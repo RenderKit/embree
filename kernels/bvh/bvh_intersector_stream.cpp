@@ -63,10 +63,10 @@ namespace embree
 #if defined(__AVX512F__)
     template<int N, bool dist_update, bool robust>
     __forceinline vbool<N*2> intersectAlignedNode(const RayContext<robust>& ctx,
-                                           const vfloat<N*2>& bminmaxX,
-                                           const vfloat<N*2>& bminmaxY,
-                                           const vfloat<N*2>& bminmaxZ,
-                                           vfloat<N*2>& dist)
+                                                  const vfloat<N*2>& bminmaxX,
+                                                  const vfloat<N*2>& bminmaxY,
+                                                  const vfloat<N*2>& bminmaxZ,
+                                                  vfloat<N*2>& dist)
     {
       if (!robust)
       {
@@ -98,13 +98,13 @@ namespace embree
 
     template<int N, int Nx, bool dist_update, bool robust>
     __forceinline vbool<Nx> intersectAlignedNode(const RayContext<robust>& ctx,
-                                          const vfloat<Nx>& bminX,
-                                          const vfloat<Nx>& bminY,
-                                          const vfloat<Nx>& bminZ,
-                                          const vfloat<Nx>& bmaxX,
-                                          const vfloat<Nx>& bmaxY,
-                                          const vfloat<Nx>& bmaxZ,
-                                          vfloat<Nx>& dist)
+                                                 const vfloat<Nx>& bminX,
+                                                 const vfloat<Nx>& bminY,
+                                                 const vfloat<Nx>& bminZ,
+                                                 const vfloat<Nx>& bmaxX,
+                                                 const vfloat<Nx>& bmaxY,
+                                                 const vfloat<Nx>& bmaxZ,
+                                                 vfloat<Nx>& dist)
     {
       if (!robust)
       {
@@ -115,7 +115,7 @@ namespace embree
         const vfloat<Nx> tFarY  = msub(bmaxY, ctx.rdir.y, ctx.org_rdir.y);
         const vfloat<Nx> tFarZ  = msub(bmaxZ, ctx.rdir.z, ctx.org_rdir.z);
 
-#if defined(__AVX2__)
+#if defined(__AVX2__) && !defined(__AVX512F__)
         const vfloat<Nx> tNear  = maxi(maxi(tNearX, tNearY), maxi(tNearZ, vfloat<Nx>(ctx.rdir.w)));
         const vfloat<Nx> tFar   = mini(mini(tFarX, tFarY), mini(tFarZ, vfloat<Nx>(ctx.org_rdir.w)));
 #else
@@ -144,7 +144,7 @@ namespace embree
         const vfloat<Nx> tFarZ  = (bmaxZ - org.z) * ctx.rdir.z;
         const float round_down = 1.0f-2.0f*float(ulp); 
         const float round_up   = 1.0f+2.0f*float(ulp);
-#if defined(__AVX2__)
+#if defined(__AVX2__) && !defined(__AVX512F__)
         const vfloat<Nx> tNear  = maxi(maxi(tNearX, tNearY), maxi(tNearZ, vfloat<Nx>(ctx.rdir.w)));
         const vfloat<Nx> tFar   = mini(mini(tFarX, tFarY), mini(tFarZ, vfloat<Nx>(org.w)));
 #else
@@ -525,34 +525,57 @@ namespace embree
             assert(m_trav_active);
 
 #if defined(__AVX512F__)
-            const vlong<N> one((size_t)1);
+            if (N == 8)
+            {
+              const vfloat<N*2> bminmaxX = permute(vfloat<N*2>::load((const float*)&node->lower_x), pc.permX);
+              const vfloat<N*2> bminmaxY = permute(vfloat<N*2>::load((const float*)&node->lower_y), pc.permY);
+              const vfloat<N*2> bminmaxZ = permute(vfloat<N*2>::load((const float*)&node->lower_z), pc.permZ);
+              const vlong<N> one((size_t)1);
+              vfloat<N*2> dist(inf);
+              vlong<N> maskK(zero);              
+              size_t bits = m_trav_active;
+              do
+              {            
+                STAT3(normal.trav_nodes,1,1,1);                          
+                const size_t i = __bscf(bits);
+                const RayCtx& ray = ray_ctx[i];
+                const vlong<N> bitmask = one << vlong<N>(i);
+                const vbool<N*2> vmask = intersectAlignedNode<N, true, robust>(ray, bminmaxX, bminmaxY, bminmaxZ, dist);
+                maskK = mask_or((vboold<N>)vmask, maskK, maskK, bitmask);
+              } while(bits);              
+              const vboold<N> vmaskN = maskK != vlong<N>(zero);
+              const vbool<N*2> vmask(vmaskN);
+              if (unlikely(none(vmask))) goto pop;
 
-            const vfloat<N*2> bminmaxX = permute(vfloat<N*2>::load((const float*)&node->lower_x), pc.permX);
-            const vfloat<N*2> bminmaxY = permute(vfloat<N*2>::load((const float*)&node->lower_y), pc.permY);
-            const vfloat<N*2> bminmaxZ = permute(vfloat<N*2>::load((const float*)&node->lower_z), pc.permZ);
+              BVHNNodeTraverserStreamHit<N, N*2, types>::traverseClosestHit(cur, m_trav_active, vmask, dist, (size_t*)&maskK, stackPtr);
+            }
+            else /* N == 4 */
+            {
+              const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearX));
+              const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearY));
+              const vfloat<Nx> bminZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearZ));
+              const vfloat<Nx> bmaxX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farX));
+              const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farY));
+              const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farZ));
 
-            vfloat<N*2> dist(inf);
-            vlong<N> maskK(zero);
-              
-            size_t bits = m_trav_active;
-            do
-            {            
-              STAT3(normal.trav_nodes,1,1,1);                          
-              const size_t i = __bscf(bits);
-              const RayCtx& ray = ray_ctx[i];
-              const vlong<N> bitmask = one << vlong<N>(i);
-
-              const vbool<N*2> vmask = intersectAlignedNode<N, true, robust>(ray, bminmaxX, bminmaxY, bminmaxZ, dist);
-
-              maskK = mask_or((vboold<N>)vmask, maskK, maskK, bitmask);
-            } while(bits);              
-
-            const vboold<N> vmaskN = maskK != vlong<N>(zero);
-            const vbool<N*2> vmask(vmaskN);
-            if (unlikely(none(vmask))) goto pop;
-
-            BVHNNodeTraverserStreamHit<N, N*2, types>::traverseClosestHit(cur, m_trav_active, vmask, dist, (size_t*)&maskK, stackPtr);
-
+              const vlong<Nx/2> one((size_t)1);
+              vfloat<Nx> dist(inf);
+              vlong<Nx/2> maskK(zero);              
+              size_t bits = m_trav_active;
+              do
+              {            
+                STAT3(normal.trav_nodes,1,1,1);                          
+                const size_t i = __bscf(bits);
+                const RayCtx& ray = ray_ctx[i];
+                const vlong<Nx/2> bitmask = one << vlong<Nx/2>(i);
+                const vbool<Nx> vmask = intersectAlignedNode<N, Nx, true, robust>(ray, bminX, bminY, bminZ, bmaxX, bmaxY, bmaxZ, dist);
+                maskK = mask_or((vboold<Nx/2>)vmask, maskK, maskK, bitmask);
+              } while(bits);              
+              const vboold<Nx/2> vmaskN = maskK != vlong<Nx/2>(zero);
+              const vbool<Nx> vmask(vmaskN);
+              if (unlikely(none(vmask))) goto pop;
+              BVHNNodeTraverserStreamHit<N, Nx, types>::traverseClosestHit(cur, m_trav_active, vmask, dist, (size_t*)&maskK, stackPtr);              
+            }
 #else
             const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearX));
             const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearY));
