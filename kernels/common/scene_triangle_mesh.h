@@ -197,6 +197,26 @@ namespace embree
       return true;
     }
 
+    /*! check if the i'th primitive is valid between the itime_lower'th and itime_upper'th timesteps */
+    __forceinline bool valid(size_t i, size_t itime_lower, size_t itime_upper) const
+    {
+      const Triangle& tri = triangle(i);
+      if (unlikely(tri.v[0] >= numVertices())) return false;
+      if (unlikely(tri.v[1] >= numVertices())) return false;
+      if (unlikely(tri.v[2] >= numVertices())) return false;
+
+      for (size_t itime = itime_lower; itime <= itime_upper; itime++)
+      {
+        const Vec3fa v0 = vertex(tri.v[0],itime);
+        const Vec3fa v1 = vertex(tri.v[1],itime);
+        const Vec3fa v2 = vertex(tri.v[2],itime);
+        if (unlikely(!isvalid(v0) || !isvalid(v1) || !isvalid(v2)))
+          return false;
+      }
+
+      return true;
+    }
+
     /*! calculates the linear bounds of the i'th primitive at the itimeGlobal'th time segment */
     __forceinline LBBox3fa linearBounds(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
     {
@@ -271,12 +291,12 @@ namespace embree
     /*! calculates the linear bounds of the i'th primitive for the specified time range */
     __forceinline bool linearBounds(size_t i, const BBox1f& time_range, LBBox3fa& bbox) const
     {
-      const Triangle& tri = triangle(i);
-      if (unlikely(tri.v[0] >= numVertices())) return false;
-      if (unlikely(tri.v[1] >= numVertices())) return false;
-      if (unlikely(tri.v[2] >= numVertices())) return false;
-      // FIXME: check all vertices
-      bbox = linearBounds(i,time_range);
+      const int itime_lower = (int)floor(time_range.lower*fnumTimeSegments);
+      const int itime_upper = (int)ceil (time_range.upper*fnumTimeSegments);
+      if (!valid(i, itime_lower, itime_upper))
+        return false;
+
+      bbox = linearBounds(i, time_range);
       return true;
     }
 
