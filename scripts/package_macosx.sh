@@ -10,11 +10,4 @@ EMBREE_VERSION=$2
 # create package
 make -j 4 package
 
-if [ "$1" == "ON" ]; then
-  embree_tgz=embree-${EMBREE_VERSION}.x86_64.macosx.tar.gz
-  echo "<DartMeasurementFile name=\"${embree_tgz}\" type=\"file\">${embree_tgz}</DartMeasurementFile>"
-else
-  embree_dmg=embree-${EMBREE_VERSION}.x86_64.dmg
-  echo "<DartMeasurementFile name=\"${embree_dmg}\" type=\"file\">${embree_dmg}</DartMeasurementFile>"
-fi
-
+echo "<DartMeasurementFile name=\"$1\" type=\"file\">$1</DartMeasurementFile>"
