@@ -63,10 +63,6 @@ IF (BUILD_TESTING)
   ELSE()
     SET(MY_PROJECT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
   ENDIF()
-
-#  ADD_TEST(NAME "BuildPackage"
-#           WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
-#           COMMAND ${CMAKE_COMMAND} --build . --target package)
   
   MACRO (ADD_EMBREE_MODEL_TEST name reference executable args model)
   
