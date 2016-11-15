@@ -260,21 +260,8 @@ namespace embree
     /*! calculates the linear bounds of the i'th primitive for the specified time range */
     __forceinline LBBox3fa linearBounds(size_t primID, const BBox1f& time_range) const
     {
-      BBox3fa b0 = bounds(primID, time_range.lower);
-      BBox3fa b1 = bounds(primID, time_range.upper);
-      const int ilower = (int)ceil (time_range.lower*fnumTimeSegments);
-      const int iupper = (int)floor(time_range.upper*fnumTimeSegments);
-      for (size_t i = ilower; i <= iupper; i++)
-      {
-        const float f = (float(i)/fnumTimeSegments - time_range.lower) / time_range.size();
-        const BBox3fa bt = lerp(b0, b1, f);
-        const BBox3fa bi = bounds(primID, i);
-        const Vec3fa dlower = min(bi.lower-bt.lower, Vec3fa(zero));
-        const Vec3fa dupper = max(bi.upper-bt.upper, Vec3fa(zero));
-        b0.lower += dlower; b1.lower += dlower;
-        b0.upper += dupper; b1.upper += dupper;
-      }
-      return LBBox3fa(b0, b1);
+      return Geometry::linearBounds([&] (size_t itime) { return bounds(primID, itime); },
+                                    time_range, fnumTimeSegments);
     }
 
     /*! calculates the linear bounds of the i'th primitive for the specified time range */

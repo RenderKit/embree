@@ -329,6 +329,37 @@ namespace embree
 
   public:
 
+    /*! calculates the interpolated bounds of a primitive at the specified time */
+    template<typename BoundsFunc>
+    __forceinline static BBox3fa interpolateBounds(const BoundsFunc& bounds, float time, float numTimeSegments)
+    {
+      float ftime; size_t itime = getTimeSegment(time, numTimeSegments, ftime);
+      const BBox3fa b0 = bounds(itime+0);
+      const BBox3fa b1 = bounds(itime+1);
+      return lerp(b0, b1, ftime);
+    }
+
+    /*! calculates the linear bounds of a primitive for the specified time range */
+    template<typename BoundsFunc>
+    __forceinline static LBBox3fa linearBounds(const BoundsFunc& bounds, const BBox1f& time_range, float numTimeSegments)
+    {
+      BBox3fa b0 = interpolateBounds(bounds, time_range.lower, numTimeSegments);
+      BBox3fa b1 = interpolateBounds(bounds, time_range.upper, numTimeSegments);
+      const int ilower = (int)ceil (time_range.lower*numTimeSegments);
+      const int iupper = (int)floor(time_range.upper*numTimeSegments);
+      for (size_t i = ilower; i <= iupper; i++)
+      {
+        const float f = (float(i)/numTimeSegments - time_range.lower) / time_range.size();
+        const BBox3fa bt = lerp(b0, b1, f);
+        const BBox3fa bi = bounds(i);
+        const Vec3fa dlower = min(bi.lower-bt.lower, Vec3fa(zero));
+        const Vec3fa dupper = max(bi.upper-bt.upper, Vec3fa(zero));
+        b0.lower += dlower; b1.lower += dlower;
+        b0.upper += dupper; b1.upper += dupper;
+      }
+      return LBBox3fa(b0, b1);
+    }
+
     /*! calculates the linear bounds of a primitive at the itimeGlobal'th time segment */
     template<typename BoundsFunc>
     __forceinline static LBBox3fa linearBounds(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const BoundsFunc& bounds)
