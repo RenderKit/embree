@@ -62,6 +62,12 @@ namespace embree
       center_o = binCenter();
     }
 
+    __forceinline void binBoundsAndCenter(BBox3fa& bounds_o, Vec3fa& center_o) const
+    {
+      bounds_o = lbounds.interpolate(0.5f);
+      center_o = center2(bounds_o);
+    }
+
     /*! returns the geometry ID */
     __forceinline unsigned geomID() const { 
       return lbounds.bounds0.lower.a;

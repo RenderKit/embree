@@ -514,7 +514,7 @@ namespace embree
                             float(c[i].end  ())/float(bvh->numTimeSteps-1));
 
             avector<PrimRefMB> prims2(prims.size());
-            const PrimInfoMB pinfo = createPrimRef2ArrayMBlur<Mesh>(scene,prims2,bvh->scene->progressInterface,dt);
+            const PrimInfoMB pinfo = createPrimRefMBArray<Mesh>(scene,prims2,bvh->scene->progressInterface,dt);
             LBBox3fa cbounds = pinfo.geomBounds;
 
             node->set(i,cnode,cbounds,dt);
@@ -542,7 +542,7 @@ namespace embree
         
         NodeRef root = recurse(make_range(size_t(0),numTimeSegments));
         avector<PrimRefMB> prims2(numPrimitives);
-        const PrimInfoMB pinfo = createPrimRef2ArrayMBlur<Mesh>(scene,prims2,bvh->scene->progressInterface,BBox1f(0.0f,1.0f));
+        const PrimInfoMB pinfo = createPrimRefMBArray<Mesh>(scene,prims2,bvh->scene->progressInterface,BBox1f(0.0f,1.0f));
         bvh->set(root,pinfo.geomBounds,numPrimitives);
         
         /* clear temporary data for static geometry */
@@ -677,7 +677,7 @@ namespace embree
         avector<PrimRefMB>* prims = &prims_vector;
 #endif
         
-        PrimInfoMB pinfo = createPrimRef2ArrayMBlur<Mesh>(scene,*prims,bvh->scene->progressInterface);
+        PrimInfoMB pinfo = createPrimRefMBArray<Mesh>(scene,*prims,bvh->scene->progressInterface);
         
         /* reduction function */
         auto updateNodeFunc = [&] (NodeRef ref, Set& prims, const std::pair<LBBox3fa,BBox1f>* bounds, const size_t num) -> std::pair<LBBox3fa,BBox1f> {
