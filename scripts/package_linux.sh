@@ -70,4 +70,4 @@ else
 
 fi
 
-echo "<DartMeasurementFile name=\"version.h\" type=\"file\">version.h</DartMeasurementFile>"
+echo "<DartMeasurementFile name=\"version.h\" type=\"image/png\">version.h</DartMeasurementFile>"
