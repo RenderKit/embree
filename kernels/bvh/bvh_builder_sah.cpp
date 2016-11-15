@@ -417,33 +417,12 @@ namespace embree
     /************************************************************************************/
 
     template<int N>
-      struct CreateAlignedNodeMB4D
-    {
-      typedef BVHN<N> BVH;
-      typedef typename BVH::AlignedNodeMB4D AlignedNodeMB4D;
-
-      __forceinline CreateAlignedNodeMB4D (BVH* bvh) : bvh(bvh) {}
-      
-      __forceinline AlignedNodeMB4D* operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc)
-      {
-        AlignedNodeMB4D* node = (AlignedNodeMB4D*) alloc->alloc0->malloc(sizeof(AlignedNodeMB4D),BVH::byteNodeAlignment); node->clear();
-        for (size_t i=0; i<num; i++) {
-          children[i].parent = (size_t*)&node->child(i);
-        }
-        *current.parent = bvh->encodeNode(node);
-	return node;
-      }
-
-      BVH* bvh;
-    };
-
-    template<int N>
-      struct CreateAlignedNodeMB2
+      struct CreateAlignedNodeMB
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::AlignedNodeMB AlignedNodeMB;
 
-      __forceinline CreateAlignedNodeMB2 (BVH* bvh) : bvh(bvh) {}
+      __forceinline CreateAlignedNodeMB (BVH* bvh) : bvh(bvh) {}
       
       __forceinline AlignedNodeMB* operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc)
       {
@@ -503,7 +482,7 @@ namespace embree
           
           NodeRef root;
           BVHBuilderBinnedSAH::build_reduce<NodeRef>
-            (root,typename BVH::CreateAlloc(bvh),identity,CreateAlignedNodeMB2<N>(bvh),reduce,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),dti.begin()),bvh->scene->progressInterface,
+            (root,typename BVH::CreateAlloc(bvh),identity,CreateAlignedNodeMB<N>(bvh),reduce,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),dti.begin()),bvh->scene->progressInterface,
              prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
           
           return root;
@@ -844,7 +823,7 @@ namespace embree
           
           NodeRef root;
           LBBox3fa root_bounds = BVHBuilderBinnedSAH::build_reduce<NodeRef>
-            (root,typename BVH::CreateAlloc(bvh),identity,CreateAlignedNodeMB2<N>(bvh),reduce,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),dti.begin()),bvh->scene->progressInterface,
+            (root,typename BVH::CreateAlloc(bvh),identity,CreateAlignedNodeMB<N>(bvh),reduce,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),dti.begin()),bvh->scene->progressInterface,
              prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
           
           return std::make_tuple(root,root_bounds.global(dt));
