@@ -42,9 +42,9 @@ EMBREE_VERSION=$2
 
 # create package
 make -j 16 preinstall
-check_symbols libembree.so GLIBC 2 4 0
-check_symbols libembree.so GLIBCXX 3 4 5
-check_symbols libembree.so CXXABI 1 3 0
+#check_symbols libembree.so GLIBC 2 4 0
+#check_symbols libembree.so GLIBCXX 3 4 5
+#check_symbols libembree.so CXXABI 1 3 0
 make -j 16 package
 
 if [ "$1" == "OFF" ]; then
