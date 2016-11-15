@@ -34,10 +34,11 @@ function check_symbols
 }
 
 # read embree version
-EMBREE_VERSION_MAJOR=`sed -n 's/#define __EMBREE_VERSION_MAJOR__ \(.*\)/\1/p' version.h`
-EMBREE_VERSION_MINOR=`sed -n 's/#define __EMBREE_VERSION_MINOR__ \(.*\)/\1/p' version.h`
-EMBREE_VERSION_PATCH=`sed -n 's/#define __EMBREE_VERSION_PATCH__ \(.*\)/\1/p' version.h`
-EMBREE_VERSION=${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERSION_PATCH}
+#EMBREE_VERSION_MAJOR=`sed -n 's/#define __EMBREE_VERSION_MAJOR__ \(.*\)/\1/p' version.h`
+#EMBREE_VERSION_MINOR=`sed -n 's/#define __EMBREE_VERSION_MINOR__ \(.*\)/\1/p' version.h`
+#EMBREE_VERSION_PATCH=`sed -n 's/#define __EMBREE_VERSION_PATCH__ \(.*\)/\1/p' version.h`
+#EMBREE_VERSION=${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERSION_PATCH}
+EMBREE_VERSION=$2
 
 # create package
 make -j 16 preinstall
@@ -46,7 +47,7 @@ check_symbols libembree.so GLIBCXX 3 4 5
 check_symbols libembree.so CXXABI 1 3 0
 make -j 16 package
 
-if [ "$1" == "rpm" ]; then
+if [ "$1" == "OFF" ]; then
 
   # rename RPMs to have component name before version
   for i in embree-${EMBREE_VERSION}-1.*.rpm ; do 
