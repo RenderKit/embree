@@ -82,7 +82,7 @@ namespace embree
           const ObjectSplit object_split = object_find(set,pinfo,logBlockSize);
           const float object_split_sah = object_split.splitSAH();
   
-          /* do temporal splits only if the child bounds overlap */
+          /* do temporal splits only if the the time range is big enough */
           if (set.time_range.size() > 1.01f/float(pinfo.max_num_time_segments))
           {
             const TemporalSplit temporal_split = temporal_find(set, pinfo, logBlockSize);

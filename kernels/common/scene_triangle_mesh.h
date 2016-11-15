@@ -291,8 +291,8 @@ namespace embree
     /*! calculates the linear bounds of the i'th primitive for the specified time range */
     __forceinline bool linearBounds(size_t i, const BBox1f& time_range, LBBox3fa& bbox) const
     {
-      const int itime_lower = (int)floor(time_range.lower*fnumTimeSegments);
-      const int itime_upper = (int)ceil (time_range.upper*fnumTimeSegments);
+      const int itime_lower = (int)floor(1.0001f*time_range.lower*fnumTimeSegments);
+      const int itime_upper = (int)ceil (0.9999f*time_range.upper*fnumTimeSegments);
       if (!valid(i, itime_lower, itime_upper))
         return false;
 
