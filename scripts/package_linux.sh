@@ -42,9 +42,9 @@ EMBREE_VERSION=$2
 
 # create package
 make -j 16 preinstall
-#check_symbols libembree.so GLIBC 2 4 0
-#check_symbols libembree.so GLIBCXX 3 4 5
-#check_symbols libembree.so CXXABI 1 3 0
+check_symbols libembree.so GLIBC 2 4 0
+check_symbols libembree.so GLIBCXX 3 4 5
+check_symbols libembree.so CXXABI 1 3 0
 make -j 16 package
 
 if [ "$1" == "OFF" ]; then
@@ -59,15 +59,4 @@ if [ "$1" == "OFF" ]; then
   embree_tgz=embree-${EMBREE_VERSION}.x86_64.rpm.tar.gz
   tar czf ${embree_tgz} embree-*-${EMBREE_VERSION}-1.x86_64.rpm
 
-  # send RPMs to CDash
-  #echo "<DartMeasurementFile name=\"${embree_tgz}\" type=\"file\">${embree_tgz}</DartMeasurementFile>"
-      
-else
-
-  # send ZIP to CDash
-  embree_zip=embree-${EMBREE_VERSION}.x86_64.linux.tar.gz
-  #echo "<DartMeasurementFile name=\"${embree_zip}\" type=\"file\">${embree_zip}</DartMeasurementFile>"
-
 fi
-
-#echo "<DartMeasurementFile name=\"version.h\" type=\"image/png\">version.h</DartMeasurementFile>"
