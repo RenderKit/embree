@@ -183,18 +183,7 @@ namespace embree
     /*! check if the i'th primitive is valid at the itime'th timestep */
     __forceinline bool valid(size_t i, size_t itime) const
     {
-      const Triangle& tri = triangle(i);
-      if (unlikely(tri.v[0] >= numVertices())) return false;
-      if (unlikely(tri.v[1] >= numVertices())) return false;
-      if (unlikely(tri.v[2] >= numVertices())) return false;
-
-      const Vec3fa v0 = vertex(tri.v[0],itime);
-      const Vec3fa v1 = vertex(tri.v[1],itime);
-      const Vec3fa v2 = vertex(tri.v[2],itime);
-      if (unlikely(!isvalid(v0) || !isvalid(v1) || !isvalid(v2)))
-        return false;
-
-      return true;
+      return valid(i, itime, itime);
     }
 
     /*! check if the i'th primitive is valid between the itime_lower'th and itime_upper'th timesteps */
