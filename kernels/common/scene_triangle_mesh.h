@@ -183,18 +183,18 @@ namespace embree
     /*! check if the i'th primitive is valid at the itime'th timestep */
     __forceinline bool valid(size_t i, size_t itime) const
     {
-      return valid(i, itime, itime);
+      return valid(i, make_range(itime, itime));
     }
 
-    /*! check if the i'th primitive is valid between the itime_lower'th and itime_upper'th timesteps */
-    __forceinline bool valid(size_t i, size_t itime_lower, size_t itime_upper) const
+    /*! check if the i'th primitive is valid between the specified time range */
+    __forceinline bool valid(size_t i, const range<size_t>& itime_range) const
     {
       const Triangle& tri = triangle(i);
       if (unlikely(tri.v[0] >= numVertices())) return false;
       if (unlikely(tri.v[1] >= numVertices())) return false;
       if (unlikely(tri.v[2] >= numVertices())) return false;
 
-      for (size_t itime = itime_lower; itime <= itime_upper; itime++)
+      for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++)
       {
         const Vec3fa v0 = vertex(tri.v[0],itime);
         const Vec3fa v1 = vertex(tri.v[1],itime);
@@ -280,11 +280,8 @@ namespace embree
     /*! calculates the linear bounds of the i'th primitive for the specified time range */
     __forceinline bool linearBounds(size_t i, const BBox1f& time_range, LBBox3fa& bbox) const
     {
-      const int itime_lower = (int)floor(1.0001f*time_range.lower*fnumTimeSegments);
-      const int itime_upper = (int)ceil (0.9999f*time_range.upper*fnumTimeSegments);
-      if (!valid(i, itime_lower, itime_upper))
+      if (!valid(i, getTimeSegmentRange(time_range, fnumTimeSegments)))
         return false;
-
       bbox = linearBounds(i, time_range);
       return true;
     }

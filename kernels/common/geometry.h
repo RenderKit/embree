@@ -40,6 +40,14 @@ namespace embree
     return vint<N>(itimef);
   }
 
+  /* calculate overlapping time segment range */
+  __forceinline range<int> getTimeSegmentRange(const BBox1f& time_range, float numTimeSegments)
+  {
+    const int itime_lower = (int)floor(1.0001f*time_range.lower*numTimeSegments);
+    const int itime_upper = (int)ceil (0.9999f*time_range.upper*numTimeSegments);
+    return make_range(itime_lower, itime_upper);
+  }
+
   /*! Base class all geometries are derived from */
   class Geometry
   {

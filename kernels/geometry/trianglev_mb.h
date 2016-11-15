@@ -169,9 +169,9 @@ namespace embree
         const unsigned primID = prim.primID();
         const TriangleMesh* const mesh = scene->getTriangleMesh(geomID);
         const unsigned numTimeSegments = mesh->numTimeSegments();
-        const int ilower = (int)floor(1.0001f*time_range.lower*numTimeSegments);
-        const int iupper = (int)ceil (0.9999f*time_range.upper*numTimeSegments);
-        assert(iupper-ilower == 1);
+        const range<int> itime_range = getTimeSegmentRange(time_range, numTimeSegments);
+        assert(itime_range.size() == 1);
+        const int ilower = itime_range.begin();
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         allBounds.extend(mesh->linearBounds(primID, time_range));
         const Vec3fa& a0 = mesh->vertex(tri.v[0],ilower+0);

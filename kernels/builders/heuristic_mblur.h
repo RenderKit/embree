@@ -68,9 +68,7 @@ namespace embree
         static __forceinline unsigned calculateNumOverlappingTimeSegments(Scene* scene, unsigned geomID, BBox1f time_range)
         {
           const unsigned totalTimeSegments = scene->get(geomID)->numTimeSegments();
-          const unsigned itime_lower = floor(1.0001f*time_range.lower*float(totalTimeSegments));
-          const unsigned itime_upper = ceil (0.9999f*time_range.upper*float(totalTimeSegments));
-          const unsigned numTimeSegments = itime_upper-itime_lower; 
+          const unsigned numTimeSegments = getTimeSegmentRange(time_range, totalTimeSegments).size();
           assert(numTimeSegments > 0);
           return numTimeSegments;
         }
@@ -106,12 +104,11 @@ namespace embree
             {
               const PrimRefMB& prim = (*set.prims)[i];
               unsigned numTimeSegments = scene->get(prim.geomID())->numTimeSegments();
-              const int ilower = (int)floor(1.0001f*pinfo.time_range.lower*numTimeSegments);
-              const int iupper = (int)ceil (0.9999f*pinfo.time_range.upper*numTimeSegments);
-              const int localTimeSegments = iupper-ilower;
+              const range<int> itime_range = getTimeSegmentRange(pinfo.time_range, numTimeSegments);
+              const int localTimeSegments = itime_range.size();
               assert(localTimeSegments > 0);
               if (localTimeSegments > 1) {
-                const int icenter = (ilower + iupper)/2;
+                const int icenter = (itime_range.begin() + itime_range.end())/2;
                 const float splitTime = float(icenter)/float(numTimeSegments);
                 return TemporalSplit(1.0f,-1,0,splitTime);
               }

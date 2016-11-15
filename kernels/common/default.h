@@ -40,6 +40,7 @@
 #include "../common/math/linearspace2.h"
 #include "../common/math/linearspace3.h"
 #include "../common/math/affinespace.h"
+#include "../common/math/range.h"
 #include "../common/lexers/tokenstream.h"
 
 #include "../common/tasking/taskscheduler.h"
