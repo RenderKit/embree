@@ -375,13 +375,12 @@ namespace embree {
     /* set error handler */
     rtcDeviceSetErrorFunction(g_device,error_handler);
 
-    //Benchmark_DynamicDynamic_Update(g_ispc_scene,iterations_dynamic_dynamic);
+    Benchmark_DynamicDynamic_Update(g_ispc_scene,iterations_dynamic_dynamic);
     Benchmark_DynamicStatic_Update(g_ispc_scene,iterations_dynamic_static);
     Benchmark_DynamicStatic_Create(g_ispc_scene,iterations_dynamic_static);
-    //Benchmark_StaticStatic_Create(g_ispc_scene,iterations_static_static);
+    Benchmark_StaticStatic_Create(g_ispc_scene,iterations_static_static);
 
     rtcDeleteDevice(g_device); g_device = nullptr;
-    //exit(0);
   }
 
 /* called by the C++ code to render */
