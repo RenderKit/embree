@@ -324,10 +324,10 @@ namespace embree
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4iSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4vMBSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4iMBSceneBuilderSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH4MB4DTriangle4iMBSceneBuilderRootTimeSplits);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH4MB4DTriangle4iMBSceneBuilderInternalTimeSplits);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH4MB4DTriangle4vMBSceneBuilderInternalTimeSplits);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH4MBTSTriangle4iMBSceneBuilderSAH);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4MB4DTriangle4iMBSceneBuilderRootTimeSplitsSAH);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4MB4DTriangle4iMBSceneBuilderInternalTimeSplitsSAH);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4MB4DTriangle4vMBSceneBuilderInternalTimeSplitsSAH);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4MBTSTriangle4iMBSceneBuilderRootTimeSplitsSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Quad4vSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Quad4iSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Quad4iMBSceneBuilderSAH);
