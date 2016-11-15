@@ -423,60 +423,12 @@ namespace embree
             assert(m_trav_active);
 
 #if defined(__AVX512F__)
-            if (N == 8)
-            {
-              /* optimization will only work for 8-wide BVHs and 16-wide SIMD, supports <= 64 rays */
-              const vfloat<16> bminmaxX = permute(vfloat<16>::load((const float*)&node->lower_x), pc.permX);
-              const vfloat<16> bminmaxY = permute(vfloat<16>::load((const float*)&node->lower_y), pc.permY);
-              const vfloat<16> bminmaxZ = permute(vfloat<16>::load((const float*)&node->lower_z), pc.permZ);
-              const vlong<8> one((size_t)1);
-              vfloat<16> dist(inf);
-              vlong<8> maskK(zero);              
-              size_t bits = m_trav_active;
-              do
-              {            
-                STAT3(normal.trav_nodes,1,1,1);                          
-                const size_t i = __bscf(bits);
-                const RayCtx& ray = ray_ctx[i];
-                const vlong<8> bitmask = one << vlong<8>(i);
-                const vbool<16> vmask = intersectAlignedNode<8, 16, true, robust>(ray, bminmaxX, bminmaxY, bminmaxZ, dist);
-                maskK = mask_or((vboold<8>)vmask, maskK, maskK, bitmask);
-              } while(bits);              
-              const vboold<8> vmaskN = maskK != vlong<8>(zero);
-              const vbool<16> vmask(vmaskN);
-              if (unlikely(none(vmask))) goto pop;
-              BVHNNodeTraverserStreamHit<N, 16, types>::traverseClosestHit(cur, m_trav_active, vmask, dist, (size_t*)&maskK, stackPtr);
-            }
-            else /* N == 4 */
-            {
-              /* optimization will only work for 4-wide BVHs and 16-wide SIMD, supports <= 64 rays */
-              const vfloat<16> bminX = vfloat<16>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearX));
-              const vfloat<16> bminY = vfloat<16>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearY));
-              const vfloat<16> bminZ = vfloat<16>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearZ));
-              const vfloat<16> bmaxX = vfloat<16>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farX));
-              const vfloat<16> bmaxY = vfloat<16>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farY));
-              const vfloat<16> bmaxZ = vfloat<16>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farZ));
-
-              const vlong<8> one((size_t)1);
-              vfloat<16> dist(inf);
-              vlong<8> maskK(zero);              
-              size_t bits = m_trav_active;
-              do
-              {            
-                STAT3(normal.trav_nodes,1,1,1);                          
-                const size_t i = __bscf(bits);
-                const RayCtx& ray = ray_ctx[i];
-                const vlong<8> bitmask = one << vlong<8>(i);
-                const vbool<16> vmask = intersectAlignedNode<4, 16, true, robust>(ray, bminX, bminY, bminZ, bmaxX, bmaxY, bmaxZ, dist);
-                maskK = mask_or((vboold<8>)vmask, maskK, maskK, bitmask);
-              } while(bits);              
-              const vboold<8> vmaskN = maskK != vlong<8>(zero);
-              const vbool<16> vmask(vmaskN);
-              if (unlikely(none(vmask))) goto pop;
-              BVHNNodeTraverserStreamHit<N, 16, types>::traverseClosestHit(cur, m_trav_active, vmask, dist, (size_t*)&maskK, stackPtr);              
-            }
+            vlong<8> maskK(zero);
+            vfloat<16> dist(inf);
+            const vbool<16> vmask = traversalLoop<true>(m_trav_active,node,pc,ray_ctx,dist,maskK);
+            if (unlikely(none(vmask))) goto pop;
+            BVHNNodeTraverserStreamHit<N, 16, types>::traverseClosestHit(cur, m_trav_active, vmask, dist, (size_t*)&maskK, stackPtr);
 #else
-
             vint<Nx> maskK(zero);
             vfloat<Nx> dist(inf);
             const vbool<Nx> vmask = traversalLoop<true>(m_trav_active,node,pc,ray_ctx,dist,maskK);
@@ -589,64 +541,15 @@ namespace embree
             //STAT3(shadow.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
 
 #if defined(__AVX512F__) 
-            if (N == 8)
-            {
-              /* optimization will only work for 8-wide BVHs and 16-wide SIMD */
-              const vfloat<16> bminmaxX = permute(vfloat<16>::load((const float*)&node->lower_x), pc.permX);
-              const vfloat<16> bminmaxY = permute(vfloat<16>::load((const float*)&node->lower_y), pc.permY);
-              const vfloat<16> bminmaxZ = permute(vfloat<16>::load((const float*)&node->lower_z), pc.permZ);
-              const vlong<8> one((size_t)1);
-              vfloat<16> dist(inf);
-              vlong<8> maskK(zero);              
-              size_t bits = m_trav_active;
-              do
-              {            
-                STAT3(normal.trav_nodes,1,1,1);                          
-                const size_t i = __bscf(bits);
-                const RayCtx& ray = ray_ctx[i];
-                const vlong<8> bitmask = one << vlong<8>(i);
-                const vbool<16> vmask = intersectAlignedNode<8, 16, false, robust>(ray, bminmaxX, bminmaxY, bminmaxZ, dist);
-                maskK = mask_or((vboold<8>)vmask, maskK, maskK, bitmask);
-              } while(bits);              
-              const vboold<8> vmaskN = maskK != vlong<8>(zero);
-              const vbool<16> vmask(vmaskN);
-              if (unlikely(none(vmask))) goto pop;
-              BVHNNodeTraverserStreamHit<N, 16, types>::traverseAnyHit(cur, m_trav_active, vmask, (size_t*)&maskK, stackPtr);
-
-            }
-            else /* N == 4 */
-            {
-              /* optimization will only work for 4-wide BVHs and 16-wide SIMD */
-              const vfloat<16> bminX = vfloat<16>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearX));
-              const vfloat<16> bminY = vfloat<16>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearY));
-              const vfloat<16> bminZ = vfloat<16>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearZ));
-              const vfloat<16> bmaxX = vfloat<16>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farX));
-              const vfloat<16> bmaxY = vfloat<16>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farY));
-              const vfloat<16> bmaxZ = vfloat<16>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farZ));
-
-              const vlong<8> one((size_t)1);
-              vfloat<16> dist(inf);
-              vlong<8> maskK(zero);              
-              size_t bits = m_trav_active;
-              do
-              {            
-                STAT3(normal.trav_nodes,1,1,1);                          
-                const size_t i = __bscf(bits);
-                const RayCtx& ray = ray_ctx[i];
-                const vlong<8> bitmask = one << vlong<8>(i);
-                const vbool<16> vmask = intersectAlignedNode<4, 16, false, robust>(ray, bminX, bminY, bminZ, bmaxX, bmaxY, bmaxZ, dist);
-                maskK = mask_or((vboold<8>)vmask, maskK, maskK, bitmask);
-              } while(bits);              
-              const vboold<8> vmaskN = maskK != vlong<8>(zero);
-              const vbool<16> vmask(vmaskN);
-              if (unlikely(none(vmask))) goto pop;
-
-              BVHNNodeTraverserStreamHit<N, 16, types>::traverseAnyHit(cur, m_trav_active, vmask, (size_t*)&maskK, stackPtr);
-            }
+            vlong<8> maskK(zero);
+            vfloat<16> dist(inf);
+            const vbool<16> vmask = traversalLoop<false>(m_trav_active,node,pc,ray_ctx,dist,maskK);
+            if (unlikely(none(vmask))) goto pop;
+            BVHNNodeTraverserStreamHit<N, 16, types>::traverseAnyHit(cur, m_trav_active, vmask, (size_t*)&maskK, stackPtr);
 #else
             vint<Nx> maskK(zero);
             vfloat<Nx> dist(inf);
-            const vbool<Nx> vmask = traversalLoop<true>(m_trav_active,node,pc,ray_ctx,dist,maskK);
+            const vbool<Nx> vmask = traversalLoop<false>(m_trav_active,node,pc,ray_ctx,dist,maskK);
             if (unlikely(none(vmask))) goto pop;
             BVHNNodeTraverserStreamHit<N, Nx, types>::traverseAnyHit(cur, m_trav_active, vmask, (unsigned int*)&maskK, stackPtr);
 #endif
