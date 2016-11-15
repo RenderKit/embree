@@ -332,6 +332,7 @@ namespace embree
       size_t time;
     };
 
+    /* Motion blur BVH with multiple roots */
     template<int N, typename Mesh, typename Primitive>
     struct BVHNBuilderMSMBlurSAH : public Builder
     {
@@ -437,6 +438,7 @@ namespace embree
       BVH* bvh;
     };
 
+    /* Motion blur BVH with 4D nodes and root time splits */
     template<int N, typename Mesh, typename Primitive>
     struct BVHNBuilderMSMBlur4DSAH : public Builder
     {
@@ -564,7 +566,7 @@ namespace embree
     /************************************************************************************/
 
     template<int N, typename Mesh>
-      struct CreateAlignedNodeMB4D2
+      struct CreateAlignedNodeMB4D
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
@@ -575,7 +577,7 @@ namespace embree
       typedef typename BVH::AlignedNodeMB AlignedNodeMB;
       typedef typename BVH::AlignedNodeMB4D AlignedNodeMB4D;
 
-      __forceinline CreateAlignedNodeMB4D2 (BVH* bvh) : bvh(bvh) {}
+      __forceinline CreateAlignedNodeMB4D (BVH* bvh) : bvh(bvh) {}
       
       __forceinline NodeRef operator() (const GeneralBuildRecord<Set,Split,PrimInfoMB>& current, GeneralBuildRecord<Set,Split,PrimInfoMB>** children, const size_t num, FastAllocator::ThreadLocal2* alloc)
       {
@@ -605,7 +607,7 @@ namespace embree
     };
 
     template<int N, typename Mesh, typename Primitive>
-    struct CreateMSMBlurLeaf2
+    struct CreateMBlurLeaf
     {
       typedef BVHN<N> BVH;
       typedef HeuristicMBlur<Mesh,NUM_OBJECT_BINS> Heuristic;
@@ -613,7 +615,7 @@ namespace embree
       typedef typename Heuristic::Split Split;
       typedef GeneralBuildRecord<Set,Split,PrimInfoMB> BuildRecord;
 
-      __forceinline CreateMSMBlurLeaf2 (BVH* bvh) : bvh(bvh) {}
+      __forceinline CreateMBlurLeaf (BVH* bvh) : bvh(bvh) {}
       
       __forceinline const std::pair<LBBox3fa,BBox1f> operator() (const BuildRecord& current, Allocator* alloc)
       {
@@ -631,6 +633,7 @@ namespace embree
       BVH* bvh;
     };
 
+    /* Motion blur BVH with 4D nodes and internal time splits */
     template<int N, typename Mesh, typename Primitive>
     struct BVHNBuilderMBlurSAH : public Builder
     {
@@ -721,8 +724,8 @@ namespace embree
         /* instantiate array binning heuristic */
         Heuristic heuristic(scene);
         auto createAllocFunc = typename BVH::CreateAlloc(bvh);
-        auto createNodeFunc = CreateAlignedNodeMB4D2<N,Mesh>(bvh);
-        auto createLeafFunc = CreateMSMBlurLeaf2<N,Mesh,Primitive>(bvh);
+        auto createNodeFunc = CreateAlignedNodeMB4D<N,Mesh>(bvh);
+        auto createLeafFunc = CreateMBlurLeaf<N,Mesh,Primitive>(bvh);
         auto progressMonitor = bvh->scene->progressInterface;
         
         typedef GeneralBVHMBBuilder<
@@ -778,6 +781,7 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 
+    /* Motion blur BVH with time split nodes and root splits */
     template<int N, typename Mesh, typename Primitive>
     struct BVHNBuilderMSMBlurTSSAH : public Builder
     {
