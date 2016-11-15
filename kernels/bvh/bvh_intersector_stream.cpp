@@ -39,9 +39,6 @@
 
 // todo: parent ptr also for single stream, should improve culling.
 
-//#define DBG_PRINT(x) PRINT(x)
-#define DBG_PRINT(x)
-
 #define MAX_RAYS 64
 
 namespace embree
@@ -303,7 +300,6 @@ namespace embree
 
           vfloat<Nx> dist;
           const size_t m_node_hit = traverseCoherentStream(m_trav_active, packet, node, pc, frusta, maskK, dist);
-
           if (unlikely(m_node_hit == 0)) goto pop;
 
           BVHNNodeTraverserStreamHitCoherent<N, Nx, types>::traverseAnyHit(cur, m_trav_active, vbool<Nx>((int)m_node_hit), (size_t*)maskK, stackPtr);
@@ -401,9 +397,6 @@ namespace embree
         
         StackItemMask* stackPtr = stack + 2;
 
-        //NodeRef cur          = bvh->root;
-        //size_t m_trav_active = m_active;
-
         while (1) pop:
         {          
           /*! pop next node */
@@ -419,16 +412,17 @@ namespace embree
           {
             if (unlikely(cur.isLeaf())) break;
             const AlignedNode* __restrict__ const node = cur.alignedNode();
-            //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
             assert(m_trav_active);
 
 #if defined(__AVX512F__)
+            /* AVX512 path for up to 64 rays */
             vlong<8> maskK(zero);
             vfloat<16> dist(inf);
             const vbool<16> vmask = traversalLoop<true>(m_trav_active,node,pc,ray_ctx,dist,maskK);
             if (unlikely(none(vmask))) goto pop;
             BVHNNodeTraverserStreamHit<N, 16, types>::traverseClosestHit(cur, m_trav_active, vmask, dist, (size_t*)&maskK, stackPtr);
 #else
+            /* AVX path for up to 32 rays */
             vint<Nx> maskK(zero);
             vfloat<Nx> dist(inf);
             const vbool<Nx> vmask = traversalLoop<true>(m_trav_active,node,pc,ray_ctx,dist,maskK);
@@ -447,7 +441,6 @@ namespace embree
           STAT3(normal.trav_leaves, 1, 1, 1);
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
           
-          //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
           size_t bits = m_trav_active;
 
           /*! intersect stream of rays with all primitives */
@@ -538,15 +531,16 @@ namespace embree
             assert(m_trav_active);
 
             const AlignedNode* __restrict__ const node = cur.alignedNode();
-            //STAT3(shadow.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
 
 #if defined(__AVX512F__) 
+            /* AVX512 path for up to 64 rays */
             vlong<8> maskK(zero);
             vfloat<16> dist(inf);
             const vbool<16> vmask = traversalLoop<false>(m_trav_active,node,pc,ray_ctx,dist,maskK);
             if (unlikely(none(vmask))) goto pop;
             BVHNNodeTraverserStreamHit<N, 16, types>::traverseAnyHit(cur, m_trav_active, vmask, (size_t*)&maskK, stackPtr);
 #else
+            /* AVX path for up to 32 rays */
             vint<Nx> maskK(zero);
             vfloat<Nx> dist(inf);
             const vbool<Nx> vmask = traversalLoop<false>(m_trav_active,node,pc,ray_ctx,dist,maskK);
