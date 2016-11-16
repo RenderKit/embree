@@ -758,7 +758,8 @@ namespace embree
           maskK = select(vmask, maskK | bitmask, maskK);
 #endif
         } while(bits);    
-        const vbool<Nx> vmask = dist < inf;
+        //const vbool<Nx> vmask = dist < inf;
+        const vbool<Nx> vmask = maskK != vint<Nx>(zero);
         return vmask;
       }
 
