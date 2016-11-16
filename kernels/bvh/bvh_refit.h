@@ -82,7 +82,6 @@ namespace embree
       
     public:
       BVHNRefitT (BVH* bvh, Builder* builder, Mesh* mesh, size_t mode);
-      ~BVHNRefitT();
 
       virtual void build(size_t threadIndex, size_t threadCount);
       
@@ -101,8 +100,8 @@ namespace embree
       
     private:
       BVH* bvh;
-      Builder* builder;
-      BVHNRefitter<N>* refitter;
+      std::unique_ptr<Builder> builder;
+      std::unique_ptr<BVHNRefitter<N>> refitter;
       Mesh* mesh;
     };
   }
