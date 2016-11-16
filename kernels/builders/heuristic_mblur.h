@@ -19,7 +19,6 @@
 #include "../common/primref_mb.h"
 #include "heuristic_binning.h"
 
-#define MBLUR_SPLIT_OVERLAP_THRESHOLD 0.1f
 #define MBLUR_TIME_SPLIT_THRESHOLD 1.25f
 #define MBLUR_TIME_SPLIT_LOCATIONS 1
 #define MBLUR_NEW_ARRAY 0
