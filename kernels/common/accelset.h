@@ -65,12 +65,9 @@ namespace embree
 
     struct Intersector1
     {
-      Intersector1 (ErrorFunc error = nullptr) 
-      : intersect((IntersectFunc)error), occluded((OccludedFunc)error), name(nullptr) {}
+      Intersector1 (ErrorFunc error = nullptr);
+      Intersector1 (IntersectFunc intersect, OccludedFunc occluded, const char* name);
 
-      Intersector1 (IntersectFunc intersect, OccludedFunc occluded, const char* name)
-      : intersect(intersect), occluded(occluded), name(name) {}
-      
       operator bool() const { return name; }
         
       public:
@@ -82,11 +79,8 @@ namespace embree
       
       struct Intersector4 
       {
-        Intersector4 (ErrorFunc error = nullptr) 
-        : intersect((void*)error), occluded((void*)error), name(nullptr), ispc(false) {}
-
-        Intersector4 (void* intersect, void* occluded, const char* name, bool ispc)
-        : intersect(intersect), occluded(occluded), name(name), ispc(ispc) {}
+        Intersector4 (ErrorFunc error = nullptr);
+        Intersector4 (void* intersect, void* occluded, const char* name, bool ispc);
 	
         operator bool() const { return name; }
         
@@ -100,11 +94,8 @@ namespace embree
       
       struct Intersector8 
       {
-        Intersector8 (ErrorFunc error = nullptr) 
-        : intersect((void*)error), occluded((void*)error), name(nullptr), ispc(false) {}
-
-        Intersector8 (void* intersect, void* occluded, const char* name, bool ispc)
-        : intersect(intersect), occluded(occluded), name(name), ispc(ispc) {}
+        Intersector8 (ErrorFunc error = nullptr);
+        Intersector8 (void* intersect, void* occluded, const char* name, bool ispc);
         
         operator bool() const { return name; }
         
@@ -118,11 +109,8 @@ namespace embree
       
       struct Intersector16 
       {
-        Intersector16 (ErrorFunc error = nullptr) 
-        : intersect((void*)error), occluded((void*)error), name(nullptr), ispc(false) {}
-
-        Intersector16 (void* intersect, void* occluded, const char* name, bool ispc)
-        : intersect(intersect), occluded(occluded), name(name), ispc(ispc) {}
+        Intersector16 (ErrorFunc error = nullptr);
+        Intersector16 (void* intersect, void* occluded, const char* name, bool ispc);
         
         operator bool() const { return name; }
         
@@ -136,11 +124,8 @@ namespace embree
 
       struct Intersector1M
       {
-        Intersector1M (ErrorFunc error = nullptr) 
-        : intersect((IntersectFunc1M)error), occluded((OccludedFunc1M)error), name(nullptr) {}
-        
-        Intersector1M (IntersectFunc1M intersect, OccludedFunc1M occluded, const char* name)
-        : intersect(intersect), occluded(occluded), name(name) {}
+        Intersector1M (ErrorFunc error = nullptr);
+        Intersector1M (IntersectFunc1M intersect, OccludedFunc1M occluded, const char* name);
         
         operator bool() const { return name; }
         
@@ -153,11 +138,8 @@ namespace embree
 
       struct IntersectorN
       {
-        IntersectorN (ErrorFunc error = nullptr) 
-        : intersect((IntersectFuncN)error), occluded((OccludedFuncN)error), name(nullptr) {}
-        
-        IntersectorN (IntersectFuncN intersect, OccludedFuncN occluded, const char* name)
-        : intersect(intersect), occluded(occluded), name(name) {}
+        IntersectorN (ErrorFunc error = nullptr) ;
+        IntersectorN (IntersectFuncN intersect, OccludedFuncN occluded, const char* name);
         
         operator bool() const { return name; }
         
