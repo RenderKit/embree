@@ -71,7 +71,7 @@ namespace embree
       throw std::runtime_error("task cancelled");
 
 #elif defined(TASKING_PPL)
-    concurrency::parallel_for(first, last, minStepSize, [&](Index i) { 
+    concurrency::parallel_for(first, last, Index(1) /*minStepSize*/, [&](Index i) { 
         func(range<Index>(i,i+1)); 
       });
 
