@@ -59,4 +59,13 @@ if [ "$1" == "OFF" ]; then
   embree_tgz=embree-${EMBREE_VERSION}.x86_64.rpm.tar.gz
   tar czf ${embree_tgz} embree-*-${EMBREE_VERSION}-1.x86_64.rpm
 
+  # send RPMs to CDash
+  echo "<DartMeasurement name=\"${embree_tgz}\" type=\"text/string\">${embree_tgz}</DartMeasurement>"
+      
+else
+
+  # send ZIP to CDash
+  embree_zip=embree-${EMBREE_VERSION}.x86_64.linux.tar.gz
+  echo "<DartMeasurement name=\"${embree_zip}\" type=\"text/string\">${embree_zip}</DartMeasurement>"
+
 fi
