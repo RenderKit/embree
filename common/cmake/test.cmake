@@ -30,6 +30,7 @@ IF (BUILD_TESTING)
   SET(EMBREE_TESTING_BENCHMARK OFF CACHE BOOL "Turns benchmarking on.")
   SET(EMBREE_TESTING_BENCHMARK_DATABASE "${PROJECT_BINARY_DIR}" CACHE PATH "Path to database for benchmarking.")
   SET(EMBREE_TESTING_PACKAGE OFF CACHE BOOL "Packages release as test.")
+  SET(EMBREE_TESTING_KLOCWORK OFF CACHE BOOL "Runs Kocwork as test.")
 
   IF(   NOT EXISTS "${EMBREE_TESTING_MODEL_DIR}/embree-models-subdiv.txt"
      OR NOT EXISTS "${EMBREE_TESTING_MODEL_DIR}/embree-models-small-win32.txt"
@@ -103,6 +104,10 @@ IF (BUILD_TESTING)
       ADD_EMBREE_MODEL_TEST(${name}_${modelname} ${reference}_${modelname} ${executable} "${ARGN}" ${model})
     ENDFOREACH()
   ENDMACRO()
+
+  IF (EMBREE_TESTING_KLOCWORK)
+    ADD_TEST(NAME "Klocwork" WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMAND ${PROJECT_SOURCE_DIR}/scripts/test_klocwork.sh)
+  ENDIF()
 
 ELSE()
 
