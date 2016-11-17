@@ -16,17 +16,13 @@
 
 #include "bvh_refit.h"
 #include "bvh_statistics.h"
-#include "bvh_rotate.h"
 
 #include "../geometry/linei.h"
 #include "../geometry/triangle.h"
 #include "../geometry/trianglev.h"
 #include "../geometry/trianglei.h"
 #include "../geometry/quadv.h"
-#include "../geometry/quadi.h"
 #include "../geometry/object.h"
-
-#include <algorithm>
 
 namespace embree
 {
@@ -43,7 +39,7 @@ namespace embree
     }
 
     template<int N>
-    __forceinline BBox<Vec3<vfloat<N>>> transpose(const BBox3fa* bounds);
+    __forceinline BBox<Vec3<vfloat<N>>> transpose(const BBox3fa* bounds); // FIXME: move to bbox.h
 
     template<>
     __forceinline BBox3vf4 transpose<4>(const BBox3fa* bounds)
@@ -273,12 +269,6 @@ namespace embree
       : bvh(bvh), builder(builder), refitter(nullptr), mesh(mesh) {}
 
     template<int N, typename Mesh, typename Primitive>
-    BVHNRefitT<N,Mesh,Primitive>::~BVHNRefitT () {
-      delete builder;
-      delete refitter;
-    }
-
-    template<int N, typename Mesh, typename Primitive>
     void BVHNRefitT<N,Mesh,Primitive>::clear()
     {
       if (builder) 
@@ -291,8 +281,8 @@ namespace embree
       /* build initial BVH */
       if (builder) {
         builder->build(threadIndex,threadCount);
-        delete builder; builder = nullptr;
-        refitter = new BVHNRefitter<N>(bvh,*(typename BVHNRefitter<N>::LeafBoundsInterface*)this);
+        builder.reset(nullptr);
+        refitter.reset(new BVHNRefitter<N>(bvh,*(typename BVHNRefitter<N>::LeafBoundsInterface*)this));
       }
       
       /* refit BVH */
