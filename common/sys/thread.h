@@ -97,11 +97,11 @@ namespace embree
 	if (ptr == nullptr) ptr = createTls();
       }
       Type* lptr = (Type*) getTls(ptr);
-      if (unlikely(lptr == nullptr)) {
-	setTls(ptr,lptr = new Type(init));
-	Lock<SpinLock> lock(mutex);
-	threads.push_back(lptr);
-      }
+      if (lptr) return lptr;
+      lptr = new Type(init);
+      setTls(ptr,lptr);
+      Lock<SpinLock> lock(mutex);
+      threads.push_back(lptr);
       return lptr;
     }
 
