@@ -72,7 +72,14 @@ namespace embree
     if (lib) return lib_t(lib);
     FileName executable = getExecutableFileName();
     lib = dlopen((executable.path() + fullName).c_str(),RTLD_NOW);
-    if (lib == nullptr) THROW_RUNTIME_ERROR(dlerror());
+    if (lib == nullptr) {
+      const char* error = dlerror();
+      if (error) { 
+        THROW_RUNTIME_ERROR(error);
+      } else {
+        THROW_RUNTIME_ERROR("could not load library "+executable.str());
+      }
+    }
     return lib_t(lib);
   }
 
