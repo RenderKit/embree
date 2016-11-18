@@ -23,7 +23,8 @@ namespace embree
     GridSOA::GridSOA(const SubdivPatch1Base* patches, unsigned time_steps, unsigned time_steps_global,
                      const unsigned x0, const unsigned x1, const unsigned y0, const unsigned y1, const unsigned swidth, const unsigned sheight,
                      const SubdivMesh* const geom, const size_t bvhBytes, const size_t gridBytes, BBox3fa* bounds_o)
-      : time_steps_global(time_steps_global),time_steps(time_steps), width(x1-x0+1), height(y1-y0+1), dim_offset(width*height),
+      : align0(0), 
+        time_steps_global(time_steps_global),time_steps(time_steps), width(x1-x0+1), height(y1-y0+1), dim_offset(width*height),
         geomID(patches->geom), primID(patches->prim), 
         bvhBytes(unsigned(bvhBytes)), gridOffset(max(1u,time_steps_global-1)*unsigned(bvhBytes)), gridBytes(unsigned(gridBytes)), rootOffset(unsigned(gridOffset+time_steps*gridBytes))
     {      
