@@ -103,9 +103,12 @@ namespace embree
     /*! Scene construction */
     Scene (Device* device, RTCSceneFlags flags, RTCAlgorithmFlags aflags);
 
+  private:
+    /*! class in non-copyable */
     Scene (const Scene& other) DELETED; // do not implement
     Scene& operator= (const Scene& other) DELETED; // do not implement
 
+  public:
     void createTriangleAccel();
     void createQuadAccel();
     void createTriangleMBAccel();
