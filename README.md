@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 2.12.0
+% Embree: High Performance Ray Tracing Kernels 2.13.0
 % Intel Corporation
 
 Embree Overview
@@ -48,15 +48,16 @@ Supported Platforms
 
 Embree supports Windows (32 bit and 64 bit), Linux (64 bit) and Mac
 OS X (64 bit). The code compiles with the Intel Compiler, GCC, Clang
-and the Microsoft Compiler. Embree is tested with Intel
-Compiler 15.0.2, Clang 3.4.2, GCC 4.8.2, and Visual Studio
-12 2013. Using the Intel Compiler improves performance by
-approximately 10%.
+and the Microsoft Compiler.
 
-Performance also varies across different operating systems. Embree is
-optimized for Intel CPUs supporting SSE, AVX, and AVX2 instructions,
-and requires at least a CPU with support for SSE2.
+Using the Intel Compiler improves performance by approximately
+10%. Performance also varies across different operating
+systems, with Linux typically performing best as it supports
+transparently transitioning to 2MB pages.
 
+Embree is optimized for Intel CPUs supporting SSE, AVX, AVX2, and
+AVX-512 instructions, and requires at least a CPU with support for
+SSE2.
 Contributing to Embree
 ----------------------
 
@@ -79,6 +80,12 @@ For questions please write us at <embree_support@intel.com>.
 To receive notifications of updates and new features of Embree please
 subscribe to the [Embree mailing
 list](https://groups.google.com/d/forum/embree/).
+
+Acknowledgements
+----------------
+
+This software is based in part on the work of the Independent JPEG Group.
+
 Installation of Embree
 ======================
 
@@ -87,14 +94,14 @@ Windows Installer
 
 You can install the 64 bit version of the Embree library using the
 Windows installer application
-[embree-2.12.0-x64.exe](https://github.com/embree/embree/releases/download/v2.12.0/embree-2.12.0.x64.exe). This
+[embree-2.13.0-x64.exe](https://github.com/embree/embree/releases/download/v2.13.0/embree-2.13.0.x64.exe). This
 will install the 64 bit Embree version by default in `Program
-Files\Intel\Embree v2.12.0 x64`. To install the 32 bit
+Files\Intel\Embree v2.13.0 x64`. To install the 32 bit
 Embree library use the
-[embree-2.12.0-win32.exe](https://github.com/embree/embree/releases/download/v2.12.0/embree-2.12.0.win32.exe)
+[embree-2.13.0-win32.exe](https://github.com/embree/embree/releases/download/v2.13.0/embree-2.13.0.win32.exe)
 installer. This will install the 32 bit Embree version by default in
-`Program Files\Intel\Embree v2.12.0 win32` on 32 bit
-systems and `Program Files (x86)\Intel\Embree v2.12.0 win32`
+`Program Files\Intel\Embree v2.13.0 win32` on 32 bit
+systems and `Program Files (x86)\Intel\Embree v2.13.0 win32`
 on 64 bit systems.
 
 You have to set the path to the `lib` folder manually to your `PATH`
@@ -106,15 +113,15 @@ Embree installation.
 To uninstall Embree again open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-2.12.0` and uninstall it.
+2.13.0` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree is also delivered as a ZIP file for 64 bit
-[embree-2.12.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.12.0/embree-2.12.0.x64.windows.zip)
+[embree-2.13.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.13.0/embree-2.13.0.x64.windows.zip)
 and 32 bit
-[embree-2.12.0.win32.windows.zip](https://github.com/embree/embree/releases/download/v2.12.0/embree-2.12.0.win32.windows.zip). After
+[embree-2.13.0.win32.windows.zip](https://github.com/embree/embree/releases/download/v2.13.0/embree-2.13.0.win32.windows.zip). After
 unpacking this ZIP file you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree. To compile applications with Embree you also have to set the
@@ -128,18 +135,18 @@ Linux RPMs
 ----------
 
 Uncompress the 'tar.gz' file
-[embree-2.12.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.12.0/embree-2.12.0.x86_64.rpm.tar.gz)
+[embree-2.13.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.13.0/embree-2.13.0.x86_64.rpm.tar.gz)
 to
 obtain the individual RPM files:
 
-    tar xzf embree-2.12.0.x86_64.rpm.tar.gz
+    tar xzf embree-2.13.0.x86_64.rpm.tar.gz
 
 To install the Embree using the RPM packages on your Linux system type
 the following:
 
-    sudo rpm --install embree-lib-2.12.0-1.x86_64.rpm
-    sudo rpm --install embree-devel-2.12.0-1.x86_64.rpm
-    sudo rpm --install embree-examples-2.12.0-1.x86_64.rpm
+    sudo rpm --install embree-lib-2.13.0-1.x86_64.rpm
+    sudo rpm --install embree-devel-2.13.0-1.x86_64.rpm
+    sudo rpm --install embree-examples-2.13.0-1.x86_64.rpm
 
 You also have to install the Intel® Threading Building Blocks (TBB)
 using `yum`:
@@ -169,21 +176,21 @@ the tutorials to start them.
 
 To uninstall Embree again just execute the following:
 
-    sudo rpm --erase embree-lib-2.12.0-1.x86_64
-    sudo rpm --erase embree-devel-2.12.0-1.x86_64
-    sudo rpm --erase embree-examples-2.12.0-1.x86_64
+    sudo rpm --erase embree-lib-2.13.0-1.x86_64
+    sudo rpm --erase embree-devel-2.13.0-1.x86_64
+    sudo rpm --erase embree-examples-2.13.0-1.x86_64
 
 Linux tar.gz files
 ------------------
 
 The Linux version of Embree is also delivered as a tar.gz file
-[embree-2.12.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.12.0/embree-2.12.0.x86_64.linux.tar.gz). Unpack
+[embree-2.13.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.13.0/embree-2.13.0.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.12.0.x64.linux.tar.gz
-    source embree-2.12.0.x64.linux/embree-vars.sh
+    tar xzf embree-2.13.0.x64.linux.tar.gz
+    source embree-2.13.0.x64.linux/embree-vars.sh
 
 If you want to ship Embree with your application best use the Embree
 version provided through the tar.gz file.
@@ -193,7 +200,7 @@ Mac OS X PKG Installer
 
 To install the Embree library on your Mac OS X system use the
 provided package installer inside
-[embree-2.12.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.12.0/embree-2.12.0.x86_64.dmg). This
+[embree-2.13.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.13.0/embree-2.13.0.x86_64.dmg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree2` folder.
@@ -215,13 +222,13 @@ Mac OS X tar.gz file
 ---------------------
 
 The Mac OS X version of Embree is also delivered as a tar.gz file
-[embree-2.12.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.12.0/embree-2.12.0.x86_64.macosx.tar.gz). Unpack
+[embree-2.13.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.13.0/embree-2.13.0.x86_64.macosx.tar.gz). Unpack
 this file using `tar` and and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.12.0.x64.macosx.tar.gz
-    source embree-2.12.0.x64.macosx/embree-vars.sh
+    tar xzf embree-2.13.0.x64.macosx.tar.gz
+    source embree-2.13.0.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application please use the Embree
 library of the provided tar.gz file. The library name of that Embree
@@ -246,8 +253,8 @@ Linux and Mac OS X
 -------------------
 
 To compile Embree you need a modern C++ compiler that supports C++11.
-Embree is tested with Intel® Compiler 16.0.1, Clang 3.4.2, and GCC
-4.8.3. If the GCC that comes with your Fedora/Red Hat/CentOS
+Embree is tested with Intel® Compiler 16.0.4, Clang 3.8.0, and GCC
+5.4.0. If the GCC that comes with your Fedora/Red Hat/CentOS
 distribution is too old then you can run the provided script
 `scripts/install_linux_gcc.sh` to locally install a recent GCC into
 `$HOME/devtools-2`.
@@ -256,7 +263,7 @@ Embree supports to use the Intel® Threading Building Blocks (TBB) as
 tasking system. For performance and flexibility reasons we recommend
 to use Embree with the Intel® Threading Building Blocks (TBB) and best
 also use TBB inside your application. Optionally you can disable TBB
-in Embree through the `RTCORE_TASKING_SYSTEM` CMake variable.
+in Embree through the `EMBREE_TASKING_SYSTEM` CMake variable.
 
 Embree supports the Intel® SPMD Program Compiler (ISPC), which allows
 straight forward parallelization of an entire renderer. If you do not
@@ -317,9 +324,10 @@ respectively. Note that the compiler variables cannot be changed anymore
 after the first run of `cmake` or `ccmake`.
 
 Running `ccmake` will open a dialog where you can perform various
-configurations as described below. After having configured Embree, press
-c (for configure) and g (for generate) to generate a Makefile and leave
-the configuration. The code can be compiled by executing make.
+configurations as described below in [CMake Configuration]. After having
+configured Embree, press c (for configure) and g (for generate) to
+generate a Makefile and leave the configuration. The code can be
+compiled by executing make.
 
     make
 
@@ -358,7 +366,7 @@ Embree supports to use the Intel® Threading Building Blocks (TBB) as
 tasking system. For performance and flexibility reasons we recommend
 to use Embree with the Intel® Threading Building Blocks (TBB) and best
 also use TBB inside your application. Optionally you can disable TBB
-in Embree through the `RTCORE_TASKING_SYSTEM` CMake variable.
+in Embree through the `EMBREE_TASKING_SYSTEM` CMake variable.
 
 Embree will either find the Intel® Threading Building Blocks (TBB)
 installation that comes with the Intel® Compiler, or you can install the
@@ -389,9 +397,9 @@ for Visual Studio.
 Run `cmake-gui`, browse to the Embree sources, set the build directory
 and click Configure. Now you can select the Generator, e.g. "Visual
 Studio 12 2013" for a 32 bit build or "Visual Studio 12 2013 Win64" for
-a 64 bit build. Most configuration parameters described for the [Linux
-build](#linux-and-mac-osx) can be set under Windows as well. Finally,
-click "Generate" to create the Visual Studio solution files.
+a 64 bit build. Most configuration parameters described in the [CMake
+Configuration] can be set under Windows as well. Finally, click
+"Generate" to create the Visual Studio solution files.
 
   ------------------------- ------------------ ----------------------------
   Option                    Description        Default
@@ -451,7 +459,7 @@ example, to build the Embree library in parallel use
     cmake --build . --config Release --target embree -- /m
 
 
-CMake configuration
+CMake Configuration
 -------------------
 
 The default CMake configuration in the configuration dialog should be
@@ -780,7 +788,7 @@ if the user enables any ray packet query.
                         functions (16-wide packet interface) for this
                         scene.
 
-  RTC_INTERSECT_STREAM  Enables the `rtcIntersect1M`, `rtcOccluded1M`, 
+  RTC_INTERSECT_STREAM  Enables the `rtcIntersect1M`, `rtcOccluded1M`,
                         `rtcIntersect1Mp`, `rtcOccluded1Mp`,
                         `rtcIntersectNM`, `rtcOccludedNM`,
                         `rtcIntersectNp`, and `rtcOccludedNp`
@@ -885,7 +893,7 @@ following example demonstrates how to create a triangle mesh without
 motion blur:
 
     unsigned geomID = rtcNewTriangleMesh(scene, geomFlags,
-       numTriangles, numVertices, 1);
+                                         numTriangles, numVertices, 1);
 
 The triangle indices can be set by mapping and writing to the index
 buffer (`RTC_INDEX_BUFFER`) and the triangle vertices can be set by
@@ -935,7 +943,7 @@ scenes. The following example demonstrates how to create a quad mesh
 without motion blur:
 
     unsigned geomID = rtcNewQuadMesh(scene, geomFlags,
-       numTriangles, numVertices, 1);
+                                     numQuads, numVertices, 1);
 
 The quad indices can be set by mapping and writing to the index
 buffer (`RTC_INDEX_BUFFER`) and the quad vertices can be set by
@@ -976,7 +984,7 @@ A subdivision surface is created using the `rtcNewSubdivisionMesh`
 function call, and deleted again using the `rtcDeleteGeometry`
 function call.
 
-     unsigned rtcNewSubdivisionMesh(RTCScene scene, 
+     unsigned rtcNewSubdivisionMesh(RTCScene scene,
                                     RTCGeometryFlags flags,
                                     size_t numFaces,
                                     size_t numEdges,
@@ -1059,7 +1067,7 @@ direction the geometry normal is pointing into.
 Some texture coordinates `t0,t1,t2,t3` can be bi-linearly
 interpolated over the quadrilateral the following way:
 
-    t_uv = (1-v)((1-u)*t0 + u*t1) + v*((1-u)*t3 + u*t2) 
+    t_uv = (1-v)((1-u)*t0 + u*t1) + v*((1-u)*t3 + u*t2)
 
 The parametrization for all other face types where the number of
 vertices is not equal to 4, have a special parametrization where the
@@ -1069,8 +1077,8 @@ the local hit location inside this quadrilateral in the lower order
 bits. The following piece of code extracts the sub-patch ID i and UVs
 of this subpatch:
 
-    const unsigned l = floorf(4.0f*U); 
-    const unsigned h = floorf(4.0f*V); 
+    const unsigned l = floorf(4.0f*U);
+    const unsigned h = floorf(4.0f*V);
     const unsigned i = 4*h+l;
     const float u = 2.0f*fracf(4.0f*U);
     const float v = 2.0f*fracf(4.0f*V);
@@ -1114,7 +1122,7 @@ specified at construction time of the line segment geometry.
 
 The segment indices can be set by mapping and writing to the index buffer
 (`RTC_INDEX_BUFFER`) and the vertices can be set by mapping and
-writing into the vertex buffer (`RTC_VERTEX_BUFFER`). In case of 
+writing into the vertex buffer (`RTC_VERTEX_BUFFER`). In case of
 motion blur, the vertex buffers (`RTC_VERTEX_BUFFER0+t`) have to get
 filled for each time step `t`.
 
@@ -1132,7 +1140,7 @@ scenes.
 The following example demonstrates how to create some line segment geometry:
 
     unsigned geomID = rtcNewLineSegments(scene, geomFlags, numCurves,
-      numVertices, 1);
+                                         numVertices, 1);
 
     struct Vertex { float x, y, z, r; };
 
@@ -1282,7 +1290,7 @@ function in normal mode is as follows:
     typedef void (*RTCIntersectFunc4 ) (const void* valid, void* userDataPtr, RTCRay4& ray, size_t item);
     typedef void (*RTCIntersectFunc8 ) (const void* valid, void* userDataPtr, RTCRay8& ray, size_t item);
     typedef void (*RTCIntersectFunc16) (const void* valid, void* userDataPtr, RTCRay16& ray, size_t item);
-    
+
 The `RTCIntersectFunc` callback function operates on single rays and
 gets passed the user data pointer of the user geometry (`userDataPtr`
 parameter), the ray to intersect (`ray` parameter), and the ID of the
@@ -1666,7 +1674,7 @@ streams of rays:
                             RTCRayN* rays, size_t N, size_t M, size_t stride);
     void rtcIntersectNp    (RTCScene scene, const RTCIntersectContext* context,
                             RTCRayNp& rays, size_t N);
-    
+
     void rtcOccluded1M     (RTCScene scene, const RTCIntersectContext* context,
                             RTCRay* rays, size_t M, size_t stride);
     void rtcOccluded1Mp    (RTCScene scene, const RTCIntersectContext* context,
@@ -1760,7 +1768,7 @@ interpolates the underlying base surface.
     void rtcInterpolate2(RTCScene scene,
                          unsigned geomID, unsigned primID,
                          float u, float v,
-                         RTCBufferType buffer, 
+                         RTCBufferType buffer,
                          float* P,
                          float* dPdu, float* dPdv,
                          float* ddPdudu, float* ddPdvdv, float* ddPdudv,
@@ -1809,14 +1817,14 @@ subdivision geometry.
 There is also a second interpolate call `rtcInterpolateN2` that can be
 used for ray packets.
 
-    void rtcInterpolateN2(RTCScene scene, unsigned geomID, 
-                         const void* valid, const unsigned* primIDs,
-                         const float* u, const float* v, size_t numUVs, 
-                         RTCBufferType buffer, 
-                         float* dP,
-                         float* dPdu, float* dPdv,
-                         float* ddPdudu, float* ddPdvdv, float* ddPdudv,
-                         size_t numFloats);
+    void rtcInterpolateN2(RTCScene scene, unsigned geomID,
+                          const void* valid, const unsigned* primIDs,
+                          const float* u, const float* v, size_t numUVs,
+                          RTCBufferType buffer,
+                          float* dP,
+                          float* dPdu, float* dPdv,
+                          float* ddPdudu, float* ddPdvdv, float* ddPdudv,
+                          size_t numFloats);
 
 This call is similar to the first version, but gets passed `numUVs`
 many u/v coordinates and a valid mask (`valid` parameter) that
@@ -1932,7 +1940,7 @@ This feature can be used to disable selected triangle mesh or hair
 geometries for specifically tagged rays, e.g. to disable shadow casting
 for some geometry. This API feature is disabled in Embree by default at
 compile time, and can be enabled in CMake through the
-`RTCORE_ENABLE_RAY_MASK` parameter.
+`EMBREE_RAY_MASK` parameter.
 
 Filter Functions
 ----------------
@@ -1946,7 +1954,7 @@ transparent shadows, counting the number of surfaces along a ray,
 collecting all hits along a ray, etc. Filter functions can also be used
 to selectively reject hits to enable backface culling for some
 geometries. If the backfaces should be culled in general for all
-geometries then it is faster to enable `RTCORE_BACKFACE_CULLING` during
+geometries then it is faster to enable `EMBREE_BACKFACE_CULLING` during
 compilation of Embree instead of using filter functions.
 
 ### Normal Mode
@@ -1958,7 +1966,7 @@ the following signature:
     void RTCFilterFunc4 (const void* valid, void* userDataPtr, RTCRay4&  ray);
     void RTCFilterFunc8 (const void* valid, void* userDataPtr, RTCRay8&  ray);
     void RTCFilterFunc16(const void* valid, void* userDataPtr, RTCRay16& ray);
-    
+
 The `valid` pointer points to an integer valid mask (0 means invalid
 and -1 means valid). The `userDataPtr` is a user pointer optionally
 set per geometry through the `rtcSetUserData` function. All hit
@@ -2077,10 +2085,10 @@ conservative and should be tight for best performance.
 The displacement function has to have the following type:
 
     typedef void (*RTCDisplacementFunc2)(void* ptr,
-                                         unsigned geomID, unsigned primID, unsigned timeStep,   
-                                         const float* u,  const float* v,    
-                                         const float* nx, const float* ny, const float* nz,   
-                                         float* px, float* py, float* pz,         
+                                         unsigned geomID, unsigned primID, unsigned timeStep,
+                                         const float* u,  const float* v,
+                                         const float* nx, const float* ny, const float* nz,
+                                         float* px, float* py, float* pz,
                                          size_t N);
 
 The displacement function is called with the user data pointer of the
@@ -2297,56 +2305,61 @@ parameters from the following table are available to set/query:
   Parameter                              Description                           Read/Write
   -------------------------------------- ------------------------------------- ------------
   RTC_CONFIG_VERSION_MAJOR               returns Embree major version          Read only
-  
+
   RTC_CONFIG_VERSION_MINOR               returns Embree minor version          Read only
-  
+
   RTC_CONFIG_VERSION_PATCH               returns Embree patch version          Read only
-  
+
   RTC_CONFIG_VERSION                     returns Embree version as integer     Read only
-                                         e.g. Embree v2.8.2 -> 20802
+                                         e.g. Embree v2.8.2 → 20802
 
-  RTC_CONFIG_INTERSECT1                  checks if rtcIntersect1 is supported  Read only
+  RTC_CONFIG_INTERSECT1                  checks if `rtcIntersect1` is          Read only
+                                         supported
 
-  RTC_CONFIG_INTERSECT4                  checks if rtcIntersect4 is supported  Read only
+  RTC_CONFIG_INTERSECT4                  checks if `rtcIntersect4` is          Read only
+                                         supported
 
-  RTC_CONFIG_INTERSECT8                  checks if rtcIntersect8 is supported  Read only
+  RTC_CONFIG_INTERSECT8                  checks if `rtcIntersect8` is          Read only
+                                         supported
 
-  RTC_CONFIG_INTERSECT16                 checks if rtcIntersect16 is supported Read only
+  RTC_CONFIG_INTERSECT16                 checks if `rtcIntersect16` is         Read only
+                                         supported
 
-  RTC_CONFIG_INTERSECT_STREAM            checks if rtcIntersect1M,             Read only
-                                         rtcIntersect1Mp, rtcIntersectNM, 
-                                         and rtcIntersectNp are supported
+  RTC_CONFIG_INTERSECT_STREAM            checks if `rtcIntersect1M`,
+                                         `rtcIntersect1Mp`, `rtcIntersectNM`,  Read only
+                                         and `rtcIntersectNp` are supported
 
-  RTC_CONFIG_TRIANGLE_GEOMETRY           checks if triangle geometries         Read only
-                                         are supported
-  
-  RTC_CONFIG_QUAD_GEOMETRY               checks if quad geometries             Read only
-                                         are supported
+  RTC_CONFIG_TRIANGLE_GEOMETRY           checks if triangle geometries are     Read only
+                                         supported
 
-  RTC_CONFIG_LINE_GEOMETRY               checks if line geometries             Read only
-                                         are supported
+  RTC_CONFIG_QUAD_GEOMETRY               checks if quad geometries are         Read only
+                                         supported
 
-  RTC_CONFIG_HAIR_GEOMETRY               checks if hair geometries             Read only
-                                         are supported
+  RTC_CONFIG_LINE_GEOMETRY               checks if line geometries are         Read only
+                                         supported
 
-  RTC_CONFIG_SUBDIV_GEOMETRY             checks if subdivision meshes          Read only
-                                         are supported
+  RTC_CONFIG_HAIR_GEOMETRY               checks if hair geometries are         Read only
+                                         supported
+
+  RTC_CONFIG_SUBDIV_GEOMETRY             checks if subdivision meshes are      Read only
+                                         supported
 
   RTC_CONFIG_USER_GEOMETRY               checks if user geometries are         Read only
                                          supported
-  
+
   RTC_CONFIG_RAY_MASK                    checks if ray masks are supported     Read only
+
   RTC_CONFIG_BACKFACE_CULLING            checks if backface culling is         Read only
-  supported
-  
-  RTC_CONFIG_INTERSECTION_FILTER         checks if intersection filters        Read only
-                                         are enabled
+                                         supported
+
+  RTC_CONFIG_INTERSECTION_FILTER         checks if intersection filters are    Read only
+                                         enabled
 
   RTC_CONFIG_INTERSECTION_FILTER_RESTORE checks if intersection filters        Read only
                                          restore previous hit
 
   RTC_CONFIG_IGNORE_INVALID_RAYS         checks if invalid rays are ignored    Read only
-  
+
   RTC_CONFIG_TASKING_SYSTEM              return used tasking system            Read only
                                          (0 = INTERNAL, 1 = TBB)
 
@@ -2566,7 +2579,7 @@ work:
 
     ./viewer -i model.obj
 
-Stream Viewer 
+Stream Viewer
 -------------
 
 ![][imgViewerStream]
@@ -2686,9 +2699,10 @@ curves, instantiated triangle mesh where the instance moves,
 instantiated quad mesh where the instance and the quads move, and user
 geometry.
 
-The number of time-steps used can be configured using the --time-steps
-<int> command line parameter and the geomtetry can be rendered at a
-specific time using the the --time <float> command line parameter.
+The number of time steps used can be configured using the --time-steps
+<int> and --time-steps2 <int> command line parameters, and the geometry
+can be rendered at a specific time using the the --time <float> command
+line parameter.
 
 Interpolation
 -------------
@@ -2721,7 +2735,6 @@ the Embree installation automatically, under Windows the `embree_DIR`
 CMake variable has to be set to the following folder of the Embree
 installation: `C:\Program Files\Intel\Embree
 X.Y.Z\lib\cmake\embree-X.Y.Z`.
-
 [Embree API]: #embree-api
 [Ray Layout]: #ray-layout
 [Extending the Ray Structure]: #extending-the-ray-structure
