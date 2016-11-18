@@ -41,7 +41,7 @@ namespace embree
         
 	/* calculate parallel prefix sum */
 	std::vector<uint32_t> dst(N);
-	memset(dst.data(),0,N*sizeof(uint32_t));
+	for (auto& v : dst) v = 0;
 	
 	for (size_t i=0; i<M; i++) {
 	  uint32_t sum1 = parallel_prefix_sum(src,dst,N,0,std::plus<uint32_t>());
