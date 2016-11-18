@@ -279,6 +279,7 @@ namespace embree
     FileName path;         //!< path to XML file
     FILE* binFile;         //!< .bin file for reading binary data
     FileName binFileName;  //!< name of the .bin file
+    size_t binFileSize;
 
   private:
     std::map<std::string,Ref<SceneGraph::MaterialNode> > materialMap;     //!< named materials
@@ -411,13 +412,17 @@ namespace embree
     size_t ofs = atol(xml->parm("ofs").c_str());
     fseek(binFile,long(ofs),SEEK_SET);
 
+    /* read size of array */
     size_t size = atol(xml->parm("size").c_str());
     if (size == 0) size = atol(xml->parm("num").c_str()); // version for BGF format
 
-    Vector data;
-    data.resize(size);
+    /* perform security check that we stay in the file */
+    if (ofs + size*sizeof(typename Vector::value_type) > binFileSize)
+      THROW_RUNTIME_ERROR("error reading from binary file: "+binFileName.str());
 
-    if (size != fread(data.data(), sizeof(typename Vector::value_type), size, binFile)) 
+    /* read data from file */
+    Vector data(size);
+    if (size != fread(data.data(), sizeof(typename Vector::value_type), data.size(), binFile)) 
       THROW_RUNTIME_ERROR("error reading from binary file: "+binFileName.str());
 
     return data;
@@ -1229,7 +1234,7 @@ namespace embree
     XMLLoader loader(fileName,space); return loader.root;
   }
 
-  XMLLoader::XMLLoader(const FileName& fileName, const AffineSpace3fa& space) : binFile(nullptr), currentNodeID(0)
+  XMLLoader::XMLLoader(const FileName& fileName, const AffineSpace3fa& space) : binFile(nullptr), binFileSize(0), currentNodeID(0)
   {
     path = fileName.path();
     binFileName = fileName.setExt(".bin");
@@ -1237,6 +1242,10 @@ namespace embree
     if (!binFile) {
       binFileName = fileName.addExt(".bin");
       binFile = fopen(binFileName.c_str(),"rb");
+    }
+    if (binFile) {
+      fseek(binFile, 0L, SEEK_END);
+      binFileSize = ftell(binFile);
     }
 
     Ref<XML> xml = parseXML(fileName);
