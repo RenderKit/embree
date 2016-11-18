@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __VOXEL_DISTRIBUTION_2D_H__
-#define __VOXEL_DISTRIBUTION_2D_H__
+#pragma once
 
 #include "distribution1d.h"
 
@@ -55,4 +54,3 @@ namespace embree
   };
 }
 
-#endif

@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __VOXEL_DISTRIBUTION_1D_H__
-#define __VOXEL_DISTRIBUTION_1D_H__
+#pragma once
 
 #include "default.h"
 
@@ -53,4 +52,3 @@ namespace embree
   };
 }
 
-#endif
