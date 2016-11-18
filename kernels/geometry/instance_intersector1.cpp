@@ -78,7 +78,7 @@ namespace embree
 
     void FastInstanceIntersector1M::intersect(const Instance* instance, RTCIntersectContext* context, Ray** rays, size_t M, size_t item)
     {
-      assert(M<MAX_INTERNAL_STREAM_SIZE);
+      assert(M<=MAX_INTERNAL_STREAM_SIZE);
       Ray lrays[MAX_INTERNAL_STREAM_SIZE];
       AffineSpace3fa world2local = instance->getWorld2Local();
 

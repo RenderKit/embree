@@ -29,11 +29,11 @@ namespace embree
   InstanceFactory::InstanceFactory(int features)
   {
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceBoundsFunc);
-    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceIntersector1);
-    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceIntersector1M);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,InstanceIntersector1);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,InstanceIntersector1M);
 #if defined (EMBREE_RAY_PACKETS)
-    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceIntersector4);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,InstanceIntersector8);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,InstanceIntersector4);
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,InstanceIntersector8);
     SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,InstanceIntersector16);
 #endif
   }

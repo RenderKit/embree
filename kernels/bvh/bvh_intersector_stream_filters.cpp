@@ -200,7 +200,9 @@ namespace embree
           max_y = max(max_y,ray.dir.y);
           max_z = max(max_z,ray.dir.z);          
           all_active &= ray.tnear <= ray.tfar;
-
+#if defined(EMBREE_IGNORE_INVALID_RAYS)
+          all_active &= ray.valid();
+#endif
         }
         const bool commonDirection =                                    \
           (all(max_x < vfloatx(zero)) || all(min_x >= vfloatx(zero))) && 
@@ -211,7 +213,7 @@ namespace embree
         if (unlikely(commonDirection == false 
                      || !all(all_active) 
                      || scene->isRobust()
-                     || scene->accels.size() > 1)) /* FIXME: two-level intersector/acceln will cause problem due to change in SIMD width */
+                     || !scene->accels.validIsecN() ) ) /* all valid accels need to have a intersectN/occludedN */
         {
           for (size_t s=0; s<streams; s++)
           {
@@ -223,9 +225,9 @@ namespace embree
           }
           return;
         }
-        
+
         /* prevent SOA to AOS conversion by setting context flag */
-        context->flags = IntersectContext::INPUT_RAY_DATA_SOA;
+        context->flags = IntersectContext::encodeSIMDWidth(VSIZEX);
         size_t numStreams = 0;
 
         for (size_t s=0; s<streams; s++)

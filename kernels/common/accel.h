@@ -123,11 +123,8 @@ namespace embree
 
     struct Intersector1
     {
-      Intersector1 (ErrorFunc error = nullptr) 
-      : intersect((IntersectFunc)error), occluded((OccludedFunc)error), name(nullptr) {}
-
-      Intersector1 (IntersectFunc intersect, OccludedFunc occluded, const char* name)
-      : intersect(intersect), occluded(occluded), name(name) {}
+      Intersector1 (ErrorFunc error = nullptr);
+      Intersector1 (IntersectFunc intersect, OccludedFunc occluded, const char* name);
 
       operator bool() const { return name; }
 
@@ -140,11 +137,8 @@ namespace embree
     
     struct Intersector4 
     {
-       Intersector4 (ErrorFunc error = nullptr) 
-       : intersect((IntersectFunc4)error), occluded((OccludedFunc4)error), name(nullptr) {}
-
-      Intersector4 (IntersectFunc4 intersect, OccludedFunc4 occluded, const char* name)
-      : intersect(intersect), occluded(occluded), name(name) {}
+      Intersector4 (ErrorFunc error = nullptr);
+      Intersector4 (IntersectFunc4 intersect, OccludedFunc4 occluded, const char* name);
 
       operator bool() const { return name; }
       
@@ -157,11 +151,8 @@ namespace embree
     
     struct Intersector8 
     {
-      Intersector8 (ErrorFunc error = nullptr) 
-      : intersect((IntersectFunc8)error), occluded((OccludedFunc8)error), name(nullptr) {}
-
-      Intersector8 (IntersectFunc8 intersect, OccludedFunc8 occluded, const char* name)
-      : intersect(intersect), occluded(occluded), name(name) {}
+      Intersector8 (ErrorFunc error = nullptr);
+      Intersector8 (IntersectFunc8 intersect, OccludedFunc8 occluded, const char* name);
 
       operator bool() const { return name; }
       
@@ -174,11 +165,8 @@ namespace embree
     
     struct Intersector16 
     {
-      Intersector16 (ErrorFunc error = nullptr) 
-      : intersect((IntersectFunc16)error), occluded((OccludedFunc16)error), name(nullptr) {}
-
-      Intersector16 (IntersectFunc16 intersect, OccludedFunc16 occluded, const char* name)
-      : intersect(intersect), occluded(occluded), name(name) {}
+      Intersector16 (ErrorFunc error = nullptr);
+      Intersector16 (IntersectFunc16 intersect, OccludedFunc16 occluded, const char* name);
 
       operator bool() const { return name; }
       
@@ -189,13 +177,10 @@ namespace embree
       const char* name;
     };
 
-     struct IntersectorN 
+    struct IntersectorN 
     {
-      IntersectorN (ErrorFunc error = nullptr) 
-      : intersect((IntersectFuncN)error), occluded((OccludedFuncN)error), name(nullptr) {}
-
-      IntersectorN (IntersectFuncN intersect, OccludedFuncN occluded, const char* name)
-      : intersect(intersect), occluded(occluded), name(name) {}
+      IntersectorN (ErrorFunc error = nullptr);
+      IntersectorN (IntersectFuncN intersect, OccludedFuncN occluded, const char* name);
 
       operator bool() const { return name; }
       
@@ -331,13 +316,14 @@ namespace embree
             intersect(*rayN[i],context);
         else
         {
+          assert(context->getInputSIMDWidth() == VSIZEX);
           const size_t numPackets = (N+VSIZEX-1)/VSIZEX;
           for (size_t i=0; i<numPackets; i++)
           {
             RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)rayN[i];
-            vboolx valid = ray.tnear <= ray.tfar;
+            vbool<VSIZEX> valid = ray.tnear <= ray.tfar;
             intersect(valid,ray,context);
-          }
+          }      
         }
       }
     }
@@ -386,6 +372,7 @@ namespace embree
       intersectors.intersector16.occluded(valid,intersectors.ptr,ray,context);
     }
 
+
     /*! Tests if a packet of N rays in SOA layout is occluded by the scene. */
     __forceinline void occludedN (RTCRay** rayN, const size_t N, IntersectContext* context) 
     {
@@ -399,13 +386,14 @@ namespace embree
             occluded(*rayN[i],context);
         else
         {
+          assert(context->getInputSIMDWidth() == VSIZEX);
           const size_t numPackets = (N+VSIZEX-1)/VSIZEX;
           for (size_t i=0; i<numPackets; i++)
           {
             RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)rayN[i];
-            vboolx valid = ray.tnear <= ray.tfar;
+            vbool<VSIZEX> valid = ray.tnear <= ray.tfar;
             occluded(valid,ray,context);
-          }
+          }      
         }
       }
     }

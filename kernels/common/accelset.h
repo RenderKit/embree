@@ -65,12 +65,9 @@ namespace embree
 
     struct Intersector1
     {
-      Intersector1 (ErrorFunc error = nullptr) 
-      : intersect((IntersectFunc)error), occluded((OccludedFunc)error), name(nullptr) {}
+      Intersector1 (ErrorFunc error = nullptr);
+      Intersector1 (IntersectFunc intersect, OccludedFunc occluded, const char* name);
 
-      Intersector1 (IntersectFunc intersect, OccludedFunc occluded, const char* name)
-      : intersect(intersect), occluded(occluded), name(name) {}
-      
       operator bool() const { return name; }
         
       public:
@@ -82,11 +79,8 @@ namespace embree
       
       struct Intersector4 
       {
-        Intersector4 (ErrorFunc error = nullptr) 
-        : intersect((void*)error), occluded((void*)error), name(nullptr), ispc(false) {}
-
-        Intersector4 (void* intersect, void* occluded, const char* name, bool ispc)
-        : intersect(intersect), occluded(occluded), name(name), ispc(ispc) {}
+        Intersector4 (ErrorFunc error = nullptr);
+        Intersector4 (void* intersect, void* occluded, const char* name, bool ispc);
 	
         operator bool() const { return name; }
         
@@ -100,11 +94,8 @@ namespace embree
       
       struct Intersector8 
       {
-        Intersector8 (ErrorFunc error = nullptr) 
-        : intersect((void*)error), occluded((void*)error), name(nullptr), ispc(false) {}
-
-        Intersector8 (void* intersect, void* occluded, const char* name, bool ispc)
-        : intersect(intersect), occluded(occluded), name(name), ispc(ispc) {}
+        Intersector8 (ErrorFunc error = nullptr);
+        Intersector8 (void* intersect, void* occluded, const char* name, bool ispc);
         
         operator bool() const { return name; }
         
@@ -118,11 +109,8 @@ namespace embree
       
       struct Intersector16 
       {
-        Intersector16 (ErrorFunc error = nullptr) 
-        : intersect((void*)error), occluded((void*)error), name(nullptr), ispc(false) {}
-
-        Intersector16 (void* intersect, void* occluded, const char* name, bool ispc)
-        : intersect(intersect), occluded(occluded), name(name), ispc(ispc) {}
+        Intersector16 (ErrorFunc error = nullptr);
+        Intersector16 (void* intersect, void* occluded, const char* name, bool ispc);
         
         operator bool() const { return name; }
         
@@ -136,11 +124,8 @@ namespace embree
 
       struct Intersector1M
       {
-        Intersector1M (ErrorFunc error = nullptr) 
-        : intersect((IntersectFunc1M)error), occluded((OccludedFunc1M)error), name(nullptr) {}
-        
-        Intersector1M (IntersectFunc1M intersect, OccludedFunc1M occluded, const char* name)
-        : intersect(intersect), occluded(occluded), name(name) {}
+        Intersector1M (ErrorFunc error = nullptr);
+        Intersector1M (IntersectFunc1M intersect, OccludedFunc1M occluded, const char* name);
         
         operator bool() const { return name; }
         
@@ -153,11 +138,8 @@ namespace embree
 
       struct IntersectorN
       {
-        IntersectorN (ErrorFunc error = nullptr) 
-        : intersect((IntersectFuncN)error), occluded((OccludedFuncN)error), name(nullptr) {}
-        
-        IntersectorN (IntersectFuncN intersect, OccludedFuncN occluded, const char* name)
-        : intersect(intersect), occluded(occluded), name(name) {}
+        IntersectorN (ErrorFunc error = nullptr) ;
+        IntersectorN (IntersectFuncN intersect, OccludedFuncN occluded, const char* name);
         
         operator bool() const { return name; }
         
@@ -209,8 +191,8 @@ namespace embree
       /*! calculates the linear bounds of the i'th item at the itimeGlobal'th time segment */
       __forceinline LBBox3fa linearBounds(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
       {
-        return Geometry::linearBounds(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
-                                      [&] (size_t itime) { return bounds(i, itime); });
+        return Geometry::linearBounds([&] (size_t itime) { return bounds(i, itime); },
+                                      itimeGlobal, numTimeStepsGlobal, numTimeSteps);
       }
 
       /*! calculates the build bounds of the i'th item, if it's valid */
@@ -233,13 +215,12 @@ namespace embree
       /*! calculates the build bounds of the i'th item at the itimeGlobal'th time segment, if it's valid */
       __forceinline bool buildBounds(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal, BBox3fa& bbox) const
       {
-        return Geometry::buildBounds(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
-                                     [&] (size_t itime, BBox3fa& bbox) -> bool
+        return Geometry::buildBounds([&] (size_t itime, BBox3fa& bbox) -> bool
                                      {
                                        bbox = bounds(i, itime);
                                        return isvalid(bbox);
                                      },
-                                     bbox);
+                                     itimeGlobal, numTimeStepsGlobal, numTimeSteps, bbox);
       }
       
       void enabling ();

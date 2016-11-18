@@ -102,12 +102,17 @@ namespace embree {
     return geomID;
   }
 
-  RTCScene convertScene(ISPCScene* scene_in, RTCSceneFlags sflags, RTCGeometryFlags gflags)
+  RTCScene createScene(RTCSceneFlags sflags, RTCGeometryFlags gflags)
   {
-    size_t numGeometries = scene_in->numGeometries;
     RTCSceneFlags scene_flags = sflags | RTC_SCENE_INCOHERENT;
     int scene_aflags = RTC_INTERSECT1 | RTC_INTERSECT_STREAM | RTC_INTERPOLATE;
     RTCScene scene_out = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
+    return scene_out;
+  }
+
+  void convertScene(RTCScene scene_out, ISPCScene* scene_in, RTCSceneFlags sflags, RTCGeometryFlags gflags)
+  {
+    size_t numGeometries = scene_in->numGeometries;
     for (size_t i=0; i<numGeometries; i++)
     {
       ISPCGeometry* geometry = scene_in->geometries[i];
@@ -144,7 +149,6 @@ namespace embree {
       else
         assert(false);
     }
-    return scene_out;
   }
 
   size_t getNumPrimitives(ISPCScene* scene_in)
@@ -178,7 +182,7 @@ namespace embree {
     return numPrimitives;
   }
 
-  void updateScene(ISPCScene* scene_in, RTCScene scene_out)
+  void updateObjects(ISPCScene* scene_in, RTCScene scene_out)
   {
     size_t numGeometries = scene_in->numGeometries;
     for (size_t i=0; i<numGeometries; i++)
@@ -207,16 +211,46 @@ namespace embree {
     }
   }
 
-  void Benchmark_DynamicDynamic(ISPCScene* scene_in, size_t benchmark_iterations)
+  void deleteObjects(ISPCScene* scene_in, RTCScene scene_out)
+  {
+    size_t numGeometries = scene_in->numGeometries;
+    for (size_t i=0; i<numGeometries; i++)
+    {
+      ISPCGeometry* geometry = scene_in->geometries[i];
+      if (geometry->type == SUBDIV_MESH) {
+        rtcDeleteGeometry(scene_out,((ISPCSubdivMesh*)geometry)->geomID);
+      }
+      else if (geometry->type == TRIANGLE_MESH) {
+        rtcDeleteGeometry(scene_out,((ISPCTriangleMesh*)geometry)->geomID);
+      }
+      else if (geometry->type == QUAD_MESH) {
+        rtcDeleteGeometry(scene_out,((ISPCQuadMesh*)geometry)->geomID);
+      }
+      else if (geometry->type == LINE_SEGMENTS) {
+        rtcDeleteGeometry(scene_out,((ISPCLineSegments*)geometry)->geomID);
+      }
+      else if (geometry->type == HAIR_SET) {
+        rtcDeleteGeometry(scene_out,((ISPCHairSet*)geometry)->geomID);
+      }
+      else if (geometry->type == CURVES) {
+        rtcDeleteGeometry(scene_out,((ISPCHairSet*)geometry)->geomID);
+      }
+      else
+        assert(false);
+    }
+  }
+
+  void Benchmark_DynamicDynamic_Update(ISPCScene* scene_in, size_t benchmark_iterations)
   {
     assert(g_scene == nullptr);
-    g_scene = convertScene(scene_in,RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC);
+    g_scene = createScene(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC);
+    convertScene(g_scene, scene_in,RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC);
     size_t primitives = getNumPrimitives(scene_in);
     size_t iterations = 0;
     double time = 0.0;
     for(size_t i=0;i<benchmark_iterations+skip_iterations;i++)
     {
-      updateScene(scene_in,g_scene);
+      updateObjects(scene_in,g_scene);
       double t0 = getSeconds();
       rtcCommit (g_scene);
       double t1 = getSeconds();
@@ -236,16 +270,17 @@ namespace embree {
   }
 
 
-  void Benchmark_DynamicStatic(ISPCScene* scene_in, size_t benchmark_iterations)
+  void Benchmark_DynamicStatic_Update(ISPCScene* scene_in, size_t benchmark_iterations)
   {
     assert(g_scene == nullptr);
-    g_scene = convertScene(scene_in,RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC);
+    g_scene = createScene(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC);
+    convertScene(g_scene, scene_in,RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC);
     size_t primitives = getNumPrimitives(scene_in);
     size_t iterations = 0;
     double time = 0.0;
     for(size_t i=0;i<benchmark_iterations+skip_iterations;i++)
     {
-      updateScene(scene_in,g_scene);
+      updateObjects(scene_in,g_scene);
       double t0 = getSeconds();
       rtcCommit (g_scene);
       double t1 = getSeconds();
@@ -264,7 +299,37 @@ namespace embree {
     g_scene = nullptr;    
   }
 
-  void Benchmark_StaticStatic(ISPCScene* scene_in, size_t benchmark_iterations)
+  void Benchmark_DynamicStatic_Create(ISPCScene* scene_in, size_t benchmark_iterations)
+  {
+    assert(g_scene == nullptr);
+    g_scene = createScene(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC);
+    convertScene(g_scene, scene_in,RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC);
+    size_t primitives = getNumPrimitives(scene_in);
+    size_t iterations = 0;
+    double time = 0.0;
+    for(size_t i=0;i<benchmark_iterations+skip_iterations;i++)
+    {
+      deleteObjects(scene_in,g_scene);
+      convertScene(g_scene, scene_in,RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC);
+      double t0 = getSeconds();
+      rtcCommit (g_scene);
+      double t1 = getSeconds();
+      if (i >= skip_iterations)
+      {
+        time += t1 - t0;      
+        iterations++;
+      }
+    }
+    std::cout << "Create dynamic scene, static geometry " 
+              << "(" << primitives << " primitives)  :  "
+              << " avg. time  = " <<  time/iterations 
+              << " , avg. build perf " << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
+
+    rtcDeleteScene (g_scene); 
+    g_scene = nullptr;    
+  }
+
+  void Benchmark_StaticStatic_Create(ISPCScene* scene_in, size_t benchmark_iterations)
   {
     assert(g_scene == nullptr);
     size_t primitives = getNumPrimitives(scene_in);
@@ -272,7 +337,9 @@ namespace embree {
     double time = 0.0;
     for(size_t i=0;i<benchmark_iterations+skip_iterations;i++)
     {
-      g_scene = convertScene(scene_in,RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC);
+      g_scene = createScene(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC);
+      convertScene(g_scene,scene_in,RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC);
+
       double t0 = getSeconds();
       rtcCommit (g_scene);
       double t1 = getSeconds();
@@ -308,12 +375,12 @@ namespace embree {
     /* set error handler */
     rtcDeviceSetErrorFunction(g_device,error_handler);
 
-    Benchmark_DynamicDynamic(g_ispc_scene,iterations_dynamic_dynamic);
-    Benchmark_DynamicStatic(g_ispc_scene,iterations_dynamic_static);
-    Benchmark_StaticStatic(g_ispc_scene,iterations_static_static);
+    Benchmark_DynamicDynamic_Update(g_ispc_scene,iterations_dynamic_dynamic);
+    Benchmark_DynamicStatic_Update(g_ispc_scene,iterations_dynamic_static);
+    Benchmark_DynamicStatic_Create(g_ispc_scene,iterations_dynamic_static);
+    Benchmark_StaticStatic_Create(g_ispc_scene,iterations_static_static);
 
     rtcDeleteDevice(g_device); g_device = nullptr;
-    //exit(0);
   }
 
 /* called by the C++ code to render */
