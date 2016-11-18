@@ -329,8 +329,8 @@ namespace embree
     tbb::task_group* group;
     BarrierActiveAutoReset group_barrier;
 #elif defined(TASKING_PPL)
-	concurrency::task_group* group;
-	BarrierActiveAutoReset group_barrier;
+    concurrency::task_group* group;
+    BarrierActiveAutoReset group_barrier;
 #endif
     
   public:
