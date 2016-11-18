@@ -293,6 +293,10 @@ namespace embree
         delete[] geometries;
       }
 
+    private:
+      ISPCGroup (const ISPCGroup& other) DELETED; // do not implement
+      ISPCGroup& operator= (const ISPCGroup& other) DELETED; // do not implement
+      
     public:
       ISPCGeometry geom;
       ISPCGeometry** geometries;
@@ -419,6 +423,10 @@ namespace embree
       return (Light*)out;
     }
 
+  private:
+    ISPCScene (const ISPCScene& other) DELETED; // do not implement
+    ISPCScene& operator= (const ISPCScene& other) DELETED; // do not implement
+ 
   public:
     ISPCGeometry** geometries;   //!< list of geometries
     ISPCMaterial* materials;     //!< material list
