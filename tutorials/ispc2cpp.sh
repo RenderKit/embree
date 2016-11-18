@@ -116,6 +116,9 @@ sed -i.backup  's/Texture_RGB8/Texture::RGB8/g' $2
 # to make 32 bit compile happy under Windows
 sed -i.backup 's/const Vec3fa defaultValue/const Vec3fa\& defaultValue/g' $2
 
+# to make static analysis happy
+sed -i.backup 's/if (all(1 == 0)) continue;//g' $2
+
 # add Embree namespace
 ln=`grep -n -E "#include|#pragma" $2 | tail -1 | cut -d: -f1`
 mv $2 $2.backup
