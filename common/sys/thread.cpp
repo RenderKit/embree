@@ -386,8 +386,10 @@ namespace embree
   tls_t createTls() 
   {
     pthread_key_t* key = new pthread_key_t;
-    if (pthread_key_create(key,nullptr) != 0)
+    if (pthread_key_create(key,nullptr) != 0) {
+      delete key;
       FATAL("pthread_key_create failed");
+    }
 
     return tls_t(key);
   }
