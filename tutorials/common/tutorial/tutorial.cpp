@@ -198,6 +198,7 @@ namespace embree
 
   TutorialApplication::~TutorialApplication()
   {
+    if (g_ispc_scene) delete g_ispc_scene;
     device_cleanup();
     alignedFree(pixels); 
     pixels = nullptr;

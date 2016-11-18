@@ -159,8 +159,8 @@ namespace embree
 
         size_t numEdges = in->position_indices.size();
         size_t numFaces = in->verticesPerFace.size();
-        subdivlevel = new float[numEdges]; // FIXME: never deleted
-        face_offsets = new unsigned[numFaces]; // FIXME: never deleted
+        subdivlevel = new float[numEdges];
+        face_offsets = new unsigned[numFaces];
         for (size_t i=0; i<numEdges; i++) subdivlevel[i] = 1.0f;
         int offset = 0;
         for (size_t i=0; i<numFaces; i++)
@@ -169,7 +169,13 @@ namespace embree
           offset+=verticesPerFace[i];
         }
       }
-
+      
+      ~ISPCSubdivMesh ()
+      {
+        delete[] subdivlevel;
+        delete[] face_offsets;
+      }
+      
     public:
       ISPCGeometry geom;
       Vec3fa* positions;       //!< vertex positions
@@ -300,16 +306,42 @@ namespace embree
         geometries[i] = convertGeometry(in->geometries[i]);
       numGeometries = unsigned(in->geometries.size());
 
-      materials = (ISPCMaterial*) (in->materials.size() ? &in->materials[0] : nullptr);
+      materials = (ISPCMaterial*) in->materials.data();
       numMaterials = unsigned(in->materials.size());
 
       lights = new Light*[in->lights.size()];
       numLights = 0;
-      for (size_t i = 0; i < in->lights.size(); i++)
+      for (size_t i=0; i<in->lights.size(); i++)
       {
         Light* light = convertLight(in->lights[i]);
         if (light) lights[numLights++] = light;
       }
+    }
+
+    ~ISPCScene()
+    {
+      /* delete all geometries */
+      for (size_t i=0; i<numGeometries; i++) 
+      {
+        switch (geometries[i]->type) {
+        case TRIANGLE_MESH: delete (ISPCTriangleMesh*) geometries[i]; break;
+        case SUBDIV_MESH  : delete (ISPCSubdivMesh*) geometries[i]; break;
+        case HAIR_SET: delete (ISPCHairSet*) geometries[i]; break;
+        case INSTANCE: delete (ISPCInstance*) geometries[i]; break;
+        case GROUP: delete (ISPCGroup*) geometries[i]; break;
+        case QUAD_MESH: delete (ISPCQuadMesh*) geometries[i]; break;
+        case LINE_SEGMENTS: delete (ISPCLineSegments*) geometries[i]; break;
+        case CURVES: delete (ISPCHairSet*) geometries[i]; break;
+        default: assert(false); break;
+        }
+      }        
+      delete[] geometries;
+      
+      /* delete all lights */
+      //for (size_t i=0; i<numLights; i++)
+      //{
+        // FIXME: currently lights cannot get deleted
+      //}
     }
 
     static ISPCGeometry* convertGeometry (Ref<TutorialScene::Geometry> in)
