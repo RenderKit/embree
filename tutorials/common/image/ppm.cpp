@@ -19,6 +19,7 @@
 #include <iostream>
 #include <cstring>
 #include <cstdio>
+#include <fstream>
 
 namespace embree
 {
@@ -116,18 +117,24 @@ namespace embree
   /*! store PPM file to disk */
   void storePPM(const Ref<Image>& img, const FileName& fileName)
   {
-    FILE* file = fopen(fileName.c_str(), "wb");
-    if (!file) THROW_RUNTIME_ERROR("cannot open file " + fileName.str());
-    fprintf(file,"P6\n%i %i\n255\n", int(img->width), int(img->height));
+    /* open file for writing */
+    std::fstream file;
+    file.open (fileName.c_str(), std::fstream::out | std::fstream::binary);
+    if (!file.is_open()) THROW_RUNTIME_ERROR("cannot open file " + fileName.str());
 
+    /* write file header */
+    file << "P6" << std::endl;
+    file << img->width << " " << img->height << std::endl;
+    file << 255 << std::endl;
+
+    /* write image */
     for (size_t y=0; y<img->height; y++) {
       for (size_t x=0; x<img->width; x++) {
         const Color4 c = img->get(x,y);
-        fputc((unsigned char)(clamp(c.r)*255.0f), file);
-        fputc((unsigned char)(clamp(c.g)*255.0f), file);
-        fputc((unsigned char)(clamp(c.b)*255.0f), file);
+        file << (unsigned char)(clamp(c.r)*255.0f);
+        file << (unsigned char)(clamp(c.g)*255.0f);
+        file << (unsigned char)(clamp(c.b)*255.0f);
       }
     }
-    fclose(file);
   }
 }
