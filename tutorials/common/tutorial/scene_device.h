@@ -342,6 +342,7 @@ namespace embree
       //{
         // FIXME: currently lights cannot get deleted
       //}
+      delete[] lights;
     }
 
     static ISPCGeometry* convertGeometry (Ref<TutorialScene::Geometry> in)
