@@ -103,6 +103,12 @@ namespace embree
     /*! Scene construction */
     Scene (Device* device, RTCSceneFlags flags, RTCAlgorithmFlags aflags);
 
+  private:
+    /*! class is non-copyable */
+    Scene (const Scene& other) DELETED; // do not implement
+    Scene& operator= (const Scene& other) DELETED; // do not implement
+
+  public:
     void createTriangleAccel();
     void createQuadAccel();
     void createTriangleMBAccel();
@@ -326,8 +332,8 @@ namespace embree
     tbb::task_group* group;
     BarrierActiveAutoReset group_barrier;
 #elif defined(TASKING_PPL)
-	concurrency::task_group* group;
-	BarrierActiveAutoReset group_barrier;
+    concurrency::task_group* group;
+    BarrierActiveAutoReset group_barrier;
 #endif
     
   public:

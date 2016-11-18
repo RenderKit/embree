@@ -19,85 +19,79 @@
 #include <iostream>
 #include <cstring>
 #include <cstdio>
+#include <fstream>
 
 namespace embree
 {
-  /*! read a single comment line starting with #, or read a space */
-  static bool readCommentLine(FILE* file)
+  static void skipSpacesAndComments(std::fstream& file)
   {
-    int c = fgetc(file);
-    if (isspace(c)) return true;
-    if (c != '#') {
-      ungetc(c, file);
-      return false;
+    while (true)
+    {
+      if  (isspace(file.peek())) {
+        file.ignore();
+      } else  if (file.peek() == '#') {
+        std::string line; std::getline(file,line);
+      } else break;
     }
-    char line[1024];
-    if(fgets(line, sizeof(line), file) == nullptr) 
-      THROW_RUNTIME_ERROR("Error reading PPM file!");
-    return true;
   }
 
   /*! read PPM file from disk */
   Ref<Image> loadPPM(const FileName& fileName)
   {
-    /* open PPM file */
-    FILE* file = fopen(fileName.c_str(), "rb");
-    if (!file) THROW_RUNTIME_ERROR("cannot open " + fileName.str());
+    /* open file for reading */
+    std::fstream file;
+    file.exceptions (std::fstream::failbit | std::fstream::badbit);
+    file.open (fileName.c_str(), std::fstream::in | std::fstream::binary);
 
     /* read file type */
-    char type[8];
-    if (fscanf(file, "%7s", type) != 1)
-      THROW_RUNTIME_ERROR("Error reading " + fileName.str());
-    
-    /* skip comment lines */
-    while (readCommentLine(file)) {};
+    char cty[2]; file.read(cty,2);
+    skipSpacesAndComments(file);
+    std::string type(cty,2);
 
     /* read width, height, and maximal color value */
-    int width, height, maxColor;
-    if (fscanf(file, "%i %i %i", &width, &height, &maxColor) != 3)
-      THROW_RUNTIME_ERROR("Error reading " + fileName.str());
+    int width; file >> width;
+    skipSpacesAndComments(file);
+    int height; file >> height;
+    skipSpacesAndComments(file);
+    int maxColor; file >> maxColor;
+    if (maxColor <= 0) THROW_RUNTIME_ERROR("Invalid maxColor value in PPM file");
     float rcpMaxColor = 1.0f/float(maxColor);
-
-    /* get return or space */
-    fgetc(file);
+    file.ignore(); // skip space or return
 
     /* create image and fill with data */
     Ref<Image> img = new Image4uc(width,height,fileName);
 
     /* image in text format */
-    if (!strcmp(type, "P3"))
+    if (type == "P3")
     {
       int r, g, b;
       for (ssize_t y=0; y<height; y++) {
         for (ssize_t x=0; x<width; x++) {
-          if (fscanf(file, "%i %i %i", &r, &g, &b) != 3)
-            THROW_RUNTIME_ERROR("Error reading " + fileName.str());
+          file >> r; file >> g; file >> b;
           img->set(x,y,Color4(float(r)*rcpMaxColor,float(g)*rcpMaxColor,float(b)*rcpMaxColor,1.0f));
         }
       }
     }
 
     /* image in binary format 8 bit */
-    else if (!strcmp(type, "P6") && maxColor <= 255)
+    else if (type == "P6" && maxColor <= 255)
     {
       unsigned char rgb[3];
       for (ssize_t y=0; y<height; y++) {
         for (ssize_t x=0; x<width; x++) {
-          if (fread(rgb,sizeof(rgb),1,file) != 1)
-            THROW_RUNTIME_ERROR("Error reading " + fileName.str());
+          file.read((char*)rgb,sizeof(rgb));
           img->set(x,y,Color4(float(rgb[0])*rcpMaxColor,float(rgb[1])*rcpMaxColor,float(rgb[2])*rcpMaxColor,1.0f));
         }
       }
     }
 
     /* image in binary format 16 bit */
-    else if (!strcmp(type, "P6"))
+    else if (type == "P6" && maxColor <= 65535)
     {
       unsigned short rgb[3];
       for (ssize_t y=0; y<height; y++) {
         for (ssize_t x=0; x<width; x++) {
-          if (fread(rgb,sizeof(rgb),1,file) != 1)
-            THROW_RUNTIME_ERROR("Error reading " + fileName.str());
+          file.read((char*)rgb,sizeof(rgb));
           img->set(x,y,Color4(float(rgb[0])*rcpMaxColor,float(rgb[1])*rcpMaxColor,float(rgb[2])*rcpMaxColor,1.0f));
         }
       }
@@ -105,29 +99,32 @@ namespace embree
 
     /* invalid magic value */
     else {
-      fclose(file);
       THROW_RUNTIME_ERROR("Invalid magic value in PPM file");
     }
-
-    fclose(file);
     return img;
   }
 
   /*! store PPM file to disk */
   void storePPM(const Ref<Image>& img, const FileName& fileName)
   {
-    FILE* file = fopen(fileName.c_str(), "wb");
-    if (!file) THROW_RUNTIME_ERROR("cannot open file " + fileName.str());
-    fprintf(file,"P6\n%i %i\n255\n", int(img->width), int(img->height));
+    /* open file for writing */
+    std::fstream file;
+    file.exceptions (std::fstream::failbit | std::fstream::badbit);
+    file.open (fileName.c_str(), std::fstream::out | std::fstream::binary);
 
+    /* write file header */
+    file << "P6" << std::endl;
+    file << img->width << " " << img->height << std::endl;
+    file << 255 << std::endl;
+
+    /* write image */
     for (size_t y=0; y<img->height; y++) {
       for (size_t x=0; x<img->width; x++) {
         const Color4 c = img->get(x,y);
-        fputc((unsigned char)(clamp(c.r)*255.0f), file);
-        fputc((unsigned char)(clamp(c.g)*255.0f), file);
-        fputc((unsigned char)(clamp(c.b)*255.0f), file);
+        file << (unsigned char)(clamp(c.r)*255.0f);
+        file << (unsigned char)(clamp(c.g)*255.0f);
+        file << (unsigned char)(clamp(c.b)*255.0f);
       }
     }
-    fclose(file);
   }
 }

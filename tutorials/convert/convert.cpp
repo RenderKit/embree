@@ -103,7 +103,7 @@ namespace embree
       for (size_t y=0; y<height; y++)
         for (size_t x=0; x<width; x++)
           values[y*width+x] = luminance(distribution->get(x,y));
-      dist = new Distribution2D(values,width,height);
+      dist = std::make_shared<Distribution2D>(values,width,height);
       delete[] values;
     }
         
@@ -123,7 +123,7 @@ namespace embree
   private:
     Ref<HeightField> heightField;
     Ref<SceneGraph::Node> object;
-    Ref<Distribution2D> dist;
+    std::shared_ptr<Distribution2D> dist;
     //float MAYBE_UNUSED minDistance;
     size_t N;
   };

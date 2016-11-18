@@ -20,23 +20,18 @@
 namespace embree
 {
   Distribution1D::Distribution1D()
-    : size(0), PDF(NULL), CDF(NULL) {}
+    : size(0) {}
 
   Distribution1D::Distribution1D(const float* f, const size_t size_in) {
     init(f, size_in);
-  }
-
-  Distribution1D::~Distribution1D() {
-    if (PDF) delete[] PDF; PDF = NULL;
-    if (CDF) delete[] CDF; CDF = NULL;
   }
 
   void Distribution1D::init(const float* f, const size_t size_in)
   {
     /*! create arrays */
     size = size_in;
-    PDF = new float[size];
-    CDF = new float[size+1];
+    PDF.resize(size);
+    CDF.resize(size+1);
 
     /*! accumulate the function f */
     CDF[0] = 0.0f;
@@ -57,8 +52,8 @@ namespace embree
   float Distribution1D::sample(const float u) const
   {
     /*! coarse sampling of the distribution */
-    float* pointer = std::upper_bound(CDF, CDF+size, u);
-    int index = clamp(int(pointer-CDF-1),0,int(size)-1);
+    const float* pointer = std::upper_bound(CDF.data(), CDF.data()+size, u);
+    int index = clamp(int(pointer-CDF.data()-1),0,int(size)-1);
 
     /*! refine sampling linearly by assuming the distribution being a step function */
     const float dCDF = CDF[index+1] - CDF[index];

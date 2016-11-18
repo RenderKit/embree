@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __VOXEL_DISTRIBUTION_1D_H__
-#define __VOXEL_DISTRIBUTION_1D_H__
+#pragma once
 
 #include "default.h"
 
@@ -24,7 +23,7 @@ namespace embree
   /*! 1D probability distribution. The probability distribution
    *  function (PDF) can be initialized with arbitrary data and be
    *  sampled. */
-  class Distribution1D : public RefCount
+  class Distribution1D
   {
   public:
 
@@ -33,9 +32,6 @@ namespace embree
 
     /*! Construction from distribution array f. */
     Distribution1D(const float* f, const size_t size);
-
-    /*! Destruction. */
-    ~Distribution1D();
 
     /*! Initialized the PDF and CDF arrays. */
     void init(const float* f, const size_t size);
@@ -51,9 +47,8 @@ namespace embree
 
   private:
     size_t size;  //!< Number of elements in the PDF
-    float* PDF;   //!< Probability distribution function
-    float* CDF;   //!< Cumulative distribution function (required for sampling)
+    std::vector<float> PDF;   //!< Probability distribution function
+    std::vector<float> CDF;   //!< Cumulative distribution function (required for sampling)
   };
 }
 
-#endif

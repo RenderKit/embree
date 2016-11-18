@@ -165,7 +165,7 @@ namespace embree
             const vfloatx lv = select(iy == sheight-1, vfloatx(1.0f), (vfloatx(iy)-srange.lower.y)*scale_y);
             const Vec3<vfloatx> p = patch.eval(lu,lv);
             Vec3<vfloatx> n = zero;
-            if (unlikely(Nx != nullptr)) n = normalize_safe(patch.normal(lu,lv));
+            if (unlikely(Nx)) n = normalize_safe(patch.normal(lu,lv));
             const vfloatx u = vfloatx(ix)*rcp_swidth;
             const vfloatx v = vfloatx(iy)*rcp_sheight;
             const vintx ofs = (iy-y0)*dwidth+(ix-x0);
@@ -176,11 +176,9 @@ namespace embree
               vfloatx::storeu(Pz+ofs2,p.z);
               vfloatx::storeu(U+ofs2,u);
               vfloatx::storeu(V+ofs2,v);
-              if (unlikely(Nx != nullptr)) {
-                vfloatx::storeu(Nx+ofs2,n.x);
-                vfloatx::storeu(Ny+ofs2,n.y);
-                vfloatx::storeu(Nz+ofs2,n.z);
-              }
+              if (unlikely(Nx)) vfloatx::storeu(Nx+ofs2,n.x);
+              if (unlikely(Ny)) vfloatx::storeu(Ny+ofs2,n.y);
+              if (unlikely(Nz)) vfloatx::storeu(Nz+ofs2,n.z);
             } else {
               foreach_unique_index(valid,iy,[&](const vboolx& valid, const int iy0, const int j) {
                   const unsigned ofs2 = ofs[j]-j;
@@ -189,11 +187,9 @@ namespace embree
                   vfloatx::storeu(valid,Pz+ofs2,p.z);
                   vfloatx::storeu(valid,U+ofs2,u);
                   vfloatx::storeu(valid,V+ofs2,v);
-                  if (unlikely(Nx != nullptr)) {
-                    vfloatx::storeu(valid,Nx+ofs2,n.x);
-                    vfloatx::storeu(valid,Ny+ofs2,n.y);
-                    vfloatx::storeu(valid,Nz+ofs2,n.z);
-                  }
+                  if (unlikely(Nx)) vfloatx::storeu(valid,Nx+ofs2,n.x);
+                  if (unlikely(Ny)) vfloatx::storeu(valid,Ny+ofs2,n.y);
+                  if (unlikely(Nz)) vfloatx::storeu(valid,Nz+ofs2,n.z);
                 });
             }
           });
@@ -299,11 +295,9 @@ namespace embree
         Pz[(y-y0)*dwidth+dx0] = pz[ys];
         U [(y-y0)*dwidth+dx0] = u[ys];
         V [(y-y0)*dwidth+dx0] = v[ys];
-        if (unlikely(Nx != nullptr)) {
-          Nx[(y-y0)*dwidth+dx0] = nx[ys];
-          Ny[(y-y0)*dwidth+dx0] = ny[ys];
-          Nz[(y-y0)*dwidth+dx0] = nz[ys];
-        }
+        if (unlikely(Nx)) Nx[(y-y0)*dwidth+dx0] = nx[ys];
+        if (unlikely(Ny)) Ny[(y-y0)*dwidth+dx0] = ny[ys];
+        if (unlikely(Nz)) Nz[(y-y0)*dwidth+dx0] = nz[ys];
       }
       return true;
     }
@@ -339,11 +333,9 @@ namespace embree
         Pz[dy0*dwidth+x-x0] = pz[xs];
         U [dy0*dwidth+x-x0] = u[xs];
         V [dy0*dwidth+x-x0] = v[xs];
-        if (unlikely(Nx != nullptr)) {
-          Nx[dy0*dwidth+x-x0] = nx[xs];
-          Ny[dy0*dwidth+x-x0] = ny[xs];
-          Nz[dy0*dwidth+x-x0] = nz[xs];
-        }
+        if (unlikely(Nx)) Nx[dy0*dwidth+x-x0] = nx[xs];
+        if (unlikely(Ny)) Ny[dy0*dwidth+x-x0] = ny[xs];
+        if (unlikely(Nz)) Nz[dy0*dwidth+x-x0] = nz[xs];
       }
       return true;
     }

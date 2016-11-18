@@ -39,14 +39,12 @@ namespace embree
     static std::atomic<size_t> cache_hits;
     static std::atomic<size_t> cache_misses;
     static std::atomic<size_t> cache_flushes;                
-    static std::atomic<size_t> *cache_patch_builds;                
     static size_t        cache_num_patches;
     __aligned(64) static SpinLock mtx;
     
     /* print stats for debugging */                 
     static void printStats();
     static void clearStats();
-    static void incPatchBuild(const size_t ID, const size_t numPatches);
   };
   
   void resizeTessellationCache(size_t new_size);
