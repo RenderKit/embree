@@ -335,8 +335,10 @@ namespace embree
 
     /* create thread */
     pthread_t* tid = new pthread_t;
-    if (pthread_create(tid,&attr,(void*(*)(void*))threadStartup,new ThreadStartupData(f,arg,threadID)) != 0)
+    if (pthread_create(tid,&attr,(void*(*)(void*))threadStartup,new ThreadStartupData(f,arg,threadID)) != 0) {
+      delete tid; 
       FATAL("pthread_create failed");
+    }
 
     /* set affinity */
 #if defined(__LINUX__)
