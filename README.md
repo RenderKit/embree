@@ -2448,7 +2448,7 @@ Embree Tutorials
 
 Embree comes with a set of tutorials aimed at helping users understand
 how Embree can be used and extended. All tutorials exist in an ISPC and
-C version to demonstrate the two versions of the API. Look for files
+C++ version to demonstrate the two versions of the API. Look for files
 named `tutorialname_device.ispc` for the ISPC implementation of the
 tutorial, and files named `tutorialname_device.cpp` for the single ray C++
 version of the tutorial. To start the C++ version use the `tutorialname`
