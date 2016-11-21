@@ -666,7 +666,7 @@ namespace embree
     if (id != "" && textureMap.find(id) != textureMap.end())
       return textureMap[id];
 
-    std::shared_ptr<Texture> texture(nullptr);
+    std::shared_ptr<Texture> texture;
     const FileName src = xml->parm("src");
 
     /*! load texture from file */
