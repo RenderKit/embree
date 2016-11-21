@@ -149,12 +149,16 @@ namespace embree
       serv_addr.sin_port = (unsigned short) htons(port);
       serv_addr.sin_addr.s_addr = INADDR_ANY;
 
-      if (::bind(sockfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr)) < 0)
+      if (::bind(sockfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr)) < 0) {
+        ::shutdown(sockfd,SHUT_RDWR);
         THROW_RUNTIME_ERROR("binding to port "+toString(port)+" failed");
+      }
       
       /*! listen to port, up to 5 pending connections */
-      if (::listen(sockfd,5) < 0)
+      if (::listen(sockfd,5) < 0) {
+        ::shutdown(sockfd,SHUT_RDWR);
         THROW_RUNTIME_ERROR("listening on socket failed");
+      }
 
       return (socket_t) new buffered_socket_t(sockfd);
     }
