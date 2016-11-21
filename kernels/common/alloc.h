@@ -233,7 +233,7 @@ namespace embree
       defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE));
       growSize = clamp(bytesAllocate,size_t(PAGE_SIZE),maxAllocationSize);
       log2_grow_size_scale = 0;
-      if (MAX_THREAD_USED_BLOCK_SLOTS >= 0                                        ) slotMask = 0x0;
+      slotMask = 0x0;
       if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesAllocate >  4*maxAllocationSize) slotMask = 0x1;
       if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesAllocate >  8*maxAllocationSize) slotMask = 0x3;
       if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesAllocate > 16*maxAllocationSize) slotMask = 0x7;
