@@ -280,7 +280,7 @@ namespace embree
       const unsigned y0s = stitch(y0,fine_y,coarse_y);
       const unsigned y1s = stitch(y1,fine_y,coarse_y);
       const unsigned M = y1s-y0s+1;
-
+      
       dynamic_large_stack_array(float,px,M,64*sizeof(float));
       dynamic_large_stack_array(float,py,M,64*sizeof(float));
       dynamic_large_stack_array(float,pz,M,64*sizeof(float));
@@ -289,7 +289,9 @@ namespace embree
       dynamic_large_stack_array(float,nx,M,64*sizeof(float));
       dynamic_large_stack_array(float,ny,M,64*sizeof(float));
       dynamic_large_stack_array(float,nz,M,64*sizeof(float));
-      Eval(patch,subPatch, right,right, y0s,y1s, 2,coarse_y+1, px,py,pz,u,v, Nx ? (float*)nx : nullptr,Ny ? (float*)ny : nullptr ,Nz ? (float*)nz : nullptr, 1,4097);
+      const bool has_Nxyz = Nx; assert(!Nx || (Ny && Nz));
+      Eval(patch,subPatch, right,right, y0s,y1s, 2,coarse_y+1, px,py,pz,u,v, 
+           has_Nxyz ? (float*)nx : nullptr,has_Nxyz ? (float*)ny : nullptr ,has_Nxyz ? (float*)nz : nullptr, 1,4097);
       
       for (unsigned y=y0; y<=y1; y++) 
       {
@@ -299,7 +301,7 @@ namespace embree
         Pz[(y-y0)*dwidth+dx0] = pz[ys];
         U [(y-y0)*dwidth+dx0] = u[ys];
         V [(y-y0)*dwidth+dx0] = v[ys];
-        if (unlikely(Nx != nullptr)) {
+        if (unlikely(has_Nxyz)) {
           Nx[(y-y0)*dwidth+dx0] = nx[ys];
           Ny[(y-y0)*dwidth+dx0] = ny[ys];
           Nz[(y-y0)*dwidth+dx0] = nz[ys];
@@ -329,7 +331,9 @@ namespace embree
       dynamic_large_stack_array(float,nx,M,64*sizeof(float));
       dynamic_large_stack_array(float,ny,M,64*sizeof(float));
       dynamic_large_stack_array(float,nz,M,64*sizeof(float));
-      Eval(patch,subPatch, x0s,x1s, bottom,bottom, coarse_x+1,2, px,py,pz,u,v, Nx ? (float*)nx :nullptr,Ny ? (float*)ny : nullptr , Nz ? (float*)nz : nullptr, 4097,1);
+      const bool has_Nxyz = Nx; assert(!Nx || (Ny && Nz));
+      Eval(patch,subPatch, x0s,x1s, bottom,bottom, coarse_x+1,2, px,py,pz,u,v, 
+           has_Nxyz ? (float*)nx :nullptr, has_Nxyz ? (float*)ny : nullptr , has_Nxyz ? (float*)nz : nullptr, 4097,1);
       
       for (unsigned x=x0; x<=x1; x++) 
       {
@@ -339,7 +343,7 @@ namespace embree
         Pz[dy0*dwidth+x-x0] = pz[xs];
         U [dy0*dwidth+x-x0] = u[xs];
         V [dy0*dwidth+x-x0] = v[xs];
-        if (unlikely(Nx != nullptr)) {
+        if (unlikely(has_Nxyz)) {
           Nx[dy0*dwidth+x-x0] = nx[xs];
           Ny[dy0*dwidth+x-x0] = ny[xs];
           Nz[dy0*dwidth+x-x0] = nz[xs];
