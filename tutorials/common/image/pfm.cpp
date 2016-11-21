@@ -22,93 +22,82 @@
 
 namespace embree
 {
-  /*! read a single comment line starting with #, or read a space */
-  static bool readCommentLine(FILE* file)
+  static void skipSpacesAndComments(std::fstream& file)
   {
-    int c = fgetc(file);
-    if (isspace(c)) return true;
-    if (c != '#') {
-      ungetc(c, file);
-      return false;
+    while (true)
+    {
+      if  (isspace(file.peek())) {
+        file.ignore();
+      } else  if (file.peek() == '#') {
+        std::string line; std::getline(file,line);
+      } else break;
     }
-    char line[1024];
-    if (fgets(line, sizeof(line), file) == nullptr)
-      THROW_RUNTIME_ERROR("Error reading PPM file!");
-    return true;
   }
 
   /*! read PFM file from disk */
   Ref<Image> loadPFM(const FileName& fileName)
   {
-    /* open PPM file */
-    FILE* file = fopen(fileName.c_str(), "rb");
-    if (!file) THROW_RUNTIME_ERROR("cannot open " + fileName.str());
+    /* open file for reading */
+    std::fstream file;
+    file.exceptions (std::fstream::failbit | std::fstream::badbit);
+    file.open (fileName.c_str(), std::fstream::in | std::fstream::binary);
 
     /* read file type */
-    char type[8];
-    if (fscanf(file, "%7s", type) != 1)
-      THROW_RUNTIME_ERROR("Error reading " + fileName.str());
-
-    /* skip comment lines */
-    while (readCommentLine(file)) {};
+    char cty[2]; file.read(cty,2);
+    skipSpacesAndComments(file);
+    std::string type(cty,2);
 
     /* read width, height, and maximal color value */
-    int width, height;
-    float maxColor;
-    if (fscanf(file, "%i %i %f", &width, &height, &maxColor) != 3)
-      THROW_RUNTIME_ERROR("Error reading " + fileName.str());
-
-    /* Check for big endian PFM file */
-    if (maxColor > 0.0f) {
-      fclose(file);
-      THROW_RUNTIME_ERROR("Big endian PFM files not supported");
-    }
+    int width; file >> width;
+    skipSpacesAndComments(file);
+    int height; file >> height;
+    skipSpacesAndComments(file);
+    float maxColor; file >> maxColor;
+    if (maxColor > 0) THROW_RUNTIME_ERROR("Big endian PFM files not supported");
     float rcpMaxColor = -1.0f/float(maxColor);
-
-    /* get return or space */
-    fgetc(file);
+    file.ignore(); // skip space or return
 
     /* create image and fill with data */
-    Ref<Image> img = new Image3f(width,height,fileName);
+    Ref<Image> img = new Image4f(width,height,fileName);
 
-    /* image in binary format 32 bit */
-    if (!strcmp(type, "PF"))
+    /* image in binary format 16 bit */
+    if (type == "PF")
     {
       float rgb[3];
       for (ssize_t y=0; y<height; y++) {
         for (ssize_t x=0; x<width; x++) {
-          if (fread(rgb,sizeof(rgb),1,file) != 1)
-            THROW_RUNTIME_ERROR("Error reading " + fileName.str());
-          img->set(x,y,Color4(float(rgb[0])*rcpMaxColor,float(rgb[1])*rcpMaxColor,float(rgb[2])*rcpMaxColor,1.0f));
+          file.read((char*)rgb,sizeof(rgb));
+          img->set(x,y,Color4(rgb[0]*rcpMaxColor,rgb[1]*rcpMaxColor,rgb[2]*rcpMaxColor,1.0f));
         }
       }
     }
 
     /* invalid magic value */
     else {
-      fclose(file);
       THROW_RUNTIME_ERROR("Invalid magic value in PFM file");
     }
-
-    fclose(file);
     return img;
   }
 
   /*! store PFM file to disk */
   void storePFM(const Ref<Image>& img, const FileName& fileName)
   {
-    FILE* file = fopen(fileName.c_str(), "wb");
-    if (!file) THROW_RUNTIME_ERROR("cannot open file " + fileName.str());
-    fprintf(file,"PF\n%i %i\n%f\n", int(img->width), int(img->height), -1.0f);
+    /* open file for writing */
+    std::fstream file;
+    file.exceptions (std::fstream::failbit | std::fstream::badbit);
+    file.open (fileName.c_str(), std::fstream::out | std::fstream::binary);
 
-    float rgb[3];
+    /* write file header */
+    file << "PF" << std::endl;
+    file << img->width << " " << img->height << std::endl;
+    file << -1.0f << std::endl;
+
+    /* write image */
     for (size_t y=0; y<img->height; y++) {
       for (size_t x=0; x<img->width; x++) {
-        Color4 c = img->get(x,y);
-        rgb[0] = c.r; rgb[1] = c.g; rgb[2] = c.b;
-        fwrite(rgb,sizeof(rgb),1,file);
+        const Color4 c = img->get(x,y);
+        file.write((char*)&c,3*sizeof(float));
       }
     }
-    fclose(file);
   }
 }
