@@ -36,7 +36,7 @@ namespace embree
   {
   public:
     TutorialApplication (const std::string& tutorialName, const int features);
-    ~TutorialApplication();
+    virtual ~TutorialApplication();
 
   public:
     /* starts tutorial */
