@@ -62,7 +62,7 @@ namespace embree
       
       /* create properly sized output array */
       flattened.resize(S);
-      memset(flattened.data(),0,sizeof(atomic<size_t>)*S);
+      for (auto& a : flattened) a.store(0);
 
       /* now we actually fill the flattened array */
       parallel_for_for_prefix_sum( state, array2, size_t(0), [&](std::vector<size_t>* v, const range<size_t>& r, size_t k, const size_t base) -> size_t
