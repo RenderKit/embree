@@ -64,7 +64,7 @@ namespace embree
     if (type == "PF")
     {
       float rgb[3];
-      for (ssize_t y=0; y<height; y++) {
+      for (ssize_t y=height-1; y>=0; y--) {
         for (ssize_t x=0; x<width; x++) {
           file.read((char*)rgb,sizeof(rgb));
           img->set(x,y,Color4(rgb[0]*rcpMaxColor,rgb[1]*rcpMaxColor,rgb[2]*rcpMaxColor,1.0f));
@@ -93,8 +93,8 @@ namespace embree
     file << -1.0f << std::endl;
 
     /* write image */
-    for (size_t y=0; y<img->height; y++) {
-      for (size_t x=0; x<img->width; x++) {
+    for (ssize_t y=img->height-1; y>=0; y--) {
+      for (ssize_t x=0; x<img->width; x++) {
         const Color4 c = img->get(x,y);
         file.write((char*)&c,3*sizeof(float));
       }
