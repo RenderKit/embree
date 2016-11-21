@@ -69,7 +69,7 @@ namespace embree
       return *this;
     }
 
-    RTCDeviceRef& operator= (RTCDeviceRef& in) 
+    RTCDeviceRef& operator= (const RTCDeviceRef& in) 
     {
       if (in.device != device && device) 
         rtcDeleteDevice(device);
@@ -89,7 +89,7 @@ namespace embree
   struct RTCSceneRef
   {
   public:
-    RTCScene scene;
+    mutable RTCScene scene;
     
     RTCSceneRef (nullptr_t) 
       : scene(nullptr) {}
@@ -103,7 +103,7 @@ namespace embree
     
     __forceinline operator RTCScene () const { return scene; }
     
-    __forceinline RTCSceneRef& operator= (RTCSceneRef& in) 
+    __forceinline RTCSceneRef& operator= (const RTCSceneRef& in) 
     {
       RTCScene tmp = in.scene;
       in.scene = nullptr;
