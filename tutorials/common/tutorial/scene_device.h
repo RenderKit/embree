@@ -175,6 +175,10 @@ namespace embree
         delete[] subdivlevel;
         delete[] face_offsets;
       }
+
+    private:
+      ISPCSubdivMesh (const ISPCSubdivMesh& other) DELETED; // do not implement
+      ISPCSubdivMesh& operator= (const ISPCSubdivMesh& other) DELETED; // do not implement
       
     public:
       ISPCGeometry geom;
