@@ -77,7 +77,12 @@ namespace embree
         delete[] ibuf; ibuf = nullptr;
         delete[] obuf; obuf = nullptr;
       }
-      
+
+    private:
+      buffered_socket_t (const buffered_socket_t& other) DELETED; // do not implement
+      buffered_socket_t& operator= (const buffered_socket_t& other) DELETED; // do not implement
+
+    public:
       SOCKET fd;               //!< file descriptor of the socket
       char* ibuf;
       size_t isize;
