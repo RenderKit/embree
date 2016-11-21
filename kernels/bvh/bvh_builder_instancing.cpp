@@ -45,12 +45,22 @@ namespace embree
 	delete builders[i];
     }
 
+    int hash(const Vec3fa& vec)
+    {
+      int h = 0;
+      for (size_t i=0; i<3; i++)
+        h ^= 0x42F276E1*i*((int*)&vec)[i];
+      return h;
+    }
+
     int hash(const AffineSpace3fa& space)
     {
-      int xfmID = 0;
-      for (size_t i=0; i<12; i++)
-        xfmID ^= 0x12F576E1*i*((int*)&space)[i];
-      return xfmID;
+      int h = 0;
+      h ^= 0xF2FF7631*hash(space.l.vx);
+      h ^= 0xF2FF7731*hash(space.l.vy);
+      h ^= 0xF2FF7831*hash(space.l.vz);
+      h ^= 0xF2FF7931*hash(space.p);
+      return h;
     }
 
     int slot(int type, int numTimeSteps)
