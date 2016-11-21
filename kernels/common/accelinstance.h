@@ -28,12 +28,7 @@ namespace embree
       : Accel(AccelData::TY_ACCEL_INSTANCE,intersectors), accel(accel), builder(builder) {}
 
     void immutable () {
-      delete builder; builder = nullptr;
-    }
-
-    ~AccelInstance() {
-      delete builder; builder = nullptr;
-      delete accel;   accel = nullptr;
+      builder.reset(nullptr);
     }
 
   public:
@@ -53,7 +48,7 @@ namespace embree
     }
 
   private:
-    AccelData* accel;
-    Builder* builder;
+    std::unique_ptr<AccelData> accel;
+    std::unique_ptr<Builder> builder;
   };
 }
