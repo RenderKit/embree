@@ -102,7 +102,7 @@ namespace embree
       
       /*! perform DNS lookup */
       struct hostent* server = ::gethostbyname(host);
-      if (server == nullptr) THROW_RUNTIME_ERROR("server "+std::string(host)+" not found");
+      if (!server) THROW_RUNTIME_ERROR("server "+std::string(host)+" not found");
       
       /*! perform connection */
       struct sockaddr_in serv_addr;
