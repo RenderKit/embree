@@ -33,19 +33,20 @@ namespace embree
 #endif
 
     /* calculate base pointer and stride */
-    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) ||
+    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS)) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
     const char* src = nullptr; 
     size_t stride = 0;
     size_t bufID = buffer&0xFFFF;
     std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
     if (buffer >= RTC_USER_VERTEX_BUFFER0) {
-      src    = userbuffers[buffer&0xFFFF]->getPtr();
-      stride = userbuffers[buffer&0xFFFF]->getStride();
+      src    = userbuffers[bufID]->getPtr();
+      stride = userbuffers[bufID]->getStride();
       baseEntry = &user_buffer_tags[bufID];
     } else {
-      src    = vertices[buffer&0xFFFF].getPtr();
-      stride = vertices[buffer&0xFFFF].getStride();
+      assert(bufID < numTimeSteps);
+      src    = vertices[bufID].getPtr();
+      stride = vertices[bufID].getStride();
       baseEntry = &vertex_buffer_tags[bufID];
     }
 
@@ -126,7 +127,7 @@ namespace embree
                                         RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats)
   {
     /* calculate base pointer and stride */
-     assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) ||
+     assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS)) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
     const char* src = nullptr; 
     size_t stride = 0;
@@ -137,6 +138,7 @@ namespace embree
       stride = userbuffers[bufID]->getStride();
       baseEntry = &user_buffer_tags[bufID];
     } else {
+      assert(bufID < numTimeSteps);
       src    = vertices[bufID].getPtr();
       stride = vertices[bufID].getStride();
       baseEntry = &vertex_buffer_tags[bufID];

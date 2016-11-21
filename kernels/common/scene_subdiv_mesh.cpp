@@ -593,7 +593,7 @@ namespace embree
 #endif
 
     /* calculate base pointer and stride */
-    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) ||
+    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS)) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
     const char* src = nullptr; 
     size_t stride = 0;
@@ -604,6 +604,7 @@ namespace embree
       stride = userbuffers[bufID]->getStride();
       baseEntry = &user_buffer_tags[bufID];
     } else {
+      assert(bufID < numTimeSteps);
       src    = vertices[bufID].getPtr();
       stride = vertices[bufID].getStride();
       baseEntry = &vertex_buffer_tags[bufID];
@@ -653,7 +654,7 @@ namespace embree
 #endif
 
     /* calculate base pointer and stride */
-    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) ||
+    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS)) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
     const char* src = nullptr; 
     size_t stride = 0;
@@ -664,6 +665,7 @@ namespace embree
       stride = userbuffers[bufID]->getStride();
       baseEntry = &user_buffer_tags[bufID];
     } else {
+      assert(bufID < numTimeSteps);
       src    = vertices[bufID].getPtr();
       stride = vertices[bufID].getStride();
       baseEntry = &vertex_buffer_tags[bufID];
