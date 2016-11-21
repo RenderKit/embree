@@ -169,13 +169,13 @@ namespace embree
    bool State::parseFile(const FileName& fileName)
   {
     FILE* f = fopen(fileName.c_str(),"r");
-    if (f == nullptr) return false;
+    if (!f) return false;
     Ref<Stream<int> > file = new FileStream(f,fileName);
-
+    
     std::vector<std::string> syms;
-	  for (size_t i=0; i<sizeof(symbols)/sizeof(void*); i++) 
+    for (size_t i=0; i<sizeof(symbols)/sizeof(void*); i++) 
       syms.push_back(symbols[i]);
-
+    
     Ref<TokenStream> cin = new TokenStream(new LineCommentFilter(file,"#"),
                                            TokenStream::alpha+TokenStream::ALPHA+TokenStream::numbers+"_.",
                                            TokenStream::separators,syms);
