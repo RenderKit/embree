@@ -256,7 +256,7 @@ namespace embree
   void Device::process_error(Device* device, RTCError error, const char* str)
   { 
     /* store global error code when device construction failed */
-    if (device == nullptr)
+    if (!device)
       return setThreadErrorCode(error);
 
     /* print error when in verbose mode */
