@@ -127,9 +127,34 @@ namespace embree
     }
   };
 
+  __forceinline void clearRay(RTCRay& ray)
+  {
+    ray.org[0] = zero;
+    ray.org[1] = zero;
+    ray.org[2] = zero;
+    ray.align0 = 0;
+    ray.dir[0] = zero;
+    ray.dir[1] = zero;
+    ray.dir[2] = zero;
+    ray.align1 = 0;
+    ray.tnear = pos_inf;
+    ray.tfar = neg_inf;
+    ray.time = 0;
+    ray.mask = -1;
+    ray.Ng[0] = 0.0f;
+    ray.Ng[1] = 0.0f;
+    ray.Ng[2] = 0.0f;
+    ray.align2 = 0;
+    ray.u = 0.0f;
+    ray.v = 0.0f;
+    ray.geomID = -1;
+    ray.primID = -1;
+    ray.instID = -1;
+  }
+
   __forceinline RTCRay makeRay(const Vec3fa& org, const Vec3fa& dir) 
   {
-    RTCRay ray; memset(&ray,0,sizeof(RTCRay));
+    RTCRay ray; clearRay(ray);
     ray.org[0] = org.x; ray.org[1] = org.y; ray.org[2] = org.z;
     ray.dir[0] = dir.x; ray.dir[1] = dir.y; ray.dir[2] = dir.z;
     ray.tnear = 0.0f; ray.tfar = inf;
@@ -140,7 +165,7 @@ namespace embree
 
   __forceinline RTCRay makeRay(const Vec3fa& org, const Vec3fa& dir, float tnear, float tfar) 
   {
-    RTCRay ray; memset(&ray,0,sizeof(RTCRay));
+    RTCRay ray; clearRay(ray);
     ray.org[0] = org.x; ray.org[1] = org.y; ray.org[2] = org.z;
     ray.dir[0] = dir.x; ray.dir[1] = dir.y; ray.dir[2] = dir.z;
     ray.tnear = tnear; ray.tfar = tfar;
