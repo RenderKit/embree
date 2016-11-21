@@ -50,6 +50,10 @@ namespace embree
       baseEntry = &vertex_buffer_tags[bufID];
     }
 
+    bool has_P = P;
+    bool has_dP = dPdu;     assert(!has_dP  || dPdv);
+    bool has_ddP = ddPdudu; assert(!has_ddP || (ddPdvdv && ddPdudu));
+
     for (size_t i=0,slot=0; i<numFloats; slot++)
     {
       if (i+4 >= numFloats)
@@ -57,25 +61,25 @@ namespace embree
         vfloat4 Pt, dPdut, dPdvt, ddPdudut, ddPdvdvt, ddPdudvt;; 
         isa::PatchEval<vfloat4>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
                                 getHalfEdge(primID),src+i*sizeof(float),stride,u,v,
-                                P ? &Pt : nullptr, 
-                                dPdu ? &dPdut : nullptr, 
-                                dPdv ? &dPdvt : nullptr,
-                                ddPdudu ? &ddPdudut : nullptr, 
-                                ddPdvdv ? &ddPdvdvt : nullptr, 
-                                ddPdudv ? &ddPdudvt : nullptr);
+                                has_P ? &Pt : nullptr, 
+                                has_dP ? &dPdut : nullptr, 
+                                has_dP ? &dPdvt : nullptr,
+                                has_ddP ? &ddPdudut : nullptr, 
+                                has_ddP ? &ddPdvdvt : nullptr, 
+                                has_ddP ? &ddPdudvt : nullptr);
         
-        if (P) {
+        if (has_P) {
           for (size_t j=i; j<min(i+4,numFloats); j++) 
             P[j] = Pt[j-i];
         }
-        if (dPdu) 
+        if (has_dP) 
         {
           for (size_t j=i; j<min(i+4,numFloats); j++) {
             dPdu[j] = dPdut[j-i];
             dPdv[j] = dPdvt[j-i];
           }
         }
-        if (ddPdudu) 
+        if (has_ddP) 
         {
           for (size_t j=i; j<min(i+4,numFloats); j++) {
             ddPdudu[j] = ddPdudut[j-i];
@@ -90,25 +94,25 @@ namespace embree
         vfloat8 Pt, dPdut, dPdvt, ddPdudut, ddPdvdvt, ddPdudvt; 
         isa::PatchEval<vfloat8>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
                                 getHalfEdge(primID),src+i*sizeof(float),stride,u,v,
-                                P ? &Pt : nullptr, 
-                                dPdu ? &dPdut : nullptr, 
-                                dPdv ? &dPdvt : nullptr,
-                                ddPdudu ? &ddPdudut : nullptr, 
-                                ddPdvdv ? &ddPdvdvt : nullptr, 
-                                ddPdudv ? &ddPdudvt : nullptr);
+                                has_P ? &Pt : nullptr, 
+                                has_dP ? &dPdut : nullptr, 
+                                has_dP ? &dPdvt : nullptr,
+                                has_ddP ? &ddPdudut : nullptr, 
+                                has_ddP ? &ddPdvdvt : nullptr, 
+                                has_ddP ? &ddPdudvt : nullptr);
                                     
-        if (P) {
+        if (has_P) {
           for (size_t j=i; j<i+8; j++) 
             P[j] = Pt[j-i];
         }
-        if (dPdu) 
+        if (has_dP) 
         {
           for (size_t j=i; j<i+8; j++) {
             dPdu[j] = dPdut[j-i];
             dPdv[j] = dPdvt[j-i];
           }
         }
-        if (ddPdudu) 
+        if (has_ddP) 
         {
           for (size_t j=i; j<i+8; j++) {
             ddPdudu[j] = ddPdudut[j-i];
