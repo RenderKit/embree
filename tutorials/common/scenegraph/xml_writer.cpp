@@ -23,7 +23,6 @@ namespace embree
   public:
 
     XMLWriter(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures);
-   ~XMLWriter();
 
   public:
     void tab();
@@ -73,8 +72,8 @@ namespace embree
     void store(Ref<SceneGraph::Node> node);
 
   private:
-    FILE* xml;         //!< .xml file for writing XML data
-    FILE* bin;         //!< .bin file for writing binary data
+    std::fstream xml;         //!< .xml file for writing XML data
+    std::fstream bin;         //!< .bin file for writing binary data
 
   private:
     size_t ident;
@@ -91,18 +90,18 @@ namespace embree
   void XMLWriter::tab()
   {
     for (size_t i=0; i<ident; i++) 
-      fprintf(xml," ");
+      xml << " ";
   }
 
   void XMLWriter::open(const char* str)
   {
-    tab(); fprintf(xml,"<%s>\n",str);
+    tab(); xml << "<" << str << ">" << std::endl;
     ident+=2;
   }
 
   void XMLWriter::open(const char* str, size_t id)
   {
-    tab(); fprintf(xml,"<%s id=\"%zu\">\n",str,id);
+    tab(); xml << "<" << str << " id=\"" << id << "\">" << std::endl;
     ident+=2;
   }
 
@@ -110,49 +109,49 @@ namespace embree
   {
     assert(ident>=2);
     ident-=2;
-    tab(); fprintf(xml,"</%s>\n",str);
+    tab(); xml << "</" << str << ">" << std::endl;
   }
 
   void XMLWriter::store(const char* name, const char* str) {
-    tab(); fprintf(xml,"<%s>\"%s\"</%s>\n",name,str,name);
+    tab(); xml << "<" << name << ">\"" << str << "\"</" << name << ">" << std::endl;
   }
 
   void XMLWriter::store(const char* name, const float& v) {
-    tab(); fprintf(xml,"<%s>%f</%s>\n",name,v,name);
+    tab(); xml << "<" << name << ">" << v << "</" << name << ">" << std::endl;
   }
 
   void XMLWriter::store(const char* name, const Vec3fa& v) {
-    tab(); fprintf(xml,"<%s>%f %f %f</%s>\n",name,v.x,v.y,v.z,name);
+    tab(); xml << "<" << name << ">" << v.x << " " << v.y << " " << v.z << "</" << name << ">" << std::endl;
   }
 
   template<typename T>
   void XMLWriter::store(const char* name, const std::vector<T>& vec)
   {
-    const long int offset = ftell(bin);
-    tab(); fprintf(xml, "<%s ofs=\"%li\" size=\"%zu\"/>\n", name, offset, vec.size());
-    if (vec.size()) fwrite(vec.data(),vec.size(),sizeof(T),bin);
+    std::streampos offset = bin.tellg();
+    tab(); xml << "<" << name << " ofs=\"" << offset << "\" size=\"" << vec.size() << "\"/>" << std::endl;
+    if (vec.size()) bin.write((char*)vec.data(),vec.size()*sizeof(T));
   }
 
   void XMLWriter::store(const char* name, const avector<Vec3fa>& vec)
   {
-    const long int offset = ftell(bin);
-    tab(); fprintf(xml, "<%s ofs=\"%ld\" size=\"%zu\"/>\n", name, offset, vec.size());
-    for (size_t i=0; i<vec.size(); i++) fwrite(&vec[i],1,sizeof(Vec3f),bin);
+    std::streampos offset = bin.tellg();
+    tab(); xml << "<" << name << " ofs=\"" << offset << "\" size=\"" << vec.size() << "\"/>" << std::endl;
+    for (size_t i=0; i<vec.size(); i++) bin.write((char*)&vec[i],sizeof(Vec3f));
   }
 
   void XMLWriter::store4f(const char* name, const avector<Vec3fa>& vec)
   {
-    const long int offset = ftell(bin);
-    tab(); fprintf(xml, "<%s ofs=\"%ld\" size=\"%zu\"/>\n", name, offset, vec.size());
-    for (size_t i=0; i<vec.size(); i++) fwrite(&vec[i],1,sizeof(Vec3fa),bin);
+    std::streampos offset = bin.tellg();
+    tab(); xml << "<" << name << " ofs=\"" << offset << "\" size=\"" << vec.size() << "\"/>" << std::endl;
+    for (size_t i=0; i<vec.size(); i++) bin.write((char*)&vec[i],sizeof(Vec3fa));
   }
 
   void XMLWriter::store_parm(const char* name, const float& v) {
-    tab(); fprintf(xml,"<float name=\"%s\">%f</float>\n",name,v);
+    tab(); xml << "<float name=\"" << name << "\">" << v << "</float>" << std::endl;
   }
 
   void XMLWriter::store_parm(const char* name, const Vec3fa& v) {
-    tab(); fprintf(xml,"<float3 name=\"%s\">%f %f %f</float3>\n",name,v.x,v.y,v.z);
+    tab(); xml << "<float3 name=\"" << name << "\">" << v.x << " " << v.y << " " << v.z << "</float3>" << std::endl;
   }
 
   void XMLWriter::store_parm(const char* name, const Texture* tex) 
@@ -160,27 +159,28 @@ namespace embree
     if (tex == nullptr) return;
 
     if (textureMap.find(tex) != textureMap.end()) {
-      tab(); fprintf(xml,"<texture3d name=\"%s\" id=\"%zu\"/>\n",name,textureMap[tex]);
+      tab(); xml << "<texture3d name=\"" << name << "\" id=\"" << textureMap[tex] << "\"/>" << std::endl;
     } else if (embedTextures) {
-      const long int offset = ftell(bin);
-      fwrite(tex->data,tex->width*tex->height,tex->bytesPerTexel,bin);
+      std::streampos offset = bin.tellg();
+      bin.write((char*)tex->data,tex->width*tex->height*tex->bytesPerTexel);
       const size_t id = textureMap[tex] = currentNodeID++;
-      tab(); fprintf(xml,"<texture3d name=\"%s\" id=\"%zu\" ofs=\"%ld\" width=\"%i\" height=\"%i\" format=\"%s\"/>\n",
-                     name,id,offset,tex->width,tex->height,Texture::format_to_string(tex->format));
+      tab(); xml << "<texture3d name=\"" << name << "\" id=\"" << id << "\" ofs=\"" << offset 
+                 << "\" width=\"" << tex->width << "\" height=\"" << tex->height 
+                 << "\" format=\"" << Texture::format_to_string(tex->format) << "\"/>" << std::endl;
     }
     else {
       const size_t id = textureMap[tex] = currentNodeID++;
-      tab(); fprintf(xml,"<texture3d name=\"%s\" id=\"%zu\" src=\"%s\"/>\n",name,id,tex->fileName.c_str());
+      tab(); xml << "<texture3d name=\"" << name << "\" id=\"" << id << "\" src=\"" << tex->fileName << "\"/>" << std::endl;
     }
   }
 
   void XMLWriter::store(const char* name, const AffineSpace3fa& space)
   {
-    tab(); fprintf(xml,"<%s>\n",name);
-    tab(); fprintf(xml,"  %f %f %f %f\n",space.l.vx.x,space.l.vy.x,space.l.vz.x,space.p.x);
-    tab(); fprintf(xml,"  %f %f %f %f\n",space.l.vx.y,space.l.vy.y,space.l.vz.y,space.p.y);
-    tab(); fprintf(xml,"  %f %f %f %f\n",space.l.vx.z,space.l.vy.z,space.l.vz.z,space.p.z);
-    tab(); fprintf(xml,"</%s>\n",name);
+    tab(); xml << "<" << name << ">" << std::endl;
+    tab(); xml << "  " << space.l.vx.x << " " << space.l.vy.x << " " << space.l.vz.x << " " << space.p.x << std::endl;
+    tab(); xml << "  " << space.l.vx.y << " " << space.l.vy.y << " " << space.l.vz.y << " " << space.p.y << std::endl;
+    tab(); xml << "  " << space.l.vx.z << " " << space.l.vy.z << " " << space.l.vz.z << " " << space.p.z << std::endl;
+    tab(); xml << "</" << name << ">" << std::endl;
   }
                   
   void XMLWriter::store(const SceneGraph::PointLight& light, ssize_t id)
@@ -381,7 +381,7 @@ namespace embree
   {
     Ref<SceneGraph::Node> node = mnode.dynamicCast<SceneGraph::Node>();
     if (nodeMap.find(node) != nodeMap.end()) {
-      tab(); fprintf(xml,"<material id=\"%zu\"/>\n",nodeMap[node]);
+      tab(); xml << "<material id=\"" << nodeMap[node] << "\"/>" << std::endl;
       return;
     }
     const ssize_t id = nodeMap[node] = currentNodeID++;
@@ -501,7 +501,7 @@ namespace embree
   void XMLWriter::store(Ref<SceneGraph::Node> node)
   {
     if (nodeMap.find(node) != nodeMap.end()) {
-      tab(); fprintf(xml,"<ref id=\"%zu\"/>\n",nodeMap[node]); return;
+      tab(); xml << "<ref id=\"" << nodeMap[node] << "\"/>" << std::endl; return;
     }
     const ssize_t id = nodeMap[node] = currentNodeID++;
 
@@ -518,21 +518,19 @@ namespace embree
   }
  
   XMLWriter::XMLWriter(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures) 
-    : xml(nullptr), bin(nullptr), ident(0), currentNodeID(0), embedTextures(embedTextures)
+    : ident(0), currentNodeID(0), embedTextures(embedTextures)
   {
     FileName binFileName = fileName.addExt(".bin");
-    xml = fopen(fileName.c_str(),"w");
-    bin = fopen(binFileName.c_str(),"wb");
 
-    fprintf(xml,"<?xml version=\"1.0\"?>\n");
+    xml.exceptions (std::fstream::failbit | std::fstream::badbit);
+    xml.open (fileName, std::fstream::out);
+    bin.exceptions (std::fstream::failbit | std::fstream::badbit);
+    bin.open (binFileName, std::fstream::out | std::fstream::binary);
+
+    xml << "<?xml version=\"1.0\"?>" << std::endl;
     open("scene");
     store(root);
     close("scene");
-  }
-
-  XMLWriter::~XMLWriter() {
-    if (xml) fclose(xml);
-    if (bin) fclose(bin);
   }
 
   void SceneGraph::storeXML(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures) {
