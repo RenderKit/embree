@@ -78,7 +78,7 @@ namespace embree
         convertLights(xfmNode->child, spaces*xfmNode->spaces);
       } 
       else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) {
-        for (auto child : groupNode->children) convertLights(child,spaces);
+        for (const auto& child : groupNode->children) convertLights(child,spaces);
       }
       else if (Ref<SceneGraph::LightNode> lightNode = node.dynamicCast<SceneGraph::LightNode>()) {
         scene->lights.push_back(lightNode->light->transform(spaces[0]));
@@ -91,7 +91,7 @@ namespace embree
         convertGeometries(group,xfmNode->child, spaces*xfmNode->spaces);
       } 
       else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) {
-        for (auto child : groupNode->children) convertGeometries(group,child,spaces);
+        for (const auto& child : groupNode->children) convertGeometries(group,child,spaces);
       }
       else if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) {
         group.push_back(convertTriangleMesh(mesh,spaces));
@@ -136,7 +136,7 @@ namespace embree
         convertInstances(xfmNode->child, spaces*xfmNode->spaces);
       } 
       else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) {
-        for (auto child : groupNode->children) convertInstances(child,spaces);
+        for (const auto& child : groupNode->children) convertInstances(child,spaces);
       }
     }
   };
