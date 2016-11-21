@@ -2198,8 +2198,7 @@ namespace embree
       rtcCommit (scene);
       AssertNoError(device);
 
-      RTCRay invalid_ray;
-      memset(&invalid_ray,-1,sizeof(RTCRay));
+      RTCRay invalid_ray; clearRay(invalid_ray);
       invalid_ray.tnear = pos_inf;
       invalid_ray.tfar  = neg_inf;
       invalid_ray = invalid_ray;
