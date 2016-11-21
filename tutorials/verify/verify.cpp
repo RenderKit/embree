@@ -569,7 +569,7 @@ namespace embree
         });
     } 
     else {
-      for (auto test : tests)
+      for (auto& test : tests)
         passed.fetch_and(test->execute(state,nextsilent) != FAILED);
     }
 
@@ -4283,7 +4283,7 @@ namespace embree
   void VerifyApplication::prefix_test_names(Ref<Test> test, std::string prefix)
   {
     if (Ref<TestGroup> group = test.dynamicCast<TestGroup>()) 
-      for (auto t : group->tests) 
+      for (auto& t : group->tests) 
         prefix_test_names(t,group->extend_prefix(prefix));
 
     test->name = prefix + test->name;
@@ -4331,7 +4331,7 @@ namespace embree
     if (Ref<TestGroup> group = test.dynamicCast<TestGroup>()) 
     {
       std::cout << std::string(2*depth,' ') << group->name << (group->name != "" ? " " : "") << "{" << std::endl;
-      for (auto t : group->tests) print_tests(t,depth+1);
+      for (auto& t : group->tests) print_tests(t,depth+1);
       std::cout << std::string(2*depth,' ') << "}" << std::endl;
     } else {
       std::cout << std::string(2*depth,' ') << test->name << std::endl;
@@ -4344,7 +4344,7 @@ namespace embree
 
     if (Ref<TestGroup> group = test.dynamicCast<TestGroup>()) 
     {
-      for (auto t : group->tests) print_ctests(t,depth+1);
+      for (auto& t : group->tests) print_ctests(t,depth+1);
     } else {
       std::cout << "ADD_TEST(NAME " << test->name << " COMMAND verify --no-colors --cdash-measurements --run " << test->name << std::endl;
     }
@@ -4354,7 +4354,7 @@ namespace embree
   void VerifyApplication::map_tests(Ref<Test> test, const Function& f)
   {
     if (Ref<TestGroup> group = test.dynamicCast<TestGroup>()) {
-      for (auto t : group->tests) map_tests(t,f);
+      for (auto& t : group->tests) map_tests(t,f);
     } else {
       f(test);
     }
