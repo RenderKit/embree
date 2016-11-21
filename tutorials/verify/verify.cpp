@@ -176,6 +176,9 @@ namespace embree
     VerifyScene (const RTCDeviceRef& device, RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
       : device(device), scene(rtcDeviceNewScene(device,sflags,aflags)) {}
 
+    virtual ~VerifyScene() {
+    }
+
     operator RTCScene() const {
       return scene;
     }
