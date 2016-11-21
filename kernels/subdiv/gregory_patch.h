@@ -695,7 +695,7 @@ namespace embree
     __forceinline void eval(const vbool& valid, const vfloat& uu, const vfloat& vv, 
                             float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv,
                             const float dscale, const size_t dstride, const size_t N) const {
-      return eval(v,f,valid,uu,vv,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale,dstride,N);
+      eval(v,f,valid,uu,vv,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale,dstride,N);
     }
 
     template<class T>
