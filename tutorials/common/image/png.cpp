@@ -104,7 +104,7 @@ namespace embree
 
     // set the individual row_pointers to point at the correct offsets of image_data
     for (size_t i = 0; i < height; ++i)
-      row_pointers[height - 1 - i] = (unsigned char*) &data[i * rowbytes];
+      row_pointers[i] = (unsigned char*) &data[i * rowbytes];
  
     // read the png into image_data through row_pointers
     png_read_image(png_ptr, row_pointers.data());
