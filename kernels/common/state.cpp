@@ -36,12 +36,12 @@ namespace embree
   RTCError* State::ErrorHandler::error() 
   {
     RTCError* stored_error = (RTCError*) getTls(thread_error);
-    if (stored_error == nullptr) {
-      Lock<MutexSys> lock(errors_mutex);
-      stored_error = new RTCError(RTC_NO_ERROR);
-      thread_errors.push_back(stored_error);
-      setTls(thread_error,stored_error);
-    }
+    if (stored_error) return stored_error;
+
+    Lock<MutexSys> lock(errors_mutex);
+    stored_error = new RTCError(RTC_NO_ERROR);
+    thread_errors.push_back(stored_error);
+    setTls(thread_error,stored_error);
     return stored_error;
   }
 
