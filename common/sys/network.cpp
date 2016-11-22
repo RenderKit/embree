@@ -96,7 +96,8 @@ namespace embree
     {
       SOCKET sock;
       AutoCloseSocket (SOCKET sock) : sock(sock) {}
-      ~AutoCloseSocket () { if (sock != INVALID_SOCKET) ::shutdown(sock,SHUT_RDWR); }
+      //~AutoCloseSocket () { if (sock != INVALID_SOCKET) ::shutdown(sock,SHUT_RDWR); }
+      ~AutoCloseSocket () { if (sock != INVALID_SOCKET) ::close(sock); }
     };
 
     socket_t connect(const char* host, unsigned short port) 
