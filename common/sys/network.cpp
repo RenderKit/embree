@@ -92,6 +92,13 @@ namespace embree
       size_t oend;
     };
 
+    struct AutoCloseSocket
+    {
+      SOCKET sock;
+      AutoCloseSocket (SOCKET sock) : sock(sock) {}
+      ~AutoCloseSocket () { if (sock != INVALID_SOCKET) ::shutdown(sock,SHUT_RDWR); }
+    };
+
     socket_t connect(const char* host, unsigned short port) 
     {
       initialize();
@@ -99,7 +106,8 @@ namespace embree
       /*! create a new socket */
       SOCKET sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
       if (sockfd == INVALID_SOCKET) THROW_RUNTIME_ERROR("cannot create socket");
-      auto auto_close = OnScopeExit([&]() { ::shutdown(sockfd,SHUT_RDWR); });
+      //auto auto_close = OnScopeExit([&]() { ::shutdown(sockfd,SHUT_RDWR); });
+      AutoCloseSocket auto_close(sockfd);
       
       /*! perform DNS lookup */
       struct hostent* server = ::gethostbyname(host);
@@ -125,7 +133,8 @@ namespace embree
       { int flag = 1; setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, (const char*) &flag, sizeof(int)); }
 #endif
       
-      auto_close.deactivate();
+      //auto_close.deactivate();
+      auto_close.sock = INVALID_SOCKET;
       return (socket_t) new buffered_socket_t(sockfd);
     }
     
@@ -136,7 +145,8 @@ namespace embree
       /*! create a new socket */
       SOCKET sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
       if (sockfd == INVALID_SOCKET) THROW_RUNTIME_ERROR("cannot create socket");
-      auto auto_close = OnScopeExit([&]() { ::shutdown(sockfd,SHUT_RDWR); });
+      //auto auto_close = OnScopeExit([&]() { ::shutdown(sockfd,SHUT_RDWR); });
+      AutoCloseSocket auto_close(sockfd);
 
       /* When the server completes, the server socket enters a time-wait state during which the local
       address and port used by the socket are believed to be in use by the OS. The wait state may
@@ -159,7 +169,8 @@ namespace embree
       if (::listen(sockfd,5) < 0)
         THROW_RUNTIME_ERROR("listening on socket failed");
 
-      auto_close.deactivate();
+      //auto_close.deactivate();
+      auto_close.sock = INVALID_SOCKET;
       return (socket_t) new buffered_socket_t(sockfd);
     }
     
