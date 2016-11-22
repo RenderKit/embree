@@ -97,12 +97,12 @@ namespace embree
       State::print();
 
     /* register all algorithms */
-    instance_factory.reset(new InstanceFactory(enabled_cpu_features));
+    instance_factory = make_unique(new InstanceFactory(enabled_cpu_features));
 
-    bvh4_factory.reset(new BVH4Factory(enabled_cpu_features));
+    bvh4_factory = make_unique(new BVH4Factory(enabled_cpu_features));
 
 #if defined(__TARGET_AVX__)
-    bvh8_factory.reset(new BVH8Factory(enabled_cpu_features));
+    bvh8_factory = make_unique(new BVH8Factory(enabled_cpu_features));
 #endif
 
     /* setup tasking system */
@@ -334,7 +334,7 @@ namespace embree
     size_t maxNumThreads = getMaxNumThreads();
     TaskScheduler::create(maxNumThreads,State::set_affinity,State::start_threads);
 #if USE_TASK_ARENA
-    arena.reset(new tbb::task_arena(int(maxNumThreads)));
+    arena = make_unique(new tbb::task_arena(int(maxNumThreads)));
 #endif
   }
 
