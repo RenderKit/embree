@@ -184,7 +184,7 @@ namespace embree
   class Material : public MaterialBase
   {
   public:
-    Material () { memset(this,0,sizeof(Material)); }
+    Material () { for (auto& x : v) x = Vec3fa(zero); }
     Material (const OBJMaterial& in) { *((OBJMaterial*)this) = in; }
     OBJMaterial& obj() { return *(OBJMaterial*)this; }
 
