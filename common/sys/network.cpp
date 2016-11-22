@@ -98,7 +98,6 @@ namespace embree
       AutoCloseSocket (SOCKET sock) : sock(sock) {}
       ~AutoCloseSocket () {
         if (sock != INVALID_SOCKET) {
-          ::shutdown(sock,SHUT_RDWR);
           closesocket(sock);
         }
       }
