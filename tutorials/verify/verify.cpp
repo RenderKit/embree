@@ -174,11 +174,7 @@ namespace embree
   struct VerifyScene : public RefCount
   {
     VerifyScene (const RTCDeviceRef& device, RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
-      : device(device), scene(rtcDeviceNewScene(device,sflags,aflags)), removeme(new int) {}
-
-    virtual ~VerifyScene() {
-      delete removeme;
-    }
+      : device(device), scene(rtcDeviceNewScene(device,sflags,aflags)) {}
 
     operator RTCScene() const {
       return scene;
@@ -186,9 +182,7 @@ namespace embree
     
     unsigned addGeometry(const RTCGeometryFlags gflag, const Ref<SceneGraph::Node>& node)
     {
-      mutex.lock();
       nodes.push_back(node);
-      mutex.unlock();
       
       if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
       {
@@ -309,11 +303,9 @@ namespace embree
     }
 
   public:
-    MutexSys mutex;
     const RTCDeviceRef& device;
     RTCSceneRef scene;
     std::vector<Ref<SceneGraph::Node>> nodes;
-    int* removeme;
   };
 
   VerifyApplication::TestReturnValue VerifyApplication::Test::execute(VerifyApplication* state, bool silent)
