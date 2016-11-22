@@ -349,8 +349,10 @@ namespace embree
   template<typename Closure>
     struct OnScopeExitHelper
   {
-    OnScopeExitHelper (const Closure f) : f(f) {}
-    ~OnScopeExitHelper() { f(); }
+    OnScopeExitHelper (const Closure f) : active(true), f(f) {}
+    ~OnScopeExitHelper() { if (active) f(); }
+    void deactivate() { active = false; }
+    bool active;
     const Closure f;
   };
   

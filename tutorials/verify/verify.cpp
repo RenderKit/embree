@@ -174,9 +174,10 @@ namespace embree
   struct VerifyScene : public RefCount
   {
     VerifyScene (const RTCDeviceRef& device, RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
-      : device(device), scene(rtcDeviceNewScene(device,sflags,aflags)) {}
+      : device(device), scene(rtcDeviceNewScene(device,sflags,aflags)), removeme(new int) {}
 
     virtual ~VerifyScene() {
+      delete removeme;
     }
 
     operator RTCScene() const {
@@ -312,6 +313,7 @@ namespace embree
     const RTCDeviceRef& device;
     RTCSceneRef scene;
     std::vector<Ref<SceneGraph::Node>> nodes;
+    int* removeme;
   };
 
   VerifyApplication::TestReturnValue VerifyApplication::Test::execute(VerifyApplication* state, bool silent)

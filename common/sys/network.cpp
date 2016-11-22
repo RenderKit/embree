@@ -99,6 +99,7 @@ namespace embree
       /*! create a new socket */
       SOCKET sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
       if (sockfd == INVALID_SOCKET) THROW_RUNTIME_ERROR("cannot create socket");
+      auto auto_close = OnScopeExit([&]() { ::shutdown(sockfd,SHUT_RDWR); });
       
       /*! perform DNS lookup */
       struct hostent* server = ::gethostbyname(host);
@@ -113,17 +114,18 @@ namespace embree
       
       if (::connect(sockfd,(struct sockaddr*) &serv_addr,sizeof(serv_addr)) < 0)
         THROW_RUNTIME_ERROR("connection to "+std::string(host)+":"+toString(port)+" failed");
-
+      
       /*! enable TCP_NODELAY */
 #ifdef TCP_NODELAY
       { int flag = 1; ::setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, (const char*)&flag, sizeof(int)); }
 #endif
-
+      
       /*! we do not want SIGPIPE to be thrown */
 #ifdef SO_NOSIGPIPE
       { int flag = 1; setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, (const char*) &flag, sizeof(int)); }
 #endif
       
+      auto_close.deactivate();
       return (socket_t) new buffered_socket_t(sockfd);
     }
     
@@ -134,6 +136,7 @@ namespace embree
       /*! create a new socket */
       SOCKET sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
       if (sockfd == INVALID_SOCKET) THROW_RUNTIME_ERROR("cannot create socket");
+      auto auto_close = OnScopeExit([&]() { ::shutdown(sockfd,SHUT_RDWR); });
 
       /* When the server completes, the server socket enters a time-wait state during which the local
       address and port used by the socket are believed to be in use by the OS. The wait state may
@@ -149,17 +152,14 @@ namespace embree
       serv_addr.sin_port = (unsigned short) htons(port);
       serv_addr.sin_addr.s_addr = INADDR_ANY;
 
-      if (::bind(sockfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr)) < 0) {
-        ::shutdown(sockfd,SHUT_RDWR);
+      if (::bind(sockfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr)) < 0)
         THROW_RUNTIME_ERROR("binding to port "+toString(port)+" failed");
-      }
       
       /*! listen to port, up to 5 pending connections */
-      if (::listen(sockfd,5) < 0) {
-        ::shutdown(sockfd,SHUT_RDWR);
+      if (::listen(sockfd,5) < 0)
         THROW_RUNTIME_ERROR("listening on socket failed");
-      }
 
+      auto_close.deactivate();
       return (socket_t) new buffered_socket_t(sockfd);
     }
     
