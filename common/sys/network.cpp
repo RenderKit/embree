@@ -38,7 +38,7 @@ typedef int socklen_t;
 #include <netdb.h> 
 #define SOCKET int
 #define INVALID_SOCKET -1
-#define closesocket close
+#define closesocket ::close
 #endif
 
 /*! ignore if not supported */
@@ -96,8 +96,12 @@ namespace embree
     {
       SOCKET sock;
       AutoCloseSocket (SOCKET sock) : sock(sock) {}
-      //~AutoCloseSocket () { if (sock != INVALID_SOCKET) ::shutdown(sock,SHUT_RDWR); }
-      ~AutoCloseSocket () { if (sock != INVALID_SOCKET) ::close(sock); }
+      ~AutoCloseSocket () {
+        if (sock != INVALID_SOCKET) {
+          ::shutdown(sock,SHUT_RDWR);
+          closesocket(sock);
+        }
+      }
     };
 
     socket_t connect(const char* host, unsigned short port) 
@@ -107,7 +111,6 @@ namespace embree
       /*! create a new socket */
       SOCKET sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
       if (sockfd == INVALID_SOCKET) THROW_RUNTIME_ERROR("cannot create socket");
-      //auto auto_close = OnScopeExit([&]() { ::shutdown(sockfd,SHUT_RDWR); });
       AutoCloseSocket auto_close(sockfd);
       
       /*! perform DNS lookup */
@@ -134,7 +137,6 @@ namespace embree
       { int flag = 1; setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, (const char*) &flag, sizeof(int)); }
 #endif
       
-      //auto_close.deactivate();
       auto_close.sock = INVALID_SOCKET;
       return (socket_t) new buffered_socket_t(sockfd);
     }
@@ -146,7 +148,6 @@ namespace embree
       /*! create a new socket */
       SOCKET sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
       if (sockfd == INVALID_SOCKET) THROW_RUNTIME_ERROR("cannot create socket");
-      //auto auto_close = OnScopeExit([&]() { ::shutdown(sockfd,SHUT_RDWR); });
       AutoCloseSocket auto_close(sockfd);
 
       /* When the server completes, the server socket enters a time-wait state during which the local
@@ -170,7 +171,6 @@ namespace embree
       if (::listen(sockfd,5) < 0)
         THROW_RUNTIME_ERROR("listening on socket failed");
 
-      //auto_close.deactivate();
       auto_close.sock = INVALID_SOCKET;
       return (socket_t) new buffered_socket_t(sockfd);
     }
@@ -276,6 +276,7 @@ namespace embree
     void close(socket_t hsock_i) {
       buffered_socket_t* hsock = (buffered_socket_t*) hsock_i;
       ::shutdown(hsock->fd,SHUT_RDWR);
+      closesocket(hsock->fd);
       delete hsock;
     }
   }
