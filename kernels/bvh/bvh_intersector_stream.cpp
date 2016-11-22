@@ -562,7 +562,7 @@ namespace embree
           size_t bits = m_trav_active & m_active;          
 
           assert(bits);
-          m_active &= ~PrimitiveIntersector::occluded(pre, bits, rays, context, 0, prim, num, lazy_node);
+          m_active = m_active & ~PrimitiveIntersector::occluded(pre, bits, rays, context, 0, prim, num, lazy_node);
           if (unlikely(m_active == 0)) break;
         } // traversal + intersection        
       }      

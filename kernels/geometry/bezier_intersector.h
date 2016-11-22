@@ -106,7 +106,7 @@ namespace embree
          bool ishit = false;
         if (unlikely(any(valid))) {
           BezierHit<VSIZEX> hit(valid,u,0.0f,t,0,N,v0,v1,v2,v3);
-          ishit |= epilog(valid,hit);
+          ishit = ishit | epilog(valid,hit);
         }
 
         if (unlikely(VSIZEX < N)) 
@@ -135,7 +135,7 @@ namespace embree
              /* update hit information */
             if (unlikely(any(valid))) {
               BezierHit<VSIZEX> hit(valid,u,0.0f,t,i,N,v0,v1,v2,v3);
-              ishit |= epilog(valid,hit);
+              ishit = ishit | epilog(valid,hit);
             }
           }
         }
@@ -208,7 +208,7 @@ namespace embree
         
           /* update hit information */
           BezierHit<VSIZEX> hit(valid,u,0.0f,t,i,N,v0,v1,v2,v3);
-          ishit |= epilog(valid,hit);
+          ishit = ishit | epilog(valid,hit);
         }
         return ishit;
       }
