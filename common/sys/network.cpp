@@ -38,7 +38,7 @@ typedef int socklen_t;
 #include <netdb.h> 
 #define SOCKET int
 #define INVALID_SOCKET -1
-#define closesocket ::close
+#define closesocket close
 #endif
 
 /*! ignore if not supported */
@@ -96,7 +96,8 @@ namespace embree
     {
       SOCKET sock;
       AutoCloseSocket (SOCKET sock) : sock(sock) {}
-      ~AutoCloseSocket () { if (sock != INVALID_SOCKET) closesocket(sock); }
+      //~AutoCloseSocket () { if (sock != INVALID_SOCKET) ::shutdown(sock,SHUT_RDWR); }
+      ~AutoCloseSocket () { if (sock != INVALID_SOCKET) ::close(sock); }
     };
 
     socket_t connect(const char* host, unsigned short port) 
@@ -104,12 +105,13 @@ namespace embree
       initialize();
 
       /*! create a new socket */
-      SOCKET sockfd = socket(AF_INET, SOCK_STREAM, 0);
+      SOCKET sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
       if (sockfd == INVALID_SOCKET) THROW_RUNTIME_ERROR("cannot create socket");
+      //auto auto_close = OnScopeExit([&]() { ::shutdown(sockfd,SHUT_RDWR); });
       AutoCloseSocket auto_close(sockfd);
       
       /*! perform DNS lookup */
-      struct hostent* server = gethostbyname(host);
+      struct hostent* server = ::gethostbyname(host);
       if (!server) THROW_RUNTIME_ERROR("server "+std::string(host)+" not found");
       
       /*! perform connection */
@@ -119,12 +121,12 @@ namespace embree
       serv_addr.sin_port = (unsigned short) htons(port);
       memcpy((char*)&serv_addr.sin_addr.s_addr, (char*)server->h_addr, server->h_length);
       
-      if (connect(sockfd,(struct sockaddr*) &serv_addr,sizeof(serv_addr)) < 0)
+      if (::connect(sockfd,(struct sockaddr*) &serv_addr,sizeof(serv_addr)) < 0)
         THROW_RUNTIME_ERROR("connection to "+std::string(host)+":"+toString(port)+" failed");
       
       /*! enable TCP_NODELAY */
 #ifdef TCP_NODELAY
-      { int flag = 1; setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, (const char*)&flag, sizeof(int)); }
+      { int flag = 1; ::setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, (const char*)&flag, sizeof(int)); }
 #endif
       
       /*! we do not want SIGPIPE to be thrown */
@@ -132,6 +134,7 @@ namespace embree
       { int flag = 1; setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, (const char*) &flag, sizeof(int)); }
 #endif
       
+      //auto_close.deactivate();
       auto_close.sock = INVALID_SOCKET;
       return (socket_t) new buffered_socket_t(sockfd);
     }
@@ -141,15 +144,16 @@ namespace embree
       initialize();
 
       /*! create a new socket */
-      SOCKET sockfd = socket(AF_INET, SOCK_STREAM, 0);
+      SOCKET sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
       if (sockfd == INVALID_SOCKET) THROW_RUNTIME_ERROR("cannot create socket");
+      //auto auto_close = OnScopeExit([&]() { ::shutdown(sockfd,SHUT_RDWR); });
       AutoCloseSocket auto_close(sockfd);
 
       /* When the server completes, the server socket enters a time-wait state during which the local
       address and port used by the socket are believed to be in use by the OS. The wait state may
       last several minutes. This socket option allows bind() to reuse the port immediately. */
 #ifdef SO_REUSEADDR
-      { int flag = true; setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (const char*)&flag, sizeof(int)); }
+      { int flag = true; ::setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (const char*)&flag, sizeof(int)); }
 #endif
       
       /*! bind socket to port */
@@ -159,13 +163,14 @@ namespace embree
       serv_addr.sin_port = (unsigned short) htons(port);
       serv_addr.sin_addr.s_addr = INADDR_ANY;
 
-      if (bind(sockfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr)) < 0)
+      if (::bind(sockfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr)) < 0)
         THROW_RUNTIME_ERROR("binding to port "+toString(port)+" failed");
       
       /*! listen to port, up to 5 pending connections */
       if (::listen(sockfd,5) < 0)
         THROW_RUNTIME_ERROR("listening on socket failed");
 
+      //auto_close.deactivate();
       auto_close.sock = INVALID_SOCKET;
       return (socket_t) new buffered_socket_t(sockfd);
     }
@@ -177,12 +182,12 @@ namespace embree
       /*! accept incoming connection */
       struct sockaddr_in addr;
       socklen_t len = sizeof(addr);
-      SOCKET fd = accept(sockfd, (struct sockaddr *) &addr, &len);
+      SOCKET fd = ::accept(sockfd, (struct sockaddr *) &addr, &len);
       if (fd == INVALID_SOCKET) THROW_RUNTIME_ERROR("cannot accept connection");
 
       /*! enable TCP_NODELAY */
 #ifdef TCP_NODELAY
-      { int flag = 1; setsockopt(fd,IPPROTO_TCP,TCP_NODELAY,(char*)&flag,sizeof(int)); }
+      { int flag = 1; ::setsockopt(fd,IPPROTO_TCP,TCP_NODELAY,(char*)&flag,sizeof(int)); }
 #endif
 
       /*! we do not want SIGPIPE to be thrown */
@@ -200,7 +205,7 @@ namespace embree
       buffered_socket_t* hsock = (buffered_socket_t*) hsock_i;
       while (bytes) {
         if (hsock->istart == hsock->iend) {
-          ssize_t n = recv(hsock->fd,hsock->ibuf,int(hsock->isize),MSG_NOSIGNAL);
+          ssize_t n = ::recv(hsock->fd,hsock->ibuf,int(hsock->isize),MSG_NOSIGNAL);
           if      (n == 0) throw Disconnect();
           else if (n  < 0) THROW_RUNTIME_ERROR("error reading from socket");
           hsock->istart = 0;
@@ -217,7 +222,7 @@ namespace embree
       char* data = (char*) data_i;
       buffered_socket_t* hsock = (buffered_socket_t*) hsock_i;
       while (bytes) {
-        ssize_t n = read(hsock->fd,data,bytes);
+        ssize_t n = ::read(hsock->fd,data,bytes);
         if      (n == 0) throw Disconnect();
         else if (n  < 0) THROW_RUNTIME_ERROR("error reading from socket");
         data+=n;
@@ -244,7 +249,7 @@ namespace embree
       const char* data = (const char*) data_i;
       buffered_socket_t* hsock = (buffered_socket_t*) hsock_i;
       while (bytes) {
-        ssize_t n = write(hsock->fd,data,bytes);
+        ssize_t n = ::write(hsock->fd,data,bytes);
         if (n  < 0) THROW_RUNTIME_ERROR("error writing to socket");
         data+=n;
         bytes-=n;
@@ -259,7 +264,7 @@ namespace embree
       char* data = hsock->obuf;
       size_t bytes = hsock->oend;
       while (bytes > 0) {
-        ssize_t n = send(hsock->fd,data,(int)bytes,MSG_NOSIGNAL);
+        ssize_t n = ::send(hsock->fd,data,(int)bytes,MSG_NOSIGNAL);
         if (n < 0) THROW_RUNTIME_ERROR("error writing to socket");
         bytes -= n;
         data += n;
@@ -270,7 +275,7 @@ namespace embree
     
     void close(socket_t hsock_i) {
       buffered_socket_t* hsock = (buffered_socket_t*) hsock_i;
-      closesocket(hsock->fd);
+      ::shutdown(hsock->fd,SHUT_RDWR);
       delete hsock;
     }
   }
