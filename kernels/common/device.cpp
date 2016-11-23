@@ -502,6 +502,14 @@ namespace embree
     case RTC_CONFIG_USER_GEOMETRY: return 0;
 #endif
 
+#if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR < 8)
+    case RTC_CONFIG_COMMIT_JOIN: return 0;
+    case RTC_CONFIG_COMMIT_THREAD: return 0;
+#else
+    case RTC_CONFIG_COMMIT_JOIN: return 1;
+    case RTC_CONFIG_COMMIT_THREAD: return 1;
+#endif
+
     default: throw_RTCError(RTC_INVALID_ARGUMENT, "unknown readable parameter"); break;
     };
   }
