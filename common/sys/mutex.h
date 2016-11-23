@@ -29,6 +29,11 @@ namespace embree
     MutexSys( void );
     ~MutexSys( void );
 
+  private:
+    MutexSys (const MutexSys& other) DELETED; // do not implement
+    MutexSys& operator= (const MutexSys& other) DELETED; // do not implement
+
+  public:
     void lock( void );
     bool try_lock( void );
     void unlock( void );

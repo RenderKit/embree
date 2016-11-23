@@ -47,10 +47,9 @@ namespace embree
   
   MutexSys::~MutexSys( void ) 
   { 
-    if (pthread_mutex_destroy((pthread_mutex_t*)mutex) != 0)
-      THROW_RUNTIME_ERROR("pthread_mutex_destroy failed");
-    
+    bool failed = pthread_mutex_destroy((pthread_mutex_t*)mutex) != 0;
     delete (pthread_mutex_t*)mutex; 
+    if (failed) THROW_RUNTIME_ERROR("pthread_mutex_destroy failed");
   }
   
   void MutexSys::lock( void ) 

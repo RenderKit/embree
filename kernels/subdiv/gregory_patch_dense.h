@@ -116,7 +116,7 @@ namespace embree
     __forceinline void eval(const vbool& valid, const vfloat& uu, const vfloat& vv, float* P, float* dPdu, float* dPdv, const float dscale, const size_t dstride, const size_t N) const 
     {
       __aligned(64) Vec3fa f_m[2][2]; extract_f_m(f_m);
-      return GregoryPatch3fa::eval(matrix,f_m,valid,uu,vv,P,dPdu,dPdv,dscale,dstride,N);
+      GregoryPatch3fa::eval(matrix,f_m,valid,uu,vv,P,dPdu,dPdv,dscale,dstride,N);
     }
 
   private:

@@ -96,52 +96,52 @@ namespace embree
   void SharedLazyTessellationCache::allocNextSegment() 
   {
     if (reset_state.try_lock())
+    {
+      if (next_block >= switch_block_threshold)
       {
-	if (next_block >= switch_block_threshold)
-	  {
-            /* lock the linked list of thread states */
-
-            linkedlist_mtx.lock();
-
-            /* block all threads */
-	    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->next)
-	      if (lockThread(t,THREAD_BLOCK_ATOMIC_ADD) != 0)
-		waitForUsersLessEqual(t,THREAD_BLOCK_ATOMIC_ADD);
-
-            /* switch to the next segment */
-	    addCurrentIndex();
-	    CACHE_STATS(PRINT("RESET TESS CACHE"));
-
+        /* lock the linked list of thread states */
+        
+        linkedlist_mtx.lock();
+        
+        /* block all threads */
+        for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->next)
+          if (lockThread(t,THREAD_BLOCK_ATOMIC_ADD) != 0)
+            waitForUsersLessEqual(t,THREAD_BLOCK_ATOMIC_ADD);
+        
+        /* switch to the next segment */
+        addCurrentIndex();
+        CACHE_STATS(PRINT("RESET TESS CACHE"));
+        
 #if FORCE_SIMPLE_FLUSH == 1
-	    next_block = 0;
-	    switch_block_threshold = maxBlocks;
+        next_block = 0;
+        switch_block_threshold = maxBlocks;
 #else
-	    const size_t region = localTime % NUM_CACHE_SEGMENTS;
-	    next_block = region * (maxBlocks/NUM_CACHE_SEGMENTS);
-	    switch_block_threshold = next_block + (maxBlocks/NUM_CACHE_SEGMENTS);
-	    assert( switch_block_threshold <= maxBlocks );
+        const size_t region = localTime % NUM_CACHE_SEGMENTS;
+        next_block = region * (maxBlocks/NUM_CACHE_SEGMENTS);
+        switch_block_threshold = next_block + (maxBlocks/NUM_CACHE_SEGMENTS);
+        assert( switch_block_threshold <= maxBlocks );
 #endif
-
-	    CACHE_STATS(SharedTessellationCacheStats::cache_flushes++);
-
-            /* release all blocked threads */
-
-	    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->next)
-	      unlockThread(t,-THREAD_BLOCK_ATOMIC_ADD);
-
-            /* unlock the linked list of thread states */
-
-            linkedlist_mtx.unlock();
-	    
-
-	  }
-	reset_state.unlock();
+        
+        CACHE_STATS(SharedTessellationCacheStats::cache_flushes++);
+        
+        /* release all blocked threads */
+        
+        for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->next)
+          unlockThread(t,-THREAD_BLOCK_ATOMIC_ADD);
+        
+        /* unlock the linked list of thread states */
+        
+        linkedlist_mtx.unlock();
+	
+        
       }
+      reset_state.unlock();
+    }
     else
       reset_state.wait_until_unlocked();	   
   }
-
-
+  
+  
   void SharedLazyTessellationCache::reset()
   {
     /* lock the reset_state */
@@ -232,7 +232,6 @@ namespace embree
   std::atomic<size_t> SharedTessellationCacheStats::cache_misses(0);
   std::atomic<size_t> SharedTessellationCacheStats::cache_flushes(0);  
   SpinLock   SharedTessellationCacheStats::mtx;  
-  std::atomic<size_t> *SharedTessellationCacheStats::cache_patch_builds(nullptr);
   size_t SharedTessellationCacheStats::cache_num_patches(0);
 
   void SharedTessellationCacheStats::printStats()
@@ -244,17 +243,6 @@ namespace embree
     PRINT(100.0f * cache_hits / cache_accesses);
     assert(cache_hits + cache_misses == cache_accesses);
     PRINT(cache_num_patches);
-    size_t patches = 0;
-    size_t builds  = 0;
-    for (size_t i=0;i<cache_num_patches;i++)
-      if (cache_patch_builds[i])
-	{
-	  patches++;
-	  builds += cache_patch_builds[i];
-	}
-    PRINT(patches);
-    PRINT(builds);
-    PRINT((double)builds/patches);
   }
 
   void SharedTessellationCacheStats::clearStats()
@@ -263,26 +251,6 @@ namespace embree
     SharedTessellationCacheStats::cache_hits      = 0;
     SharedTessellationCacheStats::cache_misses    = 0;
     SharedTessellationCacheStats::cache_flushes   = 0;
-    for (size_t i=0;i<cache_num_patches;i++)
-      cache_patch_builds[i] = 0;
-  }
-
-  void SharedTessellationCacheStats::incPatchBuild(const size_t ID, const size_t numPatches)
-  {
-    if (!cache_patch_builds)
-      {
-	mtx.lock();
-	if (!cache_patch_builds)
-	  {
-	    PRINT(numPatches);
-	    cache_num_patches = numPatches;
-	    cache_patch_builds = (std::atomic<size_t>*)os_malloc(numPatches*sizeof(std::atomic<size_t>));
-	    memset(cache_patch_builds,0,numPatches*sizeof(std::atomic<size_t>));
-	  }
-	mtx.unlock();
-      }
-    assert(ID < cache_num_patches);
-    cache_patch_builds[ID]++;
   }
 
   struct cache_regression_test : public RegressionTest

@@ -152,9 +152,9 @@ namespace embree
                              const size_t binID, 
                              const BBox3fa &b) 
       {
-        assert(beginID >= 0 && beginID < BINS);
-        assert(endID >= 0 && endID < BINS);
-        assert(binID >= 0 && binID < BINS);
+        assert(beginID < BINS);
+        assert(endID < BINS);
+        assert(binID < BINS);
 
         numBegin[beginID][dim]++;
         numEnd  [endID][dim]++;
@@ -166,10 +166,9 @@ namespace embree
                                 const size_t binID, 
                                 const BBox3fa &b) 
       {
-        assert(binID >= 0 && binID < BINS);
+        assert(binID < BINS);
         bounds  [binID][dim].extend(b);        
       }
-
       
       /*! bins an array of triangles */
       template<typename SplitPrimitive>

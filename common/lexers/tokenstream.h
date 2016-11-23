@@ -107,7 +107,7 @@ namespace embree
       if (t.ty == TY_INT) return cout << "Int(" << t.i << ")";
       if (t.ty == TY_FLOAT) return cout << "Float(" << t.f << ")";
       if (t.ty == TY_IDENTIFIER) return cout << "Id(" << t.str << ")";
-      if (t.ty == TY_STRING) return cout << "String(" + t.str + ")";
+      if (t.ty == TY_STRING) return cout << "String(" << t.str << ")";
       if (t.ty == TY_SYMBOL) return cout << "Symbol(" << t.str << ")";
       return cout << "unknown";
     }

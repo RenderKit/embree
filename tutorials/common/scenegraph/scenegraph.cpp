@@ -19,7 +19,6 @@
 #include "xml_writer.h"
 #include "obj_loader.h"
 #include "ply_loader.h"
-#include "hair_loader.h"
 #include "corona_loader.h"
 
 namespace embree
@@ -29,8 +28,6 @@ namespace embree
     if      (toLowerCase(filename.ext()) == std::string("obj" )) return loadOBJ(filename);
     else if (toLowerCase(filename.ext()) == std::string("ply" )) return loadPLY(filename);
     else if (toLowerCase(filename.ext()) == std::string("xml" )) return loadXML(filename);
-    else if (toLowerCase(filename.ext()) == std::string("txt" )) return loadTxtHair(filename);
-    else if (toLowerCase(filename.ext()) == std::string("bin" )) return loadBinHair(filename);
     else if (toLowerCase(filename.ext()) == std::string("scn" )) return loadCorona(filename);
     else throw std::runtime_error("unknown scene format: " + filename.ext());
   }
@@ -65,7 +62,7 @@ namespace embree
     else done.insert(this);
     indegree = 0;
     closed = false;
-    for (auto c : children)
+    for (auto& c : children)
       c->resetNode(done);
   }
 
@@ -86,7 +83,7 @@ namespace embree
   {
     indegree++;
     if (indegree == 1) {
-      for (auto c : children)
+      for (auto&  c : children)
         c->calculateInDegree();
     }
   }

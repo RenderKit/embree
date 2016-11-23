@@ -122,12 +122,12 @@ namespace embree
       case RTC_LEVEL_BUFFER               : levels.set(ptr,offset,stride); break;
         
       case RTC_USER_VERTEX_BUFFER0: 
-        if (userbuffers[0] == nullptr) userbuffers[0].reset(new APIBuffer<char>(parent->device,numVertices,stride)); 
+        if (userbuffers[0] == nullptr) userbuffers[0] = make_unique(new APIBuffer<char>(parent->device,numVertices,stride)); 
         userbuffers[0]->set(ptr,offset,stride);  
         userbuffers[0]->checkPadding16();
         break;
       case RTC_USER_VERTEX_BUFFER1: 
-        if (userbuffers[1] == nullptr) userbuffers[1].reset(new APIBuffer<char>(parent->device,numVertices,stride)); 
+        if (userbuffers[1] == nullptr) userbuffers[1] = make_unique(new APIBuffer<char>(parent->device,numVertices,stride)); 
         userbuffers[1]->set(ptr,offset,stride);  
         userbuffers[1]->checkPadding16();
         break;
@@ -593,7 +593,7 @@ namespace embree
 #endif
 
     /* calculate base pointer and stride */
-    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) ||
+    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS)) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
     const char* src = nullptr; 
     size_t stride = 0;
@@ -604,35 +604,40 @@ namespace embree
       stride = userbuffers[bufID]->getStride();
       baseEntry = &user_buffer_tags[bufID];
     } else {
+      assert(bufID < numTimeSteps);
       src    = vertices[bufID].getPtr();
       stride = vertices[bufID].getStride();
       baseEntry = &vertex_buffer_tags[bufID];
     }
+
+    bool has_P = P;
+    bool has_dP = dPdu;     assert(!has_dP  || dPdv);
+    bool has_ddP = ddPdudu; assert(!has_ddP || (ddPdvdv && ddPdudu));
 
     for (size_t i=0; i<numFloats; i+=4)
     {
       vfloat4 Pt, dPdut, dPdvt, ddPdudut, ddPdvdvt, ddPdudvt;
       isa::PatchEval<vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,i/4,stride)),parent->commitCounterSubdiv,
                                       getHalfEdge(primID),src+i*sizeof(float),stride,u,v,
-                                      P ? &Pt : nullptr, 
-                                      dPdu ? &dPdut : nullptr, 
-                                      dPdv ? &dPdvt : nullptr,
-                                      ddPdudu ? &ddPdudut : nullptr, 
-                                      ddPdvdv ? &ddPdvdvt : nullptr, 
-                                      ddPdudv ? &ddPdudvt : nullptr);
+                                      has_P ? &Pt : nullptr, 
+                                      has_dP ? &dPdut : nullptr, 
+                                      has_dP ? &dPdvt : nullptr,
+                                      has_ddP ? &ddPdudut : nullptr, 
+                                      has_ddP ? &ddPdvdvt : nullptr, 
+                                      has_ddP ? &ddPdudvt : nullptr);
 
-      if (P) {
+      if (has_P) {
         for (size_t j=i; j<min(i+4,numFloats); j++) 
           P[j] = Pt[j-i];
       }
-      if (dPdu) 
+      if (has_dP) 
       {
         for (size_t j=i; j<min(i+4,numFloats); j++) {
           dPdu[j] = dPdut[j-i];
           dPdv[j] = dPdvt[j-i];
         }
       }
-      if (ddPdudu) 
+      if (has_ddP) 
       {
         for (size_t j=i; j<min(i+4,numFloats); j++) {
           ddPdudu[j] = ddPdudut[j-i];
@@ -653,7 +658,7 @@ namespace embree
 #endif
 
     /* calculate base pointer and stride */
-    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) ||
+    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS)) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
     const char* src = nullptr; 
     size_t stride = 0;
@@ -664,6 +669,7 @@ namespace embree
       stride = userbuffers[bufID]->getStride();
       baseEntry = &user_buffer_tags[bufID];
     } else {
+      assert(bufID < numTimeSteps);
       src    = vertices[bufID].getPtr();
       stride = vertices[bufID].getStride();
       baseEntry = &vertex_buffer_tags[bufID];

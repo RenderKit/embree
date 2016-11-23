@@ -19,25 +19,20 @@
 namespace embree
 {
   Distribution2D::Distribution2D()
-    : width(0), height(0), xDists(NULL) {}
+    : width(0), height(0) {}
 
   Distribution2D::Distribution2D(const float* f, const size_t width, const size_t height)
-    : width(width), height(height), xDists(NULL)
+    : width(width), height(height)
   {
     init(f, width, height);
-  }
-
-  Distribution2D::~Distribution2D() {
-    if (xDists) delete[] xDists; xDists = NULL;
   }
 
   void Distribution2D::init(const float* f, const size_t w, const size_t h)
   {
     /*! create arrays */
-    if (xDists) delete[] xDists;
     width = w; height = h;
-    xDists = new Distribution1D[height];
-    float* fy = new float[height];
+    xDists.resize(height);
+    std::vector<float> fy(height);
 
     /*! compute y distribution and initialize row distributions */
     for (size_t y=0; y<height; y++)
@@ -52,8 +47,7 @@ namespace embree
     }
 
     /*! initializes the y distribution */
-    yDist.init(fy, height);
-    delete[] fy;
+    yDist.init(fy.data(), height);
   }
 
   Vec2f Distribution2D::sample(const Vec2f& u) const

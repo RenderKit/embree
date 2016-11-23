@@ -116,7 +116,7 @@ namespace embree
 
   void Application::printCommandLineHelp()
   {
-    for (auto c : commandLineOptionList) {
+    for (auto& c : commandLineOptionList) {
       std::cout << c->description << std::endl;
     }
   }

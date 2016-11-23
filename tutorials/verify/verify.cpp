@@ -182,9 +182,7 @@ namespace embree
     
     unsigned addGeometry(const RTCGeometryFlags gflag, const Ref<SceneGraph::Node>& node)
     {
-      mutex.lock();
       nodes.push_back(node);
-      mutex.unlock();
       
       if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
       {
@@ -305,7 +303,6 @@ namespace embree
     }
 
   public:
-    MutexSys mutex;
     const RTCDeviceRef& device;
     RTCSceneRef scene;
     std::vector<Ref<SceneGraph::Node>> nodes;
@@ -569,7 +566,7 @@ namespace embree
         });
     } 
     else {
-      for (auto test : tests)
+      for (auto& test : tests)
         passed.fetch_and(test->execute(state,nextsilent) != FAILED);
     }
 
@@ -757,8 +754,9 @@ namespace embree
       AssertNoError(device);
       rtcCommit (scene);
       AssertNoError(device);
-      LBBox3fa bounds1;
-      rtcGetLinearBounds(scene,(RTCBounds*)&bounds1);
+      BBox3fa bbox[2];
+      rtcGetLinearBounds(scene,(RTCBounds*)bbox);
+      LBBox3fa bounds1(bbox[0],bbox[1]);
       AssertNoError(device);
       return (VerifyApplication::TestReturnValue)(bounds0 == bounds1);
     }
@@ -2195,8 +2193,7 @@ namespace embree
       rtcCommit (scene);
       AssertNoError(device);
 
-      RTCRay invalid_ray;
-      memset(&invalid_ray,-1,sizeof(RTCRay));
+      RTCRay invalid_ray; clearRay(invalid_ray);
       invalid_ray.tnear = pos_inf;
       invalid_ray.tfar  = neg_inf;
       invalid_ray = invalid_ray;
@@ -4025,13 +4022,17 @@ namespace embree
       
       groups.top()->add(new IntensiveRegressionTest("regression_static",isa,rtcore_regression_static_thread,0,30));
       groups.top()->add(new IntensiveRegressionTest("regression_dynamic",isa,rtcore_regression_dynamic_thread,0,300));
-      
-      groups.top()->add(new IntensiveRegressionTest("regression_static_user_threads", isa,rtcore_regression_static_thread,1,30));
-      groups.top()->add(new IntensiveRegressionTest("regression_dynamic_user_threads",isa,rtcore_regression_dynamic_thread,1,300));
-      
-      groups.top()->add(new IntensiveRegressionTest("regression_static_build_join", isa,rtcore_regression_static_thread,2,30));
-      groups.top()->add(new IntensiveRegressionTest("regression_dynamic_build_join",isa,rtcore_regression_dynamic_thread,2,300));
-      
+
+      if (rtcDeviceGetParameter1i(device,RTC_CONFIG_COMMIT_THREAD)) {
+	groups.top()->add(new IntensiveRegressionTest("regression_static_user_threads", isa,rtcore_regression_static_thread,1,30));
+	groups.top()->add(new IntensiveRegressionTest("regression_dynamic_user_threads",isa,rtcore_regression_dynamic_thread,1,300));
+      }
+
+      if (rtcDeviceGetParameter1i(device,RTC_CONFIG_COMMIT_JOIN)) {
+	groups.top()->add(new IntensiveRegressionTest("regression_static_build_join", isa,rtcore_regression_static_thread,2,30));
+	groups.top()->add(new IntensiveRegressionTest("regression_dynamic_build_join",isa,rtcore_regression_dynamic_thread,2,300));
+      }
+
       groups.top()->add(new MemoryMonitorTest("regression_static_memory_monitor", isa,rtcore_regression_static_thread,30));
       groups.top()->add(new MemoryMonitorTest("regression_dynamic_memory_monitor",isa,rtcore_regression_dynamic_thread,300));
 
@@ -4283,7 +4284,7 @@ namespace embree
   void VerifyApplication::prefix_test_names(Ref<Test> test, std::string prefix)
   {
     if (Ref<TestGroup> group = test.dynamicCast<TestGroup>()) 
-      for (auto t : group->tests) 
+      for (auto& t : group->tests) 
         prefix_test_names(t,group->extend_prefix(prefix));
 
     test->name = prefix + test->name;
@@ -4331,7 +4332,7 @@ namespace embree
     if (Ref<TestGroup> group = test.dynamicCast<TestGroup>()) 
     {
       std::cout << std::string(2*depth,' ') << group->name << (group->name != "" ? " " : "") << "{" << std::endl;
-      for (auto t : group->tests) print_tests(t,depth+1);
+      for (auto& t : group->tests) print_tests(t,depth+1);
       std::cout << std::string(2*depth,' ') << "}" << std::endl;
     } else {
       std::cout << std::string(2*depth,' ') << test->name << std::endl;
@@ -4344,7 +4345,7 @@ namespace embree
 
     if (Ref<TestGroup> group = test.dynamicCast<TestGroup>()) 
     {
-      for (auto t : group->tests) print_ctests(t,depth+1);
+      for (auto& t : group->tests) print_ctests(t,depth+1);
     } else {
       std::cout << "ADD_TEST(NAME " << test->name << " COMMAND verify --no-colors --cdash-measurements --run " << test->name << std::endl;
     }
@@ -4354,7 +4355,7 @@ namespace embree
   void VerifyApplication::map_tests(Ref<Test> test, const Function& f)
   {
     if (Ref<TestGroup> group = test.dynamicCast<TestGroup>()) {
-      for (auto t : group->tests) map_tests(t,f);
+      for (auto& t : group->tests) map_tests(t,f);
     } else {
       f(test);
     }
@@ -4451,6 +4452,7 @@ namespace embree
 
 int main(int argc, char** argv)
 {
+  int* ptr = new int; // FIXME: remove, only for testing
   embree::VerifyApplication app;
   return app.main(argc,argv);
 }

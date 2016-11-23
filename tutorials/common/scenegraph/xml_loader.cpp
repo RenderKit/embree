@@ -221,7 +221,7 @@ namespace embree
    ~XMLLoader();
 
   public:
-    Texture* loadTextureParm(const Ref<XML>& xml);
+    std::shared_ptr<Texture> loadTextureParm(const Ref<XML>& xml);
     Parms loadMaterialParms(const Ref<XML>& parms);
     Ref<SceneGraph::MaterialNode> addMaterial(const std::string& type, const Parms& parms);
 
@@ -279,12 +279,13 @@ namespace embree
     FileName path;         //!< path to XML file
     FILE* binFile;         //!< .bin file for reading binary data
     FileName binFileName;  //!< name of the .bin file
+    size_t binFileSize;
 
   private:
     std::map<std::string,Ref<SceneGraph::MaterialNode> > materialMap;     //!< named materials
     std::map<Ref<XML>, Ref<SceneGraph::MaterialNode> > materialCache;     //!< map for detecting repeated materials
     std::map<std::string,Ref<SceneGraph::Node> > sceneMap; 
-    std::map<std::string,Texture* > textureMap; 
+    std::map<std::string,std::shared_ptr<Texture>> textureMap; 
 
   private:
     size_t currentNodeID;
@@ -411,13 +412,17 @@ namespace embree
     size_t ofs = atol(xml->parm("ofs").c_str());
     fseek(binFile,long(ofs),SEEK_SET);
 
+    /* read size of array */
     size_t size = atol(xml->parm("size").c_str());
     if (size == 0) size = atol(xml->parm("num").c_str()); // version for BGF format
 
-    Vector data;
-    data.resize(size);
+    /* perform security check that we stay in the file */
+    if (ofs + size*sizeof(typename Vector::value_type) > binFileSize)
+      THROW_RUNTIME_ERROR("error reading from binary file: "+binFileName.str());
 
-    if (size != fread(data.data(), sizeof(typename Vector::value_type), size, binFile)) 
+    /* read data from file */
+    Vector data(size);
+    if (size != fread(data.data(), sizeof(typename Vector::value_type), data.size(), binFile)) 
       THROW_RUNTIME_ERROR("error reading from binary file: "+binFileName.str());
 
     return data;
@@ -653,18 +658,20 @@ namespace embree
     return new SceneGraph::LightNode(new SceneGraph::QuadLight(v0,v1,v2,v3,L));
   }
 
-  Texture* XMLLoader::loadTextureParm(const Ref<XML>& xml)
+  std::shared_ptr<Texture> XMLLoader::loadTextureParm(const Ref<XML>& xml)
   {
+    static std::vector<std::shared_ptr<Texture>> g_textures;
+
     const std::string id = xml->parm("id");
     if (id != "" && textureMap.find(id) != textureMap.end())
       return textureMap[id];
 
-    Texture* texture = nullptr;
+    std::shared_ptr<Texture> texture;
     const FileName src = xml->parm("src");
 
     /*! load texture from file */
     if (src.str() != "") {
-      texture = Texture::load(path+src);
+      texture = std::shared_ptr<Texture>(Texture::load(path+src));
     }
 
     /*! load texture from binary file */
@@ -673,9 +680,13 @@ namespace embree
       const unsigned height = stoi(xml->parm("height"));
       const Texture::Format format = Texture::string_to_format(xml->parm("format"));
       const unsigned bytesPerTexel = Texture::getFormatBytesPerTexel(format);
-      texture = new Texture(width,height,format);
+      if (ftell(binFile) + width*height*bytesPerTexel > binFileSize)
+        THROW_RUNTIME_ERROR("error reading from binary file: "+binFileName.str());
+      
+      texture = std::make_shared<Texture>(width,height,format);
       if (width*height != fread(texture->data, bytesPerTexel, width*height, binFile)) 
         THROW_RUNTIME_ERROR("error reading from binary file: "+binFileName.str());
+      g_textures.push_back(texture); // FIXME: we can only free textures at application exit currently
     }
     
     if (id != "") textureMap[id] = texture;
@@ -697,7 +708,7 @@ namespace embree
       else if (entry->name == "float2" ) { material.add(name, load<Vec2f>(entry)); }
       else if (entry->name == "float3" ) { material.add(name, load<Vec3f>(entry)); }
       else if (entry->name == "float4" ) { material.add(name, load<Vec4f>(entry)); }
-      else if (entry->name == "texture3d") { material.add(name, loadTextureParm(entry)); }
+      else if (entry->name == "texture3d") { material.add(name, loadTextureParm(entry).get()); }
       else if (entry->name == "param") {
         const std::string type = entry->parm("type");
         if      (type ==  "int"   ) { material.add(name, load<int>  (entry)); }
@@ -1229,7 +1240,7 @@ namespace embree
     XMLLoader loader(fileName,space); return loader.root;
   }
 
-  XMLLoader::XMLLoader(const FileName& fileName, const AffineSpace3fa& space) : binFile(nullptr), currentNodeID(0)
+  XMLLoader::XMLLoader(const FileName& fileName, const AffineSpace3fa& space) : binFile(nullptr), binFileSize(0), currentNodeID(0)
   {
     path = fileName.path();
     binFileName = fileName.setExt(".bin");
@@ -1237,6 +1248,11 @@ namespace embree
     if (!binFile) {
       binFileName = fileName.addExt(".bin");
       binFile = fopen(binFileName.c_str(),"rb");
+    }
+    if (binFile) {
+      fseek(binFile, 0L, SEEK_END);
+      binFileSize = ftell(binFile);
+      fseek(binFile, 0L, SEEK_SET);
     }
 
     Ref<XML> xml = parseXML(fileName);

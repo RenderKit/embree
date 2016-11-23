@@ -47,6 +47,11 @@ namespace embree
 	    dest[offset+3] = (unsigned char)(c.a * 255.0f);
 	  }
     }
+
+  private:
+    Image (const Image& other) DELETED; // do not implement
+    Image& operator= (const Image& other) DELETED; // do not implement
+
   public:
     size_t width,height;
     std::string name;

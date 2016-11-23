@@ -36,12 +36,12 @@ namespace embree
   RTCError* State::ErrorHandler::error() 
   {
     RTCError* stored_error = (RTCError*) getTls(thread_error);
-    if (stored_error == nullptr) {
-      Lock<MutexSys> lock(errors_mutex);
-      stored_error = new RTCError(RTC_NO_ERROR);
-      thread_errors.push_back(stored_error);
-      setTls(thread_error,stored_error);
-    }
+    if (stored_error) return stored_error;
+
+    Lock<MutexSys> lock(errors_mutex);
+    stored_error = new RTCError(RTC_NO_ERROR);
+    thread_errors.push_back(stored_error);
+    setTls(thread_error,stored_error);
     return stored_error;
   }
 
@@ -169,13 +169,13 @@ namespace embree
    bool State::parseFile(const FileName& fileName)
   {
     FILE* f = fopen(fileName.c_str(),"r");
-    if (f == nullptr) return false;
+    if (!f) return false;
     Ref<Stream<int> > file = new FileStream(f,fileName);
-
+    
     std::vector<std::string> syms;
-	  for (size_t i=0; i<sizeof(symbols)/sizeof(void*); i++) 
+    for (size_t i=0; i<sizeof(symbols)/sizeof(void*); i++) 
       syms.push_back(symbols[i]);
-
+    
     Ref<TokenStream> cin = new TokenStream(new LineCommentFilter(file,"#"),
                                            TokenStream::alpha+TokenStream::ALPHA+TokenStream::numbers+"_.",
                                            TokenStream::separators,syms);

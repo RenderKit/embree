@@ -38,7 +38,7 @@ typedef int socklen_t;
 #include <netdb.h> 
 #define SOCKET int
 #define INVALID_SOCKET -1
-#define closesocket close
+#define closesocket ::close
 #endif
 
 /*! ignore if not supported */
@@ -77,7 +77,12 @@ namespace embree
         delete[] ibuf; ibuf = nullptr;
         delete[] obuf; obuf = nullptr;
       }
-      
+
+    private:
+      buffered_socket_t (const buffered_socket_t& other) DELETED; // do not implement
+      buffered_socket_t& operator= (const buffered_socket_t& other) DELETED; // do not implement
+
+    public:
       SOCKET fd;               //!< file descriptor of the socket
       char* ibuf;
       size_t isize;
@@ -87,6 +92,17 @@ namespace embree
       size_t oend;
     };
 
+    struct AutoCloseSocket
+    {
+      SOCKET sock;
+      AutoCloseSocket (SOCKET sock) : sock(sock) {}
+      ~AutoCloseSocket () {
+        if (sock != INVALID_SOCKET) {
+          closesocket(sock);
+        }
+      }
+    };
+
     socket_t connect(const char* host, unsigned short port) 
     {
       initialize();
@@ -94,10 +110,11 @@ namespace embree
       /*! create a new socket */
       SOCKET sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
       if (sockfd == INVALID_SOCKET) THROW_RUNTIME_ERROR("cannot create socket");
+      AutoCloseSocket auto_close(sockfd);
       
       /*! perform DNS lookup */
       struct hostent* server = ::gethostbyname(host);
-      if (server == nullptr) THROW_RUNTIME_ERROR("server "+std::string(host)+" not found");
+      if (!server) THROW_RUNTIME_ERROR("server "+std::string(host)+" not found");
       
       /*! perform connection */
       struct sockaddr_in serv_addr;
@@ -108,17 +125,18 @@ namespace embree
       
       if (::connect(sockfd,(struct sockaddr*) &serv_addr,sizeof(serv_addr)) < 0)
         THROW_RUNTIME_ERROR("connection to "+std::string(host)+":"+toString(port)+" failed");
-
+      
       /*! enable TCP_NODELAY */
 #ifdef TCP_NODELAY
       { int flag = 1; ::setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, (const char*)&flag, sizeof(int)); }
 #endif
-
+      
       /*! we do not want SIGPIPE to be thrown */
 #ifdef SO_NOSIGPIPE
       { int flag = 1; setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, (const char*) &flag, sizeof(int)); }
 #endif
       
+      auto_close.sock = INVALID_SOCKET;
       return (socket_t) new buffered_socket_t(sockfd);
     }
     
@@ -129,6 +147,7 @@ namespace embree
       /*! create a new socket */
       SOCKET sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
       if (sockfd == INVALID_SOCKET) THROW_RUNTIME_ERROR("cannot create socket");
+      AutoCloseSocket auto_close(sockfd);
 
       /* When the server completes, the server socket enters a time-wait state during which the local
       address and port used by the socket are believed to be in use by the OS. The wait state may
@@ -151,6 +170,7 @@ namespace embree
       if (::listen(sockfd,5) < 0)
         THROW_RUNTIME_ERROR("listening on socket failed");
 
+      auto_close.sock = INVALID_SOCKET;
       return (socket_t) new buffered_socket_t(sockfd);
     }
     
@@ -255,6 +275,7 @@ namespace embree
     void close(socket_t hsock_i) {
       buffered_socket_t* hsock = (buffered_socket_t*) hsock_i;
       ::shutdown(hsock->fd,SHUT_RDWR);
+      closesocket(hsock->fd);
       delete hsock;
     }
   }

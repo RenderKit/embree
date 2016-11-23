@@ -306,10 +306,10 @@ namespace embree
         Ref<SceneGraph::TriangleMeshNode> mesh_o = new SceneGraph::TriangleMeshNode(material,1);
         
         /* convert all vertices */
-        const Element& vertices = mesh.elements.find("vertex")->second;
-        const std::vector<float>& posx = vertices.data.find("x")->second;
-        const std::vector<float>& posy = vertices.data.find("y")->second;
-        const std::vector<float>& posz = vertices.data.find("z")->second;
+        const Element& vertices = mesh.elements.at("vertex");
+        const std::vector<float>& posx = vertices.data.at("x");
+        const std::vector<float>& posy = vertices.data.at("y");
+        const std::vector<float>& posz = vertices.data.at("z");
         
         mesh_o->positions[0].resize(vertices.size);
         for (size_t i=0; i<vertices.size; i++) {
@@ -319,8 +319,8 @@ namespace embree
         }
 
         /* convert all faces */
-        const Element& faces = mesh.elements.find("face")->second;
-        const std::vector<std::vector<size_t> >& polygons = faces.list.find("vertex_indices")->second;
+        const Element& faces = mesh.elements.at("face");
+        const std::vector<std::vector<size_t> >& polygons = faces.list.at("vertex_indices");
         
         for (size_t j=0; j<polygons.size(); j++)
         {

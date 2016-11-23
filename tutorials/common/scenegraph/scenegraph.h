@@ -313,7 +313,7 @@ namespace embree
       }
 
       virtual void setMaterial(Ref<MaterialNode> material) {
-        for (auto child : children) child->setMaterial(material);
+        for (auto& child : children) child->setMaterial(material);
       }
 
       virtual void resetNode(std::set<Ref<Node>>& done);

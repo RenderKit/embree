@@ -97,12 +97,12 @@ namespace embree
       State::print();
 
     /* register all algorithms */
-    instance_factory.reset(new InstanceFactory(enabled_cpu_features));
+    instance_factory = make_unique(new InstanceFactory(enabled_cpu_features));
 
-    bvh4_factory.reset(new BVH4Factory(enabled_cpu_features));
+    bvh4_factory = make_unique(new BVH4Factory(enabled_cpu_features));
 
 #if defined(__TARGET_AVX__)
-    bvh8_factory.reset(new BVH8Factory(enabled_cpu_features));
+    bvh8_factory = make_unique(new BVH8Factory(enabled_cpu_features));
 #endif
 
     /* setup tasking system */
@@ -256,7 +256,7 @@ namespace embree
   void Device::process_error(Device* device, RTCError error, const char* str)
   { 
     /* store global error code when device construction failed */
-    if (device == nullptr)
+    if (!device)
       return setThreadErrorCode(error);
 
     /* print error when in verbose mode */
@@ -334,7 +334,7 @@ namespace embree
     size_t maxNumThreads = getMaxNumThreads();
     TaskScheduler::create(maxNumThreads,State::set_affinity,State::start_threads);
 #if USE_TASK_ARENA
-    arena.reset(new tbb::task_arena(int(maxNumThreads)));
+    arena = make_unique(new tbb::task_arena(int(maxNumThreads)));
 #endif
   }
 
@@ -500,6 +500,14 @@ namespace embree
     case RTC_CONFIG_USER_GEOMETRY: return 1;
 #else
     case RTC_CONFIG_USER_GEOMETRY: return 0;
+#endif
+
+#if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR < 8)
+    case RTC_CONFIG_COMMIT_JOIN: return 0;
+    case RTC_CONFIG_COMMIT_THREAD: return 0;
+#else
+    case RTC_CONFIG_COMMIT_JOIN: return 1;
+    case RTC_CONFIG_COMMIT_THREAD: return 1;
 #endif
 
     default: throw_RTCError(RTC_INVALID_ARGUMENT, "unknown readable parameter"); break;

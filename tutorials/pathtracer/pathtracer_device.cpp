@@ -1795,7 +1795,8 @@ extern "C" void device_render (int* pixels,
     g_accu = (Vec3fa*) alignedMalloc(width*height*sizeof(Vec3fa));
     g_accu_width = width;
     g_accu_height = height;
-    memset(g_accu,0,width*height*sizeof(Vec3fa));
+    for (size_t i=0; i<width*height; i++)
+      g_accu[i] = Vec3fa(0.0f);
   }
 
   /* reset accumulator */
@@ -1812,7 +1813,8 @@ extern "C" void device_render (int* pixels,
   if (camera_changed)
   {
     g_accu_count=0;
-    memset(g_accu,0,width*height*sizeof(Vec3fa));
+    for (size_t i=0; i<width*height; i++)
+      g_accu[i] = Vec3fa(0.0f);
 
     if (g_subdiv_mode) {
       updateEdgeLevels(g_ispc_scene,camera.xfm.p);

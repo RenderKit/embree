@@ -56,8 +56,12 @@ namespace embree
         clear(); 
       }
       
-      void clear() { 
-        memset(this,0,sizeof(Counters)); 
+      void clear() 
+      { 
+        all.clear();
+        active.clear();
+        code.clear();
+        for (auto& u : user) u.store(0);
       }
 
     public:
@@ -65,8 +69,28 @@ namespace embree
 	/* per packet and per ray stastics */
 	struct 
         {
+          void clear () {
+            normal.clear();
+            shadow.clear();
+          }
+
 	  /* normal and shadow ray statistics */
-	  struct {
+	  struct 
+          {
+            void clear() 
+            {
+              travs.store(0);
+              trav_nodes.store(0);
+              trav_leaves.store(0);
+              trav_prims.store(0);
+              trav_prim_hits.store(0);
+              for (auto& v : trav_hit_boxes) v.store(0);
+              trav_stack_pop.store(0);
+              trav_stack_nodes.store(0); 
+              trav_xfm_nodes.store(0); 
+            }
+
+          public:
 	    std::atomic<size_t> travs;
 	    std::atomic<size_t> trav_nodes;
 	    std::atomic<size_t> trav_leaves;
@@ -76,6 +100,7 @@ namespace embree
 	    std::atomic<size_t> trav_stack_pop;
 	    std::atomic<size_t> trav_stack_nodes; 
             std::atomic<size_t> trav_xfm_nodes; 
+            
 	  } normal, shadow;
 	} all, active, code; 
 

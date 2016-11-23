@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __VOXEL_DISTRIBUTION_2D_H__
-#define __VOXEL_DISTRIBUTION_2D_H__
+#pragma once
 
 #include "distribution1d.h"
 
@@ -24,7 +23,7 @@ namespace embree
   /*! 2D probability distribution. The probability distribution
    *  function (PDF) can be initialized with arbitrary data and be
    *  sampled. */
-  class Distribution2D : public RefCount
+  class Distribution2D
   {
   public:
 
@@ -33,9 +32,6 @@ namespace embree
 
     /*! Construction from 2D distribution array f. */
     Distribution2D(const float* f, const size_t width, const size_t height);
-
-    /*! Destruction. */
-    ~Distribution2D();
 
     /*! Initialized the PDF and CDF arrays. */
     void init(const float* f, const size_t width, const size_t height);
@@ -54,8 +50,7 @@ namespace embree
     size_t height;           //!< Number of elements in y direction
   private:
     Distribution1D yDist;    //!< Distribution to select between rows
-    Distribution1D* xDists;  //!< One 1D Distribution per row
+    std::vector<Distribution1D> xDists;  //!< One 1D Distribution per row
   };
 }
 
-#endif

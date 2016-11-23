@@ -31,6 +31,12 @@ namespace embree
     BarrierSys (size_t N = 0);
     ~BarrierSys ();
 
+  private:
+    /*! class in non-copyable */
+    BarrierSys (const BarrierSys& other) DELETED; // do not implement
+    BarrierSys& operator= (const BarrierSys& other) DELETED; // do not implement
+
+  public:
     /*! intializes the barrier with some number of threads */
     void init(size_t count);
 
@@ -95,6 +101,12 @@ namespace embree
     LinearBarrierActive (size_t threadCount = 0);
     ~LinearBarrierActive();
     
+  private:
+    /*! class in non-copyable */
+    LinearBarrierActive (const LinearBarrierActive& other) DELETED; // do not implement
+    LinearBarrierActive& operator= (const LinearBarrierActive& other) DELETED; // do not implement
+
+  public:
     /*! intializes the barrier with some number of threads */
     void init(size_t threadCount);
     

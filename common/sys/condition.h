@@ -34,6 +34,10 @@ namespace embree
       while (!pred()) wait(mutex);
     }
 
+  private:
+    ConditionSys (const ConditionSys& other) DELETED; // do not implement
+    ConditionSys& operator= (const ConditionSys& other) DELETED; // do not implement
+
   protected:
     void* cond;
   };

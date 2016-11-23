@@ -296,7 +296,7 @@ void renderTileStandardStream(int taskIndex,
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* ISPC workaround for mask == 0 */
-    if (all(1 == 0)) continue;
+    
 
     /* initialize variables */
     color_stream[N] = Vec3fa(0.0f);
@@ -332,7 +332,7 @@ void renderTileStandardStream(int taskIndex,
   {
     N++;
     /* ISPC workaround for mask == 0 */
-    if (all(1 == 0)) continue;
+    
 
     /* invalidate shadow rays by default */
     RTCRay& shadow = shadow_stream[N];
@@ -389,7 +389,7 @@ void renderTileStandardStream(int taskIndex,
   {
     N++;
     /* ISPC workaround for mask == 0 */
-    if (all(1 == 0)) continue;
+    
 
     /* ignore invalid rays */
     if (valid_stream[N] == false) continue;
@@ -419,7 +419,7 @@ void renderTileStandardStream(int taskIndex,
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* ISPC workaround for mask == 0 */
-    if (all(1 == 0)) continue;
+    
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color_stream[N].x,0.0f,1.0f));

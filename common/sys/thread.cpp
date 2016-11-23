@@ -335,8 +335,12 @@ namespace embree
 
     /* create thread */
     pthread_t* tid = new pthread_t;
-    if (pthread_create(tid,&attr,(void*(*)(void*))threadStartup,new ThreadStartupData(f,arg,threadID)) != 0)
+    if (pthread_create(tid,&attr,(void*(*)(void*))threadStartup,new ThreadStartupData(f,arg,threadID)) != 0) {
+      pthread_attr_destroy(&attr);
+      delete tid; 
       FATAL("pthread_create failed");
+    }
+    pthread_attr_destroy(&attr);
 
     /* set affinity */
 #if defined(__LINUX__)
@@ -382,8 +386,10 @@ namespace embree
   tls_t createTls() 
   {
     pthread_key_t* key = new pthread_key_t;
-    if (pthread_key_create(key,nullptr) != 0)
+    if (pthread_key_create(key,nullptr) != 0) {
+      delete key;
       FATAL("pthread_key_create failed");
+    }
 
     return tls_t(key);
   }

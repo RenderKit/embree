@@ -28,3 +28,6 @@ endif()
 list (APPEND CTEST_CUSTOM_WARNING_EXCEPTION "warning #1478")  # deprecated function used
 list (APPEND CTEST_CUSTOM_WARNING_EXCEPTION "warning #10237") # -lcilkrts linked in dynamically, static library not available")
 list (APPEND CTEST_CUSTOM_WARNING_EXCEPTION "-Wextern-initializer")
+
+SET(CTEST_CUSTOM_MAXIMUM_PASSED_TEST_OUTPUT_SIZE 200000)
+SET(CTEST_CUSTOM_MAXIMUM_FAILED_TEST_OUTPUT_SIZE 800000)

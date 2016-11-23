@@ -33,21 +33,26 @@ namespace embree
 #endif
 
     /* calculate base pointer and stride */
-    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) ||
+    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS)) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
     const char* src = nullptr; 
     size_t stride = 0;
     size_t bufID = buffer&0xFFFF;
     std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
     if (buffer >= RTC_USER_VERTEX_BUFFER0) {
-      src    = userbuffers[buffer&0xFFFF]->getPtr();
-      stride = userbuffers[buffer&0xFFFF]->getStride();
+      src    = userbuffers[bufID]->getPtr();
+      stride = userbuffers[bufID]->getStride();
       baseEntry = &user_buffer_tags[bufID];
     } else {
-      src    = vertices[buffer&0xFFFF].getPtr();
-      stride = vertices[buffer&0xFFFF].getStride();
+      assert(bufID < numTimeSteps);
+      src    = vertices[bufID].getPtr();
+      stride = vertices[bufID].getStride();
       baseEntry = &vertex_buffer_tags[bufID];
     }
+
+    bool has_P = P;
+    bool has_dP = dPdu;     assert(!has_dP  || dPdv);
+    bool has_ddP = ddPdudu; assert(!has_ddP || (ddPdvdv && ddPdudu));
 
     for (size_t i=0,slot=0; i<numFloats; slot++)
     {
@@ -56,25 +61,25 @@ namespace embree
         vfloat4 Pt, dPdut, dPdvt, ddPdudut, ddPdvdvt, ddPdudvt;; 
         isa::PatchEval<vfloat4>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
                                 getHalfEdge(primID),src+i*sizeof(float),stride,u,v,
-                                P ? &Pt : nullptr, 
-                                dPdu ? &dPdut : nullptr, 
-                                dPdv ? &dPdvt : nullptr,
-                                ddPdudu ? &ddPdudut : nullptr, 
-                                ddPdvdv ? &ddPdvdvt : nullptr, 
-                                ddPdudv ? &ddPdudvt : nullptr);
+                                has_P ? &Pt : nullptr, 
+                                has_dP ? &dPdut : nullptr, 
+                                has_dP ? &dPdvt : nullptr,
+                                has_ddP ? &ddPdudut : nullptr, 
+                                has_ddP ? &ddPdvdvt : nullptr, 
+                                has_ddP ? &ddPdudvt : nullptr);
         
-        if (P) {
+        if (has_P) {
           for (size_t j=i; j<min(i+4,numFloats); j++) 
             P[j] = Pt[j-i];
         }
-        if (dPdu) 
+        if (has_dP) 
         {
           for (size_t j=i; j<min(i+4,numFloats); j++) {
             dPdu[j] = dPdut[j-i];
             dPdv[j] = dPdvt[j-i];
           }
         }
-        if (ddPdudu) 
+        if (has_ddP) 
         {
           for (size_t j=i; j<min(i+4,numFloats); j++) {
             ddPdudu[j] = ddPdudut[j-i];
@@ -89,25 +94,25 @@ namespace embree
         vfloat8 Pt, dPdut, dPdvt, ddPdudut, ddPdvdvt, ddPdudvt; 
         isa::PatchEval<vfloat8>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
                                 getHalfEdge(primID),src+i*sizeof(float),stride,u,v,
-                                P ? &Pt : nullptr, 
-                                dPdu ? &dPdut : nullptr, 
-                                dPdv ? &dPdvt : nullptr,
-                                ddPdudu ? &ddPdudut : nullptr, 
-                                ddPdvdv ? &ddPdvdvt : nullptr, 
-                                ddPdudv ? &ddPdudvt : nullptr);
+                                has_P ? &Pt : nullptr, 
+                                has_dP ? &dPdut : nullptr, 
+                                has_dP ? &dPdvt : nullptr,
+                                has_ddP ? &ddPdudut : nullptr, 
+                                has_ddP ? &ddPdvdvt : nullptr, 
+                                has_ddP ? &ddPdudvt : nullptr);
                                     
-        if (P) {
+        if (has_P) {
           for (size_t j=i; j<i+8; j++) 
             P[j] = Pt[j-i];
         }
-        if (dPdu) 
+        if (has_dP) 
         {
           for (size_t j=i; j<i+8; j++) {
             dPdu[j] = dPdut[j-i];
             dPdv[j] = dPdvt[j-i];
           }
         }
-        if (ddPdudu) 
+        if (has_ddP) 
         {
           for (size_t j=i; j<i+8; j++) {
             ddPdudu[j] = ddPdudut[j-i];
@@ -126,7 +131,7 @@ namespace embree
                                         RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats)
   {
     /* calculate base pointer and stride */
-     assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) ||
+     assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS)) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
     const char* src = nullptr; 
     size_t stride = 0;
@@ -137,6 +142,7 @@ namespace embree
       stride = userbuffers[bufID]->getStride();
       baseEntry = &user_buffer_tags[bufID];
     } else {
+      assert(bufID < numTimeSteps);
       src    = vertices[bufID].getPtr();
       stride = vertices[bufID].getStride();
       baseEntry = &vertex_buffer_tags[bufID];

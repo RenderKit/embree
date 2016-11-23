@@ -343,3 +343,31 @@ __asm__ __volatile__ (									\
 					IACA_SSC_MARK(111)}
 #define IACA_END {IACA_SSC_MARK(222) \
 					IACA_UD_BYTES}
+
+namespace embree
+{
+  template<typename Closure>
+    struct OnScopeExitHelper
+  {
+    OnScopeExitHelper (const Closure f) : active(true), f(f) {}
+    ~OnScopeExitHelper() { if (active) f(); }
+    void deactivate() { active = false; }
+    bool active;
+    const Closure f;
+  };
+  
+  template <typename Closure>
+    OnScopeExitHelper<Closure> OnScopeExit(const Closure f) {
+    return OnScopeExitHelper<Closure>(f);
+  };
+
+#define STRING_JOIN2(arg1, arg2) DO_STRING_JOIN2(arg1, arg2)
+#define DO_STRING_JOIN2(arg1, arg2) arg1 ## arg2
+#define ON_SCOPE_EXIT(code)                                             \
+  auto STRING_JOIN2(on_scope_exit_, __LINE__) = OnScopeExit([&](){code;})
+
+  template<typename Ty>
+    std::unique_ptr<Ty> make_unique(Ty* ptr) {
+    return std::unique_ptr<Ty>(ptr);
+  }
+}

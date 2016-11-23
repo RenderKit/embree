@@ -106,6 +106,7 @@ namespace embree
     
     __forceinline void init(size_t N) 
     {
+      assert(count == 0);
       count = 0;
       barrierSize = N;
     }

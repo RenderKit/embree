@@ -1,12 +1,24 @@
 Version History
 ---------------
 
+### New Features in Embree 2.13.0
+
+-   Improved performance for compact (but not robust) scenes.
+-   Added robust mode for motion blurred triangles and quads.
+-   Added fast dynamic mode for user geometries.
+-   Up to 20% faster BVH build performance on the second generation
+    Intel® Xeon Phi™ processor codenamed Knights Landing.
+-   Improved quality of the spatial split builder.
+-   Improved performance for coherent streams of ray packets (SOA layout),
+    e.g. for fast primary visibility.
+-   Various bug fixes in tessellation cache, quad-based spatial
+    split builder, etc.
+
 ### New Features in Embree 2.12.0
 
--   Added support for multi-segment motion blur for all primitive
-    types.
--   API support for stream of pointers to single rays (rtcIntersect1Mp and
-    rtcOccluded1Mp)
+-   Added support for multi-segment motion blur for all primitive types.
+-   API support for stream of pointers to single rays (`rtcIntersect1Mp`
+    and `rtcOccluded1Mp`)
 -   Improved BVH refitting performance for dynamic scenes.
 -   Improved high-quality mode for quads (added spatial split builder
     for quads)
@@ -14,20 +26,20 @@ Version History
     enabled machines.
 -   Performance and correctness bugfix in optimization for streams of
     coherent (single) rays.
--   Fixed large memory consumption (issue introduced in Embree
-    v2.11.0). If you use Embree v2.11.0 please upgrade to Embree
-    v2.12.0.
--   Reduced memory consumption for dynamic scenes containing small meshes.
+-   Fixed large memory consumption (issue introduced in Embree v2.11.0).
+    If you use Embree v2.11.0 please upgrade to Embree v2.12.0.
+-   Reduced memory consumption for dynamic scenes containing small
+    meshes.
 -   Added support to start and affinitize TBB worker threads by passing
-    "start_threads=1,set_affinity=1" to rtcNewDevice. These settings
+    "`start_threads=1,set_affinity=1`" to `rtcNewDevice`. These settings
     are recommended on systems with a high thread count.
--   rtcInterpolate2 can now be called within a displacement shader.
--   Added initial support for Microsoft's Parallel Pattern Library (PPL) as
-    tasking system alternative (for optimial performance TBB is highly recommended).
--   Updated to TBB 2017 which is released under the Apache v2.0
-    license.
--   Dropped support for Visual Studio 2012 Win32 compiler. Visual
-    Studio 2012 x64 is still supported. 
+-   `rtcInterpolate2` can now be called within a displacement shader.
+-   Added initial support for Microsoft's Parallel Pattern Library (PPL)
+    as tasking system alternative (for optimal performance TBB is
+    highly recommended).
+-   Updated to TBB 2017 which is released under the Apache v2.0 license.
+-   Dropped support for Visual Studio 2012 Win32 compiler. Visual Studio
+    2012 x64 is still supported.
 
 ### New Features in Embree 2.11.0
 
