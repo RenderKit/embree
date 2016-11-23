@@ -42,10 +42,10 @@ namespace embree
   __forceinline bool isCoherent  (RTCIntersectFlags flags) { return (flags & RTC_INTERSECT_INCOHERENT) == 0; }
   __forceinline bool isIncoherent(RTCIntersectFlags flags) { return (flags & RTC_INTERSECT_INCOHERENT) != 0; }
 
-#if TBB_INTERFACE_VERSION_MAJOR < 8    
-#  define USE_TASK_ARENA 0
-#else
+#if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR >= 8)
 #  define USE_TASK_ARENA 1
+#else
+#  define USE_TASK_ARENA 0
 #endif
 
 /*! Makros used in the rtcore API implementation */
