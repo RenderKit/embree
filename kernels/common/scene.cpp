@@ -791,6 +791,9 @@ namespace embree
   {
     /* let threads wait for build to finish in rtcCommitThread mode */
     if (threadCount != 0) {
+#if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR < 8)
+      throw_RTCError(RTC_INVALID_OPERATION,"rtcCommitThread not supported");
+#endif
       if (threadIndex > 0) {
         group_barrier.wait(threadCount); // FIXME: use barrier that waits in condition
         group->wait();
@@ -803,6 +806,9 @@ namespace embree
 
     /* join hierarchy build */
     if (!lock.isLocked()) {
+#if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR < 8)
+      throw_RTCError(RTC_INVALID_OPERATION,"join not supported");
+#endif
 #if USE_TASK_ARENA
       device->arena->execute([&]{ group->wait(); });
 #else
