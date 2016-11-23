@@ -123,13 +123,12 @@ namespace embree
         *current.parent = BVH::encodeLeaf((char*)accel,1);
         vint4 vgeomID = -1, vprimID = -1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
+        const unsigned geomID = this->mesh->id;
+        const TriangleMesh* __restrict__ const mesh = this->mesh;
 
         for (size_t i=0; i<items; i++)
         {
-          const unsigned index = morton[start+i].index;
-          const unsigned primID = index; 
-          const unsigned geomID = this->mesh->id;
-          const TriangleMesh* mesh = this->mesh;
+          const unsigned primID = morton[start+i].index;
           const TriangleMesh::Triangle& tri = mesh->triangle(primID);
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
           const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -175,17 +174,15 @@ namespace embree
         
         /* allocate leaf node */
         Triangle4v* accel = (Triangle4v*) alloc->alloc1->malloc(sizeof(Triangle4v));
-        *current.parent = BVH::encodeLeaf((char*)accel,1);
-        
+        *current.parent = BVH::encodeLeaf((char*)accel,1);       
         vint4 vgeomID = -1, vprimID = -1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
+        const unsigned geomID = this->mesh->id;
+        const TriangleMesh* __restrict__ mesh = this->mesh;
 
         for (size_t i=0; i<items; i++)
         {
-          const unsigned index = morton[start+i].index;
-          const unsigned primID = index; 
-          const unsigned geomID = this->mesh->id;
-          const TriangleMesh* mesh = this->mesh;
+          const unsigned primID = morton[start+i].index;
           const TriangleMesh::Triangle& tri = mesh->triangle(primID);
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
           const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -234,13 +231,12 @@ namespace embree
         vint4 vgeomID = -1, vprimID = -1;
         Vec3f* v0[4] = { nullptr, nullptr, nullptr, nullptr };
         vint4 v1 = zero, v2 = zero;
+        const unsigned geomID = this->mesh->id;
+        const TriangleMesh* __restrict__ const mesh = this->mesh;
         
         for (size_t i=0; i<items; i++)
         {
-          const unsigned index = morton[start+i].index;
-          const unsigned primID = index; 
-          const unsigned geomID = this->mesh->id;
-          const TriangleMesh* mesh = this->mesh;
+          const unsigned primID = morton[start+i].index;
           const TriangleMesh::Triangle& tri = mesh->triangle(primID);
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
           const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -298,13 +294,12 @@ namespace embree
         
         vint4 vgeomID = -1, vprimID = -1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero, v3 = zero;
+        const unsigned geomID = this->mesh->id;
+        const QuadMesh* __restrict__ mesh = this->mesh;
 
         for (size_t i=0; i<items; i++)
         {
-          const unsigned index = morton[start+i].index;
-          const unsigned primID = index; 
-          const unsigned geomID = this->mesh->id;
-          const QuadMesh* mesh = this->mesh;
+          const unsigned primID = morton[start+i].index;
           const QuadMesh::Quad& tri = mesh->quad(primID);
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
           const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -351,14 +346,15 @@ namespace embree
         /* allocate leaf node */
         Object* accel = (Object*) alloc->alloc1->malloc(items*sizeof(Object));
         *current.parent = BVH::encodeLeaf((char*)accel,items);
+
+        const unsigned geomID = this->mesh->id;
+        const AccelSet* mesh = this->mesh;
         
         BBox3fa bounds = empty;
         for (size_t i=0; i<items; i++)
         {
           const unsigned index = morton[start+i].index;
           const unsigned primID = index; 
-          const unsigned geomID = this->mesh->id;
-          const AccelSet* mesh = this->mesh;
           bounds.extend(mesh->bounds(primID));
           new (&accel[i]) Object(geomID,primID);
         }

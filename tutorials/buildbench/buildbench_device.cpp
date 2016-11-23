@@ -114,6 +114,8 @@ namespace embree {
   void convertScene(RTCScene scene_out, ISPCScene* scene_in, RTCSceneFlags sflags, RTCGeometryFlags gflags)
   {
     size_t numGeometries = scene_in->numGeometries;
+    PRINT(numGeometries);
+
     for (size_t i=0; i<numGeometries; i++)
     {
       ISPCGeometry* geometry = scene_in->geometries[i];
@@ -406,9 +408,9 @@ namespace embree {
     rtcDeviceSetErrorFunction(g_device,error_handler);
 
     //Benchmark_DynamicDeformable_Update(g_ispc_scene,iterations_dynamic_dynamic);
-    //Benchmark_DynamicDynamic_Update(g_ispc_scene,iterations_dynamic_dynamic);
+    Benchmark_DynamicDynamic_Update(g_ispc_scene,iterations_dynamic_dynamic);
     //Benchmark_DynamicStatic_Update(g_ispc_scene,iterations_dynamic_static);
-    Benchmark_DynamicStatic_Create(g_ispc_scene,iterations_dynamic_static);
+    //Benchmark_DynamicStatic_Create(g_ispc_scene,iterations_dynamic_static);
     //Benchmark_StaticStatic_Create(g_ispc_scene,iterations_static_static);
 
     rtcDeleteDevice(g_device); g_device = nullptr;
