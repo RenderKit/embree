@@ -121,6 +121,10 @@ void lazyCreate(LazyGeometry* instance)
     instance->object = rtcDeviceNewScene(g_device,RTC_SCENE_STATIC,RTC_INTERSECT1);
     createTriangulatedSphere(instance->object,instance->center,instance->radius);
 
+    /* when join mode is not supported we let only a single thread build */
+    if (!rtcDeviceGetParameter1i(g_device,RTC_CONFIG_COMMIT_JOIN))
+      rtcCommit(instance->object);
+
     /* now switch to the LAZY_COMMIT state */
     __memory_barrier();
     instance->state = LAZY_COMMIT;
@@ -135,7 +139,8 @@ void lazyCreate(LazyGeometry* instance)
 
   /* multiple threads might enter the rtcCommit function to jointly
    * build the internal data structures */
-  rtcCommit(instance->object);
+  if (rtcDeviceGetParameter1i(g_device,RTC_CONFIG_COMMIT_JOIN))
+    rtcCommit(instance->object);
 
   /* switch to LAZY_VALID state */
   atomic_cmpxchg((int32_t*)&instance->state,LAZY_COMMIT,LAZY_VALID);

@@ -365,4 +365,9 @@ namespace embree
 #define DO_STRING_JOIN2(arg1, arg2) arg1 ## arg2
 #define ON_SCOPE_EXIT(code)                                             \
   auto STRING_JOIN2(on_scope_exit_, __LINE__) = OnScopeExit([&](){code;})
+
+  template<typename Ty>
+    std::unique_ptr<Ty> make_unique(Ty* ptr) {
+    return std::unique_ptr<Ty>(ptr);
+  }
 }

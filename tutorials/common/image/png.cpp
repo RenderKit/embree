@@ -25,6 +25,13 @@
 
 namespace embree
 {
+  struct AutoCloseFile
+  {
+    FILE* file;
+    AutoCloseFile (FILE* file) : file(file) {}
+    ~AutoCloseFile () { if (file) fclose(file); }
+  };
+
   /*! read PNG file from disk */
   Ref<Image> loadPNG(const FileName& fileName)
   {
@@ -36,7 +43,8 @@ namespace embree
     //open file as binary
     FILE* fp = fopen(fileName.c_str(), "rb");
     if (!fp) THROW_RUNTIME_ERROR("cannot open file "+fileName.str());
-    ON_SCOPE_EXIT(fclose(fp));
+    //ON_SCOPE_EXIT(fclose(fp));
+    AutoCloseFile close_file(fp);
 
     //read the header
     if (fread(header, 1, 8, fp) != 8)

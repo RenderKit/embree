@@ -616,7 +616,7 @@ namespace embree
 #endif
           
           /* update occlusion */
-          valid0 &= !valid;
+          valid0 = valid0 & !valid;
           return valid;
         }
       };
@@ -716,7 +716,7 @@ namespace embree
 #endif
           
           /* update occlusion */
-          valid0 &= !valid;
+          valid0 = valid0 & !valid;
           return valid;
         }
       };
@@ -776,7 +776,7 @@ namespace embree
               if (unlikely(geometry->hasIntersectionFilter<vfloat<K>>())) {
                 assert(i<M);
                 const Vec2f uv = hit.uv(i);
-                foundhit |= runIntersectionFilter(geometry,ray,k,context,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primIDs[i]);
+                foundhit = foundhit | runIntersectionFilter(geometry,ray,k,context,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primIDs[i]);
                 clear(valid,i);
                 valid &= hit.vt < ray.tfar[k]; // intersection filters may modify tfar value
                 continue;
@@ -909,7 +909,7 @@ namespace embree
               while (true) 
               {
                 const Vec2f uv = hit.uv(i);
-                foundhit |= runIntersectionFilter(geometry,ray,k,context,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primID);
+                foundhit = foundhit | runIntersectionFilter(geometry,ray,k,context,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primID);
                 clear(valid,i);
                 valid &= hit.vt < ray.tfar[k]; // intersection filters may modify tfar value
                 if (unlikely(none(valid))) break;

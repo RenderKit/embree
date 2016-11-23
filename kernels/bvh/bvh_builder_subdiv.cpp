@@ -242,7 +242,7 @@ namespace embree
               fastUpdate &= !iter[i]->edge_crease_weights.isModified();
               fastUpdate &= !iter[i]->vertex_creases.isModified();
               fastUpdate &= !iter[i]->vertex_crease_weights.isModified(); 
-              fastUpdate &= iter[i]->levels.isModified();
+              fastUpdate &= iter[i]->levels.isModified() == true;
               iter[i]->initializeHalfEdgeStructures();
               //iter[i]->patch_eval_trees.resize(iter[i]->size()*numTimeSteps);
             }

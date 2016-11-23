@@ -174,11 +174,7 @@ namespace embree
   struct VerifyScene : public RefCount
   {
     VerifyScene (const RTCDeviceRef& device, RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
-      : device(device), scene(rtcDeviceNewScene(device,sflags,aflags)), removeme(new int) {}
-
-    virtual ~VerifyScene() {
-      delete removeme;
-    }
+      : device(device), scene(rtcDeviceNewScene(device,sflags,aflags)) {}
 
     operator RTCScene() const {
       return scene;
@@ -186,9 +182,7 @@ namespace embree
     
     unsigned addGeometry(const RTCGeometryFlags gflag, const Ref<SceneGraph::Node>& node)
     {
-      mutex.lock();
       nodes.push_back(node);
-      mutex.unlock();
       
       if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
       {
@@ -309,11 +303,9 @@ namespace embree
     }
 
   public:
-    MutexSys mutex;
     const RTCDeviceRef& device;
     RTCSceneRef scene;
     std::vector<Ref<SceneGraph::Node>> nodes;
-    int* removeme;
   };
 
   VerifyApplication::TestReturnValue VerifyApplication::Test::execute(VerifyApplication* state, bool silent)
@@ -4030,13 +4022,17 @@ namespace embree
       
       groups.top()->add(new IntensiveRegressionTest("regression_static",isa,rtcore_regression_static_thread,0,30));
       groups.top()->add(new IntensiveRegressionTest("regression_dynamic",isa,rtcore_regression_dynamic_thread,0,300));
-      
-      groups.top()->add(new IntensiveRegressionTest("regression_static_user_threads", isa,rtcore_regression_static_thread,1,30));
-      groups.top()->add(new IntensiveRegressionTest("regression_dynamic_user_threads",isa,rtcore_regression_dynamic_thread,1,300));
-      
-      groups.top()->add(new IntensiveRegressionTest("regression_static_build_join", isa,rtcore_regression_static_thread,2,30));
-      groups.top()->add(new IntensiveRegressionTest("regression_dynamic_build_join",isa,rtcore_regression_dynamic_thread,2,300));
-      
+
+      if (rtcDeviceGetParameter1i(device,RTC_CONFIG_COMMIT_THREAD)) {
+	groups.top()->add(new IntensiveRegressionTest("regression_static_user_threads", isa,rtcore_regression_static_thread,1,30));
+	groups.top()->add(new IntensiveRegressionTest("regression_dynamic_user_threads",isa,rtcore_regression_dynamic_thread,1,300));
+      }
+
+      if (rtcDeviceGetParameter1i(device,RTC_CONFIG_COMMIT_JOIN)) {
+	groups.top()->add(new IntensiveRegressionTest("regression_static_build_join", isa,rtcore_regression_static_thread,2,30));
+	groups.top()->add(new IntensiveRegressionTest("regression_dynamic_build_join",isa,rtcore_regression_dynamic_thread,2,300));
+      }
+
       groups.top()->add(new MemoryMonitorTest("regression_static_memory_monitor", isa,rtcore_regression_static_thread,30));
       groups.top()->add(new MemoryMonitorTest("regression_dynamic_memory_monitor",isa,rtcore_regression_dynamic_thread,300));
 
