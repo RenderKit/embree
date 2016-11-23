@@ -343,11 +343,31 @@ namespace embree
     template<typename BoundsFunc>
     __forceinline static LBBox3fa linearBounds(const BoundsFunc& bounds, const BBox1f& time_range, float numTimeSegments)
     {
-      BBox3fa b0 = interpolateBounds(bounds, time_range.lower, numTimeSegments);
-      BBox3fa b1 = interpolateBounds(bounds, time_range.upper, numTimeSegments);
-      const int ilower = (int)ceil (time_range.lower*numTimeSegments);
-      const int iupper = (int)floor(time_range.upper*numTimeSegments);
-      for (size_t i = ilower; i <= iupper; i++)
+      const float lower = 1.0001f*time_range.lower*numTimeSegments;
+      const float upper = 0.9999f*time_range.upper*numTimeSegments;
+      const float ilowerf = floor(lower);
+      const float iupperf = ceil(upper);
+      const int ilower = (int)ilowerf;
+      const int iupper = (int)iupperf;
+
+      if (iupper-ilower == 1)
+      {
+        const BBox3fa b0 = bounds(ilower);
+        const BBox3fa b1 = bounds(iupper);
+
+        return LBBox3fa(lerp(b0, b1, lower-ilowerf),
+                        lerp(b1, b0, iupperf-upper));
+      }
+
+      const BBox3fa blower0 = bounds(ilower);
+      const BBox3fa blower1 = bounds(ilower+1);
+      const BBox3fa bupper0 = bounds(iupper-1);
+      const BBox3fa bupper1 = bounds(iupper);
+
+      BBox3fa b0 = lerp(blower0, blower1, lower-ilowerf);
+      BBox3fa b1 = lerp(bupper1, bupper0, iupperf-upper);
+
+      for (size_t i = ilower+1; i < iupper; i++)
       {
         const float f = (float(i)/numTimeSegments - time_range.lower) / time_range.size();
         const BBox3fa bt = lerp(b0, b1, f);
@@ -357,6 +377,7 @@ namespace embree
         b0.lower += dlower; b1.lower += dlower;
         b0.upper += dupper; b1.upper += dupper;
       }
+
       return LBBox3fa(b0, b1);
     }
 
