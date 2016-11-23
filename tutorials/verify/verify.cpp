@@ -4452,6 +4452,7 @@ namespace embree
 
 int main(int argc, char** argv)
 {
+  int* ptr = new int; // FIXME: remove, only for testing
   embree::VerifyApplication app;
   return app.main(argc,argv);
 }
