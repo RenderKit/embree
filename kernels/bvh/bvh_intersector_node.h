@@ -411,9 +411,11 @@ namespace embree
     //////////////////////////////////////////////////////////////////////////////////////
 
     template<int N>
-      __forceinline size_t intersectNode(const typename BVHN<N>::AlignedNodeMB4D* node, const TravRay<N,N>& ray, 
-                                         const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist)
+      __forceinline size_t intersectNodeMB4D(const typename BVHN<N>::NodeRef ref, const TravRay<N,N>& ray, 
+                                             const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist)
     {
+      const typename BVHN<N>::AlignedNodeMB* node = ref.alignedNodeMB();
+        
       const vfloat<N>* pNearX = (const vfloat<N>*)((const char*)&node->lower_x+ray.nearX);
       const vfloat<N>* pNearY = (const vfloat<N>*)((const char*)&node->lower_x+ray.nearY);
       const vfloat<N>* pNearZ = (const vfloat<N>*)((const char*)&node->lower_x+ray.nearZ);
@@ -435,7 +437,6 @@ namespace embree
       const vfloat<N> tFarY  = (madd(time,pFarY [6],vfloat<N>(pFarY [0])) - ray.org.y) * ray.rdir.y;
       const vfloat<N> tFarZ  = (madd(time,pFarZ [6],vfloat<N>(pFarZ [0])) - ray.org.z) * ray.rdir.z;
 #endif
-      const vbool<N> tmask = (node->lower_t <= time) & (time < node->upper_t);
 #if defined(__AVX2__) && !defined(__AVX512F__)
       const vfloat<N> tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
       const vfloat<N> tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
@@ -443,8 +444,12 @@ namespace embree
       const vfloat<N> tNear = max(tnear,tNearX,tNearY,tNearZ);
       const vfloat<N> tFar  = min(tfar, tFarX ,tFarY ,tFarZ );
 #endif
-      const vbool<N> vmask = tNear <= tFar;
-      const size_t mask = movemask(vmask & tmask);
+      vbool<N> vmask = tNear <= tFar;
+      if (unlikely(ref.isAlignedNodeMB4D())) {
+        const typename BVHN<N>::AlignedNodeMB4D* node1 = (const typename BVHN<N>::AlignedNodeMB4D*) node;
+        vmask &= (node1->lower_t <= time) & (time < node1->upper_t);
+      }
+      const size_t mask = movemask(vmask);
       dist = tNear;
       return mask;
     }
@@ -834,8 +839,7 @@ namespace embree
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
       {
         if (unlikely(node.isLeaf())) return false;
-        if (likely(node.isAlignedNodeMB())) mask = intersectNode<N>(node.alignedNodeMB(),ray,tnear,tfar,time,dist);
-        else /*if (node.isAlignedNodeMB4D())*/  mask = intersectNode<N>(node.alignedNodeMB4D(),ray,tnear,tfar,time,dist); 
+        mask = intersectNodeMB4D<N>(node,ray,tnear,tfar,time,dist); 
         return true;
       }
     };
