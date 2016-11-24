@@ -754,9 +754,9 @@ namespace embree
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
       {
-        if (unlikely(node.isLeaf())) return false;
         if (likely(node.isAlignedNode()))          mask = intersectNode<N,N>(node.alignedNode(),ray,tnear,tfar,dist);
         else if (unlikely(node.isUnalignedNode())) mask = intersectNode<N>(node.unalignedNode(),ray,tnear,tfar,dist);
+        else return false;
         return true;
       }
     };
@@ -766,9 +766,9 @@ namespace embree
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
       {
-        if (unlikely(node.isLeaf())) return false;
-        if (likely(node.isAlignedNodeMB()))              mask = intersectNode<N>(node.alignedNodeMB(),ray,tnear,tfar,time,dist);
-        else /*if (unlikely(node.isUnalignedNodeMB()))*/ mask = intersectNode<N>(node.unalignedNodeMB(),ray,tnear,tfar,time,dist);
+        if (likely(node.isAlignedNodeMB()))           mask = intersectNode<N>(node.alignedNodeMB(),ray,tnear,tfar,time,dist);
+        else if (unlikely(node.isUnalignedNodeMB()))  mask = intersectNode<N>(node.unalignedNodeMB(),ray,tnear,tfar,time,dist);
+        else return false;
         return true;
       }
     };
@@ -778,10 +778,9 @@ namespace embree
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
       {
-        if (unlikely(node.isLeaf())) return false;
         if (likely(node.isAlignedNode()))        mask = intersectNode<N,N>(node.alignedNode(),ray,tnear,tfar,dist);
         else if (likely(node.isAlignedNodeMB())) mask = intersectNode<N>(node.alignedNodeMB(),ray,tnear,tfar,time,dist);
-        else                              return false;
+        else return false;
         return true;
       }
     };
