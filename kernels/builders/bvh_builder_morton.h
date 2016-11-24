@@ -93,6 +93,9 @@ namespace embree
           scale = select(diag > vfloat4(1E-19f), rcp(diag) * vfloat4(LATTICE_SIZE_PER_DIM * 0.99f),vfloat4(0.0f));
         }
       };
+
+      __forceinline MortonCodeGenerator(const BBox3fa& bounds)
+        : mapping(bounds), dest(nullptr), currentID(0), slots(0), ax(0), ay(0), az(0), ai(0) {}
       
       __forceinline MortonCodeGenerator(const BBox3fa& bounds, MortonID32Bit* dest)
         : mapping(bounds), dest(dest), currentID(0), slots(0), ax(0), ay(0), az(0), ai(0) {}
@@ -161,6 +164,19 @@ namespace embree
         }
 #endif
 #endif
+      }
+
+      __forceinline unsigned int getCode(const BBox3fa& b)
+      {
+        const vfloat4 lower = (vfloat4)b.lower;
+        const vfloat4 upper = (vfloat4)b.upper;
+        const vfloat4 centroid = lower+upper;
+        const vint4 binID = vint4((centroid-mapping.base)*mapping.scale); // FIXME: transform into fma
+        const unsigned int x = extract<0>(binID);
+        const unsigned int y = extract<1>(binID);
+        const unsigned int z = extract<2>(binID);
+        const unsigned int xyz = bitInterleave(x,y,z);
+        return xyz;
       }
     
     public:
@@ -525,9 +541,18 @@ namespace embree
       std::pair<NodeRef,BBox3fa> build(MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives) 
       {
         /* using 4 phases radix sort */
+        /* double t0 = getSeconds(); */
         morton = src;
         radix_sort_u32(src,tmp,numPrimitives,SINGLE_THREADED_THRESHOLD);
         //InPlace32BitRadixSort(morton,numPrimitives);
+
+        /* double t1 = getSeconds(); */
+        /* PRINT(t1-t0); */
+        /* for (size_t i=0;i<numPrimitives-1;i++) */
+        /* { */
+        /*   PRINT(morton[i]); */
+        /*   assert(morton[i].code <= morton[i+1].code); */
+        /* } */
 
         /* build BVH */
         NodeRef root;

@@ -382,6 +382,47 @@ namespace embree
     private:
       Mesh* mesh;
     };        
+
+    struct __aligned(64) BinBuckets {
+
+      static const size_t BUCKETS  = 256;
+
+      unsigned int b[BUCKETS];
+
+      __forceinline BinBuckets() {}
+
+      __forceinline BinBuckets( ZeroTy ) { 
+        for (size_t i=0;i<BUCKETS;i++) b[i] = 0; 
+      }
+
+      __forceinline BinBuckets(const BinBuckets &bb) {
+        for (size_t i=0;i<BUCKETS;i++) b[i] = bb.b[i];
+      }
+
+      __forceinline void clear() { 
+        for (size_t i=0;i<BUCKETS;i++) b[i] = 0; 
+      }
+
+      __forceinline void inc(const size_t i) { 
+        b[i % BUCKETS]++;
+      }
+
+      __forceinline const unsigned int& operator[](const size_t index) const { 
+        assert(index < BUCKETS); 
+        return b[index]; 
+      }
+
+      __forceinline void print() { 
+        for (size_t i=0;i<BUCKETS;i++) std::cout << "i  = " << i << " -> " << b[i] << std::endl;
+      }
+    };
+
+    __forceinline BinBuckets operator +(const BinBuckets& a, const BinBuckets& b ) { 
+      BinBuckets v;
+      for (size_t i=0;i<BinBuckets::BUCKETS;i++) 
+        v.b[i] = a.b[i] + b.b[i];
+      return v;
+    }
     
     template<int N, typename Mesh, typename Primitive>
     class BVHNMeshBuilderMorton : public Builder
@@ -389,6 +430,7 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::AlignedNode AlignedNode;
       typedef typename BVH::NodeRef NodeRef;
+
 
     public:
       
@@ -457,13 +499,100 @@ namespace embree
 
         if (likely(numPrimitivesGen == numPrimitives))
         {
-          /* fast path */
           MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
-          parallel_for( size_t(0), numPrimitives, block_size, [&](const range<size_t>& r) -> void {
-              MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
-              for (size_t j=r.begin(); j<r.end(); j++)
-                generator(mesh->bounds(j),unsigned(j));
-            });
+#if 0
+          PRINT(numPrimitives);
+          /* fast path */
+          {
+            double e0 = getSeconds();
+            const size_t MAX_TASKS = MAX_THREADS;
+            const size_t BLOCKSIZE = 8192;
+            const size_t BUCKETS = BinBuckets::BUCKETS;
+
+            BinBuckets binBuckets[MAX_TASKS];
+            const size_t numTasks = min((numPrimitives+BLOCKSIZE-1)/BLOCKSIZE,TaskScheduler::threadCount(),size_t(MAX_TASKS));
+            /* gather bin count phase */
+            parallel_for(numTasks,[&] (size_t taskIndex) { 
+                BinBuckets &bb = binBuckets[taskIndex];
+                bb.clear();
+                const size_t startID = (taskIndex+0)*numPrimitives/numTasks;
+                const size_t endID   = (taskIndex+1)*numPrimitives/numTasks;
+                MortonCodeGenerator generator(mapping);
+                for (size_t j=startID; j<endID; j++)
+                {
+                  const unsigned int code = generator.getCode(mesh->bounds(j));
+                  bb.inc(code);
+                }                
+              });
+            double e1 = getSeconds();
+
+            /* generate and scatter phase */
+            MortonID32Bit *const dst = morton.data();
+
+            parallel_for(numTasks,[&] (size_t taskIndex) { 
+                const size_t startID = (taskIndex+0)*numPrimitives/numTasks;
+                const size_t endID   = (taskIndex+1)*numPrimitives/numTasks;
+                
+                /* calculate total number of items for each bucket */
+                __aligned(64) unsigned int total[BUCKETS];
+                for (size_t i=0; i<BUCKETS; i++)
+                  total[i] = 0;
+      
+                for (size_t i=0; i<numTasks; i++)
+                  for (size_t j=0; j<BUCKETS; j++)
+                    total[j] += binBuckets[i][j];
+      
+                /* calculate start offset of each bucket */
+                __aligned(64) unsigned int offset[BUCKETS];
+                offset[0] = 0;
+                for (size_t i=1; i<BUCKETS; i++)    
+                  offset[i] = offset[i-1] + total[i-1];
+      
+                /* calculate start offset of each bucket for this thread */
+                for (size_t i=0; i<taskIndex; i++)
+                  for (size_t j=0; j<BUCKETS; j++)
+                    offset[j] += binBuckets[i][j];
+
+                MortonCodeGenerator generator(mapping);
+      
+                /* copy items into their buckets */
+                for (size_t j=startID; j<endID; j++) {
+                  const unsigned int code = generator.getCode(mesh->bounds(j));                  
+                  const unsigned int index = code % BUCKETS;
+                  dst[offset[index]].code  = code;
+                  dst[offset[index]].index = j;
+                  offset[index]++;
+                }
+              });
+            double e2 = getSeconds();
+            PRINT(e1-e0);
+            PRINT(e2-e1);
+
+
+            // BinBuckets bb_zero(zero);
+            // BinBuckets buckets = parallel_reduce 
+            //   ( size_t(0), numPrimitives, block_size, bb_zero, [&](const range<size_t>& r) -> BinBuckets {
+            //     BinBuckets bb(zero);
+            //     MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
+            //     for (size_t j=r.begin(); j<r.end(); j++)
+            //     {
+            //       const unsigned int code = generator.getCode(mesh->bounds(j));
+            //       bb.inc(code);
+            //     }
+            //     return bb;
+            //   }, [] (const BinBuckets& a, const BinBuckets& b) {
+            //     return a + b;            
+            //   });
+            //PRINT(binBuckets[0].b[0]);
+          }
+#endif
+          {
+            parallel_for( size_t(0), numPrimitives, block_size, [&](const range<size_t>& r) -> void {
+                MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
+                for (size_t j=r.begin(); j<r.end(); j++)
+                  generator(mesh->bounds(j),unsigned(j));
+              });
+          }
         }
         else
         {
