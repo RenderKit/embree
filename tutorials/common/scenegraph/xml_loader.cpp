@@ -680,7 +680,7 @@ namespace embree
       const unsigned height = stoi(xml->parm("height"));
       const Texture::Format format = Texture::string_to_format(xml->parm("format"));
       const unsigned bytesPerTexel = Texture::getFormatBytesPerTexel(format);
-      if (ftell(binFile) + width*height*bytesPerTexel > binFileSize)
+      if (ftell(binFile) + width*height*bytesPerTexel > (unsigned)binFileSize)
         THROW_RUNTIME_ERROR("error reading from binary file: "+binFileName.str());
       
       texture = std::make_shared<Texture>(width,height,format);
