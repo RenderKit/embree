@@ -385,7 +385,8 @@ namespace embree
 
     struct __aligned(64) BinBuckets {
 
-      static const size_t BUCKETS  = 256;
+      static const size_t BUCKETS_SHIFT = 8;
+      static const size_t BUCKETS  = 1 << BUCKETS_SHIFT;
 
       unsigned int b[BUCKETS];
 
@@ -404,12 +405,17 @@ namespace embree
       }
 
       __forceinline void inc(const size_t i) { 
-        b[i % BUCKETS]++;
+        b[i>>(32-BUCKETS_SHIFT)]++;
       }
 
       __forceinline const unsigned int& operator[](const size_t index) const { 
         assert(index < BUCKETS); 
         return b[index]; 
+      }
+
+      __forceinline void operator +=(const BinBuckets& a) { 
+        for (size_t i=0;i<BinBuckets::BUCKETS;i++) 
+          b[i] += a.b[i];
       }
 
       __forceinline void print() { 
@@ -508,6 +514,7 @@ namespace embree
             const size_t MAX_TASKS = MAX_THREADS;
             const size_t BLOCKSIZE = 8192;
             const size_t BUCKETS = BinBuckets::BUCKETS;
+            const size_t BUCKETS_SHIFT = BinBuckets::BUCKETS_SHIFT;
 
             BinBuckets binBuckets[MAX_TASKS];
             const size_t numTasks = min((numPrimitives+BLOCKSIZE-1)/BLOCKSIZE,TaskScheduler::threadCount(),size_t(MAX_TASKS));
@@ -526,6 +533,13 @@ namespace embree
               });
             double e1 = getSeconds();
 
+            /* sum up buckets, better use parallel_reduce here */
+            BinBuckets total = binBuckets[0];
+            for (size_t i=1;i<numTasks;i++)
+              total += binBuckets[i];
+            
+            //total.print();
+            
             /* generate and scatter phase */
             MortonID32Bit *const dst = morton.data();
 
@@ -558,7 +572,7 @@ namespace embree
                 /* copy items into their buckets */
                 for (size_t j=startID; j<endID; j++) {
                   const unsigned int code = generator.getCode(mesh->bounds(j));                  
-                  const unsigned int index = code % BUCKETS;
+                  const unsigned int index = code >> (32-BUCKETS_SHIFT);
                   dst[offset[index]].code  = code;
                   dst[offset[index]].index = j;
                   offset[index]++;
@@ -568,7 +582,20 @@ namespace embree
             PRINT(e1-e0);
             PRINT(e2-e1);
 
+            double f0 = getSeconds();
+            parallel_for(numTasks,[&] (size_t taskIndex) { 
+                const size_t startID = (taskIndex+0)*numPrimitives/numTasks;
+                const size_t endID   = (taskIndex+1)*numPrimitives/numTasks;
+                //std::sort(dst+startID,dst+endID);
+                InPlace32BitRadixSort(dst+startID,endID-startID,3*8);
+                for (size_t i=startID;i<endID-1;i++)
+                  assert(dst[i].code <= dst[i+1].code);
 
+              });
+            double f1 = getSeconds();
+            PRINT(f1-f0);
+
+            
             // BinBuckets bb_zero(zero);
             // BinBuckets buckets = parallel_reduce 
             //   ( size_t(0), numPrimitives, block_size, bb_zero, [&](const range<size_t>& r) -> BinBuckets {
