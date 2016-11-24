@@ -34,7 +34,6 @@ namespace embree
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::AlignedNode AlignedNode;
       typedef typename BVH::AlignedNodeMB4D AlignedNodeMB4D;
-      typedef typename BVH::TimeSplitNode TimeSplitNode;
       typedef typename BVH::TransformNode TransformNode;
 
       static const size_t stackSize = 

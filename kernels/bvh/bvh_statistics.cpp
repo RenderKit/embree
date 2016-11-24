@@ -54,7 +54,6 @@ namespace embree
     if (stat.statAlignedNodesMB4D.numNodes) stream << "  alignedNodesMB4D : "  << stat.statAlignedNodesMB4D.toString(bvh,totalSAH,totalBytes) << std::endl;
     if (stat.statUnalignedNodesMB.numNodes) stream << "  unaligneddNodesMB: "  << stat.statUnalignedNodesMB.toString(bvh,totalSAH,totalBytes) << std::endl;
     if (stat.statTransformNodes.numNodes  ) stream << "  transformNodes   : "  << stat.statTransformNodes.toString(bvh,totalSAH,totalBytes) << std::endl;
-    if (stat.statTimeSplitNodes.numNodes  ) stream << "  timeSplitNodes   : "  << stat.statTimeSplitNodes.toString(bvh,totalSAH,totalBytes) << std::endl;
     if (stat.statQuantizedNodes.numNodes  ) stream << "  quantizedNodes   : "  << stat.statQuantizedNodes.toString(bvh,totalSAH,totalBytes) << std::endl;
     if (true)                               stream << "  leaves           : "  << stat.statLeaf.toString(bvh,totalSAH,totalBytes) << std::endl;
     if (true)                               stream << "    histogram      : "  << stat.statLeaf.histToString() << std::endl;
@@ -138,20 +137,6 @@ namespace embree
     {
       s.statTransformNodes.numNodes++;
       s.statTransformNodes.nodeSAH += dt*A;
-      s.depth++;
-    }
-    else if (node.isTimeSplitNode())
-    {
-      TimeSplitNode* n = node.timeSplitNode();
-      for (size_t i=0; i<N; i++) {
-        if (n->child(i) == BVH::emptyNode) continue;
-        s.statTimeSplitNodes.numChildren++;
-        const BBox1f t0t1i = intersect(t0t1,n->timeRange(i));
-        assert(!t0t1i.empty());
-        s = s + statistics(n->child(i),A,t0t1i);
-      }
-      s.statTimeSplitNodes.numNodes++;
-      s.statTimeSplitNodes.nodeSAH += dt*A;
       s.depth++;
     }
     else if (node.isQuantizedNode())

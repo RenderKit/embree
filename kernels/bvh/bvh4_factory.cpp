@@ -56,7 +56,6 @@ namespace embree
 
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4MB4DTriangle4iMBIntersector1Moeller);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4MB4DTriangle4vMBIntersector1Moeller);
-  DECLARE_SYMBOL2(Accel::Intersector1,BVH4MBTSTriangle4iMBIntersector1Moeller);
 
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Quad4vIntersector1Moeller);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Quad4iIntersector1Moeller);
@@ -98,7 +97,6 @@ namespace embree
 
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4MB4DTriangle4iMBIntersector4HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4MB4DTriangle4vMBIntersector4HybridMoeller);
-  DECLARE_SYMBOL2(Accel::Intersector4,BVH4MBTSTriangle4iMBIntersector4HybridMoeller);
 
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Quad4vIntersector4HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Quad4vIntersector4HybridMoellerNoFilter);
@@ -138,7 +136,6 @@ namespace embree
 
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4MB4DTriangle4iMBIntersector8HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4MB4DTriangle4vMBIntersector8HybridMoeller);
-  DECLARE_SYMBOL2(Accel::Intersector8,BVH4MBTSTriangle4iMBIntersector8HybridMoeller);
 
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Quad4vIntersector8HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Quad4vIntersector8HybridMoellerNoFilter);
@@ -178,7 +175,6 @@ namespace embree
 
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4MB4DTriangle4iMBIntersector16HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4MB4DTriangle4vMBIntersector16HybridMoeller);
-  DECLARE_SYMBOL2(Accel::Intersector16,BVH4MBTSTriangle4iMBIntersector16HybridMoeller);
 
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4Quad4vIntersector16HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4Quad4vIntersector16HybridMoellerNoFilter);
@@ -239,7 +235,6 @@ namespace embree
   DECLARE_BUILDER2(void,Scene,size_t,BVH4MB4DTriangle4iMBSceneBuilderRootTimeSplitsSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4MB4DTriangle4iMBSceneBuilderInternalTimeSplitsSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4MB4DTriangle4vMBSceneBuilderInternalTimeSplitsSAH);
-  DECLARE_BUILDER2(void,Scene,size_t,BVH4MBTSTriangle4iMBSceneBuilderRootTimeSplitsSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4QuantizedTriangle4iSceneBuilderSAH);
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Quad4vSceneBuilderSAH);
@@ -308,7 +303,6 @@ namespace embree
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4MB4DTriangle4iMBSceneBuilderRootTimeSplitsSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4MB4DTriangle4iMBSceneBuilderInternalTimeSplitsSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4MB4DTriangle4vMBSceneBuilderInternalTimeSplitsSAH));
-    IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4MBTSTriangle4iMBSceneBuilderRootTimeSplitsSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4QuantizedTriangle4iSceneBuilderSAH));
 
     IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Quad4vSceneBuilderSAH));
@@ -375,7 +369,6 @@ namespace embree
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4MB4DTriangle4iMBIntersector1Moeller));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4MB4DTriangle4vMBIntersector1Moeller));
-    IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4MBTSTriangle4iMBIntersector1Moeller));
 
     IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Quad4vIntersector1Moeller));
     IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Quad4iIntersector1Moeller));
@@ -420,7 +413,6 @@ namespace embree
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4MB4DTriangle4iMBIntersector4HybridMoeller));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4MB4DTriangle4vMBIntersector4HybridMoeller));
-    IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4MBTSTriangle4iMBIntersector4HybridMoeller));
 
     IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Quad4vIntersector4HybridMoeller));
     IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Quad4vIntersector4HybridMoellerNoFilter));
@@ -462,7 +454,6 @@ namespace embree
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH4MB4DTriangle4iMBIntersector8HybridMoeller));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH4MB4DTriangle4vMBIntersector8HybridMoeller));
-    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH4MBTSTriangle4iMBIntersector8HybridMoeller));
 
     IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH4Quad4vIntersector8HybridMoeller));
     IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH4Quad4vIntersector8HybridMoellerNoFilter));
@@ -503,7 +494,6 @@ namespace embree
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4MB4DTriangle4iMBIntersector16HybridMoeller));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4MB4DTriangle4vMBIntersector16HybridMoeller));
-    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4MBTSTriangle4iMBIntersector16HybridMoeller));
 
     IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Quad4vIntersector16HybridMoeller));
     IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Quad4vIntersector16HybridMoellerNoFilter));
@@ -783,19 +773,6 @@ namespace embree
     intersectors.intersector8  = BVH4MB4DTriangle4vMBIntersector8HybridMoeller;
     intersectors.intersector16 = BVH4MB4DTriangle4vMBIntersector16HybridMoeller;
     //intersectors.intersectorN  = BVH4MB4DTriangle4vMBIntersectorStreamMoeller;
-    return intersectors;
-  }
-
-  Accel::Intersectors BVH4Factory::BVH4MBTSTriangle4iMBIntersectors(BVH4* bvh, IntersectVariant ivariant)
-  {
-    assert(ivariant == IntersectVariant::FAST);
-    Accel::Intersectors intersectors;
-    intersectors.ptr = bvh;
-    intersectors.intersector1  = BVH4MBTSTriangle4iMBIntersector1Moeller;
-    intersectors.intersector4  = BVH4MBTSTriangle4iMBIntersector4HybridMoeller;
-    intersectors.intersector8  = BVH4MBTSTriangle4iMBIntersector8HybridMoeller;
-    intersectors.intersector16 = BVH4MBTSTriangle4iMBIntersector16HybridMoeller;
-    //intersectors.intersectorN  = BVH4MBTSTriangle4iMBIntersectorStreamMoeller;
     return intersectors;
   }
 
@@ -1381,30 +1358,6 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4Factory::BVH4MBTSTriangle4iMB(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
-  {
-    BVH4* accel = new BVH4(Triangle4iMB::type,scene);
-
-    Accel::Intersectors intersectors;
-    if      (scene->device->tri_traverser_mb == "default") intersectors = BVH4MBTSTriangle4iMBIntersectors(accel,ivariant);
-    else if (scene->device->tri_traverser_mb == "fast"   ) intersectors = BVH4MBTSTriangle4iMBIntersectors(accel,IntersectVariant::FAST);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown traverser "+scene->device->tri_traverser_mb+" for BVH4MBTS<Triangle4iMB>");
-
-    Builder* builder = nullptr;
-    if (scene->device->tri_builder_mb == "default") { // FIXME: implement
-      switch (bvariant) {
-      case BuildVariant::STATIC      : builder = BVH4MBTSTriangle4iMBSceneBuilderRootTimeSplitsSAH(accel,scene,0); break;
-      case BuildVariant::DYNAMIC     : assert(false); break; // FIXME: implement
-      case BuildVariant::HIGH_QUALITY: assert(false); break;
-      }
-    }
-    else  if (scene->device->tri_builder_mb == "early_time_splits") builder = BVH4MBTSTriangle4iMBSceneBuilderRootTimeSplitsSAH(accel,scene,0);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder_mb+" for BVH4MBTS<Triangle4iMB>");
-
-    scene->needTriangleVertices = true;
-    return new AccelInstance(accel,builder,intersectors);
-  }
-  
   Accel* BVH4Factory::BVH4Quad4v(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
     BVH4* accel = new BVH4(Quad4v::type,scene);

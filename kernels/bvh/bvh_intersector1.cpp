@@ -87,7 +87,7 @@ namespace embree
           continue;
 
         /* downtraversal loop */
-        while (true) cont:
+        while (true)
         {
           /*! stop if we found a leaf node */
           if (unlikely(cur.isLeaf(types))) break;
@@ -107,38 +107,6 @@ namespace embree
           nodeTraverser.traverseClosestHit(cur,mask,tNear,stackPtr,stackEnd);
         }
         
-        /* AlignedNodeMB4D support */
-        /*if (types & BVH_FLAG_ALIGNED_NODE_MB4D)
-        {
-          if (unlikely(cur.isAlignedNodeMB4D())) 
-          {
-            STAT3(normal.trav_nodes,1,1,1);
-            const AlignedNodeMB4D* node = cur.alignedNodeMB4D();
-            vfloat<N> dist = zero;
-            size_t mask = intersectNode<N>(node,vray,ray_near,ray_far,pre.ftime(),dist);
-            assert((mask & (mask-1)) == 0);
-            if (mask == 0) goto pop;
-            cur = node->child(__bsf(mask));
-            goto cont;
-          }
-          }*/
-
-        /* TimeSplitNode support */
-        if (types & BVH_FLAG_TIME_SPLIT_NODE)
-        {
-          if (unlikely(cur.isTimeSplitNode())) 
-          {
-            STAT3(normal.trav_nodes,1,1,1);
-            const TimeSplitNode* node = cur.timeSplitNode();
-            vfloat<N> dist = zero;
-            size_t mask = intersectNode<N>(node,vray,ray_near,ray_far,pre.ftime(),dist);
-            assert((mask & (mask-1)) == 0);
-            if (mask == 0) goto pop;
-            cur = node->child(__bsf(mask));
-            goto cont;
-          }
-        }
-
         /* ray transformation support */
         if (unlikely(nodeTraverser.traverseTransform(cur,ray,vray,leafType,context,stackPtr,stackEnd)))
           goto pop;
@@ -215,7 +183,7 @@ namespace embree
         NodeRef cur = (NodeRef) *stackPtr;
         
         /* downtraversal loop */
-        while (true) cont:
+        while (true)
         {
           /*! stop if we found a leaf node */
           if (unlikely(cur.isLeaf(types))) break;
@@ -233,38 +201,6 @@ namespace embree
 
           /* select next child and push other children */
           nodeTraverser.traverseAnyHit(cur,mask,tNear,stackPtr,stackEnd);
-        }
-
-        /* AlignedNodeMB4D support */
-        /*if (types & BVH_FLAG_ALIGNED_NODE_MB4D)
-        {
-          if (unlikely(cur.isAlignedNodeMB4D())) 
-          {
-            STAT3(normal.trav_nodes,1,1,1);
-            const AlignedNodeMB4D* node = cur.alignedNodeMB4D();
-            vfloat<N> dist = zero;
-            size_t mask = intersectNode<N>(node,vray,ray_near,ray_far,pre.ftime(),dist);
-            assert((mask & (mask-1)) == 0);
-            if (mask == 0) goto pop;
-            cur = node->child(__bsf(mask));
-            goto cont;
-          }
-          }*/
-
-        /* TimeSplitNode support */
-        if (types & BVH_FLAG_TIME_SPLIT_NODE)
-        {
-          if (unlikely(cur.isTimeSplitNode())) 
-          {
-            STAT3(normal.trav_nodes,1,1,1);
-            const TimeSplitNode* node = cur.timeSplitNode();
-            vfloat<N> dist = zero;
-            size_t mask = intersectNode<N>(node,vray,ray_near,ray_far,pre.ftime(),dist);
-            assert((mask & (mask-1)) == 0);
-            if (mask == 0) goto pop;
-            cur = node->child(__bsf(mask));
-            goto cont;
-          }
         }
 
         /* ray transformation support */
@@ -324,7 +260,6 @@ namespace embree
 
     IF_ENABLED_TRIS(DEFINE_INTERSECTOR1(BVH4MB4DTriangle4iMBIntersector1Moeller, BVHNIntersector1<4 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersector1<TriangleMiMBIntersector1Moeller <SIMD_MODE(4) COMMA true> > >));
     IF_ENABLED_TRIS(DEFINE_INTERSECTOR1(BVH4MB4DTriangle4vMBIntersector1Moeller, BVHNIntersector1<4 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersector1<TriangleMvMBIntersector1Moeller <SIMD_MODE(4) COMMA true> > >));
-    IF_ENABLED_TRIS(DEFINE_INTERSECTOR1(BVH4MBTSTriangle4iMBIntersector1Moeller, BVHNIntersector1<4 COMMA BVH_AN2_TS COMMA false COMMA ArrayIntersector1<TriangleMiMBIntersector1Moeller <SIMD_MODE(4) COMMA true> > >));
 
     IF_ENABLED_QUADS(DEFINE_INTERSECTOR1(BVH4Quad4vIntersector1Moeller, BVHNIntersector1<4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1Moeller <4 COMMA true> > >));
     IF_ENABLED_QUADS(DEFINE_INTERSECTOR1(BVH4Quad4iIntersector1Moeller, BVHNIntersector1<4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMiIntersector1Moeller <4 COMMA true> > >));
@@ -365,7 +300,6 @@ namespace embree
 
     IF_ENABLED_TRIS(DEFINE_INTERSECTOR1(BVH8MB4DTriangle4iMBIntersector1Moeller, BVHNIntersector1<8 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersector1<TriangleMiMBIntersector1Moeller <SIMD_MODE(4) COMMA true> > >));
     IF_ENABLED_TRIS(DEFINE_INTERSECTOR1(BVH8MB4DTriangle4vMBIntersector1Moeller, BVHNIntersector1<8 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersector1<TriangleMvMBIntersector1Moeller <SIMD_MODE(4) COMMA true> > >));
-    IF_ENABLED_TRIS(DEFINE_INTERSECTOR1(BVH8MBTSTriangle4iMBIntersector1Moeller, BVHNIntersector1<8 COMMA BVH_AN2_TS COMMA false COMMA ArrayIntersector1<TriangleMiMBIntersector1Moeller <SIMD_MODE(4) COMMA true> > >));
 
     IF_ENABLED_QUADS(DEFINE_INTERSECTOR1(BVH8Quad4vIntersector1Moeller, BVHNIntersector1<8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1Moeller <4 COMMA true> > >));
     IF_ENABLED_QUADS(DEFINE_INTERSECTOR1(BVH8Quad4iIntersector1Moeller, BVHNIntersector1<8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMiIntersector1Moeller <4 COMMA true> > >));
