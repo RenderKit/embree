@@ -499,7 +499,7 @@ namespace embree
         accels.add(device->bvh4_factory->BVH4UserGeometry(this,BVH4Factory::BuildVariant::DYNAMIC));
       }
     }
-    else if (device->object_accel == "bvh4.object") accels.add(device->bvh4_factory->BVH4UserGeometry(this)); 
+    else if (device->object_accel == "bvh4.object"    ) accels.add(device->bvh4_factory->BVH4UserGeometry(this)); 
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown user geometry accel "+device->object_accel);
 #endif
   }
@@ -507,7 +507,9 @@ namespace embree
   void Scene::createUserGeometryMBAccel()
   {
 #if defined(EMBREE_GEOMETRY_USER)
-    accels.add(device->bvh4_factory->BVH4UserGeometryMB(this));
+    if      (device->object_accel_mb == "default"        ) accels.add(device->bvh4_factory->BVH4UserGeometryMB(this));
+    else if (device->object_accel_mb == "bvh4.object"    ) accels.add(device->bvh4_factory->BVH4UserGeometryMB(this)); 
+    else if (device->object_accel_mb == "bvh4mb4d.object") accels.add(device->bvh4_factory->BVH4MB4DUserGeometryMB(this)); 
 #endif
   }
   

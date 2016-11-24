@@ -65,6 +65,7 @@ namespace embree
     Accel* BVH4SubdivPatch1MBlur(Scene* scene, bool cached);
     Accel* BVH4UserGeometry(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC);
     Accel* BVH4UserGeometryMB(Scene* scene);
+    Accel* BVH4MB4DUserGeometryMB(Scene* scene);
     Accel* BVH4InstancedBVH4Triangle4ObjectSplit(Scene* scene);
     
   private:
@@ -97,6 +98,7 @@ namespace embree
 
     Accel::Intersectors BVH4UserGeometryIntersectors(BVH4* bvh);
     Accel::Intersectors BVH4UserGeometryMBIntersectors(BVH4* bvh);
+    Accel::Intersectors BVH4MB4DUserGeometryMBIntersectors(BVH4* bvh);
     Accel::Intersectors BVH4SubdivPatch1Intersectors(BVH4* bvh);
     Accel::Intersectors BVH4SubdivPatch1EagerIntersectors(BVH4* bvh);
     Accel::Intersectors BVH4SubdivPatch1CachedIntersectors(BVH4* bvh);
@@ -165,6 +167,7 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4GridAOSIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4VirtualIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4VirtualMBIntersector1);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH4MB4DVirtualMBIntersector1);
         
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4Line4iIntersector4);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4Line4iMBIntersector4);
@@ -211,6 +214,7 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4GridAOSIntersector4);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4VirtualIntersector4Chunk);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4VirtualMBIntersector4Chunk);
+    DEFINE_SYMBOL2(Accel::Intersector4,BVH4MB4DVirtualMBIntersector4Chunk);
     
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4Line4iIntersector8);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4Line4iMBIntersector8);
@@ -257,6 +261,7 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4GridAOSIntersector8);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4VirtualIntersector8Chunk);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4VirtualMBIntersector8Chunk);
+    DEFINE_SYMBOL2(Accel::Intersector8,BVH4MB4DVirtualMBIntersector8Chunk);
     
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4Line4iIntersector16);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4Line4iMBIntersector16);
@@ -303,6 +308,7 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4GridAOSIntersector16);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4VirtualIntersector16Chunk);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4VirtualMBIntersector16Chunk);
+    DEFINE_SYMBOL2(Accel::Intersector16,BVH4MB4DVirtualMBIntersector16Chunk);
 
     DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Line4iIntersectorStream);
     //DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Line4iMBIntersectorStream);
@@ -376,6 +382,7 @@ namespace embree
     DEFINE_BUILDER2(void,Scene,size_t,BVH4VirtualSceneBuilderSAH);
     DEFINE_BUILDER2(void,AccelSet,size_t,BVH4VirtualMeshBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4VirtualMBSceneBuilderSAH);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4MB4DVirtualMBSceneBuilderSAH);
     
     DEFINE_BUILDER2(void,Scene,size_t,BVH4SubdivPatch1EagerBuilderBinnedSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4SubdivPatch1CachedBuilderBinnedSAH);

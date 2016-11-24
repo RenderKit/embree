@@ -85,6 +85,8 @@ namespace embree
     object_accel_min_leaf_size = 1;
     object_accel_max_leaf_size = 1;
 
+    object_accel_mb = "default";
+    object_builder_mb = "default";
     object_accel_mb_min_leaf_size = 1;
     object_accel_mb_max_leaf_size = 1;
 
@@ -312,6 +314,10 @@ namespace embree
       else if (tok == Token::Id("object_accel_max_leaf_size") && cin->trySymbol("="))
         object_accel_max_leaf_size = cin->get().Int();
 
+      else if (tok == Token::Id("object_accel_mb") && cin->trySymbol("="))
+        object_accel_mb = cin->get().Identifier();
+      else if (tok == Token::Id("object_builder_mb") && cin->trySymbol("="))
+        object_builder_mb = cin->get().Identifier();
       else if (tok == Token::Id("object_accel_mb_min_leaf_size") && cin->trySymbol("="))
         object_accel_mb_min_leaf_size = cin->get().Int();
       else if (tok == Token::Id("object_accel_mb_max_leaf_size") && cin->trySymbol("="))
