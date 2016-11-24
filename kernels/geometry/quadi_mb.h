@@ -37,6 +37,9 @@ namespace embree
 
   public:
 
+    /* primitive supports multiple time segments */
+    static const bool singleTimeSegment = false;
+
     /* Returns maximal number of stored quads */
     static __forceinline size_t max_size() { return M; }
     
@@ -166,13 +169,25 @@ namespace embree
       }
       return allBounds;
     }
+
+    __forceinline LBBox3fa linearBounds(const Scene *const scene, const BBox1f time_range) 
+    {
+      LBBox3fa allBounds = empty;
+      for (size_t i=0; i<M && valid(i); i++)
+      {
+        const QuadMesh* mesh = scene->getQuadMesh(geomID(i));
+        allBounds.extend(mesh->linearBounds(primID(i), time_range));
+      }
+      return allBounds;
+    }
     
     /* Fill quad from quad list */
-    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list, size_t itime, size_t numTimeSteps)
+    template<typename PrimRefT>
+    __forceinline void fillMB(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene)
     {
       vint<M> geomID = -1, primID = -1;
       vint<M> v0 = zero, v1 = zero, v2 = zero, v3 = zero;
-      const PrimRef* prim = &prims[begin];
+      const PrimRefT* prim = &prims[begin];
       
       for (size_t i=0; i<M; i++)
       {
@@ -199,7 +214,18 @@ namespace embree
       }
       
       new (this) QuadMiMB(v0,v1,v2,v3,geomID,primID); // FIXME: use non temporal store
+    }
+
+    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list, size_t itime, size_t numTimeSteps)
+    {
+      fillMB(prims,begin,end,scene);
       return linearBounds(scene,itime,numTimeSteps);
+    }
+
+    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range)
+    {
+      fillMB(prims,begin,end,scene);
+      return linearBounds(scene,time_range);
     }
 
     friend std::ostream& operator<<(std::ostream& cout, const QuadMiMB& quad) {

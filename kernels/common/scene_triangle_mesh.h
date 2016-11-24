@@ -181,8 +181,7 @@ namespace embree
     }
 
     /*! check if the i'th primitive is valid at the itime'th timestep */
-    __forceinline bool valid(size_t i, size_t itime) const
-    {
+    __forceinline bool valid(size_t i, size_t itime) const {
       return valid(i, make_range(itime, itime));
     }
 
@@ -196,11 +195,9 @@ namespace embree
 
       for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++)
       {
-        const Vec3fa v0 = vertex(tri.v[0],itime);
-        const Vec3fa v1 = vertex(tri.v[1],itime);
-        const Vec3fa v2 = vertex(tri.v[2],itime);
-        if (unlikely(!isvalid(v0) || !isvalid(v1) || !isvalid(v2)))
-          return false;
+        if (!isvalid(vertex(tri.v[0],itime))) return false;
+        if (!isvalid(vertex(tri.v[1],itime))) return false;
+        if (!isvalid(vertex(tri.v[2],itime))) return false;
       }
 
       return true;

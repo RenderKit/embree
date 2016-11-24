@@ -116,30 +116,33 @@ namespace embree
     }
 
     /*! check if the i'th primitive is valid at the itime'th timestep */
-    __forceinline bool valid(size_t i, size_t itime) const
+    __forceinline bool valid(size_t i, size_t itime) const {
+      return valid(i, make_range(itime, itime));
+    }
+
+    /*! check if the i'th primitive is valid between the specified time range */
+    __forceinline bool valid(size_t i, const range<size_t>& itime_range) const
     {
       const Quad& q = quad(i);
-      if (q.v[0] >= numVertices()) return false;
-      if (q.v[1] >= numVertices()) return false;
-      if (q.v[2] >= numVertices()) return false;
-      if (q.v[3] >= numVertices()) return false;
+      if (unlikely(q.v[0] >= numVertices())) return false;
+      if (unlikely(q.v[1] >= numVertices())) return false;
+      if (unlikely(q.v[2] >= numVertices())) return false;
+      if (unlikely(q.v[3] >= numVertices())) return false;
 
-      const Vec3fa v0 = vertex(q.v[0],itime);
-      const Vec3fa v1 = vertex(q.v[1],itime);
-      const Vec3fa v2 = vertex(q.v[2],itime);
-      const Vec3fa v3 = vertex(q.v[3],itime);
-
-      if (unlikely(!isvalid(v0) || !isvalid(v1) || !isvalid(v2) || !isvalid(v3)))
-        return false;
+      for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++)
+      {
+        if (!isvalid(vertex(q.v[0],itime))) return false;
+        if (!isvalid(vertex(q.v[1],itime))) return false;
+        if (!isvalid(vertex(q.v[2],itime))) return false;
+        if (!isvalid(vertex(q.v[3],itime))) return false;
+      }
 
       return true;
     }
 
     /*! calculates the linear bounds of the i'th quad at the itimeGlobal'th time segment */
-    __forceinline LBBox3fa linearBounds(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
-    {
-      return Geometry::linearBounds([&] (size_t itime) { return bounds(i, itime); },
-                                    itimeGlobal, numTimeStepsGlobal, numTimeSteps);
+    __forceinline LBBox3fa linearBounds(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const {
+      return Geometry::linearBounds([&] (size_t itime) { return bounds(i, itime); }, itimeGlobal, numTimeStepsGlobal, numTimeSteps);
     }
 
     /*! calculates the build bounds of the i'th primitive, if it's valid */
@@ -189,6 +192,19 @@ namespace embree
       
       /* use bounds of first time step in builder */
       bbox = BBox3fa(min(a0,a1,a2,a3),max(a0,a1,a2,a3));
+      return true;
+    }
+
+    /*! calculates the linear bounds of the i'th primitive for the specified time range */
+    __forceinline LBBox3fa linearBounds(size_t primID, const BBox1f& time_range) const {
+      return Geometry::linearBounds([&] (size_t itime) { return bounds(primID, itime); }, time_range, fnumTimeSegments);
+    }
+
+    /*! calculates the linear bounds of the i'th primitive for the specified time range */
+    __forceinline bool linearBounds(size_t i, const BBox1f& time_range, LBBox3fa& bbox) const
+    {
+      if (!valid(i, getTimeSegmentRange(time_range, fnumTimeSegments))) return false;
+      bbox = linearBounds(i, time_range);
       return true;
     }
 

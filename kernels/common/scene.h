@@ -183,6 +183,19 @@ namespace embree
     __forceinline const Geometry* get(size_t i) const { assert(i < geometries.size()); return geometries[i]; }
 
     template<typename Mesh>
+      __forceinline       Mesh* get(size_t i)       { 
+      assert(i < geometries.size()); 
+      assert(geometries[i]->getType() == Mesh::geom_type);
+      return (Mesh*)geometries[i]; 
+    }
+    template<typename Mesh>
+      __forceinline const Mesh* get(size_t i) const { 
+      assert(i < geometries.size()); 
+      assert(geometries[i]->getType() == Mesh::geom_type);
+      return (Mesh*)geometries[i]; 
+    }
+
+    template<typename Mesh>
     __forceinline Mesh* getSafe(size_t i) {
       assert(i < geometries.size());
       if (geometries[i] == nullptr) return nullptr;

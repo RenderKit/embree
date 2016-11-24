@@ -35,6 +35,9 @@ namespace embree
 
   public:
 
+    /* primitive supports multiple time segments */
+    static const bool singleTimeSegment = false;
+
     /* Returns maximal number of stored line segments */
     static __forceinline size_t max_size() { return M; }
 

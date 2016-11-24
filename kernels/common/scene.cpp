@@ -321,11 +321,13 @@ namespace embree
       case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Quad4iMB(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::ROBUST)); break;
       }
     }
-    else if (device->quad_accel_mb == "bvh4.quad4imb") accels.add(device->bvh4_factory->BVH4Quad4iMB(this));
+    else if (device->quad_accel_mb == "bvh4.quad4imb"    ) accels.add(device->bvh4_factory->BVH4Quad4iMB(this));
+    else if (device->quad_accel_mb == "bvh4mb4d.quad4imb") accels.add(device->bvh4_factory->BVH4MB4DQuad4iMB(this));
 #if defined (__TARGET_AVX__)
-    else if (device->quad_accel_mb == "bvh8.quad4imb") accels.add(device->bvh8_factory->BVH8Quad4iMB(this));
+    else if (device->quad_accel_mb == "bvh8.quad4imb"    ) accels.add(device->bvh8_factory->BVH8Quad4iMB(this));
+    else if (device->quad_accel_mb == "bvh8mb4d.quad4imb") accels.add(device->bvh8_factory->BVH8MB4DQuad4iMB(this));
 #endif
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown quad acceleration structure "+device->quad_accel_mb);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown quad motion blur acceleration structure "+device->quad_accel_mb);
 #endif
   }
 
