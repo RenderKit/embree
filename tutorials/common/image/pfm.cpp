@@ -94,7 +94,7 @@ namespace embree
 
     /* write image */
     for (ssize_t y=img->height-1; y>=0; y--) {
-      for (ssize_t x=0; x<img->width; x++) {
+      for (ssize_t x=0; x<(ssize_t)img->width; x++) {
         const Color4 c = img->get(x,y);
         file.write((char*)&c,3*sizeof(float));
       }

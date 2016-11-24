@@ -324,10 +324,6 @@ namespace embree
       /*! checks if this is a leaf */
       __forceinline size_t isLeaf() const { return ptr & tyLeaf; }
 
-      __forceinline size_t isLeaf(int types) const { 
-        return ptr & tyLeaf; 
-      }
-
       /*! returns node type */
       __forceinline int type() const { return ptr & (size_t)align_mask; }
 

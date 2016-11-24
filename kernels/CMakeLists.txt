@@ -142,7 +142,8 @@ SET(EMBREE_LIBRARY_FILES_AVX2
     geometry/instance_intersector1.cpp
     geometry/grid_soa.cpp
     subdiv/subdivpatch1base_eval.cpp
-
+    bvh/bvh_builder_morton.cpp
+    bvh/bvh_rotate.cpp
     bvh/bvh_intersector1.cpp)
 
 IF (EMBREE_RAY_PACKETS)
