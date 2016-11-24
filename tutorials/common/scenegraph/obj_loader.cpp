@@ -486,7 +486,6 @@ namespace embree
     {
       Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(curMaterial,1);
       group->add(mesh.cast<SceneGraph::Node>());
-      
       // merge three indices into one
       std::map<Vertex, uint32_t> vertexMap;
       for (size_t j=0; j<curGroup.size(); j++)
