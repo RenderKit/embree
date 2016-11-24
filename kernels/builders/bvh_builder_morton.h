@@ -118,19 +118,6 @@ namespace embree
 #endif
       }
 
-#if defined(__AVX2__)
-
-      __forceinline unsigned int fast_bitInterleave(const unsigned int x,
-                                                    const unsigned int y,
-                                                    const unsigned int z)
-      {
-        unsigned int xx = pdep(x,0b01001001001001001001001001001001);
-        unsigned int yy = pdep(y,0b10010010010010010010010010010010);
-        unsigned int zz = pdep(z,0b00100100100100100100100100100100);
-        return xx | yy | zz;
-      }
-
-#endif      
       __forceinline void operator() (const BBox3fa& b, const unsigned index)
       {
         const vfloat4 lower = (vfloat4)b.lower;
@@ -142,7 +129,7 @@ namespace embree
         const unsigned int x = extract<0>(binID);
         const unsigned int y = extract<1>(binID);
         const unsigned int z = extract<2>(binID);
-        const unsigned int xyz = fast_bitInterleave(x,y,z);
+        const unsigned int xyz = bitInterleave(x,y,z);
         dest[currentID].index = index;
         dest[currentID].code  = xyz;
         currentID++;
