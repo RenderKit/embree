@@ -99,13 +99,14 @@ namespace embree
       
       __forceinline MortonCodeGenerator(const MortonCodeMapping& mapping, MortonID32Bit* dest)
         : mapping(mapping), dest(dest), currentID(0), slots(0), ax(0), ay(0), az(0), ai(0) {}
-      
+
       __forceinline ~MortonCodeGenerator()
       {
+#if !defined(__AVX2__)
         if (slots != 0)
         {
 #if defined(__AVX512F__)
-          const vint16 code = bitInterleave(ax,ay,az);
+          const vint16 code = bitInterleave(ax,ay,az); //FIXME: remove after perf testing
 #else
           const vint4 code = bitInterleave(ax,ay,az);
 #endif
@@ -114,15 +115,39 @@ namespace embree
             dest[currentID-slots+i].code = code[i];
           }
         }
+#endif
       }
-      
+
+#if defined(__AVX2__)
+
+      __forceinline unsigned int fast_bitInterleave(const unsigned int x,
+                                                    const unsigned int y,
+                                                    const unsigned int z)
+      {
+        unsigned int xx = pdep(x,0b01001001001001001001001001001001);
+        unsigned int yy = pdep(y,0b10010010010010010010010010010010);
+        unsigned int zz = pdep(z,0b00100100100100100100100100100100);
+        return xx | yy | zz;
+      }
+
+#endif      
       __forceinline void operator() (const BBox3fa& b, const unsigned index)
       {
         const vfloat4 lower = (vfloat4)b.lower;
         const vfloat4 upper = (vfloat4)b.upper;
         const vfloat4 centroid = lower+upper;
         const vint4 binID = vint4((centroid-mapping.base)*mapping.scale); // FIXME: transform into fma
-        
+
+#if defined(__AVX2__)
+        const unsigned int x = extract<0>(binID);
+        const unsigned int y = extract<1>(binID);
+        const unsigned int z = extract<2>(binID);
+        const unsigned int xyz = fast_bitInterleave(x,y,z);
+        dest[currentID].index = index;
+        dest[currentID].code  = xyz;
+        currentID++;
+#else      
+  
         ax[slots] = extract<0>(binID);
         ay[slots] = extract<1>(binID);
         az[slots] = extract<2>(binID);
@@ -130,7 +155,7 @@ namespace embree
         slots++;
         currentID++;
 
-#if defined(__AVX512F__)
+#if defined(__AVX512F__) //FIXME: remove after perf testing
         if (unlikely(slots == 16))
         {
           const vint16 code = bitInterleave(ax,ay,az);
@@ -148,6 +173,7 @@ namespace embree
           slots = 0;
         }
 #endif
+#endif
       }
     
     public:
@@ -157,7 +183,7 @@ namespace embree
       const vfloat4 scale;
       size_t currentID;
       size_t slots;
-#if defined(__AVX512F__)
+#if defined(__AVX512F__) //FIXME: remove after perf testing
       vint16 ax, ay, az, ai;
 #else
       vint4 ax, ay, az, ai;
