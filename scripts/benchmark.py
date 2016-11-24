@@ -130,7 +130,7 @@ def extractLoop():
 def printData(name,modelname):
   base = baseName(name,modelname)
   line = (' %#6.1f MB' %  (1E-6*memory[base]))
-  line += (' %#6.1f M/s' %  (1E-6*buildperf[base]))
+  line += (' %#6.2f M/s' %  (1E-6*buildperf[base]))
   line += (' %#6.1f ' %  sah[base])
   line += (' %#6.3f fps' %  fps_avg[base])
   line += (' +/-%#6.3f ' %  fps_sigma[base])
