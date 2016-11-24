@@ -429,4 +429,13 @@ namespace embree
   __forceinline void prefetchL2EX(const void* ptr) { 
     prefetchEX(ptr); 
   }
+#if defined(__AVX2__)
+   __forceinline unsigned int pext(const unsigned int a, const unsigned int b) { return _pext_u32(a,b); }
+   __forceinline unsigned int pdep(const unsigned int a, const unsigned int b) { return _pdep_u32(a,b); }
+#if defined(__X86_64__)
+   __forceinline size_t pext(const size_t a, const size_t b) { return _pext_u64(a,b); }
+   __forceinline size_t pdep(const size_t a, const size_t b) { return _pdep_u64(a,b); }
+#endif
+#endif
+
 }
