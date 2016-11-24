@@ -130,11 +130,6 @@ CONFIGURE_FILE(
 )
 
 ##############################################################
-# Create Binary Packages (uses above config options)
-##############################################################
-include(package)
-
-##############################################################
 # Compiler
 ##############################################################
 
@@ -212,6 +207,13 @@ ELSE()
     MESSAGE(FATAL_ERROR "Unsupported ISA specified: " ${EMBREE_MAX_ISA})
   ENDIF()
 
+  SET(EMBREE_ISA_SSE2 OFF)
+  SET(EMBREE_ISA_SSE42 OFF)
+  SET(EMBREE_ISA_AVX OFF)
+  SET(EMBREE_ISA_AVX2 OFF)
+  SET(EMBREE_ISA_AVX512KNL OFF)
+  SET(EMBREE_ISA_AVX512SKX OFF)
+
   IF (ISA GREATER 0)
     SET(EMBREE_ISA_SSE2  ON)
   ENDIF ()
@@ -263,6 +265,11 @@ IF (EMBREE_ISA_AVX512SKX)
 ENDIF ()
 
 INCLUDE (ispc)
+
+##############################################################
+# Create Binary Packages (uses above config options)
+##############################################################
+include(package)
 
 ##############################################################
 # Search paths

@@ -294,6 +294,19 @@ namespace embree
     return x | (y << 1) | (z << 2);
   }
 
+#if defined(__AVX2__)
+
+  template<>
+    __forceinline unsigned int bitInterleave(const unsigned int &xi, const unsigned int& yi, const unsigned int& zi)
+  {
+    const unsigned int xx = pdep(xi,0b01001001001001001001001001001001);
+    const unsigned int yy = pdep(yi,0b10010010010010010010010010010010);
+    const unsigned int zz = pdep(zi,0b00100100100100100100100100100100);
+    return xx | yy | zz;
+  }
+
+#endif
+
   /*! bit interleave operation for 64bit data types*/
   template<class T>
     __forceinline T bitInterleave64(const T& xin, const T& yin, const T& zin){
