@@ -37,6 +37,7 @@ namespace embree
 {
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Line4iIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Line4iMBIntersector1);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH8MB4DLine4iMBIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Bezier1vIntersector1_OBB);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Bezier1iIntersector1_OBB);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Bezier1iMBIntersector1_OBB);
@@ -72,6 +73,7 @@ namespace embree
 
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8Line4iIntersector4);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8Line4iMBIntersector4);
+  DECLARE_SYMBOL2(Accel::Intersector4,BVH8MB4DLine4iMBIntersector4);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8Bezier1vIntersector4Single_OBB);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8Bezier1iIntersector4Single_OBB);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8Bezier1iMBIntersector4Single_OBB);
@@ -106,6 +108,7 @@ namespace embree
 
   DECLARE_SYMBOL2(Accel::Intersector8,BVH8Line4iIntersector8);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH8Line4iMBIntersector8);
+  DECLARE_SYMBOL2(Accel::Intersector8,BVH8MB4DLine4iMBIntersector8);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH8Bezier1vIntersector8Single_OBB);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH8Bezier1iIntersector8Single_OBB);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH8Bezier1iMBIntersector8Single_OBB);
@@ -140,6 +143,7 @@ namespace embree
 
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8Line4iIntersector16);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8Line4iMBIntersector16);
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH8MB4DLine4iMBIntersector16);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8Bezier1vIntersector16Single_OBB);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8Bezier1iIntersector16Single_OBB);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8Bezier1iMBIntersector16Single_OBB);
@@ -199,6 +203,7 @@ namespace embree
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Line4iSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Line4iMBSceneBuilderSAH);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH8MB4DLine4iMBSceneBuilderSAH);
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle4SceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle4vSceneBuilderSAH);
@@ -249,6 +254,7 @@ namespace embree
 
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8Line4iSceneBuilderSAH));
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8Line4iMBSceneBuilderSAH));
+    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8MB4DLine4iMBSceneBuilderSAH));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8Triangle4SceneBuilderSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8Triangle4vSceneBuilderSAH));
@@ -292,6 +298,7 @@ namespace embree
     /* select intersectors1 */
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Line4iIntersector1));
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Line4iMBIntersector1));
+    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8MB4DLine4iMBIntersector1));
     IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Bezier1vIntersector1_OBB));
     IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Bezier1iIntersector1_OBB));
     IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Bezier1iMBIntersector1_OBB));
@@ -330,6 +337,7 @@ namespace embree
     /* select intersectors4 */
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Line4iIntersector4));
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Line4iMBIntersector4));
+    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8MB4DLine4iMBIntersector4));
     IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Bezier1vIntersector4Single_OBB));
     IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Bezier1iIntersector4Single_OBB));
     IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Bezier1iMBIntersector4Single_OBB));
@@ -365,6 +373,7 @@ namespace embree
     /* select intersectors8 */
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Line4iIntersector8));
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Line4iMBIntersector8));
+    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8MB4DLine4iMBIntersector8));
     IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Bezier1vIntersector8Single_OBB));
     IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Bezier1iIntersector8Single_OBB));
     IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Bezier1iMBIntersector8Single_OBB));
@@ -400,6 +409,7 @@ namespace embree
     /* select intersectors16 */
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH8Line4iIntersector16));
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH8Line4iMBIntersector16));
+    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH8MB4DLine4iMBIntersector16));
     IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH8Bezier1vIntersector16Single_OBB));
     IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH8Bezier1iIntersector16Single_OBB));
     IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH8Bezier1iMBIntersector16Single_OBB));
@@ -588,6 +598,18 @@ namespace embree
     intersectors.intersector8  = BVH8Line4iMBIntersector8;
     intersectors.intersector16 = BVH8Line4iMBIntersector16;
     //intersectors.intersectorN  = BVH8Line4iMBIntersectorStream;
+    return intersectors;
+  }
+
+  Accel::Intersectors BVH8Factory::BVH8MB4DLine4iMBIntersectors(BVH8* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1  = BVH8MB4DLine4iMBIntersector1;
+    intersectors.intersector4  = BVH8MB4DLine4iMBIntersector4;
+    intersectors.intersector8  = BVH8MB4DLine4iMBIntersector8;
+    intersectors.intersector16 = BVH8MB4DLine4iMBIntersector16;
+    //intersectors.intersectorN  = BVH8MB4DLine4iMBIntersectorStream;
     return intersectors;
   }
 
@@ -946,6 +968,17 @@ namespace embree
     Builder* builder = nullptr;
     if      (scene->device->line_builder_mb == "default"     ) builder = BVH8Line4iMBSceneBuilderSAH(accel,scene,0);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->line_builder_mb+" for BVH8MB<Line4i>");
+    scene->needLineVertices = true;
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH8Factory::BVH8MB4DLine4iMB(Scene* scene)
+  {
+    BVH8* accel = new BVH8(Line4i::type,scene);
+    Accel::Intersectors intersectors = BVH8MB4DLine4iMBIntersectors(accel);
+    Builder* builder = nullptr;
+    if      (scene->device->line_builder_mb == "default"     ) builder = BVH8MB4DLine4iMBSceneBuilderSAH(accel,scene,0);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->line_builder_mb+" for BVH8MB4DMB<Line4i>");
     scene->needLineVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }

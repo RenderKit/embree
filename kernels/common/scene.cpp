@@ -445,9 +445,11 @@ namespace embree
 #endif
         accels.add(device->bvh4_factory->BVH4Line4iMB(this));
     }
-    else if (device->line_accel_mb == "bvh4.line4imb") accels.add(device->bvh4_factory->BVH4Line4iMB(this));
+    else if (device->line_accel_mb == "bvh4.line4imb"    ) accels.add(device->bvh4_factory->BVH4Line4iMB(this));
+    else if (device->line_accel_mb == "bvh4mb4d.line4imb") accels.add(device->bvh4_factory->BVH4MB4DLine4iMB(this));
 #if defined (__TARGET_AVX__)
-    else if (device->line_accel_mb == "bvh8.line4imb") accels.add(device->bvh8_factory->BVH8Line4iMB(this));
+    else if (device->line_accel_mb == "bvh8.line4imb"    ) accels.add(device->bvh8_factory->BVH8Line4iMB(this));
+    else if (device->line_accel_mb == "bvh8mb4d.line4imb") accels.add(device->bvh8_factory->BVH8MB4DLine4iMB(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown motion blur line segment acceleration structure "+device->line_accel_mb);
 #endif

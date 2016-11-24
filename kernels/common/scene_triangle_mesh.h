@@ -255,17 +255,13 @@ namespace embree
     }
 
     /*! calculates the linear bounds of the i'th primitive for the specified time range */
-    __forceinline LBBox3fa linearBounds(size_t primID, const BBox1f& time_range) const
-    {
-      return Geometry::linearBounds([&] (size_t itime) { return bounds(primID, itime); },
-                                    time_range, fnumTimeSegments);
+    __forceinline LBBox3fa linearBounds(size_t primID, const BBox1f& time_range) const {
+      return Geometry::linearBounds([&] (size_t itime) { return bounds(primID, itime); }, time_range, fnumTimeSegments);
     }
 
     /*! calculates the linear bounds of the i'th primitive for the specified time range */
-    __forceinline bool linearBounds(size_t i, const BBox1f& time_range, LBBox3fa& bbox) const
-    {
-      if (!valid(i, getTimeSegmentRange(time_range, fnumTimeSegments)))
-        return false;
+    __forceinline bool linearBounds(size_t i, const BBox1f& time_range, LBBox3fa& bbox) const  {
+      if (!valid(i, getTimeSegmentRange(time_range, fnumTimeSegments))) return false;
       bbox = linearBounds(i, time_range);
       return true;
     }
