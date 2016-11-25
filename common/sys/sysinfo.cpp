@@ -398,7 +398,8 @@ namespace embree
   {
     HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
     if (handle == INVALID_HANDLE_VALUE) return 80;
-    CONSOLE_SCREEN_BUFFER_INFO info = { { 0 } };
+    CONSOLE_SCREEN_BUFFER_INFO info;
+    memset(&info,0,sizeof(info));
     GetConsoleScreenBufferInfo(handle, &info);
     return info.dwSize.X;
   }

@@ -312,6 +312,14 @@ __forceinline std::string toString(long long value) {
 //#pragma GCC diagnostic ignored "-Warray-bounds"
 #endif
 
+#if defined(__clang__) && defined(__WIN32__)
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#pragma clang diagnostic ignored "-Wmicrosoft-cast"
+#pragma clang diagnostic ignored "-Wmicrosoft-enum-value"
+#pragma clang diagnostic ignored "-Wmicrosoft-include"
+#pragma clang diagnostic ignored "-Wunused-function"
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 /// Some macros for static profiling
 ////////////////////////////////////////////////////////////////////////////////
