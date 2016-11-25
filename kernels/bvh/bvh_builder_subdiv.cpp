@@ -540,7 +540,7 @@ namespace embree
       {
         SubdivPatch1Base& patch = patches[patchIndexMB+0];
         const unsigned num_time_steps = num_time_segments+1;
-        const LBBox3fa lbounds = Geometry::linearBounds([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, time_range, num_time_steps);
+        const LBBox3fa lbounds = Geometry::linearBounds([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, time_range, num_time_segments);
         const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
         const PrimRefMB prim2(lbounds,tbounds.size(),num_time_segments,patchIndexMB);
         return std::make_pair(prim2,tbounds);
