@@ -178,6 +178,10 @@ namespace embree
       __forceinline PrimInfoMB (EmptyTy)
 	: CentGeom<LBBox3fa>(empty), begin(0), end(0), num_time_segments(0), max_num_time_segments(0), time_range(0.0f,1.0f) {}
 
+      __forceinline PrimInfoMB (size_t begin, size_t end)
+	: CentGeom<LBBox3fa>(empty), begin(begin), end(end), num_time_segments(0), max_num_time_segments(0), time_range(0.0f,1.0f) {}
+
+
       template<typename PrimRef> 
         __forceinline void add_primref(const PrimRef& prim) 
       {

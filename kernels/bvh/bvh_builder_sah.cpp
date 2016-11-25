@@ -731,8 +731,6 @@ namespace embree
             }
             return std::make_pair(cbounds,prims.time_range);
           }
-
-          return LBBox3fa::merge_with_time(bounds,num);
         };
         auto identity = std::make_pair(LBBox3fa(empty),BBox1f(empty));
 

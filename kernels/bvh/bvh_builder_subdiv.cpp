@@ -524,18 +524,86 @@ namespace embree
       }
     };
 
-#if 0
+    // =======================================================================================================
+    // =======================================================================================================
+    // =======================================================================================================
+
+    struct RecalculatePrimRef2
+    {
+      mvector<BBox3fa>& bounds;
+      SubdivPatch1Cached* patches;
+
+      __forceinline RecalculatePrimRef2 (mvector<BBox3fa>& bounds, SubdivPatch1Cached* patches)
+        : bounds(bounds), patches(patches) {}
+
+      __forceinline std::pair<PrimRefMB,range<int>> operator() (const size_t patchIndexMB, const unsigned num_time_segments, const BBox1f time_range) const
+      {
+        SubdivPatch1Base& patch = patches[patchIndexMB+0];
+        const unsigned num_time_steps = num_time_segments+1;
+        const LBBox3fa lbounds = Geometry::linearBounds([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, time_range, num_time_steps);
+        const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
+        const PrimRefMB prim2(lbounds,tbounds.size(),num_time_segments,patchIndexMB);
+        return std::make_pair(prim2,tbounds);
+      }
+
+      __forceinline std::pair<PrimRefMB,range<int>> operator() (const PrimRefMB& prim, const BBox1f time_range) const {
+        return operator()(prim.ID(),prim.totalTimeSegments(),time_range);
+      }
+    };
 
     template<int N>
-    struct BVHNMB4DSubdivPatch1BuilderBinnedSAHClass : public Builder
+      struct CreateAlignedNodeMB4D
+    {
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+      typedef HeuristicMBlur<RecalculatePrimRef2,NUM_OBJECT_BINS> Heuristic;
+      typedef typename Heuristic::Set Set;
+      typedef typename Heuristic::Split Split;
+      typedef GeneralBuildRecord<Set,Split,PrimInfoMB> BuildRecord;
+      typedef typename BVH::AlignedNodeMB AlignedNodeMB;
+      typedef typename BVH::AlignedNodeMB4D AlignedNodeMB4D;
+
+      __forceinline CreateAlignedNodeMB4D (BVH* bvh) : bvh(bvh) {}
+      
+      __forceinline NodeRef operator() (const GeneralBuildRecord<Set,Split,PrimInfoMB>& current, GeneralBuildRecord<Set,Split,PrimInfoMB>** children, const size_t num, FastAllocator::ThreadLocal2* alloc)
+      {
+        bool hasTimeSplits = false;
+        for (size_t i=0; i<num && !hasTimeSplits; i++)
+          hasTimeSplits |= current.pinfo.time_range != children[i]->pinfo.time_range;
+
+        if (hasTimeSplits)
+        {
+          AlignedNodeMB4D* node = (AlignedNodeMB4D*) alloc->alloc0->malloc(sizeof(AlignedNodeMB4D),BVH::byteNodeAlignment); node->clear();
+          for (size_t i=0; i<num; i++) children[i]->parent = (size_t*)&node->child(i);
+          NodeRef ref = bvh->encodeNode(node);
+          *current.parent = ref;
+          return ref;
+        }
+        else
+        {
+          AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),BVH::byteNodeAlignment); node->clear();
+          for (size_t i=0; i<num; i++) children[i]->parent = (size_t*)&node->child(i);
+          NodeRef ref = bvh->encodeNode(node);
+          *current.parent = ref;
+          return ref;
+        }
+      }
+
+      BVH* bvh;
+    };
+
+    template<int N>
+    struct BVHNMB4DSubdivPatch1CachedBuilderBinnedSAHClass : public Builder
     {
       ALIGNED_STRUCT;
 
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVHN<N>::AlignedNodeMB AlignedNodeMB;
+      typedef typename BVHN<N>::AlignedNodeMB4D AlignedNodeMB4D;
       typedef typename BVHN<N>::Allocator BVH_Allocator;
 
-      typedef HeuristicMBlur<SubdivMesh,NUM_OBJECT_BINS> Heuristic;
+      typedef HeuristicMBlur<RecalculatePrimRef2,NUM_OBJECT_BINS> Heuristic;
       typedef typename Heuristic::Set Set;
       typedef typename Heuristic::Split Split;
       typedef GeneralBuildRecord<Set,Split,PrimInfoMB> BuildRecord;
@@ -544,20 +612,20 @@ namespace embree
       Scene* scene;
       std::shared_ptr<avector<PrimRefMB>> prims; // FIXME: use mvector instead of avector
       mvector<BBox3fa> bounds; 
-      ParallelForForPrefixSumState<PrimInfo> pstate;
+      ParallelForForPrefixSumState<PrimInfoMB> pstate;
       size_t numSubdivEnableDisableEvents;
 
-      BVHNMB4DSubdivPatch1BuilderBinnedSAHClass (BVH* bvh, Scene* scene)
-        : bvh(bvh), refitter(nullptr), scene(scene), numTimeSteps(0), prims((new avector<PrimRefMB>())), bounds(scene->device), numSubdivEnableDisableEvents(0) {}
+      BVHNMB4DSubdivPatch1CachedBuilderBinnedSAHClass (BVH* bvh, Scene* scene)
+        : bvh(bvh), scene(scene), prims((new avector<PrimRefMB>())), bounds(scene->device), numSubdivEnableDisableEvents(0) {}
       
       bool initializeHalfEdges(size_t& numPrimitives)
       {
         /* initialize all half edge structures */
         bool fastUpdateMode = true;
-        numPrimitives = scene->getNumPrimitives<SubdivMesh,mblur>();
+        numPrimitives = scene->getNumPrimitives<SubdivMesh,true>();
         if (numPrimitives > 0 || scene->isInterpolatable()) 
         {
-          Scene::Iterator<SubdivMesh,mblur> iter(scene,scene->isInterpolatable());
+          Scene::Iterator<SubdivMesh,true> iter(scene,scene->isInterpolatable());
           fastUpdateMode = parallel_reduce(size_t(0),iter.size(),true,[&](const range<size_t>& range)
           {
             bool fastUpdate = true;
@@ -587,10 +655,10 @@ namespace embree
 
       void countSubPatches(size_t& numSubPatches, size_t& numSubPatchesMB)
       {
-        Scene::Iterator<SubdivMesh,mblur> iter(scene);
+        Scene::Iterator<SubdivMesh,true> iter(scene);
         pstate.init(iter,size_t(1024));
 
-        PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+        PrimInfoMB pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfoMB(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfoMB& base) -> PrimInfoMB
         { 
           size_t s = 0;
           size_t sMB = 0;
@@ -601,52 +669,21 @@ namespace embree
             s += count;
             sMB += count * mesh->numTimeSteps;
           }
-          return PrimInfo(s,sMB,empty,empty);
-        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty,empty); });
+          return PrimInfoMB(s,sMB);
+        }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB { return PrimInfoMB(a.begin+b.begin,a.end+b.end); });
 
         numSubPatches = pinfo.begin;
         numSubPatchesMB = pinfo.end;
       }
 
-      PrimInfo updatePrimRefArray(size_t t)
-      {
-        SubdivPatch1Cached* const subdiv_patches = (SubdivPatch1Cached*) bvh->subdiv_patches.data();
-
-        const PrimInfo pinfo = parallel_reduce(size_t(0), prims.size(), PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo
-        {
-          PrimInfo pinfo(empty);
-          for (size_t i = r.begin(); i < r.end(); i++) {
-            size_t patchIndexMB = prims[i].ID();
-
-            BBox3fa bound;
-            if (mblur) {
-              size_t patchNumTimeSteps = scene->getSubdivMesh(subdiv_patches[patchIndexMB].geom)->numTimeSteps;
-              Geometry::buildBounds([&] (size_t itime, BBox3fa& bbox) -> bool
-                                    {
-                                      bbox = bounds[patchIndexMB+itime];
-                                      return true;
-                                    },
-                                    t, numTimeSteps, patchNumTimeSteps, bound);
-            } else {
-              bound = bounds[patchIndexMB];
-            }
-
-            prims[i] = PrimRef(bound,patchIndexMB);
-            pinfo.add(bound);
-          }
-          return pinfo;
-        }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
-
-        return pinfo;
-      }
-
       void rebuild(size_t numPrimitives)
       {
         SubdivPatch1Cached* const subdiv_patches = (SubdivPatch1Cached*) bvh->subdiv_patches.data();
+        RecalculatePrimRef2 recalculatePrimRef(bounds,subdiv_patches);
         bvh->alloc.reset();
 
-        Scene::Iterator<SubdivMesh,mblur> iter(scene);
-        PrimInfoMB pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfoMB(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfoMB
+        Scene::Iterator<SubdivMesh,true> iter(scene);
+        PrimInfoMB pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfoMB(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfoMB& base) -> PrimInfoMB
         {
           size_t s = 0;
           size_t sMB = 0;
@@ -669,13 +706,11 @@ namespace embree
               }
 
               SubdivPatch1Base& patch0 = subdiv_patches[patchIndexMB];
-              patch0.root_ref.set((int64_t) GridSOA::create(&patch0,(unsigned)mesh->numTimeSteps,(unsigned)numTimeSteps,scene,alloc,&bounds[patchIndexMB]));
-              
-              LBBox3fa lbounds = linearBounds(&bounds[patchIndexMB],mesh->numTimeSteps,BBox1f(0.0f,1.0f));
-              prims[patchIndex] = PrimRefMB(lbounds,mesh->numTimeSegments,mesh->numTimeSegments,patchIndexMB);
+              patch0.root_ref.set((int64_t) GridSOA::create(&patch0,(unsigned)mesh->numTimeSteps,(unsigned)mesh->numTimeSteps,scene,alloc,&bounds[patchIndexMB]));
+              (*prims)[patchIndex] = recalculatePrimRef(patchIndexMB,mesh->numTimeSegments(),BBox1f(0.0f,1.0f)).first;
               s++;
               sMB += mesh->numTimeSteps;
-              pinfo.add(prims[patchIndex]);
+              pinfo.add_primref((*prims)[patchIndex]);
             });
           }
           pinfo.begin = s;
@@ -687,30 +722,64 @@ namespace embree
             //bvh->scene->progressMonitor(double(dn)); // FIXME: triggers GCC compiler bug
         //  });
         
-        auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> LBBox3fa {
+        auto createLeafFunc = [&] (const BuildRecord& current, Allocator* alloc) -> std::pair<LBBox3fa,BBox1f> {
           size_t items MAYBE_UNUSED = current.pinfo.size();
           assert(items == 1);
-          const size_t patchIndexMB = prims[current.prims.begin()].ID();
+          const size_t patchIndexMB = (*prims)[current.prims.object_range.begin()].ID();
           SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+0];
           *current.parent = bvh->encodeLeaf((char*)&patch,1);
           size_t patchNumTimeSteps = scene->getSubdivMesh(patch.geom)->numTimeSteps;
-          return Geometry::linearBounds([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, t, numTimeSteps, patchNumTimeSteps);
+          const LBBox3fa lbounds = Geometry::linearBounds([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, current.prims.time_range, patchNumTimeSteps);
+          return std::make_pair(lbounds,current.prims.time_range);
         };
 
+        /* reduction function */
+        auto updateNodeFunc = [&] (NodeRef ref, Set& prims, const std::pair<LBBox3fa,BBox1f>* bounds, const size_t num) -> std::pair<LBBox3fa,BBox1f> {
+          
+          assert(num <= N);
+
+          if (ref.isAlignedNodeMB())
+          {
+            LBBox3fa cbounds = empty;
+            AlignedNodeMB* node = ref.alignedNodeMB();
+            for (size_t i=0; i<num; i++) {
+              assert(bounds[i].second == bounds[0].second);
+              node->set(i, bounds[i].first.global(bounds[i].second));
+              cbounds.extend(bounds[i].first);
+            }
+            return std::make_pair(cbounds,bounds[0].second);
+          }
+          else
+          {
+            AlignedNodeMB4D* node = ref.alignedNodeMB4D();
+            for (size_t i=0; i<num; i++) 
+              node->set(i, bounds[i].first.global(bounds[i].second), bounds[i].second);
+
+            LBBox3fa cbounds = empty;
+            for (size_t j=prims.object_range.begin(); j<prims.object_range.end(); j++) 
+            {
+              PrimRefMB& ref = (*prims.prims)[j];
+              PrimRefMB ref2 = recalculatePrimRef(ref,prims.time_range).first;
+              cbounds.extend(ref2.lbounds);
+            }
+            return std::make_pair(cbounds,prims.time_range);
+          }
+        };
+        auto identity = std::make_pair(LBBox3fa(empty),BBox1f(empty));
+
         /* builder wants log2 of blockSize as input */		  
-        const size_t logBlockSize = __bsr(sahBlockSize); 
-        assert((sahBlockSize ^ (size_t(1) << logBlockSize)) == 0);
+        const size_t logBlockSize = __bsr(N); 
 
         /* instantiate array binning heuristic */
-        Heuristic heuristic(scene);
+        Heuristic heuristic(recalculatePrimRef);
         auto createAllocFunc = typename BVH::CreateAlloc(bvh);
-        auto createNodeFunc = CreateAlignedNodeMB4D<N,Mesh>(bvh);
+        auto createNodeFunc = CreateAlignedNodeMB4D<N>(bvh);
         //auto createLeafFunc = CreateMBlurLeaf<N,Mesh,Primitive>(bvh);
         auto progressMonitor = bvh->scene->progressInterface;
         
         typedef GeneralBVHMBBuilder<
           BuildRecord,
-          Mesh,
+          RecalculatePrimRef2,
           decltype(identity),
           decltype(createAllocFunc()),
           decltype(createAllocFunc),
@@ -721,7 +790,7 @@ namespace embree
           PrimInfoMB> Builder;
 
         /* instantiate builder */
-        Builder builder(scene,
+        Builder builder(recalculatePrimRef,
                         identity,
                         createAllocFunc,
                         createNodeFunc,
@@ -730,8 +799,10 @@ namespace embree
                         progressMonitor,
                         pinfo,
                         N,BVH::maxDepth,logBlockSize,
-                        minLeafSize,maxLeafSize,travCost,intCost,
-                        Primitive::singleTimeSegment);
+                        //minLeafSize,maxLeafSize,travCost,intCost,
+                        1,1,1.0f,1.0f,
+                        //Primitive::singleTimeSegment);
+                        false);
         
         /* build hierarchy */
         Set set(prims); 
@@ -756,8 +827,8 @@ namespace embree
 
         /* skip build for empty scene */
         if (numPatches == 0) {
-          prims->resize(numPatches);
-          bounds.resize(numPatches);
+          prims->resize(0);
+          bounds.resize(0);
           bvh->set(BVH::emptyNode,empty,0);
           return;
         }
@@ -785,7 +856,7 @@ namespace embree
         
 	/* clear temporary data for static geometry */
 	if (scene->isStatic()) {
-          prims.clear();
+          prims->clear();
           bvh->shrink();
         }
         bvh->cleanup();
@@ -793,15 +864,15 @@ namespace embree
       }
       
       void clear() {
-        prims.clear();
+        prims->clear();
       }
     };
-#endif
     
     /* entry functions for the scene builder */
     Builder* BVH4SubdivPatch1EagerBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1EagerBuilderBinnedSAHClass<4>((BVH4*)bvh,scene); }
     Builder* BVH4SubdivPatch1CachedBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedBuilderBinnedSAHClass<4,false>((BVH4*)bvh,scene,mode); }
     Builder* BVH4SubdivPatch1MBlurCachedBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedBuilderBinnedSAHClass<4,true>((BVH4*)bvh,scene,mode); }
+    Builder* BVH4MB4DSubdivPatch1MBlurCachedBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNMB4DSubdivPatch1CachedBuilderBinnedSAHClass<4>((BVH4*)bvh,scene); }
   }
 }
 #endif

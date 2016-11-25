@@ -28,6 +28,7 @@ namespace embree
     __forceinline PrimRefMB (const LBBox3fa& lbounds_i, unsigned int activeTimeSegments, unsigned int totalTimeSegments, unsigned int geomID, unsigned int primID)
       : lbounds(lbounds_i)
     {
+      assert(activeTimeSegments > 0);
       lbounds.bounds0.lower.a = geomID;
       lbounds.bounds0.upper.a = primID;
       lbounds.bounds1.lower.a = activeTimeSegments;
@@ -37,6 +38,7 @@ namespace embree
     __forceinline PrimRefMB (const LBBox3fa& lbounds_i, unsigned int activeTimeSegments, unsigned int totalTimeSegments, size_t id) 
       : lbounds(lbounds_i)
     {
+      assert(activeTimeSegments > 0);
 #if defined(__X86_64__)
       lbounds.bounds0.lower.u = id & 0xFFFFFFFF;
       lbounds.bounds0.upper.u = (id >> 32) & 0xFFFFFFFF;
@@ -90,6 +92,15 @@ namespace embree
     /*! returns the primitive ID */
     __forceinline unsigned primID() const { 
       return lbounds.bounds0.upper.a;
+    }
+
+    /*! returns an size_t sized ID */
+    __forceinline size_t ID() const { 
+#if defined(__X86_64__)
+      return size_t(lbounds.bounds0.lower.u) + (size_t(lbounds.bounds0.upper.u) << 32);
+#else
+      return size_t(lbounds.bounds0.lower.u);
+#endif
     }
 
     /*! special function for operator< */
