@@ -34,6 +34,20 @@ namespace embree
       lbounds.bounds1.upper.a = totalTimeSegments;
     }
 
+    __forceinline PrimRefMB (const LBBox3fa& lbounds_i, unsigned int activeTimeSegments, unsigned int totalTimeSegments, size_t id) 
+      : lbounds(lbounds_i)
+    {
+#if defined(__X86_64__)
+      lbounds.bounds0.lower.u = id & 0xFFFFFFFF;
+      lbounds.bounds0.upper.u = (id >> 32) & 0xFFFFFFFF;
+#else
+      lbounds.bounds0.lower.u = id;
+      lbounds.bounds0.upper.u = 0;
+#endif
+      lbounds.bounds1.lower.a = activeTimeSegments;
+      lbounds.bounds1.upper.a = totalTimeSegments;
+    }
+
     /*! returns bounds for binning */
     __forceinline LBBox3fa bounds() const {
       return lbounds;

@@ -523,6 +523,280 @@ namespace embree
         prims.clear();
       }
     };
+
+#if 0
+
+    template<int N>
+    struct BVHNMB4DSubdivPatch1BuilderBinnedSAHClass : public Builder
+    {
+      ALIGNED_STRUCT;
+
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVHN<N>::Allocator BVH_Allocator;
+
+      typedef HeuristicMBlur<SubdivMesh,NUM_OBJECT_BINS> Heuristic;
+      typedef typename Heuristic::Set Set;
+      typedef typename Heuristic::Split Split;
+      typedef GeneralBuildRecord<Set,Split,PrimInfoMB> BuildRecord;
+
+      BVH* bvh;
+      Scene* scene;
+      std::shared_ptr<avector<PrimRefMB>> prims; // FIXME: use mvector instead of avector
+      mvector<BBox3fa> bounds; 
+      ParallelForForPrefixSumState<PrimInfo> pstate;
+      size_t numSubdivEnableDisableEvents;
+
+      BVHNMB4DSubdivPatch1BuilderBinnedSAHClass (BVH* bvh, Scene* scene)
+        : bvh(bvh), refitter(nullptr), scene(scene), numTimeSteps(0), prims((new avector<PrimRefMB>())), bounds(scene->device), numSubdivEnableDisableEvents(0) {}
+      
+      bool initializeHalfEdges(size_t& numPrimitives)
+      {
+        /* initialize all half edge structures */
+        bool fastUpdateMode = true;
+        numPrimitives = scene->getNumPrimitives<SubdivMesh,mblur>();
+        if (numPrimitives > 0 || scene->isInterpolatable()) 
+        {
+          Scene::Iterator<SubdivMesh,mblur> iter(scene,scene->isInterpolatable());
+          fastUpdateMode = parallel_reduce(size_t(0),iter.size(),true,[&](const range<size_t>& range)
+          {
+            bool fastUpdate = true;
+            for (size_t i=range.begin(); i<range.end(); i++)
+            {
+              if (!iter[i]) continue;
+              fastUpdate &= !iter[i]->vertexIndices.isModified(); 
+              fastUpdate &= !iter[i]->faceVertices.isModified();
+              fastUpdate &= !iter[i]->holes.isModified();
+              fastUpdate &= !iter[i]->edge_creases.isModified();
+              fastUpdate &= !iter[i]->edge_crease_weights.isModified();
+              fastUpdate &= !iter[i]->vertex_creases.isModified();
+              fastUpdate &= !iter[i]->vertex_crease_weights.isModified(); 
+              fastUpdate &= iter[i]->levels.isModified() == true;
+              iter[i]->initializeHalfEdgeStructures();
+              //iter[i]->patch_eval_trees.resize(iter[i]->size()*numTimeSteps);
+            }
+            return fastUpdate;
+          }, [](const bool a, const bool b) { return a && b; });
+        }
+
+        /* only enable fast mode if no subdiv mesh got enabled or disabled since last run */
+        fastUpdateMode &= numSubdivEnableDisableEvents == scene->numSubdivEnableDisableEvents;
+        numSubdivEnableDisableEvents = scene->numSubdivEnableDisableEvents;
+        return fastUpdateMode;
+      }
+
+      void countSubPatches(size_t& numSubPatches, size_t& numSubPatchesMB)
+      {
+        Scene::Iterator<SubdivMesh,mblur> iter(scene);
+        pstate.init(iter,size_t(1024));
+
+        PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+        { 
+          size_t s = 0;
+          size_t sMB = 0;
+          for (size_t f=r.begin(); f!=r.end(); ++f) 
+          {          
+            if (!mesh->valid(f)) continue;
+            size_t count = patch_eval_subdivision_count(mesh->getHalfEdge(f));
+            s += count;
+            sMB += count * mesh->numTimeSteps;
+          }
+          return PrimInfo(s,sMB,empty,empty);
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty,empty); });
+
+        numSubPatches = pinfo.begin;
+        numSubPatchesMB = pinfo.end;
+      }
+
+      PrimInfo updatePrimRefArray(size_t t)
+      {
+        SubdivPatch1Cached* const subdiv_patches = (SubdivPatch1Cached*) bvh->subdiv_patches.data();
+
+        const PrimInfo pinfo = parallel_reduce(size_t(0), prims.size(), PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo
+        {
+          PrimInfo pinfo(empty);
+          for (size_t i = r.begin(); i < r.end(); i++) {
+            size_t patchIndexMB = prims[i].ID();
+
+            BBox3fa bound;
+            if (mblur) {
+              size_t patchNumTimeSteps = scene->getSubdivMesh(subdiv_patches[patchIndexMB].geom)->numTimeSteps;
+              Geometry::buildBounds([&] (size_t itime, BBox3fa& bbox) -> bool
+                                    {
+                                      bbox = bounds[patchIndexMB+itime];
+                                      return true;
+                                    },
+                                    t, numTimeSteps, patchNumTimeSteps, bound);
+            } else {
+              bound = bounds[patchIndexMB];
+            }
+
+            prims[i] = PrimRef(bound,patchIndexMB);
+            pinfo.add(bound);
+          }
+          return pinfo;
+        }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
+
+        return pinfo;
+      }
+
+      void rebuild(size_t numPrimitives)
+      {
+        SubdivPatch1Cached* const subdiv_patches = (SubdivPatch1Cached*) bvh->subdiv_patches.data();
+        bvh->alloc.reset();
+
+        Scene::Iterator<SubdivMesh,mblur> iter(scene);
+        PrimInfoMB pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfoMB(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfoMB
+        {
+          size_t s = 0;
+          size_t sMB = 0;
+          PrimInfoMB pinfo(empty);
+          for (size_t f=r.begin(); f!=r.end(); ++f) 
+          {
+            if (!mesh->valid(f)) continue;
+            
+            BVH_Allocator alloc(bvh);
+            patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
+            {
+              const size_t patchIndex = base.begin+s;
+              const size_t patchIndexMB = base.end+sMB;
+              assert(patchIndex < numPrimitives);
+
+              for (size_t t=0; t<mesh->numTimeSteps; t++)
+              {
+                SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+t];
+                new (&patch) SubdivPatch1Cached(mesh->id,unsigned(f),subPatch,mesh,t,uv,edge_level,subdiv,VSIZEX);
+              }
+
+              SubdivPatch1Base& patch0 = subdiv_patches[patchIndexMB];
+              patch0.root_ref.set((int64_t) GridSOA::create(&patch0,(unsigned)mesh->numTimeSteps,(unsigned)numTimeSteps,scene,alloc,&bounds[patchIndexMB]));
+              
+              LBBox3fa lbounds = linearBounds(&bounds[patchIndexMB],mesh->numTimeSteps,BBox1f(0.0f,1.0f));
+              prims[patchIndex] = PrimRefMB(lbounds,mesh->numTimeSegments,mesh->numTimeSegments,patchIndexMB);
+              s++;
+              sMB += mesh->numTimeSteps;
+              pinfo.add(prims[patchIndex]);
+            });
+          }
+          pinfo.begin = s;
+          pinfo.end = sMB;
+          return pinfo;
+        }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB { return PrimInfoMB::merge(a,b); });
+
+        //auto virtualprogress = BuildProgressMonitorFromClosure([&] (size_t dn) { 
+            //bvh->scene->progressMonitor(double(dn)); // FIXME: triggers GCC compiler bug
+        //  });
+        
+        auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> LBBox3fa {
+          size_t items MAYBE_UNUSED = current.pinfo.size();
+          assert(items == 1);
+          const size_t patchIndexMB = prims[current.prims.begin()].ID();
+          SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+0];
+          *current.parent = bvh->encodeLeaf((char*)&patch,1);
+          size_t patchNumTimeSteps = scene->getSubdivMesh(patch.geom)->numTimeSteps;
+          return Geometry::linearBounds([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, t, numTimeSteps, patchNumTimeSteps);
+        };
+
+        /* builder wants log2 of blockSize as input */		  
+        const size_t logBlockSize = __bsr(sahBlockSize); 
+        assert((sahBlockSize ^ (size_t(1) << logBlockSize)) == 0);
+
+        /* instantiate array binning heuristic */
+        Heuristic heuristic(scene);
+        auto createAllocFunc = typename BVH::CreateAlloc(bvh);
+        auto createNodeFunc = CreateAlignedNodeMB4D<N,Mesh>(bvh);
+        //auto createLeafFunc = CreateMBlurLeaf<N,Mesh,Primitive>(bvh);
+        auto progressMonitor = bvh->scene->progressInterface;
+        
+        typedef GeneralBVHMBBuilder<
+          BuildRecord,
+          Mesh,
+          decltype(identity),
+          decltype(createAllocFunc()),
+          decltype(createAllocFunc),
+          decltype(createNodeFunc),
+          decltype(updateNodeFunc),
+          decltype(createLeafFunc),
+          decltype(progressMonitor),
+          PrimInfoMB> Builder;
+
+        /* instantiate builder */
+        Builder builder(scene,
+                        identity,
+                        createAllocFunc,
+                        createNodeFunc,
+                        updateNodeFunc,
+                        createLeafFunc,
+                        progressMonitor,
+                        pinfo,
+                        N,BVH::maxDepth,logBlockSize,
+                        minLeafSize,maxLeafSize,travCost,intCost,
+                        Primitive::singleTimeSegment);
+        
+        /* build hierarchy */
+        Set set(prims); 
+        assert(prims->size() == pinfo.size());
+        NodeRef root;
+        BuildRecord br(pinfo,1,(size_t*)&root,set);
+        builder(br);
+        
+        bvh->set(root,pinfo.geomBounds,pinfo.size());
+
+        /* call BVH builder */
+        //BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f);
+
+        //bvh->set(NodeRef((size_t)roots),pinfo.lbounds,num_bvh_primitives);
+      }
+
+      void build(size_t, size_t) 
+      {
+        /* initialize all half edge structures */
+        size_t numPatches;
+        bool fastUpdateMode = initializeHalfEdges(numPatches);
+
+        /* skip build for empty scene */
+        if (numPatches == 0) {
+          prims->resize(numPatches);
+          bounds.resize(numPatches);
+          bvh->set(BVH::emptyNode,empty,0);
+          return;
+        }
+
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "MB4DSubdivPatch1BuilderBinnedSAH");
+        
+        /* calculate number of primitives (some patches need initial subdivision) */
+        size_t numSubPatches, numSubPatchesMB;
+        countSubPatches(numSubPatches, numSubPatchesMB);
+        prims->resize(numSubPatches);
+        bounds.resize(numSubPatchesMB);
+        
+        /* exit if there are no primitives to process */
+        if (numSubPatches == 0) {
+          bvh->set(BVH::emptyNode,empty,0);
+          bvh->postBuild(t0);
+          return;
+        }
+        
+        /* Allocate memory for gregory and b-spline patches */
+        bvh->subdiv_patches.resize(sizeof(SubdivPatch1Cached) * numSubPatchesMB);
+
+        /* rebuild BVH */
+        rebuild(numSubPatches);
+        
+	/* clear temporary data for static geometry */
+	if (scene->isStatic()) {
+          prims.clear();
+          bvh->shrink();
+        }
+        bvh->cleanup();
+        bvh->postBuild(t0);        
+      }
+      
+      void clear() {
+        prims.clear();
+      }
+    };
+#endif
     
     /* entry functions for the scene builder */
     Builder* BVH4SubdivPatch1EagerBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1EagerBuilderBinnedSAHClass<4>((BVH4*)bvh,scene); }
