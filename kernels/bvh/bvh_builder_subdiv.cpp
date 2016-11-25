@@ -614,9 +614,10 @@ namespace embree
       mvector<BBox3fa> bounds; 
       ParallelForForPrefixSumState<PrimInfoMB> pstate;
       size_t numSubdivEnableDisableEvents;
+      bool cached;
 
-      BVHNMB4DSubdivPatch1CachedBuilderBinnedSAHClass (BVH* bvh, Scene* scene)
-        : bvh(bvh), scene(scene), prims((new avector<PrimRefMB>())), bounds(scene->device), numSubdivEnableDisableEvents(0) {}
+      BVHNMB4DSubdivPatch1CachedBuilderBinnedSAHClass (BVH* bvh, Scene* scene, bool cached)
+        : bvh(bvh), scene(scene), prims((new avector<PrimRefMB>())), bounds(scene->device), numSubdivEnableDisableEvents(0), cached(cached) {}
       
       bool initializeHalfEdges(size_t& numPrimitives)
       {
@@ -705,8 +706,20 @@ namespace embree
                 new (&patch) SubdivPatch1Cached(mesh->id,unsigned(f),subPatch,mesh,t,uv,edge_level,subdiv,VSIZEX);
               }
 
-              SubdivPatch1Base& patch0 = subdiv_patches[patchIndexMB];
-              patch0.root_ref.set((int64_t) GridSOA::create(&patch0,(unsigned)mesh->numTimeSteps,(unsigned)mesh->numTimeSteps,scene,alloc,&bounds[patchIndexMB]));
+              if (cached)
+              {
+                for (size_t t=0; t<mesh->numTimeSteps; t++)
+                {
+                  SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+t];
+                  BBox3fa bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
+                  bounds[patchIndexMB+t] = bound;
+                }
+              }
+              else
+              {
+                SubdivPatch1Base& patch0 = subdiv_patches[patchIndexMB];
+                patch0.root_ref.set((int64_t) GridSOA::create(&patch0,(unsigned)mesh->numTimeSteps,(unsigned)mesh->numTimeSteps,scene,alloc,&bounds[patchIndexMB]));
+              }
               (*prims)[patchIndex] = recalculatePrimRef(patchIndexMB,mesh->numTimeSegments(),BBox1f(0.0f,1.0f)).first;
               s++;
               sMB += mesh->numTimeSteps;
@@ -872,7 +885,7 @@ namespace embree
     Builder* BVH4SubdivPatch1EagerBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1EagerBuilderBinnedSAHClass<4>((BVH4*)bvh,scene); }
     Builder* BVH4SubdivPatch1CachedBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedBuilderBinnedSAHClass<4,false>((BVH4*)bvh,scene,mode); }
     Builder* BVH4SubdivPatch1MBlurCachedBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedBuilderBinnedSAHClass<4,true>((BVH4*)bvh,scene,mode); }
-    Builder* BVH4MB4DSubdivPatch1MBlurCachedBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNMB4DSubdivPatch1CachedBuilderBinnedSAHClass<4>((BVH4*)bvh,scene); }
+    Builder* BVH4MB4DSubdivPatch1MBlurCachedBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNMB4DSubdivPatch1CachedBuilderBinnedSAHClass<4>((BVH4*)bvh,scene,mode); }
   }
 }
 #endif
