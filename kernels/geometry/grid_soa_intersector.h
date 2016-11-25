@@ -45,6 +45,8 @@ namespace embree
 
       public:
         GridSOA* grid;
+        int _itime;
+        float _ftime;
         PlueckerIntersectorK<M,K> intersector; // FIXME: use quad intersector
       };
 
@@ -283,8 +285,9 @@ namespace embree
       /*! Intersect a ray with the primitive. */
       static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
       { 
-        float ftime;
-        const size_t itime = getTimeSegment(ray.time[k], float(pre.grid->time_steps-1), ftime);
+        //float ftime;
+        //const size_t itime = getTimeSegment(ray.time[k], float(pre.grid->time_steps-1), ftime);
+        float ftime = pre._ftime; int itime = pre._itime;
 
         const size_t line_offset   = pre.grid->width;
         const float* const grid_x  = pre.grid->decodeLeaf(itime,prim);
@@ -300,8 +303,9 @@ namespace embree
       /*! Test if the ray is occluded by the primitive */
       static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
       {
-        float ftime;
-        const size_t itime = getTimeSegment(ray.time[k], float(pre.grid->time_steps-1), ftime);
+        //float ftime;
+        //const size_t itime = getTimeSegment(ray.time[k], float(pre.grid->time_steps-1), ftime);
+        float ftime = pre._ftime; int itime = pre._itime;
 
         const size_t line_offset   = pre.grid->width;
         const float* const grid_x  = pre.grid->decodeLeaf(itime,prim);

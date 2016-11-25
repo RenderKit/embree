@@ -123,7 +123,9 @@ namespace embree
         else {
           grid = (GridSOA*) prim->root_ref.get();
         }
-        lazy_node = grid->root(pre.itime());
+        pre._itime = getTimeSegment(ray.time, float(grid->time_steps-1), pre._ftime);
+        lazy_node = grid->root(pre._itime);
+        //lazy_node = grid->root(pre.itime());
         pre.grid = grid;
         return false;
       }
@@ -233,7 +235,9 @@ namespace embree
         else {
           grid = (GridSOA*) prim->root_ref.get();
         }
-        lazy_node = grid->root(pre.itime(k));
+        pre._itime = getTimeSegment(ray.time[k], float(grid->time_steps-1), pre._ftime);
+        lazy_node = grid->root(pre._itime);
+        //lazy_node = grid->root(pre.itime(k));
         pre.grid = grid;
         return false;
       }
