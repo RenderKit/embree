@@ -565,12 +565,34 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 
+    template<typename Mesh>
+    struct RecalculatePrimRef
+    {
+      Scene* scene;
+
+      __forceinline RecalculatePrimRef (Scene* scene)
+        : scene(scene) {}
+
+      __forceinline std::pair<PrimRefMB,range<int>> operator() (const PrimRefMB& prim, const BBox1f time_range) const
+      {
+        const unsigned geomID = prim.geomID();
+        const unsigned primID = prim.primID();
+        const Mesh* mesh = (Mesh*)scene->get(geomID);
+        const LBBox3fa lbounds = mesh->linearBounds(primID,time_range);
+        const unsigned num_time_segments = mesh->numTimeSegments();
+        const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
+        assert(tbounds.size() > 0);
+        const PrimRefMB prim2(lbounds,tbounds.size(),num_time_segments,geomID,primID);
+        return std::make_pair(prim2,tbounds);
+      }
+    };
+
     template<int N, typename Mesh>
       struct CreateAlignedNodeMB4D
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
-      typedef HeuristicMBlur<Mesh,NUM_OBJECT_BINS> Heuristic;
+      typedef HeuristicMBlur<RecalculatePrimRef<Mesh>,NUM_OBJECT_BINS> Heuristic;
       typedef typename Heuristic::Set Set;
       typedef typename Heuristic::Split Split;
       typedef GeneralBuildRecord<Set,Split,PrimInfoMB> BuildRecord;
@@ -610,7 +632,7 @@ namespace embree
     struct CreateMBlurLeaf
     {
       typedef BVHN<N> BVH;
-      typedef HeuristicMBlur<Mesh,NUM_OBJECT_BINS> Heuristic;
+      typedef HeuristicMBlur<RecalculatePrimRef<Mesh>,NUM_OBJECT_BINS> Heuristic;
       typedef typename Heuristic::Set Set;
       typedef typename Heuristic::Split Split;
       typedef GeneralBuildRecord<Set,Split,PrimInfoMB> BuildRecord;
@@ -642,7 +664,7 @@ namespace embree
       typedef typename BVHN<N>::AlignedNodeMB AlignedNodeMB;
       typedef typename BVHN<N>::AlignedNodeMB4D AlignedNodeMB4D;
 
-      typedef HeuristicMBlur<Mesh,NUM_OBJECT_BINS> Heuristic;
+      typedef HeuristicMBlur<RecalculatePrimRef<Mesh>,NUM_OBJECT_BINS> Heuristic;
       typedef typename Heuristic::Set Set;
       typedef typename Heuristic::Split Split;
       typedef GeneralBuildRecord<Set,Split,PrimInfoMB> BuildRecord;
@@ -722,7 +744,8 @@ namespace embree
         assert((sahBlockSize ^ (size_t(1) << logBlockSize)) == 0);
 
         /* instantiate array binning heuristic */
-        Heuristic heuristic(scene);
+        RecalculatePrimRef<Mesh> recalculatePrimRef(scene);
+        Heuristic heuristic(recalculatePrimRef);
         auto createAllocFunc = typename BVH::CreateAlloc(bvh);
         auto createNodeFunc = CreateAlignedNodeMB4D<N,Mesh>(bvh);
         auto createLeafFunc = CreateMBlurLeaf<N,Mesh,Primitive>(bvh);
@@ -730,7 +753,7 @@ namespace embree
         
         typedef GeneralBVHMBBuilder<
           BuildRecord,
-          Mesh,
+          RecalculatePrimRef<Mesh>,
           decltype(identity),
           decltype(createAllocFunc()),
           decltype(createAllocFunc),
@@ -741,7 +764,7 @@ namespace embree
           PrimInfoMB> Builder;
 
         /* instantiate builder */
-        Builder builder(scene,
+        Builder builder(recalculatePrimRef,
                         identity,
                         createAllocFunc,
                         createNodeFunc,

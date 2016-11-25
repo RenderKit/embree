@@ -28,7 +28,7 @@ namespace embree
   namespace isa
   { 
     /*! Performs standard object binning */
-    template<typename Mesh, size_t BINS>
+    template<typename RecalculatePrimRef, size_t BINS>
       struct HeuristicMBlur
       {
         typedef BinSplit<BINS> Split;
@@ -61,16 +61,8 @@ namespace embree
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
         static const size_t PARALLEL_PARITION_BLOCK_SIZE = 128;
 
-        HeuristicMBlur (Scene* scene)
-          : scene(scene) {}
-
-        static __forceinline unsigned calculateNumOverlappingTimeSegments(Scene* scene, unsigned geomID, BBox1f time_range)
-        {
-          const unsigned totalTimeSegments = scene->get(geomID)->numTimeSegments();
-          const unsigned numTimeSegments = getTimeSegmentRange(time_range, totalTimeSegments).size();
-          assert(numTimeSegments > 0);
-          return numTimeSegments;
-        }
+        HeuristicMBlur (const RecalculatePrimRef recalculatePrimRef)
+        : recalculatePrimRef(recalculatePrimRef) {}
 
         /*! finds the best split */
         const Split find(Set& set, PrimInfoMB& pinfo, const size_t logBlockSize)
@@ -102,13 +94,12 @@ namespace embree
             for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++) 
             {
               const PrimRefMB& prim = (*set.prims)[i];
-              unsigned numTimeSegments = scene->get(prim.geomID())->numTimeSegments();
-              const range<int> itime_range = getTimeSegmentRange(pinfo.time_range, numTimeSegments);
+              const range<int> itime_range = recalculatePrimRef(prim,pinfo.time_range).second;
               const int localTimeSegments = itime_range.size();
               assert(localTimeSegments > 0);
               if (localTimeSegments > 1) {
                 const int icenter = (itime_range.begin() + itime_range.end())/2;
-                const float splitTime = float(icenter)/float(numTimeSegments);
+                const float splitTime = float(icenter)/float(prim.totalTimeSegments());
                 return TemporalSplit(1.0f,-1,0,splitTime);
               }
             }
@@ -145,7 +136,7 @@ namespace embree
             }
           }
           
-          void bin(const PrimRefMB* prims, size_t begin, size_t end, BBox1f time_range, size_t numTimeSegments, Scene* scene)
+          void bin(const PrimRefMB* prims, size_t begin, size_t end, BBox1f time_range, size_t numTimeSegments, const RecalculatePrimRef& recalculatePrimRef)
           {
             for (int b=0; b<MBLUR_TIME_SPLIT_LOCATIONS; b++)
             {
@@ -160,24 +151,24 @@ namespace embree
               /* find linear bounds for both time segments */
               for (size_t i=begin; i<end; i++) 
               {
-                const unsigned geomID = prims[i].geomID();
-                const unsigned primID = prims[i].primID();
-                bounds0[b].extend(((Mesh*)scene->get(geomID))->linearBounds(primID,dt0));
-                bounds1[b].extend(((Mesh*)scene->get(geomID))->linearBounds(primID,dt1));
-                count0[b] += calculateNumOverlappingTimeSegments(scene,geomID,dt0);
-                count1[b] += calculateNumOverlappingTimeSegments(scene,geomID,dt1);
+                auto bn0 = recalculatePrimRef(prims[i],dt0);
+                auto bn1 = recalculatePrimRef(prims[i],dt1);
+                bounds0[b].extend(bn0.first.lbounds);
+                bounds1[b].extend(bn1.first.lbounds);
+                count0[b] += bn0.second.size();
+                count1[b] += bn1.second.size();
               }
             }
           }
 
-          __forceinline void bin_parallel(const PrimRefMB* prims, size_t begin, size_t end, size_t blockSize, size_t parallelThreshold, BBox1f time_range, size_t numTimeSegments, Scene* scene) 
+          __forceinline void bin_parallel(const PrimRefMB* prims, size_t begin, size_t end, size_t blockSize, size_t parallelThreshold, BBox1f time_range, size_t numTimeSegments, const RecalculatePrimRef& recalculatePrimRef) 
           {
             if (likely(end-begin < parallelThreshold)) {
-              bin(prims,begin,end,time_range,numTimeSegments,scene);
+              bin(prims,begin,end,time_range,numTimeSegments,recalculatePrimRef);
             } else {
               TemporalBinInfo binner(empty);
               *this = parallel_reduce(begin,end,blockSize,binner,
-                                      [&](const range<size_t>& r) -> TemporalBinInfo { TemporalBinInfo binner(empty); binner.bin(prims, r.begin(), r.end(), time_range, numTimeSegments, scene); return binner; },
+                                      [&](const range<size_t>& r) -> TemporalBinInfo { TemporalBinInfo binner(empty); binner.bin(prims, r.begin(), r.end(), time_range, numTimeSegments, recalculatePrimRef); return binner; },
                                       [&](const TemporalBinInfo& b0, const TemporalBinInfo& b1) -> TemporalBinInfo { TemporalBinInfo r = b0; r.merge(b1); return r; });
             }
           }
@@ -236,7 +227,7 @@ namespace embree
           assert(set.object_range.size() > 0);
           unsigned numTimeSegments = pinfo.max_num_time_segments;
           TemporalBinInfo<MBLUR_TIME_SPLIT_LOCATIONS> binner(empty);
-          binner.bin_parallel(set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,set.time_range,numTimeSegments,scene);
+          binner.bin_parallel(set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,set.time_range,numTimeSegments,recalculatePrimRef);
           TemporalSplit tsplit = binner.best(logBlockSize,set.time_range,numTimeSegments);
           if (!tsplit.valid()) tsplit.data = -2; // use fallback split
           return tsplit;
@@ -297,12 +288,8 @@ namespace embree
             for (size_t i=r.begin(); i<r.end(); i++) 
             {
               avector<PrimRefMB>& prims = *set.prims;
-              const unsigned geomID = prims[i].geomID();
-              const unsigned primID = prims[i].primID();
-              Mesh* mesh = (Mesh*)scene->get(geomID);
-              const LBBox3fa lbounds = mesh->linearBounds(primID,time_range);
-              const unsigned num_time_segments = calculateNumOverlappingTimeSegments(scene,geomID,time_range);
-              const PrimRefMB prim(lbounds,num_time_segments,mesh->numTimeSegments(),geomID,primID);
+              auto bn0 = recalculatePrimRef(prims[i],time_range);
+              const PrimRefMB& prim = bn0.first;
 #if MBLUR_NEW_ARRAY
               (*lprims)[i-set.object_range.begin()] = prim;
 #else
@@ -360,11 +347,11 @@ namespace embree
         }
 
       private:
-        Scene* scene;
+        const RecalculatePrimRef recalculatePrimRef;
       };
 
     template<typename BuildRecord, 
-      typename Mesh, 
+      typename RecalculatePrimRef, 
       typename ReductionTy, 
       typename Allocator, 
       typename CreateAllocFunc, 
@@ -374,12 +361,12 @@ namespace embree
       typename ProgressMonitor,
       typename PrimInfo>
       
-      class GeneralBVHMBBuilder : public HeuristicMBlur<Mesh,NUM_OBJECT_BINS>
+      class GeneralBVHMBBuilder : public HeuristicMBlur<RecalculatePrimRef,NUM_OBJECT_BINS>
       {
         static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximal supported BVH branching factor
         static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree of we are that many levels before the maximal tree depth
         static const size_t SINGLE_THREADED_THRESHOLD = 1024;  //!< threshold to switch to single threaded build
-        typedef HeuristicMBlur<Mesh,NUM_OBJECT_BINS> Heuristic;
+        typedef HeuristicMBlur<RecalculatePrimRef,NUM_OBJECT_BINS> Heuristic;
         
       public:
 
@@ -593,7 +580,7 @@ namespace embree
           size_t depth;
         };
 
-        GeneralBVHMBBuilder (Scene* scene,
+        GeneralBVHMBBuilder (const RecalculatePrimRef recalculatePrimRef,
                              const ReductionTy& identity,
                              CreateAllocFunc& createAlloc, 
                              CreateNodeFunc& createNode, 
@@ -604,7 +591,7 @@ namespace embree
                              const size_t branchingFactor, const size_t maxDepth, 
                              const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize,
                              const float travCost, const float intCost, const bool singleLeafTimeSegment)
-          : HeuristicMBlur<Mesh,NUM_OBJECT_BINS>(scene), 
+          : HeuristicMBlur<RecalculatePrimRef,NUM_OBJECT_BINS>(recalculatePrimRef), 
           identity(identity), 
           createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
           progressMonitor(progressMonitor),
