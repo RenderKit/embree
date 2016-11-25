@@ -225,7 +225,9 @@ namespace embree
           if (pre.grid) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
           grid = (GridSOA*) SharedLazyTessellationCache::lookup(prim->entry(),scene->commitCounterSubdiv,[&] () {
               auto alloc = [] (const size_t bytes) { return SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(bytes); };
-              return GridSOA::create((SubdivPatch1Base*)prim,(unsigned)scene->getSubdivMesh(prim->geom)->numTimeSteps,pre.numTimeSteps(),scene,alloc);
+              const unsigned num_time_steps = (unsigned)scene->getSubdivMesh(prim->geom)->numTimeSteps;
+              return GridSOA::create((SubdivPatch1Base*)prim,num_time_steps,num_time_steps,scene,alloc);
+              //return GridSOA::create((SubdivPatch1Base*)prim,num_time_steps,pre.numTimeSteps(),scene,alloc);
             });
         }
         else {
