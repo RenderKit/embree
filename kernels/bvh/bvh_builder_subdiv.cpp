@@ -742,7 +742,7 @@ namespace embree
           SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+0];
           *current.parent = bvh->encodeLeaf((char*)&patch,1);
           size_t patchNumTimeSteps = scene->getSubdivMesh(patch.geom)->numTimeSteps;
-          const LBBox3fa lbounds = Geometry::linearBounds([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, current.prims.time_range, patchNumTimeSteps);
+          const LBBox3fa lbounds = Geometry::linearBounds([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, current.prims.time_range, patchNumTimeSteps-1);
           return std::make_pair(lbounds,current.prims.time_range);
         };
 
