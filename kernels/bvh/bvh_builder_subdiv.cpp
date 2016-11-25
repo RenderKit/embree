@@ -539,7 +539,6 @@ namespace embree
       __forceinline std::pair<PrimRefMB,range<int>> operator() (const size_t patchIndexMB, const unsigned num_time_segments, const BBox1f time_range) const
       {
         SubdivPatch1Base& patch = patches[patchIndexMB+0];
-        const unsigned num_time_steps = num_time_segments+1;
         const LBBox3fa lbounds = Geometry::linearBounds([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, time_range, num_time_segments);
         const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
         const PrimRefMB prim2(lbounds,tbounds.size(),num_time_segments,patchIndexMB);
@@ -736,9 +735,10 @@ namespace embree
         //  });
         
         auto createLeafFunc = [&] (const BuildRecord& current, Allocator* alloc) -> std::pair<LBBox3fa,BBox1f> {
+          avector<PrimRefMB>& prims = *current.prims.prims;
           size_t items MAYBE_UNUSED = current.pinfo.size();
           assert(items == 1);
-          const size_t patchIndexMB = (*prims)[current.prims.object_range.begin()].ID();
+          const size_t patchIndexMB = prims[current.prims.object_range.begin()].ID();
           SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+0];
           *current.parent = bvh->encodeLeaf((char*)&patch,1);
           size_t patchNumTimeSteps = scene->getSubdivMesh(patch.geom)->numTimeSteps;
