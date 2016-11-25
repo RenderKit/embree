@@ -133,6 +133,7 @@ namespace embree
 
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR4(BVH4Subdivpatch1MBlurIntersector4, BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1MBlurIntersector4>));
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR4(BVH4Subdivpatch1MBlurCachedIntersector4, BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1MBlurCachedIntersector4>));
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR4(BVH4MB4DSubdivpatch1MBlurCachedIntersector4, BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN2_AN4D COMMA false COMMA SubdivPatch1MBlurCachedIntersector4>)); // FIXME: use hybrid intersector?
 
     ////////////////////////////////////////////////////////////////////////////////
     /// BVH4Intersector8Single Definitions
@@ -152,6 +153,7 @@ namespace embree
 
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR8(BVH4Subdivpatch1MBlurIntersector8, BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1MBlurIntersector8>));
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR8(BVH4Subdivpatch1MBlurCachedIntersector8, BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1MBlurCachedIntersector8>));
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR8(BVH4MB4DSubdivpatch1MBlurCachedIntersector8, BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN2_AN4D COMMA false COMMA SubdivPatch1MBlurCachedIntersector8>));
 #endif
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -172,6 +174,7 @@ namespace embree
 
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR16(BVH4Subdivpatch1MBlurIntersector16, BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1MBlurIntersector16>));
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR16(BVH4Subdivpatch1MBlurCachedIntersector16, BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1MBlurCachedIntersector16>));
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR16(BVH4MB4DSubdivpatch1MBlurCachedIntersector16, BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN2_AN4D COMMA false COMMA SubdivPatch1MBlurCachedIntersector16>));
 #endif
 
     ////////////////////////////////////////////////////////////////////////////////
