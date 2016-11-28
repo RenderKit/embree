@@ -109,11 +109,7 @@ namespace embree
 #if !defined(__AVX2__)
         if (slots != 0)
         {
-#if defined(__AVX512F__)
-          const vint16 code = bitInterleave(ax,ay,az); //FIXME: remove after perf testing
-#else
           const vint4 code = bitInterleave(ax,ay,az);
-#endif
           for (size_t i=0; i<slots; i++) {
             dest[currentID-slots+i].index = ai[i];
             dest[currentID-slots+i].code = code[i];
@@ -137,8 +133,7 @@ namespace embree
         dest[currentID].index = index;
         dest[currentID].code  = xyz;
         currentID++;
-#else      
-  
+#else        
         ax[slots] = extract<0>(binID);
         ay[slots] = extract<1>(binID);
         az[slots] = extract<2>(binID);
@@ -146,16 +141,6 @@ namespace embree
         slots++;
         currentID++;
 
-#if defined(__AVX512F__) //FIXME: remove after perf testing
-        if (unlikely(slots == 16))
-        {
-          const vint16 code = bitInterleave(ax,ay,az);
-          vint16::storeu(&dest[currentID-16],unpacklo(code,ai));
-          vint16::storeu(&dest[currentID-8],unpackhi(code,ai));
-          slots = 0;
-        }
-
-#else        
         if (slots == 4)
         {
           const vint4 code = bitInterleave(ax,ay,az);
@@ -163,7 +148,6 @@ namespace embree
           vint4::storeu(&dest[currentID-2],unpackhi(code,ai));
           slots = 0;
         }
-#endif
 #endif
       }
 
@@ -187,12 +171,7 @@ namespace embree
       const vfloat4 scale;
       size_t currentID;
       size_t slots;
-#if defined(__AVX512F__) //FIXME: remove after perf testing
-      vint16 ax, ay, az, ai;
-#else
       vint4 ax, ay, az, ai;
-#endif
-
     };
             
 
