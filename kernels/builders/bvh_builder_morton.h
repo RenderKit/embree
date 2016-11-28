@@ -18,6 +18,7 @@
 
 #include "../common/builder.h"
 #include "../../common/algorithms/parallel_reduce.h"
+#include "tbb/parallel_sort.h"
 
 namespace embree
 {
@@ -541,18 +542,10 @@ namespace embree
       std::pair<NodeRef,BBox3fa> build(MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives) 
       {
         /* using 4 phases radix sort */
-        /* double t0 = getSeconds(); */
         morton = src;
         radix_sort_u32(src,tmp,numPrimitives,SINGLE_THREADED_THRESHOLD);
         //InPlace32BitRadixSort(morton,numPrimitives);
-
-        /* double t1 = getSeconds(); */
-        /* PRINT(t1-t0); */
-        /* for (size_t i=0;i<numPrimitives-1;i++) */
-        /* { */
-        /*   PRINT(morton[i]); */
-        /*   assert(morton[i].code <= morton[i+1].code); */
-        /* } */
+        //tbb::parallel_sort(src, src + numPrimitives);
 
         /* build BVH */
         NodeRef root;
