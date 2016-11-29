@@ -776,7 +776,6 @@ namespace embree
         
         /* build hierarchy */
         Set set(prims); 
-        assert(prims->size() == pinfo.size());
         NodeRef root;
         BuildRecord br(pinfo,1,(size_t*)&root,set);
         builder(br);
