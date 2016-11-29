@@ -775,7 +775,7 @@ namespace embree
                         Primitive::singleTimeSegment);
         
         /* build hierarchy */
-        Set set(prims); 
+        Set set(prims,make_range(size_t(0),pinfo.size()),BBox1f(0.0f,1.0f)); 
         NodeRef root;
         BuildRecord br(pinfo,1,(size_t*)&root,set);
         builder(br);
