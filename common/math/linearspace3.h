@@ -177,6 +177,14 @@ namespace embree
   template<typename T> __forceinline bool operator !=( const LinearSpace3<T>& a, const LinearSpace3<T>& b ) { return a.vx != b.vx || a.vy != b.vy || a.vz != b.vz; }
 
   ////////////////////////////////////////////////////////////////////////////////
+  /// Select
+  ////////////////////////////////////////////////////////////////////////////////
+
+  template<typename T> __forceinline LinearSpace3<T> select ( const typename T::Scalar::Bool& s, const LinearSpace3<T>& t, const LinearSpace3<T>& f ) {
+    return LinearSpace3<T>(select(s,t.vx,f.vx),select(s,t.vy,f.vy),select(s,t.vz,f.vz));
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////
 
