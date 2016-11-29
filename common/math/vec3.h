@@ -157,7 +157,7 @@ namespace embree
 
   template<typename T>
     __forceinline Vec3<T> lerp(const Vec3<T>& v0, const Vec3<T>& v1, const T& t) {
-    return (T(1.0f)-t)*v0 + t*v1;
+    return madd(Vec3<T>(T(1.0f)-t),v0,t*v1);
   }
 
   template<typename T> __forceinline int maxDim ( const Vec3<T>& a )
@@ -208,7 +208,7 @@ namespace embree
 
   template<typename T> __forceinline T       sum      ( const Vec3<T>& a )                   { return a.x+a.y+a.z; }
 
-  template<typename T> __forceinline      T  halfArea ( const Vec3<T>& d )                  { return d.x*(d.y+d.z)+d.y*d.z; }
+  template<typename T> __forceinline      T  halfArea ( const Vec3<T>& d )                  { return madd(d.x,(d.y+d.z),d.y*d.z); }
   template<typename T> __forceinline      T  area     ( const Vec3<T>& d )                  { return 2.0f*halfArea(d); }
 
   template<typename T> __forceinline Vec3<T> normalize_safe( const Vec3<T>& a ) {

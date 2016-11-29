@@ -235,7 +235,7 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   /*! computes luminance of a color */
-  __forceinline float luminance (const Color& a) { return 0.212671f*a.r + 0.715160f*a.g + 0.072169f*a.b; }
+  __forceinline float luminance (const Color& a) { return madd(0.212671f,a.r,madd(0.715160f,a.g,0.072169f*a.b)); }
 
   /*! output operator */
   inline std::ostream& operator<<(std::ostream& cout, const Color& a) {
