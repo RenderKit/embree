@@ -343,8 +343,8 @@ namespace embree
     template<typename BoundsFunc>
     __forceinline static LBBox3fa linearBounds(const BoundsFunc& bounds, const BBox1f& time_range, float numTimeSegments)
     {
-      const float lower = 1.0001f*time_range.lower*numTimeSegments;
-      const float upper = 0.9999f*time_range.upper*numTimeSegments;
+      const float lower = time_range.lower*numTimeSegments;
+      const float upper = time_range.upper*numTimeSegments;
       const float ilowerf = floor(lower);
       const float iupperf = ceil(upper);
       const int ilower = (int)ilowerf;
