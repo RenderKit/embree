@@ -156,7 +156,7 @@ namespace embree
   template<typename T> __forceinline LinearSpace3<T> operator -( const LinearSpace3<T>& a, const LinearSpace3<T>& b ) { return LinearSpace3<T>(a.vx-b.vx,a.vy-b.vy,a.vz-b.vz); }
 
   template<typename T> __forceinline LinearSpace3<T> operator*(const typename T::Scalar & a, const LinearSpace3<T>& b) { return LinearSpace3<T>(a*b.vx, a*b.vy, a*b.vz); }
-  template<typename T> __forceinline T               operator*(const LinearSpace3<T>& a, const T              & b) { return b.x*a.vx + b.y*a.vy + b.z*a.vz; }
+  template<typename T> __forceinline T               operator*(const LinearSpace3<T>& a, const T              & b) { return madd(T(b.x),a.vx,madd(T(b.y),a.vy,T(b.z)*a.vz)); }
   template<typename T> __forceinline LinearSpace3<T> operator*(const LinearSpace3<T>& a, const LinearSpace3<T>& b) { return LinearSpace3<T>(a*b.vx, a*b.vy, a*b.vz); }
 
   template<typename T> __forceinline LinearSpace3<T> operator/(const LinearSpace3<T>& a, const typename T::Scalar & b) { return LinearSpace3<T>(a.vx/b, a.vy/b, a.vz/b); }
