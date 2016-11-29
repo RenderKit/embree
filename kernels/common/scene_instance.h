@@ -71,6 +71,7 @@ namespace embree
       assert(any(valid));
       const size_t index = __bsf(movemask(valid));
       const int itime = itime_k[index];
+      assert(all(valid,itime_k == vint<K>(itime)));
       const vfloat<K> t0 = vfloat<K>(1.0f)-ftime;
       const vfloat<K> t1 = ftime;
       return rcp(t0*AffineSpace3vfK(local2world[itime+0])+t1*AffineSpace3vfK(local2world[itime+1]));
