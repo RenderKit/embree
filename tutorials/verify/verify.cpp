@@ -3834,7 +3834,7 @@ namespace embree
       }
       groups.pop();
 
-      groups.top()->add(new GarbageGeometryTest("build_garbage_geom."+stringOfISA(isa),isa));
+      groups.top()->add(new GarbageGeometryTest("build_garbage_geom",isa));
 
       /**************************************************************************/
       /*                     Interpolation Tests                                */
