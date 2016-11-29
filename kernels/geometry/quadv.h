@@ -104,7 +104,7 @@ namespace embree
     }
 
     /* Fill quad from quad list */
-    __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
+    __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene)
     {
       vint<M> vgeomID = -1, vprimID = -1;
       Vec3vfM v0 = zero, v1 = zero, v2 = zero, v3 = zero;

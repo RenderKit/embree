@@ -232,7 +232,7 @@ namespace embree
     }
 
     /* Fill triangle from triangle list */
-    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list, size_t itime, size_t numTimeSteps) 
+    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime, size_t numTimeSteps) 
     {
       fillMB(prims,begin,end,scene);
       return linearBounds(scene,itime,numTimeSteps);

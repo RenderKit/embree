@@ -93,7 +93,7 @@ namespace embree
     }
     
     /* Fill triangle from triangle list */
-    __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
+    __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene)
     {
       vint<M> geomID = -1, primID = -1;
       Vec3f* v0[M];

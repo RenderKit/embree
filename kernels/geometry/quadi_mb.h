@@ -242,7 +242,7 @@ namespace embree
       new (this) QuadMiMB(v0,v1,v2,v3,geomID,primID); // FIXME: use non temporal store
     }
 
-    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list, size_t itime, size_t numTimeSteps)
+    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime, size_t numTimeSteps)
     {
       fillMB(prims,begin,end,scene);
       return linearBounds(scene,itime,numTimeSteps);

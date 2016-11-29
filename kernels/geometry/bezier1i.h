@@ -53,7 +53,7 @@ namespace embree
     __forceinline unsigned primID() const { return prim; }
 
     /*! fill curve from curve list */
-    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene, const bool list)
+    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene)
     {
       const PrimRef& prim = prims[i];
       i++;
@@ -65,7 +65,7 @@ namespace embree
     }
 
     /*! fill curve from curve list */
-    __forceinline void fill(const BezierPrim* prims, size_t& i, size_t end, Scene* scene, const bool list)
+    __forceinline void fill(const BezierPrim* prims, size_t& i, size_t end, Scene* scene)
     {
       const BezierPrim& curve = prims[i]; i++;
       const unsigned geomID = curve.geomID();

@@ -18,7 +18,6 @@
 
 #include "../common/builder.h"
 #include "../../common/algorithms/parallel_reduce.h"
-//#include "tbb/parallel_sort.h"
 
 namespace embree
 {
@@ -363,7 +362,7 @@ namespace embree
       }
       
       /*! recreates morton codes when reaching a region where all codes are identical */
-      void recreateMortonCodes(MortonBuildRecord<NodeRef>& current) const
+      __noinline void recreateMortonCodes(MortonBuildRecord<NodeRef>& current) const
       {
         BBox3fa centBounds(empty);
         for (size_t i=current.begin; i<current.end; i++)
@@ -383,7 +382,11 @@ namespace embree
           morton[i].code = bitInterleave(bx,by,bz);
         }
         //std::sort(morton+current.begin,morton+current.end); // FIXME: use radix sort
+#if defined(TASKING_TBB)
+        tbb::parallel_sort(morton+current.begin,morton+current.end);
+#else
         InPlace32BitRadixSort(morton+current.begin,current.end-current.begin);
+#endif
       }
       
       __forceinline void split(MortonBuildRecord<NodeRef>& current,
@@ -524,7 +527,6 @@ namespace embree
         morton = src;
         radix_sort_u32(src,tmp,numPrimitives,SINGLE_THREADED_THRESHOLD);
         //InPlace32BitRadixSort(morton,numPrimitives);
-        //tbb::parallel_sort(src, src + numPrimitives);
 
         /* build BVH */
         NodeRef root;

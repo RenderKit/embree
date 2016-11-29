@@ -132,7 +132,7 @@ namespace embree
 
     /* Fill line segment from line segment list */
     template<typename PrimRefT>
-    __forceinline void fill(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene, const bool list)
+    __forceinline void fill(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene)
     {
       vint<M> geomID, primID;
       vint<M> v0;
@@ -160,15 +160,15 @@ namespace embree
       new (this) LineMi(v0,geomID,primID); // FIXME: use non temporal store
     }
 
-    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list, size_t itime, size_t numTimeSteps)
+    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime, size_t numTimeSteps)
     {
-      fill(prims,begin,end,scene,list);
+      fill(prims,begin,end,scene);
       return linearBounds(scene,itime,numTimeSteps);
     }
 
     __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range)
     {
-      fill(prims,begin,end,scene,false);
+      fill(prims,begin,end,scene);
       return linearBounds(scene,time_range);
     }
 

@@ -19,15 +19,15 @@
 
 namespace embree {
 
-  static const size_t skip_iterations               = 5;
-  static const size_t iterations_dynamic_deformable = 400;
-  static const size_t iterations_dynamic_dynamic    = 200;
-  static const size_t iterations_dynamic_static     = 50;
-  static const size_t iterations_static_static      = 30;
+  static const MAYBE_UNUSED size_t skip_iterations               = 5;
+  static const MAYBE_UNUSED size_t iterations_dynamic_deformable = 400;
+  static const MAYBE_UNUSED size_t iterations_dynamic_dynamic    = 200;
+  static const MAYBE_UNUSED size_t iterations_dynamic_static     = 50;
+  static const MAYBE_UNUSED size_t iterations_static_static      = 30;
 
   extern "C" ISPCScene* g_ispc_scene;
 
-/* scene data */
+  /* scene data */
   RTCDevice g_device = nullptr;
   RTCScene g_scene = nullptr;
 
@@ -391,7 +391,7 @@ namespace embree {
   }
 
 
-/* called by the C++ code for initialization */
+  /* called by the C++ code for initialization */
   extern "C" void device_init (char* cfg)
   {
     std::string init("start_threads=1,affinity=1");

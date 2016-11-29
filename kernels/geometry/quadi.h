@@ -93,7 +93,7 @@ namespace embree
 #endif    
 
     /* Fill quad from quad list */
-    __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
+    __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene)
     {
       vint<M> geomID = -1, primID = -1;
       vint<M> v0 = zero, v1 = zero, v2 = zero, v3 = zero;

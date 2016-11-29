@@ -101,7 +101,7 @@ namespace embree
               Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive));
               NodeRef node = bvh->encodeLeaf((char*)accel,items);
               for (size_t i=0; i<items; i++) {
-                accel[i].fill(prims.data(),start,pinfo.end,bvh->scene,false);
+                accel[i].fill(prims.data(),start,pinfo.end,bvh->scene);
               }
               return node;
             },
@@ -211,7 +211,7 @@ namespace embree
               Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive));
               NodeRef node = bvh->encodeLeaf((char*)accel,items);
               for (size_t i=0; i<items; i++) {
-                accel[i].fill(prims.data(),start,pinfo.end,bvh->scene,false);
+                accel[i].fill(prims.data(),start,pinfo.end,bvh->scene);
               }
               return node;
             },

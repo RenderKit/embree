@@ -47,14 +47,14 @@ namespace embree
     : geomID(geomID), primID(primID) {}
 
     /*! fill triangle from triangle list */
-    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene, const bool list)
+    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene)
     {
       const PrimRef& prim = prims[i]; i++;
       new (this) Object(prim.geomID(), prim.primID());
     }
 
     /*! fill triangle from triangle list */
-    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& i, size_t end, Scene* scene, const bool list, size_t itime, size_t numTimeSteps)
+    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& i, size_t end, Scene* scene, size_t itime, size_t numTimeSteps)
     {
       const PrimRef& prim = prims[i]; i++;
       const unsigned geomID = prim.geomID();
