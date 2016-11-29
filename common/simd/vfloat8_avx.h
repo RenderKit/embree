@@ -563,7 +563,7 @@ namespace embree
   //__forceinline float  length   ( const vfloat<8>& a )                  { return sqrt(dot(a,a)); }
   __forceinline vfloat<8> normalize( const vfloat<8>& a )               { return a*rsqrt(dot(a,a)); }
   //__forceinline float  distance ( const vfloat<8>& a, const vfloat<8>& b ) { return length(a-b); }
-  //__forceinline float  halfArea ( const vfloat<8>& d )                  { return d.x*(d.y+d.z)+d.y*d.z; }
+  //__forceinline float  halfArea ( const vfloat<8>& d )                  { return madd(d.x,(d.y+d.z),d.y*d.z); }
   //__forceinline float  area     ( const vfloat<8>& d )                  { return 2.0f*halfArea(d); }
   //__forceinline vfloat<8> reflect  ( const vfloat<8>& V, const vfloat<8>& N ) { return 2.0f*dot(V,N)*N-V; }
 

@@ -191,7 +191,7 @@ namespace embree
       const vfloatx p2 = vfloatx::loadu(valid,(float*)&src[tri.v[2]*stride+ofs]);
       
       if (P) {
-        vfloatx::storeu(valid,P+i,w*p0 + u*p1 + v*p2);
+        vfloatx::storeu(valid,P+i,madd(w,p0,madd(u,p1,v*p2)));
       }
       if (dPdu) {
         assert(dPdu); vfloatx::storeu(valid,dPdu+i,p1-p0);
