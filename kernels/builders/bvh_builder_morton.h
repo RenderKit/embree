@@ -18,6 +18,7 @@
 
 #include "../common/builder.h"
 #include "../../common/algorithms/parallel_reduce.h"
+//#include "tbb/parallel_sort.h"
 
 namespace embree
 {
@@ -93,6 +94,9 @@ namespace embree
           scale = select(diag > vfloat4(1E-19f), rcp(diag) * vfloat4(LATTICE_SIZE_PER_DIM * 0.99f),vfloat4(0.0f));
         }
       };
+
+      __forceinline MortonCodeGenerator(const MortonCodeMapping& mapping)
+        : mapping(mapping), dest(nullptr), currentID(0), slots(0), ax(0), ay(0), az(0), ai(0) {}
       
       __forceinline MortonCodeGenerator(const BBox3fa& bounds, MortonID32Bit* dest)
         : mapping(bounds), dest(dest), currentID(0), slots(0), ax(0), ay(0), az(0), ai(0) {}
@@ -105,11 +109,7 @@ namespace embree
 #if !defined(__AVX2__)
         if (slots != 0)
         {
-#if defined(__AVX512F__)
-          const vint16 code = bitInterleave(ax,ay,az); //FIXME: remove after perf testing
-#else
           const vint4 code = bitInterleave(ax,ay,az);
-#endif
           for (size_t i=0; i<slots; i++) {
             dest[currentID-slots+i].index = ai[i];
             dest[currentID-slots+i].code = code[i];
@@ -133,8 +133,7 @@ namespace embree
         dest[currentID].index = index;
         dest[currentID].code  = xyz;
         currentID++;
-#else      
-  
+#else        
         ax[slots] = extract<0>(binID);
         ay[slots] = extract<1>(binID);
         az[slots] = extract<2>(binID);
@@ -142,16 +141,6 @@ namespace embree
         slots++;
         currentID++;
 
-#if defined(__AVX512F__) //FIXME: remove after perf testing
-        if (unlikely(slots == 16))
-        {
-          const vint16 code = bitInterleave(ax,ay,az);
-          vint16::storeu(&dest[currentID-16],unpacklo(code,ai));
-          vint16::storeu(&dest[currentID-8],unpackhi(code,ai));
-          slots = 0;
-        }
-
-#else        
         if (slots == 4)
         {
           const vint4 code = bitInterleave(ax,ay,az);
@@ -160,7 +149,19 @@ namespace embree
           slots = 0;
         }
 #endif
-#endif
+      }
+
+      __forceinline unsigned int getCode(const BBox3fa& b)
+      {
+        const vfloat4 lower = (vfloat4)b.lower;
+        const vfloat4 upper = (vfloat4)b.upper;
+        const vfloat4 centroid = lower+upper;
+        const vint4 binID = vint4((centroid-mapping.base)*mapping.scale); // FIXME: transform into fma
+        const unsigned int x = extract<0>(binID);
+        const unsigned int y = extract<1>(binID);
+        const unsigned int z = extract<2>(binID);
+        const unsigned int xyz = bitInterleave(x,y,z);
+        return xyz;
       }
     
     public:
@@ -170,12 +171,7 @@ namespace embree
       const vfloat4 scale;
       size_t currentID;
       size_t slots;
-#if defined(__AVX512F__) //FIXME: remove after perf testing
-      vint16 ax, ay, az, ai;
-#else
       vint4 ax, ay, az, ai;
-#endif
-
     };
             
 
@@ -528,6 +524,7 @@ namespace embree
         morton = src;
         radix_sort_u32(src,tmp,numPrimitives,SINGLE_THREADED_THRESHOLD);
         //InPlace32BitRadixSort(morton,numPrimitives);
+        //tbb::parallel_sort(src, src + numPrimitives);
 
         /* build BVH */
         NodeRef root;

@@ -382,6 +382,53 @@ namespace embree
     private:
       Mesh* mesh;
     };        
+
+    struct __aligned(64) BinBuckets {
+
+      static const size_t BUCKETS_SHIFT = 8;
+      static const size_t BUCKETS  = 1 << BUCKETS_SHIFT;
+
+      unsigned int b[BUCKETS];
+
+      __forceinline BinBuckets() {}
+
+      __forceinline BinBuckets( ZeroTy ) { 
+        for (size_t i=0;i<BUCKETS;i++) b[i] = 0; 
+      }
+
+      __forceinline BinBuckets(const BinBuckets &bb) {
+        for (size_t i=0;i<BUCKETS;i++) b[i] = bb.b[i];
+      }
+
+      __forceinline void clear() { 
+        for (size_t i=0;i<BUCKETS;i++) b[i] = 0; 
+      }
+
+      __forceinline void inc(const size_t i) { 
+        b[i>>(32-BUCKETS_SHIFT)]++;
+      }
+
+      __forceinline const unsigned int& operator[](const size_t index) const { 
+        assert(index < BUCKETS); 
+        return b[index]; 
+      }
+
+      __forceinline void operator +=(const BinBuckets& a) { 
+        for (size_t i=0;i<BinBuckets::BUCKETS;i++) 
+          b[i] += a.b[i];
+      }
+
+      __forceinline void print() { 
+        for (size_t i=0;i<BUCKETS;i++) std::cout << "i  = " << i << " -> " << b[i] << std::endl;
+      }
+    };
+
+    __forceinline BinBuckets operator +(const BinBuckets& a, const BinBuckets& b ) { 
+      BinBuckets v;
+      for (size_t i=0;i<BinBuckets::BUCKETS;i++) 
+        v.b[i] = a.b[i] + b.b[i];
+      return v;
+    }
     
     template<int N, typename Mesh, typename Primitive>
     class BVHNMeshBuilderMorton : public Builder
@@ -389,6 +436,7 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::AlignedNode AlignedNode;
       typedef typename BVH::NodeRef NodeRef;
+
 
     public:
       
@@ -457,7 +505,6 @@ namespace embree
 
         if (likely(numPrimitivesGen == numPrimitives))
         {
-          /* fast path */
           MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
           parallel_for( size_t(0), numPrimitives, block_size, [&](const range<size_t>& r) -> void {
               MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);

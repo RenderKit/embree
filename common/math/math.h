@@ -299,9 +299,9 @@ namespace embree
   template<>
     __forceinline unsigned int bitInterleave(const unsigned int &xi, const unsigned int& yi, const unsigned int& zi)
   {
-    const unsigned int xx = pdep(xi,0b01001001001001001001001001001001);
-    const unsigned int yy = pdep(yi,0b10010010010010010010010010010010);
-    const unsigned int zz = pdep(zi,0b00100100100100100100100100100100);
+    const unsigned int xx = pdep(xi,0x49249249 /* 0b01001001001001001001001001001001 */ );
+    const unsigned int yy = pdep(yi,0x92492492 /* 0b10010010010010010010010010010010 */);
+    const unsigned int zz = pdep(zi,0x24924924 /* 0b00100100100100100100100100100100 */);
     return xx | yy | zz;
   }
 

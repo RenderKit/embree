@@ -52,6 +52,29 @@ namespace embree
 #  error "no tasking system enabled"
 #endif
   }
+
+#if defined(TASKING_TBB)
+  template<typename Index, typename Func>
+    __forceinline void parallel_for_static( const Index N, const Func& func)
+  {
+    tbb::parallel_for(Index(0),N,Index(1),[&](Index i) { 
+	func(i);
+      },tbb::simple_partitioner());
+    if (tbb::task::self().is_cancelled())
+      throw std::runtime_error("task cancelled");
+  }
+
+  template<typename Index, typename Func>
+    __forceinline void parallel_for_affinity( const Index N, const Func& func, tbb::affinity_partitioner &ap)
+  {
+    tbb::parallel_for(Index(0),N,Index(1),[&](Index i) { 
+	func(i);
+      },ap);
+    if (tbb::task::self().is_cancelled())
+      throw std::runtime_error("task cancelled");
+  }
+
+#endif
   
   /* parallel for with range and granulatity */
   template<typename Index, typename Func>
