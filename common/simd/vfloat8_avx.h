@@ -347,13 +347,8 @@ namespace embree
   __forceinline const vboolf8 operator <=( const vfloat8& a, const float&   b ) { return a <= vfloat8(b); }
   __forceinline const vboolf8 operator <=( const float&   a, const vfloat8& b ) { return vfloat8(a) <= b; }
 
-
   __forceinline vfloat8 lerp(const vfloat8& a, const vfloat8& b, const vfloat8& t) {
-#if defined(__AVX2__)
-    return madd(t, b, madd(-t, a, a));
-#else
-    return a + t*(b-a);
-#endif
+    return madd(t,b-a,a);
   }
 
   __forceinline bool isvalid ( const vfloat8& v ) {

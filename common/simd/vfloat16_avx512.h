@@ -381,8 +381,8 @@ namespace embree
     return _mm512_mask_blend_ps(s, f, t);
   }
 
-  __forceinline vfloat16  lerp(const vfloat16& a, const vfloat16& b, const vfloat16& t) {
-    return madd(t, b, madd(-t, a, a));
+  __forceinline vfloat16 lerp(const vfloat16& a, const vfloat16& b, const vfloat16& t) {
+    return madd(t,b-a,a);
   }
 
   __forceinline void xchg(vboolf16 m, vfloat16& a, vfloat16& b)
@@ -391,6 +391,7 @@ namespace embree
     a = select(m,b,a);
     b = select(m,c,b); 
   }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Rounding Functions
   ////////////////////////////////////////////////////////////////////////////////

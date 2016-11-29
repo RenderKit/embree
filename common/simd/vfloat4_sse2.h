@@ -351,13 +351,8 @@ namespace embree
 #endif
 #endif
 
-
   __forceinline vfloat4 lerp(const vfloat4& a, const vfloat4& b, const vfloat4& t) {
-#if defined(__AVX2__)
-    return madd(t, b, madd(-t, a, a));
-#else
-    return a + t*(b-a);
-#endif
+    return madd(t,b-a,a);
   }
   
   __forceinline bool isvalid ( const vfloat4& v ) {
