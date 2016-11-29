@@ -538,7 +538,6 @@ namespace embree
 
       __forceinline std::pair<PrimRefMB,range<int>> operator() (const size_t patchIndexMB, const unsigned num_time_segments, const BBox1f time_range) const
       {
-        SubdivPatch1Base& patch = patches[patchIndexMB+0];
         const LBBox3fa lbounds = Geometry::linearBounds([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, time_range, num_time_segments);
         const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
         const PrimRefMB prim2(lbounds,tbounds.size(),num_time_segments,patchIndexMB);
@@ -729,6 +728,8 @@ namespace embree
           pinfo.end = sMB;
           return pinfo;
         }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB { return PrimInfoMB::merge(a,b); });
+        pinfo.end = pinfo.begin;
+        pinfo.begin = 0;
 
         //auto virtualprogress = BuildProgressMonitorFromClosure([&] (size_t dn) { 
             //bvh->scene->progressMonitor(double(dn)); // FIXME: triggers GCC compiler bug
@@ -825,18 +826,13 @@ namespace embree
         builder(br);
         
         bvh->set(root,pinfo.geomBounds,pinfo.size());
-
-        /* call BVH builder */
-        //BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f);
-
-        //bvh->set(NodeRef((size_t)roots),pinfo.lbounds,num_bvh_primitives);
       }
 
       void build(size_t, size_t) 
       {
         /* initialize all half edge structures */
         size_t numPatches;
-        bool fastUpdateMode = initializeHalfEdges(numPatches);
+        initializeHalfEdges(numPatches);
 
         /* skip build for empty scene */
         if (numPatches == 0) {
