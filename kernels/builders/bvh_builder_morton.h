@@ -18,7 +18,7 @@
 
 #include "../common/builder.h"
 #include "../../common/algorithms/parallel_reduce.h"
-#include "tbb/parallel_sort.h"
+//#include "tbb/parallel_sort.h"
 
 namespace embree
 {
