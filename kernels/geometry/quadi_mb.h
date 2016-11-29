@@ -96,6 +96,22 @@ namespace embree
       return (T(one)-ftime)*p0 + ftime*p1;
     }
 
+    template<int K, typename T>
+    __forceinline Vec3<T> getVertex(const vbool<K>& valid, const vint<M>& v, const size_t index, const Scene *const scene, const vint<K>& itime, const T& ftime) const
+    {
+      Vec3<T> p0, p1;
+      const QuadMesh* mesh = scene->getQuadMesh(geomID(index));
+      
+      for (size_t mask=movemask(valid), i=__bsf(mask); mask; mask=__btc(mask,i), i=__bsf(mask))
+      {
+        const Vec3fa& v0 = *(Vec3fa*)mesh->vertexPtr(v[index],itime[i]+0);
+        const Vec3fa& v1 = *(Vec3fa*)mesh->vertexPtr(v[index],itime[i]+1);
+        p0.x[i] = v0.x; p0.y[i] = v0.y; p0.z[i] = v0.z;
+        p1.x[i] = v1.x; p1.y[i] = v1.y; p1.z[i] = v1.z;
+      }
+      return (T(one)-ftime)*p0 + ftime*p1;
+    }
+
     /* gather the quads */
     template<int K>
       __forceinline void gather(const vbool<K>& valid,
@@ -113,11 +129,20 @@ namespace embree
       const vint<K> itime = getTimeSegment(time, vfloat<K>(mesh->fnumTimeSegments), ftime);
 
       const size_t first = __bsf(movemask(valid)); 
-      assert(all(valid,itime[first] == itime)); // assume itime is uniform
-      p0 = getVertex(v0, index, scene, itime[first], ftime);
-      p1 = getVertex(v1, index, scene, itime[first], ftime);
-      p2 = getVertex(v2, index, scene, itime[first], ftime);
-      p3 = getVertex(v3, index, scene, itime[first], ftime);
+      if (likely(all(valid,itime[first] == itime)))
+      {
+        p0 = getVertex(v0, index, scene, itime[first], ftime);
+        p1 = getVertex(v1, index, scene, itime[first], ftime);
+        p2 = getVertex(v2, index, scene, itime[first], ftime);
+        p3 = getVertex(v3, index, scene, itime[first], ftime);
+      }
+      else
+      {
+        p0 = getVertex(valid, v0, index, scene, itime, ftime);
+        p1 = getVertex(valid, v1, index, scene, itime, ftime);
+        p2 = getVertex(valid, v2, index, scene, itime, ftime);
+        p3 = getVertex(valid, v3, index, scene, itime, ftime);
+      }
     }
 
     __forceinline void gather(Vec3<vfloat<M>>& p0, 
