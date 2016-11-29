@@ -44,6 +44,7 @@
 #undef __TBB_EXCEPTION_PTR_PRESENT
 #define __TBB_EXCEPTION_PTR_PRESENT 1
 #include "tbb/tbb.h"
+#include "tbb/parallel_sort.h"
 
 namespace embree
 {  
