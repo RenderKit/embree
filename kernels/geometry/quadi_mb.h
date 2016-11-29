@@ -112,7 +112,8 @@ namespace embree
       vfloat<K> ftime;
       const vint<K> itime = getTimeSegment(time, vfloat<K>(mesh->fnumTimeSegments), ftime);
 
-      const size_t first = __bsf(movemask(valid)); // assume itime is uniform
+      const size_t first = __bsf(movemask(valid)); 
+      assert(all(valid,itime[first] == itime)); // assume itime is uniform
       p0 = getVertex(v0, index, scene, itime[first], ftime);
       p1 = getVertex(v1, index, scene, itime[first], ftime);
       p2 = getVertex(v2, index, scene, itime[first], ftime);
