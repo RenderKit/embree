@@ -179,6 +179,12 @@ namespace embree
     return true; 
   }
 
+  /*! blending */
+  template<typename T>
+    __forceinline BBox<T> lerp(const BBox<T>& b0, const BBox<T>& b1, const float t) {
+    return BBox<T>(lerp(b0.lower,b1.lower,t),lerp(b0.upper,b1.upper,t));
+  }
+
   /*! output operator */
   template<typename T> __forceinline std::ostream& operator<<(std::ostream& cout, const BBox<T>& box) {
     return cout << "[" << box.lower << "; " << box.upper << "]";

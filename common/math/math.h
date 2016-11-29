@@ -247,12 +247,12 @@ namespace embree
 
   template<typename V>
     __forceinline V lerp(const V& v0, const V& v1, const float t) {
-    return (1.0f-t)*v0 + t*v1;
+    return madd(V(1.0f-t),v0,t*v1);
   }
 
   template<typename T>
     __forceinline T lerp2(const float x0, const float x1, const float x2, const float x3, const T& u, const T& v) {
-    return (1.0f-u)*(1.0f-v)*x0 + u*(1.0f-v)*x1 + (1.0f-u)*v*x2 + u*v*x3;
+    return madd((1.0f-u),madd((1.0f-v),T(x0),v*T(x2)),u*madd((1.0f-v),T(x1),v*T(x3)));
   }
 
   /*! exchange */
