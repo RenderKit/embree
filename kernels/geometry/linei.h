@@ -117,7 +117,7 @@ namespace embree
     }
 
     /* Fill line segment from line segment list */
-    __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
+    __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene)
     {
       vint<M> geomID, primID;
       vint<M> v0;
@@ -146,9 +146,9 @@ namespace embree
     }
 
     /* Fill line segment from line segment list */
-    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list, size_t itime, size_t numTimeSteps)
+    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime, size_t numTimeSteps)
     {
-      fill(prims,begin,end,scene,list);
+      fill(prims,begin,end,scene);
       return linearBounds(scene,itime,numTimeSteps);
     }
 

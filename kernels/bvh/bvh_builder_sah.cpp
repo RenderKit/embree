@@ -62,7 +62,7 @@ namespace embree
         Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
-          accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
+          accel[i].fill(prims,start,current.prims.end(),bvh->scene);
         }
         *current.parent = node;
 	return n;
@@ -89,7 +89,7 @@ namespace embree
         Primitive* accel = (Primitive*) alloc->alloc0->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
-          accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
+          accel[i].fill(prims,start,current.prims.end(),bvh->scene);
         }
 
         *current.parent = node;
@@ -126,7 +126,7 @@ namespace embree
         Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
-          accel[i].fill(source,start,current.prims.end(),bvh->scene,false);
+          accel[i].fill(source,start,current.prims.end(),bvh->scene);
         }
         *current.parent = node;
 	return n;
@@ -322,7 +322,7 @@ namespace embree
         typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
         LBBox3fa allBounds = empty;
         for (size_t i=0; i<items; i++)
-          allBounds.extend(accel[i].fillMB(prims, start, current.prims.end(), bvh->scene, false, time, bvh->numTimeSteps));
+          allBounds.extend(accel[i].fillMB(prims, start, current.prims.end(), bvh->scene, time, bvh->numTimeSteps));
         *current.parent = node;
         return allBounds;
       }
@@ -558,7 +558,7 @@ namespace embree
         Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
-          accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
+          accel[i].fill(prims,start,current.prims.end(),bvh->scene);
         }
         *current.parent = node;
 	return n;

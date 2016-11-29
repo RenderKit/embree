@@ -154,7 +154,7 @@ namespace embree
     }
 
     /*! fill triangle from triangle list */
-    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene, const bool list)
+    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene)
     {
       const PrimRef& prim = prims[i];
       i++;
@@ -170,7 +170,7 @@ namespace embree
     }
 
     /*! fill triangle from triangle list */
-    __forceinline void fill(const BezierPrim* prims, size_t& i, size_t end, Scene* scene, const bool list) 
+    __forceinline void fill(const BezierPrim* prims, size_t& i, size_t end, Scene* scene) 
     {
       new (this) Bezier1v(prims[i].p0,prims[i].p1,prims[i].p2,prims[i].p3,prims[i].geom,prims[i].prim);
       i++;
