@@ -696,7 +696,8 @@ namespace embree
           const float leafSAH  = intCost*current.pinfo.leafSAH(logBlockSize);
           const float splitSAH = travCost*current.pinfo.halfArea()+intCost*current.split.splitSAH();
           assert((current.pinfo.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
-          
+          assert(current.pinfo.size() == current.prims.object_range.size());
+
           /*! create a leaf node when threshold reached or SAH tells us to stop */
           if (current.pinfo.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.pinfo.size() <= maxLeafSize && leafSAH <= splitSAH)) {
             Heuristic::deterministic_order(current.prims);
