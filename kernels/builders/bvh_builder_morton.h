@@ -64,9 +64,10 @@ namespace embree
       
     public:   
 
+#if defined(__X86_64__)
       __forceinline MortonID32Bit() {}
       __forceinline MortonID32Bit(const MortonID32Bit& m) { t = m.t; }
-
+#endif
 
         __forceinline operator unsigned() const { return code; }
       
