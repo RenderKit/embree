@@ -151,8 +151,8 @@ namespace embree
               /* find linear bounds for both time segments */
               for (size_t i=begin; i<end; i++) 
               {
-                auto bn0 = recalculatePrimRef.lbounds(prims[i],dt0);
-                auto bn1 = recalculatePrimRef.lbounds(prims[i],dt1);
+                auto bn0 = recalculatePrimRef.linearBounds(prims[i],dt0);
+                auto bn1 = recalculatePrimRef.linearBounds(prims[i],dt1);
                 bounds0[b].extend(bn0.first);
                 bounds1[b].extend(bn1.first);
                 count0[b] += bn0.second.size();

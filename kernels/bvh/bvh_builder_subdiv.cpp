@@ -548,7 +548,7 @@ namespace embree
         return operator()(prim.ID(),prim.totalTimeSegments(),time_range);
       }
 
-      __forceinline std::pair<LBBox3fa,range<int>> lbounds(const PrimRefMB& prim, const BBox1f time_range) const
+      __forceinline std::pair<LBBox3fa,range<int>> linearBounds(const PrimRefMB& prim, const BBox1f time_range) const
       {
         const size_t patchIndexMB = prim.ID();
         const unsigned num_time_segments = prim.totalTimeSegments();
@@ -784,7 +784,7 @@ namespace embree
             for (size_t j=prims.object_range.begin(); j<prims.object_range.end(); j++) 
             {
               PrimRefMB& ref = (*prims.prims)[j];
-              auto bn = recalculatePrimRef.lbounds(ref,prims.time_range);
+              auto bn = recalculatePrimRef.linearBounds(ref,prims.time_range);
               cbounds.extend(bn.first);
             }
             return std::make_pair(cbounds,prims.time_range);

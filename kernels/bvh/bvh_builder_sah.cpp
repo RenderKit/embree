@@ -586,7 +586,7 @@ namespace embree
         return std::make_pair(prim2, tbounds);
       }
 
-      __forceinline std::pair<LBBox3fa,range<int>> lbounds(const PrimRefMB& prim, const BBox1f time_range) const
+      __forceinline std::pair<LBBox3fa,range<int>> linearBounds(const PrimRefMB& prim, const BBox1f time_range) const
       {
         const unsigned geomID = prim.geomID();
         const unsigned primID = prim.primID();
