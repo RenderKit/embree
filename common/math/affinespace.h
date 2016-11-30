@@ -140,6 +140,12 @@ namespace embree
     return AffineSpaceT<L>(select(s,t.l,f.l),select(s,t.p,f.p));
   }
 
+  /*! blending */
+  template<typename T>
+    __forceinline AffineSpaceT<T> lerp(const AffineSpaceT<T>& l0, const AffineSpaceT<T>& l1, const float t) {
+    return AffineSpaceT<T>(lerp(l0.l,l1.l,t),lerp(l0.p,l1.p,t));
+  }
+
   ////////////////////////////////////////////////////////////////////////////////
   // Output Operators
   ////////////////////////////////////////////////////////////////////////////////

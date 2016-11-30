@@ -156,7 +156,7 @@ namespace embree
   template<typename T> __forceinline LinearSpace3<T> operator -( const LinearSpace3<T>& a, const LinearSpace3<T>& b ) { return LinearSpace3<T>(a.vx-b.vx,a.vy-b.vy,a.vz-b.vz); }
 
   template<typename T> __forceinline LinearSpace3<T> operator*(const typename T::Scalar & a, const LinearSpace3<T>& b) { return LinearSpace3<T>(a*b.vx, a*b.vy, a*b.vz); }
-  template<typename T> __forceinline T               operator*(const LinearSpace3<T>& a, const T              & b) { return b.x*a.vx + b.y*a.vy + b.z*a.vz; }
+  template<typename T> __forceinline T               operator*(const LinearSpace3<T>& a, const T              & b) { return madd(T(b.x),a.vx,madd(T(b.y),a.vy,T(b.z)*a.vz)); }
   template<typename T> __forceinline LinearSpace3<T> operator*(const LinearSpace3<T>& a, const LinearSpace3<T>& b) { return LinearSpace3<T>(a*b.vx, a*b.vy, a*b.vz); }
 
   template<typename T> __forceinline LinearSpace3<T> operator/(const LinearSpace3<T>& a, const typename T::Scalar & b) { return LinearSpace3<T>(a.vx/b, a.vy/b, a.vz/b); }
@@ -182,6 +182,15 @@ namespace embree
 
   template<typename T> __forceinline LinearSpace3<T> select ( const typename T::Scalar::Bool& s, const LinearSpace3<T>& t, const LinearSpace3<T>& f ) {
     return LinearSpace3<T>(select(s,t.vx,f.vx),select(s,t.vy,f.vy),select(s,t.vz,f.vz));
+  }
+
+  /*! blending */
+  template<typename T>
+    __forceinline LinearSpace3<T> lerp(const LinearSpace3<T>& l0, const LinearSpace3<T>& l1, const float t) 
+  {
+    return LinearSpace3<T>(lerp(l0.vx,l1.vx,t),
+                           lerp(l0.vy,l1.vy,t),
+                           lerp(l0.vz,l1.vz,t));
   }
 
   ////////////////////////////////////////////////////////////////////////////////

@@ -190,7 +190,7 @@ namespace embree
       const vboolx valid = vintx((int)i)+vintx(step) < vintx(numFloats);
       const vfloatx p0 = vfloatx::loadu(valid,(float*)&src[(segment+0)*stride+ofs]);
       const vfloatx p1 = vfloatx::loadu(valid,(float*)&src[(segment+1)*stride+ofs]);
-      if (P      ) vfloatx::storeu(valid,P+i,(1.0f-u)*p0 + u*p1);
+      if (P      ) vfloatx::storeu(valid,P+i,lerp(p0,p1,u));
       if (dPdu   ) vfloatx::storeu(valid,dPdu+i,p1-p0);
       if (ddPdudu) vfloatx::storeu(valid,dPdu+i,vfloatx(zero));
     }

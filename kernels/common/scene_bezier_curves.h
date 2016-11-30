@@ -117,10 +117,10 @@ namespace embree
       gather(a0,a1,a2,a3,i,itime);
       Vec3fa b0,b1,b2,b3;
       gather(b0,b1,b2,b3,i,itime+1);
-      p0 = t0 * a0 + t1 * b0;
-      p1 = t0 * a1 + t1 * b1;
-      p2 = t0 * a2 + t1 * b2;
-      p3 = t0 * a3 + t1 * b3;
+      p0 = madd(Vec3fa(t0),a0,t1*b0);
+      p1 = madd(Vec3fa(t0),a1,t1*b1);
+      p2 = madd(Vec3fa(t0),a2,t1*b2);
+      p3 = madd(Vec3fa(t0),a3,t1*b3);
     }
     
     /*! calculates bounding box of i'th bezier curve */

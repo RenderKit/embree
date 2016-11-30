@@ -198,7 +198,7 @@ namespace embree
       const vfloatx V  = select(left,v,vfloatx(1.0f)-v);
       const vfloatx W  = 1.0f-U-V;
       if (P) {
-        vfloatx::storeu(valid,P+i,W*Q0 + U*Q1 + V*Q2);
+        vfloatx::storeu(valid,P+i,madd(W,Q0,madd(U,Q1,V*Q2)));
       }
       if (dPdu) { 
         assert(dPdu); vfloatx::storeu(valid,dPdu+i,select(left,Q1-Q0,Q0-Q1));

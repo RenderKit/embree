@@ -347,13 +347,8 @@ namespace embree
   __forceinline const vboolf8 operator <=( const vfloat8& a, const float&   b ) { return a <= vfloat8(b); }
   __forceinline const vboolf8 operator <=( const float&   a, const vfloat8& b ) { return vfloat8(a) <= b; }
 
-
   __forceinline vfloat8 lerp(const vfloat8& a, const vfloat8& b, const vfloat8& t) {
-#if defined(__AVX2__)
-    return madd(t, b, madd(-t, a, a));
-#else
-    return a + t*(b-a);
-#endif
+    return madd(t,b-a,a);
   }
 
   __forceinline bool isvalid ( const vfloat8& v ) {
@@ -568,7 +563,7 @@ namespace embree
   //__forceinline float  length   ( const vfloat<8>& a )                  { return sqrt(dot(a,a)); }
   __forceinline vfloat<8> normalize( const vfloat<8>& a )               { return a*rsqrt(dot(a,a)); }
   //__forceinline float  distance ( const vfloat<8>& a, const vfloat<8>& b ) { return length(a-b); }
-  //__forceinline float  halfArea ( const vfloat<8>& d )                  { return d.x*(d.y+d.z)+d.y*d.z; }
+  //__forceinline float  halfArea ( const vfloat<8>& d )                  { return madd(d.x,(d.y+d.z),d.y*d.z); }
   //__forceinline float  area     ( const vfloat<8>& d )                  { return 2.0f*halfArea(d); }
   //__forceinline vfloat<8> reflect  ( const vfloat<8>& V, const vfloat<8>& N ) { return 2.0f*dot(V,N)*N-V; }
 
