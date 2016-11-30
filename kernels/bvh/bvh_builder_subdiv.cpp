@@ -528,24 +528,33 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
 
-    struct RecalculatePrimRef2
+    struct SubdivRecalculatePrimRef
     {
       mvector<BBox3fa>& bounds;
       SubdivPatch1Cached* patches;
 
-      __forceinline RecalculatePrimRef2 (mvector<BBox3fa>& bounds, SubdivPatch1Cached* patches)
+      __forceinline SubdivRecalculatePrimRef (mvector<BBox3fa>& bounds, SubdivPatch1Cached* patches)
         : bounds(bounds), patches(patches) {}
 
       __forceinline std::pair<PrimRefMB,range<int>> operator() (const size_t patchIndexMB, const unsigned num_time_segments, const BBox1f time_range) const
       {
         const LBBox3fa lbounds = Geometry::linearBounds([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, time_range, num_time_segments);
         const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
-        const PrimRefMB prim2(lbounds,tbounds.size(),num_time_segments,patchIndexMB);
-        return std::make_pair(prim2,tbounds);
+        const PrimRefMB prim2(lbounds, tbounds.size(), num_time_segments, patchIndexMB);
+        return std::make_pair(prim2, tbounds);
       }
 
       __forceinline std::pair<PrimRefMB,range<int>> operator() (const PrimRefMB& prim, const BBox1f time_range) const {
         return operator()(prim.ID(),prim.totalTimeSegments(),time_range);
+      }
+
+      __forceinline std::pair<LBBox3fa,range<int>> lbounds(const PrimRefMB& prim, const BBox1f time_range) const
+      {
+        const size_t patchIndexMB = prim.ID();
+        const unsigned num_time_segments = prim.totalTimeSegments();
+        const LBBox3fa lbounds = Geometry::linearBounds([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, time_range, num_time_segments);
+        const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
+        return std::make_pair(lbounds, tbounds);
       }
     };
 
@@ -554,7 +563,7 @@ namespace embree
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
-      typedef HeuristicMBlur<RecalculatePrimRef2,NUM_OBJECT_BINS> Heuristic;
+      typedef HeuristicMBlur<SubdivRecalculatePrimRef,NUM_OBJECT_BINS> Heuristic;
       typedef typename Heuristic::Set Set;
       typedef typename Heuristic::Split Split;
       typedef GeneralBuildRecord<Set,Split,PrimInfoMB> BuildRecord;
@@ -601,7 +610,7 @@ namespace embree
       typedef typename BVHN<N>::AlignedNodeMB4D AlignedNodeMB4D;
       typedef typename BVHN<N>::Allocator BVH_Allocator;
 
-      typedef HeuristicMBlur<RecalculatePrimRef2,NUM_OBJECT_BINS> Heuristic;
+      typedef HeuristicMBlur<SubdivRecalculatePrimRef,NUM_OBJECT_BINS> Heuristic;
       typedef typename Heuristic::Set Set;
       typedef typename Heuristic::Split Split;
       typedef GeneralBuildRecord<Set,Split,PrimInfoMB> BuildRecord;
@@ -680,7 +689,7 @@ namespace embree
       void rebuild(size_t numPrimitives)
       {
         SubdivPatch1Cached* const subdiv_patches = (SubdivPatch1Cached*) bvh->subdiv_patches.data();
-        RecalculatePrimRef2 recalculatePrimRef(bounds,subdiv_patches);
+        SubdivRecalculatePrimRef recalculatePrimRef(bounds,subdiv_patches);
         bvh->alloc.reset();
 
         Scene::Iterator<SubdivMesh,true> iter(scene);
@@ -775,8 +784,8 @@ namespace embree
             for (size_t j=prims.object_range.begin(); j<prims.object_range.end(); j++) 
             {
               PrimRefMB& ref = (*prims.prims)[j];
-              PrimRefMB ref2 = recalculatePrimRef(ref,prims.time_range).first;
-              cbounds.extend(ref2.lbounds);
+              auto bn = recalculatePrimRef.lbounds(ref,prims.time_range);
+              cbounds.extend(bn.first);
             }
             return std::make_pair(cbounds,prims.time_range);
           }
@@ -795,7 +804,7 @@ namespace embree
         
         typedef GeneralBVHMBBuilder<
           BuildRecord,
-          RecalculatePrimRef2,
+          SubdivRecalculatePrimRef,
           decltype(identity),
           decltype(createAllocFunc()),
           decltype(createAllocFunc),

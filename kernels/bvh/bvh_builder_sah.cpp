@@ -578,12 +578,24 @@ namespace embree
         const unsigned geomID = prim.geomID();
         const unsigned primID = prim.primID();
         const Mesh* mesh = (Mesh*)scene->get(geomID);
-        const LBBox3fa lbounds = mesh->linearBounds(primID,time_range);
+        const LBBox3fa lbounds = mesh->linearBounds(primID, time_range);
         const unsigned num_time_segments = mesh->numTimeSegments();
         const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
         assert(tbounds.size() > 0);
-        const PrimRefMB prim2(lbounds,tbounds.size(),num_time_segments,geomID,primID);
-        return std::make_pair(prim2,tbounds);
+        const PrimRefMB prim2(lbounds, tbounds.size(), num_time_segments, geomID, primID);
+        return std::make_pair(prim2, tbounds);
+      }
+
+      __forceinline std::pair<LBBox3fa,range<int>> lbounds(const PrimRefMB& prim, const BBox1f time_range) const
+      {
+        const unsigned geomID = prim.geomID();
+        const unsigned primID = prim.primID();
+        const Mesh* mesh = (Mesh*)scene->get(geomID);
+        const LBBox3fa lbounds = mesh->linearBounds(primID, time_range);
+        const unsigned num_time_segments = mesh->numTimeSegments();
+        const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
+        assert(tbounds.size() > 0);
+        return std::make_pair(lbounds, tbounds);
       }
     };
 
