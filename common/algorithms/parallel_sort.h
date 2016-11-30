@@ -238,10 +238,15 @@ namespace embree
       /* count how many items go into the buckets */
       for (size_t i=0; i<BUCKETS; i++)
         radixCount[threadIndex][i] = 0;
-      
+
+      /* iterate over src array and count buckets */
+      unsigned int * __restrict const count = radixCount[threadIndex];
+#if defined(__INTEL_COMPILER)
+#pragma nounroll      
+#endif
       for (size_t i=startID; i<endID; i++) {
-        const Key index = ((Key)src[i] >> shift) & mask;
-        radixCount[threadIndex][index]++;
+        const size_t index = ((size_t)(Key)src[i] >> (size_t)shift) & (size_t)mask;
+        count[index]++;
       }
     }
     
@@ -276,12 +281,49 @@ namespace embree
         for (size_t j=0; j<BUCKETS; j++)
           offset[j] += radixCount[i][j];
       
+#if 1
       /* copy items into their buckets */
+#if defined(__INTEL_COMPILER)
+#pragma nounroll
+#endif
       for (size_t i=startID; i<endID; i++) {
         const Ty elt = src[i];
-        const Key index = ((Key)src[i] >> shift) & mask;
+        const size_t index = ((size_t)(Key)src[i] >> (size_t)shift) & (size_t)mask;
         dst[offset[index]++] = elt;
       }
+
+#else
+      static const size_t NUM_LOCAL_ITEMS = 8;
+
+      /* temporary local in-cache storage */
+      __aligned(64) Ty local[BUCKETS][NUM_LOCAL_ITEMS];
+
+      /* reset total count */
+      for (size_t i=0; i<BUCKETS; i++)
+        total[i] = 0;
+#if defined(__INTEL_COMPILER)
+#pragma nounroll
+#endif
+      for (size_t i=startID; i<endID; i++) {
+        const Ty elt = src[i];
+        const size_t index = ((size_t)(Key)src[i] >> (size_t)shift) & (size_t)mask;
+        local[index][total[index]++] = elt;
+
+        /* flush local bucket */
+        if (unlikely(total[index] == NUM_LOCAL_ITEMS))
+        {
+          memcpy(&dst[offset[index]],&local[index][0],sizeof(Ty)*NUM_LOCAL_ITEMS);
+          offset[index] += NUM_LOCAL_ITEMS;
+          total[index]   = 0;
+        }
+      }
+      
+      /* flush non-empty local buckets */
+      for (size_t i=0; i<BUCKETS; i++)
+        for (size_t j=0;j<total[i];j++)
+          dst[offset[i]+j] = local[i][j];
+          
+#endif
     }
     
     void tbbRadixIteration(const Key shift, const bool last,

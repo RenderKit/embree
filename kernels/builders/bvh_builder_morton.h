@@ -53,12 +53,22 @@ namespace embree
     struct __aligned(8) MortonID32Bit
     {
     public:
-      
-      unsigned int code;
-      unsigned int index;
+
+      union {
+        struct {
+          unsigned int code;
+          unsigned int index;
+        };
+        uint64_t t;
+      };
       
     public:   
-      __forceinline operator unsigned() const { return code; }
+
+      __forceinline MortonID32Bit() {}
+      __forceinline MortonID32Bit(const MortonID32Bit& m) { t = m.t; }
+
+
+        __forceinline operator unsigned() const { return code; }
       
       __forceinline unsigned int get(const unsigned int shift, const unsigned int and_mask) const {
         return (code >> shift) & and_mask;
