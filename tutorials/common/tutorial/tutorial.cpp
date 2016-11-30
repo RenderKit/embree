@@ -77,7 +77,6 @@ namespace embree
 
       interactive(true),
       fullscreen(false),
-      benchmarkSleep(true),
       window_width(512),
       window_height(512),
       windowID(0),
@@ -153,10 +152,6 @@ namespace embree
         numBenchmarkFrames  = 2048;
         interactive = false;
       }, "--nodisplay: enabled benchmark mode, continously renders frames");
-
-    registerOption("nosleep", [this] (Ref<ParseStream> cin, const FileName& path) {
-        benchmarkSleep = false;
-      }, "--nosleep: disables brief sleeping periods in benchmark mode");
     
     /* output filename */
     registerOption("shader", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -381,7 +376,6 @@ namespace embree
         device_render(pixels,width,height,0.0f,ispccamera);
         double t1 = getSeconds();
         std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " <<  std::setw(8) << 1.0/(t1-t0) << " fps (skipped)" << std::endl << std::flush;
-        if (benchmarkSleep) sleepSeconds(0.1);
       }
       
       for (size_t i=skipBenchmarkFrames; i<numTotalFrames; i++) 
@@ -401,7 +395,6 @@ namespace embree
                     << "max = " << std::setw(8) << stat.getMax() << " fps, "
                     << "sigma = " << std::setw(6) << stat.getSigma() << " (" << 100.0f*stat.getSigma()/stat.getAvg() << "%)" << std::endl << std::flush;
         }
-        if (benchmarkSleep) sleepSeconds(0.1);
       }
 
       /* rebuild scene between repetitions */
@@ -425,7 +418,6 @@ namespace embree
     std::cout << "BENCHMARK_RENDER_MAX " << stat.getMax() << std::endl;
     std::cout << "BENCHMARK_RENDER_SIGMA " << stat.getSigma() << std::endl;
     std::cout << "BENCHMARK_RENDER_AVG_SIGMA " << stat.getAvgSigma() << std::endl << std::flush;
-    if (benchmarkSleep) sleepSeconds(0.1);
   }
 
   void TutorialApplication::renderToFile(const FileName& fileName)
