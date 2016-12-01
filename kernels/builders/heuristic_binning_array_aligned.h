@@ -33,11 +33,11 @@ namespace embree
 #if defined(__AVX512F__)
         static const size_t PARALLEL_THRESHOLD = 4*768; 
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 768;
-        static const size_t PARALLEL_PARITION_BLOCK_SIZE = 768; 
+        static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 768;
 #else
         static const size_t PARALLEL_THRESHOLD = 3 * 1024;
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
-        static const size_t PARALLEL_PARITION_BLOCK_SIZE = 128;
+        static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;
 #endif
         __forceinline HeuristicArrayBinningSAH ()
           : prims(nullptr) {}
@@ -149,7 +149,7 @@ namespace embree
               prims,begin,end,empty,local_left,local_right,isLeft,
               [] (CentGeomBBox3fa& pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
               [] (CentGeomBBox3fa& pinfo0,const CentGeomBBox3fa &pinfo1) { pinfo0.merge(pinfo1); },
-              PARALLEL_PARITION_BLOCK_SIZE);
+              PARALLEL_PARTITION_BLOCK_SIZE);
           
           new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
           new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);

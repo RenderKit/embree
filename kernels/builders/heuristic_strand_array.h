@@ -33,7 +33,7 @@ namespace embree
   
       static const size_t PARALLEL_THRESHOLD = 10000;
       static const size_t PARALLEL_FIND_BLOCK_SIZE = 4096;
-      static const size_t PARALLEL_PARITION_BLOCK_SIZE = 64;
+      static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 64;
 
       /*! stores all information to perform some split */
       struct Split
@@ -277,7 +277,7 @@ namespace embree
           prims,begin,end,empty,left,right,primOnLeftSide,
           [] (PrimInfo &pinfo, const BezierPrim& ref) { pinfo.add(ref.bounds()); },
           [] (PrimInfo &pinfo0,const PrimInfo& pinfo1) { pinfo0.merge(pinfo1); },
-          PARALLEL_PARITION_BLOCK_SIZE);
+          PARALLEL_PARTITION_BLOCK_SIZE);
         
         left.begin  = begin;  left.end  = center; // FIXME: remove?
         right.begin = center; right.end = end;

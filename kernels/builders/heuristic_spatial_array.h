@@ -107,11 +107,11 @@ namespace embree
 #if defined(__AVX512F__)
         static const size_t PARALLEL_THRESHOLD = 3*1024; 
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 768;
-        static const size_t PARALLEL_PARITION_BLOCK_SIZE = 128;
+        static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;
 #else
         static const size_t PARALLEL_THRESHOLD = 3*1024;
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
-        static const size_t PARALLEL_PARITION_BLOCK_SIZE = 128;
+        static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;
 #endif
 
         static const size_t MOVE_STEP_SIZE = 64;
@@ -481,7 +481,7 @@ namespace embree
             prims0,begin,end,empty,left,right,isLeft,
             [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds(),ref.lower.a >> 24); },
             [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); },
-            PARALLEL_PARITION_BLOCK_SIZE);
+            PARALLEL_PARTITION_BLOCK_SIZE);
 
           const size_t left_weight  = left.end;
           const size_t right_weight = right.end;
@@ -521,7 +521,7 @@ namespace embree
             prims0,begin,end,empty,left,right,isLeft,
             [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds(),ref.lower.a >> 24); },
             [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); },
-            PARALLEL_PARITION_BLOCK_SIZE);
+            PARALLEL_PARTITION_BLOCK_SIZE);
 
           const size_t left_weight  = left.end;
           const size_t right_weight = right.end;
