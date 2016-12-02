@@ -35,6 +35,10 @@
 
 #include "../common/state.h"
 
+// FIXME: remove after removing BVHNBuilderMSMBlur4DSAH
+#include "../../common/algorithms/parallel_for_for.h"
+#include "../../common/algorithms/parallel_for_for_prefix_sum.h"
+
 #define PROFILE 0
 #define PROFILE_RUNS 20
 
@@ -513,9 +517,7 @@ namespace embree
             const BBox1f dt(float(c[i].begin())/float(bvh->numTimeSteps-1),
                             float(c[i].end  ())/float(bvh->numTimeSteps-1));
 
-            avector<PrimRefMB> prims2(prims.size());
-            const PrimInfoMB pinfo = createPrimRefMBArray<Mesh>(scene,prims2,bvh->scene->progressInterface,dt);
-            LBBox3fa cbounds = pinfo.geomBounds;
+            LBBox3fa cbounds = linearBounds(scene,dt);
 
             node->set(i,cnode,cbounds,dt);
             lbounds.extend(cbounds);
@@ -541,9 +543,8 @@ namespace embree
         bvh->numTimeSteps = numTimeSteps;
         
         NodeRef root = recurse(make_range(size_t(0),numTimeSegments));
-        avector<PrimRefMB> prims2(numPrimitives);
-        const PrimInfoMB pinfo = createPrimRefMBArray<Mesh>(scene,prims2,bvh->scene->progressInterface,BBox1f(0.0f,1.0f));
-        bvh->set(root,pinfo.geomBounds,numPrimitives);
+        LBBox3fa rootBounds = linearBounds(scene,BBox1f(0.0f,1.0f));
+        bvh->set(root,rootBounds,numPrimitives);
         
         /* clear temporary data for static geometry */
         if (scene->isStatic()) 
@@ -557,6 +558,28 @@ namespace embree
         
       void clear() {
         prims.clear();
+      }
+
+      LBBox3fa linearBounds(Scene* scene, BBox1f t0t1)
+      {
+        ParallelForForPrefixSumState<LBBox3fa> pstate;
+        Scene::Iterator<Mesh,true> iter(scene);
+
+        /* first try */
+        pstate.init(iter,size_t(1024));
+        LBBox3fa lbounds = parallel_for_for_prefix_sum( pstate, iter, LBBox3fa(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k, const LBBox3fa& base) -> LBBox3fa
+        {
+          LBBox3fa lbounds(empty);
+          for (size_t j=r.begin(); j<r.end(); j++)
+          {
+            LBBox3fa bounds = empty;
+            if (!mesh->linearBounds(j,t0t1,bounds)) continue;
+            lbounds.extend(bounds);
+          }
+          return lbounds;
+        }, [](const LBBox3fa& a, const LBBox3fa& b) -> LBBox3fa { return merge(a,b); });
+
+        return lbounds;
       }
     };
 
@@ -582,7 +605,11 @@ namespace embree
         const unsigned num_time_segments = mesh->numTimeSegments();
         const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
         assert(tbounds.size() > 0);
+#if MBLUR_BIN_LBBOX
         const PrimRefMB prim2(lbounds, tbounds.size(), num_time_segments, geomID, primID);
+#else
+        const PrimRefMB prim2(lbounds.interpolate(0.5f), tbounds.size(), num_time_segments, geomID, primID);
+#endif
         return std::make_pair(prim2, tbounds);
       }
 
@@ -785,9 +812,10 @@ namespace embree
         Set set(prims,make_range(size_t(0),pinfo.size()),BBox1f(0.0f,1.0f)); 
         NodeRef root;
         BuildRecord br(pinfo,1,(size_t*)&root,set);
-        builder(br);
-        
-        bvh->set(root,pinfo.geomBounds,pinfo.size());
+        LBBox3fa rootBounds = builder(br).first;
+
+        //bvh->set(root,pinfo.geomBounds,pinfo.size());
+        bvh->set(root,rootBounds,pinfo.size());
 
 #if PROFILE
           });

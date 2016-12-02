@@ -18,8 +18,12 @@
 
 #include "default.h"
 
+#define MBLUR_BIN_LBBOX 0
+
 namespace embree
 {
+#if MBLUR_BIN_LBBOX
+
   /*! A primitive reference stores the bounds of the primitive and its ID. */
   struct __aligned(32) PrimRefMB
   {
@@ -35,7 +39,7 @@ namespace embree
       lbounds.bounds1.upper.a = totalTimeSegments;
     }
 
-    __forceinline PrimRefMB (const LBBox3fa& lbounds_i, unsigned int activeTimeSegments, unsigned int totalTimeSegments, size_t id) 
+    __forceinline PrimRefMB (const LBBox3fa& lbounds_i, unsigned int activeTimeSegments, unsigned int totalTimeSegments, size_t id)
       : lbounds(lbounds_i)
     {
       assert(activeTimeSegments > 0);
@@ -56,11 +60,11 @@ namespace embree
     }
 
     /*! returns the number of time segments of this primref */
-    __forceinline unsigned size() const { 
+    __forceinline unsigned size() const {
       return lbounds.bounds1.lower.a;
     }
 
-    __forceinline unsigned totalTimeSegments() const { 
+    __forceinline unsigned totalTimeSegments() const {
       return lbounds.bounds1.upper.a;
     }
 
@@ -72,7 +76,7 @@ namespace embree
     }
 
     /*! returns bounds and centroid used for binning */
-    __forceinline void binBoundsAndCenter(LBBox3fa& bounds_o, Vec3fa& center_o) const 
+    __forceinline void binBoundsAndCenter(LBBox3fa& bounds_o, Vec3fa& center_o) const
     {
       bounds_o = bounds();
       center_o = binCenter();
@@ -85,21 +89,117 @@ namespace embree
     }
 
     /*! returns the geometry ID */
-    __forceinline unsigned geomID() const { 
+    __forceinline unsigned geomID() const {
       return lbounds.bounds0.lower.a;
     }
 
     /*! returns the primitive ID */
-    __forceinline unsigned primID() const { 
+    __forceinline unsigned primID() const {
       return lbounds.bounds0.upper.a;
+    }
+
+    /*! returns an size_t sized ID */
+    __forceinline size_t ID() const {
+#if defined(__X86_64__)
+      return size_t(lbounds.bounds0.lower.u) + (size_t(lbounds.bounds0.upper.u) << 32);
+#else
+      return size_t(lbounds.bounds0.lower.u);
+#endif
+    }
+
+    /*! special function for operator< */
+    __forceinline uint64_t ID64() const {
+      return (((uint64_t)primID()) << 32) + (uint64_t)geomID();
+    }
+
+    /*! allows sorting the primrefs by ID */
+    friend __forceinline bool operator<(const PrimRefMB& p0, const PrimRefMB& p1) {
+      return p0.ID64() < p1.ID64();
+    }
+
+    /*! Outputs primitive reference to a stream. */
+    friend __forceinline std::ostream& operator<<(std::ostream& cout, const PrimRefMB& ref) {
+      return cout << "{ lbounds = " << ref.lbounds << ", geomID = " << ref.geomID() << ", primID = " << ref.primID() << " }";
+    }
+
+  public:
+    LBBox3fa lbounds;
+  };
+
+#else
+
+  /*! A primitive reference stores the bounds of the primitive and its ID. */
+  struct __aligned(16) PrimRefMB
+  {
+    __forceinline PrimRefMB () {}
+
+    __forceinline PrimRefMB (const BBox3fa& bounds, unsigned int activeTimeSegments, unsigned int totalTimeSegments, unsigned int geomID, unsigned int primID)
+      : bbox(bounds)
+    {
+      assert(activeTimeSegments > 0);
+      bbox.lower.a = geomID;
+      bbox.upper.a = primID;
+      num.x = activeTimeSegments;
+      num.y = totalTimeSegments;
+    }
+
+    __forceinline PrimRefMB (const BBox3fa& bounds, unsigned int activeTimeSegments, unsigned int totalTimeSegments, size_t id)
+      : bbox(bounds)
+    {
+      assert(activeTimeSegments > 0);
+#if defined(__X86_64__)
+      bbox.lower.u = id & 0xFFFFFFFF;
+      bbox.upper.u = (id >> 32) & 0xFFFFFFFF;
+#else
+      bbox.lower.u = id;
+      bbox.upper.u = 0;
+#endif
+      num.x = activeTimeSegments;
+      num.y = totalTimeSegments;
+    }
+
+    /*! returns bounds for binning */
+    __forceinline BBox3fa bounds() const {
+      return bbox;
+    }
+
+    /*! returns the number of time segments of this primref */
+    __forceinline unsigned size() const { 
+      return num.x;
+    }
+
+    __forceinline unsigned totalTimeSegments() const { 
+      return num.y;
+    }
+
+    /*! returns center for binning */
+    __forceinline Vec3fa binCenter() const {
+      return center2(bounds());
+    }
+
+    /*! returns bounds and centroid used for binning */
+    __forceinline void binBoundsAndCenter(BBox3fa& bounds_o, Vec3fa& center_o) const
+    {
+      bounds_o = bounds();
+      center_o = center2(bounds());
+    }
+
+    /*! returns the geometry ID */
+    __forceinline unsigned geomID() const { 
+      return bbox.lower.a;
+    }
+
+    /*! returns the primitive ID */
+    __forceinline unsigned primID() const { 
+      return bbox.upper.a;
     }
 
     /*! returns an size_t sized ID */
     __forceinline size_t ID() const { 
 #if defined(__X86_64__)
-      return size_t(lbounds.bounds0.lower.u) + (size_t(lbounds.bounds0.upper.u) << 32);
+      return size_t(bbox.lower.u) + (size_t(bbox.upper.u) << 32);
 #else
-      return size_t(lbounds.bounds0.lower.u);
+      return size_t(bbox.lower.u);
 #endif
     }
 
@@ -115,10 +215,13 @@ namespace embree
 
     /*! Outputs primitive reference to a stream. */
     friend __forceinline std::ostream& operator<<(std::ostream& cout, const PrimRefMB& ref) {
-      return cout << "{ lbounds = " << ref.lbounds << ", geomID = " << ref.geomID() << ", primID = " << ref.primID() << " }";
+      return cout << "{ bounds = " << ref.bounds() << ", geomID = " << ref.geomID() << ", primID = " << ref.primID() << " }";
     }
 
   public:
-    LBBox3fa lbounds;
+    BBox3fa bbox; // bounds, geomID, primID
+    Vec3ia num;   // activeTimeSegments, totalTimeSegments
   };
+
+#endif
 }

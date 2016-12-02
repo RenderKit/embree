@@ -34,7 +34,11 @@ namespace embree
         typedef BinSplit<BINS> Split;
         typedef BinSplit<BINS> ObjectSplit;
         typedef BinSplit<BINS> TemporalSplit;
+#if MBLUR_BIN_LBBOX
         typedef BinInfoT<BINS,PrimRefMB,LBBox3fa> ObjectBinner;
+#else
+        typedef BinInfoT<BINS,PrimRefMB,BBox3fa> ObjectBinner;
+#endif
 #if MBLUR_NEW_ARRAY
         typedef std::shared_ptr<avector<PrimRefMB>> PrimRefVector;
 #else
@@ -67,7 +71,7 @@ namespace embree
 
             return parallel_reduce(object_range.begin(), object_range.end(), PARALLEL_FIND_BLOCK_SIZE, PARALLEL_THRESHOLD, LBBox3fa(empty),
                                    reduce,
-                                   [&](const LBBox3fa& b0, const LBBox3fa& b1) -> LBBox3fa { LBBox3fa b = b0; b.extend(b1); return b; });
+                                   [&](const LBBox3fa& b0, const LBBox3fa& b1) -> LBBox3fa { return merge(b0, b1); });
           }
 
         public:
@@ -172,8 +176,13 @@ namespace embree
               {
                 auto bn0 = recalculatePrimRef.linearBounds(prims[i],dt0);
                 auto bn1 = recalculatePrimRef.linearBounds(prims[i],dt1);
+#if MBLUR_BIN_LBBOX
                 bounds0[b].extend(bn0.first);
                 bounds1[b].extend(bn1.first);
+#else
+                bounds0[b].extend(bn0.first.interpolate(0.5f));
+                bounds1[b].extend(bn1.first.interpolate(0.5f));
+#endif
                 count0[b] += bn0.second.size();
                 count1[b] += bn1.second.size();
               }
@@ -221,8 +230,8 @@ namespace embree
               /* calculate sah */
               const size_t lCount = (count0[b]+(1 << logBlockSize)-1) >> int(logBlockSize);
               const size_t rCount = (count1[b]+(1 << logBlockSize)-1) >> int(logBlockSize);
-              const float sah0 = bounds0[b].expectedApproxHalfArea()*float(lCount)*dt0.size();
-              const float sah1 = bounds1[b].expectedApproxHalfArea()*float(rCount)*dt1.size();
+              const float sah0 = expectedApproxHalfArea(bounds0[b])*float(lCount)*dt0.size();
+              const float sah1 = expectedApproxHalfArea(bounds1[b])*float(rCount)*dt1.size();
               const float sah = sah0+sah1;
               if (sah < bestSAH) {
                 bestSAH = sah;
@@ -236,8 +245,13 @@ namespace embree
         public:
           size_t count0[LOCATIONS];
           size_t count1[LOCATIONS];
+#if MBLUR_BIN_LBBOX
           LBBox3fa bounds0[LOCATIONS];
           LBBox3fa bounds1[LOCATIONS];
+#else
+          BBox3fa bounds0[LOCATIONS];
+          BBox3fa bounds1[LOCATIONS];
+#endif
         };
         
         /*! finds the best split */

@@ -17,6 +17,8 @@
 #pragma once
 
 #include "../common/default.h"
+#include "../common/primref.h"
+#include "../common/primref_mb.h"
 
 namespace embree
 {
@@ -166,42 +168,43 @@ namespace embree
     //typedef PrimInfoT<LBBox3fa> PrimInfoMB;
 
     /*! stores bounding information for a set of primitives */
-    class PrimInfoMB : public CentGeom<LBBox3fa>
+    template<typename BBox>
+      class PrimInfoMBT : public CentGeom<BBox>
     {
     public:
-      using CentGeom<LBBox3fa>::geomBounds;
-      using CentGeom<LBBox3fa>::centBounds;
+      using CentGeom<BBox>::geomBounds;
+      using CentGeom<BBox>::centBounds;
 
-      __forceinline PrimInfoMB () {
+      __forceinline PrimInfoMBT () {
       } 
 
-      __forceinline PrimInfoMB (EmptyTy)
-	: CentGeom<LBBox3fa>(empty), begin(0), end(0), num_time_segments(0), max_num_time_segments(0), time_range(0.0f,1.0f) {}
+      __forceinline PrimInfoMBT (EmptyTy)
+        : CentGeom<BBox>(empty), begin(0), end(0), num_time_segments(0), max_num_time_segments(0), time_range(0.0f,1.0f) {}
 
-      __forceinline PrimInfoMB (size_t begin, size_t end)
-	: CentGeom<LBBox3fa>(empty), begin(begin), end(end), num_time_segments(0), max_num_time_segments(0), time_range(0.0f,1.0f) {}
+      __forceinline PrimInfoMBT (size_t begin, size_t end)
+        : CentGeom<BBox>(empty), begin(begin), end(end), num_time_segments(0), max_num_time_segments(0), time_range(0.0f,1.0f) {}
 
 
       template<typename PrimRef> 
         __forceinline void add_primref(const PrimRef& prim) 
       {
-        CentGeom<LBBox3fa>::extend_primref(prim);
+        CentGeom<BBox>::extend_primref(prim);
         end++;
         num_time_segments += prim.size();
         max_num_time_segments = max(max_num_time_segments,size_t(prim.totalTimeSegments()));
       }
 
-      __forceinline void merge(const PrimInfoMB& other)
+      __forceinline void merge(const PrimInfoMBT& other)
       {
-	CentGeom<LBBox3fa>::merge(other);
+        CentGeom<BBox>::merge(other);
         begin += other.begin;
 	end += other.end;
         num_time_segments += other.num_time_segments;
         max_num_time_segments = max(max_num_time_segments,other.max_num_time_segments);
       }
 
-      static __forceinline const PrimInfoMB merge(const PrimInfoMB& a, const PrimInfoMB& b) {
-        PrimInfoMB r = a; r.merge(b); return r;
+      static __forceinline const PrimInfoMBT merge(const PrimInfoMBT& a, const PrimInfoMBT& b) {
+        PrimInfoMBT r = a; r.merge(b); return r;
       }
       
       /*! returns the number of primitives */
@@ -223,7 +226,7 @@ namespace embree
       }
       
       /*! stream output */
-      friend std::ostream& operator<<(std::ostream& cout, const PrimInfoMB& pinfo) {
+      friend std::ostream& operator<<(std::ostream& cout, const PrimInfoMBT& pinfo) {
 	return cout << "PrimInfo { begin = " << pinfo.begin << ", end = " << pinfo.end << ", time_segments = " 
                     << pinfo.num_time_segments << ", geomBounds = " << pinfo.geomBounds << ", centBounds = " << pinfo.centBounds << "}";
       }
@@ -234,5 +237,11 @@ namespace embree
       size_t max_num_time_segments; //!< maximal number of time segments of a primitive
       BBox1f time_range;
     };
+
+#if MBLUR_BIN_LBBOX
+    typedef PrimInfoMBT<LBBox3fa> PrimInfoMB;
+#else
+    typedef PrimInfoMBT<BBox3fa> PrimInfoMB;
+#endif
   }
 }

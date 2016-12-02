@@ -188,8 +188,14 @@ namespace embree
                                    Vec3fa(d1.y,d1.z,d1.x)));
   }
 
-  template<typename T> __forceinline float expectedApproxHalfArea(const LBBox<T>& box) {
+  template<typename T>
+  __forceinline float expectedApproxHalfArea(const LBBox<T>& box) {
     return box.expectedApproxHalfArea(); 
+  }
+
+  template<typename T>
+  __forceinline LBBox<T> merge(const LBBox<T>& a, const LBBox<T>& b) {
+    return LBBox<T>(merge(a.bounds0, b.bounds0), merge(a.bounds1, b.bounds1));
   }
 
   /*! default template instantiations */

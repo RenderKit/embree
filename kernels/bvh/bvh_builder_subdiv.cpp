@@ -540,7 +540,11 @@ namespace embree
       {
         const LBBox3fa lbounds = Geometry::linearBounds([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, time_range, num_time_segments);
         const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
+#if MBLUR_BIN_LBBOX
         const PrimRefMB prim2(lbounds, tbounds.size(), num_time_segments, patchIndexMB);
+#else
+        const PrimRefMB prim2(lbounds.interpolate(0.5f), tbounds.size(), num_time_segments, patchIndexMB);
+#endif
         return std::make_pair(prim2, tbounds);
       }
 
@@ -828,9 +832,10 @@ namespace embree
         assert(prims->size() == pinfo.size());
         NodeRef root;
         BuildRecord br(pinfo,1,(size_t*)&root,set);
-        builder(br);
+        LBBox3fa rootBounds = builder(br).first;
         
-        bvh->set(root,pinfo.geomBounds,pinfo.size());
+        //bvh->set(root,pinfo.geomBounds,pinfo.size());
+        bvh->set(root,rootBounds,pinfo.size());
       }
 
       void build(size_t, size_t) 
