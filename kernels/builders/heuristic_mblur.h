@@ -59,7 +59,7 @@ namespace embree
 
         static const size_t PARALLEL_THRESHOLD = 3 * 1024;
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
-        static const size_t PARALLEL_PARITION_BLOCK_SIZE = 128;
+        static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;
 
         HeuristicMBlur (const RecalculatePrimRef recalculatePrimRef)
         : recalculatePrimRef(recalculatePrimRef) {}
@@ -264,7 +264,7 @@ namespace embree
           auto isLeft = [&] (const PrimRefMB &ref) { return any(((vint4)split.mapping.bin_unsafe(ref) < vSplitPos) & vSplitMask); };
           auto reduction = [] (PrimInfoMB& pinfo, const PrimRefMB& ref) { pinfo.add_primref(ref); };
           auto reduction2 = [] (PrimInfoMB& pinfo0,const PrimInfoMB& pinfo1) { pinfo0.merge(pinfo1); };
-          size_t center = parallel_partitioning(set.prims->data(),begin,end,empty,left,right,isLeft,reduction,reduction2,PARALLEL_PARITION_BLOCK_SIZE,PARALLEL_THRESHOLD);
+          size_t center = parallel_partitioning(set.prims->data(),begin,end,empty,left,right,isLeft,reduction,reduction2,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD);
           left.begin  = begin;  left.end = center; left.time_range = pinfo.time_range;
           right.begin = center; right.end = end;   right.time_range = pinfo.time_range;
           new (&lset) Set(set.prims,range<size_t>(begin,center),set.time_range);
@@ -299,7 +299,7 @@ namespace embree
             }
             return pinfo;
           };        
-          linfo = parallel_reduce(set.object_range.begin(),set.object_range.end(),PARALLEL_PARITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func0,
+          linfo = parallel_reduce(set.object_range.begin(),set.object_range.end(),PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func0,
                                   [] (const PrimInfoMB& a, const PrimInfoMB& b) { return PrimInfoMB::merge(a,b); });
    
           linfo.time_range = time_range;
