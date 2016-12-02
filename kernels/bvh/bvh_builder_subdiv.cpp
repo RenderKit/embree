@@ -780,13 +780,7 @@ namespace embree
             for (size_t i=0; i<num; i++) 
               node->set(i, bounds[i].first.global(bounds[i].second), bounds[i].second);
 
-            LBBox3fa cbounds = empty;
-            for (size_t j=prims.object_range.begin(); j<prims.object_range.end(); j++) 
-            {
-              PrimRefMB& ref = (*prims.prims)[j];
-              auto bn = recalculatePrimRef.linearBounds(ref,prims.time_range);
-              cbounds.extend(bn.first);
-            }
+            LBBox3fa cbounds = prims.linearBounds(recalculatePrimRef);
             return std::make_pair(cbounds,prims.time_range);
           }
         };

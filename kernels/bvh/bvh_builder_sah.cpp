@@ -712,6 +712,7 @@ namespace embree
 #endif
         
         PrimInfoMB pinfo = createPrimRefMBArray<Mesh>(scene,*prims,bvh->scene->progressInterface);
+        RecalculatePrimRef<Mesh> recalculatePrimRef(scene);
         
         /* reduction function */
         auto updateNodeFunc = [&] (NodeRef ref, Set& prims, const std::pair<LBBox3fa,BBox1f>* bounds, const size_t num) -> std::pair<LBBox3fa,BBox1f> {
@@ -727,7 +728,7 @@ namespace embree
               node->set(i, bounds[i].first.global(bounds[i].second));
               cbounds.extend(bounds[i].first);
             }
-            return std::make_pair(cbounds,bounds[0].second);
+            return std::make_pair(cbounds, bounds[0].second);
           }
           else
           {
@@ -735,13 +736,8 @@ namespace embree
             for (size_t i=0; i<num; i++) 
               node->set(i, bounds[i].first.global(bounds[i].second), bounds[i].second);
 
-            LBBox3fa cbounds = empty;
-            for (size_t j=prims.object_range.begin(); j<prims.object_range.end(); j++) 
-            {
-              PrimRefMB& ref = (*prims.prims)[j];
-              cbounds.extend(bvh->scene->template get<Mesh>(ref.geomID())->linearBounds(ref.primID(),prims.time_range));
-            }
-            return std::make_pair(cbounds,prims.time_range);
+            LBBox3fa cbounds = prims.linearBounds(recalculatePrimRef);
+            return std::make_pair(cbounds, prims.time_range);
           }
         };
         auto identity = std::make_pair(LBBox3fa(empty),BBox1f(empty));
@@ -754,7 +750,6 @@ namespace embree
         assert((sahBlockSize ^ (size_t(1) << logBlockSize)) == 0);
 
         /* instantiate array binning heuristic */
-        RecalculatePrimRef<Mesh> recalculatePrimRef(scene);
         Heuristic heuristic(recalculatePrimRef);
         auto createAllocFunc = typename BVH::CreateAlloc(bvh);
         auto createNodeFunc = CreateAlignedNodeMB4D<N,Mesh>(bvh);

@@ -51,6 +51,25 @@ namespace embree
           __forceinline Set(PrimRefVector prims, BBox1f time_range = BBox1f(0.0f,1.0f))
             : prims(prims), object_range(range<size_t>(0,prims->size())), time_range(time_range) {}
 
+          __forceinline LBBox3fa linearBounds(const RecalculatePrimRef& recalculatePrimRef) const
+          {
+            auto reduce = [&](const range<size_t>& r) -> LBBox3fa
+            {
+              LBBox3fa cbounds(empty);
+              for (size_t j = r.begin(); j < r.end(); j++)
+              {
+                PrimRefMB& ref = (*prims)[j];
+                auto bn = recalculatePrimRef.linearBounds(ref, time_range);
+                cbounds.extend(bn.first);
+              };
+              return cbounds;
+            };
+
+            return parallel_reduce(object_range.begin(), object_range.end(), PARALLEL_FIND_BLOCK_SIZE, PARALLEL_THRESHOLD, LBBox3fa(empty),
+                                   reduce,
+                                   [&](const LBBox3fa& b0, const LBBox3fa& b1) -> LBBox3fa { LBBox3fa b = b0; b.extend(b1); return b; });
+          }
+
         public:
           PrimRefVector prims;
           range<size_t> object_range;
@@ -61,7 +80,7 @@ namespace embree
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
         static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;
 
-        HeuristicMBlur (const RecalculatePrimRef recalculatePrimRef)
+        HeuristicMBlur (const RecalculatePrimRef& recalculatePrimRef)
         : recalculatePrimRef(recalculatePrimRef) {}
 
         /*! finds the best split */
