@@ -53,12 +53,23 @@ namespace embree
     struct __aligned(8) MortonID32Bit
     {
     public:
-      
-      unsigned int code;
-      unsigned int index;
+
+      union {
+        struct {
+          unsigned int code;
+          unsigned int index;
+        };
+        uint64_t t;
+      };
       
     public:   
-      __forceinline operator unsigned() const { return code; }
+
+#if defined(__X86_64__)
+      __forceinline MortonID32Bit() {}
+      __forceinline MortonID32Bit(const MortonID32Bit& m) { t = m.t; }
+#endif
+
+        __forceinline operator unsigned() const { return code; }
       
       __forceinline unsigned int get(const unsigned int shift, const unsigned int and_mask) const {
         return (code >> shift) & and_mask;
@@ -265,7 +276,7 @@ namespace embree
     protected:
       static const size_t MAX_BRANCHING_FACTOR = 16;         //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;         //!< create balanced tree of we are that many levels before the maximal tree depth
-      static const size_t SINGLE_THREADED_THRESHOLD = 2*1024;  //!< threshold to switch to single threaded build
+      static const size_t SINGLE_THREADED_THRESHOLD = 1024;  //!< threshold to switch to single threaded build
 
 
     public:

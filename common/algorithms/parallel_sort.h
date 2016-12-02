@@ -238,10 +238,19 @@ namespace embree
       /* count how many items go into the buckets */
       for (size_t i=0; i<BUCKETS; i++)
         radixCount[threadIndex][i] = 0;
-      
+
+      /* iterate over src array and count buckets */
+      unsigned int * __restrict const count = radixCount[threadIndex];
+#if defined(__INTEL_COMPILER)
+#pragma nounroll      
+#endif
       for (size_t i=startID; i<endID; i++) {
-        const Key index = ((Key)src[i] >> shift) & mask;
-        radixCount[threadIndex][index]++;
+#if defined(__X86_64__)
+        const size_t index = ((size_t)(Key)src[i] >> (size_t)shift) & (size_t)mask;
+#else
+		const Key index = ((Key)src[i] >> shift) & mask;
+#endif
+        count[index]++;
       }
     }
     
@@ -277,9 +286,16 @@ namespace embree
           offset[j] += radixCount[i][j];
       
       /* copy items into their buckets */
+#if defined(__INTEL_COMPILER)
+#pragma nounroll
+#endif
       for (size_t i=startID; i<endID; i++) {
         const Ty elt = src[i];
-        const Key index = ((Key)src[i] >> shift) & mask;
+#if defined(__X86_64__)
+        const size_t index = ((size_t)(Key)src[i] >> (size_t)shift) & (size_t)mask;
+#else
+		const size_t index = ((Key)src[i] >> shift) & mask;
+#endif
         dst[offset[index]++] = elt;
       }
     }
