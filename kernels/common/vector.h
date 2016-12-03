@@ -62,7 +62,7 @@ namespace embree
         {
 #if defined(__LINUX__) && defined(__AVX512F__)
           if (n*sizeof(value_type) >= 14 * PAGE_SIZE_2M)
-           os_free(p,n*sizeof(value_type)); 
+            os_free(p,n*sizeof(value_type)); 
           else
             alignedFree(p);
 #else

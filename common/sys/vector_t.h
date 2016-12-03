@@ -26,26 +26,26 @@ namespace embree
     
 #if defined(VECTOR_INIT_ALLOCATOR)
     template<typename M>
-    vector_t (M alloc) 
+    __forceinline vector_t (M alloc) 
       : alloc(alloc), size_active(0), size_alloced(0), items(nullptr) {}
 
     template<typename M>
-    vector_t (M alloc, size_t sz) 
+    __forceinline vector_t (M alloc, size_t sz) 
       : alloc(alloc), size_active(0), size_alloced(0), items(nullptr) { internal_resize_init(sz); }
 
 #else
-      vector_t () 
+      __forceinline vector_t () 
         : size_active(0), size_alloced(0), items(nullptr) {}
     
-      explicit vector_t (size_t sz) 
+      __forceinline explicit vector_t (size_t sz) 
         : size_active(0), size_alloced(0), items(nullptr) { internal_resize_init(sz); }
 #endif
       
-      ~vector_t() {
+      __forceinline ~vector_t() {
         clear();
       }
     
-      vector_t (const vector_t& other)
+      __forceinline vector_t (const vector_t& other)
       {
         size_active = other.size_active;
         size_alloced = other.size_alloced;
@@ -53,7 +53,7 @@ namespace embree
         for (size_t i=0; i<size_active; i++) items[i] = other.items[i];
       }
     
-      vector_t (vector_t&& other)
+      __forceinline vector_t (vector_t&& other)
       {
         alloc = std::move(other.alloc);
         size_active = other.size_active; other.size_active = 0;
@@ -61,14 +61,14 @@ namespace embree
         items = other.items; other.items = nullptr;
       }
 
-      vector_t& operator=(const vector_t& other) 
+      __forceinline vector_t& operator=(const vector_t& other) 
       {
         resize(other.size_active);
         for (size_t i=0; i<size_active; i++) items[i] = other.items[i];
         return *this;
       }
 
-      vector_t& operator=(vector_t&& other) 
+      __forceinline vector_t& operator=(vector_t&& other) 
       {
         alloc = std::move(other.alloc);
         size_active = other.size_active; other.size_active = 0;
@@ -93,11 +93,11 @@ namespace embree
       __forceinline size_t capacity () const { return size_alloced; }
 
 
-      void resize(size_t new_size) {
+      __forceinline void resize(size_t new_size) {
         internal_resize(new_size,size_alloced < new_size ? new_size : size_alloced);
       }
 
-      void reserve(size_t new_alloced) 
+      __forceinline void reserve(size_t new_alloced) 
       {
         /* do nothing if container already large enough */
         if (new_alloced <= size_alloced) 
@@ -107,7 +107,7 @@ namespace embree
         internal_resize(size_active,new_alloced);
       }
 
-      void shrink_to_fit() {
+      __forceinline void shrink_to_fit() {
         internal_resize(size_active,size_active);
       }
 
@@ -140,7 +140,7 @@ namespace embree
         size_active--;
       }
 
-      void clear() 
+      __forceinline void clear() 
       {
         /* destroy elements */
         for (size_t i=0; i<size_active; i++)
@@ -169,7 +169,7 @@ namespace embree
 
     private:
 
-      void internal_resize_init(size_t new_active)
+      __forceinline void internal_resize_init(size_t new_active)
       {
         assert(size_active == 0); 
         assert(size_alloced == 0);
@@ -181,7 +181,7 @@ namespace embree
         size_alloced = new_active;
       }
 
-      void internal_resize(size_t new_active, size_t new_alloced)
+      __forceinline void internal_resize(size_t new_active, size_t new_alloced)
       {
         assert(new_active <= new_alloced); 
 
@@ -205,7 +205,7 @@ namespace embree
         size_alloced = new_alloced;
       }
 
-      void internal_grow(size_t new_alloced)
+      __forceinline void internal_grow(size_t new_alloced)
       {
         /* do nothing if container already large enough */
         if (new_alloced <= size_alloced) 

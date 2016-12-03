@@ -75,6 +75,7 @@ namespace embree
       void clear();
 
       void open_sequential(size_t numPrimitives);
+      void open_overlap(size_t numPrimitives);
       
     public:
       BVH* bvh;
