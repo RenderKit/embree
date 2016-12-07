@@ -158,6 +158,7 @@ namespace embree
                                             IntersectContext* context,
                                             const float* const grid_x,
                                             const size_t line_offset,
+                                            const size_t lines,
                                             Precalculations& pre)
       {
         typedef typename Loader::vfloat vfloat;
@@ -165,8 +166,8 @@ namespace embree
         const float* const grid_y  = grid_x + 1 * dim_offset;
         const float* const grid_z  = grid_x + 2 * dim_offset;
         const float* const grid_uv = grid_x + 3 * dim_offset;
-        Vec3<vfloat> v0, v1, v2; Loader::gather(grid_x,grid_y,grid_z,line_offset,v0,v1,v2);
-        pre.intersector.intersect(ray,k,v0,v1,v2,GridSOA::MapUV<Loader>(grid_uv,line_offset),Intersect1KEpilogMU<Loader::M,K,true>(ray,k,context,pre.grid->geomID,pre.grid->primID));
+        Vec3<vfloat> v0, v1, v2; Loader::gather(grid_x,grid_y,grid_z,line_offset,lines,v0,v1,v2);
+        pre.intersector.intersect(ray,k,v0,v1,v2,GridSOA::MapUV<Loader>(grid_uv,line_offset,lines),Intersect1KEpilogMU<Loader::M,K,true>(ray,k,context,pre.grid->geomID,pre.grid->primID));
       };
 
       template<typename Loader>
@@ -174,6 +175,7 @@ namespace embree
                                            IntersectContext* context,
                                            const float* const grid_x,
                                            const size_t line_offset,
+                                           const size_t lines,
                                            Precalculations& pre)
       {
         typedef typename Loader::vfloat vfloat;
@@ -181,21 +183,25 @@ namespace embree
         const float* const grid_y  = grid_x + 1 * dim_offset;
         const float* const grid_z  = grid_x + 2 * dim_offset;
         const float* const grid_uv = grid_x + 3 * dim_offset;
-        Vec3<vfloat> v0, v1, v2; Loader::gather(grid_x,grid_y,grid_z,line_offset,v0,v1,v2);
-        return pre.intersector.intersect(ray,k,v0,v1,v2,GridSOA::MapUV<Loader>(grid_uv,line_offset),Occluded1KEpilogMU<Loader::M,K,true>(ray,k,context,pre.grid->geomID,pre.grid->primID));
+        Vec3<vfloat> v0, v1, v2; Loader::gather(grid_x,grid_y,grid_z,line_offset,lines,v0,v1,v2);
+        return pre.intersector.intersect(ray,k,v0,v1,v2,GridSOA::MapUV<Loader>(grid_uv,line_offset,lines),Occluded1KEpilogMU<Loader::M,K,true>(ray,k,context,pre.grid->geomID,pre.grid->primID));
       }
 
       /*! Intersect a ray with the primitive. */
       static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
       {
         const size_t line_offset   = pre.grid->width;
+        const size_t lines         = pre.grid->height;
         const float* const grid_x  = pre.grid->decodeLeaf(0,prim);
 
 #if defined(__AVX__)
-        intersect<GridSOA::Gather3x3>( ray, k, context, grid_x, line_offset, pre);
+        intersect<GridSOA::Gather3x3>( ray, k, context, grid_x, line_offset, lines, pre);
 #else
-        intersect<GridSOA::Gather2x3>(ray, k, context, grid_x            , line_offset, pre);
-        intersect<GridSOA::Gather2x3>(ray, k, context, grid_x+line_offset, line_offset, pre);
+        intersect<GridSOA::Gather2x3>(ray, k, context, grid_x            , line_offset, lines, pre);
+#if LOW_TESSELLTION_LEVEL_FIX == 1
+        if (likely(lines > 2))
+#endif
+        intersect<GridSOA::Gather2x3>(ray, k, context, grid_x+line_offset, line_offset, lines, pre);
 #endif
       }
 
@@ -203,13 +209,17 @@ namespace embree
       static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
       {
         const size_t line_offset   = pre.grid->width;
+        const size_t lines         = pre.grid->height;
         const float* const grid_x  = pre.grid->decodeLeaf(0,prim);
 
 #if defined(__AVX__)
-        return occluded<GridSOA::Gather3x3>( ray, k, context, grid_x, line_offset, pre);
+        return occluded<GridSOA::Gather3x3>( ray, k, context, grid_x, line_offset, lines, pre);
 #else
-        if (occluded<GridSOA::Gather2x3>(ray, k, context, grid_x            , line_offset, pre)) return true;
-        if (occluded<GridSOA::Gather2x3>(ray, k, context, grid_x+line_offset, line_offset, pre)) return true;
+        if (occluded<GridSOA::Gather2x3>(ray, k, context, grid_x            , line_offset, lines, pre)) return true;
+#if LOW_TESSELLTION_LEVEL_FIX == 1
+        if (likely(lines > 2))
+#endif
+        if (occluded<GridSOA::Gather2x3>(ray, k, context, grid_x+line_offset, line_offset, lines, pre)) return true;
 #endif
         return false;
       }
@@ -230,6 +240,7 @@ namespace embree
                                             IntersectContext* context,
                                             const float* const grid_x,
                                             const size_t line_offset,
+                                            const size_t lines,
                                             Precalculations& pre)
       {
         typedef typename Loader::vfloat vfloat;
@@ -240,16 +251,16 @@ namespace embree
         const float* const grid_uv = grid_x + 3 * dim_offset;
 
         Vec3<vfloat> a0, a1, a2;
-        Loader::gather(grid_x,grid_y,grid_z,line_offset,a0,a1,a2);
+        Loader::gather(grid_x,grid_y,grid_z,line_offset,lines,a0,a1,a2);
 
         Vec3<vfloat> b0, b1, b2;
-        Loader::gather(grid_x+grid_offset,grid_y+grid_offset,grid_z+grid_offset,line_offset,b0,b1,b2);
+        Loader::gather(grid_x+grid_offset,grid_y+grid_offset,grid_z+grid_offset,line_offset,lines,b0,b1,b2);
 
         Vec3<vfloat> v0 = lerp(a0,b0,vfloat(ftime));
         Vec3<vfloat> v1 = lerp(a1,b1,vfloat(ftime));
         Vec3<vfloat> v2 = lerp(a2,b2,vfloat(ftime));
 
-        pre.intersector.intersect(ray,k,v0,v1,v2,GridSOA::MapUV<Loader>(grid_uv,line_offset),Intersect1KEpilogMU<Loader::M,K,true>(ray,k,context,pre.grid->geomID,pre.grid->primID));
+        pre.intersector.intersect(ray,k,v0,v1,v2,GridSOA::MapUV<Loader>(grid_uv,line_offset,lines),Intersect1KEpilogMU<Loader::M,K,true>(ray,k,context,pre.grid->geomID,pre.grid->primID));
       };
 
       template<typename Loader>
@@ -258,6 +269,7 @@ namespace embree
                                            IntersectContext* context,
                                            const float* const grid_x,
                                            const size_t line_offset,
+                                           const size_t lines,
                                            Precalculations& pre)
       {
         typedef typename Loader::vfloat vfloat;
@@ -268,16 +280,16 @@ namespace embree
         const float* const grid_uv = grid_x + 3 * dim_offset;
 
         Vec3<vfloat> a0, a1, a2;
-        Loader::gather(grid_x,grid_y,grid_z,line_offset,a0,a1,a2);
+        Loader::gather(grid_x,grid_y,grid_z,line_offset,lines,a0,a1,a2);
 
         Vec3<vfloat> b0, b1, b2;
-        Loader::gather(grid_x+grid_offset,grid_y+grid_offset,grid_z+grid_offset,line_offset,b0,b1,b2);
+        Loader::gather(grid_x+grid_offset,grid_y+grid_offset,grid_z+grid_offset,line_offset,lines,b0,b1,b2);
 
         Vec3<vfloat> v0 = lerp(a0,b0,vfloat(ftime));
         Vec3<vfloat> v1 = lerp(a1,b1,vfloat(ftime));
         Vec3<vfloat> v2 = lerp(a2,b2,vfloat(ftime));
 
-        return pre.intersector.intersect(ray,k,v0,v1,v2,GridSOA::MapUV<Loader>(grid_uv,line_offset),Occluded1KEpilogMU<Loader::M,K,true>(ray,k,context,pre.grid->geomID,pre.grid->primID));
+        return pre.intersector.intersect(ray,k,v0,v1,v2,GridSOA::MapUV<Loader>(grid_uv,line_offset,lines),Occluded1KEpilogMU<Loader::M,K,true>(ray,k,context,pre.grid->geomID,pre.grid->primID));
       }
 
       /*! Intersect a ray with the primitive. */
@@ -287,13 +299,17 @@ namespace embree
         const size_t itime = getTimeSegment(ray.time[k], float(pre.grid->time_steps-1), ftime);
 
         const size_t line_offset   = pre.grid->width;
+        const size_t lines         = pre.grid->height;
         const float* const grid_x  = pre.grid->decodeLeaf(itime,prim);
 
 #if defined(__AVX__)
-        intersect<GridSOA::Gather3x3>( ray, k, ftime, context, grid_x, line_offset, pre);
+        intersect<GridSOA::Gather3x3>( ray, k, ftime, context, grid_x, line_offset, lines, pre);
 #else
-        intersect<GridSOA::Gather2x3>(ray, k, ftime, context, grid_x            , line_offset, pre);
-        intersect<GridSOA::Gather2x3>(ray, k, ftime, context, grid_x+line_offset, line_offset, pre);
+        intersect<GridSOA::Gather2x3>(ray, k, ftime, context, grid_x            , line_offset, lines, pre);
+#if LOW_TESSELLTION_LEVEL_FIX == 1
+        if (likely(lines > 2))
+#endif
+        intersect<GridSOA::Gather2x3>(ray, k, ftime, context, grid_x+line_offset, line_offset, lines, pre);
 #endif
       }
 
@@ -304,13 +320,17 @@ namespace embree
         const size_t itime = getTimeSegment(ray.time[k], float(pre.grid->time_steps-1), ftime);
 
         const size_t line_offset   = pre.grid->width;
+        const size_t lines         = pre.grid->height;
         const float* const grid_x  = pre.grid->decodeLeaf(itime,prim);
 
 #if defined(__AVX__)
-        return occluded<GridSOA::Gather3x3>( ray, k, ftime, context, grid_x, line_offset, pre);
+        return occluded<GridSOA::Gather3x3>( ray, k, ftime, context, grid_x, line_offset, lines, pre);
 #else
-        if (occluded<GridSOA::Gather2x3>(ray, k, ftime, context, grid_x            , line_offset, pre)) return true;
-        if (occluded<GridSOA::Gather2x3>(ray, k, ftime, context, grid_x+line_offset, line_offset, pre)) return true;
+        if (occluded<GridSOA::Gather2x3>(ray, k, ftime, context, grid_x            , line_offset, lines, pre)) return true;
+#if LOW_TESSELLTION_LEVEL_FIX == 1
+        if (likely(lines > 2))
+#endif
+        if (occluded<GridSOA::Gather2x3>(ray, k, ftime, context, grid_x+line_offset, line_offset, lines, pre)) return true;
 #endif
         return false;
       }
