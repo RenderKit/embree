@@ -1,4 +1,4 @@
-// ======================================================================== //
+﻿// ======================================================================== //
 // Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
@@ -39,15 +39,11 @@ namespace embree
 #else
         typedef BinInfoT<BINS,PrimRefMB,BBox3fa> ObjectBinner;
 #endif
-#if MBLUR_NEW_ARRAY
-        typedef std::shared_ptr<avector<PrimRefMB>> PrimRefVector;
-#else
         typedef avector<PrimRefMB>* PrimRefVector;
-#endif
 
         struct Set 
         {
-          __forceinline Set () {}
+          __forceinline Set() {}
 
           __forceinline Set(PrimRefVector prims, range<size_t> object_range, BBox1f time_range)
             : prims(prims), object_range(object_range), time_range(time_range) {}
@@ -314,7 +310,7 @@ namespace embree
           
           /* calculate primrefs for first time range */
 #if MBLUR_NEW_ARRAY
-          std::shared_ptr<avector<PrimRefMB>> lprims(new avector<PrimRefMB>(set.object_range.size()));
+          PrimRefVector lprims = new avector<PrimRefMB>(set.object_range.size());
 #endif
           auto reduction_func0 = [&] ( const range<size_t>& r) {
             PrimInfoMB pinfo = empty;
@@ -541,30 +537,116 @@ namespace embree
 
         struct LocalChildList
         {
-          __forceinline LocalChildList (GeneralBVHMBBuilder* builder, BuildRecord& record)
-            : builder(builder), numChildren(0), depth(record.depth) 
+          struct SharedPrimRefVector
           {
-            add(record);
+            __forceinline SharedPrimRefVector() {}
+
+            __forceinline SharedPrimRefVector(const BuildRecord& record, size_t refCount = 1)
+              : prims(record.prims.prims), refCount(refCount) {}
+
+            __forceinline void incRef()
+            {
+              refCount++;
+            }
+
+            __forceinline void decRef()
+            {
+              if (--refCount == 0)
+                delete prims;
+            }
+
+            typename Heuristic::PrimRefVector prims;
+            size_t refCount;
+          };
+
+          struct Child
+          {
+            __forceinline Child() {}
+
+            __forceinline Child(const BuildRecord& record, SharedPrimRefVector* sharedPrimVec)
+              : record(record), sharedPrimVec(sharedPrimVec) {}
+
+            BuildRecord record;
+            SharedPrimRefVector* sharedPrimVec;
+          };
+
+          __forceinline LocalChildList (GeneralBVHMBBuilder* builder, BuildRecord& record)
+            : builder(builder), numChildren(1), numSharedPrimVecs(1), depth(record.depth)
+          {
+            /* the local root will be freed in the ancestor where it was created (thus refCount is 2) */
+            SharedPrimRefVector* sharedPrimVec = new (&sharedPrimVecs[0]) SharedPrimRefVector(record, 2);
+            new (&children[0]) Child(record, sharedPrimVec);
           }
 
-          __forceinline void add(BuildRecord& record) {
-            children[numChildren] = record;
-            numChildren++;
+          __forceinline ~LocalChildList()
+          {
+            for (size_t i = 0; i < numChildren; i++)
+              children[i].sharedPrimVec->decRef();
           }
 
           __forceinline void split(size_t bestChild)
           {
             /* perform best found split */
-            BuildRecord& brecord = children[bestChild];
+            BuildRecord& brecord = children[bestChild].record;
             BuildRecord lrecord(depth+1);
             BuildRecord rrecord(depth+1);
             builder->partition(brecord,lrecord,rrecord);
-            
+
             /* find new splits */
             lrecord.split = builder->find(lrecord);
             rrecord.split = builder->find(rrecord);
-            children[bestChild  ] = lrecord;
-            children[numChildren] = rrecord; 
+
+            /* add new children */
+            SharedPrimRefVector* bsharedPrimVec = children[bestChild].sharedPrimVec;
+            if (brecord.split.data == -1)
+            {
+              SharedPrimRefVector* lsharedPrimVec = new (&sharedPrimVecs[numSharedPrimVecs  ]) SharedPrimRefVector(lrecord);
+              SharedPrimRefVector* rsharedPrimVec = new (&sharedPrimVecs[numSharedPrimVecs+1]) SharedPrimRefVector(rrecord);
+              numSharedPrimVecs += 2;
+              new (&children[bestChild  ]) Child(lrecord, lsharedPrimVec);
+              new (&children[numChildren]) Child(rrecord, rsharedPrimVec);
+              bsharedPrimVec->decRef();
+            }
+            else
+            {
+              new (&children[bestChild  ]) Child(lrecord, bsharedPrimVec);
+              new (&children[numChildren]) Child(rrecord, bsharedPrimVec);
+              bsharedPrimVec->incRef();
+            }
+            numChildren++;
+          }
+
+          __forceinline void splitLargeLeaf(size_t bestChild, bool singleLeafTimeSegment)
+          {
+            /* perform best found split */
+            BuildRecord& brecord = children[bestChild].record;
+            BuildRecord lrecord(depth+1);
+            BuildRecord rrecord(depth+1);
+            builder->partition(brecord,lrecord,rrecord);
+
+            /* find new splits */
+            lrecord.split = builder->findFallback(lrecord,singleLeafTimeSegment);
+            rrecord.split = builder->findFallback(rrecord,singleLeafTimeSegment);
+
+            /* add new children */
+            SharedPrimRefVector* bsharedPrimVec = children[bestChild].sharedPrimVec;
+            if (brecord.split.data == -1)
+            {
+              SharedPrimRefVector* lsharedPrimVec = new (&sharedPrimVecs[numSharedPrimVecs  ]) SharedPrimRefVector(lrecord);
+              SharedPrimRefVector* rsharedPrimVec = new (&sharedPrimVecs[numSharedPrimVecs+1]) SharedPrimRefVector(rrecord);
+              numSharedPrimVecs += 2;
+              children[bestChild] = children[numChildren-1];
+              new (&children[numChildren-1]) Child(lrecord, lsharedPrimVec);
+              new (&children[numChildren+0]) Child(rrecord, rsharedPrimVec);
+              bsharedPrimVec->decRef();
+            }
+            else
+            {
+              children[bestChild] = children[numChildren-1];
+              new (&children[numChildren-1]) Child(lrecord, bsharedPrimVec);
+              new (&children[numChildren+0]) Child(rrecord, bsharedPrimVec);
+              bsharedPrimVec->incRef();
+            }
             numChildren++;
           }
 
@@ -573,14 +655,14 @@ namespace embree
           }
 
           __forceinline BuildRecord& operator[] ( size_t i ) {
-            return children[i];
+            return children[i].record;
           }
 
           __forceinline BuildRecord** childrenArray() 
           {
             for (size_t i=0; i<numChildren; i++) 
-              children_ptrs[i] = &children[i];
-            return children_ptrs;
+              childrenPtrs[i] = &children[i].record;
+            return childrenPtrs;
           }
 
           bool hasTimeSplits() const {
@@ -597,19 +679,41 @@ namespace embree
             ssize_t bestChild = -1;
             for (size_t i=0; i<numChildren; i++) 
             {
-              if (children[i].pinfo.size() <= builder->minLeafSize) continue; 
-              if (expectedApproxHalfArea(children[i].pinfo.geomBounds) > bestSAH) {
-                bestChild = i; bestSAH = expectedApproxHalfArea(children[i].pinfo.geomBounds); 
+              if (children[i].record.pinfo.size() <= builder->minLeafSize) continue;
+              if (expectedApproxHalfArea(children[i].record.pinfo.geomBounds) > bestSAH) {
+                bestChild = i; bestSAH = expectedApproxHalfArea(children[i].record.pinfo.geomBounds);
               } 
+            }
+            return bestChild;
+          }
+
+          __forceinline ssize_t bestLargeLeaf()
+          {
+            /* find best child with largest bounding box area */
+            size_t bestChild = -1;
+            size_t bestSize = 0;
+            for (size_t i=0; i<numChildren; i++)
+            {
+              /* ignore leaves as they cannot get split */
+              if (children[i].record.pinfo.size() <= builder->maxLeafSize && children[i].record.split.data != -1)
+                continue;
+
+              /* remember child with largest size */
+              if (children[i].record.pinfo.size() > bestSize) {
+                bestSize = children[i].record.pinfo.size();
+                bestChild = i;
+              }
             }
             return bestChild;
           }
 
         public:
           GeneralBVHMBBuilder* builder;
-          BuildRecord children[MAX_BRANCHING_FACTOR];
-          BuildRecord* children_ptrs[MAX_BRANCHING_FACTOR];
+          Child children[MAX_BRANCHING_FACTOR];
+          BuildRecord* childrenPtrs[MAX_BRANCHING_FACTOR];
+          SharedPrimRefVector sharedPrimVecs[MAX_BRANCHING_FACTOR*2];
           size_t numChildren;
+          size_t numSharedPrimVecs;
           size_t depth;
         };
 
@@ -652,56 +756,23 @@ namespace embree
           
           /* fill all children by always splitting the largest one */
           ReductionTy values[MAX_BRANCHING_FACTOR];
-          BuildRecord children[MAX_BRANCHING_FACTOR];
-          size_t numChildren = 1;
-          children[0] = current;
+          LocalChildList children(this,current);
         
-          do {
-            
-            /* find best child with largest bounding box area */
-            size_t bestChild = -1;
-            size_t bestSize = 0;
-            for (size_t i=0; i<numChildren; i++)
-            {
-              /* ignore leaves as they cannot get split */
-              if (children[i].pinfo.size() <= maxLeafSize && children[i].split.data != -1)
-                continue;
-              
-              /* remember child with largest size */
-              if (children[i].pinfo.size() > bestSize) { 
-                bestSize = children[i].pinfo.size();
-                bestChild = i;
-              }
-            }
-            if (bestChild == (size_t)-1) break;
-            
-            /*! split best child into left and right child */
-            BuildRecord& brecord = children[bestChild];
-            BuildRecord lrecord(current.depth+1);
-            BuildRecord rrecord(current.depth+1);
-            partition(brecord,lrecord,rrecord);
-            lrecord.split = findFallback(lrecord,singleLeafTimeSegment);
-            rrecord.split = findFallback(rrecord,singleLeafTimeSegment);
-            
-            /* add new children left and right */
-            children[bestChild] = children[numChildren-1];
-            children[numChildren-1] = lrecord;
-            children[numChildren+0] = rrecord;
-            numChildren++;
-            
-          } while (numChildren < branchingFactor);
+          do {  
+            ssize_t bestChild = children.bestLargeLeaf();
+            if (bestChild == -1) break;
+            children.splitLargeLeaf(bestChild, singleLeafTimeSegment);
+          } while (children.size() < branchingFactor);
           
           /* create node */
-          BuildRecord* records[MAX_BRANCHING_FACTOR];
-          for (size_t i=0; i<numChildren; i++) records[i] = &children[i];
-          auto node = createNode(current,records,numChildren,alloc);
+          auto node = createNode(current,children.childrenArray(),children.size(),alloc);
           
           /* recurse into each child  and perform reduction */
-          for (size_t i=0; i<numChildren; i++)
+          for (size_t i=0; i<children.size(); i++)
             values[i] = createLargeLeaf(children[i],alloc);
           
           /* perform reduction */
-          return updateNode(node,current.prims,values,numChildren);
+          return updateNode(node,current.prims,values,children.size());
         }
         
         __forceinline const typename Heuristic::Split find(BuildRecord& current) {
