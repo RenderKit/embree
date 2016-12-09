@@ -127,6 +127,7 @@ namespace embree
     bool convert_bezier_to_lines;
     bool convert_hair_to_curves;
     FileName sceneFilename;
+    std::vector<FileName> keyFramesFilenames;
     int instancing_mode;
     std::string subdiv_mode;
   };
