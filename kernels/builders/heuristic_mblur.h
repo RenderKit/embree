@@ -399,141 +399,7 @@ namespace embree
         
       public:
 
-        struct LocalTree
-        {
-          struct Node
-          {
-            __forceinline Node () {}
-            __forceinline Node (BuildRecord& record, Node* parent = nullptr, bool right = false, bool valid = true)
-              : record(record), valid(valid), lchild(nullptr), rchild(nullptr), parent(parent)
-            {
-              if (parent) {
-                if (right) parent->rchild = this;
-                else       parent->lchild = this;
-              }
-            }
-
-          public:
-            BuildRecord record; // has to be first member
-            bool valid;
-            Node* lchild;
-            Node* rchild;
-            Node* parent;
-          };
-
-          __forceinline LocalTree (GeneralBVHMBBuilder* builder, BuildRecord& record)
-            : builder(builder), numNodes(0), numChildren(0), depth(record.depth), hasTimeSplit(false)
-          {
-            children[numChildren++] = add(record);
-          }
-
-          __forceinline Node* add(BuildRecord& record, Node* parent = nullptr, bool right = false, bool valid = true) {
-            return new (&nodes[numNodes++]) Node(record,parent,right,valid);
-          }
-
-          __forceinline void split(size_t bestChild)
-          {
-            /* make sure the primrefs for this child are valid */
-            restore(bestChild);
-
-            Node* node = children[bestChild];
-            BuildRecord& brecord = node->record;
-            BuildRecord lrecord(depth+1);
-            BuildRecord rrecord(depth+1);
-
-            /* temporal split */
-            if (brecord.split.data == -1 && brecord.split.valid())
-            {
-              hasTimeSplit = true;
-              builder->temporal_split(brecord.split,brecord.pinfo,brecord.prims,lrecord.pinfo,lrecord.prims,false);
-              lrecord.split = builder->find(lrecord);
-              builder->temporal_split(brecord.split,brecord.pinfo,brecord.prims,rrecord.pinfo,rrecord.prims,true);
-              rrecord.split = builder->find(rrecord);
-              children[bestChild  ] = add(lrecord,node,false,false);
-              children[numChildren] = add(rrecord,node,true ,true );
-              numChildren++;
-            } 
-            /* object split */
-            else 
-            {
-              builder->partition(brecord,lrecord,rrecord);
-              lrecord.split = builder->find(lrecord);
-              rrecord.split = builder->find(rrecord);
-              children[bestChild  ] = add(lrecord,node,false);
-              children[numChildren] = add(rrecord,node,true);
-              numChildren++;
-            }
-          }
-
-          __forceinline size_t size() const {
-            return numChildren;
-          }
-
-          __forceinline BuildRecord& operator[] ( size_t i) {
-            return children[i]->record;
-          }
-          
-          __forceinline BuildRecord** childrenArray() {
-            return (BuildRecord**) children;
-          }
-
-          bool hasTimeSplits() const {
-            return hasTimeSplit;
-          }
-
-          bool restore(Node* node, Node* child)
-          {
-            /* first restore all prior splits */
-            bool invalid = !child->valid;
-            assert(node->lchild == child || node->rchild == child);
-            if (node->parent) invalid |= restore(node->parent,node);
-            
-            /* if the node we came from was invalid and this is a time split node then we have to recalculate the invalid node */
-            if (invalid)
-            {
-              if (node->record.split.data == -1) {
-                const bool right = node->rchild == child;
-                builder->temporal_split(node->record.split,node->record.pinfo,node->record.prims,child->record.pinfo,child->record.prims,right);
-                node->lchild->valid = !right;
-                node->rchild->valid = right;
-              } else {
-                builder->partition(node->record,node->lchild->record,node->rchild->record);
-              }
-            }
-            return invalid;
-          }
-          
-          __forceinline void restore(size_t childID) 
-          {
-            if (hasTimeSplit)
-              if (children[childID]->parent)
-                restore(children[childID]->parent,children[childID]);
-          }
-
-          __forceinline ssize_t best()
-          {
-            /*! find best child to split */
-            float bestSAH = neg_inf;
-            ssize_t bestChild = -1;
-            for (size_t i=0; i<numChildren; i++) 
-            {
-              if (children[i]->record.pinfo.size() <= builder->minLeafSize) continue; 
-              if (expectedApproxHalfArea(children[i]->record.pinfo.geomBounds) > bestSAH) {
-                bestChild = i; bestSAH = expectedApproxHalfArea(children[i]->record.pinfo.geomBounds); 
-              } 
-            }
-            return bestChild;
-          }
-
-        private:
-          GeneralBVHMBBuilder* builder;
-          Node nodes[2*MAX_BRANCHING_FACTOR];
-          size_t numNodes;
-          Node* children[MAX_BRANCHING_FACTOR];
-          size_t numChildren;
-          size_t depth;
-          bool hasTimeSplit;
-        };
+#if MBLUR_NEW_ARRAY
 
         struct LocalChildList
         {
@@ -716,6 +582,259 @@ namespace embree
           size_t numSharedPrimVecs;
           size_t depth;
         };
+
+#else
+
+        struct LocalTree
+        {
+          struct Node
+          {
+            __forceinline Node () {}
+            __forceinline Node (BuildRecord& record, Node* parent = nullptr, bool right = false, bool valid = true)
+              : record(record), valid(valid), lchild(nullptr), rchild(nullptr), parent(parent)
+            {
+              if (parent) {
+                if (right) parent->rchild = this;
+                else       parent->lchild = this;
+              }
+            }
+
+          public:
+            BuildRecord record; // has to be first member
+            bool valid;
+            Node* lchild;
+            Node* rchild;
+            Node* parent;
+          };
+
+          __forceinline LocalTree (GeneralBVHMBBuilder* builder, BuildRecord& record)
+            : builder(builder), numNodes(0), numChildren(0), depth(record.depth), hasTimeSplit(false)
+          {
+            children[numChildren++] = add(record);
+          }
+
+          __forceinline Node* add(BuildRecord& record, Node* parent = nullptr, bool right = false, bool valid = true) {
+            return new (&nodes[numNodes++]) Node(record,parent,right,valid);
+          }
+
+          __forceinline void split(size_t bestChild)
+          {
+            /* make sure the primrefs for this child are valid */
+            restore(bestChild);
+
+            Node* node = children[bestChild];
+            BuildRecord& brecord = node->record;
+            BuildRecord lrecord(depth+1);
+            BuildRecord rrecord(depth+1);
+
+            /* temporal split */
+            if (brecord.split.data == -1 && brecord.split.valid())
+            {
+              hasTimeSplit = true;
+              builder->temporal_split(brecord.split,brecord.pinfo,brecord.prims,lrecord.pinfo,lrecord.prims,false);
+              lrecord.split = builder->find(lrecord);
+              builder->temporal_split(brecord.split,brecord.pinfo,brecord.prims,rrecord.pinfo,rrecord.prims,true);
+              rrecord.split = builder->find(rrecord);
+              children[bestChild  ] = add(lrecord,node,false,false);
+              children[numChildren] = add(rrecord,node,true ,true );
+              numChildren++;
+            }
+            /* object split */
+            else
+            {
+              builder->partition(brecord,lrecord,rrecord);
+              lrecord.split = builder->find(lrecord);
+              rrecord.split = builder->find(rrecord);
+              children[bestChild  ] = add(lrecord,node,false);
+              children[numChildren] = add(rrecord,node,true);
+              numChildren++;
+            }
+          }
+
+          __forceinline size_t size() const {
+            return numChildren;
+          }
+
+          __forceinline BuildRecord& operator[] ( size_t i) {
+            return children[i]->record;
+          }
+
+          __forceinline BuildRecord** childrenArray() {
+            return (BuildRecord**) children;
+          }
+
+          bool hasTimeSplits() const {
+            return hasTimeSplit;
+          }
+
+          bool restore(Node* node, Node* child)
+          {
+            /* first restore all prior splits */
+            bool invalid = !child->valid;
+            assert(node->lchild == child || node->rchild == child);
+            if (node->parent) invalid |= restore(node->parent,node);
+
+            /* if the node we came from was invalid and this is a time split node then we have to recalculate the invalid node */
+            if (invalid)
+            {
+              if (node->record.split.data == -1) {
+                const bool right = node->rchild == child;
+                builder->temporal_split(node->record.split,node->record.pinfo,node->record.prims,child->record.pinfo,child->record.prims,right);
+                node->lchild->valid = !right;
+                node->rchild->valid = right;
+              } else {
+                builder->partition(node->record,node->lchild->record,node->rchild->record);
+              }
+            }
+            return invalid;
+          }
+
+          __forceinline void restore(size_t childID)
+          {
+            if (hasTimeSplit)
+              if (children[childID]->parent)
+                restore(children[childID]->parent,children[childID]);
+          }
+
+          __forceinline ssize_t best()
+          {
+            /*! find best child to split */
+            float bestSAH = neg_inf;
+            ssize_t bestChild = -1;
+            for (size_t i=0; i<numChildren; i++)
+            {
+              if (children[i]->record.pinfo.size() <= builder->minLeafSize) continue;
+              if (expectedApproxHalfArea(children[i]->record.pinfo.geomBounds) > bestSAH) {
+                bestChild = i; bestSAH = expectedApproxHalfArea(children[i]->record.pinfo.geomBounds);
+              }
+            }
+            return bestChild;
+          }
+
+        private:
+          GeneralBVHMBBuilder* builder;
+          Node nodes[2*MAX_BRANCHING_FACTOR];
+          size_t numNodes;
+          Node* children[MAX_BRANCHING_FACTOR];
+          size_t numChildren;
+          size_t depth;
+          bool hasTimeSplit;
+        };
+
+        struct LocalChildList
+        {
+          __forceinline LocalChildList (GeneralBVHMBBuilder* builder, BuildRecord& record)
+            : builder(builder), numChildren(0), depth(record.depth)
+          {
+            add(record);
+          }
+
+          __forceinline void add(BuildRecord& record) {
+            children[numChildren] = record;
+            numChildren++;
+          }
+
+          __forceinline void split(size_t bestChild)
+          {
+            /* perform best found split */
+            BuildRecord& brecord = children[bestChild];
+            BuildRecord lrecord(depth+1);
+            BuildRecord rrecord(depth+1);
+            builder->partition(brecord,lrecord,rrecord);
+
+            /* find new splits */
+            lrecord.split = builder->find(lrecord);
+            rrecord.split = builder->find(rrecord);
+            children[bestChild  ] = lrecord;
+            children[numChildren] = rrecord;
+            numChildren++;
+          }
+
+          __forceinline void splitLargeLeaf(size_t bestChild, bool singleLeafTimeSegment)
+          {
+            /* perform best found split */
+            BuildRecord& brecord = children[bestChild];
+            BuildRecord lrecord(depth+1);
+            BuildRecord rrecord(depth+1);
+            builder->partition(brecord,lrecord,rrecord);
+
+            /* find new splits */
+            lrecord.split = builder->findFallback(lrecord,singleLeafTimeSegment);
+            rrecord.split = builder->findFallback(rrecord,singleLeafTimeSegment);
+
+            /* add new children */
+            children[bestChild] = children[numChildren-1];
+            children[numChildren-1] = lrecord;
+            children[numChildren+0] = rrecord;
+            numChildren++;
+          }
+
+          __forceinline size_t size() const {
+            return numChildren;
+          }
+
+          __forceinline BuildRecord& operator[] ( size_t i ) {
+            return children[i];
+          }
+
+          __forceinline BuildRecord** childrenArray()
+          {
+            for (size_t i=0; i<numChildren; i++)
+              children_ptrs[i] = &children[i];
+            return children_ptrs;
+          }
+
+          bool hasTimeSplits() const {
+            return false;
+          }
+
+          __forceinline void restore(size_t childID) {
+          }
+
+          __forceinline ssize_t best()
+          {
+            /*! find best child to split */
+            float bestSAH = neg_inf;
+            ssize_t bestChild = -1;
+            for (size_t i=0; i<numChildren; i++)
+            {
+              if (children[i].pinfo.size() <= builder->minLeafSize) continue;
+              if (expectedApproxHalfArea(children[i].pinfo.geomBounds) > bestSAH) {
+                bestChild = i; bestSAH = expectedApproxHalfArea(children[i].pinfo.geomBounds);
+              }
+            }
+            return bestChild;
+          }
+
+          __forceinline ssize_t bestLargeLeaf()
+          {
+            /* find best child with largest bounding box area */
+            size_t bestChild = -1;
+            size_t bestSize = 0;
+            for (size_t i=0; i<numChildren; i++)
+            {
+              /* ignore leaves as they cannot get split */
+              if (children[i].pinfo.size() <= builder->maxLeafSize && children[i].split.data != -1)
+                continue;
+
+              /* remember child with largest size */
+              if (children[i].pinfo.size() > bestSize) {
+                bestSize = children[i].pinfo.size();
+                bestChild = i;
+              }
+            }
+            return bestChild;
+          }
+
+        public:
+          GeneralBVHMBBuilder* builder;
+          BuildRecord children[MAX_BRANCHING_FACTOR];
+          BuildRecord* children_ptrs[MAX_BRANCHING_FACTOR];
+          size_t numChildren;
+          size_t depth;
+        };
+
+#endif
 
         GeneralBVHMBBuilder (const RecalculatePrimRef recalculatePrimRef,
                              const ReductionTy& identity,
