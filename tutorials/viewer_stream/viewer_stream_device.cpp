@@ -32,12 +32,15 @@ namespace embree {
 
 extern "C" ISPCScene* g_ispc_scene;
 
+/* enable obj animation */
+extern "C" bool g_anim;
+
 /* scene data */
   RTCDevice g_device = nullptr;
   RTCScene g_scene = nullptr;
-  
-  bool anim = false;
-  size_t animFrameID = 0;
+
+/* animation sequence data */
+size_t animFrameID = 0;
 
   unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, RTCGeometryFlags object_flags = RTC_GEOMETRY_STATIC)
 {
@@ -372,7 +375,7 @@ extern "C" void device_init (char* cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* create scene */
-  g_scene = convertScene(g_ispc_scene,anim);
+  g_scene = convertScene(g_ispc_scene,g_anim);
   rtcCommit (g_scene);
 
   /* set render tile function to use */
@@ -395,7 +398,7 @@ extern "C" void device_render (int* pixels,
       renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
   /* update geometry and rebuild */
-  if (anim)
+  if (g_anim)
   {
     updateObjects(g_ispc_scene,g_scene,animFrameID++);
     double t0 = getSeconds();

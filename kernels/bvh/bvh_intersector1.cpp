@@ -54,7 +54,6 @@ namespace embree
       StackItemT<NodeRef>* stackEnd = stack+stackSize;
       stack[0].ptr  = bvh->getRoot(pre);
       stack[0].dist = neg_inf;
-
       /* filter out invalid rays */
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
       if (!ray.valid()) return;

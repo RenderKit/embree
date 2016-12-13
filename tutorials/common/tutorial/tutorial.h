@@ -109,6 +109,9 @@ namespace embree
     
     float speed;
 
+    /* animation */
+    bool anim;
+
   public:
     static TutorialApplication* instance;
   };

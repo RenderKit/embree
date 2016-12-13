@@ -87,7 +87,9 @@ namespace embree
     
       mouseMode(0),
       clickX(0), clickY(0),
-      speed(1.0f)
+      speed(1.0f),
+      anim(false)
+
   {
     /* only a single instance of this class is supported */
     assert(instance == nullptr);
@@ -233,6 +235,8 @@ namespace embree
             if (line != "")
               keyFramesFilenames.push_back(listFilename.path() + line);
           }
+          if (keyFramesFilenames.size())
+            anim = true;
         }
       }, "-objlist <filename>: parses a sequence of .obj files listed in <filename> and adds them to the scene");
     

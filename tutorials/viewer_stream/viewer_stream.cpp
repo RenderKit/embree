@@ -19,6 +19,7 @@
 namespace embree
 {
   extern "C" { int g_instancing_mode = 0; }
+  extern "C" { bool g_anim = false; }
 
   struct Tutorial : public SceneLoadingTutorialApplication
   {
@@ -27,8 +28,11 @@ namespace embree
     
     void postParseCommandLine() 
     {
+      /* enable/disable animation sequence */
+      g_anim = anim;
+
       /* load default scene if none specified */
-      if (sceneFilename.ext() == "") {
+      if (!g_anim && sceneFilename.ext() == "") {
         FileName file = FileName::executableFolder() + FileName("models/cornell_box.ecs");
         parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path());
       }
