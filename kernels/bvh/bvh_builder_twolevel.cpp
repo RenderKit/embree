@@ -133,8 +133,8 @@ namespace embree
       {
         /* open all large nodes */
         refs.resize(nextRef);
-        //open_sequential(numPrimitives); 
-        open_overlap(numPrimitives); 
+        open_sequential(numPrimitives); 
+        //open_overlap(numPrimitives); 
         // PRINT(numPrimitives);
         // PRINT(refs.size());
         /* compute PrimRefs */

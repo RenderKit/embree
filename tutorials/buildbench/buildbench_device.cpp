@@ -20,7 +20,7 @@
 namespace embree {
 
   static const MAYBE_UNUSED size_t skip_iterations               = 5;
-  static const MAYBE_UNUSED size_t iterations_dynamic_deformable = 400;
+  static const MAYBE_UNUSED size_t iterations_dynamic_deformable = 200;
   static const MAYBE_UNUSED size_t iterations_dynamic_dynamic    = 200;
   static const MAYBE_UNUSED size_t iterations_dynamic_static     = 50;
   static const MAYBE_UNUSED size_t iterations_static_static      = 30;
@@ -114,7 +114,7 @@ namespace embree {
   void convertScene(RTCScene scene_out, ISPCScene* scene_in, RTCSceneFlags sflags, RTCGeometryFlags gflags)
   {
     size_t numGeometries = scene_in->numGeometries;
-    PRINT(numGeometries);
+    //PRINT(numGeometries);
 
     for (size_t i=0; i<numGeometries; i++)
     {
@@ -122,32 +122,26 @@ namespace embree {
       if (geometry->type == SUBDIV_MESH) {
         unsigned int geomID MAYBE_UNUSED = convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out, gflags);
         ((ISPCSubdivMesh*)geometry)->geomID = geomID;
-        assert(geomID == i);
       }
       else if (geometry->type == TRIANGLE_MESH) {
         unsigned int geomID MAYBE_UNUSED = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out, gflags);
         ((ISPCTriangleMesh*)geometry)->geomID = geomID;
-        assert(geomID == i);
       }
       else if (geometry->type == QUAD_MESH) {
         unsigned int geomID MAYBE_UNUSED = convertQuadMesh((ISPCQuadMesh*) geometry, scene_out, gflags);
         ((ISPCQuadMesh*)geometry)->geomID = geomID;
-        assert(geomID == i);
       }
       else if (geometry->type == LINE_SEGMENTS) {
         unsigned int geomID MAYBE_UNUSED = convertLineSegments((ISPCLineSegments*) geometry, scene_out, gflags);
         ((ISPCLineSegments*)geometry)->geomID = geomID;
-        assert(geomID == i);
       }
       else if (geometry->type == HAIR_SET) {
         unsigned int geomID MAYBE_UNUSED = convertHairSet((ISPCHairSet*) geometry, scene_out, gflags);
         ((ISPCHairSet*)geometry)->geomID = geomID;
-        assert(geomID == i);
       }
       else if (geometry->type == CURVES) {
         unsigned int geomID MAYBE_UNUSED = convertCurveGeometry((ISPCHairSet*) geometry, scene_out, gflags);
         ((ISPCHairSet*)geometry)->geomID = geomID;
-        assert(geomID == i);
       }
       else
         assert(false);
@@ -331,11 +325,11 @@ namespace embree {
     g_scene = nullptr;    
   }
 
-  void Benchmark_DynamicStatic_Create(ISPCScene* scene_in, size_t benchmark_iterations)
+  void Benchmark_Dynamic_Create(ISPCScene* scene_in, size_t benchmark_iterations, RTCGeometryFlags gflags = RTC_GEOMETRY_STATIC)
   {
     assert(g_scene == nullptr);
-    g_scene = createScene(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC);
-    convertScene(g_scene, scene_in,RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC);
+    g_scene = createScene(RTC_SCENE_DYNAMIC,gflags);
+    convertScene(g_scene, scene_in,RTC_SCENE_DYNAMIC,gflags);
     size_t primitives = getNumPrimitives(scene_in);
     size_t iterations = 0;
     double time = 0.0;
@@ -352,8 +346,12 @@ namespace embree {
         iterations++;
       }
     }
-    std::cout << "Create dynamic scene, static geometry " 
-              << "(" << primitives << " primitives)  :  "
+    if (gflags == RTC_GEOMETRY_STATIC)
+      std::cout << "Create dynamic scene, static geometry ";
+    else
+      std::cout << "Create dynamic scene, dynamic geometry ";
+
+    std::cout << "(" << primitives << " primitives)  :  "
               << " avg. time  = " <<  time/iterations 
               << " , avg. build perf " << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
 
@@ -408,9 +406,10 @@ namespace embree {
     rtcDeviceSetErrorFunction(g_device,error_handler);
 
     //Benchmark_DynamicDeformable_Update(g_ispc_scene,iterations_dynamic_dynamic);
-    Benchmark_DynamicDynamic_Update(g_ispc_scene,iterations_dynamic_dynamic);
+    //Benchmark_DynamicDynamic_Update(g_ispc_scene,iterations_dynamic_dynamic);
     //Benchmark_DynamicStatic_Update(g_ispc_scene,iterations_dynamic_static);
-    //Benchmark_DynamicStatic_Create(g_ispc_scene,iterations_dynamic_static);
+    Benchmark_Dynamic_Create(g_ispc_scene,iterations_dynamic_static,RTC_GEOMETRY_STATIC);
+    Benchmark_Dynamic_Create(g_ispc_scene,iterations_dynamic_dynamic,RTC_GEOMETRY_DYNAMIC);
     //Benchmark_StaticStatic_Create(g_ispc_scene,iterations_static_static);
 
     rtcDeleteDevice(g_device); g_device = nullptr;
