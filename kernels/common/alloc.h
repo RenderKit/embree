@@ -463,8 +463,14 @@ namespace embree
         /* either use alignedMalloc or os_reserve/os_commit */
         if (!osAllocation)
         {
+#if defined(__AVX512F__)
+          /* need full page alignment on xeon phi to ensure 2M pages*/
           ptr = alignedMalloc(bytesReserve,PAGE_SIZE_2M);         
           assert(((size_t)ptr % PAGE_SIZE_2M) == 0);
+#else
+          /* slightly reduces rendering performance on xeon 3-5% */
+          ptr = alignedMalloc(bytesReserve,PAGE_SIZE);         
+#endif
           assert(ptr);
           os_advise(ptr,bytesReserve); 
         }

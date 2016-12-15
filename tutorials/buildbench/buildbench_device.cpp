@@ -407,7 +407,7 @@ namespace embree {
 
     //Benchmark_DynamicDeformable_Update(g_ispc_scene,iterations_dynamic_dynamic);
     //Benchmark_DynamicDynamic_Update(g_ispc_scene,iterations_dynamic_dynamic);
-    //Benchmark_DynamicStatic_Update(g_ispc_scene,iterations_dynamic_static);
+    Benchmark_DynamicStatic_Update(g_ispc_scene,iterations_dynamic_static);
     Benchmark_Dynamic_Create(g_ispc_scene,iterations_dynamic_static,RTC_GEOMETRY_STATIC);
     Benchmark_Dynamic_Create(g_ispc_scene,iterations_dynamic_dynamic,RTC_GEOMETRY_DYNAMIC);
     //Benchmark_StaticStatic_Create(g_ispc_scene,iterations_static_static);
