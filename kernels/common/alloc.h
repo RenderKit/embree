@@ -192,6 +192,8 @@ namespace embree
       return thread_local_allocators2.get();
     }
 
+    __forceinline void set_osAllocation(const bool v) { osAllocation = v; }
+
     void internal_fix_used_blocks()
     {
 #if ENABLE_PARALLEL_BLOCK_ALLOCATION == 1
@@ -460,7 +462,12 @@ namespace embree
         void *ptr = nullptr;
         /* either use alignedMalloc or os_reserve/os_commit */
         if (!osAllocation)
-          ptr = alignedMalloc(bytesReserve);
+        {
+          ptr = alignedMalloc(bytesReserve,PAGE_SIZE_2M);         
+          assert(((size_t)ptr % PAGE_SIZE_2M) == 0);
+          assert(ptr);
+          os_advise(ptr,bytesReserve); 
+        }
         else
         {
           ptr = os_reserve(bytesReserve);
@@ -528,8 +535,8 @@ namespace embree
           size_t newSize = os_shrink(this,sizeof_Header+getBlockUsedBytes(),reserveEnd+sizeof_Header);
           if (device) device->memoryMonitor(newSize-sizeof_Header-allocEnd,true);
           reserveEnd = allocEnd = newSize-sizeof_Header;
+          if (next) next->shrink(device,osAllocation);
         }
-        if (next) next->shrink(device,osAllocation);
       }
 
       size_t getBlockUsedBytes() const {

@@ -35,8 +35,6 @@ namespace embree
       typedef std::size_t size_type;
       typedef std::ptrdiff_t difference_type;
       
-      static const size_t PAGE_SIZE_2M = 2*1024*1024;
-
       __forceinline aligned_monitored_allocator(MemoryMonitorInterface* device) 
         : device(device) {}
 
