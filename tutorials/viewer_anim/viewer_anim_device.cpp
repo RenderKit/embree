@@ -21,24 +21,23 @@
 
 namespace embree {
 
-#define USE_INTERFACE 0 // 0 = stream, 1 = single rays/packets, 2 = single rays/packets using stream interface
-#define AMBIENT_OCCLUSION_SAMPLES 64
-//#define rtcOccluded rtcIntersect
-//#define rtcOccluded1M rtcIntersect1M
 #define RAYN_FLAGS RTC_INTERSECT_COHERENT
-//#define RAYN_FLAGS RTC_INTERSECT_INCOHERENT
-
-#define SIMPLE_SHADING 1
 
 extern "C" ISPCScene* g_ispc_scene;
+
+/* enable obj animation */
+extern "C" bool g_anim;
 
 /* scene data */
 RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
 
-unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
+/* animation sequence data */
+size_t animFrameID = 0;
+
+  unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, RTCGeometryFlags object_flags = RTC_GEOMETRY_STATIC)
 {
-  unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices, mesh->numTimeSteps);
+  unsigned int geomID = rtcNewTriangleMesh (scene_out, object_flags, mesh->numTriangles, mesh->numVertices, mesh->numTimeSteps);
   for (size_t t=0; t<mesh->numTimeSteps; t++) {
     rtcSetBuffer(scene_out, geomID, (RTCBufferType)(RTC_VERTEX_BUFFER+t),mesh->positions+t*mesh->numVertices, 0, sizeof(Vec3fa      ));
   }
@@ -47,9 +46,9 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
   return geomID;
 }
 
-unsigned int convertQuadMesh(ISPCQuadMesh* mesh, RTCScene scene_out)
+unsigned int convertQuadMesh(ISPCQuadMesh* mesh, RTCScene scene_out, RTCGeometryFlags object_flags = RTC_GEOMETRY_STATIC)
 {
-  unsigned int geomID = rtcNewQuadMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numQuads, mesh->numVertices, mesh->numTimeSteps);
+  unsigned int geomID = rtcNewQuadMesh (scene_out, object_flags, mesh->numQuads, mesh->numVertices, mesh->numTimeSteps);
   for (size_t t=0; t<mesh->numTimeSteps; t++) {
     rtcSetBuffer(scene_out, geomID, (RTCBufferType)(RTC_VERTEX_BUFFER+t),mesh->positions+t*mesh->numVertices, 0, sizeof(Vec3fa      ));
   }
@@ -58,9 +57,9 @@ unsigned int convertQuadMesh(ISPCQuadMesh* mesh, RTCScene scene_out)
   return geomID;
 }
 
-unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
+unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out, RTCGeometryFlags object_flags = RTC_GEOMETRY_STATIC)
 {
-  unsigned int geomID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numEdges, mesh->numVertices,
+  unsigned int geomID = rtcNewSubdivisionMesh(scene_out, object_flags, mesh->numFaces, mesh->numEdges, mesh->numVertices,
                                                       mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles, mesh->numTimeSteps);
   mesh->geomID = geomID;
   for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 16.0f;
@@ -78,9 +77,9 @@ unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
   return geomID;
 }
 
-unsigned int convertLineSegments(ISPCLineSegments* mesh, RTCScene scene_out)
+unsigned int convertLineSegments(ISPCLineSegments* mesh, RTCScene scene_out, RTCGeometryFlags object_flags = RTC_GEOMETRY_STATIC)
 {
-  unsigned int geomID = rtcNewLineSegments (scene_out, RTC_GEOMETRY_STATIC, mesh->numSegments, mesh->numVertices, mesh->numTimeSteps);
+  unsigned int geomID = rtcNewLineSegments (scene_out, object_flags, mesh->numSegments, mesh->numVertices, mesh->numTimeSteps);
   for (size_t t=0; t<mesh->numTimeSteps; t++) {
     rtcSetBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t),mesh->positions+t*mesh->numVertices,0,sizeof(Vertex));
   }
@@ -88,9 +87,9 @@ unsigned int convertLineSegments(ISPCLineSegments* mesh, RTCScene scene_out)
   return geomID;
 }
 
-unsigned int convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
+unsigned int convertHairSet(ISPCHairSet* hair, RTCScene scene_out, RTCGeometryFlags object_flags = RTC_GEOMETRY_STATIC)
 {
-  unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, hair->numTimeSteps);
+  unsigned int geomID = rtcNewHairGeometry (scene_out, object_flags, hair->numHairs, hair->numVertices, hair->numTimeSteps);
   for (size_t t=0; t<hair->numTimeSteps; t++) {
     rtcSetBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t),hair->positions+t*hair->numVertices,0,sizeof(Vertex));
   }
@@ -98,9 +97,9 @@ unsigned int convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
   return geomID;
 }
 
-unsigned int convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out)
+unsigned int convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out, RTCGeometryFlags object_flags = RTC_GEOMETRY_STATIC)
 {
-  unsigned int geomID = rtcNewCurveGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, hair->numTimeSteps);
+  unsigned int geomID = rtcNewCurveGeometry (scene_out, object_flags, hair->numHairs, hair->numVertices, hair->numTimeSteps);
   for (size_t t=0; t<hair->numTimeSteps; t++) {
     rtcSetBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t),hair->positions+t*hair->numVertices,0,sizeof(Vertex));
   }
@@ -108,110 +107,96 @@ unsigned int convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out)
   return geomID;
 }
 
-RTCScene convertScene(ISPCScene* scene_in)
+  RTCScene convertScene(ISPCScene* scene_in, bool animSequence = false)
 {
   size_t numGeometries = scene_in->numGeometries;
-  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
+  int scene_flags = RTC_SCENE_INCOHERENT | (animSequence ? RTC_SCENE_DYNAMIC : RTC_SCENE_STATIC);
   int scene_aflags = RTC_INTERSECT1 | RTC_INTERSECT_STREAM | RTC_INTERPOLATE;
   RTCScene scene_out = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
 
+  RTCGeometryFlags object_flags = animSequence ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
   for (size_t i=0; i<numGeometries; i++)
   {
     ISPCGeometry* geometry = scene_in->geometries[i];
     if (geometry->type == SUBDIV_MESH) {
-      unsigned int geomID MAYBE_UNUSED = convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out);
+      unsigned int geomID MAYBE_UNUSED = convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out, object_flags);
+      ((ISPCSubdivMesh*)geometry)->geomID = geomID;
       assert(geomID == i);
     }
     else if (geometry->type == TRIANGLE_MESH) {
-      unsigned int geomID MAYBE_UNUSED = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out);
+      unsigned int geomID MAYBE_UNUSED = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out, object_flags);
+      ((ISPCTriangleMesh*)geometry)->geomID = geomID;
       assert(geomID == i);
     }
     else if (geometry->type == QUAD_MESH) {
-      unsigned int geomID MAYBE_UNUSED = convertQuadMesh((ISPCQuadMesh*) geometry, scene_out);
+      unsigned int geomID MAYBE_UNUSED = convertQuadMesh((ISPCQuadMesh*) geometry, scene_out, object_flags);
+      ((ISPCQuadMesh*)geometry)->geomID = geomID;
       assert(geomID == i);
     }
     else if (geometry->type == LINE_SEGMENTS) {
-      unsigned int geomID MAYBE_UNUSED = convertLineSegments((ISPCLineSegments*) geometry, scene_out);
+      unsigned int geomID MAYBE_UNUSED = convertLineSegments((ISPCLineSegments*) geometry, scene_out, object_flags);
+      ((ISPCLineSegments*)geometry)->geomID = geomID;
       assert(geomID == i);
     }
     else if (geometry->type == HAIR_SET) {
-      unsigned int geomID MAYBE_UNUSED = convertHairSet((ISPCHairSet*) geometry, scene_out);
+      unsigned int geomID MAYBE_UNUSED = convertHairSet((ISPCHairSet*) geometry, scene_out, object_flags);
+      ((ISPCHairSet*)geometry)->geomID = geomID;
       assert(geomID == i);
     }
     else if (geometry->type == CURVES) {
-      unsigned int geomID MAYBE_UNUSED = convertCurveGeometry((ISPCHairSet*) geometry, scene_out);
+      unsigned int geomID MAYBE_UNUSED = convertCurveGeometry((ISPCHairSet*) geometry, scene_out, object_flags);
+      ((ISPCHairSet*)geometry)->geomID = geomID;
       assert(geomID == i);
     }
     else
       assert(false);
+    if (animSequence) 
+      break;
   }
   return scene_out;
 }
 
-/* renders a single pixel casting with ambient occlusion */
-Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
-{
-  RTCRay rays[AMBIENT_OCCLUSION_SAMPLES];
-
-  Vec3fa Ng = normalize(ray.Ng);
-  if (dot(ray.dir,Ng) > 0.0f) Ng = neg(Ng);
-
-  Vec3fa col = Vec3fa(min(1.0f,0.3f+0.8f*abs(dot(Ng,normalize(ray.dir)))));
-
-  /* calculate hit point */
-  float intensity = 0;
-  Vec3fa hitPos = ray.org + ray.tfar * ray.dir;
-
-  RandomSampler sampler;
-  RandomSampler_init(sampler,x,y,0);
-
-  /* enable only valid rays */
-  for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
+  void updateObjects(ISPCScene* scene_in, RTCScene scene_out, size_t keyFrameID)
   {
-    /* sample random direction */
-    Vec2f s = RandomSampler_get2D(sampler);
-    Sample3f dir;
-    dir.v = cosineSampleHemisphere(s);
-    dir.pdf = cosineSampleHemispherePDF(dir.v);
-    dir.v = frame(Ng) * dir.v;
+    size_t numGeometries = scene_in->numGeometries;
+    if (!numGeometries) return;
 
-    /* initialize shadow ray */
-    RTCRay& shadow = rays[i];
-    shadow.org = hitPos;
-    shadow.dir = dir.v;
-    bool mask = 1; { // invalidate inactive rays
-      shadow.tnear = mask ? 0.001f       : (float)(pos_inf);
-      shadow.tfar  = mask ? (float)(inf) : (float)(neg_inf);
+    ISPCGeometry* geometry = scene_in->geometries[keyFrameID % numGeometries];
+
+    if (geometry->type == SUBDIV_MESH) {
+      unsigned int geomID = ((ISPCSubdivMesh*)geometry)->geomID;
+      rtcUpdate(scene_out,geomID);
     }
-    shadow.geomID = RTC_INVALID_GEOMETRY_ID;
-    shadow.primID = RTC_INVALID_GEOMETRY_ID;
-    shadow.mask = -1;
-    shadow.time = 0;    // FIXME: invalidate inactive rays
+    else if (geometry->type == TRIANGLE_MESH) {
+      ISPCTriangleMesh* mesh0 = (ISPCTriangleMesh*)scene_in->geometries[0];
+      ISPCTriangleMesh* mesh = (ISPCTriangleMesh*)geometry;
+      unsigned int geomID = mesh0->geomID;
+      for (size_t t=0; t<mesh->numTimeSteps; t++) {
+        rtcSetBuffer(scene_out, geomID, (RTCBufferType)(RTC_VERTEX_BUFFER+t),mesh->positions+t*mesh->numVertices, 0, sizeof(Vec3fa      ));
+      }
+      rtcUpdate(scene_out,geomID);
+    }
+    else if (geometry->type == QUAD_MESH) {
+      unsigned int geomID = ((ISPCQuadMesh*)geometry)->geomID;
+      rtcUpdate(scene_out,geomID);
+    }
+    else if (geometry->type == LINE_SEGMENTS) {
+      unsigned int geomID = ((ISPCLineSegments*)geometry)->geomID;
+      rtcUpdate(scene_out,geomID);
+    }
+    else if (geometry->type == HAIR_SET) {
+      unsigned int geomID = ((ISPCHairSet*)geometry)->geomID;
+      rtcUpdate(scene_out,geomID);
+    }
+    else if (geometry->type == CURVES) {
+      unsigned int geomID = ((ISPCHairSet*)geometry)->geomID;
+      rtcUpdate(scene_out,geomID);
+    }
+    else
+      assert(false);
   }
 
-  RTCIntersectContext context;
-  context.flags = RAYN_FLAGS;
 
-  /* trace occlusion rays */
-#if USE_INTERFACE == 0
-  rtcOccluded1M(g_scene,&context,rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(RTCRay));
-#elif USE_INTERFACE == 1
-  for (size_t i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
-    rtcOccluded(g_scene,rays[i]);
-#else
-  for (size_t i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
-    rtcOccluded1M(g_scene,&context,&rays[i],1,sizeof(RTCRay));
-#endif
-
-  /* accumulate illumination */
-  for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++) {
-    if (rays[i].geomID == RTC_INVALID_GEOMETRY_ID)
-      intensity += 1.0f;
-  }
-
-  /* shade pixel */
-  return col * (intensity/AMBIENT_OCCLUSION_SAMPLES);
-}
 
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex,
@@ -237,7 +222,7 @@ void renderTileStandard(int taskIndex,
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* ISPC workaround for mask == 0 */
-    if (all(1 == 0)) continue;
+    
 
     RandomSampler sampler;
     RandomSampler_init(sampler, x, y, 0);
@@ -261,32 +246,20 @@ void renderTileStandard(int taskIndex,
   context.flags = RAYN_FLAGS;
 
   /* trace stream of rays */
-#if USE_INTERFACE == 0
   rtcIntersect1M(g_scene,&context,rays,N,sizeof(RTCRay));
-#elif USE_INTERFACE == 1
-  for (size_t i=0; i<N; i++)
-    rtcIntersect(g_scene,rays[i]);
-#else
-  for (size_t i=0; i<N; i++)
-    rtcIntersect1M(g_scene,&context,&rays[i],1,sizeof(RTCRay));
-#endif
 
   /* shade stream of rays */
   N = 0;
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* ISPC workaround for mask == 0 */
-    if (all(1 == 0)) continue;
+    
     RTCRay& ray = rays[N++];
 
     /* eyelight shading */
     Vec3fa color = Vec3fa(0.0f);
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
-#if SIMPLE_SHADING == 1
       color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
-#else
-      color = ambientOcclusionShading(x,y,ray);
-#endif
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -319,7 +292,7 @@ extern "C" void device_init (char* cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* create scene */
-  g_scene = convertScene(g_ispc_scene);
+  g_scene = convertScene(g_ispc_scene,g_anim);
   rtcCommit (g_scene);
 
   /* set render tile function to use */
@@ -341,6 +314,15 @@ extern "C" void device_render (int* pixels,
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
+  /* update geometry and rebuild */
+  if (g_anim)
+  {
+    updateObjects(g_ispc_scene,g_scene,animFrameID++);
+    double t0 = getSeconds();
+    rtcCommit(g_scene);      
+    double t1 = getSeconds();
+    std::cout << "bvh rebuild in " << t1-t0 << " ms" << std::endl;
+  }
 }
 
 /* called by the C++ code for cleanup */
