@@ -265,9 +265,9 @@ namespace embree {
     }
 
     if (gflags == RTC_GEOMETRY_DYNAMIC)
-      std::cout << "Update dynamic scene, dynamic geometry ";
+      std::cout << "Update dynamic scene, dynamic geometry    ";
     else if (gflags == RTC_GEOMETRY_STATIC)
-      std::cout << "Update dynamic scene, static geometry ";
+      std::cout << "Update dynamic scene, static geometry     ";
     else if (gflags == RTC_GEOMETRY_DEFORMABLE)
       std::cout << "Update dynamic scene, deformable geometry ";
     else
@@ -304,9 +304,9 @@ namespace embree {
       }
     }
     if (gflags == RTC_GEOMETRY_STATIC)
-      std::cout << "Create dynamic scene, static geometry ";
+      std::cout << "Create dynamic scene, static geometry     ";
     else if (gflags == RTC_GEOMETRY_DYNAMIC)
-      std::cout << "Create dynamic scene, dynamic geometry ";
+      std::cout << "Create dynamic scene, dynamic geometry    ";
     else if (gflags == RTC_GEOMETRY_DEFORMABLE)
       std::cout << "Create dynamic scene, deformable geometry ";
     else
@@ -344,11 +344,11 @@ namespace embree {
     }
 
     if (gflags == RTC_GEOMETRY_STATIC)
-      std::cout << "Create static scene, static geometry ";
+      std::cout << "Create static scene, static geometry      ";
     else if (gflags == RTC_GEOMETRY_DYNAMIC)
-      std::cout << "Create static scene, dynamic geometry ";
+      std::cout << "Create static scene, dynamic geometry     ";
     else if (gflags == RTC_GEOMETRY_DEFORMABLE)
-      std::cout << "Create static scene, deformable geometry ";
+      std::cout << "Create static scene, deformable geometry  ";
     else
       FATAL("unknown flags");
 
