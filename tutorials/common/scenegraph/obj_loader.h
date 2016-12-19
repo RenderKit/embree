@@ -20,5 +20,7 @@
 
 namespace embree
 {
-  Ref<SceneGraph::Node> loadOBJ(const FileName& fileName, const bool subdivMode = false);
+  Ref<SceneGraph::Node> loadOBJ(const FileName& fileName, 
+                                const bool subdivMode = false,
+                                const bool combineIntoSingleObject = false);
 }

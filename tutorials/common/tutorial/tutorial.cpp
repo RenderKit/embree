@@ -776,7 +776,7 @@ namespace embree
     for (size_t i=0;i<keyFramesFilenames.size();i++)
     {
       std::cout << "Adding ["<< keyFramesFilenames[i] << "] to scene..." << std::flush;
-      scene->add(loadOBJ(keyFramesFilenames[i],subdiv_mode != ""));
+      scene->add(loadOBJ(keyFramesFilenames[i],subdiv_mode != "",true));
       std::cout << "done" << std::endl << std::flush;
     }
     /* convert triangles to quads */

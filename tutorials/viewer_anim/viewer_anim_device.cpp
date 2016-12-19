@@ -110,6 +110,7 @@ unsigned int convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out, RTCGeom
   RTCScene convertScene(ISPCScene* scene_in, bool animSequence = false)
 {
   size_t numGeometries = scene_in->numGeometries;
+  PRINT(numGeometries);
   int scene_flags = RTC_SCENE_INCOHERENT | (animSequence ? RTC_SCENE_DYNAMIC : RTC_SCENE_STATIC);
   int scene_aflags = RTC_INTERSECT1 | RTC_INTERSECT_STREAM | RTC_INTERPOLATE;
   RTCScene scene_out = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);

@@ -105,7 +105,7 @@ namespace embree
   public:
 
     /*! Constructor. */
-    OBJLoader(const FileName& fileName, const bool subdivMode);
+    OBJLoader(const FileName& fileName, const bool subdivMode, const bool combineIntoSingleObject);
  
     /*! output model */
     Ref<SceneGraph::GroupNode> group;
@@ -141,7 +141,7 @@ namespace embree
     uint32_t getVertex(std::map<Vertex,uint32_t>& vertexMap, Ref<SceneGraph::TriangleMeshNode> mesh, const Vertex& i);
   };
 
-  OBJLoader::OBJLoader(const FileName &fileName, const bool subdivMode) 
+  OBJLoader::OBJLoader(const FileName &fileName, const bool subdivMode, const bool combineIntoSingleObject) 
     : group(new SceneGraph::GroupNode), path(fileName.path()), subdivMode(subdivMode)
   {
     /* open file */
@@ -222,7 +222,7 @@ namespace embree
       /*! use material */
       if (!strncmp(token, "usemtl", 6) && isSep(token[6]))
       {
-        flushFaceGroup();
+        if (!combineIntoSingleObject) flushFaceGroup();
         std::string name(parseSep(token += 6));
         if (material.find(name) == material.end()) {
           curMaterial = defaultMaterial;
@@ -517,8 +517,9 @@ namespace embree
     ec.clear();
   }
   
-  Ref<SceneGraph::Node> loadOBJ(const FileName& fileName, const bool subdivMode) {
-    OBJLoader loader(fileName,subdivMode); return loader.group.cast<SceneGraph::Node>();
+  Ref<SceneGraph::Node> loadOBJ(const FileName& fileName, const bool subdivMode, const bool combineIntoSingleObject) {
+    OBJLoader loader(fileName,subdivMode,combineIntoSingleObject); 
+    return loader.group.cast<SceneGraph::Node>();
   }
 }
 
