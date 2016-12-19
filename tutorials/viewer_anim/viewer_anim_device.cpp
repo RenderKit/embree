@@ -29,11 +29,14 @@ extern "C" ISPCScene* g_ispc_scene;
 extern "C" bool g_anim;
 
 /* scene data */
-RTCDevice g_device = nullptr;
-RTCScene g_scene = nullptr;
+  RTCDevice g_device = nullptr;
+  RTCScene g_scene   = nullptr;
 
-/* animation sequence data */
-size_t animFrameID = 0;
+/* animation data */
+  size_t animFrameID = 0;
+  size_t numAnimFrames  = 1;
+  std::vector<double> buildTime;
+  std::vector<double> renderTime;
 
   unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, RTCGeometryFlags object_flags = RTC_GEOMETRY_STATIC)
 {
@@ -106,6 +109,11 @@ unsigned int convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out, RTCGeom
   rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
   return geomID;
 }
+
+  size_t getNumObjects(ISPCScene* scene_in)
+  {
+    return scene_in->numGeometries;
+  }
 
   RTCScene convertScene(ISPCScene* scene_in, bool animSequence = false)
 {
@@ -296,6 +304,13 @@ extern "C" void device_init (char* cfg)
   g_scene = convertScene(g_ispc_scene,g_anim);
   rtcCommit (g_scene);
 
+  numAnimFrames = getNumObjects(g_ispc_scene);
+  PRINT(numAnimFrames);
+
+  buildTime.resize(numAnimFrames);
+  renderTime.resize(numAnimFrames);
+
+
   /* set render tile function to use */
   renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed_default;
@@ -309,22 +324,55 @@ extern "C" void device_render (int* pixels,
                            const ISPCCamera& camera)
 {
   /* render image */
+  double r0 = getSeconds();
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
+  double r1 = getSeconds();
+  PRINT(r1-r0);
+  assert(animFrameID < renderTime.size());
+  assert(animFrameID < buildTime.size());
+
+  renderTime[animFrameID] = r1-r0;
+
   /* update geometry and rebuild */
   if (g_anim)
   {
-    updateObjects(g_ispc_scene,g_scene,animFrameID++);
+    updateObjects(g_ispc_scene,g_scene,animFrameID);
+
     double t0 = getSeconds();
     rtcCommit(g_scene);      
     double t1 = getSeconds();
+    renderTime[animFrameID] = t0-t1;
+
     std::cout << "bvh rebuild in " << t1-t0 << " ms" << std::endl;
+    animFrameID = (animFrameID+1) % numAnimFrames;
   }
 }
+
+/* plot build and render times */
+
+  void plotBuildAndRenderTimes(FileName &name)
+  {
+    std::fstream plot;
+    plot.open(name.addExt(".plot"), std::fstream::out | std::fstream::trunc);
+    plot << "set terminal png size 2048,600 enhanced" << std::endl;
+    plot << "set output \"" << name.addExt(".png") << "\"" << std::endl;
+    plot << "set key inside right top vertical Right noreverse enhanced autotitles box linetype -1 linewidth 1.000" << std::endl;
+    plot << "set samples 50, 50" << std::endl;
+    //plot << "set title \"" << name << "\"" << std::endl; 
+    //plot << "set xlabel \"" << name << "\""<< std::endl;
+    plot << "set xtics axis rotate by 90" << std::endl;
+    //plot << "set ylabel \"" << unit << "\"" << std::endl;
+    plot << "set yrange [0:]" << std::endl;
+    //plot << "plot \"" << FileName(name).addExt(".txt") << "\" using :2:xtic(1) title \"" << name << "\" with lines, \\" << std::endl; 
+    //plot << "     \"" << FileName(name).addExt(".txt") << "\" using :3         title \"best\" with lines" << std::endl;
+    plot << std::endl;
+    plot.close();
+  }
 
 /* called by the C++ code for cleanup */
 extern "C" void device_cleanup ()
