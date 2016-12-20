@@ -710,6 +710,7 @@ namespace embree
 
       BVH* bvh;
       Scene* scene;
+      avector<PrimRefMB> prims; // FIXME: use mvector instead of avector
       const size_t sahBlockSize;
       const float intCost;
       const size_t minLeafSize;
@@ -722,7 +723,7 @@ namespace embree
       {
 	/* skip build for empty scene */
         const size_t numPrimitives = scene->getNumPrimitives<Mesh,true>();
-        if (numPrimitives == 0) { bvh->clear(); return; }
+        if (numPrimitives == 0) { prims.clear(); bvh->clear(); return; }
         
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderMBlurSAH");
 
@@ -731,10 +732,8 @@ namespace embree
 #endif
 
         /* create primref array */
-        avector<PrimRefMB> prims_vector(numPrimitives); // FIXME: use mvector instead of avector
-        avector<PrimRefMB>* prims = &prims_vector;
-        
-        PrimInfoMB pinfo = createPrimRefMBArray<Mesh>(scene,*prims,bvh->scene->progressInterface);
+        prims.resize(numPrimitives);
+        PrimInfoMB pinfo = createPrimRefMBArray<Mesh>(scene,prims,bvh->scene->progressInterface);
         RecalculatePrimRef<Mesh> recalculatePrimRef(scene);
         
         /* reduction function */
@@ -805,7 +804,7 @@ namespace embree
                         Primitive::singleTimeSegment);
         
         /* build hierarchy */
-        Set set(prims,make_range(size_t(0),pinfo.size()),BBox1f(0.0f,1.0f)); 
+        Set set(&prims,make_range(size_t(0),pinfo.size()),BBox1f(0.0f,1.0f));
         NodeRef root;
         BuildRecord br(pinfo,1,(size_t*)&root,set);
         LBBox3fa rootBounds = builder(br).first;
@@ -818,12 +817,17 @@ namespace embree
 #endif
 
 	/* clear temporary data for static geometry */
-	if (scene->isStatic()) bvh->shrink();
+        if (scene->isStatic())
+        {
+          prims.clear();
+          bvh->shrink();
+        }
 	bvh->cleanup();
         bvh->postBuild(t0);
       }
 
       void clear() {
+        prims.clear();
       }
     };
 
