@@ -738,7 +738,6 @@ namespace embree
 
     /* start tutorial */
     run(argc,argv);
-
     return 0;
   }  
   catch (const std::exception& e) {

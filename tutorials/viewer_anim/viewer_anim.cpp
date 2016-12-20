@@ -21,6 +21,8 @@ namespace embree
   extern "C" { int g_instancing_mode = 0; }
   extern "C" { bool g_anim = false; }
 
+  extern "C" void dumpBuildAndRenderTimes();
+
   struct Tutorial : public SceneLoadingTutorialApplication
   {
     Tutorial()
@@ -44,5 +46,6 @@ namespace embree
 }
 
 int main(int argc, char** argv) {
-  return embree::Tutorial().main(argc,argv);
+  int t = embree::Tutorial().main(argc,argv);
+  return t;
 }

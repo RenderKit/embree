@@ -59,6 +59,12 @@ void error_handler(const RTCError code, const char* str = nullptr);
 /* returns time stamp counter */
 extern "C" int64_t get_tsc();
 
+/* declare some standard library functions */
+extern "C" void abort ();
+extern "C" void exit(int);
+extern "C" int puts ( const char* str );
+extern "C" int putchar ( int character );
+
 /* face forward for shading normals */
 inline Vec3fa faceforward( const Vec3fa& N, const Vec3fa& I, const Vec3fa& Ng ) {
   Vec3fa NN = N; return dot(I, Ng) < 0 ? NN : neg(NN);
