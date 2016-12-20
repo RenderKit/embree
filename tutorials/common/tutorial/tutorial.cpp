@@ -87,8 +87,7 @@ namespace embree
     
       mouseMode(0),
       clickX(0), clickY(0),
-      speed(1.0f),
-      anim(false)
+      speed(1.0f)
 
   {
     /* only a single instance of this class is supported */
@@ -235,8 +234,6 @@ namespace embree
             if (line != "")
               keyFramesFilenames.push_back(listFilename.path() + line);
           }
-          if (keyFramesFilenames.size())
-            anim = true;
         }
       }, "-objlist <filename>: parses a sequence of .obj files listed in <filename> and adds them to the scene");
     
@@ -700,7 +697,9 @@ namespace embree
     
     /* benchmark mode */
     if (numBenchmarkFrames)
+    {
       renderBenchmark();
+    }
     
     /* render to disk */
     if (outputImageFilename.str() != "")

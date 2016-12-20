@@ -25,19 +25,18 @@ namespace embree {
 
   extern "C" ISPCScene* g_ispc_scene;
 
-/* enable obj animation */
-  extern "C" bool g_anim;
-
 /* scene data */
   RTCDevice g_device = nullptr;
   RTCScene g_scene   = nullptr;
 
 /* animation data */
   size_t animFrameID = 0;
-  size_t numAnimFrames  = 1;
   std::vector<double> buildTime;
   std::vector<double> renderTime;
   bool printStats = false;
+  bool timeInitialized = false;
+
+  static const size_t numProfileFrames = 200;
 
   void dumpBuildAndRenderTimes();
 
@@ -321,15 +320,23 @@ namespace embree {
     rtcDeviceSetErrorFunction(g_device,error_handler);
 
     /* create scene */
-    g_scene = convertScene(g_ispc_scene,g_anim);
+    g_scene = convertScene(g_ispc_scene,true);
     rtcCommit (g_scene);
 
-    numAnimFrames = getNumObjects(g_ispc_scene);
-    PRINT(numAnimFrames);
+    if (!timeInitialized)
+    {
+      timeInitialized = true;
 
-    buildTime.resize(numAnimFrames);
-    renderTime.resize(numAnimFrames);
+      buildTime.resize(numProfileFrames);
+      renderTime.resize(numProfileFrames);
 
+      for (size_t i=0;i<numProfileFrames;i++)
+      {
+        buildTime[i] = 0.0;
+        renderTime[i] = 0.0;
+      }
+      
+    }
 
     /* set render tile function to use */
     renderTile = renderTileStandard;
@@ -355,21 +362,29 @@ namespace embree {
     assert(animFrameID < renderTime.size());
     assert(animFrameID < buildTime.size());
 
-    renderTime[animFrameID] = r1-r0;
-    if (unlikely(printStats))std::cout << "rendering frame in " << r1-r0 << " ms" << std::endl;
-    /* update geometry and rebuild */
-    if (g_anim)
-    {
-      updateObjects(g_ispc_scene,g_scene,animFrameID);
+    if (renderTime[animFrameID] > 0.0f) 
+      renderTime[animFrameID] = (renderTime[animFrameID] + r1-r0) * 0.5f;
+    else
+      renderTime[animFrameID] = r1-r0;
 
-      double t0 = getSeconds();
-      rtcCommit(g_scene);      
-      double t1 = getSeconds();
+    if (unlikely(printStats))std::cout << "rendering frame in " << r1-r0 << " ms" << std::endl;
+
+    /* update geometry and rebuild */
+
+    updateObjects(g_ispc_scene,g_scene,animFrameID);
+    
+    double t0 = getSeconds();
+    rtcCommit(g_scene);      
+    double t1 = getSeconds();
+
+    if (buildTime[animFrameID] > 0.0f) 
+      buildTime[animFrameID] = (buildTime[animFrameID] + t1-t0) * 0.5f;
+    else
       buildTime[animFrameID] = t1-t0;
 
-      if (unlikely(printStats)) std::cout << "bvh rebuild in " << t1-t0 << " ms" << std::endl;
-      animFrameID = (animFrameID+1) % numAnimFrames;
-    }
+
+    if (unlikely(printStats)) std::cout << "bvh rebuild in " << t1-t0 << " ms" << std::endl;
+    animFrameID = (animFrameID+1) % numProfileFrames;
   }
 
 /* plot build and render times */
@@ -378,10 +393,24 @@ namespace embree {
   {
     FileName name("buildRenderTimes");
     std::fstream plot;
-    plot.open(name.addExt(".data"), std::fstream::out | std::fstream::trunc);
-    assert(buildTime.size() == renderTime.size());
+    plot.open(name.addExt(".plot"), std::fstream::out | std::fstream::trunc);
+
+    plot << "set terminal png size 2048,600 enhanced" << std::endl;
+    plot << "set output \"" << name.addExt(".png") << "\"" << std::endl;
+    plot << "set key inside right top vertical Right noreverse enhanced autotitles box linetype -1 linewidth 1.000" << std::endl;
+    plot << "set ylabel \"" << "ms" << "\"" << std::endl;
+    plot << "set yrange [0:20]" << std::endl;
+    plot << "set ytics 1" << std::endl;
+    plot << "factor=1000" << std::endl;
+    plot << "plot \"-\" using ($1):(factor*($2)) title \"build time\" with linespoints lw 4,\"-\" using ($1):(factor*($2)) title \"render time\" with linespoints lw 4,\"-\" using ($1):(factor*($2)) title \"total time\" with linespoints lw 4" << std::endl;
     for (size_t i=0;i<buildTime.size();i++)
-      plot << buildTime[i] << "          " << renderTime[i] << std::endl;
+      plot << i << " " << buildTime[i] << std::endl;
+    plot << "e" << std::endl;
+    for (size_t i=0;i<renderTime.size();i++)
+      plot << i << " " << renderTime[i] << std::endl;
+    plot << "e" << std::endl;
+    for (size_t i=0;i<renderTime.size();i++)
+      plot << i << " " << buildTime[i] + renderTime[i] << std::endl;
     plot << std::endl;
     plot.close();
   }
@@ -391,6 +420,10 @@ namespace embree {
   {
     rtcDeleteScene (g_scene); g_scene = nullptr;
     rtcDeleteDevice(g_device); g_device = nullptr;
+    /* dump data at the end of profiling */
+    std::cout << "dumping build and render times per frame [" << numProfileFrames << " frames]..." << std::flush;
+    dumpBuildAndRenderTimes(); 
+    std::cout << "done" << std::endl;
   }
 
 } // namespace embree
