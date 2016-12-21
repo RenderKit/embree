@@ -710,20 +710,21 @@ namespace embree
 
       BVH* bvh;
       Scene* scene;
-      avector<PrimRefMB> prims; // FIXME: use mvector instead of avector
+      mvector<PrimRef> prims;
+      avector<PrimRefMB> primsMB; // FIXME: use mvector instead of avector
       const size_t sahBlockSize;
       const float intCost;
       const size_t minLeafSize;
       const size_t maxLeafSize;
 
       BVHNBuilderMBlurSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(scene), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)) {}
+        : bvh(bvh), scene(scene), prims(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)) {}
 
       void build(size_t, size_t) 
       {
 	/* skip build for empty scene */
         const size_t numPrimitives = scene->getNumPrimitives<Mesh,true>();
-        if (numPrimitives == 0) { prims.clear(); bvh->clear(); return; }
+        if (numPrimitives == 0) { prims.clear(); primsMB.clear(); bvh->clear(); return; }
         
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderMBlurSAH");
 
@@ -731,11 +732,67 @@ namespace embree
         profile(2,PROFILE_RUNS,numPrimitives,[&] (ProfileTimer& timer) {
 #endif
 
+        const size_t numTimeSteps = scene->getNumTimeSteps<Mesh,true>();
+        const size_t numTimeSegments = numTimeSteps-1; assert(numTimeSteps > 1);
+
+        bvh->numTimeSteps = numTimeSteps;
+
+        if (numTimeSegments == 1)
+          buildSingleSegment(numPrimitives);
+        else
+          buildMultiSegment(numPrimitives);
+
+#if PROFILE
+          });
+#endif
+
+	/* clear temporary data for static geometry */
+        if (scene->isStatic())
+        {
+          prims.clear();
+          primsMB.clear();
+          bvh->shrink();
+        }
+	bvh->cleanup();
+        bvh->postBuild(t0);
+      }
+
+      void buildSingleSegment(size_t numPrimitives)
+      { 
         /* create primref array */
         prims.resize(numPrimitives);
-        PrimInfoMB pinfo = createPrimRefMBArray<Mesh>(scene,prims,bvh->scene->progressInterface);
+        const PrimInfo pinfo = createPrimRefArrayMBlur<Mesh>(0,2,scene,prims,bvh->scene->progressInterface);
+
+        /* reduction function */
+        auto reduce = [&] (AlignedNodeMB* node, const LBBox3fa* bounds, const size_t num) -> LBBox3fa
+        {
+          assert(num <= N);
+          LBBox3fa allBounds = empty;
+          for (size_t i=0; i<num; i++) {
+            node->set(i, bounds[i]);
+            allBounds.extend(bounds[i]);
+          }
+          return allBounds;
+        };
+        auto identity = LBBox3fa(empty);
+
+        bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef));
+
+        NodeRef root;
+        LBBox3fa rootBounds = BVHBuilderBinnedSAH::build_reduce<NodeRef>
+          (root,typename BVH::CreateAlloc(bvh),identity,CreateAlignedNodeMB<N>(bvh),reduce,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),0),bvh->scene->progressInterface,
+           prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+
+        bvh->set(root,rootBounds,pinfo.size());
+      }
+
+      void buildMultiSegment(size_t numPrimitives)
+      {
+        /* create primref array */
+        primsMB.resize(numPrimitives);
+        PrimInfoMB pinfo = createPrimRefMBArray<Mesh>(scene,primsMB,bvh->scene->progressInterface);
         RecalculatePrimRef<Mesh> recalculatePrimRef(scene);
-        
+
         /* reduction function */
         auto updateNodeFunc = [&] (NodeRef ref, Set& prims, const std::pair<LBBox3fa,BBox1f>* bounds, const size_t num) -> std::pair<LBBox3fa,BBox1f> {
 
@@ -755,7 +812,7 @@ namespace embree
           else
           {
             AlignedNodeMB4D* node = ref.alignedNodeMB4D();
-            for (size_t i=0; i<num; i++) 
+            for (size_t i=0; i<num; i++)
               node->set(i, bounds[i].first.global(bounds[i].second), bounds[i].second);
 
             LBBox3fa cbounds = prims.linearBounds(recalculatePrimRef);
@@ -764,11 +821,11 @@ namespace embree
         };
         auto identity = std::make_pair(LBBox3fa(empty),BBox1f(empty));
 
-        /* call BVH builder */            
+        /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
 
-        /* builder wants log2 of blockSize as input */		  
-        const size_t logBlockSize = __bsr(sahBlockSize); 
+        /* builder wants log2 of blockSize as input */
+        const size_t logBlockSize = __bsr(sahBlockSize);
         assert((sahBlockSize ^ (size_t(1) << logBlockSize)) == 0);
 
         /* instantiate array binning heuristic */
@@ -777,7 +834,7 @@ namespace embree
         auto createNodeFunc = CreateAlignedNodeMB4D<N,Mesh>(bvh);
         auto createLeafFunc = CreateMBlurLeaf<N,Mesh,Primitive>(bvh);
         auto progressMonitor = bvh->scene->progressInterface;
-        
+
         typedef GeneralBVHMBBuilder<
           BuildRecord,
           RecalculatePrimRef<Mesh>,
@@ -802,32 +859,20 @@ namespace embree
                         N,BVH::maxDepth,logBlockSize,
                         minLeafSize,maxLeafSize,travCost,intCost,
                         Primitive::singleTimeSegment);
-        
+
         /* build hierarchy */
-        Set set(&prims,make_range(size_t(0),pinfo.size()),BBox1f(0.0f,1.0f));
+        Set set(&primsMB,make_range(size_t(0),pinfo.size()),BBox1f(0.0f,1.0f));
         NodeRef root;
         BuildRecord br(pinfo,1,(size_t*)&root,set);
         LBBox3fa rootBounds = builder(br).first;
 
         //bvh->set(root,pinfo.geomBounds,pinfo.size());
         bvh->set(root,rootBounds,pinfo.size());
-
-#if PROFILE
-          });
-#endif
-
-	/* clear temporary data for static geometry */
-        if (scene->isStatic())
-        {
-          prims.clear();
-          bvh->shrink();
-        }
-	bvh->cleanup();
-        bvh->postBuild(t0);
       }
 
       void clear() {
         prims.clear();
+        primsMB.clear();
       }
     };
 
