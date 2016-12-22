@@ -30,7 +30,10 @@ namespace embree {
   RTCScene g_scene   = nullptr;
 
 /* animation data */
-  size_t animFrameID = 0;
+  size_t animFrameID     = 0;
+  unsigned int staticID  = 0;
+  unsigned int dynamicID = 0;
+
   std::vector<double> buildTime;
   std::vector<double> renderTime;
   bool printStats = false;
@@ -135,70 +138,69 @@ namespace embree {
     return scene_in->numGeometries;
   }
 
-  RTCScene convertScene(ISPCScene* scene_in, bool animSequence = false)
+  RTCScene createScene(ISPCScene* scene_in, bool dynamic = false)
   {
-    size_t numGeometries = scene_in->numGeometries;
-    int scene_flags = RTC_SCENE_INCOHERENT | (animSequence ? RTC_SCENE_DYNAMIC : RTC_SCENE_STATIC);
+    int scene_flags = RTC_SCENE_INCOHERENT | (dynamic ? RTC_SCENE_DYNAMIC : RTC_SCENE_STATIC);
     int scene_aflags = RTC_INTERSECT1 | RTC_INTERSECT_STREAM | RTC_INTERPOLATE;
-    RTCScene scene_out = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
+    return rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
+  }
+    
 
-    RTCGeometryFlags object_flags = animSequence ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
-    for (size_t i=0; i<numGeometries; i++)
-    {
-      ISPCGeometry* geometry = scene_in->geometries[i];
-      if (geometry->type == SUBDIV_MESH) {
-        unsigned int geomID MAYBE_UNUSED = convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out, object_flags);
-        ((ISPCSubdivMesh*)geometry)->geomID = geomID;
-        assert(geomID == i);
-      }
-      else if (geometry->type == TRIANGLE_MESH) {
-        unsigned int geomID MAYBE_UNUSED = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out, object_flags);
-        ((ISPCTriangleMesh*)geometry)->geomID = geomID;
-        assert(geomID == i);
-      }
-      else if (geometry->type == QUAD_MESH) {
-        unsigned int geomID MAYBE_UNUSED = convertQuadMesh((ISPCQuadMesh*) geometry, scene_out, object_flags);
-        ((ISPCQuadMesh*)geometry)->geomID = geomID;
-        assert(geomID == i);
-      }
-      else if (geometry->type == LINE_SEGMENTS) {
-        unsigned int geomID MAYBE_UNUSED = convertLineSegments((ISPCLineSegments*) geometry, scene_out, object_flags);
-        ((ISPCLineSegments*)geometry)->geomID = geomID;
-        assert(geomID == i);
-      }
-      else if (geometry->type == HAIR_SET) {
-        unsigned int geomID MAYBE_UNUSED = convertHairSet((ISPCHairSet*) geometry, scene_out, object_flags);
-        ((ISPCHairSet*)geometry)->geomID = geomID;
-        assert(geomID == i);
-      }
-      else if (geometry->type == CURVES) {
-        unsigned int geomID MAYBE_UNUSED = convertCurveGeometry((ISPCHairSet*) geometry, scene_out, object_flags);
-        ((ISPCHairSet*)geometry)->geomID = geomID;
-        assert(geomID == i);
-      }
-      else
-        assert(false);
-      if (animSequence) 
-        break;
+  unsigned int createObject(const size_t i, ISPCScene* scene_in, RTCScene scene_out, bool dynamic = false)
+  {
+    RTCGeometryFlags object_flags = dynamic ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
+
+    ISPCGeometry* geometry = scene_in->geometries[i];
+    unsigned int geomID = 0;
+
+    if (geometry->type == SUBDIV_MESH) {
+      geomID = convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out, object_flags);
+      ((ISPCSubdivMesh*)geometry)->geomID = geomID;
+      assert(geomID == i);
     }
-    return scene_out;
+    else if (geometry->type == TRIANGLE_MESH) {
+      geomID = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out, object_flags);
+      ((ISPCTriangleMesh*)geometry)->geomID = geomID;
+      assert(geomID == i);
+    }
+    else if (geometry->type == QUAD_MESH) {
+      geomID = convertQuadMesh((ISPCQuadMesh*) geometry, scene_out, object_flags);
+      ((ISPCQuadMesh*)geometry)->geomID = geomID;
+      assert(geomID == i);
+    }
+    else if (geometry->type == LINE_SEGMENTS) {
+      geomID = convertLineSegments((ISPCLineSegments*) geometry, scene_out, object_flags);
+      ((ISPCLineSegments*)geometry)->geomID = geomID;
+      assert(geomID == i);
+    }
+    else if (geometry->type == HAIR_SET) {
+      geomID = convertHairSet((ISPCHairSet*) geometry, scene_out, object_flags);
+      ((ISPCHairSet*)geometry)->geomID = geomID;
+      assert(geomID == i);
+    }
+    else if (geometry->type == CURVES) {
+      geomID = convertCurveGeometry((ISPCHairSet*) geometry, scene_out, object_flags);
+      ((ISPCHairSet*)geometry)->geomID = geomID;
+      assert(geomID == i);
+    }
+    else
+      assert(false);
+    return geomID;
   }
 
-  void updateObjects(ISPCScene* scene_in, RTCScene scene_out, size_t keyFrameID)
+  void updateObjects(const unsigned int geomID, ISPCScene* scene_in, RTCScene scene_out, size_t keyFrameID)
   {
     size_t numGeometries = scene_in->numGeometries;
     if (!numGeometries) return;
 
-    ISPCGeometry* geometry = scene_in->geometries[keyFrameID % numGeometries];
+    ISPCGeometry* geometry = scene_in->geometries[max(keyFrameID % numGeometries,(size_t)1)];
 
     if (geometry->type == SUBDIV_MESH) {
       unsigned int geomID = ((ISPCSubdivMesh*)geometry)->geomID;
       rtcUpdate(scene_out,geomID);
     }
     else if (geometry->type == TRIANGLE_MESH) {
-      ISPCTriangleMesh* mesh0 = (ISPCTriangleMesh*)scene_in->geometries[0];
       ISPCTriangleMesh* mesh = (ISPCTriangleMesh*)geometry;
-      unsigned int geomID = mesh0->geomID;
       for (size_t t=0; t<mesh->numTimeSteps; t++) {
         rtcSetBuffer(scene_out, geomID, (RTCBufferType)(RTC_VERTEX_BUFFER+t),mesh->positions+t*mesh->numVertices, 0, sizeof(Vec3fa      ));
       }
@@ -319,8 +321,26 @@ namespace embree {
     /* set error handler */
     rtcDeviceSetErrorFunction(g_device,error_handler);
 
+
     /* create scene */
-    g_scene = convertScene(g_ispc_scene,true);
+    g_scene = createScene(g_ispc_scene,true);
+
+    /* instantiate the first two objects (static,dynamic) */
+#if 0
+    /* num objects */
+    size_t numObjects = getNumObjects(g_ispc_scene);
+    PRINT(numObjects);
+
+    for (size_t i=0;i<numObjects;i++)
+      createObject(i,g_ispc_scene,g_scene,true);
+#else
+    staticID  = createObject(0,g_ispc_scene,g_scene,false);
+    dynamicID = createObject(1,g_ispc_scene,g_scene,true);
+    PRINT(staticID);
+    PRINT(dynamicID);
+
+#endif
+
     rtcCommit (g_scene);
 
     if (!timeInitialized)
@@ -371,7 +391,7 @@ namespace embree {
 
     /* update geometry and rebuild */
 
-    updateObjects(g_ispc_scene,g_scene,animFrameID);
+    updateObjects(dynamicID, g_ispc_scene, g_scene, animFrameID);
     
     double t0 = getSeconds();
     rtcCommit(g_scene);      

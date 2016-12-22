@@ -110,10 +110,12 @@ namespace embree
   void os_advise(void *pptr, size_t bytes)
   {
 #if defined(MADV_HUGEPAGE)
-    if ((size_t)bytes % PAGE_SIZE_2M == 0) 
+    if (isHugePageCandidate(bytes)) 
     {
-      int r = madvise(pptr,bytes,MADV_HUGEPAGE); 
+      madvise(pptr,bytes,MADV_HUGEPAGE); 
 #if 0
+      int r = madvise(pptr,bytes,MADV_HUGEPAGE); 
+
       if (r == -1)
       {
         perror("error");

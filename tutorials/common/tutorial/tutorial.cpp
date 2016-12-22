@@ -217,7 +217,7 @@ namespace embree
         sceneFilename = path + cin->getFileName();
       }, "-i <filename>: parses scene from <filename>");
 
-    registerOption("objlist", [this] (Ref<ParseStream> cin, const FileName& path) {
+    registerOption("animlist", [this] (Ref<ParseStream> cin, const FileName& path) {
         FileName listFilename = path + cin->getFileName();
 
         std::ifstream listFile;
@@ -235,7 +235,7 @@ namespace embree
               keyFramesFilenames.push_back(listFilename.path() + line);
           }
         }
-      }, "-objlist <filename>: parses a sequence of .obj files listed in <filename> and adds them to the scene");
+      }, "-animlist <filename>: parses a sequence of .obj/.xml files listed in <filename> and adds them to the scene");
     
     registerOption("convert-triangles-to-quads", [this] (Ref<ParseStream> cin, const FileName& path) {
         convert_tris_to_quads = true;
@@ -774,7 +774,10 @@ namespace embree
     for (size_t i=0;i<keyFramesFilenames.size();i++)
     {
       std::cout << "Adding ["<< keyFramesFilenames[i] << "] to scene..." << std::flush;
-      scene->add(loadOBJ(keyFramesFilenames[i],subdiv_mode != "",true));
+      if (toLowerCase(keyFramesFilenames[i].ext()) == std::string("obj"))
+        scene->add(loadOBJ(keyFramesFilenames[i],subdiv_mode != "",true));
+      else if (keyFramesFilenames[i].ext() != "")
+        scene->add(SceneGraph::load(keyFramesFilenames[i]));
       std::cout << "done" << std::endl << std::flush;
     }
     /* convert triangles to quads */

@@ -23,7 +23,9 @@ namespace embree
 {
   /* name of the tutorial */
   bool embedTextures = true;
-  
+  float centerScale = 0.0f;
+  Vec3fa centerTranslate(0.0f,0.0f,0.0f);
+
   struct HeightField : public RefCount
   {
     ALIGNED_STRUCT;
@@ -147,7 +149,16 @@ namespace embree
 
       /* load model */
       else if (tag == "-i") {
-        g_scene->add(SceneGraph::load(path + cin->getFileName()));
+        Ref<SceneGraph::Node> object = SceneGraph::load(path + cin->getFileName());
+        if (centerScale != 0.0f)
+        {
+          BBox3fa bb = object->bounds();
+          Vec3fa center = bb.center();
+          const AffineSpace3fa space = AffineSpace3fa::translate(centerTranslate)*AffineSpace3fa::scale(Vec3fa(centerScale))*AffineSpace3fa::translate(-center);
+          g_scene->add(new SceneGraph::TransformNode(space,object));
+        }
+        else
+          g_scene->add(object);
       }
 
       /* convert triangles to quads */
@@ -205,6 +216,13 @@ namespace embree
       /* enable texture referencing */
       else if (tag == "-reference-textures") {
         embedTextures = false;
+      }
+
+      else if (tag == "-centerScaleTranslate") {
+        centerScale       = cin->getFloat();
+        centerTranslate.x = cin->getFloat();
+        centerTranslate.y = cin->getFloat();
+        centerTranslate.z = cin->getFloat();
       }
 
       /* output filename */
