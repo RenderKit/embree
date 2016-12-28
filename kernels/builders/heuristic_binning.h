@@ -280,9 +280,43 @@ namespace embree
         if (likely(end-begin < parallelThreshold)) {
           bin(prims,begin,end,mapping);
         } else {
-          BinInfoT binner(empty);
-          *this = parallel_reduce(begin,end,blockSize,binner,
+          *this = parallel_reduce(begin,end,blockSize,*this,
                                   [&](const range<size_t>& r) -> BinInfoT { BinInfoT binner(empty); binner.bin(prims + r.begin(), r.size(), mapping); return binner; },
+                                  [&](const BinInfoT& b0, const BinInfoT& b1) -> BinInfoT { BinInfoT r = b0; r.merge(b1, mapping.size()); return r; });
+        }
+      }
+
+      __forceinline void bin_parallel(const PrimRef* prims, size_t begin, size_t end, size_t blockSize, size_t parallelThreshold, const BinMapping<BINS>& mapping, const AffineSpace3fa& space)
+      {
+        if (likely(end-begin < parallelThreshold)) {
+          bin(prims,begin,end,mapping,space);
+        } else {
+          *this = parallel_reduce(begin,end,blockSize,*this,
+                                  [&](const range<size_t>& r) -> BinInfoT { BinInfoT binner(empty); binner.bin(prims + r.begin(), r.size(), mapping, space); return binner; },
+                                  [&](const BinInfoT& b0, const BinInfoT& b1) -> BinInfoT { BinInfoT r = b0; r.merge(b1, mapping.size()); return r; });
+        }
+      }
+
+      template<bool parallel>
+      __forceinline void bin_serial_or_parallel(const PrimRef* prims, size_t begin, size_t end, size_t blockSize, const BinMapping<BINS>& mapping)
+      {
+        if (!parallel) {
+          bin(prims,begin,end,mapping);
+        } else {
+          *this = parallel_reduce(begin,end,blockSize,*this,
+                                  [&](const range<size_t>& r) -> BinInfoT { BinInfoT binner(empty); binner.bin(prims + r.begin(), r.size(), mapping); return binner; },
+                                  [&](const BinInfoT& b0, const BinInfoT& b1) -> BinInfoT { BinInfoT r = b0; r.merge(b1, mapping.size()); return r; });
+        }
+      }
+
+      template<bool parallel>
+      __forceinline void bin_serial_or_parallel(const PrimRef* prims, size_t begin, size_t end, size_t blockSize, const BinMapping<BINS>& mapping, const AffineSpace3fa& space)
+      {
+        if (!parallel) {
+          bin(prims,begin,end,mapping,space);
+        } else {
+          *this = parallel_reduce(begin,end,blockSize,*this,
+                                  [&](const range<size_t>& r) -> BinInfoT { BinInfoT binner(empty); binner.bin(prims + r.begin(), r.size(), mapping, space); return binner; },
                                   [&](const BinInfoT& b0, const BinInfoT& b1) -> BinInfoT { BinInfoT r = b0; r.merge(b1, mapping.size()); return r; });
         }
       }

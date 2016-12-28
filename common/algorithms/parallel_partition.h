@@ -279,4 +279,22 @@ namespace embree
       return begin+p->partition(leftReduction,rightReduction);    
     }
   }
+
+  template<bool parallel, typename T, typename V, typename Vi, typename IsLeft, typename Reduction_T, typename Reduction_V>
+    __forceinline size_t serial_or_parallel_partitioning(T* array,
+                                            const size_t begin,
+                                            const size_t end,
+                                            const Vi &identity,
+                                            V &leftReduction,
+                                            V &rightReduction,
+                                            const IsLeft& is_left,
+                                            const Reduction_T& reduction_t,
+                                            const Reduction_V& reduction_v,
+                                            size_t BLOCK_SIZE)
+  {
+    if (!parallel)
+      return serial_partitioning(array,begin,end,leftReduction,rightReduction,is_left,reduction_t);
+    else
+      return parallel_partitioning(array,begin,end,identity,leftReduction,rightReduction,is_left,reduction_t,reduction_v,BLOCK_SIZE);
+  }
 }

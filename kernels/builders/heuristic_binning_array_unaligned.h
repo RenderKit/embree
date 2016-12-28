@@ -145,35 +145,25 @@ namespace embree
         const Split find(const PrimInfo& pinfo, const size_t logBlockSize, const LinearSpace3fa& space)
         {
           Set set(pinfo.begin,pinfo.end);
-          if (likely(pinfo.size() < 10000)) return sequential_find(set,pinfo,logBlockSize,space);
-          else                              return   parallel_find(set,pinfo,logBlockSize,space);
+          return find(set,pinfo,logBlockSize,space);
         }
         
         /*! finds the best split */
-        const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, const LinearSpace3fa& space)
+        __forceinline const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, const LinearSpace3fa& space)
         {
-          if (likely(pinfo.size() < 10000)) return sequential_find(set,pinfo,logBlockSize,space);
-          else                              return   parallel_find(set,pinfo,logBlockSize,space);
+          if (likely(pinfo.size() < 10000))
+            return find_template<false>(set,pinfo,logBlockSize,space);
+          else
+            return find_template<true>(set,pinfo,logBlockSize,space);
         }
 
         /*! finds the best split */
-        const Split sequential_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, const LinearSpace3fa& space)
+        template<bool parallel>
+        const Split find_template(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, const LinearSpace3fa& space)
         {
           Binner binner(empty);
           const BinMapping<BINS> mapping(pinfo);
-          binner.bin(prims,set.begin(),set.end(),mapping,space);
-          return binner.best(mapping,logBlockSize);
-        }
-        
-        /*! finds the best split */
-        const Split parallel_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, const LinearSpace3fa& space)
-        {
-          Binner binner(empty);
-          const BinMapping<BINS> mapping(pinfo);
-          const BinMapping<BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
-          binner = parallel_reduce(set.begin(),set.end(),size_t(4096),binner,
-                                   [&] (const range<size_t>& r) -> Binner { Binner binner(empty); binner.bin(prims+r.begin(),r.size(),_mapping,space); return binner; },
-                                   [&] (const Binner& b0, const Binner& b1) -> Binner { Binner r = b0; r.merge(b1,_mapping.size()); return r; });
+          binner.template bin_serial_or_parallel<parallel>(prims,set.begin(),set.end(),size_t(4096),mapping,space);
           return binner.best(mapping,logBlockSize);
         }
         
@@ -182,17 +172,21 @@ namespace embree
         {
           Set lset,rset;
           Set set(pinfo.begin,pinfo.end);
-          split_helper(spliti,space,set,left,lset,right,rset);
+          split(spliti,space,set,left,lset,right,rset);
         }
 
         /*! array partitioning */
-        void split(const Split& split, const LinearSpace3fa& space, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        __forceinline void split(const Split& split, const LinearSpace3fa& space, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
         {
-          split_helper(split,space,set,left,lset,right,rset);
+          if (likely(set.size() < 10000))
+            split_template<false>(split,space,set,left,lset,right,rset);
+          else
+            split_template<true>(split,space,set,left,lset,right,rset);
         }
 
         /*! array partitioning */
-        __forceinline void split_helper(const Split& split, const LinearSpace3fa& space, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        template<bool parallel>
+        __forceinline void split_template(const Split& split, const LinearSpace3fa& space, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
         {
           if (!split.valid()) {
             deterministic_order(set);
@@ -205,17 +199,12 @@ namespace embree
           CentGeomBBox3fa local_right(empty);
           const int splitPos = split.pos;
           const int splitDim = split.dim;
-          size_t center = 0;
-          if (likely(set.size() < 10000))
-            center = serial_partitioning(prims,begin,end,local_left,local_right,
-                                         [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(center2(ref.bounds(space)))[splitDim] < splitPos; },
-                                         [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });
-          else
-            center = parallel_partitioning(prims,begin,end,empty,local_left,local_right,
-                                           [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(center2(ref.bounds(space)))[splitDim] < splitPos; },
-                                           [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); },
-                                           [] (CentGeomBBox3fa& pinfo0,const CentGeomBBox3fa& pinfo1) { pinfo0.merge(pinfo1); },
-                                           128);
+          size_t center = serial_or_parallel_partitioning<parallel>(
+            prims,begin,end,empty,local_left,local_right,
+            [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(center2(ref.bounds(space)))[splitDim] < splitPos; },
+            [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); },
+            [] (CentGeomBBox3fa& pinfo0,const CentGeomBBox3fa& pinfo1) { pinfo0.merge(pinfo1); },
+            128);
           
           new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
           new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
