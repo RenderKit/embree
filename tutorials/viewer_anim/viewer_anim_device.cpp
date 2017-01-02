@@ -14,6 +14,15 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+/* hack to quickly enable use 8-wide ray initialization and rtcIntersectNM */
+
+#define VECTOR_MODE 0
+
+#if VECTOR_MODE  == 1
+#define __SSE4_2__
+#define __AVX__
+#endif 
+
 #include "../common/math/random_sampler.h"
 #include "../common/math/sampling.h"
 #include "../common/tutorial/tutorial_device.h"
@@ -252,7 +261,68 @@ namespace embree {
       assert(false);
   }
 
+#if VECTOR_MODE  == 1
+  
+  void renderTile8x8(int taskIndex,
+                     int* pixels,
+                     const unsigned int width,
+                     const unsigned int height,
+                     const float time,
+                     const ISPCCamera& camera,
+                     const int numTilesX,
+                     const int numTilesY)
+  {
+    assert(TILE_SIZE_X == 8);
+    assert(TILE_SIZE_Y == 8);
 
+    const unsigned int tileY = taskIndex / numTilesX;
+    const unsigned int tileX = taskIndex - tileY * numTilesX;
+    const unsigned int x0 = tileX * TILE_SIZE_X;
+    const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+    const unsigned int y0 = tileY * TILE_SIZE_Y;
+    const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
+
+    RTCRay8 rays[TILE_SIZE_Y];
+    const Vec3fa ray_org(camera.xfm.p);
+    for (unsigned int i=0; i<TILE_SIZE_Y; i++) 
+      {
+        const vfloat8 x(vfloat8(step) + x0);
+        const vfloat8 y((float)(y0 + i));
+        vfloat8::store(rays[i].orgx,ray_org.x);
+        vfloat8::store(rays[i].orgy,ray_org.y);
+        vfloat8::store(rays[i].orgz,ray_org.z);
+        vfloat8::store(rays[i].dirx,x * camera.xfm.l.vx.x + y * camera.xfm.l.vy.x + camera.xfm.l.vz.x);
+        vfloat8::store(rays[i].diry,x * camera.xfm.l.vx.y + y * camera.xfm.l.vy.y + camera.xfm.l.vz.y);
+        vfloat8::store(rays[i].dirz,x * camera.xfm.l.vx.z + y * camera.xfm.l.vy.z + camera.xfm.l.vz.z);
+        vfloat8::store(rays[i].tnear,0.0f);
+        vfloat8::store(rays[i].tfar,(float)pos_inf);
+        vfloat8::store(rays[i].time,0.0f);
+        vint8::store(rays[i].mask,-1);
+        vint8::store(rays[i].geomID,RTC_INVALID_GEOMETRY_ID);
+        vint8::store(rays[i].primID,RTC_INVALID_GEOMETRY_ID);
+      }
+
+    RTCIntersectContext context;
+    context.flags = RAYN_FLAGS;
+
+    /* trace stream of rays */
+    rtcIntersectNM(g_scene,&context,(RTCRayN *)rays,8,8,sizeof(RTCRay8));
+
+    /* shade stream of rays */
+    for (unsigned int i=0; i<TILE_SIZE_Y; i++) 
+      {
+        Vec3<vfloat8> ray_dir(vfloat8::load(rays[i].dirx),vfloat8::load(rays[i].diry),vfloat8::load(rays[i].dirz));
+        Vec3<vfloat8> ray_Ng(vfloat8::load(rays[i].Ngx),vfloat8::load(rays[i].Ngy),vfloat8::load(rays[i].Ngz));        
+        vfloat8 color = abs(dot(normalize(ray_dir),normalize(ray_Ng)));
+
+        vint8 r = (vint8) (255.0f * clamp(color,vfloat8(0.0f),vfloat8(1.0f)));
+        vint8 g = (vint8) (255.0f * clamp(color,vfloat8(0.0f),vfloat8(1.0f)));
+        vint8 b = (vint8) (255.0f * clamp(color,vfloat8(0.0f),vfloat8(1.0f)));
+        vint8::store(&pixels[(y0+i)*width+x0],(b << 16) + (g << 8) + r);        
+      }
+  }
+
+#endif
 
 /* renders a single screen tile */
   void renderTileStandard(int taskIndex,
@@ -278,12 +348,6 @@ namespace embree {
     for (unsigned int y=y0; y<y1; y++) 
       for (unsigned int x=x0; x<x1; x++)
       {
-        /* ISPC workaround for mask == 0 */
-    
-
-        RandomSampler sampler;
-        RandomSampler_init(sampler, x, y, 0);
-
         /* initialize ray */
         RTCRay& ray = rays[N++];
 
@@ -296,7 +360,7 @@ namespace embree {
         ray.geomID = RTC_INVALID_GEOMETRY_ID;
         ray.primID = RTC_INVALID_GEOMETRY_ID;
         ray.mask = -1;
-        ray.time = RandomSampler_get1D(sampler);
+        ray.time = 0.0f;
       }
 
     RTCIntersectContext context;
@@ -304,6 +368,7 @@ namespace embree {
 
     /* trace stream of rays */
     rtcIntersect1M(g_scene,&context,rays,N,sizeof(RTCRay));
+    //rtcOccluded1M(g_scene,&context,rays,N,sizeof(RTCRay));
 
     /* shade stream of rays */
     N = 0;
@@ -422,7 +487,11 @@ namespace embree {
     const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
     parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
         for (size_t i=range.begin(); i<range.end(); i++)
+#if VECTOR_MODE  == 1
+          renderTile8x8((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
+#else
           renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
+#endif
       }); 
     const double renderTime1 = getSeconds();
     const double renderTimeDelta = renderTime1-renderTime0;
