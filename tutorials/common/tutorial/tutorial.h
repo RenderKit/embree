@@ -96,6 +96,8 @@ namespace embree
     /* window settings */
     bool interactive;
     bool fullscreen;
+    bool consoleOutput;
+
     unsigned window_width;
     unsigned window_height;
     int windowID;

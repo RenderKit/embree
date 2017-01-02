@@ -409,24 +409,28 @@ namespace embree {
                                  const float time,
                                  const ISPCCamera& camera)
   {
+    assert(frameID < renderTime.size());
+    assert(frameID < vertexUpdateTime.size());
+    assert(frameID < buildTime.size());
+
     /* ============ */
     /* render image */
     /* ============ */
 
-    double renderTime0 = getSeconds();
+    const double renderTime0 = getSeconds();
     const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
     const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
     parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
         for (size_t i=range.begin(); i<range.end(); i++)
           renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
       }); 
-    double renderTime1 = getSeconds();
-    assert(frameID < renderTime.size());
-    assert(frameID < buildTime.size());
+    const double renderTime1 = getSeconds();
+    const double renderTimeDelta = renderTime1-renderTime0;
+    
+    updateTimeLog(renderTime,renderTimeDelta);
 
-    updateTimeLog(renderTime,renderTime1-renderTime0);
+    if (unlikely(printStats)) std::cout << "rendering frame in : " << renderTimeDelta << " ms" << std::endl;
 
-    if (unlikely(printStats)) std::cout << "rendering frame in " << renderTime1-renderTime0 << " ms" << std::endl;
 
     /* =============== */
     /* update geometry */
@@ -442,7 +446,11 @@ namespace embree {
     updateVertexData(dynamicID, g_ispc_scene, g_scene, keyFrameID, (float)fracpart);
 
     double vertexUpdateTime1 = getSeconds();    
-    updateTimeLog(vertexUpdateTime,vertexUpdateTime1-vertexUpdateTime0);
+    const double vertexUpdateTimeDelta = vertexUpdateTime1-vertexUpdateTime0;
+
+    updateTimeLog(vertexUpdateTime,vertexUpdateTimeDelta);
+
+    if (unlikely(printStats)) std::cout << "vertex update in :   " << vertexUpdateTimeDelta << " ms" << std::endl;
 
     /* =========== */
     /* rebuild bvh */
@@ -451,10 +459,11 @@ namespace embree {
     double buildTime0 = getSeconds();
     rtcCommit(g_scene);      
     double buildTime1 = getSeconds();
+    double buildTimeDelta = buildTime1-buildTime0;
 
-    updateTimeLog(buildTime,buildTime1-buildTime0);
+    updateTimeLog(buildTime,buildTimeDelta);
 
-    if (unlikely(printStats)) std::cout << "bvh rebuild in " << buildTime1-buildTime0 << " ms" << std::endl;
+    if (unlikely(printStats)) std::cout << "bvh rebuild in :     " << buildTimeDelta << " ms" << std::endl;
     
     frameID = (frameID + 1) % numProfileFrames;
   }
@@ -467,11 +476,11 @@ namespace embree {
     std::fstream plot;
     plot.open(name.addExt(".plot"), std::fstream::out | std::fstream::trunc);
 
-    plot << "set terminal png size 2048,600 enhanced" << std::endl;
+    plot << "set terminal png size 1920,1080 enhanced" << std::endl;
     plot << "set output \"" << name.addExt(".png") << "\"" << std::endl;
     plot << "set key inside right top vertical Right noreverse enhanced autotitles box linetype -1 linewidth 1.000" << std::endl;
     plot << "set ylabel \"" << "ms" << "\"" << std::endl;
-    plot << "set yrange [0:20]" << std::endl;
+    plot << "set yrange [0:50]" << std::endl;
     plot << "set ytics 1" << std::endl;
     plot << "factor=1000" << std::endl;
     plot << "plot \"-\" using ($1):(factor*($2)) title \"build time\" with linespoints lw 4,\"-\" using ($1):(factor*($2)) title \"vertex update time\" with linespoints lw 4,\"-\" using ($1):(factor*($2)) title \"render time\" with linespoints lw 4,\"-\" using ($1):(factor*($2)) title \"total time\" with linespoints lw 4" << std::endl;

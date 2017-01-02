@@ -77,6 +77,8 @@ namespace embree
 
       interactive(true),
       fullscreen(false),
+      consoleOutput(true),
+
       window_width(512),
       window_height(512),
       windowID(0),
@@ -633,17 +635,20 @@ namespace embree
     double dt1 = getSeconds()-t0;
 
     /* print frame rate */
-    std::ostringstream stream;
-    stream.setf(std::ios::fixed, std::ios::floatfield);
-    stream.precision(2);
-    stream << "render: ";
-    stream << 1.0f/dt0 << " fps, ";
-    stream << dt0*1000.0f << " ms, ";
-    stream << "display: ";
-    stream << 1.0f/dt1 << " fps, ";
-    stream << dt1*1000.0f << " ms, ";
-    stream << width << "x" << height << " pixels";
-    std::cout << stream.str() << std::endl;
+    if (consoleOutput)
+    {
+      std::ostringstream stream;
+      stream.setf(std::ios::fixed, std::ios::floatfield);
+      stream.precision(2);
+      stream << "render: ";
+      stream << 1.0f/dt0 << " fps, ";
+      stream << dt0*1000.0f << " ms, ";
+      stream << "display: ";
+      stream << 1.0f/dt1 << " fps, ";
+      stream << dt1*1000.0f << " ms, ";
+      stream << width << "x" << height << " pixels";
+      std::cout << stream.str() << std::endl;
+    }
   }
 
   void TutorialApplication::reshapeFunc(int width, int height) 
