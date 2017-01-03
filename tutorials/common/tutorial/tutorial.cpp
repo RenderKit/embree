@@ -602,7 +602,7 @@ namespace embree
     /* draw pixels to screen */
     glDrawPixels(width,height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
     
-    if (fullscreen) 
+    if (fullscreen || !consoleOutput) 
     {
       glMatrixMode( GL_PROJECTION );
       glPushMatrix();
