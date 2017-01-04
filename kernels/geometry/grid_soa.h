@@ -56,8 +56,11 @@ namespace embree
         const GridRange range(0,width-1,0,height-1);
         const size_t nodeBytes = time_steps_global == 1 ? sizeof(BVH4::AlignedNode) : sizeof(BVH4::AlignedNodeMB);
         const size_t bvhBytes  = getBVHBytes(range,nodeBytes,0);
-        const size_t gridBytes = 4*size_t(width)*size_t(height)*sizeof(float);  // 4 bytes of padding after grid required because of off by 1 read below
-        const size_t rootBytes = time_steps_global*sizeof(BVH4::NodeRef);
+        const size_t gridBytes = 4*size_t(width)*size_t(height)*sizeof(float);  
+        size_t rootBytes = time_steps_global*sizeof(BVH4::NodeRef);
+#if !defined(__X86_64__)
+        rootBytes += 4; // We read 2 elements behind the grid. As we store at least 8 root bytes after the grid we are fine in 64 bit mode. But in 32 bit mode we have to do additional padding.
+#endif
         void* data = alloc(offsetof(GridSOA,data)+max(1u,time_steps_global-1)*bvhBytes+time_steps*gridBytes+rootBytes);
         assert(data);
         return new (data) GridSOA(patches,time_steps,time_steps_global,x0,x1,y0,y1,patches->grid_u_res,patches->grid_v_res,scene->getSubdivMesh(patches->geom),bvhBytes,gridBytes,bounds_o);
@@ -161,7 +164,7 @@ namespace embree
         {
 #if LOW_TESSELLATION_LEVEL_FIX == 1
           vfloat4 r0 = vfloat4::loadu(grid + 0*line_offset);
-          vfloat4 r1 = vfloat4::loadu(grid + 1*line_offset); 
+          vfloat4 r1 = vfloat4::loadu(grid + 1*line_offset); // this accesses 2 elements too much in case of 2x2 grid, but this is ok as we ensure enough padding after the grid
           if (unlikely(line_offset == 2))
           {
             r0 = shuffle<0,1,1,1>(r0);
@@ -206,18 +209,20 @@ namespace embree
         {
 #if LOW_TESSELLATION_LEVEL_FIX == 1
           vfloat4 ra = vfloat4::loadu(grid + 0*line_offset);
-          vfloat4 rb = vfloat4::loadu(grid + 1*line_offset);
-          vfloat4 rc = vfloat4::loadu(grid + 2*line_offset); 
+          vfloat4 rb = vfloat4::loadu(grid + 1*line_offset); // this accesses 2 elements too much in case of 2x2 grid, but this is ok as we ensure enough padding after the grid
+          vfloat4 rc;
+          if (likely(lines > 2)) 
+            rc = vfloat4::loadu(grid + 2*line_offset);
+          else                   
+            rc = rb;
+
           if (unlikely(line_offset == 2))
           {
             ra = shuffle<0,1,1,1>(ra);
             rb = shuffle<0,1,1,1>(rb);
             rc = shuffle<0,1,1,1>(rc);
           }
-          if (unlikely(lines == 2))
-          {
-            rc = rb;
-          }
+          
 #else
           const vfloat4 ra = vfloat4::loadu(grid + 0*line_offset);
           const vfloat4 rb = vfloat4::loadu(grid + 1*line_offset);
