@@ -463,13 +463,17 @@ namespace embree
         /* either use alignedMalloc or os_reserve/os_commit */
         if (!osAllocation)
         {
+          const size_t defaultAlignment = 64;
 #if defined(__AVX512F__)
-          /* need full page alignment on xeon phi to ensure 2M pages*/
-          ptr = alignedMalloc(bytesReserve,PAGE_SIZE_2M);         
-          assert(((size_t)ptr % PAGE_SIZE_2M) == 0);
+          /* need full page alignment on xeon phi to ensure 2M pages, better waste some space than to lose lot of performance */
+          const size_t alignmentSizeThreshold = 2 * PAGE_SIZE_2M; // 2 * 2M = 4M
+          const size_t alignment = (bytesReserve >= alignmentSizeThreshold) ? PAGE_SIZE_2M : defaultAlignment;
+          ptr = alignedMalloc(bytesReserve,alignment);         
 #else
           /* slightly reduces rendering performance on xeon 3-5% */
-          ptr = alignedMalloc(bytesReserve,PAGE_SIZE);         
+          const size_t alignmentSizeThreshold = 8 * PAGE_SIZE; // 8 * 4k = 32k
+          const size_t alignment = (bytesReserve >= alignmentSizeThreshold) ? PAGE_SIZE : defaultAlignment;
+          ptr = alignedMalloc(bytesReserve,alignment);         
 #endif
           assert(ptr);
           os_advise(ptr,bytesReserve); 

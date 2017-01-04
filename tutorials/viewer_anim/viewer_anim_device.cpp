@@ -16,7 +16,7 @@
 
 /* hack to quickly enable use 8-wide ray initialization and rtcIntersectNM */
 
-#define VECTOR_MODE 1
+#define VECTOR_MODE 0
 
 #if VECTOR_MODE  == 1
 #define __SSE4_2__
@@ -401,7 +401,7 @@ namespace embree {
     for (size_t i=0;i<TILE_SIZE_Y;i++) 
     {
       factor[i] = vfloat8::load(&shadowDistanceMap[(y0+i)*width+x0]);
-      //factor[i] = select(factor[i] < 1.0f, vfloat8(0.0f), factor[i]);
+      factor[i] = select(factor[i] < 1.0f, vfloat8(0.0f), factor[i]);
     }
 
     for (unsigned int x=x0;x<x1;x++)
@@ -412,7 +412,7 @@ namespace embree {
 
         const int min_y = max((int)y-FILTER_WIDTH,0);
         const int max_y = min((int)y+FILTER_WIDTH,(int)height);
-#if 1
+#if 0
         if (factor[y-y0][x-x0] < 1.0f)
         {
           int dist = 0;
@@ -608,7 +608,7 @@ namespace embree {
     const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
     const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
 
-#if 0
+#if VECTOR_MODE == 0
 
     parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
         for (size_t i=range.begin(); i<range.end(); i++)
