@@ -16,7 +16,7 @@
 
 /* hack to quickly enable use 8-wide ray initialization and rtcIntersectNM */
 
-#define VECTOR_MODE 0
+#define VECTOR_MODE 1
 
 #if VECTOR_MODE  == 1
 #define __SSE4_2__
@@ -388,6 +388,8 @@ namespace embree {
     assert(TILE_SIZE_X == 8);
     assert(TILE_SIZE_Y == 8);
 
+    const int FILTER_WIDTH = 4;
+
     const unsigned int tileY = taskIndex / numTilesX;
     const unsigned int tileX = taskIndex - tileY * numTilesX;
     const unsigned int x0 = tileX * TILE_SIZE_X;
@@ -395,11 +397,42 @@ namespace embree {
     const unsigned int y0 = tileY * TILE_SIZE_Y;
     const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
+    vfloat8 factor[TILE_SIZE_Y];
+    for (size_t i=0;i<TILE_SIZE_Y;i++) 
+    {
+      factor[i] = vfloat8::load(&shadowDistanceMap[(y0+i)*width+x0]);
+      //factor[i] = select(factor[i] < 1.0f, vfloat8(0.0f), factor[i]);
+    }
+
+    for (unsigned int x=x0;x<x1;x++)
+      for (unsigned int y=y0;y<y1;y++)
+      {
+        const int min_x = max((int)x-FILTER_WIDTH,0);
+        const int max_x = min((int)x+FILTER_WIDTH,(int)width);
+
+        const int min_y = max((int)y-FILTER_WIDTH,0);
+        const int max_y = min((int)y+FILTER_WIDTH,(int)height);
+#if 1
+        if (factor[y-y0][x-x0] < 1.0f)
+        {
+          int dist = 0;
+          for (int mx=min_x;mx<max_x;mx++)
+            for (int my=min_y;my<max_y;my++,values++)
+              value += shadowDistanceMap[y*width+x];
+          factor[y-y0][x-x0] = value / (float)values;
+        }
+        //else
+        //factor[y-y0][x-x0] = 0.0f;
+#endif            
+      }
+
     for (unsigned int i=0; i<TILE_SIZE_Y; i++) 
     {
-      const vbool8 mask = vfloat8::load(&shadowDistanceMap[(y0+i)*width+x0]) == 1.0f;
       const vint8 rgb = vint8::load(&pixels[(y0+i)*width+x0]);
-      vint8::storeu(&pixels[(y0+i)*width+x0],select(mask,rgb,vint8(zero)));
+      const vint8 r = vint8(vfloat8((rgb >>  0) & 0xff) * factor[i]);
+      const vint8 g = vint8(vfloat8((rgb >>  8) & 0xff) * factor[i]);
+      const vint8 b = vint8(vfloat8((rgb >> 16) & 0xff) * factor[i]);
+      vint8::storeu(&pixels[(y0+i)*width+x0],(b << 16) + (g << 8) + r);
     }      
     
   }
@@ -575,7 +608,7 @@ namespace embree {
     const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
     const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
 
-#if 1
+#if 0
 
     parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
         for (size_t i=range.begin(); i<range.end(); i++)
