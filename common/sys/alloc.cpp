@@ -111,23 +111,7 @@ namespace embree
   {
 #if defined(MADV_HUGEPAGE)
     if (isHugePageCandidate(bytes)) 
-    {
       madvise(pptr,bytes,MADV_HUGEPAGE); 
-#if 0
-      int r = madvise(pptr,bytes,MADV_HUGEPAGE); 
-
-      if (r == -1)
-      {
-        perror("error");
-        PRINT(pptr);
-        PRINT((size_t)pptr % PAGE_SIZE_2M);
-        PRINT(bytes);
-        PRINT((size_t)bytes % PAGE_SIZE_2M);
-        //exit(0);
-        //assert(false);
-      }
-#endif
-    }
 #endif
   }
   
