@@ -24,7 +24,7 @@
 #include "../subdiv/tessellation_cache.h"
 #include "subdivpatch1cached.h"
 
-#define LOW_TESSELLTION_LEVEL_FIX 1
+#define LOW_TESSELLATION_LEVEL_FIX 1
 
 namespace embree
 {
@@ -49,7 +49,7 @@ namespace embree
         if (y1-y0 < 2 && y0 > 0) y0--;
         const unsigned width = x1-x0+1;  
         const unsigned height = y1-y0+1; 
-#if LOW_TESSELLTION_LEVEL_FIX != 1
+#if LOW_TESSELLATION_LEVEL_FIX != 1
         assert(width >= 3);
         assert(height >= 3);
 #endif
@@ -159,7 +159,7 @@ namespace embree
         
         static __forceinline const Vec3<vfloat4> gather(const float* const grid, const size_t line_offset, const size_t lines)
         {
-#if LOW_TESSELLTION_LEVEL_FIX == 1
+#if LOW_TESSELLATION_LEVEL_FIX == 1
           vfloat4 r0 = vfloat4::loadu(grid + 0*line_offset);
           vfloat4 r1 = vfloat4::loadu(grid + 1*line_offset); 
           if (unlikely(line_offset == 2))
@@ -204,7 +204,7 @@ namespace embree
         
         static __forceinline const Vec3<vfloat8> gather(const float* const grid, const size_t line_offset, const size_t lines)
         {
-#if LOW_TESSELLTION_LEVEL_FIX == 1
+#if LOW_TESSELLATION_LEVEL_FIX == 1
           vfloat4 ra = vfloat4::loadu(grid + 0*line_offset);
           vfloat4 rb = vfloat4::loadu(grid + 1*line_offset);
           vfloat4 rc = vfloat4::loadu(grid + 2*line_offset); 
