@@ -75,7 +75,7 @@ namespace embree
       const float length_ray_dir = length(dir);
       for (size_t i=0; i<numJacobianIterations; i++) 
       {
-        const Vec3fa Q = org + t*dir;
+        const Vec3fa Q = madd(Vec3fa(t),dir,org);
         //const Vec3fa dQdu = zero;
         const Vec3fa dQdt = dir;
 
@@ -116,7 +116,7 @@ namespace embree
           if (t < ray.tnear || t > ray.tfar) return false;
           if (u < 0.0f || u > 1.0f) return false;
           const Vec3fa R = normalize(Q-P);
-          const Vec3fa U = dPdu+dPdu.w*R;
+          const Vec3fa U = madd(Vec3fa(dPdu.w),R,dPdu);
           const Vec3fa V = cross(dPdu,R);
           BezierGeometryHit hit(t,u,cross(V,U));
           return epilog(hit);
@@ -361,7 +361,7 @@ namespace embree
 
         /* move ray closer to make intersection stable */
         const float dt = dot(0.25f*(v0+v1+v2+v3)-ray.org,ray.dir)*rcp(dot(ray.dir,ray.dir));
-        const Vec3fa ref(ray.org+dt*ray.dir,0.0f);
+        const Vec3fa ref(madd(Vec3fa(dt),ray.dir,ray.org),0.0f);
         const Vec3fa p0 = v0-ref;
         const Vec3fa p1 = v1-ref;
         const Vec3fa p2 = v2-ref;
@@ -401,7 +401,7 @@ namespace embree
 
         /* move ray closer to make intersection stable */
         const float dt = dot(0.25f*(v0+v1+v2+v3)-ray.org,ray.dir)*rcp(dot(ray.dir,ray.dir));
-        const Vec3fa ref(ray.org+dt*ray.dir,0.0f);
+        const Vec3fa ref(madd(Vec3fa(dt),ray.dir,ray.org),0.0f);
         const Vec3fa p0 = v0-ref;
         const Vec3fa p1 = v1-ref;
         const Vec3fa p2 = v2-ref;
