@@ -668,13 +668,11 @@ namespace embree
       __forceinline size_t intersectNode(const typename BVHN<N>::UnalignedNodeMB* node, const TravRay<N,N>& ray, 
                                          const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist)
     {
-      const vfloat<N> t0 = vfloat<N>(1.0f)-time, t1 = time;
-
       const AffineSpaceT<LinearSpace3<Vec3<vfloat<N>>>> xfm = node->space0;
       const Vec3<vfloat<N>> b0_lower = zero;
       const Vec3<vfloat<N>> b0_upper = one;
-      const Vec3<vfloat<N>> lower = t0*b0_lower + t1*node->b1.lower;
-      const Vec3<vfloat<N>> upper = t0*b0_upper + t1*node->b1.upper;
+      const Vec3<vfloat<N>> lower = lerp(b0_lower,node->b1.lower,vfloat<N>(time));
+      const Vec3<vfloat<N>> upper = lerp(b0_upper,node->b1.upper,vfloat<N>(time));
 
       const BBox<Vec3<vfloat<N>>> bounds(lower,upper);
       const Vec3<vfloat<N>> dir = xfmVector(xfm,ray.dir);
