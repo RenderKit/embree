@@ -170,6 +170,11 @@ namespace embree
     return Vec4<T>(select(s,t.x,f.x),select(s,t.y,f.y),select(s,t.z,f.z),select(s,t.w,f.w));
   }
 
+  template<typename T>
+    __forceinline Vec4<T> lerp(const Vec4<T>& v0, const Vec4<T>& v1, const T& t) {
+    return madd(Vec4<T>(T(1.0f)-t),v0,t*v1);
+  }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////
