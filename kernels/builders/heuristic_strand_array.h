@@ -113,7 +113,7 @@ namespace embree
           return Split(inf,axis0,axis1);
       
         /*! calculate sah for the split */
-        const float sah = float(lnum)*halfArea(lbounds) + float(rnum)*halfArea(rbounds);
+        const float sah = madd(float(lnum),halfArea(lbounds),float(rnum)*halfArea(rbounds));
         return Split(sah,axis0,axis1);
       }
 
@@ -204,7 +204,7 @@ namespace embree
           return Split(inf,axis0,axis1);
       
         /*! calculate sah for the split */
-        const float sah = float(info.lnum)*halfArea(info.lbounds) + float(info.rnum)*halfArea(info.rbounds);
+        const float sah = madd(float(info.lnum),halfArea(info.lbounds),float(info.rnum)*halfArea(info.rbounds));
         return Split(sah,axis0,axis1);
       }
       
