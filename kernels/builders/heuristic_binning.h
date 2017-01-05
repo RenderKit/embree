@@ -494,7 +494,7 @@ namespace embree
         const vfloat16 dx = r_max_x - r_min_x;
         const vfloat16 dy = r_max_y - r_min_y;
         const vfloat16 dz = r_max_z - r_min_z;
-        const vfloat16 area_rl = dx*dy+dx*dz+dy*dz;
+        const vfloat16 area_rl = madd(dx,dy,madd(dx,dz,dy*dz));
         return area_rl;
       }
 
@@ -514,7 +514,7 @@ namespace embree
         const vfloat16 dx = r_max_x - r_min_x;
         const vfloat16 dy = r_max_y - r_min_y;
         const vfloat16 dz = r_max_z - r_min_z;
-        const vfloat16 area_lr = dx*dy+dx*dz+dy*dz;
+        const vfloat16 area_lr = madd(dx,dy,madd(dx,dz,dy*dz));
         return area_lr;
       }
 
