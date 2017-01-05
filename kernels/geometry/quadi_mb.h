@@ -90,7 +90,7 @@ namespace embree
       const Vec3fa v1 = *(Vec3fa*)mesh->vertexPtr(v[index],itime+1);
       const Vec3<T> p0(v0.x,v0.y,v0.z);
       const Vec3<T> p1(v1.x,v1.y,v1.z);
-      return (T(one)-ftime)*p0 + ftime*p1;
+      return lerp(p0,p1,ftime);
     }
 
     /* gather the quads */
