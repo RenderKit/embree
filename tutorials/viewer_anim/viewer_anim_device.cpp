@@ -17,6 +17,7 @@
 /* hack to quickly enable use 8-wide ray initialization and rtcIntersectNM */
 
 #define VECTOR_MODE 0
+#define ENABLE_ANIM 1
 
 #if VECTOR_MODE  == 1
 #define __SSE4_2__
@@ -58,6 +59,8 @@ namespace embree {
   /* shadow distance map */
 
   float *shadowDistanceMap = NULL;
+  float *zBuffer = NULL;
+
 
   void dumpBuildAndRenderTimes();
 
@@ -341,6 +344,8 @@ namespace embree {
         const Vec3<vfloat8> ray_dir(vfloat8::load(rays[i].dirx),vfloat8::load(rays[i].diry),vfloat8::load(rays[i].dirz));
         const Vec3<vfloat8> ray_org(vfloat8::load(rays[i].orgx),vfloat8::load(rays[i].orgy),vfloat8::load(rays[i].orgz));
         const vfloat8 ray_dist(vfloat8::load(rays[i].tfar));
+        
+        vfloat8::storeu(&zBuffer[(y0+i)*width+x0],ray_dist);
 
         const Vec3<vfloat8> pos = ray_org + ray_dir * ray_dist;
         const Vec3<vfloat8> shadow_dir = pos - shadow_org;
@@ -388,7 +393,6 @@ namespace embree {
     assert(TILE_SIZE_X == 8);
     assert(TILE_SIZE_Y == 8);
 
-    const int FILTER_WIDTH = 4;
 
     const unsigned int tileY = taskIndex / numTilesX;
     const unsigned int tileX = taskIndex - tileY * numTilesX;
@@ -401,28 +405,88 @@ namespace embree {
     for (size_t i=0;i<TILE_SIZE_Y;i++) 
     {
       factor[i] = vfloat8::load(&shadowDistanceMap[(y0+i)*width+x0]);
-      factor[i] = select(factor[i] < 1.0f, vfloat8(0.0f), factor[i]);
+      //factor[i] = select(factor[i] < 1.0f, vfloat8(0.0f), factor[i]);
+      factor[i] = select(factor[i] < 1.0f, vfloat8(0.0f), vfloat8(1.0f));
     }
 
     for (unsigned int x=x0;x<x1;x++)
       for (unsigned int y=y0;y<y1;y++)
       {
-        const int min_x = max((int)x-FILTER_WIDTH,0);
-        const int max_x = min((int)x+FILTER_WIDTH,(int)width);
 
-        const int min_y = max((int)y-FILTER_WIDTH,0);
-        const int max_y = min((int)y+FILTER_WIDTH,(int)height);
-#if 0
-        if (factor[y-y0][x-x0] < 1.0f)
+        const int x_p1 = min((int)x+1,(int)width);
+        const int x_m1 = max((int)x-1,0);
+
+        const int y_p1 = min((int)y+1,(int)height);
+        const int y_m1 = max((int)y-1,0);
+
+        const float z_xy = zBuffer[y*width+x];
+        float z_dx = min(abs(z_xy-zBuffer[y*width+x_m1]),abs(z_xy-zBuffer[y*width+x_p1]));
+        float z_dy = max(abs(z_xy-zBuffer[y_m1*width+x]),abs(z_xy-zBuffer[y_p1*width+x]));
+        if (z_dx < z_dy) z_dy = z_dx;
+        if (z_dy < z_dx) z_dx = z_dy;
+
+#if 1
+        if (shadowDistanceMap[y*width+x] < 1.0f)
         {
-          int dist = 0;
+          int FILTER_WIDTH = max((int)( (1.0f - shadowDistanceMap[y*width+x]) * 0.5f / z_xy),1);
+          FILTER_WIDTH = min(FILTER_WIDTH,8);
+
+
+          const int min_x = max((int)x-FILTER_WIDTH,0);
+          const int max_x = min((int)x+FILTER_WIDTH,(int)width);
+
+          const int min_y = max((int)y-FILTER_WIDTH,0);
+          const int max_y = min((int)y+FILTER_WIDTH,(int)height);
+
+
+
+          int min_sqrdist = 2*FILTER_WIDTH*FILTER_WIDTH;
+          size_t validTests = 0;
+#if 1
           for (int mx=min_x;mx<max_x;mx++)
-            for (int my=min_y;my<max_y;my++,values++)
-              value += shadowDistanceMap[y*width+x];
-          factor[y-y0][x-x0] = value / (float)values;
+            for (int my=min_y;my<max_y;my++)
+              if (mx != x && my != y && shadowDistanceMap[my*width+mx] == 1.0f)
+              {
+                const int stepsx = std::abs(mx-(int)x);
+                const int stepsy = std::abs(my-(int)y);
+                const float deltaz = abs(zBuffer[my*width+mx] - z_xy);
+                if (deltaz >= stepsx * z_dx + stepsy * z_dy + 1E-3f) continue; 
+                validTests++;
+                const int sqrdist = (mx-x)*(mx-x)+(my-y)*(my-y);
+                if ( sqrdist < min_sqrdist) min_sqrdist = sqrdist;
+              }
+#else
+          for (int mx=min_x;mx<max_x;mx++)
+            if (mx != x && shadowDistanceMap[y*width+mx] == 1.0f)
+              {
+                const int stepsx = std::abs(mx-(int)x);
+                const float deltaz = abs(zBuffer[y*width+mx] - z_xy);
+                if (deltaz >= stepsx * z_dx + 1E-3f) continue; 
+                validTests++;
+
+                const int sqrdist = (mx-x)*(mx-x);
+                if ( sqrdist < min_sqrdist) min_sqrdist = sqrdist;
+              }
+          for (int my=min_y;my<max_y;my++)
+            if (my != y && shadowDistanceMap[my*width+x] == 1.0f)
+              {
+                const int stepsy = std::abs(my-(int)y);
+                const float deltaz = abs(zBuffer[my*width+x] - z_xy);
+                if (deltaz >= stepsy * z_dy + 1E-3f) continue; 
+                validTests++;
+
+                const int sqrdist = (my-y)*(my-y);
+                if ( sqrdist < min_sqrdist) min_sqrdist = sqrdist;
+              }
+
+#endif
+          if (min_sqrdist == 2*FILTER_WIDTH*FILTER_WIDTH || validTests <= 3)
+            factor[y-y0][x-x0] = 0.0f;
+          else
+          {
+            factor[y-y0][x-x0] = 1.0f - (float)sqrtf(min_sqrdist) / sqrtf(2*FILTER_WIDTH*FILTER_WIDTH);
+          }
         }
-        //else
-        //factor[y-y0][x-x0] = 0.0f;
 #endif            
       }
 
@@ -592,12 +656,15 @@ namespace embree {
     assert(frameID < vertexUpdateTime.size());
     assert(frameID < buildTime.size());
 
-    /* ========================== */
-    /* create shadow distance map */
-    /* ========================== */
+    /* ======================================= */
+    /* create shadow distance map and z-buffer */
+    /* ======================================= */
 
     if (!shadowDistanceMap)
       shadowDistanceMap = (float*) alignedMalloc(width*height*sizeof(float),64);
+
+    if (!zBuffer)
+      zBuffer = (float*) alignedMalloc(width*height*sizeof(float),64);
 
 
     /* ============ */
@@ -615,7 +682,7 @@ namespace embree {
 #if VECTOR_MODE  == 1
           renderTile8x8<false>((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
 #else
-          renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
+        renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
 #endif
       }); 
 
@@ -652,7 +719,11 @@ namespace embree {
     double vertexUpdateTime0 = getSeconds();    
 
     if (animTime < 0.0f) animTime = getSeconds();
+#if ENABLE_ANIM == 0
+    const double atime = 0.0;
+#else
     const double atime = (getSeconds() - animTime) * ANIM_FPS;
+#endif
     double intpart, fracpart;
     fracpart = modf(atime,&intpart);
     const size_t keyFrameID = ((size_t)intpart) % numProfileFrames;    
@@ -716,6 +787,7 @@ namespace embree {
   extern "C" void device_cleanup ()
   {
     if (shadowDistanceMap) alignedFree(shadowDistanceMap);
+    if (zBuffer) alignedFree(zBuffer);
 
     rtcDeleteScene (g_scene); g_scene = nullptr;
     rtcDeleteDevice(g_device); g_device = nullptr;
