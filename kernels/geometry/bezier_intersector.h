@@ -103,7 +103,7 @@ namespace embree
         valid &= (d2 <= r2) & (vfloatx(ray.tnear) < t) & (t < vfloatx(ray.tfar));
 
         /* update hit information */
-         bool ishit = false;
+        bool ishit = false;
         if (unlikely(any(valid))) {
           BezierHit<VSIZEX> hit(valid,u,0.0f,t,0,N,v0,v1,v2,v3);
           ishit = ishit | epilog(valid,hit);
