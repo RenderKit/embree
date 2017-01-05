@@ -95,6 +95,15 @@ namespace embree
   template<typename T> __forceinline Vec4<T> min(const Vec4<T>& a, const Vec4<T>& b) { return Vec4<T>(min(a.x, b.x), min(a.y, b.y), min(a.z, b.z), min(a.w, b.w)); }
   template<typename T> __forceinline Vec4<T> max(const Vec4<T>& a, const Vec4<T>& b) { return Vec4<T>(max(a.x, b.x), max(a.y, b.y), max(a.z, b.z), max(a.w, b.w)); }
 
+   ////////////////////////////////////////////////////////////////////////////////
+  /// Ternary Operators
+  ////////////////////////////////////////////////////////////////////////////////
+
+  template<typename T> __forceinline const Vec4<T> madd  ( const Vec4<T>& a, const Vec4<T>& b, const Vec4<T>& c) { return Vec4<T>( madd(a.x,b.x,c.x), madd(a.y,b.y,c.y), madd(a.z,b.z,c.z), madd(a.w,b.w,c.w)); }
+  template<typename T> __forceinline const Vec4<T> msub  ( const Vec4<T>& a, const Vec4<T>& b, const Vec4<T>& c) { return Vec4<T>( msub(a.x,b.x,c.x), msub(a.y,b.y,c.y), msub(a.z,b.z,c.z), msub(a.w,b.w,c.w)); }
+  template<typename T> __forceinline const Vec4<T> nmadd ( const Vec4<T>& a, const Vec4<T>& b, const Vec4<T>& c) { return Vec4<T>(nmadd(a.x,b.x,c.x),nmadd(a.y,b.y,c.y),nmadd(a.z,b.z,c.z),nmadd(a.w,b.w,c.w)); }
+  template<typename T> __forceinline const Vec4<T> nmsub ( const Vec4<T>& a, const Vec4<T>& b, const Vec4<T>& c) { return Vec4<T>(nmsub(a.x,b.x,c.x),nmsub(a.y,b.y,c.y),nmsub(a.z,b.z,c.z),nmsub(a.w,b.w,c.w)); }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
   ////////////////////////////////////////////////////////////////////////////////
