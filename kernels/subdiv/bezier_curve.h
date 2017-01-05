@@ -78,19 +78,17 @@ namespace embree
 
     __forceinline Vertex eval(const float t) const
     {
-      const float t0 = 1.0f - t, t1 = t;
-
       const Vertex p00 = v0;
       const Vertex p01 = v1;
       const Vertex p02 = v2;
       const Vertex p03 = v3;
 
-      const Vertex p10 = p00 * t0 + p01 * t1;
-      const Vertex p11 = p01 * t0 + p02 * t1;
-      const Vertex p12 = p02 * t0 + p03 * t1;
-      const Vertex p20 = p10 * t0 + p11 * t1;
-      const Vertex p21 = p11 * t0 + p12 * t1;
-      const Vertex p30 = p20 * t0 + p21 * t1;
+      const Vertex p10 = lerp(p00,p01,t);
+      const Vertex p11 = lerp(p01,p02,t);
+      const Vertex p12 = lerp(p02,p03,t);
+      const Vertex p20 = lerp(p10,p11,t);
+      const Vertex p21 = lerp(p11,p12,t);
+      const Vertex p30 = lerp(p20,p21,t);
       return p30;
     }
     
@@ -116,24 +114,20 @@ namespace embree
 
     __forceinline void eval(const float t, Vertex& p, Vertex& dp, Vertex& ddp) const
     {
-      const float t0 = 1.0f - t, t1 = t;
-
       const Vertex p00 = v0;
       const Vertex p01 = v1;
       const Vertex p02 = v2;
       const Vertex p03 = v3;
 
-      const Vertex p10 = p00 * t0 + p01 * t1;
-      const Vertex p11 = p01 * t0 + p02 * t1;
-      const Vertex p12 = p02 * t0 + p03 * t1;
-      const Vertex p20 = p10 * t0 + p11 * t1;
-      const Vertex p21 = p11 * t0 + p12 * t1;
-      const Vertex p30 = p20 * t0 + p21 * t1;
+      const Vertex p10 = lerp(p00,p01,t);
+      const Vertex p11 = lerp(p01,p02,t);
+      const Vertex p12 = lerp(p02,p03,t);
+      const Vertex p20 = lerp(p10,p11,t);
+      const Vertex p21 = lerp(p11,p12,t);
+      const Vertex p30 = lerp(p20,p21,t);
       p = p30;
       dp = 3.0f*(p21-p20);
-      //dp = eval_du(t);
       ddp = eval_dudu(t);
-      //ddp = 6.0f*((p30-2.0f*p21+p12)/(1.0f-t) + (p30-2.0f*p20+p10)/t);
     }
 
     friend inline std::ostream& operator<<(std::ostream& cout, const BezierCurveT& curve) {
