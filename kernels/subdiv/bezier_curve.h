@@ -176,108 +176,76 @@ namespace embree
   {
     //using BezierCurveT<Vec3fa>::BezierCurveT; // FIXME: not supported by VS2010
 
-	__forceinline BezierCurve3fa() {}
-	__forceinline BezierCurve3fa(const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const float t0 = 0.0f, const float t1 = 1.0f, const int depth = 0)
+    __forceinline BezierCurve3fa() {}
+    __forceinline BezierCurve3fa(const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const float t0 = 0.0f, const float t1 = 1.0f, const int depth = 0)
       : BezierCurveT<Vec3fa>(v0,v1,v2,v3,t0,t1,depth) {}
-        
-        template<int N>
-          __forceinline BezierCurve4N<N> subdivide(const float u0, const float u1) const
-        {
-          const vfloat<N> lu = vfloat<N>(step)*(1.0f/(N-1));
-          const vfloat<N> vu0 = (vfloat<N>(one)-lu)*u0 + lu*u1;
-          Vec4<vfloat<N>> P0, dP0du; evalN(vu0,P0,dP0du);
-          const Vec4<vfloat<N>>  P3   = Vec4<vfloat<N>>(shift_right_1(P0.x   ),shift_right_1(P0.y   ),shift_right_1(P0.z   ),shift_right_1(P0.w)   );
-          const Vec4<vfloat<N>> dP3du = Vec4<vfloat<N>>(shift_right_1(dP0du.x),shift_right_1(dP0du.y),shift_right_1(dP0du.z),shift_right_1(dP0du.w));
-          const Vec4<vfloat<N>> P1 = P0 + Vec4<vfloat<N>>((u1-u0)/(3.0f*(VSIZEX-1)))*dP0du; 
-          const Vec4<vfloat<N>> P2 = P3 - Vec4<vfloat<N>>((u1-u0)/(3.0f*(VSIZEX-1)))*dP3du;
-          return BezierCurve4N<N>(P0,P1,P2,P3);
-        }
-
+    
+    template<int N>
+      __forceinline BezierCurve4N<N> subdivide(const float u0, const float u1) const
+    {
+      const vfloat<N> lu = vfloat<N>(step)*(1.0f/(N-1));
+      const vfloat<N> vu0 = (vfloat<N>(one)-lu)*u0 + lu*u1;
+      Vec4<vfloat<N>> P0, dP0du; evalN(vu0,P0,dP0du);
+      const Vec4<vfloat<N>>  P3   = Vec4<vfloat<N>>(shift_right_1(P0.x   ),shift_right_1(P0.y   ),shift_right_1(P0.z   ),shift_right_1(P0.w)   );
+      const Vec4<vfloat<N>> dP3du = Vec4<vfloat<N>>(shift_right_1(dP0du.x),shift_right_1(dP0du.y),shift_right_1(dP0du.z),shift_right_1(dP0du.w));
+      const Vec4<vfloat<N>> P1 = P0 + Vec4<vfloat<N>>((u1-u0)/(3.0f*(VSIZEX-1)))*dP0du; 
+      const Vec4<vfloat<N>> P2 = P3 - Vec4<vfloat<N>>((u1-u0)/(3.0f*(VSIZEX-1)))*dP3du;
+      return BezierCurve4N<N>(P0,P1,P2,P3);
+    }
+    
     __forceinline void evalN(const vfloatx& t, Vec4vfx& p, Vec4vfx& dp) const
     {
-#if 1
-      const vfloatx t0 = vfloatx(1.0f) - t, t1 = t;
-
       const Vec4vfx p00 = v0;
       const Vec4vfx p01 = v1;
       const Vec4vfx p02 = v2;
       const Vec4vfx p03 = v3;
 
-      const Vec4vfx p10 = p00 * t0 + p01 * t1;
-      const Vec4vfx p11 = p01 * t0 + p02 * t1;
-      const Vec4vfx p12 = p02 * t0 + p03 * t1;
-      const Vec4vfx p20 = p10 * t0 + p11 * t1;
-      const Vec4vfx p21 = p11 * t0 + p12 * t1;
-      const Vec4vfx p30 = p20 * t0 + p21 * t1;
+      const Vec4vfx p10 = lerp(p00,p01,t);
+      const Vec4vfx p11 = lerp(p01,p02,t);
+      const Vec4vfx p12 = lerp(p02,p03,t);
+      const Vec4vfx p20 = lerp(p10,p11,t);
+      const Vec4vfx p21 = lerp(p11,p12,t);
+      const Vec4vfx p30 = lerp(p20,p21,t);
 
       p = p30;
       dp = vfloatx(3.0f)*(p21-p20);
-#else
-      const vfloatx t0 = 1.0f - t, t1 = t;
-
-      vfloatx A0 = t0 * t0 * t0;
-      vfloatx A1 = 3.0f * t1 * t0 * t0;
-      vfloatx A2 = 3.0f * t1 * t1 * t0;
-      vfloatx A3 = t1 * t1 * t1;
-
-      vfloatx B0 = -3.0f*(t0*t0);
-      vfloatx B1 = -6.0f*(t0*t1) + 3.0f*(t0*t0);
-      vfloatx B2 = +6.0f*(t0*t1) - 3.0f*(t1*t1);
-      vfloatx B3 = +3.0f*(t1*t1);
-
-      p   = A0*Vec4vfx(v0) + A1*Vec4vfx(v1) + A2*Vec4vfx(v2) + A3*Vec4vfx(v3);
-      dp  = B0*Vec4vfx(v0) + B1*Vec4vfx(v1) + B2*Vec4vfx(v2) + B3*Vec4vfx(v3);
-#endif
     }
 
 
-#if defined(__SSE__)
     template<int M>
       __forceinline Vec4<vfloat<M>> eval0(const vbool<M>& valid, const int ofs, const int size) const
     {
       assert(size <= BezierCoefficients::N);
       assert(ofs <= size);
-      Vec4<vfloat<M>> r;
-      r  = Vec4<vfloat<M>>(v0) * vfloat<M>::loadu(&bezier_coeff0.c0[size][ofs]);
-      r += Vec4<vfloat<M>>(v1) * vfloat<M>::loadu(&bezier_coeff0.c1[size][ofs]); // FIXME: use fmadd
-      r += Vec4<vfloat<M>>(v2) * vfloat<M>::loadu(&bezier_coeff0.c2[size][ofs]);
-      r += Vec4<vfloat<M>>(v3) * vfloat<M>::loadu(&bezier_coeff0.c3[size][ofs]);
-      return r;
+      return madd(vfloat<M>::loadu(&bezier_coeff0.c0[size][ofs]), Vec4<vfloat<M>>(v0),
+                  madd(vfloat<M>::loadu(&bezier_coeff0.c1[size][ofs]), Vec4<vfloat<M>>(v1),
+                       madd(vfloat<M>::loadu(&bezier_coeff0.c2[size][ofs]), Vec4<vfloat<M>>(v2),
+                            vfloat<M>::loadu(&bezier_coeff0.c3[size][ofs]) * Vec4<vfloat<M>>(v3))));
     }
-#endif
 
-#if defined(__SSE__)
     template<int M>
       __forceinline Vec4<vfloat<M>> derivative(const vbool<M>& valid, const int ofs, const int size) const
     {
       assert(size <= BezierCoefficients::N);
       assert(ofs <= size);
-      Vec4<vfloat<M>> r;
-      r  = Vec4<vfloat<M>>(v0) * vfloat<M>::loadu(&bezier_coeff0.d0[size][ofs]);
-      r += Vec4<vfloat<M>>(v1) * vfloat<M>::loadu(&bezier_coeff0.d1[size][ofs]); // FIXME: use fmadd
-      r += Vec4<vfloat<M>>(v2) * vfloat<M>::loadu(&bezier_coeff0.d2[size][ofs]);
-      r += Vec4<vfloat<M>>(v3) * vfloat<M>::loadu(&bezier_coeff0.d3[size][ofs]);
-      return r;
+      return madd(vfloat<M>::loadu(&bezier_coeff0.d0[size][ofs]), Vec4<vfloat<M>>(v0),
+                  madd(vfloat<M>::loadu(&bezier_coeff0.d1[size][ofs]), Vec4<vfloat<M>>(v1),
+                       madd(vfloat<M>::loadu(&bezier_coeff0.d2[size][ofs]), Vec4<vfloat<M>>(v2),
+                            vfloat<M>::loadu(&bezier_coeff0.d3[size][ofs]) * Vec4<vfloat<M>>(v3))));
     }
-#endif
-
-#if defined(__SSE__)
+    
     template<int M>
       __forceinline Vec4<vfloat<M>> eval1(const vbool<M>& valid, const int ofs, const int size) const
     {
       assert(size <= BezierCoefficients::N);
       assert(ofs <= size);
-      Vec4<vfloat<M>> r;
-      r  = Vec4<vfloat<M>>(v0) * vfloat<M>::loadu(&bezier_coeff1.c0[size][ofs]);
-      r += Vec4<vfloat<M>>(v1) * vfloat<M>::loadu(&bezier_coeff1.c1[size][ofs]); // FIXME: use fmadd
-      r += Vec4<vfloat<M>>(v2) * vfloat<M>::loadu(&bezier_coeff1.c2[size][ofs]);
-      r += Vec4<vfloat<M>>(v3) * vfloat<M>::loadu(&bezier_coeff1.c3[size][ofs]);
-      return r;
+      return madd(vfloat<M>::loadu(&bezier_coeff1.c0[size][ofs]), Vec4<vfloat<M>>(v0), 
+                  madd(vfloat<M>::loadu(&bezier_coeff1.c1[size][ofs]), Vec4<vfloat<M>>(v1),
+                       madd(vfloat<M>::loadu(&bezier_coeff1.c2[size][ofs]), Vec4<vfloat<M>>(v2),
+                            vfloat<M>::loadu(&bezier_coeff1.c3[size][ofs]) * Vec4<vfloat<M>>(v3))));
     }
-#endif
 
     /* calculates bounds of bezier curve geometry */
-#if defined(__SSE__)
     __forceinline BBox3fa bounds() const
     {
       const int N = 7;
@@ -299,10 +267,8 @@ namespace embree
       const Vec3fa upper_r = Vec3fa(reduce_max(max(-pl.w,pu.w)));
       return enlarge(BBox3fa(lower,upper),upper_r);
     }
-#endif
 
     /* calculates bounds of bezier curve geometry when tessellated into N line segments */
-#if defined(__SSE__)
     __forceinline BBox3fa bounds(int N) const
     {
       if (likely(N == 4))
@@ -337,6 +303,5 @@ namespace embree
         return enlarge(BBox3fa(min(lower,v3),max(upper,v3)),max(upper_r,Vec3fa(abs(v3.w))));
       }
     }
-#endif
   };
 }
