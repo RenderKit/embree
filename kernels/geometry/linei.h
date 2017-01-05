@@ -248,8 +248,8 @@ namespace embree
     gather(a0,a1,geom0,geom1,geom2,geom3,itime);
     Vec4vf4 b0,b1;
     gather(b0,b1,geom0,geom1,geom2,geom3,itime+1);
-    p0 = t0 * a0 + t1 * b0;
-    p1 = t0 * a1 + t1 * b1;
+    p0 = madd(Vec4vf4(t0),a0,t1*b0);
+    p1 = madd(Vec4vf4(t0),a1,t1*b1);
   }
 
   template<int M>
