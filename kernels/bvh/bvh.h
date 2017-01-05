@@ -906,17 +906,17 @@ namespace embree
         init_dim(node.lower_z,node.upper_z,lower_z,upper_z,start.z,scale.z);
       }
 
-      __forceinline vfloat<N> dequantizeLowerX() const { return vfloat<N>(start.x) + vfloat<N>(vint<N>::load(lower_x)) * scale.x; }
+      __forceinline vfloat<N> dequantizeLowerX() const { return madd(vfloat<N>(vint<N>::load(lower_x)),scale.x,vfloat<N>(start.x)); }
 
-      __forceinline vfloat<N> dequantizeUpperX() const { return vfloat<N>(start.x) + vfloat<N>(vint<N>::load(upper_x)) * scale.x; }
+      __forceinline vfloat<N> dequantizeUpperX() const { return madd(vfloat<N>(vint<N>::load(upper_x)),scale.x,vfloat<N>(start.x)); }
 
-      __forceinline vfloat<N> dequantizeLowerY() const { return vfloat<N>(start.y) + vfloat<N>(vint<N>::load(lower_y)) * scale.y; }
+      __forceinline vfloat<N> dequantizeLowerY() const { return madd(vfloat<N>(vint<N>::load(lower_y)),scale.y,vfloat<N>(start.y)); }
 
-      __forceinline vfloat<N> dequantizeUpperY() const { return vfloat<N>(start.y) + vfloat<N>(vint<N>::load(upper_y)) * scale.y; }
+      __forceinline vfloat<N> dequantizeUpperY() const { return madd(vfloat<N>(vint<N>::load(upper_y)),scale.y,vfloat<N>(start.y)); }
 
-      __forceinline vfloat<N> dequantizeLowerZ() const { return vfloat<N>(start.z) + vfloat<N>(vint<N>::load(lower_z)) * scale.z; }
+      __forceinline vfloat<N> dequantizeLowerZ() const { return madd(vfloat<N>(vint<N>::load(lower_z)),scale.z,vfloat<N>(start.z)); }
 
-      __forceinline vfloat<N> dequantizeUpperZ() const { return vfloat<N>(start.z) + vfloat<N>(vint<N>::load(upper_z)) * scale.z; }
+      __forceinline vfloat<N> dequantizeUpperZ() const { return madd(vfloat<N>(vint<N>::load(upper_z)),scale.z,vfloat<N>(start.z)); }
 
       template <int M>
       __forceinline vfloat<M> dequantize(const size_t offset) const { return vfloat<M>(vint<M>::loadu(all_planes+offset)); }
