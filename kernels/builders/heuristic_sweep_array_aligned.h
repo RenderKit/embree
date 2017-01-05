@@ -181,8 +181,8 @@ namespace embree
               const size_t blocks_add = (1 << logBlockSize)-1;
               const size_t lCount = (numLeft +blocks_add) >> logBlockSize;
               const size_t rCount = (numRight+blocks_add) >> logBlockSize;
-              const float sah =  lArea*lCount + rArea*rCount;
-			  if (centroid[dim][i - 1].v != centroid[dim][i].v)
+              const float sah =  madd(lArea,lCount,rArea*rCount);
+              if (centroid[dim][i - 1].v != centroid[dim][i].v)
               if (unlikely(sah < bestSAH)) {
                 bestDim = (int)dim;
                 bestPos = (int)i;
