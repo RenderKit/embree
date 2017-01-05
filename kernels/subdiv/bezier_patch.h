@@ -24,25 +24,23 @@ namespace embree
   template<class T, class S>
     static __forceinline T deCasteljau(const S& uu, const T& v0, const T& v1, const T& v2, const T& v3)
   {
-    const S one_minus_uu = 1.0f - uu;      
-    const T v0_1 = one_minus_uu * v0   + uu * v1;
-    const T v1_1 = one_minus_uu * v1   + uu * v2;
-    const T v2_1 = one_minus_uu * v2   + uu * v3;      
-    const T v0_2 = one_minus_uu * v0_1 + uu * v1_1;
-    const T v1_2 = one_minus_uu * v1_1 + uu * v2_1;      
-    const T v0_3 = one_minus_uu * v0_2 + uu * v1_2;
+    const T v0_1 = lerp(v0,v1,uu);
+    const T v1_1 = lerp(v1,v2,uu);
+    const T v2_1 = lerp(v2,v3,uu);
+    const T v0_2 = lerp(v0_1,v1_1,uu);
+    const T v1_2 = lerp(v1_1,v2_1,uu);
+    const T v0_3 = lerp(v0_2,v1_2,uu);
     return v0_3;
   }
   
   template<class T, class S>
     static __forceinline T deCasteljau_tangent(const S& uu, const T& v0, const T& v1, const T& v2, const T& v3)
   {
-    const S one_minus_uu = 1.0f - uu;      
-    const T v0_1         = one_minus_uu * v0   + uu * v1;
-    const T v1_1         = one_minus_uu * v1   + uu * v2;
-    const T v2_1         = one_minus_uu * v2   + uu * v3;      
-    const T v0_2         = one_minus_uu * v0_1 + uu * v1_1;
-    const T v1_2         = one_minus_uu * v1_1 + uu * v2_1;      
+    const T v0_1 = lerp(v0,v1,uu);
+    const T v1_1 = lerp(v1,v2,uu);
+    const T v2_1 = lerp(v2,v3,uu);
+    const T v0_2 = lerp(v0_1,v1_1,uu);
+    const T v1_2 = lerp(v1_1,v2_1,uu);
     return S(3.0f)*(v1_2-v0_2);
   }
 
