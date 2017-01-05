@@ -35,7 +35,7 @@ uniform bool g_subdiv_mode = false;
 #define FIXED_EDGE_TESSELLATION_VALUE 3
 
 #define MAX_EDGE_LEVEL 64.0f
-#define MIN_EDGE_LEVEL  1.0f
+#define MIN_EDGE_LEVEL  4.0f
 #define LEVEL_FACTOR   64.0f
 
 inline uniform float updateEdgeLevel( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, const uniform size_t e0, const uniform size_t e1)
