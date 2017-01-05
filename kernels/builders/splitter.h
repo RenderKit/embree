@@ -47,7 +47,7 @@ namespace embree
         if ((v0d < pos && pos < v1d) || (v1d < pos && pos < v0d)) // the edge crosses the splitting location
         {
           assert((v1d-v0d) != 0.0f);
-          const Vec3fa c = v0 + (pos-v0d)*inv_length[i][dim]*(v1-v0);
+          const Vec3fa c = madd(Vec3fa((pos-v0d)*inv_length[i][dim]),v1-v0,v0);
           left.extend(c);
           right.extend(c);
         }
@@ -81,7 +81,7 @@ namespace embree
         {
           assert((v1d-v0d) != 0.0f);
           const float inv_length = 1.0f/(v1d-v0d);
-          const Vec3fa c = v0 + (pos-v0d)*inv_length*(v1-v0);
+          const Vec3fa c = madd(Vec3fa((pos-v0d)*inv_length),v1-v0,v0);
           left.extend(c);
           right.extend(c);
         }
