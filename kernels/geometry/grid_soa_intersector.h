@@ -66,8 +66,8 @@ namespace embree
           const Vec2<vfloat<K>> uv0 = GridSOA::decodeUV(uv00);
           const Vec2<vfloat<K>> uv1 = GridSOA::decodeUV(uv01);
           const Vec2<vfloat<K>> uv2 = GridSOA::decodeUV(uv10);
-          const Vec2<vfloat<K>> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;
-          u = uv[0];v = uv[1];
+          const Vec2<vfloat<K>> uv = madd(u,uv1,madd(v,uv2,(1.0f-u-v)*uv0));
+          u = uv[0]; v = uv[1];
         }
       };
 
@@ -87,8 +87,8 @@ namespace embree
           const Vec2<vfloat<K>> uv0 = GridSOA::decodeUV(uv10);
           const Vec2<vfloat<K>> uv1 = GridSOA::decodeUV(uv01);
           const Vec2<vfloat<K>> uv2 = GridSOA::decodeUV(uv11);
-          const Vec2<vfloat<K>> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;
-          u = uv[0];v = uv[1];
+          const Vec2<vfloat<K>> uv = madd(u,uv1,madd(v,uv2,(1.0f-u-v)*uv0));
+          u = uv[0]; v = uv[1];
         }
       };
 

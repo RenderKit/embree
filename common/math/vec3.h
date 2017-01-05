@@ -107,6 +107,11 @@ namespace embree
   template<typename T> __forceinline const Vec3<T> nmadd ( const Vec3<T>& a, const Vec3<T>& b, const Vec3<T>& c) { return Vec3<T>(nmadd(a.x,b.x,c.x),nmadd(a.y,b.y,c.y),nmadd(a.z,b.z,c.z));}
   template<typename T> __forceinline const Vec3<T> nmsub ( const Vec3<T>& a, const Vec3<T>& b, const Vec3<T>& c) { return Vec3<T>(nmsub(a.x,b.x,c.x),nmsub(a.y,b.y,c.y),nmsub(a.z,b.z,c.z)); }
 
+  template<typename T> __forceinline const Vec3<T> madd  ( const T& a, const Vec3<T>& b, const Vec3<T>& c) { return Vec3<T>( madd(a,b.x,c.x), madd(a,b.y,c.y), madd(a,b.z,c.z)); }
+  template<typename T> __forceinline const Vec3<T> msub  ( const T& a, const Vec3<T>& b, const Vec3<T>& c) { return Vec3<T>( msub(a,b.x,c.x), msub(a,b.y,c.y), msub(a,b.z,c.z)); }
+  template<typename T> __forceinline const Vec3<T> nmadd ( const T& a, const Vec3<T>& b, const Vec3<T>& c) { return Vec3<T>(nmadd(a,b.x,c.x),nmadd(a,b.y,c.y),nmadd(a,b.z,c.z));}
+  template<typename T> __forceinline const Vec3<T> nmsub ( const T& a, const Vec3<T>& b, const Vec3<T>& c) { return Vec3<T>(nmsub(a,b.x,c.x),nmsub(a,b.y,c.y),nmsub(a,b.z,c.z)); }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
   ////////////////////////////////////////////////////////////////////////////////
