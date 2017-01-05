@@ -873,8 +873,8 @@ namespace embree
         vint<N> i_ceil_upper ( ceil_upper  );
 
         /* lower/upper correction */
-        vbool<N> m_lower_correction = ((minF + vfloat<N>(i_floor_lower) * scale_diff) > lower) & m_valid;
-        vbool<N> m_upper_correction = ((minF + vfloat<N>(i_ceil_upper) * scale_diff) < upper) & m_valid;
+        vbool<N> m_lower_correction = ((madd(vfloat<N>(i_floor_lower),scale_diff,minF)) > lower) & m_valid;
+        vbool<N> m_upper_correction = ((madd(vfloat<N>(i_ceil_upper),scale_diff,minF)) < upper) & m_valid;
         i_floor_lower  = select(m_lower_correction,i_floor_lower-1,i_floor_lower);
         i_ceil_upper   = select(m_upper_correction,i_ceil_upper +1,i_ceil_upper);
 
@@ -891,8 +891,8 @@ namespace embree
 #if 0
         vfloat<N> extract_lower( vint<N>::load(lower_quant) );
         vfloat<N> extract_upper( vint<N>::load(upper_quant) );
-        vfloat<N> final_extract_lower = minF + extract_lower * scale_diff;
-        vfloat<N> final_extract_upper = minF + extract_upper * scale_diff;
+        vfloat<N> final_extract_lower = madd(extract_lower,scale_diff,minF);
+        vfloat<N> final_extract_upper = madd(extract_upper,scale_diff,minF);
         assert( (movemask(final_extract_lower <= lower ) & movemask(m_valid)) == movemask(m_valid));
         assert( (movemask(final_extract_upper >= upper ) & movemask(m_valid)) == movemask(m_valid));
 #endif
