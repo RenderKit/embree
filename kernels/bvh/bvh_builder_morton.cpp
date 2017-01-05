@@ -50,6 +50,10 @@ namespace embree
         AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode),BVH::byteNodeAlignment); 
         *current.parent = BVH::encodeNode(node);
         node->clear();
+#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+		/* need pragma as code generation with VS 2015 + AVX2 is otherwise buggy for this loop */
+#pragma loop(no_vector)
+#endif
         for (size_t i=0; i<numChildren; i++)
           children[i].parent = &node->child(i);
         return node;

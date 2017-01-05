@@ -17,6 +17,7 @@
 #include "config.h"
 #include "alloc.h"
 #include "intrinsics.h"
+#include "sysinfo.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Windows Platform
@@ -64,6 +65,11 @@ namespace embree
     if (!VirtualFree(ptr,0,MEM_RELEASE))
       /*throw std::bad_alloc()*/ return;  // we on purpose do not throw an exception when an error occurs, to avoid throwing an exception during error handling
   }
+
+  void os_advise(void *ptr, size_t bytes)
+  {
+  }
+
 }
 #endif
 
@@ -79,8 +85,6 @@ namespace embree
 #include <string.h>
 
 #define UPGRADE_TO_2M_PAGE_LIMIT (256*1024) 
-#define PAGE_SIZE_2M (2*1024*1024)
-#define PAGE_SIZE_4K (4*1024)
 
 namespace embree
 {
@@ -103,10 +107,11 @@ namespace embree
 #endif
 
   /* hint for transparent huge pages (THP) */
-  void os_madvise(void *ptr, size_t bytes)
+  void os_advise(void *pptr, size_t bytes)
   {
 #if defined(MADV_HUGEPAGE)
-    madvise(ptr,bytes,MADV_HUGEPAGE); 
+    if (isHugePageCandidate(bytes)) 
+      madvise(pptr,bytes,MADV_HUGEPAGE); 
 #endif
   }
   
@@ -149,8 +154,7 @@ namespace embree
     if (ptr == nullptr || ptr == MAP_FAILED) throw std::bad_alloc();
 
     /* advise huge page hint for THP */
-    os_madvise(ptr,bytes);
-
+    os_advise(ptr,bytes);
     return ptr;
   }
 

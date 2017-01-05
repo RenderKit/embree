@@ -14,13 +14,34 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "scenegraph.h"
+#include "../common/tutorial/tutorial.h"
 
 namespace embree
 {
-  Ref<SceneGraph::Node> loadOBJ(const FileName& fileName, 
-                                const bool subdivMode = false,
-                                const bool combineIntoSingleObject = false);
+  extern "C" { int g_instancing_mode = 0; }
+
+  struct Tutorial : public SceneLoadingTutorialApplication
+  {
+    Tutorial()
+      : SceneLoadingTutorialApplication("viewer_anim",FEATURE_RTCORE) {
+      consoleOutput = false;
+    }
+    
+    void postParseCommandLine() 
+    {
+      /* load default scene if none specified */
+      // if (sceneFilename.ext() == "") {
+      //   FileName file = FileName::executableFolder() + FileName("models/cornell_box.ecs");
+      //   parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path());
+      // }
+      
+      g_instancing_mode = instancing_mode;
+    }
+  };
+
+}
+
+int main(int argc, char** argv) {
+  int t = embree::Tutorial().main(argc,argv);
+  return t;
 }

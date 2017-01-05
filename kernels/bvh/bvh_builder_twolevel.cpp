@@ -134,6 +134,9 @@ namespace embree
         /* open all large nodes */
         refs.resize(nextRef);
         open_sequential(numPrimitives); 
+        //open_overlap(numPrimitives); 
+        // PRINT(numPrimitives);
+        // PRINT(refs.size());
         /* compute PrimRefs */
         prims.resize(refs.size());
 
@@ -236,6 +239,54 @@ namespace embree
           ref.prefetch();
       }
 #endif
+
+      std::make_heap(refs.begin(),refs.end());
+      while (refs.size()+3 <= num)
+      {
+        std::pop_heap (refs.begin(),refs.end()); 
+        NodeRef ref = refs.back().node;
+        if (ref.isLeaf()) break;
+        refs.pop_back();    
+        
+        AlignedNode* node = ref.alignedNode();
+        for (size_t i=0; i<N; i++) {
+          if (node->child(i) == BVH::emptyNode) continue;
+          refs.push_back(BuildRef(node->bounds(i),node->child(i)));
+         
+#if 1
+          NodeRef ref_pre = node->child(i);
+          if (ref_pre.isAlignedNode())
+            ref_pre.prefetch();
+#endif
+          std::push_heap (refs.begin(),refs.end()); 
+        }
+      }
+    }
+
+    template<int N, typename Mesh>
+    void BVHNBuilderTwoLevel<N,Mesh>::open_overlap(size_t numPrimitives)
+    {
+      if (refs.size() == 0)
+	return;
+
+      size_t num = min(numPrimitives/400,size_t(MAX_OPEN_SIZE));
+      refs.reserve(num);
+
+#if 1
+      for (size_t i=0;i<refs.size();i++)
+      {
+        NodeRef ref = refs.back().node;
+        if (ref.isAlignedNode())
+          ref.prefetch();
+      }
+#endif
+
+      for (size_t i=0;i<refs.size();i++)
+        for (size_t j=i+1;j<refs.size();j++)
+        {
+          //std::cout << "i " << i << " j " << j << " -> " << disjoint(refs[i].bounds(),refs[j].bounds()) << std::endl;
+        }
+
 
       std::make_heap(refs.begin(),refs.end());
       while (refs.size()+3 <= num)

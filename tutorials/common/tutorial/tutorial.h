@@ -96,6 +96,8 @@ namespace embree
     /* window settings */
     bool interactive;
     bool fullscreen;
+    bool consoleOutput;
+
     unsigned window_width;
     unsigned window_height;
     int windowID;
@@ -127,6 +129,7 @@ namespace embree
     bool convert_bezier_to_lines;
     bool convert_hair_to_curves;
     FileName sceneFilename;
+    std::vector<FileName> keyFramesFilenames;
     int instancing_mode;
     std::string subdiv_mode;
   };

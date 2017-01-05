@@ -77,6 +77,8 @@ namespace embree
 
       interactive(true),
       fullscreen(false),
+      consoleOutput(true),
+
       window_width(512),
       window_height(512),
       windowID(0),
@@ -88,6 +90,7 @@ namespace embree
       mouseMode(0),
       clickX(0), clickY(0),
       speed(1.0f)
+
   {
     /* only a single instance of this class is supported */
     assert(instance == nullptr);
@@ -215,6 +218,26 @@ namespace embree
     registerOption("i", [this] (Ref<ParseStream> cin, const FileName& path) {
         sceneFilename = path + cin->getFileName();
       }, "-i <filename>: parses scene from <filename>");
+
+    registerOption("animlist", [this] (Ref<ParseStream> cin, const FileName& path) {
+        FileName listFilename = path + cin->getFileName();
+
+        std::ifstream listFile;
+        listFile.open(listFilename.c_str());
+        if (!listFile.is_open()) {
+          THROW_RUNTIME_ERROR("cannot open " + listFilename.str());
+        }
+        else
+        {
+          while (!listFile.eof())
+          {
+            std::string line;
+            listFile >> line;
+            if (line != "")
+              keyFramesFilenames.push_back(listFilename.path() + line);
+          }
+        }
+      }, "-animlist <filename>: parses a sequence of .obj/.xml files listed in <filename> and adds them to the scene");
     
     registerOption("convert-triangles-to-quads", [this] (Ref<ParseStream> cin, const FileName& path) {
         convert_tris_to_quads = true;
@@ -579,7 +602,7 @@ namespace embree
     /* draw pixels to screen */
     glDrawPixels(width,height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
     
-    if (fullscreen) 
+    if (fullscreen || !consoleOutput) 
     {
       glMatrixMode( GL_PROJECTION );
       glPushMatrix();
@@ -612,17 +635,20 @@ namespace embree
     double dt1 = getSeconds()-t0;
 
     /* print frame rate */
-    std::ostringstream stream;
-    stream.setf(std::ios::fixed, std::ios::floatfield);
-    stream.precision(2);
-    stream << "render: ";
-    stream << 1.0f/dt0 << " fps, ";
-    stream << dt0*1000.0f << " ms, ";
-    stream << "display: ";
-    stream << 1.0f/dt1 << " fps, ";
-    stream << dt1*1000.0f << " ms, ";
-    stream << width << "x" << height << " pixels";
-    std::cout << stream.str() << std::endl;
+    if (consoleOutput)
+    {
+      std::ostringstream stream;
+      stream.setf(std::ios::fixed, std::ios::floatfield);
+      stream.precision(2);
+      stream << "render: ";
+      stream << 1.0f/dt0 << " fps, ";
+      stream << dt0*1000.0f << " ms, ";
+      stream << "display: ";
+      stream << 1.0f/dt1 << " fps, ";
+      stream << dt1*1000.0f << " ms, ";
+      stream << width << "x" << height << " pixels";
+      std::cout << stream.str() << std::endl;
+    }
   }
 
   void TutorialApplication::reshapeFunc(int width, int height) 
@@ -676,7 +702,9 @@ namespace embree
     
     /* benchmark mode */
     if (numBenchmarkFrames)
+    {
       renderBenchmark();
+    }
     
     /* render to disk */
     if (outputImageFilename.str() != "")
@@ -714,7 +742,6 @@ namespace embree
 
     /* start tutorial */
     run(argc,argv);
-
     return 0;
   }  
   catch (const std::exception& e) {
@@ -732,14 +759,32 @@ namespace embree
     parseCommandLine(argc,argv);
 
     /* callback */
-    postParseCommandLine();
+    try {
+      postParseCommandLine();
+    }
+    catch (const std::exception& e) {
+      std::cout << "Error: " << e.what() << std::endl;
+    }
 
     /* load scene */
-    if (toLowerCase(sceneFilename.ext()) == std::string("obj"))
-      scene->add(loadOBJ(sceneFilename,subdiv_mode != ""));
-    else if (sceneFilename.ext() != "")
-      scene->add(SceneGraph::load(sceneFilename));
+    if (sceneFilename != "")
+    {
+      if (toLowerCase(sceneFilename.ext()) == std::string("obj"))
+        scene->add(loadOBJ(sceneFilename,subdiv_mode != ""));
+      else if (sceneFilename.ext() != "")
+        scene->add(SceneGraph::load(sceneFilename));
+    }
 
+    /* load key frames for animation */
+    for (size_t i=0;i<keyFramesFilenames.size();i++)
+    {
+      std::cout << "Adding ["<< keyFramesFilenames[i] << "] to scene..." << std::flush;
+      if (toLowerCase(keyFramesFilenames[i].ext()) == std::string("obj"))
+        scene->add(loadOBJ(keyFramesFilenames[i],subdiv_mode != "",true));
+      else if (keyFramesFilenames[i].ext() != "")
+        scene->add(SceneGraph::load(keyFramesFilenames[i]));
+      std::cout << "done" << std::endl << std::flush;
+    }
     /* convert triangles to quads */
     if (convert_tris_to_quads)
       scene->triangles_to_quads();

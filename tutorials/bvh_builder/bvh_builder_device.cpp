@@ -69,7 +69,7 @@ namespace embree
     size_t N = pinfo.size();
     
     /* fast allocator that supports thread local operation */
-    FastAllocator allocator(nullptr);
+    FastAllocator allocator(nullptr,false);
     
     for (size_t i=0; i<2; i++)
     {
@@ -131,7 +131,7 @@ namespace embree
       morton_src[i].index = i;
     
     /* fast allocator that supports thread local operation */
-    FastAllocator allocator(nullptr);
+    FastAllocator allocator(nullptr,true);
     
     for (size_t i=0; i<2; i++)
     {
