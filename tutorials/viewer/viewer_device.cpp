@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2016 Intel Corporation                                    //
+// Copyright 2009-2017 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -37,7 +37,7 @@ bool g_subdiv_mode = false;
 #define FIXED_EDGE_TESSELLATION_VALUE 3
 
 #define MAX_EDGE_LEVEL 64.0f
-#define MIN_EDGE_LEVEL  1.0f
+#define MIN_EDGE_LEVEL  4.0f
 #define LEVEL_FACTOR   64.0f
 
 inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const size_t e0, const size_t e1)
