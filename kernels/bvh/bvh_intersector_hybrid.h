@@ -39,7 +39,7 @@ namespace embree
       typedef Vec3<vfloat<K>> Vec3vfK;
       typedef Vec3<vint<K>> Vec3viK;
 
-      static const size_t stackSizeChunk = N*BVH::maxDepth+1;
+      static const size_t stackSizeChunk = 1+(N-1)*BVH::maxDepth;
 
       static const size_t switchThreshold = (K==4)  ? 3 :
                                             (K==8)  ? ((N==4) ? 5 : 7) :

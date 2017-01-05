@@ -494,10 +494,6 @@ namespace embree
       typedef typename BVH::AlignedNodeMB AlignedNodeMB;
       typedef Vec3<vfloat<K>> Vec3vfK;
       typedef Vec3<vint<K>> Vec3viK;
-      static const size_t stackSize = 
-        1+(N-1)*BVH::maxDepth+   // standard depth
-        1+(N-1)*BVH::maxDepth;   // transform feature
-
 
       // =============================================================================================
       // =============================================================================================
@@ -824,7 +820,6 @@ namespace embree
       // =============================================================================================
       // =============================================================================================
 
-      static const size_t stackSizeChunk  = N*BVH::maxDepth+1;
       static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
 
       static void intersectCoherentSOA(BVH* bvh, RayK<K>** inputRays, size_t numValidStreams, IntersectContext* context);
