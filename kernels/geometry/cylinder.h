@@ -83,17 +83,17 @@ namespace embree
         
         /* calculates u and Ng for near hit */
         {
-          u0_o = (Oz+t0*dOz)*rl;
+          u0_o = madd(t0,dOz,Oz)*rl;
           const Vec3fa Pr = t_o.lower*dir;
-          const Vec3fa Pl = p0 + u0_o*(p1-p0);
+          const Vec3fa Pl = madd(u0_o,p1-p0,p0);
           Ng0_o = Pr-Pl;
         }
 
         /* calculates u and Ng for far hit */
         {
-          u1_o = (Oz+t1*dOz)*rl;
+          u1_o = madd(t1,dOz,Oz)*rl;
           const Vec3fa Pr = t_o.lower*dir;
-          const Vec3fa Pl = p0 + u1_o*(p1-p0);
+          const Vec3fa Pl = madd(u1_o,p1-p0,p0);
           Ng1_o = Pr-Pl;
         }
 
@@ -196,17 +196,17 @@ namespace embree
         
         /* calculates u and Ng for near hit */
         {
-          u0_o = (Oz+t0*dOz)*rl;
+          u0_o = madd(t0,dOz,Oz)*rl;
           const Vec3vfN Pr = t0*Vec3vfN(dir);
-          const Vec3vfN Pl = p0 + u0_o*(p1-p0);
+          const Vec3vfN Pl = madd(u0_o,p1-p0,p0);
           Ng0_o = Pr-Pl;
         }
         
         /* calculates u and Ng for far hit */
         {
-          u1_o = (Oz+t1*dOz)*rl;
+          u1_o = madd(t1,dOz,Oz)*rl;
           const Vec3vfN Pr = t1*Vec3vfN(dir);
-          const Vec3vfN Pl = p0 + u1_o*(p1-p0);
+          const Vec3vfN Pl = madd(u1_o,p1-p0,p0);
           Ng1_o = Pr-Pl;
         }
 
