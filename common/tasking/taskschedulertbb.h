@@ -26,9 +26,15 @@
 
 #if defined(__WIN32__)
 #  define NOMINMAX
-#  if defined(__clang__) && !defined(__INTEL_COMPILER) 
-#    define __MINGW64__ 1
-#  endif
+
+// Clang under Windows need some hacks to make TBB work
+/*#  if defined(__clang__)
+#    if defined(__X86_64__)
+#      define __MINGW64__ 1
+#    else
+#      define __MINGW32__ 1
+#    endif
+#  endif*/
 #endif
 
 #if defined(__clang__) && !defined(__INTEL_COMPILER)

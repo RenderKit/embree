@@ -318,6 +318,7 @@ __forceinline std::string toString(long long value) {
 #pragma clang diagnostic ignored "-Wmicrosoft-enum-value"
 #pragma clang diagnostic ignored "-Wmicrosoft-include"
 #pragma clang diagnostic ignored "-Wunused-function"
+#pragma clang diagnostic ignored "-Wunknown-pragmas"
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
