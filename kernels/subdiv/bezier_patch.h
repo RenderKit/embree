@@ -66,8 +66,8 @@ namespace embree
       const T t  = u;
       const T s  = 1.0f - u;
       const T n0 = -3.0f*(s*s);
-      const T n1 = -6.0f*(s*t) + 3.0f*(s*s);
-      const T n2 = +6.0f*(s*t) - 3.0f*(t*t);
+      const T n1 = madd(-6.0f,s*t,3.0f*(s*s));
+      const T n2 = msub(+6.0f,s*t,3.0f*(t*t));
       const T n3 = 3.0f*(t*t);
       return Vec4<T>(n0,n1,n2,n3);
     }
@@ -78,8 +78,8 @@ namespace embree
       const T t1 = u;
       const T t0 = 1.0f - t1;
       const T n0 = 6.0f*t0;
-      const T n1 = 6.0f*t1 - 12.0f*t0;
-      const T n2 = 6.0f*t0 - 12.0f*t1;
+      const T n1 = msub(6.0f,t1,12.0f*t0);
+      const T n2 = msub(6.0f,t0,12.0f*t1);
       const T n3 = 6.0f*t1;
       return Vec4<T>(n0,n1,n2,n3);
     }
