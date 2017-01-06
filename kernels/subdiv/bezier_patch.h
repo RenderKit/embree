@@ -329,8 +329,8 @@ namespace embree
           }
         }
       }
-    
-    template<class T>
+
+    template<typename T>
       static __forceinline Vec3<T> eval(const Vertex matrix[4][4], const T& uu, const T& vv) 
     {      
       const T one_minus_uu = 1.0f - uu;
@@ -346,23 +346,23 @@ namespace embree
       const T B3_v = vv * vv * vv;
       
       const T x = 
-	(B0_u * matrix[0][0].x + B1_u * matrix[0][1].x + B2_u * matrix[0][2].x + B3_u * matrix[0][3].x) * B0_v + 
-	(B0_u * matrix[1][0].x + B1_u * matrix[1][1].x + B2_u * matrix[1][2].x + B3_u * matrix[1][3].x) * B1_v + 
-	(B0_u * matrix[2][0].x + B1_u * matrix[2][1].x + B2_u * matrix[2][2].x + B3_u * matrix[2][3].x) * B2_v + 
-	(B0_u * matrix[3][0].x + B1_u * matrix[3][1].x + B2_u * matrix[3][2].x + B3_u * matrix[3][3].x) * B3_v; 
-      
+        madd(B0_v,madd(B0_u,matrix[0][0].x,madd(B1_u,matrix[0][1].x,madd(B2_u,matrix[0][2].x,B3_u*matrix[0][3].x))), 
+        madd(B1_v,madd(B0_u,matrix[1][0].x,madd(B1_u,matrix[1][1].x,madd(B2_u,matrix[1][2].x,B3_u*matrix[1][3].x))),
+        madd(B2_v,madd(B0_u,matrix[2][0].x,madd(B1_u,matrix[2][1].x,madd(B2_u,matrix[2][2].x,B3_u*matrix[2][3].x))),
+             B3_v*madd(B0_u,matrix[3][0].x,madd(B1_u,matrix[3][1].x,madd(B2_u,matrix[3][2].x,B3_u*matrix[3][3].x)))))); 
+
       const T y = 
-	(B0_u * matrix[0][0].y + B1_u * matrix[0][1].y + B2_u * matrix[0][2].y + B3_u * matrix[0][3].y) * B0_v + 
-	(B0_u * matrix[1][0].y + B1_u * matrix[1][1].y + B2_u * matrix[1][2].y + B3_u * matrix[1][3].y) * B1_v + 
-	(B0_u * matrix[2][0].y + B1_u * matrix[2][1].y + B2_u * matrix[2][2].y + B3_u * matrix[2][3].y) * B2_v + 
-	(B0_u * matrix[3][0].y + B1_u * matrix[3][1].y + B2_u * matrix[3][2].y + B3_u * matrix[3][3].y) * B3_v; 
+        madd(B0_v,madd(B0_u,matrix[0][0].y,madd(B1_u,matrix[0][1].y,madd(B2_u,matrix[0][2].y,B3_u*matrix[0][3].y))), 
+        madd(B1_v,madd(B0_u,matrix[1][0].y,madd(B1_u,matrix[1][1].y,madd(B2_u,matrix[1][2].y,B3_u*matrix[1][3].y))),
+        madd(B2_v,madd(B0_u,matrix[2][0].y,madd(B1_u,matrix[2][1].y,madd(B2_u,matrix[2][2].y,B3_u*matrix[2][3].y))),
+             B3_v*madd(B0_u,matrix[3][0].y,madd(B1_u,matrix[3][1].y,madd(B2_u,matrix[3][2].y,B3_u*matrix[3][3].y)))))); 
       
       const T z = 
-	(B0_u * matrix[0][0].z + B1_u * matrix[0][1].z + B2_u * matrix[0][2].z + B3_u * matrix[0][3].z) * B0_v + 
-	(B0_u * matrix[1][0].z + B1_u * matrix[1][1].z + B2_u * matrix[1][2].z + B3_u * matrix[1][3].z) * B1_v + 
-	(B0_u * matrix[2][0].z + B1_u * matrix[2][1].z + B2_u * matrix[2][2].z + B3_u * matrix[2][3].z) * B2_v + 
-	(B0_u * matrix[3][0].z + B1_u * matrix[3][1].z + B2_u * matrix[3][2].z + B3_u * matrix[3][3].z) * B3_v; 
-            
+        madd(B0_v,madd(B0_u,matrix[0][0].z,madd(B1_u,matrix[0][1].z,madd(B2_u,matrix[0][2].z,B3_u*matrix[0][3].z))), 
+        madd(B1_v,madd(B0_u,matrix[1][0].z,madd(B1_u,matrix[1][1].z,madd(B2_u,matrix[1][2].z,B3_u*matrix[1][3].z))),
+        madd(B2_v,madd(B0_u,matrix[2][0].z,madd(B1_u,matrix[2][1].z,madd(B2_u,matrix[2][2].z,B3_u*matrix[2][3].z))),
+             B3_v*madd(B0_u,matrix[3][0].z,madd(B1_u,matrix[3][1].z,madd(B2_u,matrix[3][2].z,B3_u*matrix[3][3].z)))))); 
+      
       return Vec3<T>(x,y,z);
     }
 
