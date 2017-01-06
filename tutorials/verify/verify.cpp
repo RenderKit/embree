@@ -66,15 +66,11 @@ namespace embree
 
   bool regex_match(std::string str, std::string regex)
   {
-#if (defined(__MACOSX__) && defined(__INTEL_COMPILER) && (__INTEL_COMPILER < 1600)) // works around __ZTVNSt3__123__match_any_but_newlineIcEE link error
+#if (defined(__INTEL_COMPILER) && (__INTEL_COMPILER < 1600)) // works around __ZTVNSt3__123__match_any_but_newlineIcEE link error
+    return str == regex; 
+#elif defined(__GNUC__) && !defined(__clang__) && (__GNUC__ <= 4) && (__GNUC_MINOR__ < 8) // workaround for older gcc version
     return str == regex; 
 #else
-
-#if defined(__GNUC__) && !defined(__clang__)
-#if (__GNUC__ <= 4) && (__GNUC_MINOR__ < 8) // workaround for older gcc version
-    return str == regex; 
-#endif
-#endif
     std::smatch match; std::regex regexpr(regex);
     return std::regex_match(str, match, regexpr);
 #endif
