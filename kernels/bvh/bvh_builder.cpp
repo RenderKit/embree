@@ -179,51 +179,14 @@ namespace embree
       return std::make_tuple(root,root_bounds);
     }
 
-    // ========================================================================================================================================================
-    // ========================================================================================================================================================
-    // ========================================================================================================================================================
-
-    template<int N>
-    void BVHNBuilderSweep<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
-    {
-      //bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-
-      auto progressFunc = [&] (size_t dn) { 
-        progress_in(dn); 
-      };
-            
-      auto createLeafFunc = [&] (const BVHBuilderSweepSAH::BuildRecord& current, Allocator* alloc) -> size_t {
-        return createLeaf(current,alloc);
-      };
-      
-      NodeRef root;
-      BVHBuilderSweepSAH::build_reduce<NodeRef>
-        (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateAlignedNode(bvh),rotate<N>,createLeafFunc,progressFunc,
-         prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
-
-      bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
-      
-      bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
-    }
-
-
-
-
-    // ========================================================================================================================================================
-    // ========================================================================================================================================================
-    // ========================================================================================================================================================
-
-
     template struct BVHNBuilder<4>;
     template struct BVHNBuilderQuantized<4>;
     template struct BVHNBuilderMblur<4>;    
-    template struct BVHNBuilderSweep<4>;
 
 #if defined(__AVX__)
     template struct BVHNBuilder<8>;
     template struct BVHNBuilderQuantized<8>;
     template struct BVHNBuilderMblur<8>;
-    template struct BVHNBuilderSweep<8>;
 #endif
   }
 }
