@@ -80,7 +80,7 @@ namespace embree
           const vfloat<M> d0 = madd(w.x,v.x,w.y*v.y);
           const vfloat<M> d1 = madd(v.x,v.x,v.y*v.y);
           const vfloat<M> u = clamp(d0*rcp(d1),vfloat<M>(zero),vfloat<M>(one));
-          const Vec4vfM p = madd(Vec4vfM(u),v,p0);
+          const Vec4vfM p = madd(u,v,p0);
           const vfloat<M> t = p.z*pre.depth_scale;
           const vfloat<M> d2 = madd(p.x,p.x,p.y*p.y);
           const vfloat<M> r = p.w;
@@ -138,7 +138,7 @@ namespace embree
           const vfloat<M> d0 = madd(w.x,v.x,w.y*v.y);
           const vfloat<M> d1 = madd(v.x,v.x,v.y*v.y);
           const vfloat<M> u = clamp(d0*rcp(d1),vfloat<M>(zero),vfloat<M>(one));
-          const Vec4vfM p = p0 + u*v;
+          const Vec4vfM p = madd(u,v,p0);
           const vfloat<M> t = p.z*pre.depth_scale[k];
           const vfloat<M> d2 = madd(p.x,p.x,p.y*p.y);
           const vfloat<M> r = p.w;
