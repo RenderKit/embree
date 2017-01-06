@@ -830,12 +830,12 @@ namespace embree
       __forceinline BBox3fa bounds(size_t i) const
       {
         assert(i < N);
-        const Vec3fa lower(start.x + scale.x * (float)lower_x[i],
-                           start.y + scale.y * (float)lower_y[i],
-                           start.z + scale.z * (float)lower_z[i]);
-        const Vec3fa upper(start.x + scale.x * (float)upper_x[i],
-                           start.y + scale.y * (float)upper_y[i],
-                           start.z + scale.z * (float)upper_z[i]);
+        const Vec3fa lower(madd(scale.x,(float)lower_x[i],start.x),
+                           madd(scale.y,(float)lower_y[i],start.y),
+                           madd(scale.z,(float)lower_z[i],start.z));
+        const Vec3fa upper(madd(scale.x,(float)upper_x[i],start.x),
+                           madd(scale.y,(float)upper_y[i],start.y),
+                           madd(scale.z,(float)upper_z[i],start.z));
         return BBox3fa(lower,upper);
       }
 
