@@ -720,39 +720,11 @@ namespace embree
       const T B3_u = uu * uu * uu;
       const T B3_v = vv * vv * vv;
 
-      const T B0_u_00_x = B0_u * matrix[0][0].x;
-      const T B1_u_01_x = B1_u * matrix[0][1].x;
-      const T B2_u_02_x = B2_u * matrix[0][2].x;
-      const T B3_u_03_x = B3_u * matrix[0][3].x;
-
-      const T B0_u_10_x = B0_u * matrix[1][0].x;
-      const T B1_u_11_x = B1_u * F0.x;
-      const T B2_u_12_x = B2_u * F1.x;
-      const T B3_u_13_x = B3_u * matrix[1][3].x;
-
-      const T B0_u_20_x = B0_u * matrix[2][0].x;
-      const T B1_u_21_x = B1_u * F3.x;
-      const T B2_u_22_x = B2_u * F2.x;
-      const T B3_u_23_x = B3_u * matrix[2][3].x;
-
-      const T B0_u_30_x = B0_u * matrix[3][0].x;
-      const T B1_u_31_x = B1_u * matrix[3][1].x;
-      const T B2_u_32_x = B2_u * matrix[3][2].x;
-      const T B3_u_33_x = B3_u * matrix[3][3].x;
-
-#if 0      
       const T x = madd(B0_v,madd(B0_u,matrix[0][0].x,madd(B1_u,matrix[0][1].x,madd(B2_u,matrix[0][2].x,B3_u * matrix[0][3].x))), 
                   madd(B1_v,madd(B0_u,matrix[1][0].x,madd(B1_u,F0.x          ,madd(B2_u,F1.x          ,B3_u * matrix[1][3].x))), 
                   madd(B2_v,madd(B0_u,matrix[2][0].x,madd(B1_u,F3.x          ,madd(B2_u,F2.x          ,B3_u * matrix[2][3].x))), 
                        B3_v*madd(B0_u,matrix[3][0].x,madd(B1_u,matrix[3][1].x,madd(B2_u,matrix[3][2].x,B3_u * matrix[3][3].x)))))); 
-#else
-      const T N0_v_x = ((B0_u_00_x + B2_u_02_x) + (B1_u_01_x + B3_u_03_x)) * B0_v;
-      const T N1_v_x = ((B0_u_10_x + B2_u_12_x) + (B1_u_11_x + B3_u_13_x)) * B1_v;
-      const T N2_v_x = ((B0_u_20_x + B2_u_22_x) + (B1_u_21_x + B3_u_23_x)) * B2_v;
-      const T N3_v_x = ((B0_u_30_x + B2_u_32_x) + (B1_u_31_x + B3_u_33_x)) * B3_v;
-      const T x = (N0_v_x + N2_v_x) + (N1_v_x + N3_v_x);
 
-#endif      
       const T y = madd(B0_v,madd(B0_u,matrix[0][0].y,madd(B1_u,matrix[0][1].y,madd(B2_u,matrix[0][2].y,B3_u * matrix[0][3].y))),
                   madd(B1_v,madd(B0_u,matrix[1][0].y,madd(B1_u,F0.y          ,madd(B2_u,F1.y          ,B3_u * matrix[1][3].y))),
                   madd(B2_v,madd(B0_u,matrix[2][0].y,madd(B1_u,F3.y          ,madd(B2_u,F2.y          ,B3_u * matrix[2][3].y))),
