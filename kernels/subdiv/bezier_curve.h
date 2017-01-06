@@ -96,20 +96,20 @@ namespace embree
     {
       const float t0 = 1.0f - t, t1 = t;
       const float B0 = -(t0*t0);
-      const float B1 = -2.0f*(t0*t1) + (t0*t0);
-      const float B2 = +2.0f*(t0*t1) - (t1*t1);
+      const float B1 = madd(-2.0f,t0*t1,t0*t0);
+      const float B2 = msub(+2.0f,t0*t1,t1*t1);
       const float B3 = +(t1*t1);
-      return 3.0f*(B0*v0 + B1*v1 + B2*v2 + B3*v3);
+      return 3.0f*(madd(B0,v0,madd(B1,v1,madd(B2,v2,B3*v3))));
     }
 
     __forceinline Vertex eval_dudu(const float t) const
     {
       const float t0 = 1.0f - t, t1 = t;
       const float C0 = t0;
-      const float C1 = t1 - 2.0f*t0;
-      const float C2 = t0 - 2.0f*t1;
+      const float C1 = madd(-2.0f,t0,t1);
+      const float C2 = madd(-2.0f,t1,t0);
       const float C3 = t1;
-      return 6.0f*(C0*v0 + C1*v1 + C2*v2 + C3*v3);
+      return 6.0f*(madd(C0,v0,madd(C1,v1,madd(C2,v2,C3*v3))));
     }
 
     __forceinline void eval(const float t, Vertex& p, Vertex& dp, Vertex& ddp) const
