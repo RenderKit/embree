@@ -46,7 +46,7 @@ namespace embree
       const T n1 = -t*t - 4.0f*(t*s);
       const T n2 =  s*s + 4.0f*(s*t);
       const T n3 =  t*t;
-      return Vec4<T>(3.0f*n0,3.0f*n1,3.0f*n2,3.0f*n3);
+      return T(3.0f)*Vec4<T>(n0,n1,n2,n3);
     }
 
     template<class T>
@@ -58,7 +58,7 @@ namespace embree
       const T n1 = t - 2.0f*s;
       const T n2 = s - 2.0f*t;
       const T n3 = t;
-      return Vec4<T>(6.0f*n0,6.0f*n1,6.0f*n2,6.0f*n3);
+      return T(6.0f)*Vec4<T>(n0,n1,n2,n3);
     }
   };
 
@@ -258,73 +258,73 @@ namespace embree
       __forceinline Vertex eval(const float uu, const float vv) const
       {
         const Vec4f v_n = BSplineBasis::eval(vv);
-        const Vertex_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
-        const Vertex_t curve1 = v_n[0] * v[0][1] + v_n[1] * v[1][1] + v_n[2] * v[2][1] + v_n[3] * v[3][1];
-        const Vertex_t curve2 = v_n[0] * v[0][2] + v_n[1] * v[1][2] + v_n[2] * v[2][2] + v_n[3] * v[3][2];
-        const Vertex_t curve3 = v_n[0] * v[0][3] + v_n[1] * v[1][3] + v_n[2] * v[2][3] + v_n[3] * v[3][3];
+        const Vertex_t curve0 = madd(v_n[0],v[0][0],madd(v_n[1],v[1][0],madd(v_n[2],v[2][0],v_n[3] * v[3][0])));
+        const Vertex_t curve1 = madd(v_n[0],v[0][1],madd(v_n[1],v[1][1],madd(v_n[2],v[2][1],v_n[3] * v[3][1])));
+        const Vertex_t curve2 = madd(v_n[0],v[0][2],madd(v_n[1],v[1][2],madd(v_n[2],v[2][2],v_n[3] * v[3][2])));
+        const Vertex_t curve3 = madd(v_n[0],v[0][3],madd(v_n[1],v[1][3],madd(v_n[2],v[2][3],v_n[3] * v[3][3])));
         
         const Vec4f u_n = BSplineBasis::eval(uu);
-        return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * (1.0f/36.0f);
+        return madd(u_n[0],curve0,madd(u_n[1],curve1,madd(u_n[2],curve2,u_n[3] * curve3))) * (1.0f/36.0f);
       }
       
       __forceinline Vertex eval_du(const float uu, const float vv) const
       {
         const Vec4f v_n = BSplineBasis::eval(vv);
-        const Vertex_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
-        const Vertex_t curve1 = v_n[0] * v[0][1] + v_n[1] * v[1][1] + v_n[2] * v[2][1] + v_n[3] * v[3][1];
-        const Vertex_t curve2 = v_n[0] * v[0][2] + v_n[1] * v[1][2] + v_n[2] * v[2][2] + v_n[3] * v[3][2];
-        const Vertex_t curve3 = v_n[0] * v[0][3] + v_n[1] * v[1][3] + v_n[2] * v[2][3] + v_n[3] * v[3][3];
+        const Vertex_t curve0 = madd(v_n[0],v[0][0],madd(v_n[1],v[1][0],madd(v_n[2],v[2][0],v_n[3] * v[3][0])));
+        const Vertex_t curve1 = madd(v_n[0],v[0][1],madd(v_n[1],v[1][1],madd(v_n[2],v[2][1],v_n[3] * v[3][1])));
+        const Vertex_t curve2 = madd(v_n[0],v[0][2],madd(v_n[1],v[1][2],madd(v_n[2],v[2][2],v_n[3] * v[3][2])));
+        const Vertex_t curve3 = madd(v_n[0],v[0][3],madd(v_n[1],v[1][3],madd(v_n[2],v[2][3],v_n[3] * v[3][3])));
         
         const Vec4f u_n = BSplineBasis::derivative(uu);
-        return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * (1.0f/36.0f);
+        return madd(u_n[0],curve0,madd(u_n[1],curve1,madd(u_n[2],curve2,u_n[3] * curve3))) * (1.0f/36.0f);
       }
       
       __forceinline Vertex eval_dv(const float uu, const float vv) const
       {
         const Vec4f v_n = BSplineBasis::derivative(vv);
-        const Vertex_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
-        const Vertex_t curve1 = v_n[0] * v[0][1] + v_n[1] * v[1][1] + v_n[2] * v[2][1] + v_n[3] * v[3][1];
-        const Vertex_t curve2 = v_n[0] * v[0][2] + v_n[1] * v[1][2] + v_n[2] * v[2][2] + v_n[3] * v[3][2];
-        const Vertex_t curve3 = v_n[0] * v[0][3] + v_n[1] * v[1][3] + v_n[2] * v[2][3] + v_n[3] * v[3][3];
+        const Vertex_t curve0 = madd(v_n[0],v[0][0],madd(v_n[1],v[1][0],madd(v_n[2],v[2][0],v_n[3] * v[3][0])));
+        const Vertex_t curve1 = madd(v_n[0],v[0][1],madd(v_n[1],v[1][1],madd(v_n[2],v[2][1],v_n[3] * v[3][1])));
+        const Vertex_t curve2 = madd(v_n[0],v[0][2],madd(v_n[1],v[1][2],madd(v_n[2],v[2][2],v_n[3] * v[3][2])));
+        const Vertex_t curve3 = madd(v_n[0],v[0][3],madd(v_n[1],v[1][3],madd(v_n[2],v[2][3],v_n[3] * v[3][3])));
         
         const Vec4f u_n = BSplineBasis::eval(uu);
-        return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * (1.0f/36.0f);
+        return madd(u_n[0],curve0,madd(u_n[1],curve1,madd(u_n[2],curve2,u_n[3] * curve3))) * (1.0f/36.0f);
       }
 
       __forceinline Vertex eval_dudu(const float uu, const float vv) const
       {
         const Vec4f v_n = BSplineBasis::eval(vv);
-        const Vertex_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
-        const Vertex_t curve1 = v_n[0] * v[0][1] + v_n[1] * v[1][1] + v_n[2] * v[2][1] + v_n[3] * v[3][1];
-        const Vertex_t curve2 = v_n[0] * v[0][2] + v_n[1] * v[1][2] + v_n[2] * v[2][2] + v_n[3] * v[3][2];
-        const Vertex_t curve3 = v_n[0] * v[0][3] + v_n[1] * v[1][3] + v_n[2] * v[2][3] + v_n[3] * v[3][3];
+        const Vertex_t curve0 = madd(v_n[0],v[0][0],madd(v_n[1],v[1][0],madd(v_n[2],v[2][0],v_n[3] * v[3][0])));
+        const Vertex_t curve1 = madd(v_n[0],v[0][1],madd(v_n[1],v[1][1],madd(v_n[2],v[2][1],v_n[3] * v[3][1])));
+        const Vertex_t curve2 = madd(v_n[0],v[0][2],madd(v_n[1],v[1][2],madd(v_n[2],v[2][2],v_n[3] * v[3][2])));
+        const Vertex_t curve3 = madd(v_n[0],v[0][3],madd(v_n[1],v[1][3],madd(v_n[2],v[2][3],v_n[3] * v[3][3])));
         
         const Vec4f u_n = BSplineBasis::derivative2(uu);
-        return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * (1.0f/36.0f);
+        return madd(u_n[0],curve0,madd(u_n[1],curve1,madd(u_n[2],curve2,u_n[3] * curve3))) * (1.0f/36.0f);
       }
 
       __forceinline Vertex eval_dvdv(const float uu, const float vv) const
       {
         const Vec4f v_n = BSplineBasis::derivative2(vv);
-        const Vertex_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
-        const Vertex_t curve1 = v_n[0] * v[0][1] + v_n[1] * v[1][1] + v_n[2] * v[2][1] + v_n[3] * v[3][1];
-        const Vertex_t curve2 = v_n[0] * v[0][2] + v_n[1] * v[1][2] + v_n[2] * v[2][2] + v_n[3] * v[3][2];
-        const Vertex_t curve3 = v_n[0] * v[0][3] + v_n[1] * v[1][3] + v_n[2] * v[2][3] + v_n[3] * v[3][3];
+        const Vertex_t curve0 = madd(v_n[0],v[0][0],madd(v_n[1],v[1][0],madd(v_n[2],v[2][0],v_n[3] * v[3][0])));
+        const Vertex_t curve1 = madd(v_n[0],v[0][1],madd(v_n[1],v[1][1],madd(v_n[2],v[2][1],v_n[3] * v[3][1])));
+        const Vertex_t curve2 = madd(v_n[0],v[0][2],madd(v_n[1],v[1][2],madd(v_n[2],v[2][2],v_n[3] * v[3][2])));
+        const Vertex_t curve3 = madd(v_n[0],v[0][3],madd(v_n[1],v[1][3],madd(v_n[2],v[2][3],v_n[3] * v[3][3])));
         
         const Vec4f u_n = BSplineBasis::eval(uu);
-        return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * (1.0f/36.0f);
+        return madd(u_n[0],curve0,madd(u_n[1],curve1,madd(u_n[2],curve2,u_n[3] * curve3))) * (1.0f/36.0f);
       }
 
       __forceinline Vertex eval_dudv(const float uu, const float vv) const
       {
         const Vec4f v_n = BSplineBasis::derivative(vv);
-        const Vertex_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
-        const Vertex_t curve1 = v_n[0] * v[0][1] + v_n[1] * v[1][1] + v_n[2] * v[2][1] + v_n[3] * v[3][1];
-        const Vertex_t curve2 = v_n[0] * v[0][2] + v_n[1] * v[1][2] + v_n[2] * v[2][2] + v_n[3] * v[3][2];
-        const Vertex_t curve3 = v_n[0] * v[0][3] + v_n[1] * v[1][3] + v_n[2] * v[2][3] + v_n[3] * v[3][3];
+        const Vertex_t curve0 = madd(v_n[0],v[0][0],madd(v_n[1],v[1][0],madd(v_n[2],v[2][0],v_n[3] * v[3][0])));
+        const Vertex_t curve1 = madd(v_n[0],v[0][1],madd(v_n[1],v[1][1],madd(v_n[2],v[2][1],v_n[3] * v[3][1])));
+        const Vertex_t curve2 = madd(v_n[0],v[0][2],madd(v_n[1],v[1][2],madd(v_n[2],v[2][2],v_n[3] * v[3][2])));
+        const Vertex_t curve3 = madd(v_n[0],v[0][3],madd(v_n[1],v[1][3],madd(v_n[2],v[2][3],v_n[3] * v[3][3])));
         
         const Vec4f u_n = BSplineBasis::derivative(uu);
-        return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * (1.0f/36.0f);
+        return madd(u_n[0],curve0,madd(u_n[1],curve1,madd(u_n[2],curve2,u_n[3] * curve3))) * (1.0f/36.0f);
       }
       
       __forceinline Vertex normal(const float uu, const float vv) const
@@ -337,23 +337,23 @@ namespace embree
       template<class T>
       __forceinline Vec3<T> eval(const T& uu, const T& vv, const Vec4<T>& u_n, const Vec4<T>& v_n) const
       {
-        const T curve0_x = v_n[0] * T(v[0][0].x) + v_n[1] * T(v[1][0].x) + v_n[2] * T(v[2][0].x) + v_n[3] * T(v[3][0].x);
-        const T curve1_x = v_n[0] * T(v[0][1].x) + v_n[1] * T(v[1][1].x) + v_n[2] * T(v[2][1].x) + v_n[3] * T(v[3][1].x);
-        const T curve2_x = v_n[0] * T(v[0][2].x) + v_n[1] * T(v[1][2].x) + v_n[2] * T(v[2][2].x) + v_n[3] * T(v[3][2].x);
-        const T curve3_x = v_n[0] * T(v[0][3].x) + v_n[1] * T(v[1][3].x) + v_n[2] * T(v[2][3].x) + v_n[3] * T(v[3][3].x);
-        const T x = (u_n[0] * curve0_x + u_n[1] * curve1_x + u_n[2] * curve2_x + u_n[3] * curve3_x) * T(1.0f/36.0f);
+        const T curve0_x = madd(v_n[0],T(v[0][0].x),madd(v_n[1],T(v[1][0].x),madd(v_n[2],T(v[2][0].x),v_n[3] * T(v[3][0].x))));
+        const T curve1_x = madd(v_n[0],T(v[0][1].x),madd(v_n[1],T(v[1][1].x),madd(v_n[2],T(v[2][1].x),v_n[3] * T(v[3][1].x))));
+        const T curve2_x = madd(v_n[0],T(v[0][2].x),madd(v_n[1],T(v[1][2].x),madd(v_n[2],T(v[2][2].x),v_n[3] * T(v[3][2].x))));
+        const T curve3_x = madd(v_n[0],T(v[0][3].x),madd(v_n[1],T(v[1][3].x),madd(v_n[2],T(v[2][3].x),v_n[3] * T(v[3][3].x))));
+        const T x = madd(u_n[0],curve0_x,madd(u_n[1],curve1_x,madd(u_n[2],curve2_x,u_n[3] * curve3_x))) * T(1.0f/36.0f);
                   
-        const T curve0_y = v_n[0] * T(v[0][0].y) + v_n[1] * T(v[1][0].y) + v_n[2] * T(v[2][0].y) + v_n[3] * T(v[3][0].y);
-        const T curve1_y = v_n[0] * T(v[0][1].y) + v_n[1] * T(v[1][1].y) + v_n[2] * T(v[2][1].y) + v_n[3] * T(v[3][1].y);
-        const T curve2_y = v_n[0] * T(v[0][2].y) + v_n[1] * T(v[1][2].y) + v_n[2] * T(v[2][2].y) + v_n[3] * T(v[3][2].y);
-        const T curve3_y = v_n[0] * T(v[0][3].y) + v_n[1] * T(v[1][3].y) + v_n[2] * T(v[2][3].y) + v_n[3] * T(v[3][3].y);
-        const T y = (u_n[0] * curve0_y + u_n[1] * curve1_y + u_n[2] * curve2_y + u_n[3] * curve3_y) * T(1.0f/36.0f);
+        const T curve0_y = madd(v_n[0],T(v[0][0].y),madd(v_n[1],T(v[1][0].y),madd(v_n[2],T(v[2][0].y),v_n[3] * T(v[3][0].y))));
+        const T curve1_y = madd(v_n[0],T(v[0][1].y),madd(v_n[1],T(v[1][1].y),madd(v_n[2],T(v[2][1].y),v_n[3] * T(v[3][1].y))));
+        const T curve2_y = madd(v_n[0],T(v[0][2].y),madd(v_n[1],T(v[1][2].y),madd(v_n[2],T(v[2][2].y),v_n[3] * T(v[3][2].y))));
+        const T curve3_y = madd(v_n[0],T(v[0][3].y),madd(v_n[1],T(v[1][3].y),madd(v_n[2],T(v[2][3].y),v_n[3] * T(v[3][3].y))));
+        const T y = madd(u_n[0],curve0_y,madd(u_n[1],curve1_y,madd(u_n[2],curve2_y,u_n[3] * curve3_y))) * T(1.0f/36.0f);
           
-        const T curve0_z = v_n[0] * T(v[0][0].z) + v_n[1] * T(v[1][0].z) + v_n[2] * T(v[2][0].z) + v_n[3] * T(v[3][0].z);
-        const T curve1_z = v_n[0] * T(v[0][1].z) + v_n[1] * T(v[1][1].z) + v_n[2] * T(v[2][1].z) + v_n[3] * T(v[3][1].z);
-        const T curve2_z = v_n[0] * T(v[0][2].z) + v_n[1] * T(v[1][2].z) + v_n[2] * T(v[2][2].z) + v_n[3] * T(v[3][2].z);
-        const T curve3_z = v_n[0] * T(v[0][3].z) + v_n[1] * T(v[1][3].z) + v_n[2] * T(v[2][3].z) + v_n[3] * T(v[3][3].z);
-        const T z = (u_n[0] * curve0_z + u_n[1] * curve1_z + u_n[2] * curve2_z + u_n[3] * curve3_z) * T(1.0f/36.0f);
+        const T curve0_z = madd(v_n[0],T(v[0][0].z),madd(v_n[1],T(v[1][0].z),madd(v_n[2],T(v[2][0].z),v_n[3] * T(v[3][0].z))));
+        const T curve1_z = madd(v_n[0],T(v[0][1].z),madd(v_n[1],T(v[1][1].z),madd(v_n[2],T(v[2][1].z),v_n[3] * T(v[3][1].z))));
+        const T curve2_z = madd(v_n[0],T(v[0][2].z),madd(v_n[1],T(v[1][2].z),madd(v_n[2],T(v[2][2].z),v_n[3] * T(v[3][2].z))));
+        const T curve3_z = madd(v_n[0],T(v[0][3].z),madd(v_n[1],T(v[1][3].z),madd(v_n[2],T(v[2][3].z),v_n[3] * T(v[3][3].z))));
+        const T z = madd(u_n[0],curve0_z,madd(u_n[1],curve1_z,madd(u_n[2],curve2_z,u_n[3] * curve3_z))) * T(1.0f/36.0f);
         
         return Vec3<T>(x,y,z);
       }
@@ -432,11 +432,11 @@ namespace embree
       template<class vfloat>
       __forceinline vfloat eval(const size_t i, const vfloat& uu, const vfloat& vv, const Vec4<vfloat>& u_n, const Vec4<vfloat>& v_n) const
       {
-        const vfloat curve0_x = v_n[0] * vfloat(v[0][0][i]) + v_n[1] * vfloat(v[1][0][i]) + v_n[2] * vfloat(v[2][0][i]) + v_n[3] * vfloat(v[3][0][i]);
-        const vfloat curve1_x = v_n[0] * vfloat(v[0][1][i]) + v_n[1] * vfloat(v[1][1][i]) + v_n[2] * vfloat(v[2][1][i]) + v_n[3] * vfloat(v[3][1][i]);
-        const vfloat curve2_x = v_n[0] * vfloat(v[0][2][i]) + v_n[1] * vfloat(v[1][2][i]) + v_n[2] * vfloat(v[2][2][i]) + v_n[3] * vfloat(v[3][2][i]);
-        const vfloat curve3_x = v_n[0] * vfloat(v[0][3][i]) + v_n[1] * vfloat(v[1][3][i]) + v_n[2] * vfloat(v[2][3][i]) + v_n[3] * vfloat(v[3][3][i]);
-        return (u_n[0] * curve0_x + u_n[1] * curve1_x + u_n[2] * curve2_x + u_n[3] * curve3_x) * vfloat(1.0f/36.0f);
+        const vfloat curve0_x = madd(v_n[0],vfloat(v[0][0][i]),madd(v_n[1],vfloat(v[1][0][i]),madd(v_n[2],vfloat(v[2][0][i]),v_n[3] * vfloat(v[3][0][i]))));
+        const vfloat curve1_x = madd(v_n[0],vfloat(v[0][1][i]),madd(v_n[1],vfloat(v[1][1][i]),madd(v_n[2],vfloat(v[2][1][i]),v_n[3] * vfloat(v[3][1][i]))));
+        const vfloat curve2_x = madd(v_n[0],vfloat(v[0][2][i]),madd(v_n[1],vfloat(v[1][2][i]),madd(v_n[2],vfloat(v[2][2][i]),v_n[3] * vfloat(v[3][2][i]))));
+        const vfloat curve3_x = madd(v_n[0],vfloat(v[0][3][i]),madd(v_n[1],vfloat(v[1][3][i]),madd(v_n[2],vfloat(v[2][3][i]),v_n[3] * vfloat(v[3][3][i]))));
+        return madd(u_n[0],curve0_x,madd(u_n[1],curve1_x,madd(u_n[2],curve2_x,u_n[3] * curve3_x))) * vfloat(1.0f/36.0f);
       }
         
       template<typename vbool, typename vfloat>
