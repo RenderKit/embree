@@ -621,14 +621,14 @@ namespace embree
 
       BVH* bvh;
       Scene* scene;
-      mvector<PrimRefMB> prims;
+      mvector<PrimRefMB> primsMB;
       mvector<BBox3fa> bounds; 
       ParallelForForPrefixSumState<PrimInfoMB> pstate;
       size_t numSubdivEnableDisableEvents;
       bool cached;
 
       BVHNMB4DSubdivPatch1CachedBuilderBinnedSAHClass (BVH* bvh, Scene* scene, bool cached)
-        : bvh(bvh), scene(scene), prims(scene->device), bounds(scene->device), numSubdivEnableDisableEvents(0), cached(cached) {}
+        : bvh(bvh), scene(scene), primsMB(scene->device), bounds(scene->device), numSubdivEnableDisableEvents(0), cached(cached) {}
 
 #if MBLUR_NEW_ARRAY
       
@@ -733,10 +733,10 @@ namespace embree
                 SubdivPatch1Base& patch0 = subdiv_patches[patchIndexMB];
                 patch0.root_ref.set((int64_t) GridSOA::create(&patch0,(unsigned)mesh->numTimeSteps,(unsigned)mesh->numTimeSteps,scene,alloc,&bounds[patchIndexMB]));
               }
-              prims[patchIndex] = recalculatePrimRef(patchIndexMB,mesh->numTimeSegments(),BBox1f(0.0f,1.0f)).first;
+              primsMB[patchIndex] = recalculatePrimRef(patchIndexMB,mesh->numTimeSegments(),BBox1f(0.0f,1.0f)).first;
               s++;
               sMB += mesh->numTimeSteps;
-              pinfo.add_primref(prims[patchIndex]);
+              pinfo.add_primref(primsMB[patchIndex]);
             });
           }
           pinfo.begin = s;
@@ -829,8 +829,8 @@ namespace embree
                         false);
         
         /* build hierarchy */
-        Set set(&prims);
-        assert(prims.size() == pinfo.size());
+        Set set(&primsMB);
+        assert(primsMB.size() == pinfo.size());
         NodeRef root;
         BuildRecord br(pinfo,1,(size_t*)&root,set);
         LBBox3fa rootBounds = builder(br).first;
@@ -847,7 +847,7 @@ namespace embree
 
         /* skip build for empty scene */
         if (numPatches == 0) {
-          prims.resize(0);
+          primsMB.resize(0);
           bounds.resize(0);
           bvh->set(BVH::emptyNode,empty,0);
           return;
@@ -858,7 +858,7 @@ namespace embree
         /* calculate number of primitives (some patches need initial subdivision) */
         size_t numSubPatches, numSubPatchesMB;
         countSubPatches(numSubPatches, numSubPatchesMB);
-        prims.resize(numSubPatches);
+        primsMB.resize(numSubPatches);
         bounds.resize(numSubPatchesMB);
         
         /* exit if there are no primitives to process */
@@ -876,7 +876,7 @@ namespace embree
         
 	/* clear temporary data for static geometry */
 	if (scene->isStatic()) {
-          prims.clear();
+          primsMB.clear();
           bvh->shrink();
         }
         bvh->cleanup();
@@ -887,7 +887,7 @@ namespace embree
 #endif
       
       void clear() {
-        prims.clear();
+        primsMB.clear();
       }
     };
     
