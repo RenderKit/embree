@@ -793,8 +793,7 @@ namespace embree
         /* builder wants log2 of blockSize as input */		  
         const size_t logBlockSize = __bsr(N); 
 
-        /* instantiate array binning heuristic */
-        Heuristic heuristic(scene->device, recalculatePrimRef);
+        /* instantiate builder */
         auto createAllocFunc = typename BVH::CreateAlloc(bvh);
         auto createNodeFunc = CreateAlignedNodeMB4D<N>(bvh);
         //auto createLeafFunc = CreateMBlurLeaf<N,Mesh,Primitive>(bvh);
@@ -812,7 +811,6 @@ namespace embree
           decltype(progressMonitor),
           PrimInfoMB> Builder;
 
-        /* instantiate builder */
         Builder builder(scene->device,
                         recalculatePrimRef,
                         identity,

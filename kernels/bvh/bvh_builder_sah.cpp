@@ -828,8 +828,7 @@ namespace embree
         const size_t logBlockSize = __bsr(sahBlockSize);
         assert((sahBlockSize ^ (size_t(1) << logBlockSize)) == 0);
 
-        /* instantiate array binning heuristic */
-        Heuristic heuristic(scene->device, recalculatePrimRef);
+        /* instantiate builder */
         auto createAllocFunc = typename BVH::CreateAlloc(bvh);
         auto createNodeFunc = CreateAlignedNodeMB4D<N,Mesh>(bvh);
         auto createLeafFunc = CreateMBlurLeaf<N,Mesh,Primitive>(bvh);
