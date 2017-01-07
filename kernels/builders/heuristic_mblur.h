@@ -37,7 +37,7 @@ namespace embree
 #else
         typedef BinInfoT<BINS,PrimRefMB,BBox3fa> ObjectBinner;
 #endif
-        typedef avector<PrimRefMB>* PrimRefVector;
+        typedef mvector<PrimRefMB>* PrimRefVector;
 
         enum
         {
@@ -85,8 +85,8 @@ namespace embree
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
         static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;
 
-        HeuristicMBlur (const RecalculatePrimRef& recalculatePrimRef)
-        : recalculatePrimRef(recalculatePrimRef) {}
+        HeuristicMBlur (MemoryMonitorInterface* device, const RecalculatePrimRef& recalculatePrimRef)
+          : device(device), recalculatePrimRef(recalculatePrimRef) {}
 
         /*! finds the best split */
         const Split find(Set& set, PrimInfoMB& pinfo, const size_t logBlockSize)
@@ -315,13 +315,13 @@ namespace embree
           
           /* calculate primrefs for first time range */
 #if MBLUR_NEW_ARRAY
-          PrimRefVector lprims = new avector<PrimRefMB>(set.object_range.size());
+          PrimRefVector lprims = new mvector<PrimRefMB>(device, set.object_range.size());
 #endif
           auto reduction_func0 = [&] ( const range<size_t>& r) {
             PrimInfoMB pinfo = empty;
             for (size_t i=r.begin(); i<r.end(); i++) 
             {
-              avector<PrimRefMB>& prims = *set.prims;
+              mvector<PrimRefMB>& prims = *set.prims;
               auto bn0 = recalculatePrimRef(prims[i],time_range);
               const PrimRefMB& prim = bn0.first;
 #if MBLUR_NEW_ARRAY
@@ -360,7 +360,7 @@ namespace embree
 
         void splitFallback(const Set& set, PrimInfoMB& linfo, Set& lset, PrimInfoMB& rinfo, Set& rset) // FIXME: also perform time split here?
         {
-          avector<PrimRefMB>& prims = *set.prims;
+          mvector<PrimRefMB>& prims = *set.prims;
 
           const size_t begin = set.object_range.begin();
           const size_t end   = set.object_range.end();
@@ -381,6 +381,7 @@ namespace embree
         }
 
       private:
+        MemoryMonitorInterface* device;              // device to report memory usage to
         const RecalculatePrimRef recalculatePrimRef;
       };
 
@@ -845,7 +846,8 @@ namespace embree
 
 #endif
 
-        GeneralBVHMBBuilder (const RecalculatePrimRef recalculatePrimRef,
+        GeneralBVHMBBuilder (MemoryMonitorInterface* device,
+                             const RecalculatePrimRef recalculatePrimRef,
                              const ReductionTy& identity,
                              CreateAllocFunc& createAlloc, 
                              CreateNodeFunc& createNode, 
@@ -856,7 +858,7 @@ namespace embree
                              const size_t branchingFactor, const size_t maxDepth, 
                              const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize,
                              const float travCost, const float intCost, const bool singleLeafTimeSegment)
-          : HeuristicMBlur<RecalculatePrimRef,NUM_OBJECT_BINS>(recalculatePrimRef), 
+          : HeuristicMBlur<RecalculatePrimRef,NUM_OBJECT_BINS>(device, recalculatePrimRef),
           identity(identity), 
           createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
           progressMonitor(progressMonitor),

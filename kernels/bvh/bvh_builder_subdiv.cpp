@@ -621,14 +621,14 @@ namespace embree
 
       BVH* bvh;
       Scene* scene;
-      avector<PrimRefMB> prims; // FIXME: use mvector instead of avector
+      mvector<PrimRefMB> prims;
       mvector<BBox3fa> bounds; 
       ParallelForForPrefixSumState<PrimInfoMB> pstate;
       size_t numSubdivEnableDisableEvents;
       bool cached;
 
       BVHNMB4DSubdivPatch1CachedBuilderBinnedSAHClass (BVH* bvh, Scene* scene, bool cached)
-        : bvh(bvh), scene(scene), bounds(scene->device), numSubdivEnableDisableEvents(0), cached(cached) {}
+        : bvh(bvh), scene(scene), prims(scene->device), bounds(scene->device), numSubdivEnableDisableEvents(0), cached(cached) {}
 
 #if MBLUR_NEW_ARRAY
       
@@ -751,7 +751,7 @@ namespace embree
         //  });
         
         auto createLeafFunc = [&] (const BuildRecord& current, Allocator* alloc) -> std::pair<LBBox3fa,BBox1f> {
-          avector<PrimRefMB>& prims = *current.prims.prims;
+          mvector<PrimRefMB>& prims = *current.prims.prims;
           size_t items MAYBE_UNUSED = current.pinfo.size();
           assert(items == 1);
           const size_t patchIndexMB = prims[current.prims.object_range.begin()].ID();
@@ -794,7 +794,7 @@ namespace embree
         const size_t logBlockSize = __bsr(N); 
 
         /* instantiate array binning heuristic */
-        Heuristic heuristic(recalculatePrimRef);
+        Heuristic heuristic(scene->device, recalculatePrimRef);
         auto createAllocFunc = typename BVH::CreateAlloc(bvh);
         auto createNodeFunc = CreateAlignedNodeMB4D<N>(bvh);
         //auto createLeafFunc = CreateMBlurLeaf<N,Mesh,Primitive>(bvh);
@@ -813,7 +813,8 @@ namespace embree
           PrimInfoMB> Builder;
 
         /* instantiate builder */
-        Builder builder(recalculatePrimRef,
+        Builder builder(scene->device,
+                        recalculatePrimRef,
                         identity,
                         createAllocFunc,
                         createNodeFunc,

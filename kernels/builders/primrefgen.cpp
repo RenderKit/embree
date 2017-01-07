@@ -158,7 +158,7 @@ namespace embree
     }
 
     template<typename Mesh>
-    PrimInfoMB createPrimRefMBArray(Scene* scene, avector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1)
+    PrimInfoMB createPrimRefMBArray(Scene* scene, mvector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1)
     {
       ParallelForForPrefixSumState<PrimInfoMB> pstate;
       Scene::Iterator<Mesh,true> iter(scene);
@@ -342,10 +342,10 @@ namespace embree
     //template PrimInfo createPrimRefArrayMBlur<SubdivMesh>(size_t timeSegment, size_t numTimeSteps, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
     template PrimInfo createPrimRefArrayMBlur<AccelSet>(size_t timeSegment, size_t numTimeSteps, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
 
-    template PrimInfoMB createPrimRefMBArray<TriangleMesh>(Scene* scene, avector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1);
-    template PrimInfoMB createPrimRefMBArray<QuadMesh>(Scene* scene, avector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1);
-    template PrimInfoMB createPrimRefMBArray<LineSegments>(Scene* scene, avector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1);
-    template PrimInfoMB createPrimRefMBArray<AccelSet>(Scene* scene, avector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1);
+    template PrimInfoMB createPrimRefMBArray<TriangleMesh>(Scene* scene, mvector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1);
+    template PrimInfoMB createPrimRefMBArray<QuadMesh>(Scene* scene, mvector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1);
+    template PrimInfoMB createPrimRefMBArray<LineSegments>(Scene* scene, mvector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1);
+    template PrimInfoMB createPrimRefMBArray<AccelSet>(Scene* scene, mvector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1);
   }
 }
 

@@ -711,14 +711,14 @@ namespace embree
       BVH* bvh;
       Scene* scene;
       mvector<PrimRef> prims;
-      avector<PrimRefMB> primsMB; // FIXME: use mvector instead of avector
+      mvector<PrimRefMB> primsMB;
       const size_t sahBlockSize;
       const float intCost;
       const size_t minLeafSize;
       const size_t maxLeafSize;
 
       BVHNBuilderMBlurSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(scene), prims(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)) {}
+        : bvh(bvh), scene(scene), prims(scene->device), primsMB(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)) {}
 
       void build(size_t, size_t) 
       {
@@ -829,7 +829,7 @@ namespace embree
         assert((sahBlockSize ^ (size_t(1) << logBlockSize)) == 0);
 
         /* instantiate array binning heuristic */
-        Heuristic heuristic(recalculatePrimRef);
+        Heuristic heuristic(scene->device, recalculatePrimRef);
         auto createAllocFunc = typename BVH::CreateAlloc(bvh);
         auto createNodeFunc = CreateAlignedNodeMB4D<N,Mesh>(bvh);
         auto createLeafFunc = CreateMBlurLeaf<N,Mesh,Primitive>(bvh);
@@ -848,7 +848,8 @@ namespace embree
           PrimInfoMB> Builder;
 
         /* instantiate builder */
-        Builder builder(recalculatePrimRef,
+        Builder builder(scene->device,
+                        recalculatePrimRef,
                         identity,
                         createAllocFunc,
                         createNodeFunc,
