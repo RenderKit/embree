@@ -36,9 +36,7 @@ namespace embree
       typedef typename BVH::AlignedNodeMB4D AlignedNodeMB4D;
       typedef typename BVH::TransformNode TransformNode;
 
-      static const size_t stackSize = 
-        1+(N-1)*BVH::maxDepth+   // standard depth
-        1+(N-1)*BVH::maxDepth;   // transform feature
+      static const size_t stackSize = 1+(N-1)*BVH::maxDepth;
 
       /* right now AVX512KNL SIMD extension only for standard node types */
       static const size_t Nx = (types == BVH_AN1 || types == BVH_QN1) ? vextend<N>::size : N;

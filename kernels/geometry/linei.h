@@ -262,14 +262,12 @@ namespace embree
     vfloat4 ftime;
     const vint4 itime = getTimeSegment(vfloat4(time), numTimeSegments, ftime);
 
-    const vfloat4 t0 = 1.0f - ftime;
-    const vfloat4 t1 = ftime;
     Vec4vf4 a0,a1;
     gather(a0,a1,geom0,geom1,geom2,geom3,itime);
     Vec4vf4 b0,b1;
     gather(b0,b1,geom0,geom1,geom2,geom3,itime+1);
-    p0 = t0 * a0 + t1 * b0;
-    p1 = t0 * a1 + t1 * b1;
+    p0 = lerp(a0,b0,ftime);
+    p1 = lerp(a1,b1,ftime);
   }
 
   template<int M>

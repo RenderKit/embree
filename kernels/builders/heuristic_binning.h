@@ -382,7 +382,7 @@ namespace embree
           const vfloat4 rArea = rAreas[i];
           const vint4 lCount = (count     +blocks_add) >> int(blocks_shift);
           const vint4 rCount = (rCounts[i]+blocks_add) >> int(blocks_shift);
-          const vfloat4 sah = lArea*vfloat4(lCount) + rArea*vfloat4(rCount);
+          const vfloat4 sah = madd(lArea,vfloat4(lCount),rArea*vfloat4(rCount));
           vbestPos = select(sah < vbestSAH,ii ,vbestPos);
           vbestSAH = select(sah < vbestSAH,sah,vbestSAH);
         }
@@ -550,7 +550,7 @@ namespace embree
         const vfloat16 dx = r_max_x - r_min_x;
         const vfloat16 dy = r_max_y - r_min_y;
         const vfloat16 dz = r_max_z - r_min_z;
-        const vfloat16 area_rl = dx*dy+dx*dz+dy*dz;
+        const vfloat16 area_rl = madd(dx,dy,madd(dx,dz,dy*dz));
         return area_rl;
       }
 
@@ -570,7 +570,7 @@ namespace embree
         const vfloat16 dx = r_max_x - r_min_x;
         const vfloat16 dy = r_max_y - r_min_y;
         const vfloat16 dz = r_max_z - r_min_z;
-        const vfloat16 area_lr = dx*dy+dx*dz+dy*dz;
+        const vfloat16 area_lr = madd(dx,dy,madd(dx,dz,dy*dz));
         return area_lr;
       }
 
@@ -866,7 +866,7 @@ namespace embree
           const vint16 leftCount  = ( lC + blocks_add) >> blocks_shift;
           const vint16 rightCount = ( rC + blocks_add) >> blocks_shift;
           const vbool16 valid = (leftArea < inf) & (rightArea < inf) & vbool16(0x7fff); // handles inf entries
-          const vfloat16 sah = select(valid,leftArea*vfloat16(leftCount) + rightArea*vfloat16(rightCount),vfloat16(pos_inf));
+          const vfloat16 sah = select(valid,madd(leftArea,vfloat16(leftCount),rightArea*vfloat16(rightCount)),vfloat16(pos_inf));
           /* test if this is a better dimension */
           if (any(sah < vfloat16(bestSAH))) 
           {

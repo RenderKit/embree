@@ -24,25 +24,23 @@ namespace embree
   template<class T, class S>
     static __forceinline T deCasteljau(const S& uu, const T& v0, const T& v1, const T& v2, const T& v3)
   {
-    const S one_minus_uu = 1.0f - uu;      
-    const T v0_1 = one_minus_uu * v0   + uu * v1;
-    const T v1_1 = one_minus_uu * v1   + uu * v2;
-    const T v2_1 = one_minus_uu * v2   + uu * v3;      
-    const T v0_2 = one_minus_uu * v0_1 + uu * v1_1;
-    const T v1_2 = one_minus_uu * v1_1 + uu * v2_1;      
-    const T v0_3 = one_minus_uu * v0_2 + uu * v1_2;
+    const T v0_1 = lerp(v0,v1,uu);
+    const T v1_1 = lerp(v1,v2,uu);
+    const T v2_1 = lerp(v2,v3,uu);
+    const T v0_2 = lerp(v0_1,v1_1,uu);
+    const T v1_2 = lerp(v1_1,v2_1,uu);
+    const T v0_3 = lerp(v0_2,v1_2,uu);
     return v0_3;
   }
   
   template<class T, class S>
     static __forceinline T deCasteljau_tangent(const S& uu, const T& v0, const T& v1, const T& v2, const T& v3)
   {
-    const S one_minus_uu = 1.0f - uu;      
-    const T v0_1         = one_minus_uu * v0   + uu * v1;
-    const T v1_1         = one_minus_uu * v1   + uu * v2;
-    const T v2_1         = one_minus_uu * v2   + uu * v3;      
-    const T v0_2         = one_minus_uu * v0_1 + uu * v1_1;
-    const T v1_2         = one_minus_uu * v1_1 + uu * v2_1;      
+    const T v0_1 = lerp(v0,v1,uu);
+    const T v1_1 = lerp(v1,v2,uu);
+    const T v2_1 = lerp(v2,v3,uu);
+    const T v0_2 = lerp(v0_1,v1_1,uu);
+    const T v1_2 = lerp(v1_1,v2_1,uu);
     return S(3.0f)*(v1_2-v0_2);
   }
 
@@ -68,8 +66,8 @@ namespace embree
       const T t  = u;
       const T s  = 1.0f - u;
       const T n0 = -3.0f*(s*s);
-      const T n1 = -6.0f*(s*t) + 3.0f*(s*s);
-      const T n2 = +6.0f*(s*t) - 3.0f*(t*t);
+      const T n1 = madd(-6.0f,s*t,3.0f*(s*s));
+      const T n2 = msub(+6.0f,s*t,3.0f*(t*t));
       const T n3 = 3.0f*(t*t);
       return Vec4<T>(n0,n1,n2,n3);
     }
@@ -80,8 +78,8 @@ namespace embree
       const T t1 = u;
       const T t0 = 1.0f - t1;
       const T n0 = 6.0f*t0;
-      const T n1 = 6.0f*t1 - 12.0f*t0;
-      const T n2 = 6.0f*t0 - 12.0f*t1;
+      const T n1 = msub(6.0f,t1,12.0f*t0);
+      const T n2 = msub(6.0f,t0,12.0f*t1);
       const T n3 = 6.0f*t1;
       return Vec4<T>(n0,n1,n2,n3);
     }
@@ -169,70 +167,55 @@ namespace embree
       matrix[2][1] = computeCornerBezierControlPoint(source.v,2,1,-1, 1);      
     }
 
+    static __forceinline Vertex_t bilinear(const Vec4f Bu, const Vertex matrix[4][4], const Vec4f Bv)
+    {
+      const Vertex_t M0 = madd(Bu.x,matrix[0][0],madd(Bu.y,matrix[0][1],madd(Bu.z,matrix[0][2],Bu.w * matrix[0][3]))); 
+      const Vertex_t M1 = madd(Bu.x,matrix[1][0],madd(Bu.y,matrix[1][1],madd(Bu.z,matrix[1][2],Bu.w * matrix[1][3])));
+      const Vertex_t M2 = madd(Bu.x,matrix[2][0],madd(Bu.y,matrix[2][1],madd(Bu.z,matrix[2][2],Bu.w * matrix[2][3])));
+      const Vertex_t M3 = madd(Bu.x,matrix[3][0],madd(Bu.y,matrix[3][1],madd(Bu.z,matrix[3][2],Bu.w * matrix[3][3])));
+      return madd(Bv.x,M0,madd(Bv.y,M1,madd(Bv.z,M2,Bv.w*M3)));
+    }
+
     static __forceinline Vertex_t eval(const Vertex matrix[4][4], const float uu, const float vv) 
     {      
       const Vec4f Bu = BezierBasis::eval(uu);
       const Vec4f Bv = BezierBasis::eval(vv);
-      return 
-        (Bu.x * matrix[0][0] + Bu.y * matrix[0][1] + Bu.z * matrix[0][2] + Bu.w * matrix[0][3]) * Bv.x + 
-        (Bu.x * matrix[1][0] + Bu.y * matrix[1][1] + Bu.z * matrix[1][2] + Bu.w * matrix[1][3]) * Bv.y + 
-        (Bu.x * matrix[2][0] + Bu.y * matrix[2][1] + Bu.z * matrix[2][2] + Bu.w * matrix[2][3]) * Bv.z + 
-        (Bu.x * matrix[3][0] + Bu.y * matrix[3][1] + Bu.z * matrix[3][2] + Bu.w * matrix[3][3]) * Bv.w; 
+      return bilinear(Bu,matrix,Bv);
     }
 
     static __forceinline Vertex_t eval_du(const Vertex matrix[4][4], const float uu, const float vv) 
     {
       const Vec4f Bu = BezierBasis::derivative(uu);
       const Vec4f Bv = BezierBasis::eval(vv);
-      return 
-        (Bu.x * matrix[0][0] + Bu.y * matrix[0][1] + Bu.z * matrix[0][2] + Bu.w * matrix[0][3]) * Bv.x + 
-        (Bu.x * matrix[1][0] + Bu.y * matrix[1][1] + Bu.z * matrix[1][2] + Bu.w * matrix[1][3]) * Bv.y + 
-        (Bu.x * matrix[2][0] + Bu.y * matrix[2][1] + Bu.z * matrix[2][2] + Bu.w * matrix[2][3]) * Bv.z + 
-        (Bu.x * matrix[3][0] + Bu.y * matrix[3][1] + Bu.z * matrix[3][2] + Bu.w * matrix[3][3]) * Bv.w; 
+      return bilinear(Bu,matrix,Bv);
     }
 
     static __forceinline Vertex_t eval_dv(const Vertex matrix[4][4], const float uu, const float vv) 
     {
       const Vec4f Bu = BezierBasis::eval(uu);
       const Vec4f Bv = BezierBasis::derivative(vv);
-      return 
-        (Bu.x * matrix[0][0] + Bu.y * matrix[0][1] + Bu.z * matrix[0][2] + Bu.w * matrix[0][3]) * Bv.x + 
-        (Bu.x * matrix[1][0] + Bu.y * matrix[1][1] + Bu.z * matrix[1][2] + Bu.w * matrix[1][3]) * Bv.y + 
-        (Bu.x * matrix[2][0] + Bu.y * matrix[2][1] + Bu.z * matrix[2][2] + Bu.w * matrix[2][3]) * Bv.z + 
-        (Bu.x * matrix[3][0] + Bu.y * matrix[3][1] + Bu.z * matrix[3][2] + Bu.w * matrix[3][3]) * Bv.w; 
+      return bilinear(Bu,matrix,Bv);
     }
 
     static __forceinline Vertex_t eval_dudu(const Vertex matrix[4][4], const float uu, const float vv) 
     {
       const Vec4f Bu = BezierBasis::derivative2(uu);
       const Vec4f Bv = BezierBasis::eval(vv);
-      return 
-        (Bu.x * matrix[0][0] + Bu.y * matrix[0][1] + Bu.z * matrix[0][2] + Bu.w * matrix[0][3]) * Bv.x + 
-        (Bu.x * matrix[1][0] + Bu.y * matrix[1][1] + Bu.z * matrix[1][2] + Bu.w * matrix[1][3]) * Bv.y + 
-        (Bu.x * matrix[2][0] + Bu.y * matrix[2][1] + Bu.z * matrix[2][2] + Bu.w * matrix[2][3]) * Bv.z + 
-        (Bu.x * matrix[3][0] + Bu.y * matrix[3][1] + Bu.z * matrix[3][2] + Bu.w * matrix[3][3]) * Bv.w; 
+      return bilinear(Bu,matrix,Bv);
     }
 
     static __forceinline Vertex_t eval_dvdv(const Vertex matrix[4][4], const float uu, const float vv) 
     {
       const Vec4f Bu = BezierBasis::eval(uu);
       const Vec4f Bv = BezierBasis::derivative2(vv);
-      return 
-        (Bu.x * matrix[0][0] + Bu.y * matrix[0][1] + Bu.z * matrix[0][2] + Bu.w * matrix[0][3]) * Bv.x + 
-        (Bu.x * matrix[1][0] + Bu.y * matrix[1][1] + Bu.z * matrix[1][2] + Bu.w * matrix[1][3]) * Bv.y + 
-        (Bu.x * matrix[2][0] + Bu.y * matrix[2][1] + Bu.z * matrix[2][2] + Bu.w * matrix[2][3]) * Bv.z + 
-        (Bu.x * matrix[3][0] + Bu.y * matrix[3][1] + Bu.z * matrix[3][2] + Bu.w * matrix[3][3]) * Bv.w; 
+      return bilinear(Bu,matrix,Bv);
     }
 
     static __forceinline Vertex_t eval_dudv(const Vertex matrix[4][4], const float uu, const float vv) 
     {
       const Vec4f Bu = BezierBasis::derivative(uu);
       const Vec4f Bv = BezierBasis::derivative(vv);
-      return 
-        (Bu.x * matrix[0][0] + Bu.y * matrix[0][1] + Bu.z * matrix[0][2] + Bu.w * matrix[0][3]) * Bv.x + 
-        (Bu.x * matrix[1][0] + Bu.y * matrix[1][1] + Bu.z * matrix[1][2] + Bu.w * matrix[1][3]) * Bv.y + 
-        (Bu.x * matrix[2][0] + Bu.y * matrix[2][1] + Bu.z * matrix[2][2] + Bu.w * matrix[2][3]) * Bv.z + 
-        (Bu.x * matrix[3][0] + Bu.y * matrix[3][1] + Bu.z * matrix[3][2] + Bu.w * matrix[3][3]) * Bv.w; 
+      return bilinear(Bu,matrix,Bv);
     }
 
     static __forceinline Vertex_t normal(const Vertex matrix[4][4], const float uu, const float vv) 
@@ -346,8 +329,8 @@ namespace embree
           }
         }
       }
-    
-    template<class T>
+
+    template<typename T>
       static __forceinline Vec3<T> eval(const Vertex matrix[4][4], const T& uu, const T& vv) 
     {      
       const T one_minus_uu = 1.0f - uu;
@@ -363,23 +346,23 @@ namespace embree
       const T B3_v = vv * vv * vv;
       
       const T x = 
-	(B0_u * matrix[0][0].x + B1_u * matrix[0][1].x + B2_u * matrix[0][2].x + B3_u * matrix[0][3].x) * B0_v + 
-	(B0_u * matrix[1][0].x + B1_u * matrix[1][1].x + B2_u * matrix[1][2].x + B3_u * matrix[1][3].x) * B1_v + 
-	(B0_u * matrix[2][0].x + B1_u * matrix[2][1].x + B2_u * matrix[2][2].x + B3_u * matrix[2][3].x) * B2_v + 
-	(B0_u * matrix[3][0].x + B1_u * matrix[3][1].x + B2_u * matrix[3][2].x + B3_u * matrix[3][3].x) * B3_v; 
-      
+        madd(B0_v,madd(B0_u,matrix[0][0].x,madd(B1_u,matrix[0][1].x,madd(B2_u,matrix[0][2].x,B3_u*matrix[0][3].x))), 
+        madd(B1_v,madd(B0_u,matrix[1][0].x,madd(B1_u,matrix[1][1].x,madd(B2_u,matrix[1][2].x,B3_u*matrix[1][3].x))),
+        madd(B2_v,madd(B0_u,matrix[2][0].x,madd(B1_u,matrix[2][1].x,madd(B2_u,matrix[2][2].x,B3_u*matrix[2][3].x))),
+             B3_v*madd(B0_u,matrix[3][0].x,madd(B1_u,matrix[3][1].x,madd(B2_u,matrix[3][2].x,B3_u*matrix[3][3].x)))))); 
+
       const T y = 
-	(B0_u * matrix[0][0].y + B1_u * matrix[0][1].y + B2_u * matrix[0][2].y + B3_u * matrix[0][3].y) * B0_v + 
-	(B0_u * matrix[1][0].y + B1_u * matrix[1][1].y + B2_u * matrix[1][2].y + B3_u * matrix[1][3].y) * B1_v + 
-	(B0_u * matrix[2][0].y + B1_u * matrix[2][1].y + B2_u * matrix[2][2].y + B3_u * matrix[2][3].y) * B2_v + 
-	(B0_u * matrix[3][0].y + B1_u * matrix[3][1].y + B2_u * matrix[3][2].y + B3_u * matrix[3][3].y) * B3_v; 
+        madd(B0_v,madd(B0_u,matrix[0][0].y,madd(B1_u,matrix[0][1].y,madd(B2_u,matrix[0][2].y,B3_u*matrix[0][3].y))), 
+        madd(B1_v,madd(B0_u,matrix[1][0].y,madd(B1_u,matrix[1][1].y,madd(B2_u,matrix[1][2].y,B3_u*matrix[1][3].y))),
+        madd(B2_v,madd(B0_u,matrix[2][0].y,madd(B1_u,matrix[2][1].y,madd(B2_u,matrix[2][2].y,B3_u*matrix[2][3].y))),
+             B3_v*madd(B0_u,matrix[3][0].y,madd(B1_u,matrix[3][1].y,madd(B2_u,matrix[3][2].y,B3_u*matrix[3][3].y)))))); 
       
       const T z = 
-	(B0_u * matrix[0][0].z + B1_u * matrix[0][1].z + B2_u * matrix[0][2].z + B3_u * matrix[0][3].z) * B0_v + 
-	(B0_u * matrix[1][0].z + B1_u * matrix[1][1].z + B2_u * matrix[1][2].z + B3_u * matrix[1][3].z) * B1_v + 
-	(B0_u * matrix[2][0].z + B1_u * matrix[2][1].z + B2_u * matrix[2][2].z + B3_u * matrix[2][3].z) * B2_v + 
-	(B0_u * matrix[3][0].z + B1_u * matrix[3][1].z + B2_u * matrix[3][2].z + B3_u * matrix[3][3].z) * B3_v; 
-            
+        madd(B0_v,madd(B0_u,matrix[0][0].z,madd(B1_u,matrix[0][1].z,madd(B2_u,matrix[0][2].z,B3_u*matrix[0][3].z))), 
+        madd(B1_v,madd(B0_u,matrix[1][0].z,madd(B1_u,matrix[1][1].z,madd(B2_u,matrix[1][2].z,B3_u*matrix[1][3].z))),
+        madd(B2_v,madd(B0_u,matrix[2][0].z,madd(B1_u,matrix[2][1].z,madd(B2_u,matrix[2][2].z,B3_u*matrix[2][3].z))),
+             B3_v*madd(B0_u,matrix[3][0].z,madd(B1_u,matrix[3][1].z,madd(B2_u,matrix[3][2].z,B3_u*matrix[3][3].z)))))); 
+      
       return Vec3<T>(x,y,z);
     }
 

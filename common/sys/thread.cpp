@@ -102,12 +102,13 @@ namespace embree
     void* arg;
   };
 
-  static void* threadStartup(ThreadStartupData* parg)
+  DWORD WINAPI threadStartup(LPVOID ptr)
   {
+    ThreadStartupData* parg = (ThreadStartupData*) ptr;
     _mm_setcsr(_mm_getcsr() | /*FTZ:*/ (1<<15) | /*DAZ:*/ (1<<6));
     parg->f(parg->arg);
     delete parg;
-    return nullptr;
+    return 0;
   }
 
 #if !defined(PTHREADS_WIN32)
@@ -115,7 +116,7 @@ namespace embree
   /*! creates a hardware thread running on specific core */
   thread_t createThread(thread_func f, void* arg, size_t stack_size, ssize_t threadID)
   {
-    HANDLE thread = CreateThread(nullptr, stack_size, (LPTHREAD_START_ROUTINE)threadStartup, new ThreadStartupData(f,arg), 0, nullptr);
+    HANDLE thread = CreateThread(nullptr, stack_size, threadStartup, new ThreadStartupData(f,arg), 0, nullptr);
     if (thread == nullptr) FATAL("CreateThread failed");
     if (threadID >= 0) setAffinity(thread, threadID);
     return thread_t(thread);

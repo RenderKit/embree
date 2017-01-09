@@ -623,16 +623,16 @@ namespace embree
     {
       const vfloat4 start_x(node->start.x);
       const vfloat4 scale_x(node->scale.x);
-      const vfloat4 lower_x = node->dequantize<4>(ray.nearX >> 2) * scale_x + start_x;
-      const vfloat4 upper_x = node->dequantize<4>(ray.farX  >> 2) * scale_x + start_x;
+      const vfloat4 lower_x = madd(node->dequantize<4>(ray.nearX >> 2),scale_x,start_x);
+      const vfloat4 upper_x = madd(node->dequantize<4>(ray.farX  >> 2),scale_x,start_x);
       const vfloat4 start_y(node->start.y);
       const vfloat4 scale_y(node->scale.y);
-      const vfloat4 lower_y = node->dequantize<4>(ray.nearY >> 2) * scale_y + start_y;
-      const vfloat4 upper_y = node->dequantize<4>(ray.farY  >> 2) * scale_y + start_y;
+      const vfloat4 lower_y = madd(node->dequantize<4>(ray.nearY >> 2),scale_y,start_y);
+      const vfloat4 upper_y = madd(node->dequantize<4>(ray.farY  >> 2),scale_y,start_y);
       const vfloat4 start_z(node->start.z);
       const vfloat4 scale_z(node->scale.z);
-      const vfloat4 lower_z = node->dequantize<4>(ray.nearZ >> 2) * scale_z + start_z;
-      const vfloat4 upper_z = node->dequantize<4>(ray.farZ  >> 2) * scale_z + start_z;
+      const vfloat4 lower_z = madd(node->dequantize<4>(ray.nearZ >> 2),scale_z,start_z);
+      const vfloat4 upper_z = madd(node->dequantize<4>(ray.farZ  >> 2),scale_z,start_z);
 
 #if defined (__AVX2__)
       const vfloat4 tNearX = msub(lower_x, ray.rdir.x, ray.org_rdir.x);
@@ -672,16 +672,16 @@ namespace embree
     {
       const vfloat8 start_x(node->start.x);
       const vfloat8 scale_x(node->scale.x);
-      const vfloat8 lower_x = node->dequantize<8>(ray.nearX >> 2) * scale_x + start_x;
-      const vfloat8 upper_x = node->dequantize<8>(ray.farX  >> 2) * scale_x + start_x;
+      const vfloat8 lower_x = madd(node->dequantize<8>(ray.nearX >> 2),scale_x,start_x);
+      const vfloat8 upper_x = madd(node->dequantize<8>(ray.farX  >> 2),scale_x,start_x);
       const vfloat8 start_y(node->start.y);
       const vfloat8 scale_y(node->scale.y);
-      const vfloat8 lower_y = node->dequantize<8>(ray.nearY >> 2) * scale_y + start_y;
-      const vfloat8 upper_y = node->dequantize<8>(ray.farY  >> 2) * scale_y + start_y;
+      const vfloat8 lower_y = madd(node->dequantize<8>(ray.nearY >> 2),scale_y,start_y);
+      const vfloat8 upper_y = madd(node->dequantize<8>(ray.farY  >> 2),scale_y,start_y);
       const vfloat8 start_z(node->start.z);
       const vfloat8 scale_z(node->scale.z);
-      const vfloat8 lower_z = node->dequantize<8>(ray.nearZ >> 2) * scale_z + start_z;
-      const vfloat8 upper_z = node->dequantize<8>(ray.farZ  >> 2) * scale_z + start_z;
+      const vfloat8 lower_z = madd(node->dequantize<8>(ray.nearZ >> 2),scale_z,start_z);
+      const vfloat8 upper_z = madd(node->dequantize<8>(ray.farZ  >> 2),scale_z,start_z);
 
 #if defined (__AVX2__)
       const vfloat8 tNearX = msub(lower_x, ray.rdir.x, ray.org_rdir.x);
@@ -723,16 +723,16 @@ namespace embree
     {
       const vfloat16 start_x(node->start.x);
       const vfloat16 scale_x(node->scale.x);
-      const vfloat16 lower_x = vfloat16(node->dequantize<16>(ray.nearX >> 2)) * scale_x + start_x;
-      const vfloat16 upper_x = vfloat16(node->dequantize<16>(ray.farX  >> 2)) * scale_x + start_x;
+      const vfloat16 lower_x = madd(vfloat16(node->dequantize<16>(ray.nearX >> 2)),scale_x,start_x);
+      const vfloat16 upper_x = madd(vfloat16(node->dequantize<16>(ray.farX  >> 2)),scale_x,start_x);
       const vfloat16 start_y(node->start.y);
       const vfloat16 scale_y(node->scale.y);
-      const vfloat16 lower_y = vfloat16(node->dequantize<16>(ray.nearY >> 2)) * scale_y + start_y;
-      const vfloat16 upper_y = vfloat16(node->dequantize<16>(ray.farY  >> 2)) * scale_y + start_y;
+      const vfloat16 lower_y = madd(vfloat16(node->dequantize<16>(ray.nearY >> 2)),scale_y,start_y);
+      const vfloat16 upper_y = madd(vfloat16(node->dequantize<16>(ray.farY  >> 2)),scale_y,start_y);
       const vfloat16 start_z(node->start.z);
       const vfloat16 scale_z(node->scale.z);
-      const vfloat16 lower_z = vfloat16(node->dequantize<16>(ray.nearZ >> 2)) * scale_z + start_z;
-      const vfloat16 upper_z = vfloat16(node->dequantize<16>(ray.farZ  >> 2)) * scale_z + start_z;
+      const vfloat16 lower_z = madd(vfloat16(node->dequantize<16>(ray.nearZ >> 2)),scale_z,start_z);
+      const vfloat16 upper_z = madd(vfloat16(node->dequantize<16>(ray.farZ  >> 2)),scale_z,start_z);
 
       const vfloat16 tNearX = msub(lower_x, ray.rdir.x, ray.org_rdir.x);
       const vfloat16 tNearY = msub(lower_y, ray.rdir.y, ray.org_rdir.y);
@@ -753,16 +753,16 @@ namespace embree
     {
       const vfloat16 start_x(node->start.x);
       const vfloat16 scale_x(node->scale.x);
-      const vfloat16 lower_x = vfloat16(node->dequantize<16>(ray.nearX >> 2)) * scale_x + start_x;
-      const vfloat16 upper_x = vfloat16(node->dequantize<16>(ray.farX  >> 2)) * scale_x + start_x;
+      const vfloat16 lower_x = madd(vfloat16(node->dequantize<16>(ray.nearX >> 2)),scale_x,start_x);
+      const vfloat16 upper_x = madd(vfloat16(node->dequantize<16>(ray.farX  >> 2)),scale_x,start_x);
       const vfloat16 start_y(node->start.y);
       const vfloat16 scale_y(node->scale.y);
-      const vfloat16 lower_y = vfloat16(node->dequantize<16>(ray.nearY >> 2)) * scale_y + start_y;
-      const vfloat16 upper_y = vfloat16(node->dequantize<16>(ray.farY  >> 2)) * scale_y + start_y;
+      const vfloat16 lower_y = madd(vfloat16(node->dequantize<16>(ray.nearY >> 2)),scale_y,start_y);
+      const vfloat16 upper_y = madd(vfloat16(node->dequantize<16>(ray.farY  >> 2)),scale_y,start_y);
       const vfloat16 start_z(node->start.z);
       const vfloat16 scale_z(node->scale.z);
-      const vfloat16 lower_z = vfloat16(node->dequantize<16>(ray.nearZ >> 2)) * scale_z + start_z;
-      const vfloat16 upper_z = vfloat16(node->dequantize<16>(ray.farZ  >> 2)) * scale_z + start_z;
+      const vfloat16 lower_z = madd(vfloat16(node->dequantize<16>(ray.nearZ >> 2)),scale_z,start_z);
+      const vfloat16 upper_z = madd(vfloat16(node->dequantize<16>(ray.farZ  >> 2)),scale_z,start_z);
 
       const vfloat16 tNearX = msub(lower_x, ray.rdir.x, ray.org_rdir.x);
       const vfloat16 tNearY = msub(lower_y, ray.rdir.y, ray.org_rdir.y);
@@ -817,13 +817,11 @@ namespace embree
       __forceinline size_t intersectNode(const typename BVHN<N>::UnalignedNodeMB* node, const TravRay<N,N>& ray, 
                                          const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist)
     {
-      const vfloat<N> t0 = vfloat<N>(1.0f)-time, t1 = time;
-
       const AffineSpaceT<LinearSpace3<Vec3<vfloat<N>>>> xfm = node->space0;
       const Vec3<vfloat<N>> b0_lower = zero;
       const Vec3<vfloat<N>> b0_upper = one;
-      const Vec3<vfloat<N>> lower = t0*b0_lower + t1*node->b1.lower;
-      const Vec3<vfloat<N>> upper = t0*b0_upper + t1*node->b1.upper;
+      const Vec3<vfloat<N>> lower = lerp(b0_lower,node->b1.lower,vfloat<N>(time));
+      const Vec3<vfloat<N>> upper = lerp(b0_upper,node->b1.upper,vfloat<N>(time));
 
       const BBox<Vec3<vfloat<N>>> bounds(lower,upper);
       const Vec3<vfloat<N>> dir = xfmVector(xfm,ray.dir);

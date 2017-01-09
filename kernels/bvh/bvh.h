@@ -99,8 +99,8 @@ namespace embree
 
     /*! Maximal depth of the BVH. */
     static const size_t maxBuildDepth = 32;
-    static const size_t maxBuildDepthLeaf = maxBuildDepth+16;
-    static const size_t maxDepth = maxBuildDepthLeaf+maxBuildDepthLeaf+maxBuildDepth;
+    static const size_t maxBuildDepthLeaf = maxBuildDepth+8;
+    static const size_t maxDepth = maxBuildDepth+maxBuildDepthLeaf;
 
     /*! Maximal number of primitive blocks in a leaf. */
     static const size_t maxLeafBlocks = items_mask-tyLeaf;
@@ -962,12 +962,12 @@ namespace embree
       __forceinline BBox3fa bounds(size_t i) const
       {
         assert(i < N);
-        const Vec3fa lower(start.x + scale.x * (float)lower_x[i],
-                           start.y + scale.y * (float)lower_y[i],
-                           start.z + scale.z * (float)lower_z[i]);
-        const Vec3fa upper(start.x + scale.x * (float)upper_x[i],
-                           start.y + scale.y * (float)upper_y[i],
-                           start.z + scale.z * (float)upper_z[i]);
+        const Vec3fa lower(madd(scale.x,(float)lower_x[i],start.x),
+                           madd(scale.y,(float)lower_y[i],start.y),
+                           madd(scale.z,(float)lower_z[i],start.z));
+        const Vec3fa upper(madd(scale.x,(float)upper_x[i],start.x),
+                           madd(scale.y,(float)upper_y[i],start.y),
+                           madd(scale.z,(float)upper_z[i],start.z));
         return BBox3fa(lower,upper);
       }
 
@@ -1005,8 +1005,8 @@ namespace embree
         vint<N> i_ceil_upper ( ceil_upper  );
 
         /* lower/upper correction */
-        vbool<N> m_lower_correction = ((minF + vfloat<N>(i_floor_lower) * scale_diff) > lower) & m_valid;
-        vbool<N> m_upper_correction = ((minF + vfloat<N>(i_ceil_upper) * scale_diff) < upper) & m_valid;
+        vbool<N> m_lower_correction = ((madd(vfloat<N>(i_floor_lower),scale_diff,minF)) > lower) & m_valid;
+        vbool<N> m_upper_correction = ((madd(vfloat<N>(i_ceil_upper),scale_diff,minF)) < upper) & m_valid;
         i_floor_lower  = select(m_lower_correction,i_floor_lower-1,i_floor_lower);
         i_ceil_upper   = select(m_upper_correction,i_ceil_upper +1,i_ceil_upper);
 
@@ -1023,8 +1023,8 @@ namespace embree
 #if 0
         vfloat<N> extract_lower( vint<N>::load(lower_quant) );
         vfloat<N> extract_upper( vint<N>::load(upper_quant) );
-        vfloat<N> final_extract_lower = minF + extract_lower * scale_diff;
-        vfloat<N> final_extract_upper = minF + extract_upper * scale_diff;
+        vfloat<N> final_extract_lower = madd(extract_lower,scale_diff,minF);
+        vfloat<N> final_extract_upper = madd(extract_upper,scale_diff,minF);
         assert( (movemask(final_extract_lower <= lower ) & movemask(m_valid)) == movemask(m_valid));
         assert( (movemask(final_extract_upper >= upper ) & movemask(m_valid)) == movemask(m_valid));
 #endif
@@ -1038,17 +1038,17 @@ namespace embree
         init_dim(node.lower_z,node.upper_z,lower_z,upper_z,start.z,scale.z);
       }
 
-      __forceinline vfloat<N> dequantizeLowerX() const { return vfloat<N>(start.x) + vfloat<N>(vint<N>::load(lower_x)) * scale.x; }
+      __forceinline vfloat<N> dequantizeLowerX() const { return madd(vfloat<N>(vint<N>::load(lower_x)),scale.x,vfloat<N>(start.x)); }
 
-      __forceinline vfloat<N> dequantizeUpperX() const { return vfloat<N>(start.x) + vfloat<N>(vint<N>::load(upper_x)) * scale.x; }
+      __forceinline vfloat<N> dequantizeUpperX() const { return madd(vfloat<N>(vint<N>::load(upper_x)),scale.x,vfloat<N>(start.x)); }
 
-      __forceinline vfloat<N> dequantizeLowerY() const { return vfloat<N>(start.y) + vfloat<N>(vint<N>::load(lower_y)) * scale.y; }
+      __forceinline vfloat<N> dequantizeLowerY() const { return madd(vfloat<N>(vint<N>::load(lower_y)),scale.y,vfloat<N>(start.y)); }
 
-      __forceinline vfloat<N> dequantizeUpperY() const { return vfloat<N>(start.y) + vfloat<N>(vint<N>::load(upper_y)) * scale.y; }
+      __forceinline vfloat<N> dequantizeUpperY() const { return madd(vfloat<N>(vint<N>::load(upper_y)),scale.y,vfloat<N>(start.y)); }
 
-      __forceinline vfloat<N> dequantizeLowerZ() const { return vfloat<N>(start.z) + vfloat<N>(vint<N>::load(lower_z)) * scale.z; }
+      __forceinline vfloat<N> dequantizeLowerZ() const { return madd(vfloat<N>(vint<N>::load(lower_z)),scale.z,vfloat<N>(start.z)); }
 
-      __forceinline vfloat<N> dequantizeUpperZ() const { return vfloat<N>(start.z) + vfloat<N>(vint<N>::load(upper_z)) * scale.z; }
+      __forceinline vfloat<N> dequantizeUpperZ() const { return madd(vfloat<N>(vint<N>::load(upper_z)),scale.z,vfloat<N>(start.z)); }
 
       template <int M>
       __forceinline vfloat<M> dequantize(const size_t offset) const { return vfloat<M>(vint<M>::loadu(all_planes+offset)); }

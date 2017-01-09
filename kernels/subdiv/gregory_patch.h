@@ -102,27 +102,29 @@ namespace embree
     }
     
     __forceinline Vertex initPositiveEdgeVertex(const CatmullClarkPatch& irreg_patch, const size_t index, const Vertex& p_vtx) {
-      return 1.0f/3.0f * irreg_patch.ring[index].getLimitTangent() + p_vtx;
+      return madd(1.0f/3.0f,irreg_patch.ring[index].getLimitTangent(),p_vtx);
     }
     
     __forceinline Vertex initNegativeEdgeVertex(const CatmullClarkPatch& irreg_patch, const size_t index, const Vertex& p_vtx) {
-      return 1.0f/3.0f * irreg_patch.ring[index].getSecondLimitTangent() + p_vtx;
+      return madd(1.0f/3.0f,irreg_patch.ring[index].getSecondLimitTangent(),p_vtx);
     }
 
-    __forceinline Vertex initPositiveEdgeVertex2(const CatmullClarkPatch& irreg_patch, const size_t index, const Vertex& p_vtx) {
+    __forceinline Vertex initPositiveEdgeVertex2(const CatmullClarkPatch& irreg_patch, const size_t index, const Vertex& p_vtx) 
+    {
       CatmullClark1Ring3fa r0,r1,r2;
       irreg_patch.ring[index].subdivide(r0);
       r0.subdivide(r1);
       r1.subdivide(r2);
-      return 8.0f/3.0f * r2.getLimitTangent() + p_vtx;
+      return madd(8.0f/3.0f,r2.getLimitTangent(),p_vtx);
     }
     
-    __forceinline Vertex initNegativeEdgeVertex2(const CatmullClarkPatch& irreg_patch, const size_t index, const Vertex& p_vtx) {
+    __forceinline Vertex initNegativeEdgeVertex2(const CatmullClarkPatch& irreg_patch, const size_t index, const Vertex& p_vtx) 
+    {
       CatmullClark1Ring3fa r0,r1,r2;
       irreg_patch.ring[index].subdivide(r0);
       r0.subdivide(r1);
       r1.subdivide(r2);
-      return 8.0f/3.0f * r2.getSecondLimitTangent() + p_vtx;
+      return madd(8.0f/3.0f,r2.getSecondLimitTangent(),p_vtx);
     }
     
     void initFaceVertex(const CatmullClarkPatch& irreg_patch, 
@@ -154,8 +156,8 @@ namespace embree
       if (unlikely(border_index == edge_valence-2) || hasHardEdge)
       {
         /* mirror quad center and edge mid-point */
-        c_i     = c_i_m_1 + 2 * (e_i - c_i_m_1);
-        e_i_p_1 = e_i_m_1 + 2 * (vtx - e_i_m_1);
+        c_i     = madd(2.0f, e_i - c_i_m_1, c_i_m_1);
+        e_i_p_1 = madd(2.0f, vtx - e_i_m_1, e_i_m_1);
       }
       else
       {
@@ -167,8 +169,8 @@ namespace embree
       if (unlikely(border_index == 2 || face_valence == 2 || hasHardEdge)) // FIXME: face_valence correct?
       {
         /* mirror quad center and edge mid-point */
-        c_i_m_2  = c_i_m_1 + 2 * (e_i_m_1 - c_i_m_1);
-        e_i_m_2  = e_i + 2 * (vtx - e_i);	  
+        c_i_m_2  = madd(2.0f, e_i_m_1 - c_i_m_1, c_i_m_1);
+        e_i_m_2  = madd(2.0f, vtx - e_i, + e_i);
       }
       else
       {
@@ -437,13 +439,10 @@ namespace embree
       const Vec4<float> Bu = BezierBasis::eval(uu);
       const Vec4<float> Bv = BezierBasis::eval(vv);
       
-      const Vertex_t res = 
-        (Bu.x * matrix[0][0] + Bu.y * matrix[0][1] + Bu.z * matrix[0][2] + Bu.w * matrix[0][3]) * Bv.x + 
-	(Bu.x * matrix[1][0] + Bu.y * v_11         + Bu.z * v_12         + Bu.w * matrix[1][3]) * Bv.y + 
-	(Bu.x * matrix[2][0] + Bu.y * v_21         + Bu.z * v_22         + Bu.w * matrix[2][3]) * Bv.z + 
-	(Bu.x * matrix[3][0] + Bu.y * matrix[3][1] + Bu.z * matrix[3][2] + Bu.w * matrix[3][3]) * Bv.w; 
-      
-      return res;
+      return madd(Bv.x,madd(Bu.x,matrix[0][0],madd(Bu.y,matrix[0][1],madd(Bu.z,matrix[0][2],Bu.w * matrix[0][3]))), 
+                  madd(Bv.y,madd(Bu.x,matrix[1][0],madd(Bu.y,v_11        ,madd(Bu.z,v_12        ,Bu.w * matrix[1][3]))), 
+                       madd(Bv.z,madd(Bu.x,matrix[2][0],madd(Bu.y,v_21        ,madd(Bu.z,v_22        ,Bu.w * matrix[2][3]))), 
+                            Bv.w*madd(Bu.x,matrix[3][0],madd(Bu.y,matrix[3][1],madd(Bu.z,matrix[3][2],Bu.w * matrix[3][3])))))); 
     }
 
     static __forceinline Vertex eval_du(const Vertex matrix[4][4], const Vertex f[2][2], const float uu, const float vv) // approximative derivative
@@ -453,14 +452,11 @@ namespace embree
       
       const Vec4<float> Bu = BezierBasis::derivative(uu);
       const Vec4<float> Bv = BezierBasis::eval(vv);
-      
-      const Vertex_t res = 
-        (Bu.x * matrix[0][0] + Bu.y * matrix[0][1] + Bu.z * matrix[0][2] + Bu.w * matrix[0][3]) * Bv.x + 
-	(Bu.x * matrix[1][0] + Bu.y * v_11         + Bu.z * v_12         + Bu.w * matrix[1][3]) * Bv.y + 
-	(Bu.x * matrix[2][0] + Bu.y * v_21         + Bu.z * v_22         + Bu.w * matrix[2][3]) * Bv.z + 
-	(Bu.x * matrix[3][0] + Bu.y * matrix[3][1] + Bu.z * matrix[3][2] + Bu.w * matrix[3][3]) * Bv.w; 
-      
-      return res;
+
+      return madd(Bv.x,madd(Bu.x,matrix[0][0],madd(Bu.y,matrix[0][1],madd(Bu.z,matrix[0][2],Bu.w * matrix[0][3]))), 
+                  madd(Bv.y,madd(Bu.x,matrix[1][0],madd(Bu.y,v_11        ,madd(Bu.z,v_12        ,Bu.w * matrix[1][3]))), 
+                       madd(Bv.z,madd(Bu.x,matrix[2][0],madd(Bu.y,v_21        ,madd(Bu.z,v_22        ,Bu.w * matrix[2][3]))), 
+                            Bv.w*madd(Bu.x,matrix[3][0],madd(Bu.y,matrix[3][1],madd(Bu.z,matrix[3][2],Bu.w * matrix[3][3])))))); 
     }
 
     static __forceinline Vertex eval_dv(const Vertex matrix[4][4], const Vertex f[2][2], const float uu, const float vv) // approximative derivative
@@ -470,14 +466,11 @@ namespace embree
       
       const Vec4<float> Bu = BezierBasis::eval(uu);
       const Vec4<float> Bv = BezierBasis::derivative(vv);
-      
-      const Vertex_t res = 
-        (Bu.x * matrix[0][0] + Bu.y * matrix[0][1] + Bu.z * matrix[0][2] + Bu.w * matrix[0][3]) * Bv.x + 
-	(Bu.x * matrix[1][0] + Bu.y * v_11         + Bu.z * v_12         + Bu.w * matrix[1][3]) * Bv.y + 
-	(Bu.x * matrix[2][0] + Bu.y * v_21         + Bu.z * v_22         + Bu.w * matrix[2][3]) * Bv.z + 
-	(Bu.x * matrix[3][0] + Bu.y * matrix[3][1] + Bu.z * matrix[3][2] + Bu.w * matrix[3][3]) * Bv.w; 
-      
-      return res;
+ 
+      return madd(Bv.x,madd(Bu.x,matrix[0][0],madd(Bu.y,matrix[0][1],madd(Bu.z,matrix[0][2],Bu.w * matrix[0][3]))), 
+                  madd(Bv.y,madd(Bu.x,matrix[1][0],madd(Bu.y,v_11        ,madd(Bu.z,v_12        ,Bu.w * matrix[1][3]))), 
+                       madd(Bv.z,madd(Bu.x,matrix[2][0],madd(Bu.y,v_21        ,madd(Bu.z,v_22        ,Bu.w * matrix[2][3]))), 
+                            Bv.w*madd(Bu.x,matrix[3][0],madd(Bu.y,matrix[3][1],madd(Bu.z,matrix[3][2],Bu.w * matrix[3][3])))))); 
     }
 
     static __forceinline Vertex eval_dudu(const Vertex matrix[4][4], const Vertex f[2][2], const float uu, const float vv) // approximative derivative
@@ -487,15 +480,12 @@ namespace embree
       
       const Vec4<float> Bu = BezierBasis::derivative2(uu);
       const Vec4<float> Bv = BezierBasis::eval(vv);
-      
-      const Vertex_t res = 
-        (Bu.x * matrix[0][0] + Bu.y * matrix[0][1] + Bu.z * matrix[0][2] + Bu.w * matrix[0][3]) * Bv.x + 
-	(Bu.x * matrix[1][0] + Bu.y * v_11         + Bu.z * v_12         + Bu.w * matrix[1][3]) * Bv.y + 
-	(Bu.x * matrix[2][0] + Bu.y * v_21         + Bu.z * v_22         + Bu.w * matrix[2][3]) * Bv.z + 
-	(Bu.x * matrix[3][0] + Bu.y * matrix[3][1] + Bu.z * matrix[3][2] + Bu.w * matrix[3][3]) * Bv.w; 
-      
-      return res;
-    }
+ 
+      return madd(Bv.x,madd(Bu.x,matrix[0][0],madd(Bu.y,matrix[0][1],madd(Bu.z,matrix[0][2],Bu.w * matrix[0][3]))), 
+                  madd(Bv.y,madd(Bu.x,matrix[1][0],madd(Bu.y,v_11        ,madd(Bu.z,v_12        ,Bu.w * matrix[1][3]))), 
+                       madd(Bv.z,madd(Bu.x,matrix[2][0],madd(Bu.y,v_21        ,madd(Bu.z,v_22        ,Bu.w * matrix[2][3]))), 
+                            Bv.w*madd(Bu.x,matrix[3][0],madd(Bu.y,matrix[3][1],madd(Bu.z,matrix[3][2],Bu.w * matrix[3][3])))))); 
+     }
 
     static __forceinline Vertex eval_dvdv(const Vertex matrix[4][4], const Vertex f[2][2], const float uu, const float vv) // approximative derivative
     {
@@ -504,14 +494,11 @@ namespace embree
       
       const Vec4<float> Bu = BezierBasis::eval(uu);
       const Vec4<float> Bv = BezierBasis::derivative2(vv);
-      
-      const Vertex_t res = 
-        (Bu.x * matrix[0][0] + Bu.y * matrix[0][1] + Bu.z * matrix[0][2] + Bu.w * matrix[0][3]) * Bv.x + 
-	(Bu.x * matrix[1][0] + Bu.y * v_11         + Bu.z * v_12         + Bu.w * matrix[1][3]) * Bv.y + 
-	(Bu.x * matrix[2][0] + Bu.y * v_21         + Bu.z * v_22         + Bu.w * matrix[2][3]) * Bv.z + 
-	(Bu.x * matrix[3][0] + Bu.y * matrix[3][1] + Bu.z * matrix[3][2] + Bu.w * matrix[3][3]) * Bv.w; 
-      
-      return res;
+
+      return madd(Bv.x,madd(Bu.x,matrix[0][0],madd(Bu.y,matrix[0][1],madd(Bu.z,matrix[0][2],Bu.w * matrix[0][3]))), 
+                  madd(Bv.y,madd(Bu.x,matrix[1][0],madd(Bu.y,v_11        ,madd(Bu.z,v_12        ,Bu.w * matrix[1][3]))), 
+                       madd(Bv.z,madd(Bu.x,matrix[2][0],madd(Bu.y,v_21        ,madd(Bu.z,v_22        ,Bu.w * matrix[2][3]))), 
+                            Bv.w*madd(Bu.x,matrix[3][0],madd(Bu.y,matrix[3][1],madd(Bu.z,matrix[3][2],Bu.w * matrix[3][3])))))); 
     }
 
     static __forceinline Vertex eval_dudv(const Vertex matrix[4][4], const Vertex f[2][2], const float uu, const float vv) // approximative derivative
@@ -521,14 +508,11 @@ namespace embree
       
       const Vec4<float> Bu = BezierBasis::derivative(uu);
       const Vec4<float> Bv = BezierBasis::derivative(vv);
-      
-      const Vertex_t res = 
-        (Bu.x * matrix[0][0] + Bu.y * matrix[0][1] + Bu.z * matrix[0][2] + Bu.w * matrix[0][3]) * Bv.x + 
-	(Bu.x * matrix[1][0] + Bu.y * v_11         + Bu.z * v_12         + Bu.w * matrix[1][3]) * Bv.y + 
-	(Bu.x * matrix[2][0] + Bu.y * v_21         + Bu.z * v_22         + Bu.w * matrix[2][3]) * Bv.z + 
-	(Bu.x * matrix[3][0] + Bu.y * matrix[3][1] + Bu.z * matrix[3][2] + Bu.w * matrix[3][3]) * Bv.w; 
-      
-      return res;
+
+      return madd(Bv.x,madd(Bu.x,matrix[0][0],madd(Bu.y,matrix[0][1],madd(Bu.z,matrix[0][2],Bu.w * matrix[0][3]))), 
+                  madd(Bv.y,madd(Bu.x,matrix[1][0],madd(Bu.y,v_11        ,madd(Bu.z,v_12        ,Bu.w * matrix[1][3]))), 
+                       madd(Bv.z,madd(Bu.x,matrix[2][0],madd(Bu.y,v_21        ,madd(Bu.z,v_22        ,Bu.w * matrix[2][3]))), 
+                            Bv.w*madd(Bu.x,matrix[3][0],madd(Bu.y,matrix[3][1],madd(Bu.z,matrix[3][2],Bu.w * matrix[3][3])))))); 
     }
 
     __forceinline Vertex eval(const float uu, const float vv) const {
@@ -611,11 +595,11 @@ namespace embree
                                      const size_t i, const vfloat& uu, const vfloat& vv, const Vec4<vfloat>& u_n, const Vec4<vfloat>& v_n,
                                      vfloat& matrix_11, vfloat& matrix_12, vfloat& matrix_22, vfloat& matrix_21)
     {
-      const vfloat curve0_x = v_n[0] * vfloat(v[0][0][i]) + v_n[1] * vfloat(v[1][0][i]) + v_n[2] * vfloat(v[2][0][i]) + v_n[3] * vfloat(v[3][0][i]);
-      const vfloat curve1_x = v_n[0] * vfloat(v[0][1][i]) + v_n[1] * vfloat(matrix_11 ) + v_n[2] * vfloat(matrix_21 ) + v_n[3] * vfloat(v[3][1][i]);
-      const vfloat curve2_x = v_n[0] * vfloat(v[0][2][i]) + v_n[1] * vfloat(matrix_12 ) + v_n[2] * vfloat(matrix_22 ) + v_n[3] * vfloat(v[3][2][i]);
-      const vfloat curve3_x = v_n[0] * vfloat(v[0][3][i]) + v_n[1] * vfloat(v[1][3][i]) + v_n[2] * vfloat(v[2][3][i]) + v_n[3] * vfloat(v[3][3][i]);
-      return u_n[0] * curve0_x + u_n[1] * curve1_x + u_n[2] * curve2_x + u_n[3] * curve3_x;
+      const vfloat curve0_x = madd(v_n[0],vfloat(v[0][0][i]),madd(v_n[1],vfloat(v[1][0][i]),madd(v_n[2],vfloat(v[2][0][i]),v_n[3] * vfloat(v[3][0][i]))));
+      const vfloat curve1_x = madd(v_n[0],vfloat(v[0][1][i]),madd(v_n[1],vfloat(matrix_11 ),madd(v_n[2],vfloat(matrix_21 ),v_n[3] * vfloat(v[3][1][i]))));
+      const vfloat curve2_x = madd(v_n[0],vfloat(v[0][2][i]),madd(v_n[1],vfloat(matrix_12 ),madd(v_n[2],vfloat(matrix_22 ),v_n[3] * vfloat(v[3][2][i]))));
+      const vfloat curve3_x = madd(v_n[0],vfloat(v[0][3][i]),madd(v_n[1],vfloat(v[1][3][i]),madd(v_n[2],vfloat(v[2][3][i]),v_n[3] * vfloat(v[3][3][i]))));
+      return madd(u_n[0],curve0_x,madd(u_n[1],curve1_x,madd(u_n[2],curve2_x,u_n[3] * curve3_x)));
     }
     
     template<typename vbool, typename vfloat>
@@ -727,15 +711,6 @@ namespace embree
       const Vec3<T> F2( select(m_border,f2_p.x,f2_i.x), select(m_border,f2_p.y,f2_i.y), select(m_border,f2_p.z,f2_i.z) );
       const Vec3<T> F3( select(m_border,f3_p.x,f3_i.x), select(m_border,f3_p.y,f3_i.y), select(m_border,f3_p.z,f3_i.z) );
 
-      /*
-          void EvalBezCubic(in float u, out float B[4]) {
-      float T = u, S = 1.0 - u;
-      B[0] = S*S*S;
-      B[1] = 3.0*T*S*T;
-      B[2] = 3.0*S*T*S;
-      B[3] = T*T*T;
-    }
-      */
       const T B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
       const T B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
       const T B1_u = 3.0f * (one_minus_uu * uu * one_minus_uu);
@@ -745,52 +720,21 @@ namespace embree
       const T B3_u = uu * uu * uu;
       const T B3_v = vv * vv * vv;
 
-      const T B0_u_00_x = B0_u * matrix[0][0].x;
-      const T B1_u_01_x = B1_u * matrix[0][1].x;
-      const T B2_u_02_x = B2_u * matrix[0][2].x;
-      const T B3_u_03_x = B3_u * matrix[0][3].x;
+      const T x = madd(B0_v,madd(B0_u,matrix[0][0].x,madd(B1_u,matrix[0][1].x,madd(B2_u,matrix[0][2].x,B3_u * matrix[0][3].x))), 
+                  madd(B1_v,madd(B0_u,matrix[1][0].x,madd(B1_u,F0.x          ,madd(B2_u,F1.x          ,B3_u * matrix[1][3].x))), 
+                  madd(B2_v,madd(B0_u,matrix[2][0].x,madd(B1_u,F3.x          ,madd(B2_u,F2.x          ,B3_u * matrix[2][3].x))), 
+                       B3_v*madd(B0_u,matrix[3][0].x,madd(B1_u,matrix[3][1].x,madd(B2_u,matrix[3][2].x,B3_u * matrix[3][3].x)))))); 
 
-      const T B0_u_10_x = B0_u * matrix[1][0].x;
-      const T B1_u_11_x = B1_u * F0.x;
-      const T B2_u_12_x = B2_u * F1.x;
-      const T B3_u_13_x = B3_u * matrix[1][3].x;
-
-      const T B0_u_20_x = B0_u * matrix[2][0].x;
-      const T B1_u_21_x = B1_u * F3.x;
-      const T B2_u_22_x = B2_u * F2.x;
-      const T B3_u_23_x = B3_u * matrix[2][3].x;
-
-      const T B0_u_30_x = B0_u * matrix[3][0].x;
-      const T B1_u_31_x = B1_u * matrix[3][1].x;
-      const T B2_u_32_x = B2_u * matrix[3][2].x;
-      const T B3_u_33_x = B3_u * matrix[3][3].x;
-
-#if 0      
-      const T x = 
-	(B0_u * matrix[0][0].x + B1_u * matrix[0][1].x + B2_u * matrix[0][2].x + B3_u * matrix[0][3].x) * B0_v + 
-	(B0_u * matrix[1][0].x + B1_u * F0.x           + B2_u * F1.x           + B3_u * matrix[1][3].x) * B1_v + 
-	(B0_u * matrix[2][0].x + B1_u * F3.x           + B2_u * F2.x           + B3_u * matrix[2][3].x) * B2_v + 
-	(B0_u * matrix[3][0].x + B1_u * matrix[3][1].x + B2_u * matrix[3][2].x + B3_u * matrix[3][3].x) * B3_v; 
-#else
-      const T N0_v_x = ((B0_u_00_x + B2_u_02_x) + (B1_u_01_x + B3_u_03_x)) * B0_v;
-      const T N1_v_x = ((B0_u_10_x + B2_u_12_x) + (B1_u_11_x + B3_u_13_x)) * B1_v;
-      const T N2_v_x = ((B0_u_20_x + B2_u_22_x) + (B1_u_21_x + B3_u_23_x)) * B2_v;
-      const T N3_v_x = ((B0_u_30_x + B2_u_32_x) + (B1_u_31_x + B3_u_33_x)) * B3_v;
-      const T x = (N0_v_x + N2_v_x) + (N1_v_x + N3_v_x);
-
-#endif      
-      const T y = 
-	(B0_u * matrix[0][0].y + B1_u * matrix[0][1].y + B2_u * matrix[0][2].y + B3_u * matrix[0][3].y) * B0_v + 
-	(B0_u * matrix[1][0].y + B1_u * F0.y           + B2_u * F1.y           + B3_u * matrix[1][3].y) * B1_v + 
-	(B0_u * matrix[2][0].y + B1_u * F3.y           + B2_u * F2.y           + B3_u * matrix[2][3].y) * B2_v + 
-	(B0_u * matrix[3][0].y + B1_u * matrix[3][1].y + B2_u * matrix[3][2].y + B3_u * matrix[3][3].y) * B3_v; 
+      const T y = madd(B0_v,madd(B0_u,matrix[0][0].y,madd(B1_u,matrix[0][1].y,madd(B2_u,matrix[0][2].y,B3_u * matrix[0][3].y))),
+                  madd(B1_v,madd(B0_u,matrix[1][0].y,madd(B1_u,F0.y          ,madd(B2_u,F1.y          ,B3_u * matrix[1][3].y))),
+                  madd(B2_v,madd(B0_u,matrix[2][0].y,madd(B1_u,F3.y          ,madd(B2_u,F2.y          ,B3_u * matrix[2][3].y))),
+                       B3_v*madd(B0_u,matrix[3][0].y,madd(B1_u,matrix[3][1].y,madd(B2_u,matrix[3][2].y,B3_u * matrix[3][3].y))))));
       
-      const T z = 
-	(B0_u * matrix[0][0].z + B1_u * matrix[0][1].z + B2_u * matrix[0][2].z + B3_u * matrix[0][3].z) * B0_v + 
-	(B0_u * matrix[1][0].z + B1_u * F0.z           + B2_u * F1.z           + B3_u * matrix[1][3].z) * B1_v + 
-	(B0_u * matrix[2][0].z + B1_u * F3.z           + B2_u * F2.z           + B3_u * matrix[2][3].z) * B2_v + 
-	(B0_u * matrix[3][0].z + B1_u * matrix[3][1].z + B2_u * matrix[3][2].z + B3_u * matrix[3][3].z) * B3_v; 
-            
+      const T z = madd(B0_v,madd(B0_u,matrix[0][0].z,madd(B1_u,matrix[0][1].z,madd(B2_u,matrix[0][2].z,B3_u * matrix[0][3].z))),
+                  madd(B1_v,madd(B0_u,matrix[1][0].z,madd(B1_u,F0.z          ,madd(B2_u,F1.z          ,B3_u * matrix[1][3].z))),
+                  madd(B2_v,madd(B0_u,matrix[2][0].z,madd(B1_u,F3.z          ,madd(B2_u,F2.z          ,B3_u * matrix[2][3].z))),
+                       B3_v*madd(B0_u,matrix[3][0].z,madd(B1_u,matrix[3][1].z,madd(B2_u,matrix[3][2].z,B3_u * matrix[3][3].z))))));
+      
       return Vec3<T>(x,y,z);
     }
 

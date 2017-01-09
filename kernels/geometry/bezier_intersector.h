@@ -92,18 +92,18 @@ namespace embree
         /* approximative intersection with cone */
         const Vec4vfx v = p1-p0;
         const Vec4vfx w = -p0;
-        const vfloatx d0 = w.x*v.x + w.y*v.y;
-        const vfloatx d1 = v.x*v.x + v.y*v.y;
+        const vfloatx d0 = madd(w.x,v.x,w.y*v.y);
+        const vfloatx d1 = madd(v.x,v.x,v.y*v.y);
         const vfloatx u = clamp(d0*rcp(d1),vfloatx(zero),vfloatx(one));
-        const Vec4vfx p = p0 + u*v;
+        const Vec4vfx p = madd(u,v,p0);
         const vfloatx t = p.z*depth_scale;
-        const vfloatx d2 = p.x*p.x + p.y*p.y; 
+        const vfloatx d2 = madd(p.x,p.x,p.y*p.y); 
         const vfloatx r = p.w;
         const vfloatx r2 = r*r;
         valid &= (d2 <= r2) & (vfloatx(ray.tnear) < t) & (t < vfloatx(ray.tfar));
 
         /* update hit information */
-         bool ishit = false;
+        bool ishit = false;
         if (unlikely(any(valid))) {
           BezierHit<VSIZEX> hit(valid,u,0.0f,t,0,N,v0,v1,v2,v3);
           ishit = ishit | epilog(valid,hit);
@@ -122,12 +122,12 @@ namespace embree
             /* approximative intersection with cone */
             const Vec4vfx v = p1-p0;
             const Vec4vfx w = -p0;
-            const vfloatx d0 = w.x*v.x + w.y*v.y;
-            const vfloatx d1 = v.x*v.x + v.y*v.y;
+            const vfloatx d0 = madd(w.x,v.x,w.y*v.y);
+            const vfloatx d1 = madd(v.x,v.x,v.y*v.y);
             const vfloatx u = clamp(d0*rcp(d1),vfloatx(zero),vfloatx(one));
-            const Vec4vfx p = p0 + u*v;
+            const Vec4vfx p = madd(u,v,p0);
             const vfloatx t = p.z*depth_scale;
-            const vfloatx d2 = p.x*p.x + p.y*p.y; 
+            const vfloatx d2 = madd(p.x,p.x,p.y*p.y); 
             const vfloatx r = p.w;
             const vfloatx r2 = r*r;
             valid &= (d2 <= r2) & (vfloatx(ray.tnear) < t) & (t < vfloatx(ray.tfar));
@@ -195,12 +195,12 @@ namespace embree
           /* approximative intersection with cone */
           const Vec4vfx v = p1-p0;
           const Vec4vfx w = -p0;
-          const vfloatx d0 = w.x*v.x + w.y*v.y;
-          const vfloatx d1 = v.x*v.x + v.y*v.y;
+          const vfloatx d0 = madd(w.x,v.x,w.y*v.y);
+          const vfloatx d1 = madd(v.x,v.x,v.y*v.y);
           const vfloatx u = clamp(d0*rcp(d1),vfloatx(zero),vfloatx(one));
-          const Vec4vfx p = p0 + u*v;
+          const Vec4vfx p = madd(u,v,p0);
           const vfloatx t = p.z*depth_scale[k];
-          const vfloatx d2 = p.x*p.x + p.y*p.y; 
+          const vfloatx d2 = madd(p.x,p.x,p.y*p.y); 
           const vfloatx r = p.w;
           const vfloatx r2 = r*r;
           valid &= (d2 <= r2) & (vfloatx(ray_tnear) < t) & (t < vfloatx(ray_tfar));

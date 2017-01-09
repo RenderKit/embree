@@ -263,15 +263,14 @@ namespace embree
 	  
           /* even slower path for blended edge rule */
           if (unlikely(edge_crease < 1.0f)) {
-            const float w1 = edge_crease, w0 = 1.0f-w1;
-            dest.ring[index] = w0*((v+f)*0.25f) + w1*(v*0.5f);
+            dest.ring[index] = lerp((v+f)*0.25f,v*0.5f,edge_crease);
           }
         }
       }
       
       /* compute new vertex using smooth rule */
       const float inv_face_valence = 1.0f / (float)face_valence;
-      const Vertex_t v_smooth = (Vertex_t)(S*inv_face_valence + (float(face_valence)-2.0f)*vtx)*inv_face_valence;
+      const Vertex_t v_smooth = (Vertex_t) madd(inv_face_valence,S,(float(face_valence)-2.0f)*vtx)*inv_face_valence;
       dest.vtx = v_smooth;
       
       /* compute new vertex using vertex_crease_weight rule */
@@ -280,8 +279,7 @@ namespace embree
         if (vertex_crease_weight >= 1.0f) {
           dest.vtx = vtx;
         } else {
-          const float t1 = vertex_crease_weight, t0 = 1.0f-t1;
-          dest.vtx = t0*v_smooth + t1*vtx;
+          dest.vtx = lerp(v_smooth,vtx,vertex_crease_weight);
         }
         return;
       }
@@ -304,9 +302,9 @@ namespace embree
         dest.crease_weight[crease1] = max(0.25f*(3.0f*crease_weight1 + crease_weight0)-1.0f,0.0f);
 
         /* interpolate between sharp and smooth rule */
-        const float t1 = 0.5f*(crease_weight0+crease_weight1), t0 = 1.0f-t1;
-        if (unlikely(t1 < 1.0f)) {
-          dest.vtx = t0*v_smooth + t1*v_sharp;
+        const float v_blend = 0.5f*(crease_weight0+crease_weight1);
+        if (unlikely(v_blend < 1.0f)) {
+          dest.vtx = lerp(v_smooth,v_sharp,v_blend);
         }
       }
       
@@ -708,8 +706,7 @@ namespace embree
 	  
           /* even slower path for blended edge rule */
           if (unlikely(faces[i].crease_weight < 1.0f)) {
-            const float w0 = faces[i].crease_weight, w1 = 1.0f-w0;
-            dest.ring[2*i] = w1*((v+f)*0.25f) + w0*(v*0.5f);
+            dest.ring[2*i] = lerp((v+f)*0.25f,v*0.5f,faces[i].crease_weight);
           }
         }
         j+=faces[i].size;
@@ -718,7 +715,7 @@ namespace embree
       
       /* compute new vertex using smooth rule */
       const float inv_face_valence = 1.0f / (float)face_valence;
-      const Vertex_t v_smooth = (Vertex_t)(S*inv_face_valence + (float(face_valence)-2.0f)*vtx)*inv_face_valence;
+      const Vertex_t v_smooth = (Vertex_t) madd(inv_face_valence,S,(float(face_valence)-2.0f)*vtx)*inv_face_valence;
       dest.vtx = v_smooth;
       
       /* compute new vertex using vertex_crease_weight rule */
@@ -727,8 +724,7 @@ namespace embree
         if (vertex_crease_weight >= 1.0f) {
           dest.vtx = vtx;
         } else {
-          const float t0 = vertex_crease_weight, t1 = 1.0f-t0;
-          dest.vtx = t0*vtx + t1*v_smooth;
+          dest.vtx = lerp(vtx,v_smooth,vertex_crease_weight);
         }
         return;
       }
@@ -744,9 +740,9 @@ namespace embree
         dest.vtx = v_sharp;
         dest.crease_weight[crease_id[0]] = max(0.25f*(3.0f*crease_weight0 + crease_weight1)-1.0f,0.0f);
         dest.crease_weight[crease_id[1]] = max(0.25f*(3.0f*crease_weight1 + crease_weight0)-1.0f,0.0f);
-        const float t0 = 0.5f*(crease_weight0+crease_weight1), t1 = 1.0f-t0;
-        if (unlikely(t0 < 1.0f)) {
-          dest.vtx = t0*v_sharp + t1*v_smooth;
+        const float v_blend = 0.5f*(crease_weight0+crease_weight1);
+        if (unlikely(v_blend < 1.0f)) {
+          dest.vtx = lerp(v_sharp,v_smooth,v_blend);
         }
       }
       

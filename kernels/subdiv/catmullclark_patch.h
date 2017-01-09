@@ -522,9 +522,9 @@ namespace embree
       for (unsigned i=0; i<N; i++)
       {
         const unsigned i0 = i, i1 = i+1==N ? 0 : i+1;
-        const Vertex P1 = P0 + (1.0f/3.0f) * ring[i0].getLimitTangent();
+        const Vertex P1 = madd(1.0f/3.0f,ring[i0].getLimitTangent(),P0);
         const Vertex P3 = ring[i1].getLimitVertex();
-        const Vertex P2 = P3 + (1.0f/3.0f) * ring[i1].getSecondLimitTangent();
+        const Vertex P2 = madd(1.0f/3.0f,ring[i1].getSecondLimitTangent(),P3);
         new (&curves[i]) BezierCurve(P0,P1,P2,P3);
         P0 = P3;
       }
@@ -548,14 +548,14 @@ namespace embree
       const Vertex b03 = ring[i1].getLimitVertex();
       const Vertex b33 = ring[i2].getLimitVertex();
       
-      const Vertex b01 = b00 + 1.0/3.0f * t0_p;
-      const Vertex b11 = b00 + 1.0/3.0f * t0_m;
+      const Vertex b01 = madd(1.0/3.0f,t0_p,b00);
+      const Vertex b11 = madd(1.0/3.0f,t0_m,b00);
       
-      //const Vertex b13 = b03 + 1.0/3.0f * t1_p;
-      const Vertex b02 = b03 + 1.0/3.0f * t1_m;
+      //const Vertex b13 = madd(1.0/3.0f,t1_p,b03);
+      const Vertex b02 = madd(1.0/3.0f,t1_m,b03);
           
-      const Vertex b22 = b33 + 1.0/3.0f * t2_p;
-      const Vertex b23 = b33 + 1.0/3.0f * t2_m;
+      const Vertex b22 = madd(1.0/3.0f,t2_p,b33);
+      const Vertex b23 = madd(1.0/3.0f,t2_m,b33);
           
       new (&curves[0]) BezierCurve(b00,b01,b02,b03);
       new (&curves[1]) BezierCurve(b33,b22,b11,b00);

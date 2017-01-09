@@ -28,7 +28,6 @@
 #include "geometry.h"
 
 #include "../geometry/cylinder.h"
-#include "../geometry/cone.h"
 
 #include "../bvh/bvh4_factory.h"
 #include "../bvh/bvh8_factory.h"
@@ -72,7 +71,6 @@ namespace embree
 
     /*! do some internal tests */
     assert(isa::Cylinder::verify());
-    assert(isa::Cone::verify());
     
     /*! set tessellation cache size */
     setCacheSize( State::tessellation_cache_size );

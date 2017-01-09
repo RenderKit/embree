@@ -69,14 +69,13 @@ namespace embree
         
         /*! calculates left spatial position of bin */
         __forceinline float pos(const size_t bin, const size_t dim) const {
-          //return float(bin)/scale[dim]+ofs[dim];
-          return float(bin)*inv_scale[dim]+ofs[dim];
+          return madd(float(bin),inv_scale[dim],ofs[dim]);
         }
 
         /*! calculates left spatial position of bin */
         template<size_t N>
         __forceinline vfloat<N> posN(const vfloat<N> bin, const size_t dim) const {
-          return bin*vfloat<N>(inv_scale[dim])+vfloat<N>(ofs[dim]);
+          return madd(bin,vfloat<N>(inv_scale[dim]),vfloat<N>(ofs[dim]));
         }
         
         /*! returns true if the mapping is invalid in some dimension */
@@ -339,7 +338,7 @@ namespace embree
           const vfloat4 rArea = rAreas[i];
           const vint4 lCount = (count     +blocks_add) >> int(blocks_shift);
           const vint4 rCount = (rCounts[i]+blocks_add) >> int(blocks_shift);
-          const vfloat4 sah = lArea*vfloat4(lCount) + rArea*vfloat4(rCount);
+          const vfloat4 sah = madd(lArea,vfloat4(lCount),rArea*vfloat4(rCount));
           const vbool4 mask = sah < vbestSAH;
           vbestPos      = select(mask,ii ,vbestPos);
           vbestSAH      = select(mask,sah,vbestSAH);

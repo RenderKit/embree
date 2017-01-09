@@ -43,7 +43,7 @@ namespace embree
       vfloat4 sizeX = parent->upper_x-parent->lower_x;
       vfloat4 sizeY = parent->upper_y-parent->lower_y;
       vfloat4 sizeZ = parent->upper_z-parent->lower_z;
-      vfloat4 childArea = sizeX*(sizeY + sizeZ) + sizeY*sizeZ;
+      vfloat4 childArea = madd(sizeX,(sizeY + sizeZ),sizeY*sizeZ);
       
       /*! get node bounds */
       BBox<vfloat4> child1_0,child1_1,child1_2,child1_3;

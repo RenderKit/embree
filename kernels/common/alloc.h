@@ -18,8 +18,6 @@
 
 #include "default.h"
 
-#define ENABLE_PARALLEL_BLOCK_ALLOCATION 1
-
 namespace embree
 {
   class FastAllocator 
@@ -47,10 +45,6 @@ namespace embree
       /*! Constructor for usage with ThreadLocalData */
       __forceinline ThreadLocal (void* alloc) 
 	: alloc((FastAllocator*)alloc), ptr(nullptr), cur(0), end(0), allocBlockSize(((FastAllocator*)alloc)->defaultBlockSize), bytesUsed(0), bytesWasted(0) {}
-
-      /*! Default constructor. */
-      //__forceinline ThreadLocal (FastAllocator* alloc, const size_t allocBlockSize = PAGE_SIZE) 
-//	: alloc(alloc), ptr(nullptr), cur(0), end(0), allocBlockSize(allocBlockSize), bytesUsed(0), bytesWasted(0)  {}
 
       /*! resets the allocator */
       __forceinline void reset() 
@@ -141,13 +135,6 @@ namespace embree
         if (((FastAllocator*)alloc)->use_single_mode) alloc1 = &allocators[0];
       }
       
-      /*! Default constructor. */
-      /*__forceinline ThreadLocal2 (FastAllocator* alloc, const size_t allocBlockSize = PAGE_SIZE) 
-      {
-        ::new (&allocators[0]) ThreadLocal(alloc,allocBlockSize); alloc0 = &allocators[0];
-        ::new (&allocators[1]) ThreadLocal(alloc,allocBlockSize); alloc1 = &allocators[0];
-        }*/
-
       /*! resets the allocator */
       __forceinline void reset() {
         allocators[0].reset();
@@ -167,7 +154,8 @@ namespace embree
     };
 
     FastAllocator (MemoryMonitorInterface* device, bool osAllocation) 
-      : device(device), slotMask(0), usedBlocks(nullptr), freeBlocks(nullptr), use_single_mode(false), defaultBlockSize(PAGE_SIZE), growSize(PAGE_SIZE), log2_grow_size_scale(0), bytesUsed(0), bytesWasted(0), thread_local_allocators2(this), osAllocation(osAllocation)
+      : device(device), slotMask(0), usedBlocks(nullptr), freeBlocks(nullptr), use_single_mode(false), defaultBlockSize(PAGE_SIZE), 
+      growSize(PAGE_SIZE), log2_grow_size_scale(0), bytesUsed(0), bytesWasted(0), thread_local_allocators2(this), osAllocation(osAllocation)
     {
       for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++)
       {
@@ -196,7 +184,6 @@ namespace embree
 
     void internal_fix_used_blocks()
     {
-#if ENABLE_PARALLEL_BLOCK_ALLOCATION == 1
       /* move thread local blocks to global block list */
       for (size_t i = 0; i < MAX_THREAD_USED_BLOCK_SLOTS; i++)
       {
@@ -208,7 +195,6 @@ namespace embree
         }
         threadBlocks[i] = nullptr;
       }
-#endif
     }
 
     /*! initializes the allocator */
@@ -332,7 +318,6 @@ namespace embree
         if (bytes > maxAllocationSize)
           throw_RTCError(RTC_UNKNOWN_ERROR,"allocation is too large");
 
-#if ENABLE_PARALLEL_BLOCK_ALLOCATION == 1
         /* parallel block creation in case of no freeBlocks, avoids single global mutex */
         if (likely(freeBlocks.load() == nullptr)) 
         {
@@ -343,7 +328,6 @@ namespace embree
           }
           continue;
         }        
-#endif
 
         /* if this fails allocate new block */
         {
@@ -459,27 +443,12 @@ namespace embree
         bytesAllocate = ((sizeof_Header+bytesAllocate+PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
         bytesReserve  = ((sizeof_Header+bytesReserve +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
         if (device) device->memoryMonitor(bytesAllocate,false);
-        void *ptr = nullptr;
+
         /* either use alignedMalloc or os_reserve/os_commit */
-        if (!osAllocation)
-        {
-          const size_t defaultAlignment = 64;
-#if defined(__AVX512F__)
-          /* need full page alignment on xeon phi to ensure 2M pages, better waste some space than to lose lot of performance */
-          const size_t alignmentSizeThreshold = 2 * PAGE_SIZE_2M; // 2 * 2M = 4M
-          const size_t alignment = (bytesReserve >= alignmentSizeThreshold) ? PAGE_SIZE_2M : defaultAlignment;
-          ptr = alignedMalloc(bytesReserve,alignment);         
-#else
-          /* slightly reduces rendering performance on xeon 3-5% */
-          const size_t alignmentSizeThreshold = 8 * PAGE_SIZE; // 8 * 4k = 32k
-          const size_t alignment = (bytesReserve >= alignmentSizeThreshold) ? PAGE_SIZE : defaultAlignment;
-          ptr = alignedMalloc(bytesReserve,alignment);         
-#endif
-          assert(ptr);
-          os_advise(ptr,bytesReserve); 
-        }
-        else
-        {
+        void *ptr = nullptr;
+        if (!osAllocation) {
+          ptr = alignedMalloc(bytesReserve,CACHELINE_SIZE);         
+        } else {
           ptr = os_reserve(bytesReserve);
           os_commit(ptr,bytesAllocate);
         }
@@ -493,7 +462,8 @@ namespace embree
         //for (size_t i=0; i<allocEnd; i+=defaultBlockSize) data[i] = 0;
       }
 
-      void clear (MemoryMonitorInterface* device, bool osAllocation) {
+      void clear (MemoryMonitorInterface* device, bool osAllocation) 
+      {
 	if (next) next->clear(device,osAllocation); next = nullptr;
         const size_t sizeof_Header = offsetof(Block,data[0]);
         const ssize_t sizeof_Alloced = sizeof_Header+getBlockAllocatedBytes();

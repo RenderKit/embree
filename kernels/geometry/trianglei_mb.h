@@ -92,7 +92,7 @@ namespace embree
       const Vec3fa v1 = *(Vec3fa*)mesh->vertexPtr(v[index],itime+1);
       const Vec3<T> p0(v0.x,v0.y,v0.z);
       const Vec3<T> p1(v1.x,v1.y,v1.z);
-      return (T(one)-ftime)*p0 + ftime*p1;
+      return lerp(p0,p1,ftime);
     }
 
     template<int K, typename T>
@@ -318,15 +318,13 @@ namespace embree
     vfloat4 ftime;
     const vint4 itime = getTimeSegment(vfloat4(time), numTimeSegments, ftime);
 
-    const vfloat4 t0 = 1.0f - ftime;
-    const vfloat4 t1 = ftime;
     Vec3vf4 a0,a1,a2;
     gather(a0,a1,a2,mesh0,mesh1,mesh2,mesh3,itime);
     Vec3vf4 b0,b1,b2;
     gather(b0,b1,b2,mesh0,mesh1,mesh2,mesh3,itime+1);
-    p0 = t0 * a0 + t1 * b0;
-    p1 = t0 * a1 + t1 * b1;
-    p2 = t0 * a2 + t1 * b2;
+    p0 = lerp(a0,b0,ftime);
+    p1 = lerp(a1,b1,ftime);
+    p2 = lerp(a2,b2,ftime);
   }
 
   template<int M>
