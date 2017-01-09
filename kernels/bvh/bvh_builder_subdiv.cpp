@@ -630,8 +630,6 @@ namespace embree
       BVHNMB4DSubdivPatch1CachedBuilderBinnedSAHClass (BVH* bvh, Scene* scene, bool cached)
         : bvh(bvh), scene(scene), primsMB(scene->device), bounds(scene->device), numSubdivEnableDisableEvents(0), cached(cached) {}
 
-#if MBLUR_NEW_ARRAY
-      
       bool initializeHalfEdges(size_t& numPrimitives)
       {
         /* initialize all half edge structures */
@@ -880,9 +878,6 @@ namespace embree
         bvh->cleanup();
         bvh->postBuild(t0);        
       }
-#else
-      void build(size_t, size_t) {}
-#endif
       
       void clear() {
         primsMB.clear();
