@@ -80,12 +80,7 @@ namespace embree
 #endif
         typedef mvector<PrimRefMB>* PrimRefVector;
 
-        enum
-        {
-          SPLIT_OBJECT   =  0,
-          SPLIT_TEMPORAL = -1,
-          SPLIT_FALLBACK = -2,
-        };
+        
 
         
 
@@ -104,7 +99,7 @@ namespace embree
           binner.bin_parallel(set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,mapping);
           Split osplit = binner.best(mapping,logBlockSize);
           osplit.sah *= pinfo.time_range.size();
-          if (!osplit.valid()) osplit.data = SPLIT_FALLBACK; // use fallback split
+          if (!osplit.valid()) osplit.data = Split::SPLIT_FALLBACK; // use fallback split
           return osplit;
         }
 
@@ -203,7 +198,7 @@ namespace embree
               }
             }
             assert(bestSAH != float(inf));
-            return Split(bestSAH*MBLUR_TIME_SPLIT_THRESHOLD,SPLIT_TEMPORAL,0,bestPos);
+            return Split(bestSAH*MBLUR_TIME_SPLIT_THRESHOLD,Split::SPLIT_TEMPORAL,0,bestPos);
           }
           
         public:
@@ -226,7 +221,7 @@ namespace embree
           TemporalBinInfo<MBLUR_TIME_SPLIT_LOCATIONS> binner(empty);
           binner.bin_parallel(set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,set.time_range,numTimeSegments,recalculatePrimRef);
           Split tsplit = binner.best(logBlockSize,set.time_range,numTimeSegments);
-          if (!tsplit.valid()) tsplit.data = SPLIT_FALLBACK; // use fallback split
+          if (!tsplit.valid()) tsplit.data = Split::SPLIT_FALLBACK; // use fallback split
           return tsplit;
         }
 
@@ -307,10 +302,6 @@ namespace embree
         static const size_t SINGLE_THREADED_THRESHOLD = 1024;  //!< threshold to switch to single threaded build
         typedef HeuristicMBlur<RecalculatePrimRef,NUM_OBJECT_BINS> Heuristic;
 
-        using Heuristic::SPLIT_OBJECT;
-        using Heuristic::SPLIT_TEMPORAL;
-        using Heuristic::SPLIT_FALLBACK;
-
         typedef BinSplit<NUM_OBJECT_BINS> Split;
 
       public:
@@ -378,7 +369,7 @@ namespace embree
 
             /* add new children */
             SharedPrimRefVector* bsharedPrimVec = children[bestChild].sharedPrimVec;
-            if (brecord.split.data == SPLIT_TEMPORAL)
+            if (brecord.split.data == Split::SPLIT_TEMPORAL)
             {
               SharedPrimRefVector* lsharedPrimVec = new (&sharedPrimVecs[numSharedPrimVecs  ]) SharedPrimRefVector(lrecord);
               SharedPrimRefVector* rsharedPrimVec = new (&sharedPrimVecs[numSharedPrimVecs+1]) SharedPrimRefVector(rrecord);
@@ -410,7 +401,7 @@ namespace embree
 
             /* add new children */
             SharedPrimRefVector* bsharedPrimVec = children[bestChild].sharedPrimVec;
-            if (brecord.split.data == SPLIT_TEMPORAL)
+            if (brecord.split.data == Split::SPLIT_TEMPORAL)
             {
               SharedPrimRefVector* lsharedPrimVec = new (&sharedPrimVecs[numSharedPrimVecs  ]) SharedPrimRefVector(lrecord);
               SharedPrimRefVector* rsharedPrimVec = new (&sharedPrimVecs[numSharedPrimVecs+1]) SharedPrimRefVector(rrecord);
@@ -475,7 +466,7 @@ namespace embree
             for (size_t i=0; i<numChildren; i++)
             {
               /* ignore leaves as they cannot get split */
-              if (children[i].record.pinfo.size() <= builder->maxLeafSize && children[i].record.split.data != SPLIT_TEMPORAL)
+              if (children[i].record.pinfo.size() <= builder->maxLeafSize && children[i].record.split.data != Split::SPLIT_TEMPORAL)
                 continue;
 
               /* remember child with largest size */
@@ -557,12 +548,12 @@ namespace embree
         {
           /* perform fallback split */
           //if (unlikely(!split.valid())) {
-          if (unlikely(split.data == SPLIT_FALLBACK)) {
+          if (unlikely(split.data == Split::SPLIT_FALLBACK)) {
             deterministic_order(set);
             return splitFallback(set,left,lset,right,rset);
           }
           /* perform temporal split */
-          else if (unlikely(split.data == SPLIT_TEMPORAL)) {
+          else if (unlikely(split.data == Split::SPLIT_TEMPORAL)) {
             Heuristic::temporal_split(split,pinfo,set,left,lset,right,rset);
           }
           /* perform object split */
@@ -590,13 +581,13 @@ namespace embree
               if (localTimeSegments > 1) {
                 const int icenter = (itime_range.begin() + itime_range.end())/2;
                 const float splitTime = float(icenter)/float(prim.totalTimeSegments());
-                return Split(1.0f,SPLIT_TEMPORAL,0,splitTime);
+                return Split(1.0f,Split::SPLIT_TEMPORAL,0,splitTime);
               }
             }
           }
           
           /* otherwise return fallback split */
-          return Split(1.0f,SPLIT_FALLBACK);
+          return Split(1.0f,Split::SPLIT_FALLBACK);
         }
 
         void splitFallback(const SetMB& set, PrimInfoMB& linfo, SetMB& lset, PrimInfoMB& rinfo, SetMB& rset) // FIXME: also perform time split here?
@@ -638,7 +629,7 @@ namespace embree
           current.split = findFallback(current,singleLeafTimeSegment);
 
           /* create leaf for few primitives */
-          if (current.pinfo.size() <= maxLeafSize && current.split.data != SPLIT_TEMPORAL)
+          if (current.pinfo.size() <= maxLeafSize && current.split.data != Split::SPLIT_TEMPORAL)
             return createLeaf(current,alloc);
           
           /* fill all children by always splitting the largest one */

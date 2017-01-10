@@ -98,6 +98,13 @@ namespace embree
     template<size_t BINS>
       struct BinSplit
       {
+        enum
+        {
+          SPLIT_OBJECT   =  0,
+          SPLIT_TEMPORAL = -1,
+          SPLIT_FALLBACK = -2,
+        };
+
         /*! construct an invalid split by default */
         __forceinline BinSplit()
           : sah(inf), dim(-1), pos(0), data(0) {}
