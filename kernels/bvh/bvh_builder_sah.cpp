@@ -632,15 +632,14 @@ namespace embree
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
-      typedef SetMB Set;
       typedef BinSplit<NUM_OBJECT_BINS> Split;
-      typedef GeneralBuildRecord<Set,Split,PrimInfoMB> BuildRecord;
+      typedef GeneralBuildRecord<SetMB,Split,PrimInfoMB> BuildRecord;
       typedef typename BVH::AlignedNodeMB AlignedNodeMB;
       typedef typename BVH::AlignedNodeMB4D AlignedNodeMB4D;
 
       __forceinline CreateAlignedNodeMB4D (BVH* bvh) : bvh(bvh) {}
       
-      __forceinline NodeRef operator() (const GeneralBuildRecord<Set,Split,PrimInfoMB>& current, GeneralBuildRecord<Set,Split,PrimInfoMB>** children, const size_t num, FastAllocator::ThreadLocal2* alloc)
+      __forceinline NodeRef operator() (const BuildRecord& current, BuildRecord** children, const size_t num, FastAllocator::ThreadLocal2* alloc)
       {
         bool hasTimeSplits = false;
         for (size_t i=0; i<num && !hasTimeSplits; i++)
@@ -671,9 +670,8 @@ namespace embree
     struct CreateMBlurLeaf
     {
       typedef BVHN<N> BVH;
-      typedef SetMB Set;
       typedef BinSplit<NUM_OBJECT_BINS> Split;
-      typedef GeneralBuildRecord<Set,Split,PrimInfoMB> BuildRecord;
+      typedef GeneralBuildRecord<SetMB,Split,PrimInfoMB> BuildRecord;
 
       __forceinline CreateMBlurLeaf (BVH* bvh) : bvh(bvh) {}
       
@@ -702,9 +700,8 @@ namespace embree
       typedef typename BVHN<N>::AlignedNodeMB AlignedNodeMB;
       typedef typename BVHN<N>::AlignedNodeMB4D AlignedNodeMB4D;
 
-      typedef SetMB Set;
       typedef BinSplit<NUM_OBJECT_BINS> Split;
-      typedef GeneralBuildRecord<Set,Split,PrimInfoMB> BuildRecord;
+      typedef GeneralBuildRecord<SetMB,Split,PrimInfoMB> BuildRecord;
 
       BVH* bvh;
       Scene* scene;
@@ -792,7 +789,7 @@ namespace embree
         RecalculatePrimRef<Mesh> recalculatePrimRef(scene);
 
         /* reduction function */
-        auto updateNodeFunc = [&] (NodeRef ref, Set& prims, const std::pair<LBBox3fa,BBox1f>* bounds, const size_t num) -> std::pair<LBBox3fa,BBox1f> {
+        auto updateNodeFunc = [&] (NodeRef ref, SetMB& prims, const std::pair<LBBox3fa,BBox1f>* bounds, const size_t num) -> std::pair<LBBox3fa,BBox1f> {
 
           assert(num <= N);
 
@@ -859,7 +856,7 @@ namespace embree
                         Primitive::singleTimeSegment);
 
         /* build hierarchy */
-        Set set(&primsMB,make_range(size_t(0),pinfo.size()),BBox1f(0.0f,1.0f));
+        SetMB set(&primsMB,make_range(size_t(0),pinfo.size()),BBox1f(0.0f,1.0f));
         NodeRef root;
         BuildRecord br(pinfo,1,(size_t*)&root,set);
         LBBox3fa rootBounds = builder(br).first;
