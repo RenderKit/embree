@@ -469,8 +469,8 @@ namespace embree
         
       private:
         const RecalculatePrimRef recalculatePrimRef;
-        HeuristicArrayBinningMB<NUM_OBJECT_BINS> heuristicObjectSplit;
-        HeuristicMBlurTemporalSplit<RecalculatePrimRef,NUM_TEMPORAL_BINS> heuristicTemporalSplit;
+        HeuristicArrayBinningMB<PrimRefMB,NUM_OBJECT_BINS> heuristicObjectSplit;
+        HeuristicMBlurTemporalSplit<PrimRefMB,RecalculatePrimRef,NUM_TEMPORAL_BINS> heuristicTemporalSplit;
         const ReductionTy identity;
         CreateAllocFunc& createAlloc;
         CreateNodeFunc& createNode;

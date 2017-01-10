@@ -25,7 +25,7 @@ namespace embree
   namespace isa
   { 
     /*! Performs standard object binning */
-    template<typename RecalculatePrimRef, size_t BINS>
+    template<typename PrimRefMB, typename RecalculatePrimRef, size_t BINS>
       struct HeuristicMBlurTemporalSplit
       {
         typedef BinSplit<NUM_OBJECT_BINS> Split;

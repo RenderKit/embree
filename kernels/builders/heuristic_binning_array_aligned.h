@@ -226,7 +226,7 @@ namespace embree
     };
 
     /*! Performs standard object binning */
-    template<size_t BINS>
+    template<typename PrimRefMB, size_t BINS>
       struct HeuristicArrayBinningMB
       {
         typedef BinSplit<BINS> Split;
