@@ -24,7 +24,6 @@
 
 #include "heuristic_binning_array_aligned.h"
 #include "heuristic_spatial_array.h"
-#include "heuristic_mblur.h"
 
 namespace embree
 {

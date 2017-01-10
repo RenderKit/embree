@@ -23,6 +23,7 @@
 
 #include "../builders/primrefgen.h"
 #include "../builders/bvh_builder_sah.h"
+#include "../builders/bvh_builder_msmblur.h"
 
 #include "../../common/algorithms/parallel_for_for.h"
 #include "../../common/algorithms/parallel_for_for_prefix_sum.h"

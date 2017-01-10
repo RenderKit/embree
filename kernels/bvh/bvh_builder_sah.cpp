@@ -16,6 +16,7 @@
 
 #include "bvh.h"
 #include "bvh_builder.h"
+#include "../builders/bvh_builder_msmblur.h"
 
 #include "../builders/primrefgen.h"
 #include "../builders/presplit.h"
