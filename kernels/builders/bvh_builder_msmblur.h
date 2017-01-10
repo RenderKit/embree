@@ -271,7 +271,7 @@ namespace embree
           /* do temporal splits only if the the time range is big enough */
           if (set.time_range.size() > 1.01f/float(pinfo.max_num_time_segments))
           {
-            const Split temporal_split = heuristicTemporalSplit.temporal_find(set, pinfo, logBlockSize);
+            const Split temporal_split = heuristicTemporalSplit.find(set, pinfo, logBlockSize);
             const float temporal_split_sah = temporal_split.splitSAH();
 
             /* take temporal split if it improved SAH */
@@ -297,7 +297,7 @@ namespace embree
           }
           /* perform temporal split */
           else if (unlikely(split.data == Split::SPLIT_TEMPORAL)) {
-            heuristicTemporalSplit.temporal_split(split,pinfo,set,left,lset,right,rset);
+            heuristicTemporalSplit.split(split,pinfo,set,left,lset,right,rset);
           }
           /* perform object split */
           else {

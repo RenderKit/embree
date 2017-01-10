@@ -148,7 +148,7 @@ namespace embree
         };
         
         /*! finds the best split */
-        const Split temporal_find(const SetMB& set, const PrimInfoMB& pinfo, const size_t logBlockSize)
+        const Split find(const SetMB& set, const PrimInfoMB& pinfo, const size_t logBlockSize)
         {
           assert(set.object_range.size() > 0);
           unsigned numTimeSegments = pinfo.max_num_time_segments;
@@ -160,9 +160,9 @@ namespace embree
         }
 
         /*! array partitioning */
-        __forceinline void temporal_split(const Split& split, const PrimInfoMB& pinfo, const SetMB& set, PrimInfoMB& linfo, SetMB& lset, int side)
+        __forceinline void split(const Split& tsplit, const PrimInfoMB& pinfo, const SetMB& set, PrimInfoMB& linfo, SetMB& lset, int side)
         {
-          float center_time = split.fpos;
+          float center_time = tsplit.fpos;
           const BBox1f time_range0(set.time_range.lower,center_time);
           const BBox1f time_range1(center_time,set.time_range.upper);
           const BBox1f time_range = side ? time_range1 : time_range0;
@@ -188,10 +188,10 @@ namespace embree
           lset = SetMB(lprims,time_range);
         }
 
-        __forceinline void temporal_split(const Split& split, const PrimInfoMB& pinfo, const SetMB& set, PrimInfoMB& linfo, SetMB& lset, PrimInfoMB& rinfo, SetMB& rset)
+        __forceinline void split(const Split& tsplit, const PrimInfoMB& pinfo, const SetMB& set, PrimInfoMB& linfo, SetMB& lset, PrimInfoMB& rinfo, SetMB& rset)
         {
-          temporal_split(split,pinfo,set,linfo,lset,0);
-          temporal_split(split,pinfo,set,rinfo,rset,1);
+          split(tsplit,pinfo,set,linfo,lset,0);
+          split(tsplit,pinfo,set,rinfo,rset,1);
         }
 
       private:
