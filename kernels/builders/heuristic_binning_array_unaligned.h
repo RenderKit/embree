@@ -23,7 +23,7 @@ namespace embree
   namespace isa
   { 
     /*! Performs standard object binning */
-    template<typename PrimRef, size_t BINS = 32>
+    template<typename PrimRef, size_t BINS>
       struct UnalignedHeuristicArrayBinningSAH
       {
         typedef BinSplit<BINS> Split;

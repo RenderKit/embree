@@ -41,12 +41,10 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
       typedef FastAllocator::ThreadLocal2* Allocator;
-
-      typedef HeuristicArrayBinningMB<BezierPrimMB,NUM_OBJECT_BINS> HeuristicBinningMB;
+ 
+      typedef HeuristicArrayBinningMB<BezierPrim,NUM_OBJECT_BINS> HeuristicBinningSAH;
+      typedef UnalignedHeuristicArrayBinningMB<BezierPrim,NUM_OBJECT_BINS> UnalignedHeuristicBinningSAH;
       typedef HeuristicMBlurTemporalSplit<BezierPrimMB,RecalculatePrimRef,NUM_TEMPORAL_BINS> HeuristicTemporal;
-       
-      typedef HeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> HeuristicBinningSAH;
-      typedef UnalignedHeuristicArrayBinningSAH<BezierPrim> UnalignedHeuristicBinningSAH;
       typedef HeuristicStrandSplit<BezierPrim> HeuristicStrandSplitSAH;
 
       static const size_t MAX_BRANCHING_FACTOR = 16;         //!< maximal supported BVH branching factor

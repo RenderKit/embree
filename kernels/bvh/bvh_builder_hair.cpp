@@ -81,7 +81,7 @@ namespace embree
             },
             
             [&] (const PrimInfo* children, const size_t numChildren, 
-                 UnalignedHeuristicArrayBinningSAH<BezierPrim> unalignedHeuristic, 
+                 UnalignedHeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> unalignedHeuristic, 
                  FastAllocator::ThreadLocal2* alloc) -> UnalignedNode*
             {
               UnalignedNode* node = (UnalignedNode*) alloc->alloc0->malloc(sizeof(UnalignedNode),BVH::byteNodeAlignment); node->clear();
@@ -192,13 +192,13 @@ namespace embree
               return node;
             },
             
-            [&] (const PrimInfo* children, const size_t numChildren, UnalignedHeuristicArrayBinningSAH<BezierPrim> unalignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> UnalignedNodeMB*
+            [&] (const PrimInfo* children, const size_t numChildren, UnalignedHeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> unalignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> UnalignedNodeMB*
             {
               UnalignedNodeMB* node = (UnalignedNodeMB*) alloc->alloc0->malloc(sizeof(UnalignedNodeMB),BVH::byteNodeAlignment); node->clear();
               for (size_t i=0; i<numChildren; i++) 
               {
                 const AffineSpace3fa space = unalignedHeuristic.computeAlignedSpaceMB(scene,children[i]); 
-                UnalignedHeuristicArrayBinningSAH<BezierPrim>::PrimInfoMB pinfo = unalignedHeuristic.computePrimInfoMB(t,bvh->numTimeSteps,scene,children[i],space);
+                UnalignedHeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS>::PrimInfoMB pinfo = unalignedHeuristic.computePrimInfoMB(t,bvh->numTimeSteps,scene,children[i],space);
                 node->set(i,space,pinfo.s0t0,pinfo.s1t1);
               }
               return node;
