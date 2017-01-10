@@ -26,6 +26,29 @@ namespace embree
 {
   namespace isa
   { 
+    template<typename T>
+    struct SharedVector
+    {
+      __forceinline SharedVector() {}
+      
+      __forceinline SharedVector(T* ptr, size_t refCount = 1)
+        : prims(ptr), refCount(refCount) {}
+      
+      __forceinline void incRef()
+      {
+        refCount++;
+      }
+      
+      __forceinline void decRef()
+      {
+        if (--refCount == 0)
+          delete prims;
+      }
+      
+      T* prims;
+      size_t refCount;
+    };
+
     template<typename BuildRecord, 
       typename RecalculatePrimRef, 
       typename ReductionTy, 
@@ -45,33 +68,12 @@ namespace embree
 
         typedef BinSplit<NUM_OBJECT_BINS> Split;
         typedef mvector<PrimRefMB>* PrimRefVector;
+        typedef SharedVector<mvector<PrimRefMB>> SharedPrimRefVector;
 
       public:
 
         struct LocalChildList
         {
-          struct SharedPrimRefVector
-          {
-            __forceinline SharedPrimRefVector() {}
-
-            __forceinline SharedPrimRefVector(const BuildRecord& record, size_t refCount = 1)
-              : prims(record.prims.prims), refCount(refCount) {}
-
-            __forceinline void incRef()
-            {
-              refCount++;
-            }
-
-            __forceinline void decRef()
-            {
-              if (--refCount == 0)
-                delete prims;
-            }
-
-            PrimRefVector prims;
-            size_t refCount;
-          };
-
           struct Child
           {
             __forceinline Child() {}
@@ -87,7 +89,7 @@ namespace embree
             : builder(builder), numChildren(1), numSharedPrimVecs(1), depth(record.depth)
           {
             /* the local root will be freed in the ancestor where it was created (thus refCount is 2) */
-            SharedPrimRefVector* sharedPrimVec = new (&sharedPrimVecs[0]) SharedPrimRefVector(record, 2);
+            SharedPrimRefVector* sharedPrimVec = new (&sharedPrimVecs[0]) SharedPrimRefVector(record.prims.prims, 2);
             new (&children[0]) Child(record, sharedPrimVec);
           }
 
@@ -113,8 +115,8 @@ namespace embree
             SharedPrimRefVector* bsharedPrimVec = children[bestChild].sharedPrimVec;
             if (brecord.split.data == Split::SPLIT_TEMPORAL)
             {
-              new (&children[bestChild  ]) Child(lrecord, new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(lrecord));
-              new (&children[numChildren]) Child(rrecord, new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(rrecord));
+              new (&children[bestChild  ]) Child(lrecord, new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(lrecord.prims.prims));
+              new (&children[numChildren]) Child(rrecord, new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(rrecord.prims.prims));
               bsharedPrimVec->decRef();
             }
             else
@@ -143,8 +145,8 @@ namespace embree
             if (brecord.split.data == Split::SPLIT_TEMPORAL)
             {
               children[bestChild] = children[numChildren-1];
-              new (&children[numChildren-1]) Child(lrecord, new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(lrecord));
-              new (&children[numChildren+0]) Child(rrecord, new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(rrecord));
+              new (&children[numChildren-1]) Child(lrecord, new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(lrecord.prims.prims));
+              new (&children[numChildren+0]) Child(rrecord, new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(rrecord.prims.prims));
               bsharedPrimVec->decRef();
             }
             else
