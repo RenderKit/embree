@@ -251,5 +251,48 @@ namespace embree
       private:
         PrimRef* const prims;
       };
+
+    /*! Performs standard object binning */
+    template<typename PrimRefMB, size_t BINS>
+      struct UnalignedHeuristicArrayBinningMB
+      {
+        typedef BinSplit<BINS> Split;
+        typedef BinInfoT<BINS,PrimRefMB,BBox3fa> ObjectBinner;
+
+        static const size_t PARALLEL_THRESHOLD = 3 * 1024;
+        static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
+        static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;
+
+        /*! finds the best split */
+        const Split find(const SetMB& set, const PrimInfoMB& pinfo, const size_t logBlockSize, const LinearSpace3fa& space)
+        {
+          ObjectBinner binner(empty); // FIXME: this clear can be optimized away
+          const BinMapping<BINS> mapping(pinfo.centBounds,pinfo.size());
+          binner.bin_parallel(set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,mapping,space);
+          Split osplit = binner.best(mapping,logBlockSize);
+          osplit.sah *= pinfo.time_range.size();
+          if (!osplit.valid()) osplit.data = Split::SPLIT_FALLBACK; // use fallback split
+          return osplit;
+        }
+        
+        /*! array partitioning */
+        __forceinline void split(const Split& split, const LinearSpace3fa& space, const PrimInfoMB& pinfo, const SetMB& set, PrimInfoMB& left, SetMB& lset, PrimInfoMB& right, SetMB& rset)
+        {
+          const size_t begin = set.object_range.begin();
+          const size_t end   = set.object_range.end();
+          left = empty;
+          right = empty;
+          const vint4 vSplitPos(split.pos);
+          const vbool4 vSplitMask(1 << split.dim);
+          auto isLeft = [&] (const PrimRefMB &ref) { return any(((vint4)split.mapping.bin_unsafe(ref,space) < vSplitPos) & vSplitMask); };
+          auto reduction = [] (PrimInfoMB& pinfo, const PrimRefMB& ref) { pinfo.add_primref(ref); };
+          auto reduction2 = [] (PrimInfoMB& pinfo0,const PrimInfoMB& pinfo1) { pinfo0.merge(pinfo1); };
+          size_t center = parallel_partitioning(set.prims->data(),begin,end,empty,left,right,isLeft,reduction,reduction2,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD);
+          left.begin  = begin;  left.end = center; left.time_range = pinfo.time_range;
+          right.begin = center; right.end = end;   right.time_range = pinfo.time_range;
+          new (&lset) SetMB(set.prims,range<size_t>(begin,center),set.time_range);
+          new (&rset) SetMB(set.prims,range<size_t>(center,end  ),set.time_range);
+        }
+      };
   }
 }

@@ -79,6 +79,12 @@ namespace embree
           return bin_unsafe(p.binCenter());
         }
 
+        /*! faster but unsafe binning */
+        template<typename PrimRef>
+        __forceinline Vec3ia bin_unsafe(const PrimRef& p, const LinearSpace3fa& space) const {
+          return bin_unsafe(p.binCenter(space));
+        }
+
         /*! returns true if the mapping is invalid in some dimension */
         __forceinline bool invalid(const size_t dim) const {
           return scale[dim] == 0.0f;
@@ -282,6 +288,10 @@ namespace embree
 	bin(prims+begin,end-begin,mapping);
       }
 
+      __forceinline void bin(const PrimRef* prims, size_t begin, size_t end, const BinMapping<BINS>& mapping, const AffineSpace3fa& space) {
+	bin(prims+begin,end-begin,mapping,space);
+      }   
+
       __forceinline void bin_parallel(const PrimRef* prims, size_t begin, size_t end, size_t blockSize, size_t parallelThreshold, const BinMapping<BINS>& mapping) 
       {
         if (likely(end-begin < parallelThreshold)) {
@@ -327,10 +337,6 @@ namespace embree
                                   [&](const BinInfoT& b0, const BinInfoT& b1) -> BinInfoT { BinInfoT r = b0; r.merge(b1, mapping.size()); return r; });
         }
       }
-
-      __forceinline void bin(const PrimRef* prims, size_t begin, size_t end, const BinMapping<BINS>& mapping, const AffineSpace3fa& space) {
-	bin(prims+begin,end-begin,mapping,space);
-      }   
 
       /*! merges in other binning information */
       __forceinline void merge (const BinInfoT& other, size_t numBins)

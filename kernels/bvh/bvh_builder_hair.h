@@ -45,7 +45,7 @@ namespace embree
       typedef UnalignedHeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> UnalignedHeuristicBinningSAH;
       typedef HeuristicStrandSplit<BezierPrim> HeuristicStrandSplitSAH;
 
-      static const size_t MAX_BRANCHING_FACTOR = 16;         //!< maximal supported BVH branching factor
+      static const size_t MAX_BRANCHING_FACTOR =  8;         //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;         //!< create balanced tree if we are that many levels before the maximal tree depth
       static const size_t SINGLE_THREADED_THRESHOLD = 4096;  //!< threshold to switch to single threaded build
 
