@@ -63,9 +63,9 @@ namespace embree
   {
     /* initialize global state */
     State::parseString(cfg);
-    if (FileName::executableFolder() != FileName(""))
+    if (!ignore_config_files && FileName::executableFolder() != FileName(""))
       State::parseFile(FileName::executableFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
-    if (FileName::homeFolder() != FileName(""))
+    if (!ignore_config_files && FileName::homeFolder() != FileName(""))
       State::parseFile(FileName::homeFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
     State::verify();
 
