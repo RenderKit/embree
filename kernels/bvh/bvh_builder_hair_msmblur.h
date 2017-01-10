@@ -31,6 +31,7 @@ namespace embree
              typename CreateAllocFunc,
              typename CreateAlignedNodeFunc, 
              typename CreateUnalignedNodeFunc, 
+             typename CreateAlignedNode4DFunc, 
              typename CreateLeafFunc, 
              typename ProgressMonitor>
 
@@ -42,10 +43,10 @@ namespace embree
       typedef typename BVH::NodeRef NodeRef;
       typedef FastAllocator::ThreadLocal2* Allocator;
  
-      typedef HeuristicArrayBinningMB<BezierPrim,NUM_OBJECT_BINS> HeuristicBinningSAH;
-      typedef UnalignedHeuristicArrayBinningMB<BezierPrim,NUM_OBJECT_BINS> UnalignedHeuristicBinningSAH;
       typedef HeuristicMBlurTemporalSplit<BezierPrimMB,RecalculatePrimRef,NUM_TEMPORAL_BINS> HeuristicTemporal;
-      typedef HeuristicStrandSplit<BezierPrim> HeuristicStrandSplitSAH;
+      typedef HeuristicArrayBinningMB<BezierPrimMB,NUM_OBJECT_BINS> HeuristicBinningSAH;
+      typedef UnalignedHeuristicArrayBinningMB<BezierPrimMB,NUM_OBJECT_BINS> UnalignedHeuristicBinningSAH;
+      //typedef HeuristicStrandSplit<BezierPrimMB> HeuristicStrandSplitSAH;
 
       static const size_t MAX_BRANCHING_FACTOR =  8;         //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;         //!< create balanced tree if we are that many levels before the maximal tree depth
@@ -61,6 +62,7 @@ namespace embree
                             const CreateAllocFunc& createAlloc, 
                             const CreateAlignedNodeFunc& createAlignedNode, 
                             const CreateUnalignedNodeFunc& createUnalignedNode, 
+                            const CreateAlignedNode4DFunc& createAlignedNode4D, 
                             const CreateLeafFunc& createLeaf,
                             const ProgressMonitor& progressMonitor,
                             const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, 
@@ -68,24 +70,54 @@ namespace embree
         : createAlloc(createAlloc), 
         createAlignedNode(createAlignedNode), 
         createUnalignedNode(createUnalignedNode), 
+        createAlignedNode4D(createAlignedNode4D),
         createLeaf(createLeaf),
         progressMonitor(progressMonitor),
         prims(prims), 
         branchingFactor(branchingFactor), maxDepth(maxDepth), logBlockSize(logBlockSize), 
         minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
-        alignedHeuristic(prims), unalignedHeuristic(prims), strandHeuristic(prims) {}
+        alignedHeuristic(prims), unalignedHeuristic(prims)/*, strandHeuristic(prims)*/ {}
        
       /*! entry point into builder */
-      NodeRef operator() (const PrimInfo& pinfo) {
+      NodeRef operator() (const PrimInfoMB& pinfo) {
         NodeRef root = recurse(1,pinfo,nullptr,true);
         _mm_mfence(); // to allow non-temporal stores during build
         return root;
       }
       
     private:
-      
+
+      void deterministic_order(const SetMB& set) 
+      {
+        /* required as parallel partition destroys original primitive order */
+        BezierPrimMB* prims = set.prims->data();
+        std::sort(&prims[set.object_range.begin()],&prims[set.object_range.end()]);
+      }
+
+      void splitFallback(const SetMB& set, PrimInfoMB& linfo, SetMB& lset, PrimInfoMB& rinfo, SetMB& rset) // FIXME: also perform time split here?
+      {
+        mvector<PrimRefMB>& prims = *set.prims;
+        
+        const size_t begin = set.object_range.begin();
+        const size_t end   = set.object_range.end();
+        const size_t center = (begin + end)/2;
+        
+        linfo = empty;
+        for (size_t i=begin; i<center; i++)
+          linfo.add_primref(prims[i]);
+        linfo.begin = begin; linfo.end = center; linfo.time_range = set.time_range;
+        
+        rinfo = empty;
+        for (size_t i=center; i<end; i++)
+          rinfo.add_primref(prims[i]);	
+        rinfo.begin = center; rinfo.end = end; rinfo.time_range = set.time_range;
+        
+        new (&lset) SetMB(set.prims,range<size_t>(begin,center),set.time_range);
+        new (&rset) SetMB(set.prims,range<size_t>(center,end  ),set.time_range);
+      }
+
       /*! creates a large leaf that could be larger than supported by the BVH */
-      NodeRef createLargeLeaf(size_t depth, const PrimInfo& pinfo, Allocator alloc)
+      NodeRef createLargeLeaf(size_t depth, const PrimInfoMB& pinfo, Allocator alloc)
       {
         /* this should never occur but is a fatal error */
         if (depth > maxDepth) 
@@ -96,7 +128,7 @@ namespace embree
           return createLeaf(depth,pinfo,alloc);
         
         /* fill all children by always splitting the largest one */
-        PrimInfo children[MAX_BRANCHING_FACTOR];
+        PrimInfoMB children[MAX_BRANCHING_FACTOR];
         unsigned numChildren = 1;
         children[0] = pinfo;
         
@@ -120,7 +152,7 @@ namespace embree
           if (bestChild == -1) break;
           
           /*! split best child into left and right child */
-          __aligned(64) PrimInfo left, right;
+          __aligned(64) PrimInfoMB left, right;
           alignedHeuristic.splitFallback(children[bestChild],left,right);
           
           /* add new children left and right */
@@ -137,7 +169,7 @@ namespace embree
       }
             
       /*! performs split */
-      bool split(const PrimInfo& pinfo, PrimInfo& linfo, PrimInfo& rinfo)
+      void split(const PrimInfoMB& pinfo, PrimInfoMB& linfo, PrimInfoMB& rinfo, bool& aligned, bool& timesplit)
       {
         /* variable to track the SAH of the best splitting approach */
         float bestSAH = inf;
@@ -145,57 +177,68 @@ namespace embree
         
         /* perform standard binning in aligned space */
         float alignedObjectSAH = inf;
-        HeuristicBinningSAH::Split alignedObjectSplit;
-        alignedObjectSplit = alignedHeuristic.find(pinfo,0);
+        HeuristicBinningMB::Split alignedObjectSplit;
+        alignedObjectSplit = alignedHeuristic.find(set,pinfo,0);
         alignedObjectSAH = travCostAligned*halfArea(pinfo.geomBounds) + intCost*alignedObjectSplit.splitSAH();
         bestSAH = min(alignedObjectSAH,bestSAH);
         
         /* perform standard binning in unaligned space */
-        UnalignedHeuristicBinningSAH::Split unalignedObjectSplit;
+        UnalignedHeuristicBinningMB::Split unalignedObjectSplit;
         LinearSpace3fa uspace;
         float unalignedObjectSAH = inf;
         if (alignedObjectSAH > 0.7f*leafSAH) {
-          uspace = unalignedHeuristic.computeAlignedSpace(pinfo); 
-          const PrimInfo       sinfo = unalignedHeuristic.computePrimInfo(pinfo,uspace);
-          unalignedObjectSplit = unalignedHeuristic.find(sinfo,0,uspace);    	
+          uspace = unalignedHeuristic.computeAlignedSpaceMB(scene,set); 
+          const PrimInfoMB sinfo = unalignedHeuristic.computePrimInfoMB(scene,set,uspace);
+          unalignedObjectSplit = unalignedHeuristic.find(set,sinfo,0,uspace);    	
           unalignedObjectSAH = travCostUnaligned*halfArea(pinfo.geomBounds) + intCost*unalignedObjectSplit.splitSAH();
           bestSAH = min(unalignedObjectSAH,bestSAH);
         }
 
+        /* do temporal splits only if the the time range is big enough */
+        float temporal_split_sah = inf;
+        HeuristicTemporal::Split temporal_split;
+        if (set.time_range.size() > 1.01f/float(pinfo.max_num_time_segments)) {
+          temporal_split = heuristicTemporalSplit.find(set, pinfo, 0);
+          temporal_split_sah = temporal_split.splitSAH();
+        }
+        
         /* perform splitting into two strands */
-        HeuristicStrandSplitSAH::Split strandSplit;
+        /*HeuristicStrandSplitSAH::Split strandSplit;
         float strandSAH = inf;
         if (alignedObjectSAH > 0.6f*leafSAH) {
           strandSplit = strandHeuristic.find(pinfo);
           strandSAH = travCostUnaligned*halfArea(pinfo.geomBounds) + intCost*strandSplit.splitSAH();
           bestSAH = min(strandSAH,bestSAH);
-        }
+          }*/
         
+        /* perform time split if this is the best */
+        if (bestSAH == timeSplitSAH) {
+          timeSplitHeuristic.split(timeSplit,pinfo,set,linfo,lset,rinfo,rset);
+          timesplit = true;
+        }
         /* perform aligned split if this is best */
-        if (bestSAH == alignedObjectSAH) {
-          alignedHeuristic.split(alignedObjectSplit,pinfo,linfo,rinfo);
-          return true;
+        else if (bestSAH == alignedObjectSAH) {
+          alignedHeuristic.split(alignedObjectSplit,pinfo,set,linfo,lset,rinfo,rset);
         }
         /* perform unaligned split if this is best */
         else if (bestSAH == unalignedObjectSAH) {
-          unalignedHeuristic.split(unalignedObjectSplit,uspace,pinfo,linfo,rinfo);
-          return false;
+          unalignedHeuristic.split(unalignedObjectSplit,uspace,pinfo,set,linfo,lset,rinfo,rset);
+          aligned = false;
         }
         /* perform strand split if this is best */
-        else if (bestSAH == strandSAH) {
+        /*else if (bestSAH == strandSAH) {
           strandHeuristic.split(strandSplit,pinfo,linfo,rinfo);
-          return false;
-        }
+          aligned = false;
+          }*/
         /* otherwise perform fallback split */
         else {
-          alignedHeuristic.deterministic_order(pinfo);
-          alignedHeuristic.splitFallback(pinfo,linfo,rinfo);
-          return true;
+          deterministic_order(set);
+          splitFallback(pinfo,set,linfo,lset,rinfo,rset);
         }
       }
       
       /*! recursive build */
-      NodeRef recurse(size_t depth, const PrimInfo& pinfo, Allocator alloc, bool toplevel)
+      NodeRef recurse(size_t depth, const PrimInfoMB& pinfo, Allocator alloc, bool toplevel)
       {
         if (alloc == nullptr) 
           alloc = createAlloc();
@@ -204,7 +247,7 @@ namespace embree
         if (toplevel && pinfo.size() <= SINGLE_THREADED_THRESHOLD)
           progressMonitor(pinfo.size());
 	
-        PrimInfo children[MAX_BRANCHING_FACTOR];
+        PrimInfoMB children[MAX_BRANCHING_FACTOR];
         
         /* create leaf node */
         if (depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || pinfo.size() <= minLeafSize) {
@@ -216,6 +259,7 @@ namespace embree
         size_t numChildren = 1;
         children[0] = pinfo;
         bool aligned = true;
+        bool timesplit = false;
         
         do {
           
@@ -237,8 +281,8 @@ namespace embree
           if (bestChild == -1) break;
           
           /*! split best child into left and right child */
-          PrimInfo left, right;
-          aligned &= split(children[bestChild],left,right);
+          PrimInfoMB left, right;
+          split(children[bestChild],left,right,aligned,timesplit);
           
           /* add new children left and right */
           children[bestChild] = children[numChildren-1];
@@ -249,8 +293,31 @@ namespace embree
         } while (numChildren < branchingFactor); 
         assert(numChildren > 1);
 	
+        /* create time split node */
+        if (timesplit)
+        {
+          auto node = createAlignedNode4D(children,numChildren,alloc);
+
+          /* spawn tasks or ... */
+          if (pinfo.size() > SINGLE_THREADED_THRESHOLD)
+          {
+            parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) {
+                for (size_t i=r.begin(); i<r.end(); i++) {
+                  node->child(i) = recurse(depth+1,children[i],nullptr,true); 
+                  _mm_mfence(); // to allow non-temporal stores during build
+                }                
+              });
+          }
+          /* ... continue sequential */
+          else {
+            for (size_t i=0; i<numChildren; i++) 
+              node->child(i) = recurse(depth+1,children[i],alloc,false);
+          }
+          return BVH::encodeNode(node);
+        }
+
         /* create aligned node */
-        if (aligned) 
+        else if (aligned) 
         {
           auto node = createAlignedNode(children,numChildren,alignedHeuristic,alloc);
 
@@ -302,11 +369,12 @@ namespace embree
       const CreateAllocFunc& createAlloc;
       const CreateAlignedNodeFunc& createAlignedNode;
       const CreateUnalignedNodeFunc& createUnalignedNode;
+      const CreateAlignedNode4DFunc& createAlignedNode4D;
       const CreateLeafFunc& createLeaf;
       const ProgressMonitor& progressMonitor;
 
     private:
-      BezierPrim* prims;
+      BezierPrimMB* prims;
       const size_t branchingFactor;
       const size_t maxDepth;
       const size_t logBlockSize;
@@ -316,28 +384,31 @@ namespace embree
     private:
       HeuristicBinningSAH alignedHeuristic;
       UnalignedHeuristicBinningSAH unalignedHeuristic;
-      HeuristicStrandSplitSAH strandHeuristic;
+      //HeuristicStrandSplitSAH strandHeuristic;
+      HeuristicTemporal heuristicTemporalSplit;
     };
 
     template<int N,
              typename CreateAllocFunc,
              typename CreateAlignedNodeFunc, 
              typename CreateUnalignedNodeFunc, 
+             typename CreateAlignedNode4DFunc, 
              typename CreateLeafFunc, 
              typename ProgressMonitor>
 
-      typename BVHN<N>::NodeRef bvh_obb_builder_binned_sah (const CreateAllocFunc& createAlloc,
-                                                const CreateAlignedNodeFunc& createAlignedNode, 
-                                                const CreateUnalignedNodeFunc& createUnalignedNode, 
-                                                const CreateLeafFunc& createLeaf, 
-                                                const ProgressMonitor& progressMonitor,
-                                                BezierPrim* prims, 
-                                                const PrimInfo& pinfo,
-                                                const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, 
-                                                const size_t minLeafSize, const size_t maxLeafSize) 
+      typename BVHN<N>::NodeRef bvh_obb_builder_binned_sah_mblur (const CreateAllocFunc& createAlloc,
+                                                                  const CreateAlignedNodeFunc& createAlignedNode, 
+                                                                  const CreateUnalignedNodeFunc& createUnalignedNode, 
+                                                                  const CreateAlignedNode4DFunc& createAlignedNode4D, 
+                                                                  const CreateLeafFunc& createLeaf, 
+                                                                  const ProgressMonitor& progressMonitor,
+                                                                  BezierPrimMB* prims, 
+                                                                  const PrimInfoMB& pinfo,
+                                                                  const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, 
+                                                                  const size_t minLeafSize, const size_t maxLeafSize) 
     {
-      typedef BVHNBuilderHair<N,CreateAllocFunc,CreateAlignedNodeFunc,CreateUnalignedNodeFunc,CreateLeafFunc,ProgressMonitor> Builder;
-      Builder builder(prims,createAlloc,createAlignedNode,createUnalignedNode,createLeaf,progressMonitor,
+      typedef BVHNBuilderHairMBlur<N,CreateAllocFunc,CreateAlignedNodeFunc,CreateUnalignedNodeFunc,CreateAlignedNode4DFunc,CreateLeafFunc,ProgressMonitor> Builder;
+      Builder builder(prims,createAlloc,createAlignedNode,createUnalignedNode,createAlignedNode4D,createLeaf,progressMonitor,
                       branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
       return builder(pinfo);
     }

@@ -263,6 +263,74 @@ namespace embree
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
         static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;
 
+        const AffineSpace3fa computeAlignedSpaceMB(Scene* scene, const SetMB& set)
+        {
+          /*! find first curve that defines valid directions */
+          Vec3fa axis0(0,0,1);
+          Vec3fa axis1(0,0,1);
+
+          for (size_t i=set.object_range.begin; i<set.object_range.end; i++)
+          {
+            const BezierPrim& prim = prims[i];
+            const size_t geomID = prim.geomID();
+            const size_t primID = prim.primID();
+            const BezierCurves* curves = scene->getBezierCurves(geomID);
+            const int curve = curves->curve(primID);
+            
+            const Vec3fa a3 = curves->vertex(curve+3,0);
+            //const Vec3fa a2 = curves->vertex(curve+2,0);
+            //const Vec3fa a1 = curves->vertex(curve+1,0);
+            const Vec3fa a0 = curves->vertex(curve+0,0);
+            
+            const Vec3fa b3 = curves->vertex(curve+3,1);
+            //const Vec3fa b2 = curves->vertex(curve+2,1);
+            //const Vec3fa b1 = curves->vertex(curve+1,1);
+            const Vec3fa b0 = curves->vertex(curve+0,1);
+            
+            if (sqr_length(a3 - a0) > 1E-18f && sqr_length(b3 - b0) > 1E-18f)
+            {
+              axis0 = normalize(a3 - a0);
+              axis1 = normalize(b3 - b0);
+              break;
+            }
+          }
+
+          Vec3fa axis01 = axis0+axis1;
+          if (sqr_length(axis01) < 1E-18f) axis01 = axis0;
+          axis01 = normalize(axis01);
+          return frame(axis01).transposed();
+        }
+
+        const PrimInfoMB computePrimInfoMB(Scene* scene, const SetMB& set, const AffineSpace3fa& space)
+        {
+          size_t N = 0;
+          BBox3fa centBounds = empty;
+          BBox3fa geomBounds = empty;
+          BBox3fa s0t0 = empty, s1t1 = empty;
+          for (size_t i=set.object_range.begin; i<set.object_range.end; i++)  // FIXME: parallelize
+          {
+            const BezierPrimMB& prim = prims[i];
+            const size_t geomID = prim.geomID();
+            const size_t primID = prim.primID();
+
+            N++;
+            const BBox3fa bounds = prim.bounds(space);
+            geomBounds.extend(bounds);
+            centBounds.extend(center2(bounds));
+
+            const BezierCurves* curves = scene->getBezierCurves(geomID);
+            const LBBox3fa linearBounds = curves->linearBounds(space,primID,set.time_range);
+            s0t0.extend(linearBounds.bounds0);
+            s1t1.extend(linearBounds.bounds1);
+          }
+          
+          PrimInfoMB ret;
+          ret.pinfo = PrimInfo(N,geomBounds,centBounds);
+          ret.s0t0 = s0t0;
+          ret.s1t1 = s1t1;
+          return ret;
+        }
+
         /*! finds the best split */
         const Split find(const SetMB& set, const PrimInfoMB& pinfo, const size_t logBlockSize, const LinearSpace3fa& space)
         {
