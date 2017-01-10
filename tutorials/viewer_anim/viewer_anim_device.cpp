@@ -17,7 +17,7 @@
 /* hack to quickly enable use 8-wide ray initialization and rtcIntersectNM */
 
 #define VECTOR_MODE 0
-#define ENABLE_ANIM 1
+#define ENABLE_ANIM 0
 
 #if VECTOR_MODE  == 1
 #define __SSE4_2__
@@ -61,6 +61,14 @@ namespace embree {
   float *shadowDistanceMap = NULL;
   float *zBuffer = NULL;
 
+  /* shadow rays */
+
+  static const size_t numShadowSamples = 64;
+  static const size_t numShadowPackets = numShadowSamples/8;
+  struct SampleSet {
+    float u[numShadowSamples];
+    float v[numShadowSamples];
+  } sampleSet;
 
   void dumpBuildAndRenderTimes();
 
@@ -271,6 +279,11 @@ namespace embree {
   }
 
 #if VECTOR_MODE  == 1
+
+  const Vec3<vfloat8> ls_origin(vfloat8(-1.513921618),vfloat8(13.41725254),vfloat8(-8.156237602));
+  const static float LS_SIZE = 10.0f;
+  const Vec3<vfloat8> ls_dir_u(vfloat8(LS_SIZE),vfloat8(0.0f),vfloat8(0.0f));
+  const Vec3<vfloat8> ls_dir_v(vfloat8(0.0f),vfloat8(0.0f),vfloat8(LS_SIZE));
   
   template<bool fillDistanceMap>
   void renderTile8x8(int taskIndex,
@@ -318,7 +331,9 @@ namespace embree {
 
     /* trace stream of rays */
     rtcIntersectNM(g_scene,&context,(RTCRayN *)rays,8,8,sizeof(RTCRay8));
+    //rtcOccludedNM(g_scene,&context,(RTCRayN *)rays,8,8,sizeof(RTCRay8));
 
+#if 1
     /* shade stream of rays */
     for (unsigned int i=0; i<TILE_SIZE_Y; i++) 
       {
@@ -337,8 +352,6 @@ namespace embree {
     if (fillDistanceMap)
     {
       // -vp -1.513921618 13.41725254 -8.156237602 -vi -0.3423615694 3.748182058 -3.199102163 -vu 0 1 0 -fov 90
-      const Vec3<vfloat8> shadow_org(vfloat8(-1.513921618),vfloat8(13.41725254),vfloat8(-8.156237602));
-
       for (unsigned int i=0; i<TILE_SIZE_Y; i++) 
       {
         const Vec3<vfloat8> ray_dir(vfloat8::load(rays[i].dirx),vfloat8::load(rays[i].diry),vfloat8::load(rays[i].dirz));
@@ -348,15 +361,15 @@ namespace embree {
         vfloat8::storeu(&zBuffer[(y0+i)*width+x0],ray_dist);
 
         const Vec3<vfloat8> pos = ray_org + ray_dir * ray_dist;
-        const Vec3<vfloat8> shadow_dir = pos - shadow_org;
+        const Vec3<vfloat8> shadow_dir = pos - ls_origin;
 
         const vfloat8 shadow_dist(0.99f);
 
         const vbool8 mask = vint8::load(rays[i].geomID) != vint8(RTC_INVALID_GEOMETRY_ID);
 
-        vfloat8::store(rays[i].orgx,shadow_org.x);
-        vfloat8::store(rays[i].orgy,shadow_org.y);
-        vfloat8::store(rays[i].orgz,shadow_org.z);
+        vfloat8::store(rays[i].orgx,ls_origin.x);
+        vfloat8::store(rays[i].orgy,ls_origin.y);
+        vfloat8::store(rays[i].orgz,ls_origin.z);
         vfloat8::store(rays[i].dirx,shadow_dir.x);
         vfloat8::store(rays[i].diry,shadow_dir.y);
         vfloat8::store(rays[i].dirz,shadow_dir.z);
@@ -378,6 +391,7 @@ namespace embree {
         vfloat8::storeu(&shadowDistanceMap[(y0+i)*width+x0],select(mask,1.0f,vfloat8::load(rays[i].tfar)));
       }
     }
+#endif
   }
 
 
@@ -409,6 +423,7 @@ namespace embree {
       factor[i] = select(factor[i] < 1.0f, vfloat8(0.0f), vfloat8(1.0f));
     }
 
+#if 1
     for (unsigned int x=x0;x<x1;x++)
       for (unsigned int y=y0;y<y1;y++)
       {
@@ -489,6 +504,7 @@ namespace embree {
         }
 #endif            
       }
+#endif
 
     for (unsigned int i=0; i<TILE_SIZE_Y; i++) 
     {
@@ -500,6 +516,130 @@ namespace embree {
     }      
     
   }
+
+  float getLSOcclusion(const Vec3fa& origin)
+  {
+    RTCRay8 rays[numShadowPackets];
+    
+    const Vec3<vfloat8> ray_org(vfloat8(origin.x),vfloat8(origin.y),vfloat8(origin.z));
+
+    RTCIntersectContext context;
+    context.flags = RAYN_FLAGS;
+
+    for (unsigned int i=0; i<TILE_SIZE_Y; i++) 
+      {
+        vfloat8 rnd_u = vfloat8::load(&sampleSet.u[i*8]);
+        vfloat8 rnd_v = vfloat8::load(&sampleSet.v[i*8]);
+
+        const Vec3<vfloat8> ls_pnt = ls_origin + rnd_u * ls_dir_u + rnd_v * ls_dir_v;
+        const Vec3<vfloat8> ray_dir = ls_pnt - ray_org;
+        vfloat8::store(rays[i].orgx,ray_org.x);
+        vfloat8::store(rays[i].orgy,ray_org.y);
+        vfloat8::store(rays[i].orgz,ray_org.z);
+        vfloat8::store(rays[i].dirx,ray_dir.x);
+        vfloat8::store(rays[i].diry,ray_dir.y);
+        vfloat8::store(rays[i].dirz,ray_dir.z);
+        vfloat8::store(rays[i].tnear,1E-4f);
+        vfloat8::store(rays[i].tfar,vfloat8(1.0f));
+        vfloat8::store(rays[i].time,0.0f);
+        vint8::store(rays[i].mask,-1);
+        vint8::store(rays[i].geomID,RTC_INVALID_GEOMETRY_ID);
+        vint8::store(rays[i].primID,RTC_INVALID_GEOMETRY_ID);
+      }
+
+    rtcOccludedNM(g_scene,&context,(RTCRayN *)rays,8,8,sizeof(RTCRay8));
+    vfloat8 acc(zero);
+    for (unsigned int i=0; i<TILE_SIZE_Y; i++) 
+      {
+        const vbool8 occ_mask = vint8::load(rays[i].geomID) == vint8(RTC_INVALID_GEOMETRY_ID);
+        acc += select(occ_mask,vfloat8(1.0f),vfloat8(0.0f));
+      }
+    PRINT(reduce_add(acc) * 1.0f/64.0f);
+    return reduce_add(acc) * 1.0f/64.0f;
+  }
+
+  void retraceShadowDistanceMap8x8(int taskIndex,
+                                   int* pixels,
+                                   const unsigned int width,
+                                   const unsigned int height,
+                                   const float time,
+                                   const ISPCCamera& camera,
+                                   const int numTilesX,
+                                   const int numTilesY)
+  {
+    assert(TILE_SIZE_X == 8);
+    assert(TILE_SIZE_Y == 8);
+
+
+    const unsigned int tileY = taskIndex / numTilesX;
+    const unsigned int tileX = taskIndex - tileY * numTilesX;
+    const unsigned int x0 = tileX * TILE_SIZE_X;
+    const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+    const unsigned int y0 = tileY * TILE_SIZE_Y;
+    const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
+
+    vfloat8 factor[TILE_SIZE_Y];
+    for (size_t i=0;i<TILE_SIZE_Y;i++) 
+    {
+      factor[i] = vfloat8::load(&shadowDistanceMap[(y0+i)*width+x0]);
+      //factor[i] = select(factor[i] < 1.0f, vfloat8(0.0f), factor[i]);
+      factor[i] = select(factor[i] < 1.0f, vfloat8(0.0f), vfloat8(1.0f));
+    }
+
+    const Vec3fa ray_org(camera.xfm.p);
+
+    for (unsigned int x=x0;x<x1;x++)
+      for (unsigned int y=y0;y<y1;y++)
+      {
+
+        const int x_p1 = min((int)x+1,(int)width);
+        const int x_m1 = max((int)x-1,0);
+
+        const int y_p1 = min((int)y+1,(int)height);
+        const int y_m1 = max((int)y-1,0);
+
+        if (shadowDistanceMap[y*width+x] < 1.0f)
+        {
+          int FILTER_WIDTH = max((int)( (1.0f - shadowDistanceMap[y*width+x]) * 0.5f / zBuffer[y*width+x]),1);
+          FILTER_WIDTH = min(FILTER_WIDTH,8);
+
+
+          const int min_x = max((int)x-FILTER_WIDTH,0);
+          const int max_x = min((int)x+FILTER_WIDTH,(int)width);
+          const int min_y = max((int)y-FILTER_WIDTH,0);
+          const int max_y = min((int)y+FILTER_WIDTH,(int)height);
+
+          bool found = false;
+
+          for (int mx=min_x;mx<max_x;mx++)
+            for (int my=min_y;my<max_y;my++)
+              if (shadowDistanceMap[my*width+mx] == 1.0f)
+              {
+                found = true;
+                break;
+              }
+          if (found) {
+            const Vec3fa hit = ray_org + x * camera.xfm.l.vx + y * camera.xfm.l.vy + camera.xfm.l.vz;
+            const float occ = getLSOcclusion(hit);
+            factor[y-y0][x-x0] = occ;
+          }
+
+        }
+
+
+      }
+
+    for (unsigned int i=0; i<TILE_SIZE_Y; i++) 
+    {
+      const vint8 rgb = vint8::load(&pixels[(y0+i)*width+x0]);
+      const vint8 r = vint8(max(vfloat8((rgb >>  0) & 0xff) * factor[i],vfloat8(1.0f)));
+      const vint8 g = vint8(max(vfloat8((rgb >>  8) & 0xff) * factor[i],vfloat8(1.0f)));
+      const vint8 b = vint8(max(vfloat8((rgb >> 16) & 0xff) * factor[i],vfloat8(1.0f)));
+      vint8::storeu(&pixels[(y0+i)*width+x0],(b << 16) + (g << 8) + r);
+    }      
+    
+  }
+
 #endif
 
 /* renders a single screen tile */
@@ -592,6 +732,17 @@ namespace embree {
     /* set error handler */
     rtcDeviceSetErrorFunction(g_device,error_handler);
 
+    /* generate rnd numbers */
+
+    RandomSampler sampler;
+    RandomSampler_init(sampler, 0);
+
+    for (size_t i=0;i<numShadowSamples;i++)
+    {
+      const Vec2f uv = RandomSampler_get2D(sampler);
+      sampleSet.u[i] = uv.x;
+      sampleSet.v[i] = uv.y;
+    }
 
     /* create scene */
     g_scene = createScene(g_ispc_scene,true);
@@ -695,12 +846,12 @@ namespace embree {
       }); 
     
     /* filter shadow distance buffer and update framebuffer */
-
     parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
         for (size_t i=range.begin(); i<range.end(); i++)
-          filterShadowDistanceMap8x8((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
-      }); 
+          //filterShadowDistanceMap8x8((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
+          retraceShadowDistanceMap8x8((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
 
+      }); 
 
 #endif
 
@@ -716,14 +867,12 @@ namespace embree {
     /* update geometry */
     /* =============== */
 
+#if ENABLE_ANIM == 1
+
     double vertexUpdateTime0 = getSeconds();    
 
     if (animTime < 0.0f) animTime = getSeconds();
-#if ENABLE_ANIM == 0
-    const double atime = 0.0;
-#else
     const double atime = (getSeconds() - animTime) * ANIM_FPS;
-#endif
     double intpart, fracpart;
     fracpart = modf(atime,&intpart);
     const size_t keyFrameID = ((size_t)intpart) % numProfileFrames;    
@@ -748,6 +897,7 @@ namespace embree {
     updateTimeLog(buildTime,buildTimeDelta);
 
     if (unlikely(printStats)) std::cout << "bvh rebuild in :     " << buildTimeDelta << " ms" << std::endl;
+#endif
     
     frameID = (frameID + 1) % numProfileFrames;
   }
