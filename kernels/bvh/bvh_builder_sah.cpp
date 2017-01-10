@@ -632,7 +632,7 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
       typedef HeuristicMBlur<RecalculatePrimRef<Mesh>,NUM_OBJECT_BINS> Heuristic;
-      typedef typename Heuristic::Set Set;
+      typedef SetMB Set;
       typedef typename Heuristic::Split Split;
       typedef GeneralBuildRecord<Set,Split,PrimInfoMB> BuildRecord;
       typedef typename BVH::AlignedNodeMB AlignedNodeMB;
@@ -672,7 +672,7 @@ namespace embree
     {
       typedef BVHN<N> BVH;
       typedef HeuristicMBlur<RecalculatePrimRef<Mesh>,NUM_OBJECT_BINS> Heuristic;
-      typedef typename Heuristic::Set Set;
+      typedef SetMB Set;
       typedef typename Heuristic::Split Split;
       typedef GeneralBuildRecord<Set,Split,PrimInfoMB> BuildRecord;
 
@@ -704,7 +704,7 @@ namespace embree
       typedef typename BVHN<N>::AlignedNodeMB4D AlignedNodeMB4D;
 
       typedef HeuristicMBlur<RecalculatePrimRef<Mesh>,NUM_OBJECT_BINS> Heuristic;
-      typedef typename Heuristic::Set Set;
+      typedef SetMB Set;
       typedef typename Heuristic::Split Split;
       typedef GeneralBuildRecord<Set,Split,PrimInfoMB> BuildRecord;
 

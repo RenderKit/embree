@@ -26,6 +26,48 @@ namespace embree
 {
   namespace isa
   { 
+    struct SetMB 
+    {
+      static const size_t PARALLEL_THRESHOLD = 3 * 1024;
+      static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
+      static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;
+
+      typedef mvector<PrimRefMB>* PrimRefVector;
+
+      __forceinline SetMB() {}
+      
+      __forceinline SetMB(PrimRefVector prims, range<size_t> object_range, BBox1f time_range)
+        : prims(prims), object_range(object_range), time_range(time_range) {}
+      
+      __forceinline SetMB(PrimRefVector prims, BBox1f time_range = BBox1f(0.0f,1.0f))
+        : prims(prims), object_range(range<size_t>(0,prims->size())), time_range(time_range) {}
+      
+      template<typename RecalculatePrimRef>
+      __forceinline LBBox3fa linearBounds(const RecalculatePrimRef& recalculatePrimRef) const
+      {
+        auto reduce = [&](const range<size_t>& r) -> LBBox3fa
+        {
+          LBBox3fa cbounds(empty);
+          for (size_t j = r.begin(); j < r.end(); j++)
+          {
+            PrimRefMB& ref = (*prims)[j];
+            auto bn = recalculatePrimRef.linearBounds(ref, time_range);
+            cbounds.extend(bn.first);
+          };
+          return cbounds;
+        };
+        
+        return parallel_reduce(object_range.begin(), object_range.end(), PARALLEL_FIND_BLOCK_SIZE, PARALLEL_THRESHOLD, LBBox3fa(empty),
+                               reduce,
+                                   [&](const LBBox3fa& b0, const LBBox3fa& b1) -> LBBox3fa { return merge(b0, b1); });
+      }
+      
+    public:
+      PrimRefVector prims;
+      range<size_t> object_range;
+      BBox1f time_range;
+    };
+
     /*! Performs standard object binning */
     template<typename RecalculatePrimRef, size_t BINS>
       struct HeuristicMBlur
@@ -45,40 +87,7 @@ namespace embree
           SPLIT_FALLBACK = -2,
         };
 
-        struct Set 
-        {
-          __forceinline Set() {}
-
-          __forceinline Set(PrimRefVector prims, range<size_t> object_range, BBox1f time_range)
-            : prims(prims), object_range(object_range), time_range(time_range) {}
-
-          __forceinline Set(PrimRefVector prims, BBox1f time_range = BBox1f(0.0f,1.0f))
-            : prims(prims), object_range(range<size_t>(0,prims->size())), time_range(time_range) {}
-
-          __forceinline LBBox3fa linearBounds(const RecalculatePrimRef& recalculatePrimRef) const
-          {
-            auto reduce = [&](const range<size_t>& r) -> LBBox3fa
-            {
-              LBBox3fa cbounds(empty);
-              for (size_t j = r.begin(); j < r.end(); j++)
-              {
-                PrimRefMB& ref = (*prims)[j];
-                auto bn = recalculatePrimRef.linearBounds(ref, time_range);
-                cbounds.extend(bn.first);
-              };
-              return cbounds;
-            };
-
-            return parallel_reduce(object_range.begin(), object_range.end(), PARALLEL_FIND_BLOCK_SIZE, PARALLEL_THRESHOLD, LBBox3fa(empty),
-                                   reduce,
-                                   [&](const LBBox3fa& b0, const LBBox3fa& b1) -> LBBox3fa { return merge(b0, b1); });
-          }
-
-        public:
-          PrimRefVector prims;
-          range<size_t> object_range;
-          BBox1f time_range;
-        };
+        
 
         static const size_t PARALLEL_THRESHOLD = 3 * 1024;
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
@@ -88,52 +97,7 @@ namespace embree
           : device(device), recalculatePrimRef(recalculatePrimRef) {}
 
         /*! finds the best split */
-        const Split find(Set& set, PrimInfoMB& pinfo, const size_t logBlockSize)
-        {
-          /* first try standard object split */
-          const Split object_split = object_find(set,pinfo,logBlockSize);
-          const float object_split_sah = object_split.splitSAH();
-  
-          /* do temporal splits only if the the time range is big enough */
-          if (set.time_range.size() > 1.01f/float(pinfo.max_num_time_segments))
-          {
-            const Split temporal_split = temporal_find(set, pinfo, logBlockSize);
-            const float temporal_split_sah = temporal_split.splitSAH();
-
-            /* take temporal split if it improved SAH */
-            if (temporal_split_sah < object_split_sah)
-              return temporal_split;
-          }
-
-          return object_split;
-        }
-
-        /*! finds the best split */
-        const Split findFallback(Set& set, PrimInfoMB& pinfo, const size_t logBlockSize, const bool singleLeafTimeSegment)
-        {
-          /* test if one primitive has two time segments in time range, if so split time */
-          if (singleLeafTimeSegment)
-          {
-            for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++) 
-            {
-              const PrimRefMB& prim = (*set.prims)[i];
-              const range<int> itime_range = recalculatePrimRef(prim,pinfo.time_range).second;
-              const int localTimeSegments = itime_range.size();
-              assert(localTimeSegments > 0);
-              if (localTimeSegments > 1) {
-                const int icenter = (itime_range.begin() + itime_range.end())/2;
-                const float splitTime = float(icenter)/float(prim.totalTimeSegments());
-                return Split(1.0f,SPLIT_TEMPORAL,0,splitTime);
-              }
-            }
-          }
-          
-          /* otherwise return fallback split */
-          return Split(1.0f,SPLIT_FALLBACK);
-        }
-
-        /*! finds the best split */
-        const Split object_find(const Set& set, const PrimInfoMB& pinfo, const size_t logBlockSize)
+        const Split object_find(const SetMB& set, const PrimInfoMB& pinfo, const size_t logBlockSize)
         {
           ObjectBinner binner(empty); // FIXME: this clear can be optimized away
           const BinMapping<BINS> mapping(pinfo.centBounds,pinfo.size());
@@ -255,7 +219,7 @@ namespace embree
         };
         
         /*! finds the best split */
-        const Split temporal_find(const Set& set, const PrimInfoMB& pinfo, const size_t logBlockSize)
+        const Split temporal_find(const SetMB& set, const PrimInfoMB& pinfo, const size_t logBlockSize)
         {
           assert(set.object_range.size() > 0);
           unsigned numTimeSegments = pinfo.max_num_time_segments;
@@ -265,28 +229,9 @@ namespace embree
           if (!tsplit.valid()) tsplit.data = SPLIT_FALLBACK; // use fallback split
           return tsplit;
         }
-        
-        /*! array partitioning */
-        void split(const Split& split, const PrimInfoMB& pinfo, const Set& set, PrimInfoMB& left, Set& lset, PrimInfoMB& right, Set& rset)
-        {
-          /* perform fallback split */
-          //if (unlikely(!split.valid())) {
-          if (unlikely(split.data == SPLIT_FALLBACK)) {
-            deterministic_order(set);
-            return splitFallback(set,left,lset,right,rset);
-          }
-          /* perform temporal split */
-          else if (unlikely(split.data == SPLIT_TEMPORAL)) {
-            temporal_split(split,pinfo,set,left,lset,right,rset);
-          }
-          /* perform object split */
-          else {
-            object_split(split,pinfo,set,left,lset,right,rset);
-          }
-        }
 
         /*! array partitioning */
-        __forceinline void object_split(const Split& split, const PrimInfoMB& pinfo, const Set& set, PrimInfoMB& left, Set& lset, PrimInfoMB& right, Set& rset)
+        __forceinline void object_split(const Split& split, const PrimInfoMB& pinfo, const SetMB& set, PrimInfoMB& left, SetMB& lset, PrimInfoMB& right, SetMB& rset)
         {
           const size_t begin = set.object_range.begin();
           const size_t end   = set.object_range.end();
@@ -300,12 +245,12 @@ namespace embree
           size_t center = parallel_partitioning(set.prims->data(),begin,end,empty,left,right,isLeft,reduction,reduction2,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD);
           left.begin  = begin;  left.end = center; left.time_range = pinfo.time_range;
           right.begin = center; right.end = end;   right.time_range = pinfo.time_range;
-          new (&lset) Set(set.prims,range<size_t>(begin,center),set.time_range);
-          new (&rset) Set(set.prims,range<size_t>(center,end  ),set.time_range);
+          new (&lset) SetMB(set.prims,range<size_t>(begin,center),set.time_range);
+          new (&rset) SetMB(set.prims,range<size_t>(center,end  ),set.time_range);
         }
 
         /*! array partitioning */
-        __forceinline void temporal_split(const Split& split, const PrimInfoMB& pinfo, const Set& set, PrimInfoMB& linfo, Set& lset, int side)
+        __forceinline void temporal_split(const Split& split, const PrimInfoMB& pinfo, const SetMB& set, PrimInfoMB& linfo, SetMB& lset, int side)
         {
           float center_time = split.fpos;
           const BBox1f time_range0(set.time_range.lower,center_time);
@@ -330,42 +275,13 @@ namespace embree
                                   [] (const PrimInfoMB& a, const PrimInfoMB& b) { return PrimInfoMB::merge(a,b); });
    
           linfo.time_range = time_range;
-          lset = Set(lprims,time_range);
+          lset = SetMB(lprims,time_range);
         }
 
-        __forceinline void temporal_split(const Split& split, const PrimInfoMB& pinfo, const Set& set, PrimInfoMB& linfo, Set& lset, PrimInfoMB& rinfo, Set& rset)
+        __forceinline void temporal_split(const Split& split, const PrimInfoMB& pinfo, const SetMB& set, PrimInfoMB& linfo, SetMB& lset, PrimInfoMB& rinfo, SetMB& rset)
         {
           temporal_split(split,pinfo,set,linfo,lset,0);
           temporal_split(split,pinfo,set,rinfo,rset,1);
-        }
-
-        void deterministic_order(const Set& set) 
-        {
-          /* required as parallel partition destroys original primitive order */
-          PrimRefMB* prims = set.prims->data();
-          std::sort(&prims[set.object_range.begin()],&prims[set.object_range.end()]);
-        }
-
-        void splitFallback(const Set& set, PrimInfoMB& linfo, Set& lset, PrimInfoMB& rinfo, Set& rset) // FIXME: also perform time split here?
-        {
-          mvector<PrimRefMB>& prims = *set.prims;
-
-          const size_t begin = set.object_range.begin();
-          const size_t end   = set.object_range.end();
-          const size_t center = (begin + end)/2;
-          
-          linfo = empty;
-          for (size_t i=begin; i<center; i++)
-            linfo.add_primref(prims[i]);
-          linfo.begin = begin; linfo.end = center; linfo.time_range = set.time_range;
-          
-          rinfo = empty;
-          for (size_t i=center; i<end; i++)
-            rinfo.add_primref(prims[i]);	
-          rinfo.begin = center; rinfo.end = end; rinfo.time_range = set.time_range;
-          
-          new (&lset) Set(set.prims,range<size_t>(begin,center),set.time_range);
-          new (&rset) Set(set.prims,range<size_t>(center,end  ),set.time_range);
         }
 
       private:
@@ -394,7 +310,9 @@ namespace embree
         using Heuristic::SPLIT_OBJECT;
         using Heuristic::SPLIT_TEMPORAL;
         using Heuristic::SPLIT_FALLBACK;
-        
+
+        typedef BinSplit<NUM_OBJECT_BINS> Split;
+
       public:
 
         struct LocalChildList
@@ -592,6 +510,7 @@ namespace embree
                              const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize,
                              const float travCost, const float intCost, const bool singleLeafTimeSegment)
           : HeuristicMBlur<RecalculatePrimRef,NUM_OBJECT_BINS>(device, recalculatePrimRef),
+          recalculatePrimRef(recalculatePrimRef),
           identity(identity), 
           createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
           progressMonitor(progressMonitor),
@@ -604,6 +523,111 @@ namespace embree
             throw_RTCError(RTC_UNKNOWN_ERROR,"bvh_builder: branching factor too large");
         }
         
+        __forceinline const typename Heuristic::Split find(BuildRecord& current) {
+          return find (current.prims,current.pinfo,logBlockSize);
+        }
+
+        /*! finds the best split */
+        const typename Heuristic::Split find(SetMB& set, PrimInfoMB& pinfo, const size_t logBlockSize)
+        {
+          /* first try standard object split */
+          const Split object_split = Heuristic::object_find(set,pinfo,logBlockSize);
+          const float object_split_sah = object_split.splitSAH();
+          
+          /* do temporal splits only if the the time range is big enough */
+          if (set.time_range.size() > 1.01f/float(pinfo.max_num_time_segments))
+          {
+            const Split temporal_split = Heuristic::temporal_find(set, pinfo, logBlockSize);
+            const float temporal_split_sah = temporal_split.splitSAH();
+
+            /* take temporal split if it improved SAH */
+            if (temporal_split_sah < object_split_sah)
+              return temporal_split;
+          }
+
+          return object_split;
+        }
+
+         __forceinline void partition(BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) {
+          split(brecord.split,brecord.pinfo,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
+        }
+
+        /*! array partitioning */
+        void split(const typename Heuristic::Split& split, const PrimInfoMB& pinfo, const SetMB& set, PrimInfoMB& left, SetMB& lset, PrimInfoMB& right, SetMB& rset)
+        {
+          /* perform fallback split */
+          //if (unlikely(!split.valid())) {
+          if (unlikely(split.data == SPLIT_FALLBACK)) {
+            deterministic_order(set);
+            return splitFallback(set,left,lset,right,rset);
+          }
+          /* perform temporal split */
+          else if (unlikely(split.data == SPLIT_TEMPORAL)) {
+            Heuristic::temporal_split(split,pinfo,set,left,lset,right,rset);
+          }
+          /* perform object split */
+          else {
+            Heuristic::object_split(split,pinfo,set,left,lset,right,rset);
+          }
+        }
+
+        __forceinline const typename Heuristic::Split findFallback(BuildRecord& current, bool singleLeafTimeSegment) {
+          return findFallback (current.prims,current.pinfo,logBlockSize,singleLeafTimeSegment);
+        }
+             
+        /*! finds the best split */
+        const Split findFallback(SetMB& set, PrimInfoMB& pinfo, const size_t logBlockSize, const bool singleLeafTimeSegment)
+        {
+          /* test if one primitive has two time segments in time range, if so split time */
+          if (singleLeafTimeSegment)
+          {
+            for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++) 
+            {
+              const PrimRefMB& prim = (*set.prims)[i];
+              const range<int> itime_range = recalculatePrimRef(prim,pinfo.time_range).second;
+              const int localTimeSegments = itime_range.size();
+              assert(localTimeSegments > 0);
+              if (localTimeSegments > 1) {
+                const int icenter = (itime_range.begin() + itime_range.end())/2;
+                const float splitTime = float(icenter)/float(prim.totalTimeSegments());
+                return Split(1.0f,SPLIT_TEMPORAL,0,splitTime);
+              }
+            }
+          }
+          
+          /* otherwise return fallback split */
+          return Split(1.0f,SPLIT_FALLBACK);
+        }
+
+        void splitFallback(const SetMB& set, PrimInfoMB& linfo, SetMB& lset, PrimInfoMB& rinfo, SetMB& rset) // FIXME: also perform time split here?
+        {
+          mvector<PrimRefMB>& prims = *set.prims;
+
+          const size_t begin = set.object_range.begin();
+          const size_t end   = set.object_range.end();
+          const size_t center = (begin + end)/2;
+          
+          linfo = empty;
+          for (size_t i=begin; i<center; i++)
+            linfo.add_primref(prims[i]);
+          linfo.begin = begin; linfo.end = center; linfo.time_range = set.time_range;
+          
+          rinfo = empty;
+          for (size_t i=center; i<end; i++)
+            rinfo.add_primref(prims[i]);	
+          rinfo.begin = center; rinfo.end = end; rinfo.time_range = set.time_range;
+          
+          new (&lset) SetMB(set.prims,range<size_t>(begin,center),set.time_range);
+          new (&rset) SetMB(set.prims,range<size_t>(center,end  ),set.time_range);
+        }
+
+        void deterministic_order(const SetMB& set) 
+        {
+          /* required as parallel partition destroys original primitive order */
+          PrimRefMB* prims = set.prims->data();
+          std::sort(&prims[set.object_range.begin()],&prims[set.object_range.end()]);
+        }
+
         const ReductionTy createLargeLeaf(BuildRecord& current, Allocator alloc)
         {
           /* this should never occur but is a fatal error */
@@ -637,19 +661,7 @@ namespace embree
           /* perform reduction */
           return updateNode(node,current.prims,values,children.size());
         }
-        
-        __forceinline const typename Heuristic::Split find(BuildRecord& current) {
-          return Heuristic::find (current.prims,current.pinfo,logBlockSize);
-        }
 
-        __forceinline const typename Heuristic::Split findFallback(BuildRecord& current, bool singleLeafTimeSegment) {
-          return Heuristic::findFallback (current.prims,current.pinfo,logBlockSize,singleLeafTimeSegment);
-        }
-        
-        __forceinline void partition(BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) {
-          Heuristic::split(brecord.split,brecord.pinfo,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
-        }
-        
         const ReductionTy recurse(BuildRecord& current, Allocator alloc, bool toplevel)
         {
           if (alloc == nullptr)
@@ -667,7 +679,7 @@ namespace embree
 
           /*! create a leaf node when threshold reached or SAH tells us to stop */
           if (current.pinfo.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.pinfo.size() <= maxLeafSize && leafSAH <= splitSAH)) {
-            Heuristic::deterministic_order(current.prims);
+            deterministic_order(current.prims);
             return createLargeLeaf(current,alloc);
           }
           
@@ -726,6 +738,7 @@ namespace embree
         }
         
       private:
+        const RecalculatePrimRef recalculatePrimRef;
         const ReductionTy identity;
         CreateAllocFunc& createAlloc;
         CreateNodeFunc& createNode;
