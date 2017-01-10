@@ -113,11 +113,8 @@ namespace embree
             SharedPrimRefVector* bsharedPrimVec = children[bestChild].sharedPrimVec;
             if (brecord.split.data == Split::SPLIT_TEMPORAL)
             {
-              SharedPrimRefVector* lsharedPrimVec = new (&sharedPrimVecs[numSharedPrimVecs  ]) SharedPrimRefVector(lrecord);
-              SharedPrimRefVector* rsharedPrimVec = new (&sharedPrimVecs[numSharedPrimVecs+1]) SharedPrimRefVector(rrecord);
-              numSharedPrimVecs += 2;
-              new (&children[bestChild  ]) Child(lrecord, lsharedPrimVec);
-              new (&children[numChildren]) Child(rrecord, rsharedPrimVec);
+              new (&children[bestChild  ]) Child(lrecord, new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(lrecord));
+              new (&children[numChildren]) Child(rrecord, new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(rrecord));
               bsharedPrimVec->decRef();
             }
             else
@@ -145,12 +142,9 @@ namespace embree
             SharedPrimRefVector* bsharedPrimVec = children[bestChild].sharedPrimVec;
             if (brecord.split.data == Split::SPLIT_TEMPORAL)
             {
-              SharedPrimRefVector* lsharedPrimVec = new (&sharedPrimVecs[numSharedPrimVecs  ]) SharedPrimRefVector(lrecord);
-              SharedPrimRefVector* rsharedPrimVec = new (&sharedPrimVecs[numSharedPrimVecs+1]) SharedPrimRefVector(rrecord);
-              numSharedPrimVecs += 2;
               children[bestChild] = children[numChildren-1];
-              new (&children[numChildren-1]) Child(lrecord, lsharedPrimVec);
-              new (&children[numChildren+0]) Child(rrecord, rsharedPrimVec);
+              new (&children[numChildren-1]) Child(lrecord, new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(lrecord));
+              new (&children[numChildren+0]) Child(rrecord, new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(rrecord));
               bsharedPrimVec->decRef();
             }
             else
