@@ -27,7 +27,8 @@ namespace embree
   namespace isa
   { 
     /*! Performs standard object binning */
-    struct HeuristicStrandSplit
+    template<typename PrimRef>
+      struct HeuristicStrandSplit
     {
       typedef range<size_t> Set;
   
@@ -61,7 +62,7 @@ namespace embree
         : prims(nullptr) {}
       
       /*! remember prim array */
-      __forceinline HeuristicStrandSplit (BezierPrim* prims)
+      __forceinline HeuristicStrandSplit (PrimRef* prims)
         : prims(prims) {}
       
       /*! finds the best split */
@@ -99,7 +100,7 @@ namespace embree
         
         for (size_t i=set.begin(); i<set.end(); i++)
         {
-          BezierPrim& prim = prims[i];
+          PrimRef& prim = prims[i];
           const Vec3fa axisi = normalize(prim.p3-prim.p0);
           const float cos0 = abs(dot(axisi,axis0));
           const float cos1 = abs(dot(axisi,axis1));
@@ -185,7 +186,7 @@ namespace embree
              Info info;
              for (size_t i=r.begin(); i<r.end(); i++)
              {
-               BezierPrim& prim = prims[i];
+               PrimRef& prim = prims[i];
                const Vec3fa axisi = normalize(prim.p3-prim.p0);
                const float cos0 = abs(dot(axisi,axis0));
                const float cos1 = abs(dot(axisi,axis1));
@@ -232,14 +233,14 @@ namespace embree
         CentGeomBBox3fa local_left(empty);
         CentGeomBBox3fa local_right(empty);
 
-        auto primOnLeftSide = [&] (const BezierPrim& prim) -> bool { 
+        auto primOnLeftSide = [&] (const PrimRef& prim) -> bool { 
           const Vec3fa axisi = normalize(prim.p3-prim.p0);
           const float cos0 = abs(dot(axisi,split.axis0));
           const float cos1 = abs(dot(axisi,split.axis1));
           return cos0 > cos1;
         };
 
-        auto mergePrimBounds = [] (CentGeomBBox3fa& pinfo,const BezierPrim& ref) { 
+        auto mergePrimBounds = [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { 
           pinfo.extend(ref.bounds()); 
         };
         
@@ -266,7 +267,7 @@ namespace embree
         left.reset(); 
         right.reset();
 
-        auto primOnLeftSide = [&] (const BezierPrim& prim) -> bool { 
+        auto primOnLeftSide = [&] (const PrimRef& prim) -> bool { 
           const Vec3fa axisi = normalize(prim.p3-prim.p0);
           const float cos0 = abs(dot(axisi,split.axis0));
           const float cos1 = abs(dot(axisi,split.axis1));
@@ -275,7 +276,7 @@ namespace embree
 
         const size_t center = parallel_partitioning(
           prims,begin,end,empty,left,right,primOnLeftSide,
-          [] (PrimInfo &pinfo, const BezierPrim& ref) { pinfo.add(ref.bounds()); },
+          [] (PrimInfo &pinfo, const PrimRef& ref) { pinfo.add(ref.bounds()); },
           [] (PrimInfo &pinfo0,const PrimInfo& pinfo1) { pinfo0.merge(pinfo1); },
           PARALLEL_PARTITION_BLOCK_SIZE);
         
@@ -327,7 +328,7 @@ namespace embree
       }
       
     private:
-      BezierPrim* const prims;
+      PrimRef* const prims;
     };
   }
 }
