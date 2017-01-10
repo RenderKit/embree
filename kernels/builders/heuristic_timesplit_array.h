@@ -19,7 +19,6 @@
 #include "../common/primref_mb.h"
 
 #define MBLUR_TIME_SPLIT_THRESHOLD 1.25f
-#define MBLUR_TIME_SPLIT_LOCATIONS 1
 
 namespace embree
 {
@@ -29,7 +28,7 @@ namespace embree
     template<typename RecalculatePrimRef, size_t BINS>
       struct HeuristicMBlurTemporalSplit
       {
-        typedef BinSplit<BINS> Split;
+        typedef BinSplit<NUM_OBJECT_BINS> Split;
         typedef mvector<PrimRefMB>* PrimRefVector;
 
         static const size_t PARALLEL_THRESHOLD = 3 * 1024;
@@ -39,7 +38,6 @@ namespace embree
         HeuristicMBlurTemporalSplit (MemoryMonitorInterface* device, const RecalculatePrimRef& recalculatePrimRef)
           : device(device), recalculatePrimRef(recalculatePrimRef) {}
 
-        template<int LOCATIONS>
         struct TemporalBinInfo
         {
           __forceinline TemporalBinInfo () {
@@ -47,7 +45,7 @@ namespace embree
           
           __forceinline TemporalBinInfo (EmptyTy)
           {
-            for (size_t i=0; i<LOCATIONS; i++)
+            for (size_t i=0; i<BINS-1; i++)
             {
               count0[i] = count1[i] = 0;
               bounds0[i] = bounds1[i] = empty;
@@ -56,9 +54,9 @@ namespace embree
           
           void bin(const PrimRefMB* prims, size_t begin, size_t end, BBox1f time_range, size_t numTimeSegments, const RecalculatePrimRef& recalculatePrimRef)
           {
-            for (int b=0; b<MBLUR_TIME_SPLIT_LOCATIONS; b++)
+            for (int b=0; b<BINS-1; b++)
             {
-              float t = float(b+1)/float(MBLUR_TIME_SPLIT_LOCATIONS+1);
+              float t = float(b+1)/float(BINS);
               float ct = lerp(time_range.lower,time_range.upper,t);
               const float center_time = round(ct * float(numTimeSegments)) / float(numTimeSegments);
               if (center_time <= time_range.lower) continue;
@@ -99,7 +97,7 @@ namespace embree
           /*! merges in other binning information */
           __forceinline void merge (const TemporalBinInfo& other)
           {
-            for (size_t i=0; i<LOCATIONS; i++) 
+            for (size_t i=0; i<BINS-1; i++) 
             {
               count0[i] += other.count0[i];
               count1[i] += other.count1[i];
@@ -112,9 +110,9 @@ namespace embree
           {
             float bestSAH = inf;
             float bestPos = 0.0f;
-            for (int b=0; b<MBLUR_TIME_SPLIT_LOCATIONS; b++)
+            for (int b=0; b<BINS-1; b++)
             {
-              float t = float(b+1)/float(MBLUR_TIME_SPLIT_LOCATIONS+1);
+              float t = float(b+1)/float(BINS);
               float ct = lerp(time_range.lower,time_range.upper,t);
               const float center_time = round(ct * float(numTimeSegments)) / float(numTimeSegments);
               if (center_time <= time_range.lower) continue;
@@ -138,14 +136,14 @@ namespace embree
           }
           
         public:
-          size_t count0[LOCATIONS];
-          size_t count1[LOCATIONS];
+          size_t count0[BINS-1];
+          size_t count1[BINS-1];
 #if MBLUR_BIN_LBBOX
-          LBBox3fa bounds0[LOCATIONS];
-          LBBox3fa bounds1[LOCATIONS];
+          LBBox3fa bounds0[BINS-1];
+          LBBox3fa bounds1[BINS-1];
 #else
-          BBox3fa bounds0[LOCATIONS];
-          BBox3fa bounds1[LOCATIONS];
+          BBox3fa bounds0[BINS-1];
+          BBox3fa bounds1[BINS-1];
 #endif
         };
         
@@ -154,7 +152,7 @@ namespace embree
         {
           assert(set.object_range.size() > 0);
           unsigned numTimeSegments = pinfo.max_num_time_segments;
-          TemporalBinInfo<MBLUR_TIME_SPLIT_LOCATIONS> binner(empty);
+          TemporalBinInfo binner(empty);
           binner.bin_parallel(set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,set.time_range,numTimeSegments,recalculatePrimRef);
           Split tsplit = binner.best(logBlockSize,set.time_range,numTimeSegments);
           if (!tsplit.valid()) tsplit.data = Split::SPLIT_FALLBACK; // use fallback split

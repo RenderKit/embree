@@ -16,6 +16,8 @@
 
 #pragma once
 
+#define NUM_TEMPORAL_BINS 2
+
 #include "../common/primref_mb.h"
 #include "heuristic_binning_array_aligned.h"
 #include "heuristic_timesplit_array.h"
@@ -472,7 +474,7 @@ namespace embree
       private:
         const RecalculatePrimRef recalculatePrimRef;
         HeuristicArrayBinningMB<NUM_OBJECT_BINS> heuristicObjectSplit;
-        HeuristicMBlurTemporalSplit<RecalculatePrimRef,NUM_OBJECT_BINS> heuristicTemporalSplit;
+        HeuristicMBlurTemporalSplit<RecalculatePrimRef,NUM_TEMPORAL_BINS> heuristicTemporalSplit;
         const ReductionTy identity;
         CreateAllocFunc& createAlloc;
         CreateNodeFunc& createNode;
