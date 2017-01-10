@@ -70,7 +70,7 @@ namespace embree
 
     /*! Performs standard object binning */
     template<typename RecalculatePrimRef, size_t BINS>
-      struct HeuristicMBlur
+      struct HeuristicMBlurObjectSplit
       {
         typedef BinSplit<BINS> Split;
 #if MBLUR_BIN_LBBOX
@@ -80,15 +80,11 @@ namespace embree
 #endif
         typedef mvector<PrimRefMB>* PrimRefVector;
 
-        
-
-        
-
         static const size_t PARALLEL_THRESHOLD = 3 * 1024;
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
         static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;
 
-        HeuristicMBlur (MemoryMonitorInterface* device, const RecalculatePrimRef& recalculatePrimRef)
+        HeuristicMBlurObjectSplit (MemoryMonitorInterface* device, const RecalculatePrimRef& recalculatePrimRef)
           : device(device), recalculatePrimRef(recalculatePrimRef) {}
 
         /*! finds the best split */
@@ -102,6 +98,44 @@ namespace embree
           if (!osplit.valid()) osplit.data = Split::SPLIT_FALLBACK; // use fallback split
           return osplit;
         }
+
+        /*! array partitioning */
+        __forceinline void object_split(const Split& split, const PrimInfoMB& pinfo, const SetMB& set, PrimInfoMB& left, SetMB& lset, PrimInfoMB& right, SetMB& rset)
+        {
+          const size_t begin = set.object_range.begin();
+          const size_t end   = set.object_range.end();
+          left = empty;
+          right = empty;
+          const vint4 vSplitPos(split.pos);
+          const vbool4 vSplitMask(1 << split.dim);
+          auto isLeft = [&] (const PrimRefMB &ref) { return any(((vint4)split.mapping.bin_unsafe(ref) < vSplitPos) & vSplitMask); };
+          auto reduction = [] (PrimInfoMB& pinfo, const PrimRefMB& ref) { pinfo.add_primref(ref); };
+          auto reduction2 = [] (PrimInfoMB& pinfo0,const PrimInfoMB& pinfo1) { pinfo0.merge(pinfo1); };
+          size_t center = parallel_partitioning(set.prims->data(),begin,end,empty,left,right,isLeft,reduction,reduction2,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD);
+          left.begin  = begin;  left.end = center; left.time_range = pinfo.time_range;
+          right.begin = center; right.end = end;   right.time_range = pinfo.time_range;
+          new (&lset) SetMB(set.prims,range<size_t>(begin,center),set.time_range);
+          new (&rset) SetMB(set.prims,range<size_t>(center,end  ),set.time_range);
+        }
+        
+      private:
+        MemoryMonitorInterface* device;              // device to report memory usage to
+        const RecalculatePrimRef recalculatePrimRef;
+      };
+
+    /*! Performs standard object binning */
+    template<typename RecalculatePrimRef, size_t BINS>
+      struct HeuristicMBlurTemporalSplit
+      {
+        typedef BinSplit<BINS> Split;
+        typedef mvector<PrimRefMB>* PrimRefVector;
+
+        static const size_t PARALLEL_THRESHOLD = 3 * 1024;
+        static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
+        static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;
+
+        HeuristicMBlurTemporalSplit (MemoryMonitorInterface* device, const RecalculatePrimRef& recalculatePrimRef)
+          : device(device), recalculatePrimRef(recalculatePrimRef) {}
 
         template<int LOCATIONS>
         struct TemporalBinInfo
@@ -226,25 +260,6 @@ namespace embree
         }
 
         /*! array partitioning */
-        __forceinline void object_split(const Split& split, const PrimInfoMB& pinfo, const SetMB& set, PrimInfoMB& left, SetMB& lset, PrimInfoMB& right, SetMB& rset)
-        {
-          const size_t begin = set.object_range.begin();
-          const size_t end   = set.object_range.end();
-          left = empty;
-          right = empty;
-          const vint4 vSplitPos(split.pos);
-          const vbool4 vSplitMask(1 << split.dim);
-          auto isLeft = [&] (const PrimRefMB &ref) { return any(((vint4)split.mapping.bin_unsafe(ref) < vSplitPos) & vSplitMask); };
-          auto reduction = [] (PrimInfoMB& pinfo, const PrimRefMB& ref) { pinfo.add_primref(ref); };
-          auto reduction2 = [] (PrimInfoMB& pinfo0,const PrimInfoMB& pinfo1) { pinfo0.merge(pinfo1); };
-          size_t center = parallel_partitioning(set.prims->data(),begin,end,empty,left,right,isLeft,reduction,reduction2,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD);
-          left.begin  = begin;  left.end = center; left.time_range = pinfo.time_range;
-          right.begin = center; right.end = end;   right.time_range = pinfo.time_range;
-          new (&lset) SetMB(set.prims,range<size_t>(begin,center),set.time_range);
-          new (&rset) SetMB(set.prims,range<size_t>(center,end  ),set.time_range);
-        }
-
-        /*! array partitioning */
         __forceinline void temporal_split(const Split& split, const PrimInfoMB& pinfo, const SetMB& set, PrimInfoMB& linfo, SetMB& lset, int side)
         {
           float center_time = split.fpos;
@@ -295,14 +310,16 @@ namespace embree
       typename ProgressMonitor,
       typename PrimInfo>
       
-      class GeneralBVHMBBuilder : public HeuristicMBlur<RecalculatePrimRef,NUM_OBJECT_BINS>
+      class GeneralBVHMBBuilder
       {
         static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximal supported BVH branching factor
         static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree of we are that many levels before the maximal tree depth
         static const size_t SINGLE_THREADED_THRESHOLD = 1024;  //!< threshold to switch to single threaded build
-        typedef HeuristicMBlur<RecalculatePrimRef,NUM_OBJECT_BINS> Heuristic;
+        typedef HeuristicMBlurObjectSplit<RecalculatePrimRef,NUM_OBJECT_BINS> HeuristicObjectSplit;
+        typedef HeuristicMBlurTemporalSplit<RecalculatePrimRef,NUM_OBJECT_BINS> HeuristicTemporalSplit;
 
         typedef BinSplit<NUM_OBJECT_BINS> Split;
+        typedef mvector<PrimRefMB>* PrimRefVector;
 
       public:
 
@@ -326,7 +343,7 @@ namespace embree
                 delete prims;
             }
 
-            typename Heuristic::PrimRefVector prims;
+            PrimRefVector prims;
             size_t refCount;
           };
 
@@ -500,8 +517,9 @@ namespace embree
                              const size_t branchingFactor, const size_t maxDepth, 
                              const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize,
                              const float travCost, const float intCost, const bool singleLeafTimeSegment)
-          : HeuristicMBlur<RecalculatePrimRef,NUM_OBJECT_BINS>(device, recalculatePrimRef),
-          recalculatePrimRef(recalculatePrimRef),
+          : recalculatePrimRef(recalculatePrimRef),
+          heuristicObjectSplit(device, recalculatePrimRef),
+          heuristicTemporalSplit(device, recalculatePrimRef),
           identity(identity), 
           createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
           progressMonitor(progressMonitor),
@@ -514,21 +532,21 @@ namespace embree
             throw_RTCError(RTC_UNKNOWN_ERROR,"bvh_builder: branching factor too large");
         }
         
-        __forceinline const typename Heuristic::Split find(BuildRecord& current) {
+        __forceinline const Split find(BuildRecord& current) {
           return find (current.prims,current.pinfo,logBlockSize);
         }
 
         /*! finds the best split */
-        const typename Heuristic::Split find(SetMB& set, PrimInfoMB& pinfo, const size_t logBlockSize)
+        const Split find(SetMB& set, PrimInfoMB& pinfo, const size_t logBlockSize)
         {
           /* first try standard object split */
-          const Split object_split = Heuristic::object_find(set,pinfo,logBlockSize);
+          const Split object_split = heuristicObjectSplit.object_find(set,pinfo,logBlockSize);
           const float object_split_sah = object_split.splitSAH();
           
           /* do temporal splits only if the the time range is big enough */
           if (set.time_range.size() > 1.01f/float(pinfo.max_num_time_segments))
           {
-            const Split temporal_split = Heuristic::temporal_find(set, pinfo, logBlockSize);
+            const Split temporal_split = heuristicTemporalSplit.temporal_find(set, pinfo, logBlockSize);
             const float temporal_split_sah = temporal_split.splitSAH();
 
             /* take temporal split if it improved SAH */
@@ -539,12 +557,12 @@ namespace embree
           return object_split;
         }
 
-         __forceinline void partition(BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) {
+        __forceinline void partition(BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) {
           split(brecord.split,brecord.pinfo,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
         }
 
         /*! array partitioning */
-        void split(const typename Heuristic::Split& split, const PrimInfoMB& pinfo, const SetMB& set, PrimInfoMB& left, SetMB& lset, PrimInfoMB& right, SetMB& rset)
+        void split(const Split& split, const PrimInfoMB& pinfo, const SetMB& set, PrimInfoMB& left, SetMB& lset, PrimInfoMB& right, SetMB& rset)
         {
           /* perform fallback split */
           //if (unlikely(!split.valid())) {
@@ -554,15 +572,15 @@ namespace embree
           }
           /* perform temporal split */
           else if (unlikely(split.data == Split::SPLIT_TEMPORAL)) {
-            Heuristic::temporal_split(split,pinfo,set,left,lset,right,rset);
+            heuristicTemporalSplit.temporal_split(split,pinfo,set,left,lset,right,rset);
           }
           /* perform object split */
           else {
-            Heuristic::object_split(split,pinfo,set,left,lset,right,rset);
+            heuristicObjectSplit.object_split(split,pinfo,set,left,lset,right,rset);
           }
         }
 
-        __forceinline const typename Heuristic::Split findFallback(BuildRecord& current, bool singleLeafTimeSegment) {
+        __forceinline Split findFallback(BuildRecord& current, bool singleLeafTimeSegment) {
           return findFallback (current.prims,current.pinfo,logBlockSize,singleLeafTimeSegment);
         }
              
@@ -730,6 +748,8 @@ namespace embree
         
       private:
         const RecalculatePrimRef recalculatePrimRef;
+        HeuristicMBlurObjectSplit<RecalculatePrimRef,NUM_OBJECT_BINS> heuristicObjectSplit;
+        HeuristicMBlurTemporalSplit<RecalculatePrimRef,NUM_OBJECT_BINS> heuristicTemporalSplit;
         const ReductionTy identity;
         CreateAllocFunc& createAlloc;
         CreateNodeFunc& createNode;

@@ -631,9 +631,8 @@ namespace embree
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
-      typedef HeuristicMBlur<RecalculatePrimRef<Mesh>,NUM_OBJECT_BINS> Heuristic;
       typedef SetMB Set;
-      typedef typename Heuristic::Split Split;
+      typedef BinSplit<NUM_OBJECT_BINS> Split;
       typedef GeneralBuildRecord<Set,Split,PrimInfoMB> BuildRecord;
       typedef typename BVH::AlignedNodeMB AlignedNodeMB;
       typedef typename BVH::AlignedNodeMB4D AlignedNodeMB4D;
@@ -671,9 +670,8 @@ namespace embree
     struct CreateMBlurLeaf
     {
       typedef BVHN<N> BVH;
-      typedef HeuristicMBlur<RecalculatePrimRef<Mesh>,NUM_OBJECT_BINS> Heuristic;
       typedef SetMB Set;
-      typedef typename Heuristic::Split Split;
+      typedef BinSplit<NUM_OBJECT_BINS> Split;
       typedef GeneralBuildRecord<Set,Split,PrimInfoMB> BuildRecord;
 
       __forceinline CreateMBlurLeaf (BVH* bvh) : bvh(bvh) {}
@@ -703,9 +701,8 @@ namespace embree
       typedef typename BVHN<N>::AlignedNodeMB AlignedNodeMB;
       typedef typename BVHN<N>::AlignedNodeMB4D AlignedNodeMB4D;
 
-      typedef HeuristicMBlur<RecalculatePrimRef<Mesh>,NUM_OBJECT_BINS> Heuristic;
       typedef SetMB Set;
-      typedef typename Heuristic::Split Split;
+      typedef BinSplit<NUM_OBJECT_BINS> Split;
       typedef GeneralBuildRecord<Set,Split,PrimInfoMB> BuildRecord;
 
       BVH* bvh;
