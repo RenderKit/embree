@@ -17,7 +17,7 @@
 #pragma once
 
 #include "../common/primref_mb.h"
-#include "heuristic_binning.h"
+#include "heuristic_binning_array_aligned.h"
 
 #define MBLUR_TIME_SPLIT_THRESHOLD 1.25f
 #define MBLUR_TIME_SPLIT_LOCATIONS 1
@@ -26,103 +26,6 @@ namespace embree
 {
   namespace isa
   { 
-    struct SetMB 
-    {
-      static const size_t PARALLEL_THRESHOLD = 3 * 1024;
-      static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
-      static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;
-
-      typedef mvector<PrimRefMB>* PrimRefVector;
-
-      __forceinline SetMB() {}
-      
-      __forceinline SetMB(PrimRefVector prims, range<size_t> object_range, BBox1f time_range)
-        : prims(prims), object_range(object_range), time_range(time_range) {}
-      
-      __forceinline SetMB(PrimRefVector prims, BBox1f time_range = BBox1f(0.0f,1.0f))
-        : prims(prims), object_range(range<size_t>(0,prims->size())), time_range(time_range) {}
-      
-      template<typename RecalculatePrimRef>
-      __forceinline LBBox3fa linearBounds(const RecalculatePrimRef& recalculatePrimRef) const
-      {
-        auto reduce = [&](const range<size_t>& r) -> LBBox3fa
-        {
-          LBBox3fa cbounds(empty);
-          for (size_t j = r.begin(); j < r.end(); j++)
-          {
-            PrimRefMB& ref = (*prims)[j];
-            auto bn = recalculatePrimRef.linearBounds(ref, time_range);
-            cbounds.extend(bn.first);
-          };
-          return cbounds;
-        };
-        
-        return parallel_reduce(object_range.begin(), object_range.end(), PARALLEL_FIND_BLOCK_SIZE, PARALLEL_THRESHOLD, LBBox3fa(empty),
-                               reduce,
-                                   [&](const LBBox3fa& b0, const LBBox3fa& b1) -> LBBox3fa { return merge(b0, b1); });
-      }
-      
-    public:
-      PrimRefVector prims;
-      range<size_t> object_range;
-      BBox1f time_range;
-    };
-
-    /*! Performs standard object binning */
-    template<typename RecalculatePrimRef, size_t BINS>
-      struct HeuristicMBlurObjectSplit
-      {
-        typedef BinSplit<BINS> Split;
-#if MBLUR_BIN_LBBOX
-        typedef BinInfoT<BINS,PrimRefMB,LBBox3fa> ObjectBinner;
-#else
-        typedef BinInfoT<BINS,PrimRefMB,BBox3fa> ObjectBinner;
-#endif
-        typedef mvector<PrimRefMB>* PrimRefVector;
-
-        static const size_t PARALLEL_THRESHOLD = 3 * 1024;
-        static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
-        static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;
-
-        HeuristicMBlurObjectSplit (MemoryMonitorInterface* device, const RecalculatePrimRef& recalculatePrimRef)
-          : device(device), recalculatePrimRef(recalculatePrimRef) {}
-
-        /*! finds the best split */
-        const Split object_find(const SetMB& set, const PrimInfoMB& pinfo, const size_t logBlockSize)
-        {
-          ObjectBinner binner(empty); // FIXME: this clear can be optimized away
-          const BinMapping<BINS> mapping(pinfo.centBounds,pinfo.size());
-          binner.bin_parallel(set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,mapping);
-          Split osplit = binner.best(mapping,logBlockSize);
-          osplit.sah *= pinfo.time_range.size();
-          if (!osplit.valid()) osplit.data = Split::SPLIT_FALLBACK; // use fallback split
-          return osplit;
-        }
-
-        /*! array partitioning */
-        __forceinline void object_split(const Split& split, const PrimInfoMB& pinfo, const SetMB& set, PrimInfoMB& left, SetMB& lset, PrimInfoMB& right, SetMB& rset)
-        {
-          const size_t begin = set.object_range.begin();
-          const size_t end   = set.object_range.end();
-          left = empty;
-          right = empty;
-          const vint4 vSplitPos(split.pos);
-          const vbool4 vSplitMask(1 << split.dim);
-          auto isLeft = [&] (const PrimRefMB &ref) { return any(((vint4)split.mapping.bin_unsafe(ref) < vSplitPos) & vSplitMask); };
-          auto reduction = [] (PrimInfoMB& pinfo, const PrimRefMB& ref) { pinfo.add_primref(ref); };
-          auto reduction2 = [] (PrimInfoMB& pinfo0,const PrimInfoMB& pinfo1) { pinfo0.merge(pinfo1); };
-          size_t center = parallel_partitioning(set.prims->data(),begin,end,empty,left,right,isLeft,reduction,reduction2,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD);
-          left.begin  = begin;  left.end = center; left.time_range = pinfo.time_range;
-          right.begin = center; right.end = end;   right.time_range = pinfo.time_range;
-          new (&lset) SetMB(set.prims,range<size_t>(begin,center),set.time_range);
-          new (&rset) SetMB(set.prims,range<size_t>(center,end  ),set.time_range);
-        }
-        
-      private:
-        MemoryMonitorInterface* device;              // device to report memory usage to
-        const RecalculatePrimRef recalculatePrimRef;
-      };
-
     /*! Performs standard object binning */
     template<typename RecalculatePrimRef, size_t BINS>
       struct HeuristicMBlurTemporalSplit
@@ -315,8 +218,6 @@ namespace embree
         static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximal supported BVH branching factor
         static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree of we are that many levels before the maximal tree depth
         static const size_t SINGLE_THREADED_THRESHOLD = 1024;  //!< threshold to switch to single threaded build
-        typedef HeuristicMBlurObjectSplit<RecalculatePrimRef,NUM_OBJECT_BINS> HeuristicObjectSplit;
-        typedef HeuristicMBlurTemporalSplit<RecalculatePrimRef,NUM_OBJECT_BINS> HeuristicTemporalSplit;
 
         typedef BinSplit<NUM_OBJECT_BINS> Split;
         typedef mvector<PrimRefMB>* PrimRefVector;
@@ -518,7 +419,7 @@ namespace embree
                              const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize,
                              const float travCost, const float intCost, const bool singleLeafTimeSegment)
           : recalculatePrimRef(recalculatePrimRef),
-          heuristicObjectSplit(device, recalculatePrimRef),
+          heuristicObjectSplit(),
           heuristicTemporalSplit(device, recalculatePrimRef),
           identity(identity), 
           createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
@@ -540,7 +441,7 @@ namespace embree
         const Split find(SetMB& set, PrimInfoMB& pinfo, const size_t logBlockSize)
         {
           /* first try standard object split */
-          const Split object_split = heuristicObjectSplit.object_find(set,pinfo,logBlockSize);
+          const Split object_split = heuristicObjectSplit.find(set,pinfo,logBlockSize);
           const float object_split_sah = object_split.splitSAH();
           
           /* do temporal splits only if the the time range is big enough */
@@ -576,7 +477,7 @@ namespace embree
           }
           /* perform object split */
           else {
-            heuristicObjectSplit.object_split(split,pinfo,set,left,lset,right,rset);
+            heuristicObjectSplit.split(split,pinfo,set,left,lset,right,rset);
           }
         }
 
@@ -748,7 +649,7 @@ namespace embree
         
       private:
         const RecalculatePrimRef recalculatePrimRef;
-        HeuristicMBlurObjectSplit<RecalculatePrimRef,NUM_OBJECT_BINS> heuristicObjectSplit;
+        HeuristicArrayBinningMB<NUM_OBJECT_BINS> heuristicObjectSplit;
         HeuristicMBlurTemporalSplit<RecalculatePrimRef,NUM_OBJECT_BINS> heuristicTemporalSplit;
         const ReductionTy identity;
         CreateAllocFunc& createAlloc;
