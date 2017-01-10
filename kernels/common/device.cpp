@@ -63,9 +63,9 @@ namespace embree
   {
     /* initialize global state */
     State::parseString(cfg);
-    if (FileName::executableFolder() != FileName(""))
+    if (!ignore_config_files && FileName::executableFolder() != FileName(""))
       State::parseFile(FileName::executableFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
-    if (FileName::homeFolder() != FileName(""))
+    if (!ignore_config_files && FileName::homeFolder() != FileName(""))
       State::parseFile(FileName::homeFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
     State::verify();
 
@@ -312,12 +312,14 @@ namespace embree
  
   void Device::setCacheSize(size_t bytes) 
   {
+#if defined(EMBREE_GEOMETRY_SUBDIV)
     Lock<MutexSys> lock(g_mutex);
     if (bytes == 0) g_cache_size_map.erase(this);
     else            g_cache_size_map[this] = bytes;
     
     size_t maxCacheSize = getMaxCacheSize();
     resizeTessellationCache(maxCacheSize);
+#endif
   }
 
   void Device::initTaskingSystem(size_t numThreads) 

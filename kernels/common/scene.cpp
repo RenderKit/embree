@@ -516,6 +516,7 @@ namespace embree
   void Scene::clear() {
   }
 
+#if defined(EMBREE_GEOMETRY_USER)
   unsigned Scene::newUserGeometry (RTCGeometryFlags gflags, size_t items, size_t numTimeSteps) 
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
@@ -548,7 +549,9 @@ namespace embree
     Geometry* instance = new GeometryInstance(this,geom);
     return instance->id;
   }
+#endif
 
+#if defined(EMBREE_GEOMETRY_TRIANGLES)
   unsigned Scene::newTriangleMesh (RTCGeometryFlags gflags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) 
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
@@ -564,7 +567,9 @@ namespace embree
     Geometry* geom = new TriangleMesh(this,gflags,numTriangles,numVertices,numTimeSteps);
     return geom->id;
   }
+#endif
 
+#if defined(EMBREE_GEOMETRY_QUADS)
   unsigned Scene::newQuadMesh (RTCGeometryFlags gflags, size_t numQuads, size_t numVertices, size_t numTimeSteps) 
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
@@ -580,7 +585,9 @@ namespace embree
     Geometry* geom = new QuadMesh(this,gflags,numQuads,numVertices,numTimeSteps);
     return geom->id;
   }
+#endif
 
+#if defined(EMBREE_GEOMETRY_SUBDIV)
   unsigned Scene::newSubdivisionMesh (RTCGeometryFlags gflags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps) 
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
@@ -602,8 +609,9 @@ namespace embree
       geom = new SubdivMesh(this,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
     return geom->id;
   }
+#endif
 
-
+#if defined(EMBREE_GEOMETRY_HAIR)
   unsigned Scene::newBezierCurves (BezierCurves::SubType subtype, RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
@@ -619,7 +627,9 @@ namespace embree
     Geometry* geom = new BezierCurves(this,subtype,gflags,numCurves,numVertices,numTimeSteps);
     return geom->id;
   }
+#endif
 
+#if defined(EMBREE_GEOMETRY_LINES)
   unsigned Scene::newLineSegments (RTCGeometryFlags gflags, size_t numSegments, size_t numVertices, size_t numTimeSteps)
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
@@ -635,6 +645,7 @@ namespace embree
     Geometry* geom = new LineSegments(this,gflags,numSegments,numVertices,numTimeSteps);
     return geom->id;
   }
+#endif
 
   unsigned Scene::add(Geometry* geometry) 
   {
