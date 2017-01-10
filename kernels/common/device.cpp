@@ -312,12 +312,14 @@ namespace embree
  
   void Device::setCacheSize(size_t bytes) 
   {
+#if defined(EMBREE_GEOMETRY_SUBDIV)
     Lock<MutexSys> lock(g_mutex);
     if (bytes == 0) g_cache_size_map.erase(this);
     else            g_cache_size_map[this] = bytes;
     
     size_t maxCacheSize = getMaxCacheSize();
     resizeTessellationCache(maxCacheSize);
+#endif
   }
 
   void Device::initTaskingSystem(size_t numThreads) 

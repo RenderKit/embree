@@ -186,10 +186,6 @@ namespace embree
     Stat::clear();
 #endif
 
-#if defined(DEBUG) && 1
-    extern void printTessCacheStats();
-    printTessCacheStats();
-#endif
     RTCORE_CATCH_END(g_device);
   }
 
@@ -771,8 +767,12 @@ namespace embree
     RTCORE_TRACE(rtcNewInstance);
     RTCORE_VERIFY_HANDLE(htarget);
     RTCORE_VERIFY_HANDLE(hsource);
+#if defined(EMBREE_GEOMETRY_USER)
     if (target->device != source->device) throw_RTCError(RTC_INVALID_OPERATION,"scenes do not belong to the same device");
     return target->newInstance(source,1);
+#else
+    throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewInstance is not supported");
+#endif
     RTCORE_CATCH_END(target->device);
     return -1;
   }
@@ -785,8 +785,12 @@ namespace embree
     RTCORE_TRACE(rtcNewInstance2);
     RTCORE_VERIFY_HANDLE(htarget);
     RTCORE_VERIFY_HANDLE(hsource);
+#if defined(EMBREE_GEOMETRY_USER)
     if (target->device != source->device) throw_RTCError(RTC_INVALID_OPERATION,"scenes do not belong to the same device");
     return target->newInstance(source,numTimeSteps);
+#else
+    throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewInstance2 is not supported");
+#endif
     RTCORE_CATCH_END(target->device);
     return -1;
   }
@@ -868,7 +872,11 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewUserGeometry);
     RTCORE_VERIFY_HANDLE(hscene);
+#if defined(EMBREE_GEOMETRY_USER)
     return scene->newUserGeometry(RTC_GEOMETRY_STATIC,numItems,1);
+#else
+    throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewUserGeometry is not supported");
+#endif
     RTCORE_CATCH_END(scene->device);
     return -1;
   }
@@ -879,7 +887,11 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewUserGeometry2);
     RTCORE_VERIFY_HANDLE(hscene);
+#if defined(EMBREE_GEOMETRY_USER)
     return scene->newUserGeometry(RTC_GEOMETRY_STATIC,numItems,numTimeSteps);
+#else
+    throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewUserGeometry2 is not supported");
+#endif
     RTCORE_CATCH_END(scene->device);
     return -1;
   }
@@ -890,7 +902,11 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewUserGeometry2);
     RTCORE_VERIFY_HANDLE(hscene);
+#if defined(EMBREE_GEOMETRY_USER)
     return scene->newUserGeometry(gflags,numItems,numTimeSteps);
+#else
+    throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewUserGeometry3 is not supported");
+#endif
     RTCORE_CATCH_END(scene->device);
     return -1;
   }
@@ -901,7 +917,11 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewTriangleMesh);
     RTCORE_VERIFY_HANDLE(hscene);
+#if defined(EMBREE_GEOMETRY_TRIANGLES)
     return scene->newTriangleMesh(flags,numTriangles,numVertices,numTimeSteps);
+#else
+    throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewTriangleMesh is not supported");
+#endif
     RTCORE_CATCH_END(scene->device);
     return -1;
   }
@@ -912,7 +932,11 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewQuadMesh);
     RTCORE_VERIFY_HANDLE(hscene);
+#if defined(EMBREE_GEOMETRY_QUADS)
     return scene->newQuadMesh(flags,numQuads,numVertices,numTimeSteps);
+#else
+    throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewQuadMesh is not supported");
+#endif
     RTCORE_CATCH_END(scene->device);
     return -1;
   }
@@ -923,7 +947,11 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewHairGeometry);
     RTCORE_VERIFY_HANDLE(hscene);
+#if defined(EMBREE_GEOMETRY_HAIR)
     return scene->newBezierCurves(BezierCurves::HAIR,flags,numCurves,numVertices,numTimeSteps);
+#else
+    throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewHairGeometry is not supported");
+#endif
     RTCORE_CATCH_END(scene->device);
     return -1;
   }
@@ -934,7 +962,11 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewCurveGeometry);
     RTCORE_VERIFY_HANDLE(hscene);
+#if defined(EMBREE_GEOMETRY_HAIR)
     return scene->newBezierCurves(BezierCurves::SURFACE,flags,numCurves,numVertices,numTimeSteps);
+#else
+    throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewCurveGeometry is not supported");
+#endif
     RTCORE_CATCH_END(scene->device);
     return -1;
   }
@@ -945,7 +977,11 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewLineSegments);
     RTCORE_VERIFY_HANDLE(hscene);
+#if defined(EMBREE_GEOMETRY_LINES)
     return scene->newLineSegments(flags,numSegments,numVertices,numTimeSteps);
+#else
+    throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewLineSegments is not supported");
+#endif
     RTCORE_CATCH_END(scene->device);
     return -1;
   }
@@ -957,7 +993,11 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewSubdivisionMesh);
     RTCORE_VERIFY_HANDLE(hscene);
+#if defined(EMBREE_GEOMETRY_SUBDIV)
     return scene->newSubdivisionMesh(flags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
+#else
+    throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewSubdivisionMesh is not supported");
+#endif
     RTCORE_CATCH_END(scene->device);
     return -1;
   }
