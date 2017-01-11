@@ -243,7 +243,7 @@ namespace embree
       }
     };
 
-#if 0
+#if 1
     template<int N, typename Primitive>
     struct BVHNHairMSMBlurBuilderSAH : public Builder
     {

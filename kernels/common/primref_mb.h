@@ -195,7 +195,7 @@ namespace embree
     }
 
     /*! returns center for binning */
-    __forceinline Vec3fa binCenter(const LinearSpace3fa& space, void* user) const // only called by bezier msmblur builder
+    __forceinline Vec3fa binCenter(const AffineSpace3fa& space, void* user) const // only called by bezier msmblur builder
     {
       Scene* scene = ((UserPrimRefData*) user)->scene;
       BBox1f time_range = ((UserPrimRefData*) user)->time_range;
@@ -205,7 +205,7 @@ namespace embree
     }
 
     /*! returns bounds and centroid used for binning */
-    __forceinline void binBoundsAndCenter(BBox3fa& bounds_o, Vec3fa& center_o, const LinearSpace3fa& space, void* user) const // only called by bezier msmblur builder
+    __forceinline void binBoundsAndCenter(BBox3fa& bounds_o, Vec3fa& center_o, const AffineSpace3fa& space, void* user) const // only called by bezier msmblur builder
     {
       Scene* scene = ((UserPrimRefData*) user)->scene;
       BBox1f time_range = ((UserPrimRefData*) user)->time_range;
