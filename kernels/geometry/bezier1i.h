@@ -65,6 +65,18 @@ namespace embree
     }
 
     /*! fill curve from curve list */
+    __forceinline void fill(const PrimRefMB* prims, size_t& i, size_t end, Scene* scene)
+    {
+      const PrimRefMB& prim = prims[i];
+      i++;
+      const unsigned geomID = prim.geomID();
+      const unsigned primID = prim.primID();
+      const BezierCurves* curves = scene->getBezierCurves(geomID);
+      const unsigned vertexID = curves->curve(primID);
+      new (this) Bezier1i(vertexID,geomID,primID);
+    }
+
+    /*! fill curve from curve list */
     __forceinline void fill(const BezierPrim* prims, size_t& i, size_t end, Scene* scene)
     {
       const BezierPrim& curve = prims[i]; i++;

@@ -881,6 +881,11 @@ namespace embree
       }
 
       /*! Sets space and bounding boxes. */
+      __forceinline void set(size_t i, const AffineSpace3fa& space, const LBBox3fa& lbounds) {
+        set(i,space,lbounds.bounds0,lbounds.bounds1);
+      }
+
+      /*! Sets space and bounding boxes. */
       __forceinline void set(size_t i, const AffineSpace3fa& s0, const BBox3fa& a, const BBox3fa& c)
       {
         assert(i < N);

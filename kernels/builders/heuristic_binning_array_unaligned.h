@@ -264,7 +264,7 @@ namespace embree
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
         static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;
 
-        const AffineSpace3fa computeAlignedSpaceMB(Scene* scene, const SetMB& set)
+        const LinearSpace3fa computeAlignedSpaceMB(Scene* scene, const SetMB& set)
         {
           /*! find first curve that defines valid directions */
           Vec3fa axis0(0,0,1);
@@ -302,7 +302,7 @@ namespace embree
           return frame(axis01).transposed();
         }
 
-        const PrimInfoMB computePrimInfoMB(Scene* scene, const SetMB& set, const AffineSpace3fa& space)
+        const PrimInfoMB computePrimInfoMB(Scene* scene, const SetMB& set, const AffineSpace3fa& space) // FIXME: required
         {
           PrimInfoMB ret(empty);
           for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++)  // FIXME: parallelize
@@ -323,6 +323,20 @@ namespace embree
             ret.add_primref(prim2);
           }
           return ret;
+        }
+
+        const LBBox3fa linearBounds(Scene* scene, const SetMB& set, const AffineSpace3fa& space)
+        {
+          LBBox3fa lbounds(empty);
+          for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++)  // FIXME: parallelize
+          {
+            const PrimRefMB& prim = (*set.prims)[i];
+            const size_t geomID = prim.geomID();
+            const size_t primID = prim.primID();
+            const BezierCurves* mesh = (BezierCurves*)scene->get(geomID);
+            lbounds.extend(mesh->linearBounds(space, primID, set.time_range));
+          }
+          return lbounds;
         }
 
         /*! finds the best split */

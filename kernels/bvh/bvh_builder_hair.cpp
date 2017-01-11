@@ -243,15 +243,17 @@ namespace embree
       }
     };
 
-#if 0
+#if 1
     template<int N, typename Primitive>
     struct BVHNHairMSMBlurBuilderSAH : public Builder
     {
       typedef BVHN<N> BVH;
-      typedef typename BVH::AlignedNode AlignedNode;
-      typedef typename BVH::UnalignedNode UnalignedNode;
+      typedef typename BVH::AlignedNodeMB AlignedNodeMB;
+      typedef typename BVH::AlignedNodeMB4D AlignedNodeMB4D;
+      typedef typename BVH::UnalignedNodeMB UnalignedNodeMB;
       typedef typename BVH::NodeRef NodeRef;
-      typedef HeuristicArrayBinningSAH<PrimRefMB,NUM_OBJECT_BINS> HeuristicBinningSAH;
+      typedef HeuristicArrayBinningMB<PrimRefMB,NUM_OBJECT_BINS> HeuristicBinning;
+      typedef UnalignedHeuristicArrayBinningMB<PrimRefMB,NUM_OBJECT_BINS> UnalignedHeuristicBinning;
 
       BVH* bvh;
       Scene* scene;
@@ -281,7 +283,7 @@ namespace embree
         /* create primref array */
         bvh->alloc.init_estimate(numPrimitives*sizeof(Primitive));
         prims.resize(numPrimitives);
-        const PrimInfoMB pinfo = createPrimRefMBArray(scene,prims,virtualprogress);
+        const PrimInfoMB pinfo = createPrimRefMBArray<BezierCurves>(scene,prims,virtualprogress);
 
         RecalculatePrimRef<BezierCurves> recalculatePrimRef(scene);
         
@@ -294,7 +296,7 @@ namespace embree
             [&] () { return bvh->alloc.threadLocal2(); },
             
             [&] (const BuildRecord2* children, const size_t numChildren, 
-                 HeuristicBinningSAH alignedHeuristic, 
+                 HeuristicBinning alignedHeuristic, 
                  FastAllocator::ThreadLocal2* alloc) -> AlignedNodeMB*
             {
               AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),BVH::byteNodeAlignment); node->clear();
@@ -307,15 +309,15 @@ namespace embree
             },
             
             [&] (const BuildRecord2* children, const size_t numChildren, 
-                 UnalignedHeuristicArrayBinningSAH<PrimRefMB,NUM_OBJECT_BINS> unalignedHeuristic, 
+                 UnalignedHeuristicBinning unalignedHeuristic, 
                  FastAllocator::ThreadLocal2* alloc) -> UnalignedNodeMB*
             {
               UnalignedNodeMB* node = (UnalignedNodeMB*) alloc->alloc0->malloc(sizeof(UnalignedNodeMB),BVH::byteNodeAlignment); node->clear();
               for (size_t i=0; i<numChildren; i++) 
               {
-                const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpaceMB(children[i].set); 
-                PrimInfoMB pinfo = unalignedHeuristic.computePrimInfoMB(scene,children[i].set,space);
-                node->set(i,space,LBBox3fa(pinfo.s0t0,pinfo.s1t1).global(children[i].prims.time_range));
+                const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpaceMB(scene,children[i].prims); 
+                LBBox3fa lbounds = unalignedHeuristic.linearBounds(scene,children[i].prims,space);
+                node->set(i,space,lbounds.global(children[i].prims.time_range));
               }
               return node;
             },
@@ -331,19 +333,19 @@ namespace embree
               return node;
             },
 
-            [&] (size_t depth, const PrimInfo& pinfo, FastAllocator::ThreadLocal2* alloc) -> NodeRef
+            [&] (size_t depth, const BuildRecord2& current, FastAllocator::ThreadLocal2* alloc) -> NodeRef
             {
-              size_t items = pinfo.size();
-              size_t start = pinfo.begin;
+              size_t items = current.prims.object_range.size();
+              size_t start = current.prims.object_range.begin();
               Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive));
               NodeRef node = bvh->encodeLeaf((char*)accel,items);
               for (size_t i=0; i<items; i++) {
-                accel[i].fill(prims.data(),start,pinfo.end,bvh->scene);
+                accel[i].fill(prims.data(),start,current.prims.object_range.end(),bvh->scene);
               }
               return node;
             },
             progress,
-            prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,1,1,BVH::maxLeafBlocks);
+            pinfo,N,BVH::maxBuildDepthLeaf,1,1,BVH::maxLeafBlocks);
         
         bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
         
