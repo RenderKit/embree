@@ -17,11 +17,21 @@
 #pragma once
 
 #include "default.h"
+#include "scene.h"
 
 #define MBLUR_BIN_LBBOX 0
 
 namespace embree
 {
+  struct UserPrimRefData
+  {
+    __forceinline UserPrimRefData(Scene* scene, BBox1f time_range)
+      : scene(scene), time_range(time_range) {}
+
+    Scene* scene;
+    BBox1f time_range;
+  };
+
 #if MBLUR_BIN_LBBOX
 
   /*! A primitive reference stores the bounds of the primitive and its ID. */
@@ -182,6 +192,27 @@ namespace embree
     {
       bounds_o = bounds();
       center_o = center2(bounds());
+    }
+
+    /*! returns center for binning */
+    __forceinline Vec3fa binCenter(const LinearSpace3fa& space, void* user) const // only called by bezier msmblur builder
+    {
+      Scene* scene = ((UserPrimRefData*) user)->scene;
+      BBox1f time_range = ((UserPrimRefData*) user)->time_range;
+      BezierCurves* mesh = (BezierCurves*) scene->get(geomID());
+      LBBox3fa lbounds = mesh->linearBounds(space,primID(),time_range);
+      return center2(lbounds.interpolate(0.5f));
+    }
+
+    /*! returns bounds and centroid used for binning */
+    __forceinline void binBoundsAndCenter(BBox3fa& bounds_o, Vec3fa& center_o, const LinearSpace3fa& space, void* user) const // only called by bezier msmblur builder
+    {
+      Scene* scene = ((UserPrimRefData*) user)->scene;
+      BBox1f time_range = ((UserPrimRefData*) user)->time_range;
+      BezierCurves* mesh = (BezierCurves*) scene->get(geomID());
+      LBBox3fa lbounds = mesh->linearBounds(space,primID(),time_range);
+      bounds_o = lbounds.interpolate(0.5f);
+      center_o = center2(bounds_o);
     }
 
     /*! returns the geometry ID */

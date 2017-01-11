@@ -105,6 +105,7 @@ namespace embree
         progressMonitor(progressMonitor),
         branchingFactor(branchingFactor), maxDepth(maxDepth), logBlockSize(logBlockSize), 
         minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
+        unalignedHeuristic(scene),
         temporalSplitHeuristic(scene->device,recalculatePrimRef) {}
        
       /*! entry point into builder */

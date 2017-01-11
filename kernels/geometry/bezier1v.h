@@ -85,7 +85,7 @@ namespace embree
     }
     
     /*! returns bounds and centroid used for binning */
-    __forceinline void binBoundsAndCenter(BBox3fa& bounds_o, Vec3fa& center_o, const AffineSpace3fa& space) const 
+    __forceinline void binBoundsAndCenter(BBox3fa& bounds_o, Vec3fa& center_o, const AffineSpace3fa& space, void* user) const 
     {
       bounds_o = bounds(space);
       center_o = embree::center2(bounds_o);

@@ -81,8 +81,8 @@ namespace embree
 
         /*! faster but unsafe binning */
         template<typename PrimRef>
-        __forceinline Vec3ia bin_unsafe(const PrimRef& p, const LinearSpace3fa& space) const {
-          return bin_unsafe(p.binCenter(space));
+        __forceinline Vec3ia bin_unsafe(const PrimRef& p, const LinearSpace3fa& space, void* user = nullptr) const {
+          return bin_unsafe(p.binCenter(space,user));
         }
 
         /*! returns true if the mapping is invalid in some dimension */
@@ -243,7 +243,7 @@ namespace embree
       }
 
       /*! bins an array of primitives */
-      __forceinline void bin (const PrimRef* prims, size_t N, const BinMapping<BINS>& mapping, const AffineSpace3fa& space)
+      __forceinline void bin (const PrimRef* prims, size_t N, const BinMapping<BINS>& mapping, const AffineSpace3fa& space, void* user = nullptr)
       {
 	if (N == 0) return;
         
@@ -251,9 +251,9 @@ namespace embree
 	for (i=0; i<N-1; i+=2)
         {
           /*! map even and odd primitive to bin */
-          BBox prim0; Vec3fa center0; prims[i+0].binBoundsAndCenter(prim0,center0,space); 
+          BBox prim0; Vec3fa center0; prims[i+0].binBoundsAndCenter(prim0,center0,space,user); 
           const vint4 bin0 = (vint4)mapping.bin(center0); 
-          BBox prim1; Vec3fa center1; prims[i+1].binBoundsAndCenter(prim1,center1,space); 
+          BBox prim1; Vec3fa center1; prims[i+1].binBoundsAndCenter(prim1,center1,space,user); 
           const vint4 bin1 = (vint4)mapping.bin(center1); 
           
           /*! increase bounds for bins for even primitive */
@@ -273,7 +273,7 @@ namespace embree
 	if (i < N)
         {
           /*! map primitive to bin */
-          BBox prim0; Vec3fa center0; prims[i+0].binBoundsAndCenter(prim0,center0,space); 
+          BBox prim0; Vec3fa center0; prims[i+0].binBoundsAndCenter(prim0,center0,space,user); 
           const vint4 bin0 = (vint4)mapping.bin(center0); 
           
           /*! increase bounds of bins */
@@ -288,8 +288,8 @@ namespace embree
 	bin(prims+begin,end-begin,mapping);
       }
 
-      __forceinline void bin(const PrimRef* prims, size_t begin, size_t end, const BinMapping<BINS>& mapping, const AffineSpace3fa& space) {
-	bin(prims+begin,end-begin,mapping,space);
+      __forceinline void bin(const PrimRef* prims, size_t begin, size_t end, const BinMapping<BINS>& mapping, const AffineSpace3fa& space, void* user = nullptr) {
+	bin(prims+begin,end-begin,mapping,space,user);
       }   
 
       __forceinline void bin_parallel(const PrimRef* prims, size_t begin, size_t end, size_t blockSize, size_t parallelThreshold, const BinMapping<BINS>& mapping) 
@@ -303,13 +303,13 @@ namespace embree
         }
       }
 
-      __forceinline void bin_parallel(const PrimRef* prims, size_t begin, size_t end, size_t blockSize, size_t parallelThreshold, const BinMapping<BINS>& mapping, const AffineSpace3fa& space)
+      __forceinline void bin_parallel(const PrimRef* prims, size_t begin, size_t end, size_t blockSize, size_t parallelThreshold, const BinMapping<BINS>& mapping, const AffineSpace3fa& space, void* user = nullptr)
       {
         if (likely(end-begin < parallelThreshold)) {
-          bin(prims,begin,end,mapping,space);
+          bin(prims,begin,end,mapping,space,user);
         } else {
           *this = parallel_reduce(begin,end,blockSize,*this,
-                                  [&](const range<size_t>& r) -> BinInfoT { BinInfoT binner(empty); binner.bin(prims + r.begin(), r.size(), mapping, space); return binner; },
+                                  [&](const range<size_t>& r) -> BinInfoT { BinInfoT binner(empty); binner.bin(prims + r.begin(), r.size(), mapping, space, user); return binner; },
                                   [&](const BinInfoT& b0, const BinInfoT& b1) -> BinInfoT { BinInfoT r = b0; r.merge(b1, mapping.size()); return r; });
         }
       }
@@ -327,13 +327,13 @@ namespace embree
       }
 
       template<bool parallel>
-      __forceinline void bin_serial_or_parallel(const PrimRef* prims, size_t begin, size_t end, size_t blockSize, const BinMapping<BINS>& mapping, const AffineSpace3fa& space)
+      __forceinline void bin_serial_or_parallel(const PrimRef* prims, size_t begin, size_t end, size_t blockSize, const BinMapping<BINS>& mapping, const AffineSpace3fa& space, void* user = nullptr)
       {
         if (!parallel) {
-          bin(prims,begin,end,mapping,space);
+          bin(prims,begin,end,mapping,space,user);
         } else {
           *this = parallel_reduce(begin,end,blockSize,*this,
-                                  [&](const range<size_t>& r) -> BinInfoT { BinInfoT binner(empty); binner.bin(prims + r.begin(), r.size(), mapping, space); return binner; },
+                                  [&](const range<size_t>& r) -> BinInfoT { BinInfoT binner(empty); binner.bin(prims + r.begin(), r.size(), mapping, space, user); return binner; },
                                   [&](const BinInfoT& b0, const BinInfoT& b1) -> BinInfoT { BinInfoT r = b0; r.merge(b1, mapping.size()); return r; });
         }
       }
