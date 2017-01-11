@@ -38,8 +38,8 @@ namespace embree
         //__forceinline BuildRecord2 (const PrimInfoMB& pinfo, size_t depth, size_t* parent) 
         //  : parent(parent), depth(depth), pinfo(pinfo) {}
         
-        //__forceinline BuildRecord2 (const PrimInfoMB& pinfo, size_t depth, size_t* parent, const Set &prims) 
-        //  : parent(parent), depth(depth), prims(prims), pinfo(pinfo) {}
+        __forceinline BuildRecord2 (const PrimInfoMB& pinfo, const SetMB& prims, size_t depth = 0) 
+          : depth(depth), prims(prims), pinfo(pinfo) {}
 
         //__forceinline BBox3fa bounds() const { return pinfo.geomBounds; }
         
@@ -96,6 +96,7 @@ namespace embree
                             const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, 
                             const size_t minLeafSize, const size_t maxLeafSize )
         : scene(scene),
+        recalculatePrimRef(recalculatePrimRef),
         createAlloc(createAlloc), 
         createAlignedNode(createAlignedNode), 
         createUnalignedNode(createUnalignedNode), 
@@ -103,11 +104,12 @@ namespace embree
         createLeaf(createLeaf),
         progressMonitor(progressMonitor),
         branchingFactor(branchingFactor), maxDepth(maxDepth), logBlockSize(logBlockSize), 
-        minLeafSize(minLeafSize), maxLeafSize(maxLeafSize) {}
+        minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
+        temporalSplitHeuristic(scene->device,recalculatePrimRef) {}
        
       /*! entry point into builder */
-      NodeRef operator() (const PrimInfoMB& pinfo) {
-        NodeRef root = recurse(1,pinfo,nullptr,true);
+      NodeRef operator() (const BuildRecord2& current) {
+        NodeRef root = recurse(current,nullptr,true);
         _mm_mfence(); // to allow non-temporal stores during build
         return root;
       }
@@ -419,14 +421,14 @@ namespace embree
                                                                   const CreateAlignedNode4DFunc& createAlignedNode4D, 
                                                                   const CreateLeafFunc& createLeaf, 
                                                                   const ProgressMonitor& progressMonitor,
-                                                                  const PrimInfoMB& pinfo,
+                                                                  const BuildRecord2& current,
                                                                   const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, 
                                                                   const size_t minLeafSize, const size_t maxLeafSize) 
     {
       typedef BVHNBuilderHairMBlur<N,RecalculatePrimRef,CreateAllocFunc,CreateAlignedNodeFunc,CreateUnalignedNodeFunc,CreateAlignedNode4DFunc,CreateLeafFunc,ProgressMonitor> Builder;
-      Builder builder(recalculatePrimRef,createAlloc,createAlignedNode,createUnalignedNode,createAlignedNode4D,createLeaf,
+      Builder builder(scene,recalculatePrimRef,createAlloc,createAlignedNode,createUnalignedNode,createAlignedNode4D,createLeaf,
                       progressMonitor,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
-      return builder(pinfo);
+      return builder(current);
     }
   }
 }

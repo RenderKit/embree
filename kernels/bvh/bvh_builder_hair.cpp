@@ -286,6 +286,9 @@ namespace embree
         const PrimInfoMB pinfo = createPrimRefMBArray<BezierCurves>(scene,prims,virtualprogress);
 
         RecalculatePrimRef<BezierCurves> recalculatePrimRef(scene);
+
+        SetMB set(&prims,range<size_t>(0,pinfo.size()),BBox1f(0.0f,1.0f));
+        BuildRecord2 record(pinfo,set,0);
         
         /* build hierarchy */
         typename BVH::NodeRef root = bvh_obb_builder_binned_sah_mblur<N>
@@ -345,7 +348,7 @@ namespace embree
               return node;
             },
             progress,
-            pinfo,N,BVH::maxBuildDepthLeaf,1,1,BVH::maxLeafBlocks);
+            record,N,BVH::maxBuildDepthLeaf,1,1,BVH::maxLeafBlocks);
         
         bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
         
