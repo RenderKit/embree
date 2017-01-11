@@ -49,6 +49,44 @@ namespace embree
       size_t refCount;
     };
 
+    template<typename Mesh>
+      struct RecalculatePrimRef
+    {
+      Scene* scene;
+
+      __forceinline RecalculatePrimRef (Scene* scene)
+        : scene(scene) {}
+
+      __forceinline std::pair<PrimRefMB,range<int>> operator() (const PrimRefMB& prim, const BBox1f time_range) const
+      {
+        const unsigned geomID = prim.geomID();
+        const unsigned primID = prim.primID();
+        const Mesh* mesh = (Mesh*)scene->get(geomID);
+        const LBBox3fa lbounds = mesh->linearBounds(primID, time_range);
+        const unsigned num_time_segments = mesh->numTimeSegments();
+        const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
+        assert(tbounds.size() > 0);
+#if MBLUR_BIN_LBBOX
+        const PrimRefMB prim2(lbounds, tbounds.size(), num_time_segments, geomID, primID);
+#else
+        const PrimRefMB prim2(lbounds.interpolate(0.5f), tbounds.size(), num_time_segments, geomID, primID);
+#endif
+        return std::make_pair(prim2, tbounds);
+      }
+
+      __forceinline std::pair<LBBox3fa,range<int>> linearBounds(const PrimRefMB& prim, const BBox1f time_range) const
+      {
+        const unsigned geomID = prim.geomID();
+        const unsigned primID = prim.primID();
+        const Mesh* mesh = (Mesh*)scene->get(geomID);
+        const LBBox3fa lbounds = mesh->linearBounds(primID, time_range);
+        const unsigned num_time_segments = mesh->numTimeSegments();
+        const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
+        assert(tbounds.size() > 0);
+        return std::make_pair(lbounds, tbounds);
+      }
+    };
+
     template<typename BuildRecord, 
       typename RecalculatePrimRef, 
       typename ReductionTy, 

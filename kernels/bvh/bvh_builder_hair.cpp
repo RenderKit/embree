@@ -241,6 +241,113 @@ namespace embree
         prims.clear();
       }
     };
+
+#if 0
+    template<int N, typename Primitive>
+    struct BVHNHairMSMBlurBuilderSAH : public Builder
+    {
+      typedef BVHN<N> BVH;
+      typedef typename BVH::AlignedNode AlignedNode;
+      typedef typename BVH::UnalignedNode UnalignedNode;
+      typedef typename BVH::NodeRef NodeRef;
+      typedef HeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> HeuristicBinningSAH;
+
+      BVH* bvh;
+      Scene* scene;
+      mvector<PrimRefMB> prims;
+
+      BVHNHairMSMBlurBuilderSAH (BVH* bvh, Scene* scene)
+        : bvh(bvh), scene(scene), prims(scene->device) {}
+      
+      void build(size_t, size_t) 
+      {
+        /* progress monitor */
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(double(dn)); };
+        auto virtualprogress = BuildProgressMonitorFromClosure(progress);
+
+        /* fast path for empty BVH */
+        const size_t numPrimitives = scene->getNumPrimitives<BezierCurves,true>();
+        if (numPrimitives == 0) {
+          prims.clear();
+          bvh->set(BVH::emptyNode,empty,0);
+          return;
+        }
+
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderMSMBlurHairSAH");
+
+        //profile(1,5,numPrimitives,[&] (ProfileTimer& timer) {
+        
+        /* create primref array */
+        bvh->alloc.init_estimate(numPrimitives*sizeof(Primitive));
+        prims.resize(numPrimitives);
+        const PrimInfoMB pinfo = createBezierRefArrayMSMBlur(scene,prims,virtualprogress);
+
+        RecalculatePrimRef<BezierCurves> recalculatePrimRef(scene);
+        
+        /* build hierarchy */
+        typename BVH::NodeRef root = bvh_obb_builder_binned_sah_mblur<N>
+          (
+            scene,
+
+            
+            [&] () { return bvh->alloc.threadLocal2(); },
+
+            [&] (const PrimInfo* children, const size_t numChildren, 
+                 HeuristicBinningSAH alignedHeuristic, 
+                 FastAllocator::ThreadLocal2* alloc) -> AlignedNode*
+            {
+              AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode),BVH::byteNodeAlignment); node->clear();
+              for (size_t i=0; i<numChildren; i++)
+                node->set(i,children[i].geomBounds);
+              return node;
+            },
+            
+            [&] (const PrimInfo* children, const size_t numChildren, 
+                 UnalignedHeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> unalignedHeuristic, 
+                 FastAllocator::ThreadLocal2* alloc) -> UnalignedNode*
+            {
+              UnalignedNode* node = (UnalignedNode*) alloc->alloc0->malloc(sizeof(UnalignedNode),BVH::byteNodeAlignment); node->clear();
+              for (size_t i=0; i<numChildren; i++) 
+              {
+                const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpace(children[i]); 
+                const PrimInfo       sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
+                node->set(i,OBBox3fa(space,sinfo.geomBounds));
+              }
+              return node;
+            },
+
+            [&] (size_t depth, const PrimInfo& pinfo, FastAllocator::ThreadLocal2* alloc) -> NodeRef
+            {
+              size_t items = pinfo.size();
+              size_t start = pinfo.begin;
+              Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive));
+              NodeRef node = bvh->encodeLeaf((char*)accel,items);
+              for (size_t i=0; i<items; i++) {
+                accel[i].fill(prims.data(),start,pinfo.end,bvh->scene);
+              }
+              return node;
+            },
+            progress,
+            prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,1,1,BVH::maxLeafBlocks);
+        
+        bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
+        
+        //});
+        
+        /* clear temporary data for static geometry */
+        if (scene->isStatic()) {
+          prims.clear();
+          bvh->shrink();
+        }
+        bvh->cleanup();
+        bvh->postBuild(t0);
+      }
+
+      void clear() {
+        prims.clear();
+      }
+    };
+#endif
     
     /*! entry functions for the builder */
     Builder* BVH4Bezier1vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Bezier1v>((BVH4*)bvh,scene); }

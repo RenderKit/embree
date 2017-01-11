@@ -27,8 +27,6 @@ namespace embree
 {
   namespace isa
   {
-    typedef SetMB_t<BezierPrimMB> SetMB2;
-
       struct BuildRecord2
       {
       public:
@@ -52,7 +50,7 @@ namespace embree
         
       public:
 	size_t depth;     //!< Depth of the root of this subtree.
-	SetMB2 prims;     //!< The list of primitives.
+	SetMB prims;     //!< The list of primitives.
 	PrimInfo pinfo;   //!< Bounding info of primitives.
       };
 
@@ -73,9 +71,9 @@ namespace embree
       typedef typename BVH::NodeRef NodeRef;
       typedef FastAllocator::ThreadLocal2* Allocator;
  
-      typedef HeuristicMBlurTemporalSplit<BezierPrimMB,RecalculatePrimRef,NUM_TEMPORAL_BINS> HeuristicTemporal;
-      typedef HeuristicArrayBinningMB<BezierPrimMB,NUM_OBJECT_BINS> HeuristicBinningSAH;
-      typedef UnalignedHeuristicArrayBinningMB<BezierPrimMB,NUM_OBJECT_BINS> UnalignedHeuristicBinningSAH;
+      typedef HeuristicMBlurTemporalSplit<PrimRefMB,RecalculatePrimRef,NUM_TEMPORAL_BINS> HeuristicTemporal;
+      typedef HeuristicArrayBinningMB<PrimRefMB,NUM_OBJECT_BINS> HeuristicBinningSAH;
+      typedef UnalignedHeuristicArrayBinningMB<PrimRefMB,NUM_OBJECT_BINS> UnalignedHeuristicBinningSAH;
 
       static const size_t MAX_BRANCHING_FACTOR =  8;         //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;         //!< create balanced tree if we are that many levels before the maximal tree depth
@@ -117,14 +115,14 @@ namespace embree
       
     private:
 
-      void deterministic_order(const SetMB2& set) 
+      void deterministic_order(const SetMB& set) 
       {
         /* required as parallel partition destroys original primitive order */
-        BezierPrimMB* prims = set.prims->data();
+        PrimRefMB* prims = set.prims->data();
         std::sort(&prims[set.object_range.begin()],&prims[set.object_range.end()]);
       }
 
-      void splitFallback(const SetMB2& set, PrimInfoMB& linfo, SetMB2& lset, PrimInfoMB& rinfo, SetMB2& rset) // FIXME: also perform time split here?
+      void splitFallback(const SetMB& set, PrimInfoMB& linfo, SetMB& lset, PrimInfoMB& rinfo, SetMB& rset) // FIXME: also perform time split here?
       {
         mvector<PrimRefMB>& prims = *set.prims;
         
@@ -142,8 +140,8 @@ namespace embree
           rinfo.add_primref(prims[i]);	
         rinfo.begin = center; rinfo.end = end; rinfo.time_range = set.time_range;
         
-        new (&lset) SetMB2(set.prims,range<size_t>(begin,center),set.time_range);
-        new (&rset) SetMB2(set.prims,range<size_t>(center,end  ),set.time_range);
+        new (&lset) SetMB(set.prims,range<size_t>(begin,center),set.time_range);
+        new (&rset) SetMB(set.prims,range<size_t>(center,end  ),set.time_range);
       }
 
       /*! creates a large leaf that could be larger than supported by the BVH */
@@ -235,7 +233,7 @@ namespace embree
         
         /* perform time split if this is the best */
         if (bestSAH == timeSplitSAH) {
-          timeSplitHeuristic.split(timeSplit,current.pinfo,current.set,lrecord.pinfo,lrecord.set,rrecord.pinfo,rrecord.set);
+          timeSplitHeuristic.split(temporal_split,current.pinfo,current.set,lrecord.pinfo,lrecord.set,rrecord.pinfo,rrecord.set);
           timesplit = true;
         }
         /* perform aligned split if this is best */
@@ -422,7 +420,6 @@ namespace embree
                                                                   const CreateAlignedNode4DFunc& createAlignedNode4D, 
                                                                   const CreateLeafFunc& createLeaf, 
                                                                   const ProgressMonitor& progressMonitor,
-                                                                  BezierPrimMB* prims, 
                                                                   const PrimInfoMB& pinfo,
                                                                   const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, 
                                                                   const size_t minLeafSize, const size_t maxLeafSize) 
