@@ -108,7 +108,7 @@ namespace embree
         temporalSplitHeuristic(scene->device,recalculatePrimRef) {}
        
       /*! entry point into builder */
-      NodeRef operator() (const BuildRecord2& current) {
+      NodeRef operator() (BuildRecord2& current) {
         NodeRef root = recurse(current,nullptr,true);
         _mm_mfence(); // to allow non-temporal stores during build
         return root;
@@ -169,12 +169,12 @@ namespace embree
           for (unsigned i=0; i<numChildren; i++)
           {
             /* ignore leaves as they cannot get split */
-            if (children[i].object_range.size() <= maxLeafSize)
+            if (children[i].size() <= maxLeafSize)
               continue;
             
             /* remember child with largest size */
             if (children[i].size() > bestSize) { 
-              bestSize = children[i].object_range.size();
+              bestSize = children[i].size();
               bestChild = i;
             }
           }
@@ -183,7 +183,7 @@ namespace embree
           /*! split best child into left and right child */
           BuildRecord2 left(current.depth+1);
           BuildRecord2 right(current.depth+1);
-          splitFallback(children[bestChild],left,right);
+          splitFallback(children[bestChild].prims,left.pinfo,left.prims,right.pinfo,right.prims);
           
           /* add new children left and right */
           children[bestChild] = children[numChildren-1];
@@ -248,8 +248,8 @@ namespace embree
         }
         /* otherwise perform fallback split */
         else {
-          deterministic_order(set);
-          splitFallback(current.pinfo,current.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
+          deterministic_order(current.prims);
+          splitFallback(current.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
         }
       }
       
@@ -265,7 +265,7 @@ namespace embree
        
         /* create leaf node */
         if (current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize) {
-          deterministic_order(current);
+          deterministic_order(current.prims);
           return createLargeLeaf(current,alloc);
         }
         
@@ -288,8 +288,8 @@ namespace embree
               continue;
             
             /* remember child with largest area */
-            if (area(children[i].geomBounds) > bestArea) { 
-              bestArea = area(children[i].geomBounds);
+            if (area(children[i].pinfo.geomBounds) > bestArea) { 
+              bestArea = area(children[i].pinfo.geomBounds);
               bestChild = i;
             }
           }
@@ -421,7 +421,7 @@ namespace embree
                                                                   const CreateAlignedNode4DFunc& createAlignedNode4D, 
                                                                   const CreateLeafFunc& createLeaf, 
                                                                   const ProgressMonitor& progressMonitor,
-                                                                  const BuildRecord2& current,
+                                                                  BuildRecord2& current,
                                                                   const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, 
                                                                   const size_t minLeafSize, const size_t maxLeafSize) 
     {

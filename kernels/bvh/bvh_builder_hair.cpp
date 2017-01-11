@@ -243,7 +243,7 @@ namespace embree
       }
     };
 
-#if 1
+#if 0
     template<int N, typename Primitive>
     struct BVHNHairMSMBlurBuilderSAH : public Builder
     {
@@ -336,7 +336,7 @@ namespace embree
               return node;
             },
 
-            [&] (size_t depth, const BuildRecord2& current, FastAllocator::ThreadLocal2* alloc) -> NodeRef
+            [&] (const BuildRecord2& current, FastAllocator::ThreadLocal2* alloc) -> NodeRef
             {
               size_t items = current.prims.object_range.size();
               size_t start = current.prims.object_range.begin();
