@@ -344,6 +344,7 @@ namespace embree
 
     template PrimInfoMB createPrimRefMBArray<TriangleMesh>(Scene* scene, mvector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1);
     template PrimInfoMB createPrimRefMBArray<QuadMesh>(Scene* scene, mvector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1);
+    template PrimInfoMB createPrimRefMBArray<BezierCurves>(Scene* scene, mvector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1);
     template PrimInfoMB createPrimRefMBArray<LineSegments>(Scene* scene, mvector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1);
     template PrimInfoMB createPrimRefMBArray<AccelSet>(Scene* scene, mvector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1);
   }

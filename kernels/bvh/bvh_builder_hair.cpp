@@ -199,7 +199,7 @@ namespace embree
               {
                 const AffineSpace3fa space = unalignedHeuristic.computeAlignedSpaceMB(scene,children[i]); 
                 UnalignedHeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS>::PrimInfoMB pinfo = unalignedHeuristic.computePrimInfoMB(t,bvh->numTimeSteps,scene,children[i],space);
-                node->set(i,space,pinfo.s0t0,pinfo.s1t1);
+                node->set(i,space,pinfo.s0t0,pinfo.s1t1); // FIXME: do we have to globalize these bounds?
               }
               return node;
             },
@@ -250,7 +250,7 @@ namespace embree
       typedef typename BVH::AlignedNode AlignedNode;
       typedef typename BVH::UnalignedNode UnalignedNode;
       typedef typename BVH::NodeRef NodeRef;
-      typedef HeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> HeuristicBinningSAH;
+      typedef HeuristicArrayBinningSAH<PrimRefMB,NUM_OBJECT_BINS> HeuristicBinningSAH;
 
       BVH* bvh;
       Scene* scene;
@@ -280,7 +280,7 @@ namespace embree
         /* create primref array */
         bvh->alloc.init_estimate(numPrimitives*sizeof(Primitive));
         prims.resize(numPrimitives);
-        const PrimInfoMB pinfo = createBezierRefArrayMSMBlur(scene,prims,virtualprogress);
+        const PrimInfoMB pinfo = createPrimRefMBArray(scene,prims,virtualprogress);
 
         RecalculatePrimRef<BezierCurves> recalculatePrimRef(scene);
         
@@ -288,30 +288,44 @@ namespace embree
         typename BVH::NodeRef root = bvh_obb_builder_binned_sah_mblur<N>
           (
             scene,
-
+            recalculatePrimRef,
             
             [&] () { return bvh->alloc.threadLocal2(); },
-
-            [&] (const PrimInfo* children, const size_t numChildren, 
+            
+            [&] (const BuildRecord2* children, const size_t numChildren, 
                  HeuristicBinningSAH alignedHeuristic, 
-                 FastAllocator::ThreadLocal2* alloc) -> AlignedNode*
+                 FastAllocator::ThreadLocal2* alloc) -> AlignedNodeMB*
             {
-              AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode),BVH::byteNodeAlignment); node->clear();
-              for (size_t i=0; i<numChildren; i++)
-                node->set(i,children[i].geomBounds);
+              AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),BVH::byteNodeAlignment); node->clear();
+              for (size_t i=0; i<numChildren; i++) {
+                LBBox3fa cbounds = children[i].prims.linearBounds(recalculatePrimRef);
+                BBox1f dt = children[i].prims.time_range;
+                node->set(i,cbounds.global(dt));
+              }
               return node;
             },
             
-            [&] (const PrimInfo* children, const size_t numChildren, 
-                 UnalignedHeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> unalignedHeuristic, 
-                 FastAllocator::ThreadLocal2* alloc) -> UnalignedNode*
+            [&] (const BuildRecord2* children, const size_t numChildren, 
+                 UnalignedHeuristicArrayBinningSAH<PrimRefMB,NUM_OBJECT_BINS> unalignedHeuristic, 
+                 FastAllocator::ThreadLocal2* alloc) -> UnalignedNodeMB*
             {
-              UnalignedNode* node = (UnalignedNode*) alloc->alloc0->malloc(sizeof(UnalignedNode),BVH::byteNodeAlignment); node->clear();
+              UnalignedNodeMB* node = (UnalignedNodeMB*) alloc->alloc0->malloc(sizeof(UnalignedNodeMB),BVH::byteNodeAlignment); node->clear();
               for (size_t i=0; i<numChildren; i++) 
               {
-                const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpace(children[i]); 
-                const PrimInfo       sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
-                node->set(i,OBBox3fa(space,sinfo.geomBounds));
+                const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpaceMB(children[i].set); 
+                PrimInfoMB pinfo = unalignedHeuristic.computePrimInfoMB(scene,children[i].set,space);
+                node->set(i,space,LBBox3fa(pinfo.s0t0,pinfo.s1t1).global(children[i].prims.time_range));
+              }
+              return node;
+            },
+
+            [&] (const BuildRecord2* children, const size_t numChildren, FastAllocator::ThreadLocal2* alloc) -> AlignedNodeMB4D*
+            {
+              AlignedNodeMB4D* node = (AlignedNodeMB4D*) alloc->alloc0->malloc(sizeof(AlignedNodeMB4D),BVH::byteNodeAlignment); node->clear();
+              for (size_t i=0; i<numChildren; i++) {
+                LBBox3fa cbounds = children[i].prims.linearBounds(recalculatePrimRef);
+                BBox1f dt = children[i].prims.time_range;
+                node->set(i,cbounds.global(dt),dt);
               }
               return node;
             },
@@ -347,6 +361,9 @@ namespace embree
         prims.clear();
       }
     };
+
+     Builder* BVH4Bezier1iMSMBlurBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMSMBlurBuilderSAH<4,Bezier1i>((BVH4*)bvh,scene); }
+
 #endif
     
     /*! entry functions for the builder */
