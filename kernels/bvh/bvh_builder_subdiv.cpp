@@ -816,7 +816,6 @@ namespace embree
                         updateNodeFunc,
                         createLeafFunc,
                         progressMonitor,
-                        pinfo,
                         N,BVH::maxDepth,logBlockSize,
                         //minLeafSize,maxLeafSize,travCost,intCost,
                         1,1,1.0f,1.0f,

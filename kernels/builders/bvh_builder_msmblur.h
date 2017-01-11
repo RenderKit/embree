@@ -234,7 +234,6 @@ namespace embree
                              UpdateNodeFunc& updateNode, 
                              CreateLeafFunc& createLeaf,
                              ProgressMonitor& progressMonitor,
-                             const PrimInfo& pinfo,
                              const size_t branchingFactor, const size_t maxDepth, 
                              const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize,
                              const float travCost, const float intCost, const bool singleLeafTimeSegment)
@@ -244,7 +243,6 @@ namespace embree
           identity(identity), 
           createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
           progressMonitor(progressMonitor),
-          pinfo(pinfo), 
           branchingFactor(branchingFactor), maxDepth(maxDepth),
           logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
           travCost(travCost), intCost(intCost), singleLeafTimeSegment(singleLeafTimeSegment)
@@ -479,7 +477,6 @@ namespace embree
         ProgressMonitor& progressMonitor;
         
       private:
-        const PrimInfo& pinfo;
         const size_t branchingFactor;
         const size_t maxDepth;
         const size_t logBlockSize;
