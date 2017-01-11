@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "bvh_builder_hair.h"
+#include "bvh_builder_hair_msmblur.h"
 #include "../builders/primrefgen.h"
 
 #include "../geometry/bezier1v.h"

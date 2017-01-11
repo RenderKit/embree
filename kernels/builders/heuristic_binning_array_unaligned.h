@@ -252,7 +252,7 @@ namespace embree
         PrimRef* const prims;
       };
 
-#if 0
+#if 1
     /*! Performs standard object binning */
     template<typename PrimRefMB, size_t BINS>
       struct UnalignedHeuristicArrayBinningMB
@@ -272,7 +272,7 @@ namespace embree
 
           for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++)
           {
-            const BezierPrimMB& prim = (*set.prims)[i];
+            const PrimRefMB& prim = (*set.prims)[i];
             const size_t geomID = prim.geomID();
             const size_t primID = prim.primID();
             const BezierCurves* curves = scene->getBezierCurves(geomID);
@@ -304,31 +304,24 @@ namespace embree
 
         const PrimInfoMB computePrimInfoMB(Scene* scene, const SetMB& set, const AffineSpace3fa& space)
         {
-          size_t N = 0;
-          BBox3fa centBounds = empty;
-          BBox3fa geomBounds = empty;
-          BBox3fa s0t0 = empty, s1t1 = empty;
-          for (size_t i=set.object_range.begin; i<set.object_range.end; i++)  // FIXME: parallelize
+          PrimInfoMB ret(empty);
+          for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++)  // FIXME: parallelize
           {
-            const BezierPrimMB& prim = prims[i];
+            const PrimRefMB& prim = (*set.prims)[i];
             const size_t geomID = prim.geomID();
             const size_t primID = prim.primID();
-
-            N++;
-            const BBox3fa bounds = prim.bounds(space);
-            geomBounds.extend(bounds);
-            centBounds.extend(center2(bounds));
-
-            const BezierCurves* curves = scene->getBezierCurves(geomID);
-            const LBBox3fa linearBounds = curves->linearBounds(space,primID,set.time_range);
-            s0t0.extend(linearBounds.bounds0);
-            s1t1.extend(linearBounds.bounds1);
+            const BezierCurves* mesh = (BezierCurves*)scene->get(geomID);
+            const LBBox3fa lbounds = mesh->linearBounds(space, primID, set.time_range);
+            const unsigned num_time_segments = mesh->numTimeSegments();
+            const range<int> tbounds = getTimeSegmentRange(set.time_range, num_time_segments);
+            assert(tbounds.size() > 0);
+#if MBLUR_BIN_LBBOX
+            const PrimRefMB prim2(lbounds, tbounds.size(), num_time_segments, geomID, primID);
+#else
+            const PrimRefMB prim2(lbounds.interpolate(0.5f), tbounds.size(), num_time_segments, geomID, primID);
+#endif
+            ret.add_primref(prim2);
           }
-          
-          PrimInfoMB ret;
-          ret.pinfo = PrimInfo(N,geomBounds,centBounds);
-          ret.s0t0 = s0t0;
-          ret.s1t1 = s1t1;
           return ret;
         }
 

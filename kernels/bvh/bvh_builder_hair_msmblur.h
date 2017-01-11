@@ -46,12 +46,12 @@ namespace embree
         //__forceinline friend bool operator< (const BuildRecord2& a, const BuildRecord2& b) { return a.prims.size() < b.prims.size(); }
 	//__forceinline friend bool operator> (const BuildRecord2& a, const BuildRecord2& b) { return a.prims.size() > b.prims.size();  }
         
-        __forceinline size_t size() const { return prims.size(); }
+        __forceinline size_t size() const { return prims.object_range.size(); }
         
       public:
 	size_t depth;     //!< Depth of the root of this subtree.
 	SetMB prims;     //!< The list of primitives.
-	PrimInfo pinfo;   //!< Bounding info of primitives.
+	PrimInfoMB pinfo;   //!< Bounding info of primitives.
       };
 
     template<int N,
@@ -72,8 +72,8 @@ namespace embree
       typedef FastAllocator::ThreadLocal2* Allocator;
  
       typedef HeuristicMBlurTemporalSplit<PrimRefMB,RecalculatePrimRef,NUM_TEMPORAL_BINS> HeuristicTemporal;
-      typedef HeuristicArrayBinningMB<PrimRefMB,NUM_OBJECT_BINS> HeuristicBinningSAH;
-      typedef UnalignedHeuristicArrayBinningMB<PrimRefMB,NUM_OBJECT_BINS> UnalignedHeuristicBinningSAH;
+      typedef HeuristicArrayBinningMB<PrimRefMB,NUM_OBJECT_BINS> HeuristicBinning;
+      typedef UnalignedHeuristicArrayBinningMB<PrimRefMB,NUM_OBJECT_BINS> UnalignedHeuristicBinning;
 
       static const size_t MAX_BRANCHING_FACTOR =  8;         //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;         //!< create balanced tree if we are that many levels before the maximal tree depth
@@ -103,8 +103,7 @@ namespace embree
         createLeaf(createLeaf),
         progressMonitor(progressMonitor),
         branchingFactor(branchingFactor), maxDepth(maxDepth), logBlockSize(logBlockSize), 
-        minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
-        alignedHeuristic(prims), unalignedHeuristic(prims) {}
+        minLeafSize(minLeafSize), maxLeafSize(maxLeafSize) {}
        
       /*! entry point into builder */
       NodeRef operator() (const PrimInfoMB& pinfo) {
@@ -180,8 +179,8 @@ namespace embree
           if (bestChild == -1) break;
           
           /*! split best child into left and right child */
-          BuildRecord left(current.depth+1);
-          BuildRecord right(current.depth+1);
+          BuildRecord2 left(current.depth+1);
+          BuildRecord2 right(current.depth+1);
           splitFallback(children[bestChild],left,right);
           
           /* add new children left and right */
@@ -198,7 +197,7 @@ namespace embree
       }
             
       /*! performs split */
-      void split(const BuildRecord& current, BuildRecord& lrecord, BuildRecord& rrecord, bool& aligned, bool& timesplit)
+      void split(const BuildRecord2& current, BuildRecord2& lrecord, BuildRecord2& rrecord, bool& aligned, bool& timesplit)
       {
         /* variable to track the SAH of the best splitting approach */
         float bestSAH = inf;
@@ -206,54 +205,54 @@ namespace embree
         
         /* perform standard binning in aligned space */
         float alignedObjectSAH = inf;
-        HeuristicBinningMB::Split alignedObjectSplit;
-        alignedObjectSplit = alignedHeuristic.find(current.set,current.pinfo,0);
+        HeuristicBinning::Split alignedObjectSplit;
+        alignedObjectSplit = alignedHeuristic.find(current.prims,current.pinfo,0);
         alignedObjectSAH = travCostAligned*halfArea(current.pinfo.geomBounds) + intCost*alignedObjectSplit.splitSAH();
         bestSAH = min(alignedObjectSAH,bestSAH);
         
         /* perform standard binning in unaligned space */
-        UnalignedHeuristicBinningMB::Split unalignedObjectSplit;
+        UnalignedHeuristicBinning::Split unalignedObjectSplit;
         LinearSpace3fa uspace;
         float unalignedObjectSAH = inf;
         if (alignedObjectSAH > 0.7f*leafSAH) {
-          uspace = unalignedHeuristic.computeAlignedSpaceMB(scene,current.set); 
-          const PrimInfoMB sinfo = unalignedHeuristic.computePrimInfoMB(scene,current.set,uspace);
-          unalignedObjectSplit = unalignedHeuristic.find(current.set,sinfo,0,uspace);    	
+          uspace = unalignedHeuristic.computeAlignedSpaceMB(scene,current.prims); 
+          const PrimInfoMB sinfo = unalignedHeuristic.computePrimInfoMB(scene,current.prims,uspace);
+          unalignedObjectSplit = unalignedHeuristic.find(current.prims,sinfo,0,uspace);    	
           unalignedObjectSAH = travCostUnaligned*halfArea(current.pinfo.geomBounds) + intCost*unalignedObjectSplit.splitSAH();
           bestSAH = min(unalignedObjectSAH,bestSAH);
         }
 
         /* do temporal splits only if the the time range is big enough */
         float temporal_split_sah = inf;
-        HeuristicTemporal::Split temporal_split;
-        if (current.set.time_range.size() > 1.01f/float(current.pinfo.max_num_time_segments)) {
-          temporal_split = heuristicTemporalSplit.find(current.set, current.pinfo, 0);
+        typename HeuristicTemporal::Split temporal_split;
+        if (current.prims.time_range.size() > 1.01f/float(current.pinfo.max_num_time_segments)) {
+          temporal_split = temporalSplitHeuristic.find(current.prims, current.pinfo, 0);
           temporal_split_sah = temporal_split.splitSAH();
         }
         
         /* perform time split if this is the best */
-        if (bestSAH == timeSplitSAH) {
-          timeSplitHeuristic.split(temporal_split,current.pinfo,current.set,lrecord.pinfo,lrecord.set,rrecord.pinfo,rrecord.set);
+        if (bestSAH == temporal_split_sah) {
+          temporalSplitHeuristic.split(temporal_split,current.pinfo,current.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
           timesplit = true;
         }
         /* perform aligned split if this is best */
         else if (bestSAH == alignedObjectSAH) {
-          alignedHeuristic.split(alignedObjectSplit,current.pinfo,current.set,lrecord.pinfo,lrecord.set,rrecord.info,rrecord.set);
+          alignedHeuristic.split(alignedObjectSplit,current.pinfo,current.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
         }
         /* perform unaligned split if this is best */
         else if (bestSAH == unalignedObjectSAH) {
-          unalignedHeuristic.split(unalignedObjectSplit,uspace,current.pinfo,current.set,lrecord.info,lrecord.set,rrecord.info,rrecord.set);
+          unalignedHeuristic.split(unalignedObjectSplit,uspace,current.pinfo,current.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
           aligned = false;
         }
         /* otherwise perform fallback split */
         else {
           deterministic_order(set);
-          splitFallback(current.pinfo,current.set,lrecord.info,lrecord.set,rrecord.pinfo,rrecord.set);
+          splitFallback(current.pinfo,current.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
         }
       }
       
       /*! recursive build */
-      NodeRef recurse(BuildRecord& current, Allocator alloc, bool toplevel)
+      NodeRef recurse(BuildRecord2& current, Allocator alloc, bool toplevel)
       {
         if (alloc == nullptr) 
           alloc = createAlloc();
@@ -263,15 +262,15 @@ namespace embree
           progressMonitor(current.size());
        
         /* create leaf node */
-        if (depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize) {
+        if (current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize) {
           deterministic_order(current);
           return createLargeLeaf(current,alloc);
         }
         
         /* fill all children by always splitting the one with the largest surface area */
         size_t numChildren = 1;
-        BuildRecord children[MAX_BRANCHING_FACTOR];
-        children[0] = pinfo;
+        BuildRecord2 children[MAX_BRANCHING_FACTOR];
+        children[0] = current;
         bool aligned = true;
         bool timesplit = false;
         
@@ -295,8 +294,8 @@ namespace embree
           if (bestChild == -1) break;
           
           /*! split best child into left and right child */
-          BuildRecord left(current.depth+1);
-          BuildRecord right(current.depth+1);
+          BuildRecord2 left(current.depth+1);
+          BuildRecord2 right(current.depth+1);
           split(children[bestChild],left,right,aligned,timesplit);
           
           /* add new children left and right */
@@ -398,9 +397,9 @@ namespace embree
       const size_t maxLeafSize;
   
     private:
-      HeuristicBinningSAH alignedHeuristic;
-      UnalignedHeuristicBinningSAH unalignedHeuristic;
-      HeuristicTemporal heuristicTemporalSplit;
+      HeuristicBinning alignedHeuristic;
+      UnalignedHeuristicBinning unalignedHeuristic;
+      HeuristicTemporal temporalSplitHeuristic;
     };
 
     template<int N,
@@ -425,7 +424,7 @@ namespace embree
                                                                   const size_t minLeafSize, const size_t maxLeafSize) 
     {
       typedef BVHNBuilderHairMBlur<N,RecalculatePrimRef,CreateAllocFunc,CreateAlignedNodeFunc,CreateUnalignedNodeFunc,CreateAlignedNode4DFunc,CreateLeafFunc,ProgressMonitor> Builder;
-      Builder builder(prims,recalculatePrimRef,createAlloc,createAlignedNode,createUnalignedNode,createAlignedNode4D,createLeaf,
+      Builder builder(recalculatePrimRef,createAlloc,createAlignedNode,createUnalignedNode,createAlignedNode4D,createLeaf,
                       progressMonitor,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
       return builder(pinfo);
     }
