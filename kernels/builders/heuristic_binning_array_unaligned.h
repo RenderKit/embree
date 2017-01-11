@@ -252,6 +252,7 @@ namespace embree
         PrimRef* const prims;
       };
 
+#if 0
     /*! Performs standard object binning */
     template<typename PrimRefMB, size_t BINS>
       struct UnalignedHeuristicArrayBinningMB
@@ -269,9 +270,9 @@ namespace embree
           Vec3fa axis0(0,0,1);
           Vec3fa axis1(0,0,1);
 
-          for (size_t i=set.object_range.begin; i<set.object_range.end; i++)
+          for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++)
           {
-            const BezierPrim& prim = prims[i];
+            const BezierPrimMB& prim = (*set.prims)[i];
             const size_t geomID = prim.geomID();
             const size_t primID = prim.primID();
             const BezierCurves* curves = scene->getBezierCurves(geomID);
@@ -362,5 +363,6 @@ namespace embree
           new (&rset) SetMB(set.prims,range<size_t>(center,end  ),set.time_range);
         }
       };
+#endif
   }
 }
