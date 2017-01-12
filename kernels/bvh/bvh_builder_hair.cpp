@@ -277,7 +277,7 @@ namespace embree
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderMSMBlurHairSAH");
 
         //profile(1,5,numPrimitives,[&] (ProfileTimer& timer) {
-        
+
         /* create primref array */
         bvh->alloc.init_estimate(numPrimitives*sizeof(Primitive));
         mvector<PrimRefMB> prims0(scene->device,numPrimitives);

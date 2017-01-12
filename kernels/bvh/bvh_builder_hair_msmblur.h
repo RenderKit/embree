@@ -62,7 +62,7 @@ namespace embree
              typename CreateAlignedNode4DFunc, 
              typename CreateLeafFunc, 
              typename ProgressMonitor>
-
+      
       class BVHNBuilderHairMBlur
     {
       ALIGNED_CLASS;
@@ -207,10 +207,9 @@ namespace embree
         const float leafSAH = intCost*float(current.size())*halfArea(current.pinfo.geomBounds);
         
         /* perform standard binning in aligned space */
-        float alignedObjectSAH = inf;
         HeuristicBinning::Split alignedObjectSplit;
         alignedObjectSplit = alignedHeuristic.find(current.prims,current.pinfo,0);
-        alignedObjectSAH = travCostAligned*halfArea(current.pinfo.geomBounds) + intCost*alignedObjectSplit.splitSAH();
+        float alignedObjectSAH = travCostAligned*halfArea(current.pinfo.geomBounds) + intCost*alignedObjectSplit.splitSAH();
         bestSAH = min(alignedObjectSAH,bestSAH);
 
         /* perform standard binning in unaligned space */
@@ -233,9 +232,14 @@ namespace embree
           temporal_split_sah = temporal_split.splitSAH();
           bestSAH = min(temporal_split_sah,bestSAH);
         }
-        
-        /* perform time split if this is the best */
-        if (bestSAH == temporal_split_sah) {
+
+        /* perform fallback split */
+        if (!std::isfinite(bestSAH))
+        {
+          deterministic_order(current.prims);
+          splitFallback(current.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
+        }
+        else if (bestSAH == temporal_split_sah) {
           temporalSplitHeuristic.split(temporal_split,current.pinfo,current.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
           timesplit = true;
         }
