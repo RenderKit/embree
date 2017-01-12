@@ -26,29 +26,8 @@
 
 #if defined(__WIN32__)
 #  define NOMINMAX
-
-// Clang under Windows need some hacks to make TBB work
-/*#  if defined(__clang__)
-#    if defined(__X86_64__)
-#      define __MINGW64__ 1
-#    else
-#      define __MINGW32__ 1
-#    endif
-#  endif*/
 #endif
 
-#if defined(__clang__) && !defined(__INTEL_COMPILER)
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-#endif
-
-#define TBB_IMPLEMENT_CPP0X 0
-#define __TBB_NO_IMPLICIT_LINKAGE 1
-#define __TBBMALLOC_NO_IMPLICIT_LINKAGE 1
-#include "tbb/tbb_config.h"
-#undef TBB_USE_CAPTURED_EXCEPTION
-#define TBB_USE_CAPTURED_EXCEPTION 0
-#undef __TBB_EXCEPTION_PTR_PRESENT
-#define __TBB_EXCEPTION_PTR_PRESENT 1
 #include "tbb/tbb.h"
 #include "tbb/parallel_sort.h"
 

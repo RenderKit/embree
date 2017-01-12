@@ -16,7 +16,7 @@
 
 /* hack to quickly enable use 8-wide ray initialization and rtcIntersectNM */
 
-#define VECTOR_MODE 1
+#define VECTOR_MODE 0
 #define ENABLE_ANIM 1
 
 #if VECTOR_MODE  == 1
