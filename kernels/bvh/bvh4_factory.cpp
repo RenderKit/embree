@@ -262,6 +262,7 @@ namespace embree
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Bezier1vBuilder_OBB_New);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Bezier1iBuilder_OBB_New);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Bezier1iMBBuilder_OBB_New);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH4Bezier1iMSMBlurBuilder_OBB);
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Triangle4SceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Triangle4vSceneBuilderSAH);
@@ -334,6 +335,7 @@ namespace embree
     IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1vBuilder_OBB_New));
     IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iBuilder_OBB_New));
     IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iMBBuilder_OBB_New));
+    IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iMSMBlurBuilder_OBB));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Triangle4SceneBuilderSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Triangle4vSceneBuilderSAH));
@@ -1365,8 +1367,9 @@ namespace embree
     Accel::Intersectors intersectors = BVH4Bezier1iMBIntersectors_OBB(accel);
 
     Builder* builder = nullptr;
-    if      (scene->device->hair_builder_mb == "default"     ) builder = BVH4Bezier1iMBBuilder_OBB_New(accel,scene,0);
-    else if (scene->device->hair_builder_mb == "sah"         ) builder = BVH4Bezier1iMBBuilder_OBB_New(accel,scene,0);
+    if      (scene->device->hair_builder_mb == "default"     ) builder = BVH4Bezier1iMSMBlurBuilder_OBB(accel,scene,0);
+    else if (scene->device->hair_builder_mb == "sah"         ) builder = BVH4Bezier1iMSMBlurBuilder_OBB(accel,scene,0);
+    else if (scene->device->hair_builder_mb == "old"         ) builder = BVH4Bezier1iMBBuilder_OBB_New(accel,scene,0);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder_mb+" for BVH4MBOBB<Bezier1iMB>");   
 
     scene->needBezierVertices = true;

@@ -357,6 +357,7 @@ namespace embree
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Bezier1vBuilder_OBB_New);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Bezier1iBuilder_OBB_New);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Bezier1iMBBuilder_OBB_New);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4Bezier1iMSMBlurBuilder_OBB);
     
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4SceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4vSceneBuilderSAH);
