@@ -227,8 +227,8 @@ namespace embree
       
       /*! stream output */
       friend std::ostream& operator<<(std::ostream& cout, const PrimInfoMBT& pinfo) {
-	return cout << "PrimInfo { begin = " << pinfo.begin << ", end = " << pinfo.end << ", time_segments = " 
-                    << pinfo.num_time_segments << ", geomBounds = " << pinfo.geomBounds << ", centBounds = " << pinfo.centBounds << "}";
+	return cout << "PrimInfo { begin = " << pinfo.begin << ", end = " << pinfo.end << ", time_segments = " << pinfo.num_time_segments << 
+          ", time_range = " << pinfo.time_range << ", geomBounds = " << pinfo.geomBounds << ", centBounds = " << pinfo.centBounds << "}";
       }
       
     public:

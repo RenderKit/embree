@@ -207,6 +207,7 @@ namespace embree
           return pinfo;
         }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB { return PrimInfoMB::merge(a,b); });
       }
+      pinfo.time_range = t0t1;
       return pinfo;
     }
 

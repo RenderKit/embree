@@ -279,13 +279,14 @@ namespace embree
         //profile(1,5,numPrimitives,[&] (ProfileTimer& timer) {
 
         /* create primref array */
+        BBox1f dt0(0.0f,1.0f);
         bvh->alloc.init_estimate(numPrimitives*sizeof(Primitive));
         mvector<PrimRefMB> prims0(scene->device,numPrimitives);
-        const PrimInfoMB pinfo = createPrimRefMBArray<BezierCurves>(scene,prims0,virtualprogress);
+        const PrimInfoMB pinfo = createPrimRefMBArray<BezierCurves>(scene,prims0,virtualprogress,dt0);
 
         RecalculatePrimRef<BezierCurves> recalculatePrimRef(scene);
 
-        SetMB set(&prims0,range<size_t>(0,pinfo.size()),BBox1f(0.0f,1.0f));
+        SetMB set(&prims0,range<size_t>(0,pinfo.size()),dt0);
         BuildRecord2 record(pinfo,set,0);
         
         /* build hierarchy */

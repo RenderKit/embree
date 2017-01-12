@@ -325,6 +325,7 @@ namespace embree
 #endif
             ret.add_primref(prim2);
           }
+          ret.time_range = set.time_range;
           return ret;
         }
 
