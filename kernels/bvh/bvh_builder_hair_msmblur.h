@@ -202,8 +202,6 @@ namespace embree
       /*! performs split */
       void split(const BuildRecord2& current, BuildRecord2& lrecord, BuildRecord2& rrecord, bool& aligned, bool& timesplit)
       {
-        //PRINT2("split",current.depth);
-
         /* variable to track the SAH of the best splitting approach */
         float bestSAH = inf;
         const float leafSAH = intCost*float(current.size())*halfArea(current.pinfo.geomBounds);
@@ -214,7 +212,6 @@ namespace embree
         alignedObjectSplit = alignedHeuristic.find(current.prims,current.pinfo,0);
         alignedObjectSAH = travCostAligned*halfArea(current.pinfo.geomBounds) + intCost*alignedObjectSplit.splitSAH();
         bestSAH = min(alignedObjectSAH,bestSAH);
-        //PRINT(alignedObjectSAH);
 
         /* perform standard binning in unaligned space */
         UnalignedHeuristicBinning::Split unalignedObjectSplit;
@@ -226,7 +223,6 @@ namespace embree
           unalignedObjectSplit = unalignedHeuristic.find(current.prims,sinfo,0,uspace);    	
           unalignedObjectSAH = travCostUnaligned*halfArea(current.pinfo.geomBounds) + intCost*unalignedObjectSplit.splitSAH();
           bestSAH = min(unalignedObjectSAH,bestSAH);
-          //PRINT(unalignedObjectSAH);
         }
 
         /* do temporal splits only if the the time range is big enough */
@@ -236,23 +232,19 @@ namespace embree
           temporal_split = temporalSplitHeuristic.find(current.prims, current.pinfo, 0);
           temporal_split_sah = temporal_split.splitSAH();
           bestSAH = min(temporal_split_sah,bestSAH);
-          //PRINT(temporal_split_sah);
         }
         
         /* perform time split if this is the best */
         if (bestSAH == temporal_split_sah) {
-          //PRINT("doing time_split");
           temporalSplitHeuristic.split(temporal_split,current.pinfo,current.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
           timesplit = true;
         }
         /* perform aligned split if this is best */
         else if (bestSAH == alignedObjectSAH) {
-          //PRINT("doing aligned split");
           alignedHeuristic.split(alignedObjectSplit,current.pinfo,current.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
         }
         /* perform unaligned split if this is best */
         else if (bestSAH == unalignedObjectSAH) {
-          //PRINT("doing unaligned split");
           unalignedHeuristic.split(unalignedObjectSplit,uspace,current.pinfo,current.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
           aligned = false;
         }

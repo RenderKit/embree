@@ -257,10 +257,9 @@ namespace embree
 
       BVH* bvh;
       Scene* scene;
-      mvector<PrimRefMB> prims;
 
       BVHNHairMSMBlurBuilderSAH (BVH* bvh, Scene* scene)
-        : bvh(bvh), scene(scene), prims(scene->device) {}
+        : bvh(bvh), scene(scene) {}
       
       void build(size_t, size_t) 
       {
@@ -271,7 +270,6 @@ namespace embree
         /* fast path for empty BVH */
         const size_t numPrimitives = scene->getNumPrimitives<BezierCurves,true>();
         if (numPrimitives == 0) {
-          prims.clear();
           bvh->set(BVH::emptyNode,empty,0);
           return;
         }
@@ -282,12 +280,12 @@ namespace embree
         
         /* create primref array */
         bvh->alloc.init_estimate(numPrimitives*sizeof(Primitive));
-        prims.resize(numPrimitives);
-        const PrimInfoMB pinfo = createPrimRefMBArray<BezierCurves>(scene,prims,virtualprogress);
+        mvector<PrimRefMB> prims0(scene->device,numPrimitives);
+        const PrimInfoMB pinfo = createPrimRefMBArray<BezierCurves>(scene,prims0,virtualprogress);
 
         RecalculatePrimRef<BezierCurves> recalculatePrimRef(scene);
 
-        SetMB set(&prims,range<size_t>(0,pinfo.size()),BBox1f(0.0f,1.0f));
+        SetMB set(&prims0,range<size_t>(0,pinfo.size()),BBox1f(0.0f,1.0f));
         BuildRecord2 record(pinfo,set,0);
         
         /* build hierarchy */
@@ -343,7 +341,7 @@ namespace embree
               Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive));
               NodeRef node = bvh->encodeLeaf((char*)accel,items);
               for (size_t i=0; i<items; i++) {
-                accel[i].fill(prims.data(),start,current.prims.object_range.end(),bvh->scene);
+                accel[i].fill(current.prims.prims->data(),start,current.prims.object_range.end(),bvh->scene);
               }
               return node;
             },
@@ -356,7 +354,6 @@ namespace embree
         
         /* clear temporary data for static geometry */
         if (scene->isStatic()) {
-          prims.clear();
           bvh->shrink();
         }
         bvh->cleanup();
@@ -364,7 +361,6 @@ namespace embree
       }
 
       void clear() {
-        prims.clear();
       }
     };
 
