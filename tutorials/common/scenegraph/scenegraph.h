@@ -624,8 +624,10 @@ namespace embree
       {
         for (size_t i=0; i<spaces.size(); i++) {
           avector<Vertex> verts(imesh->numVertices());
-          for (size_t j=0; j<imesh->numVertices(); j++) 
+          for (size_t j=0; j<imesh->numVertices(); j++) {
             verts[j] = xfmPoint(spaces[i],imesh->positions[0][j]);
+            verts[j].w = imesh->positions[0][j].w;
+          }
           positions.push_back(std::move(verts));
         }
       }
@@ -704,8 +706,10 @@ namespace embree
       {
         for (size_t i=0; i<spaces.size(); i++) {
           avector<Vertex> verts(imesh->numVertices());
-          for (size_t j=0; j<imesh->numVertices(); j++) 
+          for (size_t j=0; j<imesh->numVertices(); j++) {
             verts[j] = xfmPoint(spaces[i],imesh->positions[0][j]);
+            verts[j].w = imesh->positions[0][j].w;
+          }
           positions.push_back(std::move(verts));
         }
       }
