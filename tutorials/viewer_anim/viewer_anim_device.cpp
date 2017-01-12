@@ -64,7 +64,7 @@ namespace embree {
   /* shadow rays */
 
   static const size_t numShadowSamples = 64;
-  static const size_t numShadowPackets = numShadowSamples/8;
+  MAYBE_UNUSED static const size_t numShadowPackets = numShadowSamples/8;
   struct SampleSet {
     float u[numShadowSamples];
     float v[numShadowSamples];
