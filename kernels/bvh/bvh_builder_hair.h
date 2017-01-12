@@ -161,13 +161,13 @@ namespace embree
         }
 
         /* perform splitting into two strands */
-        /*HeuristicStrandSplitSAH::Split strandSplit;
+        HeuristicStrandSplitSAH::Split strandSplit;
         float strandSAH = inf;
         if (alignedObjectSAH > 0.6f*leafSAH) {
           strandSplit = strandHeuristic.find(pinfo);
           strandSAH = travCostUnaligned*halfArea(pinfo.geomBounds) + intCost*strandSplit.splitSAH();
           bestSAH = min(strandSAH,bestSAH);
-          }*/
+        }
         
         /* perform aligned split if this is best */
         if (bestSAH == alignedObjectSAH) {
@@ -180,10 +180,10 @@ namespace embree
           return false;
         }
         /* perform strand split if this is best */
-        /*else if (bestSAH == strandSAH) {
+        else if (bestSAH == strandSAH) {
           strandHeuristic.split(strandSplit,pinfo,linfo,rinfo);
           return false;
-          }*/
+        }
         /* otherwise perform fallback split */
         else {
           alignedHeuristic.deterministic_order(pinfo);
