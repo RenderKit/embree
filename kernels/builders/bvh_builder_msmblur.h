@@ -217,26 +217,22 @@ namespace embree
           return object_split;
         }
 
-        __forceinline void partition(BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) {
-          split(brecord.split,brecord.pinfo,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
-        }
-
         /*! array partitioning */
-        void split(const Split& split, const PrimInfoMB& pinfo, const SetMB& set, PrimInfoMB& left, SetMB& lset, PrimInfoMB& right, SetMB& rset)
+        __forceinline void partition(BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) 
         {
           /* perform fallback split */
-          //if (unlikely(!split.valid())) {
-          if (unlikely(split.data == Split::SPLIT_FALLBACK)) {
-            deterministic_order(set);
-            return splitFallback(set,left,lset,right,rset);
+          //if (unlikely(!brecord.split.valid())) {
+          if (unlikely(brecord.split.data == Split::SPLIT_FALLBACK)) {
+            deterministic_order(brecord.prims);
+            return splitFallback(brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
           }
           /* perform temporal split */
-          else if (unlikely(split.data == Split::SPLIT_TEMPORAL)) {
-            heuristicTemporalSplit.split(split,pinfo,set,left,lset,right,rset);
+          else if (unlikely(brecord.split.data == Split::SPLIT_TEMPORAL)) {
+            heuristicTemporalSplit.split(brecord.split,brecord.pinfo,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
           }
           /* perform object split */
           else {
-            heuristicObjectSplit.split(split,pinfo,set,left,lset,right,rset);
+            heuristicObjectSplit.split(brecord.split,brecord.pinfo,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
           }
         }
 
