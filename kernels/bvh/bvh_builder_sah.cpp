@@ -667,21 +667,19 @@ namespace embree
 
       BVH* bvh;
       Scene* scene;
-      mvector<PrimRef> prims;
-      mvector<PrimRefMB> primsMB;
       const size_t sahBlockSize;
       const float intCost;
       const size_t minLeafSize;
       const size_t maxLeafSize;
 
       BVHNBuilderMBlurSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(scene), prims(scene->device), primsMB(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)) {}
+        : bvh(bvh), scene(scene), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)) {}
 
       void build(size_t, size_t) 
       {
 	/* skip build for empty scene */
         const size_t numPrimitives = scene->getNumPrimitives<Mesh,true>();
-        if (numPrimitives == 0) { prims.clear(); primsMB.clear(); bvh->clear(); return; }
+        if (numPrimitives == 0) { bvh->clear(); return; }
         
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderMBlurSAH");
 
@@ -704,12 +702,7 @@ namespace embree
 #endif
 
 	/* clear temporary data for static geometry */
-        if (scene->isStatic())
-        {
-          prims.clear();
-          primsMB.clear();
-          bvh->shrink();
-        }
+        if (scene->isStatic()) bvh->shrink();
 	bvh->cleanup();
         bvh->postBuild(t0);
       }
@@ -717,7 +710,7 @@ namespace embree
       void buildSingleSegment(size_t numPrimitives)
       { 
         /* create primref array */
-        prims.resize(numPrimitives);
+        mvector<PrimRef> prims(scene->device,numPrimitives);
         const PrimInfo pinfo = createPrimRefArrayMBlur<Mesh>(0,2,scene,prims,bvh->scene->progressInterface);
 
         /* reduction function */
@@ -746,7 +739,7 @@ namespace embree
       void buildMultiSegment(size_t numPrimitives)
       {
         /* create primref array */
-        primsMB.resize(numPrimitives);
+        mvector<PrimRefMB> primsMB(scene->device,numPrimitives);
         PrimInfoMB pinfo = createPrimRefMBArray<Mesh>(scene,primsMB,bvh->scene->progressInterface);
         RecalculatePrimRef<Mesh> recalculatePrimRef(scene);
 
@@ -827,8 +820,6 @@ namespace embree
       }
 
       void clear() {
-        prims.clear();
-        primsMB.clear();
       }
     };
 

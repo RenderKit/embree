@@ -243,7 +243,6 @@ namespace embree
       }
     };
 
-#if 1
     template<int N, typename Primitive>
     struct BVHNHairMSMBlurBuilderSAH : public Builder
     {
@@ -364,8 +363,6 @@ namespace embree
       void clear() {
       }
     };
-
-#endif
     
     /*! entry functions for the builder */
     Builder* BVH4Bezier1vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Bezier1v>((BVH4*)bvh,scene); }
