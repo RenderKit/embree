@@ -90,30 +90,28 @@ namespace embree
       __forceinline void split(int bestChild, BuildRecord& lrecord, BuildRecord& rrecord)
       {
         SharedPrimRefVector* bsharedPrimVec = primvecs[bestChild];
-        primvecs[bestChild] = primvecs[numChildren-1];
         if (lrecord.prims.prims == bsharedPrimVec->prims) {
-          primvecs[numChildren-1] = bsharedPrimVec;
+          primvecs[bestChild] = bsharedPrimVec;
           bsharedPrimVec->incRef();
         }
         else {
-          primvecs[numChildren-1] = new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(lrecord.prims.prims);
+          primvecs[bestChild] = new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(lrecord.prims.prims);
         }
         
         if (rrecord.prims.prims == bsharedPrimVec->prims) {
-          primvecs[numChildren+0] = bsharedPrimVec;
+          primvecs[numChildren] = bsharedPrimVec;
           bsharedPrimVec->incRef();
         }
         else {
-          primvecs[numChildren+0] = new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(rrecord.prims.prims);
+          primvecs[numChildren] = new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(rrecord.prims.prims);
         }
         bsharedPrimVec->decRef();
         
-        children[bestChild] = children[numChildren-1];
-        children[numChildren-1] = lrecord;
-        children[numChildren+0] = rrecord;
+        children[bestChild] = lrecord;
+        children[numChildren] = rrecord;
         numChildren++;
       }
-      
+
     public:
       BuildRecord children[MAX_BRANCHING_FACTOR];
       SharedPrimRefVector* primvecs[MAX_BRANCHING_FACTOR];
@@ -181,162 +179,9 @@ namespace embree
         typedef BinSplit<NUM_OBJECT_BINS> Split;
         typedef mvector<PrimRefMB>* PrimRefVector;
         typedef SharedVector<mvector<PrimRefMB>> SharedPrimRefVector;
+        typedef LocalChildListT<BuildRecord,MAX_BRANCHING_FACTOR> LocalChildList;
 
       public:
-
-        struct LocalChildList
-        {
-          struct Child
-          {
-            __forceinline Child() {}
-
-            __forceinline Child(const BuildRecord& record, SharedPrimRefVector* sharedPrimVec)
-              : record(record), sharedPrimVec(sharedPrimVec) {}
-
-            BuildRecord record;
-            SharedPrimRefVector* sharedPrimVec;
-          };
-
-          __forceinline LocalChildList (GeneralBVHMBBuilder* builder, BuildRecord& record)
-            : builder(builder), numChildren(1), numSharedPrimVecs(1), depth(record.depth)
-          {
-            /* the local root will be freed in the ancestor where it was created (thus refCount is 2) */
-            SharedPrimRefVector* sharedPrimVec = new (&sharedPrimVecs[0]) SharedPrimRefVector(record.prims.prims, 2);
-            new (&children[0]) Child(record, sharedPrimVec);
-          }
-
-          __forceinline ~LocalChildList()
-          {
-            for (size_t i = 0; i < numChildren; i++)
-              children[i].sharedPrimVec->decRef();
-          }
-
-          __forceinline void split(size_t bestChild)
-          {
-            /* perform best found split */
-            BuildRecord& brecord = children[bestChild].record;
-            BuildRecord lrecord(depth+1);
-            BuildRecord rrecord(depth+1);
-            builder->partition(brecord,lrecord,rrecord);
-
-            /* find new splits */
-            lrecord.split = builder->find(lrecord);
-            rrecord.split = builder->find(rrecord);
-
-            /* add new children */
-            SharedPrimRefVector* bsharedPrimVec = children[bestChild].sharedPrimVec;
-            if (brecord.split.data == Split::SPLIT_TEMPORAL)
-            {
-              new (&children[bestChild  ]) Child(lrecord, new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(lrecord.prims.prims));
-              new (&children[numChildren]) Child(rrecord, new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(rrecord.prims.prims));
-              bsharedPrimVec->decRef();
-            }
-            else
-            {
-              new (&children[bestChild  ]) Child(lrecord, bsharedPrimVec);
-              new (&children[numChildren]) Child(rrecord, bsharedPrimVec);
-              bsharedPrimVec->incRef();
-            }
-            numChildren++;
-          }
-
-          __forceinline void splitLargeLeaf(size_t bestChild, bool singleLeafTimeSegment)
-          {
-            /* perform best found split */
-            BuildRecord& brecord = children[bestChild].record;
-            BuildRecord lrecord(depth+1);
-            BuildRecord rrecord(depth+1);
-            builder->partition(brecord,lrecord,rrecord);
-
-            /* find new splits */
-            lrecord.split = builder->findFallback(lrecord,singleLeafTimeSegment);
-            rrecord.split = builder->findFallback(rrecord,singleLeafTimeSegment);
-
-            /* add new children */
-            SharedPrimRefVector* bsharedPrimVec = children[bestChild].sharedPrimVec;
-            if (brecord.split.data == Split::SPLIT_TEMPORAL)
-            {
-              children[bestChild] = children[numChildren-1];
-              new (&children[numChildren-1]) Child(lrecord, new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(lrecord.prims.prims));
-              new (&children[numChildren+0]) Child(rrecord, new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(rrecord.prims.prims));
-              bsharedPrimVec->decRef();
-            }
-            else
-            {
-              children[bestChild] = children[numChildren-1];
-              new (&children[numChildren-1]) Child(lrecord, bsharedPrimVec);
-              new (&children[numChildren+0]) Child(rrecord, bsharedPrimVec);
-              bsharedPrimVec->incRef();
-            }
-            numChildren++;
-          }
-
-          __forceinline size_t size() const {
-            return numChildren;
-          }
-
-          __forceinline BuildRecord& operator[] ( size_t i ) {
-            return children[i].record;
-          }
-
-          __forceinline BuildRecord** childrenArray() 
-          {
-            for (size_t i=0; i<numChildren; i++) 
-              childrenPtrs[i] = &children[i].record;
-            return childrenPtrs;
-          }
-
-          bool hasTimeSplits() const {
-            return false;
-          }
-
-          __forceinline void restore(size_t childID) {
-          }
-
-          __forceinline ssize_t best()
-          {
-            /*! find best child to split */
-            float bestSAH = neg_inf;
-            ssize_t bestChild = -1;
-            for (size_t i=0; i<numChildren; i++) 
-            {
-              if (children[i].record.pinfo.size() <= builder->minLeafSize) continue;
-              if (expectedApproxHalfArea(children[i].record.pinfo.geomBounds) > bestSAH) {
-                bestChild = i; bestSAH = expectedApproxHalfArea(children[i].record.pinfo.geomBounds);
-              } 
-            }
-            return bestChild;
-          }
-
-          __forceinline ssize_t bestLargeLeaf()
-          {
-            /* find best child with largest bounding box area */
-            size_t bestChild = -1;
-            size_t bestSize = 0;
-            for (size_t i=0; i<numChildren; i++)
-            {
-              /* ignore leaves as they cannot get split */
-              if (children[i].record.pinfo.size() <= builder->maxLeafSize && children[i].record.split.data != Split::SPLIT_TEMPORAL)
-                continue;
-
-              /* remember child with largest size */
-              if (children[i].record.pinfo.size() > bestSize) {
-                bestSize = children[i].record.pinfo.size();
-                bestChild = i;
-              }
-            }
-            return bestChild;
-          }
-
-        public:
-          GeneralBVHMBBuilder* builder;
-          Child children[MAX_BRANCHING_FACTOR];
-          BuildRecord* childrenPtrs[MAX_BRANCHING_FACTOR];
-          SharedPrimRefVector sharedPrimVecs[MAX_BRANCHING_FACTOR*2];
-          size_t numChildren;
-          size_t numSharedPrimVecs;
-          size_t depth;
-        };
 
         GeneralBVHMBBuilder (MemoryMonitorInterface* device,
                              const RecalculatePrimRef recalculatePrimRef,
@@ -483,16 +328,41 @@ namespace embree
           
           /* fill all children by always splitting the largest one */
           ReductionTy values[MAX_BRANCHING_FACTOR];
-          LocalChildList children(this,current);
+          LocalChildList children(current);
         
           do {  
-            ssize_t bestChild = children.bestLargeLeaf();
+            /* find best child with largest bounding box area */
+            size_t bestChild = -1;
+            size_t bestSize = 0;
+            for (size_t i=0; i<children.size(); i++)
+            {
+              /* ignore leaves as they cannot get split */
+              if (children[i].pinfo.size() <= maxLeafSize && children[i].split.data != Split::SPLIT_TEMPORAL)
+                continue;
+
+              /* remember child with largest size */
+              if (children[i].pinfo.size() > bestSize) {
+                bestSize = children[i].pinfo.size();
+                bestChild = i;
+              }
+            }
             if (bestChild == -1) break;
-            children.splitLargeLeaf(bestChild, singleLeafTimeSegment);
+
+            /* perform best found split */
+            BuildRecord& brecord = children[bestChild];
+            BuildRecord lrecord(current.depth+1);
+            BuildRecord rrecord(current.depth+1);
+            partition(brecord,lrecord,rrecord);
+            
+            /* find new splits */
+            lrecord.split = findFallback(lrecord,singleLeafTimeSegment);
+            rrecord.split = findFallback(rrecord,singleLeafTimeSegment);
+            children.split(bestChild,lrecord,rrecord);
+
           } while (children.size() < branchingFactor);
           
           /* create node */
-          auto node = createNode(current,children.childrenArray(),children.size(),alloc);
+          auto node = createNode(current,&children[0],children.size(),alloc);
           
           /* recurse into each child  and perform reduction */
           for (size_t i=0; i<children.size(); i++)
@@ -525,23 +395,43 @@ namespace embree
           
           /*! initialize child list */
           ReductionTy values[MAX_BRANCHING_FACTOR];
-          LocalChildList children(this,current);
+          LocalChildList children(current);
           
           /*! split until node is full or SAH tells us to stop */
           do {
-            ssize_t bestChild = children.best();
+            /*! find best child to split */
+            float bestSAH = neg_inf;
+            ssize_t bestChild = -1;
+            for (size_t i=0; i<children.size(); i++) 
+            {
+              if (children[i].pinfo.size() <= minLeafSize) continue;
+              if (expectedApproxHalfArea(children[i].pinfo.geomBounds) > bestSAH) {
+                bestChild = i; bestSAH = expectedApproxHalfArea(children[i].pinfo.geomBounds);
+              } 
+            }
             if (bestChild == -1) break;
-            children.split(bestChild);
+
+            /* perform best found split */
+            BuildRecord& brecord = children[bestChild];
+            BuildRecord lrecord(current.depth+1);
+            BuildRecord rrecord(current.depth+1);
+            partition(brecord,lrecord,rrecord);            
+            
+            /* find new splits */
+            lrecord.split = find(lrecord);
+            rrecord.split = find(rrecord);
+            children.split(bestChild,lrecord,rrecord);
+
           } while (children.size() < branchingFactor);
           
           /* sort buildrecords for simpler shadow ray traversal */
           //std::sort(&children[0],&children[children.size()],std::greater<BuildRecord>()); // FIXME: reduces traversal performance of bvh8.triangle4 (need to verified) !!
           
           /*! create an inner node */
-          auto node = createNode(current,children.childrenArray(),children.size(),alloc);
+          auto node = createNode(current,&children[0],children.size(),alloc);
           
           /* spawn tasks */
-          if (current.size() > SINGLE_THREADED_THRESHOLD && !children.hasTimeSplits()) 
+          if (current.size() > SINGLE_THREADED_THRESHOLD) 
           {
             /*! parallel_for is faster than spawing sub-tasks */
             parallel_for(size_t(0), children.size(), [&] (const range<size_t>& r) {
@@ -556,9 +446,8 @@ namespace embree
           /* recurse into each child */
           else 
           {
-            //for (size_t i=0; i<numChildren; i++)
+            //for (size_t i=0; i<children.size(); i++)
             for (ssize_t i=children.size()-1; i>=0; i--) {
-              children.restore(i);
               values[i] = recurse(children[i],alloc,false);
             }
             

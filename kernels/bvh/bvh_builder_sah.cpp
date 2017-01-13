@@ -601,16 +601,16 @@ namespace embree
 
       __forceinline CreateAlignedNodeMB4D (BVH* bvh) : bvh(bvh) {}
       
-      __forceinline NodeRef operator() (const BuildRecord& current, BuildRecord** children, const size_t num, FastAllocator::ThreadLocal2* alloc)
+      __forceinline NodeRef operator() (const BuildRecord& current, BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc)
       {
         bool hasTimeSplits = false;
         for (size_t i=0; i<num && !hasTimeSplits; i++)
-          hasTimeSplits |= current.pinfo.time_range != children[i]->pinfo.time_range;
+          hasTimeSplits |= current.pinfo.time_range != children[i].pinfo.time_range;
 
         if (hasTimeSplits)
         {
           AlignedNodeMB4D* node = (AlignedNodeMB4D*) alloc->alloc0->malloc(sizeof(AlignedNodeMB4D),BVH::byteNodeAlignment); node->clear();
-          for (size_t i=0; i<num; i++) children[i]->parent = (size_t*)&node->child(i);
+          for (size_t i=0; i<num; i++) children[i].parent = (size_t*)&node->child(i);
           NodeRef ref = bvh->encodeNode(node);
           *current.parent = ref;
           return ref;
@@ -618,7 +618,7 @@ namespace embree
         else
         {
           AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),BVH::byteNodeAlignment); node->clear();
-          for (size_t i=0; i<num; i++) children[i]->parent = (size_t*)&node->child(i);
+          for (size_t i=0; i<num; i++) children[i].parent = (size_t*)&node->child(i);
           NodeRef ref = bvh->encodeNode(node);
           *current.parent = ref;
           return ref;
