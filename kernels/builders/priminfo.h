@@ -203,7 +203,7 @@ namespace embree
         max_num_time_segments = max(max_num_time_segments,other.max_num_time_segments);
       }
 
-      static __forceinline const PrimInfoMBT merge(const PrimInfoMBT& a, const PrimInfoMBT& b) {
+      static __forceinline const PrimInfoMBT merge2(const PrimInfoMBT& a, const PrimInfoMBT& b) {
         PrimInfoMBT r = a; r.merge(b); return r;
       }
       

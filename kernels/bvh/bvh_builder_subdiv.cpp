@@ -735,7 +735,7 @@ namespace embree
           pinfo.begin = s;
           pinfo.end = sMB;
           return pinfo;
-        }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB { return PrimInfoMB::merge(a,b); });
+        }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB { return PrimInfoMB::merge2(a,b); });
         pinfo.end = pinfo.begin;
         pinfo.begin = 0;
 
