@@ -212,7 +212,7 @@ namespace embree
 	return end-begin; 
       }
 
-      __forceinline float halfArea() {
+      __forceinline float halfArea() const {
         return time_range.size()*expectedApproxHalfArea(geomBounds);
       }
 
