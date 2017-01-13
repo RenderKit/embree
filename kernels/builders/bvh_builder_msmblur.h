@@ -99,7 +99,7 @@ namespace embree
           primvecs[numChildren-1] = new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(lrecord.prims.prims);
         }
         
-        if (lrecord.prims.prims == bsharedPrimVec->prims) {
+        if (rrecord.prims.prims == bsharedPrimVec->prims) {
           primvecs[numChildren+0] = bsharedPrimVec;
           bsharedPrimVec->incRef();
         }
