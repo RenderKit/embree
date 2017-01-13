@@ -252,17 +252,13 @@ namespace embree
         PrimRef* const prims;
       };
 
-#if 1
     /*! Performs standard object binning */
     template<typename PrimRefMB, size_t BINS>
       struct UnalignedHeuristicArrayBinningMB
       {
         typedef BinSplit<BINS> Split;
-#if MBLUR_BIN_LBBOX
-        typedef BinInfoT<BINS,PrimRefMB,LBBox3fa> ObjectBinner;
-#else
-        typedef BinInfoT<BINS,PrimRefMB,BBox3fa> ObjectBinner;
-#endif
+        typedef typename PrimRefMB::BBox BBox;
+        typedef BinInfoT<BINS,PrimRefMB,BBox> ObjectBinner;
 
         static const size_t PARALLEL_THRESHOLD = 3 * 1024;
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
@@ -322,11 +318,7 @@ namespace embree
             const unsigned num_time_segments = mesh->numTimeSegments();
             const range<int> tbounds = getTimeSegmentRange(set.time_range, num_time_segments);
             assert(tbounds.size() > 0);
-#if MBLUR_BIN_LBBOX
             const PrimRefMB prim2(lbounds, tbounds.size(), num_time_segments, geomID, primID);
-#else
-            const PrimRefMB prim2(lbounds.interpolate(0.5f), tbounds.size(), num_time_segments, geomID, primID);
-#endif
             ret.add_primref(prim2);
           }
           ret.time_range = set.time_range;
@@ -383,6 +375,5 @@ namespace embree
       private:
         Scene* scene;
       };
-#endif
   }
 }

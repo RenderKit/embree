@@ -138,11 +138,7 @@ namespace embree
         const unsigned num_time_segments = mesh->numTimeSegments();
         const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
         assert(tbounds.size() > 0);
-#if MBLUR_BIN_LBBOX
         const PrimRefMB prim2(lbounds, tbounds.size(), num_time_segments, geomID, primID);
-#else
-        const PrimRefMB prim2(lbounds.interpolate(0.5f), tbounds.size(), num_time_segments, geomID, primID);
-#endif
         return std::make_pair(prim2, tbounds);
       }
 

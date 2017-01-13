@@ -30,6 +30,7 @@ namespace embree
       {
         typedef BinSplit<NUM_OBJECT_BINS> Split;
         typedef mvector<PrimRefMB>* PrimRefVector;
+        typedef typename PrimRefMB::BBox BBox; 
 
         static const size_t PARALLEL_THRESHOLD = 3 * 1024;
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
@@ -138,13 +139,8 @@ namespace embree
         public:
           size_t count0[BINS-1];
           size_t count1[BINS-1];
-#if MBLUR_BIN_LBBOX
-          LBBox3fa bounds0[BINS-1];
-          LBBox3fa bounds1[BINS-1];
-#else
-          BBox3fa bounds0[BINS-1];
-          BBox3fa bounds1[BINS-1];
-#endif
+          BBox bounds0[BINS-1];
+          BBox bounds1[BINS-1];
         };
         
         /*! finds the best split */

@@ -541,11 +541,7 @@ namespace embree
       {
         const LBBox3fa lbounds = Geometry::linearBounds([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, time_range, num_time_segments);
         const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
-#if MBLUR_BIN_LBBOX
         const PrimRefMB prim2(lbounds, tbounds.size(), num_time_segments, patchIndexMB);
-#else
-        const PrimRefMB prim2(lbounds.interpolate(0.5f), tbounds.size(), num_time_segments, patchIndexMB);
-#endif
         return std::make_pair(prim2, tbounds);
       }
 

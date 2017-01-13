@@ -238,10 +238,6 @@ namespace embree
       BBox1f time_range;
     };
 
-#if MBLUR_BIN_LBBOX
-    typedef PrimInfoMBT<LBBox3fa> PrimInfoMB;
-#else
-    typedef PrimInfoMBT<BBox3fa> PrimInfoMB;
-#endif
+    typedef PrimInfoMBT<typename PrimRefMB::BBox> PrimInfoMB;
   }
 }

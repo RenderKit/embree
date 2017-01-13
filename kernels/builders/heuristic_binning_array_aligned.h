@@ -230,11 +230,8 @@ namespace embree
       struct HeuristicArrayBinningMB
       {
         typedef BinSplit<BINS> Split;
-#if MBLUR_BIN_LBBOX
-        typedef BinInfoT<BINS,PrimRefMB,LBBox3fa> ObjectBinner;
-#else
-        typedef BinInfoT<BINS,PrimRefMB,BBox3fa> ObjectBinner;
-#endif
+        typedef typename PrimRefMB::BBox BBox;
+        typedef BinInfoT<BINS,PrimRefMB,BBox> ObjectBinner;
         static const size_t PARALLEL_THRESHOLD = 3 * 1024;
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
         static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;

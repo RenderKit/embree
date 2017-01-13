@@ -37,6 +37,8 @@ namespace embree
   /*! A primitive reference stores the bounds of the primitive and its ID. */
   struct __aligned(32) PrimRefMB
   {
+    typedef LBBox3fa BBox;
+
     __forceinline PrimRefMB () {}
 
     __forceinline PrimRefMB (const LBBox3fa& lbounds_i, unsigned int activeTimeSegments, unsigned int totalTimeSegments, unsigned int geomID, unsigned int primID)
@@ -162,10 +164,12 @@ namespace embree
   /*! A primitive reference stores the bounds of the primitive and its ID. */
   struct __aligned(16) PrimRefMB
   {
+    typedef BBox3fa BBox;
+
     __forceinline PrimRefMB () {}
 
-    __forceinline PrimRefMB (const BBox3fa& bounds, unsigned int activeTimeSegments, unsigned int totalTimeSegments, unsigned int geomID, unsigned int primID)
-      : bbox(bounds)
+    __forceinline PrimRefMB (const LBBox3fa& bounds, unsigned int activeTimeSegments, unsigned int totalTimeSegments, unsigned int geomID, unsigned int primID)
+      : bbox(bounds.interpolate(0.5f))
     {
       assert(activeTimeSegments > 0);
       bbox.lower.a = geomID;
@@ -174,8 +178,8 @@ namespace embree
       num.y = totalTimeSegments;
     }
 
-    __forceinline PrimRefMB (const BBox3fa& bounds, unsigned int activeTimeSegments, unsigned int totalTimeSegments, size_t id)
-      : bbox(bounds)
+    __forceinline PrimRefMB (const LBBox3fa& bounds, unsigned int activeTimeSegments, unsigned int totalTimeSegments, size_t id)
+      : bbox(bounds.interpolate(0.5f))
     {
       assert(activeTimeSegments > 0);
 #if defined(__X86_64__)
