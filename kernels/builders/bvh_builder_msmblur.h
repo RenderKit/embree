@@ -252,20 +252,16 @@ namespace embree
           }
         }
 
-        __forceinline Split findFallback(BuildRecord& current, bool singleLeafTimeSegment) {
-          return findFallback (current.prims,current.pinfo,logBlockSize,singleLeafTimeSegment);
-        }
-             
-        /*! finds the best split */
-        const Split findFallback(SetMB& set, PrimInfoMB& pinfo, const size_t logBlockSize, const bool singleLeafTimeSegment)
+        /*! finds the best fallback split */
+        __forceinline Split findFallback(BuildRecord& current, bool singleLeafTimeSegment)
         {
           /* test if one primitive has two time segments in time range, if so split time */
           if (singleLeafTimeSegment)
           {
-            for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++) 
+            for (size_t i=current.prims.object_range.begin(); i<current.prims.object_range.end(); i++) 
             {
-              const PrimRefMB& prim = (*set.prims)[i];
-              const range<int> itime_range = recalculatePrimRef(prim,pinfo.time_range).second;
+              const PrimRefMB& prim = (*current.prims.prims)[i];
+              const range<int> itime_range = recalculatePrimRef(prim,current.pinfo.time_range).second;
               const int localTimeSegments = itime_range.size();
               assert(localTimeSegments > 0);
               if (localTimeSegments > 1) {
