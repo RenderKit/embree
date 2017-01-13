@@ -801,8 +801,7 @@ namespace embree
           decltype(createNodeFunc),
           decltype(updateNodeFunc),
           decltype(createLeafFunc),
-          decltype(progressMonitor),
-          PrimInfoMB> Builder;
+          decltype(progressMonitor)> Builder;
 
         Builder builder(scene->device,
                         recalculatePrimRef,

@@ -151,8 +151,7 @@ namespace embree
       typename CreateNodeFunc, 
       typename UpdateNodeFunc, 
       typename CreateLeafFunc, 
-      typename ProgressMonitor,
-      typename PrimInfo>
+      typename ProgressMonitor>
       
       class GeneralBVHMBBuilder
       {
