@@ -178,8 +178,7 @@ namespace embree
                              const size_t branchingFactor, const size_t maxDepth, 
                              const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize,
                              const float travCost, const float intCost, const bool singleLeafTimeSegment)
-          : recalculatePrimRef(recalculatePrimRef),
-          heuristicObjectSplit(),
+          : heuristicObjectSplit(),
           heuristicTemporalSplit(device, recalculatePrimRef),
           identity(identity), 
           createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
@@ -444,7 +443,6 @@ namespace embree
         }
         
       private:
-        const RecalculatePrimRef recalculatePrimRef;
         HeuristicArrayBinningMB<PrimRefMB,NUM_OBJECT_BINS> heuristicObjectSplit;
         HeuristicMBlurTemporalSplit<PrimRefMB,RecalculatePrimRef,NUM_TEMPORAL_BINS> heuristicTemporalSplit;
         const ReductionTy identity;

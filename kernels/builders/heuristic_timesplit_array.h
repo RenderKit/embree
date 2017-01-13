@@ -77,8 +77,8 @@ namespace embree
                 bounds0[b].extend(bn0.first.interpolate(0.5f));
                 bounds1[b].extend(bn1.first.interpolate(0.5f));
 #endif
-                count0[b] += bn0.second.size();
-                count1[b] += bn1.second.size();
+                count0[b] += getTimeSegmentRange(dt0,prims[i].totalTimeSegments()).size();
+                count1[b] += getTimeSegmentRange(dt1,prims[i].totalTimeSegments()).size();
               }
             }
           }
