@@ -565,14 +565,12 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
       typedef SetMB Set;
-      typedef BinSplit<NUM_OBJECT_BINS> Split;
-      typedef GeneralBuildRecord<Set,Split,PrimInfoMB> BuildRecord;
       typedef typename BVH::AlignedNodeMB AlignedNodeMB;
       typedef typename BVH::AlignedNodeMB4D AlignedNodeMB4D;
 
       __forceinline CreateAlignedNodeMB4D (BVH* bvh) : bvh(bvh) {}
       
-      __forceinline NodeRef operator() (const GeneralBuildRecord<Set,Split,PrimInfoMB>& current, GeneralBuildRecord<Set,Split,PrimInfoMB>* children, const size_t num, FastAllocator::ThreadLocal2* alloc)
+      __forceinline NodeRef operator() (const BuildRecord3& current, BuildRecord3* children, const size_t num, FastAllocator::ThreadLocal2* alloc)
       {
         bool hasTimeSplits = false;
         for (size_t i=0; i<num && !hasTimeSplits; i++)
@@ -611,8 +609,6 @@ namespace embree
       typedef typename BVHN<N>::Allocator BVH_Allocator;
 
       typedef SetMB Set;
-      typedef BinSplit<NUM_OBJECT_BINS> Split;
-      typedef GeneralBuildRecord<Set,Split,PrimInfoMB> BuildRecord;
 
       BVH* bvh;
       Scene* scene;
@@ -743,7 +739,7 @@ namespace embree
             //bvh->scene->progressMonitor(double(dn)); // FIXME: triggers GCC compiler bug
         //  });
         
-        auto createLeafFunc = [&] (const BuildRecord& current, Allocator* alloc) -> std::pair<LBBox3fa,BBox1f> {
+        auto createLeafFunc = [&] (const BuildRecord3& current, Allocator* alloc) -> std::pair<LBBox3fa,BBox1f> {
           mvector<PrimRefMB>& prims = *current.prims.prims;
           size_t items MAYBE_UNUSED = current.pinfo.size();
           assert(items == 1);
@@ -793,7 +789,6 @@ namespace embree
         auto progressMonitor = bvh->scene->progressInterface;
         
         typedef GeneralBVHMBBuilder<
-          BuildRecord,
           SubdivRecalculatePrimRef,
           decltype(identity),
           decltype(createAllocFunc()),
@@ -821,7 +816,7 @@ namespace embree
         Set set(&primsMB);
         assert(primsMB.size() == pinfo.size());
         NodeRef root;
-        BuildRecord br(pinfo,1,(size_t*)&root,set);
+        BuildRecord3 br(pinfo,1,(size_t*)&root,set);
         LBBox3fa rootBounds = builder(br).first;
         
         //bvh->set(root,pinfo.geomBounds,pinfo.size());

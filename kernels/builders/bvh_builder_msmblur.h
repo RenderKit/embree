@@ -143,8 +143,37 @@ namespace embree
       }
     };
 
-    template<typename BuildRecord, 
-      typename RecalculatePrimRef, 
+      struct BuildRecord3
+      {
+      public:
+	__forceinline BuildRecord3 () {}
+        
+        __forceinline BuildRecord3 (size_t depth) 
+          : parent(nullptr), depth(depth), pinfo(empty) {}
+        
+        __forceinline BuildRecord3 (const PrimInfoMB& pinfo, size_t depth, size_t* parent) 
+          : parent(parent), depth(depth), pinfo(pinfo) {}
+        
+        __forceinline BuildRecord3 (const PrimInfoMB& pinfo, size_t depth, size_t* parent, const SetMB &prims) 
+          : parent(parent), depth(depth), prims(prims), pinfo(pinfo) {}
+
+        __forceinline BBox3fa bounds() const { return pinfo.geomBounds; }
+        
+        __forceinline friend bool operator< (const BuildRecord3& a, const BuildRecord3& b) { return a.pinfo.size() < b.pinfo.size(); }
+	__forceinline friend bool operator> (const BuildRecord3& a, const BuildRecord3& b) { return a.pinfo.size() > b.pinfo.size();  }
+        
+
+        __forceinline size_t size() const { return this->pinfo.size(); }
+        
+      public:
+        size_t* parent;   //!< Pointer to the parent node's reference to us
+	size_t depth;     //!< Depth of the root of this subtree.
+	SetMB prims;        //!< The list of primitives.
+	PrimInfoMB pinfo;   //!< Bounding info of primitives.
+	BinSplit<NUM_OBJECT_BINS> split;      //!< The best split for the primitives.
+      };
+
+    template<typename RecalculatePrimRef, 
       typename ReductionTy, 
       typename Allocator, 
       typename CreateAllocFunc, 
@@ -162,7 +191,7 @@ namespace embree
         typedef BinSplit<NUM_OBJECT_BINS> Split;
         typedef mvector<PrimRefMB>* PrimRefVector;
         typedef SharedVector<mvector<PrimRefMB>> SharedPrimRefVector;
-        typedef LocalChildListT<BuildRecord,MAX_BRANCHING_FACTOR> LocalChildList;
+        typedef LocalChildListT<BuildRecord3,MAX_BRANCHING_FACTOR> LocalChildList;
 
       public:
 
@@ -190,7 +219,7 @@ namespace embree
             throw_RTCError(RTC_UNKNOWN_ERROR,"bvh_builder: branching factor too large");
         }
         
-        __forceinline const Split find(BuildRecord& current) {
+        __forceinline const Split find(BuildRecord3& current) {
           return find (current.prims,current.pinfo,logBlockSize);
         }
 
@@ -216,7 +245,7 @@ namespace embree
         }
 
         /*! array partitioning */
-        __forceinline void partition(BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) 
+        __forceinline void partition(BuildRecord3& brecord, BuildRecord3& lrecord, BuildRecord3& rrecord) 
         {
           /* perform fallback split */
           //if (unlikely(!brecord.split.valid())) {
@@ -235,7 +264,7 @@ namespace embree
         }
 
         /*! finds the best fallback split */
-        __forceinline Split findFallback(BuildRecord& current, bool singleLeafTimeSegment)
+        __forceinline Split findFallback(BuildRecord3& current, bool singleLeafTimeSegment)
         {
           /* if a leaf can only hold a single time-segment, we might have to do additional temporal splits */
           if (singleLeafTimeSegment)
@@ -288,7 +317,7 @@ namespace embree
           std::sort(&prims[set.object_range.begin()],&prims[set.object_range.end()]);
         }
 
-        const ReductionTy createLargeLeaf(BuildRecord& current, Allocator alloc)
+        const ReductionTy createLargeLeaf(BuildRecord3& current, Allocator alloc)
         {
           /* this should never occur but is a fatal error */
           if (current.depth > maxDepth) 
@@ -324,9 +353,9 @@ namespace embree
             if (bestChild == -1) break;
 
             /* perform best found split */
-            BuildRecord& brecord = children[bestChild];
-            BuildRecord lrecord(current.depth+1);
-            BuildRecord rrecord(current.depth+1);
+            BuildRecord3& brecord = children[bestChild];
+            BuildRecord3 lrecord(current.depth+1);
+            BuildRecord3 rrecord(current.depth+1);
             partition(brecord,lrecord,rrecord);
             
             /* find new splits */
@@ -347,7 +376,7 @@ namespace embree
           return updateNode(node,current.prims,values,children.size());
         }
 
-        const ReductionTy recurse(BuildRecord& current, Allocator alloc, bool toplevel)
+        const ReductionTy recurse(BuildRecord3& current, Allocator alloc, bool toplevel)
         {
           if (alloc == nullptr)
             alloc = createAlloc();
@@ -387,9 +416,9 @@ namespace embree
             if (bestChild == -1) break;
 
             /* perform best found split */
-            BuildRecord& brecord = children[bestChild];
-            BuildRecord lrecord(current.depth+1);
-            BuildRecord rrecord(current.depth+1);
+            BuildRecord3& brecord = children[bestChild];
+            BuildRecord3 lrecord(current.depth+1);
+            BuildRecord3 rrecord(current.depth+1);
             partition(brecord,lrecord,rrecord);            
             
             /* find new splits */
@@ -400,7 +429,7 @@ namespace embree
           } while (children.size() < branchingFactor);
           
           /* sort buildrecords for simpler shadow ray traversal */
-          //std::sort(&children[0],&children[children.size()],std::greater<BuildRecord>()); // FIXME: reduces traversal performance of bvh8.triangle4 (need to verified) !!
+          //std::sort(&children[0],&children[children.size()],std::greater<BuildRecord3>()); // FIXME: reduces traversal performance of bvh8.triangle4 (need to verified) !!
           
           /*! create an inner node */
           auto node = createNode(current,&children[0],children.size(),alloc);
@@ -432,9 +461,9 @@ namespace embree
         }
         
         /*! builder entry function */
-        __forceinline const ReductionTy operator() (BuildRecord& record)
+        __forceinline const ReductionTy operator() (BuildRecord3& record)
         {
-          //BuildRecord br(record);
+          //BuildRecord3 br(record);
           record.split = find(record); 
           ReductionTy ret = recurse(record,nullptr,true);
           _mm_mfence(); // to allow non-temporal stores during build
