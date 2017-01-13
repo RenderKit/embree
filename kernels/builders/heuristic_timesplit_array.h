@@ -183,8 +183,41 @@ namespace embree
 
         __forceinline void split(const Split& tsplit, const PrimInfoMB& pinfo, const SetMB& set, PrimInfoMB& linfo, SetMB& lset, PrimInfoMB& rinfo, SetMB& rset)
         {
-          split(tsplit,pinfo,set,linfo,lset,0);
-          split(tsplit,pinfo,set,rinfo,rset,1);
+          float center_time = tsplit.fpos;
+          const BBox1f time_range0(set.time_range.lower,center_time);
+          const BBox1f time_range1(center_time,set.time_range.upper);
+          mvector<PrimRefMB>& prims = *set.prims;
+          
+          /* calculate primrefs for first time range */
+          PrimRefVector lprims = new mvector<PrimRefMB>(device, set.object_range.size());
+          auto reduction_func0 = [&] ( const range<size_t>& r) {
+            PrimInfoMB pinfo = empty;
+            for (size_t i=r.begin(); i<r.end(); i++) 
+            {
+              const PrimRefMB& prim = recalculatePrimRef(prims[i],time_range0).first;
+              (*lprims)[i-set.object_range.begin()] = prim;
+              pinfo.add_primref(prim);
+            }
+            return pinfo;
+          };        
+          linfo = parallel_reduce(set.object_range,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func0,PrimInfoMB::merge2);
+          linfo.time_range = time_range0;
+          lset = SetMB(lprims,time_range0);
+
+          /* calculate primrefs for second time range */
+          auto reduction_func1 = [&] ( const range<size_t>& r) {
+            PrimInfoMB pinfo = empty;
+            for (size_t i=r.begin(); i<r.end(); i++) 
+            {
+              const PrimRefMB& prim = recalculatePrimRef(prims[i],time_range1).first;
+              prims[i] = prim;
+              pinfo.add_primref(prim);
+            }
+            return pinfo;
+          };        
+          rinfo = parallel_reduce(set.object_range,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func1,PrimInfoMB::merge2);
+          rinfo.time_range = time_range1;
+          rset = SetMB(&prims,set.object_range,time_range1);
         }
 
       private:
