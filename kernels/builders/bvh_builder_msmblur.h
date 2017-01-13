@@ -239,13 +239,14 @@ namespace embree
         /*! finds the best fallback split */
         __forceinline Split findFallback(BuildRecord& current, bool singleLeafTimeSegment)
         {
-          /* test if one primitive has two time segments in time range, if so split time */
+          /* if a leaf can only hold a single time-segment, we might have to do additional temporal splits */
           if (singleLeafTimeSegment)
           {
+            /* test if one primitive has more than one time segment in time range, if so split time */
             for (size_t i=current.prims.object_range.begin(); i<current.prims.object_range.end(); i++) 
             {
               const PrimRefMB& prim = (*current.prims.prims)[i];
-              const range<int> itime_range = recalculatePrimRef(prim,current.pinfo.time_range).second;
+              const range<int> itime_range = getTimeSegmentRange(current.pinfo.time_range,prim.totalTimeSegments());
               const int localTimeSegments = itime_range.size();
               assert(localTimeSegments > 0);
               if (localTimeSegments > 1) {
