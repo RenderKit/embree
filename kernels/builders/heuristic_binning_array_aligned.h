@@ -183,8 +183,7 @@ namespace embree
         PrimRef* const prims;
       };
 
-    template<typename PrimRefMB>
-      struct SetMB_t
+      struct SetMB
     {
       static const size_t PARALLEL_THRESHOLD = 3 * 1024;
       static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
@@ -192,12 +191,12 @@ namespace embree
 
       typedef mvector<PrimRefMB>* PrimRefVector;
 
-      __forceinline SetMB_t() {}
+      __forceinline SetMB() {}
       
-      __forceinline SetMB_t(PrimRefVector prims, range<size_t> object_range, BBox1f time_range)
+      __forceinline SetMB(PrimRefVector prims, range<size_t> object_range, BBox1f time_range)
         : prims(prims), object_range(object_range), time_range(time_range) {}
       
-      __forceinline SetMB_t(PrimRefVector prims, BBox1f time_range = BBox1f(0.0f,1.0f))
+      __forceinline SetMB(PrimRefVector prims, BBox1f time_range = BBox1f(0.0f,1.0f))
         : prims(prims), object_range(range<size_t>(0,prims->size())), time_range(time_range) {}
       
       template<typename RecalculatePrimRef>
@@ -225,8 +224,6 @@ namespace embree
       range<size_t> object_range;
       BBox1f time_range;
     };
-
-    typedef SetMB_t<PrimRefMB> SetMB;
 
     /*! Performs standard object binning */
     template<typename PrimRefMB, size_t BINS>

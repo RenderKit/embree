@@ -35,23 +35,15 @@ namespace embree
         __forceinline BuildRecord2 (size_t depth) 
           : depth(depth), pinfo(empty) {}
         
-        //__forceinline BuildRecord2 (const PrimInfoMB& pinfo, size_t depth, size_t* parent) 
-        //  : parent(parent), depth(depth), pinfo(pinfo) {}
-        
         __forceinline BuildRecord2 (const PrimInfoMB& pinfo, const SetMB& prims, size_t depth = 0) 
           : depth(depth), prims(prims), pinfo(pinfo) {}
 
-        //__forceinline BBox3fa bounds() const { return pinfo.geomBounds; }
-        
-        //__forceinline friend bool operator< (const BuildRecord2& a, const BuildRecord2& b) { return a.prims.size() < b.prims.size(); }
-	//__forceinline friend bool operator> (const BuildRecord2& a, const BuildRecord2& b) { return a.prims.size() > b.prims.size();  }
-        
         __forceinline size_t size() const { return prims.object_range.size(); }
         
       public:
-	size_t depth;     //!< Depth of the root of this subtree.
-	SetMB prims;     //!< The list of primitives.
-	PrimInfoMB pinfo;   //!< Bounding info of primitives.
+	size_t depth;       //!< depth of the root of this subtree
+	SetMB prims;        //!< the list of primitives
+	PrimInfoMB pinfo;   //!< bounding info of primitives.
       };
 
     template<int N,
