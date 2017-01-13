@@ -70,6 +70,7 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
       typedef FastAllocator::ThreadLocal2* Allocator;
+      typedef SharedVector<mvector<PrimRefMB>> SharedPrimRefVector;
  
       typedef HeuristicMBlurTemporalSplit<PrimRefMB,RecalculatePrimRef,NUM_TEMPORAL_BINS> HeuristicTemporal;
       typedef HeuristicArrayBinningMB<PrimRefMB,NUM_OBJECT_BINS> HeuristicBinning;
@@ -84,6 +85,62 @@ namespace embree
       static const size_t intCost = 6;
 
     public:
+
+      struct LocalChildList
+      {
+        struct Child
+        {
+          __forceinline Child() {}
+          
+          __forceinline Child(const BuildRecord2& record, SharedPrimRefVector* sharedPrimVec)
+            : record(record), sharedPrimVec(sharedPrimVec) {}
+
+          BuildRecord2 record;
+          SharedPrimRefVector* sharedPrimVec;
+        };
+        
+        __forceinline LocalChildList (BuildRecord2& record)
+          : numChildren(1), numSharedPrimVecs(1), depth(record.depth)
+        {
+          /* the local root will be freed in the ancestor where it was created (thus refCount is 2) */
+          SharedPrimRefVector* sharedPrimVec = new (&sharedPrimVecs[0]) SharedPrimRefVector(record.prims.prims, 2);
+          new (&children[0]) Child(record, sharedPrimVec);
+        }
+        
+        __forceinline ~LocalChildList()
+        {
+          for (size_t i = 0; i < numChildren; i++)
+            children[i].sharedPrimVec->decRef();
+        }
+
+        __forceinline void split(int bestChild, BuildRecord2& lrecord, BuildRecord2& rrecord, bool temporal_split)
+        {
+          if (temporal_split)
+          {
+            SharedPrimRefVector* bsharedPrimVec = children[bestChild].sharedPrimVec;
+            children[bestChild] = children[numChildren-1];
+            new (&children[numChildren-1]) Child(lrecord, new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(lrecord.prims.prims));
+            new (&children[numChildren+0]) Child(rrecord, new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(rrecord.prims.prims));
+            bsharedPrimVec->decRef();
+          }
+          else
+          {
+            SharedPrimRefVector* bsharedPrimVec = children[bestChild].sharedPrimVec;
+            children[bestChild] = children[numChildren-1];
+            new (&children[numChildren-1]) Child(lrecord, bsharedPrimVec);
+            new (&children[numChildren+0]) Child(rrecord, bsharedPrimVec);
+            bsharedPrimVec->incRef();
+          }
+        }
+
+      public:
+        Child children[MAX_BRANCHING_FACTOR];
+        BuildRecord2* childrenPtrs[MAX_BRANCHING_FACTOR];
+        SharedPrimRefVector sharedPrimVecs[MAX_BRANCHING_FACTOR*2];
+        size_t numChildren;
+        size_t numSharedPrimVecs;
+        size_t depth;
+      };
       
       BVHNBuilderHairMBlur (Scene* scene,
                             const RecalculatePrimRef& recalculatePrimRef,
