@@ -144,10 +144,10 @@ namespace embree
         };
         
         /*! finds the best split */
-        const Split find(const SetMB& set, const PrimInfoMB& pinfo, const size_t logBlockSize)
+        const Split find(const SetMB& set, const size_t logBlockSize)
         {
           assert(set.object_range.size() > 0);
-          unsigned numTimeSegments = pinfo.max_num_time_segments;
+          unsigned numTimeSegments = set.pinfo.max_num_time_segments;
           TemporalBinInfo binner(empty);
           binner.bin_parallel(set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,set.time_range,numTimeSegments,recalculatePrimRef);
           Split tsplit = binner.best(logBlockSize,set.time_range,numTimeSegments);
@@ -156,7 +156,7 @@ namespace embree
         }
 
         /*! array partitioning */
-        __forceinline void split(const Split& tsplit, const PrimInfoMB& pinfo, const SetMB& set, PrimInfoMB& linfo, SetMB& lset, int side)
+        __forceinline void split(const Split& tsplit, const SetMB& set, PrimInfoMB& linfo, SetMB& lset, int side)
         {
           float center_time = tsplit.fpos;
           const BBox1f time_range0(set.time_range.lower,center_time);
@@ -181,7 +181,7 @@ namespace embree
           lset = SetMB(lprims,time_range);
         }
 
-        __forceinline void split(const Split& tsplit, const PrimInfoMB& pinfo, const SetMB& set, PrimInfoMB& linfo, SetMB& lset, PrimInfoMB& rinfo, SetMB& rset)
+        __forceinline void split(const Split& tsplit, const SetMB& set, SetMB& lset, SetMB& rset)
         {
           float center_time = tsplit.fpos;
           const BBox1f time_range0(set.time_range.lower,center_time);
@@ -200,9 +200,8 @@ namespace embree
             }
             return pinfo;
           };        
-          linfo = parallel_reduce(set.object_range,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func0,PrimInfoMB::merge2);
-          linfo.time_range = time_range0;
-          lset = SetMB(lprims,time_range0);
+          PrimInfoMB linfo = parallel_reduce(set.object_range,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func0,PrimInfoMB::merge2);
+          lset = SetMB(linfo,lprims,time_range0);
 
           /* calculate primrefs for second time range */
           auto reduction_func1 = [&] ( const range<size_t>& r) {
@@ -215,9 +214,8 @@ namespace embree
             }
             return pinfo;
           };        
-          rinfo = parallel_reduce(set.object_range,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func1,PrimInfoMB::merge2);
-          rinfo.time_range = time_range1;
-          rset = SetMB(&prims,set.object_range,time_range1);
+          PrimInfoMB rinfo = parallel_reduce(set.object_range,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func1,PrimInfoMB::merge2);
+          rset = SetMB(rinfo,&prims,set.object_range,time_range1);
         }
 
       private:

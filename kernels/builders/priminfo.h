@@ -254,12 +254,20 @@ namespace embree
       typedef mvector<PrimRefMB>* PrimRefVector;
 
       __forceinline SetMB() {}
+
+      __forceinline SetMB(const PrimInfoMB& pinfo_i, PrimRefVector prims, range<size_t> object_range, BBox1f time_range)
+        : pinfo(pinfo_i), prims(prims), object_range(object_range), time_range(time_range)
+      {
+        pinfo.object_range = object_range;
+        pinfo.time_range = time_range;
+      }
       
-      __forceinline SetMB(PrimRefVector prims, range<size_t> object_range, BBox1f time_range)
-        : prims(prims), object_range(object_range), time_range(time_range) {}
-      
-      __forceinline SetMB(PrimRefVector prims, BBox1f time_range = BBox1f(0.0f,1.0f))
-        : prims(prims), object_range(range<size_t>(0,prims->size())), time_range(time_range) {}
+      __forceinline SetMB(const PrimInfoMB& pinfo_i, PrimRefVector prims, BBox1f time_range = BBox1f(0.0f,1.0f))
+        : pinfo(pinfo_i), prims(prims), object_range(range<size_t>(0,prims->size())), time_range(time_range) 
+      {
+        pinfo.object_range = object_range;
+        pinfo.time_range = time_range;
+      }
       
       template<typename RecalculatePrimRef>
       __forceinline LBBox3fa linearBounds(const RecalculatePrimRef& recalculatePrimRef) const
@@ -282,6 +290,7 @@ namespace embree
       }
       
     public:
+      PrimInfoMB pinfo;
       PrimRefVector prims;
       range<size_t> object_range;
       BBox1f time_range;

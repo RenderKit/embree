@@ -149,27 +149,26 @@ namespace embree
 	__forceinline BuildRecord3 () {}
         
         __forceinline BuildRecord3 (size_t depth) 
-          : parent(nullptr), depth(depth), pinfo(empty) {}
+          : parent(nullptr), depth(depth) {}
         
-        __forceinline BuildRecord3 (const PrimInfoMB& pinfo, size_t depth, size_t* parent) 
-          : parent(parent), depth(depth), pinfo(pinfo) {}
+        __forceinline BuildRecord3 (const SetMB& prims, size_t depth, size_t* parent) 
+          : parent(parent), depth(depth), prims(prims) {}
         
-        __forceinline BuildRecord3 (const PrimInfoMB& pinfo, size_t depth, size_t* parent, const SetMB &prims) 
-          : parent(parent), depth(depth), prims(prims), pinfo(pinfo) {}
+        //__forceinline BuildRecord3 (const PrimInfoMB& pinfo, size_t depth, size_t* parent, const SetMB &prims) 
+        //  : parent(parent), depth(depth), prims(prims), pinfo(pinfo) {}
 
-        __forceinline BBox3fa bounds() const { return pinfo.geomBounds; }
+        __forceinline BBox3fa bounds() const { return prims.pinfo.geomBounds; }
         
-        __forceinline friend bool operator< (const BuildRecord3& a, const BuildRecord3& b) { return a.pinfo.size() < b.pinfo.size(); }
-	__forceinline friend bool operator> (const BuildRecord3& a, const BuildRecord3& b) { return a.pinfo.size() > b.pinfo.size();  }
+        __forceinline friend bool operator< (const BuildRecord3& a, const BuildRecord3& b) { return a.prims.pinfo.size() < b.prims.pinfo.size(); }
+	__forceinline friend bool operator> (const BuildRecord3& a, const BuildRecord3& b) { return a.prims.pinfo.size() > b.prims.pinfo.size();  }
         
 
-        __forceinline size_t size() const { return this->pinfo.size(); }
+        __forceinline size_t size() const { return this->prims.pinfo.size(); }
         
       public:
         size_t* parent;   //!< Pointer to the parent node's reference to us
 	size_t depth;     //!< Depth of the root of this subtree.
 	SetMB prims;        //!< The list of primitives.
-	PrimInfoMB pinfo;   //!< Bounding info of primitives.
 	BinSplit<NUM_OBJECT_BINS> split;      //!< The best split for the primitives.
       };
 
@@ -220,20 +219,20 @@ namespace embree
         }
         
         __forceinline const Split find(BuildRecord3& current) {
-          return find (current.prims,current.pinfo,logBlockSize);
+          return find (current.prims,logBlockSize);
         }
 
         /*! finds the best split */
-        const Split find(SetMB& set, PrimInfoMB& pinfo, const size_t logBlockSize)
+        const Split find(SetMB& set, const size_t logBlockSize)
         {
           /* first try standard object split */
-          const Split object_split = heuristicObjectSplit.find(set,pinfo,logBlockSize);
+          const Split object_split = heuristicObjectSplit.find(set,logBlockSize);
           const float object_split_sah = object_split.splitSAH();
           
           /* do temporal splits only if the the time range is big enough */
-          if (set.time_range.size() > 1.01f/float(pinfo.max_num_time_segments))
+          if (set.time_range.size() > 1.01f/float(set.pinfo.max_num_time_segments))
           {
-            const Split temporal_split = heuristicTemporalSplit.find(set, pinfo, logBlockSize);
+            const Split temporal_split = heuristicTemporalSplit.find(set, logBlockSize);
             const float temporal_split_sah = temporal_split.splitSAH();
 
             /* take temporal split if it improved SAH */
@@ -251,15 +250,15 @@ namespace embree
           //if (unlikely(!brecord.split.valid())) {
           if (unlikely(brecord.split.data == Split::SPLIT_FALLBACK)) {
             deterministic_order(brecord.prims);
-            return splitFallback(brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
+            return splitFallback(brecord.prims,lrecord.prims,rrecord.prims);
           }
           /* perform temporal split */
           else if (unlikely(brecord.split.data == Split::SPLIT_TEMPORAL)) {
-            heuristicTemporalSplit.split(brecord.split,brecord.pinfo,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
+            heuristicTemporalSplit.split(brecord.split,brecord.prims,lrecord.prims,rrecord.prims);
           }
           /* perform object split */
           else {
-            heuristicObjectSplit.split(brecord.split,brecord.pinfo,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
+            heuristicObjectSplit.split(brecord.split,brecord.prims,lrecord.prims,rrecord.prims);
           }
         }
 
@@ -273,7 +272,7 @@ namespace embree
             for (size_t i=current.prims.object_range.begin(); i<current.prims.object_range.end(); i++) 
             {
               const PrimRefMB& prim = (*current.prims.prims)[i];
-              const range<int> itime_range = getTimeSegmentRange(current.pinfo.time_range,prim.totalTimeSegments());
+              const range<int> itime_range = getTimeSegmentRange(current.prims.pinfo.time_range,prim.totalTimeSegments());
               const int localTimeSegments = itime_range.size();
               assert(localTimeSegments > 0);
               if (localTimeSegments > 1) {
@@ -288,7 +287,7 @@ namespace embree
           return Split(1.0f,Split::SPLIT_FALLBACK);
         }
 
-        void splitFallback(const SetMB& set, PrimInfoMB& linfo, SetMB& lset, PrimInfoMB& rinfo, SetMB& rset) // FIXME: also perform time split here?
+        void splitFallback(const SetMB& set, SetMB& lset, SetMB& rset) // FIXME: also perform time split here?
         {
           mvector<PrimRefMB>& prims = *set.prims;
 
@@ -296,18 +295,16 @@ namespace embree
           const size_t end   = set.object_range.end();
           const size_t center = (begin + end)/2;
           
-          linfo = empty;
+          PrimInfoMB linfo = empty;
           for (size_t i=begin; i<center; i++)
             linfo.add_primref(prims[i]);
-          linfo.object_range = range<size_t>(begin,center); linfo.time_range = set.time_range;
           
-          rinfo = empty;
+          PrimInfoMB rinfo = empty;
           for (size_t i=center; i<end; i++)
             rinfo.add_primref(prims[i]);	
-          rinfo.object_range = range<size_t>(center,end); rinfo.time_range = set.time_range;
           
-          new (&lset) SetMB(set.prims,range<size_t>(begin,center),set.time_range);
-          new (&rset) SetMB(set.prims,range<size_t>(center,end  ),set.time_range);
+          new (&lset) SetMB(linfo,set.prims,range<size_t>(begin,center),set.time_range);
+          new (&rset) SetMB(rinfo,set.prims,range<size_t>(center,end  ),set.time_range);
         }
 
         void deterministic_order(const SetMB& set) 
@@ -327,7 +324,7 @@ namespace embree
           current.split = findFallback(current,singleLeafTimeSegment);
 
           /* create leaf for few primitives */
-          if (current.pinfo.size() <= maxLeafSize && current.split.data != Split::SPLIT_TEMPORAL)
+          if (current.prims.pinfo.size() <= maxLeafSize && current.split.data != Split::SPLIT_TEMPORAL)
             return createLeaf(current,alloc);
           
           /* fill all children by always splitting the largest one */
@@ -341,12 +338,12 @@ namespace embree
             for (size_t i=0; i<children.size(); i++)
             {
               /* ignore leaves as they cannot get split */
-              if (children[i].pinfo.size() <= maxLeafSize && children[i].split.data != Split::SPLIT_TEMPORAL)
+              if (children[i].prims.pinfo.size() <= maxLeafSize && children[i].split.data != Split::SPLIT_TEMPORAL)
                 continue;
 
               /* remember child with largest size */
-              if (children[i].pinfo.size() > bestSize) {
-                bestSize = children[i].pinfo.size();
+              if (children[i].prims.pinfo.size() > bestSize) {
+                bestSize = children[i].prims.pinfo.size();
                 bestChild = i;
               }
             }
@@ -386,13 +383,13 @@ namespace embree
             progressMonitor(current.size());
           
           /*! compute leaf and split cost */
-          const float leafSAH  = intCost*current.pinfo.leafSAH(logBlockSize);
-          const float splitSAH = travCost*current.pinfo.halfArea()+intCost*current.split.splitSAH();
-          assert((current.pinfo.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
-          assert(current.pinfo.size() == current.prims.object_range.size());
+          const float leafSAH  = intCost*current.prims.pinfo.leafSAH(logBlockSize);
+          const float splitSAH = travCost*current.prims.pinfo.halfArea()+intCost*current.split.splitSAH();
+          assert((current.prims.pinfo.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
+          assert(current.prims.pinfo.size() == current.prims.object_range.size());
 
           /*! create a leaf node when threshold reached or SAH tells us to stop */
-          if (current.pinfo.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.pinfo.size() <= maxLeafSize && leafSAH <= splitSAH)) {
+          if (current.prims.pinfo.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.prims.pinfo.size() <= maxLeafSize && leafSAH <= splitSAH)) {
             deterministic_order(current.prims);
             return createLargeLeaf(current,alloc);
           }
@@ -408,9 +405,9 @@ namespace embree
             ssize_t bestChild = -1;
             for (size_t i=0; i<children.size(); i++) 
             {
-              if (children[i].pinfo.size() <= minLeafSize) continue;
-              if (expectedApproxHalfArea(children[i].pinfo.geomBounds) > bestSAH) {
-                bestChild = i; bestSAH = expectedApproxHalfArea(children[i].pinfo.geomBounds);
+              if (children[i].prims.pinfo.size() <= minLeafSize) continue;
+              if (expectedApproxHalfArea(children[i].prims.pinfo.geomBounds) > bestSAH) {
+                bestChild = i; bestSAH = expectedApproxHalfArea(children[i].prims.pinfo.geomBounds);
               } 
             }
             if (bestChild == -1) break;

@@ -305,7 +305,7 @@ namespace embree
           return frame(axis01).transposed();
         }
 
-        const PrimInfoMB computePrimInfoMB(Scene* scene, const SetMB& set, const AffineSpace3fa& space) // FIXME: required
+        const SetMB computePrimInfoMB(Scene* scene, const SetMB& set, const AffineSpace3fa& space) // FIXME: required
         {
           PrimInfoMB ret(empty);
           for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++)  // FIXME: parallelize
@@ -321,8 +321,7 @@ namespace embree
             const PrimRefMB prim2(lbounds, tbounds.size(), num_time_segments, geomID, primID);
             ret.add_primref(prim2);
           }
-          ret.time_range = set.time_range;
-          return ret;
+          return SetMB(ret,set.prims,set.object_range,set.time_range);
         }
 
         const LBBox3fa linearBounds(Scene* scene, const SetMB& set, const AffineSpace3fa& space)
@@ -340,36 +339,34 @@ namespace embree
         }
 
         /*! finds the best split */
-        const Split find(const SetMB& set, const PrimInfoMB& pinfo, const size_t logBlockSize, const LinearSpace3fa& space)
+        const Split find(const SetMB& set, const size_t logBlockSize, const LinearSpace3fa& space)
         {
           UserPrimRefData user(scene,set.time_range);
           ObjectBinner binner(empty); // FIXME: this clear can be optimized away
-          const BinMapping<BINS> mapping(pinfo.centBounds,pinfo.size());
+          const BinMapping<BINS> mapping(set.pinfo.centBounds,set.pinfo.size());
           binner.bin_parallel(set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,mapping,space,&user);
           Split osplit = binner.best(mapping,logBlockSize);
-          osplit.sah *= pinfo.time_range.size();
+          osplit.sah *= set.pinfo.time_range.size();
           if (!osplit.valid()) osplit.data = Split::SPLIT_FALLBACK; // use fallback split
           return osplit;
         }
         
         /*! array partitioning */
-        __forceinline void split(const Split& split, const LinearSpace3fa& space, const PrimInfoMB& pinfo, const SetMB& set, PrimInfoMB& left, SetMB& lset, PrimInfoMB& right, SetMB& rset)
+        __forceinline void split(const Split& split, const LinearSpace3fa& space, const SetMB& set, SetMB& lset, SetMB& rset)
         {
           UserPrimRefData user(scene,set.time_range);
           const size_t begin = set.object_range.begin();
           const size_t end   = set.object_range.end();
-          left = empty;
-          right = empty;
+          PrimInfoMB left = empty;
+          PrimInfoMB right = empty;
           const vint4 vSplitPos(split.pos);
           const vbool4 vSplitMask(1 << split.dim);
           auto isLeft = [&] (const PrimRefMB &ref) { return any(((vint4)split.mapping.bin_unsafe(ref,space,&user) < vSplitPos) & vSplitMask); };
           auto reduction = [] (PrimInfoMB& pinfo, const PrimRefMB& ref) { pinfo.add_primref(ref); };
           auto reduction2 = [] (PrimInfoMB& pinfo0,const PrimInfoMB& pinfo1) { pinfo0.merge(pinfo1); };
           size_t center = parallel_partitioning(set.prims->data(),begin,end,empty,left,right,isLeft,reduction,reduction2,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD);
-          left.object_range  = range<size_t>(begin,center); left.time_range = pinfo.time_range;
-          right.object_range = range<size_t>(center,end  ); right.time_range = pinfo.time_range;
-          new (&lset) SetMB(set.prims,range<size_t>(begin,center),set.time_range);
-          new (&rset) SetMB(set.prims,range<size_t>(center,end  ),set.time_range);
+          new (&lset) SetMB(left,set.prims,range<size_t>(begin,center),set.time_range);
+          new (&rset) SetMB(right,set.prims,range<size_t>(center,end ),set.time_range);
         }
 
       private:

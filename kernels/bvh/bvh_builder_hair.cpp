@@ -285,8 +285,8 @@ namespace embree
 
         RecalculatePrimRef<BezierCurves> recalculatePrimRef(scene);
 
-        SetMB set(&prims0,range<size_t>(0,pinfo.size()),dt0);
-        BuildRecord2 record(pinfo,set,0);
+        SetMB set(pinfo,&prims0,range<size_t>(0,pinfo.size()),dt0);
+        BuildRecord2 record(set,0);
         
         /* build hierarchy */
         typename BVH::NodeRef root = bvh_obb_builder_binned_sah_mblur<N>

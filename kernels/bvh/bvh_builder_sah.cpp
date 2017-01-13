@@ -603,7 +603,7 @@ namespace embree
       {
         bool hasTimeSplits = false;
         for (size_t i=0; i<num && !hasTimeSplits; i++)
-          hasTimeSplits |= current.pinfo.time_range != children[i].pinfo.time_range;
+          hasTimeSplits |= current.prims.pinfo.time_range != children[i].prims.pinfo.time_range;
 
         if (hasTimeSplits)
         {
@@ -803,9 +803,9 @@ namespace embree
                         Primitive::singleTimeSegment);
 
         /* build hierarchy */
-        SetMB set(&primsMB,make_range(size_t(0),pinfo.size()),BBox1f(0.0f,1.0f));
+        SetMB set(pinfo,&primsMB,make_range(size_t(0),pinfo.size()),BBox1f(0.0f,1.0f));
         NodeRef root;
-        BuildRecord3 br(pinfo,1,(size_t*)&root,set);
+        BuildRecord3 br(set,1,(size_t*)&root);
         LBBox3fa rootBounds = builder(br).first;
 
         //bvh->set(root,pinfo.geomBounds,pinfo.size());

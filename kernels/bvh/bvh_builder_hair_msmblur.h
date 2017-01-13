@@ -33,17 +33,16 @@ namespace embree
 	__forceinline BuildRecord2 () {}
         
         __forceinline BuildRecord2 (size_t depth) 
-          : depth(depth), pinfo(empty) {}
+          : depth(depth) {}
         
-        __forceinline BuildRecord2 (const PrimInfoMB& pinfo, const SetMB& prims, size_t depth = 0) 
-          : depth(depth), prims(prims), pinfo(pinfo) {}
+        __forceinline BuildRecord2 (const SetMB& prims, size_t depth = 0) 
+          : depth(depth), prims(prims) {}
 
         __forceinline size_t size() const { return prims.object_range.size(); }
         
       public:
 	size_t depth;       //!< depth of the root of this subtree
 	SetMB prims;        //!< the list of primitives
-	PrimInfoMB pinfo;   //!< bounding info of primitives.
       };
 
     template<int N,
@@ -117,7 +116,7 @@ namespace embree
         std::sort(&prims[set.object_range.begin()],&prims[set.object_range.end()]);
       }
 
-      void splitFallback(const SetMB& set, PrimInfoMB& linfo, SetMB& lset, PrimInfoMB& rinfo, SetMB& rset) // FIXME: also perform time split here?
+      void splitFallback(const SetMB& set, SetMB& lset, SetMB& rset) // FIXME: also perform time split here?
       {
         mvector<PrimRefMB>& prims = *set.prims;
         
@@ -125,18 +124,16 @@ namespace embree
         const size_t end   = set.object_range.end();
         const size_t center = (begin + end)/2;
         
-        linfo = empty;
+        PrimInfoMB linfo = empty;
         for (size_t i=begin; i<center; i++)
           linfo.add_primref(prims[i]);
-        linfo.object_range = range<size_t>(begin,center); linfo.time_range = set.time_range;
         
-        rinfo = empty;
+        PrimInfoMB rinfo = empty;
         for (size_t i=center; i<end; i++)
           rinfo.add_primref(prims[i]);	
-        rinfo.object_range = range<size_t>(center,end); rinfo.time_range = set.time_range;
         
-        new (&lset) SetMB(set.prims,range<size_t>(begin,center),set.time_range);
-        new (&rset) SetMB(set.prims,range<size_t>(center,end  ),set.time_range);
+        new (&lset) SetMB(linfo,set.prims,range<size_t>(begin,center),set.time_range);
+        new (&rset) SetMB(rinfo,set.prims,range<size_t>(center,end  ),set.time_range);
       }
 
       /*! creates a large leaf that could be larger than supported by the BVH */
@@ -175,7 +172,7 @@ namespace embree
           /*! split best child into left and right child */
           BuildRecord2 left(current.depth+1);
           BuildRecord2 right(current.depth+1);
-          splitFallback(children[bestChild].prims,left.pinfo,left.prims,right.pinfo,right.prims);
+          splitFallback(children[bestChild].prims,left.prims,right.prims);
           children.split(bestChild,left,right);
           
         } while (children.size() < branchingFactor);
@@ -190,12 +187,12 @@ namespace embree
       {
         /* variable to track the SAH of the best splitting approach */
         float bestSAH = inf;
-        const float leafSAH = intCost*float(current.pinfo.num_time_segments)*current.pinfo.halfArea();
+        const float leafSAH = intCost*float(current.prims.pinfo.num_time_segments)*current.prims.pinfo.halfArea();
         
         /* perform standard binning in aligned space */
         HeuristicBinning::Split alignedObjectSplit;
-        alignedObjectSplit = alignedHeuristic.find(current.prims,current.pinfo,0);
-        float alignedObjectSAH = travCostAligned*current.pinfo.halfArea() + intCost*alignedObjectSplit.splitSAH();
+        alignedObjectSplit = alignedHeuristic.find(current.prims,0);
+        float alignedObjectSAH = travCostAligned*current.prims.pinfo.halfArea() + intCost*alignedObjectSplit.splitSAH();
         bestSAH = min(alignedObjectSAH,bestSAH);
 
         /* perform standard binning in unaligned space */
@@ -204,18 +201,18 @@ namespace embree
         float unalignedObjectSAH = inf;
         if (alignedObjectSAH > 0.7f*leafSAH) {
           uspace = unalignedHeuristic.computeAlignedSpaceMB(scene,current.prims); 
-          const PrimInfoMB sinfo = unalignedHeuristic.computePrimInfoMB(scene,current.prims,uspace);
-          unalignedObjectSplit = unalignedHeuristic.find(current.prims,sinfo,0,uspace);    	
-          unalignedObjectSAH = travCostUnaligned*current.pinfo.halfArea() + intCost*unalignedObjectSplit.splitSAH();
+          const SetMB sset = unalignedHeuristic.computePrimInfoMB(scene,current.prims,uspace);
+          unalignedObjectSplit = unalignedHeuristic.find(sset,0,uspace);    	
+          unalignedObjectSAH = travCostUnaligned*current.prims.pinfo.halfArea() + intCost*unalignedObjectSplit.splitSAH();
           bestSAH = min(unalignedObjectSAH,bestSAH);
         }
 
         /* do temporal splits only if the the time range is big enough */
         float temporal_split_sah = inf;
         typename HeuristicTemporal::Split temporal_split;
-        if (current.prims.time_range.size() > 1.01f/float(current.pinfo.max_num_time_segments)) {
-          temporal_split = temporalSplitHeuristic.find(current.prims, current.pinfo, 0);
-          temporal_split_sah = travCostAligned*current.pinfo.halfArea() + temporal_split.splitSAH();
+        if (current.prims.time_range.size() > 1.01f/float(current.prims.pinfo.max_num_time_segments)) {
+          temporal_split = temporalSplitHeuristic.find(current.prims, 0);
+          temporal_split_sah = travCostAligned*current.prims.pinfo.halfArea() + temporal_split.splitSAH();
           bestSAH = min(temporal_split_sah,bestSAH);
         }
 
@@ -223,25 +220,25 @@ namespace embree
         if (!std::isfinite(bestSAH))
         {
           deterministic_order(current.prims);
-          splitFallback(current.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
+          splitFallback(current.prims,lrecord.prims,rrecord.prims);
         }
         else if (bestSAH == temporal_split_sah) {
-          temporalSplitHeuristic.split(temporal_split,current.pinfo,current.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
+          temporalSplitHeuristic.split(temporal_split,current.prims,lrecord.prims,rrecord.prims);
           timesplit = true;
         }
         /* perform aligned split if this is best */
         else if (bestSAH == alignedObjectSAH) {
-          alignedHeuristic.split(alignedObjectSplit,current.pinfo,current.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
+          alignedHeuristic.split(alignedObjectSplit,current.prims,lrecord.prims,rrecord.prims);
         }
         /* perform unaligned split if this is best */
         else if (bestSAH == unalignedObjectSAH) {
-          unalignedHeuristic.split(unalignedObjectSplit,uspace,current.pinfo,current.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
+          unalignedHeuristic.split(unalignedObjectSplit,uspace,current.prims,lrecord.prims,rrecord.prims);
           aligned = false;
         }
         /* otherwise perform fallback split */
         else {
           deterministic_order(current.prims);
-          splitFallback(current.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
+          splitFallback(current.prims,lrecord.prims,rrecord.prims);
         }
       }
       
@@ -254,7 +251,7 @@ namespace embree
         /* call memory monitor function to signal progress */
         if (toplevel && current.size() <= SINGLE_THREADED_THRESHOLD)
           progressMonitor(current.size());
-       
+        
         /* create leaf node */
         if (current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize) {
           deterministic_order(current.prims);
@@ -278,9 +275,9 @@ namespace embree
               continue;
             
             /* remember child with largest area */
-            const float A = children[i].pinfo.halfArea();
+            const float A = children[i].prims.pinfo.halfArea();
             if (A > bestArea) { 
-              bestArea = children[i].pinfo.halfArea();
+              bestArea = children[i].prims.pinfo.halfArea();
               bestChild = i;
             }
           }
