@@ -677,10 +677,10 @@ namespace embree
             sMB += count * mesh->numTimeSteps;
           }
           return PrimInfoMB(s,sMB);
-        }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB { return PrimInfoMB(a.begin+b.begin,a.end+b.end); });
+        }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB { return PrimInfoMB(a.object_range.begin()+b.object_range.begin(),a.object_range.end()+b.object_range.end()); });
 
-        numSubPatches = pinfo.begin;
-        numSubPatchesMB = pinfo.end;
+        numSubPatches = pinfo.object_range.begin();
+        numSubPatchesMB = pinfo.object_range.end();
       }
 
       void rebuild(size_t numPrimitives)
@@ -702,8 +702,8 @@ namespace embree
             BVH_Allocator alloc(bvh);
             patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
-              const size_t patchIndex = base.begin+s;
-              const size_t patchIndexMB = base.end+sMB;
+              const size_t patchIndex = base.object_range.begin()+s;
+              const size_t patchIndexMB = base.object_range.end()+sMB;
               assert(patchIndex < numPrimitives);
 
               for (size_t t=0; t<mesh->numTimeSteps; t++)
@@ -732,12 +732,12 @@ namespace embree
               pinfo.add_primref(primsMB[patchIndex]);
             });
           }
-          pinfo.begin = s;
-          pinfo.end = sMB;
+          pinfo.object_range._begin = s;
+          pinfo.object_range._end = sMB;
           return pinfo;
         }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB { return PrimInfoMB::merge2(a,b); });
-        pinfo.end = pinfo.begin;
-        pinfo.begin = 0;
+        pinfo.object_range._end = pinfo.object_range.begin();
+        pinfo.object_range._begin = 0;
 
         //auto virtualprogress = BuildProgressMonitorFromClosure([&] (size_t dn) { 
             //bvh->scene->progressMonitor(double(dn)); // FIXME: triggers GCC compiler bug

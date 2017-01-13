@@ -366,8 +366,8 @@ namespace embree
           auto reduction = [] (PrimInfoMB& pinfo, const PrimRefMB& ref) { pinfo.add_primref(ref); };
           auto reduction2 = [] (PrimInfoMB& pinfo0,const PrimInfoMB& pinfo1) { pinfo0.merge(pinfo1); };
           size_t center = parallel_partitioning(set.prims->data(),begin,end,empty,left,right,isLeft,reduction,reduction2,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD);
-          left.begin  = begin;  left.end = center; left.time_range = pinfo.time_range;
-          right.begin = center; right.end = end;   right.time_range = pinfo.time_range;
+          left.object_range  = range<size_t>(begin,center); left.time_range = pinfo.time_range;
+          right.object_range = range<size_t>(center,end  ); right.time_range = pinfo.time_range;
           new (&lset) SetMB(set.prims,range<size_t>(begin,center),set.time_range);
           new (&rset) SetMB(set.prims,range<size_t>(center,end  ),set.time_range);
         }

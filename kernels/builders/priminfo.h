@@ -179,17 +179,16 @@ namespace embree
       } 
 
       __forceinline PrimInfoMBT (EmptyTy)
-        : CentGeom<BBox>(empty), begin(0), end(0), num_time_segments(0), max_num_time_segments(0), time_range(0.0f,1.0f) {}
+        : CentGeom<BBox>(empty), object_range(0,0), num_time_segments(0), max_num_time_segments(0), time_range(0.0f,1.0f) {}
 
       __forceinline PrimInfoMBT (size_t begin, size_t end)
-        : CentGeom<BBox>(empty), begin(begin), end(end), num_time_segments(0), max_num_time_segments(0), time_range(0.0f,1.0f) {}
-
+        : CentGeom<BBox>(empty), object_range(begin,end), num_time_segments(0), max_num_time_segments(0), time_range(0.0f,1.0f) {}
 
       template<typename PrimRef> 
         __forceinline void add_primref(const PrimRef& prim) 
       {
         CentGeom<BBox>::extend_primref(prim);
-        end++;
+        object_range._end++;
         num_time_segments += prim.size();
         max_num_time_segments = max(max_num_time_segments,size_t(prim.totalTimeSegments()));
       }
@@ -197,8 +196,8 @@ namespace embree
       __forceinline void merge(const PrimInfoMBT& other)
       {
         CentGeom<BBox>::merge(other);
-        begin += other.begin;
-	end += other.end;
+        object_range._begin += other.object_range.begin();
+	object_range._end += other.object_range.end();
         num_time_segments += other.num_time_segments;
         max_num_time_segments = max(max_num_time_segments,other.max_num_time_segments);
       }
@@ -209,7 +208,7 @@ namespace embree
       
       /*! returns the number of primitives */
       __forceinline size_t size() const { 
-	return end-begin; 
+	return object_range.size(); 
       }
 
       __forceinline float halfArea() const {
@@ -226,13 +225,19 @@ namespace embree
       }
       
       /*! stream output */
-      friend std::ostream& operator<<(std::ostream& cout, const PrimInfoMBT& pinfo) {
-	return cout << "PrimInfo { begin = " << pinfo.begin << ", end = " << pinfo.end << ", time_segments = " << pinfo.num_time_segments << 
-          ", time_range = " << pinfo.time_range << ", geomBounds = " << pinfo.geomBounds << ", centBounds = " << pinfo.centBounds << "}";
+      friend std::ostream& operator<<(std::ostream& cout, const PrimInfoMBT& pinfo) 
+      {
+	return cout << "PrimInfo { " << 
+          "object_range = " << pinfo.object_range << 
+          ", time_range = " << pinfo.time_range << 
+          ", time_segments = " << pinfo.num_time_segments << 
+          ", geomBounds = " << pinfo.geomBounds << 
+          ", centBounds = " << pinfo.centBounds << 
+          "}";
       }
       
     public:
-      size_t begin,end;          //!< number of primitives
+      range<size_t> object_range; //!< primitive range
       size_t num_time_segments;  //!< total number of time segments of all added primrefs
       size_t max_num_time_segments; //!< maximal number of time segments of a primitive
       BBox1f time_range;

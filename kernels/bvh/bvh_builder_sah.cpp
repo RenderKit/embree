@@ -589,7 +589,7 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 
-    template<int N, typename Mesh>
+    template<int N>
       struct CreateAlignedNodeMB4D
     {
       typedef BVHN<N> BVH;
@@ -780,7 +780,7 @@ namespace embree
 
         /* instantiate builder */
         auto createAllocFunc = typename BVH::CreateAlloc(bvh);
-        auto createNodeFunc = CreateAlignedNodeMB4D<N,Mesh>(bvh);
+        auto createNodeFunc = CreateAlignedNodeMB4D<N>(bvh);
         auto createLeafFunc = CreateMBlurLeaf<N,Mesh,Primitive>(bvh);
         auto progressMonitor = bvh->scene->progressInterface;
 

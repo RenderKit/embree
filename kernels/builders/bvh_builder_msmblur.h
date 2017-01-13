@@ -271,12 +271,12 @@ namespace embree
           linfo = empty;
           for (size_t i=begin; i<center; i++)
             linfo.add_primref(prims[i]);
-          linfo.begin = begin; linfo.end = center; linfo.time_range = set.time_range;
+          linfo.object_range = range<size_t>(begin,center); linfo.time_range = set.time_range;
           
           rinfo = empty;
           for (size_t i=center; i<end; i++)
             rinfo.add_primref(prims[i]);	
-          rinfo.begin = center; rinfo.end = end; rinfo.time_range = set.time_range;
+          rinfo.object_range = range<size_t>(center,end); rinfo.time_range = set.time_range;
           
           new (&lset) SetMB(set.prims,range<size_t>(begin,center),set.time_range);
           new (&rset) SetMB(set.prims,range<size_t>(center,end  ),set.time_range);
