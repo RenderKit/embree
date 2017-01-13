@@ -90,7 +90,6 @@ namespace embree
                             const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, 
                             const size_t minLeafSize, const size_t maxLeafSize )
         : scene(scene),
-        recalculatePrimRef(recalculatePrimRef),
         createAlloc(createAlloc), 
         createAlignedNode(createAlignedNode), 
         createUnalignedNode(createUnalignedNode), 
@@ -370,7 +369,6 @@ namespace embree
     
     private:      
       Scene* scene;
-      const RecalculatePrimRef& recalculatePrimRef;
       const CreateAllocFunc& createAlloc;
       const CreateAlignedNodeFunc& createAlignedNode;
       const CreateUnalignedNodeFunc& createUnalignedNode;
