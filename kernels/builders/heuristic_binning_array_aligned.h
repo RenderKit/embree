@@ -183,48 +183,6 @@ namespace embree
         PrimRef* const prims;
       };
 
-      struct SetMB
-    {
-      static const size_t PARALLEL_THRESHOLD = 3 * 1024;
-      static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
-      static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;
-
-      typedef mvector<PrimRefMB>* PrimRefVector;
-
-      __forceinline SetMB() {}
-      
-      __forceinline SetMB(PrimRefVector prims, range<size_t> object_range, BBox1f time_range)
-        : prims(prims), object_range(object_range), time_range(time_range) {}
-      
-      __forceinline SetMB(PrimRefVector prims, BBox1f time_range = BBox1f(0.0f,1.0f))
-        : prims(prims), object_range(range<size_t>(0,prims->size())), time_range(time_range) {}
-      
-      template<typename RecalculatePrimRef>
-      __forceinline LBBox3fa linearBounds(const RecalculatePrimRef& recalculatePrimRef) const
-      {
-        auto reduce = [&](const range<size_t>& r) -> LBBox3fa
-        {
-          LBBox3fa cbounds(empty);
-          for (size_t j = r.begin(); j < r.end(); j++)
-          {
-            PrimRefMB& ref = (*prims)[j];
-            auto bn = recalculatePrimRef.linearBounds(ref, time_range);
-            cbounds.extend(bn.first);
-          };
-          return cbounds;
-        };
-        
-        return parallel_reduce(object_range.begin(), object_range.end(), PARALLEL_FIND_BLOCK_SIZE, PARALLEL_THRESHOLD, LBBox3fa(empty),
-                               reduce,
-                                   [&](const LBBox3fa& b0, const LBBox3fa& b1) -> LBBox3fa { return merge(b0, b1); });
-      }
-      
-    public:
-      PrimRefVector prims;
-      range<size_t> object_range;
-      BBox1f time_range;
-    };
-
     /*! Performs standard object binning */
     template<typename PrimRefMB, size_t BINS>
       struct HeuristicArrayBinningMB
