@@ -82,9 +82,7 @@ namespace embree
 
     /*! returns center for binning */
     __forceinline Vec3fa binCenter() const {
-      //return center2(lbounds.interpolate(0.0f));
       return center2(lbounds.interpolate(0.5f));
-      //return center2(lbounds.interpolate(1.0f));
     }
 
     /*! returns bounds and centroid used for binning */
@@ -92,12 +90,6 @@ namespace embree
     {
       bounds_o = bounds();
       center_o = binCenter();
-    }
-
-    __forceinline void binBoundsAndCenter(BBox3fa& bounds_o, Vec3fa& center_o) const
-    {
-      bounds_o = lbounds.interpolate(0.5f);
-      center_o = center2(bounds_o);
     }
 
     /*! returns center for binning */
@@ -152,7 +144,7 @@ namespace embree
 
     /*! Outputs primitive reference to a stream. */
     friend __forceinline std::ostream& operator<<(std::ostream& cout, const PrimRefMB& ref) {
-      return cout << "{ lbounds = " << ref.lbounds << ", geomID = " << ref.geomID() << ", primID = " << ref.primID() << " }";
+      return cout << "{ bounds = " << ref.bounds() << ", geomID = " << ref.geomID() << ", primID = " << ref.primID() << ", active_segments = " << ref.size() << ",  total_segments = " << ref.totalTimeSegments() << " }";
     }
 
   public:
@@ -271,7 +263,7 @@ namespace embree
 
     /*! Outputs primitive reference to a stream. */
     friend __forceinline std::ostream& operator<<(std::ostream& cout, const PrimRefMB& ref) {
-      return cout << "{ bounds = " << ref.bounds() << ", geomID = " << ref.geomID() << ", primID = " << ref.primID() << " }";
+      return cout << "{ bounds = " << ref.bounds() << ", geomID = " << ref.geomID() << ", primID = " << ref.primID() << ", active_segments = " << ref.size() << ",  total_segments = " << ref.totalTimeSegments() << " }";
     }
 
   public:
