@@ -4448,7 +4448,6 @@ namespace embree
 
 int main(int argc, char** argv)
 {
-  int* ptr = new int; // FIXME: experimental defect
   embree::VerifyApplication app;
   return app.main(argc,argv);
 }
