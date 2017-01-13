@@ -103,39 +103,54 @@ namespace embree
           : numChildren(1), numSharedPrimVecs(1), depth(record.depth)
         {
           /* the local root will be freed in the ancestor where it was created (thus refCount is 2) */
-          SharedPrimRefVector* sharedPrimVec = new (&sharedPrimVecs[0]) SharedPrimRefVector(record.prims.prims, 2);
-          new (&children[0]) Child(record, sharedPrimVec);
+          children[0] = record;
+          primvecs[0] = new (&sharedPrimVecs[0]) SharedPrimRefVector(record.prims.prims, 2);
         }
         
         __forceinline ~LocalChildList()
         {
           for (size_t i = 0; i < numChildren; i++)
-            children[i].sharedPrimVec->decRef();
+            primvecs[i]->decRef();
         }
 
-        __forceinline void split(int bestChild, BuildRecord2& lrecord, BuildRecord2& rrecord, bool temporal_split)
+        __forceinline BuildRecord2& operator[] ( const size_t i ) {
+          return children[i];
+        }
+
+        __forceinline size_t size() const {
+          return numChildren;
+        }
+
+        __forceinline void split(int bestChild, BuildRecord2& lrecord, BuildRecord2& rrecord)
         {
-          if (temporal_split)
-          {
-            SharedPrimRefVector* bsharedPrimVec = children[bestChild].sharedPrimVec;
-            children[bestChild] = children[numChildren-1];
-            new (&children[numChildren-1]) Child(lrecord, new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(lrecord.prims.prims));
-            new (&children[numChildren+0]) Child(rrecord, new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(rrecord.prims.prims));
-            bsharedPrimVec->decRef();
-          }
-          else
-          {
-            SharedPrimRefVector* bsharedPrimVec = children[bestChild].sharedPrimVec;
-            children[bestChild] = children[numChildren-1];
-            new (&children[numChildren-1]) Child(lrecord, bsharedPrimVec);
-            new (&children[numChildren+0]) Child(rrecord, bsharedPrimVec);
+          SharedPrimRefVector* bsharedPrimVec = primvecs[bestChild];
+          primvecs[bestChild] = primvecs[numChildren-1];
+          if (lrecord.prims.prims == bsharedPrimVec->prims) {
+            primvecs[numChildren-1] = bsharedPrimVec;
             bsharedPrimVec->incRef();
           }
+          else {
+            primvecs[numChildren-1] = new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(lrecord.prims.prims);
+          }
+          
+          if (lrecord.prims.prims == bsharedPrimVec->prims) {
+            primvecs[numChildren+0] = bsharedPrimVec;
+            bsharedPrimVec->incRef();
+          }
+          else {
+            primvecs[numChildren+0] = new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(rrecord.prims.prims);
+          }
+          bsharedPrimVec->decRef();
+            
+          children[bestChild] = children[numChildren-1];
+          children[numChildren-1] = lrecord;
+          children[numChildren+0] = rrecord;
+          numChildren++;
         }
 
       public:
-        Child children[MAX_BRANCHING_FACTOR];
-        BuildRecord2* childrenPtrs[MAX_BRANCHING_FACTOR];
+        BuildRecord2 children[MAX_BRANCHING_FACTOR];
+        SharedPrimRefVector* primvecs[MAX_BRANCHING_FACTOR];
         SharedPrimRefVector sharedPrimVecs[MAX_BRANCHING_FACTOR*2];
         size_t numChildren;
         size_t numSharedPrimVecs;
@@ -215,16 +230,14 @@ namespace embree
           return createLeaf(current,alloc);
         
         /* fill all children by always splitting the largest one */
-        BuildRecord2 children[MAX_BRANCHING_FACTOR];
-        unsigned numChildren = 1;
-        children[0] = current;
+        LocalChildList children(current);
         
         do {
           
           /* find best child with largest bounding box area */
           int bestChild = -1;
           size_t bestSize = 0;
-          for (unsigned i=0; i<numChildren; i++)
+          for (unsigned i=0; i<children.size(); i++)
           {
             /* ignore leaves as they cannot get split */
             if (children[i].size() <= maxLeafSize)
@@ -242,17 +255,12 @@ namespace embree
           BuildRecord2 left(current.depth+1);
           BuildRecord2 right(current.depth+1);
           splitFallback(children[bestChild].prims,left.pinfo,left.prims,right.pinfo,right.prims);
+          children.split(bestChild,left,right);
           
-          /* add new children left and right */
-          children[bestChild] = children[numChildren-1];
-          children[numChildren-1] = left;
-          children[numChildren+0] = right;
-          numChildren++;
-          
-        } while (numChildren < branchingFactor);
+        } while (children.size() < branchingFactor);
         
         /* create node */
-        auto node = createAlignedNode(children,numChildren,alignedHeuristic,alloc);
+        auto node = createAlignedNode(&children[0],children.size(),alignedHeuristic,alloc);
         return BVH::encodeNode(node);
       }
             
@@ -333,9 +341,7 @@ namespace embree
         }
         
         /* fill all children by always splitting the one with the largest surface area */
-        size_t numChildren = 1;
-        BuildRecord2 children[MAX_BRANCHING_FACTOR];
-        children[0] = current;
+        LocalChildList children(current);
         bool aligned = true;
         bool timesplit = false;
         
@@ -344,7 +350,7 @@ namespace embree
           /* find best child with largest bounding box area */
           ssize_t bestChild = -1;
           float bestArea = neg_inf;
-          for (size_t i=0; i<numChildren; i++)
+          for (size_t i=0; i<children.size(); i++)
           {
             /* ignore leaves as they cannot get split */
             if (children[i].size() <= minLeafSize)
@@ -362,25 +368,20 @@ namespace embree
           BuildRecord2 left(current.depth+1);
           BuildRecord2 right(current.depth+1);
           split(children[bestChild],left,right,aligned,timesplit);
-
-          /* add new children left and right */
-          children[bestChild] = children[numChildren-1];
-          children[numChildren-1] = left;
-          children[numChildren+0] = right;
-          numChildren++;
+          children.split(bestChild,left,right);
           
-        } while (numChildren < branchingFactor); 
-        assert(numChildren > 1);
+        } while (children.size() < branchingFactor); 
+        assert(children.size() > 1);
 	
         /* create time split node */
         if (timesplit)
         {
-          auto node = createAlignedNode4D(children,numChildren,alloc);
+          auto node = createAlignedNode4D(&children[0],children.size(),alloc);
 
           /* spawn tasks or ... */
           if (current.size() > SINGLE_THREADED_THRESHOLD)
           {
-            parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) {
+            parallel_for(size_t(0), children.size(), [&] (const range<size_t>& r) {
                 for (size_t i=r.begin(); i<r.end(); i++) {
                   node->child(i) = recurse(children[i],nullptr,true); 
                   _mm_mfence(); // to allow non-temporal stores during build
@@ -389,7 +390,7 @@ namespace embree
           }
           /* ... continue sequential */
           else {
-            for (size_t i=0; i<numChildren; i++) 
+            for (size_t i=0; i<children.size(); i++) 
               node->child(i) = recurse(children[i],alloc,false);
           }
           return BVH::encodeNode(node);
@@ -398,12 +399,12 @@ namespace embree
         /* create aligned node */
         else if (aligned) 
         {
-          auto node = createAlignedNode(children,numChildren,alignedHeuristic,alloc);
+          auto node = createAlignedNode(&children[0],children.size(),alignedHeuristic,alloc);
 
           /* spawn tasks or ... */
           if (current.size() > SINGLE_THREADED_THRESHOLD)
           {
-            parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) {
+            parallel_for(size_t(0), children.size(), [&] (const range<size_t>& r) {
                 for (size_t i=r.begin(); i<r.end(); i++) {
                   node->child(i) = recurse(children[i],nullptr,true); 
                   _mm_mfence(); // to allow non-temporal stores during build
@@ -412,7 +413,7 @@ namespace embree
           }
           /* ... continue sequential */
           else {
-            for (size_t i=0; i<numChildren; i++) 
+            for (size_t i=0; i<children.size(); i++) 
               node->child(i) = recurse(children[i],alloc,false);
           }
           return BVH::encodeNode(node);
@@ -421,13 +422,13 @@ namespace embree
         /* create unaligned node */
         else 
         {
-          auto node = createUnalignedNode(children,numChildren,unalignedHeuristic,alloc);
+          auto node = createUnalignedNode(&children[0],children.size(),unalignedHeuristic,alloc);
           
           /* spawn tasks or ... */
           if (current.size() > SINGLE_THREADED_THRESHOLD)
           {
 
-            parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) {
+            parallel_for(size_t(0), children.size(), [&] (const range<size_t>& r) {
                 for (size_t i=r.begin(); i<r.end(); i++) {
                     node->child(i) = recurse(children[i],nullptr,true);
                     _mm_mfence(); // to allow non-temporal stores during build
@@ -437,7 +438,7 @@ namespace embree
           /* ... continue sequentially */
           else
           {
-            for (size_t i=0; i<numChildren; i++) 
+            for (size_t i=0; i<children.size(); i++) 
               node->child(i) = recurse(children[i],alloc,false);
           }
           return BVH::encodeNode(node);
