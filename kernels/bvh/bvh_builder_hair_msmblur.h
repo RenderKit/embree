@@ -67,15 +67,6 @@ namespace embree
     {
       ALIGNED_CLASS;
 
-      typedef BVHN<N> BVH;
-      typedef typename BVH::NodeRef NodeRef;
-      typedef FastAllocator::ThreadLocal2* Allocator;
-      typedef SharedVector<mvector<PrimRefMB>> SharedPrimRefVector;
- 
-      typedef HeuristicMBlurTemporalSplit<PrimRefMB,RecalculatePrimRef,NUM_TEMPORAL_BINS> HeuristicTemporal;
-      typedef HeuristicArrayBinningMB<PrimRefMB,NUM_OBJECT_BINS> HeuristicBinning;
-      typedef UnalignedHeuristicArrayBinningMB<PrimRefMB,NUM_OBJECT_BINS> UnalignedHeuristicBinning;
-
       static const size_t MAX_BRANCHING_FACTOR =  8;         //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;         //!< create balanced tree if we are that many levels before the maximal tree depth
       static const size_t SINGLE_THREADED_THRESHOLD = 4096;  //!< threshold to switch to single threaded build
@@ -84,78 +75,17 @@ namespace embree
       static const size_t travCostUnaligned = 5;
       static const size_t intCost = 6;
 
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+      typedef FastAllocator::ThreadLocal2* Allocator;
+      typedef SharedVector<mvector<PrimRefMB>> SharedPrimRefVector;
+      typedef LocalChildListT<BuildRecord2,MAX_BRANCHING_FACTOR> LocalChildList;
+ 
+      typedef HeuristicMBlurTemporalSplit<PrimRefMB,RecalculatePrimRef,NUM_TEMPORAL_BINS> HeuristicTemporal;
+      typedef HeuristicArrayBinningMB<PrimRefMB,NUM_OBJECT_BINS> HeuristicBinning;
+      typedef UnalignedHeuristicArrayBinningMB<PrimRefMB,NUM_OBJECT_BINS> UnalignedHeuristicBinning;
+
     public:
-
-      struct LocalChildList
-      {
-        struct Child
-        {
-          __forceinline Child() {}
-          
-          __forceinline Child(const BuildRecord2& record, SharedPrimRefVector* sharedPrimVec)
-            : record(record), sharedPrimVec(sharedPrimVec) {}
-
-          BuildRecord2 record;
-          SharedPrimRefVector* sharedPrimVec;
-        };
-        
-        __forceinline LocalChildList (BuildRecord2& record)
-          : numChildren(1), numSharedPrimVecs(1), depth(record.depth)
-        {
-          /* the local root will be freed in the ancestor where it was created (thus refCount is 2) */
-          children[0] = record;
-          primvecs[0] = new (&sharedPrimVecs[0]) SharedPrimRefVector(record.prims.prims, 2);
-        }
-        
-        __forceinline ~LocalChildList()
-        {
-          for (size_t i = 0; i < numChildren; i++)
-            primvecs[i]->decRef();
-        }
-
-        __forceinline BuildRecord2& operator[] ( const size_t i ) {
-          return children[i];
-        }
-
-        __forceinline size_t size() const {
-          return numChildren;
-        }
-
-        __forceinline void split(int bestChild, BuildRecord2& lrecord, BuildRecord2& rrecord)
-        {
-          SharedPrimRefVector* bsharedPrimVec = primvecs[bestChild];
-          primvecs[bestChild] = primvecs[numChildren-1];
-          if (lrecord.prims.prims == bsharedPrimVec->prims) {
-            primvecs[numChildren-1] = bsharedPrimVec;
-            bsharedPrimVec->incRef();
-          }
-          else {
-            primvecs[numChildren-1] = new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(lrecord.prims.prims);
-          }
-          
-          if (lrecord.prims.prims == bsharedPrimVec->prims) {
-            primvecs[numChildren+0] = bsharedPrimVec;
-            bsharedPrimVec->incRef();
-          }
-          else {
-            primvecs[numChildren+0] = new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(rrecord.prims.prims);
-          }
-          bsharedPrimVec->decRef();
-            
-          children[bestChild] = children[numChildren-1];
-          children[numChildren-1] = lrecord;
-          children[numChildren+0] = rrecord;
-          numChildren++;
-        }
-
-      public:
-        BuildRecord2 children[MAX_BRANCHING_FACTOR];
-        SharedPrimRefVector* primvecs[MAX_BRANCHING_FACTOR];
-        SharedPrimRefVector sharedPrimVecs[MAX_BRANCHING_FACTOR*2];
-        size_t numChildren;
-        size_t numSharedPrimVecs;
-        size_t depth;
-      };
       
       BVHNBuilderHairMBlur (Scene* scene,
                             const RecalculatePrimRef& recalculatePrimRef,

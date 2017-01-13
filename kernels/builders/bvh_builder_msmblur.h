@@ -49,9 +49,83 @@ namespace embree
       size_t refCount;
     };
 
+    template<typename BuildRecord, int MAX_BRANCHING_FACTOR>
+      struct LocalChildListT
+    {
+      typedef SharedVector<mvector<PrimRefMB>> SharedPrimRefVector;
+
+      struct Child
+      {
+        __forceinline Child() {}
+        
+        __forceinline Child(const BuildRecord& record, SharedPrimRefVector* sharedPrimVec)
+          : record(record), sharedPrimVec(sharedPrimVec) {}
+        
+        BuildRecord record;
+        SharedPrimRefVector* sharedPrimVec;
+      };
+      
+      __forceinline LocalChildListT (BuildRecord& record)
+        : numChildren(1), numSharedPrimVecs(1), depth(record.depth)
+      {
+        /* the local root will be freed in the ancestor where it was created (thus refCount is 2) */
+        children[0] = record;
+        primvecs[0] = new (&sharedPrimVecs[0]) SharedPrimRefVector(record.prims.prims, 2);
+      }
+      
+      __forceinline ~LocalChildListT()
+      {
+        for (size_t i = 0; i < numChildren; i++)
+          primvecs[i]->decRef();
+      }
+      
+      __forceinline BuildRecord& operator[] ( const size_t i ) {
+        return children[i];
+      }
+      
+      __forceinline size_t size() const {
+        return numChildren;
+      }
+      
+      __forceinline void split(int bestChild, BuildRecord& lrecord, BuildRecord& rrecord)
+      {
+        SharedPrimRefVector* bsharedPrimVec = primvecs[bestChild];
+        primvecs[bestChild] = primvecs[numChildren-1];
+        if (lrecord.prims.prims == bsharedPrimVec->prims) {
+          primvecs[numChildren-1] = bsharedPrimVec;
+          bsharedPrimVec->incRef();
+        }
+        else {
+          primvecs[numChildren-1] = new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(lrecord.prims.prims);
+        }
+        
+        if (lrecord.prims.prims == bsharedPrimVec->prims) {
+          primvecs[numChildren+0] = bsharedPrimVec;
+          bsharedPrimVec->incRef();
+        }
+        else {
+          primvecs[numChildren+0] = new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(rrecord.prims.prims);
+        }
+        bsharedPrimVec->decRef();
+        
+        children[bestChild] = children[numChildren-1];
+        children[numChildren-1] = lrecord;
+        children[numChildren+0] = rrecord;
+        numChildren++;
+      }
+      
+    public:
+      BuildRecord children[MAX_BRANCHING_FACTOR];
+      SharedPrimRefVector* primvecs[MAX_BRANCHING_FACTOR];
+      SharedPrimRefVector sharedPrimVecs[MAX_BRANCHING_FACTOR*2]; // FIXME: *2 required?
+      size_t numChildren;
+      size_t numSharedPrimVecs;
+      size_t depth;
+    };
+    
     template<typename Mesh>
       struct RecalculatePrimRef
-    {
+      {
       Scene* scene;
 
       __forceinline RecalculatePrimRef (Scene* scene)
