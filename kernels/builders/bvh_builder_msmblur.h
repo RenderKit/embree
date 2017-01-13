@@ -34,8 +34,7 @@ namespace embree
       __forceinline SharedVector(T* ptr, size_t refCount = 1)
         : prims(ptr), refCount(refCount) {}
       
-      __forceinline void incRef()
-      {
+      __forceinline void incRef() {
         refCount++;
       }
       
@@ -54,17 +53,6 @@ namespace embree
     {
       typedef SharedVector<mvector<PrimRefMB>> SharedPrimRefVector;
 
-      struct Child
-      {
-        __forceinline Child() {}
-        
-        __forceinline Child(const BuildRecord& record, SharedPrimRefVector* sharedPrimVec)
-          : record(record), sharedPrimVec(sharedPrimVec) {}
-        
-        BuildRecord record;
-        SharedPrimRefVector* sharedPrimVec;
-      };
-      
       __forceinline LocalChildListT (BuildRecord& record)
         : numChildren(1), numSharedPrimVecs(1), depth(record.depth)
       {
