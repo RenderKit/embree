@@ -176,7 +176,7 @@ namespace embree
             }
             return pinfo;
           };        
-          linfo = parallel_reduce(set.object_range.begin(),set.object_range.end(),PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func0,PrimInfoMB::merge2);
+          linfo = parallel_reduce(set.object_range,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func0,PrimInfoMB::merge2);
           linfo.time_range = time_range;
           lset = SetMB(lprims,time_range);
         }
