@@ -36,6 +36,7 @@ namespace embree
     Accel* BVH8OBBBezier1v(Scene* scene);
     Accel* BVH8OBBBezier1i(Scene* scene);
     Accel* BVH8OBBBezier1iMB(Scene* scene);
+    Accel* BVH8MB4DBezier1iMB(Scene* scene);
 
     Accel* BVH8Line4i(Scene* scene);
     Accel* BVH8Line4iMB(Scene* scene);
@@ -74,6 +75,7 @@ namespace embree
     Accel::Intersectors BVH8Bezier1vIntersectors_OBB(BVH8* bvh);
     Accel::Intersectors BVH8Bezier1iIntersectors_OBB(BVH8* bvh);
     Accel::Intersectors BVH8Bezier1iMBIntersectors_OBB(BVH8* bvh);
+    Accel::Intersectors BVH8MB4DBezier1iMBIntersectors_OBB(BVH8* bvh);
 
     Accel::Intersectors BVH8Triangle4Intersectors(BVH8* bvh, IntersectVariant ivariant);
     Accel::Intersectors BVH8Triangle4vIntersectors(BVH8* bvh, IntersectVariant ivariant);
@@ -98,6 +100,7 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Bezier1vIntersector1_OBB);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Bezier1iIntersector1_OBB);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Bezier1iMBIntersector1_OBB);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH8MB4DBezier1iMBIntersector1_OBB);
 
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Triangle4Intersector1Moeller);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Triangle4iIntersector1Moeller);
@@ -134,6 +137,7 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8Bezier1vIntersector4Single_OBB);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8Bezier1iIntersector4Single_OBB);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8Bezier1iMBIntersector4Single_OBB);
+    DEFINE_SYMBOL2(Accel::Intersector4,BVH8MB4DBezier1iMBIntersector4Single_OBB);
 
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8Triangle4Intersector4HybridMoeller);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8Triangle4Intersector4HybridMoellerNoFilter);
@@ -169,6 +173,7 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8Bezier1vIntersector8Single_OBB);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8Bezier1iIntersector8Single_OBB);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8Bezier1iMBIntersector8Single_OBB);
+    DEFINE_SYMBOL2(Accel::Intersector8,BVH8MB4DBezier1iMBIntersector8Single_OBB);
 
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8Triangle4Intersector8HybridMoeller);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8Triangle4Intersector8HybridMoellerNoFilter);
@@ -204,6 +209,7 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8Bezier1vIntersector16Single_OBB);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8Bezier1iIntersector16Single_OBB);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8Bezier1iMBIntersector16Single_OBB);
+    DEFINE_SYMBOL2(Accel::Intersector16,BVH8MB4DBezier1iMBIntersector16Single_OBB);
 
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8Triangle4Intersector16HybridMoeller);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8Triangle4Intersector16HybridMoellerNoFilter);
