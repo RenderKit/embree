@@ -157,7 +157,7 @@ namespace embree
         //__forceinline BuildRecord3 (const PrimInfoMB& pinfo, size_t depth, size_t* parent, const SetMB &prims) 
         //  : parent(parent), depth(depth), prims(prims), pinfo(pinfo) {}
 
-        __forceinline BBox3fa bounds() const { return prims.pinfo.geomBounds; }
+        //__forceinline BBox3fa bounds() const { return prims.pinfo.geomBounds; }
         
         __forceinline friend bool operator< (const BuildRecord3& a, const BuildRecord3& b) { return a.prims.pinfo.size() < b.prims.pinfo.size(); }
 	__forceinline friend bool operator> (const BuildRecord3& a, const BuildRecord3& b) { return a.prims.pinfo.size() > b.prims.pinfo.size();  }
