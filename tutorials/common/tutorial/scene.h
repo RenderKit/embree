@@ -171,7 +171,7 @@ namespace embree
     struct SubdivMesh : public Geometry
     {
       SubdivMesh (Ref<SceneGraph::SubdivMeshNode> mesh, const SceneGraph::Transformations& spaces, unsigned materialID)
-		  : Geometry(SUBDIV_MESH), numTimeSteps((unsigned int)mesh->numTimeSteps()), numPositions((unsigned int)mesh->numPositions()), materialID(materialID)
+        : Geometry(SUBDIV_MESH), boundaryMode(mesh->boundaryMode), numTimeSteps((unsigned int)mesh->numTimeSteps()), numPositions((unsigned int)mesh->numPositions()), materialID(materialID)
       {
         positions.resize(numTimeSteps*numPositions); 
         for (size_t t=0; t<numTimeSteps; t++) {
@@ -211,6 +211,7 @@ namespace embree
       std::vector<float> edge_crease_weights;   //!< weight for each edge crease
       std::vector<unsigned> vertex_creases;     //!< indices of vertex creases
       std::vector<float> vertex_crease_weights; //!< weight for each vertex crease
+      RTCBoundaryMode boundaryMode;
 
       unsigned numTimeSteps;
       unsigned numPositions;

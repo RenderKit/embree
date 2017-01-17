@@ -133,7 +133,8 @@ namespace embree
 
     struct ISPCSubdivMesh
     {
-      ISPCSubdivMesh (Ref<TutorialScene::SubdivMesh> in) : geom(SUBDIV_MESH)
+      ISPCSubdivMesh (Ref<TutorialScene::SubdivMesh> in) 
+      : geom(SUBDIV_MESH), boundaryMode(in->boundaryMode)
       {
         positions = in->positions.data();
         normals = in->normals.data();
@@ -206,6 +207,7 @@ namespace embree
       unsigned int numHoles;
       unsigned int materialID;
       unsigned int geomID;
+      RTCBoundaryMode boundaryMode;
     };
 
     struct ISPCLineSegments

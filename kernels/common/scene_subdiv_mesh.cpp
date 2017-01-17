@@ -31,7 +31,7 @@ namespace embree
       numFaces(numFaces), 
       numEdges(numEdges), 
       numVertices(numVertices),
-      boundary(RTC_BOUNDARY_EDGE_ONLY),
+      boundary(RTC_BOUNDARY_SMOOTH),
       displFunc(nullptr),
       displFunc2(nullptr),
       displBounds(empty),
@@ -377,24 +377,32 @@ namespace embree
       }
     });
 
-    /* calculate patch types and sharp corners */
+    /* set boundary mode and calculate patch types */
     parallel_for( size_t(0), numFaces, blockSize, [&](const range<size_t>& r) 
     {
       for (size_t f=r.begin(); f<r.end(); f++) 
       {
         HalfEdge* edge = &halfEdges[faceStartEdge[f]];
-        HalfEdge::PatchType patch_type = edge->patchType();
+
+        /* calculate if face is valid */
         for (size_t t=0; t<numTimeSteps; t++)
           invalidFace(f,t) = !edge->valid(vertices[t]) || holeSet.lookup(unsigned(f));
           
         for (size_t i=0; i<faceVertices[f]; i++) 
         {
-          edge[i].patch_type = patch_type;
-
-          /* calculate sharp corner vertices */
-          if (boundary == RTC_BOUNDARY_EDGE_AND_CORNER && edge[i].isCorner()) 
+          /* pin corner vertices when requested by user */
+          if (boundary == RTC_BOUNDARY_PIN_CORNERS && edge[i].isCorner()) 
+            edge[i].vertex_crease_weight = float(inf);
+          
+          /* pin all border vertices when requested by user */
+          if (boundary == RTC_BOUNDARY_PIN_BORDERS && edge[i].vertexHasBorder()) 
             edge[i].vertex_crease_weight = float(inf);
         }
+
+        /* we have to calculate patch_type last! */
+        HalfEdge::PatchType patch_type = edge->patchType();
+        for (size_t i=0; i<faceVertices[f]; i++) 
+          edge[i].patch_type = patch_type;
       }
     });
   }
@@ -427,10 +435,18 @@ namespace embree
 	  if (edge.hasOpposite()) // leave weight at inf for borders
             edge.edge_crease_weight = edgeCreaseMap.lookup(key,0.0f);
 	}
-
-        if (updateVertexCreases && edge.vertex_type != HalfEdge::NON_MANIFOLD_EDGE_VERTEX) {
+        
+        /* we only use user specified vertex_crease_weight if the vertex is manifold */
+        if (updateVertexCreases && edge.vertex_type != HalfEdge::NON_MANIFOLD_EDGE_VERTEX) 
+        {
 	  edge.vertex_crease_weight = vertexCreaseMap.lookup(startVertex,0.0f);
-          if (boundary == RTC_BOUNDARY_EDGE_AND_CORNER && edge.isCorner()) 
+
+          /* pin corner vertices when requested by user */
+          if (boundary == RTC_BOUNDARY_PIN_CORNERS && edge.isCorner()) 
+            edge.vertex_crease_weight = float(inf);
+          
+          /* pin all border vertices when requested by user */
+          if (boundary == RTC_BOUNDARY_PIN_BORDERS && edge.vertexHasBorder()) 
             edge.vertex_crease_weight = float(inf);
         }
 
