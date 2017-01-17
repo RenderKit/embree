@@ -909,6 +909,12 @@ namespace embree
         mesh->positions.push_back(loadVec3faArray(xml->childOpt("positions2")));
     }
 
+    std::string boundary = xml->parm("boundary");
+    if      (boundary == "smooth"     ) mesh->boundaryMode = RTC_BOUNDARY_SMOOTH;
+    else if (boundary == "pin_corners") mesh->boundaryMode = RTC_BOUNDARY_PIN_CORNERS;
+    else if (boundary == "pin_borders") mesh->boundaryMode = RTC_BOUNDARY_PIN_BORDERS;
+    else if (boundary != ""           ) THROW_RUNTIME_ERROR("invalid boundary mode: "+boundary);
+
     mesh->normals = loadVec3faArray(xml->childOpt("normals"));
     mesh->texcoords = loadVec2fArray(xml->childOpt("texcoords"));
     mesh->position_indices = loadUIntArray(xml->childOpt("position_indices"));

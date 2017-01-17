@@ -1439,7 +1439,7 @@ namespace embree
     
     bool checkSubdivInterpolation(const RTCDeviceRef& device, const RTCSceneRef& scene, int geomID, RTCBufferType buffer, float* vertices0, size_t N, size_t N_total)
     {
-      rtcSetBoundaryMode(scene,geomID,RTC_BOUNDARY_EDGE_ONLY);
+      rtcSetBoundaryMode(scene,geomID,RTC_BOUNDARY_SMOOTH);
       AssertNoError(device);
       rtcDisable(scene,geomID);
       AssertNoError(device);
@@ -1458,7 +1458,7 @@ namespace embree
       passed &= checkInterpolationSharpVertex(scene,geomID,6,0.0f,1.0f,12,buffer,vertices0,N,N_total);
       passed &= checkInterpolationSharpVertex(scene,geomID,8,1.0f,1.0f,15,buffer,vertices0,N,N_total);
       
-      rtcSetBoundaryMode(scene,geomID,RTC_BOUNDARY_EDGE_AND_CORNER);
+      rtcSetBoundaryMode(scene,geomID,RTC_BOUNDARY_PIN_CORNERS);
       AssertNoError(device);
       rtcCommit(scene);
       AssertNoError(device);

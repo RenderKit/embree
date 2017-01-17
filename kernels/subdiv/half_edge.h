@@ -150,7 +150,7 @@ namespace embree
     __forceinline bool isCorner() const {
       return !hasOpposite() && !prev()->hasOpposite();
     }
-    
+
     /*! tests if the vertex is attached to any border */
     __forceinline bool vertexHasBorder() const 
     {
@@ -209,8 +209,8 @@ namespace embree
         "prev = " << h.prev_half_edge_ofs << ", " << 
         "next = " << h.next_half_edge_ofs << ", " << 
         "opposite = " << h.opposite_half_edge_ofs << ", " << 
-        //"edge_crease = " << h.edge_crease_weight << ", " << 
-        //"vertex_crease = " << h.vertex_crease_weight << ", " << 
+        "edge_crease = " << h.edge_crease_weight << ", " << 
+        "vertex_crease = " << h.vertex_crease_weight << ", " << 
         //"edge_level = " << h.edge_level << 
         " }";
     } 
