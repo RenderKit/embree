@@ -3569,7 +3569,7 @@ namespace embree
 
     bool setup(VerifyApplication* state) 
     {
-      std::string cfg = state->rtcore + ",start_threads=1,set_affinity=1,isa="+stringOfISA(isa) + ",threads=" + std::to_string((long long)numThreads);
+      std::string cfg = "start_threads=1,set_affinity=1,isa="+stringOfISA(isa) + ",threads=" + std::to_string((long long)numThreads)+","+state->rtcore;
       device = rtcNewDevice(cfg.c_str());
       errorHandler(rtcDeviceGetError(device));
       rtcDeviceSetErrorFunction(device,errorHandler);
