@@ -478,6 +478,8 @@ namespace embree
         bytesAllocated = max(bytesAllocated,bytesMortonCodes); // the first allocation block is reused to sort the morton codes
         bvh->alloc.init(bytesAllocated,2*bytesAllocated);
 
+        bvh->alloc.initGrowSizeAndNumSlots(PAGE_SIZE);
+
         size_t block_size = size_t(BLOCK_SIZE);
 
         /* compute scene bounds */
