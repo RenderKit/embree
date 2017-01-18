@@ -329,9 +329,9 @@ namespace embree
         if (likely(freeBlocks.load() == nullptr)) 
         {
           Lock<SpinLock> lock(slotMutex[slot]);
-          if (myUsedBlocks == threadUsedBlocks[slot]) {
+          if (myUsedBlocks == threadUsedBlocks[slot]) {            
             //const size_t allocSize = min(growSize * incGrowSizeScale(),size_t(maxAllocationSize+maxAlignment))-maxAlignment;
-            /* new slot, use current growSize to init first block */
+            /* new allocation */
             const size_t allocSize = min(max(growSize,bytes),size_t(maxAllocationSize));
             threadBlocks[slot] = threadUsedBlocks[slot] = Block::create(device,allocSize,allocSize,threadBlocks[slot],osAllocation);              
           }

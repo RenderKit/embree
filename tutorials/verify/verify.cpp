@@ -1098,7 +1098,7 @@ namespace embree
 
     std::pair<ssize_t,ssize_t> run_build(VerifyApplication* state, size_t N, unsigned numThreads)
     {
-      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa) + ",threads="+std::to_string(numThreads);
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa) + ",threads="+std::to_string((long long)numThreads);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       errorHandler(rtcDeviceGetError(device));
       memory_consumption_bytes_used = 0;
