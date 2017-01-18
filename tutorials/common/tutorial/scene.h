@@ -252,10 +252,10 @@ namespace embree
     struct HairSet : public Geometry
     {
       HairSet (avector<Vec3fa>& positions, std::vector<Hair>& hairs, unsigned materialID, bool hair)
-		  : Geometry(hair ? HAIR_SET : CURVES), positions(positions), hairs(hairs), numTimeSteps(1), numVertices((unsigned int)positions.size()), materialID(materialID) {}
+        : Geometry(hair ? HAIR_SET : CURVES), positions(positions), hairs(hairs), numTimeSteps(1), numVertices((unsigned int)positions.size()), materialID(materialID), tessellation_rate(4) {}
       
       HairSet (Ref<SceneGraph::HairSetNode> mesh, const SceneGraph::Transformations& spaces, unsigned materialID)
-		  : Geometry(mesh->hair ? HAIR_SET : CURVES), numTimeSteps((unsigned int)mesh->numTimeSteps()), numVertices((unsigned int)mesh->numVertices()), materialID(materialID)
+        : Geometry(mesh->hair ? HAIR_SET : CURVES), numTimeSteps((unsigned int)mesh->numTimeSteps()), numVertices((unsigned int)mesh->numVertices()), materialID(materialID), tessellation_rate(mesh->tessellation_rate)
       {
         positions.resize(numTimeSteps*numVertices); 
         for (size_t t=0; t<numTimeSteps; t++) {
@@ -279,6 +279,7 @@ namespace embree
       unsigned numTimeSteps;
       unsigned numVertices;
       unsigned materialID;
+      unsigned tessellation_rate;
     };
     
     struct Instance : public Geometry

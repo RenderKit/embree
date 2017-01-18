@@ -244,6 +244,7 @@ namespace embree
         numVertices = in->numVertices;
         numHairs = unsigned(in->hairs.size());
         materialID = in->materialID;
+        tessellation_rate = in->tessellation_rate;
       }
 
     public:
@@ -256,6 +257,7 @@ namespace embree
       unsigned int numHairs;
       unsigned int materialID;
       unsigned int geomID;
+      unsigned int tessellation_rate;
     };
 
     struct ISPCInstance

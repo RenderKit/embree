@@ -693,14 +693,14 @@ namespace embree
       
     public:
       HairSetNode (bool hair, Ref<MaterialNode> material, size_t numTimeSteps = 0)
-        : Node(true), hair(hair), material(material) 
+        : Node(true), hair(hair), material(material), tessellation_rate(4)
       {
         for (size_t i=0; i<numTimeSteps; i++)
           positions.push_back(avector<Vertex>());
       }
 
       HairSetNode (Ref<SceneGraph::HairSetNode> imesh, const Transformations& spaces)
-        : Node(true), hair(imesh->hair), hairs(imesh->hairs), material(imesh->material)
+        : Node(true), hair(imesh->hair), hairs(imesh->hairs), material(imesh->material), tessellation_rate(imesh->tessellation_rate)
       {
         for (size_t i=0; i<spaces.size(); i++) {
           avector<Vertex> verts(imesh->numVertices());
@@ -754,6 +754,7 @@ namespace embree
       std::vector<avector<Vertex>> positions; //!< hair control points (x,y,z,r) for multiple timesteps
       std::vector<Hair> hairs;  //!< list of hairs
       Ref<MaterialNode> material;
+      unsigned tessellation_rate;
     };
     
     Ref<Node> flatten(Ref<Node> node, const Transformations& spaces = Transformations(one));
