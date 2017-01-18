@@ -198,10 +198,15 @@ namespace embree
     }
 
     /*! initializes the grow size */
-    __forceinline void initGrowSize(size_t bytesReserve) 
+    __forceinline void initGrowSizeAndNumSlots(size_t bytesAllocate, size_t bytesReserve = 0) 
     {
+      if (bytesReserve == 0) bytesReserve = bytesAllocate;
       growSize = clamp(bytesReserve,size_t(PAGE_SIZE),maxAllocationSize);
       log2_grow_size_scale = 0;
+      slotMask = 0x0;
+      if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesAllocate >  4*maxAllocationSize) slotMask = 0x1;
+      if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesAllocate >  8*maxAllocationSize) slotMask = 0x3;
+      if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesAllocate > 16*maxAllocationSize) slotMask = 0x7;
     }
 
 
@@ -216,7 +221,7 @@ namespace embree
       freeBlocks = Block::create(device,bytesAllocate,bytesReserve,nullptr,osAllocation);
       use_single_mode = false; //bytesAllocate < 8*PAGE_SIZE;
       defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE));
-      initGrowSize(bytesReserve);
+      initGrowSizeAndNumSlots(bytesAllocate,bytesReserve);
     }
 
     /*! initializes the allocator */
@@ -226,11 +231,7 @@ namespace embree
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       use_single_mode = false; //bytesAllocate < 8*PAGE_SIZE;
       defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE));
-      initGrowSize(bytesAllocate);
-      slotMask = 0x0;
-      if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesAllocate >  4*maxAllocationSize) slotMask = 0x1;
-      if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesAllocate >  8*maxAllocationSize) slotMask = 0x3;
-      if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesAllocate > 16*maxAllocationSize) slotMask = 0x7;
+      initGrowSizeAndNumSlots(bytesAllocate,bytesAllocate);
     }
 
     /*! frees state not required after build */
@@ -331,7 +332,8 @@ namespace embree
           if (myUsedBlocks == threadUsedBlocks[slot]) {
             //const size_t allocSize = min(growSize * incGrowSizeScale(),size_t(maxAllocationSize+maxAlignment))-maxAlignment;
             /* new slot, use current growSize to init first block */
-            const size_t allocSize = growSize;
+            const size_t allocSize = min(growSize,size_t(maxAllocationSize+maxAlignment))-maxAlignment;
+
             threadBlocks[slot] = threadUsedBlocks[slot] = Block::create(device,allocSize,allocSize,threadBlocks[slot],osAllocation);              
           }
           continue;
