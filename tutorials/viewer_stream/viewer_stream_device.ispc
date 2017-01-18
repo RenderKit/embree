@@ -94,6 +94,7 @@ uniform unsigned int convertHairSet(uniform ISPCHairSet* uniform hair, RTCScene 
     rtcSetBuffer(scene_out,geomID,(uniform RTCBufferType)(RTC_VERTEX_BUFFER+t),hair->positions+t*hair->numVertices,0,sizeof(uniform Vertex));
   }
   rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(uniform ISPCHair));
+  rtcSetTessellationRate(scene_out,geomID,hair->tessellation_rate);
   return geomID;
 }
 

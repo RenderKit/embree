@@ -126,6 +126,7 @@ struct ISPCHairSet
   unsigned int numHairs;
   unsigned int materialID;
   unsigned int geomID;
+  unsigned int tessellation_rate;
 };
 
 struct ISPCInstance

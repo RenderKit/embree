@@ -988,6 +988,10 @@ namespace embree
     for (size_t i=0; i<indices.size(); i++) 
       mesh->hairs[i] = SceneGraph::HairSetNode::Hair(indices[i].x,indices[i].y);
 
+    std::string tessellation_rate = xml->parm("tessellation_rate");
+    if (tessellation_rate != "")
+      mesh->tessellation_rate = atoi(tessellation_rate.c_str());
+
     mesh->verify();
     return mesh;
   }
