@@ -222,17 +222,6 @@ namespace embree
                        madd(vfloat<M>::loadu(&bezier_coeff0.c2[size][ofs]), Vec4<vfloat<M>>(v2),
                             vfloat<M>::loadu(&bezier_coeff0.c3[size][ofs]) * Vec4<vfloat<M>>(v3))));
     }
-
-    template<int M>
-      __forceinline Vec4<vfloat<M>> derivative(const vbool<M>& valid, const int ofs, const int size) const
-    {
-      assert(size <= BezierCoefficients::N);
-      assert(ofs <= size);
-      return madd(vfloat<M>::loadu(&bezier_coeff0.d0[size][ofs]), Vec4<vfloat<M>>(v0),
-                  madd(vfloat<M>::loadu(&bezier_coeff0.d1[size][ofs]), Vec4<vfloat<M>>(v1),
-                       madd(vfloat<M>::loadu(&bezier_coeff0.d2[size][ofs]), Vec4<vfloat<M>>(v2),
-                            vfloat<M>::loadu(&bezier_coeff0.d3[size][ofs]) * Vec4<vfloat<M>>(v3))));
-    }
     
     template<int M>
       __forceinline Vec4<vfloat<M>> eval1(const vbool<M>& valid, const int ofs, const int size) const
@@ -243,6 +232,28 @@ namespace embree
                   madd(vfloat<M>::loadu(&bezier_coeff1.c1[size][ofs]), Vec4<vfloat<M>>(v1),
                        madd(vfloat<M>::loadu(&bezier_coeff1.c2[size][ofs]), Vec4<vfloat<M>>(v2),
                             vfloat<M>::loadu(&bezier_coeff1.c3[size][ofs]) * Vec4<vfloat<M>>(v3))));
+    }
+
+    template<int M>
+      __forceinline Vec4<vfloat<M>> derivative0(const vbool<M>& valid, const int ofs, const int size) const
+    {
+      assert(size <= BezierCoefficients::N);
+      assert(ofs <= size);
+      return madd(vfloat<M>::loadu(&bezier_coeff0.d0[size][ofs]), Vec4<vfloat<M>>(v0),
+                  madd(vfloat<M>::loadu(&bezier_coeff0.d1[size][ofs]), Vec4<vfloat<M>>(v1),
+                       madd(vfloat<M>::loadu(&bezier_coeff0.d2[size][ofs]), Vec4<vfloat<M>>(v2),
+                            vfloat<M>::loadu(&bezier_coeff0.d3[size][ofs]) * Vec4<vfloat<M>>(v3))));
+    }
+
+    template<int M>
+      __forceinline Vec4<vfloat<M>> derivative1(const vbool<M>& valid, const int ofs, const int size) const
+    {
+      assert(size <= BezierCoefficients::N);
+      assert(ofs <= size);
+      return madd(vfloat<M>::loadu(&bezier_coeff1.d0[size][ofs]), Vec4<vfloat<M>>(v0),
+                  madd(vfloat<M>::loadu(&bezier_coeff1.d1[size][ofs]), Vec4<vfloat<M>>(v1),
+                       madd(vfloat<M>::loadu(&bezier_coeff1.d2[size][ofs]), Vec4<vfloat<M>>(v2),
+                            vfloat<M>::loadu(&bezier_coeff1.d3[size][ofs]) * Vec4<vfloat<M>>(v3))));
     }
 
     /* calculates bounds of bezier curve geometry */
@@ -256,7 +267,7 @@ namespace embree
         vintx vi = vintx(i)+vintx(step);
         vboolx valid = vi <= vintx(N);
         const Vec4vfx p  = eval0(valid,i,N);
-        const Vec4vfx dp = derivative(valid,i,N);
+        const Vec4vfx dp = derivative0(valid,i,N);
         const Vec4vfx pm = p-Vec4vfx(scale)*select(vi!=vintx(0),dp,Vec4vfx(zero));
         const Vec4vfx pp = p+Vec4vfx(scale)*select(vi!=vintx(N),dp,Vec4vfx(zero));
         pl = select(valid,min(pl,p,pm,pp),pl); // FIXME: use masked min

@@ -35,7 +35,7 @@ namespace embree
       __forceinline void finalize() 
       {
         vu = (vfloat<M>(step)+U+vfloat<M>(float(i)))*(1.0f/float(N));
-        vv = 0.0f;
+        vv = V;
         vt = T;
       }
       
@@ -88,7 +88,47 @@ namespace embree
         vboolx valid = vfloatx(step) < vfloatx(float(N));
         const Vec4vfx p0 = curve2D.eval0(valid,0,N);
         const Vec4vfx p1 = curve2D.eval1(valid,0,N);
-        
+      
+#if 0
+        const Vec3vfx dp0dt = curve2D.derivative0(valid,0,N);
+        const Vec3vfx dp1dt = curve2D.derivative1(valid,0,N);
+        const Vec3vfx n0(dp0dt.y,-dp0dt.x,0.0f);
+        const Vec3vfx n1(dp1dt.y,-dp1dt.x,0.0f);
+        const Vec3vfx nn0 = normalize(n0);
+        const Vec3vfx nn1 = normalize(n1);
+        const Vec3vfx up0 = Vec3vfx(p0)+nn0*p0.w;
+        const Vec3vfx up1 = Vec3vfx(p1)+nn1*p1.w;
+        const Vec3vfx lp0 = Vec3vfx(p0)-nn0*p0.w;
+        const Vec3vfx lp1 = Vec3vfx(p1)-nn1*p1.w;
+
+        const Vec2vfx uv_lp0(0.0f,-1.0f);
+        const Vec2vfx uv_lp1(1.0f,-1.0f);
+        const Vec2vfx uv_up0(0.0f,+1.0f);
+        const Vec2vfx uv_up1(1.0f,+1.0f);
+
+        bool ishit = false;
+        Ray lray(zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale);
+        MoellerTrumboreIntersector1<VSIZEX> intersector;
+
+        MoellerTrumboreHitM<VSIZEX> hit0;
+        if (intersector.intersect(valid,lray,up0,up1,lp0,hit0)) {
+          hit0.finalize();
+          const Vec2vfx uv = hit0.vu*uv_up1 + hit0.vv*uv_lp0 + (vfloatx(1.0f)-hit0.vu-hit0.vv)*uv_up0;
+          BezierHit<VSIZEX> bhit(hit0.valid,uv.x,uv.y,depth_scale*hit0.vt,0,N,v0,v1,v2,v3);
+          ishit |= epilog(bhit.valid,bhit);
+        }
+
+        MoellerTrumboreHitM<VSIZEX> hit1;
+        Ray lray1(zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale);
+        if (intersector.intersect(valid,lray1,lp0,lp1,up1,hit1)) {
+          hit1.finalize();
+          const Vec2vfx uv = hit1.vu*uv_lp1 + hit1.vv*uv_up1 + (vfloatx(1.0f)-hit1.vu-hit1.vv)*uv_lp0;
+          BezierHit<VSIZEX> bhit(hit1.valid,uv.x,uv.y,depth_scale*hit1.vt,0,N,v0,v1,v2,v3);
+          ishit |= epilog(bhit.valid,bhit);
+        }
+        return ishit;
+  
+#else
         /* approximative intersection with cone */
         const Vec4vfx v = p1-p0;
         const Vec4vfx w = -p0;
@@ -102,9 +142,28 @@ namespace embree
         const vfloatx r2 = r*r;
         valid &= (d2 <= r2) & (vfloatx(ray.tnear) < t) & (t < vfloatx(ray.tfar));
 
+#if 0
+        const Vec3vfx dp0dt = curve2D.derivative0(valid,0,N);
+        const Vec3vfx dp1dt = curve2D.derivative1(valid,0,N);
+        valid &= dot(Vec2vfx(p0.x,p0.y),Vec2vfx(dp0dt.x,dp0dt.y)) <= 0.0f;
+        valid &= dot(Vec2vfx(p1.x,p1.y),Vec2vfx(dp1dt.x,dp1dt.y)) >= 0.0f;
+#endif
+
+#if 0
+        const Vec4vfx p1p0 = p1-p0;
+        const vfloatx side = p1p0.x*p0.y - p1p0.y*p0.x;
+        const vfloatx sd2 = select(side<0.0f,vfloatx(1.0f),vfloatx(-1.0f));
+#endif
+
+#if 0
+        for (size_t i=0; i<min(VSIZEX,N)-1; i++)
+          if (d2[i] < d2[i+1]) valid[i+1] = 0;
+#endif
+
         /* update hit information */
         bool ishit = false;
         if (unlikely(any(valid))) {
+          //BezierHit<VSIZEX> hit(valid,u,sd2*sqrt(d2*rcp(r2)),t,0,N,v0,v1,v2,v3);
           BezierHit<VSIZEX> hit(valid,u,0.0f,t,0,N,v0,v1,v2,v3);
           ishit = ishit | epilog(valid,hit);
         }
@@ -140,6 +199,7 @@ namespace embree
           }
         }
         return ishit;
+#endif
       }
     };
 
