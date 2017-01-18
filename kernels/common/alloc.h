@@ -197,6 +197,14 @@ namespace embree
       }
     }
 
+    /*! initializes the grow size */
+    __forceinline void initGrowSize(size_t bytesReserve) 
+    {
+      growSize = clamp(bytesReserve,size_t(PAGE_SIZE),maxAllocationSize);
+      log2_grow_size_scale = 0;
+    }
+
+
     /*! initializes the allocator */
     void init(size_t bytesAllocate, size_t bytesReserve = 0) 
     {     
@@ -208,8 +216,7 @@ namespace embree
       freeBlocks = Block::create(device,bytesAllocate,bytesReserve,nullptr,osAllocation);
       use_single_mode = false; //bytesAllocate < 8*PAGE_SIZE;
       defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE));
-      growSize = clamp(bytesReserve,size_t(PAGE_SIZE),maxAllocationSize);
-      log2_grow_size_scale = 0;
+      initGrowSize(bytesReserve);
     }
 
     /*! initializes the allocator */
@@ -219,8 +226,7 @@ namespace embree
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       use_single_mode = false; //bytesAllocate < 8*PAGE_SIZE;
       defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE));
-      growSize = clamp(bytesAllocate,size_t(PAGE_SIZE),maxAllocationSize);
-      log2_grow_size_scale = 0;
+      initGrowSize(bytesAllocate);
       slotMask = 0x0;
       if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesAllocate >  4*maxAllocationSize) slotMask = 0x1;
       if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesAllocate >  8*maxAllocationSize) slotMask = 0x3;
@@ -323,7 +329,9 @@ namespace embree
         {
           Lock<SpinLock> lock(slotMutex[slot]);
           if (myUsedBlocks == threadUsedBlocks[slot]) {
-            const size_t allocSize = min(growSize * incGrowSizeScale(),size_t(maxAllocationSize+maxAlignment))-maxAlignment;
+            //const size_t allocSize = min(growSize * incGrowSizeScale(),size_t(maxAllocationSize+maxAlignment))-maxAlignment;
+            /* new slot, use current growSize to init first block */
+            const size_t allocSize = growSize;
             threadBlocks[slot] = threadUsedBlocks[slot] = Block::create(device,allocSize,allocSize,threadBlocks[slot],osAllocation);              
           }
           continue;
