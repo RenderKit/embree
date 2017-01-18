@@ -91,7 +91,7 @@ namespace embree {
       rtcSetBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t),hair->positions+t*hair->numVertices,0,sizeof(Vertex));
     }
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
-    rtcSetTessellationRate(scene_out,geomID,hair->tessellation_rate);
+    rtcSetTessellationRate(scene_out,geomID,(float)hair->tessellation_rate);
     return geomID;
   }
 

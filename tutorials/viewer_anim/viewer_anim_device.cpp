@@ -145,7 +145,7 @@ namespace embree {
       rtcSetBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t),hair->positions+t*hair->numVertices,0,sizeof(Vertex));
     }
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
-    rtcSetTessellationRate(scene_out,geomID,hair->tessellation_rate);
+    rtcSetTessellationRate(scene_out,geomID,(float)hair->tessellation_rate);
     return geomID;
   }
 
@@ -214,7 +214,7 @@ namespace embree {
     return geomID;
   }
 
-  void updateVertexData(const unsigned int geomID, ISPCScene* scene_in, RTCScene scene_out, size_t keyFrameID, const float t)
+  void updateVertexData(const unsigned int geomID, ISPCScene* scene_in, RTCScene scene_out, size_t keyFrameID, const float tt)
   {
     size_t numGeometries = scene_in->numGeometries;
     if (!numGeometries) return;
@@ -243,7 +243,7 @@ namespace embree {
 
         parallel_for(size_t(0),size_t(mesh0->numVertices),[&](const range<size_t>& range) {
             for (size_t i=range.begin(); i<range.end(); i++)
-              vertices[i] = lerp(input0[i],input1[i],t);
+              vertices[i] = lerp(input0[i],input1[i],tt);
           }); 
 
         rtcUnmapBuffer(scene_out, geomID, (RTCBufferType)(RTC_VERTEX_BUFFER+t));
