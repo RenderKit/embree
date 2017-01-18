@@ -332,7 +332,7 @@ namespace embree
           if (myUsedBlocks == threadUsedBlocks[slot]) {
             //const size_t allocSize = min(growSize * incGrowSizeScale(),size_t(maxAllocationSize+maxAlignment))-maxAlignment;
             /* new slot, use current growSize to init first block */
-            const size_t allocSize = min(growSize,size_t(maxAllocationSize+maxAlignment))-maxAlignment;
+            const size_t allocSize = min(max(growSize,bytes),size_t(maxAllocationSize+maxAlignment))-maxAlignment;
 
             threadBlocks[slot] = threadUsedBlocks[slot] = Block::create(device,allocSize,allocSize,threadBlocks[slot],osAllocation);              
           }
@@ -353,7 +353,9 @@ namespace embree
 	      freeBlocks = nextFreeBlock;
 	    } else {
 	      //growSize = min(2*growSize,size_t(maxAllocationSize+maxAlignment));
-              const size_t allocSize = min(growSize * incGrowSizeScale(),size_t(maxAllocationSize+maxAlignment))-maxAlignment;
+              const size_t curGrowSize = growSize * incGrowSizeScale();
+              assert(curGrowSize >= bytes);
+              const size_t allocSize = min(curGrowSize,size_t(maxAllocationSize+maxAlignment))-maxAlignment;
 	      usedBlocks = threadUsedBlocks[slot] = Block::create(device,allocSize,allocSize,usedBlocks,osAllocation);
 	    }
 	  }
