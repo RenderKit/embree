@@ -74,8 +74,8 @@ enum RTCBoundaryMode
   RTC_BOUNDARY_PIN_BORDERS = 3,        //!< linearly interpolation along border
 
   /* old names for compatibility */
-  RTC_BOUNDARY_EDGE_ONLY RTCORE_DEPRECATED = 1,          //!< soft boundary (default)
-  RTC_BOUNDARY_EDGE_AND_CORNER RTCORE_DEPRECATED = 2    //!< boundary corner vertices are sharp vertices
+  RTC_BOUNDARY_EDGE_ONLY /* RTCORE_DEPRECATED */ = 1,          //!< soft boundary (default)
+  RTC_BOUNDARY_EDGE_AND_CORNER /* RTCORE_DEPRECATED */ = 2    //!< boundary corner vertices are sharp vertices
 };
 
 /*! Intersection filter function for single rays. */
