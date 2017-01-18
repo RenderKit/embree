@@ -1078,6 +1078,93 @@ namespace embree
       return VerifyApplication::PASSED;
     }
   };
+
+  static std::atomic<ssize_t> memory_consumption_bytes_used(0);
+
+  struct MemoryConsumptionTest : public VerifyApplication::Test
+  {
+    GeometryType gtype;
+    RTCSceneFlags sflags;
+    RTCGeometryFlags gflags;
+    
+    MemoryConsumptionTest (std::string name, int isa, GeometryType gtype, RTCSceneFlags sflags, RTCGeometryFlags gflags)
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), gtype(gtype), sflags(sflags), gflags(gflags) {}
+
+    static bool memoryMonitor(const ssize_t bytes, const bool /*post*/)
+    {
+      memory_consumption_bytes_used += bytes;
+      return true;
+    }
+
+    std::pair<ssize_t,ssize_t> run_build(VerifyApplication* state, size_t N, unsigned numThreads)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa) + ",threads="+std::to_string(numThreads);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      errorHandler(rtcDeviceGetError(device));
+      memory_consumption_bytes_used = 0;
+      rtcDeviceSetMemoryMonitorFunction(device,memoryMonitor);
+      VerifyScene scene(device,sflags,aflags);
+      AssertNoError(device);
+      
+      int numPhi = (size_t) ceilf(sqrtf(N/4.0f));
+      ssize_t NN = 0;
+      
+      Ref<SceneGraph::Node> mesh;
+      int i = 0;
+      switch (gtype) {
+      case TRIANGLE_MESH:    
+      case TRIANGLE_MESH_MB: mesh = SceneGraph::createTriangleSphere(zero,float(i+1),numPhi); 
+                             NN = 4*numPhi*numPhi; break;
+      case QUAD_MESH:        
+      case QUAD_MESH_MB:     mesh = SceneGraph::createQuadSphere(zero,float(i+1),numPhi); 
+                             NN = 2*numPhi*numPhi; break;
+      case SUBDIV_MESH:      
+      case SUBDIV_MESH_MB:   mesh = SceneGraph::createSubdivSphere(zero,float(i+1),8,float(numPhi)/8.0f); 
+                             NN = 2*8*8; break;
+      case HAIR_GEOMETRY:    
+      case HAIR_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi,true); 
+                             NN = 4*numPhi*numPhi; break;
+      case LINE_GEOMETRY:    
+      case LINE_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi/3,true); 
+                             NN = (4*numPhi*numPhi/3)*3; break;
+      default:               throw std::runtime_error("invalid geometry for benchmark");
+      }
+      
+      switch (gtype) {
+      case LINE_GEOMETRY:    
+      case LINE_GEOMETRY_MB: mesh = SceneGraph::convert_bezier_to_lines(mesh); break;
+      default: break;
+      }
+      
+      switch (gtype) {
+      case TRIANGLE_MESH_MB: 
+      case QUAD_MESH_MB:     
+      case SUBDIV_MESH_MB:   
+      case HAIR_GEOMETRY_MB: 
+      case LINE_GEOMETRY_MB: mesh = mesh->set_motion_vector(random_motion_vector2(0.0001f)); break;
+      default: break;
+      }
+      
+      scene.addGeometry(gflags,mesh);
+      rtcCommit (scene);
+      AssertNoError(device);
+
+      return std::make_pair(NN,memory_consumption_bytes_used.load());
+    }
+    
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      for (size_t N=128; N<100000; N*=1.2f)
+      {
+        auto bytes_one_thread  = run_build(state,N,1);
+        auto bytes_all_threads = run_build(state,N,0);
+        double overhead = double(bytes_all_threads.second)/double(bytes_one_thread.second);
+        //std::cout << "N = " << bytes_one_thread.first << ", 1 thread = " << 1E-6*bytes_one_thread.second << " MB, all_threads = " << 1E-6*bytes_all_threads.second << " MB (" << 100.0f*overhead << " %)" << std::endl;
+        if (overhead > 1.2f) return VerifyApplication::FAILED;
+      }
+      return VerifyApplication::PASSED;
+    }
+  };
     
   struct NewDeleteGeometryTest : public VerifyApplication::Test
   {
@@ -3506,7 +3593,7 @@ namespace embree
     }
   };
 
-  static std::atomic<ssize_t> bytes_used(0);
+  static std::atomic<ssize_t> create_geometry_bytes_used(0);
 
   struct CreateGeometryBenchmark : public VerifyApplication::Benchmark
   {
@@ -3563,7 +3650,7 @@ namespace embree
 
     static bool memoryMonitor(const ssize_t bytes, const bool /*post*/)
     {
-      bytes_used += bytes;
+      create_geometry_bytes_used += bytes;
       return true;
     }
 
@@ -3623,7 +3710,7 @@ namespace embree
         for (unsigned int i=0; i<numMeshes; i++) 
           rtcUpdate(*scene,i);
       
-      bytes_used = 0;
+      create_geometry_bytes_used = 0;
       rtcCommit (*scene);
       AssertNoError(device);
       
@@ -3632,7 +3719,7 @@ namespace embree
       if (dobenchmark)
         return 1E-6f*float(numPrimitives)/float(t1-t0);
       else
-        return 1E-6f*bytes_used;
+        return 1E-6f*create_geometry_bytes_used;
     }
       
     virtual void cleanup(VerifyApplication* state) 
@@ -3831,6 +3918,19 @@ namespace embree
       groups.pop();
 
       groups.top()->add(new GarbageGeometryTest("build_garbage_geom",isa));
+
+      GeometryType gtypes_memory[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, HAIR_GEOMETRY, HAIR_GEOMETRY_MB, LINE_GEOMETRY, LINE_GEOMETRY_MB };
+      std::vector<std::pair<RTCSceneFlags,RTCGeometryFlags>> sflags_gflags_memory;
+      sflags_gflags_memory.push_back(std::make_pair(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC));
+      sflags_gflags_memory.push_back(std::make_pair(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC));
+
+      push(new TestGroup("memory_consumption",false,false,false));
+
+      for (auto gtype : gtypes_memory)
+        for (auto sflags : sflags_gflags_memory)
+          groups.top()->add(new MemoryConsumptionTest(to_string(gtype)+"."+to_string(sflags.first,sflags.second),isa,gtype,sflags.first,sflags.second));
+
+      groups.pop();
 
       /**************************************************************************/
       /*                     Interpolation Tests                                */
