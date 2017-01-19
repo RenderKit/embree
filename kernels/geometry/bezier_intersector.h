@@ -71,72 +71,6 @@ namespace embree
       __forceinline Bezier1Intersector1(const Ray& ray, const void* ptr) 
          : depth_scale(rsqrt(dot(ray.dir,ray.dir))), ray_space(frame(depth_scale*ray.dir).transposed()) {}
 
-      __forceinline vboolx intersect_quad(const vboolx& valid0,
-                                          const Vec3fa& ray_org,
-                                          const Vec3fa& ray_dir,
-                                          const float ray_tnear,
-                                          const float ray_tfar,
-                                          const Vec3vfx& tri_v0, 
-                                          const Vec3vfx& tri_v1, 
-                                          const Vec3vfx& tri_v2, 
-                                          const Vec3vfx& tri_v3, 
-                                          vfloatx& vu, 
-                                          vfloatx& vv,
-                                          vfloatx& vt) const
-      {
-        vboolx valid = valid0;
-
-        /* calculate vertices relative to ray origin */
-        const Vec3vfx O = Vec3vfx(ray_org);
-        const Vec3vfx D = Vec3vfx(ray_dir);
-        const Vec3vfx va = tri_v0-O;
-        const Vec3vfx vb = tri_v1-O;
-        const Vec3vfx vc = tri_v2-O;
-        const Vec3vfx vd = tri_v3-O;
-        
-        const Vec3vfx edb = vb-vd;
-        const vfloatx WW = dot(cross(vd,edb),D);
-        const Vec3vfx v0 = select(WW <= 0.0f,va,vc);
-        const Vec3vfx v1 = select(WW <= 0.0f,vb,vd);
-        const Vec3vfx v2 = select(WW <= 0.0f,vd,vb);
-
-        /* calculate triangle edges */
-        const Vec3vfx e0 = v2-v0;
-        const Vec3vfx e1 = v0-v1;
-                
-        /* perform edge tests */
-        const vfloatx U = dot(cross(v0,e0),D);
-        const vfloatx V = dot(cross(v1,e1),D);  
-        valid &= max(U,V) <= 0.0f;
-        if (unlikely(none(valid))) return false;
-        
-        /* calculate geometry normal and denominator */
-        const Vec3vfx Ng1 = cross(e1,e0);
-        const Vec3vfx Ng = Ng1;
-        const vfloatx den = dot(Ng,D);
-        const vfloatx absDen = abs(den);
-        const vfloatx sgnDen = signmsk(den);
-        
-        /* perform depth test */
-        const vfloatx T = dot(v0,Ng);
-        valid &= ((T^sgnDen) >= absDen*vfloatx(ray_tnear));
-        valid &=(absDen*vfloatx(ray_tfar) >= (T^sgnDen));
-        if (unlikely(none(valid))) return false;
-        
-        /* avoid division by 0 */
-        valid &= den != vfloatx(zero);
-        if (unlikely(none(valid))) return false;
-        
-        /* update hit information */
-        const vfloatx rcpDen = rcp(den);
-        vt = T * rcpDen;
-        vu = U * rcpDen;
-        vv = V * rcpDen;
-        vu = select(WW <= 0.0f,vu,1.0f-vu);
-        vv = select(WW <= 0.0f,vv,1.0f-vv);
-        return valid;
-      }
-
       /* calculate squared distance of point p0 to line p1->p2 */
       static __forceinline std::pair<vfloatx,vfloatx> sqr_point_line_distance(const Vec2vfx& p0, const Vec2vfx& p1, const Vec2vfx& p2)
       {
@@ -181,7 +115,7 @@ namespace embree
 
         bool ishit = false;
         vfloatx vu,vv,vt;
-        vboolx valid0 = intersect_quad(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,lp1,up1,up0,vu,vv,vt);
+        vboolx valid0 = intersect_quad_backface_culling(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,lp1,up1,up0,vu,vv,vt);
         if (any(valid0))
         {
           vv = madd(2.0f,vv,vfloatx(-1.0f));
@@ -206,7 +140,7 @@ namespace embree
             vboolx valid = vfloatx(i)+vfloatx(step) < vfloatx(float(N)) & vfloatx(step) < VSIZEX-1;
             
             vfloatx vu,vv,vt;
-            vboolx valid0 = intersect_quad(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,lp1,up1,up0,vu,vv,vt);
+            vboolx valid0 = intersect_quad_backface_culling(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,lp1,up1,up0,vu,vv,vt);
             if (any(valid0))
             {
               vv = madd(2.0f,vv,vfloatx(-1.0f));
@@ -244,7 +178,7 @@ namespace embree
           const Vec3vfx up1 = nmadd(p1.w,nn1,Vec3vfx(p1));
           
           vfloatx vu,vv,vt;
-          vboolx valid0 = intersect_quad(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,lp1,up1,up0,vu,vv,vt);
+          vboolx valid0 = intersect_quad_backface_culling(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,lp1,up1,up0,vu,vv,vt);
           if (any(valid0))
           {
             vv = madd(2.0f,vv,vfloatx(-1.0f));
@@ -277,7 +211,7 @@ namespace embree
             const Vec3vfx up1 = nmadd(p1.w,nn1,Vec3vfx(p1));
             
             vfloatx vu,vv,vt;
-            vboolx valid0 = intersect_quad(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,lp1,up1,up0,vu,vv,vt);
+            vboolx valid0 = intersect_quad_backface_culling(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,lp1,up1,up0,vu,vv,vt);
             if (any(valid0))
             {
               vv = madd(2.0f,vv,vfloatx(-1.0f));
