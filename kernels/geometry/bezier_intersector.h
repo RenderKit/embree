@@ -34,8 +34,7 @@ namespace embree
       
       __forceinline void finalize() 
       {
-        //vu = (vfloat<M>(step)+U+vfloat<M>(float(i)))*(1.0f/float(N));
-        vu = U;
+        vu = (vfloat<M>(step)+U+vfloat<M>(float(i)))*(1.0f/float(N));
         vv = V;
         vt = T;
       }
@@ -135,6 +134,8 @@ namespace embree
         vt = T * rcpDen;
         vu = U * rcpDen;
         vv = V * rcpDen;
+        vu = select(WW <= 0.0f,vu,1.0f-vu);
+        vv = select(WW <= 0.0f,vv,1.0f-vv);
         return valid;
       }
 
