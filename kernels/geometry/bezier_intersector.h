@@ -220,7 +220,7 @@ namespace embree
 #endif
 
         /* SIMD-width matches number of processed segments */
-#if 1
+#if 0
 
         bool ishit = false;
 
@@ -291,7 +291,7 @@ namespace embree
 #endif
 
         /* old approximative intersection code */
-#if 0
+#if 1
         /* evaluate the bezier curve */
         vboolx valid = vfloatx(step) < vfloatx(float(N));
         const Vec4vfx p0 = curve2D.eval0(valid,0,N);
