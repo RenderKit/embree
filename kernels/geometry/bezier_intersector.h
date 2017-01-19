@@ -34,7 +34,8 @@ namespace embree
       
       __forceinline void finalize() 
       {
-        vu = (vfloat<M>(step)+U+vfloat<M>(float(i)))*(1.0f/float(N));
+        //vu = (vfloat<M>(step)+U+vfloat<M>(float(i)))*(1.0f/float(N));
+        vu = U;
         vv = V;
         vt = T;
       }
@@ -71,35 +72,43 @@ namespace embree
       __forceinline Bezier1Intersector1(const Ray& ray, const void* ptr) 
          : depth_scale(rsqrt(dot(ray.dir,ray.dir))), ray_space(frame(depth_scale*ray.dir).transposed()) {}
 
-      __forceinline vboolx intersect_triangle(const vboolx& valid0,
-                                             const Vec3fa& ray_org,
-                                             const Vec3fa& ray_dir,
-                                             const float ray_tnear,
-                                             const float ray_tfar,
-                                             const Vec3vfx& tri_v0, 
-                                             const Vec3vfx& tri_v1, 
-                                             const Vec3vfx& tri_v2, 
-                                             vfloatx& vu, 
-                                             vfloatx& vv,
-                                             vfloatx& vt) const
+      __forceinline vboolx intersect_quad(const vboolx& valid0,
+                                          const Vec3fa& ray_org,
+                                          const Vec3fa& ray_dir,
+                                          const float ray_tnear,
+                                          const float ray_tfar,
+                                          const Vec3vfx& tri_v0, 
+                                          const Vec3vfx& tri_v1, 
+                                          const Vec3vfx& tri_v2, 
+                                          const Vec3vfx& tri_v3, 
+                                          vfloatx& vu, 
+                                          vfloatx& vv,
+                                          vfloatx& vt) const
       {
         vboolx valid = valid0;
 
         /* calculate vertices relative to ray origin */
         const Vec3vfx O = Vec3vfx(ray_org);
         const Vec3vfx D = Vec3vfx(ray_dir);
-        const Vec3vfx v0 = tri_v0-O;
-        const Vec3vfx v1 = tri_v1-O;
-        const Vec3vfx v2 = tri_v2-O;
+        const Vec3vfx va = tri_v0-O;
+        const Vec3vfx vb = tri_v1-O;
+        const Vec3vfx vc = tri_v2-O;
+        const Vec3vfx vd = tri_v3-O;
         
+        const Vec3vfx edb = vb-vd;
+        const vfloatx WW = dot(cross(vd,edb),D);
+        const Vec3vfx v0 = select(WW <= 0.0f,va,vc);
+        const Vec3vfx v1 = select(WW <= 0.0f,vb,vd);
+        const Vec3vfx v2 = select(WW <= 0.0f,vd,vb);
+
         /* calculate triangle edges */
         const Vec3vfx e0 = v2-v0;
         const Vec3vfx e1 = v0-v1;
         const Vec3vfx e2 = v1-v2;
-        
+                
         /* perform edge tests */
         const vfloatx U = dot(cross(v0,e0),D);
-        const vfloatx V = dot(cross(v1,e1),D);
+        const vfloatx V = dot(cross(v1,e1),D);  
         const vfloatx W = dot(cross(v2,e2),D);
         valid &= max(U,V,W) <= 0.0f;
         if (unlikely(none(valid))) return false;
@@ -154,10 +163,10 @@ namespace embree
         const Vec3vfx n1(dp1dt.y,-dp1dt.x,0.0f);
         const Vec3vfx nn0 = normalize(n0);
         const Vec3vfx nn1 = normalize(n1);
-        const Vec3vfx up0 = Vec3vfx(p0)+nn0*p0.w;
-        const Vec3vfx up1 = Vec3vfx(p1)+nn1*p1.w;
-        const Vec3vfx lp0 = Vec3vfx(p0)-nn0*p0.w;
-        const Vec3vfx lp1 = Vec3vfx(p1)-nn1*p1.w;
+        const Vec3vfx lp0 = Vec3vfx(p0)+nn0*p0.w;
+        const Vec3vfx lp1 = Vec3vfx(p1)+nn1*p1.w;
+        const Vec3vfx up0 = Vec3vfx(p0)-nn0*p0.w;
+        const Vec3vfx up1 = Vec3vfx(p1)-nn1*p1.w;
 
         const Vec2vfx uv_lp0(0.0f,-1.0f);
         const Vec2vfx uv_lp1(1.0f,-1.0f);
@@ -165,8 +174,17 @@ namespace embree
         const Vec2vfx uv_up1(1.0f,+1.0f);
 
         bool ishit = false;
-
         vfloatx vu,vv,vt;
+        vboolx valid0 = intersect_quad(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,lp1,up1,up0,vu,vv,vt);
+        if (any(valid0))
+        {
+          //const Vec2vfx uv = vu*uv_up0 + vv*uv_lp1 + (vfloatx(1.0f)-vu-vv)*uv_lp0;
+          BezierHit<VSIZEX> bhit(valid0,vu,vv,depth_scale*vt,0,N,v0,v1,v2,v3);
+          ishit |= epilog(bhit.valid,bhit);
+        }
+
+
+        /*vfloatx vu,vv,vt;
         vboolx valid0 = intersect_triangle(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,up0,lp1,vu,vv,vt);
         if (any(valid0))
         {
@@ -181,7 +199,7 @@ namespace embree
           const Vec2vfx uv = vu*uv_lp1 + vv*uv_up0 + (vfloatx(1.0f)-vu-vv)*uv_up1;
           BezierHit<VSIZEX> bhit(valid1,uv.x,uv.y,depth_scale*vt,0,N,v0,v1,v2,v3);
           ishit |= epilog(bhit.valid,bhit);
-        }
+          }*/
         return ishit;
   
 #else
