@@ -84,51 +84,49 @@ namespace embree
                                              vfloatx& vt) const
       {
         vboolx valid = valid0;
+
         /* calculate vertices relative to ray origin */
-          const Vec3vfx O = Vec3vfx(ray_org);
-          const Vec3vfx D = Vec3vfx(ray_dir);
-          const Vec3vfx v0 = tri_v0-O;
-          const Vec3vfx v1 = tri_v1-O;
-          const Vec3vfx v2 = tri_v2-O;
-          
-          /* calculate triangle edges */
-          const Vec3vfx e0 = v2-v0;
-          const Vec3vfx e1 = v0-v1;
-          const Vec3vfx e2 = v1-v2;
-          
-          /* perform edge tests */
-          const vfloatx U = dot(cross(v0,e0),D);
-          const vfloatx V = dot(cross(v1,e1),D);
-          const vfloatx W = dot(cross(v2,e2),D);
-
-          const vfloatx maxUVW = max(U,V,W);
-          valid &= maxUVW <= 0.0f;
-
-          if (unlikely(none(valid))) return false;
-          
-          /* calculate geometry normal and denominator */
-          const Vec3vfx Ng1 = cross(e1,e0);
-          const Vec3vfx Ng = Ng1;
-          const vfloatx den = dot(Ng,D);
-          const vfloatx absDen = abs(den);
-          const vfloatx sgnDen = signmsk(den);
-          
-          /* perform depth test */
-          const vfloatx T = dot(v0,Ng);
-          valid &= ((T^sgnDen) >= absDen*vfloatx(ray_tnear));
-          valid &=(absDen*vfloatx(ray_tfar) >= (T^sgnDen));
-          if (unlikely(none(valid))) return false;
-          
-          /* avoid division by 0 */
-          valid &= den != vfloatx(zero);
-          if (unlikely(none(valid))) return false;
-          
-          /* update hit information */
-          const vfloatx rcpDen = rcp(den);
-          vt = T * rcpDen;
-          vu = U * rcpDen;
-          vv = V * rcpDen;
-          return valid;
+        const Vec3vfx O = Vec3vfx(ray_org);
+        const Vec3vfx D = Vec3vfx(ray_dir);
+        const Vec3vfx v0 = tri_v0-O;
+        const Vec3vfx v1 = tri_v1-O;
+        const Vec3vfx v2 = tri_v2-O;
+        
+        /* calculate triangle edges */
+        const Vec3vfx e0 = v2-v0;
+        const Vec3vfx e1 = v0-v1;
+        const Vec3vfx e2 = v1-v2;
+        
+        /* perform edge tests */
+        const vfloatx U = dot(cross(v0,e0),D);
+        const vfloatx V = dot(cross(v1,e1),D);
+        const vfloatx W = dot(cross(v2,e2),D);
+        valid &= max(U,V,W) <= 0.0f;
+        if (unlikely(none(valid))) return false;
+        
+        /* calculate geometry normal and denominator */
+        const Vec3vfx Ng1 = cross(e1,e0);
+        const Vec3vfx Ng = Ng1;
+        const vfloatx den = dot(Ng,D);
+        const vfloatx absDen = abs(den);
+        const vfloatx sgnDen = signmsk(den);
+        
+        /* perform depth test */
+        const vfloatx T = dot(v0,Ng);
+        valid &= ((T^sgnDen) >= absDen*vfloatx(ray_tnear));
+        valid &=(absDen*vfloatx(ray_tfar) >= (T^sgnDen));
+        if (unlikely(none(valid))) return false;
+        
+        /* avoid division by 0 */
+        valid &= den != vfloatx(zero);
+        if (unlikely(none(valid))) return false;
+        
+        /* update hit information */
+        const vfloatx rcpDen = rcp(den);
+        vt = T * rcpDen;
+        vu = U * rcpDen;
+        vv = V * rcpDen;
+        return valid;
       }
 
       template<typename Epilog>
