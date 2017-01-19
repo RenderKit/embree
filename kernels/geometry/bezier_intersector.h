@@ -71,50 +71,69 @@ namespace embree
       __forceinline Bezier1Intersector1(const Ray& ray, const void* ptr) 
          : depth_scale(rsqrt(dot(ray.dir,ray.dir))), ray_space(frame(depth_scale*ray.dir).transposed()) {}
 
-      __forceinline bool intersect_triangle(const vboolx& valid0,
-                                            const Vec3fa& ray_org,
-                                            const Vec3fa& ray_dir,
-                                            const float ray_tnear,
-                                            const float ray_tfar,
-                                            const Vec3vfx& tri_v0, 
-                                            const Vec3vfx& tri_v1, 
-                                            const Vec3vfx& tri_v2, 
-                                            MoellerTrumboreHitM<VSIZEX>& hit) const
+      __forceinline vboolx intersect_triangle(const vboolx& valid0,
+                                             const Vec3fa& ray_org,
+                                             const Vec3fa& ray_dir,
+                                             const float ray_tnear,
+                                             const float ray_tfar,
+                                             const Vec3vfx& tri_v0, 
+                                             const Vec3vfx& tri_v1, 
+                                             const Vec3vfx& tri_v2, 
+                                             vfloatx& vu, 
+                                             vfloatx& vv,
+                                             vfloatx& vt) const
       {
-        const Vec3vfx tri_e1 = tri_v0-tri_v1;
-        const Vec3vfx tri_e2 = tri_v2-tri_v0;
-        const Vec3vfx tri_Ng = cross(tri_e1,tri_e2);
-
-        /* calculate denominator */
         vboolx valid = valid0;
-        const Vec3vfx O = Vec3vfx(ray_org);
-        const Vec3vfx D = Vec3vfx(ray_dir);
-        const Vec3vfx C = Vec3vfx(tri_v0) - O;
-        const Vec3vfx R = cross(D,C);
-        const vfloatx den = dot(Vec3vfx(tri_Ng),D);
-        const vfloatx absDen = abs(den);
-        const vfloatx sgnDen = signmsk(den);
-        
-        /* perform edge tests */
-        const vfloatx U = dot(R,Vec3vfx(tri_e2)) ^ sgnDen;
-        const vfloatx V = dot(R,Vec3vfx(tri_e1)) ^ sgnDen;
-        
-        /* perform backface culling */        
+        /* calculate vertices relative to ray origin */
+          const Vec3vfx O = Vec3vfx(ray_org);
+          const Vec3vfx D = Vec3vfx(ray_dir);
+          const Vec3vfx v0 = tri_v0-O;
+          const Vec3vfx v1 = tri_v1-O;
+          const Vec3vfx v2 = tri_v2-O;
+          
+          /* calculate triangle edges */
+          const Vec3vfx e0 = v2-v0;
+          const Vec3vfx e1 = v0-v1;
+          const Vec3vfx e2 = v1-v2;
+          
+          /* perform edge tests */
+          const vfloatx U = dot(cross(v2+v0,e0),D);
+          const vfloatx V = dot(cross(v0+v1,e1),D);
+          const vfloatx W = dot(cross(v1+v2,e2),D);
 #if defined(EMBREE_BACKFACE_CULLING)
-        valid &= (den < vfloatx(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
+          const vfloatx maxUVW = max(U,V,W);
+          valid &= maxUVW <= 0.0f;
 #else
-        valid &= (den != vfloatx(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
+          const vfloatx minUVW = min(U,V,W);
+          const vfloatx maxUVW = max(U,V,W);
+          valid &= (minUVW >= 0.0f) | (maxUVW <= 0.0f);
 #endif
-        if (likely(none(valid))) return false;
-        
-        /* perform depth test */
-        const vfloatx T = dot(Vec3vfx(tri_Ng),C) ^ sgnDen;
-        valid &= (T > absDen*vfloatx(ray_tnear)) & (T < absDen*vfloatx(ray_tfar));
-        if (likely(none(valid))) return false;
-        
-        /* update hit information */
-        new (&hit) MoellerTrumboreHitM<VSIZEX>(valid,U,V,T,absDen,tri_Ng);
-        return true;
+          if (unlikely(none(valid))) return false;
+          
+          /* calculate geometry normal and denominator */
+          //const Vec3vfx Ng1 = cross(e1,e0);
+          const Vec3vfx Ng1 = stable_triangle_normal(e2,e1,e0);
+          const Vec3vfx Ng = Ng1+Ng1;
+          const vfloatx den = dot(Ng,D);
+          const vfloatx absDen = abs(den);
+          const vfloatx sgnDen = signmsk(den);
+          
+          /* perform depth test */
+          const vfloatx T = dot(v0,Ng);
+          valid &= ((T^sgnDen) >= absDen*vfloatx(ray_tnear));
+          valid &=(absDen*vfloatx(ray_tfar) >= (T^sgnDen));
+          if (unlikely(none(valid))) return false;
+          
+          /* avoid division by 0 */
+          valid &= den != vfloatx(zero);
+          if (unlikely(none(valid))) return false;
+          
+          /* update hit information */
+          const vfloatx rcpDen = rcp(den);
+          vt = T * rcpDen;
+          vu = U * rcpDen;
+          vv = V * rcpDen;
+          return valid;
       }
 
       template<typename Epilog>
@@ -154,19 +173,20 @@ namespace embree
 
         bool ishit = false;
 
-        MoellerTrumboreHitM<VSIZEX> hit0;
-        if (intersect_triangle(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,up0,up1,lp0,hit0)) {
-          hit0.finalize();
-          const Vec2vfx uv = hit0.vu*uv_up1 + hit0.vv*uv_lp0 + (vfloatx(1.0f)-hit0.vu-hit0.vv)*uv_up0;
-          BezierHit<VSIZEX> bhit(hit0.valid,uv.x,uv.y,depth_scale*hit0.vt,0,N,v0,v1,v2,v3);
+        vfloatx vu,vv,vt;
+        vboolx valid0 = intersect_triangle(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,up0,up1,lp0,vu,vv,vt);
+        if (any(valid0))
+        {
+          const Vec2vfx uv = vu*uv_up1 + vv*uv_lp0 + (vfloatx(1.0f)-vu-vv)*uv_up0;
+          BezierHit<VSIZEX> bhit(valid0,uv.x,uv.y,depth_scale*vt,0,N,v0,v1,v2,v3);
           ishit |= epilog(bhit.valid,bhit);
         }
 
-        MoellerTrumboreHitM<VSIZEX> hit1;
-        if (intersect_triangle(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,lp1,up1,hit1)) {
-          hit1.finalize();
-          const Vec2vfx uv = hit1.vu*uv_lp1 + hit1.vv*uv_up1 + (vfloatx(1.0f)-hit1.vu-hit1.vv)*uv_lp0;
-          BezierHit<VSIZEX> bhit(hit1.valid,uv.x,uv.y,depth_scale*hit1.vt,0,N,v0,v1,v2,v3);
+        vboolx valid1 = intersect_triangle(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,lp1,up1,vu,vv,vt);
+        if (any(valid1))
+        {
+          const Vec2vfx uv = vu*uv_lp1 + vv*uv_up1 + (vfloatx(1.0f)-vu-vv)*uv_lp0;
+          BezierHit<VSIZEX> bhit(valid1,uv.x,uv.y,depth_scale*vt,0,N,v0,v1,v2,v3);
           ishit |= epilog(bhit.valid,bhit);
         }
         return ishit;
