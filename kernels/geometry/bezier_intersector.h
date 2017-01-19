@@ -71,6 +71,21 @@ namespace embree
       __forceinline Bezier1Intersector1(const Ray& ray, const void* ptr) 
          : depth_scale(rsqrt(dot(ray.dir,ray.dir))), ray_space(frame(depth_scale*ray.dir).transposed()) {}
 
+      /* calculate squared distance of point p0 to line p1->p2 */
+      static __forceinline std::pair<vfloatx,vfloatx> sqr_point_line_distance(const Vec2vfx& p0, const Vec2vfx& p1, const Vec2vfx& p2)
+      {
+        const vfloatx num = det(p2-p1,p1-p0);
+        const vfloatx den2 = dot(p2-p1,p2-p1);
+        return std::make_pair(num*num,den2);
+      }
+
+      /* performs culling against a cylinder */
+      static __forceinline vboolx cylinder_culling_test(const Vec2vfx& p0, const Vec2vfx& p1, const Vec2vfx& p2, const vfloatx& r)
+      {
+        const std::pair<vfloatx,vfloatx> d = sqr_point_line_distance(p0,p1,p2);
+        return d.first <= r*r*d.second;
+      }
+
       template<typename Epilog>
       __forceinline bool intersect(Ray& ray,
                                    const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
@@ -83,52 +98,139 @@ namespace embree
         Vec3fa w2 = xfmVector(ray_space,v2-ray.org); w2.w = v2.w;
         Vec3fa w3 = xfmVector(ray_space,v3-ray.org); w3.w = v3.w;
         BezierCurve3fa curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
-        
+      
+        /* SIMD-width matches number of processed points */
+#if 0
+
+        /* evaluate the bezier curve */
+        const Vec4vfx p = curve2D.eval0(vboolx(true),0,N);
+        const Vec3vfx dpdt = curve2D.derivative0(vboolx(true),0,N);
+        const Vec3vfx n(dpdt.y,-dpdt.x,0.0f);
+        const Vec3vfx nn = normalize(n);
+        const Vec3vfx lp0 = Vec3vfx(p)+nn*p.w;
+        const Vec3vfx up0 = Vec3vfx(p)-nn*p.w;
+        const Vec3vfx lp1(shift_right_1(lp0.x),shift_right_1(lp0.y),shift_right_1(lp0.z));
+        const Vec3vfx up1(shift_right_1(up0.x),shift_right_1(up0.y),shift_right_1(up0.z));
+        vboolx valid = vfloatx(step) < vfloatx(float(N)) & vfloatx(step) < VSIZEX-1;
+
+        bool ishit = false;
+        vfloatx vu,vv,vt;
+        vboolx valid0 = intersect_quad_backface_culling(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,lp1,up1,up0,vu,vv,vt);
+        if (any(valid0))
+        {
+          vv = madd(2.0f,vv,vfloatx(-1.0f));
+          BezierHit<VSIZEX> bhit(valid0,vu,vv,depth_scale*vt,0,N,v0,v1,v2,v3);
+          ishit |= epilog(bhit.valid,bhit);
+        }
+
+        if (unlikely(VSIZEX-1 < N)) 
+        {
+          /* process SIMD-size-1 many segments per iteration */
+          for (int i=VSIZEX-1; i<N; i+=VSIZEX-1)
+          {
+            /* evaluate the bezier curve */
+            const Vec4vfx p = curve2D.eval0(vboolx(true),i,N);
+            const Vec3vfx dpdt = curve2D.derivative0(vboolx(true),i,N);
+            const Vec3vfx n(dpdt.y,-dpdt.x,0.0f);
+            const Vec3vfx nn = normalize(n);
+            const Vec3vfx lp0 =  madd(p.w,nn,Vec3vfx(p));
+            const Vec3vfx up0 = nmadd(p.w,nn,Vec3vfx(p));
+            const Vec3vfx lp1(shift_right_1(lp0.x),shift_right_1(lp0.y),shift_right_1(lp0.z));
+            const Vec3vfx up1(shift_right_1(up0.x),shift_right_1(up0.y),shift_right_1(up0.z));
+            vboolx valid = vfloatx(i)+vfloatx(step) < vfloatx(float(N)) & vfloatx(step) < VSIZEX-1;
+            
+            vfloatx vu,vv,vt;
+            vboolx valid0 = intersect_quad_backface_culling(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,lp1,up1,up0,vu,vv,vt);
+            if (any(valid0))
+            {
+              vv = madd(2.0f,vv,vfloatx(-1.0f));
+              BezierHit<VSIZEX> bhit(valid0,vu,vv,depth_scale*vt,i,N,v0,v1,v2,v3);
+              ishit |= epilog(bhit.valid,bhit);
+            }
+          }
+        }
+        return ishit;
+
+#endif
+
+        /* SIMD-width matches number of processed segments */
+#if 0
+
+        bool ishit = false;
+
         /* evaluate the bezier curve */
         vboolx valid = vfloatx(step) < vfloatx(float(N));
         const Vec4vfx p0 = curve2D.eval0(valid,0,N);
         const Vec4vfx p1 = curve2D.eval1(valid,0,N);
-      
-#if 0
-        const Vec3vfx dp0dt = curve2D.derivative0(valid,0,N);
-        const Vec3vfx dp1dt = curve2D.derivative1(valid,0,N);
-        const Vec3vfx n0(dp0dt.y,-dp0dt.x,0.0f);
-        const Vec3vfx n1(dp1dt.y,-dp1dt.x,0.0f);
-        const Vec3vfx nn0 = normalize(n0);
-        const Vec3vfx nn1 = normalize(n1);
-        const Vec3vfx up0 = Vec3vfx(p0)+nn0*p0.w;
-        const Vec3vfx up1 = Vec3vfx(p1)+nn1*p1.w;
-        const Vec3vfx lp0 = Vec3vfx(p0)-nn0*p0.w;
-        const Vec3vfx lp1 = Vec3vfx(p1)-nn1*p1.w;
+        valid &= cylinder_culling_test(zero,Vec2vfx(p0.x,p0.y),Vec2vfx(p1.x,p1.y),max(p0.w,p1.w));
 
-        const Vec2vfx uv_lp0(0.0f,-1.0f);
-        const Vec2vfx uv_lp1(1.0f,-1.0f);
-        const Vec2vfx uv_up0(0.0f,+1.0f);
-        const Vec2vfx uv_up1(1.0f,+1.0f);
-
-        bool ishit = false;
-        Ray lray(zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale);
-        MoellerTrumboreIntersector1<VSIZEX> intersector;
-
-        MoellerTrumboreHitM<VSIZEX> hit0;
-        if (intersector.intersect(valid,lray,up0,up1,lp0,hit0)) {
-          hit0.finalize();
-          const Vec2vfx uv = hit0.vu*uv_up1 + hit0.vv*uv_lp0 + (vfloatx(1.0f)-hit0.vu-hit0.vv)*uv_up0;
-          BezierHit<VSIZEX> bhit(hit0.valid,uv.x,uv.y,depth_scale*hit0.vt,0,N,v0,v1,v2,v3);
-          ishit |= epilog(bhit.valid,bhit);
+        if (any(valid)) 
+        {
+          const Vec3vfx dp0dt = curve2D.derivative0(valid,0,N);
+          const Vec3vfx dp1dt = curve2D.derivative1(valid,0,N);
+          const Vec3vfx n0(dp0dt.y,-dp0dt.x,0.0f);
+          const Vec3vfx n1(dp1dt.y,-dp1dt.x,0.0f);
+          const Vec3vfx nn0 = normalize(n0);
+          const Vec3vfx nn1 = normalize(n1);
+          const Vec3vfx lp0 =  madd(p0.w,nn0,Vec3vfx(p0));
+          const Vec3vfx lp1 =  madd(p1.w,nn1,Vec3vfx(p1));
+          const Vec3vfx up0 = nmadd(p0.w,nn0,Vec3vfx(p0));
+          const Vec3vfx up1 = nmadd(p1.w,nn1,Vec3vfx(p1));
+          
+          vfloatx vu,vv,vt;
+          vboolx valid0 = intersect_quad_backface_culling(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,lp1,up1,up0,vu,vv,vt);
+          if (any(valid0))
+          {
+            vv = madd(2.0f,vv,vfloatx(-1.0f));
+            BezierHit<VSIZEX> bhit(valid0,vu,vv,depth_scale*vt,0,N,v0,v1,v2,v3);
+            ishit |= epilog(bhit.valid,bhit);
+          }
         }
 
-        MoellerTrumboreHitM<VSIZEX> hit1;
-        Ray lray1(zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale);
-        if (intersector.intersect(valid,lray1,lp0,lp1,up1,hit1)) {
-          hit1.finalize();
-          const Vec2vfx uv = hit1.vu*uv_lp1 + hit1.vv*uv_up1 + (vfloatx(1.0f)-hit1.vu-hit1.vv)*uv_lp0;
-          BezierHit<VSIZEX> bhit(hit1.valid,uv.x,uv.y,depth_scale*hit1.vt,0,N,v0,v1,v2,v3);
-          ishit |= epilog(bhit.valid,bhit);
+        if (unlikely(VSIZEX < N)) 
+        {
+          /* process SIMD-size many segments per iteration */
+          for (int i=VSIZEX; i<N; i+=VSIZEX)
+          {
+            /* evaluate the bezier curve */
+            vboolx valid = vintx(i)+vintx(step) < vintx(N);
+            const Vec4vfx p0 = curve2D.eval0(valid,i,N);
+            const Vec4vfx p1 = curve2D.eval1(valid,i,N);
+            valid &= cylinder_culling_test(zero,Vec2vfx(p0.x,p0.y),Vec2vfx(p1.x,p1.y),max(p0.w,p1.w));
+            if (none(valid)) continue;
+
+            const Vec3vfx dp0dt = curve2D.derivative0(valid,i,N);
+            const Vec3vfx dp1dt = curve2D.derivative1(valid,i,N);
+            const Vec3vfx n0(dp0dt.y,-dp0dt.x,0.0f);
+            const Vec3vfx n1(dp1dt.y,-dp1dt.x,0.0f);
+            const Vec3vfx nn0 = normalize(n0);
+            const Vec3vfx nn1 = normalize(n1);
+            const Vec3vfx lp0 =  madd(p0.w,nn0,Vec3vfx(p0));
+            const Vec3vfx lp1 =  madd(p1.w,nn1,Vec3vfx(p1));
+            const Vec3vfx up0 = nmadd(p0.w,nn0,Vec3vfx(p0));
+            const Vec3vfx up1 = nmadd(p1.w,nn1,Vec3vfx(p1));
+            
+            vfloatx vu,vv,vt;
+            vboolx valid0 = intersect_quad_backface_culling(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,lp1,up1,up0,vu,vv,vt);
+            if (any(valid0))
+            {
+              vv = madd(2.0f,vv,vfloatx(-1.0f));
+              BezierHit<VSIZEX> bhit(valid0,vu,vv,depth_scale*vt,i,N,v0,v1,v2,v3);
+              ishit |= epilog(bhit.valid,bhit);
+            }
+          }
         }
         return ishit;
-  
-#else
+
+#endif
+
+        /* old approximative intersection code */
+#if 1
+        /* evaluate the bezier curve */
+        vboolx valid = vfloatx(step) < vfloatx(float(N));
+        const Vec4vfx p0 = curve2D.eval0(valid,0,N);
+        const Vec4vfx p1 = curve2D.eval1(valid,0,N);
+
         /* approximative intersection with cone */
         const Vec4vfx v = p1-p0;
         const Vec4vfx w = -p0;
