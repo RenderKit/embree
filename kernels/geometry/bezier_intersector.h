@@ -71,6 +71,52 @@ namespace embree
       __forceinline Bezier1Intersector1(const Ray& ray, const void* ptr) 
          : depth_scale(rsqrt(dot(ray.dir,ray.dir))), ray_space(frame(depth_scale*ray.dir).transposed()) {}
 
+      __forceinline bool intersect_triangle(const vboolx& valid0,
+                                            const Vec3fa& ray_org,
+                                            const Vec3fa& ray_dir,
+                                            const float ray_tnear,
+                                            const float ray_tfar,
+                                            const Vec3vfx& tri_v0, 
+                                            const Vec3vfx& tri_v1, 
+                                            const Vec3vfx& tri_v2, 
+                                            MoellerTrumboreHitM<VSIZEX>& hit) const
+      {
+        const Vec3vfx tri_e1 = tri_v0-tri_v1;
+        const Vec3vfx tri_e2 = tri_v2-tri_v0;
+        const Vec3vfx tri_Ng = cross(tri_e1,tri_e2);
+
+        /* calculate denominator */
+        vboolx valid = valid0;
+        const Vec3vfx O = Vec3vfx(ray_org);
+        const Vec3vfx D = Vec3vfx(ray_dir);
+        const Vec3vfx C = Vec3vfx(tri_v0) - O;
+        const Vec3vfx R = cross(D,C);
+        const vfloatx den = dot(Vec3vfx(tri_Ng),D);
+        const vfloatx absDen = abs(den);
+        const vfloatx sgnDen = signmsk(den);
+        
+        /* perform edge tests */
+        const vfloatx U = dot(R,Vec3vfx(tri_e2)) ^ sgnDen;
+        const vfloatx V = dot(R,Vec3vfx(tri_e1)) ^ sgnDen;
+        
+        /* perform backface culling */        
+#if defined(EMBREE_BACKFACE_CULLING)
+        valid &= (den < vfloatx(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
+#else
+        valid &= (den != vfloatx(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
+#endif
+        if (likely(none(valid))) return false;
+        
+        /* perform depth test */
+        const vfloatx T = dot(Vec3vfx(tri_Ng),C) ^ sgnDen;
+        valid &= (T > absDen*vfloatx(ray_tnear)) & (T < absDen*vfloatx(ray_tfar));
+        if (likely(none(valid))) return false;
+        
+        /* update hit information */
+        new (&hit) MoellerTrumboreHitM<VSIZEX>(valid,U,V,T,absDen,tri_Ng);
+        return true;
+      }
+
       template<typename Epilog>
       __forceinline bool intersect(Ray& ray,
                                    const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
@@ -89,7 +135,7 @@ namespace embree
         const Vec4vfx p0 = curve2D.eval0(valid,0,N);
         const Vec4vfx p1 = curve2D.eval1(valid,0,N);
       
-#if 0
+#if 1
         const Vec3vfx dp0dt = curve2D.derivative0(valid,0,N);
         const Vec3vfx dp1dt = curve2D.derivative1(valid,0,N);
         const Vec3vfx n0(dp0dt.y,-dp0dt.x,0.0f);
@@ -107,11 +153,9 @@ namespace embree
         const Vec2vfx uv_up1(1.0f,+1.0f);
 
         bool ishit = false;
-        Ray lray(zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale);
-        MoellerTrumboreIntersector1<VSIZEX> intersector;
 
         MoellerTrumboreHitM<VSIZEX> hit0;
-        if (intersector.intersect(valid,lray,up0,up1,lp0,hit0)) {
+        if (intersect_triangle(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,up0,up1,lp0,hit0)) {
           hit0.finalize();
           const Vec2vfx uv = hit0.vu*uv_up1 + hit0.vv*uv_lp0 + (vfloatx(1.0f)-hit0.vu-hit0.vv)*uv_up0;
           BezierHit<VSIZEX> bhit(hit0.valid,uv.x,uv.y,depth_scale*hit0.vt,0,N,v0,v1,v2,v3);
@@ -119,8 +163,7 @@ namespace embree
         }
 
         MoellerTrumboreHitM<VSIZEX> hit1;
-        Ray lray1(zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale);
-        if (intersector.intersect(valid,lray1,lp0,lp1,up1,hit1)) {
+        if (intersect_triangle(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,lp1,up1,hit1)) {
           hit1.finalize();
           const Vec2vfx uv = hit1.vu*uv_lp1 + hit1.vv*uv_up1 + (vfloatx(1.0f)-hit1.vu-hit1.vv)*uv_lp0;
           BezierHit<VSIZEX> bhit(hit1.valid,uv.x,uv.y,depth_scale*hit1.vt,0,N,v0,v1,v2,v3);
