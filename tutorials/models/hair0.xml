@@ -21,7 +21,7 @@
       </material>
     </TriangleMesh>
 
-    <BSplineHair>
+    <BSplineHair  tessellation_rate="4">
 
       <positions>
         0 0 0 0.3
@@ -61,7 +61,7 @@
 
     </BSplineHair>
 
-    <BezierHair tessellation_rate="8">
+    <BezierHair tessellation_rate="16">
 
       <positions>
         0 0 -2 0.2

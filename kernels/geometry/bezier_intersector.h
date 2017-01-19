@@ -149,13 +149,64 @@ namespace embree
         Vec3fa w2 = xfmVector(ray_space,v2-ray.org); w2.w = v2.w;
         Vec3fa w3 = xfmVector(ray_space,v3-ray.org); w3.w = v3.w;
         BezierCurve3fa curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
-        
+      
+#if 0
+
+        /* evaluate the bezier curve */
+        const Vec4vfx p = curve2D.eval0(vboolx(true),0,N);
+        const Vec3vfx dpdt = curve2D.derivative0(vboolx(true),0,N);
+        const Vec3vfx n(dpdt.y,-dpdt.x,0.0f);
+        const Vec3vfx nn = normalize(n);
+        const Vec3vfx lp0 = Vec3vfx(p)+nn*p.w;
+        const Vec3vfx up0 = Vec3vfx(p)-nn*p.w;
+        const Vec3vfx lp1(shift_right_1(lp0.x),shift_right_1(lp0.y),shift_right_1(lp0.z));
+        const Vec3vfx up1(shift_right_1(up0.x),shift_right_1(up0.y),shift_right_1(up0.z));
+        vboolx valid = vfloatx(step) < vfloatx(float(N)) & vfloatx(step) < VSIZEX-1;
+
+        bool ishit = false;
+        vfloatx vu,vv,vt;
+        vboolx valid0 = intersect_quad(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,lp1,up1,up0,vu,vv,vt);
+        if (any(valid0))
+        {
+          BezierHit<VSIZEX> bhit(valid0,vu,vv,depth_scale*vt,0,N,v0,v1,v2,v3);
+          ishit |= epilog(bhit.valid,bhit);
+        }
+
+        if (unlikely(VSIZEX-1 < N)) 
+        {
+          /* process SIMD-size-1 many segments per iteration */
+          for (int i=VSIZEX-1; i<N; i+=VSIZEX-1)
+          {
+            /* evaluate the bezier curve */
+            const Vec4vfx p = curve2D.eval0(vboolx(true),i,N);
+            const Vec3vfx dpdt = curve2D.derivative0(vboolx(true),i,N);
+            const Vec3vfx n(dpdt.y,-dpdt.x,0.0f);
+            const Vec3vfx nn = normalize(n);
+            const Vec3vfx lp0 = Vec3vfx(p)+nn*p.w;
+            const Vec3vfx up0 = Vec3vfx(p)-nn*p.w;
+            const Vec3vfx lp1(shift_right_1(lp0.x),shift_right_1(lp0.y),shift_right_1(lp0.z));
+            const Vec3vfx up1(shift_right_1(up0.x),shift_right_1(up0.y),shift_right_1(up0.z));
+            vboolx valid = vfloatx(i)+vfloatx(step) < vfloatx(float(N)) & vfloatx(step) < VSIZEX-1;
+            
+            vfloatx vu,vv,vt;
+            vboolx valid0 = intersect_quad(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,lp1,up1,up0,vu,vv,vt);
+            if (any(valid0))
+            {
+              BezierHit<VSIZEX> bhit(valid0,vu,vv,depth_scale*vt,i,N,v0,v1,v2,v3);
+              ishit |= epilog(bhit.valid,bhit);
+            }
+          }
+        }
+        return ishit;
+
+#endif
+
+#if 0
+
         /* evaluate the bezier curve */
         vboolx valid = vfloatx(step) < vfloatx(float(N));
         const Vec4vfx p0 = curve2D.eval0(valid,0,N);
         const Vec4vfx p1 = curve2D.eval1(valid,0,N);
-      
-#if 1
         const Vec3vfx dp0dt = curve2D.derivative0(valid,0,N);
         const Vec3vfx dp1dt = curve2D.derivative1(valid,0,N);
         const Vec3vfx n0(dp0dt.y,-dp0dt.x,0.0f);
@@ -167,11 +218,6 @@ namespace embree
         const Vec3vfx up0 = Vec3vfx(p0)-nn0*p0.w;
         const Vec3vfx up1 = Vec3vfx(p1)-nn1*p1.w;
 
-        const Vec2vfx uv_lp0(0.0f,-1.0f);
-        const Vec2vfx uv_lp1(1.0f,-1.0f);
-        const Vec2vfx uv_up0(0.0f,+1.0f);
-        const Vec2vfx uv_up1(1.0f,+1.0f);
-
         bool ishit = false;
         vfloatx vu,vv,vt;
         vboolx valid0 = intersect_quad(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,lp1,up1,up0,vu,vv,vt);
@@ -181,9 +227,45 @@ namespace embree
           ishit |= epilog(bhit.valid,bhit);
         }
 
+        if (unlikely(VSIZEX < N)) 
+        {
+          /* process SIMD-size many segments per iteration */
+          for (int i=VSIZEX; i<N; i+=VSIZEX)
+          {
+            /* evaluate the bezier curve */
+            vboolx valid = vintx(i)+vintx(step) < vintx(N);
+            const Vec4vfx p0 = curve2D.eval0(valid,i,N);
+            const Vec4vfx p1 = curve2D.eval1(valid,i,N);
+            const Vec3vfx dp0dt = curve2D.derivative0(valid,i,N);
+            const Vec3vfx dp1dt = curve2D.derivative1(valid,i,N);
+            const Vec3vfx n0(dp0dt.y,-dp0dt.x,0.0f);
+            const Vec3vfx n1(dp1dt.y,-dp1dt.x,0.0f);
+            const Vec3vfx nn0 = normalize(n0);
+            const Vec3vfx nn1 = normalize(n1);
+            const Vec3vfx lp0 = Vec3vfx(p0)+nn0*p0.w;
+            const Vec3vfx lp1 = Vec3vfx(p1)+nn1*p1.w;
+            const Vec3vfx up0 = Vec3vfx(p0)-nn0*p0.w;
+            const Vec3vfx up1 = Vec3vfx(p1)-nn1*p1.w;
+            
+            vfloatx vu,vv,vt;
+            vboolx valid0 = intersect_quad(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,lp1,up1,up0,vu,vv,vt);
+            if (any(valid0))
+            {
+              BezierHit<VSIZEX> bhit(valid0,vu,vv,depth_scale*vt,i,N,v0,v1,v2,v3);
+              ishit |= epilog(bhit.valid,bhit);
+            }
+          }
+        }
         return ishit;
+
+#endif
   
-#else
+#if 1
+        /* evaluate the bezier curve */
+        vboolx valid = vfloatx(step) < vfloatx(float(N));
+        const Vec4vfx p0 = curve2D.eval0(valid,0,N);
+        const Vec4vfx p1 = curve2D.eval1(valid,0,N);
+
         /* approximative intersection with cone */
         const Vec4vfx v = p1-p0;
         const Vec4vfx w = -p0;
