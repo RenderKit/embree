@@ -103,7 +103,6 @@ namespace embree
         /* calculate triangle edges */
         const Vec3vfx e0 = v2-v0;
         const Vec3vfx e1 = v0-v1;
-        const Vec3vfx e2 = v1-v2;
                 
         /* perform edge tests */
         const vfloatx U = dot(cross(v0,e0),D);
@@ -178,28 +177,10 @@ namespace embree
         vboolx valid0 = intersect_quad(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,lp1,up1,up0,vu,vv,vt);
         if (any(valid0))
         {
-          //const Vec2vfx uv = vu*uv_up0 + vv*uv_lp1 + (vfloatx(1.0f)-vu-vv)*uv_lp0;
           BezierHit<VSIZEX> bhit(valid0,vu,vv,depth_scale*vt,0,N,v0,v1,v2,v3);
           ishit |= epilog(bhit.valid,bhit);
         }
 
-
-        /*vfloatx vu,vv,vt;
-        vboolx valid0 = intersect_triangle(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,up0,lp1,vu,vv,vt);
-        if (any(valid0))
-        {
-          const Vec2vfx uv = vu*uv_up0 + vv*uv_lp1 + (vfloatx(1.0f)-vu-vv)*uv_lp0;
-          BezierHit<VSIZEX> bhit(valid0,uv.x,uv.y,depth_scale*vt,0,N,v0,v1,v2,v3);
-          ishit |= epilog(bhit.valid,bhit);
-        }
-
-        vboolx valid1 = intersect_triangle(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,up1,lp1,up0,vu,vv,vt);
-        if (any(valid1))
-        {
-          const Vec2vfx uv = vu*uv_lp1 + vv*uv_up0 + (vfloatx(1.0f)-vu-vv)*uv_up1;
-          BezierHit<VSIZEX> bhit(valid1,uv.x,uv.y,depth_scale*vt,0,N,v0,v1,v2,v3);
-          ishit |= epilog(bhit.valid,bhit);
-          }*/
         return ishit;
   
 #else
