@@ -108,8 +108,8 @@ namespace embree
         /* perform edge tests */
         const vfloatx U = dot(cross(v0,e0),D);
         const vfloatx V = dot(cross(v1,e1),D);  
-        const vfloatx W = dot(cross(v2,e2),D);
-        valid &= max(U,V,W) <= 0.0f;
+        //const vfloatx W = dot(cross(v2,e2),D);
+        valid &= max(U,V) <= 0.0f;
         if (unlikely(none(valid))) return false;
         
         /* calculate geometry normal and denominator */
