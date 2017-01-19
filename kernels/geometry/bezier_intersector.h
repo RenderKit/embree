@@ -97,9 +97,9 @@ namespace embree
           const Vec3vfx e2 = v1-v2;
           
           /* perform edge tests */
-          const vfloatx U = dot(cross(v2+v0,e0),D);
-          const vfloatx V = dot(cross(v0+v1,e1),D);
-          const vfloatx W = dot(cross(v1+v2,e2),D);
+          const vfloatx U = dot(cross(v0,e0),D);
+          const vfloatx V = dot(cross(v1,e1),D);
+          const vfloatx W = dot(cross(v2,e2),D);
 
           const vfloatx maxUVW = max(U,V,W);
           valid &= maxUVW <= 0.0f;
@@ -107,9 +107,8 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* calculate geometry normal and denominator */
-          //const Vec3vfx Ng1 = cross(e1,e0);
-          const Vec3vfx Ng1 = stable_triangle_normal(e2,e1,e0);
-          const Vec3vfx Ng = Ng1+Ng1;
+          const Vec3vfx Ng1 = cross(e1,e0);
+          const Vec3vfx Ng = Ng1;
           const vfloatx den = dot(Ng,D);
           const vfloatx absDen = abs(den);
           const vfloatx sgnDen = signmsk(den);
