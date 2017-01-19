@@ -137,6 +137,21 @@ namespace embree
         return valid;
       }
 
+      /* calculate squared distance of point p0 to line p1->p2 */
+      static __forceinline std::pair<vfloatx,vfloatx> sqr_point_line_distance(const Vec2vfx& p0, const Vec2vfx& p1, const Vec2vfx& p2)
+      {
+        const vfloatx num = det(p2-p1,p1-p0);
+        const vfloatx den2 = dot(p2-p1,p2-p1);
+        return std::make_pair(num*num,den2);
+      }
+
+      /* performs culling against a cylinder */
+      static __forceinline vboolx cylinder_culling_test(const Vec2vfx& p0, const Vec2vfx& p1, const Vec2vfx& p2, const vfloatx& r)
+      {
+        const std::pair<vfloatx,vfloatx> d = sqr_point_line_distance(p0,p1,p2);
+        return d.first <= r*r*d.second;
+      }
+
       template<typename Epilog>
       __forceinline bool intersect(Ray& ray,
                                    const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
@@ -209,18 +224,7 @@ namespace embree
         vboolx valid = vfloatx(step) < vfloatx(float(N));
         const Vec4vfx p0 = curve2D.eval0(valid,0,N);
         const Vec4vfx p1 = curve2D.eval1(valid,0,N);
-
-        /* approximative intersection with cone */
-        const Vec4vfx v = p1-p0;
-        const Vec4vfx w = -p0;
-        const vfloatx d0 = madd(w.x,v.x,w.y*v.y);
-        const vfloatx d1 = madd(v.x,v.x,v.y*v.y);
-        const vfloatx u = clamp(d0*rcp(d1),vfloatx(zero),vfloatx(one));
-        const Vec4vfx p = madd(u,v,p0);
-        const vfloatx d2 = madd(p.x,p.x,p.y*p.y); 
-        const vfloatx r = p.w;
-        const vfloatx r2 = r*r;
-        valid &= (d2 <= r2);
+        valid &= cylinder_culling_test(zero,Vec2vfx(p0.x,p0.y),Vec2vfx(p1.x,p1.y),max(p0.w,p1.w));
 
         if (any(valid)) 
         {
@@ -253,6 +257,8 @@ namespace embree
             vboolx valid = vintx(i)+vintx(step) < vintx(N);
             const Vec4vfx p0 = curve2D.eval0(valid,i,N);
             const Vec4vfx p1 = curve2D.eval1(valid,i,N);
+            valid &= cylinder_culling_test(zero,Vec2vfx(p0.x,p0.y),Vec2vfx(p1.x,p1.y),max(p0.w,p1.w));
+            if (none(valid)) continue;
 
             /* approximative intersection with cone */
             const Vec4vfx v = p1-p0;
