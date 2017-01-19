@@ -44,7 +44,9 @@ namespace embree
 
       /*! Constructor for usage with ThreadLocalData */
       __forceinline ThreadLocal (void* alloc) 
-	: alloc((FastAllocator*)alloc), ptr(nullptr), cur(0), end(0), allocBlockSize(((FastAllocator*)alloc)->defaultBlockSize), bytesUsed(0), bytesWasted(0) {}
+	: alloc((FastAllocator*)alloc), ptr(nullptr), cur(0), end(0), 
+        allocBlockSize( ((FastAllocator*)alloc)->defaultBlockSize ), 
+        bytesUsed(0), bytesWasted(0) { }
 
       /*! resets the allocator */
       __forceinline void reset() 
@@ -201,7 +203,11 @@ namespace embree
     __forceinline void initGrowSizeAndNumSlots(size_t bytesAllocate, size_t bytesReserve = 0) 
     {
       if (bytesReserve == 0) bytesReserve = bytesAllocate;
-      growSize = clamp(bytesReserve,defaultBlockSize,maxAllocationSize);
+
+      bytesReserve  = ((bytesReserve +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
+      
+      growSize = clamp(bytesReserve,size_t(PAGE_SIZE),maxAllocationSize); // PAGE_SIZE -maxAlignment ?
+
       log2_grow_size_scale = 0;
       slotMask = 0x0;
       if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesAllocate >  4*maxAllocationSize) slotMask = 0x1;
