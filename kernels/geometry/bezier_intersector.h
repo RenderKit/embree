@@ -100,14 +100,10 @@ namespace embree
           const vfloatx U = dot(cross(v2+v0,e0),D);
           const vfloatx V = dot(cross(v0+v1,e1),D);
           const vfloatx W = dot(cross(v1+v2,e2),D);
-#if defined(EMBREE_BACKFACE_CULLING)
+
           const vfloatx maxUVW = max(U,V,W);
           valid &= maxUVW <= 0.0f;
-#else
-          const vfloatx minUVW = min(U,V,W);
-          const vfloatx maxUVW = max(U,V,W);
-          valid &= (minUVW >= 0.0f) | (maxUVW <= 0.0f);
-#endif
+
           if (unlikely(none(valid))) return false;
           
           /* calculate geometry normal and denominator */
@@ -174,18 +170,18 @@ namespace embree
         bool ishit = false;
 
         vfloatx vu,vv,vt;
-        vboolx valid0 = intersect_triangle(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,up0,up1,lp0,vu,vv,vt);
+        vboolx valid0 = intersect_triangle(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,up0,lp1,vu,vv,vt);
         if (any(valid0))
         {
-          const Vec2vfx uv = vu*uv_up1 + vv*uv_lp0 + (vfloatx(1.0f)-vu-vv)*uv_up0;
+          const Vec2vfx uv = vu*uv_up0 + vv*uv_lp1 + (vfloatx(1.0f)-vu-vv)*uv_lp0;
           BezierHit<VSIZEX> bhit(valid0,uv.x,uv.y,depth_scale*vt,0,N,v0,v1,v2,v3);
           ishit |= epilog(bhit.valid,bhit);
         }
 
-        vboolx valid1 = intersect_triangle(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,lp1,up1,vu,vv,vt);
+        vboolx valid1 = intersect_triangle(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,up1,lp1,up0,vu,vv,vt);
         if (any(valid1))
         {
-          const Vec2vfx uv = vu*uv_lp1 + vv*uv_up1 + (vfloatx(1.0f)-vu-vv)*uv_lp0;
+          const Vec2vfx uv = vu*uv_lp1 + vv*uv_up0 + (vfloatx(1.0f)-vu-vv)*uv_up1;
           BezierHit<VSIZEX> bhit(valid1,uv.x,uv.y,depth_scale*vt,0,N,v0,v1,v2,v3);
           ishit |= epilog(bhit.valid,bhit);
         }
