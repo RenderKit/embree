@@ -165,6 +165,7 @@ namespace embree
         Vec3fa w3 = xfmVector(ray_space,v3-ray.org); w3.w = v3.w;
         BezierCurve3fa curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
       
+        /* SIMD-width matches number of processed points */
 #if 0
 
         /* evaluate the bezier curve */
@@ -183,6 +184,7 @@ namespace embree
         vboolx valid0 = intersect_quad(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,lp1,up1,up0,vu,vv,vt);
         if (any(valid0))
         {
+          vv = madd(2.0f,vv,vfloatx(-1.0f));
           BezierHit<VSIZEX> bhit(valid0,vu,vv,depth_scale*vt,0,N,v0,v1,v2,v3);
           ishit |= epilog(bhit.valid,bhit);
         }
@@ -207,6 +209,7 @@ namespace embree
             vboolx valid0 = intersect_quad(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,lp1,up1,up0,vu,vv,vt);
             if (any(valid0))
             {
+              vv = madd(2.0f,vv,vfloatx(-1.0f));
               BezierHit<VSIZEX> bhit(valid0,vu,vv,depth_scale*vt,i,N,v0,v1,v2,v3);
               ishit |= epilog(bhit.valid,bhit);
             }
@@ -216,6 +219,7 @@ namespace embree
 
 #endif
 
+        /* SIMD-width matches number of processed segments */
 #if 1
 
         bool ishit = false;
@@ -243,6 +247,7 @@ namespace embree
           vboolx valid0 = intersect_quad(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,lp1,up1,up0,vu,vv,vt);
           if (any(valid0))
           {
+            vv = madd(2.0f,vv,vfloatx(-1.0f));
             BezierHit<VSIZEX> bhit(valid0,vu,vv,depth_scale*vt,0,N,v0,v1,v2,v3);
             ishit |= epilog(bhit.valid,bhit);
           }
@@ -260,20 +265,6 @@ namespace embree
             valid &= cylinder_culling_test(zero,Vec2vfx(p0.x,p0.y),Vec2vfx(p1.x,p1.y),max(p0.w,p1.w));
             if (none(valid)) continue;
 
-            /* approximative intersection with cone */
-            const Vec4vfx v = p1-p0;
-            const Vec4vfx w = -p0;
-            const vfloatx d0 = madd(w.x,v.x,w.y*v.y);
-            const vfloatx d1 = madd(v.x,v.x,v.y*v.y);
-            const vfloatx u = clamp(d0*rcp(d1),vfloatx(zero),vfloatx(one));
-            const Vec4vfx p = madd(u,v,p0);
-            const vfloatx d2 = madd(p.x,p.x,p.y*p.y); 
-            const vfloatx r = p.w;
-            const vfloatx r2 = r*r;
-            valid &= (d2 <= r2);
-            
-            if (none(valid)) continue;
-
             const Vec3vfx dp0dt = curve2D.derivative0(valid,i,N);
             const Vec3vfx dp1dt = curve2D.derivative1(valid,i,N);
             const Vec3vfx n0(dp0dt.y,-dp0dt.x,0.0f);
@@ -289,6 +280,7 @@ namespace embree
             vboolx valid0 = intersect_quad(valid,zero,Vec3fa(0,0,1),ray.tnear*depth_scale,ray.tfar*depth_scale,lp0,lp1,up1,up0,vu,vv,vt);
             if (any(valid0))
             {
+              vv = madd(2.0f,vv,vfloatx(-1.0f));
               BezierHit<VSIZEX> bhit(valid0,vu,vv,depth_scale*vt,i,N,v0,v1,v2,v3);
               ishit |= epilog(bhit.valid,bhit);
             }
@@ -297,7 +289,8 @@ namespace embree
         return ishit;
 
 #endif
-  
+
+        /* old approximative intersection code */
 #if 0
         /* evaluate the bezier curve */
         vboolx valid = vfloatx(step) < vfloatx(float(N));
