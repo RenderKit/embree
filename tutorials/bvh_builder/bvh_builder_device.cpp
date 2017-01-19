@@ -77,6 +77,7 @@ namespace embree
       double t0 = getSeconds();
       
       allocator.reset();
+      allocator.init(N);
       
       Node* root;
       isa::BVHBuilderBinnedSAH::build<Node*>(
@@ -139,6 +140,7 @@ namespace embree
       double t0 = getSeconds();
       
       allocator.reset();
+      allocator.init(N);
       
       std::pair<Node*,BBox3fa> node_bounds = isa::bvh_builder_morton<Node*>(
         
