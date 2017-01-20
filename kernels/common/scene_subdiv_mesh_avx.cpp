@@ -60,7 +60,7 @@ namespace embree
       {
         vfloat4 Pt, dPdut, dPdvt, ddPdudut, ddPdvdvt, ddPdudvt;; 
         isa::PatchEval<vfloat4>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
-                                getHalfEdge(primID),src+i*sizeof(float),stride,u,v,
+                                getHalfEdge(0,primID),src+i*sizeof(float),stride,u,v,
                                 has_P ? &Pt : nullptr, 
                                 has_dP ? &dPdut : nullptr, 
                                 has_dP ? &dPdvt : nullptr,
@@ -93,7 +93,7 @@ namespace embree
       {
         vfloat8 Pt, dPdut, dPdvt, ddPdudut, ddPdvdvt, ddPdudvt; 
         isa::PatchEval<vfloat8>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
-                                getHalfEdge(primID),src+i*sizeof(float),stride,u,v,
+                                getHalfEdge(0,primID),src+i*sizeof(float),stride,u,v,
                                 has_P ? &Pt : nullptr, 
                                 has_dP ? &dPdut : nullptr, 
                                 has_dP ? &dPdvt : nullptr,
@@ -156,7 +156,7 @@ namespace embree
         {
           const size_t M = min(size_t(4),numFloats-j);
           isa::PatchEvalSimd<vbool,vint,vfloat,vfloat4>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
-                                                        getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
+                                                        getHalfEdge(0,primID),src+j*sizeof(float),stride,valid1,uu,vv,
                                                         P ? P+j*numUVs : nullptr,
                                                         dPdu ? dPdu+j*numUVs : nullptr,
                                                         dPdv ? dPdv+j*numUVs : nullptr,
@@ -170,7 +170,7 @@ namespace embree
         {
           const size_t M = min(size_t(8),numFloats-j);
           isa::PatchEvalSimd<vbool,vint,vfloat,vfloat8>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
-                                                        getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
+                                                        getHalfEdge(0,primID),src+j*sizeof(float),stride,valid1,uu,vv,
                                                         P ? P+j*numUVs : nullptr,
                                                         dPdu ? dPdu+j*numUVs : nullptr,
                                                         dPdv ? dPdv+j*numUVs : nullptr,

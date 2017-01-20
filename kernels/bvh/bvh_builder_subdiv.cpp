@@ -117,7 +117,7 @@ namespace embree
           size_t g = 0;
           for (size_t f=r.begin(); f!=r.end(); ++f) {          
             if (!mesh->valid(f)) continue;
-            patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
+            patch_eval_subdivision(mesh->getHalfEdge(0,f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
               float level[4]; SubdivPatch1Base::computeEdgeLevels(edge_level,subdiv,level);
               Vec2i grid = SubdivPatch1Base::computeGridSize(level);
@@ -148,7 +148,7 @@ namespace embree
           for (size_t f=r.begin(); f!=r.end(); ++f) {
             if (!mesh->valid(f)) continue;
             
-            patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
+            patch_eval_subdivision(mesh->getHalfEdge(0,f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
               SubdivPatch1Base patch(mesh->id,unsigned(f),subPatch,mesh,0,uv,edge_level,subdiv,VSIZEX);
               size_t num = createEager(patch,scene,mesh,unsigned(f),alloc,&prims[base.end+s.end]);
@@ -235,14 +235,14 @@ namespace embree
             for (size_t i=range.begin(); i<range.end(); i++)
             {
               if (!iter[i]) continue;
-              fastUpdate &= !iter[i]->vertexIndices.isModified(); 
               fastUpdate &= !iter[i]->faceVertices.isModified();
               fastUpdate &= !iter[i]->holes.isModified();
-              fastUpdate &= !iter[i]->edge_creases.isModified();
-              fastUpdate &= !iter[i]->edge_crease_weights.isModified();
-              fastUpdate &= !iter[i]->vertex_creases.isModified();
-              fastUpdate &= !iter[i]->vertex_crease_weights.isModified(); 
-              fastUpdate &= iter[i]->levels.isModified() == true;
+              fastUpdate &= iter[i]->levels.isModified();
+              fastUpdate &= !iter[i]->topology[0].vertexIndices.isModified(); 
+              fastUpdate &= !iter[i]->topology[0].edge_creases.isModified();
+              fastUpdate &= !iter[i]->topology[0].edge_crease_weights.isModified();
+              fastUpdate &= !iter[i]->topology[0].vertex_creases.isModified();
+              fastUpdate &= !iter[i]->topology[0].vertex_crease_weights.isModified();               
               iter[i]->initializeHalfEdgeStructures();
               //iter[i]->patch_eval_trees.resize(iter[i]->size()*numTimeSteps);
             }
@@ -268,7 +268,7 @@ namespace embree
           for (size_t f=r.begin(); f!=r.end(); ++f) 
           {          
             if (!mesh->valid(f)) continue;
-            size_t count = patch_eval_subdivision_count(mesh->getHalfEdge(f));
+            size_t count = patch_eval_subdivision_count(mesh->getHalfEdge(0,f));
             s += count;
             sMB += count * mesh->numTimeSteps;
           }
@@ -327,9 +327,9 @@ namespace embree
             
             BVH_Allocator alloc(bvh);
             //for (size_t t=0; t<numTimeSteps; t++)
-            //mesh->patch_eval_trees[f*numTimeSteps+t] = Patch3fa::create(alloc, mesh->getHalfEdge(f), mesh->getVertexBuffer(t).getPtr(), mesh->getVertexBuffer(t).getStride());
+            //mesh->patch_eval_trees[f*numTimeSteps+t] = Patch3fa::create(alloc, mesh->getHalfEdge(0,f), mesh->getVertexBuffer(t).getPtr(), mesh->getVertexBuffer(t).getStride());
 
-            patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
+            patch_eval_subdivision(mesh->getHalfEdge(0,f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
               const size_t patchIndex = base.begin+s;
               const size_t patchIndexMB = base.end+sMB;
@@ -438,7 +438,7 @@ namespace embree
           {
             if (!mesh->valid(f)) continue;
             
-            patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
+            patch_eval_subdivision(mesh->getHalfEdge(0,f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
               const size_t patchIndex = base.begin+s;
               assert(patchIndex < numPrimitives);
