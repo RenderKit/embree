@@ -50,7 +50,6 @@ namespace embree
     levels.init(parent->device,numEdges,sizeof(float));
 
     new (&topology[0]) Topology(this,numEdgeCreases,numVertexCreases);
-    invalid_face.resize(numFaces*numTimeSteps);
     enabling();
   }
 
@@ -565,6 +564,8 @@ namespace embree
   void SubdivMesh::initializeHalfEdgeStructures ()
   {
     double t0 = getSeconds();
+
+    invalid_face.resize(numFaces*numTimeSteps);
  
     /* calculate start edge of each face */
     faceStartEdge.resize(numFaces);
