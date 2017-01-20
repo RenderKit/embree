@@ -148,6 +148,8 @@ namespace embree
     size_t numFaces;           //!< number of faces
     size_t numEdges;           //!< number of edges
     size_t numVertices;        //!< number of vertices
+    size_t numEdgeCreases;     //!< number of edge creases
+    size_t numVertexCreases;   //!< number of vertex creases
 
   public:
     RTCDisplacementFunc displFunc;    //!< displacement function
@@ -170,7 +172,7 @@ namespace embree
       Topology () : halfEdges(nullptr) {}
 
       /*! Topology initialization */
-      Topology (SubdivMesh* mesh, size_t numEdgeCreases, size_t numVertexCreases);
+      Topology (SubdivMesh* mesh);
 
       /*! check if the i'th primitive is valid in this topology */
       __forceinline bool valid(size_t i) const 
