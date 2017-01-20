@@ -32,26 +32,10 @@ namespace embree
     ALIGNED_CLASS;
   public:
 
+    typedef HalfEdge::Edge Edge;
+    
     /*! type of this geometry */
     static const Geometry::Type geom_type = Geometry::SUBDIV_MESH;
-
-    struct Edge 
-    {
-      /*! edge constructor */
-      __forceinline Edge(const uint32_t v0, const uint32_t v1)
-	: v0(v0), v1(v1) {}
-
-      /*! create an 64 bit identifier that is unique for the not oriented edge */
-      __forceinline operator uint64_t() const       
-      {
-	uint32_t p0 = v0, p1 = v1;
-	if (p0<p1) std::swap(p0,p1);
-	return (((uint64_t)p0) << 32) | (uint64_t)p1;
-      }
-
-    public:
-      uint32_t v0,v1;    //!< start and end vertex of the edge
-    };
 
     /*! structure used to sort half edges using radix sort by their key */
     struct KeyHalfEdge 

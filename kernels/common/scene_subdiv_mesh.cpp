@@ -377,18 +377,24 @@ namespace embree
 	{
 	  HalfEdge* edge = &halfEdges[e+de];
 
-	  const unsigned int startVertex = vertexIndices[e+de];
-	  unsigned int nextIndex = de + 1;
+          unsigned int nextIndex = de + 1;
 	  if (unlikely(nextIndex >= N)) nextIndex -= N; 
-	  const unsigned int endVertex = vertexIndices[e + nextIndex]; 
+	  
+	  const unsigned int startVertex = vertexIndices[e+de];
+          const unsigned int endVertex = vertexIndices[e+nextIndex]; 
 	  const uint64_t key = SubdivMesh::Edge(startVertex,endVertex);
+
+          /* we always have to use the geometry topology to lookup creases */
+          const unsigned int startVertex0 = mesh->topology[0].vertexIndices[e+de];
+          const unsigned int endVertex0 = mesh->topology[0].vertexIndices[e+nextIndex]; 
+	  const uint64_t key0 = SubdivMesh::Edge(startVertex0,endVertex0);
 	  
 	  edge->vtx_index              = startVertex;
 	  edge->next_half_edge_ofs     = (de == (N-1)) ? -int(N-1) : +1;
 	  edge->prev_half_edge_ofs     = (de ==     0) ? +int(N-1) : -1;
 	  edge->opposite_half_edge_ofs = 0;
-	  edge->edge_crease_weight     = mesh->edgeCreaseMap.lookup(key,0.0f);
-	  edge->vertex_crease_weight   = mesh->vertexCreaseMap.lookup(startVertex,0.0f);
+	  edge->edge_crease_weight     = mesh->edgeCreaseMap.lookup(key0,0.0f);
+	  edge->vertex_crease_weight   = mesh->vertexCreaseMap.lookup(startVertex0,0.0f);
 	  edge->edge_level             = mesh->getEdgeLevel(e+de);
           edge->patch_type             = HalfEdge::COMPLEX_PATCH; // type gets updated below
           edge->vertex_type            = HalfEdge::REGULAR_VERTEX;
@@ -494,13 +500,16 @@ namespace embree
 
   void SubdivMesh::Topology::updateHalfEdges()
   {
+    /* we always use the geometry topology to lookup creases */
+    mvector<HalfEdge>& halfEdgesGeom = mesh->topology[0].halfEdges;
+
     /* assume we do no longer recalculate in the future and clear these arrays */
     halfEdges0.clear();
     halfEdges1.clear();
 
     /* calculate which data to update */
-    const bool updateEdgeCreases = mesh->edge_creases.isModified() || mesh->edge_crease_weights.isModified();
-    const bool updateVertexCreases = mesh->vertex_creases.isModified() || mesh->vertex_crease_weights.isModified(); 
+    const bool updateEdgeCreases   = mesh->topology[0].vertexIndices.isModified() || mesh->edge_creases.isModified()   || mesh->edge_crease_weights.isModified();
+    const bool updateVertexCreases = mesh->topology[0].vertexIndices.isModified() || mesh->vertex_creases.isModified() || mesh->vertex_crease_weights.isModified(); 
     const bool updateLevels = mesh->levels.isModified();
 
     /* parallel loop over all half edges */
@@ -509,22 +518,19 @@ namespace embree
       for (size_t i=r.begin(); i!=r.end(); i++)
       {
 	HalfEdge& edge = halfEdges[i];
-	const unsigned int startVertex = edge.vtx_index;
- 
+
 	if (updateLevels)
 	  edge.edge_level = mesh->getEdgeLevel(i); 
         
 	if (updateEdgeCreases) {
-	  const unsigned int endVertex = edge.next()->vtx_index;
-	  const uint64_t key = SubdivMesh::Edge(startVertex,endVertex);
 	  if (edge.hasOpposite()) // leave weight at inf for borders
-            edge.edge_crease_weight = mesh->edgeCreaseMap.lookup(key,0.0f);
+            edge.edge_crease_weight = mesh->edgeCreaseMap.lookup((uint64_t)halfEdgesGeom[i].getEdge(),0.0f);
 	}
         
         /* we only use user specified vertex_crease_weight if the vertex is manifold */
         if (updateVertexCreases && edge.vertex_type != HalfEdge::NON_MANIFOLD_EDGE_VERTEX) 
         {
-	  edge.vertex_crease_weight = mesh->vertexCreaseMap.lookup(startVertex,0.0f);
+	  edge.vertex_crease_weight = mesh->vertexCreaseMap.lookup(halfEdgesGeom[i].vtx_index,0.0f);
 
           /* pin corner vertices when requested by user */
           if (boundary == RTC_BOUNDARY_PIN_CORNERS && edge.isCorner())
