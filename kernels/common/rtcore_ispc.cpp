@@ -257,6 +257,14 @@ namespace embree
   extern "C" void ispcSetBoundaryMode (RTCScene scene, unsigned geomID, RTCBoundaryMode mode) {
     rtcSetBoundaryMode(scene,geomID,mode);
   }
+
+  extern "C" void ispcSetBoundaryMode2 (RTCScene scene, unsigned geomID, unsigned topologyID, RTCBoundaryMode mode) {
+    rtcSetBoundaryMode2(scene,geomID,topologyID,mode);
+  }
+
+  extern "C" void ispcSetIndexBuffer(RTCScene scene, unsigned geomID, RTCBufferType vertexBuffer, RTCBufferType indexBuffer) {
+    rtcSetIndexBuffer(scene,geomID,vertexBuffer,indexBuffer);
+  }
   
   extern "C" void* ispcMapBuffer(RTCScene scene, unsigned geomID, RTCBufferType type) {
     return rtcMapBuffer(scene,geomID,type);

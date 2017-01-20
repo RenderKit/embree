@@ -26,9 +26,18 @@
 /*! maximal number of time steps */
 #define RTC_MAX_TIME_STEPS 129
 
+/*! maximal number of user vertex buffers */
+#define RTC_MAX_USER_VERTEX_BUFFERS 16
+
+/*! maximal number of index buffers for subdivision surfaces */
+#define RTC_MAX_INDEX_BUFFERS 16
+
 /*! \brief Specifies the type of buffers when mapping buffers */
-enum RTCBufferType {
+enum RTCBufferType 
+{
   RTC_INDEX_BUFFER         = 0x01000000,
+  RTC_INDEX_BUFFER0        = 0x01000000,
+  RTC_INDEX_BUFFER1        = 0x01000001,
   
   RTC_VERTEX_BUFFER        = 0x02000000,
   RTC_VERTEX_BUFFER0       = 0x02000000,
@@ -72,6 +81,7 @@ enum RTCBoundaryMode
   RTC_BOUNDARY_SMOOTH = 1,             //!< smooth border (default)
   RTC_BOUNDARY_PIN_CORNERS= 2,         //!< smooth border with fixed corners
   RTC_BOUNDARY_PIN_BORDERS = 3,        //!< linearly interpolation along border
+  RTC_PIN_ALL = 4,                     //!< pin every vertex (interpolates every patch linearly)
 
   /* old names for compatibility */
   RTC_BOUNDARY_EDGE_ONLY /* RTCORE_DEPRECATED */ = 1,          //!< soft boundary (default)
@@ -362,8 +372,14 @@ RTCORE_API unsigned rtcNewLineSegments (RTCScene scene,                    //!< 
 /*! \brief Sets 32 bit ray mask. */
 RTCORE_API void rtcSetMask (RTCScene scene, unsigned geomID, int mask);
 
-/*! \brief Sets boundary interpolation mode for subdivision surfaces */                                                                        
+/*! \brief Sets boundary interpolation mode for default subdivision surface topology */
 RTCORE_API void rtcSetBoundaryMode(RTCScene scene, unsigned geomID, RTCBoundaryMode mode);
+
+/*! \brief Sets boundary interpolation mode for specified subdivision surface topology */
+RTCORE_API void rtcSetBoundaryMode2(RTCScene scene, unsigned geomID, unsigned topologyID, RTCBoundaryMode mode);
+
+/*! \brief Binds a user vertex buffer to some index buffer topology. */
+RTCORE_API void rtcSetIndexBuffer(RTCScene scene, unsigned geomID, RTCBufferType vertexBuffer, RTCBufferType indexBuffer);
 
 /*! \brief Maps specified buffer. This function can be used to set index and
  *  vertex buffers of geometries. */

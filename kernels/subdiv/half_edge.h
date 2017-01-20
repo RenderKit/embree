@@ -40,13 +40,31 @@ namespace embree
       return (PatchType) max((int)ty0,(int)ty1);
     }
     
+    struct Edge 
+    {
+      /*! edge constructor */
+      __forceinline Edge(const uint32_t v0, const uint32_t v1)
+	: v0(v0), v1(v1) {}
+
+      /*! create an 64 bit identifier that is unique for the not oriented edge */
+      __forceinline operator uint64_t() const       
+      {
+	uint32_t p0 = v0, p1 = v1;
+	if (p0<p1) std::swap(p0,p1);
+	return (((uint64_t)p0) << 32) | (uint64_t)p1;
+      }
+
+    public:
+      uint32_t v0,v1;    //!< start and end vertex of the edge
+    };
+
     HalfEdge () 
       : vtx_index(-1), next_half_edge_ofs(0), prev_half_edge_ofs(0), opposite_half_edge_ofs(0), edge_crease_weight(0), 
       vertex_crease_weight(0), edge_level(0), patch_type(COMPLEX_PATCH), vertex_type(REGULAR_VERTEX)
     {
       static_assert(sizeof(HalfEdge) == 32, "invalid half edge size");
     }
-    
+ 
     __forceinline bool hasOpposite() const { return opposite_half_edge_ofs != 0; }
     __forceinline void setOpposite(HalfEdge* opposite) { opposite_half_edge_ofs = int(opposite-this); }
     
@@ -64,6 +82,8 @@ namespace embree
     
     __forceinline unsigned int getStartVertexIndex() const { return vtx_index; }
     __forceinline unsigned int getEndVertexIndex  () const { return next()->vtx_index; }
+    __forceinline Edge         getEdge            () const { return Edge(getStartVertexIndex(),getEndVertexIndex()); }
+   
     
     /*! tests if the start vertex of the edge is regular */
     __forceinline PatchType vertexType() const

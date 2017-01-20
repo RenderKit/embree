@@ -54,8 +54,8 @@ namespace embree
       }
     
       __forceinline vector_t (vector_t&& other)
+        : alloc(std::move(other.alloc))
       {
-        alloc = std::move(other.alloc);
         size_active = other.size_active; other.size_active = 0;
         size_alloced = other.size_alloced; other.size_alloced = 0;
         items = other.items; other.items = nullptr;

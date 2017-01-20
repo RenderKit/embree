@@ -262,7 +262,7 @@ namespace embree
     APIBuffer<unsigned int> curves;                   //!< array of curve indices
     BufferRefT<Vec3fa> vertices0;                     //!< fast access to first vertex buffer
     vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
-    array_t<std::unique_ptr<APIBuffer<char>>,2> userbuffers; //!< user buffers
+    std::vector<APIBuffer<char>> userbuffers;         //!< user buffers
     SubType subtype;                                //!< hair or surface geometry
     int tessellationRate;                           //!< tessellation rate for bezier curve
   };

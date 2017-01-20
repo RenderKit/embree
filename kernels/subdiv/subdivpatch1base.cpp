@@ -31,7 +31,7 @@ namespace embree
   {
     static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
 
-    const HalfEdge* edge = mesh->getHalfEdge(pID);
+    const HalfEdge* edge = mesh->getHalfEdge(0,pID);
 
     if (edge->patch_type == HalfEdge::REGULAR_QUAD_PATCH) 
     {
@@ -53,7 +53,7 @@ namespace embree
     else
     {
       type = EVAL_PATCH;
-      set_edge(mesh->getHalfEdge(pID));
+      set_edge(mesh->getHalfEdge(0,pID));
       set_subPatch(subPatch);
     }
 
