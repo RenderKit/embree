@@ -256,7 +256,7 @@ namespace embree
     }
 
     /*! array of topologies */
-    Topology topology[1];
+    std::vector<Topology> topology;
 
     /*! vertex buffer (one buffer for each time step) */
     vector<APIBuffer<Vec3fa>> vertices;

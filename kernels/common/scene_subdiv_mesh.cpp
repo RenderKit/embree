@@ -40,6 +40,7 @@ namespace embree
       invalid_face(parent->device),
       levelUpdate(false)
   {
+    topology.resize(1);
     vertices.resize(numTimeSteps);
     vertex_buffer_tags.resize(numTimeSteps);
     for (size_t i=0; i<numTimeSteps; i++)
@@ -80,7 +81,7 @@ namespace embree
   {
     if (parent->isStatic() && parent->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-    if (topologyID > 1)
+    if (topologyID >= topology.size())
       throw_RTCError(RTC_INVALID_OPERATION,"invalid topology ID");
     topology[topologyID].setBoundaryMode(mode);
     Geometry::update();
