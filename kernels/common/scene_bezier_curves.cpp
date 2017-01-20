@@ -69,7 +69,7 @@ namespace embree
       vertices[t].checkPadding16();
       vertices0 = vertices[0];
     } 
-    else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+2)
+    else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
     {
       if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
       new (&userbuffers[bid]) APIBuffer<char>(parent->device,numVertices(),stride);
