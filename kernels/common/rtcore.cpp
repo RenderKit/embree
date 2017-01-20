@@ -1035,6 +1035,17 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
 
+  RTCORE_API void rtcSetIndexBuffer (RTCScene hscene, unsigned geomID, RTCBufferType vertexBuffer, RTCBufferType indexBuffer) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetIndexBuffer);
+    RTCORE_VERIFY_HANDLE(hscene);
+    RTCORE_VERIFY_GEOMID(geomID);
+    scene->get_locked(geomID)->setIndexBuffer(vertexBuffer,indexBuffer);
+    RTCORE_CATCH_END(scene->device);
+  }
+
   RTCORE_API void* rtcMapBuffer(RTCScene hscene, unsigned geomID, RTCBufferType type) 
   {
     Scene* scene = (Scene*) hscene;

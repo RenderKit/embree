@@ -377,6 +377,9 @@ RTCORE_API void rtcSetBoundaryMode(RTCScene scene, unsigned geomID, RTCBoundaryM
 /*! \brief Sets boundary interpolation mode for specified subdivision surface topology */
 RTCORE_API void rtcSetBoundaryMode2(RTCScene scene, unsigned geomID, unsigned topologyID, RTCBoundaryMode mode);
 
+/*! \brief Binds a user vertex buffer to some index buffer topology. */
+RTCORE_API void rtcSetIndexBuffer(RTCScene scene, unsigned geomID, RTCBufferType vertexBuffer, RTCBufferType indexBuffer);
+
 /*! \brief Maps specified buffer. This function can be used to set index and
  *  vertex buffers of geometries. */
 RTCORE_API void* rtcMapBuffer(RTCScene scene, unsigned geomID, RTCBufferType type);

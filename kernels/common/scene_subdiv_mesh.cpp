@@ -92,6 +92,24 @@ namespace embree
     topology[topologyID].setBoundaryMode(mode);
   }
 
+  void SubdivMesh::setIndexBuffer(RTCBufferType vertexBuffer, RTCBufferType indexBuffer)
+  {
+    if (vertexBuffer >= RTC_USER_VERTEX_BUFFER0 && vertexBuffer < RTC_USER_VERTEX_BUFFER0+userbuffers.size()) {
+      if (indexBuffer >= RTC_INDEX_BUFFER && indexBuffer < RTC_INDEX_BUFFER+topology.size()) {
+        unsigned vid = vertexBuffer & 0xFFFF;
+        unsigned iid = indexBuffer & 0xFFFF;
+        if (userbuffers[vid].userdata != iid) {
+          userbuffers[vid].userdata = iid;
+          parent->commitCounterSubdiv++; // triggers recalculation of cached interpolation data
+        }
+      } else {
+        throw_RTCError(RTC_INVALID_OPERATION,"invalid index buffer specified");
+      }
+    } else {
+      throw_RTCError(RTC_INVALID_OPERATION,"invalid vertex buffer specified");
+    }
+  }
+
   void SubdivMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
   { 
     if (parent->isStatic() && parent->isBuild()) 
@@ -244,7 +262,7 @@ namespace embree
   void SubdivMesh::updateBuffer (RTCBufferType type)
   {
     if (type != RTC_LEVEL_BUFFER)
-      parent->commitCounterSubdiv++; // FIXME: can get removed !!!!!!!!!!!!
+      parent->commitCounterSubdiv++;
 
     unsigned bid = type & 0xFFFF;
     if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+numTimeSteps)
@@ -735,15 +753,19 @@ namespace embree
     size_t stride = 0;
     size_t bufID = buffer&0xFFFF;
     std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
+    Topology* topo = nullptr;
     if (buffer >= RTC_USER_VERTEX_BUFFER0) {
       src    = userbuffers[bufID].getPtr();
       stride = userbuffers[bufID].getStride();
       baseEntry = &user_buffer_tags[bufID];
+      int topologyID = userbuffers[bufID].userdata;
+      topo = &topology[topologyID];
     } else {
       assert(bufID < numTimeSteps);
       src    = vertices[bufID].getPtr();
       stride = vertices[bufID].getStride();
       baseEntry = &vertex_buffer_tags[bufID];
+      topo = &topology[0];
     }
 
     bool has_P = P;
@@ -754,7 +776,7 @@ namespace embree
     {
       vfloat4 Pt, dPdut, dPdvt, ddPdudut, ddPdvdvt, ddPdudvt;
       isa::PatchEval<vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,i/4,stride)),parent->commitCounterSubdiv,
-                                      getHalfEdge(0,primID),src+i*sizeof(float),stride,u,v,
+                                      topo->getHalfEdge(primID),src+i*sizeof(float),stride,u,v,
                                       has_P ? &Pt : nullptr, 
                                       has_dP ? &dPdut : nullptr, 
                                       has_dP ? &dPdvt : nullptr,
@@ -800,15 +822,19 @@ namespace embree
     size_t stride = 0;
     size_t bufID = buffer&0xFFFF;
     std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
+    Topology* topo = nullptr;
     if (buffer >= RTC_USER_VERTEX_BUFFER0) {
       src    = userbuffers[bufID].getPtr();
       stride = userbuffers[bufID].getStride();
       baseEntry = &user_buffer_tags[bufID];
+      int topologyID = userbuffers[bufID].userdata;
+      topo = &topology[topologyID];
     } else {
       assert(bufID < numTimeSteps);
       src    = vertices[bufID].getPtr();
       stride = vertices[bufID].getStride();
       baseEntry = &vertex_buffer_tags[bufID];
+      topo = &topology[0];
     }
 
     const int* valid = (const int*) valid_i;
@@ -829,7 +855,7 @@ namespace embree
         {
           const size_t M = min(size_t(4),numFloats-j);
           isa::PatchEvalSimd<vbool4,vint4,vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,j/4,stride)),parent->commitCounterSubdiv,
-                                                           getHalfEdge(0,primID),src+j*sizeof(float),stride,valid1,uu,vv,
+                                                           topo->getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
                                                            P ? P+j*numUVs+i : nullptr,
                                                            dPdu ? dPdu+j*numUVs+i : nullptr,
                                                            dPdv ? dPdv+j*numUVs+i : nullptr,
