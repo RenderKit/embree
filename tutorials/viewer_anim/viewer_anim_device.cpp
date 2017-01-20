@@ -81,41 +81,54 @@ namespace embree {
   // ==================================================================================================
 
 
-  unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, RTCGeometryFlags object_flags = RTC_GEOMETRY_STATIC)
+  unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
   {
-    unsigned int geomID = rtcNewTriangleMesh (scene_out, object_flags, mesh->numTriangles, mesh->numVertices, mesh->numTimeSteps);
-    for (size_t t=0; t<mesh->numTimeSteps; t++) {
-      //rtcSetBuffer(scene_out, geomID, (RTCBufferType)(RTC_VERTEX_BUFFER+t),mesh->positions+t*mesh->numVertices, 0, sizeof(Vec3fa      ));
-      Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t));
-      for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = *(mesh->positions+t*mesh->numVertices+i);        
-      rtcUnmapBuffer(scene_out, geomID, (RTCBufferType)(RTC_VERTEX_BUFFER+t));
-    }
+    /* if more than a single timestep, mark object as dynamic */
+    RTCGeometryFlags object_flags = mesh->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
+    /* create object */
+    unsigned int geomID = rtcNewTriangleMesh (scene_out, object_flags, mesh->numTriangles, mesh->numVertices, 1);
+    PRINT(mesh->numTimeSteps);
+    /* generate vertex buffer */
+    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
+    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[i];        
+    rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
+    /* set index buffer */
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
     mesh->geomID = geomID;
     return geomID;
   }
 
 
-  unsigned int convertQuadMesh(ISPCQuadMesh* mesh, RTCScene scene_out, RTCGeometryFlags object_flags = RTC_GEOMETRY_STATIC)
+  unsigned int convertQuadMesh(ISPCQuadMesh* mesh, RTCScene scene_out)
   {
+    /* if more than a single timestep, mark object as dynamic */
+    RTCGeometryFlags object_flags = mesh->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
+    /* create object */
     unsigned int geomID = rtcNewQuadMesh (scene_out, object_flags, mesh->numQuads, mesh->numVertices, mesh->numTimeSteps);
-    for (size_t t=0; t<mesh->numTimeSteps; t++) {
-      rtcSetBuffer(scene_out, geomID, (RTCBufferType)(RTC_VERTEX_BUFFER+t),mesh->positions+t*mesh->numVertices, 0, sizeof(Vec3fa      ));
-    }
+    /* generate vertex buffer */
+    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
+    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[i];        
+    rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
+    /* set index buffer */
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(ISPCQuad));
     mesh->geomID = geomID;
     return geomID;
   }
 
-  unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out, RTCGeometryFlags object_flags = RTC_GEOMETRY_STATIC)
+  unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
   {
+    /* if more than a single timestep, mark object as dynamic */
+    RTCGeometryFlags object_flags = mesh->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
+    /* create object */
     unsigned int geomID = rtcNewSubdivisionMesh(scene_out, object_flags, mesh->numFaces, mesh->numEdges, mesh->numVertices,
                                                 mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles, mesh->numTimeSteps);
     mesh->geomID = geomID;
-    for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 16.0f;
-    for (size_t t=0; t<mesh->numTimeSteps; t++) {
-      rtcSetBuffer(scene_out, geomID, (RTCBufferType)(RTC_VERTEX_BUFFER+t),mesh->positions+t*mesh->numVertices, 0, sizeof(Vec3fa  ));
-    }
+    for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 4.0f;
+    /* generate vertex buffer */
+    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
+    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[i];        
+    rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
+    /* set all other buffers */
     rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float));
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(unsigned int));
     rtcSetBuffer(scene_out, geomID, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(unsigned int));
@@ -128,33 +141,48 @@ namespace embree {
     return geomID;
   }
 
-  unsigned int convertLineSegments(ISPCLineSegments* mesh, RTCScene scene_out, RTCGeometryFlags object_flags = RTC_GEOMETRY_STATIC)
+  unsigned int convertLineSegments(ISPCLineSegments* mesh, RTCScene scene_out)
   {
+    /* if more than a single timestep, mark object as dynamic */
+    RTCGeometryFlags object_flags = mesh->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
+    /* create object */
     unsigned int geomID = rtcNewLineSegments (scene_out, object_flags, mesh->numSegments, mesh->numVertices, mesh->numTimeSteps);
-    for (size_t t=0; t<mesh->numTimeSteps; t++) {
-      rtcSetBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t),mesh->positions+t*mesh->numVertices,0,sizeof(Vertex));
-    }
+    /* generate vertex buffer */
+    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
+    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[i];        
+    rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
+    /* set index buffer */
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->indices,0,sizeof(int));
     return geomID;
   }
 
-  unsigned int convertHairSet(ISPCHairSet* hair, RTCScene scene_out, RTCGeometryFlags object_flags = RTC_GEOMETRY_STATIC)
+  unsigned int convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
   {
+    /* if more than a single timestep, mark object as dynamic */
+    RTCGeometryFlags object_flags = hair->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
+    /* create object */
     unsigned int geomID = rtcNewHairGeometry (scene_out, object_flags, hair->numHairs, hair->numVertices, hair->numTimeSteps);
-    for (size_t t=0; t<hair->numTimeSteps; t++) {
-      rtcSetBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t),hair->positions+t*hair->numVertices,0,sizeof(Vertex));
-    }
+    /* generate vertex buffer */
+    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
+    for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[i];        
+    rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
+    /* set index buffer */
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
     rtcSetTessellationRate(scene_out,geomID,(float)hair->tessellation_rate);
     return geomID;
   }
 
-  unsigned int convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out, RTCGeometryFlags object_flags = RTC_GEOMETRY_STATIC)
+  unsigned int convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out)
   {
+    /* if more than a single timestep, mark object as dynamic */
+    RTCGeometryFlags object_flags = hair->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
+    /* create object */
     unsigned int geomID = rtcNewCurveGeometry (scene_out, object_flags, hair->numHairs, hair->numVertices, hair->numTimeSteps);
-    for (size_t t=0; t<hair->numTimeSteps; t++) {
-      rtcSetBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t),hair->positions+t*hair->numVertices,0,sizeof(Vertex));
-    }
+    /* generate vertex buffer */
+    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
+    for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[i];        
+    rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
+    /* set index buffer */
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
     return geomID;
   }
@@ -172,99 +200,95 @@ namespace embree {
   }
     
 
-  unsigned int createObject(const size_t i, ISPCScene* scene_in, RTCScene scene_out, bool dynamic = false)
+  void createObject(const size_t i, ISPCScene* scene_in, RTCScene scene_out)
   {
-    RTCGeometryFlags object_flags = dynamic ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
-
     ISPCGeometry* geometry = scene_in->geometries[i];
     unsigned int geomID = 0;
 
     if (geometry->type == SUBDIV_MESH) {
-      geomID = convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out, object_flags);
+      geomID = convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out);
       ((ISPCSubdivMesh*)geometry)->geomID = geomID;
       assert(geomID == i);
     }
     else if (geometry->type == TRIANGLE_MESH) {
-      geomID = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out, object_flags);
+      geomID = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out);
       ((ISPCTriangleMesh*)geometry)->geomID = geomID;
       assert(geomID == i);
     }
     else if (geometry->type == QUAD_MESH) {
-      geomID = convertQuadMesh((ISPCQuadMesh*) geometry, scene_out, object_flags);
+      geomID = convertQuadMesh((ISPCQuadMesh*) geometry, scene_out);
       ((ISPCQuadMesh*)geometry)->geomID = geomID;
       assert(geomID == i);
     }
     else if (geometry->type == LINE_SEGMENTS) {
-      geomID = convertLineSegments((ISPCLineSegments*) geometry, scene_out, object_flags);
+      geomID = convertLineSegments((ISPCLineSegments*) geometry, scene_out);
       ((ISPCLineSegments*)geometry)->geomID = geomID;
       assert(geomID == i);
     }
     else if (geometry->type == HAIR_SET) {
-      geomID = convertHairSet((ISPCHairSet*) geometry, scene_out, object_flags);
+      geomID = convertHairSet((ISPCHairSet*) geometry, scene_out);
       ((ISPCHairSet*)geometry)->geomID = geomID;
       assert(geomID == i);
     }
     else if (geometry->type == CURVES) {
-      geomID = convertCurveGeometry((ISPCHairSet*) geometry, scene_out, object_flags);
+      geomID = convertCurveGeometry((ISPCHairSet*) geometry, scene_out);
       ((ISPCHairSet*)geometry)->geomID = geomID;
       assert(geomID == i);
     }
     else
       assert(false);
-    return geomID;
   }
 
   void updateVertexData(const unsigned int geomID, ISPCScene* scene_in, RTCScene scene_out, size_t keyFrameID, const float tt)
   {
-    size_t numGeometries = scene_in->numGeometries;
-    if (!numGeometries) return;
+    ISPCGeometry* geometry = scene_in->geometries[geomID];
 
-    ISPCGeometry* geometry0 = scene_in->geometries[max((keyFrameID+0) % numGeometries,(size_t)1)];
-    ISPCGeometry* geometry1 = scene_in->geometries[max((keyFrameID+1) % numGeometries,(size_t)1)];
-
-    /* FIXME: only updating triangle meshes works so far */
-
-    if (geometry0->type == SUBDIV_MESH) {
-      unsigned int geomID = ((ISPCSubdivMesh*)geometry0)->geomID;
+    if (geometry->type == SUBDIV_MESH) {
+      unsigned int geomID = ((ISPCSubdivMesh*)geometry)->geomID;
+      /* if static do nothing */
+      if (((ISPCSubdivMesh*)geometry)->numTimeSteps <= 1) return;
       rtcUpdate(scene_out,geomID);
     }
-    else if (geometry0->type == TRIANGLE_MESH) {
-      ISPCTriangleMesh* mesh0 = (ISPCTriangleMesh*)geometry0;
-      ISPCTriangleMesh* mesh1 = (ISPCTriangleMesh*)geometry1;
-
-      assert(mesh0->numTimeSteps == mesh1->numTimeSteps);
-      assert(mesh0->numVertices  == mesh1->numVertices);
-
-      for (size_t t=0; t<mesh0->numTimeSteps; t++) {
-        //rtcSetBuffer(scene_out, geomID, (RTCBufferType)(RTC_VERTEX_BUFFER+t),mesh->positions+t*mesh->numVertices, 0, sizeof(Vec3fa      ));
-        Vec3fa* __restrict__ vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t));
-        const Vec3fa* __restrict__ const input0 = mesh0->positions+t*mesh0->numVertices;
-        const Vec3fa* __restrict__ const input1 = mesh1->positions+t*mesh1->numVertices;
-
-        parallel_for(size_t(0),size_t(mesh0->numVertices),[&](const range<size_t>& range) {
-            for (size_t i=range.begin(); i<range.end(); i++)
-              vertices[i] = lerp(input0[i],input1[i],tt);
-          }); 
-
-        rtcUnmapBuffer(scene_out, geomID, (RTCBufferType)(RTC_VERTEX_BUFFER+t));
-
-      }
+    else if (geometry->type == TRIANGLE_MESH) {
+      ISPCTriangleMesh* mesh = (ISPCTriangleMesh*)geometry;
+      /* if static do nothing */
+      if (mesh->numTimeSteps <= 1) return;
+      
+      /* interpolate two vertices from two timesteps */
+      const size_t t0 = (keyFrameID+0) % mesh->numTimeSteps;
+      const size_t t1 = (keyFrameID+1) % mesh->numTimeSteps;
+      Vec3fa* __restrict__ vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
+      const Vec3fa* __restrict__ const input0 = mesh->positions+t0*mesh->numVertices;
+      const Vec3fa* __restrict__ const input1 = mesh->positions+t1*mesh->numVertices;
+      parallel_for(size_t(0),size_t(mesh->numVertices),[&](const range<size_t>& range) {
+          for (size_t i=range.begin(); i<range.end(); i++)
+            vertices[i] = lerp(input0[i],input1[i],tt);
+        }); 
+      rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
       rtcUpdate(scene_out,geomID);
     }
-    else if (geometry0->type == QUAD_MESH) {
-      unsigned int geomID = ((ISPCQuadMesh*)geometry0)->geomID;
+    else if (geometry->type == QUAD_MESH) {
+      unsigned int geomID = ((ISPCQuadMesh*)geometry)->geomID;
+      /* if static do nothing */
+      if (((ISPCQuadMesh*)geometry)->numTimeSteps <= 1) return;
       rtcUpdate(scene_out,geomID);
     }
-    else if (geometry0->type == LINE_SEGMENTS) {
-      unsigned int geomID = ((ISPCLineSegments*)geometry0)->geomID;
+    else if (geometry->type == LINE_SEGMENTS) {
+      unsigned int geomID = ((ISPCLineSegments*)geometry)->geomID;
+      /* if static do nothing */
+      if (((ISPCLineSegments*)geometry)->numTimeSteps <= 1) return;
       rtcUpdate(scene_out,geomID);
     }
-    else if (geometry0->type == HAIR_SET) {
-      unsigned int geomID = ((ISPCHairSet*)geometry0)->geomID;
+    else if (geometry->type == HAIR_SET) {
+      unsigned int geomID = ((ISPCHairSet*)geometry)->geomID;
+      /* if static do nothing */
+      if (((ISPCHairSet*)geometry)->numTimeSteps <= 1) return;
       rtcUpdate(scene_out,geomID);
     }
-    else if (geometry0->type == CURVES) {
-      unsigned int geomID = ((ISPCHairSet*)geometry0)->geomID;
+    else if (geometry->type == CURVES) {
+      unsigned int geomID = ((ISPCHairSet*)geometry)->geomID;
+      /* if static do nothing */
+      if (((ISPCHairSet*)geometry)->numTimeSteps <= 1) return;
       rtcUpdate(scene_out,geomID);
     }
     else
@@ -600,22 +624,13 @@ namespace embree {
     /* create scene */
     g_scene = createScene(g_ispc_scene,true);
 
-    /* instantiate the first two objects (static,dynamic) */
-#if 0
-    /* num objects */
+    /* create objects */
     size_t numObjects = getNumObjects(g_ispc_scene);
     PRINT(numObjects);
-
     for (size_t i=0;i<numObjects;i++)
-      createObject(i,g_ispc_scene,g_scene,true);
-#else
-    staticID  = createObject(0,g_ispc_scene,g_scene,false);
-    dynamicID = createObject(1,g_ispc_scene,g_scene,true);
-    PRINT(staticID);
-    PRINT(dynamicID);
+      createObject(i,g_ispc_scene,g_scene);
 
-#endif
-
+    /* commit the scene */
     rtcCommit (g_scene);
 
     if (!timeInitialized)
@@ -728,7 +743,10 @@ namespace embree {
     double intpart, fracpart;
     fracpart = modf(atime,&intpart);
     const size_t keyFrameID = ((size_t)intpart) % numProfileFrames;    
-    updateVertexData(dynamicID, g_ispc_scene, g_scene, keyFrameID, (float)fracpart);
+
+    size_t numObjects = getNumObjects(g_ispc_scene);
+    for (size_t i=0;i<numObjects;i++)
+      updateVertexData(i, g_ispc_scene, g_scene, keyFrameID, (float)fracpart);
 
     double vertexUpdateTime1 = getSeconds();    
     const double vertexUpdateTimeDelta = vertexUpdateTime1-vertexUpdateTime0;
