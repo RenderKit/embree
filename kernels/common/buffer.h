@@ -149,6 +149,10 @@ namespace embree
     }
     
   public:
+
+    bool valid() const {
+      return device != nullptr;
+    }
     
     /* inits the buffer */
     void init(MemoryMonitorInterface* device_in, size_t num_in, size_t stride_in) 

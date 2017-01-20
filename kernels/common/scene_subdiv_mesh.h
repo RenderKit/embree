@@ -228,7 +228,7 @@ namespace embree
     vector<APIBuffer<Vec3fa>> vertices;
 
     /*! user data buffers */
-    array_t<std::unique_ptr<APIBuffer<char>>,2> userbuffers;
+    std::vector<APIBuffer<char>> userbuffers;
 
     /*! edge crease buffer containing edges (pairs of vertices) that carry edge crease weights */
     APIBuffer<Edge> edge_creases;

@@ -112,9 +112,10 @@ namespace embree
     }
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+2)
     {
-      if (userbuffers[bid] == nullptr) userbuffers[bid] = make_unique(new APIBuffer<char>(parent->device,numVertices,stride)); 
-      userbuffers[bid]->set(ptr,offset,stride);  
-      userbuffers[bid]->checkPadding16();
+      if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
+      new (&userbuffers[bid]) APIBuffer<char>(parent->device,numVertices,stride);
+      userbuffers[bid].set(ptr,offset,stride);  
+      userbuffers[bid].checkPadding16();
     }
     else if (type == RTC_FACE_BUFFER) {
       faceVertices.set(ptr,offset,stride);
@@ -247,7 +248,7 @@ namespace embree
       vertices[bid].setModified(true);
     
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+2)
-      userbuffers[bid]->setModified(true);
+      userbuffers[bid].setModified(true);
 
     else if (type == RTC_FACE_BUFFER)
       faceVertices.setModified(true);
@@ -648,10 +649,10 @@ namespace embree
         return numInterpolationSlots4(stride);
       };
 #endif
-      for (size_t i=0; i<numTimeSteps; i++)
+      for (size_t i=0; i<vertex_buffer_tags.size(); i++)
         vertex_buffer_tags[i].resize(numFaces*numInterpolationSlots(vertices[i].getStride()));
-      for (size_t i=0; i<2; i++)
-        if (userbuffers[i]) user_buffer_tags  [i].resize(numFaces*numInterpolationSlots(userbuffers[i]->getStride()));
+      for (size_t i=0; i<userbuffers.size(); i++)
+        if (userbuffers[i].valid()) user_buffer_tags[i].resize(numFaces*numInterpolationSlots(userbuffers[i].getStride()));
     }
 
     /* cleanup some state for static scenes */
@@ -732,8 +733,8 @@ namespace embree
     size_t bufID = buffer&0xFFFF;
     std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
     if (buffer >= RTC_USER_VERTEX_BUFFER0) {
-      src    = userbuffers[bufID]->getPtr();
-      stride = userbuffers[bufID]->getStride();
+      src    = userbuffers[bufID].getPtr();
+      stride = userbuffers[bufID].getStride();
       baseEntry = &user_buffer_tags[bufID];
     } else {
       assert(bufID < numTimeSteps);
@@ -797,8 +798,8 @@ namespace embree
     size_t bufID = buffer&0xFFFF;
     std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
     if (buffer >= RTC_USER_VERTEX_BUFFER0) {
-      src    = userbuffers[bufID]->getPtr();
-      stride = userbuffers[bufID]->getStride();
+      src    = userbuffers[bufID].getPtr();
+      stride = userbuffers[bufID].getStride();
       baseEntry = &user_buffer_tags[bufID];
     } else {
       assert(bufID < numTimeSteps);
