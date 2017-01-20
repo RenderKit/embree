@@ -239,10 +239,10 @@ namespace embree
               fastUpdate &= !iter[i]->holes.isModified();
               fastUpdate &= iter[i]->levels.isModified();
               fastUpdate &= !iter[i]->topology[0].vertexIndices.isModified(); 
-              fastUpdate &= !iter[i]->topology[0].edge_creases.isModified();
-              fastUpdate &= !iter[i]->topology[0].edge_crease_weights.isModified();
-              fastUpdate &= !iter[i]->topology[0].vertex_creases.isModified();
-              fastUpdate &= !iter[i]->topology[0].vertex_crease_weights.isModified();               
+              fastUpdate &= !iter[i]->edge_creases.isModified();
+              fastUpdate &= !iter[i]->edge_crease_weights.isModified();
+              fastUpdate &= !iter[i]->vertex_creases.isModified();
+              fastUpdate &= !iter[i]->vertex_crease_weights.isModified();               
               iter[i]->initializeHalfEdgeStructures();
               //iter[i]->patch_eval_trees.resize(iter[i]->size()*numTimeSteps);
             }

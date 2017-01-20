@@ -31,8 +31,6 @@ namespace embree
       numFaces(numFaces), 
       numEdges(numEdges), 
       numVertices(numVertices),
-      numEdgeCreases(numEdgeCreases),
-      numVertexCreases(numVertexCreases),
       displFunc(nullptr),
       displFunc2(nullptr),
       displBounds(empty),
@@ -50,6 +48,11 @@ namespace embree
     faceVertices.init(parent->device,numFaces,sizeof(unsigned int));
     holes.init(parent->device,numHoles,sizeof(int));
     levels.init(parent->device,numEdges,sizeof(float));
+
+    edge_creases.init(parent->device,numEdgeCreases,2*sizeof(unsigned int));
+    edge_crease_weights.init(parent->device,numEdgeCreases,sizeof(float));
+    vertex_creases.init(parent->device,numVertexCreases,sizeof(unsigned int));
+    vertex_crease_weights.init(parent->device,numVertexCreases,sizeof(float));
 
     topology.resize(1);
     new (&topology[0]) Topology(this);
@@ -87,7 +90,6 @@ namespace embree
     if (topologyID >= topology.size())
       throw_RTCError(RTC_INVALID_OPERATION,"invalid topology ID");
     topology[topologyID].setBoundaryMode(mode);
-    Geometry::update();
   }
 
   void SubdivMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
@@ -123,30 +125,24 @@ namespace embree
       if (bid >= topology.size()) topology.resize(bid+1);
       topology[bid].vertexIndices.set(ptr,offset,stride);
     }
-    else if (type >= RTC_EDGE_CREASE_INDEX_BUFFER && type < RTC_EDGE_CREASE_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
-    {
-      if (bid >= topology.size()) topology.resize(bid+1);
-      topology[bid].edge_creases.set(ptr,offset,stride);
-    } 
-    else if (type >= RTC_EDGE_CREASE_WEIGHT_BUFFER && type < RTC_EDGE_CREASE_WEIGHT_BUFFER+RTC_MAX_INDEX_BUFFERS)
-    {
-      if (bid >= topology.size()) topology.resize(bid+1);
-      topology[bid].edge_crease_weights.set(ptr,offset,stride);
-    }
-    else if (type >= RTC_VERTEX_CREASE_INDEX_BUFFER && type < RTC_VERTEX_CREASE_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
-    {
-      if (bid >= topology.size()) topology.resize(bid+1);
-      topology[bid].vertex_creases.set(ptr,offset,stride);
-    }
-    else if (type >= RTC_VERTEX_CREASE_WEIGHT_BUFFER && type < RTC_VERTEX_CREASE_WEIGHT_BUFFER+RTC_MAX_INDEX_BUFFERS)
-    {
-      if (bid >= topology.size()) topology.resize(bid+1);
-      topology[bid].vertex_crease_weights.set(ptr,offset,stride);
-    }
+    else if (type == RTC_EDGE_CREASE_INDEX_BUFFER)
+      edge_creases.set(ptr,offset,stride);
+
+    else if (type == RTC_EDGE_CREASE_WEIGHT_BUFFER)
+      edge_crease_weights.set(ptr,offset,stride);
+
+    else if (type == RTC_VERTEX_CREASE_INDEX_BUFFER)
+      vertex_creases.set(ptr,offset,stride);
+
+    else if (type == RTC_VERTEX_CREASE_WEIGHT_BUFFER)
+      vertex_crease_weights.set(ptr,offset,stride);
+
     else if (type == RTC_HOLE_BUFFER)
       holes.set(ptr,offset,stride);
+
     else if (type == RTC_LEVEL_BUFFER)
       levels.set(ptr,offset,stride);
+
     else
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
   }
@@ -166,17 +162,17 @@ namespace embree
     else if (type == RTC_FACE_BUFFER)
       return faceVertices.map(parent->numMappedBuffers);
 
-    else if (type >= RTC_EDGE_CREASE_INDEX_BUFFER && type < RTC_EDGE_CREASE_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
-      return topology[bid].edge_creases.map(parent->numMappedBuffers); 
+    else if (type == RTC_EDGE_CREASE_INDEX_BUFFER)
+      return edge_creases.map(parent->numMappedBuffers); 
 
-    else if (type >= RTC_EDGE_CREASE_WEIGHT_BUFFER && type < RTC_EDGE_CREASE_WEIGHT_BUFFER+RTC_MAX_INDEX_BUFFERS)
-      return topology[bid].edge_crease_weights.map(parent->numMappedBuffers); 
+    else if (type == RTC_EDGE_CREASE_WEIGHT_BUFFER)
+      return edge_crease_weights.map(parent->numMappedBuffers); 
 
-    else if (type >= RTC_VERTEX_CREASE_INDEX_BUFFER && type < RTC_VERTEX_CREASE_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
-      return topology[bid].vertex_creases.map(parent->numMappedBuffers); 
+    else if (type == RTC_VERTEX_CREASE_INDEX_BUFFER)
+      return vertex_creases.map(parent->numMappedBuffers); 
     
-    else if (type >= RTC_VERTEX_CREASE_WEIGHT_BUFFER && type < RTC_VERTEX_CREASE_WEIGHT_BUFFER+RTC_MAX_INDEX_BUFFERS)
-      return topology[bid].vertex_crease_weights.map(parent->numMappedBuffers);
+    else if (type == RTC_VERTEX_CREASE_WEIGHT_BUFFER)
+      return vertex_crease_weights.map(parent->numMappedBuffers);
 
     else if (type == RTC_HOLE_BUFFER)
       return holes.map(parent->numMappedBuffers);
@@ -205,17 +201,17 @@ namespace embree
     else if (type == RTC_FACE_BUFFER)
       faceVertices.unmap(parent->numMappedBuffers);
 
-    else if (type >= RTC_EDGE_CREASE_INDEX_BUFFER && type < RTC_EDGE_CREASE_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
-      topology[bid].edge_creases.unmap(parent->numMappedBuffers); 
+    else if (type == RTC_EDGE_CREASE_INDEX_BUFFER)
+      edge_creases.unmap(parent->numMappedBuffers); 
 
-    else if (type >= RTC_EDGE_CREASE_WEIGHT_BUFFER && type < RTC_EDGE_CREASE_WEIGHT_BUFFER+RTC_MAX_INDEX_BUFFERS)
-      topology[bid].edge_crease_weights.unmap(parent->numMappedBuffers); 
+    else if (type == RTC_EDGE_CREASE_WEIGHT_BUFFER)
+      edge_crease_weights.unmap(parent->numMappedBuffers); 
 
-    else if (type >= RTC_VERTEX_CREASE_INDEX_BUFFER && type < RTC_VERTEX_CREASE_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
-      topology[bid].vertex_creases.unmap(parent->numMappedBuffers); 
+    else if (type == RTC_VERTEX_CREASE_INDEX_BUFFER)
+      vertex_creases.unmap(parent->numMappedBuffers); 
     
-    else if (type >= RTC_VERTEX_CREASE_WEIGHT_BUFFER && type < RTC_VERTEX_CREASE_WEIGHT_BUFFER+RTC_MAX_INDEX_BUFFERS)
-      topology[bid].vertex_crease_weights.unmap(parent->numMappedBuffers);
+    else if (type == RTC_VERTEX_CREASE_WEIGHT_BUFFER)
+      vertex_crease_weights.unmap(parent->numMappedBuffers);
 
     else if (type == RTC_HOLE_BUFFER)
       holes.unmap(parent->numMappedBuffers);
@@ -233,6 +229,10 @@ namespace embree
     holes.setModified(true);
     for (auto& buffer : vertices) buffer.setModified(true); 
     levels.setModified(true);
+    edge_creases.setModified(true);
+    edge_crease_weights.setModified(true);
+    vertex_creases.setModified(true);
+    vertex_crease_weights.setModified(true); 
     for (auto& t : topology) t.update();
     Geometry::update();
   }
@@ -255,17 +255,17 @@ namespace embree
     else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
       topology[bid].vertexIndices.setModified(true);
 
-    else if (type >= RTC_EDGE_CREASE_INDEX_BUFFER && type < RTC_EDGE_CREASE_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
-      topology[bid].edge_creases.setModified(true);
+    else if (type == RTC_EDGE_CREASE_INDEX_BUFFER)
+      edge_creases.setModified(true);
 
-    else if (type >= RTC_EDGE_CREASE_WEIGHT_BUFFER && type < RTC_EDGE_CREASE_WEIGHT_BUFFER+RTC_MAX_INDEX_BUFFERS)
-      topology[bid].edge_crease_weights.setModified(true);
+    else if (type == RTC_EDGE_CREASE_WEIGHT_BUFFER)
+      edge_crease_weights.setModified(true);
 
-    else if (type >= RTC_VERTEX_CREASE_INDEX_BUFFER && type < RTC_VERTEX_CREASE_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
-      topology[bid].vertex_creases.setModified(true);
+    else if (type == RTC_VERTEX_CREASE_INDEX_BUFFER)
+      vertex_creases.setModified(true);
 
-    else if (type >= RTC_VERTEX_CREASE_WEIGHT_BUFFER && type < RTC_VERTEX_CREASE_WEIGHT_BUFFER+RTC_MAX_INDEX_BUFFERS)
-      topology[bid].vertex_crease_weights.setModified(true);
+    else if (type == RTC_VERTEX_CREASE_WEIGHT_BUFFER)
+      vertex_crease_weights.setModified(true);
 
     else if (type == RTC_HOLE_BUFFER)
       holes.setModified(true);
@@ -317,6 +317,10 @@ namespace embree
         buffer.free();
     levels.free();
     holes.free();
+    edge_creases.free();
+    edge_crease_weights.free();
+    vertex_creases.free();
+    vertex_crease_weights.free();
     for (auto& t : topology) 
       t.immutable();
   }
@@ -331,37 +335,23 @@ namespace embree
     : mesh(mesh), boundary(RTC_BOUNDARY_SMOOTH), halfEdges(mesh->parent->device)
   {
     vertexIndices.init(mesh->parent->device,mesh->numEdges,sizeof(unsigned int));
-    edge_creases.init(mesh->parent->device,mesh->numEdgeCreases,2*sizeof(unsigned int));
-    edge_crease_weights.init(mesh->parent->device,mesh->numEdgeCreases,sizeof(float));
-    vertex_creases.init(mesh->parent->device,mesh->numVertexCreases,sizeof(unsigned int));
-    vertex_crease_weights.init(mesh->parent->device,mesh->numVertexCreases,sizeof(float));
   }
   
   void SubdivMesh::Topology::setBoundaryMode (RTCBoundaryMode mode)
   {
     if (boundary == mode) return;
     boundary = mode;
-    vertex_crease_weights.setModified(true);
-    mesh->parent->commitCounterSubdiv++;
+    mesh->updateBuffer(RTC_VERTEX_CREASE_WEIGHT_BUFFER);
   }
   
-  void SubdivMesh::Topology::update ()
-  {
+  void SubdivMesh::Topology::update () {
     vertexIndices.setModified(true); 
-    edge_creases.setModified(true);
-    edge_crease_weights.setModified(true);
-    vertex_creases.setModified(true);
-    vertex_crease_weights.setModified(true); 
   }
 
   void SubdivMesh::Topology::immutable () 
   {
     const bool freeIndices = !mesh->parent->needSubdivIndices;
     if (freeIndices) vertexIndices.free();
-    edge_creases.free();
-    edge_crease_weights.free();
-    vertex_creases.free();
-    vertex_crease_weights.free();
   }
 
   void SubdivMesh::Topology::calculateHalfEdges()
@@ -397,8 +387,8 @@ namespace embree
 	  edge->next_half_edge_ofs     = (de == (N-1)) ? -int(N-1) : +1;
 	  edge->prev_half_edge_ofs     = (de ==     0) ? +int(N-1) : -1;
 	  edge->opposite_half_edge_ofs = 0;
-	  edge->edge_crease_weight     = edgeCreaseMap.lookup(key,0.0f);
-	  edge->vertex_crease_weight   = vertexCreaseMap.lookup(startVertex,0.0f);
+	  edge->edge_crease_weight     = mesh->edgeCreaseMap.lookup(key,0.0f);
+	  edge->vertex_crease_weight   = mesh->vertexCreaseMap.lookup(startVertex,0.0f);
 	  edge->edge_level             = mesh->getEdgeLevel(e+de);
           edge->patch_type             = HalfEdge::COMPLEX_PATCH; // type gets updated below
           edge->vertex_type            = HalfEdge::REGULAR_VERTEX;
@@ -509,8 +499,8 @@ namespace embree
     halfEdges1.clear();
 
     /* calculate which data to update */
-    const bool updateEdgeCreases = edge_creases.isModified() || edge_crease_weights.isModified();
-    const bool updateVertexCreases = vertex_creases.isModified() || vertex_crease_weights.isModified(); 
+    const bool updateEdgeCreases = mesh->edge_creases.isModified() || mesh->edge_crease_weights.isModified();
+    const bool updateVertexCreases = mesh->vertex_creases.isModified() || mesh->vertex_crease_weights.isModified(); 
     const bool updateLevels = mesh->levels.isModified();
 
     /* parallel loop over all half edges */
@@ -528,13 +518,13 @@ namespace embree
 	  const unsigned int endVertex = edge.next()->vtx_index;
 	  const uint64_t key = SubdivMesh::Edge(startVertex,endVertex);
 	  if (edge.hasOpposite()) // leave weight at inf for borders
-            edge.edge_crease_weight = edgeCreaseMap.lookup(key,0.0f);
+            edge.edge_crease_weight = mesh->edgeCreaseMap.lookup(key,0.0f);
 	}
         
         /* we only use user specified vertex_crease_weight if the vertex is manifold */
         if (updateVertexCreases && edge.vertex_type != HalfEdge::NON_MANIFOLD_EDGE_VERTEX) 
         {
-	  edge.vertex_crease_weight = vertexCreaseMap.lookup(startVertex,0.0f);
+	  edge.vertex_crease_weight = mesh->vertexCreaseMap.lookup(startVertex,0.0f);
 
           /* pin corner vertices when requested by user */
           if (boundary == RTC_BOUNDARY_PIN_CORNERS && edge.isCorner())
@@ -558,14 +548,6 @@ namespace embree
     /* allocate half edge array */
     halfEdges.resize(mesh->numEdges);
 
-    /* create set with all vertex creases */
-    if (vertex_creases.isModified() || vertex_crease_weights.isModified())
-      vertexCreaseMap.init(vertex_creases,vertex_crease_weights);
-    
-    /* create map with all edge creases */
-    if (edge_creases.isModified() || edge_crease_weights.isModified())
-      edgeCreaseMap.init(edge_creases,edge_crease_weights);
-
     /* check if we have to recalculate the half edges */
     bool recalculate = false;
     recalculate |= vertexIndices.isModified(); 
@@ -574,15 +556,16 @@ namespace embree
 
     /* check if we can simply update the half edges */
     bool update = false;
-    update |= edge_creases.isModified();
-    update |= edge_crease_weights.isModified();
-    update |= vertex_creases.isModified();
-    update |= vertex_crease_weights.isModified(); 
+    update |= mesh->topology[0].vertexIndices.isModified(); // we use this buffer to copy creases to interpolation topologies
+    update |= mesh->edge_creases.isModified();
+    update |= mesh->edge_crease_weights.isModified();
+    update |= mesh->vertex_creases.isModified();
+    update |= mesh->vertex_crease_weights.isModified(); 
     update |= mesh->levels.isModified();
 
     /* check whether we can simply update the bvh in cached mode */
     if (this == &mesh->topology[0])
-      mesh->levelUpdate = !recalculate && edge_creases.size() == 0 && vertex_creases.size() == 0 && mesh->levels.isModified(); // FIXME: still used??
+      mesh->levelUpdate = !recalculate && mesh->edge_creases.size() == 0 && mesh->vertex_creases.size() == 0 && mesh->levels.isModified(); // FIXME: still used??
 
     /* now either recalculate or update the half edges */
     if (recalculate) calculateHalfEdges();
@@ -593,16 +576,10 @@ namespace embree
     {
       halfEdges0.clear();
       halfEdges1.clear();
-      vertexCreaseMap.clear();
-      edgeCreaseMap.clear();
     }
 
     /* clear modified state of all buffers */
     vertexIndices.setModified(false); 
-    edge_creases.setModified(false);
-    edge_crease_weights.setModified(false);
-    vertex_creases.setModified(false);
-    vertex_crease_weights.setModified(false); 
   }
 
   void SubdivMesh::printStatistics()
@@ -638,6 +615,14 @@ namespace embree
     if (faceVertices.isModified())
       numHalfEdges = parallel_prefix_sum(faceVertices,faceStartEdge,numFaces,0,std::plus<unsigned>());
 
+    /* create set with all vertex creases */
+    if (vertex_creases.isModified() || vertex_crease_weights.isModified())
+      vertexCreaseMap.init(vertex_creases,vertex_crease_weights);
+    
+    /* create map with all edge creases */
+    if (edge_creases.isModified() || edge_crease_weights.isModified())
+      edgeCreaseMap.init(edge_creases,edge_crease_weights);
+
     /* create set with all holes */
     if (holes.isModified())
       holeSet.init(holes);
@@ -664,11 +649,22 @@ namespace embree
         if (userbuffers[i]) user_buffer_tags  [i].resize(numFaces*numInterpolationSlots(userbuffers[i]->getStride()));
     }
 
+    /* cleanup some state for static scenes */
+    if (parent->isStatic()) 
+    {
+      vertexCreaseMap.clear();
+      edgeCreaseMap.clear();
+    }
+
     /* clear modified state of all buffers */
     faceVertices.setModified(false);
     holes.setModified(false);
     for (auto& buffer : vertices) buffer.setModified(false); 
     levels.setModified(false);
+    edge_creases.setModified(false);
+    edge_crease_weights.setModified(false);
+    vertex_creases.setModified(false);
+    vertex_crease_weights.setModified(false); 
 
     double t1 = getSeconds();
 
