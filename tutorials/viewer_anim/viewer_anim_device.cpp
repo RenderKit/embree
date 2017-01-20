@@ -45,8 +45,6 @@ namespace embree {
   
   size_t frameID         = 0;
   double animTime        = -1.0f; // global time counter
-  unsigned int staticID  = 0;
-  unsigned int dynamicID = 0;
 
   std::vector<double> buildTime;
   std::vector<double> vertexUpdateTime;
@@ -192,9 +190,9 @@ namespace embree {
     return scene_in->numGeometries;
   }
 
-  RTCScene createScene(ISPCScene* scene_in, bool dynamic = false)
+  RTCScene createScene(ISPCScene* scene_in)
   {
-    int scene_flags = RTC_SCENE_INCOHERENT | (dynamic ? RTC_SCENE_DYNAMIC : RTC_SCENE_STATIC);
+    int scene_flags = RTC_SCENE_INCOHERENT | RTC_SCENE_DYNAMIC;
     int scene_aflags = RTC_INTERSECT1 | RTC_INTERSECT_STREAM | RTC_INTERPOLATE;
     return rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
   }
@@ -239,9 +237,29 @@ namespace embree {
       assert(false);
   }
 
-  void updateVertexData(const unsigned int geomID, ISPCScene* scene_in, RTCScene scene_out, size_t keyFrameID, const float tt)
+  void interpolateVertices(RTCScene scene_out,
+                           const unsigned int geomID,
+                           const size_t numVertices,
+                           const Vec3fa* __restrict__ const input0,
+                           const Vec3fa* __restrict__ const input1,
+                           const float tt)
   {
-    ISPCGeometry* geometry = scene_in->geometries[geomID];
+    Vec3fa* __restrict__ vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
+    parallel_for(size_t(0),numVertices,[&](const range<size_t>& range) {
+        for (size_t i=range.begin(); i<range.end(); i++)
+          vertices[i] = lerp(input0[i],input1[i],tt);
+      }); 
+    rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
+    rtcUpdate(scene_out,geomID);
+  }
+
+  void updateVertexData(const unsigned int ID, 
+                        ISPCScene* scene_in, 
+                        RTCScene scene_out, 
+                        const size_t keyFrameID, 
+                        const float tt)
+  {
+    ISPCGeometry* geometry = scene_in->geometries[ID];
 
     if (geometry->type == SUBDIV_MESH) {
       unsigned int geomID = ((ISPCSubdivMesh*)geometry)->geomID;
@@ -252,26 +270,24 @@ namespace embree {
     else if (geometry->type == TRIANGLE_MESH) {
       ISPCTriangleMesh* mesh = (ISPCTriangleMesh*)geometry;
       /* if static do nothing */
-      if (mesh->numTimeSteps <= 1) return;
-      
+      if (mesh->numTimeSteps <= 1) return;      
       /* interpolate two vertices from two timesteps */
       const size_t t0 = (keyFrameID+0) % mesh->numTimeSteps;
       const size_t t1 = (keyFrameID+1) % mesh->numTimeSteps;
-      Vec3fa* __restrict__ vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
       const Vec3fa* __restrict__ const input0 = mesh->positions+t0*mesh->numVertices;
       const Vec3fa* __restrict__ const input1 = mesh->positions+t1*mesh->numVertices;
-      parallel_for(size_t(0),size_t(mesh->numVertices),[&](const range<size_t>& range) {
-          for (size_t i=range.begin(); i<range.end(); i++)
-            vertices[i] = lerp(input0[i],input1[i],tt);
-        }); 
-      rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
-      rtcUpdate(scene_out,geomID);
+      interpolateVertices(scene_out, mesh->geomID, mesh->numVertices, input0, input1, tt);
     }
     else if (geometry->type == QUAD_MESH) {
-      unsigned int geomID = ((ISPCQuadMesh*)geometry)->geomID;
+      ISPCQuadMesh* mesh = (ISPCQuadMesh*)geometry;
       /* if static do nothing */
-      if (((ISPCQuadMesh*)geometry)->numTimeSteps <= 1) return;
-      rtcUpdate(scene_out,geomID);
+      if (mesh->numTimeSteps <= 1) return;      
+      /* interpolate two vertices from two timesteps */
+      const size_t t0 = (keyFrameID+0) % mesh->numTimeSteps;
+      const size_t t1 = (keyFrameID+1) % mesh->numTimeSteps;
+      const Vec3fa* __restrict__ const input0 = mesh->positions+t0*mesh->numVertices;
+      const Vec3fa* __restrict__ const input1 = mesh->positions+t1*mesh->numVertices;
+      interpolateVertices(scene_out, mesh->geomID, mesh->numVertices, input0, input1, tt);
     }
     else if (geometry->type == LINE_SEGMENTS) {
       unsigned int geomID = ((ISPCLineSegments*)geometry)->geomID;
@@ -622,7 +638,7 @@ namespace embree {
     rtcDeviceSetErrorFunction(g_device,error_handler);
 
     /* create scene */
-    g_scene = createScene(g_ispc_scene,true);
+    g_scene = createScene(g_ispc_scene);
 
     /* create objects */
     size_t numObjects = getNumObjects(g_ispc_scene);
