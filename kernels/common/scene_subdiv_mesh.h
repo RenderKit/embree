@@ -286,7 +286,7 @@ namespace embree
       return slots*prim+slot;
     }
     std::vector<std::vector<SharedLazyTessellationCache::CacheEntry>> vertex_buffer_tags;
-    std::vector<SharedLazyTessellationCache::CacheEntry> user_buffer_tags[2];
+    std::vector<std::vector<SharedLazyTessellationCache::CacheEntry>> user_buffer_tags;
     std::vector<Patch3fa::Ref> patch_eval_trees;
 
     /*! the following data is only required during construction of the

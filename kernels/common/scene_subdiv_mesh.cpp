@@ -112,7 +112,10 @@ namespace embree
     }
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+2)
     {
-      if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
+      if (bid >= userbuffers.size()) {
+        userbuffers.resize(bid+1);
+        user_buffer_tags.resize(bid+1);
+      }
       new (&userbuffers[bid]) APIBuffer<char>(parent->device,numVertices,stride);
       userbuffers[bid].set(ptr,offset,stride);  
       userbuffers[bid].checkPadding16();
