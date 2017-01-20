@@ -61,6 +61,7 @@ namespace embree
     if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) 
       throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
 
+    unsigned bid = type & 0xFFFF;
     if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) 
     {
       size_t t = type - RTC_VERTEX_BUFFER0;
@@ -68,27 +69,17 @@ namespace embree
       vertices[t].checkPadding16();
       vertices0 = vertices[0];
     } 
-    else 
+    else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
     {
-      switch (type) {
-      case RTC_INDEX_BUFFER  : 
-        curves.set(ptr,offset,stride); 
-        break;
-      case RTC_USER_VERTEX_BUFFER0  : 
-        if (userbuffers[0] == nullptr) userbuffers[0] = make_unique(new APIBuffer<char>(parent->device,numVertices(),stride)); 
-        userbuffers[0]->set(ptr,offset,stride);  
-        userbuffers[0]->checkPadding16();
-        break;
-      case RTC_USER_VERTEX_BUFFER1  : 
-        if (userbuffers[1] == nullptr) userbuffers[1] = make_unique(new APIBuffer<char>(parent->device,numVertices(),stride)); 
-        userbuffers[1]->set(ptr,offset,stride);  
-        userbuffers[1]->checkPadding16();
-        break;
-      default: 
-        throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
-        break;
-      }
+      if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
+      new (&userbuffers[bid]) APIBuffer<char>(parent->device,numVertices(),stride);
+      userbuffers[bid].set(ptr,offset,stride);  
+      userbuffers[bid].checkPadding16();
     }
+    else if (type == RTC_INDEX_BUFFER)
+      curves.set(ptr,offset,stride); 
+    else 
+        throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
   }
 
   void* BezierCurves::map(RTCBufferType type) 
@@ -184,8 +175,8 @@ namespace embree
     const char* src = nullptr; 
     size_t stride = 0;
     if (buffer >= RTC_USER_VERTEX_BUFFER0) {
-      src    = userbuffers[buffer&0xFFFF]->getPtr();
-      stride = userbuffers[buffer&0xFFFF]->getStride();
+      src    = userbuffers[buffer&0xFFFF].getPtr();
+      stride = userbuffers[buffer&0xFFFF].getStride();
     } else {
       src    = vertices[buffer&0xFFFF].getPtr();
       stride = vertices[buffer&0xFFFF].getStride();

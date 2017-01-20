@@ -222,10 +222,17 @@ namespace embree
 {
   template<> __forceinline Vec4<float>::Vec4( const Vec3fa& a ) { x = a.x; y = a.y; z = a.z; w = a.w; }
 
-#if defined (__SSE__)
+#if defined(__AVX__)
+  template<> __forceinline Vec4<vfloat4>::Vec4( const Vec3fa& a ) {
+    x = a.x; y = a.y; z = a.z; w = a.w;
+  }
+#elif defined(__SSE__)
   template<> __forceinline Vec4<vfloat4>::Vec4( const Vec3fa& a ) {
     const vfloat4 v = vfloat4(a); x = shuffle<0,0,0,0>(v); y = shuffle<1,1,1,1>(v); z = shuffle<2,2,2,2>(v); w = shuffle<3,3,3,3>(v);
   }
+#endif
+
+#if defined(__SSE__)
   __forceinline Vec4<vfloat4> broadcast4f( const Vec4<vfloat4>& a, const size_t k ) {
     return Vec4<vfloat4>(vfloat4::broadcast(&a.x[k]), vfloat4::broadcast(&a.y[k]), vfloat4::broadcast(&a.z[k]), vfloat4::broadcast(&a.w[k]));
   }

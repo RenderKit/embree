@@ -32,26 +32,10 @@ namespace embree
     ALIGNED_CLASS;
   public:
 
+    typedef HalfEdge::Edge Edge;
+    
     /*! type of this geometry */
     static const Geometry::Type geom_type = Geometry::SUBDIV_MESH;
-
-    struct Edge 
-    {
-      /*! edge constructor */
-      __forceinline Edge(const uint32_t v0, const uint32_t v1)
-	: v0(v0), v1(v1) {}
-
-      /*! create an 64 bit identifier that is unique for the not oriented edge */
-      __forceinline operator uint64_t() const       
-      {
-	uint32_t p0 = v0, p1 = v1;
-	if (p0<p1) std::swap(p0,p1);
-	return (((uint64_t)p0) << 32) | (uint64_t)p1;
-      }
-
-    public:
-      uint32_t v0,v1;    //!< start and end vertex of the edge
-    };
 
     /*! structure used to sort half edges using radix sort by their key */
     struct KeyHalfEdge 
@@ -84,7 +68,8 @@ namespace embree
     void enabling();
     void disabling();
     void setMask (unsigned mask);
-    void setBoundaryMode (RTCBoundaryMode mode);
+    void setBoundaryMode (unsigned topologyID, RTCBoundaryMode mode);
+    void setIndexBuffer(RTCBufferType vertexBuffer, RTCBufferType indexBuffer);
     void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride);
     void* map(RTCBufferType type);
     void unmap(RTCBufferType type);
@@ -108,44 +93,26 @@ namespace embree
 
     /*! calculates the bounds of the i'th subdivision patch at the j'th timestep */
     __forceinline BBox3fa bounds(size_t i, size_t j = 0) const {
-      return halfEdges[faceStartEdge[i]].bounds(vertices[j]);
+      return topology[0].getHalfEdge(i)->bounds(vertices[j]);
     }
 
     /*! check if the i'th primitive is valid */
-    __forceinline bool valid(size_t i) const 
-    {
-      if (unlikely(boundary == RTC_BOUNDARY_NONE)) {
-        if (getHalfEdge(i)->faceHasBorder()) return false;
-      }
-      return !invalidFace(i);
+    __forceinline bool valid(size_t i) const {
+      return topology[0].valid(i) && !invalidFace(i);
     }
 
     /*! check if the i'th primitive is valid for the j'th time range */
-    __forceinline bool valid(size_t i, size_t j) const 
-    {
-      if (unlikely(boundary == RTC_BOUNDARY_NONE)) {
-        if (getHalfEdge(i)->faceHasBorder()) return false;
-      }
-      return !invalidFace(i,j);
+    __forceinline bool valid(size_t i, size_t j) const {
+      return topology[0].valid(i) && !invalidFace(i,j);
     }
+
+    /*! prints some statistics */
+    void printStatistics();
 
     /*! initializes the half edge data structure */
     void initializeHalfEdgeStructures ();
  
-  private:
-
-    /*! recalculates the half edges */
-    void calculateHalfEdges();
-
-    /*! updates half edges when recalculation is not necessary */
-    void updateHalfEdges();
-
   public:
-
-    /*! returns the start half edge for some face */
-    __forceinline const HalfEdge* getHalfEdge ( const size_t f ) const { 
-      return &halfEdges[faceStartEdge[f]]; 
-    }    
 
     /*! returns the vertex buffer for some time step */
     __forceinline const BufferRefT<Vec3fa>& getVertexBuffer( const size_t t = 0 ) const {
@@ -166,7 +133,6 @@ namespace embree
     size_t numFaces;           //!< number of faces
     size_t numEdges;           //!< number of edges
     size_t numVertices;        //!< number of vertices
-    RTCBoundaryMode boundary;  //!< boundary interpolation mode
 
   public:
     RTCDisplacementFunc displFunc;    //!< displacement function
@@ -179,24 +145,101 @@ namespace embree
     /*! buffer containing the number of vertices for each face */
     APIBuffer<unsigned> faceVertices;
 
-    /*! indices of the vertices composing each face */
-    APIBuffer<unsigned> vertexIndices;
+    /*! the topology contains all data that may differ when
+     *  interpolating different user data buffers */
+    struct Topology
+    {
+    public:
+
+      /*! Default topology construction */
+      Topology () : halfEdges(nullptr) {}
+
+      /*! Topology initialization */
+      Topology (SubdivMesh* mesh);
+
+      /*! check if the i'th primitive is valid in this topology */
+      __forceinline bool valid(size_t i) const 
+      {
+        if (unlikely(boundary == RTC_BOUNDARY_NONE)) {
+          if (getHalfEdge(i)->faceHasBorder()) return false;
+        }
+        return true;
+      }
+      
+      /*! updates the boundary mode for the topology */
+      void setBoundaryMode (RTCBoundaryMode mode);
+
+      /*! marks all buffers as modified */
+      void update ();
+
+      /*! frees unused buffers */
+      void immutable();
+
+      /*! initializes the half edge data structure */
+      void initializeHalfEdgeStructures ();
+
+    private:
+      
+      /*! recalculates the half edges */
+      void calculateHalfEdges();
+      
+      /*! updates half edges when recalculation is not necessary */
+      void updateHalfEdges();
+      
+      /*! user input data */
+    public:
+
+      SubdivMesh* mesh;
+
+      /*! indices of the vertices composing each face */
+      APIBuffer<unsigned> vertexIndices;
+      
+      /*! boundary interpolation mode */
+      RTCBoundaryMode boundary;
+
+      /*! generated data */
+    public:
+
+      /*! returns the start half edge for face f */
+      __forceinline const HalfEdge* getHalfEdge ( const size_t f ) const { 
+        return &halfEdges[mesh->faceStartEdge[f]]; 
+      }
+
+      /*! Half edge structure, generated by initHalfEdgeStructures */
+      mvector<HalfEdge> halfEdges;
+
+      /*! the following data is only required during construction of the
+       *  half edge structure and can be cleared for static scenes */
+    private:
+      
+      /*! two arrays used to sort the half edges */
+      std::vector<KeyHalfEdge> halfEdges0;
+      std::vector<KeyHalfEdge> halfEdges1;
+    };
+
+    /*! returns the start half edge for topology t and face f */
+    __forceinline const HalfEdge* getHalfEdge ( const size_t t , const size_t f ) const { 
+      return topology[t].getHalfEdge(f);
+    }
+
+    /*! array of topologies */
+    std::vector<Topology> topology;
 
     /*! vertex buffer (one buffer for each time step) */
     vector<APIBuffer<Vec3fa>> vertices;
 
     /*! user data buffers */
-    array_t<std::unique_ptr<APIBuffer<char>>,2> userbuffers;
+    std::vector<APIBuffer<char>> userbuffers;
 
     /*! edge crease buffer containing edges (pairs of vertices) that carry edge crease weights */
     APIBuffer<Edge> edge_creases;
-
+    
     /*! edge crease weights for each edge of the edge_creases buffer */
     APIBuffer<float> edge_crease_weights;
-
+    
     /*! vertex crease buffer containing all vertices that carry vertex crease weights */
     APIBuffer<unsigned> vertex_creases;
-
+    
     /*! vertex crease weights for each vertex of the vertex_creases buffer */
     APIBuffer<float> vertex_crease_weights;
 
@@ -215,9 +258,6 @@ namespace embree
 
     /*! fast lookup table to find the first half edge for some face */
     mvector<uint32_t> faceStartEdge;
-
-    /*! Half edge structure. */
-    mvector<HalfEdge> halfEdges;
 
     /*! set with all holes */
     parallel_set<uint32_t> holeSet;
@@ -247,22 +287,18 @@ namespace embree
       return slots*prim+slot;
     }
     std::vector<std::vector<SharedLazyTessellationCache::CacheEntry>> vertex_buffer_tags;
-    std::vector<SharedLazyTessellationCache::CacheEntry> user_buffer_tags[2];
+    std::vector<std::vector<SharedLazyTessellationCache::CacheEntry>> user_buffer_tags;
     std::vector<Patch3fa::Ref> patch_eval_trees;
-      
+
     /*! the following data is only required during construction of the
-     *  half edge structure and can be cleared for static scenes */
-  private:
-
-    /*! two arrays used to sort the half edges */
-    std::vector<KeyHalfEdge> halfEdges0;
-    std::vector<KeyHalfEdge> halfEdges1;
-
-    /*! map with all vertex creases */
-    parallel_map<uint32_t,float> vertexCreaseMap;
-
-    /*! map with all edge creases */
-    parallel_map<uint64_t,float> edgeCreaseMap;
+       *  half edge structure and can be cleared for static scenes */
+    private:
+      
+      /*! map with all vertex creases */
+      parallel_map<uint32_t,float> vertexCreaseMap;
+      
+      /*! map with all edge creases */
+      parallel_map<uint64_t,float> edgeCreaseMap;
   };
 
   class SubdivMeshAVX : public SubdivMesh

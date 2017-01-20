@@ -208,6 +208,6 @@ namespace embree
     APIBuffer<Quad> quads;                            //!< array of quads
     BufferRefT<Vec3fa> vertices0;                     //!< fast access to first vertex buffer
     vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
-    array_t<std::unique_ptr<APIBuffer<char>>,2> userbuffers; //!< user buffers  // FIXME: no std::unique_ptr here
+    std::vector<APIBuffer<char>> userbuffers;         //!< user buffers
   };
 }
