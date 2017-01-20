@@ -110,11 +110,11 @@ namespace embree
 
     /*! Buffer construction */
     APIBuffer () 
-      : device(nullptr), ptr(nullptr), allocated(false), shared(false), mapped(false), modified(true) {}
+      : device(nullptr), ptr(nullptr), allocated(false), shared(false), mapped(false), modified(true), userdata(0) {}
     
     /*! Buffer construction */
     APIBuffer (MemoryMonitorInterface* device, size_t num_in, size_t stride_in) 
-      : BufferRefT<T>(num_in,stride_in), device(device), ptr(nullptr), allocated(false), shared(false), mapped(false), modified(true) {}
+      : BufferRefT<T>(num_in,stride_in), device(device), ptr(nullptr), allocated(false), shared(false), mapped(false), modified(true), userdata(0) {}
     
     /*! Buffer destruction */
     ~APIBuffer () {
@@ -130,20 +130,24 @@ namespace embree
   public:
     APIBuffer (APIBuffer&& other) : BufferRefT<T>(std::move(other))
     {
-      device = other.device;     other.device = nullptr;
-      ptr = other.ptr;           other.ptr = nullptr;
-      shared = other.shared;     other.shared = false;
-      mapped = other.mapped;     other.mapped = false;
-      modified = other.modified; other.modified = false;
+      device = other.device;       other.device = nullptr;
+      ptr = other.ptr;             other.ptr = nullptr;
+      allocated = other.allocated; other.allocated = false;
+      shared = other.shared;       other.shared = false;
+      mapped = other.mapped;       other.mapped = false;
+      modified = other.modified;   other.modified = false;
+      userdata = other.userdata;   other.userdata = 0;
     }
     
     APIBuffer& operator= (APIBuffer&& other)
     {
-      device = other.device;     other.device = nullptr;
-      ptr = other.ptr;           other.ptr = nullptr;
-      shared = other.shared;     other.shared = false;
-      mapped = other.mapped;     other.mapped = false;
-      modified = other.modified; other.modified = false;
+      device = other.device;       other.device = nullptr;
+      ptr = other.ptr;             other.ptr = nullptr;
+      allocated = other.allocated; other.allocated = false;
+      shared = other.shared;       other.shared = false;
+      mapped = other.mapped;       other.mapped = false;
+      modified = other.modified;   other.modified = false;
+      userdata = other.userdata;   other.userdata = 0;
       BufferRefT<T>::operator=(std::move(other));
       return *this;
     }
@@ -263,5 +267,7 @@ namespace embree
     bool shared;     //!< set if memory is shared with application
     bool mapped;     //!< set if buffer is mapped
     bool modified;   //!< true if the buffer got modified
+  public:
+    int userdata;    //!< special data
   };
 }
