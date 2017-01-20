@@ -182,22 +182,10 @@ namespace embree
       }
       
       /*! updates the boundary mode for the topology */
-      void setBoundaryMode (RTCBoundaryMode mode)
-      {
-        if (boundary == mode) return;
-        boundary = mode;
-        vertex_crease_weights.setModified(true);
-      }
+      void setBoundaryMode (RTCBoundaryMode mode);
 
       /*! marks all buffers as modified */
-      void update ()
-      {
-        vertexIndices.setModified(true); 
-        edge_creases.setModified(true);
-        edge_crease_weights.setModified(true);
-        vertex_creases.setModified(true);
-        vertex_crease_weights.setModified(true); 
-      }
+      void update ();
 
       /*! frees unused buffers */
       void immutable();

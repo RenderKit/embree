@@ -82,6 +82,7 @@ namespace embree
     if (parent->isStatic() && parent->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
     topology[0].setBoundaryMode(mode);
+    Geometry::update();
   }
 
   void SubdivMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
@@ -271,6 +272,23 @@ namespace embree
     vertex_crease_weights.init(mesh->parent->device,numVertexCreases,sizeof(float));
   }
   
+  void SubdivMesh::Topology::setBoundaryMode (RTCBoundaryMode mode)
+  {
+    if (boundary == mode) return;
+    boundary = mode;
+    vertex_crease_weights.setModified(true);
+    mesh->parent->commitCounterSubdiv++;
+  }
+  
+  void SubdivMesh::Topology::update ()
+  {
+    vertexIndices.setModified(true); 
+    edge_creases.setModified(true);
+    edge_crease_weights.setModified(true);
+    vertex_creases.setModified(true);
+    vertex_crease_weights.setModified(true); 
+  }
+
   void SubdivMesh::Topology::immutable () 
   {
     const bool freeIndices = !mesh->parent->needSubdivIndices;
@@ -403,7 +421,7 @@ namespace embree
         for (size_t i=0; i<mesh->faceVertices[f]; i++) 
         {
           /* pin corner vertices when requested by user */
-          if (boundary == RTC_BOUNDARY_PIN_CORNERS && edge[i].isCorner()) 
+          if (boundary == RTC_BOUNDARY_PIN_CORNERS && edge[i].isCorner())
             edge[i].vertex_crease_weight = float(inf);
           
           /* pin all border vertices when requested by user */
@@ -454,7 +472,7 @@ namespace embree
 	  edge.vertex_crease_weight = vertexCreaseMap.lookup(startVertex,0.0f);
 
           /* pin corner vertices when requested by user */
-          if (boundary == RTC_BOUNDARY_PIN_CORNERS && edge.isCorner()) 
+          if (boundary == RTC_BOUNDARY_PIN_CORNERS && edge.isCorner())
             edge.vertex_crease_weight = float(inf);
           
           /* pin all border vertices when requested by user */
@@ -496,7 +514,7 @@ namespace embree
     update |= vertex_creases.isModified();
     update |= vertex_crease_weights.isModified(); 
     update |= mesh->levels.isModified();
-    
+
     /* check whether we can simply update the bvh in cached mode */
     if (this == &mesh->topology[0])
       mesh->levelUpdate = !recalculate && edge_creases.size() == 0 && vertex_creases.size() == 0 && mesh->levels.isModified(); // FIXME: still used??
