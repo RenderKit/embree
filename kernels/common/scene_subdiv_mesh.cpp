@@ -376,22 +376,21 @@ namespace embree
 	for (unsigned de=0; de<N; de++)
 	{
 	  HalfEdge* edge = &halfEdges[e+de];
-
-          unsigned int nextIndex = de + 1;
-	  if (unlikely(nextIndex >= N)) nextIndex -= N; 
+          int nextOfs = (de == (N-1)) ? -int(N-1) : +1;
+          int prevOfs = (de ==     0) ? +int(N-1) : -1;
 	  
 	  const unsigned int startVertex = vertexIndices[e+de];
-          const unsigned int endVertex = vertexIndices[e+nextIndex]; 
+          const unsigned int endVertex = vertexIndices[e+de+nextOfs]; 
 	  const uint64_t key = SubdivMesh::Edge(startVertex,endVertex);
 
           /* we always have to use the geometry topology to lookup creases */
           const unsigned int startVertex0 = mesh->topology[0].vertexIndices[e+de];
-          const unsigned int endVertex0 = mesh->topology[0].vertexIndices[e+nextIndex]; 
+          const unsigned int endVertex0 = mesh->topology[0].vertexIndices[e+de+nextOfs]; 
 	  const uint64_t key0 = SubdivMesh::Edge(startVertex0,endVertex0);
 	  
 	  edge->vtx_index              = startVertex;
-	  edge->next_half_edge_ofs     = (de == (N-1)) ? -int(N-1) : +1;
-	  edge->prev_half_edge_ofs     = (de ==     0) ? +int(N-1) : -1;
+	  edge->next_half_edge_ofs     = nextOfs;
+	  edge->prev_half_edge_ofs     = prevOfs;
 	  edge->opposite_half_edge_ofs = 0;
 	  edge->edge_crease_weight     = mesh->edgeCreaseMap.lookup(key0,0.0f);
 	  edge->vertex_crease_weight   = mesh->vertexCreaseMap.lookup(startVertex0,0.0f);
