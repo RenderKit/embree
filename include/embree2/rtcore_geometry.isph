@@ -351,8 +351,11 @@ uniform unsigned int rtcNewLineSegments (RTCScene scene,                    //!<
 /*! \brief Sets 32 bit ray mask. */
 void rtcSetMask (RTCScene scene, uniform unsigned int geomID, uniform int mask);
 
-/*! \brief Sets boundary interpolation mode for subdivision surfaces */                                                                        
+/*! \brief Sets boundary interpolation mode for default subdivision surface topology */
 void rtcSetBoundaryMode(RTCScene scene, uniform unsigned int geomID, uniform RTCBoundaryMode mode);
+
+/*! \brief Sets boundary interpolation mode for specified subdivision surface topology */
+void rtcSetBoundaryMode2(RTCScene scene, uniform unsigned int geomID, uniform unsigned int topologyID, uniform RTCBoundaryMode mode);
 
 /*! \brief Maps specified buffer. This function can be used to set index and
  *  vertex buffers of geometries. */

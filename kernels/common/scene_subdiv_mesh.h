@@ -84,7 +84,7 @@ namespace embree
     void enabling();
     void disabling();
     void setMask (unsigned mask);
-    void setBoundaryMode (RTCBoundaryMode mode);
+    void setBoundaryMode (unsigned topologyID, RTCBoundaryMode mode);
     void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride);
     void* map(RTCBufferType type);
     void unmap(RTCBufferType type);

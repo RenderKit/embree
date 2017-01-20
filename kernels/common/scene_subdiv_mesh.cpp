@@ -76,11 +76,13 @@ namespace embree
     Geometry::update();
   }
 
-  void SubdivMesh::setBoundaryMode (RTCBoundaryMode mode)
+  void SubdivMesh::setBoundaryMode (unsigned topologyID, RTCBoundaryMode mode)
   {
     if (parent->isStatic() && parent->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-    topology[0].setBoundaryMode(mode);
+    if (topologyID > 1)
+      throw_RTCError(RTC_INVALID_OPERATION,"invalid topology ID");
+    topology[topologyID].setBoundaryMode(mode);
     Geometry::update();
   }
 

@@ -362,8 +362,11 @@ RTCORE_API unsigned rtcNewLineSegments (RTCScene scene,                    //!< 
 /*! \brief Sets 32 bit ray mask. */
 RTCORE_API void rtcSetMask (RTCScene scene, unsigned geomID, int mask);
 
-/*! \brief Sets boundary interpolation mode for subdivision surfaces */                                                                        
+/*! \brief Sets boundary interpolation mode for default subdivision surface topology */
 RTCORE_API void rtcSetBoundaryMode(RTCScene scene, unsigned geomID, RTCBoundaryMode mode);
+
+/*! \brief Sets boundary interpolation mode for specified subdivision surface topology */
+RTCORE_API void rtcSetBoundaryMode2(RTCScene scene, unsigned geomID, unsigned topologyID, RTCBoundaryMode mode);
 
 /*! \brief Maps specified buffer. This function can be used to set index and
  *  vertex buffers of geometries. */
