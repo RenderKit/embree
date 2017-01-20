@@ -507,7 +507,11 @@ namespace embree
             edge[i].vertex_crease_weight = float(inf);
           
           /* pin all border vertices when requested by user */
-          if (boundary == RTC_BOUNDARY_PIN_BORDERS && edge[i].vertexHasBorder()) 
+          else if (boundary == RTC_BOUNDARY_PIN_BORDERS && edge[i].vertexHasBorder()) 
+            edge[i].vertex_crease_weight = float(inf);
+
+          /* pin all vertices when requested by user */
+          else if (boundary == RTC_PIN_ALL) 
             edge[i].vertex_crease_weight = float(inf);
         }
 
@@ -558,7 +562,11 @@ namespace embree
             edge.vertex_crease_weight = float(inf);
           
           /* pin all border vertices when requested by user */
-          if (boundary == RTC_BOUNDARY_PIN_BORDERS && edge.vertexHasBorder()) 
+          else if (boundary == RTC_BOUNDARY_PIN_BORDERS && edge.vertexHasBorder()) 
+            edge.vertex_crease_weight = float(inf);
+
+          /* pin every vertex when requested by user */
+          else if (boundary == RTC_PIN_ALL) 
             edge.vertex_crease_weight = float(inf);
         }
 

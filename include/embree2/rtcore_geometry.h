@@ -81,6 +81,7 @@ enum RTCBoundaryMode
   RTC_BOUNDARY_SMOOTH = 1,             //!< smooth border (default)
   RTC_BOUNDARY_PIN_CORNERS= 2,         //!< smooth border with fixed corners
   RTC_BOUNDARY_PIN_BORDERS = 3,        //!< linearly interpolation along border
+  RTC_PIN_ALL = 4,                     //!< pin every vertex (interpolates every patch linearly)
 
   /* old names for compatibility */
   RTC_BOUNDARY_EDGE_ONLY /* RTCORE_DEPRECATED */ = 1,          //!< soft boundary (default)
