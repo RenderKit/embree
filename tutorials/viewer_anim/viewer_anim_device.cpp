@@ -753,13 +753,13 @@ namespace embree {
 #if ENABLE_ANIM == 1
 
     double vertexUpdateTime0 = getSeconds();    
-
+    
     if (animTime < 0.0f) animTime = getSeconds();
     const double atime = (getSeconds() - animTime) * ANIM_FPS;
-    double intpart, fracpart;
-    fracpart = modf(atime,&intpart);
-    const size_t keyFrameID = ((size_t)intpart) % numProfileFrames;    
-
+    const size_t intpart = (size_t)floor(atime);
+    const double fracpart = atime - (double)intpart;
+    const size_t keyFrameID = intpart;      
+    
     size_t numObjects = getNumObjects(g_ispc_scene);
     for (size_t i=0;i<numObjects;i++)
       updateVertexData(i, g_ispc_scene, g_scene, keyFrameID, (float)fracpart);

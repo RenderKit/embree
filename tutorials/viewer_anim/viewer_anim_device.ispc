@@ -19,10 +19,17 @@
 #include "../common/tutorial/tutorial_device.isph"
 #include "../common/tutorial/scene_device.isph"
 
+#define ANIM_FPS 15.0f
+
 extern uniform ISPCScene* uniform g_ispc_scene;
+
 /* scene data */
-RTCDevice g_device = NULL;
-RTCScene g_scene = NULL;
+uniform RTCDevice g_device = NULL;
+uniform RTCScene g_scene   = NULL;
+
+/* animation data */
+uniform double animTime        = -1.0f; // global time counter
+
 
   // ==================================================================================================
   // ==================================================================================================
@@ -381,6 +388,9 @@ export void device_init (uniform int8* uniform cfg)
   key_pressed_handler = device_key_pressed_handler;
 }
 
+#define TICKS_PER_SECOND 2000000000
+
+uniform double getSeconds() { return (double)clock() / TICKS_PER_SECOND; }
 
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
@@ -393,6 +403,28 @@ export void device_render (uniform int* uniform pixels,
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
+
+  /* =============== */
+  /* update geometry */
+  /* =============== */
+
+  uniform double vertexUpdateTime0 = getSeconds();    
+  
+  if (animTime < 0.0f) animTime = getSeconds();
+  const uniform double atime = (getSeconds() - animTime) * ANIM_FPS;
+  const uniform size_t intpart = (size_t)floor(atime);
+  const uniform double fracpart = atime - (double)intpart;
+  const uniform size_t keyFrameID = intpart;      
+
+  uniform size_t numObjects = getNumObjects(g_ispc_scene);
+  for (uniform size_t i=0;i<numObjects;i++)
+    updateVertexData(i, g_ispc_scene, g_scene, keyFrameID, (float)fracpart);
+
+  /* =========== */
+  /* rebuild bvh */
+  /* =========== */
+
+  rtcCommit(g_scene);      
 }
 
 /* called by the C++ code for cleanup */
