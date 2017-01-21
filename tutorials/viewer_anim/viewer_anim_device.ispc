@@ -20,6 +20,7 @@
 #include "../common/tutorial/scene_device.isph"
 
 #define ANIM_FPS 15.0f
+#define VERTEX_INTERPOLATION_BLOCK_SIZE 1024
 
 extern uniform ISPCScene* uniform g_ispc_scene;
 
@@ -196,6 +197,21 @@ uniform unsigned int convertCurveGeometry(uniform ISPCHairSet* uniform hair, RTC
     return v0*(1.0f-t)+v1*t;
   }
 
+
+ task void interpolateVertexBlock(const uniform size_t numVertices,
+                                  uniform Vec3fa* uniform vertices,
+                                  const uniform Vec3fa* uniform const input0,
+                                  const uniform Vec3fa* uniform const input1,
+                                  const uniform float tt)
+ {
+   const uniform size_t b = taskIndex;
+   const uniform size_t startID = b*VERTEX_INTERPOLATION_BLOCK_SIZE;
+   const uniform size_t endID = min(startID + VERTEX_INTERPOLATION_BLOCK_SIZE,numVertices);
+   for (uniform size_t i=startID; i<endID; i++)
+     vertices[i] = lerp(input0[i],input1[i],tt);
+ }
+ 
+
   void interpolateVertices(uniform RTCScene scene_out,
                            const uniform unsigned int geomID,
                            const uniform size_t numVertices,
@@ -204,8 +220,13 @@ uniform unsigned int convertCurveGeometry(uniform ISPCHairSet* uniform hair, RTC
                            const uniform float tt)
   {
     uniform Vec3fa* uniform vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
+#if 1
+    const uniform size_t blocks = (numVertices+VERTEX_INTERPOLATION_BLOCK_SIZE-1) / VERTEX_INTERPOLATION_BLOCK_SIZE;
+    launch[blocks] interpolateVertexBlock(numVertices,vertices,input0,input1,tt); sync;   
+#else
     for (uniform size_t i=0; i<numVertices; i++)
       vertices[i] = lerp(input0[i],input1[i],tt);
+#endif
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     rtcUpdate(scene_out,geomID);
   }
@@ -294,9 +315,6 @@ void renderTileStandard(uniform int taskIndex,
     /* ISPC workaround for mask == 0 */
     if (all(__mask == 0)) continue;
 
-    RandomSampler sampler;
-    RandomSampler_init(sampler, x, y, 0);
-
     /* initialize ray */
     RTCRay& ray = rays[N++];
 
@@ -309,7 +327,7 @@ void renderTileStandard(uniform int taskIndex,
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
     ray.primID = RTC_INVALID_GEOMETRY_ID;
     ray.mask = -1;
-    ray.time = RandomSampler_get1D(sampler);
+    ray.time = 0.0f;
   }
 
   uniform RTCIntersectContext context;
@@ -331,6 +349,13 @@ void renderTileStandard(uniform int taskIndex,
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
     {
       color = make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
+    }
+
+    /* occlusion */
+    if (g_ispc_scene->numLights)
+    {
+      RTCRay shadow_rays[TILE_SIZE_X*TILE_SIZE_Y];
+      //for (uniform size_t l=0;l<g_ispc_scene->numLights;l+)
     }
 
     /* write color to framebuffer */
@@ -377,7 +402,7 @@ export void device_init (uniform int8* uniform cfg)
 
   /* create objects */
   uniform size_t numObjects = getNumObjects(g_ispc_scene);
-  print("numObjects %i\n",numObjects);
+  print("numObjects %\n",numObjects);
   for (uniform size_t i=0;i<numObjects;i++)
     createObject(i,g_ispc_scene,g_scene);
 

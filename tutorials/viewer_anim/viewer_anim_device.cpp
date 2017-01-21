@@ -85,7 +85,6 @@ namespace embree {
     RTCGeometryFlags object_flags = mesh->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
     /* create object */
     unsigned int geomID = rtcNewTriangleMesh (scene_out, object_flags, mesh->numTriangles, mesh->numVertices, 1);
-    PRINT(mesh->numTimeSteps);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
     for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[i];        
