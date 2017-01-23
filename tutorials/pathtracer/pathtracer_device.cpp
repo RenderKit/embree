@@ -864,8 +864,8 @@ inline Vec3fa Material__sample(ISPCMaterial* materials, unsigned int materialID,
 extern "C" ISPCScene* g_ispc_scene;
 RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
-RTCScene* geomID_to_scene = nullptr;
-ISPCInstance** geomID_to_inst = nullptr;
+  extern "C" RTCScene* geomID_to_scene; // = nullptr;
+  extern "C" ISPCInstance** geomID_to_inst; // = nullptr;
 
 /* occlusion filter function */
 void intersectionFilterReject(void* ptr, RTCRay& ray);
@@ -1029,7 +1029,72 @@ void convertGroup(ISPCGroup* group, RTCScene scene_out)
       assert(false);
   }
 }
-
+  
+  void assignShaders(ISPCGeometry* geometry)
+  {
+    if (geometry->type == SUBDIV_MESH) {
+      ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
+#if ENABLE_FILTER_FUNCTION == 1
+      rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&occlusionFilterOpaque);
+#endif
+    }
+    else if (geometry->type == TRIANGLE_MESH) {
+      ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
+#if ENABLE_FILTER_FUNCTION == 1
+      rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&occlusionFilterOpaque);
+      
+      ISPCMaterial& material = g_ispc_scene->materials[mesh->materialID];
+      //if (material.ty == MATERIAL_DIELECTRIC || material.ty == MATERIAL_THIN_DIELECTRIC)
+      //  rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&intersectionFilterReject);
+      //else
+      if (material.ty == MATERIAL_OBJ)
+      {
+        OBJMaterial& obj = (OBJMaterial&) material;
+        if (obj.d != 1.0f || obj.map_d) {
+          rtcSetIntersectionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&intersectionFilterOBJ);
+          rtcSetOcclusionFilterFunction   (mesh->scene,mesh->geomID,(RTCFilterFunc)&occlusionFilterOBJ);
+        }
+      }
+#endif
+    }
+    else if (geometry->type == QUAD_MESH) {
+      ISPCQuadMesh* mesh = (ISPCQuadMesh*) geometry;
+#if ENABLE_FILTER_FUNCTION == 1
+      rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&occlusionFilterOpaque);
+      
+      ISPCMaterial& material = g_ispc_scene->materials[mesh->materialID];
+      //if (material.ty == MATERIAL_DIELECTRIC || material.ty == MATERIAL_THIN_DIELECTRIC)
+      //  rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&intersectionFilterReject);
+      //else
+      if (material.ty == MATERIAL_OBJ)
+      {
+        OBJMaterial& obj = (OBJMaterial&) material;
+        if (obj.d != 1.0f || obj.map_d) {
+          rtcSetIntersectionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&intersectionFilterOBJ);
+          rtcSetOcclusionFilterFunction   (mesh->scene,mesh->geomID,(RTCFilterFunc)&occlusionFilterOBJ);
+        }
+      }
+#endif
+    }
+    else if (geometry->type == LINE_SEGMENTS) {
+      ISPCLineSegments* mesh = (ISPCLineSegments*) geometry;
+      rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&occlusionFilterHair);
+    }
+    else if (geometry->type == HAIR_SET) {
+      ISPCHairSet* mesh = (ISPCHairSet*) geometry;
+      rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&occlusionFilterHair);
+    }
+    else if (geometry->type == CURVES) {
+      ISPCHairSet* mesh = (ISPCHairSet*) geometry;
+      rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&occlusionFilterHair);
+    }
+    else if (geometry->type == GROUP) {
+      ISPCGroup* group = (ISPCGroup*) geometry;
+      for (size_t i=0; i<group->numGeometries; i++)
+        assignShaders(group->geometries[i]);
+    }
+  }
+  
 unsigned int convertInstance(ISPCInstance* instance, int meshID, RTCScene scene_out)
 {
   /*if (g_instancing_mode == 1) {
@@ -1067,10 +1132,6 @@ RTCScene convertScene(ISPCScene* scene_in)
     }
   }
 
-  size_t numGeometries = scene_in->numGeometries;
-  geomID_to_scene = (RTCScene*) alignedMalloc(numGeometries*sizeof(RTCScene));
-  geomID_to_inst  = (ISPCInstance_ptr*) alignedMalloc(numGeometries*sizeof(ISPCInstance_ptr));
-
   /* create scene */
   int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
   int scene_aflags = RTC_INTERSECT1;
@@ -1079,6 +1140,27 @@ RTCScene convertScene(ISPCScene* scene_in)
     scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
 
   scene_aflags |= RTC_INTERPOLATE;
+
+#if 1
+
+  RTCScene scene_out = ConvertScene(g_device, g_ispc_scene,(RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags, RTC_GEOMETRY_STATIC);
+
+  /* assign shaders */
+  for (unsigned int i=0; i<scene_in->numGeometries; i++) {
+    assignShaders(scene_in->geometries[i]);
+  }
+
+  if (g_instancing_mode == 2 || g_instancing_mode == 3) {
+    for (unsigned int i=0; i<scene_in->numGeometries; i++) {
+      if (geomID_to_scene[i]) rtcCommit(geomID_to_scene[i]);
+    }
+  }
+
+#else
+
+  size_t numGeometries = scene_in->numGeometries;
+  geomID_to_scene = (RTCScene*) alignedMalloc(numGeometries*sizeof(RTCScene));
+  geomID_to_inst  = (ISPCInstance_ptr*) alignedMalloc(numGeometries*sizeof(ISPCInstance_ptr));
 
   RTCScene scene_out = rtcDeviceNewScene(g_device,(RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags);
 
@@ -1218,6 +1300,7 @@ RTCScene convertScene(ISPCScene* scene_in)
         assert(false);
     }
   }
+#endif
 
   /* commit changes to scene */
   progressStart();
