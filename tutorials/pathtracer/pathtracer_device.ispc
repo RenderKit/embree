@@ -862,8 +862,8 @@ inline Vec3f Material__sample(ISPCMaterial* uniform uniform materials, unsigned 
 extern uniform ISPCScene* uniform g_ispc_scene;
 RTCDevice g_device = NULL;
 RTCScene g_scene = NULL;
-extern RTCScene* uniform geomID_to_scene;// = NULL;
-extern ISPCInstance* uniform* uniform geomID_to_inst;// = NULL;
+extern RTCScene* uniform geomID_to_scene;
+extern ISPCInstance* uniform* uniform geomID_to_inst;
 
 /* occlusion filter function */
 void intersectionFilterReject(void* uniform ptr, RTCRay& ray);
@@ -894,228 +894,70 @@ void device_key_pressed_handler(uniform int key)
   else device_key_pressed_default(key);
 }
 
-uniform unsigned int convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh, RTCScene scene_out)
+void assignShaders(ISPCGeometry* uniform geometry)
 {
-  uniform unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices, mesh->numTimeSteps);
-  for (uniform size_t t=0; t<mesh->numTimeSteps; t++) {
-    rtcSetBuffer(scene_out, geomID, (uniform RTCBufferType)(RTC_VERTEX_BUFFER+t), mesh->positions+t*mesh->numVertices, 0, sizeof(uniform Vec3fa      ));
-  }
-  rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(uniform ISPCTriangle));
-  mesh->geomID = geomID;
+  if (geometry->type == SUBDIV_MESH) {
+    ISPCSubdivMesh* uniform mesh = (ISPCSubdivMesh* uniform ) geometry;
 #if ENABLE_FILTER_FUNCTION == 1
-  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&occlusionFilterOpaque);
-
-  uniform ISPCMaterial& material = g_ispc_scene->materials[mesh->materialID];
-  //if (material.ty == MATERIAL_DIELECTRIC || material.ty == MATERIAL_THIN_DIELECTRIC)
-  //  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&intersectionFilterReject);
-  //else
-  if (material.ty == MATERIAL_OBJ)
-  {
-    uniform OBJMaterial& obj = (uniform OBJMaterial&) material;
-    if (obj.d != 1.0f || obj.map_d) {
-      rtcSetIntersectionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&intersectionFilterOBJ);
-      rtcSetOcclusionFilterFunction   (scene_out,geomID,(RTCFilterFuncVarying)&occlusionFilterOBJ);
-    }
-  }
+    rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&occlusionFilterOpaque);
 #endif
-  return geomID;
-}
-
-uniform unsigned int convertQuadMesh(uniform ISPCQuadMesh* uniform mesh, RTCScene scene_out)
-{
-  uniform unsigned int geomID = rtcNewQuadMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numQuads, mesh->numVertices, mesh->numTimeSteps);
-  for (uniform size_t t=0; t<mesh->numTimeSteps; t++) {
-    rtcSetBuffer(scene_out, geomID, (uniform RTCBufferType)(RTC_VERTEX_BUFFER+t), mesh->positions+t*mesh->numVertices, 0, sizeof(uniform Vec3fa      ));
   }
-  rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(uniform ISPCQuad));
-  mesh->geomID = geomID;
+  else if (geometry->type == TRIANGLE_MESH) {
+    ISPCTriangleMesh* uniform mesh = (ISPCTriangleMesh* uniform ) geometry;
 #if ENABLE_FILTER_FUNCTION == 1
-  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&occlusionFilterOpaque);
-
-  uniform ISPCMaterial& material = g_ispc_scene->materials[mesh->materialID];
-  //if (material.ty == MATERIAL_DIELECTRIC || material.ty == MATERIAL_THIN_DIELECTRIC)
-  //  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&intersectionFilterReject);
-  //else
-  if (material.ty == MATERIAL_OBJ)
-  {
-    uniform OBJMaterial& obj = (uniform OBJMaterial&) material;
-    if (obj.d != 1.0f || obj.map_d) {
-      rtcSetIntersectionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&intersectionFilterOBJ);
-      rtcSetOcclusionFilterFunction   (scene_out,geomID,(RTCFilterFuncVarying)&occlusionFilterOBJ);
-    }
-  }
-#endif
-  return geomID;
-}
-
-uniform unsigned int convertSubdivMesh(uniform ISPCSubdivMesh* uniform mesh, RTCScene scene_out)
-{
-  uniform unsigned int geomID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_DYNAMIC, mesh->numFaces, mesh->numEdges, mesh->numVertices,
-                                                      mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles, mesh->numTimeSteps);
-  mesh->geomID = geomID;
-  for (uniform size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
-  for (uniform size_t t=0; t<mesh->numTimeSteps; t++) {
-    rtcSetBuffer(scene_out, geomID, (uniform RTCBufferType)(RTC_VERTEX_BUFFER+t), mesh->positions+t*mesh->numVertices, 0, sizeof(uniform Vec3fa  ));
-  }
-  rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(uniform float));
-  rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(uniform unsigned int));
-  rtcSetBuffer(scene_out, geomID, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(uniform unsigned int));
-  rtcSetBuffer(scene_out, geomID, RTC_HOLE_BUFFER,   mesh->holes, 0, sizeof(uniform unsigned int));
-  rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_INDEX_BUFFER,    mesh->edge_creases,          0, 2*sizeof(uniform unsigned int));
-  rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(uniform float));
-  rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(uniform unsigned int));
-  rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(uniform float));
-  rtcSetSubdivisionMode(scene_out, geomID, 0, mesh->subdiv_mode);
-#if ENABLE_FILTER_FUNCTION == 1
-  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&occlusionFilterOpaque);
-#endif
-  return geomID;
-}
-
-uniform unsigned int convertLineSegments(uniform ISPCLineSegments* uniform mesh, RTCScene scene_out)
-{
-  uniform unsigned int geomID = rtcNewLineSegments (scene_out, RTC_GEOMETRY_STATIC, mesh->numSegments, mesh->numVertices, mesh->numTimeSteps);
-  for (uniform size_t t=0; t<mesh->numTimeSteps; t++) {
-    rtcSetBuffer(scene_out,geomID,(uniform RTCBufferType)(RTC_VERTEX_BUFFER+t), mesh->positions+t*mesh->numVertices,0,sizeof(uniform Vertex));
-  }
-  rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->indices,0,sizeof(uniform int));
-  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&occlusionFilterHair);
-  return geomID;
-}
-
-uniform unsigned int convertHairSet(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
-{
-  uniform unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, hair->numTimeSteps);
-  for (uniform size_t t=0; t<hair->numTimeSteps; t++) {
-    rtcSetBuffer(scene_out,geomID,(uniform RTCBufferType)(RTC_VERTEX_BUFFER+t), hair->positions+t*hair->numVertices,0,sizeof(uniform Vertex));
-  }
-  rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(uniform ISPCHair));
-  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&occlusionFilterHair);
-  rtcSetTessellationRate(scene_out,geomID,hair->tessellation_rate);
-  return geomID;
-}
-
-uniform unsigned int convertCurveGeometry(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
-{
-  uniform unsigned int geomID = rtcNewCurveGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, hair->numTimeSteps);
-  for (uniform size_t t=0; t<hair->numTimeSteps; t++) {
-    rtcSetBuffer(scene_out,geomID,(uniform RTCBufferType)(RTC_VERTEX_BUFFER+t), hair->positions+t*hair->numVertices,0,sizeof(uniform Vertex));
-  }
-  rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(uniform ISPCHair));
-  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&occlusionFilterHair);
-  return geomID;
-}
-
-void convertGroup(uniform ISPCGroup* uniform group, RTCScene scene_out)
-{
-  for (uniform size_t i=0; i<group->numGeometries; i++)
-  {
-    uniform ISPCGeometry* uniform geometry = group->geometries[i];
-    if (geometry->type == SUBDIV_MESH)
-      convertSubdivMesh((uniform ISPCSubdivMesh* uniform) geometry, scene_out);
-    else if (geometry->type == TRIANGLE_MESH)
-      convertTriangleMesh((uniform ISPCTriangleMesh* uniform) geometry, scene_out);
-    else if (geometry->type == QUAD_MESH)
-      convertQuadMesh((uniform ISPCQuadMesh* uniform) geometry, scene_out);
-    else if (geometry->type == LINE_SEGMENTS)
-      convertLineSegments((uniform ISPCLineSegments* uniform) geometry, scene_out);
-    else if (geometry->type == HAIR_SET)
-      convertHairSet((uniform ISPCHairSet* uniform) geometry, scene_out);
-    else if (geometry->type == CURVES)
-      convertCurveGeometry((uniform ISPCHairSet* uniform) geometry, scene_out);
-    else
-      assert(false);
-  }
-}
-
-uniform unsigned int convertInstance(uniform ISPCInstance* uniform instance, uniform int meshID, RTCScene scene_out)
-{
-  /*if (g_instancing_mode == 1) {
-    uniform unsigned int geom_inst = instance->geomID;
-    uniform unsigned int geomID = rtcNewGeometryInstance(scene_out, geom_inst);
-    rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
-    return geomID;
-    } else */
-  {
-    RTCScene scene_inst = geomID_to_scene[instance->geomID];
-    if (instance->numTimeSteps == 1) {
-      uniform unsigned int geomID = rtcNewInstance(scene_out, scene_inst);
-      rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->spaces[0].l.vx.x);
-      return geomID;
-    }
-    else {
-      uniform unsigned int geomID = rtcNewInstance2(scene_out, scene_inst, instance->numTimeSteps);
-      for (uniform size_t t=0; t<instance->numTimeSteps; t++)
-        rtcSetTransform2(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->spaces[t].l.vx.x,t);
-      return geomID;
-    }
-  }
-}
-
-  void assignShaders(ISPCGeometry* uniform geometry)
-  {
-    if (geometry->type == SUBDIV_MESH) {
-      ISPCSubdivMesh* uniform mesh = (ISPCSubdivMesh* uniform ) geometry;
-#if ENABLE_FILTER_FUNCTION == 1
-      rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&occlusionFilterOpaque);
-#endif
-    }
-    else if (geometry->type == TRIANGLE_MESH) {
-      ISPCTriangleMesh* uniform mesh = (ISPCTriangleMesh* uniform ) geometry;
-#if ENABLE_FILTER_FUNCTION == 1
-      rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&occlusionFilterOpaque);
-      
-      uniform ISPCMaterial& material = g_ispc_scene->materials[mesh->materialID];
-      //if (material.ty == MATERIAL_DIELECTRIC || material.ty == MATERIAL_THIN_DIELECTRIC)
-      //  rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&intersectionFilterReject);
-      //else
-      if (material.ty == MATERIAL_OBJ)
-      {
-        uniform OBJMaterial& obj = (uniform OBJMaterial&) material;
-        if (obj.d != 1.0f || obj.map_d) {
-          rtcSetIntersectionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&intersectionFilterOBJ);
-          rtcSetOcclusionFilterFunction   (mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&occlusionFilterOBJ);
-        }
+    rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&occlusionFilterOpaque);
+    
+    uniform ISPCMaterial& material = g_ispc_scene->materials[mesh->materialID];
+    //if (material.ty == MATERIAL_DIELECTRIC || material.ty == MATERIAL_THIN_DIELECTRIC)
+    //  rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&intersectionFilterReject);
+    //else
+    if (material.ty == MATERIAL_OBJ)
+    {
+      uniform OBJMaterial& obj = (uniform OBJMaterial&) material;
+      if (obj.d != 1.0f || obj.map_d) {
+        rtcSetIntersectionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&intersectionFilterOBJ);
+        rtcSetOcclusionFilterFunction   (mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&occlusionFilterOBJ);
       }
+    }
 #endif
-    }
-    else if (geometry->type == QUAD_MESH) {
-      ISPCQuadMesh* uniform mesh = (ISPCQuadMesh* uniform) geometry;
-#if ENABLE_FILTER_FUNCTION == 1
-      rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&occlusionFilterOpaque);
-      
-      uniform ISPCMaterial& material = g_ispc_scene->materials[mesh->materialID];
-      //if (material.ty == MATERIAL_DIELECTRIC || material.ty == MATERIAL_THIN_DIELECTRIC)
-      //  rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&intersectionFilterReject);
-      //else
-      if (material.ty == MATERIAL_OBJ)
-      {
-        uniform OBJMaterial& obj = (uniform OBJMaterial&) material;
-        if (obj.d != 1.0f || obj.map_d) {
-          rtcSetIntersectionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&intersectionFilterOBJ);
-          rtcSetOcclusionFilterFunction   (mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&occlusionFilterOBJ);
-        }
-      }
-#endif
-    }
-    else if (geometry->type == LINE_SEGMENTS) {
-      ISPCLineSegments* uniform mesh = (ISPCLineSegments* uniform) geometry;
-      rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&occlusionFilterHair);
-    }
-    else if (geometry->type == HAIR_SET) {
-      ISPCHairSet* uniform mesh = (ISPCHairSet* uniform) geometry;
-      rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&occlusionFilterHair);
-    }
-    else if (geometry->type == CURVES) {
-      ISPCHairSet* uniform mesh = (ISPCHairSet* uniform) geometry;
-      rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&occlusionFilterHair);
-    }
-    else if (geometry->type == GROUP) {
-      ISPCGroup* uniform group = (ISPCGroup* uniform) geometry;
-      for (uniform size_t i=0; i<group->numGeometries; i++)
-        assignShaders(group->geometries[i]);
-    }
   }
+  else if (geometry->type == QUAD_MESH) {
+    ISPCQuadMesh* uniform mesh = (ISPCQuadMesh* uniform) geometry;
+#if ENABLE_FILTER_FUNCTION == 1
+    rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&occlusionFilterOpaque);
+    
+    uniform ISPCMaterial& material = g_ispc_scene->materials[mesh->materialID];
+    //if (material.ty == MATERIAL_DIELECTRIC || material.ty == MATERIAL_THIN_DIELECTRIC)
+    //  rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&intersectionFilterReject);
+    //else
+    if (material.ty == MATERIAL_OBJ)
+    {
+      uniform OBJMaterial& obj = (uniform OBJMaterial&) material;
+      if (obj.d != 1.0f || obj.map_d) {
+        rtcSetIntersectionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&intersectionFilterOBJ);
+        rtcSetOcclusionFilterFunction   (mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&occlusionFilterOBJ);
+      }
+    }
+#endif
+  }
+  else if (geometry->type == LINE_SEGMENTS) {
+    ISPCLineSegments* uniform mesh = (ISPCLineSegments* uniform) geometry;
+    rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&occlusionFilterHair);
+  }
+  else if (geometry->type == HAIR_SET) {
+    ISPCHairSet* uniform mesh = (ISPCHairSet* uniform) geometry;
+    rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&occlusionFilterHair);
+  }
+  else if (geometry->type == CURVES) {
+    ISPCHairSet* uniform mesh = (ISPCHairSet* uniform) geometry;
+    rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&occlusionFilterHair);
+  }
+  else if (geometry->type == GROUP) {
+    ISPCGroup* uniform group = (ISPCGroup* uniform) geometry;
+    for (uniform size_t i=0; i<group->numGeometries; i++)
+      assignShaders(group->geometries[i]);
+  }
+}
 
 typedef uniform ISPCInstance* uniform ISPCInstance_ptr;
 typedef uniform ISPCGeometry* uniform ISPCGeometry_ptr;
@@ -1139,8 +981,6 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 
   scene_aflags |= RTC_INTERPOLATE;
 
-#if 1
-
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene,(RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags, RTC_GEOMETRY_STATIC);
 
   /* assign shaders */
@@ -1148,157 +988,13 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
     assignShaders(scene_in->geometries[i]);
   }
 
-  if (g_instancing_mode == 2 || g_instancing_mode == 3) {
+  /* commit individual objects in case of instancing */
+  if (g_instancing_mode == 2 || g_instancing_mode == 3) 
+  {
     for (uniform unsigned int i=0; i<scene_in->numGeometries; i++) {
       if (geomID_to_scene[i]) rtcCommit(geomID_to_scene[i]);
     }
   }
-
-#else
-
-  uniform size_t numGeometries = scene_in->numGeometries;
-  geomID_to_scene = uniform new RTCScene[numGeometries];
-  geomID_to_inst  = uniform new ISPCInstance_ptr[numGeometries];
-
-  RTCScene scene_out = rtcDeviceNewScene(g_device,(RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags);
-
-  /* use geometry instancing feature */
-  if (g_instancing_mode == 1)
-  {
-    for (uniform unsigned int i=0; i<scene_in->numGeometries; i++)
-    {
-      uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
-      if (geometry->type == SUBDIV_MESH) {
-        uniform unsigned int geomID = convertSubdivMesh((uniform ISPCSubdivMesh* uniform) geometry, scene_out);
-        assert(geomID == i);
-        rtcDisable(scene_out,geomID);
-      }
-      else if (geometry->type == TRIANGLE_MESH) {
-        uniform unsigned int geomID = convertTriangleMesh((uniform ISPCTriangleMesh* uniform) geometry, scene_out);
-        assert(geomID == i);
-        rtcDisable(scene_out,geomID);
-      }
-      else if (geometry->type == QUAD_MESH) {
-        uniform unsigned int geomID = convertQuadMesh((uniform ISPCQuadMesh* uniform) geometry, scene_out);
-        assert(geomID == i);
-        rtcDisable(scene_out,geomID);
-      }
-      else if (geometry->type == LINE_SEGMENTS) {
-        uniform unsigned int geomID = convertLineSegments((uniform ISPCLineSegments* uniform) geometry, scene_out);
-        assert(geomID == i);
-        rtcDisable(scene_out,geomID);
-      }
-      else if (geometry->type == HAIR_SET) {
-        uniform unsigned int geomID = convertHairSet((uniform ISPCHairSet* uniform) geometry, scene_out);
-        assert(geomID == i);
-        rtcDisable(scene_out,geomID);
-      }
-      else if (geometry->type == CURVES) {
-        uniform unsigned int geomID = convertCurveGeometry((uniform ISPCHairSet* uniform) geometry, scene_out);
-        assert(geomID == i);
-        rtcDisable(scene_out,geomID);
-      }
-      else if (geometry->type == INSTANCE) {
-        uniform unsigned int geomID = convertInstance((uniform ISPCInstance* uniform) geometry, i, scene_out);
-        assert(geomID == i); geomID_to_inst[geomID] = (uniform ISPCInstance* uniform) geometry;
-      }
-      else
-        assert(false);
-    }
-  }
-
-  /* use scene instancing feature */
-  else if (g_instancing_mode == 2 || g_instancing_mode == 3)
-  {
-    for (uniform unsigned int i=0; i<scene_in->numGeometries; i++)
-    {
-      uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
-      if (geometry->type == SUBDIV_MESH) {
-        RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
-        convertSubdivMesh((uniform ISPCSubdivMesh* uniform) geometry, objscene);
-        geomID_to_scene[i] = objscene;
-        rtcCommit(objscene);
-      }
-      else if (geometry->type == TRIANGLE_MESH) {
-        RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
-        convertTriangleMesh((uniform ISPCTriangleMesh* uniform) geometry, objscene);
-        geomID_to_scene[i] = objscene;
-        rtcCommit(objscene);
-      }
-      else if (geometry->type == QUAD_MESH) {
-        RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
-        convertQuadMesh((uniform ISPCQuadMesh* uniform) geometry, objscene);
-        geomID_to_scene[i] = objscene;
-        rtcCommit(objscene);
-      }
-      else if (geometry->type == LINE_SEGMENTS) {
-        RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
-        convertLineSegments((uniform ISPCLineSegments* uniform) geometry, objscene);
-        geomID_to_scene[i] = objscene;
-        rtcCommit(objscene);
-      }
-      else if (geometry->type == HAIR_SET) {
-        RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
-        convertHairSet((uniform ISPCHairSet* uniform) geometry, objscene);
-        geomID_to_scene[i] = objscene;
-        rtcCommit(objscene);
-      }
-      else if (geometry->type == CURVES) {
-        RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
-        convertCurveGeometry((uniform ISPCHairSet* uniform) geometry, objscene);
-        geomID_to_scene[i] = objscene;
-        rtcCommit(objscene);
-      }
-      else if (geometry->type == GROUP) {
-        RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
-        convertGroup((uniform ISPCGroup* uniform) geometry, objscene);
-        geomID_to_scene[i] = objscene;
-        rtcCommit(objscene);
-      }
-      else if (geometry->type == INSTANCE) {
-        uniform unsigned int geomID = convertInstance((uniform ISPCInstance* uniform) geometry, i, scene_out);
-        geomID_to_scene[i] = NULL; geomID_to_inst[geomID] = (uniform ISPCInstance* uniform) geometry;
-      }
-      else
-        assert(false);
-    }
-  }
-
-  /* no instancing */
-  else
-  {
-    for (uniform unsigned int i=0; i<scene_in->numGeometries; i++)
-    {
-      uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
-      if (geometry->type == SUBDIV_MESH) {
-        uniform unsigned int geomID MAYBE_UNUSED = convertSubdivMesh((uniform ISPCSubdivMesh* uniform) geometry, scene_out);
-        assert(geomID == i);
-      }
-      else if (geometry->type == TRIANGLE_MESH) {
-        uniform unsigned int geomID MAYBE_UNUSED = convertTriangleMesh((uniform ISPCTriangleMesh* uniform) geometry, scene_out);
-        assert(geomID == i);
-      }
-      else if (geometry->type == QUAD_MESH) {
-        uniform unsigned int geomID MAYBE_UNUSED = convertQuadMesh((uniform ISPCQuadMesh* uniform) geometry, scene_out);
-        assert(geomID == i);
-      }
-      else if (geometry->type == LINE_SEGMENTS) {
-        uniform unsigned int geomID MAYBE_UNUSED = convertLineSegments((uniform ISPCLineSegments* uniform) geometry, scene_out);
-        assert(geomID == i);
-      }
-      else if (geometry->type == HAIR_SET) {
-        uniform unsigned int geomID MAYBE_UNUSED = convertHairSet((uniform ISPCHairSet* uniform) geometry, scene_out);
-        assert(geomID == i);
-      }
-      else if (geometry->type == CURVES) {
-        uniform unsigned int geomID MAYBE_UNUSED = convertCurveGeometry((uniform ISPCHairSet* uniform) geometry, scene_out);
-        assert(geomID == i);
-      }
-      else
-        assert(false);
-    }
-  }
-#endif
 
   /* commit changes to scene */
   progressStart();

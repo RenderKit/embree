@@ -96,7 +96,7 @@ unsigned int convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
     rtcSetBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t),hair->positions+t*hair->numVertices,0,sizeof(Vertex));
   }
   rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
-  rtcSetTessellationRate(scene_out,geomID,(float)hair->tessellation_rate);
+  rtcSetTessellationRate(scene_out,geomID,hair->tessellation_rate);
   return geomID;
 }
 
@@ -239,7 +239,7 @@ void renderTileStandard(int taskIndex,
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* ISPC workaround for mask == 0 */
-    if (all(1 == 0)) continue;
+    
 
     RandomSampler sampler;
     RandomSampler_init(sampler, x, y, 0);
@@ -278,7 +278,7 @@ void renderTileStandard(int taskIndex,
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* ISPC workaround for mask == 0 */
-    if (all(1 == 0)) continue;
+    
     RTCRay& ray = rays[N++];
 
     /* eyelight shading */
