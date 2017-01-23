@@ -1106,7 +1106,10 @@ namespace embree
     else 
     {
       const std::string id = xml->parm("id");
-      if      (xml->name == "extern"          ) return sceneMap[id] = SceneGraph::load(path + xml->parm("src"));
+      if (xml->name == "extern"          ) 
+        return sceneMap[id] = SceneGraph::load(path + xml->parm("src"));
+      else if (xml->name == "extern_combine"          ) 
+        return sceneMap[id] = SceneGraph::load(path + xml->parm("src"),true);
       else if (xml->name == "obj"             ) {
         const bool subdiv_mode = xml->parm("subdiv") == "1";
         return sceneMap[id] = loadOBJ(path + xml->parm("src"),subdiv_mode);

@@ -23,9 +23,9 @@
 
 namespace embree
 {
-  Ref<SceneGraph::Node> SceneGraph::load(const FileName& filename)
+  Ref<SceneGraph::Node> SceneGraph::load(const FileName& filename, const bool singleObject)
   {
-    if      (toLowerCase(filename.ext()) == std::string("obj" )) return loadOBJ(filename);
+    if      (toLowerCase(filename.ext()) == std::string("obj" )) return loadOBJ(filename, false, singleObject);
     else if (toLowerCase(filename.ext()) == std::string("ply" )) return loadPLY(filename);
     else if (toLowerCase(filename.ext()) == std::string("xml" )) return loadXML(filename);
     else if (toLowerCase(filename.ext()) == std::string("scn" )) return loadCorona(filename);

@@ -29,7 +29,7 @@ namespace embree
     struct MaterialNode;
     struct Transformations;
 
-    Ref<Node> load(const FileName& fname);
+    Ref<Node> load(const FileName& fname, bool singleObject = false);
     void store(Ref<Node> root, const FileName& fname, bool embedTextures);
     void extend_animation(Ref<Node> node0, Ref<Node> node1);
     void optimize_animation(Ref<Node> node0);
