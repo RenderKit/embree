@@ -499,7 +499,8 @@ namespace embree
           for (size_t t=0; t<mesh->numTimeSteps; t++)
             mesh->invalidFace(f,t) = !edge->valid(mesh->vertices[t]) || mesh->holeSet.lookup(unsigned(f));
         }
-        
+
+        /* pin some edges and vertices */
         for (size_t i=0; i<mesh->faceVertices[f]; i++) 
         {
           /* pin corner vertices when requested by user */
@@ -510,9 +511,11 @@ namespace embree
           else if (subdiv_mode == RTC_SUBDIV_PIN_BOUNDARY && edge[i].vertexHasBorder()) 
             edge[i].vertex_crease_weight = float(inf);
 
-          /* pin all vertices when requested by user */
-          else if (subdiv_mode == RTC_SUBDIV_PIN_ALL) 
+          /* pin all edges and vertices when requested by user */
+          else if (subdiv_mode == RTC_SUBDIV_PIN_ALL) {
+            edge[i].edge_crease_weight = float(inf);
             edge[i].vertex_crease_weight = float(inf);
+          }
         }
 
         /* we have to calculate patch_type last! */
@@ -566,8 +569,10 @@ namespace embree
             edge.vertex_crease_weight = float(inf);
 
           /* pin every vertex when requested by user */
-          else if (subdiv_mode == RTC_SUBDIV_PIN_ALL) 
+          else if (subdiv_mode == RTC_SUBDIV_PIN_ALL) {
+            edge.edge_crease_weight = float(inf);
             edge.vertex_crease_weight = float(inf);
+          }
         }
 
         /* update patch type */
