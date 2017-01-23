@@ -741,7 +741,7 @@ namespace embree
         mesh->verticesPerFace[i] = 4;
       }
     }
-    mesh->boundaryMode = RTC_BOUNDARY_PIN_CORNERS;
+    mesh->subdiv_mode = RTC_SUBDIV_PIN_CORNERS;
     return mesh;
   }
 

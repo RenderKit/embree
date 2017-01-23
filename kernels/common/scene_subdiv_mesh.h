@@ -68,7 +68,7 @@ namespace embree
     void enabling();
     void disabling();
     void setMask (unsigned mask);
-    void setBoundaryMode (unsigned topologyID, RTCBoundaryMode mode);
+    void setSubdivisionMode (unsigned topologyID, RTCSubdivisionMode mode);
     void setIndexBuffer(RTCBufferType vertexBuffer, RTCBufferType indexBuffer);
     void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride);
     void* map(RTCBufferType type);
@@ -162,7 +162,7 @@ namespace embree
       Topology (Topology&& other) // FIXME: this is only required to workaround compilation issues under Windows
         : mesh(std::move(other.mesh)), 
           vertexIndices(std::move(other.vertexIndices)),
-          boundary(std::move(other.boundary)),
+          subdiv_mode(std::move(other.subdiv_mode)),
           halfEdges(std::move(other.halfEdges)),
           halfEdges0(std::move(other.halfEdges0)),
           halfEdges1(std::move(other.halfEdges1)) {}
@@ -171,7 +171,7 @@ namespace embree
       {
         mesh = std::move(other.mesh); 
         vertexIndices = std::move(other.vertexIndices);
-        boundary = std::move(other.boundary);
+        subdiv_mode = std::move(other.subdiv_mode);
         halfEdges = std::move(other.halfEdges);
         halfEdges0 = std::move(other.halfEdges0);
         halfEdges1 =std::move(other.halfEdges1);
@@ -182,14 +182,14 @@ namespace embree
       /*! check if the i'th primitive is valid in this topology */
       __forceinline bool valid(size_t i) const 
       {
-        if (unlikely(boundary == RTC_BOUNDARY_NONE)) {
+        if (unlikely(subdiv_mode == RTC_SUBDIV_NO_BOUNDARY)) {
           if (getHalfEdge(i)->faceHasBorder()) return false;
         }
         return true;
       }
       
-      /*! updates the boundary mode for the topology */
-      void setBoundaryMode (RTCBoundaryMode mode);
+      /*! updates the interpolation mode for the topology */
+      void setSubdivisionMode (RTCSubdivisionMode mode);
 
       /*! marks all buffers as modified */
       void update ();
@@ -216,8 +216,8 @@ namespace embree
       /*! indices of the vertices composing each face */
       APIBuffer<unsigned> vertexIndices;
       
-      /*! boundary interpolation mode */
-      RTCBoundaryMode boundary;
+      /*! subdiv interpolation mode */
+      RTCSubdivisionMode subdiv_mode;
 
       /*! generated data */
     public:

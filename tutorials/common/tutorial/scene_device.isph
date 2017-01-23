@@ -95,7 +95,7 @@ struct ISPCSubdivMesh
   unsigned int numHoles;
   unsigned int materialID;
   unsigned int geomID;
-  RTCBoundaryMode boundaryMode;
+  RTCSubdivisionMode subdiv_mode;
 };
 
 struct ISPCHair

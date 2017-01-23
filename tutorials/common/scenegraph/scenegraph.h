@@ -518,7 +518,7 @@ namespace embree
       typedef Vec3fa Vertex;
 
       SubdivMeshNode (Ref<MaterialNode> material, size_t numTimeSteps = 0) 
-        : Node(true), material(material), boundaryMode(RTC_BOUNDARY_SMOOTH), tessellationRate(2.0f) 
+        : Node(true), material(material), subdiv_mode(RTC_SUBDIV_SMOOTH_BOUNDARY), tessellationRate(2.0f) 
       {
         for (size_t i=0; i<numTimeSteps; i++)
           positions.push_back(avector<Vertex>());
@@ -538,7 +538,7 @@ namespace embree
         vertex_creases(imesh->vertex_creases),
         vertex_crease_weights(imesh->vertex_crease_weights),
         material(imesh->material), 
-        boundaryMode(imesh->boundaryMode),
+        subdiv_mode(imesh->subdiv_mode),
         tessellationRate(imesh->tessellationRate)
       {
         for (size_t i=0; i<spaces.size(); i++) {
@@ -602,7 +602,7 @@ namespace embree
       std::vector<unsigned> vertex_creases;          //!< indices of vertex creases
       std::vector<float> vertex_crease_weights; //!< weight for each vertex crease
       Ref<MaterialNode> material;
-      RTCBoundaryMode boundaryMode;
+      RTCSubdivisionMode subdiv_mode;
       float tessellationRate;
     };
 

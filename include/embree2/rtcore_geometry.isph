@@ -75,17 +75,23 @@ enum RTCGeometryFlags
 };
 
 /*! \brief Boundary interpolation mode for subdivision surfaces */
-enum RTCBoundaryMode
+enum RTCBoundaryMode RTCORE_DEPRECATED
 {
   RTC_BOUNDARY_NONE = 0,               //!< ignores border patches
   RTC_BOUNDARY_SMOOTH = 1,             //!< smooth border (default)
-  RTC_BOUNDARY_PIN_CORNERS= 2,         //!< smooth border with fixed corners
-  RTC_BOUNDARY_PIN_BORDERS = 3,        //!< linearly interpolation along border
-  RTC_PIN_ALL = 4,                     //!< pin every vertex (interpolates every patch linearly)
+  RTC_BOUNDARY_EDGE_ONLY = 1,          //!< soft boundary (default)
+  RTC_BOUNDARY_EDGE_AND_CORNER = 2     //!< boundary corner vertices are sharp vertices
+};
 
-  /* old names for compatibility */
-  RTC_BOUNDARY_EDGE_ONLY RTCORE_DEPRECATED = 1,          //!< soft boundary (default)
-  RTC_BOUNDARY_EDGE_AND_CORNER RTCORE_DEPRECATED = 2    //!< boundary corner vertices are sharp vertices
+/*! \brief Interpolation mode for subdivision surfaces. The modes are
+ *  ordered to interpolate successively more linear. */
+enum RTCSubdivisionMode
+{
+  RTC_SUBDIV_NO_BOUNDARY = 0,          //!< ignores border patches
+  RTC_SUBDIV_SMOOTH_BOUNDARY = 1,      //!< smooth border (default)
+  RTC_SUBDIV_PIN_CORNERS = 2,          //!< smooth border with fixed corners
+  RTC_SUBDIV_PIN_BOUNDARY = 3,         //!< linearly interpolation along border
+  RTC_SUBDIV_PIN_ALL = 4,              //!< pin every vertex (interpolates every patch linearly)
 };
 
 /*! Intersection filter function for uniform rays. */
@@ -362,10 +368,10 @@ uniform unsigned int rtcNewLineSegments (RTCScene scene,                    //!<
 void rtcSetMask (RTCScene scene, uniform unsigned int geomID, uniform int mask);
 
 /*! \brief Sets boundary interpolation mode for default subdivision surface topology */
-void rtcSetBoundaryMode(RTCScene scene, uniform unsigned int geomID, uniform RTCBoundaryMode mode);
+RTCORE_DEPRECATED void rtcSetBoundaryMode(RTCScene scene, uniform unsigned int geomID, uniform RTCBoundaryMode mode);
 
 /*! \brief Sets boundary interpolation mode for specified subdivision surface topology */
-void rtcSetBoundaryMode2(RTCScene scene, uniform unsigned int geomID, uniform unsigned int topologyID, uniform RTCBoundaryMode mode);
+void rtcSetSubdivisionMode(RTCScene scene, uniform unsigned int geomID, uniform unsigned int topologyID, uniform RTCSubdivisionMode mode);
 
 /*! \brief Binds a user vertex buffer to some index buffer topology. */
 void rtcSetIndexBuffer(RTCScene scene, uniform unsigned geomID, uniform RTCBufferType vertexBuffer, uniform RTCBufferType indexBuffer);

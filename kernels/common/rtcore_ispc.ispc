@@ -111,7 +111,7 @@ extern "C" uniform unsigned int ispcNewSubdivisionMesh (RTCScene scene,
 
 extern "C" void ispcSetRayMask (RTCScene scene, uniform unsigned int geomID, uniform int mask);
 extern "C" void ispcSetBoundaryMode(RTCScene scene, uniform unsigned int geomID, uniform size_tt mode);
-extern "C" void ispcSetBoundaryMode2(RTCScene scene, uniform unsigned int geomID, uniform size_tt topologyID, uniform size_tt mode);
+extern "C" void ispcSetSubdivisionMode(RTCScene scene, uniform unsigned int geomID, uniform size_tt topologyID, uniform size_tt mode);
 extern "C" void ispcSetIndexBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType vertexBuffer, uniform RTCBufferType indexBuffer);
 extern "C" void* uniform ispcMapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
 extern "C" void ispcUnmapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
@@ -461,8 +461,8 @@ void rtcSetBoundaryMode(RTCScene scene, uniform unsigned int geomID, uniform RTC
   ispcSetBoundaryMode(scene,geomID,mode);
 }
 
-void rtcSetBoundaryMode2(RTCScene scene, uniform unsigned int geomID, uniform unsigned int topologyID, uniform RTCBoundaryMode mode) {
-  ispcSetBoundaryMode2(scene,geomID,topologyID,mode);
+void rtcSetSubdivisionMode(RTCScene scene, uniform unsigned int geomID, uniform unsigned int topologyID, uniform RTCSubdivisionMode mode) {
+  ispcSetSubdivisionMode(scene,geomID,topologyID,mode);
 }
 
 void rtcSetIndexBuffer(RTCScene scene, uniform unsigned geomID, uniform RTCBufferType vertexBuffer, uniform RTCBufferType indexBuffer) {

@@ -213,7 +213,7 @@ namespace embree
         if (mesh->vertex_crease_weights.size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_CREASE_WEIGHT_BUFFER,mesh->vertex_crease_weights.data(),0,sizeof(float));
         if (mesh->holes.size()) rtcSetBuffer(scene,geomID,RTC_HOLE_BUFFER,mesh->holes.data(),0,sizeof(int));
         rtcSetTessellationRate(scene,geomID,mesh->tessellationRate);
-        rtcSetBoundaryMode(scene,geomID,mesh->boundaryMode);
+        rtcSetSubdivisionMode(scene,geomID,0,mesh->subdiv_mode);
         AssertNoError(device);
         return geomID;
       }
@@ -1547,7 +1547,7 @@ namespace embree
       passed &= checkInterpolationSharpVertex(scene,geomID,6,0.0f,1.0f,12,buffer,vertices0,N,N_total);
       passed &= checkInterpolationSharpVertex(scene,geomID,8,1.0f,1.0f,15,buffer,vertices0,N,N_total);
       
-      rtcSetBoundaryMode(scene,geomID,RTC_BOUNDARY_PIN_CORNERS);
+      rtcSetSubdivisionMode(scene,geomID,0,RTC_SUBDIV_PIN_CORNERS);
       AssertNoError(device);
       rtcCommit(scene);
       AssertNoError(device);
