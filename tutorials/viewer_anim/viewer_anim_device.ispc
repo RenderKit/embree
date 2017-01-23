@@ -20,6 +20,9 @@
 #include "../common/tutorial/scene_device.isph"
 
 #define ANIM_FPS 15.0f
+#define ENABLE_ANIM 1
+#define VERTEX_NORMALS 1
+
 #define VERTEX_INTERPOLATION_BLOCK_SIZE 1024
 
 extern uniform ISPCScene* uniform g_ispc_scene;
@@ -344,11 +347,31 @@ void renderTileStandard(uniform int taskIndex,
     if (all(__mask == 0)) continue;
     RTCRay& ray = rays[N++];
 
-    /* eyelight shading */
-    Vec3f color = make_Vec3f(0.0f);
+    Vec3f Ng = ray.Ng;
+
+    /* shading */
+    Vec3f color = make_Vec3f(0.0f,1.0f,0.0f);
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
     {
-      color = make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
+      /* vertex normals */
+#if VERTEX_NORMALS == 1
+      ISPCGeometry* geometry = g_ispc_scene->geometries[ray.geomID];
+      if (geometry->type == TRIANGLE_MESH)
+      {
+        ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
+        if (mesh->normals)
+        {
+          ISPCTriangle* tri = &mesh->triangles[ray.primID];
+              
+          const Vec3fa n0 = mesh->normals[tri->v0];
+          const Vec3fa n1 = mesh->normals[tri->v1];
+          const Vec3fa n2 = mesh->normals[tri->v2];
+          const Vec3fa n = n0*(1.0f-ray.u-ray.v) + n1*ray.u + n2*ray.v;          
+          Ng = make_Vec3f(n.x,n.y,n.z);
+        }
+      }
+#endif
+      color = make_Vec3f(abs(dot(ray.dir,normalize(Ng))));
     }
 
     /* occlusion */
@@ -433,6 +456,8 @@ export void device_render (uniform int* uniform pixels,
   /* update geometry */
   /* =============== */
 
+#if ENABLE_ANIM == 1
+
   uniform double vertexUpdateTime0 = getSeconds();    
   
   if (animTime < 0.0f) animTime = getSeconds();
@@ -450,6 +475,8 @@ export void device_render (uniform int* uniform pixels,
   /* =========== */
 
   rtcCommit(g_scene);      
+
+#endif
 }
 
 /* called by the C++ code for cleanup */

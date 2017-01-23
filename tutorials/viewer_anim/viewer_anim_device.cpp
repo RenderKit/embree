@@ -14,15 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-/* hack to quickly enable use 8-wide ray initialization and rtcIntersectNM */
-
-#define VECTOR_MODE 0
+#define ANIM_FPS 15.0f
 #define ENABLE_ANIM 1
-
-#if VECTOR_MODE  == 1
-#define __SSE4_2__
-#define __AVX__
-#endif 
+#define VERTEX_NORMALS 1
 
 #include "../common/math/random_sampler.h"
 #include "../common/math/sampling.h"
@@ -31,9 +25,6 @@
 
 
 namespace embree {
-
-#define RAYN_FLAGS RTC_INTERSECT_COHERENT
-#define ANIM_FPS 15.0f
 
   extern "C" ISPCScene* g_ispc_scene;
 
@@ -55,9 +46,6 @@ namespace embree {
   static const size_t numProfileFrames = 200;
 
   /* shadow distance map */
-
-  float *shadowDistanceMap = NULL;
-  float *zBuffer = NULL;
 
   void dumpBuildAndRenderTimes();
 
@@ -310,241 +298,7 @@ namespace embree {
       assert(false);
   }
 
-#if VECTOR_MODE  == 1
 
-  const Vec3<vfloat8> ls_origin(vfloat8(-1.513921618),vfloat8(13.41725254),vfloat8(-8.156237602));
-  const static float LS_SIZE = 0.5f;
-  
-  template<bool fillDistanceMap>
-  void renderTile8x8(int taskIndex,
-                     int* pixels,
-                     const unsigned int width,
-                     const unsigned int height,
-                     const float time,
-                     const ISPCCamera& camera,
-                     const int numTilesX,
-                     const int numTilesY)
-  {
-    assert(TILE_SIZE_X == 8);
-    assert(TILE_SIZE_Y == 8);
-
-    const unsigned int tileY = taskIndex / numTilesX;
-    const unsigned int tileX = taskIndex - tileY * numTilesX;
-    const unsigned int x0 = tileX * TILE_SIZE_X;
-    const unsigned int x1 = min(x0+TILE_SIZE_X,width);
-    const unsigned int y0 = tileY * TILE_SIZE_Y;
-    const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-    RTCRay8 rays[TILE_SIZE_Y];
-    const Vec3fa ray_org(camera.xfm.p);
-    for (unsigned int i=0; i<TILE_SIZE_Y; i++) 
-      {
-        const vfloat8 x(vfloat8(step) + x0);
-        const vfloat8 y((float)(y0 + i));
-        const vboolf8 mask((x < vfloat8(x1)) & (y < vfloat8(y1))); 
-        vfloat8::store(rays[i].orgx,ray_org.x);
-        vfloat8::store(rays[i].orgy,ray_org.y);
-        vfloat8::store(rays[i].orgz,ray_org.z);
-        vfloat8::store(rays[i].dirx,x * camera.xfm.l.vx.x + y * camera.xfm.l.vy.x + camera.xfm.l.vz.x);
-        vfloat8::store(rays[i].diry,x * camera.xfm.l.vx.y + y * camera.xfm.l.vy.y + camera.xfm.l.vz.y);
-        vfloat8::store(rays[i].dirz,x * camera.xfm.l.vx.z + y * camera.xfm.l.vy.z + camera.xfm.l.vz.z);
-        vfloat8::store(rays[i].tnear,0.0f);
-        vfloat8::store(rays[i].tfar,select(mask,vfloat8(pos_inf),vfloat8(-1.0f)));
-        vfloat8::store(rays[i].time,0.0f);
-        vint8::store(rays[i].mask,-1);
-        vint8::store(rays[i].geomID,RTC_INVALID_GEOMETRY_ID);
-        vint8::store(rays[i].primID,RTC_INVALID_GEOMETRY_ID);
-      }
-
-    RTCIntersectContext context;
-    context.flags = RAYN_FLAGS;
-
-    /* trace stream of rays */
-    rtcIntersectNM(g_scene,&context,(RTCRayN *)rays,8,8,sizeof(RTCRay8));
-    //rtcOccludedNM(g_scene,&context,(RTCRayN *)rays,8,8,sizeof(RTCRay8));
-
-#if 1
-    /* shade stream of rays */
-    for (unsigned int i=0; i<TILE_SIZE_Y; i++) 
-      {
-        const Vec3<vfloat8> ray_dir(vfloat8::load(rays[i].dirx),vfloat8::load(rays[i].diry),vfloat8::load(rays[i].dirz));
-        const Vec3<vfloat8> ray_Ng(vfloat8::load(rays[i].Ngx),vfloat8::load(rays[i].Ngy),vfloat8::load(rays[i].Ngz));        
-        const vfloat8 color = abs(dot(normalize(ray_dir),normalize(ray_Ng)));
-
-        const vint8 r = (vint8) (255.0f * clamp(color,vfloat8(0.0f),vfloat8(1.0f)));
-        const vint8 g = (vint8) (255.0f * clamp(color,vfloat8(0.0f),vfloat8(1.0f)));
-        const vint8 b = (vint8) (255.0f * clamp(color,vfloat8(0.0f),vfloat8(1.0f)));   
-        const vint8 rgb = select(vint8::load(rays[i].geomID) != vint8(RTC_INVALID_GEOMETRY_ID),(b << 16) + (g << 8) + r,vint8(zero));
-
-        vint8::storeu(&pixels[(y0+i)*width+x0],rgb);
-      }
-
-    if (fillDistanceMap)
-    {
-      for (unsigned int i=0; i<TILE_SIZE_Y; i++) 
-      {
-        const Vec3<vfloat8> ray_dir(vfloat8::load(rays[i].dirx),vfloat8::load(rays[i].diry),vfloat8::load(rays[i].dirz));
-        const Vec3<vfloat8> ray_org(vfloat8::load(rays[i].orgx),vfloat8::load(rays[i].orgy),vfloat8::load(rays[i].orgz));
-        const vfloat8 ray_dist(vfloat8::load(rays[i].tfar));
-        
-        vfloat8::storeu(&zBuffer[(y0+i)*width+x0],ray_dist);
-
-        const Vec3<vfloat8> pos = ray_org + ray_dir * ray_dist;
-        const Vec3<vfloat8> shadow_dir = pos - ls_origin;
-
-        const vfloat8 shadow_dist(0.99f);
-
-        const vbool8 mask = vint8::load(rays[i].geomID) != vint8(RTC_INVALID_GEOMETRY_ID);
-
-        vfloat8::store(rays[i].orgx,ls_origin.x);
-        vfloat8::store(rays[i].orgy,ls_origin.y);
-        vfloat8::store(rays[i].orgz,ls_origin.z);
-        vfloat8::store(rays[i].dirx,shadow_dir.x);
-        vfloat8::store(rays[i].diry,shadow_dir.y);
-        vfloat8::store(rays[i].dirz,shadow_dir.z);
-        vfloat8::store(rays[i].tnear,0.0f);
-        vfloat8::store(rays[i].tfar,select(mask,shadow_dist,vfloat8(-1.0f)));
-        vfloat8::store(rays[i].time,0.0f);
-        vint8::store(rays[i].mask,-1);
-        vint8::store(rays[i].geomID,RTC_INVALID_GEOMETRY_ID);
-        vint8::store(rays[i].primID,RTC_INVALID_GEOMETRY_ID);
-      }
-
-      /* trace stream of rays */
-      rtcIntersectNM(g_scene,&context,(RTCRayN *)rays,8,8,sizeof(RTCRay8));
-
-      /* store distance map */
-      for (unsigned int i=0; i<TILE_SIZE_Y; i++) 
-      {
-        const vbool8 mask = vint8::load(rays[i].geomID) == vint8(RTC_INVALID_GEOMETRY_ID);
-        vfloat8::storeu(&shadowDistanceMap[(y0+i)*width+x0],select(mask,1.0f,vfloat8::load(rays[i].tfar)));
-      }
-    }
-#endif
-  }
-
-
-  void filterShadowDistanceMap8x8(int taskIndex,
-                                  int* pixels,
-                                  const unsigned int width,
-                                  const unsigned int height,
-                                  const float time,
-                                  const ISPCCamera& camera,
-                                  const int numTilesX,
-                                  const int numTilesY)
-  {
-    assert(TILE_SIZE_X == 8);
-    assert(TILE_SIZE_Y == 8);
-
-
-    const unsigned int tileY = taskIndex / numTilesX;
-    const unsigned int tileX = taskIndex - tileY * numTilesX;
-    const unsigned int x0 = tileX * TILE_SIZE_X;
-    const unsigned int x1 = min(x0+TILE_SIZE_X,width);
-    const unsigned int y0 = tileY * TILE_SIZE_Y;
-    const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-    vfloat8 factor[TILE_SIZE_Y];
-    for (size_t i=0;i<TILE_SIZE_Y;i++) 
-    {
-      factor[i] = vfloat8::load(&shadowDistanceMap[(y0+i)*width+x0]);
-      //factor[i] = select(factor[i] < 1.0f, vfloat8(0.0f), factor[i]);
-      factor[i] = select(factor[i] < 1.0f, vfloat8(0.0f), vfloat8(1.0f));
-    }
-
-#if 1
-    for (unsigned int x=x0;x<x1;x++)
-      for (unsigned int y=y0;y<y1;y++)
-      {
-        const int x_p1 = min((int)x+1,(int)width);
-        const int x_m1 = max((int)x-1,0);
-
-        const int y_p1 = min((int)y+1,(int)height);
-        const int y_m1 = max((int)y-1,0);
-
-        const float z_xy = zBuffer[y*width+x];
-        float z_dx = min(abs(z_xy-zBuffer[y*width+x_m1]),abs(z_xy-zBuffer[y*width+x_p1]));
-        float z_dy = max(abs(z_xy-zBuffer[y_m1*width+x]),abs(z_xy-zBuffer[y_p1*width+x]));
-        if (z_dx < z_dy) z_dy = z_dx;
-        if (z_dy < z_dx) z_dx = z_dy;
-
-#if 1
-        if (shadowDistanceMap[y*width+x] < 1.0f)
-        {
-          int FILTER_WIDTH = max((int)( (1.0f - shadowDistanceMap[y*width+x]) * LS_SIZE / z_xy),1);
-          FILTER_WIDTH = min(FILTER_WIDTH,8);
-
-
-          const int min_x = max((int)x-FILTER_WIDTH,0);
-          const int max_x = min((int)x+FILTER_WIDTH,(int)width);
-
-          const int min_y = max((int)y-FILTER_WIDTH,0);
-          const int max_y = min((int)y+FILTER_WIDTH,(int)height);
-
-          int min_sqrdist = 2*FILTER_WIDTH*FILTER_WIDTH;
-          size_t validTests = 0;
-#if 1
-          for (int mx=min_x;mx<max_x;mx++)
-            for (int my=min_y;my<max_y;my++)
-              if (!(mx == x && my == y) && shadowDistanceMap[my*width+mx] == 1.0f)
-              {
-                const int stepsx = std::abs(mx-(int)x);
-                const int stepsy = std::abs(my-(int)y);
-                const float deltaz = abs(zBuffer[my*width+mx] - z_xy);
-                if (deltaz >= stepsx * z_dx + stepsy * z_dy + 1E-3f) continue; 
-                validTests++;
-                const int sqrdist = (mx-x)*(mx-x)+(my-y)*(my-y);
-                if ( sqrdist < min_sqrdist) min_sqrdist = sqrdist;
-              }
-#else
-          for (int mx=min_x;mx<max_x;mx++)
-            if (mx != x && shadowDistanceMap[y*width+mx] == 1.0f)
-              {
-                const int stepsx = std::abs(mx-(int)x);
-                const float deltaz = abs(zBuffer[y*width+mx] - z_xy);
-                if (deltaz >= stepsx * z_dx + 1E-3f) continue; 
-                validTests++;
-
-                const int sqrdist = (mx-x)*(mx-x);
-                if ( sqrdist < min_sqrdist) min_sqrdist = sqrdist;
-              }
-          for (int my=min_y;my<max_y;my++)
-            if (my != y && shadowDistanceMap[my*width+x] == 1.0f)
-              {
-                const int stepsy = std::abs(my-(int)y);
-                const float deltaz = abs(zBuffer[my*width+x] - z_xy);
-                if (deltaz >= stepsy * z_dy + 1E-3f) continue; 
-                validTests++;
-
-                const int sqrdist = (my-y)*(my-y);
-                if ( sqrdist < min_sqrdist) min_sqrdist = sqrdist;
-              }
-
-#endif
-          if (min_sqrdist == 2*FILTER_WIDTH*FILTER_WIDTH || validTests <= 3)
-            factor[y-y0][x-x0] = 0.0f;
-          else
-          {
-            factor[y-y0][x-x0] = 1.0f - (float)sqrtf((float)min_sqrdist) / sqrtf(2.0f*FILTER_WIDTH*FILTER_WIDTH);
-          }
-        }
-#endif            
-      }
-#endif
-
-    for (unsigned int i=0; i<TILE_SIZE_Y; i++) 
-    {
-      const vint8 rgb = vint8::load(&pixels[(y0+i)*width+x0]);
-      const vint8 r = vint8(vfloat8((rgb >>  0) & 0xff) * factor[i]);
-      const vint8 g = vint8(vfloat8((rgb >>  8) & 0xff) * factor[i]);
-      const vint8 b = vint8(vfloat8((rgb >> 16) & 0xff) * factor[i]);
-      vint8::storeu(&pixels[(y0+i)*width+x0],(b << 16) + (g << 8) + r);
-    }      
-  }
-
-
-   
-#endif
 
 /* renders a single screen tile */
   void renderTileStandard(int taskIndex,
@@ -586,25 +340,45 @@ namespace embree {
       }
 
     RTCIntersectContext context;
-    context.flags = RAYN_FLAGS;
+    context.flags = RTC_INTERSECT_COHERENT;
 
     /* trace stream of rays */
     rtcIntersect1M(g_scene,&context,rays,N,sizeof(RTCRay));
-    //rtcOccluded1M(g_scene,&context,rays,N,sizeof(RTCRay));
 
     /* shade stream of rays */
     N = 0;
     for (unsigned int y=y0; y<y1; y++) 
       for (unsigned int x=x0; x<x1; x++)
       {
-        /* ISPC workaround for mask == 0 */
-    
+        /* ISPC workaround for mask == 0 */    
         RTCRay& ray = rays[N++];
 
-        /* eyelight shading */
-        Vec3fa color = Vec3fa(0.0f);
+        Vec3fa Ng = ray.Ng;
+
+        /* shading */
+        Vec3fa color = Vec3fa(0.0f,1.0f,0.0f);
         if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
-          color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
+        {
+#if VERTEX_NORMALS == 1
+          /* vertex normals */
+          ISPCGeometry* geometry = g_ispc_scene->geometries[ray.geomID];
+          if (likely(geometry->type == TRIANGLE_MESH))
+          {
+            ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
+            if (likely(mesh->normals))
+            {
+              ISPCTriangle* tri = &mesh->triangles[ray.primID];
+              
+              const Vec3fa n0 = mesh->normals[tri->v0];
+              const Vec3fa n1 = mesh->normals[tri->v1];
+              const Vec3fa n2 = mesh->normals[tri->v2];
+              Ng = (1.0f-ray.u-ray.v)*n0 + ray.u*n1 + ray.v*n2;          
+            }
+          }
+#endif
+          /* final color */
+          color = Vec3fa(abs(dot(ray.dir,normalize(Ng))));
+        }
 
         /* write color to framebuffer */
         unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -690,17 +464,6 @@ namespace embree {
     assert(frameID < vertexUpdateTime.size());
     assert(frameID < buildTime.size());
 
-    /* ======================================= */
-    /* create shadow distance map and z-buffer */
-    /* ======================================= */
-
-    if (!shadowDistanceMap)
-      shadowDistanceMap = (float*) alignedMalloc(width*height*sizeof(float),64);
-
-    if (!zBuffer)
-      zBuffer = (float*) alignedMalloc(width*height*sizeof(float),64);
-
-
     /* ============ */
     /* render image */
     /* ============ */
@@ -709,33 +472,10 @@ namespace embree {
     const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
     const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
 
-#if VECTOR_MODE == 0
-
     parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
         for (size_t i=range.begin(); i<range.end(); i++)
-#if VECTOR_MODE  == 1
-          renderTile8x8<false>((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
-#else
         renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
-#endif
       }); 
-
-#else
-    /* trace primary visibility and fill shadow distance buffer */
-
-    parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
-        for (size_t i=range.begin(); i<range.end(); i++)
-          renderTile8x8<true>((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
-      }); 
-
-    /* filter shadow distance buffer and update framebuffer */
-    parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
-        for (size_t i=range.begin(); i<range.end(); i++)
-          filterShadowDistanceMap8x8((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
-          //retraceShadowDistanceMap8x8((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
-
-      }); 
-#endif
 
     const double renderTime1 = getSeconds();
     const double renderTimeDelta = renderTime1-renderTime0;
@@ -821,9 +561,6 @@ namespace embree {
 /* called by the C++ code for cleanup */
   extern "C" void device_cleanup ()
   {
-    if (shadowDistanceMap) alignedFree(shadowDistanceMap);
-    if (zBuffer) alignedFree(zBuffer);
-
     rtcDeleteScene (g_scene); g_scene = nullptr;
     rtcDeleteDevice(g_device); g_device = nullptr;
     /* dump data at the end of profiling */
