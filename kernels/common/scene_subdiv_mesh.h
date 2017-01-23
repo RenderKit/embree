@@ -157,6 +157,17 @@ namespace embree
       /*! Topology initialization */
       Topology (SubdivMesh* mesh);
 
+      /*! make the class movable */
+    public: 
+      Topology (Topology&& other) // FIXME: this is only required to workaround compilation issues under Windows
+        : mesh(std::move(other.mesh)), 
+          vertexIndices(std::move(other.vertexIndices)),
+          boundary(std::move(other.boundary)),
+          halfEdges(std::move(other.halfEdges)),
+          halfEdges0(std::move(other.halfEdges0)),
+          halfEdges1(std::move(other.halfEdges1)) {}
+
+    public:
       /*! check if the i'th primitive is valid in this topology */
       __forceinline bool valid(size_t i) const 
       {
