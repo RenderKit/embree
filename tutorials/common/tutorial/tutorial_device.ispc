@@ -19,7 +19,7 @@
 
 /* the scene to render */
 extern RTCScene g_scene;
-extern ISPCScene* g_ispc_scene;
+extern ISPCScene* uniform g_ispc_scene;
 
 /* intensity scaling for traversal cost visualization */
 extern uniform float scale;
@@ -239,7 +239,7 @@ Vec3f renderPixelTexCoords(float x, float y, const uniform ISPCCamera& camera)
 
   else if (g_ispc_scene) 
   {
-    Vec2f st;
+    Vec2f st = make_Vec2f(0,0);
     foreach_unique (geomID in ray.geomID) {
       rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,(RTCBufferType)(RTC_USER_VERTEX_BUFFER+2),&st.x,NULL,NULL,2);
     }
