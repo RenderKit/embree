@@ -74,7 +74,7 @@ namespace embree
 
     /* set texcoord buffer and optionally texcoord topology */
     if (mesh->texcoords) {
-      rtcSetBuffer(scene_out, geomID, (RTCBufferType)(RTC_USER_VERTEX_BUFFER+2), mesh->texcoords, 0, sizeof(Vec3fa  ));
+      rtcSetBuffer(scene_out, geomID, (RTCBufferType)(RTC_USER_VERTEX_BUFFER+2), mesh->texcoords, 0, sizeof(Vec2f));
       if (mesh->texcoord_indices) {
         rtcSetBuffer(scene_out, geomID, (RTCBufferType)(RTC_INDEX_BUFFER+2),  mesh->texcoord_indices  , 0, sizeof(unsigned int));
         rtcSetIndexBuffer(scene_out, geomID, (RTCBufferType)(RTC_USER_VERTEX_BUFFER+2), (RTCBufferType)(RTC_INDEX_BUFFER+2));
