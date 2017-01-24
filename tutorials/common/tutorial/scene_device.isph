@@ -80,6 +80,9 @@ struct ISPCSubdivMesh
   uniform int* position_indices;   //!< position indices for all faces
   uniform int* normal_indices;     //!< normal indices for all faces
   uniform int* texcoord_indices;   //!< texcoord indices for all faces
+  RTCSubdivisionMode position_subdiv_mode;  
+  RTCSubdivisionMode normal_subdiv_mode;
+  RTCSubdivisionMode texcoord_subdiv_mode;
   uniform int* verticesPerFace;    //!< number of indices of each face
   uniform int* holes;              //!< face ID of holes
   uniform float* subdivlevel;      //!< subdivision level
@@ -98,7 +101,6 @@ struct ISPCSubdivMesh
   unsigned int materialID;
   RTCScene scene;
   unsigned int geomID;
-  RTCSubdivisionMode subdiv_mode;
 };
 
 struct ISPCHair

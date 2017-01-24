@@ -138,7 +138,7 @@ namespace embree
     struct ISPCSubdivMesh
     {
       ISPCSubdivMesh (Ref<TutorialScene::SubdivMesh> in) 
-      : geom(SUBDIV_MESH), subdiv_mode(in->subdiv_mode)
+      : geom(SUBDIV_MESH)
       {
         positions = in->positions.data();
         normals = in->normals.data();
@@ -146,6 +146,9 @@ namespace embree
         position_indices = in->position_indices.data();
         normal_indices = in->normal_indices.data();
         texcoord_indices = in->texcoord_indices.data();
+        position_subdiv_mode =  in->position_subdiv_mode;
+        normal_subdiv_mode = in->normal_subdiv_mode;
+        texcoord_subdiv_mode = in->texcoord_subdiv_mode;
         verticesPerFace = in->verticesPerFace.data();
         holes = in->holes.data();
         edge_creases = in->edge_creases.data();
@@ -194,6 +197,9 @@ namespace embree
       unsigned* position_indices;   //!< position indices for all faces
       unsigned* normal_indices;     //!< normal indices for all faces
       unsigned* texcoord_indices;   //!< texcoord indices for all faces
+      RTCSubdivisionMode position_subdiv_mode;  
+      RTCSubdivisionMode normal_subdiv_mode;
+      RTCSubdivisionMode texcoord_subdiv_mode;
       unsigned* verticesPerFace;    //!< number of indices of each face
       unsigned* holes;              //!< face ID of holes
       float* subdivlevel;      //!< subdivision level
@@ -213,7 +219,6 @@ namespace embree
       unsigned int materialID;
       RTCScene scene;
       unsigned int geomID;
-      RTCSubdivisionMode subdiv_mode;
     };
 
     struct ISPCLineSegments

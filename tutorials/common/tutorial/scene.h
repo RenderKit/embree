@@ -171,7 +171,11 @@ namespace embree
     struct SubdivMesh : public Geometry
     {
       SubdivMesh (Ref<SceneGraph::SubdivMeshNode> mesh, const SceneGraph::Transformations& spaces, unsigned materialID)
-        : Geometry(SUBDIV_MESH), subdiv_mode(mesh->subdiv_mode), numTimeSteps((unsigned int)mesh->numTimeSteps()), numPositions((unsigned int)mesh->numPositions()), materialID(materialID)
+        : Geometry(SUBDIV_MESH), 
+           position_subdiv_mode(mesh->position_subdiv_mode),
+           normal_subdiv_mode(mesh->normal_subdiv_mode),
+           texcoord_subdiv_mode(mesh->texcoord_subdiv_mode),
+           numTimeSteps((unsigned int)mesh->numTimeSteps()), numPositions((unsigned int)mesh->numPositions()), materialID(materialID)
       {
         positions.resize(numTimeSteps*numPositions); 
         for (size_t t=0; t<numTimeSteps; t++) {
@@ -205,13 +209,15 @@ namespace embree
       std::vector<unsigned> position_indices;   //!< position indices for all faces
       std::vector<unsigned> normal_indices;     //!< normal indices for all faces
       std::vector<unsigned> texcoord_indices;   //!< texcoord indices for all faces
+      RTCSubdivisionMode position_subdiv_mode;  
+      RTCSubdivisionMode normal_subdiv_mode;
+      RTCSubdivisionMode texcoord_subdiv_mode;
       std::vector<unsigned> verticesPerFace;    //!< number of indices of each face
       std::vector<unsigned> holes;              //!< face ID of holes
       std::vector<Vec2i> edge_creases;          //!< index pairs for edge crease 
       std::vector<float> edge_crease_weights;   //!< weight for each edge crease
       std::vector<unsigned> vertex_creases;     //!< indices of vertex creases
       std::vector<float> vertex_crease_weights; //!< weight for each vertex crease
-      RTCSubdivisionMode subdiv_mode;
 
       unsigned numTimeSteps;
       unsigned numPositions;

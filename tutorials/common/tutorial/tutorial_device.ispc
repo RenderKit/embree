@@ -215,6 +215,57 @@ void renderTileUV(uniform int taskIndex,
   }
 }
 
+/* renders a single pixel with TexCoords shading */
+Vec3f renderPixelTexCoords(float x, float y, const uniform ISPCCamera& camera)
+{
+  /* initialize ray */
+  RTCRay ray;
+  ray.org = make_Vec3f(camera.xfm.p);
+  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
+  ray.tnear = 0.0f;
+  ray.tfar = inf;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
+  ray.mask = -1;
+  ray.time = g_debug;
+
+  /* intersect ray with scene */
+  rtcIntersect(g_scene,ray);
+
+  /* shade pixel */
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f,0.0f,1.0f);
+  else return make_Vec3f(ray.u,ray.v,1.0f-ray.u-ray.v);
+}
+
+void renderTileTexCoords(uniform int taskIndex,
+                  uniform int* uniform pixels,
+                  const uniform unsigned int width,
+                  const uniform unsigned int height,
+                  const uniform float time,
+                  const uniform ISPCCamera& camera,
+                  const uniform int numTilesX,
+                  const uniform int numTilesY)
+{
+  const uniform int t = taskIndex;
+  const uniform unsigned int tileY = t / numTilesX;
+  const uniform unsigned int tileX = t - tileY * numTilesX;
+  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
+  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
+  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
+
+  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
+  {
+    Vec3f color = renderPixelTexCoords((float)x,(float)y,camera);
+
+    /* write color to framebuffer */
+    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;
+  }
+}
+
 /* renders a single pixel with geometry normal shading */
 Vec3f renderPixelNg(float x, float y, const uniform ISPCCamera& camera)
 {
@@ -421,60 +472,6 @@ void renderTileCycles(uniform int taskIndex,
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     Vec3f color = renderPixelCycles((float)x,(float)y,camera);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-}
-
-/* renders a single pixel with UV shading and shoot ray 16 times for measurements */
-Vec3f renderPixelUV16(float x, float y, const uniform ISPCCamera& camera)
-{
-  /* initialize ray */
-  RTCRay ray;
-  ray.org = make_Vec3f(camera.xfm.p);
-  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time = g_debug;
-
-  /* intersect ray with scene */
-  for (uniform int i=0; i<16; i++) {
-    ray.tfar = inf;
-    rtcIntersect(g_scene,ray);
-  }
-
-  /* shade pixel */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
-  else return make_Vec3f(ray.u,ray.v,1.0f-ray.u-ray.v);
-}
-
-void renderTileUV16(uniform int taskIndex,
-                    uniform int* uniform pixels,
-                    const uniform unsigned int width,
-                    const uniform unsigned int height,
-                    const uniform float time,
-                    const uniform ISPCCamera& camera,
-                    const uniform int numTilesX,
-                    const uniform int numTilesY)
-{
-  const uniform int t = taskIndex;
-  const uniform unsigned int tileY = t / numTilesX;
-  const uniform unsigned int tileX = t - tileY * numTilesX;
-  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
-  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
-  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
-  {
-    Vec3f color = renderPixelUV16((float)x,(float)y,camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -750,7 +747,7 @@ extern void device_key_pressed_default(uniform int key)
     g_changed = true;
   }
   else if (key == GLUT_KEY_F8) {
-    renderTile = renderTileUV16;
+    renderTile = renderTileTexCoords;
     g_changed = true;
   }
   else if (key == GLUT_KEY_F9) {

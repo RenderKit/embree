@@ -741,7 +741,7 @@ namespace embree
         mesh->verticesPerFace[i] = 4;
       }
     }
-    mesh->subdiv_mode = RTC_SUBDIV_PIN_CORNERS;
+    mesh->position_subdiv_mode = RTC_SUBDIV_PIN_CORNERS;
     return mesh;
   }
 
