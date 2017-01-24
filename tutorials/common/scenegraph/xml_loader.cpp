@@ -908,11 +908,11 @@ namespace embree
         mesh->positions.push_back(loadVec3faArray(xml->childOpt("positions2")));
     }
 
-    std::string boundary = xml->parm("boundary");
-    if      (boundary == "smooth"     ) mesh->boundaryMode = RTC_BOUNDARY_SMOOTH;
-    else if (boundary == "pin_corners") mesh->boundaryMode = RTC_BOUNDARY_PIN_CORNERS;
-    else if (boundary == "pin_borders") mesh->boundaryMode = RTC_BOUNDARY_PIN_BORDERS;
-    else if (boundary != ""           ) THROW_RUNTIME_ERROR("invalid boundary mode: "+boundary);
+    std::string subdiv_mode = xml->parm("mode");
+    if      (subdiv_mode == "smooth"     ) mesh->subdiv_mode = RTC_SUBDIV_SMOOTH_BOUNDARY;
+    else if (subdiv_mode == "pin_corners") mesh->subdiv_mode = RTC_SUBDIV_PIN_CORNERS;
+    else if (subdiv_mode == "pin_borders") mesh->subdiv_mode = RTC_SUBDIV_PIN_BOUNDARY;
+    else if (subdiv_mode != ""           ) THROW_RUNTIME_ERROR("invalid subdivision mode: "+subdiv_mode);
 
     mesh->normals = loadVec3faArray(xml->childOpt("normals"));
     mesh->texcoords = loadVec2fArray(xml->childOpt("texcoords"));
@@ -1106,7 +1106,10 @@ namespace embree
     else 
     {
       const std::string id = xml->parm("id");
-      if      (xml->name == "extern"          ) return sceneMap[id] = SceneGraph::load(path + xml->parm("src"));
+      if (xml->name == "extern"          ) 
+        return sceneMap[id] = SceneGraph::load(path + xml->parm("src"));
+      else if (xml->name == "extern_combine"          ) 
+        return sceneMap[id] = SceneGraph::load(path + xml->parm("src"),true);
       else if (xml->name == "obj"             ) {
         const bool subdiv_mode = xml->parm("subdiv") == "1";
         return sceneMap[id] = loadOBJ(path + xml->parm("src"),subdiv_mode);

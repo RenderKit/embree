@@ -49,7 +49,7 @@ IF (WIN32)
   INSTALL(PROGRAMS ${GLUT_DIR}/freeglut.dll DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
 ENDIF (WIN32)
 
-ADD_LIBRARY(tutorial_device STATIC tutorial_device.cpp)
+ADD_LIBRARY(tutorial_device STATIC tutorial_device.cpp scene_device.cpp)
 TARGET_LINK_LIBRARIES(tutorial_device tutorial lights embree)
 SET_PROPERTY(TARGET tutorial_device PROPERTY FOLDER tutorials/common)
 
@@ -57,7 +57,7 @@ ADD_LIBRARY(noise STATIC noise.cpp)
 SET_PROPERTY(TARGET noise PROPERTY FOLDER tutorials/common)
 
 IF (EMBREE_ISPC_SUPPORT)
-  ADD_ISPC_LIBRARY(tutorial_device_ispc STATIC tutorial_device.ispc)
+  ADD_ISPC_LIBRARY(tutorial_device_ispc STATIC tutorial_device.ispc scene_device.cpp)
   TARGET_LINK_LIBRARIES(tutorial_device_ispc tutorial lights_ispc embree)
   SET_TARGET_PROPERTIES(tutorial_device_ispc PROPERTIES LINKER_LANGUAGE C)
   SET_PROPERTY(TARGET tutorial_device_ispc PROPERTY FOLDER tutorials/common)

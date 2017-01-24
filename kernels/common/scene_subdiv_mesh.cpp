@@ -83,13 +83,13 @@ namespace embree
     Geometry::update();
   }
 
-  void SubdivMesh::setBoundaryMode (unsigned topologyID, RTCBoundaryMode mode)
+  void SubdivMesh::setSubdivisionMode (unsigned topologyID, RTCSubdivisionMode mode)
   {
     if (parent->isStatic() && parent->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
     if (topologyID >= topology.size())
       throw_RTCError(RTC_INVALID_OPERATION,"invalid topology ID");
-    topology[topologyID].setBoundaryMode(mode);
+    topology[topologyID].setSubdivisionMode(mode);
   }
 
   void SubdivMesh::setIndexBuffer(RTCBufferType vertexBuffer, RTCBufferType indexBuffer)
@@ -175,7 +175,7 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+numTimeSteps) 
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+int(numTimeSteps)) 
       return vertices[bid].map(parent->numMappedBuffers);
 
     else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
@@ -354,15 +354,15 @@ namespace embree
   }
 
   SubdivMesh::Topology::Topology(SubdivMesh* mesh)
-    : mesh(mesh), boundary(RTC_BOUNDARY_SMOOTH), halfEdges(mesh->parent->device)
+    : mesh(mesh), subdiv_mode(RTC_SUBDIV_SMOOTH_BOUNDARY), halfEdges(mesh->parent->device)
   {
     vertexIndices.init(mesh->parent->device,mesh->numEdges,sizeof(unsigned int));
   }
   
-  void SubdivMesh::Topology::setBoundaryMode (RTCBoundaryMode mode)
+  void SubdivMesh::Topology::setSubdivisionMode (RTCSubdivisionMode mode)
   {
-    if (boundary == mode) return;
-    boundary = mode;
+    if (subdiv_mode == mode) return;
+    subdiv_mode = mode;
     mesh->updateBuffer(RTC_VERTEX_CREASE_WEIGHT_BUFFER);
   }
   
@@ -485,7 +485,7 @@ namespace embree
       }
     });
 
-    /* set boundary mode and calculate patch types */
+    /* set subdivision mode and calculate patch types */
     parallel_for( size_t(0), numFaces, blockSize, [&](const range<size_t>& r) 
     {
       for (size_t f=r.begin(); f<r.end(); f++) 
@@ -499,20 +499,23 @@ namespace embree
           for (size_t t=0; t<mesh->numTimeSteps; t++)
             mesh->invalidFace(f,t) = !edge->valid(mesh->vertices[t]) || mesh->holeSet.lookup(unsigned(f));
         }
-        
+
+        /* pin some edges and vertices */
         for (size_t i=0; i<mesh->faceVertices[f]; i++) 
         {
           /* pin corner vertices when requested by user */
-          if (boundary == RTC_BOUNDARY_PIN_CORNERS && edge[i].isCorner())
+          if (subdiv_mode == RTC_SUBDIV_PIN_CORNERS && edge[i].isCorner())
             edge[i].vertex_crease_weight = float(inf);
           
           /* pin all border vertices when requested by user */
-          else if (boundary == RTC_BOUNDARY_PIN_BORDERS && edge[i].vertexHasBorder()) 
+          else if (subdiv_mode == RTC_SUBDIV_PIN_BOUNDARY && edge[i].vertexHasBorder()) 
             edge[i].vertex_crease_weight = float(inf);
 
-          /* pin all vertices when requested by user */
-          else if (boundary == RTC_PIN_ALL) 
+          /* pin all edges and vertices when requested by user */
+          else if (subdiv_mode == RTC_SUBDIV_PIN_ALL) {
+            edge[i].edge_crease_weight = float(inf);
             edge[i].vertex_crease_weight = float(inf);
+          }
         }
 
         /* we have to calculate patch_type last! */
@@ -558,16 +561,18 @@ namespace embree
 	  edge.vertex_crease_weight = mesh->vertexCreaseMap.lookup(halfEdgesGeom[i].vtx_index,0.0f);
 
           /* pin corner vertices when requested by user */
-          if (boundary == RTC_BOUNDARY_PIN_CORNERS && edge.isCorner())
+          if (subdiv_mode == RTC_SUBDIV_PIN_CORNERS && edge.isCorner())
             edge.vertex_crease_weight = float(inf);
           
           /* pin all border vertices when requested by user */
-          else if (boundary == RTC_BOUNDARY_PIN_BORDERS && edge.vertexHasBorder()) 
+          else if (subdiv_mode == RTC_SUBDIV_PIN_BOUNDARY && edge.vertexHasBorder()) 
             edge.vertex_crease_weight = float(inf);
 
           /* pin every vertex when requested by user */
-          else if (boundary == RTC_PIN_ALL) 
+          else if (subdiv_mode == RTC_SUBDIV_PIN_ALL) {
+            edge.edge_crease_weight = float(inf);
             edge.vertex_crease_weight = float(inf);
+          }
         }
 
         /* update patch type */

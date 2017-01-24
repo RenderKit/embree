@@ -84,6 +84,7 @@ namespace embree
         numTimeSteps = in->numTimeSteps;
         numVertices = in->numVertices;
         numTriangles = unsigned(in->triangles.size());
+        scene = nullptr;
         geomID = -1;
         materialID = in->materialID;
       }
@@ -98,6 +99,7 @@ namespace embree
       unsigned int numTimeSteps;
       unsigned int numVertices;
       unsigned int numTriangles;
+      RTCScene scene;
       unsigned int geomID;
       unsigned int materialID;
     };
@@ -113,6 +115,7 @@ namespace embree
         numTimeSteps = in->numTimeSteps;
         numVertices = in->numVertices;
         numQuads = unsigned(in->quads.size());
+        scene = nullptr;
         geomID = -1;
         materialID = in->materialID;
       }
@@ -127,6 +130,7 @@ namespace embree
       unsigned int numTimeSteps;
       unsigned int numVertices;
       unsigned int numQuads;
+      RTCScene scene;
       unsigned int geomID;
       unsigned int materialID;
     };
@@ -134,7 +138,7 @@ namespace embree
     struct ISPCSubdivMesh
     {
       ISPCSubdivMesh (Ref<TutorialScene::SubdivMesh> in) 
-      : geom(SUBDIV_MESH), boundaryMode(in->boundaryMode)
+      : geom(SUBDIV_MESH), subdiv_mode(in->subdiv_mode)
       {
         positions = in->positions.data();
         normals = in->normals.data();
@@ -156,6 +160,7 @@ namespace embree
         numVertexCreases = unsigned(in->vertex_creases.size());
         numHoles = unsigned(in->holes.size());
         materialID = in->materialID;
+        scene = nullptr;
         geomID = -1;
 
         size_t numEdges = in->position_indices.size();
@@ -206,8 +211,9 @@ namespace embree
       unsigned int numVertexCreases;
       unsigned int numHoles;
       unsigned int materialID;
+      RTCScene scene;
       unsigned int geomID;
-      RTCBoundaryMode boundaryMode;
+      RTCSubdivisionMode subdiv_mode;
     };
 
     struct ISPCLineSegments
@@ -220,6 +226,8 @@ namespace embree
         numVertices = in->numVertices;
         numSegments = unsigned(in->indices.size());
         materialID = in->materialID;
+        scene = nullptr;
+        geomID = -1;
       }
 
     public:
@@ -231,6 +239,7 @@ namespace embree
       unsigned int numVertices;
       unsigned int numSegments;
       unsigned int materialID;
+      RTCScene scene;
       unsigned int geomID;
     };
 
@@ -244,6 +253,8 @@ namespace embree
         numVertices = in->numVertices;
         numHairs = unsigned(in->hairs.size());
         materialID = in->materialID;
+        scene = nullptr;
+        geomID = -1;
         tessellation_rate = in->tessellation_rate;
       }
 
@@ -256,6 +267,7 @@ namespace embree
       unsigned int numVertices;
       unsigned int numHairs;
       unsigned int materialID;
+      RTCScene scene;
       unsigned int geomID;
       unsigned int tessellation_rate;
     };
@@ -453,4 +465,6 @@ namespace embree
   typedef ISPCScene::ISPCHairSet ISPCHairSet;
   typedef ISPCScene::ISPCInstance ISPCInstance;
   typedef ISPCScene::ISPCGroup ISPCGroup;
+
+  extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCSceneFlags sflags, RTCAlgorithmFlags aflags, RTCGeometryFlags gflags);
 }

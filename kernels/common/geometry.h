@@ -133,7 +133,7 @@ namespace embree
 
     /*! for subdivision surfaces only */
   public:
-    virtual void setBoundaryMode (unsigned topologyID, RTCBoundaryMode mode) {
+    virtual void setSubdivisionMode (unsigned topologyID, RTCSubdivisionMode mode) {
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 

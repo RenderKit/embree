@@ -19,7 +19,7 @@ sed -i.backup  's/unmasked //g' $2
 sed -i.backup  's/extern \"C\"/__EXTERN_C/g' $2
 sed -i.backup  's/extern/extern \"C\"/g' $2
 sed -i.backup  's/export/extern \"C\"/g' $2
-sed -i.backup  's/extern \"C\" RTCScene/extern RTCScene/g' $2
+sed -i.backup  's/extern \"C\" RTCScene g_scene/extern RTCScene g_scene/g' $2
 sed -i.backup  's/__EXTERN_C/extern \"C\"/g' $2
 
 sed -i.backup 's/int8/char/g' $2
