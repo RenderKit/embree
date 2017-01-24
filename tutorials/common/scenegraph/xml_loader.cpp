@@ -894,6 +894,18 @@ namespace embree
     return mesh;
   }
 
+  RTCSubdivisionMode parseSubdivMode(const Ref<XML>& xml)
+  {
+    std::string subdiv_mode = xml->parm("subdiv_mode");
+    if      (subdiv_mode == "no_boundary" ) return RTC_SUBDIV_NO_BOUNDARY;
+    else if (subdiv_mode == "smooth"      ) return RTC_SUBDIV_SMOOTH_BOUNDARY;
+    else if (subdiv_mode == "pin_corners" ) return RTC_SUBDIV_PIN_CORNERS;
+    else if (subdiv_mode == "pin_boundary") return RTC_SUBDIV_PIN_BOUNDARY;
+    else if (subdiv_mode == "pin_all"     ) return RTC_SUBDIV_PIN_ALL;
+    else if (subdiv_mode != ""            ) THROW_RUNTIME_ERROR("invalid subdivision mode: "+subdiv_mode);
+    return RTC_SUBDIV_SMOOTH_BOUNDARY;
+  }
+
   Ref<SceneGraph::Node> XMLLoader::loadSubdivMesh(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
@@ -906,19 +918,23 @@ namespace embree
       mesh->positions.push_back(loadVec3faArray(xml->childOpt("positions")));
       if (xml->hasChild("positions2")) 
         mesh->positions.push_back(loadVec3faArray(xml->childOpt("positions2")));
-    }
-
-    std::string subdiv_mode = xml->parm("mode");
-    if      (subdiv_mode == "smooth"     ) mesh->subdiv_mode = RTC_SUBDIV_SMOOTH_BOUNDARY;
-    else if (subdiv_mode == "pin_corners") mesh->subdiv_mode = RTC_SUBDIV_PIN_CORNERS;
-    else if (subdiv_mode == "pin_borders") mesh->subdiv_mode = RTC_SUBDIV_PIN_BOUNDARY;
-    else if (subdiv_mode != ""           ) THROW_RUNTIME_ERROR("invalid subdivision mode: "+subdiv_mode);
-
+    }    
     mesh->normals = loadVec3faArray(xml->childOpt("normals"));
     mesh->texcoords = loadVec2fArray(xml->childOpt("texcoords"));
-    mesh->position_indices = loadUIntArray(xml->childOpt("position_indices"));
-    mesh->normal_indices   = loadUIntArray(xml->childOpt("normal_indices"));
-    mesh->texcoord_indices = loadUIntArray(xml->childOpt("texcoord_indices"));
+
+    if (Ref<XML> child = xml->childOpt("position_indices")) {
+      mesh->position_indices = loadUIntArray(child);
+      mesh->position_subdiv_mode = parseSubdivMode(child);
+    }
+    if (Ref<XML> child = xml->childOpt("normal_indices")) {
+      mesh->normal_indices   = loadUIntArray(child);
+      mesh->normal_subdiv_mode = parseSubdivMode(child);
+    }
+    if (Ref<XML> child = xml->childOpt("texcoord_indices")) {
+      mesh->texcoord_indices = loadUIntArray(child);
+      mesh->texcoord_subdiv_mode = parseSubdivMode(child);
+    }
+
     mesh->verticesPerFace  = loadUIntArray(xml->childOpt("faces"));
     mesh->holes            = loadUIntArray(xml->childOpt("holes"));
     mesh->edge_creases     = loadVec2iArray(xml->childOpt("edge_creases"));

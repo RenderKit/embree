@@ -21,6 +21,7 @@ namespace embree {
 
 /* the scene to render */
 extern RTCScene g_scene;
+extern "C" ISPCScene* g_ispc_scene;
 
 /* intensity scaling for traversal cost visualization */
 extern "C" float scale;
@@ -208,6 +209,67 @@ void renderTileUV(int taskIndex,
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     Vec3fa color = renderPixelUV((float)x,(float)y,camera);
+
+    /* write color to framebuffer */
+    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;
+  }
+}
+
+/* renders a single pixel with TexCoords shading */
+Vec3fa renderPixelTexCoords(float x, float y, const ISPCCamera& camera)
+{
+  /* initialize ray */
+  RTCRay ray;
+  ray.org = Vec3fa(camera.xfm.p);
+  ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
+  ray.tnear = 0.0f;
+  ray.tfar = inf;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
+  ray.mask = -1;
+  ray.time = g_debug;
+
+  /* intersect ray with scene */
+  rtcIntersect(g_scene,ray);
+
+  /* shade pixel */
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
+    return Vec3fa(0.0f,0.0f,1.0f);
+
+  else if (g_ispc_scene) 
+  {
+    Vec2f st;
+    unsigned int geomID = ray.geomID; {
+      rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,(RTCBufferType)(RTC_USER_VERTEX_BUFFER+2),&st.x,nullptr,nullptr,2);
+    }
+    return Vec3fa(st.x,st.y,0.0f);
+  }
+  else return Vec3fa(1.0f);
+}
+
+void renderTileTexCoords(int taskIndex,
+                  int* pixels,
+                  const unsigned int width,
+                  const unsigned int height,
+                  const float time,
+                  const ISPCCamera& camera,
+                  const int numTilesX,
+                  const int numTilesY)
+{
+  const int t = taskIndex;
+  const unsigned int tileY = t / numTilesX;
+  const unsigned int tileX = t - tileY * numTilesX;
+  const unsigned int x0 = tileX * TILE_SIZE_X;
+  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int y0 = tileY * TILE_SIZE_Y;
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
+
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
+  {
+    Vec3fa color = renderPixelTexCoords((float)x,(float)y,camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -423,60 +485,6 @@ void renderTileCycles(int taskIndex,
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     Vec3fa color = renderPixelCycles((float)x,(float)y,camera);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-}
-
-/* renders a single pixel with UV shading and shoot ray 16 times for measurements */
-Vec3fa renderPixelUV16(float x, float y, const ISPCCamera& camera)
-{
-  /* initialize ray */
-  RTCRay ray;
-  ray.org = Vec3fa(camera.xfm.p);
-  ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time = g_debug;
-
-  /* intersect ray with scene */
-  for (int i=0; i<16; i++) {
-    ray.tfar = inf;
-    rtcIntersect(g_scene,ray);
-  }
-
-  /* shade pixel */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
-  else return Vec3fa(ray.u,ray.v,1.0f-ray.u-ray.v);
-}
-
-void renderTileUV16(int taskIndex,
-                    int* pixels,
-                    const unsigned int width,
-                    const unsigned int height,
-                    const float time,
-                    const ISPCCamera& camera,
-                    const int numTilesX,
-                    const int numTilesY)
-{
-  const int t = taskIndex;
-  const unsigned int tileY = t / numTilesX;
-  const unsigned int tileX = t - tileY * numTilesX;
-  const unsigned int x0 = tileX * TILE_SIZE_X;
-  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const unsigned int y0 = tileY * TILE_SIZE_Y;
-  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
-  {
-    Vec3fa color = renderPixelUV16((float)x,(float)y,camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -752,7 +760,7 @@ extern "C" void device_key_pressed_default(int key)
     g_changed = true;
   }
   else if (key == GLUT_KEY_F8) {
-    renderTile = renderTileUV16;
+    renderTile = renderTileTexCoords;
     g_changed = true;
   }
   else if (key == GLUT_KEY_F9) {

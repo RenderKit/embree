@@ -315,7 +315,7 @@ namespace embree
       unsigned int i = 0;
       const HalfEdge* edge = h; 
       do {
-	      ring[i].init(edge,vertices,stride);
+        ring[i].init(edge,vertices,stride);
         edge = edge->next();
         i++;
       } while ((edge != h) && (i < SIZE));

@@ -162,6 +162,7 @@ namespace embree
         if      (mode == "default" ) shader = SHADER_DEFAULT;
         else if (mode == "eyelight") shader = SHADER_EYELIGHT;
         else if (mode == "uv"      ) shader = SHADER_UV;
+        else if (mode == "texcoords") shader = SHADER_TEXCOORDS;
         else if (mode == "Ng"      ) shader = SHADER_NG;
         else if (mode == "geomID"  ) shader = SHADER_GEOMID;
         else if (mode == "primID"  ) shader = SHADER_GEOMID_PRIMID;
@@ -691,11 +692,12 @@ namespace embree
     
     /* set shader mode */
     switch (shader) {
-    case SHADER_DEFAULT : break;
-    case SHADER_EYELIGHT: device_key_pressed(GLUT_KEY_F2); break;
-    case SHADER_UV      : device_key_pressed(GLUT_KEY_F4); break;
-    case SHADER_NG      : device_key_pressed(GLUT_KEY_F5); break;
-    case SHADER_GEOMID  : device_key_pressed(GLUT_KEY_F6); break;
+    case SHADER_DEFAULT  : break;
+    case SHADER_EYELIGHT : device_key_pressed(GLUT_KEY_F2); break;
+    case SHADER_UV       : device_key_pressed(GLUT_KEY_F4); break;
+    case SHADER_TEXCOORDS: device_key_pressed(GLUT_KEY_F8); break;
+    case SHADER_NG       : device_key_pressed(GLUT_KEY_F5); break;
+    case SHADER_GEOMID   : device_key_pressed(GLUT_KEY_F6); break;
     case SHADER_GEOMID_PRIMID: device_key_pressed(GLUT_KEY_F7); break;
     case SHADER_AMBIENT_OCCLUSION: device_key_pressed(GLUT_KEY_F11); break;
     };
