@@ -226,7 +226,7 @@ namespace embree
         const vfloat<Nx> tNear     = max(tNearFarX, tNearFarY, tNearFarZ, vfloat<Nx>(ctx.rdir.w));
         const vfloat<Nx> tFar      = min(tNearFarX, tNearFarY, tNearFarZ, vfloat<Nx>(ctx.org_rdir.w));
         const vbool<Nx> vmask      = le(tNear, align_shift_right<N>(tFar, tFar));
-        if (dist_update) dist       = select(vmask, min(tNear, dist), dist);
+        if (dist_update) dist      = select(vmask, min(tNear, dist), dist);
         return vmask;       
       }
       else
@@ -237,10 +237,10 @@ namespace embree
         const vfloat<Nx> tNearFarZ = (bminmaxZ - org.z) * ctx.rdir.z;
         const vfloat<Nx> tNear     = max(tNearFarX, tNearFarY, tNearFarZ, vfloat<Nx>(ctx.rdir.w));
         const vfloat<Nx> tFar      = min(tNearFarX, tNearFarY, tNearFarZ, vfloat<Nx>(org.w));
-        const float round_down      = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512
-        const float round_up        = 1.0f+2.0f*float(ulp);
+        const float round_down     = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512
+        const float round_up       = 1.0f+2.0f*float(ulp);
         const vbool<Nx> vmask      = le(tNear*round_down, align_shift_right<N>(tFar, tFar)*round_up);
-        if (dist_update) dist       = select(vmask, min(tNear, dist), dist);
+        if (dist_update) dist      = select(vmask, min(tNear, dist), dist);
         return vmask;       
       }
     }
@@ -266,8 +266,8 @@ namespace embree
         const vfloat<Nx> tFarZ  = msub(bmaxZ, ctx.rdir.z, ctx.org_rdir.z);
 
 #if defined(__AVX2__) && !defined(__AVX512F__)
-        const vfloat<Nx> tNear  = maxi(maxi(tNearX, tNearY), maxi(tNearZ, vfloat<Nx>(ctx.rdir.w)));
-        const vfloat<Nx> tFar   = mini(mini(tFarX, tFarY), mini(tFarZ, vfloat<Nx>(ctx.org_rdir.w)));
+        const vfloat<Nx> tNear  = maxi(tNearX, tNearY, tNearZ, vfloat<Nx>(ctx.rdir.w));
+        const vfloat<Nx> tFar   = mini(tFarX , tFarY , tFarZ , vfloat<Nx>(ctx.org_rdir.w));
 #else
         const vfloat<Nx> tNear  = max(tNearX, tNearY, tNearZ, vfloat<Nx>(ctx.rdir.w));
         const vfloat<Nx> tFar   = min(tFarX , tFarY , tFarZ , vfloat<Nx>(ctx.org_rdir.w));
@@ -276,11 +276,11 @@ namespace embree
 
 #if defined(__AVX512F__) && !defined(__AVX512VL__) // N != Nx
         const unsigned int maskN = ((unsigned int)1 << N)-1;
-        const vbool<Nx> vmask   = le(maskN,tNear,tFar);
+        const vbool<Nx> vmask    = le(maskN,tNear,tFar);
 #else
-        const vbool<Nx> vmask   = tNear <= tFar;
+        const vbool<Nx> vmask    = tNear <= tFar;
 #endif
-        if (dist_update) dist  = select(vmask, min(tNear,dist), dist);
+        if (dist_update) dist    = select(vmask, min(tNear,dist), dist);
         return vmask;    
       }
       else
@@ -295,20 +295,20 @@ namespace embree
         const float round_down = 1.0f-2.0f*float(ulp); 
         const float round_up   = 1.0f+2.0f*float(ulp);
 #if defined(__AVX2__) && !defined(__AVX512F__)
-        const vfloat<Nx> tNear  = maxi(maxi(tNearX, tNearY), maxi(tNearZ, vfloat<Nx>(ctx.rdir.w)));
-        const vfloat<Nx> tFar   = mini(mini(tFarX, tFarY), mini(tFarZ, vfloat<Nx>(org.w)));
+        const vfloat<Nx> tNear = maxi(tNearX, tNearY, tNearZ, vfloat<Nx>(ctx.rdir.w));
+        const vfloat<Nx> tFar  = mini(tFarX , tFarY , tFarZ , vfloat<Nx>(org.w));
 #else
-        const vfloat<Nx> tNear  = max(tNearX, tNearY, tNearZ, vfloat<Nx>(ctx.rdir.w));
-        const vfloat<Nx> tFar   = min(tFarX , tFarY , tFarZ , vfloat<Nx>(org.w));
+        const vfloat<Nx> tNear = max(tNearX, tNearY, tNearZ, vfloat<Nx>(ctx.rdir.w));
+        const vfloat<Nx> tFar  = min(tFarX , tFarY , tFarZ , vfloat<Nx>(org.w));
 #endif
 
 #if defined(__AVX512F__) && !defined(__AVX512VL__) // N != Nx
         const unsigned int maskN = ((unsigned int)1 << N)-1;
-        const vbool<Nx> vmask   = le(maskN,round_down*tNear,round_up*tFar);
+        const vbool<Nx> vmask    = le(maskN,round_down*tNear,round_up*tFar);
 #else
-        const vbool<Nx> vmask   = round_down*tNear <= round_up*tFar;
+        const vbool<Nx> vmask    = round_down*tNear <= round_up*tFar;
 #endif
-        if (dist_update) dist  = select(vmask, min(tNear, dist), dist);
+        if (dist_update) dist    = select(vmask, min(tNear, dist), dist);
         return vmask;    
       }
     }
@@ -642,8 +642,8 @@ namespace embree
           const vfloat<K> tmaxX = msub(maxX, p.rdir.x, p.org_rdir.x);
           const vfloat<K> tmaxY = msub(maxY, p.rdir.y, p.org_rdir.y);
           const vfloat<K> tmaxZ = msub(maxZ, p.rdir.z, p.org_rdir.z);
-          const vfloat<K> tmin  = maxi(maxi(tminX, tminY), maxi(tminZ, p.min_dist));
-          const vfloat<K> tmax  = mini(mini(tmaxX, tmaxY), mini(tmaxZ, p.max_dist));
+          const vfloat<K> tmin  = maxi(tminX, tminY, tminZ, p.min_dist);
+          const vfloat<K> tmax  = mini(tmaxX, tmaxY, tmaxZ, p.max_dist);
           const vbool<K> vmask  = tmin <= tmax;
           const size_t m_hit = movemask(vmask);
           m_trav_active |= m_hit << (i*K);
@@ -673,8 +673,8 @@ namespace embree
         const vfloat<Nx> fmaxX = msub(bmaxX, vfloat<Nx>(frusta.max_rdir.x), vfloat<Nx>(frusta.max_org_rdir.x));
         const vfloat<Nx> fmaxY = msub(bmaxY, vfloat<Nx>(frusta.max_rdir.y), vfloat<Nx>(frusta.max_org_rdir.y));
         const vfloat<Nx> fmaxZ = msub(bmaxZ, vfloat<Nx>(frusta.max_rdir.z), vfloat<Nx>(frusta.max_org_rdir.z));
-        const vfloat<Nx> fmin  = maxi(maxi(fminX, fminY), maxi(fminZ, frusta.min_dist));
-        const vfloat<Nx> fmax  = mini(mini(fmaxX, fmaxY), mini(fmaxZ, frusta.max_dist));
+        const vfloat<Nx> fmin  = maxi(fminX, fminY, fminZ, vfloat<Nx>(frusta.min_dist));
+        const vfloat<Nx> fmax  = mini(fmaxX, fmaxY, fmaxZ, vfloat<Nx>(frusta.max_dist));
         const vbool<Nx> vmask_node_hit = fmin <= fmax;
         //STAT3(normal.trav_nodes,1,1,1);                          
 
@@ -693,8 +693,8 @@ namespace embree
         const vfloat<Nx> rmaxX = msub(bmaxX, vfloat<Nx>(p.rdir.x[first_rayID]), vfloat<Nx>(p.org_rdir.x[first_rayID]));
         const vfloat<Nx> rmaxY = msub(bmaxY, vfloat<Nx>(p.rdir.y[first_rayID]), vfloat<Nx>(p.org_rdir.y[first_rayID]));
         const vfloat<Nx> rmaxZ = msub(bmaxZ, vfloat<Nx>(p.rdir.z[first_rayID]), vfloat<Nx>(p.org_rdir.z[first_rayID]));
-        const vfloat<Nx> rmin  = maxi(maxi(rminX, rminY), maxi(rminZ, p.min_dist[first_rayID]));
-        const vfloat<Nx> rmax  = mini(mini(rmaxX, rmaxY), mini(rmaxZ, p.max_dist[first_rayID]));
+        const vfloat<Nx> rmin  = maxi(rminX, rminY, rminZ, vfloat<Nx>(p.min_dist[first_rayID]));
+        const vfloat<Nx> rmax  = mini(rmaxX, rmaxY, rmaxZ, vfloat<Nx>(p.max_dist[first_rayID]));
 
         const vbool<Nx> vmask_first_hit = rmin <= rmax;
 

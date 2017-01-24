@@ -167,6 +167,10 @@ namespace embree
   template<typename T> __forceinline T min(const T& a, const T& b, const T& c, const T& d) { return min(min(a,b),min(c,d)); }
   template<typename T> __forceinline T min(const T& a, const T& b, const T& c, const T& d, const T& e) { return min(min(min(a,b),min(c,d)),e); }
 
+  template<typename T> __forceinline T mini(const T& a, const T& b, const T& c) { return mini(mini(a,b),c); }
+  template<typename T> __forceinline T mini(const T& a, const T& b, const T& c, const T& d) { return mini(mini(a,b),mini(c,d)); }
+  template<typename T> __forceinline T mini(const T& a, const T& b, const T& c, const T& d, const T& e) { return mini(mini(mini(a,b),mini(c,d)),e); }
+
   __forceinline      int max(int      a, int      b) { return a<b ? b:a; }
   __forceinline unsigned max(unsigned a, unsigned b) { return a<b ? b:a; }
   __forceinline  int64_t max(int64_t  a, int64_t  b) { return a<b ? b:a; }
@@ -179,6 +183,10 @@ namespace embree
   template<typename T> __forceinline T max(const T& a, const T& b, const T& c) { return max(max(a,b),c); }
   template<typename T> __forceinline T max(const T& a, const T& b, const T& c, const T& d) { return max(max(a,b),max(c,d)); }
   template<typename T> __forceinline T max(const T& a, const T& b, const T& c, const T& d, const T& e) { return max(max(max(a,b),max(c,d)),e); }
+
+  template<typename T> __forceinline T maxi(const T& a, const T& b, const T& c) { return maxi(maxi(a,b),c); }
+  template<typename T> __forceinline T maxi(const T& a, const T& b, const T& c, const T& d) { return maxi(maxi(a,b),maxi(c,d)); }
+  template<typename T> __forceinline T maxi(const T& a, const T& b, const T& c, const T& d, const T& e) { return maxi(maxi(maxi(a,b),maxi(c,d)),e); }
 
 #if defined(__MACOSX__)
   __forceinline ssize_t min(ssize_t a, ssize_t b) { return a<b ? a:b; }

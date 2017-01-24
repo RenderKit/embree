@@ -120,13 +120,13 @@ namespace embree
 #endif
       
 #if defined(__SSE4_1__) && !defined(__AVX512F__) // up to HSW
-      const vfloat4 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
-      const vfloat4 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
+      const vfloat4 tNear = maxi(tNearX,tNearY,tNearZ,tnear);
+      const vfloat4 tFar  = mini(tFarX ,tFarY ,tFarZ ,tfar);
       const vbool4 vmask = asInt(tNear) > asInt(tFar);
       const size_t mask = movemask(vmask) ^ ((1<<4)-1);
 #elif defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
-      const vfloat4 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
-      const vfloat4 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
+      const vfloat4 tNear = maxi(tNearX,tNearY,tNearZ,tnear);
+      const vfloat4 tFar  = mini(tFarX ,tFarY ,tFarZ ,tfar);
       const vbool4 vmask = asInt(tNear) <= asInt(tFar);
       const size_t mask = movemask(vmask);
 #else
@@ -162,13 +162,13 @@ namespace embree
 #endif
       
 #if defined(__AVX2__) && !defined(__AVX512F__) // HSW
-      const vfloat8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
-      const vfloat8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
+      const vfloat8 tNear = maxi(tNearX,tNearY,tNearZ,tnear);
+      const vfloat8 tFar  = mini(tFarX ,tFarY ,tFarZ ,tfar);
       const vbool8 vmask = asInt(tNear) > asInt(tFar);
       const size_t mask = movemask(vmask) ^ ((1<<8)-1);
 #elif defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
-      const vfloat8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
-      const vfloat8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
+      const vfloat8 tNear = maxi(tNearX,tNearY,tNearZ,tnear);
+      const vfloat8 tFar  = mini(tFarX ,tFarY ,tFarZ ,tfar);
       const vbool8 vmask = asInt(tNear) <= asInt(tFar);
       const size_t mask = movemask(vmask);
 #else
@@ -367,13 +367,13 @@ namespace embree
       const vfloat<N> tFarZ  = (madd(time,pFarZ [6],vfloat<N>(pFarZ [0])) - ray.org.z) * ray.rdir.z;
 #endif
 #if defined(__SSE4_1__) && !defined(__AVX512F__) // up to HSW
-      const vfloat<N> tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
-      const vfloat<N> tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
+      const vfloat<N> tNear = maxi(tNearX,tNearY,tNearZ,tnear);
+      const vfloat<N> tFar  = mini(tFarX ,tFarY ,tFarZ ,tfar);
       const vbool<N> vmask = asInt(tNear) > asInt(tFar);
       const size_t mask = movemask(vmask) ^ ((1<<N)-1);
 #elif defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
-      const vfloat<N> tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
-      const vfloat<N> tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
+      const vfloat<N> tNear = maxi(tNearX,tNearY,tNearZ,tnear);
+      const vfloat<N> tFar  = mini(tFarX ,tFarY ,tFarZ ,tfar);
       const vbool<N> vmask = asInt(tNear) <= asInt(tFar);
       const size_t mask = movemask(vmask);
 #else
@@ -517,13 +517,13 @@ namespace embree
 #endif
       
 #if defined(__SSE4_1__) && !defined(__AVX512F__) // up to HSW
-      const vfloat4 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
-      const vfloat4 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
+      const vfloat4 tNear = maxi(tNearX,tNearY,tNearZ,tnear);
+      const vfloat4 tFar  = mini(tFarX ,tFarY ,tFarZ ,tfar);
       const vbool4 vmask = asInt(tNear) > asInt(tFar);
       const size_t mask = movemask(vmask) ^ ((1<<4)-1);
 #elif defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
-      const vfloat4 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
-      const vfloat4 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
+      const vfloat4 tNear = maxi(tNearX,tNearY,tNearZ,tnear);
+      const vfloat4 tFar  = mini(tFarX ,tFarY ,tFarZ ,tfar);
       const vbool4 vmask = asInt(tNear) <= asInt(tFar);
       const size_t mask = movemask(vmask);
 #else
@@ -571,13 +571,13 @@ namespace embree
 #endif
       
 #if defined(__AVX2__) && !defined(__AVX512F__) // HSW
-      const vfloat8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
-      const vfloat8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
+      const vfloat8 tNear = maxi(tNearX,tNearY,tNearZ,tnear);
+      const vfloat8 tFar  = mini(tFarX ,tFarY ,tFarZ ,tfar);
       const vbool8 vmask = asInt(tNear) > asInt(tFar);
       const size_t mask = movemask(vmask) ^ ((1<<8)-1);
 #elif defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
-      const vfloat8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
-      const vfloat8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
+      const vfloat8 tNear = maxi(tNearX,tNearY,tNearZ,tnear);
+      const vfloat8 tFar  = mini(tFarX ,tFarY ,tFarZ ,tfar);
       const vbool8 vmask = asInt(tNear) <= asInt(tFar);
       const size_t mask = movemask(vmask);
 #else
