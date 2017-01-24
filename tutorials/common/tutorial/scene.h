@@ -22,13 +22,14 @@
 namespace embree
 {
   enum Shader { 
-    SHADER_DEFAULT = 0, 
-    SHADER_EYELIGHT = 1,
-    SHADER_UV = 2,
-    SHADER_NG = 3,
-    SHADER_GEOMID = 4,
-    SHADER_GEOMID_PRIMID = 5,
-    SHADER_AMBIENT_OCCLUSION = 6
+    SHADER_DEFAULT, 
+    SHADER_EYELIGHT,
+    SHADER_UV,
+    SHADER_TEXCOORDS,
+    SHADER_NG,
+    SHADER_GEOMID,
+    SHADER_GEOMID_PRIMID,
+    SHADER_AMBIENT_OCCLUSION
   };
 
   /*! Scene representing the OBJ file */

@@ -19,6 +19,7 @@
 
 /* the scene to render */
 extern RTCScene g_scene;
+extern ISPCScene* g_ispc_scene;
 
 /* intensity scaling for traversal cost visualization */
 extern uniform float scale;
@@ -233,8 +234,18 @@ Vec3f renderPixelTexCoords(float x, float y, const uniform ISPCCamera& camera)
   rtcIntersect(g_scene,ray);
 
   /* shade pixel */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f,0.0f,1.0f);
-  else return make_Vec3f(ray.u,ray.v,1.0f-ray.u-ray.v);
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
+    return make_Vec3f(0.0f,0.0f,1.0f);
+
+  else if (g_ispc_scene) 
+  {
+    Vec2f st;
+    foreach_unique (geomID in ray.geomID) {
+      rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,(RTCBufferType)(RTC_USER_VERTEX_BUFFER+2),&st.x,NULL,NULL,2);
+    }
+    return make_Vec3f(st.x,st.y,0.0f);
+  }
+  else return make_Vec3f(1.0f);
 }
 
 void renderTileTexCoords(uniform int taskIndex,

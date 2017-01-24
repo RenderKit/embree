@@ -218,7 +218,7 @@ void renderTileUV(int taskIndex,
   }
 }
 
-/* renders a single pixel with texcoord shading */
+/* renders a single pixel with TexCoords shading */
 Vec3fa renderPixelTexCoords(float x, float y, const ISPCCamera& camera)
 {
   /* initialize ray */
@@ -234,26 +234,30 @@ Vec3fa renderPixelTexCoords(float x, float y, const ISPCCamera& camera)
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
-  
+
   /* shade pixel */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f,0.0f,1.0f);
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
+    return Vec3fa(0.0f,0.0f,1.0f);
+
   else if (g_ispc_scene) 
   {
     Vec2f st;
-    rtcInterpolate(g_scene,ray.geomID,ray.primID,ray.u,ray.v,(RTCBufferType)(RTC_USER_VERTEX_BUFFER+2),&st.x,nullptr,nullptr,2);
+    unsigned int geomID = ray.geomID; {
+      rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,(RTCBufferType)(RTC_USER_VERTEX_BUFFER+2),&st.x,nullptr,nullptr,2);
+    }
     return Vec3fa(st.x,st.y,0.0f);
   }
-  else return Vec3fa(one);
+  else return Vec3fa(1.0f);
 }
 
 void renderTileTexCoords(int taskIndex,
-                         int* pixels,
-                         const unsigned int width,
-                         const unsigned int height,
-                         const float time,
-                         const ISPCCamera& camera,
-                         const int numTilesX,
-                         const int numTilesY)
+                  int* pixels,
+                  const unsigned int width,
+                  const unsigned int height,
+                  const float time,
+                  const ISPCCamera& camera,
+                  const int numTilesX,
+                  const int numTilesY)
 {
   const int t = taskIndex;
   const unsigned int tileY = t / numTilesX;
