@@ -1160,7 +1160,7 @@ namespace embree
         auto bytes_one_thread  = run_build(state,N,1);
         auto bytes_all_threads = run_build(state,N,0);
         double overhead = double(bytes_all_threads.second)/double(bytes_one_thread.second);
-        std::cout << "N = " << bytes_one_thread.first << ", 1 thread = " << 1E-6*bytes_one_thread.second << " MB, all_threads = " << 1E-6*bytes_all_threads.second << " MB (" << 100.0f*overhead << " %)" << std::endl;
+        //std::cout << "N = " << bytes_one_thread.first << ", 1 thread = " << 1E-6*bytes_one_thread.second << " MB, all_threads = " << 1E-6*bytes_all_threads.second << " MB (" << 100.0f*overhead << " %)" << std::endl;
 
         /* right now we use a 60% overhead threshold due to the BVH SAH builder for lines */
         if (overhead > 1.60f) return VerifyApplication::FAILED;
