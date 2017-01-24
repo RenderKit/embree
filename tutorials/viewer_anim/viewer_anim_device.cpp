@@ -31,6 +31,7 @@ namespace embree {
   /* scene data */
   RTCDevice g_device = nullptr;
   RTCScene g_scene   = nullptr;
+  Vec3fa *ls_positions = nullptr;
 
   /* animation data */
   
@@ -298,6 +299,10 @@ namespace embree {
       assert(false);
   }
 
+inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
+  const Vec3fa Ng = _Ng;
+  return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
+}
 
 
 /* renders a single screen tile */
@@ -525,6 +530,34 @@ namespace embree {
 #endif
     
     frameID = (frameID + 1) % numProfileFrames;
+
+    /* =================================== */
+    /* samples LS positions as pointlights */
+    /* =================================== */
+
+    if (g_ispc_scene->numLights)
+    {
+      if (ls_positions == nullptr) ls_positions = new Vec3fa[g_ispc_scene->numLights];
+
+      DifferentialGeometry dg;
+      dg.geomID = 0;
+      dg.primID = 0;
+      dg.u = 0.0f;
+      dg.v = 0.0f;
+      dg.P  = Vec3fa(0.0f,0.0f,0.0f);
+      dg.Ng = Vec3fa(0.0f,0.0f,0.0f);
+      dg.Ns = dg.Ng;
+
+      for (size_t i=0; i<g_ispc_scene->numLights; i++)
+      {
+        const Light* l = g_ispc_scene->lights[i];            
+        Light_SampleRes ls = l->sample(l,dg,Vec2f(0.0f,0.0f));
+        ls_positions[i] = ls.dir;
+        //PRINT(ls.dir);
+      }
+
+    }          
+
   }
 
 /* plot build and render times */
