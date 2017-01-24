@@ -54,7 +54,8 @@ namespace embree
     vertex_creases.init(parent->device,numVertexCreases,sizeof(unsigned int));
     vertex_crease_weights.init(parent->device,numVertexCreases,sizeof(float));
 
-    topology.resize(1,this);
+    topology.resize(1);
+    new (&topology[0]) Topology(this);
     enabling();
   }
 
@@ -142,7 +143,12 @@ namespace embree
 
     else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
     {
-      if (bid >= topology.size()) topology.resize(bid+1,this);
+      int begin = topology.size();
+      if (bid >= topology.size()) {
+        topology.resize(bid+1);
+        for (size_t i=begin; i<topology.size(); i++)
+          new (&topology[i]) Topology(this);
+      }
       topology[bid].vertexIndices.set(ptr,offset,stride);
     }
     else if (type == RTC_EDGE_CREASE_INDEX_BUFFER)

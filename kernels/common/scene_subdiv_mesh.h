@@ -174,7 +174,7 @@ namespace embree
         subdiv_mode = std::move(other.subdiv_mode);
         halfEdges = std::move(other.halfEdges);
         halfEdges0 = std::move(other.halfEdges0);
-        halfEdges1 =std::move(other.halfEdges1);
+        halfEdges1 = std::move(other.halfEdges1);
         return *this;
       }
 
