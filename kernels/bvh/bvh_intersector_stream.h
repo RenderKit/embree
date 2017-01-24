@@ -223,10 +223,17 @@ namespace embree
         const vfloat<Nx> tNearFarX = msub(bminmaxX, ctx.rdir.x, ctx.org_rdir.x);
         const vfloat<Nx> tNearFarY = msub(bminmaxY, ctx.rdir.y, ctx.org_rdir.y);
         const vfloat<Nx> tNearFarZ = msub(bminmaxZ, ctx.rdir.z, ctx.org_rdir.z);
+#if !defined(__AVX512ER__) // SKX
+        const vfloat<Nx> tNear     = maxi(tNearFarX, tNearFarY, tNearFarZ, vfloat<Nx>(ctx.rdir.w));
+        const vfloat<Nx> tFar      = mini(tNearFarX, tNearFarY, tNearFarZ, vfloat<Nx>(ctx.org_rdir.w));
+        const vbool<Nx> vmask      = le(asInt(tNear), align_shift_right<N>(asInt(tFar), asInt(tFar)));
+        if (dist_update) dist      = select(vmask, mini(tNear, dist), dist);
+#else // KNL
         const vfloat<Nx> tNear     = max(tNearFarX, tNearFarY, tNearFarZ, vfloat<Nx>(ctx.rdir.w));
         const vfloat<Nx> tFar      = min(tNearFarX, tNearFarY, tNearFarZ, vfloat<Nx>(ctx.org_rdir.w));
         const vbool<Nx> vmask      = le(tNear, align_shift_right<N>(tFar, tFar));
         if (dist_update) dist      = select(vmask, min(tNear, dist), dist);
+#endif
         return vmask;       
       }
       else

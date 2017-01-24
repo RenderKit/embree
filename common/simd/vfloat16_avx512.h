@@ -262,10 +262,25 @@ namespace embree
   }; 
 
   __forceinline vfloat16 mini(const vfloat16& a, const vfloat16& b) {
+#if !defined(__AVX512ER__) // SKX
+    const vint16 ai = _mm512_castps_si512(a);
+    const vint16 bi = _mm512_castps_si512(b);
+    const vint16 ci = _mm512_min_epi32(ai,bi);
+    return _mm512_castsi512_ps(ci);
+#else // KNL
     return min(a,b);
+#endif
   }
+
   __forceinline vfloat16 maxi(const vfloat16& a, const vfloat16& b) {
+#if !defined(__AVX512ER__) // SKX
+    const vint16 ai = _mm512_castps_si512(a);
+    const vint16 bi = _mm512_castps_si512(b);
+    const vint16 ci = _mm512_max_epi32(ai,bi);
+    return _mm512_castsi512_ps(ci);
+#else // KNL
     return max(a,b);
+#endif
   }
 
   ////////////////////////////////////////////////////////////////////////////////
