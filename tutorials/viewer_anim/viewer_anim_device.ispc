@@ -22,7 +22,7 @@
 #define ANIM_FPS 15.0f
 #define ENABLE_ANIM 1
 #define VERTEX_NORMALS 1
-
+#define SHADOWS 1
 #define VERTEX_INTERPOLATION_BLOCK_SIZE 1024
 
 extern uniform ISPCScene* uniform g_ispc_scene;
@@ -30,6 +30,7 @@ extern uniform ISPCScene* uniform g_ispc_scene;
 /* scene data */
 uniform RTCDevice g_device = NULL;
 uniform RTCScene g_scene   = NULL;
+uniform Vec3f* uniform ls_positions = NULL;
 
 /* animation data */
 uniform double animTime        = -1.0f; // global time counter
@@ -340,12 +341,13 @@ void renderTileStandard(uniform int taskIndex,
   rtcIntersectVM(g_scene,&context,rays,N,sizeof(RTCRay));
 
   /* shade stream of rays */
+  Vec3f colors[TILE_SIZE_X*TILE_SIZE_Y];
   N = 0;
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* ISPC workaround for mask == 0 */
     if (all(__mask == 0)) continue;
-    RTCRay& ray = rays[N++];
+    RTCRay& ray = rays[N];
 
     Vec3f Ng = ray.Ng;
 
@@ -373,20 +375,56 @@ void renderTileStandard(uniform int taskIndex,
 #endif
       color = make_Vec3f(abs(dot(ray.dir,normalize(Ng))));
     }
+    colors[N++] = color;
+  }
 
-    /* occlusion */
+
+#if SHADOWS == 1
+    /* do some hard shadows to point lights */
     if (g_ispc_scene->numLights)
     {
-      RTCRay shadow_rays[TILE_SIZE_X*TILE_SIZE_Y];
-      //for (uniform size_t l=0;l<g_ispc_scene->numLights;l+)
-    }
+      for (uniform size_t i=0; i<g_ispc_scene->numLights; i++)
+      {
+        /* init shadow/occlusion rays */
+        for (uniform size_t n=0;n<N;n++)
+        {
+          RTCRay& ray = rays[n];
+          const bool valid = ray.geomID != RTC_INVALID_GEOMETRY_ID;
+          const Vec3f hitpos = ray.org + ray.dir * ray.tfar;
+          ray.org = ls_positions[i];
+          ray.dir = hitpos - ray.org;
+          ray.tnear = 1E-4f;
+          ray.tfar  = valid ? 0.99f : -1.0f;
+          ray.geomID = RTC_INVALID_GEOMETRY_ID;
+          ray.primID = RTC_INVALID_GEOMETRY_ID;
+          ray.mask = 0;
+          ray.time = 0.0f;
+        }
+        /* trace shadow rays */
+        rtcOccludedVM(g_scene,&context,rays,N,sizeof(RTCRay));
 
+        /* modify pixel color based on occlusion */
+        for (uniform size_t n=0;n<N;n++)
+          if (rays[n].geomID != RTC_INVALID_GEOMETRY_ID)
+            colors[n] = colors[n] * 0.1f;
+        
+      }
+    }
+#endif
+
+  N = 0;
+  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
+  {
+    /* ISPC workaround for mask == 0 */
+    if (all(__mask == 0)) continue;
+    Vec3f& color = colors[N++];
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
     unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
+
 }
 
 /* task that renders a single screen tile */
@@ -447,7 +485,37 @@ export void device_render (uniform int* uniform pixels,
                            const uniform float time,
                            const uniform ISPCCamera& camera)
 {
+
+  /* =================================== */
+  /* samples LS positions as pointlights */
+  /* =================================== */
+
+  if (g_ispc_scene->numLights)
+  {
+    if (ls_positions == NULL) ls_positions = uniform new uniform Vec3f[g_ispc_scene->numLights];
+    uniform DifferentialGeometry dg;
+    dg.geomID = 0;
+    dg.primID = 0;
+    dg.u = 0.0f;
+    dg.v = 0.0f;
+    dg.P  = make_Vec3f(0.0f,0.0f,0.0f);
+    dg.Ng = make_Vec3f(0.0f,0.0f,0.0f);
+    dg.Ns = dg.Ng;
+    for (uniform size_t i=0; i<g_ispc_scene->numLights; i++)
+    {
+      const uniform Light* uniform l = g_ispc_scene->lights[i];            
+      const uniform Vec2f sample = make_Vec2f(0.0f,0.0f);
+      //uniform Light_SampleRes = l->sample(l,dg,sample);
+      //ls_positions[i] = ls.dir * ls.dist;
+      ls_positions[i] = make_Vec3f(-1.513921618f,13.41725254f,-8.156237602f); 
+      //print("% % % \n",ls_positions[i].x,ls_positions[i].y,ls_positions[i].z);
+    }
+  }          
+
+  /* ============ */
   /* render image */
+  /* ============ */
+
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;

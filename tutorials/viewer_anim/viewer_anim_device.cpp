@@ -17,6 +17,7 @@
 #define ANIM_FPS 15.0f
 #define ENABLE_ANIM 1
 #define VERTEX_NORMALS 1
+#define SHADOWS 1
 
 #include "../common/math/random_sampler.h"
 #include "../common/math/sampling.h"
@@ -29,15 +30,15 @@ namespace embree {
   extern "C" ISPCScene* g_ispc_scene;
 
   /* scene data */
-  RTCDevice g_device = nullptr;
-  RTCScene g_scene   = nullptr;
+  RTCDevice g_device   = nullptr;
+  RTCScene g_scene     = nullptr;
   Vec3fa *ls_positions = nullptr;
 
   /* animation data */
-  
   size_t frameID         = 0;
   double animTime        = -1.0f; // global time counter
 
+  /* profile data */
   std::vector<double> buildTime;
   std::vector<double> vertexUpdateTime;
   std::vector<double> renderTime;
@@ -351,17 +352,18 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
     rtcIntersect1M(g_scene,&context,rays,N,sizeof(RTCRay));
 
     /* shade stream of rays */
+    Vec3fa colors[TILE_SIZE_X*TILE_SIZE_Y];
     N = 0;
     for (unsigned int y=y0; y<y1; y++) 
-      for (unsigned int x=x0; x<x1; x++)
+      for (unsigned int x=x0; x<x1; x++,N++)
       {
         /* ISPC workaround for mask == 0 */    
-        RTCRay& ray = rays[N++];
-
+        RTCRay& ray = rays[N];
         Vec3fa Ng = ray.Ng;
 
         /* shading */
-        Vec3fa color = Vec3fa(0.0f,1.0f,0.0f);
+        Vec3fa& color = colors[N];
+        color = Vec3fa(0.0f,1.0f,0.0f);
         if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
         {
 #if VERTEX_NORMALS == 1
@@ -384,8 +386,48 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
           /* final color */
           color = Vec3fa(abs(dot(ray.dir,normalize(Ng))));
         }
+      }
 
-        /* write color to framebuffer */
+
+#if SHADOWS == 1
+    /* do some hard shadows to point lights */
+    if (g_ispc_scene->numLights)
+    {
+      for (size_t i=0; i<g_ispc_scene->numLights; i++)
+      {
+        /* init shadow/occlusion rays */
+        for (size_t n=0;n<N;n++)
+        {
+          RTCRay& ray = rays[n];
+          const bool valid = ray.geomID != RTC_INVALID_GEOMETRY_ID;
+          const Vec3fa hitpos = ray.org + ray.tfar*ray.dir;
+          ray.org = ls_positions[i];
+          ray.dir = hitpos - ray.org;
+          ray.tnear = 1E-4f;
+          ray.tfar  = valid ? 0.99f : -1.0f;
+          ray.geomID = RTC_INVALID_GEOMETRY_ID;
+          ray.primID = RTC_INVALID_GEOMETRY_ID;
+          ray.mask = 0;
+          ray.time = 0.0f;
+        }
+        /* trace shadow rays */
+        rtcOccluded1M(g_scene,&context,rays,N,sizeof(RTCRay));
+
+        /* modify pixel color based on occlusion */
+        for (size_t n=0;n<N;n++)
+          if (rays[n].geomID != RTC_INVALID_GEOMETRY_ID)
+            colors[n] *= 0.1f;
+        
+      }
+    }
+#endif
+
+    /* write colors to framebuffer */
+    N = 0;
+    for (unsigned int y=y0; y<y1; y++) 
+      for (unsigned int x=x0; x<x1; x++,N++)
+      {
+        Vec3fa& color = colors[N];
         unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
         unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
         unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
@@ -469,6 +511,29 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
     assert(frameID < vertexUpdateTime.size());
     assert(frameID < buildTime.size());
 
+    /* =================================== */
+    /* samples LS positions as pointlights */
+    /* =================================== */
+
+    if (g_ispc_scene->numLights)
+    {
+      if (ls_positions == nullptr) ls_positions = new Vec3fa[g_ispc_scene->numLights];
+      DifferentialGeometry dg;
+      dg.geomID = 0;
+      dg.primID = 0;
+      dg.u = 0.0f;
+      dg.v = 0.0f;
+      dg.P  = Vec3fa(0.0f,0.0f,0.0f);
+      dg.Ng = Vec3fa(0.0f,0.0f,0.0f);
+      dg.Ns = dg.Ng;
+      for (size_t i=0; i<g_ispc_scene->numLights; i++)
+      {
+        const Light* l = g_ispc_scene->lights[i];            
+        Light_SampleRes ls = l->sample(l,dg,Vec2f(0.0f,0.0f));
+        ls_positions[i] = ls.dir * ls.dist;
+      }
+    }          
+
     /* ============ */
     /* render image */
     /* ============ */
@@ -530,34 +595,6 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 #endif
     
     frameID = (frameID + 1) % numProfileFrames;
-
-    /* =================================== */
-    /* samples LS positions as pointlights */
-    /* =================================== */
-
-    if (g_ispc_scene->numLights)
-    {
-      if (ls_positions == nullptr) ls_positions = new Vec3fa[g_ispc_scene->numLights];
-
-      DifferentialGeometry dg;
-      dg.geomID = 0;
-      dg.primID = 0;
-      dg.u = 0.0f;
-      dg.v = 0.0f;
-      dg.P  = Vec3fa(0.0f,0.0f,0.0f);
-      dg.Ng = Vec3fa(0.0f,0.0f,0.0f);
-      dg.Ns = dg.Ng;
-
-      for (size_t i=0; i<g_ispc_scene->numLights; i++)
-      {
-        const Light* l = g_ispc_scene->lights[i];            
-        Light_SampleRes ls = l->sample(l,dg,Vec2f(0.0f,0.0f));
-        ls_positions[i] = ls.dir;
-        //PRINT(ls.dir);
-      }
-
-    }          
-
   }
 
 /* plot build and render times */
