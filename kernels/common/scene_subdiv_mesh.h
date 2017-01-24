@@ -157,27 +157,6 @@ namespace embree
       /*! Topology initialization */
       Topology (SubdivMesh* mesh);
 
-      /*! make the class movable */
-    public: 
-      Topology (Topology&& other) // FIXME: this is only required to workaround compilation issues under Windows
-        : mesh(std::move(other.mesh)), 
-          vertexIndices(std::move(other.vertexIndices)),
-          subdiv_mode(std::move(other.subdiv_mode)),
-          halfEdges(std::move(other.halfEdges)),
-          halfEdges0(std::move(other.halfEdges0)),
-          halfEdges1(std::move(other.halfEdges1)) {}
-
-      Topology& operator= (Topology&& other) // FIXME: this is only required to workaround compilation issues under Windows
-      {
-        mesh = std::move(other.mesh); 
-        vertexIndices = std::move(other.vertexIndices);
-        subdiv_mode = std::move(other.subdiv_mode);
-        halfEdges = std::move(other.halfEdges);
-        halfEdges0 = std::move(other.halfEdges0);
-        halfEdges1 =std::move(other.halfEdges1);
-        return *this;
-      }
-
     public:
       /*! check if the i'th primitive is valid in this topology */
       __forceinline bool valid(size_t i) const 
@@ -245,7 +224,7 @@ namespace embree
     }
 
     /*! array of topologies */
-    std::vector<Topology> topology;
+    vector<Topology> topology;
 
     /*! vertex buffer (one buffer for each time step) */
     vector<APIBuffer<Vec3fa>> vertices;
@@ -311,16 +290,16 @@ namespace embree
     std::vector<std::vector<SharedLazyTessellationCache::CacheEntry>> vertex_buffer_tags;
     std::vector<std::vector<SharedLazyTessellationCache::CacheEntry>> user_buffer_tags;
     std::vector<Patch3fa::Ref> patch_eval_trees;
-
+    
     /*! the following data is only required during construction of the
-       *  half edge structure and can be cleared for static scenes */
-    private:
-      
-      /*! map with all vertex creases */
-      parallel_map<uint32_t,float> vertexCreaseMap;
-      
-      /*! map with all edge creases */
-      parallel_map<uint64_t,float> edgeCreaseMap;
+     *  half edge structure and can be cleared for static scenes */
+  private:
+    
+    /*! map with all vertex creases */
+    parallel_map<uint32_t,float> vertexCreaseMap;
+    
+    /*! map with all edge creases */
+    parallel_map<uint64_t,float> edgeCreaseMap;
   };
 
   class SubdivMeshAVX : public SubdivMesh
