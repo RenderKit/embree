@@ -366,7 +366,7 @@ namespace embree
       const vfloat<N> tFarY  = (madd(time,pFarY [6],vfloat<N>(pFarY [0])) - ray.org.y) * ray.rdir.y;
       const vfloat<N> tFarZ  = (madd(time,pFarZ [6],vfloat<N>(pFarZ [0])) - ray.org.z) * ray.rdir.z;
 #endif
-#if defined(__SSE4_1__) && !defined(__AVX512F__) // up to HSW
+#if defined(__AVX2__) && !defined(__AVX512F__) // HSW
       const vfloat<N> tNear = maxi(tNearX,tNearY,tNearZ,tnear);
       const vfloat<N> tFar  = mini(tFarX ,tFarY ,tFarZ ,tfar);
       const vbool<N> vmask = asInt(tNear) > asInt(tFar);
