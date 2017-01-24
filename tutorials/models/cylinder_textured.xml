@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+
+<scene>
+  <Group>
+    <SubdivisionMesh>
+
+      <positions>
+        -1.0 -1.0 -1.0
+        1.0 -1.0 -1.0
+        1.0 -1.0  1.0
+        -1.0 -1.0  1.0
+        -1.0  1.0 -1.0
+        1.0  1.0 -1.0
+        1.0  1.0  1.0
+        -1.0  1.0  1.0
+      </positions>
+
+      <position_indices>
+        0 1 5 4 
+        1 2 6 5 
+        2 3 7 6 
+        3 0 4 7 
+
+        4 5 6 7 
+        0 3 2 1 
+      </position_indices>
+
+      <texcoords>
+        0.0  0.0
+        0.25 0.0
+        0.5  0.0
+        0.75 0.0
+        1.0  0.0
+
+        0.0  1.0
+        0.25 1.0
+        0.5  1.0
+        0.75 1.0
+        1.0  1.0
+
+        0 0
+        0 1
+        1 1
+        1 0
+      </texcoords>
+
+      <texcoord_indices subdiv_mode="pin_boundary">
+        0 1 6 5 
+        1 2 7 6 
+        2 3 8 7 
+        3 4 9 8 
+
+        10 11 12 13 
+        10 13 12 11 
+      </texcoord_indices>
+
+      <faces>
+        4 4 4 4 4 4
+      </faces>
+
+      <edge_creases>
+        0 1 1 2 2 3 3 0
+        4 5 5 6 6 7 7 4
+      </edge_creases>
+
+      <edge_crease_weights>
+        4 4 4 4
+        4 4 4 4
+      </edge_crease_weights>
+
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 1 1</float3>
+        </parameters>
+      </material>
+
+    </SubdivisionMesh>
+  </Group>
+</scene>
