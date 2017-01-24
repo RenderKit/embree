@@ -54,9 +54,7 @@ namespace embree
     vertex_creases.init(parent->device,numVertexCreases,sizeof(unsigned int));
     vertex_crease_weights.init(parent->device,numVertexCreases,sizeof(float));
 
-    topology.resize(1);
-    new (&topology[0]) Topology(this);
-    
+    topology.resize(1,this);
     enabling();
   }
 
@@ -144,7 +142,7 @@ namespace embree
 
     else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
     {
-      if (bid >= topology.size()) topology.resize(bid+1);
+      if (bid >= topology.size()) topology.resize(bid+1,this);
       topology[bid].vertexIndices.set(ptr,offset,stride);
     }
     else if (type == RTC_EDGE_CREASE_INDEX_BUFFER)
@@ -585,6 +583,10 @@ namespace embree
 
   void SubdivMesh::Topology::initializeHalfEdgeStructures ()
   {
+    /* if vertex indices not set we ignore this topology */
+    if (!vertexIndices)
+      return;
+
     /* allocate half edge array */
     halfEdges.resize(mesh->numEdges);
 
@@ -686,7 +688,7 @@ namespace embree
       for (size_t i=0; i<vertex_buffer_tags.size(); i++)
         vertex_buffer_tags[i].resize(numFaces*numInterpolationSlots(vertices[i].getStride()));
       for (size_t i=0; i<userbuffers.size(); i++)
-        if (userbuffers[i].valid()) user_buffer_tags[i].resize(numFaces*numInterpolationSlots(userbuffers[i].getStride()));
+        if (userbuffers[i]) user_buffer_tags[i].resize(numFaces*numInterpolationSlots(userbuffers[i].getStride()));
     }
 
     /* cleanup some state for static scenes */
@@ -761,13 +763,14 @@ namespace embree
 
     /* calculate base pointer and stride */
     assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS)) ||
-           (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
+           (buffer >= RTC_USER_VERTEX_BUFFER0 && RTCBufferType(RTC_USER_VERTEX_BUFFER0 + RTC_MAX_USER_VERTEX_BUFFERS)));
     const char* src = nullptr; 
     size_t stride = 0;
     size_t bufID = buffer&0xFFFF;
     std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
     Topology* topo = nullptr;
     if (buffer >= RTC_USER_VERTEX_BUFFER0) {
+      assert(bufID < userbuffers.size());
       src    = userbuffers[bufID].getPtr();
       stride = userbuffers[bufID].getStride();
       baseEntry = &user_buffer_tags[bufID];
@@ -830,13 +833,14 @@ namespace embree
 
     /* calculate base pointer and stride */
     assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS)) ||
-           (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
+           (buffer >= RTC_USER_VERTEX_BUFFER0 && RTCBufferType(RTC_USER_VERTEX_BUFFER0 + RTC_MAX_USER_VERTEX_BUFFERS)));
     const char* src = nullptr; 
     size_t stride = 0;
     size_t bufID = buffer&0xFFFF;
     std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
     Topology* topo = nullptr;
     if (buffer >= RTC_USER_VERTEX_BUFFER0) {
+      assert(bufID < userbuffers.size());
       src    = userbuffers[bufID].getPtr();
       stride = userbuffers[bufID].getStride();
       baseEntry = &user_buffer_tags[bufID];

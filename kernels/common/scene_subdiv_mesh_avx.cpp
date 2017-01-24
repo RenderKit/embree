@@ -34,13 +34,14 @@ namespace embree
 
     /* calculate base pointer and stride */
     assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS)) ||
-           (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
+           (buffer >= RTC_USER_VERTEX_BUFFER0 && RTCBufferType(RTC_USER_VERTEX_BUFFER0 + RTC_MAX_USER_VERTEX_BUFFERS)));
     const char* src = nullptr; 
     size_t stride = 0;
     size_t bufID = buffer&0xFFFF;
     std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
     Topology* topo = nullptr;
     if (buffer >= RTC_USER_VERTEX_BUFFER0) {
+      assert(bufID < userbuffers.size());
       src    = userbuffers[bufID].getPtr();
       stride = userbuffers[bufID].getStride();
       baseEntry = &user_buffer_tags[bufID];
@@ -136,13 +137,14 @@ namespace embree
   {
     /* calculate base pointer and stride */
      assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS)) ||
-           (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
+           (buffer >= RTC_USER_VERTEX_BUFFER0 && RTCBufferType(RTC_USER_VERTEX_BUFFER0 + RTC_MAX_USER_VERTEX_BUFFERS)));
     const char* src = nullptr; 
     size_t stride = 0;
     size_t bufID = buffer&0xFFFF;
     std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
     Topology* topo = nullptr;
     if (buffer >= RTC_USER_VERTEX_BUFFER0) {
+      assert(bufID < userbuffers.size());
       src    = userbuffers[bufID].getPtr();
       stride = userbuffers[bufID].getStride();
       baseEntry = &user_buffer_tags[bufID];
