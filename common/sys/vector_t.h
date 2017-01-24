@@ -97,6 +97,11 @@ namespace embree
         internal_resize(new_size,size_alloced < new_size ? new_size : size_alloced);
       }
 
+      template<typename T1>
+      __forceinline void resize(size_t new_size, const T1& init) {
+        internal_resize(new_size,size_alloced < new_size ? new_size : size_alloced, init);
+      }
+
       __forceinline void reserve(size_t new_alloced) 
       {
         /* do nothing if container already large enough */
@@ -189,18 +194,47 @@ namespace embree
         for (size_t i=new_active; i<size_active; i++)
           alloc.destroy(&items[i]);
 
-        size_t size_copy = new_active < size_active ? new_active : size_active;
-        size_active = new_active;
-
         /* only reallocate if necessary */
-        if (new_alloced == size_alloced) 
+        if (new_alloced == size_alloced) {
+          for (size_t i=size_active; i<new_active; i++) ::new (&items[i]) T;
+          size_active = new_active;
           return;
-        
+        }
+
         /* reallocate and copy items */
+        size_t size_copy = new_active < size_active ? new_active : size_active;
         T* old_items = items;
         items = alloc.allocate(new_alloced);
         for (size_t i=0; i<size_copy; i++) items[i] = std::move(old_items[i]);
-        for (size_t i=size_copy; i<size_active; i++) ::new (&items[i]) T;
+        for (size_t i=size_copy; i<new_active; i++) ::new (&items[i]) T;
+        size_active = new_active;
+        alloc.deallocate(old_items,size_alloced);
+        size_alloced = new_alloced;
+      }
+
+      template<typename T1>
+        __forceinline void internal_resize(size_t new_active, size_t new_alloced, const T1& init)
+      {
+        assert(new_active <= new_alloced); 
+
+        /* destroy elements */
+        for (size_t i=new_active; i<size_active; i++)
+          alloc.destroy(&items[i]);
+
+        /* only reallocate if necessary */
+        if (new_alloced == size_alloced) {
+          for (size_t i=size_active; i<new_active; i++) ::new (&items[i]) T(init);
+          size_active = new_active;
+          return;
+        }
+
+        /* reallocate and copy items */
+        size_t size_copy = new_active < size_active ? new_active : size_active;
+        T* old_items = items;
+        items = alloc.allocate(new_alloced);
+        for (size_t i=0; i<size_copy; i++) items[i] = std::move(old_items[i]);
+        for (size_t i=size_copy; i<new_active; i++) ::new (&items[i]) T(init);
+        size_active = new_active;
         alloc.deallocate(old_items,size_alloced);
         size_alloced = new_alloced;
       }
