@@ -98,8 +98,8 @@ namespace embree
         /*! slow path for more than two hits */
         const size_t hits = __popcnt(movemask(vmask));
         const vint<Nx> dist_i = select(vmask, (asInt(tNear) & 0xfffffff8) | vint<Nx>(step), 0x7fffffff);
-#if defined(__AVX512F__)
-        const vint8 tmp = _mm512_castsi512_si256(dist_i);
+#if defined(__AVX512F__) && !defined(__AVX512VL__) // KNL
+        const vint<N> tmp = extractN<N>(dist_i);
         const vint<Nx> dist_i_sorted = sortNetwork(tmp);
 #else
         const vint<Nx> dist_i_sorted = sortNetwork(dist_i);
@@ -184,7 +184,7 @@ namespace embree
         vfloat16 rdir     = select(0x7777,rcp_safe(dir),max(vfloat16(ray->tnear),vfloat16(zero)));
         vfloat16 org_rdir = robust ? select(0x7777,org,ray->tfar) : select(0x7777,org * rdir,ray->tfar);
         vfloat16 res = select(0xf,rdir,org_rdir);
-        vfloat8 r = extractf256bit(res);
+        vfloat8 r = extract8(res);
         *(vfloat8*)this = r;          
 #else
         Vec3fa& org = ray->org;
@@ -407,7 +407,7 @@ namespace embree
         const size_t hits = __popcnt(movemask(vmask));
         const vint<Nx> dist_i = select(vmask, (asInt(tNear) & 0xfffffff8) | vint<Nx>(step), 0x7fffffff);
 #if defined(__AVX512F__) && !defined(__AVX512VL__) // KNL
-        const vint8 tmp = _mm512_castsi512_si256(dist_i);
+        const vint<N> tmp = extractN<N>(dist_i);
         const vint<Nx> dist_i_sorted = sortNetwork(tmp);
 #else
         const vint<Nx> dist_i_sorted = sortNetwork(dist_i);

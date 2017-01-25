@@ -136,18 +136,6 @@ namespace embree
       return _mm512_set1_epi64(v);
     }
 
-    static __forceinline size_t extracti64bit(const vint16& v) {
-      return _mm_cvtsi128_si64(_mm512_castsi512_si128(v));
-    }
-
-    static __forceinline vint4 extracti128bit(const vint16& v) {
-      return _mm512_castsi512_si128(v);
-    }
-
-    static __forceinline vint8 extracti256bit(const vint16& v) {
-      return _mm512_castsi512_si256(v);
-    }
-
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
@@ -370,6 +358,19 @@ namespace embree
   }
 
   template<size_t i> __forceinline const vint16 insert4(const vint16& a, const vint4& b) { return _mm512_inserti32x4(a, b, i); }
+
+  __forceinline size_t extract64bit(const vint16& v) {
+    return _mm_cvtsi128_si64(_mm512_castsi512_si128(v));
+  }
+
+  template<int N>
+  vint<N> extractN(const vint16& v);
+
+  template<> __forceinline vint4 extractN<4>(const vint16& v) { return _mm512_castsi512_si128(v); }
+  template<> __forceinline vint8 extractN<8>(const vint16& v) { return _mm512_castsi512_si256(v); }
+
+  __forceinline vint4 extract4(const vint16& v) { return _mm512_castsi512_si128(v); }
+  __forceinline vint8 extract8(const vint16& v) { return _mm512_castsi512_si256(v); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
