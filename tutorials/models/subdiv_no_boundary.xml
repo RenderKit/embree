@@ -39,6 +39,28 @@
         10 11 15 14
       </position_indices>
 
+      <texcoords>
+        0 0
+        0 0
+        0 1
+        1 1 
+        1 0
+      </texcoords>
+
+      <texcoord_indices subdiv_mode="pin_boundary">
+        0 0 0 0
+        0 0 0 0
+        0 0 0 0
+        0 0 0 0
+
+        1 2 3 4
+
+        0 0 0 0
+        0 0 0 0
+        0 0 0 0
+        0 0 0 0
+      </texcoord_indices>
+
       <faces>
         4 4 4 4 4 4 4 4 4
       </faces>
