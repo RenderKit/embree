@@ -554,6 +554,10 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 
     if (unlikely(printStats)) std::cout << "rendering frame in : " << renderTimeDelta << " ms" << std::endl;
 
+    /* ============ */
+    /* Adaptive AA  */
+    /* ============ */
+
 
     /* =============== */
     /* update geometry */
