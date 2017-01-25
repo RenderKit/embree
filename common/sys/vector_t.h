@@ -186,8 +186,12 @@ namespace embree
         assert(new_active <= new_alloced); 
 
         /* destroy elements */
-        for (size_t i=new_active; i<size_active; i++)
-          alloc.destroy(&items[i]);
+        if (new_active < size_active) 
+        {
+          for (size_t i=new_active; i<size_active; i++)
+            alloc.destroy(&items[i]);
+          size_active = new_active;
+        }
 
         /* only reallocate if necessary */
         if (new_alloced == size_alloced) {
@@ -197,13 +201,17 @@ namespace embree
         }
 
         /* reallocate and copy items */
-        size_t size_copy = new_active < size_active ? new_active : size_active;
         T* old_items = items;
         items = alloc.allocate(new_alloced);
-        for (size_t i=0; i<size_copy; i++) ::new (&items[i]) T(std::move(old_items[i]));
-        for (size_t i=size_copy; i<new_active; i++) ::new (&items[i]) T;
-        size_active = new_active;
+        for (size_t i=0; i<size_active; i++) {
+          ::new (&items[i]) T(std::move(old_items[i]));
+          alloc.destroy(&old_items[i]);
+        }
+        for (size_t i=size_active; i<new_active; i++) {
+          ::new (&items[i]) T;
+        }
         alloc.deallocate(old_items,size_alloced);
+        size_active = new_active;
         size_alloced = new_alloced;
       }
 
