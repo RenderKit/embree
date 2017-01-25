@@ -17,7 +17,9 @@
 #pragma once
 
 #include "bezier1i.h"
-#include "bezier_intersector.h"
+#include "hair_intersector.h"
+#include "ribbon_intersector.h"
+#include "bezier_geometry_intersector.h"
 
 namespace embree
 {
