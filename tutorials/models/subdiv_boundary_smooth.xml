@@ -2,7 +2,7 @@
 
 <scene>
   <Group>
-    <SubdivisionMesh boundary="smooth">
+    <SubdivisionMesh>
 
       <positions>
         -2.0 +2.5 0.0 <!-- 0 -->
@@ -46,7 +46,7 @@
         +2.0 -2.5 0.0 <!-- 33 -->
       </positions>
 
-      <position_indices>
+      <position_indices subdiv_mode="smooth">
         0 1 7 6
         1 2 8 7
         3 4 9 8
