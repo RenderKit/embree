@@ -18,6 +18,7 @@
 #define ENABLE_ANIM 1
 #define VERTEX_NORMALS 1
 #define SHADOWS 1
+#define ANTI_ALIASING 1
 
 #include "../common/math/random_sampler.h"
 #include "../common/math/sampling.h"
@@ -33,6 +34,15 @@ namespace embree {
   RTCDevice g_device   = nullptr;
   RTCScene g_scene     = nullptr;
   Vec3fa *ls_positions = nullptr;
+
+  struct DeferredShadingBuffer {
+    unsigned int geomID;
+    unsigned int primID;
+    float z;
+  };
+
+  DeferredShadingBuffer *dBuffer = nullptr;
+
 
   /* animation data */
   size_t frameID         = 0;
@@ -386,6 +396,13 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
           /* final color */
           color = Vec3fa(abs(dot(ray.dir,normalize(Ng))));
         }
+
+#if ANTI_ALIASING == 1
+        dBuffer[y*width+x].geomID = ray.geomID;
+        dBuffer[y*width+x].primID = ray.primID;
+        dBuffer[y*width+x].z      = ray.tfar;
+
+#endif
       }
 
 
@@ -500,6 +517,19 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
       times[frameID] = time;    
   }
 
+  __forceinline Vec3fa getTriangleNormal(const unsigned int geomID,
+                                         const unsigned int primID)
+  {
+    ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
+    assert(geometry->type == TRIANGLE_MESH);
+    ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
+    ISPCTriangle* tri = &mesh->triangles[primID];             
+    const Vec3fa v0 = mesh->positions[tri->v0];
+    const Vec3fa v1 = mesh->positions[tri->v1];
+    const Vec3fa v2 = mesh->positions[tri->v2];
+    return cross((v1-v0),(v2-v0));    
+  }
+
 /* called by the C++ code to render */
   extern "C" void device_render (int* pixels,
                                  const unsigned int width,
@@ -510,6 +540,11 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
     assert(frameID < renderTime.size());
     assert(frameID < vertexUpdateTime.size());
     assert(frameID < buildTime.size());
+
+#if ANTI_ALIASING == 1
+    if (!dBuffer)
+      dBuffer = (DeferredShadingBuffer*) alignedMalloc(width*height*sizeof(DeferredShadingBuffer),64);
+#endif
 
     /* =================================== */
     /* samples LS positions as pointlights */
@@ -554,11 +589,81 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 
     if (unlikely(printStats)) std::cout << "rendering frame in : " << renderTimeDelta << " ms" << std::endl;
 
+
+#if ANTI_ALIASING == 1
+
     /* ============ */
     /* Adaptive AA  */
     /* ============ */
 
+    for (size_t py=1; py<height-1; py++) 
+      for (size_t px=1; px<width-1; px++)
+      {
+        const unsigned int geomID = dBuffer[width*py+px].geomID;
+        const unsigned int primID = dBuffer[width*py+px].primID;
+        const unsigned int primZ  = dBuffer[width*py+px].z;
+        const int color = pixels[width*py+px];
+        const int r = (color >>  0) & 255;
+        const int g = (color >>  8) & 255;
+        const int b = (color >> 16) & 255;
 
+
+        const Vec3fa normal = normalize(getTriangleNormal(geomID,primID));
+
+        size_t numTris = 0;
+        DeferredShadingBuffer tList[9];
+        float minZdist = pos_inf;
+        for (size_t y=py-1;y<py+1;y++)
+          for (size_t x=px-1;x<px+1;x++)
+          {
+            if (x == px && y == px) continue;
+            const unsigned int gID = dBuffer[width*y+x].geomID;
+            const unsigned int pID = dBuffer[width*y+x].primID;
+            const float z = dBuffer[width*y+x].z;
+            if (unlikely( gID != geomID || pID != primID))
+            {
+              bool found = false;
+              for (size_t i=0;i<numTris;i++)
+                if (tList[i].geomID == gID && tList[i].primID == pID) { found = true; break; }
+              if (found == true) continue;
+
+              const int c = pixels[width*y+x];
+              const int rr = (c >>  0) & 255;
+              const int gg = (c >>  8) & 255;
+              const int bb = (c >> 16) & 255;
+
+#define THRESHOLD (int)8
+              if (std::abs(rr-r) <= THRESHOLD &&
+                  std::abs(gg-g) <= THRESHOLD &&
+                  std::abs(bb-b) <= THRESHOLD) continue;
+
+              minZdist = min(minZdist,abs(primZ-z));
+              tList[numTris].geomID = gID;
+              tList[numTris].primID = pID;
+              tList[numTris].z = z;
+
+              numTris++;
+              
+              assert(numTris <= 9);
+            }            
+          }
+
+        if (numTris)
+        {
+          for (size_t i=0;i<numTris;i++)
+          {
+            //const Vec3fa n = normalize(getTriangleNormal(tList[i].geomID,tList[i].primID));
+            //if (dot(n,normal) >= 0.1f) continue;
+
+            //if (dot(n,normal) <= 0.2f /* || minZdist * 1.05f < abs(tList[i].z-primZ) */)            
+              pixels[py*width+px] = 255;
+          }
+        }
+
+      }
+
+
+#endif
     /* =============== */
     /* update geometry */
     /* =============== */
