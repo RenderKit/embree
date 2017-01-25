@@ -50,7 +50,7 @@ namespace embree
   
   unsigned int ConvertSubdivMesh(ISPCSubdivMesh* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
   {
-    unsigned int geomID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_DYNAMIC, mesh->numFaces, mesh->numEdges, mesh->numVertices,
+    unsigned int geomID = rtcNewSubdivisionMesh(scene_out, gflags, mesh->numFaces, mesh->numEdges, mesh->numVertices,
                                                 mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles, mesh->numTimeSteps);
     mesh->geomID = geomID;
     for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
