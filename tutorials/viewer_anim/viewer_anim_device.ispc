@@ -30,7 +30,7 @@ extern uniform ISPCScene* uniform g_ispc_scene;
 /* scene data */
 uniform RTCDevice g_device = NULL;
 uniform RTCScene g_scene   = NULL;
-uniform Vec3f* uniform ls_positions = NULL;
+varying Vec3f* uniform ls_positions = NULL;
 
 /* animation data */
 uniform double animTime        = -1.0f; // global time counter
@@ -390,7 +390,7 @@ void renderTileStandard(uniform int taskIndex,
         {
           RTCRay& ray = rays[n];
           const bool valid = ray.geomID != RTC_INVALID_GEOMETRY_ID;
-          const Vec3f hitpos = ray.org + ray.dir * ray.tfar;
+          const Vec3f hitpos = ray.org + ray.dir * ray.tfar;          
           ray.org = ls_positions[i];
           ray.dir = hitpos - ray.org;
           ray.tnear = 1E-4f;
@@ -492,8 +492,8 @@ export void device_render (uniform int* uniform pixels,
 
   if (g_ispc_scene->numLights)
   {
-    if (ls_positions == NULL) ls_positions = uniform new uniform Vec3f[g_ispc_scene->numLights];
-    uniform DifferentialGeometry dg;
+    if (ls_positions == NULL) ls_positions = uniform new varying Vec3f[g_ispc_scene->numLights];
+    DifferentialGeometry dg;
     dg.geomID = 0;
     dg.primID = 0;
     dg.u = 0.0f;
@@ -504,11 +504,9 @@ export void device_render (uniform int* uniform pixels,
     for (uniform size_t i=0; i<g_ispc_scene->numLights; i++)
     {
       const uniform Light* uniform l = g_ispc_scene->lights[i];            
-      const uniform Vec2f sample = make_Vec2f(0.0f,0.0f);
-      //uniform Light_SampleRes = l->sample(l,dg,sample);
-      //ls_positions[i] = ls.dir * ls.dist;
-      ls_positions[i] = make_Vec3f(-1.513921618f,13.41725254f,-8.156237602f); 
-      //print("% % % \n",ls_positions[i].x,ls_positions[i].y,ls_positions[i].z);
+      const Vec2f sample = make_Vec2f(0.0f,0.0f);
+      Light_SampleRes ls = l->sample(l,dg,sample);
+      ls_positions[i] = ls.dir * ls.dist;
     }
   }          
 
