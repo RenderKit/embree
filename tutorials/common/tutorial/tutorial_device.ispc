@@ -216,6 +216,8 @@ void renderTileUV(uniform int taskIndex,
   }
 }
 
+uniform unsigned int render_texcoords_mode = 0;
+
 /* renders a single pixel with TexCoords shading */
 Vec3f renderPixelTexCoords(float x, float y, const uniform ISPCCamera& camera)
 {
@@ -243,9 +245,13 @@ Vec3f renderPixelTexCoords(float x, float y, const uniform ISPCCamera& camera)
     foreach_unique (geomID in ray.geomID) {
       rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,(RTCBufferType)(RTC_USER_VERTEX_BUFFER+2),&st.x,NULL,NULL,2);
     }
-    return make_Vec3f(st.x,st.y,0.0f);
+    if (render_texcoords_mode%2 == 0)
+      return make_Vec3f(st.x,st.y,0.0f);
+    else if (render_texcoords_mode%2 == 1)
+      return ((int)(10.0f*st.x)+(int)(10.0f*st.y)) % 2 == 0 ? make_Vec3f(1,0,0) : make_Vec3f(0,1,0);
   }
-  else return make_Vec3f(1.0f);
+  
+  return make_Vec3f(1.0f);
 }
 
 void renderTileTexCoords(uniform int taskIndex,
@@ -758,6 +764,7 @@ extern void device_key_pressed_default(uniform int key)
     g_changed = true;
   }
   else if (key == GLUT_KEY_F8) {
+    if (renderTile == renderTileTexCoords) render_texcoords_mode++;
     renderTile = renderTileTexCoords;
     g_changed = true;
   }

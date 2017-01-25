@@ -69,6 +69,7 @@ namespace embree
       if (mesh->normal_indices) {
         rtcSetBuffer(scene_out, geomID, (RTCBufferType)(RTC_INDEX_BUFFER+1),  mesh->normal_indices  , 0, sizeof(unsigned int));
         rtcSetIndexBuffer(scene_out, geomID, (RTCBufferType)(RTC_USER_VERTEX_BUFFER+1), (RTCBufferType)(RTC_INDEX_BUFFER+1));
+        rtcSetSubdivisionMode(scene_out, geomID, 1, mesh->normal_subdiv_mode);
       }
     }
 
@@ -78,6 +79,7 @@ namespace embree
       if (mesh->texcoord_indices) {
         rtcSetBuffer(scene_out, geomID, (RTCBufferType)(RTC_INDEX_BUFFER+2),  mesh->texcoord_indices  , 0, sizeof(unsigned int));
         rtcSetIndexBuffer(scene_out, geomID, (RTCBufferType)(RTC_USER_VERTEX_BUFFER+2), (RTCBufferType)(RTC_INDEX_BUFFER+2));
+        rtcSetSubdivisionMode(scene_out, geomID, 2, mesh->texcoord_subdiv_mode);
       }
     }
 
