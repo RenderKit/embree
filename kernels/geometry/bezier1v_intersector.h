@@ -17,10 +17,9 @@
 #pragma once
 
 #include "bezier1v.h"
-#include "hair_intersector.h"
-#include "ribbon_intersector.h"
-#include "bezier_geometry_intersector.h"
-#include "intersector_epilog.h"
+#include "bezier_hair_intersector.h"
+#include "bezier_ribbon_intersector.h"
+#include "bezier_curve_intersector.h"
 
 namespace embree
 {
@@ -39,7 +38,7 @@ namespace embree
           : intersectorHair(ray,ptr), intersectorCurve(ray,ptr) {}
 
         Bezier1Intersector1 intersectorHair;
-        BezierGeometry1Intersector1 intersectorCurve;
+        BezierCurve1Intersector1 intersectorCurve;
       };
 
       typedef Intersector1Precalculations<PrecalculationsBase> Precalculations;
@@ -96,7 +95,7 @@ namespace embree
           : intersectorHair(ray,k), intersectorCurve(ray,k) {}
 
         Bezier1IntersectorK<K> intersectorHair;
-        BezierGeometry1IntersectorK<K> intersectorCurve;
+        BezierCurve1IntersectorK<K> intersectorCurve;
       };
 
       typedef IntersectorKPrecalculations<K,PrecalculationsBase> Precalculations;

@@ -35,11 +35,11 @@ namespace embree
     static const size_t numBezierSubdivisions = 3;
 #endif
 
-    struct BezierGeometryHit
+    struct BezierCurveHit
     {
-      __forceinline BezierGeometryHit() {}
+      __forceinline BezierCurveHit() {}
 
-      __forceinline BezierGeometryHit(const float t, const float u, const Vec3fa& Ng)
+      __forceinline BezierCurveHit(const float t, const float u, const Vec3fa& Ng)
         : t(t), u(u), v(0.0f), Ng(Ng) {}
       
       __forceinline void finalize() {}
@@ -61,7 +61,7 @@ namespace embree
       Vec3fa Ng_o = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
       if (h0.lower[i] == tp.lower[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
       if (h1.lower[i] == tp.lower[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
-      BezierGeometryHit hit(tp.lower[i]+dt,u[i],Ng_o);
+      BezierCurveHit hit(tp.lower[i]+dt,u[i],Ng_o);
       return epilog(hit);
     }
 
@@ -117,7 +117,7 @@ namespace embree
           const Vec3fa R = normalize(Q-P);
           const Vec3fa U = madd(Vec3fa(dPdu.w),R,dPdu);
           const Vec3fa V = cross(dPdu,R);
-          BezierGeometryHit hit(t,u,cross(V,U));
+          BezierCurveHit hit(t,u,cross(V,U));
           return epilog(hit);
         }
       }
@@ -217,11 +217,11 @@ namespace embree
       return found;
     }
     
-    struct BezierGeometry1Intersector1
+    struct BezierCurve1Intersector1
     {
-      __forceinline BezierGeometry1Intersector1() {}
+      __forceinline BezierCurve1Intersector1() {}
 
-      __forceinline BezierGeometry1Intersector1(const Ray& ray, const void* ptr) {}
+      __forceinline BezierCurve1Intersector1(const Ray& ray, const void* ptr) {}
 
       template<typename Epilog>
       __noinline bool intersect(Ray& ray, 
@@ -244,7 +244,7 @@ namespace embree
     };
 
     template<int K>
-      struct BezierGeometry1IntersectorK
+      struct BezierCurve1IntersectorK
     {
       struct Ray1
       {
@@ -257,9 +257,9 @@ namespace embree
         float& tfar;
       };
 
-      __forceinline BezierGeometry1IntersectorK(const vbool<K>& valid, const RayK<K>& ray) {} // FIXME: why is this required for the single ray packet traverser?
+      __forceinline BezierCurve1IntersectorK(const vbool<K>& valid, const RayK<K>& ray) {} // FIXME: why is this required for the single ray packet traverser?
 
-      __forceinline BezierGeometry1IntersectorK (const RayK<K>& ray, size_t k) {}
+      __forceinline BezierCurve1IntersectorK (const RayK<K>& ray, size_t k) {}
       
       template<typename Epilog>
       __forceinline bool intersect(RayK<K>& vray, size_t k,

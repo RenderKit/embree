@@ -197,13 +197,6 @@ namespace embree
         }
       }
 
-      __forceinline Ribbon1IntersectorK (const RayK<K>& ray, size_t k) // FIXME: can this get removed?
-      {
-        Vec3fa ray_dir = Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
-        depth_scale[k] = rsqrt(dot(ray_dir,ray_dir));
-        ray_space  [k] = frame(depth_scale[k]*ray_dir).transposed();
-      }
-      
       template<typename Epilog>
       __forceinline bool intersect(RayK<K>& ray, size_t k,
                                    const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
