@@ -240,6 +240,15 @@ namespace embree
       initGrowSizeAndNumSlots(bytesAllocate,bytesAllocate);
     }
 
+    /*! initializes the allocator */
+    void init_estimate2(size_t bytesAllocate) 
+    {
+      internal_fix_used_blocks();
+      use_single_mode = false; 
+      defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE)); // PAGE_SIZE - maxAlignment?
+      initGrowSizeAndNumSlots(bytesAllocate,bytesAllocate);
+    }
+
     /*! frees state not required after build */
     __forceinline void cleanup() 
     {
