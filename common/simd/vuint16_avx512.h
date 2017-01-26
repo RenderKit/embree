@@ -479,7 +479,7 @@ namespace embree
     return v;  
   }
 
-  __forceinline vuint16 sortNetwork(const vuint16& v)
+  __forceinline vuint16 sortNetwork8(const vuint16& v)
   {
     const vuint16 a0 = v;
     const vuint16 b0 = shuffle<1,0,3,2>(a0);

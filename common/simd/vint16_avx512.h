@@ -357,20 +357,28 @@ namespace embree
     return _mm_cvtsi128_si32(_mm512_castsi512_si128(a));
   }
 
-  template<size_t i> __forceinline const vint16 insert4(const vint16& a, const vint4& b) { return _mm512_inserti32x4(a, b, i); }
+  template<int i> __forceinline const vint16 insert4(const vint16& a, const vint4& b) { return _mm512_inserti32x4(a, b, i); }
 
   __forceinline size_t extract64bit(const vint16& v) {
     return _mm_cvtsi128_si64(_mm512_castsi512_si128(v));
   }
 
-  template<int N>
+  template<int N, int i>
   vint<N> extractN(const vint16& v);
 
-  template<> __forceinline vint4 extractN<4>(const vint16& v) { return _mm512_castsi512_si128(v); }
-  template<> __forceinline vint8 extractN<8>(const vint16& v) { return _mm512_castsi512_si256(v); }
+  template<> __forceinline vint4 extractN<4,0>(const vint16& v) { return _mm512_castsi512_si128(v);       }
+  template<> __forceinline vint4 extractN<4,1>(const vint16& v) { return _mm512_extracti32x4_epi32(v, 1); }
+  template<> __forceinline vint4 extractN<4,2>(const vint16& v) { return _mm512_extracti32x4_epi32(v, 2); }
+  template<> __forceinline vint4 extractN<4,3>(const vint16& v) { return _mm512_extracti32x4_epi32(v, 3); }
 
-  __forceinline vint4 extract4(const vint16& v) { return _mm512_castsi512_si128(v); }
-  __forceinline vint8 extract8(const vint16& v) { return _mm512_castsi512_si256(v); }
+  template<> __forceinline vint8 extractN<8,0>(const vint16& v) { return _mm512_castsi512_si256(v);       }
+  template<> __forceinline vint8 extractN<8,1>(const vint16& v) { return _mm512_extracti32x8_epi32(v, 1); }
+
+  template<int i> __forceinline vint4 extract4   (const vint16& v) { return _mm512_extracti32x4_epi32(v, i); }
+  template<>      __forceinline vint4 extract4<0>(const vint16& v) { return _mm512_castsi512_si128(v);       }
+
+  template<int i> __forceinline vint8 extract8   (const vint16& v) { return _mm512_extracti32x8_epi32(v, i); }
+  template<>      __forceinline vint8 extract8<0>(const vint16& v) { return _mm512_castsi512_si256(v);       }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
@@ -525,7 +533,7 @@ namespace embree
   }
 
 
-  __forceinline vint16 sortNetwork(const vint16& v)
+  __forceinline vint16 sortNetwork8(const vint16& v)
   {
     const vint16 a0 = v;
     const vint16 b0 = shuffle<1,0,3,2>(a0);
