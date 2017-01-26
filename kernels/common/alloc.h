@@ -180,6 +180,8 @@ namespace embree
       return thread_local_allocators2.get();
     }
 
+    void initGrowSizeAndNumSlots(int a = 0, int b = 0) {} // FIXME: remove
+
     __forceinline void set_osAllocation(const bool v) { osAllocation = v; }
 
     void internal_fix_used_blocks()
@@ -225,6 +227,10 @@ namespace embree
       if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesAllocate >  4*maxAllocationSize) slotMask = 0x1;
       if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesAllocate >  8*maxAllocationSize) slotMask = 0x3;
       if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesAllocate > 16*maxAllocationSize) slotMask = 0x7;
+    }
+
+    void init_estimate2(size_t bytesAllocate) {
+      init_estimate(bytesAllocate);
     }
 
     /*! frees state not required after build */
