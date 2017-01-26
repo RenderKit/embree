@@ -416,7 +416,7 @@ namespace embree
 
 #if defined(__AVX512F__)
             /* AVX512 path for up to 64 rays */
-            vlong8 maskK(zero);
+            vlong<Nxd> maskK(zero);
             vfloat<Nx> dist(inf);
             const vbool<Nx> vmask = traversalLoop<true>(m_trav_active,node,pc,ray_ctx,dist,maskK);
             if (unlikely(none(vmask))) goto pop;
@@ -534,7 +534,7 @@ namespace embree
 
 #if defined(__AVX512F__) 
             /* AVX512 path for up to 64 rays */
-            vlong8 maskK(zero);
+            vlong<Nxd> maskK(zero);
             vfloat<Nx> dist(inf);
             const vbool<Nx> vmask = traversalLoop<false>(m_trav_active,node,pc,ray_ctx,dist,maskK);
             if (unlikely(none(vmask))) goto pop;

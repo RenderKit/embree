@@ -511,6 +511,8 @@ namespace embree
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
       class BVHNIntersectorStream
     {
+      static const int Nxd = (Nx == N) ? N : Nx/2;
+
       /* shortcuts for frequently used types */
       typedef typename PrimitiveIntersector::Precalculations Precalculations;
       typedef typename PrimitiveIntersector::Primitive Primitive;
@@ -545,32 +547,32 @@ namespace embree
         float max_dist;
       };
 
-        struct NearFarPreCompute
+      struct NearFarPreCompute
+      {
+#if defined(__AVX512F__)
+        vint16 permX, permY, permZ;
+#endif
+        size_t nearX, nearY, nearZ;
+        size_t farX, farY, farZ;
+
+        __forceinline NearFarPreCompute(const Vec3fa& dir)
         {
 #if defined(__AVX512F__)
-          vint16 permX, permY, permZ;
+          /* optimization works only for 8-wide BVHs with 16-wide SIMD */
+          const vint<16> id(step);
+          const vint<16> id2 = align_shift_right<16/2>(id, id);
+          permX = select(vfloat<16>(dir.x) >= 0.0f, id, id2);
+          permY = select(vfloat<16>(dir.y) >= 0.0f, id, id2);
+          permZ = select(vfloat<16>(dir.z) >= 0.0f, id, id2);
 #endif
-          size_t nearX, nearY, nearZ;
-          size_t farX, farY, farZ;
-
-          __forceinline NearFarPreCompute(const Vec3fa& dir)
-          {
-#if defined(__AVX512F__)
-            /* optimization works only for 8-wide BVHs with 16-wide SIMD */
-            const vint<16> id(step);
-            const vint<16> id2 = align_shift_right<16/2>(id, id);
-            permX = select(vfloat<16>(dir.x) >= 0.0f, id, id2);
-            permY = select(vfloat<16>(dir.y) >= 0.0f, id, id2);
-            permZ = select(vfloat<16>(dir.z) >= 0.0f, id, id2);
-#endif
-            nearX = (dir.x < 0.0f) ? 1*sizeof(vfloat<N>) : 0*sizeof(vfloat<N>);
-            nearY = (dir.y < 0.0f) ? 3*sizeof(vfloat<N>) : 2*sizeof(vfloat<N>);
-            nearZ = (dir.z < 0.0f) ? 5*sizeof(vfloat<N>) : 4*sizeof(vfloat<N>);
-            farX  = nearX ^ sizeof(vfloat<N>);
-            farY  = nearY ^ sizeof(vfloat<N>);
-            farZ  = nearZ ^ sizeof(vfloat<N>);
-          }
-        };
+          nearX = (dir.x < 0.0f) ? 1*sizeof(vfloat<N>) : 0*sizeof(vfloat<N>);
+          nearY = (dir.y < 0.0f) ? 3*sizeof(vfloat<N>) : 2*sizeof(vfloat<N>);
+          nearZ = (dir.z < 0.0f) ? 5*sizeof(vfloat<N>) : 4*sizeof(vfloat<N>);
+          farX  = nearX ^ sizeof(vfloat<N>);
+          farY  = nearY ^ sizeof(vfloat<N>);
+          farZ  = nearZ ^ sizeof(vfloat<N>);
+        }
+      };
 
 
       __forceinline static size_t initPacketsAndFrusta(RayK<K>** inputPackets, const size_t numOctantRays, Packet* const packet, Frusta& frusta)
@@ -611,6 +613,7 @@ namespace embree
           tmp_min_org  = min(tmp_min_org , select(m_valid,org , Vec3vfK(pos_inf)));
           tmp_max_org  = max(tmp_max_org , select(m_valid,org , Vec3vfK(neg_inf)));
         }
+
         m_active &= (numOctantRays == (8 * sizeof(size_t))) ? (size_t)-1 : (((size_t)1 << numOctantRays)-1);
         const Vec3fa reduced_min_rdir( reduce_min(tmp_min_rdir.x), 
                                        reduce_min(tmp_min_rdir.y),
@@ -794,7 +797,7 @@ namespace embree
                                                      const NearFarPreCompute& pc,
                                                      const RayCtx* __restrict__ const ray_ctx,
                                                      vfloat<Nx>& dist,
-                                                     vlong8& maskK)
+                                                     vlong<Nxd>& maskK)
       {
         if (N == 8)
         {
@@ -802,18 +805,18 @@ namespace embree
           const vfloat<N*2> bminmaxX = permute(vfloat<N*2>::load((const float*)&node->lower_x), pc.permX);
           const vfloat<N*2> bminmaxY = permute(vfloat<N*2>::load((const float*)&node->lower_y), pc.permY);
           const vfloat<N*2> bminmaxZ = permute(vfloat<N*2>::load((const float*)&node->lower_z), pc.permZ);
-          const vlong8 one((size_t)1);
+          const vlong<Nxd> one((size_t)1);
           size_t bits = m_trav_active;
           do
           {            
             STAT3(normal.trav_nodes,1,1,1);                          
             const size_t i = __bscf(bits);
             const RayCtx& ray = ray_ctx[i];
-            const vlong8 bitmask = one << vlong8(i);
+            const vlong<Nxd> bitmask = one << vlong<Nxd>(i);
             const vbool<Nx> vmask = intersectAlignedNode<N, Nx, dist_update, robust>(ray, bminmaxX, bminmaxY, bminmaxZ, dist);
-            maskK = mask_or((vboold8)vmask, maskK, maskK, bitmask);
+            maskK = mask_or((vboold<Nxd>)vmask, maskK, maskK, bitmask);
           } while(bits);              
-          const vboold8 vmaskN = maskK != vlong8(zero);
+          const vboold<Nxd> vmaskN = maskK != vlong<Nxd>(zero);
           const vbool<Nx> vmask(vmaskN);
           return vmask;
         }
@@ -826,18 +829,18 @@ namespace embree
           const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farY));
           const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farZ));
 
-          const vlong8 one((size_t)1);
+          const vlong<Nxd> one((size_t)1);
           size_t bits = m_trav_active;
           do
           {            
             STAT3(normal.trav_nodes,1,1,1);                          
             const size_t i = __bscf(bits);
             const RayCtx& ray = ray_ctx[i];
-            const vlong8 bitmask = one << vlong8(i);
+            const vlong<Nxd> bitmask = one << vlong<Nxd>(i);
             const vbool<Nx> vmask = intersectAlignedNode<N, Nx, dist_update, robust>(ray, bminX, bminY, bminZ, bmaxX, bmaxY, bmaxZ, dist);
-            maskK = mask_or((vboold8)vmask, maskK, maskK, bitmask);
+            maskK = mask_or((vboold<Nxd>)vmask, maskK, maskK, bitmask);
           } while(bits);              
-          const vboold8 vmaskN = maskK != vlong8(zero);
+          const vboold<Nxd> vmaskN = maskK != vlong<Nxd>(zero);
           const vbool<Nx> vmask(vmaskN);
           return vmask;
         }
