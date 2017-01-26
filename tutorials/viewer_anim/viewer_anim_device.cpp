@@ -15,9 +15,9 @@
 // ======================================================================== //
 
 #define ANIM_FPS 15.0f
-#define ENABLE_ANIM 1
+#define ENABLE_ANIM 0
 #define VERTEX_NORMALS 1
-#define SHADOWS 1
+#define SHADOWS 0
 #define ANTI_ALIASING 1
 
 #include "../common/math/random_sampler.h"
@@ -601,12 +601,11 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
       {
         const unsigned int geomID = dBuffer[width*py+px].geomID;
         const unsigned int primID = dBuffer[width*py+px].primID;
-        const unsigned int primZ  = dBuffer[width*py+px].z;
-        const int color = pixels[width*py+px];
-        const int r = (color >>  0) & 255;
-        const int g = (color >>  8) & 255;
-        const int b = (color >> 16) & 255;
+        const float primZ  = dBuffer[width*py+px].z;
+        const float inv_primZ  = 1.0f / dBuffer[width*py+px].z;
 
+        bool debug = false;
+        if (px == 963 && py == 772) { debug = true; PRINT("DEBUG"); PRINT(primZ); }
 
         const Vec3fa normal = normalize(getTriangleNormal(geomID,primID));
 
@@ -620,6 +619,11 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
             const unsigned int gID = dBuffer[width*y+x].geomID;
             const unsigned int pID = dBuffer[width*y+x].primID;
             const float z = dBuffer[width*y+x].z;
+            if (debug) { PRINT(z); PRINT(z*inv_primZ); }
+            if (gID == geomID && pID == primID)
+              minZdist = min(minZdist,z*inv_primZ);
+            if (debug) PRINT(minZdist);
+
             if (unlikely( gID != geomID || pID != primID))
             {
               bool found = false;
@@ -627,21 +631,10 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
                 if (tList[i].geomID == gID && tList[i].primID == pID) { found = true; break; }
               if (found == true) continue;
 
-              const int c = pixels[width*y+x];
-              const int rr = (c >>  0) & 255;
-              const int gg = (c >>  8) & 255;
-              const int bb = (c >> 16) & 255;
-
-#define THRESHOLD (int)8
-              if (std::abs(rr-r) <= THRESHOLD &&
-                  std::abs(gg-g) <= THRESHOLD &&
-                  std::abs(bb-b) <= THRESHOLD) continue;
-
-              minZdist = min(minZdist,abs(primZ-z));
               tList[numTris].geomID = gID;
               tList[numTris].primID = pID;
               tList[numTris].z = z;
-
+              if (debug) { PRINT(tList[numTris].z); }
               numTris++;
               
               assert(numTris <= 9);
@@ -650,13 +643,21 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 
         if (numTris)
         {
+          if (debug) PRINT(numTris);
           for (size_t i=0;i<numTris;i++)
           {
-            //const Vec3fa n = normalize(getTriangleNormal(tList[i].geomID,tList[i].primID));
+            const Vec3fa n = normalize(getTriangleNormal(tList[i].geomID,tList[i].primID));
             //if (dot(n,normal) >= 0.1f) continue;
-
-            //if (dot(n,normal) <= 0.2f /* || minZdist * 1.05f < abs(tList[i].z-primZ) */)            
+            assert(tList[i].geomID != geomID || tList[i].primID != primID);
+            const float z = tList[i].z;
+            bool ztest = abs(1.0f - (z*inv_primZ)) > 0.002f;
+            //bool ztest = 
+          //if (tList[i].geomID != geomID || ztest /* minZdist *1.01f < abs(tList[i].z-primZ)  ||  (dot(normal,n) <= 0.1f) */ )
+          if (ztest)
+            {
+              if (debug) { PRINT(z); PRINT(abs(1.0f - (z*inv_primZ))); PRINT("RED"); /* exit(0); */ }
               pixels[py*width+px] = 255;
+            }
           }
         }
 
