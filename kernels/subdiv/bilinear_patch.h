@@ -34,11 +34,23 @@ namespace embree
       
       __forceinline BilinearPatchT () {}
 
-      __forceinline BilinearPatchT (const CatmullClarkPatch& patch,
-                                    const BezierCurveT<Vertex>* border0 = nullptr,
-                                    const BezierCurveT<Vertex>* border1 = nullptr,
-                                    const BezierCurveT<Vertex>* border2 = nullptr,
-                                    const BezierCurveT<Vertex>* border3 = nullptr) 
+      __forceinline BilinearPatchT (const HalfEdge* edge, const BufferRefT<Vertex>& vertices) {
+        init(edge,vertices.getPtr(),vertices.getStride());
+      }
+      
+      __forceinline BilinearPatchT (const HalfEdge* edge, const char* vertices, size_t stride) {
+        init(edge,vertices,stride);
+      }
+
+      __forceinline void init (const HalfEdge* edge, const char* vertices, size_t stride)
+      {
+        v[0] = Vertex::loadu(vertices+edge->getStartVertexIndex()*stride); edge = edge->next();
+        v[1] = Vertex::loadu(vertices+edge->getStartVertexIndex()*stride); edge = edge->next();
+        v[2] = Vertex::loadu(vertices+edge->getStartVertexIndex()*stride); edge = edge->next();
+        v[3] = Vertex::loadu(vertices+edge->getStartVertexIndex()*stride); edge = edge->next();
+      }
+
+      __forceinline BilinearPatchT (const CatmullClarkPatch& patch)
       {
         v[0] = patch.ring[0].getLimitVertex();
         v[1] = patch.ring[1].getLimitVertex();
