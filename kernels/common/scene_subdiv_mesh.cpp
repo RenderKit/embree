@@ -134,10 +134,11 @@ namespace embree
       userbuffers[bid].set(ptr,offset,stride,size);  
       userbuffers[bid].checkPadding16();
     }
-    else if (type == RTC_FACE_BUFFER) {
+    else if (type == RTC_FACE_BUFFER) 
+    {
       if (size != -1) disabling();
       faceVertices.set(ptr,offset,stride,size);
-      if (size != -1) numPrimitives = size;
+      setNumPrimitives(size);
       if (size != -1) enabling();
     }
 

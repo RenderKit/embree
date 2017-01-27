@@ -75,10 +75,11 @@ namespace embree
       userbuffers[bid].set(ptr,offset,stride,size);
       userbuffers[bid].checkPadding16();
     }
-    else if (type == RTC_INDEX_BUFFER) {
+    else if (type == RTC_INDEX_BUFFER) 
+    {
       if (size != -1) disabling();
       segments.set(ptr,offset,stride,size); 
-      if (size != -1) numPrimitives = size;
+      setNumPrimitives(size);
       if (size != -1) enabling();
     }
     else

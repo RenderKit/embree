@@ -360,10 +360,7 @@ namespace embree
     /* special allocation only used from morton builder only a single time for each build */
     void* specialAlloc(size_t bytes) 
     {
-      /* create a new block if the first free block is too small */
-      if (freeBlocks.load() == nullptr || freeBlocks.load()->getBlockAllocatedBytes() < bytes)
-        freeBlocks = Block::create(device,bytes,bytes,freeBlocks,osAllocation);
-
+      assert(freeBlocks.load() != nullptr && freeBlocks.load()->getBlockAllocatedBytes() >= bytes);
       return freeBlocks.load()->ptr();
     }
 
