@@ -52,7 +52,7 @@ namespace embree
     Geometry::update();
   }
 
-  void BezierCurves::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
+  void BezierCurves::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size) 
   { 
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
@@ -65,7 +65,7 @@ namespace embree
     if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) 
     {
       size_t t = type - RTC_VERTEX_BUFFER0;
-      vertices[t].set(ptr,offset,stride); 
+      vertices[t].set(ptr,offset,stride,size); 
       vertices[t].checkPadding16();
       vertices0 = vertices[0];
     } 
@@ -73,11 +73,15 @@ namespace embree
     {
       if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
       new (&userbuffers[bid]) APIBuffer<char>(parent->device,numVertices(),stride);
-      userbuffers[bid].set(ptr,offset,stride);  
+      userbuffers[bid].set(ptr,offset,stride,size);  
       userbuffers[bid].checkPadding16();
     }
-    else if (type == RTC_INDEX_BUFFER)
-      curves.set(ptr,offset,stride); 
+    else if (type == RTC_INDEX_BUFFER) {
+      if (size != -1) disabling();
+      curves.set(ptr,offset,stride,size); 
+      if (size != -1) numPrimitives = size;
+      if (size != -1) enabling();
+    }
     else 
         throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
   }

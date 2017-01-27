@@ -168,13 +168,14 @@ namespace embree
     }
 
     /*! sets shared buffer */
-    void set(void* ptr_in, size_t ofs_in, size_t stride_in)
+    void set(void* ptr_in, size_t ofs_in, size_t stride_in, size_t num_in)
     {
       /* report error if buffer is not existing */
       if (!device)
         throw_RTCError(RTC_INVALID_ARGUMENT,"invalid buffer specified");
       
       ptr = (char*) ptr_in;
+      if (num_in != -1) this->num = num_in;
       shared = true;
 
       BufferRefT<T>::set(ptr+ofs_in,stride_in);

@@ -19,7 +19,6 @@
 
 namespace embree
 {
-
   TriangleMesh::TriangleMesh (Scene* parent, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps)
     : Geometry(parent,TRIANGLE_MESH,numTriangles,numTimeSteps,flags)
   {
@@ -52,7 +51,7 @@ namespace embree
     Geometry::update();
   }
 
-  void TriangleMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
+  void TriangleMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size) 
   { 
     if (parent->isStatic() && parent->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
@@ -65,7 +64,7 @@ namespace embree
     if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) 
     {
       size_t t = type - RTC_VERTEX_BUFFER0;
-      vertices[t].set(ptr,offset,stride); 
+      vertices[t].set(ptr,offset,stride,size);
       vertices[t].checkPadding16();
       vertices0 = vertices[0];
     } 
@@ -73,11 +72,15 @@ namespace embree
     {
       if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
       new (&userbuffers[bid]) APIBuffer<char>(parent->device,numVertices(),stride);
-      userbuffers[bid].set(ptr,offset,stride);  
+      userbuffers[bid].set(ptr,offset,stride,size);
       userbuffers[bid].checkPadding16();
     }
-    else if (type == RTC_INDEX_BUFFER)
-      triangles.set(ptr,offset,stride); 
+    else if (type == RTC_INDEX_BUFFER) {
+      if (size != -1) disabling();
+      triangles.set(ptr,offset,stride,size); 
+      if (size != -1) numPrimitives = size;
+      if (size != -1) enabling();
+    }
     else 
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
   }
@@ -128,10 +131,15 @@ namespace embree
 
   bool TriangleMesh::verify () 
   {
-    /*! verify consistent size of vertex arrays */
+    /*! verify size of vertex arrays */
     if (vertices.size() == 0) return false;
     for (const auto& buffer : vertices)
-      if (vertices[0].size() != buffer.size())
+      if (buffer.size() != numVertices())
+        return false;
+
+    /*! verify size of user vertex arrays */
+    for (const auto& buffer : userbuffers)
+      if (buffer.size() != numVertices())
         return false;
 
     /*! verify triangle indices */

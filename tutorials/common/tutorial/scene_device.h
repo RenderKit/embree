@@ -162,6 +162,8 @@ namespace embree
         numEdgeCreases = unsigned(in->edge_creases.size());
         numVertexCreases = unsigned(in->vertex_creases.size());
         numHoles = unsigned(in->holes.size());
+        numNormals = unsigned(in->normals.size());
+        numTexCoords = unsigned(in->texcoords.size());
         materialID = in->materialID;
         scene = nullptr;
         geomID = -1;
@@ -216,6 +218,8 @@ namespace embree
       unsigned int numEdgeCreases;
       unsigned int numVertexCreases;
       unsigned int numHoles;
+      unsigned int numNormals;
+      unsigned int numTexCoords;
       unsigned int materialID;
       RTCScene scene;
       unsigned int geomID;

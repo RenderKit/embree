@@ -161,7 +161,7 @@ namespace embree
     }
 
     /*! Sets specified buffer. */
-    virtual void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) { 
+    virtual void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size) { 
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 

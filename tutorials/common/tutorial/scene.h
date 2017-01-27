@@ -193,7 +193,10 @@ namespace embree
           normals[i] = xfmVector(nspace0,mesh->normals[i]);
         
         texcoords = mesh->texcoords;
-        if (texcoords.size()) texcoords.resize(texcoords.size()+2,zero);
+        if (texcoords.size()) { // zero pad to 16 bytes
+          texcoords.reserve(texcoords.size()+1);
+          texcoords.data()[texcoords.size()] = zero;
+        }
         position_indices = mesh->position_indices;
         normal_indices = mesh->normal_indices;
         texcoord_indices = mesh->texcoord_indices;
