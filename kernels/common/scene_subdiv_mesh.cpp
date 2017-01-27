@@ -133,9 +133,9 @@ namespace embree
         userbuffers.resize(bid+1);
         user_buffer_tags.resize(bid+1);
       }
-      new (&userbuffers[bid]) APIBuffer<char>(parent->device,numVertices,stride);
+      new (&userbuffers[bid]) APIBuffer<char>(parent->device,inf,stride);
       userbuffers[bid].set(ptr,offset,stride);  
-      userbuffers[bid].checkPadding16();
+      //userbuffers[bid].checkPadding16();
     }
     else if (type == RTC_FACE_BUFFER) {
       faceVertices.set(ptr,offset,stride);
