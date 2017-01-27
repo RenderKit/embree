@@ -458,6 +458,7 @@ namespace embree
         /* we reset the allocator when the mesh size changed */
         if (mesh->numPrimitivesChanged) {
           bvh->alloc.clear();
+          morton.clear();
           mesh->numPrimitivesChanged = false;
         }
         size_t numPrimitives = mesh->size();

@@ -168,6 +168,12 @@ namespace embree
 
       void build(size_t, size_t) 
       {
+        /* we reset the allocator when the mesh size changed */
+        if (mesh && mesh->numPrimitivesChanged) {
+          bvh->alloc.clear();
+          mesh->numPrimitivesChanged = false;
+        }
+
 	/* skip build for empty scene */
         const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
         if (numPrimitives == 0) {
@@ -256,6 +262,12 @@ namespace embree
 
       void build(size_t, size_t) 
       {
+        /* we reset the allocator when the mesh size changed */
+        if (mesh && mesh->numPrimitivesChanged) {
+          bvh->alloc.clear();
+          mesh->numPrimitivesChanged = false;
+        }
+
 	/* skip build for empty scene */
         const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
         if (numPrimitives == 0) {
@@ -447,6 +459,12 @@ namespace embree
 
       void build(size_t, size_t) 
       {
+        /* we reset the allocator when the mesh size changed */
+        if (mesh && mesh->numPrimitivesChanged) {
+          bvh->alloc.clear();
+          mesh->numPrimitivesChanged = false;
+        }
+
 	/* skip build for empty scene */
         const size_t numOriginalPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
         if (numOriginalPrimitives == 0) {
