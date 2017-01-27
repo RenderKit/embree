@@ -54,4 +54,13 @@ namespace embree
   
   Accel::IntersectorN::IntersectorN (IntersectFuncN intersect, OccludedFuncN occluded, const char* name)
     : intersect(intersect), occluded(occluded), name(name) {}
+
+  RayStreamFilterFuncs::RayStreamFilterFuncs()
+    : filterAOS(nullptr), filterSOA(nullptr), filterSOP(nullptr) {}
+  
+  RayStreamFilterFuncs::RayStreamFilterFuncs(void (*ptr) ()) 
+    : filterAOS((filterAOS_func) ptr), filterSOA((filterSOA_func) ptr), filterSOP((filterSOP_func) ptr) {}
+  
+  RayStreamFilterFuncs::RayStreamFilterFuncs(filterAOS_func aos, filterAOP_func aop, filterSOA_func soa, filterSOP_func sop) 
+    : filterAOS(aos), filterAOP(aop), filterSOA(soa), filterSOP(sop) {}
 }

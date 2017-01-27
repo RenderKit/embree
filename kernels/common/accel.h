@@ -454,15 +454,9 @@ namespace embree
 
   struct RayStreamFilterFuncs
   {
-    __forceinline RayStreamFilterFuncs()
-      : filterAOS(nullptr), filterSOA(nullptr), filterSOP(nullptr) {}
-    
-    __forceinline RayStreamFilterFuncs(void (*ptr) ()) 
-      : filterAOS((filterAOS_func) ptr), filterSOA((filterSOA_func) ptr), filterSOP((filterSOP_func) ptr) {}
-
-    __forceinline RayStreamFilterFuncs(filterAOS_func aos, filterAOP_func aop, filterSOA_func soa, filterSOP_func sop) 
-      : filterAOS(aos), filterAOP(aop), filterSOA(soa), filterSOP(sop) {}
-
+    RayStreamFilterFuncs();
+    RayStreamFilterFuncs(void (*ptr) ());
+    RayStreamFilterFuncs(filterAOS_func aos, filterAOP_func aop, filterSOA_func soa, filterSOP_func sop);
   public:
     filterAOS_func filterAOS;
     filterAOP_func filterAOP;
