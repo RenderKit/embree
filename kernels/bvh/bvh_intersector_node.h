@@ -244,7 +244,11 @@ namespace embree
 #endif  
       const vfloat<K> lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
       const vfloat<K> lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
+#if defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
+      const vbool<K> lhit    = asInt(maxi(lnearP,tnear)) <= asInt(mini(lfarP,tfar));
+#else
       const vbool<K> lhit    = maxi(lnearP,tnear) <= mini(lfarP,tfar);
+#endif
       dist = lnearP;
       return lhit;
     }
@@ -416,7 +420,11 @@ namespace embree
 
       const vfloat<K> lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
       const vfloat<K> lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
+#if defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
+      const vbool<K>  lhit   = asInt(maxi(lnearP,tnear)) <= asInt(mini(lfarP,tfar));
+#else
       const vbool<K>  lhit   = maxi(lnearP,tnear) <= mini(lfarP,tfar);
+#endif
       dist = lnearP;
       return lhit;
     }
