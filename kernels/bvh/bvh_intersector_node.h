@@ -242,15 +242,30 @@ namespace embree
       const vfloat<K> lclipMaxY = (node->upper_y[i] - org.y) * rdir.y;
       const vfloat<K> lclipMaxZ = (node->upper_z[i] - org.z) * rdir.z;
 #endif  
-      const vfloat<K> lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
-      const vfloat<K> lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
+
 #if defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
-      const vbool<K> lhit    = asInt(maxi(lnearP,tnear)) <= asInt(mini(lfarP,tfar));
-#else
-      const vbool<K> lhit    = maxi(lnearP,tnear) <= mini(lfarP,tfar);
+      if (K == 16)
+      {
+        /* use mixed float/int min/max */
+        const vfloat<K> lnearP = maxi(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY), min(lclipMinZ, lclipMaxZ));
+        const vfloat<K> lfarP  = mini(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY), max(lclipMinZ, lclipMaxZ));
+        const vbool<K> lhit    = asInt(maxi(lnearP, tnear)) <= asInt(mini(lfarP, tfar));
+        dist = lnearP;
+        return lhit;
+      }
+      else
 #endif
-      dist = lnearP;
-      return lhit;
+      {
+        const vfloat<K> lnearP = maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY), mini(lclipMinZ, lclipMaxZ));
+        const vfloat<K> lfarP  = mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY), maxi(lclipMinZ, lclipMaxZ));
+#if defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
+        const vbool<K> lhit    = asInt(maxi(lnearP, tnear)) <= asInt(mini(lfarP, tfar));
+#else
+        const vbool<K> lhit    = maxi(lnearP, tnear) <= mini(lfarP, tfar);
+#endif
+        dist = lnearP;
+        return lhit;
+      }
     }
 
     //////////////////////////////////////////////////////////////////////////////////////
@@ -418,15 +433,29 @@ namespace embree
       const vfloat<K> lclipMaxZ = (vupper_z - org.z) * rdir.z;
 #endif
 
-      const vfloat<K> lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
-      const vfloat<K> lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
 #if defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
-      const vbool<K>  lhit   = asInt(maxi(lnearP,tnear)) <= asInt(mini(lfarP,tfar));
-#else
-      const vbool<K>  lhit   = maxi(lnearP,tnear) <= mini(lfarP,tfar);
+      if (K == 16)
+      {
+        /* use mixed float/int min/max */
+        const vfloat<K> lnearP = maxi(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY), min(lclipMinZ, lclipMaxZ));
+        const vfloat<K> lfarP  = mini(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY), max(lclipMinZ, lclipMaxZ));
+        const vbool<K> lhit    = asInt(maxi(lnearP, tnear)) <= asInt(mini(lfarP, tfar));
+        dist = lnearP;
+        return lhit;
+      }
+      else
 #endif
-      dist = lnearP;
-      return lhit;
+      {
+        const vfloat<K> lnearP = maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY), mini(lclipMinZ, lclipMaxZ));
+        const vfloat<K> lfarP  = mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY), maxi(lclipMinZ, lclipMaxZ));
+#if defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
+        const vbool<K> lhit    = asInt(maxi(lnearP, tnear)) <= asInt(mini(lfarP, tfar));
+#else
+        const vbool<K> lhit    = maxi(lnearP, tnear) <= mini(lfarP, tfar);
+#endif
+        dist = lnearP;
+        return lhit;
+      }
     }
 
     //////////////////////////////////////////////////////////////////////////////////////
@@ -476,13 +505,27 @@ namespace embree
       const vfloat<K> lclipMaxY = (vupper_y - org.y) * rdir.y;
       const vfloat<K> lclipMaxZ = (vupper_z - org.z) * rdir.z;
 
-      const vfloat<K> lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
-      const vfloat<K> lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
       const float round_down = 1.0f-2.0f*float(ulp);
       const float round_up   = 1.0f+2.0f*float(ulp);
-      const vbool<K>  lhit   = round_down*maxi(lnearP,tnear) <= round_up*mini(lfarP,tfar);
-      dist = lnearP;
-      return lhit;
+
+#if defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
+      if (K == 16)
+      {
+        const vfloat<K> lnearP = maxi(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY), min(lclipMinZ, lclipMaxZ));
+        const vfloat<K> lfarP  = mini(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY), max(lclipMinZ, lclipMaxZ));
+        const vbool<K>  lhit   = round_down*maxi(lnearP, tnear) <= round_up*mini(lfarP, tfar);
+        dist = lnearP;
+        return lhit;
+      }
+      else
+#endif
+      {
+        const vfloat<K> lnearP = maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY), mini(lclipMinZ, lclipMaxZ));
+        const vfloat<K> lfarP  = mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY), maxi(lclipMinZ, lclipMaxZ));
+        const vbool<K>  lhit   = round_down*maxi(lnearP, tnear) <= round_up*mini(lfarP, tfar);
+        dist = lnearP;
+        return lhit;
+      }
     }
     
     //////////////////////////////////////////////////////////////////////////////////////
