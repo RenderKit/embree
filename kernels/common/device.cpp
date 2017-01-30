@@ -52,7 +52,7 @@ namespace embree
   ssize_t Device::debug_int2 = 0;
   ssize_t Device::debug_int3 = 0;
 
-  DECLARE_SYMBOL2(RayStreamFilterFuncs,rayStreamFilters);
+  DECLARE_SYMBOL2(RayStreamFilterFuncs,rayStreamFilterFuncs);
 
   static MutexSys g_mutex;
   static std::map<Device*,size_t> g_cache_size_map;
@@ -108,7 +108,9 @@ namespace embree
 
     /* ray stream SOA to AOS conversion */
 #if defined(EMBREE_RAY_PACKETS)
-    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(enabled_cpu_features,rayStreamFilters);
+    RayStreamFilterFuncsType rayStreamFilterFuncs;
+    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(enabled_cpu_features,rayStreamFilterFuncs);
+    rayStreamFilters = rayStreamFilterFuncs();
 #endif
   }
 
