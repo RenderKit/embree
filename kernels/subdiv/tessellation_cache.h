@@ -73,9 +73,8 @@ namespace embree
  {
  public:
    
-   //static const size_t DEFAULT_TESSELLATION_CACHE_SIZE = MAX_TESSELLATION_CACHE_SIZE; 
    static const size_t NUM_CACHE_SEGMENTS              = 8;
-   static const size_t NUM_PREALLOC_THREAD_WORK_STATES = MAX_THREADS;
+   static const size_t NUM_PREALLOC_THREAD_WORK_STATES = 512;
    static const size_t COMMIT_INDEX_SHIFT              = 32+8;
 #if defined(__X86_64__)
    static const size_t REF_TAG_MASK                    = 0xffffffffff;
