@@ -130,7 +130,7 @@ namespace embree
         userbuffers.resize(bid+1);
         user_buffer_tags.resize(bid+1);
       }
-      new (&userbuffers[bid]) APIBuffer<char>(parent->device,size,stride);
+      new (&userbuffers[bid]) APIBuffer<char>(parent->device,numVertices(),stride); // FIXME: numVertices for compatibility
       userbuffers[bid].set(ptr,offset,stride,size);  
       userbuffers[bid].checkPadding16();
     }
