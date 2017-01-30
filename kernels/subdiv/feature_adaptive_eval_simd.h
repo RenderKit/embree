@@ -43,6 +43,7 @@ namespace embree
         : P(P), dPdu(dPdu), dPdv(dPdv), ddPdudu(ddPdudu), ddPdvdv(ddPdvdv), ddPdudv(ddPdudv), dstride(dstride), N(N)
         {
           switch (edge->patch_type) {
+          case HalfEdge::BILINEAR_PATCH: BilinearPatch(edge,vertices,stride).eval(valid,u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,1.0f,dstride,N); break;
           case HalfEdge::REGULAR_QUAD_PATCH: RegularPatchT(edge,vertices,stride).eval(valid,u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,1.0f,dstride,N); break;
 #if PATCH_USE_GREGORY == 2
           case HalfEdge::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,vertices,stride).eval(valid,u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,1.0f,dstride,N); break;

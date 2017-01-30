@@ -52,7 +52,7 @@ namespace embree
     vertex_crease_weights.init(parent->device,numVertexCreases,sizeof(float));
 
     topology.resize(1);
-    new (&topology[0]) Topology(this,numEdges);
+    topology[0] = Topology(this,numEdges);
     enabling();
   }
 
@@ -130,7 +130,7 @@ namespace embree
         userbuffers.resize(bid+1);
         user_buffer_tags.resize(bid+1);
       }
-      new (&userbuffers[bid]) APIBuffer<char>(parent->device,size,stride);
+      userbuffers[bid] = APIBuffer<char>(parent->device,numVertices(),stride); // FIXME: numVertices for compatibility
       userbuffers[bid].set(ptr,offset,stride,size);  
       userbuffers[bid].checkPadding16();
     }
@@ -148,7 +148,7 @@ namespace embree
       if (bid >= topology.size()) {
         topology.resize(bid+1);
         for (size_t i=begin; i<topology.size(); i++)
-          new (&topology[i]) Topology(this,numEdges());
+          topology[i] = Topology(this,numEdges());
       }
       topology[bid].vertexIndices.set(ptr,offset,stride,size);
     }
@@ -652,6 +652,7 @@ namespace embree
 
   void SubdivMesh::printStatistics()
   {
+    size_t numBilinearFaces = 0;
     size_t numRegularQuadFaces = 0;
     size_t numIrregularQuadFaces = 0;
     size_t numComplexFaces = 0;
@@ -659,6 +660,7 @@ namespace embree
     for (size_t e=0, f=0; f<numFaces(); e+=faceVertices[f++]) 
     {
       switch (topology[0].halfEdges[e].patch_type) {
+      case HalfEdge::BILINEAR_PATCH      : numBilinearFaces++;   break;
       case HalfEdge::REGULAR_QUAD_PATCH  : numRegularQuadFaces++;   break;
       case HalfEdge::IRREGULAR_QUAD_PATCH: numIrregularQuadFaces++; break;
       case HalfEdge::COMPLEX_PATCH       : numComplexFaces++;   break;
@@ -666,6 +668,7 @@ namespace embree
     }
     
     std::cout << "numFaces = " << numFaces() << ", " 
+              << "numBilinearFaces = " << numBilinearFaces << " (" << 100.0f * numBilinearFaces / numFaces() << "%), " 
               << "numRegularQuadFaces = " << numRegularQuadFaces << " (" << 100.0f * numRegularQuadFaces / numFaces() << "%), " 
               << "numIrregularQuadFaces " << numIrregularQuadFaces << " (" << 100.0f * numIrregularQuadFaces / numFaces() << "%) " 
               << "numComplexFaces " << numComplexFaces << " (" << 100.0f * numComplexFaces / numFaces() << "%) " 

@@ -426,6 +426,8 @@ namespace embree
         }
     }
 
-    RayStreamFilterFuncs rayStreamFilters(RayStream::filterAOS,RayStream::filterAOP,RayStream::filterSOA,RayStream::filterSOP);
+    RayStreamFilterFuncs rayStreamFilterFuncs() {
+      return RayStreamFilterFuncs(RayStream::filterAOS,RayStream::filterAOP,RayStream::filterSOA,RayStream::filterSOP);
+    }
   };
 };

@@ -444,37 +444,49 @@ namespace embree
         IntersectorN intersectorN;
       } intersectors;
   };
-
+  
 #define DEFINE_SET_INTERSECTOR1(symbol,intersector)                     \
-  AccelSet::Intersector1 symbol((AccelSet::IntersectFunc)intersector::intersect, \
-                                (AccelSet::OccludedFunc )intersector::occluded, \
-                                TOSTRING(isa) "::" TOSTRING(symbol));
-
-#define DEFINE_SET_INTERSECTOR4(symbol,intersector)                         \
-  AccelSet::Intersector4 symbol((void*)intersector::intersect, \
-                                (void*)intersector::occluded, \
-                                TOSTRING(isa) "::" TOSTRING(symbol),	\
-				false);
-
-#define DEFINE_SET_INTERSECTOR8(symbol,intersector)                         \
-  AccelSet::Intersector8 symbol((void*)intersector::intersect, \
-                                (void*)intersector::occluded, \
-                                TOSTRING(isa) "::" TOSTRING(symbol),	\
-				false);
-
-#define DEFINE_SET_INTERSECTOR16(symbol,intersector)                         \
-  AccelSet::Intersector16 symbol((void*)intersector::intersect, \
-                                 (void*)intersector::occluded, \
-                                 TOSTRING(isa) "::" TOSTRING(symbol),\
-				 false);  
-
-#define DEFINE_SET_INTERSECTOR1M(symbol,intersector)                     \
-  AccelSet::Intersector1M symbol((AccelSet::IntersectFunc1M)intersector::intersect, \
-                                 (AccelSet::OccludedFunc1M )intersector::occluded, \
-                                 TOSTRING(isa) "::" TOSTRING(symbol));
-
-#define DEFINE_SET_INTERSECTORN(symbol,intersector)                         \
-  AccelSet::IntersectorN symbol((AccelSet::IntersectFuncN)intersector::intersect, \
-                                (AccelSet::OccludedFuncN)intersector::occluded,                     \
-                                TOSTRING(isa) "::" TOSTRING(symbol));    
+  AccelSet::Intersector1 symbol() {                                     \
+    return AccelSet::Intersector1((AccelSet::IntersectFunc)intersector::intersect, \
+                                  (AccelSet::OccludedFunc )intersector::occluded, \
+                                  TOSTRING(isa) "::" TOSTRING(symbol)); \
+  }
+  
+#define DEFINE_SET_INTERSECTOR4(symbol,intersector)                     \
+  AccelSet::Intersector4 symbol() {                                     \
+    return AccelSet::Intersector4((void*)intersector::intersect,        \
+                                  (void*)intersector::occluded,         \
+                                  TOSTRING(isa) "::" TOSTRING(symbol),	\
+                                  false);                               \
+  }
+  
+#define DEFINE_SET_INTERSECTOR8(symbol,intersector)                     \
+  AccelSet::Intersector8 symbol() {                                     \
+    return AccelSet::Intersector8((void*)intersector::intersect,        \
+                                  (void*)intersector::occluded,         \
+                                  TOSTRING(isa) "::" TOSTRING(symbol),	\
+                                  false);                               \
+  }
+  
+#define DEFINE_SET_INTERSECTOR16(symbol,intersector)                    \
+  AccelSet::Intersector16 symbol() {                                    \
+    return AccelSet::Intersector16((void*)intersector::intersect,       \
+                                   (void*)intersector::occluded,        \
+                                   TOSTRING(isa) "::" TOSTRING(symbol), \
+                                   false);                              \
+  }
+  
+#define DEFINE_SET_INTERSECTOR1M(symbol,intersector)                    \
+  AccelSet::Intersector1M symbol() {                                    \
+    return AccelSet::Intersector1M((AccelSet::IntersectFunc1M)intersector::intersect, \
+                                   (AccelSet::OccludedFunc1M )intersector::occluded, \
+                                   TOSTRING(isa) "::" TOSTRING(symbol)); \
+  }
+  
+#define DEFINE_SET_INTERSECTORN(symbol,intersector)                     \
+  AccelSet::IntersectorN symbol() {                                     \
+    return AccelSet::IntersectorN((AccelSet::IntersectFuncN)intersector::intersect, \
+                                  (AccelSet::OccludedFuncN)intersector::occluded, \
+                                  TOSTRING(isa) "::" TOSTRING(symbol)); \
+  }
 }

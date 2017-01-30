@@ -29,7 +29,6 @@ SET(EMBREE_LIBRARY_FILES
 
   common/device.cpp
   common/stat.cpp
-  common/accel.cpp
   common/acceln.cpp
   common/accelset.cpp
   common/state.cpp
