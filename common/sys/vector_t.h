@@ -54,8 +54,8 @@ namespace embree
       }
     
       __forceinline vector_t (vector_t&& other)
+        : alloc(std::move(other.alloc))
       {
-        alloc = std::move(other.alloc);
         size_active = other.size_active; other.size_active = 0;
         size_alloced = other.size_alloced; other.size_alloced = 0;
         items = other.items; other.items = nullptr;
@@ -186,22 +186,32 @@ namespace embree
         assert(new_active <= new_alloced); 
 
         /* destroy elements */
-        for (size_t i=new_active; i<size_active; i++)
-          alloc.destroy(&items[i]);
-
-        size_t size_copy = new_active < size_active ? new_active : size_active;
-        size_active = new_active;
+        if (new_active < size_active) 
+        {
+          for (size_t i=new_active; i<size_active; i++)
+            alloc.destroy(&items[i]);
+          size_active = new_active;
+        }
 
         /* only reallocate if necessary */
-        if (new_alloced == size_alloced) 
+        if (new_alloced == size_alloced) {
+          for (size_t i=size_active; i<new_active; i++) ::new (&items[i]) T;
+          size_active = new_active;
           return;
-        
+        }
+
         /* reallocate and copy items */
         T* old_items = items;
         items = alloc.allocate(new_alloced);
-        for (size_t i=0; i<size_copy; i++) items[i] = std::move(old_items[i]);
-        for (size_t i=size_copy; i<size_active; i++) ::new (&items[i]) T;
+        for (size_t i=0; i<size_active; i++) {
+          ::new (&items[i]) T(std::move(old_items[i]));
+          alloc.destroy(&old_items[i]);
+        }
+        for (size_t i=size_active; i<new_active; i++) {
+          ::new (&items[i]) T;
+        }
         alloc.deallocate(old_items,size_alloced);
+        size_active = new_active;
         size_alloced = new_alloced;
       }
 

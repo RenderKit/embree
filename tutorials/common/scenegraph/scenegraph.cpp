@@ -23,9 +23,9 @@
 
 namespace embree
 {
-  Ref<SceneGraph::Node> SceneGraph::load(const FileName& filename)
+  Ref<SceneGraph::Node> SceneGraph::load(const FileName& filename, const bool singleObject)
   {
-    if      (toLowerCase(filename.ext()) == std::string("obj" )) return loadOBJ(filename);
+    if      (toLowerCase(filename.ext()) == std::string("obj" )) return loadOBJ(filename, false, singleObject);
     else if (toLowerCase(filename.ext()) == std::string("ply" )) return loadPLY(filename);
     else if (toLowerCase(filename.ext()) == std::string("xml" )) return loadXML(filename);
     else if (toLowerCase(filename.ext()) == std::string("scn" )) return loadCorona(filename);
@@ -741,7 +741,7 @@ namespace embree
         mesh->verticesPerFace[i] = 4;
       }
     }
-    mesh->boundaryMode = RTC_BOUNDARY_EDGE_AND_CORNER;
+    mesh->position_subdiv_mode = RTC_SUBDIV_PIN_CORNERS;
     return mesh;
   }
 
@@ -935,10 +935,10 @@ namespace embree
   {
     SceneGraph::HairSetNode* mesh = new SceneGraph::HairSetNode(true,material,1);
     mesh->hairs.push_back(SceneGraph::HairSetNode::Hair(0,0));
-    mesh->positions[0].push_back(Vec3fa(center,radius));
-    mesh->positions[0].push_back(Vec3fa(center,radius));
-    mesh->positions[0].push_back(Vec3fa(center,radius));
-    mesh->positions[0].push_back(Vec3fa(center,radius));
+    mesh->positions[0].push_back(Vec3fa(center+Vec3fa(-radius,0,0),radius));
+    mesh->positions[0].push_back(Vec3fa(center+Vec3fa(0,radius,0),radius));
+    mesh->positions[0].push_back(Vec3fa(center+Vec3fa(0,0,radius),radius));
+    mesh->positions[0].push_back(Vec3fa(center+Vec3fa(0,+radius,0),radius));
     return mesh;
   }
 

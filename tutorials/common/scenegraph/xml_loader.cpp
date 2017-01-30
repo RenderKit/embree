@@ -239,9 +239,8 @@ namespace embree
     Ref<SceneGraph::Node> loadQuadMesh(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadSubdivMesh(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadLineSegments(const Ref<XML>& xml);
-    Ref<SceneGraph::Node> loadBezierHair(const Ref<XML>& xml);
-    Ref<SceneGraph::Node> loadBezierCurves(const Ref<XML>& xml);
-    Ref<SceneGraph::Node> loadBSplineCurves(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadBezierCurves(const Ref<XML>& xml, bool hair);
+    Ref<SceneGraph::Node> loadBSplineCurves(const Ref<XML>& xml, bool hair);
 
   private:
     Ref<SceneGraph::MaterialNode> loadMaterial(const Ref<XML>& xml);
@@ -895,6 +894,18 @@ namespace embree
     return mesh;
   }
 
+  RTCSubdivisionMode parseSubdivMode(const Ref<XML>& xml)
+  {
+    std::string subdiv_mode = xml->parm("subdiv_mode");
+    if      (subdiv_mode == "no_boundary" ) return RTC_SUBDIV_NO_BOUNDARY;
+    else if (subdiv_mode == "smooth"      ) return RTC_SUBDIV_SMOOTH_BOUNDARY;
+    else if (subdiv_mode == "pin_corners" ) return RTC_SUBDIV_PIN_CORNERS;
+    else if (subdiv_mode == "pin_boundary") return RTC_SUBDIV_PIN_BOUNDARY;
+    else if (subdiv_mode == "pin_all"     ) return RTC_SUBDIV_PIN_ALL;
+    else if (subdiv_mode != ""            ) THROW_RUNTIME_ERROR("invalid subdivision mode: "+subdiv_mode);
+    return RTC_SUBDIV_SMOOTH_BOUNDARY;
+  }
+
   Ref<SceneGraph::Node> XMLLoader::loadSubdivMesh(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
@@ -907,13 +918,23 @@ namespace embree
       mesh->positions.push_back(loadVec3faArray(xml->childOpt("positions")));
       if (xml->hasChild("positions2")) 
         mesh->positions.push_back(loadVec3faArray(xml->childOpt("positions2")));
-    }
-
+    }    
     mesh->normals = loadVec3faArray(xml->childOpt("normals"));
     mesh->texcoords = loadVec2fArray(xml->childOpt("texcoords"));
-    mesh->position_indices = loadUIntArray(xml->childOpt("position_indices"));
-    mesh->normal_indices   = loadUIntArray(xml->childOpt("normal_indices"));
-    mesh->texcoord_indices = loadUIntArray(xml->childOpt("texcoord_indices"));
+
+    if (Ref<XML> child = xml->childOpt("position_indices")) {
+      mesh->position_indices = loadUIntArray(child);
+      mesh->position_subdiv_mode = parseSubdivMode(child);
+    }
+    if (Ref<XML> child = xml->childOpt("normal_indices")) {
+      mesh->normal_indices   = loadUIntArray(child);
+      mesh->normal_subdiv_mode = parseSubdivMode(child);
+    }
+    if (Ref<XML> child = xml->childOpt("texcoord_indices")) {
+      mesh->texcoord_indices = loadUIntArray(child);
+      mesh->texcoord_subdiv_mode = parseSubdivMode(child);
+    }
+
     mesh->verticesPerFace  = loadUIntArray(xml->childOpt("faces"));
     mesh->holes            = loadUIntArray(xml->childOpt("holes"));
     mesh->edge_creases     = loadVec2iArray(xml->childOpt("edge_creases"));
@@ -943,52 +964,6 @@ namespace embree
     return mesh;
   }
 
-  Ref<SceneGraph::Node> XMLLoader::loadBezierHair(const Ref<XML>& xml) 
-  {
-    Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    SceneGraph::HairSetNode* mesh = new SceneGraph::HairSetNode(true,material);
-
-    if (Ref<XML> animation = xml->childOpt("animated_positions")) {
-      for (size_t i=0; i<animation->size(); i++)
-        mesh->positions.push_back(loadVec4fArray(animation->child(i)));
-    } else {
-      mesh->positions.push_back(loadVec4fArray(xml->childOpt("positions")));
-      if (xml->hasChild("positions2")) 
-        mesh->positions.push_back(loadVec4fArray(xml->childOpt("positions2")));
-    }
-    
-    std::vector<Vec2i> indices = loadVec2iArray(xml->childOpt("indices"));
-    mesh->hairs.resize(indices.size()); 
-    for (size_t i=0; i<indices.size(); i++) 
-      mesh->hairs[i] = SceneGraph::HairSetNode::Hair(indices[i].x,indices[i].y);
-
-    mesh->verify();
-    return mesh;
-  }
-
-  Ref<SceneGraph::Node> XMLLoader::loadBezierCurves(const Ref<XML>& xml) 
-  {
-    Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    SceneGraph::HairSetNode* mesh = new SceneGraph::HairSetNode(false,material);
-
-    if (Ref<XML> animation = xml->childOpt("animated_positions")) {
-      for (size_t i=0; i<animation->size(); i++)
-        mesh->positions.push_back(loadVec4fArray(animation->child(i)));
-    } else {
-      mesh->positions.push_back(loadVec4fArray(xml->childOpt("positions")));
-      if (xml->hasChild("positions2")) 
-        mesh->positions.push_back(loadVec4fArray(xml->childOpt("positions2")));
-    }
-    
-    std::vector<Vec2i> indices = loadVec2iArray(xml->childOpt("indices"));
-    mesh->hairs.resize(indices.size()); 
-    for (size_t i=0; i<indices.size(); i++) 
-      mesh->hairs[i] = SceneGraph::HairSetNode::Hair(indices[i].x,indices[i].y);
-
-    mesh->verify();
-    return mesh;
-  }
-
   avector<Vec3fa> convert_bspline_to_bezier(const std::vector<unsigned>& indices, const avector<Vec3fa>& positions)
   {
     avector<Vec3fa> positions_o;
@@ -1010,10 +985,37 @@ namespace embree
     return positions_o;
   }
 
-  Ref<SceneGraph::Node> XMLLoader::loadBSplineCurves(const Ref<XML>& xml) 
+  Ref<SceneGraph::Node> XMLLoader::loadBezierCurves(const Ref<XML>& xml, bool hair) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    SceneGraph::HairSetNode* mesh = new SceneGraph::HairSetNode(false,material);
+    SceneGraph::HairSetNode* mesh = new SceneGraph::HairSetNode(hair,material);
+
+    if (Ref<XML> animation = xml->childOpt("animated_positions")) {
+      for (size_t i=0; i<animation->size(); i++)
+        mesh->positions.push_back(loadVec4fArray(animation->child(i)));
+    } else {
+      mesh->positions.push_back(loadVec4fArray(xml->childOpt("positions")));
+      if (xml->hasChild("positions2")) 
+        mesh->positions.push_back(loadVec4fArray(xml->childOpt("positions2")));
+    }
+    
+    std::vector<Vec2i> indices = loadVec2iArray(xml->childOpt("indices"));
+    mesh->hairs.resize(indices.size()); 
+    for (size_t i=0; i<indices.size(); i++) 
+      mesh->hairs[i] = SceneGraph::HairSetNode::Hair(indices[i].x,indices[i].y);
+
+    std::string tessellation_rate = xml->parm("tessellation_rate");
+    if (tessellation_rate != "")
+      mesh->tessellation_rate = atoi(tessellation_rate.c_str());
+
+    mesh->verify();
+    return mesh;
+  }
+
+  Ref<SceneGraph::Node> XMLLoader::loadBSplineCurves(const Ref<XML>& xml, bool hair) 
+  {
+    Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
+    SceneGraph::HairSetNode* mesh = new SceneGraph::HairSetNode(hair,material);
 
     std::vector<unsigned> indices = loadUIntArray(xml->childOpt("indices"));
     mesh->hairs.resize(indices.size());
@@ -1120,7 +1122,10 @@ namespace embree
     else 
     {
       const std::string id = xml->parm("id");
-      if      (xml->name == "extern"          ) return sceneMap[id] = SceneGraph::load(path + xml->parm("src"));
+      if (xml->name == "extern"          ) 
+        return sceneMap[id] = SceneGraph::load(path + xml->parm("src"));
+      else if (xml->name == "extern_combine"          ) 
+        return sceneMap[id] = SceneGraph::load(path + xml->parm("src"),true);
       else if (xml->name == "obj"             ) {
         const bool subdiv_mode = xml->parm("subdiv") == "1";
         return sceneMap[id] = loadOBJ(path + xml->parm("src"),subdiv_mode);
@@ -1137,9 +1142,11 @@ namespace embree
       else if (xml->name == "QuadMesh"        ) return sceneMap[id] = loadQuadMesh        (xml);
       else if (xml->name == "SubdivisionMesh" ) return sceneMap[id] = loadSubdivMesh      (xml);
       else if (xml->name == "LineSegments"    ) return sceneMap[id] = loadLineSegments    (xml);
-      else if (xml->name == "Hair"            ) return sceneMap[id] = loadBezierHair      (xml);
-      else if (xml->name == "BezierCurves"    ) return sceneMap[id] = loadBezierCurves    (xml);
-      else if (xml->name == "BSplineCurves"   ) return sceneMap[id] = loadBSplineCurves   (xml);
+      else if (xml->name == "Hair"            ) return sceneMap[id] = loadBezierCurves    (xml,true);
+      else if (xml->name == "BezierHair"      ) return sceneMap[id] = loadBezierCurves    (xml,true);
+      else if (xml->name == "BSplineHair"     ) return sceneMap[id] = loadBSplineCurves   (xml,true);
+      else if (xml->name == "BezierCurves"    ) return sceneMap[id] = loadBezierCurves    (xml,false);
+      else if (xml->name == "BSplineCurves"   ) return sceneMap[id] = loadBSplineCurves   (xml,false);
       else if (xml->name == "Group"           ) return sceneMap[id] = loadGroupNode       (xml);
       else if (xml->name == "Transform"       ) return sceneMap[id] = loadTransformNode   (xml);
       else if (xml->name == "Transform2"      ) return sceneMap[id] = loadTransform2Node  (xml);

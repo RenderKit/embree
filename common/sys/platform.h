@@ -18,6 +18,8 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 
+//__asm__(".symver memcpy,memcpy@GLIBC_2.2.5");
+
 #include <cstddef>
 #include <cassert>
 #include <cstdlib>
@@ -304,6 +306,7 @@ __forceinline std::string toString(long long value) {
 //#pragma clang diagnostic ignored "-Wnarrowing"
 //#pragma clang diagnostic ignored "-Wc++11-narrowing"
 //#pragma clang diagnostic ignored "-Wdeprecated-register"
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined(__clang__)

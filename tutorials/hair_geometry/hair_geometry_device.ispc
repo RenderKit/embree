@@ -75,6 +75,7 @@ void convertHairSet(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
   }
   rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(uniform ISPCHair));
   rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&filterDispatch);
+  rtcSetTessellationRate(scene_out,geomID,hair->tessellation_rate);
 }
 
 RTCScene convertScene(uniform ISPCScene* uniform scene_in)

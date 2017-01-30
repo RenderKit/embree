@@ -29,7 +29,7 @@ namespace embree
     struct MaterialNode;
     struct Transformations;
 
-    Ref<Node> load(const FileName& fname);
+    Ref<Node> load(const FileName& fname, bool singleObject = false);
     void store(Ref<Node> root, const FileName& fname, bool embedTextures);
     void extend_animation(Ref<Node> node0, Ref<Node> node1);
     void optimize_animation(Ref<Node> node0);
@@ -518,7 +518,11 @@ namespace embree
       typedef Vec3fa Vertex;
 
       SubdivMeshNode (Ref<MaterialNode> material, size_t numTimeSteps = 0) 
-        : Node(true), material(material), boundaryMode(RTC_BOUNDARY_EDGE_ONLY), tessellationRate(2.0f) 
+        : Node(true), 
+          position_subdiv_mode(RTC_SUBDIV_SMOOTH_BOUNDARY), 
+          normal_subdiv_mode(RTC_SUBDIV_SMOOTH_BOUNDARY),
+          texcoord_subdiv_mode(RTC_SUBDIV_SMOOTH_BOUNDARY),
+          material(material), tessellationRate(2.0f) 
       {
         for (size_t i=0; i<numTimeSteps; i++)
           positions.push_back(avector<Vertex>());
@@ -531,6 +535,9 @@ namespace embree
         position_indices(imesh->position_indices),
         normal_indices(imesh->normal_indices),
         texcoord_indices(imesh->texcoord_indices),
+        position_subdiv_mode(imesh->position_subdiv_mode), 
+        normal_subdiv_mode(imesh->normal_subdiv_mode),
+        texcoord_subdiv_mode(imesh->texcoord_subdiv_mode),
         verticesPerFace(imesh->verticesPerFace),
         holes(imesh->holes),
         edge_creases(imesh->edge_creases),
@@ -538,7 +545,6 @@ namespace embree
         vertex_creases(imesh->vertex_creases),
         vertex_crease_weights(imesh->vertex_crease_weights),
         material(imesh->material), 
-        boundaryMode(imesh->boundaryMode),
         tessellationRate(imesh->tessellationRate)
       {
         for (size_t i=0; i<spaces.size(); i++) {
@@ -595,6 +601,9 @@ namespace embree
       std::vector<unsigned> position_indices;        //!< position indices for all faces
       std::vector<unsigned> normal_indices;          //!< normal indices for all faces
       std::vector<unsigned> texcoord_indices;        //!< texcoord indices for all faces
+      RTCSubdivisionMode position_subdiv_mode;  
+      RTCSubdivisionMode normal_subdiv_mode;
+      RTCSubdivisionMode texcoord_subdiv_mode;
       std::vector<unsigned> verticesPerFace;         //!< number of indices of each face
       std::vector<unsigned> holes;                   //!< face ID of holes
       std::vector<Vec2i> edge_creases;          //!< index pairs for edge crease 
@@ -602,7 +611,6 @@ namespace embree
       std::vector<unsigned> vertex_creases;          //!< indices of vertex creases
       std::vector<float> vertex_crease_weights; //!< weight for each vertex crease
       Ref<MaterialNode> material;
-      RTCBoundaryMode boundaryMode;
       float tessellationRate;
     };
 
@@ -695,14 +703,14 @@ namespace embree
       
     public:
       HairSetNode (bool hair, Ref<MaterialNode> material, size_t numTimeSteps = 0)
-        : Node(true), hair(hair), material(material) 
+        : Node(true), hair(hair), material(material), tessellation_rate(4)
       {
         for (size_t i=0; i<numTimeSteps; i++)
           positions.push_back(avector<Vertex>());
       }
 
       HairSetNode (Ref<SceneGraph::HairSetNode> imesh, const Transformations& spaces)
-        : Node(true), hair(imesh->hair), hairs(imesh->hairs), material(imesh->material)
+        : Node(true), hair(imesh->hair), hairs(imesh->hairs), material(imesh->material), tessellation_rate(imesh->tessellation_rate)
       {
         for (size_t i=0; i<spaces.size(); i++) {
           avector<Vertex> verts(imesh->numVertices());
@@ -758,6 +766,7 @@ namespace embree
       std::vector<avector<Vertex>> positions; //!< hair control points (x,y,z,r) for multiple timesteps
       std::vector<Hair> hairs;  //!< list of hairs
       Ref<MaterialNode> material;
+      unsigned tessellation_rate;
     };
     
     Ref<Node> flatten(Ref<Node> node, const Transformations& spaces = Transformations(one));

@@ -110,10 +110,12 @@ extern "C" uniform unsigned int ispcNewSubdivisionMesh (RTCScene scene,
                                                         uniform size_tt numTimeSteps);
 
 extern "C" void ispcSetRayMask (RTCScene scene, uniform unsigned int geomID, uniform int mask);
-extern "C" void ispcSetBoundaryMode(RTCScene scene, uniform unsigned int geomID, uniform size_tt mask);
+extern "C" void ispcSetBoundaryMode(RTCScene scene, uniform unsigned int geomID, uniform size_tt mode);
+extern "C" void ispcSetSubdivisionMode(RTCScene scene, uniform unsigned int geomID, uniform size_tt topologyID, uniform size_tt mode);
+extern "C" void ispcSetIndexBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType vertexBuffer, uniform RTCBufferType indexBuffer);
 extern "C" void* uniform ispcMapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
 extern "C" void ispcUnmapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
-extern "C" void ispcSetBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type, const void* uniform ptr, uniform size_tt offset, uniform size_tt stride);
+extern "C" void ispcSetBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type, const void* uniform ptr, uniform size_tt offset, uniform size_tt stride, uniform size_tt size);
 extern "C" void ispcEnable (RTCScene scene, uniform unsigned int geomID);
 extern "C" void ispcUpdate (RTCScene scene, uniform unsigned int geomID);
 extern "C" void ispcUpdateBuffer (RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
@@ -237,8 +239,6 @@ RTCScene rtcNewScene (uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags afl
       aflags = (uniform RTCAlgorithmFlags) ((aflags & ~RTC_INTERSECT_VARYING) | (1 << 2));
     else if (sizeof(varying float) == 64)
       aflags = (uniform RTCAlgorithmFlags) ((aflags & ~RTC_INTERSECT_VARYING) | (1 << 3));
-
-    aflags |= (uniform RTCAlgorithmFlags)(1 << 5); /* ray stream interface */
   }
   return ispcNewScene(flags,aflags);
 }
@@ -459,6 +459,14 @@ void rtcSetBoundaryMode(RTCScene scene, uniform unsigned int geomID, uniform RTC
   ispcSetBoundaryMode(scene,geomID,mode);
 }
 
+void rtcSetSubdivisionMode(RTCScene scene, uniform unsigned int geomID, uniform unsigned int topologyID, uniform RTCSubdivisionMode mode) {
+  ispcSetSubdivisionMode(scene,geomID,topologyID,mode);
+}
+
+void rtcSetIndexBuffer(RTCScene scene, uniform unsigned geomID, uniform RTCBufferType vertexBuffer, uniform RTCBufferType indexBuffer) {
+  ispcSetIndexBuffer(scene,geomID,vertexBuffer,indexBuffer);
+}
+
 void* uniform rtcMapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type) {
   return ispcMapBuffer(scene,geomID,type);
 }
@@ -468,7 +476,11 @@ void rtcUnmapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBuff
 }
 
 void rtcSetBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type, const void* uniform ptr, uniform size_t offset, uniform size_t stride) {
-  ispcSetBuffer(scene,geomID,type,ptr,offset,stride);
+  ispcSetBuffer(scene,geomID,type,ptr,offset,stride,-1);
+}
+
+void rtcSetBuffer2(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type, const void* uniform ptr, uniform size_t offset, uniform size_t stride, uniform size_t size) {
+  ispcSetBuffer(scene,geomID,type,ptr,offset,stride,size);
 }
 
 void rtcEnable (RTCScene scene, uniform unsigned int geomID) {

@@ -29,12 +29,10 @@ SET(EMBREE_LIBRARY_FILES
 
   common/device.cpp
   common/stat.cpp
-  common/accel.cpp
   common/acceln.cpp
   common/accelset.cpp
   common/state.cpp
   common/rtcore.cpp
-  common/buffer.cpp
   common/scene.cpp
   common/alloc.cpp
   common/geometry.cpp
@@ -46,17 +44,12 @@ SET(EMBREE_LIBRARY_FILES
   common/scene_quad_mesh.cpp
   common/scene_bezier_curves.cpp
   common/scene_line_segments.cpp
-  common/scene_subdiv_mesh.cpp
-  subdiv/tessellation_cache.cpp
-  subdiv/subdivpatch1base.cpp
-  subdiv/catmullclark_coefficients.cpp
+
   subdiv/bezier_curve.cpp
 
   geometry/primitive.cpp
   geometry/instance_intersector1.cpp
   geometry/instance_intersector.cpp
-  geometry/grid_soa.cpp	
-  subdiv/subdivpatch1base_eval.cpp	
   builders/primrefgen.cpp
 
   bvh/bvh.cpp
@@ -72,10 +65,20 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh_builder_sah.cpp
   bvh/bvh_builder_twolevel.cpp
   bvh/bvh_builder_instancing.cpp
-  bvh/bvh_builder_subdiv.cpp
 
   bvh/bvh_intersector1.cpp
   )
+
+IF (EMBREE_GEOMETRY_SUBDIV)
+  SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
+  common/scene_subdiv_mesh.cpp
+  subdiv/tessellation_cache.cpp
+  subdiv/subdivpatch1base.cpp
+  subdiv/catmullclark_coefficients.cpp
+  geometry/grid_soa.cpp	
+  subdiv/subdivpatch1base_eval.cpp
+  bvh/bvh_builder_subdiv.cpp)
+ENDIF()
 
 IF (EMBREE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
@@ -89,9 +92,13 @@ IF (EMBREE_RAY_PACKETS)
 ENDIF()
 
 SET(EMBREE_LIBRARY_FILES_SSE42
-    geometry/grid_soa.cpp
-    subdiv/subdivpatch1base_eval.cpp
     bvh/bvh_intersector1.cpp)
+
+IF (EMBREE_GEOMETRY_SUBDIV)
+  SET(EMBREE_LIBRARY_FILES_SSE42 ${EMBREE_LIBRARY_FILES_SSE42}
+    geometry/grid_soa.cpp
+    subdiv/subdivpatch1base_eval.cpp)
+ENDIF()
 
 IF (EMBREE_RAY_PACKETS)
     SET(EMBREE_LIBRARY_FILES_SSE42 ${EMBREE_LIBRARY_FILES_SSE42}
@@ -102,13 +109,8 @@ IF (EMBREE_RAY_PACKETS)
 ENDIF()
 
 SET(EMBREE_LIBRARY_FILES_AVX
-    
-    common/scene_subdiv_mesh_avx.cpp
-  
+   
     geometry/instance_intersector1.cpp
-    
-    geometry/grid_soa.cpp
-    subdiv/subdivpatch1base_eval.cpp
     builders/primrefgen.cpp
 
     bvh/bvh_rotate.cpp
@@ -119,11 +121,18 @@ SET(EMBREE_LIBRARY_FILES_AVX
     bvh/bvh_builder_sah.cpp
     bvh/bvh_builder_twolevel.cpp
     bvh/bvh_builder_instancing.cpp
-    bvh/bvh_builder_subdiv.cpp
     bvh/bvh_intersector1.cpp
     
     bvh/bvh.cpp
     bvh/bvh_statistics.cpp)
+
+IF (EMBREE_GEOMETRY_SUBDIV)
+  SET(EMBREE_LIBRARY_FILES_AVX ${EMBREE_LIBRARY_FILES_AVX}
+  geometry/grid_soa.cpp
+  subdiv/subdivpatch1base_eval.cpp
+  common/scene_subdiv_mesh_avx.cpp
+  bvh/bvh_builder_subdiv.cpp)
+ENDIF()
 
 IF (EMBREE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES_AVX ${EMBREE_LIBRARY_FILES_AVX}
@@ -140,11 +149,15 @@ ENDIF()
 SET(EMBREE_LIBRARY_FILES_AVX2
 
     geometry/instance_intersector1.cpp
-    geometry/grid_soa.cpp
-    subdiv/subdivpatch1base_eval.cpp
     bvh/bvh_builder_morton.cpp
     bvh/bvh_rotate.cpp
     bvh/bvh_intersector1.cpp)
+
+IF (EMBREE_GEOMETRY_SUBDIV)
+  SET(EMBREE_LIBRARY_FILES_AVX2 ${EMBREE_LIBRARY_FILES_AVX2}
+  geometry/grid_soa.cpp
+  subdiv/subdivpatch1base_eval.cpp)
+ENDIF()
 
 IF (EMBREE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES_AVX2 ${EMBREE_LIBRARY_FILES_AVX2}
@@ -160,12 +173,9 @@ ENDIF()
 SET(EMBREE_LIBRARY_FILES_AVX512
 
     geometry/instance_intersector1.cpp
-    geometry/grid_soa.cpp    
-    subdiv/subdivpatch1base_eval.cpp
 
     bvh/bvh_refit.cpp
     bvh/bvh_rotate.cpp
-    bvh/bvh_builder_subdiv.cpp
     bvh/bvh_intersector1.cpp
 
     builders/primrefgen.cpp
@@ -173,8 +183,14 @@ SET(EMBREE_LIBRARY_FILES_AVX512
     bvh/bvh_builder_sah.cpp
     bvh/bvh_builder_twolevel.cpp
     bvh/bvh_builder_instancing.cpp
-    bvh/bvh_builder_morton.cpp
-    bvh/bvh_builder_subdiv.cpp)
+    bvh/bvh_builder_morton.cpp)
+
+IF (EMBREE_GEOMETRY_SUBDIV)
+  SET(EMBREE_LIBRARY_FILES_AVX512 ${EMBREE_LIBRARY_FILES_AVX512}
+  geometry/grid_soa.cpp    
+  subdiv/subdivpatch1base_eval.cpp
+  bvh/bvh_builder_subdiv.cpp)
+ENDIF()
 
 IF (EMBREE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES_AVX512 ${EMBREE_LIBRARY_FILES_AVX512}
@@ -252,6 +268,7 @@ IF (EMBREE_ISA_AVX512SKX AND EMBREE_LIBRARY_FILES_AVX512SKX)
 ENDIF()
 
 TARGET_LINK_LIBRARIES(embree ${EMBREE_LIBRARIES} sys simd lexers tasking)
+SET_TARGET_PROPERTIES(embree PROPERTIES INSTALL_RPATH "") # no RPATH for installed libembree
 
 IF (WIN32)
 ELSEIF (APPLE)
@@ -261,6 +278,7 @@ ELSE()
   SET_TARGET_PROPERTIES(embree PROPERTIES LINK_FLAGS -Wl,--version-script=${PROJECT_SOURCE_DIR}/kernels/export.linux.map)
   SET_SOURCE_FILES_PROPERTIES(common/rtcore.cpp PROPERTIES OBJECT_DEPENDS ${PROJECT_SOURCE_DIR}/kernels/export.linux.map)
 ENDIF()
+
 
 IF (EMBREE_ZIP_MODE)
   SET_TARGET_PROPERTIES(embree PROPERTIES VERSION ${EMBREE_VERSION_MAJOR} SOVERSION ${EMBREE_VERSION_MAJOR})

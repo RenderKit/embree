@@ -41,7 +41,7 @@ namespace embree
     void enabling();
     void disabling();
     void setMask (unsigned mask);
-    void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride);
+    void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size);
     void* map(RTCBufferType type);
     void unmap(RTCBufferType type);
     void immutable ();
@@ -287,7 +287,7 @@ namespace embree
     APIBuffer<unsigned int> curves;                   //!< array of curve indices
     BufferRefT<Vec3fa> vertices0;                     //!< fast access to first vertex buffer
     vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
-    array_t<std::unique_ptr<APIBuffer<char>>,2> userbuffers; //!< user buffers
+    vector<APIBuffer<char>> userbuffers;            //!< user buffers
     SubType subtype;                                //!< hair or surface geometry
     int tessellationRate;                           //!< tessellation rate for bezier curve
   };

@@ -22,13 +22,15 @@
 namespace embree
 {
   enum Shader { 
-    SHADER_DEFAULT = 0, 
-    SHADER_EYELIGHT = 1,
-    SHADER_UV = 2,
-    SHADER_NG = 3,
-    SHADER_GEOMID = 4,
-    SHADER_GEOMID_PRIMID = 5,
-    SHADER_AMBIENT_OCCLUSION = 6
+    SHADER_DEFAULT, 
+    SHADER_EYELIGHT,
+    SHADER_UV,
+    SHADER_TEXCOORDS,
+    SHADER_TEXCOORDS_GRID,
+    SHADER_NG,
+    SHADER_GEOMID,
+    SHADER_GEOMID_PRIMID,
+    SHADER_AMBIENT_OCCLUSION
   };
 
   /*! Scene representing the OBJ file */
@@ -171,7 +173,11 @@ namespace embree
     struct SubdivMesh : public Geometry
     {
       SubdivMesh (Ref<SceneGraph::SubdivMeshNode> mesh, const SceneGraph::Transformations& spaces, unsigned materialID)
-		  : Geometry(SUBDIV_MESH), numTimeSteps((unsigned int)mesh->numTimeSteps()), numPositions((unsigned int)mesh->numPositions()), materialID(materialID)
+        : Geometry(SUBDIV_MESH), 
+           position_subdiv_mode(mesh->position_subdiv_mode),
+           normal_subdiv_mode(mesh->normal_subdiv_mode),
+           texcoord_subdiv_mode(mesh->texcoord_subdiv_mode),
+           numTimeSteps((unsigned int)mesh->numTimeSteps()), numPositions((unsigned int)mesh->numPositions()), materialID(materialID)
       {
         positions.resize(numTimeSteps*numPositions); 
         for (size_t t=0; t<numTimeSteps; t++) {
@@ -187,6 +193,10 @@ namespace embree
           normals[i] = xfmVector(nspace0,mesh->normals[i]);
         
         texcoords = mesh->texcoords;
+        if (texcoords.size()) { // zero pad to 16 bytes
+          texcoords.reserve(texcoords.size()+1);
+          texcoords.data()[texcoords.size()] = zero;
+        }
         position_indices = mesh->position_indices;
         normal_indices = mesh->normal_indices;
         texcoord_indices = mesh->texcoord_indices;
@@ -205,6 +215,9 @@ namespace embree
       std::vector<unsigned> position_indices;   //!< position indices for all faces
       std::vector<unsigned> normal_indices;     //!< normal indices for all faces
       std::vector<unsigned> texcoord_indices;   //!< texcoord indices for all faces
+      RTCSubdivisionMode position_subdiv_mode;  
+      RTCSubdivisionMode normal_subdiv_mode;
+      RTCSubdivisionMode texcoord_subdiv_mode;
       std::vector<unsigned> verticesPerFace;    //!< number of indices of each face
       std::vector<unsigned> holes;              //!< face ID of holes
       std::vector<Vec2i> edge_creases;          //!< index pairs for edge crease 
@@ -251,10 +264,10 @@ namespace embree
     struct HairSet : public Geometry
     {
       HairSet (avector<Vec3fa>& positions, std::vector<Hair>& hairs, unsigned materialID, bool hair)
-		  : Geometry(hair ? HAIR_SET : CURVES), positions(positions), hairs(hairs), numTimeSteps(1), numVertices((unsigned int)positions.size()), materialID(materialID) {}
+        : Geometry(hair ? HAIR_SET : CURVES), positions(positions), hairs(hairs), numTimeSteps(1), numVertices((unsigned int)positions.size()), materialID(materialID), tessellation_rate(4) {}
       
       HairSet (Ref<SceneGraph::HairSetNode> mesh, const SceneGraph::Transformations& spaces, unsigned materialID)
-		  : Geometry(mesh->hair ? HAIR_SET : CURVES), numTimeSteps((unsigned int)mesh->numTimeSteps()), numVertices((unsigned int)mesh->numVertices()), materialID(materialID)
+        : Geometry(mesh->hair ? HAIR_SET : CURVES), numTimeSteps((unsigned int)mesh->numTimeSteps()), numVertices((unsigned int)mesh->numVertices()), materialID(materialID), tessellation_rate(mesh->tessellation_rate)
       {
         positions.resize(numTimeSteps*numVertices); 
         for (size_t t=0; t<numTimeSteps; t++) {
@@ -278,6 +291,7 @@ namespace embree
       unsigned numTimeSteps;
       unsigned numVertices;
       unsigned materialID;
+      unsigned tessellation_rate;
     };
     
     struct Instance : public Geometry

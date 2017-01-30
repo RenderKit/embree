@@ -103,7 +103,7 @@ namespace embree
       __forceinline size_t intersectNode<4,4>(const typename BVH4::AlignedNode* node, const TravRay<4,4>& ray, 
                                               const vfloat4& tnear, const vfloat4& tfar, vfloat4& dist)
     {
-#if defined (__AVX2__)
+#if defined(__AVX2__)
       const vfloat4 tNearX = msub(vfloat4::load((float*)((const char*)&node->lower_x+ray.nearX)), ray.rdir.x, ray.org_rdir.x);
       const vfloat4 tNearY = msub(vfloat4::load((float*)((const char*)&node->lower_x+ray.nearY)), ray.rdir.y, ray.org_rdir.y);
       const vfloat4 tNearZ = msub(vfloat4::load((float*)((const char*)&node->lower_x+ray.nearZ)), ray.rdir.z, ray.org_rdir.z);
@@ -119,11 +119,16 @@ namespace embree
       const vfloat4 tFarZ  = (vfloat4::load((float*)((const char*)&node->lower_x+ray.farZ )) - ray.org.z) * ray.rdir.z;
 #endif
       
-#if defined(__SSE4_1__)
-      const vfloat4 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
-      const vfloat4 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
+#if defined(__SSE4_1__) && !defined(__AVX512F__) // up to HSW
+      const vfloat4 tNear = maxi(tNearX,tNearY,tNearZ,tnear);
+      const vfloat4 tFar  = mini(tFarX ,tFarY ,tFarZ ,tfar);
       const vbool4 vmask = asInt(tNear) > asInt(tFar);
       const size_t mask = movemask(vmask) ^ ((1<<4)-1);
+#elif defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
+      const vfloat4 tNear = maxi(tNearX,tNearY,tNearZ,tnear);
+      const vfloat4 tFar  = mini(tFarX ,tFarY ,tFarZ ,tfar);
+      const vbool4 vmask = asInt(tNear) <= asInt(tFar);
+      const size_t mask = movemask(vmask);
 #else
       const vfloat4 tNear = max(tNearX,tNearY,tNearZ,tnear);
       const vfloat4 tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
@@ -140,7 +145,7 @@ namespace embree
       __forceinline size_t intersectNode<8,8>(const typename BVH8::AlignedNode* node, const TravRay<8,8>& ray, 
                                               const vfloat8& tnear, const vfloat8& tfar, vfloat8& dist)
     {
-#if defined (__AVX2__)
+#if defined(__AVX2__)
       const vfloat8 tNearX = msub(vfloat8::load((float*)((const char*)&node->lower_x+ray.nearX)), ray.rdir.x, ray.org_rdir.x);
       const vfloat8 tNearY = msub(vfloat8::load((float*)((const char*)&node->lower_x+ray.nearY)), ray.rdir.y, ray.org_rdir.y);
       const vfloat8 tNearZ = msub(vfloat8::load((float*)((const char*)&node->lower_x+ray.nearZ)), ray.rdir.z, ray.org_rdir.z);
@@ -156,11 +161,16 @@ namespace embree
       const vfloat8 tFarZ  = (vfloat8::load((float*)((const char*)&node->lower_x+ray.farZ )) - ray.org.z) * ray.rdir.z;
 #endif
       
-#if defined(__AVX2__) && !defined(__AVX512F__)
-      const vfloat8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
-      const vfloat8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
+#if defined(__AVX2__) && !defined(__AVX512F__) // HSW
+      const vfloat8 tNear = maxi(tNearX,tNearY,tNearZ,tnear);
+      const vfloat8 tFar  = mini(tFarX ,tFarY ,tFarZ ,tfar);
       const vbool8 vmask = asInt(tNear) > asInt(tFar);
       const size_t mask = movemask(vmask) ^ ((1<<8)-1);
+#elif defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
+      const vfloat8 tNear = maxi(tNearX,tNearY,tNearZ,tnear);
+      const vfloat8 tFar  = mini(tFarX ,tFarY ,tFarZ ,tfar);
+      const vbool8 vmask = asInt(tNear) <= asInt(tFar);
+      const size_t mask = movemask(vmask);
 #else
       const vfloat8 tNear = max(tNearX,tNearY,tNearZ,tnear);
       const vfloat8 tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
@@ -232,11 +242,30 @@ namespace embree
       const vfloat<K> lclipMaxY = (node->upper_y[i] - org.y) * rdir.y;
       const vfloat<K> lclipMaxZ = (node->upper_z[i] - org.z) * rdir.z;
 #endif  
-      const vfloat<K> lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
-      const vfloat<K> lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
-      const vbool<K> lhit    = maxi(lnearP,tnear) <= mini(lfarP,tfar);
-      dist = lnearP;
-      return lhit;
+
+#if defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
+      if (K == 16)
+      {
+        /* use mixed float/int min/max */
+        const vfloat<K> lnearP = maxi(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY), min(lclipMinZ, lclipMaxZ));
+        const vfloat<K> lfarP  = mini(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY), max(lclipMinZ, lclipMaxZ));
+        const vbool<K> lhit    = asInt(maxi(lnearP, tnear)) <= asInt(mini(lfarP, tfar));
+        dist = lnearP;
+        return lhit;
+      }
+      else
+#endif
+      {
+        const vfloat<K> lnearP = maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY), mini(lclipMinZ, lclipMaxZ));
+        const vfloat<K> lfarP  = mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY), maxi(lclipMinZ, lclipMaxZ));
+#if defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
+        const vbool<K> lhit    = asInt(maxi(lnearP, tnear)) <= asInt(mini(lfarP, tfar));
+#else
+        const vbool<K> lhit    = maxi(lnearP, tnear) <= mini(lfarP, tfar);
+#endif
+        dist = lnearP;
+        return lhit;
+      }
     }
 
     //////////////////////////////////////////////////////////////////////////////////////
@@ -341,7 +370,7 @@ namespace embree
       const vfloat<N>* pFarX  = (const vfloat<N>*)((const char*)&node->lower_x+ray.farX);
       const vfloat<N>* pFarY  = (const vfloat<N>*)((const char*)&node->lower_x+ray.farY);
       const vfloat<N>* pFarZ  = (const vfloat<N>*)((const char*)&node->lower_x+ray.farZ);
-#if defined (__AVX2__)
+#if defined(__AVX2__)
       const vfloat<N> tNearX = msub(madd(time,pNearX[6],vfloat<N>(pNearX[0])), ray.rdir.x, ray.org_rdir.x);
       const vfloat<N> tNearY = msub(madd(time,pNearY[6],vfloat<N>(pNearY[0])), ray.rdir.y, ray.org_rdir.y);
       const vfloat<N> tNearZ = msub(madd(time,pNearZ[6],vfloat<N>(pNearZ[0])), ray.rdir.z, ray.org_rdir.z);
@@ -356,11 +385,16 @@ namespace embree
       const vfloat<N> tFarY  = (madd(time,pFarY [6],vfloat<N>(pFarY [0])) - ray.org.y) * ray.rdir.y;
       const vfloat<N> tFarZ  = (madd(time,pFarZ [6],vfloat<N>(pFarZ [0])) - ray.org.z) * ray.rdir.z;
 #endif
-#if defined(__AVX2__) && !defined(__AVX512F__)
-      const vfloat<N> tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
-      const vfloat<N> tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
+#if defined(__AVX2__) && !defined(__AVX512F__) // HSW
+      const vfloat<N> tNear = maxi(tNearX,tNearY,tNearZ,tnear);
+      const vfloat<N> tFar  = mini(tFarX ,tFarY ,tFarZ ,tfar);
       const vbool<N> vmask = asInt(tNear) > asInt(tFar);
       const size_t mask = movemask(vmask) ^ ((1<<N)-1);
+#elif defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
+      const vfloat<N> tNear = maxi(tNearX,tNearY,tNearZ,tnear);
+      const vfloat<N> tFar  = mini(tFarX ,tFarY ,tFarZ ,tfar);
+      const vbool<N> vmask = asInt(tNear) <= asInt(tFar);
+      const size_t mask = movemask(vmask);
 #else
       const vfloat<N> tNear = max(tnear,tNearX,tNearY,tNearZ);
       const vfloat<N> tFar  = min(tfar, tFarX ,tFarY ,tFarZ );
@@ -399,11 +433,29 @@ namespace embree
       const vfloat<K> lclipMaxZ = (vupper_z - org.z) * rdir.z;
 #endif
 
-      const vfloat<K> lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
-      const vfloat<K> lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
-      const vbool<K>  lhit   = maxi(lnearP,tnear) <= mini(lfarP,tfar);
-      dist = lnearP;
-      return lhit;
+#if defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
+      if (K == 16)
+      {
+        /* use mixed float/int min/max */
+        const vfloat<K> lnearP = maxi(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY), min(lclipMinZ, lclipMaxZ));
+        const vfloat<K> lfarP  = mini(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY), max(lclipMinZ, lclipMaxZ));
+        const vbool<K> lhit    = asInt(maxi(lnearP, tnear)) <= asInt(mini(lfarP, tfar));
+        dist = lnearP;
+        return lhit;
+      }
+      else
+#endif
+      {
+        const vfloat<K> lnearP = maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY), mini(lclipMinZ, lclipMaxZ));
+        const vfloat<K> lfarP  = mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY), maxi(lclipMinZ, lclipMaxZ));
+#if defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
+        const vbool<K> lhit    = asInt(maxi(lnearP, tnear)) <= asInt(mini(lfarP, tfar));
+#else
+        const vbool<K> lhit    = maxi(lnearP, tnear) <= mini(lfarP, tfar);
+#endif
+        dist = lnearP;
+        return lhit;
+      }
     }
 
     //////////////////////////////////////////////////////////////////////////////////////
@@ -453,13 +505,27 @@ namespace embree
       const vfloat<K> lclipMaxY = (vupper_y - org.y) * rdir.y;
       const vfloat<K> lclipMaxZ = (vupper_z - org.z) * rdir.z;
 
-      const vfloat<K> lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
-      const vfloat<K> lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
       const float round_down = 1.0f-2.0f*float(ulp);
       const float round_up   = 1.0f+2.0f*float(ulp);
-      const vbool<K>  lhit   = round_down*maxi(lnearP,tnear) <= round_up*mini(lfarP,tfar);
-      dist = lnearP;
-      return lhit;
+
+#if defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
+      if (K == 16)
+      {
+        const vfloat<K> lnearP = maxi(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY), min(lclipMinZ, lclipMaxZ));
+        const vfloat<K> lfarP  = mini(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY), max(lclipMinZ, lclipMaxZ));
+        const vbool<K>  lhit   = round_down*maxi(lnearP, tnear) <= round_up*mini(lfarP, tfar);
+        dist = lnearP;
+        return lhit;
+      }
+      else
+#endif
+      {
+        const vfloat<K> lnearP = maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY), mini(lclipMinZ, lclipMaxZ));
+        const vfloat<K> lfarP  = mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY), maxi(lclipMinZ, lclipMaxZ));
+        const vbool<K>  lhit   = round_down*maxi(lnearP, tnear) <= round_up*mini(lfarP, tfar);
+        dist = lnearP;
+        return lhit;
+      }
     }
     
     //////////////////////////////////////////////////////////////////////////////////////
@@ -634,7 +700,7 @@ namespace embree
       const vfloat4 lower_z = madd(node->dequantize<4>(ray.nearZ >> 2),scale_z,start_z);
       const vfloat4 upper_z = madd(node->dequantize<4>(ray.farZ  >> 2),scale_z,start_z);
 
-#if defined (__AVX2__)
+#if defined(__AVX2__)
       const vfloat4 tNearX = msub(lower_x, ray.rdir.x, ray.org_rdir.x);
       const vfloat4 tNearY = msub(lower_y, ray.rdir.y, ray.org_rdir.y);
       const vfloat4 tNearZ = msub(lower_z, ray.rdir.z, ray.org_rdir.z);
@@ -650,11 +716,16 @@ namespace embree
       const vfloat4 tFarZ  = (upper_z - ray.org.z) * ray.rdir.z;
 #endif
       
-#if defined(__SSE4_1__)
-      const vfloat4 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
-      const vfloat4 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
+#if defined(__SSE4_1__) && !defined(__AVX512F__) // up to HSW
+      const vfloat4 tNear = maxi(tNearX,tNearY,tNearZ,tnear);
+      const vfloat4 tFar  = mini(tFarX ,tFarY ,tFarZ ,tfar);
       const vbool4 vmask = asInt(tNear) > asInt(tFar);
       const size_t mask = movemask(vmask) ^ ((1<<4)-1);
+#elif defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
+      const vfloat4 tNear = maxi(tNearX,tNearY,tNearZ,tnear);
+      const vfloat4 tFar  = mini(tFarX ,tFarY ,tFarZ ,tfar);
+      const vbool4 vmask = asInt(tNear) <= asInt(tFar);
+      const size_t mask = movemask(vmask);
 #else
       const vfloat4 tNear = max(tNearX,tNearY,tNearZ,tnear);
       const vfloat4 tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
@@ -683,7 +754,7 @@ namespace embree
       const vfloat8 lower_z = madd(node->dequantize<8>(ray.nearZ >> 2),scale_z,start_z);
       const vfloat8 upper_z = madd(node->dequantize<8>(ray.farZ  >> 2),scale_z,start_z);
 
-#if defined (__AVX2__)
+#if defined(__AVX2__)
       const vfloat8 tNearX = msub(lower_x, ray.rdir.x, ray.org_rdir.x);
       const vfloat8 tNearY = msub(lower_y, ray.rdir.y, ray.org_rdir.y);
       const vfloat8 tNearZ = msub(lower_z, ray.rdir.z, ray.org_rdir.z);
@@ -699,11 +770,16 @@ namespace embree
       const vfloat8 tFarZ  = (upper_z - ray.org.z) * ray.rdir.z;
 #endif
       
-#if defined(__AVX2__) && !defined(__AVX512F__)
-      const vfloat8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
-      const vfloat8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
+#if defined(__AVX2__) && !defined(__AVX512F__) // HSW
+      const vfloat8 tNear = maxi(tNearX,tNearY,tNearZ,tnear);
+      const vfloat8 tFar  = mini(tFarX ,tFarY ,tFarZ ,tfar);
       const vbool8 vmask = asInt(tNear) > asInt(tFar);
       const size_t mask = movemask(vmask) ^ ((1<<8)-1);
+#elif defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
+      const vfloat8 tNear = maxi(tNearX,tNearY,tNearZ,tnear);
+      const vfloat8 tFar  = mini(tFarX ,tFarY ,tFarZ ,tfar);
+      const vbool8 vmask = asInt(tNear) <= asInt(tFar);
+      const size_t mask = movemask(vmask);
 #else
       const vfloat8 tNear = max(tNearX,tNearY,tNearZ,tnear);
       const vfloat8 tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);

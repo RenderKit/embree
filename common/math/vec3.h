@@ -276,10 +276,17 @@ namespace embree
 
   template<> __forceinline Vec3<float>::Vec3( const Vec3fa& a ) { x = a.x; y = a.y; z = a.z; }
 
-#if defined (__SSE__)
+#if defined(__AVX__)
+  template<> __forceinline Vec3<vfloat4>::Vec3( const Vec3fa& a ) {
+    x = a.x; y = a.y; z = a.z;
+  }
+#elif defined(__SSE__)
   template<> __forceinline Vec3<vfloat4>::Vec3( const Vec3fa& a ) {
     const vfloat4 v = vfloat4(a); x = shuffle<0,0,0,0>(v); y = shuffle<1,1,1,1>(v); z = shuffle<2,2,2,2>(v);
   }
+#endif
+
+#if defined(__SSE__)
   __forceinline Vec3<vfloat4> broadcast4f( const Vec3<vfloat4>& a, const size_t k ) {
     return Vec3<vfloat4>(vfloat4::broadcast(&a.x[k]), vfloat4::broadcast(&a.y[k]), vfloat4::broadcast(&a.z[k]));
   }
@@ -292,7 +299,6 @@ namespace embree
   template<size_t i0, size_t i1, size_t i2, size_t i3> __forceinline const Vec3<vfloat4> shuffle( const Vec3<vfloat4>& b ) {
     return Vec3<vfloat4>(shuffle<i0,i1,i2,i3>(b.x),shuffle<i0,i1,i2,i3>(b.y),shuffle<i0,i1,i2,i3>(b.z));
   }
-
 #endif
 
 #if defined(__AVX__)
@@ -321,7 +327,6 @@ namespace embree
   template<size_t i0, size_t i1, size_t i2, size_t i3> __forceinline const Vec3<vfloat8> shuffle( const Vec3<vfloat8>& b ) {
     return Vec3<vfloat8>(shuffle<i0,i1,i2,i3>(b.x),shuffle<i0,i1,i2,i3>(b.y),shuffle<i0,i1,i2,i3>(b.z));
   }
-
 #endif
 
 #if defined(__AVX512F__)

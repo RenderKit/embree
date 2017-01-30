@@ -26,9 +26,18 @@
 /*! maximal number of time steps */
 #define RTC_MAX_TIME_STEPS 129
 
+/*! maximal number of user vertex buffers */
+#define RTC_MAX_USER_VERTEX_BUFFERS 16
+
+/*! maximal number of index buffers for subdivision surfaces */
+#define RTC_MAX_INDEX_BUFFERS 16
+
 /*! \brief Specifies the type of buffers when mapping buffers */
-enum RTCBufferType {
+enum RTCBufferType 
+{
   RTC_INDEX_BUFFER         = 0x01000000,
+  RTC_INDEX_BUFFER0        = 0x01000000,
+  RTC_INDEX_BUFFER1        = 0x01000001,
   
   RTC_VERTEX_BUFFER        = 0x02000000,
   RTC_VERTEX_BUFFER0       = 0x02000000,
@@ -66,11 +75,23 @@ enum RTCGeometryFlags
 };
 
 /*! \brief Boundary interpolation mode for subdivision surfaces */
-enum RTCBoundaryMode
+enum RTCORE_DEPRECATED RTCBoundaryMode
 {
   RTC_BOUNDARY_NONE = 0,               //!< ignores border patches
+  RTC_BOUNDARY_SMOOTH = 1,             //!< smooth border (default)
   RTC_BOUNDARY_EDGE_ONLY = 1,          //!< soft boundary (default)
   RTC_BOUNDARY_EDGE_AND_CORNER = 2     //!< boundary corner vertices are sharp vertices
+};
+
+/*! \brief Interpolation mode for subdivision surfaces. The modes are
+ *  ordered to interpolate successively more linear. */
+enum RTCSubdivisionMode
+{
+  RTC_SUBDIV_NO_BOUNDARY = 0,          //!< ignores border patches
+  RTC_SUBDIV_SMOOTH_BOUNDARY = 1,      //!< smooth border (default)
+  RTC_SUBDIV_PIN_CORNERS = 2,          //!< smooth border with fixed corners
+  RTC_SUBDIV_PIN_BOUNDARY = 3,         //!< linearly interpolation along border
+  RTC_SUBDIV_PIN_ALL = 4,              //!< pin every vertex (interpolates every patch linearly)
 };
 
 /*! Intersection filter function for single rays. */
@@ -357,8 +378,14 @@ RTCORE_API unsigned rtcNewLineSegments (RTCScene scene,                    //!< 
 /*! \brief Sets 32 bit ray mask. */
 RTCORE_API void rtcSetMask (RTCScene scene, unsigned geomID, int mask);
 
-/*! \brief Sets boundary interpolation mode for subdivision surfaces */                                                                        
-RTCORE_API void rtcSetBoundaryMode(RTCScene scene, unsigned geomID, RTCBoundaryMode mode);
+/*! \brief Sets boundary interpolation mode for default subdivision surface topology */
+RTCORE_API RTCORE_DEPRECATED void rtcSetBoundaryMode(RTCScene scene, unsigned geomID, RTCBoundaryMode mode);
+
+/*! \brief Sets subdivision interpolation mode for specified subdivision surface topology */
+RTCORE_API void rtcSetSubdivisionMode(RTCScene scene, unsigned geomID, unsigned topologyID, RTCSubdivisionMode mode);
+
+/*! \brief Binds a user vertex buffer to some index buffer topology. */
+RTCORE_API void rtcSetIndexBuffer(RTCScene scene, unsigned geomID, RTCBufferType vertexBuffer, RTCBufferType indexBuffer);
 
 /*! \brief Maps specified buffer. This function can be used to set index and
  *  vertex buffers of geometries. */
@@ -384,6 +411,21 @@ RTCORE_API void rtcUnmapBuffer(RTCScene scene, unsigned geomID, RTCBufferType ty
  *  layout. */
 RTCORE_API void rtcSetBuffer(RTCScene scene, unsigned geomID, RTCBufferType type, 
                              const void* ptr, size_t byteOffset, size_t byteStride);
+
+/*! \brief Shares a data buffer between the application and
+ *  Embree. The data has to remain valid as long as the mesh exists,
+ *  and the user is responsible to free the data when the mesh gets
+ *  deleted. For sharing the buffer, one has to specify the number of
+ *  elements of the buffer, a byte offset to the first element, and
+ *  byte stride of elements stored inside the buffer. The addresses
+ *  ptr+offset+i*stride have to be aligned to 4 bytes. For vertex
+ *  buffers and user vertex buffers the buffer has to be padded with 0
+ *  to a size of a multiple of 16 bytes, as Embree always accesses
+ *  vertex buffers and user vertex buffers using SSE instructions. If
+ *  this function is not called, Embree will allocate and manage
+ *  buffers of the default layout. */
+RTCORE_API void rtcSetBuffer2(RTCScene scene, unsigned geomID, RTCBufferType type, 
+                              const void* ptr, size_t byteOffset, size_t byteStride, size_t size = -1);
 
 /*! \brief Enable geometry. Enabled geometry can be hit by a ray. */
 RTCORE_API void rtcEnable (RTCScene scene, unsigned geomID);

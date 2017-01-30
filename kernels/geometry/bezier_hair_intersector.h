@@ -19,23 +19,27 @@
 #include "../common/ray.h"
 #include "filter.h"
 
+// FIXME: remove this file later
+//#define Bezier1Intersector1 Hair1Intersector1
+//#define Bezier1IntersectorK Hair1IntersectorK
+
 namespace embree
 {
   namespace isa
   {
     template<int M>
-      struct BezierHit
+      struct HairHit
     {
-      __forceinline BezierHit() {}
+      __forceinline HairHit() {}
 
-      __forceinline BezierHit(const vbool<M>& valid, const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& T, const int i, const int N,
+      __forceinline HairHit(const vbool<M>& valid, const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& T, const int i, const int N,
                               const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const Vec3fa& p3)
         : U(U), V(V), T(T), i(i), N(N), p0(p0), p1(p1), p2(p2), p3(p3), valid(valid) {}
       
       __forceinline void finalize() 
       {
         vu = (vfloat<M>(step)+U+vfloat<M>(float(i)))*(1.0f/float(N));
-        vv = 0.0f;
+        vv = V;
         vt = T;
       }
       
@@ -61,14 +65,14 @@ namespace embree
       vfloat<M> vt;
     };
     
-    struct Bezier1Intersector1
+    struct Hair1Intersector1
     {
       float depth_scale;
       LinearSpace3fa ray_space;
 
-      __forceinline Bezier1Intersector1() {}
+      __forceinline Hair1Intersector1() {}
 
-      __forceinline Bezier1Intersector1(const Ray& ray, const void* ptr) 
+      __forceinline Hair1Intersector1(const Ray& ray, const void* ptr) 
          : depth_scale(rsqrt(dot(ray.dir,ray.dir))), ray_space(frame(depth_scale*ray.dir).transposed()) {}
 
       template<typename Epilog>
@@ -77,18 +81,17 @@ namespace embree
                                    const Epilog& epilog) const
       {
         /* transform control points into ray space */
-        STAT3(normal.trav_prims,1,1,1);
         Vec3fa w0 = xfmVector(ray_space,v0-ray.org); w0.w = v0.w;
         Vec3fa w1 = xfmVector(ray_space,v1-ray.org); w1.w = v1.w;
         Vec3fa w2 = xfmVector(ray_space,v2-ray.org); w2.w = v2.w;
         Vec3fa w3 = xfmVector(ray_space,v3-ray.org); w3.w = v3.w;
         BezierCurve3fa curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
-        
+      
         /* evaluate the bezier curve */
         vboolx valid = vfloatx(step) < vfloatx(float(N));
         const Vec4vfx p0 = curve2D.eval0(valid,0,N);
         const Vec4vfx p1 = curve2D.eval1(valid,0,N);
-        
+
         /* approximative intersection with cone */
         const Vec4vfx v = p1-p0;
         const Vec4vfx w = -p0;
@@ -105,7 +108,7 @@ namespace embree
         /* update hit information */
         bool ishit = false;
         if (unlikely(any(valid))) {
-          BezierHit<VSIZEX> hit(valid,u,0.0f,t,0,N,v0,v1,v2,v3);
+          HairHit<VSIZEX> hit(valid,u,0.0f,t,0,N,v0,v1,v2,v3);
           ishit = ishit | epilog(valid,hit);
         }
 
@@ -134,7 +137,7 @@ namespace embree
 
              /* update hit information */
             if (unlikely(any(valid))) {
-              BezierHit<VSIZEX> hit(valid,u,0.0f,t,i,N,v0,v1,v2,v3);
+              HairHit<VSIZEX> hit(valid,u,0.0f,t,i,N,v0,v1,v2,v3);
               ishit = ishit | epilog(valid,hit);
             }
           }
@@ -144,12 +147,12 @@ namespace embree
     };
 
     template<int K>
-    struct Bezier1IntersectorK
+    struct Hair1IntersectorK
     {
       vfloat<K> depth_scale;
       LinearSpace3fa ray_space[K];
 
-      __forceinline Bezier1IntersectorK(const vbool<K>& valid, const RayK<K>& ray) 
+      __forceinline Hair1IntersectorK(const vbool<K>& valid, const RayK<K>& ray) 
       {
         size_t mask = movemask(valid);
         depth_scale = rsqrt(dot(ray.dir,ray.dir));
@@ -159,7 +162,7 @@ namespace embree
         }
       }
 
-      __forceinline Bezier1IntersectorK (const RayK<K>& ray, size_t k)
+      __forceinline Hair1IntersectorK (const RayK<K>& ray, size_t k)
       {
         Vec3fa ray_dir = Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
         depth_scale[k] = rsqrt(dot(ray_dir,ray_dir));
@@ -207,11 +210,11 @@ namespace embree
           if (likely(none(valid))) continue;
         
           /* update hit information */
-          BezierHit<VSIZEX> hit(valid,u,0.0f,t,i,N,v0,v1,v2,v3);
+          HairHit<VSIZEX> hit(valid,u,0.0f,t,i,N,v0,v1,v2,v3);
           ishit = ishit | epilog(valid,hit);
         }
         return ishit;
       }
-    };
+    };  
   }
 }

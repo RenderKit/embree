@@ -1,0 +1,3 @@
+-i subdiv_smooth_boundary.xml
+--shader texcoords-grid
+

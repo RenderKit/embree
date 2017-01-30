@@ -445,7 +445,7 @@ namespace embree
     public:
       
       BVHNMeshBuilderMorton (BVH* bvh, Mesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
-        : bvh(bvh), mesh(mesh), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), numPrimitives(0), morton(bvh->device) {}
+        : bvh(bvh), mesh(mesh), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), morton(bvh->device) {}
       
       /*! Destruction */
       ~BVHNMeshBuilderMorton () {
@@ -455,13 +455,13 @@ namespace embree
       /* build function */
       void build(size_t threadIndex, size_t threadCount) 
       {
-        /* We have to clear the allocator to guarantee that we can
-         * temporarily use the first allocation block for sorting the
-         * morton codes. */
-
-        const size_t numNewPrimitives = mesh->size();
-        if (numNewPrimitives != numPrimitives) bvh->alloc.clear();
-        numPrimitives = numNewPrimitives;
+        /* we reset the allocator when the mesh size changed */
+        if (mesh->numPrimitivesChanged) {
+          bvh->alloc.clear();
+          morton.clear();
+          mesh->numPrimitivesChanged = false;
+        }
+        size_t numPrimitives = mesh->size();
         
         /* skip build for empty scene */
         if (numPrimitives == 0) {
@@ -477,6 +477,8 @@ namespace embree
         size_t bytesMortonCodes = numPrimitives*sizeof(MortonID32Bit);
         bytesAllocated = max(bytesAllocated,bytesMortonCodes); // the first allocation block is reused to sort the morton codes
         bvh->alloc.init(bytesAllocated,2*bytesAllocated);
+
+        bvh->alloc.initGrowSizeAndNumSlots(PAGE_SIZE);
 
         size_t block_size = size_t(BLOCK_SIZE);
 
@@ -587,7 +589,6 @@ namespace embree
       Mesh* mesh;
       const size_t minLeafSize;
       const size_t maxLeafSize;
-      size_t numPrimitives;
       mvector<MortonID32Bit> morton;
     };
 

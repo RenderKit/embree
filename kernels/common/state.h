@@ -111,6 +111,7 @@ namespace embree
     size_t tessellation_cache_size;        //!< size of the shared tessellation cache 
 
   public:
+    bool ignore_config_files;              //!< if true no more config files get parsed
     bool float_exceptions;                 //!< enable floating point exceptions
     int scene_flags;                       //!< scene flags to use
     size_t verbose;                        //!< verbosity of output

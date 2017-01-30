@@ -51,6 +51,7 @@ struct ISPCTriangleMesh
   unsigned int numTimeSteps;
   unsigned int numVertices;
   unsigned int numTriangles;
+  RTCScene scene;
   unsigned int geomID;
   unsigned int materialID;
 };
@@ -65,6 +66,7 @@ struct ISPCQuadMesh
   unsigned int numTimeSteps;
   unsigned int numVertices;
   unsigned int numQuads;
+  RTCScene scene;
   unsigned int geomID;
   unsigned int materialID;
 };
@@ -78,6 +80,9 @@ struct ISPCSubdivMesh
   uniform int* position_indices;   //!< position indices for all faces
   uniform int* normal_indices;     //!< normal indices for all faces
   uniform int* texcoord_indices;   //!< texcoord indices for all faces
+  RTCSubdivisionMode position_subdiv_mode;  
+  RTCSubdivisionMode normal_subdiv_mode;
+  RTCSubdivisionMode texcoord_subdiv_mode;
   uniform int* verticesPerFace;    //!< number of indices of each face
   uniform int* holes;              //!< face ID of holes
   uniform float* subdivlevel;      //!< subdivision level
@@ -93,7 +98,10 @@ struct ISPCSubdivMesh
   unsigned int numEdgeCreases;
   unsigned int numVertexCreases;
   unsigned int numHoles;
+  unsigned int numNormals;
+  unsigned int numTexCoords;
   unsigned int materialID;
+  RTCScene scene;
   unsigned int geomID;
 };
 
@@ -112,6 +120,7 @@ struct ISPCLineSegments
   unsigned int numVertices;
   unsigned int numSegments;
   int materialID;
+  RTCScene scene;
   unsigned int geomID;
 };
 
@@ -124,7 +133,9 @@ struct ISPCHairSet
   unsigned int numVertices;
   unsigned int numHairs;
   unsigned int materialID;
+  RTCScene scene;
   unsigned int geomID;
+  unsigned int tessellation_rate;
 };
 
 struct ISPCInstance
@@ -299,3 +310,5 @@ struct ISPCScene
   unsigned int numLights;                               //!< number of lights
 
 }; // ISPCScene
+
+unmasked extern "C" RTCScene ConvertScene (RTCDevice g_device, ISPCScene* uniform scene_in, uniform RTCSceneFlags sflags, uniform RTCAlgorithmFlags aflags, uniform RTCGeometryFlags gflags);

@@ -213,7 +213,7 @@ namespace embree
         if (mesh->vertex_crease_weights.size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_CREASE_WEIGHT_BUFFER,mesh->vertex_crease_weights.data(),0,sizeof(float));
         if (mesh->holes.size()) rtcSetBuffer(scene,geomID,RTC_HOLE_BUFFER,mesh->holes.data(),0,sizeof(int));
         rtcSetTessellationRate(scene,geomID,mesh->tessellationRate);
-        rtcSetBoundaryMode(scene,geomID,mesh->boundaryMode);
+        rtcSetSubdivisionMode(scene,geomID,0,mesh->position_subdiv_mode);
         AssertNoError(device);
         return geomID;
       }
@@ -240,62 +240,90 @@ namespace embree
       }
       return 0;
     }
-    
-    unsigned addPlane (RandomSampler& sampler, const RTCGeometryFlags gflag, size_t num, const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy) {
-      return addGeometry(gflag,SceneGraph::createTrianglePlane(p0,dx,dy,num,num));
+
+    std::pair<unsigned,Ref<SceneGraph::Node>> addGeometry2(const RTCGeometryFlags gflag, const Ref<SceneGraph::Node>& node) {
+      return std::make_pair(addGeometry(gflag,node),node);
     }
     
-    unsigned addSubdivPlane (RandomSampler& sampler, RTCGeometryFlags gflag, size_t num, const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy) {
-      return addGeometry(gflag,SceneGraph::createSubdivPlane(p0,dx,dy,num,num,2.0f));
+    std::pair<unsigned,Ref<SceneGraph::Node>> addPlane (RandomSampler& sampler, const RTCGeometryFlags gflag, size_t num, const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy) {
+      return addGeometry2(gflag,SceneGraph::createTrianglePlane(p0,dx,dy,num,num));
     }
     
-    unsigned addSphere (RandomSampler& sampler, RTCGeometryFlags gflag, const Vec3fa& pos, const float r, size_t numPhi, size_t maxTriangles = -1, const avector<Vec3fa>& motion_vector = avector<Vec3fa>())
+    std::pair<unsigned,Ref<SceneGraph::Node>> addSubdivPlane (RandomSampler& sampler, RTCGeometryFlags gflag, size_t num, const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy) {
+      return addGeometry2(gflag,SceneGraph::createSubdivPlane(p0,dx,dy,num,num,2.0f));
+    }
+    
+    std::pair<unsigned,Ref<SceneGraph::Node>> addSphere (RandomSampler& sampler, RTCGeometryFlags gflag, const Vec3fa& pos, const float r, size_t numPhi, size_t maxTriangles = -1, const avector<Vec3fa>& motion_vector = avector<Vec3fa>())
     {
       Ref<SceneGraph::Node> node = SceneGraph::createTriangleSphere(pos,r,numPhi);
       if (motion_vector.size()) SceneGraph::set_motion_vector(node,motion_vector);
       if (maxTriangles != size_t(-1)) SceneGraph::resize_randomly(sampler,node,maxTriangles);
-      return addGeometry(gflag,node);
+      return addGeometry2(gflag,node);
     }
 
-    unsigned addQuadSphere (RandomSampler& sampler, RTCGeometryFlags gflag, const Vec3fa& pos, const float r, size_t numPhi, size_t maxQuads = -1, const avector<Vec3fa>& motion_vector = avector<Vec3fa>())
+    std::pair<unsigned,Ref<SceneGraph::Node>> addQuadSphere (RandomSampler& sampler, RTCGeometryFlags gflag, const Vec3fa& pos, const float r, size_t numPhi, size_t maxQuads = -1, const avector<Vec3fa>& motion_vector = avector<Vec3fa>())
     {
       Ref<SceneGraph::Node> node = SceneGraph::createQuadSphere(pos,r,numPhi);
       if (motion_vector.size()) SceneGraph::set_motion_vector(node,motion_vector);
       if (maxQuads != size_t(-1)) SceneGraph::resize_randomly(sampler,node,maxQuads);
-      return addGeometry(gflag,node);
+      return addGeometry2(gflag,node);
     }
 
-    unsigned int addSubdivSphere (RandomSampler& sampler, RTCGeometryFlags gflag, const Vec3fa& pos, const float r, size_t numPhi, float level, size_t maxFaces = -1, const avector<Vec3fa>& motion_vector = avector<Vec3fa>())
+    std::pair<unsigned,Ref<SceneGraph::Node>> addSubdivSphere (RandomSampler& sampler, RTCGeometryFlags gflag, const Vec3fa& pos, const float r, size_t numPhi, float level, size_t maxFaces = -1, const avector<Vec3fa>& motion_vector = avector<Vec3fa>())
     {
       Ref<SceneGraph::Node> node = SceneGraph::createSubdivSphere(pos,r,numPhi,level);
       if (motion_vector.size()) SceneGraph::set_motion_vector(node,motion_vector);
       if (maxFaces != size_t(-1)) SceneGraph::resize_randomly(sampler,node,maxFaces);
       addRandomSubdivFeatures(sampler,node.dynamicCast<SceneGraph::SubdivMeshNode>(),10,10,0);
-      return addGeometry(gflag,node);
+      return addGeometry2(gflag,node);
     }
     
-    unsigned addSphereHair (RandomSampler& sampler, RTCGeometryFlags gflag, const Vec3fa& center, const float radius, const avector<Vec3fa>& motion_vector = avector<Vec3fa>())
+    std::pair<unsigned,Ref<SceneGraph::Node>> addSphereHair (RandomSampler& sampler, RTCGeometryFlags gflag, const Vec3fa& center, const float radius, const avector<Vec3fa>& motion_vector = avector<Vec3fa>())
     {
       Ref<SceneGraph::Node> node = SceneGraph::createSphereShapedHair(center,radius);
       if (motion_vector.size()) SceneGraph::set_motion_vector(node,motion_vector);
-      return addGeometry(gflag,node);
+      return addGeometry2(gflag,node);
     }
     
-    unsigned addHair (RandomSampler& sampler, RTCGeometryFlags gflag, const Vec3fa& pos, const float scale, const float r, size_t numHairs = 1, const avector<Vec3fa>& motion_vector = avector<Vec3fa>())
+    std::pair<unsigned,Ref<SceneGraph::Node>> addHair (RandomSampler& sampler, RTCGeometryFlags gflag, const Vec3fa& pos, const float scale, const float r, size_t numHairs = 1, const avector<Vec3fa>& motion_vector = avector<Vec3fa>())
     {
       Ref<SceneGraph::Node> node = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),pos,Vec3fa(1,0,0),Vec3fa(0,0,1),scale,r,numHairs,true);
       if (motion_vector.size()) SceneGraph::set_motion_vector(node,motion_vector);
-      return addGeometry(gflag,node);
+      return addGeometry2(gflag,node);
     }
 
-    unsigned addUserGeometryEmpty (RandomSampler& sampler, RTCGeometryFlags gflag, Sphere* sphere)
+    std::pair<unsigned,Ref<SceneGraph::Node>> addUserGeometryEmpty (RandomSampler& sampler, RTCGeometryFlags gflag, Sphere* sphere)
     {
       unsigned geom = rtcNewUserGeometry3 (scene,gflag,1,1);
       rtcSetBoundsFunction(scene,geom,(RTCBoundsFunc)BoundsFunc);
       rtcSetUserData(scene,geom,sphere);
       rtcSetIntersectFunctionN(scene,geom,IntersectFuncN);
       rtcSetOccludedFunctionN(scene,geom,IntersectFuncN);
-      return geom;
+      return std::make_pair(geom,Ref<SceneGraph::Node>(nullptr));
+    }
+
+    void resizeRandomly (std::pair<unsigned,Ref<SceneGraph::Node>> geom, RandomSampler& sampler)
+    {
+      if (Ref<SceneGraph::TriangleMeshNode> mesh = geom.second.dynamicCast<SceneGraph::TriangleMeshNode>())
+      {
+        rtcSetBuffer2(scene,geom.first,RTC_INDEX_BUFFER ,mesh->triangles.data(),0,sizeof(SceneGraph::TriangleMeshNode::Triangle), RandomSampler_getInt(sampler) % (mesh->triangles.size()+1));
+      }
+      else if (Ref<SceneGraph::QuadMeshNode> mesh = geom.second.dynamicCast<SceneGraph::QuadMeshNode>())
+      {
+        rtcSetBuffer2(scene,geom.first,RTC_INDEX_BUFFER ,mesh->quads.data(),0,sizeof(SceneGraph::QuadMeshNode::Quad), RandomSampler_getInt(sampler) % (mesh->quads.size()+1));
+      } 
+      else if (Ref<SceneGraph::SubdivMeshNode> mesh = geom.second.dynamicCast<SceneGraph::SubdivMeshNode>())
+      {
+        rtcSetBuffer2(scene,geom.first,RTC_FACE_BUFFER  ,mesh->verticesPerFace.data(), 0,sizeof(int), RandomSampler_getInt(sampler) % (mesh->verticesPerFace.size()+1));
+      }
+      else if (Ref<SceneGraph::HairSetNode> mesh = geom.second.dynamicCast<SceneGraph::HairSetNode>())
+      {
+        rtcSetBuffer2(scene,geom.first,RTC_INDEX_BUFFER,mesh->hairs.data(),0,sizeof(SceneGraph::HairSetNode::Hair), RandomSampler_getInt(sampler) % (mesh->hairs.size()+1));
+      } 
+      else if (Ref<SceneGraph::LineSegmentsNode> mesh = geom.second.dynamicCast<SceneGraph::LineSegmentsNode>())
+      {
+        rtcSetBuffer2(scene,geom.first,RTC_INDEX_BUFFER,mesh->indices.data(),0,sizeof(int), RandomSampler_getInt(sampler) % (mesh->indices.size()+1));
+      }
     }
 
   public:
@@ -669,8 +697,8 @@ namespace embree
       errorHandler(rtcDeviceGetError(device));
       VerifyScene scene(device,RTC_SCENE_STATIC,aflags);
       AssertNoError(device);
-      unsigned geom0 = scene.addSphere(sampler,RTC_GEOMETRY_STATIC,zero,1.0f,50);
-      unsigned geom1 = scene.addSphere(sampler,RTC_GEOMETRY_STATIC,zero,1.0f,50);
+      unsigned geom0 = scene.addSphere(sampler,RTC_GEOMETRY_STATIC,zero,1.0f,50).first;
+      unsigned geom1 = scene.addSphere(sampler,RTC_GEOMETRY_STATIC,zero,1.0f,50).first;
       AssertNoError(device);
       rtcMapBuffer(scene,geom0,RTC_INDEX_BUFFER);
       rtcMapBuffer(scene,geom1,RTC_VERTEX_BUFFER);
@@ -1078,6 +1106,96 @@ namespace embree
       return VerifyApplication::PASSED;
     }
   };
+
+  static std::atomic<ssize_t> memory_consumption_bytes_used(0);
+
+  struct MemoryConsumptionTest : public VerifyApplication::Test
+  {
+    GeometryType gtype;
+    RTCSceneFlags sflags;
+    RTCGeometryFlags gflags;
+    
+    MemoryConsumptionTest (std::string name, int isa, GeometryType gtype, RTCSceneFlags sflags, RTCGeometryFlags gflags)
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), gtype(gtype), sflags(sflags), gflags(gflags) {}
+
+    static bool memoryMonitor(const ssize_t bytes, const bool /*post*/)
+    {
+      memory_consumption_bytes_used += bytes;
+      return true;
+    }
+
+    std::pair<ssize_t,ssize_t> run_build(VerifyApplication* state, size_t N, unsigned numThreads)
+    {
+      //if (numThreads != 1) numThreads = 2;
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa) + ",threads="+std::to_string((long long)numThreads);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      errorHandler(rtcDeviceGetError(device));
+      memory_consumption_bytes_used = 0;
+      rtcDeviceSetMemoryMonitorFunction(device,memoryMonitor);
+      VerifyScene scene(device,sflags,aflags);
+      AssertNoError(device);
+      
+      int numPhi = (size_t) ceilf(sqrtf(N/4.0f));
+      ssize_t NN = 0;
+      
+      Ref<SceneGraph::Node> mesh;
+      int i = 0;
+      switch (gtype) {
+      case TRIANGLE_MESH:    
+      case TRIANGLE_MESH_MB: mesh = SceneGraph::createTriangleSphere(zero,float(i+1),numPhi); 
+                             NN = 4*numPhi*numPhi; break;
+      case QUAD_MESH:        
+      case QUAD_MESH_MB:     mesh = SceneGraph::createQuadSphere(zero,float(i+1),numPhi); 
+                             NN = 2*numPhi*numPhi; break;
+      case SUBDIV_MESH:      
+      case SUBDIV_MESH_MB:   mesh = SceneGraph::createSubdivSphere(zero,float(i+1),8,float(numPhi)/8.0f); 
+                             NN = 2*8*8; break;
+      case HAIR_GEOMETRY:    
+      case HAIR_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi,true); 
+                             NN = 4*numPhi*numPhi; break;
+      case LINE_GEOMETRY:    
+      case LINE_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi/3,true); 
+                             NN = (4*numPhi*numPhi/3)*3; break;
+      default:               throw std::runtime_error("invalid geometry for benchmark");
+      }
+      
+      switch (gtype) {
+      case LINE_GEOMETRY:    
+      case LINE_GEOMETRY_MB: mesh = SceneGraph::convert_bezier_to_lines(mesh); break;
+      default: break;
+      }
+      
+      switch (gtype) {
+      case TRIANGLE_MESH_MB: 
+      case QUAD_MESH_MB:     
+      case SUBDIV_MESH_MB:   
+      case HAIR_GEOMETRY_MB: 
+      case LINE_GEOMETRY_MB: mesh = mesh->set_motion_vector(random_motion_vector2(0.0001f)); break;
+      default: break;
+      }
+      
+      scene.addGeometry(gflags,mesh);
+      rtcCommit (scene);
+      AssertNoError(device);
+      
+      return std::make_pair(NN,memory_consumption_bytes_used.load());
+    }
+    
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      for (size_t N=128; N<100000; N = (size_t)((float)N * 1.2f)) 
+      {
+        auto bytes_one_thread  = run_build(state,N,1);
+        auto bytes_all_threads = run_build(state,N,0);
+        double overhead = double(bytes_all_threads.second)/double(bytes_one_thread.second);
+        //std::cout << "N = " << bytes_one_thread.first << ", 1 thread = " << 1E-6*bytes_one_thread.second << " MB, all_threads = " << 1E-6*bytes_all_threads.second << " MB (" << 100.0f*overhead << " %)" << std::endl;
+
+        /* right now we use a 60% overhead threshold due to the BVH SAH builder for lines */
+        if (overhead > 1.60f) return VerifyApplication::FAILED;
+      }
+      return VerifyApplication::PASSED;
+    }
+  };
     
   struct NewDeleteGeometryTest : public VerifyApplication::Test
   {
@@ -1105,17 +1223,17 @@ namespace embree
           Vec3fa pos = 100.0f*random_Vec3fa();
           if (geom[index] == -1) {
             switch (random_int()%9) {
-            case 0: geom[index] = scene.addSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,10); break;
-            case 1: geom[index] = scene.addSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,10,-1,random_motion_vector(1.0f)); break;
-            case 2: geom[index] = scene.addQuadSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,10); break;
-            case 3: geom[index] = scene.addQuadSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,10,-1,random_motion_vector(1.0f)); break;
-            case 4: geom[index] = scene.addHair  (sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,10); break;
-            case 5: geom[index] = scene.addHair  (sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,10,random_motion_vector(1.0f)); break;
-            case 6: geom[index] = scene.addSubdivSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,4,4); break;
-            case 7: geom[index] = scene.addSubdivSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,4,4,-1,random_motion_vector(1.0f)); break;
+            case 0: geom[index] = scene.addSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,10).first; break;
+            case 1: geom[index] = scene.addSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,10,-1,random_motion_vector(1.0f)).first; break;
+            case 2: geom[index] = scene.addQuadSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,10).first; break;
+            case 3: geom[index] = scene.addQuadSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,10,-1,random_motion_vector(1.0f)).first; break;
+            case 4: geom[index] = scene.addHair  (sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,10).first; break;
+            case 5: geom[index] = scene.addHair  (sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,10,random_motion_vector(1.0f)).first; break;
+            case 6: geom[index] = scene.addSubdivSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,4,4).first; break;
+            case 7: geom[index] = scene.addSubdivSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,4,4,-1,random_motion_vector(1.0f)).first; break;
             case 8: 
               spheres[index] = Sphere(pos,2.0f);
-              geom[index] = scene.addUserGeometryEmpty(sampler,RTC_GEOMETRY_STATIC,&spheres[index]); break;
+              geom[index] = scene.addUserGeometryEmpty(sampler,RTC_GEOMETRY_STATIC,&spheres[index]).first; break;
             }
             AssertNoError(device);
           }
@@ -1159,10 +1277,10 @@ namespace embree
       errorHandler(rtcDeviceGetError(device));
       VerifyScene scene(device,sflags,aflags);
       AssertNoError(device);
-      unsigned geom0 = scene.addSphere      (sampler,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,-1),1.0f,50);
-      unsigned geom1 = scene.addQuadSphere  (sampler,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,+1),1.0f,50);
-      unsigned geom2 = scene.addSubdivSphere(sampler,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,-1),1.0f,5,4);
-      unsigned geom3 = scene.addHair        (sampler,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,+1),1.0f,1.0f,1);
+      unsigned geom0 = scene.addSphere      (sampler,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,-1),1.0f,50).first;
+      unsigned geom1 = scene.addQuadSphere  (sampler,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,+1),1.0f,50).first;
+      unsigned geom2 = scene.addSubdivSphere(sampler,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,-1),1.0f,5,4).first;
+      unsigned geom3 = scene.addHair        (sampler,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,+1),1.0f,1.0f,1).first;
       AssertNoError(device);
       
       for (size_t i=0; i<16; i++) 
@@ -1228,10 +1346,10 @@ namespace embree
       Vec3fa pos1 = Vec3fa(-10,0,+10);
       Vec3fa pos2 = Vec3fa(+10,0,-10);
       Vec3fa pos3 = Vec3fa(+10,0,+10);
-      unsigned geom0 = scene.addSphere      (sampler,gflags,pos0,1.0f,numPhi);
-      unsigned geom1 = scene.addQuadSphere  (sampler,gflags,pos1,1.0f,numPhi);
-      unsigned geom2 = scene.addSubdivSphere(sampler,gflags,pos2,1.0f,numPhi,4);
-      unsigned geom3 = scene.addSphereHair  (sampler,gflags,pos3,1.0f);
+      unsigned geom0 = scene.addSphere      (sampler,gflags,pos0,1.0f,numPhi).first;
+      unsigned geom1 = scene.addQuadSphere  (sampler,gflags,pos1,1.0f,numPhi).first;
+      unsigned geom2 = scene.addSubdivSphere(sampler,gflags,pos2,1.0f,numPhi,4).first;
+      unsigned geom3 = scene.addSphereHair  (sampler,gflags,pos3,1.0f).first;
       AssertNoError(device);
       
       for (size_t i=0; i<16; i++) 
@@ -1439,7 +1557,7 @@ namespace embree
     
     bool checkSubdivInterpolation(const RTCDeviceRef& device, const RTCSceneRef& scene, int geomID, RTCBufferType buffer, float* vertices0, size_t N, size_t N_total)
     {
-      rtcSetBoundaryMode(scene,geomID,RTC_BOUNDARY_EDGE_ONLY);
+      rtcSetBoundaryMode(scene,geomID,RTC_BOUNDARY_SMOOTH);
       AssertNoError(device);
       rtcDisable(scene,geomID);
       AssertNoError(device);
@@ -1458,7 +1576,7 @@ namespace embree
       passed &= checkInterpolationSharpVertex(scene,geomID,6,0.0f,1.0f,12,buffer,vertices0,N,N_total);
       passed &= checkInterpolationSharpVertex(scene,geomID,8,1.0f,1.0f,15,buffer,vertices0,N,N_total);
       
-      rtcSetBoundaryMode(scene,geomID,RTC_BOUNDARY_EDGE_AND_CORNER);
+      rtcSetSubdivisionMode(scene,geomID,0,RTC_SUBDIV_PIN_CORNERS);
       AssertNoError(device);
       rtcCommit(scene);
       AssertNoError(device);
@@ -1905,10 +2023,10 @@ namespace embree
       Vec3fa pos3 = Vec3fa(+10,0,+10);
       
       VerifyScene scene(device,sflags,to_aflags(imode));
-      unsigned int geom0 = scene.addSphere      (sampler,gflags,pos0,1.0f,50);
-      unsigned int geom1 = scene.addQuadSphere  (sampler,gflags,pos1,1.0f,50); 
-      unsigned int geom2 = scene.addSubdivSphere(sampler,gflags,pos2,1.0f,5,4);
-      unsigned int geom3 = scene.addHair        (sampler,gflags,pos3,1.0f,1.0f,1);
+      unsigned int geom0 = scene.addSphere      (sampler,gflags,pos0,1.0f,50).first;
+      unsigned int geom1 = scene.addQuadSphere  (sampler,gflags,pos1,1.0f,50).first; 
+      unsigned int geom2 = scene.addSubdivSphere(sampler,gflags,pos2,1.0f,5,4).first;
+      unsigned int geom3 = scene.addHair        (sampler,gflags,pos3,1.0f,1.0f,1).first;
       rtcSetMask(scene,geom0,1);
       rtcSetMask(scene,geom1,2);
       rtcSetMask(scene,geom2,4);
@@ -2107,8 +2225,8 @@ namespace embree
       VerifyScene scene(device,sflags,to_aflags(imode));
       Vec3fa p0(-0.75f,-0.25f,-10.0f), dx(4,0,0), dy(0,4,0);
       int geom0 = 0;
-      if (subdiv) geom0 = scene.addSubdivPlane (sampler,gflags, 4, p0, dx, dy);
-      else        geom0 = scene.addPlane       (sampler,gflags, 4, p0, dx, dy);
+      if (subdiv) geom0 = scene.addSubdivPlane (sampler,gflags, 4, p0, dx, dy).first;
+      else        geom0 = scene.addPlane       (sampler,gflags, 4, p0, dx, dy).first;
       rtcSetUserData(scene,geom0,(void*)123);
       
       if (imode == MODE_INTERSECT1 ) {
@@ -2797,12 +2915,13 @@ namespace embree
     if (task->cancelBuild) rtcSetProgressMonitorFunction(*task->scene,monitorProgressFunction,nullptr);
     const size_t numSlots = 20;
     const size_t numIterations = 2*numSlots;
-    int geom[numSlots];
+    std::pair<int,Ref<SceneGraph::Node>> geom[numSlots];
     int types[numSlots];
     Sphere spheres[numSlots];
     size_t numVertices[numSlots];
     for (size_t i=0; i<numSlots; i++)  {
-      geom[i] = -1;
+      geom[i].first = -1;
+      geom[i].second = nullptr;
       types[i] = 0;
       numVertices[i] = 0;
     }
@@ -2817,7 +2936,7 @@ namespace embree
       for (unsigned int j=0; j<numIterations; j++) 
       {
         int index = RandomSampler_getInt(task->sampler)%numSlots;
-        if (geom[index] == -1) 
+        if (geom[index].first == -1) 
         {
           int type = RandomSampler_getInt(task->sampler)%21;
           Vec3fa pos = 100.0f*RandomSampler_get3D(task->sampler);
@@ -2876,58 +2995,72 @@ namespace embree
         else 
         {
           switch (types[index]) {
-          case 0:
-          case 3:
-          case 6:
-	  case 9:
-          case 12:
-          case 15:
-          case 16:
-          case 17:
           case 18:
           case 19:
           case 20:
           {
-            rtcDeleteGeometry(*task->scene,geom[index]);     
+            rtcDeleteGeometry(*task->scene,geom[index].first);     
 	    if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
-            geom[index] = -1; 
+            geom[index].first = -1; 
+            geom[index].second = nullptr; 
             break;
           }
+          case 0:
           case 1: 
           case 2:
+          case 3:
           case 4: 
           case 5:
+          case 6:
 	  case 7: 
           case 8:
+          case 9:
           case 10:
           case 11:
+          case 12:
           case 13:
           case 14:
+          case 15:
+          case 16:
+          case 17:
           {
-            int op = RandomSampler_getInt(task->sampler)%2;
+            int op = RandomSampler_getInt(task->sampler)%3;
             switch (op) {
             case 0: {
-              rtcDeleteGeometry(*task->scene,geom[index]);     
+              rtcDeleteGeometry(*task->scene,geom[index].first);     
 	      if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
-              geom[index] = -1; 
+              geom[index].first = -1; 
+              geom[index].second = nullptr; 
               break;
             }
             case 1: {
-              Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(*task->scene,geom[index],RTC_VERTEX_BUFFER);
+              Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(*task->scene,geom[index].first,RTC_VERTEX_BUFFER);
               if (vertices) { 
                 for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
               }
-              rtcUnmapBuffer(*task->scene,geom[index],RTC_VERTEX_BUFFER);
+              rtcUnmapBuffer(*task->scene,geom[index].first,RTC_VERTEX_BUFFER);
               switch (types[index])
               {
               case 4: case 5: case 10: case 11:
-                Vec3fa* vertices = (Vec3fa*)rtcMapBuffer(*task->scene, geom[index], RTC_VERTEX_BUFFER1);
+                Vec3fa* vertices = (Vec3fa*)rtcMapBuffer(*task->scene, geom[index].first, RTC_VERTEX_BUFFER1);
                 if (vertices) {
                   for (size_t i = 0; i < numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
                 }
-                rtcUnmapBuffer(*task->scene, geom[index], RTC_VERTEX_BUFFER1);
+                rtcUnmapBuffer(*task->scene, geom[index].first, RTC_VERTEX_BUFFER1);
               }
               break;
+            }
+            case 2: {
+              switch (types[index])
+              {
+              case 2:
+              case 5:
+              case 8:
+              case 11:
+              case 14:
+                task->scene->resizeRandomly(geom[index],task->sampler);
+                break;
+              }
             }
             }
             break;
@@ -2938,10 +3071,11 @@ namespace embree
         /* entirely delete all objects at the end */
         if (j == numIterations-1) {
           for (size_t i=0; i<numSlots; i++) {
-            if (geom[i] != -1) {
-              rtcDeleteGeometry(*task->scene,geom[i]);
+            if (geom[i].first != -1) {
+              rtcDeleteGeometry(*task->scene,geom[i].first);
               if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
-              geom[i] = -1;
+              geom[i].first = -1;
+              geom[i].second = nullptr;
             }
           }
         }
@@ -3506,7 +3640,7 @@ namespace embree
     }
   };
 
-  static std::atomic<ssize_t> bytes_used(0);
+  static std::atomic<ssize_t> create_geometry_bytes_used(0);
 
   struct CreateGeometryBenchmark : public VerifyApplication::Benchmark
   {
@@ -3563,13 +3697,13 @@ namespace embree
 
     static bool memoryMonitor(const ssize_t bytes, const bool /*post*/)
     {
-      bytes_used += bytes;
+      create_geometry_bytes_used += bytes;
       return true;
     }
 
     bool setup(VerifyApplication* state) 
     {
-      std::string cfg = state->rtcore + ",start_threads=1,set_affinity=1,isa="+stringOfISA(isa) + ",threads=" + std::to_string((long long)numThreads);
+      std::string cfg = "start_threads=1,set_affinity=1,isa="+stringOfISA(isa) + ",threads=" + std::to_string((long long)numThreads)+","+state->rtcore;
       device = rtcNewDevice(cfg.c_str());
       errorHandler(rtcDeviceGetError(device));
       rtcDeviceSetErrorFunction(device,errorHandler);
@@ -3623,7 +3757,7 @@ namespace embree
         for (unsigned int i=0; i<numMeshes; i++) 
           rtcUpdate(*scene,i);
       
-      bytes_used = 0;
+      create_geometry_bytes_used = 0;
       rtcCommit (*scene);
       AssertNoError(device);
       
@@ -3632,7 +3766,7 @@ namespace embree
       if (dobenchmark)
         return 1E-6f*float(numPrimitives)/float(t1-t0);
       else
-        return 1E-6f*bytes_used;
+        return 1E-6f*create_geometry_bytes_used;
     }
       
     virtual void cleanup(VerifyApplication* state) 
@@ -3831,6 +3965,19 @@ namespace embree
       groups.pop();
 
       groups.top()->add(new GarbageGeometryTest("build_garbage_geom",isa));
+
+      GeometryType gtypes_memory[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, HAIR_GEOMETRY, HAIR_GEOMETRY_MB, LINE_GEOMETRY, LINE_GEOMETRY_MB };
+      std::vector<std::pair<RTCSceneFlags,RTCGeometryFlags>> sflags_gflags_memory;
+      sflags_gflags_memory.push_back(std::make_pair(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC));
+      sflags_gflags_memory.push_back(std::make_pair(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC));
+
+      push(new TestGroup("memory_consumption",false,false,false));
+
+      for (auto gtype : gtypes_memory)
+        for (auto sflags : sflags_gflags_memory)
+          groups.top()->add(new MemoryConsumptionTest(to_string(gtype)+"."+to_string(sflags.first,sflags.second),isa,gtype,sflags.first,sflags.second));
+
+      groups.pop();
 
       /**************************************************************************/
       /*                     Interpolation Tests                                */

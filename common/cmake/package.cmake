@@ -25,9 +25,15 @@ IF (NOT EMBREE_ZIP_MODE AND NOT WIN32 AND NOT APPLE)
   SET(CMAKE_INSTALL_FULL_BINDIR ${CMAKE_INSTALL_FULL_BINDIR}/embree${EMBREE_VERSION_MAJOR})
 ENDIF()
 
-# use full absolute path as install name for PKG installer under MacOSX
+# use full absolute path as install name
 IF (NOT EMBREE_ZIP_MODE)
   SET(CMAKE_INSTALL_NAME_DIR ${CMAKE_INSTALL_FULL_LIBDIR})
+ELSE()
+  IF(APPLE)
+    SET(CMAKE_INSTALL_RPATH "@loader_path/../lib")
+  ELSE()
+    SET(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
+  ENDIF()
 ENDIF()
 
 ##############################################################

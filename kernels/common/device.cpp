@@ -52,7 +52,7 @@ namespace embree
   ssize_t Device::debug_int2 = 0;
   ssize_t Device::debug_int3 = 0;
 
-  DECLARE_SYMBOL2(RayStreamFilterFuncs,rayStreamFilters);
+  DECLARE_SYMBOL2(RayStreamFilterFuncs,rayStreamFilterFuncs);
 
   static MutexSys g_mutex;
   static std::map<Device*,size_t> g_cache_size_map;
@@ -63,9 +63,9 @@ namespace embree
   {
     /* initialize global state */
     State::parseString(cfg);
-    if (FileName::executableFolder() != FileName(""))
+    if (!ignore_config_files && FileName::executableFolder() != FileName(""))
       State::parseFile(FileName::executableFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
-    if (FileName::homeFolder() != FileName(""))
+    if (!ignore_config_files && FileName::homeFolder() != FileName(""))
       State::parseFile(FileName::homeFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
     State::verify();
 
@@ -108,7 +108,9 @@ namespace embree
 
     /* ray stream SOA to AOS conversion */
 #if defined(EMBREE_RAY_PACKETS)
-    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(enabled_cpu_features,rayStreamFilters);
+    RayStreamFilterFuncsType rayStreamFilterFuncs;
+    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(enabled_cpu_features,rayStreamFilterFuncs);
+    rayStreamFilters = rayStreamFilterFuncs();
 #endif
   }
 
@@ -312,12 +314,14 @@ namespace embree
  
   void Device::setCacheSize(size_t bytes) 
   {
+#if defined(EMBREE_GEOMETRY_SUBDIV)
     Lock<MutexSys> lock(g_mutex);
     if (bytes == 0) g_cache_size_map.erase(this);
     else            g_cache_size_map[this] = bytes;
     
     size_t maxCacheSize = getMaxCacheSize();
     resizeTessellationCache(maxCacheSize);
+#endif
   }
 
   void Device::initTaskingSystem(size_t numThreads) 

@@ -19,7 +19,6 @@
 
 namespace embree
 {
-
   QuadMesh::QuadMesh (Scene* parent, RTCGeometryFlags flags, size_t numQuads, size_t numVertices, size_t numTimeSteps)
     : Geometry(parent,QUAD_MESH,numQuads,numTimeSteps,flags)
   {
@@ -52,7 +51,7 @@ namespace embree
     Geometry::update();
   }
 
-  void QuadMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
+  void QuadMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size) 
   { 
     if (parent->isStatic() && parent->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
@@ -61,34 +60,30 @@ namespace embree
     if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) 
       throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
 
+    unsigned bid = type & 0xFFFF;
     if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) 
     {
       size_t t = type - RTC_VERTEX_BUFFER0;
-      vertices[t].set(ptr,offset,stride); 
+      vertices[t].set(ptr,offset,stride,size); 
       vertices[t].checkPadding16();
       vertices0 = vertices[0];
     } 
-    else 
+    else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
     {
-      switch (type) {
-      case RTC_INDEX_BUFFER  : 
-        quads.set(ptr,offset,stride); 
-        break;
-      case RTC_USER_VERTEX_BUFFER0: 
-        if (userbuffers[0] == nullptr) userbuffers[0] = make_unique(new APIBuffer<char>(parent->device,numVertices(),stride)); 
-        userbuffers[0]->set(ptr,offset,stride);  
-        userbuffers[0]->checkPadding16();
-        break;
-      case RTC_USER_VERTEX_BUFFER1: 
-        if (userbuffers[1] == nullptr) userbuffers[1] = make_unique(new APIBuffer<char>(parent->device,numVertices(),stride)); 
-        userbuffers[1]->set(ptr,offset,stride);  
-        userbuffers[1]->checkPadding16();
-        break;
-        
-      default: 
-        throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
-      }
+      if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
+      userbuffers[bid] = APIBuffer<char>(parent->device,numVertices(),stride);
+      userbuffers[bid].set(ptr,offset,stride,size);  
+      userbuffers[bid].checkPadding16();
     }
+    else if (type == RTC_INDEX_BUFFER) 
+    {
+      if (size != -1) disabling();
+      quads.set(ptr,offset,stride,size);
+      setNumPrimitives(size);
+      if (size != -1) enabling();
+    }
+    else
+      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
   }
 
   void* QuadMesh::map(RTCBufferType type) 
@@ -140,7 +135,7 @@ namespace embree
     /*! verify consistent size of vertex arrays */
     if (vertices.size() == 0) return false;
     for (const auto& buffer : vertices)
-      if (vertices[0].size() != buffer.size())
+      if (buffer.size() != numVertices())
         return false;
 
     /*! verify quad indices */
@@ -174,8 +169,8 @@ namespace embree
     const char* src = nullptr; 
     size_t stride = 0;
     if (buffer >= RTC_USER_VERTEX_BUFFER0) {
-      src    = userbuffers[buffer&0xFFFF]->getPtr();
-      stride = userbuffers[buffer&0xFFFF]->getStride();
+      src    = userbuffers[buffer&0xFFFF].getPtr();
+      stride = userbuffers[buffer&0xFFFF].getStride();
     } else {
       src    = vertices[buffer&0xFFFF].getPtr();
       stride = vertices[buffer&0xFFFF].getStride();

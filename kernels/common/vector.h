@@ -40,8 +40,10 @@ namespace embree
 
       __forceinline pointer allocate( size_type n ) 
       {
-        assert(device);
-        device->memoryMonitor(n*sizeof(T),false);
+        if (n) {
+          assert(device);
+          device->memoryMonitor(n*sizeof(T),false);
+        }
 #if defined(__LINUX__) && defined(__AVX512F__)
         if (n*sizeof(value_type) >= 14 * PAGE_SIZE_2M)
         {
@@ -55,7 +57,6 @@ namespace embree
 
       __forceinline void deallocate( pointer p, size_type n ) 
       {
-        assert(device);
         if (p)
         {
 #if defined(__LINUX__) && defined(__AVX512F__)
@@ -68,7 +69,11 @@ namespace embree
 #endif
         }
         else assert(n == 0);
-        device->memoryMonitor(-ssize_t(n)*sizeof(T),true);
+
+        if (n) {
+          assert(device);
+          device->memoryMonitor(-ssize_t(n)*sizeof(T),true);
+        }
       }
 
       __forceinline void construct( pointer p, const_reference val ) {

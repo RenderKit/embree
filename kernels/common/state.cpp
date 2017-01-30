@@ -104,6 +104,7 @@ namespace embree
     subdiv_accel = "default";
     subdiv_accel_mb = "default";
 
+    ignore_config_files = false;
     float_exceptions = false;
     scene_flags = -1;
     verbose = 0;
@@ -226,7 +227,7 @@ namespace embree
 
       if (tok == Token::Id("threads") && cin->trySymbol("=")) 
         numThreads = cin->get().Int();
-      
+
       else if (tok == Token::Id("set_affinity")&& cin->trySymbol("=")) 
         set_affinity = cin->get().Int();
 
@@ -246,6 +247,8 @@ namespace embree
         enabled_cpu_features &= string_to_cpufeatures(isa);
       }
 
+      else if (tok == Token::Id("ignore_config_files") && cin->trySymbol("="))
+        ignore_config_files = cin->get().Int();
       else if (tok == Token::Id("float_exceptions") && cin->trySymbol("=")) 
         float_exceptions = cin->get().Int();
 

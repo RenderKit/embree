@@ -87,7 +87,11 @@ namespace embree
         : Test(name,isa,BENCHMARK,false), unit(unit), numThreads(getNumberOfLogicalThreads()), higher_is_better(higher_is_better), max_attempts(max_attempts) {}
       
       virtual size_t setNumPrimitives(size_t N) { return 0; }
-      virtual void setNumThreads(size_t N) { numThreads = N; }
+      virtual void setNumThreads(size_t N) 
+      { 
+        if (N == 0) numThreads = getNumberOfLogicalThreads(); 
+        else numThreads = N; 
+      }
       virtual bool setup(VerifyApplication* state) { return true; }
       virtual float benchmark(VerifyApplication* state) = 0;
       Statistics benchmark_loop(VerifyApplication* state);
@@ -105,8 +109,8 @@ namespace embree
 
     struct TestGroup : public Test
     {
-      TestGroup (std::string name, bool silent, bool parallel)
-        : Test(name,0,TEST_GROUP), silent(silent), parallel(parallel) {}
+      TestGroup (std::string name, bool silent, bool parallel, bool enabled = true)
+        : Test(name,0,TEST_GROUP,enabled), silent(silent), parallel(parallel) {}
 
     public:
       void add(Ref<Test> test) {
