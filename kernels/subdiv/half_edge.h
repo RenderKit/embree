@@ -26,9 +26,10 @@ namespace embree
     public:
 
     enum PatchType : char { 
-      REGULAR_QUAD_PATCH       = 0, //!< a regular quad patch can be represented as a B-Spline
-      IRREGULAR_QUAD_PATCH     = 1, //!< an irregular quad patch can be represented as a Gregory patch
-      COMPLEX_PATCH            = 2  //!< these patches need subdivision and cannot be processed by the above fast code paths
+      BILINEAR_PATCH        = 0, //!< a bilinear patch
+      REGULAR_QUAD_PATCH    = 1, //!< a regular quad patch can be represented as a B-Spline
+      IRREGULAR_QUAD_PATCH  = 2, //!< an irregular quad patch can be represented as a Gregory patch
+      COMPLEX_PATCH         = 3  //!< these patches need subdivision and cannot be processed by the above fast code paths
     };
     
     enum VertexType : char { 
@@ -134,25 +135,36 @@ namespace embree
       else if (face_valence == 4 && !hasBorder)      return REGULAR_QUAD_PATCH;
       else                                           return IRREGULAR_QUAD_PATCH;
     }
+
+    /*! tests if this edge is part of a bilinear patch */
+    __forceinline bool bilinearVertex() const {
+      return vertex_crease_weight == float(inf) && edge_crease_weight == float(inf);
+    }
     
     /*! calculates the type of the patch */
     __forceinline PatchType patchType() const 
     {
       const HalfEdge* p = this;
       PatchType ret = REGULAR_QUAD_PATCH;
+      bool bilinear = true;
       
       ret = max(ret,p->vertexType());
+      bilinear &= p->bilinearVertex();
       if ((p = p->next()) == this) return COMPLEX_PATCH;
       
       ret = max(ret,p->vertexType());
+      bilinear &= p->bilinearVertex();
       if ((p = p->next()) == this) return COMPLEX_PATCH;
       
       ret = max(ret,p->vertexType());
+      bilinear &= p->bilinearVertex();
       if ((p = p->next()) == this) return COMPLEX_PATCH;
       
       ret = max(ret,p->vertexType());
+      bilinear &= p->bilinearVertex();
       if ((p = p->next()) != this) return COMPLEX_PATCH;
       
+      if (bilinear) return BILINEAR_PATCH;
       return ret;
     }
     

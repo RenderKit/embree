@@ -39,6 +39,7 @@ namespace embree
       BEZIER_PATCH           = 2,  
       GREGORY_PATCH          = 3,
       EVAL_PATCH             = 5,
+      BILINEAR_PATCH         = 6,
     };
 
     enum Flags {

@@ -652,6 +652,7 @@ namespace embree
 
   void SubdivMesh::printStatistics()
   {
+    size_t numBilinearFaces = 0;
     size_t numRegularQuadFaces = 0;
     size_t numIrregularQuadFaces = 0;
     size_t numComplexFaces = 0;
@@ -659,6 +660,7 @@ namespace embree
     for (size_t e=0, f=0; f<numFaces(); e+=faceVertices[f++]) 
     {
       switch (topology[0].halfEdges[e].patch_type) {
+      case HalfEdge::BILINEAR_PATCH      : numBilinearFaces++;   break;
       case HalfEdge::REGULAR_QUAD_PATCH  : numRegularQuadFaces++;   break;
       case HalfEdge::IRREGULAR_QUAD_PATCH: numIrregularQuadFaces++; break;
       case HalfEdge::COMPLEX_PATCH       : numComplexFaces++;   break;
@@ -666,6 +668,7 @@ namespace embree
     }
     
     std::cout << "numFaces = " << numFaces() << ", " 
+              << "numBilinearFaces = " << numBilinearFaces << " (" << 100.0f * numBilinearFaces / numFaces() << "%), " 
               << "numRegularQuadFaces = " << numRegularQuadFaces << " (" << 100.0f * numRegularQuadFaces / numFaces() << "%), " 
               << "numIrregularQuadFaces " << numIrregularQuadFaces << " (" << 100.0f * numIrregularQuadFaces / numFaces() << "%) " 
               << "numComplexFaces " << numComplexFaces << " (" << 100.0f * numComplexFaces / numFaces() << "%) " 

@@ -45,6 +45,7 @@ namespace embree
         : P(P), dPdu(dPdu), dPdv(dPdv), ddPdudu(ddPdudu), ddPdvdv(ddPdvdv), ddPdudv(ddPdudv)
         {
           switch (edge->patch_type) {
+          case HalfEdge::BILINEAR_PATCH: BilinearPatch(edge,vertices,stride).eval(u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,1.0f); break;
           case HalfEdge::REGULAR_QUAD_PATCH: RegularPatchT(edge,vertices,stride).eval(u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,1.0f); break;
 #if PATCH_USE_GREGORY == 2
           case HalfEdge::IRREGULAR_QUAD_PATCH: GregoryPatch(edge,vertices,stride).eval(u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,1.0f); break;
@@ -190,7 +191,7 @@ namespace embree
         }
         
         void eval(const GeneralCatmullClarkPatch& patch, const Vec2f& uv, const size_t depth) 
-        {
+        {  
           /* convert into standard quad patch if possible */
           if (likely(patch.isQuadPatch())) 
           {
