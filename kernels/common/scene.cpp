@@ -32,7 +32,6 @@ namespace embree
   Scene::Scene (Device* device, RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
     : Accel(AccelData::TY_UNKNOWN),
       device(device), 
-      commitCounter(0), 
       commitCounterSubdiv(0), 
       numMappedBuffers(0),
       flags(sflags), aflags(aflags), 
@@ -698,9 +697,6 @@ namespace embree
       if ((aflags & RTC_INTERSECT8) == 0) intersectors.intersector8 = Accel::Intersector8(&invalid_rtcIntersect8);
       if ((aflags & RTC_INTERSECT16) == 0) intersectors.intersector16 = Accel::Intersector16(&invalid_rtcIntersect16);
     }
-
-    /* update commit counter */
-    commitCounter++;
   }
 
   void Scene::build_task ()

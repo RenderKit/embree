@@ -436,39 +436,39 @@ namespace embree
     Intersectors intersectors;
   };
 
-#define DEFINE_INTERSECTOR1(symbol,intersector)                         \
-  Accel::Intersector1 symbol() {                                        \
+#define DEFINE_INTERSECTOR1(symbol,intersector)                              \
+  Accel::Intersector1 symbol() {                                             \
     return Accel::Intersector1((Accel::IntersectFunc)intersector::intersect, \
-                               (Accel::OccludedFunc )intersector::occluded, \
-                               TOSTRING(isa) "::" TOSTRING(symbol));    \
+                               (Accel::OccludedFunc )intersector::occluded,  \
+                               TOSTRING(isa) "::" TOSTRING(symbol));         \
   }
   
-#define DEFINE_INTERSECTOR4(symbol,intersector)                         \
-  Accel::Intersector4 symbol() {                                        \
+#define DEFINE_INTERSECTOR4(symbol,intersector)                               \
+  Accel::Intersector4 symbol() {                                              \
     return Accel::Intersector4((Accel::IntersectFunc4)intersector::intersect, \
-                               (Accel::OccludedFunc4)intersector::occluded, \
-                               TOSTRING(isa) "::" TOSTRING(symbol));    \
+                               (Accel::OccludedFunc4)intersector::occluded,   \
+                               TOSTRING(isa) "::" TOSTRING(symbol));          \
   }
   
-#define DEFINE_INTERSECTOR8(symbol,intersector)                         \
-  Accel::Intersector8 symbol() {                                        \
+#define DEFINE_INTERSECTOR8(symbol,intersector)                               \
+  Accel::Intersector8 symbol() {                                              \
     return Accel::Intersector8((Accel::IntersectFunc8)intersector::intersect, \
-                               (Accel::OccludedFunc8)intersector::occluded, \
-                               TOSTRING(isa) "::" TOSTRING(symbol));    \
+                               (Accel::OccludedFunc8)intersector::occluded,   \
+                               TOSTRING(isa) "::" TOSTRING(symbol));          \
   }
 
-#define DEFINE_INTERSECTOR16(symbol,intersector)                         \
-  Accel::Intersector16 symbol() {                                       \
-    Accel::Intersector16((Accel::IntersectFunc16)intersector::intersect, \
-                         (Accel::OccludedFunc16)intersector::occluded,  \
-                         TOSTRING(isa) "::" TOSTRING(symbol));          \
+#define DEFINE_INTERSECTOR16(symbol,intersector)                                \
+  Accel::Intersector16 symbol() {                                               \
+    return Accel::Intersector16((Accel::IntersectFunc16)intersector::intersect, \
+                                (Accel::OccludedFunc16)intersector::occluded,   \
+                                TOSTRING(isa) "::" TOSTRING(symbol));           \
   }
 
-#define DEFINE_INTERSECTORN(symbol,intersector)                         \
-  Accel::IntersectorN symbol() {                                        \
+#define DEFINE_INTERSECTORN(symbol,intersector)                               \
+  Accel::IntersectorN symbol() {                                              \
     return Accel::IntersectorN((Accel::IntersectFuncN)intersector::intersect, \
-                               (Accel::OccludedFuncN)intersector::occluded, \
-                               TOSTRING(isa) "::" TOSTRING(symbol));    \
+                               (Accel::OccludedFuncN)intersector::occluded,   \
+                               TOSTRING(isa) "::" TOSTRING(symbol));          \
   }
 
   /* ray stream filter interface */
