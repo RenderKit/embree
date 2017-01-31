@@ -155,13 +155,13 @@ namespace embree
                 switch (geom->type) {
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
                 case Geometry::TRIANGLE_MESH:
-                  objects[objectID] = new BVH4(Triangle4::type,geom->parent);
+                  //objects[objectID] = new BVH4(Triangle4::type,geom->parent); // FIXME: enable
                   builders[objectID] = BVH4Triangle4MeshBuilderSAH((BVH4*)objects[objectID],(TriangleMesh*)geom);
                   break;
 #endif
 #if defined(EMBREE_GEOMETRY_QUADS)
                 case Geometry::QUAD_MESH:
-                  objects[objectID] = new BVH4(Quad4v::type,geom->parent);
+                  //objects[objectID] = new BVH4(Quad4v::type,geom->parent); // FIXME: enable
                   builders[objectID] = BVH4Quad4vMeshBuilderSAH((BVH4*)objects[objectID],(QuadMesh*)geom);
                   break;
 #endif
