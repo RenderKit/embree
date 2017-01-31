@@ -29,8 +29,6 @@ namespace embree
 {
   namespace isa
   {
-    MAYBE_UNUSED static const size_t HIGH_SINGLE_THREAD_THRESHOLD    = 2*1024;
-
     template<int N, typename Mesh>
     BVHNBuilderTwoLevel<N,Mesh>::BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, const createMeshAccelTy createMeshAccel, const size_t singleThreadThreshold)
       : bvh(bvh), objects(bvh->objects), scene(scene), createMeshAccel(createMeshAccel), refs(scene->device), prims(scene->device), singleThreadThreshold(singleThreadThreshold) {}
