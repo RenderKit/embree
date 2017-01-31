@@ -1190,8 +1190,8 @@ namespace embree
         double overhead = double(bytes_all_threads.second)/double(bytes_one_thread.second);
         //std::cout << "N = " << bytes_one_thread.first << ", 1 thread = " << 1E-6*bytes_one_thread.second << " MB, all_threads = " << 1E-6*bytes_all_threads.second << " MB (" << 100.0f*overhead << " %)" << std::endl;
 
-        /* right now we use a 60% overhead threshold due to the BVH SAH builder for lines */
-        if (overhead > 1.60f) return VerifyApplication::FAILED;
+        /* right now we use a 30% overhead threshold */
+        if (overhead > 1.30f) return VerifyApplication::FAILED;
       }
       return VerifyApplication::PASSED;
     }

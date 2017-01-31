@@ -114,7 +114,7 @@ namespace embree
           // throw an exception here to cancel the build operation
         },
         
-        prims.data(),pinfo,2,1024,1,1,1,1.0f,1.0f);
+        prims.data(),pinfo,2,1024,1,1,1,1.0f,1.0f,Builder::DEFAULT_SINGLE_THREAD_THRESHOLD);
       
       double t1 = getSeconds();
       

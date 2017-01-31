@@ -172,7 +172,7 @@ namespace embree
           return 0;
         };
        
-        BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f);
+        BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f,DEFAULT_SINGLE_THREAD_THRESHOLD);
         
 	/* clear temporary data for static geometry */
 	if (scene->isStatic()) {
@@ -386,7 +386,7 @@ namespace embree
           const PrimInfo pinfo = updatePrimRefArray(0);
 
           /* call BVH builder */
-          BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f);
+          BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f,DEFAULT_SINGLE_THREAD_THRESHOLD);
         }
 
         /* build MBlur BVH over patches */
@@ -417,7 +417,7 @@ namespace embree
 
             /* call BVH builder */
             NodeRef root; LBBox3fa tbounds;
-            std::tie(root, tbounds) = BVHNBuilderMblur<N>::build(bvh,createLeaf,bvh->scene->progressInterface,prims.data(),pinfo,N,1,1,1.0f,1.0f);
+            std::tie(root, tbounds) = BVHNBuilderMblur<N>::build(bvh,createLeaf,bvh->scene->progressInterface,prims.data(),pinfo,N,1,1,1.0f,1.0f,DEFAULT_SINGLE_THREAD_THRESHOLD);
             roots[t] = root;
             boxes[t+0] = tbounds.bounds0;
             boxes[t+1] = tbounds.bounds1;
