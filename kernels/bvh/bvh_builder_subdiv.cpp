@@ -100,7 +100,9 @@ namespace embree
           bvh->set(BVH::emptyNode,empty,0);
           return;
         }
-        bvh->alloc.reset();
+        //bvh->alloc.reset();
+        bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef));
+
 
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1EagerBuilderBinnedSAH");
 
@@ -314,7 +316,8 @@ namespace embree
       void rebuild(size_t numPrimitives)
       {
         SubdivPatch1Cached* const subdiv_patches = (SubdivPatch1Cached*) bvh->subdiv_patches.data();
-        bvh->alloc.reset();
+        //bvh->alloc.reset();
+        bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef)*numTimeSteps);
 
         Scene::Iterator<SubdivMesh,mblur> iter(scene);
         parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
@@ -391,7 +394,6 @@ namespace embree
         {
           /* allocate buffers */
           const size_t numTimeSegments = bvh->numTimeSteps-1; assert(bvh->numTimeSteps > 1);
-          //bvh->alloc.init_estimate2(numPrimitives*sizeof(PrimRef)*numTimeSegments);
           NodeRef* roots = (NodeRef*) bvh->alloc.threadLocal2()->alloc0->malloc(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
           
           /* build BVH for each timestep */
