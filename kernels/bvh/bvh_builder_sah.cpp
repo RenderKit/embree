@@ -45,7 +45,7 @@ namespace embree
     MAYBE_UNUSED static const float travCost = 1.0f;
     MAYBE_UNUSED static const float defaultPresplitFactor = 1.2f;
     MAYBE_UNUSED static const size_t DEFAULT_SINGLE_THREAD_THRESHOLD = 1024;
-    MAYBE_UNUSED static const size_t HIGH_SINGLE_THREAD_THRESHOLD    = 2048;
+    MAYBE_UNUSED static const size_t HIGH_SINGLE_THREAD_THRESHOLD    = 2*1024;
 
     typedef FastAllocator::ThreadLocal2 Allocator;
 

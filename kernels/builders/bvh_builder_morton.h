@@ -276,20 +276,21 @@ namespace embree
     protected:
       static const size_t MAX_BRANCHING_FACTOR = 16;         //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;         //!< create balanced tree of we are that many levels before the maximal tree depth
-      static const size_t SINGLE_THREADED_THRESHOLD = 1024;  //!< threshold to switch to single threaded build
+      //static const size_t SINGLE_THREADED_THRESHOLD = 1024;  //!< threshold to switch to single threaded build
 
 
     public:
       
       GeneralBVHBuilderMorton (const ReductionTy& identity, 
-                        CreateAllocator& createAllocator, 
-                        AllocNodeFunc& allocNode, 
-                        SetNodeBoundsFunc& setBounds, 
-                        CreateLeafFunc& createLeaf, 
-                        CalculateBounds& calculateBounds,
-                        ProgressMonitor& progressMonitor,
-                        const size_t branchingFactor, const size_t maxDepth, 
-                        const size_t minLeafSize, const size_t maxLeafSize)
+                               CreateAllocator& createAllocator, 
+                               AllocNodeFunc& allocNode, 
+                               SetNodeBoundsFunc& setBounds, 
+                               CreateLeafFunc& createLeaf, 
+                               CalculateBounds& calculateBounds,
+                               ProgressMonitor& progressMonitor,
+                               const size_t branchingFactor, const size_t maxDepth, 
+                               const size_t minLeafSize, const size_t maxLeafSize,
+                               const size_t singleThreadThreshold)
         : identity(identity), 
         createAllocator(createAllocator), 
         allocNode(allocNode), 
@@ -301,7 +302,8 @@ namespace embree
         branchingFactor(branchingFactor), 
         maxDepth(maxDepth), 
         minLeafSize(minLeafSize), 
-        maxLeafSize(maxLeafSize) {}
+        maxLeafSize(maxLeafSize),
+        singleThreadThreshold(singleThreadThreshold) {}
       
       void splitFallback(MortonBuildRecord<NodeRef>& current, MortonBuildRecord<NodeRef>& leftChild, MortonBuildRecord<NodeRef>& rightChild) const
       {
@@ -454,7 +456,7 @@ namespace embree
           alloc = createAllocator();
 
         /* call memory monitor function to signal progress */
-        if (toplevel && current.size() <= SINGLE_THREADED_THRESHOLD)
+        if (toplevel && current.size() <= singleThreadThreshold)
           progressMonitor(current.size());
         
         __aligned(64) MortonBuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
@@ -510,7 +512,7 @@ namespace embree
 
         /* process top parts of tree parallel */
         BBox3fa bounds[MAX_BRANCHING_FACTOR];
-        if (current.size() > SINGLE_THREADED_THRESHOLD)
+        if (current.size() > singleThreadThreshold)
         {
           /*! parallel_for is faster than spawing sub-tasks */
           parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) {
@@ -536,7 +538,7 @@ namespace embree
       {
         /* using 4 phases radix sort */
         morton = src;
-        radix_sort_u32(src,tmp,numPrimitives,SINGLE_THREADED_THRESHOLD);
+        radix_sort_u32(src,tmp,numPrimitives,singleThreadThreshold);
         //InPlace32BitRadixSort(morton,numPrimitives);
 
         /* build BVH */
@@ -564,6 +566,7 @@ namespace embree
       const size_t maxDepth;
       const size_t minLeafSize;
       const size_t maxLeafSize;
+      const size_t singleThreadThreshold;
     };
 
     
@@ -590,7 +593,8 @@ namespace embree
                                                              const size_t branchingFactor, 
                                                              const size_t maxDepth, 
                                                              const size_t minLeafSize, 
-                                                             const size_t maxLeafSize)
+                                                             const size_t maxLeafSize,
+                                                             const size_t singleThreadThreshold)
     {
       typedef GeneralBVHBuilderMorton<
         NodeRef,
@@ -613,7 +617,8 @@ namespace embree
                       branchingFactor,
                       maxDepth,
                       minLeafSize,
-                      maxLeafSize);
+                      maxLeafSize,
+                      singleThreadThreshold);
 
       return builder.build(src,tmp,numPrimitives);
     }
@@ -641,7 +646,8 @@ namespace embree
                                                     const size_t branchingFactor, 
                                                     const size_t maxDepth, 
                                                     const size_t minLeafSize, 
-                                                    const size_t maxLeafSize)
+                                                    const size_t maxLeafSize,
+                                                    const size_t singleThreadThreshold)
     {
       std::pair<NodeRef,BBox3fa> ret;
 
@@ -669,7 +675,7 @@ namespace embree
       
       return bvh_builder_morton_internal<NodeRef>(
         createAllocator,identity,allocNode,setBounds,createLeaf,calculateBounds,progressMonitor,
-        src,temp,numPrimitives,branchingFactor,maxDepth,minLeafSize,maxLeafSize);
+        src,temp,numPrimitives,branchingFactor,maxDepth,minLeafSize,maxLeafSize,singleThreadThreshold);
 
     }
   }
