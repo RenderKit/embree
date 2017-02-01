@@ -18,17 +18,18 @@
 
 namespace embree
 {
-  bool g_tbb_threads_initialized = false;
-  tbb::task_scheduler_init g_tbb_threads(tbb::task_scheduler_init::deferred);
+  static bool g_tbb_threads_initialized = false;
+  static tbb::task_scheduler_init g_tbb_threads(tbb::task_scheduler_init::deferred);
   
   class TBBAffinity: public tbb::task_scheduler_observer
   {
   public:
     tbb::atomic<int> threadCount;
     
-    void on_scheduler_entry( bool ) {
+    void on_scheduler_entry( bool ) 
+    {
       ++threadCount;
-      setAffinity(TaskScheduler::threadIndex()); // FIXME: use threadCount?
+      setAffinity(TaskScheduler::threadIndex());
     }
     
     void on_scheduler_exit( bool ) { 
