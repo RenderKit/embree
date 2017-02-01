@@ -392,7 +392,6 @@ namespace embree
           const unsigned int bz = extract<2>(binID);
           morton[i].code = bitInterleave(bx,by,bz);
         }
-        //std::sort(morton+current.begin,morton+current.end); // FIXME: use radix sort
 #if defined(TASKING_TBB)
         tbb::parallel_sort(morton+current.begin,morton+current.end);
 #else

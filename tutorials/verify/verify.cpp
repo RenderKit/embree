@@ -1923,7 +1923,7 @@ namespace embree
         const Vec3fa ht  = org + rays[i].tfar*dir;
         const Vec3fa huv = vertices[0] + rays[i].u*(vertices[1]-vertices[0]) + rays[i].v*(vertices[2]-vertices[0]);
         if (reduce_max(abs(ht-huv)) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
-        const Vec3fa Ng = normalize(Vec3fa(rays[i].Ng[0],rays[i].Ng[1],rays[i].Ng[2])); // FIXME: some geom normals are scaled!!!??
+        const Vec3fa Ng = Vec3fa(rays[i].Ng[0],rays[i].Ng[1],rays[i].Ng[2]);
         if (reduce_max(abs(Ng - Vec3fa(0.0f,0.0f,-1.0f))) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
       }
       AssertNoError(device);
@@ -1991,7 +1991,7 @@ namespace embree
         const Vec3fa ht  = org + rays[i].tfar*dir;
         const Vec3fa huv = vertices[0] + rays[i].u*(vertices[1]-vertices[0]) + rays[i].v*(vertices[3]-vertices[0]);
         if (reduce_max(abs(ht-huv)) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
-        const Vec3fa Ng = normalize(Vec3fa(rays[i].Ng[0],rays[i].Ng[1],rays[i].Ng[2])); // FIXME: some geom normals are scaled!!!??
+        const Vec3fa Ng = Vec3fa(rays[i].Ng[0],rays[i].Ng[1],rays[i].Ng[2]);
         if (reduce_max(abs(Ng - Vec3fa(0.0f,0.0f,-1.0f))) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
       }
       AssertNoError(device);

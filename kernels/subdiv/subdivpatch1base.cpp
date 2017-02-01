@@ -86,14 +86,8 @@ namespace embree
 
   Vec2i SubdivPatch1Base::computeGridSize(const float level[4])
   {
-    int width  = (int)max(level[0],level[2])+1; // n segments -> n+1 points
-    int height = (int)max(level[1],level[3])+1;
-    
-    /* workaround for 2x2 intersection stencil */
-    width = max(width,2); // FIXME: this triggers stitching
-    height = max(height,2);
-
-    return Vec2i(width,height);
+    return Vec2i((int)max(level[0],level[2])+1,
+                 (int)max(level[1],level[3])+1);
   }
   
   bool SubdivPatch1Base::updateEdgeLevels(const float edge_level[4], const int subdiv[4], const SubdivMesh *const mesh, const int simd_width)
@@ -112,7 +106,6 @@ namespace embree
     /* compute grid resolution */
     Vec2i res = computeGridSize(level);
     grid_u_res = res.x; grid_v_res = res.y;
-    
     grid_size_simd_blocks = ((grid_u_res*grid_v_res+simd_width-1)&(-simd_width)) / simd_width;
 
     /* need stiching? */
@@ -129,23 +122,5 @@ namespace embree
     }
 
     return grid_changed;
-  }
-
-   size_t SubdivPatch1Base::get64BytesBlocksForGridSubTree(const GridRange& range, const unsigned int leafBlocks)
-   {
-     if (range.hasLeafSize()) 
-       return leafBlocks;
-     
-     __aligned(64) GridRange r[4];
-     const unsigned int children = range.splitIntoSubRanges(r);
-     
-     size_t blocks = 2; /* 128 bytes bvh4 node layout */
-     for (unsigned int i=0;i<children;i++)
-       blocks += get64BytesBlocksForGridSubTree(r[i],leafBlocks);
-     return blocks;    
-   }
-
-  size_t SubdivPatch1Base::getSubTreeSize64bBlocks(const unsigned int leafBlocks) {
-    return get64BytesBlocksForGridSubTree(GridRange(0,grid_u_res-1,0,grid_v_res-1),leafBlocks);
   }
 }

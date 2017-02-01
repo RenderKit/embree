@@ -198,10 +198,8 @@ namespace embree
         intersect<GridSOA::Gather3x3>( ray, k, context, grid_x, line_offset, lines, pre);
 #else
         intersect<GridSOA::Gather2x3>(ray, k, context, grid_x            , line_offset, lines, pre);
-#if LOW_TESSELLATION_LEVEL_FIX == 1
         if (likely(lines > 2))
-#endif
-        intersect<GridSOA::Gather2x3>(ray, k, context, grid_x+line_offset, line_offset, lines, pre);
+          intersect<GridSOA::Gather2x3>(ray, k, context, grid_x+line_offset, line_offset, lines, pre);
 #endif
       }
 
@@ -216,10 +214,8 @@ namespace embree
         return occluded<GridSOA::Gather3x3>( ray, k, context, grid_x, line_offset, lines, pre);
 #else
         if (occluded<GridSOA::Gather2x3>(ray, k, context, grid_x            , line_offset, lines, pre)) return true;
-#if LOW_TESSELLATION_LEVEL_FIX == 1
         if (likely(lines > 2))
-#endif
-        if (occluded<GridSOA::Gather2x3>(ray, k, context, grid_x+line_offset, line_offset, lines, pre)) return true;
+          if (occluded<GridSOA::Gather2x3>(ray, k, context, grid_x+line_offset, line_offset, lines, pre)) return true;
 #endif
         return false;
       }
@@ -306,10 +302,8 @@ namespace embree
         intersect<GridSOA::Gather3x3>( ray, k, ftime, context, grid_x, line_offset, lines, pre);
 #else
         intersect<GridSOA::Gather2x3>(ray, k, ftime, context, grid_x            , line_offset, lines, pre);
-#if LOW_TESSELLATION_LEVEL_FIX == 1
         if (likely(lines > 2))
-#endif
-        intersect<GridSOA::Gather2x3>(ray, k, ftime, context, grid_x+line_offset, line_offset, lines, pre);
+          intersect<GridSOA::Gather2x3>(ray, k, ftime, context, grid_x+line_offset, line_offset, lines, pre);
 #endif
       }
 
@@ -327,10 +321,8 @@ namespace embree
         return occluded<GridSOA::Gather3x3>( ray, k, ftime, context, grid_x, line_offset, lines, pre);
 #else
         if (occluded<GridSOA::Gather2x3>(ray, k, ftime, context, grid_x            , line_offset, lines, pre)) return true;
-#if LOW_TESSELLATION_LEVEL_FIX == 1
         if (likely(lines > 2))
-#endif
-        if (occluded<GridSOA::Gather2x3>(ray, k, ftime, context, grid_x+line_offset, line_offset, lines, pre)) return true;
+          if (occluded<GridSOA::Gather2x3>(ray, k, ftime, context, grid_x+line_offset, line_offset, lines, pre)) return true;
 #endif
         return false;
       }

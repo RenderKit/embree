@@ -227,7 +227,7 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_QUADS)
     if (device->quad_accel == "default") 
     {
-      if (isStatic() || isRobust()) // FIXME: dont go here for robust mode
+      if (isStatic())
       {
         /* static */
         int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
@@ -264,14 +264,30 @@ namespace embree
         case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Quad4i(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::ROBUST)); break;
         }
       }
-      else
+      else /* dynamic */
       {
 #if defined (__TARGET_AVX__)
-        if (device->hasISA(AVX))
-          accels.add(device->bvh8_factory->BVH8Quad4v(this,BVH8Factory::BuildVariant::DYNAMIC,BVH8Factory::IntersectVariant::FAST));
-        else
+          if (device->hasISA(AVX))
+	  {
+            int mode =  2*(int)isCompact() + 1*(int)isRobust();
+            switch (mode) {
+            case /*0b00*/ 0: accels.add(device->bvh8_factory->BVH8Quad4v(this,BVH8Factory::BuildVariant::DYNAMIC,BVH8Factory::IntersectVariant::FAST)); break;
+            case /*0b01*/ 1: accels.add(device->bvh8_factory->BVH8Quad4v(this,BVH8Factory::BuildVariant::DYNAMIC,BVH8Factory::IntersectVariant::ROBUST)); break; 
+            case /*0b10*/ 2: accels.add(device->bvh8_factory->BVH8Quad4v(this,BVH8Factory::BuildVariant::DYNAMIC,BVH8Factory::IntersectVariant::FAST)); break;
+            case /*0b11*/ 3: accels.add(device->bvh8_factory->BVH8Quad4v(this,BVH8Factory::BuildVariant::DYNAMIC,BVH8Factory::IntersectVariant::ROBUST)); break;
+            }
+          }
+          else
 #endif
-          accels.add(device->bvh4_factory->BVH4Quad4v(this,BVH4Factory::BuildVariant::DYNAMIC,BVH4Factory::IntersectVariant::FAST));
+          {
+            int mode =  2*(int)isCompact() + 1*(int)isRobust();
+            switch (mode) {
+            case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4Quad4v(this,BVH4Factory::BuildVariant::DYNAMIC,BVH4Factory::IntersectVariant::FAST)); break;
+            case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Quad4v(this,BVH4Factory::BuildVariant::DYNAMIC,BVH4Factory::IntersectVariant::ROBUST)); break; 
+            case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4Quad4v(this,BVH4Factory::BuildVariant::DYNAMIC,BVH4Factory::IntersectVariant::FAST)); break;
+            case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Quad4v(this,BVH4Factory::BuildVariant::DYNAMIC,BVH4Factory::IntersectVariant::ROBUST)); break;
+            }
+          }
       }
     }
     else if (device->quad_accel == "bvh4.quad4v")       accels.add(device->bvh4_factory->BVH4Quad4v(this));
