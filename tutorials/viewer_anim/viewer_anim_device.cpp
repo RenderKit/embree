@@ -363,14 +363,14 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 
         /* shading */
         Vec3fa& color = colors[N];
-        color = Vec3fa(0.0f,1.0f,0.0f);
+        color = Vec3fa(1.0f,1.0f,1.0f);
         if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
         {
-#if VERTEX_NORMALS == 1
           /* vertex normals */
           ISPCGeometry* geometry = g_ispc_scene->geometries[ray.geomID];
           if (likely(geometry->type == TRIANGLE_MESH))
           {
+#if VERTEX_NORMALS == 1
             ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
             if (likely(mesh->normals))
             {
@@ -381,8 +381,8 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
               const Vec3fa n2 = mesh->normals[tri->v2];
               Ng = (1.0f-ray.u-ray.v)*n0 + ray.u*n1 + ray.v*n2;          
             }
-          }
 #endif
+          }
           /* final color */
           color = Vec3fa(abs(dot(ray.dir,normalize(Ng))));
         }

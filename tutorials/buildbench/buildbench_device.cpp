@@ -322,7 +322,7 @@ namespace embree {
     g_scene = nullptr;    
   }
 
-  void Benchmark_Static_Create(ISPCScene* scene_in, size_t benchmark_iterations, RTCGeometryFlags gflags = RTC_GEOMETRY_STATIC)
+  void Benchmark_Static_Create(ISPCScene* scene_in, size_t benchmark_iterations, RTCGeometryFlags gflags = RTC_GEOMETRY_STATIC, RTCSceneFlags sflags = RTC_SCENE_STATIC)
   {
     assert(g_scene == nullptr);
     size_t primitives = getNumPrimitives(scene_in);
@@ -331,7 +331,7 @@ namespace embree {
     double time = 0.0;
     for(size_t i=0;i<benchmark_iterations+skip_iterations;i++)
     {
-      g_scene = createScene(RTC_SCENE_STATIC);
+      g_scene = createScene(sflags);
       convertScene(g_scene,scene_in,gflags);
 
       double t0 = getSeconds();
@@ -345,12 +345,17 @@ namespace embree {
       rtcDeleteScene (g_scene);       
     }
 
+    if (sflags & RTC_SCENE_HIGH_QUALITY)
+      std::cout << "Create static (HQ) scene, ";
+    else
+      std::cout << "Create static scene, ";
+
     if (gflags == RTC_GEOMETRY_STATIC)
-      std::cout << "Create static scene, static geometry      ";
+      std::cout << "static geometry      ";
     else if (gflags == RTC_GEOMETRY_DYNAMIC)
-      std::cout << "Create static scene, dynamic geometry     ";
+      std::cout << "dynamic geometry    ";
     else if (gflags == RTC_GEOMETRY_DEFORMABLE)
-      std::cout << "Create static scene, deformable geometry  ";
+      std::cout << "deformable geometry ";
     else
       FATAL("unknown flags");
 
@@ -384,7 +389,8 @@ namespace embree {
     Benchmark_Dynamic_Create(g_ispc_scene,iterations_dynamic_dynamic,RTC_GEOMETRY_DEFORMABLE);
     Benchmark_Dynamic_Create(g_ispc_scene,iterations_dynamic_dynamic,RTC_GEOMETRY_DYNAMIC);
     Benchmark_Dynamic_Create(g_ispc_scene,iterations_dynamic_static ,RTC_GEOMETRY_STATIC);
-    Benchmark_Static_Create(g_ispc_scene,iterations_static_static);
+    Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_GEOMETRY_STATIC,RTC_SCENE_STATIC);
+    Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_GEOMETRY_STATIC,RTC_SCENE_HIGH_QUALITY);
 
     rtcDeleteDevice(g_device); g_device = nullptr;
   }
