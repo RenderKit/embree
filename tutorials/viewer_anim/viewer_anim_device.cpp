@@ -605,13 +605,13 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
         const float inv_primZ  = 1.0f / dBuffer[width*py+px].z;
 
         bool debug = false;
-        if (px == 963 && py == 772) { debug = true; PRINT("DEBUG"); PRINT(primZ); }
+        //if (px == 820 && py == 1013) { debug = true; PRINT("DEBUG"); PRINT(primZ); }
 
         const Vec3fa normal = normalize(getTriangleNormal(geomID,primID));
 
         size_t numTris = 0;
         DeferredShadingBuffer tList[9];
-        float minZdist = pos_inf;
+        float minZdist = neg_inf; //pos_inf;
         for (size_t y=py-1;y<py+1;y++)
           for (size_t x=px-1;x<px+1;x++)
           {
@@ -621,7 +621,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
             const float z = dBuffer[width*y+x].z;
             if (debug) { PRINT(z); PRINT(z*inv_primZ); }
             if (gID == geomID && pID == primID)
-              minZdist = min(minZdist,z*inv_primZ);
+              minZdist = max(minZdist,abs(z-primZ));
             if (debug) PRINT(minZdist);
 
             if (unlikely( gID != geomID || pID != primID))
@@ -650,12 +650,22 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
             //if (dot(n,normal) >= 0.1f) continue;
             assert(tList[i].geomID != geomID || tList[i].primID != primID);
             const float z = tList[i].z;
-            bool ztest = abs(1.0f - (z*inv_primZ)) > 0.002f;
-            //bool ztest = 
+            //bool ztest = abs(1.0f - (z*inv_primZ)) > 0.002f;
+//            bool ztest = abs(z-primZ) > minZdist;
+            //bool ztest = abs(1.0f - abs(z-primZ) / minZdist) > 0.15f;
+            bool ztest = tList[i].geomID != geomID;
           //if (tList[i].geomID != geomID || ztest /* minZdist *1.01f < abs(tList[i].z-primZ)  ||  (dot(normal,n) <= 0.1f) */ )
           if (ztest)
             {
-              if (debug) { PRINT(z); PRINT(abs(1.0f - (z*inv_primZ))); PRINT("RED"); /* exit(0); */ }
+              if (debug) { 
+                PRINT(z); 
+                PRINT(abs(z-primZ)); 
+                PRINT(minZdist);
+                PRINT(abs(z-primZ) < minZdist); 
+                PRINT(abs(1.0f - abs(z-primZ) / minZdist)); 
+
+                PRINT(abs(1.0f - (z*inv_primZ))); PRINT("RED"); /* exit(0); */ 
+              }
               pixels[py*width+px] = 255;
             }
           }
