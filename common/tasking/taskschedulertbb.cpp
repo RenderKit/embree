@@ -23,8 +23,11 @@ namespace embree
   
   class TBBAffinity: public tbb::task_scheduler_observer
   {
-  public:
     tbb::atomic<int> threadCount;
+    
+  public:
+    TBBAffinity()
+      : threadCount(0) {}
     
     void on_scheduler_entry( bool ) 
     {
@@ -35,13 +38,8 @@ namespace embree
     void on_scheduler_exit( bool ) { 
       --threadCount; 
     }
-  public:
-    
-    TBBAffinity() { threadCount = 0; }
     
   } tbb_affinity;
-  
-  size_t TaskScheduler::g_numThreads = 0;
   
   void TaskScheduler::create(size_t numThreads, bool set_affinity, bool start_threads)
   {
@@ -56,20 +54,19 @@ namespace embree
       tbb_affinity.observe(true); 
     
     /* now either keep default settings or configure number of threads */
-    if (numThreads == 0) 
-    {
+    if (numThreads == 0) {
       g_tbb_threads_initialized = false;
-      g_numThreads = tbb::task_scheduler_init::default_num_threads();
+      numThreads = tbb::task_scheduler_init::default_num_threads();
     } else {
       g_tbb_threads_initialized = true;
       g_tbb_threads.initialize(int(numThreads));
-      g_numThreads = numThreads;
     }
 
     /* start worker threads */
-    if (start_threads) {
-      BarrierSys barrier(g_numThreads);
-      tbb::parallel_for(size_t(0), size_t(g_numThreads), size_t(1), [&] ( size_t i ) {
+    if (start_threads) 
+    {
+      BarrierSys barrier(numThreads);
+      tbb::parallel_for(size_t(0), size_t(numThreads), size_t(1), [&] ( size_t i ) {
           barrier.wait();
         });
     }
