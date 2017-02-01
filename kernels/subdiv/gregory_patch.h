@@ -166,7 +166,7 @@ namespace embree
       }
       
       Vertex c_i_m_2, e_i_m_2;
-      if (unlikely(border_index == 2 || face_valence == 2 || hasHardEdge)) // FIXME: face_valence correct?
+      if (unlikely(border_index == 2 || hasHardEdge))
       {
         /* mirror quad center and edge mid-point */
         c_i_m_2  = madd(2.0f, e_i_m_1 - c_i_m_1, c_i_m_1);
