@@ -45,8 +45,6 @@ namespace embree
                                unsigned x0, unsigned x1, unsigned y0, unsigned y1, 
                                const Scene* scene, Allocator& alloc, BBox3fa* bounds_o = nullptr)
       {
-        if (x1-x0 < 2 && x0 > 0) x0--;
-        if (y1-y0 < 2 && y0 > 0) y0--;
         const unsigned width = x1-x0+1;  
         const unsigned height = y1-y0+1; 
 #if LOW_TESSELLATION_LEVEL_FIX != 1
