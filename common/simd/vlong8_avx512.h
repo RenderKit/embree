@@ -205,11 +205,11 @@ namespace embree
   __forceinline const vlong8 max( const vlong8& a, const long    b ) { return max(a,vlong8(b)); }
   __forceinline const vlong8 max( const long    a, const vlong8& b ) { return max(vlong8(a),b); }
   
-  __forceinline const vlong8 mask_add(const vboold8& mask, vlong8& c, const vlong8& a, const vlong8& b) { return _mm512_mask_add_epi64(c,mask,a,b); }
-  __forceinline const vlong8 mask_sub(const vboold8& mask, vlong8& c, const vlong8& a, const vlong8& b) { return _mm512_mask_sub_epi64(c,mask,a,b); }
+  __forceinline const vlong8 mask_add(const vboold8& m, const vlong8& c, const vlong8& a, const vlong8& b) { return _mm512_mask_add_epi64(c,m,a,b); }
+  __forceinline const vlong8 mask_sub(const vboold8& m, const vlong8& c, const vlong8& a, const vlong8& b) { return _mm512_mask_sub_epi64(c,m,a,b); }
 
-  __forceinline const vlong8 mask_and(const vboold8& m,vlong8& c, const vlong8& a, const vlong8& b) { return _mm512_mask_and_epi64(c,m,a,b); }
-  __forceinline const vlong8 mask_or (const vboold8& m,vlong8& c, const vlong8& a, const vlong8& b) { return _mm512_mask_or_epi64(c,m,a,b); }
+  __forceinline const vlong8 mask_and(const vboold8& m, const vlong8& c, const vlong8& a, const vlong8& b) { return _mm512_mask_and_epi64(c,m,a,b); }
+  __forceinline const vlong8 mask_or (const vboold8& m, const vlong8& c, const vlong8& a, const vlong8& b) { return _mm512_mask_or_epi64(c,m,a,b); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators

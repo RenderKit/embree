@@ -304,7 +304,6 @@ namespace embree
   public:
     Device* device;
     AccelN accels;
-    unsigned int commitCounter;
     std::atomic<size_t> commitCounterSubdiv;
     std::atomic<size_t> numMappedBuffers;         //!< number of mapped buffers
     RTCSceneFlags flags;

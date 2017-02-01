@@ -56,7 +56,7 @@ namespace embree
 #endif
 
     template<int N>
-    void BVHNBuilder<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
+    void BVHNBuilder<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost, const size_t singleThreadThreshold)
     {
       //bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
 
@@ -71,7 +71,7 @@ namespace embree
       NodeRef root;
       BVHBuilderBinnedSAH::build_reduce<NodeRef>
         (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateAlignedNode(bvh),rotate<N>,createLeafFunc,progressFunc,
-         prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+         prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
 
       bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
       
@@ -89,7 +89,7 @@ namespace embree
 
 
     template<int N>
-    void BVHNBuilderQuantized<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
+    void BVHNBuilderQuantized<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost, const size_t singleThreadThreshold)
     {
       //bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
       auto progressFunc = [&] (size_t dn) { 
@@ -103,7 +103,7 @@ namespace embree
       NodeRef root = 0;
       BVHBuilderBinnedSAH::build_reduce<NodeRef>
         (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateQuantizedNode(bvh),dummy<N>,createLeafFunc,progressFunc,
-         prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+         prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
 
       NodeRef new_root = (size_t)root | BVH::tyQuantizedNode;
       // todo: COPY LAYOUT FOR LARGE NODES !!!
@@ -134,7 +134,7 @@ namespace embree
     };
 
     template<int N>
-    std::tuple<typename BVHN<N>::NodeRef,LBBox3fa> BVHNBuilderMblur<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
+    std::tuple<typename BVHN<N>::NodeRef,LBBox3fa> BVHNBuilderMblur<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost, const size_t singleThreadThreshold)
     {
       auto progressFunc = [&] (size_t dn) { 
         progress_in(dn); 
@@ -160,7 +160,7 @@ namespace embree
       NodeRef root;
       LBBox3fa root_bounds = BVHBuilderBinnedSAH::build_reduce<NodeRef>
         (root,typename BVH::CreateAlloc(bvh),identity,CreateAlignedNodeMB<N>(bvh),reduce,createLeafFunc,progressFunc,
-         prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+         prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
 
       /* set bounding box to merge bounds of all time steps */
       bvh->set(root,root_bounds,pinfo.size()); // FIXME: remove later

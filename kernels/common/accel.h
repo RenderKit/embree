@@ -123,8 +123,11 @@ namespace embree
 
     struct Intersector1
     {
-      Intersector1 (ErrorFunc error = nullptr);
-      Intersector1 (IntersectFunc intersect, OccludedFunc occluded, const char* name);
+      Intersector1 (ErrorFunc error = nullptr)
+      : intersect((IntersectFunc)error), occluded((OccludedFunc)error), name(nullptr) {}
+      
+      Intersector1 (IntersectFunc intersect, OccludedFunc occluded, const char* name)
+      : intersect(intersect), occluded(occluded), name(name) {}
 
       operator bool() const { return name; }
 
@@ -137,8 +140,11 @@ namespace embree
     
     struct Intersector4 
     {
-      Intersector4 (ErrorFunc error = nullptr);
-      Intersector4 (IntersectFunc4 intersect, OccludedFunc4 occluded, const char* name);
+      Intersector4 (ErrorFunc error = nullptr)
+      : intersect((IntersectFunc4)error), occluded((OccludedFunc4)error), name(nullptr) {}
+
+      Intersector4 (IntersectFunc4 intersect, OccludedFunc4 occluded, const char* name)
+      : intersect(intersect), occluded(occluded), name(name) {}
 
       operator bool() const { return name; }
       
@@ -151,8 +157,11 @@ namespace embree
     
     struct Intersector8 
     {
-      Intersector8 (ErrorFunc error = nullptr);
-      Intersector8 (IntersectFunc8 intersect, OccludedFunc8 occluded, const char* name);
+      Intersector8 (ErrorFunc error = nullptr)
+      : intersect((IntersectFunc8)error), occluded((OccludedFunc8)error), name(nullptr) {}
+
+      Intersector8 (IntersectFunc8 intersect, OccludedFunc8 occluded, const char* name)
+      : intersect(intersect), occluded(occluded), name(name) {}
 
       operator bool() const { return name; }
       
@@ -165,8 +174,11 @@ namespace embree
     
     struct Intersector16 
     {
-      Intersector16 (ErrorFunc error = nullptr);
-      Intersector16 (IntersectFunc16 intersect, OccludedFunc16 occluded, const char* name);
+      Intersector16 (ErrorFunc error = nullptr)
+      : intersect((IntersectFunc16)error), occluded((OccludedFunc16)error), name(nullptr) {}
+
+      Intersector16 (IntersectFunc16 intersect, OccludedFunc16 occluded, const char* name)
+      : intersect(intersect), occluded(occluded), name(name) {}
 
       operator bool() const { return name; }
       
@@ -179,8 +191,11 @@ namespace embree
 
     struct IntersectorN 
     {
-      IntersectorN (ErrorFunc error = nullptr);
-      IntersectorN (IntersectFuncN intersect, OccludedFuncN occluded, const char* name);
+      IntersectorN (ErrorFunc error = nullptr)
+      : intersect((IntersectFuncN)error), occluded((OccludedFuncN)error), name(nullptr) {}
+
+      IntersectorN (IntersectFuncN intersect, OccludedFuncN occluded, const char* name)
+      : intersect(intersect), occluded(occluded), name(name) {}
 
       operator bool() const { return name; }
       
@@ -421,30 +436,40 @@ namespace embree
     Intersectors intersectors;
   };
 
-#define DEFINE_INTERSECTOR1(symbol,intersector)                         \
-  Accel::Intersector1 symbol((Accel::IntersectFunc)intersector::intersect, \
-                             (Accel::OccludedFunc )intersector::occluded, \
-                             TOSTRING(isa) "::" TOSTRING(symbol));
+#define DEFINE_INTERSECTOR1(symbol,intersector)                              \
+  Accel::Intersector1 symbol() {                                             \
+    return Accel::Intersector1((Accel::IntersectFunc)intersector::intersect, \
+                               (Accel::OccludedFunc )intersector::occluded,  \
+                               TOSTRING(isa) "::" TOSTRING(symbol));         \
+  }
   
-#define DEFINE_INTERSECTOR4(symbol,intersector)                         \
-  Accel::Intersector4 symbol((Accel::IntersectFunc4)intersector::intersect, \
-                             (Accel::OccludedFunc4)intersector::occluded, \
-                             TOSTRING(isa) "::" TOSTRING(symbol));
+#define DEFINE_INTERSECTOR4(symbol,intersector)                               \
+  Accel::Intersector4 symbol() {                                              \
+    return Accel::Intersector4((Accel::IntersectFunc4)intersector::intersect, \
+                               (Accel::OccludedFunc4)intersector::occluded,   \
+                               TOSTRING(isa) "::" TOSTRING(symbol));          \
+  }
   
-#define DEFINE_INTERSECTOR8(symbol,intersector)                         \
-  Accel::Intersector8 symbol((Accel::IntersectFunc8)intersector::intersect, \
-                             (Accel::OccludedFunc8)intersector::occluded, \
-                             TOSTRING(isa) "::" TOSTRING(symbol));
+#define DEFINE_INTERSECTOR8(symbol,intersector)                               \
+  Accel::Intersector8 symbol() {                                              \
+    return Accel::Intersector8((Accel::IntersectFunc8)intersector::intersect, \
+                               (Accel::OccludedFunc8)intersector::occluded,   \
+                               TOSTRING(isa) "::" TOSTRING(symbol));          \
+  }
 
-#define DEFINE_INTERSECTOR16(symbol,intersector)                         \
-  Accel::Intersector16 symbol((Accel::IntersectFunc16)intersector::intersect, \
-                              (Accel::OccludedFunc16)intersector::occluded,\
-                              TOSTRING(isa) "::" TOSTRING(symbol));
+#define DEFINE_INTERSECTOR16(symbol,intersector)                                \
+  Accel::Intersector16 symbol() {                                               \
+    return Accel::Intersector16((Accel::IntersectFunc16)intersector::intersect, \
+                                (Accel::OccludedFunc16)intersector::occluded,   \
+                                TOSTRING(isa) "::" TOSTRING(symbol));           \
+  }
 
-#define DEFINE_INTERSECTORN(symbol,intersector)                         \
-  Accel::IntersectorN symbol((Accel::IntersectFuncN)intersector::intersect, \
-                              (Accel::OccludedFuncN)intersector::occluded,\
-                              TOSTRING(isa) "::" TOSTRING(symbol));
+#define DEFINE_INTERSECTORN(symbol,intersector)                               \
+  Accel::IntersectorN symbol() {                                              \
+    return Accel::IntersectorN((Accel::IntersectFuncN)intersector::intersect, \
+                               (Accel::OccludedFuncN)intersector::occluded,   \
+                               TOSTRING(isa) "::" TOSTRING(symbol));          \
+  }
 
   /* ray stream filter interface */
   typedef void (*filterAOS_func)(Scene *scene, RTCRay*  _rayN, const size_t N, const size_t stride, IntersectContext* context, const bool intersect);
@@ -454,14 +479,14 @@ namespace embree
 
   struct RayStreamFilterFuncs
   {
-    __forceinline RayStreamFilterFuncs()
-      : filterAOS(nullptr), filterSOA(nullptr), filterSOP(nullptr) {}
-    
-    __forceinline RayStreamFilterFuncs(void (*ptr) ()) 
-      : filterAOS((filterAOS_func) ptr), filterSOA((filterSOA_func) ptr), filterSOP((filterSOP_func) ptr) {}
+    RayStreamFilterFuncs()
+    : filterAOS(nullptr), filterSOA(nullptr), filterSOP(nullptr) {}
 
-    __forceinline RayStreamFilterFuncs(filterAOS_func aos, filterAOP_func aop, filterSOA_func soa, filterSOP_func sop) 
-      : filterAOS(aos), filterAOP(aop), filterSOA(soa), filterSOP(sop) {}
+    RayStreamFilterFuncs(void (*ptr) ())
+    : filterAOS((filterAOS_func) ptr), filterSOA((filterSOA_func) ptr), filterSOP((filterSOP_func) ptr) {}
+
+    RayStreamFilterFuncs(filterAOS_func aos, filterAOP_func aop, filterSOA_func soa, filterSOP_func sop)
+    : filterAOS(aos), filterAOP(aop), filterSOA(soa), filterSOP(sop) {}
 
   public:
     filterAOS_func filterAOS;
@@ -469,4 +494,6 @@ namespace embree
     filterSOA_func filterSOA;
     filterSOP_func filterSOP;
   }; 
+
+  typedef RayStreamFilterFuncs (*RayStreamFilterFuncsType)();
 }

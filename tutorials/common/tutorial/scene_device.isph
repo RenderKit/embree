@@ -98,6 +98,8 @@ struct ISPCSubdivMesh
   unsigned int numEdgeCreases;
   unsigned int numVertexCreases;
   unsigned int numHoles;
+  unsigned int numNormals;
+  unsigned int numTexCoords;
   unsigned int materialID;
   RTCScene scene;
   unsigned int geomID;

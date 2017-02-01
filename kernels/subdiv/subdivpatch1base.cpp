@@ -33,7 +33,12 @@ namespace embree
 
     const HalfEdge* edge = mesh->getHalfEdge(0,pID);
 
-    if (edge->patch_type == HalfEdge::REGULAR_QUAD_PATCH) 
+    if (edge->patch_type == HalfEdge::BILINEAR_PATCH)
+    {
+      type = BILINEAR_PATCH;
+      new (patch_v) BilinearPatch3fa(edge,mesh->getVertexBuffer(time));
+    }
+    else if (edge->patch_type == HalfEdge::REGULAR_QUAD_PATCH) 
     {
 #if PATCH_USE_BEZIER_PATCH 
       type = BEZIER_PATCH;

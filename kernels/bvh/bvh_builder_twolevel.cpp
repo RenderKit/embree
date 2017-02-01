@@ -30,8 +30,8 @@ namespace embree
   namespace isa
   {
     template<int N, typename Mesh>
-    BVHNBuilderTwoLevel<N,Mesh>::BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, const createMeshAccelTy createMeshAccel)
-      : bvh(bvh), objects(bvh->objects), scene(scene), createMeshAccel(createMeshAccel), refs(scene->device), prims(scene->device) {}
+    BVHNBuilderTwoLevel<N,Mesh>::BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, const createMeshAccelTy createMeshAccel, const size_t singleThreadThreshold)
+      : bvh(bvh), objects(bvh->objects), scene(scene), createMeshAccel(createMeshAccel), refs(scene->device), prims(scene->device), singleThreadThreshold(singleThreadThreshold) {}
     
     template<int N, typename Mesh>
     BVHNBuilderTwoLevel<N,Mesh>::~BVHNBuilderTwoLevel ()
@@ -98,7 +98,6 @@ namespace embree
             createMeshAccel(mesh,(AccelData*&)objects[objectID],builders[objectID]);
         }
       });
-
       /* parallel build of acceleration structures */
       parallel_for(size_t(0), num, [&] (const range<size_t>& r)
       {
@@ -139,7 +138,6 @@ namespace embree
         // PRINT(refs.size());
         /* compute PrimRefs */
         prims.resize(refs.size());
-
 #if defined(TASKING_TBB) && defined(__AVX512F__) && USE_TASK_ARENA
         tbb::task_arena limited(32);
         limited.execute([&]
@@ -163,7 +161,6 @@ namespace embree
           else
           {
             NodeRef root;
-
             BVHBuilderBinnedSAH::build<NodeRef>
               (root,
                [&] { return bvh->alloc.threadLocal2(); },
@@ -184,7 +181,7 @@ namespace embree
                 return 1;
               },
                [&] (size_t dn) { bvh->scene->progressMonitor(0); },
-               prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,N,1,1,1.0f,1.0f);
+               prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,N,1,1,1.0f,1.0f,singleThreadThreshold);
 
             bvh->set(root,LBBox3fa(pinfo.geomBounds),numPrimitives);
           }

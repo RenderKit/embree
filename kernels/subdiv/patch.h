@@ -123,11 +123,20 @@ namespace embree
       template<typename Allocator>
       __noinline static Ref create(const Allocator& alloc, const CatmullClarkPatch& patch,
                                    const BezierCurve* border0, const BezierCurve* border1, const BezierCurve* border2, const BezierCurve* border3) {
-        return Ref(BILINEAR_PATCH, new (alloc(sizeof(BilinearPatch))) BilinearPatch(patch,border0,border1,border2,border3));
+        return Ref(BILINEAR_PATCH, new (alloc(sizeof(BilinearPatch))) BilinearPatch(patch));
+      }
+
+      __forceinline BilinearPatch (const CatmullClarkPatch& patch) 
+        : patch(patch) {}
+
+      /* creates BilinearPatch from 4 vertices */
+      template<typename Allocator>
+      __noinline static Ref create(const Allocator& alloc, const HalfEdge* edge, const char* vertices, size_t stride) {
+        return Ref(BILINEAR_PATCH, new (alloc(sizeof(BilinearPatch))) BilinearPatch(edge,vertices,stride));
       }
       
-      __forceinline BilinearPatch (const CatmullClarkPatch& patch, const BezierCurve* border0, const BezierCurve* border1, const BezierCurve* border2, const BezierCurve* border3) 
-        : patch(patch,border0,border1,border2,border3) {}
+      __forceinline BilinearPatch (const HalfEdge* edge, const char* vertices, size_t stride) 
+        : patch(edge,vertices,stride) {}
       
     public:
       BilinearPatchT<Vertex,Vertex_t> patch;
@@ -249,6 +258,7 @@ namespace embree
 
       Ref child(0);
       switch (edge->patch_type) {
+      case HalfEdge::BILINEAR_PATCH:       child = BilinearPatch::create(alloc,edge,vertices,stride); break; 
       case HalfEdge::REGULAR_QUAD_PATCH:   child = RegularPatch::create(alloc,edge,vertices,stride); break;
 #if PATCH_USE_GREGORY == 2
       case HalfEdge::IRREGULAR_QUAD_PATCH: child = GregoryPatch::create(alloc,edge,vertices,stride); break;
@@ -263,17 +273,18 @@ namespace embree
 
     template<typename Allocator>
     __noinline static Ref create(const Allocator& alloc, GeneralCatmullClarkPatch& patch, const HalfEdge* edge, const char* vertices, size_t stride, size_t depth)
-    {
+    {  
       /* convert into standard quad patch if possible */
       if (likely(patch.isQuadPatch())) 
       {
         CatmullClarkPatch qpatch; patch.init(qpatch);
         return PatchT::create(alloc,qpatch,edge,vertices,stride,depth);
       }
-      
+   
+      /* do only cache up to some depth */
       if (depth >= PATCH_MAX_CACHE_DEPTH)
         return nullptr;
-      
+         
       /* subdivide patch */
       unsigned N;
       array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 

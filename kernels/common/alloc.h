@@ -44,9 +44,7 @@ namespace embree
 
       /*! Constructor for usage with ThreadLocalData */
       __forceinline ThreadLocal (void* alloc) 
-	: alloc((FastAllocator*)alloc), ptr(nullptr), cur(0), end(0), 
-        allocBlockSize( ((FastAllocator*)alloc)->defaultBlockSize ), 
-        bytesUsed(0), bytesWasted(0) { }
+	: alloc((FastAllocator*)alloc), ptr(nullptr), cur(0), end(0), allocBlockSize(((FastAllocator*)alloc)->defaultBlockSize), bytesUsed(0), bytesWasted(0) {}
 
       /*! resets the allocator */
       __forceinline void reset() 
@@ -182,6 +180,22 @@ namespace embree
       return thread_local_allocators2.get();
     }
 
+   /*! initializes the grow size */
+    __forceinline void initGrowSizeAndNumSlots(size_t bytesAllocate, size_t bytesReserve = 0) 
+    {
+      if (bytesReserve == 0) bytesReserve = bytesAllocate;
+
+      bytesReserve  = ((bytesReserve +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
+      
+      growSize = clamp(bytesReserve,size_t(PAGE_SIZE),maxAllocationSize); // PAGE_SIZE -maxAlignment ?
+
+      log2_grow_size_scale = 0;
+      slotMask = 0x0;
+      if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesAllocate >  4*maxAllocationSize) slotMask = 0x1;
+      if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesAllocate >  8*maxAllocationSize) slotMask = 0x3;
+      if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesAllocate > 16*maxAllocationSize) slotMask = 0x7;
+    }
+
     __forceinline void set_osAllocation(const bool v) { osAllocation = v; }
 
     void internal_fix_used_blocks()
@@ -199,23 +213,6 @@ namespace embree
       }
     }
 
-    /*! initializes the grow size */
-    __forceinline void initGrowSizeAndNumSlots(size_t bytesAllocate, size_t bytesReserve = 0) 
-    {
-      if (bytesReserve == 0) bytesReserve = bytesAllocate;
-
-      bytesReserve  = ((bytesReserve +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
-      
-      growSize = clamp(bytesReserve,size_t(PAGE_SIZE),maxAllocationSize); // PAGE_SIZE -maxAlignment ?
-
-      log2_grow_size_scale = 0;
-      slotMask = 0x0;
-      if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesAllocate >  4*maxAllocationSize) slotMask = 0x1;
-      if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesAllocate >  8*maxAllocationSize) slotMask = 0x3;
-      if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesAllocate > 16*maxAllocationSize) slotMask = 0x7;
-    }
-
-
     /*! initializes the allocator */
     void init(size_t bytesAllocate, size_t bytesReserve = 0) 
     {     
@@ -225,9 +222,17 @@ namespace embree
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       if (bytesReserve == 0) bytesReserve = bytesAllocate;
       freeBlocks = Block::create(device,bytesAllocate,bytesReserve,nullptr,osAllocation);
+
+#if 1
       use_single_mode = false; 
       defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE)); // PAGE_SIZE - maxAlignment?
       initGrowSizeAndNumSlots(bytesAllocate,bytesReserve);
+#else
+      use_single_mode = false; //bytesAllocate < 8*PAGE_SIZE;
+      defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE));
+      growSize = clamp(bytesReserve,size_t(PAGE_SIZE),maxAllocationSize);
+      log2_grow_size_scale = 0;
+#endif
     }
 
     /*! initializes the allocator */
@@ -235,9 +240,20 @@ namespace embree
     {
       internal_fix_used_blocks();
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
+#if 1
       use_single_mode = false; 
       defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE)); // PAGE_SIZE - maxAlignment?
       initGrowSizeAndNumSlots(bytesAllocate,bytesAllocate);
+#else
+     use_single_mode = false; //bytesAllocate < 8*PAGE_SIZE;
+     defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE));
+     growSize = clamp(bytesAllocate,size_t(PAGE_SIZE),maxAllocationSize);
+     log2_grow_size_scale = 0;
+     slotMask = 0x0;
+     if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesAllocate >  4*maxAllocationSize) slotMask = 0x1;
+     if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesAllocate >  8*maxAllocationSize) slotMask = 0x3;
+     if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesAllocate > 16*maxAllocationSize) slotMask = 0x7;
+#endif
     }
 
     /*! frees state not required after build */
@@ -335,9 +351,7 @@ namespace embree
         if (likely(freeBlocks.load() == nullptr)) 
         {
           Lock<SpinLock> lock(slotMutex[slot]);
-          if (myUsedBlocks == threadUsedBlocks[slot]) {            
-            //const size_t allocSize = min(growSize * incGrowSizeScale(),size_t(maxAllocationSize+maxAlignment))-maxAlignment;
-            /* new allocation */
+          if (myUsedBlocks == threadUsedBlocks[slot]) {
             const size_t allocSize = min(max(growSize,bytes),size_t(maxAllocationSize));
             assert(allocSize >= bytes);
             threadBlocks[slot] = threadUsedBlocks[slot] = Block::create(device,allocSize,allocSize,threadBlocks[slot],osAllocation);              
@@ -359,9 +373,7 @@ namespace embree
 	      freeBlocks = nextFreeBlock;
 	    } else {
 	      //growSize = min(2*growSize,size_t(maxAllocationSize+maxAlignment));
-              const size_t curGrowSize = growSize * incGrowSizeScale();
-              const size_t allocSize = min(curGrowSize,size_t(maxAllocationSize));
-              assert(allocSize >= bytes);
+              const size_t allocSize = min(growSize * incGrowSizeScale(),size_t(maxAllocationSize+maxAlignment))-maxAlignment;
 	      usedBlocks = threadUsedBlocks[slot] = Block::create(device,allocSize,allocSize,usedBlocks,osAllocation);
 	    }
 	  }
@@ -372,10 +384,7 @@ namespace embree
     /* special allocation only used from morton builder only a single time for each build */
     void* specialAlloc(size_t bytes) 
     {
-      /* create a new block if the first free block is too small */
-      if (freeBlocks.load() == nullptr || freeBlocks.load()->getBlockAllocatedBytes() < bytes)
-        freeBlocks = Block::create(device,bytes,bytes,freeBlocks,osAllocation);
-
+      assert(freeBlocks.load() != nullptr && freeBlocks.load()->getBlockAllocatedBytes() >= bytes);
       return freeBlocks.load()->ptr();
     }
 

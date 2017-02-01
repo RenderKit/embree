@@ -24,7 +24,7 @@ namespace embree
      *  enabled. The quad v0,v1,v2,v3 is split into two triangles
      *  v0,v1,v3 and v2,v3,v1. The edge v1,v2 decides which of the two
      *  triangles gets intersected. */
-    template<typename N>
+    template<int N>
       __forceinline vbool<N> intersect_quad_backface_culling(const vbool<N>& valid0,
                                                              const Vec3fa& ray_org,
                                                              const Vec3fa& ray_dir,
@@ -36,7 +36,7 @@ namespace embree
                                                              const Vec3<vfloat<N>>& quad_v3, 
                                                              vfloat<N>& u_o, 
                                                              vfloat<N>& v_o,
-                                                             vfloat<N>& t_o) const
+                                                             vfloat<N>& t_o)
       {
         /* calculate vertices relative to ray origin */
         vbool<N> valid = valid0;

@@ -70,7 +70,7 @@ namespace embree
     void setMask (unsigned mask);
     void setSubdivisionMode (unsigned topologyID, RTCSubdivisionMode mode);
     void setIndexBuffer(RTCBufferType vertexBuffer, RTCBufferType indexBuffer);
-    void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride);
+    void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size);
     void* map(RTCBufferType type);
     void unmap(RTCBufferType type);
     void update ();
@@ -88,8 +88,23 @@ namespace embree
 
     /*! return the number of faces */
     size_t size() const { 
-      return numFaces; 
-    };
+      return faceVertices.size(); 
+    }
+
+    /*! return the number of faces */
+    size_t numFaces() const { 
+      return faceVertices.size(); 
+    }
+
+    /*! return the number of edges */
+    size_t numEdges() const { 
+      return topology[0].vertexIndices.size(); 
+    }
+
+    /*! return the number of vertices */
+    size_t numVertices() const { 
+      return vertices[0].size(); 
+    }
 
     /*! calculates the bounds of the i'th subdivision patch at the j'th timestep */
     __forceinline BBox3fa bounds(size_t i, size_t j = 0) const {
@@ -119,20 +134,12 @@ namespace embree
       return vertices[t];
     }
 
-     /* check for simple edge level update */
-    __forceinline bool checkLevelUpdate() const { return levelUpdate; }
-
     /* returns tessellation level of edge */
     __forceinline float getEdgeLevel(const size_t i) const
     {
       if (levels) return clamp(levels[i],1.0f,4096.0f); // FIXME: do we want to limit edge level?
       else return clamp(tessellationRate,1.0f,4096.0f); // FIXME: do we want to limit edge level?
     }
-
-  private:
-    size_t numFaces;           //!< number of faces
-    size_t numEdges;           //!< number of edges
-    size_t numVertices;        //!< number of vertices
 
   public:
     RTCDisplacementFunc displFunc;    //!< displacement function
@@ -142,9 +149,6 @@ namespace embree
     /*! all buffers in this section are provided by the application */
   public:
     
-    /*! buffer containing the number of vertices for each face */
-    APIBuffer<unsigned> faceVertices;
-
     /*! the topology contains all data that may differ when
      *  interpolating different user data buffers */
     struct Topology
@@ -155,7 +159,7 @@ namespace embree
       Topology () : halfEdges(nullptr) {}
 
       /*! Topology initialization */
-      Topology (SubdivMesh* mesh);
+      Topology (SubdivMesh* mesh, size_t numEdges);
 
       /*! make the class movable */
     public: 
@@ -196,6 +200,9 @@ namespace embree
 
       /*! frees unused buffers */
       void immutable();
+
+      /*! verifies index array */
+      bool verify (size_t numVertices);
 
       /*! initializes the half edge data structure */
       void initializeHalfEdgeStructures ();
@@ -244,6 +251,9 @@ namespace embree
       return topology[t].getHalfEdge(f);
     }
 
+    /*! buffer containing the number of vertices for each face */
+    APIBuffer<unsigned> faceVertices;
+
     /*! array of topologies */
     vector<Topology> topology;
 
@@ -290,10 +300,6 @@ namespace embree
     /*! test if face i is invalid in timestep j */
     __forceinline       char& invalidFace(size_t i, size_t j = 0)       { return invalid_face[i*numTimeSteps+j]; }
     __forceinline const char& invalidFace(size_t i, size_t j = 0) const { return invalid_face[i*numTimeSteps+j]; }
-
-    /*! flag whether only the edge levels have changed and the mesh has no creases,
-     *  allows for simple bvh update instead of full rebuild in cached mode */
-    bool levelUpdate;
 
     /*! interpolation cache */
   public:

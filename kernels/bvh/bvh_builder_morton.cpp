@@ -444,8 +444,8 @@ namespace embree
 
     public:
       
-      BVHNMeshBuilderMorton (BVH* bvh, Mesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
-        : bvh(bvh), mesh(mesh), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), numPrimitives(0), morton(bvh->device) {}
+      BVHNMeshBuilderMorton (BVH* bvh, Mesh* mesh, const size_t minLeafSize, const size_t maxLeafSize, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
+        : bvh(bvh), mesh(mesh), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), morton(bvh->device), singleThreadThreshold(singleThreadThreshold) {}
       
       /*! Destruction */
       ~BVHNMeshBuilderMorton () {
@@ -455,13 +455,13 @@ namespace embree
       /* build function */
       void build(size_t threadIndex, size_t threadCount) 
       {
-        /* We have to clear the allocator to guarantee that we can
-         * temporarily use the first allocation block for sorting the
-         * morton codes. */
-
-        const size_t numNewPrimitives = mesh->size();
-        if (numNewPrimitives != numPrimitives) bvh->alloc.clear();
-        numPrimitives = numNewPrimitives;
+        /* we reset the allocator when the mesh size changed */
+        if (mesh->numPrimitivesChanged) {
+          bvh->alloc.clear();
+          morton.clear();
+          mesh->numPrimitivesChanged = false;
+        }
+        size_t numPrimitives = mesh->size();
         
         /* skip build for empty scene */
         if (numPrimitives == 0) {
@@ -558,7 +558,7 @@ namespace embree
         auto node_bounds = bvh_builder_morton_internal<NodeRef>(
           typename BVH::CreateAlloc(bvh), BBox3fa(empty),
           allocAlignedNode,setBounds,createLeaf,calculateBounds,progress,
-          morton.data(),dest,numPrimitivesGen,N,BVH::maxBuildDepth,minLeafSize,maxLeafSize);
+          morton.data(),dest,numPrimitivesGen,N,BVH::maxBuildDepth,minLeafSize,maxLeafSize,singleThreadThreshold);
         
         bvh->set(node_bounds.first,LBBox3fa(node_bounds.second),numPrimitives);
         
@@ -589,8 +589,8 @@ namespace embree
       Mesh* mesh;
       const size_t minLeafSize;
       const size_t maxLeafSize;
-      size_t numPrimitives;
       mvector<MortonID32Bit> morton;
+      const size_t singleThreadThreshold;
     };
 
 #if defined(EMBREE_GEOMETRY_TRIANGLES)

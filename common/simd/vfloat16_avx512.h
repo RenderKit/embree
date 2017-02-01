@@ -515,7 +515,24 @@ namespace embree
   __forceinline float toScalar(const vfloat16& a) { return _mm512_cvtss_f32(a); }
 
 
-  template<size_t i> __forceinline const vfloat16 insert4(const vfloat16& a, const vfloat4& b) { return _mm512_insertf32x4(a, b, i); }
+  template<int i> __forceinline const vfloat16 insert4(const vfloat16& a, const vfloat4& b) { return _mm512_insertf32x4(a, b, i); }
+
+  template<int N, int i>
+  vfloat<N> extractN(const vfloat16& v);
+
+  template<> __forceinline vfloat4 extractN<4,0>(const vfloat16& v) { return _mm512_castps512_ps128(v);    }
+  template<> __forceinline vfloat4 extractN<4,1>(const vfloat16& v) { return _mm512_extractf32x4_ps(v, 1); }
+  template<> __forceinline vfloat4 extractN<4,2>(const vfloat16& v) { return _mm512_extractf32x4_ps(v, 2); }
+  template<> __forceinline vfloat4 extractN<4,3>(const vfloat16& v) { return _mm512_extractf32x4_ps(v, 3); }
+
+  template<> __forceinline vfloat8 extractN<8,0>(const vfloat16& v) { return _mm512_castps512_ps256(v);    }
+  template<> __forceinline vfloat8 extractN<8,1>(const vfloat16& v) { return _mm512_extractf32x8_ps(v, 1); }
+
+  template<int i> __forceinline vfloat4 extract4   (const vfloat16& v) { return _mm512_extractf32x4_ps(v, i); }
+  template<>      __forceinline vfloat4 extract4<0>(const vfloat16& v) { return _mm512_castps512_ps128(v);    }
+
+  template<int i> __forceinline vfloat8 extract8   (const vfloat16& v) { return _mm512_extractf32x8_ps(v, i); }
+  template<>      __forceinline vfloat8 extract8<0>(const vfloat16& v) { return _mm512_castps512_ps256(v);    }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
@@ -881,17 +898,6 @@ namespace embree
     vv = _mm512_add_ps(vv,shuffle(vv,_MM_SWIZ_REG_BADC));
     return vv;        
   }
-
-
-    static __forceinline vfloat4 extractf128bit(const vfloat16& v)
-    {
-      return _mm512_castps512_ps128(v);
-    }
-
-    static __forceinline vfloat8 extractf256bit(const vfloat16& v)
-    {
-      return _mm512_castps512_ps256(v);
-    }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators

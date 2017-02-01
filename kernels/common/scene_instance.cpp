@@ -44,13 +44,13 @@ namespace embree
     world2local0 = one;
     for (size_t i=0; i<numTimeSteps; i++) local2world[i] = one;
     intersectors.ptr = this;
-    boundsFunc3 = parent->device->instance_factory->InstanceBoundsFunc;
+    boundsFunc3 = parent->device->instance_factory->InstanceBoundsFunc();
     boundsFuncUserPtr = nullptr;
-    intersectors.intersector1 = parent->device->instance_factory->InstanceIntersector1;
-    intersectors.intersector4 = parent->device->instance_factory->InstanceIntersector4; 
-    intersectors.intersector8 = parent->device->instance_factory->InstanceIntersector8; 
-    intersectors.intersector16 = parent->device->instance_factory->InstanceIntersector16;
-    intersectors.intersector1M = parent->device->instance_factory->InstanceIntersector1M;
+    intersectors.intersector1 = parent->device->instance_factory->InstanceIntersector1();
+    intersectors.intersector4 = parent->device->instance_factory->InstanceIntersector4(); 
+    intersectors.intersector8 = parent->device->instance_factory->InstanceIntersector8(); 
+    intersectors.intersector16 = parent->device->instance_factory->InstanceIntersector16();
+    intersectors.intersector1M = parent->device->instance_factory->InstanceIntersector1M();
   }
   
   void Instance::setTransform(const AffineSpace3fa& xfm, size_t timeStep)

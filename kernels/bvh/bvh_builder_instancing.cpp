@@ -155,13 +155,13 @@ namespace embree
                 switch (geom->type) {
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
                 case Geometry::TRIANGLE_MESH:
-                  objects[objectID] = new BVH4(Triangle4::type,geom->parent);
+                  //objects[objectID] = new BVH4(Triangle4::type,geom->parent); // FIXME: enable
                   builders[objectID] = BVH4Triangle4MeshBuilderSAH((BVH4*)objects[objectID],(TriangleMesh*)geom);
                   break;
 #endif
 #if defined(EMBREE_GEOMETRY_QUADS)
                 case Geometry::QUAD_MESH:
-                  objects[objectID] = new BVH4(Quad4v::type,geom->parent);
+                  //objects[objectID] = new BVH4(Quad4v::type,geom->parent); // FIXME: enable
                   builders[objectID] = BVH4Quad4vMeshBuilderSAH((BVH4*)objects[objectID],(QuadMesh*)geom);
                   break;
 #endif
@@ -307,7 +307,7 @@ namespace embree
             return 1;
           },
            [&] (size_t dn) { bvh->scene->progressMonitor(0); },
-           prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,4,1,1,1.0f,1.0f);
+           prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,4,1,1,1.0f,1.0f,DEFAULT_SINGLE_THREAD_THRESHOLD);
         
         bvh->set(root,LBBox3fa(pinfo.geomBounds),numPrimitives);
         numCollapsedTransformNodes = refs.size();

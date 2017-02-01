@@ -274,7 +274,7 @@ namespace embree
         };
 
         const size_t center = parallel_partitioning(
-          prims,begin,end,empty,left,right,primOnLeftSide,
+          prims,begin,end,EmptyTy(),left,right,primOnLeftSide,
           [] (PrimInfo &pinfo, const BezierPrim& ref) { pinfo.add(ref.bounds()); },
           [] (PrimInfo &pinfo0,const PrimInfo& pinfo1) { pinfo0.merge(pinfo1); },
           PARALLEL_PARTITION_BLOCK_SIZE);

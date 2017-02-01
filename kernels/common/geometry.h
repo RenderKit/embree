@@ -80,6 +80,15 @@ namespace embree
     /*! returns number of primitives */
     __forceinline size_t size() const { return numPrimitives; }
 
+    /*! sets the number of primitives */
+    __forceinline void setNumPrimitives(size_t numPrimitives_in)
+    { 
+      if ((ssize_t)numPrimitives_in == -1) return;
+      if (numPrimitives_in == numPrimitives) return;
+      numPrimitives = numPrimitives_in;
+      numPrimitivesChanged = true;
+    }
+
     /*! for all geometries */
   public:
 
@@ -161,7 +170,7 @@ namespace embree
     }
 
     /*! Sets specified buffer. */
-    virtual void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) { 
+    virtual void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size) { 
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
@@ -466,6 +475,7 @@ namespace embree
     unsigned id;               //!< internal geometry ID
     Type type;                 //!< geometry type 
     size_t numPrimitives;      //!< number of primitives of this geometry
+    bool numPrimitivesChanged; //!< true if number of primitives changed
     unsigned numTimeSteps;     //!< number of time steps
     float fnumTimeSegments;    //!< number of time segments (precalculation)
     RTCGeometryFlags flags;    //!< flags of geometry

@@ -142,7 +142,19 @@ namespace embree
     __forceinline const long& operator[](const size_t index) const { assert(index < 4); return i[index]; }
 
   };
+
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Select
+  ////////////////////////////////////////////////////////////////////////////////
   
+  __forceinline const vlong4 select( const vboold4& m, const vlong4& t, const vlong4& f ) {
+  #if defined(__AVX512VL__)
+    return _mm256_mask_blend_epi64(m, f, t);
+  #else
+    return _mm256_castpd_si256(_mm256_blendv_pd(_mm256_castsi256_pd(f), _mm256_castsi256_pd(t), m));
+  #endif
+  }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
@@ -196,6 +208,14 @@ namespace embree
   //__forceinline const vlong4 max( const vlong4& a, const vlong4& b ) { return _mm256_max_epi64(a, b); }
   //__forceinline const vlong4 max( const vlong4& a, const long    b ) { return max(a,vlong4(b)); }
   //__forceinline const vlong4 max( const long    a, const vlong4& b ) { return max(vlong4(a),b); }
+
+#if defined(__AVX512VL__)
+  __forceinline const vlong4 mask_and(const vboold4& m, const vlong4& c, const vlong4& a, const vlong4& b) { return _mm256_mask_and_epi64(c,m,a,b); }
+  __forceinline const vlong4 mask_or (const vboold4& m, const vlong4& c, const vlong4& a, const vlong4& b) { return _mm256_mask_or_epi64(c,m,a,b); }
+#else
+  __forceinline const vlong4 mask_and(const vboold4& m, const vlong4& c, const vlong4& a, const vlong4& b) { return select(m, a & b, c); }
+  __forceinline const vlong4 mask_or (const vboold4& m, const vlong4& c, const vlong4& a, const vlong4& b) { return select(m, a | b, c); }
+#endif
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
@@ -220,7 +240,7 @@ namespace embree
   //__forceinline vlong4& operator >>=( vlong4& a, const long b ) { return a = a >> b; }
 
   ////////////////////////////////////////////////////////////////////////////////
-  /// Comparison Operators + Select
+  /// Comparison Operators
   ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX512VL__)
@@ -256,14 +276,6 @@ namespace embree
 
   __forceinline const vboold4 operator <=( const vlong4& a, const long    b ) { return a <= vlong4(b); }
   __forceinline const vboold4 operator <=( const long    a, const vlong4& b ) { return vlong4(a) <= b; }
-
-  __forceinline const vlong4 select( const vboold4& m, const vlong4& t, const vlong4& f ) {
-#if defined(__AVX512VL__)
-    return _mm256_mask_blend_epi64(m, f, t);
-#else
-    return _mm256_castpd_si256(_mm256_blendv_pd(_mm256_castsi256_pd(f), _mm256_castsi256_pd(t), m));
-#endif
-  }
 
   __forceinline void xchg(const vboold4& m, vlong4& a, vlong4& b) {
     const vlong4 c = a; a = select(m,b,a); b = select(m,c,b);

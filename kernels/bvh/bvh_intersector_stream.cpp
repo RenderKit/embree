@@ -416,11 +416,11 @@ namespace embree
 
 #if defined(__AVX512F__)
             /* AVX512 path for up to 64 rays */
-            vlong<8> maskK(zero);
-            vfloat<16> dist(inf);
-            const vbool<16> vmask = traversalLoop<true>(m_trav_active,node,pc,ray_ctx,dist,maskK);
+            vlong<Nxd> maskK(zero);
+            vfloat<Nx> dist(inf);
+            const vbool<Nx> vmask = traversalLoop<true>(m_trav_active,node,pc,ray_ctx,dist,maskK);
             if (unlikely(none(vmask))) goto pop;
-            BVHNNodeTraverserStreamHit<N, 16, types>::traverseClosestHit(cur, m_trav_active, vmask, dist, (size_t*)&maskK, stackPtr);
+            BVHNNodeTraverserStreamHit<N, Nx, types>::traverseClosestHit(cur, m_trav_active, vmask, dist, (size_t*)&maskK, stackPtr);
 #else
             /* AVX path for up to 32 rays */
             vint<Nx> maskK(zero);
@@ -534,11 +534,11 @@ namespace embree
 
 #if defined(__AVX512F__) 
             /* AVX512 path for up to 64 rays */
-            vlong<8> maskK(zero);
-            vfloat<16> dist(inf);
-            const vbool<16> vmask = traversalLoop<false>(m_trav_active,node,pc,ray_ctx,dist,maskK);
+            vlong<Nxd> maskK(zero);
+            vfloat<Nx> dist(inf);
+            const vbool<Nx> vmask = traversalLoop<false>(m_trav_active,node,pc,ray_ctx,dist,maskK);
             if (unlikely(none(vmask))) goto pop;
-            BVHNNodeTraverserStreamHit<N, 16, types>::traverseAnyHit(cur, m_trav_active, vmask, (size_t*)&maskK, stackPtr);
+            BVHNNodeTraverserStreamHit<N, Nx, types>::traverseAnyHit(cur, m_trav_active, vmask, (size_t*)&maskK, stackPtr);
 #else
             /* AVX path for up to 32 rays */
             vint<Nx> maskK(zero);

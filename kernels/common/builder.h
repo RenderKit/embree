@@ -26,6 +26,9 @@ namespace embree
   /*! virtual interface for all hierarchy builders */
   class Builder : public RefCount {
   public:
+
+    static const size_t DEFAULT_SINGLE_THREAD_THRESHOLD = 1024;
+
     /*! initiates the hierarchy builder */
     virtual void build(size_t threadIndex = 0, size_t threadCount = 0) = 0;
 

@@ -75,7 +75,6 @@ namespace embree
       {
         static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximal supported BVH branching factor
         static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree of we are that many levels before the maximal tree depth
-        static const size_t SINGLE_THREADED_THRESHOLD = 1024 ;  //!< threshold to switch to single threaded build
         
       public:
         
@@ -89,7 +88,7 @@ namespace embree
                            const PrimInfo& pinfo,
                            const size_t branchingFactor, const size_t maxDepth, 
                            const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize,
-                           const float travCost, const float intCost)
+                           const float travCost, const float intCost, const size_t singleThreadThreshold)
           : heuristic(heuristic), 
           identity(identity), 
           createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
@@ -97,7 +96,7 @@ namespace embree
           pinfo(pinfo), 
           branchingFactor(branchingFactor), maxDepth(maxDepth),
           logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
-          travCost(travCost), intCost(intCost)
+          travCost(travCost), intCost(intCost), singleThreadThreshold(singleThreadThreshold)
         {
           if (branchingFactor > MAX_BRANCHING_FACTOR)
             throw_RTCError(RTC_UNKNOWN_ERROR,"bvh_builder: branching factor too large");
@@ -177,7 +176,7 @@ namespace embree
             alloc = createAlloc();
 
           /* call memory monitor function to signal progress */
-          if (toplevel && current.size() <= SINGLE_THREADED_THRESHOLD)
+          if (toplevel && current.size() <= singleThreadThreshold)
             progressMonitor(current.size());
           
           /*! compute leaf and split cost */
@@ -247,7 +246,7 @@ namespace embree
           auto node = createNode(current,children,numChildren,alloc);
           
           /* spawn tasks */
-          if (current.size() > SINGLE_THREADED_THRESHOLD) 
+          if (current.size() > singleThreadThreshold) 
           {
             /*! parallel_for is faster than spawing sub-tasks */
             parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) {
@@ -299,6 +298,7 @@ namespace embree
         const size_t maxLeafSize;
         const float travCost;
         const float intCost;
+        const size_t singleThreadThreshold;
       };
     
     /* SAH builder that operates on an array of BuildRecords */
@@ -323,7 +323,7 @@ namespace embree
                           PrimRef* prims, const PrimInfo& pinfo, 
                           const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
                           const size_t minLeafSize, const size_t maxLeafSize,
-                          const float travCost, const float intCost)
+                          const float travCost, const float intCost, const size_t singleThreadThreshold)
       {
         /* use dummy reduction over integers */
         int identity = 0;
@@ -340,7 +340,7 @@ namespace embree
                      prims,
                      pinfo,
                      branchingFactor,maxDepth,blockSize,
-                     minLeafSize,maxLeafSize,travCost,intCost);
+                     minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
       }
       
       /*! special builder that propagates reduction over the tree */
@@ -360,7 +360,7 @@ namespace embree
                                         PrimRef* prims, const PrimInfo& pinfo, 
                                         const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
                                         const size_t minLeafSize, const size_t maxLeafSize,
-                                        const float travCost, const float intCost)
+                                        const float travCost, const float intCost, const size_t singleThreadThreshold)
       {
         /* builder wants log2 of blockSize as input */		  
         const size_t logBlockSize = __bsr(blockSize); 
@@ -391,7 +391,7 @@ namespace embree
                         progressMonitor,
                         pinfo,
                         branchingFactor,maxDepth,logBlockSize,
-                        minLeafSize,maxLeafSize,travCost,intCost);
+                        minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
         
         /* build hierarchy */
         BuildRecord br(pinfo,1,(size_t*)&root,Set(0,pinfo.size()));
@@ -432,7 +432,8 @@ namespace embree
                           PrimRef* prims, const PrimInfo& pinfo, 
                           const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
                           const size_t minLeafSize, const size_t maxLeafSize,
-                          const float travCost, const float intCost)
+                          const float travCost, const float intCost,
+                          const size_t singleThreadThreshold)
       {
         /* use dummy reduction over integers */
         int identity = 0;
@@ -450,7 +451,7 @@ namespace embree
                      prims,
                      pinfo,
                      branchingFactor,maxDepth,blockSize,
-                     minLeafSize,maxLeafSize,travCost,intCost);
+                     minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
       }
       
       /*! special builder that propagates reduction over the tree */
@@ -477,7 +478,8 @@ namespace embree
                                         const size_t branchingFactor, 
                                         const size_t maxDepth, const size_t blockSize, 
                                         const size_t minLeafSize, const size_t maxLeafSize,
-                                        const float travCost, const float intCost)
+                                        const float travCost, const float intCost, 
+                                        const size_t singleThreadThreshold)
       {
         /* builder wants log2 of blockSize as input */		  
         const size_t logBlockSize = __bsr(blockSize); 
@@ -511,7 +513,7 @@ namespace embree
                         progressMonitor,
                         pinfo,
                         branchingFactor,maxDepth,logBlockSize,
-                        minLeafSize,maxLeafSize,travCost,intCost);
+                        minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
         
         /* build hierarchy */
         BuildRecord br(pinfo,1,(size_t*)&root,Set(0,pinfo.size(),extSize));

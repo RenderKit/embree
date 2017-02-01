@@ -64,7 +64,7 @@ namespace embree
       };
       
       /*! Constructor. */
-      BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, const createMeshAccelTy createMeshAccel);
+      BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, const createMeshAccelTy createMeshAcce, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD);
       
       /*! Destructor */
       ~BVHNBuilderTwoLevel ();
@@ -89,6 +89,7 @@ namespace embree
       mvector<BuildRef> refs;
       mvector<PrimRef> prims;
       std::atomic<int> nextRef;
+      const size_t singleThreadThreshold;
     };
   }
 }
