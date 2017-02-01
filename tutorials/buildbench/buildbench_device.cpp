@@ -366,6 +366,13 @@ namespace embree {
     g_scene = nullptr;    
   }
 
+  void Pause()
+  {
+    std::cout << "sleeping..." << std::flush;
+    sleepSeconds(2);    
+    std::cout << "done" << std::endl;
+  }
+
 
   /* called by the C++ code for initialization */
   extern "C" void device_init (char* cfg)
@@ -382,14 +389,21 @@ namespace embree {
 
     /* set error handler */
     rtcDeviceSetErrorFunction(g_device,error_handler);
-
+    
     Benchmark_Dynamic_Update(g_ispc_scene,iterations_dynamic_dynamic,RTC_GEOMETRY_DEFORMABLE);
+    Pause();
     Benchmark_Dynamic_Update(g_ispc_scene,iterations_dynamic_dynamic,RTC_GEOMETRY_DYNAMIC);
+    Pause();
     Benchmark_Dynamic_Update(g_ispc_scene,iterations_dynamic_static ,RTC_GEOMETRY_STATIC);
+    Pause();
     Benchmark_Dynamic_Create(g_ispc_scene,iterations_dynamic_dynamic,RTC_GEOMETRY_DEFORMABLE);
+    Pause();
     Benchmark_Dynamic_Create(g_ispc_scene,iterations_dynamic_dynamic,RTC_GEOMETRY_DYNAMIC);
+    Pause();
     Benchmark_Dynamic_Create(g_ispc_scene,iterations_dynamic_static ,RTC_GEOMETRY_STATIC);
+    Pause();
     Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_GEOMETRY_STATIC,RTC_SCENE_STATIC);
+    Pause();
     Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_GEOMETRY_STATIC,RTC_SCENE_HIGH_QUALITY);
 
     rtcDeleteDevice(g_device); g_device = nullptr;
