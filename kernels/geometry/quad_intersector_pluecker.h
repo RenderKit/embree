@@ -67,8 +67,7 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* calculate geometry normal and denominator */
-          const Vec3vfM Ng = cross(e1,e0);
-          //const Vec3vfM Ng = stable_triangle_normal(e2,e1,e0); // FIXME: enable
+          const Vec3vfM Ng = stable_triangle_normal(e2,e1,e0);
           const vfloat<M> den = twice(dot(Ng,D));
           const vfloat<M> absDen = abs(den);
           const vfloat<M> sgnDen = signmsk(den);
@@ -248,7 +247,6 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* calculate geometry normal and denominator */
-          //const Vec3vfM Ng = cross(e1,e0);
           const Vec3vfM Ng = stable_triangle_normal(e2,e1,e0);
           const vfloat<M> den = twice(dot(Ng,D));
           const vfloat<M> absDen = abs(den);
@@ -314,7 +312,6 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
            /* calculate geometry normal and denominator */
-          //const Vec3vfK Ng = cross(e1,e0);
           const Vec3vfK Ng = stable_triangle_normal(e2,e1,e0);
           const vfloat<K> den = twice(dot(Vec3vfK(Ng),D));
           const vfloat<K> absDen = abs(den);
