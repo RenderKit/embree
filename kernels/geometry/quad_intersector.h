@@ -65,8 +65,7 @@ namespace embree
         if (unlikely(none(valid))) return false;
         
         /* calculate geometry normal and denominator */
-        const Vec3vfN Ng1 = cross(e1,e0);
-        const Vec3vfN Ng = Ng1;
+        const Vec3vfN Ng = cross(e1,e0);
         const vfloat<N> den = dot(Ng,D);
         const vfloat<N> absDen = abs(den);
         const vfloat<N> sgnDen = signmsk(den);
