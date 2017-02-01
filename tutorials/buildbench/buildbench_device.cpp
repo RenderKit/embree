@@ -369,7 +369,7 @@ namespace embree {
   void Pause()
   {
     std::cout << "sleeping..." << std::flush;
-    sleepSeconds(2);    
+    sleepSeconds(3);    
     std::cout << "done" << std::endl;
   }
 
@@ -389,7 +389,6 @@ namespace embree {
 
     /* set error handler */
     rtcDeviceSetErrorFunction(g_device,error_handler);
-    
     Benchmark_Dynamic_Update(g_ispc_scene,iterations_dynamic_dynamic,RTC_GEOMETRY_DEFORMABLE);
     Pause();
     Benchmark_Dynamic_Update(g_ispc_scene,iterations_dynamic_dynamic,RTC_GEOMETRY_DYNAMIC);
