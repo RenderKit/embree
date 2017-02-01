@@ -93,7 +93,7 @@ namespace embree
       if (indexBuffer >= RTC_INDEX_BUFFER && indexBuffer < RTC_INDEX_BUFFER+topology.size()) {
         unsigned vid = vertexBuffer & 0xFFFF;
         unsigned iid = indexBuffer & 0xFFFF;
-        if (userbuffers[vid].userdata != iid) {
+        if ((unsigned)userbuffers[vid].userdata != iid) {
           userbuffers[vid].userdata = iid;
           parent->commitCounterSubdiv++; // triggers recalculation of cached interpolation data
         }
@@ -135,10 +135,10 @@ namespace embree
     }
     else if (type == RTC_FACE_BUFFER) 
     {
-      if (size != -1) disabling();
+      if (size != (size_t)-1) disabling();
       faceVertices.set(ptr,offset,stride,size);
       setNumPrimitives(size);
-      if (size != -1) enabling();
+      if (size != (size_t)-1) enabling();
     }
 
     else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)

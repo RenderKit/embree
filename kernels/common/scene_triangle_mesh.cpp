@@ -77,10 +77,10 @@ namespace embree
     }
     else if (type == RTC_INDEX_BUFFER) 
     {
-      if (size != -1) disabling();
+      if (size != (size_t)-1) disabling();
       triangles.set(ptr,offset,stride,size); 
       setNumPrimitives(size);
-      if (size != -1) enabling();
+      if (size != (size_t)-1) enabling();
     }
     else 
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
