@@ -393,7 +393,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
     /* do some hard shadows to point lights */
     if (g_ispc_scene->numLights)
     {
-      for (size_t i=0; i<g_ispc_scene->numLights; i++)
+      for (unsigned int i=0; i<g_ispc_scene->numLights; i++)
       {
         /* init shadow/occlusion rays */
         for (size_t n=0;n<N;n++)
@@ -414,7 +414,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
         rtcOccluded1M(g_scene,&context,rays,N,sizeof(RTCRay));
 
         /* modify pixel color based on occlusion */
-        for (size_t n=0;n<N;n++)
+        for (int n=0;n<N;n++)
           if (rays[n].geomID != RTC_INVALID_GEOMETRY_ID)
             colors[n] *= 0.1f;
         
@@ -570,7 +570,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
     const size_t keyFrameID = intpart;      
     
     size_t numObjects = getNumObjects(g_ispc_scene);
-    for (int i=0;i<numObjects;i++)
+    for (unsigned int i=0;i<numObjects;i++)
       updateVertexData(i, g_ispc_scene, g_scene, keyFrameID, (float)fracpart);
 
     double vertexUpdateTime1 = getSeconds();    

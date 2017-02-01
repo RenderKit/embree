@@ -89,8 +89,8 @@ namespace embree
 
   void SubdivMesh::setIndexBuffer(RTCBufferType vertexBuffer, RTCBufferType indexBuffer)
   {
-    if (vertexBuffer >= RTC_USER_VERTEX_BUFFER0 && vertexBuffer < RTC_USER_VERTEX_BUFFER0+userbuffers.size()) {
-      if (indexBuffer >= RTC_INDEX_BUFFER && indexBuffer < RTC_INDEX_BUFFER+topology.size()) {
+    if (vertexBuffer >= RTC_USER_VERTEX_BUFFER0 && vertexBuffer < RTC_USER_VERTEX_BUFFER0+(int)userbuffers.size()) {
+      if (indexBuffer >= RTC_INDEX_BUFFER && indexBuffer < RTC_INDEX_BUFFER+(int)topology.size()) {
         unsigned vid = vertexBuffer & 0xFFFF;
         unsigned iid = indexBuffer & 0xFFFF;
         if ((unsigned)userbuffers[vid].userdata != iid) {
