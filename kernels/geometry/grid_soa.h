@@ -24,8 +24,6 @@
 #include "../subdiv/tessellation_cache.h"
 #include "subdivpatch1cached.h"
 
-#define LOW_TESSELLATION_LEVEL_FIX 1
-
 namespace embree
 {
   namespace isa
@@ -47,10 +45,6 @@ namespace embree
       {
         const unsigned width = x1-x0+1;  
         const unsigned height = y1-y0+1; 
-#if LOW_TESSELLATION_LEVEL_FIX != 1
-        assert(width >= 3);
-        assert(height >= 3);
-#endif
         const GridRange range(0,width-1,0,height-1);
         const size_t nodeBytes = time_steps_global == 1 ? sizeof(BVH4::AlignedNode) : sizeof(BVH4::AlignedNodeMB);
         const size_t bvhBytes  = getBVHBytes(range,nodeBytes,0);
@@ -160,7 +154,6 @@ namespace embree
         
         static __forceinline const Vec3<vfloat4> gather(const float* const grid, const size_t line_offset, const size_t lines)
         {
-#if LOW_TESSELLATION_LEVEL_FIX == 1
           vfloat4 r0 = vfloat4::loadu(grid + 0*line_offset);
           vfloat4 r1 = vfloat4::loadu(grid + 1*line_offset); // this accesses 2 elements too much in case of 2x2 grid, but this is ok as we ensure enough padding after the grid
           if (unlikely(line_offset == 2))
@@ -168,10 +161,6 @@ namespace embree
             r0 = shuffle<0,1,1,1>(r0);
             r1 = shuffle<0,1,1,1>(r1);
           }
-#else
-          const vfloat4 r0 = vfloat4::loadu(grid + 0*line_offset);
-          const vfloat4 r1 = vfloat4::loadu(grid + 1*line_offset); // this accesses 1 element too much, but this is ok as we ensure enough padding after the grid
-#endif
           return Vec3<vfloat4>(unpacklo(r0,r1),       // r00, r10, r01, r11
                                shuffle<1,1,2,2>(r0),  // r01, r01, r02, r02
                                shuffle<0,1,1,2>(r1)); // r10, r11, r11, r12
@@ -205,7 +194,6 @@ namespace embree
         
         static __forceinline const Vec3<vfloat8> gather(const float* const grid, const size_t line_offset, const size_t lines)
         {
-#if LOW_TESSELLATION_LEVEL_FIX == 1
           vfloat4 ra = vfloat4::loadu(grid + 0*line_offset);
           vfloat4 rb = vfloat4::loadu(grid + 1*line_offset); // this accesses 2 elements too much in case of 2x2 grid, but this is ok as we ensure enough padding after the grid
           vfloat4 rc;
@@ -221,11 +209,6 @@ namespace embree
             rc = shuffle<0,1,1,1>(rc);
           }
           
-#else
-          const vfloat4 ra = vfloat4::loadu(grid + 0*line_offset);
-          const vfloat4 rb = vfloat4::loadu(grid + 1*line_offset);
-          const vfloat4 rc = vfloat4::loadu(grid + 2*line_offset); // this accesses 1 element too much, but this is ok as we ensure enough padding after the grid
-#endif
           const vfloat8 r0 = vfloat8(ra,rb);
           const vfloat8 r1 = vfloat8(rb,rc);
           return Vec3<vfloat8>(unpacklo(r0,r1),         // r00, r10, r01, r11, r10, r20, r11, r21
