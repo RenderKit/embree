@@ -34,8 +34,7 @@ namespace embree
       tessellationRate(2.0f),
       numHalfEdges(0),
       faceStartEdge(parent->device),
-      invalid_face(parent->device),
-      levelUpdate(false)
+      invalid_face(parent->device)
   {
     vertices.resize(numTimeSteps);
     vertex_buffer_tags.resize(numTimeSteps);
@@ -630,10 +629,6 @@ namespace embree
     update |= mesh->vertex_creases.isModified();
     update |= mesh->vertex_crease_weights.isModified(); 
     update |= mesh->levels.isModified();
-
-    /* check whether we can simply update the bvh in cached mode */
-    if (this == &mesh->topology[0])
-      mesh->levelUpdate = !recalculate && mesh->edge_creases.size() == 0 && mesh->vertex_creases.size() == 0 && mesh->levels.isModified(); // FIXME: still used??
 
     /* now either recalculate or update the half edges */
     if (recalculate) calculateHalfEdges();

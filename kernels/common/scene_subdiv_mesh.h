@@ -134,9 +134,6 @@ namespace embree
       return vertices[t];
     }
 
-     /* check for simple edge level update */
-    __forceinline bool checkLevelUpdate() const { return levelUpdate; }
-
     /* returns tessellation level of edge */
     __forceinline float getEdgeLevel(const size_t i) const
     {
@@ -303,10 +300,6 @@ namespace embree
     /*! test if face i is invalid in timestep j */
     __forceinline       char& invalidFace(size_t i, size_t j = 0)       { return invalid_face[i*numTimeSteps+j]; }
     __forceinline const char& invalidFace(size_t i, size_t j = 0) const { return invalid_face[i*numTimeSteps+j]; }
-
-    /*! flag whether only the edge levels have changed and the mesh has no creases,
-     *  allows for simple bvh update instead of full rebuild in cached mode */
-    bool levelUpdate;
 
     /*! interpolation cache */
   public:
