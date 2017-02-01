@@ -304,8 +304,8 @@ Vec3fa renderPixelNg(float x, float y, const ISPCCamera& camera)
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f,0.0f,1.0f);
-  //else return abs(normalize(Vec3fa(ray.Ng.x,ray.Ng.y,ray.Ng.z)));
-  else return normalize(Vec3fa(ray.Ng.x,ray.Ng.y,ray.Ng.z));
+  else return abs(normalize(Vec3fa(ray.Ng.x,ray.Ng.y,ray.Ng.z)));
+  //else return normalize(Vec3fa(ray.Ng.x,ray.Ng.y,ray.Ng.z));
 }
 
 void renderTileNg(int taskIndex,
