@@ -123,22 +123,4 @@ namespace embree
 
     return grid_changed;
   }
-
-   size_t SubdivPatch1Base::get64BytesBlocksForGridSubTree(const GridRange& range, const unsigned int leafBlocks)
-   {
-     if (range.hasLeafSize()) 
-       return leafBlocks;
-     
-     __aligned(64) GridRange r[4];
-     const unsigned int children = range.splitIntoSubRanges(r);
-     
-     size_t blocks = 2; /* 128 bytes bvh4 node layout */
-     for (unsigned int i=0;i<children;i++)
-       blocks += get64BytesBlocksForGridSubTree(r[i],leafBlocks);
-     return blocks;    
-   }
-
-  size_t SubdivPatch1Base::getSubTreeSize64bBlocks(const unsigned int leafBlocks) {
-    return get64BytesBlocksForGridSubTree(GridRange(0,grid_u_res-1,0,grid_v_res-1),leafBlocks);
-  }
 }
