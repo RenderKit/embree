@@ -570,7 +570,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
     const size_t keyFrameID = intpart;      
     
     size_t numObjects = getNumObjects(g_ispc_scene);
-    for (size_t i=0;i<numObjects;i++)
+    for (int i=0;i<numObjects;i++)
       updateVertexData(i, g_ispc_scene, g_scene, keyFrameID, (float)fracpart);
 
     double vertexUpdateTime1 = getSeconds();    

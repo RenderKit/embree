@@ -118,7 +118,7 @@ namespace embree
       parent->commitCounterSubdiv++;
 
     unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+numTimeSteps) 
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+(int)numTimeSteps) 
     {
       vertices[bid].set(ptr,offset,stride,size); 
       vertices[bid].checkPadding16();
@@ -143,7 +143,7 @@ namespace embree
 
     else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
     {
-      int begin = topology.size();
+      int begin = (int)topology.size();
       if (bid >= topology.size()) {
         topology.resize(bid+1);
         for (size_t i=begin; i<topology.size(); i++)
@@ -218,7 +218,7 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+numTimeSteps) 
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+(int)numTimeSteps) 
       vertices[bid].unmap(parent->numMappedBuffers);
 
     else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
@@ -269,7 +269,7 @@ namespace embree
       parent->commitCounterSubdiv++;
 
     unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+numTimeSteps)
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+(int)numTimeSteps)
       vertices[bid].setModified(true);
     
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+2)
