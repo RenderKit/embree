@@ -426,8 +426,19 @@ namespace embree
 
       void verify() const;
 
+      void relayout()
+      {
+        positions_soa.resize(numVertices()*numTimeSteps());
+        for (size_t i=0; i<positions_soa.size(); i+=numTimeSteps()) {
+          for (size_t j=0; j<numTimeSteps(); j++) {
+            positions_soa[i+j] = positions[j][i];
+          }
+        }
+      }
+
     public:
       std::vector<avector<Vertex>> positions;
+      avector<Vertex> positions_soa;
       avector<Vertex> normals;
       std::vector<Vec2f> texcoords;
       std::vector<Triangle> triangles;
@@ -510,8 +521,19 @@ namespace embree
 
       void verify() const;
 
+      void relayout()
+      {
+        positions_soa.resize(numVertices()*numTimeSteps());
+        for (size_t i=0; i<positions_soa.size(); i+=numTimeSteps()) {
+          for (size_t j=0; j<numTimeSteps(); j++) {
+            positions_soa[i+j] = positions[j][i];
+          }
+        }
+      }
+
     public:
       std::vector<avector<Vertex>> positions;
+      avector<Vertex> positions_soa;
       avector<Vertex> normals;
       std::vector<Vec2f> texcoords;
       std::vector<Quad> quads;
@@ -608,8 +630,19 @@ namespace embree
 
       void verify() const;
 
+      void relayout()
+      {
+        positions_soa.resize(numPositions()*numTimeSteps());
+        for (size_t i=0; i<positions_soa.size(); i+=numTimeSteps()) {
+          for (size_t j=0; j<numTimeSteps(); j++) {
+            positions_soa[i+j] = positions[j][i];
+          }
+        }
+      }
+
     public:
       std::vector<avector<Vertex>> positions; //!< vertex positions for multiple timesteps
+      avector<Vertex> positions_soa;
       avector<Vertex> normals;              //!< face vertex normals
       std::vector<Vec2f> texcoords;             //!< face texture coordinates
       std::vector<unsigned> position_indices;        //!< position indices for all faces
@@ -691,8 +724,19 @@ namespace embree
 
       void verify() const;
 
+      void relayout()
+      {
+        positions_soa.resize(numVertices()*numTimeSteps());
+        for (size_t i=0; i<positions_soa.size(); i+=numTimeSteps()) {
+          for (size_t j=0; j<numTimeSteps(); j++) {
+            positions_soa[i+j] = positions[j][i];
+          }
+        }
+      }
+
     public:
       std::vector<avector<Vertex>> positions; //!< line control points (x,y,z,r) for multiple timesteps
+      avector<Vertex> positions_soa;
       std::vector<unsigned> indices; //!< list of line segments
       Ref<MaterialNode> material;
     };
@@ -771,9 +815,20 @@ namespace embree
 
       void verify() const;
 
+      void relayout()
+      {
+        positions_soa.resize(numVertices()*numTimeSteps());
+        for (size_t i=0; i<positions_soa.size(); i+=numTimeSteps()) {
+          for (size_t j=0; j<numTimeSteps(); j++) {
+            positions_soa[i+j] = positions[j][i];
+          }
+        }
+      }
+
     public:
       bool hair;                //!< true is this is hair geometry, false if this are curves
       std::vector<avector<Vertex>> positions; //!< hair control points (x,y,z,r) for multiple timesteps
+      avector<Vertex> positions_soa;
       std::vector<Hair> hairs;  //!< list of hairs
       Ref<MaterialNode> material;
       unsigned tessellation_rate;
