@@ -23,7 +23,6 @@ struct ISPCTriangle
   int v0;                /*< first triangle vertex */
   int v1;                /*< second triangle vertex */
   int v2;                /*< third triangle vertex */
-  int materialID;        /*< material of triangle */
 };
 
 struct ISPCQuad

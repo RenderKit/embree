@@ -48,13 +48,13 @@ namespace embree
       Triangle () {}
       
       Triangle (const Triangle& other) 
-      : v0(other.v0), v1(other.v1), v2(other.v2), materialID(other.materialID) {}
+      : v0(other.v0), v1(other.v1), v2(other.v2) {}
 
-      Triangle (unsigned v0, unsigned v1, unsigned v2, unsigned materialID) 
-      : v0(v0), v1(v1), v2(v2), materialID(materialID) {}
+      Triangle (unsigned v0, unsigned v1, unsigned v2) 
+      : v0(v0), v1(v1), v2(v2) {}
 
     public:
-      unsigned v0, v1, v2, materialID;
+      unsigned v0, v1, v2;
     };
 
     /*! OBJ Quad */
@@ -115,7 +115,7 @@ namespace embree
         triangles.resize(mesh->triangles.size());
         for (size_t i=0; i<mesh->triangles.size(); i++) {
           SceneGraph::TriangleMeshNode::Triangle& tri = mesh->triangles[i];
-          triangles[i] = TutorialScene::Triangle(tri.v0,tri.v1,tri.v2,materialID);
+          triangles[i] = TutorialScene::Triangle(tri.v0,tri.v1,tri.v2);
         }
       }
 

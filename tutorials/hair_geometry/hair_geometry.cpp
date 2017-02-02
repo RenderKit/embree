@@ -223,10 +223,10 @@ float Noise(float x, float y, float z)
           unsigned int p11 = phi*numTheta+theta%numTheta;
           
           if (phi > 1)
-            triangles.push_back(TutorialScene::Triangle(p10,p00,p01,materialID));
+            triangles.push_back(TutorialScene::Triangle(p10,p00,p01));
           
           if (phi < numPhi) 
-            triangles.push_back(TutorialScene::Triangle(p11,p10,p01,materialID));
+            triangles.push_back(TutorialScene::Triangle(p11,p10,p01));
         }
       }
       
@@ -280,8 +280,8 @@ float Noise(float x, float y, float z)
      positions.push_back(p10);
      positions.push_back(p11);
 
-     triangles.push_back(TutorialScene::Triangle(0,1,2,materialID));
-     triangles.push_back(TutorialScene::Triangle(2,1,3,materialID));
+     triangles.push_back(TutorialScene::Triangle(0,1,2));
+     triangles.push_back(TutorialScene::Triangle(2,1,3));
      
      scene.geometries.push_back(new TutorialScene::TriangleMesh(positions,normals,texcoords,triangles,materialID));
   }

@@ -160,7 +160,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
   if (geometry->type == TRIANGLE_MESH)
   {
     ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
-    materialID = mesh->triangles[ray.primID].materialID;
+    materialID = mesh->materialID;
   }
   else if (geometry->type == QUAD_MESH)
   {

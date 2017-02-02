@@ -1041,7 +1041,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
   if (geometry->type == TRIANGLE_MESH)
   {
     ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
-    materialID = mesh->triangles[ray.primID].materialID;
+    materialID = mesh->materialID;
     if (mesh->texcoords) {
       ISPCTriangle* tri = &mesh->triangles[ray.primID];
       const Vec2f st0 = mesh->texcoords[tri->v0];

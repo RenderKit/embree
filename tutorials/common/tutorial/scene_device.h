@@ -32,7 +32,6 @@ namespace embree
     unsigned v0;                /*< first triangle vertex */
     unsigned v1;                /*< second triangle vertex */
     unsigned v2;                /*< third triangle vertex */
-    unsigned materialID;        /*< material of triangle */
   };
 
   struct ISPCQuad
