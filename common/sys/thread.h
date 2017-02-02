@@ -81,8 +81,8 @@ namespace embree
     }
 
     /*! disallow copy */
-    //ThreadLocalData(const ThreadLocalData&) = delete;
-    //ThreadLocalData& operator=(const ThreadLocalData&) = delete;
+    ThreadLocalData(const ThreadLocalData&) DELETED;
+    ThreadLocalData& operator=(const ThreadLocalData&) DELETED;
 
     __forceinline void reset()
     {
