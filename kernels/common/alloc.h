@@ -189,7 +189,6 @@ namespace embree
       bytesReserve  = ((bytesReserve +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
       
       growSize = clamp(bytesReserve,size_t(PAGE_SIZE),maxAllocationSize); // PAGE_SIZE -maxAlignment ?
-
       log2_grow_size_scale = 0;
       slotMask = 0x0;
       if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesAllocate >  4*maxAllocationSize) slotMask = 0x1;
@@ -235,7 +234,7 @@ namespace embree
       /* single allocator mode ? */
       use_single_mode = single_mode; 
       defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE+maxAlignment)); 
-      initGrowSizeAndNumSlots(bytesAllocate,bytesAllocate);
+      initGrowSizeAndNumSlots(bytesAllocate/2);
     }
 
     /*! frees state not required after build */
