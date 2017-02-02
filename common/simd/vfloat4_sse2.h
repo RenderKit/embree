@@ -178,8 +178,14 @@ namespace embree
 #endif
   __forceinline const vfloat4 signmsk   ( const vfloat4& a ) { return _mm_and_ps(a.v,_mm_castsi128_ps(_mm_set1_epi32(0x80000000))); }
   
-  __forceinline const vfloat4 rcp  ( const vfloat4& a ) {
+  __forceinline const vfloat4 rcp  ( const vfloat4& a )
+  {
+#if defined(__AVX512VL__)
+    const vfloat4 r = _mm_rcp14_ps(a.v);
+#else
     const vfloat4 r = _mm_rcp_ps(a.v);
+#endif
+
 #if defined(__AVX2__)
     return _mm_mul_ps(r,_mm_fnmadd_ps(r, a, vfloat4(2.0f)));
 #else
@@ -188,11 +194,18 @@ namespace embree
   }
   __forceinline const vfloat4 sqr  ( const vfloat4& a ) { return _mm_mul_ps(a,a); }
   __forceinline const vfloat4 sqrt ( const vfloat4& a ) { return _mm_sqrt_ps(a.v); }
-  __forceinline const vfloat4 rsqrt( const vfloat4& a ) {
+
+  __forceinline const vfloat4 rsqrt( const vfloat4& a )
+  {
+#if defined(__AVX512VL__)
+    const vfloat4 r = _mm_rsqrt14_ps(a.v);
+#else
     const vfloat4 r = _mm_rsqrt_ps(a.v);
+#endif
     return _mm_add_ps(_mm_mul_ps(_mm_set_ps(1.5f, 1.5f, 1.5f, 1.5f), r),
                       _mm_mul_ps(_mm_mul_ps(_mm_mul_ps(a, _mm_set_ps(-0.5f, -0.5f, -0.5f, -0.5f)), r), _mm_mul_ps(r, r)));
   }
+
   __forceinline const vboolf4 isnan( const vfloat4& a ) {
     const vfloat4 b = _mm_and_ps(a.v, _mm_castsi128_ps(_mm_set1_epi32(0x7fffffff)));
 #if defined(__AVX512VL__)

@@ -174,8 +174,14 @@ namespace embree
   __forceinline const vfloat8 signmsk ( const vfloat8& a ) { return _mm256_and_ps(a.v,_mm256_castsi256_ps(_mm256_set1_epi32(0x80000000))); }
 
 
-  __forceinline const vfloat8 rcp  ( const vfloat8& a ) {
-    const vfloat8 r   = _mm256_rcp_ps(a.v);
+  __forceinline const vfloat8 rcp(const vfloat8& a)
+  {
+#if defined(__AVX512VL__)
+    const vfloat8 r = _mm256_rcp14_ps(a.v);
+#else
+    const vfloat8 r = _mm256_rcp_ps(a.v);
+#endif
+
 #if defined(__AVX2__)
     return _mm256_mul_ps(r,_mm256_fnmadd_ps(r, a, vfloat8(2.0f)));
 #else
@@ -184,8 +190,14 @@ namespace embree
   }
   __forceinline const vfloat8 sqr  ( const vfloat8& a ) { return _mm256_mul_ps(a,a); }
   __forceinline const vfloat8 sqrt ( const vfloat8& a ) { return _mm256_sqrt_ps(a.v); }
-  __forceinline const vfloat8 rsqrt( const vfloat8& a ) {
+
+  __forceinline const vfloat8 rsqrt( const vfloat8& a )
+  {
+#if defined(__AVX512VL__)
+    const vfloat8 r = _mm256_rsqrt14_ps(a.v);
+#else
     const vfloat8 r = _mm256_rsqrt_ps(a.v);
+#endif
     return _mm256_add_ps(_mm256_mul_ps(_mm256_set1_ps(1.5f), r), _mm256_mul_ps(_mm256_mul_ps(_mm256_mul_ps(a, _mm256_set1_ps(-0.5f)), r), _mm256_mul_ps(r, r))); 
   }
 
