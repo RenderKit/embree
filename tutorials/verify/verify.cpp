@@ -3971,7 +3971,7 @@ namespace embree
       sflags_gflags_memory.push_back(std::make_pair(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC));
       sflags_gflags_memory.push_back(std::make_pair(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC));
 
-      push(new TestGroup("memory_consumption",false,false,false));
+      push(new TestGroup("memory_consumption",false,false));
 
       for (auto gtype : gtypes_memory)
         for (auto sflags : sflags_gflags_memory)
