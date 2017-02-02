@@ -261,24 +261,20 @@ namespace embree
   __forceinline const vboold8 operator <=( const vlong8& a, const long    b ) { return a <= vlong8(b); }
   __forceinline const vboold8 operator <=( const long    a, const vlong8& b ) { return vlong8(a) <= b; }
 
-  __forceinline vboold8 eq(                    const vlong8& a, const vlong8& b) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_EQ); }
-  __forceinline vboold8 eq(const vboold8 mask, const vlong8& a, const vlong8& b) { return _mm512_mask_cmp_epi64_mask(mask,a,b,_MM_CMPINT_EQ); }
-  
-  __forceinline vboold8 ne(                    const vlong8& a, const vlong8& b) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_NE); }
-  __forceinline vboold8 ne(const vboold8 mask, const vlong8& a, const vlong8& b) { return _mm512_mask_cmp_epi64_mask(mask,a,b,_MM_CMPINT_NE); }
-
-  __forceinline vboold8 lt(                    const vlong8& a, const vlong8& b) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_LT); }
-  __forceinline vboold8 lt(const vboold8 mask, const vlong8& a, const vlong8& b) { return _mm512_mask_cmp_epi64_mask(mask,a,b,_MM_CMPINT_LT); }
- 
-  __forceinline vboold8 ge(                    const vlong8& a, const vlong8& b) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_GE); }
-  __forceinline vboold8 ge(const vboold8 mask, const vlong8& a, const vlong8& b) { return _mm512_mask_cmp_epi64_mask(mask,a,b,_MM_CMPINT_GE); }
-  
-  __forceinline vboold8 gt(                    const vlong8& a, const vlong8& b) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_GT); }
-  __forceinline vboold8 gt(const vboold8 mask, const vlong8& a, const vlong8& b) { return _mm512_mask_cmp_epi64_mask(mask,a,b,_MM_CMPINT_GT); }
-  
-  __forceinline vboold8 le(                    const vlong8& a, const vlong8& b) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_LE); }
-  __forceinline vboold8 le(const vboold8 mask, const vlong8& a, const vlong8& b) { return _mm512_mask_cmp_epi64_mask(mask,a,b,_MM_CMPINT_LE); }
+  __forceinline vboold8 eq(const vlong8& a, const vlong8& b) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_EQ); }
+  __forceinline vboold8 ne(const vlong8& a, const vlong8& b) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_NE); }
+  __forceinline vboold8 lt(const vlong8& a, const vlong8& b) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_LT); }
+  __forceinline vboold8 ge(const vlong8& a, const vlong8& b) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_GE); }
+  __forceinline vboold8 gt(const vlong8& a, const vlong8& b) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_GT); }
+  __forceinline vboold8 le(const vlong8& a, const vlong8& b) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_LE); }
     
+  __forceinline vboold8 eq(const vboold8 mask, const vlong8& a, const vlong8& b) { return _mm512_mask_cmp_epi64_mask(mask,a,b,_MM_CMPINT_EQ); }
+  __forceinline vboold8 ne(const vboold8 mask, const vlong8& a, const vlong8& b) { return _mm512_mask_cmp_epi64_mask(mask,a,b,_MM_CMPINT_NE); }
+  __forceinline vboold8 lt(const vboold8 mask, const vlong8& a, const vlong8& b) { return _mm512_mask_cmp_epi64_mask(mask,a,b,_MM_CMPINT_LT); }
+  __forceinline vboold8 ge(const vboold8 mask, const vlong8& a, const vlong8& b) { return _mm512_mask_cmp_epi64_mask(mask,a,b,_MM_CMPINT_GE); }
+  __forceinline vboold8 gt(const vboold8 mask, const vlong8& a, const vlong8& b) { return _mm512_mask_cmp_epi64_mask(mask,a,b,_MM_CMPINT_GT); }
+  __forceinline vboold8 le(const vboold8 mask, const vlong8& a, const vlong8& b) { return _mm512_mask_cmp_epi64_mask(mask,a,b,_MM_CMPINT_LE); }
+
   __forceinline const vlong8 select( const vboold8& m, const vlong8& t, const vlong8& f ) {
     return _mm512_mask_or_epi64(f,m,t,t); 
   }
