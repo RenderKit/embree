@@ -382,6 +382,9 @@ namespace embree
             verts[j] = xfmPoint(spaces[i],imesh->positions[0][j]);
           positions.push_back(std::move(verts));
         }
+
+        const LinearSpace3fa nspace0 = rcp(spaces[0].l).transposed();
+        for (auto& n : normals) n = xfmVector(nspace0,n);
       }
       
       virtual void setMaterial(Ref<MaterialNode> material) {
@@ -463,6 +466,9 @@ namespace embree
             verts[j] = xfmPoint(spaces[i],imesh->positions[0][j]);
           positions.push_back(std::move(verts));
         }
+
+        const LinearSpace3fa nspace0 = rcp(spaces[0].l).transposed();
+        for (auto& n : normals) n = xfmVector(nspace0,n);
       }
       
       virtual void setMaterial(Ref<MaterialNode> material) {
@@ -552,6 +558,14 @@ namespace embree
           for (size_t j=0; j<imesh->numPositions(); j++) 
             verts[j] = xfmPoint(spaces[i],imesh->positions[0][j]);
           positions.push_back(std::move(verts));
+        }
+        
+        const LinearSpace3fa nspace0 = rcp(spaces[0].l).transposed();
+        for (auto& n : normals) n = xfmVector(nspace0,n);
+
+        if (texcoords.size()) { // zero pad to 16 bytes
+          texcoords.reserve(texcoords.size()+1);
+          texcoords.data()[texcoords.size()] = zero;
         }
       }
       
