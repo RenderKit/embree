@@ -165,6 +165,9 @@ namespace embree
   }
 #endif
 
+  template<typename T>
+    __forceinline T twice(const T& a) { return a+a; }
+
   __forceinline      int min(int      a, int      b) { return a<b ? a:b; }
   __forceinline unsigned min(unsigned a, unsigned b) { return a<b ? a:b; }
   __forceinline  int64_t min(int64_t  a, int64_t  b) { return a<b ? a:b; }

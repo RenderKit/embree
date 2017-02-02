@@ -175,7 +175,7 @@ namespace embree
         throw_RTCError(RTC_INVALID_ARGUMENT,"invalid buffer specified");
       
       ptr = (char*) ptr_in;
-      if (num_in != -1) this->num = num_in;
+      if (num_in != (size_t)-1) this->num = num_in;
       shared = true;
 
       BufferRefT<T>::set(ptr+ofs_in,stride_in);

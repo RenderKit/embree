@@ -44,6 +44,8 @@ namespace embree
   {
     MAYBE_UNUSED static const float travCost = 1.0f;
     MAYBE_UNUSED static const float defaultPresplitFactor = 1.2f;
+    MAYBE_UNUSED static const size_t DEFAULT_SINGLE_THREAD_THRESHOLD = 1024;
+    MAYBE_UNUSED static const size_t HIGH_SINGLE_THREAD_THRESHOLD    = 3*1024;
 
     typedef FastAllocator::ThreadLocal2 Allocator;
 
@@ -154,15 +156,16 @@ namespace embree
       const size_t minLeafSize;
       const size_t maxLeafSize;
       const float presplitFactor;
+      const size_t singleThreadThreshold;
 
-      BVHNBuilderSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+      BVHNBuilderSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
         : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
-          presplitFactor((mode & MODE_HIGH_QUALITY) ? defaultPresplitFactor : 1.0f) {}
+          presplitFactor((mode & MODE_HIGH_QUALITY) ? defaultPresplitFactor : 1.0f), singleThreadThreshold(singleThreadThreshold) {}
 
 
-      BVHNBuilderSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+      BVHNBuilderSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
         : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
-          presplitFactor((mode & MODE_HIGH_QUALITY ) ? defaultPresplitFactor : 1.0f) {}
+          presplitFactor((mode & MODE_HIGH_QUALITY ) ? defaultPresplitFactor : 1.0f), singleThreadThreshold(singleThreadThreshold) {}
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
 
@@ -206,10 +209,10 @@ namespace embree
             /* perform pre-splitting */
             if (presplitFactor > 1.0f) 
               pinfo = presplit<Mesh>(scene, pinfo, prims);
-        
+
             /* call BVH builder */            
-            bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-            BVHNBuilder<N>::build(bvh,CreateLeaf<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+            bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef),singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD);
+            BVHNBuilder<N>::build(bvh,CreateLeaf<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
 
 #if PROFILE
           }); 
@@ -249,14 +252,15 @@ namespace embree
       const size_t minLeafSize;
       const size_t maxLeafSize;
       const float presplitFactor;
+      const size_t singleThreadThreshold;
 
-      BVHNBuilderSAHQuantized (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+      BVHNBuilderSAHQuantized (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
         : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
-          presplitFactor((mode & MODE_HIGH_QUALITY) ? defaultPresplitFactor : 1.0f) {}
+          presplitFactor((mode & MODE_HIGH_QUALITY) ? defaultPresplitFactor : 1.0f), singleThreadThreshold(singleThreadThreshold) {}
 
-      BVHNBuilderSAHQuantized (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+      BVHNBuilderSAHQuantized (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
         : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
-          presplitFactor((mode & MODE_HIGH_QUALITY) ? defaultPresplitFactor : 1.0f) {}
+          presplitFactor((mode & MODE_HIGH_QUALITY) ? defaultPresplitFactor : 1.0f), singleThreadThreshold(singleThreadThreshold) {}
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
 
@@ -293,8 +297,8 @@ namespace embree
               pinfo = presplit<Mesh>(scene, pinfo, prims);
         
             /* call BVH builder */
-            bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-            BVHNBuilderQuantized<N>::build(bvh,CreateLeafQuantized<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+            bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef),singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD);
+            BVHNBuilderQuantized<N>::build(bvh,CreateLeafQuantized<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
 
 #if PROFILE
           }); 
@@ -356,10 +360,11 @@ namespace embree
       const float intCost;
       const size_t minLeafSize;
       const size_t maxLeafSize;
+      const size_t singleThreadThreshold;
 
-      BVHNBuilderMSMBlurSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
+      BVHNBuilderMSMBlurSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
         : bvh(bvh), scene(scene), prims(scene->device), 
-          sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)) {}
+          sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)), singleThreadThreshold(singleThreadThreshold) {}
 
       void build(size_t, size_t) 
       {
@@ -378,8 +383,8 @@ namespace embree
         bvh->numTimeSteps = scene->getNumTimeSteps<Mesh,true>();
         const size_t numTimeSegments = bvh->numTimeSteps-1; assert(bvh->numTimeSteps > 1);
         prims.resize(numPrimitives);
-        bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef)*numTimeSegments);
-        NodeRef* roots = (NodeRef*) bvh->alloc.threadLocal2()->alloc0->malloc(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
+        bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef)*numTimeSegments,singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD);
+        NodeRef* roots = (NodeRef*) bvh->alloc.threadLocal()->malloc(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
 
         /* build BVH for each timestep */
         avector<BBox3fa> bounds(bvh->numTimeSteps);
@@ -392,7 +397,7 @@ namespace embree
           if (pinfo.size())
           {
             std::tie(root, tbounds) = BVHNBuilderMblur<N>::build(bvh,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),t),bvh->scene->progressInterface,prims.data(),pinfo,
-                                                                 sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+                                                                 sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
           }
           else
           {
@@ -446,14 +451,15 @@ namespace embree
       const size_t minLeafSize;
       const size_t maxLeafSize;
       const float splitFactor;
+      const size_t singleThreadThreshold;
 
-      BVHNBuilderFastSpatialSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+      BVHNBuilderFastSpatialSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
         : bvh(bvh), scene(scene), mesh(nullptr), prims0(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
-          splitFactor(scene->device->max_spatial_split_replications) {}
+          splitFactor(scene->device->max_spatial_split_replications), singleThreadThreshold(singleThreadThreshold) {}
 
-      BVHNBuilderFastSpatialSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+      BVHNBuilderFastSpatialSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
         : bvh(bvh), scene(nullptr), mesh(mesh), prims0(bvh->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
-          splitFactor(scene->device->max_spatial_split_replications) {}
+          splitFactor(scene->device->max_spatial_split_replications), singleThreadThreshold(singleThreadThreshold) {}
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
 
@@ -533,7 +539,7 @@ namespace embree
           pinfo,
           N,BVH::maxBuildDepthLeaf,
           sahBlockSize,minLeafSize,maxLeafSize,
-          travCost,intCost);
+          travCost,intCost,singleThreadThreshold);
         
 
         bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());      
@@ -561,18 +567,18 @@ namespace embree
 
 
 #if defined(EMBREE_GEOMETRY_LINES)
-    Builder* BVH4Line4iMeshBuilderSAH     (void* bvh, LineSegments* mesh, size_t mode) { return new BVHNBuilderSAH<4,LineSegments,Line4i>((BVH4*)bvh,mesh,4,1.0f,4,inf,mode); }
-    Builder* BVH4Line4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,LineSegments,Line4i>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH4Line4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMSMBlurSAH<4,LineSegments,Line4i>((BVH4*)bvh,scene ,4,1.0f,4,inf); }
+    Builder* BVH4Line4iMeshBuilderSAH     (void* bvh, LineSegments* mesh, size_t mode) { return new BVHNBuilderSAH<4,LineSegments,Line4i>((BVH4*)bvh,mesh,4,1.0f,4,inf,mode,HIGH_SINGLE_THREAD_THRESHOLD); }
+    Builder* BVH4Line4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,LineSegments,Line4i>((BVH4*)bvh,scene,4,1.0f,4,inf,mode,HIGH_SINGLE_THREAD_THRESHOLD); }
+    Builder* BVH4Line4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMSMBlurSAH<4,LineSegments,Line4i>((BVH4*)bvh,scene ,4,1.0f,4,inf,HIGH_SINGLE_THREAD_THRESHOLD); }
 #if defined(__AVX__)
-    Builder* BVH8Line4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,LineSegments,Line4i>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH8Line4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMSMBlurSAH<8,LineSegments,Line4i>((BVH8*)bvh,scene,4,1.0f,4,inf); }
+    Builder* BVH8Line4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,LineSegments,Line4i>((BVH8*)bvh,scene,4,1.0f,4,inf,mode,HIGH_SINGLE_THREAD_THRESHOLD); }
+    Builder* BVH8Line4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMSMBlurSAH<8,LineSegments,Line4i>((BVH8*)bvh,scene,4,1.0f,4,inf,HIGH_SINGLE_THREAD_THRESHOLD); }
 #endif
 #endif
 
 #if defined(EMBREE_GEOMETRY_HAIR)
-    Builder* BVH4Bezier1vSceneBuilderSAH   (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,BezierCurves,Bezier1v>((BVH4*)bvh,scene,1,1.0f,1,1,mode); }
-    Builder* BVH4Bezier1iSceneBuilderSAH   (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,BezierCurves,Bezier1i>((BVH4*)bvh,scene,1,1.0f,1,1,mode); }
+    Builder* BVH4Bezier1vSceneBuilderSAH   (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,BezierCurves,Bezier1v>((BVH4*)bvh,scene,1,1.0f,1,1,mode,HIGH_SINGLE_THREAD_THRESHOLD); }
+    Builder* BVH4Bezier1iSceneBuilderSAH   (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,BezierCurves,Bezier1i>((BVH4*)bvh,scene,1,1.0f,1,1,mode,HIGH_SINGLE_THREAD_THRESHOLD); }
 #endif
 
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
@@ -584,8 +590,8 @@ namespace embree
     Builder* BVH4Triangle4vSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,TriangleMesh,Triangle4v>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH4Triangle4iSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,TriangleMesh,Triangle4i>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
 
-    Builder* BVH4Triangle4vMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMSMBlurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,scene,4,1.0f,4,inf); }
-    Builder* BVH4Triangle4iMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMSMBlurSAH<4,TriangleMesh,Triangle4iMB>((BVH4*)bvh,scene,4,1.0f,4,inf); }
+    Builder* BVH4Triangle4vMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMSMBlurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,scene,4,1.0f,4,inf,HIGH_SINGLE_THREAD_THRESHOLD); }
+    Builder* BVH4Triangle4iMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMSMBlurSAH<4,TriangleMesh,Triangle4iMB>((BVH4*)bvh,scene,4,1.0f,4,inf,HIGH_SINGLE_THREAD_THRESHOLD); }
 
     Builder* BVH4Triangle4SceneBuilderFastSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderFastSpatialSAH<4,TriangleMesh,Triangle4,TriangleSplitterFactory>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH4Triangle4vSceneBuilderFastSpatialSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderFastSpatialSAH<4,TriangleMesh,Triangle4v,TriangleSplitterFactory>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
@@ -601,8 +607,8 @@ namespace embree
     Builder* BVH8Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,TriangleMesh,Triangle4>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH8Triangle4vSceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,TriangleMesh,Triangle4v>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH8Triangle4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,TriangleMesh,Triangle4i>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH8Triangle4vMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMSMBlurSAH<8,TriangleMesh,Triangle4vMB>((BVH8*)bvh,scene,4,1.0f,4,inf); }
-    Builder* BVH8Triangle4iMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMSMBlurSAH<8,TriangleMesh,Triangle4iMB>((BVH8*)bvh,scene,4,1.0f,4,inf); }
+    Builder* BVH8Triangle4vMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMSMBlurSAH<8,TriangleMesh,Triangle4vMB>((BVH8*)bvh,scene,4,1.0f,4,inf,HIGH_SINGLE_THREAD_THRESHOLD); }
+    Builder* BVH8Triangle4iMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMSMBlurSAH<8,TriangleMesh,Triangle4iMB>((BVH8*)bvh,scene,4,1.0f,4,inf,HIGH_SINGLE_THREAD_THRESHOLD); }
     Builder* BVH8QuantizedTriangle4iSceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<8,TriangleMesh,Triangle4i>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH8Triangle4SceneBuilderFastSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderFastSpatialSAH<8,TriangleMesh,Triangle4,TriangleSplitterFactory>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH8Triangle4vSceneBuilderFastSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderFastSpatialSAH<8,TriangleMesh,Triangle4v,TriangleSplitterFactory>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
@@ -615,7 +621,7 @@ namespace embree
     Builder* BVH4Quad4iMeshBuilderSAH     (void* bvh, QuadMesh* mesh, size_t mode)     { return new BVHNBuilderSAH<4,QuadMesh,Quad4i>((BVH4*)bvh,mesh,4,1.0f,4,inf,mode); }
     Builder* BVH4Quad4vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,QuadMesh,Quad4v>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH4Quad4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,QuadMesh,Quad4i>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH4Quad4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMSMBlurSAH<4,QuadMesh,Quad4iMB>((BVH4*)bvh,scene ,4,1.0f,4,inf); }
+    Builder* BVH4Quad4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMSMBlurSAH<4,QuadMesh,Quad4iMB>((BVH4*)bvh,scene ,4,1.0f,4,inf,HIGH_SINGLE_THREAD_THRESHOLD); }
     Builder* BVH4QuantizedQuad4vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<4,QuadMesh,Quad4v>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH4QuantizedQuad4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<4,QuadMesh,Quad4i>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH4Quad4vSceneBuilderFastSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderFastSpatialSAH<4,QuadMesh,Quad4v,QuadSplitterFactory>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
@@ -623,7 +629,7 @@ namespace embree
 #if defined(__AVX__)
     Builder* BVH8Quad4vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,QuadMesh,Quad4v>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH8Quad4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,QuadMesh,Quad4i>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH8Quad4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMSMBlurSAH<8,QuadMesh,Quad4iMB>((BVH8*)bvh,scene,4,1.0f,4,inf); }
+    Builder* BVH8Quad4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMSMBlurSAH<8,QuadMesh,Quad4iMB>((BVH8*)bvh,scene,4,1.0f,4,inf,HIGH_SINGLE_THREAD_THRESHOLD); }
     Builder* BVH8QuantizedQuad4vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<8,QuadMesh,Quad4v>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH8QuantizedQuad4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<8,QuadMesh,Quad4i>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH8Quad4vMeshBuilderSAH     (void* bvh, QuadMesh* mesh, size_t mode)     { return new BVHNBuilderSAH<8,QuadMesh,Quad4v>((BVH8*)bvh,mesh,4,1.0f,4,inf,mode); }

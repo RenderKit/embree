@@ -334,7 +334,6 @@ namespace embree
         new (&cur) ExtObjMaterial;
         continue;
       }
-
       if (name == "") THROW_RUNTIME_ERROR("invalid material file: newmtl expected first");
 
       try 

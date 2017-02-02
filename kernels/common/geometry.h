@@ -83,7 +83,7 @@ namespace embree
     /*! sets the number of primitives */
     __forceinline void setNumPrimitives(size_t numPrimitives_in)
     { 
-      if (numPrimitives_in == -1) return;
+      if ((ssize_t)numPrimitives_in == -1) return;
       if (numPrimitives_in == numPrimitives) return;
       numPrimitives = numPrimitives_in;
       numPrimitivesChanged = true;

@@ -30,7 +30,7 @@ namespace embree
       
         struct BVHNBuilderV {
           void build(BVH* bvh, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
-                     const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost);
+                     const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost, const size_t singleThreadThreshold);
           virtual size_t createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) = 0;
         };
 
@@ -50,8 +50,8 @@ namespace embree
 
         template<typename CreateLeafFunc>
         static void build(BVH* bvh, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
-                          const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost) {
-          BVHNBuilderT<CreateLeafFunc>(createLeaf).build(bvh,progress,prims,pinfo,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+                          const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost, const size_t singleThreadThreshold) {
+          BVHNBuilderT<CreateLeafFunc>(createLeaf).build(bvh,progress,prims,pinfo,blockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
         }
       };
 
@@ -65,7 +65,7 @@ namespace embree
       
         struct BVHNBuilderV {
           void build(BVH* bvh, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
-                     const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost);
+                     const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost, const size_t singleThreadThreshold);
           virtual size_t createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) = 0;
         };
 
@@ -85,8 +85,8 @@ namespace embree
 
         template<typename CreateLeafFunc>
         static void build(BVH* bvh, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
-                          const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost) {
-          BVHNBuilderT<CreateLeafFunc>(createLeaf).build(bvh,progress,prims,pinfo,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+                          const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost, const size_t singleThreadThreshold) {
+          BVHNBuilderT<CreateLeafFunc>(createLeaf).build(bvh,progress,prims,pinfo,blockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
         }
       };
 
@@ -100,7 +100,7 @@ namespace embree
       
         struct BVHNBuilderV {
           std::tuple<NodeRef,LBBox3fa> build(BVH* bvh, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
-                     const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost);
+                     const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost, const size_t singleThreadThreshold);
           virtual LBBox3fa createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) = 0;
         };
 
@@ -120,8 +120,8 @@ namespace embree
 
         template<typename CreateLeafFunc>
         static std::tuple<NodeRef,LBBox3fa>  build(BVH* bvh, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
-                          const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost) {
-          return BVHNBuilderT<CreateLeafFunc>(createLeaf).build(bvh,progress,prims,pinfo,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+                          const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost, const size_t singleThreadThreshold) {
+          return BVHNBuilderT<CreateLeafFunc>(createLeaf).build(bvh,progress,prims,pinfo,blockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
         }
       };
 

@@ -762,12 +762,12 @@ namespace embree
   RTCORE_API unsigned rtcNewInstance (RTCScene htarget, RTCScene hsource) 
   {
     Scene* target = (Scene*) htarget;
-    Scene* source = (Scene*) hsource;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewInstance);
     RTCORE_VERIFY_HANDLE(htarget);
     RTCORE_VERIFY_HANDLE(hsource);
 #if defined(EMBREE_GEOMETRY_USER)
+    Scene* source = (Scene*) hsource;
     if (target->device != source->device) throw_RTCError(RTC_INVALID_OPERATION,"scenes do not belong to the same device");
     return target->newInstance(source,1);
 #else

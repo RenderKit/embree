@@ -18,10 +18,8 @@
 
 namespace embree
 {
-  bool g_ppl_threads_initialized = false;
+  static bool g_ppl_threads_initialized = false;
     
-  size_t TaskScheduler::g_numThreads = 0;
-  
   void TaskScheduler::create(size_t numThreads, bool set_affinity, bool start_threads)
   {
     /* first terminate threads in case we configured them */
@@ -33,24 +31,22 @@ namespace embree
     if (numThreads == 0)
     {
       g_ppl_threads_initialized = false;
-      g_numThreads = threadCount();
+      numThreads = threadCount();
     }
-    else {
+    else 
+    {
       g_ppl_threads_initialized = true;
-      g_numThreads = numThreads;
       try {
-        concurrency::Scheduler::SetDefaultSchedulerPolicy(concurrency::SchedulerPolicy(2, concurrency::MinConcurrency, g_numThreads, concurrency::MaxConcurrency, g_numThreads));
+        concurrency::Scheduler::SetDefaultSchedulerPolicy(concurrency::SchedulerPolicy(2, concurrency::MinConcurrency, numThreads, concurrency::MaxConcurrency, numThreads));
       }
-      catch(concurrency::default_scheduler_exists &)
-      { }
+      catch(concurrency::default_scheduler_exists &) { 
+      }
     }
   }
-  //
   
   void TaskScheduler::destroy()
   {
-    if (g_ppl_threads_initialized)
-    {
+    if (g_ppl_threads_initialized) {
       g_ppl_threads_initialized = false;
     }
   }

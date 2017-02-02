@@ -146,7 +146,7 @@ namespace embree
                                          [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });          
           else
             center = parallel_partitioning(
-              prims,begin,end,empty,local_left,local_right,isLeft,
+              prims,begin,end,EmptyTy(),local_left,local_right,isLeft,
               [] (CentGeomBBox3fa& pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
               [] (CentGeomBBox3fa& pinfo0,const CentGeomBBox3fa &pinfo1) { pinfo0.merge(pinfo1); },
               PARALLEL_PARTITION_BLOCK_SIZE);

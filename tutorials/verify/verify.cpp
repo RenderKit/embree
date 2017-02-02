@@ -1190,8 +1190,9 @@ namespace embree
         double overhead = double(bytes_all_threads.second)/double(bytes_one_thread.second);
         //std::cout << "N = " << bytes_one_thread.first << ", 1 thread = " << 1E-6*bytes_one_thread.second << " MB, all_threads = " << 1E-6*bytes_all_threads.second << " MB (" << 100.0f*overhead << " %)" << std::endl;
 
-        /* right now we use a 60% overhead threshold due to the BVH SAH builder for lines */
-        if (overhead > 1.60f) return VerifyApplication::FAILED;
+        /* right now we use a 37% overhead threshold, MBlur scenes requires */
+        if (overhead > 1.37f) { 
+			return VerifyApplication::FAILED; }
       }
       return VerifyApplication::PASSED;
     }
@@ -1923,7 +1924,7 @@ namespace embree
         const Vec3fa ht  = org + rays[i].tfar*dir;
         const Vec3fa huv = vertices[0] + rays[i].u*(vertices[1]-vertices[0]) + rays[i].v*(vertices[2]-vertices[0]);
         if (reduce_max(abs(ht-huv)) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
-        const Vec3fa Ng = normalize(Vec3fa(rays[i].Ng[0],rays[i].Ng[1],rays[i].Ng[2])); // FIXME: some geom normals are scaled!!!??
+        const Vec3fa Ng = Vec3fa(rays[i].Ng[0],rays[i].Ng[1],rays[i].Ng[2]);
         if (reduce_max(abs(Ng - Vec3fa(0.0f,0.0f,-1.0f))) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
       }
       AssertNoError(device);
@@ -1991,7 +1992,7 @@ namespace embree
         const Vec3fa ht  = org + rays[i].tfar*dir;
         const Vec3fa huv = vertices[0] + rays[i].u*(vertices[1]-vertices[0]) + rays[i].v*(vertices[3]-vertices[0]);
         if (reduce_max(abs(ht-huv)) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
-        const Vec3fa Ng = normalize(Vec3fa(rays[i].Ng[0],rays[i].Ng[1],rays[i].Ng[2])); // FIXME: some geom normals are scaled!!!??
+        const Vec3fa Ng = Vec3fa(rays[i].Ng[0],rays[i].Ng[1],rays[i].Ng[2]);
         if (reduce_max(abs(Ng - Vec3fa(0.0f,0.0f,-1.0f))) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
       }
       AssertNoError(device);
@@ -3971,7 +3972,7 @@ namespace embree
       sflags_gflags_memory.push_back(std::make_pair(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC));
       sflags_gflags_memory.push_back(std::make_pair(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC));
 
-      push(new TestGroup("memory_consumption",false,false,false));
+      push(new TestGroup("memory_consumption",false,false));
 
       for (auto gtype : gtypes_memory)
         for (auto sflags : sflags_gflags_memory)

@@ -213,7 +213,7 @@ namespace embree
     const QuadMesh* mesh2 = scene->getQuadMesh(geomIDs[2]);
     const QuadMesh* mesh3 = scene->getQuadMesh(geomIDs[3]);
 
-    static const vint16 perm(0,4,8,12,1,5,9,13,2,6,10,14,3,7,11,15);
+    const vint16 perm(0,4,8,12,1,5,9,13,2,6,10,14,3,7,11,15);
     const vfloat4 &a0 = *(vfloat4*)(mesh0->vertexPtr(v0[0]));
     const vfloat4 &a1 = *(vfloat4*)(mesh1->vertexPtr(v0[1]));
     const vfloat4 &a2 = *(vfloat4*)(mesh2->vertexPtr(v0[2]));

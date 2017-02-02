@@ -100,7 +100,9 @@ namespace embree
           bvh->set(BVH::emptyNode,empty,0);
           return;
         }
-        bvh->alloc.reset();
+        //bvh->alloc.reset();
+        bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef));
+
 
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1EagerBuilderBinnedSAH");
 
@@ -170,7 +172,7 @@ namespace embree
           return 0;
         };
        
-        BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f);
+        BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f,DEFAULT_SINGLE_THREAD_THRESHOLD);
         
 	/* clear temporary data for static geometry */
 	if (scene->isStatic()) {
@@ -314,7 +316,8 @@ namespace embree
       void rebuild(size_t numPrimitives)
       {
         SubdivPatch1Cached* const subdiv_patches = (SubdivPatch1Cached*) bvh->subdiv_patches.data();
-        bvh->alloc.reset();
+        //bvh->alloc.reset();
+        bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef)*numTimeSteps);
 
         Scene::Iterator<SubdivMesh,mblur> iter(scene);
         parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
@@ -383,7 +386,7 @@ namespace embree
           const PrimInfo pinfo = updatePrimRefArray(0);
 
           /* call BVH builder */
-          BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f);
+          BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f,DEFAULT_SINGLE_THREAD_THRESHOLD);
         }
 
         /* build MBlur BVH over patches */
@@ -391,8 +394,7 @@ namespace embree
         {
           /* allocate buffers */
           const size_t numTimeSegments = bvh->numTimeSteps-1; assert(bvh->numTimeSteps > 1);
-          //bvh->alloc.init_estimate2(numPrimitives*sizeof(PrimRef)*numTimeSegments);
-          NodeRef* roots = (NodeRef*) bvh->alloc.threadLocal2()->alloc0->malloc(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
+          NodeRef* roots = (NodeRef*) bvh->alloc.threadLocal()->malloc(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
           
           /* build BVH for each timestep */
           avector<BBox3fa> boxes(bvh->numTimeSteps);
@@ -415,7 +417,7 @@ namespace embree
 
             /* call BVH builder */
             NodeRef root; LBBox3fa tbounds;
-            std::tie(root, tbounds) = BVHNBuilderMblur<N>::build(bvh,createLeaf,bvh->scene->progressInterface,prims.data(),pinfo,N,1,1,1.0f,1.0f);
+            std::tie(root, tbounds) = BVHNBuilderMblur<N>::build(bvh,createLeaf,bvh->scene->progressInterface,prims.data(),pinfo,N,1,1,1.0f,1.0f,DEFAULT_SINGLE_THREAD_THRESHOLD);
             roots[t] = root;
             boxes[t+0] = tbounds.bounds0;
             boxes[t+1] = tbounds.bounds1;

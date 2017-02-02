@@ -149,11 +149,11 @@ namespace embree
       const Vertex e_i_m_1  = irreg_patch.ring[index].getEdgeCenter(1);
       
       Vertex c_i, e_i_p_1;
-      const bool hasHardEdge =
+      const bool hasHardEdge0 =
         std::isinf(irreg_patch.ring[index].vertex_crease_weight) &&
         std::isinf(irreg_patch.ring[index].crease_weight[0]);
                 
-      if (unlikely(border_index == edge_valence-2) || hasHardEdge)
+      if (unlikely((border_index == edge_valence-2) || hasHardEdge0))
       {
         /* mirror quad center and edge mid-point */
         c_i     = madd(2.0f, e_i - c_i_m_1, c_i_m_1);
@@ -166,7 +166,11 @@ namespace embree
       }
       
       Vertex c_i_m_2, e_i_m_2;
-      if (unlikely(border_index == 2 || face_valence == 2 || hasHardEdge)) // FIXME: face_valence correct?
+      const bool hasHardEdge1 =
+        std::isinf(irreg_patch.ring[index].vertex_crease_weight) &&
+        std::isinf(irreg_patch.ring[index].crease_weight[1]);
+      
+      if (unlikely(border_index == 2 || hasHardEdge1))
       {
         /* mirror quad center and edge mid-point */
         c_i_m_2  = madd(2.0f, e_i_m_1 - c_i_m_1, c_i_m_1);

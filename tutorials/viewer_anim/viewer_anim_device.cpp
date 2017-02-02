@@ -363,14 +363,14 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 
         /* shading */
         Vec3fa& color = colors[N];
-        color = Vec3fa(0.0f,1.0f,0.0f);
+        color = Vec3fa(1.0f,1.0f,1.0f);
         if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
         {
-#if VERTEX_NORMALS == 1
           /* vertex normals */
           ISPCGeometry* geometry = g_ispc_scene->geometries[ray.geomID];
           if (likely(geometry->type == TRIANGLE_MESH))
           {
+#if VERTEX_NORMALS == 1
             ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
             if (likely(mesh->normals))
             {
@@ -381,8 +381,8 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
               const Vec3fa n2 = mesh->normals[tri->v2];
               Ng = (1.0f-ray.u-ray.v)*n0 + ray.u*n1 + ray.v*n2;          
             }
-          }
 #endif
+          }
           /* final color */
           color = Vec3fa(abs(dot(ray.dir,normalize(Ng))));
         }
@@ -393,10 +393,10 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
     /* do some hard shadows to point lights */
     if (g_ispc_scene->numLights)
     {
-      for (size_t i=0; i<g_ispc_scene->numLights; i++)
+      for (unsigned int i=0; i<g_ispc_scene->numLights; i++)
       {
         /* init shadow/occlusion rays */
-        for (size_t n=0;n<N;n++)
+        for (int n=0;n<N;n++)
         {
           RTCRay& ray = rays[n];
           const bool valid = ray.geomID != RTC_INVALID_GEOMETRY_ID;
@@ -414,7 +414,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
         rtcOccluded1M(g_scene,&context,rays,N,sizeof(RTCRay));
 
         /* modify pixel color based on occlusion */
-        for (size_t n=0;n<N;n++)
+        for (int n=0;n<N;n++)
           if (rays[n].geomID != RTC_INVALID_GEOMETRY_ID)
             colors[n] *= 0.1f;
         
@@ -570,7 +570,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
     const size_t keyFrameID = intpart;      
     
     size_t numObjects = getNumObjects(g_ispc_scene);
-    for (size_t i=0;i<numObjects;i++)
+    for (unsigned int i=0;i<numObjects;i++)
       updateVertexData(i, g_ispc_scene, g_scene, keyFrameID, (float)fracpart);
 
     double vertexUpdateTime1 = getSeconds();    

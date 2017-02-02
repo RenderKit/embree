@@ -82,7 +82,7 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
     shadow.geomID = RTC_INVALID_GEOMETRY_ID;
     shadow.primID = RTC_INVALID_GEOMETRY_ID;
     shadow.mask = -1;
-    shadow.time = 0;    // FIXME: invalidate inactive rays
+    shadow.time = 0;
   }
 
   RTCIntersectContext context;
