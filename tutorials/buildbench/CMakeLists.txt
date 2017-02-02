@@ -13,5 +13,7 @@
 ## See the License for the specific language governing permissions and      ##
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
-INCLUDE(basictutorial)
+
+SET(EMBREE_ISPC_SUPPORT OFF)
+INCLUDE(tutorial)
 ADD_TUTORIAL(buildbench)
