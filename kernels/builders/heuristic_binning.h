@@ -73,6 +73,7 @@ namespace embree
           return Vec3ia(floori((vfloat4(p)-ofs)*scale));
         }
 
+        template<typename PrimRef>
         __forceinline bool bin_unsafe(const PrimRef &ref,
                                       const vint4   vSplitPos,
                                       const vbool4  splitDimMask) const
