@@ -74,18 +74,20 @@ namespace embree
 
     struct ISPCTriangleMesh
     {
-      ISPCTriangleMesh (Ref<TutorialScene::TriangleMesh> in) : geom(TRIANGLE_MESH)
+      ISPCTriangleMesh (TutorialScene* scene_in, Ref<SceneGraph::TriangleMeshNode> in) 
+      : geom(TRIANGLE_MESH)
       {
-        positions = in->positions.data();
+        in->relayout();
+        positions = in->positions_soa.data();
         normals = in->normals.data();
         texcoords = in->texcoords.data();
         triangles = (ISPCTriangle*) in->triangles.data();
-        numTimeSteps = in->numTimeSteps;
-        numVertices = in->numVertices;
-        numTriangles = unsigned(in->triangles.size());
+        numTimeSteps = in->numTimeSteps();
+        numVertices = in->numVertices();
+        numTriangles = in->numPrimitives();
         scene = nullptr;
         geomID = -1;
-        materialID = in->materialID;
+        materialID = scene_in->materialID(in->material);
       }
 
     public:
@@ -105,18 +107,20 @@ namespace embree
     
     struct ISPCQuadMesh
     {
-      ISPCQuadMesh (Ref<TutorialScene::QuadMesh> in) : geom(QUAD_MESH)
+      ISPCQuadMesh (TutorialScene* scene_in, Ref<SceneGraph::QuadMeshNode> in) 
+      : geom(QUAD_MESH)
       {
-        positions = in->positions.data();
+        in->relayout();
+        positions = in->positions_soa.data();
         normals = in->normals.data();
         texcoords = in->texcoords.data();
         quads = (ISPCQuad*) in->quads.data();
-        numTimeSteps = in->numTimeSteps;
-        numVertices = in->numVertices;
-        numQuads = unsigned(in->quads.size());
+        numTimeSteps = in->numTimeSteps();
+        numVertices = in->numVertices();
+        numQuads = in->numPrimitives();
         scene = nullptr;
         geomID = -1;
-        materialID = in->materialID;
+        materialID = scene_in->materialID(in->material);
       }
 
     public:
@@ -136,10 +140,11 @@ namespace embree
 
     struct ISPCSubdivMesh
     {
-      ISPCSubdivMesh (Ref<TutorialScene::SubdivMesh> in) 
+      ISPCSubdivMesh (TutorialScene* scene_in, Ref<SceneGraph::SubdivMeshNode> in) 
       : geom(SUBDIV_MESH)
       {
-        positions = in->positions.data();
+        in->relayout();
+        positions = in->positions_soa.data();
         normals = in->normals.data();
         texcoords = in->texcoords.data();
         position_indices = in->position_indices.data();
@@ -154,16 +159,16 @@ namespace embree
         edge_crease_weights = in->edge_crease_weights.data();
         vertex_creases = in->vertex_creases.data();
         vertex_crease_weights = in->vertex_crease_weights.data();
-        numTimeSteps = in->numTimeSteps;
-        numVertices = in->numPositions;
-        numFaces = unsigned(in->verticesPerFace.size());
+        numTimeSteps = in->numTimeSteps();
+        numVertices = in->numPositions();
+        numFaces = in->numPrimitives();
         numEdges = unsigned(in->position_indices.size());
         numEdgeCreases = unsigned(in->edge_creases.size());
         numVertexCreases = unsigned(in->vertex_creases.size());
         numHoles = unsigned(in->holes.size());
         numNormals = unsigned(in->normals.size());
         numTexCoords = unsigned(in->texcoords.size());
-        materialID = in->materialID;
+        materialID = scene_in->materialID(in->material);
         scene = nullptr;
         geomID = -1;
 
@@ -226,14 +231,16 @@ namespace embree
 
     struct ISPCLineSegments
     {
-      ISPCLineSegments (Ref<TutorialScene::LineSegments> in) : geom(LINE_SEGMENTS)
+      ISPCLineSegments (TutorialScene* scene_in, Ref<SceneGraph::LineSegmentsNode> in) 
+      : geom(LINE_SEGMENTS)
       {
-        positions = in->positions.data();
+        in->relayout();
+        positions = in->positions_soa.data();
         indices = in->indices.data();
-        numTimeSteps = in->numTimeSteps;
-        numVertices = in->numVertices;
-        numSegments = unsigned(in->indices.size());
-        materialID = in->materialID;
+        numTimeSteps = in->numTimeSteps();
+        numVertices = in->numVertices();
+        numSegments = in->numPrimitives();
+        materialID = scene_in->materialID(in->material);
         scene = nullptr;
         geomID = -1;
       }
@@ -253,14 +260,16 @@ namespace embree
 
     struct ISPCHairSet
     {
-      ISPCHairSet (bool hair, Ref<TutorialScene::HairSet> in) : geom(hair ? HAIR_SET : CURVES)
+      ISPCHairSet (TutorialScene* scene_in, bool hair, Ref<SceneGraph::HairSetNode> in) 
+      : geom(hair ? HAIR_SET : CURVES)
       {
-        positions = in->positions.data();
+        in->relayout();
+        positions = in->positions_soa.data();
         hairs = (ISPCHair*) in->hairs.data();
-        numTimeSteps = in->numTimeSteps;
-        numVertices = in->numVertices;
-        numHairs = unsigned(in->hairs.size());
-        materialID = in->materialID;
+        numTimeSteps = in->numTimeSteps();
+        numVertices = in->numVertices();
+        numHairs = in->numPrimitives();
+        materialID = scene_in->materialID(in->material);
         scene = nullptr;
         geomID = -1;
         tessellation_rate = in->tessellation_rate;
@@ -284,13 +293,13 @@ namespace embree
     {
       ALIGNED_STRUCT;
       
-      static ISPCInstance* create (Ref<TutorialScene::Instance> in) {
-        return ::new (alignedMalloc(sizeof(ISPCInstance)+(in->spaces.size()-1)*sizeof(AffineSpace3fa))) ISPCInstance(in);
+      static ISPCInstance* create (TutorialScene* scene, Ref<SceneGraph::TransformNode> in) {
+        return ::new (alignedMalloc(sizeof(ISPCInstance)+(in->spaces.size()-1)*sizeof(AffineSpace3fa))) ISPCInstance(scene,in);
       }
 
     private:
-      ISPCInstance (Ref<TutorialScene::Instance> in)
-      : geom(INSTANCE), geomID(in->geomID), numTimeSteps(unsigned(in->spaces.size())) 
+      ISPCInstance (TutorialScene* scene, Ref<SceneGraph::TransformNode> in)
+      : geom(INSTANCE), geomID(scene->geometryID(in->child)), numTimeSteps(unsigned(in->spaces.size())) 
       {
         for (size_t i=0; i<numTimeSteps; i++)
           spaces[i] = in->spaces[i];
@@ -305,13 +314,13 @@ namespace embree
 
     struct ISPCGroup
     {
-      ISPCGroup (Ref<TutorialScene::Group> in)
+      ISPCGroup (TutorialScene* scene, Ref<SceneGraph::GroupNode> in)
       : geom(GROUP)
       {
         numGeometries = in->size();
         geometries = new ISPCGeometry*[numGeometries];
         for (size_t i=0; i<numGeometries; i++)
-          geometries[i] = ISPCScene::convertGeometry(in->at(i));
+          geometries[i] = ISPCScene::convertGeometry(scene,in->child(i));
       }
 
       ~ISPCGroup()
@@ -335,7 +344,7 @@ namespace embree
     {
       geometries = new ISPCGeometry*[in->geometries.size()];
       for (size_t i=0; i<in->geometries.size(); i++)
-        geometries[i] = convertGeometry(in->geometries[i]);
+        geometries[i] = convertGeometry(in,in->geometries[i]);
       numGeometries = unsigned(in->geometries.size());
 
       materials = (ISPCMaterial*) in->materials.data();
@@ -377,24 +386,22 @@ namespace embree
       delete[] lights;
     }
 
-    static ISPCGeometry* convertGeometry (Ref<TutorialScene::Geometry> in)
+    static ISPCGeometry* convertGeometry (TutorialScene* scene, Ref<SceneGraph::Node> in)
     {
-      if (in->type == TutorialScene::Geometry::TRIANGLE_MESH)
-        return (ISPCGeometry*) new ISPCTriangleMesh(in.dynamicCast<TutorialScene::TriangleMesh>());
-      else if (in->type == TutorialScene::Geometry::QUAD_MESH)
-        return (ISPCGeometry*) new ISPCQuadMesh(in.dynamicCast<TutorialScene::QuadMesh>());
-      else if (in->type == TutorialScene::Geometry::SUBDIV_MESH)
-        return (ISPCGeometry*) new ISPCSubdivMesh(in.dynamicCast<TutorialScene::SubdivMesh>());
-      else if (in->type == TutorialScene::Geometry::LINE_SEGMENTS)
-        return (ISPCGeometry*) new ISPCLineSegments(in.dynamicCast<TutorialScene::LineSegments>());
-      else if (in->type == TutorialScene::Geometry::HAIR_SET)
-        return (ISPCGeometry*) new ISPCHairSet(true,in.dynamicCast<TutorialScene::HairSet>());
-      else if (in->type == TutorialScene::Geometry::CURVES)
-        return (ISPCGeometry*) new ISPCHairSet(false,in.dynamicCast<TutorialScene::HairSet>());
-      else if (in->type == TutorialScene::Geometry::INSTANCE)
-        return (ISPCGeometry*) ISPCInstance::create(in.dynamicCast<TutorialScene::Instance>());
-      else if (in->type == TutorialScene::Geometry::GROUP)
-        return (ISPCGeometry*) new ISPCGroup(in.dynamicCast<TutorialScene::Group>());
+      if (Ref<SceneGraph::TriangleMeshNode> mesh = in.dynamicCast<SceneGraph::TriangleMeshNode>())
+        return (ISPCGeometry*) new ISPCTriangleMesh(scene,mesh);
+      else if (Ref<SceneGraph::QuadMeshNode> mesh = in.dynamicCast<SceneGraph::QuadMeshNode>())
+        return (ISPCGeometry*) new ISPCQuadMesh(scene,mesh);
+      else if (Ref<SceneGraph::SubdivMeshNode> mesh = in.dynamicCast<SceneGraph::SubdivMeshNode>())
+        return (ISPCGeometry*) new ISPCSubdivMesh(scene,mesh);
+      else if (Ref<SceneGraph::LineSegmentsNode> mesh = in.dynamicCast<SceneGraph::LineSegmentsNode>())
+        return (ISPCGeometry*) new ISPCLineSegments(scene,mesh);
+      else if (Ref<SceneGraph::HairSetNode> mesh = in.dynamicCast<SceneGraph::HairSetNode>())
+        return (ISPCGeometry*) new ISPCHairSet(scene,mesh->hair,mesh);
+      else if (Ref<SceneGraph::TransformNode> mesh = in.dynamicCast<SceneGraph::TransformNode>())
+        return (ISPCGeometry*) ISPCInstance::create(scene,mesh);
+      else if (Ref<SceneGraph::GroupNode> mesh = in.dynamicCast<SceneGraph::GroupNode>())
+        return (ISPCGeometry*) new ISPCGroup(scene,mesh);
       else
         THROW_RUNTIME_ERROR("unknown geometry type");
     }

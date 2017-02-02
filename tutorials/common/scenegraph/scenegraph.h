@@ -210,7 +210,45 @@ namespace embree
     public:
       avector<AffineSpace3fa> spaces;
     };
-    
+
+    template<typename Vertex>
+       std::vector<avector<Vertex>> transformMSMBlurBuffer(const std::vector<avector<Vertex>>& positions_in, const Transformations& spaces)
+    {
+      std::vector<avector<Vertex>> positions_out;
+      const size_t num_time_steps = positions_in.size(); assert(num_time_steps);
+      const size_t num_vertices = positions_in[0].size();
+
+      /* if we have only one set of vertices, use transformation to generate more vertex sets */
+      if (num_time_steps == 1)
+      {
+        for (size_t i=0; i<spaces.size(); i++) 
+        {
+          avector<Vertex> verts(num_vertices);
+          for (size_t j=0; j<num_vertices; j++) {
+            verts[j] = xfmPoint(spaces[i],positions_in[0][j]);
+            verts[j].w = positions_in[0][j].w;
+          }
+          positions_out.push_back(std::move(verts));
+        }
+      } 
+      /* otherwise transform all vertex sets with interpolated transformation */
+      else
+      {
+        for (size_t t=0; t<num_time_steps; t++) 
+        {
+          float time = num_time_steps > 1 ? float(t)/float(num_time_steps-1) : 0.0f;
+          const AffineSpace3fa space = spaces.interpolate(time);
+          avector<Vertex> verts(num_vertices);
+          for (size_t i=0; i<num_vertices; i++) {
+            verts[i] = xfmPoint (space,positions_in[t][i]);
+            verts[i].w = positions_in[t][i].w;
+          }
+          positions_out.push_back(std::move(verts));
+        }
+      }
+      return positions_out;
+    }
+
     struct TransformNode : public Node
     {
       ALIGNED_STRUCT;
@@ -222,6 +260,9 @@ namespace embree
         : spaces(xfm0,xfm1), child(child) {}
 
       TransformNode (const avector<AffineSpace3fa>& spaces, const Ref<Node>& child)
+        : spaces(spaces), child(child) {}
+
+      TransformNode(const Transformations& spaces, const Ref<Node>& child)
         : spaces(spaces), child(child) {}
 
       virtual void setMaterial(Ref<MaterialNode> material) {
@@ -255,6 +296,9 @@ namespace embree
         children.resize(N); 
       }
 
+      GroupNode (std::vector<Ref<Node>>& children)
+        : children(children) {}
+
       size_t size() const {
         return children.size();
       }
@@ -265,6 +309,10 @@ namespace embree
       
       void set(const size_t i, const Ref<Node>& node) {
         children[i] = node;
+      }
+ 
+      Ref<Node> child ( size_t i ) const {
+        return children[i];
       }
 
       virtual BBox3fa bounds() const
@@ -366,6 +414,16 @@ namespace embree
       };
       
     public:
+      TriangleMeshNode (const avector<Vertex>& positions_in, 
+                        const avector<Vertex>& normals, 
+                        const std::vector<Vec2f>& texcoords,
+                        const std::vector<Triangle>& triangles,
+                        Ref<MaterialNode> material) 
+        : Node(true), normals(normals), texcoords(texcoords), triangles(triangles), material(material) 
+      {
+        positions.push_back(positions_in);
+      }
+
       TriangleMeshNode (Ref<MaterialNode> material, size_t numTimeSteps = 0) 
         : Node(true), material(material) 
       {
@@ -374,15 +432,9 @@ namespace embree
       }
 
       TriangleMeshNode (Ref<SceneGraph::TriangleMeshNode> imesh, const Transformations& spaces)
-        : Node(true), normals(imesh->normals), texcoords(imesh->texcoords), triangles(imesh->triangles), material(imesh->material)
+        : Node(true), positions(transformMSMBlurBuffer(imesh->positions,spaces)),
+        normals(imesh->normals), texcoords(imesh->texcoords), triangles(imesh->triangles), material(imesh->material)
       {
-        for (size_t i=0; i<spaces.size(); i++) {
-          avector<Vertex> verts(imesh->numVertices());
-          for (size_t j=0; j<imesh->numVertices(); j++) 
-            verts[j] = xfmPoint(spaces[i],imesh->positions[0][j]);
-          positions.push_back(std::move(verts));
-        }
-
         const LinearSpace3fa nspace0 = rcp(spaces[0].l).transposed();
         for (auto& n : normals) n = xfmVector(nspace0,n);
       }
@@ -429,9 +481,9 @@ namespace embree
       void relayout()
       {
         positions_soa.resize(numVertices()*numTimeSteps());
-        for (size_t i=0; i<positions_soa.size(); i+=numTimeSteps()) {
-          for (size_t j=0; j<numTimeSteps(); j++) {
-            positions_soa[i+j] = positions[j][i];
+        for (size_t j=0; j<numTimeSteps(); j++) {
+          for (size_t i=0; i<numVertices(); i++) {
+            positions_soa[j*numVertices()+i] = positions[j][i];
           }
         }
       }
@@ -469,15 +521,9 @@ namespace embree
       }
 
       QuadMeshNode (Ref<SceneGraph::QuadMeshNode> imesh, const Transformations& spaces)
-        : Node(true), normals(imesh->normals), texcoords(imesh->texcoords), quads(imesh->quads), material(imesh->material)
+        : Node(true), positions(transformMSMBlurBuffer(imesh->positions,spaces)),
+        normals(imesh->normals), texcoords(imesh->texcoords), quads(imesh->quads), material(imesh->material)
       {
-        for (size_t i=0; i<spaces.size(); i++) {
-          avector<Vertex> verts(imesh->numVertices());
-          for (size_t j=0; j<imesh->numVertices(); j++) 
-            verts[j] = xfmPoint(spaces[i],imesh->positions[0][j]);
-          positions.push_back(std::move(verts));
-        }
-
         const LinearSpace3fa nspace0 = rcp(spaces[0].l).transposed();
         for (auto& n : normals) n = xfmVector(nspace0,n);
       }
@@ -524,9 +570,9 @@ namespace embree
       void relayout()
       {
         positions_soa.resize(numVertices()*numTimeSteps());
-        for (size_t i=0; i<positions_soa.size(); i+=numTimeSteps()) {
-          for (size_t j=0; j<numTimeSteps(); j++) {
-            positions_soa[i+j] = positions[j][i];
+        for (size_t j=0; j<numTimeSteps(); j++) {
+          for (size_t i=0; i<numVertices(); i++) {
+            positions_soa[j*numVertices()+i] = positions[j][i];
           }
         }
       }
@@ -558,6 +604,7 @@ namespace embree
 
       SubdivMeshNode (Ref<SceneGraph::SubdivMeshNode> imesh, const Transformations& spaces)
         : Node(true), 
+        positions(transformMSMBlurBuffer(imesh->positions,spaces)),
         normals(imesh->normals),
         texcoords(imesh->texcoords),
         position_indices(imesh->position_indices),
@@ -575,20 +622,8 @@ namespace embree
         material(imesh->material), 
         tessellationRate(imesh->tessellationRate)
       {
-        for (size_t i=0; i<spaces.size(); i++) {
-          avector<Vertex> verts(imesh->numPositions());
-          for (size_t j=0; j<imesh->numPositions(); j++) 
-            verts[j] = xfmPoint(spaces[i],imesh->positions[0][j]);
-          positions.push_back(std::move(verts));
-        }
-        
         const LinearSpace3fa nspace0 = rcp(spaces[0].l).transposed();
         for (auto& n : normals) n = xfmVector(nspace0,n);
-
-        if (texcoords.size()) { // zero pad to 16 bytes
-          texcoords.reserve(texcoords.size()+1);
-          texcoords.data()[texcoords.size()] = zero;
-        }
       }
       
       virtual void setMaterial(Ref<MaterialNode> material) {
@@ -633,10 +668,15 @@ namespace embree
       void relayout()
       {
         positions_soa.resize(numPositions()*numTimeSteps());
-        for (size_t i=0; i<positions_soa.size(); i+=numTimeSteps()) {
-          for (size_t j=0; j<numTimeSteps(); j++) {
-            positions_soa[i+j] = positions[j][i];
+        for (size_t j=0; j<numTimeSteps(); j++) {
+          for (size_t i=0; i<numPositions(); i++) {
+            positions_soa[j*numPositions()+i] = positions[j][i];
           }
+        }
+
+        if (texcoords.size()) { // zero pad to 16 bytes
+          texcoords.reserve(texcoords.size()+1);
+          texcoords.data()[texcoords.size()] = zero;
         }
       }
 
@@ -675,15 +715,7 @@ namespace embree
       }
 
       LineSegmentsNode (Ref<SceneGraph::LineSegmentsNode> imesh, const Transformations& spaces)
-        : Node(true), indices(imesh->indices), material(imesh->material)
-      {
-        for (size_t i=0; i<spaces.size(); i++) {
-          avector<Vertex> verts(imesh->numVertices());
-          for (size_t j=0; j<imesh->numVertices(); j++) 
-            verts[j] = xfmPoint(spaces[i],imesh->positions[0][j]);
-          positions.push_back(std::move(verts));
-        }
-      }
+        : Node(true), positions(transformMSMBlurBuffer(imesh->positions,spaces)), indices(imesh->indices), material(imesh->material) {}
       
       virtual void setMaterial(Ref<MaterialNode> material) {
         this->material = material;
@@ -727,9 +759,9 @@ namespace embree
       void relayout()
       {
         positions_soa.resize(numVertices()*numTimeSteps());
-        for (size_t i=0; i<positions_soa.size(); i+=numTimeSteps()) {
-          for (size_t j=0; j<numTimeSteps(); j++) {
-            positions_soa[i+j] = positions[j][i];
+        for (size_t j=0; j<numTimeSteps(); j++) {
+          for (size_t i=0; i<numVertices(); i++) {
+            positions_soa[j*numVertices()+i] = positions[j][i];
           }
         }
       }
@@ -765,16 +797,15 @@ namespace embree
           positions.push_back(avector<Vertex>());
       }
 
-      HairSetNode (Ref<SceneGraph::HairSetNode> imesh, const Transformations& spaces)
-        : Node(true), hair(imesh->hair), hairs(imesh->hairs), material(imesh->material), tessellation_rate(imesh->tessellation_rate)
+      HairSetNode (const avector<Vertex>& positions_in, const std::vector<Hair>& hairs, Ref<MaterialNode> material, bool hair)
+        : Node(true), hair(hair), hairs(hairs), material(material), tessellation_rate(4) 
       {
-        for (size_t i=0; i<spaces.size(); i++) {
-          avector<Vertex> verts(imesh->numVertices());
-          for (size_t j=0; j<imesh->numVertices(); j++) 
-            verts[j] = xfmPoint(spaces[i],imesh->positions[0][j]);
-          positions.push_back(std::move(verts));
-        }
+        positions.push_back(positions_in);
       }
+   
+      HairSetNode (Ref<SceneGraph::HairSetNode> imesh, const Transformations& spaces)
+        : Node(true), hair(imesh->hair), positions(transformMSMBlurBuffer(imesh->positions,spaces)),
+        hairs(imesh->hairs), material(imesh->material), tessellation_rate(imesh->tessellation_rate) {}
 
       virtual void setMaterial(Ref<MaterialNode> material) {
         this->material = material;
@@ -818,9 +849,9 @@ namespace embree
       void relayout()
       {
         positions_soa.resize(numVertices()*numTimeSteps());
-        for (size_t i=0; i<positions_soa.size(); i+=numTimeSteps()) {
-          for (size_t j=0; j<numTimeSteps(); j++) {
-            positions_soa[i+j] = positions[j][i];
+        for (size_t j=0; j<numTimeSteps(); j++) {
+          for (size_t i=0; i<numVertices(); i++) {
+            positions_soa[j*numVertices()+i] = positions[j][i];
           }
         }
       }
