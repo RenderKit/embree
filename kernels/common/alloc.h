@@ -223,7 +223,7 @@ namespace embree
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       if (bytesReserve == 0) bytesReserve = bytesAllocate;
       freeBlocks = Block::create(device,bytesAllocate,bytesReserve,nullptr,osAllocation);
-      defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE)); 
+      defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE+maxAlignment)); 
       initGrowSizeAndNumSlots(bytesAllocate,bytesReserve);
     }
 
@@ -234,7 +234,7 @@ namespace embree
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       /* single allocator mode ? */
       use_single_mode = single_mode; 
-      defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE)); 
+      defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE+maxAlignment)); 
       initGrowSizeAndNumSlots(bytesAllocate,bytesAllocate);
     }
 
