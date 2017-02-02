@@ -234,7 +234,8 @@ namespace embree
       /* single allocator mode ? */
       use_single_mode = single_mode; 
       defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE+maxAlignment)); 
-      initGrowSizeAndNumSlots(bytesAllocate/2);
+      /* if in memory conservative single_mode, reduce bytesAllocate/growSize by 2 */
+      initGrowSizeAndNumSlots(single_mode == false ? bytesAllocate : bytesAllocate/2);
     }
 
     /*! frees state not required after build */
