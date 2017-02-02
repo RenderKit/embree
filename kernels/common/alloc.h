@@ -148,9 +148,11 @@ namespace embree
       size_t getWastedBytes() const { return allocators[0].getWastedBytes() + allocators[1].getWastedBytes(); }
     
     public:  
-      ThreadLocal allocators[2];
       ThreadLocal* alloc0;
       ThreadLocal* alloc1;
+
+    private:
+      ThreadLocal allocators[2];
     };
 
     FastAllocator (MemoryMonitorInterface* device, bool osAllocation) 
@@ -163,19 +165,18 @@ namespace embree
         threadBlocks[i] = nullptr;
         assert(!slotMutex[i].isLocked());
       }
-    }
+    } 
 
     ~FastAllocator () { 
       clear();
     }
 
-    /*! returns a fast thread local allocator */
-    __forceinline ThreadLocal* threadLocal(size_t slot = 0) {
-      assert(slot < 2);
-      return &thread_local_allocators2.get()->allocators[slot];
+    /*! returns first fast thread local allocator */
+    __forceinline ThreadLocal* threadLocal() {
+      return thread_local_allocators2.get()->alloc0;
     }
 
-    /*! returns a fast thread local allocator */
+    /*! returns both fast thread local allocators */
     __forceinline ThreadLocal2* threadLocal2() {
       return thread_local_allocators2.get();
     }
