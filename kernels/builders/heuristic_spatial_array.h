@@ -104,7 +104,7 @@ namespace embree
         typedef extended_range<size_t> Set;
         typedef Split2<ObjectSplit,SpatialSplit> Split;
         
-#if defined(__AVX512F__)
+#if defined(__AVX512ER__) // KNL
         static const size_t PARALLEL_THRESHOLD = 3*1024; 
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 768;
         static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;
@@ -396,11 +396,7 @@ namespace embree
           size_t center = serial_partitioning(prims0,
                                               begin,end,local_left,local_right,
                                               [&] (const PrimRef& ref) { 
-#if defined(__AVX512F__)
-                                                return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask);                                                 
-#else
-                                                return any(((vint4)split.mapping.bin_unsafe(center2(ref.bounds())) < vSplitPos) & vSplitMask); 
-#endif
+                                                return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask);
                                               },
                                               [] (PrimInfo& pinfo,const PrimRef& ref) { pinfo.add(ref.bounds(),ref.lower.a >> 24); });          
           
@@ -470,13 +466,12 @@ namespace embree
 #if defined(__AVX512F__)
           const vint16 vSplitPos(splitPos);
           const vbool16 vSplitMask( (int)splitDimMask );
-          auto isLeft = [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask); };
 #else
           const vint4 vSplitPos(splitPos);
           const vbool4 vSplitMask( (int)splitDimMask );
-          auto isLeft = [&] (const PrimRef &ref) { return any(((vint4)split.mapping.bin_unsafe(center2(ref.bounds())) < vSplitPos) & vSplitMask); };
-
 #endif
+          auto isLeft = [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask); };
+
           const size_t center = parallel_partitioning(
             prims0,begin,end,empty,left,right,isLeft,
             [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds(),ref.lower.a >> 24); },

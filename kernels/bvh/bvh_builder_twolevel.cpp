@@ -140,7 +140,7 @@ namespace embree
         /* compute PrimRefs */
         prims.resize(refs.size());
 
-#if defined(TASKING_TBB) && defined(__AVX512F__) && USE_TASK_ARENA
+#if defined(TASKING_TBB) && defined(__AVX512ER__) && USE_TASK_ARENA // KNL
         tbb::task_arena limited(32);
         limited.execute([&]
 #endif
@@ -189,7 +189,7 @@ namespace embree
             bvh->set(root,LBBox3fa(pinfo.geomBounds),numPrimitives);
           }
         }
-#if defined(TASKING_TBB) && defined(__AVX512F__) && USE_TASK_ARENA
+#if defined(TASKING_TBB) && defined(__AVX512ER__) && USE_TASK_ARENA // KNL
           );
 #endif
 
