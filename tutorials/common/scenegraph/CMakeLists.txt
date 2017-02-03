@@ -22,7 +22,8 @@ ADD_LIBRARY(scenegraph STATIC
     ply_loader.cpp
     corona_loader.cpp
     texture.cpp
-    scenegraph.cpp)
+    scenegraph.cpp
+    geometry_creation.cpp)
 
 TARGET_LINK_LIBRARIES(scenegraph sys lexers image)
 SET_PROPERTY(TARGET scenegraph PROPERTY FOLDER tutorials/common)

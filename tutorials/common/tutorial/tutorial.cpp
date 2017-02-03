@@ -35,6 +35,7 @@
  * warnings of redefined GLUT_KEY_F1, etc. */
 #include "tutorial_device.h"
 #include "../scenegraph/scenegraph.h"
+#include "../scenegraph/geometry_creation.h"
 #include "../scenegraph/obj_loader.h"
 #include "../scenegraph/xml_loader.h"
 #include "../image/image.h"
