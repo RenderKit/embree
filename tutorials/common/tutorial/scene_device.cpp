@@ -138,7 +138,54 @@ namespace embree
     geomID = -1;
     tessellation_rate = in->tessellation_rate;
   }
+
+  ISPCInstance* ISPCInstance::create (TutorialScene* scene, Ref<SceneGraph::TransformNode> in) {
+    return ::new (alignedMalloc(sizeof(ISPCInstance)+(in->spaces.size()-1)*sizeof(AffineSpace3fa))) ISPCInstance(scene,in);
+  }
   
+  ISPCInstance::ISPCInstance (TutorialScene* scene, Ref<SceneGraph::TransformNode> in)
+    : geom(INSTANCE), geomID(scene->geometryID(in->child)), numTimeSteps(unsigned(in->spaces.size())) 
+  {
+    for (size_t i=0; i<numTimeSteps; i++)
+      spaces[i] = in->spaces[i];
+  }
+
+  ISPCGroup::ISPCGroup (TutorialScene* scene, Ref<SceneGraph::GroupNode> in)
+    : geom(GROUP)
+  {
+    numGeometries = in->size();
+    geometries = new ISPCGeometry*[numGeometries];
+    for (size_t i=0; i<numGeometries; i++)
+      geometries[i] = ISPCScene::convertGeometry(scene,in->child(i));
+  }
+  
+  ISPCGroup::~ISPCGroup()
+  {
+    for (size_t i=0; i<numGeometries; i++)
+      delete geometries[i];
+    delete[] geometries;
+  }
+  
+  ISPCGeometry* ISPCScene::convertGeometry (TutorialScene* scene, Ref<SceneGraph::Node> in)
+  {
+    if (Ref<SceneGraph::TriangleMeshNode> mesh = in.dynamicCast<SceneGraph::TriangleMeshNode>())
+      return (ISPCGeometry*) new ISPCTriangleMesh(scene,mesh);
+    else if (Ref<SceneGraph::QuadMeshNode> mesh = in.dynamicCast<SceneGraph::QuadMeshNode>())
+      return (ISPCGeometry*) new ISPCQuadMesh(scene,mesh);
+    else if (Ref<SceneGraph::SubdivMeshNode> mesh = in.dynamicCast<SceneGraph::SubdivMeshNode>())
+      return (ISPCGeometry*) new ISPCSubdivMesh(scene,mesh);
+    else if (Ref<SceneGraph::LineSegmentsNode> mesh = in.dynamicCast<SceneGraph::LineSegmentsNode>())
+      return (ISPCGeometry*) new ISPCLineSegments(scene,mesh);
+    else if (Ref<SceneGraph::HairSetNode> mesh = in.dynamicCast<SceneGraph::HairSetNode>())
+      return (ISPCGeometry*) new ISPCHairSet(scene,mesh->hair,mesh);
+    else if (Ref<SceneGraph::TransformNode> mesh = in.dynamicCast<SceneGraph::TransformNode>())
+      return (ISPCGeometry*) ISPCInstance::create(scene,mesh);
+    else if (Ref<SceneGraph::GroupNode> mesh = in.dynamicCast<SceneGraph::GroupNode>())
+      return (ISPCGeometry*) new ISPCGroup(scene,mesh);
+    else
+      THROW_RUNTIME_ERROR("unknown geometry type");
+  }
+
   unsigned int ConvertTriangleMesh(ISPCTriangleMesh* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
   {
     unsigned int geomID = rtcNewTriangleMesh (scene_out, gflags, mesh->numTriangles, mesh->numVertices, mesh->numTimeSteps);

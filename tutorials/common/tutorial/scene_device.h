@@ -190,17 +190,10 @@ namespace embree
   {
     ALIGNED_STRUCT;
     
-    static ISPCInstance* create (TutorialScene* scene, Ref<SceneGraph::TransformNode> in) {
-      return ::new (alignedMalloc(sizeof(ISPCInstance)+(in->spaces.size()-1)*sizeof(AffineSpace3fa))) ISPCInstance(scene,in);
-    }
+    static ISPCInstance* create (TutorialScene* scene, Ref<SceneGraph::TransformNode> in);
     
   private:
-    ISPCInstance (TutorialScene* scene, Ref<SceneGraph::TransformNode> in)
-    : geom(INSTANCE), geomID(scene->geometryID(in->child)), numTimeSteps(unsigned(in->spaces.size())) 
-    {
-      for (size_t i=0; i<numTimeSteps; i++)
-        spaces[i] = in->spaces[i];
-    }
+    ISPCInstance (TutorialScene* scene, Ref<SceneGraph::TransformNode> in);
     
   public:
     ISPCGeometry geom;
@@ -208,37 +201,24 @@ namespace embree
     unsigned int numTimeSteps;
     AffineSpace3fa spaces[1];
   };
+
+  struct ISPCGroup
+  {
+    ISPCGroup (TutorialScene* scene, Ref<SceneGraph::GroupNode> in);
+    ~ISPCGroup();
+    
+  private:
+    ISPCGroup (const ISPCGroup& other) DELETED; // do not implement
+    ISPCGroup& operator= (const ISPCGroup& other) DELETED; // do not implement
+    
+  public:
+    ISPCGeometry geom;
+    ISPCGeometry** geometries;
+    size_t numGeometries;
+  };
   
   struct ISPCScene
   {
-    struct ISPCGroup
-    {
-      ISPCGroup (TutorialScene* scene, Ref<SceneGraph::GroupNode> in)
-      : geom(GROUP)
-      {
-        numGeometries = in->size();
-        geometries = new ISPCGeometry*[numGeometries];
-        for (size_t i=0; i<numGeometries; i++)
-          geometries[i] = ISPCScene::convertGeometry(scene,in->child(i));
-      }
-      
-      ~ISPCGroup()
-      {
-        for (size_t i=0; i<numGeometries; i++)
-          delete geometries[i];
-        delete[] geometries;
-      }
-      
-    private:
-      ISPCGroup (const ISPCGroup& other) DELETED; // do not implement
-      ISPCGroup& operator= (const ISPCGroup& other) DELETED; // do not implement
-      
-    public:
-      ISPCGeometry geom;
-      ISPCGeometry** geometries;
-      size_t numGeometries;
-    };
-    
     ISPCScene(TutorialScene* in)
     {
       geometries = new ISPCGeometry*[in->geometries.size()];
@@ -288,25 +268,7 @@ namespace embree
       delete[] lights;
     }
     
-    static ISPCGeometry* convertGeometry (TutorialScene* scene, Ref<SceneGraph::Node> in)
-    {
-      if (Ref<SceneGraph::TriangleMeshNode> mesh = in.dynamicCast<SceneGraph::TriangleMeshNode>())
-        return (ISPCGeometry*) new ISPCTriangleMesh(scene,mesh);
-      else if (Ref<SceneGraph::QuadMeshNode> mesh = in.dynamicCast<SceneGraph::QuadMeshNode>())
-        return (ISPCGeometry*) new ISPCQuadMesh(scene,mesh);
-      else if (Ref<SceneGraph::SubdivMeshNode> mesh = in.dynamicCast<SceneGraph::SubdivMeshNode>())
-        return (ISPCGeometry*) new ISPCSubdivMesh(scene,mesh);
-      else if (Ref<SceneGraph::LineSegmentsNode> mesh = in.dynamicCast<SceneGraph::LineSegmentsNode>())
-        return (ISPCGeometry*) new ISPCLineSegments(scene,mesh);
-      else if (Ref<SceneGraph::HairSetNode> mesh = in.dynamicCast<SceneGraph::HairSetNode>())
-        return (ISPCGeometry*) new ISPCHairSet(scene,mesh->hair,mesh);
-      else if (Ref<SceneGraph::TransformNode> mesh = in.dynamicCast<SceneGraph::TransformNode>())
-        return (ISPCGeometry*) ISPCInstance::create(scene,mesh);
-      else if (Ref<SceneGraph::GroupNode> mesh = in.dynamicCast<SceneGraph::GroupNode>())
-        return (ISPCGeometry*) new ISPCGroup(scene,mesh);
-      else
-        THROW_RUNTIME_ERROR("unknown geometry type");
-    }
+    static ISPCGeometry* convertGeometry (TutorialScene* scene, Ref<SceneGraph::Node> in);
     
     static Light* convertLight(Ref<SceneGraph::Light> in)
     {
@@ -376,8 +338,6 @@ namespace embree
     RTCScene* geomID_to_scene;
     ISPCInstance** geomID_to_inst;
   };
-  
-  typedef ISPCScene::ISPCGroup ISPCGroup;
   
   extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCSceneFlags sflags, RTCAlgorithmFlags aflags, RTCGeometryFlags gflags);
 }
