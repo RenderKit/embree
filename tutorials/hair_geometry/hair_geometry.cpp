@@ -314,7 +314,7 @@ float Noise(float x, float y, float z)
       addGroundPlane(obj_scene,Vec3fa(-10,0,-10),Vec3fa(-10,0,+10),Vec3fa(+10,0,-10),Vec3fa(+10,0,+10));
 
       /* convert model */
-      obj_scene.add(scene.dynamicCast<SceneGraph::Node>(),(TutorialScene::InstancingMode)0); 
+      obj_scene.add(scene.dynamicCast<SceneGraph::Node>(),SceneGraph::INSTANCING_NONE); 
       scene = nullptr;
       
       /* send model */

@@ -23,14 +23,14 @@ namespace embree
     TutorialScene* scene;
     std::map<Ref<SceneGraph::Node>,Ref<SceneGraph::Node>> object_mapping;
     
-    SceneGraphConverter (Ref<SceneGraph::Node> in, TutorialScene* scene, TutorialScene::InstancingMode instancing)
+    SceneGraphConverter (Ref<SceneGraph::Node> in, TutorialScene* scene, SceneGraph::InstancingMode instancing)
       : scene(scene)
     { 
       convertLights(in,one);
 
-      if (instancing != TutorialScene::INSTANCING_NONE) 
+      if (instancing != SceneGraph::INSTANCING_NONE) 
       {
-        if (instancing == TutorialScene::INSTANCING_SCENE_GROUP) 
+        if (instancing == SceneGraph::INSTANCING_SCENE_GROUP) 
         {
           in->reset();
           in->calculateInDegree();
@@ -133,7 +133,7 @@ namespace embree
     }
   };
 
-  void TutorialScene::add(Ref<SceneGraph::Node> node, TutorialScene::InstancingMode instancing) {
+  void TutorialScene::add(Ref<SceneGraph::Node> node, SceneGraph::InstancingMode instancing) {
     SceneGraphConverter(node,this,instancing);
   }
 };

@@ -36,8 +36,7 @@ namespace embree
   /*! Scene representing the OBJ file */
   struct TutorialScene
   {
-    enum InstancingMode { INSTANCING_NONE, INSTANCING_GEOMETRY, INSTANCING_SCENE_GEOMETRY, INSTANCING_SCENE_GROUP };
-    void add (Ref<SceneGraph::Node> node, InstancingMode instancing);
+    void add (Ref<SceneGraph::Node> node, SceneGraph::InstancingMode instancing);
 
     unsigned addMaterial(Ref<SceneGraph::MaterialNode> node) 
     {

@@ -650,6 +650,106 @@ namespace embree
     return node;
   }
 
+  struct SceneGraphFlattener
+  {
+    Ref<SceneGraph::Node> node;
+    std::map<Ref<SceneGraph::Node>,Ref<SceneGraph::Node>> object_mapping;
+    
+    SceneGraphFlattener (Ref<SceneGraph::Node> in, SceneGraph::InstancingMode instancing, const SceneGraph::Transformations& spaces)
+    { 
+      std::vector<Ref<SceneGraph::Node>> geometries;
+      convertLights(geometries,in,spaces);
+      
+      if (instancing != SceneGraph::INSTANCING_NONE) 
+      {
+        if (instancing == SceneGraph::INSTANCING_SCENE_GROUP) 
+        {
+          in->reset();
+          in->calculateInDegree();
+          in->calculateClosed();
+        }
+        convertInstances(geometries,in,spaces);
+      }
+      else
+        convertGeometries(geometries,in,spaces);
+
+      node = new SceneGraph::GroupNode(geometries);
+    }
+
+    void convertLights(std::vector<Ref<SceneGraph::Node>>& group, Ref<SceneGraph::Node> node, const SceneGraph::Transformations& spaces)
+    {
+      if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+        convertLights(group,xfmNode->child, spaces*xfmNode->spaces);
+      } 
+      else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) {
+        for (const auto& child : groupNode->children) convertLights(group,child,spaces);
+      }
+      else if (Ref<SceneGraph::LightNode> lightNode = node.dynamicCast<SceneGraph::LightNode>()) {
+        group.push_back(new SceneGraph::LightNode(lightNode->light->transform(spaces[0])));
+      }
+    }
+
+    void convertGeometries(std::vector<Ref<SceneGraph::Node>>& group, Ref<SceneGraph::Node> node, const SceneGraph::Transformations& spaces)
+    {
+      if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+        convertGeometries(group,xfmNode->child, spaces*xfmNode->spaces);
+      } 
+      else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) {
+        for (const auto& child : groupNode->children) convertGeometries(group,child,spaces);
+      }
+      else if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) {
+        group.push_back(new SceneGraph::TriangleMeshNode(mesh,spaces));
+      }
+      else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) {
+        group.push_back(new SceneGraph::QuadMeshNode(mesh,spaces));
+      }
+      else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) {
+        group.push_back(new SceneGraph::SubdivMeshNode(mesh,spaces));
+      }
+      else if (Ref<SceneGraph::LineSegmentsNode> mesh = node.dynamicCast<SceneGraph::LineSegmentsNode>()) {
+        group.push_back(new SceneGraph::LineSegmentsNode(mesh,spaces));
+      }
+      else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>()) {
+        group.push_back(new SceneGraph::HairSetNode(mesh,spaces));
+      }
+    }
+
+    Ref<SceneGraph::Node> lookupGeometries(Ref<SceneGraph::Node> node)
+    {
+      if (object_mapping.find(node) == object_mapping.end())
+      {
+        std::vector<Ref<SceneGraph::Node>> geometries;
+        convertGeometries(geometries,node,one);
+        
+        if (geometries.size() == 1) object_mapping[node] = geometries[0];
+        else object_mapping[node] = new SceneGraph::GroupNode(geometries);
+      }
+      
+      return object_mapping[node];
+    }
+
+    void convertInstances(std::vector<Ref<SceneGraph::Node>>& group, Ref<SceneGraph::Node> node, const SceneGraph::Transformations& spaces)
+    {
+      if (node->isClosed()) {
+        group.push_back(new SceneGraph::TransformNode(spaces,lookupGeometries(node)));
+      }
+      else if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+        convertInstances(group,xfmNode->child, spaces*xfmNode->spaces);
+      } 
+      else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) {
+        for (const auto& child : groupNode->children) convertInstances(group,child,spaces);
+      }
+    }
+  };
+
+  Ref<SceneGraph::Node> SceneGraph::flatten(Ref<Node> node, InstancingMode mode, const Transformations& spaces) {
+    return SceneGraphFlattener(node,mode,spaces).node;
+  }
+
+  Ref<SceneGraph::GroupNode> SceneGraph::flatten(Ref<SceneGraph::GroupNode> node, SceneGraph::InstancingMode mode, const SceneGraph::Transformations& spaces) {
+    return flatten(node.dynamicCast<SceneGraph::Node>(),mode,spaces).dynamicCast<SceneGraph::GroupNode>();
+  }
+
   Ref<SceneGraph::Node> SceneGraph::createTrianglePlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material)
   {
     SceneGraph::TriangleMeshNode* mesh = new SceneGraph::TriangleMeshNode(material,1);    
