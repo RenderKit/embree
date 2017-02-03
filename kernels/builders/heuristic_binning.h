@@ -73,6 +73,14 @@ namespace embree
           return Vec3ia(floori((vfloat4(p)-ofs)*scale));
         }
 
+        template<typename PrimRef>
+        __forceinline bool bin_unsafe(const PrimRef &ref,
+                                      const vint4&   vSplitPos,
+                                      const vbool4&  splitDimMask) const
+        {
+          return any(((vint4)bin_unsafe(center2(ref.bounds())) < vSplitPos) & splitDimMask);
+        }
+
         /*! returns true if the mapping is invalid in some dimension */
         __forceinline bool invalid(const size_t dim) const {
           return scale[dim] == 0.0f;
@@ -564,7 +572,7 @@ namespace embree
         {
           /*! map even and odd primitive to bin */
           const BBox3fa primA = prims[i+0].bounds();
-          const vfloat16 centerA = vfloat16((vfloat4)primA.lower) + vfloat16((vfloat4)primA.upper); 
+          const vfloat16 centerA = vfloat16((vfloat4)primA.lower) + vfloat16((vfloat4)primA.upper);
           const vint16 binA = mapping.bin16(centerA);
 
           const BBox3fa primB = prims[i+1].bounds();
@@ -679,6 +687,7 @@ namespace embree
           const BBox3fa prim0 = prims[i].bounds();
           const vfloat16 center0 = vfloat16((vfloat4)prim0.lower) + vfloat16((vfloat4)prim0.upper); 
           const vint16 bin = mapping.bin16(center0);
+
           const vfloat16 b_min_x = prims[i].lower.x;
           const vfloat16 b_min_y = prims[i].lower.y;
           const vfloat16 b_min_z = prims[i].lower.z;

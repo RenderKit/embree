@@ -30,7 +30,7 @@ namespace embree
         typedef BinInfoT<BINS,PrimRef,BBox3fa> Binner;
         typedef range<size_t> Set;
 
-#if defined(__AVX512F__)
+#if defined(__AVX512ER__) // KNL
         static const size_t PARALLEL_THRESHOLD = 4*768; 
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 768;
         static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 768;
@@ -134,12 +134,12 @@ namespace embree
 #if defined(__AVX512F__)
           const vint16 vSplitPos(splitPos);
           const vbool16 vSplitMask( splitDimMask );
-          auto isLeft = [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask); };
 #else
           const vint4 vSplitPos(splitPos);
           const vbool4 vSplitMask( (int)splitDimMask );
-          auto isLeft = [&] (const PrimRef &ref) { return any(((vint4)split.mapping.bin_unsafe(center2(ref.bounds())) < vSplitPos) & vSplitMask); };
 #endif
+          auto isLeft = [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask); };
+
           size_t center = 0;
           if (!parallel)
             center = serial_partitioning(prims,begin,end,local_left,local_right,isLeft,

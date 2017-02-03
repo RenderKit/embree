@@ -263,22 +263,18 @@ namespace embree
   __forceinline const vboolf16 operator <=( const vuint16& a, const unsigned int b ) { return a <= vuint16(b); }
   __forceinline const vboolf16 operator <=( const unsigned int a, const vuint16& b ) { return vuint16(a) <= b; }
 
-  __forceinline vboolf16 eq(                     const vuint16& a, const vuint16& b) { return _mm512_cmp_epu32_mask(a,b,_MM_CMPINT_EQ); }
-  __forceinline vboolf16 eq(const vboolf16 mask, const vuint16& a, const vuint16& b) { return _mm512_mask_cmp_epu32_mask(mask,a,b,_MM_CMPINT_EQ); }
-  
-  __forceinline vboolf16 ne(                     const vuint16& a, const vuint16& b) { return _mm512_cmp_epu32_mask(a,b,_MM_CMPINT_NE); }
-  __forceinline vboolf16 ne(const vboolf16 mask, const vuint16& a, const vuint16& b) { return _mm512_mask_cmp_epu32_mask(mask,a,b,_MM_CMPINT_NE); }
+  __forceinline vboolf16 eq(const vuint16& a, const vuint16& b) { return _mm512_cmp_epu32_mask(a,b,_MM_CMPINT_EQ); }
+  __forceinline vboolf16 ne(const vuint16& a, const vuint16& b) { return _mm512_cmp_epu32_mask(a,b,_MM_CMPINT_NE); }
+  __forceinline vboolf16 lt(const vuint16& a, const vuint16& b) { return _mm512_cmp_epu32_mask(a,b,_MM_CMPINT_LT); }
+  __forceinline vboolf16 ge(const vuint16& a, const vuint16& b) { return _mm512_cmp_epu32_mask(a,b,_MM_CMPINT_GE); }
+  __forceinline vboolf16 gt(const vuint16& a, const vuint16& b) { return _mm512_cmp_epu32_mask(a,b,_MM_CMPINT_GT); }
+  __forceinline vboolf16 le(const vuint16& a, const vuint16& b) { return _mm512_cmp_epu32_mask(a,b,_MM_CMPINT_LE); }
 
-  __forceinline vboolf16 lt(                     const vuint16& a, const vuint16& b) { return _mm512_cmp_epu32_mask(a,b,_MM_CMPINT_LT); }
+  __forceinline vboolf16 eq(const vboolf16 mask, const vuint16& a, const vuint16& b) { return _mm512_mask_cmp_epu32_mask(mask,a,b,_MM_CMPINT_EQ); }
+  __forceinline vboolf16 ne(const vboolf16 mask, const vuint16& a, const vuint16& b) { return _mm512_mask_cmp_epu32_mask(mask,a,b,_MM_CMPINT_NE); }
   __forceinline vboolf16 lt(const vboolf16 mask, const vuint16& a, const vuint16& b) { return _mm512_mask_cmp_epu32_mask(mask,a,b,_MM_CMPINT_LT); }
- 
-  __forceinline vboolf16 ge(                     const vuint16& a, const vuint16& b) { return _mm512_cmp_epu32_mask(a,b,_MM_CMPINT_GE); }
   __forceinline vboolf16 ge(const vboolf16 mask, const vuint16& a, const vuint16& b) { return _mm512_mask_cmp_epu32_mask(mask,a,b,_MM_CMPINT_GE); }
-  
-  __forceinline vboolf16 gt(                     const vuint16& a, const vuint16& b) { return _mm512_cmp_epu32_mask(a,b,_MM_CMPINT_GT); }
   __forceinline vboolf16 gt(const vboolf16 mask, const vuint16& a, const vuint16& b) { return _mm512_mask_cmp_epu32_mask(mask,a,b,_MM_CMPINT_GT); }
-  
-  __forceinline vboolf16 le(                     const vuint16& a, const vuint16& b) { return _mm512_cmp_epu32_mask(a,b,_MM_CMPINT_LE); }
   __forceinline vboolf16 le(const vboolf16 mask, const vuint16& a, const vuint16& b) { return _mm512_mask_cmp_epu32_mask(mask,a,b,_MM_CMPINT_LE); }
     
  

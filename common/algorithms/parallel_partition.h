@@ -39,7 +39,7 @@ namespace embree
       /* *l < pivot */
       while (likely(l <= r && is_left(*l) )) 
       {
-#if defined(__AVX512F__)
+#if defined(__AVX512PF__) // KNL
         prefetch<PFHINT_L1EX>(l+4);	  
 #endif
         reduction_t(leftReduction,*l);
@@ -48,7 +48,7 @@ namespace embree
       /* *r >= pivot) */
       while (likely(l <= r && !is_left(*r)))
       {
-#if defined(__AVX512F__)
+#if defined(__AVX512PF__) // KNL
         prefetch<PFHINT_L1EX>(r-4);	  
 #endif
         reduction_t(rightReduction,*r);

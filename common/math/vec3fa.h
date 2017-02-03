@@ -121,22 +121,38 @@ namespace embree
   __forceinline const Vec3fa sign ( const Vec3fa& a ) {
     return blendv_ps(Vec3fa(one), -Vec3fa(one), _mm_cmplt_ps (a,Vec3fa(zero)));
   }
-  __forceinline const Vec3fa rcp  ( const Vec3fa& a ) {
+
+  __forceinline const Vec3fa rcp  ( const Vec3fa& a )
+  {
+#if defined(__AVX512VL__)
+    const Vec3fa r = _mm_rcp14_ps(a.m128);
+#else
     const Vec3fa r = _mm_rcp_ps(a.m128);
+#endif
+
 #if defined(__AVX2__)
     const Vec3fa res = _mm_mul_ps(r,_mm_fnmadd_ps(r, a, vfloat4(2.0f)));
 #else
     const Vec3fa res = _mm_mul_ps(r,_mm_sub_ps(vfloat4(2.0f), _mm_mul_ps(r, a)));
     //return _mm_sub_ps(_mm_add_ps(r, r), _mm_mul_ps(_mm_mul_ps(r, r), a));
 #endif
+
     return res;
   }
+
   __forceinline const Vec3fa sqrt ( const Vec3fa& a ) { return _mm_sqrt_ps(a.m128); }
   __forceinline const Vec3fa sqr  ( const Vec3fa& a ) { return _mm_mul_ps(a,a); }
-  __forceinline const Vec3fa rsqrt( const Vec3fa& a ) {
+
+  __forceinline const Vec3fa rsqrt( const Vec3fa& a )
+  {
+#if defined(__AVX512VL__)
+    __m128 r = _mm_rsqrt14_ps(a.m128);
+#else
     __m128 r = _mm_rsqrt_ps(a.m128);
+#endif
     return _mm_add_ps(_mm_mul_ps(_mm_set1_ps(1.5f),r), _mm_mul_ps(_mm_mul_ps(_mm_mul_ps(a, _mm_set1_ps(-0.5f)), r), _mm_mul_ps(r, r)));
   }
+
   __forceinline const Vec3fa zero_fix(const Vec3fa& a) {
     return blendv_ps(a, _mm_set1_ps(min_rcp_input), _mm_cmplt_ps (abs(a).m128, _mm_set1_ps(min_rcp_input)));
   }

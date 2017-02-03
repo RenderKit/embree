@@ -272,11 +272,11 @@ namespace embree
   __forceinline const vboolf4 operator > ( const vint4& a, const vint4& b ) { return _mm_cmp_epi32_mask(a,b,_MM_CMPINT_GT); }
   __forceinline const vboolf4 operator <=( const vint4& a, const vint4& b ) { return _mm_cmp_epi32_mask(a,b,_MM_CMPINT_LE); }
 #else
-  __forceinline const vboolf4 operator ==( const vint4& a, const vint4& b ) { return _mm_castsi128_ps(_mm_cmpeq_epi32 (a.v, b.v)); }
+  __forceinline const vboolf4 operator ==( const vint4& a, const vint4& b ) { return _mm_castsi128_ps(_mm_cmpeq_epi32(a, b)); }
   __forceinline const vboolf4 operator !=( const vint4& a, const vint4& b ) { return !(a == b); }
-  __forceinline const vboolf4 operator < ( const vint4& a, const vint4& b ) { return _mm_castsi128_ps(_mm_cmplt_epi32 (a.v, b.v)); }
+  __forceinline const vboolf4 operator < ( const vint4& a, const vint4& b ) { return _mm_castsi128_ps(_mm_cmplt_epi32(a, b)); }
   __forceinline const vboolf4 operator >=( const vint4& a, const vint4& b ) { return !(a <  b); }
-  __forceinline const vboolf4 operator > ( const vint4& a, const vint4& b ) { return _mm_castsi128_ps(_mm_cmpgt_epi32 (a.v, b.v)); }
+  __forceinline const vboolf4 operator > ( const vint4& a, const vint4& b ) { return _mm_castsi128_ps(_mm_cmpgt_epi32(a, b)); }
   __forceinline const vboolf4 operator <=( const vint4& a, const vint4& b ) { return !(a >  b); }
 #endif
 
@@ -298,6 +298,28 @@ namespace embree
   __forceinline const vboolf4 operator <=( const vint4& a, const int&   b ) { return a <= vint4(b); }
   __forceinline const vboolf4 operator <=( const int&   a, const vint4& b ) { return vint4(a) <= b; }
 
+  __forceinline vboolf4 eq(const vint4& a, const vint4& b) { return a == b; }
+  __forceinline vboolf4 ne(const vint4& a, const vint4& b) { return a != b; }
+  __forceinline vboolf4 lt(const vint4& a, const vint4& b) { return a <  b; }
+  __forceinline vboolf4 ge(const vint4& a, const vint4& b) { return a >= b; }
+  __forceinline vboolf4 gt(const vint4& a, const vint4& b) { return a >  b; }
+  __forceinline vboolf4 le(const vint4& a, const vint4& b) { return a <= b; }
+
+#if defined(__AVX512VL__)
+  __forceinline vboolf4 eq(const vboolf4& mask, const vint4& a, const vint4& b) { return _mm_mask_cmp_epi32_mask(mask, a, b, _MM_CMPINT_EQ); }
+  __forceinline vboolf4 ne(const vboolf4& mask, const vint4& a, const vint4& b) { return _mm_mask_cmp_epi32_mask(mask, a, b, _MM_CMPINT_NE); }
+  __forceinline vboolf4 lt(const vboolf4& mask, const vint4& a, const vint4& b) { return _mm_mask_cmp_epi32_mask(mask, a, b, _MM_CMPINT_LT); }
+  __forceinline vboolf4 ge(const vboolf4& mask, const vint4& a, const vint4& b) { return _mm_mask_cmp_epi32_mask(mask, a, b, _MM_CMPINT_GE); }
+  __forceinline vboolf4 gt(const vboolf4& mask, const vint4& a, const vint4& b) { return _mm_mask_cmp_epi32_mask(mask, a, b, _MM_CMPINT_GT); }
+  __forceinline vboolf4 le(const vboolf4& mask, const vint4& a, const vint4& b) { return _mm_mask_cmp_epi32_mask(mask, a, b, _MM_CMPINT_LE); }
+#else
+  __forceinline vboolf4 eq(const vboolf4& mask, const vint4& a, const vint4& b) { return mask & (a == b); }
+  __forceinline vboolf4 ne(const vboolf4& mask, const vint4& a, const vint4& b) { return mask & (a != b); }
+  __forceinline vboolf4 lt(const vboolf4& mask, const vint4& a, const vint4& b) { return mask & (a <  b); }
+  __forceinline vboolf4 ge(const vboolf4& mask, const vint4& a, const vint4& b) { return mask & (a >= b); }
+  __forceinline vboolf4 gt(const vboolf4& mask, const vint4& a, const vint4& b) { return mask & (a >  b); }
+  __forceinline vboolf4 le(const vboolf4& mask, const vint4& a, const vint4& b) { return mask & (a <= b); }
+#endif
 
 #if defined(__SSE4_1__) 
 #if defined(__clang__) && !defined(__INTEL_COMPILER) || defined(_MSC_VER) && !defined(__INTEL_COMPILER) || defined(__GNUC__) && !defined(__INTEL_COMPILER) // still required for clang

@@ -26,8 +26,9 @@ namespace embree
     tbb::atomic<int> threadCount;
     
   public:
-    TBBAffinity()
-      : threadCount(0) {}
+    TBBAffinity() {
+      threadCount = 0;
+    }
     
     void on_scheduler_entry( bool ) 
     {

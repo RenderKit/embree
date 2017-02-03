@@ -58,7 +58,13 @@ namespace embree
   __forceinline float rcp  ( const float x )
   {
     const __m128 a = _mm_set_ss(x);
+
+#if defined(__AVX512VL__)
+    const __m128 r = _mm_rcp14_ps(a);
+#else
     const __m128 r = _mm_rcp_ps(a);
+#endif
+
 #if defined(__AVX2__)
     return _mm_cvtss_f32(_mm_mul_ps(r,_mm_fnmadd_ps(r, a, _mm_set_ss(2.0f))));
 #else
@@ -75,9 +81,14 @@ namespace embree
   __forceinline float andf( const float x, const unsigned y ) {
     return _mm_cvtss_f32(_mm_and_ps(_mm_set_ss(x),_mm_castsi128_ps(_mm_set1_epi32(y))));
   }
-  __forceinline float rsqrt( const float x ) {
+  __forceinline float rsqrt( const float x )
+  {
     const __m128 a = _mm_set_ss(x);
+#if defined(__AVX512VL__)
+    const __m128 r = _mm_rsqrt14_ps(a);
+#else
     const __m128 r = _mm_rsqrt_ps(a);
+#endif
     const __m128 c = _mm_add_ps(_mm_mul_ps(_mm_set_ps(1.5f, 1.5f, 1.5f, 1.5f), r),
                                 _mm_mul_ps(_mm_mul_ps(_mm_mul_ps(a, _mm_set_ps(-0.5f, -0.5f, -0.5f, -0.5f)), r), _mm_mul_ps(r, r)));
     return _mm_cvtss_f32(c);
@@ -153,6 +164,9 @@ namespace embree
     return _mm_cvtss_f32(_mm_castsi128_ps(ci));
   }
 #endif
+
+  template<typename T>
+    __forceinline T twice(const T& a) { return a+a; }
 
   __forceinline      int min(int      a, int      b) { return a<b ? a:b; }
   __forceinline unsigned min(unsigned a, unsigned b) { return a<b ? a:b; }

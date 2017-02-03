@@ -101,7 +101,7 @@ namespace embree
     AccelN* This = (AccelN*)ptr;
     for (size_t i=0; i<This->validAccels.size(); i++) {
       This->validAccels[i]->occluded8(valid,ray,context);
-#if defined(__SSE2__)
+#if defined(__SSE2__) // FIXME: use AVX code
       vbool4 valid0 = ((vbool4*)valid)[0];
       vbool4 hit0   = ((vint4*)ray.geomID)[0] == vint4(0);
       vbool4 valid1 = ((vbool4*)valid)[1];

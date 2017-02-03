@@ -67,15 +67,13 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* calculate geometry normal and denominator */
-          const Vec3vfM Ng1 = cross(e1,e0);
-          //const Vec3vfM Ng1 = stable_triangle_normal(e2,e1,e0); // FIXME: enable
-          const Vec3vfM Ng = Ng1+Ng1;
-          const vfloat<M> den = dot(Ng,D);
+          const Vec3vfM Ng = stable_triangle_normal(e2,e1,e0);
+          const vfloat<M> den = twice(dot(Ng,D));
           const vfloat<M> absDen = abs(den);
           const vfloat<M> sgnDen = signmsk(den);
           
           /* perform depth test */
-          const vfloat<M> T = dot(v0,Ng);
+          const vfloat<M> T = twice(dot(v0,Ng));
           valid &= ((T^sgnDen) >= absDen*vfloat<M>(ray.tnear));
           valid &=(absDen*vfloat<M>(ray.tfar) >= (T^sgnDen));
           if (unlikely(none(valid))) return false;
@@ -249,15 +247,13 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* calculate geometry normal and denominator */
-          //const Vec3vfM Ng1 = cross(e1,e0);
-          const Vec3vfM Ng1 = stable_triangle_normal(e2,e1,e0);
-          const Vec3vfM Ng = Ng1+Ng1;
-          const vfloat<M> den = dot(Ng,D);
+          const Vec3vfM Ng = stable_triangle_normal(e2,e1,e0);
+          const vfloat<M> den = twice(dot(Ng,D));
           const vfloat<M> absDen = abs(den);
           const vfloat<M> sgnDen = signmsk(den);
 
           /* perform depth test */
-          const vfloat<M> T = dot(v0,Ng);
+          const vfloat<M> T = twice(dot(v0,Ng));
           valid &= ((T^sgnDen) >= absDen*vfloat<M>(ray.tnear[k]));
           valid &= (absDen*vfloat<M>(ray.tfar[k]) >= (T^sgnDen));
           if (unlikely(none(valid))) return false;
@@ -316,15 +312,13 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
            /* calculate geometry normal and denominator */
-          //const Vec3vfK Ng1 = cross(e1,e0);
-          const Vec3vfK Ng1 = stable_triangle_normal(e2,e1,e0);
-          const Vec3vfK Ng = Ng1+Ng1;
-          const vfloat<K> den = dot(Vec3vfK(Ng),D);
+          const Vec3vfK Ng = stable_triangle_normal(e2,e1,e0);
+          const vfloat<K> den = twice(dot(Vec3vfK(Ng),D));
           const vfloat<K> absDen = abs(den);
           const vfloat<K> sgnDen = signmsk(den);
 
           /* perform depth test */
-          const vfloat<K> T = dot(v0,Vec3vfK(Ng));
+          const vfloat<K> T = twice(dot(v0,Vec3vfK(Ng)));
           valid &= ((T^sgnDen) >= absDen*ray.tnear);
           valid &= (absDen*ray.tfar >= (T^sgnDen));
           if (unlikely(none(valid))) return false;

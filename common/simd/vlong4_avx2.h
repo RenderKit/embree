@@ -277,6 +277,29 @@ namespace embree
   __forceinline const vboold4 operator <=( const vlong4& a, const long    b ) { return a <= vlong4(b); }
   __forceinline const vboold4 operator <=( const long    a, const vlong4& b ) { return vlong4(a) <= b; }
 
+  __forceinline vboold4 eq(const vlong4& a, const vlong4& b) { return a == b; }
+  __forceinline vboold4 ne(const vlong4& a, const vlong4& b) { return a != b; }
+  __forceinline vboold4 lt(const vlong4& a, const vlong4& b) { return a <  b; }
+  __forceinline vboold4 ge(const vlong4& a, const vlong4& b) { return a >= b; }
+  __forceinline vboold4 gt(const vlong4& a, const vlong4& b) { return a >  b; }
+  __forceinline vboold4 le(const vlong4& a, const vlong4& b) { return a <= b; }
+
+#if defined(__AVX512VL__)
+  __forceinline vboold4 eq(const vboold4& mask, const vlong4& a, const vlong4& b) { return _mm256_mask_cmp_epi64_mask(mask, a, b, _MM_CMPINT_EQ); }
+  __forceinline vboold4 ne(const vboold4& mask, const vlong4& a, const vlong4& b) { return _mm256_mask_cmp_epi64_mask(mask, a, b, _MM_CMPINT_NE); }
+  __forceinline vboold4 lt(const vboold4& mask, const vlong4& a, const vlong4& b) { return _mm256_mask_cmp_epi64_mask(mask, a, b, _MM_CMPINT_LT); }
+  __forceinline vboold4 ge(const vboold4& mask, const vlong4& a, const vlong4& b) { return _mm256_mask_cmp_epi64_mask(mask, a, b, _MM_CMPINT_GE); }
+  __forceinline vboold4 gt(const vboold4& mask, const vlong4& a, const vlong4& b) { return _mm256_mask_cmp_epi64_mask(mask, a, b, _MM_CMPINT_GT); }
+  __forceinline vboold4 le(const vboold4& mask, const vlong4& a, const vlong4& b) { return _mm256_mask_cmp_epi64_mask(mask, a, b, _MM_CMPINT_LE); }
+#else
+  __forceinline vboold4 eq(const vboold4& mask, const vlong4& a, const vlong4& b) { return mask & (a == b); }
+  __forceinline vboold4 ne(const vboold4& mask, const vlong4& a, const vlong4& b) { return mask & (a != b); }
+  __forceinline vboold4 lt(const vboold4& mask, const vlong4& a, const vlong4& b) { return mask & (a <  b); }
+  __forceinline vboold4 ge(const vboold4& mask, const vlong4& a, const vlong4& b) { return mask & (a >= b); }
+  __forceinline vboold4 gt(const vboold4& mask, const vlong4& a, const vlong4& b) { return mask & (a >  b); }
+  __forceinline vboold4 le(const vboold4& mask, const vlong4& a, const vlong4& b) { return mask & (a <= b); }
+#endif
+
   __forceinline void xchg(const vboold4& m, vlong4& a, vlong4& b) {
     const vlong4 c = a; a = select(m,b,a); b = select(m,c,b);
   }

@@ -71,11 +71,7 @@ namespace embree
     static Vec2i computeGridSize(const float level[4]);
     bool updateEdgeLevels(const float edge_level[4], const int subdiv[4], const SubdivMesh *const mesh, const int simd_width);
 
-  private:
-    size_t get64BytesBlocksForGridSubTree(const GridRange& range, const unsigned int leafBlocks);
-
   public:
-    size_t getSubTreeSize64bBlocks(const unsigned int leafBlocks = 2);
 
     __forceinline size_t getGridBytes() const {
       const size_t grid_size_xyzuv = (grid_size_simd_blocks * VSIZEX) * 4;
