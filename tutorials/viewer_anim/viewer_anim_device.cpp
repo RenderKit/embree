@@ -18,6 +18,7 @@
 #define ENABLE_ANIM 1
 #define VERTEX_NORMALS 1
 #define SHADOWS 1
+#define DUMP_PROFILE_DATA 0
 
 #include "../common/math/random_sampler.h"
 #include "../common/math/sampling.h"
@@ -49,14 +50,18 @@ namespace embree {
 
   /* shadow distance map */
 
+#if DUMP_PROFILE_DATA == 1
   void dumpBuildAndRenderTimes();
+#endif
 
   void device_key_pressed_handler(int key)
   {
-    if (key == 100 /*d*/) { 
+    if (key == 100 /*d*/) {
+#if DUMP_PROFILE_DATA == 1 
       std::cout << "dumping build and render times per frame [" << buildTime.size() << " frames]..." << std::flush;
       dumpBuildAndRenderTimes(); 
       std::cout << "done" << std::endl;
+#endif
     }
     else if (key == 115 /*s*/) { 
       printStats = !printStats; 
@@ -597,8 +602,9 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
     frameID = (frameID + 1) % numProfileFrames;
   }
 
-/* plot build and render times */
+#if DUMP_PROFILE_DATA == 1
 
+/* plot build and render times */
   void dumpBuildAndRenderTimes()
   {
     FileName name("buildRenderTimes");
@@ -627,16 +633,19 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
     plot << std::endl;
     plot.close();
   }
+#endif
 
 /* called by the C++ code for cleanup */
   extern "C" void device_cleanup ()
   {
     rtcDeleteScene (g_scene); g_scene = nullptr;
     rtcDeleteDevice(g_device); g_device = nullptr;
+#if DUMP_PROFILE_DATA == 1
     /* dump data at the end of profiling */
     std::cout << "dumping build and render times per frame [" << numProfileFrames << " frames]..." << std::flush;
     dumpBuildAndRenderTimes(); 
     std::cout << "done" << std::endl;
+#endif
   }
 
 } // namespace embree
