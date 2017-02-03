@@ -16,7 +16,7 @@
 
 #include "../common/math/random_sampler.isph"
 #include "../common/tutorial/tutorial_device.isph"
-#include "../common/tutorial/scene_device.isph"
+#include "../common/tutorial/scene_device.h"
 #include "../common/tutorial/optics.isph"
 
 /* accumulation buffer */

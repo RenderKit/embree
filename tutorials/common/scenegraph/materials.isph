@@ -1,0 +1,160 @@
+// ======================================================================== //
+// Copyright 2009-2017 Intel Corporation                                    //
+//                                                                          //
+// Licensed under the Apache License, Version 2.0 (the "License");          //
+// you may not use this file except in compliance with the License.         //
+// You may obtain a copy of the License at                                  //
+//                                                                          //
+//     http://www.apache.org/licenses/LICENSE-2.0                           //
+//                                                                          //
+// Unless required by applicable law or agreed to in writing, software      //
+// distributed under the License is distributed on an "AS IS" BASIS,        //
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
+// See the License for the specific language governing permissions and      //
+// limitations under the License.                                           //
+// ======================================================================== //
+
+enum TEXTURE_FORMAT {
+    Texture_RGBA8        = 1,
+    Texture_RGB8         = 2,
+    Texture_FLOAT32      = 3,
+  };
+
+struct Texture {
+  int width;
+  int height;
+  int format;
+  int bytesPerTexel;
+  int width_mask;
+  int height_mask;
+  void* data;
+};
+
+enum MaterialTy
+{
+  MATERIAL_OBJ,
+  MATERIAL_THIN_DIELECTRIC,
+  MATERIAL_METAL,
+  MATERIAL_VELVET,
+  MATERIAL_DIELECTRIC,
+  MATERIAL_METALLIC_PAINT,
+  MATERIAL_MATTE,
+  MATERIAL_MIRROR,
+  MATERIAL_REFLECTIVE_METAL,
+  MATERIAL_HAIR
+};
+
+struct ISPCMaterial
+{
+  int ty;
+  int align0,align1,align2;
+  Vec3fa v[7];
+};
+
+struct MatteMaterial
+{
+  int ty;
+  int align[3];
+
+  Vec3fa reflectance;
+};
+
+struct MirrorMaterial
+{
+  int ty;
+  int align[3];
+  Vec3fa reflectance;
+};
+
+struct OBJMaterial
+{
+  int ty;
+  int align[3];
+
+  int illum;             /*< illumination model */
+  float d;               /*< dissolve factor, 1=opaque, 0=transparent */
+  float Ns;              /*< specular exponent */
+  float Ni;              /*< optical density for the surface (index of refraction) */
+
+  Vec3fa Ka;              /*< ambient reflectivity */
+  Vec3fa Kd;              /*< diffuse reflectivity */
+  Vec3fa Ks;              /*< specular reflectivity */
+  Vec3fa Kt;              /*< transmission filter */
+
+  Texture* map_d;
+  Texture* map_Kd;          /*< dummy */
+  Texture* map_Displ;       /*< dummy */
+};
+
+struct MetalMaterial
+{
+  int ty;
+  int align[3];
+
+  Vec3fa reflectance;
+  Vec3fa eta;
+  Vec3fa k;
+  float roughness;
+};
+
+struct ReflectiveMetalMaterial
+{
+  int ty;
+  int align[3];
+
+  Vec3fa reflectance;
+  Vec3fa eta;
+  Vec3fa k;
+  float roughness;
+};
+
+struct VelvetMaterial
+{
+  int ty;
+  int align[3];
+
+  Vec3fa reflectance;
+  Vec3fa horizonScatteringColor;
+  float backScattering;
+  float horizonScatteringFallOff;
+};
+
+struct DielectricMaterial
+{
+  int ty;
+  int align[3];
+  Vec3fa transmissionOutside;
+  Vec3fa transmissionInside;
+  float etaOutside;
+  float etaInside;
+};
+
+struct ThinDielectricMaterial
+{
+  int ty;
+  int align[3];
+  Vec3fa transmission;
+  Vec3fa transmissionFactor;
+  float eta;
+  float thickness;
+};
+
+struct MetallicPaintMaterial
+{
+  int ty;
+  int align[3];
+  Vec3fa shadeColor;
+  Vec3fa glitterColor;
+  float glitterSpread;
+  float eta;
+};
+
+struct HairMaterial
+{
+  int ty;
+  int align[3];
+  Vec3fa Kr;
+  Vec3fa Kt;
+  float nx;
+  float ny;
+};

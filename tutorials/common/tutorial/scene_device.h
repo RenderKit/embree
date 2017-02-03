@@ -16,6 +16,7 @@
 
 #pragma once
 
+#if !defined(ISPC)
 #include "../math/sampling.h"
 #include "../lights/light.h"
 #include "../lights/ambient_light.h"
@@ -24,57 +25,71 @@
 #include "../lights/quad_light.h"
 #include "../lights/spot_light.h"
 #include "scene.h"
+#else
+#include "../lights/light.isph"
+#include "../scenegraph/materials.isph"
+#endif
 
+#if !defined(ISPC)
 namespace embree
 {
+#endif
+
   struct ISPCTriangle
   {
-    unsigned v0;                /*< first triangle vertex */
-    unsigned v1;                /*< second triangle vertex */
-    unsigned v2;                /*< third triangle vertex */
+    unsigned int v0;                /*< first triangle vertex */
+    unsigned int v1;                /*< second triangle vertex */
+    unsigned int v2;                /*< third triangle vertex */
   };
 
   struct ISPCQuad
   {
-    unsigned v0;                /*< first triangle vertex */
-    unsigned v1;                /*< second triangle vertex */
-    unsigned v2;                /*< third triangle vertex */
-    unsigned v3;                /*< fourth triangle vertex */
+    unsigned int v0;                /*< first triangle vertex */
+    unsigned int v1;                /*< second triangle vertex */
+    unsigned int v2;                /*< third triangle vertex */
+    unsigned int v3;                /*< fourth triangle vertex */
   };
 
   struct ISPCHair
   {
-    unsigned vertex;
-    unsigned id;
+    unsigned int vertex;
+    unsigned int id;
   };
 
   enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP, QUAD_MESH, LINE_SEGMENTS, CURVES };
+  
+  struct ISPCGeometry
+  {
+#if !defined(ISPC)
+    ISPCGeometry (ISPCType type) : type(type) {}
+#endif
+    ISPCType type;
+  };
 
+#if !defined(ISPC)
   struct ISPCMaterial
   {
     int ty;
     int align0,align1,align2;
     Vec3fa v[7];
   };
+#endif
 
+#if !defined(ISPC)
   enum TEXTURE_FORMAT {
     Texture_RGBA8        = 1,
     Texture_RGB8         = 2,
     Texture_FLOAT32      = 3,
   };
-
-  struct ISPCGeometry
-  {
-    ISPCGeometry (ISPCType type) : type(type) {}
-    
-    ISPCType type;
-  };
+#endif
 
   struct ISPCTriangleMesh
   {
+#if !defined(ISPC)
     ISPCTriangleMesh (TutorialScene* scene_in, Ref<SceneGraph::TriangleMeshNode> in);
     
   public:
+#endif
     ISPCGeometry geom;
     Vec3fa** positions;     //!< vertex position array with all timesteps
     Vec3fa* normals;       //!< vertex normal array
@@ -91,9 +106,11 @@ namespace embree
   
   struct ISPCQuadMesh
   {
+#if !defined(ISPC)
     ISPCQuadMesh (TutorialScene* scene_in, Ref<SceneGraph::QuadMeshNode> in);
     
   public:
+#endif
     ISPCGeometry geom;
     Vec3fa** positions;    //!< vertex position array
     Vec3fa* normals;       //!< vertex normal array
@@ -110,6 +127,7 @@ namespace embree
   
   struct ISPCSubdivMesh
   {
+#if !defined(ISPC)
     ISPCSubdivMesh (TutorialScene* scene_in, Ref<SceneGraph::SubdivMeshNode> in);
     ~ISPCSubdivMesh ();
     
@@ -118,24 +136,25 @@ namespace embree
     ISPCSubdivMesh& operator= (const ISPCSubdivMesh& other) DELETED; // do not implement
     
   public:
+#endif
     ISPCGeometry geom;
     Vec3fa** positions;       //!< vertex positions
     Vec3fa* normals;         //!< face vertex normals
     Vec2f* texcoords;        //!< face texture coordinates
-    unsigned* position_indices;   //!< position indices for all faces
-    unsigned* normal_indices;     //!< normal indices for all faces
-    unsigned* texcoord_indices;   //!< texcoord indices for all faces
+    unsigned int* position_indices;   //!< position indices for all faces
+    unsigned int* normal_indices;     //!< normal indices for all faces
+    unsigned int* texcoord_indices;   //!< texcoord indices for all faces
     RTCSubdivisionMode position_subdiv_mode;  
     RTCSubdivisionMode normal_subdiv_mode;
     RTCSubdivisionMode texcoord_subdiv_mode;
-    unsigned* verticesPerFace;    //!< number of indices of each face
-    unsigned* holes;              //!< face ID of holes
+    unsigned int* verticesPerFace;    //!< number of indices of each face
+    unsigned int* holes;              //!< face ID of holes
     float* subdivlevel;      //!< subdivision level
     Vec2i* edge_creases;          //!< crease index pairs
     float* edge_crease_weights;   //!< weight for each crease
-    unsigned* vertex_creases;          //!< indices of vertex creases
+    unsigned int* vertex_creases;          //!< indices of vertex creases
     float* vertex_crease_weights; //!< weight for each vertex crease
-    unsigned* face_offsets;
+    unsigned int* face_offsets;
     
     unsigned int numTimeSteps;
     unsigned int numVertices;
@@ -153,12 +172,14 @@ namespace embree
   
   struct ISPCLineSegments
   {
+#if !defined(ISPC)
     ISPCLineSegments (TutorialScene* scene_in, Ref<SceneGraph::LineSegmentsNode> in);
     
   public:
+#endif
     ISPCGeometry geom;
     Vec3fa** positions;        //!< control points (x,y,z,r)
-    unsigned* indices;        //!< for each segment, index to first control point
+    unsigned int* indices;        //!< for each segment, index to first control point
     
     unsigned int numTimeSteps;
     unsigned int numVertices;
@@ -170,9 +191,11 @@ namespace embree
   
   struct ISPCHairSet
   {
+#if !defined(ISPC)
     ISPCHairSet (TutorialScene* scene_in, bool hair, Ref<SceneGraph::HairSetNode> in);
     
   public:
+#endif
     ISPCGeometry geom;
     Vec3fa** positions;       //!< hair control points (x,y,z,r)
     ISPCHair* hairs;         //!< for each hair, index to first control point
@@ -188,6 +211,7 @@ namespace embree
   
   struct ISPCInstance
   {
+#if !defined(ISPC)
     ALIGNED_STRUCT;
     
     static ISPCInstance* create (TutorialScene* scene, Ref<SceneGraph::TransformNode> in);
@@ -196,14 +220,17 @@ namespace embree
     ISPCInstance (TutorialScene* scene, Ref<SceneGraph::TransformNode> in);
     
   public:
+#endif
     ISPCGeometry geom;
     unsigned int geomID;
     unsigned int numTimeSteps;
+    unsigned int align;
     AffineSpace3fa spaces[1];
   };
 
   struct ISPCGroup
   {
+#if !defined(ISPC)
     ISPCGroup (TutorialScene* scene, Ref<SceneGraph::GroupNode> in);
     ~ISPCGroup();
     
@@ -212,6 +239,7 @@ namespace embree
     ISPCGroup& operator= (const ISPCGroup& other) DELETED; // do not implement
     
   public:
+#endif
     ISPCGeometry geom;
     ISPCGeometry** geometries;
     size_t numGeometries;
@@ -219,6 +247,7 @@ namespace embree
   
   struct ISPCScene
   {
+#if !defined(ISPC)
     ISPCScene(TutorialScene* in)
     {
       geometries = new ISPCGeometry*[in->geometries.size()];
@@ -327,6 +356,7 @@ namespace embree
     ISPCScene& operator= (const ISPCScene& other) DELETED; // do not implement
     
   public:
+#endif
     ISPCGeometry** geometries;   //!< list of geometries
     ISPCMaterial* materials;     //!< material list
     unsigned int numGeometries;           //!< number of geometries
@@ -334,10 +364,18 @@ namespace embree
     
     Light** lights;              //!< list of lights
     unsigned int numLights;               //!< number of lights
-  public:
+
     RTCScene* geomID_to_scene;
     ISPCInstance** geomID_to_inst;
   };
-  
+
+#if !defined(ISPC)  
   extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCSceneFlags sflags, RTCAlgorithmFlags aflags, RTCGeometryFlags gflags);
+#else
+  unmasked extern "C" RTCScene ConvertScene (RTCDevice g_device, ISPCScene* uniform scene_in, uniform RTCSceneFlags sflags, uniform RTCAlgorithmFlags aflags, uniform RTCGeometryFlags gflags);
+#endif
+
+#if !defined(ISPC)                    
 }
+#endif
+

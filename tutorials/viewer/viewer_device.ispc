@@ -17,7 +17,7 @@
 #include "../common/math/random_sampler.isph"
 #include "../common/core/differential_geometry.isph"
 #include "../common/tutorial/tutorial_device.isph"
-#include "../common/tutorial/scene_device.isph"
+#include "../common/tutorial/scene_device.h"
 
 extern uniform ISPCScene* uniform g_ispc_scene;
 extern uniform bool g_changed;

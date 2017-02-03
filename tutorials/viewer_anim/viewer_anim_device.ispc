@@ -17,7 +17,7 @@
 #include "../common/math/random_sampler.isph"
 #include "../common/math/sampling.isph"
 #include "../common/tutorial/tutorial_device.isph"
-#include "../common/tutorial/scene_device.isph"
+#include "../common/tutorial/scene_device.h"
 
 #define ANIM_FPS 15.0f
 #define ENABLE_ANIM 1
