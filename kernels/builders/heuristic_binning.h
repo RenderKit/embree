@@ -74,7 +74,7 @@ namespace embree
         }
 
         template<typename PrimRef>
-        __forceinline bool bin_unsafe(const PrimRef &ref,
+        __forceinline bool bin_unsafe(const PrimRef& ref,
                                       const vint4&   vSplitPos,
                                       const vbool4&  splitDimMask) const
         {
@@ -442,9 +442,9 @@ namespace embree
           return floori((p-ofs16)*scale16);
         }
 
-        __forceinline int bin_unsafe(const PrimRef &ref,
-                                     const vint16  vSplitPos,
-                                     const vbool16 splitDimMask) const
+        __forceinline int bin_unsafe(const PrimRef& ref,
+                                     const vint16&  vSplitPos,
+                                     const vbool16& splitDimMask) const
         {
           const vfloat16 lower(*(vfloat4*)&ref.lower);
           const vfloat16 upper(*(vfloat4*)&ref.upper);
