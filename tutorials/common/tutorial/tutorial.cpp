@@ -803,10 +803,8 @@ namespace embree
     if (convert_hair_to_curves)
       scene->hair_to_curves();
     
-    scene = SceneGraph::flatten(scene,instancing_mode);
-    
     /* convert model */
-    obj_scene.add(scene.dynamicCast<SceneGraph::Node>(),instancing_mode); 
+    obj_scene.add(SceneGraph::flatten(scene,instancing_mode)); 
     scene = nullptr;
 
     /* send model */

@@ -657,9 +657,7 @@ namespace embree
     
     SceneGraphFlattener (Ref<SceneGraph::Node> in, SceneGraph::InstancingMode instancing, const SceneGraph::Transformations& spaces)
     { 
-      std::vector<Ref<SceneGraph::Node>> geometries;
-      convertLights(geometries,in,spaces);
-      
+      std::vector<Ref<SceneGraph::Node>> geometries;      
       if (instancing != SceneGraph::INSTANCING_NONE) 
       {
         if (instancing == SceneGraph::INSTANCING_SCENE_GROUP) 
@@ -672,6 +670,8 @@ namespace embree
       }
       else
         convertGeometries(geometries,in,spaces);
+
+      convertLights(geometries,in,spaces);
 
       node = new SceneGraph::GroupNode(geometries);
     }

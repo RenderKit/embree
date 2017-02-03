@@ -36,16 +36,7 @@ namespace embree
   /*! Scene representing the OBJ file */
   struct TutorialScene
   {
-    void add (Ref<SceneGraph::Node> node, SceneGraph::InstancingMode instancing);
-
-    unsigned addMaterial(Ref<SceneGraph::MaterialNode> node) 
-    {
-      if (material2id.find(node) == material2id.end()) {
-        materials.push_back(node->material);
-        material2id[node] = unsigned(materials.size()-1);
-      }
-      return material2id[node];
-    }
+    void add (Ref<SceneGraph::GroupNode> node);
 
     unsigned addGeometry(Ref<SceneGraph::Node> node) 
     {
@@ -58,7 +49,10 @@ namespace embree
     
     unsigned materialID(Ref<SceneGraph::MaterialNode> material) 
     {
-      assert(material2id.find(material) != material2id.end());
+      if (material2id.find(material) == material2id.end()) {
+        materials.push_back(material->material);
+        material2id[material] = unsigned(materials.size()-1);
+      }
       return material2id[material];
     }
 

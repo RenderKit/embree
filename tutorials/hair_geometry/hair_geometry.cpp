@@ -190,7 +190,6 @@ float Noise(float x, float y, float z)
   {
     Material materialdata;
     Ref<SceneGraph::MaterialNode> material = new SceneGraph::MaterialNode(materialdata);
-    scene.addMaterial(material);
     
     {
       const size_t numPhi   = 20;
@@ -273,7 +272,6 @@ float Noise(float x, float y, float z)
 
      Material materialdata;
      Ref<SceneGraph::MaterialNode> material = new SceneGraph::MaterialNode(materialdata);
-     scene.addMaterial(material);
    
      positions.push_back(p00);
      positions.push_back(p01);
@@ -314,7 +312,7 @@ float Noise(float x, float y, float z)
       addGroundPlane(obj_scene,Vec3fa(-10,0,-10),Vec3fa(-10,0,+10),Vec3fa(+10,0,-10),Vec3fa(+10,0,+10));
 
       /* convert model */
-      obj_scene.add(scene.dynamicCast<SceneGraph::Node>(),SceneGraph::INSTANCING_NONE); 
+      obj_scene.add(SceneGraph::flatten(scene,SceneGraph::INSTANCING_NONE)); 
       scene = nullptr;
       
       /* send model */
