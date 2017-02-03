@@ -33,7 +33,7 @@ namespace embree
     SHADER_AMBIENT_OCCLUSION
   };
 
-  /*! Scene representing the OBJ file */
+  /*! Flattened scene used inside tutorials */
   struct TutorialScene
   {
     void add (Ref<SceneGraph::GroupNode> node);

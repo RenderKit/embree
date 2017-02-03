@@ -1014,7 +1014,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 inline void evalBezier(const ISPCHairSet* hair, const int primID, const float t, Vec3fa& p, Vec3fa& dp)
 {
   const float t0 = 1.0f - t, t1 = t;
-  const Vec3fa* vertices = hair->positions;
+  const Vec3fa* vertices = hair->positions[0];
   const ISPCHair* hairs = hair->hairs;
   
   const int i = hairs[primID].vertex;
@@ -1099,7 +1099,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
     dg.Ty = dy;
     dg.Ng = dg.Ns = dz;
     int vtx = mesh->indices[ray.primID];
-    dg.tnear_eps = 1.1f*mesh->positions[vtx].w;
+    dg.tnear_eps = 1.1f*mesh->positions[0][vtx].w;
   }
   else if (geometry->type == HAIR_SET)
   {
@@ -1472,8 +1472,8 @@ void renderTileTask (int taskIndex, int* pixels,
 
 inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const size_t e0, const size_t e1)
 {
-  const Vec3fa v0 = mesh->positions[mesh->position_indices[e0]];
-  const Vec3fa v1 = mesh->positions[mesh->position_indices[e1]];
+  const Vec3fa v0 = mesh->positions[0][mesh->position_indices[e0]];
+  const Vec3fa v1 = mesh->positions[0][mesh->position_indices[e1]];
   const Vec3fa edge = v1-v0;
   const Vec3fa P = 0.5f*(v1+v0);
   const Vec3fa dist = cam_pos - P;

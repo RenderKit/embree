@@ -478,19 +478,8 @@ namespace embree
 
       void verify() const;
 
-      void relayout()
-      {
-        positions_soa.resize(numVertices()*numTimeSteps());
-        for (size_t j=0; j<numTimeSteps(); j++) {
-          for (size_t i=0; i<numVertices(); i++) {
-            positions_soa[j*numVertices()+i] = positions[j][i];
-          }
-        }
-      }
-
     public:
       std::vector<avector<Vertex>> positions;
-      avector<Vertex> positions_soa;
       avector<Vertex> normals;
       std::vector<Vec2f> texcoords;
       std::vector<Triangle> triangles;
@@ -567,19 +556,8 @@ namespace embree
 
       void verify() const;
 
-      void relayout()
-      {
-        positions_soa.resize(numVertices()*numTimeSteps());
-        for (size_t j=0; j<numTimeSteps(); j++) {
-          for (size_t i=0; i<numVertices(); i++) {
-            positions_soa[j*numVertices()+i] = positions[j][i];
-          }
-        }
-      }
-
     public:
       std::vector<avector<Vertex>> positions;
-      avector<Vertex> positions_soa;
       avector<Vertex> normals;
       std::vector<Vec2f> texcoords;
       std::vector<Quad> quads;
@@ -600,6 +578,7 @@ namespace embree
       {
         for (size_t i=0; i<numTimeSteps; i++)
           positions.push_back(avector<Vertex>());
+        zero_pad_arrays();
       }
 
       SubdivMeshNode (Ref<SceneGraph::SubdivMeshNode> imesh, const Transformations& spaces)
@@ -624,6 +603,16 @@ namespace embree
       {
         const LinearSpace3fa nspace0 = rcp(spaces[0].l).transposed();
         for (auto& n : normals) n = xfmVector(nspace0,n);
+
+        zero_pad_arrays();
+      }
+
+      void zero_pad_arrays()
+      {
+        if (texcoords.size()) { // zero pad to 16 bytes
+          texcoords.reserve(texcoords.size()+1);
+          texcoords.data()[texcoords.size()] = zero;
+        }
       }
       
       virtual void setMaterial(Ref<MaterialNode> material) {
@@ -665,24 +654,8 @@ namespace embree
 
       void verify() const;
 
-      void relayout()
-      {
-        positions_soa.resize(numPositions()*numTimeSteps());
-        for (size_t j=0; j<numTimeSteps(); j++) {
-          for (size_t i=0; i<numPositions(); i++) {
-            positions_soa[j*numPositions()+i] = positions[j][i];
-          }
-        }
-
-        if (texcoords.size()) { // zero pad to 16 bytes
-          texcoords.reserve(texcoords.size()+1);
-          texcoords.data()[texcoords.size()] = zero;
-        }
-      }
-
     public:
       std::vector<avector<Vertex>> positions; //!< vertex positions for multiple timesteps
-      avector<Vertex> positions_soa;
       avector<Vertex> normals;              //!< face vertex normals
       std::vector<Vec2f> texcoords;             //!< face texture coordinates
       std::vector<unsigned> position_indices;        //!< position indices for all faces
@@ -756,19 +729,8 @@ namespace embree
 
       void verify() const;
 
-      void relayout()
-      {
-        positions_soa.resize(numVertices()*numTimeSteps());
-        for (size_t j=0; j<numTimeSteps(); j++) {
-          for (size_t i=0; i<numVertices(); i++) {
-            positions_soa[j*numVertices()+i] = positions[j][i];
-          }
-        }
-      }
-
     public:
       std::vector<avector<Vertex>> positions; //!< line control points (x,y,z,r) for multiple timesteps
-      avector<Vertex> positions_soa;
       std::vector<unsigned> indices; //!< list of line segments
       Ref<MaterialNode> material;
     };
@@ -846,20 +808,9 @@ namespace embree
 
       void verify() const;
 
-      void relayout()
-      {
-        positions_soa.resize(numVertices()*numTimeSteps());
-        for (size_t j=0; j<numTimeSteps(); j++) {
-          for (size_t i=0; i<numVertices(); i++) {
-            positions_soa[j*numVertices()+i] = positions[j][i];
-          }
-        }
-      }
-
     public:
       bool hair;                //!< true is this is hair geometry, false if this are curves
       std::vector<avector<Vertex>> positions; //!< hair control points (x,y,z,r) for multiple timesteps
-      avector<Vertex> positions_soa;
       std::vector<Hair> hairs;  //!< list of hairs
       Ref<MaterialNode> material;
       unsigned tessellation_rate;

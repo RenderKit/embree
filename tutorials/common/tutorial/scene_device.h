@@ -77,8 +77,9 @@ namespace embree
       ISPCTriangleMesh (TutorialScene* scene_in, Ref<SceneGraph::TriangleMeshNode> in) 
       : geom(TRIANGLE_MESH)
       {
-        in->relayout();
-        positions = in->positions_soa.data();
+        positions = new Vec3fa*[in->numTimeSteps()];
+        for (size_t i=0; i<in->numTimeSteps(); i++)
+          positions[i] = in->positions[i].data();
         normals = in->normals.data();
         texcoords = in->texcoords.data();
         triangles = (ISPCTriangle*) in->triangles.data();
@@ -92,7 +93,7 @@ namespace embree
 
     public:
       ISPCGeometry geom;
-      Vec3fa* positions;     //!< vertex position array with all timesteps
+      Vec3fa** positions;     //!< vertex position array with all timesteps
       Vec3fa* normals;       //!< vertex normal array
       Vec2f* texcoords;      //!< vertex texcoord array
       ISPCTriangle* triangles;  //!< list of triangles
@@ -110,8 +111,9 @@ namespace embree
       ISPCQuadMesh (TutorialScene* scene_in, Ref<SceneGraph::QuadMeshNode> in) 
       : geom(QUAD_MESH)
       {
-        in->relayout();
-        positions = in->positions_soa.data();
+        positions = new Vec3fa*[in->numTimeSteps()];
+        for (size_t i=0; i<in->numTimeSteps(); i++)
+          positions[i] = in->positions[i].data();
         normals = in->normals.data();
         texcoords = in->texcoords.data();
         quads = (ISPCQuad*) in->quads.data();
@@ -125,7 +127,7 @@ namespace embree
 
     public:
       ISPCGeometry geom;
-      Vec3fa* positions;    //!< vertex position array
+      Vec3fa** positions;    //!< vertex position array
       Vec3fa* normals;       //!< vertex normal array
       Vec2f* texcoords;     //!< vertex texcoord array
       ISPCQuad* quads;      //!< list of quads
@@ -143,8 +145,9 @@ namespace embree
       ISPCSubdivMesh (TutorialScene* scene_in, Ref<SceneGraph::SubdivMeshNode> in) 
       : geom(SUBDIV_MESH)
       {
-        in->relayout();
-        positions = in->positions_soa.data();
+        positions = new Vec3fa*[in->numTimeSteps()];
+        for (size_t i=0; i<in->numTimeSteps(); i++)
+          positions[i] = in->positions[i].data();
         normals = in->normals.data();
         texcoords = in->texcoords.data();
         position_indices = in->position_indices.data();
@@ -197,7 +200,7 @@ namespace embree
       
     public:
       ISPCGeometry geom;
-      Vec3fa* positions;       //!< vertex positions
+      Vec3fa** positions;       //!< vertex positions
       Vec3fa* normals;         //!< face vertex normals
       Vec2f* texcoords;        //!< face texture coordinates
       unsigned* position_indices;   //!< position indices for all faces
@@ -234,8 +237,9 @@ namespace embree
       ISPCLineSegments (TutorialScene* scene_in, Ref<SceneGraph::LineSegmentsNode> in) 
       : geom(LINE_SEGMENTS)
       {
-        in->relayout();
-        positions = in->positions_soa.data();
+        positions = new Vec3fa*[in->numTimeSteps()];
+        for (size_t i=0; i<in->numTimeSteps(); i++)
+          positions[i] = in->positions[i].data();
         indices = in->indices.data();
         numTimeSteps = in->numTimeSteps();
         numVertices = in->numVertices();
@@ -247,7 +251,7 @@ namespace embree
 
     public:
       ISPCGeometry geom;
-      Vec3fa* positions;        //!< control points (x,y,z,r)
+      Vec3fa** positions;        //!< control points (x,y,z,r)
       unsigned* indices;        //!< for each segment, index to first control point
       
       unsigned int numTimeSteps;
@@ -263,8 +267,9 @@ namespace embree
       ISPCHairSet (TutorialScene* scene_in, bool hair, Ref<SceneGraph::HairSetNode> in) 
       : geom(hair ? HAIR_SET : CURVES)
       {
-        in->relayout();
-        positions = in->positions_soa.data();
+        positions = new Vec3fa*[in->numTimeSteps()];
+        for (size_t i=0; i<in->numTimeSteps(); i++)
+          positions[i] = in->positions[i].data();
         hairs = (ISPCHair*) in->hairs.data();
         numTimeSteps = in->numTimeSteps();
         numVertices = in->numVertices();
@@ -277,7 +282,7 @@ namespace embree
 
     public:
       ISPCGeometry geom;
-      Vec3fa* positions;       //!< hair control points (x,y,z,r)
+      Vec3fa** positions;       //!< hair control points (x,y,z,r)
       ISPCHair* hairs;         //!< for each hair, index to first control point
       
       unsigned int numTimeSteps;

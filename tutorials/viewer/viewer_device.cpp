@@ -40,8 +40,8 @@ bool g_subdiv_mode = false;
 
 inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const size_t e0, const size_t e1)
 {
-  const Vec3fa v0 = mesh->positions[mesh->position_indices[e0]];
-  const Vec3fa v1 = mesh->positions[mesh->position_indices[e1]];
+  const Vec3fa v0 = mesh->positions[0][mesh->position_indices[e0]];
+  const Vec3fa v1 = mesh->positions[0][mesh->position_indices[e1]];
   const Vec3fa edge = v1-v0;
   const Vec3fa P = 0.5f*(v1+v0);
   const Vec3fa dist = cam_pos - P;

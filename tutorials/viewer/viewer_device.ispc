@@ -38,8 +38,8 @@ uniform bool g_subdiv_mode = false;
 
 inline uniform float updateEdgeLevel( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, const uniform size_t e0, const uniform size_t e1)
 {
-  const uniform Vec3fa v0 = mesh->positions[mesh->position_indices[e0]];
-  const uniform Vec3fa v1 = mesh->positions[mesh->position_indices[e1]];
+  const uniform Vec3fa v0 = mesh->positions[0][mesh->position_indices[e0]];
+  const uniform Vec3fa v1 = mesh->positions[0][mesh->position_indices[e1]];
   const uniform Vec3fa edge = v1-v0;
   const uniform Vec3fa P = 0.5f*(v1+v0);
   const uniform Vec3fa dist = cam_pos - P;
