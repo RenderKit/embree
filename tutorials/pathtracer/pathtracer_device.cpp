@@ -786,7 +786,7 @@ inline void Material__preprocess(ISPCMaterial* materials, unsigned int materialI
     {
       ISPCMaterial* material = &materials[id];
 
-      switch (material->ty) {
+      switch (material->type) {
       case MATERIAL_OBJ  : OBJMaterial__preprocess  ((OBJMaterial*)  material,brdf,wo,dg,medium); break;
       case MATERIAL_METAL: MetalMaterial__preprocess((MetalMaterial*)material,brdf,wo,dg,medium); break;
       case MATERIAL_REFLECTIVE_METAL: ReflectiveMetalMaterial__preprocess((ReflectiveMetalMaterial*)material,brdf,wo,dg,medium); break;
@@ -811,7 +811,7 @@ inline Vec3fa Material__eval(ISPCMaterial* materials, unsigned int materialID, u
     if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
       ISPCMaterial* material = &materials[id];
-      switch (material->ty) {
+      switch (material->type) {
       case MATERIAL_OBJ  : c = OBJMaterial__eval  ((OBJMaterial*)  material, brdf, wo, dg, wi); break;
       case MATERIAL_METAL: c = MetalMaterial__eval((MetalMaterial*)material, brdf, wo, dg, wi); break;
       case MATERIAL_REFLECTIVE_METAL: c = ReflectiveMetalMaterial__eval((ReflectiveMetalMaterial*)material, brdf, wo, dg, wi); break;
@@ -837,7 +837,7 @@ inline Vec3fa Material__sample(ISPCMaterial* materials, unsigned int materialID,
     if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
       ISPCMaterial* material = &materials[id];
-      switch (material->ty) {
+      switch (material->type) {
       case MATERIAL_OBJ  : c = OBJMaterial__sample  ((OBJMaterial*)  material, brdf, Lw, wo, dg, wi_o, medium, s); break;
       case MATERIAL_METAL: c = MetalMaterial__sample((MetalMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
       case MATERIAL_REFLECTIVE_METAL: c = ReflectiveMetalMaterial__sample((ReflectiveMetalMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
@@ -908,10 +908,10 @@ void assignShaders(ISPCGeometry* geometry)
     rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&occlusionFilterOpaque);
     
     ISPCMaterial& material = g_ispc_scene->materials[mesh->materialID];
-    //if (material.ty == MATERIAL_DIELECTRIC || material.ty == MATERIAL_THIN_DIELECTRIC)
+    //if (material.type == MATERIAL_DIELECTRIC || material.type == MATERIAL_THIN_DIELECTRIC)
     //  rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&intersectionFilterReject);
     //else
-    if (material.ty == MATERIAL_OBJ)
+    if (material.type == MATERIAL_OBJ)
     {
       OBJMaterial& obj = (OBJMaterial&) material;
       if (obj.d != 1.0f || obj.map_d) {
@@ -927,10 +927,10 @@ void assignShaders(ISPCGeometry* geometry)
     rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&occlusionFilterOpaque);
     
     ISPCMaterial& material = g_ispc_scene->materials[mesh->materialID];
-    //if (material.ty == MATERIAL_DIELECTRIC || material.ty == MATERIAL_THIN_DIELECTRIC)
+    //if (material.type == MATERIAL_DIELECTRIC || material.type == MATERIAL_THIN_DIELECTRIC)
     //  rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&intersectionFilterReject);
     //else
-    if (material.ty == MATERIAL_OBJ)
+    if (material.type == MATERIAL_OBJ)
     {
       OBJMaterial& obj = (OBJMaterial&) material;
       if (obj.d != 1.0f || obj.map_d) {
@@ -1262,7 +1262,7 @@ void occlusionFilterHair(void* ptr, RTCRay& ray)
     {
       int materialID = ((ISPCLineSegments*)geometry)->materialID;
       ISPCMaterial* material = &g_ispc_scene->materials[materialID];
-      switch (material->ty) {
+      switch (material->type) {
       case MATERIAL_HAIR: Kt = Vec3fa(((HairMaterial*)material)->Kt); break;
       default: break;
       }
@@ -1271,7 +1271,7 @@ void occlusionFilterHair(void* ptr, RTCRay& ray)
     {
       int materialID = ((ISPCHairSet*)geometry)->materialID;
       ISPCMaterial* material = &g_ispc_scene->materials[materialID];
-      switch (material->ty) {
+      switch (material->type) {
       case MATERIAL_HAIR: Kt = Vec3fa(((HairMaterial*)material)->Kt); break;
       default: break;
       }
@@ -1285,7 +1285,7 @@ void occlusionFilterHair(void* ptr, RTCRay& ray)
       {
         int materialID = ((ISPCHairSet*)geometry)->materialID;
         ISPCMaterial* material = &g_ispc_scene->materials[materialID];
-        switch (material->ty) {
+        switch (material->type) {
         case MATERIAL_HAIR: Kt = Vec3fa(((HairMaterial*)material)->Kt); break;
         default: break;
         }

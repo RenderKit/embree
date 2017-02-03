@@ -16,6 +16,26 @@
 
 #pragma once
 
+#if defined(ISPC)
+
+enum TEXTURE_FORMAT {
+    Texture_RGBA8        = 1,
+    Texture_RGB8         = 2,
+    Texture_FLOAT32      = 3,
+  };
+
+struct Texture {
+  int width;
+  int height;
+  int format;
+  int bytesPerTexel;
+  int width_mask;
+  int height_mask;
+  void* data;
+};
+
+#else
+
 #include "../default.h"
 #include "../image/image.h"
 
@@ -53,3 +73,4 @@ namespace embree
     std::string fileName;
   };
 }
+#endif

@@ -27,8 +27,9 @@
 #include "scene.h"
 #else
 #include "../lights/light.isph"
-#include "../scenegraph/materials.isph"
 #endif
+
+#include "../scenegraph/materials.h"
 
 #if !defined(ISPC)
 namespace embree
@@ -65,15 +66,6 @@ namespace embree
 #endif
     ISPCType type;
   };
-
-#if !defined(ISPC)
-  struct ISPCMaterial
-  {
-    int ty;
-    int align0,align1,align2;
-    Vec3fa v[7];
-  };
-#endif
 
 #if !defined(ISPC)
   enum TEXTURE_FORMAT {

@@ -16,11 +16,17 @@
 
 #pragma once
 
+#if !defined(ISPC)
 #include "../default.h"
+#endif
+
 #include "texture.h"
 
+#if !defined(ISPC)
 namespace embree
 {
+#endif
+
   enum MaterialType
   {
     MATERIAL_OBJ,
@@ -35,37 +41,37 @@ namespace embree
     MATERIAL_HAIR
   };
 
-  class MatteMaterial 
+  struct MatteMaterial 
   {
-  public:
+#if !defined(ISPC)
     MatteMaterial (const Vec3fa& reflectance)
       : type(MATERIAL_MATTE), reflectance(reflectance) {}
+#endif
 
-  public:
     int type;
     int align[3];
     Vec3fa reflectance;
   };
 
-  class MirrorMaterial
+  struct MirrorMaterial
   {
-  public:
+#if !defined(ISPC)
     MirrorMaterial (const Vec3fa& reflectance)
       : type(MATERIAL_MIRROR), reflectance(reflectance) {}
+#endif
 
-  public:
     int type;
     int align[3];
     Vec3fa reflectance;
   };
 
-  class ThinDielectricMaterial
+  struct ThinDielectricMaterial
   {
-  public:
+#if !defined(ISPC)
     ThinDielectricMaterial (const Vec3fa& transmission, const float eta, const float thickness)
       : type(MATERIAL_THIN_DIELECTRIC), transmission(transmission), transmissionFactor(log(transmission)*thickness), eta(eta), thickness(thickness) {}
+#endif
 
-  public:
     int type;
     int align[3];
     Vec3fa transmission;
@@ -74,9 +80,9 @@ namespace embree
     float thickness;
   };
 
-  class OBJMaterial
+  struct OBJMaterial
   {
-  public:
+#if !defined(ISPC)
     OBJMaterial ()
       : type(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Kt(1.0f), map_d(nullptr), map_Kd(nullptr), map_Displ(nullptr) {}
 
@@ -88,8 +94,8 @@ namespace embree
 
     ~OBJMaterial() { // FIXME: destructor never called!
     }
+#endif
 
-  public:
     int type;
     int align[3];
     int illum;             /*< illumination model */
@@ -107,16 +113,16 @@ namespace embree
     const Texture* map_Displ;        /*< Displ texture */
   };
 
-  class MetalMaterial
+  struct MetalMaterial
   {
-  public:
+#if !defined(ISPC)
     MetalMaterial (const Vec3fa& reflectance, const Vec3fa& eta, const Vec3fa& k)
       : type(MATERIAL_REFLECTIVE_METAL), reflectance(reflectance), eta(eta), k(k), roughness(0.0f) {}
 
     MetalMaterial (const Vec3fa& reflectance, const Vec3fa& eta, const Vec3fa& k, const float roughness)
       : type(MATERIAL_METAL), reflectance(reflectance), eta(eta), k(k), roughness(roughness) {}
+#endif
 
-  public:
     int type;
     int align[3];
     Vec3fa reflectance;
@@ -127,13 +133,13 @@ namespace embree
 
   typedef MetalMaterial ReflectiveMetalMaterial;
 
-  class VelvetMaterial
+  struct VelvetMaterial
   {
-  public:
+#if !defined(ISPC)
     VelvetMaterial (const Vec3fa& reflectance, const float backScattering, const Vec3fa& horizonScatteringColor, const float horizonScatteringFallOff)
       : type(MATERIAL_VELVET), reflectance(reflectance), horizonScatteringColor(horizonScatteringColor), backScattering(backScattering), horizonScatteringFallOff(horizonScatteringFallOff) {}
+#endif
 
-  public:
     int type;
     int align[3];
     Vec3fa reflectance;
@@ -142,13 +148,13 @@ namespace embree
     float horizonScatteringFallOff;
   };
 
-  class DielectricMaterial
+  struct DielectricMaterial
   {
-  public:
+#if !defined(ISPC)
     DielectricMaterial (const Vec3fa& transmissionOutside, const Vec3fa& transmissionInside, const float etaOutside, const float etaInside)
       : type(MATERIAL_DIELECTRIC), transmissionOutside(transmissionOutside), transmissionInside(transmissionInside), etaOutside(etaOutside), etaInside(etaInside) {}
+#endif
 
-  public:
     int type;
     int align[3];
     Vec3fa transmissionOutside;
@@ -157,13 +163,13 @@ namespace embree
     float etaInside;
   };
 
-  class MetallicPaintMaterial
+  struct MetallicPaintMaterial
   {
-  public:
+#if !defined(ISPC)
     MetallicPaintMaterial (const Vec3fa& shadeColor, const Vec3fa& glitterColor, float glitterSpread, float eta)
       : type(MATERIAL_METALLIC_PAINT), shadeColor(shadeColor), glitterColor(glitterColor), glitterSpread(glitterSpread), eta(eta) {}
+#endif
 
-  public:
     int type;
     int align[3];
     Vec3fa shadeColor;
@@ -172,13 +178,13 @@ namespace embree
     float eta;
   };
 
-  class HairMaterial
+  struct HairMaterial
   {
-  public:
+#if !defined(ISPC)
     HairMaterial (const Vec3fa& Kr, const Vec3fa& Kt, float nx, float ny)
       : type(MATERIAL_HAIR), Kr(Kr), Kt(Kt), nx(nx), ny(ny) {}
+#endif
 
-  public:
     int type;
     int align[3];
     Vec3fa Kr;
@@ -187,16 +193,22 @@ namespace embree
     float ny;
   };
 
-  class Material
+  struct Material
   {
-  public:
+#if !defined(ISPC)
     Material () { for (auto& x : v) x = Vec3fa(zero); }
     Material (const OBJMaterial& in) { *((OBJMaterial*)this) = in; }
     OBJMaterial& obj() { return *(OBJMaterial*)this; }
+#endif
 
-  public:
     int type;
     int align[3];
     Vec3fa v[7];
   };
+
+  typedef Material ISPCMaterial;
+
+#if !defined(ISPC)
 }
+#endif
+
