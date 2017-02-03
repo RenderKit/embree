@@ -20,7 +20,7 @@
 
 namespace embree
 {
-  extern "C" int g_instancing_mode;
+  extern "C" int g_instancing_mode = 0;
 
   unsigned int ConvertTriangleMesh(ISPCTriangleMesh* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
   {
