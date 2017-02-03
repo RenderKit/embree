@@ -75,8 +75,8 @@ namespace embree
 
         template<typename PrimRef>
         __forceinline bool bin_unsafe(const PrimRef &ref,
-                                      const vint4   vSplitPos,
-                                      const vbool4  splitDimMask) const
+                                      const vint4&   vSplitPos,
+                                      const vbool4&  splitDimMask) const
         {
           return any(((vint4)bin_unsafe(center2(ref.bounds())) < vSplitPos) & splitDimMask);
         }
