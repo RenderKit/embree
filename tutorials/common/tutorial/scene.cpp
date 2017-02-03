@@ -44,6 +44,9 @@ namespace embree
         for (auto& geom : geometries)
           scene->addGeometry(geom);
       }
+
+      scene->geomID_to_scene.resize(scene->geometries.size());
+      scene->geomID_to_inst.resize(scene->geometries.size());
     }
 
     void convertLights(Ref<SceneGraph::Node> node, const SceneGraph::Transformations& spaces)

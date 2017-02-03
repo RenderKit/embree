@@ -862,8 +862,6 @@ inline Vec3f Material__sample(ISPCMaterial* uniform uniform materials, unsigned 
 extern uniform ISPCScene* uniform g_ispc_scene;
 RTCDevice g_device = NULL;
 RTCScene g_scene = NULL;
-extern RTCScene* uniform geomID_to_scene;
-extern ISPCInstance* uniform* uniform geomID_to_inst;
 
 /* occlusion filter function */
 void intersectionFilterReject(void* uniform ptr, RTCRay& ray);
@@ -992,7 +990,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   if (g_instancing_mode == 2 || g_instancing_mode == 3) 
   {
     for (uniform unsigned int i=0; i<scene_in->numGeometries; i++) {
-      if (geomID_to_scene[i]) rtcCommit(geomID_to_scene[i]);
+      if (scene_in->geomID_to_scene[i]) rtcCommit(scene_in->geomID_to_scene[i]);
     }
   }
 
@@ -1168,7 +1166,7 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
     ISPCInstance* uniform instance;
     uniform ISPCGeometry* uniform geometry;
     if (g_instancing_mode) {
-      instance = geomID_to_inst[geomID];
+      instance = g_ispc_scene->geomID_to_inst[geomID];
       geometry = g_ispc_scene->geometries[instance->geomID];
     } else {
       instance = NULL;

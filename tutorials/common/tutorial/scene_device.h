@@ -357,6 +357,9 @@ namespace embree
         Light* light = convertLight(in->lights[i]);
         if (light) lights[numLights++] = light;
       }
+
+      geomID_to_scene = in->geomID_to_scene.data();
+      geomID_to_inst = (ISPCInstance**) in->geomID_to_inst.data();
     }
 
     ~ISPCScene()
@@ -470,7 +473,10 @@ namespace embree
 
     Light** lights;              //!< list of lights
     unsigned int numLights;               //!< number of lights
-  };
+  public:
+    RTCScene* geomID_to_scene;
+    ISPCInstance** geomID_to_inst;
+   };
 
   typedef ISPCScene::ISPCGeometry ISPCGeometry;
   typedef ISPCScene::ISPCTriangleMesh ISPCTriangleMesh;
