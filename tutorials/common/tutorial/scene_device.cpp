@@ -22,6 +22,123 @@ namespace embree
 {
   extern "C" int g_instancing_mode = 0;
 
+  ISPCTriangleMesh::ISPCTriangleMesh (TutorialScene* scene_in, Ref<SceneGraph::TriangleMeshNode> in) 
+    : geom(TRIANGLE_MESH)
+  {
+    positions = new Vec3fa*[in->numTimeSteps()];
+    for (size_t i=0; i<in->numTimeSteps(); i++)
+      positions[i] = in->positions[i].data();
+    normals = in->normals.data();
+    texcoords = in->texcoords.data();
+    triangles = (ISPCTriangle*) in->triangles.data();
+    numTimeSteps = in->numTimeSteps();
+    numVertices = in->numVertices();
+    numTriangles = in->numPrimitives();
+    scene = nullptr;
+    geomID = -1;
+    materialID = scene_in->materialID(in->material);
+  }
+  
+  ISPCQuadMesh::ISPCQuadMesh (TutorialScene* scene_in, Ref<SceneGraph::QuadMeshNode> in) 
+    : geom(QUAD_MESH)
+  {
+    positions = new Vec3fa*[in->numTimeSteps()];
+    for (size_t i=0; i<in->numTimeSteps(); i++)
+      positions[i] = in->positions[i].data();
+    normals = in->normals.data();
+    texcoords = in->texcoords.data();
+    quads = (ISPCQuad*) in->quads.data();
+    numTimeSteps = in->numTimeSteps();
+    numVertices = in->numVertices();
+    numQuads = in->numPrimitives();
+    scene = nullptr;
+    geomID = -1;
+    materialID = scene_in->materialID(in->material);
+  }
+
+  ISPCSubdivMesh::ISPCSubdivMesh (TutorialScene* scene_in, Ref<SceneGraph::SubdivMeshNode> in) 
+    : geom(SUBDIV_MESH)
+  {
+    positions = new Vec3fa*[in->numTimeSteps()];
+    for (size_t i=0; i<in->numTimeSteps(); i++)
+      positions[i] = in->positions[i].data();
+    normals = in->normals.data();
+    texcoords = in->texcoords.data();
+    position_indices = in->position_indices.data();
+    normal_indices = in->normal_indices.data();
+    texcoord_indices = in->texcoord_indices.data();
+    position_subdiv_mode =  in->position_subdiv_mode;
+    normal_subdiv_mode = in->normal_subdiv_mode;
+    texcoord_subdiv_mode = in->texcoord_subdiv_mode;
+    verticesPerFace = in->verticesPerFace.data();
+    holes = in->holes.data();
+    edge_creases = in->edge_creases.data();
+    edge_crease_weights = in->edge_crease_weights.data();
+    vertex_creases = in->vertex_creases.data();
+    vertex_crease_weights = in->vertex_crease_weights.data();
+    numTimeSteps = in->numTimeSteps();
+    numVertices = in->numPositions();
+    numFaces = in->numPrimitives();
+    numEdges = unsigned(in->position_indices.size());
+    numEdgeCreases = unsigned(in->edge_creases.size());
+    numVertexCreases = unsigned(in->vertex_creases.size());
+    numHoles = unsigned(in->holes.size());
+    numNormals = unsigned(in->normals.size());
+    numTexCoords = unsigned(in->texcoords.size());
+    materialID = scene_in->materialID(in->material);
+    scene = nullptr;
+    geomID = -1;
+    
+    size_t numEdges = in->position_indices.size();
+    size_t numFaces = in->verticesPerFace.size();
+    subdivlevel = new float[numEdges];
+    face_offsets = new unsigned[numFaces];
+    for (size_t i=0; i<numEdges; i++) subdivlevel[i] = 1.0f;
+    int offset = 0;
+    for (size_t i=0; i<numFaces; i++)
+    {
+      face_offsets[i] = offset;
+      offset+=verticesPerFace[i];
+    }
+  }
+  
+  ISPCSubdivMesh::~ISPCSubdivMesh ()
+  {
+    delete[] subdivlevel;
+    delete[] face_offsets;
+  }
+  
+  ISPCLineSegments::ISPCLineSegments (TutorialScene* scene_in, Ref<SceneGraph::LineSegmentsNode> in) 
+    : geom(LINE_SEGMENTS)
+  {
+    positions = new Vec3fa*[in->numTimeSteps()];
+    for (size_t i=0; i<in->numTimeSteps(); i++)
+      positions[i] = in->positions[i].data();
+    indices = in->indices.data();
+    numTimeSteps = in->numTimeSteps();
+    numVertices = in->numVertices();
+    numSegments = in->numPrimitives();
+    materialID = scene_in->materialID(in->material);
+    scene = nullptr;
+    geomID = -1;
+  }
+  
+  ISPCHairSet::ISPCHairSet (TutorialScene* scene_in, bool hair, Ref<SceneGraph::HairSetNode> in) 
+    : geom(hair ? HAIR_SET : CURVES)
+  {
+    positions = new Vec3fa*[in->numTimeSteps()];
+    for (size_t i=0; i<in->numTimeSteps(); i++)
+      positions[i] = in->positions[i].data();
+    hairs = (ISPCHair*) in->hairs.data();
+    numTimeSteps = in->numTimeSteps();
+    numVertices = in->numVertices();
+    numHairs = in->numPrimitives();
+    materialID = scene_in->materialID(in->material);
+    scene = nullptr;
+    geomID = -1;
+    tessellation_rate = in->tessellation_rate;
+  }
+  
   unsigned int ConvertTriangleMesh(ISPCTriangleMesh* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
   {
     unsigned int geomID = rtcNewTriangleMesh (scene_out, gflags, mesh->numTriangles, mesh->numVertices, mesh->numTimeSteps);
