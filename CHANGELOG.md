@@ -1,6 +1,35 @@
 Version History
 ---------------
 
+### New Features in Embree 2.14.0
+-   Added `ignore_config_files` option to init flags that allows the
+    application to ignore Embree configuration files.
+-   Face-varying interpolation is now supported for subdivision surfaces.
+-   Up to 16 user vertex buffers are supported for vertex
+    attribute interpolation.
+-   Deprecated `rtcSetBoundaryMode` function, please use the new
+    `rtcSetSubdivisionMode` function.
+-   Added `RTC_SUBDIV_PIN_BOUNDARY` mode for handling boundaries of
+    subdivision meshes.
+-   Added `RTC_SUBDIV_PIN_ALL` mode to enforce linear interpolation
+    for subdivision meshes.
+-   Optimized object generation performance for dynamic scenes.
+-   Reduced memory consumption when using lots of small dynamic objects.
+-   Fixed bug for subdivision surfaces using low tessellation rates.
+-   Hair geometry now uses a new ribbon intersector that intersects with
+    ray-facing quads. The new intersector also returns the
+    v-coordinate of the hair intersection, and fixes artefacts at junction
+    points between segments, at the cost of a small performance hit.
+-   Added `rtcSetBuffer2` function, that additionally gets the number of
+    elements of a buffer. In dynamic scenes, this function allows to
+    quickly change buffer sizes, making it possible to change the number of
+    primitives of a mesh or the number of crease features for subdivision
+    surfaces.
+-   Added simple 'viewer_anim' tutorial for rendering key
+    frame animations and 'buildbench' for measuring BVH (re-)build
+    performance for static and dynamic scenes.
+-   Added more AVX512 optimizations for future architectures.
+
 ### New Features in Embree 2.13.0
 
 -   Improved performance for compact (but not robust) scenes.
