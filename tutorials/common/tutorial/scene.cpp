@@ -21,6 +21,7 @@ namespace embree
   struct SceneGraphConverter
   {
     TutorialScene* scene;
+    std::map<Ref<SceneGraph::Node>,Ref<SceneGraph::Node>> object_mapping;
     
     SceneGraphConverter (Ref<SceneGraph::Node> in, TutorialScene* scene, TutorialScene::InstancingMode instancing)
       : scene(scene)
@@ -99,16 +100,23 @@ namespace embree
 
     Ref<SceneGraph::Node> lookupGeometries(Ref<SceneGraph::Node> node)
     {
-      if (scene->geometry2id.find(node) == scene->geometry2id.end())
+      if (object_mapping.find(node) == object_mapping.end())
       {
         std::vector<Ref<SceneGraph::Node>> geometries;
         convertGeometries(geometries,node,one);
         
-        if (geometries.size() == 1) scene->addGeometry(geometries[0]);
-        else scene->addGeometry(new SceneGraph::GroupNode(geometries));
-    
+        if (geometries.size() == 1) {
+          scene->addGeometry(geometries[0]);
+          object_mapping[node] = geometries[0];
+        }
+        else {
+          Ref<SceneGraph::Node> group = new SceneGraph::GroupNode(geometries);
+          scene->addGeometry(group);
+          object_mapping[node] = group;
+        }
       }
-      return scene->geometries.back();
+      
+      return object_mapping[node];
     }
 
     void convertInstances(Ref<SceneGraph::Node> node, const SceneGraph::Transformations& spaces)
