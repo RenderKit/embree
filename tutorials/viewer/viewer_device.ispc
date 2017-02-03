@@ -289,8 +289,8 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
   dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
 
   /* shade */
-  if (g_ispc_scene->materials[materialID].type == MATERIAL_OBJ) {
-    uniform OBJMaterial* material = (uniform OBJMaterial*) &g_ispc_scene->materials[materialID];
+  if (g_ispc_scene->materials[materialID]->type == MATERIAL_OBJ) {
+    uniform OBJMaterial* material = (uniform OBJMaterial*) g_ispc_scene->materials[materialID];
     color = make_Vec3f(material->Kd);
   }
 

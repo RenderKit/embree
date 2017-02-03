@@ -50,7 +50,7 @@ namespace embree
     unsigned materialID(Ref<SceneGraph::MaterialNode> material) 
     {
       if (material2id.find(material) == material2id.end()) {
-        materials.push_back(material->material);
+        materials.push_back(material);
         material2id[material] = unsigned(materials.size()-1);
       }
       return material2id[material];
@@ -63,7 +63,7 @@ namespace embree
     }
     
   public:
-    avector<Material> materials;                      //!< list of materials
+    std::vector<Ref<SceneGraph::MaterialNode>> materials; //!< list of materials // FIXME: replacing std::vector by avector causes segfault!!
     std::vector<Ref<SceneGraph::Node> > geometries;   //!< list of geometries
     std::vector<Ref<SceneGraph::Light>> lights;       //!< list of lights
   public:

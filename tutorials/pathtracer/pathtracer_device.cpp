@@ -778,13 +778,13 @@ Vec3fa HairMaterial__sample(HairMaterial* This, const BRDF& brdf, const Vec3fa& 
 //                              Material                                      //
 ////////////////////////////////////////////////////////////////////////////////
 
-inline void Material__preprocess(ISPCMaterial* materials, unsigned int materialID, unsigned int numMaterials, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)
+inline void Material__preprocess(ISPCMaterial** materials, unsigned int materialID, unsigned int numMaterials, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)
 {
   unsigned int id = materialID;
   {
     if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
-      ISPCMaterial* material = &materials[id];
+      ISPCMaterial* material = materials[id];
 
       switch (material->type) {
       case MATERIAL_OBJ  : OBJMaterial__preprocess  ((OBJMaterial*)  material,brdf,wo,dg,medium); break;
@@ -803,14 +803,14 @@ inline void Material__preprocess(ISPCMaterial* materials, unsigned int materialI
   }
 }
 
-inline Vec3fa Material__eval(ISPCMaterial* materials, unsigned int materialID, unsigned int numMaterials, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi)
+inline Vec3fa Material__eval(ISPCMaterial** materials, unsigned int materialID, unsigned int numMaterials, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi)
 {
   Vec3fa c = Vec3fa(0.0f);
   unsigned int id = materialID;
   {
     if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
-      ISPCMaterial* material = &materials[id];
+      ISPCMaterial* material = materials[id];
       switch (material->type) {
       case MATERIAL_OBJ  : c = OBJMaterial__eval  ((OBJMaterial*)  material, brdf, wo, dg, wi); break;
       case MATERIAL_METAL: c = MetalMaterial__eval((MetalMaterial*)material, brdf, wo, dg, wi); break;
@@ -829,14 +829,14 @@ inline Vec3fa Material__eval(ISPCMaterial* materials, unsigned int materialID, u
   return c;
 }
 
-inline Vec3fa Material__sample(ISPCMaterial* materials, unsigned int materialID, unsigned int numMaterials, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
+inline Vec3fa Material__sample(ISPCMaterial** materials, unsigned int materialID, unsigned int numMaterials, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
   Vec3fa c = Vec3fa(0.0f);
   unsigned int id = materialID;
   {
     if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
-      ISPCMaterial* material = &materials[id];
+      ISPCMaterial* material = materials[id];
       switch (material->type) {
       case MATERIAL_OBJ  : c = OBJMaterial__sample  ((OBJMaterial*)  material, brdf, Lw, wo, dg, wi_o, medium, s); break;
       case MATERIAL_METAL: c = MetalMaterial__sample((MetalMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
@@ -907,14 +907,14 @@ void assignShaders(ISPCGeometry* geometry)
 #if ENABLE_FILTER_FUNCTION == 1
     rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&occlusionFilterOpaque);
     
-    ISPCMaterial& material = g_ispc_scene->materials[mesh->materialID];
-    //if (material.type == MATERIAL_DIELECTRIC || material.type == MATERIAL_THIN_DIELECTRIC)
+    ISPCMaterial* material = g_ispc_scene->materials[mesh->materialID];
+    //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
     //  rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&intersectionFilterReject);
     //else
-    if (material.type == MATERIAL_OBJ)
+    if (material->type == MATERIAL_OBJ)
     {
-      OBJMaterial& obj = (OBJMaterial&) material;
-      if (obj.d != 1.0f || obj.map_d) {
+      OBJMaterial* obj = (OBJMaterial*) material;
+      if (obj->d != 1.0f || obj->map_d) {
         rtcSetIntersectionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&intersectionFilterOBJ);
         rtcSetOcclusionFilterFunction   (mesh->scene,mesh->geomID,(RTCFilterFunc)&occlusionFilterOBJ);
       }
@@ -926,14 +926,14 @@ void assignShaders(ISPCGeometry* geometry)
 #if ENABLE_FILTER_FUNCTION == 1
     rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&occlusionFilterOpaque);
     
-    ISPCMaterial& material = g_ispc_scene->materials[mesh->materialID];
-    //if (material.type == MATERIAL_DIELECTRIC || material.type == MATERIAL_THIN_DIELECTRIC)
+    ISPCMaterial* material = g_ispc_scene->materials[mesh->materialID];
+    //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
     //  rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&intersectionFilterReject);
     //else
-    if (material.type == MATERIAL_OBJ)
+    if (material->type == MATERIAL_OBJ)
     {
-      OBJMaterial& obj = (OBJMaterial&) material;
-      if (obj.d != 1.0f || obj.map_d) {
+      OBJMaterial* obj = (OBJMaterial*) material;
+      if (obj->d != 1.0f || obj->map_d) {
         rtcSetIntersectionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&intersectionFilterOBJ);
         rtcSetOcclusionFilterFunction   (mesh->scene,mesh->geomID,(RTCFilterFunc)&occlusionFilterOBJ);
       }
@@ -1212,7 +1212,7 @@ void intersectionFilterOBJ(void* ptr, RTCRay& ray)
   /* calculate BRDF */
   BRDF brdf; brdf.Kt = Vec3fa(0,0,0);
   int numMaterials = g_ispc_scene->numMaterials;
-  ISPCMaterial* material_array = &g_ispc_scene->materials[0];
+  ISPCMaterial** material_array = &g_ispc_scene->materials[0];
   Medium medium = make_Medium_Vacuum();
   Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
   if (min(min(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) >= 1.0f)
@@ -1242,7 +1242,7 @@ void occlusionFilterOBJ(void* ptr, RTCRay& ray)
   /* calculate BRDF */
   BRDF brdf; brdf.Kt = Vec3fa(0,0,0);
   int numMaterials = g_ispc_scene->numMaterials;
-  ISPCMaterial* material_array = &g_ispc_scene->materials[0];
+  ISPCMaterial** material_array = &g_ispc_scene->materials[0];
   Medium medium = make_Medium_Vacuum();
   Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
 
@@ -1261,7 +1261,7 @@ void occlusionFilterHair(void* ptr, RTCRay& ray)
     if (geometry->type == LINE_SEGMENTS)
     {
       int materialID = ((ISPCLineSegments*)geometry)->materialID;
-      ISPCMaterial* material = &g_ispc_scene->materials[materialID];
+      ISPCMaterial* material = g_ispc_scene->materials[materialID];
       switch (material->type) {
       case MATERIAL_HAIR: Kt = Vec3fa(((HairMaterial*)material)->Kt); break;
       default: break;
@@ -1270,7 +1270,7 @@ void occlusionFilterHair(void* ptr, RTCRay& ray)
     else if (geometry->type == HAIR_SET)
     {
       int materialID = ((ISPCHairSet*)geometry)->materialID;
-      ISPCMaterial* material = &g_ispc_scene->materials[materialID];
+      ISPCMaterial* material = g_ispc_scene->materials[materialID];
       switch (material->type) {
       case MATERIAL_HAIR: Kt = Vec3fa(((HairMaterial*)material)->Kt); break;
       default: break;
@@ -1284,7 +1284,7 @@ void occlusionFilterHair(void* ptr, RTCRay& ray)
       else*/
       {
         int materialID = ((ISPCHairSet*)geometry)->materialID;
-        ISPCMaterial* material = &g_ispc_scene->materials[materialID];
+        ISPCMaterial* material = g_ispc_scene->materials[materialID];
         switch (material->type) {
         case MATERIAL_HAIR: Kt = Vec3fa(((HairMaterial*)material)->Kt); break;
         default: break;
@@ -1372,7 +1372,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
     /* calculate BRDF */
     BRDF brdf;
     int numMaterials = g_ispc_scene->numMaterials;
-    ISPCMaterial* material_array = &g_ispc_scene->materials[0];
+    ISPCMaterial** material_array = &g_ispc_scene->materials[0];
     Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
 
     /* sample BRDF at hit point */

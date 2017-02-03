@@ -247,7 +247,9 @@ namespace embree
         geometries[i] = convertGeometry(in,in->geometries[i]);
       numGeometries = unsigned(in->geometries.size());
       
-      materials = (ISPCMaterial*) in->materials.data();
+      materials = new ISPCMaterial*[in->materials.size()];
+      for (size_t i=0; i<in->materials.size(); i++)
+        materials[i] = &in->materials[i]->material;
       numMaterials = unsigned(in->materials.size());
       
       lights = new Light*[in->lights.size()];
@@ -350,7 +352,7 @@ namespace embree
   public:
 #endif
     ISPCGeometry** geometries;   //!< list of geometries
-    ISPCMaterial* materials;     //!< material list
+    ISPCMaterial** materials;     //!< material list
     unsigned int numGeometries;           //!< number of geometries
     unsigned int numMaterials;            //!< number of materials
     

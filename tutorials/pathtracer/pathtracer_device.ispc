@@ -776,13 +776,13 @@ Vec3f HairMaterial__sample(HairMaterial* uniform This, const BRDF& brdf, const V
 //                              Material                                      //
 ////////////////////////////////////////////////////////////////////////////////
 
-inline void Material__preprocess(ISPCMaterial* uniform materials, unsigned int materialID, uniform unsigned int numMaterials, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)
+inline void Material__preprocess(ISPCMaterial** uniform materials, unsigned int materialID, uniform unsigned int numMaterials, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)
 {
   foreach_unique (id in materialID)
   {
     if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
-      ISPCMaterial* uniform material = &materials[id];
+      ISPCMaterial* uniform material = materials[id];
 
       switch (material->type) {
       case MATERIAL_OBJ  : OBJMaterial__preprocess  ((uniform OBJMaterial* uniform)  material,brdf,wo,dg,medium); break;
@@ -801,14 +801,14 @@ inline void Material__preprocess(ISPCMaterial* uniform materials, unsigned int m
   }
 }
 
-inline Vec3f Material__eval(ISPCMaterial* uniform materials, unsigned int materialID, uniform unsigned int numMaterials, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi)
+inline Vec3f Material__eval(ISPCMaterial** uniform materials, unsigned int materialID, uniform unsigned int numMaterials, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi)
 {
   Vec3f c = make_Vec3f(0.0f);
   foreach_unique (id in materialID)
   {
     if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
-      ISPCMaterial* uniform material = &materials[id];
+      ISPCMaterial* uniform material = materials[id];
       switch (material->type) {
       case MATERIAL_OBJ  : c = OBJMaterial__eval  ((uniform OBJMaterial* uniform)  material, brdf, wo, dg, wi); break;
       case MATERIAL_METAL: c = MetalMaterial__eval((uniform MetalMaterial* uniform)material, brdf, wo, dg, wi); break;
@@ -827,14 +827,14 @@ inline Vec3f Material__eval(ISPCMaterial* uniform materials, unsigned int materi
   return c;
 }
 
-inline Vec3f Material__sample(ISPCMaterial* uniform uniform materials, unsigned int materialID, uniform unsigned int numMaterials, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
+inline Vec3f Material__sample(ISPCMaterial** uniform uniform materials, unsigned int materialID, uniform unsigned int numMaterials, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
   Vec3f c = make_Vec3f(0.0f);
   foreach_unique (id in materialID)
   {
     if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
-      ISPCMaterial* uniform material = &materials[id];
+      ISPCMaterial* uniform material = materials[id];
       switch (material->type) {
       case MATERIAL_OBJ  : c = OBJMaterial__sample  ((uniform OBJMaterial* uniform)  material, brdf, Lw, wo, dg, wi_o, medium, s); break;
       case MATERIAL_METAL: c = MetalMaterial__sample((uniform MetalMaterial* uniform)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
@@ -905,14 +905,14 @@ void assignShaders(ISPCGeometry* uniform geometry)
 #if ENABLE_FILTER_FUNCTION == 1
     rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&occlusionFilterOpaque);
     
-    uniform ISPCMaterial& material = g_ispc_scene->materials[mesh->materialID];
-    //if (material.type == MATERIAL_DIELECTRIC || material.type == MATERIAL_THIN_DIELECTRIC)
+    ISPCMaterial* uniform material = g_ispc_scene->materials[mesh->materialID];
+    //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
     //  rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&intersectionFilterReject);
     //else
-    if (material.type == MATERIAL_OBJ)
+    if (material->type == MATERIAL_OBJ)
     {
-      uniform OBJMaterial& obj = (uniform OBJMaterial&) material;
-      if (obj.d != 1.0f || obj.map_d) {
+      OBJMaterial* uniform obj = (OBJMaterial* uniform) material;
+      if (obj->d != 1.0f || obj->map_d) {
         rtcSetIntersectionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&intersectionFilterOBJ);
         rtcSetOcclusionFilterFunction   (mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&occlusionFilterOBJ);
       }
@@ -924,14 +924,14 @@ void assignShaders(ISPCGeometry* uniform geometry)
 #if ENABLE_FILTER_FUNCTION == 1
     rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&occlusionFilterOpaque);
     
-    uniform ISPCMaterial& material = g_ispc_scene->materials[mesh->materialID];
-    //if (material.type == MATERIAL_DIELECTRIC || material.type == MATERIAL_THIN_DIELECTRIC)
+    ISPCMaterial* uniform material = g_ispc_scene->materials[mesh->materialID];
+    //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
     //  rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&intersectionFilterReject);
     //else
-    if (material.type == MATERIAL_OBJ)
+    if (material->type == MATERIAL_OBJ)
     {
-      uniform OBJMaterial& obj = (uniform OBJMaterial&) material;
-      if (obj.d != 1.0f || obj.map_d) {
+      OBJMaterial* uniform obj = (OBJMaterial* uniform) material;
+      if (obj->d != 1.0f || obj->map_d) {
         rtcSetIntersectionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&intersectionFilterOBJ);
         rtcSetOcclusionFilterFunction   (mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&occlusionFilterOBJ);
       }
@@ -1210,7 +1210,7 @@ void intersectionFilterOBJ(void* uniform ptr, RTCRay& ray)
   /* calculate BRDF */
   BRDF brdf; brdf.Kt = make_Vec3f(0,0,0);
   uniform int numMaterials = g_ispc_scene->numMaterials;
-  uniform ISPCMaterial* uniform material_array = &g_ispc_scene->materials[0];
+  ISPCMaterial** uniform material_array = &g_ispc_scene->materials[0];
   Medium medium = make_Medium_Vacuum();
   Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
   if (min(min(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) >= 1.0f)
@@ -1240,7 +1240,7 @@ void occlusionFilterOBJ(void* uniform ptr, RTCRay& ray)
   /* calculate BRDF */
   BRDF brdf; brdf.Kt = make_Vec3f(0,0,0);
   uniform int numMaterials = g_ispc_scene->numMaterials;
-  uniform ISPCMaterial* uniform material_array = &g_ispc_scene->materials[0];
+  ISPCMaterial** uniform material_array = &g_ispc_scene->materials[0];
   Medium medium = make_Medium_Vacuum();
   Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
 
@@ -1259,7 +1259,7 @@ void occlusionFilterHair(void* uniform ptr, RTCRay& ray)
     if (geometry->type == LINE_SEGMENTS)
     {
       uniform int materialID = ((ISPCLineSegments* uniform)geometry)->materialID;
-      ISPCMaterial* uniform material = &g_ispc_scene->materials[materialID];
+      ISPCMaterial* uniform material = g_ispc_scene->materials[materialID];
       switch (material->type) {
       case MATERIAL_HAIR: Kt = make_Vec3f(((uniform HairMaterial* uniform)material)->Kt); break;
       default: break;
@@ -1268,7 +1268,7 @@ void occlusionFilterHair(void* uniform ptr, RTCRay& ray)
     else if (geometry->type == HAIR_SET)
     {
       uniform int materialID = ((ISPCHairSet* uniform)geometry)->materialID;
-      ISPCMaterial* uniform material = &g_ispc_scene->materials[materialID];
+      ISPCMaterial* uniform material = g_ispc_scene->materials[materialID];
       switch (material->type) {
       case MATERIAL_HAIR: Kt = make_Vec3f(((uniform HairMaterial* uniform)material)->Kt); break;
       default: break;
@@ -1282,7 +1282,7 @@ void occlusionFilterHair(void* uniform ptr, RTCRay& ray)
       else*/
       {
         uniform int materialID = ((ISPCHairSet* uniform)geometry)->materialID;
-        ISPCMaterial* uniform material = &g_ispc_scene->materials[materialID];
+        ISPCMaterial* uniform material = g_ispc_scene->materials[materialID];
         switch (material->type) {
         case MATERIAL_HAIR: Kt = make_Vec3f(((uniform HairMaterial* uniform)material)->Kt); break;
         default: break;
@@ -1370,7 +1370,7 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
     /* calculate BRDF */
     BRDF brdf;
     uniform int numMaterials = g_ispc_scene->numMaterials;
-    uniform ISPCMaterial* uniform material_array = &g_ispc_scene->materials[0];
+    ISPCMaterial** uniform material_array = &g_ispc_scene->materials[0];
     Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
 
     /* sample BRDF at hit point */
