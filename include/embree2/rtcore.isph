@@ -197,9 +197,14 @@ RTCORE_DEPRECATED void rtcSetErrorFunction(uniform RTCErrorFunc func);
 /*! \brief Sets a callback function that is called whenever an error occurs. */
 void rtcDeviceSetErrorFunction(RTCDevice device, uniform RTCErrorFunc func);
 
-/*! \brief Type of memory consumption callback function. */
-typedef uniform bool (*uniform RTCMemoryMonitorFunc)(const uniform size_t bytes, const uniform bool post); // FIXME: should be ssize_t
+/*! \brief Type of memory consumption callback function. 
+  WARNING: This callback function is deprecated, use RTCMemoryMonitorFunc instead.
+*/
+RTCORE_DEPRECATED typedef uniform bool (*uniform RTCMemoryMonitorFunc)(const uniform size_t bytes, const uniform bool post); // FIXME: should be ssize_t
 RTCORE_DEPRECATED typedef RTCMemoryMonitorFunc RTC_MEMORY_MONITOR_FUNCTION;
+
+/*! \brief Type of memory consumption callback function. */
+typedef uniform bool (*uniform RTCMemoryMonitorFunc2)(const uniform size_t bytes, const uniform bool post); // FIXME: should be ssize_t
 
 /*! \brief Sets the memory consumption callback function which is
  *  called before the library allocates or after the library frees
@@ -212,6 +217,12 @@ RTCORE_DEPRECATED void rtcSetMemoryMonitorFunction(RTCMemoryMonitorFunc func);
  *  called before the library allocates or after the library frees
  *  memory. */
 void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunc func);
+
+/*! \brief Sets the memory consumption callback function which is
+ *  called before or after the library allocates or frees memory. The
+ *  userPtr pointer is passed to each invokation of the callback
+ *  function. */
+void rtcDeviceSetMemoryMonitorFunction2(RTCDevice device, RTCMemoryMonitorFunc2 func, void* uniform userPtr);
 
 /*! \brief Implementation specific (do not call).
 

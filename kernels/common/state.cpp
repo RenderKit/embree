@@ -121,6 +121,8 @@ namespace embree
 
     error_function = nullptr;
     memory_monitor_function = nullptr;
+    memory_monitor_function2 = nullptr;
+    memory_monitor_userptr = nullptr;
   }
 
   State::~State() {

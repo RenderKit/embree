@@ -163,7 +163,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetMemoryMonitorFunction);
     assert(g_device);
-    if (g_device) g_device->memory_monitor_function = func;
+    if (g_device) g_device->setMemoryMonitorFunction(func);
     RTCORE_CATCH_END(g_device);
   }
 
@@ -172,7 +172,16 @@ namespace embree
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcDeviceSetMemoryMonitorFunction);
-    device->memory_monitor_function = func;
+    device->setMemoryMonitorFunction(func);
+    RTCORE_CATCH_END(device);
+  }
+
+  RTCORE_API void rtcDeviceSetMemoryMonitorFunction2(RTCDevice hdevice, RTCMemoryMonitorFunc2 func, void* userPtr) 
+  {
+    Device* device = (Device*) hdevice;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcDeviceSetMemoryMonitorFunction2);
+    device->setMemoryMonitorFunction(func,userPtr);
     RTCORE_CATCH_END(device);
   }
 
