@@ -301,8 +301,7 @@ namespace embree
 
       Ref<SceneGraph::Node> import()
       {
-        Material objmtl; new (&objmtl) OBJMaterial;
-        Ref<SceneGraph::MaterialNode> material = new SceneGraph::MaterialNode(objmtl);
+        Ref<SceneGraph::MaterialNode> material = new OBJMaterial;
         Ref<SceneGraph::TriangleMeshNode> mesh_o = new SceneGraph::TriangleMeshNode(material,1);
         
         /* convert all vertices */

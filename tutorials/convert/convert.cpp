@@ -60,8 +60,7 @@ namespace embree
 
     Ref<SceneGraph::Node> geometry()
     {
-      OBJMaterial material(1.0f,Vec3fa(1.0f),Vec3fa(0.0f),1.0f);
-      Ref<SceneGraph::MaterialNode> mnode = new SceneGraph::MaterialNode((Material&)material);
+      Ref<SceneGraph::MaterialNode> mnode = new OBJMaterial(1.0f,Vec3fa(1.0f),Vec3fa(0.0f),1.0f);
       Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(mnode,1);
 
       const size_t width = texture->width;

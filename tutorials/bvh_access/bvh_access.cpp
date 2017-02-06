@@ -23,7 +23,7 @@
 namespace embree
 {
   /* error reporting function */
-  void error_handler(const RTCError code, const char* str)
+  void error_handler(void* userPtr, const RTCError code, const char* str)
   {
     if (code == RTC_NO_ERROR) 
       return;
@@ -45,7 +45,7 @@ namespace embree
     }
     exit(1);
   }
-  
+
   /* adds a cube to the scene */
   unsigned int addCube (RTCScene scene_i, const Vec3fa& pos)
   {
@@ -223,10 +223,10 @@ namespace embree
 
     /* create new Embree device and force bvh4.triangle4v hierarchy for triangles */
     RTCDevice device = rtcNewDevice("tri_accel=bvh4.triangle4v");
-    error_handler(rtcDeviceGetError(device));
+    error_handler(nullptr,rtcDeviceGetError(device));
     
     /* set error handler */
-    rtcDeviceSetErrorFunction(device,error_handler);
+    rtcDeviceSetErrorFunction2(device,error_handler,nullptr);
     
     /* create scene */
     RTCScene scene = rtcDeviceNewScene(device,RTC_SCENE_STATIC,RTC_INTERSECT1);

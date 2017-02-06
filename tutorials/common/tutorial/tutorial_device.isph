@@ -37,7 +37,7 @@ struct Triangle { int v0, v1, v2; };
 #include "../math/affinespace.isph"
 #include "../core/ray.isph"
 #include "camera.isph"
-#include "scene_device.isph"
+#include "scene_device.h"
 #include "noise.isph"
 #if !defined(ISPC)
 #include "../../../common/algorithms/parallel_for.h"
@@ -52,7 +52,7 @@ enum Mode {
 extern uniform Mode g_mode;
 
 /* error reporting function */
-unmasked void error_handler(const uniform RTCError code, const uniform int8* uniform str = NULL);
+unmasked void error_handler(void* uniform userPtr, const uniform RTCError code, const uniform int8* uniform str = NULL);
 
 /* returns time stamp counter */
 extern "C" uniform int64 get_tsc();

@@ -211,10 +211,10 @@ namespace embree
   {
     /* create new Embree device */
     g_device = rtcNewDevice(cfg);
-    error_handler(rtcDeviceGetError(g_device));
+    error_handler(nullptr,rtcDeviceGetError(g_device));
     
     /* set error handler */
-    rtcDeviceSetErrorFunction(g_device,error_handler);
+    rtcDeviceSetErrorFunction2(g_device,error_handler,nullptr);
     
     /* set start render mode */
     renderTile = renderTileStandard;

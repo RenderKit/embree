@@ -18,7 +18,7 @@
 
 namespace embree
 {
-  extern "C" { int g_instancing_mode = 0; }
+  extern "C" int g_instancing_mode;
 
   struct Tutorial : public SceneLoadingTutorialApplication
   {

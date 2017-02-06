@@ -186,11 +186,9 @@ float Noise(float x, float y, float z)
     return p+0.2f*Vec3fa(x,y,z);
   }
 
-  void addHairySphere (TutorialScene& scene, const Vec3fa& p, float r)
+  void addHairySphere (Ref<SceneGraph::GroupNode>& scene, const Vec3fa& p, float r)
   {
-    Material material;
-    unsigned materialID = unsigned(scene.materials.size());
-    scene.materials.push_back(material);
+    Ref<SceneGraph::MaterialNode> material = new HairMaterial(Vec3fa(1.0f,1.0f,0.0f),Vec3fa(0.8f),2.0f,2.0f);
     
     {
       const size_t numPhi   = 20;
@@ -199,7 +197,7 @@ float Noise(float x, float y, float z)
       avector<Vec3fa> positions;
       avector<Vec3fa> normals;
       std::vector<Vec2f> texcoords;
-      std::vector<TutorialScene::Triangle> triangles;
+      std::vector<SceneGraph::TriangleMeshNode::Triangle> triangles;
 
       const float rcpNumTheta = rcp((float)numTheta);
       const float rcpNumPhi   = rcp((float)numPhi);
@@ -223,20 +221,20 @@ float Noise(float x, float y, float z)
           unsigned int p11 = phi*numTheta+theta%numTheta;
           
           if (phi > 1)
-            triangles.push_back(TutorialScene::Triangle(p10,p00,p01,materialID));
+            triangles.push_back(SceneGraph::TriangleMeshNode::Triangle(p10,p00,p01));
           
           if (phi < numPhi) 
-            triangles.push_back(TutorialScene::Triangle(p11,p10,p01,materialID));
+            triangles.push_back(SceneGraph::TriangleMeshNode::Triangle(p11,p10,p01));
         }
       }
       
-      scene.geometries.push_back(new TutorialScene::TriangleMesh(positions,normals,texcoords,triangles,materialID));
+      scene->add(new SceneGraph::TriangleMeshNode(positions,normals,texcoords,triangles,material));
     }
 
     {
       const float thickness = 0.001f*r;
       avector<Vec3fa> positions; 
-      std::vector<TutorialScene::Hair> hairs;
+      std::vector<SceneGraph::HairSetNode::Hair> hairs;
       
       unsigned int s = 0;
       for (size_t iy=0; iy<300; iy++)
@@ -257,33 +255,31 @@ float Noise(float x, float y, float z)
           positions.push_back(l1);
           positions.push_back(l2);
           positions.push_back(l3);
-          hairs.push_back( TutorialScene::Hair(unsigned(v_index),0) );
+          hairs.push_back(SceneGraph::HairSetNode::Hair(unsigned(v_index),0) );
         }
       }
-      scene.geometries.push_back(new TutorialScene::HairSet(positions,hairs,materialID,true));
+      scene->add(new SceneGraph::HairSetNode(positions,hairs,material,true));
     }
   }
 
-  void addGroundPlane (TutorialScene& scene, const Vec3fa& p00, const Vec3fa& p01, const Vec3fa& p10, const Vec3fa& p11)
+  void addGroundPlane (Ref<SceneGraph::GroupNode>& scene, const Vec3fa& p00, const Vec3fa& p01, const Vec3fa& p10, const Vec3fa& p11)
   {
      avector<Vec3fa> positions;
      avector<Vec3fa> normals;
      std::vector<Vec2f> texcoords;
-     std::vector<TutorialScene::Triangle> triangles;
+     std::vector<SceneGraph::TriangleMeshNode::Triangle> triangles;
 
-     Material material;
-     unsigned materialID = unsigned(scene.materials.size());
-     scene.materials.push_back(material);
-
+     Ref<SceneGraph::MaterialNode> material = new OBJMaterial;
+   
      positions.push_back(p00);
      positions.push_back(p01);
      positions.push_back(p10);
      positions.push_back(p11);
 
-     triangles.push_back(TutorialScene::Triangle(0,1,2,materialID));
-     triangles.push_back(TutorialScene::Triangle(2,1,3,materialID));
+     triangles.push_back(SceneGraph::TriangleMeshNode::Triangle(0,1,2));
+     triangles.push_back(SceneGraph::TriangleMeshNode::Triangle(2,1,3));
      
-     scene.geometries.push_back(new TutorialScene::TriangleMesh(positions,normals,texcoords,triangles,materialID));
+     scene->add(new SceneGraph::TriangleMeshNode(positions,normals,texcoords,triangles,material));
   }
 
   struct Tutorial : public TutorialApplication 
@@ -310,19 +306,18 @@ float Noise(float x, float y, float z)
 
     void postParseCommandLine() 
     {
-      addHairySphere(obj_scene,Vec3fa(0,1.5f,0),1.5f);
-      addGroundPlane(obj_scene,Vec3fa(-10,0,-10),Vec3fa(-10,0,+10),Vec3fa(+10,0,-10),Vec3fa(+10,0,+10));
+      Ref<SceneGraph::GroupNode> group = new SceneGraph::GroupNode;
+      addHairySphere(group,Vec3fa(0,1.5f,0),1.5f);
+      addGroundPlane(group,Vec3fa(-10,0,-10),Vec3fa(-10,0,+10),Vec3fa(+10,0,-10),Vec3fa(+10,0,+10));
 
       /* convert model */
-      obj_scene.add(scene.dynamicCast<SceneGraph::Node>(),(TutorialScene::InstancingMode)0); 
-      scene = nullptr;
+      obj_scene.add(SceneGraph::flatten(group,SceneGraph::INSTANCING_NONE)); 
       
       /* send model */
       set_scene(&obj_scene);
     }
 
     TutorialScene obj_scene;
-    Ref<SceneGraph::GroupNode> scene;
   };
 
 }

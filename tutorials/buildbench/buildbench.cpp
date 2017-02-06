@@ -18,8 +18,6 @@
 
 namespace embree
 {
-  extern "C" { int g_instancing_mode = 0; }
-
   struct Tutorial : public SceneLoadingTutorialApplication
   {
     Tutorial()
@@ -35,8 +33,6 @@ namespace embree
         FileName file = FileName::executableFolder() + FileName("models/cornell_box.ecs");
         parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path());
       }
-      
-      g_instancing_mode = instancing_mode;
     }
   };
 

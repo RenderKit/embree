@@ -33,7 +33,7 @@ extern "C" float g_debug;
 renderTileFunc renderTile;
 
 /* error reporting function */
-void error_handler(const RTCError code, const char* str)
+void error_handler(void* userPtr, const RTCError code, const char* str)
 {
   if (code == RTC_NO_ERROR)
     return;

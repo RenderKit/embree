@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 2.13.0
+% Embree: High Performance Ray Tracing Kernels 2.14.0
 % Intel Corporation
 
 Embree Overview
@@ -94,14 +94,14 @@ Windows Installer
 
 You can install the 64 bit version of the Embree library using the
 Windows installer application
-[embree-2.13.0-x64.exe](https://github.com/embree/embree/releases/download/v2.13.0/embree-2.13.0.x64.exe). This
+[embree-2.14.0-x64.exe](https://github.com/embree/embree/releases/download/v2.14.0/embree-2.14.0.x64.exe). This
 will install the 64 bit Embree version by default in `Program
-Files\Intel\Embree v2.13.0 x64`. To install the 32 bit
+Files\Intel\Embree v2.14.0 x64`. To install the 32 bit
 Embree library use the
-[embree-2.13.0-win32.exe](https://github.com/embree/embree/releases/download/v2.13.0/embree-2.13.0.win32.exe)
+[embree-2.14.0-win32.exe](https://github.com/embree/embree/releases/download/v2.14.0/embree-2.14.0.win32.exe)
 installer. This will install the 32 bit Embree version by default in
-`Program Files\Intel\Embree v2.13.0 win32` on 32 bit
-systems and `Program Files (x86)\Intel\Embree v2.13.0 win32`
+`Program Files\Intel\Embree v2.14.0 win32` on 32 bit
+systems and `Program Files (x86)\Intel\Embree v2.14.0 win32`
 on 64 bit systems.
 
 You have to set the path to the `lib` folder manually to your `PATH`
@@ -113,15 +113,15 @@ Embree installation.
 To uninstall Embree again open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-2.13.0` and uninstall it.
+2.14.0` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree is also delivered as a ZIP file for 64 bit
-[embree-2.13.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.13.0/embree-2.13.0.x64.windows.zip)
+[embree-2.14.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.14.0/embree-2.14.0.x64.windows.zip)
 and 32 bit
-[embree-2.13.0.win32.windows.zip](https://github.com/embree/embree/releases/download/v2.13.0/embree-2.13.0.win32.windows.zip). After
+[embree-2.14.0.win32.windows.zip](https://github.com/embree/embree/releases/download/v2.14.0/embree-2.14.0.win32.windows.zip). After
 unpacking this ZIP file you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree. To compile applications with Embree you also have to set the
@@ -135,18 +135,18 @@ Linux RPMs
 ----------
 
 Uncompress the 'tar.gz' file
-[embree-2.13.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.13.0/embree-2.13.0.x86_64.rpm.tar.gz)
+[embree-2.14.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.14.0/embree-2.14.0.x86_64.rpm.tar.gz)
 to
 obtain the individual RPM files:
 
-    tar xzf embree-2.13.0.x86_64.rpm.tar.gz
+    tar xzf embree-2.14.0.x86_64.rpm.tar.gz
 
 To install the Embree using the RPM packages on your Linux system type
 the following:
 
-    sudo rpm --install embree-lib-2.13.0-1.x86_64.rpm
-    sudo rpm --install embree-devel-2.13.0-1.x86_64.rpm
-    sudo rpm --install embree-examples-2.13.0-1.x86_64.rpm
+    sudo rpm --install embree-lib-2.14.0-1.x86_64.rpm
+    sudo rpm --install embree-devel-2.14.0-1.x86_64.rpm
+    sudo rpm --install embree-examples-2.14.0-1.x86_64.rpm
 
 You also have to install the Intel® Threading Building Blocks (TBB)
 using `yum`:
@@ -176,31 +176,34 @@ the tutorials to start them.
 
 To uninstall Embree again just execute the following:
 
-    sudo rpm --erase embree-lib-2.13.0-1.x86_64
-    sudo rpm --erase embree-devel-2.13.0-1.x86_64
-    sudo rpm --erase embree-examples-2.13.0-1.x86_64
+    sudo rpm --erase embree-lib-2.14.0-1.x86_64
+    sudo rpm --erase embree-devel-2.14.0-1.x86_64
+    sudo rpm --erase embree-examples-2.14.0-1.x86_64
 
 Linux tar.gz files
 ------------------
 
 The Linux version of Embree is also delivered as a tar.gz file
-[embree-2.13.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.13.0/embree-2.13.0.x86_64.linux.tar.gz). Unpack
+[embree-2.14.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.14.0/embree-2.14.0.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.13.0.x64.linux.tar.gz
-    source embree-2.13.0.x64.linux/embree-vars.sh
+    tar xzf embree-2.14.0.x64.linux.tar.gz
+    source embree-2.14.0.x64.linux/embree-vars.sh
 
 If you want to ship Embree with your application best use the Embree
 version provided through the tar.gz file.
+
+We recommend adding a relative RPATH to your application that points
+to the location Embree (and TBB) can be found, e.g. `$ORIGIN/../lib`.
 
 Mac OS X PKG Installer
 -----------------------
 
 To install the Embree library on your Mac OS X system use the
 provided package installer inside
-[embree-2.13.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.13.0/embree-2.13.0.x86_64.dmg). This
+[embree-2.14.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.14.0/embree-2.14.0.x86_64.dmg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree2` folder.
@@ -222,19 +225,20 @@ Mac OS X tar.gz file
 ---------------------
 
 The Mac OS X version of Embree is also delivered as a tar.gz file
-[embree-2.13.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.13.0/embree-2.13.0.x86_64.macosx.tar.gz). Unpack
-this file using `tar` and and source the provided `embree-vars.sh` (if you
+[embree-2.14.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.14.0/embree-2.14.0.x86_64.macosx.tar.gz). Unpack
+this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.13.0.x64.macosx.tar.gz
-    source embree-2.13.0.x64.macosx/embree-vars.sh
+    tar xzf embree-2.14.0.x64.macosx.tar.gz
+    source embree-2.14.0.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application please use the Embree
 library of the provided tar.gz file. The library name of that Embree
-library does not contain any global path and also links against TBB
-without global path. This ensures that the Embree (and TBB) library
-that you put next to your application executable is used.
+library is of the form `@rpath/libembree.2.dylib`
+(and similar also for the included TBB library). This ensures that you
+can add a relative RPATH to your application that points to the location
+Embree (and TBB) can be found, e.g. `@loader_path/../lib`.
 
 Linking ISPC applications with Embree
 -------------------------------------
@@ -248,6 +252,9 @@ compiling your application with ISPC, e.g.:
 
 Compiling Embree
 ================
+
+We recommend to use CMake to build Embree. Do not enable fast-math
+optimization, these might break Embree.
 
 Linux and Mac OS X
 -------------------
@@ -357,10 +364,11 @@ Windows
 Embree is tested under Windows using the Visual Studio 2015 (Update 1)
 compiler (Win32 and x64), Visual Studio 2013 (Update 5) compiler
 (Win32 and x64), Visual Studio 2012 (Update 4) compiler (x64 only),
-and Intel® Compiler 16.0.1 (Win32 and x64). Using the Visual Studio
-2015 compiler, Visual Studio 2013 compiler, and Intel Compiler you can
-compile Embree for AVX2, while Visual Studio 2012 supports at most
-AVX.
+Intel® Compiler 16.0.1 (Win32 and x64), and Clang 3.9 (x64
+only). Using the Visual Studio 2015 compiler, Visual Studio 2013
+compiler, Intel Compiler, and Clang you can compile Embree for AVX2, while
+Visual Studio 2012 supports at most AVX. To compile Embree for AVX512
+you have to use the Intel Compiler.
 
 Embree supports to use the Intel® Threading Building Blocks (TBB) as
 tasking system. For performance and flexibility reasons we recommend
@@ -396,9 +404,11 @@ for Visual Studio.
 
 Run `cmake-gui`, browse to the Embree sources, set the build directory
 and click Configure. Now you can select the Generator, e.g. "Visual
-Studio 12 2013" for a 32 bit build or "Visual Studio 12 2013 Win64" for
-a 64 bit build. Most configuration parameters described in the [CMake
-Configuration] can be set under Windows as well. Finally, click
+Studio 12 2013" for a 32 bit build or "Visual Studio 12 2013 Win64"
+for a 64 bit build. If you want to use Clang for compilation, you
+have to specify LLVM-vs2013 as "Optional toolset to use (-T
+parameter)". Most configuration parameters described in the
+[CMake Configuration] can be set under Windows as well. Finally, click
 "Generate" to create the Visual Studio solution files.
 
   ------------------------- ------------------ ----------------------------
@@ -514,10 +524,27 @@ parameters that can be configured in CMake:
                                internal tasking system
                                (INTERNAL).
 
-  EMBREE_MAX_ISA               Select highest supported ISA on  AVX2
-                               Intel® Xeon® CPUs (SSE2, SSE3,
-                               SSSE3, SSE4.1, SSE4.2, AVX,
-                               AVX-I, AVX2, or AVX512KNL).
+  EMBREE_MAX_ISA               Select highest supported ISA     AVX2
+                               (SSE2, SSE4.2, AVX, AVX2,
+                               AVX512KNL, AVX512SKX, or NONE).
+                               When set to NONE the EMBREE_ISA_*
+                               variables can be used to enable
+                               ISAs individually.
+
+  EMBREE_ISA_SSE42             Enables SSE4.2 when               OFF
+                               EMBREE_MAX_ISA is set to NONE.
+
+  EMBREE_ISA_AVX               Enables AVX when                  OFF
+                               EMBREE_MAX_ISA is set to NONE.
+
+  EMBREE_ISA_AVX2              Enables AVX2 when                 OFF
+                               EMBREE_MAX_ISA is set to NONE.
+
+  EMBREE_ISA_AVX512KNL         Enables AVX512 for Xeon Phi when  OFF
+                               EMBREE_MAX_ISA is set to NONE.
+
+  EMBREE_ISA_AVX512SKX         Enables AVX512 for Skylake when   OFF
+                               EMBREE_MAX_ISA is set to NONE.
 
   EMBREE_GEOMETRY_TRIANGLES    Enables support for triangle      ON
                                geometries.
@@ -619,7 +646,8 @@ Settings performed later overwrite previous settings. This way the
 configuration for the application can be changed globally (either
 through the `rtcNewDevice` call or through the `.embree2` file in the
 application folder) and each user has the option to modify the
-configuration to fit its needs.
+configuration to fit its needs. Configuration files can be ignored by
+the application by passing `ignore_config_files=1` to `rtcNewDevice`.
 
 API calls that access geometries are only thread safe as long as
 different geometries are accessed. Accesses to one geometry have to
@@ -978,7 +1006,7 @@ represent a mixed mesh which contains triangles and quads.
 Catmull-Clark subdivision surfaces for meshes consisting of faces of
 up to 15 vertices (e.g. triangles, quadrilateral, pentagons, etc.) are
 supported, including support for edge creases, vertex creases, holes,
-and non-manifold geometry.
+non-manifold geometry, and face-varying interpolation.
 
 A subdivision surface is created using the `rtcNewSubdivisionMesh`
 function call, and deleted again using the `rtcDeleteGeometry`
@@ -1009,9 +1037,15 @@ stores `numVertices` vertices as single precision `x`, `y`, `z` floating
 point coordinates aligned to 16 bytes. The value of the 4th float used
 for alignment can be arbitrary.
 
+Optionally the application may fill additional index buffers if
+multiple topologies are required for face-varying interpolation. The
+standard vertex buffers `RTC_VERTEX_BUFFER` are always bound to the
+geometry topology (topology 0) thus use `RTC_INDEX_BUFFER0`. Data
+interpolation may use different topologies as described later.
+
 Optionally, the application can setup the hole buffer (`RTC_HOLE_BUFFER`)
 with `numHoles` many 32 bit indices of faces that should be considered
-non-existing.
+non-existing in all topologies.
 
 Optionally, the application can fill the level buffer
 (`RTC_LEVEL_BUFFER`) with a tessellation rate for each or the edges of
@@ -1030,32 +1064,45 @@ uniform tessellation rate.
 
 Optionally, the application can fill the sparse edge crease buffers to
 make some edges appear sharper. The edge crease index buffer
-(`RTC_EDGE_CREASE_INDEX_BUFFER`) contains `numEdgeCreases` many pairs of
-32 bit vertex indices that specify unoriented edges. The edge crease
-weight buffer (`RTC_EDGE_CREASE_WEIGHT_BUFFER`) stores for each of
-theses crease edges a positive floating point weight. The larger this
-weight, the sharper the edge. Specifying a weight of infinity is
-supported and marks an edge as infinitely sharp. Storing an edge
-multiple times with the same crease weight is allowed, but has lower
-performance. Storing an edge multiple times with different crease
-weights results in undefined behavior. For a stored edge (i,j), the
-reverse direction edges (j,i) does not have to get stored, as both are
-considered the same edge.
+(`RTC_EDGE_CREASE_INDEX_BUFFER`) contains `numEdgeCreases` many pairs
+of 32 bit vertex indices that specify unoriented edges in the
+geometry topology. The edge crease weight buffer
+(`RTC_EDGE_CREASE_WEIGHT_BUFFER`) stores for each of theses crease
+edges a positive floating point weight. The larger this weight, the
+sharper the edge. Specifying a weight of infinity is supported and
+marks an edge as infinitely sharp. Storing an edge multiple times with
+the same crease weight is allowed, but has lower performance. Storing
+an edge multiple times with different crease weights results in
+undefined behavior. For a stored edge (i,j), the reverse direction
+edges (j,i) does not have to get stored, as both are considered the
+same edge. Edge crease features are specified for the geomtetry
+topology, but copied to all other topologies automatically.
 
 Optionally, the application can fill the sparse vertex crease buffers
 to make some vertices appear sharper. The vertex crease index buffer
 (`RTC_VERTEX_CREASE_INDEX_BUFFER`), contains `numVertexCreases` many
-32 bit vertex indices to specify a set of vertices. The vertex crease
-weight buffer (`RTC_VERTEX_CREASE_WEIGHT_BUFFER`) specifies for each of
-these vertices a positive floating point weight. The larger this
-weight, the sharper the vertex. Specifying a weight of infinity is
-supported and makes the vertex infinitely sharp. Storing a vertex
-multiple times with the same crease weight is allowed, but has lower
+32 bit vertex indices to specify a set of vertices from the geometry
+topology. The vertex crease weight buffer
+(`RTC_VERTEX_CREASE_WEIGHT_BUFFER`) specifies for each of these
+vertices a positive floating point weight. The larger this weight, the
+sharper the vertex. Specifying a weight of infinity is supported and
+makes the vertex infinitely sharp. Storing a vertex multiple times
+with the same crease weight is allowed, but has lower
 performance. Storing a vertex multiple times with different crease
-weights results in undefined behavior.
+weights results in undefined behavior. Vertex crease features are
+specified for the geomtetry topology, but copied to all other
+topologies automatically.
 
 Faces with 3 to 15 vertices are supported (triangles, quadrilateral,
 pentagons, etc).
+
+The user can also specify a geometry mask and additional flags that
+choose the strategy to handle that subdivision mesh in dynamic scenes.
+
+The implementation of subdivision surfaces uses an internal software cache,
+which can get configured to some desired size (see [Configuring Embree]).
+
+#### Parametrization
 
 The parametrization of a regular quadrilateral uses the first vertex `p0` as
 base point, and the vector `p1 - p0` as u-direction and `p3 - p0` as
@@ -1089,16 +1136,70 @@ apply the standard subdivision rules for interpolation and
 automatically take care of the special UV encoding for
 non-quadrilaterals.
 
-Using the `rtcSetBoundaryMode` API call one can specify how corner
-vertices are handled. Specifying `RTC_BOUNDARY_NONE` ignores all
-boundary patches, `RTC_BOUNDARY_EDGE_ONLY` makes all boundaries soft,
-while `RTC_BOUNDARY_EDGE_AND_CORNER` makes corner vertices sharp.
+#### Face-Varing Data
 
-The user can also specify a geometry mask and additional flags that
-choose the strategy to handle that subdivision mesh in dynamic scenes.
+Face-varying interpolation is supported through multiple topologies
+per subdivision mesh and binding such topologies to user vertex buffers
+to interpolate. This way texture coordinates may use a different
+topology with additional boundaries to construct separate UV regions
+inside one subdivision mesh.
 
-The implementation of subdivision surfaces uses an internal software cache,
-which can get configured to some desired size (see [Configuring Embree]).
+Each such topology consists of an index buffer and subdivision
+mode. Up to 16 topologies are supported, with corresponding index
+buffers `RTC_INDEX_BUFFER0+i`, with i in the range 0 to 15.
+
+Each of the 16 supported user vertex buffers
+`RTC_USER_VERTEX_BUFFER0+j` (j in the range 0 to 15) can be assigned
+to some topology using the `rtcSetIndexBuffer` call:
+
+    void rtcSetIndexBuffer(RTCScene scene, unsigned geomID,
+                           RTCBufferType vertexBuffer, RTCBufferType indexBuffer);
+
+The face buffer (`RTC_FACE_BUFFER`) is shared between all topologies,
+which means that the n'th primitive always has the same number of
+vertices (e.g. being a triangle or a quad) for each topology. However,
+the indices of the topologies themselves may be different.
+
+#### Subdivision Mode
+
+The subdivision modes can be used to force linear interpolation for
+some parts of the subdivision mesh.
+
+  -------------------------- ---------------------------------------------
+  Boundary Mode              Description
+  -------------------------- ---------------------------------------------
+  RTC_SUBDIV_NO_BOUNDARY     Boundary patches are ignored. This way each
+                             rendered patch has a full set of control
+                             vertices.
+
+  RTC_SUBDIV_SMOOTH_BOUNDARY The sequence of boundary control points are
+                             used to generate a smooth B-spline boundary
+                             curve (default mode).
+
+  RTC_SUBDIV_PIN_CORNERS     Corner vertices are pinned to their
+                             location during subdivision.
+
+  RTC_SUBDIV_PIN_BOUNDARY    All vertices at the border are pinned to
+                             their location during subdivision. This way
+                             the boundary is interpolated linearly.
+
+  RTC_SUBDIV_PIN_ALL         All vertices at the border are binned to
+                             their location during subdivision. This way all
+                             patches are linearly interpolated.
+
+  ------------------------ ---------------------------------------------
+  : Subdivision modes supported by Embree.
+
+These modes can be set to each topology separately using the
+`rtcSetSubdivisionMode` API call with the following signature:
+
+    void rtcSetSubdivisionMode(RTCScene scene, unsigned geomID,
+                               unsigned topologyID, RTCSubdivisionMode mode);
+
+These modes are typically used to interpolate face-varying data
+properly. E.g. the topology used to interpolate texture coordinaces
+are typically assigned the `RTC_SUBDIV_PIN_BOUNDARY` mode, to also map
+texels at the border of the texture to the mesh.
 
 Also see tutorial [Subdivision Geometry] for an example of how to create
 subdivision surfaces.
@@ -1181,6 +1282,12 @@ stores all control points in the form of a single precision position
 and radius stored in `x`, `y`, `z`, `r` order in memory. The hair
 radii have to be greater or equal zero. All buffers have to get
 unmapped before an `rtcCommit` call to the scene.
+
+The intersection with the hair primitive stores the parametric hit
+location along the hair as `u`-coordinate (range 0 to +1), and the
+normalized distance as the `v`-coordinate (range -1 to +1). The
+geometry normal `Ng` is filled with the the tangent of the bezier
+curve at the hit location on the curve (dPdu).
 
 The implementation may choose to subdivide the Bézier curve into
 multiple cylinders-like primitives. The number of cylinders the curve
@@ -1784,7 +1891,7 @@ interpolate. As interpolation buffer one can specify the
 `RTC_VERTEX_BUFFER0` and `RTC_VERTEX_BUFFER1` as well as one of two
 special user vertex buffers `RTC_USER_VERTEX_BUFFER0` and
 `RTC_USER_VERTEX_BUFFER1`. These user vertex buffers can only get set
-using the `rtcSetBuffer` call, they cannot get managed internally by
+using the `rtcSetBuffer2` call, they cannot get managed internally by
 Embree as they have no default layout. The last element of the buffer
 has to be padded to 16 bytes, such that it can be read safely using
 SSE instructions.
@@ -1841,15 +1948,16 @@ Buffer Sharing
 
 Embree supports sharing of buffers with the application. Each buffer
 that can be mapped for a specific geometry can also be shared with the
-application, by pass a pointer, offset, and stride of the application
-side buffer using the `rtcSetBuffer` API function.
+application, by passing a pointer, offset, stride, and number of
+elements of the application side buffer using the `rtcSetBuffer2` API
+function.
 
-    void rtcSetBuffer(RTCScene scene, unsigned geomID, RTCBufferType type,
-                      void* ptr, size_t offset, size_t stride);
+    void rtcSetBuffer2(RTCScene scene, unsigned geomID, RTCBufferType type,
+                      void* ptr, size_t offset, size_t stride, size_t size);
 
-The `rtcSetBuffer` function has to get called before any call to
+The `rtcSetBuffer2` function has to get called before any call to
 `rtcMapBuffer` for that buffer, otherwise the buffer will get allocated
-internally and the call to `rtcSetBuffer` will fail. The buffer has to
+internally and the call to `rtcSetBuffer2` will fail. The buffer has to
 remain valid as long as the geometry exists, and the user is responsible
 to free the buffer when the geometry gets deleted. When a buffer is
 shared, it is safe to modify that buffer without mapping and unmapping
@@ -1858,14 +1966,18 @@ modified geometries and the buffer data has to stay constant from the
 `rtcCommit` call to after the last ray query invocation.
 
 The `offset` parameter specifies a byte offset to the start of the
-first element and the `stride` parameter specifies a byte stride
-between the different elements of the shared buffer. This support for
-offset and stride allows the application quite some freedom in the
-data layout of these buffers, however, some restrictions apply. Index
-buffers always store 32 bit indices and vertex buffers always store
-single precision floating point data. The start address `ptr+offset`
-and `stride` always have to be aligned to 4 bytes, otherwise the
-`rtcSetBuffer` function will fail.
+first element, the `stride` parameter specifies a byte stride between
+the different elements of the shared buffer and the `size` parameter
+specified the number of elements stored inside the buffer. This
+support for offset and stride allows the application quite some
+freedom in the data layout of these buffers, however, some
+restrictions apply. Index buffers always store 32 bit indices and
+vertex buffers always store single precision floating point data. The
+start address `ptr+offset` and `stride` always have to be aligned to 4
+bytes, otherwise the `rtcSetBuffer2` function will fail. The `size`
+parameter can be used to change the size of a buffer, which makes it
+possible to change the number of elements inside a mesh (by changing
+the size of the `RTC_INDEX_BUFFER`).
 
 For vertex buffers (`RTC_VERTEX_BUFFER` and `RTC_USER_VERTEX_BUFFER`),
 the last element must be readable using SSE instructions, thus padding
@@ -1875,8 +1987,8 @@ The following is an example of how to create a mesh with shared index
 and vertex buffers:
 
     unsigned geomID = rtcNewTriangleMesh(scene, geomFlags, numTriangles, numVertices);
-    rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, vertexPtr, 0, 3*sizeof(float));
-    rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER, indexPtr, 0, 3*sizeof(int));
+    rtcSetBuffer2(scene, geomID, RTC_VERTEX_BUFFER, vertexPtr, 0, 3*sizeof(float), numVertices);
+    rtcSetBuffer2(scene, geomID, RTC_INDEX_BUFFER, indexPtr, 0, 3*sizeof(int), numTriangles);
 
 Sharing buffers can significantly reduce the memory required by the
 application, thus we recommend using this feature. When enabling the
@@ -1894,10 +2006,10 @@ steps to the geometry construction function and setting the
 vertex arrays `RTC_VERTEX_BUFFER0+t` for each time step `t`:
 
     unsigned geomID = rtcNewTriangleMesh(scene, geomFlags, numTris, numVertices, 3);
-    rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0+0, vertex0Ptr, 0, sizeof(Vertex));
-    rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0+1, vertex1Ptr, 0, sizeof(Vertex));
-    rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0+2, vertex2Ptr, 0, sizeof(Vertex));
-    rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER, indexPtr, 0, sizeof(Triangle));
+    rtcSetBuffer2(scene, geomID, RTC_VERTEX_BUFFER0+0, vertex0Ptr, 0, sizeof(Vertex), numVertices);
+    rtcSetBuffer2(scene, geomID, RTC_VERTEX_BUFFER0+1, vertex1Ptr, 0, sizeof(Vertex), numVertices);
+    rtcSetBuffer2(scene, geomID, RTC_VERTEX_BUFFER0+2, vertex2Ptr, 0, sizeof(Vertex), numVertices);
+    rtcSetBuffer2(scene, geomID, RTC_INDEX_BUFFER, indexPtr, 0, sizeof(Triangle), numTris);
 
 If a scene contains geometries with motion blur, the user has to set
 the `time` member of the ray to a value in the range $[0, 1]$. The
@@ -2369,6 +2481,17 @@ parameters from the following table are available to set/query:
                                          as an integer number of bytes. The
                                          software cache cannot be configured
                                          during rendering.
+
+  RTC_CONFIG_COMMIT_JOIN                 Checks if rtcCommit can be used to    Read only
+                                         join build operation (not supported
+                                         when Embree is compiled with some
+                                         older TBB versions)
+                                         
+  RTC_CONFIG_COMMIT_THREAD               Checks if rtcCommitThread is          Read only
+                                         available (not supported when
+                                         Embree is compiled with some older
+                                         TBB versions)
+
   -------------------------------------- ------------------------------------- ------------
   : Parameters for `rtcDeviceSetParameter` and `rtcDeviceGetParameter`.
 
@@ -2448,7 +2571,7 @@ Embree Tutorials
 
 Embree comes with a set of tutorials aimed at helping users understand
 how Embree can be used and extended. All tutorials exist in an ISPC and
-C version to demonstrate the two versions of the API. Look for files
+C++ version to demonstrate the two versions of the API. Look for files
 named `tutorialname_device.ispc` for the ISPC implementation of the
 tutorial, and files named `tutorialname_device.cpp` for the single ray C++
 version of the tutorial. To start the C++ version use the `tutorialname`
