@@ -74,8 +74,10 @@ enum RTCGeometryFlags
   RTC_GEOMETRY_DYNAMIC    = 2,    //!< specifies dynamic geometry with arbitrary motion (BVH refit not possible)
 };
 
-/*! \brief Boundary interpolation mode for subdivision surfaces */
-enum RTCORE_DEPRECATED RTCBoundaryMode
+/*! \brief Boundary interpolation mode for subdivision surfaces.
+  WARNING: This enum is deprecated, use RTCSubdivisionMode instead.
+ */
+enum RTCBoundaryMode
 {
   RTC_BOUNDARY_NONE = 0,               //!< ignores border patches
   RTC_BOUNDARY_SMOOTH = 1,             //!< smooth border (default)
@@ -378,7 +380,9 @@ RTCORE_API unsigned rtcNewLineSegments (RTCScene scene,                    //!< 
 /*! \brief Sets 32 bit ray mask. */
 RTCORE_API void rtcSetMask (RTCScene scene, unsigned geomID, int mask);
 
-/*! \brief Sets boundary interpolation mode for default subdivision surface topology */
+/*! \brief Sets boundary interpolation mode for default subdivision surface topology.
+  WARNING: This function is deprecated, use rtcSetSubdivisionMode instead.
+ */
 RTCORE_API RTCORE_DEPRECATED void rtcSetBoundaryMode(RTCScene scene, unsigned geomID, RTCBoundaryMode mode);
 
 /*! \brief Sets subdivision interpolation mode for specified subdivision surface topology */
