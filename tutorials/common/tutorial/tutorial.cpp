@@ -784,6 +784,10 @@ namespace embree
         scene->add(SceneGraph::load(keyFramesFilenames[i]));
       std::cout << "done" << std::endl << std::flush;
     }
+
+    /* clear texture cache */
+    Texture::clearTextureCache();
+
     /* convert triangles to quads */
     if (convert_tris_to_quads)
       scene->triangles_to_quads();

@@ -61,6 +61,7 @@ namespace embree
     static unsigned getFormatBytesPerTexel(const Format format);
 
     static std::shared_ptr<Texture> load(const FileName& fileName);
+    static void clearTextureCache();
     
   public:
     unsigned width;
