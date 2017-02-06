@@ -659,8 +659,6 @@ namespace embree
 
   std::shared_ptr<Texture> XMLLoader::loadTextureParm(const Ref<XML>& xml)
   {
-    static std::vector<std::shared_ptr<Texture>> g_textures; // FIXME: remove
-
     const std::string id = xml->parm("id");
     if (id != "" && textureMap.find(id) != textureMap.end())
       return textureMap[id];
@@ -670,7 +668,7 @@ namespace embree
 
     /*! load texture from file */
     if (src.str() != "") {
-      texture = std::shared_ptr<Texture>(Texture::load(path+src));
+      texture = Texture::load(path+src);
     }
 
     /*! load texture from binary file */
@@ -685,7 +683,6 @@ namespace embree
       texture = std::make_shared<Texture>(width,height,format);
       if (width*height != fread(texture->data, bytesPerTexel, width*height, binFile)) 
         THROW_RUNTIME_ERROR("error reading from binary file: "+binFileName.str());
-      g_textures.push_back(texture); // FIXME: we can only free textures at application exit currently
     }
     
     if (id != "") textureMap[id] = texture;
