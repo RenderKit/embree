@@ -32,6 +32,7 @@ extern "C" uniform RTCError ispcGetError ();
 extern "C" uniform RTCError ispcDeviceGetError (RTCDevice device);
 extern "C" void ispcSetErrorFunction (void* uniform ptr);
 extern "C" void ispcDeviceSetErrorFunction (RTCDevice device, void* uniform ptr);
+extern "C" void ispcDeviceSetErrorFunction2(RTCDevice device, void* uniform fptr, void* uniform uptr);
 extern "C" void ispcSetMemoryMonitorFunction (void* uniform ptr);
 extern "C" void ispcDeviceSetMemoryMonitorFunction (RTCDevice device, void* uniform ptr);
 extern "C" void ispcDeviceSetMemoryMonitorFunction2 (RTCDevice device, void* uniform fptr, void* uniform uptr);
@@ -217,6 +218,10 @@ void rtcSetErrorFunction(uniform RTCErrorFunc func) {
 
 void rtcDeviceSetErrorFunction(RTCDevice device, uniform RTCErrorFunc func) {
   ispcDeviceSetErrorFunction(device,func);
+}
+
+void rtcDeviceSetErrorFunction2(RTCDevice device, uniform RTCErrorFunc2 fptr, void* uniform uptr) {
+  ispcDeviceSetErrorFunction2(device,fptr,uptr);
 }
 
 void rtcSetMemoryMonitorFunction(uniform RTCMemoryMonitorFunc func) {

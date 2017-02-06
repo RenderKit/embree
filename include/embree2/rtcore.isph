@@ -185,17 +185,27 @@ RTCORE_DEPRECATED uniform RTCError rtcGetError();
   currently stored error and clears the error flag again. */
 uniform RTCError rtcDeviceGetError(RTCDevice device);
 
-/*! \brief Type of error callback function. */
-typedef unmasked void (*uniform RTCErrorFunc)(const uniform RTCError code, const uniform int8* uniform str);
+/*! \brief Type of error callback function. 
+  WARNING: This callback function is deprecated, use RTCErrorFunc2 instead.
+*/
+RTCORE_DEPRECATED typedef unmasked void (*uniform RTCErrorFunc)(const uniform RTCError code, const uniform int8* uniform str);
 RTCORE_DEPRECATED typedef RTCErrorFunc RTC_ERROR_FUNCTION;
 
+/*! \brief Type of error callback function. */
+typedef unmasked void (*uniform RTCErrorFunc2)(void* uniform userPtr, const uniform RTCError code, const uniform int8* uniform str);
+
 /*! \brief Sets a callback function that is called whenever an error occurs. 
-    WARNING: This function is deprecated, use rtcDeviceSetErrorFunction instead.
+    WARNING: This function is deprecated, use rtcDeviceSetErrorFunction2 instead.
 */
 RTCORE_DEPRECATED void rtcSetErrorFunction(uniform RTCErrorFunc func);
 
+/*! \brief Sets a callback function that is called whenever an error occurs. 
+    WARNING: This function is deprecated, use rtcDeviceSetErrorFunction2 instead.
+*/
+RTCORE_DEPRECATED void rtcDeviceSetErrorFunction(RTCDevice device, uniform RTCErrorFunc func);
+
 /*! \brief Sets a callback function that is called whenever an error occurs. */
-void rtcDeviceSetErrorFunction(RTCDevice device, uniform RTCErrorFunc func);
+void rtcDeviceSetErrorFunction2(RTCDevice device, uniform RTCErrorFunc2 func, void* uniform userPtr);
 
 /*! \brief Type of memory consumption callback function. 
   WARNING: This callback function is deprecated, use RTCMemoryMonitorFunc instead.

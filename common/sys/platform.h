@@ -306,13 +306,13 @@ __forceinline std::string toString(long long value) {
 //#pragma clang diagnostic ignored "-Wnarrowing"
 //#pragma clang diagnostic ignored "-Wc++11-narrowing"
 //#pragma clang diagnostic ignored "-Wdeprecated-register"
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+//#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined(__clang__)
 //#pragma GCC diagnostic ignored "-Wnarrowing"
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+//#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 //#pragma GCC diagnostic ignored "-Warray-bounds"
 #endif
 

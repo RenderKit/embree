@@ -144,7 +144,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetErrorFunction);
     assert(g_device);
-    if (g_device) g_device->error_function = func;
+    if (g_device) g_device->setErrorFunction(func);
     RTCORE_CATCH_END(g_device);
   }
 
@@ -154,7 +154,17 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcDeviceSetErrorFunction);
     RTCORE_VERIFY_HANDLE(hdevice);
-    device->error_function = func;
+    device->setErrorFunction(func);
+    RTCORE_CATCH_END(device);
+  }
+
+  RTCORE_API void rtcDeviceSetErrorFunction2(RTCDevice hdevice, RTCErrorFunc2 func, void* userPtr) 
+  {
+    Device* device = (Device*) hdevice;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcDeviceSetErrorFunction2);
+    RTCORE_VERIFY_HANDLE(hdevice);
+    device->setErrorFunction(func,userPtr);
     RTCORE_CATCH_END(device);
   }
 

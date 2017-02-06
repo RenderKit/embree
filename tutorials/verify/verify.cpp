@@ -759,7 +759,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      error_handler(nullptr,rtcDeviceGetError(device));
       VerifyScene scene(device,RTC_SCENE_STATIC,RTC_INTERSECT1);
       AssertNoError(device);
 
@@ -1119,7 +1119,7 @@ namespace embree
     MemoryConsumptionTest (std::string name, int isa, GeometryType gtype, RTCSceneFlags sflags, RTCGeometryFlags gflags)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), gtype(gtype), sflags(sflags), gflags(gflags) {}
 
-    static bool memoryMonitor(const ssize_t bytes, const bool /*post*/)
+    static bool memoryMonitor(void* userPtr, const ssize_t bytes, const bool /*post*/)
     {
       memory_consumption_bytes_used += bytes;
       return true;
@@ -1132,7 +1132,7 @@ namespace embree
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       errorHandler(rtcDeviceGetError(device));
       memory_consumption_bytes_used = 0;
-      rtcDeviceSetMemoryMonitorFunction(device,memoryMonitor);
+      rtcDeviceSetMemoryMonitorFunction2(device,memoryMonitor,nullptr);
       VerifyScene scene(device,sflags,aflags);
       AssertNoError(device);
       
@@ -3188,7 +3188,7 @@ namespace embree
   std::atomic<size_t> monitorMemoryInvokations(0);
   std::atomic<size_t> monitorMemoryBreakExecuted(0);
 
-  bool monitorMemoryFunction(ssize_t bytes, bool post) 
+  bool monitorMemoryFunction(void* userPtr, ssize_t bytes, bool post) 
   {
     monitorMemoryBytesUsed += bytes;
     if (bytes > 0) {
@@ -3233,7 +3233,7 @@ namespace embree
         intersectModes.push_back(MODE_INTERSECTNp);
       }
       
-      rtcDeviceSetMemoryMonitorFunction(device,monitorMemoryFunction);
+      rtcDeviceSetMemoryMonitorFunction2(device,monitorMemoryFunction,nullptr);
       
       unsigned int sceneIndex = 0;
       while (sceneIndex < size_t(intensity*state->intensity)) 
@@ -3269,7 +3269,7 @@ namespace embree
           return VerifyApplication::FAILED;
         sceneIndex++;
       }
-      rtcDeviceSetMemoryMonitorFunction(device,nullptr);
+      rtcDeviceSetMemoryMonitorFunction2(device,nullptr,nullptr);
       AssertNoError(device);
       return VerifyApplication::PASSED;
     }

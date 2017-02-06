@@ -31,7 +31,7 @@ extern uniform float g_debug;
 renderTileFunc renderTile;
 
 /* error reporting function */
-unmasked void error_handler(const uniform RTCError code, const uniform int8* uniform str)
+unmasked void error_handler(void* uniform userPtr, const uniform RTCError code, const uniform int8* uniform str)
 {
   if (code == RTC_NO_ERROR)
     return;
