@@ -60,7 +60,7 @@ namespace embree
     static Format string_to_format(const std::string& str);
     static unsigned getFormatBytesPerTexel(const Format format);
 
-    static Texture* load(const FileName& fileName); // FIXME: return reference
+    static std::shared_ptr<Texture> load(const FileName& fileName);
     
   public:
     unsigned width;

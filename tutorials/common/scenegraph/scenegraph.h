@@ -16,13 +16,14 @@
 
 #pragma once
 
-#include "materials.h"
 #include "lights.h"
 #include "../../../include/embree2/rtcore.h"
 #include "../math/random_sampler.h"
 
 namespace embree
 {  
+  struct Material;
+  
   namespace SceneGraph
   {
     struct Node;
@@ -372,14 +373,11 @@ namespace embree
     {
       ALIGNED_STRUCT;
 
-      MaterialNode(const Material& material)
-        : material(material) {}
-
       virtual size_t numPrimitives() const {
         return 0;
       }
 
-      Material material;
+      virtual Material* material() = 0;
     };
     
     /*! Mesh. */
@@ -807,3 +805,6 @@ namespace embree
     Ref<GroupNode> flatten(Ref<GroupNode> node, InstancingMode mode, const SceneGraph::Transformations& spaces = Transformations(one));
   }
 }
+
+#include "materials.h"
+

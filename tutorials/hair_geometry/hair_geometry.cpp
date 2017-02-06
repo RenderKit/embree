@@ -188,8 +188,7 @@ float Noise(float x, float y, float z)
 
   void addHairySphere (Ref<SceneGraph::GroupNode>& scene, const Vec3fa& p, float r)
   {
-    Material materialdata;
-    Ref<SceneGraph::MaterialNode> material = new SceneGraph::MaterialNode(materialdata);
+    Ref<SceneGraph::MaterialNode> material = new HairMaterial(Vec3fa(1.0f,1.0f,0.0f),Vec3fa(0.8f),2.0f,2.0f);
     
     {
       const size_t numPhi   = 20;
@@ -270,8 +269,7 @@ float Noise(float x, float y, float z)
      std::vector<Vec2f> texcoords;
      std::vector<SceneGraph::TriangleMeshNode::Triangle> triangles;
 
-     Material materialdata;
-     Ref<SceneGraph::MaterialNode> material = new SceneGraph::MaterialNode(materialdata);
+     Ref<SceneGraph::MaterialNode> material = new OBJMaterial;
    
      positions.push_back(p00);
      positions.push_back(p01);

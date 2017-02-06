@@ -90,7 +90,7 @@ namespace embree
     Variant (const std::string& str) : type(STRING), str(str) {}
 
     /*! Constructs a variant object holding a texture value. */
-    Variant (const Texture* tex) : type(TEXTURE) { texture = tex; }
+    Variant (const std::shared_ptr<Texture> tex) : type(TEXTURE), texture(tex) {}
 
     /*! Extracts a boolean from the variant type. */
     bool  getBool () const { return b[0]; }
@@ -114,7 +114,7 @@ namespace embree
     std::string getString() const { return str;   }
 
     /*! Extracts a texture from the variant type. */
-    const Texture* getTexture() const { return texture;   }
+    const std::shared_ptr<Texture> getTexture() const { return texture;   }
 
     operator bool() const {
       return type != EMPTY;
@@ -126,8 +126,8 @@ namespace embree
       bool b[4];          //!< Storage for single bool,bool2,bool3, and bool4 values.
       int i[4];           //!< Storage for single int,int2,int3, and int4 values.
       float f[12];         //!< Storage for single float,float2,float3, float4, and AffineSpace3f values.
-      const Texture* texture;
     };
+    std::shared_ptr<Texture> texture;
     std::string str;      //!< Storage for string values.
   };
 
@@ -195,7 +195,7 @@ namespace embree
     }
 
     /*! Extracts a named texture out of the container. */
-    const Texture* getTexture(const char* name) const {
+    const std::shared_ptr<Texture> getTexture(const char* name) const {
       std::map<std::string,Variant>::const_iterator i = m.find(name);
       if (i == m.end() || (*i).second.type != Variant::TEXTURE) return nullptr;
       return (*i).second.getTexture();
@@ -659,7 +659,7 @@ namespace embree
 
   std::shared_ptr<Texture> XMLLoader::loadTextureParm(const Ref<XML>& xml)
   {
-    static std::vector<std::shared_ptr<Texture>> g_textures;
+    static std::vector<std::shared_ptr<Texture>> g_textures; // FIXME: remove
 
     const std::string id = xml->parm("id");
     if (id != "" && textureMap.find(id) != textureMap.end())
@@ -707,7 +707,7 @@ namespace embree
       else if (entry->name == "float2" ) { material.add(name, load<Vec2f>(entry)); }
       else if (entry->name == "float3" ) { material.add(name, load<Vec3f>(entry)); }
       else if (entry->name == "float4" ) { material.add(name, load<Vec4f>(entry)); }
-      else if (entry->name == "texture3d") { material.add(name, loadTextureParm(entry).get()); }
+      else if (entry->name == "texture3d") { material.add(name, loadTextureParm(entry)); }
       else if (entry->name == "param") {
         const std::string type = entry->parm("type");
         if      (type ==  "int"   ) { material.add(name, load<int>  (entry)); }
@@ -744,29 +744,28 @@ namespace embree
 
   Ref<SceneGraph::MaterialNode> XMLLoader::addMaterial(const std::string& type, const Parms& parms) 
   {
-    Material material;
     if (type == "Matte")
     {
       const Vec3fa reflectance = parms.getVec3fa("reflectance",one);
-      new (&material) MatteMaterial(reflectance);
+      return new MatteMaterial(reflectance);
     }
     else if (type == "Mirror")
     {
       const Vec3fa reflectance = parms.getVec3fa("reflectance",one);
-      new (&material) MirrorMaterial(reflectance);
+      return new MirrorMaterial(reflectance);
     }
     else if (type == "OBJ") 
     {
-      const Texture* map_d = parms.getTexture("map_d");  
+      const std::shared_ptr<Texture> map_d = parms.getTexture("map_d");  
       const float d = parms.getFloat("d", 1.0f);
-      const Texture* map_Kd = parms.getTexture("map_Kd");  
+      const std::shared_ptr<Texture> map_Kd = parms.getTexture("map_Kd");  
       const Vec3fa Kd = parms.getVec3fa("Kd", one);
-      const Texture* map_Ks = parms.getTexture("map_Ks");  
+      const std::shared_ptr<Texture> map_Ks = parms.getTexture("map_Ks");  
       const Vec3fa Ks = parms.getVec3fa("Ks", zero);
-      const Texture* map_Ns = parms.getTexture("map_Ns");  
+      const std::shared_ptr<Texture> map_Ns = parms.getTexture("map_Ns");  
       const float Ns = parms.getFloat("Ns", 10.0f);
-      const Texture* map_Bump = parms.getTexture("map_Bump");
-      new (&material) OBJMaterial(d,map_d,Kd,map_Kd,Ks,map_Ks,Ns,map_Ns,map_Bump);
+      const std::shared_ptr<Texture> map_Bump = parms.getTexture("map_Bump");
+      return new OBJMaterial(d,map_d,Kd,map_Kd,Ks,map_Ks,Ns,map_Ns,map_Bump);
     }
     else if (type == "OBJMaterial")  // for BGF file format
     {
@@ -779,21 +778,21 @@ namespace embree
       //map_Ns = parms.getTexture("map_ns");  
       const float Ns = parms.getFloat("ns", 10.0f);
       //map_Bump = parms.getTexture("map_Bump");
-      new (&material) OBJMaterial(d,Kd,Ks,Ns);
+      return new OBJMaterial(d,Kd,Ks,Ns);
     }
     else if (type == "ThinDielectric" || type == "ThinGlass")
     {
       const Vec3fa transmission = parms.getVec3fa("transmission",one);
       const float eta          = parms.getFloat("eta",1.4f);
       const float thickness    = parms.getFloat("thickness",0.1f);
-      new (&material) ThinDielectricMaterial(transmission,eta,thickness);
+      return new ThinDielectricMaterial(transmission,eta,thickness);
     }
     else if (type == "Plastic")
     {
       const Vec3fa pigmentColor = parms.getVec3fa("pigmentColor",one);
       const float eta          = parms.getFloat("eta",1.4f);
       const float roughness    = parms.getFloat("roughness",0.01f);
-      new (&material) MetallicPaintMaterial(pigmentColor,pigmentColor,roughness,eta);
+      return new MetallicPaintMaterial(pigmentColor,pigmentColor,roughness,eta);
     }
     else if (type == "Metal")
     {
@@ -802,9 +801,9 @@ namespace embree
       const Vec3fa k            = parms.getVec3fa("k",Vec3fa(0.0f));
       const float roughness     = parms.getFloat("roughness",0.01f);
       if (roughness == 0.0f)
-        new (&material) MetalMaterial(reflectance,eta,k);
+        return new MetalMaterial(reflectance,eta,k);
       else 
-        new (&material) MetalMaterial(reflectance,eta,k,roughness);
+        return new MetalMaterial(reflectance,eta,k,roughness);
     }
     else if (type == "Velvet")
     {
@@ -812,7 +811,7 @@ namespace embree
       const float backScattering = parms.getFloat("backScattering",zero);
       const Vec3fa horizonScatteringColor = parms.getVec3fa("horizonScatteringColor",one);
       const float horizonScatteringFallOff = parms.getFloat("horizonScatteringFallOff",zero);
-      new (&material) VelvetMaterial(reflectance,backScattering,horizonScatteringColor,horizonScatteringFallOff);
+      return new VelvetMaterial(reflectance,backScattering,horizonScatteringColor,horizonScatteringFallOff);
     }
     else if (type == "Dielectric")
     {
@@ -820,7 +819,7 @@ namespace embree
       const Vec3fa transmissionInside  = parms.getVec3fa("transmission",one);
       const float etaOutside = parms.getFloat("etaOutside",1.0f);
       const float etaInside  = parms.getFloat("etaInside",1.4f);
-      new (&material) DielectricMaterial(transmissionOutside,transmissionInside,etaOutside,etaInside);
+      return new DielectricMaterial(transmissionOutside,transmissionInside,etaOutside,etaInside);
     }
     else if (type == "MetallicPaint")
     {
@@ -828,7 +827,7 @@ namespace embree
       const Vec3fa glitterColor  = parms.getVec3fa("glitterColor",zero);
       const float glitterSpread = parms.getFloat("glitterSpread",1.0f);
       const float eta           = parms.getFloat("eta",1.4f);
-      new (&material) MetallicPaintMaterial(shadeColor,glitterColor,glitterSpread,eta);
+      return new MetallicPaintMaterial(shadeColor,glitterColor,glitterSpread,eta);
     }
     else if (type == "Hair")
     {
@@ -836,13 +835,12 @@ namespace embree
       const Vec3fa Kt = parms.getVec3fa("Kt",zero);
       const float nx = parms.getFloat("nx",20.0f);
       const float ny = parms.getFloat("ny",2.0f);
-      new (&material) HairMaterial(Kr,Kt,nx,ny);
+      return new HairMaterial(Kr,Kt,nx,ny);
     }
     else {
       std::cout << "Warning: unsupported material " << type << std::endl;
-      new (&material) OBJMaterial(1.0f,Vec3fa(0.5f),Vec3fa(0.0f),0.0f);
+      return new OBJMaterial(1.0f,Vec3fa(0.5f),Vec3fa(0.0f),0.0f);
     }
-    return new SceneGraph::MaterialNode(material);
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadTriangleMesh(const Ref<XML>& xml) 

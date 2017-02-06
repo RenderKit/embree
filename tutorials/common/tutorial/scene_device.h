@@ -29,9 +29,15 @@
 #include "../lights/light.isph"
 #endif
 
+#include "../scenegraph/texture.h"
 #include "../scenegraph/materials.h"
 
 #if !defined(ISPC)
+
+#define CPPTUTORIAL
+#include "../scenegraph/materials.h"
+#undef CPPTUTORIAL
+
 namespace embree
 {
 #endif
@@ -249,7 +255,7 @@ namespace embree
       
       materials = new ISPCMaterial*[in->materials.size()];
       for (size_t i=0; i<in->materials.size(); i++)
-        materials[i] = &in->materials[i]->material;
+        materials[i] = (ISPCMaterial*) in->materials[i]->material();
       numMaterials = unsigned(in->materials.size());
       
       lights = new Light*[in->lights.size()];

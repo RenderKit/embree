@@ -298,7 +298,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 
   /* shade */
   if (g_ispc_scene->materials[materialID]->type == MATERIAL_OBJ) {
-    OBJMaterial* material = (OBJMaterial*) g_ispc_scene->materials[materialID];
+    ISPCOBJMaterial* material = (ISPCOBJMaterial*) g_ispc_scene->materials[materialID];
     color = Vec3fa(material->Kd);
   }
 

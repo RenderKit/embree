@@ -454,17 +454,17 @@ inline Vec3f AnisotropicBlinn__sample(const varying AnisotropicBlinn* uniform Th
 //                          Matte Material                                    //
 ////////////////////////////////////////////////////////////////////////////////
 
-void MatteMaterial__preprocess(uniform MatteMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)
+void MatteMaterial__preprocess(uniform ISPCMatteMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)
 {
 }
 
-Vec3f MatteMaterial__eval(MatteMaterial* uniform This, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi)
+Vec3f MatteMaterial__eval(ISPCMatteMaterial* uniform This, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi)
 {
   Lambertian lambertian = make_Lambertian(make_Vec3f((varying Vec3fa)This->reflectance));
   return Lambertian__eval(&lambertian,wo,dg,wi);
 }
 
-Vec3f MatteMaterial__sample(MatteMaterial* uniform This, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
+Vec3f MatteMaterial__sample(ISPCMatteMaterial* uniform This, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
   Lambertian lambertian = make_Lambertian(make_Vec3f((varying Vec3fa)This->reflectance));
   return Lambertian__sample(&lambertian,wo,dg,wi_o,s);
@@ -474,15 +474,15 @@ Vec3f MatteMaterial__sample(MatteMaterial* uniform This, const BRDF& brdf, const
 //                          Mirror Material                                    //
 ////////////////////////////////////////////////////////////////////////////////
 
-void MirrorMaterial__preprocess(uniform MirrorMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)
+void MirrorMaterial__preprocess(uniform ISPCMirrorMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)
 {
 }
 
-Vec3f MirrorMaterial__eval(MirrorMaterial* uniform This, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi) {
+Vec3f MirrorMaterial__eval(ISPCMirrorMaterial* uniform This, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi) {
   return make_Vec3f(0.0f);
 }
 
-Vec3f MirrorMaterial__sample(MirrorMaterial* uniform This, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
+Vec3f MirrorMaterial__sample(ISPCMirrorMaterial* uniform This, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
   wi_o = make_Sample3f(reflect(wo,dg.Ns),1.0f);
   return make_Vec3f(This->reflectance);
@@ -492,7 +492,7 @@ Vec3f MirrorMaterial__sample(MirrorMaterial* uniform This, const BRDF& brdf, con
 //                          OBJ Material                                      //
 ////////////////////////////////////////////////////////////////////////////////
 
-void OBJMaterial__preprocess(uniform OBJMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)
+void OBJMaterial__preprocess(uniform ISPCOBJMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)
 {
     float d = material->d;
     if (material->map_d) d *= 1.0f-getTextureTexel1f(material->map_d,dg.u,dg.v);
@@ -508,7 +508,7 @@ void OBJMaterial__preprocess(uniform OBJMaterial* uniform material, BRDF& brdf, 
     brdf.Ni = material->Ni;
 }
 
-Vec3f OBJMaterial__eval(OBJMaterial* uniform material, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi)
+Vec3f OBJMaterial__eval(ISPCOBJMaterial* uniform material, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi)
 {
   Vec3f R = make_Vec3f(0.0f);
   const float Md = max(max(brdf.Kd.x,brdf.Kd.y),brdf.Kd.z);
@@ -527,7 +527,7 @@ Vec3f OBJMaterial__eval(OBJMaterial* uniform material, const BRDF& brdf, const V
   return R;
 }
 
-Vec3f OBJMaterial__sample(OBJMaterial* uniform material, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
+Vec3f OBJMaterial__sample(ISPCOBJMaterial* uniform material, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
   Vec3f cd = make_Vec3f(0.0f);
   Sample3f wid = make_Sample3f(make_Vec3f(0.0f),0.0f);
@@ -593,11 +593,11 @@ Vec3f OBJMaterial__sample(OBJMaterial* uniform material, const BRDF& brdf, const
 //                        Metal Material                                      //
 ////////////////////////////////////////////////////////////////////////////////
 
-void MetalMaterial__preprocess(uniform MetalMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)
+void MetalMaterial__preprocess(uniform ISPCMetalMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)
 {
 }
 
-Vec3f MetalMaterial__eval(MetalMaterial* uniform This, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi)
+Vec3f MetalMaterial__eval(ISPCMetalMaterial* uniform This, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi)
 {
   const FresnelConductor fresnel = make_FresnelConductor(make_Vec3f(This->eta),make_Vec3f(This->k));
   const PowerCosineDistribution distribution = make_PowerCosineDistribution(rcp(This->roughness));
@@ -615,7 +615,7 @@ Vec3f MetalMaterial__eval(MetalMaterial* uniform This, const BRDF& brdf, const V
   return (make_Vec3f(This->reflectance)*F) * D * G * rcp(4.0f*cosThetaO);
 }
 
-Vec3f MetalMaterial__sample(MetalMaterial* uniform This, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
+Vec3f MetalMaterial__sample(ISPCMetalMaterial* uniform This, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
   const PowerCosineDistribution distribution = make_PowerCosineDistribution(rcp(This->roughness));
 
@@ -629,14 +629,14 @@ Vec3f MetalMaterial__sample(MetalMaterial* uniform This, const BRDF& brdf, const
 //                        ReflectiveMetal Material                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-void ReflectiveMetalMaterial__preprocess(uniform ReflectiveMetalMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)  {
+void ReflectiveMetalMaterial__preprocess(uniform ISPCReflectiveMetalMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)  {
 }
 
-Vec3f ReflectiveMetalMaterial__eval(ReflectiveMetalMaterial* uniform This, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi) {
+Vec3f ReflectiveMetalMaterial__eval(ISPCReflectiveMetalMaterial* uniform This, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi) {
   return make_Vec3f(0.0f);
 }
 
-Vec3f ReflectiveMetalMaterial__sample(ReflectiveMetalMaterial* uniform This, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
+Vec3f ReflectiveMetalMaterial__sample(ISPCReflectiveMetalMaterial* uniform This, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
   wi_o = make_Sample3f(reflect(wo,dg.Ns),1.0f);
   return make_Vec3f(This->reflectance) * fresnelConductor(dot(wo,dg.Ns),make_Vec3f((varying Vec3fa)This->eta),make_Vec3f((varying Vec3fa)This->k));
@@ -646,18 +646,18 @@ Vec3f ReflectiveMetalMaterial__sample(ReflectiveMetalMaterial* uniform This, con
 //                        Velvet Material                                     //
 ////////////////////////////////////////////////////////////////////////////////
 
-void VelvetMaterial__preprocess(uniform VelvetMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)
+void VelvetMaterial__preprocess(uniform ISPCVelvetMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)
 {
 }
 
-Vec3f VelvetMaterial__eval(VelvetMaterial* uniform This, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi)
+Vec3f VelvetMaterial__eval(ISPCVelvetMaterial* uniform This, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi)
 {
   Minneart minneart; Minneart__Constructor(&minneart,(varying Vec3f)make_Vec3f(This->reflectance),This->backScattering);
   Velvety velvety; Velvety__Constructor (&velvety,make_Vec3f((varying Vec3fa)This->horizonScatteringColor),This->horizonScatteringFallOff);
   return Minneart__eval(&minneart,wo,dg,wi) + Velvety__eval(&velvety,wo,dg,wi);
 }
 
-Vec3f VelvetMaterial__sample(VelvetMaterial* uniform This, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
+Vec3f VelvetMaterial__sample(ISPCVelvetMaterial* uniform This, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
   Minneart minneart; Minneart__Constructor(&minneart,make_Vec3f((varying Vec3fa)This->reflectance),This->backScattering);
   Velvety velvety; Velvety__Constructor (&velvety,make_Vec3f((varying Vec3fa)This->horizonScatteringColor),This->horizonScatteringFallOff);
@@ -671,15 +671,15 @@ Vec3f VelvetMaterial__sample(VelvetMaterial* uniform This, const BRDF& brdf, con
 //                          Dielectric Material                               //
 ////////////////////////////////////////////////////////////////////////////////
 
-void DielectricMaterial__preprocess(uniform DielectricMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)
+void DielectricMaterial__preprocess(uniform ISPCDielectricMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)
 {
 }
 
-Vec3f DielectricMaterial__eval(DielectricMaterial* uniform material, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi) {
+Vec3f DielectricMaterial__eval(ISPCDielectricMaterial* uniform material, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi) {
   return make_Vec3f(0.0f);
 }
 
-Vec3f DielectricMaterial__sample(DielectricMaterial* uniform material, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
+Vec3f DielectricMaterial__sample(ISPCDielectricMaterial* uniform material, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
   float eta = 0.0f;
   Medium mediumOutside = make_Medium(make_Vec3f((varying Vec3fa)material->transmissionOutside),material->etaOutside);
@@ -709,15 +709,15 @@ Vec3f DielectricMaterial__sample(DielectricMaterial* uniform material, const BRD
 //                          ThinDielectric Material                               //
 ////////////////////////////////////////////////////////////////////////////////
 
-void ThinDielectricMaterial__preprocess(uniform ThinDielectricMaterial* uniform This, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)
+void ThinDielectricMaterial__preprocess(uniform ISPCThinDielectricMaterial* uniform This, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)
 {
 }
 
-Vec3f ThinDielectricMaterial__eval(ThinDielectricMaterial* uniform This, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi) {
+Vec3f ThinDielectricMaterial__eval(ISPCThinDielectricMaterial* uniform This, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi) {
   return make_Vec3f(0.0f);
 }
 
-Vec3f ThinDielectricMaterial__sample(ThinDielectricMaterial* uniform This, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
+Vec3f ThinDielectricMaterial__sample(ISPCThinDielectricMaterial* uniform This, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
   float cosThetaO = clamp(dot(wo,dg.Ns));
   if (cosThetaO <= 0.0f) return make_Vec3f(0.0f);
@@ -733,18 +733,18 @@ Vec3f ThinDielectricMaterial__sample(ThinDielectricMaterial* uniform This, const
 //                     MetallicPaint Material                                 //
 ////////////////////////////////////////////////////////////////////////////////
 
-void MetallicPaintMaterial__preprocess(uniform MetallicPaintMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)
+void MetallicPaintMaterial__preprocess(uniform ISPCMetallicPaintMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)
 {
 }
 
-Vec3f MetallicPaintMaterial__eval(MetallicPaintMaterial* uniform This, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi)
+Vec3f MetallicPaintMaterial__eval(ISPCMetallicPaintMaterial* uniform This, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi)
 {
   DielectricReflection reflection; DielectricReflection__Constructor(&reflection, 1.0f, This->eta);
   DielectricLayerLambertian lambertian; DielectricLayerLambertian__Constructor(&lambertian, make_Vec3f((varying float)1.0f), 1.0f, This->eta, make_Lambertian(make_Vec3f((varying Vec3fa)This->shadeColor)));
   return DielectricReflection__eval(&reflection,wo,dg,wi) + DielectricLayerLambertian__eval(&lambertian,wo,dg,wi);
 }
 
-Vec3f MetallicPaintMaterial__sample(MetallicPaintMaterial* uniform This, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
+Vec3f MetallicPaintMaterial__sample(ISPCMetallicPaintMaterial* uniform This, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
   DielectricReflection reflection; DielectricReflection__Constructor(&reflection, 1.0f, This->eta);
   DielectricLayerLambertian lambertian; DielectricLayerLambertian__Constructor(&lambertian, make_Vec3f((varying float)1.0f), 1.0f, This->eta, make_Lambertian(make_Vec3f((varying Vec3fa)This->shadeColor)));
@@ -757,17 +757,17 @@ Vec3f MetallicPaintMaterial__sample(MetallicPaintMaterial* uniform This, const B
 //                              Hair Material                                 //
 ////////////////////////////////////////////////////////////////////////////////
 
-void HairMaterial__preprocess(uniform HairMaterial* uniform This, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)
+void HairMaterial__preprocess(uniform ISPCHairMaterial* uniform This, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)
 {
   AnisotropicBlinn__Constructor((varying AnisotropicBlinn* uniform)&brdf,make_Vec3f(This->Kr),make_Vec3f(This->Kt),dg.Tx,(varying float)This->nx,dg.Ty,(varying float)This->ny,dg.Ng);
 }
 
-Vec3f HairMaterial__eval(HairMaterial* uniform This, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi)
+Vec3f HairMaterial__eval(ISPCHairMaterial* uniform This, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi)
 {
   return AnisotropicBlinn__eval((varying AnisotropicBlinn* uniform)&brdf,wo,wi);
 }
 
-Vec3f HairMaterial__sample(HairMaterial* uniform This, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
+Vec3f HairMaterial__sample(ISPCHairMaterial* uniform This, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
   return AnisotropicBlinn__sample((varying AnisotropicBlinn* uniform)&brdf,wo,wi_o,s.x,s.y,s.x);
 }
@@ -785,16 +785,16 @@ inline void Material__preprocess(ISPCMaterial** uniform materials, unsigned int 
       ISPCMaterial* uniform material = materials[id];
 
       switch (material->type) {
-      case MATERIAL_OBJ  : OBJMaterial__preprocess  ((uniform OBJMaterial* uniform)  material,brdf,wo,dg,medium); break;
-      case MATERIAL_METAL: MetalMaterial__preprocess((uniform MetalMaterial* uniform)material,brdf,wo,dg,medium); break;
-      case MATERIAL_REFLECTIVE_METAL: ReflectiveMetalMaterial__preprocess((uniform ReflectiveMetalMaterial* uniform)material,brdf,wo,dg,medium); break;
-      case MATERIAL_VELVET: VelvetMaterial__preprocess((uniform VelvetMaterial* uniform)material,brdf,wo,dg,medium); break;
-      case MATERIAL_DIELECTRIC: DielectricMaterial__preprocess((uniform DielectricMaterial* uniform)material,brdf,wo,dg,medium); break;
-      case MATERIAL_METALLIC_PAINT: MetallicPaintMaterial__preprocess((uniform MetallicPaintMaterial* uniform)material,brdf,wo,dg,medium); break;
-      case MATERIAL_MATTE: MatteMaterial__preprocess((uniform MatteMaterial* uniform)material,brdf,wo,dg,medium); break;
-      case MATERIAL_MIRROR: MirrorMaterial__preprocess((uniform MirrorMaterial* uniform)material,brdf,wo,dg,medium); break;
-      case MATERIAL_THIN_DIELECTRIC: ThinDielectricMaterial__preprocess((uniform ThinDielectricMaterial* uniform)material,brdf,wo,dg,medium); break;
-      case MATERIAL_HAIR: HairMaterial__preprocess((uniform HairMaterial* uniform)material,brdf,wo,dg,medium); break;
+      case MATERIAL_OBJ  : OBJMaterial__preprocess  ((uniform ISPCOBJMaterial* uniform)  material,brdf,wo,dg,medium); break;
+      case MATERIAL_METAL: MetalMaterial__preprocess((uniform ISPCMetalMaterial* uniform)material,brdf,wo,dg,medium); break;
+      case MATERIAL_REFLECTIVE_METAL: ReflectiveMetalMaterial__preprocess((uniform ISPCReflectiveMetalMaterial* uniform)material,brdf,wo,dg,medium); break;
+      case MATERIAL_VELVET: VelvetMaterial__preprocess((uniform ISPCVelvetMaterial* uniform)material,brdf,wo,dg,medium); break;
+      case MATERIAL_DIELECTRIC: DielectricMaterial__preprocess((uniform ISPCDielectricMaterial* uniform)material,brdf,wo,dg,medium); break;
+      case MATERIAL_METALLIC_PAINT: MetallicPaintMaterial__preprocess((uniform ISPCMetallicPaintMaterial* uniform)material,brdf,wo,dg,medium); break;
+      case MATERIAL_MATTE: MatteMaterial__preprocess((uniform ISPCMatteMaterial* uniform)material,brdf,wo,dg,medium); break;
+      case MATERIAL_MIRROR: MirrorMaterial__preprocess((uniform ISPCMirrorMaterial* uniform)material,brdf,wo,dg,medium); break;
+      case MATERIAL_THIN_DIELECTRIC: ThinDielectricMaterial__preprocess((uniform ISPCThinDielectricMaterial* uniform)material,brdf,wo,dg,medium); break;
+      case MATERIAL_HAIR: HairMaterial__preprocess((uniform ISPCHairMaterial* uniform)material,brdf,wo,dg,medium); break;
       default: break;
       }
     }
@@ -810,16 +810,16 @@ inline Vec3f Material__eval(ISPCMaterial** uniform materials, unsigned int mater
     {
       ISPCMaterial* uniform material = materials[id];
       switch (material->type) {
-      case MATERIAL_OBJ  : c = OBJMaterial__eval  ((uniform OBJMaterial* uniform)  material, brdf, wo, dg, wi); break;
-      case MATERIAL_METAL: c = MetalMaterial__eval((uniform MetalMaterial* uniform)material, brdf, wo, dg, wi); break;
-      case MATERIAL_REFLECTIVE_METAL: c = ReflectiveMetalMaterial__eval((uniform ReflectiveMetalMaterial* uniform)material, brdf, wo, dg, wi); break;
-      case MATERIAL_VELVET: c = VelvetMaterial__eval((uniform VelvetMaterial* uniform)material, brdf, wo, dg, wi); break;
-      case MATERIAL_DIELECTRIC: c = DielectricMaterial__eval((uniform DielectricMaterial* uniform)material, brdf, wo, dg, wi); break;
-      case MATERIAL_METALLIC_PAINT: c = MetallicPaintMaterial__eval((uniform MetallicPaintMaterial* uniform)material, brdf, wo, dg, wi); break;
-      case MATERIAL_MATTE: c = MatteMaterial__eval((uniform MatteMaterial* uniform)material, brdf, wo, dg, wi); break;
-      case MATERIAL_MIRROR: c = MirrorMaterial__eval((uniform MirrorMaterial* uniform)material, brdf, wo, dg, wi); break;
-      case MATERIAL_THIN_DIELECTRIC: c = ThinDielectricMaterial__eval((uniform ThinDielectricMaterial* uniform)material, brdf, wo, dg, wi); break;
-      case MATERIAL_HAIR: c = HairMaterial__eval((uniform HairMaterial* uniform)material, brdf, wo, dg, wi); break;
+      case MATERIAL_OBJ  : c = OBJMaterial__eval  ((uniform ISPCOBJMaterial* uniform)  material, brdf, wo, dg, wi); break;
+      case MATERIAL_METAL: c = MetalMaterial__eval((uniform ISPCMetalMaterial* uniform)material, brdf, wo, dg, wi); break;
+      case MATERIAL_REFLECTIVE_METAL: c = ReflectiveMetalMaterial__eval((uniform ISPCReflectiveMetalMaterial* uniform)material, brdf, wo, dg, wi); break;
+      case MATERIAL_VELVET: c = VelvetMaterial__eval((uniform ISPCVelvetMaterial* uniform)material, brdf, wo, dg, wi); break;
+      case MATERIAL_DIELECTRIC: c = DielectricMaterial__eval((uniform ISPCDielectricMaterial* uniform)material, brdf, wo, dg, wi); break;
+      case MATERIAL_METALLIC_PAINT: c = MetallicPaintMaterial__eval((uniform ISPCMetallicPaintMaterial* uniform)material, brdf, wo, dg, wi); break;
+      case MATERIAL_MATTE: c = MatteMaterial__eval((uniform ISPCMatteMaterial* uniform)material, brdf, wo, dg, wi); break;
+      case MATERIAL_MIRROR: c = MirrorMaterial__eval((uniform ISPCMirrorMaterial* uniform)material, brdf, wo, dg, wi); break;
+      case MATERIAL_THIN_DIELECTRIC: c = ThinDielectricMaterial__eval((uniform ISPCThinDielectricMaterial* uniform)material, brdf, wo, dg, wi); break;
+      case MATERIAL_HAIR: c = HairMaterial__eval((uniform ISPCHairMaterial* uniform)material, brdf, wo, dg, wi); break;
       default: c = make_Vec3f(0.0f);
       }
     }
@@ -836,16 +836,16 @@ inline Vec3f Material__sample(ISPCMaterial** uniform uniform materials, unsigned
     {
       ISPCMaterial* uniform material = materials[id];
       switch (material->type) {
-      case MATERIAL_OBJ  : c = OBJMaterial__sample  ((uniform OBJMaterial* uniform)  material, brdf, Lw, wo, dg, wi_o, medium, s); break;
-      case MATERIAL_METAL: c = MetalMaterial__sample((uniform MetalMaterial* uniform)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
-      case MATERIAL_REFLECTIVE_METAL: c = ReflectiveMetalMaterial__sample((uniform ReflectiveMetalMaterial* uniform)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
-      case MATERIAL_VELVET: c = VelvetMaterial__sample((uniform VelvetMaterial* uniform)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
-      case MATERIAL_DIELECTRIC: c = DielectricMaterial__sample((uniform DielectricMaterial* uniform)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
-      case MATERIAL_METALLIC_PAINT: c = MetallicPaintMaterial__sample((uniform MetallicPaintMaterial* uniform)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
-      case MATERIAL_MATTE: c = MatteMaterial__sample((uniform MatteMaterial* uniform)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
-      case MATERIAL_MIRROR: c = MirrorMaterial__sample((uniform MirrorMaterial* uniform)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
-      case MATERIAL_THIN_DIELECTRIC: c = ThinDielectricMaterial__sample((uniform ThinDielectricMaterial* uniform)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
-      case MATERIAL_HAIR: c = HairMaterial__sample((uniform HairMaterial* uniform)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
+      case MATERIAL_OBJ  : c = OBJMaterial__sample  ((uniform ISPCOBJMaterial* uniform)  material, brdf, Lw, wo, dg, wi_o, medium, s); break;
+      case MATERIAL_METAL: c = MetalMaterial__sample((uniform ISPCMetalMaterial* uniform)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
+      case MATERIAL_REFLECTIVE_METAL: c = ReflectiveMetalMaterial__sample((uniform ISPCReflectiveMetalMaterial* uniform)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
+      case MATERIAL_VELVET: c = VelvetMaterial__sample((uniform ISPCVelvetMaterial* uniform)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
+      case MATERIAL_DIELECTRIC: c = DielectricMaterial__sample((uniform ISPCDielectricMaterial* uniform)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
+      case MATERIAL_METALLIC_PAINT: c = MetallicPaintMaterial__sample((uniform ISPCMetallicPaintMaterial* uniform)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
+      case MATERIAL_MATTE: c = MatteMaterial__sample((uniform ISPCMatteMaterial* uniform)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
+      case MATERIAL_MIRROR: c = MirrorMaterial__sample((uniform ISPCMirrorMaterial* uniform)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
+      case MATERIAL_THIN_DIELECTRIC: c = ThinDielectricMaterial__sample((uniform ISPCThinDielectricMaterial* uniform)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
+      case MATERIAL_HAIR: c = HairMaterial__sample((uniform ISPCHairMaterial* uniform)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
       default: wi_o = make_Sample3f(make_Vec3f(0.0f),0.0f); c = make_Vec3f(0.0f); break;
       }
     }
@@ -911,7 +911,7 @@ void assignShaders(ISPCGeometry* uniform geometry)
     //else
     if (material->type == MATERIAL_OBJ)
     {
-      OBJMaterial* uniform obj = (OBJMaterial* uniform) material;
+      ISPCOBJMaterial* uniform obj = (ISPCOBJMaterial* uniform) material;
       if (obj->d != 1.0f || obj->map_d) {
         rtcSetIntersectionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&intersectionFilterOBJ);
         rtcSetOcclusionFilterFunction   (mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&occlusionFilterOBJ);
@@ -930,7 +930,7 @@ void assignShaders(ISPCGeometry* uniform geometry)
     //else
     if (material->type == MATERIAL_OBJ)
     {
-      OBJMaterial* uniform obj = (OBJMaterial* uniform) material;
+      ISPCOBJMaterial* uniform obj = (ISPCOBJMaterial* uniform) material;
       if (obj->d != 1.0f || obj->map_d) {
         rtcSetIntersectionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&intersectionFilterOBJ);
         rtcSetOcclusionFilterFunction   (mesh->scene,mesh->geomID,(RTCFilterFuncVarying)&occlusionFilterOBJ);
@@ -1261,7 +1261,7 @@ void occlusionFilterHair(void* uniform ptr, RTCRay& ray)
       uniform int materialID = ((ISPCLineSegments* uniform)geometry)->materialID;
       ISPCMaterial* uniform material = g_ispc_scene->materials[materialID];
       switch (material->type) {
-      case MATERIAL_HAIR: Kt = make_Vec3f(((uniform HairMaterial* uniform)material)->Kt); break;
+      case MATERIAL_HAIR: Kt = make_Vec3f(((uniform ISPCHairMaterial* uniform)material)->Kt); break;
       default: break;
       }
     }
@@ -1270,7 +1270,7 @@ void occlusionFilterHair(void* uniform ptr, RTCRay& ray)
       uniform int materialID = ((ISPCHairSet* uniform)geometry)->materialID;
       ISPCMaterial* uniform material = g_ispc_scene->materials[materialID];
       switch (material->type) {
-      case MATERIAL_HAIR: Kt = make_Vec3f(((uniform HairMaterial* uniform)material)->Kt); break;
+      case MATERIAL_HAIR: Kt = make_Vec3f(((uniform ISPCHairMaterial* uniform)material)->Kt); break;
       default: break;
       }
     }
@@ -1284,7 +1284,7 @@ void occlusionFilterHair(void* uniform ptr, RTCRay& ray)
         uniform int materialID = ((ISPCHairSet* uniform)geometry)->materialID;
         ISPCMaterial* uniform material = g_ispc_scene->materials[materialID];
         switch (material->type) {
-        case MATERIAL_HAIR: Kt = make_Vec3f(((uniform HairMaterial* uniform)material)->Kt); break;
+        case MATERIAL_HAIR: Kt = make_Vec3f(((uniform ISPCHairMaterial* uniform)material)->Kt); break;
         default: break;
         }
       }

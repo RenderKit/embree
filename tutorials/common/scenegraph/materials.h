@@ -14,19 +14,35 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
+#if defined (CPPTUTORIAL) && !defined(_MATERIALS_H_CPPTUTORIAL) || !defined(_MATERIALS_H_)
 
-#if !defined(ISPC)
-#include "../default.h"
+#if defined (CPPTUTORIAL)
+#define _MATERIALS_H_CPPTUTORIAL
+#else
+#define _MATERIALS_H_
 #endif
 
+//#pragma once
+
+#if !defined(ISPC)
 #include "texture.h"
+#include "scenegraph.h"
+#endif
 
 #if !defined(ISPC)
 namespace embree
 {
 #endif
 
+#if defined(ISPC) || defined(CPPTUTORIAL)
+#define MATERIAL_BASE_CLASS
+#define PREFIX(x) ISPC##x
+#else
+#define MATERIAL_BASE_CLASS : public SceneGraph::MaterialNode
+#define PREFIX(x) x
+#endif
+
+#if !defined(CPPTUTORIAL)
   enum MaterialType
   {
     MATERIAL_OBJ,
@@ -40,64 +56,93 @@ namespace embree
     MATERIAL_REFLECTIVE_METAL,
     MATERIAL_HAIR
   };
+#endif
 
-  struct MatteMaterial 
+  struct PREFIX(Material)
   {
+#if !defined(ISPC) && !defined(CPPTUTORIAL)
+    Material (MaterialType type)
+     : type(type) {}
+#endif
 #if !defined(ISPC)
+    __aligned(16)
+#endif
+    int type;
+    int align[3];
+  };
+
+  struct PREFIX(MatteMaterial) MATERIAL_BASE_CLASS
+  {
+#if !defined(ISPC) && !defined(CPPTUTORIAL)
     MatteMaterial (const Vec3fa& reflectance)
-      : type(MATERIAL_MATTE), reflectance(reflectance) {}
+      : base(MATERIAL_MATTE), reflectance(reflectance) {}
+    virtual Material* material() { return &base; }
 #endif
 
-    int type;
-    int align[3];
+    PREFIX(Material) base;
     Vec3fa reflectance;
   };
 
-  struct MirrorMaterial
+  struct PREFIX(MirrorMaterial) MATERIAL_BASE_CLASS
   {
-#if !defined(ISPC)
+#if !defined(ISPC) && !defined(CPPTUTORIAL)
     MirrorMaterial (const Vec3fa& reflectance)
-      : type(MATERIAL_MIRROR), reflectance(reflectance) {}
+      : base(MATERIAL_MIRROR), reflectance(reflectance) {}
+    virtual Material* material() { return &base; }
 #endif
 
-    int type;
-    int align[3];
+    PREFIX(Material) base;
     Vec3fa reflectance;
   };
 
-  struct ThinDielectricMaterial
+  struct PREFIX(ThinDielectricMaterial) MATERIAL_BASE_CLASS
   {
-#if !defined(ISPC)
+#if !defined(ISPC) && !defined(CPPTUTORIAL)
     ThinDielectricMaterial (const Vec3fa& transmission, const float eta, const float thickness)
-      : type(MATERIAL_THIN_DIELECTRIC), transmission(transmission), transmissionFactor(log(transmission)*thickness), eta(eta), thickness(thickness) {}
+      : base(MATERIAL_THIN_DIELECTRIC), transmission(transmission), transmissionFactor(log(transmission)*thickness), eta(eta), thickness(thickness) {}
+    virtual Material* material() { return &base; }
 #endif
 
-    int type;
-    int align[3];
+    PREFIX(Material) base;
     Vec3fa transmission;
     Vec3fa transmissionFactor;
     float eta;
     float thickness;
   };
 
-  struct OBJMaterial
+  struct PREFIX(OBJMaterial) MATERIAL_BASE_CLASS
   {
-#if !defined(ISPC)
+#if !defined(ISPC) && !defined(CPPTUTORIAL)
     OBJMaterial ()
-      : type(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Kt(1.0f), map_d(nullptr), map_Kd(nullptr), map_Displ(nullptr) {}
+      : base(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Kt(1.0f), map_d(nullptr), map_Kd(nullptr), map_Displ(nullptr) {}
 
     OBJMaterial (float d, const Vec3fa& Kd, const Vec3fa& Ks, const float Ns)
-      : type(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Kt(1.0f), map_d(nullptr), map_Kd(nullptr), map_Displ(nullptr) {}
+      : base(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Kt(1.0f), map_d(nullptr), map_Kd(nullptr), map_Displ(nullptr) {}
 
-    OBJMaterial (float d, const Texture* map_d, const Vec3fa& Kd, const Texture* map_Kd, const Vec3fa& Ks, const Texture* map_Ks, const float Ns, const Texture* map_Ns, const Texture* map_Bump)
-      : type(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Kt(1.0f), map_d(map_d), map_Kd(map_Kd), map_Displ(nullptr) {}
+    OBJMaterial (float d, const std::shared_ptr<Texture> map_d, 
+                 const Vec3fa& Kd, const std::shared_ptr<Texture> map_Kd, 
+                 const Vec3fa& Ks, const std::shared_ptr<Texture> map_Ks, 
+                 const float Ns, const std::shared_ptr<Texture> map_Ns, 
+                 const std::shared_ptr<Texture> map_Displ)
+      : base(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Kt(1.0f), 
+      map_d(nullptr), map_Kd(nullptr), map_Ks(nullptr), map_Ns(nullptr), map_Displ(nullptr),
+      _map_d(map_d), _map_Kd(map_Kd), _map_Ks(map_Ks), _map_Ns(map_Ns), _map_Displ(map_Displ) {}
 
-    ~OBJMaterial() { // FIXME: destructor never called!
+    virtual Material* material() 
+    { 
+      map_d = _map_d.get();
+      map_Kd = _map_Kd.get();
+      map_Ks = _map_Ks.get();
+      map_Ns = _map_Ns.get();
+      map_Displ = _map_Displ.get();
+      return &base; 
+    }
+
+    ~OBJMaterial() { // FIXME: destructor never called
     }
 #endif
 
-    int type;
-    int align[3];
+    PREFIX(Material) base;
     int illum;             /*< illumination model */
     float d;               /*< dissolve factor, 1=opaque, 0=transparent */
     float Ns;              /*< specular exponent */
@@ -110,105 +155,109 @@ namespace embree
 
     const Texture* map_d;            /*< d texture */
     const Texture* map_Kd;           /*< Kd texture */
+    const Texture* map_Ks;           /*< Ks texture */
+    const Texture* map_Ns;           /*< Ns texture */
     const Texture* map_Displ;        /*< Displ texture */
+
+#if !defined(ISPC) && !defined(CPPTUTORIAL)
+    std::shared_ptr<Texture> _map_d;            /*< d texture */
+    std::shared_ptr<Texture> _map_Kd;           /*< Kd texture */
+    std::shared_ptr<Texture> _map_Ks;           /*< Ks texture */
+    std::shared_ptr<Texture> _map_Ns;           /*< Ns texture */
+    std::shared_ptr<Texture> _map_Displ;        /*< Displ texture */
+#endif
   };
 
-  struct MetalMaterial
+  struct PREFIX(MetalMaterial) MATERIAL_BASE_CLASS
   {
-#if !defined(ISPC)
+#if !defined(ISPC) && !defined(CPPTUTORIAL)
     MetalMaterial (const Vec3fa& reflectance, const Vec3fa& eta, const Vec3fa& k)
-      : type(MATERIAL_REFLECTIVE_METAL), reflectance(reflectance), eta(eta), k(k), roughness(0.0f) {}
+      : base(MATERIAL_REFLECTIVE_METAL), reflectance(reflectance), eta(eta), k(k), roughness(0.0f) {}
 
     MetalMaterial (const Vec3fa& reflectance, const Vec3fa& eta, const Vec3fa& k, const float roughness)
-      : type(MATERIAL_METAL), reflectance(reflectance), eta(eta), k(k), roughness(roughness) {}
+      : base(MATERIAL_METAL), reflectance(reflectance), eta(eta), k(k), roughness(roughness) {}
+    
+    virtual Material* material() { return &base; }
 #endif
 
-    int type;
-    int align[3];
+    PREFIX(Material) base;
     Vec3fa reflectance;
     Vec3fa eta;
     Vec3fa k;
     float roughness;
   };
 
-  typedef MetalMaterial ReflectiveMetalMaterial;
+  typedef PREFIX(MetalMaterial) PREFIX(ReflectiveMetalMaterial);
 
-  struct VelvetMaterial
+  struct PREFIX(VelvetMaterial) MATERIAL_BASE_CLASS
   {
-#if !defined(ISPC)
+#if !defined(ISPC) && !defined(CPPTUTORIAL)
     VelvetMaterial (const Vec3fa& reflectance, const float backScattering, const Vec3fa& horizonScatteringColor, const float horizonScatteringFallOff)
-      : type(MATERIAL_VELVET), reflectance(reflectance), horizonScatteringColor(horizonScatteringColor), backScattering(backScattering), horizonScatteringFallOff(horizonScatteringFallOff) {}
+      : base(MATERIAL_VELVET), reflectance(reflectance), horizonScatteringColor(horizonScatteringColor), backScattering(backScattering), horizonScatteringFallOff(horizonScatteringFallOff) {}
+
+    virtual Material* material() { return &base; }
 #endif
 
-    int type;
-    int align[3];
+    PREFIX(Material) base;
     Vec3fa reflectance;
     Vec3fa horizonScatteringColor;
     float backScattering;
     float horizonScatteringFallOff;
   };
 
-  struct DielectricMaterial
+  struct PREFIX(DielectricMaterial) MATERIAL_BASE_CLASS
   {
-#if !defined(ISPC)
+#if !defined(ISPC) && !defined(CPPTUTORIAL)
     DielectricMaterial (const Vec3fa& transmissionOutside, const Vec3fa& transmissionInside, const float etaOutside, const float etaInside)
-      : type(MATERIAL_DIELECTRIC), transmissionOutside(transmissionOutside), transmissionInside(transmissionInside), etaOutside(etaOutside), etaInside(etaInside) {}
+      : base(MATERIAL_DIELECTRIC), transmissionOutside(transmissionOutside), transmissionInside(transmissionInside), etaOutside(etaOutside), etaInside(etaInside) {}
+
+    virtual Material* material() { return &base; }
 #endif
 
-    int type;
-    int align[3];
+    PREFIX(Material) base;
     Vec3fa transmissionOutside;
     Vec3fa transmissionInside;
     float etaOutside;
     float etaInside;
   };
 
-  struct MetallicPaintMaterial
+  struct PREFIX(MetallicPaintMaterial) MATERIAL_BASE_CLASS
   {
-#if !defined(ISPC)
+#if !defined(ISPC) && !defined(CPPTUTORIAL)
     MetallicPaintMaterial (const Vec3fa& shadeColor, const Vec3fa& glitterColor, float glitterSpread, float eta)
-      : type(MATERIAL_METALLIC_PAINT), shadeColor(shadeColor), glitterColor(glitterColor), glitterSpread(glitterSpread), eta(eta) {}
+      : base(MATERIAL_METALLIC_PAINT), shadeColor(shadeColor), glitterColor(glitterColor), glitterSpread(glitterSpread), eta(eta) {}
+
+    virtual Material* material() { return &base; }
 #endif
 
-    int type;
-    int align[3];
+    PREFIX(Material) base;
     Vec3fa shadeColor;
     Vec3fa glitterColor;
     float glitterSpread;
     float eta;
   };
 
-  struct HairMaterial
+  struct PREFIX(HairMaterial) MATERIAL_BASE_CLASS
   {
-#if !defined(ISPC)
+#if !defined(ISPC) && !defined(CPPTUTORIAL)
     HairMaterial (const Vec3fa& Kr, const Vec3fa& Kt, float nx, float ny)
-      : type(MATERIAL_HAIR), Kr(Kr), Kt(Kt), nx(nx), ny(ny) {}
+      : base(MATERIAL_HAIR), Kr(Kr), Kt(Kt), nx(nx), ny(ny) {}
+
+    virtual Material* material() { return &base; }
 #endif
 
-    int type;
-    int align[3];
+    PREFIX(Material) base;
     Vec3fa Kr;
     Vec3fa Kt;
     float nx;
     float ny;
   };
 
-  struct Material
-  {
-#if !defined(ISPC)
-    Material () { for (auto& x : v) x = Vec3fa(zero); }
-    Material (const OBJMaterial& in) { *((OBJMaterial*)this) = in; }
-    OBJMaterial& obj() { return *(OBJMaterial*)this; }
-#endif
-
-    int type;
-    int align[3];
-    Vec3fa v[7];
-  };
-
-  typedef Material ISPCMaterial;
+#undef MATERIAL_BASE_CLASS
+#undef PREFIX
 
 #if !defined(ISPC)
 }
 #endif
 
+#endif
