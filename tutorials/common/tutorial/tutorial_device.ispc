@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "tutorial_device.isph"
-#include "scene_device.isph"
+#include "scene_device.h"
 
 /* the scene to render */
 extern RTCScene g_scene;

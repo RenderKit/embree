@@ -18,6 +18,7 @@
 
 #include "verify.h"
 #include "../tutorials/common/scenegraph/scenegraph.h"
+#include "../tutorials/common/scenegraph/geometry_creation.h"
 #include "../common/algorithms/parallel_for.h"
 #include <regex>
 #include <stack>

@@ -17,7 +17,7 @@
 #include "../common/math/random_sampler.isph"
 #include "../common/core/differential_geometry.isph"
 #include "../common/tutorial/tutorial_device.isph"
-#include "../common/tutorial/scene_device.isph"
+#include "../common/tutorial/scene_device.h"
 
 extern uniform ISPCScene* uniform g_ispc_scene;
 extern uniform bool g_changed;
@@ -26,8 +26,6 @@ extern uniform int g_instancing_mode;
 /* scene data */
 RTCDevice g_device = NULL;
 RTCScene g_scene = NULL;
-extern RTCScene* uniform geomID_to_scene;
-extern ISPCInstance* uniform* uniform geomID_to_inst;
 uniform bool g_subdiv_mode = false;
 
 #define SPP 1
@@ -40,8 +38,8 @@ uniform bool g_subdiv_mode = false;
 
 inline uniform float updateEdgeLevel( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, const uniform size_t e0, const uniform size_t e1)
 {
-  const uniform Vec3fa v0 = mesh->positions[mesh->position_indices[e0]];
-  const uniform Vec3fa v1 = mesh->positions[mesh->position_indices[e1]];
+  const uniform Vec3fa v0 = mesh->positions[0][mesh->position_indices[e0]];
+  const uniform Vec3fa v1 = mesh->positions[0][mesh->position_indices[e1]];
   const uniform Vec3fa edge = v1-v0;
   const uniform Vec3fa P = 0.5f*(v1+v0);
   const uniform Vec3fa dist = cam_pos - P;
@@ -138,7 +136,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   if (g_instancing_mode == 2 || g_instancing_mode == 3) 
   {
     for (uniform unsigned int i=0; i<scene_in->numGeometries; i++) {
-      if (geomID_to_scene[i]) rtcCommit(geomID_to_scene[i]);
+      if (scene_in->geomID_to_scene[i]) rtcCommit(scene_in->geomID_to_scene[i]);
     }
   }
 
@@ -152,7 +150,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform 
   if (geometry->type == TRIANGLE_MESH)
   {
     uniform ISPCTriangleMesh* uniform mesh = (uniform ISPCTriangleMesh* uniform) geometry;
-    materialID = mesh->triangles[ray.primID].materialID;
+    materialID = mesh->materialID;
   }
   else if (geometry->type == QUAD_MESH)
   {
@@ -211,7 +209,7 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
     ISPCInstance* uniform instance;
     uniform ISPCGeometry* uniform geometry;
     if (g_instancing_mode) {
-      instance = geomID_to_inst[geomID];
+      instance = g_ispc_scene->geomID_to_inst[geomID];
       geometry = g_ispc_scene->geometries[instance->geomID];
     } else {
       instance = NULL;
@@ -291,8 +289,8 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
   dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
 
   /* shade */
-  if (g_ispc_scene->materials[materialID].ty == MATERIAL_OBJ) {
-    uniform OBJMaterial* material = (uniform OBJMaterial*) &g_ispc_scene->materials[materialID];
+  if (g_ispc_scene->materials[materialID]->type == MATERIAL_OBJ) {
+    uniform ISPCOBJMaterial* material = (uniform ISPCOBJMaterial*) g_ispc_scene->materials[materialID];
     color = make_Vec3f(material->Kd);
   }
 

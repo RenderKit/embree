@@ -14,13 +14,35 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
+#if defined (CPPTUTORIAL) && !defined(_MATERIALS_H_CPPTUTORIAL) || !defined(_MATERIALS_H_)
 
-#include "../default.h"
+#if defined (CPPTUTORIAL)
+#define _MATERIALS_H_CPPTUTORIAL
+#else
+#define _MATERIALS_H_
+#endif
+
+//#pragma once
+
+#if !defined(ISPC)
 #include "texture.h"
+#include "scenegraph.h"
+#endif
 
+#if !defined(ISPC)
 namespace embree
 {
+#endif
+
+#if defined(ISPC) || defined(CPPTUTORIAL)
+#define MATERIAL_BASE_CLASS
+#define PREFIX(x) ISPC##x
+#else
+#define MATERIAL_BASE_CLASS : public SceneGraph::MaterialNode
+#define PREFIX(x) x
+#endif
+
+#if !defined(CPPTUTORIAL)
   enum MaterialType
   {
     MATERIAL_OBJ,
@@ -34,68 +56,93 @@ namespace embree
     MATERIAL_REFLECTIVE_METAL,
     MATERIAL_HAIR
   };
+#endif
 
-  class MaterialBase
+  struct PREFIX(Material)
   {
-  public:
-    MaterialBase() {}
-    MaterialBase(MaterialType type) : type(type) {}
-
-  public:
+#if !defined(ISPC) && !defined(CPPTUTORIAL)
+    Material (MaterialType type)
+     : type(type) {}
+#endif
+#if !defined(ISPC)
+    __aligned(16)
+#endif
     int type;
-  private:
     int align[3];
   };
 
-  class MatteMaterial : public MaterialBase
+  struct PREFIX(MatteMaterial) MATERIAL_BASE_CLASS
   {
-  public:
+#if !defined(ISPC) && !defined(CPPTUTORIAL)
     MatteMaterial (const Vec3fa& reflectance)
-      : MaterialBase(MATERIAL_MATTE), reflectance(reflectance) {}
+      : base(MATERIAL_MATTE), reflectance(reflectance) {}
+    virtual Material* material() { return &base; }
+#endif
 
-  public:
+    PREFIX(Material) base;
     Vec3fa reflectance;
   };
 
-  class MirrorMaterial : public MaterialBase
+  struct PREFIX(MirrorMaterial) MATERIAL_BASE_CLASS
   {
-  public:
+#if !defined(ISPC) && !defined(CPPTUTORIAL)
     MirrorMaterial (const Vec3fa& reflectance)
-      : MaterialBase(MATERIAL_MIRROR), reflectance(reflectance) {}
+      : base(MATERIAL_MIRROR), reflectance(reflectance) {}
+    virtual Material* material() { return &base; }
+#endif
 
-  public:
+    PREFIX(Material) base;
     Vec3fa reflectance;
   };
 
-  class ThinDielectricMaterial : public MaterialBase
+  struct PREFIX(ThinDielectricMaterial) MATERIAL_BASE_CLASS
   {
-  public:
+#if !defined(ISPC) && !defined(CPPTUTORIAL)
     ThinDielectricMaterial (const Vec3fa& transmission, const float eta, const float thickness)
-      : MaterialBase(MATERIAL_THIN_DIELECTRIC), transmission(transmission), transmissionFactor(log(transmission)*thickness), eta(eta), thickness(thickness) {}
+      : base(MATERIAL_THIN_DIELECTRIC), transmission(transmission), transmissionFactor(log(transmission)*thickness), eta(eta), thickness(thickness) {}
+    virtual Material* material() { return &base; }
+#endif
 
-  public:
+    PREFIX(Material) base;
     Vec3fa transmission;
     Vec3fa transmissionFactor;
     float eta;
     float thickness;
   };
 
-  class OBJMaterial : public MaterialBase
+  struct PREFIX(OBJMaterial) MATERIAL_BASE_CLASS
   {
-  public:
+#if !defined(ISPC) && !defined(CPPTUTORIAL)
     OBJMaterial ()
-      : MaterialBase(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Kt(1.0f), map_d(nullptr), map_Kd(nullptr), map_Displ(nullptr) {}
+      : base(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Kt(1.0f), map_d(nullptr), map_Kd(nullptr), map_Displ(nullptr) {}
 
     OBJMaterial (float d, const Vec3fa& Kd, const Vec3fa& Ks, const float Ns)
-      : MaterialBase(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Kt(1.0f), map_d(nullptr), map_Kd(nullptr), map_Displ(nullptr) {}
+      : base(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Kt(1.0f), map_d(nullptr), map_Kd(nullptr), map_Displ(nullptr) {}
 
-    OBJMaterial (float d, const Texture* map_d, const Vec3fa& Kd, const Texture* map_Kd, const Vec3fa& Ks, const Texture* map_Ks, const float Ns, const Texture* map_Ns, const Texture* map_Bump)
-      : MaterialBase(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Kt(1.0f), map_d(map_d), map_Kd(map_Kd), map_Displ(nullptr) {}
+    OBJMaterial (float d, const std::shared_ptr<Texture> map_d, 
+                 const Vec3fa& Kd, const std::shared_ptr<Texture> map_Kd, 
+                 const Vec3fa& Ks, const std::shared_ptr<Texture> map_Ks, 
+                 const float Ns, const std::shared_ptr<Texture> map_Ns, 
+                 const std::shared_ptr<Texture> map_Displ)
+      : base(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Kt(1.0f), 
+      map_d(nullptr), map_Kd(nullptr), map_Ks(nullptr), map_Ns(nullptr), map_Displ(nullptr),
+      _map_d(map_d), _map_Kd(map_Kd), _map_Ks(map_Ks), _map_Ns(map_Ns), _map_Displ(map_Displ) {}
 
-    ~OBJMaterial() { // FIXME: destructor never called!
+    virtual Material* material() 
+    { 
+      map_d = _map_d.get();
+      map_Kd = _map_Kd.get();
+      map_Ks = _map_Ks.get();
+      map_Ns = _map_Ns.get();
+      map_Displ = _map_Displ.get();
+      return &base; 
     }
 
-  public:
+    ~OBJMaterial() { // FIXME: destructor never called
+    }
+#endif
+
+    PREFIX(Material) base;
     int illum;             /*< illumination model */
     float d;               /*< dissolve factor, 1=opaque, 0=transparent */
     float Ns;              /*< specular exponent */
@@ -108,87 +155,109 @@ namespace embree
 
     const Texture* map_d;            /*< d texture */
     const Texture* map_Kd;           /*< Kd texture */
+    const Texture* map_Ks;           /*< Ks texture */
+    const Texture* map_Ns;           /*< Ns texture */
     const Texture* map_Displ;        /*< Displ texture */
+
+#if !defined(ISPC) && !defined(CPPTUTORIAL)
+    std::shared_ptr<Texture> _map_d;            /*< d texture */
+    std::shared_ptr<Texture> _map_Kd;           /*< Kd texture */
+    std::shared_ptr<Texture> _map_Ks;           /*< Ks texture */
+    std::shared_ptr<Texture> _map_Ns;           /*< Ns texture */
+    std::shared_ptr<Texture> _map_Displ;        /*< Displ texture */
+#endif
   };
 
-  class MetalMaterial : public MaterialBase
+  struct PREFIX(MetalMaterial) MATERIAL_BASE_CLASS
   {
-  public:
+#if !defined(ISPC) && !defined(CPPTUTORIAL)
     MetalMaterial (const Vec3fa& reflectance, const Vec3fa& eta, const Vec3fa& k)
-      : MaterialBase(MATERIAL_REFLECTIVE_METAL), reflectance(reflectance), eta(eta), k(k), roughness(0.0f) {}
+      : base(MATERIAL_REFLECTIVE_METAL), reflectance(reflectance), eta(eta), k(k), roughness(0.0f) {}
 
     MetalMaterial (const Vec3fa& reflectance, const Vec3fa& eta, const Vec3fa& k, const float roughness)
-      : MaterialBase(MATERIAL_METAL), reflectance(reflectance), eta(eta), k(k), roughness(roughness) {}
+      : base(MATERIAL_METAL), reflectance(reflectance), eta(eta), k(k), roughness(roughness) {}
+    
+    virtual Material* material() { return &base; }
+#endif
 
-  public:
+    PREFIX(Material) base;
     Vec3fa reflectance;
     Vec3fa eta;
     Vec3fa k;
     float roughness;
   };
 
-  typedef MetalMaterial ReflectiveMetalMaterial;
+  typedef PREFIX(MetalMaterial) PREFIX(ReflectiveMetalMaterial);
 
-  class VelvetMaterial : public MaterialBase
+  struct PREFIX(VelvetMaterial) MATERIAL_BASE_CLASS
   {
-  public:
+#if !defined(ISPC) && !defined(CPPTUTORIAL)
     VelvetMaterial (const Vec3fa& reflectance, const float backScattering, const Vec3fa& horizonScatteringColor, const float horizonScatteringFallOff)
-      : MaterialBase(MATERIAL_VELVET), reflectance(reflectance), horizonScatteringColor(horizonScatteringColor), backScattering(backScattering), horizonScatteringFallOff(horizonScatteringFallOff) {}
+      : base(MATERIAL_VELVET), reflectance(reflectance), horizonScatteringColor(horizonScatteringColor), backScattering(backScattering), horizonScatteringFallOff(horizonScatteringFallOff) {}
 
-  public:
+    virtual Material* material() { return &base; }
+#endif
+
+    PREFIX(Material) base;
     Vec3fa reflectance;
     Vec3fa horizonScatteringColor;
     float backScattering;
     float horizonScatteringFallOff;
   };
 
-  class DielectricMaterial : public MaterialBase
+  struct PREFIX(DielectricMaterial) MATERIAL_BASE_CLASS
   {
-  public:
+#if !defined(ISPC) && !defined(CPPTUTORIAL)
     DielectricMaterial (const Vec3fa& transmissionOutside, const Vec3fa& transmissionInside, const float etaOutside, const float etaInside)
-      : MaterialBase(MATERIAL_DIELECTRIC), transmissionOutside(transmissionOutside), transmissionInside(transmissionInside), etaOutside(etaOutside), etaInside(etaInside) {}
+      : base(MATERIAL_DIELECTRIC), transmissionOutside(transmissionOutside), transmissionInside(transmissionInside), etaOutside(etaOutside), etaInside(etaInside) {}
 
-  public:
+    virtual Material* material() { return &base; }
+#endif
+
+    PREFIX(Material) base;
     Vec3fa transmissionOutside;
     Vec3fa transmissionInside;
     float etaOutside;
     float etaInside;
   };
 
-  class MetallicPaintMaterial : public MaterialBase
+  struct PREFIX(MetallicPaintMaterial) MATERIAL_BASE_CLASS
   {
-  public:
+#if !defined(ISPC) && !defined(CPPTUTORIAL)
     MetallicPaintMaterial (const Vec3fa& shadeColor, const Vec3fa& glitterColor, float glitterSpread, float eta)
-      : MaterialBase(MATERIAL_METALLIC_PAINT), shadeColor(shadeColor), glitterColor(glitterColor), glitterSpread(glitterSpread), eta(eta) {}
+      : base(MATERIAL_METALLIC_PAINT), shadeColor(shadeColor), glitterColor(glitterColor), glitterSpread(glitterSpread), eta(eta) {}
 
-  public:
+    virtual Material* material() { return &base; }
+#endif
+
+    PREFIX(Material) base;
     Vec3fa shadeColor;
     Vec3fa glitterColor;
     float glitterSpread;
     float eta;
   };
 
-  class HairMaterial : public MaterialBase
+  struct PREFIX(HairMaterial) MATERIAL_BASE_CLASS
   {
-  public:
+#if !defined(ISPC) && !defined(CPPTUTORIAL)
     HairMaterial (const Vec3fa& Kr, const Vec3fa& Kt, float nx, float ny)
-      : MaterialBase(MATERIAL_HAIR), Kr(Kr), Kt(Kt), nx(nx), ny(ny) {}
+      : base(MATERIAL_HAIR), Kr(Kr), Kt(Kt), nx(nx), ny(ny) {}
 
-  public:
+    virtual Material* material() { return &base; }
+#endif
+
+    PREFIX(Material) base;
     Vec3fa Kr;
     Vec3fa Kt;
     float nx;
     float ny;
   };
 
-  class Material : public MaterialBase
-  {
-  public:
-    Material () { for (auto& x : v) x = Vec3fa(zero); }
-    Material (const OBJMaterial& in) { *((OBJMaterial*)this) = in; }
-    OBJMaterial& obj() { return *(OBJMaterial*)this; }
+#undef MATERIAL_BASE_CLASS
+#undef PREFIX
 
-  private:
-    Vec3fa v[7];
-  };
+#if !defined(ISPC)
 }
+#endif
+
+#endif

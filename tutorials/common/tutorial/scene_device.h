@@ -16,6 +16,7 @@
 
 #pragma once
 
+#if !defined(ISPC)
 #include "../math/sampling.h"
 #include "../lights/light.h"
 #include "../lights/ambient_light.h"
@@ -24,324 +25,239 @@
 #include "../lights/quad_light.h"
 #include "../lights/spot_light.h"
 #include "scene.h"
+#else
+#include "../lights/light.isph"
+#endif
+
+#include "../scenegraph/texture.h"
+#include "../scenegraph/materials.h"
+
+#if !defined(ISPC)
+
+#define CPPTUTORIAL
+#include "../scenegraph/materials.h"
+#undef CPPTUTORIAL
 
 namespace embree
 {
+#endif
+
   struct ISPCTriangle
   {
-    unsigned v0;                /*< first triangle vertex */
-    unsigned v1;                /*< second triangle vertex */
-    unsigned v2;                /*< third triangle vertex */
-    unsigned materialID;        /*< material of triangle */
+    unsigned int v0;                /*< first triangle vertex */
+    unsigned int v1;                /*< second triangle vertex */
+    unsigned int v2;                /*< third triangle vertex */
   };
 
   struct ISPCQuad
   {
-    unsigned v0;                /*< first triangle vertex */
-    unsigned v1;                /*< second triangle vertex */
-    unsigned v2;                /*< third triangle vertex */
-    unsigned v3;                /*< fourth triangle vertex */
+    unsigned int v0;                /*< first triangle vertex */
+    unsigned int v1;                /*< second triangle vertex */
+    unsigned int v2;                /*< third triangle vertex */
+    unsigned int v3;                /*< fourth triangle vertex */
   };
 
   struct ISPCHair
   {
-    unsigned vertex;
-    unsigned id;
+    unsigned int vertex;
+    unsigned int id;
   };
 
   enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP, QUAD_MESH, LINE_SEGMENTS, CURVES };
-
-  struct ISPCMaterial
+  
+  struct ISPCGeometry
   {
-    int ty;
-    int align0,align1,align2;
-    Vec3fa v[7];
+#if !defined(ISPC)
+    ISPCGeometry (ISPCType type) : type(type) {}
+#endif
+    ISPCType type;
   };
 
+#if !defined(ISPC)
   enum TEXTURE_FORMAT {
     Texture_RGBA8        = 1,
     Texture_RGB8         = 2,
     Texture_FLOAT32      = 3,
   };
+#endif
 
+  struct ISPCTriangleMesh
+  {
+#if !defined(ISPC)
+    ISPCTriangleMesh (TutorialScene* scene_in, Ref<SceneGraph::TriangleMeshNode> in);
+    
+  public:
+#endif
+    ISPCGeometry geom;
+    Vec3fa** positions;     //!< vertex position array with all timesteps
+    Vec3fa* normals;       //!< vertex normal array
+    Vec2f* texcoords;      //!< vertex texcoord array
+    ISPCTriangle* triangles;  //!< list of triangles
+    
+    unsigned int numTimeSteps;
+    unsigned int numVertices;
+    unsigned int numTriangles;
+    RTCScene scene;
+    unsigned int geomID;
+    unsigned int materialID;
+  };
+  
+  struct ISPCQuadMesh
+  {
+#if !defined(ISPC)
+    ISPCQuadMesh (TutorialScene* scene_in, Ref<SceneGraph::QuadMeshNode> in);
+    
+  public:
+#endif
+    ISPCGeometry geom;
+    Vec3fa** positions;    //!< vertex position array
+    Vec3fa* normals;       //!< vertex normal array
+    Vec2f* texcoords;     //!< vertex texcoord array
+    ISPCQuad* quads;      //!< list of quads
+    
+    unsigned int numTimeSteps;
+    unsigned int numVertices;
+    unsigned int numQuads;
+    RTCScene scene;
+    unsigned int geomID;
+    unsigned int materialID;
+  };
+  
+  struct ISPCSubdivMesh
+  {
+#if !defined(ISPC)
+    ISPCSubdivMesh (TutorialScene* scene_in, Ref<SceneGraph::SubdivMeshNode> in);
+    ~ISPCSubdivMesh ();
+    
+  private:
+    ISPCSubdivMesh (const ISPCSubdivMesh& other) DELETED; // do not implement
+    ISPCSubdivMesh& operator= (const ISPCSubdivMesh& other) DELETED; // do not implement
+    
+  public:
+#endif
+    ISPCGeometry geom;
+    Vec3fa** positions;       //!< vertex positions
+    Vec3fa* normals;         //!< face vertex normals
+    Vec2f* texcoords;        //!< face texture coordinates
+    unsigned int* position_indices;   //!< position indices for all faces
+    unsigned int* normal_indices;     //!< normal indices for all faces
+    unsigned int* texcoord_indices;   //!< texcoord indices for all faces
+    RTCSubdivisionMode position_subdiv_mode;  
+    RTCSubdivisionMode normal_subdiv_mode;
+    RTCSubdivisionMode texcoord_subdiv_mode;
+    unsigned int* verticesPerFace;    //!< number of indices of each face
+    unsigned int* holes;              //!< face ID of holes
+    float* subdivlevel;      //!< subdivision level
+    Vec2i* edge_creases;          //!< crease index pairs
+    float* edge_crease_weights;   //!< weight for each crease
+    unsigned int* vertex_creases;          //!< indices of vertex creases
+    float* vertex_crease_weights; //!< weight for each vertex crease
+    unsigned int* face_offsets;
+    
+    unsigned int numTimeSteps;
+    unsigned int numVertices;
+    unsigned int numFaces;
+    unsigned int numEdges;
+    unsigned int numEdgeCreases;
+    unsigned int numVertexCreases;
+    unsigned int numHoles;
+    unsigned int numNormals;
+    unsigned int numTexCoords;
+    unsigned int materialID;
+    RTCScene scene;
+    unsigned int geomID;
+  };
+  
+  struct ISPCLineSegments
+  {
+#if !defined(ISPC)
+    ISPCLineSegments (TutorialScene* scene_in, Ref<SceneGraph::LineSegmentsNode> in);
+    
+  public:
+#endif
+    ISPCGeometry geom;
+    Vec3fa** positions;        //!< control points (x,y,z,r)
+    unsigned int* indices;        //!< for each segment, index to first control point
+    
+    unsigned int numTimeSteps;
+    unsigned int numVertices;
+    unsigned int numSegments;
+    unsigned int materialID;
+    RTCScene scene;
+    unsigned int geomID;
+  };
+  
+  struct ISPCHairSet
+  {
+#if !defined(ISPC)
+    ISPCHairSet (TutorialScene* scene_in, bool hair, Ref<SceneGraph::HairSetNode> in);
+    
+  public:
+#endif
+    ISPCGeometry geom;
+    Vec3fa** positions;       //!< hair control points (x,y,z,r)
+    ISPCHair* hairs;         //!< for each hair, index to first control point
+    
+    unsigned int numTimeSteps;
+    unsigned int numVertices;
+    unsigned int numHairs;
+    unsigned int materialID;
+    RTCScene scene;
+    unsigned int geomID;
+    unsigned int tessellation_rate;
+  };
+  
+  struct ISPCInstance
+  {
+#if !defined(ISPC)
+    ALIGNED_STRUCT;
+    
+    static ISPCInstance* create (TutorialScene* scene, Ref<SceneGraph::TransformNode> in);
+    
+  private:
+    ISPCInstance (TutorialScene* scene, Ref<SceneGraph::TransformNode> in);
+    
+  public:
+#endif
+    ISPCGeometry geom;
+    unsigned int geomID;
+    unsigned int numTimeSteps;
+    unsigned int align;
+    AffineSpace3fa spaces[1];
+  };
+
+  struct ISPCGroup
+  {
+#if !defined(ISPC)
+    ISPCGroup (TutorialScene* scene, Ref<SceneGraph::GroupNode> in);
+    ~ISPCGroup();
+    
+  private:
+    ISPCGroup (const ISPCGroup& other) DELETED; // do not implement
+    ISPCGroup& operator= (const ISPCGroup& other) DELETED; // do not implement
+    
+  public:
+#endif
+    ISPCGeometry geom;
+    ISPCGeometry** geometries;
+    size_t numGeometries;
+  };
+  
   struct ISPCScene
   {
-    struct ISPCGeometry
-    {
-      ISPCGeometry (ISPCType type) : type(type) {}
-
-      ISPCType type;
-    };
-
-    struct ISPCTriangleMesh
-    {
-      ISPCTriangleMesh (Ref<TutorialScene::TriangleMesh> in) : geom(TRIANGLE_MESH)
-      {
-        positions = in->positions.data();
-        normals = in->normals.data();
-        texcoords = in->texcoords.data();
-        triangles = (ISPCTriangle*) in->triangles.data();
-        numTimeSteps = in->numTimeSteps;
-        numVertices = in->numVertices;
-        numTriangles = unsigned(in->triangles.size());
-        scene = nullptr;
-        geomID = -1;
-        materialID = in->materialID;
-      }
-
-    public:
-      ISPCGeometry geom;
-      Vec3fa* positions;     //!< vertex position array with all timesteps
-      Vec3fa* normals;       //!< vertex normal array
-      Vec2f* texcoords;      //!< vertex texcoord array
-      ISPCTriangle* triangles;  //!< list of triangles
-
-      unsigned int numTimeSteps;
-      unsigned int numVertices;
-      unsigned int numTriangles;
-      RTCScene scene;
-      unsigned int geomID;
-      unsigned int materialID;
-    };
-    
-    struct ISPCQuadMesh
-    {
-      ISPCQuadMesh (Ref<TutorialScene::QuadMesh> in) : geom(QUAD_MESH)
-      {
-        positions = in->positions.data();
-        normals = in->normals.data();
-        texcoords = in->texcoords.data();
-        quads = (ISPCQuad*) in->quads.data();
-        numTimeSteps = in->numTimeSteps;
-        numVertices = in->numVertices;
-        numQuads = unsigned(in->quads.size());
-        scene = nullptr;
-        geomID = -1;
-        materialID = in->materialID;
-      }
-
-    public:
-      ISPCGeometry geom;
-      Vec3fa* positions;    //!< vertex position array
-      Vec3fa* normals;       //!< vertex normal array
-      Vec2f* texcoords;     //!< vertex texcoord array
-      ISPCQuad* quads;      //!< list of quads
-
-      unsigned int numTimeSteps;
-      unsigned int numVertices;
-      unsigned int numQuads;
-      RTCScene scene;
-      unsigned int geomID;
-      unsigned int materialID;
-    };
-
-    struct ISPCSubdivMesh
-    {
-      ISPCSubdivMesh (Ref<TutorialScene::SubdivMesh> in) 
-      : geom(SUBDIV_MESH)
-      {
-        positions = in->positions.data();
-        normals = in->normals.data();
-        texcoords = in->texcoords.data();
-        position_indices = in->position_indices.data();
-        normal_indices = in->normal_indices.data();
-        texcoord_indices = in->texcoord_indices.data();
-        position_subdiv_mode =  in->position_subdiv_mode;
-        normal_subdiv_mode = in->normal_subdiv_mode;
-        texcoord_subdiv_mode = in->texcoord_subdiv_mode;
-        verticesPerFace = in->verticesPerFace.data();
-        holes = in->holes.data();
-        edge_creases = in->edge_creases.data();
-        edge_crease_weights = in->edge_crease_weights.data();
-        vertex_creases = in->vertex_creases.data();
-        vertex_crease_weights = in->vertex_crease_weights.data();
-        numTimeSteps = in->numTimeSteps;
-        numVertices = in->numPositions;
-        numFaces = unsigned(in->verticesPerFace.size());
-        numEdges = unsigned(in->position_indices.size());
-        numEdgeCreases = unsigned(in->edge_creases.size());
-        numVertexCreases = unsigned(in->vertex_creases.size());
-        numHoles = unsigned(in->holes.size());
-        numNormals = unsigned(in->normals.size());
-        numTexCoords = unsigned(in->texcoords.size());
-        materialID = in->materialID;
-        scene = nullptr;
-        geomID = -1;
-
-        size_t numEdges = in->position_indices.size();
-        size_t numFaces = in->verticesPerFace.size();
-        subdivlevel = new float[numEdges];
-        face_offsets = new unsigned[numFaces];
-        for (size_t i=0; i<numEdges; i++) subdivlevel[i] = 1.0f;
-        int offset = 0;
-        for (size_t i=0; i<numFaces; i++)
-        {
-          face_offsets[i] = offset;
-          offset+=verticesPerFace[i];
-        }
-      }
-      
-      ~ISPCSubdivMesh ()
-      {
-        delete[] subdivlevel;
-        delete[] face_offsets;
-      }
-
-    private:
-      ISPCSubdivMesh (const ISPCSubdivMesh& other) DELETED; // do not implement
-      ISPCSubdivMesh& operator= (const ISPCSubdivMesh& other) DELETED; // do not implement
-      
-    public:
-      ISPCGeometry geom;
-      Vec3fa* positions;       //!< vertex positions
-      Vec3fa* normals;         //!< face vertex normals
-      Vec2f* texcoords;        //!< face texture coordinates
-      unsigned* position_indices;   //!< position indices for all faces
-      unsigned* normal_indices;     //!< normal indices for all faces
-      unsigned* texcoord_indices;   //!< texcoord indices for all faces
-      RTCSubdivisionMode position_subdiv_mode;  
-      RTCSubdivisionMode normal_subdiv_mode;
-      RTCSubdivisionMode texcoord_subdiv_mode;
-      unsigned* verticesPerFace;    //!< number of indices of each face
-      unsigned* holes;              //!< face ID of holes
-      float* subdivlevel;      //!< subdivision level
-      Vec2i* edge_creases;          //!< crease index pairs
-      float* edge_crease_weights;   //!< weight for each crease
-      unsigned* vertex_creases;          //!< indices of vertex creases
-      float* vertex_crease_weights; //!< weight for each vertex crease
-      unsigned* face_offsets;
-
-      unsigned int numTimeSteps;
-      unsigned int numVertices;
-      unsigned int numFaces;
-      unsigned int numEdges;
-      unsigned int numEdgeCreases;
-      unsigned int numVertexCreases;
-      unsigned int numHoles;
-      unsigned int numNormals;
-      unsigned int numTexCoords;
-      unsigned int materialID;
-      RTCScene scene;
-      unsigned int geomID;
-    };
-
-    struct ISPCLineSegments
-    {
-      ISPCLineSegments (Ref<TutorialScene::LineSegments> in) : geom(LINE_SEGMENTS)
-      {
-        positions = in->positions.data();
-        indices = in->indices.data();
-        numTimeSteps = in->numTimeSteps;
-        numVertices = in->numVertices;
-        numSegments = unsigned(in->indices.size());
-        materialID = in->materialID;
-        scene = nullptr;
-        geomID = -1;
-      }
-
-    public:
-      ISPCGeometry geom;
-      Vec3fa* positions;        //!< control points (x,y,z,r)
-      unsigned* indices;        //!< for each segment, index to first control point
-      
-      unsigned int numTimeSteps;
-      unsigned int numVertices;
-      unsigned int numSegments;
-      unsigned int materialID;
-      RTCScene scene;
-      unsigned int geomID;
-    };
-
-    struct ISPCHairSet
-    {
-      ISPCHairSet (bool hair, Ref<TutorialScene::HairSet> in) : geom(hair ? HAIR_SET : CURVES)
-      {
-        positions = in->positions.data();
-        hairs = (ISPCHair*) in->hairs.data();
-        numTimeSteps = in->numTimeSteps;
-        numVertices = in->numVertices;
-        numHairs = unsigned(in->hairs.size());
-        materialID = in->materialID;
-        scene = nullptr;
-        geomID = -1;
-        tessellation_rate = in->tessellation_rate;
-      }
-
-    public:
-      ISPCGeometry geom;
-      Vec3fa* positions;       //!< hair control points (x,y,z,r)
-      ISPCHair* hairs;         //!< for each hair, index to first control point
-      
-      unsigned int numTimeSteps;
-      unsigned int numVertices;
-      unsigned int numHairs;
-      unsigned int materialID;
-      RTCScene scene;
-      unsigned int geomID;
-      unsigned int tessellation_rate;
-    };
-
-    struct ISPCInstance
-    {
-      ALIGNED_STRUCT;
-      
-      static ISPCInstance* create (Ref<TutorialScene::Instance> in) {
-        return ::new (alignedMalloc(sizeof(ISPCInstance)+(in->spaces.size()-1)*sizeof(AffineSpace3fa))) ISPCInstance(in);
-      }
-
-    private:
-      ISPCInstance (Ref<TutorialScene::Instance> in)
-      : geom(INSTANCE), geomID(in->geomID), numTimeSteps(unsigned(in->spaces.size())) 
-      {
-        for (size_t i=0; i<numTimeSteps; i++)
-          spaces[i] = in->spaces[i];
-      }
-
-    public:
-      ISPCGeometry geom;
-      unsigned int geomID;
-      unsigned int numTimeSteps;
-      AffineSpace3fa spaces[1];
-    };
-
-    struct ISPCGroup
-    {
-      ISPCGroup (Ref<TutorialScene::Group> in)
-      : geom(GROUP)
-      {
-        numGeometries = in->size();
-        geometries = new ISPCGeometry*[numGeometries];
-        for (size_t i=0; i<numGeometries; i++)
-          geometries[i] = ISPCScene::convertGeometry(in->at(i));
-      }
-
-      ~ISPCGroup()
-      {
-        for (size_t i=0; i<numGeometries; i++)
-          delete geometries[i];
-        delete[] geometries;
-      }
-
-    private:
-      ISPCGroup (const ISPCGroup& other) DELETED; // do not implement
-      ISPCGroup& operator= (const ISPCGroup& other) DELETED; // do not implement
-      
-    public:
-      ISPCGeometry geom;
-      ISPCGeometry** geometries;
-      size_t numGeometries;
-    };
-
+#if !defined(ISPC)
     ISPCScene(TutorialScene* in)
     {
       geometries = new ISPCGeometry*[in->geometries.size()];
       for (size_t i=0; i<in->geometries.size(); i++)
-        geometries[i] = convertGeometry(in->geometries[i]);
+        geometries[i] = convertGeometry(in,in->geometries[i]);
       numGeometries = unsigned(in->geometries.size());
-
-      materials = (ISPCMaterial*) in->materials.data();
+      
+      materials = new ISPCMaterial*[in->materials.size()];
+      for (size_t i=0; i<in->materials.size(); i++)
+        materials[i] = (ISPCMaterial*) in->materials[i]->material();
       numMaterials = unsigned(in->materials.size());
-
+      
       lights = new Light*[in->lights.size()];
       numLights = 0;
       for (size_t i=0; i<in->lights.size(); i++)
@@ -349,8 +265,11 @@ namespace embree
         Light* light = convertLight(in->lights[i]);
         if (light) lights[numLights++] = light;
       }
+      
+      geomID_to_scene = in->geomID_to_scene.data();
+      geomID_to_inst = (ISPCInstance**) in->geomID_to_inst.data();
     }
-
+    
     ~ISPCScene()
     {
       /* delete all geometries */
@@ -373,37 +292,17 @@ namespace embree
       /* delete all lights */
       //for (size_t i=0; i<numLights; i++)
       //{
-        // FIXME: currently lights cannot get deleted
+      // FIXME: currently lights cannot get deleted
       //}
       delete[] lights;
     }
-
-    static ISPCGeometry* convertGeometry (Ref<TutorialScene::Geometry> in)
-    {
-      if (in->type == TutorialScene::Geometry::TRIANGLE_MESH)
-        return (ISPCGeometry*) new ISPCTriangleMesh(in.dynamicCast<TutorialScene::TriangleMesh>());
-      else if (in->type == TutorialScene::Geometry::QUAD_MESH)
-        return (ISPCGeometry*) new ISPCQuadMesh(in.dynamicCast<TutorialScene::QuadMesh>());
-      else if (in->type == TutorialScene::Geometry::SUBDIV_MESH)
-        return (ISPCGeometry*) new ISPCSubdivMesh(in.dynamicCast<TutorialScene::SubdivMesh>());
-      else if (in->type == TutorialScene::Geometry::LINE_SEGMENTS)
-        return (ISPCGeometry*) new ISPCLineSegments(in.dynamicCast<TutorialScene::LineSegments>());
-      else if (in->type == TutorialScene::Geometry::HAIR_SET)
-        return (ISPCGeometry*) new ISPCHairSet(true,in.dynamicCast<TutorialScene::HairSet>());
-      else if (in->type == TutorialScene::Geometry::CURVES)
-        return (ISPCGeometry*) new ISPCHairSet(false,in.dynamicCast<TutorialScene::HairSet>());
-      else if (in->type == TutorialScene::Geometry::INSTANCE)
-        return (ISPCGeometry*) ISPCInstance::create(in.dynamicCast<TutorialScene::Instance>());
-      else if (in->type == TutorialScene::Geometry::GROUP)
-        return (ISPCGeometry*) new ISPCGroup(in.dynamicCast<TutorialScene::Group>());
-      else
-        THROW_RUNTIME_ERROR("unknown geometry type");
-    }
-
+    
+    static ISPCGeometry* convertGeometry (TutorialScene* scene, Ref<SceneGraph::Node> in);
+    
     static Light* convertLight(Ref<SceneGraph::Light> in)
     {
       void* out = 0;
-
+      
       switch (in->getType())
       {
       case SceneGraph::LIGHT_AMBIENT:
@@ -444,36 +343,39 @@ namespace embree
         // FIXME: not implemented yet
         break;
       }
-
+      
       default:
         THROW_RUNTIME_ERROR("unknown light type");
       }
-
+      
       return (Light*)out;
     }
-
+    
   private:
     ISPCScene (const ISPCScene& other) DELETED; // do not implement
     ISPCScene& operator= (const ISPCScene& other) DELETED; // do not implement
- 
+    
   public:
+#endif
     ISPCGeometry** geometries;   //!< list of geometries
-    ISPCMaterial* materials;     //!< material list
+    ISPCMaterial** materials;     //!< material list
     unsigned int numGeometries;           //!< number of geometries
     unsigned int numMaterials;            //!< number of materials
-
+    
     Light** lights;              //!< list of lights
     unsigned int numLights;               //!< number of lights
+
+    RTCScene* geomID_to_scene;
+    ISPCInstance** geomID_to_inst;
   };
 
-  typedef ISPCScene::ISPCGeometry ISPCGeometry;
-  typedef ISPCScene::ISPCTriangleMesh ISPCTriangleMesh;
-  typedef ISPCScene::ISPCQuadMesh ISPCQuadMesh;
-  typedef ISPCScene::ISPCSubdivMesh ISPCSubdivMesh;
-  typedef ISPCScene::ISPCLineSegments ISPCLineSegments;
-  typedef ISPCScene::ISPCHairSet ISPCHairSet;
-  typedef ISPCScene::ISPCInstance ISPCInstance;
-  typedef ISPCScene::ISPCGroup ISPCGroup;
-
+#if !defined(ISPC)  
   extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCSceneFlags sflags, RTCAlgorithmFlags aflags, RTCGeometryFlags gflags);
+#else
+  unmasked extern "C" RTCScene ConvertScene (RTCDevice g_device, ISPCScene* uniform scene_in, uniform RTCSceneFlags sflags, uniform RTCAlgorithmFlags aflags, uniform RTCGeometryFlags gflags);
+#endif
+
+#if !defined(ISPC)                    
 }
+#endif
+
