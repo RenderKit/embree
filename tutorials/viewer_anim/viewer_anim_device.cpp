@@ -529,9 +529,9 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
     assert(geometry->type == TRIANGLE_MESH);
     ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
     ISPCTriangle* tri = &mesh->triangles[primID];             
-    const Vec3fa v0 = mesh->positions[tri->v0];
-    const Vec3fa v1 = mesh->positions[tri->v1];
-    const Vec3fa v2 = mesh->positions[tri->v2];
+    const Vec3fa v0 = mesh->positions[0][tri->v0];
+    const Vec3fa v1 = mesh->positions[0][tri->v1];
+    const Vec3fa v2 = mesh->positions[0][tri->v2];
     return cross((v1-v0),(v2-v0));    
   }
 
