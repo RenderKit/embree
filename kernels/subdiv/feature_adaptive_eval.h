@@ -132,11 +132,11 @@ namespace embree
         __forceinline bool final(const CatmullClarkPatch& patch, const typename CatmullClarkRing::Type type, size_t depth) 
         {
           const int max_eval_depth = (type & CatmullClarkRing::TYPE_CREASES) ? PATCH_MAX_EVAL_DEPTH_CREASE : PATCH_MAX_EVAL_DEPTH_IRREGULAR;
-#if PATCH_MIN_RESOLUTION
-          return patch.isFinalResolution(PATCH_MIN_RESOLUTION) || depth>=(size_t)max_eval_depth;
-#else
+//#if PATCH_MIN_RESOLUTION
+//          return patch.isFinalResolution(PATCH_MIN_RESOLUTION) || depth>=(size_t)max_eval_depth;
+//#else
           return depth>=max_eval_depth;
-#endif
+//#endif
         }
         
         void eval(CatmullClarkPatch& patch, Vec2f uv, float dscale, size_t depth, 
