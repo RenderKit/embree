@@ -195,9 +195,9 @@ namespace embree
     }
 
     /*! Extracts a named texture out of the container. */
-    const std::shared_ptr<Texture> getTexture(const char* name) const {
+    std::shared_ptr<Texture> getTexture(const char* name) const {
       std::map<std::string,Variant>::const_iterator i = m.find(name);
-      if (i == m.end() || (*i).second.type != Variant::TEXTURE) return nullptr;
+      if (i == m.end() || (*i).second.type != Variant::TEXTURE) return std::shared_ptr<Texture>();
       return (*i).second.getTexture();
     }
 

@@ -179,7 +179,7 @@ namespace embree
       std::shared_ptr<Texture> texture = loadMap(child);
       if (texture) return texture;
     }
-    return nullptr;
+    return std::shared_ptr<Texture>();
   }
 
   void CoronaLoader::loadMapDefinition(const Ref<XML>& xml) 

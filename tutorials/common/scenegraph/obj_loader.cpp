@@ -265,7 +265,7 @@ namespace embree
         return new OBJMaterial(d,map_d,Kd,map_Kd,Ks,map_Ks,Ns,map_Ns,map_Displ);
       } else if (type == MATTE) {
         if (coat_eta != 1.0f) return new MetallicPaintMaterial (Kd,zero,0.0f,eta.x);
-        else                  return new OBJMaterial(1.0f,nullptr,Kd,map_Kd,Ks,nullptr,1.0f/(1E-6f+roughness),nullptr,nullptr);
+        else                  return new OBJMaterial(1.0f,NULL,Kd,map_Kd,Ks,NULL,1.0f/(1E-6f+roughness),NULL,NULL);
       } else if (type == GLASS) {
         return new ThinDielectricMaterial(Vec3fa(1.0f),eta.x,0.1f);
       } else if (type == METAL) {
