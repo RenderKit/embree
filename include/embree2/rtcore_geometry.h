@@ -178,6 +178,17 @@ RTCORE_API unsigned rtcNewInstance2 (RTCScene target,                  //!< the 
                                      RTCScene source,                  //!< the scene to instantiate
                                      size_t numTimeSteps = 1);         //!< number of timesteps, one matrix per timestep
 
+/*! \brief Creates a new geometry instance. 
+
+  A geometry instance contains a reference to some geometry to
+  instantiate and the transformation to instantiate that geometry
+  with. An implementation will typically transform the ray with the
+  inverse of the provided transformation and continue traversing the
+  ray through the provided scene. If any geometry is hit, the geometry
+  ID (geomID) member of the ray will get set to the geometry ID of the
+  instance. */
+RTCORE_API RTCORE_DEPRECATED unsigned rtcNewGeometryInstance(RTCScene scene, unsigned geomID);
+
 /*! \brief Sets transformation of the instance */
 RTCORE_API void rtcSetTransform (RTCScene scene,                          //!< scene handle
                                  unsigned geomID,                         //!< ID of geometry

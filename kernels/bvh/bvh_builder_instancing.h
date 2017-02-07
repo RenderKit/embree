@@ -87,7 +87,10 @@ namespace embree
       void deleteGeometry(size_t geomID);
       void clear();
 
+      void open(size_t numPrimitives);
+
       size_t numCollapsedTransformNodes;
+      NodeRef collapse(NodeRef& node);
       
     public:
       BVH* bvh;
