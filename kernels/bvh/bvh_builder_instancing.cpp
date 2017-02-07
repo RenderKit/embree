@@ -374,18 +374,18 @@ namespace embree
           continue;
         }
         
-        if (ref.node.isNode()) 
+        if (ref.node.isAlignedNode()) 
         {
-          Node* node = ref.node.node();
+          AlignedNode* node = ref.node.alignedNode();
           for (size_t i=0; i<N; i++) {
             if (node->child(i) == BVH::emptyNode) continue;
             refs.push_back(BuildRef(ref.local2world,node->bounds(i),node->child(i),ref.mask,ref.instID,ref.xfmID,ref.type,ref.depth+1));
             std::push_heap (refs.begin(),refs.end()); 
           }
         } 
-        /*else if (ref.node.isNodeMB()) 
+        /*else if (ref.node.isAlignedNodeMB()) 
         {
-          NodeMB* node = ref.node.nodeMB();
+          AlignedNodeMB* node = ref.node.alignedNodeMB();
           for (size_t i=0; i<N; i++) {
             if (node->child(i) == BVH::emptyNode) continue;
             refs.push_back(BuildRef(ref.local2world,node->bounds(i),node->child(i),ref.mask,ref.instID,ref.xfmID,ref.type,ref.depth+1));
@@ -409,8 +409,8 @@ namespace embree
         return node;
       }
       
-      assert(node.isNode());
-      Node* n = node.node();
+      assert(node.isAlignedNode());
+      AlignedNode* n = node.alignedNode();
       TransformNode* first = nullptr;
       for (size_t c=0; c<N; c++) {
         if (n->child(c) == BVH::emptyNode) continue;
