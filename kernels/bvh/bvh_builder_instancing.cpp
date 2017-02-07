@@ -274,13 +274,15 @@ namespace embree
       if (pinfo.size() == 0)
         bvh->set(BVH::emptyNode,empty,0);
       
+#if 0 // this codepath is buggy, have to create transform node here too
       else if (pinfo.size() == 1) {
         BuildRef* ref = (BuildRef*) prims[0].ID();
         //const BBox3fa bounds = xfmBounds(ref->local2world,ref->localBounds);
         const BBox3fa bounds = xfmDeepBounds<N>(ref->local2world,ref->localBounds,ref->node,2);
         bvh->set(ref->node,LBBox3fa(bounds),numPrimitives);
       }
-      
+#endif
+ 
       /* otherwise build toplevel hierarchy */
       else
       {
