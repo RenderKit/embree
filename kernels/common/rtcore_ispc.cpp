@@ -120,6 +120,10 @@ namespace embree
     return rtcCommit(scene);
   }
 
+  extern "C" void ispcCommitJoin (RTCScene scene) {
+    return rtcCommitJoin(scene);
+  }
+
   extern "C" void ispcCommitThread (RTCScene scene, unsigned int threadID, unsigned int numThreads) {
     return rtcCommitThread(scene,threadID,numThreads);
   }

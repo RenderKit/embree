@@ -2778,7 +2778,7 @@ namespace embree
 	task->barrier.wait();
 	if (thread->threadIndex < task->numActiveThreads) 
 	{
-          if (build_join_test) rtcCommit(*task->scene);
+          if (build_join_test) rtcCommitJoin(*task->scene);
           else                 {
             rtcCommitThread(*task->scene,thread->threadIndex,task->numActiveThreads);
             rtcCommitThread(*task->scene,thread->threadIndex,task->numActiveThreads);
@@ -2851,7 +2851,7 @@ namespace embree
       if (thread->threadCount) {
 	task->numActiveThreads = max(unsigned(1),RandomSampler_getInt(task->sampler) % thread->threadCount);
 	task->barrier.wait();
-        if (build_join_test) rtcCommit(*task->scene);
+        if (build_join_test) rtcCommitJoin(*task->scene);
         else                 {
           rtcCommitThread(*task->scene,thread->threadIndex,task->numActiveThreads);
           rtcCommitThread(*task->scene,thread->threadIndex,task->numActiveThreads);          
@@ -2897,7 +2897,7 @@ namespace embree
 	task->barrier.wait();
 	if (thread->threadIndex < task->numActiveThreads) 
 	{
-          if (build_join_test) rtcCommit(*task->scene);
+          if (build_join_test) rtcCommitJoin(*task->scene);
           else	               rtcCommitThread(*task->scene,thread->threadIndex,task->numActiveThreads);
 	  //if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
           if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
@@ -3086,7 +3086,7 @@ namespace embree
       if (thread->threadCount) {
 	task->numActiveThreads = max(unsigned(1),RandomSampler_getInt(task->sampler) % thread->threadCount);
 	task->barrier.wait();
-        if (build_join_test) rtcCommit(*task->scene);
+        if (build_join_test) rtcCommitJoin(*task->scene);
         else                 rtcCommitThread(*task->scene,thread->threadIndex,task->numActiveThreads);
       } else {
         if (!hasError) 

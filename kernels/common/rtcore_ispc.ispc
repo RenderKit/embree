@@ -41,6 +41,7 @@ extern "C" RTCScene ispcNewScene (uniform RTCSceneFlags flags, uniform RTCAlgori
 extern "C" RTCScene ispcNewScene2 (RTCDevice device, uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags);
 extern "C" void ispcSetProgressMonitorFunction (RTCScene scene, void* uniform func, void* uniform ptr);
 extern "C" void ispcCommit (RTCScene scene);
+extern "C" void ispcCommitJoin (RTCScene scene);
 extern "C" void ispcCommitThread (RTCScene scene, uniform unsigned int threadID, uniform unsigned int numThreads);
 extern "C" void ispcGetBounds(RTCScene scene, uniform RTCBounds& bounds_o);
 extern "C" void ispcGetLinearBounds(RTCScene scene, uniform RTCBounds* uniform bounds_o);
@@ -272,6 +273,10 @@ void rtcSetProgressMonitorFunction(RTCScene scene, uniform RTC_PROGRESS_MONITOR_
 
 void rtcCommit (RTCScene scene) {
   ispcCommit(scene);
+}
+
+void rtcCommitJoin (RTCScene scene) {
+  ispcCommitJoin(scene);
 }
 
 void rtcCommitThread (RTCScene scene, uniform unsigned int threadID, uniform unsigned int numThreads) {

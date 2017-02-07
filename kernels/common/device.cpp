@@ -32,17 +32,7 @@
 #include "../bvh/bvh4_factory.h"
 #include "../bvh/bvh8_factory.h"
 
-#if defined(TASKING_INTERNAL)
-#  include "../common/tasking/taskschedulerinternal.h"
-#endif
-
-#if defined(TASKING_TBB)
-#  include "../common/tasking/taskschedulertbb.h"
-#endif
-
-#if defined(TASKING_PPL)
-#  include "../common/tasking/taskschedulerppl.h"
-#endif
+#include "../common/tasking/taskscheduler.h"
 
 namespace embree
 {
