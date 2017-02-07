@@ -304,14 +304,9 @@ namespace embree
                            const Ty* __restrict src, Ty* __restrict dst,
                            const size_t numTasks)
     {
-#if defined(TASKING_TBB)
-      tbb::affinity_partitioner ap;
+      affinity_partitioner ap;
       parallel_for_affinity(numTasks,[&] (size_t taskIndex) { tbbRadixIteration0(shift,src,dst,taskIndex,numTasks); },ap);
       parallel_for_affinity(numTasks,[&] (size_t taskIndex) { tbbRadixIteration1(shift,src,dst,taskIndex,numTasks); },ap);
-#else
-      parallel_for(numTasks,[&] (size_t taskIndex) { tbbRadixIteration0(shift,src,dst,taskIndex,numTasks); });
-      parallel_for(numTasks,[&] (size_t taskIndex) { tbbRadixIteration1(shift,src,dst,taskIndex,numTasks); });
-#endif
     }
     
     void tbbRadixSort(const size_t numTasks)

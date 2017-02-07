@@ -52,29 +52,6 @@ namespace embree
 #  error "no tasking system enabled"
 #endif
   }
-
-#if defined(TASKING_TBB)
-  template<typename Index, typename Func>
-    __forceinline void parallel_for_static( const Index N, const Func& func)
-  {
-    tbb::parallel_for(Index(0),N,Index(1),[&](Index i) { 
-	func(i);
-      },tbb::simple_partitioner());
-    if (tbb::task::self().is_cancelled())
-      throw std::runtime_error("task cancelled");
-  }
-
-  template<typename Index, typename Func>
-    __forceinline void parallel_for_affinity( const Index N, const Func& func, tbb::affinity_partitioner &ap)
-  {
-    tbb::parallel_for(Index(0),N,Index(1),[&](Index i) { 
-	func(i);
-      },ap);
-    if (tbb::task::self().is_cancelled())
-      throw std::runtime_error("task cancelled");
-  }
-
-#endif
   
   /* parallel for with range and granulatity */
   template<typename Index, typename Func>
@@ -110,4 +87,47 @@ namespace embree
     assert(first <= last);
     parallel_for(first,last,(Index)1,func);
   }
+
+#if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION > 4001)
+
+  template<typename Index, typename Func>
+    __forceinline void parallel_for_static( const Index N, const Func& func)
+  {
+    tbb::parallel_for(Index(0),N,Index(1),[&](Index i) { 
+	func(i);
+      },tbb::simple_partitioner());
+    if (tbb::task::self().is_cancelled())
+      throw std::runtime_error("task cancelled");
+  }
+
+  typedef tbb::affinity_partitioner affinity_partitioner;
+
+  template<typename Index, typename Func>
+    __forceinline void parallel_for_affinity( const Index N, const Func& func, tbb::affinity_partitioner& ap)
+  {
+    tbb::parallel_for(Index(0),N,Index(1),[&](Index i) { 
+	func(i);
+      },ap);
+    if (tbb::task::self().is_cancelled())
+      throw std::runtime_error("task cancelled");
+  }
+
+#else
+
+  template<typename Index, typename Func>
+    __forceinline void parallel_for_static( const Index N, const Func& func) 
+  {
+    parallel_for(N,func);
+  }
+
+  struct affinity_partitioner {
+  };
+
+  template<typename Index, typename Func>
+    __forceinline void parallel_for_affinity( const Index N, const Func& func, affinity_partitioner& ap) 
+  {
+    parallel_for(N,func);
+  }
+
+#endif
 }
