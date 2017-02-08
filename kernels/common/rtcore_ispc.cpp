@@ -120,6 +120,10 @@ namespace embree
     return rtcCommit(scene);
   }
 
+  extern "C" void ispcCommitJoin (RTCScene scene) {
+    return rtcCommitJoin(scene);
+  }
+
   extern "C" void ispcCommitThread (RTCScene scene, unsigned int threadID, unsigned int numThreads) {
     return rtcCommitThread(scene,threadID,numThreads);
   }
@@ -208,9 +212,9 @@ namespace embree
     return rtcNewInstance2(target,source,numTimeSteps);
   }
 
-  /*extern "C" unsigned ispcNewGeometryInstance (RTCScene scene, unsigned geomID) {
+  extern "C" unsigned ispcNewGeometryInstance (RTCScene scene, unsigned geomID) {
     return rtcNewGeometryInstance(scene,geomID);
-    }*/
+  }
   
   extern "C" void ispcSetTransform (RTCScene scene, unsigned geomID, RTCMatrixType layout, const float* xfm) {
     return rtcSetTransform(scene,geomID,layout,xfm);

@@ -495,7 +495,7 @@ Vec3f MirrorMaterial__sample(ISPCMirrorMaterial* uniform This, const BRDF& brdf,
 void OBJMaterial__preprocess(uniform ISPCOBJMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)
 {
     float d = material->d;
-    if (material->map_d) d *= 1.0f-getTextureTexel1f(material->map_d,dg.u,dg.v);
+    if (material->map_d) d *= getTextureTexel1f(material->map_d,dg.u,dg.v);
     brdf.Ka = make_Vec3f(material->Ka);
     //if (material->map_Ka) { brdf.Ka *= material->map_Ka->get(dg.st); }
     brdf.Kd = d * make_Vec3f(material->Kd);

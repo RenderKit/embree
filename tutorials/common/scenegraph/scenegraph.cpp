@@ -660,6 +660,7 @@ namespace embree
       std::vector<Ref<SceneGraph::Node>> geometries;      
       if (instancing != SceneGraph::INSTANCING_NONE) 
       {
+        std::cout << "extracting instances ";
         if (instancing == SceneGraph::INSTANCING_SCENE_GROUP) 
         {
           in->reset();
@@ -667,6 +668,7 @@ namespace embree
           in->calculateClosed();
         }
         convertInstances(geometries,in,spaces);
+        std::cout << "[DONE] (" << geometries.size() << " instances, " << object_mapping.size() << " objects)" << std::endl;
       }
       else
         convertGeometries(geometries,in,spaces);
@@ -731,6 +733,7 @@ namespace embree
     void convertInstances(std::vector<Ref<SceneGraph::Node>>& group, Ref<SceneGraph::Node> node, const SceneGraph::Transformations& spaces)
     {
       if (node->isClosed()) {
+        if (group.size() % 10000 == 0) std::cout << "." << std::flush;
         group.push_back(new SceneGraph::TransformNode(spaces,lookupGeometries(node)));
       }
       else if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {

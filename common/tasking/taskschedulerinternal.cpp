@@ -228,7 +228,7 @@ namespace embree
   TaskScheduler::TaskScheduler()
     : threadCounter(0), anyTasksRunning(0), hasRootTask(false) 
   {
-    threadLocal.resize(2*getNumberOfLogicalThreads()); // FIXME: this has to be 2x as in the join mode the worker threads also join
+    threadLocal.resize(2*getNumberOfLogicalThreads()); // FIXME: this has to be 2x as in the compatibility join mode with rtcCommit the worker threads also join. When disallowing rtcCommit to join a build we can remove the 2x.
     for (size_t i=0; i<threadLocal.size(); i++)
       threadLocal[i].store(nullptr);
   }

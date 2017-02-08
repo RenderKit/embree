@@ -715,7 +715,7 @@ namespace embree
     }
   }
 
-  void Scene::build_task ()
+  void Scene::commit_task ()
   {
     progress_monitor_counter = 0;
 
@@ -758,7 +758,7 @@ namespace embree
 
 #if defined(TASKING_INTERNAL)
 
-  void Scene::build (size_t threadIndex, size_t threadCount) 
+  void Scene::commit (size_t threadIndex, size_t threadCount, bool useThreadPool) 
   {
     Lock<MutexSys> buildLock(buildMutex,false);
 
@@ -785,19 +785,19 @@ namespace embree
 
     /* fast path for unchanged scenes */
     if (!isModified()) {
-      scheduler->spawn_root([&]() { this->scheduler = nullptr; }, 1, threadCount == 0);
+      scheduler->spawn_root([&]() { this->scheduler = nullptr; }, 1, useThreadPool);
       return;
     }
 
     /* report error if scene not ready */
     if (!ready()) {
-      scheduler->spawn_root([&]() { this->scheduler = nullptr; }, 1, threadCount == 0);
+      scheduler->spawn_root([&]() { this->scheduler = nullptr; }, 1, useThreadPool);
       throw_RTCError(RTC_INVALID_OPERATION,"not all buffers are unmapped");
     }
 
     /* initiate build */
     try {
-      scheduler->spawn_root([&]() { build_task(); this->scheduler = nullptr; }, 1, threadCount == 0);
+      scheduler->spawn_root([&]() { commit_task(); this->scheduler = nullptr; }, 1, useThreadPool);
     }
     catch (...) {
       accels.clear();
@@ -810,7 +810,7 @@ namespace embree
 
 #if defined(TASKING_TBB) || defined(TASKING_PPL)
 
-  void Scene::build (size_t threadIndex, size_t threadCount) 
+  void Scene::commit (size_t threadIndex, size_t threadCount, bool useThreadPool) 
   {
     /* let threads wait for build to finish in rtcCommitThread mode */
     if (threadCount != 0) {
@@ -878,7 +878,7 @@ namespace embree
       device->arena->execute([&]{
 #endif
           group->run([&]{
-              tbb::parallel_for (size_t(0), size_t(1), size_t(1), [&] (size_t) { build_task(); }, ctx);
+              tbb::parallel_for (size_t(0), size_t(1), size_t(1), [&] (size_t) { commit_task(); }, ctx);
             });
           if (threadCount) group_barrier.wait(threadCount);
           group->wait();
@@ -890,7 +890,7 @@ namespace embree
       _mm_setcsr(mxcsr);
 #else
       group->run([&]{
-          concurrency::parallel_for(size_t(0), size_t(1), size_t(1), [&](size_t) { build_task(); });
+          concurrency::parallel_for(size_t(0), size_t(1), size_t(1), [&](size_t) { commit_task(); });
         });
       if (threadCount) group_barrier.wait(threadCount);
       group->wait();

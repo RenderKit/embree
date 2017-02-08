@@ -246,7 +246,17 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcCommit);
     RTCORE_VERIFY_HANDLE(hscene);
-    scene->build(0,0);
+    scene->commit(0,0,true);
+    RTCORE_CATCH_END(scene->device);
+  }
+
+  RTCORE_API void rtcCommitJoin (RTCScene hscene) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcCommitJoin);
+    RTCORE_VERIFY_HANDLE(hscene);
+    scene->commit(0,0,false);
     RTCORE_CATCH_END(scene->device);
   }
 
@@ -265,7 +275,7 @@ namespace embree
     _mm_setcsr(mxcsr | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
     
     /* perform scene build */
-    scene->build(threadID,numThreads);
+    scene->commit(threadID,numThreads,false);
 
     /* reset MXCSR register again */
     _mm_setcsr(mxcsr);
@@ -814,7 +824,7 @@ namespace embree
     return -1;
   }
 
-  /*RTCORE_API unsigned rtcNewGeometryInstance (RTCScene hscene, unsigned geomID) 
+  RTCORE_API unsigned rtcNewGeometryInstance (RTCScene hscene, unsigned geomID) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -824,7 +834,7 @@ namespace embree
     return scene->newGeometryInstance(scene->get_locked(geomID));
     RTCORE_CATCH_END(scene->device);
     return -1;
-    }*/
+  }
 
   AffineSpace3fa convertTransform(RTCMatrixType layout, const float* xfm)
   {
