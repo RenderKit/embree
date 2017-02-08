@@ -25,6 +25,8 @@
 #define MAX_OPEN_SIZE 10000
 #define PROFILE_ITERATIONS 200
 
+#define SAH_OPEN_MERGE_BUILD 1
+
 namespace embree
 {
   namespace isa
@@ -48,30 +50,46 @@ namespace embree
     template<int N, typename Mesh>
     void BVHNBuilderTwoLevel<N,Mesh>::open_merge_build_sequential(mvector<BuildRef> &buildRefs, const PrimInfo &pinfo)
     {
-      if (buildRefs.size() == 0) return;
+      assert(pinfo.size());
+      PRINT(pinfo);
 
       bool same_geomID = true;
-      for (size_t i=1;i<buildRefs.size();i++)
-        if (buildRefs[0].geomID != buildRefs[i].geomID) 
+      for (size_t i=1;i<pinfo.size();i++)
+        if (buildRefs[pinfo.begin+i].geomID != buildRefs[pinfo.begin].geomID) 
         {
           same_geomID = false;
           break;
         }
+      PRINT(same_geomID);
 
       /* single element or all geomIDs are the same => end recursion */
-      if (buildRefs.size() == 1 || same_geomID) {
-        for (size_t i=0;i<buildRefs.size();i++)        
-          prims.push_back( PrimRef(buildRefs[i].bounds(),(size_t)buildRefs[i].node) );
+      if (pinfo.size() == 1 || same_geomID) {
+        PRINT("DONE");
+        for (size_t i=0;i<pinfo.size();i++)        
+          prims.push_back( PrimRef(buildRefs[pinfo.begin+i].bounds(),(size_t)buildRefs[pinfo.begin+i].node) );
         return;
       }
 
+      /* non-opening split */
       typedef HeuristicArrayBinningSAH<BuildRef,NUM_OBJECT_BINS> Heuristic;
       const size_t logBlockSize = 1;
       Heuristic heuristic((BuildRef*)buildRefs.data());
       typename Heuristic::Split split = heuristic.find(pinfo,logBlockSize);
-      
+
+      /* opening split */
+
+      //....
+
+      /* --------------*/
+
       PrimInfo left, right;
       heuristic.split(split,pinfo,left,right);
+      PRINT(left);
+      PRINT(right);
+      assert(left.size());
+      assert(right.size());
+      open_merge_build_sequential(buildRefs,left);
+      open_merge_build_sequential(buildRefs,right);      
     }
 
     // ===========================================================================
@@ -171,9 +189,8 @@ namespace embree
       {
         /* open all large nodes */
         refs.resize(nextRef);
-#if 0
-        open_sequential(numPrimitives); 
-#else
+#if SAH_OPEN_MERGE_BUILD == 1
+
         PRINT(refs.size());
         prims.resize(0);
         PrimInfo pinfo(empty);
@@ -181,11 +198,10 @@ namespace embree
           pinfo.add(refs[i].bounds(),refs[i].bounds().center2());
         open_merge_build_sequential(refs,pinfo);
         PRINT(prims.size());
-        exit(0);
+#else
+        open_sequential(numPrimitives); 
 #endif
 
-        // PRINT(numPrimitives);
-        // PRINT(refs.size());
         /* compute PrimRefs */
         prims.resize(refs.size());
 
@@ -194,6 +210,7 @@ namespace embree
         limited.execute([&]
 #endif
         {
+#if SAH_OPEN_MERGE_BUILD == 0
           const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(),  PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {
 
               PrimInfo pinfo(empty);
@@ -203,7 +220,7 @@ namespace embree
               }
               return pinfo;
             }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
-
+#endif
           /* skip if all objects where empty */
           if (pinfo.size() == 0)
             bvh->set(BVH::emptyNode,empty,0);
