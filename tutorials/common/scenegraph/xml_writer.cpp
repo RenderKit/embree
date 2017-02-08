@@ -500,7 +500,11 @@ namespace embree
     if (nodeMap.find(node) != nodeMap.end()) {
       tab(); xml << "<ref id=\"" << nodeMap[node] << "\"/>" << std::endl; return;
     }
+    
     const ssize_t id = nodeMap[node] = currentNodeID++;
+    if (node->fileName != "") {
+      tab(); xml << "<extern id=\"" << id << "\" src=\"" << node->fileName << "\"/>" << std::endl; return;
+    } 
 
     if      (Ref<SceneGraph::LightNode> cnode = node.dynamicCast<SceneGraph::LightNode>()) store(cnode,id);
     //else if (Ref<SceneGraph::MaterialNode> cnode = node.dynamicCast<SceneGraph::MaterialNode>()) store(cnode,id);

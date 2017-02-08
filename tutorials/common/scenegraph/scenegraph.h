@@ -90,6 +90,8 @@ namespace embree
         SceneGraph::set_motion_vector(this,motion_vector); return this;
       }
 
+    public:
+      std::string fileName; // when set to some filename the exporter references this file
     protected:
       size_t indegree;   // number of nodes pointing to us
       bool closed;       // determines if the subtree may represent an instance

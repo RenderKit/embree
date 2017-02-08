@@ -23,6 +23,7 @@ namespace embree
 {
   /* name of the tutorial */
   bool embedTextures = true;
+  bool referenceObjects = true;
   float centerScale = 0.0f;
   Vec3fa centerTranslate(0.0f,0.0f,0.0f);
 
@@ -188,7 +189,9 @@ namespace embree
 
       /* distribute model */
       else if (tag == "-distribute") {
-        Ref<SceneGraph::Node> object = SceneGraph::load(path + cin->getFileName());
+        const FileName objectFile = cin->getFileName();
+        Ref<SceneGraph::Node> object = SceneGraph::load(path + objectFile);
+        if (referenceObjects) object->fileName = objectFile;
         Ref<Image> distribution = loadImage(path + cin->getFileName());
         const float minDistance = cin->getFloat();
         const size_t N = cin->getInt();
@@ -198,7 +201,9 @@ namespace embree
 
       /* instantiate model a single time */
       else if (tag == "-instantiate") {
-        Ref<SceneGraph::Node> object = SceneGraph::load(path + cin->getFileName());
+        const FileName objectFile = cin->getFileName();
+        Ref<SceneGraph::Node> object = SceneGraph::load(path + objectFile);
+        if (referenceObjects) object->fileName = objectFile;
         const float px = cin->getFloat();
         const float py = cin->getFloat();
         const Vec2f p(px,py);
@@ -215,6 +220,16 @@ namespace embree
       /* enable texture referencing */
       else if (tag == "-reference-textures") {
         embedTextures = false;
+      }
+
+      /* enable object embedding */
+      else if (tag == "-embed-objects") {
+        referenceObjects = false;
+      }
+
+      /* enable object referencing */
+      else if (tag == "-reference-objects") {
+        referenceObjects = true;
       }
 
       else if (tag == "-centerScaleTranslate") {
