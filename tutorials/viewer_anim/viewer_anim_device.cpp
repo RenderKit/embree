@@ -18,6 +18,7 @@
 #define ENABLE_ANIM 1
 #define VERTEX_NORMALS 1
 #define SHADOWS 1
+#define DUMP_PROFILE_DATA 0
 
 #include "../common/math/random_sampler.h"
 #include "../common/math/sampling.h"
@@ -49,14 +50,18 @@ namespace embree {
 
   /* shadow distance map */
 
+#if DUMP_PROFILE_DATA == 1
   void dumpBuildAndRenderTimes();
+#endif
 
   void device_key_pressed_handler(int key)
   {
-    if (key == 100 /*d*/) { 
+    if (key == 100 /*d*/) {
+#if DUMP_PROFILE_DATA == 1 
       std::cout << "dumping build and render times per frame [" << buildTime.size() << " frames]..." << std::flush;
       dumpBuildAndRenderTimes(); 
       std::cout << "done" << std::endl;
+#endif
     }
     else if (key == 115 /*s*/) { 
       printStats = !printStats; 
@@ -77,7 +82,7 @@ namespace embree {
     unsigned int geomID = rtcNewTriangleMesh (scene_out, object_flags, mesh->numTriangles, mesh->numVertices, 1);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
-    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[i];        
+    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];        
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
@@ -94,7 +99,7 @@ namespace embree {
     unsigned int geomID = rtcNewQuadMesh (scene_out, object_flags, mesh->numQuads, mesh->numVertices, mesh->numTimeSteps);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
-    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[i];        
+    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];        
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(ISPCQuad));
@@ -113,7 +118,7 @@ namespace embree {
     for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 4.0f;
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
-    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[i];        
+    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];        
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set all other buffers */
     rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float));
@@ -136,7 +141,7 @@ namespace embree {
     unsigned int geomID = rtcNewLineSegments (scene_out, object_flags, mesh->numSegments, mesh->numVertices, mesh->numTimeSteps);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
-    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[i];        
+    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];        
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->indices,0,sizeof(int));
@@ -151,7 +156,7 @@ namespace embree {
     unsigned int geomID = rtcNewHairGeometry (scene_out, object_flags, hair->numHairs, hair->numVertices, hair->numTimeSteps);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
-    for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[i];        
+    for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];        
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
@@ -167,7 +172,7 @@ namespace embree {
     unsigned int geomID = rtcNewCurveGeometry (scene_out, object_flags, hair->numHairs, hair->numVertices, hair->numTimeSteps);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
-    for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[i];        
+    for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];        
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
@@ -263,8 +268,8 @@ namespace embree {
       /* interpolate two vertices from two timesteps */
       const size_t t0 = (keyFrameID+0) % mesh->numTimeSteps;
       const size_t t1 = (keyFrameID+1) % mesh->numTimeSteps;
-      const Vec3fa* __restrict__ const input0 = mesh->positions+t0*mesh->numVertices;
-      const Vec3fa* __restrict__ const input1 = mesh->positions+t1*mesh->numVertices;
+      const Vec3fa* __restrict__ const input0 = mesh->positions[t0];
+      const Vec3fa* __restrict__ const input1 = mesh->positions[t1];
       interpolateVertices(scene_out, mesh->geomID, mesh->numVertices, input0, input1, tt);
     }
     else if (geometry->type == QUAD_MESH) {
@@ -274,8 +279,8 @@ namespace embree {
       /* interpolate two vertices from two timesteps */
       const size_t t0 = (keyFrameID+0) % mesh->numTimeSteps;
       const size_t t1 = (keyFrameID+1) % mesh->numTimeSteps;
-      const Vec3fa* __restrict__ const input0 = mesh->positions+t0*mesh->numVertices;
-      const Vec3fa* __restrict__ const input1 = mesh->positions+t1*mesh->numVertices;
+      const Vec3fa* __restrict__ const input0 = mesh->positions[t0];
+      const Vec3fa* __restrict__ const input1 = mesh->positions[t1];
       interpolateVertices(scene_out, mesh->geomID, mesh->numVertices, input0, input1, tt);
     }
     else if (geometry->type == LINE_SEGMENTS) {
@@ -363,14 +368,14 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 
         /* shading */
         Vec3fa& color = colors[N];
-        color = Vec3fa(0.0f,1.0f,0.0f);
+        color = Vec3fa(1.0f,1.0f,1.0f);
         if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
         {
-#if VERTEX_NORMALS == 1
           /* vertex normals */
           ISPCGeometry* geometry = g_ispc_scene->geometries[ray.geomID];
           if (likely(geometry->type == TRIANGLE_MESH))
           {
+#if VERTEX_NORMALS == 1
             ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
             if (likely(mesh->normals))
             {
@@ -381,8 +386,8 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
               const Vec3fa n2 = mesh->normals[tri->v2];
               Ng = (1.0f-ray.u-ray.v)*n0 + ray.u*n1 + ray.v*n2;          
             }
-          }
 #endif
+          }
           /* final color */
           color = Vec3fa(abs(dot(ray.dir,normalize(Ng))));
         }
@@ -393,10 +398,10 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
     /* do some hard shadows to point lights */
     if (g_ispc_scene->numLights)
     {
-      for (size_t i=0; i<g_ispc_scene->numLights; i++)
+      for (unsigned int i=0; i<g_ispc_scene->numLights; i++)
       {
         /* init shadow/occlusion rays */
-        for (size_t n=0;n<N;n++)
+        for (int n=0;n<N;n++)
         {
           RTCRay& ray = rays[n];
           const bool valid = ray.geomID != RTC_INVALID_GEOMETRY_ID;
@@ -414,7 +419,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
         rtcOccluded1M(g_scene,&context,rays,N,sizeof(RTCRay));
 
         /* modify pixel color based on occlusion */
-        for (size_t n=0;n<N;n++)
+        for (int n=0;n<N;n++)
           if (rays[n].geomID != RTC_INVALID_GEOMETRY_ID)
             colors[n] *= 0.1f;
         
@@ -452,10 +457,10 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
   {
     /* create new Embree device */
     g_device = rtcNewDevice(cfg);
-    error_handler(rtcDeviceGetError(g_device));
+    error_handler(nullptr,rtcDeviceGetError(g_device));
 
     /* set error handler */
-    rtcDeviceSetErrorFunction(g_device,error_handler);
+    rtcDeviceSetErrorFunction2(g_device,error_handler,nullptr);
 
     /* create scene */
     g_scene = createScene(g_ispc_scene);
@@ -570,7 +575,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
     const size_t keyFrameID = intpart;      
     
     size_t numObjects = getNumObjects(g_ispc_scene);
-    for (size_t i=0;i<numObjects;i++)
+    for (unsigned int i=0;i<numObjects;i++)
       updateVertexData(i, g_ispc_scene, g_scene, keyFrameID, (float)fracpart);
 
     double vertexUpdateTime1 = getSeconds();    
@@ -597,8 +602,9 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
     frameID = (frameID + 1) % numProfileFrames;
   }
 
-/* plot build and render times */
+#if DUMP_PROFILE_DATA == 1
 
+/* plot build and render times */
   void dumpBuildAndRenderTimes()
   {
     FileName name("buildRenderTimes");
@@ -627,16 +633,19 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
     plot << std::endl;
     plot.close();
   }
+#endif
 
 /* called by the C++ code for cleanup */
   extern "C" void device_cleanup ()
   {
     rtcDeleteScene (g_scene); g_scene = nullptr;
     rtcDeleteDevice(g_device); g_device = nullptr;
+#if DUMP_PROFILE_DATA == 1
     /* dump data at the end of profiling */
     std::cout << "dumping build and render times per frame [" << numProfileFrames << " frames]..." << std::flush;
     dumpBuildAndRenderTimes(); 
     std::cout << "done" << std::endl;
+#endif
   }
 
 } // namespace embree

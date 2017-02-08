@@ -104,6 +104,12 @@ namespace embree
     subdiv_accel = "default";
     subdiv_accel_mb = "default";
 
+    instancing_open_min = 0;
+    instancing_block_size = 0;
+    instancing_open_factor = 8.0f; 
+    instancing_open_max_depth = 32;
+    instancing_open_max = 50000000;
+
     ignore_config_files = false;
     float_exceptions = false;
     scene_flags = -1;
@@ -122,7 +128,12 @@ namespace embree
     start_threads = false;
 
     error_function = nullptr;
+    error_function2 = nullptr;
+    error_function_userptr = nullptr;
+
     memory_monitor_function = nullptr;
+    memory_monitor_function2 = nullptr;
+    memory_monitor_userptr = nullptr;
   }
 
   State::~State() {
@@ -325,6 +336,21 @@ namespace embree
         object_accel_mb_min_leaf_size = cin->get().Int();
       else if (tok == Token::Id("object_accel_mb_max_leaf_size") && cin->trySymbol("="))
         object_accel_mb_max_leaf_size = cin->get().Int();
+
+      else if (tok == Token::Id("instancing_open_min") && cin->trySymbol("="))
+        instancing_open_min = cin->get().Int();
+      else if (tok == Token::Id("instancing_block_size") && cin->trySymbol("=")) {
+        instancing_block_size = cin->get().Int();
+        instancing_open_factor = 0.0f;
+      }
+      else if (tok == Token::Id("instancing_open_max_depth") && cin->trySymbol("="))
+        instancing_open_max_depth = cin->get().Int();
+      else if (tok == Token::Id("instancing_open_factor") && cin->trySymbol("=")) {
+        instancing_block_size = 0;
+        instancing_open_factor = cin->get().Float();
+      }
+      else if (tok == Token::Id("instancing_open_max") && cin->trySymbol("="))
+        instancing_open_max = cin->get().Int();
 
       else if (tok == Token::Id("subdiv_accel") && cin->trySymbol("="))
         subdiv_accel = cin->get().Identifier();

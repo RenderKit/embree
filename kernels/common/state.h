@@ -111,7 +111,14 @@ namespace embree
     size_t tessellation_cache_size;        //!< size of the shared tessellation cache 
 
   public:
-    bool ignore_config_files;              //!< if true no more config files get parsed
+    size_t instancing_open_min;            //!< instancing opens tree to minimally that number of subtrees
+    size_t instancing_block_size;          //!< instancing opens tree up to average block size of primitives
+    float  instancing_open_factor;         //!< instancing opens tree up to x times the number of instances
+    size_t instancing_open_max_depth;      //!< maximal open depth for geometries
+    size_t instancing_open_max;            //!< instancing opens tree to maximally that number of subtrees
+
+  public:
+    bool ignore_config_files;              //!< if true no more config files get parse
     bool float_exceptions;                 //!< enable floating point exceptions
     int scene_flags;                       //!< scene flags to use
     size_t verbose;                        //!< verbosity of output
@@ -140,7 +147,41 @@ namespace embree
     static ErrorHandler g_errorHandler;
 
   public:
+    void setErrorFunction(RTCErrorFunc fptr) 
+    {
+      error_function = fptr;
+      error_function2 = nullptr;
+      error_function_userptr = nullptr;
+    }
+    
+    void setErrorFunction(RTCErrorFunc2 fptr, void* uptr) 
+    {
+      error_function = nullptr;
+      error_function2 = fptr;
+      error_function_userptr = uptr;
+    }
+
     RTCErrorFunc error_function;
+    RTCErrorFunc2 error_function2;
+    void* error_function_userptr;
+
+  public:
+    void setMemoryMonitorFunction(RTCMemoryMonitorFunc fptr) 
+    {
+      memory_monitor_function = fptr;
+      memory_monitor_function2 = nullptr;
+      memory_monitor_userptr = nullptr;
+    }
+    
+    void setMemoryMonitorFunction(RTCMemoryMonitorFunc2 fptr, void* uptr) 
+    {
+      memory_monitor_function = nullptr;
+      memory_monitor_function2 = fptr;
+      memory_monitor_userptr = uptr;
+    }
+      
     RTCMemoryMonitorFunc memory_monitor_function;
+    RTCMemoryMonitorFunc2 memory_monitor_function2;
+    void* memory_monitor_userptr;
   };
 }

@@ -17,7 +17,7 @@
 #include "../common/math/random_sampler.isph"
 #include "../common/math/sampling.isph"
 #include "../common/tutorial/tutorial_device.isph"
-#include "../common/tutorial/scene_device.isph"
+#include "../common/tutorial/scene_device.h"
 
 #define ANIM_FPS 15.0f
 #define ENABLE_ANIM 1
@@ -49,7 +49,7 @@ uniform unsigned int convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh,
   uniform unsigned int geomID = rtcNewTriangleMesh (scene_out, object_flags, mesh->numTriangles, mesh->numVertices, 1);
   /* generate vertex buffer */
   uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
-  for (uniform size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[i];        
+  for (uniform size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];        
   rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
   /* set index buffer */
   rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(uniform ISPCTriangle));
@@ -65,7 +65,7 @@ uniform unsigned int convertQuadMesh(uniform ISPCQuadMesh* uniform mesh, RTCScen
     uniform unsigned int geomID = rtcNewQuadMesh (scene_out, object_flags, mesh->numQuads, mesh->numVertices, mesh->numTimeSteps);
     /* generate vertex buffer */
     uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
-    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[i];        
+    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];        
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(uniform ISPCQuad));
@@ -84,7 +84,7 @@ uniform unsigned int convertSubdivMesh(uniform ISPCSubdivMesh* uniform mesh, RTC
     for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 4.0f;
     /* generate vertex buffer */
     uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
-    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[i];        
+    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];        
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set all other buffers */
     rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(uniform float));
@@ -107,7 +107,7 @@ uniform unsigned int convertLineSegments(uniform ISPCLineSegments* uniform mesh,
     uniform unsigned int geomID = rtcNewLineSegments (scene_out, object_flags, mesh->numSegments, mesh->numVertices, mesh->numTimeSteps);
     /* generate vertex buffer */
     uniform Vec3fa* uniform vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
-    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[i];        
+    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];        
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->indices,0,sizeof(uniform int));
@@ -122,7 +122,7 @@ uniform unsigned int convertHairSet(uniform ISPCHairSet* uniform hair, RTCScene 
     uniform unsigned int geomID = rtcNewHairGeometry (scene_out, object_flags, hair->numHairs, hair->numVertices, hair->numTimeSteps);
     /* generate vertex buffer */
     uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
-    for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[i];        
+    for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];        
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(uniform ISPCHair));
@@ -138,7 +138,7 @@ uniform unsigned int convertCurveGeometry(uniform ISPCHairSet* uniform hair, RTC
     uniform unsigned int geomID = rtcNewCurveGeometry (scene_out, object_flags, hair->numHairs, hair->numVertices, hair->numTimeSteps);
     /* generate vertex buffer */
     uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
-    for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[i];        
+    for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];        
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(uniform ISPCHair));
@@ -256,8 +256,8 @@ uniform unsigned int convertCurveGeometry(uniform ISPCHairSet* uniform hair, RTC
       /* interpolate two vertices from two timesteps */
       const uniform size_t t0 = (keyFrameID+0) % mesh->numTimeSteps;
       const uniform size_t t1 = (keyFrameID+1) % mesh->numTimeSteps;
-      const uniform Vec3fa* uniform const input0 = mesh->positions+t0*mesh->numVertices;
-      const uniform Vec3fa* uniform const input1 = mesh->positions+t1*mesh->numVertices;
+      const uniform Vec3fa* uniform const input0 = mesh->positions[t0];
+      const uniform Vec3fa* uniform const input1 = mesh->positions[t1];
       interpolateVertices(scene_out, mesh->geomID, mesh->numVertices, input0, input1, tt);
     }
     else if (geometry->type == QUAD_MESH) {
@@ -267,8 +267,8 @@ uniform unsigned int convertCurveGeometry(uniform ISPCHairSet* uniform hair, RTC
       /* interpolate two vertices from two timesteps */
       const uniform size_t t0 = (keyFrameID+0) % mesh->numTimeSteps;
       const uniform size_t t1 = (keyFrameID+1) % mesh->numTimeSteps;
-      const uniform Vec3fa* uniform const input0 = mesh->positions+t0*mesh->numVertices;
-      const uniform Vec3fa* uniform const input1 = mesh->positions+t1*mesh->numVertices;
+      const uniform Vec3fa* uniform const input0 = mesh->positions[t0];
+      const uniform Vec3fa* uniform const input1 = mesh->positions[t1];
       interpolateVertices(scene_out, mesh->geomID, mesh->numVertices, input0, input1, tt);
     }
     else if (geometry->type == LINE_SEGMENTS) {
@@ -453,10 +453,10 @@ export void device_init (uniform int8* uniform cfg)
 {
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
-  error_handler(rtcDeviceGetError(g_device));
+  error_handler(NULL,rtcDeviceGetError(g_device));
 
   /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler);
+  rtcDeviceSetErrorFunction2(g_device,error_handler,NULL);
 
   /* create scene */
   g_scene = createScene(g_ispc_scene);

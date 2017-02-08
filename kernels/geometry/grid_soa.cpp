@@ -118,16 +118,8 @@ namespace embree
       /*! create leaf node */
       if (unlikely(range.hasLeafSize()))
       {
-        /* shift 2x2 quads that wrap around to the left */ // FIXME: causes intersection filter to be called multiple times for some triangles
-        size_t u_start = range.u_start, u_end = range.u_end;
-        size_t v_start = range.v_start, v_end = range.v_end;
-        size_t u_size = u_end-u_start; assert(u_size > 0);
-        size_t v_size = v_end-v_start; assert(v_size > 0);
-        if (unlikely(u_size < 2 && u_start > 0)) u_start--;
-        if (unlikely(v_size < 2 && v_start > 0)) v_start--;
-        
         /* we store index of first subgrid vertex as leaf node */
-        curNode = BVH4::encodeTypedLeaf(encodeLeaf(u_start,v_start),0);
+        curNode = BVH4::encodeTypedLeaf(encodeLeaf(range.u_start,range.v_start),0);
 
         /* return bounding box */
         return calculateBounds(time,range);
@@ -175,17 +167,8 @@ namespace embree
       /*! create leaf node */
       if (unlikely(range.hasLeafSize()))
       {
-        /* shift 2x2 quads that wrap around to the left */ // FIXME: causes intersection filter to be called multiple times for some triangles
-        size_t u_start = range.u_start, u_end = range.u_end;
-        size_t v_start = range.v_start, v_end = range.v_end;
-        size_t u_size = u_end-u_start; assert(u_size > 0);
-        size_t v_size = v_end-v_start; assert(v_size > 0);
-        if (unlikely(u_size < 2 && u_start > 0)) u_start--;
-        if (unlikely(v_size < 2 && v_start > 0)) v_start--;
-        
         /* we store index of first subgrid vertex as leaf node */
-        const size_t value = 16*(v_start * width + u_start + 1); // +1 to not create empty leaf
-        curNode = BVH4::encodeTypedLeaf((void*)value,0);
+        curNode = BVH4::encodeTypedLeaf(encodeLeaf(range.u_start,range.v_start),0);
 
         /* return bounding box */
         return Geometry::linearBounds([&] (size_t itime) { return calculateBounds(itime,range); },

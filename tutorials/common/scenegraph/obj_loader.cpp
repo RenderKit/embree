@@ -130,6 +130,7 @@ namespace embree
     std::string curMaterialName;
     Ref<SceneGraph::MaterialNode> curMaterial;
     std::map<std::string, Ref<SceneGraph::MaterialNode> > material;
+    std::map<std::string, std::shared_ptr<Texture>> textureMap; 
 
   private:
     void loadMTL(const FileName& fileName);
@@ -139,6 +140,7 @@ namespace embree
     void flushFaceGroup();
     Vertex getInt3(const char*& token);
     uint32_t getVertex(std::map<Vertex,uint32_t>& vertexMap, Ref<SceneGraph::TriangleMeshNode> mesh, const Vertex& i);
+    std::shared_ptr<Texture> loadTexture(const FileName& fname);
   };
 
   OBJLoader::OBJLoader(const FileName &fileName, const bool subdivMode, const bool combineIntoSingleObject) 
@@ -153,8 +155,7 @@ namespace embree
     }
 
     /* generate default material */
-    Material objmtl; new (&objmtl) OBJMaterial;
-    Ref<SceneGraph::MaterialNode> defaultMaterial = new SceneGraph::MaterialNode(objmtl);
+    Ref<SceneGraph::MaterialNode> defaultMaterial = new OBJMaterial();
     curMaterialName = "default";
     curMaterial = defaultMaterial;
 
@@ -248,48 +249,74 @@ namespace embree
     cin.close();
   }
 
-  struct ExtObjMaterial : public OBJMaterial
+  struct ExtObjMaterial
   {
   public:
 
     enum Type { NONE, MATTE, GLASS, METAL, METALLIC_PAINT };
 
     ExtObjMaterial ()
-      : type(NONE), roughness(0.0f), roughnessMap(nullptr), coat_eta(1.0f), coat_roughness(0.0f), coat_roughnessMap(nullptr), bump(0.0f), eta(1.4f), k(3.0f) {}
+      : type(NONE), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Kt(1.0f),
+        roughness(0.0f), coat_eta(1.0f), coat_roughness(0.0f), bump(0.0f), eta(1.4f), k(3.0f) {}
 
-    Material select() const 
+    Ref<SceneGraph::MaterialNode> select() const 
     {
-      Material material;
+      std::shared_ptr<Texture> nulltex;
       if (type == NONE) {
-        new (&material) OBJMaterial(*this);
+        return new OBJMaterial(d,map_d,Kd,map_Kd,Ks,map_Ks,Ns,map_Ns,map_Displ);
       } else if (type == MATTE) {
-        if (coat_eta != 1.0f) new (&material) MetallicPaintMaterial (Kd,zero,0.0f,eta.x);
-        else                  new (&material) OBJMaterial(1.0f,nullptr,Kd,map_Kd,Ks,nullptr,1.0f/(1E-6f+roughness),nullptr,nullptr);
+        if (coat_eta != 1.0f) return new MetallicPaintMaterial (Kd,zero,0.0f,eta.x);
+        else                  return new OBJMaterial(1.0f,nulltex,Kd,map_Kd,Ks,nulltex,1.0f/(1E-6f+roughness),nulltex,nulltex);
       } else if (type == GLASS) {
-        new (&material) ThinDielectricMaterial(Vec3fa(1.0f),eta.x,0.1f);
+        return new ThinDielectricMaterial(Vec3fa(1.0f),eta.x,0.1f);
       } else if (type == METAL) {
         if (roughness == 0.0f) {
-          if (eta == Vec3fa(1.0f) && k == Vec3fa(0.0f)) new (&material) MirrorMaterial(Kd);
-          else                                          new (&material) MetalMaterial(Kd,eta,k);
+          if (eta == Vec3fa(1.0f) && k == Vec3fa(0.0f)) return new MirrorMaterial(Kd);
+          else                                          return new MetalMaterial(Kd,eta,k);
         }
-        else                   new (&material) MetalMaterial(Kd,eta,k,roughness);
+        else return new MetalMaterial(Kd,eta,k,roughness);
       } else if (type == METALLIC_PAINT) {
-        new (&material) MetallicPaintMaterial (Kd,Ks,0.0f,coat_eta);
+        return new MetallicPaintMaterial (Kd,Ks,0.0f,coat_eta);
       }
-      return material;
+      return new MatteMaterial(Vec3fa(0.5f));
     }
 
   public:
     Type type;
+
+    int illum;             /*< illumination model */
+    float d;               /*< dissolve factor, 1=opaque, 0=transparent */
+    float Ns;              /*< specular exponent */
+    float Ni;              /*< optical density for the surface (index of refraction) */
+
+    Vec3fa Ka;              /*< ambient reflectivity */
+    Vec3fa Kd;              /*< diffuse reflectivity */
+    Vec3fa Ks;              /*< specular reflectivity */
+    Vec3fa Kt;              /*< transmission filter */
+
+    std::shared_ptr<Texture> map_d;            /*< d texture */
+    std::shared_ptr<Texture> map_Kd;           /*< Kd texture */
+    std::shared_ptr<Texture> map_Ks;           /*< Ks texture */
+    std::shared_ptr<Texture> map_Ns;           /*< Ns texture */
+    std::shared_ptr<Texture> map_Displ;        /*< Displ texture */
+
     float roughness;
-    Texture* roughnessMap;
+    std::shared_ptr<Texture> roughnessMap;
     float coat_eta;
     float coat_roughness;
-    Texture* coat_roughnessMap;
+    std::shared_ptr<Texture> coat_roughnessMap;
     float bump;
     Vec3f eta;
     Vec3f k;
   };
+
+  std::shared_ptr<Texture> OBJLoader::loadTexture(const FileName& fname)
+  {
+    if (textureMap.find(fname.str()) != textureMap.end())
+      return textureMap[fname.str()];
+    
+    return std::shared_ptr<Texture>(Texture::load(path+fname));
+  }
 
   /* load material file */
   void OBJLoader::loadMTL(const FileName &fileName)
@@ -304,7 +331,6 @@ namespace embree
     char line[10000];
     memset(line, 0, sizeof(line));
 
-    //OBJMaterial* cur = nullptr;
     std::string name;
     ExtObjMaterial cur;
 
@@ -327,16 +353,15 @@ namespace embree
       if (!strncmp(token, "newmtl", 6)) 
       {
         if (name != "")
-          material[name] = new SceneGraph::MaterialNode(cur.select());
+          material[name] = cur.select();
         
         parseSep(token+=6);
         name = token;
-        new (&cur) ExtObjMaterial;
+        cur = ExtObjMaterial();
         continue;
       }
-
       if (name == "") THROW_RUNTIME_ERROR("invalid material file: newmtl expected first");
-
+      
       try 
       {
         if (!strncmp(token, "illum", 5)) { parseSep(token += 5);  continue; }
@@ -347,13 +372,13 @@ namespace embree
         
         if (!strncmp(token, "map_d", 5) || !strncmp(token, "d_map", 5)) {
           parseSep(token += 5);
-          cur.map_d = Texture::load(path + FileName(token));
+          cur.map_d = loadTexture(FileName(token));
           continue;
         }
         if (!strncmp(token, "map_Ka", 6) || !strncmp(token, "Ka_map", 6)) { continue; }
         if (!strncmp(token, "map_Kd", 6) || !strncmp(token, "Kd_map", 6)) {
           parseSep(token += 6);
-          cur.map_Kd = Texture::load(path + FileName(token));
+          cur.map_Kd = loadTexture(FileName(token));
           continue;
         }
         
@@ -361,7 +386,7 @@ namespace embree
         if (!strncmp(token, "map_Tf", 6) || !strncmp(token, "Tf_map", 6)) { continue; }
         if (!strncmp(token, "map_Displ", 9) || !strncmp(token, "Displ_map", 9)) {
           parseSep(token += 9);
-          cur.map_Displ = Texture::load(path + FileName(token));
+          cur.map_Displ = loadTexture(FileName(token));
           continue;
         }
         
@@ -378,15 +403,15 @@ namespace embree
           else if (type == "metal") cur.type = ExtObjMaterial::METAL;
           else if (type == "metallicPaint") cur.type = ExtObjMaterial::METALLIC_PAINT;
         }
-        if (!strncmp(token, "roughnessMap",     12)) { parseSep(token += 12); cur.roughnessMap = Texture::load(path + FileName(token)); }
+        if (!strncmp(token, "roughnessMap",     12)) { parseSep(token += 12); cur.roughnessMap = loadTexture(FileName(token)); }
         if (!strncmp(token, "roughness",         9)) { parseSep(token +=  9); cur.roughness = getFloat(token); }
-        if (!strncmp(token, "colorMap",          8)) { parseSep(token +=  8); cur.map_Kd  = Texture::load(path + FileName(token)); }
+        if (!strncmp(token, "colorMap",          8)) { parseSep(token +=  8); cur.map_Kd  = loadTexture(FileName(token)); }
         if (!strncmp(token, "color",             5)) { parseSep(token +=  5); cur.Kd      = getVec3f(token); }
         if (!strncmp(token, "coat.color",       10)) { parseSep(token += 10); cur.Kd      = getVec3f(token); }
         if (!strncmp(token, "coat.eta",          8)) { parseSep(token +=  8); cur.coat_eta  = getFloat(token); }
-        if (!strncmp(token, "coat.roughnessMap",17)) { parseSep(token += 17); cur.coat_roughnessMap   = Texture::load(path + FileName(token)); }
+        if (!strncmp(token, "coat.roughnessMap",17)) { parseSep(token += 17); cur.coat_roughnessMap   = loadTexture(FileName(token)); }
         if (!strncmp(token, "coat.roughness",   14)) { parseSep(token += 14); cur.coat_roughness = getFloat(token); }
-        if (!strncmp(token, "bumpMap",           7)) { parseSep(token +=  7); cur.map_Displ = Texture::load(path + FileName(token)); }
+        if (!strncmp(token, "bumpMap",           7)) { parseSep(token +=  7); cur.map_Displ = loadTexture(FileName(token)); }
         if (!strncmp(token, "bump",              4)) { parseSep(token +=  4); cur.bump   = getFloat(token); }
         if (!strncmp(token, "eta",               3)) { parseSep(token +=  3); cur.eta = getVec3f(token); }
         if (!strncmp(token, "k",                 1)) { parseSep(token +=  1); cur.k = getVec3f(token); }
@@ -397,7 +422,7 @@ namespace embree
     }
 
     if (name != "")
-      material[name] = new SceneGraph::MaterialNode(cur.select());
+      material[name] = cur.select();
 
     cin.close();
   }

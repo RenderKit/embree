@@ -92,6 +92,14 @@ RTCORE_API void rtcSetProgressMonitorFunction(RTCScene scene, RTCProgressMonitor
  *  rays. */
 RTCORE_API void rtcCommit (RTCScene scene);
 
+/*! Commits the geometry of the scene in join mode. When Embree is
+ *  using TBB (default), threads that call `rtcCommitJoin` will
+ *  participate in the hierarchy build procedure. When Embree is using
+ *  the internal tasking system, exclusively threads that call
+ *  `rtcCommitJoin` will execute the build procedure. Do not
+ *  mix `rtcCommitJoin` with other commit calls. */
+RTCORE_API void rtcCommitJoin (RTCScene scene);
+
 /*! Commits the geometry of the scene. The calling threads will be
  *  used internally as a worker threads on some implementations. The
  *  function will wait until 'numThreads' threads have called this

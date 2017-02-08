@@ -41,20 +41,14 @@ namespace embree
     static void destroy();
     
     /* returns the index of the current thread */
-    static __forceinline size_t threadIndex()
-    {
-      size_t ID = GetCurrentThreadId();
-	  return ID;
+    static __forceinline size_t threadIndex() {
+      return GetCurrentThreadId();
     }
   
     /* returns the total number of threads */
     static __forceinline size_t threadCount() {
-	  size_t num = GetMaximumProcessorCount(ALL_PROCESSOR_GROUPS);
-      return num;
+      return GetMaximumProcessorCount(ALL_PROCESSOR_GROUPS);
     }
-
-  private:
-    static size_t g_numThreads;
   };
 };
 

@@ -28,6 +28,8 @@ namespace embree
         return ((BSplinePatch3fa*)patch.patch_v)->eval(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::GREGORY_PATCH))
         return ((DenseGregoryPatch3fa*)patch.patch_v)->eval(uu,vv);
+      else if (likely(patch.type == SubdivPatch1Base::BILINEAR_PATCH))
+        return ((BilinearPatch3fa*)patch.patch_v)->eval(uu,vv);
       return Vec3fa( zero );
     }
 
@@ -39,6 +41,8 @@ namespace embree
         return ((BSplinePatch3fa*)patch.patch_v)->normal(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::GREGORY_PATCH))
         return ((DenseGregoryPatch3fa*)patch.patch_v)->normal(uu,vv);
+      else if (likely(patch.type == SubdivPatch1Base::BILINEAR_PATCH))
+        return ((BilinearPatch3fa*)patch.patch_v)->normal(uu,vv);
       return Vec3fa( zero );
     }
 
@@ -51,6 +55,8 @@ namespace embree
         return ((BSplinePatch3fa*)patch.patch_v)->eval(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::GREGORY_PATCH))
         return ((DenseGregoryPatch3fa*)patch.patch_v)->eval(uu,vv);
+      else if (likely(patch.type == SubdivPatch1Base::BILINEAR_PATCH))
+        return ((BilinearPatch3fa*)patch.patch_v)->eval(uu,vv);
       return Vec3<simdf>( zero );
     }
 
@@ -63,6 +69,8 @@ namespace embree
         return ((BSplinePatch3fa*)patch.patch_v)->normal(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::GREGORY_PATCH))
         return ((DenseGregoryPatch3fa*)patch.patch_v)->normal(uu,vv);
+      else if (likely(patch.type == SubdivPatch1Base::BILINEAR_PATCH))
+        return ((BilinearPatch3fa*)patch.patch_v)->normal(uu,vv);
       return Vec3<simdf>( zero );
     }
 

@@ -232,7 +232,7 @@ namespace embree
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR1(BVH4MB4DBezier1iMBIntersector1_OBB,BVHNIntersector1<4 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1MB> >));
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR1(BVH4Bezier1iMBIntersector1_OBB,BVHNIntersector1<4 COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1MB> >));
   
-#if 1
+#if 0
     typedef Select2Intersector1<
       TriangleMIntersector1Moeller<4 COMMA 4 COMMA true>,
       TriangleMvMBIntersector1Moeller<4 COMMA 4 COMMA true> > Intersector1_Triangle4Moeller_Triangle4vMBMoeller;

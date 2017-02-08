@@ -30,8 +30,8 @@ namespace embree
         typedef BinInfoT<BINS,PrimRef,BBox3fa> Binner;
         typedef range<size_t> Set;
 
-#if defined(__AVX512F__)
-        static const size_t PARALLEL_THRESHOLD = 4*768;
+#if defined(__AVX512ER__) // KNL
+        static const size_t PARALLEL_THRESHOLD = 4*768; 
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 768;
         static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 768;
 #else
@@ -119,18 +119,23 @@ namespace embree
 #if defined(__AVX512F__)
           const vint16 vSplitPos(splitPos);
           const vbool16 vSplitMask( splitDimMask );
-          auto isLeft = [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask); };
 #else
           const vint4 vSplitPos(splitPos);
           const vbool4 vSplitMask( (int)splitDimMask );
-          auto isLeft = [&] (const PrimRef &ref) { return any(((vint4)split.mapping.bin_unsafe(center2(ref.bounds())) < vSplitPos) & vSplitMask); };
 #endif
-          size_t center = serial_or_parallel_partitioning<parallel>(
-            prims,begin,end,empty,local_left,local_right,isLeft,
-            [] (CentGeomBBox3fa& pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
-            [] (CentGeomBBox3fa& pinfo0,const CentGeomBBox3fa &pinfo1) { pinfo0.merge(pinfo1); },
-            PARALLEL_PARTITION_BLOCK_SIZE);
+          auto isLeft = [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask); };
 
+          size_t center = 0;
+          if (!parallel)
+            center = serial_partitioning(prims,begin,end,local_left,local_right,isLeft,
+                                         [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });          
+          else
+            center = parallel_partitioning(
+              prims,begin,end,EmptyTy(),local_left,local_right,isLeft,
+              [] (CentGeomBBox3fa& pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
+              [] (CentGeomBBox3fa& pinfo0,const CentGeomBBox3fa &pinfo1) { pinfo0.merge(pinfo1); },
+              PARALLEL_PARTITION_BLOCK_SIZE);
+          
           new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
           new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
           new (&lset) range<size_t>(begin,center);
@@ -218,7 +223,7 @@ namespace embree
           auto isLeft = [&] (const PrimRefMB &ref) { return any(((vint4)split.mapping.bin_unsafe(ref) < vSplitPos) & vSplitMask); };
           auto reduction = [] (PrimInfoMB& pinfo, const PrimRefMB& ref) { pinfo.add_primref(ref); };
           auto reduction2 = [] (PrimInfoMB& pinfo0,const PrimInfoMB& pinfo1) { pinfo0.merge(pinfo1); };
-          size_t center = parallel_partitioning(set.prims->data(),begin,end,empty,left,right,isLeft,reduction,reduction2,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD);
+          size_t center = parallel_partitioning(set.prims->data(),begin,end,EmptyTy(),left,right,isLeft,reduction,reduction2,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD);
           new (&lset) SetMB(left,set.prims,range<size_t>(begin,center),set.time_range);
           new (&rset) SetMB(right,set.prims,range<size_t>(center,end  ),set.time_range);
         }

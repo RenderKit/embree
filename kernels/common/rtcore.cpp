@@ -144,7 +144,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetErrorFunction);
     assert(g_device);
-    if (g_device) g_device->error_function = func;
+    if (g_device) g_device->setErrorFunction(func);
     RTCORE_CATCH_END(g_device);
   }
 
@@ -154,7 +154,17 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcDeviceSetErrorFunction);
     RTCORE_VERIFY_HANDLE(hdevice);
-    device->error_function = func;
+    device->setErrorFunction(func);
+    RTCORE_CATCH_END(device);
+  }
+
+  RTCORE_API void rtcDeviceSetErrorFunction2(RTCDevice hdevice, RTCErrorFunc2 func, void* userPtr) 
+  {
+    Device* device = (Device*) hdevice;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcDeviceSetErrorFunction2);
+    RTCORE_VERIFY_HANDLE(hdevice);
+    device->setErrorFunction(func,userPtr);
     RTCORE_CATCH_END(device);
   }
 
@@ -163,7 +173,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetMemoryMonitorFunction);
     assert(g_device);
-    if (g_device) g_device->memory_monitor_function = func;
+    if (g_device) g_device->setMemoryMonitorFunction(func);
     RTCORE_CATCH_END(g_device);
   }
 
@@ -172,7 +182,16 @@ namespace embree
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcDeviceSetMemoryMonitorFunction);
-    device->memory_monitor_function = func;
+    device->setMemoryMonitorFunction(func);
+    RTCORE_CATCH_END(device);
+  }
+
+  RTCORE_API void rtcDeviceSetMemoryMonitorFunction2(RTCDevice hdevice, RTCMemoryMonitorFunc2 func, void* userPtr) 
+  {
+    Device* device = (Device*) hdevice;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcDeviceSetMemoryMonitorFunction2);
+    device->setMemoryMonitorFunction(func,userPtr);
     RTCORE_CATCH_END(device);
   }
 
@@ -227,7 +246,17 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcCommit);
     RTCORE_VERIFY_HANDLE(hscene);
-    scene->build(0,0);
+    scene->commit(0,0,true);
+    RTCORE_CATCH_END(scene->device);
+  }
+
+  RTCORE_API void rtcCommitJoin (RTCScene hscene) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcCommitJoin);
+    RTCORE_VERIFY_HANDLE(hscene);
+    scene->commit(0,0,false);
     RTCORE_CATCH_END(scene->device);
   }
 
@@ -246,7 +275,7 @@ namespace embree
     _mm_setcsr(mxcsr | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
     
     /* perform scene build */
-    scene->build(threadID,numThreads);
+    scene->commit(threadID,numThreads,false);
 
     /* reset MXCSR register again */
     _mm_setcsr(mxcsr);
@@ -762,12 +791,12 @@ namespace embree
   RTCORE_API unsigned rtcNewInstance (RTCScene htarget, RTCScene hsource) 
   {
     Scene* target = (Scene*) htarget;
-    Scene* source = (Scene*) hsource;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewInstance);
     RTCORE_VERIFY_HANDLE(htarget);
     RTCORE_VERIFY_HANDLE(hsource);
 #if defined(EMBREE_GEOMETRY_USER)
+    Scene* source = (Scene*) hsource;
     if (target->device != source->device) throw_RTCError(RTC_INVALID_OPERATION,"scenes do not belong to the same device");
     return target->newInstance(source,1);
 #else
@@ -795,7 +824,7 @@ namespace embree
     return -1;
   }
 
-  /*RTCORE_API unsigned rtcNewGeometryInstance (RTCScene hscene, unsigned geomID) 
+  RTCORE_API unsigned rtcNewGeometryInstance (RTCScene hscene, unsigned geomID) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -805,7 +834,7 @@ namespace embree
     return scene->newGeometryInstance(scene->get_locked(geomID));
     RTCORE_CATCH_END(scene->device);
     return -1;
-    }*/
+  }
 
   AffineSpace3fa convertTransform(RTCMatrixType layout, const float* xfm)
   {

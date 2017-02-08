@@ -80,12 +80,20 @@ namespace embree
     return rtcDeviceSetErrorFunction(device,(RTCErrorFunc)f);
   }
 
+  extern "C" void ispcDeviceSetErrorFunction2(RTCDevice device, void* fptr, void* uptr) {
+    return rtcDeviceSetErrorFunction2(device,(RTCErrorFunc2)fptr,uptr);
+  }
+
   extern "C" void ispcSetMemoryMonitorFunction(void* f) {
     return rtcSetMemoryMonitorFunction((RTCMemoryMonitorFunc)f);
   }
 
   extern "C" void ispcDeviceSetMemoryMonitorFunction(RTCDevice device, void* f) {
     return rtcDeviceSetMemoryMonitorFunction(device,(RTCMemoryMonitorFunc)f);
+  }
+
+  extern "C" void ispcDeviceSetMemoryMonitorFunction2(RTCDevice device, void* fptr, void* uptr) {
+    return rtcDeviceSetMemoryMonitorFunction2(device,(RTCMemoryMonitorFunc2)fptr,uptr);
   }
 
   extern "C" void ispcDebug() {
@@ -110,6 +118,10 @@ namespace embree
 
   extern "C" void ispcCommit (RTCScene scene) {
     return rtcCommit(scene);
+  }
+
+  extern "C" void ispcCommitJoin (RTCScene scene) {
+    return rtcCommitJoin(scene);
   }
 
   extern "C" void ispcCommitThread (RTCScene scene, unsigned int threadID, unsigned int numThreads) {
@@ -200,9 +212,9 @@ namespace embree
     return rtcNewInstance2(target,source,numTimeSteps);
   }
 
-  /*extern "C" unsigned ispcNewGeometryInstance (RTCScene scene, unsigned geomID) {
+  extern "C" unsigned ispcNewGeometryInstance (RTCScene scene, unsigned geomID) {
     return rtcNewGeometryInstance(scene,geomID);
-    }*/
+  }
   
   extern "C" void ispcSetTransform (RTCScene scene, unsigned geomID, RTCMatrixType layout, const float* xfm) {
     return rtcSetTransform(scene,geomID,layout,xfm);

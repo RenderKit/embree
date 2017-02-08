@@ -163,12 +163,22 @@ namespace embree
     const __m128 mask = _mm_castsi128_ps(_mm_set1_epi32(0x7fffffff));
     return _mm_and_ps(a.m128, mask);
   }
-  __forceinline const Color rcp  ( const Color& a ) {
+  __forceinline const Color rcp  ( const Color& a )
+  {
+#if defined(__AVX512VL__)
+    const Color r = _mm_rcp14_ps(a.m128);
+#else
     const Color r = _mm_rcp_ps(a.m128);
+#endif
     return _mm_sub_ps(_mm_add_ps(r, r), _mm_mul_ps(_mm_mul_ps(r, r), a));
   }
-  __forceinline const Color rsqrt( const Color& a ) {
+  __forceinline const Color rsqrt( const Color& a )
+  {
+#if defined(__AVX512VL__)
+    __m128 r = _mm_rsqrt14_ps(a.m128);
+#else
     __m128 r = _mm_rsqrt_ps(a.m128);
+#endif
     return _mm_add_ps(_mm_mul_ps(_mm_set1_ps(1.5f),r), _mm_mul_ps(_mm_mul_ps(_mm_mul_ps(a, _mm_set1_ps(-0.5f)), r), _mm_mul_ps(r, r)));
   }
   __forceinline const Color sqrt ( const Color& a ) { return _mm_sqrt_ps(a.m128); }

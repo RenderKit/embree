@@ -38,7 +38,7 @@ namespace embree
     void store4f(const char* name, const avector<Vec3fa>& vec);
     void store_parm(const char* name, const float& v);
     void store_parm(const char* name, const Vec3fa& v);
-    void store_parm(const char* name, const Texture* tex);
+    void store_parm(const char* name, const std::shared_ptr<Texture> tex);
     void store(const char* name, const AffineSpace3fa& space);
 
     void store(const SceneGraph::PointLight& light, ssize_t id);
@@ -50,15 +50,15 @@ namespace embree
     void store(const SceneGraph::QuadLight& light, ssize_t id);
     void store(Ref<SceneGraph::LightNode> light, ssize_t id);
     
-    void store(const MatteMaterial& material, ssize_t id);
-    void store(const MirrorMaterial& material, ssize_t id);
-    void store(const ThinDielectricMaterial& material, ssize_t id);
-    void store(const OBJMaterial& material, ssize_t id);
-    void store(const MetalMaterial& material, ssize_t id);
-    void store(const VelvetMaterial& material, ssize_t id);
-    void store(const DielectricMaterial& material, ssize_t id);
-    void store(const MetallicPaintMaterial& material, ssize_t id);
-    void store(const HairMaterial& material, ssize_t id);
+    void store(Ref<MatteMaterial> material, ssize_t id);
+    void store(Ref<MirrorMaterial> material, ssize_t id);
+    void store(Ref<ThinDielectricMaterial> material, ssize_t id);
+    void store(Ref<OBJMaterial> material, ssize_t id);
+    void store(Ref<MetalMaterial> material, ssize_t id);
+    void store(Ref<VelvetMaterial> material, ssize_t id);
+    void store(Ref<DielectricMaterial> material, ssize_t id);
+    void store(Ref<MetallicPaintMaterial> material, ssize_t id);
+    void store(Ref<HairMaterial> material, ssize_t id);
     void store(Ref<SceneGraph::MaterialNode> material);
 
     void store(Ref<SceneGraph::TriangleMeshNode> mesh, ssize_t id);
@@ -79,7 +79,7 @@ namespace embree
     size_t ident;
     size_t currentNodeID;
     std::map<Ref<SceneGraph::Node>, size_t> nodeMap;   
-    std::map<const Texture*, size_t> textureMap; // FIXME: use Ref<Texture>
+    std::map<std::shared_ptr<Texture>, size_t> textureMap; // FIXME: use Ref<Texture>
     bool embedTextures;
   };
 
@@ -154,7 +154,7 @@ namespace embree
     tab(); xml << "<float3 name=\"" << name << "\">" << v.x << " " << v.y << " " << v.z << "</float3>" << std::endl;
   }
 
-  void XMLWriter::store_parm(const char* name, const Texture* tex) 
+  void XMLWriter::store_parm(const char* name, const std::shared_ptr<Texture> tex) 
   {
     if (tex == nullptr) return;
 
@@ -265,114 +265,114 @@ namespace embree
     }
   }
 
-  void XMLWriter::store(const MatteMaterial& material, ssize_t id)
+  void XMLWriter::store(Ref<MatteMaterial> material, ssize_t id)
   {
     open("material",id);
     store("code","Matte");
     open("parameters");
-    store_parm("reflectance",material.reflectance);
+    store_parm("reflectance",material->reflectance);
     close("parameters");
     close("material");
   }
 
-  void XMLWriter::store(const MirrorMaterial& material, ssize_t id)
+  void XMLWriter::store(Ref<MirrorMaterial> material, ssize_t id)
   {
     open("material",id);
     store("code","Mirror");
     open("parameters");
-    store_parm("reflectance",material.reflectance);
+    store_parm("reflectance",material->reflectance);
     close("parameters");
     close("material");
   }
 
-  void XMLWriter::store(const ThinDielectricMaterial& material, ssize_t id)
+  void XMLWriter::store(Ref<ThinDielectricMaterial> material, ssize_t id)
   {
     open("material",id);
     store("code","ThinDielectric");
     open("parameters");
-    store_parm("transmission",material.transmission);
-    store_parm("eta",material.eta);
-    store_parm("thickness",material.thickness);
+    store_parm("transmission",material->transmission);
+    store_parm("eta",material->eta);
+    store_parm("thickness",material->thickness);
     close("parameters");
     close("material");
   }
 
-  void XMLWriter::store(const OBJMaterial& material, ssize_t id)
+  void XMLWriter::store(Ref<OBJMaterial> material, ssize_t id)
   {
     open("material",id);
     store("code","OBJ");
     open("parameters");
-    store_parm("d",material.d);
-    store_parm("Kd",material.Kd);
-    store_parm("Ks",material.Ks);
-    store_parm("Ns",material.Ns);
-    store_parm("map_d",material.map_d);
-    store_parm("map_Kd",material.map_Kd);
+    store_parm("d",material->d);
+    store_parm("Kd",material->Kd);
+    store_parm("Ks",material->Ks);
+    store_parm("Ns",material->Ns);
+    store_parm("map_d",material->_map_d);
+    store_parm("map_Kd",material->_map_Kd);
     close("parameters");
     close("material");
   }
 
-  void XMLWriter::store(const MetalMaterial& material, ssize_t id)
+  void XMLWriter::store(Ref<MetalMaterial> material, ssize_t id)
   {
     open("material",id);
     store("code","Metal");
     open("parameters");
-    store_parm("reflectance",material.reflectance);
-    store_parm("eta",material.eta);
-    store_parm("k",material.k);
-    store_parm("roughness",material.roughness);
+    store_parm("reflectance",material->reflectance);
+    store_parm("eta",material->eta);
+    store_parm("k",material->k);
+    store_parm("roughness",material->roughness);
     close("parameters");
     close("material");
   }
 
-  void XMLWriter::store(const VelvetMaterial& material, ssize_t id)
+  void XMLWriter::store(Ref<VelvetMaterial> material, ssize_t id)
   {
     open("material",id);
     store("code","Velvet");
     open("parameters");
-    store_parm("reflectance",material.reflectance);
-    store_parm("backScattering",material.backScattering);
-    store_parm("horizonScatteringColor",material.horizonScatteringColor);
-    store_parm("horizonScatteringFallOff",material.horizonScatteringFallOff);
+    store_parm("reflectance",material->reflectance);
+    store_parm("backScattering",material->backScattering);
+    store_parm("horizonScatteringColor",material->horizonScatteringColor);
+    store_parm("horizonScatteringFallOff",material->horizonScatteringFallOff);
     close("parameters");
     close("material");
   }
 
-  void XMLWriter::store(const DielectricMaterial& material, ssize_t id)
+  void XMLWriter::store(Ref<DielectricMaterial> material, ssize_t id)
   {
     open("material",id);
     store("code","Dielectric");
     open("parameters");
-    store_parm("transmissionOutside",material.transmissionOutside);
-    store_parm("transmission",material.transmissionInside);
-    store_parm("etaOutside",material.etaOutside);
-    store_parm("etaInside",material.etaInside);
+    store_parm("transmissionOutside",material->transmissionOutside);
+    store_parm("transmission",material->transmissionInside);
+    store_parm("etaOutside",material->etaOutside);
+    store_parm("etaInside",material->etaInside);
     close("parameters");
     close("material");
   }
 
-  void XMLWriter::store(const MetallicPaintMaterial& material, ssize_t id)
+  void XMLWriter::store(Ref<MetallicPaintMaterial> material, ssize_t id)
   {
     open("material",id);
     store("code","MetallicPaint");
     open("parameters");
-    store_parm("shadeColor",material.shadeColor);
-    store_parm("glitterColor",material.glitterColor);
-    store_parm("glitterSpread",material.glitterSpread);
-    store_parm("eta",material.eta);
+    store_parm("shadeColor",material->shadeColor);
+    store_parm("glitterColor",material->glitterColor);
+    store_parm("glitterSpread",material->glitterSpread);
+    store_parm("eta",material->eta);
     close("parameters");
     close("material");
   }
 
-  void XMLWriter::store(const HairMaterial& material, ssize_t id)
+  void XMLWriter::store(Ref<HairMaterial> material, ssize_t id)
   {
     open("material",id);
     store("code","Hair");
     open("parameters");
-    store_parm("Kr",material.Kr);
-    store_parm("Kt",material.Kt);
-    store_parm("nx",material.nx);
-    store_parm("ny",material.ny);
+    store_parm("Kr",material->Kr);
+    store_parm("Kt",material->Kt);
+    store_parm("nx",material->nx);
+    store_parm("ny",material->ny);
     close("parameters");
     close("material");
   }
@@ -386,20 +386,17 @@ namespace embree
     }
     const ssize_t id = nodeMap[node] = currentNodeID++;
 
-    switch (mnode->material.type)
-    {
-    case MATERIAL_OBJ             : store((OBJMaterial&)mnode->material,id); break;
-    case MATERIAL_THIN_DIELECTRIC : store((ThinDielectricMaterial&)mnode->material,id); break;
-    case MATERIAL_METAL           : store((MetalMaterial&)mnode->material,id); break;
-    case MATERIAL_VELVET          : store((VelvetMaterial&)mnode->material,id); break;
-    case MATERIAL_DIELECTRIC      : store((DielectricMaterial&)mnode->material,id); break;
-    case MATERIAL_METALLIC_PAINT  : store((MetallicPaintMaterial&)mnode->material,id); break;
-    case MATERIAL_MATTE           : store((MatteMaterial&)mnode->material,id); break;
-    case MATERIAL_MIRROR          : store((MirrorMaterial&)mnode->material,id); break;
-    case MATERIAL_REFLECTIVE_METAL: store((ReflectiveMetalMaterial&)mnode->material,id); break;
-    case MATERIAL_HAIR            : store((HairMaterial&)mnode->material,id); break;
-    default: throw std::runtime_error("unsupported material");
-    }
+    if      (Ref<OBJMaterial> m = mnode.dynamicCast<OBJMaterial>()) store(m,id);
+    else if (Ref<ThinDielectricMaterial> m = mnode.dynamicCast<ThinDielectricMaterial>()) store(m,id);
+    else if (Ref<MetalMaterial> m = mnode.dynamicCast<MetalMaterial>()) store(m,id);
+    else if (Ref<VelvetMaterial> m = mnode.dynamicCast<VelvetMaterial>()) store(m,id);
+    else if (Ref<DielectricMaterial> m = mnode.dynamicCast<DielectricMaterial>()) store(m,id);
+    else if (Ref<MetallicPaintMaterial> m = mnode.dynamicCast<MetallicPaintMaterial>()) store(m,id);
+    else if (Ref<MatteMaterial> m = mnode.dynamicCast<MatteMaterial>()) store(m,id);
+    else if (Ref<MirrorMaterial> m = mnode.dynamicCast<MirrorMaterial>()) store(m,id);
+    else if (Ref<ReflectiveMetalMaterial> m = mnode.dynamicCast<ReflectiveMetalMaterial>()) store(m,id);
+    else if (Ref<HairMaterial> m = mnode.dynamicCast<HairMaterial>()) store(m,id);
+    else throw std::runtime_error("unsupported material");
   }
 
   void XMLWriter::store(Ref<SceneGraph::TriangleMeshNode> mesh, ssize_t id) 
@@ -503,7 +500,11 @@ namespace embree
     if (nodeMap.find(node) != nodeMap.end()) {
       tab(); xml << "<ref id=\"" << nodeMap[node] << "\"/>" << std::endl; return;
     }
+    
     const ssize_t id = nodeMap[node] = currentNodeID++;
+    if (node->fileName != "") {
+      tab(); xml << "<extern id=\"" << id << "\" src=\"" << node->fileName << "\"/>" << std::endl; return;
+    } 
 
     if      (Ref<SceneGraph::LightNode> cnode = node.dynamicCast<SceneGraph::LightNode>()) store(cnode,id);
     //else if (Ref<SceneGraph::MaterialNode> cnode = node.dynamicCast<SceneGraph::MaterialNode>()) store(cnode,id);

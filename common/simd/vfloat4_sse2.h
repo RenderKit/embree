@@ -178,8 +178,14 @@ namespace embree
 #endif
   __forceinline const vfloat4 signmsk   ( const vfloat4& a ) { return _mm_and_ps(a.v,_mm_castsi128_ps(_mm_set1_epi32(0x80000000))); }
   
-  __forceinline const vfloat4 rcp  ( const vfloat4& a ) {
+  __forceinline const vfloat4 rcp  ( const vfloat4& a )
+  {
+#if defined(__AVX512VL__)
+    const vfloat4 r = _mm_rcp14_ps(a.v);
+#else
     const vfloat4 r = _mm_rcp_ps(a.v);
+#endif
+
 #if defined(__AVX2__)
     return _mm_mul_ps(r,_mm_fnmadd_ps(r, a, vfloat4(2.0f)));
 #else
@@ -188,11 +194,18 @@ namespace embree
   }
   __forceinline const vfloat4 sqr  ( const vfloat4& a ) { return _mm_mul_ps(a,a); }
   __forceinline const vfloat4 sqrt ( const vfloat4& a ) { return _mm_sqrt_ps(a.v); }
-  __forceinline const vfloat4 rsqrt( const vfloat4& a ) {
+
+  __forceinline const vfloat4 rsqrt( const vfloat4& a )
+  {
+#if defined(__AVX512VL__)
+    const vfloat4 r = _mm_rsqrt14_ps(a.v);
+#else
     const vfloat4 r = _mm_rsqrt_ps(a.v);
+#endif
     return _mm_add_ps(_mm_mul_ps(_mm_set_ps(1.5f, 1.5f, 1.5f, 1.5f), r),
                       _mm_mul_ps(_mm_mul_ps(_mm_mul_ps(a, _mm_set_ps(-0.5f, -0.5f, -0.5f, -0.5f)), r), _mm_mul_ps(r, r)));
   }
+
   __forceinline const vboolf4 isnan( const vfloat4& a ) {
     const vfloat4 b = _mm_and_ps(a.v, _mm_castsi128_ps(_mm_set1_epi32(0x7fffffff)));
 #if defined(__AVX512VL__)
@@ -306,19 +319,19 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX512VL__)
-  __forceinline const vboolf4 operator ==( const vfloat4& a, const vfloat4& b ) { return _mm_cmp_ps_mask(a.v, b.v, _CMP_EQ_OQ ); }
-  __forceinline const vboolf4 operator !=( const vfloat4& a, const vfloat4& b ) { return _mm_cmp_ps_mask(a.v, b.v, _CMP_NEQ_OQ); }
-  __forceinline const vboolf4 operator < ( const vfloat4& a, const vfloat4& b ) { return _mm_cmp_ps_mask(a.v, b.v, _CMP_LT_OQ ); }
-  __forceinline const vboolf4 operator >=( const vfloat4& a, const vfloat4& b ) { return _mm_cmp_ps_mask(a.v, b.v, _CMP_GE_OQ ); }
-  __forceinline const vboolf4 operator > ( const vfloat4& a, const vfloat4& b ) { return _mm_cmp_ps_mask(a.v, b.v, _CMP_GT_OQ ); }
-  __forceinline const vboolf4 operator <=( const vfloat4& a, const vfloat4& b ) { return _mm_cmp_ps_mask(a.v, b.v, _CMP_LE_OQ ); }
+  __forceinline const vboolf4 operator ==( const vfloat4& a, const vfloat4& b ) { return _mm_cmp_ps_mask(a, b, _MM_CMPINT_EQ); }
+  __forceinline const vboolf4 operator !=( const vfloat4& a, const vfloat4& b ) { return _mm_cmp_ps_mask(a, b, _MM_CMPINT_NE); }
+  __forceinline const vboolf4 operator < ( const vfloat4& a, const vfloat4& b ) { return _mm_cmp_ps_mask(a, b, _MM_CMPINT_LT); }
+  __forceinline const vboolf4 operator >=( const vfloat4& a, const vfloat4& b ) { return _mm_cmp_ps_mask(a, b, _MM_CMPINT_GE); }
+  __forceinline const vboolf4 operator > ( const vfloat4& a, const vfloat4& b ) { return _mm_cmp_ps_mask(a, b, _MM_CMPINT_GT); }
+  __forceinline const vboolf4 operator <=( const vfloat4& a, const vfloat4& b ) { return _mm_cmp_ps_mask(a, b, _MM_CMPINT_LE); }
 #else
-  __forceinline const vboolf4 operator ==( const vfloat4& a, const vfloat4& b ) { return _mm_cmpeq_ps (a.v, b.v); }
-  __forceinline const vboolf4 operator !=( const vfloat4& a, const vfloat4& b ) { return _mm_cmpneq_ps(a.v, b.v); }
-  __forceinline const vboolf4 operator < ( const vfloat4& a, const vfloat4& b ) { return _mm_cmplt_ps (a.v, b.v); }
-  __forceinline const vboolf4 operator >=( const vfloat4& a, const vfloat4& b ) { return _mm_cmpnlt_ps(a.v, b.v); }
-  __forceinline const vboolf4 operator > ( const vfloat4& a, const vfloat4& b ) { return _mm_cmpnle_ps(a.v, b.v); }
-  __forceinline const vboolf4 operator <=( const vfloat4& a, const vfloat4& b ) { return _mm_cmple_ps (a.v, b.v); }
+  __forceinline const vboolf4 operator ==( const vfloat4& a, const vfloat4& b ) { return _mm_cmpeq_ps (a, b); }
+  __forceinline const vboolf4 operator !=( const vfloat4& a, const vfloat4& b ) { return _mm_cmpneq_ps(a, b); }
+  __forceinline const vboolf4 operator < ( const vfloat4& a, const vfloat4& b ) { return _mm_cmplt_ps (a, b); }
+  __forceinline const vboolf4 operator >=( const vfloat4& a, const vfloat4& b ) { return _mm_cmpnlt_ps(a, b); }
+  __forceinline const vboolf4 operator > ( const vfloat4& a, const vfloat4& b ) { return _mm_cmpnle_ps(a, b); }
+  __forceinline const vboolf4 operator <=( const vfloat4& a, const vfloat4& b ) { return _mm_cmple_ps (a, b); }
 #endif
 
   __forceinline const vboolf4 operator ==( const vfloat4& a, const float&   b ) { return a == vfloat4(b); }
@@ -338,6 +351,29 @@ namespace embree
 
   __forceinline const vboolf4 operator <=( const vfloat4& a, const float&   b ) { return a <= vfloat4(b); }
   __forceinline const vboolf4 operator <=( const float&   a, const vfloat4& b ) { return vfloat4(a) <= b; }
+
+  __forceinline vboolf4 eq(const vfloat4& a, const vfloat4& b) { return a == b; }
+  __forceinline vboolf4 ne(const vfloat4& a, const vfloat4& b) { return a != b; }
+  __forceinline vboolf4 lt(const vfloat4& a, const vfloat4& b) { return a <  b; }
+  __forceinline vboolf4 ge(const vfloat4& a, const vfloat4& b) { return a >= b; }
+  __forceinline vboolf4 gt(const vfloat4& a, const vfloat4& b) { return a >  b; }
+  __forceinline vboolf4 le(const vfloat4& a, const vfloat4& b) { return a <= b; }
+
+#if defined(__AVX512VL__)
+  __forceinline vboolf4 eq(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_EQ); }
+  __forceinline vboolf4 ne(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_NE); }
+  __forceinline vboolf4 lt(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_LT); }
+  __forceinline vboolf4 ge(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_GE); }
+  __forceinline vboolf4 gt(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_GT); }
+  __forceinline vboolf4 le(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_LE); }
+#else
+  __forceinline vboolf4 eq(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return mask & (a == b); }
+  __forceinline vboolf4 ne(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return mask & (a != b); }
+  __forceinline vboolf4 lt(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return mask & (a <  b); }
+  __forceinline vboolf4 ge(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return mask & (a >= b); }
+  __forceinline vboolf4 gt(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return mask & (a >  b); }
+  __forceinline vboolf4 le(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return mask & (a <= b); }
+#endif
 
 #if defined(__SSE4_1__) 
 #if defined(__clang__) && !defined(__INTEL_COMPILER) || defined(_MSC_VER) && !defined(__INTEL_COMPILER) || defined(__INTEL_COMPILER) && defined(_DEBUG)
@@ -383,7 +419,7 @@ namespace embree
   __forceinline const vfloat4 frac      ( const vfloat4& a ) { return a-floor(a); }
 
   __forceinline vint4 floori (const vfloat4& a) {
-#if defined (__SSE4_1__)
+#if defined(__SSE4_1__)
     return vint4(floor(a));
 #else
     return vint4(a-vfloat4(0.5f));

@@ -32,7 +32,6 @@ namespace embree
   Scene::Scene (Device* device, RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
     : Accel(AccelData::TY_UNKNOWN),
       device(device), 
-      commitCounter(0), 
       commitCounterSubdiv(0), 
       numMappedBuffers(0),
       flags(sflags), aflags(aflags), 
@@ -232,7 +231,7 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_QUADS)
     if (device->quad_accel == "default") 
     {
-      if (isStatic() || isRobust()) // FIXME: dont go here for robust mode
+      if (isStatic())
       {
         /* static */
         int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
@@ -269,14 +268,30 @@ namespace embree
         case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Quad4i(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::ROBUST)); break;
         }
       }
-      else
+      else /* dynamic */
       {
 #if defined (__TARGET_AVX__)
-        if (device->hasISA(AVX))
-          accels.add(device->bvh8_factory->BVH8Quad4v(this,BVH8Factory::BuildVariant::DYNAMIC,BVH8Factory::IntersectVariant::FAST));
-        else
+          if (device->hasISA(AVX))
+	  {
+            int mode =  2*(int)isCompact() + 1*(int)isRobust();
+            switch (mode) {
+            case /*0b00*/ 0: accels.add(device->bvh8_factory->BVH8Quad4v(this,BVH8Factory::BuildVariant::DYNAMIC,BVH8Factory::IntersectVariant::FAST)); break;
+            case /*0b01*/ 1: accels.add(device->bvh8_factory->BVH8Quad4v(this,BVH8Factory::BuildVariant::DYNAMIC,BVH8Factory::IntersectVariant::ROBUST)); break; 
+            case /*0b10*/ 2: accels.add(device->bvh8_factory->BVH8Quad4v(this,BVH8Factory::BuildVariant::DYNAMIC,BVH8Factory::IntersectVariant::FAST)); break;
+            case /*0b11*/ 3: accels.add(device->bvh8_factory->BVH8Quad4v(this,BVH8Factory::BuildVariant::DYNAMIC,BVH8Factory::IntersectVariant::ROBUST)); break;
+            }
+          }
+          else
 #endif
-          accels.add(device->bvh4_factory->BVH4Quad4v(this,BVH4Factory::BuildVariant::DYNAMIC,BVH4Factory::IntersectVariant::FAST));
+          {
+            int mode =  2*(int)isCompact() + 1*(int)isRobust();
+            switch (mode) {
+            case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4Quad4v(this,BVH4Factory::BuildVariant::DYNAMIC,BVH4Factory::IntersectVariant::FAST)); break;
+            case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Quad4v(this,BVH4Factory::BuildVariant::DYNAMIC,BVH4Factory::IntersectVariant::ROBUST)); break; 
+            case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4Quad4v(this,BVH4Factory::BuildVariant::DYNAMIC,BVH4Factory::IntersectVariant::FAST)); break;
+            case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Quad4v(this,BVH4Factory::BuildVariant::DYNAMIC,BVH4Factory::IntersectVariant::ROBUST)); break;
+            }
+          }
       }
     }
     else if (device->quad_accel == "bvh4.quad4v")       accels.add(device->bvh4_factory->BVH4Quad4v(this));
@@ -712,12 +727,9 @@ namespace embree
       if ((aflags & RTC_INTERSECT8) == 0) intersectors.intersector8 = Accel::Intersector8(&invalid_rtcIntersect8);
       if ((aflags & RTC_INTERSECT16) == 0) intersectors.intersector16 = Accel::Intersector16(&invalid_rtcIntersect16);
     }
-
-    /* update commit counter */
-    commitCounter++;
   }
 
-  void Scene::build_task ()
+  void Scene::commit_task ()
   {
     progress_monitor_counter = 0;
 
@@ -760,7 +772,7 @@ namespace embree
 
 #if defined(TASKING_INTERNAL)
 
-  void Scene::build (size_t threadIndex, size_t threadCount) 
+  void Scene::commit (size_t threadIndex, size_t threadCount, bool useThreadPool) 
   {
     Lock<MutexSys> buildLock(buildMutex,false);
 
@@ -787,19 +799,19 @@ namespace embree
 
     /* fast path for unchanged scenes */
     if (!isModified()) {
-      scheduler->spawn_root([&]() { this->scheduler = nullptr; }, 1, threadCount == 0);
+      scheduler->spawn_root([&]() { this->scheduler = nullptr; }, 1, useThreadPool);
       return;
     }
 
     /* report error if scene not ready */
     if (!ready()) {
-      scheduler->spawn_root([&]() { this->scheduler = nullptr; }, 1, threadCount == 0);
+      scheduler->spawn_root([&]() { this->scheduler = nullptr; }, 1, useThreadPool);
       throw_RTCError(RTC_INVALID_OPERATION,"not all buffers are unmapped");
     }
 
     /* initiate build */
     try {
-      scheduler->spawn_root([&]() { build_task(); this->scheduler = nullptr; }, 1, threadCount == 0);
+      scheduler->spawn_root([&]() { commit_task(); this->scheduler = nullptr; }, 1, useThreadPool);
     }
     catch (...) {
       accels.clear();
@@ -812,7 +824,7 @@ namespace embree
 
 #if defined(TASKING_TBB) || defined(TASKING_PPL)
 
-  void Scene::build (size_t threadIndex, size_t threadCount) 
+  void Scene::commit (size_t threadIndex, size_t threadCount, bool useThreadPool) 
   {
     /* let threads wait for build to finish in rtcCommitThread mode */
     if (threadCount != 0) {
@@ -880,7 +892,7 @@ namespace embree
       device->arena->execute([&]{
 #endif
           group->run([&]{
-              tbb::parallel_for (size_t(0), size_t(1), size_t(1), [&] (size_t) { build_task(); }, ctx);
+              tbb::parallel_for (size_t(0), size_t(1), size_t(1), [&] (size_t) { commit_task(); }, ctx);
             });
           if (threadCount) group_barrier.wait(threadCount);
           group->wait();
@@ -892,7 +904,7 @@ namespace embree
       _mm_setcsr(mxcsr);
 #else
       group->run([&]{
-          concurrency::parallel_for(size_t(0), size_t(1), size_t(1), [&](size_t) { build_task(); });
+          concurrency::parallel_for(size_t(0), size_t(1), size_t(1), [&](size_t) { commit_task(); });
         });
       if (threadCount) group_barrier.wait(threadCount);
       group->wait();

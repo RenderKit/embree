@@ -43,6 +43,7 @@ namespace embree
         : P(P), dPdu(dPdu), dPdv(dPdv), ddPdudu(ddPdudu), ddPdvdv(ddPdvdv), ddPdudv(ddPdudv), dstride(dstride), N(N)
         {
           switch (edge->patch_type) {
+          case HalfEdge::BILINEAR_PATCH: BilinearPatch(edge,vertices,stride).eval(valid,u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,1.0f,dstride,N); break;
           case HalfEdge::REGULAR_QUAD_PATCH: RegularPatchT(edge,vertices,stride).eval(valid,u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,1.0f,dstride,N); break;
 #if PATCH_USE_GREGORY == 2
           case HalfEdge::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,vertices,stride).eval(valid,u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,1.0f,dstride,N); break;
@@ -112,11 +113,11 @@ namespace embree
         __forceinline bool final(const CatmullClarkPatch& patch, const typename CatmullClarkRing::Type type, size_t depth) 
         {
           const size_t max_eval_depth = (type & CatmullClarkRing::TYPE_CREASES) ? PATCH_MAX_EVAL_DEPTH_CREASE : PATCH_MAX_EVAL_DEPTH_IRREGULAR;
-#if PATCH_MIN_RESOLUTION
-          return patch.isFinalResolution(PATCH_MIN_RESOLUTION) || depth>=max_eval_depth;
-#else
+//#if PATCH_MIN_RESOLUTION
+//          return patch.isFinalResolution(PATCH_MIN_RESOLUTION) || depth>=max_eval_depth;
+//#else
           return depth>=max_eval_depth;
-#endif
+//#endif
         }
 
         void eval_direct(const vbool& valid, const CatmullClarkPatch& patch, const Vec2<vfloat>& uv, float dscale, size_t depth,

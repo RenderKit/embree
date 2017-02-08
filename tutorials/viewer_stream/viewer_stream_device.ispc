@@ -17,7 +17,7 @@
 #include "../common/math/random_sampler.isph"
 #include "../common/math/sampling.isph"
 #include "../common/tutorial/tutorial_device.isph"
-#include "../common/tutorial/scene_device.isph"
+#include "../common/tutorial/scene_device.h"
 
 #define USE_INTERFACE 0 // 0 = stream, 1 = single rays/packets, 2 = single rays/packets using stream interface
 #define AMBIENT_OCCLUSION_SAMPLES 64
@@ -80,7 +80,7 @@ Vec3f ambientOcclusionShading(int x, int y, RTCRay& ray)
     shadow.geomID = RTC_INVALID_GEOMETRY_ID;
     shadow.primID = RTC_INVALID_GEOMETRY_ID;
     shadow.mask = -1;
-    shadow.time = 0;    // FIXME: invalidate inactive rays
+    shadow.time = 0;
   }
 
   uniform RTCIntersectContext context;
@@ -207,10 +207,10 @@ export void device_init (uniform int8* uniform cfg)
 {
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
-  error_handler(rtcDeviceGetError(g_device));
+  error_handler(NULL,rtcDeviceGetError(g_device));
 
   /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler);
+  rtcDeviceSetErrorFunction2(g_device,error_handler,NULL);
 
   /* create scene */
   g_scene = convertScene(g_ispc_scene);

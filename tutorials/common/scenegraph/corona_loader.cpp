@@ -31,7 +31,7 @@ namespace embree
     template<typename T> T load(const Ref<XML>& xml) { assert(false); return T(zero); }
     Ref<SceneGraph::MaterialNode> loadMaterial(const Ref<XML>& xml);
     void  loadMaterialDefinition(const Ref<XML>& xml);
-    Texture* loadMap(const Ref<XML>& xml);
+    std::shared_ptr<Texture> loadMap(const Ref<XML>& xml);
     void  loadMapDefinition(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadMaterialLibrary(const FileName& fileName);
     Ref<SceneGraph::Node> loadObject(const Ref<XML>& xml);
@@ -42,8 +42,8 @@ namespace embree
   private:
     FileName path; 
     std::map<std::string,Ref<SceneGraph::MaterialNode> > materialMap; 
-    std::map<std::string,Texture* > textureMap; 
-    std::map<std::string,Texture* > textureFileMap; 
+    std::map<std::string,std::shared_ptr<Texture>> textureMap; 
+    std::map<std::string,std::shared_ptr<Texture>> textureFileMap; 
   public:
     Ref<SceneGraph::Node> root;
   };
@@ -98,32 +98,29 @@ namespace embree
     if (xml->parm("class") == "Native") 
     {
       /* we convert into an OBJ material */
-      OBJMaterial objmaterial;
+      Ref<OBJMaterial> objmaterial = new OBJMaterial;
       for (auto child : xml->children)
       {
         if (child->name == "diffuse") {
-          objmaterial.Kd = load<Vec3fa>(child);
+          objmaterial->Kd = load<Vec3fa>(child);
           if (child->children.size() && child->children[0]->name == "map")
-            objmaterial.map_Kd = loadMap(child->children[0]);
+            objmaterial->_map_Kd = loadMap(child->children[0]);
         }
         else if (child->name == "reflect") {
-          objmaterial.Ks = load<Vec3fa>(child->child("color"));
-          objmaterial.Ni = load<float >(child->child("ior"));
-          objmaterial.Ns = load<float >(child->child("glossiness"));
+          objmaterial->Ks = load<Vec3fa>(child->child("color"));
+          objmaterial->Ni = load<float >(child->child("ior"));
+          objmaterial->Ns = load<float >(child->child("glossiness"));
         }
         else if (child->name == "translucency") {
-          objmaterial.Kt = load<Vec3fa>(child->child("color"));
+          objmaterial->Kt = load<Vec3fa>(child->child("color"));
         }
         else if (child->name == "opacity") {
-          objmaterial.d = load<Vec3fa>(child).x;
+          objmaterial->d = load<Vec3fa>(child).x;
           if (child->children.size() && child->children[0]->name == "map")
-            objmaterial.map_d = loadMap(child->children[0]);
+            objmaterial->_map_d = loadMap(child->children[0]);
         }
       }
-      
-      /* return material */
-      Material material; new (&material) OBJMaterial(objmaterial);
-      return new SceneGraph::MaterialNode(material);
+      return objmaterial.dynamicCast<SceneGraph::MaterialNode>();
     }
 
     /* reference by name */
@@ -135,10 +132,7 @@ namespace embree
 
     /* else return default material */
     else 
-    {
-      Material objmtl; new (&objmtl) OBJMaterial;
-      return new SceneGraph::MaterialNode(objmtl);
-    }
+      return new OBJMaterial;
   }
 
   void CoronaLoader::loadMaterialDefinition(const Ref<XML>& xml) 
@@ -152,7 +146,7 @@ namespace embree
     materialMap[name] = loadMaterial(xml->children[0]);
   }
 
-  Texture* CoronaLoader::loadMap(const Ref<XML>& xml) 
+  std::shared_ptr<Texture> CoronaLoader::loadMap(const Ref<XML>& xml) 
   {
     /* process map node */
     if (xml->name == "map")
@@ -182,10 +176,10 @@ namespace embree
 
     /* recurse into every unknown node to find some texture */
     for (auto child : xml->children) {
-      Texture* texture = loadMap(child);
+      std::shared_ptr<Texture> texture = loadMap(child);
       if (texture) return texture;
     }
-    return nullptr;
+    return std::shared_ptr<Texture>();
   }
 
   void CoronaLoader::loadMapDefinition(const Ref<XML>& xml) 
@@ -196,7 +190,7 @@ namespace embree
       THROW_RUNTIME_ERROR(xml->loc.str()+": invalid map definition");
 
     const std::string name = xml->parm("name");
-    Texture* texture = loadMap(xml->children[0]);
+    std::shared_ptr<Texture> texture = loadMap(xml->children[0]);
     if (texture) textureMap[name] = texture;
   }
 
@@ -234,8 +228,7 @@ namespace embree
       THROW_RUNTIME_ERROR(xml->loc.str()+": invalid instance node");
 
     /* create default material */
-    Material objmtl; new (&objmtl) OBJMaterial;
-    Ref<SceneGraph::MaterialNode> material = new SceneGraph::MaterialNode(objmtl);
+    Ref<SceneGraph::MaterialNode> material = new OBJMaterial;
 
     avector<AffineSpace3fa> xfms;
     for (size_t i=0; i<xml->children.size(); i++)

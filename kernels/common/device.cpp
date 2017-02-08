@@ -32,17 +32,7 @@
 #include "../bvh/bvh4_factory.h"
 #include "../bvh/bvh8_factory.h"
 
-#if defined(TASKING_INTERNAL)
-#  include "../common/tasking/taskschedulerinternal.h"
-#endif
-
-#if defined(TASKING_TBB)
-#  include "../common/tasking/taskschedulertbb.h"
-#endif
-
-#if defined(TASKING_PPL)
-#  include "../common/tasking/taskschedulerppl.h"
-#endif
+#include "../common/tasking/taskscheduler.h"
 
 namespace embree
 {
@@ -287,6 +277,14 @@ namespace embree
   {
     if (State::memory_monitor_function && bytes != 0) {
       if (!State::memory_monitor_function(bytes,post)) {
+        if (bytes > 0) { // only throw exception when we allocate memory to never throw inside a destructor
+          throw_RTCError(RTC_OUT_OF_MEMORY,"memory monitor forced termination");
+        }
+      }
+    }
+
+    if (State::memory_monitor_function2 && bytes != 0) {
+      if (!State::memory_monitor_function2(State::memory_monitor_userptr,bytes,post)) {
         if (bytes > 0) { // only throw exception when we allocate memory to never throw inside a destructor
           throw_RTCError(RTC_OUT_OF_MEMORY,"memory monitor forced termination");
         }

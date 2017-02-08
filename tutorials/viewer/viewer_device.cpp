@@ -28,8 +28,6 @@ extern "C" int g_instancing_mode;
 /* scene data */
 RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
-extern "C" RTCScene* geomID_to_scene;
-extern "C" ISPCInstance** geomID_to_inst;
 bool g_subdiv_mode = false;
 
 #define SPP 1
@@ -42,8 +40,8 @@ bool g_subdiv_mode = false;
 
 inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const size_t e0, const size_t e1)
 {
-  const Vec3fa v0 = mesh->positions[mesh->position_indices[e0]];
-  const Vec3fa v1 = mesh->positions[mesh->position_indices[e1]];
+  const Vec3fa v0 = mesh->positions[0][mesh->position_indices[e0]];
+  const Vec3fa v1 = mesh->positions[0][mesh->position_indices[e1]];
   const Vec3fa edge = v1-v0;
   const Vec3fa P = 0.5f*(v1+v0);
   const Vec3fa dist = cam_pos - P;
@@ -146,7 +144,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   if (g_instancing_mode == 2 || g_instancing_mode == 3) 
   {
     for (unsigned int i=0; i<scene_in->numGeometries; i++) {
-      if (geomID_to_scene[i]) rtcCommit(geomID_to_scene[i]);
+      if (scene_in->geomID_to_scene[i]) rtcCommit(scene_in->geomID_to_scene[i]);
     }
   }
 
@@ -160,7 +158,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
   if (geometry->type == TRIANGLE_MESH)
   {
     ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
-    materialID = mesh->triangles[ray.primID].materialID;
+    materialID = mesh->materialID;
   }
   else if (geometry->type == QUAD_MESH)
   {
@@ -219,7 +217,7 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
     ISPCInstance* instance;
     ISPCGeometry* geometry;
     if (g_instancing_mode) {
-      instance = geomID_to_inst[geomID];
+      instance = g_ispc_scene->geomID_to_inst[geomID];
       geometry = g_ispc_scene->geometries[instance->geomID];
     } else {
       instance = nullptr;
@@ -299,8 +297,8 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
   dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
 
   /* shade */
-  if (g_ispc_scene->materials[materialID].ty == MATERIAL_OBJ) {
-    OBJMaterial* material = (OBJMaterial*) &g_ispc_scene->materials[materialID];
+  if (g_ispc_scene->materials[materialID]->type == MATERIAL_OBJ) {
+    ISPCOBJMaterial* material = (ISPCOBJMaterial*) g_ispc_scene->materials[materialID];
     color = Vec3fa(material->Kd);
   }
 
@@ -356,10 +354,10 @@ extern "C" void device_init (char* cfg)
 {
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
-  error_handler(rtcDeviceGetError(g_device));
+  error_handler(nullptr,rtcDeviceGetError(g_device));
 
   /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler);
+  rtcDeviceSetErrorFunction2(g_device,error_handler,nullptr);
 
   /* set start render mode */
   renderTile = renderTileStandard;

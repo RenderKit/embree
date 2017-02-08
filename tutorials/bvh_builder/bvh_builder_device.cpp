@@ -114,7 +114,7 @@ namespace embree
           // throw an exception here to cancel the build operation
         },
         
-        prims.data(),pinfo,2,1024,1,1,1,1.0f,1.0f);
+        prims.data(),pinfo,2,1024,1,1,1,1.0f,1.0f,Builder::DEFAULT_SINGLE_THREAD_THRESHOLD);
       
       double t1 = getSeconds();
       
@@ -196,7 +196,7 @@ namespace embree
           // throw an exception here to cancel the build operation
         },
         
-        morton_src.data(),morton_tmp.data(),prims.size(),2,1024,1,1);
+        morton_src.data(),morton_tmp.data(),prims.size(),2,1024,1,1,Builder::DEFAULT_SINGLE_THREAD_THRESHOLD);
       
       Node* root = node_bounds.first;
       
@@ -211,10 +211,10 @@ namespace embree
   {
     /* create new Embree device */
     g_device = rtcNewDevice(cfg);
-    error_handler(rtcDeviceGetError(g_device));
+    error_handler(nullptr,rtcDeviceGetError(g_device));
     
     /* set error handler */
-    rtcDeviceSetErrorFunction(g_device,error_handler);
+    rtcDeviceSetErrorFunction2(g_device,error_handler,nullptr);
     
     /* set start render mode */
     renderTile = renderTileStandard;

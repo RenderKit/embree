@@ -329,7 +329,7 @@ namespace embree
     __forceinline bool isQuadPatch() const {
       return (N == 4) && ring[0].only_quads && ring[1].only_quads && ring[2].only_quads && ring[3].only_quads;
     }
-    
+
     static __forceinline void init_regular(const CatmullClark1RingT<Vertex,Vertex_t>& p0,
 					   const CatmullClark1RingT<Vertex,Vertex_t>& p1,
 					   CatmullClark1RingT<Vertex,Vertex_t>& dest0,

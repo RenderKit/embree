@@ -193,13 +193,13 @@ extern "C" void device_init (char* cfg)
 {
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
-  error_handler(rtcDeviceGetError(g_device));
+  error_handler(nullptr,rtcDeviceGetError(g_device));
 
   /* configure the size of the software cache used for subdivision geometry */
   rtcDeviceSetParameter1i(g_device,RTC_SOFTWARE_CACHE_SIZE,100*1024*1024);
 
   /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler);
+  rtcDeviceSetErrorFunction2(g_device,error_handler,nullptr);
 
   /* create scene */
   g_scene = rtcDeviceNewScene(g_device,RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST,RTC_INTERSECT1 | RTC_INTERPOLATE);

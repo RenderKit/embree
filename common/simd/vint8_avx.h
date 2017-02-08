@@ -228,6 +228,20 @@ namespace embree
   __forceinline const vboolf8 operator <=( const vint8& a, const int    b ) { return a <= vint8(b); }
   __forceinline const vboolf8 operator <=( const int    a, const vint8& b ) { return vint8(a) <= b; }
 
+  __forceinline vboolf8 eq(const vint8& a, const vint8& b) { return a == b; }
+  __forceinline vboolf8 ne(const vint8& a, const vint8& b) { return a != b; }
+  __forceinline vboolf8 lt(const vint8& a, const vint8& b) { return a <  b; }
+  __forceinline vboolf8 ge(const vint8& a, const vint8& b) { return a >= b; }
+  __forceinline vboolf8 gt(const vint8& a, const vint8& b) { return a >  b; }
+  __forceinline vboolf8 le(const vint8& a, const vint8& b) { return a <= b; }
+
+  __forceinline vboolf8 eq(const vboolf8& mask, const vint8& a, const vint8& b) { return mask & (a == b); }
+  __forceinline vboolf8 ne(const vboolf8& mask, const vint8& a, const vint8& b) { return mask & (a != b); }
+  __forceinline vboolf8 lt(const vboolf8& mask, const vint8& a, const vint8& b) { return mask & (a <  b); }
+  __forceinline vboolf8 ge(const vboolf8& mask, const vint8& a, const vint8& b) { return mask & (a >= b); }
+  __forceinline vboolf8 gt(const vboolf8& mask, const vint8& a, const vint8& b) { return mask & (a >  b); }
+  __forceinline vboolf8 le(const vboolf8& mask, const vint8& a, const vint8& b) { return mask & (a <= b); }
+
   __forceinline const vint8 select( const vboolf8& m, const vint8& t, const vint8& f ) {
     return _mm256_castps_si256(_mm256_blendv_ps(_mm256_castsi256_ps(f), _mm256_castsi256_ps(t), m)); 
   }

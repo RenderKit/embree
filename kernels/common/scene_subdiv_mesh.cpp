@@ -34,8 +34,7 @@ namespace embree
       tessellationRate(2.0f),
       numHalfEdges(0),
       faceStartEdge(parent->device),
-      invalid_face(parent->device),
-      levelUpdate(false)
+      invalid_face(parent->device)
   {
     vertices.resize(numTimeSteps);
     vertex_buffer_tags.resize(numTimeSteps);
@@ -90,11 +89,11 @@ namespace embree
 
   void SubdivMesh::setIndexBuffer(RTCBufferType vertexBuffer, RTCBufferType indexBuffer)
   {
-    if (vertexBuffer >= RTC_USER_VERTEX_BUFFER0 && vertexBuffer < RTC_USER_VERTEX_BUFFER0+userbuffers.size()) {
-      if (indexBuffer >= RTC_INDEX_BUFFER && indexBuffer < RTC_INDEX_BUFFER+topology.size()) {
+    if (vertexBuffer >= RTC_USER_VERTEX_BUFFER0 && vertexBuffer < RTC_USER_VERTEX_BUFFER0+(int)userbuffers.size()) {
+      if (indexBuffer >= RTC_INDEX_BUFFER && indexBuffer < RTC_INDEX_BUFFER+(int)topology.size()) {
         unsigned vid = vertexBuffer & 0xFFFF;
         unsigned iid = indexBuffer & 0xFFFF;
-        if (userbuffers[vid].userdata != iid) {
+        if ((unsigned)userbuffers[vid].userdata != iid) {
           userbuffers[vid].userdata = iid;
           parent->commitCounterSubdiv++; // triggers recalculation of cached interpolation data
         }
@@ -119,7 +118,7 @@ namespace embree
       parent->commitCounterSubdiv++;
 
     unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+numTimeSteps) 
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+(int)numTimeSteps) 
     {
       vertices[bid].set(ptr,offset,stride,size); 
       vertices[bid].checkPadding16();
@@ -136,15 +135,15 @@ namespace embree
     }
     else if (type == RTC_FACE_BUFFER) 
     {
-      if (size != -1) disabling();
+      if (size != (size_t)-1) disabling();
       faceVertices.set(ptr,offset,stride,size);
       setNumPrimitives(size);
-      if (size != -1) enabling();
+      if (size != (size_t)-1) enabling();
     }
 
     else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
     {
-      int begin = topology.size();
+      int begin = (int)topology.size();
       if (bid >= topology.size()) {
         topology.resize(bid+1);
         for (size_t i=begin; i<topology.size(); i++)
@@ -219,7 +218,7 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+numTimeSteps) 
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+(int)numTimeSteps) 
       vertices[bid].unmap(parent->numMappedBuffers);
 
     else if (type >= RTC_INDEX_BUFFER && type < RTC_INDEX_BUFFER+RTC_MAX_INDEX_BUFFERS)
@@ -270,7 +269,7 @@ namespace embree
       parent->commitCounterSubdiv++;
 
     unsigned bid = type & 0xFFFF;
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+numTimeSteps)
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+(int)numTimeSteps)
       vertices[bid].setModified(true);
     
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+2)
@@ -631,10 +630,6 @@ namespace embree
     update |= mesh->vertex_crease_weights.isModified(); 
     update |= mesh->levels.isModified();
 
-    /* check whether we can simply update the bvh in cached mode */
-    if (this == &mesh->topology[0])
-      mesh->levelUpdate = !recalculate && mesh->edge_creases.size() == 0 && mesh->vertex_creases.size() == 0 && mesh->levels.isModified(); // FIXME: still used??
-
     /* now either recalculate or update the half edges */
     if (recalculate) calculateHalfEdges();
     else if (update) updateHalfEdges();
@@ -652,6 +647,7 @@ namespace embree
 
   void SubdivMesh::printStatistics()
   {
+    size_t numBilinearFaces = 0;
     size_t numRegularQuadFaces = 0;
     size_t numIrregularQuadFaces = 0;
     size_t numComplexFaces = 0;
@@ -659,6 +655,7 @@ namespace embree
     for (size_t e=0, f=0; f<numFaces(); e+=faceVertices[f++]) 
     {
       switch (topology[0].halfEdges[e].patch_type) {
+      case HalfEdge::BILINEAR_PATCH      : numBilinearFaces++;   break;
       case HalfEdge::REGULAR_QUAD_PATCH  : numRegularQuadFaces++;   break;
       case HalfEdge::IRREGULAR_QUAD_PATCH: numIrregularQuadFaces++; break;
       case HalfEdge::COMPLEX_PATCH       : numComplexFaces++;   break;
@@ -666,6 +663,7 @@ namespace embree
     }
     
     std::cout << "numFaces = " << numFaces() << ", " 
+              << "numBilinearFaces = " << numBilinearFaces << " (" << 100.0f * numBilinearFaces / numFaces() << "%), " 
               << "numRegularQuadFaces = " << numRegularQuadFaces << " (" << 100.0f * numRegularQuadFaces / numFaces() << "%), " 
               << "numIrregularQuadFaces " << numIrregularQuadFaces << " (" << 100.0f * numIrregularQuadFaces / numFaces() << "%) " 
               << "numComplexFaces " << numComplexFaces << " (" << 100.0f * numComplexFaces / numFaces() << "%) " 

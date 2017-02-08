@@ -55,9 +55,6 @@ namespace embree
     static __forceinline size_t threadCount() {
       return tbb::task_scheduler_init::default_num_threads();
     }
-
-  private:
-    static size_t g_numThreads;
   };
 };
 

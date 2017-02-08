@@ -14,17 +14,18 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-# additional parameters (beyond the name) are treated as additional dependencies
-# if ADDITIONAL_LIBRARIES is set these will be included during linking
+IF (WIN32 OR APPLE)
+   return()
+ENDIF()
 
-MACRO (ADD_TUTORIAL TUTORIAL_NAME)
+execute_process(COMMAND objdump -C -t ${file} OUTPUT_VARIABLE output)
 
-  ADD_EXECUTABLE(${TUTORIAL_NAME} ${TUTORIAL_NAME}.cpp ${TUTORIAL_NAME}_device.cpp ${ARGN})
-                                  TARGET_LINK_LIBRARIES(${TUTORIAL_NAME} embree tutorial image tutorial_device noise ${ADDITIONAL_LIBRARIES})
-  SET_PROPERTY(TARGET ${TUTORIAL_NAME} PROPERTY FOLDER tutorials/single)
-  INSTALL(TARGETS ${TUTORIAL_NAME} DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
-  SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} "${CMAKE_INSTALL_BINDIR}/${TUTORIAL_NAME}" "${TUTORIAL_NAME}")
+string(REPLACE "\n" ";" output ${output})
 
-  SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} PARENT_SCOPE)
-
-ENDMACRO ()
+foreach (line ${output})
+  if ("${line}" MATCHES "O .bss")
+    if (NOT "${line}" MATCHES "std::__ioinit")
+      message(WARNING "\nProblematic global variable in non-SSE code:\n" ${line})
+    endif()
+  endif()
+endforeach()

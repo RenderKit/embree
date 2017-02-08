@@ -33,7 +33,7 @@ extern "C" float g_debug;
 renderTileFunc renderTile;
 
 /* error reporting function */
-void error_handler(const RTCError code, const char* str)
+void error_handler(void* userPtr, const RTCError code, const char* str)
 {
   if (code == RTC_NO_ERROR)
     return;
@@ -304,8 +304,8 @@ Vec3fa renderPixelNg(float x, float y, const ISPCCamera& camera)
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f,0.0f,1.0f);
-  //else return abs(normalize(Vec3fa(ray.Ng.x,ray.Ng.y,ray.Ng.z)));
-  else return normalize(Vec3fa(ray.Ng.x,ray.Ng.y,ray.Ng.z));
+  else return abs(normalize(Vec3fa(ray.Ng.x,ray.Ng.y,ray.Ng.z)));
+  //else return normalize(Vec3fa(ray.Ng.x,ray.Ng.y,ray.Ng.z));
 }
 
 void renderTileNg(int taskIndex,

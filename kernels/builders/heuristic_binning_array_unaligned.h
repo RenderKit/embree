@@ -199,12 +199,18 @@ namespace embree
           CentGeomBBox3fa local_right(empty);
           const int splitPos = split.pos;
           const int splitDim = split.dim;
-          size_t center = serial_or_parallel_partitioning<parallel>(
-            prims,begin,end,empty,local_left,local_right,
-            [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(center2(ref.bounds(space)))[splitDim] < splitPos; },
-            [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); },
-            [] (CentGeomBBox3fa& pinfo0,const CentGeomBBox3fa& pinfo1) { pinfo0.merge(pinfo1); },
-            128);
+
+          size_t center = 0;
+          if (likely(set.size() < 10000))
+            center = serial_partitioning(prims,begin,end,local_left,local_right,
+                                         [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(center2(ref.bounds(space)))[splitDim] < splitPos; },
+                                         [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });
+          else
+            center = parallel_partitioning(prims,begin,end,EmptyTy(),local_left,local_right,
+                                           [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(center2(ref.bounds(space)))[splitDim] < splitPos; },
+                                           [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); },
+                                           [] (CentGeomBBox3fa& pinfo0,const CentGeomBBox3fa& pinfo1) { pinfo0.merge(pinfo1); },
+                                           128);
           
           new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
           new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
@@ -364,7 +370,7 @@ namespace embree
           auto isLeft = [&] (const PrimRefMB &ref) { return any(((vint4)split.mapping.bin_unsafe(ref,space,&user) < vSplitPos) & vSplitMask); };
           auto reduction = [] (PrimInfoMB& pinfo, const PrimRefMB& ref) { pinfo.add_primref(ref); };
           auto reduction2 = [] (PrimInfoMB& pinfo0,const PrimInfoMB& pinfo1) { pinfo0.merge(pinfo1); };
-          size_t center = parallel_partitioning(set.prims->data(),begin,end,empty,left,right,isLeft,reduction,reduction2,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD);
+          size_t center = parallel_partitioning(set.prims->data(),begin,end,EmptyTy(),left,right,isLeft,reduction,reduction2,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD);
           new (&lset) SetMB(left,set.prims,range<size_t>(begin,center),set.time_range);
           new (&rset) SetMB(right,set.prims,range<size_t>(center,end ),set.time_range);
         }

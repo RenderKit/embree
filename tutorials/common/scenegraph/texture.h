@@ -16,6 +16,26 @@
 
 #pragma once
 
+#if defined(ISPC)
+
+enum TEXTURE_FORMAT {
+    Texture_RGBA8        = 1,
+    Texture_RGB8         = 2,
+    Texture_FLOAT32      = 3,
+  };
+
+struct Texture {
+  int width;
+  int height;
+  int format;
+  int bytesPerTexel;
+  int width_mask;
+  int height_mask;
+  void* data;
+};
+
+#else
+
 #include "../default.h"
 #include "../image/image.h"
 
@@ -40,7 +60,8 @@ namespace embree
     static Format string_to_format(const std::string& str);
     static unsigned getFormatBytesPerTexel(const Format format);
 
-    static Texture* load(const FileName& fileName); // FIXME: return reference
+    static std::shared_ptr<Texture> load(const FileName& fileName);
+    static void clearTextureCache();
     
   public:
     unsigned width;
@@ -53,3 +74,4 @@ namespace embree
     std::string fileName;
   };
 }
+#endif

@@ -124,6 +124,12 @@ namespace embree
   SELECT_SYMBOL_AVX(features,intersector);                         \
   SELECT_SYMBOL_AVX2(features,intersector);                       
 
+#define SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX512SKX(features,intersector) \
+  SELECT_SYMBOL_DEFAULT(features,intersector);                          \
+  SELECT_SYMBOL_SSE42(features,intersector);                            \
+  SELECT_SYMBOL_AVX(features,intersector);                              \
+  SELECT_SYMBOL_AVX512SKX(features,intersector);
+
 #define SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,intersector) \
   SELECT_SYMBOL_DEFAULT(features,intersector);                                   \
   SELECT_SYMBOL_AVX(features,intersector);                                       \
@@ -185,6 +191,12 @@ namespace embree
   INIT_SYMBOL(features,intersector);                      \
   SELECT_SYMBOL_AVX(features,intersector);                \
   SELECT_SYMBOL_AVX2(features,intersector);
+
+#define SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,intersector) \
+  INIT_SYMBOL(features,intersector);                                \
+  SELECT_SYMBOL_AVX(features,intersector);                          \
+  SELECT_SYMBOL_AVX2(features,intersector);                         \
+  SELECT_SYMBOL_AVX512SKX(features,intersector);
 
 #define SELECT_SYMBOL_INIT_SSE42_AVX_AVX2(features,intersector) \
   INIT_SYMBOL(features,intersector);                            \

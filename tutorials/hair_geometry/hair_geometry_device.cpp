@@ -63,7 +63,7 @@ void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 {
   unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices, mesh->numTimeSteps);
   for (size_t t=0; t<mesh->numTimeSteps; t++) {
-    rtcSetBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t),mesh->positions+t*mesh->numVertices,0,sizeof(Vertex));
+    rtcSetBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t),mesh->positions[t],0,sizeof(Vertex));
   }
   rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->triangles,0,sizeof(ISPCTriangle));
   rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&filterDispatch);
@@ -73,7 +73,7 @@ void convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
 {
   unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, hair->numTimeSteps);
   for (size_t t=0; t<hair->numTimeSteps; t++) {
-    rtcSetBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t),hair->positions+t*hair->numVertices,0,sizeof(Vertex));
+    rtcSetBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t),hair->positions[t],0,sizeof(Vertex));
   }
   rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
   rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&filterDispatch);
@@ -213,9 +213,9 @@ inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
 {
   const float t0 = 1.0f - t, t1 = t;
   const ISPCHairSet* hair = (const ISPCHairSet*) g_ispc_scene->geometries[geomID];
-  const Vec3fa* vertices = hair->positions;
+  const Vec3fa* vertices = hair->positions[0];
   const ISPCHair* hairs = hair->hairs;
-
+  
   const int i = hairs[primID].vertex;
   const Vec3fa p00 = vertices[i+0];
   const Vec3fa p01 = vertices[i+1];
@@ -469,10 +469,10 @@ extern "C" void device_init (char* cfg)
 
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
-  error_handler(rtcDeviceGetError(g_device));
+  error_handler(nullptr,rtcDeviceGetError(g_device));
 
   /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler);
+  rtcDeviceSetErrorFunction2(g_device,error_handler,nullptr);
 
   /* set start render mode */
   renderTile = renderTileStandard;

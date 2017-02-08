@@ -156,8 +156,9 @@ namespace embree
     void deleteGeometry(size_t geomID);
 
     /*! Builds acceleration structure for the scene. */
-    void build (size_t threadIndex, size_t threadCount);
-    void build_task ();
+    void commit (size_t threadIndex, size_t threadCount, bool useThreadPool);
+    void commit_task ();
+    void build (size_t threadIndex, size_t threadCount) {}
 
     void updateInterface();
 
@@ -317,7 +318,6 @@ namespace embree
   public:
     Device* device;
     AccelN accels;
-    unsigned int commitCounter;
     std::atomic<size_t> commitCounterSubdiv;
     std::atomic<size_t> numMappedBuffers;         //!< number of mapped buffers
     RTCSceneFlags flags;

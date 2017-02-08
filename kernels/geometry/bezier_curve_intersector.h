@@ -257,9 +257,8 @@ namespace embree
         float& tfar;
       };
 
-      __forceinline BezierCurve1IntersectorK(const vbool<K>& valid, const RayK<K>& ray) {} // FIXME: why is this required for the single ray packet traverser?
-
-      __forceinline BezierCurve1IntersectorK (const RayK<K>& ray, size_t k) {}
+      __forceinline BezierCurve1IntersectorK(const vbool<K>& valid, const RayK<K>& ray) {
+      }
       
       template<typename Epilog>
       __forceinline bool intersect(RayK<K>& vray, size_t k,

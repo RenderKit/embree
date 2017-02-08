@@ -135,10 +135,10 @@ void lazyCreate(uniform LazyGeometry* uniform instance)
     }
   }
 
-  /* multiple threads might enter the rtcCommit function to jointly
+  /* multiple threads might enter the rtcCommitJoin function to jointly
    * build the internal data structures */
   if (rtcDeviceGetParameter1i(g_device,RTC_CONFIG_COMMIT_JOIN))
-    rtcCommit(instance->object);
+    rtcCommitJoin(instance->object);
 
   /* switch to LAZY_VALID state */
   atomic_compare_exchange_global((uniform int32*)&instance->state,LAZY_COMMIT,LAZY_VALID);
@@ -215,10 +215,10 @@ export void device_init (uniform int8* uniform cfg)
 {
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
-  error_handler(rtcDeviceGetError(g_device));
+  error_handler(NULL,rtcDeviceGetError(g_device));
 
   /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler);
+  rtcDeviceSetErrorFunction2(g_device,error_handler,NULL);
 
   /* create scene */
   g_scene = rtcDeviceNewScene(g_device,RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);

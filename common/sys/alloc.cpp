@@ -31,9 +31,9 @@
 
 namespace embree
 {
-  void* os_malloc(size_t bytes, const int additional_flags) 
+  void* os_malloc(size_t bytes) 
   {
-    int flags = MEM_COMMIT | MEM_RESERVE | additional_flags;
+    int flags = MEM_COMMIT | MEM_RESERVE;
     char* ptr = (char*) VirtualAlloc(nullptr,bytes,flags,PAGE_READWRITE);
     if (ptr == nullptr) throw std::bad_alloc();
     return ptr;
@@ -115,9 +115,9 @@ namespace embree
 #endif
   }
   
-  void* os_malloc(size_t bytes, const int additional_flags)
+  void* os_malloc(size_t bytes)
   {
-    int flags = MAP_PRIVATE | MAP_ANON | additional_flags;
+    int flags = MAP_PRIVATE | MAP_ANON;
         
     if (isHugePageCandidate(bytes)) 
     {
