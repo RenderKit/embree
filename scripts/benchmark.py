@@ -130,18 +130,18 @@ def extractLoop():
 def printData(name,modelname):
   base = baseName(name,modelname)
   line = (' %#6.1f MB' %  (1E-6*memory[base]))
-  line += (' %#6.2f M/s' %  (1E-6*buildperf[base]))
-  line += (' %#6.1f ' %  sah[base])
-  line += (' %#6.3f fps' %  fps_avg[base])
+  line += (' %#8.2f M/s' %  (1E-6*buildperf[base]))
+  line += (' %#7.1f ' %  sah[base])
+  line += (' %#7.3f fps' %  fps_avg[base])
   line += (' +/-%#6.3f ' %  fps_sigma[base])
-  line += (' (%#+3.3f, ' %  fps_davg[base])
-  line += (' %#+2.1f%%)' %  fps_gain[base])
+  line += (' (%#+6.2f, ' %  fps_davg[base])
+  line += (' %#+6.2f%%)' %  fps_gain[base])
   line += '\n'
   sys.stdout.write(line)
 
 def printHeader():
   tableWidth = 55 + 74
-  line  = '  ' + '{0:<55}'.format('') + ' |     Memory      Build    SAH       Render'
+  line  = '  ' + '{0:<55}'.format('') + ' |     Memory        Build     SAH       Render'
   print(line)
   line = ''
   while (len(line) < tableWidth): line = line + '-'
