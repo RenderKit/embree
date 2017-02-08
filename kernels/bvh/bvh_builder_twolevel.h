@@ -17,6 +17,8 @@
 #pragma once
 
 #include "bvh.h"
+#include "../common/primref.h"
+#include "../builders/priminfo.h"
 
 namespace embree
 {
@@ -35,13 +37,13 @@ namespace embree
 
       typedef void (*createMeshAccelTy)(Mesh* mesh, AccelData*& accel, Builder*& builder);
 
-      struct __aligned(16) BuildRef
+      struct __aligned(32) BuildRef : public PrimRef
       {
       public:
         __forceinline BuildRef () {}
 
-        __forceinline BuildRef (const BBox3fa& bounds, NodeRef node)
-          : lower(bounds.lower), upper(bounds.upper), node(node)
+        __forceinline BuildRef (const BBox3fa& bounds, NodeRef node, const unsigned int geomID = 0, const unsigned int numPrimitives = 0)
+          : PrimRef(bounds,geomID), node(node), geomID(geomID), numPrimitives(numPrimitives)
         {
           if (node.isLeaf())
             lower.w = 0.0f;
@@ -49,18 +51,14 @@ namespace embree
             lower.w = area(this->bounds());
         }
 
-        __forceinline BBox3fa bounds () const {
-          return BBox3fa(lower,upper);
-        }
-
         friend bool operator< (const BuildRef& a, const BuildRef& b) {
           return a.lower.w < b.lower.w;
         }
 
       public:
-        Vec3fa lower;
-        Vec3fa upper;
         NodeRef node;
+        unsigned int geomID;
+        unsigned numPrimitives;
       };
       
       /*! Constructor. */
@@ -75,7 +73,7 @@ namespace embree
       void clear();
 
       void open_sequential(size_t numPrimitives);
-      void open_overlap(size_t numPrimitives);
+      void open_merge_build_sequential(mvector<BuildRef> &buildRefs, const PrimInfo &pinfo);
       
     public:
       BVH* bvh;

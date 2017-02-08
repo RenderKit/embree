@@ -40,6 +40,45 @@ namespace embree
 	delete builders[i];
     }
 
+    // ===========================================================================
+    // ===========================================================================
+    // ===========================================================================
+
+
+    template<int N, typename Mesh>
+    void BVHNBuilderTwoLevel<N,Mesh>::open_merge_build_sequential(mvector<BuildRef> &buildRefs, const PrimInfo &pinfo)
+    {
+      if (buildRefs.size() == 0) return;
+
+      bool same_geomID = true;
+      for (size_t i=1;i<buildRefs.size();i++)
+        if (buildRefs[0].geomID != buildRefs[i].geomID) 
+        {
+          same_geomID = false;
+          break;
+        }
+
+      /* single element or all geomIDs are the same => end recursion */
+      if (buildRefs.size() == 1 || same_geomID) {
+        for (size_t i=0;i<buildRefs.size();i++)        
+          prims.push_back( PrimRef(buildRefs[i].bounds(),(size_t)buildRefs[i].node) );
+        return;
+      }
+
+      typedef HeuristicArrayBinningSAH<BuildRef,NUM_OBJECT_BINS> Heuristic;
+      const size_t logBlockSize = 1;
+      Heuristic heuristic((BuildRef*)buildRefs.data());
+      typename Heuristic::Split split = heuristic.find(pinfo,logBlockSize);
+      
+      PrimInfo left, right;
+      heuristic.split(split,pinfo,left,right);
+    }
+
+    // ===========================================================================
+    // ===========================================================================
+    // ===========================================================================
+
+
     template<int N, typename Mesh>
     void BVHNBuilderTwoLevel<N,Mesh>::build(size_t threadIndex, size_t threadCount)
     {
@@ -119,7 +158,7 @@ namespace embree
           
           /* create build primitive */
           if (!object->getBounds().empty())
-            refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root);
+            refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root,objectID,mesh->size());
         }
       });
 
@@ -132,8 +171,19 @@ namespace embree
       {
         /* open all large nodes */
         refs.resize(nextRef);
+#if 0
         open_sequential(numPrimitives); 
-        //open_overlap(numPrimitives); 
+#else
+        PRINT(refs.size());
+        prims.resize(0);
+        PrimInfo pinfo(empty);
+        for (size_t i=0;i<refs.size();i++) 
+          pinfo.add(refs[i].bounds(),refs[i].bounds().center2());
+        open_merge_build_sequential(refs,pinfo);
+        PRINT(prims.size());
+        exit(0);
+#endif
+
         // PRINT(numPrimitives);
         // PRINT(refs.size());
         /* compute PrimRefs */
@@ -261,53 +311,6 @@ namespace embree
       }
     }
 
-    template<int N, typename Mesh>
-    void BVHNBuilderTwoLevel<N,Mesh>::open_overlap(size_t numPrimitives)
-    {
-      if (refs.size() == 0)
-	return;
-
-      size_t num = min(numPrimitives/400,size_t(MAX_OPEN_SIZE));
-      refs.reserve(num);
-
-#if 1
-      for (size_t i=0;i<refs.size();i++)
-      {
-        NodeRef ref = refs.back().node;
-        if (ref.isAlignedNode())
-          ref.prefetch();
-      }
-#endif
-
-      for (size_t i=0;i<refs.size();i++)
-        for (size_t j=i+1;j<refs.size();j++)
-        {
-          //std::cout << "i " << i << " j " << j << " -> " << disjoint(refs[i].bounds(),refs[j].bounds()) << std::endl;
-        }
-
-
-      std::make_heap(refs.begin(),refs.end());
-      while (refs.size()+3 <= num)
-      {
-        std::pop_heap (refs.begin(),refs.end()); 
-        NodeRef ref = refs.back().node;
-        if (ref.isLeaf()) break;
-        refs.pop_back();    
-        
-        AlignedNode* node = ref.alignedNode();
-        for (size_t i=0; i<N; i++) {
-          if (node->child(i) == BVH::emptyNode) continue;
-          refs.push_back(BuildRef(node->bounds(i),node->child(i)));
-         
-#if 1
-          NodeRef ref_pre = node->child(i);
-          if (ref_pre.isAlignedNode())
-            ref_pre.prefetch();
-#endif
-          std::push_heap (refs.begin(),refs.end()); 
-        }
-      }
-    }
 
 #if defined(EMBREE_GEOMETRY_LINES)    
     Builder* BVH4BuilderTwoLevelLineSegmentsSAH (void* bvh, Scene* scene, const createLineSegmentsAccelTy createMeshAccel) {

@@ -58,7 +58,7 @@ namespace embree
       T items[N];
     };
 
-  /*! static array with dyamic size */
+  /*! static array with dynamic size */
   template<typename T, size_t N>
     class darray_t
     {
