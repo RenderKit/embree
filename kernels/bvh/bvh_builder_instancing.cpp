@@ -27,13 +27,6 @@ namespace embree
 {
   namespace isa
   {
-    //Builder* BVH4Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode = 0);
-    Builder* BVH4Triangle4MeshBuilderSAH    (void* bvh, TriangleMesh* mesh, size_t mode = 0);
-    //Builder* BVH4Triangle4vMBMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode = 0);
-
-    Builder* BVH4Quad4vMeshBuilderSAH        (void* bvh, QuadMesh* mesh,     size_t mode = 0);
-    //Builder* BVH4Quad4iMBMeshBuilderSAH     (void* bvh, QuadMesh* mesh,     size_t mode = 0);
-
     template<int N, typename Mesh>
     BVHNBuilderInstancing<N,Mesh>::BVHNBuilderInstancing (BVH* bvh, Scene* scene, const createMeshAccelTy createMeshAccel)
       : bvh(bvh), objects(bvh->objects), createMeshAccel(createMeshAccel), scene(scene), refs(scene->device), prims(scene->device), nextRef(0) {}
@@ -63,7 +56,7 @@ namespace embree
       return h;
     }
 
-    int slot(int type, int numTimeSteps)
+    /*int slot(int type, int numTimeSteps)
     {
       if (numTimeSteps == 1)
       {
@@ -83,7 +76,7 @@ namespace embree
       }
       assert(false);
       return 0;
-    }
+      }*/
     
     template<int N, typename Mesh>
     const BBox3fa xfmDeepBounds(const AffineSpace3fa& xfm, const BBox3fa& bounds, typename BVHN<N>::NodeRef ref, size_t depth)
@@ -178,7 +171,7 @@ namespace embree
             BVH* object = objects[instance->geom->id];
             if (object == nullptr) continue;
             if (object->getBounds().empty()) continue;
-            int s = slot(geom->getType() & ~Geometry::INSTANCE, geom->numTimeSteps);
+            int s = 0; //slot(geom->getType() & ~Geometry::INSTANCE, geom->numTimeSteps);
             refs[nextRef++] = BVHNBuilderInstancing::BuildRef(instance->local2world,object->getBounds(),object->root,instance->mask,unsigned(objectID),hash(instance->local2world),s);
           }
         });
