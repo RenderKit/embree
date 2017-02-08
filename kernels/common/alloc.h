@@ -310,7 +310,7 @@ namespace embree
     }
 
     /*! thread safe allocation of memory */
-    __noinline void* malloc(size_t& bytes, size_t align, bool partial) 
+    void* malloc(size_t& bytes, size_t align, bool partial) 
     {
       assert(align <= maxAlignment);
 
@@ -455,8 +455,20 @@ namespace embree
 
         /* either use alignedMalloc or os_reserve/os_commit */
         void *ptr = nullptr;
-        if (!osAllocation) {
-          ptr = alignedMalloc(bytesReserve,CACHELINE_SIZE);         
+        if (!osAllocation) {          
+          if (bytesReserve == (2*PAGE_SIZE_2M))
+          {
+            /* full 2M alignment for very first block */
+            const size_t alignment = (next == NULL) ? PAGE_SIZE_2M : PAGE_SIZE;
+            ptr = alignedMalloc(bytesReserve,alignment);            
+            const size_t ptr_aligned_begin = ((size_t)ptr) & ~(PAGE_SIZE_2M-1);
+            /* first os_advise could fail as speculative */
+            os_advise((void*)(ptr_aligned_begin +            0),PAGE_SIZE_2M);
+            /* second os_advise should succeed as with 4M block */
+            os_advise((void*)(ptr_aligned_begin + PAGE_SIZE_2M),PAGE_SIZE_2M);
+          }
+          else
+            ptr = alignedMalloc(bytesReserve,CACHELINE_SIZE);
         } else {
           ptr = os_reserve(bytesReserve);
           os_commit(ptr,bytesAllocate);
