@@ -34,12 +34,12 @@ namespace embree
     Builder* BVH4Quad4vMeshBuilderSAH        (void* bvh, QuadMesh* mesh,     size_t mode = 0);
     //Builder* BVH4Quad4iMBMeshBuilderSAH     (void* bvh, QuadMesh* mesh,     size_t mode = 0);
 
-    template<int N>
-    BVHNBuilderInstancing<N>::BVHNBuilderInstancing (BVH* bvh, Scene* scene)
-      : bvh(bvh), objects(bvh->objects), scene(scene), refs(scene->device), prims(scene->device), nextRef(0) {}
+    template<int N, typename Mesh>
+    BVHNBuilderInstancing<N,Mesh>::BVHNBuilderInstancing (BVH* bvh, Scene* scene, const createMeshAccelTy createMeshAccel)
+      : bvh(bvh), objects(bvh->objects), createMeshAccel(createMeshAccel), scene(scene), refs(scene->device), prims(scene->device), nextRef(0) {}
     
-    template<int N>
-    BVHNBuilderInstancing<N>::~BVHNBuilderInstancing ()
+    template<int N, typename Mesh>
+    BVHNBuilderInstancing<N,Mesh>::~BVHNBuilderInstancing ()
     {
       for (size_t i=0; i<builders.size(); i++) 
 	delete builders[i];
@@ -85,7 +85,7 @@ namespace embree
       return 0;
     }
     
-    template<int N>
+    template<int N, typename Mesh>
     const BBox3fa xfmDeepBounds(const AffineSpace3fa& xfm, const BBox3fa& bounds, typename BVHN<N>::NodeRef ref, size_t depth)
     {
       if (ref == BVHN<N>::emptyNode) return empty;
@@ -98,8 +98,8 @@ namespace embree
       return box;
     }
 
-    template<int N>
-    void BVHNBuilderInstancing<N>::build(size_t threadIndex, size_t threadCount)
+    template<int N, typename Mesh>
+    void BVHNBuilderInstancing<N,Mesh>::build(size_t threadIndex, size_t threadCount)
     {
       /* delete some objects */
       size_t num = scene->size();
@@ -138,10 +138,10 @@ namespace embree
       parallel_for(size_t(0), num, [&] (const range<size_t>& r) {
           for (size_t objectID=r.begin(); objectID<r.end(); objectID++)
           {
-            Geometry* geom = scene->get(objectID);
+            Mesh* mesh = scene->getSafe<Mesh>(objectID);
             
             /* verify if geometry got deleted properly */
-            if (geom == nullptr) {
+            if (mesh == nullptr) {
               assert(objectID < objects.size () && objects[objectID] == nullptr);
               assert(objectID < builders.size() && builders[objectID] == nullptr);
               continue;
@@ -149,50 +149,7 @@ namespace embree
             
             /* create BVH and builder for new meshes */
             if (objects[objectID] == nullptr) 
-            {
-              if (geom->numTimeSteps == 1)
-              {
-                switch (geom->type) {
-#if defined(EMBREE_GEOMETRY_TRIANGLES)
-                case Geometry::TRIANGLE_MESH:
-                  objects[objectID] = new BVH4(Triangle4::type,geom->parent);
-                  builders[objectID] = BVH4Triangle4MeshBuilderSAH((BVH4*)objects[objectID],(TriangleMesh*)geom);
-                  break;
-#endif
-#if defined(EMBREE_GEOMETRY_QUADS)
-                case Geometry::QUAD_MESH:
-                  objects[objectID] = new BVH4(Quad4v::type,geom->parent);
-                  builders[objectID] = BVH4Quad4vMeshBuilderSAH((BVH4*)objects[objectID],(QuadMesh*)geom);
-                  break;
-#endif
-
-                case Geometry::USER_GEOMETRY: break;
-                case Geometry::BEZIER_CURVES: break;
-                case Geometry::SUBDIV_MESH  : break;
-                default                     : break; 
-                }
-              } else {
-                switch (geom->type) {
-/*#if defined(EMBREE_GEOMETRY_TRIANGLES)
-                 case Geometry::TRIANGLE_MESH:
-                   objects[objectID] = new BVH4(Triangle4vMB::type,geom->parent);
-                   builders[objectID] = BVH4Triangle4vMBMeshBuilderSAH((BVH4*)objects[objectID],(TriangleMesh*)geom);
-                   break;
-#endif
-
-#if defined(EMBREE_GEOMETRY_QUADS)
-                 case Geometry::QUAD_MESH:
-                   objects[objectID] = new BVH4(Quad4iMB::type,geom->parent);
-                   builders[objectID] = BVH4Quad4iMBMeshBuilderSAH((BVH4*)objects[objectID],(QuadMesh*)geom);
-                   break;
-                   #endif*/
-                 case Geometry::USER_GEOMETRY: break;
-                 case Geometry::BEZIER_CURVES: break;
-                 case Geometry::SUBDIV_MESH  : break;
-                 default                     : break;
-                 }
-              }
-            }
+              createMeshAccel(mesh,(AccelData*&)objects[objectID],builders[objectID]);
           }
         });
       
@@ -325,16 +282,16 @@ namespace embree
       bvh->postBuild(t0);
     }
     
-    template<int N>
-    void BVHNBuilderInstancing<N>::deleteGeometry(size_t geomID)
+    template<int N, typename Mesh>
+    void BVHNBuilderInstancing<N,Mesh>::deleteGeometry(size_t geomID)
     {
       if (geomID >= objects.size()) return;
       delete builders[geomID]; builders[geomID] = nullptr;
       delete objects [geomID]; objects [geomID] = nullptr;
     }
 
-    template<int N>
-    void BVHNBuilderInstancing<N>::clear()
+    template<int N, typename Mesh>
+    void BVHNBuilderInstancing<N,Mesh>::clear()
     {
       for (size_t i=0; i<objects.size(); i++) 
         if (objects[i]) objects[i]->clear();
@@ -345,8 +302,8 @@ namespace embree
       refs.clear();
     }
     
-    template<int N>
-    void BVHNBuilderInstancing<N>::open(size_t numInstancedPrimitives)
+    template<int N, typename Mesh>
+    void BVHNBuilderInstancing<N,Mesh>::open(size_t numInstancedPrimitives)
     {
       if (refs.size() == 0)
 	return;
@@ -403,8 +360,8 @@ namespace embree
       if (scene->device->benchmark) { std::cout << "BENCHMARK_OPENED_INSTANCES " << refs.size() << std::endl; }
     }
     
-    template<int N>
-    typename BVHNBuilderInstancing<N>::NodeRef BVHNBuilderInstancing<N>::collapse(NodeRef& node)
+    template<int N, typename Mesh>
+    typename BVHNBuilderInstancing<N,Mesh>::NodeRef BVHNBuilderInstancing<N,Mesh>::collapse(NodeRef& node)
     {
       if (node.isBarrier()) {
         node.clearBarrier();
@@ -461,12 +418,11 @@ namespace embree
     }
     
     Builder* BVH4BuilderInstancingTriangleMeshSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) {
-      return new BVHNBuilderInstancing<4>((BVH4*)bvh,scene);
+      return new BVHNBuilderInstancing<4,TriangleMesh>((BVH4*)bvh,scene,createTriangleMeshAccel);
     }
 
     Builder* BVH4BuilderInstancingQuadMeshSAH (void* bvh, Scene* scene, const createQuadMeshAccelTy createQuadMeshAccel) {
-      return new BVHNBuilderInstancing<4>((BVH4*)bvh,scene);
+      return new BVHNBuilderInstancing<4,QuadMesh>((BVH4*)bvh,scene,createQuadMeshAccel);
     }
-
   }
 }

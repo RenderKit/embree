@@ -23,7 +23,7 @@ namespace embree
 {
   namespace isa
   {
-    template<int N>
+    template<int N, typename Mesh>
     class BVHNBuilderInstancing : public Builder
     {
       ALIGNED_CLASS;
@@ -35,6 +35,8 @@ namespace embree
       typedef typename BVH::TransformNode TransformNode;
 
     public:
+
+      typedef void (*createMeshAccelTy)(Mesh* mesh, AccelData*& accel, Builder*& builder);
 
       struct BuildRef
       {
@@ -77,7 +79,7 @@ namespace embree
       };
       
       /*! Constructor. */
-      BVHNBuilderInstancing (BVH* bvh, Scene* scene);
+      BVHNBuilderInstancing (BVH* bvh, Scene* scene, const createMeshAccelTy createMeshAccel);
       
       /*! Destructor */
       ~BVHNBuilderInstancing ();
@@ -96,6 +98,7 @@ namespace embree
       BVH* bvh;
       std::vector<BVH*>& objects;
       std::vector<Builder*> builders;
+      const createMeshAccelTy createMeshAccel;
 
     public:
       Scene* scene;
