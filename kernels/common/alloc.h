@@ -456,36 +456,19 @@ namespace embree
         /* either use alignedMalloc or os_reserve/os_commit */
         void *ptr = nullptr;
         if (!osAllocation) {          
-#if 1 
           if (bytesReserve == (2*PAGE_SIZE_2M))
           {
             /* full 2M alignment for very first block */
-#if 1
             const size_t alignment = (next == NULL) ? PAGE_SIZE_2M : PAGE_SIZE;
-            ptr = alignedMalloc(bytesReserve,alignment);
-            
+            ptr = alignedMalloc(bytesReserve,alignment);            
             const size_t ptr_aligned_begin = ((size_t)ptr) & ~(PAGE_SIZE_2M-1);
-            const size_t ptr_aligned_end   = ((size_t)ptr+bytesReserve+PAGE_SIZE-1) & ~(PAGE_SIZE_2M-1);
-            os_advise((void*)ptr_aligned_begin,ptr_aligned_end-ptr_aligned_begin);
-            //os_advise((void*)(ptr_aligned_begin +            0),PAGE_SIZE_2M);
-            //os_advise((void*)(ptr_aligned_begin + PAGE_SIZE_2M),PAGE_SIZE_2M);
-#else
-            const size_t alignment = (next == NULL) ? PAGE_SIZE_2M : PAGE_SIZE_2M/2;
-            ptr = alignedMalloc(bytesReserve,alignment);
-            void *new_ptr = (void*)((next == NULL) ? (size_t)ptr : ((size_t)ptr & ~(PAGE_SIZE_2M-1)));
             /* first os_advise could fail as speculative */
-            os_advise(new_ptr,PAGE_SIZE_2M);
+            os_advise((void*)(ptr_aligned_begin +            0),PAGE_SIZE_2M);
             /* second os_advise should succeed as with 4M block */
-            os_advise((void*)((size_t)new_ptr + PAGE_SIZE_2M),PAGE_SIZE_2M);
-#endif
+            os_advise((void*)(ptr_aligned_begin + PAGE_SIZE_2M),PAGE_SIZE_2M);
           }
           else
             ptr = alignedMalloc(bytesReserve,CACHELINE_SIZE);
-#else
-          /* non KNL path */
-          ptr = alignedMalloc(bytesReserve,CACHELINE_SIZE);
-#endif
-
         } else {
           ptr = os_reserve(bytesReserve);
           os_commit(ptr,bytesAllocate);
