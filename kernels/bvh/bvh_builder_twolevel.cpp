@@ -76,10 +76,29 @@ namespace embree
       Heuristic heuristic((BuildRef*)buildRefs.data());
       typename Heuristic::Split split = heuristic.find(pinfo,logBlockSize);
 
-      /* opening split */
+      /* open bvh nodes */
 
-      //....
+      avector<BuildRef> opened_buildRefs;
 
+      opened_buildRefs.reserve(pinfo.size());
+      PRINT(opened_buildRefs.size());
+
+      for (size_t i=pinfo.begin;i<pinfo.end;i++)
+        if (buildRefs[i].node.isLeaf())
+          opened_buildRefs.push_back(buildRefs[i]);
+        else
+        {
+          NodeRef ref = buildRefs[i].node;
+          unsigned int geomID   = buildRefs[i].geomID;
+          unsigned int numPrims = buildRefs[i].numPrimitives;
+          AlignedNode* node = ref.alignedNode();
+          for (size_t i=0; i<N; i++) {
+            if (node->child(i) == BVH::emptyNode) continue;
+            opened_buildRefs.push_back(BuildRef(node->bounds(i),node->child(i),geomID,numPrims));
+          }
+        }
+      PRINT(opened_buildRefs.size());
+      exit(0);
       /* --------------*/
 
       PrimInfo left, right;
