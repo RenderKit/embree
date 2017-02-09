@@ -621,7 +621,7 @@ namespace embree
       {
         bool hasTimeSplits = false;
         for (size_t i=0; i<num && !hasTimeSplits; i++)
-          hasTimeSplits |= current.prims.pinfo.time_range != children[i].prims.pinfo.time_range;
+          hasTimeSplits |= current.prims.time_range != children[i].prims.time_range;
 
         if (hasTimeSplits)
         {

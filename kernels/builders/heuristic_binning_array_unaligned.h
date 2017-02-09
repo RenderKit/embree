@@ -349,10 +349,10 @@ namespace embree
         {
           UserPrimRefData user(scene,set.time_range);
           ObjectBinner binner(empty); // FIXME: this clear can be optimized away
-          const BinMapping<BINS> mapping(set.pinfo.centBounds,set.pinfo.size());
+          const BinMapping<BINS> mapping(set.centBounds,set.size());
           binner.bin_parallel(set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,mapping,space,&user);
           Split osplit = binner.best(mapping,logBlockSize);
-          osplit.sah *= set.pinfo.time_range.size();
+          osplit.sah *= set.time_range.size();
           if (!osplit.valid()) osplit.data = Split::SPLIT_FALLBACK; // use fallback split
           return osplit;
         }

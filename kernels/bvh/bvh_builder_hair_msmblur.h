@@ -187,12 +187,12 @@ namespace embree
       {
         /* variable to track the SAH of the best splitting approach */
         float bestSAH = inf;
-        const float leafSAH = intCost*float(current.prims.pinfo.num_time_segments)*current.prims.pinfo.halfArea();
+        const float leafSAH = intCost*float(current.prims.num_time_segments)*current.prims.halfArea();
         
         /* perform standard binning in aligned space */
         HeuristicBinning::Split alignedObjectSplit;
         alignedObjectSplit = alignedHeuristic.find(current.prims,0);
-        float alignedObjectSAH = travCostAligned*current.prims.pinfo.halfArea() + intCost*alignedObjectSplit.splitSAH();
+        float alignedObjectSAH = travCostAligned*current.prims.halfArea() + intCost*alignedObjectSplit.splitSAH();
         bestSAH = min(alignedObjectSAH,bestSAH);
 
         /* perform standard binning in unaligned space */
@@ -203,16 +203,16 @@ namespace embree
           uspace = unalignedHeuristic.computeAlignedSpaceMB(scene,current.prims); 
           const SetMB sset = unalignedHeuristic.computePrimInfoMB(scene,current.prims,uspace);
           unalignedObjectSplit = unalignedHeuristic.find(sset,0,uspace);    	
-          unalignedObjectSAH = travCostUnaligned*current.prims.pinfo.halfArea() + intCost*unalignedObjectSplit.splitSAH();
+          unalignedObjectSAH = travCostUnaligned*current.prims.halfArea() + intCost*unalignedObjectSplit.splitSAH();
           bestSAH = min(unalignedObjectSAH,bestSAH);
         }
 
         /* do temporal splits only if the the time range is big enough */
         float temporal_split_sah = inf;
         typename HeuristicTemporal::Split temporal_split;
-        if (current.prims.time_range.size() > 1.01f/float(current.prims.pinfo.max_num_time_segments)) {
+        if (current.prims.time_range.size() > 1.01f/float(current.prims.max_num_time_segments)) {
           temporal_split = temporalSplitHeuristic.find(current.prims, 0);
-          temporal_split_sah = travCostAligned*current.prims.pinfo.halfArea() + intCost*temporal_split.splitSAH();
+          temporal_split_sah = travCostAligned*current.prims.halfArea() + intCost*temporal_split.splitSAH();
           bestSAH = min(temporal_split_sah,bestSAH);
         }
 
@@ -279,9 +279,9 @@ namespace embree
               continue;
             
             /* remember child with largest area */
-            const float A = children[i].prims.pinfo.halfArea();
+            const float A = children[i].prims.halfArea();
             if (A > bestArea) { 
-              bestArea = children[i].prims.pinfo.halfArea();
+              bestArea = children[i].prims.halfArea();
               bestChild = i;
             }
           }

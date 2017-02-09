@@ -576,7 +576,7 @@ namespace embree
       {
         bool hasTimeSplits = false;
         for (size_t i=0; i<num && !hasTimeSplits; i++)
-          hasTimeSplits |= current.prims.pinfo.time_range != children[i].prims.pinfo.time_range;
+          hasTimeSplits |= current.prims.time_range != children[i].prims.time_range;
 
         if (hasTimeSplits)
         {
@@ -743,7 +743,7 @@ namespace embree
         
         auto createLeafFunc = [&] (const BuildRecord3& current, Allocator* alloc) -> std::pair<LBBox3fa,BBox1f> {
           mvector<PrimRefMB>& prims = *current.prims.prims;
-          size_t items MAYBE_UNUSED = current.prims.pinfo.size();
+          size_t items MAYBE_UNUSED = current.prims.size();
           assert(items == 1);
           const size_t patchIndexMB = prims[current.prims.object_range.begin()].ID();
           SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+0];

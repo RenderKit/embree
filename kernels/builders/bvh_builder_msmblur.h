@@ -155,16 +155,11 @@ namespace embree
         __forceinline BuildRecord3 (const SetMB& prims, size_t depth, size_t* parent) 
           : parent(parent), depth(depth), prims(prims) {}
         
-        //__forceinline BuildRecord3 (const PrimInfoMB& pinfo, size_t depth, size_t* parent, const SetMB &prims) 
-        //  : parent(parent), depth(depth), prims(prims), pinfo(pinfo) {}
-
-        //__forceinline BBox3fa bounds() const { return prims.pinfo.geomBounds; }
-        
-        __forceinline friend bool operator< (const BuildRecord3& a, const BuildRecord3& b) { return a.prims.pinfo.size() < b.prims.pinfo.size(); }
-	__forceinline friend bool operator> (const BuildRecord3& a, const BuildRecord3& b) { return a.prims.pinfo.size() > b.prims.pinfo.size();  }
+        __forceinline friend bool operator< (const BuildRecord3& a, const BuildRecord3& b) { return a.prims.size() < b.prims.size(); }
+	__forceinline friend bool operator> (const BuildRecord3& a, const BuildRecord3& b) { return a.prims.size() > b.prims.size();  }
         
 
-        __forceinline size_t size() const { return this->prims.pinfo.size(); }
+        __forceinline size_t size() const { return this->prims.size(); }
         
       public:
         size_t* parent;   //!< Pointer to the parent node's reference to us
@@ -231,7 +226,7 @@ namespace embree
           const float object_split_sah = object_split.splitSAH();
           
           /* do temporal splits only if the the time range is big enough */
-          if (set.time_range.size() > 1.01f/float(set.pinfo.max_num_time_segments))
+          if (set.time_range.size() > 1.01f/float(set.max_num_time_segments))
           {
             const Split temporal_split = heuristicTemporalSplit.find(set, logBlockSize);
             const float temporal_split_sah = temporal_split.splitSAH();
@@ -275,7 +270,7 @@ namespace embree
             for (size_t i=current.prims.object_range.begin(); i<current.prims.object_range.end(); i++) 
             {
               const PrimRefMB& prim = (*current.prims.prims)[i];
-              const range<int> itime_range = getTimeSegmentRange(current.prims.pinfo.time_range,prim.totalTimeSegments());
+              const range<int> itime_range = getTimeSegmentRange(current.prims.time_range,prim.totalTimeSegments());
               const int localTimeSegments = itime_range.size();
               assert(localTimeSegments > 0);
               if (localTimeSegments > 1) {
@@ -327,7 +322,7 @@ namespace embree
           current.split = findFallback(current,singleLeafTimeSegment);
 
           /* create leaf for few primitives */
-          if (current.prims.pinfo.size() <= maxLeafSize && current.split.data != Split::SPLIT_TEMPORAL)
+          if (current.prims.size() <= maxLeafSize && current.split.data != Split::SPLIT_TEMPORAL)
             return createLeaf(current,alloc);
           
           /* fill all children by always splitting the largest one */
@@ -341,12 +336,12 @@ namespace embree
             for (size_t i=0; i<children.size(); i++)
             {
               /* ignore leaves as they cannot get split */
-              if (children[i].prims.pinfo.size() <= maxLeafSize && children[i].split.data != Split::SPLIT_TEMPORAL)
+              if (children[i].prims.size() <= maxLeafSize && children[i].split.data != Split::SPLIT_TEMPORAL)
                 continue;
 
               /* remember child with largest size */
-              if (children[i].prims.pinfo.size() > bestSize) {
-                bestSize = children[i].prims.pinfo.size();
+              if (children[i].prims.size() > bestSize) {
+                bestSize = children[i].prims.size();
                 bestChild = i;
               }
             }
@@ -386,13 +381,13 @@ namespace embree
             progressMonitor(current.size());
           
           /*! compute leaf and split cost */
-          const float leafSAH  = intCost*current.prims.pinfo.leafSAH(logBlockSize);
-          const float splitSAH = travCost*current.prims.pinfo.halfArea()+intCost*current.split.splitSAH();
-          assert((current.prims.pinfo.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
-          assert(current.prims.pinfo.size() == current.prims.object_range.size());
+          const float leafSAH  = intCost*current.prims.leafSAH(logBlockSize);
+          const float splitSAH = travCost*current.prims.halfArea()+intCost*current.split.splitSAH();
+          assert((current.prims.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
+          assert(current.prims.size() == current.prims.object_range.size());
 
           /*! create a leaf node when threshold reached or SAH tells us to stop */
-          if (current.prims.pinfo.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.prims.pinfo.size() <= maxLeafSize && leafSAH <= splitSAH)) {
+          if (current.prims.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.prims.size() <= maxLeafSize && leafSAH <= splitSAH)) {
             deterministic_order(current.prims);
             return createLargeLeaf(current,alloc);
           }
@@ -408,9 +403,9 @@ namespace embree
             ssize_t bestChild = -1;
             for (size_t i=0; i<children.size(); i++) 
             {
-              if (children[i].prims.pinfo.size() <= minLeafSize) continue;
-              if (expectedApproxHalfArea(children[i].prims.pinfo.geomBounds) > bestSAH) {
-                bestChild = i; bestSAH = expectedApproxHalfArea(children[i].prims.pinfo.geomBounds);
+              if (children[i].prims.size() <= minLeafSize) continue;
+              if (expectedApproxHalfArea(children[i].prims.geomBounds) > bestSAH) {
+                bestChild = i; bestSAH = expectedApproxHalfArea(children[i].prims.geomBounds);
               } 
             }
             if (bestChild == -1) break;

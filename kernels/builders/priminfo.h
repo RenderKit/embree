@@ -245,7 +245,7 @@ namespace embree
 
     typedef PrimInfoMBT<typename PrimRefMB::BBox> PrimInfoMB;
 
-     struct SetMB
+    struct SetMB : public PrimInfoMB
     {
       static const size_t PARALLEL_THRESHOLD = 3 * 1024;
       static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
@@ -255,18 +255,18 @@ namespace embree
 
       __forceinline SetMB() {}
 
-      __forceinline SetMB(const PrimInfoMB& pinfo_i, PrimRefVector prims, range<size_t> object_range, BBox1f time_range)
-        : pinfo(pinfo_i), prims(prims), object_range(object_range), time_range(time_range)
+      __forceinline SetMB(const PrimInfoMB& pinfo_i, PrimRefVector prims, range<size_t> object_range_in, BBox1f time_range_in)
+        : PrimInfoMB(pinfo_i), prims(prims)
       {
-        pinfo.object_range = object_range;
-        pinfo.time_range = time_range;
+        object_range = object_range_in;
+        time_range = time_range_in;
       }
       
-      __forceinline SetMB(const PrimInfoMB& pinfo_i, PrimRefVector prims, BBox1f time_range = BBox1f(0.0f,1.0f))
-        : pinfo(pinfo_i), prims(prims), object_range(range<size_t>(0,prims->size())), time_range(time_range) 
+      __forceinline SetMB(const PrimInfoMB& pinfo_i, PrimRefVector prims, BBox1f time_range_in = BBox1f(0.0f,1.0f))
+        : PrimInfoMB(pinfo_i), prims(prims)
       {
-        pinfo.object_range = object_range;
-        pinfo.time_range = time_range;
+        object_range = range<size_t>(0,prims->size());
+        time_range = time_range_in;
       }
       
       template<typename RecalculatePrimRef>
@@ -286,14 +286,11 @@ namespace embree
         
         return parallel_reduce(object_range.begin(), object_range.end(), PARALLEL_FIND_BLOCK_SIZE, PARALLEL_THRESHOLD, LBBox3fa(empty),
                                reduce,
-                                   [&](const LBBox3fa& b0, const LBBox3fa& b1) -> LBBox3fa { return merge(b0, b1); });
+                               [&](const LBBox3fa& b0, const LBBox3fa& b1) -> LBBox3fa { return embree::merge(b0, b1); });
       }
       
     public:
-      PrimInfoMB pinfo;
       PrimRefVector prims;
-      range<size_t> object_range;
-      BBox1f time_range;
     };
   }
 }
