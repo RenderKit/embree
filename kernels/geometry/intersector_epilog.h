@@ -361,6 +361,9 @@ namespace embree
 
           /* intersection filter test */
 #if defined(EMBREE_INTERSECTION_FILTER) || defined(EMBREE_RAY_MASK)
+          if (unlikely(filter))
+            hit.finalize(); /* called only once */
+
           vbool<Mx> valid = valid_i;
           if (Mx > M) valid &= (1<<M)-1;
           size_t m=movemask(valid);
@@ -370,7 +373,6 @@ namespace embree
             if (unlikely(m == 0)) return false;
           entry:
             size_t i=__bsf(m);
-            hit.finalize(); // FIXME: executed too often
 
             const int geomID = geomIDs[i];
             const int instID = context->geomID_to_instID ? context->geomID_to_instID[0] : geomID;
@@ -827,6 +829,9 @@ namespace embree
 
           /* intersection filter test */
 #if defined(EMBREE_INTERSECTION_FILTER) || defined(EMBREE_RAY_MASK)
+          if (unlikely(filter))
+            hit.finalize(); /* called only once */
+          
           vbool<Mx> valid = valid_i;
           if (Mx > M) valid &= (1<<M)-1;
           size_t m=movemask(valid);
@@ -836,7 +841,6 @@ namespace embree
             if (unlikely(m == 0)) return false;
           entry:
             size_t i=__bsf(m);
-            hit.finalize(); // FIXME: executed too often
 
             const int geomID = geomIDs[i];
             Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
