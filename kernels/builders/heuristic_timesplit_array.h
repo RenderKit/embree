@@ -155,32 +155,6 @@ namespace embree
           return tsplit;
         }
 
-        /*! array partitioning */
-        __forceinline void split(const Split& tsplit, const SetMB& set, PrimInfoMB& linfo, SetMB& lset, int side)
-        {
-          float center_time = tsplit.fpos;
-          const BBox1f time_range0(set.time_range.lower,center_time);
-          const BBox1f time_range1(center_time,set.time_range.upper);
-          const BBox1f time_range = side ? time_range1 : time_range0;
-          
-          /* calculate primrefs for first time range */
-          mvector<PrimRefMB>& prims = *set.prims;
-          PrimRefVector lprims = new mvector<PrimRefMB>(device, set.object_range.size());
-          auto reduction_func0 = [&] ( const range<size_t>& r) {
-            PrimInfoMB pinfo = empty;
-            for (size_t i=r.begin(); i<r.end(); i++) 
-            {
-              const PrimRefMB& prim = recalculatePrimRef(prims[i],time_range).first;
-              (*lprims)[i-set.object_range.begin()] = prim;
-              pinfo.add_primref(prim);
-            }
-            return pinfo;
-          };        
-          linfo = parallel_reduce(set.object_range,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func0,PrimInfoMB::merge2);
-          linfo.time_range = time_range;
-          lset = SetMB(lprims,time_range);
-        }
-
         __forceinline void split(const Split& tsplit, const SetMB& set, SetMB& lset, SetMB& rset)
         {
           float center_time = tsplit.fpos;
