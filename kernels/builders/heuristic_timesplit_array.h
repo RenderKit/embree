@@ -155,7 +155,7 @@ namespace embree
           return tsplit;
         }
 
-        __forceinline void split(const Split& tsplit, const SetMB& set, SetMB& lset, SetMB& rset)
+        __forceinline std::unique_ptr<mvector<PrimRefMB>> split(const Split& tsplit, const SetMB& set, SetMB& lset, SetMB& rset)
         {
           float center_time = tsplit.fpos;
           const BBox1f time_range0(set.time_range.lower,center_time);
@@ -163,7 +163,9 @@ namespace embree
           mvector<PrimRefMB>& prims = *set.prims;
           
           /* calculate primrefs for first time range */
-          PrimRefVector lprims = new mvector<PrimRefMB>(device, set.object_range.size());
+          std::unique_ptr<mvector<PrimRefMB>> new_vector(new mvector<PrimRefMB>(device, set.object_range.size()));
+          PrimRefVector lprims = new_vector.get();
+
           auto reduction_func0 = [&] ( const range<size_t>& r) {
             PrimInfoMB pinfo = empty;
             for (size_t i=r.begin(); i<r.end(); i++) 
@@ -190,6 +192,8 @@ namespace embree
           };        
           PrimInfoMB rinfo = parallel_reduce(set.object_range,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func1,PrimInfoMB::merge2);
           rset = SetMB(rinfo,&prims,set.object_range,time_range1);
+
+          return new_vector;
         }
 
       private:

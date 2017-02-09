@@ -173,7 +173,7 @@ namespace embree
           BuildRecord2 left(current.depth+1);
           BuildRecord2 right(current.depth+1);
           splitFallback(children[bestChild].prims,left.prims,right.prims);
-          children.split(bestChild,left,right);
+          children.split(bestChild,left,right,nullptr);
           
         } while (children.size() < branchingFactor);
         
@@ -183,7 +183,7 @@ namespace embree
       }
             
       /*! performs split */
-      void split(const BuildRecord2& current, BuildRecord2& lrecord, BuildRecord2& rrecord, bool& aligned, bool& timesplit)
+      std::unique_ptr<mvector<PrimRefMB>> split(const BuildRecord2& current, BuildRecord2& lrecord, BuildRecord2& rrecord, bool& aligned, bool& timesplit)
       {
         /* variable to track the SAH of the best splitting approach */
         float bestSAH = inf;
@@ -221,24 +221,28 @@ namespace embree
         {
           deterministic_order(current.prims);
           splitFallback(current.prims,lrecord.prims,rrecord.prims);
+          return nullptr;
         }
         else if (bestSAH == temporal_split_sah) {
-          temporalSplitHeuristic.split(temporal_split,current.prims,lrecord.prims,rrecord.prims);
           timesplit = true;
+          return temporalSplitHeuristic.split(temporal_split,current.prims,lrecord.prims,rrecord.prims);
         }
         /* perform aligned split if this is best */
         else if (bestSAH == alignedObjectSAH) {
           alignedHeuristic.split(alignedObjectSplit,current.prims,lrecord.prims,rrecord.prims);
+          return nullptr;
         }
         /* perform unaligned split if this is best */
         else if (bestSAH == unalignedObjectSAH) {
           unalignedHeuristic.split(unalignedObjectSplit,uspace,current.prims,lrecord.prims,rrecord.prims);
           aligned = false;
+          return nullptr;
         }
         /* otherwise perform fallback split */
         else {
           deterministic_order(current.prims);
           splitFallback(current.prims,lrecord.prims,rrecord.prims);
+          return nullptr;
         }
       }
       
@@ -286,8 +290,8 @@ namespace embree
           /*! split best child into left and right child */
           BuildRecord2 left(current.depth+1);
           BuildRecord2 right(current.depth+1);
-          split(children[bestChild],left,right,aligned,timesplit);
-          children.split(bestChild,left,right);
+          std::unique_ptr<mvector<PrimRefMB>> new_vector = split(children[bestChild],left,right,aligned,timesplit);
+          children.split(bestChild,left,right,std::move(new_vector));
           
         } while (children.size() < branchingFactor); 
         assert(children.size() > 1);

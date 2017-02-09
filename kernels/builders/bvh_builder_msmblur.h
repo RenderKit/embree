@@ -75,7 +75,7 @@ namespace embree
         return numChildren;
       }
       
-      __forceinline void split(int bestChild, BuildRecord& lrecord, BuildRecord& rrecord)
+      __forceinline void split(int bestChild, BuildRecord& lrecord, BuildRecord& rrecord, std::unique_ptr<mvector<PrimRefMB>> new_vector)
       {
         SharedPrimRefVector* bsharedPrimVec = primvecs[bestChild];
         if (lrecord.prims.prims == bsharedPrimVec->prims) {
@@ -94,6 +94,7 @@ namespace embree
           primvecs[numChildren] = new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(rrecord.prims.prims);
         }
         bsharedPrimVec->decRef();
+        new_vector.release();
         
         children[bestChild] = lrecord;
         children[numChildren] = rrecord;
@@ -244,21 +245,23 @@ namespace embree
         }
 
         /*! array partitioning */
-        __forceinline void partition(BuildRecord3& brecord, BuildRecord3& lrecord, BuildRecord3& rrecord) 
+        __forceinline std::unique_ptr<mvector<PrimRefMB>> partition(BuildRecord3& brecord, BuildRecord3& lrecord, BuildRecord3& rrecord) 
         {
           /* perform fallback split */
           //if (unlikely(!brecord.split.valid())) {
           if (unlikely(brecord.split.data == Split::SPLIT_FALLBACK)) {
             deterministic_order(brecord.prims);
-            return splitFallback(brecord.prims,lrecord.prims,rrecord.prims);
+            splitFallback(brecord.prims,lrecord.prims,rrecord.prims);
+            return nullptr;
           }
           /* perform temporal split */
           else if (unlikely(brecord.split.data == Split::SPLIT_TEMPORAL)) {
-            heuristicTemporalSplit.split(brecord.split,brecord.prims,lrecord.prims,rrecord.prims);
+            return heuristicTemporalSplit.split(brecord.split,brecord.prims,lrecord.prims,rrecord.prims);
           }
           /* perform object split */
           else {
             heuristicObjectSplit.split(brecord.split,brecord.prims,lrecord.prims,rrecord.prims);
+            return nullptr;
           }
         }
 
@@ -353,12 +356,12 @@ namespace embree
             BuildRecord3& brecord = children[bestChild];
             BuildRecord3 lrecord(current.depth+1);
             BuildRecord3 rrecord(current.depth+1);
-            partition(brecord,lrecord,rrecord);
+            std::unique_ptr<mvector<PrimRefMB>> new_vector = partition(brecord,lrecord,rrecord);
             
             /* find new splits */
             lrecord.split = findFallback(lrecord,singleLeafTimeSegment);
             rrecord.split = findFallback(rrecord,singleLeafTimeSegment);
-            children.split(bestChild,lrecord,rrecord);
+            children.split(bestChild,lrecord,rrecord,std::move(new_vector));
 
           } while (children.size() < branchingFactor);
           
@@ -416,12 +419,12 @@ namespace embree
             BuildRecord3& brecord = children[bestChild];
             BuildRecord3 lrecord(current.depth+1);
             BuildRecord3 rrecord(current.depth+1);
-            partition(brecord,lrecord,rrecord);            
+            std::unique_ptr<mvector<PrimRefMB>> new_vector = partition(brecord,lrecord,rrecord);            
             
             /* find new splits */
             lrecord.split = find(lrecord);
             rrecord.split = find(rrecord);
-            children.split(bestChild,lrecord,rrecord);
+            children.split(bestChild,lrecord,rrecord,std::move(new_vector));
 
           } while (children.size() < branchingFactor);
           
