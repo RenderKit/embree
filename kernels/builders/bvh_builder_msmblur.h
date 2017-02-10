@@ -202,7 +202,7 @@ namespace embree
         class GeneralBVHMBBuilder : private Settings
       {
         static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximal supported BVH branching factor
-        static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree of we are that many levels before the maximal tree depth
+        static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree if we are that many levels before the maximal tree depth
         
         typedef BinSplit<NUM_OBJECT_BINS> Split;
         typedef mvector<PrimRefMB>* PrimRefVector;
@@ -276,7 +276,7 @@ namespace embree
         }
         
         /*! finds the best fallback split */
-        __forceinline Split findFallback(BuildRecord& current, bool singleLeafTimeSegment) // FIXME: remove singleLeafTimeSegment parameter
+        __forceinline Split findFallback(BuildRecord& current)
         {
           /* if a leaf can only hold a single time-segment, we might have to do additional temporal splits */
           if (singleLeafTimeSegment)
@@ -334,7 +334,7 @@ namespace embree
             throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
           
           /* replace already found split by fallback split */
-          current.split = findFallback(current,singleLeafTimeSegment);
+          current.split = findFallback(current);
           
           /* create leaf for few primitives */
           if (current.prims.size() <= maxLeafSize && current.split.data != Split::SPLIT_TEMPORAL)
@@ -369,8 +369,8 @@ namespace embree
             std::unique_ptr<mvector<PrimRefMB>> new_vector = partition(brecord,lrecord,rrecord);
             
             /* find new splits */
-            lrecord.split = findFallback(lrecord,singleLeafTimeSegment);
-            rrecord.split = findFallback(rrecord,singleLeafTimeSegment);
+            lrecord.split = findFallback(lrecord);
+            rrecord.split = findFallback(rrecord);
             children.split(bestChild,lrecord,rrecord,std::move(new_vector));
             
           } while (children.size() < branchingFactor);
