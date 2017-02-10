@@ -46,7 +46,8 @@ namespace embree
   }
 
   State::State (bool singledevice) 
-    : enabled_cpu_features(getCPUFeatures())
+    : enabled_cpu_features(getCPUFeatures()),
+      enabled_builder_cpu_features(enabled_cpu_features)
   {
     tri_accel = "default";
     tri_builder = "default";
@@ -251,11 +252,18 @@ namespace embree
       else if (tok == Token::Id("isa") && cin->trySymbol("=")) {
         std::string isa = toLowerCase(cin->get().Identifier());
         enabled_cpu_features = string_to_cpufeatures(isa);
+        enabled_builder_cpu_features = enabled_cpu_features;
       }
 
       else if (tok == Token::Id("max_isa") && cin->trySymbol("=")) {
         std::string isa = toLowerCase(cin->get().Identifier());
         enabled_cpu_features &= string_to_cpufeatures(isa);
+        enabled_builder_cpu_features &= enabled_cpu_features;
+      }
+
+      else if (tok == Token::Id("max_builder_isa") && cin->trySymbol("=")) {
+        std::string isa = toLowerCase(cin->get().Identifier());
+        enabled_builder_cpu_features &= string_to_cpufeatures(isa);
       }
 
       else if (tok == Token::Id("ignore_config_files") && cin->trySymbol("="))

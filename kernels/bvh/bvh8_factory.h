@@ -30,7 +30,7 @@ namespace embree
     enum class BuildVariant     { STATIC, DYNAMIC, HIGH_QUALITY };
     enum class IntersectVariant { FAST, ROBUST };
 
-    BVH8Factory(int features);
+    BVH8Factory(int bfeatures, int ifeatures);
 
   public:
     Accel* BVH8OBBBezier1v(Scene* scene);
@@ -67,6 +67,10 @@ namespace embree
 
     static void createQuadMeshQuad4vMorton(QuadMesh* mesh, AccelData*& accel, Builder*& builder);
     static void createQuadMeshQuad4v(QuadMesh* mesh, AccelData*& accel, Builder*& builder);
+
+  private:
+    void selectBuilders(int features);
+    void selectIntersectors(int features);
 
   private:
     Accel::Intersectors BVH8Line4iIntersectors(BVH8* bvh);

@@ -30,10 +30,9 @@ namespace embree
     enum class BuildVariant     { STATIC, DYNAMIC, HIGH_QUALITY };
     enum class IntersectVariant { FAST, ROBUST };
 
-    BVH4Factory(int features);
+    BVH4Factory(int bfeatures, int ifeatures);
 
   public:
-    
     Accel* BVH4Bezier1v(Scene* scene);
     Accel* BVH4Bezier1i(Scene* scene);
     Accel* BVH4Line4i(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC);
@@ -69,9 +68,12 @@ namespace embree
     Accel* BVH4UserGeometryMB(Scene* scene);
     Accel* BVH4MB4DUserGeometryMB(Scene* scene);
     Accel* BVH4InstancedBVH4Triangle4ObjectSplit(Scene* scene);
+
+  private:
+    void selectBuilders(int features);
+    void selectIntersectors(int features);
     
   private:
-    
     Accel::Intersectors BVH4Line4iIntersectors(BVH4* bvh);
     Accel::Intersectors BVH4Line4iMBIntersectors(BVH4* bvh);
     Accel::Intersectors BVH4MB4DLine4iMBIntersectors(BVH4* bvh);

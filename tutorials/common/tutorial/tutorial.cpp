@@ -201,7 +201,7 @@ namespace embree
 
   TutorialApplication::~TutorialApplication()
   {
-    if (g_ispc_scene) delete g_ispc_scene;
+    g_ispc_scene = nullptr;
     device_cleanup();
     alignedFree(pixels); 
     pixels = nullptr;
@@ -464,8 +464,10 @@ namespace embree
     pixels = (unsigned*) alignedMalloc(width*height*sizeof(unsigned),64);
   }
 
-  void TutorialApplication::set_scene (TutorialScene* in) {
-    g_ispc_scene = new ISPCScene(in);
+  void TutorialApplication::set_scene (TutorialScene* in) 
+  {
+    ispc_scene.reset(new ISPCScene(in));
+    g_ispc_scene = ispc_scene.get();
   }
 
   void TutorialApplication::keyboardFunc(unsigned char key, int x, int y)
