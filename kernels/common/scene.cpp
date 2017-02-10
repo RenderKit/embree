@@ -558,13 +558,13 @@ namespace embree
     Geometry* geom = Instance::create(this,scene,numTimeSteps);
     return geom->id;
   }
-  
+#endif
+
   unsigned Scene::newGeometryInstance (Geometry* geom) 
   {
     Geometry* instance = new GeometryInstance(this,geom);
     return instance->id;
   }
-#endif
 
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
   unsigned Scene::newTriangleMesh (RTCGeometryFlags gflags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) 
