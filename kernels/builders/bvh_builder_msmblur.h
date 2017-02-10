@@ -102,9 +102,9 @@ namespace embree
       }
 
     public:
-      BuildRecord children[MAX_BRANCHING_FACTOR];
-      SharedPrimRefVector* primvecs[MAX_BRANCHING_FACTOR];
-      SharedPrimRefVector sharedPrimVecs[MAX_BRANCHING_FACTOR*2]; // FIXME: *2 required?
+      array_t<BuildRecord,MAX_BRANCHING_FACTOR> children;
+      array_t<SharedPrimRefVector*,MAX_BRANCHING_FACTOR> primvecs;
+      array_t<SharedPrimRefVector,2*MAX_BRANCHING_FACTOR> sharedPrimVecs;
       size_t numChildren;
       size_t numSharedPrimVecs;
       size_t depth;
