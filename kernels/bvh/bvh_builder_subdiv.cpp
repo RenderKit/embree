@@ -703,7 +703,7 @@ namespace embree
             //bvh->scene->progressMonitor(double(dn)); // FIXME: triggers GCC compiler bug
         //  });
         
-        auto createLeafFunc = [&] (const BuildRecord3& current, Allocator* alloc) -> std::tuple<NodeRef,LBBox3fa,BBox1f> {
+        auto createLeafFunc = [&] (const BVHMBuilderMSMBlur::BuildRecord3& current, Allocator* alloc) -> std::tuple<NodeRef,LBBox3fa,BBox1f> {
           mvector<PrimRefMB>& prims = *current.prims.prims;
           size_t items MAYBE_UNUSED = current.prims.size();
           assert(items == 1);
@@ -715,8 +715,6 @@ namespace embree
           return std::make_tuple(node,lbounds,current.prims.time_range);
         };
 
-        auto identity = NodeRef(0);
-
         /* builder wants log2 of blockSize as input */		  
         const size_t logBlockSize = __bsr(N); 
 
@@ -726,37 +724,27 @@ namespace embree
         auto updateNodeFunc = typename BVH::UpdateAlignedNodeMB4D(bvh);
         //auto createLeafFunc = CreateMBlurLeaf<N,Mesh,Primitive>(bvh);
         auto progressMonitor = bvh->scene->progressInterface;
-        
-        typedef GeneralBVHMBBuilder<
-          SubdivRecalculatePrimRef,
-          decltype(identity),
-          decltype(createAllocFunc()),
-          decltype(createAllocFunc),
-          decltype(createNodeFunc),
-          decltype(updateNodeFunc),
-          decltype(createLeafFunc),
-          decltype(progressMonitor)> Builder;
 
-        Builder builder(scene->device,
-                        recalculatePrimRef,
-                        createAllocFunc,
-                        createNodeFunc,
-                        updateNodeFunc,
-                        createLeafFunc,
-                        progressMonitor,
-                        N,BVH::maxDepth,logBlockSize,
-                        //minLeafSize,maxLeafSize,travCost,intCost,
-                        1,1,1.0f,1.0f,
-                        //Primitive::singleTimeSegment);
-                        false);
-        
         /* build hierarchy */
         Set set(pinfo,&primsMB);
         assert(primsMB.size() == pinfo.size());
         
-        BuildRecord3 br(set,1);
+        BVHMBuilderMSMBlur::BuildRecord3 br(set,1);
         NodeRef root; LBBox3fa rootBounds;
-        std::tie(root, rootBounds, std::ignore) = builder(br);
+      
+         std::tie(root, rootBounds, std::ignore) =
+           BVHMBuilderMSMBlur::build<NodeRef>(br,scene->device,
+                                     recalculatePrimRef,
+                                     createAllocFunc,
+                                     createNodeFunc,
+                                     updateNodeFunc,
+                                     createLeafFunc,
+                                     progressMonitor,
+                                     N,BVH::maxDepth,logBlockSize,
+                                     //minLeafSize,maxLeafSize,travCost,intCost,
+                                     1,1,1.0f,1.0f,
+                                     //Primitive::singleTimeSegment);
+                                     false);
         
         //bvh->set(root,pinfo.geomBounds,pinfo.size());
         bvh->set(root,rootBounds,pinfo.size());

@@ -144,6 +144,8 @@ namespace embree
       }
     };
 
+    struct BVHMBuilderMSMBlur
+    {
       struct BuildRecord3
       {
       public:
@@ -158,7 +160,7 @@ namespace embree
         __forceinline friend bool operator< (const BuildRecord3& a, const BuildRecord3& b) { return a.prims.size() < b.prims.size(); }
 	__forceinline friend bool operator> (const BuildRecord3& a, const BuildRecord3& b) { return a.prims.size() > b.prims.size();  }
         
-
+        
         __forceinline size_t size() const { return this->prims.size(); }
         
       public:
@@ -166,358 +168,406 @@ namespace embree
 	SetMB prims;                      //!< The list of primitives.
 	BinSplit<NUM_OBJECT_BINS> split;  //!< The best split for the primitives.
       };
-
-    template<typename RecalculatePrimRef, 
-      typename ReductionTy, 
-      typename Allocator, 
-      typename CreateAllocFunc, 
-      typename CreateNodeFunc, 
-      typename UpdateNodeFunc, 
-      typename CreateLeafFunc, 
-      typename ProgressMonitor>
       
-      class GeneralBVHMBBuilder
-      {
-        static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximal supported BVH branching factor
-        static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree of we are that many levels before the maximal tree depth
-        static const size_t SINGLE_THREADED_THRESHOLD = 1024;  //!< threshold to switch to single threaded build
-
-        typedef BinSplit<NUM_OBJECT_BINS> Split;
-        typedef mvector<PrimRefMB>* PrimRefVector;
-        typedef SharedVector<mvector<PrimRefMB>> SharedPrimRefVector;
-        typedef LocalChildListT<BuildRecord3,MAX_BRANCHING_FACTOR> LocalChildList;
-
-      public:
-
-        GeneralBVHMBBuilder (MemoryMonitorInterface* device,
-                             RecalculatePrimRef& recalculatePrimRef,
-                             CreateAllocFunc& createAlloc, 
-                             CreateNodeFunc& createNode, 
-                             UpdateNodeFunc& updateNode, 
-                             CreateLeafFunc& createLeaf,
-                             ProgressMonitor& progressMonitor,
-                             const size_t branchingFactor, const size_t maxDepth, 
-                             const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize,
-                             const float travCost, const float intCost, const bool singleLeafTimeSegment)
-          : heuristicObjectSplit(),
-          heuristicTemporalSplit(device, recalculatePrimRef),
-          recalculatePrimRef(recalculatePrimRef), createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
-          progressMonitor(progressMonitor),
-          branchingFactor(branchingFactor), maxDepth(maxDepth),
-          logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
-          travCost(travCost), intCost(intCost), singleLeafTimeSegment(singleLeafTimeSegment)
-        {
-          if (branchingFactor > MAX_BRANCHING_FACTOR)
-            throw_RTCError(RTC_UNKNOWN_ERROR,"bvh_builder: branching factor too large");
-        }
+      template<typename RecalculatePrimRef, 
+        typename ReductionTy, 
+        typename Allocator, 
+        typename CreateAllocFunc, 
+        typename CreateNodeFunc, 
+        typename UpdateNodeFunc, 
+        typename CreateLeafFunc, 
+        typename ProgressMonitor>
         
-        __forceinline const Split find(BuildRecord3& current) {
-          return find (current.prims,logBlockSize);
-        }
-
-        /*! finds the best split */
-        const Split find(SetMB& set, const size_t logBlockSize)
+        class GeneralBVHMBBuilder
         {
-          /* first try standard object split */
-          const Split object_split = heuristicObjectSplit.find(set,logBlockSize);
-          const float object_split_sah = object_split.splitSAH();
+          static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximal supported BVH branching factor
+          static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree of we are that many levels before the maximal tree depth
+          static const size_t SINGLE_THREADED_THRESHOLD = 1024;  //!< threshold to switch to single threaded build
           
-          /* do temporal splits only if the the time range is big enough */
-          if (set.time_range.size() > 1.01f/float(set.max_num_time_segments)) // FIXME: test temporal splits only when object split was bad
+          typedef BinSplit<NUM_OBJECT_BINS> Split;
+          typedef mvector<PrimRefMB>* PrimRefVector;
+          typedef SharedVector<mvector<PrimRefMB>> SharedPrimRefVector;
+          typedef LocalChildListT<BuildRecord3,MAX_BRANCHING_FACTOR> LocalChildList;
+          
+        public:
+          
+          GeneralBVHMBBuilder (MemoryMonitorInterface* device,
+                               RecalculatePrimRef& recalculatePrimRef,
+                               CreateAllocFunc& createAlloc, 
+                               CreateNodeFunc& createNode, 
+                               UpdateNodeFunc& updateNode, 
+                               CreateLeafFunc& createLeaf,
+                               ProgressMonitor& progressMonitor,
+                               const size_t branchingFactor, const size_t maxDepth, 
+                               const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize,
+                               const float travCost, const float intCost, const bool singleLeafTimeSegment)
+            : heuristicObjectSplit(),
+            heuristicTemporalSplit(device, recalculatePrimRef),
+            recalculatePrimRef(recalculatePrimRef), createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
+            progressMonitor(progressMonitor),
+            branchingFactor(branchingFactor), maxDepth(maxDepth),
+            logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
+            travCost(travCost), intCost(intCost), singleLeafTimeSegment(singleLeafTimeSegment)
           {
-            const Split temporal_split = heuristicTemporalSplit.find(set, logBlockSize);
-            const float temporal_split_sah = temporal_split.splitSAH();
-
-            /* take temporal split if it improved SAH */
-            if (temporal_split_sah < object_split_sah)
-              return temporal_split;
+            if (branchingFactor > MAX_BRANCHING_FACTOR)
+              throw_RTCError(RTC_UNKNOWN_ERROR,"bvh_builder: branching factor too large");
           }
-
-          return object_split;
-        }
-
-        /*! array partitioning */
-        __forceinline std::unique_ptr<mvector<PrimRefMB>> partition(BuildRecord3& brecord, BuildRecord3& lrecord, BuildRecord3& rrecord) 
-        {
-          /* perform fallback split */
-          //if (unlikely(!brecord.split.valid())) {
-          if (unlikely(brecord.split.data == Split::SPLIT_FALLBACK)) {
-            deterministic_order(brecord.prims);
-            splitFallback(brecord.prims,lrecord.prims,rrecord.prims);
-            return nullptr;
+          
+          __forceinline const Split find(BuildRecord3& current) {
+            return find (current.prims,logBlockSize);
           }
-          /* perform temporal split */
-          else if (unlikely(brecord.split.data == Split::SPLIT_TEMPORAL)) {
-            return heuristicTemporalSplit.split(brecord.split,brecord.prims,lrecord.prims,rrecord.prims);
-          }
-          /* perform object split */
-          else {
-            heuristicObjectSplit.split(brecord.split,brecord.prims,lrecord.prims,rrecord.prims);
-            return nullptr;
-          }
-        }
-
-        /*! finds the best fallback split */
-        __forceinline Split findFallback(BuildRecord3& current, bool singleLeafTimeSegment)
-        {
-          /* if a leaf can only hold a single time-segment, we might have to do additional temporal splits */
-          if (singleLeafTimeSegment)
+          
+          /*! finds the best split */
+          const Split find(SetMB& set, const size_t logBlockSize)
           {
-            /* test if one primitive has more than one time segment in time range, if so split time */
-            for (size_t i=current.prims.object_range.begin(); i<current.prims.object_range.end(); i++) 
+            /* first try standard object split */
+            const Split object_split = heuristicObjectSplit.find(set,logBlockSize);
+            const float object_split_sah = object_split.splitSAH();
+            
+            /* do temporal splits only if the the time range is big enough */
+            if (set.time_range.size() > 1.01f/float(set.max_num_time_segments)) // FIXME: test temporal splits only when object split was bad
             {
-              const PrimRefMB& prim = (*current.prims.prims)[i];
-              const range<int> itime_range = getTimeSegmentRange(current.prims.time_range,prim.totalTimeSegments());
-              const int localTimeSegments = itime_range.size();
-              assert(localTimeSegments > 0);
-              if (localTimeSegments > 1) {
-                const int icenter = (itime_range.begin() + itime_range.end())/2;
-                const float splitTime = float(icenter)/float(prim.totalTimeSegments());
-                return Split(1.0f,Split::SPLIT_TEMPORAL,0,splitTime);
+              const Split temporal_split = heuristicTemporalSplit.find(set, logBlockSize);
+              const float temporal_split_sah = temporal_split.splitSAH();
+              
+              /* take temporal split if it improved SAH */
+              if (temporal_split_sah < object_split_sah)
+                return temporal_split;
+            }
+            
+            return object_split;
+          }
+          
+          /*! array partitioning */
+          __forceinline std::unique_ptr<mvector<PrimRefMB>> partition(BuildRecord3& brecord, BuildRecord3& lrecord, BuildRecord3& rrecord) 
+          {
+            /* perform fallback split */
+            //if (unlikely(!brecord.split.valid())) {
+            if (unlikely(brecord.split.data == Split::SPLIT_FALLBACK)) {
+              deterministic_order(brecord.prims);
+              splitFallback(brecord.prims,lrecord.prims,rrecord.prims);
+              return nullptr;
+            }
+            /* perform temporal split */
+            else if (unlikely(brecord.split.data == Split::SPLIT_TEMPORAL)) {
+              return heuristicTemporalSplit.split(brecord.split,brecord.prims,lrecord.prims,rrecord.prims);
+            }
+            /* perform object split */
+            else {
+              heuristicObjectSplit.split(brecord.split,brecord.prims,lrecord.prims,rrecord.prims);
+              return nullptr;
+            }
+          }
+          
+          /*! finds the best fallback split */
+          __forceinline Split findFallback(BuildRecord3& current, bool singleLeafTimeSegment)
+          {
+            /* if a leaf can only hold a single time-segment, we might have to do additional temporal splits */
+            if (singleLeafTimeSegment)
+            {
+              /* test if one primitive has more than one time segment in time range, if so split time */
+              for (size_t i=current.prims.object_range.begin(); i<current.prims.object_range.end(); i++) 
+              {
+                const PrimRefMB& prim = (*current.prims.prims)[i];
+                const range<int> itime_range = getTimeSegmentRange(current.prims.time_range,prim.totalTimeSegments());
+                const int localTimeSegments = itime_range.size();
+                assert(localTimeSegments > 0);
+                if (localTimeSegments > 1) {
+                  const int icenter = (itime_range.begin() + itime_range.end())/2;
+                  const float splitTime = float(icenter)/float(prim.totalTimeSegments());
+                  return Split(1.0f,Split::SPLIT_TEMPORAL,0,splitTime);
+                }
               }
             }
+            
+            /* otherwise return fallback split */
+            return Split(1.0f,Split::SPLIT_FALLBACK);
           }
           
-          /* otherwise return fallback split */
-          return Split(1.0f,Split::SPLIT_FALLBACK);
-        }
-
-        void splitFallback(const SetMB& set, SetMB& lset, SetMB& rset) // FIXME: also perform time split here?
-        {
-          mvector<PrimRefMB>& prims = *set.prims;
-
-          const size_t begin = set.object_range.begin();
-          const size_t end   = set.object_range.end();
-          const size_t center = (begin + end)/2;
+          void splitFallback(const SetMB& set, SetMB& lset, SetMB& rset) // FIXME: also perform time split here?
+          {
+            mvector<PrimRefMB>& prims = *set.prims;
+            
+            const size_t begin = set.object_range.begin();
+            const size_t end   = set.object_range.end();
+            const size_t center = (begin + end)/2;
+            
+            PrimInfoMB linfo = empty;
+            for (size_t i=begin; i<center; i++)
+              linfo.add_primref(prims[i]);
+            
+            PrimInfoMB rinfo = empty;
+            for (size_t i=center; i<end; i++)
+              rinfo.add_primref(prims[i]);	
+            
+            new (&lset) SetMB(linfo,set.prims,range<size_t>(begin,center),set.time_range);
+            new (&rset) SetMB(rinfo,set.prims,range<size_t>(center,end  ),set.time_range);
+          }
           
-          PrimInfoMB linfo = empty;
-          for (size_t i=begin; i<center; i++)
-            linfo.add_primref(prims[i]);
+          void deterministic_order(const SetMB& set) 
+          {
+            /* required as parallel partition destroys original primitive order */
+            PrimRefMB* prims = set.prims->data();
+            std::sort(&prims[set.object_range.begin()],&prims[set.object_range.end()]);
+          }
           
-          PrimInfoMB rinfo = empty;
-          for (size_t i=center; i<end; i++)
-            rinfo.add_primref(prims[i]);	
-          
-          new (&lset) SetMB(linfo,set.prims,range<size_t>(begin,center),set.time_range);
-          new (&rset) SetMB(rinfo,set.prims,range<size_t>(center,end  ),set.time_range);
-        }
-
-        void deterministic_order(const SetMB& set) 
-        {
-          /* required as parallel partition destroys original primitive order */
-          PrimRefMB* prims = set.prims->data();
-          std::sort(&prims[set.object_range.begin()],&prims[set.object_range.end()]);
-        }
-
-        const std::tuple<ReductionTy,LBBox3fa,BBox1f> createLargeLeaf(BuildRecord3& current, Allocator alloc)
-        {
-          /* this should never occur but is a fatal error */
-          if (current.depth > maxDepth) 
-            throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
-
-          /* replace already found split by fallback split */
-          current.split = findFallback(current,singleLeafTimeSegment);
-
-          /* create leaf for few primitives */
-          if (current.prims.size() <= maxLeafSize && current.split.data != Split::SPLIT_TEMPORAL)
-            return createLeaf(current,alloc);
-          
-          /* fill all children by always splitting the largest one */
-          std::tuple<ReductionTy,LBBox3fa,BBox1f> values[MAX_BRANCHING_FACTOR];
-          LocalChildList children(current);
-        
-          do {  
-            /* find best child with largest bounding box area */
-            size_t bestChild = -1;
-            size_t bestSize = 0;
-            for (size_t i=0; i<children.size(); i++)
-            {
-              /* ignore leaves as they cannot get split */
-              if (children[i].prims.size() <= maxLeafSize && children[i].split.data != Split::SPLIT_TEMPORAL)
-                continue;
-
-              /* remember child with largest size */
-              if (children[i].prims.size() > bestSize) {
-                bestSize = children[i].prims.size();
-                bestChild = i;
+          const std::tuple<ReductionTy,LBBox3fa,BBox1f> createLargeLeaf(BuildRecord3& current, Allocator alloc)
+          {
+            /* this should never occur but is a fatal error */
+            if (current.depth > maxDepth) 
+              throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
+            
+            /* replace already found split by fallback split */
+            current.split = findFallback(current,singleLeafTimeSegment);
+            
+            /* create leaf for few primitives */
+            if (current.prims.size() <= maxLeafSize && current.split.data != Split::SPLIT_TEMPORAL)
+              return createLeaf(current,alloc);
+            
+            /* fill all children by always splitting the largest one */
+            std::tuple<ReductionTy,LBBox3fa,BBox1f> values[MAX_BRANCHING_FACTOR];
+            LocalChildList children(current);
+            
+            do {  
+              /* find best child with largest bounding box area */
+              size_t bestChild = -1;
+              size_t bestSize = 0;
+              for (size_t i=0; i<children.size(); i++)
+              {
+                /* ignore leaves as they cannot get split */
+                if (children[i].prims.size() <= maxLeafSize && children[i].split.data != Split::SPLIT_TEMPORAL)
+                  continue;
+                
+                /* remember child with largest size */
+                if (children[i].prims.size() > bestSize) {
+                  bestSize = children[i].prims.size();
+                  bestChild = i;
+                }
               }
-            }
-            if (bestChild == -1) break;
-
-            /* perform best found split */
-            BuildRecord3& brecord = children[bestChild];
-            BuildRecord3 lrecord(current.depth+1);
-            BuildRecord3 rrecord(current.depth+1);
-            std::unique_ptr<mvector<PrimRefMB>> new_vector = partition(brecord,lrecord,rrecord);
+              if (bestChild == -1) break;
+              
+              /* perform best found split */
+              BuildRecord3& brecord = children[bestChild];
+              BuildRecord3 lrecord(current.depth+1);
+              BuildRecord3 rrecord(current.depth+1);
+              std::unique_ptr<mvector<PrimRefMB>> new_vector = partition(brecord,lrecord,rrecord);
+              
+              /* find new splits */
+              lrecord.split = findFallback(lrecord,singleLeafTimeSegment);
+              rrecord.split = findFallback(rrecord,singleLeafTimeSegment);
+              children.split(bestChild,lrecord,rrecord,std::move(new_vector));
+              
+            } while (children.size() < branchingFactor);
             
-            /* find new splits */
-            lrecord.split = findFallback(lrecord,singleLeafTimeSegment);
-            rrecord.split = findFallback(rrecord,singleLeafTimeSegment);
-            children.split(bestChild,lrecord,rrecord,std::move(new_vector));
-
-          } while (children.size() < branchingFactor);
-          
-          /* check if we did some time split */
-          bool hasTimeSplits = false;
-          for (size_t i=0; i<children.size() && !hasTimeSplits; i++)
-            hasTimeSplits |= current.prims.time_range != children[i].prims.time_range;
-
-          /* create node */
-          auto node = createNode(hasTimeSplits,alloc);
-          
-          /* recurse into each child  and perform reduction */
-          for (size_t i=0; i<children.size(); i++) {
-            values[i] = createLargeLeaf(children[i],alloc);
-            updateNode(node,i,values[i]);
-          }
-
-          /* calculate geometry bounds and time bounds of this node */
-          LBBox3fa gbounds = empty;
-          BBox1f tbounds = empty;
-          if (!hasTimeSplits)
-          {
-            for (size_t i=0; i<children.size(); i++)
-              gbounds.extend(std::get<1>(values[i]));
-            tbounds = std::get<2>(values[0]);
-          }
-          else
-          {
-            gbounds = current.prims.linearBounds(recalculatePrimRef);
-            tbounds = current.prims.time_range;
-          }
-          return std::make_tuple(node,gbounds,tbounds);
-        }
-
-        const std::tuple<ReductionTy,LBBox3fa,BBox1f> recurse(BuildRecord3& current, Allocator alloc, bool toplevel)
-        {
-          if (alloc == nullptr)
-            alloc = createAlloc();
-
-          /* call memory monitor function to signal progress */
-          if (toplevel && current.size() <= SINGLE_THREADED_THRESHOLD)
-            progressMonitor(current.size());
-          
-          /*! compute leaf and split cost */
-          const float leafSAH  = intCost*current.prims.leafSAH(logBlockSize);
-          const float splitSAH = travCost*current.prims.halfArea()+intCost*current.split.splitSAH();
-          assert((current.prims.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
-          assert(current.prims.size() == current.prims.object_range.size());
-
-          /*! create a leaf node when threshold reached or SAH tells us to stop */
-          if (current.prims.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.prims.size() <= maxLeafSize && leafSAH <= splitSAH)) {
-            deterministic_order(current.prims);
-            return createLargeLeaf(current,alloc);
-          }
-          
-          /*! initialize child list */
-          std::tuple<ReductionTy,LBBox3fa,BBox1f> values[MAX_BRANCHING_FACTOR];
-          LocalChildList children(current);
-          
-          /*! split until node is full or SAH tells us to stop */
-          do {
-            /*! find best child to split */
-            float bestSAH = neg_inf;
-            ssize_t bestChild = -1;
-            for (size_t i=0; i<children.size(); i++) 
-            {
-              if (children[i].prims.size() <= minLeafSize) continue;
-              if (expectedApproxHalfArea(children[i].prims.geomBounds) > bestSAH) {
-                bestChild = i; bestSAH = expectedApproxHalfArea(children[i].prims.geomBounds);
-              } 
-            }
-            if (bestChild == -1) break;
-
-            /* perform best found split */
-            BuildRecord3& brecord = children[bestChild];
-            BuildRecord3 lrecord(current.depth+1);
-            BuildRecord3 rrecord(current.depth+1);
-            std::unique_ptr<mvector<PrimRefMB>> new_vector = partition(brecord,lrecord,rrecord);            
+            /* check if we did some time split */
+            bool hasTimeSplits = false;
+            for (size_t i=0; i<children.size() && !hasTimeSplits; i++)
+              hasTimeSplits |= current.prims.time_range != children[i].prims.time_range;
             
-            /* find new splits */
-            lrecord.split = find(lrecord);
-            rrecord.split = find(rrecord);
-            children.split(bestChild,lrecord,rrecord,std::move(new_vector));
-
-          } while (children.size() < branchingFactor);
-          
-          /* sort buildrecords for simpler shadow ray traversal */
-          //std::sort(&children[0],&children[children.size()],std::greater<BuildRecord3>()); // FIXME: reduces traversal performance of bvh8.triangle4 (need to verified) !!
-          
-          /* check if we did some time split */
-          bool hasTimeSplits = false;
-          for (size_t i=0; i<children.size() && !hasTimeSplits; i++)
-            hasTimeSplits |= current.prims.time_range != children[i].prims.time_range;
-
-          /*! create an inner node */
-          auto node = createNode(hasTimeSplits,alloc);
-          
-          /* spawn tasks */
-          if (current.size() > SINGLE_THREADED_THRESHOLD) 
-          {
-            /*! parallel_for is faster than spawing sub-tasks */
-            parallel_for(size_t(0), children.size(), [&] (const range<size_t>& r) {
-                for (size_t i=r.begin(); i<r.end(); i++) {
-                  values[i] = recurse(children[i],nullptr,true); 
-                  updateNode(node,i,values[i]);
-                  _mm_mfence(); // to allow non-temporal stores during build
-                }                
-              });
-          }
-          /* recurse into each child */
-          else 
-          {
-            //for (size_t i=0; i<children.size(); i++)
-            for (ssize_t i=children.size()-1; i>=0; i--) {
-              values[i] = recurse(children[i],alloc,false);
+            /* create node */
+            auto node = createNode(hasTimeSplits,alloc);
+            
+            /* recurse into each child  and perform reduction */
+            for (size_t i=0; i<children.size(); i++) {
+              values[i] = createLargeLeaf(children[i],alloc);
               updateNode(node,i,values[i]);
             }
+            
+            /* calculate geometry bounds and time bounds of this node */
+            LBBox3fa gbounds = empty;
+            BBox1f tbounds = empty;
+            if (!hasTimeSplits)
+            {
+              for (size_t i=0; i<children.size(); i++)
+                gbounds.extend(std::get<1>(values[i]));
+              tbounds = std::get<2>(values[0]);
+            }
+            else
+            {
+              gbounds = current.prims.linearBounds(recalculatePrimRef);
+              tbounds = current.prims.time_range;
+            }
+            return std::make_tuple(node,gbounds,tbounds);
           }
+          
+          const std::tuple<ReductionTy,LBBox3fa,BBox1f> recurse(BuildRecord3& current, Allocator alloc, bool toplevel)
+          {
+            if (alloc == nullptr)
+              alloc = createAlloc();
+            
+            /* call memory monitor function to signal progress */
+            if (toplevel && current.size() <= SINGLE_THREADED_THRESHOLD)
+              progressMonitor(current.size());
+            
+            /*! compute leaf and split cost */
+            const float leafSAH  = intCost*current.prims.leafSAH(logBlockSize);
+            const float splitSAH = travCost*current.prims.halfArea()+intCost*current.split.splitSAH();
+            assert((current.prims.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
+            assert(current.prims.size() == current.prims.object_range.size());
+            
+            /*! create a leaf node when threshold reached or SAH tells us to stop */
+            if (current.prims.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.prims.size() <= maxLeafSize && leafSAH <= splitSAH)) {
+              deterministic_order(current.prims);
+              return createLargeLeaf(current,alloc);
+            }
+            
+            /*! initialize child list */
+            std::tuple<ReductionTy,LBBox3fa,BBox1f> values[MAX_BRANCHING_FACTOR];
+            LocalChildList children(current);
+            
+            /*! split until node is full or SAH tells us to stop */
+            do {
+              /*! find best child to split */
+              float bestSAH = neg_inf;
+              ssize_t bestChild = -1;
+              for (size_t i=0; i<children.size(); i++) 
+              {
+                if (children[i].prims.size() <= minLeafSize) continue;
+                if (expectedApproxHalfArea(children[i].prims.geomBounds) > bestSAH) {
+                  bestChild = i; bestSAH = expectedApproxHalfArea(children[i].prims.geomBounds);
+                } 
+              }
+              if (bestChild == -1) break;
+              
+              /* perform best found split */
+              BuildRecord3& brecord = children[bestChild];
+              BuildRecord3 lrecord(current.depth+1);
+              BuildRecord3 rrecord(current.depth+1);
+              std::unique_ptr<mvector<PrimRefMB>> new_vector = partition(brecord,lrecord,rrecord);            
+              
+              /* find new splits */
+              lrecord.split = find(lrecord);
+              rrecord.split = find(rrecord);
+              children.split(bestChild,lrecord,rrecord,std::move(new_vector));
+              
+            } while (children.size() < branchingFactor);
+            
+            /* sort buildrecords for simpler shadow ray traversal */
+            //std::sort(&children[0],&children[children.size()],std::greater<BuildRecord3>()); // FIXME: reduces traversal performance of bvh8.triangle4 (need to verified) !!
+            
+            /* check if we did some time split */
+            bool hasTimeSplits = false;
+            for (size_t i=0; i<children.size() && !hasTimeSplits; i++)
+              hasTimeSplits |= current.prims.time_range != children[i].prims.time_range;
+            
+            /*! create an inner node */
+            auto node = createNode(hasTimeSplits,alloc);
+            
+            /* spawn tasks */
+            if (current.size() > SINGLE_THREADED_THRESHOLD) 
+            {
+              /*! parallel_for is faster than spawing sub-tasks */
+              parallel_for(size_t(0), children.size(), [&] (const range<size_t>& r) {
+                  for (size_t i=r.begin(); i<r.end(); i++) {
+                    values[i] = recurse(children[i],nullptr,true); 
+                    updateNode(node,i,values[i]);
+                    _mm_mfence(); // to allow non-temporal stores during build
+                  }                
+                });
+            }
+            /* recurse into each child */
+            else 
+            {
+              //for (size_t i=0; i<children.size(); i++)
+              for (ssize_t i=children.size()-1; i>=0; i--) {
+                values[i] = recurse(children[i],alloc,false);
+                updateNode(node,i,values[i]);
+              }
+            }
+            
+            /* calculate geometry bounds and time bounds of this node */
+            LBBox3fa gbounds = empty;
+            BBox1f tbounds = empty;
+            if (!hasTimeSplits)
+            {
+              for (size_t i=0; i<children.size(); i++)
+                gbounds.extend(std::get<1>(values[i]));
+              tbounds = std::get<2>(values[0]);
+            }
+            else
+            {
+              gbounds = current.prims.linearBounds(recalculatePrimRef);
+              tbounds = current.prims.time_range;
+            }
+            return std::make_tuple(node,gbounds,tbounds);
+          }
+          
+          /*! builder entry function */
+          __forceinline const std::tuple<ReductionTy,LBBox3fa,BBox1f> operator() (BuildRecord3& record)
+          {
+            record.split = find(record); 
+            auto ret = recurse(record,nullptr,true);
+            _mm_mfence(); // to allow non-temporal stores during build
+            return ret;
+          }
+          
+        private:
+          HeuristicArrayBinningMB<PrimRefMB,NUM_OBJECT_BINS> heuristicObjectSplit;
+          HeuristicMBlurTemporalSplit<PrimRefMB,RecalculatePrimRef,NUM_TEMPORAL_BINS> heuristicTemporalSplit;
+          RecalculatePrimRef& recalculatePrimRef;
+          CreateAllocFunc& createAlloc;
+          CreateNodeFunc& createNode;
+          UpdateNodeFunc& updateNode;
+          CreateLeafFunc& createLeaf;
+          ProgressMonitor& progressMonitor;
+          
+        private:
+          const size_t branchingFactor;
+          const size_t maxDepth;
+          const size_t logBlockSize;
+          const size_t minLeafSize;
+          const size_t maxLeafSize;
+          const float travCost;
+          const float intCost;
+          const bool singleLeafTimeSegment;
+        };
 
-          /* calculate geometry bounds and time bounds of this node */
-          LBBox3fa gbounds = empty;
-          BBox1f tbounds = empty;
-          if (!hasTimeSplits)
-          {
-            for (size_t i=0; i<children.size(); i++)
-              gbounds.extend(std::get<1>(values[i]));
-            tbounds = std::get<2>(values[0]);
-          }
-          else
-          {
-            gbounds = current.prims.linearBounds(recalculatePrimRef);
-            tbounds = current.prims.time_range;
-          }
-          return std::make_tuple(node,gbounds,tbounds);
-        }
-        
-        /*! builder entry function */
-        __forceinline const std::tuple<ReductionTy,LBBox3fa,BBox1f> operator() (BuildRecord3& record)
+      template<
+        typename ReductionTy, 
+        typename RecalculatePrimRef, 
+        typename CreateAllocFunc, 
+        typename CreateNodeFunc, 
+        typename UpdateNodeFunc, 
+        typename CreateLeafFunc, 
+        typename ProgressMonitor>
+
+        static const std::tuple<ReductionTy,LBBox3fa,BBox1f> build(BuildRecord3& record,
+                                                                   MemoryMonitorInterface* device,
+                                                                   RecalculatePrimRef& recalculatePrimRef,
+                                                                   CreateAllocFunc& createAlloc, 
+                                                                   CreateNodeFunc& createNode, 
+                                                                   UpdateNodeFunc& updateNode, 
+                                                                   CreateLeafFunc& createLeaf,
+                                                                   ProgressMonitor& progressMonitor,
+                                                                   const size_t branchingFactor, const size_t maxDepth, 
+                                                                   const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize,
+                                                                   const float travCost, const float intCost, const bool singleLeafTimeSegment)
         {
-          record.split = find(record); 
-          auto ret = recurse(record,nullptr,true);
-          _mm_mfence(); // to allow non-temporal stores during build
-          return ret;
+          typedef GeneralBVHMBBuilder<
+            RecalculatePrimRef,
+            ReductionTy,
+            decltype(createAlloc()),
+            decltype(createAlloc),
+            decltype(createNode),
+            decltype(updateNode),
+            decltype(createLeaf),
+            decltype(progressMonitor)> Builder;
+
+          /* instantiate builder */
+          Builder builder(device,
+                          recalculatePrimRef,
+                          createAlloc,
+                          createNode,
+                          updateNode,
+                          createLeaf,
+                          progressMonitor,
+                          branchingFactor, maxDepth,
+                          logBlockSize, minLeafSize, maxLeafSize,
+                          travCost, intCost, singleLeafTimeSegment);
+          
+          return builder(record);
         }
-        
-      private:
-        HeuristicArrayBinningMB<PrimRefMB,NUM_OBJECT_BINS> heuristicObjectSplit;
-        HeuristicMBlurTemporalSplit<PrimRefMB,RecalculatePrimRef,NUM_TEMPORAL_BINS> heuristicTemporalSplit;
-        RecalculatePrimRef& recalculatePrimRef;
-        CreateAllocFunc& createAlloc;
-        CreateNodeFunc& createNode;
-        UpdateNodeFunc& updateNode;
-        CreateLeafFunc& createLeaf;
-        ProgressMonitor& progressMonitor;
-        
-      private:
-        const size_t branchingFactor;
-        const size_t maxDepth;
-        const size_t logBlockSize;
-        const size_t minLeafSize;
-        const size_t maxLeafSize;
-        const float travCost;
-        const float intCost;
-        const bool singleLeafTimeSegment;
-      };
+    };
   }
 }
+  
