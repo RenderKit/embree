@@ -151,7 +151,9 @@ namespace embree
       {
         /*! default settings */
         Settings () 
-        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8), travCost(1.0f), intCost(1.0f), singleLeafTimeSegment(false) {}
+        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8), 
+          travCost(1.0f), intCost(1.0f), singleLeafTimeSegment(false), 
+          singleThreadThreshold(1024) {}
 
       public:
         size_t branchingFactor;  //!< branching factor of BVH to build
@@ -162,6 +164,7 @@ namespace embree
         float travCost;          //!< estimated cost of one traversal step
         float intCost;           //!< estimated cost of one primitive intersection
         bool singleLeafTimeSegment; //!< split time to single time range
+        size_t singleThreadThreshold; //!< threshold when we switch to single threaded build
       };
 
       struct BuildRecord
@@ -200,7 +203,6 @@ namespace embree
       {
         static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximal supported BVH branching factor
         static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree of we are that many levels before the maximal tree depth
-        static const size_t SINGLE_THREADED_THRESHOLD = 1024;  //!< threshold to switch to single threaded build
         
         typedef BinSplit<NUM_OBJECT_BINS> Split;
         typedef mvector<PrimRefMB>* PrimRefVector;
@@ -410,7 +412,7 @@ namespace embree
             alloc = createAlloc();
           
           /* call memory monitor function to signal progress */
-          if (toplevel && current.size() <= SINGLE_THREADED_THRESHOLD)
+          if (toplevel && current.size() <= singleThreadThreshold)
             progressMonitor(current.size());
           
           /*! compute leaf and split cost */
@@ -468,7 +470,7 @@ namespace embree
           auto node = createNode(hasTimeSplits,alloc);
           
           /* spawn tasks */
-          if (current.size() > SINGLE_THREADED_THRESHOLD) 
+          if (current.size() > singleThreadThreshold) 
           {
             /*! parallel_for is faster than spawing sub-tasks */
             parallel_for(size_t(0), children.size(), [&] (const range<size_t>& r) {
