@@ -738,7 +738,7 @@ namespace embree
                                              bvh->scene->progressInterface,
                                              settings);
         
-        bvh->set(root,rootBounds,pinfo.size());
+        bvh->set(root,rootBounds,pinfo.num_time_segments);
       }
 
       void build(size_t, size_t) 

@@ -348,7 +348,7 @@ namespace embree
             progress,
             record,N,BVH::maxBuildDepthLeaf,1,1,BVH::maxLeafBlocks);
         
-        bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
+        bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.num_time_segments);
         
         //});
         

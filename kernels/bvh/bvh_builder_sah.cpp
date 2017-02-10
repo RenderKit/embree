@@ -716,8 +716,8 @@ namespace embree
       void buildMultiSegment(size_t numPrimitives)
       {
         /* create primref array */
-        mvector<PrimRefMB> primsMB(scene->device,numPrimitives);
-        PrimInfoMB pinfo = createPrimRefMBArray<Mesh>(scene,primsMB,bvh->scene->progressInterface);
+        mvector<PrimRefMB> prims(scene->device,numPrimitives);
+        PrimInfoMB pinfo = createPrimRefMBArray<Mesh>(scene,prims,bvh->scene->progressInterface);
 
         /* estimate acceleration structure size */
         size_t bytes = pinfo.num_time_segments*sizeof(AlignedNodeMB)/(4*N) + size_t(1.2*Primitive::blocks(pinfo.num_time_segments)*sizeof(Primitive));
@@ -737,7 +737,7 @@ namespace embree
         /* build hierarchy */
         NodeRef root; LBBox3fa rootBounds;
         std::tie (root, rootBounds, std::ignore) = 
-          BVHMBuilderMSMBlur::build<NodeRef>(primsMB,pinfo,scene->device,
+          BVHMBuilderMSMBlur::build<NodeRef>(prims,pinfo,scene->device,
                                              RecalculatePrimRef<Mesh>(scene),
                                              typename BVH::CreateAlloc(bvh),
                                              typename BVH::CreateAlignedNodeMB4D(bvh),
@@ -746,7 +746,7 @@ namespace embree
                                              bvh->scene->progressInterface,
                                              settings);
         
-        bvh->set(root,rootBounds,pinfo.size());
+        bvh->set(root,rootBounds,pinfo.num_time_segments);
       }
 
       void clear() {
