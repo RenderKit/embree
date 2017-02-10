@@ -649,8 +649,12 @@ namespace embree
       const size_t maxLeafSize;
       const size_t singleThreadThreshold;
 
-      BVHNBuilderMBlurSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
-        : bvh(bvh), scene(scene), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)), singleThreadThreshold(singleThreadThreshold) {}
+      BVHNBuilderMBlurSAH (BVH* bvh, Scene* scene, 
+                           const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, 
+                           const size_t mode, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
+        : bvh(bvh), scene(scene), 
+          sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)), 
+          singleThreadThreshold(singleThreadThreshold) {}
 
       void build(size_t, size_t) 
       {
@@ -741,8 +745,8 @@ namespace embree
           BVHMBuilderMSMBlur::build<NodeRef>(prims,pinfo,scene->device,
                                              RecalculatePrimRef<Mesh>(scene),
                                              typename BVH::CreateAlloc(bvh),
-                                             typename BVH::CreateAlignedNodeMB4D(bvh),
-                                             typename BVH::UpdateAlignedNodeMB4D(bvh),
+                                             typename BVH::CreateAlignedNodeMB4D(),
+                                             typename BVH::UpdateAlignedNodeMB4D(),
                                              CreateMBlurLeaf<N,Mesh,Primitive>(bvh),
                                              bvh->scene->progressInterface,
                                              settings);

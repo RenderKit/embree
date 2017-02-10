@@ -547,31 +547,23 @@ namespace embree
 
     struct CreateAlignedNodeMB4D
     {
-      __forceinline CreateAlignedNodeMB4D (BVHN* bvh) 
-        : bvh(bvh) {}
-      
       __forceinline NodeRef operator() (bool hasTimeSplits, FastAllocator::ThreadLocal2* alloc) const
       {
         if (hasTimeSplits)
         {
           AlignedNodeMB4D* node = (AlignedNodeMB4D*) alloc->alloc0->malloc(sizeof(AlignedNodeMB4D),byteNodeAlignment); node->clear();
-          return bvh->encodeNode(node);
+          return BVHN::encodeNode(node);
         }
         else
         {
           AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),byteNodeAlignment); node->clear();
-          return bvh->encodeNode(node);
+          return BVHN::encodeNode(node);
         }
       }
-
-      BVHN* bvh;
     };
 
     struct UpdateAlignedNodeMB4D
     {
-      __forceinline UpdateAlignedNodeMB4D (BVHN* bvh) 
-        : bvh(bvh) {}
-      
       __forceinline void operator() (NodeRef ref, const size_t i, const std::tuple<NodeRef,LBBox3fa,BBox1f>& child) const
       {
         if (likely(ref.isAlignedNodeMB())) {
@@ -580,8 +572,6 @@ namespace embree
           ref.alignedNodeMB4D()->set(i, child);
         }
       }
-
-      BVHN* bvh;
     };
 
     /*! Motion Blur AlignedNode */

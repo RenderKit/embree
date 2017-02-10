@@ -693,10 +693,6 @@ namespace embree
         pinfo.object_range._end = pinfo.object_range.begin();
         pinfo.object_range._begin = 0;
 
-        //auto virtualprogress = BuildProgressMonitorFromClosure([&] (size_t dn) { 
-            //bvh->scene->progressMonitor(double(dn)); // FIXME: triggers GCC compiler bug
-        //  });
-        
         auto createLeafFunc = [&] (const BVHMBuilderMSMBlur::BuildRecord& current, Allocator* alloc) -> std::tuple<NodeRef,LBBox3fa,BBox1f> {
           mvector<PrimRefMB>& prims = *current.prims.prims;
           size_t items MAYBE_UNUSED = current.prims.size();
@@ -726,9 +722,9 @@ namespace embree
           BVHMBuilderMSMBlur::build<NodeRef>(primsMB,pinfo,scene->device,
                                              recalculatePrimRef,
                                              typename BVH::CreateAlloc(bvh),
-                                             typename BVH::CreateAlignedNodeMB4D(bvh),
-                                             typename BVH::UpdateAlignedNodeMB4D(bvh),
-                                              createLeafFunc,
+                                             typename BVH::CreateAlignedNodeMB4D(),
+                                             typename BVH::UpdateAlignedNodeMB4D(),
+                                             createLeafFunc,
                                              bvh->scene->progressInterface,
                                              settings);
         
