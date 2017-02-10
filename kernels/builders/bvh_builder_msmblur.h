@@ -185,7 +185,7 @@ namespace embree
       };
       
       template<typename RecalculatePrimRef, 
-        typename ReductionTy, 
+        typename NodeTy, 
         typename Allocator, 
         typename CreateAllocFunc, 
         typename CreateNodeFunc, 
@@ -322,7 +322,7 @@ namespace embree
           std::sort(&prims[set.object_range.begin()],&prims[set.object_range.end()]);
         }
         
-        const std::tuple<ReductionTy,LBBox3fa,BBox1f> createLargeLeaf(BuildRecord3& current, Allocator alloc)
+        const std::tuple<NodeTy,LBBox3fa,BBox1f> createLargeLeaf(BuildRecord3& current, Allocator alloc)
         {
           /* this should never occur but is a fatal error */
           if (current.depth > maxDepth) 
@@ -336,7 +336,7 @@ namespace embree
             return createLeaf(current,alloc);
           
           /* fill all children by always splitting the largest one */
-          std::tuple<ReductionTy,LBBox3fa,BBox1f> values[MAX_BRANCHING_FACTOR];
+          std::tuple<NodeTy,LBBox3fa,BBox1f> values[MAX_BRANCHING_FACTOR];
           LocalChildList children(current);
           
           do {  
@@ -401,7 +401,7 @@ namespace embree
           return std::make_tuple(node,gbounds,tbounds);
         }
         
-        const std::tuple<ReductionTy,LBBox3fa,BBox1f> recurse(BuildRecord3& current, Allocator alloc, bool toplevel)
+        const std::tuple<NodeTy,LBBox3fa,BBox1f> recurse(BuildRecord3& current, Allocator alloc, bool toplevel)
         {
           if (alloc == nullptr)
             alloc = createAlloc();
@@ -423,7 +423,7 @@ namespace embree
           }
           
           /*! initialize child list */
-          std::tuple<ReductionTy,LBBox3fa,BBox1f> values[MAX_BRANCHING_FACTOR];
+          std::tuple<NodeTy,LBBox3fa,BBox1f> values[MAX_BRANCHING_FACTOR];
           LocalChildList children(current);
           
           /*! split until node is full or SAH tells us to stop */
@@ -504,7 +504,7 @@ namespace embree
         }
         
         /*! builder entry function */
-        __forceinline const std::tuple<ReductionTy,LBBox3fa,BBox1f> operator() (BuildRecord3& record)
+        __forceinline const std::tuple<NodeTy,LBBox3fa,BBox1f> operator() (BuildRecord3& record)
         {
           record.split = find(record); 
           auto ret = recurse(record,nullptr,true);
@@ -523,7 +523,7 @@ namespace embree
         ProgressMonitor& progressMonitor;
       };
       
-      template<typename ReductionTy, 
+      template<typename NodeTy, 
         typename RecalculatePrimRef, 
         typename CreateAllocFunc, 
         typename CreateNodeFunc, 
@@ -531,7 +531,7 @@ namespace embree
         typename CreateLeafFunc, 
         typename ProgressMonitor>
         
-        static const std::tuple<ReductionTy,LBBox3fa,BBox1f> build(BuildRecord3& record,
+        static const std::tuple<NodeTy,LBBox3fa,BBox1f> build(BuildRecord3& record,
                                                                    MemoryMonitorInterface* device,
                                                                    RecalculatePrimRef& recalculatePrimRef,
                                                                    CreateAllocFunc& createAlloc, 
@@ -543,7 +543,7 @@ namespace embree
       {
         typedef GeneralBVHMBBuilder<
           RecalculatePrimRef,
-          ReductionTy,
+          NodeTy,
           decltype(createAlloc()),
           decltype(createAlloc),
           decltype(createNode),
