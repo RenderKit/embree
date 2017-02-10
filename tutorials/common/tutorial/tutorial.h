@@ -111,6 +111,8 @@ namespace embree
     
     float speed;
 
+     std::unique_ptr<ISPCScene> ispc_scene;
+     
   public:
     static TutorialApplication* instance;
   };
