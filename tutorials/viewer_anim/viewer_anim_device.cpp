@@ -18,7 +18,7 @@
 #define ENABLE_ANIM 0
 #define VERTEX_NORMALS 1
 #define SHADOWS 0
-#define ANTI_ALIASING 1
+#define ANTI_ALIASING 0
 #define DUMP_PROFILE_DATA 0
 
 #include "../common/math/random_sampler.h"

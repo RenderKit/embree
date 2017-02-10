@@ -48,7 +48,7 @@ namespace embree
 
 
     template<int N, typename Mesh>
-    void BVHNBuilderTwoLevel<N,Mesh>::open_merge_build_sequential(mvector<BuildRef> &buildRefs, const PrimInfo &pinfo)
+    void BVHNBuilderTwoLevel<N,Mesh>::open_merge_build_sequential(avector<BuildRef> &buildRefs, const PrimInfo &pinfo)
     {
       assert(pinfo.size());
       PRINT(pinfo);
@@ -75,7 +75,10 @@ namespace embree
       const size_t logBlockSize = 1;
       Heuristic heuristic((BuildRef*)buildRefs.data());
       typename Heuristic::Split split = heuristic.find(pinfo,logBlockSize);
+      assert(split.valid());
+      PRINT(split);
 
+#if 0
       /* open bvh nodes */
 
       avector<BuildRef> opened_buildRefs;
@@ -85,7 +88,9 @@ namespace embree
 
       for (size_t i=pinfo.begin;i<pinfo.end;i++)
         if (buildRefs[i].node.isLeaf())
+        {
           opened_buildRefs.push_back(buildRefs[i]);
+        }
         else
         {
           NodeRef ref = buildRefs[i].node;
@@ -98,17 +103,63 @@ namespace embree
           }
         }
       PRINT(opened_buildRefs.size());
-      exit(0);
-      /* --------------*/
 
-      PrimInfo left, right;
-      heuristic.split(split,pinfo,left,right);
-      PRINT(left);
-      PRINT(right);
-      assert(left.size());
-      assert(right.size());
-      open_merge_build_sequential(buildRefs,left);
-      open_merge_build_sequential(buildRefs,right);      
+      PrimInfo opened_pinfo(empty);
+      for (size_t i=0;i<opened_buildRefs.size();i++)
+        opened_pinfo.add(opened_buildRefs[i].bounds(),opened_buildRefs[i].bounds().center2());
+      PRINT(opened_pinfo);
+
+      Heuristic opened_heuristic((BuildRef*)opened_buildRefs.data());
+      typename Heuristic::Split opened_split = opened_heuristic.find(opened_pinfo,logBlockSize);
+      PRINT(opened_split);
+
+      if (opened_split.sah() && opened_split.sah < 8.0f * split.sah)
+      {
+        PRINT("OPEN SPLIT");
+        PrimInfo left, right;
+
+        for (size_t i=pinfo.begin;i<pinfo.end;i++)
+          if (buildRefs[i].bounds)
+
+        
+        
+      }
+      else
+#endif
+      {
+        PRINT("REGULAR SPLIT");
+        /* --------------*/
+        PrimInfo left(empty), right(empty);
+        
+        const vint4 vSplitPos(split.pos);
+        const vbool4 vSplitMask( (int)1 << split.dim );
+
+        avector<BuildRef> left_refs(0);
+        avector<BuildRef> right_refs(0);
+
+        for (size_t i=0;i<buildRefs.size();i++)
+        {
+          if (split.mapping.bin_unsafe(buildRefs[i],vSplitPos,vSplitMask))
+          {
+            left.add(buildRefs[i].bounds(),buildRefs[i].bounds().center2());            
+            left_refs.push_back(buildRefs[i]);
+          }
+          else
+          {
+            right.add(buildRefs[i].bounds(),buildRefs[i].bounds().center2());            
+            right_refs.push_back(buildRefs[i]);
+          }
+        }
+
+
+
+        PRINT(left);
+        PRINT(right);
+        assert(left.size());
+        assert(right.size());
+        open_merge_build_sequential(left_refs,left);
+        open_merge_build_sequential(right_refs,right);      
+      }
     }
 
     // ===========================================================================
@@ -212,10 +263,14 @@ namespace embree
 
         PRINT(refs.size());
         prims.resize(0);
+        avector<BuildRef> new_refs;
         PrimInfo pinfo(empty);
         for (size_t i=0;i<refs.size();i++) 
+        {
           pinfo.add(refs[i].bounds(),refs[i].bounds().center2());
-        open_merge_build_sequential(refs,pinfo);
+          new_refs.push_back(refs[i]);
+        }
+        open_merge_build_sequential(new_refs,pinfo);
         PRINT(prims.size());
 #else
         open_sequential(numPrimitives); 
