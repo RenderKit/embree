@@ -363,7 +363,7 @@ namespace embree
             hasTimeSplits |= current.prims.time_range != children[i].prims.time_range;
 
           /* create node */
-          auto node = createNode(hasTimeSplits,current,&children[0],children.size(),alloc);
+          auto node = createNode(hasTimeSplits,alloc);
           
           /* recurse into each child  and perform reduction */
           for (size_t i=0; i<children.size(); i++)
@@ -434,7 +434,7 @@ namespace embree
             hasTimeSplits |= current.prims.time_range != children[i].prims.time_range;
 
           /*! create an inner node */
-          auto node = createNode(hasTimeSplits,current,&children[0],children.size(),alloc);
+          auto node = createNode(hasTimeSplits,alloc);
           
           /* spawn tasks */
           if (current.size() > SINGLE_THREADED_THRESHOLD) 

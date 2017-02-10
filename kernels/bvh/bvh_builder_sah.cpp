@@ -607,33 +607,6 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 
-    template<int N>
-      struct CreateAlignedNodeMB4D
-    {
-      typedef BVHN<N> BVH;
-      typedef typename BVH::NodeRef NodeRef;
-      typedef typename BVH::AlignedNodeMB AlignedNodeMB;
-      typedef typename BVH::AlignedNodeMB4D AlignedNodeMB4D;
-
-      __forceinline CreateAlignedNodeMB4D (BVH* bvh) : bvh(bvh) {}
-      
-      __forceinline NodeRef operator() (bool hasTimeSplits, const BuildRecord3& current, BuildRecord3* children, const size_t num, FastAllocator::ThreadLocal2* alloc)
-      {
-        if (hasTimeSplits)
-        {
-          AlignedNodeMB4D* node = (AlignedNodeMB4D*) alloc->alloc0->malloc(sizeof(AlignedNodeMB4D),BVH::byteNodeAlignment); node->clear();
-          return bvh->encodeNode(node);
-        }
-        else
-        {
-          AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),BVH::byteNodeAlignment); node->clear();
-          return bvh->encodeNode(node);
-        }
-      }
-
-      BVH* bvh;
-    };
-
     template<int N, typename Mesh, typename Primitive>
     struct CreateMBlurLeaf
     {
@@ -785,7 +758,7 @@ namespace embree
 
         /* instantiate builder */
         auto createAllocFunc = typename BVH::CreateAlloc(bvh);
-        auto createNodeFunc = CreateAlignedNodeMB4D<N>(bvh);
+        auto createNodeFunc = typename BVH::CreateAlignedNodeMB4D(bvh);
         auto createLeafFunc = CreateMBlurLeaf<N,Mesh,Primitive>(bvh);
         auto progressMonitor = bvh->scene->progressInterface;
 

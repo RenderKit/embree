@@ -145,7 +145,7 @@ namespace embree
 
       BVHN* bvh;
     };
-    
+
     /*! Builder interface to create Node */
     struct CreateQuantizedNode
     {
@@ -543,6 +543,27 @@ namespace embree
       vfloat<N> upper_y;           //!< Y dimension of upper bounds of all N children.
       vfloat<N> lower_z;           //!< Z dimension of lower bounds of all N children.
       vfloat<N> upper_z;           //!< Z dimension of upper bounds of all N children.
+    };
+
+    struct CreateAlignedNodeMB4D
+    {
+      __forceinline CreateAlignedNodeMB4D (BVHN* bvh) : bvh(bvh) {}
+      
+      __forceinline NodeRef operator() (bool hasTimeSplits, FastAllocator::ThreadLocal2* alloc)
+      {
+        if (hasTimeSplits)
+        {
+          AlignedNodeMB4D* node = (AlignedNodeMB4D*) alloc->alloc0->malloc(sizeof(AlignedNodeMB4D),byteNodeAlignment); node->clear();
+          return bvh->encodeNode(node);
+        }
+        else
+        {
+          AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),byteNodeAlignment); node->clear();
+          return bvh->encodeNode(node);
+        }
+      }
+
+      BVHN* bvh;
     };
 
     /*! Motion Blur AlignedNode */
