@@ -637,9 +637,6 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVHN<N>::NodeRef NodeRef;
       typedef typename BVHN<N>::AlignedNodeMB AlignedNodeMB;
-      typedef typename BVHN<N>::AlignedNodeMB4D AlignedNodeMB4D;
-
-      typedef BinSplit<NUM_OBJECT_BINS> Split;
 
       BVH* bvh;
       Scene* scene;
@@ -668,12 +665,7 @@ namespace embree
         profile(2,PROFILE_RUNS,numPrimitives,[&] (ProfileTimer& timer) {
 #endif
 
-        const size_t numTimeSteps = scene->getNumTimeSteps<Mesh,true>();
-        const size_t numTimeSegments = numTimeSteps-1; assert(numTimeSteps > 1);
-
-        bvh->numTimeSteps = numTimeSteps;
-
-        if (numTimeSegments == 1)
+        if (scene->getNumTimeSteps<Mesh,true>() == 2)
           buildSingleSegment(numPrimitives);
         else
           buildMultiSegment(numPrimitives);
@@ -694,10 +686,14 @@ namespace embree
         mvector<PrimRef> prims(scene->device,numPrimitives);
         const PrimInfo pinfo = createPrimRefArrayMBlur<Mesh>(0,2,scene,prims,bvh->scene->progressInterface);
 
-        /* reduction function */
+        /* estimate acceleration structure size */
+        const size_t node_bytes = pinfo.size()*sizeof(AlignedNodeMB)/(4*N);
+        const size_t leaf_bytes = size_t(1.2*Primitive::blocks(pinfo.size())*sizeof(Primitive));
+        bvh->alloc.init_estimate(node_bytes+leaf_bytes);
+
+        /* reduction function that updates the bounds */
         auto reduce = [&] (AlignedNodeMB* node, const LBBox3fa* bounds, const size_t num) -> LBBox3fa
         {
-          assert(num <= N);
           LBBox3fa allBounds = empty;
           for (size_t i=0; i<num; i++) {
             node->set(i, bounds[i]);
@@ -705,13 +701,12 @@ namespace embree
           }
           return allBounds;
         };
-        auto identity = LBBox3fa(empty);
-
-        bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef));
-
+        
+        /* build hierarchy */
         NodeRef root;
         LBBox3fa rootBounds = BVHBuilderBinnedSAH::build_reduce<NodeRef>
-          (root,typename BVH::CreateAlloc(bvh),identity,CreateAlignedNodeMB<N>(bvh),reduce,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),0),bvh->scene->progressInterface,
+          (root,typename BVH::CreateAlloc(bvh),LBBox3fa(empty),CreateAlignedNodeMB<N>(bvh),reduce,
+           CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),0),bvh->scene->progressInterface,
            prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
 
         bvh->set(root,rootBounds,pinfo.size());
@@ -724,8 +719,9 @@ namespace embree
         PrimInfoMB pinfo = createPrimRefMBArray<Mesh>(scene,prims,bvh->scene->progressInterface);
 
         /* estimate acceleration structure size */
-        size_t bytes = pinfo.num_time_segments*sizeof(AlignedNodeMB)/(4*N) + size_t(1.2*Primitive::blocks(pinfo.num_time_segments)*sizeof(Primitive));
-        bvh->alloc.init_estimate(bytes);
+        const size_t node_bytes = pinfo.num_time_segments*sizeof(AlignedNodeMB)/(4*N);
+        const size_t leaf_bytes = size_t(1.2*Primitive::blocks(pinfo.num_time_segments)*sizeof(Primitive));
+        bvh->alloc.init_estimate(node_bytes+leaf_bytes);
       
         /* configuration for BVH build */
         BVHMBuilderMSMBlur::Settings settings;
