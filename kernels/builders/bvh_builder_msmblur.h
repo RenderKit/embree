@@ -181,8 +181,9 @@ namespace embree
 	BinSplit<NUM_OBJECT_BINS> split;  //!< The best split for the primitives.
       };
       
-      template<typename RecalculatePrimRef, 
+      template<
         typename NodeTy, 
+        typename RecalculatePrimRef,         
         typename Allocator, 
         typename CreateAllocFunc, 
         typename CreateNodeFunc, 
@@ -203,13 +204,13 @@ namespace embree
       public:
         
         BuilderT (MemoryMonitorInterface* device,
-                             RecalculatePrimRef recalculatePrimRef,
-                             CreateAllocFunc createAlloc, 
-                             CreateNodeFunc createNode, 
-                             UpdateNodeFunc updateNode, 
-                             CreateLeafFunc createLeaf,
-                             ProgressMonitor progressMonitor,
-                             const Settings& settings)
+                  const RecalculatePrimRef recalculatePrimRef,
+                  const CreateAllocFunc createAlloc, 
+                  const CreateNodeFunc createNode, 
+                  const UpdateNodeFunc updateNode, 
+                  const CreateLeafFunc createLeaf,
+                  const ProgressMonitor progressMonitor,
+                  const Settings& settings)
           : Settings(settings),
           heuristicObjectSplit(),
           heuristicTemporalSplit(device, recalculatePrimRef),
@@ -516,7 +517,7 @@ namespace embree
         const CreateNodeFunc createNode;
         const UpdateNodeFunc updateNode;
         const CreateLeafFunc createLeaf;
-        ProgressMonitor progressMonitor;
+        const ProgressMonitor progressMonitor;
       };
       
       template<typename NodeTy, 
@@ -525,28 +526,28 @@ namespace embree
         typename CreateNodeFunc, 
         typename UpdateNodeFunc, 
         typename CreateLeafFunc, 
-        typename ProgressMonitor>
+        typename ProgressMonitorFunc>
         
         static const std::tuple<NodeTy,LBBox3fa,BBox1f> build(mvector<PrimRefMB>& prims,
                                                               PrimInfoMB pinfo,
                                                               MemoryMonitorInterface* device,
-                                                              RecalculatePrimRef recalculatePrimRef,
-                                                              CreateAllocFunc createAlloc, 
-                                                              CreateNodeFunc createNode, 
-                                                              UpdateNodeFunc updateNode, 
-                                                              CreateLeafFunc createLeaf,
-                                                              ProgressMonitor progressMonitor,
+                                                              const RecalculatePrimRef recalculatePrimRef,
+                                                              const CreateAllocFunc createAlloc, 
+                                                              const CreateNodeFunc createNode, 
+                                                              const UpdateNodeFunc updateNode, 
+                                                              const CreateLeafFunc createLeaf,
+                                                              const ProgressMonitorFunc progressMonitor,
                                                               const Settings& settings)
       {
         typedef BuilderT<
-          RecalculatePrimRef,
           NodeTy,
+          RecalculatePrimRef,
           decltype(createAlloc()),
-          decltype(createAlloc),
-          decltype(createNode),
-          decltype(updateNode),
-          decltype(createLeaf),
-          decltype(progressMonitor)> Builder;
+          CreateAllocFunc,
+          CreateNodeFunc,
+          UpdateNodeFunc,
+          CreateLeafFunc,
+          ProgressMonitorFunc> Builder;
         
         Builder builder(device,
                         recalculatePrimRef,
