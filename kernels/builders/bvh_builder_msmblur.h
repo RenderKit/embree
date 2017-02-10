@@ -104,8 +104,9 @@ namespace embree
       public:
         array_t<BuildRecord,MAX_BRANCHING_FACTOR> children;
         array_t<SharedPrimRefVector*,MAX_BRANCHING_FACTOR> primvecs;
-        array_t<SharedPrimRefVector,2*MAX_BRANCHING_FACTOR> sharedPrimVecs;
         size_t numChildren;
+
+        array_t<SharedPrimRefVector,2*MAX_BRANCHING_FACTOR> sharedPrimVecs;
         size_t numSharedPrimVecs;
         size_t depth;
       };
@@ -122,7 +123,7 @@ namespace embree
         {
           const unsigned geomID = prim.geomID();
           const unsigned primID = prim.primID();
-          const Mesh* mesh = (Mesh*)scene->get(geomID);
+          const Mesh* mesh = scene->get<Mesh>(geomID);
           const LBBox3fa lbounds = mesh->linearBounds(primID, time_range);
           const unsigned num_time_segments = mesh->numTimeSegments();
           const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
@@ -135,7 +136,7 @@ namespace embree
         {
           const unsigned geomID = prim.geomID();
           const unsigned primID = prim.primID();
-          const Mesh* mesh = (Mesh*)scene->get(geomID);
+          const Mesh* mesh = scene->get<Mesh>(geomID);
           const LBBox3fa lbounds = mesh->linearBounds(primID, time_range);
           const unsigned num_time_segments = mesh->numTimeSegments();
           const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
