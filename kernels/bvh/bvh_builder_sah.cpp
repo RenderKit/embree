@@ -665,7 +665,11 @@ namespace embree
         profile(2,PROFILE_RUNS,numPrimitives,[&] (ProfileTimer& timer) {
 #endif
 
-        if (scene->getNumTimeSteps<Mesh,true>() == 2)
+        const size_t numTimeSteps = scene->getNumTimeSteps<Mesh,true>();
+        const size_t numTimeSegments = numTimeSteps-1; assert(numTimeSteps > 1);
+        bvh->numTimeSteps = numTimeSteps;
+
+        if (numTimeSegments == 1)
           buildSingleSegment(numPrimitives);
         else
           buildMultiSegment(numPrimitives);
