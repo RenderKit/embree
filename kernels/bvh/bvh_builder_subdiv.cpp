@@ -715,24 +715,6 @@ namespace embree
           return std::make_tuple(node,lbounds,current.prims.time_range);
         };
 
-        /* reduction function */
-        auto updateNodeFunc = [&] (NodeRef ref, const std::tuple<NodeRef,LBBox3fa,BBox1f>* bounds, const size_t num) -> void {
-          
-          if (ref.isAlignedNodeMB())
-          {
-            AlignedNodeMB* node = ref.alignedNodeMB();
-            for (size_t i=0; i<num; i++) {
-              node->set(i, std::get<0>(bounds[i]));
-              node->set(i, std::get<1>(bounds[i]).global(std::get<2>(bounds[i])));
-            }
-          }
-          else
-          {
-            AlignedNodeMB4D* node = ref.alignedNodeMB4D();
-            for (size_t i=0; i<num; i++)
-              node->set(i, std::get<0>(bounds[i]), std::get<1>(bounds[i]).global(std::get<2>(bounds[i])), std::get<2>(bounds[i]));
-          }
-        };
         auto identity = NodeRef(0);
 
         /* builder wants log2 of blockSize as input */		  
@@ -741,6 +723,7 @@ namespace embree
         /* instantiate builder */
         auto createAllocFunc = typename BVH::CreateAlloc(bvh);
         auto createNodeFunc = typename BVH::CreateAlignedNodeMB4D(bvh);
+        auto updateNodeFunc = typename BVH::UpdateAlignedNodeMB4D(bvh);
         //auto createLeafFunc = CreateMBlurLeaf<N,Mesh,Primitive>(bvh);
         auto progressMonitor = bvh->scene->progressInterface;
         

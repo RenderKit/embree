@@ -366,8 +366,10 @@ namespace embree
           auto node = createNode(hasTimeSplits,alloc);
           
           /* recurse into each child  and perform reduction */
-          for (size_t i=0; i<children.size(); i++)
+          for (size_t i=0; i<children.size(); i++) {
             values[i] = createLargeLeaf(children[i],alloc);
+            updateNode(node,i,values[i]);
+          }
 
           /* calculate geometry bounds and time bounds of this node */
           LBBox3fa gbounds = empty;
@@ -383,9 +385,6 @@ namespace embree
             gbounds = current.prims.linearBounds(recalculatePrimRef);
             tbounds = current.prims.time_range;
           }
-          
-          /* perform reduction */
-          updateNode(node,values,children.size());
           return std::make_tuple(node,gbounds,tbounds);
         }
 
@@ -459,6 +458,7 @@ namespace embree
             parallel_for(size_t(0), children.size(), [&] (const range<size_t>& r) {
                 for (size_t i=r.begin(); i<r.end(); i++) {
                   values[i] = recurse(children[i],nullptr,true); 
+                  updateNode(node,i,values[i]);
                   _mm_mfence(); // to allow non-temporal stores during build
                 }                
               });
@@ -469,6 +469,7 @@ namespace embree
             //for (size_t i=0; i<children.size(); i++)
             for (ssize_t i=children.size()-1; i>=0; i--) {
               values[i] = recurse(children[i],alloc,false);
+              updateNode(node,i,values[i]);
             }
           }
 
@@ -486,9 +487,6 @@ namespace embree
             gbounds = current.prims.linearBounds(recalculatePrimRef);
             tbounds = current.prims.time_range;
           }
-          
-          /* perform reduction */
-          updateNode(node,values,children.size());
           return std::make_tuple(node,gbounds,tbounds);
         }
         

@@ -547,7 +547,8 @@ namespace embree
 
     struct CreateAlignedNodeMB4D
     {
-      __forceinline CreateAlignedNodeMB4D (BVHN* bvh) : bvh(bvh) {}
+      __forceinline CreateAlignedNodeMB4D (BVHN* bvh) 
+        : bvh(bvh) {}
       
       __forceinline NodeRef operator() (bool hasTimeSplits, FastAllocator::ThreadLocal2* alloc)
       {
@@ -560,6 +561,23 @@ namespace embree
         {
           AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),byteNodeAlignment); node->clear();
           return bvh->encodeNode(node);
+        }
+      }
+
+      BVHN* bvh;
+    };
+
+    struct UpdateAlignedNodeMB4D
+    {
+      __forceinline UpdateAlignedNodeMB4D (BVHN* bvh) 
+        : bvh(bvh) {}
+      
+      __forceinline void operator() (NodeRef ref, const size_t i, const std::tuple<NodeRef,LBBox3fa,BBox1f>& child) 
+      {
+        if (likely(ref.isAlignedNodeMB())) {
+          ref.alignedNodeMB()->set(i, child);
+        } else {
+          ref.alignedNodeMB4D()->set(i, child);
         }
       }
 

@@ -720,20 +720,6 @@ namespace embree
         PrimInfoMB pinfo = createPrimRefMBArray<Mesh>(scene,primsMB,bvh->scene->progressInterface);
         RecalculatePrimRef<Mesh> recalculatePrimRef(scene);
 
-        /* reduction function */
-        auto updateNodeFunc = [&] (NodeRef ref, const std::tuple<NodeRef,LBBox3fa,BBox1f>* bounds, const size_t num) -> void {
-
-          if (ref.isAlignedNodeMB())
-          {
-            AlignedNodeMB* node = ref.alignedNodeMB();
-            for (size_t i=0; i<num; i++) node->set(i, bounds[i]);
-          }
-          else
-          {
-            AlignedNodeMB4D* node = ref.alignedNodeMB4D();
-            for (size_t i=0; i<num; i++) node->set(i, bounds[i]);
-          }
-        };
         auto identity = NodeRef(0);
 
         /* call BVH builder */
@@ -746,6 +732,7 @@ namespace embree
         /* instantiate builder */
         auto createAllocFunc = typename BVH::CreateAlloc(bvh);
         auto createNodeFunc = typename BVH::CreateAlignedNodeMB4D(bvh);
+        auto updateNodeFunc = typename BVH::UpdateAlignedNodeMB4D(bvh);
         auto createLeafFunc = CreateMBlurLeaf<N,Mesh,Primitive>(bvh);
         auto progressMonitor = bvh->scene->progressInterface;
 
