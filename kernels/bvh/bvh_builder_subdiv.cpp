@@ -581,18 +581,12 @@ namespace embree
         if (hasTimeSplits)
         {
           AlignedNodeMB4D* node = (AlignedNodeMB4D*) alloc->alloc0->malloc(sizeof(AlignedNodeMB4D),BVH::byteNodeAlignment); node->clear();
-          for (size_t i=0; i<num; i++) children[i].parent = (size_t*)&node->child(i);
-          NodeRef ref = bvh->encodeNode(node);
-          *current.parent = ref;
-          return ref;
+          return bvh->encodeNode(node);
         }
         else
         {
           AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),BVH::byteNodeAlignment); node->clear();
-          for (size_t i=0; i<num; i++) children[i].parent = (size_t*)&node->child(i);
-          NodeRef ref = bvh->encodeNode(node);
-          *current.parent = ref;
-          return ref;
+          return bvh->encodeNode(node);
         }
       }
 
@@ -741,20 +735,20 @@ namespace embree
             //bvh->scene->progressMonitor(double(dn)); // FIXME: triggers GCC compiler bug
         //  });
         
-        auto createLeafFunc = [&] (const BuildRecord3& current, Allocator* alloc) -> std::pair<LBBox3fa,BBox1f> {
+        auto createLeafFunc = [&] (const BuildRecord3& current, Allocator* alloc) -> std::tuple<NodeRef,LBBox3fa,BBox1f> {
           mvector<PrimRefMB>& prims = *current.prims.prims;
           size_t items MAYBE_UNUSED = current.prims.size();
           assert(items == 1);
           const size_t patchIndexMB = prims[current.prims.object_range.begin()].ID();
           SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+0];
-          *current.parent = bvh->encodeLeaf((char*)&patch,1);
+          NodeRef node = bvh->encodeLeaf((char*)&patch,1);
           size_t patchNumTimeSteps = scene->getSubdivMesh(patch.geom)->numTimeSteps;
           const LBBox3fa lbounds = Geometry::linearBounds([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, current.prims.time_range, patchNumTimeSteps-1);
-          return std::make_pair(lbounds,current.prims.time_range);
+          return std::make_tuple(node,lbounds,current.prims.time_range);
         };
 
         /* reduction function */
-        auto updateNodeFunc = [&] (NodeRef ref, Set& prims, const std::pair<LBBox3fa,BBox1f>* bounds, const size_t num) -> std::pair<LBBox3fa,BBox1f> {
+        auto updateNodeFunc = [&] (NodeRef ref, Set& prims, const std::tuple<NodeRef,LBBox3fa,BBox1f>* bounds, const size_t num) -> std::tuple<NodeRef,LBBox3fa,BBox1f> {
           
           assert(num <= N);
 
@@ -763,23 +757,24 @@ namespace embree
             LBBox3fa cbounds = empty;
             AlignedNodeMB* node = ref.alignedNodeMB();
             for (size_t i=0; i<num; i++) {
-              assert(bounds[i].second == bounds[0].second);
-              node->set(i, bounds[i].first.global(bounds[i].second));
-              cbounds.extend(bounds[i].first);
+              assert(std::get<2>(bounds[i]) == std::get<2>(bounds[0]));
+              node->set(i, std::get<0>(bounds[i]));
+              node->set(i, std::get<1>(bounds[i]).global(std::get<2>(bounds[i])));
+              cbounds.extend(std::get<1>(bounds[i]));
             }
-            return std::make_pair(cbounds,bounds[0].second);
+            return std::make_tuple(ref,cbounds,std::get<2>(bounds[0]));
           }
           else
           {
             AlignedNodeMB4D* node = ref.alignedNodeMB4D();
-            for (size_t i=0; i<num; i++) 
-              node->set(i, bounds[i].first.global(bounds[i].second), bounds[i].second);
+            for (size_t i=0; i<num; i++)
+              node->set(i, std::get<0>(bounds[i]), std::get<1>(bounds[i]).global(std::get<2>(bounds[i])), std::get<2>(bounds[i]));
 
             LBBox3fa cbounds = prims.linearBounds(recalculatePrimRef);
-            return std::make_pair(cbounds,prims.time_range);
+            return std::make_tuple(ref,cbounds,prims.time_range);
           }
         };
-        auto identity = std::make_pair(LBBox3fa(empty),BBox1f(empty));
+        auto identity = std::make_tuple(NodeRef(0),LBBox3fa(empty),BBox1f(empty));
 
         /* builder wants log2 of blockSize as input */		  
         const size_t logBlockSize = __bsr(N); 
@@ -802,7 +797,6 @@ namespace embree
 
         Builder builder(scene->device,
                         recalculatePrimRef,
-                        identity,
                         createAllocFunc,
                         createNodeFunc,
                         updateNodeFunc,
@@ -817,9 +811,10 @@ namespace embree
         /* build hierarchy */
         Set set(pinfo,&primsMB);
         assert(primsMB.size() == pinfo.size());
-        NodeRef root;
-        BuildRecord3 br(set,1,(size_t*)&root);
-        LBBox3fa rootBounds = builder(br).first;
+        
+        BuildRecord3 br(set,1);
+        NodeRef root; LBBox3fa rootBounds;
+        std::tie(root, rootBounds, std::ignore) = builder(br);
         
         //bvh->set(root,pinfo.geomBounds,pinfo.size());
         bvh->set(root,rootBounds,pinfo.size());

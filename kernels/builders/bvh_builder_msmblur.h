@@ -150,10 +150,10 @@ namespace embree
 	__forceinline BuildRecord3 () {}
         
         __forceinline BuildRecord3 (size_t depth) 
-          : parent(nullptr), depth(depth) {}
+          : depth(depth) {}
         
-        __forceinline BuildRecord3 (const SetMB& prims, size_t depth, size_t* parent) 
-          : parent(parent), depth(depth), prims(prims) {}
+        __forceinline BuildRecord3 (const SetMB& prims, size_t depth) 
+          : depth(depth), prims(prims) {}
         
         __forceinline friend bool operator< (const BuildRecord3& a, const BuildRecord3& b) { return a.prims.size() < b.prims.size(); }
 	__forceinline friend bool operator> (const BuildRecord3& a, const BuildRecord3& b) { return a.prims.size() > b.prims.size();  }
@@ -162,10 +162,9 @@ namespace embree
         __forceinline size_t size() const { return this->prims.size(); }
         
       public:
-        size_t* parent;   //!< Pointer to the parent node's reference to us
-	size_t depth;     //!< Depth of the root of this subtree.
-	SetMB prims;        //!< The list of primitives.
-	BinSplit<NUM_OBJECT_BINS> split;      //!< The best split for the primitives.
+	size_t depth;                     //!< Depth of the root of this subtree.
+	SetMB prims;                      //!< The list of primitives.
+	BinSplit<NUM_OBJECT_BINS> split;  //!< The best split for the primitives.
       };
 
     template<typename RecalculatePrimRef, 
@@ -192,7 +191,6 @@ namespace embree
 
         GeneralBVHMBBuilder (MemoryMonitorInterface* device,
                              const RecalculatePrimRef recalculatePrimRef,
-                             const ReductionTy& identity,
                              CreateAllocFunc& createAlloc, 
                              CreateNodeFunc& createNode, 
                              UpdateNodeFunc& updateNode, 
@@ -203,7 +201,6 @@ namespace embree
                              const float travCost, const float intCost, const bool singleLeafTimeSegment)
           : heuristicObjectSplit(),
           heuristicTemporalSplit(device, recalculatePrimRef),
-          identity(identity), 
           createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
           progressMonitor(progressMonitor),
           branchingFactor(branchingFactor), maxDepth(maxDepth),
@@ -226,7 +223,7 @@ namespace embree
           const float object_split_sah = object_split.splitSAH();
           
           /* do temporal splits only if the the time range is big enough */
-          if (set.time_range.size() > 1.01f/float(set.max_num_time_segments))
+          if (set.time_range.size() > 1.01f/float(set.max_num_time_segments)) // FIXME: test temporal splits only when object split was bad
           {
             const Split temporal_split = heuristicTemporalSplit.find(set, logBlockSize);
             const float temporal_split_sah = temporal_split.splitSAH();
@@ -458,7 +455,6 @@ namespace embree
         /*! builder entry function */
         __forceinline const ReductionTy operator() (BuildRecord3& record)
         {
-          //BuildRecord3 br(record);
           record.split = find(record); 
           ReductionTy ret = recurse(record,nullptr,true);
           _mm_mfence(); // to allow non-temporal stores during build
@@ -468,7 +464,6 @@ namespace embree
       private:
         HeuristicArrayBinningMB<PrimRefMB,NUM_OBJECT_BINS> heuristicObjectSplit;
         HeuristicMBlurTemporalSplit<PrimRefMB,RecalculatePrimRef,NUM_TEMPORAL_BINS> heuristicTemporalSplit;
-        const ReductionTy identity;
         CreateAllocFunc& createAlloc;
         CreateNodeFunc& createNode;
         UpdateNodeFunc& updateNode;

@@ -626,18 +626,12 @@ namespace embree
         if (hasTimeSplits)
         {
           AlignedNodeMB4D* node = (AlignedNodeMB4D*) alloc->alloc0->malloc(sizeof(AlignedNodeMB4D),BVH::byteNodeAlignment); node->clear();
-          for (size_t i=0; i<num; i++) children[i].parent = (size_t*)&node->child(i);
-          NodeRef ref = bvh->encodeNode(node);
-          *current.parent = ref;
-          return ref;
+          return bvh->encodeNode(node);
         }
         else
         {
           AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),BVH::byteNodeAlignment); node->clear();
-          for (size_t i=0; i<num; i++) children[i].parent = (size_t*)&node->child(i);
-          NodeRef ref = bvh->encodeNode(node);
-          *current.parent = ref;
-          return ref;
+          return bvh->encodeNode(node);
         }
       }
 
@@ -648,20 +642,20 @@ namespace embree
     struct CreateMBlurLeaf
     {
       typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
 
       __forceinline CreateMBlurLeaf (BVH* bvh) : bvh(bvh) {}
       
-      __forceinline const std::pair<LBBox3fa,BBox1f> operator() (const BuildRecord3& current, Allocator* alloc)
+      __forceinline const std::tuple<NodeRef,LBBox3fa,BBox1f> operator() (const BuildRecord3& current, Allocator* alloc)
       {
         size_t items = Primitive::blocks(current.prims.object_range.size());
         size_t start = current.prims.object_range.begin();
         Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
-        typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+        NodeRef node = bvh->encodeLeaf((char*)accel,items);
         LBBox3fa allBounds = empty;
         for (size_t i=0; i<items; i++)
           allBounds.extend(accel[i].fillMB(current.prims.prims->data(), start, current.prims.object_range.end(), bvh->scene, current.prims.time_range));
-        *current.parent = node;
-        return std::make_pair(allBounds,current.prims.time_range);
+        return std::make_tuple(node,allBounds,current.prims.time_range);
       }
 
       BVH* bvh;
@@ -758,7 +752,7 @@ namespace embree
         RecalculatePrimRef<Mesh> recalculatePrimRef(scene);
 
         /* reduction function */
-        auto updateNodeFunc = [&] (NodeRef ref, SetMB& prims, const std::pair<LBBox3fa,BBox1f>* bounds, const size_t num) -> std::pair<LBBox3fa,BBox1f> {
+        auto updateNodeFunc = [&] (NodeRef ref, SetMB& prims, const std::tuple<NodeRef,LBBox3fa,BBox1f>* bounds, const size_t num) -> std::tuple<NodeRef,LBBox3fa,BBox1f> {
 
           assert(num <= N);
 
@@ -767,23 +761,24 @@ namespace embree
             LBBox3fa cbounds = empty;
             AlignedNodeMB* node = ref.alignedNodeMB();
             for (size_t i=0; i<num; i++) {
-              assert(bounds[i].second == bounds[0].second);
-              node->set(i, bounds[i].first.global(bounds[i].second));
-              cbounds.extend(bounds[i].first);
+              assert(std::get<2>(bounds[i]) == std::get<2>(bounds[0]));
+              node->set(i, std::get<0>(bounds[i]));
+              node->set(i, std::get<1>(bounds[i]).global(std::get<2>(bounds[i])));
+              cbounds.extend(std::get<1>(bounds[i]));
             }
-            return std::make_pair(cbounds, bounds[0].second);
+            return std::make_tuple(ref, cbounds, std::get<2>(bounds[0]));
           }
           else
           {
             AlignedNodeMB4D* node = ref.alignedNodeMB4D();
             for (size_t i=0; i<num; i++)
-              node->set(i, bounds[i].first.global(bounds[i].second), bounds[i].second);
-
+              node->set(i, std::get<0>(bounds[i]), std::get<1>(bounds[i]).global(std::get<2>(bounds[i])), std::get<2>(bounds[i]));
+            
             LBBox3fa cbounds = prims.linearBounds(recalculatePrimRef);
-            return std::make_pair(cbounds, prims.time_range);
+            return std::make_tuple(ref, cbounds, prims.time_range);
           }
         };
-        auto identity = std::make_pair(LBBox3fa(empty),BBox1f(empty));
+        auto identity = std::make_tuple(NodeRef(0),LBBox3fa(empty),BBox1f(empty));
 
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
@@ -811,7 +806,6 @@ namespace embree
         /* instantiate builder */
         Builder builder(scene->device,
                         recalculatePrimRef,
-                        identity,
                         createAllocFunc,
                         createNodeFunc,
                         updateNodeFunc,
@@ -823,9 +817,9 @@ namespace embree
 
         /* build hierarchy */
         SetMB set(pinfo,&primsMB,make_range(size_t(0),pinfo.size()),BBox1f(0.0f,1.0f));
-        NodeRef root;
-        BuildRecord3 br(set,1,(size_t*)&root);
-        LBBox3fa rootBounds = builder(br).first;
+        NodeRef root; LBBox3fa rootBounds;
+        BuildRecord3 record(set,1);
+        std::tie (root, rootBounds, std::ignore) = builder(record);
 
         //bvh->set(root,pinfo.geomBounds,pinfo.size());
         bvh->set(root,rootBounds,pinfo.size());
