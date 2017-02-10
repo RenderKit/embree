@@ -616,9 +616,15 @@ namespace embree
       }
 
       /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, const LBBox3fa& bounds)
-      {
+      __forceinline void set(size_t i, const LBBox3fa& bounds) {
         set(i, bounds.bounds0, bounds.bounds1);
+      }
+
+      /*! Sets bounding box and ID of child. */
+      __forceinline void set(size_t i, const std::tuple<NodeRef,LBBox3fa,BBox1f>& child) 
+      {
+        set(i,std::get<0>(child));
+        set(i, std::get<1>(child).global(std::get<2>(child)));
       }
 
       /*! tests if the node has valid bounds */
@@ -786,6 +792,11 @@ namespace embree
       {
         AlignedNodeMB::set(i,childID);
         set(i,bounds,tbounds);
+      }
+
+      /*! Sets bounding box and ID of child. */
+      __forceinline void set(size_t i, const std::tuple<NodeRef,LBBox3fa,BBox1f>& child) {
+        set(i, std::get<0>(child), std::get<1>(child).global(std::get<2>(child)), std::get<2>(child));
       }
 
       /*! Returns reference to specified child */

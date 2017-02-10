@@ -726,16 +726,12 @@ namespace embree
           if (ref.isAlignedNodeMB())
           {
             AlignedNodeMB* node = ref.alignedNodeMB();
-            for (size_t i=0; i<num; i++) {
-              node->set(i, std::get<0>(bounds[i]));
-              node->set(i, std::get<1>(bounds[i]).global(std::get<2>(bounds[i])));
-            }
+            for (size_t i=0; i<num; i++) node->set(i, bounds[i]);
           }
           else
           {
             AlignedNodeMB4D* node = ref.alignedNodeMB4D();
-            for (size_t i=0; i<num; i++)
-              node->set(i, std::get<0>(bounds[i]), std::get<1>(bounds[i]).global(std::get<2>(bounds[i])), std::get<2>(bounds[i]));
+            for (size_t i=0; i<num; i++) node->set(i, bounds[i]);
           }
         };
         auto identity = NodeRef(0);
