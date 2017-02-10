@@ -146,6 +146,21 @@ namespace embree
     
     struct BVHMBuilderMSMBlur
     {
+      struct Settings
+      {
+        Settings () 
+        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8), travCost(1.0f), intCost(1.0f), singleLeafTimeSegment(false) {}
+
+        size_t branchingFactor;
+        size_t maxDepth;
+        size_t logBlockSize;
+        size_t minLeafSize;
+        size_t maxLeafSize;
+        float travCost;
+        float intCost;
+        bool singleLeafTimeSegment;
+      };
+
       struct BuildRecord3
       {
       public:
@@ -178,7 +193,7 @@ namespace embree
         typename CreateLeafFunc, 
         typename ProgressMonitor>
         
-        class GeneralBVHMBBuilder
+        class GeneralBVHMBBuilder : private Settings
       {
         static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximal supported BVH branching factor
         static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree of we are that many levels before the maximal tree depth
@@ -198,17 +213,13 @@ namespace embree
                              UpdateNodeFunc& updateNode, 
                              CreateLeafFunc& createLeaf,
                              ProgressMonitor& progressMonitor,
-                             const size_t branchingFactor, const size_t maxDepth, 
-                             const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize,
-                             const float travCost, const float intCost, const bool singleLeafTimeSegment)
-          : heuristicObjectSplit(),
+                             const Settings& settings)
+          : Settings(settings),
+          heuristicObjectSplit(),
           heuristicTemporalSplit(device, recalculatePrimRef),
           recalculatePrimRef(recalculatePrimRef), createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
-          progressMonitor(progressMonitor),
-          branchingFactor(branchingFactor), maxDepth(maxDepth),
-          logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
-          travCost(travCost), intCost(intCost), singleLeafTimeSegment(singleLeafTimeSegment)
-        {
+          progressMonitor(progressMonitor)
+       {
           if (branchingFactor > MAX_BRANCHING_FACTOR)
             throw_RTCError(RTC_UNKNOWN_ERROR,"bvh_builder: branching factor too large");
         }
@@ -260,7 +271,7 @@ namespace embree
         }
         
         /*! finds the best fallback split */
-        __forceinline Split findFallback(BuildRecord3& current, bool singleLeafTimeSegment)
+        __forceinline Split findFallback(BuildRecord3& current, bool singleLeafTimeSegment) // FIXME: remove singleLeafTimeSegment parameter
         {
           /* if a leaf can only hold a single time-segment, we might have to do additional temporal splits */
           if (singleLeafTimeSegment)
@@ -510,16 +521,6 @@ namespace embree
         UpdateNodeFunc& updateNode;
         CreateLeafFunc& createLeaf;
         ProgressMonitor& progressMonitor;
-        
-      private:
-        const size_t branchingFactor;
-        const size_t maxDepth;
-        const size_t logBlockSize;
-        const size_t minLeafSize;
-        const size_t maxLeafSize;
-        const float travCost;
-        const float intCost;
-        const bool singleLeafTimeSegment;
       };
       
       template<typename ReductionTy, 
@@ -538,9 +539,7 @@ namespace embree
                                                                    UpdateNodeFunc& updateNode, 
                                                                    CreateLeafFunc& createLeaf,
                                                                    ProgressMonitor& progressMonitor,
-                                                                   const size_t branchingFactor, const size_t maxDepth, 
-                                                                   const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize,
-                                                                   const float travCost, const float intCost, const bool singleLeafTimeSegment)
+                                                                   const Settings& settings)
       {
         typedef GeneralBVHMBBuilder<
           RecalculatePrimRef,
@@ -560,9 +559,7 @@ namespace embree
                         updateNode,
                         createLeaf,
                         progressMonitor,
-                        branchingFactor, maxDepth,
-                        logBlockSize, minLeafSize, maxLeafSize,
-                        travCost, intCost, singleLeafTimeSegment);
+                        settings);
         
         return builder(record);
       }

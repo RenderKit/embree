@@ -738,18 +738,26 @@ namespace embree
         SetMB set(pinfo,&primsMB,make_range(size_t(0),pinfo.size()),BBox1f(0.0f,1.0f));
         NodeRef root; LBBox3fa rootBounds;
         BVHMBuilderMSMBlur::BuildRecord3 record(set,1);
-      
+
+        BVHMBuilderMSMBlur::Settings settings;
+        settings.branchingFactor = N;
+        settings.maxDepth = BVH::maxDepth;
+        settings.logBlockSize = logBlockSize;
+        settings.minLeafSize = minLeafSize;
+        settings.maxLeafSize = maxLeafSize;
+        settings.travCost = travCost;
+        settings.intCost = intCost;
+        settings.singleLeafTimeSegment = Primitive::singleTimeSegment;
+
         std::tie (root, rootBounds, std::ignore) = 
           BVHMBuilderMSMBlur::build<NodeRef>(record,scene->device,
-                                    recalculatePrimRef,
-                                    createAllocFunc,
-                                    createNodeFunc,
-                                    updateNodeFunc,
-                                    createLeafFunc,
-                                    progressMonitor,
-                                    N,BVH::maxDepth,logBlockSize,
-                                    minLeafSize,maxLeafSize,travCost,intCost,
-                                    Primitive::singleTimeSegment);
+                                             recalculatePrimRef,
+                                             createAllocFunc,
+                                             createNodeFunc,
+                                             updateNodeFunc,
+                                             createLeafFunc,
+                                             progressMonitor,
+                                             settings);
         
         //bvh->set(root,pinfo.geomBounds,pinfo.size());
         bvh->set(root,rootBounds,pinfo.size());

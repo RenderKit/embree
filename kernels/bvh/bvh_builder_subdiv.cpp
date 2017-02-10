@@ -725,6 +725,16 @@ namespace embree
         //auto createLeafFunc = CreateMBlurLeaf<N,Mesh,Primitive>(bvh);
         auto progressMonitor = bvh->scene->progressInterface;
 
+        BVHMBuilderMSMBlur::Settings settings;
+        settings.branchingFactor = N;
+        settings.maxDepth = BVH::maxDepth;
+        settings.logBlockSize = logBlockSize;
+        settings.minLeafSize = 1;
+        settings.maxLeafSize = 1;
+        settings.travCost = 1.0f;
+        settings.intCost = 1.0f;
+        settings.singleLeafTimeSegment = false;
+
         /* build hierarchy */
         Set set(pinfo,&primsMB);
         assert(primsMB.size() == pinfo.size());
@@ -734,17 +744,13 @@ namespace embree
       
          std::tie(root, rootBounds, std::ignore) =
            BVHMBuilderMSMBlur::build<NodeRef>(br,scene->device,
-                                     recalculatePrimRef,
-                                     createAllocFunc,
-                                     createNodeFunc,
-                                     updateNodeFunc,
-                                     createLeafFunc,
-                                     progressMonitor,
-                                     N,BVH::maxDepth,logBlockSize,
-                                     //minLeafSize,maxLeafSize,travCost,intCost,
-                                     1,1,1.0f,1.0f,
-                                     //Primitive::singleTimeSegment);
-                                     false);
+                                              recalculatePrimRef,
+                                              createAllocFunc,
+                                              createNodeFunc,
+                                              updateNodeFunc,
+                                              createLeafFunc,
+                                              progressMonitor,
+                                              settings);
         
         //bvh->set(root,pinfo.geomBounds,pinfo.size());
         bvh->set(root,rootBounds,pinfo.size());
