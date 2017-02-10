@@ -716,33 +716,24 @@ namespace embree
         };
 
         /* reduction function */
-        auto updateNodeFunc = [&] (NodeRef ref, Set& prims, const std::tuple<NodeRef,LBBox3fa,BBox1f>* bounds, const size_t num) -> std::tuple<NodeRef,LBBox3fa,BBox1f> {
+        auto updateNodeFunc = [&] (NodeRef ref, const std::tuple<NodeRef,LBBox3fa,BBox1f>* bounds, const size_t num) -> void {
           
-          assert(num <= N);
-
           if (ref.isAlignedNodeMB())
           {
-            LBBox3fa cbounds = empty;
             AlignedNodeMB* node = ref.alignedNodeMB();
             for (size_t i=0; i<num; i++) {
-              assert(std::get<2>(bounds[i]) == std::get<2>(bounds[0]));
               node->set(i, std::get<0>(bounds[i]));
               node->set(i, std::get<1>(bounds[i]).global(std::get<2>(bounds[i])));
-              cbounds.extend(std::get<1>(bounds[i]));
             }
-            return std::make_tuple(ref,cbounds,std::get<2>(bounds[0]));
           }
           else
           {
             AlignedNodeMB4D* node = ref.alignedNodeMB4D();
             for (size_t i=0; i<num; i++)
               node->set(i, std::get<0>(bounds[i]), std::get<1>(bounds[i]).global(std::get<2>(bounds[i])), std::get<2>(bounds[i]));
-
-            LBBox3fa cbounds = prims.linearBounds(recalculatePrimRef);
-            return std::make_tuple(ref,cbounds,prims.time_range);
           }
         };
-        auto identity = std::make_tuple(NodeRef(0),LBBox3fa(empty),BBox1f(empty));
+        auto identity = NodeRef(0);
 
         /* builder wants log2 of blockSize as input */		  
         const size_t logBlockSize = __bsr(N); 

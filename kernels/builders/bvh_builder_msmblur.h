@@ -190,7 +190,7 @@ namespace embree
       public:
 
         GeneralBVHMBBuilder (MemoryMonitorInterface* device,
-                             const RecalculatePrimRef recalculatePrimRef,
+                             RecalculatePrimRef& recalculatePrimRef,
                              CreateAllocFunc& createAlloc, 
                              CreateNodeFunc& createNode, 
                              UpdateNodeFunc& updateNode, 
@@ -201,7 +201,7 @@ namespace embree
                              const float travCost, const float intCost, const bool singleLeafTimeSegment)
           : heuristicObjectSplit(),
           heuristicTemporalSplit(device, recalculatePrimRef),
-          createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
+          recalculatePrimRef(recalculatePrimRef), createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
           progressMonitor(progressMonitor),
           branchingFactor(branchingFactor), maxDepth(maxDepth),
           logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
@@ -309,7 +309,7 @@ namespace embree
           std::sort(&prims[set.object_range.begin()],&prims[set.object_range.end()]);
         }
 
-        const ReductionTy createLargeLeaf(BuildRecord3& current, Allocator alloc)
+        const std::tuple<ReductionTy,LBBox3fa,BBox1f> createLargeLeaf(BuildRecord3& current, Allocator alloc)
         {
           /* this should never occur but is a fatal error */
           if (current.depth > maxDepth) 
@@ -323,7 +323,7 @@ namespace embree
             return createLeaf(current,alloc);
           
           /* fill all children by always splitting the largest one */
-          ReductionTy values[MAX_BRANCHING_FACTOR];
+          std::tuple<ReductionTy,LBBox3fa,BBox1f> values[MAX_BRANCHING_FACTOR];
           LocalChildList children(current);
         
           do {  
@@ -368,12 +368,28 @@ namespace embree
           /* recurse into each child  and perform reduction */
           for (size_t i=0; i<children.size(); i++)
             values[i] = createLargeLeaf(children[i],alloc);
+
+          /* calculate geometry bounds and time bounds of this node */
+          LBBox3fa gbounds = empty;
+          BBox1f tbounds = empty;
+          if (!hasTimeSplits)
+          {
+            for (size_t i=0; i<children.size(); i++)
+              gbounds.extend(std::get<1>(values[i]));
+            tbounds = std::get<2>(values[0]);
+          }
+          else
+          {
+            gbounds = current.prims.linearBounds(recalculatePrimRef);
+            tbounds = current.prims.time_range;
+          }
           
           /* perform reduction */
-          return updateNode(node,current.prims,values,children.size());
+          updateNode(node,values,children.size());
+          return std::make_tuple(node,gbounds,tbounds);
         }
 
-        const ReductionTy recurse(BuildRecord3& current, Allocator alloc, bool toplevel)
+        const std::tuple<ReductionTy,LBBox3fa,BBox1f> recurse(BuildRecord3& current, Allocator alloc, bool toplevel)
         {
           if (alloc == nullptr)
             alloc = createAlloc();
@@ -395,7 +411,7 @@ namespace embree
           }
           
           /*! initialize child list */
-          ReductionTy values[MAX_BRANCHING_FACTOR];
+          std::tuple<ReductionTy,LBBox3fa,BBox1f> values[MAX_BRANCHING_FACTOR];
           LocalChildList children(current);
           
           /*! split until node is full or SAH tells us to stop */
@@ -446,8 +462,6 @@ namespace embree
                   _mm_mfence(); // to allow non-temporal stores during build
                 }                
               });
-            /* perform reduction */
-            return updateNode(node,current.prims,values,children.size());
           }
           /* recurse into each child */
           else 
@@ -456,17 +470,33 @@ namespace embree
             for (ssize_t i=children.size()-1; i>=0; i--) {
               values[i] = recurse(children[i],alloc,false);
             }
-            
-            /* perform reduction */
-            return updateNode(node,current.prims,values,children.size());
           }
+
+          /* calculate geometry bounds and time bounds of this node */
+          LBBox3fa gbounds = empty;
+          BBox1f tbounds = empty;
+          if (!hasTimeSplits)
+          {
+            for (size_t i=0; i<children.size(); i++)
+              gbounds.extend(std::get<1>(values[i]));
+            tbounds = std::get<2>(values[0]);
+          }
+          else
+          {
+            gbounds = current.prims.linearBounds(recalculatePrimRef);
+            tbounds = current.prims.time_range;
+          }
+          
+          /* perform reduction */
+          updateNode(node,values,children.size());
+          return std::make_tuple(node,gbounds,tbounds);
         }
         
         /*! builder entry function */
-        __forceinline const ReductionTy operator() (BuildRecord3& record)
+        __forceinline const std::tuple<ReductionTy,LBBox3fa,BBox1f> operator() (BuildRecord3& record)
         {
           record.split = find(record); 
-          ReductionTy ret = recurse(record,nullptr,true);
+          auto ret = recurse(record,nullptr,true);
           _mm_mfence(); // to allow non-temporal stores during build
           return ret;
         }
@@ -474,6 +504,7 @@ namespace embree
       private:
         HeuristicArrayBinningMB<PrimRefMB,NUM_OBJECT_BINS> heuristicObjectSplit;
         HeuristicMBlurTemporalSplit<PrimRefMB,RecalculatePrimRef,NUM_TEMPORAL_BINS> heuristicTemporalSplit;
+        RecalculatePrimRef& recalculatePrimRef;
         CreateAllocFunc& createAlloc;
         CreateNodeFunc& createNode;
         UpdateNodeFunc& updateNode;

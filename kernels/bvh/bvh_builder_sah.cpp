@@ -721,33 +721,24 @@ namespace embree
         RecalculatePrimRef<Mesh> recalculatePrimRef(scene);
 
         /* reduction function */
-        auto updateNodeFunc = [&] (NodeRef ref, SetMB& prims, const std::tuple<NodeRef,LBBox3fa,BBox1f>* bounds, const size_t num) -> std::tuple<NodeRef,LBBox3fa,BBox1f> {
-
-          assert(num <= N);
+        auto updateNodeFunc = [&] (NodeRef ref, const std::tuple<NodeRef,LBBox3fa,BBox1f>* bounds, const size_t num) -> void {
 
           if (ref.isAlignedNodeMB())
           {
-            LBBox3fa cbounds = empty;
             AlignedNodeMB* node = ref.alignedNodeMB();
             for (size_t i=0; i<num; i++) {
-              assert(std::get<2>(bounds[i]) == std::get<2>(bounds[0]));
               node->set(i, std::get<0>(bounds[i]));
               node->set(i, std::get<1>(bounds[i]).global(std::get<2>(bounds[i])));
-              cbounds.extend(std::get<1>(bounds[i]));
             }
-            return std::make_tuple(ref, cbounds, std::get<2>(bounds[0]));
           }
           else
           {
             AlignedNodeMB4D* node = ref.alignedNodeMB4D();
             for (size_t i=0; i<num; i++)
               node->set(i, std::get<0>(bounds[i]), std::get<1>(bounds[i]).global(std::get<2>(bounds[i])), std::get<2>(bounds[i]));
-            
-            LBBox3fa cbounds = prims.linearBounds(recalculatePrimRef);
-            return std::make_tuple(ref, cbounds, prims.time_range);
           }
         };
-        auto identity = std::make_tuple(NodeRef(0),LBBox3fa(empty),BBox1f(empty));
+        auto identity = NodeRef(0);
 
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
