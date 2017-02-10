@@ -170,7 +170,7 @@ namespace embree
             PrimInfoMB pinfo = empty;
             for (size_t i=r.begin(); i<r.end(); i++) 
             {
-              const PrimRefMB& prim = recalculatePrimRef(prims[i],time_range0).first;
+              const PrimRefMB& prim = recalculatePrimRef(prims[i],time_range0);
               (*lprims)[i-set.object_range.begin()] = prim;
               pinfo.add_primref(prim);
             }
@@ -184,7 +184,7 @@ namespace embree
             PrimInfoMB pinfo = empty;
             for (size_t i=r.begin(); i<r.end(); i++) 
             {
-              const PrimRefMB& prim = recalculatePrimRef(prims[i],time_range1).first;
+              const PrimRefMB& prim = recalculatePrimRef(prims[i],time_range1);
               prims[i] = prim;
               pinfo.add_primref(prim);
             }

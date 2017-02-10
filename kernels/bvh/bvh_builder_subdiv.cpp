@@ -539,15 +539,15 @@ namespace embree
       __forceinline SubdivRecalculatePrimRef (mvector<BBox3fa>& bounds, SubdivPatch1Cached* patches)
         : bounds(bounds), patches(patches) {}
 
-      __forceinline std::pair<PrimRefMB,range<int>> operator() (const size_t patchIndexMB, const unsigned num_time_segments, const BBox1f time_range) const
+      __forceinline PrimRefMB operator() (const size_t patchIndexMB, const unsigned num_time_segments, const BBox1f time_range) const
       {
         const LBBox3fa lbounds = Geometry::linearBounds([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, time_range, num_time_segments);
         const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
         const PrimRefMB prim2(lbounds, tbounds.size(), num_time_segments, patchIndexMB);
-        return std::make_pair(prim2, tbounds);
+        return prim2;
       }
 
-      __forceinline std::pair<PrimRefMB,range<int>> operator() (const PrimRefMB& prim, const BBox1f time_range) const {
+      __forceinline PrimRefMB operator() (const PrimRefMB& prim, const BBox1f time_range) const {
         return operator()(prim.ID(),prim.totalTimeSegments(),time_range);
       }
 
@@ -686,7 +686,7 @@ namespace embree
                 SubdivPatch1Base& patch0 = subdiv_patches[patchIndexMB];
                 patch0.root_ref.set((int64_t) GridSOA::create(&patch0,(unsigned)mesh->numTimeSteps,(unsigned)mesh->numTimeSteps,scene,alloc,&bounds[patchIndexMB]));
               }
-              primsMB[patchIndex] = recalculatePrimRef(patchIndexMB,mesh->numTimeSegments(),BBox1f(0.0f,1.0f)).first;
+              primsMB[patchIndex] = recalculatePrimRef(patchIndexMB,mesh->numTimeSegments(),BBox1f(0.0f,1.0f));
               s++;
               sMB += mesh->numTimeSteps;
               pinfo.add_primref(primsMB[patchIndex]);

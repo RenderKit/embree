@@ -119,7 +119,7 @@ namespace embree
         __forceinline RecalculatePrimRef (Scene* scene)
           : scene(scene) {}
         
-        __forceinline std::pair<PrimRefMB,range<int>> operator() (const PrimRefMB& prim, const BBox1f time_range) const
+        __forceinline PrimRefMB operator() (const PrimRefMB& prim, const BBox1f time_range) const
         {
           const unsigned geomID = prim.geomID();
           const unsigned primID = prim.primID();
@@ -129,7 +129,7 @@ namespace embree
           const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
           assert(tbounds.size() > 0);
           const PrimRefMB prim2(lbounds, tbounds.size(), num_time_segments, geomID, primID);
-          return std::make_pair(prim2, tbounds);
+          return prim2;
         }
         
         __forceinline std::pair<LBBox3fa,range<int>> linearBounds(const PrimRefMB& prim, const BBox1f time_range) const
@@ -200,7 +200,7 @@ namespace embree
         typename CreateLeafFunc, 
         typename ProgressMonitor>
         
-        class GeneralBVHMBBuilder : private Settings
+        class BuilderT : private Settings
       {
         static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximal supported BVH branching factor
         static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree if we are that many levels before the maximal tree depth
@@ -212,7 +212,7 @@ namespace embree
         
       public:
         
-        GeneralBVHMBBuilder (MemoryMonitorInterface* device,
+        BuilderT (MemoryMonitorInterface* device,
                              RecalculatePrimRef recalculatePrimRef,
                              CreateAllocFunc createAlloc, 
                              CreateNodeFunc createNode, 
@@ -548,7 +548,7 @@ namespace embree
                                                               ProgressMonitor progressMonitor,
                                                               const Settings& settings)
       {
-        typedef GeneralBVHMBBuilder<
+        typedef BuilderT<
           RecalculatePrimRef,
           NodeTy,
           decltype(createAlloc()),
