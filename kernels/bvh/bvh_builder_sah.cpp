@@ -615,7 +615,7 @@ namespace embree
 
       __forceinline CreateMBlurLeaf (BVH* bvh) : bvh(bvh) {}
       
-      __forceinline const std::tuple<NodeRef,LBBox3fa,BBox1f> operator() (const BVHMBuilderMSMBlur::BuildRecord3& current, Allocator* alloc)
+      __forceinline const std::tuple<NodeRef,LBBox3fa,BBox1f> operator() (const BVHMBuilderMSMBlur::BuildRecord& current, Allocator* alloc)
       {
         size_t items = Primitive::blocks(current.prims.object_range.size());
         size_t start = current.prims.object_range.begin();
@@ -737,7 +737,7 @@ namespace embree
          /* build hierarchy */
         SetMB set(pinfo,&primsMB,make_range(size_t(0),pinfo.size()),BBox1f(0.0f,1.0f));
         NodeRef root; LBBox3fa rootBounds;
-        BVHMBuilderMSMBlur::BuildRecord3 record(set,1);
+        BVHMBuilderMSMBlur::BuildRecord record(set,1);
 
         BVHMBuilderMSMBlur::Settings settings;
         settings.branchingFactor = N;

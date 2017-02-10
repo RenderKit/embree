@@ -146,34 +146,37 @@ namespace embree
     
     struct BVHMBuilderMSMBlur
     {
+      /*! settings for msmblur builder */
       struct Settings
       {
+        /*! default settings */
         Settings () 
         : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8), travCost(1.0f), intCost(1.0f), singleLeafTimeSegment(false) {}
 
-        size_t branchingFactor;
-        size_t maxDepth;
-        size_t logBlockSize;
-        size_t minLeafSize;
-        size_t maxLeafSize;
-        float travCost;
-        float intCost;
-        bool singleLeafTimeSegment;
+      public:
+        size_t branchingFactor;  //!< branching factor of BVH to build
+        size_t maxDepth;         //!< maximal depth of BVH to build
+        size_t logBlockSize;     //!< log2 of blocksize for SAH heuristic
+        size_t minLeafSize;      //!< minimal size of a leaf
+        size_t maxLeafSize;      //!< maximal size of a leaf
+        float travCost;          //!< estimated cost of one traversal step
+        float intCost;           //!< estimated cost of one primitive intersection
+        bool singleLeafTimeSegment; //!< split time to single time range
       };
 
-      struct BuildRecord3
+      struct BuildRecord
       {
       public:
-	__forceinline BuildRecord3 () {}
+	__forceinline BuildRecord () {}
         
-        __forceinline BuildRecord3 (size_t depth) 
+        __forceinline BuildRecord (size_t depth) 
           : depth(depth) {}
         
-        __forceinline BuildRecord3 (const SetMB& prims, size_t depth) 
+        __forceinline BuildRecord (const SetMB& prims, size_t depth) 
           : depth(depth), prims(prims) {}
         
-        __forceinline friend bool operator< (const BuildRecord3& a, const BuildRecord3& b) { return a.prims.size() < b.prims.size(); }
-	__forceinline friend bool operator> (const BuildRecord3& a, const BuildRecord3& b) { return a.prims.size() > b.prims.size();  }
+        __forceinline friend bool operator< (const BuildRecord& a, const BuildRecord& b) { return a.prims.size() < b.prims.size(); }
+	__forceinline friend bool operator> (const BuildRecord& a, const BuildRecord& b) { return a.prims.size() > b.prims.size();  }
         
         
         __forceinline size_t size() const { return this->prims.size(); }
@@ -202,7 +205,7 @@ namespace embree
         typedef BinSplit<NUM_OBJECT_BINS> Split;
         typedef mvector<PrimRefMB>* PrimRefVector;
         typedef SharedVector<mvector<PrimRefMB>> SharedPrimRefVector;
-        typedef LocalChildListT<BuildRecord3,MAX_BRANCHING_FACTOR> LocalChildList;
+        typedef LocalChildListT<BuildRecord,MAX_BRANCHING_FACTOR> LocalChildList;
         
       public:
         
@@ -224,7 +227,7 @@ namespace embree
             throw_RTCError(RTC_UNKNOWN_ERROR,"bvh_builder: branching factor too large");
         }
         
-        __forceinline const Split find(BuildRecord3& current) {
+        __forceinline const Split find(BuildRecord& current) {
           return find (current.prims,logBlockSize);
         }
         
@@ -250,7 +253,7 @@ namespace embree
         }
         
         /*! array partitioning */
-        __forceinline std::unique_ptr<mvector<PrimRefMB>> partition(BuildRecord3& brecord, BuildRecord3& lrecord, BuildRecord3& rrecord) 
+        __forceinline std::unique_ptr<mvector<PrimRefMB>> partition(BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) 
         {
           /* perform fallback split */
           //if (unlikely(!brecord.split.valid())) {
@@ -271,7 +274,7 @@ namespace embree
         }
         
         /*! finds the best fallback split */
-        __forceinline Split findFallback(BuildRecord3& current, bool singleLeafTimeSegment) // FIXME: remove singleLeafTimeSegment parameter
+        __forceinline Split findFallback(BuildRecord& current, bool singleLeafTimeSegment) // FIXME: remove singleLeafTimeSegment parameter
         {
           /* if a leaf can only hold a single time-segment, we might have to do additional temporal splits */
           if (singleLeafTimeSegment)
@@ -322,7 +325,7 @@ namespace embree
           std::sort(&prims[set.object_range.begin()],&prims[set.object_range.end()]);
         }
         
-        const std::tuple<NodeTy,LBBox3fa,BBox1f> createLargeLeaf(BuildRecord3& current, Allocator alloc)
+        const std::tuple<NodeTy,LBBox3fa,BBox1f> createLargeLeaf(BuildRecord& current, Allocator alloc)
         {
           /* this should never occur but is a fatal error */
           if (current.depth > maxDepth) 
@@ -358,9 +361,9 @@ namespace embree
             if (bestChild == -1) break;
             
             /* perform best found split */
-            BuildRecord3& brecord = children[bestChild];
-            BuildRecord3 lrecord(current.depth+1);
-            BuildRecord3 rrecord(current.depth+1);
+            BuildRecord& brecord = children[bestChild];
+            BuildRecord lrecord(current.depth+1);
+            BuildRecord rrecord(current.depth+1);
             std::unique_ptr<mvector<PrimRefMB>> new_vector = partition(brecord,lrecord,rrecord);
             
             /* find new splits */
@@ -401,7 +404,7 @@ namespace embree
           return std::make_tuple(node,gbounds,tbounds);
         }
         
-        const std::tuple<NodeTy,LBBox3fa,BBox1f> recurse(BuildRecord3& current, Allocator alloc, bool toplevel)
+        const std::tuple<NodeTy,LBBox3fa,BBox1f> recurse(BuildRecord& current, Allocator alloc, bool toplevel)
         {
           if (alloc == nullptr)
             alloc = createAlloc();
@@ -441,9 +444,9 @@ namespace embree
             if (bestChild == -1) break;
             
             /* perform best found split */
-            BuildRecord3& brecord = children[bestChild];
-            BuildRecord3 lrecord(current.depth+1);
-            BuildRecord3 rrecord(current.depth+1);
+            BuildRecord& brecord = children[bestChild];
+            BuildRecord lrecord(current.depth+1);
+            BuildRecord rrecord(current.depth+1);
             std::unique_ptr<mvector<PrimRefMB>> new_vector = partition(brecord,lrecord,rrecord);            
             
             /* find new splits */
@@ -454,7 +457,7 @@ namespace embree
           } while (children.size() < branchingFactor);
           
           /* sort buildrecords for simpler shadow ray traversal */
-          //std::sort(&children[0],&children[children.size()],std::greater<BuildRecord3>()); // FIXME: reduces traversal performance of bvh8.triangle4 (need to verified) !!
+          //std::sort(&children[0],&children[children.size()],std::greater<BuildRecord>()); // FIXME: reduces traversal performance of bvh8.triangle4 (need to verified) !!
           
           /* check if we did some time split */
           bool hasTimeSplits = false;
@@ -504,7 +507,7 @@ namespace embree
         }
         
         /*! builder entry function */
-        __forceinline const std::tuple<NodeTy,LBBox3fa,BBox1f> operator() (BuildRecord3& record)
+        __forceinline const std::tuple<NodeTy,LBBox3fa,BBox1f> operator() (BuildRecord& record)
         {
           record.split = find(record); 
           auto ret = recurse(record,nullptr,true);
@@ -531,15 +534,15 @@ namespace embree
         typename CreateLeafFunc, 
         typename ProgressMonitor>
         
-        static const std::tuple<NodeTy,LBBox3fa,BBox1f> build(BuildRecord3& record,
-                                                                   MemoryMonitorInterface* device,
-                                                                   RecalculatePrimRef& recalculatePrimRef,
-                                                                   CreateAllocFunc& createAlloc, 
-                                                                   CreateNodeFunc& createNode, 
-                                                                   UpdateNodeFunc& updateNode, 
-                                                                   CreateLeafFunc& createLeaf,
-                                                                   ProgressMonitor& progressMonitor,
-                                                                   const Settings& settings)
+        static const std::tuple<NodeTy,LBBox3fa,BBox1f> build(BuildRecord& record,
+                                                              MemoryMonitorInterface* device,
+                                                              RecalculatePrimRef& recalculatePrimRef,
+                                                              CreateAllocFunc& createAlloc, 
+                                                              CreateNodeFunc& createNode, 
+                                                              UpdateNodeFunc& updateNode, 
+                                                              CreateLeafFunc& createLeaf,
+                                                              ProgressMonitor& progressMonitor,
+                                                              const Settings& settings)
       {
         typedef GeneralBVHMBBuilder<
           RecalculatePrimRef,

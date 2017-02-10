@@ -703,7 +703,7 @@ namespace embree
             //bvh->scene->progressMonitor(double(dn)); // FIXME: triggers GCC compiler bug
         //  });
         
-        auto createLeafFunc = [&] (const BVHMBuilderMSMBlur::BuildRecord3& current, Allocator* alloc) -> std::tuple<NodeRef,LBBox3fa,BBox1f> {
+        auto createLeafFunc = [&] (const BVHMBuilderMSMBlur::BuildRecord& current, Allocator* alloc) -> std::tuple<NodeRef,LBBox3fa,BBox1f> {
           mvector<PrimRefMB>& prims = *current.prims.prims;
           size_t items MAYBE_UNUSED = current.prims.size();
           assert(items == 1);
@@ -739,7 +739,7 @@ namespace embree
         Set set(pinfo,&primsMB);
         assert(primsMB.size() == pinfo.size());
         
-        BVHMBuilderMSMBlur::BuildRecord3 br(set,1);
+        BVHMBuilderMSMBlur::BuildRecord br(set,1);
         NodeRef root; LBBox3fa rootBounds;
       
          std::tie(root, rootBounds, std::ignore) =
