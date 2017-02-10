@@ -715,20 +715,10 @@ namespace embree
           return std::make_tuple(node,lbounds,current.prims.time_range);
         };
 
-        /* builder wants log2 of blockSize as input */		  
-        const size_t logBlockSize = __bsr(N); 
-
-        /* instantiate builder */
-        auto createAllocFunc = typename BVH::CreateAlloc(bvh);
-        auto createNodeFunc = typename BVH::CreateAlignedNodeMB4D(bvh);
-        auto updateNodeFunc = typename BVH::UpdateAlignedNodeMB4D(bvh);
-        //auto createLeafFunc = CreateMBlurLeaf<N,Mesh,Primitive>(bvh);
-        auto progressMonitor = bvh->scene->progressInterface;
-
         BVHMBuilderMSMBlur::Settings settings;
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxDepth;
-        settings.logBlockSize = logBlockSize;
+        settings.logBlockSize = __bsr(N);
         settings.minLeafSize = 1;
         settings.maxLeafSize = 1;
         settings.travCost = 1.0f;
@@ -742,17 +732,16 @@ namespace embree
         BVHMBuilderMSMBlur::BuildRecord br(set,1);
         NodeRef root; LBBox3fa rootBounds;
       
-         std::tie(root, rootBounds, std::ignore) =
-           BVHMBuilderMSMBlur::build<NodeRef>(br,scene->device,
-                                              recalculatePrimRef,
-                                              createAllocFunc,
-                                              createNodeFunc,
-                                              updateNodeFunc,
+        std::tie(root, rootBounds, std::ignore) =
+          BVHMBuilderMSMBlur::build<NodeRef>(br,scene->device,
+                                             recalculatePrimRef,
+                                             typename BVH::CreateAlloc(bvh),
+                                             typename BVH::CreateAlignedNodeMB4D(bvh),
+                                             typename BVH::UpdateAlignedNodeMB4D(bvh),
                                               createLeafFunc,
-                                              progressMonitor,
-                                              settings);
+                                             bvh->scene->progressInterface,
+                                             settings);
         
-        //bvh->set(root,pinfo.geomBounds,pinfo.size());
         bvh->set(root,rootBounds,pinfo.size());
       }
 
