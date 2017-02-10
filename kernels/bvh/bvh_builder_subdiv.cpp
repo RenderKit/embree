@@ -551,13 +551,12 @@ namespace embree
         return operator()(prim.ID(),prim.totalTimeSegments(),time_range);
       }
 
-      __forceinline std::pair<LBBox3fa,range<int>> linearBounds(const PrimRefMB& prim, const BBox1f time_range) const
+      __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range) const
       {
         const size_t patchIndexMB = prim.ID();
         const unsigned num_time_segments = prim.totalTimeSegments();
         const LBBox3fa lbounds = Geometry::linearBounds([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, time_range, num_time_segments);
-        const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
-        return std::make_pair(lbounds, tbounds);
+        return lbounds;
       }
     };
 

@@ -132,7 +132,7 @@ namespace embree
           return prim2;
         }
         
-        __forceinline std::pair<LBBox3fa,range<int>> linearBounds(const PrimRefMB& prim, const BBox1f time_range) const
+        __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range) const
         {
           const unsigned geomID = prim.geomID();
           const unsigned primID = prim.primID();
@@ -141,7 +141,7 @@ namespace embree
           const unsigned num_time_segments = mesh->numTimeSegments();
           const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
           assert(tbounds.size() > 0);
-          return std::make_pair(lbounds, tbounds);
+          return lbounds;
         }
       };
     

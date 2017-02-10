@@ -68,14 +68,14 @@ namespace embree
               /* find linear bounds for both time segments */
               for (size_t i=begin; i<end; i++) 
               {
-                auto bn0 = recalculatePrimRef.linearBounds(prims[i],dt0);
-                auto bn1 = recalculatePrimRef.linearBounds(prims[i],dt1);
+                const LBBox3fa bn0 = recalculatePrimRef.linearBounds(prims[i],dt0);
+                const LBBox3fa bn1 = recalculatePrimRef.linearBounds(prims[i],dt1);
 #if MBLUR_BIN_LBBOX
-                bounds0[b].extend(bn0.first);
-                bounds1[b].extend(bn1.first);
+                bounds0[b].extend(bn0);
+                bounds1[b].extend(bn1);
 #else
-                bounds0[b].extend(bn0.first.interpolate(0.5f));
-                bounds1[b].extend(bn1.first.interpolate(0.5f));
+                bounds0[b].extend(bn0.interpolate(0.5f));
+                bounds1[b].extend(bn1.interpolate(0.5f));
 #endif
                 count0[b] += getTimeSegmentRange(dt0,prims[i].totalTimeSegments()).size();
                 count1[b] += getTimeSegmentRange(dt1,prims[i].totalTimeSegments()).size();

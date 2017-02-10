@@ -278,8 +278,8 @@ namespace embree
           for (size_t j = r.begin(); j < r.end(); j++)
           {
             PrimRefMB& ref = (*prims)[j];
-            auto bn = recalculatePrimRef.linearBounds(ref, time_range);
-            cbounds.extend(bn.first);
+            const LBBox3fa bn = recalculatePrimRef.linearBounds(ref, time_range);
+            cbounds.extend(bn);
           };
           return cbounds;
         };
