@@ -719,14 +719,11 @@ namespace embree
         mvector<PrimRefMB> primsMB(scene->device,numPrimitives);
         PrimInfoMB pinfo = createPrimRefMBArray<Mesh>(scene,primsMB,bvh->scene->progressInterface);
 
-        /* call BVH builder */
-        bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-
-        /* build hierarchy */
-        SetMB set(pinfo,&primsMB,make_range(size_t(0),pinfo.size()),BBox1f(0.0f,1.0f));
-        NodeRef root; LBBox3fa rootBounds;
-        BVHMBuilderMSMBlur::BuildRecord record(set,1);
-
+        /* estimate acceleration structure size */
+        size_t bytes = pinfo.num_time_segments*sizeof(AlignedNodeMB)/(4*N) + size_t(1.2*Primitive::blocks(pinfo.num_time_segments)*sizeof(Primitive));
+        bvh->alloc.init_estimate(bytes);
+      
+        /* configuration for BVH build */
         BVHMBuilderMSMBlur::Settings settings;
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxDepth;
@@ -737,8 +734,10 @@ namespace embree
         settings.intCost = intCost;
         settings.singleLeafTimeSegment = Primitive::singleTimeSegment;
 
+        /* build hierarchy */
+        NodeRef root; LBBox3fa rootBounds;
         std::tie (root, rootBounds, std::ignore) = 
-          BVHMBuilderMSMBlur::build<NodeRef>(record,scene->device,
+          BVHMBuilderMSMBlur::build<NodeRef>(primsMB,pinfo,scene->device,
                                              RecalculatePrimRef<Mesh>(scene),
                                              typename BVH::CreateAlloc(bvh),
                                              typename BVH::CreateAlignedNodeMB4D(bvh),

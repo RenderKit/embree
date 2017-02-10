@@ -534,7 +534,8 @@ namespace embree
         typename CreateLeafFunc, 
         typename ProgressMonitor>
         
-        static const std::tuple<NodeTy,LBBox3fa,BBox1f> build(BuildRecord& record,
+        static const std::tuple<NodeTy,LBBox3fa,BBox1f> build(mvector<PrimRefMB>& prims,
+                                                              PrimInfoMB pinfo,
                                                               MemoryMonitorInterface* device,
                                                               RecalculatePrimRef recalculatePrimRef,
                                                               CreateAllocFunc createAlloc, 
@@ -554,7 +555,6 @@ namespace embree
           decltype(createLeaf),
           decltype(progressMonitor)> Builder;
         
-        /* instantiate builder */
         Builder builder(device,
                         recalculatePrimRef,
                         createAlloc,
@@ -564,6 +564,8 @@ namespace embree
                         progressMonitor,
                         settings);
         
+        SetMB set(pinfo,&prims,make_range(size_t(0),pinfo.size()),BBox1f(0.0f,1.0f));
+        BuildRecord record(set,1);
         return builder(record);
       }
     };

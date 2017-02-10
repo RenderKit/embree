@@ -715,6 +715,7 @@ namespace embree
           return std::make_tuple(node,lbounds,current.prims.time_range);
         };
 
+        /* configuration for BVH build */
         BVHMBuilderMSMBlur::Settings settings;
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxDepth;
@@ -726,14 +727,9 @@ namespace embree
         settings.singleLeafTimeSegment = false;
 
         /* build hierarchy */
-        Set set(pinfo,&primsMB);
-        assert(primsMB.size() == pinfo.size());
-        
-        BVHMBuilderMSMBlur::BuildRecord br(set,1);
         NodeRef root; LBBox3fa rootBounds;
-      
         std::tie(root, rootBounds, std::ignore) =
-          BVHMBuilderMSMBlur::build<NodeRef>(br,scene->device,
+          BVHMBuilderMSMBlur::build<NodeRef>(primsMB,pinfo,scene->device,
                                              recalculatePrimRef,
                                              typename BVH::CreateAlloc(bvh),
                                              typename BVH::CreateAlignedNodeMB4D(bvh),
