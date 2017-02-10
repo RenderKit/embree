@@ -85,9 +85,9 @@ namespace embree
   {
 #if !defined(ISPC)
     ISPCTriangleMesh (TutorialScene* scene_in, Ref<SceneGraph::TriangleMeshNode> in);
-    
-  public:
+    ~ISPCTriangleMesh ();
 #endif
+
     ISPCGeometry geom;
     Vec3fa** positions;     //!< vertex position array with all timesteps
     Vec3fa* normals;       //!< vertex normal array
@@ -106,9 +106,9 @@ namespace embree
   {
 #if !defined(ISPC)
     ISPCQuadMesh (TutorialScene* scene_in, Ref<SceneGraph::QuadMeshNode> in);
-    
-  public:
+    ~ISPCQuadMesh ();
 #endif
+
     ISPCGeometry geom;
     Vec3fa** positions;    //!< vertex position array
     Vec3fa* normals;       //!< vertex normal array
@@ -135,6 +135,7 @@ namespace embree
     
   public:
 #endif
+
     ISPCGeometry geom;
     Vec3fa** positions;       //!< vertex positions
     Vec3fa* normals;         //!< face vertex normals
@@ -172,9 +173,9 @@ namespace embree
   {
 #if !defined(ISPC)
     ISPCLineSegments (TutorialScene* scene_in, Ref<SceneGraph::LineSegmentsNode> in);
-    
-  public:
+    ~ISPCLineSegments();
 #endif
+
     ISPCGeometry geom;
     Vec3fa** positions;        //!< control points (x,y,z,r)
     unsigned int* indices;        //!< for each segment, index to first control point
@@ -191,9 +192,9 @@ namespace embree
   {
 #if !defined(ISPC)
     ISPCHairSet (TutorialScene* scene_in, bool hair, Ref<SceneGraph::HairSetNode> in);
-    
-  public:
+    ~ISPCHairSet();
 #endif
+
     ISPCGeometry geom;
     Vec3fa** positions;       //!< hair control points (x,y,z,r)
     ISPCHair* hairs;         //!< for each hair, index to first control point
@@ -288,12 +289,8 @@ namespace embree
         }
       }        
       delete[] geometries;
-      
-      /* delete all lights */
-      //for (size_t i=0; i<numLights; i++)
-      //{
+      delete[] materials;
       // FIXME: currently lights cannot get deleted
-      //}
       delete[] lights;
     }
     

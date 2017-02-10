@@ -38,6 +38,10 @@ namespace embree
     geomID = -1;
     materialID = scene_in->materialID(in->material);
   }
+
+  ISPCTriangleMesh::~ISPCTriangleMesh () {
+    delete[] positions;
+  }
   
   ISPCQuadMesh::ISPCQuadMesh (TutorialScene* scene_in, Ref<SceneGraph::QuadMeshNode> in) 
     : geom(QUAD_MESH)
@@ -54,6 +58,10 @@ namespace embree
     scene = nullptr;
     geomID = -1;
     materialID = scene_in->materialID(in->material);
+  }
+
+  ISPCQuadMesh::~ISPCQuadMesh () {
+    delete[] positions;
   }
 
   ISPCSubdivMesh::ISPCSubdivMesh (TutorialScene* scene_in, Ref<SceneGraph::SubdivMeshNode> in) 
@@ -104,6 +112,7 @@ namespace embree
   
   ISPCSubdivMesh::~ISPCSubdivMesh ()
   {
+    delete[] positions;
     delete[] subdivlevel;
     delete[] face_offsets;
   }
@@ -122,6 +131,10 @@ namespace embree
     scene = nullptr;
     geomID = -1;
   }
+
+  ISPCLineSegments::~ISPCLineSegments () {
+    delete[] positions;
+  }
   
   ISPCHairSet::ISPCHairSet (TutorialScene* scene_in, bool hair, Ref<SceneGraph::HairSetNode> in) 
     : geom(hair ? HAIR_SET : CURVES)
@@ -137,6 +150,10 @@ namespace embree
     scene = nullptr;
     geomID = -1;
     tessellation_rate = in->tessellation_rate;
+  }
+
+  ISPCHairSet::~ISPCHairSet() {
+    delete[] positions;
   }
 
   ISPCInstance* ISPCInstance::create (TutorialScene* scene, Ref<SceneGraph::TransformNode> in) {
@@ -166,59 +183,6 @@ namespace embree
     delete[] geometries;
   }
 
-#if 0
-  ISPCScene::ISPCScene(TutorialScene* in)
-  {
-    geometries = new ISPCGeometry*[in->geometries.size()];
-    for (size_t i=0; i<in->geometries.size(); i++)
-      geometries[i] = convertGeometry(in,in->geometries[i]);
-    numGeometries = unsigned(in->geometries.size());
-    
-    materials = (ISPCMaterial*) in->materials.data();
-    numMaterials = unsigned(in->materials.size());
-    
-    lights = new Light*[in->lights.size()];
-    numLights = 0;
-    for (size_t i=0; i<in->lights.size(); i++)
-    {
-      Light* light = convertLight(in->lights[i]);
-      if (light) lights[numLights++] = light;
-    }
-    
-    geomID_to_scene = in->geomID_to_scene.data();
-    geomID_to_inst = (ISPCInstance**) in->geomID_to_inst.data();
-  }
-#endif
-
-#if 0
-  ISPCScene::~ISPCScene()
-  {
-    /* delete all geometries */
-    for (size_t i=0; i<numGeometries; i++) 
-    {
-      switch (geometries[i]->type) {
-      case TRIANGLE_MESH: delete (ISPCTriangleMesh*) geometries[i]; break;
-      case SUBDIV_MESH  : delete (ISPCSubdivMesh*) geometries[i]; break;
-      case HAIR_SET: delete (ISPCHairSet*) geometries[i]; break;
-      case INSTANCE: delete (ISPCInstance*) geometries[i]; break;
-      case GROUP: delete (ISPCGroup*) geometries[i]; break;
-      case QUAD_MESH: delete (ISPCQuadMesh*) geometries[i]; break;
-      case LINE_SEGMENTS: delete (ISPCLineSegments*) geometries[i]; break;
-      case CURVES: delete (ISPCHairSet*) geometries[i]; break;
-      default: assert(false); break;
-      }
-    }        
-    delete[] geometries;
-    
-    /* delete all lights */
-    //for (size_t i=0; i<numLights; i++)
-    //{
-    // FIXME: currently lights cannot get deleted
-    //}
-    delete[] lights;
-  }
-#endif
-
   ISPCGeometry* ISPCScene::convertGeometry (TutorialScene* scene, Ref<SceneGraph::Node> in)
   {
     if (Ref<SceneGraph::TriangleMeshNode> mesh = in.dynamicCast<SceneGraph::TriangleMeshNode>())
@@ -239,60 +203,6 @@ namespace embree
       THROW_RUNTIME_ERROR("unknown geometry type");
   }
 
-#if 0
-  Light* ISPCScene::convertLight(Ref<SceneGraph::Light> in)
-  {
-    void* out = 0;
-    
-    switch (in->getType())
-    {
-    case SceneGraph::LIGHT_AMBIENT:
-    {
-      Ref<SceneGraph::AmbientLight> inAmbient = in.dynamicCast<SceneGraph::AmbientLight>();
-      out = AmbientLight_create();
-      AmbientLight_set(out, inAmbient->L);
-      break;
-    }
-    case SceneGraph::LIGHT_DIRECTIONAL:
-    {
-      Ref<SceneGraph::DirectionalLight> inDirectional = in.dynamicCast<SceneGraph::DirectionalLight>();
-      out = DirectionalLight_create();
-      DirectionalLight_set(out, -normalize(inDirectional->D), inDirectional->E, 1.0f);
-      break;
-    }
-    case SceneGraph::LIGHT_DISTANT:
-    {
-      Ref<SceneGraph::DistantLight> inDistant = in.dynamicCast<SceneGraph::DistantLight>();
-      out = DirectionalLight_create();
-      DirectionalLight_set(out,
-                           -normalize(inDistant->D),
-                           inDistant->L * rcp(uniformSampleConePDF(inDistant->cosHalfAngle)),
-                           inDistant->cosHalfAngle);
-      break;
-    }
-    case SceneGraph::LIGHT_POINT:
-    {
-      Ref<SceneGraph::PointLight> inPoint = in.dynamicCast<SceneGraph::PointLight>();
-      out = PointLight_create();
-      PointLight_set(out, inPoint->P, inPoint->I, 0.f);
-      break;
-    }
-    case SceneGraph::LIGHT_SPOT:
-    case SceneGraph::LIGHT_TRIANGLE:
-    case SceneGraph::LIGHT_QUAD:
-    {
-      // FIXME: not implemented yet
-      break;
-    }
-    
-    default:
-      THROW_RUNTIME_ERROR("unknown light type");
-    }
-    
-    return (Light*)out;
-  }
-#endif
-  
   unsigned int ConvertTriangleMesh(ISPCTriangleMesh* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
   {
     unsigned int geomID = rtcNewTriangleMesh (scene_out, gflags, mesh->numTriangles, mesh->numVertices, mesh->numTimeSteps);

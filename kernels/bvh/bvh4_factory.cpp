@@ -266,9 +266,14 @@ namespace embree
   DECLARE_BUILDER2(void,QuadMesh    ,size_t,BVH4Quad4vMeshBuilderMortonGeneral);
   DECLARE_BUILDER2(void,AccelSet    ,size_t,BVH4VirtualMeshBuilderMortonGeneral);
 
-  BVH4Factory::BVH4Factory (int features)
+  BVH4Factory::BVH4Factory(int bfeatures, int ifeatures)
   {
-    /* select builders */
+    selectBuilders(bfeatures);
+    selectIntersectors(ifeatures);
+  }
+
+  void BVH4Factory::selectBuilders(int features)
+  {
     IF_ENABLED_LINES(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4BuilderTwoLevelLineSegmentsSAH));
     IF_ENABLED_TRIS (SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4BuilderTwoLevelTriangleMeshSAH));
     IF_ENABLED_TRIS (SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4BuilderInstancingTriangleMeshSAH));
@@ -328,7 +333,10 @@ namespace embree
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Triangle4iMeshBuilderMortonGeneral));
     IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Quad4vMeshBuilderMortonGeneral));
     IF_ENABLED_USER(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4VirtualMeshBuilderMortonGeneral));
+  }
 
+  void BVH4Factory::selectIntersectors(int features)
+  {
     /* select intersectors1 */
     IF_ENABLED_LINES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4Line4iIntersector1));
     IF_ENABLED_LINES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4Line4iMBIntersector1));
