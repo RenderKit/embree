@@ -615,7 +615,7 @@ namespace embree
 
       __forceinline CreateMBlurLeaf (BVH* bvh) : bvh(bvh) {}
       
-      __forceinline const std::tuple<NodeRef,LBBox3fa,BBox1f> operator() (const BVHMBuilderMSMBlur::BuildRecord& current, Allocator* alloc)
+      __forceinline const std::tuple<NodeRef,LBBox3fa,BBox1f> operator() (const BVHMBuilderMSMBlur::BuildRecord& current, Allocator* alloc) const
       {
         size_t items = Primitive::blocks(current.prims.object_range.size());
         size_t start = current.prims.object_range.begin();
@@ -718,23 +718,11 @@ namespace embree
         /* create primref array */
         mvector<PrimRefMB> primsMB(scene->device,numPrimitives);
         PrimInfoMB pinfo = createPrimRefMBArray<Mesh>(scene,primsMB,bvh->scene->progressInterface);
-        RecalculatePrimRef<Mesh> recalculatePrimRef(scene);
 
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
 
-        /* builder wants log2 of blockSize as input */
-        const size_t logBlockSize = __bsr(sahBlockSize);
-        assert((sahBlockSize ^ (size_t(1) << logBlockSize)) == 0);
-
-        /* instantiate builder */
-        auto createAllocFunc = typename BVH::CreateAlloc(bvh);
-        auto createNodeFunc = typename BVH::CreateAlignedNodeMB4D(bvh);
-        auto updateNodeFunc = typename BVH::UpdateAlignedNodeMB4D(bvh);
-        auto createLeafFunc = CreateMBlurLeaf<N,Mesh,Primitive>(bvh);
-        auto progressMonitor = bvh->scene->progressInterface;
-
-         /* build hierarchy */
+        /* build hierarchy */
         SetMB set(pinfo,&primsMB,make_range(size_t(0),pinfo.size()),BBox1f(0.0f,1.0f));
         NodeRef root; LBBox3fa rootBounds;
         BVHMBuilderMSMBlur::BuildRecord record(set,1);
@@ -742,7 +730,7 @@ namespace embree
         BVHMBuilderMSMBlur::Settings settings;
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxDepth;
-        settings.logBlockSize = logBlockSize;
+        settings.logBlockSize = __bsr(sahBlockSize);
         settings.minLeafSize = minLeafSize;
         settings.maxLeafSize = maxLeafSize;
         settings.travCost = travCost;
@@ -751,15 +739,14 @@ namespace embree
 
         std::tie (root, rootBounds, std::ignore) = 
           BVHMBuilderMSMBlur::build<NodeRef>(record,scene->device,
-                                             recalculatePrimRef,
-                                             createAllocFunc,
-                                             createNodeFunc,
-                                             updateNodeFunc,
-                                             createLeafFunc,
-                                             progressMonitor,
+                                             RecalculatePrimRef<Mesh>(scene),
+                                             typename BVH::CreateAlloc(bvh),
+                                             typename BVH::CreateAlignedNodeMB4D(bvh),
+                                             typename BVH::UpdateAlignedNodeMB4D(bvh),
+                                             CreateMBlurLeaf<N,Mesh,Primitive>(bvh),
+                                             bvh->scene->progressInterface,
                                              settings);
         
-        //bvh->set(root,pinfo.geomBounds,pinfo.size());
         bvh->set(root,rootBounds,pinfo.size());
       }
 

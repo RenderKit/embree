@@ -550,7 +550,7 @@ namespace embree
       __forceinline CreateAlignedNodeMB4D (BVHN* bvh) 
         : bvh(bvh) {}
       
-      __forceinline NodeRef operator() (bool hasTimeSplits, FastAllocator::ThreadLocal2* alloc)
+      __forceinline NodeRef operator() (bool hasTimeSplits, FastAllocator::ThreadLocal2* alloc) const
       {
         if (hasTimeSplits)
         {
@@ -572,7 +572,7 @@ namespace embree
       __forceinline UpdateAlignedNodeMB4D (BVHN* bvh) 
         : bvh(bvh) {}
       
-      __forceinline void operator() (NodeRef ref, const size_t i, const std::tuple<NodeRef,LBBox3fa,BBox1f>& child) 
+      __forceinline void operator() (NodeRef ref, const size_t i, const std::tuple<NodeRef,LBBox3fa,BBox1f>& child) const
       {
         if (likely(ref.isAlignedNodeMB())) {
           ref.alignedNodeMB()->set(i, child);

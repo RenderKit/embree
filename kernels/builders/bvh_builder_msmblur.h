@@ -210,12 +210,12 @@ namespace embree
       public:
         
         GeneralBVHMBBuilder (MemoryMonitorInterface* device,
-                             RecalculatePrimRef& recalculatePrimRef,
-                             CreateAllocFunc& createAlloc, 
-                             CreateNodeFunc& createNode, 
-                             UpdateNodeFunc& updateNode, 
-                             CreateLeafFunc& createLeaf,
-                             ProgressMonitor& progressMonitor,
+                             RecalculatePrimRef recalculatePrimRef,
+                             CreateAllocFunc createAlloc, 
+                             CreateNodeFunc createNode, 
+                             UpdateNodeFunc updateNode, 
+                             CreateLeafFunc createLeaf,
+                             ProgressMonitor progressMonitor,
                              const Settings& settings)
           : Settings(settings),
           heuristicObjectSplit(),
@@ -518,12 +518,12 @@ namespace embree
       private:
         HeuristicArrayBinningMB<PrimRefMB,NUM_OBJECT_BINS> heuristicObjectSplit;
         HeuristicMBlurTemporalSplit<PrimRefMB,RecalculatePrimRef,NUM_TEMPORAL_BINS> heuristicTemporalSplit;
-        RecalculatePrimRef& recalculatePrimRef;
-        CreateAllocFunc& createAlloc;
-        CreateNodeFunc& createNode;
-        UpdateNodeFunc& updateNode;
-        CreateLeafFunc& createLeaf;
-        ProgressMonitor& progressMonitor;
+        const RecalculatePrimRef recalculatePrimRef;
+        const CreateAllocFunc createAlloc;
+        const CreateNodeFunc createNode;
+        const UpdateNodeFunc updateNode;
+        const CreateLeafFunc createLeaf;
+        ProgressMonitor progressMonitor;
       };
       
       template<typename NodeTy, 
@@ -536,12 +536,12 @@ namespace embree
         
         static const std::tuple<NodeTy,LBBox3fa,BBox1f> build(BuildRecord& record,
                                                               MemoryMonitorInterface* device,
-                                                              RecalculatePrimRef& recalculatePrimRef,
-                                                              CreateAllocFunc& createAlloc, 
-                                                              CreateNodeFunc& createNode, 
-                                                              UpdateNodeFunc& updateNode, 
-                                                              CreateLeafFunc& createLeaf,
-                                                              ProgressMonitor& progressMonitor,
+                                                              RecalculatePrimRef recalculatePrimRef,
+                                                              CreateAllocFunc createAlloc, 
+                                                              CreateNodeFunc createNode, 
+                                                              UpdateNodeFunc updateNode, 
+                                                              CreateLeafFunc createLeaf,
+                                                              ProgressMonitor progressMonitor,
                                                               const Settings& settings)
       {
         typedef GeneralBVHMBBuilder<
