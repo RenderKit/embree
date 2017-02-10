@@ -617,12 +617,8 @@ namespace embree
 
       __forceinline CreateAlignedNodeMB4D (BVH* bvh) : bvh(bvh) {}
       
-      __forceinline NodeRef operator() (const BuildRecord3& current, BuildRecord3* children, const size_t num, FastAllocator::ThreadLocal2* alloc)
+      __forceinline NodeRef operator() (bool hasTimeSplits, const BuildRecord3& current, BuildRecord3* children, const size_t num, FastAllocator::ThreadLocal2* alloc)
       {
-        bool hasTimeSplits = false;
-        for (size_t i=0; i<num && !hasTimeSplits; i++)
-          hasTimeSplits |= current.prims.time_range != children[i].prims.time_range;
-
         if (hasTimeSplits)
         {
           AlignedNodeMB4D* node = (AlignedNodeMB4D*) alloc->alloc0->malloc(sizeof(AlignedNodeMB4D),BVH::byteNodeAlignment); node->clear();

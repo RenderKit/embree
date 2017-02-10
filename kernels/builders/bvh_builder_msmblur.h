@@ -357,8 +357,13 @@ namespace embree
 
           } while (children.size() < branchingFactor);
           
+          /* check if we did some time split */
+          bool hasTimeSplits = false;
+          for (size_t i=0; i<children.size() && !hasTimeSplits; i++)
+            hasTimeSplits |= current.prims.time_range != children[i].prims.time_range;
+
           /* create node */
-          auto node = createNode(current,&children[0],children.size(),alloc);
+          auto node = createNode(hasTimeSplits,current,&children[0],children.size(),alloc);
           
           /* recurse into each child  and perform reduction */
           for (size_t i=0; i<children.size(); i++)
@@ -423,8 +428,13 @@ namespace embree
           /* sort buildrecords for simpler shadow ray traversal */
           //std::sort(&children[0],&children[children.size()],std::greater<BuildRecord3>()); // FIXME: reduces traversal performance of bvh8.triangle4 (need to verified) !!
           
+          /* check if we did some time split */
+          bool hasTimeSplits = false;
+          for (size_t i=0; i<children.size() && !hasTimeSplits; i++)
+            hasTimeSplits |= current.prims.time_range != children[i].prims.time_range;
+
           /*! create an inner node */
-          auto node = createNode(current,&children[0],children.size(),alloc);
+          auto node = createNode(hasTimeSplits,current,&children[0],children.size(),alloc);
           
           /* spawn tasks */
           if (current.size() > SINGLE_THREADED_THRESHOLD) 
