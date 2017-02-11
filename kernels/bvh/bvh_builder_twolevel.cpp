@@ -48,9 +48,11 @@ namespace embree
 
 
     template<int N, typename Mesh>
-    void BVHNBuilderTwoLevel<N,Mesh>::open_merge_build_sequential(avector<BuildRef> &buildRefs, const PrimInfo &pinfo)
+    void BVHNBuilderTwoLevel<N,Mesh>::open_merge_build_sequential(mvector<BuildRef> &buildRefs, const PrimInfo &pinfo)
     {
       assert(pinfo.size());
+      assert(buildRefs.size() == pinfo.size());
+      assert(pinfo.begin == 0);
       PRINT(pinfo);
 
       bool same_geomID = true;
@@ -78,10 +80,9 @@ namespace embree
       assert(split.valid());
       PRINT(split);
 
-#if 0
       /* open bvh nodes */
 
-      avector<BuildRef> opened_buildRefs;
+      mvector<BuildRef> opened_buildRefs(scene->device);
 
       opened_buildRefs.reserve(pinfo.size());
       PRINT(opened_buildRefs.size());
@@ -113,29 +114,83 @@ namespace embree
       typename Heuristic::Split opened_split = opened_heuristic.find(opened_pinfo,logBlockSize);
       PRINT(opened_split);
 
-      if (opened_split.sah() && opened_split.sah < 8.0f * split.sah)
+      /* split */
+
+      PrimInfo left(empty), right(empty);
+      mvector<BuildRef> left_refs(scene->device);
+      mvector<BuildRef> right_refs(scene->device);
+
+      PRINT(left_refs.size());
+      
+      //if (opened_split.sah() && opened_split.sah < 8.0f * split.sah)
+      static bool first = true;
+      if (opened_split.valid() && first)
       {
+        //first = false;
         PRINT("OPEN SPLIT");
-        PrimInfo left, right;
+        PRINT(opened_split);
+
+        const vint4 vSplitPos(opened_split.pos);
+        const vbool4 vSplitMask( (int)1 << opened_split.dim );
+        const float split_pos = opened_split.mapping.pos(opened_split.pos,opened_split.dim);
+        
+        PRINT(split_pos);
 
         for (size_t i=pinfo.begin;i<pinfo.end;i++)
-          if (buildRefs[i].bounds)
+        {
+          const bool overlap = \
+            opened_split.mapping.bin(buildRefs[i].bounds().lower)[opened_split.dim] < opened_split.pos &&
+            opened_split.mapping.bin(buildRefs[i].bounds().upper)[opened_split.dim] >= opened_split.pos;
 
-        
-        
+          if (buildRefs[i].node.isLeaf() || !overlap)
+          {
+            /* sort leaf into left/right list */
+            if (opened_split.mapping.bin_unsafe(buildRefs[i],vSplitPos,vSplitMask))
+            {
+              left.add(buildRefs[i].bounds(),buildRefs[i].bounds().center2());            
+              left_refs.push_back(buildRefs[i]);
+            }
+            else
+            {
+              right.add(buildRefs[i].bounds(),buildRefs[i].bounds().center2());            
+              right_refs.push_back(buildRefs[i]);
+            }            
+          }
+          else
+          {
+
+            PRINT( buildRefs[i].bounds().upper[opened_split.dim] );
+            PRINT( buildRefs[i].bounds().lower[opened_split.dim] );
+
+            NodeRef ref = buildRefs[i].node;
+            unsigned int geomID   = buildRefs[i].geomID;
+            unsigned int numPrims = buildRefs[i].numPrimitives;
+            AlignedNode* node = ref.alignedNode();
+            for (size_t i=0; i<N; i++) {
+              if (node->child(i) == BVH::emptyNode) continue;
+              BuildRef newref = BuildRef(node->bounds(i),node->child(i),geomID,numPrims);
+
+              /* sort child node into left/right list */
+              if (opened_split.mapping.bin_unsafe(newref,vSplitPos,vSplitMask))
+              {
+                left.add(newref.bounds(),newref.bounds().center2());            
+                left_refs.push_back(newref);
+              }
+              else
+              {
+                right.add(newref.bounds(),newref.bounds().center2());            
+                right_refs.push_back(newref);
+              }                          
+            }
+          }        
+        }
       }
       else
-#endif
       {
         PRINT("REGULAR SPLIT");
         /* --------------*/
-        PrimInfo left(empty), right(empty);
-        
         const vint4 vSplitPos(split.pos);
         const vbool4 vSplitMask( (int)1 << split.dim );
-
-        avector<BuildRef> left_refs(0);
-        avector<BuildRef> right_refs(0);
 
         for (size_t i=0;i<buildRefs.size();i++)
         {
@@ -150,16 +205,23 @@ namespace embree
             right_refs.push_back(buildRefs[i]);
           }
         }
-
-
-
-        PRINT(left);
-        PRINT(right);
-        assert(left.size());
-        assert(right.size());
-        open_merge_build_sequential(left_refs,left);
-        open_merge_build_sequential(right_refs,right);      
       }
+
+      /* fallback case in case no successfull split has been done */
+
+      if (!left.size() || !right.size())
+      {
+        for (size_t i=0;i<pinfo.size();i++)        
+          prims.push_back( PrimRef(buildRefs[pinfo.begin+i].bounds(),(size_t)buildRefs[pinfo.begin+i].node) );
+        return;
+      }
+      
+      PRINT(left);
+      PRINT(right);
+      assert(left.size());
+      assert(right.size());
+      open_merge_build_sequential(left_refs,left);
+      open_merge_build_sequential(right_refs,right);      
     }
 
     // ===========================================================================
@@ -263,21 +325,28 @@ namespace embree
 
         PRINT(refs.size());
         prims.resize(0);
-        avector<BuildRef> new_refs;
-        PrimInfo pinfo(empty);
+        mvector<BuildRef> new_refs(scene->device);
+        PrimInfo ppinfo(empty);
         for (size_t i=0;i<refs.size();i++) 
         {
-          pinfo.add(refs[i].bounds(),refs[i].bounds().center2());
+          ppinfo.add(refs[i].bounds(),refs[i].bounds().center2());
           new_refs.push_back(refs[i]);
         }
-        open_merge_build_sequential(new_refs,pinfo);
+        open_merge_build_sequential(new_refs,ppinfo);
         PRINT(prims.size());
+
+        PrimInfo pinfo(empty);
+        for (size_t i=0;i<refs.size();i++) 
+          pinfo.add(prims[i].bounds(),prims[i].bounds().center2());
+
 #else
         open_sequential(numPrimitives); 
-#endif
 
         /* compute PrimRefs */
         prims.resize(refs.size());
+
+#endif
+
 
 #if defined(TASKING_TBB) && defined(__AVX512ER__) && USE_TASK_ARENA // KNL
         tbb::task_arena limited(32);
@@ -294,6 +363,8 @@ namespace embree
               }
               return pinfo;
             }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
+#else
+          
 #endif
           /* skip if all objects where empty */
           if (pinfo.size() == 0)

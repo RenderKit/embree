@@ -81,6 +81,11 @@ namespace embree
           return any(((vint4)bin_unsafe(center2(ref.bounds())) < vSplitPos) & splitDimMask);
         }
 
+        /*! calculates left spatial position of bin */
+        __forceinline float pos(const size_t bin, const size_t dim) const {
+          return madd(float(bin),1.0f / scale[dim],ofs[dim]);
+        }
+
         /*! returns true if the mapping is invalid in some dimension */
         __forceinline bool invalid(const size_t dim) const {
           return scale[dim] == 0.0f;
