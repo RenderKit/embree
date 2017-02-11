@@ -132,10 +132,8 @@ namespace embree
       assert(right_refs.size() == 0);
       
       //if (opened_split.sah() && opened_split.sah < 8.0f * split.sah)
-      static int first = 0;
-      if (opened_split.valid() && first < 3)
+      if (opened_split.valid())
       {
-        first++;
         PRINT("OPEN SPLIT");
         PRINT(opened_split);
 
@@ -349,7 +347,7 @@ namespace embree
         PRINT(prims.size());
 
         PrimInfo pinfo(empty);
-        for (size_t i=0;i<refs.size();i++) 
+        for (size_t i=0;i<prims.size();i++) 
           pinfo.add(prims[i].bounds(),prims[i].bounds().center2());
 
 #else
