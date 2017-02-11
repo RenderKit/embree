@@ -110,6 +110,17 @@ namespace embree
         opened_pinfo.add(opened_buildRefs[i].bounds(),opened_buildRefs[i].bounds().center2());
       PRINT(opened_pinfo);
 
+      /* need to extend centBounds here as we bin with opened/non-opened nodes */
+
+      for (size_t i=0;i<buildRefs.size();i++)
+      {
+        opened_pinfo.extend(buildRefs[i].bounds(),buildRefs[i].bounds().lower);
+        opened_pinfo.extend(buildRefs[i].bounds(),buildRefs[i].bounds().upper);
+      }
+
+
+      /* get best split for opened bounds */
+
       Heuristic opened_heuristic((BuildRef*)opened_buildRefs.data());
       typename Heuristic::Split opened_split = opened_heuristic.find(opened_pinfo,logBlockSize);
       PRINT(opened_split);
@@ -120,21 +131,19 @@ namespace embree
       mvector<BuildRef> left_refs(scene->device);
       mvector<BuildRef> right_refs(scene->device);
 
-      PRINT(left_refs.size());
+      assert(left_refs.size() == 0);
+      assert(right_refs.size() == 0);
       
       //if (opened_split.sah() && opened_split.sah < 8.0f * split.sah)
-      static bool first = true;
-      if (opened_split.valid() && first)
+      static int first = 0;
+      if (opened_split.valid() && first < 2)
       {
-        //first = false;
+        first++;
         PRINT("OPEN SPLIT");
         PRINT(opened_split);
 
         const vint4 vSplitPos(opened_split.pos);
         const vbool4 vSplitMask( (int)1 << opened_split.dim );
-        const float split_pos = opened_split.mapping.pos(opened_split.pos,opened_split.dim);
-        
-        PRINT(split_pos);
 
         for (size_t i=pinfo.begin;i<pinfo.end;i++)
         {
@@ -166,9 +175,9 @@ namespace embree
             unsigned int geomID   = buildRefs[i].geomID;
             unsigned int numPrims = buildRefs[i].numPrimitives;
             AlignedNode* node = ref.alignedNode();
-            for (size_t i=0; i<N; i++) {
-              if (node->child(i) == BVH::emptyNode) continue;
-              BuildRef newref = BuildRef(node->bounds(i),node->child(i),geomID,numPrims);
+            for (size_t j=0; j<N; j++) {
+              if (node->child(j) == BVH::emptyNode) continue;
+              BuildRef newref = BuildRef(node->bounds(j),node->child(j),geomID,numPrims);
 
               /* sort child node into left/right list */
               if (opened_split.mapping.bin_unsafe(newref,vSplitPos,vSplitMask))
@@ -184,6 +193,13 @@ namespace embree
             }
           }        
         }
+
+        PRINT(left);
+        PRINT(left_refs.size());
+        PRINT(right);
+        PRINT(right_refs.size());
+
+        PING;
       }
       else
       {
