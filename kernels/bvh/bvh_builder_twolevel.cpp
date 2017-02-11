@@ -48,7 +48,7 @@ namespace embree
 
 
     template<int N, typename Mesh>
-    void BVHNBuilderTwoLevel<N,Mesh>::open_merge_build_sequential(mvector<BuildRef> &buildRefs, const PrimInfo &pinfo)
+    void BVHNBuilderTwoLevel<N,Mesh>::open_merge_build_sequential(const mvector<BuildRef> &buildRefs, const PrimInfo &pinfo)
     {
       assert(pinfo.size());
       assert(buildRefs.size() == pinfo.size());
@@ -56,8 +56,8 @@ namespace embree
       PRINT(pinfo);
 
       bool same_geomID = true;
-      for (size_t i=1;i<pinfo.size();i++)
-        if (buildRefs[pinfo.begin+i].geomID != buildRefs[pinfo.begin].geomID) 
+      for (size_t i=1;i<buildRefs.size();i++)
+        if (buildRefs[i].geomID != buildRefs[0].geomID) 
         {
           same_geomID = false;
           break;
@@ -65,10 +65,10 @@ namespace embree
       PRINT(same_geomID);
 
       /* single element or all geomIDs are the same => end recursion */
-      if (pinfo.size() == 1 || same_geomID) {
+      if (buildRefs.size() == 1 || same_geomID) {
         PRINT("DONE");
-        for (size_t i=0;i<pinfo.size();i++)        
-          prims.push_back( PrimRef(buildRefs[pinfo.begin+i].bounds(),(size_t)buildRefs[pinfo.begin+i].node) );
+        for (size_t i=0;i<buildRefs.size();i++)        
+          prims.push_back( PrimRef(buildRefs[i].bounds(),(size_t)buildRefs[i].node) );
         return;
       }
 
@@ -84,10 +84,7 @@ namespace embree
 
       mvector<BuildRef> opened_buildRefs(scene->device);
 
-      opened_buildRefs.reserve(pinfo.size());
-      PRINT(opened_buildRefs.size());
-
-      for (size_t i=pinfo.begin;i<pinfo.end;i++)
+      for (size_t i=0;i<buildRefs.size();i++)
         if (buildRefs[i].node.isLeaf())
         {
           opened_buildRefs.push_back(buildRefs[i]);
@@ -136,7 +133,7 @@ namespace embree
       
       //if (opened_split.sah() && opened_split.sah < 8.0f * split.sah)
       static int first = 0;
-      if (opened_split.valid() && first < 2)
+      if (opened_split.valid() && first < 3)
       {
         first++;
         PRINT("OPEN SPLIT");
@@ -145,7 +142,7 @@ namespace embree
         const vint4 vSplitPos(opened_split.pos);
         const vbool4 vSplitMask( (int)1 << opened_split.dim );
 
-        for (size_t i=pinfo.begin;i<pinfo.end;i++)
+        for (size_t i=0;i<buildRefs.size();i++)
         {
           const bool overlap = \
             opened_split.mapping.bin(buildRefs[i].bounds().lower)[opened_split.dim] < opened_split.pos &&
@@ -201,7 +198,7 @@ namespace embree
 
         PING;
       }
-      else
+      else if (split.valid())
       {
         PRINT("REGULAR SPLIT");
         /* --------------*/
@@ -225,10 +222,10 @@ namespace embree
 
       /* fallback case in case no successfull split has been done */
 
-      if (!left.size() || !right.size())
+      if (!left_refs.size() || !right_refs.size())
       {
-        for (size_t i=0;i<pinfo.size();i++)        
-          prims.push_back( PrimRef(buildRefs[pinfo.begin+i].bounds(),(size_t)buildRefs[pinfo.begin+i].node) );
+        for (size_t i=0;i<buildRefs.size();i++)        
+          prims.push_back( PrimRef(buildRefs[i].bounds(),(size_t)buildRefs[i].node) );
         return;
       }
       
