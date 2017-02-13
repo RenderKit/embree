@@ -538,6 +538,7 @@ namespace embree
 
       /*! standard build without reduction */
       template<typename NodeRef, 
+        typename BuildRef,
         typename CreateAllocFunc, 
         typename CreateNodeFunc, 
         typename CreateLeafFunc,
@@ -550,7 +551,7 @@ namespace embree
                           CreateLeafFunc createLeaf, 
                           NodeOpenerFunc nodeOpenerFunc,
                           ProgressMonitor progressMonitor, 
-                          PrimRef* prims,
+                          BuildRef* prims,
                           const size_t extSize,
                           const PrimInfo& pinfo, 
                           const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
@@ -580,6 +581,7 @@ namespace embree
       
       /*! special builder that propagates reduction over the tree */
       template<typename NodeRef, 
+        typename BuildRef,
         typename CreateAllocFunc, 
         typename ReductionTy, 
         typename CreateNodeFunc, 
@@ -596,7 +598,7 @@ namespace embree
                                         CreateLeafFunc createLeaf, 
                                         NodeOpenerFunc nodeOpenerFunc,
                                         ProgressMonitor progressMonitor,
-                                        PrimRef* prims0, 
+                                        BuildRef* prims0, 
                                         const size_t extSize,
                                         const PrimInfo& pinfo, 
                                         const size_t branchingFactor, 
@@ -609,7 +611,7 @@ namespace embree
         const size_t logBlockSize = __bsr(blockSize); 
         assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
 
-        typedef HeuristicArrayOpenMergeSAH<NodeOpenerFunc,PrimRef,OBJECT_BINS> Heuristic;
+        typedef HeuristicArrayOpenMergeSAH<NodeOpenerFunc,BuildRef,OBJECT_BINS> Heuristic;
 
         /* instantiate array binning heuristic */
         Heuristic heuristic(nodeOpenerFunc,prims0,pinfo);

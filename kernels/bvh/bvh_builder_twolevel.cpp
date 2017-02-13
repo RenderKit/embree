@@ -403,7 +403,7 @@ namespace embree
             PRINT(extSize);
             refs.resize(extSize);
 
-            BVHBuilderBinnedOpenMergeSAH::build<NodeRef>
+            BVHBuilderBinnedOpenMergeSAH::build<NodeRef,BuildRef>
               (root,
                [&] { return bvh->alloc.threadLocal2(); },
                [&] (const isa::BVHBuilderBinnedOpenMergeSAH::BuildRecord& current, BVHBuilderBinnedOpenMergeSAH::BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc) -> int

@@ -187,6 +187,8 @@ namespace embree
           ObjectBinner binner(empty); 
           const BinMapping<OBJECT_BINS> mapping(pinfo);
           PRINT(mapping);
+          for (size_t i=set.begin();i<set.end();i++)
+            PRINT(prims0[i]);
           binner.bin(prims0,set.begin(),set.end(),mapping);
           ObjectSplit s = binner.best(mapping,logBlockSize);
           binner.getSplitInfo(mapping, s, info);
