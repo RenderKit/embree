@@ -290,7 +290,8 @@ namespace embree
           return Split(0.0f,Split::SPLIT_FALLBACK);
         }
         
-        void splitFallback(const SetMB& set, SetMB& lset, SetMB& rset) // FIXME: also perform time split here?
+        /*! performs fallback split */
+        void splitFallback(const SetMB& set, SetMB& lset, SetMB& rset)
         {
           mvector<PrimRefMB>& prims = *set.prims;
           
@@ -387,6 +388,7 @@ namespace embree
         
         const std::tuple<NodeTy,LBBox3fa,BBox1f> recurse(const BuildRecord& current, Allocator alloc, bool toplevel)
         {
+          /* get thread local allocator */
           if (alloc == nullptr)
             alloc = createAlloc();
           
@@ -413,13 +415,13 @@ namespace embree
           /*! split until node is full or SAH tells us to stop */
           do {
             /*! find best child to split */
-            float bestSAH = neg_inf;
+            float bestArea = neg_inf;
             ssize_t bestChild = -1;
             for (size_t i=0; i<children.size(); i++) 
             {
               if (children[i].size() <= minLeafSize) continue;
-              if (expectedApproxHalfArea(children[i].prims.geomBounds) > bestSAH) {
-                bestChild = i; bestSAH = expectedApproxHalfArea(children[i].prims.geomBounds);
+              if (expectedApproxHalfArea(children[i].prims.geomBounds) > bestArea) {
+                bestChild = i; bestArea = expectedApproxHalfArea(children[i].prims.geomBounds);
               } 
             }
             if (bestChild == -1) break;
@@ -446,7 +448,7 @@ namespace embree
           LBBox3fa gbounds = empty;
           
           /* spawn tasks */
-          if (current.size() > singleThreadThreshold) 
+          if (unlikely(current.size() > singleThreadThreshold))
           {
             /*! parallel_for is faster than spawing sub-tasks */
             parallel_for(size_t(0), children.size(), [&] (const range<size_t>& r) {
@@ -454,10 +456,10 @@ namespace embree
                   values[i] = recurse(children[i],nullptr,true); 
                   updateNode(node,i,values[i]);
                   _mm_mfence(); // to allow non-temporal stores during build
-                }                
+                }
               });
-
             
+            /*! merge bounding boxes */
             for (size_t i=0; i<children.size(); i++)
               gbounds.extend(std::get<1>(values[i]));
           }
@@ -473,7 +475,7 @@ namespace embree
           }
           
           /* calculate geometry bounds of this node */
-          if (hasTimeSplits)
+          if (unlikely(hasTimeSplits))
             return std::make_tuple(node,current.prims.linearBounds(recalculatePrimRef),current.prims.time_range);
           else
             return std::make_tuple(node,gbounds,current.prims.time_range);
@@ -483,8 +485,7 @@ namespace embree
         __forceinline const std::tuple<NodeTy,LBBox3fa,BBox1f> operator() (mvector<PrimRefMB>& prims, const PrimInfoMB& pinfo)
         {
           const SetMB set(pinfo,&prims);
-          const BuildRecord record(set,find(set),1);
-          auto ret = recurse(record,nullptr,true);
+          auto ret = recurse(BuildRecord(set,find(set),1),nullptr,true);
           _mm_mfence(); // to allow non-temporal stores during build
           return ret;
         }
