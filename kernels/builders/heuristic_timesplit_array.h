@@ -84,10 +84,13 @@ namespace embree
           {
             if (likely(end-begin < parallelThreshold)) {
               bin(prims,begin,end,time_range,numTimeSegments,recalculatePrimRef);
-            } else {
-              auto bin = [&](const range<size_t>& r) -> TemporalBinInfo { TemporalBinInfo binner(empty); binner.bin(prims, r.begin(), r.end(), time_range, numTimeSegments, recalculatePrimRef); return binner; };
-              auto reduce = [&](const TemporalBinInfo& b0, const TemporalBinInfo& b1) -> TemporalBinInfo { TemporalBinInfo r = b0; r.merge(b1); return r; };
-              *this = parallel_reduce(begin,end,blockSize,TemporalBinInfo(empty),bin,reduce);
+            } 
+            else 
+            {
+              auto bin = [&](const range<size_t>& r) -> TemporalBinInfo { 
+                TemporalBinInfo binner(empty); binner.bin(prims, r.begin(), r.end(), time_range, numTimeSegments, recalculatePrimRef); return binner; 
+              };
+              *this = parallel_reduce(begin,end,blockSize,TemporalBinInfo(empty),bin,merge2);
             }
           }
           
@@ -102,7 +105,11 @@ namespace embree
               bounds1[i].extend(other.bounds1[i]);
             }
           }
-          
+
+          static __forceinline const TemporalBinInfo merge2(const TemporalBinInfo& a, const TemporalBinInfo& b) {
+            TemporalBinInfo r = a; r.merge(b); return r;
+          }
+                    
           Split best(int logBlockSize, BBox1f time_range, size_t numTimeSegments)
           {
             float bestSAH = inf;
