@@ -281,13 +281,13 @@ namespace embree
               if (localTimeSegments > 1) {
                 const int icenter = (itime_range.begin() + itime_range.end())/2;
                 const float splitTime = float(icenter)/float(prim.totalTimeSegments());
-                return Split(1.0f,Split::SPLIT_TEMPORAL,0,splitTime);
+                return Split(0.0f,Split::SPLIT_TEMPORAL,0,splitTime);
               }
             }
           }
           
           /* otherwise return fallback split */
-          return Split(1.0f,Split::SPLIT_FALLBACK);
+          return Split(0.0f,Split::SPLIT_FALLBACK);
         }
         
         void splitFallback(const SetMB& set, SetMB& lset, SetMB& rset) // FIXME: also perform time split here?
