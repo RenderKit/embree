@@ -288,6 +288,13 @@ namespace embree
         SetMB set(pinfo,&prims0,range<size_t>(0,pinfo.size()),dt0);
         BVHMBuilderHairMSMBlur::BuildRecord record(set,0);
         
+        BVHMBuilderHairMSMBlur::Settings settings;
+        settings.branchingFactor = N;
+        settings.maxDepth = BVH::maxBuildDepthLeaf;
+        settings.logBlockSize = 1;
+        settings.minLeafSize = 1;
+        settings.maxLeafSize = BVH::maxLeafBlocks;
+
         /* build hierarchy */
         typename BVH::NodeRef root = BVHMBuilderHairMSMBlur::build<N>
           (
@@ -346,7 +353,7 @@ namespace embree
               return node;
             },
             progress,
-            record,N,BVH::maxBuildDepthLeaf,1,1,BVH::maxLeafBlocks);
+            record,settings);
         
         bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.num_time_segments);
         
