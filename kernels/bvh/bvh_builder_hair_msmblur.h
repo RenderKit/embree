@@ -128,13 +128,6 @@ namespace embree
         
       private:
         
-        void deterministic_order(const SetMB& set) 
-        {
-          /* required as parallel partition destroys original primitive order */
-          PrimRefMB* prims = set.prims->data();
-          std::sort(&prims[set.object_range.begin()],&prims[set.object_range.end()]);
-        }
-        
         void splitFallback(const SetMB& set, SetMB& lset, SetMB& rset)
         {
           mvector<PrimRefMB>& prims = *set.prims;
@@ -238,7 +231,7 @@ namespace embree
           /* perform fallback split */
           if (!std::isfinite(bestSAH))
           {
-            deterministic_order(current.prims);
+            current.prims.deterministic_order();
             splitFallback(current.prims,lrecord.prims,rrecord.prims);
             return nullptr;
           }
@@ -259,7 +252,7 @@ namespace embree
           }
           /* otherwise perform fallback split */
           else {
-            deterministic_order(current.prims);
+            current.prims.deterministic_order();
             splitFallback(current.prims,lrecord.prims,rrecord.prims);
             return nullptr;
           }
@@ -278,7 +271,7 @@ namespace embree
           
           /* create leaf node */
           if (current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize) {
-            deterministic_order(current.prims);
+            current.prims.deterministic_order();
             return createLargeLeaf(current,alloc);
           }
           

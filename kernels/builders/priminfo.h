@@ -270,7 +270,14 @@ namespace embree
         object_range = range<size_t>(0,prims->size());
         time_range = time_range_in;
       }
-      
+
+      void deterministic_order() const 
+      {
+        /* required as parallel partition destroys original primitive order */
+        PrimRefMB* prim = prims->data();
+        std::sort(&prim[object_range.begin()],&prim[object_range.end()]);
+      }
+
       template<typename RecalculatePrimRef>
       __forceinline LBBox3fa linearBounds(const RecalculatePrimRef& recalculatePrimRef) const
       {

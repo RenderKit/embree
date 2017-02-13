@@ -262,7 +262,7 @@ namespace embree
           }
           /* perform fallback split */
           else if (unlikely(brecord.split.data == Split::SPLIT_FALLBACK)) {
-            deterministic_order(brecord.prims);
+            brecord.prims.deterministic_order();
             splitFallback(brecord.prims,lrecord.prims,rrecord.prims);
           }
           else 
@@ -315,13 +315,6 @@ namespace embree
           
           new (&lset) SetMB(linfo,set.prims,range<size_t>(begin,center),set.time_range);
           new (&rset) SetMB(rinfo,set.prims,range<size_t>(center,end  ),set.time_range);
-        }
-        
-        /* required as parallel partition destroys original primitive order */
-        void deterministic_order(const SetMB& set) 
-        {
-          PrimRefMB* prims = set.prims->data();
-          std::sort(&prims[set.object_range.begin()],&prims[set.object_range.end()]);
         }
         
         const std::tuple<NodeTy,LBBox3fa,BBox1f> createLargeLeaf(const BuildRecord& in, Allocator alloc)
@@ -409,7 +402,7 @@ namespace embree
           
           /*! create a leaf node when threshold reached or SAH tells us to stop */
           if (current.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.size() <= maxLeafSize && leafSAH <= splitSAH)) {
-            deterministic_order(current.prims);
+            current.prims.deterministic_order();
             return createLargeLeaf(current,alloc);
           }
           
