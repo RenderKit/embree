@@ -318,9 +318,9 @@ namespace embree
           {
             NodeRef node = createAlignedNode4D(&children[0],children.size(),alloc);
 
-            /*LBBox3fa cbounds[MAX_BRANCHING_FACTOR];
+            LBBox3fa cbounds[MAX_BRANCHING_FACTOR];
             for (size_t i=0; i<children.size(); i++)
-            cbounds[i] = children[i].prims.linearBounds(recalculatePrimRef);*/
+            cbounds[i] = children[i].prims.linearBounds(recalculatePrimRef);
             
             /* spawn tasks or ... */
             if (current.size() > SINGLE_THREADED_THRESHOLD)
@@ -328,7 +328,7 @@ namespace embree
               parallel_for(size_t(0), children.size(), [&] (const range<size_t>& r) {
                   for (size_t i=r.begin(); i<r.end(); i++) {
                     const NodeRef child = recurse(children[i],nullptr,true);
-                    updateAlignedNode4D(node,i,child); //,cbounds[i],children[i].prims.time_range); 
+                    updateAlignedNode4D(node,i,child,cbounds[i],children[i].prims.time_range); 
                     _mm_mfence(); // to allow non-temporal stores during build
                   }                
                 });
@@ -337,7 +337,7 @@ namespace embree
             else {
               for (size_t i=0; i<children.size(); i++) {
                 const NodeRef child = recurse(children[i],alloc,false);
-                updateAlignedNode4D(node,i,child);//,cbounds[i],children[i].prims.time_range);
+                updateAlignedNode4D(node,i,child,cbounds[i],children[i].prims.time_range);
               }
             }
             return node;
