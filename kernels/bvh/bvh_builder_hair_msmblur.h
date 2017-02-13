@@ -112,6 +112,7 @@ namespace embree
                   const Settings settings)
           : Settings(settings), 
           scene(scene),
+          recalculatePrimRef(recalculatePrimRef),
           createAlloc(createAlloc), 
           createAlignedNode(createAlignedNode), updateAlignedNode(updateAlignedNode), 
           createUnalignedNode(createUnalignedNode), updateUnalignedNode(updateUnalignedNode), 
@@ -315,45 +316,59 @@ namespace embree
           /* create time split node */
           if (timesplit)
           {
-            auto node = createAlignedNode4D(&children[0],children.size(),alloc);
+            NodeRef node = createAlignedNode4D(&children[0],children.size(),alloc);
+
+            /*LBBox3fa cbounds[MAX_BRANCHING_FACTOR];
+            for (size_t i=0; i<children.size(); i++)
+            cbounds[i] = children[i].prims.linearBounds(recalculatePrimRef);*/
             
             /* spawn tasks or ... */
             if (current.size() > SINGLE_THREADED_THRESHOLD)
             {
               parallel_for(size_t(0), children.size(), [&] (const range<size_t>& r) {
                   for (size_t i=r.begin(); i<r.end(); i++) {
-                    updateAlignedNode4D(node,i,recurse(children[i],nullptr,true)); 
+                    const NodeRef child = recurse(children[i],nullptr,true);
+                    updateAlignedNode4D(node,i,child); //,cbounds[i],children[i].prims.time_range); 
                     _mm_mfence(); // to allow non-temporal stores during build
                   }                
                 });
             }
             /* ... continue sequential */
             else {
-              for (size_t i=0; i<children.size(); i++) 
-                updateAlignedNode4D(node,i,recurse(children[i],alloc,false));
+              for (size_t i=0; i<children.size(); i++) {
+                const NodeRef child = recurse(children[i],alloc,false);
+                updateAlignedNode4D(node,i,child);//,cbounds[i],children[i].prims.time_range);
+              }
             }
             return node;
-          }
+            }
           
           /* create aligned node */
           else if (aligned) 
           {
-            auto node = createAlignedNode(&children[0],children.size(),alignedHeuristic,alloc);
+            NodeRef node = createAlignedNode(&children[0],children.size(),alignedHeuristic,alloc);
+            
+            LBBox3fa cbounds[MAX_BRANCHING_FACTOR];
+            for (size_t i=0; i<children.size(); i++)
+              cbounds[i] = children[i].prims.linearBounds(recalculatePrimRef);
             
             /* spawn tasks or ... */
             if (current.size() > SINGLE_THREADED_THRESHOLD)
             {
               parallel_for(size_t(0), children.size(), [&] (const range<size_t>& r) {
                   for (size_t i=r.begin(); i<r.end(); i++) {
-                    updateAlignedNode(node,i,recurse(children[i],nullptr,true)); 
+                    const NodeRef child = recurse(children[i],nullptr,true);
+                    updateAlignedNode(node,i,child,cbounds[i],children[i].prims.time_range); 
                     _mm_mfence(); // to allow non-temporal stores during build
                   }                
                 });
             }
             /* ... continue sequential */
             else {
-              for (size_t i=0; i<children.size(); i++) 
-                updateAlignedNode(node,i,recurse(children[i],alloc,false));
+              for (size_t i=0; i<children.size(); i++) {
+                const NodeRef child = recurse(children[i],alloc,false);
+                updateAlignedNode(node,i,child,cbounds[i],children[i].prims.time_range);
+              }
             }
             return node;
           }
@@ -361,7 +376,7 @@ namespace embree
           /* create unaligned node */
           else 
           {
-            auto node = createUnalignedNode(&children[0],children.size(),unalignedHeuristic,alloc);
+            NodeRef node = createUnalignedNode(&children[0],children.size(),unalignedHeuristic,alloc);
             
             /* spawn tasks or ... */
             if (current.size() > SINGLE_THREADED_THRESHOLD)
@@ -386,6 +401,7 @@ namespace embree
         
       private:      
         Scene* scene;
+        const RecalculatePrimRef& recalculatePrimRef;
         const CreateAllocFunc& createAlloc;
         const CreateAlignedNodeFunc& createAlignedNode;
         const UpdateAlignedNodeFunc& updateAlignedNode;
@@ -400,9 +416,9 @@ namespace embree
         HeuristicBinning alignedHeuristic;
         UnalignedHeuristicBinning unalignedHeuristic;
         HeuristicTemporal temporalSplitHeuristic;
-      };
+        };
       
-      template<typename NodeRef,
+        template<typename NodeRef,
         typename RecalculatePrimRef,
         typename CreateAllocFunc,
         typename CreateAlignedNodeFunc, 

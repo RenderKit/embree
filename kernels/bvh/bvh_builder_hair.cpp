@@ -304,16 +304,11 @@ namespace embree
                  FastAllocator::ThreadLocal2* alloc) -> NodeRef
             {
               AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),BVH::byteNodeAlignment); node->clear();
-              for (size_t i=0; i<numChildren; i++) {
-                LBBox3fa cbounds = children[i].prims.linearBounds(recalculatePrimRef);
-                BBox1f dt = children[i].prims.time_range;
-                node->set(i,cbounds.global(dt));
-              }
               return BVH::encodeNode(node);
             },
 
-            [&] (NodeRef node, size_t i, NodeRef child) -> void {
-              node.alignedNodeMB()->set(i,child);
+            [&] (NodeRef node, size_t i, NodeRef child, const LBBox3fa& cbounds, const BBox1f dt) -> void {
+              node.alignedNodeMB()->set(i,std::make_tuple(child,cbounds,dt));
             },
             
             [&] (const BVHMBuilderHairMSMBlur::BuildRecord* children, const size_t numChildren, 
