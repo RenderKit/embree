@@ -163,10 +163,13 @@ namespace embree
         __forceinline BuildRecord (const SetMB& prims, const BinSplit<NUM_OBJECT_BINS>& split, size_t depth) 
           : depth(depth), prims(prims), split(split) {}
         
-        __forceinline friend bool operator< (const BuildRecord& a, const BuildRecord& b) { return a.prims.size() < b.prims.size(); }
-	__forceinline friend bool operator> (const BuildRecord& a, const BuildRecord& b) { return a.prims.size() > b.prims.size();  }
+        __forceinline friend bool operator< (const BuildRecord& a, const BuildRecord& b) { 
+          return a.prims.size() < b.prims.size(); 
+        }
                 
-        __forceinline size_t size() const { return this->prims.size(); }
+        __forceinline size_t size() const { 
+          return prims.size(); 
+        }
         
       public:
 	size_t depth;                     //!< Depth of the root of this subtree.
@@ -229,7 +232,7 @@ namespace embree
           /* do temporal splits only if the the time range is big enough */
           if (set.time_range.size() > 1.01f/float(set.max_num_time_segments))
           {
-            const Split temporal_split = heuristicTemporalSplit.find(set, logBlockSize);
+            const Split temporal_split = heuristicTemporalSplit.find(set,logBlockSize);
             const float temporal_split_sah = temporal_split.splitSAH();
             
             /* take temporal split if it improved SAH */
@@ -241,23 +244,25 @@ namespace embree
         }
         
         /*! array partitioning */
-        __forceinline std::unique_ptr<mvector<PrimRefMB>> partition(const BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) 
+        __forceinline std::unique_ptr<mvector<PrimRefMB>> split(const BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) 
         {
-          /* perform fallback split */
-          if (unlikely(brecord.split.data == Split::SPLIT_FALLBACK)) {
-            deterministic_order(brecord.prims);
-            splitFallback(brecord.prims,lrecord.prims,rrecord.prims);
-            return nullptr;
+          /* perform object split */
+          if (likely(brecord.split.data == Split::SPLIT_OBJECT)) {
+            heuristicObjectSplit.split(brecord.split,brecord.prims,lrecord.prims,rrecord.prims);
           }
           /* perform temporal split */
-          else if (unlikely(brecord.split.data == Split::SPLIT_TEMPORAL)) {
+          else if (likely(brecord.split.data == Split::SPLIT_TEMPORAL)) {
             return heuristicTemporalSplit.split(brecord.split,brecord.prims,lrecord.prims,rrecord.prims);
           }
-          /* perform object split */
-          else {
-            heuristicObjectSplit.split(brecord.split,brecord.prims,lrecord.prims,rrecord.prims);
-            return nullptr;
+          /* perform fallback split */
+          else if (unlikely(brecord.split.data == Split::SPLIT_FALLBACK)) {
+            deterministic_order(brecord.prims);
+            splitFallback(brecord.prims,lrecord.prims,rrecord.prims);
           }
+          else 
+            assert(false);
+
+          return nullptr;
         }
         
         /*! finds the best fallback split */
@@ -352,7 +357,7 @@ namespace embree
             BuildRecord& brecord = children[bestChild];
             BuildRecord lrecord(current.depth+1);
             BuildRecord rrecord(current.depth+1);
-            std::unique_ptr<mvector<PrimRefMB>> new_vector = partition(brecord,lrecord,rrecord);
+            std::unique_ptr<mvector<PrimRefMB>> new_vector = split(brecord,lrecord,rrecord);
             hasTimeSplits |= new_vector != nullptr;
             
             /* find new splits */
@@ -423,7 +428,7 @@ namespace embree
             BuildRecord& brecord = children[bestChild];
             BuildRecord lrecord(current.depth+1);
             BuildRecord rrecord(current.depth+1);
-            std::unique_ptr<mvector<PrimRefMB>> new_vector = partition(brecord,lrecord,rrecord);            
+            std::unique_ptr<mvector<PrimRefMB>> new_vector = split(brecord,lrecord,rrecord);            
             hasTimeSplits |= new_vector != nullptr;
             
             /* find new splits */
