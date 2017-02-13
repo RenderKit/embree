@@ -366,27 +366,25 @@ namespace embree
           /* create node */
           auto node = createNode(hasTimeSplits,alloc);
           
-          /* recurse into each child  and perform reduction */
+          /* recurse into each child and perform reduction */
           for (size_t i=0; i<children.size(); i++) {
             values[i] = createLargeLeaf(children[i],alloc);
             updateNode(node,i,values[i]);
           }
-          
+
           /* calculate geometry bounds and time bounds of this node */
-          LBBox3fa gbounds = empty;
-          BBox1f tbounds = empty;
-          if (!hasTimeSplits)
+          if (hasTimeSplits)
           {
-            for (size_t i=0; i<children.size(); i++)
-              gbounds.extend(std::get<1>(values[i]));
-            tbounds = std::get<2>(values[0]);
+            const LBBox3fa gbounds = current.prims.linearBounds(recalculatePrimRef);
+            return std::make_tuple(node,gbounds,current.prims.time_range);
           }
           else
           {
-            gbounds = current.prims.linearBounds(recalculatePrimRef);
-            tbounds = current.prims.time_range;
+            LBBox3fa gbounds = empty;
+            for (size_t i=0; i<children.size(); i++)
+              gbounds.extend(std::get<1>(values[i]));
+            return std::make_tuple(node,gbounds,current.prims.time_range);
           }
-          return std::make_tuple(node,gbounds,tbounds);
         }
         
         const std::tuple<NodeTy,LBBox3fa,BBox1f> recurse(BuildRecord& current, Allocator alloc, bool toplevel)
@@ -472,20 +470,18 @@ namespace embree
           }
           
           /* calculate geometry bounds and time bounds of this node */
-          LBBox3fa gbounds = empty;
-          BBox1f tbounds = empty;
-          if (!hasTimeSplits)
+          if (hasTimeSplits)
           {
-            for (size_t i=0; i<children.size(); i++)
-              gbounds.extend(std::get<1>(values[i]));
-            tbounds = std::get<2>(values[0]);
+            const LBBox3fa gbounds = current.prims.linearBounds(recalculatePrimRef);
+            return std::make_tuple(node,gbounds,current.prims.time_range);
           }
           else
           {
-            gbounds = current.prims.linearBounds(recalculatePrimRef);
-            tbounds = current.prims.time_range;
+            LBBox3fa gbounds = empty;
+            for (size_t i=0; i<children.size(); i++)
+              gbounds.extend(std::get<1>(values[i]));
+            return std::make_tuple(node,gbounds,current.prims.time_range);
           }
-          return std::make_tuple(node,gbounds,tbounds);
         }
         
         /*! builder entry function */
