@@ -162,12 +162,9 @@ namespace embree
       public:
 	__forceinline BuildRecord () {}
         
-        __forceinline BuildRecord (size_t depth)  // FIXME: remove
+        __forceinline BuildRecord (size_t depth)
           : depth(depth) {}
         
-        __forceinline BuildRecord (const SetMB& prims, size_t depth)  // FIXME: remoe
-          : depth(depth), prims(prims) {}
-
         __forceinline BuildRecord (const SetMB& prims, const BinSplit<NUM_OBJECT_BINS>& split, size_t depth) 
           : depth(depth), prims(prims), split(split) {}
         
