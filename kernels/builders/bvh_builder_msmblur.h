@@ -78,21 +78,16 @@ namespace embree
         __forceinline void split(int bestChild, const BuildRecord& lrecord, const BuildRecord& rrecord, std::unique_ptr<mvector<PrimRefMB>> new_vector)
         {
           SharedPrimRefVector* bsharedPrimVec = primvecs[bestChild];
-          if (lrecord.prims.prims == bsharedPrimVec->prims) {
-            primvecs[bestChild] = bsharedPrimVec;
+          if (lrecord.prims.prims == bsharedPrimVec->prims)
             bsharedPrimVec->incRef();
-          }
-          else {
+          else
             primvecs[bestChild] = new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(lrecord.prims.prims);
-          }
-          
-          if (rrecord.prims.prims == bsharedPrimVec->prims) {
-            primvecs[numChildren] = bsharedPrimVec;
+
+          if (rrecord.prims.prims == bsharedPrimVec->prims)
             bsharedPrimVec->incRef();
-          }
-          else {
+          else
             primvecs[numChildren] = new (&sharedPrimVecs[numSharedPrimVecs++]) SharedPrimRefVector(rrecord.prims.prims);
-          }
+
           bsharedPrimVec->decRef();
           new_vector.release();
           
@@ -162,12 +157,9 @@ namespace embree
       public:
 	__forceinline BuildRecord () {}
         
-        __forceinline BuildRecord (size_t depth)  // FIXME: remove
+        __forceinline BuildRecord (size_t depth)
           : depth(depth) {}
         
-        __forceinline BuildRecord (const SetMB& prims, size_t depth)  // FIXME: remoe
-          : depth(depth), prims(prims) {}
-
         __forceinline BuildRecord (const SetMB& prims, const BinSplit<NUM_OBJECT_BINS>& split, size_t depth) 
           : depth(depth), prims(prims), split(split) {}
         
