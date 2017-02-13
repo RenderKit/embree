@@ -55,7 +55,9 @@ namespace embree
         __forceinline BuildRecord (const SetMB& prims, size_t depth = 0) 
           : depth(depth), prims(prims) {}
         
-        __forceinline size_t size() const { return prims.object_range.size(); }
+        __forceinline size_t size() const { 
+          return prims.object_range.size(); 
+        }
         
       public:
 	size_t depth;       //!< depth of the root of this subtree
@@ -116,8 +118,11 @@ namespace embree
           temporalSplitHeuristic(scene->device,recalculatePrimRef) {}
         
         /*! entry point into builder */
-        NodeRef operator() (BuildRecord& current) {
-          NodeRef root = recurse(current,nullptr,true);
+        NodeRef operator() (mvector<PrimRefMB>& prims, const PrimInfoMB& pinfo) 
+        {
+          SetMB set(pinfo,&prims);
+          BuildRecord record(set,0); // FIXME: depth 0 or 1
+          NodeRef root = recurse(record,nullptr,true);
           _mm_mfence(); // to allow non-temporal stores during build
           return root;
         }
@@ -131,7 +136,7 @@ namespace embree
           std::sort(&prims[set.object_range.begin()],&prims[set.object_range.end()]);
         }
         
-        void splitFallback(const SetMB& set, SetMB& lset, SetMB& rset) // FIXME: also perform time split here?
+        void splitFallback(const SetMB& set, SetMB& lset, SetMB& rset)
         {
           mvector<PrimRefMB>& prims = *set.prims;
           
@@ -407,7 +412,7 @@ namespace embree
         typename CreateLeafFunc, 
         typename ProgressMonitor>
         
-        static typename BVHN<N>::NodeRef build (Scene* scene,
+        static typename BVHN<N>::NodeRef build (Scene* scene, mvector<PrimRefMB>& prims, const PrimInfoMB& pinfo,
                                                 const RecalculatePrimRef& recalculatePrimRef,
                                                 const CreateAllocFunc& createAlloc,
                                                 const CreateAlignedNodeFunc& createAlignedNode, 
@@ -415,12 +420,11 @@ namespace embree
                                                 const CreateAlignedNode4DFunc& createAlignedNode4D, 
                                                 const CreateLeafFunc& createLeaf, 
                                                 const ProgressMonitor& progressMonitor,
-                                                BuildRecord& current,
                                                 const Settings settings)
       {
         typedef BuilderT<N,RecalculatePrimRef,CreateAllocFunc,CreateAlignedNodeFunc,CreateUnalignedNodeFunc,CreateAlignedNode4DFunc,CreateLeafFunc,ProgressMonitor> Builder;
         Builder builder(scene,recalculatePrimRef,createAlloc,createAlignedNode,createUnalignedNode,createAlignedNode4D,createLeaf,progressMonitor,settings);
-        return builder(current);
+        return builder(prims,pinfo);
       }
     };
   }

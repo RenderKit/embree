@@ -278,16 +278,12 @@ namespace embree
         //profile(1,5,numPrimitives,[&] (ProfileTimer& timer) {
 
         /* create primref array */
-        BBox1f dt0(0.0f,1.0f);
         bvh->alloc.init_estimate(numPrimitives*sizeof(Primitive));
         mvector<PrimRefMB> prims0(scene->device,numPrimitives);
-        const PrimInfoMB pinfo = createPrimRefMBArray<BezierCurves>(scene,prims0,virtualprogress,dt0);
+        const PrimInfoMB pinfo = createPrimRefMBArray<BezierCurves>(scene,prims0,virtualprogress);
 
         RecalculatePrimRef<BezierCurves> recalculatePrimRef(scene);
 
-        SetMB set(pinfo,&prims0,range<size_t>(0,pinfo.size()),dt0);
-        BVHMBuilderHairMSMBlur::BuildRecord record(set,0);
-        
         BVHMBuilderHairMSMBlur::Settings settings;
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxBuildDepthLeaf;
@@ -298,7 +294,7 @@ namespace embree
         /* build hierarchy */
         typename BVH::NodeRef root = BVHMBuilderHairMSMBlur::build<N>
           (
-            scene,
+            scene, prims0, pinfo,
             recalculatePrimRef,
             
             [&] () { return bvh->alloc.threadLocal2(); },
@@ -353,7 +349,7 @@ namespace embree
               return node;
             },
             progress,
-            record,settings);
+            settings);
         
         bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.num_time_segments);
         
