@@ -29,15 +29,15 @@ namespace embree
   {
     struct BVHMBuilderHairMSMBlur
     {
-      struct BuildRecord2
+      struct BuildRecord
       {
       public:
-	__forceinline BuildRecord2 () {}
+	__forceinline BuildRecord () {}
         
-        __forceinline BuildRecord2 (size_t depth) 
+        __forceinline BuildRecord (size_t depth) 
           : depth(depth) {}
         
-        __forceinline BuildRecord2 (const SetMB& prims, size_t depth = 0) 
+        __forceinline BuildRecord (const SetMB& prims, size_t depth = 0) 
           : depth(depth), prims(prims) {}
         
         __forceinline size_t size() const { return prims.object_range.size(); }
@@ -72,7 +72,7 @@ namespace embree
         typedef typename BVH::NodeRef NodeRef;
         typedef FastAllocator::ThreadLocal2* Allocator;
         typedef SharedVector<mvector<PrimRefMB>> SharedPrimRefVector;
-        typedef LocalChildListT<BuildRecord2,MAX_BRANCHING_FACTOR> LocalChildList;
+        typedef LocalChildListT<BuildRecord,MAX_BRANCHING_FACTOR> LocalChildList;
         
         typedef HeuristicMBlurTemporalSplit<PrimRefMB,RecalculatePrimRef,NUM_TEMPORAL_BINS> HeuristicTemporal;
         typedef HeuristicArrayBinningMB<PrimRefMB,NUM_OBJECT_BINS> HeuristicBinning;
@@ -103,7 +103,7 @@ namespace embree
           temporalSplitHeuristic(scene->device,recalculatePrimRef) {}
         
         /*! entry point into builder */
-        NodeRef operator() (BuildRecord2& current) {
+        NodeRef operator() (BuildRecord& current) {
           NodeRef root = recurse(current,nullptr,true);
           _mm_mfence(); // to allow non-temporal stores during build
           return root;
@@ -139,7 +139,7 @@ namespace embree
         }
         
         /*! creates a large leaf that could be larger than supported by the BVH */
-        NodeRef createLargeLeaf(BuildRecord2& current, Allocator alloc)
+        NodeRef createLargeLeaf(BuildRecord& current, Allocator alloc)
         {
           /* this should never occur but is a fatal error */
           if (current.depth > maxDepth) 
@@ -172,8 +172,8 @@ namespace embree
             if (bestChild == -1) break;
             
             /*! split best child into left and right child */
-            BuildRecord2 left(current.depth+1);
-            BuildRecord2 right(current.depth+1);
+            BuildRecord left(current.depth+1);
+            BuildRecord right(current.depth+1);
             splitFallback(children[bestChild].prims,left.prims,right.prims);
             children.split(bestChild,left,right,nullptr);
             
@@ -185,7 +185,7 @@ namespace embree
         }
         
         /*! performs split */
-        std::unique_ptr<mvector<PrimRefMB>> split(const BuildRecord2& current, BuildRecord2& lrecord, BuildRecord2& rrecord, bool& aligned, bool& timesplit)
+        std::unique_ptr<mvector<PrimRefMB>> split(const BuildRecord& current, BuildRecord& lrecord, BuildRecord& rrecord, bool& aligned, bool& timesplit)
         {
           /* variable to track the SAH of the best splitting approach */
           float bestSAH = inf;
@@ -249,7 +249,7 @@ namespace embree
         }
         
         /*! recursive build */
-        NodeRef recurse(BuildRecord2& current, Allocator alloc, bool toplevel)
+        NodeRef recurse(BuildRecord& current, Allocator alloc, bool toplevel)
         {
           if (alloc == nullptr) 
             alloc = createAlloc();
@@ -290,8 +290,8 @@ namespace embree
             if (bestChild == -1) break;
             
             /*! split best child into left and right child */
-            BuildRecord2 left(current.depth+1);
-            BuildRecord2 right(current.depth+1);
+            BuildRecord left(current.depth+1);
+            BuildRecord right(current.depth+1);
             std::unique_ptr<mvector<PrimRefMB>> new_vector = split(children[bestChild],left,right,aligned,timesplit);
             children.split(bestChild,left,right,std::move(new_vector));
             
@@ -409,7 +409,7 @@ namespace embree
                                                 const CreateAlignedNode4DFunc& createAlignedNode4D, 
                                                 const CreateLeafFunc& createLeaf, 
                                                 const ProgressMonitor& progressMonitor,
-                                                BuildRecord2& current,
+                                                BuildRecord& current,
                                                 const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, 
                                                 const size_t minLeafSize, const size_t maxLeafSize) 
       {

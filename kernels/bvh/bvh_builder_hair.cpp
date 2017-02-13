@@ -286,7 +286,7 @@ namespace embree
         RecalculatePrimRef<BezierCurves> recalculatePrimRef(scene);
 
         SetMB set(pinfo,&prims0,range<size_t>(0,pinfo.size()),dt0);
-        BVHMBuilderHairMSMBlur::BuildRecord2 record(set,0);
+        BVHMBuilderHairMSMBlur::BuildRecord record(set,0);
         
         /* build hierarchy */
         typename BVH::NodeRef root = BVHMBuilderHairMSMBlur::build<N>
@@ -296,7 +296,7 @@ namespace embree
             
             [&] () { return bvh->alloc.threadLocal2(); },
             
-            [&] (const BVHMBuilderHairMSMBlur::BuildRecord2* children, const size_t numChildren, 
+            [&] (const BVHMBuilderHairMSMBlur::BuildRecord* children, const size_t numChildren, 
                  HeuristicBinning alignedHeuristic, 
                  FastAllocator::ThreadLocal2* alloc) -> AlignedNodeMB*
             {
@@ -309,7 +309,7 @@ namespace embree
               return node;
             },
             
-            [&] (const BVHMBuilderHairMSMBlur::BuildRecord2* children, const size_t numChildren, 
+            [&] (const BVHMBuilderHairMSMBlur::BuildRecord* children, const size_t numChildren, 
                  UnalignedHeuristicBinning unalignedHeuristic, 
                  FastAllocator::ThreadLocal2* alloc) -> UnalignedNodeMB*
             {
@@ -323,7 +323,7 @@ namespace embree
               return node;
             },
 
-            [&] (const BVHMBuilderHairMSMBlur::BuildRecord2* children, const size_t numChildren, FastAllocator::ThreadLocal2* alloc) -> AlignedNodeMB4D*
+            [&] (const BVHMBuilderHairMSMBlur::BuildRecord* children, const size_t numChildren, FastAllocator::ThreadLocal2* alloc) -> AlignedNodeMB4D*
             {
               AlignedNodeMB4D* node = (AlignedNodeMB4D*) alloc->alloc0->malloc(sizeof(AlignedNodeMB4D),BVH::byteNodeAlignment); node->clear();
               for (size_t i=0; i<numChildren; i++) {
@@ -334,7 +334,7 @@ namespace embree
               return node;
             },
 
-            [&] (const BVHMBuilderHairMSMBlur::BuildRecord2& current, FastAllocator::ThreadLocal2* alloc) -> NodeRef
+            [&] (const BVHMBuilderHairMSMBlur::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> NodeRef
             {
               size_t items = current.prims.object_range.size();
               size_t start = current.prims.object_range.begin();
