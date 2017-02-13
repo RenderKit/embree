@@ -217,7 +217,6 @@ namespace embree
 
       __forceinline float leafSAH() const { 
 	return time_range.size()*expectedApproxHalfArea(geomBounds)*float(num_time_segments); 
-	//return halfArea(geomBounds)*blocks(num); 
       }
       
       __forceinline float leafSAH(size_t block_shift) const { 

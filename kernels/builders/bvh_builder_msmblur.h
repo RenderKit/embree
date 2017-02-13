@@ -229,9 +229,14 @@ namespace embree
           /* first try standard object split */
           const Split object_split = heuristicObjectSplit.find(set,logBlockSize);
           const float object_split_sah = object_split.splitSAH();
+
+          /* test temporal splits only when object split was bad */
+          const float leaf_sah = set.leafSAH(logBlockSize);
+          if (object_split_sah < 0.50f*leaf_sah)
+            return object_split;
           
           /* do temporal splits only if the the time range is big enough */
-          if (set.time_range.size() > 1.01f/float(set.max_num_time_segments)) // FIXME: test temporal splits only when object split was bad
+          if (set.time_range.size() > 1.01f/float(set.max_num_time_segments))
           {
             const Split temporal_split = heuristicTemporalSplit.find(set, logBlockSize);
             const float temporal_split_sah = temporal_split.splitSAH();
@@ -397,7 +402,6 @@ namespace embree
           const float leafSAH  = intCost*current.prims.leafSAH(logBlockSize);
           const float splitSAH = travCost*current.prims.halfArea()+intCost*current.split.splitSAH();
           assert((current.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
-          assert(current.size() == current.prims.object_range.size());
           
           /*! create a leaf node when threshold reached or SAH tells us to stop */
           if (current.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.size() <= maxLeafSize && leafSAH <= splitSAH)) {
