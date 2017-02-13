@@ -148,7 +148,7 @@ namespace embree
             opened_split.mapping.bin(buildRefs[i].bounds().lower)[opened_split.dim] < opened_split.pos &&
             opened_split.mapping.bin(buildRefs[i].bounds().upper)[opened_split.dim] >= opened_split.pos;
 
-          if (buildRefs[i].node.isLeaf() /* || !overlap */)
+          if (buildRefs[i].node.isLeaf()  || !overlap )
           {
             /* sort leaf into left/right list */
             if (opened_split.mapping.bin_unsafe(buildRefs[i],vSplitPos,vSplitMask))
@@ -356,9 +356,9 @@ namespace embree
 
 #if ENABLER_DIRECT_SAH_MERGE_BUILDER == 0
         open_sequential(numPrimitives); 
-#endif
         /* compute PrimRefs */
         prims.resize(refs.size());
+#endif
 
 #endif
 
@@ -369,6 +369,13 @@ namespace embree
 #endif
         {
 #if SAH_OPEN_MERGE_BUILD == 0
+
+#if ENABLER_DIRECT_SAH_MERGE_BUILDER == 1
+          PrimInfo pinfo(empty);
+          for (size_t i=0;i<refs.size();i++)
+            pinfo.add(refs[i].bounds(),refs[i].bounds().center2());
+          PRINT(pinfo);
+#else
           const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(),  PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {
 
               PrimInfo pinfo(empty);
@@ -378,9 +385,10 @@ namespace embree
               }
               return pinfo;
             }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
-#else
-          
 #endif
+#endif
+
+          
           /* skip if all objects where empty */
           if (pinfo.size() == 0)
             bvh->set(BVH::emptyNode,empty,0);
@@ -390,10 +398,10 @@ namespace embree
           {
             NodeRef root;
 #if ENABLER_DIRECT_SAH_MERGE_BUILDER == 1
-            const size_t extSize = pinfo.size();
 
-            const size_t numSplitPrimitives = max(pinfo.size(),size_t(pinfo.size()*1000));
-            prims.resize(numSplitPrimitives);
+            const size_t extSize = max(pinfo.size(),size_t(pinfo.size()*1000));
+            PRINT(extSize);
+            refs.resize(extSize);
 
             BVHBuilderBinnedOpenMergeSAH::build<NodeRef>
               (root,
@@ -414,8 +422,9 @@ namespace embree
                 *current.parent = (NodeRef) prims[current.prims.begin()].ID();
                 return 1;
               },
+               [&] (BuildRef &bref) -> int { return 1; },              
                [&] (size_t dn) { bvh->scene->progressMonitor(0); },
-               prims.data(),extSize,pinfo,N,BVH::maxBuildDepthLeaf,N,1,1,1.0f,1.0f,singleThreadThreshold);
+               refs.data(),extSize,pinfo,N,BVH::maxBuildDepthLeaf,N,1,1,1.0f,1.0f,singleThreadThreshold);
 #else
             BVHBuilderBinnedSAH::build<NodeRef>
               (root,

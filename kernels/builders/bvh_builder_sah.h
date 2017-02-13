@@ -540,13 +540,15 @@ namespace embree
       template<typename NodeRef, 
         typename CreateAllocFunc, 
         typename CreateNodeFunc, 
-        typename CreateLeafFunc, 
+        typename CreateLeafFunc,
+        typename NodeOpenerFunc,
         typename ProgressMonitor>
         
         static void build(NodeRef& root,
                           CreateAllocFunc createAlloc, 
                           CreateNodeFunc createNode, 
                           CreateLeafFunc createLeaf, 
+                          NodeOpenerFunc nodeOpenerFunc,
                           ProgressMonitor progressMonitor, 
                           PrimRef* prims,
                           const size_t extSize,
@@ -567,6 +569,7 @@ namespace embree
                      createNode,
                      updateNode,
                      createLeaf,
+                     nodeOpenerFunc,
                      progressMonitor,
                      prims,
                      extSize,
@@ -582,6 +585,7 @@ namespace embree
         typename CreateNodeFunc, 
         typename UpdateNodeFunc, 
         typename CreateLeafFunc, 
+        typename NodeOpenerFunc,
         typename ProgressMonitor>
         
         static ReductionTy build_reduce(NodeRef& root,
@@ -590,6 +594,7 @@ namespace embree
                                         CreateNodeFunc createNode, 
                                         UpdateNodeFunc updateNode, 
                                         CreateLeafFunc createLeaf, 
+                                        NodeOpenerFunc nodeOpenerFunc,
                                         ProgressMonitor progressMonitor,
                                         PrimRef* prims0, 
                                         const size_t extSize,
@@ -604,10 +609,10 @@ namespace embree
         const size_t logBlockSize = __bsr(blockSize); 
         assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
 
-        typedef HeuristicArrayOpenMergeSAH<PrimRef,OBJECT_BINS> Heuristic;
+        typedef HeuristicArrayOpenMergeSAH<NodeOpenerFunc,PrimRef,OBJECT_BINS> Heuristic;
 
         /* instantiate array binning heuristic */
-        Heuristic heuristic(prims0,pinfo);
+        Heuristic heuristic(nodeOpenerFunc,prims0,pinfo);
         
         typedef GeneralBVHBuilder<
           BuildRecord,

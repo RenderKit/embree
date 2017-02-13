@@ -68,9 +68,9 @@ namespace embree
     
     /*! Performs standard object binning */
 #if defined(__AVX512F__)
-    template<typename PrimRef, size_t OBJECT_BINS = 16>
+    template<typename NodeOpenerFunc, typename PrimRef, size_t OBJECT_BINS = 16>
 #else
-      template<typename PrimRef, size_t OBJECT_BINS = 32>
+      template<typename NodeOpenerFunc, typename PrimRef, size_t OBJECT_BINS = 32>
 #endif
       struct HeuristicArrayOpenMergeSAH
       {
@@ -97,8 +97,8 @@ namespace embree
           : prims0(nullptr) {}
         
         /*! remember prim array */
-        __forceinline HeuristicArrayOpenMergeSAH (PrimRef* prims0, const PrimInfo &root_info)
-          : prims0(prims0), root_info(root_info) {}
+        __forceinline HeuristicArrayOpenMergeSAH (const NodeOpenerFunc& nodeOpenerFunc, PrimRef* prims0, const PrimInfo &root_info)
+          : prims0(prims0), nodeOpenerFunc(nodeOpenerFunc), root_info(root_info) {}
 
 
         /*! compute extended ranges */
@@ -151,9 +151,11 @@ namespace embree
         const Split find(Set& set, PrimInfo& pinfo, const size_t logBlockSize)
         {
           SplitInfo oinfo;
+          PRINT(set);
+          PRINT(pinfo);
           const ObjectSplit object_split = object_find(set,pinfo,logBlockSize,oinfo);
           const float object_split_sah = object_split.splitSAH();
-
+          PRINT(object_split);
 #if 0
           if (unlikely(set.has_ext_range()))
           {
@@ -184,6 +186,7 @@ namespace embree
         {
           ObjectBinner binner(empty); 
           const BinMapping<OBJECT_BINS> mapping(pinfo);
+          PRINT(mapping);
           binner.bin(prims0,set.begin(),set.end(),mapping);
           ObjectSplit s = binner.best(mapping,logBlockSize);
           binner.getSplitInfo(mapping, s, info);
@@ -251,23 +254,17 @@ namespace embree
           
           const float fpos = split.mapping.pos(split.pos,split.dim);
         
-          FATAL("NOT YET IMPLEMENTED");
-#if 0
           parallel_for( set.begin(), set.end(), CREATE_SPLITS_STEP_SIZE, [&](const range<size_t>& r) {
               for (size_t i=r.begin();i<r.end();i++)
               {
-                const unsigned int splits = prims0[i].geomID() >> 24;
-
-                if (likely(splits <= 1)) continue; /* todo: does this ever happen ? */
-
-                //int bin0 = split.mapping.bin(prims0[i].lower)[split.dim];
-                //int bin1 = split.mapping.bin(prims0[i].upper)[split.dim];
-                //if (unlikely(bin0 < split.pos && bin1 >= split.pos))
                 if (unlikely(prims0[i].lower[split.dim] < fpos && prims0[i].upper[split.dim] > fpos))
                 {
-                  assert(splits > 1);
 
+
+                  //PrimRef refs[8];
+                  //int n = nodeOpenerFunc(prims0[i],refs);
                   PrimRef left,right;
+#if 0
                   const auto splitter = splitterFactory.create(prims0[i]);
                   splitter.split(prims0[i],split.dim,fpos,left,right);
                 
@@ -279,6 +276,7 @@ namespace embree
                   left.lower.a  = (left.lower.a & 0x00FFFFFF) | (splits << 24);
                   right.lower.a = (right.lower.a & 0x00FFFFFF) | (splits << 24);
 
+#endif
                   const size_t ID = ext_elements.fetch_add(1);
 
                   /* break if the number of subdivided elements are greater than the maximal allowed size */
@@ -290,7 +288,7 @@ namespace embree
                 }
               }
             });
-#endif
+
           const size_t numExtElements = min(max_ext_range_size,ext_elements.load());          
           //assert(numExtElements <= max_ext_range_size);
           assert(set.end()+numExtElements<=set.ext_end());
@@ -477,6 +475,9 @@ namespace embree
           const size_t end   = set.end();
           left.reset(); 
           right.reset();
+          FATAL("NOT YET IMPLEMENTED");
+#if 0
+
           const unsigned int splitPos = split.pos;
           const unsigned int splitDim = split.dim;
           const unsigned int splitDimMask = (unsigned int)1 << splitDim;
@@ -486,8 +487,6 @@ namespace embree
           const vint4 vSplitPos(splitPos);
           const vbool4 vSplitMask( (int)splitDimMask );
 
-          FATAL("NOT YET IMPLEMENTED");
-#if 0
           auto isLeft = [&] (const PrimRef &ref) { 
             const Vec3fa c = ref.bounds().center();
             return any(((vint4)mapping.bin(c) < vSplitPos) & vSplitMask); };
@@ -557,6 +556,7 @@ namespace embree
         
       private:
         PrimRef* const prims0;
+        const NodeOpenerFunc& nodeOpenerFunc;
         const PrimInfo& root_info;
       };
   }

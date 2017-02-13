@@ -42,13 +42,19 @@ namespace embree
       public:
         __forceinline BuildRef () {}
 
-        __forceinline BuildRef (const BBox3fa& bounds, NodeRef node, const unsigned int geomID = 0, const unsigned int numPrimitives = 0)
-          : PrimRef(bounds,geomID), node(node), geomID(geomID), numPrimitives(numPrimitives)
+        __forceinline BuildRef (const BBox3fa& bounds, NodeRef node)
+          : PrimRef(bounds,geomID), node(node), geomID(0), numPrimitives(0)
         {
           if (node.isLeaf())
             lower.w = 0.0f;
           else
             lower.w = area(this->bounds());
+        }
+
+
+        __forceinline BuildRef (const BBox3fa& bounds, NodeRef node, const unsigned int geomID, const unsigned int numPrimitives)
+          : PrimRef(bounds,(size_t)node), node(node), geomID(geomID), numPrimitives(numPrimitives)
+        {
         }
 
         friend bool operator< (const BuildRef& a, const BuildRef& b) {
