@@ -85,10 +85,9 @@ namespace embree
             if (likely(end-begin < parallelThreshold)) {
               bin(prims,begin,end,time_range,numTimeSegments,recalculatePrimRef);
             } else {
-              TemporalBinInfo binner(empty);
-              *this = parallel_reduce(begin,end,blockSize,binner,
-                                      [&](const range<size_t>& r) -> TemporalBinInfo { TemporalBinInfo binner(empty); binner.bin(prims, r.begin(), r.end(), time_range, numTimeSegments, recalculatePrimRef); return binner; },
-                                      [&](const TemporalBinInfo& b0, const TemporalBinInfo& b1) -> TemporalBinInfo { TemporalBinInfo r = b0; r.merge(b1); return r; });
+              auto bin = [&](const range<size_t>& r) -> TemporalBinInfo { TemporalBinInfo binner(empty); binner.bin(prims, r.begin(), r.end(), time_range, numTimeSegments, recalculatePrimRef); return binner; };
+              auto reduce = [&](const TemporalBinInfo& b0, const TemporalBinInfo& b1) -> TemporalBinInfo { TemporalBinInfo r = b0; r.merge(b1); return r; };
+              *this = parallel_reduce(begin,end,blockSize,TemporalBinInfo(empty),bin,reduce);
             }
           }
           
