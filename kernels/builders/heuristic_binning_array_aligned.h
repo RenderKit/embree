@@ -202,7 +202,7 @@ namespace embree
         /*! finds the best split */
         const Split find(const SetMB& set, const size_t logBlockSize)
         {
-          ObjectBinner binner(empty); // FIXME: this clear can be optimized away
+          ObjectBinner binner(empty);
           const BinMapping<BINS> mapping(set.centBounds,set.size());
           binner.bin_parallel(set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,mapping);
           Split osplit = binner.best(mapping,logBlockSize);
@@ -224,7 +224,7 @@ namespace embree
           auto reduction = [] (PrimInfoMB& pinfo, const PrimRefMB& ref) { pinfo.add_primref(ref); };
           auto reduction2 = [] (PrimInfoMB& pinfo0,const PrimInfoMB& pinfo1) { pinfo0.merge(pinfo1); };
           size_t center = parallel_partitioning(set.prims->data(),begin,end,EmptyTy(),left,right,isLeft,reduction,reduction2,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD);
-          new (&lset) SetMB(left,set.prims,range<size_t>(begin,center),set.time_range);
+          new (&lset) SetMB(left, set.prims,range<size_t>(begin,center),set.time_range);
           new (&rset) SetMB(right,set.prims,range<size_t>(center,end  ),set.time_range);
         }
       };
