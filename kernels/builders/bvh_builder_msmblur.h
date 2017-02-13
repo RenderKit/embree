@@ -171,8 +171,7 @@ namespace embree
         
         __forceinline friend bool operator< (const BuildRecord& a, const BuildRecord& b) { return a.prims.size() < b.prims.size(); }
 	__forceinline friend bool operator> (const BuildRecord& a, const BuildRecord& b) { return a.prims.size() > b.prims.size();  }
-        
-        
+                
         __forceinline size_t size() const { return this->prims.size(); }
         
       public:
@@ -221,12 +220,8 @@ namespace embree
             throw_RTCError(RTC_UNKNOWN_ERROR,"bvh_builder: branching factor too large");
         }
         
-        __forceinline const Split find(BuildRecord& current) {
-          return find (current.prims,logBlockSize);
-        }
-        
         /*! finds the best split */
-        const Split find(SetMB& set, const size_t logBlockSize)
+        const Split find(SetMB& set)
         {
           /* first try standard object split */
           const Split object_split = heuristicObjectSplit.find(set,logBlockSize);
@@ -250,7 +245,6 @@ namespace embree
         __forceinline std::unique_ptr<mvector<PrimRefMB>> partition(BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) 
         {
           /* perform fallback split */
-          //if (unlikely(!brecord.split.valid())) {
           if (unlikely(brecord.split.data == Split::SPLIT_FALLBACK)) {
             deterministic_order(brecord.prims);
             splitFallback(brecord.prims,lrecord.prims,rrecord.prims);
@@ -268,16 +262,16 @@ namespace embree
         }
         
         /*! finds the best fallback split */
-        __forceinline Split findFallback(BuildRecord& current)
+        __forceinline Split findFallback(SetMB& set)
         {
           /* if a leaf can only hold a single time-segment, we might have to do additional temporal splits */
           if (singleLeafTimeSegment)
           {
             /* test if one primitive has more than one time segment in time range, if so split time */
-            for (size_t i=current.prims.object_range.begin(); i<current.prims.object_range.end(); i++) 
+            for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++) 
             {
-              const PrimRefMB& prim = (*current.prims.prims)[i];
-              const range<int> itime_range = getTimeSegmentRange(current.prims.time_range,prim.totalTimeSegments());
+              const PrimRefMB& prim = (*set.prims)[i];
+              const range<int> itime_range = getTimeSegmentRange(set.time_range,prim.totalTimeSegments());
               const int localTimeSegments = itime_range.size();
               assert(localTimeSegments > 0);
               if (localTimeSegments > 1) {
@@ -312,9 +306,9 @@ namespace embree
           new (&rset) SetMB(rinfo,set.prims,range<size_t>(center,end  ),set.time_range);
         }
         
+        /* required as parallel partition destroys original primitive order */
         void deterministic_order(const SetMB& set) 
         {
-          /* required as parallel partition destroys original primitive order */
           PrimRefMB* prims = set.prims->data();
           std::sort(&prims[set.object_range.begin()],&prims[set.object_range.end()]);
         }
@@ -326,10 +320,10 @@ namespace embree
             throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
           
           /* replace already found split by fallback split */
-          current.split = findFallback(current);
+          current.split = findFallback(current.prims);
           
           /* create leaf for few primitives */
-          if (current.prims.size() <= maxLeafSize && current.split.data != Split::SPLIT_TEMPORAL)
+          if (current.size() <= maxLeafSize && current.split.data != Split::SPLIT_TEMPORAL)
             return createLeaf(current,alloc);
           
           /* fill all children by always splitting the largest one */
@@ -343,12 +337,12 @@ namespace embree
             for (size_t i=0; i<children.size(); i++)
             {
               /* ignore leaves as they cannot get split */
-              if (children[i].prims.size() <= maxLeafSize && children[i].split.data != Split::SPLIT_TEMPORAL)
+              if (children[i].size() <= maxLeafSize && children[i].split.data != Split::SPLIT_TEMPORAL)
                 continue;
               
               /* remember child with largest size */
-              if (children[i].prims.size() > bestSize) {
-                bestSize = children[i].prims.size();
+              if (children[i].size() > bestSize) {
+                bestSize = children[i].size();
                 bestChild = i;
               }
             }
@@ -361,8 +355,8 @@ namespace embree
             std::unique_ptr<mvector<PrimRefMB>> new_vector = partition(brecord,lrecord,rrecord);
             
             /* find new splits */
-            lrecord.split = findFallback(lrecord);
-            rrecord.split = findFallback(rrecord);
+            lrecord.split = findFallback(lrecord.prims);
+            rrecord.split = findFallback(rrecord.prims);
             children.split(bestChild,lrecord,rrecord,std::move(new_vector));
             
           } while (children.size() < branchingFactor);
@@ -410,11 +404,11 @@ namespace embree
           /*! compute leaf and split cost */
           const float leafSAH  = intCost*current.prims.leafSAH(logBlockSize);
           const float splitSAH = travCost*current.prims.halfArea()+intCost*current.split.splitSAH();
-          assert((current.prims.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
-          assert(current.prims.size() == current.prims.object_range.size());
+          assert((current.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
+          assert(current.size() == current.prims.object_range.size());
           
           /*! create a leaf node when threshold reached or SAH tells us to stop */
-          if (current.prims.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.prims.size() <= maxLeafSize && leafSAH <= splitSAH)) {
+          if (current.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.size() <= maxLeafSize && leafSAH <= splitSAH)) {
             deterministic_order(current.prims);
             return createLargeLeaf(current,alloc);
           }
@@ -430,7 +424,7 @@ namespace embree
             ssize_t bestChild = -1;
             for (size_t i=0; i<children.size(); i++) 
             {
-              if (children[i].prims.size() <= minLeafSize) continue;
+              if (children[i].size() <= minLeafSize) continue;
               if (expectedApproxHalfArea(children[i].prims.geomBounds) > bestSAH) {
                 bestChild = i; bestSAH = expectedApproxHalfArea(children[i].prims.geomBounds);
               } 
@@ -444,8 +438,8 @@ namespace embree
             std::unique_ptr<mvector<PrimRefMB>> new_vector = partition(brecord,lrecord,rrecord);            
             
             /* find new splits */
-            lrecord.split = find(lrecord);
-            rrecord.split = find(rrecord);
+            lrecord.split = find(lrecord.prims);
+            rrecord.split = find(rrecord.prims);
             children.split(bestChild,lrecord,rrecord,std::move(new_vector));
             
           } while (children.size() < branchingFactor);
@@ -503,7 +497,7 @@ namespace embree
         /*! builder entry function */
         __forceinline const std::tuple<NodeTy,LBBox3fa,BBox1f> operator() (BuildRecord& record)
         {
-          record.split = find(record); 
+          record.split = find(record.prims); 
           auto ret = recurse(record,nullptr,true);
           _mm_mfence(); // to allow non-temporal stores during build
           return ret;
