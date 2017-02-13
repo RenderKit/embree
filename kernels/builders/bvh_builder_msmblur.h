@@ -367,24 +367,18 @@ namespace embree
           auto node = createNode(hasTimeSplits,alloc);
           
           /* recurse into each child and perform reduction */
+          LBBox3fa gbounds = empty;
           for (size_t i=0; i<children.size(); i++) {
             values[i] = createLargeLeaf(children[i],alloc);
+            gbounds.extend(std::get<1>(values[i]));
             updateNode(node,i,values[i]);
           }
 
-          /* calculate geometry bounds and time bounds of this node */
+          /* calculate geometry bounds of this node */
           if (hasTimeSplits)
-          {
-            const LBBox3fa gbounds = current.prims.linearBounds(recalculatePrimRef);
-            return std::make_tuple(node,gbounds,current.prims.time_range);
-          }
+            return std::make_tuple(node,current.prims.linearBounds(recalculatePrimRef),current.prims.time_range);
           else
-          {
-            LBBox3fa gbounds = empty;
-            for (size_t i=0; i<children.size(); i++)
-              gbounds.extend(std::get<1>(values[i]));
             return std::make_tuple(node,gbounds,current.prims.time_range);
-          }
         }
         
         const std::tuple<NodeTy,LBBox3fa,BBox1f> recurse(BuildRecord& current, Allocator alloc, bool toplevel)
@@ -446,6 +440,7 @@ namespace embree
           
           /*! create an inner node */
           auto node = createNode(hasTimeSplits,alloc);
+          LBBox3fa gbounds = empty;
           
           /* spawn tasks */
           if (current.size() > singleThreadThreshold) 
@@ -458,6 +453,10 @@ namespace embree
                   _mm_mfence(); // to allow non-temporal stores during build
                 }                
               });
+
+            
+            for (size_t i=0; i<children.size(); i++)
+              gbounds.extend(std::get<1>(values[i]));
           }
           /* recurse into each child */
           else 
@@ -465,23 +464,16 @@ namespace embree
             //for (size_t i=0; i<children.size(); i++)
             for (ssize_t i=children.size()-1; i>=0; i--) {
               values[i] = recurse(children[i],alloc,false);
+              gbounds.extend(std::get<1>(values[i]));
               updateNode(node,i,values[i]);
             }
           }
           
-          /* calculate geometry bounds and time bounds of this node */
+          /* calculate geometry bounds of this node */
           if (hasTimeSplits)
-          {
-            const LBBox3fa gbounds = current.prims.linearBounds(recalculatePrimRef);
-            return std::make_tuple(node,gbounds,current.prims.time_range);
-          }
+            return std::make_tuple(node,current.prims.linearBounds(recalculatePrimRef),current.prims.time_range);
           else
-          {
-            LBBox3fa gbounds = empty;
-            for (size_t i=0; i<children.size(); i++)
-              gbounds.extend(std::get<1>(values[i]));
             return std::make_tuple(node,gbounds,current.prims.time_range);
-          }
         }
         
         /*! builder entry function */
