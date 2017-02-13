@@ -477,9 +477,10 @@ namespace embree
         }
         
         /*! builder entry function */
-        __forceinline const std::tuple<NodeTy,LBBox3fa,BBox1f> operator() (const SetMB& prims)
+        __forceinline const std::tuple<NodeTy,LBBox3fa,BBox1f> operator() (mvector<PrimRefMB>& prims, const PrimInfoMB& pinfo)
         {
-          BuildRecord record(prims,1);
+          SetMB set(pinfo,&prims,make_range(size_t(0),pinfo.size()),BBox1f(0.0f,1.0f));
+          BuildRecord record(set,1);
           record.split = find(record.prims); 
           auto ret = recurse(record,nullptr,true);
           _mm_mfence(); // to allow non-temporal stores during build
@@ -535,8 +536,8 @@ namespace embree
                         progressMonitor,
                         settings);
         
-        SetMB set(pinfo,&prims,make_range(size_t(0),pinfo.size()),BBox1f(0.0f,1.0f));
-        return builder(set);
+        
+        return builder(prims,pinfo);
       }
     };
   }
