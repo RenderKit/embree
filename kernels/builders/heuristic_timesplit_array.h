@@ -179,7 +179,7 @@ namespace embree
             }
             return pinfo;
           };        
-          PrimInfoMB linfo = parallel_reduce(set.object_range,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func0,PrimInfoMB::merge2);
+          const PrimInfoMB linfo = parallel_reduce(set.object_range,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func0,PrimInfoMB::merge2);
           lset = SetMB(linfo,lprims,time_range0);
 
           /* calculate primrefs for second time range */
@@ -193,7 +193,7 @@ namespace embree
             }
             return pinfo;
           };        
-          PrimInfoMB rinfo = parallel_reduce(set.object_range,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func1,PrimInfoMB::merge2);
+          const PrimInfoMB rinfo = parallel_reduce(set.object_range,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func1,PrimInfoMB::merge2);
           rset = SetMB(rinfo,&prims,set.object_range,time_range1);
 
           return new_vector;
