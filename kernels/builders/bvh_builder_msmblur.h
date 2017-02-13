@@ -75,7 +75,7 @@ namespace embree
           return numChildren;
         }
         
-        __forceinline void split(int bestChild, BuildRecord& lrecord, BuildRecord& rrecord, std::unique_ptr<mvector<PrimRefMB>> new_vector)
+        __forceinline void split(int bestChild, const BuildRecord& lrecord, const BuildRecord& rrecord, std::unique_ptr<mvector<PrimRefMB>> new_vector)
         {
           SharedPrimRefVector* bsharedPrimVec = primvecs[bestChild];
           if (lrecord.prims.prims == bsharedPrimVec->prims) {
@@ -221,7 +221,7 @@ namespace embree
         }
         
         /*! finds the best split */
-        const Split find(SetMB& set)
+        const Split find(const SetMB& set)
         {
           /* first try standard object split */
           const Split object_split = heuristicObjectSplit.find(set,logBlockSize);
@@ -242,7 +242,7 @@ namespace embree
         }
         
         /*! array partitioning */
-        __forceinline std::unique_ptr<mvector<PrimRefMB>> partition(BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) 
+        __forceinline std::unique_ptr<mvector<PrimRefMB>> partition(const BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) 
         {
           /* perform fallback split */
           if (unlikely(brecord.split.data == Split::SPLIT_FALLBACK)) {
@@ -477,8 +477,9 @@ namespace embree
         }
         
         /*! builder entry function */
-        __forceinline const std::tuple<NodeTy,LBBox3fa,BBox1f> operator() (BuildRecord& record)
+        __forceinline const std::tuple<NodeTy,LBBox3fa,BBox1f> operator() (const SetMB& prims)
         {
+          BuildRecord record(prims,1);
           record.split = find(record.prims); 
           auto ret = recurse(record,nullptr,true);
           _mm_mfence(); // to allow non-temporal stores during build
@@ -535,8 +536,7 @@ namespace embree
                         settings);
         
         SetMB set(pinfo,&prims,make_range(size_t(0),pinfo.size()),BBox1f(0.0f,1.0f));
-        BuildRecord record(set,1);
-        return builder(record);
+        return builder(set);
       }
     };
   }
