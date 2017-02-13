@@ -18,6 +18,7 @@
 
 #include "heuristic_binning_array_aligned.h"
 #include "heuristic_spatial_array.h"
+#include "heuristic_openmerge_array.h"
 
 #if defined(__AVX512F__)
 #define NUM_OBJECT_BINS 16
@@ -401,7 +402,7 @@ namespace embree
     
 #define FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS 16
 
-    /* Spatial SAH builder that operates on an double-buffered array of BuildRecords */
+    /* Spatial SAH builder that operates on an array of BuildRecords */
     struct BVHBuilderBinnedFastSpatialSAH
     {
 #if defined(__AVX512F__)
@@ -520,6 +521,124 @@ namespace embree
         return builder(br);
       }
     };
+
+    
+    /* Open/Merge SAH builder that operates on an array of BuildRecords */
+    struct BVHBuilderBinnedOpenMergeSAH
+    {
+#if defined(__AVX512F__)
+      static const size_t OBJECT_BINS = 16;
+#else
+      static const size_t OBJECT_BINS = 32;
+#endif
+
+      typedef extended_range<size_t> Set;
+      typedef SplitOpenMerge<BinSplit<OBJECT_BINS> > Split;
+      typedef GeneralBuildRecord<Set,Split,PrimInfo> BuildRecord;
+
+      /*! standard build without reduction */
+      template<typename NodeRef, 
+        typename CreateAllocFunc, 
+        typename CreateNodeFunc, 
+        typename CreateLeafFunc, 
+        typename ProgressMonitor>
+        
+        static void build(NodeRef& root,
+                          CreateAllocFunc createAlloc, 
+                          CreateNodeFunc createNode, 
+                          CreateLeafFunc createLeaf, 
+                          ProgressMonitor progressMonitor, 
+                          PrimRef* prims,
+                          const size_t extSize,
+                          const PrimInfo& pinfo, 
+                          const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
+                          const size_t minLeafSize, const size_t maxLeafSize,
+                          const float travCost, const float intCost,
+                          const size_t singleThreadThreshold)
+      {
+        /* use dummy reduction over integers */
+        int identity = 0;
+        auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
+        
+        /* initiate builder */
+        build_reduce(root,
+                     createAlloc,
+                     identity,
+                     createNode,
+                     updateNode,
+                     createLeaf,
+                     progressMonitor,
+                     prims,
+                     extSize,
+                     pinfo,
+                     branchingFactor,maxDepth,blockSize,
+                     minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
+      }
+      
+      /*! special builder that propagates reduction over the tree */
+      template<typename NodeRef, 
+        typename CreateAllocFunc, 
+        typename ReductionTy, 
+        typename CreateNodeFunc, 
+        typename UpdateNodeFunc, 
+        typename CreateLeafFunc, 
+        typename ProgressMonitor>
+        
+        static ReductionTy build_reduce(NodeRef& root,
+                                        CreateAllocFunc createAlloc, 
+                                        const ReductionTy& identity, 
+                                        CreateNodeFunc createNode, 
+                                        UpdateNodeFunc updateNode, 
+                                        CreateLeafFunc createLeaf, 
+                                        ProgressMonitor progressMonitor,
+                                        PrimRef* prims0, 
+                                        const size_t extSize,
+                                        const PrimInfo& pinfo, 
+                                        const size_t branchingFactor, 
+                                        const size_t maxDepth, const size_t blockSize, 
+                                        const size_t minLeafSize, const size_t maxLeafSize,
+                                        const float travCost, const float intCost, 
+                                        const size_t singleThreadThreshold)
+      {
+        /* builder wants log2 of blockSize as input */		  
+        const size_t logBlockSize = __bsr(blockSize); 
+        assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
+
+        typedef HeuristicArrayOpenMergeSAH<PrimRef,OBJECT_BINS> Heuristic;
+
+        /* instantiate array binning heuristic */
+        Heuristic heuristic(prims0,pinfo);
+        
+        typedef GeneralBVHBuilder<
+          BuildRecord,
+          Heuristic,
+          ReductionTy,
+          decltype(createAlloc()),
+          CreateAllocFunc,
+          CreateNodeFunc,
+          UpdateNodeFunc,
+          CreateLeafFunc,
+          ProgressMonitor,
+          PrimInfo> Builder;
+        
+        /* instantiate builder */
+        Builder builder(heuristic,
+                        identity,
+                        createAlloc,
+                        createNode,
+                        updateNode,
+                        createLeaf,
+                        progressMonitor,
+                        pinfo,
+                        branchingFactor,maxDepth,logBlockSize,
+                        minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
+
+        /* build hierarchy */
+        BuildRecord br(pinfo,1,(size_t*)&root,Set(0,pinfo.size(),extSize));
+        return builder(br);
+      }
+    };
+
 
   }
 }

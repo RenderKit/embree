@@ -25,7 +25,9 @@
 #define MAX_OPEN_SIZE 10000
 #define PROFILE_ITERATIONS 200
 
-#define SAH_OPEN_MERGE_BUILD 1
+#define SAH_OPEN_MERGE_BUILD 0
+
+#define ENABLER_DIRECT_SAH_MERGE_BUILDER 1
 
 namespace embree
 {
@@ -131,8 +133,8 @@ namespace embree
       assert(left_refs.size() == 0);
       assert(right_refs.size() == 0);
       
-      //if (opened_split.sah() && opened_split.sah < 8.0f * split.sah)
-      if (opened_split.valid())
+      if (opened_split.valid() && opened_split.sah < 4.0f * split.sah)
+      //if (opened_split.valid())
       {
         PRINT("OPEN SPLIT");
         PRINT(opened_split);
@@ -146,7 +148,7 @@ namespace embree
             opened_split.mapping.bin(buildRefs[i].bounds().lower)[opened_split.dim] < opened_split.pos &&
             opened_split.mapping.bin(buildRefs[i].bounds().upper)[opened_split.dim] >= opened_split.pos;
 
-          if (buildRefs[i].node.isLeaf() || !overlap)
+          if (buildRefs[i].node.isLeaf() /* || !overlap */)
           {
             /* sort leaf into left/right list */
             if (opened_split.mapping.bin_unsafe(buildRefs[i],vSplitPos,vSplitMask))
@@ -351,8 +353,10 @@ namespace embree
           pinfo.add(prims[i].bounds(),prims[i].bounds().center2());
 
 #else
-        open_sequential(numPrimitives); 
 
+#if ENABLER_DIRECT_SAH_MERGE_BUILDER == 0
+        open_sequential(numPrimitives); 
+#endif
         /* compute PrimRefs */
         prims.resize(refs.size());
 
@@ -385,6 +389,34 @@ namespace embree
           else
           {
             NodeRef root;
+#if ENABLER_DIRECT_SAH_MERGE_BUILDER == 1
+            const size_t extSize = pinfo.size();
+
+            const size_t numSplitPrimitives = max(pinfo.size(),size_t(pinfo.size()*1000));
+            prims.resize(numSplitPrimitives);
+
+            BVHBuilderBinnedOpenMergeSAH::build<NodeRef>
+              (root,
+               [&] { return bvh->alloc.threadLocal2(); },
+               [&] (const isa::BVHBuilderBinnedOpenMergeSAH::BuildRecord& current, BVHBuilderBinnedOpenMergeSAH::BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc) -> int
+              {
+                AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode)); node->clear();
+                for (size_t i=0; i<n; i++) {
+                  node->set(i,children[i].pinfo.geomBounds);
+                  children[i].parent = (size_t*)&node->child(i);
+                }
+                *current.parent = bvh->encodeNode(node);
+                return 0;
+              },
+               [&] (const BVHBuilderBinnedOpenMergeSAH::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> int
+              {
+                assert(current.prims.size() == 1);
+                *current.parent = (NodeRef) prims[current.prims.begin()].ID();
+                return 1;
+              },
+               [&] (size_t dn) { bvh->scene->progressMonitor(0); },
+               prims.data(),extSize,pinfo,N,BVH::maxBuildDepthLeaf,N,1,1,1.0f,1.0f,singleThreadThreshold);
+#else
             BVHBuilderBinnedSAH::build<NodeRef>
               (root,
                [&] { return bvh->alloc.threadLocal2(); },
@@ -406,6 +438,7 @@ namespace embree
               },
                [&] (size_t dn) { bvh->scene->progressMonitor(0); },
                prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,N,1,1,1.0f,1.0f,singleThreadThreshold);
+#endif
 
             bvh->set(root,LBBox3fa(pinfo.geomBounds),numPrimitives);
           }
