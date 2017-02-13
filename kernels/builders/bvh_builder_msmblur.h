@@ -327,6 +327,7 @@ namespace embree
             return createLeaf(current,alloc);
           
           /* fill all children by always splitting the largest one */
+          bool hasTimeSplits = false;
           std::tuple<NodeTy,LBBox3fa,BBox1f> values[MAX_BRANCHING_FACTOR];
           LocalChildList children(current);
           
@@ -353,6 +354,7 @@ namespace embree
             BuildRecord lrecord(current.depth+1);
             BuildRecord rrecord(current.depth+1);
             std::unique_ptr<mvector<PrimRefMB>> new_vector = partition(brecord,lrecord,rrecord);
+            hasTimeSplits |= new_vector != nullptr;
             
             /* find new splits */
             lrecord.split = findFallback(lrecord.prims);
@@ -360,11 +362,6 @@ namespace embree
             children.split(bestChild,lrecord,rrecord,std::move(new_vector));
             
           } while (children.size() < branchingFactor);
-          
-          /* check if we did some time split */
-          bool hasTimeSplits = false;
-          for (size_t i=0; i<children.size() && !hasTimeSplits; i++)
-            hasTimeSplits |= current.prims.time_range != children[i].prims.time_range;
           
           /* create node */
           auto node = createNode(hasTimeSplits,alloc);
@@ -414,6 +411,7 @@ namespace embree
           }
           
           /*! initialize child list */
+          bool hasTimeSplits = false;
           std::tuple<NodeTy,LBBox3fa,BBox1f> values[MAX_BRANCHING_FACTOR];
           LocalChildList children(current);
           
@@ -436,6 +434,7 @@ namespace embree
             BuildRecord lrecord(current.depth+1);
             BuildRecord rrecord(current.depth+1);
             std::unique_ptr<mvector<PrimRefMB>> new_vector = partition(brecord,lrecord,rrecord);            
+            hasTimeSplits |= new_vector != nullptr;
             
             /* find new splits */
             lrecord.split = find(lrecord.prims);
@@ -446,11 +445,6 @@ namespace embree
           
           /* sort buildrecords for simpler shadow ray traversal */
           //std::sort(&children[0],&children[children.size()],std::greater<BuildRecord>()); // FIXME: reduces traversal performance of bvh8.triangle4 (need to verified) !!
-          
-          /* check if we did some time split */
-          bool hasTimeSplits = false;
-          for (size_t i=0; i<children.size() && !hasTimeSplits; i++)
-            hasTimeSplits |= current.prims.time_range != children[i].prims.time_range;
           
           /*! create an inner node */
           auto node = createNode(hasTimeSplits,alloc);
