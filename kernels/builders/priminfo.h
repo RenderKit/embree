@@ -255,14 +255,17 @@ namespace embree
 
       __forceinline SetMB() {}
 
-      __forceinline SetMB(const PrimInfoMB& pinfo_i, PrimRefVector prims, range<size_t> object_range_in, BBox1f time_range_in)
+      __forceinline SetMB(const PrimInfoMB& pinfo_i, PrimRefVector prims)
+        : PrimInfoMB(pinfo_i), prims(prims) {}
+
+      __forceinline SetMB(const PrimInfoMB& pinfo_i, PrimRefVector prims, range<size_t> object_range_in, BBox1f time_range_in) // FIXME: remove
         : PrimInfoMB(pinfo_i), prims(prims)
       {
         object_range = object_range_in;
         time_range = time_range_in;
       }
       
-      __forceinline SetMB(const PrimInfoMB& pinfo_i, PrimRefVector prims, BBox1f time_range_in = BBox1f(0.0f,1.0f))
+      __forceinline SetMB(const PrimInfoMB& pinfo_i, PrimRefVector prims, BBox1f time_range_in)
         : PrimInfoMB(pinfo_i), prims(prims)
       {
         object_range = range<size_t>(0,prims->size());

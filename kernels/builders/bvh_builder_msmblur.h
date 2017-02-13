@@ -53,7 +53,7 @@ namespace embree
       {
         typedef SharedVector<mvector<PrimRefMB>> SharedPrimRefVector;
         
-        __forceinline LocalChildListT (BuildRecord& record)
+        __forceinline LocalChildListT (const BuildRecord& record)
           : numChildren(1), numSharedPrimVecs(1), depth(record.depth)
         {
           /* the local root will be freed in the ancestor where it was created (thus refCount is 2) */
@@ -163,11 +163,14 @@ namespace embree
       public:
 	__forceinline BuildRecord () {}
         
-        __forceinline BuildRecord (size_t depth) 
+        __forceinline BuildRecord (size_t depth)  // FIXME: remove
           : depth(depth) {}
         
-        __forceinline BuildRecord (const SetMB& prims, size_t depth) 
+        __forceinline BuildRecord (const SetMB& prims, size_t depth)  // FIXME: remoe
           : depth(depth), prims(prims) {}
+
+        __forceinline BuildRecord (const SetMB& prims, const BinSplit<NUM_OBJECT_BINS>& split, size_t depth) 
+          : depth(depth), prims(prims), split(split) {}
         
         __forceinline friend bool operator< (const BuildRecord& a, const BuildRecord& b) { return a.prims.size() < b.prims.size(); }
 	__forceinline friend bool operator> (const BuildRecord& a, const BuildRecord& b) { return a.prims.size() > b.prims.size();  }
@@ -262,7 +265,7 @@ namespace embree
         }
         
         /*! finds the best fallback split */
-        __forceinline Split findFallback(SetMB& set)
+        __forceinline Split findFallback(const SetMB& set)
         {
           /* if a leaf can only hold a single time-segment, we might have to do additional temporal splits */
           if (singleLeafTimeSegment)
@@ -313,14 +316,14 @@ namespace embree
           std::sort(&prims[set.object_range.begin()],&prims[set.object_range.end()]);
         }
         
-        const std::tuple<NodeTy,LBBox3fa,BBox1f> createLargeLeaf(BuildRecord& current, Allocator alloc)
+        const std::tuple<NodeTy,LBBox3fa,BBox1f> createLargeLeaf(const BuildRecord& in, Allocator alloc)
         {
           /* this should never occur but is a fatal error */
-          if (current.depth > maxDepth) 
+          if (in.depth > maxDepth) 
             throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
           
           /* replace already found split by fallback split */
-          current.split = findFallback(current.prims);
+          const BuildRecord current(in.prims,findFallback(in.prims),in.depth);
           
           /* create leaf for few primitives */
           if (current.size() <= maxLeafSize && current.split.data != Split::SPLIT_TEMPORAL)
@@ -381,7 +384,7 @@ namespace embree
             return std::make_tuple(node,gbounds,current.prims.time_range);
         }
         
-        const std::tuple<NodeTy,LBBox3fa,BBox1f> recurse(BuildRecord& current, Allocator alloc, bool toplevel)
+        const std::tuple<NodeTy,LBBox3fa,BBox1f> recurse(const BuildRecord& current, Allocator alloc, bool toplevel)
         {
           if (alloc == nullptr)
             alloc = createAlloc();
@@ -479,9 +482,8 @@ namespace embree
         /*! builder entry function */
         __forceinline const std::tuple<NodeTy,LBBox3fa,BBox1f> operator() (mvector<PrimRefMB>& prims, const PrimInfoMB& pinfo)
         {
-          SetMB set(pinfo,&prims,make_range(size_t(0),pinfo.size()),BBox1f(0.0f,1.0f));
-          BuildRecord record(set,1);
-          record.split = find(record.prims); 
+          const SetMB set(pinfo,&prims);
+          const BuildRecord record(set,find(set),1);
           auto ret = recurse(record,nullptr,true);
           _mm_mfence(); // to allow non-temporal stores during build
           return ret;
