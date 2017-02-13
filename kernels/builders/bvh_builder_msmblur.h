@@ -54,7 +54,7 @@ namespace embree
         typedef SharedVector<mvector<PrimRefMB>> SharedPrimRefVector;
         
         __forceinline LocalChildListT (const BuildRecord& record)
-          : numChildren(1), numSharedPrimVecs(1), depth(record.depth)
+          : numChildren(1), numSharedPrimVecs(1)
         {
           /* the local root will be freed in the ancestor where it was created (thus refCount is 2) */
           children[0] = record;
@@ -108,7 +108,6 @@ namespace embree
 
         array_t<SharedPrimRefVector,2*MAX_BRANCHING_FACTOR> sharedPrimVecs;
         size_t numSharedPrimVecs;
-        size_t depth;
       };
     
     template<typename Mesh>
