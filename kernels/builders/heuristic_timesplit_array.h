@@ -41,9 +41,6 @@ namespace embree
 
         struct TemporalBinInfo
         {
-          __forceinline TemporalBinInfo () {
-          }
-          
           __forceinline TemporalBinInfo (EmptyTy)
           {
             for (size_t i=0; i<BINS-1; i++)
@@ -57,8 +54,8 @@ namespace embree
           {
             for (int b=0; b<BINS-1; b++)
             {
-              float t = float(b+1)/float(BINS);
-              float ct = lerp(time_range.lower,time_range.upper,t);
+              const float t = float(b+1)/float(BINS);
+              const float ct = lerp(time_range.lower,time_range.upper,t);
               const float center_time = round(ct * float(numTimeSegments)) / float(numTimeSegments);
               if (center_time <= time_range.lower) continue;
               if (center_time >= time_range.upper) continue;
