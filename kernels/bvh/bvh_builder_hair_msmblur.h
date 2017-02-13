@@ -120,8 +120,7 @@ namespace embree
         /*! entry point into builder */
         NodeRef operator() (mvector<PrimRefMB>& prims, const PrimInfoMB& pinfo) 
         {
-          SetMB set(pinfo,&prims);
-          BuildRecord record(set,0); // FIXME: depth 0 or 1
+          BuildRecord record(SetMB(pinfo,&prims),1);
           NodeRef root = recurse(record,nullptr,true);
           _mm_mfence(); // to allow non-temporal stores during build
           return root;
@@ -269,6 +268,7 @@ namespace embree
         /*! recursive build */
         NodeRef recurse(BuildRecord& current, Allocator alloc, bool toplevel)
         {
+          /* get thread local allocator */
           if (alloc == nullptr) 
             alloc = createAlloc();
           
