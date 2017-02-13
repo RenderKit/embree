@@ -749,6 +749,7 @@ namespace embree
     struct AlignedNodeMB4D : public AlignedNodeMB
     {
       using BaseNode::children;
+      using AlignedNodeMB::set;
       using AlignedNodeMB::bounds;
       using AlignedNodeMB::lower_x;
       using AlignedNodeMB::lower_y;

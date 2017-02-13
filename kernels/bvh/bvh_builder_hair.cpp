@@ -292,7 +292,7 @@ namespace embree
         settings.maxLeafSize = BVH::maxLeafBlocks;
 
         /* build hierarchy */
-        typename BVH::NodeRef root = BVHMBuilderHairMSMBlur::build<N>
+        typename BVH::NodeRef root = BVHMBuilderHairMSMBlur::build<NodeRef>
           (
             scene, prims0, pinfo,
             recalculatePrimRef,
@@ -301,7 +301,7 @@ namespace embree
             
             [&] (const BVHMBuilderHairMSMBlur::BuildRecord* children, const size_t numChildren, 
                  HeuristicBinning alignedHeuristic, 
-                 FastAllocator::ThreadLocal2* alloc) -> AlignedNodeMB*
+                 FastAllocator::ThreadLocal2* alloc) -> NodeRef
             {
               AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),BVH::byteNodeAlignment); node->clear();
               for (size_t i=0; i<numChildren; i++) {
@@ -309,12 +309,16 @@ namespace embree
                 BBox1f dt = children[i].prims.time_range;
                 node->set(i,cbounds.global(dt));
               }
-              return node;
+              return BVH::encodeNode(node);
+            },
+
+            [&] (NodeRef node, size_t i, NodeRef child) -> void {
+              node.alignedNodeMB()->set(i,child);
             },
             
             [&] (const BVHMBuilderHairMSMBlur::BuildRecord* children, const size_t numChildren, 
                  UnalignedHeuristicBinning unalignedHeuristic, 
-                 FastAllocator::ThreadLocal2* alloc) -> UnalignedNodeMB*
+                 FastAllocator::ThreadLocal2* alloc) -> NodeRef
             {
               UnalignedNodeMB* node = (UnalignedNodeMB*) alloc->alloc0->malloc(sizeof(UnalignedNodeMB),BVH::byteNodeAlignment); node->clear();
               for (size_t i=0; i<numChildren; i++) 
@@ -323,10 +327,14 @@ namespace embree
                 LBBox3fa lbounds = unalignedHeuristic.linearBounds(scene,children[i].prims,space);
                 node->set(i,space,lbounds.global(children[i].prims.time_range));
               }
-              return node;
+              return BVH::encodeNode(node);
             },
 
-            [&] (const BVHMBuilderHairMSMBlur::BuildRecord* children, const size_t numChildren, FastAllocator::ThreadLocal2* alloc) -> AlignedNodeMB4D*
+            [&] (NodeRef node, size_t i, NodeRef child) -> void {
+              node.unalignedNodeMB()->set(i,child);
+            },
+
+            [&] (const BVHMBuilderHairMSMBlur::BuildRecord* children, const size_t numChildren, FastAllocator::ThreadLocal2* alloc) -> NodeRef
             {
               AlignedNodeMB4D* node = (AlignedNodeMB4D*) alloc->alloc0->malloc(sizeof(AlignedNodeMB4D),BVH::byteNodeAlignment); node->clear();
               for (size_t i=0; i<numChildren; i++) {
@@ -334,7 +342,11 @@ namespace embree
                 BBox1f dt = children[i].prims.time_range;
                 node->set(i,cbounds.global(dt),dt);
               }
-              return node;
+              return BVH::encodeNode(node);
+            },
+
+            [&] (NodeRef node, size_t i, NodeRef child) -> void {
+              node.alignedNodeMB4D()->set(i,child);
             },
 
             [&] (const BVHMBuilderHairMSMBlur::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> NodeRef
