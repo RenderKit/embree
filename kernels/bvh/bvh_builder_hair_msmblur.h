@@ -377,14 +377,16 @@ namespace embree
           else 
           {
             NodeRef node = createUnalignedNode(&children[0],children.size(),unalignedHeuristic,alloc);
-            
+
             /* spawn tasks or ... */
             if (current.size() > SINGLE_THREADED_THRESHOLD)
-            {
-              
+            {              
               parallel_for(size_t(0), children.size(), [&] (const range<size_t>& r) {
                   for (size_t i=r.begin(); i<r.end(); i++) {
-                    updateUnalignedNode(node,i,recurse(children[i],nullptr,true));
+                    const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpaceMB(scene,children[i].prims); 
+                    const LBBox3fa lbounds = unalignedHeuristic.linearBounds(scene,children[i].prims,space);
+                    const NodeRef child = recurse(children[i],nullptr,true);
+                    updateUnalignedNode(node,i,child,space,lbounds,children[i].prims.time_range);
                     _mm_mfence(); // to allow non-temporal stores during build
                   }                
                 });
@@ -392,9 +394,14 @@ namespace embree
             /* ... continue sequentially */
             else
             {
-              for (size_t i=0; i<children.size(); i++) 
-                updateUnalignedNode(node,i,recurse(children[i],alloc,false));
+              for (size_t i=0; i<children.size(); i++) {
+                const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpaceMB(scene,children[i].prims); 
+                const LBBox3fa lbounds = unalignedHeuristic.linearBounds(scene,children[i].prims,space);
+                const NodeRef child = recurse(children[i],alloc,false);
+                updateUnalignedNode(node,i,child,space,lbounds,children[i].prims.time_range);
+              }
             }
+
             return node;
           }
         }
