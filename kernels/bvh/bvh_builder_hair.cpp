@@ -301,29 +301,10 @@ namespace embree
             
             typename BVH::AlignedNodeMB::Create(),
             typename BVH::AlignedNodeMB::Update(),
-            
-            [&] (const BVHMBuilderHairMSMBlur::BuildRecord* children, const size_t numChildren, 
-                 UnalignedHeuristicBinning unalignedHeuristic, 
-                 FastAllocator::ThreadLocal2* alloc) -> NodeRef
-            {
-              UnalignedNodeMB* node = (UnalignedNodeMB*) alloc->alloc0->malloc(sizeof(UnalignedNodeMB),BVH::byteNodeAlignment); node->clear();
-              return BVH::encodeNode(node);
-            },
-
-            [&] (NodeRef node, size_t i, NodeRef child, const LinearSpace3fa& space, const LBBox3fa& lbounds, const BBox1f dt) -> void {
-              node.unalignedNodeMB()->set(i,child);
-              node.unalignedNodeMB()->set(i,space,lbounds.global(dt));
-            },
-
-            [&] (const BVHMBuilderHairMSMBlur::BuildRecord* children, const size_t numChildren, FastAllocator::ThreadLocal2* alloc) -> NodeRef
-            {
-              AlignedNodeMB4D* node = (AlignedNodeMB4D*) alloc->alloc0->malloc(sizeof(AlignedNodeMB4D),BVH::byteNodeAlignment); node->clear();
-              return BVH::encodeNode(node);
-            },
-
-            [&] (NodeRef node, size_t i, NodeRef child, const LBBox3fa& cbounds, const BBox1f dt) -> void {
-              node.alignedNodeMB4D()->set(i,std::make_tuple(child,cbounds,dt));
-            },
+            typename BVH::UnalignedNodeMB::Create(),
+            typename BVH::UnalignedNodeMB::Update(),
+            typename BVH::AlignedNodeMB4D::Create(),
+            typename BVH::AlignedNodeMB4D::Update(),
 
             [&] (const BVHMBuilderHairMSMBlur::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> NodeRef
             {

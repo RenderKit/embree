@@ -780,6 +780,22 @@ namespace embree
       using AlignedNodeMB::upper_dy;
       using AlignedNodeMB::upper_dz;
 
+      struct Create
+      {
+        __forceinline NodeRef operator() (FastAllocator::ThreadLocal2* alloc) const
+        {
+          AlignedNodeMB4D* node = (AlignedNodeMB4D*) alloc->alloc0->malloc(sizeof(AlignedNodeMB4D),byteNodeAlignment); node->clear();
+          return encodeNode(node);
+        }
+      };
+      
+      struct Update
+      {
+        __forceinline void operator() (NodeRef node, size_t i, const std::tuple<NodeRef,LBBox3fa,BBox1f>& child) const {
+          node.alignedNodeMB4D()->set(i,child);
+        }
+      };
+
       /*! Clears the node. */
       __forceinline void clear()  {
         lower_t = vfloat<N>(pos_inf);
@@ -928,6 +944,23 @@ namespace embree
     struct UnalignedNodeMB : public BaseNode
     {
       using BaseNode::children;
+
+      struct Create
+      {
+        __forceinline NodeRef operator() (FastAllocator::ThreadLocal2* alloc) const
+        {
+          UnalignedNodeMB* node = (UnalignedNodeMB*) alloc->alloc0->malloc(sizeof(UnalignedNodeMB),byteNodeAlignment); node->clear();
+          return encodeNode(node);
+        }
+      };
+
+      struct Update
+      {
+        __forceinline void operator() (NodeRef node, size_t i, NodeRef child, const LinearSpace3fa& space, const LBBox3fa& lbounds, const BBox1f dt) const {
+          node.unalignedNodeMB()->set(i,child);
+          node.unalignedNodeMB()->set(i,space,lbounds.global(dt));
+        }
+      };
 
       /*! Clears the node. */
       __forceinline void clear()
