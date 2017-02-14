@@ -36,7 +36,8 @@ namespace embree
         /*! calculates the mapping */
         __forceinline BinMapping(const BBox3fa& centBounds, size_t N) 
         {
-          num = min(BINS,size_t(4.0f + 0.05f*N));
+          //num = min(BINS,size_t(4.0f + 0.05f*N));
+          num = min(BINS,N);
           const vfloat4 diag = (vfloat4) centBounds.size();
           scale = select(diag > vfloat4(1E-34f),vfloat4(0.99f*num)/diag,vfloat4(0.0f));
           ofs  = (vfloat4) centBounds.lower;

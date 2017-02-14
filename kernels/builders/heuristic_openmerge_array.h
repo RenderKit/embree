@@ -153,10 +153,11 @@ namespace embree
           SplitInfo oinfo;
           const ObjectSplit object_split = object_find(set,pinfo,logBlockSize,oinfo);
           const float object_split_sah = object_split.splitSAH();
-#if 0
           if (unlikely(set.has_ext_range()))
           {
-            const ObjectSplit opened_object_split = opend_object_find(set, pinfo, logBlockSize);
+            const ObjectSplit opened_object_split = opened_object_find(set, pinfo, logBlockSize);
+            PRINT(opened_object_split);
+#if 0
             const float opened_object_split_sah = opened_object_split.splitSAH();
             const float OPENED_SAH_THRESHOLD = 1.0f;
 
@@ -166,8 +167,8 @@ namespace embree
               {          
                 return Split(opened_object_split,opened_object_split_sah);
               }
-          }
 #endif
+          }
           return Split(object_split,object_split_sah);
         }
 
@@ -182,7 +183,7 @@ namespace embree
         __noinline const ObjectSplit sequential_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo &info)
         {
           ObjectBinner binner(empty); 
-          const BinMapping<OBJECT_BINS> mapping(pinfo);
+          const BinMapping<OBJECT_BINS> mapping(pinfo.centBounds,OBJECT_BINS);
           binner.bin(prims0,set.begin(),set.end(),mapping);
           ObjectSplit s = binner.best(mapping,logBlockSize);
           binner.getSplitInfo(mapping, s, info);
@@ -193,7 +194,7 @@ namespace embree
         __noinline const ObjectSplit parallel_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo &info)
         {
           ObjectBinner binner(empty);
-          const BinMapping<OBJECT_BINS> mapping(pinfo);
+          const BinMapping<OBJECT_BINS> mapping(pinfo.centBounds,OBJECT_BINS);
           const BinMapping<OBJECT_BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
           binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
                                    [&] (const range<size_t>& r) -> ObjectBinner { ObjectBinner binner(empty); binner.bin(prims0+r.begin(),r.size(),_mapping); return binner; },
@@ -204,27 +205,36 @@ namespace embree
         }
 
         /*! finds the best opened object split */
-        __forceinline const Split opened_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        __forceinline const ObjectSplit opened_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
-          FATAL("NOT YET IMPLEMENTED");
-          if (pinfo.size() < PARALLEL_THRESHOLD) return sequential_opened_object_find(set, pinfo, logBlockSize);
-          else                                   return parallel_opened_object_find  (set, pinfo, logBlockSize);
+          return sequential_opened_object_find(set, pinfo, logBlockSize);
+          /* if (pinfo.size() < PARALLEL_THRESHOLD) return sequential_opened_object_find(set, pinfo, logBlockSize); */
+          /* else                                   return parallel_opened_object_find  (set, pinfo, logBlockSize); */
         }
 
         /*! finds the best opened object split */
-        __noinline const Split sequential_opened_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        __noinline const ObjectSplit sequential_opened_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
           ObjectBinner binner(empty); 
-          const BinMapping<OBJECT_BINS> mapping(pinfo);
-          //binner.bin2(splitterFactory,prims0,set.begin(),set.end(),mapping);
-          FATAL("NOT YET IMPLEMENTED");
-          return binner.best(pinfo,mapping,logBlockSize); //,set.ext_size());
+          const BinMapping<OBJECT_BINS> mapping(pinfo.geomBounds,OBJECT_BINS);          
+          const BinMapping<OBJECT_BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
+
+          PRINT(mapping);
+          for (size_t i=set.begin();i<set.end();i++)
+          {
+            PrimRef refs[8];
+            size_t n = nodeOpenerFunc(prims0[i],refs);
+            binner.bin(refs,n,_mapping); 
+          }
+            
+          exit(0);
+          return binner.best(mapping,logBlockSize); //,set.ext_size());
         }
 
-        __noinline const Split parallel_opened_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        __noinline const ObjectSplit parallel_opened_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
           ObjectBinner binner(empty);
-          const BinMapping<OBJECT_BINS> mapping(pinfo);
+          const BinMapping<OBJECT_BINS> mapping(pinfo.geomBounds,OBJECT_BINS);
           const BinMapping<OBJECT_BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
           FATAL("NOT YET IMPLEMENTED");
           /* binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner, */
@@ -233,7 +243,7 @@ namespace embree
           /*                            binner.bin2(splitterFactory,prims0,r.begin(),r.end(),_mapping); */
           /*                            return binner; }, */
           /*                          [&] (const OpenMergeBinner& b0, const OpenMergeBinner& b1) -> OpenMergeBinner { return OpenMergeBinner::reduce(b0,b1); }); */
-          return binner.best(pinfo,mapping,logBlockSize); //,set.ext_size());
+          return binner.best(mapping,logBlockSize); //,set.ext_size());
         }
 
 
@@ -248,39 +258,26 @@ namespace embree
           std::atomic<size_t> ext_elements;
           ext_elements.store(0);
           
-          const float fpos = split.mapping.pos(split.pos,split.dim);
+          //const float fpos = split.mapping.pos(split.pos,split.dim);
         
           parallel_for( set.begin(), set.end(), CREATE_SPLITS_STEP_SIZE, [&](const range<size_t>& r) {
               for (size_t i=r.begin();i<r.end();i++)
               {
-                if (unlikely(prims0[i].lower[split.dim] < fpos && prims0[i].upper[split.dim] > fpos))
+                //if (unlikely(prims0[i].lower[split.dim] < fpos && prims0[i].upper[split.dim] > fpos))
                 {
+                  PrimRef refs[8];
+                  int n = nodeOpenerFunc(prims0[i],refs);
+                  if (likely(n==1)) continue;
 
-
-                  //PrimRef refs[8];
-                  //int n = nodeOpenerFunc(prims0[i],refs);
-                  PrimRef left,right;
-#if 0
-                  const auto splitter = splitterFactory.create(prims0[i]);
-                  splitter.split(prims0[i],split.dim,fpos,left,right);
-                
-                  // no empty splits
-                  if (unlikely(left.bounds().empty() || right.bounds().empty())) continue;
-                
-                  //left.lower.a  = (left.lower.a & 0x00FFFFFF) | ((splits-1) << 24);
-                  //right.lower.a = (right.lower.a & 0x00FFFFFF) | ((splits-1) << 24);
-                  left.lower.a  = (left.lower.a & 0x00FFFFFF) | (splits << 24);
-                  right.lower.a = (right.lower.a & 0x00FFFFFF) | (splits << 24);
-
-#endif
-                  const size_t ID = ext_elements.fetch_add(1);
+                  const size_t ID = ext_elements.fetch_add(n-1);
 
                   /* break if the number of subdivided elements are greater than the maximal allowed size */
                   if (unlikely(ID >= max_ext_range_size)) break;
                   /* only write within the correct bounds */
                   assert(ID < max_ext_range_size);
-                  prims0[i] = left;
-                  prims0[ext_range_start+ID] = right;     
+                  prims0[i] = refs[0];
+                  for (size_t j=1;j<n;j++)
+                    prims0[ext_range_start+ID+j] = refs[j];     
                 }
               }
             });

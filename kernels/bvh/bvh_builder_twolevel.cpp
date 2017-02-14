@@ -421,7 +421,26 @@ namespace embree
                 *current.parent = (NodeRef) refs[current.prims.begin()].ID();
                 return 1;
               },
-               [&] (BuildRef &bref) -> int { return 1; },              
+               [&] (BuildRef &bref, BuildRef *refs) -> size_t { 
+
+                 if (bref.node.isLeaf())
+                 {
+                   refs[0] = bref;
+                   return 1;
+                 }
+                 NodeRef ref = bref.node;
+                 unsigned int geomID   = bref.geomID;
+                 unsigned int numPrims = bref.numPrimitives;
+                 AlignedNode* node = ref.alignedNode();
+                 size_t n = 0;
+                 for (size_t i=0; i<N; i++) {
+                   if (node->child(i) == BVH::emptyNode) continue;
+                   refs[i] = BuildRef(node->bounds(i),node->child(i),geomID,numPrims);
+                   n++;
+                 }
+                 assert(n > 1);
+                 return n;
+               },              
                [&] (size_t dn) { bvh->scene->progressMonitor(0); },
                refs.data(),extSize,pinfo,N,BVH::maxBuildDepthLeaf,N,1,1,1.0f,1.0f,singleThreadThreshold);
 #else
