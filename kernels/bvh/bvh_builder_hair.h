@@ -287,7 +287,7 @@ namespace embree
                   }                
                 });
             }
-            /* ... continue sequential */
+            /* ... continue sequentially */
             else {
               for (size_t i=0; i<numChildren; i++) 
                 setAlignedNode(node,i,recurse(depth+1,children[i],alloc,false),children[i].geomBounds);
