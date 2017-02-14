@@ -243,34 +243,29 @@ namespace embree
             }
           }
           
-          /* perform fallback split */
-          if (!std::isfinite(bestSAH))
-          {
+          /* perform fallback split if SAH heuristics failed */
+          if (!std::isfinite(bestSAH)) {
             current.prims.deterministic_order();
             splitFallback(current.prims,lrecord.prims,rrecord.prims);
-            return nullptr;
-          }
-          else if (bestSAH == temporal_split_sah) {
-            timesplit = true;
-            return temporalSplitHeuristic.split(temporal_split,current.prims,lrecord.prims,rrecord.prims);
           }
           /* perform aligned split if this is best */
           else if (bestSAH == alignedObjectSAH) {
             alignedHeuristic.split(alignedObjectSplit,current.prims,lrecord.prims,rrecord.prims);
-            return nullptr;
           }
           /* perform unaligned split if this is best */
           else if (bestSAH == unalignedObjectSAH) {
             unalignedHeuristic.split(unalignedObjectSplit,uspace,current.prims,lrecord.prims,rrecord.prims);
             aligned = false;
-            return nullptr;
           }
-          /* otherwise perform fallback split */
-          else {
-            current.prims.deterministic_order();
-            splitFallback(current.prims,lrecord.prims,rrecord.prims);
-            return nullptr;
+          /* perform temporal split if this is best */
+          else if (bestSAH == temporal_split_sah) {
+            timesplit = true;
+            return temporalSplitHeuristic.split(temporal_split,current.prims,lrecord.prims,rrecord.prims);
           }
+          else
+            assert(false);
+
+          return nullptr;
         }
         
         /*! recursive build */
