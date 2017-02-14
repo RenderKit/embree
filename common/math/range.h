@@ -21,15 +21,15 @@
 
 namespace embree
 {
-  template<typename T>
+  template<typename Ty>
     struct range 
     {
       __forceinline range() {}
 
-      __forceinline range(const T& begin)
+      __forceinline range(const Ty& begin)
         : _begin(begin), _end(begin+1) {}
       
-      __forceinline range(const T& begin, const T& end)
+      __forceinline range(const Ty& begin, const Ty& end)
         : _begin(begin), _end(end) {}
 
       __forceinline range(const range& other)
@@ -37,7 +37,7 @@ namespace embree
 
       template<typename T1>
       __forceinline range(const range<T1>& other)
-        : _begin(T(other._begin)), _end(T(other._end)) {}
+        : _begin(Ty(other._begin)), _end(Ty(other._end)) {}
 
       template<typename T1>
       __forceinline range& operator =(const range<T1>& other) {
@@ -46,11 +46,11 @@ namespace embree
         return *this;
       }
       
-      __forceinline T begin() const {
+      __forceinline Ty begin() const {
         return _begin;
       }
       
-      __forceinline T end() const {
+      __forceinline Ty end() const {
 	return _end;
       }
 
@@ -58,7 +58,7 @@ namespace embree
         return range (max(_begin,r._begin),min(_end,r._end));
       }
 
-      __forceinline T size() const {
+      __forceinline Ty size() const {
         return _end - _begin;
       }
 
@@ -68,7 +68,7 @@ namespace embree
 
       __forceinline std::pair<range,range> split() const 
       {
-        const T _center = (_begin+_end)/2;
+        const Ty _center = (_begin+_end)/2;
         return std::make_pair(range(_begin,_center),range(_center,_end));
       }
 
@@ -80,49 +80,49 @@ namespace embree
         return cout << "range [" << r.begin() << ", " << r.end() << "]";
       }
       
-      T _begin, _end;
+      Ty _begin, _end;
     };
 
-  template<typename T>
-    range<T> make_range(const T& begin, const T& end) {
-    return range<T>(begin,end);
+  template<typename Ty>
+    range<Ty> make_range(const Ty& begin, const Ty& end) {
+    return range<Ty>(begin,end);
   }
 
-  template<typename T>
+  template<typename Ty>
     struct extended_range 
     {
       __forceinline extended_range () {}
 
-      __forceinline extended_range (const T& begin)
+      __forceinline extended_range (const Ty& begin)
         : _begin(begin), _end(begin+1), _ext_end(begin+1) {}
       
-      __forceinline extended_range (const T& begin, const T& end)
+      __forceinline extended_range (const Ty& begin, const Ty& end)
         : _begin(begin), _end(end), _ext_end(end) {}
 
-      __forceinline extended_range (const T& begin, const T& end, const T& ext_end)
+      __forceinline extended_range (const Ty& begin, const Ty& end, const Ty& ext_end)
         : _begin(begin), _end(end), _ext_end(ext_end) {}
       
-      __forceinline T begin() const {
+      __forceinline Ty begin() const {
         return _begin;
       }
       
-      __forceinline T end() const {
+      __forceinline Ty end() const {
 	return _end;
       }
 
-      __forceinline T ext_end() const {
+      __forceinline Ty ext_end() const {
 	return _ext_end;
       }
 
-      __forceinline T size() const {
+      __forceinline Ty size() const {
         return _end - _begin;
       }
 
-      __forceinline T ext_size() const {
+      __forceinline Ty ext_size() const {
         return _ext_end - _begin;
       }
 
-      __forceinline T ext_range_size() const {
+      __forceinline Ty ext_range_size() const {
         return _ext_end - _end;
       }
 
@@ -146,6 +146,6 @@ namespace embree
         return cout << "extended_range [" << r.begin() << ", " << r.end() <<  " (" << r.ext_end() << ")]";
       }
       
-      T _begin, _end, _ext_end;
+      Ty _begin, _end, _ext_end;
     };
 }
