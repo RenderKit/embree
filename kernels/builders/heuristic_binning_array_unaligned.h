@@ -287,15 +287,11 @@ namespace embree
             const BezierCurves* curves = scene->getBezierCurves(geomID);
             const int curve = curves->curve(primID);
             
-            const Vec3fa a3 = curves->vertex(curve+3,0);
-            //const Vec3fa a2 = curves->vertex(curve+2,0);
-            //const Vec3fa a1 = curves->vertex(curve+1,0);
             const Vec3fa a0 = curves->vertex(curve+0,0);
+            const Vec3fa a3 = curves->vertex(curve+3,0);
             
-            const Vec3fa b3 = curves->vertex(curve+3,1);
-            //const Vec3fa b2 = curves->vertex(curve+2,1);
-            //const Vec3fa b1 = curves->vertex(curve+1,1);
             const Vec3fa b0 = curves->vertex(curve+0,1);
+            const Vec3fa b3 = curves->vertex(curve+3,1);
             
             if (sqr_length(a3 - a0) > 1E-18f && sqr_length(b3 - b0) > 1E-18f)
             {
