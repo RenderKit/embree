@@ -85,13 +85,12 @@ namespace embree
           
         /* build hierarchy */
         typename BVH::NodeRef root = BVHNBuilderHair::build<N>
-          (
-            typename BVH::CreateAlloc(bvh),
-            typename BVH::AlignedNode::Create(),
-            typename BVH::AlignedNode::Set(),
-            typename BVH::UnalignedNode::Create(),
-            typename BVH::UnalignedNode::Set(),
-            createLeaf,scene->progressInterface,prims.data(),pinfo,settings);
+          (tpename BVH::CreateAlloc(bvh),
+           typename BVH::AlignedNode::Create(),
+           typename BVH::AlignedNode::Set(),
+           typename BVH::UnalignedNode::Create(),
+           typename BVH::UnalignedNode::Set(),
+           createLeaf,scene->progressInterface,prims.data(),pinfo,settings);
         
         bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
         
