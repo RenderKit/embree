@@ -133,6 +133,7 @@ namespace embree
         
       private:
         
+        /*! performs some split if SAH approaches fail */
         void splitFallback(const SetMB& set, SetMB& lset, SetMB& rset)
         {
           mvector<PrimRefMB>& prims = *set.prims;
@@ -440,7 +441,7 @@ namespace embree
         HeuristicTemporal temporalSplitHeuristic;
         };
       
-        template<typename NodeRef,
+      template<typename NodeRef,
         typename RecalculatePrimRef,
         typename CreateAllocFunc,
         typename CreateAlignedNodeFunc, 
@@ -470,7 +471,13 @@ namespace embree
           CreateUnalignedNodeFunc,UpdateUnalignedNodeFunc,
           CreateAlignedNode4DFunc,UpdateAlignedNode4DFunc,
           CreateLeafFunc,ProgressMonitor> Builder;
-        Builder builder(scene,recalculatePrimRef,createAlloc,createAlignedNode,updateAlignedNode,createUnalignedNode,updateUnalignedNode,createAlignedNode4D,updateAlignedNode4D,createLeaf,progressMonitor,settings);
+        
+        Builder builder(scene,recalculatePrimRef,createAlloc,
+                        createAlignedNode,updateAlignedNode,
+                        createUnalignedNode,updateUnalignedNode,
+                        createAlignedNode4D,updateAlignedNode4D,
+                        createLeaf,progressMonitor,settings);
+
         return builder(prims,pinfo);
       }
     };
