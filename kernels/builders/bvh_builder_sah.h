@@ -173,7 +173,6 @@ namespace embree
         
         const ReductionTy recurse(BuildRecord& current, Allocator alloc, bool toplevel)
         {
-          PING;
           if (alloc == nullptr)
             alloc = createAlloc();
 

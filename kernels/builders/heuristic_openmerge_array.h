@@ -168,9 +168,6 @@ namespace embree
             const float OPENED_SAH_THRESHOLD = 8.0f;
 
             const ObjectSplit opened_object_split = opened_object_find(set, pinfo, logBlockSize);
-            PRINT(object_split);
-            PRINT(opened_object_split);
-            PRINT(OPENED_SAH_THRESHOLD*object_split_sah);
 
             const float opened_object_split_sah = opened_object_split.splitSAH();
 
@@ -189,7 +186,6 @@ namespace embree
         /*! finds the best object split */
         __forceinline const ObjectSplit object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo &info)
         {
-          PING;
           if (pinfo.size() < PARALLEL_THRESHOLD) return sequential_object_find(set,pinfo,logBlockSize,info);
           else                                   return parallel_object_find  (set,pinfo,logBlockSize,info);
         }
@@ -197,10 +193,8 @@ namespace embree
         /*! finds the best object split */
         __noinline const ObjectSplit sequential_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo &info)
         {
-          PING;
           ObjectBinner binner(empty); 
           const BinMapping<OBJECT_BINS> mapping(pinfo.centBounds,OBJECT_BINS);
-          PRINT(pinfo.centBounds);
           binner.bin(prims0,set.begin(),set.end(),mapping);
           ObjectSplit s = binner.best(mapping,logBlockSize);
           binner.getSplitInfo(mapping, s, info);
@@ -210,7 +204,6 @@ namespace embree
         /*! finds the best split */
         __noinline const ObjectSplit parallel_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo &info)
         {
-          PING;
           ObjectBinner binner(empty);
           const BinMapping<OBJECT_BINS> mapping(pinfo.centBounds,OBJECT_BINS);
           const BinMapping<OBJECT_BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
@@ -235,10 +228,21 @@ namespace embree
         {
           PING;
           ObjectBinner binner(empty); 
-          BBox3fa cent2Bounds(empty);
+          BBox3fa cent2Bounds(pinfo.centBounds); // FIXME: empty?
+
+          assert(set.begin() == pinfo.begin);
+          assert(set.end() == pinfo.end);
+          bool debug = set.begin() == 14951 && set.end() == 15806;
 
           for (size_t i=set.begin();i<set.end();i++)
           {
+            if (debug) 
+            {
+              PRINT(i);
+              PRINT(prims0[i]);
+            }
+
+            cent2Bounds.extend(prims0[i].center2());
             PrimRef refs[8];
             size_t n = nodeOpenerFunc(prims0[i],refs);
             for (size_t j=0;j<n;j++)
@@ -248,7 +252,8 @@ namespace embree
           const BinMapping<OBJECT_BINS> mapping(cent2Bounds,OBJECT_BINS);          
           const BinMapping<OBJECT_BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
 
-          PRINT(mapping);
+          std::cout << "mapping " << pinfo << " " << cent2Bounds << std::endl;
+          PRINT(_mapping);
 
           for (size_t i=set.begin();i<set.end();i++)
           {
@@ -290,6 +295,7 @@ namespace embree
         /*! open primref */
         __noinline void create_opened_object_splits(Set& set, PrimInfo& pinfo, const ObjectSplit &split, const BinMapping<OBJECT_BINS> &mapping)
         {
+          PING;
           assert(set.has_ext_range());
           const size_t max_ext_range_size = set.ext_range_size();
           const size_t ext_range_start = set.end();
@@ -299,7 +305,8 @@ namespace embree
           ext_elements.store(0);
           
           //const float fpos = split.mapping.pos(split.pos,split.dim);
-        
+          BBox3fa centBounds(empty); //FIXME
+
           parallel_for( set.begin(), set.end(), CREATE_SPLITS_STEP_SIZE, [&](const range<size_t>& r) {
               for (size_t i=r.begin();i<r.end();i++)
               {
@@ -312,20 +319,31 @@ namespace embree
                   const size_t ID = ext_elements.fetch_add(n-1);
 
                   /* break if the number of subdivided elements are greater than the maximal allowed size */
-                  if (unlikely(ID >= max_ext_range_size)) { PRINT("EXCEED"); break; }
+                  if (unlikely(ID + n - 1 >= max_ext_range_size)) { 
+                    ext_elements.fetch_add(-(n-1));
+#if 0
+                    PRINT("EXCEED"); exit(0); 
+#endif
+                    break; 
+                  }
                   /* only write within the correct bounds */
                   assert(ID < max_ext_range_size);
                   prims0[i] = refs[0];
+                  centBounds.extend(prims0[i].center2());
                   assert(prims0[i].numPrimitives);
                   for (size_t j=1;j<n;j++)
                   {
+                    assert(ID+j-1 < max_ext_range_size);
                     prims0[ext_range_start+ID+j-1] = refs[j];     
                     assert(prims0[ext_range_start+ID+j-1].numPrimitives);
-
+                    centBounds.extend(prims0[ext_range_start+ID+j-1].center2());
                   }
                 }
               }
             });
+
+          assert(ext_elements.load() < max_ext_range_size);
+          PRINT(centBounds);
 
           const size_t numExtElements = min(max_ext_range_size,ext_elements.load());          
           //assert(numExtElements <= max_ext_range_size);
@@ -334,6 +352,8 @@ namespace embree
           pinfo.begin = nset.begin();
           pinfo.end   = nset.end();
           set = nset;
+
+          
 
         }
         
@@ -344,11 +364,10 @@ namespace embree
           PrimInfo pinfo = pinfo_i; 
           std::cout << std::endl;
           PING;
+          PRINT(pinfo_i);
           PRINT(split.valid());
           PRINT(split.opened);
           PRINT(split.objectSplit());
-          PRINT(pinfo_i);
-          PRINT(set_i);
 
           /* valid split */
           if (unlikely(!split.valid())) {
@@ -357,21 +376,17 @@ namespace embree
           }
 
           std::pair<size_t,size_t> ext_weights(0,0);
-          PRINT(split.opened);
           if (unlikely(split.opened))
           {
             create_opened_object_splits(set,pinfo,split.objectSplit(), split.objectSplit().mapping); 
+
             PRINT(pinfo);
-            PRINT(set);
 
             /* opened split */
             //if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
               ext_weights = sequential_opened_object_split(split.objectSplit(),set,left,lset,right,rset);
               //else
               //ext_weights = parallel_opened_object_split(split.objectSplit(),set,left,lset,right,rset);
-              PRINT(ext_weights.first);
-              PRINT(ext_weights.second);
-
           }
           else
           {
@@ -455,7 +470,25 @@ namespace embree
           /* init opened object mapping */
           const BinMapping<OBJECT_BINS> mapping = split.mapping;
 
-          PRINT(mapping);
+          std::cout << "mapping " << split << " " << set << std::endl;
+          PRINT(split.mapping);
+
+          BBox3fa centBounds(empty); //FIXME
+          bool debug = set.begin() == 14951 && set.end() ==17847;
+
+          for (size_t i=set.begin();i<set.end();i++)
+          {
+            centBounds.extend(prims0[i].center2());
+            if (debug) 
+            {
+              PRINT(i);
+              PRINT(prims0[i]);
+            }
+
+          }
+
+          PRINT(centBounds);
+
 
           const vint4 vSplitPos(splitPos);
           const vbool4 vSplitMask( (int)splitDimMask );
@@ -463,7 +496,7 @@ namespace embree
           size_t center = serial_partitioning(prims0,
                                               begin,end,local_left,local_right,
                                               [&] (const PrimRef& ref) {
-                                                const Vec3fa c = ref.bounds().center2();
+                                                const Vec3fa c = ref.center2();
                                                 return any(((vint4)mapping.bin(c) < vSplitPos) & vSplitMask); 
                                               },
                                               [] (PrimInfo& pinfo,const PrimRef& ref) { pinfo.add(ref.bounds()); });          
@@ -476,6 +509,17 @@ namespace embree
           new (&rset) extended_range<size_t>(center,end,end);
           assert(area(left.geomBounds) >= 0.0f);
           assert(area(right.geomBounds) >= 0.0f);
+
+          if (lset.size() == 0 || rset.size() == 0)
+          {
+            PRINT("FALLBACK");
+            splitFallback(set,left,lset,right,rset);
+            PRINT(lset.size());
+            PRINT(rset.size());
+          }
+
+          assert(lset.size() >= 1);
+          assert(rset.size() >= 1);
 
           for (size_t i=lset.begin();i<lset.end();i++)
             assert(inside(left.centBounds,prims0[i].center2()));
