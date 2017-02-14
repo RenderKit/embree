@@ -339,7 +339,6 @@ namespace embree
       __forceinline int isTransformNode() const { return (ptr & (size_t)align_mask) == tyTransformNode; }
       __forceinline int isTransformNode(int types) const { return (types == BVH_FLAG_TRANSFORM_NODE) || ((types & BVH_FLAG_TRANSFORM_NODE) && isTransformNode()); }
 
-
       /*! checks if this is a quantized node */
       __forceinline int isQuantizedNode() const { return (ptr & (size_t)align_mask) == tyQuantizedNode; }
 
@@ -539,6 +538,22 @@ namespace embree
     {
       using BaseNode::children;
 
+      struct Create
+      {
+        __forceinline NodeRef operator() (FastAllocator::ThreadLocal2* alloc) const
+        {
+          AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),byteNodeAlignment); node->clear();
+          return BVHN::encodeNode(node);
+        }
+      };
+
+      struct Set
+      {
+        __forceinline void operator() (NodeRef node, size_t i, const std::tuple<NodeRef,LBBox3fa,BBox1f>& child) const {
+          node.alignedNodeMB()->set(i,child);
+        }
+      };
+
       /*! Clears the node. */
       __forceinline void clear()  {
         lower_x = lower_y = lower_z = vfloat<N>(nan);
@@ -567,29 +582,32 @@ namespace embree
       }
 
       /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, const BBox3fa& bounds0, const BBox3fa& bounds1)
+      __forceinline void set(size_t i, const BBox3fa& bounds0_i, const BBox3fa& bounds1_i)
       {
+        /*! for empty bounds we have to avoid inf-inf=nan */
+        const BBox3fa bounds0(min(bounds0_i.lower,Vec3fa(+FLT_MAX)),max(bounds0_i.upper,Vec3fa(-FLT_MAX)));
+        const BBox3fa bounds1(min(bounds1_i.lower,Vec3fa(+FLT_MAX)),max(bounds1_i.upper,Vec3fa(-FLT_MAX)));
+
         lower_x[i] = bounds0.lower.x; lower_y[i] = bounds0.lower.y; lower_z[i] = bounds0.lower.z;
         upper_x[i] = bounds0.upper.x; upper_y[i] = bounds0.upper.y; upper_z[i] = bounds0.upper.z;
 
-        /*! for empty bounds we have to avoid inf-inf=nan */
-        if (unlikely(bounds0.empty())) {
-          lower_dx[i] = lower_dy[i] = lower_dz[i] = zero;
-          upper_dx[i] = upper_dy[i] = upper_dz[i] = zero;
-        }
         /*! standard case */
-        else {
-          const Vec3fa dlower = bounds1.lower-bounds0.lower;
-          const Vec3fa dupper = bounds1.upper-bounds0.upper;
-          lower_dx[i] = dlower.x; lower_dy[i] = dlower.y; lower_dz[i] = dlower.z;
-          upper_dx[i] = dupper.x; upper_dy[i] = dupper.y; upper_dz[i] = dupper.z;
-        }
+        const Vec3fa dlower = bounds1.lower-bounds0.lower;
+        const Vec3fa dupper = bounds1.upper-bounds0.upper;
+        lower_dx[i] = dlower.x; lower_dy[i] = dlower.y; lower_dz[i] = dlower.z;
+        upper_dx[i] = dupper.x; upper_dy[i] = dupper.y; upper_dz[i] = dupper.z;
       }
 
       /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, const LBBox3fa& bounds)
-      {
+      __forceinline void set(size_t i, const LBBox3fa& bounds) {
         set(i, bounds.bounds0, bounds.bounds1);
+      }
+
+      /*! Sets bounding box and ID of child. */
+      __forceinline void set(size_t i, const std::tuple<NodeRef,LBBox3fa,BBox1f>& child) 
+      {
+        set(i,std::get<0>(child));
+        set(i, std::get<1>(child).global(std::get<2>(child)));
       }
 
       /*! tests if the node has valid bounds */
@@ -609,11 +627,6 @@ namespace embree
                        Vec3fa(upper_x[i]+upper_dx[i],upper_y[i]+upper_dy[i],upper_z[i]+upper_dz[i]));
       }
 
-      /*! Returns extent of bounds of specified child. */
-      __forceinline Vec3fa extend0(size_t i) const {
-        return bounds0(i).size();
-      }
-
       /*! Returns bounds of node. */
       __forceinline BBox3fa bounds() const {
         return BBox3fa(Vec3fa(reduce_min(min(lower_x,lower_x+lower_dx)),
@@ -627,6 +640,26 @@ namespace embree
       /*! Return bounding box of child i */
       __forceinline BBox3fa bounds(size_t i) const {
         return merge(bounds0(i),bounds1(i));
+      }
+
+      /*! Return linear bounding box of child i */
+      __forceinline LBBox3fa lbounds(size_t i) const {
+        return LBBox3fa(bounds0(i),bounds1(i));
+      }
+
+      /*! Return bounding box of child i at specified time */
+      __forceinline BBox3fa bounds(size_t i, float time) const {
+        return lerp(bounds0(i),bounds1(i),time);
+      }
+
+      /*! Returns the expected surface area when randomly sampling the time. */
+      __forceinline float expectedHalfArea(size_t i) const {
+        return lbounds(i).expectedHalfArea();
+      }
+
+      /*! Returns the expected surface area when randomly sampling the time. */
+      __forceinline float expectedHalfArea(size_t i, const BBox1f& t0t1) const {
+        return lbounds(i).expectedHalfArea(t0t1); 
       }
 
       /*! swap two children of the node */
@@ -653,6 +686,23 @@ namespace embree
       /*! Returns reference to specified child */
       __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
+
+      /*! stream output operator */
+      friend std::ostream& operator<<(std::ostream& cout, const AlignedNodeMB& n) 
+      {
+        cout << "AlignedNodeMB {" << std::endl;
+        for (size_t i=0; i<N; i++) 
+        {
+          const BBox3fa b0 = n.bounds0(i);
+          const BBox3fa b1 = n.bounds1(i);
+          cout << "  child" << i << " { " << std::endl;
+          cout << "    bounds0 = " << b0 << ", " << std::endl;
+          cout << "    bounds1 = " << b1 << ", " << std::endl;
+          cout << "  }";
+        }
+        cout << "}";
+        return cout;
+  }
 
     public:
       vfloat<N> lower_x;        //!< X dimension of lower bounds of all N children.
@@ -738,6 +788,23 @@ namespace embree
     {
       using BaseNode::children;
 
+      struct Create
+      {
+        __forceinline NodeRef operator() (FastAllocator::ThreadLocal2* alloc) const
+        {
+          UnalignedNodeMB* node = (UnalignedNodeMB*) alloc->alloc0->malloc(sizeof(UnalignedNodeMB),byteNodeAlignment); node->clear();
+          return encodeNode(node);
+        }
+      };
+
+      struct Set
+      {
+        __forceinline void operator() (NodeRef node, size_t i, NodeRef child, const LinearSpace3fa& space, const LBBox3fa& lbounds, const BBox1f dt) const {
+          node.unalignedNodeMB()->set(i,child);
+          node.unalignedNodeMB()->set(i,space,lbounds.global(dt));
+        }
+      };
+
       /*! Clears the node. */
       __forceinline void clear()
       {
@@ -745,6 +812,11 @@ namespace embree
         //b0.lower = b0.upper = Vec3fa(nan);
         b1.lower = b1.upper = Vec3fa(nan);
         BaseNode::clear();
+      }
+
+      /*! Sets space and bounding boxes. */
+      __forceinline void set(size_t i, const AffineSpace3fa& space, const LBBox3fa& lbounds) {
+        set(i,space,lbounds.bounds0,lbounds.bounds1);
       }
 
       /*! Sets space and bounding boxes. */
@@ -809,7 +881,6 @@ namespace embree
       unsigned int xfmID;
       unsigned int type;
     };
-
 
     /*! BVHN Quantized Node */
     struct __aligned(16) QuantizedNode : public BaseNode
@@ -1058,12 +1129,12 @@ namespace embree
     }
 
     template<int K>
-    __forceinline NodeRef getRoot(const RayKPrecalculations<K>& pre, size_t k) const {
+      __forceinline NodeRef getRoot(const RayKPrecalculations<K>& pre, size_t k) const {
       return root;
     }
 
     template<int K>
-    __forceinline NodeRef getRoot(const RayKPrecalculationsMB<K>& pre, size_t k) const {
+      __forceinline NodeRef getRoot(const RayKPrecalculationsMB<K>& pre, size_t k) const {
       NodeRef* roots = (NodeRef*)(size_t)root;
       return roots[pre.itime(k)];
     }
@@ -1090,7 +1161,6 @@ namespace embree
       return (int)leaf_offset;
     }
 
-    /*! Encodes a node */
     static __forceinline NodeRef encodeNode(AlignedNodeMB* node) {
       assert(!((size_t)node & align_mask));
       return NodeRef((size_t) node | tyAlignedNodeMB);
