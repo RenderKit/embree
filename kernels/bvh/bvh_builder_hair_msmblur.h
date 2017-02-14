@@ -199,10 +199,9 @@ namespace embree
 
           LBBox3fa bounds = empty;
           for (size_t i=0; i<children.size(); i++) {
-            const LBBox3fa cbounds = children[i].prims.linearBounds(recalculatePrimRef);
             const auto child = createLargeLeaf(children[i],alloc);
-            bounds.extend(cbounds);
-            updateAlignedNode(node,i,std::make_tuple(child.first,cbounds,children[i].prims.time_range));
+            updateAlignedNode(node,i,std::make_tuple(child.first,child.second,children[i].prims.time_range));
+            bounds.extend(child.second);
           }
 
           return std::make_pair(node,bounds);
@@ -328,17 +327,13 @@ namespace embree
           {
             const NodeRef node = createAlignedNode4D(alloc);
 
-            LBBox3fa cbounds[MAX_BRANCHING_FACTOR];
-            for (size_t i=0; i<children.size(); i++)
-              cbounds[i] = children[i].prims.linearBounds(recalculatePrimRef);
-            
             /* spawn tasks or ... */
             if (current.size() > SINGLE_THREADED_THRESHOLD)
             {
               parallel_for(size_t(0), children.size(), [&] (const range<size_t>& r) {
                   for (size_t i=r.begin(); i<r.end(); i++) {
                     const auto child = recurse(children[i],nullptr,true);
-                    updateAlignedNode4D(node,i,std::make_tuple(child.first,cbounds[i],children[i].prims.time_range)); 
+                    updateAlignedNode4D(node,i,std::make_tuple(child.first,child.second,children[i].prims.time_range)); 
                     _mm_mfence(); // to allow non-temporal stores during build
                   }                
                 });
@@ -347,7 +342,7 @@ namespace embree
             else {
               for (size_t i=0; i<children.size(); i++) {
                 const auto child = recurse(children[i],alloc,false);
-                updateAlignedNode4D(node,i,std::make_tuple(child.first,cbounds[i],children[i].prims.time_range));
+                updateAlignedNode4D(node,i,std::make_tuple(child.first,child.second,children[i].prims.time_range));
               }
             }
 
@@ -360,31 +355,36 @@ namespace embree
           {
             const NodeRef node = createAlignedNode(alloc);
             
-            LBBox3fa cbounds[MAX_BRANCHING_FACTOR];
-            for (size_t i=0; i<children.size(); i++)
-              cbounds[i] = children[i].prims.linearBounds(recalculatePrimRef);
-            
             /* spawn tasks or ... */
             if (current.size() > SINGLE_THREADED_THRESHOLD)
             {
+              LBBox3fa cbounds[MAX_BRANCHING_FACTOR];
               parallel_for(size_t(0), children.size(), [&] (const range<size_t>& r) {
                   for (size_t i=r.begin(); i<r.end(); i++) {
                     const auto child = recurse(children[i],nullptr,true);
-                    updateAlignedNode(node,i,std::make_tuple(child.first,cbounds[i],children[i].prims.time_range)); 
+                    updateAlignedNode(node,i,std::make_tuple(child.first,child.second,children[i].prims.time_range)); 
+                    cbounds[i] = child.second;
                     _mm_mfence(); // to allow non-temporal stores during build
                   }                
                 });
+
+              LBBox3fa bounds = empty;
+              for (size_t i=0; i<children.size(); i++)
+                bounds.extend(cbounds[i]);
+
+              return std::make_pair(node,bounds);
             }
             /* ... continue sequential */
-            else {
+            else 
+            {
+              LBBox3fa bounds = empty;
               for (size_t i=0; i<children.size(); i++) {
                 const auto child = recurse(children[i],alloc,false);
-                updateAlignedNode(node,i,std::make_tuple(child.first,cbounds[i],children[i].prims.time_range));
+                updateAlignedNode(node,i,std::make_tuple(child.first,child.second,children[i].prims.time_range));
+                bounds.extend(child.second);
               }
+              return std::make_pair(node,bounds);
             }
-
-            const LBBox3fa bounds = current.prims.linearBounds(recalculatePrimRef);
-            return std::make_pair(node,bounds);
           }
           
           /* create unaligned node */
