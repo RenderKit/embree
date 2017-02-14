@@ -727,7 +727,7 @@ namespace embree
         const size_t leaf_bytes = size_t(1.2*Primitive::blocks(pinfo.num_time_segments)*sizeof(Primitive));
         bvh->alloc.init_estimate(node_bytes+leaf_bytes);
       
-        /* configuration for BVH build */
+        /* settings for BVH build */
         BVHMBuilderMSMBlur::Settings settings;
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxDepth;

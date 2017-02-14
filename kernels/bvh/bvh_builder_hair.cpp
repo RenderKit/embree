@@ -278,8 +278,7 @@ namespace embree
         mvector<PrimRefMB> prims0(scene->device,numPrimitives);
         const PrimInfoMB pinfo = createPrimRefMBArray<BezierCurves>(scene,prims0,bvh->scene->progressInterface);
 
-        RecalculatePrimRef<BezierCurves> recalculatePrimRef(scene);
-
+        /* settings for BVH build */
         BVHMBuilderHairMSMBlur::Settings settings;
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxBuildDepthLeaf;
@@ -287,33 +286,33 @@ namespace embree
         settings.minLeafSize = 1;
         settings.maxLeafSize = BVH::maxLeafBlocks;
 
+        /* creates a leaf node */
         auto createLeaf = [&] (const SetMB& prims, FastAllocator::ThreadLocal2* alloc) -> NodeRef
           {
-            size_t items = prims.object_range.size();
             size_t start = prims.object_range.begin();
+            size_t end   = prims.object_range.end();
+            size_t items = prims.object_range.size();
             Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive));
-            NodeRef node = bvh->encodeLeaf((char*)accel,items);
             for (size_t i=0; i<items; i++) {
-              accel[i].fill(prims.prims->data(),start,prims.object_range.end(),bvh->scene);
+              accel[i].fill(prims.prims->data(),start,end,bvh->scene);
             }
-            return node;
+            return bvh->encodeLeaf((char*)accel,items);
           };
 
-        /* build hierarchy */
+        /* build the hierarchy */
         typename BVH::NodeRef root = BVHMBuilderHairMSMBlur::build<NodeRef>
-          (
-            scene, prims0, pinfo,
-            recalculatePrimRef,
-            typename BVH::CreateAlloc(bvh),
-            typename BVH::AlignedNodeMB::Create(),
-            typename BVH::AlignedNodeMB::Update(),
-            typename BVH::UnalignedNodeMB::Create(),
-            typename BVH::UnalignedNodeMB::Update(),
-            typename BVH::AlignedNodeMB4D::Create(),
-            typename BVH::AlignedNodeMB4D::Update(),
-            createLeaf,
-            bvh->scene->progressInterface,
-            settings);
+          (scene, prims0, pinfo,
+           RecalculatePrimRef<BezierCurves>(scene),
+           typename BVH::CreateAlloc(bvh),
+           typename BVH::AlignedNodeMB::Create(),
+           typename BVH::AlignedNodeMB::Update(),
+           typename BVH::UnalignedNodeMB::Create(),
+           typename BVH::UnalignedNodeMB::Update(),
+           typename BVH::AlignedNodeMB4D::Create(),
+           typename BVH::AlignedNodeMB4D::Update(),
+           createLeaf,
+           bvh->scene->progressInterface,
+           settings);
         
         bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.num_time_segments);
         
