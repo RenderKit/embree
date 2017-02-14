@@ -150,13 +150,10 @@ namespace embree
         /*! finds the best split */
         const Split find(Set& set, PrimInfo& pinfo, const size_t logBlockSize)
         {
-          std::cout << std::endl;
-          PING;
-          PRINT(pinfo);
-
           /* need to avoid splitting single element ranges */
           if (pinfo.size() <= 1)
           {
+            // FIXME: test if all object have the same geomID
             return  Split(ObjectSplit(),inf,false);
           }
           assert(pinfo.size() > 1);
@@ -174,12 +171,12 @@ namespace embree
               /* valid opened split, better SAH and number of splits do not exceed extended range */
             if (opened_object_split.valid() && opened_object_split_sah < OPENED_SAH_THRESHOLD*object_split_sah )
               {          
-                PRINT("OPEN SPLIT");
+                //PRINT("OPEN SPLIT");
                 // && opened_object_split.left + opened_object_split.right - set.size() <= set.ext_range_size()
                 return Split(opened_object_split,opened_object_split_sah,true);
               }
           }
-          PRINT("REGULAR SPLIT");
+          //PRINT("REGULAR SPLIT");
           return Split(object_split,object_split_sah,false);
         }
 
@@ -226,22 +223,14 @@ namespace embree
         /*! finds the best opened object split */
         __noinline const ObjectSplit sequential_opened_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
-          PING;
           ObjectBinner binner(empty); 
           BBox3fa cent2Bounds(pinfo.centBounds); // FIXME: empty?
 
           assert(set.begin() == pinfo.begin);
           assert(set.end() == pinfo.end);
-          bool debug = set.begin() == 14951 && set.end() == 15806;
 
           for (size_t i=set.begin();i<set.end();i++)
           {
-            if (debug) 
-            {
-              PRINT(i);
-              PRINT(prims0[i]);
-            }
-
             cent2Bounds.extend(prims0[i].center2());
             PrimRef refs[8];
             size_t n = nodeOpenerFunc(prims0[i],refs);
@@ -251,9 +240,6 @@ namespace embree
 
           const BinMapping<OBJECT_BINS> mapping(cent2Bounds,OBJECT_BINS);          
           const BinMapping<OBJECT_BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
-
-          std::cout << "mapping " << pinfo << " " << cent2Bounds << std::endl;
-          PRINT(_mapping);
 
           for (size_t i=set.begin();i<set.end();i++)
           {
@@ -295,7 +281,6 @@ namespace embree
         /*! open primref */
         __noinline void create_opened_object_splits(Set& set, PrimInfo& pinfo, const ObjectSplit &split, const BinMapping<OBJECT_BINS> &mapping)
         {
-          PING;
           assert(set.has_ext_range());
           const size_t max_ext_range_size = set.ext_range_size();
           const size_t ext_range_start = set.end();
@@ -305,7 +290,6 @@ namespace embree
           ext_elements.store(0);
           
           //const float fpos = split.mapping.pos(split.pos,split.dim);
-          BBox3fa centBounds(empty); //FIXME
 
           parallel_for( set.begin(), set.end(), CREATE_SPLITS_STEP_SIZE, [&](const range<size_t>& r) {
               for (size_t i=r.begin();i<r.end();i++)
@@ -329,21 +313,18 @@ namespace embree
                   /* only write within the correct bounds */
                   assert(ID < max_ext_range_size);
                   prims0[i] = refs[0];
-                  centBounds.extend(prims0[i].center2());
                   assert(prims0[i].numPrimitives);
                   for (size_t j=1;j<n;j++)
                   {
                     assert(ID+j-1 < max_ext_range_size);
                     prims0[ext_range_start+ID+j-1] = refs[j];     
                     assert(prims0[ext_range_start+ID+j-1].numPrimitives);
-                    centBounds.extend(prims0[ext_range_start+ID+j-1].center2());
                   }
                 }
               }
             });
 
           assert(ext_elements.load() < max_ext_range_size);
-          PRINT(centBounds);
 
           const size_t numExtElements = min(max_ext_range_size,ext_elements.load());          
           //assert(numExtElements <= max_ext_range_size);
@@ -362,12 +343,6 @@ namespace embree
         {
           Set set = set_i;
           PrimInfo pinfo = pinfo_i; 
-          std::cout << std::endl;
-          PING;
-          PRINT(pinfo_i);
-          PRINT(split.valid());
-          PRINT(split.opened);
-          PRINT(split.objectSplit());
 
           /* valid split */
           if (unlikely(!split.valid())) {
@@ -379,8 +354,6 @@ namespace embree
           if (unlikely(split.opened))
           {
             create_opened_object_splits(set,pinfo,split.objectSplit(), split.objectSplit().mapping); 
-
-            PRINT(pinfo);
 
             /* opened split */
             //if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
@@ -403,9 +376,6 @@ namespace embree
             setExtentedRanges(set,lset,rset,ext_weights.first,ext_weights.second);
             moveExtentedRange(set,lset,left,rset,right);
           }
-
-          PRINT(lset);
-          PRINT(rset);
 
           assert(lset.begin() == left.begin);
           assert(lset.end()   == left.end);
@@ -458,7 +428,6 @@ namespace embree
         /*! array partitioning */
         __noinline std::pair<size_t,size_t> sequential_opened_object_split(const ObjectSplit& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
-          PING;
           const size_t begin = set.begin();
           const size_t end   = set.end();
           PrimInfo local_left(empty);
@@ -469,27 +438,6 @@ namespace embree
 
           /* init opened object mapping */
           const BinMapping<OBJECT_BINS> mapping = split.mapping;
-
-          std::cout << "mapping " << split << " " << set << std::endl;
-          PRINT(split.mapping);
-
-          BBox3fa centBounds(empty); //FIXME
-          bool debug = set.begin() == 14951 && set.end() ==17847;
-
-          for (size_t i=set.begin();i<set.end();i++)
-          {
-            centBounds.extend(prims0[i].center2());
-            if (debug) 
-            {
-              PRINT(i);
-              PRINT(prims0[i]);
-            }
-
-          }
-
-          PRINT(centBounds);
-
-
           const vint4 vSplitPos(splitPos);
           const vbool4 vSplitMask( (int)splitDimMask );
 
