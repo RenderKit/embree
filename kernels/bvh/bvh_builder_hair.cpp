@@ -81,17 +81,21 @@ namespace embree
 
             [&] (const PrimInfo* children, const size_t numChildren, 
                  HeuristicBinningSAH alignedHeuristic, 
-                 FastAllocator::ThreadLocal2* alloc) -> AlignedNode*
+                 FastAllocator::ThreadLocal2* alloc) -> NodeRef
             {
               AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode),BVH::byteNodeAlignment); node->clear();
               for (size_t i=0; i<numChildren; i++)
                 node->set(i,children[i].geomBounds);
-              return node;
+              return BVH::encodeNode(node);
+            },
+
+            [&] (NodeRef node, size_t i, NodeRef child) {
+              node.alignedNode()->set(i,child);
             },
             
             [&] (const PrimInfo* children, const size_t numChildren, 
                  UnalignedHeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> unalignedHeuristic, 
-                 FastAllocator::ThreadLocal2* alloc) -> UnalignedNode*
+                 FastAllocator::ThreadLocal2* alloc) -> NodeRef
             {
               UnalignedNode* node = (UnalignedNode*) alloc->alloc0->malloc(sizeof(UnalignedNode),BVH::byteNodeAlignment); node->clear();
               for (size_t i=0; i<numChildren; i++) 
@@ -100,7 +104,11 @@ namespace embree
                 const PrimInfo       sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
                 node->set(i,OBBox3fa(space,sinfo.geomBounds));
               }
-              return node;
+              return BVH::encodeNode(node);
+            },
+
+            [&] (NodeRef node, size_t i, NodeRef child) {
+              node.unalignedNode()->set(i,child);
             },
 
             [&] (size_t depth, const PrimInfo& pinfo, FastAllocator::ThreadLocal2* alloc) -> NodeRef
@@ -200,7 +208,7 @@ namespace embree
               }
               return node;
             },
-            
+
             [&] (const PrimInfo* children, const size_t numChildren, UnalignedHeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> unalignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> UnalignedNodeMB*
             {
               UnalignedNodeMB* node = (UnalignedNodeMB*) alloc->alloc0->malloc(sizeof(UnalignedNodeMB),BVH::byteNodeAlignment); node->clear();

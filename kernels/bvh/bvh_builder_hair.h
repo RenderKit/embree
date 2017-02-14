@@ -47,7 +47,9 @@ namespace embree
       template<int N,
         typename CreateAllocFunc,
         typename CreateAlignedNodeFunc, 
+        typename SetAlignedNodeFunc,
         typename CreateUnalignedNodeFunc, 
+        typename SetUnalignedNodeFunc,
         typename CreateLeafFunc, 
         typename ProgressMonitor>
         
@@ -75,7 +77,9 @@ namespace embree
         BuilderT (BezierPrim* prims,
                   const CreateAllocFunc& createAlloc, 
                   const CreateAlignedNodeFunc& createAlignedNode, 
+                  const SetAlignedNodeFunc& setAlignedNode,
                   const CreateUnalignedNodeFunc& createUnalignedNode, 
+                  const SetUnalignedNodeFunc& setUnalignedNode,
                   const CreateLeafFunc& createLeaf,
                   const ProgressMonitor& progressMonitor,
                   const Settings settings)
@@ -83,7 +87,9 @@ namespace embree
           : Settings(settings),
           createAlloc(createAlloc), 
           createAlignedNode(createAlignedNode), 
+          setAlignedNode(setAlignedNode),
           createUnalignedNode(createUnalignedNode), 
+          setUnalignedNode(setUnalignedNode),
           createLeaf(createLeaf),
           progressMonitor(progressMonitor),
           prims(prims), 
@@ -148,10 +154,10 @@ namespace embree
           /* create node */
           auto node = createAlignedNode(children,numChildren,alignedHeuristic,alloc);
           
-          for (size_t i=0; i<numChildren; i++) 
-            node->child(i) = createLargeLeaf(depth+1,children[i],alloc);
+          for (size_t i=0; i<numChildren; i++)
+            setAlignedNode(node,i,createLargeLeaf(depth+1,children[i],alloc));
           
-          return BVH::encodeNode(node);
+          return node;
         }
         
         /*! performs split */
@@ -277,7 +283,7 @@ namespace embree
             {
               parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) {
                   for (size_t i=r.begin(); i<r.end(); i++) {
-                    node->child(i) = recurse(depth+1,children[i],nullptr,true); 
+                    setAlignedNode(node,i,recurse(depth+1,children[i],nullptr,true)); 
                     _mm_mfence(); // to allow non-temporal stores during build
                   }                
                 });
@@ -285,9 +291,9 @@ namespace embree
             /* ... continue sequential */
             else {
               for (size_t i=0; i<numChildren; i++) 
-                node->child(i) = recurse(depth+1,children[i],alloc,false);
+                setAlignedNode(node,i,recurse(depth+1,children[i],alloc,false));
             }
-            return BVH::encodeNode(node);
+            return node;
           }
           
           /* create unaligned node */
@@ -298,10 +304,9 @@ namespace embree
             /* spawn tasks or ... */
             if (pinfo.size() > SINGLE_THREADED_THRESHOLD)
             {
-              
               parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) {
                   for (size_t i=r.begin(); i<r.end(); i++) {
-                    node->child(i) = recurse(depth+1,children[i],nullptr,true);
+                    setUnalignedNode(node,i,recurse(depth+1,children[i],nullptr,true));
                     _mm_mfence(); // to allow non-temporal stores during build
                   }                
                 });
@@ -310,16 +315,18 @@ namespace embree
             else
             {
               for (size_t i=0; i<numChildren; i++) 
-                node->child(i) = recurse(depth+1,children[i],alloc,false);
+                setUnalignedNode(node,i,recurse(depth+1,children[i],alloc,false));
             }
-            return BVH::encodeNode(node);
+            return node;
           }
         }
         
       private:      
         const CreateAllocFunc& createAlloc;
         const CreateAlignedNodeFunc& createAlignedNode;
+        const SetAlignedNodeFunc& setAlignedNode;
         const CreateUnalignedNodeFunc& createUnalignedNode;
+        const SetUnalignedNodeFunc& setUnalignedNode;
         const CreateLeafFunc& createLeaf;
         const ProgressMonitor& progressMonitor;
         
@@ -333,21 +340,33 @@ namespace embree
       template<int N,
         typename CreateAllocFunc,
         typename CreateAlignedNodeFunc, 
+        typename SetAlignedNodeFunc,
         typename CreateUnalignedNodeFunc, 
+        typename SetUnalignedNodeFunc,
         typename CreateLeafFunc, 
         typename ProgressMonitor>
         
         static typename BVHN<N>::NodeRef build (const CreateAllocFunc& createAlloc,
                                                 const CreateAlignedNodeFunc& createAlignedNode, 
+                                                const SetAlignedNodeFunc& setAlignedNode, 
                                                 const CreateUnalignedNodeFunc& createUnalignedNode, 
+                                                const SetUnalignedNodeFunc& setUnalignedNode, 
                                                 const CreateLeafFunc& createLeaf, 
                                                 const ProgressMonitor& progressMonitor,
                                                 BezierPrim* prims, 
                                                 const PrimInfo& pinfo,
                                                 const Settings settings)
       {
-        typedef BuilderT<N,CreateAllocFunc,CreateAlignedNodeFunc,CreateUnalignedNodeFunc,CreateLeafFunc,ProgressMonitor> Builder;
-        Builder builder(prims,createAlloc,createAlignedNode,createUnalignedNode,createLeaf,progressMonitor,settings);
+        typedef BuilderT<N,CreateAllocFunc,
+          CreateAlignedNodeFunc,SetAlignedNodeFunc,
+          CreateUnalignedNodeFunc,SetUnalignedNodeFunc,
+          CreateLeafFunc,ProgressMonitor> Builder;
+
+        Builder builder(prims,createAlloc,
+                        createAlignedNode,setAlignedNode,
+                        createUnalignedNode,setUnalignedNode,
+                        createLeaf,progressMonitor,settings);
+
         return builder(pinfo);
       }
     };
