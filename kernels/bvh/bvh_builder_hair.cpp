@@ -247,12 +247,7 @@ namespace embree
     struct BVHNHairMSMBlurBuilderSAH : public Builder
     {
       typedef BVHN<N> BVH;
-      typedef typename BVH::AlignedNodeMB AlignedNodeMB;
-      typedef typename BVH::AlignedNodeMB4D AlignedNodeMB4D;
-      typedef typename BVH::UnalignedNodeMB UnalignedNodeMB;
       typedef typename BVH::NodeRef NodeRef;
-      typedef HeuristicArrayBinningMB<PrimRefMB,NUM_OBJECT_BINS> HeuristicBinning;
-      typedef UnalignedHeuristicArrayBinningMB<PrimRefMB,NUM_OBJECT_BINS> UnalignedHeuristicBinning;
 
       BVH* bvh;
       Scene* scene;
@@ -274,10 +269,14 @@ namespace embree
         //profile(1,5,numPrimitives,[&] (ProfileTimer& timer) {
 
         /* create primref array */
-        bvh->alloc.init_estimate(numPrimitives*sizeof(Primitive));
         mvector<PrimRefMB> prims0(scene->device,numPrimitives);
         const PrimInfoMB pinfo = createPrimRefMBArray<BezierCurves>(scene,prims0,bvh->scene->progressInterface);
 
+        /* estimate acceleration structure size */
+        const size_t node_bytes = pinfo.num_time_segments*sizeof(typename BVH::AlignedNodeMB)/(4*N);
+        const size_t leaf_bytes = size_t(1.2*Primitive::blocks(pinfo.num_time_segments)*sizeof(Primitive));
+        bvh->alloc.init_estimate(node_bytes+leaf_bytes);
+    
         /* settings for BVH build */
         BVHMBuilderHairMSMBlur::Settings settings;
         settings.branchingFactor = N;
@@ -300,7 +299,7 @@ namespace embree
           };
 
         /* build the hierarchy */
-        typename BVH::NodeRef root = BVHMBuilderHairMSMBlur::build<NodeRef>
+        NodeRef root = BVHMBuilderHairMSMBlur::build<NodeRef>
           (scene, prims0, pinfo,
            RecalculatePrimRef<BezierCurves>(scene),
            typename BVH::CreateAlloc(bvh),
