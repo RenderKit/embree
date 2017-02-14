@@ -216,8 +216,7 @@ namespace embree
           const float leafSAH = intCost*current.prims.leafSAH();
           
           /* perform standard binning in aligned space */
-          HeuristicBinning::Split alignedObjectSplit;
-          alignedObjectSplit = alignedHeuristic.find(current.prims,0);
+          HeuristicBinning::Split alignedObjectSplit = alignedHeuristic.find(current.prims,0);
           float alignedObjectSAH = travCostAligned*current.prims.halfArea() + intCost*alignedObjectSplit.splitSAH();
           bestSAH = min(alignedObjectSAH,bestSAH);
           
@@ -233,13 +232,15 @@ namespace embree
             bestSAH = min(unalignedObjectSAH,bestSAH);
           }
           
-          /* do temporal splits only if the the time range is big enough */
+          /* do temporal splits only if previous approaches failed to produce good SAH and the the time range is large enough */
           float temporal_split_sah = inf;
           typename HeuristicTemporal::Split temporal_split;
-          if (current.prims.time_range.size() > 1.01f/float(current.prims.max_num_time_segments)) {
-            temporal_split = temporalSplitHeuristic.find(current.prims, 0);
-            temporal_split_sah = travCostAligned*current.prims.halfArea() + intCost*temporal_split.splitSAH();
-            bestSAH = min(temporal_split_sah,bestSAH);
+          if (bestSAH > 0.5f*leafSAH) {
+            if (current.prims.time_range.size() > 1.01f/float(current.prims.max_num_time_segments)) {
+              temporal_split = temporalSplitHeuristic.find(current.prims, 0);
+              temporal_split_sah = travCostAligned*current.prims.halfArea() + intCost*temporal_split.splitSAH();
+              bestSAH = min(temporal_split_sah,bestSAH);
+            }
           }
           
           /* perform fallback split */
