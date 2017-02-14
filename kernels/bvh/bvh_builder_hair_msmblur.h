@@ -231,21 +231,21 @@ namespace embree
           }
           
           /* perform fallback split if SAH heuristics failed */
-          if (!std::isfinite(bestSAH)) {
+          if (unlikely(!std::isfinite(bestSAH))) {
             current.prims.deterministic_order();
             splitFallback(current.prims,lrecord.prims,rrecord.prims);
           }
           /* perform aligned split if this is best */
-          else if (bestSAH == alignedObjectSAH) {
+          else if (likely(bestSAH == alignedObjectSAH)) {
             alignedHeuristic.split(alignedObjectSplit,current.prims,lrecord.prims,rrecord.prims);
           }
           /* perform unaligned split if this is best */
-          else if (bestSAH == unalignedObjectSAH) {
+          else if (likely(bestSAH == unalignedObjectSAH)) {
             unalignedHeuristic.split(unalignedObjectSplit,uspace,current.prims,lrecord.prims,rrecord.prims);
             aligned = false;
           }
           /* perform temporal split if this is best */
-          else if (bestSAH == temporal_split_sah) {
+          else if (likely(bestSAH == temporal_split_sah)) {
             timesplit = true;
             return temporalSplitHeuristic.split(temporal_split,current.prims,lrecord.prims,rrecord.prims);
           }
@@ -304,7 +304,6 @@ namespace embree
             children.split(bestChild,left,right,std::move(new_vector));
             
           } while (children.size() < branchingFactor); 
-          assert(children.size() > 1);
           
           /* create time split node */
           if (timesplit)
@@ -358,7 +357,7 @@ namespace embree
 
               return std::make_pair(node,bounds);
             }
-            /* ... continue sequential */
+            /* ... continue sequentially */
             else 
             {
               LBBox3fa bounds = empty;
@@ -382,7 +381,7 @@ namespace embree
               parallel_for(size_t(0), children.size(), [&] (const range<size_t>& r) {
                   for (size_t i=r.begin(); i<r.end(); i++) {
                     const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpaceMB(scene,children[i].prims); 
-                    const LBBox3fa lbounds = unalignedHeuristic.linearBounds(scene,children[i].prims,space);
+                    const LBBox3fa lbounds = children[i].prims.linearBounds(recalculatePrimRef,space);
                     const auto child = recurse(children[i],nullptr,true);
                     setUnalignedNode(node,i,child.first,space,lbounds,children[i].prims.time_range);
                     _mm_mfence(); // to allow non-temporal stores during build
@@ -394,7 +393,7 @@ namespace embree
             {
               for (size_t i=0; i<children.size(); i++) {
                 const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpaceMB(scene,children[i].prims); 
-                const LBBox3fa lbounds = unalignedHeuristic.linearBounds(scene,children[i].prims,space);
+                const LBBox3fa lbounds = children[i].prims.linearBounds(recalculatePrimRef,space);
                 const auto child = recurse(children[i],alloc,false);
                 setUnalignedNode(node,i,child.first,space,lbounds,children[i].prims.time_range);
               }

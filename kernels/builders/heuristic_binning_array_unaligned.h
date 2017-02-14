@@ -330,20 +330,6 @@ namespace embree
           return SetMB(ret,set.prims,set.object_range,set.time_range);
         }
 
-        const LBBox3fa linearBounds(Scene* scene, const SetMB& set, const AffineSpace3fa& space)
-        {
-          LBBox3fa lbounds(empty);
-          for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++)  // FIXME: parallelize
-          {
-            const PrimRefMB& prim = (*set.prims)[i];
-            const size_t geomID = prim.geomID();
-            const size_t primID = prim.primID();
-            const BezierCurves* mesh = (BezierCurves*)scene->get(geomID);
-            lbounds.extend(mesh->linearBounds(space, primID, set.time_range));
-          }
-          return lbounds;
-        }
-
         /*! finds the best split */
         const Split find(const SetMB& set, const size_t logBlockSize, const LinearSpace3fa& space)
         {

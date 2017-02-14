@@ -132,6 +132,10 @@ namespace embree
         __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range) const {
           return scene->get<Mesh>(prim.geomID())->linearBounds(prim.primID(), time_range);
         }
+
+        __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range, const LinearSpace3fa& space) const {
+          return scene->get<Mesh>(prim.geomID())->linearBounds(space, prim.primID(), time_range);
+        }
       };
     
     struct BVHMBuilderMSMBlur
