@@ -131,6 +131,10 @@ namespace embree
         
         /* create node */
         auto node = createAlignedNode(children,numChildren,alignedHeuristic,alloc);
+
+        for (size_t i=0; i<numChildren; i++) 
+          node->child(i) = createLargeLeaf(depth+1,children[i],alloc);
+
         return BVH::encodeNode(node);
       }
             
