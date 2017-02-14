@@ -152,10 +152,10 @@ namespace embree
           } while (numChildren < branchingFactor);
           
           /* create node */
-          auto node = createAlignedNode(children,numChildren,alignedHeuristic,alloc);
+          auto node = createAlignedNode(alloc);
           
           for (size_t i=0; i<numChildren; i++)
-            setAlignedNode(node,i,createLargeLeaf(depth+1,children[i],alloc));
+            setAlignedNode(node,i,createLargeLeaf(depth+1,children[i],alloc),children[i].geomBounds);
           
           return node;
         }
@@ -276,14 +276,14 @@ namespace embree
           /* create aligned node */
           if (aligned) 
           {
-            auto node = createAlignedNode(children,numChildren,alignedHeuristic,alloc);
+            auto node = createAlignedNode(alloc);
             
             /* spawn tasks or ... */
             if (pinfo.size() > SINGLE_THREADED_THRESHOLD)
             {
               parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) {
                   for (size_t i=r.begin(); i<r.end(); i++) {
-                    setAlignedNode(node,i,recurse(depth+1,children[i],nullptr,true)); 
+                    setAlignedNode(node,i,recurse(depth+1,children[i],nullptr,true),children[i].geomBounds); 
                     _mm_mfence(); // to allow non-temporal stores during build
                   }                
                 });
@@ -291,7 +291,7 @@ namespace embree
             /* ... continue sequential */
             else {
               for (size_t i=0; i<numChildren; i++) 
-                setAlignedNode(node,i,recurse(depth+1,children[i],alloc,false));
+                setAlignedNode(node,i,recurse(depth+1,children[i],alloc,false),children[i].geomBounds);
             }
             return node;
           }
@@ -299,14 +299,17 @@ namespace embree
           /* create unaligned node */
           else 
           {
-            auto node = createUnalignedNode(children,numChildren,unalignedHeuristic,alloc);
+            auto node = createUnalignedNode(alloc);
             
             /* spawn tasks or ... */
             if (pinfo.size() > SINGLE_THREADED_THRESHOLD)
             {
               parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) {
                   for (size_t i=r.begin(); i<r.end(); i++) {
-                    setUnalignedNode(node,i,recurse(depth+1,children[i],nullptr,true));
+                    const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpace(children[i]); 
+                    const PrimInfo       sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
+                    const OBBox3fa obounds(space,sinfo.geomBounds);
+                    setUnalignedNode(node,i,recurse(depth+1,children[i],nullptr,true),obounds);
                     _mm_mfence(); // to allow non-temporal stores during build
                   }                
                 });
@@ -314,8 +317,12 @@ namespace embree
             /* ... continue sequentially */
             else
             {
-              for (size_t i=0; i<numChildren; i++) 
-                setUnalignedNode(node,i,recurse(depth+1,children[i],alloc,false));
+              for (size_t i=0; i<numChildren; i++) {
+                const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpace(children[i]); 
+                const PrimInfo       sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
+                const OBBox3fa obounds(space,sinfo.geomBounds);
+                setUnalignedNode(node,i,recurse(depth+1,children[i],alloc,false),obounds);
+              }
             }
             return node;
           }

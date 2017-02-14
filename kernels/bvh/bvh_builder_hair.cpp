@@ -79,36 +79,26 @@ namespace embree
           (
             [&] () { return bvh->alloc.threadLocal2(); },
 
-            [&] (const PrimInfo* children, const size_t numChildren, 
-                 HeuristicBinningSAH alignedHeuristic, 
-                 FastAllocator::ThreadLocal2* alloc) -> NodeRef
+            [&] (FastAllocator::ThreadLocal2* alloc) -> NodeRef
             {
               AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode),BVH::byteNodeAlignment); node->clear();
-              for (size_t i=0; i<numChildren; i++)
-                node->set(i,children[i].geomBounds);
               return BVH::encodeNode(node);
             },
 
-            [&] (NodeRef node, size_t i, NodeRef child) {
+            [&] (NodeRef node, size_t i, NodeRef child, const BBox3fa& bounds) {
               node.alignedNode()->set(i,child);
+              node.alignedNode()->set(i,bounds);
             },
             
-            [&] (const PrimInfo* children, const size_t numChildren, 
-                 UnalignedHeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> unalignedHeuristic, 
-                 FastAllocator::ThreadLocal2* alloc) -> NodeRef
+            [&] (FastAllocator::ThreadLocal2* alloc) -> NodeRef
             {
               UnalignedNode* node = (UnalignedNode*) alloc->alloc0->malloc(sizeof(UnalignedNode),BVH::byteNodeAlignment); node->clear();
-              for (size_t i=0; i<numChildren; i++) 
-              {
-                const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpace(children[i]); 
-                const PrimInfo       sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
-                node->set(i,OBBox3fa(space,sinfo.geomBounds));
-              }
               return BVH::encodeNode(node);
             },
-
-            [&] (NodeRef node, size_t i, NodeRef child) {
+            
+            [&] (NodeRef node, size_t i, NodeRef child, const OBBox3fa& bounds) {
               node.unalignedNode()->set(i,child);
+              node.unalignedNode()->set(i,bounds);
             },
 
             [&] (size_t depth, const PrimInfo& pinfo, FastAllocator::ThreadLocal2* alloc) -> NodeRef
