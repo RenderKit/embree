@@ -73,7 +73,7 @@ namespace embree
         {
           Binner binner(empty);
           const BinMapping<BINS> mapping(pinfo);
-          binner.template bin_serial_or_parallel<parallel>(prims,set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,mapping);
+          bin_serial_or_parallel<parallel>(binner,prims,set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,mapping);
           return binner.best(mapping,logBlockSize);
         }
 

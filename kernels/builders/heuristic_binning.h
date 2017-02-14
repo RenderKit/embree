@@ -293,52 +293,6 @@ namespace embree
 	bin(prims+begin,end-begin,mapping,space,user);
       }   
 
-      __forceinline void bin_parallel(const PrimRef* prims, size_t begin, size_t end, size_t blockSize, size_t parallelThreshold, const BinMapping<BINS>& mapping) 
-      {
-        if (likely(end-begin < parallelThreshold)) {
-          bin(prims,begin,end,mapping);
-        } else {
-          *this = parallel_reduce(begin,end,blockSize,*this,
-                                  [&](const range<size_t>& r) -> BinInfoT { BinInfoT binner(empty); binner.bin(prims + r.begin(), r.size(), mapping); return binner; },
-                                  [&](const BinInfoT& b0, const BinInfoT& b1) -> BinInfoT { BinInfoT r = b0; r.merge(b1, mapping.size()); return r; });
-        }
-      }
-
-      __forceinline void bin_parallel(const PrimRef* prims, size_t begin, size_t end, size_t blockSize, size_t parallelThreshold, const BinMapping<BINS>& mapping, const AffineSpace3fa& space, void* user = nullptr)
-      {
-        if (likely(end-begin < parallelThreshold)) {
-          bin(prims,begin,end,mapping,space,user);
-        } else {
-          *this = parallel_reduce(begin,end,blockSize,*this,
-                                  [&](const range<size_t>& r) -> BinInfoT { BinInfoT binner(empty); binner.bin(prims + r.begin(), r.size(), mapping, space, user); return binner; },
-                                  [&](const BinInfoT& b0, const BinInfoT& b1) -> BinInfoT { BinInfoT r = b0; r.merge(b1, mapping.size()); return r; });
-        }
-      }
-
-      template<bool parallel>
-      __forceinline void bin_serial_or_parallel(const PrimRef* prims, size_t begin, size_t end, size_t blockSize, const BinMapping<BINS>& mapping)
-      {
-        if (!parallel) {
-          bin(prims,begin,end,mapping);
-        } else {
-          *this = parallel_reduce(begin,end,blockSize,*this,
-                                  [&](const range<size_t>& r) -> BinInfoT { BinInfoT binner(empty); binner.bin(prims + r.begin(), r.size(), mapping); return binner; },
-                                  [&](const BinInfoT& b0, const BinInfoT& b1) -> BinInfoT { BinInfoT r = b0; r.merge(b1, mapping.size()); return r; });
-        }
-      }
-
-      template<bool parallel>
-      __forceinline void bin_serial_or_parallel(const PrimRef* prims, size_t begin, size_t end, size_t blockSize, const BinMapping<BINS>& mapping, const AffineSpace3fa& space, void* user = nullptr)
-      {
-        if (!parallel) {
-          bin(prims,begin,end,mapping,space,user);
-        } else {
-          *this = parallel_reduce(begin,end,blockSize,*this,
-                                  [&](const range<size_t>& r) -> BinInfoT { BinInfoT binner(empty); binner.bin(prims + r.begin(), r.size(), mapping, space, user); return binner; },
-                                  [&](const BinInfoT& b0, const BinInfoT& b1) -> BinInfoT { BinInfoT r = b0; r.merge(b1, mapping.size()); return r; });
-        }
-      }
-
       /*! merges in other binning information */
       __forceinline void merge (const BinInfoT& other, size_t numBins)
       {
@@ -956,5 +910,53 @@ namespace embree
       vint16   count[3];
     };
 #endif
+  }
+
+  template<typename BinInfoT, typename BinMapping, typename PrimRef>
+  __forceinline void bin_parallel(BinInfoT& binner, const PrimRef* prims, size_t begin, size_t end, size_t blockSize, size_t parallelThreshold, const BinMapping& mapping)
+  {
+    if (likely(end-begin < parallelThreshold)) {
+      binner.bin(prims,begin,end,mapping);
+    } else {
+      binner = parallel_reduce(begin,end,blockSize,binner,
+                              [&](const range<size_t>& r) -> BinInfoT { BinInfoT binner(empty); binner.bin(prims + r.begin(), r.size(), mapping); return binner; },
+                              [&](const BinInfoT& b0, const BinInfoT& b1) -> BinInfoT { BinInfoT r = b0; r.merge(b1, mapping.size()); return r; });
+    }
+  }
+
+  template<typename BinInfoT, typename BinMapping, typename PrimRef>
+  __forceinline void bin_parallel(BinInfoT& binner, const PrimRef* prims, size_t begin, size_t end, size_t blockSize, size_t parallelThreshold, const BinMapping& mapping, const AffineSpace3fa& space, void* user = nullptr)
+  {
+    if (likely(end-begin < parallelThreshold)) {
+      binner.bin(prims,begin,end,mapping,space,user);
+    } else {
+      binner = parallel_reduce(begin,end,blockSize,binner,
+                              [&](const range<size_t>& r) -> BinInfoT { BinInfoT binner(empty); binner.bin(prims + r.begin(), r.size(), mapping, space, user); return binner; },
+                              [&](const BinInfoT& b0, const BinInfoT& b1) -> BinInfoT { BinInfoT r = b0; r.merge(b1, mapping.size()); return r; });
+    }
+  }
+
+  template<bool parallel, typename BinInfoT, typename BinMapping, typename PrimRef>
+  __forceinline void bin_serial_or_parallel(BinInfoT& binner, const PrimRef* prims, size_t begin, size_t end, size_t blockSize, const BinMapping& mapping)
+  {
+    if (!parallel) {
+      binner.bin(prims,begin,end,mapping);
+    } else {
+      binner = parallel_reduce(begin,end,blockSize,binner,
+                              [&](const range<size_t>& r) -> BinInfoT { BinInfoT binner(empty); binner.bin(prims + r.begin(), r.size(), mapping); return binner; },
+                              [&](const BinInfoT& b0, const BinInfoT& b1) -> BinInfoT { BinInfoT r = b0; r.merge(b1, mapping.size()); return r; });
+    }
+  }
+
+  template<bool parallel, typename BinInfoT, typename BinMapping, typename PrimRef>
+  __forceinline void bin_serial_or_parallel(BinInfoT& binner, const PrimRef* prims, size_t begin, size_t end, size_t blockSize, const BinMapping& mapping, const AffineSpace3fa& space, void* user = nullptr)
+  {
+    if (!parallel) {
+      binner.bin(prims,begin,end,mapping,space,user);
+    } else {
+      binner = parallel_reduce(begin,end,blockSize,binner,
+                              [&](const range<size_t>& r) -> BinInfoT { BinInfoT binner(empty); binner.bin(prims + r.begin(), r.size(), mapping, space, user); return binner; },
+                              [&](const BinInfoT& b0, const BinInfoT& b1) -> BinInfoT { BinInfoT r = b0; r.merge(b1, mapping.size()); return r; });
+    }
   }
 }
