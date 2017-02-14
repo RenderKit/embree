@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "bvh_builder_hair.h"
+#include "bvh_builder_hair_old.h"
 #include "../builders/primrefgen.h"
 
 #include "../geometry/bezier1v.h"
@@ -135,7 +136,7 @@ namespace embree
     };
 
 
-    template<int N, typename Primitive>
+     template<int N, typename Primitive>
     struct BVHNHairMBBuilderSAH : public Builder
     {
       typedef BVHN<N> BVH;
@@ -176,14 +177,6 @@ namespace embree
         bvh->alloc.init_estimate(numPrimitives*sizeof(Primitive)*numTimeSegments);
         NodeRef* roots = (NodeRef*) bvh->alloc.threadLocal()->malloc(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
 
-        /* builder settings */
-        BVHNBuilderHair::Settings settings;
-        settings.branchingFactor = N;
-        settings.maxDepth = BVH::maxBuildDepthLeaf;
-        settings.logBlockSize = 0;
-        settings.minLeafSize = 1;
-        settings.maxLeafSize = BVH::maxLeafBlocks;
-        
         /* build BVH for each timestep */
         avector<BBox3fa> bounds(bvh->numTimeSteps);
         size_t num_bvh_primitives = 0;
@@ -193,7 +186,7 @@ namespace embree
           const PrimInfo pinfo = createBezierRefArrayMBlur(t,bvh->numTimeSteps,scene,prims,virtualprogress);
           const LBBox3fa lbbox = HeuristicBinningSAH(prims.begin()).computePrimInfoMB(t,bvh->numTimeSteps,scene,pinfo);
         
-          NodeRef root = BVHNBuilderHair::build<N>
+          NodeRef root = bvh_obb_builder_binned_sah<N>
           (
             [&] () { return bvh->alloc.threadLocal2(); },
 
@@ -232,7 +225,7 @@ namespace embree
               return node;
             },
             progress,
-            prims.data(),pinfo,settings);
+            prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,1,1,BVH::maxLeafBlocks);
 
           roots[t] = root;
           bounds[t+0] = lbbox.bounds0;
