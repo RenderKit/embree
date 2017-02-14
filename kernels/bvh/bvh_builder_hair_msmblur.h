@@ -213,7 +213,7 @@ namespace embree
           float unalignedObjectSAH = inf;
           if (alignedObjectSAH > 0.7f*leafSAH) {
             uspace = unalignedHeuristic.computeAlignedSpaceMB(scene,current.prims); 
-            const SetMB sset = unalignedHeuristic.computePrimInfoMB(scene,current.prims,uspace);
+            const SetMB sset = current.prims.primInfo(recalculatePrimRef,uspace);
             unalignedObjectSplit = unalignedHeuristic.find(sset,0,uspace);    	
             unalignedObjectSAH = 1.3f*unalignedObjectSplit.splitSAH(); // makes unaligned splits more expensive
             bestSAH = min(unalignedObjectSAH,bestSAH);

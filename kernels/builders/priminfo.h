@@ -317,6 +317,27 @@ namespace embree
                                reduce,
                                [&](const LBBox3fa& b0, const LBBox3fa& b1) -> LBBox3fa { return embree::merge(b0, b1); });
       }
+
+      template<typename RecalculatePrimRef>
+        const SetMB primInfo(const RecalculatePrimRef& recalculatePrimRef, const LinearSpace3fa& space) const
+      {
+        auto computePrimInfo = [&](const range<size_t>& r) -> PrimInfoMB
+        {
+          PrimInfoMB pinfo(empty);
+          for (size_t j=r.begin(); j<r.end(); j++)
+          {
+            PrimRefMB& ref = (*prims)[j];
+            PrimRefMB ref1 = recalculatePrimRef(ref,time_range,space);
+            pinfo.add_primref(ref1);
+          };
+          return pinfo;
+        };
+        
+        const PrimInfoMB pinfo = parallel_reduce(object_range.begin(), object_range.end(), PARALLEL_FIND_BLOCK_SIZE, PARALLEL_THRESHOLD, 
+                                                 PrimInfoMB(empty), computePrimInfo, PrimInfoMB::merge2);
+
+        return SetMB(pinfo,prims,object_range,time_range);
+      }
       
     public:
       PrimRefVector prims;

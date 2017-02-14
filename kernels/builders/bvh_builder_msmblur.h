@@ -128,6 +128,17 @@ namespace embree
           const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
           return PrimRefMB (lbounds, tbounds.size(), num_time_segments, geomID, primID);
         }
+
+        __forceinline PrimRefMB operator() (const PrimRefMB& prim, const BBox1f time_range, const LinearSpace3fa& space) const
+        {
+          const unsigned geomID = prim.geomID();
+          const unsigned primID = prim.primID();
+          const Mesh* mesh = scene->get<Mesh>(geomID);
+          const LBBox3fa lbounds = mesh->linearBounds(space, primID, time_range);
+          const unsigned num_time_segments = mesh->numTimeSegments();
+          const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
+          return PrimRefMB (lbounds, tbounds.size(), num_time_segments, geomID, primID);
+        }
         
         __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range) const {
           return scene->get<Mesh>(prim.geomID())->linearBounds(prim.primID(), time_range);

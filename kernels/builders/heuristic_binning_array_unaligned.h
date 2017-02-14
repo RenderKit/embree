@@ -311,30 +311,11 @@ namespace embree
           return frame(axis01).transposed();
         }
 
-        const SetMB computePrimInfoMB(Scene* scene, const SetMB& set, const AffineSpace3fa& space) // FIXME: required
-        {
-          PrimInfoMB ret(empty);
-          for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++)  // FIXME: parallelize
-          {
-            const PrimRefMB& prim = (*set.prims)[i];
-            const size_t geomID = prim.geomID();
-            const size_t primID = prim.primID();
-            const BezierCurves* mesh = (BezierCurves*)scene->get(geomID);
-            const LBBox3fa lbounds = mesh->linearBounds(space, primID, set.time_range);
-            const unsigned num_time_segments = mesh->numTimeSegments();
-            const range<int> tbounds = getTimeSegmentRange(set.time_range, num_time_segments);
-            assert(tbounds.size() > 0);
-            const PrimRefMB prim2(lbounds, tbounds.size(), num_time_segments, geomID, primID);
-            ret.add_primref(prim2);
-          }
-          return SetMB(ret,set.prims,set.object_range,set.time_range);
-        }
-
         /*! finds the best split */
         const Split find(const SetMB& set, const size_t logBlockSize, const LinearSpace3fa& space)
         {
           UserPrimRefData user(scene,set.time_range);
-          ObjectBinner binner(empty); // FIXME: this clear can be optimized away
+          ObjectBinner binner(empty);
           const BinMapping<BINS> mapping(set.centBounds,set.size());
           binner.bin_parallel(set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,mapping,space,&user);
           Split osplit = binner.best(mapping,logBlockSize);
