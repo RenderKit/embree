@@ -29,6 +29,21 @@ namespace embree
   {
     struct BVHNBuilderHair
     {
+      /*! settings for builder */
+      struct Settings
+      {
+        /*! default settings */
+        Settings () 
+        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8) {}
+
+      public:
+        size_t branchingFactor;  //!< branching factor of BVH to build
+        size_t maxDepth;         //!< maximal depth of BVH to build
+        size_t logBlockSize;     //!< log2 of blocksize for SAH heuristic
+        size_t minLeafSize;      //!< minimal size of a leaf
+        size_t maxLeafSize;      //!< maximal size of a leaf
+      };
+
       template<int N,
         typename CreateAllocFunc,
         typename CreateAlignedNodeFunc, 
@@ -36,7 +51,7 @@ namespace embree
         typename CreateLeafFunc, 
         typename ProgressMonitor>
         
-        class BuilderT
+        class BuilderT : private Settings
       {
         ALIGNED_CLASS;
         
@@ -63,16 +78,15 @@ namespace embree
                   const CreateUnalignedNodeFunc& createUnalignedNode, 
                   const CreateLeafFunc& createLeaf,
                   const ProgressMonitor& progressMonitor,
-                  const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, 
-                  const size_t minLeafSize, const size_t maxLeafSize )
-          : createAlloc(createAlloc), 
+                  const Settings settings)
+
+          : Settings(settings),
+          createAlloc(createAlloc), 
           createAlignedNode(createAlignedNode), 
           createUnalignedNode(createUnalignedNode), 
           createLeaf(createLeaf),
           progressMonitor(progressMonitor),
           prims(prims), 
-          branchingFactor(branchingFactor), maxDepth(maxDepth), logBlockSize(logBlockSize), 
-          minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
           alignedHeuristic(prims), unalignedHeuristic(prims), strandHeuristic(prims) {}
         
         /*! entry point into builder */
@@ -311,13 +325,6 @@ namespace embree
         
       private:
         BezierPrim* prims;
-        const size_t branchingFactor;
-        const size_t maxDepth;
-        const size_t logBlockSize;
-        const size_t minLeafSize;
-        const size_t maxLeafSize;
-        
-      private:
         HeuristicBinningSAH alignedHeuristic;
         UnalignedHeuristicBinningSAH unalignedHeuristic;
         HeuristicStrandSplitSAH strandHeuristic;
@@ -337,12 +344,10 @@ namespace embree
                                                 const ProgressMonitor& progressMonitor,
                                                 BezierPrim* prims, 
                                                 const PrimInfo& pinfo,
-                                                const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, 
-                                                const size_t minLeafSize, const size_t maxLeafSize) 
+                                                const Settings settings)
       {
         typedef BuilderT<N,CreateAllocFunc,CreateAlignedNodeFunc,CreateUnalignedNodeFunc,CreateLeafFunc,ProgressMonitor> Builder;
-        Builder builder(prims,createAlloc,createAlignedNode,createUnalignedNode,createLeaf,progressMonitor,
-                        branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
+        Builder builder(prims,createAlloc,createAlignedNode,createUnalignedNode,createLeaf,progressMonitor,settings);
         return builder(pinfo);
       }
     };

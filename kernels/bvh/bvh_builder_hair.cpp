@@ -65,6 +65,14 @@ namespace embree
         prims.resize(numPrimitives);
         const PrimInfo pinfo = createBezierRefArray(scene,prims,virtualprogress);
         
+        /* builder settings */
+        BVHNBuilderHair::Settings settings;
+        settings.branchingFactor = N;
+        settings.maxDepth = BVH::maxBuildDepthLeaf;
+        settings.logBlockSize = 0;
+        settings.minLeafSize = 1;
+        settings.maxLeafSize = BVH::maxLeafBlocks;
+
         /* build hierarchy */
         typename BVH::NodeRef root = BVHNBuilderHair::build<N>
           (
@@ -106,7 +114,7 @@ namespace embree
               return node;
             },
             progress,
-            prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,1,1,BVH::maxLeafBlocks);
+            prims.data(),pinfo,settings);
         
         bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
         
@@ -168,6 +176,14 @@ namespace embree
         bvh->alloc.init_estimate(numPrimitives*sizeof(Primitive)*numTimeSegments);
         NodeRef* roots = (NodeRef*) bvh->alloc.threadLocal()->malloc(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
 
+        /* builder settings */
+        BVHNBuilderHair::Settings settings;
+        settings.branchingFactor = N;
+        settings.maxDepth = BVH::maxBuildDepthLeaf;
+        settings.logBlockSize = 0;
+        settings.minLeafSize = 1;
+        settings.maxLeafSize = BVH::maxLeafBlocks;
+        
         /* build BVH for each timestep */
         avector<BBox3fa> bounds(bvh->numTimeSteps);
         size_t num_bvh_primitives = 0;
@@ -216,7 +232,7 @@ namespace embree
               return node;
             },
             progress,
-            prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,1,1,BVH::maxLeafBlocks);
+            prims.data(),pinfo,settings);
 
           roots[t] = root;
           bounds[t+0] = lbbox.bounds0;
