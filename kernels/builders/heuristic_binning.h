@@ -60,6 +60,8 @@ namespace embree
         {
           const vint4 i = floori((vfloat4(p)-ofs)*scale);
 #if 1
+          if (!(i[2] >= 0 && (size_t)i[2] < num))
+            PRINT(i);
           assert(i[0] >= 0 && (size_t)i[0] < num); 
           assert(i[1] >= 0 && (size_t)i[1] < num);
           assert(i[2] >= 0 && (size_t)i[2] < num);

@@ -336,7 +336,6 @@ namespace embree
         refs.resize(nextRef);
 #if SAH_OPEN_MERGE_BUILD == 1
 
-        PRINT(refs.size());
         prims.resize(0);
         mvector<BuildRef> new_refs(scene->device);
         PrimInfo ppinfo(empty);
@@ -346,7 +345,6 @@ namespace embree
           new_refs.push_back(refs[i]);
         }
         open_merge_build_sequential(new_refs,ppinfo);
-        PRINT(prims.size());
 
         PrimInfo pinfo(empty);
         for (size_t i=0;i<prims.size();i++) 
