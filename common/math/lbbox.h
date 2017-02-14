@@ -99,7 +99,6 @@ namespace embree
 
     __forceinline float expectedApproxHalfArea() const {
       return 0.5f*(halfArea(bounds0) + halfArea(bounds1));
-      //return expectedHalfArea();
     }
 
     /* calculates bounds for [0,1] time range from bounds in dt time range */
