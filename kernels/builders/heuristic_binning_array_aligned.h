@@ -73,7 +73,7 @@ namespace embree
         {
           Binner binner(empty);
           const BinMapping<BINS> mapping(pinfo);
-          binner.template bin_serial_or_parallel<parallel>(prims,set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,mapping);
+          bin_serial_or_parallel<parallel>(binner,prims,set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,mapping);
           return binner.best(mapping,logBlockSize);
         }
 
@@ -204,7 +204,7 @@ namespace embree
         {
           ObjectBinner binner(empty);
           const BinMapping<BINS> mapping(set.centBounds,set.size());
-          binner.bin_parallel(set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,mapping);
+          bin_parallel(binner,set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,mapping);
           Split osplit = binner.best(mapping,logBlockSize);
           osplit.sah *= set.time_range.size();
           if (!osplit.valid()) osplit.data = Split::SPLIT_FALLBACK; // use fallback split
