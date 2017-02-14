@@ -299,17 +299,8 @@ namespace embree
             
             [&] () { return bvh->alloc.threadLocal2(); },
             
-            [&] (const BVHMBuilderHairMSMBlur::BuildRecord* children, const size_t numChildren, 
-                 HeuristicBinning alignedHeuristic, 
-                 FastAllocator::ThreadLocal2* alloc) -> NodeRef
-            {
-              AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),BVH::byteNodeAlignment); node->clear();
-              return BVH::encodeNode(node);
-            },
-
-            [&] (NodeRef node, size_t i, NodeRef child, const LBBox3fa& cbounds, const BBox1f dt) -> void {
-              node.alignedNodeMB()->set(i,std::make_tuple(child,cbounds,dt));
-            },
+            typename BVH::AlignedNodeMB::Create(),
+            typename BVH::AlignedNodeMB::Update(),
             
             [&] (const BVHMBuilderHairMSMBlur::BuildRecord* children, const size_t numChildren, 
                  UnalignedHeuristicBinning unalignedHeuristic, 

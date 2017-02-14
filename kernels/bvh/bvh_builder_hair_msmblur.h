@@ -195,7 +195,15 @@ namespace embree
           } while (children.size() < branchingFactor);
           
           /* create node */
-          return createAlignedNode(&children[0],children.size(),alignedHeuristic,alloc);
+          NodeRef node = createAlignedNode(alloc);
+
+          for (size_t i=0; i<children.size(); i++) {
+            const LBBox3fa cbounds = children[i].prims.linearBounds(recalculatePrimRef);
+            const NodeRef child = createLargeLeaf(children[i],alloc);
+            updateAlignedNode4D(node,i,child,cbounds,children[i].prims.time_range);
+          }
+
+          return node;
         }
         
         /*! performs split */
@@ -346,7 +354,7 @@ namespace embree
           /* create aligned node */
           else if (aligned) 
           {
-            NodeRef node = createAlignedNode(&children[0],children.size(),alignedHeuristic,alloc);
+            NodeRef node = createAlignedNode(alloc);
             
             LBBox3fa cbounds[MAX_BRANCHING_FACTOR];
             for (size_t i=0; i<children.size(); i++)
@@ -358,7 +366,7 @@ namespace embree
               parallel_for(size_t(0), children.size(), [&] (const range<size_t>& r) {
                   for (size_t i=r.begin(); i<r.end(); i++) {
                     const NodeRef child = recurse(children[i],nullptr,true);
-                    updateAlignedNode(node,i,child,cbounds[i],children[i].prims.time_range); 
+                    updateAlignedNode(node,i,std::make_tuple(child,cbounds[i],children[i].prims.time_range)); 
                     _mm_mfence(); // to allow non-temporal stores during build
                   }                
                 });
@@ -367,7 +375,7 @@ namespace embree
             else {
               for (size_t i=0; i<children.size(); i++) {
                 const NodeRef child = recurse(children[i],alloc,false);
-                updateAlignedNode(node,i,child,cbounds[i],children[i].prims.time_range);
+                updateAlignedNode(node,i,std::make_tuple(child,cbounds[i],children[i].prims.time_range));
               }
             }
             return node;

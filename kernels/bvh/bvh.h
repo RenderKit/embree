@@ -579,6 +579,22 @@ namespace embree
     {
       using BaseNode::children;
 
+      struct Create
+      {
+        __forceinline NodeRef operator() (FastAllocator::ThreadLocal2* alloc) const
+        {
+          AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),byteNodeAlignment); node->clear();
+          return BVHN::encodeNode(node);
+        }
+      };
+
+      struct Update
+      {
+        __forceinline void operator() (NodeRef node, size_t i, const std::tuple<NodeRef,LBBox3fa,BBox1f>& child) const {
+          node.alignedNodeMB()->set(i,child);
+        }
+      };
+
       /*! Clears the node. */
       __forceinline void clear()  {
         lower_x = lower_y = lower_z = vfloat<N>(nan);
