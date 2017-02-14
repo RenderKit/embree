@@ -73,6 +73,18 @@ namespace embree
           return Vec3ia(floori((vfloat4(p)-ofs)*scale));
         }
 
+        /*! faster but unsafe binning */
+        template<typename PrimRef>
+        __forceinline Vec3ia bin_unsafe(const PrimRef& p) const {
+          return bin_unsafe(p.binCenter());
+        }
+
+        /*! faster but unsafe binning */
+        template<typename PrimRef>
+        __forceinline Vec3ia bin_unsafe(const PrimRef& p, const LinearSpace3fa& space, void* user = nullptr) const {
+          return bin_unsafe(p.binCenter(space,user));
+        }
+
         template<typename PrimRef>
         __forceinline bool bin_unsafe(const PrimRef& ref,
                                       const vint4&   vSplitPos,
@@ -104,8 +116,8 @@ namespace embree
         __forceinline BinSplit()
           : sah(inf), dim(-1), pos(0), data(0) {}
 
-        __forceinline BinSplit(float sah, unsigned data)
-          : sah(sah), data(data) {}
+        __forceinline BinSplit(float sah, unsigned data, int dim = 0, float fpos = 0)
+          : sah(sah), dim(dim), fpos(fpos), data(data) {}
         
         /*! constructs specified split */
         __forceinline BinSplit(float sah, int dim, int pos, const BinMapping<BINS>& mapping)
@@ -125,7 +137,7 @@ namespace embree
       public:
         float sah;                //!< SAH cost of the split
         int dim;                  //!< split dimension
-        int pos;                  //!< bin index for splitting
+        union { int pos; float fpos; };                  //!< bin index for splitting
         unsigned int data;        //!< extra optional split data
         BinMapping<BINS> mapping; //!< mapping into bins
       };
@@ -201,19 +213,19 @@ namespace embree
           const unsigned int b00 = extract<0>(bin0); bounds(b00,0).extend(prim0); 
           const unsigned int b01 = extract<1>(bin0); bounds(b01,1).extend(prim0); 
           const unsigned int b02 = extract<2>(bin0); bounds(b02,2).extend(prim0); 
-
-          counts(b00,0)++;
-          counts(b01,1)++;
-          counts(b02,2)++;
+          const unsigned int s0 = prims[i+0].size();
+          counts(b00,0)+=s0;
+          counts(b01,1)+=s0;
+          counts(b02,2)+=s0;
 
           /*! increase bounds of bins for odd primitive */
           const unsigned int b10 = extract<0>(bin1);  bounds(b10,0).extend(prim1); 
           const unsigned int b11 = extract<1>(bin1);  bounds(b11,1).extend(prim1); 
           const unsigned int b12 = extract<2>(bin1);  bounds(b12,2).extend(prim1); 
-
-          counts(b10,0)++;
-          counts(b11,1)++;
-          counts(b12,2)++;
+          const unsigned int s1 = prims[i+1].size();
+          counts(b10,0)+=s1;
+          counts(b11,1)+=s1;
+          counts(b12,2)+=s1;
         }
 	/*! for uneven number of primitives */
 	if (i < N)
@@ -224,14 +236,15 @@ namespace embree
           const vint4 bin0 = (vint4)mapping.bin(center0); 
           
           /*! increase bounds of bins */
-          const int b00 = extract<0>(bin0); counts(b00,0)++; bounds(b00,0).extend(prim0);
-          const int b01 = extract<1>(bin0); counts(b01,1)++; bounds(b01,1).extend(prim0);
-          const int b02 = extract<2>(bin0); counts(b02,2)++; bounds(b02,2).extend(prim0);
+          const unsigned int s0 = prims[i].size();
+          const int b00 = extract<0>(bin0); counts(b00,0)+=s0; bounds(b00,0).extend(prim0);
+          const int b01 = extract<1>(bin0); counts(b01,1)+=s0; bounds(b01,1).extend(prim0);
+          const int b02 = extract<2>(bin0); counts(b02,2)+=s0; bounds(b02,2).extend(prim0);
         }
       }
 
       /*! bins an array of primitives */
-      __forceinline void bin (const PrimRef* prims, size_t N, const BinMapping<BINS>& mapping, const AffineSpace3fa& space)
+      __forceinline void bin (const PrimRef* prims, size_t N, const BinMapping<BINS>& mapping, const AffineSpace3fa& space, void* user = nullptr)
       {
 	if (N == 0) return;
         
@@ -239,33 +252,36 @@ namespace embree
 	for (i=0; i<N-1; i+=2)
         {
           /*! map even and odd primitive to bin */
-          BBox prim0; Vec3fa center0; prims[i+0].binBoundsAndCenter(prim0,center0,space); 
+          BBox prim0; Vec3fa center0; prims[i+0].binBoundsAndCenter(prim0,center0,space,user); 
           const vint4 bin0 = (vint4)mapping.bin(center0); 
-          BBox prim1; Vec3fa center1; prims[i+1].binBoundsAndCenter(prim1,center1,space); 
+          BBox prim1; Vec3fa center1; prims[i+1].binBoundsAndCenter(prim1,center1,space,user); 
           const vint4 bin1 = (vint4)mapping.bin(center1); 
           
           /*! increase bounds for bins for even primitive */
-          const int b00 = extract<0>(bin0); counts(b00,0)++; bounds(b00,0).extend(prim0);
-          const int b01 = extract<1>(bin0); counts(b01,1)++; bounds(b01,1).extend(prim0);
-          const int b02 = extract<2>(bin0); counts(b02,2)++; bounds(b02,2).extend(prim0);
+          const unsigned int s0 = prims[i+0].size();
+          const int b00 = extract<0>(bin0); counts(b00,0)+=s0; bounds(b00,0).extend(prim0);
+          const int b01 = extract<1>(bin0); counts(b01,1)+=s0; bounds(b01,1).extend(prim0);
+          const int b02 = extract<2>(bin0); counts(b02,2)+=s0; bounds(b02,2).extend(prim0);
           
           /*! increase bounds of bins for odd primitive */
-          const int b10 = extract<0>(bin1); counts(b10,0)++; bounds(b10,0).extend(prim1);
-          const int b11 = extract<1>(bin1); counts(b11,1)++; bounds(b11,1).extend(prim1);
-          const int b12 = extract<2>(bin1); counts(b12,2)++; bounds(b12,2).extend(prim1);
+          const unsigned int s1 = prims[i+1].size();
+          const int b10 = extract<0>(bin1); counts(b10,0)+=s1; bounds(b10,0).extend(prim1);
+          const int b11 = extract<1>(bin1); counts(b11,1)+=s1; bounds(b11,1).extend(prim1);
+          const int b12 = extract<2>(bin1); counts(b12,2)+=s1; bounds(b12,2).extend(prim1);
         }
 	
 	/*! for uneven number of primitives */
 	if (i < N)
         {
           /*! map primitive to bin */
-          BBox prim0; Vec3fa center0; prims[i+0].binBoundsAndCenter(prim0,center0,space); 
+          BBox prim0; Vec3fa center0; prims[i+0].binBoundsAndCenter(prim0,center0,space,user); 
           const vint4 bin0 = (vint4)mapping.bin(center0); 
           
           /*! increase bounds of bins */
-          const int b00 = extract<0>(bin0); counts(b00,0)++; bounds(b00,0).extend(prim0);
-          const int b01 = extract<1>(bin0); counts(b01,1)++; bounds(b01,1).extend(prim0);
-          const int b02 = extract<2>(bin0); counts(b02,2)++; bounds(b02,2).extend(prim0);
+          const unsigned int s0 = prims[i+0].size();
+          const int b00 = extract<0>(bin0); counts(b00,0)+=s0; bounds(b00,0).extend(prim0);
+          const int b01 = extract<1>(bin0); counts(b01,1)+=s0; bounds(b01,1).extend(prim0);
+          const int b02 = extract<2>(bin0); counts(b02,2)+=s0; bounds(b02,2).extend(prim0);
         }
       }
       
@@ -273,9 +289,55 @@ namespace embree
 	bin(prims+begin,end-begin,mapping);
       }
 
-      __forceinline void bin(const PrimRef* prims, size_t begin, size_t end, const BinMapping<BINS>& mapping, const AffineSpace3fa& space) {
-	bin(prims+begin,end-begin,mapping,space);
+      __forceinline void bin(const PrimRef* prims, size_t begin, size_t end, const BinMapping<BINS>& mapping, const AffineSpace3fa& space, void* user = nullptr) {
+	bin(prims+begin,end-begin,mapping,space,user);
       }   
+
+      __forceinline void bin_parallel(const PrimRef* prims, size_t begin, size_t end, size_t blockSize, size_t parallelThreshold, const BinMapping<BINS>& mapping) 
+      {
+        if (likely(end-begin < parallelThreshold)) {
+          bin(prims,begin,end,mapping);
+        } else {
+          *this = parallel_reduce(begin,end,blockSize,*this,
+                                  [&](const range<size_t>& r) -> BinInfoT { BinInfoT binner(empty); binner.bin(prims + r.begin(), r.size(), mapping); return binner; },
+                                  [&](const BinInfoT& b0, const BinInfoT& b1) -> BinInfoT { BinInfoT r = b0; r.merge(b1, mapping.size()); return r; });
+        }
+      }
+
+      __forceinline void bin_parallel(const PrimRef* prims, size_t begin, size_t end, size_t blockSize, size_t parallelThreshold, const BinMapping<BINS>& mapping, const AffineSpace3fa& space, void* user = nullptr)
+      {
+        if (likely(end-begin < parallelThreshold)) {
+          bin(prims,begin,end,mapping,space,user);
+        } else {
+          *this = parallel_reduce(begin,end,blockSize,*this,
+                                  [&](const range<size_t>& r) -> BinInfoT { BinInfoT binner(empty); binner.bin(prims + r.begin(), r.size(), mapping, space, user); return binner; },
+                                  [&](const BinInfoT& b0, const BinInfoT& b1) -> BinInfoT { BinInfoT r = b0; r.merge(b1, mapping.size()); return r; });
+        }
+      }
+
+      template<bool parallel>
+      __forceinline void bin_serial_or_parallel(const PrimRef* prims, size_t begin, size_t end, size_t blockSize, const BinMapping<BINS>& mapping)
+      {
+        if (!parallel) {
+          bin(prims,begin,end,mapping);
+        } else {
+          *this = parallel_reduce(begin,end,blockSize,*this,
+                                  [&](const range<size_t>& r) -> BinInfoT { BinInfoT binner(empty); binner.bin(prims + r.begin(), r.size(), mapping); return binner; },
+                                  [&](const BinInfoT& b0, const BinInfoT& b1) -> BinInfoT { BinInfoT r = b0; r.merge(b1, mapping.size()); return r; });
+        }
+      }
+
+      template<bool parallel>
+      __forceinline void bin_serial_or_parallel(const PrimRef* prims, size_t begin, size_t end, size_t blockSize, const BinMapping<BINS>& mapping, const AffineSpace3fa& space, void* user = nullptr)
+      {
+        if (!parallel) {
+          bin(prims,begin,end,mapping,space,user);
+        } else {
+          *this = parallel_reduce(begin,end,blockSize,*this,
+                                  [&](const range<size_t>& r) -> BinInfoT { BinInfoT binner(empty); binner.bin(prims + r.begin(), r.size(), mapping, space, user); return binner; },
+                                  [&](const BinInfoT& b0, const BinInfoT& b1) -> BinInfoT { BinInfoT r = b0; r.merge(b1, mapping.size()); return r; });
+        }
+      }
 
       /*! merges in other binning information */
       __forceinline void merge (const BinInfoT& other, size_t numBins)

@@ -147,7 +147,7 @@ namespace embree
         bestSAH = min(alignedObjectSAH,bestSAH);
         
         /* perform standard binning in unaligned space */
-        UnalignedHeuristicArrayBinningSAH<BezierPrim>::Split unalignedObjectSplit;
+        UnalignedHeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS>::Split unalignedObjectSplit;
         LinearSpace3fa uspace;
         float unalignedObjectSAH = inf;
         if (alignedObjectSAH > 0.7f*leafSAH) {
@@ -311,7 +311,7 @@ namespace embree
   
     private:
       HeuristicBinningSAH alignedHeuristic;
-      UnalignedHeuristicArrayBinningSAH<BezierPrim> unalignedHeuristic;
+      UnalignedHeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> unalignedHeuristic;
       HeuristicStrandSplit strandHeuristic;
     };
 

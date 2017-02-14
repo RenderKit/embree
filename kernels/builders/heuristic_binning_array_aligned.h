@@ -21,7 +21,7 @@
 namespace embree
 {
   namespace isa
-  { 
+  {
     /*! Performs standard object binning */
     template<typename PrimRef, size_t BINS>
       struct HeuristicArrayBinningSAH
@@ -41,7 +41,7 @@ namespace embree
 #endif
         __forceinline HeuristicArrayBinningSAH ()
           : prims(nullptr) {}
-        
+
         /*! remember prim array */
         __forceinline HeuristicArrayBinningSAH (PrimRef* prims)
           : prims(prims) {}
@@ -60,76 +60,61 @@ namespace embree
         }
 
         /*! finds the best split */
-        const Split find(const PrimInfo& pinfo, const size_t logBlockSize)
+        __noinline const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
-          Set set(pinfo.begin,pinfo.end);
-          if (likely(pinfo.size() < PARALLEL_THRESHOLD)) return sequential_find(set,pinfo,logBlockSize);
-          else                                           return   parallel_find(set,pinfo,logBlockSize);
-        }
-
-        /*! finds the best split */
-        const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
-        {
-          if (likely(pinfo.size() < PARALLEL_THRESHOLD)) return sequential_find(set,pinfo,logBlockSize);
-          else                                           return   parallel_find(set,pinfo,logBlockSize);
-        }
-        
-        /*! finds the best split */
-        const Split sequential_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
-        {
-          Binner binner(empty); // FIXME: this clear can be optimized away
-          const BinMapping<BINS> mapping(pinfo);
-          binner.bin(prims,set.begin(),set.end(),mapping);
-          return binner.best(mapping,logBlockSize);
-        }
-        
-        /*! finds the best split */
-        __noinline const Split parallel_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
-        {
-          Binner binner(empty);
-          const BinMapping<BINS> mapping(pinfo);
-          const BinMapping<BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
-          binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
-			  [&](const range<size_t>& r) -> Binner { Binner binner(empty); binner.bin(prims + r.begin(), r.size(), _mapping); return binner; },
-			  [&](const Binner& b0, const Binner& b1) -> Binner { Binner r = b0; r.merge(b1, _mapping.size()); return r; });
-		  return binner.best(mapping,logBlockSize);
-        }
-        
-        /*! array partitioning */
-        void split(const Split& spliti, const PrimInfo& pinfo, PrimInfo& left, PrimInfo& right) 
-        {
-          Set lset,rset;
-          Set set(pinfo.begin,pinfo.end);
-          if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
-            split_helper<false>(spliti,pinfo,set,left,lset,right,rset);
+          if (likely(pinfo.size() < PARALLEL_THRESHOLD))
+            return find_template<false>(set,pinfo,logBlockSize);
           else
-            split_helper<true>(spliti,pinfo,set,left,lset,right,rset);
-        }
-        
-        /*! array partitioning */
-        __forceinline void split(const Split& split, const PrimInfo& pinfo, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
-        {
-          if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
-            split_helper<false>(split,pinfo,set,left,lset,right,rset);
-          else                                
-            split_helper<true>(split,pinfo,set,left,lset,right,rset);
+            return find_template<true>(set,pinfo,logBlockSize);
         }
 
         template<bool parallel>
-        __forceinline void split_helper(const Split& split, const PrimInfo& pinfo, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        __forceinline const Split find_template(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        {
+          Binner binner(empty);
+          const BinMapping<BINS> mapping(pinfo);
+          binner.template bin_serial_or_parallel<parallel>(prims,set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,mapping);
+          return binner.best(mapping,logBlockSize);
+        }
+
+        __forceinline const Split find(const PrimInfo& pinfo, const size_t logBlockSize)
+        {
+          Set set(pinfo.begin,pinfo.end);
+          return find(set,pinfo,logBlockSize);
+        }
+
+        /*! array partitioning */
+        void split(const Split& spliti, const PrimInfo& pinfo, PrimInfo& left, PrimInfo& right)
+        {
+          Set lset,rset;
+          Set set(pinfo.begin,pinfo.end);
+          split(spliti,pinfo,set,left,lset,right,rset);
+        }
+
+        /*! array partitioning */
+        __forceinline void split(const Split& split, const PrimInfo& pinfo, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
+        {
+          if (likely(pinfo.size() < PARALLEL_THRESHOLD))
+            split_template<false>(split,pinfo,set,left,lset,right,rset);
+          else
+            split_template<true>(split,pinfo,set,left,lset,right,rset);
+        }
+
+        template<bool parallel>
+        __forceinline void split_template(const Split& split, const PrimInfo& pinfo, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
         {
           if (!split.valid()) {
             deterministic_order(set);
             return splitFallback(set,left,lset,right,rset);
           }
-          
+
           const size_t begin = set.begin();
           const size_t end   = set.end();
           CentGeomBBox3fa local_left(empty);
           CentGeomBBox3fa local_right(empty);
           const unsigned int splitPos = split.pos;
           const unsigned int splitDim = split.dim;
-          const unsigned int splitDimMask = (unsigned int)1 << splitDim; 
+          const unsigned int splitDimMask = (unsigned int)1 << splitDim;
 
 #if defined(__AVX512F__)
           const vint16 vSplitPos(splitPos);
@@ -159,46 +144,46 @@ namespace embree
           assert(area(right.geomBounds) >= 0.0f);
         }
 
-        void deterministic_order(const Set& set) 
+        void deterministic_order(const Set& set)
         {
           /* required as parallel partition destroys original primitive order */
           std::sort(&prims[set.begin()],&prims[set.end()]);
         }
 
-         void deterministic_order(const PrimInfo& pinfo) 
+        void deterministic_order(const PrimInfo& pinfo)
         {
           /* required as parallel partition destroys original primitive order */
           std::sort(&prims[pinfo.begin],&prims[pinfo.end]);
         }
-        
+
         /*! array partitioning */
-        void splitFallback(const PrimInfo& pinfo, PrimInfo& left, PrimInfo& right) 
+        void splitFallback(const PrimInfo& pinfo, PrimInfo& left, PrimInfo& right)
         {
           Set lset,rset;
           Set set(pinfo.begin,pinfo.end);
           splitFallback(set,left,lset,right,rset);
         }
-        
+
         void splitFallback(const Set& set, PrimInfo& linfo, Set& lset, PrimInfo& rinfo, Set& rset)
         {
           const size_t begin = set.begin();
           const size_t end   = set.end();
           const size_t center = (begin + end)/2;
-          
+
           CentGeomBBox3fa left; left.reset();
           for (size_t i=begin; i<center; i++)
             left.extend(prims[i].bounds());
           new (&linfo) PrimInfo(begin,center,left.geomBounds,left.centBounds);
-          
+
           CentGeomBBox3fa right; right.reset();
           for (size_t i=center; i<end; i++)
-            right.extend(prims[i].bounds());	
+            right.extend(prims[i].bounds());
           new (&rinfo) PrimInfo(center,end,right.geomBounds,right.centBounds);
-          
+
           new (&lset) range<size_t>(begin,center);
           new (&rset) range<size_t>(center,end);
         }
-        
+
       private:
         PrimRef* const prims;
       };
