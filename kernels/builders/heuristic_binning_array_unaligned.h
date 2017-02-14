@@ -277,34 +277,30 @@ namespace embree
         {
           /*! find first curve that defines valid directions */
           Vec3fa axis0(0,0,1);
-          Vec3fa axis1(0,0,1);
 
           for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++)
           {
             const PrimRefMB& prim = (*set.prims)[i];
             const size_t geomID = prim.geomID();
             const size_t primID = prim.primID();
-            const BezierCurves* curves = scene->getBezierCurves(geomID);
-            const int curve = curves->curve(primID);
+            const BezierCurves* mesh = scene->getBezierCurves(geomID);
+
+            const unsigned num_time_segments = mesh->numTimeSegments();
+            const range<int> tbounds = getTimeSegmentRange(set.time_range, num_time_segments);
+            if (tbounds.size() == 0) continue;
+
+            const size_t t = (tbounds.begin()+tbounds.end())/2;
+            const int curve = mesh->curve(primID);
+            const Vec3fa a0 = mesh->vertex(curve+0,t);
+            const Vec3fa a3 = mesh->vertex(curve+3,t);
             
-            const Vec3fa a0 = curves->vertex(curve+0,0);
-            const Vec3fa a3 = curves->vertex(curve+3,0);
-            
-            const Vec3fa b0 = curves->vertex(curve+0,1);
-            const Vec3fa b3 = curves->vertex(curve+3,1);
-            
-            if (sqr_length(a3 - a0) > 1E-18f && sqr_length(b3 - b0) > 1E-18f)
-            {
+            if (sqr_length(a3 - a0) > 1E-18f) {
               axis0 = normalize(a3 - a0);
-              axis1 = normalize(b3 - b0);
               break;
             }
           }
 
-          Vec3fa axis01 = axis0+axis1;
-          if (sqr_length(axis01) < 1E-18f) axis01 = axis0;
-          axis01 = normalize(axis01);
-          return frame(axis01).transposed();
+          return frame(axis0).transposed();
         }
 
         /*! finds the best split */
