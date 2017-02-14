@@ -84,10 +84,6 @@ namespace embree
         static const size_t MIN_LARGE_LEAF_LEVELS = 8;         //!< create balanced tree if we are that many levels before the maximal tree depth
         static const size_t SINGLE_THREADED_THRESHOLD = 4096;  //!< threshold to switch to single threaded build
         
-        static const size_t travCostAligned = 1;
-        static const size_t travCostUnaligned = 5;
-        static const size_t intCost = 6;
-        
         typedef FastAllocator::ThreadLocal2* Allocator;
         typedef LocalChildListT<BuildRecord,MAX_BRANCHING_FACTOR> LocalChildList;
         
@@ -121,16 +117,7 @@ namespace embree
           progressMonitor(progressMonitor),
           unalignedHeuristic(scene),
           temporalSplitHeuristic(scene->device,recalculatePrimRef) {}
-        
-        /*! entry point into builder */
-        std::pair<NodeRef,LBBox3fa> operator() (mvector<PrimRefMB>& prims, const PrimInfoMB& pinfo) 
-        {
-          BuildRecord record(SetMB(pinfo,&prims),1);
-          auto root = recurse(record,nullptr,true);
-          _mm_mfence(); // to allow non-temporal stores during build
-          return root;
-        }
-        
+          
       private:
         
         /*! performs some split if SAH approaches fail */
@@ -213,11 +200,11 @@ namespace embree
         {
           /* variable to track the SAH of the best splitting approach */
           float bestSAH = inf;
-          const float leafSAH = intCost*current.prims.leafSAH();
+          const float leafSAH = current.prims.leafSAH();
           
           /* perform standard binning in aligned space */
           HeuristicBinning::Split alignedObjectSplit = alignedHeuristic.find(current.prims,0);
-          float alignedObjectSAH = travCostAligned*current.prims.halfArea() + intCost*alignedObjectSplit.splitSAH();
+          float alignedObjectSAH = alignedObjectSplit.splitSAH();
           bestSAH = min(alignedObjectSAH,bestSAH);
           
           /* perform standard binning in unaligned space */
@@ -228,7 +215,7 @@ namespace embree
             uspace = unalignedHeuristic.computeAlignedSpaceMB(scene,current.prims); 
             const SetMB sset = unalignedHeuristic.computePrimInfoMB(scene,current.prims,uspace);
             unalignedObjectSplit = unalignedHeuristic.find(sset,0,uspace);    	
-            unalignedObjectSAH = travCostUnaligned*current.prims.halfArea() + intCost*unalignedObjectSplit.splitSAH();
+            unalignedObjectSAH = 1.3f*unalignedObjectSplit.splitSAH();
             bestSAH = min(unalignedObjectSAH,bestSAH);
           }
           
@@ -238,7 +225,7 @@ namespace embree
           if (bestSAH > 0.5f*leafSAH) {
             if (current.prims.time_range.size() > 1.01f/float(current.prims.max_num_time_segments)) {
               temporal_split = temporalSplitHeuristic.find(current.prims, 0);
-              temporal_split_sah = travCostAligned*current.prims.halfArea() + intCost*temporal_split.splitSAH();
+              temporal_split_sah = temporal_split.splitSAH();
               bestSAH = min(temporal_split_sah,bestSAH);
             }
           }
@@ -417,7 +404,18 @@ namespace embree
             return std::make_pair(node,bounds);
           }
         }
-        
+
+      public:
+
+        /*! entry point into builder */
+        std::pair<NodeRef,LBBox3fa> operator() (mvector<PrimRefMB>& prims, const PrimInfoMB& pinfo) 
+        {
+          BuildRecord record(SetMB(pinfo,&prims),1);
+          auto root = recurse(record,nullptr,true);
+          _mm_mfence(); // to allow non-temporal stores during build
+          return root;
+        }
+      
       private:      
         Scene* scene;
         const RecalculatePrimRef& recalculatePrimRef;
