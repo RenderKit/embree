@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "bvh_builder_hair.h"
-#include "bvh_builder_hair_msmblur.h"
+#include "../builders/bvh_builder_msmblur_hair.h"
 #include "../builders/primrefgen.h"
 
 #include "../geometry/bezier1v.h"
@@ -200,7 +200,7 @@ namespace embree
               {
                 const AffineSpace3fa space = unalignedHeuristic.computeAlignedSpaceMB(scene,children[i]); 
                 UnalignedHeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS>::PrimInfoMB pinfo = unalignedHeuristic.computePrimInfoMB(t,bvh->numTimeSteps,scene,children[i],space);
-                node->set(i,space,pinfo.s0t0,pinfo.s1t1); // FIXME: do we have to globalize these bounds?
+                node->set(i,space,pinfo.s0t0,pinfo.s1t1);
               }
               return node;
             },
