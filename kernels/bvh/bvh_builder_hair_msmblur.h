@@ -162,7 +162,7 @@ namespace embree
           
           /* create leaf for few primitives */
           if (current.size() <= maxLeafSize)
-            return createLeaf(current,alloc);
+            return createLeaf(current.prims,alloc);
           
           /* fill all children by always splitting the largest one */
           LocalChildList children(current);

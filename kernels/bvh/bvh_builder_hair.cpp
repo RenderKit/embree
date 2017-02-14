@@ -291,32 +291,31 @@ namespace embree
         settings.minLeafSize = 1;
         settings.maxLeafSize = BVH::maxLeafBlocks;
 
+        auto createLeaf = [&] (const SetMB& prims, FastAllocator::ThreadLocal2* alloc) -> NodeRef
+          {
+            size_t items = prims.object_range.size();
+            size_t start = prims.object_range.begin();
+            Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive));
+            NodeRef node = bvh->encodeLeaf((char*)accel,items);
+            for (size_t i=0; i<items; i++) {
+              accel[i].fill(prims.prims->data(),start,prims.object_range.end(),bvh->scene);
+            }
+            return node;
+          };
+
         /* build hierarchy */
         typename BVH::NodeRef root = BVHMBuilderHairMSMBlur::build<NodeRef>
           (
             scene, prims0, pinfo,
             recalculatePrimRef,
-            
-            [&] () { return bvh->alloc.threadLocal2(); },
-            
+            typename BVH::CreateAlloc(bvh),
             typename BVH::AlignedNodeMB::Create(),
             typename BVH::AlignedNodeMB::Update(),
             typename BVH::UnalignedNodeMB::Create(),
             typename BVH::UnalignedNodeMB::Update(),
             typename BVH::AlignedNodeMB4D::Create(),
             typename BVH::AlignedNodeMB4D::Update(),
-
-            [&] (const BVHMBuilderHairMSMBlur::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> NodeRef
-            {
-              size_t items = current.prims.object_range.size();
-              size_t start = current.prims.object_range.begin();
-              Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive));
-              NodeRef node = bvh->encodeLeaf((char*)accel,items);
-              for (size_t i=0; i<items; i++) {
-                accel[i].fill(current.prims.prims->data(),start,current.prims.object_range.end(),bvh->scene);
-              }
-              return node;
-            },
+            createLeaf,
             progress,
             settings);
         
