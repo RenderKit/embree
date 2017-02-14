@@ -84,8 +84,8 @@ namespace embree
           };
           
         /* build hierarchy */
-        typename BVH::NodeRef root = BVHNBuilderHair::build<N>
-          (tpename BVH::CreateAlloc(bvh),
+        typename BVH::NodeRef root = BVHNBuilderHair::build<NodeRef>
+          (typename BVH::CreateAlloc(bvh),
            typename BVH::AlignedNode::Create(),
            typename BVH::AlignedNode::Set(),
            typename BVH::UnalignedNode::Create(),

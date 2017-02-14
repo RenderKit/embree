@@ -44,7 +44,7 @@ namespace embree
         size_t maxLeafSize;      //!< maximal size of a leaf
       };
 
-      template<int N,
+      template<typename NodeRef,
         typename CreateAllocFunc,
         typename CreateAlignedNodeFunc, 
         typename SetAlignedNodeFunc,
@@ -57,8 +57,6 @@ namespace embree
       {
         ALIGNED_CLASS;
         
-        typedef BVHN<N> BVH;
-        typedef typename BVH::NodeRef NodeRef;
         typedef FastAllocator::ThreadLocal2* Allocator;
         typedef HeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> HeuristicBinningSAH;
         typedef UnalignedHeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> UnalignedHeuristicBinningSAH;
@@ -221,6 +219,7 @@ namespace embree
         /*! recursive build */
         NodeRef recurse(size_t depth, const PrimInfo& pinfo, Allocator alloc, bool toplevel)
         {
+          /* get thread local allocator */
           if (alloc == nullptr) 
             alloc = createAlloc();
           
@@ -276,7 +275,7 @@ namespace embree
           /* create aligned node */
           if (aligned) 
           {
-            auto node = createAlignedNode(alloc);
+            const NodeRef node = createAlignedNode(alloc);
             
             /* spawn tasks or ... */
             if (pinfo.size() > SINGLE_THREADED_THRESHOLD)
@@ -299,7 +298,7 @@ namespace embree
           /* create unaligned node */
           else 
           {
-            auto node = createUnalignedNode(alloc);
+            const NodeRef node = createUnalignedNode(alloc);
             
             /* spawn tasks or ... */
             if (pinfo.size() > SINGLE_THREADED_THRESHOLD)
@@ -344,7 +343,7 @@ namespace embree
         HeuristicStrandSplitSAH strandHeuristic;
       };
       
-      template<int N,
+      template<typename NodeRef,
         typename CreateAllocFunc,
         typename CreateAlignedNodeFunc, 
         typename SetAlignedNodeFunc,
@@ -353,18 +352,19 @@ namespace embree
         typename CreateLeafFunc, 
         typename ProgressMonitor>
         
-        static typename BVHN<N>::NodeRef build (const CreateAllocFunc& createAlloc,
-                                                const CreateAlignedNodeFunc& createAlignedNode, 
-                                                const SetAlignedNodeFunc& setAlignedNode, 
-                                                const CreateUnalignedNodeFunc& createUnalignedNode, 
-                                                const SetUnalignedNodeFunc& setUnalignedNode, 
-                                                const CreateLeafFunc& createLeaf, 
-                                                const ProgressMonitor& progressMonitor,
-                                                BezierPrim* prims, 
-                                                const PrimInfo& pinfo,
-                                                const Settings settings)
+        static NodeRef build (const CreateAllocFunc& createAlloc,
+                              const CreateAlignedNodeFunc& createAlignedNode, 
+                              const SetAlignedNodeFunc& setAlignedNode, 
+                              const CreateUnalignedNodeFunc& createUnalignedNode, 
+                              const SetUnalignedNodeFunc& setUnalignedNode, 
+                              const CreateLeafFunc& createLeaf, 
+                              const ProgressMonitor& progressMonitor,
+                              BezierPrim* prims, 
+                              const PrimInfo& pinfo,
+                              const Settings settings)
       {
-        typedef BuilderT<N,CreateAllocFunc,
+        typedef BuilderT<NodeRef,
+          CreateAllocFunc,
           CreateAlignedNodeFunc,SetAlignedNodeFunc,
           CreateUnalignedNodeFunc,SetUnalignedNodeFunc,
           CreateLeafFunc,ProgressMonitor> Builder;
