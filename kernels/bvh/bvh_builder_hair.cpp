@@ -80,17 +80,8 @@ namespace embree
             typename BVH::CreateAlloc(bvh),
             typename BVH::AlignedNode::Create(),
             typename BVH::AlignedNode::Set(),
-            
-            [&] (FastAllocator::ThreadLocal2* alloc) -> NodeRef
-            {
-              UnalignedNode* node = (UnalignedNode*) alloc->alloc0->malloc(sizeof(UnalignedNode),BVH::byteNodeAlignment); node->clear();
-              return BVH::encodeNode(node);
-            },
-            
-            [&] (NodeRef node, size_t i, NodeRef child, const OBBox3fa& bounds) {
-              node.unalignedNode()->set(i,child);
-              node.unalignedNode()->set(i,bounds);
-            },
+            typename BVH::UnalignedNode::Create(),
+            typename BVH::UnalignedNode::Set(),
 
             [&] (size_t depth, const PrimInfo& pinfo, FastAllocator::ThreadLocal2* alloc) -> NodeRef
             {

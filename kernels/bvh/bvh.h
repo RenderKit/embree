@@ -439,7 +439,7 @@ namespace embree
     {
       using BaseNode::children;
 
-       struct Create
+      struct Create
       {
         __forceinline NodeRef operator() (FastAllocator::ThreadLocal2* alloc) const
         {
@@ -741,6 +741,23 @@ namespace embree
     struct UnalignedNode : public BaseNode
     {
       using BaseNode::children;
+      
+      struct Create
+      {
+        __forceinline NodeRef operator() (FastAllocator::ThreadLocal2* alloc) const
+        {
+          UnalignedNode* node = (UnalignedNode*) alloc->alloc0->malloc(sizeof(UnalignedNode),byteNodeAlignment); node->clear();
+          return BVHN::encodeNode(node);
+        }
+      };
+
+      struct Set
+      {
+        __forceinline void operator() (NodeRef node, size_t i, NodeRef child, const OBBox3fa& bounds) const {
+          node.unalignedNode()->set(i,child);
+          node.unalignedNode()->set(i,bounds);
+        }
+      };
 
       /*! Clears the node. */
       __forceinline void clear()
