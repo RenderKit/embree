@@ -213,7 +213,7 @@ namespace embree
         {
           /* variable to track the SAH of the best splitting approach */
           float bestSAH = inf;
-          const float leafSAH = intCost*float(current.prims.num_time_segments)*current.prims.halfArea();
+          const float leafSAH = intCost*current.prims.leafSAH();
           
           /* perform standard binning in aligned space */
           HeuristicBinning::Split alignedObjectSplit;
