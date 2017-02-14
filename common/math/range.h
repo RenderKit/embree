@@ -31,7 +31,7 @@ namespace embree
       
       __forceinline range(const Ty& begin, const Ty& end)
         : _begin(begin), _end(end) {}
-
+ 
       __forceinline range(const range& other)
         : _begin(other._begin), _end(other._end) {}
 
