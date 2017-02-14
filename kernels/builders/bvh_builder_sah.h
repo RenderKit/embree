@@ -16,14 +16,14 @@
 
 #pragma once
 
+#include "heuristic_binning_array_aligned.h"
+#include "heuristic_spatial_array.h"
+
 #if defined(__AVX512F__)
 #define NUM_OBJECT_BINS 16
 #else
 #define NUM_OBJECT_BINS 32
 #endif
-
-#include "heuristic_binning_array_aligned.h"
-#include "heuristic_spatial_array.h"
 
 namespace embree
 {
@@ -181,7 +181,7 @@ namespace embree
           
           /*! compute leaf and split cost */
           const float leafSAH  = intCost*current.pinfo.leafSAH(logBlockSize);
-          const float splitSAH = travCost*current.pinfo.halfArea()+intCost*current.split.splitSAH();
+          const float splitSAH = travCost*halfArea(current.pinfo.geomBounds)+intCost*current.split.splitSAH();
           assert((current.pinfo.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
           
           /*! create a leaf node when threshold reached or SAH tells us to stop */
@@ -206,9 +206,7 @@ namespace embree
             for (size_t i=0; i<numChildren; i++) 
             {
               if (children[i].pinfo.size() <= minLeafSize) continue; 
-              if (expectedApproxHalfArea(children[i].pinfo.geomBounds) > bestSAH) { // FIXME: measure over all scenes if this line creates better tree
-                bestChild = i; bestSAH = expectedApproxHalfArea(children[i].pinfo.geomBounds); 
-              } 
+              if (area(children[i].pinfo.geomBounds) > bestSAH) { bestChild = i; bestSAH = area(children[i].pinfo.geomBounds); } // FIXME: measure over all scenes if this line creates better tree
             }
 #else
             float bestSAH = 0;
@@ -400,7 +398,7 @@ namespace embree
         return builder(br);
       }
     };
-
+    
 #define FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS 16
 
     /* Spatial SAH builder that operates on an double-buffered array of BuildRecords */
@@ -522,5 +520,6 @@ namespace embree
         return builder(br);
       }
     };
+
   }
 }
