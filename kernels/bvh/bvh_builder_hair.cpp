@@ -77,18 +77,9 @@ namespace embree
         /* build hierarchy */
         typename BVH::NodeRef root = BVHNBuilderHair::build<N>
           (
-            [&] () { return bvh->alloc.threadLocal2(); },
-
-            [&] (FastAllocator::ThreadLocal2* alloc) -> NodeRef
-            {
-              AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode),BVH::byteNodeAlignment); node->clear();
-              return BVH::encodeNode(node);
-            },
-
-            [&] (NodeRef node, size_t i, NodeRef child, const BBox3fa& bounds) {
-              node.alignedNode()->set(i,child);
-              node.alignedNode()->set(i,bounds);
-            },
+            typename BVH::CreateAlloc(bvh),
+            typename BVH::AlignedNode::Create(),
+            typename BVH::AlignedNode::Set(),
             
             [&] (FastAllocator::ThreadLocal2* alloc) -> NodeRef
             {
