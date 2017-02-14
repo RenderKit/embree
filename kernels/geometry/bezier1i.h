@@ -65,7 +65,7 @@ namespace embree
     }
 
     /*! fill curve from curve list */
-    __forceinline void fill(const PrimRefMB* prims, size_t& i, size_t end, Scene* scene)
+    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& i, size_t end, Scene* scene, const BBox1f time_range)
     {
       const PrimRefMB& prim = prims[i];
       i++;
@@ -74,6 +74,7 @@ namespace embree
       const BezierCurves* curves = scene->getBezierCurves(geomID);
       const unsigned vertexID = curves->curve(primID);
       new (this) Bezier1i(vertexID,geomID,primID);
+      return curves->linearBounds(primID,time_range);
     }
 
     /*! fill curve from curve list */

@@ -286,20 +286,23 @@ namespace embree
         settings.maxLeafSize = BVH::maxLeafBlocks;
 
         /* creates a leaf node */
-        auto createLeaf = [&] (const SetMB& prims, FastAllocator::ThreadLocal2* alloc) -> NodeRef
+        auto createLeaf = [&] (const SetMB& prims, FastAllocator::ThreadLocal2* alloc) -> std::pair<NodeRef,LBBox3fa>
           {
             size_t start = prims.object_range.begin();
             size_t end   = prims.object_range.end();
             size_t items = prims.object_range.size();
             Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive));
-            for (size_t i=0; i<items; i++) {
-              accel[i].fill(prims.prims->data(),start,end,bvh->scene);
-            }
-            return bvh->encodeLeaf((char*)accel,items);
+            const NodeRef node = bvh->encodeLeaf((char*)accel,items);
+
+            LBBox3fa bounds = empty;
+            for (size_t i=0; i<items; i++)
+              bounds.extend(accel[i].fillMB(prims.prims->data(),start,end,bvh->scene,prims.time_range));
+            
+            return std::make_pair(node,bounds);
           };
 
         /* build the hierarchy */
-        NodeRef root = BVHMBuilderHairMSMBlur::build<NodeRef>
+        auto root = BVHMBuilderHairMSMBlur::build<NodeRef>
           (scene, prims0, pinfo,
            RecalculatePrimRef<BezierCurves>(scene),
            typename BVH::CreateAlloc(bvh),
@@ -313,7 +316,9 @@ namespace embree
            bvh->scene->progressInterface,
            settings);
         
-        bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.num_time_segments);
+        bvh->set(root.first,LBBox3fa(pinfo.geomBounds),pinfo.num_time_segments);
+        //bvh->set(root.first,root.second,pinfo.num_time_segments); // FIXME: enable
+       
         
         //});
         
