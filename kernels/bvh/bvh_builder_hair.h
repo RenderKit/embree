@@ -102,6 +102,8 @@ namespace embree
         
       private:
         
+        // FIXME: move splitFallback function to here
+        
         /*! creates a large leaf that could be larger than supported by the BVH */
         NodeRef createLargeLeaf(size_t depth, const PrimInfo& pinfo, Allocator alloc)
         {
