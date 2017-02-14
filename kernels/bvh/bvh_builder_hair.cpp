@@ -31,10 +31,7 @@ namespace embree
     struct BVHNHairBuilderSAH : public Builder
     {
       typedef BVHN<N> BVH;
-      typedef typename BVH::AlignedNode AlignedNode;
-      typedef typename BVH::UnalignedNode UnalignedNode;
       typedef typename BVH::NodeRef NodeRef;
-      typedef HeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> HeuristicBinningSAH;
 
       BVH* bvh;
       Scene* scene;
@@ -58,9 +55,13 @@ namespace embree
         //profile(1,5,numPrimitives,[&] (ProfileTimer& timer) {
         
         /* create primref array */
-        bvh->alloc.init_estimate(numPrimitives*sizeof(Primitive));
         prims.resize(numPrimitives);
         const PrimInfo pinfo = createBezierRefArray(scene,prims,scene->progressInterface);
+
+        /* estimate acceleration structure size */
+        const size_t node_bytes = pinfo.size()*sizeof(typename BVH::UnalignedNode)/(4*N);
+        const size_t leaf_bytes = pinfo.size()*sizeof(Primitive);
+        bvh->alloc.init_estimate(node_bytes+leaf_bytes);
         
         /* builder settings */
         BVHNBuilderHair::Settings settings;
