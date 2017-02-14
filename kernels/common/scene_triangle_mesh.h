@@ -171,19 +171,34 @@ namespace embree
       return BBox3fa(min(v0,v1,v2),max(v0,v1,v2));
     }
 
+    /*! calculates the interpolated bounds of the i'th triangle at the specified time */
+    __forceinline BBox3fa bounds(size_t i, float time) const
+    {
+      float ftime; size_t itime = getTimeSegment(time, fnumTimeSegments, ftime);
+      const BBox3fa b0 = bounds(i, itime+0);
+      const BBox3fa b1 = bounds(i, itime+1);
+      return lerp(b0, b1, ftime);
+    }
+
     /*! check if the i'th primitive is valid at the itime'th timestep */
-    __forceinline bool valid(size_t i, size_t itime) const
+    __forceinline bool valid(size_t i, size_t itime) const {
+      return valid(i, make_range(itime, itime));
+    }
+
+    /*! check if the i'th primitive is valid between the specified time range */
+    __forceinline bool valid(size_t i, const range<size_t>& itime_range) const
     {
       const Triangle& tri = triangle(i);
       if (unlikely(tri.v[0] >= numVertices())) return false;
       if (unlikely(tri.v[1] >= numVertices())) return false;
       if (unlikely(tri.v[2] >= numVertices())) return false;
 
-      const Vec3fa v0 = vertex(tri.v[0],itime);
-      const Vec3fa v1 = vertex(tri.v[1],itime);
-      const Vec3fa v2 = vertex(tri.v[2],itime);
-      if (unlikely(!isvalid(v0) || !isvalid(v1) || !isvalid(v2)))
-        return false;
+      for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++)
+      {
+        if (!isvalid(vertex(tri.v[0],itime))) return false;
+        if (!isvalid(vertex(tri.v[1],itime))) return false;
+        if (!isvalid(vertex(tri.v[2],itime))) return false;
+      }
 
       return true;
     }

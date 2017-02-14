@@ -117,14 +117,23 @@ namespace embree
       return enlarge(b,Vec3fa(max(r0,r1)));
     }
 
-    /*! check if the i'th primitive is valid at the itime'th time step */
-    __forceinline bool valid(size_t i, size_t itime) const
+    /*! check if the i'th primitive is valid at the itime'th timestep */
+    __forceinline bool valid(size_t i, size_t itime) const {
+      return valid(i, make_range(itime, itime));
+    }
+
+    /*! check if the i'th primitive is valid between the specified time range */
+    __forceinline bool valid(size_t i, const range<size_t>& itime_range) const
     {
       const unsigned int index = segment(i);
       if (index+1 >= numVertices()) return false;
-      const Vec3fa v0 = vertex(index+0,itime); if (unlikely(!isvalid((vfloat4)v0))) return false;
-      const Vec3fa v1 = vertex(index+1,itime); if (unlikely(!isvalid((vfloat4)v1))) return false;
-      if (min(v0.w,v1.w) < 0.0f) return false;
+      
+      for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++)
+      {
+        const Vec3fa v0 = vertex(index+0,itime); if (unlikely(!isvalid((vfloat4)v0))) return false;
+        const Vec3fa v1 = vertex(index+1,itime); if (unlikely(!isvalid((vfloat4)v1))) return false;
+        if (min(v0.w,v1.w) < 0.0f) return false;
+      }
       return true;
     }
 

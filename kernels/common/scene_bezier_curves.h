@@ -155,27 +155,35 @@ namespace embree
       return enlarge(b,Vec3fa(max(r0,r1,r2,r3)));
     }
 
+    /*! check if the i'th primitive is valid at the itime'th timestep */
+    __forceinline bool valid(size_t i, size_t itime) const {
+      return valid(i, make_range(itime, itime));
+    }
+
     /*! check if the i'th primitive is valid at the itime'th time step */
-    __forceinline bool valid(size_t i, size_t itime) const
+    __forceinline bool valid(size_t i, const range<size_t>& itime_range) const
     {
       const unsigned int index = curve(i);
       if (index+3 >= numVertices()) return false;
 
-      const float r0 = radius(index+0,itime);
-      const float r1 = radius(index+1,itime);
-      const float r2 = radius(index+2,itime);
-      const float r3 = radius(index+3,itime);
-      if (!isvalid(r0) || !isvalid(r1) || !isvalid(r2) || !isvalid(r3))
-        return false;
-      if (min(r0,r1,r2,r3) < 0.0f)
-        return false;
-
-      const Vec3fa v0 = vertex(index+0,itime);
-      const Vec3fa v1 = vertex(index+1,itime);
-      const Vec3fa v2 = vertex(index+2,itime);
-      const Vec3fa v3 = vertex(index+3,itime);
-      if (!isvalid(v0) || !isvalid(v1) || !isvalid(v2) || !isvalid(v3))
-        return false;
+      for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++)
+      {
+        const float r0 = radius(index+0,itime);
+        const float r1 = radius(index+1,itime);
+        const float r2 = radius(index+2,itime);
+        const float r3 = radius(index+3,itime);
+        if (!isvalid(r0) || !isvalid(r1) || !isvalid(r2) || !isvalid(r3))
+          return false;
+        if (min(r0,r1,r2,r3) < 0.0f)
+          return false;
+        
+        const Vec3fa v0 = vertex(index+0,itime);
+        const Vec3fa v1 = vertex(index+1,itime);
+        const Vec3fa v2 = vertex(index+2,itime);
+        const Vec3fa v3 = vertex(index+3,itime);
+        if (!isvalid(v0) || !isvalid(v1) || !isvalid(v2) || !isvalid(v3))
+          return false;
+      }
 
       return true;
     }
