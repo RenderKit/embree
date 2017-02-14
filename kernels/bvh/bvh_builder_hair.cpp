@@ -316,8 +316,7 @@ namespace embree
            bvh->scene->progressInterface,
            settings);
         
-        bvh->set(root.first,LBBox3fa(pinfo.geomBounds),pinfo.num_time_segments);
-        //bvh->set(root.first,root.second,pinfo.num_time_segments); // FIXME: enable
+        bvh->set(root.first,root.second,pinfo.num_time_segments);
         
         //});
         
