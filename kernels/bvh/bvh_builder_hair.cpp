@@ -66,7 +66,7 @@ namespace embree
         const PrimInfo pinfo = createBezierRefArray(scene,prims,virtualprogress);
         
         /* build hierarchy */
-        typename BVH::NodeRef root = bvh_obb_builder_binned_sah<N>
+        typename BVH::NodeRef root = BVHNBuilderHair::build<N>
           (
             [&] () { return bvh->alloc.threadLocal2(); },
 
@@ -177,7 +177,7 @@ namespace embree
           const PrimInfo pinfo = createBezierRefArrayMBlur(t,bvh->numTimeSteps,scene,prims,virtualprogress);
           const LBBox3fa lbbox = HeuristicBinningSAH(prims.begin()).computePrimInfoMB(t,bvh->numTimeSteps,scene,pinfo);
         
-          NodeRef root = bvh_obb_builder_binned_sah<N>
+          NodeRef root = BVHNBuilderHair::build<N>
           (
             [&] () { return bvh->alloc.threadLocal2(); },
 
