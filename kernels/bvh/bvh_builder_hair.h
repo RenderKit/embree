@@ -42,8 +42,10 @@ namespace embree
       typedef typename BVH::NodeRef NodeRef;
       typedef FastAllocator::ThreadLocal2* Allocator;
       typedef HeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> HeuristicBinningSAH;
+      typedef UnalignedHeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> UnalignedHeuristicBinningSAH;
+      typedef HeuristicStrandSplit HeuristicStrandSplitSAH;
 
-      static const size_t MAX_BRANCHING_FACTOR = 16;         //!< maximal supported BVH branching factor
+      static const size_t MAX_BRANCHING_FACTOR =  8;         //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;         //!< create balanced tree if we are that many levels before the maximal tree depth
       static const size_t SINGLE_THREADED_THRESHOLD = 4096;  //!< threshold to switch to single threaded build
 
@@ -147,7 +149,7 @@ namespace embree
         bestSAH = min(alignedObjectSAH,bestSAH);
         
         /* perform standard binning in unaligned space */
-        UnalignedHeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS>::Split unalignedObjectSplit;
+        UnalignedHeuristicBinningSAH::Split unalignedObjectSplit;
         LinearSpace3fa uspace;
         float unalignedObjectSAH = inf;
         if (alignedObjectSAH > 0.7f*leafSAH) {
@@ -159,7 +161,7 @@ namespace embree
         }
 
         /* perform splitting into two strands */
-        HeuristicStrandSplit::Split strandSplit;
+        HeuristicStrandSplitSAH::Split strandSplit;
         float strandSAH = inf;
         if (alignedObjectSAH > 0.6f*leafSAH) {
           strandSplit = strandHeuristic.find(pinfo);
@@ -311,8 +313,8 @@ namespace embree
   
     private:
       HeuristicBinningSAH alignedHeuristic;
-      UnalignedHeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> unalignedHeuristic;
-      HeuristicStrandSplit strandHeuristic;
+      UnalignedHeuristicBinningSAH unalignedHeuristic;
+      HeuristicStrandSplitSAH strandHeuristic;
     };
 
     template<int N,
