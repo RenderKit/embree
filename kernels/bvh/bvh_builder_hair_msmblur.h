@@ -52,7 +52,7 @@ namespace embree
         __forceinline BuildRecord (size_t depth) 
           : depth(depth) {}
         
-        __forceinline BuildRecord (const SetMB& prims, size_t depth = 0) 
+        __forceinline BuildRecord (const SetMB& prims, size_t depth) 
           : depth(depth), prims(prims) {}
         
         __forceinline size_t size() const { 
@@ -68,11 +68,11 @@ namespace embree
         typename RecalculatePrimRef, 
         typename CreateAllocFunc,
         typename CreateAlignedNodeFunc, 
-        typename UpdateAlignedNodeFunc, 
+        typename SetAlignedNodeFunc, 
         typename CreateUnalignedNodeFunc, 
-        typename UpdateUnalignedNodeFunc, 
+        typename SetUnalignedNodeFunc, 
         typename CreateAlignedNode4DFunc,
-        typename UpdateAlignedNode4DFunc,
+        typename SetAlignedNode4DFunc,
         typename CreateLeafFunc, 
         typename ProgressMonitor>
         
@@ -89,7 +89,6 @@ namespace embree
         static const size_t intCost = 6;
         
         typedef FastAllocator::ThreadLocal2* Allocator;
-        typedef SharedVector<mvector<PrimRefMB>> SharedPrimRefVector;
         typedef LocalChildListT<BuildRecord,MAX_BRANCHING_FACTOR> LocalChildList;
         
         typedef HeuristicMBlurTemporalSplit<PrimRefMB,RecalculatePrimRef,NUM_TEMPORAL_BINS> HeuristicTemporal;
@@ -102,21 +101,22 @@ namespace embree
                   const RecalculatePrimRef& recalculatePrimRef,
                   const CreateAllocFunc& createAlloc, 
                   const CreateAlignedNodeFunc& createAlignedNode, 
-                  const UpdateAlignedNodeFunc& updateAlignedNode, 
+                  const SetAlignedNodeFunc& setAlignedNode, 
                   const CreateUnalignedNodeFunc& createUnalignedNode, 
-                  const UpdateUnalignedNodeFunc& updateUnalignedNode, 
+                  const SetUnalignedNodeFunc& setUnalignedNode, 
                   const CreateAlignedNode4DFunc& createAlignedNode4D, 
-                  const UpdateAlignedNode4DFunc& updateAlignedNode4D, 
+                  const SetAlignedNode4DFunc& setAlignedNode4D, 
                   const CreateLeafFunc& createLeaf,
                   const ProgressMonitor& progressMonitor,
                   const Settings settings)
+
           : Settings(settings), 
           scene(scene),
           recalculatePrimRef(recalculatePrimRef),
           createAlloc(createAlloc), 
-          createAlignedNode(createAlignedNode), updateAlignedNode(updateAlignedNode), 
-          createUnalignedNode(createUnalignedNode), updateUnalignedNode(updateUnalignedNode), 
-          createAlignedNode4D(createAlignedNode4D), updateAlignedNode4D(updateAlignedNode4D),
+          createAlignedNode(createAlignedNode), setAlignedNode(setAlignedNode), 
+          createUnalignedNode(createUnalignedNode), setUnalignedNode(setUnalignedNode), 
+          createAlignedNode4D(createAlignedNode4D), setAlignedNode4D(setAlignedNode4D),
           createLeaf(createLeaf),
           progressMonitor(progressMonitor),
           unalignedHeuristic(scene),
@@ -201,7 +201,7 @@ namespace embree
           LBBox3fa bounds = empty;
           for (size_t i=0; i<children.size(); i++) {
             const auto child = createLargeLeaf(children[i],alloc);
-            updateAlignedNode(node,i,std::make_tuple(child.first,child.second,children[i].prims.time_range));
+            setAlignedNode(node,i,std::make_tuple(child.first,child.second,children[i].prims.time_range));
             bounds.extend(child.second);
           }
 
@@ -330,7 +330,7 @@ namespace embree
               parallel_for(size_t(0), children.size(), [&] (const range<size_t>& r) {
                   for (size_t i=r.begin(); i<r.end(); i++) {
                     const auto child = recurse(children[i],nullptr,true);
-                    updateAlignedNode4D(node,i,std::make_tuple(child.first,child.second,children[i].prims.time_range)); 
+                    setAlignedNode4D(node,i,std::make_tuple(child.first,child.second,children[i].prims.time_range)); 
                     _mm_mfence(); // to allow non-temporal stores during build
                   }                
                 });
@@ -339,7 +339,7 @@ namespace embree
             else {
               for (size_t i=0; i<children.size(); i++) {
                 const auto child = recurse(children[i],alloc,false);
-                updateAlignedNode4D(node,i,std::make_tuple(child.first,child.second,children[i].prims.time_range));
+                setAlignedNode4D(node,i,std::make_tuple(child.first,child.second,children[i].prims.time_range));
               }
             }
 
@@ -359,7 +359,7 @@ namespace embree
               parallel_for(size_t(0), children.size(), [&] (const range<size_t>& r) {
                   for (size_t i=r.begin(); i<r.end(); i++) {
                     const auto child = recurse(children[i],nullptr,true);
-                    updateAlignedNode(node,i,std::make_tuple(child.first,child.second,children[i].prims.time_range)); 
+                    setAlignedNode(node,i,std::make_tuple(child.first,child.second,children[i].prims.time_range)); 
                     cbounds[i] = child.second;
                     _mm_mfence(); // to allow non-temporal stores during build
                   }                
@@ -377,7 +377,7 @@ namespace embree
               LBBox3fa bounds = empty;
               for (size_t i=0; i<children.size(); i++) {
                 const auto child = recurse(children[i],alloc,false);
-                updateAlignedNode(node,i,std::make_tuple(child.first,child.second,children[i].prims.time_range));
+                setAlignedNode(node,i,std::make_tuple(child.first,child.second,children[i].prims.time_range));
                 bounds.extend(child.second);
               }
               return std::make_pair(node,bounds);
@@ -397,7 +397,7 @@ namespace embree
                     const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpaceMB(scene,children[i].prims); 
                     const LBBox3fa lbounds = unalignedHeuristic.linearBounds(scene,children[i].prims,space);
                     const auto child = recurse(children[i],nullptr,true);
-                    updateUnalignedNode(node,i,child.first,space,lbounds,children[i].prims.time_range);
+                    setUnalignedNode(node,i,child.first,space,lbounds,children[i].prims.time_range);
                     _mm_mfence(); // to allow non-temporal stores during build
                   }                
                 });
@@ -409,7 +409,7 @@ namespace embree
                 const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpaceMB(scene,children[i].prims); 
                 const LBBox3fa lbounds = unalignedHeuristic.linearBounds(scene,children[i].prims,space);
                 const auto child = recurse(children[i],alloc,false);
-                updateUnalignedNode(node,i,child.first,space,lbounds,children[i].prims.time_range);
+                setUnalignedNode(node,i,child.first,space,lbounds,children[i].prims.time_range);
               }
             }
 
@@ -423,11 +423,11 @@ namespace embree
         const RecalculatePrimRef& recalculatePrimRef;
         const CreateAllocFunc& createAlloc;
         const CreateAlignedNodeFunc& createAlignedNode;
-        const UpdateAlignedNodeFunc& updateAlignedNode;
+        const SetAlignedNodeFunc& setAlignedNode;
         const CreateUnalignedNodeFunc& createUnalignedNode;
-        const UpdateUnalignedNodeFunc& updateUnalignedNode;
+        const SetUnalignedNodeFunc& setUnalignedNode;
         const CreateAlignedNode4DFunc& createAlignedNode4D;
-        const UpdateAlignedNode4DFunc& updateAlignedNode4D;
+        const SetAlignedNode4DFunc& setAlignedNode4D;
         const CreateLeafFunc& createLeaf;
         const ProgressMonitor& progressMonitor;
         
@@ -441,11 +441,11 @@ namespace embree
         typename RecalculatePrimRef,
         typename CreateAllocFunc,
         typename CreateAlignedNodeFunc, 
-        typename UpdateAlignedNodeFunc, 
+        typename SetAlignedNodeFunc, 
         typename CreateUnalignedNodeFunc, 
-        typename UpdateUnalignedNodeFunc, 
+        typename SetUnalignedNodeFunc, 
         typename CreateAlignedNode4DFunc, 
-        typename UpdateAlignedNode4DFunc, 
+        typename SetAlignedNode4DFunc, 
         typename CreateLeafFunc, 
         typename ProgressMonitor>
         
@@ -453,25 +453,25 @@ namespace embree
                                                     const RecalculatePrimRef& recalculatePrimRef,
                                                     const CreateAllocFunc& createAlloc,
                                                     const CreateAlignedNodeFunc& createAlignedNode, 
-                                                    const UpdateAlignedNodeFunc& updateAlignedNode, 
+                                                    const SetAlignedNodeFunc& setAlignedNode, 
                                                     const CreateUnalignedNodeFunc& createUnalignedNode, 
-                                                    const UpdateUnalignedNodeFunc& updateUnalignedNode, 
+                                                    const SetUnalignedNodeFunc& setUnalignedNode, 
                                                     const CreateAlignedNode4DFunc& createAlignedNode4D, 
-                                                    const UpdateAlignedNode4DFunc& updateAlignedNode4D, 
+                                                    const SetAlignedNode4DFunc& setAlignedNode4D, 
                                                     const CreateLeafFunc& createLeaf, 
                                                     const ProgressMonitor& progressMonitor,
                                                     const Settings settings)
       {
         typedef BuilderT<NodeRef,RecalculatePrimRef,CreateAllocFunc,
-          CreateAlignedNodeFunc,UpdateAlignedNodeFunc,
-          CreateUnalignedNodeFunc,UpdateUnalignedNodeFunc,
-          CreateAlignedNode4DFunc,UpdateAlignedNode4DFunc,
+          CreateAlignedNodeFunc,SetAlignedNodeFunc,
+          CreateUnalignedNodeFunc,SetUnalignedNodeFunc,
+          CreateAlignedNode4DFunc,SetAlignedNode4DFunc,
           CreateLeafFunc,ProgressMonitor> Builder;
         
         Builder builder(scene,recalculatePrimRef,createAlloc,
-                        createAlignedNode,updateAlignedNode,
-                        createUnalignedNode,updateUnalignedNode,
-                        createAlignedNode4D,updateAlignedNode4D,
+                        createAlignedNode,setAlignedNode,
+                        createUnalignedNode,setUnalignedNode,
+                        createAlignedNode4D,setAlignedNode4D,
                         createLeaf,progressMonitor,settings);
 
         return builder(prims,pinfo);

@@ -188,7 +188,7 @@ namespace embree
         typename Allocator, 
         typename CreateAllocFunc, 
         typename CreateNodeFunc, 
-        typename UpdateNodeFunc, 
+        typename SetNodeFunc, 
         typename CreateLeafFunc, 
         typename ProgressMonitor>
         
@@ -209,14 +209,14 @@ namespace embree
                   const RecalculatePrimRef recalculatePrimRef,
                   const CreateAllocFunc createAlloc, 
                   const CreateNodeFunc createNode, 
-                  const UpdateNodeFunc updateNode, 
+                  const SetNodeFunc setNode, 
                   const CreateLeafFunc createLeaf,
                   const ProgressMonitor progressMonitor,
                   const Settings& settings)
           : Settings(settings),
           heuristicObjectSplit(),
           heuristicTemporalSplit(device, recalculatePrimRef),
-          recalculatePrimRef(recalculatePrimRef), createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
+          recalculatePrimRef(recalculatePrimRef), createAlloc(createAlloc), createNode(createNode), setNode(setNode), createLeaf(createLeaf), 
           progressMonitor(progressMonitor)
        {
           if (branchingFactor > MAX_BRANCHING_FACTOR)
@@ -375,7 +375,7 @@ namespace embree
           for (size_t i=0; i<children.size(); i++) {
             values[i] = createLargeLeaf(children[i],alloc);
             gbounds.extend(std::get<1>(values[i]));
-            updateNode(node,i,values[i]);
+            setNode(node,i,values[i]);
           }
 
           /* calculate geometry bounds of this node */
@@ -453,7 +453,7 @@ namespace embree
             parallel_for(size_t(0), children.size(), [&] (const range<size_t>& r) {
                 for (size_t i=r.begin(); i<r.end(); i++) {
                   values[i] = recurse(children[i],nullptr,true); 
-                  updateNode(node,i,values[i]);
+                  setNode(node,i,values[i]);
                   _mm_mfence(); // to allow non-temporal stores during build
                 }
               });
@@ -469,7 +469,7 @@ namespace embree
             for (ssize_t i=children.size()-1; i>=0; i--) {
               values[i] = recurse(children[i],alloc,false);
               gbounds.extend(std::get<1>(values[i]));
-              updateNode(node,i,values[i]);
+              setNode(node,i,values[i]);
             }
           }
           
@@ -495,7 +495,7 @@ namespace embree
         const RecalculatePrimRef recalculatePrimRef;
         const CreateAllocFunc createAlloc;
         const CreateNodeFunc createNode;
-        const UpdateNodeFunc updateNode;
+        const SetNodeFunc setNode;
         const CreateLeafFunc createLeaf;
         const ProgressMonitor progressMonitor;
       };
@@ -504,7 +504,7 @@ namespace embree
         typename RecalculatePrimRef, 
         typename CreateAllocFunc, 
         typename CreateNodeFunc, 
-        typename UpdateNodeFunc, 
+        typename SetNodeFunc, 
         typename CreateLeafFunc, 
         typename ProgressMonitorFunc>
         
@@ -514,7 +514,7 @@ namespace embree
                                                               const RecalculatePrimRef recalculatePrimRef,
                                                               const CreateAllocFunc createAlloc, 
                                                               const CreateNodeFunc createNode, 
-                                                              const UpdateNodeFunc updateNode, 
+                                                              const SetNodeFunc setNode, 
                                                               const CreateLeafFunc createLeaf,
                                                               const ProgressMonitorFunc progressMonitor,
                                                               const Settings& settings)
@@ -525,7 +525,7 @@ namespace embree
           decltype(createAlloc()),
           CreateAllocFunc,
           CreateNodeFunc,
-          UpdateNodeFunc,
+          SetNodeFunc,
           CreateLeafFunc,
           ProgressMonitorFunc> Builder;
         
@@ -533,7 +533,7 @@ namespace embree
                         recalculatePrimRef,
                         createAlloc,
                         createNode,
-                        updateNode,
+                        setNode,
                         createLeaf,
                         progressMonitor,
                         settings);

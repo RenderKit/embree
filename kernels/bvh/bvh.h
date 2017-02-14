@@ -562,7 +562,7 @@ namespace embree
       }
     };
 
-    struct UpdateAlignedNodeMB4D
+    struct SetAlignedNodeMB4D
     {
       __forceinline void operator() (NodeRef ref, const size_t i, const std::tuple<NodeRef,LBBox3fa,BBox1f>& child) const
       {
@@ -588,7 +588,7 @@ namespace embree
         }
       };
 
-      struct Update
+      struct Set
       {
         __forceinline void operator() (NodeRef node, size_t i, const std::tuple<NodeRef,LBBox3fa,BBox1f>& child) const {
           node.alignedNodeMB()->set(i,child);
@@ -789,7 +789,7 @@ namespace embree
         }
       };
       
-      struct Update
+      struct Set
       {
         __forceinline void operator() (NodeRef node, size_t i, const std::tuple<NodeRef,LBBox3fa,BBox1f>& child) const {
           node.alignedNodeMB4D()->set(i,child);
@@ -954,7 +954,7 @@ namespace embree
         }
       };
 
-      struct Update
+      struct Set
       {
         __forceinline void operator() (NodeRef node, size_t i, NodeRef child, const LinearSpace3fa& space, const LBBox3fa& lbounds, const BBox1f dt) const {
           node.unalignedNodeMB()->set(i,child);

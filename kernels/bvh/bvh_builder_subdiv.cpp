@@ -723,7 +723,7 @@ namespace embree
                                              recalculatePrimRef,
                                              typename BVH::CreateAlloc(bvh),
                                              typename BVH::CreateAlignedNodeMB4D(),
-                                             typename BVH::UpdateAlignedNodeMB4D(),
+                                             typename BVH::SetAlignedNodeMB4D(),
                                              createLeafFunc,
                                              bvh->scene->progressInterface,
                                              settings);

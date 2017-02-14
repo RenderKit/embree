@@ -746,7 +746,7 @@ namespace embree
                                              RecalculatePrimRef<Mesh>(scene),
                                              typename BVH::CreateAlloc(bvh),
                                              typename BVH::CreateAlignedNodeMB4D(),
-                                             typename BVH::UpdateAlignedNodeMB4D(),
+                                             typename BVH::SetAlignedNodeMB4D(),
                                              CreateMBlurLeaf<N,Mesh,Primitive>(bvh),
                                              bvh->scene->progressInterface,
                                              settings);
