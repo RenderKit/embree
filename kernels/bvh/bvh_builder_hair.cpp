@@ -262,10 +262,6 @@ namespace embree
       
       void build(size_t, size_t) 
       {
-        /* progress monitor */
-        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(double(dn)); };
-        auto virtualprogress = BuildProgressMonitorFromClosure(progress);
-
         /* fast path for empty BVH */
         const size_t numPrimitives = scene->getNumPrimitives<BezierCurves,true>();
         if (numPrimitives == 0) {
@@ -280,7 +276,7 @@ namespace embree
         /* create primref array */
         bvh->alloc.init_estimate(numPrimitives*sizeof(Primitive));
         mvector<PrimRefMB> prims0(scene->device,numPrimitives);
-        const PrimInfoMB pinfo = createPrimRefMBArray<BezierCurves>(scene,prims0,virtualprogress);
+        const PrimInfoMB pinfo = createPrimRefMBArray<BezierCurves>(scene,prims0,bvh->scene->progressInterface);
 
         RecalculatePrimRef<BezierCurves> recalculatePrimRef(scene);
 
@@ -316,7 +312,7 @@ namespace embree
             typename BVH::AlignedNodeMB4D::Create(),
             typename BVH::AlignedNodeMB4D::Update(),
             createLeaf,
-            progress,
+            bvh->scene->progressInterface,
             settings);
         
         bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.num_time_segments);
@@ -324,9 +320,7 @@ namespace embree
         //});
         
         /* clear temporary data for static geometry */
-        if (scene->isStatic()) {
-          bvh->shrink();
-        }
+        if (scene->isStatic()) bvh->shrink();
         bvh->cleanup();
         bvh->postBuild(t0);
       }
