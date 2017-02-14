@@ -24,13 +24,27 @@ namespace embree
   template<typename Ty>
     struct range 
     {
-      __forceinline range () {}
+      __forceinline range() {}
 
-      __forceinline range (const Ty& begin) 
-      : _begin(begin), _end(begin+1) {}
+      __forceinline range(const Ty& begin)
+        : _begin(begin), _end(begin+1) {}
       
-      __forceinline range (const Ty& begin, const Ty& end) 
-      : _begin(begin), _end(end) {}
+      __forceinline range(const Ty& begin, const Ty& end)
+        : _begin(begin), _end(end) {}
+ 
+      __forceinline range(const range& other)
+        : _begin(other._begin), _end(other._end) {}
+
+      template<typename T1>
+      __forceinline range(const range<T1>& other)
+        : _begin(Ty(other._begin)), _end(Ty(other._end)) {}
+
+      template<typename T1>
+      __forceinline range& operator =(const range<T1>& other) {
+        _begin = other._begin;
+        _end = other._end;
+        return *this;
+      }
       
       __forceinline Ty begin() const {
         return _begin;
@@ -79,13 +93,13 @@ namespace embree
     {
       __forceinline extended_range () {}
 
-      __forceinline extended_range (const Ty& begin) 
+      __forceinline extended_range (const Ty& begin)
         : _begin(begin), _end(begin+1), _ext_end(begin+1) {}
       
-      __forceinline extended_range (const Ty& begin, const Ty& end) 
+      __forceinline extended_range (const Ty& begin, const Ty& end)
         : _begin(begin), _end(end), _ext_end(end) {}
 
-      __forceinline extended_range (const Ty& begin, const Ty& end, const Ty& ext_end) 
+      __forceinline extended_range (const Ty& begin, const Ty& end, const Ty& ext_end)
         : _begin(begin), _end(end), _ext_end(ext_end) {}
       
       __forceinline Ty begin() const {
