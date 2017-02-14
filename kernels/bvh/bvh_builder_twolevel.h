@@ -61,6 +61,10 @@ namespace embree
           return a.lower.w < b.lower.w;
         }
 
+        friend __forceinline std::ostream& operator<<(std::ostream& cout, const BuildRef& ref) {
+          return cout << "{ lower = " << ref.lower << ", upper = " << ref.upper << ", center2 = " << ref.center2() << ", geomID = " << ref.geomID << ", numPrimitives = " << ref.numPrimitives << " }";
+        }
+
       public:
         NodeRef node;
         unsigned int geomID;

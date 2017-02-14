@@ -374,6 +374,7 @@ namespace embree
           PrimInfo pinfo(empty);
           for (size_t i=0;i<refs.size();i++)
             pinfo.add(refs[i].bounds(),refs[i].bounds().center2());
+          PRINT(pinfo);
 #else
           const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(),  PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {
 
@@ -402,6 +403,7 @@ namespace embree
             PRINT(extSize);
             refs.resize(extSize);
 
+
             BVHBuilderBinnedOpenMergeSAH::build<NodeRef,BuildRef>
               (root,
                [&] { return bvh->alloc.threadLocal2(); },
@@ -422,7 +424,7 @@ namespace embree
                 return 1;
               },
                [&] (BuildRef &bref, BuildRef *refs) -> size_t { 
-
+                 
                  if (bref.node.isLeaf())
                  {
                    refs[0] = bref;
