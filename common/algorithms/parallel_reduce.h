@@ -114,8 +114,30 @@ namespace embree
   }
 
   template<typename Index, typename Value, typename Func, typename Reduction>
+    __forceinline Value parallel_reduce( const Index first, const Index last, const Index minStepSize, const Index parallel_threshold, const Value& identity, const Func& func, const Reduction& reduction )
+  {
+    if (likely(last-first < parallel_threshold)) {
+      return func(range<Index>(first,last)); 
+    } else {
+      return parallel_reduce(first,last,minStepSize,identity,func,reduction);
+    }
+  }
+
+  template<typename Index, typename Value, typename Func, typename Reduction>
+    __forceinline Value parallel_reduce( const range<Index> range, const Index minStepSize, const Index parallel_threshold, const Value& identity, const Func& func, const Reduction& reduction ) 
+  {
+    return parallel_reduce(range.begin(),range.end(),minStepSize,parallel_threshold,identity,func,reduction);
+  }
+
+  template<typename Index, typename Value, typename Func, typename Reduction>
     __forceinline Value parallel_reduce( const Index first, const Index last, const Value& identity, const Func& func, const Reduction& reduction )
   {
     return parallel_reduce(first,last,Index(1),identity,func,reduction);
+  }
+
+  template<typename Index, typename Value, typename Func, typename Reduction>
+    __forceinline Value parallel_reduce( const range<Index> range, const Value& identity, const Func& func, const Reduction& reduction )
+  {
+    return parallel_reduce(range.begin(),range.end(),Index(1),identity,func,reduction);
   }
 }
