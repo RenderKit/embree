@@ -45,10 +45,6 @@ namespace embree
       
       void build(size_t, size_t) 
       {
-        /* progress monitor */
-        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(double(dn)); };
-        auto virtualprogress = BuildProgressMonitorFromClosure(progress);
-
         /* fast path for empty BVH */
         const size_t numPrimitives = scene->getNumPrimitives<BezierCurves,false>();
         if (numPrimitives == 0) {
@@ -64,7 +60,7 @@ namespace embree
         /* create primref array */
         bvh->alloc.init_estimate(numPrimitives*sizeof(Primitive));
         prims.resize(numPrimitives);
-        const PrimInfo pinfo = createBezierRefArray(scene,prims,virtualprogress);
+        const PrimInfo pinfo = createBezierRefArray(scene,prims,scene->progressInterface);
         
         /* builder settings */
         BVHNBuilderHair::Settings settings;
@@ -74,6 +70,18 @@ namespace embree
         settings.minLeafSize = 1;
         settings.maxLeafSize = BVH::maxLeafBlocks;
 
+        /* creates a leaf node */
+        auto createLeaf = [&] (size_t depth, const PrimInfo& pinfo, FastAllocator::ThreadLocal2* alloc) -> NodeRef
+          {
+            size_t start = pinfo.begin;
+            size_t items = pinfo.size();
+            Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive));
+            for (size_t i=0; i<items; i++) {
+              accel[i].fill(prims.data(),start,pinfo.end,bvh->scene);
+            }
+            return bvh->encodeLeaf((char*)accel,items);
+          };
+          
         /* build hierarchy */
         typename BVH::NodeRef root = BVHNBuilderHair::build<N>
           (
@@ -82,20 +90,7 @@ namespace embree
             typename BVH::AlignedNode::Set(),
             typename BVH::UnalignedNode::Create(),
             typename BVH::UnalignedNode::Set(),
-
-            [&] (size_t depth, const PrimInfo& pinfo, FastAllocator::ThreadLocal2* alloc) -> NodeRef
-            {
-              size_t items = pinfo.size();
-              size_t start = pinfo.begin;
-              Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive));
-              NodeRef node = bvh->encodeLeaf((char*)accel,items);
-              for (size_t i=0; i<items; i++) {
-                accel[i].fill(prims.data(),start,pinfo.end,bvh->scene);
-              }
-              return node;
-            },
-            progress,
-            prims.data(),pinfo,settings);
+            createLeaf,scene->progressInterface,prims.data(),pinfo,settings);
         
         bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
         
