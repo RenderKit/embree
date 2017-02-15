@@ -161,7 +161,7 @@ namespace embree
           /* otherwise build toplevel hierarchy */
           else
           {
-            NodeRef root = BVHBuilderBinnedSAH::build_reduce<NodeRef>
+            NodeRef root = BVHBuilderBinnedSAH::build_reduce
               (
                [&] { return bvh->alloc.threadLocal2(); },
                NodeRef(0),

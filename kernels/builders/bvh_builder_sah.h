@@ -308,7 +308,7 @@ namespace embree
       typedef GeneralBuildRecord<Set,typename Heuristic::Split,PrimInfo> BuildRecord;
       
       /*! special builder that propagates reduction over the tree */
-      template<typename NodeRef, 
+      template<
         typename CreateAllocFunc, 
         typename ReductionTy, 
         typename CreateNodeFunc, 
@@ -380,7 +380,7 @@ namespace embree
       typedef GeneralBuildRecord<Set,Split,PrimInfo> BuildRecord;
 
       /*! special builder that propagates reduction over the tree */
-      template<typename NodeRef, 
+      template<
         typename CreateAllocFunc, 
         typename ReductionTy, 
         typename CreateNodeFunc, 

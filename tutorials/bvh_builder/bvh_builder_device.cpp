@@ -79,42 +79,41 @@ namespace embree
       allocator.reset();
       allocator.init(N);
       
-      Node* root = (Node*) isa::BVHBuilderBinnedSAH::build_reduce<Node*>(
+      Node* root = isa::BVHBuilderBinnedSAH::build_reduce(
 
         /* thread local allocator for fast allocations */
         [&] () -> FastAllocator::ThreadLocal* { 
           return allocator.threadLocal(); 
         },
 
-        size_t(0),
+        root,
         
         /* lambda function that creates BVH nodes */
-        [&](const isa::BVHBuilderBinnedSAH::BuildRecord& current, isa::BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, FastAllocator::ThreadLocal* alloc) -> size_t
+        [&](const isa::BVHBuilderBinnedSAH::BuildRecord& current, isa::BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, FastAllocator::ThreadLocal* alloc) -> Node*
         {
           assert(N <= 2);
           InnerNode* node = new (alloc->malloc(sizeof(InnerNode))) InnerNode;
           for (size_t i=0; i<N; i++)
             node->bounds[i] = children[i].pinfo.geomBounds;
-          
-          return (size_t) node;
+          return node;
         },
 
         /* lambda function that updates BVH nodes */
-        [&](size_t ref, size_t* children, const size_t N) -> size_t
+        [&](Node* ref, Node** children, const size_t N) -> Node*
         {
           assert(N <= 2);
           InnerNode* node = (InnerNode*) ref;
           for (size_t i=0; i<N; i++)
-            node->children[i] = (Node*) children[i];
+            node->children[i] = children[i];
           return ref;
         },
         
         /* lambda function that creates BVH leaves */
-        [&](const isa::BVHBuilderBinnedSAH::BuildRecord& current, FastAllocator::ThreadLocal* alloc) -> size_t
+        [&](const isa::BVHBuilderBinnedSAH::BuildRecord& current, FastAllocator::ThreadLocal* alloc) -> Node*
         {
           assert(current.prims.size() == 1);
           Node* node = new (alloc->malloc(sizeof(LeafNode))) LeafNode(prims[current.prims.begin()].ID(),prims[current.prims.begin()].bounds());
-          return (size_t) node;
+          return node;
         },
         
         /* progress monitor function */

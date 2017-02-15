@@ -27,7 +27,7 @@ namespace embree
         return createLeaf(current,alloc);
       };
       
-      NodeRef root = BVHBuilderBinnedSAH::build_reduce<NodeRef>
+      NodeRef root = BVHBuilderBinnedSAH::build_reduce
         (typename BVH::CreateAlloc(bvh),NodeRef(0),typename BVH::CreateAlignedNode(),typename BVH::UpdateAlignedNode(),createLeafFunc,progressFunc,
          prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
 
@@ -44,7 +44,7 @@ namespace embree
         return createLeaf(current,alloc);
       };
             
-      NodeRef root = BVHBuilderBinnedSAH::build_reduce<NodeRef>
+      NodeRef root = BVHBuilderBinnedSAH::build_reduce
         (typename BVH::CreateAlloc(bvh),NodeRef(0),typename BVH::CreateQuantizedNode(),typename BVH::UpdateQuantizedNode(),createLeafFunc,progressFunc,
          prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
 
@@ -61,7 +61,7 @@ namespace embree
 
       auto identity = std::make_pair(NodeRef(0),LBBox3fa(empty));
       
-      auto root = BVHBuilderBinnedSAH::build_reduce<NodeRef>
+      auto root = BVHBuilderBinnedSAH::build_reduce
         (typename BVH::CreateAlloc(bvh),identity,typename BVH::CreateAlignedNodeMB(),typename BVH::UpdateAlignedNodeMB(),createLeafFunc,progressFunc,
          prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
 
