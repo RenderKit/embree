@@ -426,7 +426,7 @@ namespace embree
           const unsigned int splitDimMask = (unsigned int)1 << splitDim; 
 
           /* init spatial mapping */
-          const SpatialBinMapping<SPATIAL_BINS> mapping = split.mapping;
+          const SpatialBinMapping<SPATIAL_BINS> &mapping = split.mapping;
           const vint4 vSplitPos(splitPos);
           const vbool4 vSplitMask( (int)splitDimMask );
 

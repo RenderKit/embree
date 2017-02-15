@@ -366,9 +366,10 @@ namespace embree
 
             /* opened split */
             //if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
-              ext_weights = sequential_opened_object_split(split.objectSplit(),set,left,lset,right,rset);
+            ext_weights = sequential_opened_object_split(split.objectSplit(),set,left,lset,right,rset);
+
               //else
-              //ext_weights = parallel_opened_object_split(split.objectSplit(),set,left,lset,right,rset);
+            //ext_weights = parallel_opened_object_split(split.objectSplit(),set,left,lset,right,rset);
 
               /* FIXME: does actually happen with paritially opened list of nodes */
               if (lset.size() == 0 || rset.size() == 0)
@@ -460,7 +461,7 @@ namespace embree
           const unsigned int splitDimMask = (unsigned int)1 << splitDim; 
 
           /* init opened object mapping */
-          const BinMapping<OBJECT_BINS> mapping = split.mapping;
+          const BinMapping<OBJECT_BINS> &mapping = split.mapping;
           const vint4 vSplitPos(splitPos);
           const vbool4 vSplitMask( (int)splitDimMask );
 
@@ -481,12 +482,13 @@ namespace embree
           assert(area(left.geomBounds) >= 0.0f);
           assert(area(right.geomBounds) >= 0.0f);
 
+#if DEBUG
           for (size_t i=lset.begin();i<lset.end();i++)
             assert(inside(left.centBounds,prims0[i].center2()));
 
           for (size_t i=rset.begin();i<rset.end();i++)
             assert(inside(right.centBounds,prims0[i].center2()));
-
+#endif
           return std::pair<size_t,size_t>(left_weight,right_weight);
         }
 
@@ -545,7 +547,7 @@ namespace embree
           const unsigned int splitDimMask = (unsigned int)1 << splitDim;
 
           /* init opened object mapping */
-          const BinMapping<OBJECT_BINS>& mapping = split.mapping;
+          const BinMapping<OBJECT_BINS> &mapping = split.mapping;
           const vint4 vSplitPos(splitPos);
           const vbool4 vSplitMask( (int)splitDimMask );
 
@@ -570,6 +572,15 @@ namespace embree
 
           assert(area(left.geomBounds) >= 0.0f);
           assert(area(right.geomBounds) >= 0.0f);
+
+#if DEBUG
+          for (size_t i=lset.begin();i<lset.end();i++)
+            assert(inside(left.centBounds,prims0[i].center2()));
+
+          for (size_t i=rset.begin();i<rset.end();i++)
+            assert(inside(right.centBounds,prims0[i].center2()));
+#endif
+
           return std::pair<size_t,size_t>(left_weight,right_weight);
         }
 
