@@ -102,13 +102,13 @@ namespace embree
       public:
         
         BuilderT (Heuristic& heuristic, 
-                           CreateAllocFunc& createAlloc, 
-                           CreateNodeFunc& createNode, 
-                           UpdateNodeFunc& updateNode, 
-                           const CreateLeafFunc& createLeaf,
-                           const ProgressMonitor& progressMonitor,
-                           const PrimInfo& pinfo,
-                           const Settings& settings)
+                  CreateAllocFunc& createAlloc, 
+                  CreateNodeFunc& createNode, 
+                  UpdateNodeFunc& updateNode, 
+                  const CreateLeafFunc& createLeaf,
+                  const ProgressMonitor& progressMonitor,
+                  const PrimInfo& pinfo,
+                  const Settings& settings)
           
           : Settings(settings),
           heuristic(heuristic), 
@@ -307,9 +307,9 @@ namespace embree
         const ProgressMonitor& progressMonitor;
         const PrimInfo& pinfo;
       };
-
+      
       template<
-        typename ReductionTy, 
+      typename ReductionTy, 
         typename Heuristic,
         typename Set,
         typename CreateAllocFunc, 
@@ -327,7 +327,7 @@ namespace embree
                                  const Settings& settings)
       {
         typedef BuildRecordT<Set,typename Heuristic::Split,PrimInfo> BuildRecord;
-
+        
         typedef BuilderT<
           BuildRecord,
           Heuristic,
@@ -355,7 +355,7 @@ namespace embree
         return builder(br);
       }
     };
-
+    
     /* SAH builder that operates on an array of BuildRecords */
     struct BVHBuilderBinnedSAH
     {
@@ -366,7 +366,7 @@ namespace embree
       
       /*! special builder that propagates reduction over the tree */
       template<
-        typename ReductionTy, 
+      typename ReductionTy, 
         typename CreateAllocFunc, 
         typename CreateNodeFunc, 
         typename UpdateNodeFunc, 
@@ -393,8 +393,6 @@ namespace embree
       }
     };
     
-#define FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS 16
-
     /* Spatial SAH builder that operates on an double-buffered array of BuildRecords */
     struct BVHBuilderBinnedFastSpatialSAH
     {
@@ -403,16 +401,16 @@ namespace embree
 #else
       static const size_t OBJECT_BINS = 32;
 #endif
-      static const size_t SPATIAL_BINS = FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS;
-
+      static const size_t SPATIAL_BINS = 16;
+      
       typedef extended_range<size_t> Set;
       typedef Split2<BinSplit<OBJECT_BINS>,SpatialBinSplit<SPATIAL_BINS> > Split;
       typedef GeneralBVHBuilder::BuildRecordT<Set,Split,PrimInfo> BuildRecord;
       typedef typename GeneralBVHBuilder::Settings Settings;
-
+      
       /*! special builder that propagates reduction over the tree */
       template<
-        typename ReductionTy, 
+      typename ReductionTy, 
         typename CreateAllocFunc, 
         typename CreateNodeFunc, 
         typename UpdateNodeFunc, 
@@ -426,13 +424,13 @@ namespace embree
                                  const CreateLeafFunc& createLeaf, 
                                  SplitPrimitiveFunc splitPrimitive,
                                  ProgressMonitor progressMonitor,
-                                 PrimRef* prims0, 
+                                 PrimRef* prims, 
                                  const size_t extSize,
                                  const PrimInfo& pinfo, 
                                  const Settings& settings)
       {
         typedef HeuristicArraySpatialSAH<SplitPrimitiveFunc, PrimRef,OBJECT_BINS, SPATIAL_BINS> Heuristic;
-        Heuristic heuristic(splitPrimitive,prims0,pinfo);
+        Heuristic heuristic(splitPrimitive,prims,pinfo);
         return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set>(
           heuristic,
           createAlloc,
@@ -444,6 +442,5 @@ namespace embree
           settings);
       }
     };
-
   }
 }
