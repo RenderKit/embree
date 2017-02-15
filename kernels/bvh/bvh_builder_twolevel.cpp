@@ -26,6 +26,7 @@
 #define PROFILE_ITERATIONS 200
 
 #define ENABLER_DIRECT_SAH_MERGE_BUILDER 1
+#define SPLIT_MEMORY_RESERVE_FACTOR 100
 
 namespace embree
 {
@@ -153,9 +154,19 @@ namespace embree
 #endif
         {
 #if ENABLER_DIRECT_SAH_MERGE_BUILDER == 1
-          PrimInfo pinfo(empty);
-          for (size_t i=0;i<refs.size();i++)
-            pinfo.add(refs[i].bounds(),refs[i].bounds().center2());
+
+          const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(),  PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {
+
+              PrimInfo pinfo(empty);
+              for (size_t i=r.begin(); i<r.end(); i++) {
+                pinfo.add(refs[i].bounds(),refs[i].bounds().center2());
+              }
+              return pinfo;
+            }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
+          
+          //PrimInfo pinfo(empty);
+          //for (size_t i=0;i<refs.size();i++)
+          //  pinfo.add(refs[i].bounds(),refs[i].bounds().center2());
 #else
           const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(),  PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {
 
@@ -177,8 +188,7 @@ namespace embree
             NodeRef root;
 #if ENABLER_DIRECT_SAH_MERGE_BUILDER == 1
 
-            const size_t extSize = max(pinfo.size(),size_t(pinfo.size()*100));
-            PRINT(extSize);
+            const size_t extSize = max(pinfo.size(),size_t(pinfo.size() * SPLIT_MEMORY_RESERVE_FACTOR));
             refs.resize(extSize);
 
 
