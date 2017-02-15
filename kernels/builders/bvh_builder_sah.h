@@ -40,7 +40,8 @@ namespace embree
           travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024) {}
         
         Settings (size_t sahBlockSize, size_t minLeafSize, size_t maxLeafSize, float travCost, float intCost, size_t singleThreadThreshold)
-        : branchingFactor(2), maxDepth(32), logBlockSize(__bsr(sahBlockSize)), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), travCost(travCost), intCost(intCost), singleThreadThreshold(singleThreadThreshold) {}
+        : branchingFactor(2), maxDepth(32), logBlockSize(__bsr(sahBlockSize)), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), 
+          travCost(travCost), intCost(intCost), singleThreadThreshold(singleThreadThreshold) {}
         
       public:
         size_t branchingFactor;  //!< branching factor of BVH to build
@@ -291,7 +292,6 @@ namespace embree
         /*! builder entry function */
         __forceinline const ReductionTy operator() (BuildRecord& record)
         {
-          //BuildRecord br(record);
           record.split = find(record); 
           ReductionTy ret = recurse(record,nullptr,true);
           _mm_mfence(); // to allow non-temporal stores during build
@@ -319,6 +319,7 @@ namespace embree
         typename ProgressMonitor>
         
         static ReductionTy build(Heuristic& heuristic,
+                                 const Set& set,
                                  CreateAllocFunc createAlloc, 
                                  CreateNodeFunc createNode, UpdateNodeFunc updateNode, 
                                  const CreateLeafFunc& createLeaf, 
@@ -351,7 +352,7 @@ namespace embree
                         settings);
         
         /* build hierarchy */
-        BuildRecord br(pinfo,1,Set(0,pinfo.size()));
+        BuildRecord br(pinfo,1,set);
         return builder(br);
       }
     };
@@ -383,6 +384,7 @@ namespace embree
         Heuristic heuristic(prims);
         return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set>(
           heuristic,
+          Set(0,pinfo.size()),
           createAlloc,
           createNode,
           updateNode,
@@ -433,6 +435,7 @@ namespace embree
         Heuristic heuristic(splitPrimitive,prims,pinfo);
         return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set>(
           heuristic,
+          Set(0,pinfo.size(),extSize),
           createAlloc,
           createNode,
           updateNode,
