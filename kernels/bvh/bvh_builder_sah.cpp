@@ -529,7 +529,7 @@ namespace embree
           root,
           typename BVH::CreateAlloc(bvh),
           size_t(0),
-          typename BVH::CreateAlignedNode(bvh),
+          typename BVH::CreateAlignedNode(),
           norotate<N>,
           CreateLeafSpatial<N,Primitive>(bvh,prims0.data()),
           splitter,

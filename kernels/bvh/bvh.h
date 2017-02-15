@@ -124,8 +124,6 @@ namespace embree
     /*! Builder interface to create Node */
     struct CreateAlignedNode
     {
-      __forceinline CreateAlignedNode (BVHN* bvh) : bvh(bvh) {}
-
       template<typename BuildRecord>
       __forceinline AlignedNode* operator() (const BuildRecord& current, BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc)
       {
@@ -134,11 +132,23 @@ namespace embree
           node->set(i,children[i].bounds());
           children[i].parent = (size_t*)&node->child(i);
         }
-        *current.parent = bvh->encodeNode(node);
+        *current.parent = encodeNode(node);
         return node;
       }
+    };
 
-      BVHN* bvh;
+    struct CreateAlignedNodeMB
+    {
+      template<typename BuildRecord>
+      __forceinline AlignedNodeMB* operator() (const BuildRecord& current, BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc)
+      {
+        AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),byteNodeAlignment); node->clear();
+        for (size_t i=0; i<num; i++) {
+          children[i].parent = (size_t*)&node->child(i);
+        }
+        *current.parent = encodeNode(node);
+	return node;
+      }
     };
 
     /*! Builder interface to create Node */

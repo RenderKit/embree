@@ -40,7 +40,7 @@ namespace embree
       
       NodeRef root;
       BVHBuilderBinnedSAH::build_reduce<NodeRef>
-        (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateAlignedNode(bvh),dummy<N>,createLeafFunc,progressFunc,
+        (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateAlignedNode(),dummy<N>,createLeafFunc,progressFunc,
          prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
 
       bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
@@ -74,27 +74,6 @@ namespace embree
     }
 
     template<int N>
-      struct CreateAlignedNodeMB
-    {
-      typedef BVHN<N> BVH;
-      typedef typename BVH::AlignedNodeMB AlignedNodeMB;
-
-      __forceinline CreateAlignedNodeMB (BVH* bvh) : bvh(bvh) {}
-      
-      __forceinline AlignedNodeMB* operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc)
-      {
-        AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),BVH::byteNodeAlignment); node->clear();
-        for (size_t i=0; i<num; i++) {
-          children[i].parent = (size_t*)&node->child(i);
-        }
-        *current.parent = bvh->encodeNode(node);
-	return node;
-      }
-
-      BVH* bvh;
-    };
-
-    template<int N>
     std::tuple<typename BVHN<N>::NodeRef,LBBox3fa> BVHNBuilderMblur<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost, const size_t singleThreadThreshold)
     {
       auto progressFunc = [&] (size_t dn) { 
@@ -120,7 +99,7 @@ namespace embree
       
       NodeRef root;
       LBBox3fa root_bounds = BVHBuilderBinnedSAH::build_reduce<NodeRef>
-        (root,typename BVH::CreateAlloc(bvh),identity,CreateAlignedNodeMB<N>(bvh),reduce,createLeafFunc,progressFunc,
+        (root,typename BVH::CreateAlloc(bvh),identity,typename BVH::CreateAlignedNodeMB(),reduce,createLeafFunc,progressFunc,
          prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
 
       /* set bounding box to merge bounds of all time steps */
