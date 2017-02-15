@@ -82,15 +82,9 @@ namespace embree
         typedef extended_range<size_t> Set;
         typedef SplitOpenMerge<ObjectSplit> Split;
         
-#if defined(__AVX512ER__) // KNL
-        static const size_t PARALLEL_THRESHOLD = 3*1024; 
-        static const size_t PARALLEL_FIND_BLOCK_SIZE = 768;
-        static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;
-#else
         static const size_t PARALLEL_THRESHOLD = 3*1024;
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
         static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;
-#endif
 
         static const size_t MOVE_STEP_SIZE = 64;
         static const size_t CREATE_SPLITS_STEP_SIZE = 64;
@@ -351,9 +345,6 @@ namespace embree
           pinfo.begin = nset.begin();
           pinfo.end   = nset.end();
           set = nset;
-
-          
-
         }
         
         /*! array partitioning */
@@ -375,24 +366,25 @@ namespace embree
             create_opened_object_splits(set,pinfo,split.objectSplit(), split.objectSplit().mapping); 
 
             /* opened split */
-            //if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
-            ext_weights = sequential_opened_object_split(split.objectSplit(),set,left,lset,right,rset);
+            if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
+              ext_weights = sequential_opened_object_split(split.objectSplit(),set,left,lset,right,rset);
+            else
+              ext_weights = parallel_opened_object_split(split.objectSplit(),set,left,lset,right,rset);
 
-              //else
-            //ext_weights = parallel_opened_object_split(split.objectSplit(),set,left,lset,right,rset);
 
-              /* FIXME: does actually happen with paritially opened list of nodes */
-              if (lset.size() == 0 || rset.size() == 0)
-              {
-                DBG_PRINT("FALLBACK");
-                splitFallback(set,left,lset,right,rset);
-                DBG_PRINT(lset);
-                DBG_PRINT(rset);
-                return;
-              }
-
-              assert(lset.size() >= 1);
-              assert(rset.size() >= 1);
+            /* FIXME: does actually happen with paritially opened list of nodes */
+            if (lset.size() == 0 || rset.size() == 0)
+            {
+              DBG_PRINT("FALLBACK");
+              deterministic_order(set);
+              splitFallback(set,left,lset,right,rset);
+              DBG_PRINT(lset);
+              DBG_PRINT(rset);
+              return;
+            }
+            
+            assert(lset.size() >= 1);
+            assert(rset.size() >= 1);
               
           }
           else
@@ -562,7 +554,7 @@ namespace embree
           const vbool4 vSplitMask( (int)splitDimMask );
 
           auto isLeft = [&] (const PrimRef &ref) { 
-            const Vec3fa c = ref.bounds().center2();
+            const Vec3fa c = ref.center2();
             return any(((vint4)mapping.bin(c) < vSplitPos) & vSplitMask); };
 
           const size_t center = parallel_partitioning(
