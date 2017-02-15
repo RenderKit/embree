@@ -217,16 +217,17 @@ namespace embree
         /*! finds the best opened object split */
         __forceinline const ObjectSplit opened_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
-          return sequential_opened_object_find(set, pinfo, logBlockSize);
-          /* if (pinfo.size() < PARALLEL_THRESHOLD) return sequential_opened_object_find(set, pinfo, logBlockSize); */
-          /* else                                   return parallel_opened_object_find  (set, pinfo, logBlockSize); */
+          if (pinfo.size() < PARALLEL_THRESHOLD) 
+            return sequential_opened_object_find(set, pinfo, logBlockSize); 
+          else                                   
+            return parallel_opened_object_find  (set, pinfo, logBlockSize); 
         }
 
         /*! finds the best opened object split */
         __noinline const ObjectSplit sequential_opened_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
           ObjectBinner binner(empty); 
-          BBox3fa cent2Bounds(pinfo.centBounds); // FIXME: empty?
+          BBox3fa cent2Bounds(pinfo.centBounds); // FIXME: empty or parent centBounds, might need both...
 
           assert(set.begin() == pinfo.begin);
           assert(set.end() == pinfo.end);
@@ -249,34 +250,39 @@ namespace embree
             size_t n = nodeOpenerFunc(prims0[i],refs);
             binner.bin(refs,n,_mapping); 
           }            
-          return binner.best(mapping,logBlockSize); //,set.ext_size());
+          return binner.best(mapping,logBlockSize); 
         }
 
         __noinline const ObjectSplit parallel_opened_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
           ObjectBinner binner(empty);
 
-          BBox3fa cent2Bounds(empty);
-
-          for (size_t i=set.begin();i<set.end();i++)
-          {
-            PrimRef refs[8];
-            size_t n = nodeOpenerFunc(prims0[i],refs);
-            for (size_t j=0;j<n;j++)
-              cent2Bounds.extend(refs[j].center2());
-          }
+          const BBox3fa cent2Bounds = parallel_reduce(set.begin(), set.end(),  BBox3fa(empty), [&] (const range<size_t>& r) -> BBox3fa {
+              BBox3fa bounds(empty);
+              for (size_t i=r.begin(); i<r.end(); i++) {
+                PrimRef refs[8];
+                size_t n = nodeOpenerFunc(prims0[i],refs);
+                for (size_t j=0;j<n;j++)
+                  bounds.extend(refs[j].center2());
+              }
+              return bounds;
+            }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
 
           const BinMapping<OBJECT_BINS> mapping(cent2Bounds,OBJECT_BINS);
           const BinMapping<OBJECT_BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
-          DBG_PRINT("NOT YET IMPLEMENTED");
-          exit(1);
-          /* binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner, */
-          /*                          [&] (const range<size_t>& r) -> OpenMergeBinner {  */
-          /*                            OpenMergeBinner binner(empty);  */
-          /*                            binner.bin2(splitterFactory,prims0,r.begin(),r.end(),_mapping); */
-          /*                            return binner; }, */
-          /*                          [&] (const OpenMergeBinner& b0, const OpenMergeBinner& b1) -> OpenMergeBinner { return OpenMergeBinner::reduce(b0,b1); }); */
-          return binner.best(mapping,logBlockSize); //,set.ext_size());
+          binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
+                                   [&] (const range<size_t>& r) -> ObjectBinner { 
+                                     ObjectBinner binner(empty); 
+                                     for (size_t i=r.begin();i<r.end();i++)
+                                     {
+                                       PrimRef refs[8];
+                                       size_t n = nodeOpenerFunc(prims0[i],refs);
+                                       binner.bin(refs,n,_mapping); 
+                                     }
+                                     return binner; },
+                                   [&] (const ObjectBinner& b0, const ObjectBinner& b1) -> ObjectBinner { ObjectBinner r = b0; r.merge(b1,_mapping.size()); return r; }
+            );
+          return binner.best(mapping,logBlockSize);
         }
 
 
@@ -364,6 +370,7 @@ namespace embree
               //else
               //ext_weights = parallel_opened_object_split(split.objectSplit(),set,left,lset,right,rset);
 
+              /* FIXME: does actually happen with paritially opened list of nodes */
               if (lset.size() == 0 || rset.size() == 0)
               {
                 DBG_PRINT("FALLBACK");
