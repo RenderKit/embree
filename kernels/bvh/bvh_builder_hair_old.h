@@ -81,7 +81,13 @@ namespace embree
       }
       
     private:
-      
+
+       void deterministic_order(const PrimInfo& pinfo)
+       {
+         /* required as parallel partition destroys original primitive order */
+         std::sort(&prims[pinfo.begin],&prims[pinfo.end]);
+       }
+
       /*! creates a large leaf that could be larger than supported by the BVH */
       NodeRef createLargeLeaf(size_t depth, const PrimInfo& pinfo, Allocator alloc)
       {
@@ -186,7 +192,7 @@ namespace embree
         }
         /* otherwise perform fallback split */
         else {
-          alignedHeuristic.deterministic_order(pinfo);
+          deterministic_order(pinfo);
           alignedHeuristic.splitFallback(pinfo,linfo,rinfo);
           return true;
         }
@@ -206,7 +212,7 @@ namespace embree
         
         /* create leaf node */
         if (depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || pinfo.size() <= minLeafSize) {
-          alignedHeuristic.deterministic_order(pinfo);
+          deterministic_order(pinfo);
           return createLargeLeaf(depth,pinfo,alloc);
         }
         

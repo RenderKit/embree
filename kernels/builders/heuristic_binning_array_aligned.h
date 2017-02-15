@@ -137,11 +137,13 @@ namespace embree
           std::sort(&prims[set.begin()],&prims[set.end()]);
         }
 
+#if 0
         void deterministic_order(const PrimInfo& pinfo)
         {
           /* required as parallel partition destroys original primitive order */
           std::sort(&prims[pinfo.begin],&prims[pinfo.end]);
         }
+#endif
 
         /*! array partitioning */
         void splitFallback(const PrimInfo& pinfo, PrimInfo& left, PrimInfo& right)
