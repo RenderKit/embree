@@ -161,7 +161,7 @@ namespace embree
           /* otherwise build toplevel hierarchy */
           else
           {
-            NodeRef root = BVHBuilderBinnedSAH::build_reduce<NodeRef>
+            NodeRef root = BVHBuilderBinnedSAH::build<NodeRef>
               (
                 typename BVH::CreateAlloc(bvh),
                 typename BVH::CreateAlignedNode(),

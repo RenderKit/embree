@@ -313,14 +313,14 @@ namespace embree
         typename CreateLeafFunc, 
         typename ProgressMonitor>
         
-        static ReductionTy build_reduce(CreateAllocFunc createAlloc, 
-                                        CreateNodeFunc createNode, UpdateNodeFunc updateNode, 
-                                        const CreateLeafFunc& createLeaf, 
-                                        const ProgressMonitor& progressMonitor,
-                                        PrimRef* prims, const PrimInfo& pinfo, 
-                                        const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
-                                        const size_t minLeafSize, const size_t maxLeafSize,
-                                        const float travCost, const float intCost, const size_t singleThreadThreshold)
+        static ReductionTy build(CreateAllocFunc createAlloc, 
+                                 CreateNodeFunc createNode, UpdateNodeFunc updateNode, 
+                                 const CreateLeafFunc& createLeaf, 
+                                 const ProgressMonitor& progressMonitor,
+                                 PrimRef* prims, const PrimInfo& pinfo, 
+                                 const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
+                                 const size_t minLeafSize, const size_t maxLeafSize,
+                                 const float travCost, const float intCost, const size_t singleThreadThreshold)
       {
         /* builder wants log2 of blockSize as input */		  
         const size_t logBlockSize = __bsr(blockSize); 
@@ -384,20 +384,20 @@ namespace embree
         typename SplitPrimitiveFunc, 
         typename ProgressMonitor>
         
-        static ReductionTy build_reduce(CreateAllocFunc createAlloc, 
-                                        CreateNodeFunc createNode, 
-                                        UpdateNodeFunc updateNode, 
-                                        const CreateLeafFunc& createLeaf, 
-                                        SplitPrimitiveFunc splitPrimitive,
-                                        ProgressMonitor progressMonitor,
-                                        PrimRef* prims0, 
-                                        const size_t extSize,
-                                        const PrimInfo& pinfo, 
-                                        const size_t branchingFactor, 
-                                        const size_t maxDepth, const size_t blockSize, 
-                                        const size_t minLeafSize, const size_t maxLeafSize,
-                                        const float travCost, const float intCost, 
-                                        const size_t singleThreadThreshold)
+        static ReductionTy build(CreateAllocFunc createAlloc, 
+                                 CreateNodeFunc createNode, 
+                                 UpdateNodeFunc updateNode, 
+                                 const CreateLeafFunc& createLeaf, 
+                                 SplitPrimitiveFunc splitPrimitive,
+                                 ProgressMonitor progressMonitor,
+                                 PrimRef* prims0, 
+                                 const size_t extSize,
+                                 const PrimInfo& pinfo, 
+                                 const size_t branchingFactor, 
+                                 const size_t maxDepth, const size_t blockSize, 
+                                 const size_t minLeafSize, const size_t maxLeafSize,
+                                 const float travCost, const float intCost, 
+                                 const size_t singleThreadThreshold)
       {
         /* builder wants log2 of blockSize as input */		  
         const size_t logBlockSize = __bsr(blockSize); 
