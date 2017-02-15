@@ -236,12 +236,11 @@ namespace embree
       /* otherwise build toplevel hierarchy */
       else
       {
-        NodeRef root = BVHBuilderBinnedSAH::build_reduce
+        NodeRef root = BVHBuilderBinnedSAH::build_reduce<NodeRef>
           (
-           [&] { return bvh->alloc.threadLocal2(); },
-           NodeRef(0),
-           typename BVH::CreateAlignedNode(),
-           typename BVH::UpdateAlignedNode(),
+            typename BVH::CreateAlloc(bvh),
+            typename BVH::CreateAlignedNode(),
+            typename BVH::UpdateAlignedNode(),
 
            [&] (const BVHBuilderBinnedSAH::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> NodeRef
           {

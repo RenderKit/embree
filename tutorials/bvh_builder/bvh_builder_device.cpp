@@ -79,15 +79,13 @@ namespace embree
       allocator.reset();
       allocator.init(N);
       
-      Node* root = isa::BVHBuilderBinnedSAH::build_reduce(
+      Node* root = isa::BVHBuilderBinnedSAH::build_reduce<Node*>(
 
         /* thread local allocator for fast allocations */
         [&] () -> FastAllocator::ThreadLocal* { 
           return allocator.threadLocal(); 
         },
 
-        root,
-        
         /* lambda function that creates BVH nodes */
         [&](const isa::BVHBuilderBinnedSAH::BuildRecord& current, isa::BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, FastAllocator::ThreadLocal* alloc) -> Node*
         {

@@ -78,7 +78,6 @@ namespace embree
       public:
         
         GeneralBVHBuilder (Heuristic& heuristic, 
-                           const ReductionTy& identity,
                            CreateAllocFunc& createAlloc, 
                            CreateNodeFunc& createNode, 
                            UpdateNodeFunc& updateNode, 
@@ -89,7 +88,6 @@ namespace embree
                            const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize,
                            const float travCost, const float intCost, const size_t singleThreadThreshold)
           : heuristic(heuristic), 
-          identity(identity), 
           createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
           progressMonitor(progressMonitor),
           pinfo(pinfo), 
@@ -281,7 +279,6 @@ namespace embree
         
       private:
         Heuristic& heuristic;
-        const ReductionTy identity;
         CreateAllocFunc& createAlloc;
         CreateNodeFunc& createNode;
         UpdateNodeFunc& updateNode;
@@ -309,15 +306,14 @@ namespace embree
       
       /*! special builder that propagates reduction over the tree */
       template<
-        typename CreateAllocFunc, 
         typename ReductionTy, 
+        typename CreateAllocFunc, 
         typename CreateNodeFunc, 
         typename UpdateNodeFunc, 
         typename CreateLeafFunc, 
         typename ProgressMonitor>
         
         static ReductionTy build_reduce(CreateAllocFunc createAlloc, 
-                                        const ReductionTy& identity, 
                                         CreateNodeFunc createNode, UpdateNodeFunc updateNode, 
                                         const CreateLeafFunc& createLeaf, 
                                         const ProgressMonitor& progressMonitor,
@@ -347,7 +343,6 @@ namespace embree
         
         /* instantiate builder */
         Builder builder(heuristic,
-                        identity,
                         createAlloc,
                         createNode,
                         updateNode,
@@ -381,8 +376,8 @@ namespace embree
 
       /*! special builder that propagates reduction over the tree */
       template<
-        typename CreateAllocFunc, 
         typename ReductionTy, 
+        typename CreateAllocFunc, 
         typename CreateNodeFunc, 
         typename UpdateNodeFunc, 
         typename CreateLeafFunc, 
@@ -390,7 +385,6 @@ namespace embree
         typename ProgressMonitor>
         
         static ReductionTy build_reduce(CreateAllocFunc createAlloc, 
-                                        const ReductionTy& identity, 
                                         CreateNodeFunc createNode, 
                                         UpdateNodeFunc updateNode, 
                                         const CreateLeafFunc& createLeaf, 
@@ -428,7 +422,6 @@ namespace embree
         
         /* instantiate builder */
         Builder builder(heuristic,
-                        identity,
                         createAlloc,
                         createNode,
                         updateNode,

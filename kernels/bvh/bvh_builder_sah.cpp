@@ -526,9 +526,8 @@ namespace embree
 
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
 
-        NodeRef root = BVHBuilderBinnedFastSpatialSAH::build_reduce(
+        NodeRef root = BVHBuilderBinnedFastSpatialSAH::build_reduce<NodeRef>(
           typename BVH::CreateAlloc(bvh),
-          NodeRef(0),
           typename BVH::CreateAlignedNode(),
           typename BVH::UpdateAlignedNode(),
           CreateLeafSpatial<N,Primitive>(bvh,prims0.data()),

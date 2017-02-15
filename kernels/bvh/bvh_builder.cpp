@@ -27,8 +27,8 @@ namespace embree
         return createLeaf(current,alloc);
       };
       
-      NodeRef root = BVHBuilderBinnedSAH::build_reduce
-        (typename BVH::CreateAlloc(bvh),NodeRef(0),typename BVH::CreateAlignedNode(),typename BVH::UpdateAlignedNode(),createLeafFunc,progressFunc,
+      NodeRef root = BVHBuilderBinnedSAH::build_reduce<NodeRef>
+        (typename BVH::CreateAlloc(bvh),typename BVH::CreateAlignedNode(),typename BVH::UpdateAlignedNode(),createLeafFunc,progressFunc,
          prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
 
       bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
@@ -44,8 +44,8 @@ namespace embree
         return createLeaf(current,alloc);
       };
             
-      NodeRef root = BVHBuilderBinnedSAH::build_reduce
-        (typename BVH::CreateAlloc(bvh),NodeRef(0),typename BVH::CreateQuantizedNode(),typename BVH::UpdateQuantizedNode(),createLeafFunc,progressFunc,
+      NodeRef root = BVHBuilderBinnedSAH::build_reduce<NodeRef>
+        (typename BVH::CreateAlloc(bvh),typename BVH::CreateQuantizedNode(),typename BVH::UpdateQuantizedNode(),createLeafFunc,progressFunc,
          prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
 
       //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: COPY LAYOUT FOR LARGE NODES !!!
@@ -59,10 +59,8 @@ namespace embree
         return createLeaf(current,alloc);
       };
 
-      auto identity = std::make_pair(NodeRef(0),LBBox3fa(empty));
-      
-      auto root = BVHBuilderBinnedSAH::build_reduce
-        (typename BVH::CreateAlloc(bvh),identity,typename BVH::CreateAlignedNodeMB(),typename BVH::UpdateAlignedNodeMB(),createLeafFunc,progressFunc,
+      auto root = BVHBuilderBinnedSAH::build_reduce<std::pair<NodeRef,LBBox3fa>>
+        (typename BVH::CreateAlloc(bvh),typename BVH::CreateAlignedNodeMB(),typename BVH::UpdateAlignedNodeMB(),createLeafFunc,progressFunc,
          prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
 
       /* set bounding box to merge bounds of all time steps */
