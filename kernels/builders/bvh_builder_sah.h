@@ -20,9 +20,11 @@
 #include "heuristic_spatial_array.h"
 
 #if defined(__AVX512F__)
-#define NUM_OBJECT_BINS 16
+#  define NUM_OBJECT_BINS 16
+#  define NUM_SPATIAL_BINS 16
 #else
-#define NUM_OBJECT_BINS 32
+#  define NUM_OBJECT_BINS 32
+#  define NUM_SPATIAL_BINS 16
 #endif
 
 namespace embree
@@ -398,15 +400,8 @@ namespace embree
     /* Spatial SAH builder that operates on an double-buffered array of BuildRecords */
     struct BVHBuilderBinnedFastSpatialSAH
     {
-#if defined(__AVX512F__)
-      static const size_t OBJECT_BINS = 16;
-#else
-      static const size_t OBJECT_BINS = 32;
-#endif
-      static const size_t SPATIAL_BINS = 16;
-      
       typedef extended_range<size_t> Set;
-      typedef Split2<BinSplit<OBJECT_BINS>,SpatialBinSplit<SPATIAL_BINS> > Split;
+      typedef Split2<BinSplit<NUM_OBJECT_BINS>,SpatialBinSplit<NUM_SPATIAL_BINS> > Split;
       typedef GeneralBVHBuilder::BuildRecordT<Set,Split,PrimInfo> BuildRecord;
       typedef typename GeneralBVHBuilder::Settings Settings;
       
@@ -431,8 +426,9 @@ namespace embree
                                  const PrimInfo& pinfo, 
                                  const Settings& settings)
       {
-        typedef HeuristicArraySpatialSAH<SplitPrimitiveFunc, PrimRef,OBJECT_BINS, SPATIAL_BINS> Heuristic;
+        typedef HeuristicArraySpatialSAH<SplitPrimitiveFunc,PrimRef,NUM_OBJECT_BINS,NUM_SPATIAL_BINS> Heuristic;
         Heuristic heuristic(splitPrimitive,prims,pinfo);
+
         return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set>(
           heuristic,
           Set(0,pinfo.size(),extSize),
