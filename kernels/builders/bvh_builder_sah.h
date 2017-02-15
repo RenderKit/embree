@@ -65,10 +65,7 @@ namespace embree
           __forceinline BuildRecordT (size_t depth) 
             : depth(depth), pinfo(empty) {}
           
-          __forceinline BuildRecordT (const PrimInfo& pinfo, size_t depth) 
-            : depth(depth), pinfo(pinfo) {}
-          
-          __forceinline BuildRecordT (const PrimInfo& pinfo, size_t depth, const Set &prims) 
+          __forceinline BuildRecordT (size_t depth, const PrimInfo& pinfo, const Set &prims) 
             : depth(depth), prims(prims), pinfo(pinfo) {}
           
           __forceinline BBox3fa bounds() const { return pinfo.geomBounds; }
@@ -76,8 +73,7 @@ namespace embree
           __forceinline friend bool operator< (const BuildRecordT& a, const BuildRecordT& b) { return a.pinfo.size() < b.pinfo.size(); }
           __forceinline friend bool operator> (const BuildRecordT& a, const BuildRecordT& b) { return a.pinfo.size() > b.pinfo.size();  }
           
-          
-          __forceinline size_t size() const { return this->pinfo.size(); }
+          __forceinline size_t size() const { return pinfo.size(); }
           
         public:
           size_t depth;     //!< Depth of the root of this subtree.
@@ -354,7 +350,7 @@ namespace embree
                         settings);
         
         /* build hierarchy */
-        BuildRecord br(pinfo,1,set);
+        BuildRecord br(1,pinfo,set);
         return builder(br);
       }
     };
