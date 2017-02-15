@@ -43,7 +43,7 @@ namespace embree
         __forceinline BuildRef () {}
 
         __forceinline BuildRef (const BBox3fa& bounds, NodeRef node)
-          : PrimRef(bounds,geomID), node(node), geomID(0), numPrimitives(0)
+          : PrimRef(bounds,(size_t)node), node(node), geomID(0), numPrimitives(0)
         {
           if (node.isLeaf())
             lower.w = 0.0f;
