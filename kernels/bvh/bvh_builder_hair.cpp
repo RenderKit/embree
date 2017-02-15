@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh_builder_hair.h"
-#include "bvh_builder_hair_old.h"
+#include "../builders/bvh_builder_hair.h"
+#include "../builders/bvh_builder_hair_old.h"
 #include "../builders/primrefgen.h"
 
 #include "../geometry/bezier1v.h"
