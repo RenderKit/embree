@@ -163,7 +163,7 @@ namespace embree
         {
           Binner binner(empty);
           const BinMapping<BINS> mapping(pinfo);
-          binner.template bin_serial_or_parallel<parallel>(prims,set.begin(),set.end(),size_t(4096),mapping,space);
+          bin_serial_or_parallel<parallel>(binner,prims,set.begin(),set.end(),size_t(4096),mapping,space);
           return binner.best(mapping,logBlockSize);
         }
         

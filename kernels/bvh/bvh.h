@@ -61,6 +61,7 @@ namespace embree
   public:
 
     /*! forward declaration of node type */
+    struct NodeRef;
     struct BaseNode;
     struct AlignedNode;
     struct AlignedNodeMB;
@@ -126,33 +127,60 @@ namespace embree
       BVHN* bvh;
     };
 
-    /*! Builder interface to create Node */
     struct CreateAlignedNode
     {
-      __forceinline CreateAlignedNode (BVHN* bvh) : bvh(bvh) {}
-
       template<typename BuildRecord>
-      __forceinline AlignedNode* operator() (const BuildRecord& current, BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc)
+      __forceinline NodeRef operator() (BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc) const
       {
         AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode), byteNodeAlignment); node->clear();
-        for (size_t i=0; i<n; i++) {
-          node->set(i,children[i].bounds());
-          children[i].parent = (size_t*)&node->child(i);
-        }
-        *current.parent = bvh->encodeNode(node);
-        return node;
+        for (size_t i=0; i<num; i++) node->set(i,children[i].bounds());
+        return encodeNode(node);
       }
+    };
 
-      BVHN* bvh;
+    struct UpdateAlignedNode
+    {
+      __forceinline NodeRef operator() (NodeRef ref, NodeRef* children, const size_t num) const
+      {
+        AlignedNode* node = ref.alignedNode();
+        for (size_t i=0; i<num; i++) node->set(i,children[i]);
+        return ref;
+      }
+    };
+
+    struct CreateAlignedNodeMB
+    {
+      template<typename BuildRecord>
+      __forceinline NodeRef operator() (BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc) const
+      {
+        AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),byteNodeAlignment); node->clear();
+	return encodeNode(node);
+      }
+    };
+
+    struct UpdateAlignedNodeMB
+    {
+      typedef std::pair<NodeRef,LBBox3fa> Ty;
+
+      __forceinline Ty operator() (NodeRef ref, Ty* children, const size_t num) const
+      {
+        AlignedNodeMB* node = ref.alignedNodeMB();
+
+        LBBox3fa bounds = empty;
+        for (size_t i=0; i<num; i++) {
+          node->set(i,children[i].first);
+          node->set(i,children[i].second);
+          bounds.extend(children[i].second);
+        }
+        return std::make_pair(ref,bounds);
+      }
     };
 
     /*! Builder interface to create Node */
     struct CreateQuantizedNode
     {
-      __forceinline CreateQuantizedNode (BVHN* bvh) : bvh(bvh) {}
-
       template<typename BuildRecord>
-      __forceinline AlignedNode* operator() (const BuildRecord& current, BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc)
+      __forceinline NodeRef operator() (BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc) const
       {
         __aligned(64) AlignedNode node;
         node.clear();
@@ -160,22 +188,20 @@ namespace embree
           node.set(i,children[i].bounds());
         }
         QuantizedNode *qnode = (QuantizedNode*) alloc->alloc0->malloc(sizeof(QuantizedNode), byteNodeAlignment);
-
-        assert(((size_t)qnode & 0x7) == 0);
-
-        /* init quantized node first */
         qnode->init(node);
 
-        for (size_t i=0; i<n; i++) {
-          children[i].parent = (size_t*)&qnode->child(i);
-        };
-
-        /* encode 64bit pointer as relative 32bit offset to parent node address */
-        *current.parent = (size_t)qnode | tyQuantizedNode;
-        return NULL;
+        return (size_t)qnode | tyQuantizedNode;
       }
+    };
 
-      BVHN* bvh;
+    struct UpdateQuantizedNode
+    {
+      __forceinline NodeRef operator() (NodeRef ref, NodeRef* children, const size_t num) const
+      {
+        QuantizedNode* node = ref.quantizedNode();
+        for (size_t i=0; i<num; i++) node->set(i,children[i]);
+        return ref;
+      }
     };
 
     struct NoRotate
@@ -1088,6 +1114,10 @@ namespace embree
         BaseNode::clear();
       }
 
+      __forceinline void set(size_t i, NodeRef childID) {
+        children[i] = childID;
+      }
+      
       /*! Returns bounds of specified child. */
       __forceinline BBox3fa bounds(size_t i) const
       {

@@ -15,168 +15,63 @@
 // ======================================================================== //
 
 #include "bvh_builder.h"
-#include "bvh_rotate.h"
-
-#define ROTATE_TREE 0
 
 namespace embree
 {
   namespace isa
   {
-    /* tree rotations */
     template<int N>
-    __forceinline size_t rotate(typename BVHN<N>::AlignedNode* node, const size_t* counts, const size_t num) {
-      return 0;
-    }
-
-    template<int N>
-    __forceinline size_t dummy(typename BVHN<N>::AlignedNode* node, const size_t* counts, const size_t num) {
-      return 0;
-    }
-
-#if ROTATE_TREE
-    template<>
-    __forceinline size_t rotate<4>(BVH4::AlignedNode* node, const size_t* counts, const size_t num)
+    void BVHNBuilder<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progressFunc, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings)
     {
-      size_t n = 0;
-      assert(num <= 4);
-      for (size_t i=0; i<num; i++)
-        n += counts[i];
-      if (n >= 4096) {
-        for (size_t i=0; i<num; i++) {
-          if (counts[i] < 4096) {
-            for (int j=0; j<ROTATE_TREE; j++) 
-              BVHNRotate<4>::rotate(node->child(i));
-            node->child(i).setBarrier();
-          }
-        }
-      }
-      return n;
-    }
-#endif
-
-    template<int N>
-    void BVHNBuilder<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost, const size_t singleThreadThreshold)
-    {
-      //bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-
-      auto progressFunc = [&] (size_t dn) { 
-        progress_in(dn); 
-      };
-            
-      auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> size_t {
+      auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> NodeRef {
         return createLeaf(current,alloc);
       };
       
-      NodeRef root;
-      BVHBuilderBinnedSAH::build_reduce<NodeRef>
-        (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateAlignedNode(bvh),rotate<N>,createLeafFunc,progressFunc,
-         prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
+      settings.branchingFactor = N;
+      settings.maxDepth = BVH::maxBuildDepthLeaf;
+      NodeRef root = BVHBuilderBinnedSAH::build<NodeRef>
+        (typename BVH::CreateAlloc(bvh),typename BVH::CreateAlignedNode(),typename BVH::UpdateAlignedNode(),createLeafFunc,progressFunc,prims,pinfo,settings);
 
       bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
-      
-#if ROTATE_TREE
-      if (N == 4)
-      {
-        for (int i=0; i<ROTATE_TREE; i++)
-          BVHNRotate<N>::rotate(bvh->root);
-        bvh->clearBarrier(bvh->root);
-      }
-#endif
       
       bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
     }
 
 
     template<int N>
-    void BVHNBuilderQuantized<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost, const size_t singleThreadThreshold)
+    void BVHNBuilderQuantized<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progressFunc, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings)
     {
-      //bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-      auto progressFunc = [&] (size_t dn) { 
-        progress_in(dn); 
-      };
-            
       auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> size_t {
         return createLeaf(current,alloc);
       };
             
-      NodeRef root = 0;
-      BVHBuilderBinnedSAH::build_reduce<NodeRef>
-        (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateQuantizedNode(bvh),dummy<N>,createLeafFunc,progressFunc,
-         prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
+      settings.branchingFactor = N;
+      settings.maxDepth = BVH::maxBuildDepthLeaf;
+      NodeRef root = BVHBuilderBinnedSAH::build<NodeRef>
+        (typename BVH::CreateAlloc(bvh),typename BVH::CreateQuantizedNode(),typename BVH::UpdateQuantizedNode(),createLeafFunc,progressFunc,prims,pinfo,settings);
 
-      NodeRef new_root = (size_t)root | BVH::tyQuantizedNode;
-      // todo: COPY LAYOUT FOR LARGE NODES !!!
-      //bvh->layoutLargeNodes(pinfo.size()*0.005f);
-      assert(new_root.isQuantizedNode());
-      bvh->set(new_root,LBBox3fa(pinfo.geomBounds),pinfo.size());
+      //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: COPY LAYOUT FOR LARGE NODES !!!
+      bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
     }
 
     template<int N>
-      struct CreateAlignedNodeMB
+    std::tuple<typename BVHN<N>::NodeRef,LBBox3fa> BVHNBuilderMblur<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progressFunc, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings)
     {
-      typedef BVHN<N> BVH;
-      typedef typename BVH::AlignedNodeMB AlignedNodeMB;
-
-      __forceinline CreateAlignedNodeMB (BVH* bvh) : bvh(bvh) {}
-      
-      __forceinline AlignedNodeMB* operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc)
-      {
-        AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),BVH::byteNodeAlignment); node->clear();
-        for (size_t i=0; i<num; i++) {
-          children[i].parent = (size_t*)&node->child(i);
-        }
-        *current.parent = bvh->encodeNode(node);
-	return node;
-      }
-
-      BVH* bvh;
-    };
-
-    template<int N>
-    std::tuple<typename BVHN<N>::NodeRef,LBBox3fa> BVHNBuilderMblur<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost, const size_t singleThreadThreshold)
-    {
-      auto progressFunc = [&] (size_t dn) { 
-        progress_in(dn); 
-      };
-            
-      auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> LBBox3fa {
+      auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> std::pair<NodeRef,LBBox3fa> {
         return createLeaf(current,alloc);
       };
 
-      /* reduction function */
-      auto reduce = [] (AlignedNodeMB* node, const LBBox3fa* bounds, const size_t num) -> LBBox3fa
-      {
-        assert(num <= N);
-        LBBox3fa allBounds = empty;
-        for (size_t i=0; i<num; i++) {
-          node->set(i, bounds[i]);
-          allBounds.extend(bounds[i]);
-        }
-        return allBounds;
-      };
-      auto identity = LBBox3fa(empty);
-      
-      NodeRef root;
-      LBBox3fa root_bounds = BVHBuilderBinnedSAH::build_reduce<NodeRef>
-        (root,typename BVH::CreateAlloc(bvh),identity,CreateAlignedNodeMB<N>(bvh),reduce,createLeafFunc,progressFunc,
-         prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
+      settings.branchingFactor = N;
+      settings.maxDepth = BVH::maxBuildDepthLeaf;
+      auto root = BVHBuilderBinnedSAH::build<std::pair<NodeRef,LBBox3fa>>
+        (typename BVH::CreateAlloc(bvh),typename BVH::CreateAlignedNodeMB(),typename BVH::UpdateAlignedNodeMB(),createLeafFunc,progressFunc,prims,pinfo,settings);
 
       /* set bounding box to merge bounds of all time steps */
-      bvh->set(root,root_bounds,pinfo.size()); // FIXME: remove later
+      bvh->set(root.first,root.second,pinfo.size()); // FIXME: remove later
 
-#if ROTATE_TREE
-      if (N == 4)
-      {
-        for (int i=0; i<ROTATE_TREE; i++)
-          BVHNRotate<N>::rotate(bvh->root);
-        bvh->clearBarrier(bvh->root);
-      }
-#endif
-      
       //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: implement for Mblur nodes and activate
       
-      return std::make_tuple(root,root_bounds);
+      return root;
     }
 
     template struct BVHNBuilder<4>;

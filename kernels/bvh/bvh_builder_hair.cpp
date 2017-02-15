@@ -128,6 +128,19 @@ namespace embree
       BVHNHairMBBuilderSAH (BVH* bvh, Scene* scene)
         : bvh(bvh), scene(scene), prims(scene->device) {}
       
+      const LBBox3fa computePrimInfoMB(size_t timeSegment, size_t numTimeSteps, Scene* scene, const PrimInfo& pinfo)
+      {
+        LBBox3fa allBounds = empty;
+        for (size_t i=pinfo.begin; i<pinfo.end; i++) // FIXME: parallelize
+        {
+          BezierPrim& prim = prims[i];
+          const size_t geomID = prim.geomID();
+          const BezierCurves* curves = scene->getBezierCurves(geomID);
+          allBounds.extend(curves->linearBounds(prim.primID(),timeSegment,numTimeSteps));
+        }
+        return allBounds;
+      }
+
       void build(size_t, size_t) 
       {
         /* progress monitor */
@@ -160,7 +173,7 @@ namespace embree
         {
           /* call BVH builder */
           const PrimInfo pinfo = createBezierRefArrayMBlur(t,bvh->numTimeSteps,scene,prims,virtualprogress);
-          const LBBox3fa lbbox = HeuristicBinningSAH(prims.begin()).computePrimInfoMB(t,bvh->numTimeSteps,scene,pinfo);
+          const LBBox3fa lbbox = computePrimInfoMB(t,bvh->numTimeSteps,scene,pinfo);
         
           NodeRef root = bvh_obb_builder_binned_sah<N>
           (
@@ -171,7 +184,7 @@ namespace embree
               AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),BVH::byteNodeAlignment); node->clear();
               for (size_t i=0; i<numChildren; i++) 
               {
-                LBBox3fa bounds = alignedHeuristic.computePrimInfoMB(t,bvh->numTimeSteps,scene,children[i]);
+                LBBox3fa bounds = computePrimInfoMB(t,bvh->numTimeSteps,scene,children[i]);
                 node->set(i,bounds);
               }
               return node;

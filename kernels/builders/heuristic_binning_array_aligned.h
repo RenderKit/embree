@@ -46,19 +46,6 @@ namespace embree
         __forceinline HeuristicArrayBinningSAH (PrimRef* prims)
           : prims(prims) {}
 
-        const LBBox3fa computePrimInfoMB(size_t timeSegment, size_t numTimeSteps, Scene* scene, const PrimInfo& pinfo)
-        {
-          LBBox3fa allBounds = empty;
-          for (size_t i=pinfo.begin; i<pinfo.end; i++) // FIXME: parallelize
-          {
-            BezierPrim& prim = prims[i];
-            const size_t geomID = prim.geomID();
-            const BezierCurves* curves = scene->getBezierCurves(geomID);
-            allBounds.extend(curves->linearBounds(prim.primID(),timeSegment,numTimeSteps));
-          }
-          return allBounds;
-        }
-
         /*! finds the best split */
         __noinline const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
@@ -73,7 +60,7 @@ namespace embree
         {
           Binner binner(empty);
           const BinMapping<BINS> mapping(pinfo);
-          binner.template bin_serial_or_parallel<parallel>(prims,set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,mapping);
+          bin_serial_or_parallel<parallel>(binner,prims,set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,mapping);
           return binner.best(mapping,logBlockSize);
         }
 
@@ -148,20 +135,6 @@ namespace embree
         {
           /* required as parallel partition destroys original primitive order */
           std::sort(&prims[set.begin()],&prims[set.end()]);
-        }
-
-        void deterministic_order(const PrimInfo& pinfo)
-        {
-          /* required as parallel partition destroys original primitive order */
-          std::sort(&prims[pinfo.begin],&prims[pinfo.end]);
-        }
-
-        /*! array partitioning */
-        void splitFallback(const PrimInfo& pinfo, PrimInfo& left, PrimInfo& right)
-        {
-          Set lset,rset;
-          Set set(pinfo.begin,pinfo.end);
-          splitFallback(set,left,lset,right,rset);
         }
 
         void splitFallback(const Set& set, PrimInfo& linfo, Set& lset, PrimInfo& rinfo, Set& rset)
