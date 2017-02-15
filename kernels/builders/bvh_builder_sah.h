@@ -84,6 +84,7 @@ namespace embree
       
       template<typename BuildRecord, 
         typename Heuristic, 
+        typename Set,
         typename ReductionTy, 
         typename Allocator, 
         typename CreateAllocFunc, 
@@ -112,12 +113,11 @@ namespace embree
           : Settings(settings),
           heuristic(heuristic), 
           createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
-          progressMonitor(progressMonitor),
-          pinfo(pinfo)
-          {
-            if (branchingFactor > MAX_BRANCHING_FACTOR)
-              throw_RTCError(RTC_UNKNOWN_ERROR,"bvh_builder: branching factor too large");
-          }
+          progressMonitor(progressMonitor), pinfo(pinfo)
+        {
+          if (branchingFactor > MAX_BRANCHING_FACTOR)
+            throw_RTCError(RTC_UNKNOWN_ERROR,"bvh_builder: branching factor too large");
+        }
         
         const ReductionTy createLargeLeaf(BuildRecord& current, Allocator alloc)
         {
@@ -189,6 +189,7 @@ namespace embree
         
         const ReductionTy recurse(BuildRecord& current, Allocator alloc, bool toplevel)
         {
+          /* get thread local allocator */
           if (alloc == nullptr)
             alloc = createAlloc();
           
@@ -240,7 +241,6 @@ namespace embree
             
             if (bestChild == -1) break;
             
-            
             /* perform best found split */
             BuildRecord& brecord = children[bestChild];
             BuildRecord lrecord(current.depth+1);
@@ -272,7 +272,7 @@ namespace embree
                   _mm_mfence(); // to allow non-temporal stores during build
                 }                
               });
-            /* perform reduction */
+
             return updateNode(node,values,numChildren);
           }
           /* recurse into each child */
@@ -282,14 +282,14 @@ namespace embree
             for (ssize_t i=numChildren-1; i>=0; i--)
               values[i] = recurse(children[i],alloc,false);
             
-            /* perform reduction */
             return updateNode(node,values,numChildren);
           }
         }
         
         /*! builder entry function */
-        __forceinline const ReductionTy operator() (BuildRecord& record)
+        __forceinline const ReductionTy operator() (const PrimInfo& pinfo, const Set& set)
         {
+          BuildRecord record(1,pinfo,set);
           record.split = find(record); 
           ReductionTy ret = recurse(record,nullptr,true);
           _mm_mfence(); // to allow non-temporal stores during build
@@ -330,6 +330,7 @@ namespace embree
         typedef BuilderT<
           BuildRecord,
           Heuristic,
+          Set,
           ReductionTy,
           decltype(createAlloc()),
           CreateAllocFunc,
@@ -350,8 +351,7 @@ namespace embree
                         settings);
         
         /* build hierarchy */
-        BuildRecord br(1,pinfo,set);
-        return builder(br);
+        return builder(pinfo,set);
       }
     };
     
