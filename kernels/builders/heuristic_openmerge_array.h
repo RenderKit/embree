@@ -155,14 +155,24 @@ namespace embree
           /* need to avoid splitting single element ranges */
           if (pinfo.size() <= 1)
           {
-            // FIXME: test if all object have the same geomID
             return  Split(ObjectSplit(),inf,false);
           }
+
+          // FIXME: test if all object have the same geomID
+#if 0
+          bool commonGeomID = true;
+          const unsigned int geomID = prims0[set.begin()].geomID;
+          for (size_t i=set.begin()+1;i<set.end();i++)
+            if (unlikely(prims0[i].geomID != geomID)) { commonGeomID = false; break; }
+#else
+          const bool commonGeomID = false;
+#endif
+
           assert(pinfo.size() > 1);
           SplitInfo oinfo;
           const ObjectSplit object_split = object_find(set,pinfo,logBlockSize,oinfo);
           const float object_split_sah = object_split.splitSAH();
-          if (unlikely(set.has_ext_range()))
+          if (unlikely(set.has_ext_range() && !commonGeomID))
           {
             const float OPENED_SAH_THRESHOLD = 8.0f;
 
