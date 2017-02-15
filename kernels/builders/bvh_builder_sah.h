@@ -54,24 +54,24 @@ namespace embree
       };
       
       template<typename Set, typename Split, typename PrimInfo>
-        struct GeneralBuildRecord 
+        struct BuildRecordT 
         {
         public:
-          __forceinline GeneralBuildRecord () {}
+          __forceinline BuildRecordT () {}
           
-          __forceinline GeneralBuildRecord (size_t depth) 
+          __forceinline BuildRecordT (size_t depth) 
             : depth(depth), pinfo(empty) {}
           
-          __forceinline GeneralBuildRecord (const PrimInfo& pinfo, size_t depth) 
+          __forceinline BuildRecordT (const PrimInfo& pinfo, size_t depth) 
             : depth(depth), pinfo(pinfo) {}
           
-          __forceinline GeneralBuildRecord (const PrimInfo& pinfo, size_t depth, const Set &prims) 
+          __forceinline BuildRecordT (const PrimInfo& pinfo, size_t depth, const Set &prims) 
             : depth(depth), prims(prims), pinfo(pinfo) {}
           
           __forceinline BBox3fa bounds() const { return pinfo.geomBounds; }
           
-          __forceinline friend bool operator< (const GeneralBuildRecord& a, const GeneralBuildRecord& b) { return a.pinfo.size() < b.pinfo.size(); }
-          __forceinline friend bool operator> (const GeneralBuildRecord& a, const GeneralBuildRecord& b) { return a.pinfo.size() > b.pinfo.size();  }
+          __forceinline friend bool operator< (const BuildRecordT& a, const BuildRecordT& b) { return a.pinfo.size() < b.pinfo.size(); }
+          __forceinline friend bool operator> (const BuildRecordT& a, const BuildRecordT& b) { return a.pinfo.size() > b.pinfo.size();  }
           
           
           __forceinline size_t size() const { return this->pinfo.size(); }
@@ -326,7 +326,7 @@ namespace embree
                                  const PrimInfo& pinfo, 
                                  const Settings& settings)
       {
-        typedef GeneralBuildRecord<Set,typename Heuristic::Split,PrimInfo> BuildRecord;
+        typedef BuildRecordT<Set,typename Heuristic::Split,PrimInfo> BuildRecord;
 
         typedef BuilderT<
           BuildRecord,
@@ -361,7 +361,7 @@ namespace embree
     {
       typedef range<size_t> Set;
       typedef HeuristicArrayBinningSAH<PrimRef,NUM_OBJECT_BINS> Heuristic;
-      typedef GeneralBVHBuilder::GeneralBuildRecord<Set,typename Heuristic::Split,PrimInfo> BuildRecord;
+      typedef GeneralBVHBuilder::BuildRecordT<Set,typename Heuristic::Split,PrimInfo> BuildRecord;
       typedef typename GeneralBVHBuilder::Settings Settings;
       
       /*! special builder that propagates reduction over the tree */
@@ -407,7 +407,7 @@ namespace embree
 
       typedef extended_range<size_t> Set;
       typedef Split2<BinSplit<OBJECT_BINS>,SpatialBinSplit<SPATIAL_BINS> > Split;
-      typedef GeneralBVHBuilder::GeneralBuildRecord<Set,Split,PrimInfo> BuildRecord;
+      typedef GeneralBVHBuilder::BuildRecordT<Set,Split,PrimInfo> BuildRecord;
       typedef typename GeneralBVHBuilder::Settings Settings;
 
       /*! special builder that propagates reduction over the tree */
