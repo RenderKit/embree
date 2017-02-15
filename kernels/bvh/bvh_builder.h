@@ -29,7 +29,7 @@ namespace embree
         typedef FastAllocator::ThreadLocal2 Allocator;
       
         struct BVHNBuilderV {
-          void build(BVH* bvh, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBuildSettings settings);
+          void build(BVH* bvh, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings);
           virtual NodeRef createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) = 0;
         };
 
@@ -48,7 +48,7 @@ namespace embree
         };
 
         template<typename CreateLeafFunc>
-        static void build(BVH* bvh, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBuildSettings settings) {
+        static void build(BVH* bvh, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings) {
           BVHNBuilderT<CreateLeafFunc>(createLeaf).build(bvh,progress,prims,pinfo,settings);
         }
       };
@@ -61,7 +61,7 @@ namespace embree
         typedef FastAllocator::ThreadLocal2 Allocator;
       
         struct BVHNBuilderV {
-          void build(BVH* bvh, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBuildSettings settings);
+          void build(BVH* bvh, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings);
           virtual NodeRef createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) = 0;
         };
 
@@ -80,7 +80,7 @@ namespace embree
         };
 
         template<typename CreateLeafFunc>
-        static void build(BVH* bvh, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBuildSettings settings) {
+        static void build(BVH* bvh, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings) {
           BVHNBuilderT<CreateLeafFunc>(createLeaf).build(bvh,progress,prims,pinfo,settings);
         }
       };
@@ -94,7 +94,7 @@ namespace embree
         typedef FastAllocator::ThreadLocal2 Allocator;
       
         struct BVHNBuilderV {
-          std::tuple<NodeRef,LBBox3fa> build(BVH* bvh, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBuildSettings settings);
+          std::tuple<NodeRef,LBBox3fa> build(BVH* bvh, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings);
           virtual std::pair<NodeRef,LBBox3fa> createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) = 0;
         };
 
@@ -113,7 +113,7 @@ namespace embree
         };
 
         template<typename CreateLeafFunc>
-        static std::tuple<NodeRef,LBBox3fa>  build(BVH* bvh, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBuildSettings settings) {
+        static std::tuple<NodeRef,LBBox3fa>  build(BVH* bvh, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings) {
           return BVHNBuilderT<CreateLeafFunc>(createLeaf).build(bvh,progress,prims,pinfo,settings);
         }
       };

@@ -150,7 +150,7 @@ namespace embree
       Scene* scene;
       Mesh* mesh;
       mvector<PrimRef> prims;
-      GeneralBuildSettings settings;
+      GeneralBVHBuilder::Settings settings;
       const float presplitFactor;
       
       BVHNBuilderSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
@@ -241,7 +241,7 @@ namespace embree
       Scene* scene;
       Mesh* mesh;
       mvector<PrimRef> prims;
-      GeneralBuildSettings settings;
+      GeneralBVHBuilder::Settings settings;
       const float presplitFactor;
 
       BVHNBuilderSAHQuantized (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
@@ -349,7 +349,7 @@ namespace embree
       BVH* bvh;
       Scene* scene;
       mvector<PrimRef> prims; 
-      GeneralBuildSettings settings;
+      GeneralBVHBuilder::Settings settings;
 
       BVHNBuilderMSMBlurSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
         : bvh(bvh), scene(scene), prims(scene->device), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, singleThreadThreshold) {}
@@ -425,7 +425,7 @@ namespace embree
       Scene* scene;
       Mesh* mesh;
       mvector<PrimRef> prims0;
-      GeneralBuildSettings settings;
+      GeneralBVHBuilder::Settings settings;
       const float splitFactor;
 
       BVHNBuilderFastSpatialSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)

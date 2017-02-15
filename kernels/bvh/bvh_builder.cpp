@@ -21,7 +21,7 @@ namespace embree
   namespace isa
   {
     template<int N>
-    void BVHNBuilder<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progressFunc, PrimRef* prims, const PrimInfo& pinfo, GeneralBuildSettings settings)
+    void BVHNBuilder<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progressFunc, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings)
     {
       auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> NodeRef {
         return createLeaf(current,alloc);
@@ -39,7 +39,7 @@ namespace embree
 
 
     template<int N>
-    void BVHNBuilderQuantized<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progressFunc, PrimRef* prims, const PrimInfo& pinfo, GeneralBuildSettings settings)
+    void BVHNBuilderQuantized<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progressFunc, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings)
     {
       auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> size_t {
         return createLeaf(current,alloc);
@@ -55,7 +55,7 @@ namespace embree
     }
 
     template<int N>
-    std::tuple<typename BVHN<N>::NodeRef,LBBox3fa> BVHNBuilderMblur<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progressFunc, PrimRef* prims, const PrimInfo& pinfo, GeneralBuildSettings settings)
+    std::tuple<typename BVHN<N>::NodeRef,LBBox3fa> BVHNBuilderMblur<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progressFunc, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings)
     {
       auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> std::pair<NodeRef,LBBox3fa> {
         return createLeaf(current,alloc);

@@ -80,7 +80,7 @@ namespace embree
       allocator.init(N);
 
        /* settings for BVH build */
-      isa::GeneralBuildSettings settings;
+      isa::GeneralBVHBuilder::Settings settings;
       settings.branchingFactor = 2;
       settings.maxDepth = 1024;
       settings.logBlockSize = 0;

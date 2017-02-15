@@ -237,7 +237,7 @@ namespace embree
       else
       {
         /* settings for BVH build */
-        GeneralBuildSettings settings;
+        GeneralBVHBuilder::Settings settings;
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxBuildDepthLeaf;
         settings.logBlockSize = __bsr(4);

@@ -173,7 +173,7 @@ namespace embree
         };
 
         /* settings for BVH build */
-        GeneralBuildSettings settings;
+        GeneralBVHBuilder::Settings settings;
         settings.logBlockSize = __bsr(N);
         settings.minLeafSize = 1;
         settings.maxLeafSize = 1;
@@ -394,7 +394,7 @@ namespace embree
           const PrimInfo pinfo = updatePrimRefArray(0);
 
           /* settings for BVH build */
-          GeneralBuildSettings settings;
+          GeneralBVHBuilder::Settings settings;
           settings.logBlockSize = __bsr(N);
           settings.minLeafSize = 1;
           settings.maxLeafSize = 1;
@@ -434,7 +434,7 @@ namespace embree
             const PrimInfo pinfo = updatePrimRefArray(t);
 
             /* settings for BVH build */
-            GeneralBuildSettings settings;
+            GeneralBVHBuilder::Settings settings;
             settings.logBlockSize = __bsr(N);
             settings.minLeafSize = 1;
             settings.maxLeafSize = 1;

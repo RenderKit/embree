@@ -29,101 +29,103 @@ namespace embree
 {
   namespace isa
   {  
-    /*! settings for msmblur builder */
-    struct GeneralBuildSettings
+    struct GeneralBVHBuilder
     {
-      /*! default settings */
-      GeneralBuildSettings () 
-      : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8), 
-        travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024) {}
-      
-      GeneralBuildSettings (size_t sahBlockSize, size_t minLeafSize, size_t maxLeafSize, float travCost, float intCost, size_t singleThreadThreshold)
-      : branchingFactor(2), maxDepth(32), logBlockSize(__bsr(sahBlockSize)), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), travCost(travCost), intCost(intCost), singleThreadThreshold(singleThreadThreshold) {}
-
-    public:
-      size_t branchingFactor;  //!< branching factor of BVH to build
-      size_t maxDepth;         //!< maximal depth of BVH to build
-      size_t logBlockSize;     //!< log2 of blocksize for SAH heuristic
-      size_t minLeafSize;      //!< minimal size of a leaf
-      size_t maxLeafSize;      //!< maximal size of a leaf
-      float travCost;          //!< estimated cost of one traversal step
-      float intCost;           //!< estimated cost of one primitive intersection
-      size_t singleThreadThreshold; //!< threshold when we switch to single threaded build
-    };
-
-    template<typename Set, typename Split, typename PrimInfo>
-      struct GeneralBuildRecord 
+      /*! settings for msmblur builder */
+      struct Settings
       {
-      public:
-	__forceinline GeneralBuildRecord () {}
+        /*! default settings */
+        Settings () 
+        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8), 
+          travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024) {}
         
-        __forceinline GeneralBuildRecord (size_t depth) 
-          : depth(depth), pinfo(empty) {}
-        
-        __forceinline GeneralBuildRecord (const PrimInfo& pinfo, size_t depth) 
-          : depth(depth), pinfo(pinfo) {}
-        
-        __forceinline GeneralBuildRecord (const PrimInfo& pinfo, size_t depth, const Set &prims) 
-          : depth(depth), prims(prims), pinfo(pinfo) {}
-
-        __forceinline BBox3fa bounds() const { return pinfo.geomBounds; }
-        
-        __forceinline friend bool operator< (const GeneralBuildRecord& a, const GeneralBuildRecord& b) { return a.pinfo.size() < b.pinfo.size(); }
-	__forceinline friend bool operator> (const GeneralBuildRecord& a, const GeneralBuildRecord& b) { return a.pinfo.size() > b.pinfo.size();  }
-        
-
-        __forceinline size_t size() const { return this->pinfo.size(); }
+        Settings (size_t sahBlockSize, size_t minLeafSize, size_t maxLeafSize, float travCost, float intCost, size_t singleThreadThreshold)
+        : branchingFactor(2), maxDepth(32), logBlockSize(__bsr(sahBlockSize)), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), travCost(travCost), intCost(intCost), singleThreadThreshold(singleThreadThreshold) {}
         
       public:
-	size_t depth;     //!< Depth of the root of this subtree.
-	Set prims;        //!< The list of primitives.
-	PrimInfo pinfo;   //!< Bounding info of primitives.
-	Split split;      //!< The best split for the primitives.
+        size_t branchingFactor;  //!< branching factor of BVH to build
+        size_t maxDepth;         //!< maximal depth of BVH to build
+        size_t logBlockSize;     //!< log2 of blocksize for SAH heuristic
+        size_t minLeafSize;      //!< minimal size of a leaf
+        size_t maxLeafSize;      //!< maximal size of a leaf
+        float travCost;          //!< estimated cost of one traversal step
+        float intCost;           //!< estimated cost of one primitive intersection
+        size_t singleThreadThreshold; //!< threshold when we switch to single threaded build
       };
-    
-    template<typename BuildRecord, 
-      typename Heuristic, 
-      typename ReductionTy, 
-      typename Allocator, 
-      typename CreateAllocFunc, 
-      typename CreateNodeFunc, 
-      typename UpdateNodeFunc, 
-      typename CreateLeafFunc, 
-      typename ProgressMonitor,
-      typename PrimInfo>
       
-      class GeneralBVHBuilder : private GeneralBuildSettings
+      template<typename Set, typename Split, typename PrimInfo>
+        struct GeneralBuildRecord 
+        {
+        public:
+          __forceinline GeneralBuildRecord () {}
+          
+          __forceinline GeneralBuildRecord (size_t depth) 
+            : depth(depth), pinfo(empty) {}
+          
+          __forceinline GeneralBuildRecord (const PrimInfo& pinfo, size_t depth) 
+            : depth(depth), pinfo(pinfo) {}
+          
+          __forceinline GeneralBuildRecord (const PrimInfo& pinfo, size_t depth, const Set &prims) 
+            : depth(depth), prims(prims), pinfo(pinfo) {}
+          
+          __forceinline BBox3fa bounds() const { return pinfo.geomBounds; }
+          
+          __forceinline friend bool operator< (const GeneralBuildRecord& a, const GeneralBuildRecord& b) { return a.pinfo.size() < b.pinfo.size(); }
+          __forceinline friend bool operator> (const GeneralBuildRecord& a, const GeneralBuildRecord& b) { return a.pinfo.size() > b.pinfo.size();  }
+          
+          
+          __forceinline size_t size() const { return this->pinfo.size(); }
+          
+        public:
+          size_t depth;     //!< Depth of the root of this subtree.
+          Set prims;        //!< The list of primitives.
+          PrimInfo pinfo;   //!< Bounding info of primitives.
+          Split split;      //!< The best split for the primitives.
+        };
+      
+      template<typename BuildRecord, 
+        typename Heuristic, 
+        typename ReductionTy, 
+        typename Allocator, 
+        typename CreateAllocFunc, 
+        typename CreateNodeFunc, 
+        typename UpdateNodeFunc, 
+        typename CreateLeafFunc, 
+        typename ProgressMonitor,
+        typename PrimInfo>
+        
+        class BuilderT : private Settings
       {
         static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximal supported BVH branching factor
         static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree of we are that many levels before the maximal tree depth
         
       public:
         
-        GeneralBVHBuilder (Heuristic& heuristic, 
+        BuilderT (Heuristic& heuristic, 
                            CreateAllocFunc& createAlloc, 
                            CreateNodeFunc& createNode, 
                            UpdateNodeFunc& updateNode, 
                            const CreateLeafFunc& createLeaf,
                            const ProgressMonitor& progressMonitor,
                            const PrimInfo& pinfo,
-                           const GeneralBuildSettings& settings)
-
-          : GeneralBuildSettings(settings),
+                           const Settings& settings)
+          
+          : Settings(settings),
           heuristic(heuristic), 
           createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
           progressMonitor(progressMonitor),
           pinfo(pinfo)
-        {
-          if (branchingFactor > MAX_BRANCHING_FACTOR)
-            throw_RTCError(RTC_UNKNOWN_ERROR,"bvh_builder: branching factor too large");
-        }
+          {
+            if (branchingFactor > MAX_BRANCHING_FACTOR)
+              throw_RTCError(RTC_UNKNOWN_ERROR,"bvh_builder: branching factor too large");
+          }
         
         const ReductionTy createLargeLeaf(BuildRecord& current, Allocator alloc)
         {
           /* this should never occur but is a fatal error */
           if (current.depth > maxDepth) 
             throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
-
+          
           /* create leaf for few primitives */
           if (current.pinfo.size() <= maxLeafSize)
             return createLeaf(current,alloc);
@@ -190,7 +192,7 @@ namespace embree
         {
           if (alloc == nullptr)
             alloc = createAlloc();
-
+          
           /* call memory monitor function to signal progress */
           if (toplevel && current.size() <= singleThreadThreshold)
             progressMonitor(current.size());
@@ -234,11 +236,11 @@ namespace embree
               if (children[i].pinfo.size() > maxLeafSize) dSAH = min(dSAH,0.0f); //< force split for large jobs
               if (dSAH <= bestSAH) { bestChild = i; bestSAH = dSAH; }
             }
-
+            
 #endif
-
+            
             if (bestChild == -1) break;
-
+            
             
             /* perform best found split */
             BuildRecord& brecord = children[bestChild];
@@ -305,35 +307,28 @@ namespace embree
         const ProgressMonitor& progressMonitor;
         const PrimInfo& pinfo;
       };
-    
-    /* SAH builder that operates on an array of BuildRecords */
-    struct BVHBuilderBinnedSAH
-    {
-      typedef range<size_t> Set;
-      typedef HeuristicArrayBinningSAH<PrimRef,NUM_OBJECT_BINS> Heuristic;
-      typedef GeneralBuildRecord<Set,typename Heuristic::Split,PrimInfo> BuildRecord;
-      typedef GeneralBuildSettings Settings;
-      
-      /*! special builder that propagates reduction over the tree */
+
       template<
         typename ReductionTy, 
+        typename Heuristic,
+        typename Set,
         typename CreateAllocFunc, 
         typename CreateNodeFunc, 
         typename UpdateNodeFunc, 
         typename CreateLeafFunc, 
         typename ProgressMonitor>
         
-        static ReductionTy build(CreateAllocFunc createAlloc, 
+        static ReductionTy build(Heuristic& heuristic,
+                                 CreateAllocFunc createAlloc, 
                                  CreateNodeFunc createNode, UpdateNodeFunc updateNode, 
                                  const CreateLeafFunc& createLeaf, 
                                  const ProgressMonitor& progressMonitor,
-                                 PrimRef* prims, const PrimInfo& pinfo, 
+                                 const PrimInfo& pinfo, 
                                  const Settings& settings)
       {
-        /* instantiate array binning heuristic */
-        Heuristic heuristic(prims);
-        
-        typedef GeneralBVHBuilder<
+        typedef GeneralBuildRecord<Set,typename Heuristic::Split,PrimInfo> BuildRecord;
+
+        typedef BuilderT<
           BuildRecord,
           Heuristic,
           ReductionTy,
@@ -360,6 +355,43 @@ namespace embree
         return builder(br);
       }
     };
+
+    /* SAH builder that operates on an array of BuildRecords */
+    struct BVHBuilderBinnedSAH
+    {
+      typedef range<size_t> Set;
+      typedef HeuristicArrayBinningSAH<PrimRef,NUM_OBJECT_BINS> Heuristic;
+      typedef GeneralBVHBuilder::GeneralBuildRecord<Set,typename Heuristic::Split,PrimInfo> BuildRecord;
+      typedef typename GeneralBVHBuilder::Settings Settings;
+      
+      /*! special builder that propagates reduction over the tree */
+      template<
+        typename ReductionTy, 
+        typename CreateAllocFunc, 
+        typename CreateNodeFunc, 
+        typename UpdateNodeFunc, 
+        typename CreateLeafFunc, 
+        typename ProgressMonitor>
+        
+        static ReductionTy build(CreateAllocFunc createAlloc, 
+                                 CreateNodeFunc createNode, UpdateNodeFunc updateNode, 
+                                 const CreateLeafFunc& createLeaf, 
+                                 const ProgressMonitor& progressMonitor,
+                                 PrimRef* prims, const PrimInfo& pinfo, 
+                                 const Settings& settings)
+      {
+        Heuristic heuristic(prims);
+        return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set>(
+          heuristic,
+          createAlloc,
+          createNode,
+          updateNode,
+          createLeaf,
+          progressMonitor,
+          pinfo,
+          settings);
+      }
+    };
     
 #define FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS 16
 
@@ -375,8 +407,8 @@ namespace embree
 
       typedef extended_range<size_t> Set;
       typedef Split2<BinSplit<OBJECT_BINS>,SpatialBinSplit<SPATIAL_BINS> > Split;
-      typedef GeneralBuildRecord<Set,Split,PrimInfo> BuildRecord;
-      typedef GeneralBuildSettings Settings;
+      typedef GeneralBVHBuilder::GeneralBuildRecord<Set,Split,PrimInfo> BuildRecord;
+      typedef typename GeneralBVHBuilder::Settings Settings;
 
       /*! special builder that propagates reduction over the tree */
       template<
@@ -400,35 +432,16 @@ namespace embree
                                  const Settings& settings)
       {
         typedef HeuristicArraySpatialSAH<SplitPrimitiveFunc, PrimRef,OBJECT_BINS, SPATIAL_BINS> Heuristic;
-
-        /* instantiate array binning heuristic */
         Heuristic heuristic(splitPrimitive,prims0,pinfo);
-        
-        typedef GeneralBVHBuilder<
-          BuildRecord,
-          Heuristic,
-          ReductionTy,
-          decltype(createAlloc()),
-          CreateAllocFunc,
-          CreateNodeFunc,
-          UpdateNodeFunc,
-          CreateLeafFunc,
-          ProgressMonitor,
-          PrimInfo> Builder;
-        
-        /* instantiate builder */
-        Builder builder(heuristic,
-                        createAlloc,
-                        createNode,
-                        updateNode,
-                        createLeaf,
-                        progressMonitor,
-                        pinfo,
-                        settings);
-        
-        /* build hierarchy */
-        BuildRecord br(pinfo,1,Set(0,pinfo.size(),extSize));
-        return builder(br);
+        return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set>(
+          heuristic,
+          createAlloc,
+          createNode,
+          updateNode,
+          createLeaf,
+          progressMonitor,
+          pinfo,
+          settings);
       }
     };
 
