@@ -29,6 +29,28 @@ namespace embree
 {
   namespace isa
   {  
+    /*! settings for msmblur builder */
+    struct GeneralBuildSettings
+    {
+      /*! default settings */
+      GeneralBuildSettings () 
+      : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8), 
+        travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024) {}
+      
+      GeneralBuildSettings (size_t sahBlockSize, size_t minLeafSize, size_t maxLeafSize, float travCost, float intCost, size_t singleThreadThreshold)
+      : branchingFactor(2), maxDepth(32), logBlockSize(__bsr(sahBlockSize)), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), travCost(travCost), intCost(intCost), singleThreadThreshold(singleThreadThreshold) {}
+
+    public:
+      size_t branchingFactor;  //!< branching factor of BVH to build
+      size_t maxDepth;         //!< maximal depth of BVH to build
+      size_t logBlockSize;     //!< log2 of blocksize for SAH heuristic
+      size_t minLeafSize;      //!< minimal size of a leaf
+      size_t maxLeafSize;      //!< maximal size of a leaf
+      float travCost;          //!< estimated cost of one traversal step
+      float intCost;           //!< estimated cost of one primitive intersection
+      size_t singleThreadThreshold; //!< threshold when we switch to single threaded build
+    };
+
     template<typename Set, typename Split, typename PrimInfo>
       struct GeneralBuildRecord 
       {
@@ -70,7 +92,7 @@ namespace embree
       typename ProgressMonitor,
       typename PrimInfo>
       
-      class GeneralBVHBuilder
+      class GeneralBVHBuilder : private GeneralBuildSettings
       {
         static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximal supported BVH branching factor
         static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree of we are that many levels before the maximal tree depth
@@ -84,16 +106,13 @@ namespace embree
                            const CreateLeafFunc& createLeaf,
                            const ProgressMonitor& progressMonitor,
                            const PrimInfo& pinfo,
-                           const size_t branchingFactor, const size_t maxDepth, 
-                           const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize,
-                           const float travCost, const float intCost, const size_t singleThreadThreshold)
-          : heuristic(heuristic), 
+                           const GeneralBuildSettings& settings)
+
+          : GeneralBuildSettings(settings),
+          heuristic(heuristic), 
           createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
           progressMonitor(progressMonitor),
-          pinfo(pinfo), 
-          branchingFactor(branchingFactor), maxDepth(maxDepth),
-          logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
-          travCost(travCost), intCost(intCost), singleThreadThreshold(singleThreadThreshold)
+          pinfo(pinfo)
         {
           if (branchingFactor > MAX_BRANCHING_FACTOR)
             throw_RTCError(RTC_UNKNOWN_ERROR,"bvh_builder: branching factor too large");
@@ -284,17 +303,7 @@ namespace embree
         UpdateNodeFunc& updateNode;
         const CreateLeafFunc& createLeaf;
         const ProgressMonitor& progressMonitor;
-        
-      private:
         const PrimInfo& pinfo;
-        const size_t branchingFactor;
-        const size_t maxDepth;
-        const size_t logBlockSize;
-        const size_t minLeafSize;
-        const size_t maxLeafSize;
-        const float travCost;
-        const float intCost;
-        const size_t singleThreadThreshold;
       };
     
     /* SAH builder that operates on an array of BuildRecords */
@@ -303,6 +312,7 @@ namespace embree
       typedef range<size_t> Set;
       typedef HeuristicArrayBinningSAH<PrimRef,NUM_OBJECT_BINS> Heuristic;
       typedef GeneralBuildRecord<Set,typename Heuristic::Split,PrimInfo> BuildRecord;
+      typedef GeneralBuildSettings Settings;
       
       /*! special builder that propagates reduction over the tree */
       template<
@@ -318,14 +328,8 @@ namespace embree
                                  const CreateLeafFunc& createLeaf, 
                                  const ProgressMonitor& progressMonitor,
                                  PrimRef* prims, const PrimInfo& pinfo, 
-                                 const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
-                                 const size_t minLeafSize, const size_t maxLeafSize,
-                                 const float travCost, const float intCost, const size_t singleThreadThreshold)
+                                 const Settings& settings)
       {
-        /* builder wants log2 of blockSize as input */		  
-        const size_t logBlockSize = __bsr(blockSize); 
-        assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
-
         /* instantiate array binning heuristic */
         Heuristic heuristic(prims);
         
@@ -349,8 +353,7 @@ namespace embree
                         createLeaf,
                         progressMonitor,
                         pinfo,
-                        branchingFactor,maxDepth,logBlockSize,
-                        minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
+                        settings);
         
         /* build hierarchy */
         BuildRecord br(pinfo,1,Set(0,pinfo.size()));
@@ -373,6 +376,7 @@ namespace embree
       typedef extended_range<size_t> Set;
       typedef Split2<BinSplit<OBJECT_BINS>,SpatialBinSplit<SPATIAL_BINS> > Split;
       typedef GeneralBuildRecord<Set,Split,PrimInfo> BuildRecord;
+      typedef GeneralBuildSettings Settings;
 
       /*! special builder that propagates reduction over the tree */
       template<
@@ -393,16 +397,8 @@ namespace embree
                                  PrimRef* prims0, 
                                  const size_t extSize,
                                  const PrimInfo& pinfo, 
-                                 const size_t branchingFactor, 
-                                 const size_t maxDepth, const size_t blockSize, 
-                                 const size_t minLeafSize, const size_t maxLeafSize,
-                                 const float travCost, const float intCost, 
-                                 const size_t singleThreadThreshold)
+                                 const Settings& settings)
       {
-        /* builder wants log2 of blockSize as input */		  
-        const size_t logBlockSize = __bsr(blockSize); 
-        assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
-
         typedef HeuristicArraySpatialSAH<SplitPrimitiveFunc, PrimRef,OBJECT_BINS, SPATIAL_BINS> Heuristic;
 
         /* instantiate array binning heuristic */
@@ -428,8 +424,7 @@ namespace embree
                         createLeaf,
                         progressMonitor,
                         pinfo,
-                        branchingFactor,maxDepth,logBlockSize,
-                        minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
+                        settings);
         
         /* build hierarchy */
         BuildRecord br(pinfo,1,Set(0,pinfo.size(),extSize));

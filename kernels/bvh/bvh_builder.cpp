@@ -21,15 +21,16 @@ namespace embree
   namespace isa
   {
     template<int N>
-    void BVHNBuilder<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progressFunc, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost, const size_t singleThreadThreshold)
+    void BVHNBuilder<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progressFunc, PrimRef* prims, const PrimInfo& pinfo, GeneralBuildSettings settings)
     {
       auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> NodeRef {
         return createLeaf(current,alloc);
       };
       
+      settings.branchingFactor = N;
+      settings.maxDepth = BVH::maxBuildDepthLeaf;
       NodeRef root = BVHBuilderBinnedSAH::build<NodeRef>
-        (typename BVH::CreateAlloc(bvh),typename BVH::CreateAlignedNode(),typename BVH::UpdateAlignedNode(),createLeafFunc,progressFunc,
-         prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
+        (typename BVH::CreateAlloc(bvh),typename BVH::CreateAlignedNode(),typename BVH::UpdateAlignedNode(),createLeafFunc,progressFunc,prims,pinfo,settings);
 
       bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
       
@@ -38,30 +39,32 @@ namespace embree
 
 
     template<int N>
-    void BVHNBuilderQuantized<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progressFunc, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost, const size_t singleThreadThreshold)
+    void BVHNBuilderQuantized<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progressFunc, PrimRef* prims, const PrimInfo& pinfo, GeneralBuildSettings settings)
     {
       auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> size_t {
         return createLeaf(current,alloc);
       };
             
+      settings.branchingFactor = N;
+      settings.maxDepth = BVH::maxBuildDepthLeaf;
       NodeRef root = BVHBuilderBinnedSAH::build<NodeRef>
-        (typename BVH::CreateAlloc(bvh),typename BVH::CreateQuantizedNode(),typename BVH::UpdateQuantizedNode(),createLeafFunc,progressFunc,
-         prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
+        (typename BVH::CreateAlloc(bvh),typename BVH::CreateQuantizedNode(),typename BVH::UpdateQuantizedNode(),createLeafFunc,progressFunc,prims,pinfo,settings);
 
       //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: COPY LAYOUT FOR LARGE NODES !!!
       bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
     }
 
     template<int N>
-    std::tuple<typename BVHN<N>::NodeRef,LBBox3fa> BVHNBuilderMblur<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progressFunc, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost, const size_t singleThreadThreshold)
+    std::tuple<typename BVHN<N>::NodeRef,LBBox3fa> BVHNBuilderMblur<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progressFunc, PrimRef* prims, const PrimInfo& pinfo, GeneralBuildSettings settings)
     {
       auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> std::pair<NodeRef,LBBox3fa> {
         return createLeaf(current,alloc);
       };
 
+      settings.branchingFactor = N;
+      settings.maxDepth = BVH::maxBuildDepthLeaf;
       auto root = BVHBuilderBinnedSAH::build<std::pair<NodeRef,LBBox3fa>>
-        (typename BVH::CreateAlloc(bvh),typename BVH::CreateAlignedNodeMB(),typename BVH::UpdateAlignedNodeMB(),createLeafFunc,progressFunc,
-         prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
+        (typename BVH::CreateAlloc(bvh),typename BVH::CreateAlignedNodeMB(),typename BVH::UpdateAlignedNodeMB(),createLeafFunc,progressFunc,prims,pinfo,settings);
 
       /* set bounding box to merge bounds of all time steps */
       bvh->set(root.first,root.second,pinfo.size()); // FIXME: remove later

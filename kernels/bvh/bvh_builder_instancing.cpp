@@ -236,6 +236,17 @@ namespace embree
       /* otherwise build toplevel hierarchy */
       else
       {
+        /* settings for BVH build */
+        GeneralBuildSettings settings;
+        settings.branchingFactor = N;
+        settings.maxDepth = BVH::maxBuildDepthLeaf;
+        settings.logBlockSize = __bsr(4);
+        settings.minLeafSize = 1;
+        settings.maxLeafSize = 1;
+        settings.travCost = 1.0f;
+        settings.intCost = 1.0f;
+        settings.singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD;
+
         NodeRef root = BVHBuilderBinnedSAH::build<NodeRef>
           (
             typename BVH::CreateAlloc(bvh),
@@ -253,7 +264,7 @@ namespace embree
             return noderef;
           },
            [&] (size_t dn) { bvh->scene->progressMonitor(0); },
-           prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,4,1,1,1.0f,1.0f,DEFAULT_SINGLE_THREAD_THRESHOLD);
+            prims.data(),pinfo,settings);
         
         bvh->set(root,LBBox3fa(pinfo.geomBounds),numPrimitives);
         numCollapsedTransformNodes = refs.size();

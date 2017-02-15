@@ -171,8 +171,17 @@ namespace embree
           size_t leaf = (size_t) prims[current.prims.begin()].ID();
           return NodeRef(leaf);
         };
-       
-        BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f,DEFAULT_SINGLE_THREAD_THRESHOLD);
+
+        /* settings for BVH build */
+        GeneralBuildSettings settings;
+        settings.logBlockSize = __bsr(N);
+        settings.minLeafSize = 1;
+        settings.maxLeafSize = 1;
+        settings.travCost = 1.0f;
+        settings.intCost = 1.0f;
+        settings.singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD;
+
+        BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,settings);
         
 	/* clear temporary data for static geometry */
 	if (scene->isStatic()) {
@@ -384,8 +393,17 @@ namespace embree
           /* create primrefs */
           const PrimInfo pinfo = updatePrimRefArray(0);
 
+          /* settings for BVH build */
+          GeneralBuildSettings settings;
+          settings.logBlockSize = __bsr(N);
+          settings.minLeafSize = 1;
+          settings.maxLeafSize = 1;
+          settings.travCost = 1.0f;
+          settings.intCost = 1.0f;
+          settings.singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD;
+
           /* call BVH builder */
-          BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f,DEFAULT_SINGLE_THREAD_THRESHOLD);
+          BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,settings);
         }
 
         /* build MBlur BVH over patches */
@@ -415,9 +433,18 @@ namespace embree
             /* create primrefs */
             const PrimInfo pinfo = updatePrimRefArray(t);
 
+            /* settings for BVH build */
+            GeneralBuildSettings settings;
+            settings.logBlockSize = __bsr(N);
+            settings.minLeafSize = 1;
+            settings.maxLeafSize = 1;
+            settings.travCost = 1.0f;
+            settings.intCost = 1.0f;
+            settings.singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD;
+
             /* call BVH builder */
             NodeRef root; LBBox3fa tbounds;
-            std::tie(root, tbounds) = BVHNBuilderMblur<N>::build(bvh,createLeaf,bvh->scene->progressInterface,prims.data(),pinfo,N,1,1,1.0f,1.0f,DEFAULT_SINGLE_THREAD_THRESHOLD);
+            std::tie(root, tbounds) = BVHNBuilderMblur<N>::build(bvh,createLeaf,bvh->scene->progressInterface,prims.data(),pinfo,settings);
             roots[t] = root;
             boxes[t+0] = tbounds.bounds0;
             boxes[t+1] = tbounds.bounds1;

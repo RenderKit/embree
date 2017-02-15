@@ -78,6 +78,17 @@ namespace embree
       
       allocator.reset();
       allocator.init(N);
+
+       /* settings for BVH build */
+      isa::GeneralBuildSettings settings;
+      settings.branchingFactor = 2;
+      settings.maxDepth = 1024;
+      settings.logBlockSize = 0;
+      settings.minLeafSize = 1;
+      settings.maxLeafSize = 1;
+      settings.travCost = 1.0f;
+      settings.intCost = 1.0f;
+      settings.singleThreadThreshold = Builder::DEFAULT_SINGLE_THREAD_THRESHOLD;
       
       Node* root = isa::BVHBuilderBinnedSAH::build<Node*>(
 
@@ -119,7 +130,7 @@ namespace embree
           // throw an exception here to cancel the build operation
         },
         
-        prims.data(),pinfo,2,1024,1,1,1,1.0f,1.0f,Builder::DEFAULT_SINGLE_THREAD_THRESHOLD);
+        prims.data(),pinfo,settings);
       
       double t1 = getSeconds();
       
