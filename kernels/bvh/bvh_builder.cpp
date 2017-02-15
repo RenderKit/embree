@@ -21,19 +21,8 @@ namespace embree
   namespace isa
   {
     template<int N>
-    __forceinline size_t dummy(typename BVHN<N>::AlignedNode* node, const size_t* counts, const size_t num) {
-      return 0;
-    }
-
-    template<int N>
-    void BVHNBuilder<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost, const size_t singleThreadThreshold)
+    void BVHNBuilder<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progressFunc, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost, const size_t singleThreadThreshold)
     {
-      //bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-
-      auto progressFunc = [&] (size_t dn) { 
-        progress_in(dn); 
-      };
-            
       auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> NodeRef {
         return createLeaf(current,alloc);
       };
@@ -49,13 +38,8 @@ namespace embree
 
 
     template<int N>
-    void BVHNBuilderQuantized<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost, const size_t singleThreadThreshold)
+    void BVHNBuilderQuantized<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progressFunc, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost, const size_t singleThreadThreshold)
     {
-      //bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-      auto progressFunc = [&] (size_t dn) { 
-        progress_in(dn); 
-      };
-            
       auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> size_t {
         return createLeaf(current,alloc);
       };
@@ -69,12 +53,8 @@ namespace embree
     }
 
     template<int N>
-    std::tuple<typename BVHN<N>::NodeRef,LBBox3fa> BVHNBuilderMblur<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost, const size_t singleThreadThreshold)
+    std::tuple<typename BVHN<N>::NodeRef,LBBox3fa> BVHNBuilderMblur<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progressFunc, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost, const size_t singleThreadThreshold)
     {
-      auto progressFunc = [&] (size_t dn) { 
-        progress_in(dn); 
-      };
-            
       auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> std::pair<NodeRef,LBBox3fa> {
         return createLeaf(current,alloc);
       };

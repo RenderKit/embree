@@ -57,7 +57,7 @@ namespace embree
 
       __forceinline CreateLeaf (BVH* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
       
-      __forceinline NodeRef operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
+      __forceinline NodeRef operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) const
       {
         size_t n = current.prims.size();
         size_t items = Primitive::blocks(n);
@@ -83,7 +83,7 @@ namespace embree
 
       __forceinline CreateLeafQuantized (BVH* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
       
-      __forceinline NodeRef operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
+      __forceinline NodeRef operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) const
       {
         size_t n = current.prims.size();
         size_t items = Primitive::blocks(n);
@@ -110,7 +110,7 @@ namespace embree
 
       __forceinline CreateLeafSpatial (BVH* bvh, PrimRef* prims0) : bvh(bvh), prims0(prims0) {}
       
-      __forceinline NodeRef operator() (const BVHBuilderBinnedFastSpatialSAH::BuildRecord& current, Allocator* alloc)
+      __forceinline NodeRef operator() (const BVHBuilderBinnedFastSpatialSAH::BuildRecord& current, Allocator* alloc) const
       {
         PrimRef* const source = prims0;
 
@@ -331,7 +331,7 @@ namespace embree
 
       __forceinline CreateMSMBlurLeaf (BVH* bvh, PrimRef* prims, size_t time) : bvh(bvh), prims(prims), time(time) {}
       
-      __forceinline std::pair<NodeRef,LBBox3fa> operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
+      __forceinline std::pair<NodeRef,LBBox3fa> operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) const
       {
         size_t items = Primitive::blocks(current.prims.size());
         size_t start = current.prims.begin();

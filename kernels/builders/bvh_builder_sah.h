@@ -82,8 +82,8 @@ namespace embree
                            CreateAllocFunc& createAlloc, 
                            CreateNodeFunc& createNode, 
                            UpdateNodeFunc& updateNode, 
-                           CreateLeafFunc& createLeaf,
-                           ProgressMonitor& progressMonitor,
+                           const CreateLeafFunc& createLeaf,
+                           const ProgressMonitor& progressMonitor,
                            const PrimInfo& pinfo,
                            const size_t branchingFactor, const size_t maxDepth, 
                            const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize,
@@ -285,8 +285,8 @@ namespace embree
         CreateAllocFunc& createAlloc;
         CreateNodeFunc& createNode;
         UpdateNodeFunc& updateNode;
-        CreateLeafFunc& createLeaf;
-        ProgressMonitor& progressMonitor;
+        const CreateLeafFunc& createLeaf;
+        const ProgressMonitor& progressMonitor;
         
       private:
         const PrimInfo& pinfo;
@@ -318,8 +318,9 @@ namespace embree
         
         static ReductionTy build_reduce(CreateAllocFunc createAlloc, 
                                         const ReductionTy& identity, 
-                                        CreateNodeFunc createNode, UpdateNodeFunc updateNode, CreateLeafFunc createLeaf, 
-                                        ProgressMonitor progressMonitor,
+                                        CreateNodeFunc createNode, UpdateNodeFunc updateNode, 
+                                        const CreateLeafFunc& createLeaf, 
+                                        const ProgressMonitor& progressMonitor,
                                         PrimRef* prims, const PrimInfo& pinfo, 
                                         const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
                                         const size_t minLeafSize, const size_t maxLeafSize,
@@ -392,7 +393,7 @@ namespace embree
                                         const ReductionTy& identity, 
                                         CreateNodeFunc createNode, 
                                         UpdateNodeFunc updateNode, 
-                                        CreateLeafFunc createLeaf, 
+                                        const CreateLeafFunc& createLeaf, 
                                         SplitPrimitiveFunc splitPrimitive,
                                         ProgressMonitor progressMonitor,
                                         PrimRef* prims0, 
