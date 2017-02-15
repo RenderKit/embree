@@ -56,6 +56,7 @@ namespace embree
         size_t singleThreadThreshold; //!< threshold when we switch to single threaded build
       };
       
+      /*! recursive state of builder */
       template<typename Set, typename Split, typename PrimInfo>
         struct BuildRecordT 
         {
@@ -102,9 +103,9 @@ namespace embree
       public:
         
         BuilderT (Heuristic& heuristic, 
-                  CreateAllocFunc& createAlloc, 
-                  CreateNodeFunc& createNode, 
-                  UpdateNodeFunc& updateNode, 
+                  const CreateAllocFunc& createAlloc, 
+                  const CreateNodeFunc& createNode, 
+                  const UpdateNodeFunc& updateNode, 
                   const CreateLeafFunc& createLeaf,
                   const ProgressMonitor& progressMonitor,
                   const PrimInfo& pinfo,
@@ -300,9 +301,9 @@ namespace embree
         
       private:
         Heuristic& heuristic;
-        CreateAllocFunc& createAlloc;
-        CreateNodeFunc& createNode;
-        UpdateNodeFunc& updateNode;
+        const CreateAllocFunc& createAlloc;
+        const CreateNodeFunc& createNode;
+        const UpdateNodeFunc& updateNode;
         const CreateLeafFunc& createLeaf;
         const ProgressMonitor& progressMonitor;
         const PrimInfo& pinfo;

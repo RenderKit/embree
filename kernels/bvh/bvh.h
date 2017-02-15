@@ -125,7 +125,7 @@ namespace embree
     struct CreateAlignedNode
     {
       template<typename BuildRecord>
-      __forceinline NodeRef operator() (const BuildRecord& current, BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc)
+      __forceinline NodeRef operator() (const BuildRecord& current, BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc) const
       {
         AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode), byteNodeAlignment); node->clear();
         for (size_t i=0; i<num; i++) node->set(i,children[i].bounds());
@@ -135,7 +135,7 @@ namespace embree
 
     struct UpdateAlignedNode
     {
-      __forceinline NodeRef operator() (NodeRef ref, NodeRef* children, const size_t num)
+      __forceinline NodeRef operator() (NodeRef ref, NodeRef* children, const size_t num) const
       {
         AlignedNode* node = ref.alignedNode();
         for (size_t i=0; i<num; i++) node->set(i,children[i]);
@@ -146,7 +146,7 @@ namespace embree
     struct CreateAlignedNodeMB
     {
       template<typename BuildRecord>
-      __forceinline NodeRef operator() (const BuildRecord& current, BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc)
+      __forceinline NodeRef operator() (const BuildRecord& current, BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc) const
       {
         AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),byteNodeAlignment); node->clear();
 	return encodeNode(node);
@@ -157,7 +157,7 @@ namespace embree
     {
       typedef std::pair<NodeRef,LBBox3fa> Ty;
 
-      __forceinline Ty operator() (NodeRef ref, Ty* children, const size_t num)
+      __forceinline Ty operator() (NodeRef ref, Ty* children, const size_t num) const
       {
         AlignedNodeMB* node = ref.alignedNodeMB();
 
@@ -175,7 +175,7 @@ namespace embree
     struct CreateQuantizedNode
     {
       template<typename BuildRecord>
-      __forceinline NodeRef operator() (const BuildRecord& current, BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc)
+      __forceinline NodeRef operator() (const BuildRecord& current, BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc) const
       {
         __aligned(64) AlignedNode node;
         node.clear();
@@ -191,7 +191,7 @@ namespace embree
 
     struct UpdateQuantizedNode
     {
-      __forceinline NodeRef operator() (NodeRef ref, NodeRef* children, const size_t num)
+      __forceinline NodeRef operator() (NodeRef ref, NodeRef* children, const size_t num) const
       {
         QuantizedNode* node = ref.quantizedNode();
         for (size_t i=0; i<num; i++) node->set(i,children[i]);
