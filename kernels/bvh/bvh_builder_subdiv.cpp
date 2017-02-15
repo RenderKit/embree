@@ -44,6 +44,7 @@ namespace embree
       ALIGNED_STRUCT;
 
       typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
 
       BVH* bvh;
       Scene* scene;
@@ -165,11 +166,10 @@ namespace embree
 
         PrimInfo pinfo(pinfo3.end,pinfo3.geomBounds,pinfo3.centBounds);
         
-        auto createLeaf =  [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
+        auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> NodeRef {
           assert(current.pinfo.size() == 1);
           size_t leaf = (size_t) prims[current.prims.begin()].ID();
-          *current.parent = leaf;
-          return 0;
+          return NodeRef(leaf);
         };
        
         BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f,DEFAULT_SINGLE_THREAD_THRESHOLD);
@@ -374,12 +374,11 @@ namespace embree
         /* build normal BVH over patches */
         if (!mblur)
         {
-          auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
+          auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> NodeRef {
             size_t items MAYBE_UNUSED = current.pinfo.size();
             assert(items == 1);
             const size_t patchIndex = prims[current.prims.begin()].ID();
-            *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
-            return 0;
+            return bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
           };
 
           /* create primrefs */
@@ -401,15 +400,16 @@ namespace embree
           size_t num_bvh_primitives = 0;
           for (size_t t=0; t<numTimeSegments; t++)
           {
-            auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> LBBox3fa {
+            auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> std::pair<NodeRef,LBBox3fa> {
               size_t items MAYBE_UNUSED = current.pinfo.size();
               assert(items == 1);
               const size_t patchIndexMB = prims[current.prims.begin()].ID();
               SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+0];
-              *current.parent = bvh->encodeLeaf((char*)&patch,1);
+              NodeRef ref = bvh->encodeLeaf((char*)&patch,1);
               size_t patchNumTimeSteps = scene->getSubdivMesh(patch.geom)->numTimeSteps;
-              return Geometry::linearBounds([&] (size_t itime) { return bounds[patchIndexMB+itime]; },
-                                            t, numTimeSteps, patchNumTimeSteps);
+              LBBox3fa lbounds = Geometry::linearBounds([&] (size_t itime) { return bounds[patchIndexMB+itime]; },
+                                                        t, numTimeSteps, patchNumTimeSteps);
+              return std::make_pair(ref,lbounds);
             };
 
             /* create primrefs */

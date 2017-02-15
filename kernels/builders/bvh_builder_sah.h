@@ -36,13 +36,13 @@ namespace embree
 	__forceinline GeneralBuildRecord () {}
         
         __forceinline GeneralBuildRecord (size_t depth) 
-          : parent(nullptr), depth(depth), pinfo(empty) {}
+          : depth(depth), pinfo(empty) {}
         
-        __forceinline GeneralBuildRecord (const PrimInfo& pinfo, size_t depth, size_t* parent) 
-          : parent(parent), depth(depth), pinfo(pinfo) {}
+        __forceinline GeneralBuildRecord (const PrimInfo& pinfo, size_t depth) 
+          : depth(depth), pinfo(pinfo) {}
         
-        __forceinline GeneralBuildRecord (const PrimInfo& pinfo, size_t depth, size_t* parent, const Set &prims) 
-          : parent(parent), depth(depth), prims(prims), pinfo(pinfo) {}
+        __forceinline GeneralBuildRecord (const PrimInfo& pinfo, size_t depth, const Set &prims) 
+          : depth(depth), prims(prims), pinfo(pinfo) {}
 
         __forceinline BBox3fa bounds() const { return pinfo.geomBounds; }
         
@@ -53,7 +53,6 @@ namespace embree
         __forceinline size_t size() const { return this->pinfo.size(); }
         
       public:
-        size_t* parent;   //!< Pointer to the parent node's reference to us
 	size_t depth;     //!< Depth of the root of this subtree.
 	Set prims;        //!< The list of primitives.
 	PrimInfo pinfo;   //!< Bounding info of primitives.
@@ -308,41 +307,6 @@ namespace embree
       typedef HeuristicArrayBinningSAH<PrimRef,NUM_OBJECT_BINS> Heuristic;
       typedef GeneralBuildRecord<Set,typename Heuristic::Split,PrimInfo> BuildRecord;
       
-      /*! standard build without reduction */
-      template<typename NodeRef, 
-        typename CreateAllocFunc, 
-        typename CreateNodeFunc, 
-        typename CreateLeafFunc, 
-        typename ProgressMonitor>
-        
-        static void build(NodeRef& root,
-                          CreateAllocFunc createAlloc, 
-                          CreateNodeFunc createNode, 
-                          CreateLeafFunc createLeaf, 
-                          ProgressMonitor progressMonitor, 
-                          PrimRef* prims, const PrimInfo& pinfo, 
-                          const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
-                          const size_t minLeafSize, const size_t maxLeafSize,
-                          const float travCost, const float intCost, const size_t singleThreadThreshold)
-      {
-        /* use dummy reduction over integers */
-        int identity = 0;
-        auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
-        
-        /* initiate builder */
-        build_reduce(root,
-                     createAlloc,
-                     identity,
-                     createNode,
-                     updateNode,
-                     createLeaf,
-                     progressMonitor,
-                     prims,
-                     pinfo,
-                     branchingFactor,maxDepth,blockSize,
-                     minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
-      }
-      
       /*! special builder that propagates reduction over the tree */
       template<typename NodeRef, 
         typename CreateAllocFunc, 
@@ -352,8 +316,7 @@ namespace embree
         typename CreateLeafFunc, 
         typename ProgressMonitor>
         
-        static ReductionTy build_reduce(NodeRef& root,
-                                        CreateAllocFunc createAlloc, 
+        static ReductionTy build_reduce(CreateAllocFunc createAlloc, 
                                         const ReductionTy& identity, 
                                         CreateNodeFunc createNode, UpdateNodeFunc updateNode, CreateLeafFunc createLeaf, 
                                         ProgressMonitor progressMonitor,
@@ -394,7 +357,7 @@ namespace embree
                         minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
         
         /* build hierarchy */
-        BuildRecord br(pinfo,1,(size_t*)&root,Set(0,pinfo.size()));
+        BuildRecord br(pinfo,1,Set(0,pinfo.size()));
         return builder(br);
       }
     };
@@ -415,45 +378,6 @@ namespace embree
       typedef Split2<BinSplit<OBJECT_BINS>,SpatialBinSplit<SPATIAL_BINS> > Split;
       typedef GeneralBuildRecord<Set,Split,PrimInfo> BuildRecord;
 
-      /*! standard build without reduction */
-      template<typename NodeRef, 
-        typename CreateAllocFunc, 
-        typename CreateNodeFunc, 
-        typename CreateLeafFunc, 
-        typename SplitPrimitiveFunc, 
-        typename ProgressMonitor>
-        
-        static void build(NodeRef& root,
-                          CreateAllocFunc createAlloc, 
-                          CreateNodeFunc createNode, 
-                          CreateLeafFunc createLeaf, 
-                          SplitPrimitiveFunc splitPrimitive,
-                          ProgressMonitor progressMonitor, 
-                          PrimRef* prims, const PrimInfo& pinfo, 
-                          const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
-                          const size_t minLeafSize, const size_t maxLeafSize,
-                          const float travCost, const float intCost,
-                          const size_t singleThreadThreshold)
-      {
-        /* use dummy reduction over integers */
-        int identity = 0;
-        auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
-        
-        /* initiate builder */
-        build_reduce(root,
-                     createAlloc,
-                     identity,
-                     createNode,
-                     updateNode,
-                     createLeaf,
-                     splitPrimitive,
-                     progressMonitor,
-                     prims,
-                     pinfo,
-                     branchingFactor,maxDepth,blockSize,
-                     minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
-      }
-      
       /*! special builder that propagates reduction over the tree */
       template<typename NodeRef, 
         typename CreateAllocFunc, 
@@ -464,8 +388,7 @@ namespace embree
         typename SplitPrimitiveFunc, 
         typename ProgressMonitor>
         
-        static ReductionTy build_reduce(NodeRef& root,
-                                        CreateAllocFunc createAlloc, 
+        static ReductionTy build_reduce(CreateAllocFunc createAlloc, 
                                         const ReductionTy& identity, 
                                         CreateNodeFunc createNode, 
                                         UpdateNodeFunc updateNode, 
@@ -484,7 +407,6 @@ namespace embree
         /* builder wants log2 of blockSize as input */		  
         const size_t logBlockSize = __bsr(blockSize); 
         assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
-
 
         typedef HeuristicArraySpatialSAH<SplitPrimitiveFunc, PrimRef,OBJECT_BINS, SPATIAL_BINS> Heuristic;
 
@@ -516,7 +438,7 @@ namespace embree
                         minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
         
         /* build hierarchy */
-        BuildRecord br(pinfo,1,(size_t*)&root,Set(0,pinfo.size(),extSize));
+        BuildRecord br(pinfo,1,Set(0,pinfo.size(),extSize));
         return builder(br);
       }
     };

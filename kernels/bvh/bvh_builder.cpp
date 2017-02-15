@@ -34,13 +34,12 @@ namespace embree
         progress_in(dn); 
       };
             
-      auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> size_t {
+      auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> NodeRef {
         return createLeaf(current,alloc);
       };
       
-      NodeRef root;
-      BVHBuilderBinnedSAH::build_reduce<NodeRef>
-        (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateAlignedNode(),dummy<N>,createLeafFunc,progressFunc,
+      NodeRef root = BVHBuilderBinnedSAH::build_reduce<NodeRef>
+        (typename BVH::CreateAlloc(bvh),NodeRef(0),typename BVH::CreateAlignedNode(),typename BVH::UpdateAlignedNode(),createLeafFunc,progressFunc,
          prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
 
       bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
@@ -61,16 +60,12 @@ namespace embree
         return createLeaf(current,alloc);
       };
             
-      NodeRef root = 0;
-      BVHBuilderBinnedSAH::build_reduce<NodeRef>
-        (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateQuantizedNode(bvh),dummy<N>,createLeafFunc,progressFunc,
+      NodeRef root = BVHBuilderBinnedSAH::build_reduce<NodeRef>
+        (typename BVH::CreateAlloc(bvh),NodeRef(0),typename BVH::CreateQuantizedNode(),typename BVH::UpdateQuantizedNode(),createLeafFunc,progressFunc,
          prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
 
-      NodeRef new_root = (size_t)root | BVH::tyQuantizedNode;
-      // todo: COPY LAYOUT FOR LARGE NODES !!!
-      //bvh->layoutLargeNodes(pinfo.size()*0.005f);
-      assert(new_root.isQuantizedNode());
-      bvh->set(new_root,LBBox3fa(pinfo.geomBounds),pinfo.size());
+      //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: COPY LAYOUT FOR LARGE NODES !!!
+      bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
     }
 
     template<int N>
@@ -80,34 +75,22 @@ namespace embree
         progress_in(dn); 
       };
             
-      auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> LBBox3fa {
+      auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> std::pair<NodeRef,LBBox3fa> {
         return createLeaf(current,alloc);
       };
 
-      /* reduction function */
-      auto reduce = [] (AlignedNodeMB* node, const LBBox3fa* bounds, const size_t num) -> LBBox3fa
-      {
-        assert(num <= N);
-        LBBox3fa allBounds = empty;
-        for (size_t i=0; i<num; i++) {
-          node->set(i, bounds[i]);
-          allBounds.extend(bounds[i]);
-        }
-        return allBounds;
-      };
-      auto identity = LBBox3fa(empty);
+      auto identity = std::make_pair(NodeRef(0),LBBox3fa(empty));
       
-      NodeRef root;
-      LBBox3fa root_bounds = BVHBuilderBinnedSAH::build_reduce<NodeRef>
-        (root,typename BVH::CreateAlloc(bvh),identity,typename BVH::CreateAlignedNodeMB(),reduce,createLeafFunc,progressFunc,
+      auto root = BVHBuilderBinnedSAH::build_reduce<NodeRef>
+        (typename BVH::CreateAlloc(bvh),identity,typename BVH::CreateAlignedNodeMB(),typename BVH::UpdateAlignedNodeMB(),createLeafFunc,progressFunc,
          prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
 
       /* set bounding box to merge bounds of all time steps */
-      bvh->set(root,root_bounds,pinfo.size()); // FIXME: remove later
+      bvh->set(root.first,root.second,pinfo.size()); // FIXME: remove later
 
       //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: implement for Mblur nodes and activate
       
-      return std::make_tuple(root,root_bounds);
+      return root;
     }
 
     template struct BVHNBuilder<4>;

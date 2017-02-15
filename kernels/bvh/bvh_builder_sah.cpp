@@ -53,10 +53,11 @@ namespace embree
     struct CreateLeaf
     {
       typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
 
       __forceinline CreateLeaf (BVH* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
       
-      __forceinline size_t operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
+      __forceinline NodeRef operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
       {
         size_t n = current.prims.size();
         size_t items = Primitive::blocks(n);
@@ -66,8 +67,7 @@ namespace embree
         for (size_t i=0; i<items; i++) {
           accel[i].fill(prims,start,current.prims.end(),bvh->scene);
         }
-        *current.parent = node;
-	return n;
+        return node;
       }
 
       BVH* bvh;
@@ -79,10 +79,11 @@ namespace embree
     struct CreateLeafQuantized
     {
       typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
 
       __forceinline CreateLeafQuantized (BVH* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
       
-      __forceinline size_t operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
+      __forceinline NodeRef operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
       {
         size_t n = current.prims.size();
         size_t items = Primitive::blocks(n);
@@ -93,9 +94,7 @@ namespace embree
         for (size_t i=0; i<items; i++) {
           accel[i].fill(prims,start,current.prims.end(),bvh->scene);
         }
-
-        *current.parent = node;
-	return n;
+        return node;
       }
 
       BVH* bvh;
@@ -107,10 +106,11 @@ namespace embree
     struct CreateLeafSpatial
     {
       typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
 
       __forceinline CreateLeafSpatial (BVH* bvh, PrimRef* prims0) : bvh(bvh), prims0(prims0) {}
       
-      __forceinline size_t operator() (const BVHBuilderBinnedFastSpatialSAH::BuildRecord& current, Allocator* alloc)
+      __forceinline NodeRef operator() (const BVHBuilderBinnedFastSpatialSAH::BuildRecord& current, Allocator* alloc)
       {
         PrimRef* const source = prims0;
 
@@ -130,8 +130,7 @@ namespace embree
         for (size_t i=0; i<items; i++) {
           accel[i].fill(source,start,current.prims.end(),bvh->scene);
         }
-        *current.parent = node;
-	return n;
+        return node;
       }
 
       BVH* bvh;
@@ -328,19 +327,22 @@ namespace embree
     struct CreateMSMBlurLeaf
     {
       typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+
       __forceinline CreateMSMBlurLeaf (BVH* bvh, PrimRef* prims, size_t time) : bvh(bvh), prims(prims), time(time) {}
       
-      __forceinline LBBox3fa operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
+      __forceinline std::pair<NodeRef,LBBox3fa> operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
       {
         size_t items = Primitive::blocks(current.prims.size());
         size_t start = current.prims.begin();
         Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
-        typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+        NodeRef node = bvh->encodeLeaf((char*)accel,items);
+
         LBBox3fa allBounds = empty;
         for (size_t i=0; i<items; i++)
           allBounds.extend(accel[i].fillMB(prims, start, current.prims.end(), bvh->scene, time, bvh->numTimeSteps));
-        *current.parent = node;
-        return allBounds;
+        
+        return std::make_pair(node,allBounds);
       }
 
       BVH* bvh;
@@ -524,13 +526,11 @@ namespace embree
 
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
 
-        NodeRef root;
-        BVHBuilderBinnedFastSpatialSAH::build_reduce<NodeRef>(
-          root,
+        NodeRef root = BVHBuilderBinnedFastSpatialSAH::build_reduce<NodeRef>(
           typename BVH::CreateAlloc(bvh),
-          size_t(0),
+          NodeRef(0),
           typename BVH::CreateAlignedNode(),
-          norotate<N>,
+          typename BVH::UpdateAlignedNode(),
           CreateLeafSpatial<N,Primitive>(bvh,prims0.data()),
           splitter,
           bvh->scene->progressInterface,
