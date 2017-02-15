@@ -289,12 +289,12 @@ namespace embree
           std::atomic<size_t> ext_elements;
           ext_elements.store(0);
           
-          //const float fpos = split.mapping.pos(split.pos,split.dim);
+          const float fpos = split.mapping.pos(split.pos,split.dim);
 
           parallel_for( set.begin(), set.end(), CREATE_SPLITS_STEP_SIZE, [&](const range<size_t>& r) {
               for (size_t i=r.begin();i<r.end();i++)
               {
-                //if (unlikely(prims0[i].lower[split.dim] < fpos && prims0[i].upper[split.dim] > fpos))
+                if (unlikely(prims0[i].lower[split.dim] < fpos && prims0[i].upper[split.dim] > fpos))
                 {
                   PrimRef refs[8];
                   size_t n = nodeOpenerFunc(prims0[i],refs);
@@ -306,7 +306,7 @@ namespace embree
                   if (unlikely(ID + n - 1 >= max_ext_range_size)) { 
                     ext_elements.fetch_add(-(n-1));
 #if 0
-                    PRINT("EXCEED"); exit(0); 
+                    PRINT("EXCEED"); 
 #endif
                     break; 
                   }
@@ -347,7 +347,8 @@ namespace embree
           /* valid split */
           if (unlikely(!split.valid())) {
             deterministic_order(set);
-            return splitFallback(set,left,lset,right,rset);
+            splitFallback(set,left,lset,right,rset);
+            return;
           }
 
           std::pair<size_t,size_t> ext_weights(0,0);
@@ -360,6 +361,19 @@ namespace embree
               ext_weights = sequential_opened_object_split(split.objectSplit(),set,left,lset,right,rset);
               //else
               //ext_weights = parallel_opened_object_split(split.objectSplit(),set,left,lset,right,rset);
+
+              if (lset.size() == 0 || rset.size() == 0)
+              {
+                PRINT("FALLBACK");
+                splitFallback(set,left,lset,right,rset);
+                PRINT(lset);
+                PRINT(rset);
+                return;
+              }
+
+              assert(lset.size() >= 1);
+              assert(rset.size() >= 1);
+              
           }
           else
           {
@@ -457,17 +471,6 @@ namespace embree
           new (&rset) extended_range<size_t>(center,end,end);
           assert(area(left.geomBounds) >= 0.0f);
           assert(area(right.geomBounds) >= 0.0f);
-
-          if (lset.size() == 0 || rset.size() == 0)
-          {
-            PRINT("FALLBACK");
-            splitFallback(set,left,lset,right,rset);
-            PRINT(lset.size());
-            PRINT(rset.size());
-          }
-
-          assert(lset.size() >= 1);
-          assert(rset.size() >= 1);
 
           for (size_t i=lset.begin();i<lset.end();i++)
             assert(inside(left.centBounds,prims0[i].center2()));
