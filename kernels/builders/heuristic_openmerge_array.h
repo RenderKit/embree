@@ -14,8 +14,10 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-// TODO: extend binning code to include the "numPrimitives" from the BuildRef structure
-
+// TODO: - extend binning code to include the "numPrimitives" from the BuildRef structure
+//       - adjust parallel build thresholds
+//       - do statistics about how many nodes are opened
+  
 #pragma once
 
 #include "heuristic_binning.h"
@@ -37,20 +39,20 @@ namespace embree
         __forceinline SplitOpenMerge (const SplitOpenMerge& other) 
         {
           opened = other.opened;
-          sah = other.sah;
-          objectSplit()  = other.objectSplit();
+          sah    = other.sah;
+          split  = other.objectSplit();
         }
         
         __forceinline SplitOpenMerge& operator= (const SplitOpenMerge& other) 
         {
           opened = other.opened;
-          sah = other.sah;
-          objectSplit()  = other.objectSplit();
+          sah    = other.sah;
+          split  = other.objectSplit();
           return *this;
         }
           
-          __forceinline     ObjectSplit&  objectSplit()        { return *(      ObjectSplit*)data; }
-        __forceinline const ObjectSplit&  objectSplit() const  { return *(const ObjectSplit*)data; }
+          __forceinline     ObjectSplit&  objectSplit()        { return split; }
+        __forceinline const ObjectSplit&  objectSplit() const  { return split; }
                 
         __forceinline SplitOpenMerge (const ObjectSplit& objectSplit, float sah, bool opened = false)
           : opened(opened), sah(sah) 
@@ -69,7 +71,7 @@ namespace embree
       public:
         bool opened;
         float sah;
-        __aligned(16) char data[sizeof(ObjectSplit)];
+        __aligned(16) ObjectSplit split;
       };
     
     /*! Performs standard object binning */

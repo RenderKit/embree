@@ -50,6 +50,8 @@ namespace embree
     template<int N, typename Mesh>
     void BVHNBuilderTwoLevel<N,Mesh>::build(size_t threadIndex, size_t threadCount)
     {
+      double d0 = getSeconds();
+
       /* delete some objects */
       size_t num = scene->size();
       if (num < objects.size()) {
@@ -272,6 +274,8 @@ namespace embree
 #endif
       bvh->alloc.cleanup();
       bvh->postBuild(t0);
+      double d1 = getSeconds();
+      std::cout << "TOP_LEVEL OPENING/REBUILD TIME " << d1-d0 << " ms" << std::endl;
     }
     
     template<int N, typename Mesh>
