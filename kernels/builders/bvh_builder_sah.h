@@ -65,8 +65,8 @@ namespace embree
           __forceinline BuildRecordT (size_t depth) 
             : depth(depth), pinfo(empty) {}
           
-          __forceinline BuildRecordT (size_t depth, const PrimInfo& pinfo, const Set &prims) 
-            : depth(depth), prims(prims), pinfo(pinfo) {}
+          __forceinline BuildRecordT (size_t depth, const Set& prims, const PrimInfo& pinfo, const Split& split) 
+            : depth(depth), prims(prims), pinfo(pinfo), split(split) {}
           
           __forceinline BBox3fa bounds() const { return pinfo.geomBounds; }
           
@@ -287,10 +287,12 @@ namespace embree
         }
         
         /*! builder entry function */
-        __forceinline const ReductionTy operator() (const PrimInfo& pinfo, const Set& set)
+        __forceinline const ReductionTy operator() (const Set& set, const PrimInfo& pinfo)
         {
-          BuildRecord record(1,pinfo,set);
-          record.split = find(record); 
+          Set set1 = set;
+          PrimInfo pinfo1 = pinfo;
+          auto split = heuristic.find (set1,pinfo1,logBlockSize);
+          BuildRecord record(1,set,pinfo,split);
           ReductionTy ret = recurse(record,nullptr,true);
           _mm_mfence(); // to allow non-temporal stores during build
           return ret;
@@ -351,7 +353,7 @@ namespace embree
                         settings);
         
         /* build hierarchy */
-        return builder(pinfo,set);
+        return builder(set,pinfo);
       }
     };
     
