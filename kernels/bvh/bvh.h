@@ -125,7 +125,7 @@ namespace embree
     struct CreateAlignedNode
     {
       template<typename BuildRecord>
-      __forceinline NodeRef operator() (const BuildRecord& current, BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc) const
+      __forceinline NodeRef operator() (BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc) const
       {
         AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode), byteNodeAlignment); node->clear();
         for (size_t i=0; i<num; i++) node->set(i,children[i].bounds());
@@ -146,7 +146,7 @@ namespace embree
     struct CreateAlignedNodeMB
     {
       template<typename BuildRecord>
-      __forceinline NodeRef operator() (const BuildRecord& current, BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc) const
+      __forceinline NodeRef operator() (BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc) const
       {
         AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),byteNodeAlignment); node->clear();
 	return encodeNode(node);
@@ -175,7 +175,7 @@ namespace embree
     struct CreateQuantizedNode
     {
       template<typename BuildRecord>
-      __forceinline NodeRef operator() (const BuildRecord& current, BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc) const
+      __forceinline NodeRef operator() (BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc) const
       {
         __aligned(64) AlignedNode node;
         node.clear();

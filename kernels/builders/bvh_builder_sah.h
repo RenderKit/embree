@@ -170,7 +170,7 @@ namespace embree
           } while (numChildren < branchingFactor);
           
           /* create node */
-          auto node = createNode(current,children,numChildren,alloc);
+          auto node = createNode(children,numChildren,alloc);
           
           /* recurse into each child  and perform reduction */
           for (size_t i=0; i<numChildren; i++)
@@ -261,7 +261,7 @@ namespace embree
           std::sort(&children[0],&children[numChildren],std::greater<BuildRecord>()); // FIXME: reduces traversal performance of bvh8.triangle4 (need to verified) !!
           
           /*! create an inner node */
-          auto node = createNode(current,children,numChildren,alloc);
+          auto node = createNode(children,numChildren,alloc);
           
           /* spawn tasks */
           if (current.size() > singleThreadThreshold) 

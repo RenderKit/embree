@@ -98,7 +98,7 @@ namespace embree
         },
 
         /* lambda function that creates BVH nodes */
-        [&](const isa::BVHBuilderBinnedSAH::BuildRecord& current, isa::BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, FastAllocator::ThreadLocal* alloc) -> Node*
+        [&](isa::BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, FastAllocator::ThreadLocal* alloc) -> Node*
         {
           assert(N <= 2);
           InnerNode* node = new (alloc->malloc(sizeof(InnerNode))) InnerNode;
