@@ -137,22 +137,6 @@ namespace embree
           std::sort(&prims[set.begin()],&prims[set.end()]);
         }
 
-#if 0
-        void deterministic_order(const PrimInfo& pinfo)
-        {
-          /* required as parallel partition destroys original primitive order */
-          std::sort(&prims[pinfo.begin],&prims[pinfo.end]);
-        }
-#endif
-
-        /*! array partitioning */
-        void splitFallback(const PrimInfo& pinfo, PrimInfo& left, PrimInfo& right)
-        {
-          Set lset,rset;
-          Set set(pinfo.begin,pinfo.end);
-          splitFallback(set,left,lset,right,rset);
-        }
-
         void splitFallback(const Set& set, PrimInfo& linfo, Set& lset, PrimInfo& rinfo, Set& rset)
         {
           const size_t begin = set.begin();
