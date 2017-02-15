@@ -83,7 +83,6 @@ namespace embree
       void clear();
 
       void open_sequential(size_t numPrimitives);
-      void open_merge_build_sequential(const mvector<BuildRef> &buildRefs, const PrimInfo &pinfo);
       
     public:
       BVH* bvh;

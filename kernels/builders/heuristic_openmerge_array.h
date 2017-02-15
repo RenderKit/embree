@@ -19,6 +19,8 @@
 #include "heuristic_binning.h"
 #include "heuristic_spatial.h"
 
+#define DBG_PRINT(x)
+
 namespace embree
 {
   namespace isa
@@ -171,12 +173,12 @@ namespace embree
               /* valid opened split, better SAH and number of splits do not exceed extended range */
             if (opened_object_split.valid() && opened_object_split_sah < OPENED_SAH_THRESHOLD*object_split_sah )
               {          
-                //PRINT("OPEN SPLIT");
+                //DBG_PRINT("OPEN SPLIT");
                 // && opened_object_split.left + opened_object_split.right - set.size() <= set.ext_range_size()
                 return Split(opened_object_split,opened_object_split_sah,true);
               }
           }
-          //PRINT("REGULAR SPLIT");
+          //DBG_PRINT("REGULAR SPLIT");
           return Split(object_split,object_split_sah,false);
         }
 
@@ -266,7 +268,7 @@ namespace embree
 
           const BinMapping<OBJECT_BINS> mapping(cent2Bounds,OBJECT_BINS);
           const BinMapping<OBJECT_BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
-          PRINT("NOT YET IMPLEMENTED");
+          DBG_PRINT("NOT YET IMPLEMENTED");
           exit(1);
           /* binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner, */
           /*                          [&] (const range<size_t>& r) -> OpenMergeBinner {  */
@@ -306,7 +308,7 @@ namespace embree
                   if (unlikely(ID + n - 1 >= max_ext_range_size)) { 
                     ext_elements.fetch_add(-(n-1));
 #if 0
-                    PRINT("EXCEED"); 
+                    DBG_PRINT("EXCEED"); 
 #endif
                     break; 
                   }
@@ -364,10 +366,10 @@ namespace embree
 
               if (lset.size() == 0 || rset.size() == 0)
               {
-                PRINT("FALLBACK");
+                DBG_PRINT("FALLBACK");
                 splitFallback(set,left,lset,right,rset);
-                PRINT(lset);
-                PRINT(rset);
+                DBG_PRINT(lset);
+                DBG_PRINT(rset);
                 return;
               }
 

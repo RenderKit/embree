@@ -25,8 +25,6 @@
 #define MAX_OPEN_SIZE 10000
 #define PROFILE_ITERATIONS 200
 
-#define SAH_OPEN_MERGE_BUILD 0
-
 #define ENABLER_DIRECT_SAH_MERGE_BUILDER 1
 
 namespace embree
@@ -47,200 +45,6 @@ namespace embree
     // ===========================================================================
     // ===========================================================================
     // ===========================================================================
-
-
-    template<int N, typename Mesh>
-    void BVHNBuilderTwoLevel<N,Mesh>::open_merge_build_sequential(const mvector<BuildRef> &buildRefs, const PrimInfo &pinfo)
-    {
-      assert(pinfo.size());
-      assert(buildRefs.size() == pinfo.size());
-      assert(pinfo.begin == 0);
-      PRINT(pinfo);
-
-      bool same_geomID = true;
-      for (size_t i=1;i<buildRefs.size();i++)
-        if (buildRefs[i].geomID != buildRefs[0].geomID) 
-        {
-          same_geomID = false;
-          break;
-        }
-      PRINT(same_geomID);
-
-      /* single element or all geomIDs are the same => end recursion */
-      if (buildRefs.size() == 1 || same_geomID) {
-        PRINT("DONE");
-        for (size_t i=0;i<buildRefs.size();i++)        
-          prims.push_back( PrimRef(buildRefs[i].bounds(),(size_t)buildRefs[i].node) );
-        return;
-      }
-
-      /* non-opening split */
-      typedef HeuristicArrayBinningSAH<BuildRef,NUM_OBJECT_BINS> Heuristic;
-      const size_t logBlockSize = 1;
-      Heuristic heuristic((BuildRef*)buildRefs.data());
-      typename Heuristic::Split split = heuristic.find(pinfo,logBlockSize);
-      assert(split.valid());
-      PRINT(split);
-
-      /* open bvh nodes */
-
-      mvector<BuildRef> opened_buildRefs(scene->device);
-
-      for (size_t i=0;i<buildRefs.size();i++)
-        if (buildRefs[i].node.isLeaf())
-        {
-          opened_buildRefs.push_back(buildRefs[i]);
-        }
-        else
-        {
-          NodeRef ref = buildRefs[i].node;
-          unsigned int geomID   = buildRefs[i].geomID;
-          unsigned int numPrims = buildRefs[i].numPrimitives;
-          AlignedNode* node = ref.alignedNode();
-          for (size_t i=0; i<N; i++) {
-            if (node->child(i) == BVH::emptyNode) continue;
-            opened_buildRefs.push_back(BuildRef(node->bounds(i),node->child(i),geomID,numPrims));
-          }
-        }
-      PRINT(opened_buildRefs.size());
-
-      PrimInfo opened_pinfo(empty);
-      for (size_t i=0;i<opened_buildRefs.size();i++)
-        opened_pinfo.add(opened_buildRefs[i].bounds(),opened_buildRefs[i].bounds().center2());
-      PRINT(opened_pinfo);
-
-      /* need to extend centBounds here as we bin with opened/non-opened nodes */
-
-      for (size_t i=0;i<buildRefs.size();i++)
-      {
-        opened_pinfo.extend(buildRefs[i].bounds(),buildRefs[i].bounds().lower);
-        opened_pinfo.extend(buildRefs[i].bounds(),buildRefs[i].bounds().upper);
-      }
-
-
-      /* get best split for opened bounds */
-
-      Heuristic opened_heuristic((BuildRef*)opened_buildRefs.data());
-      typename Heuristic::Split opened_split = opened_heuristic.find(opened_pinfo,logBlockSize);
-      PRINT(opened_split);
-
-      /* split */
-
-      PrimInfo left(empty), right(empty);
-      mvector<BuildRef> left_refs(scene->device);
-      mvector<BuildRef> right_refs(scene->device);
-
-      assert(left_refs.size() == 0);
-      assert(right_refs.size() == 0);
-      
-      if (opened_split.valid() && opened_split.sah < 4.0f * split.sah)
-      //if (opened_split.valid())
-      {
-        PRINT("OPEN SPLIT");
-        PRINT(opened_split);
-
-        const vint4 vSplitPos(opened_split.pos);
-        const vbool4 vSplitMask( (int)1 << opened_split.dim );
-
-        for (size_t i=0;i<buildRefs.size();i++)
-        {
-          const bool overlap = \
-            opened_split.mapping.bin(buildRefs[i].bounds().lower)[opened_split.dim] < opened_split.pos &&
-            opened_split.mapping.bin(buildRefs[i].bounds().upper)[opened_split.dim] >= opened_split.pos;
-
-          if (buildRefs[i].node.isLeaf()  || !overlap )
-          {
-            /* sort leaf into left/right list */
-            if (opened_split.mapping.bin_unsafe(buildRefs[i],vSplitPos,vSplitMask))
-            {
-              left.add(buildRefs[i].bounds(),buildRefs[i].bounds().center2());            
-              left_refs.push_back(buildRefs[i]);
-            }
-            else
-            {
-              right.add(buildRefs[i].bounds(),buildRefs[i].bounds().center2());            
-              right_refs.push_back(buildRefs[i]);
-            }            
-          }
-          else
-          {
-
-            PRINT( buildRefs[i].bounds().upper[opened_split.dim] );
-            PRINT( buildRefs[i].bounds().lower[opened_split.dim] );
-
-            NodeRef ref = buildRefs[i].node;
-            unsigned int geomID   = buildRefs[i].geomID;
-            unsigned int numPrims = buildRefs[i].numPrimitives;
-            AlignedNode* node = ref.alignedNode();
-            for (size_t j=0; j<N; j++) {
-              if (node->child(j) == BVH::emptyNode) continue;
-              BuildRef newref = BuildRef(node->bounds(j),node->child(j),geomID,numPrims);
-
-              /* sort child node into left/right list */
-              if (opened_split.mapping.bin_unsafe(newref,vSplitPos,vSplitMask))
-              {
-                left.add(newref.bounds(),newref.bounds().center2());            
-                left_refs.push_back(newref);
-              }
-              else
-              {
-                right.add(newref.bounds(),newref.bounds().center2());            
-                right_refs.push_back(newref);
-              }                          
-            }
-          }        
-        }
-
-        PRINT(left);
-        PRINT(left_refs.size());
-        PRINT(right);
-        PRINT(right_refs.size());
-
-        PING;
-      }
-      else if (split.valid())
-      {
-        PRINT("REGULAR SPLIT");
-        /* --------------*/
-        const vint4 vSplitPos(split.pos);
-        const vbool4 vSplitMask( (int)1 << split.dim );
-
-        for (size_t i=0;i<buildRefs.size();i++)
-        {
-          if (split.mapping.bin_unsafe(buildRefs[i],vSplitPos,vSplitMask))
-          {
-            left.add(buildRefs[i].bounds(),buildRefs[i].bounds().center2());            
-            left_refs.push_back(buildRefs[i]);
-          }
-          else
-          {
-            right.add(buildRefs[i].bounds(),buildRefs[i].bounds().center2());            
-            right_refs.push_back(buildRefs[i]);
-          }
-        }
-      }
-
-      /* fallback case in case no successfull split has been done */
-
-      if (!left_refs.size() || !right_refs.size())
-      {
-        for (size_t i=0;i<buildRefs.size();i++)        
-          prims.push_back( PrimRef(buildRefs[i].bounds(),(size_t)buildRefs[i].node) );
-        return;
-      }
-      
-      PRINT(left);
-      PRINT(right);
-      assert(left.size());
-      assert(right.size());
-      open_merge_build_sequential(left_refs,left);
-      open_merge_build_sequential(right_refs,right);      
-    }
-
-    // ===========================================================================
-    // ===========================================================================
-    // ===========================================================================
-
 
     template<int N, typename Mesh>
     void BVHNBuilderTwoLevel<N,Mesh>::build(size_t threadIndex, size_t threadCount)
@@ -334,23 +138,6 @@ namespace embree
       {
         /* open all large nodes */
         refs.resize(nextRef);
-#if SAH_OPEN_MERGE_BUILD == 1
-
-        prims.resize(0);
-        mvector<BuildRef> new_refs(scene->device);
-        PrimInfo ppinfo(empty);
-        for (size_t i=0;i<refs.size();i++) 
-        {
-          ppinfo.add(refs[i].bounds(),refs[i].bounds().center2());
-          new_refs.push_back(refs[i]);
-        }
-        open_merge_build_sequential(new_refs,ppinfo);
-
-        PrimInfo pinfo(empty);
-        for (size_t i=0;i<prims.size();i++) 
-          pinfo.add(prims[i].bounds(),prims[i].bounds().center2());
-
-#else
 
 #if ENABLER_DIRECT_SAH_MERGE_BUILDER == 0
         open_sequential(numPrimitives); 
@@ -358,7 +145,6 @@ namespace embree
         prims.resize(refs.size());
 #endif
 
-#endif
 
 
 #if defined(TASKING_TBB) && defined(__AVX512ER__) && USE_TASK_ARENA // KNL
@@ -366,13 +152,10 @@ namespace embree
         limited.execute([&]
 #endif
         {
-#if SAH_OPEN_MERGE_BUILD == 0
-
 #if ENABLER_DIRECT_SAH_MERGE_BUILDER == 1
           PrimInfo pinfo(empty);
           for (size_t i=0;i<refs.size();i++)
             pinfo.add(refs[i].bounds(),refs[i].bounds().center2());
-          PRINT(pinfo);
 #else
           const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(),  PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {
 
@@ -383,10 +166,7 @@ namespace embree
               }
               return pinfo;
             }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
-#endif
-#endif
-
-          
+#endif          
           /* skip if all objects where empty */
           if (pinfo.size() == 0)
             bvh->set(BVH::emptyNode,empty,0);
