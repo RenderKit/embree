@@ -55,9 +55,8 @@ namespace embree
         __forceinline const ObjectSplit&  objectSplit() const  { return split; }
                 
         __forceinline SplitOpenMerge (const ObjectSplit& objectSplit, float sah, bool opened = false)
-          : opened(opened), sah(sah) 
+          : opened(opened), sah(sah), split(objectSplit)
         {
-          new (data) ObjectSplit(objectSplit);
         }
                 
         __forceinline float splitSAH() const { 
