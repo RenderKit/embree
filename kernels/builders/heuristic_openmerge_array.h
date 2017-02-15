@@ -14,10 +14,14 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+// TODO: extend binning code to include the "numPrimitives" from the BuildRef structure
+
 #pragma once
 
 #include "heuristic_binning.h"
 #include "heuristic_spatial.h"
+
+#define COMMON_GEOMID_TERMINATION 1
 
 #define DBG_PRINT(x)
 
@@ -152,8 +156,7 @@ namespace embree
             return  Split(ObjectSplit(),inf,false);
           }
 
-          // FIXME: test if all object have the same geomID
-#if 0
+#if COMMON_GEOMID_TERMINATION == 1
           bool commonGeomID = true;
           const unsigned int geomID = prims0[set.begin()].geomID;
           for (size_t i=set.begin()+1;i<set.end();i++)

@@ -126,7 +126,11 @@ namespace embree
           
           /* create build primitive */
           if (!object->getBounds().empty())
+#if ENABLER_DIRECT_SAH_MERGE_BUILDER == 1
             refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root,objectID,mesh->size());
+#else
+          refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root);
+#endif
         }
       });
 
@@ -164,9 +168,6 @@ namespace embree
               return pinfo;
             }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
           
-          //PrimInfo pinfo(empty);
-          //for (size_t i=0;i<refs.size();i++)
-          //  pinfo.add(refs[i].bounds(),refs[i].bounds().center2());
 #else
           const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(),  PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {
 
@@ -208,7 +209,7 @@ namespace embree
                [&] (const BVHBuilderBinnedOpenMergeSAH::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> int
               {
                 assert(current.prims.size() == 1);
-                *current.parent = (NodeRef) refs[current.prims.begin()].ID();
+                *current.parent = (NodeRef) refs[current.prims.begin()].node;
                 return 1;
               },
                [&] (BuildRef &bref, BuildRef *refs) -> size_t { 

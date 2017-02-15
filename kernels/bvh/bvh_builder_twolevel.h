@@ -51,9 +51,9 @@ namespace embree
             lower.w = area(this->bounds());
         }
 
-
+        /* used by the open/merge bvh builder */
         __forceinline BuildRef (const BBox3fa& bounds, NodeRef node, const unsigned int geomID, const unsigned int numPrimitives)
-          : PrimRef(bounds,(size_t)node), node(node), geomID(geomID), numPrimitives(numPrimitives)
+          : PrimRef(bounds,(size_t)numPrimitives), node(node), geomID(geomID), numPrimitives(numPrimitives)
         {
         }
 
