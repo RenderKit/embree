@@ -15,45 +15,15 @@
 // ======================================================================== //
 
 #include "bvh_builder.h"
-#include "bvh_rotate.h"
-
-#define ROTATE_TREE 0
 
 namespace embree
 {
   namespace isa
   {
-    /* tree rotations */
-    template<int N>
-    __forceinline size_t rotate(typename BVHN<N>::AlignedNode* node, const size_t* counts, const size_t num) {
-      return 0;
-    }
-
     template<int N>
     __forceinline size_t dummy(typename BVHN<N>::AlignedNode* node, const size_t* counts, const size_t num) {
       return 0;
     }
-
-#if ROTATE_TREE
-    template<>
-    __forceinline size_t rotate<4>(BVH4::AlignedNode* node, const size_t* counts, const size_t num)
-    {
-      size_t n = 0;
-      assert(num <= 4);
-      for (size_t i=0; i<num; i++)
-        n += counts[i];
-      if (n >= 4096) {
-        for (size_t i=0; i<num; i++) {
-          if (counts[i] < 4096) {
-            for (int j=0; j<ROTATE_TREE; j++) 
-              BVHNRotate<4>::rotate(node->child(i));
-            node->child(i).setBarrier();
-          }
-        }
-      }
-      return n;
-    }
-#endif
 
     template<int N>
     void BVHNBuilder<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost, const size_t singleThreadThreshold)
@@ -70,19 +40,10 @@ namespace embree
       
       NodeRef root;
       BVHBuilderBinnedSAH::build_reduce<NodeRef>
-        (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateAlignedNode(bvh),rotate<N>,createLeafFunc,progressFunc,
+        (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateAlignedNode(bvh),dummy<N>,createLeafFunc,progressFunc,
          prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
 
       bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
-      
-#if ROTATE_TREE
-      if (N == 4)
-      {
-        for (int i=0; i<ROTATE_TREE; i++)
-          BVHNRotate<N>::rotate(bvh->root);
-        bvh->clearBarrier(bvh->root);
-      }
-#endif
       
       bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
     }
@@ -165,15 +126,6 @@ namespace embree
       /* set bounding box to merge bounds of all time steps */
       bvh->set(root,root_bounds,pinfo.size()); // FIXME: remove later
 
-#if ROTATE_TREE
-      if (N == 4)
-      {
-        for (int i=0; i<ROTATE_TREE; i++)
-          BVHNRotate<N>::rotate(bvh->root);
-        bvh->clearBarrier(bvh->root);
-      }
-#endif
-      
       //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: implement for Mblur nodes and activate
       
       return std::make_tuple(root,root_bounds);
