@@ -434,52 +434,53 @@ namespace embree
    template<>
      struct BinMapping<16>
    {
-    public:
-      __forceinline BinMapping() {}
+   public:
+     __forceinline BinMapping() {}
       
-      /*! calculates the mapping */
-        __forceinline BinMapping(const PrimInfo& pinfo) 
-        {
-          num = 16;
-          const vfloat4 diag = (vfloat4) pinfo.centBounds.size();
-          scale = select(diag > vfloat4(1E-34f),vfloat4(0.99f*num)/diag,vfloat4(0.0f));
-          ofs  = (vfloat4) pinfo.centBounds.lower;
-          scale16 = scale;
-          ofs16 = ofs;
-        }
+     /*! calculates the mapping */
+     template<typename PrimInfo>
+     __forceinline BinMapping(const PrimInfo& pinfo)
+     {
+       num = 16;
+       const vfloat4 diag = (vfloat4) pinfo.centBounds.size();
+       scale = select(diag > vfloat4(1E-34f),vfloat4(0.99f*num)/diag,vfloat4(0.0f));
+       ofs  = (vfloat4) pinfo.centBounds.lower;
+       scale16 = scale;
+       ofs16 = ofs;
+     }
 
-        /*! returns number of bins */
-        __forceinline size_t size() const { return num; }
+     /*! returns number of bins */
+     __forceinline size_t size() const { return num; }
 
-        __forceinline vint16 bin16(const Vec3fa& p) const {
-          return vint16(vint4(floori((vfloat4(p)-ofs)*scale)));
-        }
+     __forceinline vint16 bin16(const Vec3fa& p) const {
+       return vint16(vint4(floori((vfloat4(p)-ofs)*scale)));
+     }
 
-        __forceinline vint16 bin16(const vfloat16& p) const {
-          return floori((p-ofs16)*scale16);
-        }
+     __forceinline vint16 bin16(const vfloat16& p) const {
+       return floori((p-ofs16)*scale16);
+     }
 
-        __forceinline int bin_unsafe(const PrimRef& ref,
-                                     const vint16&  vSplitPos,
-                                     const vbool16& splitDimMask) const
-        {
-          const vfloat16 lower(*(vfloat4*)&ref.lower);
-          const vfloat16 upper(*(vfloat4*)&ref.upper);
-          const vfloat16 p = lower + upper;
-          const vint16 i = floori((p-ofs16)*scale16);
-          return lt(splitDimMask,i,vSplitPos);
-        }
+     __forceinline int bin_unsafe(const PrimRef& ref,
+                                  const vint16&  vSplitPos,
+                                  const vbool16& splitDimMask) const
+     {
+       const vfloat16 lower(*(vfloat4*)&ref.lower);
+       const vfloat16 upper(*(vfloat4*)&ref.upper);
+       const vfloat16 p = lower + upper;
+       const vint16 i = floori((p-ofs16)*scale16);
+       return lt(splitDimMask,i,vSplitPos);
+     }
+
+     /*! returns true if the mapping is invalid in some dimension */
+     __forceinline bool invalid(const size_t dim) const {
+       return scale[dim] == 0.0f;
+     }
         
-        /*! returns true if the mapping is invalid in some dimension */
-        __forceinline bool invalid(const size_t dim) const {
-          return scale[dim] == 0.0f;
-        }
-        
-      public:
-        size_t num;
-        vfloat4 ofs,scale;         //!< linear function that maps to bin ID
-        vfloat16 ofs16,scale16;    //!< linear function that maps to bin ID
-      };
+    public:
+      size_t num;
+      vfloat4 ofs,scale;         //!< linear function that maps to bin ID
+      vfloat16 ofs16,scale16;    //!< linear function that maps to bin ID
+    };
 
     /* 16 bins in-register binner */
     template<typename PrimRef>
