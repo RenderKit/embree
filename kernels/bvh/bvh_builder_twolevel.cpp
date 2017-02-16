@@ -25,8 +25,13 @@
 #define MAX_OPEN_SIZE 10000
 #define PROFILE_ITERATIONS 200
 
+/* new open/merge builder */
 #define ENABLER_DIRECT_SAH_MERGE_BUILDER 1
-#define SPLIT_MEMORY_RESERVE_FACTOR 100
+
+/* sequential opening phase in old code path */
+#define ENABLE_OPEN_SEQUENTIAL 1
+
+#define SPLIT_MEMORY_RESERVE_FACTOR 1000
 
 namespace embree
 {
@@ -147,7 +152,10 @@ namespace embree
         refs.resize(nextRef);
 
 #if ENABLER_DIRECT_SAH_MERGE_BUILDER == 0
+
+#if ENABLE_OPEN_SEQUENTIAL == 1
         open_sequential(numPrimitives); 
+#endif
         /* compute PrimRefs */
         prims.resize(refs.size());
 #endif
