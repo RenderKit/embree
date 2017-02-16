@@ -66,8 +66,8 @@ namespace embree
           __forceinline BuildRecordT (size_t depth) 
             : depth(depth), prims(empty) {}
           
-          __forceinline BuildRecordT (size_t depth, const Set& prims, const Split& split) 
-            : depth(depth), prims(prims), split(split) {}
+          __forceinline BuildRecordT (size_t depth, const Set& prims) 
+            : depth(depth), prims(prims) {}
           
           __forceinline BBox3fa bounds() const { return prims.geomBounds; }
           
@@ -79,7 +79,6 @@ namespace embree
         public:
           size_t depth;     //!< Depth of the root of this subtree.
           Set prims;        //!< The list of primitives.
-          Split split;      //!< The best split for the primitives.
         };
       
       template<typename BuildRecord, 
@@ -155,8 +154,6 @@ namespace embree
             BuildRecord left(current.depth+1);
             BuildRecord right(current.depth+1);
             heuristic.splitFallback(children[bestChild].prims,left.prims,right.prims);
-            left .split = heuristic.find(left.prims,logBlockSize);
-            right.split = heuristic.find(right.prims,logBlockSize);
             
             /* add new children left and right */
             children[bestChild] = children[numChildren-1];
@@ -186,10 +183,13 @@ namespace embree
           /* call memory monitor function to signal progress */
           if (toplevel && current.size() <= singleThreadThreshold)
             progressMonitor(current.size());
+
+          /*! find best split */
+          auto split = heuristic.find(current.prims,logBlockSize);
           
           /*! compute leaf and split cost */
           const float leafSAH  = intCost*current.prims.leafSAH(logBlockSize);
-          const float splitSAH = travCost*halfArea(current.prims.geomBounds)+intCost*current.split.splitSAH();
+          const float splitSAH = travCost*halfArea(current.prims.geomBounds)+intCost*split.splitSAH();
           assert((current.prims.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
           
           /*! create a leaf node when threshold reached or SAH tells us to stop */
@@ -198,11 +198,16 @@ namespace embree
             return createLargeLeaf(current,alloc);
           }
           
-          /*! initialize child list */
+          /*! perform initial split */    
+          Set lprims,rprims;
+          heuristic.split(split,current.prims,lprims,rprims);
+
+          /*! initialize child list with initial split */
           ReductionTy values[MAX_BRANCHING_FACTOR];
           BuildRecord children[MAX_BRANCHING_FACTOR];
-          children[0] = current;
-          size_t numChildren = 1;
+          children[0] = BuildRecord(current.depth+1,lprims);
+          children[1] = BuildRecord(current.depth+1,rprims);
+          size_t numChildren = 2;
           
           /*! split until node is full or SAH tells us to stop */
           do {
@@ -227,11 +232,8 @@ namespace embree
             BuildRecord& brecord = children[bestChild];
             BuildRecord lrecord(current.depth+1);
             BuildRecord rrecord(current.depth+1);
-            heuristic.split(brecord.split,brecord.prims,lrecord.prims,rrecord.prims);
-            
-            /* find new splits */
-            lrecord.split = heuristic.find(lrecord.prims,logBlockSize);
-            rrecord.split = heuristic.find(rrecord.prims,logBlockSize);
+            auto split = heuristic.find(brecord.prims,logBlockSize);
+            heuristic.split(split,brecord.prims,lrecord.prims,rrecord.prims);
             children[bestChild  ] = lrecord;
             children[numChildren] = rrecord;
             numChildren++;
@@ -271,9 +273,7 @@ namespace embree
         /*! builder entry function */
         __forceinline const ReductionTy operator() (const Set& set)
         {
-          Set set1 = set;
-          auto split = heuristic.find (set1,logBlockSize);
-          BuildRecord record(1,set,split);
+          BuildRecord record(1,set);
           ReductionTy ret = recurse(record,nullptr,true);
           _mm_mfence(); // to allow non-temporal stores during build
           return ret;
