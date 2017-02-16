@@ -28,7 +28,7 @@
 #define ENABLE_OPENING_SPLITS        1
 
 
-#define MAX_OPENED_CHILD_NODES 8*3
+#define MAX_OPENED_CHILD_NODES 8
 
 #define DBG_PRINT(x)
 
