@@ -27,6 +27,9 @@
 #define USE_SUBTREE_SIZE_FOR_BINNING 1
 #define ENABLE_OPENING_SPLITS        1
 
+
+#define MAX_OPENED_CHILD_NODES 8
+
 #define DBG_PRINT(x)
 
 namespace embree
@@ -259,7 +262,7 @@ namespace embree
           for (size_t i=set.begin();i<set.end();i++)
           {
             cent2Bounds.extend(prims0[i].center2());
-            PrimRef refs[8];
+            PrimRef refs[MAX_OPENED_CHILD_NODES];
             size_t n = nodeOpenerFunc(prims0[i],refs);
             for (size_t j=0;j<n;j++)
               cent2Bounds.extend(refs[j].center2());
@@ -270,7 +273,7 @@ namespace embree
 
           for (size_t i=set.begin();i<set.end();i++)
           {
-            PrimRef refs[8];
+            PrimRef refs[MAX_OPENED_CHILD_NODES];
             size_t n = nodeOpenerFunc(prims0[i],refs);
 #if USE_SUBTREE_SIZE_FOR_BINNING == 1
             binner.binSubTreeRefs(refs,n,_mapping); 
@@ -288,7 +291,7 @@ namespace embree
           const BBox3fa cent2Bounds = parallel_reduce(set.begin(), set.end(),  BBox3fa(empty), [&] (const range<size_t>& r) -> BBox3fa {
               BBox3fa bounds(empty);
               for (size_t i=r.begin(); i<r.end(); i++) {
-                PrimRef refs[8];
+                PrimRef refs[MAX_OPENED_CHILD_NODES];
                 size_t n = nodeOpenerFunc(prims0[i],refs);
                 for (size_t j=0;j<n;j++)
                   bounds.extend(refs[j].center2());
@@ -303,7 +306,7 @@ namespace embree
                                      ObjectBinner binner(empty); 
                                      for (size_t i=r.begin();i<r.end();i++)
                                      {
-                                       PrimRef refs[8];
+                                       PrimRef refs[MAX_OPENED_CHILD_NODES];
                                        size_t n = nodeOpenerFunc(prims0[i],refs);
 #if USE_SUBTREE_SIZE_FOR_BINNING == 1
                                        binner.binSubTreeRefs(refs,n,_mapping); 
@@ -336,7 +339,7 @@ namespace embree
               {
                 if (unlikely(prims0[i].lower[split.dim] < fpos && prims0[i].upper[split.dim] > fpos))
                 {
-                  PrimRef refs[8];
+                  PrimRef refs[MAX_OPENED_CHILD_NODES];
                   size_t n = nodeOpenerFunc(prims0[i],refs);
                   if (likely(n==1)) continue;
 
