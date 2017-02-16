@@ -155,8 +155,8 @@ namespace embree
             BuildRecord left(current.depth+1);
             BuildRecord right(current.depth+1);
             heuristic.splitFallback(children[bestChild].prims,left.prims,right.prims);
-            left .split = find(left );
-            right.split = find(right);
+            left .split = heuristic.find(left.prims,logBlockSize);
+            right.split = heuristic.find(right.prims,logBlockSize);
             
             /* add new children left and right */
             children[bestChild] = children[numChildren-1];
@@ -175,14 +175,6 @@ namespace embree
           
           /* perform reduction */
           return updateNode(node,values,numChildren);
-        }
-        
-        __forceinline const typename Heuristic::Split find(BuildRecord& current) {
-          return heuristic.find (current.prims,logBlockSize);
-        }
-        
-        __forceinline void partition(BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) {
-          heuristic.split(brecord.split,brecord.prims,lrecord.prims,rrecord.prims);
         }
         
         const ReductionTy recurse(BuildRecord& current, Allocator alloc, bool toplevel)
@@ -242,11 +234,11 @@ namespace embree
             BuildRecord& brecord = children[bestChild];
             BuildRecord lrecord(current.depth+1);
             BuildRecord rrecord(current.depth+1);
-            partition(brecord,lrecord,rrecord);
+            heuristic.split(brecord.split,brecord.prims,lrecord.prims,rrecord.prims);
             
             /* find new splits */
-            lrecord.split = find(lrecord);
-            rrecord.split = find(rrecord);
+            lrecord.split = heuristic.find(lrecord.prims,logBlockSize);
+            rrecord.split = heuristic.find(rrecord.prims,logBlockSize);
             children[bestChild  ] = lrecord;
             children[numChildren] = rrecord;
             numChildren++;

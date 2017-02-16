@@ -201,7 +201,7 @@ namespace embree
           float unalignedObjectSAH = inf;
           if (alignedObjectSAH > 0.7f*leafSAH) {
             uspace = unalignedHeuristic.computeAlignedSpace(pinfo); 
-            const PrimInfoRange       sinfo = unalignedHeuristic.computePrimInfo(pinfo,uspace);
+            const PrimInfoRange sinfo = unalignedHeuristic.computePrimInfo(pinfo,uspace);
             unalignedObjectSplit = unalignedHeuristic.find(sinfo,0,uspace);    	
             unalignedObjectSAH = travCostUnaligned*halfArea(pinfo.geomBounds) + intCost*unalignedObjectSplit.splitSAH();
             bestSAH = min(unalignedObjectSAH,bestSAH);
