@@ -438,15 +438,16 @@ namespace embree
       __forceinline BinMapping() {}
       
       /*! calculates the mapping */
+      template<typename PrimInfo>
         __forceinline BinMapping(const PrimInfo& pinfo) 
-        {
-          num = 16;
-          const vfloat4 diag = (vfloat4) pinfo.centBounds.size();
-          scale = select(diag > vfloat4(1E-34f),vfloat4(0.99f*num)/diag,vfloat4(0.0f));
-          ofs  = (vfloat4) pinfo.centBounds.lower;
-          scale16 = scale;
-          ofs16 = ofs;
-        }
+      {
+        num = 16;
+        const vfloat4 diag = (vfloat4) pinfo.centBounds.size();
+        scale = select(diag > vfloat4(1E-34f),vfloat4(0.99f*num)/diag,vfloat4(0.0f));
+        ofs  = (vfloat4) pinfo.centBounds.lower;
+        scale16 = scale;
+        ofs16 = ofs;
+      }
 
         /*! returns number of bins */
         __forceinline size_t size() const { return num; }
