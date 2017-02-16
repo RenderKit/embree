@@ -90,7 +90,6 @@ namespace embree
           setUnalignedNode(setUnalignedNode),
           createLeaf(createLeaf),
           progressMonitor(progressMonitor),
-          prims(prims), 
           alignedHeuristic(prims), unalignedHeuristic(prims), strandHeuristic(prims) {}
         
         /*! entry point into builder */
@@ -101,29 +100,6 @@ namespace embree
         }
         
       private:
-        
-        void deterministic_order(const PrimInfoRange& pinfo)
-        {
-          /* required as parallel partition destroys original primitive order */
-          std::sort(&prims[pinfo.begin()],&prims[pinfo.end()]);
-        }
-
-        void splitFallback(const PrimInfoRange& pinfo, PrimInfoRange& linfo, PrimInfoRange& rinfo)
-        {
-          const size_t begin = pinfo.begin();
-          const size_t end   = pinfo.end();
-          const size_t center = (begin + end)/2;
-
-          CentGeomBBox3fa left; left.reset();
-          for (size_t i=begin; i<center; i++)
-            left.extend(prims[i].bounds());
-          new (&linfo) PrimInfoRange(begin,center,left.geomBounds,left.centBounds);
-
-          CentGeomBBox3fa right; right.reset();
-          for (size_t i=center; i<end; i++)
-            right.extend(prims[i].bounds());
-          new (&rinfo) PrimInfoRange(center,end,right.geomBounds,right.centBounds);
-        }
         
         /*! creates a large leaf that could be larger than supported by the BVH */
         NodeRef createLargeLeaf(size_t depth, const PrimInfoRange& pinfo, Allocator alloc)
@@ -162,7 +138,7 @@ namespace embree
             
             /*! split best child into left and right child */
             __aligned(64) PrimInfoRange left, right;
-            splitFallback(children[bestChild],left,right);
+            alignedHeuristic.splitFallback(children[bestChild],left,right);
             
             /* add new children left and right */
             children[bestChild] = children[numChildren-1];
@@ -233,8 +209,8 @@ namespace embree
           }
           /* otherwise perform fallback split */
           else {
-            deterministic_order(pinfo);
-            splitFallback(pinfo,linfo,rinfo);
+            alignedHeuristic.deterministic_order(pinfo);
+            alignedHeuristic.splitFallback(pinfo,linfo,rinfo);
             return true;
           }
         }
@@ -254,7 +230,7 @@ namespace embree
           
           /* create leaf node */
           if (depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || pinfo.size() <= minLeafSize) {
-            deterministic_order(pinfo);
+            alignedHeuristic.deterministic_order(pinfo);
             return createLargeLeaf(depth,pinfo,alloc);
           }
           
@@ -360,7 +336,6 @@ namespace embree
         const ProgressMonitor& progressMonitor;
         
       private:
-        BezierPrim* prims;
         HeuristicBinningSAH alignedHeuristic;
         UnalignedHeuristicBinningSAH unalignedHeuristic;
         HeuristicStrandSplitSAH strandHeuristic;
