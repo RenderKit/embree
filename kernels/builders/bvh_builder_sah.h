@@ -269,14 +269,6 @@ namespace embree
           }
         }
         
-        /*! builder entry function */
-        __forceinline const ReductionTy operator() (const Set& set)
-        {
-          const ReductionTy ret = recurse(BuildRecord(1,set),nullptr,true);
-          _mm_mfence(); // to allow non-temporal stores during build
-          return ret;
-        }
-        
       private:
         Heuristic& heuristic;
         const CreateAllocFunc& createAlloc;
@@ -328,7 +320,9 @@ namespace embree
                         settings);
         
         /* build hierarchy */
-        return builder(set);
+        const ReductionTy root = builder.recurse(BuildRecord(1,set),nullptr,true);
+        _mm_mfence(); // to allow non-temporal stores during build
+        return root;
       }
     };
 
