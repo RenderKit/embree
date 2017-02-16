@@ -262,8 +262,7 @@ namespace embree
           /* recurse into each child */
           else 
           {
-            //for (size_t i=0; i<numChildren; i++)
-            for (ssize_t i=numChildren-1; i>=0; i--)
+            for (size_t i=0; i<numChildren; i++)
               values[i] = recurse(children[i],alloc,false);
             
             return updateNode(node,values,numChildren);
