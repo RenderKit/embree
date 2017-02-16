@@ -166,7 +166,6 @@ namespace embree
 #else
           const bool commonGeomID = false;
 #endif
-
           assert(pinfo.size() > 1);
           SplitInfo oinfo;
           const ObjectSplit object_split = object_find(set,pinfo,logBlockSize,oinfo);

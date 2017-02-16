@@ -60,14 +60,6 @@ namespace embree
         {
           const vint4 i = floori((vfloat4(p)-ofs)*scale);
 #if 1
-          if (!(i[2] >= 0 && (size_t)i[2] < num))
-          {
-            PRINT(p);
-            PRINT(vfloat4(p)-ofs);
-            PRINT((vfloat4(p)-ofs)*scale);
-
-            PRINT(i);
-          }
           assert(i[0] >= 0 && (size_t)i[0] < num); 
           assert(i[1] >= 0 && (size_t)i[1] < num);
           assert(i[2] >= 0 && (size_t)i[2] < num);
@@ -324,7 +316,6 @@ namespace embree
           const unsigned int b12 = extract<2>(bin1);  bounds(b12,2).extend(prim1); 
           const unsigned int n1  = prim1.lower.u;
           assert(n1);
-
           counts(b10,0)+=n1;
           counts(b11,1)+=n1;
           counts(b12,2)+=n1;

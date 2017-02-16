@@ -223,7 +223,7 @@ namespace embree
                  }
                  NodeRef ref = bref.node;
                  unsigned int geomID   = bref.geomID;
-                 unsigned int numPrims = bref.numPrimitives;
+                 unsigned int numPrims = max((unsigned int)bref.numPrimitives / N,(unsigned int)1);
                  AlignedNode* node = ref.alignedNode();
                  size_t n = 0;
                  for (size_t i=0; i<N; i++) {
