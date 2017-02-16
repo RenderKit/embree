@@ -316,7 +316,7 @@ namespace embree
             {
               for (size_t i=0; i<numChildren; i++) {
                 const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpace(children[i]); 
-                const PrimInfoRange       sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
+                const PrimInfoRange sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
                 const OBBox3fa obounds(space,sinfo.geomBounds);
                 setUnalignedNode(node,i,recurse(depth+1,children[i],alloc,false),obounds);
               }
