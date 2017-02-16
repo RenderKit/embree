@@ -128,7 +128,7 @@ namespace embree
   {
     const T da = a1-a0;
     const T db = b1-b0;
-    return a0*b0+(a0*db+da*b0)*T(0.5f) + da*db*T(1.0/3.0f);
+    return a0*b0+(a0*db+da*b0)*T(0.5f) + da*db*T(1.0f/3.0f);
   }
   
   template<> __forceinline float LBBox<Vec3fa>::expectedHalfArea() const 

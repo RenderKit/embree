@@ -364,7 +364,7 @@ namespace embree
       typedef range<size_t> Set;
       typedef HeuristicArrayBinningSAH<PrimRef,NUM_OBJECT_BINS> Heuristic;
       typedef GeneralBVHBuilder::BuildRecordT<Set,typename Heuristic::Split,PrimInfo> BuildRecord;
-      typedef typename GeneralBVHBuilder::Settings Settings;
+      typedef GeneralBVHBuilder::Settings Settings;
       
       /*! special builder that propagates reduction over the tree */
       template<
@@ -402,7 +402,7 @@ namespace embree
       typedef extended_range<size_t> Set;
       typedef Split2<BinSplit<NUM_OBJECT_BINS>,SpatialBinSplit<NUM_SPATIAL_BINS> > Split;
       typedef GeneralBVHBuilder::BuildRecordT<Set,Split,PrimInfo> BuildRecord;
-      typedef typename GeneralBVHBuilder::Settings Settings;
+      typedef GeneralBVHBuilder::Settings Settings;
       
       /*! special builder that propagates reduction over the tree */
       template<
