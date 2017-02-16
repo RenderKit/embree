@@ -186,8 +186,6 @@ namespace embree
             /* update right range */
             assert(rset.ext_end() + left_ext_range_size == set.ext_end());
             rset.move_right(left_ext_range_size);
-            //right.begin = rset.begin();
-            //right.end = rset.end();
           }
         }
 
@@ -320,15 +318,15 @@ namespace embree
                   // no empty splits
                   if (unlikely(left.bounds().empty() || right.bounds().empty())) continue;
                 
-                  //left.lower.a  = (left.lower.a & 0x00FFFFFF) | ((splits-1) << 24);
-                  //right.lower.a = (right.lower.a & 0x00FFFFFF) | ((splits-1) << 24);
                   left.lower.a  = (left.lower.a & 0x00FFFFFF) | (splits << 24);
                   right.lower.a = (right.lower.a & 0x00FFFFFF) | (splits << 24);
 
                   const size_t ID = ext_elements.fetch_add(1);
 
                   /* break if the number of subdivided elements are greater than the maximal allowed size */
-                  if (unlikely(ID >= max_ext_range_size)) break;
+                  if (unlikely(ID >= max_ext_range_size)) 
+                    break;
+
                   /* only write within the correct bounds */
                   assert(ID < max_ext_range_size);
                   prims0[i] = left;
@@ -338,13 +336,8 @@ namespace embree
             });
 
           const size_t numExtElements = min(max_ext_range_size,ext_elements.load());          
-          //assert(numExtElements <= max_ext_range_size);
           assert(set.end()+numExtElements<=set.ext_end());
           set._end += numExtElements;
-          //Set nset(set.begin(),set.end()+numExtElements,set.ext_end());
-          //pinfo.begin = nset.begin();
-          //pinfo.end   = nset.end();
-          //set = nset;
         }
         
         /*! array partitioning */
@@ -385,13 +378,6 @@ namespace embree
             setExtentedRanges(set,lset,rset,ext_weights.first,ext_weights.second);
             moveExtentedRange(set,lset,rset);
           }
-
-          //assert(lset.begin() == left.begin);
-          //assert(lset.end()   == left.end);
-          //assert(lset.size()  == left.size());
-          //assert(rset.begin() == right.begin);
-          //assert(rset.end()   == right.end);
-          //assert(rset.size()  == right.size());
         }
 
         /*! array partitioning */
@@ -563,15 +549,13 @@ namespace embree
           const size_t center = (begin + end)/2;
 
           PrimInfo left(empty);
-          for (size_t i=begin; i<center; i++)
-          {
+          for (size_t i=begin; i<center; i++) {
             left.add(prims0[i].bounds(),prims0[i].lower.a >> 24);
           }
           const size_t lweight = left.end;
           
           PrimInfo right(empty);
-          for (size_t i=center; i<end; i++)
-          {
+          for (size_t i=center; i<end; i++) {
             right.add(prims0[i].bounds(),prims0[i].lower.a >> 24);	
           }
           const size_t rweight = right.end;
@@ -580,8 +564,7 @@ namespace embree
           new (&rset) PrimInfoExtRange(center,end,end,right.geomBounds,right.centBounds);
 
           /* if we have an extended range */
-          if (set.has_ext_range()) 
-          {
+          if (set.has_ext_range()) {
             setExtentedRanges(set,lset,rset,lweight,rweight);
             moveExtentedRange(set,lset,rset);
           }
