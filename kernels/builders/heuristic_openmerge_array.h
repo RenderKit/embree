@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-// TODO: - extend binning code to include the "numPrimitives" from the BuildRef structure
+// TODO: 
 //       - adjust parallel build thresholds
 //       - do statistics about how many nodes are opened
   
