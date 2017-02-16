@@ -101,14 +101,18 @@ namespace embree
         
         const PrimInfo computePrimInfo(const range<size_t>& set, const LinearSpace3fa& space)
         {
-          BBox3fa geomBounds = empty;
-          BBox3fa centBounds = empty;
-          for (size_t i=set.begin(); i<set.end(); i++) { // FIXME: parallel
-            const BBox3fa bounds = prims[i].bounds(space);
-            geomBounds.extend(bounds);
-            centBounds.extend(center2(bounds));
-          }
-          return PrimInfo(set.begin(),set.end(),geomBounds,centBounds);
+          auto computeBounds = [&](const range<size_t>& r) -> CentGeomBBox3fa
+            {
+              CentGeomBBox3fa bounds(empty);
+              for (size_t i=r.begin(); i<r.end(); i++)
+                bounds.extend(prims[i].bounds(space));
+              return bounds;
+            };
+          
+          const CentGeomBBox3fa bounds = parallel_reduce(set.begin(), set.end(), size_t(1024), size_t(4096), 
+                                                         CentGeomBBox3fa(empty), computeBounds, CentGeomBBox3fa::merge2);
+
+          return PrimInfo(set.begin(),set.end(),bounds.geomBounds,bounds.centBounds);
         }
         
         const PrimInfoMB computePrimInfoMB(size_t timeSegment, size_t numTimeSteps, Scene* scene, const range<size_t>& pinfo, const AffineSpace3fa& space)
