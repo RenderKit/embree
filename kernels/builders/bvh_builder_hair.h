@@ -56,6 +56,7 @@ namespace embree
         class BuilderT : private Settings
       {
         ALIGNED_CLASS;
+        friend struct BVHNBuilderHair;
         
         typedef FastAllocator::ThreadLocal2* Allocator;
         typedef HeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> HeuristicBinningSAH;
@@ -69,8 +70,6 @@ namespace embree
         static const size_t travCostAligned = 1;
         static const size_t travCostUnaligned = 5;
         static const size_t intCost = 6;
-        
-      public:
         
         BuilderT (BezierPrim* prims,
                   const CreateAllocFunc& createAlloc, 
@@ -91,15 +90,6 @@ namespace embree
           createLeaf(createLeaf),
           progressMonitor(progressMonitor),
           alignedHeuristic(prims), unalignedHeuristic(prims), strandHeuristic(prims) {}
-        
-        /*! entry point into builder */
-        NodeRef operator() (const PrimInfoRange& pinfo) {
-          NodeRef root = recurse(1,pinfo,nullptr,true);
-          _mm_mfence(); // to allow non-temporal stores during build
-          return root;
-        }
-        
-      private:
         
         /*! creates a large leaf that could be larger than supported by the BVH */
         NodeRef createLargeLeaf(size_t depth, const PrimInfoRange& pinfo, Allocator alloc)
@@ -371,8 +361,10 @@ namespace embree
                         createAlignedNode,setAlignedNode,
                         createUnalignedNode,setUnalignedNode,
                         createLeaf,progressMonitor,settings);
-
-        return builder(pinfo);
+        
+        NodeRef root = builder.recurse(1,pinfo,nullptr,true);
+        _mm_mfence(); // to allow non-temporal stores during build
+        return root;
       }
     };
   }
