@@ -78,35 +78,51 @@ namespace embree
       
       allocator.reset();
       allocator.init(N);
+
+       /* settings for BVH build */
+      isa::GeneralBVHBuilder::Settings settings;
+      settings.branchingFactor = 2;
+      settings.maxDepth = 1024;
+      settings.logBlockSize = 0;
+      settings.minLeafSize = 1;
+      settings.maxLeafSize = 1;
+      settings.travCost = 1.0f;
+      settings.intCost = 1.0f;
+      settings.singleThreadThreshold = Builder::DEFAULT_SINGLE_THREAD_THRESHOLD;
       
-      Node* root;
-      isa::BVHBuilderBinnedSAH::build<Node*>(
-        root,
+      Node* root = isa::BVHBuilderBinnedSAH::build<Node*>(
+
         /* thread local allocator for fast allocations */
         [&] () -> FastAllocator::ThreadLocal* { 
           return allocator.threadLocal(); 
         },
-        
+
         /* lambda function that creates BVH nodes */
-        [&](const isa::BVHBuilderBinnedSAH::BuildRecord& current, isa::BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, FastAllocator::ThreadLocal* alloc) -> int
+        [&](isa::BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, FastAllocator::ThreadLocal* alloc) -> Node*
         {
           assert(N <= 2);
           InnerNode* node = new (alloc->malloc(sizeof(InnerNode))) InnerNode;
-          for (size_t i=0; i<N; i++) {
-            node->bounds[i] = children[i].pinfo.geomBounds;
-            children[i].parent = (size_t*) &node->children[i];
-          }
-          *current.parent = (size_t) node;
-          return 0;
+          for (size_t i=0; i<N; i++)
+            node->bounds[i] = children[i].prims.geomBounds;
+          return node;
+        },
+
+        /* lambda function that updates BVH nodes */
+        [&](Node* ref, Node** children, const size_t N) -> Node*
+        {
+          assert(N <= 2);
+          InnerNode* node = (InnerNode*) ref;
+          for (size_t i=0; i<N; i++)
+            node->children[i] = children[i];
+          return ref;
         },
         
         /* lambda function that creates BVH leaves */
-        [&](const isa::BVHBuilderBinnedSAH::BuildRecord& current, FastAllocator::ThreadLocal* alloc) -> int
+        [&](const isa::BVHBuilderBinnedSAH::BuildRecord& current, FastAllocator::ThreadLocal* alloc) -> Node*
         {
           assert(current.prims.size() == 1);
           Node* node = new (alloc->malloc(sizeof(LeafNode))) LeafNode(prims[current.prims.begin()].ID(),prims[current.prims.begin()].bounds());
-          *current.parent = (size_t) node;
-          return 0;
+          return node;
         },
         
         /* progress monitor function */
@@ -114,7 +130,7 @@ namespace embree
           // throw an exception here to cancel the build operation
         },
         
-        prims.data(),pinfo,2,1024,1,1,1,1.0f,1.0f,Builder::DEFAULT_SINGLE_THREAD_THRESHOLD);
+        prims.data(),pinfo,settings);
       
       double t1 = getSeconds();
       

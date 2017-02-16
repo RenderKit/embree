@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "bvh.h"
+#include "../bvh/bvh.h"
 #include "../geometry/primitive.h"
 #include "../builders/bvh_builder_sah.h"
 #include "../builders/heuristic_binning_array_aligned.h"
@@ -94,7 +94,7 @@ namespace embree
           alignedHeuristic(prims), unalignedHeuristic(prims), strandHeuristic(prims) {}
         
         /*! entry point into builder */
-        NodeRef operator() (const PrimInfo& pinfo) {
+        NodeRef operator() (const PrimInfoRange& pinfo) {
           NodeRef root = recurse(1,pinfo,nullptr,true);
           _mm_mfence(); // to allow non-temporal stores during build
           return root;
@@ -102,10 +102,31 @@ namespace embree
         
       private:
         
-        // FIXME: move splitFallback function to here
+        void deterministic_order(const PrimInfoRange& pinfo)
+        {
+          /* required as parallel partition destroys original primitive order */
+          std::sort(&prims[pinfo.begin()],&prims[pinfo.end()]);
+        }
+
+        void splitFallback(const PrimInfoRange& pinfo, PrimInfoRange& linfo, PrimInfoRange& rinfo)
+        {
+          const size_t begin = pinfo.begin();
+          const size_t end   = pinfo.end();
+          const size_t center = (begin + end)/2;
+
+          CentGeomBBox3fa left; left.reset();
+          for (size_t i=begin; i<center; i++)
+            left.extend(prims[i].bounds());
+          new (&linfo) PrimInfoRange(begin,center,left.geomBounds,left.centBounds);
+
+          CentGeomBBox3fa right; right.reset();
+          for (size_t i=center; i<end; i++)
+            right.extend(prims[i].bounds());
+          new (&rinfo) PrimInfoRange(center,end,right.geomBounds,right.centBounds);
+        }
         
         /*! creates a large leaf that could be larger than supported by the BVH */
-        NodeRef createLargeLeaf(size_t depth, const PrimInfo& pinfo, Allocator alloc)
+        NodeRef createLargeLeaf(size_t depth, const PrimInfoRange& pinfo, Allocator alloc)
         {
           /* this should never occur but is a fatal error */
           if (depth > maxDepth) 
@@ -116,7 +137,7 @@ namespace embree
             return createLeaf(depth,pinfo,alloc);
           
           /* fill all children by always splitting the largest one */
-          PrimInfo children[MAX_BRANCHING_FACTOR];
+          PrimInfoRange children[MAX_BRANCHING_FACTOR];
           unsigned numChildren = 1;
           children[0] = pinfo;
           
@@ -140,8 +161,8 @@ namespace embree
             if (bestChild == -1) break;
             
             /*! split best child into left and right child */
-            __aligned(64) PrimInfo left, right;
-            alignedHeuristic.splitFallback(children[bestChild],left,right);
+            __aligned(64) PrimInfoRange left, right;
+            splitFallback(children[bestChild],left,right);
             
             /* add new children left and right */
             children[bestChild] = children[numChildren-1];
@@ -161,7 +182,7 @@ namespace embree
         }
         
         /*! performs split */
-        bool split(const PrimInfo& pinfo, PrimInfo& linfo, PrimInfo& rinfo)
+        bool split(const PrimInfoRange& pinfo, PrimInfoRange& linfo, PrimInfoRange& rinfo)
         {
           /* variable to track the SAH of the best splitting approach */
           float bestSAH = inf;
@@ -180,7 +201,7 @@ namespace embree
           float unalignedObjectSAH = inf;
           if (alignedObjectSAH > 0.7f*leafSAH) {
             uspace = unalignedHeuristic.computeAlignedSpace(pinfo); 
-            const PrimInfo       sinfo = unalignedHeuristic.computePrimInfo(pinfo,uspace);
+            const PrimInfoRange       sinfo = unalignedHeuristic.computePrimInfo(pinfo,uspace);
             unalignedObjectSplit = unalignedHeuristic.find(sinfo,0,uspace);    	
             unalignedObjectSAH = travCostUnaligned*halfArea(pinfo.geomBounds) + intCost*unalignedObjectSplit.splitSAH();
             bestSAH = min(unalignedObjectSAH,bestSAH);
@@ -212,14 +233,14 @@ namespace embree
           }
           /* otherwise perform fallback split */
           else {
-            alignedHeuristic.deterministic_order(pinfo);
-            alignedHeuristic.splitFallback(pinfo,linfo,rinfo);
+            deterministic_order(pinfo);
+            splitFallback(pinfo,linfo,rinfo);
             return true;
           }
         }
         
         /*! recursive build */
-        NodeRef recurse(size_t depth, const PrimInfo& pinfo, Allocator alloc, bool toplevel)
+        NodeRef recurse(size_t depth, const PrimInfoRange& pinfo, Allocator alloc, bool toplevel)
         {
           /* get thread local allocator */
           if (alloc == nullptr) 
@@ -229,11 +250,11 @@ namespace embree
           if (toplevel && pinfo.size() <= SINGLE_THREADED_THRESHOLD)
             progressMonitor(pinfo.size());
           
-          PrimInfo children[MAX_BRANCHING_FACTOR];
+          PrimInfoRange children[MAX_BRANCHING_FACTOR];
           
           /* create leaf node */
           if (depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || pinfo.size() <= minLeafSize) {
-            alignedHeuristic.deterministic_order(pinfo);
+            deterministic_order(pinfo);
             return createLargeLeaf(depth,pinfo,alloc);
           }
           
@@ -262,7 +283,7 @@ namespace embree
             if (bestChild == -1) break;
             
             /*! split best child into left and right child */
-            PrimInfo left, right;
+            PrimInfoRange left, right;
             aligned &= split(children[bestChild],left,right);
             
             /* add new children left and right */
@@ -308,7 +329,7 @@ namespace embree
               parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) {
                   for (size_t i=r.begin(); i<r.end(); i++) {
                     const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpace(children[i]); 
-                    const PrimInfo       sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
+                    const PrimInfoRange       sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
                     const OBBox3fa obounds(space,sinfo.geomBounds);
                     setUnalignedNode(node,i,recurse(depth+1,children[i],nullptr,true),obounds);
                     _mm_mfence(); // to allow non-temporal stores during build
@@ -320,7 +341,7 @@ namespace embree
             {
               for (size_t i=0; i<numChildren; i++) {
                 const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpace(children[i]); 
-                const PrimInfo       sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
+                const PrimInfoRange       sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
                 const OBBox3fa obounds(space,sinfo.geomBounds);
                 setUnalignedNode(node,i,recurse(depth+1,children[i],alloc,false),obounds);
               }

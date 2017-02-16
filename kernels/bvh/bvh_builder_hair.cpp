@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh_builder_hair.h"
-#include "bvh_builder_hair_old.h"
+#include "../builders/bvh_builder_hair.h"
+#include "../builders/bvh_builder_hair_old.h"
 #include "../builders/primrefgen.h"
 
 #include "../geometry/bezier1v.h"
@@ -72,13 +72,13 @@ namespace embree
         settings.maxLeafSize = BVH::maxLeafBlocks;
 
         /* creates a leaf node */
-        auto createLeaf = [&] (size_t depth, const PrimInfo& pinfo, FastAllocator::ThreadLocal2* alloc) -> NodeRef
+        auto createLeaf = [&] (size_t depth, const range<size_t>& set, FastAllocator::ThreadLocal2* alloc) -> NodeRef
           {
-            size_t start = pinfo.begin;
-            size_t items = pinfo.size();
+            size_t start = set.begin();
+            size_t items = set.size();
             Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive));
             for (size_t i=0; i<items; i++) {
-              accel[i].fill(prims.data(),start,pinfo.end,bvh->scene);
+              accel[i].fill(prims.data(),start,set.end(),bvh->scene);
             }
             return bvh->encodeLeaf((char*)accel,items);
           };
@@ -127,6 +127,19 @@ namespace embree
       BVHNHairMBBuilderSAH (BVH* bvh, Scene* scene)
         : bvh(bvh), scene(scene), prims(scene->device) {}
       
+      const LBBox3fa computePrimInfoMB(size_t timeSegment, size_t numTimeSteps, Scene* scene, const PrimInfoRange& pinfo)
+      {
+        LBBox3fa allBounds = empty;
+        for (size_t i=pinfo.begin(); i<pinfo.end(); i++) // FIXME: parallelize
+        {
+          BezierPrim& prim = prims[i];
+          const size_t geomID = prim.geomID();
+          const BezierCurves* curves = scene->getBezierCurves(geomID);
+          allBounds.extend(curves->linearBounds(prim.primID(),timeSegment,numTimeSteps));
+        }
+        return allBounds;
+      }
+
       void build(size_t, size_t) 
       {
         /* progress monitor */
@@ -159,24 +172,24 @@ namespace embree
         {
           /* call BVH builder */
           const PrimInfo pinfo = createBezierRefArrayMBlur(t,bvh->numTimeSteps,scene,prims,virtualprogress);
-          const LBBox3fa lbbox = HeuristicBinningSAH(prims.begin()).computePrimInfoMB(t,bvh->numTimeSteps,scene,pinfo);
+          const LBBox3fa lbbox = computePrimInfoMB(t,bvh->numTimeSteps,scene,pinfo);
         
           NodeRef root = bvh_obb_builder_binned_sah<N>
           (
             [&] () { return bvh->alloc.threadLocal2(); },
 
-            [&] (const PrimInfo* children, const size_t numChildren, HeuristicBinningSAH alignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> AlignedNodeMB*
+            [&] (const PrimInfoRange* children, const size_t numChildren, HeuristicBinningSAH alignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> AlignedNodeMB*
             {
               AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),BVH::byteNodeAlignment); node->clear();
               for (size_t i=0; i<numChildren; i++) 
               {
-                LBBox3fa bounds = alignedHeuristic.computePrimInfoMB(t,bvh->numTimeSteps,scene,children[i]);
+                LBBox3fa bounds = computePrimInfoMB(t,bvh->numTimeSteps,scene,children[i]);
                 node->set(i,bounds);
               }
               return node;
             },
 
-            [&] (const PrimInfo* children, const size_t numChildren, UnalignedHeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> unalignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> UnalignedNodeMB*
+            [&] (const PrimInfoRange* children, const size_t numChildren, UnalignedHeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> unalignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> UnalignedNodeMB*
             {
               UnalignedNodeMB* node = (UnalignedNodeMB*) alloc->alloc0->malloc(sizeof(UnalignedNodeMB),BVH::byteNodeAlignment); node->clear();
               for (size_t i=0; i<numChildren; i++) 
@@ -188,14 +201,14 @@ namespace embree
               return node;
             },
 
-            [&] (size_t depth, const PrimInfo& pinfo, FastAllocator::ThreadLocal2* alloc) -> NodeRef
+            [&] (size_t depth, const PrimInfoRange& pinfo, FastAllocator::ThreadLocal2* alloc) -> NodeRef
             {
               size_t items = pinfo.size();
-              size_t start = pinfo.begin;
+              size_t start = pinfo.begin();
               Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive));
               NodeRef node = bvh->encodeLeaf((char*)accel,items);
               for (size_t i=0; i<items; i++) {
-                accel[i].fill(prims.data(),start,pinfo.end,bvh->scene);
+                accel[i].fill(prims.data(),start,pinfo.end(),bvh->scene);
               }
               return node;
             },
