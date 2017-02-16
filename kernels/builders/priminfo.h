@@ -65,7 +65,11 @@ namespace embree
 	geomBounds.extend(other.geomBounds);
 	centBounds.extend(other.centBounds);
       }
-      
+
+      static __forceinline const CentGeom merge2(const CentGeom& a, const CentGeom& b) {
+        CentGeom r = a; r.merge(b); return r;
+      }
+
     public:
       BBox geomBounds;   //!< geometry bounds of primitives
       BBox3fa centBounds;   //!< centroid bounds of primitives

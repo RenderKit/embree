@@ -136,7 +136,7 @@ namespace embree
               }
             }
             assert(bestSAH != float(inf));
-            return Split(bestSAH*MBLUR_TIME_SPLIT_THRESHOLD,Split::SPLIT_TEMPORAL,0,bestPos);
+            return Split(bestSAH*MBLUR_TIME_SPLIT_THRESHOLD,(unsigned)Split::SPLIT_TEMPORAL,0,bestPos);
           }
           
         public:

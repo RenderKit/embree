@@ -17,6 +17,7 @@
 #pragma once
 
 #include "default.h"
+#include "scene.h"
 
 namespace embree
 {
@@ -71,6 +72,25 @@ namespace embree
     {
       bounds_o = bounds();
       center_o = embree::center2(bounds_o);
+    }
+
+    /*! returns center for binning */
+    __forceinline Vec3fa binCenter(const AffineSpace3fa& space, void* user) const // only called by hair builder
+    {
+      Scene* scene = (Scene*) user;
+      BezierCurves* mesh = (BezierCurves*) scene->get(geomID());
+      BBox3fa bounds = mesh->bounds(space,primID());
+      return embree::center2(bounds);
+    }
+
+    /*! returns bounds and centroid used for binning */
+    __forceinline void binBoundsAndCenter(BBox3fa& bounds_o, Vec3fa& center_o, const AffineSpace3fa& space, void* user) const // only called by hair builder
+    {
+      Scene* scene = (Scene*) user;
+      BezierCurves* mesh = (BezierCurves*) scene->get(geomID());
+      BBox3fa bounds = mesh->bounds(space,primID());
+      bounds_o = bounds;
+      center_o = embree::center2(bounds);
     }
 
     /*! returns the geometry ID */

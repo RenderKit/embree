@@ -302,7 +302,7 @@ namespace embree
               if (localTimeSegments > 1) {
                 const int icenter = (itime_range.begin() + itime_range.end())/2;
                 const float splitTime = float(icenter)/float(prim.totalTimeSegments());
-                return Split(0.0f,Split::SPLIT_TEMPORAL,0,splitTime);
+                return Split(0.0f,(unsigned)Split::SPLIT_TEMPORAL,0,splitTime);
               }
             }
           }
