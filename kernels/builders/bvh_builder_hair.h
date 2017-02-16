@@ -159,15 +159,17 @@ namespace embree
           /* try standard binning in aligned space */
           float alignedObjectSAH = inf;
           HeuristicBinningSAH::Split alignedObjectSplit;
-          alignedObjectSplit = alignedHeuristic.find(pinfo,0);
-          alignedObjectSAH = travCostAligned*halfArea(pinfo.geomBounds) + intCost*alignedObjectSplit.splitSAH();
-          bestSAH = min(alignedObjectSAH,bestSAH);
+          if (aligned) {
+            alignedObjectSplit = alignedHeuristic.find(pinfo,0);
+            alignedObjectSAH = travCostAligned*halfArea(pinfo.geomBounds) + intCost*alignedObjectSplit.splitSAH();
+            bestSAH = min(alignedObjectSAH,bestSAH);
+          }
           
           /* try standard binning in unaligned space */
           UnalignedHeuristicBinningSAH::Split unalignedObjectSplit;
           LinearSpace3fa uspace;
           float unalignedObjectSAH = inf;
-          if (alignedObjectSAH > 0.7f*leafSAH) {
+          if (bestSAH > 0.7f*leafSAH) {
             uspace = unalignedHeuristic.computeAlignedSpace(pinfo); 
             const PrimInfoRange sinfo = unalignedHeuristic.computePrimInfo(pinfo,uspace);
             unalignedObjectSplit = unalignedHeuristic.find(sinfo,0,uspace);    	
@@ -178,7 +180,7 @@ namespace embree
           /* try splitting into two strands */
           HeuristicStrandSplitSAH::Split strandSplit;
           float strandSAH = inf;
-          if (alignedObjectSAH > 0.6f*leafSAH) {
+          if (bestSAH > 0.6f*leafSAH) {
             strandSplit = strandHeuristic.find(pinfo);
             strandSAH = travCostUnaligned*halfArea(pinfo.geomBounds) + intCost*strandSplit.splitSAH();
             bestSAH = min(strandSAH,bestSAH);
