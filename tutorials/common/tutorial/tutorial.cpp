@@ -512,7 +512,7 @@ namespace embree
 
     case '\033': case 'q': case 'Q':
       glutDestroyWindow(windowID);
-#if defined(__MACOSX__)
+#if defined(__MACOSX__) // FIXME: why only on MacOSX
       exit(1);
 #endif
       break;
