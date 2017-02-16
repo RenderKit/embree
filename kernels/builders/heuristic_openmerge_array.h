@@ -23,7 +23,7 @@
 #include "heuristic_binning.h"
 #include "heuristic_spatial.h"
 
-#define COMMON_GEOMID_TERMINATION    0
+#define COMMON_GEOMID_TERMINATION    1
 #define USE_SUBTREE_SIZE_FOR_BINNING 1
 #define ENABLE_OPENING_SPLITS        1
 
@@ -176,7 +176,7 @@ namespace embree
           if (unlikely(set.has_ext_range() && !commonGeomID))
           {
             const float OPENED_SAH_THRESHOLD = 1.25f;
-            //const float OPENED_SAH_THRESHOLD = 2.0f;
+            //const float OPENED_SAH_THRESHOLD = 8.0f;
 
             const ObjectSplit opened_object_split = opened_object_find(set, pinfo, logBlockSize);            
             const float opened_object_split_sah   = opened_object_split.splitSAH();

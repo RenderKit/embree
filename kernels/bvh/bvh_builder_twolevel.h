@@ -82,7 +82,8 @@ namespace embree
       void deleteGeometry(size_t geomID);
       void clear();
 
-      void open_sequential(size_t numPrimitives);
+      void open_sequential(const size_t numPrimitives, const size_t maxOpenSize);
+      void open_sequential2(const size_t numPrimitives);
       
     public:
       BVH* bvh;

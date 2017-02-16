@@ -23,7 +23,6 @@
 
 #define PROFILE 0
 #define MAX_OPEN_SIZE 10000
-#define PROFILE_ITERATIONS 200
 
 /* new open/merge builder */
 #define ENABLER_DIRECT_SAH_MERGE_BUILDER 1
@@ -31,7 +30,7 @@
 /* sequential opening phase in old code path */
 #define ENABLE_OPEN_SEQUENTIAL 1
 
-#define SPLIT_MEMORY_RESERVE_FACTOR 1000
+#define SPLIT_MEMORY_RESERVE_FACTOR 100
 
 namespace embree
 {
@@ -55,7 +54,6 @@ namespace embree
     template<int N, typename Mesh>
     void BVHNBuilderTwoLevel<N,Mesh>::build(size_t threadIndex, size_t threadCount)
     {
-      double d0 = getSeconds();
 
       /* delete some objects */
       size_t num = scene->size();
@@ -81,10 +79,6 @@ namespace embree
 
       double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderTwoLevel");
 
-#if PROFILE
-	profile(2,PROFILE_ITERATIONS,numPrimitives,[&] (ProfileTimer& timer)
-        {
-#endif
 
       /* resize object array if scene got larger */
       if (objects.size()  < num) objects.resize(num);
@@ -141,6 +135,10 @@ namespace embree
         }
       });
 
+#if PROFILE
+      double d0 = getSeconds();
+#endif
+
       /* fast path for single geometry scenes */
       if (nextRef == 1) { 
         bvh->set(refs[0].node,LBBox3fa(refs[0].bounds()),numPrimitives);
@@ -154,10 +152,14 @@ namespace embree
 #if ENABLER_DIRECT_SAH_MERGE_BUILDER == 0
 
 #if ENABLE_OPEN_SEQUENTIAL == 1
-        open_sequential(numPrimitives); 
+        open_sequential(numPrimitives,MAX_OPEN_SIZE); 
 #endif
         /* compute PrimRefs */
         prims.resize(refs.size());
+#else
+        //PRINT(refs.size());
+        open_sequential2(numPrimitives); 
+        //PRINT(refs.size());
 #endif
 
 
@@ -277,13 +279,12 @@ namespace embree
 
       }  
         
-#if PROFILE
-      }); 
-#endif
       bvh->alloc.cleanup();
       bvh->postBuild(t0);
+#if PROFILE
       double d1 = getSeconds();
       std::cout << "TOP_LEVEL OPENING/REBUILD TIME " << d1-d0 << " ms" << std::endl;
+#endif
     }
     
     template<int N, typename Mesh>
@@ -307,12 +308,12 @@ namespace embree
     }
 
     template<int N, typename Mesh>
-    void BVHNBuilderTwoLevel<N,Mesh>::open_sequential(size_t numPrimitives)
+    void BVHNBuilderTwoLevel<N,Mesh>::open_sequential(const size_t numPrimitives, const size_t maxOpenSize)
     {
       if (refs.size() == 0)
 	return;
 
-      size_t num = min(numPrimitives/400,size_t(MAX_OPEN_SIZE));
+      size_t num = min(numPrimitives/400,maxOpenSize);
       refs.reserve(num);
 
 #if 1
@@ -344,6 +345,50 @@ namespace embree
 #endif
           std::push_heap (refs.begin(),refs.end()); 
         }
+      }
+    }
+
+
+    template<int N, typename Mesh>
+    void BVHNBuilderTwoLevel<N,Mesh>::open_sequential2(const size_t numPrimitives)
+    {
+      if (refs.size() == 0)
+	return;
+
+      //size_t num = 2*numPrimitives;
+      size_t num = max(2*numPrimitives,(size_t)100);
+
+      refs.reserve(num);
+
+      for (size_t i=0;i<refs.size();i++)
+      {
+        NodeRef ref = refs.back().node;
+        if (ref.isAlignedNode())
+          ref.prefetch();
+      }
+
+      std::make_heap(refs.begin(),refs.end());
+      while (refs.size()+3 <= num)
+      {
+        std::pop_heap (refs.begin(),refs.end()); 
+        NodeRef ref = refs.back().node;
+        unsigned int geomID   = refs.back().geomID;
+        unsigned int numPrims = max((unsigned int)refs.back().numPrimitives / N,(unsigned int)1);
+        if (ref.isLeaf()) break;
+        refs.pop_back();    
+
+        AlignedNode* node = ref.alignedNode();
+        for (size_t i=0; i<N; i++) {
+          if (node->child(i) == BVH::emptyNode) continue;
+          refs.push_back(BuildRef(node->bounds(i),node->child(i),geomID,numPrims));
+
+          NodeRef ref_pre = node->child(i);
+          if (ref_pre.isAlignedNode())
+            ref_pre.prefetch();
+
+          std::push_heap (refs.begin(),refs.end()); 
+        }
+
       }
     }
 
