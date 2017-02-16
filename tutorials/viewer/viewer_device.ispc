@@ -111,7 +111,7 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
 uniform bool g_use_smooth_normals = false;
 void device_key_pressed_handler(uniform int key)
 {
-  if (key == 115 /*c*/) g_use_smooth_normals = !g_use_smooth_normals;
+  if (key == 110 /*n*/) g_use_smooth_normals = !g_use_smooth_normals;
   else device_key_pressed_default(key);
 }
 

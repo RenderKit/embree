@@ -888,7 +888,7 @@ uniform bool g_use_smooth_normals = false;
 void device_key_pressed_handler(uniform int key)
 {
   if (key == 32  /* */) g_animation = !g_animation;
-  if (key == 115 /*s*/) { g_use_smooth_normals = !g_use_smooth_normals; g_changed = true; }
+  if (key == 110 /*n*/) { g_use_smooth_normals = !g_use_smooth_normals; g_changed = true; }
   else device_key_pressed_default(key);
 }
 
