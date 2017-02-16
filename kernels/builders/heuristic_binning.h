@@ -315,6 +315,7 @@ namespace embree
           const unsigned int b11 = extract<1>(bin1);  bounds(b11,1).extend(prim1); 
           const unsigned int b12 = extract<2>(bin1);  bounds(b12,2).extend(prim1); 
           const unsigned int n1  = prims[i+1].primID();
+
           assert(n1);
           counts(b10,0)+=n1;
           counts(b11,1)+=n1;

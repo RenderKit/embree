@@ -225,7 +225,12 @@ namespace embree
                 return 1;
               },
                [&] (BuildRef &bref, BuildRef *refs) -> size_t { 
+#if 0
+                 // FIXME: increases SAH ???
+                 return openBuildRefDeep(bref,refs,MAX_OPENED_CHILD_NODES);
+#else
                  return openBuildRef(bref,refs);
+#endif
                },              
                [&] (size_t dn) { bvh->scene->progressMonitor(0); },
                refs.data(),extSize,pinfo,N,BVH::maxBuildDepthLeaf,N,1,1,1.0f,1.0f,singleThreadThreshold);

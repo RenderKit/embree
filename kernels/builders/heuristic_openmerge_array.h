@@ -28,7 +28,7 @@
 #define ENABLE_OPENING_SPLITS        1
 
 
-#define MAX_OPENED_CHILD_NODES 8
+#define MAX_OPENED_CHILD_NODES 8*3
 
 #define DBG_PRINT(x)
 
@@ -287,7 +287,7 @@ namespace embree
         {
           ObjectBinner binner(empty);
 
-          const BBox3fa cent2Bounds = parallel_reduce(set.begin(), set.end(),  BBox3fa(empty), [&] (const range<size_t>& r) -> BBox3fa {
+          BBox3fa cent2Bounds = parallel_reduce(set.begin(), set.end(),  BBox3fa(empty), [&] (const range<size_t>& r) -> BBox3fa {
               BBox3fa bounds(empty);
               for (size_t i=r.begin(); i<r.end(); i++) {
                 PrimRef refs[MAX_OPENED_CHILD_NODES];
@@ -297,6 +297,8 @@ namespace embree
               }
               return bounds;
             }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
+
+          cent2Bounds.extend(pinfo.centBounds);
 
           const BinMapping<OBJECT_BINS> mapping(cent2Bounds,OBJECT_BINS);
           const BinMapping<OBJECT_BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround

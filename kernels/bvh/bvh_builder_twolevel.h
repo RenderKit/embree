@@ -97,6 +97,27 @@ namespace embree
         assert(n > 1);
         return n;        
       }
+
+
+      __forceinline size_t openBuildRefDeep(BuildRef &bref, BuildRef *const refs, const size_t maxOpen) {
+        size_t n = 1;
+        refs[0] = bref;
+        while(n+N-1 < maxOpen) 
+        {
+          size_t largest_index = 0;
+          for (size_t i=1;i<n;i++)
+            if (refs[i].sah > refs[largest_index].sah)
+              largest_index = i;
+          if (refs[largest_index].node.isLeaf() || refs[largest_index].sah == 0.0f) break;
+          BuildRef tmp[8];
+          size_t m = openBuildRef(refs[largest_index],tmp);
+          assert(m>=1);
+          refs[largest_index] = tmp[0];
+          for (size_t i=1;i<m;i++)
+            refs[n++] = tmp[i];
+        }
+        return n;
+      }
       
       /*! Constructor. */
       BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, const createMeshAccelTy createMeshAcce, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD);
