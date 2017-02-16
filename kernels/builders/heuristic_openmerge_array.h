@@ -24,6 +24,7 @@
 #include "heuristic_spatial.h"
 
 #define COMMON_GEOMID_TERMINATION 1
+#define USE_SUBTREE_SIZE_FOR_BINNING 0
 
 #define DBG_PRINT(x)
 
@@ -256,7 +257,11 @@ namespace embree
           {
             PrimRef refs[8];
             size_t n = nodeOpenerFunc(prims0[i],refs);
+#if USE_SUBTREE_SIZE_FOR_BINNING == 1
+            binner.binSubTreeRefs(refs,n,_mapping); 
+#else
             binner.bin(refs,n,_mapping); 
+#endif
           }            
           return binner.best(mapping,logBlockSize); 
         }
@@ -285,7 +290,11 @@ namespace embree
                                      {
                                        PrimRef refs[8];
                                        size_t n = nodeOpenerFunc(prims0[i],refs);
+#if USE_SUBTREE_SIZE_FOR_BINNING == 1
+                                       binner.binSubTreeRefs(refs,n,_mapping); 
+#else
                                        binner.bin(refs,n,_mapping); 
+#endif
                                      }
                                      return binner; },
                                    [&] (const ObjectBinner& b0, const ObjectBinner& b1) -> ObjectBinner { ObjectBinner r = b0; r.merge(b1,_mapping.size()); return r; }

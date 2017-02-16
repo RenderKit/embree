@@ -238,9 +238,9 @@ namespace embree
           const vint4 bin0 = (vint4)mapping.bin(center0); 
           
           /*! increase bounds of bins */
-          const int b00 = extract<0>(bin0); counts(b00,0)++; bounds(b00,0).extend(prim0);
-          const int b01 = extract<1>(bin0); counts(b01,1)++; bounds(b01,1).extend(prim0);
-          const int b02 = extract<2>(bin0); counts(b02,2)++; bounds(b02,2).extend(prim0);
+          const unsigned int b00 = extract<0>(bin0); counts(b00,0)++; bounds(b00,0).extend(prim0);
+          const unsigned int b01 = extract<1>(bin0); counts(b01,1)++; bounds(b01,1).extend(prim0);
+          const unsigned int b02 = extract<2>(bin0); counts(b02,2)++; bounds(b02,2).extend(prim0);
         }
       }
 
@@ -290,6 +290,66 @@ namespace embree
       __forceinline void bin(const PrimRef* prims, size_t begin, size_t end, const BinMapping<BINS>& mapping, const AffineSpace3fa& space) {
 	bin(prims+begin,end-begin,mapping,space);
       }   
+
+
+      /*! bins an array of primitives */
+      __forceinline void binSubTreeRefs (const PrimRef* prims, size_t N, const BinMapping<BINS>& mapping)
+      {
+	if (unlikely(N == 0)) return;
+	size_t i; 
+	for (i=0; i<N-1; i+=2)
+        {
+          /*! map even and odd primitive to bin */
+          BBox prim0; Vec3fa center0;
+          prims[i+0].binBoundsAndCenter(prim0,center0); 
+          const vint4 bin0 = (vint4)mapping.bin(center0); 
+          
+          BBox prim1; Vec3fa center1;
+          prims[i+1].binBoundsAndCenter(prim1,center1); 
+          const vint4 bin1 = (vint4)mapping.bin(center1); 
+          
+          /*! increase bounds for bins for even primitive */
+          const unsigned int b00 = extract<0>(bin0); bounds(b00,0).extend(prim0); 
+          const unsigned int b01 = extract<1>(bin0); bounds(b01,1).extend(prim0); 
+          const unsigned int b02 = extract<2>(bin0); bounds(b02,2).extend(prim0); 
+          const unsigned int n0  = prim0.lower.u;
+          assert(n0);
+          counts(b00,0)+=n0;
+          counts(b01,1)+=n0;
+          counts(b02,2)+=n0;
+
+          /*! increase bounds of bins for odd primitive */
+          const unsigned int b10 = extract<0>(bin1);  bounds(b10,0).extend(prim1); 
+          const unsigned int b11 = extract<1>(bin1);  bounds(b11,1).extend(prim1); 
+          const unsigned int b12 = extract<2>(bin1);  bounds(b12,2).extend(prim1); 
+          const unsigned int n1  = prim1.lower.u;
+          assert(n1);
+
+          counts(b10,0)+=n1;
+          counts(b11,1)+=n1;
+          counts(b12,2)+=n1;
+        }
+	/*! for uneven number of primitives */
+	if (i < N)
+        {
+          /*! map primitive to bin */
+          BBox prim0; Vec3fa center0;
+          prims[i].binBoundsAndCenter(prim0,center0); 
+          const vint4 bin0 = (vint4)mapping.bin(center0); 
+          
+          /*! increase bounds of bins */
+          const unsigned int num = prim0.lower.u;
+          assert(num);
+
+          const unsigned int b00 = extract<0>(bin0); counts(b00,0)+=num; bounds(b00,0).extend(prim0);
+          const unsigned int b01 = extract<1>(bin0); counts(b01,1)+=num; bounds(b01,1).extend(prim0);
+          const unsigned int b02 = extract<2>(bin0); counts(b02,2)+=num; bounds(b02,2).extend(prim0);
+        }
+      }
+
+      __forceinline void binSubTreeRefs(const PrimRef* prims, size_t begin, size_t end, const BinMapping<BINS>& mapping) {
+	binSubTreeRefs(prims+begin,end-begin,mapping);
+      }
 
       /*! merges in other binning information */
       __forceinline void merge (const BinInfoT& other, size_t numBins)
