@@ -24,7 +24,7 @@
 #include "heuristic_spatial.h"
 
 #define COMMON_GEOMID_TERMINATION 1
-#define USE_SUBTREE_SIZE_FOR_BINNING 0
+#define USE_SUBTREE_SIZE_FOR_BINNING 1
 
 #define DBG_PRINT(x)
 
@@ -172,21 +172,23 @@ namespace embree
           const float object_split_sah = object_split.splitSAH();
           if (unlikely(set.has_ext_range() && !commonGeomID))
           {
-            const float OPENED_SAH_THRESHOLD = 8.0f;
+            const float OPENED_SAH_THRESHOLD = 1.25f;
 
             const ObjectSplit opened_object_split = opened_object_find(set, pinfo, logBlockSize);
 
             const float opened_object_split_sah = opened_object_split.splitSAH();
 
-              /* valid opened split, better SAH and number of splits do not exceed extended range */
+            DBG_PRINT(object_split_sah);
+            DBG_PRINT(opened_object_split_sah);
+
             if (opened_object_split.valid() && opened_object_split_sah < OPENED_SAH_THRESHOLD*object_split_sah )
               {          
-                //DBG_PRINT("OPEN SPLIT");
+                DBG_PRINT("OPENING SPLIT");
                 // && opened_object_split.left + opened_object_split.right - set.size() <= set.ext_range_size()
                 return Split(opened_object_split,opened_object_split_sah,true);
               }
           }
-          //DBG_PRINT("REGULAR SPLIT");
+          DBG_PRINT("OPENING SPLIT");
           return Split(object_split,object_split_sah,false);
         }
 
@@ -202,7 +204,11 @@ namespace embree
         {
           ObjectBinner binner(empty); 
           const BinMapping<OBJECT_BINS> mapping(pinfo.centBounds,OBJECT_BINS);
+#if USE_SUBTREE_SIZE_FOR_BINNING == 1
+          binner.binSubTreeRefs(prims0,set.begin(),set.end(),mapping);
+#else
           binner.bin(prims0,set.begin(),set.end(),mapping);
+#endif
           ObjectSplit s = binner.best(mapping,logBlockSize);
           binner.getSplitInfo(mapping, s, info);
           return s;
@@ -215,7 +221,13 @@ namespace embree
           const BinMapping<OBJECT_BINS> mapping(pinfo.centBounds,OBJECT_BINS);
           const BinMapping<OBJECT_BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
           binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
-                                   [&] (const range<size_t>& r) -> ObjectBinner { ObjectBinner binner(empty); binner.bin(prims0+r.begin(),r.size(),_mapping); return binner; },
+                                   [&] (const range<size_t>& r) -> ObjectBinner { ObjectBinner binner(empty); 
+#if USE_SUBTREE_SIZE_FOR_BINNING == 1
+                                     binner.binSubTreeRefs(prims0+r.begin(),r.size(),_mapping); 
+#else
+                                     binner.bin(prims0+r.begin(),r.size(),_mapping); 
+#endif
+                                     return binner; },
                                    [&] (const ObjectBinner& b0, const ObjectBinner& b1) -> ObjectBinner { ObjectBinner r = b0; r.merge(b1,_mapping.size()); return r; });
           ObjectSplit s = binner.best(mapping,logBlockSize);
           binner.getSplitInfo(mapping, s, info);
