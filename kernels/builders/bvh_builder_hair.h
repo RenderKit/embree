@@ -150,7 +150,7 @@ namespace embree
         }
         
         /*! performs split */
-        bool split(const PrimInfoRange& pinfo, PrimInfoRange& linfo, PrimInfoRange& rinfo)
+        void split(const PrimInfoRange& pinfo, PrimInfoRange& linfo, PrimInfoRange& rinfo, bool& aligned)
         {
           /* variable to track the SAH of the best splitting approach */
           float bestSAH = inf;
@@ -187,23 +187,21 @@ namespace embree
           /* perform aligned split if this is best */
           if (bestSAH == alignedObjectSAH) {
             alignedHeuristic.split(alignedObjectSplit,pinfo,linfo,rinfo);
-            return true;
           }
           /* perform unaligned split if this is best */
           else if (bestSAH == unalignedObjectSAH) {
             unalignedHeuristic.split(unalignedObjectSplit,uspace,pinfo,linfo,rinfo);
-            return false;
+            aligned = false;
           }
           /* perform strand split if this is best */
           else if (bestSAH == strandSAH) {
             strandHeuristic.split(strandSplit,pinfo,linfo,rinfo);
-            return false;
+            aligned = false;
           }
           /* otherwise perform fallback split */
           else {
             alignedHeuristic.deterministic_order(pinfo);
             alignedHeuristic.splitFallback(pinfo,linfo,rinfo);
-            return true;
           }
         }
         
@@ -252,7 +250,7 @@ namespace embree
             
             /*! split best child into left and right child */
             PrimInfoRange left, right;
-            aligned &= split(children[bestChild],left,right);
+            split(children[bestChild],left,right,aligned);
             
             /* add new children left and right */
             children[bestChild] = children[numChildren-1];
@@ -261,7 +259,6 @@ namespace embree
             numChildren++;
             
           } while (numChildren < branchingFactor); 
-          assert(numChildren > 1);
           
           /* create aligned node */
           if (aligned) 
@@ -297,7 +294,7 @@ namespace embree
               parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) {
                   for (size_t i=r.begin(); i<r.end(); i++) {
                     const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpace(children[i]); 
-                    const PrimInfoRange       sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
+                    const PrimInfoRange sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
                     const OBBox3fa obounds(space,sinfo.geomBounds);
                     setUnalignedNode(node,i,recurse(depth+1,children[i],nullptr,true),obounds);
                     _mm_mfence(); // to allow non-temporal stores during build
