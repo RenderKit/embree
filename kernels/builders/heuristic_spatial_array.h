@@ -192,7 +192,7 @@ namespace embree
         }
 
         /*! finds the best split */
-        const Split find(PrimInfoExtRange& set, const size_t logBlockSize)
+        const Split find(const PrimInfoExtRange& set, const size_t logBlockSize)
         {
           SplitInfo oinfo;
           const ObjectSplit object_split = object_find(set,logBlockSize,oinfo);

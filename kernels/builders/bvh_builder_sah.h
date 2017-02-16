@@ -116,7 +116,7 @@ namespace embree
             throw_RTCError(RTC_UNKNOWN_ERROR,"bvh_builder: branching factor too large");
         }
         
-        const ReductionTy createLargeLeaf(BuildRecord& current, Allocator alloc)
+        const ReductionTy createLargeLeaf(const BuildRecord& current, Allocator alloc)
         {
           /* this should never occur but is a fatal error */
           if (current.depth > maxDepth) 
@@ -174,7 +174,7 @@ namespace embree
           return updateNode(node,values,numChildren);
         }
         
-        const ReductionTy recurse(BuildRecord& current, Allocator alloc, bool toplevel)
+        const ReductionTy recurse(const BuildRecord& current, Allocator alloc, bool toplevel)
         {
           /* get thread local allocator */
           if (alloc == nullptr)
@@ -272,8 +272,7 @@ namespace embree
         /*! builder entry function */
         __forceinline const ReductionTy operator() (const Set& set)
         {
-          BuildRecord record(1,set);
-          ReductionTy ret = recurse(record,nullptr,true);
+          const ReductionTy ret = recurse(BuildRecord(1,set),nullptr,true);
           _mm_mfence(); // to allow non-temporal stores during build
           return ret;
         }
