@@ -156,14 +156,14 @@ namespace embree
           float bestSAH = inf;
           const float leafSAH = intCost*float(pinfo.size())*halfArea(pinfo.geomBounds);
           
-          /* perform standard binning in aligned space */
+          /* try standard binning in aligned space */
           float alignedObjectSAH = inf;
           HeuristicBinningSAH::Split alignedObjectSplit;
           alignedObjectSplit = alignedHeuristic.find(pinfo,0);
           alignedObjectSAH = travCostAligned*halfArea(pinfo.geomBounds) + intCost*alignedObjectSplit.splitSAH();
           bestSAH = min(alignedObjectSAH,bestSAH);
           
-          /* perform standard binning in unaligned space */
+          /* try standard binning in unaligned space */
           UnalignedHeuristicBinningSAH::Split unalignedObjectSplit;
           LinearSpace3fa uspace;
           float unalignedObjectSAH = inf;
@@ -175,7 +175,7 @@ namespace embree
             bestSAH = min(unalignedObjectSAH,bestSAH);
           }
           
-          /* perform splitting into two strands */
+          /* try splitting into two strands */
           HeuristicStrandSplitSAH::Split strandSplit;
           float strandSAH = inf;
           if (alignedObjectSAH > 0.6f*leafSAH) {
@@ -184,25 +184,33 @@ namespace embree
             bestSAH = min(strandSAH,bestSAH);
           }
           
+          /* fallback if SAH heuristics failed */
+          if (unlikely(!std::isfinite(bestSAH)))
+          {
+            alignedHeuristic.deterministic_order(pinfo);
+            alignedHeuristic.splitFallback(pinfo,linfo,rinfo);
+          }
+
           /* perform aligned split if this is best */
-          if (bestSAH == alignedObjectSAH) {
+          else if (bestSAH == alignedObjectSAH) {
             alignedHeuristic.split(alignedObjectSplit,pinfo,linfo,rinfo);
           }
+
           /* perform unaligned split if this is best */
           else if (bestSAH == unalignedObjectSAH) {
             unalignedHeuristic.split(unalignedObjectSplit,uspace,pinfo,linfo,rinfo);
             aligned = false;
           }
+
           /* perform strand split if this is best */
           else if (bestSAH == strandSAH) {
             strandHeuristic.split(strandSplit,pinfo,linfo,rinfo);
             aligned = false;
           }
-          /* otherwise perform fallback split */
-          else {
-            alignedHeuristic.deterministic_order(pinfo);
-            alignedHeuristic.splitFallback(pinfo,linfo,rinfo);
-          }
+          
+          /* can never happen */
+          else
+            assert(false);
         }
         
         /*! recursive build */
