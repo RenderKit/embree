@@ -57,29 +57,28 @@ namespace embree
       };
       
       /*! recursive state of builder */
-      template<typename Set, typename Split, typename PrimInfo>
+      template<typename Set, typename Split>
         struct BuildRecordT 
         {
         public:
           __forceinline BuildRecordT () {}
           
           __forceinline BuildRecordT (size_t depth) 
-            : depth(depth), pinfo(empty) {}
+            : depth(depth), prims(empty) {}
           
-          __forceinline BuildRecordT (size_t depth, const Set& prims, const PrimInfo& pinfo, const Split& split) 
-            : depth(depth), prims(prims), pinfo(pinfo), split(split) {}
+          __forceinline BuildRecordT (size_t depth, const Set& prims, const Split& split) 
+            : depth(depth), prims(prims), split(split) {}
           
-          __forceinline BBox3fa bounds() const { return pinfo.geomBounds; }
+          __forceinline BBox3fa bounds() const { return prims.geomBounds; }
           
-          __forceinline friend bool operator< (const BuildRecordT& a, const BuildRecordT& b) { return a.pinfo.size() < b.pinfo.size(); }
-          __forceinline friend bool operator> (const BuildRecordT& a, const BuildRecordT& b) { return a.pinfo.size() > b.pinfo.size();  }
+          __forceinline friend bool operator< (const BuildRecordT& a, const BuildRecordT& b) { return a.prims.size() < b.prims.size(); }
+          __forceinline friend bool operator> (const BuildRecordT& a, const BuildRecordT& b) { return a.prims.size() > b.prims.size();  }
           
-          __forceinline size_t size() const { return pinfo.size(); }
+          __forceinline size_t size() const { return prims.size(); }
           
         public:
           size_t depth;     //!< Depth of the root of this subtree.
           Set prims;        //!< The list of primitives.
-          PrimInfo pinfo;   //!< Bounding info of primitives.
           Split split;      //!< The best split for the primitives.
         };
       
@@ -92,8 +91,7 @@ namespace embree
         typename CreateNodeFunc, 
         typename UpdateNodeFunc, 
         typename CreateLeafFunc, 
-        typename ProgressMonitor,
-        typename PrimInfo>
+        typename ProgressMonitor>
         
         class BuilderT : private Settings
       {
@@ -108,13 +106,12 @@ namespace embree
                   const UpdateNodeFunc& updateNode, 
                   const CreateLeafFunc& createLeaf,
                   const ProgressMonitor& progressMonitor,
-                  const PrimInfo& pinfo,
                   const Settings& settings)
           
           : Settings(settings),
           heuristic(heuristic), 
           createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
-          progressMonitor(progressMonitor), pinfo(pinfo)
+          progressMonitor(progressMonitor)
         {
           if (branchingFactor > MAX_BRANCHING_FACTOR)
             throw_RTCError(RTC_UNKNOWN_ERROR,"bvh_builder: branching factor too large");
@@ -127,7 +124,7 @@ namespace embree
             throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
           
           /* create leaf for few primitives */
-          if (current.pinfo.size() <= maxLeafSize)
+          if (current.prims.size() <= maxLeafSize)
             return createLeaf(current,alloc);
           
           /* fill all children by always splitting the largest one */
@@ -143,12 +140,12 @@ namespace embree
             for (size_t i=0; i<numChildren; i++)
             {
               /* ignore leaves as they cannot get split */
-              if (children[i].pinfo.size() <= maxLeafSize)
+              if (children[i].prims.size() <= maxLeafSize)
                 continue;
               
               /* remember child with largest size */
-              if (children[i].pinfo.size() > bestSize) { 
-                bestSize = children[i].pinfo.size();
+              if (children[i].prims.size() > bestSize) { 
+                bestSize = children[i].prims.size();
                 bestChild = i;
               }
             }
@@ -157,7 +154,7 @@ namespace embree
             /*! split best child into left and right child */
             BuildRecord left(current.depth+1);
             BuildRecord right(current.depth+1);
-            heuristic.splitFallback(children[bestChild].prims,left.pinfo,left.prims,right.pinfo,right.prims);
+            heuristic.splitFallback(children[bestChild].prims,left.prims,right.prims);
             left .split = find(left );
             right.split = find(right);
             
@@ -181,11 +178,11 @@ namespace embree
         }
         
         __forceinline const typename Heuristic::Split find(BuildRecord& current) {
-          return heuristic.find (current.prims,current.pinfo,logBlockSize);
+          return heuristic.find (current.prims,logBlockSize);
         }
         
         __forceinline void partition(BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) {
-          heuristic.split(brecord.split,brecord.pinfo,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
+          heuristic.split(brecord.split,brecord.prims,lrecord.prims,rrecord.prims);
         }
         
         const ReductionTy recurse(BuildRecord& current, Allocator alloc, bool toplevel)
@@ -199,12 +196,12 @@ namespace embree
             progressMonitor(current.size());
           
           /*! compute leaf and split cost */
-          const float leafSAH  = intCost*current.pinfo.leafSAH(logBlockSize);
-          const float splitSAH = travCost*halfArea(current.pinfo.geomBounds)+intCost*current.split.splitSAH();
-          assert((current.pinfo.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
+          const float leafSAH  = intCost*current.prims.leafSAH(logBlockSize);
+          const float splitSAH = travCost*halfArea(current.prims.geomBounds)+intCost*current.split.splitSAH();
+          assert((current.prims.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
           
           /*! create a leaf node when threshold reached or SAH tells us to stop */
-          if (current.pinfo.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.pinfo.size() <= maxLeafSize && leafSAH <= splitSAH)) {
+          if (current.prims.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.prims.size() <= maxLeafSize && leafSAH <= splitSAH)) {
             heuristic.deterministic_order(current.prims);
             return createLargeLeaf(current,alloc);
           }
@@ -224,20 +221,19 @@ namespace embree
             ssize_t bestChild = -1;
             for (size_t i=0; i<numChildren; i++) 
             {
-              if (children[i].pinfo.size() <= minLeafSize) continue; 
-              if (area(children[i].pinfo.geomBounds) > bestSAH) { bestChild = i; bestSAH = area(children[i].pinfo.geomBounds); } // FIXME: measure over all scenes if this line creates better tree
+              if (children[i].prims.size() <= minLeafSize) continue; 
+              if (area(children[i].prims.geomBounds) > bestSAH) { bestChild = i; bestSAH = area(children[i].prims.geomBounds); } // FIXME: measure over all scenes if this line creates better tree
             }
 #else
             float bestSAH = 0;
             ssize_t bestChild = -1;
             for (size_t i=0; i<numChildren; i++) 
             {
-              float dSAH = children[i].split.splitSAH()-children[i].pinfo.leafSAH(logBlockSize);
-              if (children[i].pinfo.size() <= minLeafSize) continue; 
-              if (children[i].pinfo.size() > maxLeafSize) dSAH = min(dSAH,0.0f); //< force split for large jobs
+              float dSAH = children[i].split.splitSAH()-children[i].prims.leafSAH(logBlockSize);
+              if (children[i].prims.size() <= minLeafSize) continue; 
+              if (children[i].prims.size() > maxLeafSize) dSAH = min(dSAH,0.0f); //< force split for large jobs
               if (dSAH <= bestSAH) { bestChild = i; bestSAH = dSAH; }
             }
-            
 #endif
             
             if (bestChild == -1) break;
@@ -288,12 +284,11 @@ namespace embree
         }
         
         /*! builder entry function */
-        __forceinline const ReductionTy operator() (const Set& set, const PrimInfo& pinfo)
+        __forceinline const ReductionTy operator() (const Set& set)
         {
           Set set1 = set;
-          PrimInfo pinfo1 = pinfo;
-          auto split = heuristic.find (set1,pinfo1,logBlockSize);
-          BuildRecord record(1,set,pinfo,split);
+          auto split = heuristic.find (set1,logBlockSize);
+          BuildRecord record(1,set,split);
           ReductionTy ret = recurse(record,nullptr,true);
           _mm_mfence(); // to allow non-temporal stores during build
           return ret;
@@ -306,7 +301,6 @@ namespace embree
         const UpdateNodeFunc& updateNode;
         const CreateLeafFunc& createLeaf;
         const ProgressMonitor& progressMonitor;
-        const PrimInfo& pinfo;
       };
       
       template<
@@ -325,10 +319,9 @@ namespace embree
                                  CreateNodeFunc createNode, UpdateNodeFunc updateNode, 
                                  const CreateLeafFunc& createLeaf, 
                                  const ProgressMonitor& progressMonitor,
-                                 const PrimInfo& pinfo, 
                                  const Settings& settings)
       {
-        typedef BuildRecordT<Set,typename Heuristic::Split,PrimInfo> BuildRecord;
+        typedef BuildRecordT<Set,typename Heuristic::Split> BuildRecord;
         
         typedef BuilderT<
           BuildRecord,
@@ -340,8 +333,7 @@ namespace embree
           CreateNodeFunc,
           UpdateNodeFunc,
           CreateLeafFunc,
-          ProgressMonitor,
-          PrimInfo> Builder;
+          ProgressMonitor> Builder;
         
         /* instantiate builder */
         Builder builder(heuristic,
@@ -350,20 +342,19 @@ namespace embree
                         updateNode,
                         createLeaf,
                         progressMonitor,
-                        pinfo,
                         settings);
         
         /* build hierarchy */
-        return builder(set,pinfo);
+        return builder(set);
       }
     };
-    
+
     /* SAH builder that operates on an array of BuildRecords */
     struct BVHBuilderBinnedSAH
     {
-      typedef range<size_t> Set;
+      typedef PrimInfoRange Set;
       typedef HeuristicArrayBinningSAH<PrimRef,NUM_OBJECT_BINS> Heuristic;
-      typedef GeneralBVHBuilder::BuildRecordT<Set,typename Heuristic::Split,PrimInfo> BuildRecord;
+      typedef GeneralBVHBuilder::BuildRecordT<Set,typename Heuristic::Split> BuildRecord;
       typedef GeneralBVHBuilder::Settings Settings;
       
       /*! special builder that propagates reduction over the tree */
@@ -385,23 +376,22 @@ namespace embree
         Heuristic heuristic(prims);
         return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set>(
           heuristic,
-          Set(0,pinfo.size()),
+          PrimInfoRange(0,pinfo.size(),pinfo.geomBounds,pinfo.centBounds),
           createAlloc,
           createNode,
           updateNode,
           createLeaf,
           progressMonitor,
-          pinfo,
           settings);
       }
     };
-    
+
     /* Spatial SAH builder that operates on an double-buffered array of BuildRecords */
     struct BVHBuilderBinnedFastSpatialSAH
     {
-      typedef extended_range<size_t> Set;
+      typedef PrimInfoExtRange Set;
       typedef Split2<BinSplit<NUM_OBJECT_BINS>,SpatialBinSplit<NUM_SPATIAL_BINS> > Split;
-      typedef GeneralBVHBuilder::BuildRecordT<Set,Split,PrimInfo> BuildRecord;
+      typedef GeneralBVHBuilder::BuildRecordT<Set,Split> BuildRecord;
       typedef GeneralBVHBuilder::Settings Settings;
       
       /*! special builder that propagates reduction over the tree */
@@ -430,13 +420,12 @@ namespace embree
 
         return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set>(
           heuristic,
-          Set(0,pinfo.size(),extSize),
+          PrimInfoExtRange(0,pinfo.size(),extSize,pinfo.geomBounds,pinfo.centBounds),
           createAlloc,
           createNode,
           updateNode,
           createLeaf,
           progressMonitor,
-          pinfo,
           settings);
       }
     };

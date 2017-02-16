@@ -33,6 +33,26 @@ namespace embree
 #define SPATIAL_ASPLIT_AREA_THRESHOLD 0.000005f
 #endif
 
+    struct PrimInfoExtRange : public CentGeomBBox3fa, public extended_range<size_t>
+    {
+      __forceinline PrimInfoExtRange() {
+      }
+
+      __forceinline PrimInfoExtRange(EmptyTy)
+        : CentGeomBBox3fa(EmptyTy()), extended_range<size_t>(0,0,0) {}
+
+      __forceinline PrimInfoExtRange(size_t begin, size_t end, size_t ext_end, const BBox3fa& geomBounds, const BBox3fa& centBounds) 
+        : CentGeomBBox3fa(geomBounds,centBounds), extended_range<size_t>(begin,end,ext_end) {}
+      
+      __forceinline float leafSAH() const { 
+	return expectedApproxHalfArea(geomBounds)*float(size()); 
+      }
+      
+      __forceinline float leafSAH(size_t block_shift) const { 
+	return expectedApproxHalfArea(geomBounds)*float((size()+(size_t(1)<<block_shift)-1) >> block_shift);
+      }
+    };
+
     template<typename ObjectSplit, typename SpatialSplit>
       struct Split2
       {
@@ -101,7 +121,7 @@ namespace embree
         typedef SpatialBinSplit<SPATIAL_BINS> SpatialSplit;
         typedef SpatialBinInfo<SPATIAL_BINS,PrimRef> SpatialBinner;
 
-        typedef extended_range<size_t> Set;
+        //typedef extended_range<size_t> Set;
         typedef Split2<ObjectSplit,SpatialSplit> Split;
         
 #if defined(__AVX512ER__) // KNL
@@ -121,12 +141,12 @@ namespace embree
           : prims0(nullptr) {}
         
         /*! remember prim array */
-        __forceinline HeuristicArraySpatialSAH (const PrimitiveSplitterFactory& splitterFactory, PrimRef* prims0, const PrimInfo &root_info)
+        __forceinline HeuristicArraySpatialSAH (const PrimitiveSplitterFactory& splitterFactory, PrimRef* prims0, const CentGeomBBox3fa& root_info)
           : prims0(prims0), splitterFactory(splitterFactory), root_info(root_info) {}
 
 
         /*! compute extended ranges */
-        __noinline void setExtentedRanges(const Set& set, Set& lset, Set& rset, const size_t lweight, const size_t rweight)
+        __noinline void setExtentedRanges(const PrimInfoExtRange& set, PrimInfoExtRange& lset, PrimInfoExtRange& rset, const size_t lweight, const size_t rweight)
         {
           assert(set.ext_range_size() > 0);
           const float left_factor           = (float)lweight / (lweight + rweight);
@@ -138,7 +158,7 @@ namespace embree
         }
 
         /*! move ranges */
-        __noinline void moveExtentedRange(const Set& set, const Set& lset, const PrimInfo& left, Set& rset, PrimInfo& right)
+        __noinline void moveExtentedRange(const PrimInfoExtRange& set, const PrimInfoExtRange& lset, PrimInfoExtRange& rset)
         {
           const size_t left_ext_range_size = lset.ext_range_size();
           const size_t right_size = rset.size();
@@ -166,16 +186,16 @@ namespace embree
             /* update right range */
             assert(rset.ext_end() + left_ext_range_size == set.ext_end());
             rset.move_right(left_ext_range_size);
-            right.begin = rset.begin();
-            right.end = rset.end();
+            //right.begin = rset.begin();
+            //right.end = rset.end();
           }
         }
 
         /*! finds the best split */
-        const Split find(Set& set, PrimInfo& pinfo, const size_t logBlockSize)
+        const Split find(PrimInfoExtRange& set, const size_t logBlockSize)
         {
           SplitInfo oinfo;
-          const ObjectSplit object_split = object_find(set,pinfo,logBlockSize,oinfo);
+          const ObjectSplit object_split = object_find(set,logBlockSize,oinfo);
           const float object_split_sah = object_split.splitSAH();
 
           if (unlikely(set.has_ext_range()))
@@ -184,9 +204,9 @@ namespace embree
             
             /* do only spatial splits if the child bounds overlap */
             if (safeArea(overlap) >= SPATIAL_ASPLIT_AREA_THRESHOLD*safeArea(root_info.geomBounds) &&
-                safeArea(overlap) >= SPATIAL_ASPLIT_OVERLAP_THRESHOLD*safeArea(pinfo.geomBounds))
+                safeArea(overlap) >= SPATIAL_ASPLIT_OVERLAP_THRESHOLD*safeArea(set.geomBounds))
             {              
-              const SpatialSplit spatial_split = spatial_find(set, pinfo, logBlockSize);
+              const SpatialSplit spatial_split = spatial_find(set, logBlockSize);
               const float spatial_split_sah = spatial_split.splitSAH();
 
               /* valid spatial split, better SAH and number of splits do not exceed extended range */
@@ -202,17 +222,17 @@ namespace embree
         }
 
         /*! finds the best object split */
-        __forceinline const ObjectSplit object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo &info)
+        __forceinline const ObjectSplit object_find(const PrimInfoExtRange& set, const size_t logBlockSize, SplitInfo &info)
         {
-          if (pinfo.size() < PARALLEL_THRESHOLD) return sequential_object_find(set,pinfo,logBlockSize,info);
-          else                                   return parallel_object_find  (set,pinfo,logBlockSize,info);
+          if (set.size() < PARALLEL_THRESHOLD) return sequential_object_find(set,logBlockSize,info);
+          else                                 return parallel_object_find  (set,logBlockSize,info);
         }
 
         /*! finds the best object split */
-        __noinline const ObjectSplit sequential_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo &info)
+        __noinline const ObjectSplit sequential_object_find(const PrimInfoExtRange& set, const size_t logBlockSize, SplitInfo &info)
         {
           ObjectBinner binner(empty); 
-          const BinMapping<OBJECT_BINS> mapping(pinfo);
+          const BinMapping<OBJECT_BINS> mapping(set);
           binner.bin(prims0,set.begin(),set.end(),mapping);
           ObjectSplit s = binner.best(mapping,logBlockSize);
           binner.getSplitInfo(mapping, s, info);
@@ -220,10 +240,10 @@ namespace embree
         }
 
         /*! finds the best split */
-        __noinline const ObjectSplit parallel_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo &info)
+        __noinline const ObjectSplit parallel_object_find(const PrimInfoExtRange& set, const size_t logBlockSize, SplitInfo &info)
         {
           ObjectBinner binner(empty);
-          const BinMapping<OBJECT_BINS> mapping(pinfo);
+          const BinMapping<OBJECT_BINS> mapping(set);
           const BinMapping<OBJECT_BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
           binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
                                    [&] (const range<size_t>& r) -> ObjectBinner { ObjectBinner binner(empty); binner.bin(prims0+r.begin(),r.size(),_mapping); return binner; },
@@ -234,26 +254,26 @@ namespace embree
         }
 
         /*! finds the best spatial split */
-        __forceinline const SpatialSplit spatial_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        __forceinline const SpatialSplit spatial_find(const PrimInfoExtRange& set, const size_t logBlockSize)
         {
-          if (pinfo.size() < PARALLEL_THRESHOLD) return sequential_spatial_find(set, pinfo, logBlockSize);
-          else                                   return parallel_spatial_find  (set, pinfo, logBlockSize);
+          if (set.size() < PARALLEL_THRESHOLD) return sequential_spatial_find(set, logBlockSize);
+          else                                 return parallel_spatial_find  (set, logBlockSize);
         }
 
         /*! finds the best spatial split */
-        __noinline const SpatialSplit sequential_spatial_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        __noinline const SpatialSplit sequential_spatial_find(const PrimInfoExtRange& set, const size_t logBlockSize)
         {
           SpatialBinner binner(empty); 
-          const SpatialBinMapping<SPATIAL_BINS> mapping(pinfo);
+          const SpatialBinMapping<SPATIAL_BINS> mapping(set);
           binner.bin2(splitterFactory,prims0,set.begin(),set.end(),mapping);
           /* todo: best spatial split not exeeding the extended range does not provide any benefit ?*/
-          return binner.best(pinfo,mapping,logBlockSize); //,set.ext_size());
+          return binner.best(mapping,logBlockSize); //,set.ext_size());
         }
 
-        __noinline const SpatialSplit parallel_spatial_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        __noinline const SpatialSplit parallel_spatial_find(const PrimInfoExtRange& set, const size_t logBlockSize)
         {
           SpatialBinner binner(empty);
-          const SpatialBinMapping<SPATIAL_BINS> mapping(pinfo);
+          const SpatialBinMapping<SPATIAL_BINS> mapping(set);
           const SpatialBinMapping<SPATIAL_BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
           binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
                                    [&] (const range<size_t>& r) -> SpatialBinner { 
@@ -262,12 +282,12 @@ namespace embree
                                      return binner; },
                                    [&] (const SpatialBinner& b0, const SpatialBinner& b1) -> SpatialBinner { return SpatialBinner::reduce(b0,b1); });
           /* todo: best spatial split not exeeding the extended range does not provide any benefit ?*/
-          return binner.best(pinfo,mapping,logBlockSize); //,set.ext_size());
+          return binner.best(mapping,logBlockSize); //,set.ext_size());
         }
 
 
         /*! subdivides primitives based on a spatial split */
-        __noinline void create_spatial_splits(Set& set, PrimInfo& pinfo, const SpatialSplit &split, const SpatialBinMapping<SPATIAL_BINS> &mapping)
+        __noinline void create_spatial_splits(PrimInfoExtRange& set, const SpatialSplit& split, const SpatialBinMapping<SPATIAL_BINS> &mapping)
         {
           assert(set.has_ext_range());
           const size_t max_ext_range_size = set.ext_range_size();
@@ -320,62 +340,62 @@ namespace embree
           const size_t numExtElements = min(max_ext_range_size,ext_elements.load());          
           //assert(numExtElements <= max_ext_range_size);
           assert(set.end()+numExtElements<=set.ext_end());
-          Set nset(set.begin(),set.end()+numExtElements,set.ext_end());
-          pinfo.begin = nset.begin();
-          pinfo.end   = nset.end();
-          set = nset;
+          set._end += numExtElements;
+          //Set nset(set.begin(),set.end()+numExtElements,set.ext_end());
+          //pinfo.begin = nset.begin();
+          //pinfo.end   = nset.end();
+          //set = nset;
         }
         
         /*! array partitioning */
-        void split(const Split& split, const PrimInfo& pinfo_i, const Set& set_i, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        void split(const Split& split, const PrimInfoExtRange& set_i, PrimInfoExtRange& lset, PrimInfoExtRange& rset) 
         {
-          Set set = set_i;
-          PrimInfo pinfo = pinfo_i; 
+          PrimInfoExtRange set = set_i;
           
           /* valid split */
           if (unlikely(!split.valid())) {
             deterministic_order(set);
-            return splitFallback(set,left,lset,right,rset);
+            return splitFallback(set,lset,rset);
           }
 
           std::pair<size_t,size_t> ext_weights(0,0);
 
           if (unlikely(split.spatial))
           {
-            create_spatial_splits(set,pinfo,split.spatialSplit(), split.spatialSplit().mapping); 
+            create_spatial_splits(set,split.spatialSplit(), split.spatialSplit().mapping); 
 
             /* spatial split */
-            if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
-              ext_weights = sequential_spatial_split(split.spatialSplit(),set,left,lset,right,rset);
+            if (likely(set.size() < PARALLEL_THRESHOLD)) 
+              ext_weights = sequential_spatial_split(split.spatialSplit(),set,lset,rset);
             else
-              ext_weights = parallel_spatial_split(split.spatialSplit(),set,left,lset,right,rset);
+              ext_weights = parallel_spatial_split(split.spatialSplit(),set,lset,rset);
           }
           else
           {
             /* object split */
-            if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
-              ext_weights = sequential_object_split(split.objectSplit(),set,left,lset,right,rset);
+            if (likely(set.size() < PARALLEL_THRESHOLD)) 
+              ext_weights = sequential_object_split(split.objectSplit(),set,lset,rset);
             else
-              ext_weights = parallel_object_split(split.objectSplit(),set,left,lset,right,rset);
+              ext_weights = parallel_object_split(split.objectSplit(),set,lset,rset);
           }
 
           /* if we have an extended range, set extended child ranges and move right split range */
           if (unlikely(set.has_ext_range())) 
           {
             setExtentedRanges(set,lset,rset,ext_weights.first,ext_weights.second);
-            moveExtentedRange(set,lset,left,rset,right);
+            moveExtentedRange(set,lset,rset);
           }
 
-          assert(lset.begin() == left.begin);
-          assert(lset.end()   == left.end);
-          assert(lset.size()  == left.size());
-          assert(rset.begin() == right.begin);
-          assert(rset.end()   == right.end);
-          assert(rset.size()  == right.size());
+          //assert(lset.begin() == left.begin);
+          //assert(lset.end()   == left.end);
+          //assert(lset.size()  == left.size());
+          //assert(rset.begin() == right.begin);
+          //assert(rset.end()   == right.end);
+          //assert(rset.size()  == right.size());
         }
 
         /*! array partitioning */
-        std::pair<size_t,size_t> sequential_object_split(const ObjectSplit& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        std::pair<size_t,size_t> sequential_object_split(const ObjectSplit& split, const PrimInfoExtRange& set, PrimInfoExtRange& lset, PrimInfoExtRange& rset) 
         {
           const size_t begin = set.begin();
           const size_t end   = set.end();
@@ -403,19 +423,17 @@ namespace embree
           const size_t left_weight  = local_left.end;
           const size_t right_weight = local_right.end;
 
-          new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
-          new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
-          new (&lset) extended_range<size_t>(begin,center,center);
-          new (&rset) extended_range<size_t>(center,end,end);
+          new (&lset) PrimInfoExtRange(begin,center,center,local_left.geomBounds,local_left.centBounds);
+          new (&rset) PrimInfoExtRange(center,end,end,local_right.geomBounds,local_right.centBounds);
 
-          assert(area(left.geomBounds) >= 0.0f);
-          assert(area(right.geomBounds) >= 0.0f);
+          assert(area(lset.geomBounds) >= 0.0f);
+          assert(area(rset.geomBounds) >= 0.0f);
           return std::pair<size_t,size_t>(left_weight,right_weight);
         }
 
 
         /*! array partitioning */
-        __noinline std::pair<size_t,size_t> sequential_spatial_split(const SpatialSplit& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        __noinline std::pair<size_t,size_t> sequential_spatial_split(const SpatialSplit& split, const PrimInfoExtRange& set, PrimInfoExtRange& lset, PrimInfoExtRange& rset) 
         {
           const size_t begin = set.begin();
           const size_t end   = set.end();
@@ -441,24 +459,22 @@ namespace embree
           const size_t left_weight  = local_left.end;
           const size_t right_weight = local_right.end;
           
-          new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
-          new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
-          new (&lset) extended_range<size_t>(begin,center,center);
-          new (&rset) extended_range<size_t>(center,end,end);
-          assert(area(left.geomBounds) >= 0.0f);
-          assert(area(right.geomBounds) >= 0.0f);
+          new (&lset) PrimInfoExtRange(begin,center,center,local_left.geomBounds,local_left.centBounds);
+          new (&rset) PrimInfoExtRange(center,end,end,local_right.geomBounds,local_right.centBounds);
+          assert(area(lset.geomBounds) >= 0.0f);
+          assert(area(rset.geomBounds) >= 0.0f);
           return std::pair<size_t,size_t>(left_weight,right_weight);
         }
 
 
         
         /*! array partitioning */
-        __noinline std::pair<size_t,size_t> parallel_object_split(const ObjectSplit& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
+        __noinline std::pair<size_t,size_t> parallel_object_split(const ObjectSplit& split, const PrimInfoExtRange& set, PrimInfoExtRange& lset, PrimInfoExtRange& rset)
         {
           const size_t begin = set.begin();
           const size_t end   = set.end();
-          left.reset(); 
-          right.reset();
+          PrimInfo left; left.reset(); 
+          PrimInfo right; right.reset();
           const unsigned int splitPos = split.pos;
           const unsigned int splitDim = split.dim;
           const unsigned int splitDimMask = (unsigned int)1 << splitDim;
@@ -484,8 +500,8 @@ namespace embree
           left.begin  = begin;  left.end  = center; 
           right.begin = center; right.end = end;
           
-          new (&lset) extended_range<size_t>(begin,center,center);
-          new (&rset) extended_range<size_t>(center,end,end);
+          new (&lset) PrimInfoExtRange(begin,center,center,left.geomBounds,left.centBounds);
+          new (&rset) PrimInfoExtRange(center,end,end,right.geomBounds,right.centBounds);
 
           assert(area(left.geomBounds) >= 0.0f);
           assert(area(right.geomBounds) >= 0.0f);
@@ -493,12 +509,12 @@ namespace embree
         }
 
         /*! array partitioning */
-        __noinline std::pair<size_t,size_t> parallel_spatial_split(const SpatialSplit& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
+        __noinline std::pair<size_t,size_t> parallel_spatial_split(const SpatialSplit& split, const PrimInfoExtRange& set, PrimInfoExtRange& lset, PrimInfoExtRange& rset)
         {
           const size_t begin = set.begin();
           const size_t end   = set.end();
-          left.reset(); 
-          right.reset();
+          PrimInfo left; left.reset(); 
+          PrimInfo right; right.reset();
           const unsigned int splitPos = split.pos;
           const unsigned int splitDim = split.dim;
           const unsigned int splitDimMask = (unsigned int)1 << splitDim;
@@ -524,23 +540,23 @@ namespace embree
           left.begin  = begin;  left.end  = center; 
           right.begin = center; right.end = end;
           
-          new (&lset) extended_range<size_t>(begin,center,center);
-          new (&rset) extended_range<size_t>(center,end,end);
+          new (&lset) PrimInfoExtRange(begin,center,center,left.geomBounds,left.centBounds);
+          new (&rset) PrimInfoExtRange(center,end,end,right.geomBounds,right.centBounds);
 
           assert(area(left.geomBounds) >= 0.0f);
           assert(area(right.geomBounds) >= 0.0f);
           return std::pair<size_t,size_t>(left_weight,right_weight);
         }
 
-        void deterministic_order(const Set& set) 
+        void deterministic_order(const PrimInfoExtRange& set) 
         {
           /* required as parallel partition destroys original primitive order */
           std::sort(&prims0[set.begin()],&prims0[set.end()]);
         }
 
-        void splitFallback(const Set& set, 
-                           PrimInfo& linfo, Set& lset, 
-                           PrimInfo& rinfo, Set& rset)
+        void splitFallback(const PrimInfoExtRange& set, 
+                           PrimInfoExtRange& lset, 
+                           PrimInfoExtRange& rset)
         {
           const size_t begin = set.begin();
           const size_t end   = set.end();
@@ -552,7 +568,6 @@ namespace embree
             left.add(prims0[i].bounds(),prims0[i].lower.a >> 24);
           }
           const size_t lweight = left.end;
-          new (&linfo) PrimInfo(begin,center,left.geomBounds,left.centBounds);
           
           PrimInfo right(empty);
           for (size_t i=center; i<end; i++)
@@ -560,23 +575,22 @@ namespace embree
             right.add(prims0[i].bounds(),prims0[i].lower.a >> 24);	
           }
           const size_t rweight = right.end;
-          new (&rinfo) PrimInfo(center,end,right.geomBounds,right.centBounds);         
 
-          new (&lset) extended_range<size_t>(begin,center,center);
-          new (&rset) extended_range<size_t>(center,end,end);
+          new (&lset) PrimInfoExtRange(begin,center,center,left.geomBounds,left.centBounds);
+          new (&rset) PrimInfoExtRange(center,end,end,right.geomBounds,right.centBounds);
 
           /* if we have an extended range */
           if (set.has_ext_range()) 
           {
             setExtentedRanges(set,lset,rset,lweight,rweight);
-            moveExtentedRange(set,lset,linfo,rset,rinfo);              
+            moveExtentedRange(set,lset,rset);
           }
         }
         
       private:
         PrimRef* const prims0;
         const PrimitiveSplitterFactory& splitterFactory;
-        const PrimInfo& root_info;
+        const CentGeomBBox3fa& root_info;
       };
   }
 }

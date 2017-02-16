@@ -43,6 +43,7 @@ namespace embree
         }
 
         /*! calculates the mapping */
+        template<typename PrimInfo>
         __forceinline BinMapping(const PrimInfo& pinfo) 
         {
           num = min(BINS,size_t(4.0f + 0.05f*pinfo.size()));

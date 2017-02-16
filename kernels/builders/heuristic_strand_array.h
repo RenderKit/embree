@@ -65,15 +65,14 @@ namespace embree
         : prims(prims) {}
       
       /*! finds the best split */
-      const Split find(const PrimInfo& pinfo)
+      const Split find(const range<size_t>& set)
       {
-        Set set(pinfo.begin,pinfo.end);
-        if (likely(pinfo.size() < PARALLEL_THRESHOLD)) return sequential_find(set,pinfo);
-        else                                           return   parallel_find(set,pinfo);
+        if (likely(set.size() < PARALLEL_THRESHOLD)) return sequential_find(set);
+        else                                         return   parallel_find(set);
       }
       
       /*! finds the best split */
-      const Split sequential_find(const Set& set, const PrimInfo& pinfo)
+      const Split sequential_find(const range<size_t>& set)
       {
         /* first curve determines first axis */
         Vec3fa axis0 = normalize(prims[set.begin()].p3 - prims[set.begin()].p0);
@@ -118,7 +117,7 @@ namespace embree
       }
 
       /*! finds the best split */
-      const Split parallel_find(const Set& set, const PrimInfo& pinfo)
+      const Split parallel_find(const range<size_t>& set)
       {
         /* first curve determines first axis */
         const Vec3fa axis0 = normalize(prims[set.begin()].p3 - prims[set.begin()].p0);
@@ -209,22 +208,20 @@ namespace embree
       }
       
       /*! array partitioning */
-      void split(const Split& spliti, const PrimInfo& pinfo, PrimInfo& left, PrimInfo& right) 
+      void split(const Split& spliti, const PrimInfoRange& set, PrimInfoRange& lset, PrimInfoRange& rset) 
       {
-        Set lset,rset;
-        Set set(pinfo.begin,pinfo.end);
-        if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
-          sequential_split(spliti,set,left,lset,right,rset);
+        if (likely(set.size() < PARALLEL_THRESHOLD)) 
+          sequential_split(spliti,set,lset,rset);
         else
-          parallel_split(spliti,set,left,lset,right,rset);
+          parallel_split(spliti,set,lset,rset);
       }
       
       /*! array partitioning */
-      void sequential_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+      void sequential_split(const Split& split, const PrimInfoRange& set, PrimInfoRange& lset, PrimInfoRange& rset) 
       {
         if (!split.valid()) {
           deterministic_order(set);
-          return splitFallback(set,left,lset,right,rset);
+          return splitFallback(set,lset,rset);
         }
         
         const size_t begin = set.begin();
@@ -245,26 +242,22 @@ namespace embree
         
         size_t center = serial_partitioning(prims,begin,end,local_left,local_right,primOnLeftSide,mergePrimBounds);
         
-        new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
-        new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
-        new (&lset) range<size_t>(begin,center);
-        new (&rset) range<size_t>(center,end);
-        assert(area(left.geomBounds) >= 0.0f);
-        assert(area(right.geomBounds) >= 0.0f);
+        new (&lset) PrimInfoRange(begin,center,local_left.geomBounds,local_left.centBounds);
+        new (&rset) PrimInfoRange(center,end,local_right.geomBounds,local_right.centBounds);
+        assert(area(lset.geomBounds) >= 0.0f);
+        assert(area(rset.geomBounds) >= 0.0f);
       }
 
       /*! array partitioning */
-      void parallel_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
+      void parallel_split(const Split& split, const PrimInfoRange& set, PrimInfoRange& lset, PrimInfoRange& rset)
       {
         if (!split.valid()) {
           deterministic_order(set);
-          return splitFallback(set,left,lset,right,rset);
+          return splitFallback(set,lset,rset);
         }
         
         const size_t begin = set.begin();
         const size_t end   = set.end();
-        left.reset(); 
-        right.reset();
 
         auto primOnLeftSide = [&] (const BezierPrim& prim) -> bool { 
           const Vec3fa axisi = normalize(prim.p3-prim.p0);
@@ -273,17 +266,16 @@ namespace embree
           return cos0 > cos1;
         };
 
+        PrimInfo linfo; linfo.reset(); // FIXME: use CentGeomBBox3fa
+        PrimInfo rinfo; rinfo.reset();
         const size_t center = parallel_partitioning(
-          prims,begin,end,EmptyTy(),left,right,primOnLeftSide,
+          prims,begin,end,EmptyTy(),linfo,rinfo,primOnLeftSide,
           [] (PrimInfo &pinfo, const BezierPrim& ref) { pinfo.add(ref.bounds()); },
           [] (PrimInfo &pinfo0,const PrimInfo& pinfo1) { pinfo0.merge(pinfo1); },
           PARALLEL_PARTITION_BLOCK_SIZE);
         
-        left.begin  = begin;  left.end  = center; // FIXME: remove?
-        right.begin = center; right.end = end;
-        
-        new (&lset) range<size_t>(begin,center);
-        new (&rset) range<size_t>(center,end);
+        new (&lset) PrimInfoRange(begin,center,linfo.geomBounds,linfo.centBounds);
+        new (&rset) PrimInfoRange(center,end,rinfo.geomBounds,rinfo.centBounds);
       }
       
       void deterministic_order(const Set& set) 
@@ -292,21 +284,7 @@ namespace embree
         std::sort(&prims[set.begin()],&prims[set.end()]);
       }
       
-      void deterministic_order(const PrimInfo& pinfo) 
-      {
-        /* required as parallel partition destroys original primitive order */
-        std::sort(&prims[pinfo.begin],&prims[pinfo.end]);
-      }
-      
-      /*! array partitioning */
-      void splitFallback(const PrimInfo& pinfo, PrimInfo& left, PrimInfo& right) 
-      {
-        Set lset,rset;
-        Set set(pinfo.begin,pinfo.end);
-        splitFallback(set,left,lset,right,rset);
-      }
-      
-      void splitFallback(const Set& set, PrimInfo& linfo, Set& lset, PrimInfo& rinfo, Set& rset)
+      void splitFallback(const Set& set, PrimInfoRange& lset, PrimInfoRange& rset)
       {
         const size_t begin = set.begin();
         const size_t end   = set.end();
@@ -315,15 +293,12 @@ namespace embree
         CentGeomBBox3fa left; left.reset();
         for (size_t i=begin; i<center; i++)
           left.extend(prims[i].bounds());
-        new (&linfo) PrimInfo(begin,center,left.geomBounds,left.centBounds);
+        new (&lset) PrimInfoRange(begin,center,left.geomBounds,left.centBounds);
         
         CentGeomBBox3fa right; right.reset();
         for (size_t i=center; i<end; i++)
           right.extend(prims[i].bounds());	
-        new (&rinfo) PrimInfo(center,end,right.geomBounds,right.centBounds);
-        
-        new (&lset) range<size_t>(begin,center);
-        new (&rset) range<size_t>(center,end);
+        new (&rset) PrimInfoRange(center,end,right.geomBounds,right.centBounds);
       }
       
     private:

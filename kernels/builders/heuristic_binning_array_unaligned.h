@@ -45,11 +45,11 @@ namespace embree
         __forceinline UnalignedHeuristicArrayBinningSAH (PrimRef* prims)
           : prims(prims) {}
 
-        const LinearSpace3fa computeAlignedSpace(const PrimInfo& pinfo)
+        const LinearSpace3fa computeAlignedSpace(const range<size_t>& set)
         {
           /*! find first curve that defines valid direction */
           Vec3fa axis(0,0,1);
-          for (size_t i=pinfo.begin; i<pinfo.end; i++)
+          for (size_t i=set.begin(); i<set.end(); i++)
           {
             const BezierPrim& prim = prims[i];
             const Vec3fa axis1 = normalize(prim.p3 - prim.p0);
@@ -61,13 +61,13 @@ namespace embree
           return frame(axis).transposed();
         }
 
-        const AffineSpace3fa computeAlignedSpaceMB(Scene* scene, const PrimInfo& pinfo)
+        const AffineSpace3fa computeAlignedSpaceMB(Scene* scene, const range<size_t>& pinfo)
         {
           /*! find first curve that defines valid directions */
           Vec3fa axis0(0,0,1);
           Vec3fa axis1(0,0,1);
 
-          for (size_t i=pinfo.begin; i<pinfo.end; i++)
+          for (size_t i=pinfo.begin(); i<pinfo.end(); i++)
           {
             const BezierPrim& prim = prims[i];
             const size_t geomID = prim.geomID();
@@ -99,25 +99,25 @@ namespace embree
           return frame(axis01).transposed();
         }
         
-        const PrimInfo computePrimInfo(const PrimInfo& pinfo, const LinearSpace3fa& space)
+        const PrimInfo computePrimInfo(const range<size_t>& set, const LinearSpace3fa& space)
         {
           BBox3fa geomBounds = empty;
           BBox3fa centBounds = empty;
-          for (size_t i=pinfo.begin; i<pinfo.end; i++) { // FIXME: parallel
+          for (size_t i=set.begin(); i<set.end(); i++) { // FIXME: parallel
             const BBox3fa bounds = prims[i].bounds(space);
             geomBounds.extend(bounds);
             centBounds.extend(center2(bounds));
           }
-          return PrimInfo(pinfo.begin,pinfo.end,geomBounds,centBounds);
+          return PrimInfo(set.begin(),set.end(),geomBounds,centBounds);
         }
         
-        const PrimInfoMB computePrimInfoMB(size_t timeSegment, size_t numTimeSteps, Scene* scene, const PrimInfo& pinfo, const AffineSpace3fa& space)
+        const PrimInfoMB computePrimInfoMB(size_t timeSegment, size_t numTimeSteps, Scene* scene, const range<size_t>& pinfo, const AffineSpace3fa& space)
         {
           size_t N = 0;
           BBox3fa centBounds = empty;
           BBox3fa geomBounds = empty;
           BBox3fa s0t0 = empty, s1t1 = empty;
-          for (size_t i=pinfo.begin; i<pinfo.end; i++)  // FIXME: parallelize
+          for (size_t i=pinfo.begin(); i<pinfo.end(); i++)  // FIXME: parallelize
           {
             const BezierPrim& prim = prims[i];
             const size_t geomID = prim.geomID();
@@ -142,55 +142,40 @@ namespace embree
         }
         
         /*! finds the best split */
-        const Split find(const PrimInfo& pinfo, const size_t logBlockSize, const LinearSpace3fa& space)
-        {
-          Set set(pinfo.begin,pinfo.end);
-          return find(set,pinfo,logBlockSize,space);
-        }
-        
-        /*! finds the best split */
-        __forceinline const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, const LinearSpace3fa& space)
+        __forceinline const Split find(const PrimInfoRange& pinfo, const size_t logBlockSize, const LinearSpace3fa& space)
         {
           if (likely(pinfo.size() < 10000))
-            return find_template<false>(set,pinfo,logBlockSize,space);
+            return find_template<false>(pinfo,logBlockSize,space);
           else
-            return find_template<true>(set,pinfo,logBlockSize,space);
+            return find_template<true>(pinfo,logBlockSize,space);
         }
 
         /*! finds the best split */
         template<bool parallel>
-        const Split find_template(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, const LinearSpace3fa& space)
+        const Split find_template(const PrimInfoRange& set, const size_t logBlockSize, const LinearSpace3fa& space)
         {
           Binner binner(empty);
-          const BinMapping<BINS> mapping(pinfo);
+          const BinMapping<BINS> mapping(set);
           bin_serial_or_parallel<parallel>(binner,prims,set.begin(),set.end(),size_t(4096),mapping,space);
           return binner.best(mapping,logBlockSize);
         }
         
         /*! array partitioning */
-        void split(const Split& spliti, const LinearSpace3fa& space, const PrimInfo& pinfo, PrimInfo& left, PrimInfo& right) 
-        {
-          Set lset,rset;
-          Set set(pinfo.begin,pinfo.end);
-          split(spliti,space,set,left,lset,right,rset);
-        }
-
-        /*! array partitioning */
-        __forceinline void split(const Split& split, const LinearSpace3fa& space, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
+        __forceinline void split(const Split& split, const LinearSpace3fa& space, const Set& set, PrimInfoRange& lset, PrimInfoRange& rset)
         {
           if (likely(set.size() < 10000))
-            split_template<false>(split,space,set,left,lset,right,rset);
+            split_template<false>(split,space,set,lset,rset);
           else
-            split_template<true>(split,space,set,left,lset,right,rset);
+            split_template<true>(split,space,set,lset,rset);
         }
 
         /*! array partitioning */
         template<bool parallel>
-        __forceinline void split_template(const Split& split, const LinearSpace3fa& space, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
+        __forceinline void split_template(const Split& split, const LinearSpace3fa& space, const Set& set, PrimInfoRange& lset, PrimInfoRange& rset)
         {
           if (!split.valid()) {
             deterministic_order(set);
-            return splitFallback(set,left,lset,right,rset);
+            return splitFallback(set,lset,rset);
           }
           
           const size_t begin = set.begin();
@@ -212,29 +197,19 @@ namespace embree
                                            [] (CentGeomBBox3fa& pinfo0,const CentGeomBBox3fa& pinfo1) { pinfo0.merge(pinfo1); },
                                            128);
           
-          new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
-          new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
-          new (&lset) range<size_t>(begin,center);
-          new (&rset) range<size_t>(center,end);
-          assert(area(left.geomBounds) >= 0.0f);
-          assert(area(right.geomBounds) >= 0.0f);
+          new (&lset) PrimInfoRange(begin,center,local_left.geomBounds,local_left.centBounds);
+          new (&rset) PrimInfoRange(center,end,local_right.geomBounds,local_right.centBounds);
+          assert(area(lset.geomBounds) >= 0.0f);
+          assert(area(rset.geomBounds) >= 0.0f);
         }
         
-        void deterministic_order(const Set& set) 
+        void deterministic_order(const range<size_t>& set) 
         {
           /* required as parallel partition destroys original primitive order */
           std::sort(&prims[set.begin()],&prims[set.end()]);
         }
         
-        /*! array partitioning */
-        void splitFallback(const PrimInfo& pinfo, PrimInfo& left, PrimInfo& right) 
-        {
-          Set lset,rset;
-          Set set(pinfo.begin,pinfo.end);
-          splitFallback(set,left,lset,right,rset);
-        }
-        
-        void splitFallback(const Set& set, PrimInfo& linfo, Set& lset, PrimInfo& rinfo, Set& rset)
+        void splitFallback(const range<size_t>& set, PrimInfoRange& lset, PrimInfoRange& rset)
         {
           const size_t begin = set.begin();
           const size_t end   = set.end();
@@ -243,15 +218,12 @@ namespace embree
           CentGeomBBox3fa left; left.reset();
           for (size_t i=begin; i<center; i++)
             left.extend(prims[i].bounds());
-          new (&linfo) PrimInfo(begin,center,left.geomBounds,left.centBounds);
+          new (&lset) PrimInfoRange(begin,center,left.geomBounds,left.centBounds);
           
           CentGeomBBox3fa right; right.reset();
           for (size_t i=center; i<end; i++)
             right.extend(prims[i].bounds());	
-          new (&rinfo) PrimInfo(center,end,right.geomBounds,right.centBounds);
-          
-          new (&lset) range<size_t>(begin,center);
-          new (&rset) range<size_t>(center,end);
+          new (&rset) PrimInfoRange(center,end,right.geomBounds,right.centBounds);
         }
         
       private:
