@@ -94,10 +94,9 @@ namespace embree
         
         class BuilderT : private Settings
       {
+        friend struct GeneralBVHBuilder;
         static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximal supported BVH branching factor
         static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree of we are that many levels before the maximal tree depth
-        
-      public:
         
         BuilderT (Heuristic& heuristic, 
                   const CreateAllocFunc& createAlloc, 
