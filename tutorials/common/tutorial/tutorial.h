@@ -66,6 +66,7 @@ namespace embree
     /* GLUT callback functions */
   public:
     virtual void keyboardFunc(unsigned char key, int x, int y);
+    virtual void keyboardUpFunc(unsigned char key, int x, int y);
     virtual void specialFunc(int key, int, int);
     virtual void clickFunc(int button, int state, int x, int y);
     virtual void motionFunc(int x, int y);
@@ -110,8 +111,9 @@ namespace embree
     int clickX, clickY;
     
     float speed;
+    Vec3f moveDelta;
 
-     std::unique_ptr<ISPCScene> ispc_scene;
+    std::unique_ptr<ISPCScene> ispc_scene;
      
   public:
     static TutorialApplication* instance;

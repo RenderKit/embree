@@ -90,8 +90,8 @@ namespace embree
     
       mouseMode(0),
       clickX(0), clickY(0),
-      speed(1.0f)
-
+      speed(1.0f),
+      moveDelta(zero)
   {
     /* only a single instance of this class is supported */
     assert(instance == nullptr);
@@ -477,6 +477,11 @@ namespace embree
 
     switch (key)
     {
+    case 'w' : moveDelta.z = +1.0f; break;
+    case 's' : moveDelta.z = -1.0f; break;
+    case 'a' : moveDelta.x = -1.0f; break;
+    case 'd' : moveDelta.x = +1.0f; break;
+
     case 'f' : 
       if (fullscreen) {
         fullscreen = false;
@@ -511,6 +516,17 @@ namespace embree
       exit(1);
 #endif
       break;
+    }
+  }
+
+  void TutorialApplication::keyboardUpFunc(unsigned char key, int x, int y)
+  {
+    switch (key)
+    {
+    case 'w' : moveDelta.z = 0.0f; break;
+    case 's' : moveDelta.z = 0.0f; break;
+    case 'a' : moveDelta.x = 0.0f; break;
+    case 'd' : moveDelta.x = 0.0f; break;
     }
   }
 
@@ -591,6 +607,9 @@ namespace embree
 
   void TutorialApplication::displayFunc(void) 
   {
+    /* update camera */
+    camera.move(moveDelta.x*speed, moveDelta.y*speed, moveDelta.z*speed);
+
     ISPCCamera ispccamera = camera.getISPCCamera(width,height,true);
     
     /* render image using ISPC */
@@ -664,6 +683,9 @@ namespace embree
   void keyboardFunc(unsigned char key, int x, int y) {
     TutorialApplication::instance->keyboardFunc(key,x,y);
   }
+  void keyboardUpFunc(unsigned char key, int x, int y) {
+    TutorialApplication::instance->keyboardUpFunc(key,x,y);
+  }
   void specialFunc(int key, int x, int y) {
     TutorialApplication::instance->specialFunc(key,x,y);
   }
@@ -725,6 +747,7 @@ namespace embree
       glutDisplayFunc(embree::displayFunc);
       glutIdleFunc(embree::idleFunc);
       glutKeyboardFunc(embree::keyboardFunc);
+      glutKeyboardUpFunc(embree::keyboardUpFunc);
       glutSpecialFunc(embree::specialFunc);
       glutMouseFunc(embree::clickFunc);
       glutMotionFunc(embree::motionFunc);
