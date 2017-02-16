@@ -164,9 +164,9 @@ namespace embree
 
 #if COMMON_GEOMID_TERMINATION == 1
           bool commonGeomID = true;
-          const unsigned int geomID = prims0[set.begin()].geomID;
+          const unsigned int geomID = prims0[set.begin()].geomID();
           for (size_t i=set.begin()+1;i<set.end();i++)
-            if (unlikely(prims0[i].geomID != geomID)) { commonGeomID = false; break; }
+            if (unlikely(prims0[i].geomID() != geomID)) { commonGeomID = false; break; }
 #else
           const bool commonGeomID = false;
 #endif
@@ -179,7 +179,6 @@ namespace embree
           if (unlikely(set.has_ext_range() && !commonGeomID))
           {
             const float OPENED_SAH_THRESHOLD = 1.25f;
-            //const float OPENED_SAH_THRESHOLD = 8.0f;
 
             const ObjectSplit opened_object_split = opened_object_find(set, pinfo, logBlockSize);            
             const float opened_object_split_sah   = opened_object_split.splitSAH();
@@ -356,12 +355,12 @@ namespace embree
                   /* only write within the correct bounds */
                   assert(ID < max_ext_range_size);
                   prims0[i] = refs[0];
-                  assert(prims0[i].numPrimitives);
+                  assert(prims0[i].numPrimitives());
                   for (size_t j=1;j<n;j++)
                   {
                     assert(ID+j-1 < max_ext_range_size);
                     prims0[ext_range_start+ID+j-1] = refs[j];     
-                    assert(prims0[ext_range_start+ID+j-1].numPrimitives);
+                    assert(prims0[ext_range_start+ID+j-1].numPrimitives());
                   }
                 }
               }

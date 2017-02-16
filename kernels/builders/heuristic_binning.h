@@ -304,7 +304,7 @@ namespace embree
           const unsigned int b00 = extract<0>(bin0); bounds(b00,0).extend(prim0); 
           const unsigned int b01 = extract<1>(bin0); bounds(b01,1).extend(prim0); 
           const unsigned int b02 = extract<2>(bin0); bounds(b02,2).extend(prim0); 
-          const unsigned int n0  = prim0.lower.u;
+          const unsigned int n0  = prims[i+0].primID();
           assert(n0);
           counts(b00,0)+=n0;
           counts(b01,1)+=n0;
@@ -314,7 +314,7 @@ namespace embree
           const unsigned int b10 = extract<0>(bin1);  bounds(b10,0).extend(prim1); 
           const unsigned int b11 = extract<1>(bin1);  bounds(b11,1).extend(prim1); 
           const unsigned int b12 = extract<2>(bin1);  bounds(b12,2).extend(prim1); 
-          const unsigned int n1  = prim1.lower.u;
+          const unsigned int n1  = prims[i+1].primID();
           assert(n1);
           counts(b10,0)+=n1;
           counts(b11,1)+=n1;
@@ -329,7 +329,7 @@ namespace embree
           const vint4 bin0 = (vint4)mapping.bin(center0); 
           
           /*! increase bounds of bins */
-          const unsigned int num = prim0.lower.u;
+          const unsigned int num = prims[i].primID();
           assert(num);
 
           const unsigned int b00 = extract<0>(bin0); counts(b00,0)+=num; bounds(b00,0).extend(prim0);

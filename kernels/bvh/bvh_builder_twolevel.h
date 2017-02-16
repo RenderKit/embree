@@ -37,39 +37,66 @@ namespace embree
 
       typedef void (*createMeshAccelTy)(Mesh* mesh, AccelData*& accel, Builder*& builder);
 
-      struct __aligned(32) BuildRef : public PrimRef
+      struct __aligned(16) BuildRef : public PrimRef
       {
       public:
         __forceinline BuildRef () {}
 
         __forceinline BuildRef (const BBox3fa& bounds, NodeRef node)
-          : PrimRef(bounds,(size_t)node), node(node), geomID(0), numPrimitives(0)
+          : PrimRef(bounds,(size_t)node), node(node)
         {
           if (node.isLeaf())
-            lower.w = 0.0f;
+            sah = 0.0f;
           else
-            lower.w = area(this->bounds());
+            sah = area(this->bounds());
         }
 
         /* used by the open/merge bvh builder */
         __forceinline BuildRef (const BBox3fa& bounds, NodeRef node, const unsigned int geomID, const unsigned int numPrimitives)
-          : PrimRef(bounds,(size_t)numPrimitives), node(node), geomID(geomID), numPrimitives(numPrimitives)
+          : PrimRef(bounds,geomID,numPrimitives), node(node)
         {
+          /* important for relative buildref ordering */
+          if (node.isLeaf())
+            sah = 0.0f;
+          else
+            sah = area(this->bounds());
         }
 
         friend bool operator< (const BuildRef& a, const BuildRef& b) {
-          return a.lower.w < b.lower.w;
+          return a.sah < b.sah;
         }
 
         friend __forceinline std::ostream& operator<<(std::ostream& cout, const BuildRef& ref) {
-          return cout << "{ lower = " << ref.lower << ", upper = " << ref.upper << ", center2 = " << ref.center2() << ", geomID = " << ref.geomID << ", numPrimitives = " << ref.numPrimitives << " }";
+          return cout << "{ lower = " << ref.lower << ", upper = " << ref.upper << ", center2 = " << ref.center2() << ", geomID = " << ref.geomID() << ", numPrimitives = " << ref.numPrimitives() << ", area = " << ref.sah << " }";
         }
+
+        __forceinline unsigned int numPrimitives() { return primID(); }
 
       public:
         NodeRef node;
-        unsigned int geomID;
-        unsigned numPrimitives;
+        float sah;
       };
+
+
+      __forceinline size_t openBuildRef(BuildRef &bref, BuildRef *const refs) {
+        if (bref.node.isLeaf())
+        {
+          refs[0] = bref;
+          return 1;
+        }
+        NodeRef ref = bref.node;
+        unsigned int geomID   = bref.geomID();
+        unsigned int numPrims = max((unsigned int)bref.numPrimitives() / N,(unsigned int)1);
+        AlignedNode* node = ref.alignedNode();
+        size_t n = 0;
+        for (size_t i=0; i<N; i++) {
+          if (node->child(i) == BVH::emptyNode) continue;
+          refs[i] = BuildRef(node->bounds(i),node->child(i),geomID,numPrims);
+          n++;
+        }
+        assert(n > 1);
+        return n;        
+      }
       
       /*! Constructor. */
       BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, const createMeshAccelTy createMeshAcce, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD);

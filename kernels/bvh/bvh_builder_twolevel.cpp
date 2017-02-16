@@ -158,7 +158,7 @@ namespace embree
         prims.resize(refs.size());
 #else
         //PRINT(refs.size());
-        open_sequential2(numPrimitives); 
+        open_sequential2(refs.size()); 
         //PRINT(refs.size());
 #endif
 
@@ -225,24 +225,7 @@ namespace embree
                 return 1;
               },
                [&] (BuildRef &bref, BuildRef *refs) -> size_t { 
-                 
-                 if (bref.node.isLeaf())
-                 {
-                   refs[0] = bref;
-                   return 1;
-                 }
-                 NodeRef ref = bref.node;
-                 unsigned int geomID   = bref.geomID;
-                 unsigned int numPrims = max((unsigned int)bref.numPrimitives / N,(unsigned int)1);
-                 AlignedNode* node = ref.alignedNode();
-                 size_t n = 0;
-                 for (size_t i=0; i<N; i++) {
-                   if (node->child(i) == BVH::emptyNode) continue;
-                   refs[i] = BuildRef(node->bounds(i),node->child(i),geomID,numPrims);
-                   n++;
-                 }
-                 assert(n > 1);
-                 return n;
+                 return openBuildRef(bref,refs);
                },              
                [&] (size_t dn) { bvh->scene->progressMonitor(0); },
                refs.data(),extSize,pinfo,N,BVH::maxBuildDepthLeaf,N,1,1,1.0f,1.0f,singleThreadThreshold);
@@ -355,8 +338,7 @@ namespace embree
       if (refs.size() == 0)
 	return;
 
-      //size_t num = 2*numPrimitives;
-      size_t num = max(2*numPrimitives,(size_t)100);
+    size_t num = min(max(2*numPrimitives,(size_t)100),(size_t)MAX_OPEN_SIZE);
 
       refs.reserve(num);
 
@@ -372,8 +354,8 @@ namespace embree
       {
         std::pop_heap (refs.begin(),refs.end()); 
         NodeRef ref = refs.back().node;
-        unsigned int geomID   = refs.back().geomID;
-        unsigned int numPrims = max((unsigned int)refs.back().numPrimitives / N,(unsigned int)1);
+        unsigned int geomID   = refs.back().geomID();
+        unsigned int numPrims = max((unsigned int)refs.back().numPrimitives() / N,(unsigned int)1);
         if (ref.isLeaf()) break;
         refs.pop_back();    
 
