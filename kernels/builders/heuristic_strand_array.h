@@ -57,12 +57,12 @@ namespace embree
 	Vec3fa axis0, axis1;   //!< axis the two strands are aligned into
       };
 
-      __forceinline HeuristicStrandSplit ()
-        : prims(nullptr) {}
+      __forceinline HeuristicStrandSplit () // FIXME: required?
+        : scene(nullptr), prims(nullptr) {}
       
       /*! remember prim array */
-      __forceinline HeuristicStrandSplit (BezierPrim* prims)
-        : prims(prims) {}
+      __forceinline HeuristicStrandSplit (Scene* scene, PrimRef* prims)
+        : scene(scene), prims(prims) {}
       
       /*! finds the best split */
       const Split find(const range<size_t>& set)
@@ -71,18 +71,37 @@ namespace embree
         else                                         return   parallel_find(set);
       }
       
+      __forceinline const Vec3fa direction(const PrimRef& prim)
+      {
+        BezierCurves* curves = scene->get<BezierCurves>(prim.geomID());
+        const unsigned vtx = curves->curve(prim.primID());
+        return curves->vertex(vtx+3)-curves->vertex(vtx+0);
+      }
+      
+      __forceinline const BBox3fa bounds(const PrimRef& prim)
+      {
+        BezierCurves* curves = scene->get<BezierCurves>(prim.geomID());
+        return curves->bounds(prim.primID());
+      }
+
+      __forceinline const BBox3fa bounds(const LinearSpace3fa& space, const PrimRef& prim)
+      {
+        BezierCurves* curves = scene->get<BezierCurves>(prim.geomID());
+        return curves->bounds(space,prim.primID());
+      }
+
       /*! finds the best split */
       const Split sequential_find(const range<size_t>& set)
       {
         /* first curve determines first axis */
-        Vec3fa axis0 = normalize(prims[set.begin()].p3 - prims[set.begin()].p0);
+        Vec3fa axis0 = normalize(direction(prims[set.begin()]));
       
         /* find 2nd axis that is most misaligned with first axis */
         float bestCos = 1.0f;
         Vec3fa axis1 = axis0;
         for (size_t i=set.begin(); i<set.end(); i++) 
         {
-          Vec3fa axisi = prims[i].p3 - prims[i].p0;
+          Vec3fa axisi = direction(prims[i]);
           float leni = length(axisi);
           if (leni == 0.0f) continue;
           axisi /= leni;
@@ -98,13 +117,13 @@ namespace embree
         
         for (size_t i=set.begin(); i<set.end(); i++)
         {
-          BezierPrim& prim = prims[i];
-          const Vec3fa axisi = normalize(prim.p3-prim.p0);
+          PrimRef& prim = prims[i];
+          const Vec3fa axisi = normalize(direction(prim));
           const float cos0 = abs(dot(axisi,axis0));
           const float cos1 = abs(dot(axisi,axis1));
           
-          if (cos0 > cos1) { lnum++; lbounds.extend(prim.bounds(space0)); }
-          else             { rnum++; rbounds.extend(prim.bounds(space1)); }
+          if (cos0 > cos1) { lnum++; lbounds.extend(bounds(space0,prim)); }
+          else             { rnum++; rbounds.extend(bounds(space1,prim)); }
         }
       
         /*! return an invalid split if we do not partition */
@@ -120,7 +139,7 @@ namespace embree
       const Split parallel_find(const range<size_t>& set)
       {
         /* first curve determines first axis */
-        const Vec3fa axis0 = normalize(prims[set.begin()].p3 - prims[set.begin()].p0);
+        const Vec3fa axis0 = normalize(direction(prims[set.begin()]));
       
         /* find 2nd axis that is most misaligned with first axis */
         struct __aligned(16) BestAxis
@@ -143,7 +162,7 @@ namespace embree
              BestAxis best(inf,axis0);
              for (size_t i=r.begin(); i<r.end(); i++)
              {
-               Vec3fa axisi = prims[i].p3 - prims[i].p0;
+               Vec3fa axisi = direction(prims[i]);
                float leni = length(axisi);
                if (leni == 0.0f) continue;
                axisi /= leni;
@@ -184,13 +203,13 @@ namespace embree
              Info info;
              for (size_t i=r.begin(); i<r.end(); i++)
              {
-               BezierPrim& prim = prims[i];
-               const Vec3fa axisi = normalize(prim.p3-prim.p0);
+               PrimRef& prim = prims[i];
+               const Vec3fa axisi = normalize(direction(prim));
                const float cos0 = abs(dot(axisi,axis0));
                const float cos1 = abs(dot(axisi,axis1));
                
-               if (cos0 > cos1) { info.lnum++; info.lbounds.extend(prim.bounds(space0)); }
-               else             { info.rnum++; info.rbounds.extend(prim.bounds(space1)); }
+               if (cos0 > cos1) { info.lnum++; info.lbounds.extend(bounds(space0,prim)); }
+               else             { info.rnum++; info.rbounds.extend(bounds(space1,prim)); }
              }
              return info;
            },
@@ -229,15 +248,15 @@ namespace embree
         CentGeomBBox3fa local_left(empty);
         CentGeomBBox3fa local_right(empty);
 
-        auto primOnLeftSide = [&] (const BezierPrim& prim) -> bool { 
-          const Vec3fa axisi = normalize(prim.p3-prim.p0);
+        auto primOnLeftSide = [&] (const PrimRef& prim) -> bool { 
+          const Vec3fa axisi = normalize(direction(prim));
           const float cos0 = abs(dot(axisi,split.axis0));
           const float cos1 = abs(dot(axisi,split.axis1));
           return cos0 > cos1;
         };
 
-        auto mergePrimBounds = [] (CentGeomBBox3fa& pinfo,const BezierPrim& ref) { 
-          pinfo.extend(ref.bounds()); 
+        auto mergePrimBounds = [this] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { 
+          pinfo.extend(bounds(ref)); 
         };
         
         size_t center = serial_partitioning(prims,begin,end,local_left,local_right,primOnLeftSide,mergePrimBounds);
@@ -259,8 +278,8 @@ namespace embree
         const size_t begin = set.begin();
         const size_t end   = set.end();
 
-        auto primOnLeftSide = [&] (const BezierPrim& prim) -> bool { 
-          const Vec3fa axisi = normalize(prim.p3-prim.p0);
+        auto primOnLeftSide = [&] (const PrimRef& prim) -> bool { 
+          const Vec3fa axisi = normalize(direction(prim));
           const float cos0 = abs(dot(axisi,split.axis0));
           const float cos1 = abs(dot(axisi,split.axis1));
           return cos0 > cos1;
@@ -270,7 +289,7 @@ namespace embree
         PrimInfo rinfo; rinfo.reset();
         const size_t center = parallel_partitioning(
           prims,begin,end,EmptyTy(),linfo,rinfo,primOnLeftSide,
-          [] (PrimInfo &pinfo, const BezierPrim& ref) { pinfo.add(ref.bounds()); },
+          [this] (PrimInfo &pinfo, const PrimRef& ref) { pinfo.add(bounds(ref)); },
           [] (PrimInfo &pinfo0,const PrimInfo& pinfo1) { pinfo0.merge(pinfo1); },
           PARALLEL_PARTITION_BLOCK_SIZE);
         
@@ -292,17 +311,18 @@ namespace embree
         
         CentGeomBBox3fa left; left.reset();
         for (size_t i=begin; i<center; i++)
-          left.extend(prims[i].bounds());
+          left.extend(bounds(prims[i]));
         new (&lset) PrimInfoRange(begin,center,left.geomBounds,left.centBounds);
         
         CentGeomBBox3fa right; right.reset();
         for (size_t i=center; i<end; i++)
-          right.extend(prims[i].bounds());	
+          right.extend(bounds(prims[i]));	
         new (&rset) PrimInfoRange(center,end,right.geomBounds,right.centBounds);
       }
       
     private:
-      BezierPrim* const prims;
+      Scene* const scene;
+      PrimRef* const prims;
     };
   }
 }

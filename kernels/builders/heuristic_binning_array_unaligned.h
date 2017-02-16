@@ -30,20 +30,12 @@ namespace embree
         typedef BinInfoT<BINS,PrimRef,BBox3fa> Binner;
         typedef range<size_t> Set;
 
-         /*! computes bounding box of bezier curves for motion blur */
-        struct PrimInfoMB 
-        {
-          PrimInfo pinfo;
-          BBox3fa s0t0;
-          BBox3fa s1t1;
-        };
-
-        __forceinline UnalignedHeuristicArrayBinningSAH ()
-          : prims(nullptr) {}
+        __forceinline UnalignedHeuristicArrayBinningSAH () // FIXME: required?
+          : scene(nullptr), prims(nullptr) {}
         
         /*! remember prim array */
-        __forceinline UnalignedHeuristicArrayBinningSAH (PrimRef* prims)
-          : prims(prims) {}
+        __forceinline UnalignedHeuristicArrayBinningSAH (Scene* scene, PrimRef* prims)
+          : scene(scene), prims(prims) {}
 
         const LinearSpace3fa computeAlignedSpace(const range<size_t>& set)
         {
@@ -51,9 +43,12 @@ namespace embree
           Vec3fa axis(0,0,1);
           for (size_t i=set.begin(); i<set.end(); i++)
           {
-            const BezierPrim& prim = prims[i];
-            const Vec3fa axis1 = normalize(prim.p3 - prim.p0);
-            if (sqr_length(prim.p3 - prim.p0) > 1E-18f) {
+            BezierCurves* mesh = (BezierCurves*) scene->get(prims[i].geomID());
+            const unsigned vtxID = mesh->curve(prims[i].primID());
+            const Vec3fa p0 = mesh->vertex(vtxID+0);
+            const Vec3fa p3 = mesh->vertex(vtxID+3);
+            const Vec3fa axis1 = normalize(p3 - p0);
+            if (sqr_length(p3-p0) > 1E-18f) {
               axis = axis1;
               break;
             }
@@ -61,51 +56,15 @@ namespace embree
           return frame(axis).transposed();
         }
 
-        const AffineSpace3fa computeAlignedSpaceMB(Scene* scene, const range<size_t>& pinfo)
-        {
-          /*! find first curve that defines valid directions */
-          Vec3fa axis0(0,0,1);
-          Vec3fa axis1(0,0,1);
-
-          for (size_t i=pinfo.begin(); i<pinfo.end(); i++)
-          {
-            const BezierPrim& prim = prims[i];
-            const size_t geomID = prim.geomID();
-            const size_t primID = prim.primID();
-            const BezierCurves* curves = scene->getBezierCurves(geomID);
-            const int curve = curves->curve(primID);
-            
-            const Vec3fa a3 = curves->vertex(curve+3,0);
-            //const Vec3fa a2 = curves->vertex(curve+2,0);
-            //const Vec3fa a1 = curves->vertex(curve+1,0);
-            const Vec3fa a0 = curves->vertex(curve+0,0);
-            
-            const Vec3fa b3 = curves->vertex(curve+3,1);
-            //const Vec3fa b2 = curves->vertex(curve+2,1);
-            //const Vec3fa b1 = curves->vertex(curve+1,1);
-            const Vec3fa b0 = curves->vertex(curve+0,1);
-            
-            if (sqr_length(a3 - a0) > 1E-18f && sqr_length(b3 - b0) > 1E-18f)
-            {
-              axis0 = normalize(a3 - a0);
-              axis1 = normalize(b3 - b0);
-              break;
-            }
-          }
-
-          Vec3fa axis01 = axis0+axis1;
-          if (sqr_length(axis01) < 1E-18f) axis01 = axis0;
-          axis01 = normalize(axis01);
-          return frame(axis01).transposed();
-        }
-        
         const PrimInfo computePrimInfo(const range<size_t>& set, const LinearSpace3fa& space)
         {
           auto computeBounds = [&](const range<size_t>& r) -> CentGeomBBox3fa
             {
               CentGeomBBox3fa bounds(empty);
-              for (size_t i=r.begin(); i<r.end(); i++)
-                bounds.extend(prims[i].bounds(space));
+              for (size_t i=r.begin(); i<r.end(); i++) {
+                BezierCurves* mesh = (BezierCurves*) scene->get(prims[i].geomID());
+                bounds.extend(mesh->bounds(space,prims[i].primID()));
+              }
               return bounds;
             };
           
@@ -113,36 +72,6 @@ namespace embree
                                                          CentGeomBBox3fa(empty), computeBounds, CentGeomBBox3fa::merge2);
 
           return PrimInfo(set.begin(),set.end(),bounds.geomBounds,bounds.centBounds);
-        }
-        
-        const PrimInfoMB computePrimInfoMB(size_t timeSegment, size_t numTimeSteps, Scene* scene, const range<size_t>& pinfo, const AffineSpace3fa& space)
-        {
-          size_t N = 0;
-          BBox3fa centBounds = empty;
-          BBox3fa geomBounds = empty;
-          BBox3fa s0t0 = empty, s1t1 = empty;
-          for (size_t i=pinfo.begin(); i<pinfo.end(); i++)  // FIXME: parallelize
-          {
-            const BezierPrim& prim = prims[i];
-            const size_t geomID = prim.geomID();
-            const size_t primID = prim.primID();
-
-            N++;
-            const BBox3fa bounds = prim.bounds(space);
-            geomBounds.extend(bounds);
-            centBounds.extend(center2(bounds));
-
-            const BezierCurves* curves = scene->getBezierCurves(geomID);
-            const LBBox3fa linearBounds = curves->linearBounds(space,primID,timeSegment,numTimeSteps);
-            s0t0.extend(linearBounds.bounds0);
-            s1t1.extend(linearBounds.bounds1);
-          }
-          
-          PrimInfoMB ret;
-          ret.pinfo = PrimInfo(N,geomBounds,centBounds);
-          ret.s0t0 = s0t0;
-          ret.s1t1 = s1t1;
-          return ret;
         }
         
         /*! finds the best split */
@@ -160,7 +89,7 @@ namespace embree
         {
           Binner binner(empty);
           const BinMapping<BINS> mapping(set);
-          bin_serial_or_parallel<parallel>(binner,prims,set.begin(),set.end(),size_t(4096),mapping,space);
+          bin_serial_or_parallel<parallel>(binner,prims,set.begin(),set.end(),size_t(4096),mapping,space,scene);
           return binner.best(mapping,logBlockSize);
         }
         
@@ -192,11 +121,11 @@ namespace embree
           size_t center = 0;
           if (likely(set.size() < 10000))
             center = serial_partitioning(prims,begin,end,local_left,local_right,
-                                         [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(center2(ref.bounds(space)))[splitDim] < splitPos; },
+                                         [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(ref,space,scene)[splitDim] < splitPos; },
                                          [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });
           else
             center = parallel_partitioning(prims,begin,end,EmptyTy(),local_left,local_right,
-                                           [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(center2(ref.bounds(space)))[splitDim] < splitPos; },
+                                           [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(ref,space,scene)[splitDim] < splitPos; },
                                            [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); },
                                            [] (CentGeomBBox3fa& pinfo0,const CentGeomBBox3fa& pinfo1) { pinfo0.merge(pinfo1); },
                                            128);
@@ -231,6 +160,7 @@ namespace embree
         }
         
       private:
+        Scene* const scene;
         PrimRef* const prims;
       };
   }

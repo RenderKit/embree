@@ -59,8 +59,8 @@ namespace embree
         friend struct BVHNBuilderHair;
         
         typedef FastAllocator::ThreadLocal2* Allocator;
-        typedef HeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> HeuristicBinningSAH;
-        typedef UnalignedHeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> UnalignedHeuristicBinningSAH;
+        typedef HeuristicArrayBinningSAH<PrimRef,NUM_OBJECT_BINS> HeuristicBinningSAH;
+        typedef UnalignedHeuristicArrayBinningSAH<PrimRef,NUM_OBJECT_BINS> UnalignedHeuristicBinningSAH;
         typedef HeuristicStrandSplit HeuristicStrandSplitSAH;
         
         static const size_t MAX_BRANCHING_FACTOR =  8;         //!< maximal supported BVH branching factor
@@ -71,7 +71,8 @@ namespace embree
         static const size_t travCostUnaligned = 5;
         static const size_t intCost = 6;
         
-        BuilderT (BezierPrim* prims,
+        BuilderT (Scene* scene,
+                  PrimRef* prims,
                   const CreateAllocFunc& createAlloc, 
                   const CreateAlignedNodeFunc& createAlignedNode, 
                   const SetAlignedNodeFunc& setAlignedNode,
@@ -89,7 +90,7 @@ namespace embree
           setUnalignedNode(setUnalignedNode),
           createLeaf(createLeaf),
           progressMonitor(progressMonitor),
-          alignedHeuristic(prims), unalignedHeuristic(prims), strandHeuristic(prims) {}
+          alignedHeuristic(prims), unalignedHeuristic(scene,prims), strandHeuristic(scene,prims) {}
         
         /*! creates a large leaf that could be larger than supported by the BVH */
         NodeRef createLargeLeaf(size_t depth, const PrimInfoRange& pinfo, Allocator alloc)
@@ -185,7 +186,7 @@ namespace embree
             strandSAH = travCostUnaligned*halfArea(pinfo.geomBounds) + intCost*strandSplit.splitSAH();
             bestSAH = min(strandSAH,bestSAH);
           }
-          
+     
           /* fallback if SAH heuristics failed */
           if (unlikely(!std::isfinite(bestSAH)))
           {
@@ -209,7 +210,7 @@ namespace embree
             strandHeuristic.split(strandSplit,pinfo,linfo,rinfo);
             aligned = false;
           }
-          
+
           /* can never happen */
           else
             assert(false);
@@ -356,7 +357,8 @@ namespace embree
                               const SetUnalignedNodeFunc& setUnalignedNode, 
                               const CreateLeafFunc& createLeaf, 
                               const ProgressMonitor& progressMonitor,
-                              BezierPrim* prims, 
+                              Scene* scene,
+                              PrimRef* prims, 
                               const PrimInfo& pinfo,
                               const Settings settings)
       {
@@ -366,7 +368,7 @@ namespace embree
           CreateUnalignedNodeFunc,SetUnalignedNodeFunc,
           CreateLeafFunc,ProgressMonitor> Builder;
 
-        Builder builder(prims,createAlloc,
+        Builder builder(scene,prims,createAlloc,
                         createAlignedNode,setAlignedNode,
                         createUnalignedNode,setUnalignedNode,
                         createLeaf,progressMonitor,settings);

@@ -18,10 +18,11 @@
 
 #include "primitive.h"
 #include "../subdiv/bezier_curve.h"
+#include "../common/primref.h"
 
 namespace embree
 {
-  struct BezierPrim // FIXME: rename to BezierRef
+  struct BezierPrim // FIXME: rename to BezierRef, remove!!!
   {
   public:
 

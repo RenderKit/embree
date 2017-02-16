@@ -17,6 +17,7 @@
 #pragma once
 
 #include "bvh.h"
+#include "../common/primref.h"
 
 namespace embree
 {

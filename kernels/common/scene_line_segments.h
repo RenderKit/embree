@@ -18,7 +18,6 @@
 
 #include "default.h"
 #include "geometry.h"
-#include "primref.h"
 #include "buffer.h"
 
 namespace embree

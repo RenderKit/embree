@@ -35,7 +35,7 @@ namespace embree
 
       BVH* bvh;
       Scene* scene;
-      mvector<BezierPrim> prims;
+      mvector<PrimRef> prims;
 
       BVHNHairBuilderSAH (BVH* bvh, Scene* scene)
         : bvh(bvh), scene(scene), prims(scene->device) {}
@@ -56,7 +56,7 @@ namespace embree
         
         /* create primref array */
         prims.resize(numPrimitives);
-        const PrimInfo pinfo = createBezierRefArray(scene,prims,scene->progressInterface);
+        const PrimInfo pinfo = createPrimRefArray<BezierCurves,false>(scene,prims,scene->progressInterface);
 
         /* estimate acceleration structure size */
         const size_t node_bytes = pinfo.size()*sizeof(typename BVH::UnalignedNode)/(4*N);
@@ -90,7 +90,7 @@ namespace embree
            typename BVH::AlignedNode::Set(),
            typename BVH::UnalignedNode::Create(),
            typename BVH::UnalignedNode::Set(),
-           createLeaf,scene->progressInterface,prims.data(),pinfo,settings);
+           createLeaf,scene->progressInterface,scene,prims.data(),pinfo,settings);
         
         bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
         
@@ -189,13 +189,13 @@ namespace embree
               return node;
             },
 
-            [&] (const PrimInfoRange* children, const size_t numChildren, UnalignedHeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> unalignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> UnalignedNodeMB*
+            [&] (const PrimInfoRange* children, const size_t numChildren, UnalignedHeuristicArrayBinningSAHOld<BezierPrim,NUM_OBJECT_BINS> unalignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> UnalignedNodeMB*
             {
               UnalignedNodeMB* node = (UnalignedNodeMB*) alloc->alloc0->malloc(sizeof(UnalignedNodeMB),BVH::byteNodeAlignment); node->clear();
               for (size_t i=0; i<numChildren; i++) 
               {
                 const AffineSpace3fa space = unalignedHeuristic.computeAlignedSpaceMB(scene,children[i]); 
-                UnalignedHeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS>::PrimInfoMB pinfo = unalignedHeuristic.computePrimInfoMB(t,bvh->numTimeSteps,scene,children[i],space);
+                UnalignedHeuristicArrayBinningSAHOld<BezierPrim,NUM_OBJECT_BINS>::PrimInfoMB pinfo = unalignedHeuristic.computePrimInfoMB(t,bvh->numTimeSteps,scene,children[i],space);
                 node->set(i,space,pinfo.s0t0,pinfo.s1t1);
               }
               return node;
