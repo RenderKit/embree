@@ -141,8 +141,10 @@ namespace embree
           /* create node */
           auto node = createAlignedNode(alloc);
           
-          for (size_t i=0; i<numChildren; i++)
-            setAlignedNode(node,i,createLargeLeaf(depth+1,children[i],alloc),children[i].geomBounds);
+          for (size_t i=0; i<numChildren; i++) {
+            const NodeRef child = createLargeLeaf(depth+1,children[i],alloc);
+            setAlignedNode(node,i,child,children[i].geomBounds);
+          }
           
           return node;
         }
