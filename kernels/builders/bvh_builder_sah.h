@@ -209,8 +209,8 @@ namespace embree
           size_t numChildren = 2;
           
           /*! split until node is full or SAH tells us to stop */
-          do {
-            
+          while (numChildren < branchingFactor) 
+          {
             /*! find best child to split */
             float bestArea = neg_inf;
             ssize_t bestChild = -1;
@@ -236,8 +236,7 @@ namespace embree
             children[bestChild  ] = lrecord;
             children[numChildren] = rrecord;
             numChildren++;
-            
-          } while (numChildren < branchingFactor);
+          }
           
           /* sort buildrecords for faster shadow ray traversal */
           std::sort(&children[0],&children[numChildren],std::greater<BuildRecord>());
