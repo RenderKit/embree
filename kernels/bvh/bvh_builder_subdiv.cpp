@@ -167,7 +167,7 @@ namespace embree
         PrimInfo pinfo(pinfo3.end,pinfo3.geomBounds,pinfo3.centBounds);
         
         auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> NodeRef {
-          assert(current.pinfo.size() == 1);
+          assert(current.prims.size() == 1);
           size_t leaf = (size_t) prims[current.prims.begin()].ID();
           return NodeRef(leaf);
         };
@@ -384,8 +384,7 @@ namespace embree
         if (!mblur)
         {
           auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> NodeRef {
-            size_t items MAYBE_UNUSED = current.pinfo.size();
-            assert(items == 1);
+            assert(current.prims.size() == 1);
             const size_t patchIndex = prims[current.prims.begin()].ID();
             return bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
           };
@@ -419,8 +418,7 @@ namespace embree
           for (size_t t=0; t<numTimeSegments; t++)
           {
             auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> std::pair<NodeRef,LBBox3fa> {
-              size_t items MAYBE_UNUSED = current.pinfo.size();
-              assert(items == 1);
+              assert(current.prims.size() == 1);
               const size_t patchIndexMB = prims[current.prims.begin()].ID();
               SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+0];
               NodeRef ref = bvh->encodeLeaf((char*)&patch,1);

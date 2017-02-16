@@ -103,7 +103,7 @@ namespace embree
           assert(N <= 2);
           InnerNode* node = new (alloc->malloc(sizeof(InnerNode))) InnerNode;
           for (size_t i=0; i<N; i++)
-            node->bounds[i] = children[i].pinfo.geomBounds;
+            node->bounds[i] = children[i].prims.geomBounds;
           return node;
         },
 

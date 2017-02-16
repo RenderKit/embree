@@ -31,7 +31,7 @@ namespace embree
         __forceinline SpatialBinMapping() {}
         
         /*! calculates the mapping */
-        __forceinline SpatialBinMapping(const PrimInfo& pinfo)
+        __forceinline SpatialBinMapping(const CentGeomBBox3fa& pinfo)
         {
           const vfloat4 lower = (vfloat4) pinfo.geomBounds.lower;
           const vfloat4 upper = (vfloat4) pinfo.geomBounds.upper;
@@ -308,7 +308,7 @@ namespace embree
       }
       
       /*! finds the best split by scanning binning information */
-      SpatialBinSplit<BINS> best(const PrimInfo& pinfo, const SpatialBinMapping<BINS>& mapping, const size_t blocks_shift, const size_t maxCount = (size_t)-1) const 
+      SpatialBinSplit<BINS> best(const SpatialBinMapping<BINS>& mapping, const size_t blocks_shift, const size_t maxCount = (size_t)-1) const 
       {
         /* sweep from right to left and compute parallel prefix of merged bounds */
         vfloat4 rAreas[BINS];
