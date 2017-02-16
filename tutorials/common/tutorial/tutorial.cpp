@@ -561,7 +561,7 @@ namespace embree
     if (state == GLUT_UP) 
     {
       mouseMode = 0;
-      if (button == GLUT_LEFT_BUTTON && glutGetModifiers() == GLUT_ACTIVE_SHIFT) 
+      if (button == GLUT_RIGHT_BUTTON) 
       {
         ISPCCamera ispccamera = camera.getISPCCamera(width,height);
         Vec3fa p; bool hit = device_pick(float(x),float(y),ispccamera,p);
@@ -574,21 +574,13 @@ namespace embree
           camera.from += dot(delta,right)*right + dot(delta,up)*up;
         }
       }
-      else if (button == GLUT_LEFT_BUTTON && glutGetModifiers() == (GLUT_ACTIVE_CTRL | GLUT_ACTIVE_SHIFT)) 
-      {
-        ISPCCamera ispccamera = camera.getISPCCamera(width,height);
-        Vec3fa p; bool hit = device_pick(float(x),float(y),ispccamera,p);
-        if (hit) camera.to = p;
-      }
 
     } else {
       clickX = x; clickY = y;
       int modifiers = glutGetModifiers();
       if      (button == GLUT_LEFT_BUTTON && modifiers == GLUT_ACTIVE_SHIFT) mouseMode = 1;
-      else if (button == GLUT_MIDDLE_BUTTON) mouseMode = 2;
-      else if (button == GLUT_RIGHT_BUTTON ) mouseMode = 3;
       else if (button == GLUT_LEFT_BUTTON && modifiers == GLUT_ACTIVE_CTRL ) mouseMode = 3;
-      else if (button == GLUT_LEFT_BUTTON  ) mouseMode = 4;
+      else if (button == GLUT_LEFT_BUTTON) mouseMode = 4;
     }
   }
   
