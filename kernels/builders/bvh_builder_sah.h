@@ -208,26 +208,19 @@ namespace embree
           do {
             
             /*! find best child to split */
-#if 1
-            float bestSAH = neg_inf;
+            float bestArea = neg_inf;
             ssize_t bestChild = -1;
             for (size_t i=0; i<numChildren; i++) 
             {
+              /* ignore leaves as they cannot get split */
               if (children[i].prims.size() <= minLeafSize) continue; 
-              if (area(children[i].prims.geomBounds) > bestSAH) { bestChild = i; bestSAH = area(children[i].prims.geomBounds); } // FIXME: measure over all scenes if this line creates better tree
+
+              /* find child with largest surface area */
+              if (halfArea(children[i].prims.geomBounds) > bestArea) { 
+                bestChild = i; 
+                bestArea = halfArea(children[i].prims.geomBounds); 
+              }
             }
-#else
-            float bestSAH = 0;
-            ssize_t bestChild = -1;
-            for (size_t i=0; i<numChildren; i++) 
-            {
-              float dSAH = children[i].split.splitSAH()-children[i].prims.leafSAH(logBlockSize);
-              if (children[i].prims.size() <= minLeafSize) continue; 
-              if (children[i].prims.size() > maxLeafSize) dSAH = min(dSAH,0.0f); //< force split for large jobs
-              if (dSAH <= bestSAH) { bestChild = i; bestSAH = dSAH; }
-            }
-#endif
-            
             if (bestChild == -1) break;
             
             /* perform best found split */
@@ -245,7 +238,7 @@ namespace embree
             
           } while (numChildren < branchingFactor);
           
-          /* sort buildrecords for simpler shadow ray traversal */
+          /* sort buildrecords for faster shadow ray traversal */
           std::sort(&children[0],&children[numChildren],std::greater<BuildRecord>());
           
           /*! create an inner node */
