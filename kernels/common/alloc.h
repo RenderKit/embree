@@ -218,7 +218,7 @@ namespace embree
     {     
       internal_fix_used_blocks();
       /* distribute the allocation to multiple thread block slots */
-      slotMask = MAX_THREAD_USED_BLOCK_SLOTS-1;      
+      slotMask = MAX_THREAD_USED_BLOCK_SLOTS-1;  
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       if (bytesReserve == 0) bytesReserve = bytesAllocate;
       freeBlocks = Block::create(device,bytesAllocate,bytesReserve,nullptr,osAllocation);

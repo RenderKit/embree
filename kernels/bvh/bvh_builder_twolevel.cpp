@@ -21,7 +21,7 @@
 #include "../common/scene_triangle_mesh.h"
 #include "../common/scene_quad_mesh.h"
 
-#define PROFILE 0
+#define PROFILE 1
 #define MAX_OPEN_SIZE 10000
 
 /* new open/merge builder */
@@ -30,7 +30,7 @@
 /* sequential opening phase in old code path */
 #define ENABLE_OPEN_SEQUENTIAL 1
 
-#define SPLIT_MEMORY_RESERVE_FACTOR 100
+#define SPLIT_MEMORY_RESERVE_FACTOR 2
 
 namespace embree
 {
@@ -54,7 +54,6 @@ namespace embree
     template<int N, typename Mesh>
     void BVHNBuilderTwoLevel<N,Mesh>::build(size_t threadIndex, size_t threadCount)
     {
-
       /* delete some objects */
       size_t num = scene->size();
       if (num < objects.size()) {
@@ -71,6 +70,7 @@ namespace embree
       
       /* skip build for empty scene */
       const size_t numPrimitives = scene->getNumPrimitives<Mesh,false>();
+
       if (numPrimitives == 0) {
         prims.resize(0);
         bvh->set(BVH::emptyNode,empty,0);
@@ -85,8 +85,7 @@ namespace embree
       if (builders.size() < num) builders.resize(num);
       if (refs.size()     < num) refs.resize(num);
       nextRef.store(0);
-
-
+      
       /* create of acceleration structures */
       parallel_for(size_t(0), num, [&] (const range<size_t>& r)
       {
@@ -120,11 +119,9 @@ namespace embree
           Builder* builder = builders[objectID]; assert(builder);
           
           /* build object if it got modified */
-#if !PROFILE 
           if (mesh->isModified()) 
-#endif
             builder->build(0,0);
-          
+
           /* create build primitive */
           if (!object->getBounds().empty())
 #if ENABLER_DIRECT_SAH_MERGE_BUILDER == 1
@@ -138,7 +135,6 @@ namespace embree
 #if PROFILE
       double d0 = getSeconds();
 #endif
-
       /* fast path for single geometry scenes */
       if (nextRef == 1) { 
         bvh->set(refs[0].node,LBBox3fa(refs[0].bounds()),numPrimitives);
@@ -190,7 +186,13 @@ namespace embree
               }
               return pinfo;
             }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
-#endif          
+#endif   
+
+          /* initialize allocator */
+          // FIXME ?
+          bvh->alloc.initGrowSizeAndNumSlots(pinfo.size()*sizeof(BuildRef));
+
+       
           /* skip if all objects where empty */
           if (pinfo.size() == 0)
             bvh->set(BVH::emptyNode,empty,0);
@@ -203,7 +205,6 @@ namespace embree
 
             const size_t extSize = max(pinfo.size(),size_t(pinfo.size() * SPLIT_MEMORY_RESERVE_FACTOR));
             refs.resize(extSize);
-
 
             BVHBuilderBinnedOpenMergeSAH::build<NodeRef,BuildRef>
               (root,
@@ -307,7 +308,7 @@ namespace embree
 #if 1
       for (size_t i=0;i<refs.size();i++)
       {
-        NodeRef ref = refs.back().node;
+        NodeRef ref = refs[i].node;
         if (ref.isAlignedNode())
           ref.prefetch();
       }
@@ -334,6 +335,7 @@ namespace embree
           std::push_heap (refs.begin(),refs.end()); 
         }
       }
+      PRINT(refs.size());
     }
 
 
@@ -343,25 +345,28 @@ namespace embree
       if (refs.size() == 0)
 	return;
 
-    size_t num = min(max(2*numPrimitives,(size_t)100),(size_t)MAX_OPEN_SIZE);
+      double t0 = getSeconds();
+
+      size_t num = MAX_OPEN_SIZE;
 
       refs.reserve(num);
-
+      float min_sah = inf;
       for (size_t i=0;i<refs.size();i++)
-      {
-        NodeRef ref = refs.back().node;
-        if (ref.isAlignedNode())
-          ref.prefetch();
-      }
-
+        min_sah = min(min_sah,refs[i].sah);
+      
       std::make_heap(refs.begin(),refs.end());
       while (refs.size()+N-1 <= num)
       {
         std::pop_heap (refs.begin(),refs.end()); 
-        NodeRef ref = refs.back().node;
-        unsigned int geomID   = refs.back().geomID();
-        unsigned int numPrims = max((unsigned int)refs.back().numPrimitives() / N,(unsigned int)1);
+        BuildRef &bref = refs.back();
+        NodeRef ref = bref.node;
+        unsigned int geomID   = bref.geomID();
+        unsigned int numPrims = max((unsigned int)bref.numPrimitives() / N,(unsigned int)1);
+        /* exit if leaf */
         if (ref.isLeaf()) break;
+        /* exit if area is <= min _sah */
+        if (bref.sah <= min_sah) break;
+
         refs.pop_back();    
 
         AlignedNode* node = ref.alignedNode();
@@ -375,8 +380,10 @@ namespace embree
 
           std::push_heap (refs.begin(),refs.end()); 
         }
-
       }
+
+      double t1 = getSeconds();
+      PRINT(t1-t0);
     }
 
 

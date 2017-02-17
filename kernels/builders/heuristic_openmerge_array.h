@@ -92,8 +92,8 @@ namespace embree
         typedef extended_range<size_t> Set;
         typedef SplitOpenMerge<ObjectSplit> Split;
         
-        static const size_t PARALLEL_THRESHOLD = 3*1024;
-        static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
+        static const size_t PARALLEL_THRESHOLD = 1024;
+        static const size_t PARALLEL_FIND_BLOCK_SIZE = 256;
         static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;
 
         static const size_t MOVE_STEP_SIZE = 64;
@@ -179,6 +179,7 @@ namespace embree
           if (unlikely(set.has_ext_range() && !commonGeomID))
           {
             const float OPENED_SAH_THRESHOLD = 1.25f;
+            //const float OPENED_SAH_THRESHOLD = 0.25f;
 
             const ObjectSplit opened_object_split = opened_object_find(set, pinfo, logBlockSize);            
             const float opened_object_split_sah   = opened_object_split.splitSAH();

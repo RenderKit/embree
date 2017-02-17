@@ -273,6 +273,7 @@ namespace embree {
     }
     else if (geometry->type == TRIANGLE_MESH) {
       ISPCTriangleMesh* mesh = (ISPCTriangleMesh*)geometry;
+#if 0
       /* if static do nothing */
       if (mesh->numTimeSteps <= 1) return;      
       /* interpolate two vertices from two timesteps */
@@ -281,6 +282,9 @@ namespace embree {
       const Vec3fa* __restrict__ const input0 = mesh->positions[t0];
       const Vec3fa* __restrict__ const input1 = mesh->positions[t1];
       interpolateVertices(scene_out, mesh->geomID, mesh->numVertices, input0, input1, tt);
+#else
+      rtcUpdate(scene_out,mesh->geomID);
+#endif
     }
     else if (geometry->type == QUAD_MESH) {
       ISPCQuadMesh* mesh = (ISPCQuadMesh*)geometry;
@@ -577,6 +581,14 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
     /* ============ */
     /* render image */
     /* ============ */
+ 
+#if 0
+    // size_t numObjects = getNumObjects(g_ispc_scene);
+    // for (unsigned int i=0;i<numObjects;i++)
+    //   updateVertexData(i, g_ispc_scene, g_scene, 0, 0);
+    rtcCommit(g_scene);
+    return;
+#endif
 
     const double renderTime0 = getSeconds();
     const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
