@@ -48,6 +48,25 @@ namespace embree
     float sah() {
       return 1.0f + (area(bounds[0])*children[0]->sah() + area(bounds[1])*children[1]->sah())/area(merge(bounds[0],bounds[1]));
     }
+
+    static void* create (void* threadLocalPtr, size_t numChildren) 
+    {
+      assert(numChildren == 2);
+      RTCThreadLocalAllocator alloc = (RTCThreadLocalAllocator) threadLocalPtr;
+      void* ptr = rtcMalloc(alloc,sizeof(InnerNode),16);
+      return (void*) new (ptr) InnerNode;
+    }
+    
+    static void  setChild (void* nodePtr, size_t i, void* childPtr)
+    {
+      assert(i<2);
+      ((InnerNode*)nodePtr)->children[i] = (Node*) childPtr;
+    }
+    
+    static void  setBounds (void* nodePtr, size_t i, RTCBounds& bounds)
+    {
+      ((InnerNode*)nodePtr)->bounds[i] = (BBox3fa&) bounds;
+    }
   };
   
   struct LeafNode : public Node
@@ -60,6 +79,14 @@ namespace embree
     
     float sah() {
       return 1.0f;
+    }
+    
+    static void* create (void* threadLocalPtr, const RTCPrimRef* prims, size_t numPrims)
+    {
+      assert(numPrims == 1);
+      RTCThreadLocalAllocator alloc = (RTCThreadLocalAllocator) threadLocalPtr;
+      void* ptr = rtcMalloc(alloc,sizeof(LeafNode),16);
+      return (void*) new (ptr) LeafNode(prims->primID,*(BBox3fa*)prims);
     }
   };
 
@@ -154,33 +181,6 @@ namespace embree
     return (void*) rtcGetThreadLocalAllocator((RTCAllocator)userPtr);
   }
 
-  void* createNode (void* threadLocalPtr, size_t numChildren) 
-  {
-    assert(numChildren == 2);
-    RTCThreadLocalAllocator alloc = (RTCThreadLocalAllocator) threadLocalPtr;
-    void* ptr = rtcMalloc(alloc,sizeof(InnerNode),16);
-    return (void*) new (ptr) InnerNode;
-  }
-
-  void  setNodeChild (void* nodePtr, size_t i, void* childPtr)
-  {
-    assert(i<2);
-    ((InnerNode*)nodePtr)->children[i] = (Node*) childPtr;
-  }
-
-  void  setNodeBounds (void* nodePtr, size_t i, RTCBounds& bounds)
-  {
-    ((InnerNode*)nodePtr)->bounds[i] = (BBox3fa&) bounds;
-  }
-
-  void* createLeaf (void* threadLocalPtr, const RTCPrimRef* prims, size_t numPrims)
-  {
-     assert(numPrims == 1);
-     RTCThreadLocalAllocator alloc = (RTCThreadLocalAllocator) threadLocalPtr;
-     void* ptr = rtcMalloc(alloc,sizeof(LeafNode),16);
-     return (void*) new (ptr) LeafNode(prims->primID,*(BBox3fa*)prims);
-  }
-
   void buildProgress (void* userPtr, size_t dn) {
   }
 
@@ -211,7 +211,7 @@ namespace embree
       
       Node* root = (Node*) rtcBVHBuildSAH(device,settings,
                                           prims,N,(void*)allocator,
-                                          createThreadLocal,createNode,setNodeChild,setNodeBounds,createLeaf,buildProgress);
+                                          createThreadLocal,InnerNode::create,InnerNode::setChild,InnerNode::setBounds,LeafNode::create,buildProgress);
       
       double t1 = getSeconds();
       
@@ -325,7 +325,7 @@ namespace embree
       
       Node* root = (Node*) rtcBVHBuildMorton(device,settings,
                                              prims,N,(void*)allocator,
-                                             createThreadLocal,createNode,setNodeChild,setNodeBounds,createLeaf,buildProgress);
+                                             createThreadLocal,InnerNode::create,InnerNode::setChild,InnerNode::setBounds,LeafNode::create,buildProgress);
       
       double t1 = getSeconds();
       
