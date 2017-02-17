@@ -441,9 +441,9 @@ task void renderTileTask(uniform int* uniform pixels,
 
 void device_key_pressed_handler(uniform int key)
 {
-  if (key == 100 /*d*/) { 
+  if (key == 111 /*o*/) {
   }
-  else if (key == 115 /*s*/) { 
+  else if (key == 112 /*p*/) {
   }
   else device_key_pressed_default(key);
 }

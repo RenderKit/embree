@@ -56,14 +56,14 @@ namespace embree {
 
   void device_key_pressed_handler(int key)
   {
-    if (key == 100 /*d*/) {
+    if (key == 111 /*o*/) {
 #if DUMP_PROFILE_DATA == 1 
       std::cout << "dumping build and render times per frame [" << buildTime.size() << " frames]..." << std::flush;
       dumpBuildAndRenderTimes(); 
       std::cout << "done" << std::endl;
 #endif
     }
-    else if (key == 115 /*s*/) { 
+    else if (key == 112 /*p*/) {
       printStats = !printStats; 
     }
     else device_key_pressed_default(key);
