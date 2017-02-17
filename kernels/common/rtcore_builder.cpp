@@ -51,9 +51,9 @@ namespace embree
       return (RTCThreadLocalAllocator) ((FastAllocator*) allocator)->threadLocal();
     }
 
-    RTCORE_API void* rtcMalloc(RTCThreadLocalAllocator allocator, size_t bytes, size_t align)
+    RTCORE_API void* rtcThreadLocalMalloc(RTCThreadLocalAllocator allocator, size_t bytes, size_t align)
     {
-      RTCORE_TRACE(rtcMalloc);
+      RTCORE_TRACE(rtcThreadLocalMalloc);
       FastAllocator::ThreadLocal* alloc = (FastAllocator::ThreadLocal*) allocator;
       return alloc->malloc(bytes,align);
     }
@@ -82,9 +82,9 @@ namespace embree
       delete (FastAllocator*) allocator;
     }
 
-    RTCORE_API void* rtcBVHBuildSAH(RTCDevice device,
+    RTCORE_API void* rtcBVHBuildSAH(RTCDevice hdevice,
                                       const RTCBuildSettings& settings,
-                                      RTCPrimRef* prims,
+                                      RTCBuildPrimitive* prims,
                                       size_t numPrims,
                                       void* userPtr,
                                       RTCCreateThreadLocalFunc createThreadLocal,
@@ -94,8 +94,10 @@ namespace embree
                                       RTCCreateLeafFunc createLeaf,
                                       RTCBuildProgressFunc buildProgress)
     {
+      Device* device = (Device*) hdevice;
       RTCORE_CATCH_BEGIN;
       RTCORE_TRACE(rtcBVHBuildSAH);
+      RTCORE_VERIFY_HANDLE(device);
 
       /* calculate priminfo */
       auto computeBounds = [&](const range<size_t>& r) -> CentGeomBBox3fa
@@ -148,13 +150,13 @@ namespace embree
         (PrimRef*)prims,pinfo,settings);
          
 
-      RTCORE_CATCH_END((Device*)device);
+      RTCORE_CATCH_END(device);
       return nullptr;
     }
 
-    RTCORE_API void* rtcBVHBuildMorton(RTCDevice device,
+    RTCORE_API void* rtcBVHBuildMorton(RTCDevice hdevice,
                                          const RTCBuildSettings& settings,
-                                         RTCPrimRef* prims_i,
+                                         RTCBuildPrimitive* prims_i,
                                          size_t numPrims,
                                          void* userPtr,
                                          RTCCreateThreadLocalFunc createThreadLocal,
@@ -164,13 +166,15 @@ namespace embree
                                          RTCCreateLeafFunc createLeaf,
                                          RTCBuildProgressFunc buildProgress)
     {
+      Device* device = (Device*) hdevice;
       RTCORE_CATCH_BEGIN;
       RTCORE_TRACE(rtcBVHBuildMorton);
+      RTCORE_VERIFY_HANDLE(hdevice);
 
-      /* array for morton builder */
+      /* initialize temporary arrays for morton builder */
       PrimRef* prims = (PrimRef*) prims_i;
-      avector<isa::MortonID32Bit> morton_src(numPrims);
-      avector<isa::MortonID32Bit> morton_tmp(numPrims);
+      mvector<isa::MortonID32Bit> morton_src(device,numPrims);
+      mvector<isa::MortonID32Bit> morton_tmp(device,numPrims);
       parallel_for(size_t(0), numPrims, size_t(1024), [&] ( range<size_t> r ) {
           for (size_t i=r.begin(); i<r.end(); i++)
             morton_src[i].index = i;
@@ -229,7 +233,7 @@ namespace embree
       
       return root.first;
 
-      RTCORE_CATCH_END((Device*)device);
+      RTCORE_CATCH_END(device);
       return nullptr;
     }
   }

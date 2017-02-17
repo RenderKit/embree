@@ -53,7 +53,7 @@ namespace embree
     {
       assert(numChildren == 2);
       RTCThreadLocalAllocator alloc = (RTCThreadLocalAllocator) threadLocalPtr;
-      void* ptr = rtcMalloc(alloc,sizeof(InnerNode),16);
+      void* ptr = rtcThreadLocalMalloc(alloc,sizeof(InnerNode),16);
       return (void*) new (ptr) InnerNode;
     }
     
@@ -81,11 +81,11 @@ namespace embree
       return 1.0f;
     }
     
-    static void* create (void* threadLocalPtr, const RTCPrimRef* prims, size_t numPrims)
+    static void* create (void* threadLocalPtr, const RTCBuildPrimitive* prims, size_t numPrims)
     {
       assert(numPrims == 1);
       RTCThreadLocalAllocator alloc = (RTCThreadLocalAllocator) threadLocalPtr;
-      void* ptr = rtcMalloc(alloc,sizeof(LeafNode),16);
+      void* ptr = rtcThreadLocalMalloc(alloc,sizeof(LeafNode),16);
       return (void*) new (ptr) LeafNode(prims->primID,*(BBox3fa*)prims);
     }
   };
@@ -184,7 +184,7 @@ namespace embree
   void buildProgress (void* userPtr, size_t dn) {
   }
 
-  void build_sah_api(RTCPrimRef* prims, size_t N, char* cfg)
+  void build_sah_api(RTCBuildPrimitive* prims, size_t N, char* cfg)
   {
     RTCDevice device = rtcNewDevice(cfg);
     rtcDeviceSetMemoryMonitorFunction2(device,memoryMonitor,nullptr);
@@ -298,7 +298,7 @@ namespace embree
   }
 #endif
 
-  void build_morton_api(RTCPrimRef* prims, size_t N, char* cfg)
+  void build_morton_api(RTCBuildPrimitive* prims, size_t N, char* cfg)
   {
     RTCDevice device = rtcNewDevice(cfg);
     rtcDeviceSetMemoryMonitorFunction2(device,memoryMonitor,nullptr);
@@ -348,7 +348,7 @@ namespace embree
     
     /* create random bounding boxes */
     const size_t N = 2300000;
-    avector<RTCPrimRef> prims; 
+    avector<RTCBuildPrimitive> prims; 
     for (size_t i=0; i<N; i++) 
     {
       const float x = float(drand48());
@@ -357,7 +357,7 @@ namespace embree
       const Vec3fa p = 1000.0f*Vec3fa(x,y,z);
       const BBox3fa b = BBox3fa(p,p+Vec3fa(1.0f));
 
-      RTCPrimRef prim;
+      RTCBuildPrimitive prim;
       prim.lower_x = b.lower.x;
       prim.lower_y = b.lower.y;
       prim.lower_z = b.lower.z;
