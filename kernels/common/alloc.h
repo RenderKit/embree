@@ -373,6 +373,7 @@ namespace embree
     void* specialAlloc(size_t bytes) 
     {
       assert(freeBlocks.load() != nullptr && freeBlocks.load()->getBlockAllocatedBytes() >= bytes);
+      freeBlocks.load()->shrinkable = false; // We should never shrink this block. Removing this line creates issues when we force the morton builder also for static geometry, as this causes blocks to be shrunken.
       return freeBlocks.load()->ptr();
     }
 
@@ -484,7 +485,7 @@ namespace embree
       }
 
       Block (size_t bytesAllocate, size_t bytesReserve, Block* next) 
-      : cur(0), allocEnd(bytesAllocate), reserveEnd(bytesReserve), next(next) 
+      : cur(0), allocEnd(bytesAllocate), reserveEnd(bytesReserve), next(next), shrinkable(true)
       {
         //for (size_t i=0; i<allocEnd; i+=defaultBlockSize) data[i] = 0;
       }
@@ -538,10 +539,12 @@ namespace embree
       {
         if (osAllocation)
         {
-          const size_t sizeof_Header = offsetof(Block,data[0]);
-          size_t newSize = os_shrink(this,sizeof_Header+getBlockUsedBytes(),reserveEnd+sizeof_Header);
-          if (device) device->memoryMonitor(newSize-sizeof_Header-allocEnd,true);
-          reserveEnd = allocEnd = newSize-sizeof_Header;
+          if (shrinkable) {
+            const size_t sizeof_Header = offsetof(Block,data[0]);
+            size_t newSize = os_shrink(this,sizeof_Header+getBlockUsedBytes(),reserveEnd+sizeof_Header);
+            if (device) device->memoryMonitor(newSize-sizeof_Header-allocEnd,true);
+            reserveEnd = allocEnd = newSize-sizeof_Header;
+          }
           if (next) next->shrink(device,osAllocation);
         }
       }
@@ -588,7 +591,8 @@ namespace embree
       std::atomic<size_t> allocEnd;   //!< end of the allocated memory region
       std::atomic<size_t> reserveEnd; //!< end of the reserved memory region
       Block* next;               //!< pointer to next block in list
-      char align[maxAlignment-4*sizeof(size_t)]; //!< align data to maxAlignment
+      bool shrinkable;             //!< marks blocks that can be shrunken (true by default)
+      char align[maxAlignment-4*sizeof(size_t)-1]; //!< align data to maxAlignment
       char data[1];              //!< here starts memory to use for allocations
     };
 
