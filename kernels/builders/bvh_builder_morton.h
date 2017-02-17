@@ -267,7 +267,7 @@ namespace embree
         typename CalculateBounds, 
         typename ProgressMonitor>
         
-        class GeneralBVHBuilderMorton
+        class BuilderT
       {
         ALIGNED_CLASS;
         
@@ -277,7 +277,7 @@ namespace embree
         
       public:
         
-        GeneralBVHBuilderMorton (CreateAllocator& createAllocator, 
+        BuilderT (CreateAllocator& createAllocator, 
                                  CreateNodeFunc& createNode, 
                                  SetNodeBoundsFunc& setBounds, 
                                  CreateLeafFunc& createLeaf, 
@@ -580,7 +580,7 @@ namespace embree
                                           const size_t maxLeafSize,
                                           const size_t singleThreadThreshold)
       {
-        typedef GeneralBVHBuilderMorton<
+        typedef BuilderT<
           ReductionTy,
           decltype(createAllocator()),
           CreateAllocFunc,
