@@ -127,7 +127,7 @@ namespace embree
       const PrimInfo pinfo(0,numPrims,bounds.geomBounds,bounds.centBounds);
       
       /* build BVH */
-      return isa::BVHBuilderBinnedSAH::build<void*>(
+      return BVHBuilderBinnedSAH::build<void*>(
         
         /* thread local allocator for fast allocations */
         [&] () -> void* { 
@@ -135,7 +135,7 @@ namespace embree
         },
 
         /* lambda function that creates BVH nodes */
-        [&](isa::BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, void* threadLocal) -> void*
+        [&](BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, void* threadLocal) -> void*
         {
           void* node = createNode(threadLocal,N);
           for (size_t i=0; i<N; i++)
@@ -152,7 +152,7 @@ namespace embree
         },
         
         /* lambda function that creates BVH leaves */
-        [&](const isa::BVHBuilderBinnedSAH::BuildRecord& current, void* threadLocal) -> void* {
+        [&](const BVHBuilderBinnedSAH::BuildRecord& current, void* threadLocal) -> void* {
           return createLeaf(threadLocal,prims+current.prims.begin(),current.prims.size());
         },
         
@@ -187,15 +187,15 @@ namespace embree
 
       /* initialize temporary arrays for morton builder */
       PrimRef* prims = (PrimRef*) prims_i;
-      mvector<isa::MortonID32Bit> morton_src(device,numPrims);
-      mvector<isa::MortonID32Bit> morton_tmp(device,numPrims);
+      mvector<BVHBuilderMorton::MortonID32Bit> morton_src(device,numPrims);
+      mvector<BVHBuilderMorton::MortonID32Bit> morton_tmp(device,numPrims);
       parallel_for(size_t(0), numPrims, size_t(1024), [&] ( range<size_t> r ) {
           for (size_t i=r.begin(); i<r.end(); i++)
             morton_src[i].index = i;
         });
       
       /* start morton build */
-      std::pair<void*,BBox3fa> root = isa::bvh_builder_morton<std::pair<void*,BBox3fa>>(
+      std::pair<void*,BBox3fa> root = BVHBuilderMorton::build<std::pair<void*,BBox3fa>>(
         
         /* thread local allocator for fast allocations */
         [&] () -> void* { 
@@ -220,7 +220,7 @@ namespace embree
         },
         
         /* lambda function that creates BVH leaves */
-        [&]( isa::MortonBuildRecord& current, void* threadLocal) -> std::pair<void*,BBox3fa>
+        [&]( BVHBuilderMorton::MortonBuildRecord& current, void* threadLocal) -> std::pair<void*,BBox3fa>
         {
           const size_t id = morton_src[current.begin].index;
           const BBox3fa bounds = prims[id].bounds(); 
@@ -229,7 +229,7 @@ namespace embree
         },
         
         /* lambda that calculates the bounds for some primitive */
-        [&] (const isa::MortonID32Bit& morton) -> BBox3fa {
+        [&] (const BVHBuilderMorton::MortonID32Bit& morton) -> BBox3fa {
           return prims[morton.index].bounds();
         },
         

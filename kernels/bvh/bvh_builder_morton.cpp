@@ -93,10 +93,10 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
 
-      __forceinline CreateMortonLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
+      __forceinline CreateMortonLeaf (TriangleMesh* mesh, BVHBuilderMorton::MortonID32Bit* morton)
         : mesh(mesh), morton(morton) {}
 
-      __noinline std::pair<NodeRef,BBox3fa> operator() (MortonBuildRecord& current, FastAllocator::ThreadLocal2* alloc)
+      __noinline std::pair<NodeRef,BBox3fa> operator() (BVHBuilderMorton::MortonBuildRecord& current, FastAllocator::ThreadLocal2* alloc)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
@@ -139,7 +139,7 @@ namespace embree
     
     private:
       TriangleMesh* mesh;
-      MortonID32Bit* morton;
+      BVHBuilderMorton::MortonID32Bit* morton;
     };
     
     template<int N>
@@ -148,10 +148,10 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
 
-      __forceinline CreateMortonLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
+      __forceinline CreateMortonLeaf (TriangleMesh* mesh, BVHBuilderMorton::MortonID32Bit* morton)
         : mesh(mesh), morton(morton) {}
       
-      __noinline std::pair<NodeRef,BBox3fa> operator() (MortonBuildRecord& current, FastAllocator::ThreadLocal2* alloc)
+      __noinline std::pair<NodeRef,BBox3fa> operator() (BVHBuilderMorton::MortonBuildRecord& current, FastAllocator::ThreadLocal2* alloc)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
@@ -192,7 +192,7 @@ namespace embree
       }
     private:
       TriangleMesh* mesh;
-      MortonID32Bit* morton;
+      BVHBuilderMorton::MortonID32Bit* morton;
     };
 
     template<int N>
@@ -201,10 +201,10 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
 
-      __forceinline CreateMortonLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
+      __forceinline CreateMortonLeaf (TriangleMesh* mesh, BVHBuilderMorton::MortonID32Bit* morton)
         : mesh(mesh), morton(morton) {}
       
-      __noinline std::pair<NodeRef,BBox3fa> operator() (MortonBuildRecord& current, FastAllocator::ThreadLocal2* alloc)
+      __noinline std::pair<NodeRef,BBox3fa> operator() (BVHBuilderMorton::MortonBuildRecord& current, FastAllocator::ThreadLocal2* alloc)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
@@ -257,7 +257,7 @@ namespace embree
       }
     private:
       TriangleMesh* mesh;
-      MortonID32Bit* morton;
+      BVHBuilderMorton::MortonID32Bit* morton;
     };
 
     template<int N>
@@ -266,10 +266,10 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
 
-      __forceinline CreateMortonLeaf (QuadMesh* mesh, MortonID32Bit* morton)
+      __forceinline CreateMortonLeaf (QuadMesh* mesh, BVHBuilderMorton::MortonID32Bit* morton)
         : mesh(mesh), morton(morton) {}
       
-      __noinline std::pair<NodeRef,BBox3fa> operator() (MortonBuildRecord& current, FastAllocator::ThreadLocal2* alloc)
+      __noinline std::pair<NodeRef,BBox3fa> operator() (BVHBuilderMorton::MortonBuildRecord& current, FastAllocator::ThreadLocal2* alloc)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
@@ -313,7 +313,7 @@ namespace embree
       }
     private:
       QuadMesh* mesh;
-      MortonID32Bit* morton;
+      BVHBuilderMorton::MortonID32Bit* morton;
     };
 
     template<int N>
@@ -322,10 +322,10 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
 
-      __forceinline CreateMortonLeaf (AccelSet* mesh, MortonID32Bit* morton)
+      __forceinline CreateMortonLeaf (AccelSet* mesh, BVHBuilderMorton::MortonID32Bit* morton)
         : mesh(mesh), morton(morton) {}
       
-      __noinline std::pair<NodeRef,BBox3fa> operator() (MortonBuildRecord& current, FastAllocator::ThreadLocal2* alloc)
+      __noinline std::pair<NodeRef,BBox3fa> operator() (BVHBuilderMorton::MortonBuildRecord& current, FastAllocator::ThreadLocal2* alloc)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
@@ -357,7 +357,7 @@ namespace embree
       }
     private:
       AccelSet* mesh;
-      MortonID32Bit* morton;
+      BVHBuilderMorton::MortonID32Bit* morton;
     };
 
     template<typename Mesh>
@@ -366,7 +366,7 @@ namespace embree
       __forceinline CalculateMeshBounds (Mesh* mesh)
         : mesh(mesh) {}
       
-      __forceinline const BBox3fa operator() (const MortonID32Bit& morton) {
+      __forceinline const BBox3fa operator() (const BVHBuilderMorton::MortonID32Bit& morton) {
         return mesh->bounds(morton.index);
       }
       
@@ -461,7 +461,7 @@ namespace embree
         /* preallocate arrays */
         morton.resize(numPrimitives);
         size_t bytesAllocated = numPrimitives*sizeof(AlignedNode)/(4*N) + size_t(1.2f*Primitive::blocks(numPrimitives)*sizeof(Primitive));
-        size_t bytesMortonCodes = numPrimitives*sizeof(MortonID32Bit);
+        size_t bytesMortonCodes = numPrimitives*sizeof(BVHBuilderMorton::MortonID32Bit);
         bytesAllocated = max(bytesAllocated,bytesMortonCodes); // the first allocation block is reused to sort the morton codes
         bvh->alloc.init(bytesAllocated,2*bytesAllocated);
 
@@ -492,13 +492,13 @@ namespace embree
         const BBox3fa centBounds = cb.second;
 
         /* compute morton codes */
-        MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc.specialAlloc(bytesMortonCodes);
+        BVHBuilderMorton::MortonID32Bit* dest = (BVHBuilderMorton::MortonID32Bit*) bvh->alloc.specialAlloc(bytesMortonCodes);
 
         if (likely(numPrimitivesGen == numPrimitives))
         {
-          MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
+          BVHBuilderMorton::MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
           parallel_for( size_t(0), numPrimitives, block_size, [&](const range<size_t>& r) -> void {
-              MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
+              BVHBuilderMorton::MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
               for (size_t j=r.begin(); j<r.end(); j++)
                 generator(mesh->bounds(j),unsigned(j));
             });
@@ -507,10 +507,10 @@ namespace embree
         {
           /* slow path, fallback in case some primitives were invalid */
           ParallelPrefixSumState<size_t> pstate;
-          MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
+          BVHBuilderMorton::MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
           parallel_prefix_sum( pstate, size_t(0), numPrimitives, block_size, size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
               size_t num = 0;
-              MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
+              BVHBuilderMorton::MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
               for (size_t j=r.begin(); j<r.end(); j++)
               {
                 BBox3fa bounds = empty;
@@ -523,7 +523,7 @@ namespace embree
 
           parallel_prefix_sum( pstate, size_t(0), numPrimitives, block_size, size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
               size_t num = 0;
-              MortonCodeGenerator generator(mapping,&morton.data()[base]);
+              BVHBuilderMorton::MortonCodeGenerator generator(mapping,&morton.data()[base]);
               for (size_t j=r.begin(); j<r.end(); j++)
               {
                 BBox3fa bounds = empty;
@@ -539,7 +539,7 @@ namespace embree
         SetBVHNBounds<N> setBounds(bvh);
         CreateMortonLeaf<N,Primitive> createLeaf(mesh,morton.data());
         CalculateMeshBounds<Mesh> calculateBounds(mesh);
-        auto root = bvh_builder_morton_internal<std::pair<NodeRef,BBox3fa>>(
+        auto root = BVHBuilderMorton::build_internal<std::pair<NodeRef,BBox3fa>>(
           typename BVH::CreateAlloc(bvh), 
           typename BVH::AlignedNode::Create(),setBounds,createLeaf,calculateBounds,progress,
           morton.data(),dest,numPrimitivesGen,N,BVH::maxBuildDepth,minLeafSize,maxLeafSize,singleThreadThreshold);
@@ -573,7 +573,7 @@ namespace embree
       Mesh* mesh;
       const size_t minLeafSize;
       const size_t maxLeafSize;
-      mvector<MortonID32Bit> morton;
+      mvector<BVHBuilderMorton::MortonID32Bit> morton;
       const size_t singleThreadThreshold;
     };
 

@@ -23,6 +23,9 @@ namespace embree
 {
   namespace isa
   {
+    struct BVHBuilderMorton
+    {
+
     class MortonBuildRecord 
     {
     public:
@@ -563,7 +566,7 @@ namespace embree
       typename CalculateBoundsFunc, 
       typename ProgressMonitor>
 
-      ReductionTy bvh_builder_morton_internal(CreateAllocFunc createAllocator, 
+      static ReductionTy build_internal(CreateAllocFunc createAllocator, 
                                               CreateNodeFunc createNode, 
                                               SetBoundsFunc setBounds, 
                                               CreateLeafFunc createLeaf, 
@@ -612,7 +615,7 @@ namespace embree
       typename CalculateBoundsFunc,
       typename ProgressMonitor>
 
-      ReductionTy bvh_builder_morton(CreateAllocFunc createAllocator, 
+      static ReductionTy build(CreateAllocFunc createAllocator, 
                                      CreateNodeFunc createNode, 
                                      SetBoundsFunc setBounds, 
                                      CreateLeafFunc createLeaf, 
@@ -648,11 +651,12 @@ namespace embree
         }
       });
       
-      return bvh_builder_morton_internal<ReductionTy>(
+      return build_internal<ReductionTy>(
         createAllocator,createNode,setBounds,createLeaf,calculateBounds,progressMonitor,
         src,temp,numPrimitives,branchingFactor,maxDepth,minLeafSize,maxLeafSize,singleThreadThreshold);
 
     }
+    };
   }
 }
 

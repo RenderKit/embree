@@ -239,7 +239,7 @@ namespace embree
       allocator.reset();
       allocator.init(16*N);
       
-      std::pair<Node*,BBox3fa> node_bounds = isa::bvh_builder_morton<std::pair<Node*,BBox3fa>>(
+      std::pair<Node*,BBox3fa> node_bounds = isa::BVHBuilderMorton::build<std::pair<Node*,BBox3fa>>(
         
         /* thread local allocator for fast allocations */
         [&] () -> FastAllocator::ThreadLocal* { 
