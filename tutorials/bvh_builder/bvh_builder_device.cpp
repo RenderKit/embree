@@ -26,9 +26,8 @@ namespace embree
 
   /* This function is called by the builder to signal progress and to
    * report memory consumption. */
-  void memoryMonitor(ssize_t bytes, bool post)
-  {
-    // throw an exception here when nprims>0 to cancel the build operation
+  bool memoryMonitor(void* userPtr, ssize_t bytes, bool post) {
+    return true;
   }
   
   struct Node
@@ -190,6 +189,8 @@ namespace embree
     size_t N = prims.size();
     
     RTCDevice device = rtcNewDevice();
+    rtcDeviceSetMemoryMonitorFunction2(device,memoryMonitor,nullptr);
+
     RTCAllocator allocator = rtcNewAllocator(device,N);
 
     for (size_t i=0; i<2; i++)
@@ -303,6 +304,8 @@ namespace embree
     unsigned N = unsigned(prims.size());
 
     RTCDevice device = rtcNewDevice();
+    rtcDeviceSetMemoryMonitorFunction2(device,memoryMonitor,nullptr);
+
     RTCAllocator allocator = rtcNewAllocator(device,N);
 
     for (size_t i=0; i<2; i++)
