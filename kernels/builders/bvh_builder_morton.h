@@ -184,7 +184,7 @@ namespace embree
       };
       
       
-      inline void InPlace32BitRadixSort(MortonID32Bit* const morton, const size_t num, const unsigned int shift = 3*8)
+      static void InPlace32BitRadixSort(MortonID32Bit* const morton, const size_t num, const unsigned int shift = 3*8)
       {
         static const unsigned int BITS = 8;
         static const unsigned int BUCKETS = (1 << BITS);
@@ -199,7 +199,8 @@ namespace embree
 #if defined(__INTEL_COMPILER)
 #pragma nounroll
 #endif
-        for (size_t i=0;i<num;i++) count[ morton[i].get(shift,BUCKETS-1) ]++;
+        for (size_t i=0;i<num;i++)
+          count[(unsigned(morton[i]) >> shift) & (BUCKETS-1)]++;
         
         /* prefix sums */
         __aligned(64) unsigned int head[BUCKETS];
@@ -226,7 +227,7 @@ namespace embree
             MortonID32Bit v = morton[head[i]];
             while(1)
             {
-              const size_t b = v.get(shift,BUCKETS-1);
+              const size_t b = (unsigned(v) >> shift) & (BUCKETS-1);
               if (b == i) break;
               std::swap(v,morton[head[b]++]);
             }
@@ -242,7 +243,7 @@ namespace embree
           {
             
             for (size_t j=offset;j<offset+count[i]-1;j++)
-              assert(morton[j].get(shift,BUCKETS-1) == i);
+              assert(((unsigned(morton[j]) >> shift) & (BUCKETS-1)) == i);
             
             if (unlikely(count[i] < CMP_SORT_THRESHOLD))
               insertionsort_ascending(morton + offset, count[i]);
