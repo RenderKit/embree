@@ -31,7 +31,7 @@
 
 namespace embree
 { 
-  namespace isa // FIXME: more ISAs
+  namespace isa // FIXME: support more ISAs for builders
   {
     RTCORE_API RTCAllocator rtcNewAllocator(RTCDevice device, size_t estimatedBytes)
     {
@@ -42,44 +42,58 @@ namespace embree
       if (estimatedBytes) allocator->init_estimate(estimatedBytes);
       return (RTCAllocator) allocator;
       RTCORE_CATCH_END((Device*)device);
-      return (RTCAllocator) nullptr;
+      return nullptr;
     }
 
     RTCORE_API RTCThreadLocalAllocator rtcGetThreadLocalAllocator(RTCAllocator allocator)
     {
+      RTCORE_CATCH_BEGIN;
       RTCORE_TRACE(rtcNewAllocator);
       return (RTCThreadLocalAllocator) ((FastAllocator*) allocator)->threadLocal();
+      RTCORE_CATCH_END(((FastAllocator*) allocator)->getDevice());
+      return nullptr;
     }
 
-    RTCORE_API void* rtcThreadLocalMalloc(RTCThreadLocalAllocator allocator, size_t bytes, size_t align)
+    RTCORE_API void* rtcThreadLocalMalloc(RTCThreadLocalAllocator localAllocator, size_t bytes, size_t align)
     {
+      RTCORE_CATCH_BEGIN;
       RTCORE_TRACE(rtcThreadLocalMalloc);
-      FastAllocator::ThreadLocal* alloc = (FastAllocator::ThreadLocal*) allocator;
+      FastAllocator::ThreadLocal* alloc = (FastAllocator::ThreadLocal*) localAllocator;
       return alloc->malloc(bytes,align);
+      RTCORE_CATCH_END(((FastAllocator::ThreadLocal*) localAllocator)->alloc->getDevice());
+      return nullptr;
     }
 
     RTCORE_API void rtcDeleteThreadLocalAllocators(RTCAllocator allocator)
     {
+      RTCORE_CATCH_BEGIN;
       RTCORE_TRACE(rtcDeleteThreadLocalAllocators);
       ((FastAllocator*) allocator)->cleanup();
+      RTCORE_CATCH_END(((FastAllocator*) allocator)->getDevice());
     }
 
     RTCORE_API void rtcClearAllocator(RTCAllocator allocator)
     {
+      RTCORE_CATCH_BEGIN;
       RTCORE_TRACE(rtcClearAllocator);
       ((FastAllocator*) allocator)->clear();
+      RTCORE_CATCH_END(((FastAllocator*) allocator)->getDevice());
     }
 
     RTCORE_API void rtcResetAllocator(RTCAllocator allocator)
     {
+      RTCORE_CATCH_BEGIN;
       RTCORE_TRACE(rtcResetAllocator);
       ((FastAllocator*) allocator)->reset();
+      RTCORE_CATCH_END(((FastAllocator*) allocator)->getDevice());
     }
 
     RTCORE_API void rtcDeleteAllocator(RTCAllocator allocator)
     {
+      RTCORE_CATCH_BEGIN;
       RTCORE_TRACE(rtcDeleteAllocator);
       delete (FastAllocator*) allocator;
+      RTCORE_CATCH_END(((FastAllocator*) allocator)->getDevice());
     }
 
     RTCORE_API void* rtcBVHBuildSAH(RTCDevice hdevice,
@@ -221,7 +235,7 @@ namespace embree
         
         /* progress monitor function */
         [&] (size_t dn) { 
-          // throw an exception here to cancel the build operation
+          buildProgress(userPtr,dn);
         },
         
         morton_src.data(),morton_tmp.data(),numPrims,
