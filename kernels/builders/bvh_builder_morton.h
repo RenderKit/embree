@@ -23,19 +23,17 @@ namespace embree
 {
   namespace isa
   {
-    template<typename NodeRef>
-      class MortonBuildRecord 
+    class MortonBuildRecord 
     {
     public:
       unsigned int begin;
       unsigned int end;
       unsigned int depth;
-      NodeRef* parent;
 
       __forceinline MortonBuildRecord() {}
 
-      __forceinline MortonBuildRecord(const unsigned begin, const unsigned end, NodeRef* parent, unsigned depth)
-        : begin(begin), end(end), depth(depth), parent(parent) {}
+      __forceinline MortonBuildRecord(const unsigned begin, const unsigned end, unsigned depth)
+        : begin(begin), end(end), depth(depth) {}
 
       __forceinline unsigned int size() const {
         return end - begin;
@@ -46,7 +44,6 @@ namespace embree
         begin = _begin;
         end = _end;
         depth = 1;
-        parent = nullptr;
       }
     };
     
@@ -259,7 +256,6 @@ namespace embree
 
     
     template<
-      typename NodeRef, 
       typename ReductionTy, 
       typename Allocator, 
       typename CreateAllocator, 
@@ -274,13 +270,12 @@ namespace embree
       ALIGNED_CLASS;
       
     protected:
-      static const size_t MAX_BRANCHING_FACTOR = 16;         //!< maximal supported BVH branching factor
+      static const size_t MAX_BRANCHING_FACTOR = 8;          //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;         //!< create balanced tree of we are that many levels before the maximal tree depth
 
     public:
       
-      GeneralBVHBuilderMorton (const ReductionTy& identity, 
-                               CreateAllocator& createAllocator, 
+      GeneralBVHBuilderMorton (CreateAllocator& createAllocator, 
                                AllocNodeFunc& allocNode, 
                                SetNodeBoundsFunc& setBounds, 
                                CreateLeafFunc& createLeaf, 
@@ -289,8 +284,7 @@ namespace embree
                                const size_t branchingFactor, const size_t maxDepth, 
                                const size_t minLeafSize, const size_t maxLeafSize,
                                const size_t singleThreadThreshold)
-        : identity(identity), 
-        createAllocator(createAllocator), 
+        : createAllocator(createAllocator), 
         allocNode(allocNode), 
         setBounds(setBounds), 
         createLeaf(createLeaf), 
@@ -303,28 +297,25 @@ namespace embree
         maxLeafSize(maxLeafSize),
         singleThreadThreshold(singleThreadThreshold) {}
       
-      void splitFallback(MortonBuildRecord<NodeRef>& current, MortonBuildRecord<NodeRef>& leftChild, MortonBuildRecord<NodeRef>& rightChild) const
+      void splitFallback(MortonBuildRecord& current, MortonBuildRecord& leftChild, MortonBuildRecord& rightChild) const
       {
         const unsigned int center = (current.begin + current.end)/2;
         leftChild.init(current.begin,center);
         rightChild.init(center,current.end);
       }
       
-      BBox3fa createLargeLeaf(MortonBuildRecord<NodeRef>& current, Allocator alloc)
+      ReductionTy createLargeLeaf(MortonBuildRecord& current, Allocator alloc)
       {
         /* this should never occur but is a fatal error */
         if (current.depth > maxDepth) 
           throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
         
         /* create leaf for few primitives */
-        if (current.size() <= maxLeafSize) {
-          BBox3fa bounds;
-          createLeaf(current,alloc,bounds);
-          return bounds;
-        }
+        if (current.size() <= maxLeafSize)
+          return createLeaf(current,alloc);
         
         /* fill all children by always splitting the largest one */
-        MortonBuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
+        MortonBuildRecord children[MAX_BRANCHING_FACTOR];
         size_t numChildren = 1;
         children[0] = current;
         
@@ -348,7 +339,7 @@ namespace embree
           if (bestChild == size_t(-1)) break;
           
           /*! split best child into left and right child */
-          __aligned(64) MortonBuildRecord<NodeRef> left, right;
+          __aligned(64) MortonBuildRecord left, right;
           splitFallback(children[bestChild],left,right);
           
           /* add new children left and right */
@@ -365,7 +356,7 @@ namespace embree
         auto node = allocNode(current,children,numChildren,alloc);
 
         /* recurse into each child */
-        BBox3fa bounds[MAX_BRANCHING_FACTOR];
+        ReductionTy bounds[MAX_BRANCHING_FACTOR];
         for (size_t i=0; i<numChildren; i++) {
           bounds[i] = createLargeLeaf(children[i],alloc);
         }
@@ -373,7 +364,7 @@ namespace embree
       }
       
       /*! recreates morton codes when reaching a region where all codes are identical */
-      __noinline void recreateMortonCodes(MortonBuildRecord<NodeRef>& current) const
+      __noinline void recreateMortonCodes(MortonBuildRecord& current) const
       {
         BBox3fa centBounds(empty);
         for (size_t i=current.begin; i<current.end; i++)
@@ -399,9 +390,9 @@ namespace embree
 #endif
       }
       
-      __forceinline void split(MortonBuildRecord<NodeRef>& current,
-                               MortonBuildRecord<NodeRef>& left,
-                               MortonBuildRecord<NodeRef>& right) const
+      __forceinline void split(MortonBuildRecord& current,
+                               MortonBuildRecord& left,
+                               MortonBuildRecord& right) const
       {
         const unsigned int code_start = morton[current.begin].code;
         const unsigned int code_end   = morton[current.end-1].code;
@@ -447,7 +438,7 @@ namespace embree
         right.init(center,current.end);
       }
       
-      BBox3fa recurse(MortonBuildRecord<NodeRef>& current, Allocator alloc, bool toplevel) 
+      ReductionTy recurse(MortonBuildRecord& current, Allocator alloc, bool toplevel) 
       {
         if (alloc == nullptr) 
           alloc = createAllocator();
@@ -456,7 +447,7 @@ namespace embree
         if (toplevel && current.size() <= singleThreadThreshold)
           progressMonitor(current.size());
         
-        __aligned(64) MortonBuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
+        __aligned(64) MortonBuildRecord children[MAX_BRANCHING_FACTOR];
         
         /* create leaf node */
         if (unlikely(current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize)) {
@@ -487,7 +478,7 @@ namespace embree
           if (bestChild == -1) break;
           
           /*! split best child into left and right child */
-          __aligned(64) MortonBuildRecord<NodeRef> left, right;
+          __aligned(64) MortonBuildRecord left, right;
           split(children[bestChild],left,right);
           
           /* add new children left and right */
@@ -501,14 +492,14 @@ namespace embree
         
         /* create leaf node if no split is possible */
         if (unlikely(numChildren == 1)) {
-          BBox3fa bounds; createLeaf(current,alloc,bounds); return bounds;
+          return createLeaf(current,alloc);
         }
         
         /* allocate node */
         auto node = allocNode(current,children,numChildren,alloc);
 
         /* process top parts of tree parallel */
-        BBox3fa bounds[MAX_BRANCHING_FACTOR];
+        ReductionTy bounds[MAX_BRANCHING_FACTOR];
         if (current.size() > singleThreadThreshold)
         {
           /*! parallel_for is faster than spawing sub-tasks */
@@ -531,7 +522,7 @@ namespace embree
       }
       
       /* build function */
-      std::pair<NodeRef,BBox3fa> build(MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives) 
+      ReductionTy build(MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives) 
       {
         /* using 4 phases radix sort */
         morton = src;
@@ -539,17 +530,13 @@ namespace embree
         //InPlace32BitRadixSort(morton,numPrimitives);
 
         /* build BVH */
-        NodeRef root;
-        MortonBuildRecord<NodeRef> br(0,unsigned(numPrimitives),&root,1);
-        
-        const BBox3fa bounds = recurse(br, nullptr, true);
+        MortonBuildRecord br(0,unsigned(numPrimitives),1);
+        const ReductionTy root = recurse(br, nullptr, true);
         _mm_mfence(); // to allow non-temporal stores during build
-
-        return std::make_pair(root,bounds);
+        return root;
       }
       
     public:
-      ReductionTy identity;
       CreateAllocator& createAllocator;
       AllocNodeFunc& allocNode;
       SetNodeBoundsFunc& setBounds;
@@ -568,33 +555,30 @@ namespace embree
 
     
     template<
-      typename NodeRef, 
-      typename CreateAllocFunc, 
       typename ReductionTy, 
+      typename CreateAllocFunc, 
       typename AllocNodeFunc, 
       typename SetBoundsFunc, 
       typename CreateLeafFunc, 
       typename CalculateBoundsFunc, 
       typename ProgressMonitor>
 
-      std::pair<NodeRef,BBox3fa> bvh_builder_morton_internal(CreateAllocFunc createAllocator, 
-                                                             const ReductionTy& identity, 
-                                                             AllocNodeFunc allocNode, 
-                                                             SetBoundsFunc setBounds, 
-                                                             CreateLeafFunc createLeaf, 
-                                                             CalculateBoundsFunc calculateBounds,
-                                                             ProgressMonitor progressMonitor,
-                                                             MortonID32Bit* src, 
-                                                             MortonID32Bit* tmp, 
-                                                             size_t numPrimitives,
-                                                             const size_t branchingFactor, 
-                                                             const size_t maxDepth, 
-                                                             const size_t minLeafSize, 
-                                                             const size_t maxLeafSize,
-                                                             const size_t singleThreadThreshold)
+      ReductionTy bvh_builder_morton_internal(CreateAllocFunc createAllocator, 
+                                              AllocNodeFunc allocNode, 
+                                              SetBoundsFunc setBounds, 
+                                              CreateLeafFunc createLeaf, 
+                                              CalculateBoundsFunc calculateBounds,
+                                              ProgressMonitor progressMonitor,
+                                              MortonID32Bit* src, 
+                                              MortonID32Bit* tmp, 
+                                              size_t numPrimitives,
+                                              const size_t branchingFactor, 
+                                              const size_t maxDepth, 
+                                              const size_t minLeafSize, 
+                                              const size_t maxLeafSize,
+                                              const size_t singleThreadThreshold)
     {
       typedef GeneralBVHBuilderMorton<
-        NodeRef,
         ReductionTy,
         decltype(createAllocator()),
         CreateAllocFunc,
@@ -604,8 +588,7 @@ namespace embree
         CalculateBoundsFunc,
         ProgressMonitor> Builder;
 
-      Builder builder(identity,
-                      createAllocator,
+      Builder builder(createAllocator,
                       allocNode,
                       setBounds,
                       createLeaf,
@@ -621,35 +604,30 @@ namespace embree
     }
 
     template<
-      typename NodeRef, 
-      typename CreateAllocFunc, 
       typename ReductionTy, 
+      typename CreateAllocFunc, 
       typename AllocNodeFunc, 
       typename SetBoundsFunc, 
       typename CreateLeafFunc, 
       typename CalculateBoundsFunc,
       typename ProgressMonitor>
 
-      std::pair<NodeRef,BBox3fa> bvh_builder_morton(CreateAllocFunc createAllocator, 
-                                                    const ReductionTy& identity, 
-                                                    AllocNodeFunc allocNode, 
-                                                    SetBoundsFunc setBounds, 
-                                                    CreateLeafFunc createLeaf, 
-                                                    CalculateBoundsFunc calculateBounds,
-                                                    ProgressMonitor progressMonitor,
-                                                    MortonID32Bit* src, 
-                                                    MortonID32Bit* temp, 
-                                                    size_t numPrimitives,
-                                                    const size_t branchingFactor, 
-                                                    const size_t maxDepth, 
-                                                    const size_t minLeafSize, 
-                                                    const size_t maxLeafSize,
-                                                    const size_t singleThreadThreshold)
+      ReductionTy bvh_builder_morton(CreateAllocFunc createAllocator, 
+                                     AllocNodeFunc allocNode, 
+                                     SetBoundsFunc setBounds, 
+                                     CreateLeafFunc createLeaf, 
+                                     CalculateBoundsFunc calculateBounds,
+                                     ProgressMonitor progressMonitor,
+                                     MortonID32Bit* src, 
+                                     MortonID32Bit* temp, 
+                                     size_t numPrimitives,
+                                     const size_t branchingFactor, 
+                                     const size_t maxDepth, 
+                                     const size_t minLeafSize, 
+                                     const size_t maxLeafSize,
+                                     const size_t singleThreadThreshold)
     {
-      std::pair<NodeRef,BBox3fa> ret;
-
       /* compute scene bounds */
-
       const BBox3fa centBounds = parallel_reduce ( size_t(0), numPrimitives, BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa
       {
         BBox3fa bounds(empty);
@@ -670,8 +648,8 @@ namespace embree
         }
       });
       
-      return bvh_builder_morton_internal<NodeRef>(
-        createAllocator,identity,allocNode,setBounds,createLeaf,calculateBounds,progressMonitor,
+      return bvh_builder_morton_internal<ReductionTy>(
+        createAllocator,allocNode,setBounds,createLeaf,calculateBounds,progressMonitor,
         src,temp,numPrimitives,branchingFactor,maxDepth,minLeafSize,maxLeafSize,singleThreadThreshold);
 
     }

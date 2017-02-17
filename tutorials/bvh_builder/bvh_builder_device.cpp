@@ -240,48 +240,42 @@ namespace embree
       allocator.reset();
       allocator.init(N);
       
-      std::pair<Node*,BBox3fa> node_bounds = isa::bvh_builder_morton<Node*>(
+      std::pair<Node*,BBox3fa> node_bounds = isa::bvh_builder_morton<std::pair<Node*,BBox3fa>>(
         
         /* thread local allocator for fast allocations */
         [&] () -> FastAllocator::ThreadLocal* { 
           return allocator.threadLocal(); 
         },
         
-        BBox3fa(empty),
-        
         /* lambda function that allocates BVH nodes */
-        [&] ( isa::MortonBuildRecord<Node*>& current, isa::MortonBuildRecord<Node*>* children, size_t N, FastAllocator::ThreadLocal* alloc ) -> InnerNode*
+        [&] ( isa::MortonBuildRecord& current, isa::MortonBuildRecord* children, size_t N, FastAllocator::ThreadLocal* alloc ) -> Node*
         {
           assert(N <= 2);
           InnerNode* node = new (alloc->malloc(sizeof(InnerNode))) InnerNode;
-          *current.parent = node;
-          for (size_t i=0; i<N; i++) 
-            children[i].parent = &node->children[i];
           return node;
         },
         
         /* lambda function that sets bounds */
-        [&] (InnerNode* node, const BBox3fa* bounds, size_t N) -> BBox3fa
+        [&] (Node* ref, const std::pair<Node*,BBox3fa>* children, size_t N) -> std::pair<Node*,BBox3fa>
         {
-          BBox3fa res = empty;
+          InnerNode* node = (InnerNode*) ref;
+          BBox3fa bounds = empty;
           for (size_t i=0; i<N; i++) {
-            const BBox3fa b = bounds[i];
-            res.extend(b);
-            node->bounds[i] = b;
+            node->children[i] = children[i].first;
+            node->bounds[i] = children[i].second;
+            bounds.extend(children[i].second);
           }
-          return res;
+          return std::make_pair(ref,bounds);
         },
         
         /* lambda function that creates BVH leaves */
-        [&]( isa::MortonBuildRecord<Node*>& current, FastAllocator::ThreadLocal* alloc, BBox3fa& box_o) -> Node*
+        [&]( isa::MortonBuildRecord& current, FastAllocator::ThreadLocal* alloc) -> std::pair<Node*,BBox3fa>
         {
           assert(current.size() == 1);
           const size_t id = morton_src[current.begin].index;
           const BBox3fa bounds = prims[id].bounds(); 
           Node* node = new (alloc->malloc(sizeof(LeafNode))) LeafNode(id,bounds);
-          *current.parent = node;
-          box_o = bounds;
-          return node;
+          return std::make_pair(node,bounds);
         },
         
         /* lambda that calculates the bounds for some primitive */
