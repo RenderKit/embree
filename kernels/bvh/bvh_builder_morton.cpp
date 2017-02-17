@@ -42,21 +42,13 @@ namespace embree
     struct AllocBVHNAlignedNode
     {
       typedef BVHN<N> BVH;
-      typedef typename BVH::AlignedNode AlignedNode;
       typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::AlignedNode AlignedNode;
 
-      __forceinline AlignedNode* operator() (MortonBuildRecord<NodeRef>& current, MortonBuildRecord<NodeRef>* children, size_t numChildren, FastAllocator::ThreadLocal2* alloc)
+      __forceinline NodeRef operator() (MortonBuildRecord& current, MortonBuildRecord* children, size_t numChildren, FastAllocator::ThreadLocal2* alloc)
       {
-        AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode),BVH::byteNodeAlignment); 
-        *current.parent = BVH::encodeNode(node);
-        node->clear();
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-		/* need pragma as code generation with VS 2015 + AVX2 is otherwise buggy for this loop */
-#pragma loop(no_vector)
-#endif
-        for (size_t i=0; i<numChildren; i++)
-          children[i].parent = &node->child(i);
-        return node;
+        AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode),BVH::byteNodeAlignment); node->clear();
+        return BVH::encodeNode(node);
       }
     };
     
@@ -64,17 +56,21 @@ namespace embree
     struct SetBVHNBounds
     {
       typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::AlignedNode AlignedNode;
 
       BVH* bvh;
       __forceinline SetBVHNBounds (BVH* bvh) : bvh(bvh) {}
 
-      __forceinline BBox3fa operator() (AlignedNode* node, const BBox3fa* bounds, size_t num)
+      __forceinline std::pair<NodeRef,BBox3fa> operator() (NodeRef ref, const std::pair<NodeRef,BBox3fa>* children, size_t num)
       {
+        AlignedNode* node = ref.alignedNode();
+
         BBox3fa res = empty;
         for (size_t i=0; i<num; i++) {
-          const BBox3fa b = bounds[i];
+          const BBox3fa b = children[i].second;
           res.extend(b);
+          node->set(i,children[i].first);
           node->set(i,b);
         }
 
@@ -83,11 +79,11 @@ namespace embree
         {
           size_t n = 0;
           for (size_t i=0; i<num; i++)
-            n += bounds[i].lower.a;
+            n += children[i].second.lower.a;
 
           if (n >= 4096) {
             for (size_t i=0; i<num; i++) {
-              if (bounds[i].lower.a < 4096) {
+              if (children[i].second.lower.a < 4096) {
                 for (int j=0; j<ROTATE_TREE; j++)
                   BVHNRotate<N>::rotate(node->child(i));
                 node->child(i).setBarrier();
@@ -98,7 +94,7 @@ namespace embree
         }
 #endif
 
-        return res;
+        return std::make_pair(ref,res);
       }
     };
 
@@ -114,7 +110,7 @@ namespace embree
       __forceinline CreateMortonLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
         : mesh(mesh), morton(morton) {}
 
-      __noinline void operator() (MortonBuildRecord<NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
+      __noinline std::pair<NodeRef,BBox3fa> operator() (MortonBuildRecord& current, FastAllocator::ThreadLocal2* alloc)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
@@ -124,7 +120,7 @@ namespace embree
         
         /* allocate leaf node */
         Triangle4* accel = (Triangle4*) alloc->alloc1->malloc(sizeof(Triangle4));
-        *current.parent = BVH::encodeLeaf((char*)accel,1);
+        NodeRef ref = BVH::encodeLeaf((char*)accel,1);
         vint4 vgeomID = -1, vprimID = -1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
         const unsigned geomID = this->mesh->id;
@@ -147,11 +143,12 @@ namespace embree
         }
 
         Triangle4::store_nt(accel,Triangle4(v0,v1,v2,vgeomID,vprimID));
-        box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
+        BBox3fa box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
 #if ROTATE_TREE
         if (N == 4)
           box_o.lower.a = unsigned(current.size());
 #endif
+        return std::make_pair(ref,box_o);
       }
     
     private:
@@ -168,7 +165,7 @@ namespace embree
       __forceinline CreateMortonLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
         : mesh(mesh), morton(morton) {}
       
-      __noinline void operator() (MortonBuildRecord<NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
+      __noinline std::pair<NodeRef,BBox3fa> operator() (MortonBuildRecord& current, FastAllocator::ThreadLocal2* alloc)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
@@ -178,7 +175,7 @@ namespace embree
         
         /* allocate leaf node */
         Triangle4v* accel = (Triangle4v*) alloc->alloc1->malloc(sizeof(Triangle4v));
-        *current.parent = BVH::encodeLeaf((char*)accel,1);       
+        NodeRef ref = BVH::encodeLeaf((char*)accel,1);       
         vint4 vgeomID = -1, vprimID = -1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
         const unsigned geomID = this->mesh->id;
@@ -200,11 +197,12 @@ namespace embree
           v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
         }
         Triangle4v::store_nt(accel,Triangle4v(v0,v1,v2,vgeomID,vprimID));
-        box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
+        BBox3fa box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
 #if ROTATE_TREE
         if (N == 4)
           box_o.lower.a = current.size();
 #endif
+        return std::make_pair(ref,box_o);
       }
     private:
       TriangleMesh* mesh;
@@ -220,7 +218,7 @@ namespace embree
       __forceinline CreateMortonLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
         : mesh(mesh), morton(morton) {}
       
-      __noinline void operator() (MortonBuildRecord<NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
+      __noinline std::pair<NodeRef,BBox3fa> operator() (MortonBuildRecord& current, FastAllocator::ThreadLocal2* alloc)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
@@ -230,7 +228,7 @@ namespace embree
         
         /* allocate leaf node */
         Triangle4i* accel = (Triangle4i*) alloc->alloc1->malloc(sizeof(Triangle4i));
-        *current.parent = BVH::encodeLeaf((char*)accel,1);
+        NodeRef ref = BVH::encodeLeaf((char*)accel,1);
         
         vint4 vgeomID = -1, vprimID = -1;
         Vec3f* v0[4] = { nullptr, nullptr, nullptr, nullptr };
@@ -264,11 +262,12 @@ namespace embree
         }
         
         new (accel) Triangle4i(v0,v1,v2,vgeomID,vprimID);
-        box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
+        BBox3fa box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
 #if ROTATE_TREE
         if (N == 4)
           box_o.lower.a = current.size();
 #endif
+        return std::make_pair(ref,box_o);
       }
     private:
       TriangleMesh* mesh;
@@ -284,7 +283,7 @@ namespace embree
       __forceinline CreateMortonLeaf (QuadMesh* mesh, MortonID32Bit* morton)
         : mesh(mesh), morton(morton) {}
       
-      __noinline void operator() (MortonBuildRecord<NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
+      __noinline std::pair<NodeRef,BBox3fa> operator() (MortonBuildRecord& current, FastAllocator::ThreadLocal2* alloc)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
@@ -294,7 +293,7 @@ namespace embree
         
         /* allocate leaf node */
         Quad4v* accel = (Quad4v*) alloc->alloc1->malloc(sizeof(Quad4v));
-        *current.parent = BVH::encodeLeaf((char*)accel,1);
+        NodeRef ref = BVH::encodeLeaf((char*)accel,1);
         
         vint4 vgeomID = -1, vprimID = -1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero, v3 = zero;
@@ -319,11 +318,12 @@ namespace embree
           v3.x[i] = p3.x; v3.y[i] = p3.y; v3.z[i] = p3.z;
         }
         Quad4v::store_nt(accel,Quad4v(v0,v1,v2,v3,vgeomID,vprimID));
-        box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
+        BBox3fa box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
 #if ROTATE_TREE
         if (N == 4)
           box_o.lower.a = current.size();
 #endif
+        return std::make_pair(ref,box_o);
       }
     private:
       QuadMesh* mesh;
@@ -339,7 +339,7 @@ namespace embree
       __forceinline CreateMortonLeaf (AccelSet* mesh, MortonID32Bit* morton)
         : mesh(mesh), morton(morton) {}
       
-      __noinline void operator() (MortonBuildRecord<NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
+      __noinline std::pair<NodeRef,BBox3fa> operator() (MortonBuildRecord& current, FastAllocator::ThreadLocal2* alloc)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
@@ -349,7 +349,7 @@ namespace embree
         
         /* allocate leaf node */
         Object* accel = (Object*) alloc->alloc1->malloc(items*sizeof(Object));
-        *current.parent = BVH::encodeLeaf((char*)accel,items);
+        NodeRef ref = BVH::encodeLeaf((char*)accel,items);
 
         const unsigned geomID = this->mesh->id;
         const AccelSet* mesh = this->mesh;
@@ -362,11 +362,12 @@ namespace embree
           bounds.extend(mesh->bounds(primID));
           new (&accel[i]) Object(geomID,primID);
         }
-        box_o = bounds;
+        BBox3fa box_o = bounds;
 #if ROTATE_TREE
         if (N == 4)
           box_o.lower.a = current.size();
 #endif
+        return std::make_pair(ref,box_o);
       }
     private:
       AccelSet* mesh;
@@ -553,12 +554,12 @@ namespace embree
         SetBVHNBounds<N> setBounds(bvh);
         CreateMortonLeaf<N,Primitive> createLeaf(mesh,morton.data());
         CalculateMeshBounds<Mesh> calculateBounds(mesh);
-        auto node_bounds = bvh_builder_morton_internal<NodeRef>(
-          typename BVH::CreateAlloc(bvh), BBox3fa(empty),
+        auto root = bvh_builder_morton_internal<std::pair<NodeRef,BBox3fa>>(
+          typename BVH::CreateAlloc(bvh), 
           allocAlignedNode,setBounds,createLeaf,calculateBounds,progress,
           morton.data(),dest,numPrimitivesGen,N,BVH::maxBuildDepth,minLeafSize,maxLeafSize,singleThreadThreshold);
         
-        bvh->set(node_bounds.first,LBBox3fa(node_bounds.second),numPrimitives);
+        bvh->set(root.first,LBBox3fa(root.second),numPrimitives);
         
 #if ROTATE_TREE
         if (N == 4)
