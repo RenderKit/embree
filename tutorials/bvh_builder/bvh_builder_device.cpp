@@ -297,6 +297,41 @@ namespace embree
       std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << root->sah() << " [DONE]" << std::endl;
     }
   }
+
+  void build_morton_api(avector<PrimRef>& prims)
+  {
+    unsigned N = unsigned(prims.size());
+
+    RTCDevice device = rtcNewDevice();
+    RTCAllocator allocator = rtcNewAllocator(device,N);
+
+    for (size_t i=0; i<2; i++)
+    {
+      std::cout << "iteration " << i << ": building BVH over " << N << " primitives, " << std::flush;
+      double t0 = getSeconds();
+
+      rtcResetAllocator(allocator);
+
+       /* settings for BVH build */
+      RTCBuildSettings settings;
+      settings.size = sizeof(settings);
+      settings.branchingFactor = 2;
+      settings.maxDepth = 1024;
+      settings.blockSize = 1;
+      settings.minLeafSize = 1;
+      settings.maxLeafSize = 1;
+      settings.travCost = 1.0f;
+      settings.intCost = 1.0f;
+      
+      Node* root = (Node*) rtcBVHBuildMorton(device,settings,
+                                             (RTCPrimRef*)prims.data(),prims.size(),(void*)allocator,
+                                             createThreadLocal,createNode,setNodeChild,setNodeBounds,createLeaf,buildProgress);
+      
+      double t1 = getSeconds();
+      
+      std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << root->sah() << " [DONE]" << std::endl;
+    }
+  }
   
   /* called by the C++ code for initialization */
   extern "C" void device_init (char* cfg)
@@ -329,6 +364,7 @@ namespace embree
     build_sah(prims);
     build_sah_api(prims);
     build_morton(prims,pinfo);
+    build_morton_api(prims);
   }
   
   /* task that renders a single screen tile */

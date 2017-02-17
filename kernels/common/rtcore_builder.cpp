@@ -154,7 +154,7 @@ namespace embree
 
     RTCORE_API void* rtcBVHBuildMorton(RTCDevice device,
                                          const RTCBuildSettings& settings,
-                                         RTCPrimRef* prims,
+                                         RTCPrimRef* prims_i,
                                          size_t numPrims,
                                          void* userPtr,
                                          RTCCreateThreadLocalFunc createThreadLocal,
@@ -168,6 +168,7 @@ namespace embree
       RTCORE_TRACE(rtcBVHBuildMorton);
 
       /* array for morton builder */
+      PrimRef* prims = (PrimRef*) prims_i;
       avector<isa::MortonID32Bit> morton_src(numPrims);
       avector<isa::MortonID32Bit> morton_tmp(numPrims);
       parallel_for(size_t(0), numPrims, size_t(1024), [&] ( range<size_t> r ) {
@@ -176,23 +177,20 @@ namespace embree
         });
       
       /* start morton build */
-      std::pair<void*,BBox3fa> node_bounds = isa::bvh_builder_morton<void*>(
+      std::pair<void*,BBox3fa> root = isa::bvh_builder_morton<std::pair<void*,BBox3fa>>(
         
         /* thread local allocator for fast allocations */
         [&] () -> void* { 
           return createThreadLocal(userPtr);
         },
         
-        BBox3fa(empty),
-        
         /* lambda function that allocates BVH nodes */
-        [&] ( isa::MortonBuildRecord<Node*>& current, isa::MortonBuildRecord<Node*>* children, size_t N, FastAllocator::ThreadLocal* alloc ) -> void*
-        {
+        [&] ( isa::MortonBuildRecord& current, isa::MortonBuildRecord* children, size_t N, void* threadLocal ) -> void* {
           return createNode(threadLocal,N);
         },
         
         /* lambda function that sets bounds */
-        [&] (void* node, const std::pair<vodi*,BBox3fa>* children, size_t N) -> BBox3fa
+        [&] (void* node, const std::pair<void*,BBox3fa>* children, size_t N) -> std::pair<void*,BBox3fa>
         {
           BBox3fa res = empty;
           for (size_t i=0; i<N; i++) {
@@ -204,11 +202,11 @@ namespace embree
         },
         
         /* lambda function that creates BVH leaves */
-        [&]( isa::MortonBuildRecord<Node*>& current, void* threadLocal) -> std::pair<void*,BBox3fa>
+        [&]( isa::MortonBuildRecord& current, void* threadLocal) -> std::pair<void*,BBox3fa>
         {
           const size_t id = morton_src[current.begin].index;
           const BBox3fa bounds = prims[id].bounds(); 
-          void* node = createLeaf(threadLocal,prims+current.prims.begin(),current.prims.size());
+          void* node = createLeaf(threadLocal,prims_i+current.begin,current.size());
           return std::make_pair(node,bounds);
         },
         
@@ -229,9 +227,8 @@ namespace embree
         settings.maxLeafSize,
         Builder::DEFAULT_SINGLE_THREAD_THRESHOLD);
       
-      Node* root = node_bounds.first;
-      
-      return nullptr;
+      return root.first;
+
       RTCORE_CATCH_END((Device*)device);
       return nullptr;
     }
