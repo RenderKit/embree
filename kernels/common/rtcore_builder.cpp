@@ -220,7 +220,7 @@ namespace embree
         },
         
         /* lambda function that creates BVH leaves */
-        [&]( BVHBuilderMorton::MortonBuildRecord& current, void* threadLocal) -> std::pair<void*,BBox3fa>
+        [&]( BVHBuilderMorton::BuildRecord& current, void* threadLocal) -> std::pair<void*,BBox3fa>
         {
           const size_t id = morton_src[current.begin].index;
           const BBox3fa bounds = prims[id].bounds(); 

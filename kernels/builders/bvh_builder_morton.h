@@ -24,18 +24,17 @@ namespace embree
   namespace isa
   {
     struct BVHBuilderMorton
-    {
-      
-      class MortonBuildRecord 
+    {      
+      class BuildRecord 
       {
       public:
         unsigned int begin;
         unsigned int end;
         unsigned int depth;
         
-        __forceinline MortonBuildRecord() {}
+        __forceinline BuildRecord() {}
         
-        __forceinline MortonBuildRecord(const unsigned begin, const unsigned end, unsigned depth)
+        __forceinline BuildRecord(const unsigned begin, const unsigned end, unsigned depth)
           : begin(begin), end(end), depth(depth) {}
         
         __forceinline unsigned int size() const {
@@ -300,14 +299,14 @@ namespace embree
           maxLeafSize(maxLeafSize),
           singleThreadThreshold(singleThreadThreshold) {}
         
-        void splitFallback(MortonBuildRecord& current, MortonBuildRecord& leftChild, MortonBuildRecord& rightChild) const
+        void splitFallback(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild) const
         {
           const unsigned int center = (current.begin + current.end)/2;
           leftChild.init(current.begin,center);
           rightChild.init(center,current.end);
         }
         
-        ReductionTy createLargeLeaf(MortonBuildRecord& current, Allocator alloc)
+        ReductionTy createLargeLeaf(BuildRecord& current, Allocator alloc)
         {
           /* this should never occur but is a fatal error */
           if (current.depth > maxDepth) 
@@ -318,7 +317,7 @@ namespace embree
             return createLeaf(current,alloc);
           
           /* fill all children by always splitting the largest one */
-          MortonBuildRecord children[MAX_BRANCHING_FACTOR];
+          BuildRecord children[MAX_BRANCHING_FACTOR];
           size_t numChildren = 1;
           children[0] = current;
           
@@ -342,7 +341,7 @@ namespace embree
             if (bestChild == size_t(-1)) break;
             
             /*! split best child into left and right child */
-            __aligned(64) MortonBuildRecord left, right;
+            __aligned(64) BuildRecord left, right;
             splitFallback(children[bestChild],left,right);
             
             /* add new children left and right */
@@ -367,7 +366,7 @@ namespace embree
         }
         
         /*! recreates morton codes when reaching a region where all codes are identical */
-        __noinline void recreateMortonCodes(MortonBuildRecord& current) const
+        __noinline void recreateMortonCodes(BuildRecord& current) const
         {
           BBox3fa centBounds(empty);
           for (size_t i=current.begin; i<current.end; i++)
@@ -393,9 +392,9 @@ namespace embree
 #endif
         }
         
-        __forceinline void split(MortonBuildRecord& current,
-                                 MortonBuildRecord& left,
-                                 MortonBuildRecord& right) const
+        __forceinline void split(BuildRecord& current,
+                                 BuildRecord& left,
+                                 BuildRecord& right) const
         {
           const unsigned int code_start = morton[current.begin].code;
           const unsigned int code_end   = morton[current.end-1].code;
@@ -441,7 +440,7 @@ namespace embree
           right.init(center,current.end);
         }
         
-        ReductionTy recurse(MortonBuildRecord& current, Allocator alloc, bool toplevel) 
+        ReductionTy recurse(BuildRecord& current, Allocator alloc, bool toplevel) 
         {
           if (alloc == nullptr) 
             alloc = createAllocator();
@@ -450,7 +449,7 @@ namespace embree
           if (toplevel && current.size() <= singleThreadThreshold)
             progressMonitor(current.size());
           
-          __aligned(64) MortonBuildRecord children[MAX_BRANCHING_FACTOR];
+          __aligned(64) BuildRecord children[MAX_BRANCHING_FACTOR];
           
           /* create leaf node */
           if (unlikely(current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize)) {
@@ -481,7 +480,7 @@ namespace embree
             if (bestChild == -1) break;
             
             /*! split best child into left and right child */
-            __aligned(64) MortonBuildRecord left, right;
+            __aligned(64) BuildRecord left, right;
             split(children[bestChild],left,right);
             
             /* add new children left and right */
@@ -533,7 +532,7 @@ namespace embree
           //InPlace32BitRadixSort(morton,numPrimitives);
           
           /* build BVH */
-          MortonBuildRecord br(0,unsigned(numPrimitives),1);
+          BuildRecord br(0,unsigned(numPrimitives),1);
           const ReductionTy root = recurse(br, nullptr, true);
           _mm_mfence(); // to allow non-temporal stores during build
           return root;

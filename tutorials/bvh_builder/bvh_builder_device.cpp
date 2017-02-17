@@ -268,7 +268,7 @@ namespace embree
         },
         
         /* lambda function that creates BVH leaves */
-        [&]( isa::MortonBuildRecord& current, FastAllocator::ThreadLocal* alloc) -> std::pair<Node*,BBox3fa>
+        [&]( isa::BuildRecord& current, FastAllocator::ThreadLocal* alloc) -> std::pair<Node*,BBox3fa>
         {
           assert(current.size() == 1);
           const size_t id = morton_src[current.begin].index;
