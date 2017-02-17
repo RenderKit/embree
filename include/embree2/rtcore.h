@@ -272,6 +272,7 @@ RTCORE_API RTCORE_DEPRECATED void rtcDebug(); // FIXME: remove
 #include "rtcore_scene.h"
 #include "rtcore_geometry.h"
 #include "rtcore_geometry_user.h"
+#include "rtcore_builder.h"
 
 /*! \brief Helper to easily combing scene flags */
 inline RTCSceneFlags operator|(const RTCSceneFlags a, const RTCSceneFlags b) {

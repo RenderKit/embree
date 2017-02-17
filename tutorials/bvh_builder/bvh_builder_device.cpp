@@ -53,10 +53,10 @@ namespace embree
   
   struct LeafNode : public Node
   {
-    size_t id;
+    unsigned id;
     BBox3fa bounds;
     
-    LeafNode (size_t id, const BBox3fa& bounds)
+    LeafNode (unsigned id, const BBox3fa& bounds)
       : id(id), bounds(bounds) {}
     
     float sah() {
@@ -64,9 +64,9 @@ namespace embree
     }
   };
   
-  void build_sah(avector<PrimRef>& prims, isa::PrimInfo& pinfo)
+  void build_sah(avector<PrimRef>& prims)
   {
-    size_t N = pinfo.size();
+    size_t N = prims.size();
     
     /* fast allocator that supports thread local operation */
     FastAllocator allocator(nullptr,false);
@@ -78,6 +78,19 @@ namespace embree
       
       allocator.reset();
       allocator.init(N);
+
+      /* calculate priminfo */
+      auto computeBounds = [&](const range<size_t>& r) -> isa::CentGeomBBox3fa
+        {
+          isa::CentGeomBBox3fa bounds(empty);
+          for (size_t j=r.begin(); j<r.end(); j++)
+            bounds.extend(prims[j].bounds());
+          return bounds;
+        };
+      const isa::CentGeomBBox3fa bounds = 
+        parallel_reduce(size_t(0),prims.size(),size_t(1024),size_t(1024),isa::CentGeomBBox3fa(empty), computeBounds, isa::CentGeomBBox3fa::merge2);
+      
+      const isa::PrimInfo pinfo(0,prims.size(),bounds.geomBounds,bounds.centBounds);
 
        /* settings for BVH build */
       isa::GeneralBVHBuilder::Settings settings;
@@ -121,7 +134,7 @@ namespace embree
         [&](const isa::BVHBuilderBinnedSAH::BuildRecord& current, FastAllocator::ThreadLocal* alloc) -> Node*
         {
           assert(current.prims.size() == 1);
-          Node* node = new (alloc->malloc(sizeof(LeafNode))) LeafNode(prims[current.prims.begin()].ID(),prims[current.prims.begin()].bounds());
+          Node* node = new (alloc->malloc(sizeof(LeafNode))) LeafNode(prims[current.prims.begin()].primID(),prims[current.prims.begin()].bounds());
           return node;
         },
         
@@ -131,6 +144,75 @@ namespace embree
         },
         
         prims.data(),pinfo,settings);
+      
+      double t1 = getSeconds();
+      
+      std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << root->sah() << " [DONE]" << std::endl;
+    }
+  }
+
+  void* createThreadLocal (void* userPtr) {
+    return (void*) rtcGetThreadLocalAllocator((RTCAllocator)userPtr);
+  }
+
+  void* createNode (void* threadLocalPtr, size_t numChildren) 
+  {
+    assert(numChildren == 2);
+    RTCThreadLocalAllocator alloc = (RTCThreadLocalAllocator) threadLocalPtr;
+    void* ptr = rtcMalloc(alloc,sizeof(InnerNode),16);
+    return (void*) new (ptr) InnerNode;
+  }
+
+  void  setNodeChild (void* nodePtr, size_t i, void* childPtr)
+  {
+    assert(i<2);
+    ((InnerNode*)nodePtr)->children[i] = (Node*) childPtr;
+  }
+
+  void  setNodeBounds (void* nodePtr, size_t i, RTCBounds& bounds)
+  {
+    ((InnerNode*)nodePtr)->bounds[i] = (BBox3fa&) bounds;
+  }
+
+  void* createLeaf (void* threadLocalPtr, const RTCPrimRef* prims, size_t numPrims)
+  {
+     assert(numPrims == 1);
+     RTCThreadLocalAllocator alloc = (RTCThreadLocalAllocator) threadLocalPtr;
+     void* ptr = rtcMalloc(alloc,sizeof(LeafNode),16);
+     return (void*) new (ptr) LeafNode(prims->primID,*(BBox3fa*)prims);
+  }
+
+  void buildProgress (void* userPtr, size_t dn) {
+  }
+
+  void build_sah_api(avector<PrimRef>& prims)
+  {
+    size_t N = prims.size();
+    
+    RTCDevice device = rtcNewDevice();
+    RTCAllocator allocator = rtcNewAllocator(device,N);
+
+    for (size_t i=0; i<2; i++)
+    {
+      std::cout << "iteration " << i << ": building BVH over " << N << " primitives, " << std::flush;
+      double t0 = getSeconds();
+      
+      rtcResetAllocator(allocator);
+
+      /* settings for BVH build */
+      RTCBuildSettings settings;
+      settings.size = sizeof(settings);
+      settings.branchingFactor = 2;
+      settings.maxDepth = 1024;
+      settings.blockSize = 1;
+      settings.minLeafSize = 1;
+      settings.maxLeafSize = 1;
+      settings.travCost = 1.0f;
+      settings.intCost = 1.0f;
+      
+      Node* root = (Node*) rtcBVHBuildSAH(device,settings,
+                                          (RTCPrimRef*)prims.data(),prims.size(),(void*)allocator,
+                                          createThreadLocal,createNode,setNodeChild,setNodeBounds,createLeaf,buildProgress);
       
       double t1 = getSeconds();
       
@@ -246,11 +328,12 @@ namespace embree
       const Vec3fa p = 1000.0f*Vec3fa(x,y,z);
       const BBox3fa b = BBox3fa(p,p+Vec3fa(1.0f));
       pinfo.add(b);
-      const PrimRef prim = PrimRef(b,i);
+      const PrimRef prim = PrimRef(b,0,i);
       prims.push_back(prim);
     }
     
-    build_sah(prims,pinfo);
+    build_sah(prims);
+    build_sah_api(prims);
     build_morton(prims,pinfo);
   }
   

@@ -33,6 +33,7 @@ SET(EMBREE_LIBRARY_FILES
   common/accelset.cpp
   common/state.cpp
   common/rtcore.cpp
+  common/rtcore_builder.cpp
   common/scene.cpp
   common/alloc.cpp
   common/geometry.cpp
