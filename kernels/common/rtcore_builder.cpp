@@ -203,7 +203,7 @@ namespace embree
         },
         
         /* lambda function that allocates BVH nodes */
-        [&] ( isa::MortonBuildRecord& current, isa::MortonBuildRecord* children, size_t N, void* threadLocal ) -> void* {
+        [&] ( void* threadLocal, size_t N ) -> void* {
           return createNode(threadLocal,N);
         },
         

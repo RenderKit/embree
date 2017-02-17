@@ -460,7 +460,7 @@ namespace embree
 
       struct Create
       {
-        __forceinline NodeRef operator() (FastAllocator::ThreadLocal2* alloc) const
+        __forceinline NodeRef operator() (FastAllocator::ThreadLocal2* alloc, size_t numChildren = 0) const
         {
           AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode),byteNodeAlignment); node->clear();
           return BVHN::encodeNode(node);

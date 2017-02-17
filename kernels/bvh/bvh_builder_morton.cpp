@@ -39,20 +39,6 @@ namespace embree
   namespace isa
   {
     template<int N>
-    struct AllocBVHNAlignedNode
-    {
-      typedef BVHN<N> BVH;
-      typedef typename BVH::NodeRef NodeRef;
-      typedef typename BVH::AlignedNode AlignedNode;
-
-      __forceinline NodeRef operator() (MortonBuildRecord& current, MortonBuildRecord* children, size_t numChildren, FastAllocator::ThreadLocal2* alloc)
-      {
-        AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode),BVH::byteNodeAlignment); node->clear();
-        return BVH::encodeNode(node);
-      }
-    };
-    
-    template<int N>
     struct SetBVHNBounds
     {
       typedef BVHN<N> BVH;
@@ -550,13 +536,12 @@ namespace embree
         }
 
         /* create BVH */
-        AllocBVHNAlignedNode<N> allocAlignedNode;
         SetBVHNBounds<N> setBounds(bvh);
         CreateMortonLeaf<N,Primitive> createLeaf(mesh,morton.data());
         CalculateMeshBounds<Mesh> calculateBounds(mesh);
         auto root = bvh_builder_morton_internal<std::pair<NodeRef,BBox3fa>>(
           typename BVH::CreateAlloc(bvh), 
-          allocAlignedNode,setBounds,createLeaf,calculateBounds,progress,
+          typename BVH::AlignedNode::Create(),setBounds,createLeaf,calculateBounds,progress,
           morton.data(),dest,numPrimitivesGen,N,BVH::maxBuildDepth,minLeafSize,maxLeafSize,singleThreadThreshold);
         
         bvh->set(root.first,LBBox3fa(root.second),numPrimitives);

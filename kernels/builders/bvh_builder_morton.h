@@ -259,7 +259,7 @@ namespace embree
       typename ReductionTy, 
       typename Allocator, 
       typename CreateAllocator, 
-      typename AllocNodeFunc, 
+      typename CreateNodeFunc, 
       typename SetNodeBoundsFunc, 
       typename CreateLeafFunc, 
       typename CalculateBounds, 
@@ -276,7 +276,7 @@ namespace embree
     public:
       
       GeneralBVHBuilderMorton (CreateAllocator& createAllocator, 
-                               AllocNodeFunc& allocNode, 
+                               CreateNodeFunc& createNode, 
                                SetNodeBoundsFunc& setBounds, 
                                CreateLeafFunc& createLeaf, 
                                CalculateBounds& calculateBounds,
@@ -285,7 +285,7 @@ namespace embree
                                const size_t minLeafSize, const size_t maxLeafSize,
                                const size_t singleThreadThreshold)
         : createAllocator(createAllocator), 
-        allocNode(allocNode), 
+        createNode(createNode), 
         setBounds(setBounds), 
         createLeaf(createLeaf), 
         calculateBounds(calculateBounds),
@@ -353,7 +353,7 @@ namespace embree
         } while (numChildren < branchingFactor);
         
         /* create node */
-        auto node = allocNode(current,children,numChildren,alloc);
+        auto node = createNode(alloc,numChildren);
 
         /* recurse into each child */
         ReductionTy bounds[MAX_BRANCHING_FACTOR];
@@ -496,7 +496,7 @@ namespace embree
         }
         
         /* allocate node */
-        auto node = allocNode(current,children,numChildren,alloc);
+        auto node = createNode(alloc,numChildren);
 
         /* process top parts of tree parallel */
         ReductionTy bounds[MAX_BRANCHING_FACTOR];
@@ -538,7 +538,7 @@ namespace embree
       
     public:
       CreateAllocator& createAllocator;
-      AllocNodeFunc& allocNode;
+      CreateNodeFunc& createNode;
       SetNodeBoundsFunc& setBounds;
       CreateLeafFunc& createLeaf;
       CalculateBounds& calculateBounds;
@@ -557,14 +557,14 @@ namespace embree
     template<
       typename ReductionTy, 
       typename CreateAllocFunc, 
-      typename AllocNodeFunc, 
+      typename CreateNodeFunc, 
       typename SetBoundsFunc, 
       typename CreateLeafFunc, 
       typename CalculateBoundsFunc, 
       typename ProgressMonitor>
 
       ReductionTy bvh_builder_morton_internal(CreateAllocFunc createAllocator, 
-                                              AllocNodeFunc allocNode, 
+                                              CreateNodeFunc createNode, 
                                               SetBoundsFunc setBounds, 
                                               CreateLeafFunc createLeaf, 
                                               CalculateBoundsFunc calculateBounds,
@@ -582,14 +582,14 @@ namespace embree
         ReductionTy,
         decltype(createAllocator()),
         CreateAllocFunc,
-        AllocNodeFunc,
+        CreateNodeFunc,
         SetBoundsFunc,
         CreateLeafFunc,
         CalculateBoundsFunc,
         ProgressMonitor> Builder;
 
       Builder builder(createAllocator,
-                      allocNode,
+                      createNode,
                       setBounds,
                       createLeaf,
                       calculateBounds,
@@ -606,14 +606,14 @@ namespace embree
     template<
       typename ReductionTy, 
       typename CreateAllocFunc, 
-      typename AllocNodeFunc, 
+      typename CreateNodeFunc, 
       typename SetBoundsFunc, 
       typename CreateLeafFunc, 
       typename CalculateBoundsFunc,
       typename ProgressMonitor>
 
       ReductionTy bvh_builder_morton(CreateAllocFunc createAllocator, 
-                                     AllocNodeFunc allocNode, 
+                                     CreateNodeFunc createNode, 
                                      SetBoundsFunc setBounds, 
                                      CreateLeafFunc createLeaf, 
                                      CalculateBoundsFunc calculateBounds,
@@ -649,7 +649,7 @@ namespace embree
       });
       
       return bvh_builder_morton_internal<ReductionTy>(
-        createAllocator,allocNode,setBounds,createLeaf,calculateBounds,progressMonitor,
+        createAllocator,createNode,setBounds,createLeaf,calculateBounds,progressMonitor,
         src,temp,numPrimitives,branchingFactor,maxDepth,minLeafSize,maxLeafSize,singleThreadThreshold);
 
     }

@@ -247,7 +247,7 @@ namespace embree
         },
         
         /* lambda function that allocates BVH nodes */
-        [&] ( isa::MortonBuildRecord& current, isa::MortonBuildRecord* children, size_t N, FastAllocator::ThreadLocal* alloc ) -> Node*
+        [&] ( FastAllocator::ThreadLocal* alloc, size_t N ) -> Node*
         {
           assert(N <= 2);
           InnerNode* node = new (alloc->malloc(sizeof(InnerNode))) InnerNode;
