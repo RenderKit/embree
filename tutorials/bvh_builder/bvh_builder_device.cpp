@@ -62,11 +62,10 @@ namespace embree
       return 1.0f;
     }
   };
-  
-  void build_sah(avector<PrimRef>& prims)
+
+#if 0  // FIXME: remove
+  void build_sah(PrimRef* prims, size_t N)
   {
-    size_t N = prims.size();
-    
     /* fast allocator that supports thread local operation */
     FastAllocator allocator(nullptr,false);
     
@@ -87,9 +86,9 @@ namespace embree
           return bounds;
         };
       const isa::CentGeomBBox3fa bounds = 
-        parallel_reduce(size_t(0),prims.size(),size_t(1024),size_t(1024),isa::CentGeomBBox3fa(empty), computeBounds, isa::CentGeomBBox3fa::merge2);
+        parallel_reduce(size_t(0),N,size_t(1024),size_t(1024),isa::CentGeomBBox3fa(empty), computeBounds, isa::CentGeomBBox3fa::merge2);
       
-      const isa::PrimInfo pinfo(0,prims.size(),bounds.geomBounds,bounds.centBounds);
+      const isa::PrimInfo pinfo(0,N,bounds.geomBounds,bounds.centBounds);
 
        /* settings for BVH build */
       isa::GeneralBVHBuilder::Settings settings;
@@ -142,13 +141,14 @@ namespace embree
           // throw an exception here to cancel the build operation
         },
         
-        prims.data(),pinfo,settings);
+        prims,pinfo,settings);
       
       double t1 = getSeconds();
       
       std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << root->sah() << " [DONE]" << std::endl;
     }
   }
+#endif
 
   void* createThreadLocal (void* userPtr) {
     return (void*) rtcGetThreadLocalAllocator((RTCAllocator)userPtr);
@@ -184,11 +184,9 @@ namespace embree
   void buildProgress (void* userPtr, size_t dn) {
   }
 
-  void build_sah_api(avector<PrimRef>& prims)
+  void build_sah_api(RTCPrimRef* prims, size_t N, char* cfg)
   {
-    size_t N = prims.size();
-    
-    RTCDevice device = rtcNewDevice();
+    RTCDevice device = rtcNewDevice(cfg);
     rtcDeviceSetMemoryMonitorFunction2(device,memoryMonitor,nullptr);
 
     RTCAllocator allocator = rtcNewAllocator(device,N);
@@ -212,7 +210,7 @@ namespace embree
       settings.intCost = 1.0f;
       
       Node* root = (Node*) rtcBVHBuildSAH(device,settings,
-                                          (RTCPrimRef*)prims.data(),prims.size(),(void*)allocator,
+                                          prims,N,(void*)allocator,
                                           createThreadLocal,createNode,setNodeChild,setNodeBounds,createLeaf,buildProgress);
       
       double t1 = getSeconds();
@@ -220,10 +218,10 @@ namespace embree
       std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << root->sah() << " [DONE]" << std::endl;
     }
   }
-  
-  void build_morton(avector<PrimRef>& prims, isa::PrimInfo& pinfo)
+
+#if 0 // FIXME: remove  
+  void build_morton(PrimRef* prims, size_t N)
   {
-    unsigned N = unsigned(pinfo.size());
     /* array for morton builder */
     avector<isa::MortonID32Bit> morton_src(N);
     avector<isa::MortonID32Bit> morton_tmp(N);
@@ -239,7 +237,7 @@ namespace embree
       double t0 = getSeconds();
       
       allocator.reset();
-      allocator.init(N);
+      allocator.init(16*N);
       
       std::pair<Node*,BBox3fa> node_bounds = isa::bvh_builder_morton<std::pair<Node*,BBox3fa>>(
         
@@ -289,7 +287,7 @@ namespace embree
           // throw an exception here to cancel the build operation
         },
         
-        morton_src.data(),morton_tmp.data(),prims.size(),2,1024,1,1,Builder::DEFAULT_SINGLE_THREAD_THRESHOLD);
+        morton_src.data(),morton_tmp.data(),N,2,1024,1,1,Builder::DEFAULT_SINGLE_THREAD_THRESHOLD);
       
       Node* root = node_bounds.first;
       
@@ -298,21 +296,20 @@ namespace embree
       std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << root->sah() << " [DONE]" << std::endl;
     }
   }
+#endif
 
-  void build_morton_api(avector<PrimRef>& prims)
+  void build_morton_api(RTCPrimRef* prims, size_t N, char* cfg)
   {
-    unsigned N = unsigned(prims.size());
-
-    RTCDevice device = rtcNewDevice();
+    RTCDevice device = rtcNewDevice(cfg);
     rtcDeviceSetMemoryMonitorFunction2(device,memoryMonitor,nullptr);
 
-    RTCAllocator allocator = rtcNewAllocator(device,N);
+    RTCAllocator allocator = rtcNewAllocator(device,16*N);
 
     for (size_t i=0; i<2; i++)
     {
       std::cout << "iteration " << i << ": building BVH over " << N << " primitives, " << std::flush;
       double t0 = getSeconds();
-
+      
       rtcResetAllocator(allocator);
 
        /* settings for BVH build */
@@ -327,7 +324,7 @@ namespace embree
       settings.intCost = 1.0f;
       
       Node* root = (Node*) rtcBVHBuildMorton(device,settings,
-                                             (RTCPrimRef*)prims.data(),prims.size(),(void*)allocator,
+                                             prims,N,(void*)allocator,
                                              createThreadLocal,createNode,setNodeChild,setNodeBounds,createLeaf,buildProgress);
       
       double t1 = getSeconds();
@@ -351,23 +348,34 @@ namespace embree
     
     /* create random bounding boxes */
     const size_t N = 2300000;
-    isa::PrimInfo pinfo(empty);
-    avector<PrimRef> prims; 
-    for (size_t i=0; i<N; i++) {
+    avector<RTCPrimRef> prims; 
+    for (size_t i=0; i<N; i++) 
+    {
       const float x = float(drand48());
       const float y = float(drand48());
       const float z = float(drand48());
       const Vec3fa p = 1000.0f*Vec3fa(x,y,z);
       const BBox3fa b = BBox3fa(p,p+Vec3fa(1.0f));
-      pinfo.add(b);
-      const PrimRef prim = PrimRef(b,0,i);
+
+      RTCPrimRef prim;
+      prim.lower_x = b.lower.x;
+      prim.lower_y = b.lower.y;
+      prim.lower_z = b.lower.z;
+      prim.geomID = 0;
+      prim.upper_x = b.upper.x;
+      prim.upper_y = b.upper.y;
+      prim.upper_z = b.upper.z;
+      prim.primID = i;
       prims.push_back(prim);
     }
+
+    std::cout << "SAH builder:" << std::endl;
+    build_sah_api(prims.data(),prims.size(),cfg);
+    //build_sah((PrimRef*)prims.data(),prims.size());
     
-    build_sah(prims);
-    build_sah_api(prims);
-    build_morton(prims,pinfo);
-    build_morton_api(prims);
+    std::cout << "Morton builder:" << std::endl;
+    build_morton_api(prims.data(),prims.size(),cfg);
+    //build_morton((PrimRef*)prims.data(),prims.size());
   }
   
   /* task that renders a single screen tile */
