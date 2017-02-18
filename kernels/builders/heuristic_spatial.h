@@ -149,14 +149,15 @@ namespace embree
                              const size_t beginID, 
                              const size_t endID, 
                              const size_t binID, 
-                             const BBox3fa &b) 
+                             const BBox3fa &b,
+                             const size_t n = 1) 
       {
         assert(beginID < BINS);
         assert(endID < BINS);
         assert(binID < BINS);
 
-        numBegin[beginID][dim]++;
-        numEnd  [endID][dim]++;
+        numBegin[beginID][dim]+=n;
+        numEnd  [endID][dim]+=n;
         bounds  [binID][dim].extend(b);        
       }
 
@@ -275,6 +276,41 @@ namespace embree
             }
             if (unlikely(rest.empty())) r--;
             add(dim,l,r,bin,rest);
+          }
+        }              
+      }
+
+
+
+      /*! bins an array of primitives */
+      __forceinline void binSubTreeRefs(const PrimRef* source, size_t begin, size_t end, const SpatialBinMapping<BINS>& mapping)
+      {
+        for (size_t i=begin; i<end; i++)
+        {
+          const PrimRef &prim = source[i];
+          const vint4 bin0 = mapping.bin(prim.bounds().lower);
+          const vint4 bin1 = mapping.bin(prim.bounds().upper);
+          
+          for (size_t dim=0; dim<3; dim++) 
+          {
+            if (unlikely(mapping.invalid(dim))) 
+              continue;
+            
+            const size_t l = bin0[dim];
+            const size_t r = bin1[dim];
+
+            const unsigned int n  = prim.primID();
+            
+            // same bin optimization
+            if (likely(l == r)) 
+            {
+              add(dim,l,l,l,prim.bounds(),n);
+              continue;
+            }
+            const size_t bin_start = bin0[dim];
+            const size_t bin_end   = bin1[dim];
+            for (size_t bin=bin_start; bin<bin_end; bin++) 
+              add(dim,l,r,bin,prim.bounds(),n);
           }
         }              
       }

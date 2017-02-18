@@ -25,7 +25,7 @@
 
 #define COMMON_GEOMID_TERMINATION    1
 #define USE_SUBTREE_SIZE_FOR_BINNING 1
-#define ENABLE_OPENING_SPLITS        1
+#define ENABLE_OPENING_SPLITS        0
 
 
 #define MAX_OPENED_CHILD_NODES 8
@@ -45,20 +45,20 @@ namespace embree
         {
           opened = other.opened;
           sah    = other.sah;
-          split  = other.objectSplit();
+          objectSplit()  = other.objectSplit();
         }
         
         __forceinline SplitOpenMerge& operator= (const SplitOpenMerge& other) 
         {
           opened = other.opened;
           sah    = other.sah;
-          split  = other.objectSplit();
+          objectSplit()  = other.objectSplit();
           return *this;
         }
           
-          __forceinline     ObjectSplit&  objectSplit()        { return split; }
+        __forceinline       ObjectSplit&  objectSplit()        { return split; }
         __forceinline const ObjectSplit&  objectSplit() const  { return split; }
-                
+        
         __forceinline SplitOpenMerge (const ObjectSplit& objectSplit, float sah, bool opened = false)
           : opened(opened), sah(sah), split(objectSplit)
         {
@@ -75,7 +75,7 @@ namespace embree
       public:
         bool opened;
         float sah;
-        __aligned(16) ObjectSplit split;
+        ObjectSplit split;
       };
     
     /*! Performs standard object binning */
@@ -179,13 +179,12 @@ namespace embree
           if (unlikely(set.has_ext_range() && !commonGeomID))
           {
             const float OPENED_SAH_THRESHOLD = 1.25f;
-            //const float OPENED_SAH_THRESHOLD = 0.25f;
 
             const ObjectSplit opened_object_split = opened_object_find(set, pinfo, logBlockSize);            
             const float opened_object_split_sah   = opened_object_split.splitSAH();
 
-            DBG_PRINT(object_split_sah);
-            DBG_PRINT(opened_object_split_sah);
+            PRINT(object_split_sah);
+            PRINT(opened_object_split_sah);
 
             if (opened_object_split.valid() && opened_object_split_sah < OPENED_SAH_THRESHOLD*object_split_sah )
               {          
@@ -195,7 +194,7 @@ namespace embree
               }
           }
 #endif
-          DBG_PRINT("OPENING SPLIT");
+          DBG_PRINT("OBJECT SPLIT");
           return Split(object_split,object_split_sah,false);
         }
 
@@ -244,10 +243,10 @@ namespace embree
         /*! finds the best opened object split */
         __forceinline const ObjectSplit opened_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
-          if (pinfo.size() < PARALLEL_THRESHOLD) 
+          //if (pinfo.size() < PARALLEL_THRESHOLD) 
             return sequential_opened_object_find(set, pinfo, logBlockSize); 
-          else                                   
-            return parallel_opened_object_find  (set, pinfo, logBlockSize); 
+            //else                                   
+            //return parallel_opened_object_find  (set, pinfo, logBlockSize); 
         }
 
         /*! finds the best opened object split */
@@ -287,7 +286,7 @@ namespace embree
         __noinline const ObjectSplit parallel_opened_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
           ObjectBinner binner(empty);
-
+          FATAL("HERE");
           BBox3fa cent2Bounds = parallel_reduce(set.begin(), set.end(),  BBox3fa(empty), [&] (const range<size_t>& r) -> BBox3fa {
               BBox3fa bounds(empty);
               for (size_t i=r.begin(); i<r.end(); i++) {

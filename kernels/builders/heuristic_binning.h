@@ -284,7 +284,7 @@ namespace embree
       }   
 
 
-      /*! bins an array of primitives */
+      /*! bins an array of primitives using subtree counts */
       __forceinline void binSubTreeRefs (const PrimRef* prims, size_t N, const BinMapping<BINS>& mapping)
       {
 	if (unlikely(N == 0)) return;
@@ -293,7 +293,7 @@ namespace embree
         {
           /*! map even and odd primitive to bin */
           BBox prim0; Vec3fa center0;
-          prims[i+0].binBoundsAndCenter(prim0,center0); 
+          prims[i+0].binBoundsAndCenter(prim0,center0);
           const vint4 bin0 = (vint4)mapping.bin(center0); 
           
           BBox prim1; Vec3fa center1;

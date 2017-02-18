@@ -30,7 +30,7 @@
 /* sequential opening phase in old code path */
 #define ENABLE_OPEN_SEQUENTIAL 1
 
-#define SPLIT_MEMORY_RESERVE_FACTOR 2
+#define SPLIT_MEMORY_RESERVE_FACTOR 10
 
 namespace embree
 {
@@ -148,13 +148,28 @@ namespace embree
 #if ENABLER_DIRECT_SAH_MERGE_BUILDER == 0
 
 #if ENABLE_OPEN_SEQUENTIAL == 1
+#if 0
         open_sequential(numPrimitives,MAX_OPEN_SIZE); 
+#else
+        mvector<BuildRef> final(scene->device);
+        open_recursive(refs,final);
+        refs.resize(final.size());
+        for (size_t i=0;i<final.size();i++)
+          refs[i] = final[i];
+#endif
+        PRINT(refs.size());
 #endif
         /* compute PrimRefs */
         prims.resize(refs.size());
 #else
         //PRINT(refs.size());
-        open_sequential2(refs.size()); 
+        //open_sequential2(refs.size()); 
+        mvector<BuildRef> final(scene->device);
+        open_recursive(refs,final);
+        PRINT(final.size());
+        refs.resize(final.size());
+        for (size_t i=0;i<final.size();i++)
+          refs[i] = final[i];
         //PRINT(refs.size());
 #endif
 
@@ -302,7 +317,8 @@ namespace embree
       if (refs.size() == 0)
 	return;
 
-      size_t num = min(numPrimitives/400,maxOpenSize);
+      size_t num = min(numPrimitives/4,maxOpenSize);
+      PRINT(num);
       refs.reserve(num);
 
 #if 1
@@ -350,6 +366,7 @@ namespace embree
       size_t num = MAX_OPEN_SIZE;
 
       refs.reserve(num);
+#if 0
       float min_sah = inf;
       for (size_t i=0;i<refs.size();i++)
         min_sah = min(min_sah,refs[i].sah);
@@ -365,7 +382,7 @@ namespace embree
         /* exit if leaf */
         if (ref.isLeaf()) break;
         /* exit if area is <= min _sah */
-        if (bref.sah <= min_sah) break;
+        if (bref.sah < min_sah) break;
 
         refs.pop_back();    
 
@@ -381,9 +398,195 @@ namespace embree
           std::push_heap (refs.begin(),refs.end()); 
         }
       }
-
+#endif
       double t1 = getSeconds();
+      PRINT(refs.size());
       PRINT(t1-t0);
+
+      // ==================================
+#define OBJECT_BINS 32
+      const size_t logBlockSize = 1;
+      typedef BinSplit<OBJECT_BINS> ObjectSplit;
+      typedef BinInfoT<OBJECT_BINS,BuildRef,BBox3fa> ObjectBinner;
+      while(refs.size()+N-1 <= num)
+      {
+        ObjectBinner binner(empty); 
+
+        PrimInfo pinfo(empty);
+        for (size_t i=0;i<refs.size();i++)
+        {
+          BuildRef tmp[8];
+          size_t n = openBuildRef(refs[i],tmp);
+          for (size_t j=0;j<n;j++)
+            pinfo.extend(tmp[j].bounds());
+        }
+
+        const BinMapping<OBJECT_BINS> mapping(pinfo.centBounds,OBJECT_BINS);          
+
+        for (size_t i=0;i<refs.size();i++)
+        {
+          BuildRef tmp[8];
+          size_t n = openBuildRef(refs[i],tmp);
+          binner.binSubTreeRefs(tmp,0,n,mapping); 
+        }
+
+        ObjectSplit split = binner.best(mapping,logBlockSize);
+        PRINT(split);
+        if (!split.valid()) break;
+
+        const float fpos = split.mapping.pos(split.pos,split.dim);
+
+        const size_t current = refs.size();
+        PRINT(current);
+        bool open = false;
+        for (size_t i=0;i<current;i++)
+        {          
+          if (unlikely(refs[i].bounds().lower[split.dim] < fpos && refs[i].bounds().upper[split.dim] > fpos))
+          {
+            BuildRef tmp[8];
+            size_t n = openBuildRef(refs[i],tmp);
+            if (likely(n==1)) continue;
+
+            if (refs.size() + n < num)
+            {
+              open = true;
+              PRINT("OPEN");
+              PRINT(n);
+              refs[i] = tmp[0];
+              for (size_t j=1;j<n;j++)
+                refs.push_back(tmp[j]);
+            }
+            // FIXME: early exit
+          }
+        }
+        PRINT(refs.size());                
+        PRINT(open);
+        if(!open) break;
+      }
+      //exit(0);
+      // ==================================
+
+    }
+
+    template<int N, typename Mesh>
+    void BVHNBuilderTwoLevel<N,Mesh>::open_recursive(mvector<BuildRef> &current, mvector<BuildRef> &final)
+    {
+      std::cout << std::endl;
+      if (current.size() == 1)
+      {
+        final.push_back(current[0]);
+        return;
+      }      
+#if 1
+      else if (current.size() == 2)
+      {
+        BBox3fa left  = current[0].bounds();
+        BBox3fa right = current[1].bounds();
+        BBox3fa intersection = intersect(left,right);
+        if (intersection.empty() && current[0].geomID() != current[1].geomID()) 
+        {
+          final.push_back(current[0]);
+          final.push_back(current[1]);
+          return;
+        } 
+      }
+#endif      
+
+      unsigned int geomID = current[0].geomID();
+      bool commonGeomID = true;
+      float max_sah = 0.0f;
+      ssize_t max_index = -1;
+      for (size_t i=0;i<current.size();i++)
+      {
+        if (!current[i].node.isLeaf())
+        {
+          max_sah = max(max_sah,current[i].sah);
+          max_index = (ssize_t)i;
+        }
+        if (current[i].geomID() != geomID) commonGeomID = false;
+      }
+
+      /* only leaves ? */
+      if (max_index == -1 || commonGeomID)
+      {
+#if 1
+        float avg_area = 0.0f;
+        for (size_t i=0;i<current.size();i++) avg_area += current[i].sah;
+        avg_area *= 1.0f / current.size();
+        for (size_t i=0;i<current.size();i++)
+          if (current[i].sah > avg_area)
+          {
+            BuildRef tmp[8];
+            const size_t n = openBuildRef(current[i],tmp);
+            for (size_t j=0;j<n;j++)
+              final.push_back(tmp[j]);
+          }
+          else
+            final.push_back(current[i]);
+            
+
+#else
+        for (size_t i=0;i<current.size();i++)
+        {
+          final.push_back(current[i]);
+        }
+#endif
+        return;
+      }
+
+      assert(!current[max_index].node.isLeaf());
+
+      /* open max area node */
+      BuildRef tmp[8];
+      const size_t n = openBuildRef(current[max_index],tmp);
+      current[max_index] = tmp[0];
+      
+      for (size_t j=1;j<n;j++)
+        current.push_back(tmp[j]);
+
+      /* split into two sets */
+
+      const size_t logBlockSize = 1;
+      typedef BinSplit<OBJECT_BINS> ObjectSplit;
+      typedef BinInfoT<OBJECT_BINS,BuildRef,BBox3fa> ObjectBinner;
+
+      ObjectBinner binner(empty); 
+
+      PrimInfo pinfo(empty);
+      for (size_t i=0;i<current.size();i++)
+        pinfo.extend(current[i].bounds());
+
+      const BinMapping<OBJECT_BINS> mapping(pinfo.centBounds,OBJECT_BINS);          
+
+      /* binning */
+//      binner.binSubTreeRefs(current.data(),current.size(),mapping); 
+      binner.bin(current.data(),current.size(),mapping); 
+
+      ObjectSplit split = binner.best(mapping,logBlockSize);
+      assert(split.valid());
+
+      mvector<BuildRef> left(scene->device);
+      mvector<BuildRef> right(scene->device);
+
+      /* split */
+      const unsigned int splitPos = split.pos;
+      const unsigned int splitDim = split.dim;
+      const unsigned int splitDimMask = (unsigned int)1 << splitDim; 
+      const vint4 vSplitPos(splitPos);
+      const vbool4 vSplitMask( (int)splitDimMask );
+      for (size_t i=0;i<current.size();i++)
+      {
+        if (any(((vint4)split.mapping.bin(current[i].bounds().center2()) < vSplitPos) & vSplitMask))
+          left.push_back(current[i]);
+        else
+          right.push_back(current[i]);
+      }
+
+      assert(left.size());
+      assert(right.size());
+      open_recursive(left, final);
+      open_recursive(right, final);
+
     }
 
 
