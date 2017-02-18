@@ -148,15 +148,7 @@ namespace embree
 #if ENABLER_DIRECT_SAH_MERGE_BUILDER == 0
 
 #if ENABLE_OPEN_SEQUENTIAL == 1
-#if 0
         open_sequential(numPrimitives,MAX_OPEN_SIZE); 
-#else
-        mvector<BuildRef> final(scene->device);
-        open_recursive(refs,final);
-        refs.resize(final.size());
-        for (size_t i=0;i<final.size();i++)
-          refs[i] = final[i];
-#endif
         PRINT(refs.size());
 #endif
         /* compute PrimRefs */
@@ -471,22 +463,27 @@ namespace embree
     template<int N, typename Mesh>
     void BVHNBuilderTwoLevel<N,Mesh>::open_recursive(mvector<BuildRef> &current, mvector<BuildRef> &final)
     {
-      std::cout << std::endl;
+      //std::cout << std::endl;
       if (current.size() == 1)
       {
         final.push_back(current[0]);
         return;
       }      
 #if 1
-      else if (current.size() == 2)
+      /* disjoint test */
+      const size_t D = 8;
+      if (current.size() <= D)
       {
-        BBox3fa left  = current[0].bounds();
-        BBox3fa right = current[1].bounds();
-        BBox3fa intersection = intersect(left,right);
-        if (intersection.empty() && current[0].geomID() != current[1].geomID()) 
+        bool disjoint = true;
+        for (size_t j=0;j<current.size()-1;j++)
+          for (size_t i=1;i<current.size();i++)
+            if (conjoint(current[j].bounds(),current[i].bounds()))
+            { disjoint = false; break; }
+        
+        if (disjoint) 
         {
-          final.push_back(current[0]);
-          final.push_back(current[1]);
+          for (size_t j=0;j<current.size();j++)
+            final.push_back(current[j]);
           return;
         } 
       }
