@@ -157,7 +157,11 @@ namespace embree
         //PRINT(refs.size());
         //open_sequential2(refs.size()); 
         mvector<BuildRef> final(scene->device);
-        open_recursive(refs,final);
+        BBox3fa root_bounds(empty);
+        for (size_t i=0;i<refs.size();i++)
+          root_bounds.extend(refs[i].bounds());
+        PRINT(root_bounds);
+        open_recursive(refs,final,area(root_bounds));
         PRINT(final.size());
         refs.resize(final.size());
         for (size_t i=0;i<final.size();i++)
@@ -309,7 +313,7 @@ namespace embree
       if (refs.size() == 0)
 	return;
 
-      size_t num = min(numPrimitives/4,maxOpenSize);
+      size_t num = min(numPrimitives/400,maxOpenSize);
       PRINT(num);
       refs.reserve(num);
 
@@ -461,7 +465,7 @@ namespace embree
     }
 
     template<int N, typename Mesh>
-    void BVHNBuilderTwoLevel<N,Mesh>::open_recursive(mvector<BuildRef> &current, mvector<BuildRef> &final)
+    void BVHNBuilderTwoLevel<N,Mesh>::open_recursive(mvector<BuildRef> &current, mvector<BuildRef> &final, const float root_area)
     {
       //std::cout << std::endl;
       if (current.size() == 1)
@@ -502,9 +506,9 @@ namespace embree
         }
         if (current[i].geomID() != geomID) commonGeomID = false;
       }
-
+      
       /* only leaves ? */
-      if (max_index == -1 || commonGeomID)
+      if (max_index == -1 || commonGeomID || max_sah/root_area <= 1E-4f)
       {
 #if 1
         float avg_area = 0.0f;
@@ -581,8 +585,8 @@ namespace embree
 
       assert(left.size());
       assert(right.size());
-      open_recursive(left, final);
-      open_recursive(right, final);
+      open_recursive(left, final, root_area);
+      open_recursive(right, final, root_area);
 
     }
 
