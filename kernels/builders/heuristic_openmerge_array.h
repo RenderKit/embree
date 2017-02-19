@@ -23,10 +23,7 @@
 #include "heuristic_binning.h"
 #include "heuristic_spatial.h"
 
-#define COMMON_GEOMID_TERMINATION    1
 #define USE_SUBTREE_SIZE_FOR_BINNING 1
-#define ENABLE_OPENING_SPLITS        0
-
 #define NEW_OPENING_HEURISTIC        1
 
 #define MAX_OPENED_CHILD_NODES 8
@@ -203,7 +200,7 @@ namespace embree
               const size_t ext_range_start = set.end();
               size_t extra_elements = 0;
 
-#if 0
+              // test if stil required
               avg_area *= 1.0f / pinfo.size();
               for (size_t i=pinfo.begin;i<pinfo.end;i++)
                 if (!prims0[i].node.isLeaf() && prims0[i].sah > avg_area)
@@ -220,7 +217,7 @@ namespace embree
                     prims0[ext_range_start+extra_elements+j-1] = tmp[j]; 
                   extra_elements += n-1;
                 }
-#endif
+
               pinfo.end += extra_elements;
               Set nset(set.begin(),set.end()+extra_elements,set.ext_end());
               set = nset;            
@@ -236,6 +233,7 @@ namespace embree
             size_t extra_elements = 0;
 
 #if 1
+            // this works better
             float avg_area = 0.0f;
             for (size_t i=pinfo.begin;i<pinfo.end;i++)
               avg_area += prims0[i].sah;
@@ -260,7 +258,6 @@ namespace embree
 #else
             for (size_t k=0;k<1;k++)
             {
-              //PRINT("OPEN");
               float max_sah = 0.0f;
               ssize_t max_index = -1;
               for (size_t i=pinfo.begin;i<pinfo.end;i++)
@@ -269,13 +266,10 @@ namespace embree
                   max_sah = max(max_sah,prims0[i].sah);
                   max_index = (ssize_t)i;
                 }
-              //PRINT(max_sah);
-              //PRINT(max_index);
               if (max_index != -1)
               {
                 PrimRef tmp[MAX_OPENED_CHILD_NODES];
                 const size_t n = nodeOpenerFunc(prims0[max_index],tmp);  
-                //PRINT(max_ext_range_size);
                 if (extra_elements + n-1 < max_ext_range_size)
                 {
                   for (size_t j=0;j<n;j++)
@@ -314,39 +308,10 @@ namespace embree
             return  Split(ObjectSplit(),inf,false);
           }
 
-#if COMMON_GEOMID_TERMINATION == 1
-          bool commonGeomID = true;
-          const unsigned int geomID = prims0[set.begin()].geomID();
-          for (size_t i=set.begin()+1;i<set.end();i++)
-            if (unlikely(prims0[i].geomID() != geomID)) { commonGeomID = false; break; }
-#else
-          const bool commonGeomID = false;
-#endif
           assert(pinfo.size() > 1);
           SplitInfo oinfo;
           const ObjectSplit object_split = object_find(set,pinfo,logBlockSize,oinfo);
           const float object_split_sah = object_split.splitSAH();
-
-#if ENABLE_OPENING_SPLITS == 1
-          if (unlikely(set.has_ext_range() && !commonGeomID))
-          {
-            const float OPENED_SAH_THRESHOLD = 1.25f;
-
-            const ObjectSplit opened_object_split = opened_object_find(set, pinfo, logBlockSize);            
-            const float opened_object_split_sah   = opened_object_split.splitSAH();
-
-            PRINT(object_split_sah);
-            PRINT(opened_object_split_sah);
-
-            if (opened_object_split.valid() && opened_object_split_sah < OPENED_SAH_THRESHOLD*object_split_sah )
-              {          
-                DBG_PRINT("OPENING SPLIT");
-                // && opened_object_split.left + opened_object_split.right - set.size() <= set.ext_range_size()
-                return Split(opened_object_split,opened_object_split_sah,true);
-              }
-          }
-#endif
-          DBG_PRINT("OBJECT SPLIT");
           return Split(object_split,object_split_sah,false);
         }
 #endif
@@ -392,88 +357,6 @@ namespace embree
           binner.getSplitInfo(mapping, s, info);
           return s;
         }
-
-        /*! finds the best opened object split */
-        __forceinline const ObjectSplit opened_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
-        {
-          //if (pinfo.size() < PARALLEL_THRESHOLD) 
-            return sequential_opened_object_find(set, pinfo, logBlockSize); 
-            //else                                   
-            //return parallel_opened_object_find  (set, pinfo, logBlockSize); 
-        }
-
-        /*! finds the best opened object split */
-        __noinline const ObjectSplit sequential_opened_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
-        {
-          ObjectBinner binner(empty); 
-          BBox3fa cent2Bounds(pinfo.centBounds); // FIXME: empty or parent centBounds, might need both...
-
-          assert(set.begin() == pinfo.begin);
-          assert(set.end() == pinfo.end);
-
-          for (size_t i=set.begin();i<set.end();i++)
-          {
-            cent2Bounds.extend(prims0[i].center2());
-            PrimRef refs[MAX_OPENED_CHILD_NODES];
-            size_t n = nodeOpenerFunc(prims0[i],refs);
-            for (size_t j=0;j<n;j++)
-              cent2Bounds.extend(refs[j].center2());
-          }
-
-          const BinMapping<OBJECT_BINS> mapping(cent2Bounds,OBJECT_BINS);          
-          const BinMapping<OBJECT_BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
-
-          for (size_t i=set.begin();i<set.end();i++)
-          {
-            PrimRef refs[MAX_OPENED_CHILD_NODES];
-            size_t n = nodeOpenerFunc(prims0[i],refs);
-#if USE_SUBTREE_SIZE_FOR_BINNING == 1
-            binner.binSubTreeRefs(refs,n,_mapping); 
-#else
-            binner.bin(refs,n,_mapping); 
-#endif
-          }            
-          return binner.best(mapping,logBlockSize); 
-        }
-
-        __noinline const ObjectSplit parallel_opened_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
-        {
-          ObjectBinner binner(empty);
-          FATAL("HERE");
-          BBox3fa cent2Bounds = parallel_reduce(set.begin(), set.end(),  BBox3fa(empty), [&] (const range<size_t>& r) -> BBox3fa {
-              BBox3fa bounds(empty);
-              for (size_t i=r.begin(); i<r.end(); i++) {
-                PrimRef refs[MAX_OPENED_CHILD_NODES];
-                size_t n = nodeOpenerFunc(prims0[i],refs);
-                for (size_t j=0;j<n;j++)
-                  bounds.extend(refs[j].center2());
-              }
-              return bounds;
-            }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
-
-          cent2Bounds.extend(pinfo.centBounds);
-
-          const BinMapping<OBJECT_BINS> mapping(cent2Bounds,OBJECT_BINS);
-          const BinMapping<OBJECT_BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
-          binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
-                                   [&] (const range<size_t>& r) -> ObjectBinner { 
-                                     ObjectBinner binner(empty); 
-                                     for (size_t i=r.begin();i<r.end();i++)
-                                     {
-                                       PrimRef refs[MAX_OPENED_CHILD_NODES];
-                                       size_t n = nodeOpenerFunc(prims0[i],refs);
-#if USE_SUBTREE_SIZE_FOR_BINNING == 1
-                                       binner.binSubTreeRefs(refs,n,_mapping); 
-#else
-                                       binner.bin(refs,n,_mapping); 
-#endif
-                                     }
-                                     return binner; },
-                                   [&] (const ObjectBinner& b0, const ObjectBinner& b1) -> ObjectBinner { ObjectBinner r = b0; r.merge(b1,_mapping.size()); return r; }
-            );
-          return binner.best(mapping,logBlockSize);
-        }
-
 
         /*! open primref */
         __noinline void create_opened_object_splits(Set& set, PrimInfo& pinfo, const ObjectSplit &split, const BinMapping<OBJECT_BINS> &mapping)
@@ -546,40 +429,12 @@ namespace embree
           }
 
           std::pair<size_t,size_t> ext_weights(0,0);
-          if (unlikely(split.opened))
-          {
-            create_opened_object_splits(set,pinfo,split.objectSplit(), split.objectSplit().mapping); 
 
-            /* opened split */
-            if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
-              ext_weights = sequential_opened_object_split(split.objectSplit(),set,left,lset,right,rset);
-            else
-              ext_weights = parallel_opened_object_split(split.objectSplit(),set,left,lset,right,rset);
-
-
-            /* FIXME: does actually happen with paritially opened list of nodes */
-            if (lset.size() == 0 || rset.size() == 0)
-            {
-              DBG_PRINT("FALLBACK");
-              deterministic_order(set);
-              splitFallback(set,left,lset,right,rset);
-              DBG_PRINT(lset);
-              DBG_PRINT(rset);
-              return;
-            }
-            
-            assert(lset.size() >= 1);
-            assert(rset.size() >= 1);
-              
-          }
+          /* object split */
+          if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
+            ext_weights = sequential_object_split(split.objectSplit(),set,left,lset,right,rset);
           else
-          {
-            /* object split */
-            if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
-              ext_weights = sequential_object_split(split.objectSplit(),set,left,lset,right,rset);
-            else
-              ext_weights = parallel_object_split(split.objectSplit(),set,left,lset,right,rset);
-          }
+            ext_weights = parallel_object_split(split.objectSplit(),set,left,lset,right,rset);
 
           /* if we have an extended range, set extended child ranges and move right split range */
           if (unlikely(set.has_ext_range())) 
@@ -637,51 +492,6 @@ namespace embree
 
 
         /*! array partitioning */
-        __noinline std::pair<size_t,size_t> sequential_opened_object_split(const ObjectSplit& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
-        {
-          const size_t begin = set.begin();
-          const size_t end   = set.end();
-          PrimInfo local_left(empty);
-          PrimInfo local_right(empty);
-          const unsigned int splitPos = split.pos;
-          const unsigned int splitDim = split.dim;
-          const unsigned int splitDimMask = (unsigned int)1 << splitDim; 
-
-          /* init opened object mapping */
-          const BinMapping<OBJECT_BINS> &mapping = split.mapping;
-          const vint4 vSplitPos(splitPos);
-          const vbool4 vSplitMask( (int)splitDimMask );
-
-          size_t center = serial_partitioning(prims0,
-                                              begin,end,local_left,local_right,
-                                              [&] (const PrimRef& ref) {
-                                                const Vec3fa c = ref.center2();
-                                                return any(((vint4)mapping.bin(c) < vSplitPos) & vSplitMask); 
-                                              },
-                                              [] (PrimInfo& pinfo,const PrimRef& ref) { pinfo.add(ref.bounds()); });          
-          const size_t left_weight  = local_left.end;
-          const size_t right_weight = local_right.end;
-          
-          new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
-          new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
-          new (&lset) extended_range<size_t>(begin,center,center);
-          new (&rset) extended_range<size_t>(center,end,end);
-          assert(area(left.geomBounds) >= 0.0f);
-          assert(area(right.geomBounds) >= 0.0f);
-
-#if DEBUG
-          for (size_t i=lset.begin();i<lset.end();i++)
-            assert(inside(left.centBounds,prims0[i].center2()));
-
-          for (size_t i=rset.begin();i<rset.end();i++)
-            assert(inside(right.centBounds,prims0[i].center2()));
-#endif
-          return std::pair<size_t,size_t>(left_weight,right_weight);
-        }
-
-
-        
-        /*! array partitioning */
         __noinline std::pair<size_t,size_t> parallel_object_split(const ObjectSplit& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
         {
           const size_t begin = set.begin();
@@ -718,56 +528,6 @@ namespace embree
 
           assert(area(left.geomBounds) >= 0.0f);
           assert(area(right.geomBounds) >= 0.0f);
-          return std::pair<size_t,size_t>(left_weight,right_weight);
-        }
-
-        /*! array partitioning */
-        __noinline std::pair<size_t,size_t> parallel_opened_object_split(const ObjectSplit& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
-        {
-          const size_t begin = set.begin();
-          const size_t end   = set.end();
-          left.reset(); 
-          right.reset();
-
-          const unsigned int splitPos = split.pos;
-          const unsigned int splitDim = split.dim;
-          const unsigned int splitDimMask = (unsigned int)1 << splitDim;
-
-          /* init opened object mapping */
-          const BinMapping<OBJECT_BINS> &mapping = split.mapping;
-          const vint4 vSplitPos(splitPos);
-          const vbool4 vSplitMask( (int)splitDimMask );
-
-          auto isLeft = [&] (const PrimRef &ref) { 
-            const Vec3fa c = ref.center2();
-            return any(((vint4)mapping.bin(c) < vSplitPos) & vSplitMask); };
-
-          const size_t center = parallel_partitioning(
-            prims0,begin,end,EmptyTy(),left,right,isLeft,
-            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds()); },
-            [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); },
-            PARALLEL_PARTITION_BLOCK_SIZE);
-
-          const size_t left_weight  = left.end;
-          const size_t right_weight = right.end;
-          
-          left.begin  = begin;  left.end  = center; 
-          right.begin = center; right.end = end;
-          
-          new (&lset) extended_range<size_t>(begin,center,center);
-          new (&rset) extended_range<size_t>(center,end,end);
-
-          assert(area(left.geomBounds) >= 0.0f);
-          assert(area(right.geomBounds) >= 0.0f);
-
-#if DEBUG
-          for (size_t i=lset.begin();i<lset.end();i++)
-            assert(inside(left.centBounds,prims0[i].center2()));
-
-          for (size_t i=rset.begin();i<rset.end();i++)
-            assert(inside(right.centBounds,prims0[i].center2()));
-#endif
-
           return std::pair<size_t,size_t>(left_weight,right_weight);
         }
 

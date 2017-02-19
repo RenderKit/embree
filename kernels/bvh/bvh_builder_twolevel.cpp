@@ -279,7 +279,7 @@ namespace embree
       bvh->postBuild(t0);
 #if PROFILE
       double d1 = getSeconds();
-      std::cout << "TOP_LEVEL OPENING/REBUILD TIME " << d1-d0 << " ms" << std::endl;
+      std::cout << "TOP_LEVEL OPENING/REBUILD TIME " << 1000.0*(d1-d0) << " ms" << std::endl;
 #endif
     }
     
