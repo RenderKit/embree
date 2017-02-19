@@ -27,6 +27,7 @@
 #define USE_SUBTREE_SIZE_FOR_BINNING 1
 #define ENABLE_OPENING_SPLITS        0
 
+#define NEW_OPENING_HEURISTIC        0
 
 #define MAX_OPENED_CHILD_NODES 8
 
@@ -104,7 +105,7 @@ namespace embree
         
         /*! remember prim array */
         __forceinline HeuristicArrayOpenMergeSAH (const NodeOpenerFunc& nodeOpenerFunc, PrimRef* prims0, const PrimInfo &root_info)
-          : prims0(prims0), nodeOpenerFunc(nodeOpenerFunc), root_info(root_info) {}
+          : prims0(prims0), nodeOpenerFunc(nodeOpenerFunc), root_info(root_info), inv_root_area(1.0f / area(root_info.geomBounds)) { }
 
 
         /*! compute extended ranges */
@@ -153,6 +154,132 @@ namespace embree
           }
         }
 
+#if NEW_OPENING_HEURISTIC == 1
+
+        const Split find(Set& set, PrimInfo& pinfo, const size_t logBlockSize)
+        {
+          /* single element */
+          if (pinfo.size() == 1)
+            return Split(ObjectSplit(),inf,false);
+
+          const float area_factor = area(pinfo.geomBounds) * inv_root_area;
+          if (area_factor < 1E-5f) set.set_ext_range(set.end()); /* disable opening */
+
+          if (unlikely(set.has_ext_range()))
+          {
+            /* disjoint test */
+            bool disjoint = false;
+            const size_t D = 8;
+            if (pinfo.size() <= D)
+            {
+              disjoint = true;
+              for (size_t j=pinfo.begin;j<pinfo.end-1;j++)
+                for (size_t i=pinfo.begin+1;i<pinfo.end;i++)
+                  if (conjoint(prims0[j].bounds(),prims0[i].bounds()))
+                  { disjoint = false; break; }        
+            }
+            if (disjoint) set.set_ext_range(set.end()); /* disable opening */
+          }
+
+          /* common geomID */
+          if (set.has_ext_range())
+          {
+            bool commonGeomID = true;
+            float avg_area = 0.0f;
+            const unsigned int geomID = prims0[pinfo.begin].geomID();
+            for (size_t i=pinfo.begin;i<pinfo.end;i++)
+            {
+              avg_area += prims0[i].sah;
+              if (unlikely(prims0[i].geomID() != geomID)) 
+              {
+                commonGeomID = false;
+                break;
+              }
+            }
+
+            if (commonGeomID)
+            {
+              const size_t max_ext_range_size = set.ext_range_size();
+              const size_t ext_range_start = set.end();
+              size_t extra_elements = 0;
+
+              avg_area *= 1.0f / pinfo.size();
+              for (size_t i=pinfo.begin;i<pinfo.end;i++)
+                if (!prims0[i].node.isLeaf() && prims0[i].sah > avg_area)
+                {
+                  PrimRef tmp[MAX_OPENED_CHILD_NODES];
+                  const size_t n = nodeOpenerFunc(prims0[i],tmp);
+                  if (extra_elements + n-1 >= max_ext_range_size) break;
+
+                  for (size_t j=0;j<n;j++)
+                    pinfo.extend(tmp[j].bounds());
+
+                  prims0[i] = tmp[0];
+                  for (size_t j=1;j<n;j++)
+                    prims0[ext_range_start+extra_elements+j-1] = tmp[j]; 
+                  extra_elements += n-1;
+                }
+              pinfo.end += extra_elements;
+              Set nset(set.begin(),set.end()+extra_elements,set.ext_end());
+              set = nset;            
+              set.set_ext_range(set.end()); /* disable opening */
+            }
+          }
+
+          /* open node(s) with max area */
+          if (set.has_ext_range())
+          {
+            const size_t max_ext_range_size = set.ext_range_size();
+            const size_t ext_range_start = set.end();
+            size_t extra_elements = 0;
+
+            for (size_t k=0;k<1;k++)
+            {
+              //PRINT("OPEN");
+              float max_sah = 0.0f;
+              ssize_t max_index = -1;
+              for (size_t i=pinfo.begin;i<pinfo.end;i++)
+                if (!prims0[i].node.isLeaf())
+                {
+                  max_sah = max(max_sah,prims0[i].sah);
+                  max_index = (ssize_t)i;
+                }
+              //PRINT(max_sah);
+              //PRINT(max_index);
+              if (max_index != -1)
+              {
+                PrimRef tmp[MAX_OPENED_CHILD_NODES];
+                const size_t n = nodeOpenerFunc(prims0[max_index],tmp);  
+                //PRINT(max_ext_range_size);
+                if (extra_elements + n-1 < max_ext_range_size)
+                {
+                  for (size_t j=0;j<n;j++)
+                    pinfo.extend(tmp[j].bounds());
+
+                  prims0[max_index] = tmp[0];
+                  for (size_t j=1;j<n;j++)
+                    prims0[ext_range_start+extra_elements+j-1] = tmp[j];                   
+                  extra_elements += n-1;
+                } 
+              }
+              else
+                break;
+            }
+            pinfo.end += extra_elements;
+            Set nset(set.begin(),set.end()+extra_elements,set.ext_end());
+            set = nset;            
+          }
+        
+            
+          /* find best split */
+          SplitInfo oinfo;
+          const ObjectSplit object_split = object_find(set,pinfo,logBlockSize,oinfo);
+          const float object_split_sah = object_split.splitSAH();
+          
+          return Split(object_split,object_split_sah,false);
+        }
+
+#else
         /*! finds the best split */
         const Split find(Set& set, PrimInfo& pinfo, const size_t logBlockSize)
         {
@@ -197,6 +324,7 @@ namespace embree
           DBG_PRINT("OBJECT SPLIT");
           return Split(object_split,object_split_sah,false);
         }
+#endif
 
         /*! finds the best object split */
         __forceinline const ObjectSplit object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo &info)
@@ -663,6 +791,7 @@ namespace embree
         PrimRef* const prims0;
         const NodeOpenerFunc& nodeOpenerFunc;
         const PrimInfo& root_info;
+        const float inv_root_area;
       };
   }
 }

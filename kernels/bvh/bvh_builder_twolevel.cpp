@@ -30,7 +30,8 @@
 /* sequential opening phase in old code path */
 #define ENABLE_OPEN_SEQUENTIAL 1
 
-#define SPLIT_MEMORY_RESERVE_FACTOR 10
+#define SPLIT_MEMORY_RESERVE_FACTOR 100
+//#define SPLIT_MEMORY_RESERVE_FACTOR 5000
 
 namespace embree
 {
@@ -149,26 +150,25 @@ namespace embree
 
 #if ENABLE_OPEN_SEQUENTIAL == 1
         open_sequential(numPrimitives,MAX_OPEN_SIZE); 
-        PRINT(refs.size());
 #endif
         /* compute PrimRefs */
         prims.resize(refs.size());
 #else
-        //PRINT(refs.size());
-        //open_sequential2(refs.size()); 
+
+#if NEW_OPENING_HEURISTIC == 0
         mvector<BuildRef> final(scene->device);
         BBox3fa root_bounds(empty);
         for (size_t i=0;i<refs.size();i++)
           root_bounds.extend(refs[i].bounds());
-        PRINT(root_bounds);
         open_recursive(refs,final,area(root_bounds));
-        PRINT(final.size());
         refs.resize(final.size());
         for (size_t i=0;i<final.size();i++)
           refs[i] = final[i];
-        //PRINT(refs.size());
 #endif
 
+#endif
+
+        PRINT(refs.size());
 
 
 #if defined(TASKING_TBB) && defined(__AVX512ER__) && USE_TASK_ARENA // KNL
@@ -214,7 +214,8 @@ namespace embree
             NodeRef root;
 #if ENABLER_DIRECT_SAH_MERGE_BUILDER == 1
 
-            const size_t extSize = max(pinfo.size(),size_t(pinfo.size() * SPLIT_MEMORY_RESERVE_FACTOR));
+            const size_t extSize = max(max((size_t)1000,refs.size()),size_t(numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
+            PRINT(extSize);
             refs.resize(extSize);
 
             BVHBuilderBinnedOpenMergeSAH::build<NodeRef,BuildRef>
@@ -237,12 +238,7 @@ namespace embree
                 return 1;
               },
                [&] (BuildRef &bref, BuildRef *refs) -> size_t { 
-#if 0
-                 // FIXME: increases SAH ???
-                 return openBuildRefDeep(bref,refs,MAX_OPENED_CHILD_NODES);
-#else
                  return openBuildRef(bref,refs);
-#endif
                },              
                [&] (size_t dn) { bvh->scene->progressMonitor(0); },
                refs.data(),extSize,pinfo,N,BVH::maxBuildDepthLeaf,N,1,1,1.0f,1.0f,singleThreadThreshold);
@@ -398,70 +394,6 @@ namespace embree
       double t1 = getSeconds();
       PRINT(refs.size());
       PRINT(t1-t0);
-
-      // ==================================
-#define OBJECT_BINS 32
-      const size_t logBlockSize = 1;
-      typedef BinSplit<OBJECT_BINS> ObjectSplit;
-      typedef BinInfoT<OBJECT_BINS,BuildRef,BBox3fa> ObjectBinner;
-      while(refs.size()+N-1 <= num)
-      {
-        ObjectBinner binner(empty); 
-
-        PrimInfo pinfo(empty);
-        for (size_t i=0;i<refs.size();i++)
-        {
-          BuildRef tmp[8];
-          size_t n = openBuildRef(refs[i],tmp);
-          for (size_t j=0;j<n;j++)
-            pinfo.extend(tmp[j].bounds());
-        }
-
-        const BinMapping<OBJECT_BINS> mapping(pinfo.centBounds,OBJECT_BINS);          
-
-        for (size_t i=0;i<refs.size();i++)
-        {
-          BuildRef tmp[8];
-          size_t n = openBuildRef(refs[i],tmp);
-          binner.binSubTreeRefs(tmp,0,n,mapping); 
-        }
-
-        ObjectSplit split = binner.best(mapping,logBlockSize);
-        PRINT(split);
-        if (!split.valid()) break;
-
-        const float fpos = split.mapping.pos(split.pos,split.dim);
-
-        const size_t current = refs.size();
-        PRINT(current);
-        bool open = false;
-        for (size_t i=0;i<current;i++)
-        {          
-          if (unlikely(refs[i].bounds().lower[split.dim] < fpos && refs[i].bounds().upper[split.dim] > fpos))
-          {
-            BuildRef tmp[8];
-            size_t n = openBuildRef(refs[i],tmp);
-            if (likely(n==1)) continue;
-
-            if (refs.size() + n < num)
-            {
-              open = true;
-              PRINT("OPEN");
-              PRINT(n);
-              refs[i] = tmp[0];
-              for (size_t j=1;j<n;j++)
-                refs.push_back(tmp[j]);
-            }
-            // FIXME: early exit
-          }
-        }
-        PRINT(refs.size());                
-        PRINT(open);
-        if(!open) break;
-      }
-      //exit(0);
-      // ==================================
-
     }
 
     template<int N, typename Mesh>
@@ -548,6 +480,7 @@ namespace embree
       /* split into two sets */
 
       const size_t logBlockSize = 1;
+      const size_t OBJECT_BINS = 32;
       typedef BinSplit<OBJECT_BINS> ObjectSplit;
       typedef BinInfoT<OBJECT_BINS,BuildRef,BBox3fa> ObjectBinner;
 
