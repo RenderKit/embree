@@ -31,7 +31,9 @@
 #define ENABLE_OPEN_SEQUENTIAL 1
 
 #define SPLIT_MEMORY_RESERVE_FACTOR 1000
-//#define SPLIT_MEMORY_RESERVE_FACTOR 5000
+
+
+// for non-opening two-level appraoch set ENABLER_DIRECT_SAH_MERGE_BUILDER and ENABLE_OPEN_SEQUENTIAL to 0
 
 namespace embree
 {
@@ -361,7 +363,7 @@ namespace embree
 #if 0
       float min_sah = inf;
       for (size_t i=0;i<refs.size();i++)
-        min_sah = min(min_sah,refs[i].sah);
+        min_sah = min(min_sah,refs[i].bounds_area);
       
       std::make_heap(refs.begin(),refs.end());
       while (refs.size()+N-1 <= num)
@@ -374,7 +376,7 @@ namespace embree
         /* exit if leaf */
         if (ref.isLeaf()) break;
         /* exit if area is <= min _sah */
-        if (bref.sah < min_sah) break;
+        if (bref.bounds_area < min_sah) break;
 
         refs.pop_back();    
 
@@ -399,7 +401,6 @@ namespace embree
     template<int N, typename Mesh>
     void BVHNBuilderTwoLevel<N,Mesh>::open_recursive(mvector<BuildRef> &current, mvector<BuildRef> &final, const float root_area)
     {
-      //std::cout << std::endl;
       if (current.size() == 1)
       {
         final.push_back(current[0]);
@@ -433,7 +434,7 @@ namespace embree
       {
         if (!current[i].node.isLeaf())
         {
-          max_sah = max(max_sah,current[i].sah);
+          max_sah = max(max_sah,current[i].bounds_area);
           max_index = (ssize_t)i;
         }
         if (current[i].geomID() != geomID) commonGeomID = false;
@@ -444,10 +445,10 @@ namespace embree
       {
 #if 1
         float avg_area = 0.0f;
-        for (size_t i=0;i<current.size();i++) avg_area += current[i].sah;
+        for (size_t i=0;i<current.size();i++) avg_area += current[i].bounds_area;
         avg_area *= 1.0f / current.size();
         for (size_t i=0;i<current.size();i++)
-          if (current[i].sah > avg_area)
+          if (current[i].bounds_area > avg_area)
           {
             BuildRef tmp[8];
             const size_t n = openBuildRef(current[i],tmp);

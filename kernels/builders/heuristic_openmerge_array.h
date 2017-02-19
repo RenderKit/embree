@@ -41,14 +41,12 @@ namespace embree
         
         __forceinline SplitOpenMerge (const SplitOpenMerge& other) 
         {
-          opened = other.opened;
           sah    = other.sah;
           objectSplit()  = other.objectSplit();
         }
         
         __forceinline SplitOpenMerge& operator= (const SplitOpenMerge& other) 
         {
-          opened = other.opened;
           sah    = other.sah;
           objectSplit()  = other.objectSplit();
           return *this;
@@ -57,8 +55,8 @@ namespace embree
         __forceinline       ObjectSplit&  objectSplit()        { return split; }
         __forceinline const ObjectSplit&  objectSplit() const  { return split; }
         
-        __forceinline SplitOpenMerge (const ObjectSplit& objectSplit, float sah, bool opened = false)
-          : opened(opened), sah(sah), split(objectSplit)
+        __forceinline SplitOpenMerge (const ObjectSplit& objectSplit, float sah)
+          : sah(sah), split(objectSplit)
         {
         }
                 
@@ -71,7 +69,6 @@ namespace embree
         }
         
       public:
-        bool opened;
         float sah;
         ObjectSplit split;
       };
@@ -157,7 +154,7 @@ namespace embree
         {
           /* single element */
           if (pinfo.size() == 1)
-            return Split(ObjectSplit(),inf,false);
+            return Split(ObjectSplit(),inf);
 
           const float area_factor = area(pinfo.geomBounds) * inv_root_area;
           if (area_factor < 1E-5f) set.set_ext_range(set.end()); /* disable opening */
@@ -186,7 +183,7 @@ namespace embree
             const unsigned int geomID = prims0[pinfo.begin].geomID();
             for (size_t i=pinfo.begin;i<pinfo.end;i++)
             {
-              avg_area += prims0[i].sah;
+              avg_area += prims0[i].bounds_area;
               if (unlikely(prims0[i].geomID() != geomID)) 
               {
                 commonGeomID = false;
@@ -203,7 +200,7 @@ namespace embree
               // test if stil required
               avg_area *= 1.0f / pinfo.size();
               for (size_t i=pinfo.begin;i<pinfo.end;i++)
-                if (!prims0[i].node.isLeaf() && prims0[i].sah > avg_area)
+                if (!prims0[i].node.isLeaf() && prims0[i].bounds_area >= avg_area)
                 {
                   PrimRef tmp[MAX_OPENED_CHILD_NODES];
                   const size_t n = nodeOpenerFunc(prims0[i],tmp);
@@ -236,16 +233,16 @@ namespace embree
             // this works better
             float avg_area = 0.0f;
             for (size_t i=pinfo.begin;i<pinfo.end;i++)
-              avg_area += prims0[i].sah;
+              avg_area += prims0[i].bounds_area;
             avg_area *= 1.0f / pinfo.size();
-
+            //size_t opens = 0;
             for (size_t i=pinfo.begin;i<pinfo.end;i++)
-              if (!prims0[i].node.isLeaf() && prims0[i].sah > avg_area)
+              if (!prims0[i].node.isLeaf() && prims0[i].bounds_area >= avg_area)
               {
                 PrimRef tmp[MAX_OPENED_CHILD_NODES];
                 const size_t n = nodeOpenerFunc(prims0[i],tmp);
                 if (extra_elements + n-1 >= max_ext_range_size) break;
-
+                //opens++;
                 for (size_t j=0;j<n;j++)
                   pinfo.extend(tmp[j].bounds());
 
@@ -253,8 +250,9 @@ namespace embree
                 for (size_t j=1;j<n;j++)
                   prims0[ext_range_start+extra_elements+j-1] = tmp[j]; 
                 extra_elements += n-1;
-              }
-
+              }            
+            //PRINT(opens);
+            // TODO: if not open pick maxsah
 #else
             for (size_t k=0;k<1;k++)
             {
@@ -263,7 +261,7 @@ namespace embree
               for (size_t i=pinfo.begin;i<pinfo.end;i++)
                 if (!prims0[i].node.isLeaf())
                 {
-                  max_sah = max(max_sah,prims0[i].sah);
+                  max_sah = max(max_sah,prims0[i].bounds_area);
                   max_index = (ssize_t)i;
                 }
               if (max_index != -1)
@@ -295,7 +293,7 @@ namespace embree
           SplitInfo oinfo;
           const ObjectSplit object_split = object_find(set,pinfo,logBlockSize,oinfo);
           const float object_split_sah = object_split.splitSAH();
-          return Split(object_split,object_split_sah,false);
+          return Split(object_split,object_split_sah);
         }
 
 #else
@@ -305,14 +303,14 @@ namespace embree
           /* need to avoid splitting single element ranges */
           if (pinfo.size() <= 1)
           {
-            return  Split(ObjectSplit(),inf,false);
+            return  Split(ObjectSplit(),inf);
           }
 
           assert(pinfo.size() > 1);
           SplitInfo oinfo;
           const ObjectSplit object_split = object_find(set,pinfo,logBlockSize,oinfo);
           const float object_split_sah = object_split.splitSAH();
-          return Split(object_split,object_split_sah,false);
+          return Split(object_split,object_split_sah);
         }
 #endif
 

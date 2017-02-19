@@ -46,9 +46,9 @@ namespace embree
           : PrimRef(bounds,(size_t)node), node(node)
         {
           if (node.isLeaf())
-            sah = 0.0f;
+            bounds_area = 0.0f;
           else
-            sah = area(this->bounds());
+            bounds_area = area(this->bounds());
         }
 
         /* used by the open/merge bvh builder */
@@ -57,24 +57,24 @@ namespace embree
         {
           /* important for relative buildref ordering */
           if (node.isLeaf())
-            sah = 0.0f;
+            bounds_area = 0.0f;
           else
-            sah = area(this->bounds());
+            bounds_area = area(this->bounds());
         }
 
         friend bool operator< (const BuildRef& a, const BuildRef& b) {
-          return a.sah < b.sah;
+          return a.bounds_area < b.bounds_area;
         }
 
         friend __forceinline std::ostream& operator<<(std::ostream& cout, const BuildRef& ref) {
-          return cout << "{ lower = " << ref.lower << ", upper = " << ref.upper << ", center2 = " << ref.center2() << ", geomID = " << ref.geomID() << ", numPrimitives = " << ref.numPrimitives() << ", area = " << ref.sah << " }";
+          return cout << "{ lower = " << ref.lower << ", upper = " << ref.upper << ", center2 = " << ref.center2() << ", geomID = " << ref.geomID() << ", numPrimitives = " << ref.numPrimitives() << ", bounds_area = " << ref.bounds_area << " }";
         }
 
         __forceinline unsigned int numPrimitives() { return primID(); }
 
       public:
         NodeRef node;
-        float sah;
+        float bounds_area;
       };
 
 
@@ -96,27 +96,6 @@ namespace embree
         }
         assert(n > 1);
         return n;        
-      }
-
-
-      __forceinline size_t openBuildRefDeep(BuildRef &bref, BuildRef *const refs, const size_t maxOpen) {
-        size_t n = 1;
-        refs[0] = bref;
-        while(n+N-1 < maxOpen) 
-        {
-          size_t largest_index = 0;
-          for (size_t i=1;i<n;i++)
-            if (refs[i].sah > refs[largest_index].sah)
-              largest_index = i;
-          if (refs[largest_index].node.isLeaf() || refs[largest_index].sah == 0.0f) break;
-          BuildRef tmp[8];
-          size_t m = openBuildRef(refs[largest_index],tmp);
-          assert(m>=1);
-          refs[largest_index] = tmp[0];
-          for (size_t i=1;i<m;i++)
-            refs[n++] = tmp[i];
-        }
-        return n;
       }
       
       /*! Constructor. */
