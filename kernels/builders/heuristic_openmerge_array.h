@@ -27,7 +27,7 @@
 #define USE_SUBTREE_SIZE_FOR_BINNING 1
 #define ENABLE_OPENING_SPLITS        0
 
-#define NEW_OPENING_HEURISTIC        0
+#define NEW_OPENING_HEURISTIC        1
 
 #define MAX_OPENED_CHILD_NODES 8
 
@@ -203,6 +203,7 @@ namespace embree
               const size_t ext_range_start = set.end();
               size_t extra_elements = 0;
 
+#if 0
               avg_area *= 1.0f / pinfo.size();
               for (size_t i=pinfo.begin;i<pinfo.end;i++)
                 if (!prims0[i].node.isLeaf() && prims0[i].sah > avg_area)
@@ -219,6 +220,7 @@ namespace embree
                     prims0[ext_range_start+extra_elements+j-1] = tmp[j]; 
                   extra_elements += n-1;
                 }
+#endif
               pinfo.end += extra_elements;
               Set nset(set.begin(),set.end()+extra_elements,set.ext_end());
               set = nset;            
@@ -233,6 +235,29 @@ namespace embree
             const size_t ext_range_start = set.end();
             size_t extra_elements = 0;
 
+#if 1
+            float avg_area = 0.0f;
+            for (size_t i=pinfo.begin;i<pinfo.end;i++)
+              avg_area += prims0[i].sah;
+            avg_area *= 1.0f / pinfo.size();
+
+            for (size_t i=pinfo.begin;i<pinfo.end;i++)
+              if (!prims0[i].node.isLeaf() && prims0[i].sah > avg_area)
+              {
+                PrimRef tmp[MAX_OPENED_CHILD_NODES];
+                const size_t n = nodeOpenerFunc(prims0[i],tmp);
+                if (extra_elements + n-1 >= max_ext_range_size) break;
+
+                for (size_t j=0;j<n;j++)
+                  pinfo.extend(tmp[j].bounds());
+
+                prims0[i] = tmp[0];
+                for (size_t j=1;j<n;j++)
+                  prims0[ext_range_start+extra_elements+j-1] = tmp[j]; 
+                extra_elements += n-1;
+              }
+
+#else
             for (size_t k=0;k<1;k++)
             {
               //PRINT("OPEN");
@@ -265,6 +290,7 @@ namespace embree
               else
                 break;
             }
+#endif
             pinfo.end += extra_elements;
             Set nset(set.begin(),set.end()+extra_elements,set.ext_end());
             set = nset;            
@@ -275,7 +301,6 @@ namespace embree
           SplitInfo oinfo;
           const ObjectSplit object_split = object_find(set,pinfo,logBlockSize,oinfo);
           const float object_split_sah = object_split.splitSAH();
-          
           return Split(object_split,object_split_sah,false);
         }
 

@@ -30,7 +30,7 @@
 /* sequential opening phase in old code path */
 #define ENABLE_OPEN_SEQUENTIAL 1
 
-#define SPLIT_MEMORY_RESERVE_FACTOR 100
+#define SPLIT_MEMORY_RESERVE_FACTOR 1000
 //#define SPLIT_MEMORY_RESERVE_FACTOR 5000
 
 namespace embree
@@ -214,7 +214,7 @@ namespace embree
             NodeRef root;
 #if ENABLER_DIRECT_SAH_MERGE_BUILDER == 1
 
-            const size_t extSize = max(max((size_t)1000,refs.size()),size_t(numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
+            const size_t extSize = max(max((size_t)1000,refs.size()*2),size_t(numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
             PRINT(extSize);
             refs.resize(extSize);
 
@@ -493,7 +493,7 @@ namespace embree
       const BinMapping<OBJECT_BINS> mapping(pinfo.centBounds,OBJECT_BINS);          
 
       /* binning */
-//      binner.binSubTreeRefs(current.data(),current.size(),mapping); 
+      //binner.binSubTreeRefs(current.data(),current.size(),mapping); 
       binner.bin(current.data(),current.size(),mapping); 
 
       ObjectSplit split = binner.best(mapping,logBlockSize);
