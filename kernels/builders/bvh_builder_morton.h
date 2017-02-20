@@ -25,6 +25,34 @@ namespace embree
   {
     struct BVHBuilderMorton
     {      
+      /*! settings for msmblur builder */
+      struct Settings
+      {
+        /*! default settings */
+        Settings () 
+        : branchingFactor(2), maxDepth(32), minLeafSize(1), maxLeafSize(8), singleThreadThreshold(1024) {}
+
+        /*! initialize settings from API settings */
+        Settings (const RTCBuildSettings& settings)
+        : branchingFactor(2), maxDepth(32), minLeafSize(1), maxLeafSize(8), singleThreadThreshold(1024)
+        {
+          if (RTC_BUILD_SETTINGS_HAS(settings,branchingFactor)) branchingFactor = settings.branchingFactor;
+          if (RTC_BUILD_SETTINGS_HAS(settings,maxDepth       )) maxDepth        = settings.maxDepth;
+          if (RTC_BUILD_SETTINGS_HAS(settings,minLeafSize    )) minLeafSize     = settings.minLeafSize;
+          if (RTC_BUILD_SETTINGS_HAS(settings,maxLeafSize    )) maxLeafSize     = settings.maxLeafSize;
+        }
+        
+        Settings (size_t branchingFactor, size_t maxDepth, size_t minLeafSize, size_t maxLeafSize, size_t singleThreadThreshold)
+        : branchingFactor(branchingFactor), maxDepth(maxDepth), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), singleThreadThreshold(singleThreadThreshold) {}
+        
+      public:
+        size_t branchingFactor;  //!< branching factor of BVH to build
+        size_t maxDepth;         //!< maximal depth of BVH to build
+        size_t minLeafSize;      //!< minimal size of a leaf
+        size_t maxLeafSize;      //!< maximal size of a leaf
+        size_t singleThreadThreshold; //!< threshold when we switch to single threaded build
+      };
+
       class BuildRecord 
       {
       public:
@@ -268,7 +296,7 @@ namespace embree
         typename CalculateBounds, 
         typename ProgressMonitor>
         
-        class BuilderT
+        class BuilderT : private Settings
       {
         ALIGNED_CLASS;
         
@@ -279,26 +307,21 @@ namespace embree
       public:
         
         BuilderT (CreateAllocator& createAllocator, 
-                                 CreateNodeFunc& createNode, 
-                                 SetNodeBoundsFunc& setBounds, 
-                                 CreateLeafFunc& createLeaf, 
-                                 CalculateBounds& calculateBounds,
-                                 ProgressMonitor& progressMonitor,
-                                 const size_t branchingFactor, const size_t maxDepth, 
-                                 const size_t minLeafSize, const size_t maxLeafSize,
-                                 const size_t singleThreadThreshold)
-          : createAllocator(createAllocator), 
+                  CreateNodeFunc& createNode, 
+                  SetNodeBoundsFunc& setBounds, 
+                  CreateLeafFunc& createLeaf, 
+                  CalculateBounds& calculateBounds,
+                  ProgressMonitor& progressMonitor,
+                  const Settings& settings)
+
+          : Settings(settings),
+          createAllocator(createAllocator), 
           createNode(createNode), 
           setBounds(setBounds), 
           createLeaf(createLeaf), 
           calculateBounds(calculateBounds),
           progressMonitor(progressMonitor),
-          morton(nullptr), 
-          branchingFactor(branchingFactor), 
-          maxDepth(maxDepth), 
-          minLeafSize(minLeafSize), 
-          maxLeafSize(maxLeafSize),
-          singleThreadThreshold(singleThreadThreshold) {}
+          morton(nullptr) {}
         
         void splitFallback(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild) const
         {
@@ -549,11 +572,6 @@ namespace embree
         
       public:
         MortonID32Bit* morton;
-        const size_t branchingFactor;
-        const size_t maxDepth;
-        const size_t minLeafSize;
-        const size_t maxLeafSize;
-        const size_t singleThreadThreshold;
       };
       
       
@@ -575,11 +593,7 @@ namespace embree
                                           MortonID32Bit* src, 
                                           MortonID32Bit* tmp, 
                                           size_t numPrimitives,
-                                          const size_t branchingFactor, 
-                                          const size_t maxDepth, 
-                                          const size_t minLeafSize, 
-                                          const size_t maxLeafSize,
-                                          const size_t singleThreadThreshold)
+                                          const Settings& settings)
       {
         typedef BuilderT<
           ReductionTy,
@@ -597,11 +611,7 @@ namespace embree
                         createLeaf,
                         calculateBounds,
                         progressMonitor,
-                        branchingFactor,
-                        maxDepth,
-                        minLeafSize,
-                        maxLeafSize,
-                        singleThreadThreshold);
+                        settings);
         
         return builder.build(src,tmp,numPrimitives);
       }
@@ -624,11 +634,7 @@ namespace embree
                                  MortonID32Bit* src, 
                                  MortonID32Bit* temp, 
                                  size_t numPrimitives,
-                                 const size_t branchingFactor, 
-                                 const size_t maxDepth, 
-                                 const size_t minLeafSize, 
-                                 const size_t maxLeafSize,
-                                 const size_t singleThreadThreshold)
+                                 const Settings& settings)
       {
         /* compute scene bounds */
         const BBox3fa centBounds = parallel_reduce ( size_t(0), numPrimitives, BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa
@@ -652,8 +658,7 @@ namespace embree
                        });
         
         return build_internal<ReductionTy>(
-          createAllocator,createNode,setBounds,createLeaf,calculateBounds,progressMonitor,
-          src,temp,numPrimitives,branchingFactor,maxDepth,minLeafSize,maxLeafSize,singleThreadThreshold);
+          createAllocator,createNode,setBounds,createLeaf,calculateBounds,progressMonitor,src,temp,numPrimitives,settings);
         
       }
     };

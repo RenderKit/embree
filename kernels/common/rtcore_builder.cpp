@@ -239,11 +239,7 @@ namespace embree
         },
         
         morton_src.data(),morton_tmp.data(),numPrims,
-        settings.branchingFactor,
-        settings.maxDepth,
-        settings.minLeafSize,
-        settings.maxLeafSize,
-        Builder::DEFAULT_SINGLE_THREAD_THRESHOLD);
+        settings);
       
       return root.first;
 

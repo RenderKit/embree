@@ -381,11 +381,10 @@ namespace embree
       typedef typename BVH::AlignedNode AlignedNode;
       typedef typename BVH::NodeRef NodeRef;
 
-
     public:
       
       BVHNMeshBuilderMorton (BVH* bvh, Mesh* mesh, const size_t minLeafSize, const size_t maxLeafSize, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
-        : bvh(bvh), mesh(mesh), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), morton(bvh->device), singleThreadThreshold(singleThreadThreshold) {}
+        : bvh(bvh), mesh(mesh), morton(bvh->device), settings(N,BVH::maxBuildDepth,minLeafSize,maxLeafSize,singleThreadThreshold) {}
       
       /*! Destruction */
       ~BVHNMeshBuilderMorton () {
@@ -494,8 +493,9 @@ namespace embree
         CalculateMeshBounds<Mesh> calculateBounds(mesh);
         auto root = BVHBuilderMorton::build_internal<std::pair<NodeRef,BBox3fa>>(
           typename BVH::CreateAlloc(bvh), 
-          typename BVH::AlignedNode::Create(),setBounds,createLeaf,calculateBounds,progress,
-          morton.data(),dest,numPrimitivesGen,N,BVH::maxBuildDepth,minLeafSize,maxLeafSize,singleThreadThreshold);
+          typename BVH::AlignedNode::Create(),
+          setBounds,createLeaf,calculateBounds,progress,
+          morton.data(),dest,numPrimitivesGen,settings);
         
         bvh->set(root.first,LBBox3fa(root.second),numPrimitives);
         
@@ -524,10 +524,8 @@ namespace embree
     private:
       BVH* bvh;
       Mesh* mesh;
-      const size_t minLeafSize;
-      const size_t maxLeafSize;
       mvector<BVHBuilderMorton::MortonID32Bit> morton;
-      const size_t singleThreadThreshold;
+      BVHBuilderMorton::Settings settings;
     };
 
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
