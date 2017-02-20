@@ -107,12 +107,6 @@ namespace embree
           }
         };
         
-        __forceinline MortonCodeGenerator(const MortonCodeMapping& mapping)
-          : mapping(mapping), dest(nullptr), currentID(0), slots(0), ax(0), ay(0), az(0), ai(0) {}
-        
-        __forceinline MortonCodeGenerator(const BBox3fa& bounds, BuildPrim* dest)
-          : mapping(bounds), dest(dest), currentID(0), slots(0), ax(0), ay(0), az(0), ai(0) {}
-        
         __forceinline MortonCodeGenerator(const MortonCodeMapping& mapping, BuildPrim* dest)
           : mapping(mapping), dest(dest), currentID(0), slots(0), ax(0), ay(0), az(0), ai(0) {}
         
