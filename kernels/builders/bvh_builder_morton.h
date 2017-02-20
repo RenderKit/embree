@@ -58,12 +58,11 @@ namespace embree
       public:
         unsigned int begin;
         unsigned int end;
-        unsigned int depth;
         
         __forceinline BuildRecord() {}
         
-        __forceinline BuildRecord(const unsigned begin, const unsigned end, unsigned depth)
-          : begin(begin), end(end), depth(depth) {}
+        __forceinline BuildRecord(const unsigned begin, const unsigned end)
+          : begin(begin), end(end) {}
         
         __forceinline unsigned int size() const {
           return end - begin;
@@ -73,7 +72,6 @@ namespace embree
         {
           begin = _begin;
           end = _end;
-          depth = 1;
         }
       };
       
@@ -330,10 +328,10 @@ namespace embree
           rightChild.init(center,current.end);
         }
         
-        ReductionTy createLargeLeaf(BuildRecord& current, Allocator alloc)
+        ReductionTy createLargeLeaf(size_t depth, BuildRecord& current, Allocator alloc)
         {
           /* this should never occur but is a fatal error */
-          if (current.depth > maxDepth) 
+          if (depth > maxDepth) 
             throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
           
           /* create leaf for few primitives */
@@ -369,8 +367,6 @@ namespace embree
             splitFallback(children[bestChild],left,right);
             
             /* add new children left and right */
-            left.depth = current.depth+1; 
-            right.depth = current.depth+1;
             children[bestChild] = children[numChildren-1];
             children[numChildren-1] = left;
             children[numChildren+0] = right;
@@ -384,7 +380,7 @@ namespace embree
           /* recurse into each child */
           ReductionTy bounds[MAX_BRANCHING_FACTOR];
           for (size_t i=0; i<numChildren; i++) {
-            bounds[i] = createLargeLeaf(children[i],alloc);
+            bounds[i] = createLargeLeaf(depth+1,children[i],alloc);
           }
           return setBounds(node,bounds,numChildren);
         }
@@ -464,7 +460,7 @@ namespace embree
           right.init(center,current.end);
         }
         
-        ReductionTy recurse(BuildRecord& current, Allocator alloc, bool toplevel) 
+        ReductionTy recurse(size_t depth, BuildRecord& current, Allocator alloc, bool toplevel) 
         {
           if (alloc == nullptr) 
             alloc = createAllocator();
@@ -476,8 +472,8 @@ namespace embree
           __aligned(64) BuildRecord children[MAX_BRANCHING_FACTOR];
           
           /* create leaf node */
-          if (unlikely(current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize)) {
-            return createLargeLeaf(current,alloc);
+          if (unlikely(depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize)) {
+            return createLargeLeaf(depth,current,alloc);
           }
           
           /* fill all children by always splitting the one with the largest surface area */
@@ -508,7 +504,6 @@ namespace embree
             split(children[bestChild],left,right);
             
             /* add new children left and right */
-            left.depth = right.depth = current.depth+1;
             children[bestChild] = children[numChildren-1];
             children[numChildren-1] = left;
             children[numChildren+0] = right;
@@ -531,7 +526,7 @@ namespace embree
             /*! parallel_for is faster than spawing sub-tasks */
             parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) {
                 for (size_t i=r.begin(); i<r.end(); i++) {
-                  bounds[i] = recurse(children[i],nullptr,true); 
+                  bounds[i] = recurse(depth+1,children[i],nullptr,true); 
                   _mm_mfence(); // to allow non-temporal stores during build
                 }                
               });
@@ -541,7 +536,7 @@ namespace embree
           else
           {
             for (size_t i=0; i<numChildren; i++) 
-              bounds[i] = recurse(children[i],alloc,false);
+              bounds[i] = recurse(depth+1,children[i],alloc,false);
           }
           
           return setBounds(node,bounds,numChildren);
@@ -556,8 +551,8 @@ namespace embree
           //InPlace32BitRadixSort(morton,numPrimitives);
           
           /* build BVH */
-          BuildRecord br(0,unsigned(numPrimitives),1);
-          const ReductionTy root = recurse(br, nullptr, true);
+          BuildRecord br(0,unsigned(numPrimitives));
+          const ReductionTy root = recurse(1, br, nullptr, true);
           _mm_mfence(); // to allow non-temporal stores during build
           return root;
         }
