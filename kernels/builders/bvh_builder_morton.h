@@ -187,81 +187,6 @@ namespace embree
         vint4 ax, ay, az, ai;
       };
       
-      
-      static void InPlace32BitRadixSort(MortonID32Bit* const morton, const size_t num, const unsigned int shift = 3*8)
-      {
-        static const unsigned int BITS = 8;
-        static const unsigned int BUCKETS = (1 << BITS);
-        static const unsigned int CMP_SORT_THRESHOLD = 16;
-        
-        __aligned(64) unsigned int count[BUCKETS];
-        
-        /* clear buckets */
-        for (size_t i=0;i<BUCKETS;i++) count[i] = 0;
-        
-        /* count buckets */
-#if defined(__INTEL_COMPILER)
-#pragma nounroll
-#endif
-        for (size_t i=0;i<num;i++)
-          count[(unsigned(morton[i]) >> shift) & (BUCKETS-1)]++;
-        
-        /* prefix sums */
-        __aligned(64) unsigned int head[BUCKETS];
-        __aligned(64) unsigned int tail[BUCKETS];
-        
-        head[0] = 0;
-        for (size_t i=1; i<BUCKETS; i++)    
-          head[i] = head[i-1] + count[i-1];
-        
-        for (size_t i=0; i<BUCKETS-1; i++)    
-          tail[i] = head[i+1];
-        
-        tail[BUCKETS-1] = head[BUCKETS-1] + count[BUCKETS-1];
-        
-        assert(tail[BUCKETS-1] == head[BUCKETS-1] + count[BUCKETS-1]);      
-        assert(tail[BUCKETS-1] == num);      
-        
-        /* in-place swap */      
-        for (size_t i=0;i<BUCKETS;i++)
-        {
-          /* process bucket */
-          while(head[i] < tail[i])
-          {
-            MortonID32Bit v = morton[head[i]];
-            while(1)
-            {
-              const size_t b = (unsigned(v) >> shift) & (BUCKETS-1);
-              if (b == i) break;
-              std::swap(v,morton[head[b]++]);
-            }
-            assert(v.get(shift,BUCKETS-1) == i);
-            morton[head[i]++] = v;
-          }
-        }
-        if (shift == 0) return;
-        
-        size_t offset = 0;
-        for (size_t i=0;i<BUCKETS;i++)
-          if (count[i])
-          {
-            
-            for (size_t j=offset;j<offset+count[i]-1;j++)
-              assert(((unsigned(morton[j]) >> shift) & (BUCKETS-1)) == i);
-            
-            if (unlikely(count[i] < CMP_SORT_THRESHOLD))
-              insertionsort_ascending(morton + offset, count[i]);
-            else
-              InPlace32BitRadixSort(morton + offset, count[i], shift-BITS);
-            
-            for (size_t j=offset;j<offset+count[i]-1;j++)
-              assert(morton[j] <= morton[j+1]);
-            
-            offset += count[i];
-          }      
-      }
-      
-      
       template<
       typename ReductionTy, 
         typename Allocator, 
@@ -386,7 +311,7 @@ namespace embree
 #if defined(TASKING_TBB)
           tbb::parallel_sort(morton+current.begin(),morton+current.end());
 #else
-          InPlace32BitRadixSort(morton+current.begin(),current.size());
+          radixsort32(morton+current.begin(),current.size());
 #endif
         }
         
@@ -526,7 +451,6 @@ namespace embree
           /* using 4 phases radix sort */
           morton = src;
           radix_sort_u32(src,tmp,numPrimitives,singleThreadThreshold);
-          //InPlace32BitRadixSort(morton,numPrimitives);
           
           /* build BVH */
           range<unsigned> br(0,unsigned(numPrimitives));
