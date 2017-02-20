@@ -157,21 +157,9 @@ namespace embree
         prims.resize(refs.size());
 #else
 
-#if NEW_OPENING_HEURISTIC == 0
-        mvector<BuildRef> final(scene->device);
-        BBox3fa root_bounds(empty);
-        for (size_t i=0;i<refs.size();i++)
-          root_bounds.extend(refs[i].bounds());
-        open_recursive(refs,final,area(root_bounds));
-        refs.resize(final.size());
-        for (size_t i=0;i<final.size();i++)
-          refs[i] = final[i];
-#endif
-
 #endif
 
         PRINT(refs.size());
-
 
 #if defined(TASKING_TBB) && defined(__AVX512ER__) && USE_TASK_ARENA // KNL
         tbb::task_arena limited(32);
@@ -215,10 +203,7 @@ namespace embree
           {
             NodeRef root;
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
-            PRINT(numPrimitives);
-            PRINT(refs.size());
             const size_t extSize = max(max((size_t)1000,refs.size()*2),size_t((float)numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
-            PRINT(extSize);
             refs.resize(extSize); // reserve?
 
             double tt0 = getSeconds();
@@ -353,183 +338,6 @@ namespace embree
       }
       PRINT(refs.size());
     }
-
-
-    template<int N, typename Mesh>
-    void BVHNBuilderTwoLevel<N,Mesh>::open_sequential2(const size_t numPrimitives)
-    {
-      if (refs.size() == 0)
-	return;
-
-      double t0 = getSeconds();
-
-      size_t num = MAX_OPEN_SIZE;
-
-      refs.reserve(num);
-#if 0
-      float min_sah = inf;
-      for (size_t i=0;i<refs.size();i++)
-        min_sah = min(min_sah,refs[i].bounds_area);
-      
-      std::make_heap(refs.begin(),refs.end());
-      while (refs.size()+N-1 <= num)
-      {
-        std::pop_heap (refs.begin(),refs.end()); 
-        BuildRef &bref = refs.back();
-        NodeRef ref = bref.node;
-        unsigned int geomID   = bref.geomID();
-        unsigned int numPrims = max((unsigned int)bref.numPrimitives() / N,(unsigned int)1);
-        /* exit if leaf */
-        if (ref.isLeaf()) break;
-        /* exit if area is <= min _sah */
-        if (bref.bounds_area < min_sah) break;
-
-        refs.pop_back();    
-
-        AlignedNode* node = ref.alignedNode();
-        for (size_t i=0; i<N; i++) {
-          if (node->child(i) == BVH::emptyNode) continue;
-          refs.push_back(BuildRef(node->bounds(i),node->child(i),geomID,numPrims));
-
-          NodeRef ref_pre = node->child(i);
-          if (ref_pre.isAlignedNode())
-            ref_pre.prefetch();
-
-          std::push_heap (refs.begin(),refs.end()); 
-        }
-      }
-#endif
-      double t1 = getSeconds();
-      PRINT(refs.size());
-      PRINT(t1-t0);
-    }
-
-    template<int N, typename Mesh>
-    void BVHNBuilderTwoLevel<N,Mesh>::open_recursive(mvector<BuildRef> &current, mvector<BuildRef> &final, const float root_area)
-    {
-      if (current.size() == 1)
-      {
-        final.push_back(current[0]);
-        return;
-      }      
-#if 1
-      /* disjoint test */
-      const size_t D = 8;
-      if (current.size() <= D)
-      {
-        bool disjoint = true;
-        for (size_t j=0;j<current.size()-1;j++)
-          for (size_t i=1;i<current.size();i++)
-            if (conjoint(current[j].bounds(),current[i].bounds()))
-            { disjoint = false; break; }
-        
-        if (disjoint) 
-        {
-          for (size_t j=0;j<current.size();j++)
-            final.push_back(current[j]);
-          return;
-        } 
-      }
-#endif      
-
-      unsigned int geomID = current[0].geomID();
-      bool commonGeomID = true;
-      float max_sah = 0.0f;
-      ssize_t max_index = -1;
-      for (size_t i=0;i<current.size();i++)
-      {
-        if (!current[i].node.isLeaf())
-        {
-          max_sah = max(max_sah,current[i].bounds_area);
-          max_index = (ssize_t)i;
-        }
-        if (current[i].geomID() != geomID) commonGeomID = false;
-      }
-      
-      /* only leaves ? */
-      if (max_index == -1 || commonGeomID || max_sah/root_area <= 1E-4f)
-      {
-#if 1
-        float avg_area = 0.0f;
-        for (size_t i=0;i<current.size();i++) avg_area += current[i].bounds_area;
-        avg_area *= 1.0f / current.size();
-        for (size_t i=0;i<current.size();i++)
-          if (current[i].bounds_area > avg_area)
-          {
-            BuildRef tmp[8];
-            const size_t n = openBuildRef(current[i],tmp);
-            for (size_t j=0;j<n;j++)
-              final.push_back(tmp[j]);
-          }
-          else
-            final.push_back(current[i]);
-            
-
-#else
-        for (size_t i=0;i<current.size();i++)
-        {
-          final.push_back(current[i]);
-        }
-#endif
-        return;
-      }
-
-      assert(!current[max_index].node.isLeaf());
-
-      /* open max area node */
-      BuildRef tmp[8];
-      const size_t n = openBuildRef(current[max_index],tmp);
-      current[max_index] = tmp[0];
-      
-      for (size_t j=1;j<n;j++)
-        current.push_back(tmp[j]);
-
-      /* split into two sets */
-
-      const size_t logBlockSize = 1;
-      const size_t OBJECT_BINS = 32;
-      typedef BinSplit<OBJECT_BINS> ObjectSplit;
-      typedef BinInfoT<OBJECT_BINS,BuildRef,BBox3fa> ObjectBinner;
-
-      ObjectBinner binner(empty); 
-
-      PrimInfo pinfo(empty);
-      for (size_t i=0;i<current.size();i++)
-        pinfo.extend(current[i].bounds());
-
-      const BinMapping<OBJECT_BINS> mapping(pinfo.centBounds,OBJECT_BINS);          
-
-      /* binning */
-      //binner.binSubTreeRefs(current.data(),current.size(),mapping); 
-      binner.bin(current.data(),current.size(),mapping); 
-
-      ObjectSplit split = binner.best(mapping,logBlockSize);
-      assert(split.valid());
-
-      mvector<BuildRef> left(scene->device);
-      mvector<BuildRef> right(scene->device);
-
-      /* split */
-      const unsigned int splitPos = split.pos;
-      const unsigned int splitDim = split.dim;
-      const unsigned int splitDimMask = (unsigned int)1 << splitDim; 
-      const vint4 vSplitPos(splitPos);
-      const vbool4 vSplitMask( (int)splitDimMask );
-      for (size_t i=0;i<current.size();i++)
-      {
-        if (any(((vint4)split.mapping.bin(current[i].bounds().center2()) < vSplitPos) & vSplitMask))
-          left.push_back(current[i]);
-        else
-          right.push_back(current[i]);
-      }
-
-      assert(left.size());
-      assert(right.size());
-      open_recursive(left, final, root_area);
-      open_recursive(right, final, root_area);
-
-    }
-
 
 #if defined(EMBREE_GEOMETRY_LINES)    
     Builder* BVH4BuilderTwoLevelLineSegmentsSAH (void* bvh, Scene* scene, const createLineSegmentsAccelTy createMeshAccel) {

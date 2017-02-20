@@ -90,7 +90,7 @@ namespace embree
         typedef extended_range<size_t> Set;
         typedef SplitOpenMerge<ObjectSplit> Split;
         
-        static const size_t PARALLEL_THRESHOLD = 2*1024;
+        static const size_t PARALLEL_THRESHOLD = 1024;
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 512;
         static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;
 

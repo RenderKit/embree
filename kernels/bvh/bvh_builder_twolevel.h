@@ -110,9 +110,6 @@ namespace embree
       void clear();
 
       void open_sequential(const size_t numPrimitives, const size_t maxOpenSize);
-      void open_sequential2(const size_t numPrimitives);
-      
-      void open_recursive(mvector<BuildRef> &current, mvector<BuildRef> &final,const float root_area);
 
     public:
       BVH* bvh;
