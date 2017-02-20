@@ -74,14 +74,6 @@ namespace embree
         
         __forceinline operator unsigned() const { return code; }
         
-        __forceinline unsigned int get(const unsigned int shift, const unsigned int and_mask) const {
-          return (code >> shift) & and_mask;
-        }
-        
-        __forceinline unsigned int getByte(const size_t index) const {
-          return ((unsigned char*)&code)[index];
-        }
-        
         __forceinline bool operator<(const MortonID32Bit &m) const { return code < m.code; } 
         
         __forceinline friend std::ostream &operator<<(std::ostream &o, const MortonID32Bit& mc) {
@@ -136,7 +128,7 @@ namespace embree
           const vfloat4 lower = (vfloat4)b.lower;
           const vfloat4 upper = (vfloat4)b.upper;
           const vfloat4 centroid = lower+upper;
-          const vint4 binID = vint4((centroid-mapping.base)*mapping.scale); // FIXME: transform into fma
+          const vint4 binID = vint4((centroid-mapping.base)*mapping.scale);
           
 #if defined(__AVX2__)
           const unsigned int x = extract<0>(binID);
@@ -169,7 +161,7 @@ namespace embree
           const vfloat4 lower = (vfloat4)b.lower;
           const vfloat4 upper = (vfloat4)b.upper;
           const vfloat4 centroid = lower+upper;
-          const vint4 binID = vint4((centroid-mapping.base)*mapping.scale); // FIXME: transform into fma
+          const vint4 binID = vint4((centroid-mapping.base)*mapping.scale);
           const unsigned int x = extract<0>(binID);
           const unsigned int y = extract<1>(binID);
           const unsigned int z = extract<2>(binID);
