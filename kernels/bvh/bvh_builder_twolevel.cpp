@@ -25,15 +25,15 @@
 #define MAX_OPEN_SIZE 10000
 
 /* new open/merge builder */
-#define ENABLER_DIRECT_SAH_MERGE_BUILDER 1
+#define ENABLE_DIRECT_SAH_MERGE_BUILDER 1
 
 /* sequential opening phase in old code path */
-#define ENABLE_OPEN_SEQUENTIAL 1
+#define ENABLE_OPEN_SEQUENTIAL 0
 
 #define SPLIT_MEMORY_RESERVE_FACTOR 1000
 
 
-// for non-opening two-level appraoch set ENABLER_DIRECT_SAH_MERGE_BUILDER and ENABLE_OPEN_SEQUENTIAL to 0
+// for non-opening two-level appraoch set ENABLE_DIRECT_SAH_MERGE_BUILDER and ENABLE_OPEN_SEQUENTIAL to 0
 
 namespace embree
 {
@@ -127,7 +127,7 @@ namespace embree
 
           /* create build primitive */
           if (!object->getBounds().empty())
-#if ENABLER_DIRECT_SAH_MERGE_BUILDER == 1
+#if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
             refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root,objectID,mesh->size());
 #else
           refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root);
@@ -148,7 +148,7 @@ namespace embree
         /* open all large nodes */
         refs.resize(nextRef);
 
-#if ENABLER_DIRECT_SAH_MERGE_BUILDER == 0
+#if ENABLE_DIRECT_SAH_MERGE_BUILDER == 0
 
 #if ENABLE_OPEN_SEQUENTIAL == 1
         open_sequential(numPrimitives,MAX_OPEN_SIZE); 
@@ -178,7 +178,7 @@ namespace embree
         limited.execute([&]
 #endif
         {
-#if ENABLER_DIRECT_SAH_MERGE_BUILDER == 1
+#if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
 
           const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(),  PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {
 
@@ -214,11 +214,11 @@ namespace embree
           else
           {
             NodeRef root;
-#if ENABLER_DIRECT_SAH_MERGE_BUILDER == 1
+#if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
 
             const size_t extSize = max(max((size_t)1000,refs.size()*2),size_t(numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
             PRINT(extSize);
-            refs.resize(extSize);
+            refs.resize(extSize); // reserve?
 
             BVHBuilderBinnedOpenMergeSAH::build<NodeRef,BuildRef>
               (root,

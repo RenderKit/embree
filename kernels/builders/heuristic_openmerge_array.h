@@ -17,6 +17,7 @@
 // TODO: 
 //       - adjust parallel build thresholds
 //       - do statistics about how many nodes are opened
+//       - save commonGeomID test in buildrecord
   
 #pragma once
 
