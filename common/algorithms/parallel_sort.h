@@ -229,7 +229,7 @@ namespace embree
       /* process bucket */
       while(head[i] < tail[i])
       {
-        const T v = morton[head[i]];
+        T v = morton[head[i]];
         while(1)
         {
           const size_t b = (unsigned(v) >> shift) & (BUCKETS-1);
