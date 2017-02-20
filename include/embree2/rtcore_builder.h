@@ -20,32 +20,25 @@
 #include "rtcore.h"
 
 /*! \brief Defines an opaque allocator type */
-typedef struct __RTCAllocator {}* RTCAllocator;
+typedef struct __RTCBvh {}* RTCBVH;
 
 /*! \brief Defines an opaque thread local allocator type */
 typedef struct __RTCThreadLocalAllocator {}* RTCThreadLocalAllocator;
 
-/*! Creates a new allocator. */
-RTCORE_API RTCAllocator rtcNewAllocator(RTCDevice device, size_t estimatedBytes);
-
-/*! Get thread local allocator. */
-RTCORE_API RTCThreadLocalAllocator rtcGetThreadLocalAllocator(RTCAllocator allocator);
+/*! Creates a new BVH. */
+RTCORE_API RTCBVH rtcNewBVH(RTCDevice device);
 
 /*! Allocates memory using the thread local allocator. */
 RTCORE_API void* rtcThreadLocalMalloc(RTCThreadLocalAllocator allocator, size_t bytes, size_t align);
 
-/*! Deletes all thread local allocators again. This function should be
- *  called after the build finished. */
-RTCORE_API void rtcDeleteThreadLocalAllocators(RTCAllocator allocator);
+/*! Frees all data stored inside the BVH. */
+RTCORE_API void rtcClearBVH(RTCBVH bvh);
 
-/*! Frees all data stored inside the allocator. */
-RTCORE_API void rtcClearAllocator(RTCAllocator allocator);
+/*! Resets the BVH. No internal data buffers are freed, but all buffers are re-used for new allocations. */
+RTCORE_API void rtcResetBVH(RTCBVH bvh);
 
-/*! Resets the allocator. No internal data buffers are freed, but all buffers are re-used for new allocations. */
-RTCORE_API void rtcResetAllocator(RTCAllocator allocator);
-
-/*! Deletes the allocator. */
-RTCORE_API void rtcDeleteAllocator(RTCAllocator allocator);
+/*! Deletes the BVH. */
+RTCORE_API void rtcDeleteBVH(RTCBVH bvh);
 
 /*! Settings for builders */
 struct RTCBuildSettings
@@ -85,37 +78,27 @@ struct RTCORE_ALIGN(32) RTCBuildPrimitive
   int primID;                       //!< second ID
 };
 
-/*! Function that should return a pointer to thread local data that
-  can help making memory allocations faster (e.g. this pointer could
-  be a thread local allocator). When a node or leaf creation callback
-  is invoked, the appropiate thread local pointer returned by invoking
-  this callback is passed as agument. This is only an optimization as
-  the thread local pointer could also be obtained inside the create
-  node and leaf callbacks directly. */
-typedef void* (*RTCCreateThreadLocalFunc) (void* userPtr);
-
 /*! Callback to create a node. */
-typedef void* (*RTCCreateNodeFunc) (void* threadLocalPtr, size_t numChildren);
+typedef void* (*RTCCreateNodeFunc) (RTCThreadLocalAllocator allocator, size_t numChildren, void* userPtr);
 
 /*! Callback to set the pointer to the i'th child. */
-typedef void  (*RTCSetNodeChildFunc) (void* nodePtr, size_t i, void* childPtr);
+typedef void  (*RTCSetNodeChildFunc) (void* nodePtr, size_t i, void* childPtr, void* userPtr);
 
 /*! Callback to set the bounds of the i'th child. */
-typedef void  (*RTCSetNodeBoundsFunc) (void* nodePtr, size_t i, RTCBounds& bounds);
+typedef void  (*RTCSetNodeBoundsFunc) (void* nodePtr, size_t i, RTCBounds& bounds, void* userPtr);
 
 /*! Callback to create a leaf node. */
-typedef void* (*RTCCreateLeafFunc) (void* threadLocalPtr, const RTCBuildPrimitive* prims, size_t numPrims);
+typedef void* (*RTCCreateLeafFunc) (RTCThreadLocalAllocator allocator, const RTCBuildPrimitive* prims, size_t numPrims, void* userPtr);
 
 /*! Callback to provide build progress. */
-typedef void (*RTCBuildProgressFunc) (void* userPtr, size_t dn);
+typedef void (*RTCBuildProgressFunc) (size_t dn, void* userPtr);
 
 /*! SAH based BVH builder. */
-RTCORE_API void* rtcBVHBuildSAH(RTCDevice device,                               //!< embree device
+RTCORE_API void* rtcBVHBuildSAH(RTCBVH bvh,                                     //!< BVH to build
                                 const RTCBuildSettings& settings,               //!< settings for BVH builder
                                 RTCBuildPrimitive* prims,                       //!< list of input primitives
                                 size_t numPrims,                                //!< number of input primitives
-                                void* userPtr,                                  //!< user pointer passed to createThreadLocal callback
-                                RTCCreateThreadLocalFunc createThreadLocal,     //!< returns thread local data pointer passed to create functions
+                                void* userPtr,                                  //!< user pointer passed to callback functions
                                 RTCCreateNodeFunc createNode,                   //!< creates a node
                                 RTCSetNodeChildFunc setNodeChild,               //!< sets pointer to a child
                                 RTCSetNodeBoundsFunc setNodeBounds,             //!< sets bound of a child
@@ -124,12 +107,11 @@ RTCORE_API void* rtcBVHBuildSAH(RTCDevice device,                               
   ); 
 
 /*! Faster builder working with Morton Codes.. */
-RTCORE_API void* rtcBVHBuildMorton(RTCDevice device,                               //!< embree device
+RTCORE_API void* rtcBVHBuildMorton(RTCBVH bvh,                                     //!< BVH to build
                                    const RTCBuildSettings& settings,               //!< settings for BVH builder
                                    RTCBuildPrimitive* prims,                       //!< list of input primitives
                                    size_t numPrims,                                //!< number of input primitives
                                    void* userPtr,                                  //!< user pointer passed to createThreadLocal callback
-                                   RTCCreateThreadLocalFunc createThreadLocal,     //!< returns thread local data pointer passed to create functions
                                    RTCCreateNodeFunc createNode,                   //!< creates a node
                                    RTCSetNodeChildFunc setNodeChild,               //!< sets pointer to a child
                                    RTCSetNodeBoundsFunc setNodeBounds,             //!< sets bound of a child

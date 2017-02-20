@@ -49,21 +49,20 @@ namespace embree
       return 1.0f + (area(bounds[0])*children[0]->sah() + area(bounds[1])*children[1]->sah())/area(merge(bounds[0],bounds[1]));
     }
 
-    static void* create (void* threadLocalPtr, size_t numChildren) 
+    static void* create (RTCThreadLocalAllocator alloc, size_t numChildren, void* userPtr) 
     {
       assert(numChildren == 2);
-      RTCThreadLocalAllocator alloc = (RTCThreadLocalAllocator) threadLocalPtr;
       void* ptr = rtcThreadLocalMalloc(alloc,sizeof(InnerNode),16);
       return (void*) new (ptr) InnerNode;
     }
     
-    static void  setChild (void* nodePtr, size_t i, void* childPtr)
+    static void  setChild (void* nodePtr, size_t i, void* childPtr, void* userPtr)
     {
       assert(i<2);
       ((InnerNode*)nodePtr)->children[i] = (Node*) childPtr;
     }
     
-    static void  setBounds (void* nodePtr, size_t i, RTCBounds& bounds)
+    static void  setBounds (void* nodePtr, size_t i, RTCBounds& bounds, void* userPtr)
     {
       ((InnerNode*)nodePtr)->bounds[i] = (BBox3fa&) bounds;
     }
@@ -81,10 +80,9 @@ namespace embree
       return 1.0f;
     }
     
-    static void* create (void* threadLocalPtr, const RTCBuildPrimitive* prims, size_t numPrims)
+    static void* create (RTCThreadLocalAllocator alloc, const RTCBuildPrimitive* prims, size_t numPrims, void* userPtr)
     {
       assert(numPrims == 1);
-      RTCThreadLocalAllocator alloc = (RTCThreadLocalAllocator) threadLocalPtr;
       void* ptr = rtcThreadLocalMalloc(alloc,sizeof(LeafNode),16);
       return (void*) new (ptr) LeafNode(prims->primID,*(BBox3fa*)prims);
     }
@@ -96,7 +94,7 @@ namespace embree
     /* fast allocator that supports thread local operation */
     FastAllocator allocator(nullptr,false);
     
-    for (size_t i=0; i<2; i++)
+    for (size_t i=0; i<10; i++)
     {
       std::cout << "iteration " << i << ": building BVH over " << N << " primitives, " << std::flush;
       double t0 = getSeconds();
@@ -177,11 +175,7 @@ namespace embree
   }
 #endif
 
-  void* createThreadLocal (void* userPtr) {
-    return (void*) rtcGetThreadLocalAllocator((RTCAllocator)userPtr);
-  }
-
-  void buildProgress (void* userPtr, size_t dn) {
+  void buildProgress (size_t dn, void* userPtr) {
   }
 
   void build_sah_api(RTCBuildPrimitive* prims, size_t N, char* cfg)
@@ -189,14 +183,12 @@ namespace embree
     RTCDevice device = rtcNewDevice(cfg);
     rtcDeviceSetMemoryMonitorFunction2(device,memoryMonitor,nullptr);
 
-    RTCAllocator allocator = rtcNewAllocator(device,N);
+    RTCBVH bvh = rtcNewBVH(device);
 
-    for (size_t i=0; i<2; i++)
+    for (size_t i=0; i<10; i++)
     {
       std::cout << "iteration " << i << ": building BVH over " << N << " primitives, " << std::flush;
       double t0 = getSeconds();
-      
-      rtcResetAllocator(allocator);
 
       /* settings for BVH build */
       RTCBuildSettings settings;
@@ -209,14 +201,15 @@ namespace embree
       settings.travCost = 1.0f;
       settings.intCost = 1.0f;
       
-      Node* root = (Node*) rtcBVHBuildSAH(device,settings,
-                                          prims,N,(void*)allocator,
-                                          createThreadLocal,InnerNode::create,InnerNode::setChild,InnerNode::setBounds,LeafNode::create,buildProgress);
+      Node* root = (Node*) rtcBVHBuildSAH(bvh,settings,prims,N,nullptr,
+                                          InnerNode::create,InnerNode::setChild,InnerNode::setBounds,LeafNode::create,buildProgress);
       
       double t1 = getSeconds();
       
       std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << root->sah() << " [DONE]" << std::endl;
+      rtcResetBVH(bvh);
     }
+    rtcDeleteBVH(bvh);
   }
 
 #if 0 // FIXME: remove  
@@ -231,7 +224,7 @@ namespace embree
     /* fast allocator that supports thread local operation */
     FastAllocator allocator(nullptr,true);
     
-    for (size_t i=0; i<2; i++)
+    for (size_t i=0; i<10; i++)
     {
       std::cout << "iteration " << i << ": building BVH over " << N << " primitives, " << std::flush;
       double t0 = getSeconds();
@@ -303,14 +296,14 @@ namespace embree
     RTCDevice device = rtcNewDevice(cfg);
     rtcDeviceSetMemoryMonitorFunction2(device,memoryMonitor,nullptr);
 
-    RTCAllocator allocator = rtcNewAllocator(device,16*N);
+    RTCBVH bvh = rtcNewBVH(device);
 
-    for (size_t i=0; i<2; i++)
+    for (size_t i=0; i<10; i++)
     {
       std::cout << "iteration " << i << ": building BVH over " << N << " primitives, " << std::flush;
       double t0 = getSeconds();
       
-      rtcResetAllocator(allocator);
+      rtcResetBVH(bvh);
 
        /* settings for BVH build */
       RTCBuildSettings settings;
@@ -323,14 +316,14 @@ namespace embree
       settings.travCost = 1.0f;
       settings.intCost = 1.0f;
       
-      Node* root = (Node*) rtcBVHBuildMorton(device,settings,
-                                             prims,N,(void*)allocator,
-                                             createThreadLocal,InnerNode::create,InnerNode::setChild,InnerNode::setBounds,LeafNode::create,buildProgress);
+      Node* root = (Node*) rtcBVHBuildMorton(bvh,settings,prims,N,nullptr,
+                                             InnerNode::create,InnerNode::setChild,InnerNode::setBounds,LeafNode::create,buildProgress);
       
       double t1 = getSeconds();
       
       std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << root->sah() << " [DONE]" << std::endl;
     }
+    rtcDeleteBVH(bvh);
   }
   
   /* called by the C++ code for initialization */

@@ -33,24 +33,28 @@ namespace embree
 { 
   namespace isa // FIXME: support more ISAs for builders
   {
-    RTCORE_API RTCAllocator rtcNewAllocator(RTCDevice device, size_t estimatedBytes)
+    struct BVH
+    {
+      BVH (Device* device)
+        : device(device), allocator(device,true), morton_src(device), morton_tmp(device)
+      {
+        //if (estimatedBytes) allocator->init_estimate(estimatedBytes); // FIXME !!!!!!!!!!!!!!!!!!
+      }
+
+    public:
+      Device* device;
+      FastAllocator allocator;
+      mvector<BVHBuilderMorton::BuildPrim> morton_src;
+      mvector<BVHBuilderMorton::BuildPrim> morton_tmp;
+    };
+
+    RTCORE_API RTCBVH rtcNewBVH(RTCDevice device)
     {
       RTCORE_CATCH_BEGIN;
       RTCORE_TRACE(rtcNewAllocator);
       RTCORE_VERIFY_HANDLE(device);
-      FastAllocator* allocator = new FastAllocator((Device*)device,true);
-      if (estimatedBytes) allocator->init_estimate(estimatedBytes);
-      return (RTCAllocator) allocator;
+      return (RTCBVH) new BVH((Device*)device);
       RTCORE_CATCH_END((Device*)device);
-      return nullptr;
-    }
-
-    RTCORE_API RTCThreadLocalAllocator rtcGetThreadLocalAllocator(RTCAllocator allocator)
-    {
-      RTCORE_CATCH_BEGIN;
-      RTCORE_TRACE(rtcNewAllocator);
-      return (RTCThreadLocalAllocator) ((FastAllocator*) allocator)->threadLocal();
-      RTCORE_CATCH_END(((FastAllocator*) allocator)->getDevice());
       return nullptr;
     }
 
@@ -64,54 +68,54 @@ namespace embree
       return nullptr;
     }
 
-    RTCORE_API void rtcDeleteThreadLocalAllocators(RTCAllocator allocator)
+    RTCORE_API void rtcClearBVH(RTCBVH hbvh)
     {
+      BVH* bvh = (BVH*) hbvh;
       RTCORE_CATCH_BEGIN;
-      RTCORE_TRACE(rtcDeleteThreadLocalAllocators);
-      ((FastAllocator*) allocator)->cleanup();
-      RTCORE_CATCH_END(((FastAllocator*) allocator)->getDevice());
+      RTCORE_TRACE(rtcClearBVH);
+      RTCORE_VERIFY_HANDLE(hbvh);
+      bvh->allocator.clear();
+      RTCORE_CATCH_END(bvh->device);
     }
 
-    RTCORE_API void rtcClearAllocator(RTCAllocator allocator)
+    RTCORE_API void rtcResetBVH(RTCBVH hbvh)
     {
+      BVH* bvh = (BVH*) hbvh;
       RTCORE_CATCH_BEGIN;
-      RTCORE_TRACE(rtcClearAllocator);
-      ((FastAllocator*) allocator)->clear();
-      RTCORE_CATCH_END(((FastAllocator*) allocator)->getDevice());
+      RTCORE_TRACE(rtcResetBVH);
+      RTCORE_VERIFY_HANDLE(hbvh);
+      bvh->allocator.reset();
+      RTCORE_CATCH_END(bvh->device);
     }
 
-    RTCORE_API void rtcResetAllocator(RTCAllocator allocator)
+    RTCORE_API void rtcDeleteBVH(RTCBVH hbvh)
     {
-      RTCORE_CATCH_BEGIN;
-      RTCORE_TRACE(rtcResetAllocator);
-      ((FastAllocator*) allocator)->reset();
-      RTCORE_CATCH_END(((FastAllocator*) allocator)->getDevice());
-    }
-
-    RTCORE_API void rtcDeleteAllocator(RTCAllocator allocator)
-    {
+      BVH* bvh = (BVH*) hbvh;
+      Device* device = bvh ? bvh->device : nullptr;
       RTCORE_CATCH_BEGIN;
       RTCORE_TRACE(rtcDeleteAllocator);
-      delete (FastAllocator*) allocator;
-      RTCORE_CATCH_END(((FastAllocator*) allocator)->getDevice());
+      RTCORE_VERIFY_HANDLE(hbvh);
+      delete bvh;
+      RTCORE_CATCH_END(device);
     }
 
-    RTCORE_API void* rtcBVHBuildSAH(RTCDevice hdevice,
-                                      const RTCBuildSettings& settings,
-                                      RTCBuildPrimitive* prims,
-                                      size_t numPrims,
-                                      void* userPtr,
-                                      RTCCreateThreadLocalFunc createThreadLocal,
-                                      RTCCreateNodeFunc createNode,
-                                      RTCSetNodeChildFunc setNodeChild,
-                                      RTCSetNodeBoundsFunc setNodeBounds,
-                                      RTCCreateLeafFunc createLeaf,
-                                      RTCBuildProgressFunc buildProgress)
+    RTCORE_API void* rtcBVHBuildSAH(RTCBVH hbvh,
+                                    const RTCBuildSettings& settings,
+                                    RTCBuildPrimitive* prims,
+                                    size_t numPrims,
+                                    void* userPtr,
+                                    RTCCreateNodeFunc createNode,
+                                    RTCSetNodeChildFunc setNodeChild,
+                                    RTCSetNodeBoundsFunc setNodeBounds,
+                                    RTCCreateLeafFunc createLeaf,
+                                    RTCBuildProgressFunc buildProgress)
     {
-      Device* device = (Device*) hdevice;
+      BVH* bvh = (BVH*) hbvh;
       RTCORE_CATCH_BEGIN;
       RTCORE_TRACE(rtcBVHBuildSAH);
-      RTCORE_VERIFY_HANDLE(device);
+      RTCORE_VERIFY_HANDLE(hbvh);
+
+      bvh->allocator.init_estimate(numPrims*sizeof(BBox3fa));
 
       /* calculate priminfo */
       auto computeBounds = [&](const range<size_t>& r) -> CentGeomBBox3fa
@@ -127,19 +131,19 @@ namespace embree
       const PrimInfo pinfo(0,numPrims,bounds.geomBounds,bounds.centBounds);
       
       /* build BVH */
-      return BVHBuilderBinnedSAH::build<void*>(
+      void* root = BVHBuilderBinnedSAH::build<void*>(
         
         /* thread local allocator for fast allocations */
-        [&] () -> void* { 
-          return createThreadLocal(userPtr);
+        [&] () -> FastAllocator::ThreadLocal* { 
+          return bvh->allocator.threadLocal();
         },
 
         /* lambda function that creates BVH nodes */
-        [&](BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, void* threadLocal) -> void*
+        [&](BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, FastAllocator::ThreadLocal* alloc) -> void*
         {
-          void* node = createNode(threadLocal,N);
+          void* node = createNode((RTCThreadLocalAllocator)alloc,N,userPtr);
           for (size_t i=0; i<N; i++)
-            setNodeBounds(node,i,(RTCBounds&)children[i].prims.geomBounds);
+            setNodeBounds(node,i,(RTCBounds&)children[i].prims.geomBounds,userPtr);
           return node;
         },
 
@@ -147,48 +151,54 @@ namespace embree
         [&](void* node, void** children, const size_t N) -> void*
         {
           for (size_t i=0; i<N; i++)
-            setNodeChild(node,i,children[i]);
+            setNodeChild(node,i,children[i],userPtr);
           return node;
         },
         
         /* lambda function that creates BVH leaves */
-        [&](const BVHBuilderBinnedSAH::BuildRecord& current, void* threadLocal) -> void* {
-          return createLeaf(threadLocal,prims+current.prims.begin(),current.prims.size());
+        [&](const BVHBuilderBinnedSAH::BuildRecord& current, FastAllocator::ThreadLocal* alloc) -> void* {
+          return createLeaf((RTCThreadLocalAllocator)alloc,prims+current.prims.begin(),current.prims.size(),userPtr);
         },
         
         /* progress monitor function */
         [&] (size_t dn) { 
-          buildProgress(userPtr,dn);
+          buildProgress(dn,userPtr);
         },
         
         (PrimRef*)prims,pinfo,settings);
-         
+        
+      bvh->allocator.cleanup();
+      //bvh->allocator.shrink(); // FIXME!!
+      return root;
 
-      RTCORE_CATCH_END(device);
+      RTCORE_CATCH_END(bvh->device);
       return nullptr;
     }
 
-    RTCORE_API void* rtcBVHBuildMorton(RTCDevice hdevice,
-                                         const RTCBuildSettings& settings,
-                                         RTCBuildPrimitive* prims_i,
-                                         size_t numPrims,
-                                         void* userPtr,
-                                         RTCCreateThreadLocalFunc createThreadLocal,
-                                         RTCCreateNodeFunc createNode,
-                                         RTCSetNodeChildFunc setNodeChild,
-                                         RTCSetNodeBoundsFunc setNodeBounds,
-                                         RTCCreateLeafFunc createLeaf,
-                                         RTCBuildProgressFunc buildProgress)
+    RTCORE_API void* rtcBVHBuildMorton(RTCBVH hbvh,
+                                       const RTCBuildSettings& settings,
+                                       RTCBuildPrimitive* prims_i,
+                                       size_t numPrims,
+                                       void* userPtr,
+                                       RTCCreateNodeFunc createNode,
+                                       RTCSetNodeChildFunc setNodeChild,
+                                       RTCSetNodeBoundsFunc setNodeBounds,
+                                       RTCCreateLeafFunc createLeaf,
+                                       RTCBuildProgressFunc buildProgress)
     {
-      Device* device = (Device*) hdevice;
+      BVH* bvh = (BVH*) hbvh;
       RTCORE_CATCH_BEGIN;
       RTCORE_TRACE(rtcBVHBuildMorton);
-      RTCORE_VERIFY_HANDLE(hdevice);
+      RTCORE_VERIFY_HANDLE(hbvh);
 
+      bvh->allocator.init_estimate(numPrims*sizeof(BBox3fa));
+      
       /* initialize temporary arrays for morton builder */
       PrimRef* prims = (PrimRef*) prims_i;
-      mvector<BVHBuilderMorton::BuildPrim> morton_src(device,numPrims);
-      mvector<BVHBuilderMorton::BuildPrim> morton_tmp(device,numPrims);
+      mvector<BVHBuilderMorton::BuildPrim>& morton_src = bvh->morton_src;
+      mvector<BVHBuilderMorton::BuildPrim>& morton_tmp = bvh->morton_tmp;
+      morton_src.resize(numPrims);
+      morton_tmp.resize(numPrims);
       parallel_for(size_t(0), numPrims, size_t(1024), [&] ( range<size_t> r ) {
           for (size_t i=r.begin(); i<r.end(); i++)
             morton_src[i].index = i;
@@ -198,33 +208,33 @@ namespace embree
       std::pair<void*,BBox3fa> root = BVHBuilderMorton::build<std::pair<void*,BBox3fa>>(
         
         /* thread local allocator for fast allocations */
-        [&] () -> void* { 
-          return createThreadLocal(userPtr);
+        [&] () -> FastAllocator::ThreadLocal* { 
+          return bvh->allocator.threadLocal();
         },
         
         /* lambda function that allocates BVH nodes */
-        [&] ( void* threadLocal, size_t N ) -> void* {
-          return createNode(threadLocal,N);
+        [&] ( FastAllocator::ThreadLocal* alloc, size_t N ) -> void* {
+          return createNode((RTCThreadLocalAllocator)alloc,N,userPtr);
         },
         
         /* lambda function that sets bounds */
         [&] (void* node, const std::pair<void*,BBox3fa>* children, size_t N) -> std::pair<void*,BBox3fa>
         {
-          BBox3fa res = empty;
+          BBox3fa bounds = empty;
           for (size_t i=0; i<N; i++) {
-            res.extend(children[i].second);
-            setNodeChild(node,i,children[i].first);
-            setNodeBounds(node,i,(RTCBounds&)children[i].second);
+            bounds.extend(children[i].second);
+            setNodeChild(node,i,children[i].first,userPtr);
+            setNodeBounds(node,i,(RTCBounds&)children[i].second,userPtr);
           }
-          return std::make_pair(node,res);
+          return std::make_pair(node,bounds);
         },
         
         /* lambda function that creates BVH leaves */
-        [&]( const range<unsigned>& current, void* threadLocal) -> std::pair<void*,BBox3fa>
+        [&]( const range<unsigned>& current, FastAllocator::ThreadLocal* alloc) -> std::pair<void*,BBox3fa>
         {
           const size_t id = morton_src[current.begin()].index;
           const BBox3fa bounds = prims[id].bounds(); 
-          void* node = createLeaf(threadLocal,prims_i+current.begin(),current.size());
+          void* node = createLeaf((RTCThreadLocalAllocator)alloc,prims_i+current.begin(),current.size(),userPtr);
           return std::make_pair(node,bounds);
         },
         
@@ -235,15 +245,18 @@ namespace embree
         
         /* progress monitor function */
         [&] (size_t dn) { 
-          buildProgress(userPtr,dn);
+          buildProgress(dn,userPtr);
         },
         
         morton_src.data(),morton_tmp.data(),numPrims,
         settings);
+
+      bvh->allocator.cleanup();
+      //bvh->allocator.shrink(); // FIXME!!
       
       return root.first;
 
-      RTCORE_CATCH_END(device);
+      RTCORE_CATCH_END(bvh->device);
       return nullptr;
     }
   }
