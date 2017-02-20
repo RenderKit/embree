@@ -209,12 +209,8 @@ namespace embree
       mvector<BVHBuilderMorton::BuildPrim>& morton_tmp = bvh->morton_tmp;
       morton_src.resize(numPrimitives); // FIXME: has this to be larger
       morton_tmp.resize(numPrimitives);
-      parallel_for(size_t(0), numPrimitives, size_t(1024), [&] ( range<size_t> r ) {
-          for (size_t i=r.begin(); i<r.end(); i++)
-            morton_src[i].index = i;
-        });
 
-      /* compute scene bounds */
+      /* compute centroid bounds */
       const BBox3fa centBounds = parallel_reduce ( size_t(0), numPrimitives, BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa {
 
           BBox3fa bounds(empty);
