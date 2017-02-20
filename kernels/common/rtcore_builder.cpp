@@ -56,40 +56,6 @@ namespace embree
       return nullptr;
     }
 
-    RTCORE_API void* rtcThreadLocalAlloc(RTCThreadLocalAllocator localAllocator, size_t bytes, size_t align)
-    {
-      RTCORE_CATCH_BEGIN;
-      RTCORE_TRACE(rtcThreadLocalAlloc);
-      FastAllocator::ThreadLocal* alloc = (FastAllocator::ThreadLocal*) localAllocator;
-      return alloc->malloc(bytes,align);
-      RTCORE_CATCH_END(((FastAllocator::ThreadLocal*) localAllocator)->alloc->getDevice());
-      return nullptr;
-    }
-
-    RTCORE_API void rtcMakeStaticBVH(RTCBVH hbvh)
-    {
-      BVH* bvh = (BVH*) hbvh;
-      RTCORE_CATCH_BEGIN;
-      RTCORE_TRACE(rtcStaticBVH);
-      RTCORE_VERIFY_HANDLE(hbvh);
-      bvh->allocator.shrink();
-      bvh->morton_src.clear();
-      bvh->morton_tmp.clear();
-      bvh->isStatic = true;
-      RTCORE_CATCH_END(bvh->device);
-    }
-
-    RTCORE_API void rtcDeleteBVH(RTCBVH hbvh)
-    {
-      BVH* bvh = (BVH*) hbvh;
-      Device* device = bvh ? bvh->device : nullptr;
-      RTCORE_CATCH_BEGIN;
-      RTCORE_TRACE(rtcDeleteAllocator);
-      RTCORE_VERIFY_HANDLE(hbvh);
-      delete bvh;
-      RTCORE_CATCH_END(device);
-    }
-
     RTCORE_API void* rtcBuildBVH(RTCBVH hbvh,
                                  const RTCBuildSettings& settings,
                                  RTCBuildPrimitive* prims,
@@ -207,7 +173,7 @@ namespace embree
       PrimRef* prims = (PrimRef*) prims_i;
       mvector<BVHBuilderMorton::BuildPrim>& morton_src = bvh->morton_src;
       mvector<BVHBuilderMorton::BuildPrim>& morton_tmp = bvh->morton_tmp;
-      morton_src.resize(numPrimitives); // FIXME: has this to be larger
+      morton_src.resize(numPrimitives);
       morton_tmp.resize(numPrimitives);
 
       /* compute centroid bounds */
@@ -280,6 +246,40 @@ namespace embree
 
       RTCORE_CATCH_END(bvh->device);
       return nullptr;
+    }
+
+    RTCORE_API void* rtcThreadLocalAlloc(RTCThreadLocalAllocator localAllocator, size_t bytes, size_t align)
+    {
+      RTCORE_CATCH_BEGIN;
+      RTCORE_TRACE(rtcThreadLocalAlloc);
+      FastAllocator::ThreadLocal* alloc = (FastAllocator::ThreadLocal*) localAllocator;
+      return alloc->malloc(bytes,align);
+      RTCORE_CATCH_END(((FastAllocator::ThreadLocal*) localAllocator)->alloc->getDevice());
+      return nullptr;
+    }
+
+    RTCORE_API void rtcMakeStaticBVH(RTCBVH hbvh)
+    {
+      BVH* bvh = (BVH*) hbvh;
+      RTCORE_CATCH_BEGIN;
+      RTCORE_TRACE(rtcStaticBVH);
+      RTCORE_VERIFY_HANDLE(hbvh);
+      bvh->allocator.shrink();
+      bvh->morton_src.clear();
+      bvh->morton_tmp.clear();
+      bvh->isStatic = true;
+      RTCORE_CATCH_END(bvh->device);
+    }
+
+    RTCORE_API void rtcDeleteBVH(RTCBVH hbvh)
+    {
+      BVH* bvh = (BVH*) hbvh;
+      Device* device = bvh ? bvh->device : nullptr;
+      RTCORE_CATCH_BEGIN;
+      RTCORE_TRACE(rtcDeleteAllocator);
+      RTCORE_VERIFY_HANDLE(hbvh);
+      delete bvh;
+      RTCORE_CATCH_END(device);
     }
   }
 }

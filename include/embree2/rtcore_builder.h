@@ -20,22 +20,10 @@
 #include "rtcore.h"
 
 /*! \brief Defines an opaque BVH type */
-typedef struct __RTCBvh {}* RTCBVH;
+typedef struct __RTCBVH {}* RTCBVH;
 
 /*! \brief Defines an opaque thread local allocator type */
 typedef struct __RTCThreadLocalAllocator {}* RTCThreadLocalAllocator;
-
-/*! Creates a new BVH. */
-RTCORE_API RTCBVH rtcNewBVH(RTCDevice device);
-
-/*! Allocates memory using the thread local allocator. */
-RTCORE_API void* rtcThreadLocalAlloc(RTCThreadLocalAllocator allocator, size_t bytes, size_t align);
-
-/*! Makes the BVH static. No further rtcBVHBuild can be called anymore on the BVH. */
-RTCORE_API void rtcMakeStaticBVH(RTCBVH bvh);
-
-/*! Deletes the BVH. */
-RTCORE_API void rtcDeleteBVH(RTCBVH bvh);
 
 /*! Settings for builders */
 struct RTCBuildSettings
@@ -65,8 +53,7 @@ inline RTCBuildSettings rtcDefaultBuildSettings()
   return settings;
 }
 
-/*! Input primitives for the builder. Stores primitive bounds and
- *  ID. */
+/*! Input primitives for the builder. Stores primitive bounds and ID. */
 struct RTCORE_ALIGN(32) RTCBuildPrimitive
 {
   float lower_x, lower_y, lower_z;  //!< lower bounds in x/y/z
@@ -74,6 +61,9 @@ struct RTCORE_ALIGN(32) RTCBuildPrimitive
   float upper_x, upper_y, upper_z;  //!< upper bounds in x/y/z
   int primID;                       //!< second ID
 };
+
+/*! Creates a new BVH. */
+RTCORE_API RTCBVH rtcNewBVH(RTCDevice device);
 
 /*! Callback to create a node. */
 typedef void* (*RTCCreateNodeFunc) (RTCThreadLocalAllocator allocator, size_t numChildren, void* userPtr);
@@ -115,5 +105,14 @@ RTCORE_API void* rtcBuildBVHFast(RTCBVH bvh,                                    
                                  RTCCreateLeafFunc createLeaf,                   //!< creates a leaf
                                  RTCBuildProgressFunc buildProgress              //!< used to report build progress
   );
+
+/*! Allocates memory using the thread local allocator. Use this function to allocate nodes in the callback functions. */
+RTCORE_API void* rtcThreadLocalAlloc(RTCThreadLocalAllocator allocator, size_t bytes, size_t align);
+
+/*! Makes the BVH static. No further rtcBVHBuild can be called anymore on the BVH. */
+RTCORE_API void rtcMakeStaticBVH(RTCBVH bvh);
+
+/*! Deletes the BVH including all allocated nodes. */
+RTCORE_API void rtcDeleteBVH(RTCBVH bvh);
 
 #endif
