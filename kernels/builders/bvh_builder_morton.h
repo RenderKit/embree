@@ -55,26 +55,19 @@ namespace embree
 
       struct __aligned(8) MortonID32Bit
       {
-      public:
-        
         union {
           struct {
-            unsigned int code;
-            unsigned int index;
+            unsigned int code;     //!< morton code
+            unsigned int index;    //!< i'th primitive
           };
           uint64_t t;
         };
         
-      public:   
-        
+        /*! interface for radix sort */
         __forceinline operator unsigned() const { return code; }
         
+        /*! interface for standard sort */
         __forceinline bool operator<(const MortonID32Bit &m) const { return code < m.code; } 
-        
-        __forceinline friend std::ostream &operator<<(std::ostream &o, const MortonID32Bit& mc) {
-          o << "index " << mc.index << " code = " << mc.code;
-          return o;
-        }
       };
       
       struct MortonCodeGenerator
