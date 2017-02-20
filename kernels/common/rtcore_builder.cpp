@@ -36,13 +36,11 @@ namespace embree
     struct BVH
     {
       BVH (Device* device)
-        : device(device), allocator(device,true), morton_src(device), morton_tmp(device)
-      {
-        //if (estimatedBytes) allocator->init_estimate(estimatedBytes); // FIXME !!!!!!!!!!!!!!!!!!
-      }
+        : device(device), isStatic(false), allocator(device,true), morton_src(device), morton_tmp(device) {}
 
     public:
       Device* device;
+      bool isStatic;
       FastAllocator allocator;
       mvector<BVHBuilderMorton::BuildPrim> morton_src;
       mvector<BVHBuilderMorton::BuildPrim> morton_tmp;
@@ -58,33 +56,26 @@ namespace embree
       return nullptr;
     }
 
-    RTCORE_API void* rtcThreadLocalMalloc(RTCThreadLocalAllocator localAllocator, size_t bytes, size_t align)
+    RTCORE_API void* rtcThreadLocalAlloc(RTCThreadLocalAllocator localAllocator, size_t bytes, size_t align)
     {
       RTCORE_CATCH_BEGIN;
-      RTCORE_TRACE(rtcThreadLocalMalloc);
+      RTCORE_TRACE(rtcThreadLocalAlloc);
       FastAllocator::ThreadLocal* alloc = (FastAllocator::ThreadLocal*) localAllocator;
       return alloc->malloc(bytes,align);
       RTCORE_CATCH_END(((FastAllocator::ThreadLocal*) localAllocator)->alloc->getDevice());
       return nullptr;
     }
 
-    RTCORE_API void rtcClearBVH(RTCBVH hbvh)
+    RTCORE_API void rtcMakeStaticBVH(RTCBVH hbvh)
     {
       BVH* bvh = (BVH*) hbvh;
       RTCORE_CATCH_BEGIN;
-      RTCORE_TRACE(rtcClearBVH);
+      RTCORE_TRACE(rtcStaticBVH);
       RTCORE_VERIFY_HANDLE(hbvh);
-      bvh->allocator.clear();
-      RTCORE_CATCH_END(bvh->device);
-    }
-
-    RTCORE_API void rtcResetBVH(RTCBVH hbvh)
-    {
-      BVH* bvh = (BVH*) hbvh;
-      RTCORE_CATCH_BEGIN;
-      RTCORE_TRACE(rtcResetBVH);
-      RTCORE_VERIFY_HANDLE(hbvh);
-      bvh->allocator.reset();
+      bvh->allocator.shrink();
+      bvh->morton_src.clear();
+      bvh->morton_tmp.clear();
+      bvh->isStatic = true;
       RTCORE_CATCH_END(bvh->device);
     }
 
@@ -115,7 +106,11 @@ namespace embree
       RTCORE_TRACE(rtcBVHBuildSAH);
       RTCORE_VERIFY_HANDLE(hbvh);
 
+      if (bvh->isStatic)
+        throw_RTCError(RTC_INVALID_OPERATION,"static BVH cannot get rebuild");
+
       bvh->allocator.init_estimate(numPrims*sizeof(BBox3fa));
+      bvh->allocator.reset();
 
       /* calculate priminfo */
       auto computeBounds = [&](const range<size_t>& r) -> CentGeomBBox3fa
@@ -168,7 +163,6 @@ namespace embree
         (PrimRef*)prims,pinfo,settings);
         
       bvh->allocator.cleanup();
-      //bvh->allocator.shrink(); // FIXME!!
       return root;
 
       RTCORE_CATCH_END(bvh->device);
@@ -191,7 +185,11 @@ namespace embree
       RTCORE_TRACE(rtcBVHBuildMorton);
       RTCORE_VERIFY_HANDLE(hbvh);
 
+      if (bvh->isStatic)
+        throw_RTCError(RTC_INVALID_OPERATION,"static BVH cannot get rebuild");
+
       bvh->allocator.init_estimate(numPrims*sizeof(BBox3fa));
+      bvh->allocator.reset();
       
       /* initialize temporary arrays for morton builder */
       PrimRef* prims = (PrimRef*) prims_i;
@@ -252,8 +250,6 @@ namespace embree
         settings);
 
       bvh->allocator.cleanup();
-      //bvh->allocator.shrink(); // FIXME!!
-      
       return root.first;
 
       RTCORE_CATCH_END(bvh->device);

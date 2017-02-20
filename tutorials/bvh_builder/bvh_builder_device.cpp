@@ -14,10 +14,15 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#define INTERNAL_BVH_BUILD 1
+
 #include "../common/tutorial/tutorial_device.h"
-//#include "../../kernels/common/alloc.h"
-//#include "../../kernels/builders/bvh_builder_sah.h"
-//#include "../../kernels/builders/bvh_builder_morton.h"
+
+#if INTERNAL_BVH_BUILD
+#include "../../kernels/common/alloc.h"
+#include "../../kernels/builders/bvh_builder_sah.h"
+#include "../../kernels/builders/bvh_builder_morton.h"
+#endif
 
 namespace embree
 {
@@ -52,7 +57,7 @@ namespace embree
     static void* create (RTCThreadLocalAllocator alloc, size_t numChildren, void* userPtr) 
     {
       assert(numChildren == 2);
-      void* ptr = rtcThreadLocalMalloc(alloc,sizeof(InnerNode),16);
+      void* ptr = rtcThreadLocalAlloc(alloc,sizeof(InnerNode),16);
       return (void*) new (ptr) InnerNode;
     }
     
@@ -83,12 +88,12 @@ namespace embree
     static void* create (RTCThreadLocalAllocator alloc, const RTCBuildPrimitive* prims, size_t numPrims, void* userPtr)
     {
       assert(numPrims == 1);
-      void* ptr = rtcThreadLocalMalloc(alloc,sizeof(LeafNode),16);
+      void* ptr = rtcThreadLocalAlloc(alloc,sizeof(LeafNode),16);
       return (void*) new (ptr) LeafNode(prims->primID,*(BBox3fa*)prims);
     }
   };
 
-#if 0  // FIXME: remove
+#if INTERNAL_BVH_BUILD
   void build_sah(PrimRef* prims, size_t N)
   {
     /* fast allocator that supports thread local operation */
@@ -185,39 +190,37 @@ namespace embree
 
     RTCBVH bvh = rtcNewBVH(device);
 
+    /* settings for BVH build */
+    RTCBuildSettings settings;
+    settings.size = sizeof(settings);
+    settings.branchingFactor = 2;
+    settings.maxDepth = 1024;
+    settings.blockSize = 1;
+    settings.minLeafSize = 1;
+    settings.maxLeafSize = 1;
+    settings.travCost = 1.0f;
+    settings.intCost = 1.0f;
+    
     for (size_t i=0; i<10; i++)
     {
       std::cout << "iteration " << i << ": building BVH over " << N << " primitives, " << std::flush;
       double t0 = getSeconds();
-
-      /* settings for BVH build */
-      RTCBuildSettings settings;
-      settings.size = sizeof(settings);
-      settings.branchingFactor = 2;
-      settings.maxDepth = 1024;
-      settings.blockSize = 1;
-      settings.minLeafSize = 1;
-      settings.maxLeafSize = 1;
-      settings.travCost = 1.0f;
-      settings.intCost = 1.0f;
-      
       Node* root = (Node*) rtcBVHBuildSAH(bvh,settings,prims,N,nullptr,
                                           InnerNode::create,InnerNode::setChild,InnerNode::setBounds,LeafNode::create,buildProgress);
-      
       double t1 = getSeconds();
       
       std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << root->sah() << " [DONE]" << std::endl;
-      rtcResetBVH(bvh);
     }
+    rtcMakeStaticBVH(bvh);
     rtcDeleteBVH(bvh);
   }
 
-#if 0 // FIXME: remove  
+#if INTERNAL_BVH_BUILD
   void build_morton(PrimRef* prims, size_t N)
   {
     /* array for morton builder */
-    avector<isa::MortonID32Bit> morton_src(N);
-    avector<isa::MortonID32Bit> morton_tmp(N);
+    avector<isa::BVHBuilderMorton::BuildPrim> morton_src(N);
+    avector<isa::BVHBuilderMorton::BuildPrim> morton_tmp(N);
     for (unsigned i=0; i<N; i++) 
       morton_src[i].index = i;
     
@@ -261,17 +264,17 @@ namespace embree
         },
         
         /* lambda function that creates BVH leaves */
-        [&]( isa::BuildRecord& current, FastAllocator::ThreadLocal* alloc) -> std::pair<Node*,BBox3fa>
+        [&]( const range<unsigned>& current, FastAllocator::ThreadLocal* alloc) -> std::pair<Node*,BBox3fa>
         {
           assert(current.size() == 1);
-          const size_t id = morton_src[current.begin].index;
+          const size_t id = morton_src[current.begin()].index;
           const BBox3fa bounds = prims[id].bounds(); 
           Node* node = new (alloc->malloc(sizeof(LeafNode))) LeafNode(id,bounds);
           return std::make_pair(node,bounds);
         },
         
         /* lambda that calculates the bounds for some primitive */
-        [&] (const isa::MortonID32Bit& morton) -> BBox3fa {
+        [&] (const isa::BVHBuilderMorton::BuildPrim& morton) -> BBox3fa {
           return prims[morton.index].bounds();
         },
         
@@ -280,7 +283,8 @@ namespace embree
           // throw an exception here to cancel the build operation
         },
         
-        morton_src.data(),morton_tmp.data(),N,2,1024,1,1,Builder::DEFAULT_SINGLE_THREAD_THRESHOLD);
+        morton_src.data(),morton_tmp.data(),N,
+        isa::BVHBuilderMorton::Settings(2,1024,1,1,Builder::DEFAULT_SINGLE_THREAD_THRESHOLD));
       
       Node* root = node_bounds.first;
       
@@ -298,31 +302,28 @@ namespace embree
 
     RTCBVH bvh = rtcNewBVH(device);
 
+    /* settings for BVH build */
+    RTCBuildSettings settings;
+    settings.size = sizeof(settings);
+    settings.branchingFactor = 2;
+    settings.maxDepth = 1024;
+    settings.blockSize = 1;
+    settings.minLeafSize = 1;
+    settings.maxLeafSize = 1;
+    settings.travCost = 1.0f;
+    settings.intCost = 1.0f;
+    
     for (size_t i=0; i<10; i++)
     {
       std::cout << "iteration " << i << ": building BVH over " << N << " primitives, " << std::flush;
       double t0 = getSeconds();
-      
-      rtcResetBVH(bvh);
-
-       /* settings for BVH build */
-      RTCBuildSettings settings;
-      settings.size = sizeof(settings);
-      settings.branchingFactor = 2;
-      settings.maxDepth = 1024;
-      settings.blockSize = 1;
-      settings.minLeafSize = 1;
-      settings.maxLeafSize = 1;
-      settings.travCost = 1.0f;
-      settings.intCost = 1.0f;
-      
       Node* root = (Node*) rtcBVHBuildMorton(bvh,settings,prims,N,nullptr,
                                              InnerNode::create,InnerNode::setChild,InnerNode::setBounds,LeafNode::create,buildProgress);
-      
       double t1 = getSeconds();
       
       std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << root->sah() << " [DONE]" << std::endl;
     }
+    rtcMakeStaticBVH(bvh);
     rtcDeleteBVH(bvh);
   }
   
@@ -364,11 +365,19 @@ namespace embree
 
     std::cout << "SAH builder:" << std::endl;
     build_sah_api(prims.data(),prims.size(),cfg);
-    //build_sah((PrimRef*)prims.data(),prims.size());
-    
+
+#if INTERNAL_BVH_BUILD
+    std::cout << "internal SAH builder:" << std::endl;
+    build_sah((PrimRef*)prims.data(),prims.size());
+#endif
+
     std::cout << "Morton builder:" << std::endl;
     build_morton_api(prims.data(),prims.size(),cfg);
-    //build_morton((PrimRef*)prims.data(),prims.size());
+
+#if INTERNAL_BVH_BUILD
+    std::cout << "internal Morton builder:" << std::endl;
+    build_morton((PrimRef*)prims.data(),prims.size());
+#endif
   }
   
   /* task that renders a single screen tile */

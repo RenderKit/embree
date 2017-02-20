@@ -19,7 +19,7 @@
 
 #include "rtcore.h"
 
-/*! \brief Defines an opaque allocator type */
+/*! \brief Defines an opaque BVH type */
 typedef struct __RTCBvh {}* RTCBVH;
 
 /*! \brief Defines an opaque thread local allocator type */
@@ -29,13 +29,10 @@ typedef struct __RTCThreadLocalAllocator {}* RTCThreadLocalAllocator;
 RTCORE_API RTCBVH rtcNewBVH(RTCDevice device);
 
 /*! Allocates memory using the thread local allocator. */
-RTCORE_API void* rtcThreadLocalMalloc(RTCThreadLocalAllocator allocator, size_t bytes, size_t align);
+RTCORE_API void* rtcThreadLocalAlloc(RTCThreadLocalAllocator allocator, size_t bytes, size_t align);
 
-/*! Frees all data stored inside the BVH. */
-RTCORE_API void rtcClearBVH(RTCBVH bvh);
-
-/*! Resets the BVH. No internal data buffers are freed, but all buffers are re-used for new allocations. */
-RTCORE_API void rtcResetBVH(RTCBVH bvh);
+/*! Makes the BVH static. No further rtcBVHBuild can be called anymore on the BVH. */
+RTCORE_API void rtcMakeStaticBVH(RTCBVH bvh);
 
 /*! Deletes the BVH. */
 RTCORE_API void rtcDeleteBVH(RTCBVH bvh);
@@ -93,6 +90,8 @@ typedef void* (*RTCCreateLeafFunc) (RTCThreadLocalAllocator allocator, const RTC
 /*! Callback to provide build progress. */
 typedef void (*RTCBuildProgressFunc) (size_t dn, void* userPtr);
 
+// FIXME: starndard not SAH
+
 /*! SAH based BVH builder. */
 RTCORE_API void* rtcBVHBuildSAH(RTCBVH bvh,                                     //!< BVH to build
                                 const RTCBuildSettings& settings,               //!< settings for BVH builder
@@ -105,6 +104,8 @@ RTCORE_API void* rtcBVHBuildSAH(RTCBVH bvh,                                     
                                 RTCCreateLeafFunc createLeaf,                   //!< creates a leaf
                                 RTCBuildProgressFunc buildProgress              //!< used to report build progress
   ); 
+
+// FIXME: name Fast not Morton
 
 /*! Faster builder working with Morton Codes.. */
 RTCORE_API void* rtcBVHBuildMorton(RTCBVH bvh,                                     //!< BVH to build
