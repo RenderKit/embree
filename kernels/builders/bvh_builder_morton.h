@@ -53,6 +53,7 @@ namespace embree
         size_t singleThreadThreshold; //!< threshold when we switch to single threaded build
       };
 
+      /*! Build primitive consisting of morton code and primitive ID. */
       struct __aligned(8) BuildPrim
       {
         union {
@@ -86,6 +87,14 @@ namespace embree
             const vfloat4 diag  = (vfloat4)bounds.upper - (vfloat4)bounds.lower;
             scale = select(diag > vfloat4(1E-19f), rcp(diag) * vfloat4(LATTICE_SIZE_PER_DIM * 0.99f),vfloat4(0.0f));
           }
+
+          __forceinline const vint4 operator() (const BBox3fa& box) const 
+          {
+            const vfloat4 lower = (vfloat4)box.lower;
+            const vfloat4 upper = (vfloat4)box.upper;
+            const vfloat4 centroid = lower+upper;
+            return vint4((centroid-base)*scale);
+          }
         };
         
         __forceinline MortonCodeGenerator(const MortonCodeMapping& mapping)
@@ -113,10 +122,7 @@ namespace embree
         
         __forceinline void operator() (const BBox3fa& b, const unsigned index)
         {
-          const vfloat4 lower = (vfloat4)b.lower;
-          const vfloat4 upper = (vfloat4)b.upper;
-          const vfloat4 centroid = lower+upper;
-          const vint4 binID = vint4((centroid-mapping.base)*mapping.scale);
+          const vint4 binID = mapping(b);
           
 #if defined(__AVX2__)
           const unsigned int x = extract<0>(binID);
@@ -146,10 +152,7 @@ namespace embree
         
         __forceinline unsigned int getCode(const BBox3fa& b)
         {
-          const vfloat4 lower = (vfloat4)b.lower;
-          const vfloat4 upper = (vfloat4)b.upper;
-          const vfloat4 centroid = lower+upper;
-          const vint4 binID = vint4((centroid-mapping.base)*mapping.scale);
+          const vint4 binID = mapping(b);
           const unsigned int x = extract<0>(binID);
           const unsigned int y = extract<1>(binID);
           const unsigned int z = extract<2>(binID);
@@ -160,8 +163,6 @@ namespace embree
       public:
         const MortonCodeMapping mapping;
         BuildPrim* dest;
-        const vfloat4 base;
-        const vfloat4 scale;
         size_t currentID;
         size_t slots;
         vint4 ax, ay, az, ai;
@@ -279,10 +280,7 @@ namespace embree
           for (size_t i=current.begin(); i<current.end(); i++)
           {
             const BBox3fa b = calculateBounds(morton[i]);
-            const vfloat4 lower = (vfloat4)b.lower;
-            const vfloat4 upper = (vfloat4)b.upper;
-            const vfloat4 centroid = lower+upper;
-            const vint4 binID = vint4((centroid-mapping.base)*mapping.scale);
+            const vint4 binID = mapping(b);
             const unsigned int bx = extract<0>(binID);
             const unsigned int by = extract<1>(binID);
             const unsigned int bz = extract<2>(binID);
