@@ -344,6 +344,7 @@ namespace embree
         
         ReductionTy recurse(size_t depth, range<unsigned>& current, Allocator alloc, bool toplevel) 
         {
+          /* get thread local allocator */
           if (alloc == nullptr) 
             alloc = createAllocator();
           
@@ -364,7 +365,7 @@ namespace embree
           
           do {
             
-            /* find best child with largest bounding box area */
+            /* find best child with largest number of primitives */
             int bestChild = -1;
             unsigned bestItems = 0;
             for (unsigned int i=0; i<numChildren; i++)
