@@ -53,7 +53,7 @@ namespace embree
         size_t singleThreadThreshold; //!< threshold when we switch to single threaded build
       };
 
-      struct __aligned(8) MortonID32Bit
+      struct __aligned(8) BuildPrim
       {
         union {
           struct {
@@ -67,7 +67,7 @@ namespace embree
         __forceinline operator unsigned() const { return code; }
         
         /*! interface for standard sort */
-        __forceinline bool operator<(const MortonID32Bit &m) const { return code < m.code; } 
+        __forceinline bool operator<(const BuildPrim &m) const { return code < m.code; } 
       };
       
       struct MortonCodeGenerator
@@ -91,10 +91,10 @@ namespace embree
         __forceinline MortonCodeGenerator(const MortonCodeMapping& mapping)
           : mapping(mapping), dest(nullptr), currentID(0), slots(0), ax(0), ay(0), az(0), ai(0) {}
         
-        __forceinline MortonCodeGenerator(const BBox3fa& bounds, MortonID32Bit* dest)
+        __forceinline MortonCodeGenerator(const BBox3fa& bounds, BuildPrim* dest)
           : mapping(bounds), dest(dest), currentID(0), slots(0), ax(0), ay(0), az(0), ai(0) {}
         
-        __forceinline MortonCodeGenerator(const MortonCodeMapping& mapping, MortonID32Bit* dest)
+        __forceinline MortonCodeGenerator(const MortonCodeMapping& mapping, BuildPrim* dest)
           : mapping(mapping), dest(dest), currentID(0), slots(0), ax(0), ay(0), az(0), ai(0) {}
         
         __forceinline ~MortonCodeGenerator()
@@ -159,7 +159,7 @@ namespace embree
         
       public:
         const MortonCodeMapping mapping;
-        MortonID32Bit* dest;
+        BuildPrim* dest;
         const vfloat4 base;
         const vfloat4 scale;
         size_t currentID;
@@ -426,7 +426,7 @@ namespace embree
         }
         
         /* build function */
-        ReductionTy build(MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives) 
+        ReductionTy build(BuildPrim* src, BuildPrim* tmp, size_t numPrimitives) 
         {
           /* using 4 phases radix sort */
           morton = src;
@@ -448,7 +448,7 @@ namespace embree
         ProgressMonitor& progressMonitor;
         
       public:
-        MortonID32Bit* morton;
+        BuildPrim* morton;
       };
       
       
@@ -467,8 +467,8 @@ namespace embree
                                           CreateLeafFunc createLeaf, 
                                           CalculateBoundsFunc calculateBounds,
                                           ProgressMonitor progressMonitor,
-                                          MortonID32Bit* src, 
-                                          MortonID32Bit* tmp, 
+                                          BuildPrim* src, 
+                                          BuildPrim* tmp, 
                                           size_t numPrimitives,
                                           const Settings& settings)
       {
@@ -508,8 +508,8 @@ namespace embree
                                  CreateLeafFunc createLeaf, 
                                  CalculateBoundsFunc calculateBounds,
                                  ProgressMonitor progressMonitor,
-                                 MortonID32Bit* src, 
-                                 MortonID32Bit* temp, 
+                                 BuildPrim* src, 
+                                 BuildPrim* temp, 
                                  size_t numPrimitives,
                                  const Settings& settings)
       {

@@ -187,8 +187,8 @@ namespace embree
 
       /* initialize temporary arrays for morton builder */
       PrimRef* prims = (PrimRef*) prims_i;
-      mvector<BVHBuilderMorton::MortonID32Bit> morton_src(device,numPrims);
-      mvector<BVHBuilderMorton::MortonID32Bit> morton_tmp(device,numPrims);
+      mvector<BVHBuilderMorton::BuildPrim> morton_src(device,numPrims);
+      mvector<BVHBuilderMorton::BuildPrim> morton_tmp(device,numPrims);
       parallel_for(size_t(0), numPrims, size_t(1024), [&] ( range<size_t> r ) {
           for (size_t i=r.begin(); i<r.end(); i++)
             morton_src[i].index = i;
@@ -229,7 +229,7 @@ namespace embree
         },
         
         /* lambda that calculates the bounds for some primitive */
-        [&] (const BVHBuilderMorton::MortonID32Bit& morton) -> BBox3fa {
+        [&] (const BVHBuilderMorton::BuildPrim& morton) -> BBox3fa {
           return prims[morton.index].bounds();
         },
         
