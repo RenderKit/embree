@@ -70,43 +70,44 @@ namespace embree
         /*! interface for standard sort */
         __forceinline bool operator<(const BuildPrim &m) const { return code < m.code; } 
       };
-      
-      struct MortonCodeGenerator
+
+      /*! maps bounding box to morton code */
+      struct MortonCodeMapping
       {
         static const size_t LATTICE_BITS_PER_DIM = 10;
         static const size_t LATTICE_SIZE_PER_DIM = size_t(1) << LATTICE_BITS_PER_DIM;
+ 
+        vfloat4 base;
+        vfloat4 scale;
         
-        struct MortonCodeMapping
+        __forceinline MortonCodeMapping(const BBox3fa& bounds)
         {
-          vfloat4 base;
-          vfloat4 scale;
-          
-          __forceinline MortonCodeMapping(const BBox3fa& bounds)
-          {
-            base  = (vfloat4)bounds.lower;
-            const vfloat4 diag  = (vfloat4)bounds.upper - (vfloat4)bounds.lower;
-            scale = select(diag > vfloat4(1E-19f), rcp(diag) * vfloat4(LATTICE_SIZE_PER_DIM * 0.99f),vfloat4(0.0f));
-          }
-
-          __forceinline const vint4 bin (const BBox3fa& box) const 
-          {
-            const vfloat4 lower = (vfloat4)box.lower;
-            const vfloat4 upper = (vfloat4)box.upper;
-            const vfloat4 centroid = lower+upper;
-            return vint4((centroid-base)*scale);
-          }
-
-          __forceinline unsigned int code (const BBox3fa& box) const 
-          {
-            const vint4 binID = bin(box);
-            const unsigned int x = extract<0>(binID);
-            const unsigned int y = extract<1>(binID);
-            const unsigned int z = extract<2>(binID);
-            const unsigned int xyz = bitInterleave(x,y,z);
-            return xyz;
-          }
-        };
+          base  = (vfloat4)bounds.lower;
+          const vfloat4 diag  = (vfloat4)bounds.upper - (vfloat4)bounds.lower;
+          scale = select(diag > vfloat4(1E-19f), rcp(diag) * vfloat4(LATTICE_SIZE_PER_DIM * 0.99f),vfloat4(0.0f));
+        }
         
+        __forceinline const vint4 bin (const BBox3fa& box) const 
+        {
+          const vfloat4 lower = (vfloat4)box.lower;
+          const vfloat4 upper = (vfloat4)box.upper;
+          const vfloat4 centroid = lower+upper;
+          return vint4((centroid-base)*scale);
+        }
+        
+        __forceinline unsigned int code (const BBox3fa& box) const 
+        {
+          const vint4 binID = bin(box);
+          const unsigned int x = extract<0>(binID);
+          const unsigned int y = extract<1>(binID);
+          const unsigned int z = extract<2>(binID);
+          const unsigned int xyz = bitInterleave(x,y,z);
+          return xyz;
+        }
+      };
+      
+      struct MortonCodeGenerator
+      {       
         __forceinline MortonCodeGenerator(const MortonCodeMapping& mapping, BuildPrim* dest)
           : mapping(mapping), dest(dest), currentID(0), slots(0), ax(0), ay(0), az(0), ai(0) {}
         
@@ -266,7 +267,7 @@ namespace embree
           for (size_t i=current.begin(); i<current.end(); i++)
             centBounds.extend(center2(calculateBounds(morton[i])));
           
-          MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
+          MortonCodeMapping mapping(centBounds);
           for (size_t i=current.begin(); i<current.end(); i++) {
             morton[i].code = mapping.code(calculateBounds(morton[i]));
           }
@@ -505,16 +506,13 @@ namespace embree
                                                      }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
         
         /* compute morton codes */
-        MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
-        parallel_for ( size_t(0), numPrimitives, [&](const range<size_t>& r) 
-                       {
-                         //MortonCodeGenerator generator(mapping,&temp[r.begin()]);
-                         MortonCodeGenerator generator(mapping,&src[r.begin()]);
-                         
-                         for (size_t i=r.begin(); i<r.end(); i++) {
-                           generator(calculateBounds(src[i]),src[i].index);
-                         }
-                       });
+        MortonCodeMapping mapping(centBounds);
+        parallel_for ( size_t(0), numPrimitives, [&](const range<size_t>& r) {
+            MortonCodeGenerator generator(mapping,&src[r.begin()]);
+            for (size_t i=r.begin(); i<r.end(); i++) {
+              generator(calculateBounds(src[i]),src[i].index);
+            }
+          });
         
         return build_internal<ReductionTy>(
           createAllocator,createNode,setBounds,createLeaf,calculateBounds,progressMonitor,src,temp,numPrimitives,settings);

@@ -448,7 +448,7 @@ namespace embree
 
         if (likely(numPrimitivesGen == numPrimitives))
         {
-          BVHBuilderMorton::MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
+          BVHBuilderMorton::MortonCodeMapping mapping(centBounds);
           parallel_for( size_t(0), numPrimitives, block_size, [&](const range<size_t>& r) -> void {
               BVHBuilderMorton::MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
               for (size_t j=r.begin(); j<r.end(); j++)
@@ -459,7 +459,7 @@ namespace embree
         {
           /* slow path, fallback in case some primitives were invalid */
           ParallelPrefixSumState<size_t> pstate;
-          BVHBuilderMorton::MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
+          BVHBuilderMorton::MortonCodeMapping mapping(centBounds);
           parallel_prefix_sum( pstate, size_t(0), numPrimitives, block_size, size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
               size_t num = 0;
               BVHBuilderMorton::MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
