@@ -474,16 +474,16 @@ namespace embree
         typename CalculateBoundsFunc, 
         typename ProgressMonitor>
         
-        static ReductionTy build_internal(CreateAllocFunc createAllocator, 
-                                          CreateNodeFunc createNode, 
-                                          SetBoundsFunc setBounds, 
-                                          CreateLeafFunc createLeaf, 
-                                          CalculateBoundsFunc calculateBounds,
-                                          ProgressMonitor progressMonitor,
-                                          BuildPrim* src, 
-                                          BuildPrim* tmp, 
-                                          size_t numPrimitives,
-                                          const Settings& settings)
+        static ReductionTy build(CreateAllocFunc createAllocator, 
+                                 CreateNodeFunc createNode, 
+                                 SetBoundsFunc setBounds, 
+                                 CreateLeafFunc createLeaf, 
+                                 CalculateBoundsFunc calculateBounds,
+                                 ProgressMonitor progressMonitor,
+                                 BuildPrim* src, 
+                                 BuildPrim* tmp, 
+                                 size_t numPrimitives,
+                                 const Settings& settings)
       {
         typedef BuilderT<
           ReductionTy,
@@ -504,49 +504,6 @@ namespace embree
                         settings);
         
         return builder.build(src,tmp,numPrimitives);
-      }
-      
-      template<
-      typename ReductionTy, 
-        typename CreateAllocFunc, 
-        typename CreateNodeFunc, 
-        typename SetBoundsFunc, 
-        typename CreateLeafFunc, 
-        typename CalculateBoundsFunc,
-        typename ProgressMonitor>
-        
-        static ReductionTy build(CreateAllocFunc createAllocator, 
-                                 CreateNodeFunc createNode, 
-                                 SetBoundsFunc setBounds, 
-                                 CreateLeafFunc createLeaf, 
-                                 CalculateBoundsFunc calculateBounds,
-                                 ProgressMonitor progressMonitor,
-                                 BuildPrim* src, 
-                                 BuildPrim* temp, 
-                                 size_t numPrimitives,
-                                 const Settings& settings)
-      {
-        /* compute scene bounds */
-        const BBox3fa centBounds = parallel_reduce ( size_t(0), numPrimitives, BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa
-                                                     {
-                                                       BBox3fa bounds(empty);
-                                                       for (size_t i=r.begin(); i<r.end(); i++) 
-                                                         bounds.extend(center2(calculateBounds(src[i])));
-                                                       return bounds;
-                                                     }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
-        
-        /* compute morton codes */
-        MortonCodeMapping mapping(centBounds);
-        parallel_for ( size_t(0), numPrimitives, [&](const range<size_t>& r) {
-            MortonCodeGenerator generator(mapping,&src[r.begin()]);
-            for (size_t i=r.begin(); i<r.end(); i++) {
-              generator(calculateBounds(src[i]),src[i].index);
-            }
-          });
-        
-        return build_internal<ReductionTy>(
-          createAllocator,createNode,setBounds,createLeaf,calculateBounds,progressMonitor,src,temp,numPrimitives,settings);
-        
       }
     };
   }

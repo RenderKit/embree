@@ -491,7 +491,7 @@ namespace embree
         SetBVHNBounds<N> setBounds(bvh);
         CreateMortonLeaf<N,Primitive> createLeaf(mesh,morton.data());
         CalculateMeshBounds<Mesh> calculateBounds(mesh);
-        auto root = BVHBuilderMorton::build_internal<std::pair<NodeRef,BBox3fa>>(
+        auto root = BVHBuilderMorton::build<std::pair<NodeRef,BBox3fa>>(
           typename BVH::CreateAlloc(bvh), 
           typename BVH::AlignedNode::Create(),
           setBounds,createLeaf,calculateBounds,progress,

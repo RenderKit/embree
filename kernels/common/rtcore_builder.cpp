@@ -93,7 +93,7 @@ namespace embree
     RTCORE_API void* rtcBuildBVH(RTCBVH hbvh,
                                  const RTCBuildSettings& settings,
                                  RTCBuildPrimitive* prims,
-                                 size_t numPrims,
+                                 size_t numPrimitives,
                                  void* userPtr,
                                  RTCCreateNodeFunc createNode,
                                  RTCSetNodeChildFunc setNodeChild,
@@ -115,7 +115,7 @@ namespace embree
         throw_RTCError(RTC_INVALID_OPERATION,"static BVH cannot get rebuild");
 
       /* initialize the allocator */
-      bvh->allocator.init_estimate(numPrims*sizeof(BBox3fa));
+      bvh->allocator.init_estimate(numPrimitives*sizeof(BBox3fa));
       bvh->allocator.reset();
 
       /* calculate priminfo */
@@ -127,9 +127,9 @@ namespace embree
           return bounds;
         };
       const CentGeomBBox3fa bounds = 
-        parallel_reduce(size_t(0),numPrims,size_t(1024),size_t(1024),CentGeomBBox3fa(empty), computeBounds, CentGeomBBox3fa::merge2);
+        parallel_reduce(size_t(0),numPrimitives,size_t(1024),size_t(1024),CentGeomBBox3fa(empty), computeBounds, CentGeomBBox3fa::merge2);
 
-      const PrimInfo pinfo(0,numPrims,bounds.geomBounds,bounds.centBounds);
+      const PrimInfo pinfo(0,numPrimitives,bounds.geomBounds,bounds.centBounds);
       
       /* build BVH */
       void* root = BVHBuilderBinnedSAH::build<void*>(
@@ -178,7 +178,7 @@ namespace embree
     RTCORE_API void* rtcBuildBVHFast(RTCBVH hbvh,
                                      const RTCBuildSettings& settings,
                                      RTCBuildPrimitive* prims_i,
-                                     size_t numPrims,
+                                     size_t numPrimitives,
                                      void* userPtr,
                                      RTCCreateNodeFunc createNode,
                                      RTCSetNodeChildFunc setNodeChild,
@@ -200,20 +200,38 @@ namespace embree
         throw_RTCError(RTC_INVALID_OPERATION,"static BVH cannot get rebuild");
 
       /* initialize the allocator */
-      bvh->allocator.init_estimate(numPrims*sizeof(BBox3fa));
+      bvh->allocator.init_estimate(numPrimitives*sizeof(BBox3fa));
       bvh->allocator.reset();
       
       /* initialize temporary arrays for morton builder */
       PrimRef* prims = (PrimRef*) prims_i;
       mvector<BVHBuilderMorton::BuildPrim>& morton_src = bvh->morton_src;
       mvector<BVHBuilderMorton::BuildPrim>& morton_tmp = bvh->morton_tmp;
-      morton_src.resize(numPrims);
-      morton_tmp.resize(numPrims);
-      parallel_for(size_t(0), numPrims, size_t(1024), [&] ( range<size_t> r ) {
+      morton_src.resize(numPrimitives); // FIXME: has this to be larger
+      morton_tmp.resize(numPrimitives);
+      parallel_for(size_t(0), numPrimitives, size_t(1024), [&] ( range<size_t> r ) {
           for (size_t i=r.begin(); i<r.end(); i++)
             morton_src[i].index = i;
         });
+
+      /* compute scene bounds */
+      const BBox3fa centBounds = parallel_reduce ( size_t(0), numPrimitives, BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa {
+
+          BBox3fa bounds(empty);
+          for (size_t i=r.begin(); i<r.end(); i++) 
+            bounds.extend(prims[i].bounds().center2());
+          return bounds;
+        }, BBox3fa::merge);
       
+      /* compute morton codes */
+      BVHBuilderMorton::MortonCodeMapping mapping(centBounds);
+      parallel_for ( size_t(0), numPrimitives, [&](const range<size_t>& r) {
+          BVHBuilderMorton::MortonCodeGenerator generator(mapping,&morton_src[r.begin()]);
+          for (size_t i=r.begin(); i<r.end(); i++) {
+            generator(prims[i].bounds(),i);
+          }
+        });
+
       /* start morton build */
       std::pair<void*,BBox3fa> root = BVHBuilderMorton::build<std::pair<void*,BBox3fa>>(
         
@@ -258,7 +276,7 @@ namespace embree
           if (buildProgress) buildProgress(dn,userPtr);
         },
         
-        morton_src.data(),morton_tmp.data(),numPrims,
+        morton_src.data(),morton_tmp.data(),numPrimitives,
         settings);
 
       bvh->allocator.cleanup();
