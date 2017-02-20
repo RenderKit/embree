@@ -24,9 +24,11 @@
 #include "heuristic_spatial.h"
 
 #define USE_SUBTREE_SIZE_FOR_BINNING 1
-#define NEW_OPENING_HEURISTIC        1
+
+#define OPEN_STATS(x) x
 
 #define MAX_OPENED_CHILD_NODES 8
+#define MAX_EXTEND_THRESHOLD   0.1f
 
 #define DBG_PRINT(x)
 
@@ -99,8 +101,14 @@ namespace embree
         
         /*! remember prim array */
         __forceinline HeuristicArrayOpenMergeSAH (const NodeOpenerFunc& nodeOpenerFunc, PrimRef* prims0, const PrimInfo &root_info)
-          : prims0(prims0), nodeOpenerFunc(nodeOpenerFunc), root_info(root_info), inv_root_area(1.0f / area(root_info.geomBounds)) { }
+          : prims0(prims0), nodeOpenerFunc(nodeOpenerFunc), root_info(root_info), inv_root_area(1.0f / area(root_info.geomBounds)) { 
+          OPEN_STATS(stat_ext_elements.store(0));
+        }
 
+        __forceinline ~HeuristicArrayOpenMergeSAH()
+        {
+          OPEN_STATS(PRINT(stat_ext_elements.load()));
+        }
 
         /*! compute extended ranges */
         __noinline void setExtentedRanges(const Set& set, Set& lset, Set& rset, const size_t lweight, const size_t rweight)
@@ -148,7 +156,34 @@ namespace embree
           }
         }
 
-#if NEW_OPENING_HEURISTIC == 1
+        // ==========================================================================
+        // ==========================================================================
+        // ==========================================================================
+
+        std::pair<float,bool> getProperties(const Set& set, const PrimInfo& pinfo)
+        {
+          std::pair<float,bool> emptyProp(0.0f,true);
+          const unsigned int geomID = prims0[pinfo.begin].geomID();
+          const float inv_num = 1.0f / (float)pinfo.size();
+          std::pair<float,bool> p = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,emptyProp,
+                                                    [&] (const range<size_t>& r) -> std::pair<float,bool> { 
+                                                      float area = 0.0f;
+                                                      bool commonGeomID = true;
+                                                      for (size_t i=r.begin();i<r.end();i++)
+                                                      {
+                                                        area += prims0[i].bounds_area;
+                                                        commonGeomID &= prims0[i].geomID() == geomID; 
+                                                      }
+                                                      return std::pair<float,bool>(area,commonGeomID); },
+                                                    [&] (const std::pair<float,bool>& b0, const std::pair<float,bool>& b1) -> std::pair<float,bool> { return std::pair<float,bool>(b0.first+b1.first,b0.second && b1.second); });
+          return std::pair<float,bool>(p.first * inv_num, p.second);
+        }
+
+
+        // ==========================================================================
+        // ==========================================================================
+        // ==========================================================================
+
 
         const Split find(Set& set, PrimInfo& pinfo, const size_t logBlockSize)
         {
@@ -175,21 +210,14 @@ namespace embree
             if (disjoint) set.set_ext_range(set.end()); /* disable opening */
           }
 
+          std::pair<float,bool> p(0.0f,false);
+
           /* common geomID */
           if (set.has_ext_range())
           {
-            bool commonGeomID = true;
-            float avg_area = 0.0f;
-            const unsigned int geomID = prims0[pinfo.begin].geomID();
-            for (size_t i=pinfo.begin;i<pinfo.end;i++)
-            {
-              avg_area += prims0[i].bounds_area;
-              if (unlikely(prims0[i].geomID() != geomID)) 
-              {
-                commonGeomID = false;
-                break;
-              }
-            }
+            p =  getProperties(set,pinfo);
+            const float avg_area    = p.first;
+            const bool commonGeomID = p.second;
 
             if (commonGeomID)
             {
@@ -197,8 +225,6 @@ namespace embree
               const size_t ext_range_start = set.end();
               size_t extra_elements = 0;
 
-              // test if stil required
-              avg_area *= 1.0f / pinfo.size();
               for (size_t i=pinfo.begin;i<pinfo.end;i++)
                 if (!prims0[i].node.isLeaf() && prims0[i].bounds_area >= avg_area)
                 {
@@ -229,20 +255,17 @@ namespace embree
             const size_t ext_range_start = set.end();
             size_t extra_elements = 0;
 
-#if 1
-            // this works better
-            float avg_area = 0.0f;
-            for (size_t i=pinfo.begin;i<pinfo.end;i++)
-              avg_area += prims0[i].bounds_area;
-            avg_area *= 1.0f / pinfo.size();
-            //size_t opens = 0;
+#if 0
+            const float avg_area    = p.first;
+            assert(avg_area);
+
+
             for (size_t i=pinfo.begin;i<pinfo.end;i++)
               if (!prims0[i].node.isLeaf() && prims0[i].bounds_area >= avg_area)
               {
                 PrimRef tmp[MAX_OPENED_CHILD_NODES];
                 const size_t n = nodeOpenerFunc(prims0[i],tmp);
                 if (extra_elements + n-1 >= max_ext_range_size) break;
-                //opens++;
                 for (size_t j=0;j<n;j++)
                   pinfo.extend(tmp[j].bounds());
 
@@ -251,41 +274,33 @@ namespace embree
                   prims0[ext_range_start+extra_elements+j-1] = tmp[j]; 
                 extra_elements += n-1;
               }            
-            //PRINT(opens);
-            // TODO: if not open pick maxsah
 #else
-            for (size_t k=0;k<1;k++)
+            const Vec3fa diag = pinfo.geomBounds.size();
+            const size_t dim = maxDim(diag);
+            assert(diag[dim] > 0.0f);
+            const float inv_max_extend = 1.0f / diag[dim];
+            for (size_t i=pinfo.begin;i<pinfo.end;i++)
             {
-              float max_sah = 0.0f;
-              ssize_t max_index = -1;
-              for (size_t i=pinfo.begin;i<pinfo.end;i++)
-                if (!prims0[i].node.isLeaf())
-                {
-                  max_sah = max(max_sah,prims0[i].bounds_area);
-                  max_index = (ssize_t)i;
-                }
-              if (max_index != -1)
+              if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD)
               {
                 PrimRef tmp[MAX_OPENED_CHILD_NODES];
-                const size_t n = nodeOpenerFunc(prims0[max_index],tmp);  
-                if (extra_elements + n-1 < max_ext_range_size)
-                {
-                  for (size_t j=0;j<n;j++)
-                    pinfo.extend(tmp[j].bounds());
+                const size_t n = nodeOpenerFunc(prims0[i],tmp);
+                if (extra_elements + n-1 >= max_ext_range_size) break;
+                for (size_t j=0;j<n;j++)
+                  pinfo.extend(tmp[j].bounds());
 
-                  prims0[max_index] = tmp[0];
-                  for (size_t j=1;j<n;j++)
-                    prims0[ext_range_start+extra_elements+j-1] = tmp[j];                   
-                  extra_elements += n-1;
-                } 
+                prims0[i] = tmp[0];
+                for (size_t j=1;j<n;j++)
+                  prims0[ext_range_start+extra_elements+j-1] = tmp[j]; 
+                extra_elements += n-1;
               }
-              else
-                break;
-            }
+            }            
 #endif
+            OPEN_STATS( if (extra_elements) stat_ext_elements += extra_elements );
+
             pinfo.end += extra_elements;
             Set nset(set.begin(),set.end()+extra_elements,set.ext_end());
-            set = nset;            
+            set = nset;                        
           }
         
             
@@ -296,23 +311,6 @@ namespace embree
           return Split(object_split,object_split_sah);
         }
 
-#else
-        /*! finds the best split */
-        const Split find(Set& set, PrimInfo& pinfo, const size_t logBlockSize)
-        {
-          /* need to avoid splitting single element ranges */
-          if (pinfo.size() <= 1)
-          {
-            return  Split(ObjectSplit(),inf);
-          }
-
-          assert(pinfo.size() > 1);
-          SplitInfo oinfo;
-          const ObjectSplit object_split = object_find(set,pinfo,logBlockSize,oinfo);
-          const float object_split_sah = object_split.splitSAH();
-          return Split(object_split,object_split_sah);
-        }
-#endif
 
         /*! finds the best object split */
         __forceinline const ObjectSplit object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo &info)
@@ -575,6 +573,9 @@ namespace embree
         const NodeOpenerFunc& nodeOpenerFunc;
         const PrimInfo& root_info;
         const float inv_root_area;
+
+        /* statistics */
+        std::atomic<size_t> stat_ext_elements;
       };
   }
 }
