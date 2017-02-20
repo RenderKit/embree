@@ -88,12 +88,22 @@ namespace embree
             scale = select(diag > vfloat4(1E-19f), rcp(diag) * vfloat4(LATTICE_SIZE_PER_DIM * 0.99f),vfloat4(0.0f));
           }
 
-          __forceinline const vint4 operator() (const BBox3fa& box) const 
+          __forceinline const vint4 bin (const BBox3fa& box) const 
           {
             const vfloat4 lower = (vfloat4)box.lower;
             const vfloat4 upper = (vfloat4)box.upper;
             const vfloat4 centroid = lower+upper;
             return vint4((centroid-base)*scale);
+          }
+
+          __forceinline unsigned int code (const BBox3fa& box) const 
+          {
+            const vint4 binID = bin(box);
+            const unsigned int x = extract<0>(binID);
+            const unsigned int y = extract<1>(binID);
+            const unsigned int z = extract<2>(binID);
+            const unsigned int xyz = bitInterleave(x,y,z);
+            return xyz;
           }
         };
         
@@ -122,17 +132,13 @@ namespace embree
         
         __forceinline void operator() (const BBox3fa& b, const unsigned index)
         {
-          const vint4 binID = mapping(b);
-          
 #if defined(__AVX2__)
-          const unsigned int x = extract<0>(binID);
-          const unsigned int y = extract<1>(binID);
-          const unsigned int z = extract<2>(binID);
-          const unsigned int xyz = bitInterleave(x,y,z);
+          const unsigned int xyz = mapping.code(b);
           dest[currentID].index = index;
           dest[currentID].code  = xyz;
           currentID++;
-#else        
+#else     
+          const vint4 binID = mapping.bin(b);
           ax[slots] = extract<0>(binID);
           ay[slots] = extract<1>(binID);
           az[slots] = extract<2>(binID);
@@ -148,16 +154,6 @@ namespace embree
             slots = 0;
           }
 #endif
-        }
-        
-        __forceinline unsigned int getCode(const BBox3fa& b)
-        {
-          const vint4 binID = mapping(b);
-          const unsigned int x = extract<0>(binID);
-          const unsigned int y = extract<1>(binID);
-          const unsigned int z = extract<2>(binID);
-          const unsigned int xyz = bitInterleave(x,y,z);
-          return xyz;
         }
         
       public:
@@ -277,14 +273,8 @@ namespace embree
             centBounds.extend(center2(calculateBounds(morton[i])));
           
           MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
-          for (size_t i=current.begin(); i<current.end(); i++)
-          {
-            const BBox3fa b = calculateBounds(morton[i]);
-            const vint4 binID = mapping(b);
-            const unsigned int bx = extract<0>(binID);
-            const unsigned int by = extract<1>(binID);
-            const unsigned int bz = extract<2>(binID);
-            morton[i].code = bitInterleave(bx,by,bz);
+          for (size_t i=current.begin(); i<current.end(); i++) {
+            morton[i].code = mapping.code(calculateBounds(morton[i]));
           }
 #if defined(TASKING_TBB)
           tbb::parallel_sort(morton+current.begin(),morton+current.end());
