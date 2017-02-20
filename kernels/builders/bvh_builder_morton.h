@@ -280,14 +280,24 @@ namespace embree
         /*! recreates morton codes when reaching a region where all codes are identical */
         __noinline void recreateMortonCodes(range<unsigned>& current) const
         {
-          BBox3fa centBounds(empty);
-          for (size_t i=current.begin(); i<current.end(); i++)
-            centBounds.extend(center2(calculateBounds(morton[i])));
-          
+          /*! recalculate centroid bounds */
+          auto calculateCentBounds = [&] ( const range<unsigned>& r ) {
+            BBox3fa centBounds = empty;
+            for (size_t i=r.begin(); i<r.end(); i++)
+              centBounds.extend(center2(calculateBounds(morton[i])));
+            return centBounds;
+          };
+          const BBox3fa centBounds = parallel_reduce(current.begin(), current.end(), unsigned(1024), BBox3fa(empty), calculateCentBounds, BBox3fa::merge);
+                                                         
+          /* recalculate morton codes */
           MortonCodeMapping mapping(centBounds);
-          for (size_t i=current.begin(); i<current.end(); i++) {
-            morton[i].code = mapping.code(calculateBounds(morton[i]));
-          }
+          parallel_for(current.begin(), current.end(), unsigned(1024), [&] ( const range<unsigned>& r ) {
+              for (size_t i=r.begin(); i<r.end(); i++) {
+                morton[i].code = mapping.code(calculateBounds(morton[i]));
+              }
+            });
+          
+          /*! sort morton codes */
 #if defined(TASKING_TBB)
           tbb::parallel_sort(morton+current.begin(),morton+current.end());
 #else
