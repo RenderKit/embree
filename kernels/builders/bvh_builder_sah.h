@@ -33,7 +33,7 @@ namespace embree
   {  
     struct GeneralBVHBuilder
     {
-      /*! settings for msmblur builder */
+      /*! settings for SAH builder */
       struct Settings
       {
         /*! default settings */

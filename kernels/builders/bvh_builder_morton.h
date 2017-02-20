@@ -25,7 +25,7 @@ namespace embree
   {
     struct BVHBuilderMorton
     {      
-      /*! settings for msmblur builder */
+      /*! settings for morton builder */
       struct Settings
       {
         /*! default settings */
@@ -53,28 +53,6 @@ namespace embree
         size_t singleThreadThreshold; //!< threshold when we switch to single threaded build
       };
 
-      class BuildRecord 
-      {
-      public:
-        unsigned int begin;
-        unsigned int end;
-        
-        __forceinline BuildRecord() {}
-        
-        __forceinline BuildRecord(const unsigned begin, const unsigned end)
-          : begin(begin), end(end) {}
-        
-        __forceinline unsigned int size() const {
-          return end - begin;
-        }
-        
-        __forceinline void init(const unsigned int _begin, const unsigned int _end)			 
-        {
-          begin = _begin;
-          end = _end;
-        }
-      };
-      
       struct __aligned(8) MortonID32Bit
       {
       public:
@@ -321,14 +299,14 @@ namespace embree
           progressMonitor(progressMonitor),
           morton(nullptr) {}
         
-        void splitFallback(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild) const
+        void splitFallback(range<unsigned>& current, range<unsigned>& leftChild, range<unsigned>& rightChild) const
         {
-          const unsigned int center = (current.begin + current.end)/2;
-          leftChild.init(current.begin,center);
-          rightChild.init(center,current.end);
+          const unsigned int center = (current.begin() + current.end())/2;
+          leftChild = make_range(current.begin(),center);
+          rightChild = make_range(center,current.end());
         }
         
-        ReductionTy createLargeLeaf(size_t depth, BuildRecord& current, Allocator alloc)
+        ReductionTy createLargeLeaf(size_t depth, range<unsigned>& current, Allocator alloc)
         {
           /* this should never occur but is a fatal error */
           if (depth > maxDepth) 
@@ -339,7 +317,7 @@ namespace embree
             return createLeaf(current,alloc);
           
           /* fill all children by always splitting the largest one */
-          BuildRecord children[MAX_BRANCHING_FACTOR];
+          range<unsigned> children[MAX_BRANCHING_FACTOR];
           size_t numChildren = 1;
           children[0] = current;
           
@@ -363,7 +341,7 @@ namespace embree
             if (bestChild == size_t(-1)) break;
             
             /*! split best child into left and right child */
-            __aligned(64) BuildRecord left, right;
+            __aligned(64) range<unsigned> left, right;
             splitFallback(children[bestChild],left,right);
             
             /* add new children left and right */
@@ -386,14 +364,14 @@ namespace embree
         }
         
         /*! recreates morton codes when reaching a region where all codes are identical */
-        __noinline void recreateMortonCodes(BuildRecord& current) const
+        __noinline void recreateMortonCodes(range<unsigned>& current) const
         {
           BBox3fa centBounds(empty);
-          for (size_t i=current.begin; i<current.end; i++)
+          for (size_t i=current.begin(); i<current.end(); i++)
             centBounds.extend(center2(calculateBounds(morton[i])));
           
           MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
-          for (size_t i=current.begin; i<current.end; i++)
+          for (size_t i=current.begin(); i<current.end(); i++)
           {
             const BBox3fa b = calculateBounds(morton[i]);
             const vfloat4 lower = (vfloat4)b.lower;
@@ -406,34 +384,34 @@ namespace embree
             morton[i].code = bitInterleave(bx,by,bz);
           }
 #if defined(TASKING_TBB)
-          tbb::parallel_sort(morton+current.begin,morton+current.end);
+          tbb::parallel_sort(morton+current.begin(),morton+current.end());
 #else
-          InPlace32BitRadixSort(morton+current.begin,current.end-current.begin);
+          InPlace32BitRadixSort(morton+current.begin(),current.size());
 #endif
         }
         
-        __forceinline void split(BuildRecord& current,
-                                 BuildRecord& left,
-                                 BuildRecord& right) const
+        __forceinline void split(range<unsigned>& current,
+                                 range<unsigned>& left,
+                                 range<unsigned>& right) const
         {
-          const unsigned int code_start = morton[current.begin].code;
-          const unsigned int code_end   = morton[current.end-1].code;
+          const unsigned int code_start = morton[current.begin()].code;
+          const unsigned int code_end   = morton[current.end()-1].code;
           unsigned int bitpos = lzcnt(code_start^code_end);
           
           /* if all items mapped to same morton code, then create new morton codes for the items */
           if (unlikely(bitpos == 32)) // FIXME: maybe go here earlier to build better tree
           {
             recreateMortonCodes(current);
-            const unsigned int code_start = morton[current.begin].code;
-            const unsigned int code_end   = morton[current.end-1].code;
+            const unsigned int code_start = morton[current.begin()].code;
+            const unsigned int code_end   = morton[current.end()-1].code;
             bitpos = lzcnt(code_start^code_end);
             
             /* if the morton code is still the same, goto fall back split */
             if (unlikely(bitpos == 32)) 
             {
-              unsigned center = (current.begin + current.end)/2; 
-              left.init(current.begin,center);
-              right.init(center,current.end);
+              unsigned center = (current.begin() + current.end())/2; 
+              left = make_range(current.begin(),center);
+              right = make_range(center,current.end());
               return;
             }
           }
@@ -443,8 +421,8 @@ namespace embree
           const unsigned int bitmask = 1 << bitpos_diff;
           
           /* find location where bit differs using binary search */
-          unsigned begin = current.begin;
-          unsigned end   = current.end;
+          unsigned begin = current.begin();
+          unsigned end   = current.end();
           while (begin + 1 != end) {
             const unsigned mid = (begin+end)/2;
             const unsigned bit = morton[mid].code & bitmask;
@@ -456,11 +434,11 @@ namespace embree
           for (unsigned int i=center; i<end;    i++) assert((morton[i].code & bitmask) == bitmask);
 #endif
           
-          left.init(current.begin,center);
-          right.init(center,current.end);
+          left = make_range(current.begin(),center);
+          right = make_range(center,current.end());
         }
         
-        ReductionTy recurse(size_t depth, BuildRecord& current, Allocator alloc, bool toplevel) 
+        ReductionTy recurse(size_t depth, range<unsigned>& current, Allocator alloc, bool toplevel) 
         {
           if (alloc == nullptr) 
             alloc = createAllocator();
@@ -469,7 +447,7 @@ namespace embree
           if (toplevel && current.size() <= singleThreadThreshold)
             progressMonitor(current.size());
           
-          __aligned(64) BuildRecord children[MAX_BRANCHING_FACTOR];
+          __aligned(64) range<unsigned> children[MAX_BRANCHING_FACTOR];
           
           /* create leaf node */
           if (unlikely(depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize)) {
@@ -500,7 +478,7 @@ namespace embree
             if (bestChild == -1) break;
             
             /*! split best child into left and right child */
-            __aligned(64) BuildRecord left, right;
+            __aligned(64) range<unsigned> left, right;
             split(children[bestChild],left,right);
             
             /* add new children left and right */
@@ -551,7 +529,7 @@ namespace embree
           //InPlace32BitRadixSort(morton,numPrimitives);
           
           /* build BVH */
-          BuildRecord br(0,unsigned(numPrimitives));
+          range<unsigned> br(0,unsigned(numPrimitives));
           const ReductionTy root = recurse(1, br, nullptr, true);
           _mm_mfence(); // to allow non-temporal stores during build
           return root;

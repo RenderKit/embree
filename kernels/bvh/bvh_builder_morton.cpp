@@ -96,12 +96,12 @@ namespace embree
       __forceinline CreateMortonLeaf (TriangleMesh* mesh, BVHBuilderMorton::MortonID32Bit* morton)
         : mesh(mesh), morton(morton) {}
 
-      __noinline std::pair<NodeRef,BBox3fa> operator() (BVHBuilderMorton::BuildRecord& current, FastAllocator::ThreadLocal2* alloc)
+      __noinline std::pair<NodeRef,BBox3fa> operator() (range<unsigned>& current, FastAllocator::ThreadLocal2* alloc)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
         size_t items = current.size();
-        size_t start = current.begin;
+        size_t start = current.begin();
         assert(items<=4);
         
         /* allocate leaf node */
@@ -151,12 +151,12 @@ namespace embree
       __forceinline CreateMortonLeaf (TriangleMesh* mesh, BVHBuilderMorton::MortonID32Bit* morton)
         : mesh(mesh), morton(morton) {}
       
-      __noinline std::pair<NodeRef,BBox3fa> operator() (BVHBuilderMorton::BuildRecord& current, FastAllocator::ThreadLocal2* alloc)
+      __noinline std::pair<NodeRef,BBox3fa> operator() (range<unsigned>& current, FastAllocator::ThreadLocal2* alloc)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
         size_t items = current.size();
-        size_t start = current.begin;
+        size_t start = current.begin();
         assert(items<=4);
         
         /* allocate leaf node */
@@ -204,12 +204,12 @@ namespace embree
       __forceinline CreateMortonLeaf (TriangleMesh* mesh, BVHBuilderMorton::MortonID32Bit* morton)
         : mesh(mesh), morton(morton) {}
       
-      __noinline std::pair<NodeRef,BBox3fa> operator() (BVHBuilderMorton::BuildRecord& current, FastAllocator::ThreadLocal2* alloc)
+      __noinline std::pair<NodeRef,BBox3fa> operator() (range<unsigned>& current, FastAllocator::ThreadLocal2* alloc)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
         size_t items = current.size();
-        size_t start = current.begin;
+        size_t start = current.begin();
         assert(items<=4);
         
         /* allocate leaf node */
@@ -269,12 +269,12 @@ namespace embree
       __forceinline CreateMortonLeaf (QuadMesh* mesh, BVHBuilderMorton::MortonID32Bit* morton)
         : mesh(mesh), morton(morton) {}
       
-      __noinline std::pair<NodeRef,BBox3fa> operator() (BVHBuilderMorton::BuildRecord& current, FastAllocator::ThreadLocal2* alloc)
+      __noinline std::pair<NodeRef,BBox3fa> operator() (range<unsigned>& current, FastAllocator::ThreadLocal2* alloc)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
         size_t items = current.size();
-        size_t start = current.begin;
+        size_t start = current.begin();
         assert(items<=4);
         
         /* allocate leaf node */
@@ -325,12 +325,12 @@ namespace embree
       __forceinline CreateMortonLeaf (AccelSet* mesh, BVHBuilderMorton::MortonID32Bit* morton)
         : mesh(mesh), morton(morton) {}
       
-      __noinline std::pair<NodeRef,BBox3fa> operator() (BVHBuilderMorton::BuildRecord& current, FastAllocator::ThreadLocal2* alloc)
+      __noinline std::pair<NodeRef,BBox3fa> operator() (range<unsigned>& current, FastAllocator::ThreadLocal2* alloc)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
         size_t items = current.size();
-        size_t start = current.begin;
+        size_t start = current.begin();
         assert(items<=4);
         
         /* allocate leaf node */

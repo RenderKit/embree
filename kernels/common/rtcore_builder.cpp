@@ -220,11 +220,11 @@ namespace embree
         },
         
         /* lambda function that creates BVH leaves */
-        [&]( BVHBuilderMorton::BuildRecord& current, void* threadLocal) -> std::pair<void*,BBox3fa>
+        [&]( const range<unsigned>& current, void* threadLocal) -> std::pair<void*,BBox3fa>
         {
-          const size_t id = morton_src[current.begin].index;
+          const size_t id = morton_src[current.begin()].index;
           const BBox3fa bounds = prims[id].bounds(); 
-          void* node = createLeaf(threadLocal,prims_i+current.begin,current.size());
+          void* node = createLeaf(threadLocal,prims_i+current.begin(),current.size());
           return std::make_pair(node,bounds);
         },
         
