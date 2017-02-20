@@ -213,7 +213,7 @@ namespace embree
           progressMonitor(progressMonitor),
           morton(nullptr) {}
         
-        ReductionTy createLargeLeaf(size_t depth, range<unsigned>& current, Allocator alloc)
+        ReductionTy createLargeLeaf(size_t depth, const range<unsigned>& current, Allocator alloc)
         {
           /* this should never occur but is a fatal error */
           if (depth > maxDepth) 
@@ -263,14 +263,14 @@ namespace embree
           
           /* recurse into each child */
           ReductionTy bounds[MAX_BRANCHING_FACTOR];
-          for (size_t i=0; i<numChildren; i++) {
+          for (size_t i=0; i<numChildren; i++)
             bounds[i] = createLargeLeaf(depth+1,children[i],alloc);
-          }
+
           return setBounds(node,bounds,numChildren);
         }
         
         /*! recreates morton codes when reaching a region where all codes are identical */
-        __noinline void recreateMortonCodes(range<unsigned>& current) const
+        __noinline void recreateMortonCodes(const range<unsigned>& current) const
         {
           /* fast path for small ranges */
           if (likely(current.size() < 1024))
@@ -317,9 +317,7 @@ namespace embree
           }
         }
         
-        __forceinline void split(range<unsigned>& current,
-                                 range<unsigned>& left,
-                                 range<unsigned>& right) const
+        __forceinline void split(const range<unsigned>& current, range<unsigned>& left, range<unsigned>& right) const
         {
           const unsigned int code_start = morton[current.begin()].code;
           const unsigned int code_end   = morton[current.end()-1].code;
@@ -362,7 +360,7 @@ namespace embree
           right = make_range(center,current.end());
         }
         
-        ReductionTy recurse(size_t depth, range<unsigned>& current, Allocator alloc, bool toplevel) 
+        ReductionTy recurse(size_t depth, const range<unsigned>& current, Allocator alloc, bool toplevel) 
         {
           /* get thread local allocator */
           if (alloc == nullptr) 
@@ -373,9 +371,8 @@ namespace embree
             progressMonitor(current.size());
           
           /* create leaf node */
-          if (unlikely(depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize)) {
+          if (unlikely(depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize))
             return createLargeLeaf(depth,current,alloc);
-          }
           
           /* fill all children by always splitting the one with the largest surface area */
           range<unsigned> children[MAX_BRANCHING_FACTOR];
@@ -445,12 +442,12 @@ namespace embree
         /* build function */
         ReductionTy build(BuildPrim* src, BuildPrim* tmp, size_t numPrimitives) 
         {
+          /* sort morton codes */
           morton = src;
           radix_sort_u32(src,tmp,numPrimitives,singleThreadThreshold);
           
           /* build BVH */
-          range<unsigned> br(0,unsigned(numPrimitives));
-          const ReductionTy root = recurse(1, br, nullptr, true);
+          const ReductionTy root = recurse(1, range<unsigned>(0,(unsigned)numPrimitives), nullptr, true);
           _mm_mfence(); // to allow non-temporal stores during build
           return root;
         }
