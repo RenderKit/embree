@@ -106,6 +106,30 @@ namespace embree
         }
       };
       
+#if defined (__AVX2__)
+
+      /*! for AVX2 there is a fast scalar bitInterleave */
+      struct MortonCodeGenerator
+      {       
+        __forceinline MortonCodeGenerator(const MortonCodeMapping& mapping, BuildPrim* dest)
+          : mapping(mapping), dest(dest) {}
+        
+        __forceinline void operator() (const BBox3fa& b, const unsigned index)
+        {
+          dest->index = index;
+          dest->code = mapping.code(b);
+          dest++;
+        }
+        
+      public:
+        const MortonCodeMapping mapping;
+        BuildPrim* dest;
+        size_t currentID;
+      };
+
+#else
+
+      /*! before AVX2 is it better to use the SSE version of bitInterleave */
       struct MortonCodeGenerator
       {       
         __forceinline MortonCodeGenerator(const MortonCodeMapping& mapping, BuildPrim* dest)
@@ -113,7 +137,6 @@ namespace embree
         
         __forceinline ~MortonCodeGenerator()
         {
-#if !defined(__AVX2__)
           if (slots != 0)
           {
             const vint4 code = bitInterleave(ax,ay,az);
@@ -122,17 +145,10 @@ namespace embree
               dest[currentID-slots+i].code = code[i];
             }
           }
-#endif
         }
         
         __forceinline void operator() (const BBox3fa& b, const unsigned index)
         {
-#if defined(__AVX2__)
-          const unsigned int xyz = mapping.code(b);
-          dest[currentID].index = index;
-          dest[currentID].code  = xyz;
-          currentID++;
-#else     
           const vint4 binID = mapping.bin(b);
           ax[slots] = extract<0>(binID);
           ay[slots] = extract<1>(binID);
@@ -148,7 +164,6 @@ namespace embree
             vint4::storeu(&dest[currentID-2],unpackhi(code,ai));
             slots = 0;
           }
-#endif
         }
         
       public:
@@ -158,6 +173,8 @@ namespace embree
         size_t slots;
         vint4 ax, ay, az, ai;
       };
+
+#endif
       
       template<
       typename ReductionTy, 
