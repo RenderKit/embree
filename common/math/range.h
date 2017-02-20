@@ -66,9 +66,13 @@ namespace embree
         return _end <= _begin; 
       }
 
+      __forceinline Ty center() const {
+        return (_begin + _end)/2;
+      }
+
       __forceinline std::pair<range,range> split() const 
       {
-        const Ty _center = (_begin+_end)/2;
+        const Ty _center = center();
         return std::make_pair(range(_begin,_center),range(_center,_end));
       }
 

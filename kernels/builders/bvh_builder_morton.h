@@ -128,7 +128,7 @@ namespace embree
       };
 
 #else
-
+      
       /*! before AVX2 is it better to use the SSE version of bitInterleave */
       struct MortonCodeGenerator
       {       
@@ -177,7 +177,7 @@ namespace embree
 #endif
       
       template<
-      typename ReductionTy, 
+        typename ReductionTy, 
         typename Allocator, 
         typename CreateAllocator, 
         typename CreateNodeFunc, 
@@ -215,7 +215,7 @@ namespace embree
         
         void splitFallback(range<unsigned>& current, range<unsigned>& leftChild, range<unsigned>& rightChild) const
         {
-          const unsigned int center = (current.begin() + current.end())/2;
+          const unsigned int center = current.center();
           leftChild = make_range(current.begin(),center);
           rightChild = make_range(center,current.end());
         }
@@ -237,7 +237,7 @@ namespace embree
           
           do {
             
-            /* find best child with largest bounding box area */
+            /* find best child with largest number of primitives */
             size_t bestChild = -1;
             size_t bestSize = 0;
             for (size_t i=0; i<numChildren; i++)
