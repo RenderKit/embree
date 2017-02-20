@@ -213,13 +213,6 @@ namespace embree
           progressMonitor(progressMonitor),
           morton(nullptr) {}
         
-        void splitFallback(range<unsigned>& current, range<unsigned>& leftChild, range<unsigned>& rightChild) const
-        {
-          const unsigned int center = current.center();
-          leftChild = make_range(current.begin(),center);
-          rightChild = make_range(center,current.end());
-        }
-        
         ReductionTy createLargeLeaf(size_t depth, range<unsigned>& current, Allocator alloc)
         {
           /* this should never occur but is a fatal error */
@@ -255,13 +248,12 @@ namespace embree
             if (bestChild == size_t(-1)) break;
             
             /*! split best child into left and right child */
-            __aligned(64) range<unsigned> left, right;
-            splitFallback(children[bestChild],left,right);
+            auto split = children[bestChild].split();
             
             /* add new children left and right */
             children[bestChild] = children[numChildren-1];
-            children[numChildren-1] = left;
-            children[numChildren+0] = right;
+            children[numChildren-1] = split.first;
+            children[numChildren+0] = split.second;
             numChildren++;
             
           } while (numChildren < branchingFactor);
@@ -314,7 +306,7 @@ namespace embree
           unsigned int bitpos = lzcnt(code_start^code_end);
           
           /* if all items mapped to same morton code, then create new morton codes for the items */
-          if (unlikely(bitpos == 32)) // FIXME: maybe go here earlier to build better tree
+          if (unlikely(bitpos == 32))
           {
             recreateMortonCodes(current);
             const unsigned int code_start = morton[current.begin()].code;
@@ -322,11 +314,8 @@ namespace embree
             bitpos = lzcnt(code_start^code_end);
             
             /* if the morton code is still the same, goto fall back split */
-            if (unlikely(bitpos == 32)) 
-            {
-              unsigned center = (current.begin() + current.end())/2; 
-              left = make_range(current.begin(),center);
-              right = make_range(center,current.end());
+            if (unlikely(bitpos == 32)) {
+              current.split(left,right);
               return;
             }
           }

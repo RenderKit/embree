@@ -76,6 +76,13 @@ namespace embree
         return std::make_pair(range(_begin,_center),range(_center,_end));
       }
 
+      __forceinline void split(range& left_o, range& right_o) const 
+      {
+        const Ty _center = center();
+        left_o = range(_begin,_center);
+        right_o = range(_center,_end);
+      }
+
       __forceinline friend bool operator< (const range& r0, const range& r1) {
         return r0.size() < r1.size();
       }
