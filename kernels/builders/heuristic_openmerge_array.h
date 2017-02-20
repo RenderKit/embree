@@ -90,12 +90,12 @@ namespace embree
         typedef extended_range<size_t> Set;
         typedef SplitOpenMerge<ObjectSplit> Split;
         
-        static const size_t PARALLEL_THRESHOLD = 1024;
-        static const size_t PARALLEL_FIND_BLOCK_SIZE = 256;
+        static const size_t PARALLEL_THRESHOLD = 2*1024;
+        static const size_t PARALLEL_FIND_BLOCK_SIZE = 512;
         static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;
 
         static const size_t MOVE_STEP_SIZE = 64;
-        static const size_t CREATE_SPLITS_STEP_SIZE = 64;
+        static const size_t CREATE_SPLITS_STEP_SIZE = 128;
 
         __forceinline HeuristicArrayOpenMergeSAH ()
           : prims0(nullptr) {}
@@ -274,7 +274,7 @@ namespace embree
           {
             /* disjoint test */
             bool disjoint = false;
-            const size_t D = 8;
+            const size_t D = 4;
             if (pinfo.size() <= D)
             {
               disjoint = true;
@@ -322,7 +322,8 @@ namespace embree
 
             pinfo.end += extra_elements;
             Set nset(set.begin(),set.end()+extra_elements,set.ext_end());
-            set = nset;                        
+            set = nset;         
+            if (set.ext_range_size() <= 1) set.set_ext_range(set.end()); /* disable opening */
           }
         
             

@@ -215,8 +215,9 @@ namespace embree
           {
             NodeRef root;
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
-
-            const size_t extSize = max(max((size_t)1000,refs.size()*2),size_t(numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
+            PRINT(numPrimitives);
+            PRINT(refs.size());
+            const size_t extSize = max(max((size_t)1000,refs.size()*2),size_t((float)numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
             PRINT(extSize);
             refs.resize(extSize); // reserve?
 
