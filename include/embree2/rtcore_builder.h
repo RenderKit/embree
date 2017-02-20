@@ -90,34 +90,30 @@ typedef void* (*RTCCreateLeafFunc) (RTCThreadLocalAllocator allocator, const RTC
 /*! Callback to provide build progress. */
 typedef void (*RTCBuildProgressFunc) (size_t dn, void* userPtr);
 
-// FIXME: starndard not SAH
-
-/*! SAH based BVH builder. */
-RTCORE_API void* rtcBVHBuildSAH(RTCBVH bvh,                                     //!< BVH to build
-                                const RTCBuildSettings& settings,               //!< settings for BVH builder
-                                RTCBuildPrimitive* prims,                       //!< list of input primitives
-                                size_t numPrims,                                //!< number of input primitives
-                                void* userPtr,                                  //!< user pointer passed to callback functions
-                                RTCCreateNodeFunc createNode,                   //!< creates a node
-                                RTCSetNodeChildFunc setNodeChild,               //!< sets pointer to a child
-                                RTCSetNodeBoundsFunc setNodeBounds,             //!< sets bound of a child
-                                RTCCreateLeafFunc createLeaf,                   //!< creates a leaf
-                                RTCBuildProgressFunc buildProgress              //!< used to report build progress
+/*! Standard BVH builder (internally using binning and SAH heuristic). */
+RTCORE_API void* rtcBuildBVH(RTCBVH bvh,                                     //!< BVH to build
+                             const RTCBuildSettings& settings,               //!< settings for BVH builder
+                             RTCBuildPrimitive* prims,                       //!< list of input primitives
+                             size_t numPrims,                                //!< number of input primitives
+                             void* userPtr,                                  //!< user pointer passed to callback functions
+                             RTCCreateNodeFunc createNode,                   //!< creates a node
+                             RTCSetNodeChildFunc setNodeChild,               //!< sets pointer to a child
+                             RTCSetNodeBoundsFunc setNodeBounds,             //!< sets bound of a child
+                             RTCCreateLeafFunc createLeaf,                   //!< creates a leaf
+                             RTCBuildProgressFunc buildProgress              //!< used to report build progress
   ); 
 
-// FIXME: name Fast not Morton
-
-/*! Faster builder working with Morton Codes.. */
-RTCORE_API void* rtcBVHBuildMorton(RTCBVH bvh,                                     //!< BVH to build
-                                   const RTCBuildSettings& settings,               //!< settings for BVH builder
-                                   RTCBuildPrimitive* prims,                       //!< list of input primitives
-                                   size_t numPrims,                                //!< number of input primitives
-                                   void* userPtr,                                  //!< user pointer passed to createThreadLocal callback
-                                   RTCCreateNodeFunc createNode,                   //!< creates a node
-                                   RTCSetNodeChildFunc setNodeChild,               //!< sets pointer to a child
-                                   RTCSetNodeBoundsFunc setNodeBounds,             //!< sets bound of a child
-                                   RTCCreateLeafFunc createLeaf,                   //!< creates a leaf
-                                   RTCBuildProgressFunc buildProgress              //!< used to report build progress
+/*! Faster builder producing lower quality trees (internally operating with morton codes). */
+RTCORE_API void* rtcBuildBVHFast(RTCBVH bvh,                                     //!< BVH to build
+                                 const RTCBuildSettings& settings,               //!< settings for BVH builder
+                                 RTCBuildPrimitive* prims,                       //!< list of input primitives
+                                 size_t numPrims,                                //!< number of input primitives
+                                 void* userPtr,                                  //!< user pointer passed to createThreadLocal callback
+                                 RTCCreateNodeFunc createNode,                   //!< creates a node
+                                 RTCSetNodeChildFunc setNodeChild,               //!< sets pointer to a child
+                                 RTCSetNodeBoundsFunc setNodeBounds,             //!< sets bound of a child
+                                 RTCCreateLeafFunc createLeaf,                   //!< creates a leaf
+                                 RTCBuildProgressFunc buildProgress              //!< used to report build progress
   );
 
 #endif

@@ -90,25 +90,31 @@ namespace embree
       RTCORE_CATCH_END(device);
     }
 
-    RTCORE_API void* rtcBVHBuildSAH(RTCBVH hbvh,
-                                    const RTCBuildSettings& settings,
-                                    RTCBuildPrimitive* prims,
-                                    size_t numPrims,
-                                    void* userPtr,
-                                    RTCCreateNodeFunc createNode,
-                                    RTCSetNodeChildFunc setNodeChild,
-                                    RTCSetNodeBoundsFunc setNodeBounds,
-                                    RTCCreateLeafFunc createLeaf,
-                                    RTCBuildProgressFunc buildProgress)
+    RTCORE_API void* rtcBuildBVH(RTCBVH hbvh,
+                                 const RTCBuildSettings& settings,
+                                 RTCBuildPrimitive* prims,
+                                 size_t numPrims,
+                                 void* userPtr,
+                                 RTCCreateNodeFunc createNode,
+                                 RTCSetNodeChildFunc setNodeChild,
+                                 RTCSetNodeBoundsFunc setNodeBounds,
+                                 RTCCreateLeafFunc createLeaf,
+                                 RTCBuildProgressFunc buildProgress)
     {
       BVH* bvh = (BVH*) hbvh;
       RTCORE_CATCH_BEGIN;
-      RTCORE_TRACE(rtcBVHBuildSAH);
+      RTCORE_TRACE(rtcBuildBVH);
       RTCORE_VERIFY_HANDLE(hbvh);
+      RTCORE_VERIFY_HANDLE(createNode);
+      RTCORE_VERIFY_HANDLE(setNodeChild);
+      RTCORE_VERIFY_HANDLE(setNodeBounds);
+      RTCORE_VERIFY_HANDLE(createLeaf);
 
+      /* if we made this BVH static, we can not re-build it anymore  */
       if (bvh->isStatic)
         throw_RTCError(RTC_INVALID_OPERATION,"static BVH cannot get rebuild");
 
+      /* initialize the allocator */
       bvh->allocator.init_estimate(numPrims*sizeof(BBox3fa));
       bvh->allocator.reset();
 
@@ -157,7 +163,7 @@ namespace embree
         
         /* progress monitor function */
         [&] (size_t dn) { 
-          buildProgress(dn,userPtr);
+          if (buildProgress) buildProgress(dn,userPtr);
         },
         
         (PrimRef*)prims,pinfo,settings);
@@ -169,25 +175,31 @@ namespace embree
       return nullptr;
     }
 
-    RTCORE_API void* rtcBVHBuildMorton(RTCBVH hbvh,
-                                       const RTCBuildSettings& settings,
-                                       RTCBuildPrimitive* prims_i,
-                                       size_t numPrims,
-                                       void* userPtr,
-                                       RTCCreateNodeFunc createNode,
-                                       RTCSetNodeChildFunc setNodeChild,
-                                       RTCSetNodeBoundsFunc setNodeBounds,
-                                       RTCCreateLeafFunc createLeaf,
-                                       RTCBuildProgressFunc buildProgress)
+    RTCORE_API void* rtcBuildBVHFast(RTCBVH hbvh,
+                                     const RTCBuildSettings& settings,
+                                     RTCBuildPrimitive* prims_i,
+                                     size_t numPrims,
+                                     void* userPtr,
+                                     RTCCreateNodeFunc createNode,
+                                     RTCSetNodeChildFunc setNodeChild,
+                                     RTCSetNodeBoundsFunc setNodeBounds,
+                                     RTCCreateLeafFunc createLeaf,
+                                     RTCBuildProgressFunc buildProgress)
     {
       BVH* bvh = (BVH*) hbvh;
       RTCORE_CATCH_BEGIN;
-      RTCORE_TRACE(rtcBVHBuildMorton);
+      RTCORE_TRACE(rtcBuildBVHFast);
       RTCORE_VERIFY_HANDLE(hbvh);
+      RTCORE_VERIFY_HANDLE(createNode);
+      RTCORE_VERIFY_HANDLE(setNodeChild);
+      RTCORE_VERIFY_HANDLE(setNodeBounds);
+      RTCORE_VERIFY_HANDLE(createLeaf);
 
+      /* if we made this BVH static, we can not re-build it anymore  */
       if (bvh->isStatic)
         throw_RTCError(RTC_INVALID_OPERATION,"static BVH cannot get rebuild");
 
+      /* initialize the allocator */
       bvh->allocator.init_estimate(numPrims*sizeof(BBox3fa));
       bvh->allocator.reset();
       
@@ -243,7 +255,7 @@ namespace embree
         
         /* progress monitor function */
         [&] (size_t dn) { 
-          buildProgress(dn,userPtr);
+          if (buildProgress) buildProgress(dn,userPtr);
         },
         
         morton_src.data(),morton_tmp.data(),numPrims,

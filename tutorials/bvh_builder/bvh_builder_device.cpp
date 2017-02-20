@@ -26,7 +26,10 @@ namespace embree
   bool memoryMonitor(void* userPtr, ssize_t bytes, bool post) {
     return true;
   }
-  
+
+  void buildProgress (size_t dn, void* userPtr) {
+  }
+
   struct Node
   {
     virtual float sah() = 0;
@@ -85,10 +88,7 @@ namespace embree
     }
   };
 
-  void buildProgress (size_t dn, void* userPtr) {
-  }
-
-  void build_sah(RTCBuildPrimitive* prims, size_t N, char* cfg)
+  void build_normal(RTCBuildPrimitive* prims, size_t N, char* cfg)
   {
     RTCDevice device = rtcNewDevice(cfg);
     rtcDeviceSetMemoryMonitorFunction2(device,memoryMonitor,nullptr);
@@ -110,8 +110,8 @@ namespace embree
     {
       std::cout << "iteration " << i << ": building BVH over " << N << " primitives, " << std::flush;
       double t0 = getSeconds();
-      Node* root = (Node*) rtcBVHBuildSAH(bvh,settings,prims,N,nullptr,
-                                          InnerNode::create,InnerNode::setChild,InnerNode::setBounds,LeafNode::create,buildProgress);
+      Node* root = (Node*) rtcBuildBVH(bvh,settings,prims,N,nullptr,
+                                       InnerNode::create,InnerNode::setChild,InnerNode::setBounds,LeafNode::create,buildProgress);
       double t1 = getSeconds();
       
       std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << root->sah() << " [DONE]" << std::endl;
@@ -120,7 +120,7 @@ namespace embree
     rtcDeleteBVH(bvh);
   }
 
-  void build_morton(RTCBuildPrimitive* prims, size_t N, char* cfg)
+  void build_fast(RTCBuildPrimitive* prims, size_t N, char* cfg)
   {
     RTCDevice device = rtcNewDevice(cfg);
     rtcDeviceSetMemoryMonitorFunction2(device,memoryMonitor,nullptr);
@@ -142,8 +142,8 @@ namespace embree
     {
       std::cout << "iteration " << i << ": building BVH over " << N << " primitives, " << std::flush;
       double t0 = getSeconds();
-      Node* root = (Node*) rtcBVHBuildMorton(bvh,settings,prims,N,nullptr,
-                                             InnerNode::create,InnerNode::setChild,InnerNode::setBounds,LeafNode::create,buildProgress);
+      Node* root = (Node*) rtcBuildBVHFast(bvh,settings,prims,N,nullptr,
+                                           InnerNode::create,InnerNode::setChild,InnerNode::setBounds,LeafNode::create,buildProgress);
       double t1 = getSeconds();
       
       std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << root->sah() << " [DONE]" << std::endl;
@@ -188,11 +188,11 @@ namespace embree
       prims.push_back(prim);
     }
 
-    std::cout << "SAH builder:" << std::endl;
-    build_sah(prims.data(),prims.size(),cfg);
+    std::cout << "Normal BVH builder:" << std::endl;
+    build_normal(prims.data(),prims.size(),cfg);
 
-    std::cout << "Morton builder:" << std::endl;
-    build_morton(prims.data(),prims.size(),cfg);
+    std::cout << "Fast BVH builder:" << std::endl;
+    build_fast(prims.data(),prims.size(),cfg);
   }
   
   /* task that renders a single screen tile */
