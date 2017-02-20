@@ -325,7 +325,7 @@ namespace embree
           const unsigned int code_end   = morton[current.end()-1].code;
           unsigned int bitpos = lzcnt(code_start^code_end);
           
-          /* if all items mapped to same morton code, then create new morton codes for the items */
+          /* if all items mapped to same morton code, then re-create new morton codes for the items */
           if (unlikely(bitpos == 32))
           {
             recreateMortonCodes(current);
@@ -372,19 +372,18 @@ namespace embree
           if (toplevel && current.size() <= singleThreadThreshold)
             progressMonitor(current.size());
           
-          __aligned(64) range<unsigned> children[MAX_BRANCHING_FACTOR];
-          
           /* create leaf node */
           if (unlikely(depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize)) {
             return createLargeLeaf(depth,current,alloc);
           }
           
           /* fill all children by always splitting the one with the largest surface area */
-          size_t numChildren = 1;
-          children[0] = current;
-          
-          do {
-            
+          range<unsigned> children[MAX_BRANCHING_FACTOR];
+          split(current,children[0],children[1]);
+          size_t numChildren = 2;
+           
+          while (numChildren < branchingFactor) 
+          {  
             /* find best child with largest number of primitives */
             int bestChild = -1;
             unsigned bestItems = 0;
@@ -403,21 +402,19 @@ namespace embree
             if (bestChild == -1) break;
             
             /*! split best child into left and right child */
-            __aligned(64) range<unsigned> left, right;
+            range<unsigned> left, right;
             split(children[bestChild],left,right);
             
             /* add new children left and right */
             children[bestChild] = children[numChildren-1];
             children[numChildren-1] = left;
             children[numChildren+0] = right;
-            numChildren++;
-            
-          } while (numChildren < branchingFactor);
+            numChildren++; 
+          }
           
           /* create leaf node if no split is possible */
-          if (unlikely(numChildren == 1)) {
+          if (unlikely(numChildren == 1))
             return createLeaf(current,alloc);
-          }
           
           /* allocate node */
           auto node = createNode(alloc,numChildren);
@@ -448,7 +445,6 @@ namespace embree
         /* build function */
         ReductionTy build(BuildPrim* src, BuildPrim* tmp, size_t numPrimitives) 
         {
-          /* using 4 phases radix sort */
           morton = src;
           radix_sort_u32(src,tmp,numPrimitives,singleThreadThreshold);
           
