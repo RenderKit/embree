@@ -220,6 +220,8 @@ namespace embree
             PRINT(extSize);
             refs.resize(extSize); // reserve?
 
+            double tt0 = getSeconds();
+
             BVHBuilderBinnedOpenMergeSAH::build<NodeRef,BuildRef>
               (root,
                [&] { return bvh->alloc.threadLocal2(); },
@@ -244,6 +246,9 @@ namespace embree
                },              
                [&] (size_t dn) { bvh->scene->progressMonitor(0); },
                refs.data(),extSize,pinfo,N,BVH::maxBuildDepthLeaf,N,1,1,1.0f,1.0f,singleThreadThreshold);
+
+            double tt1 = getSeconds();
+            PRINT(1000.0 * (tt1-tt0));
 #else
             BVHBuilderBinnedSAH::build<NodeRef>
               (root,

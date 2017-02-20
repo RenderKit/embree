@@ -17,7 +17,7 @@
 // TODO: 
 //       - adjust parallel build thresholds
 //       - do statistics about how many nodes are opened
-//       - save commonGeomID test in buildrecord
+//       - openNodesBasedOnExtend should consider max extended size
   
 #pragma once
 
@@ -26,7 +26,7 @@
 
 #define USE_SUBTREE_SIZE_FOR_BINNING 1
 
-#define OPEN_STATS(x) x
+#define OPEN_STATS(x) 
 
 #define MAX_OPENED_CHILD_NODES 8
 #define MAX_EXTEND_THRESHOLD   0.1f
@@ -161,26 +161,99 @@ namespace embree
         // ==========================================================================
         // ==========================================================================
 
-        std::pair<float,bool> getProperties(const Set& set, const PrimInfo& pinfo)
+        __forceinline std::pair<size_t,bool> getProperties(const Set& set, const PrimInfo& pinfo)
         {
-          std::pair<float,bool> emptyProp(0.0f,true);
+          const Vec3fa diag = pinfo.geomBounds.size();
+          const size_t dim = maxDim(diag);
+          assert(diag[dim] > 0.0f);
+          const float inv_max_extend = 1.0f / diag[dim];
           const unsigned int geomID = prims0[pinfo.begin].geomID();
-          const float inv_num = 1.0f / (float)pinfo.size();
-          std::pair<float,bool> p = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,emptyProp,
-                                                    [&] (const range<size_t>& r) -> std::pair<float,bool> { 
-                                                      float area = 0.0f;
-                                                      bool commonGeomID = true;
-                                                      for (size_t i=r.begin();i<r.end();i++)
-                                                      {
-                                                        area += prims0[i].bounds_area;
-                                                        commonGeomID &= prims0[i].geomID() == geomID; 
-                                                      }
-                                                      return std::pair<float,bool>(area,commonGeomID); },
-                                                    [&] (const std::pair<float,bool>& b0, const std::pair<float,bool>& b1) -> std::pair<float,bool> { return std::pair<float,bool>(b0.first+b1.first,b0.second && b1.second); });
-          return std::pair<float,bool>(p.first * inv_num, p.second);
+
+          if (pinfo.size() < PARALLEL_THRESHOLD)
+          {
+            bool commonGeomID = true;
+            size_t opens = 0;
+            for (size_t i=pinfo.begin;i<pinfo.end;i++)
+            {
+              commonGeomID &= prims0[i].geomID() == geomID; 
+              if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD) opens += MAX_OPENED_CHILD_NODES-1; //FIXME              
+            }
+            return std::pair<size_t,bool>(opens,commonGeomID);
+          }
+          else
+          {
+            std::pair<size_t,bool> emptyProp(0,true);
+            return parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,emptyProp,
+                                   [&] (const range<size_t>& r) -> std::pair<size_t,bool> { 
+                                     bool commonGeomID = true;
+                                     size_t opens = 0;
+                                     for (size_t i=r.begin();i<r.end();i++)
+                                     {
+                                       commonGeomID &= prims0[i].geomID() == geomID; 
+                                       if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD) opens += MAX_OPENED_CHILD_NODES-1; //FIXME
+                                     }
+                                     return std::pair<size_t,bool>(opens,commonGeomID); },
+                                   [&] (const std::pair<size_t,bool>& b0, const std::pair<size_t,bool>& b1) -> std::pair<size_t,bool> { return std::pair<size_t,bool>(b0.first+b1.first,b0.second && b1.second); });
+          }
         }
 
+        //FIXME: should consider maximum available extended size 
+        __forceinline size_t openNodesBasedOnExtend(const Set& set, PrimInfo& pinfo)
+        {
+          const Vec3fa diag = pinfo.geomBounds.size();
+          const size_t dim = maxDim(diag);
+          assert(diag[dim] > 0.0f);
+          const float inv_max_extend = 1.0f / diag[dim];
+          const size_t ext_range_start = set.end();
 
+          if (pinfo.size() < PARALLEL_THRESHOLD) {
+            size_t extra_elements = 0;
+            for (size_t i=pinfo.begin;i<pinfo.end;i++)
+            {
+              if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD)
+              {
+                PrimRef tmp[MAX_OPENED_CHILD_NODES];
+                const size_t n = nodeOpenerFunc(prims0[i],tmp);
+                assert(extra_elements + n-1 <= set.ext_range_size());
+                for (size_t j=0;j<n;j++)
+                  pinfo.extend(tmp[j].bounds());
+                  
+                prims0[i] = tmp[0];
+                for (size_t j=1;j<n;j++)
+                  prims0[ext_range_start+extra_elements+j-1] = tmp[j]; 
+                extra_elements += n-1;
+              }
+            }
+            return extra_elements;
+          }
+          else {
+            std::atomic<size_t> ext_elements;
+            ext_elements.store(0);
+            PrimInfo info = parallel_reduce( pinfo.begin, pinfo.end, CREATE_SPLITS_STEP_SIZE, PrimInfo(empty), [&](const range<size_t>& r) -> PrimInfo {
+                PrimInfo info(empty);
+                for (size_t i=r.begin();i<r.end();i++)
+                  if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD)
+                  {
+                    PrimRef tmp[MAX_OPENED_CHILD_NODES];
+                    const size_t n = nodeOpenerFunc(prims0[i],tmp);
+                    const size_t ID = ext_elements.fetch_add(n-1);
+                    assert(ID + n-1 <= set.ext_range_size());
+
+                    for (size_t j=0;j<n;j++)
+                      info.extend(tmp[j].bounds());
+
+                    prims0[i] = tmp[0];
+                    for (size_t j=1;j<n;j++)
+                      prims0[ext_range_start+ID+j-1] = tmp[j]; 
+                  }
+                return info;
+              }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
+            pinfo.centBounds.extend(info.centBounds);
+            assert(ext_elements.load() <= set.ext_range_size());
+            return ext_elements.load();
+          }
+        } 
+                 
         // ==========================================================================
         // ==========================================================================
         // ==========================================================================
@@ -192,8 +265,10 @@ namespace embree
           if (pinfo.size() == 1)
             return Split(ObjectSplit(),inf);
 
+          /* too small */
           const float area_factor = area(pinfo.geomBounds) * inv_root_area;
-          if (area_factor < 1E-5f) set.set_ext_range(set.end()); /* disable opening */
+          if (area_factor < 1E-5f) 
+            set.set_ext_range(set.end()); /* disable opening */
 
           if (unlikely(set.has_ext_range()))
           {
@@ -217,30 +292,15 @@ namespace embree
           if (set.has_ext_range())
           {
             p =  getProperties(set,pinfo);
-            const float avg_area    = p.first;
-            const bool commonGeomID = p.second;
-
+            const size_t est_new_elements = p.first;
+            const bool commonGeomID       = p.second;
             if (commonGeomID)
             {
               const size_t max_ext_range_size = set.ext_range_size();
-              const size_t ext_range_start = set.end();
               size_t extra_elements = 0;
 
-              for (size_t i=pinfo.begin;i<pinfo.end;i++)
-                if (!prims0[i].node.isLeaf() && prims0[i].bounds_area >= avg_area)
-                {
-                  PrimRef tmp[MAX_OPENED_CHILD_NODES];
-                  const size_t n = nodeOpenerFunc(prims0[i],tmp);
-                  if (extra_elements + n-1 >= max_ext_range_size) break;
-
-                  for (size_t j=0;j<n;j++)
-                    pinfo.extend(tmp[j].bounds());
-
-                  prims0[i] = tmp[0];
-                  for (size_t j=1;j<n;j++)
-                    prims0[ext_range_start+extra_elements+j-1] = tmp[j]; 
-                  extra_elements += n-1;
-                }
+              if (est_new_elements <= max_ext_range_size)
+                extra_elements = openNodesBasedOnExtend(set,pinfo);
 
               pinfo.end += extra_elements;
               Set nset(set.begin(),set.end()+extra_elements,set.ext_end());
@@ -249,54 +309,15 @@ namespace embree
             }
           }
 
-          /* open node(s) with max area */
           if (set.has_ext_range())
           {
             const size_t max_ext_range_size = set.ext_range_size();
-            const size_t ext_range_start = set.end();
             size_t extra_elements = 0;
 
-#if 0
-            const float avg_area    = p.first;
-            assert(avg_area);
+            const size_t est_new_elements = p.first;
+            if (est_new_elements <= max_ext_range_size)
+              extra_elements = openNodesBasedOnExtend(set,pinfo);
 
-
-            for (size_t i=pinfo.begin;i<pinfo.end;i++)
-              if (!prims0[i].node.isLeaf() && prims0[i].bounds_area >= avg_area)
-              {
-                PrimRef tmp[MAX_OPENED_CHILD_NODES];
-                const size_t n = nodeOpenerFunc(prims0[i],tmp);
-                if (extra_elements + n-1 >= max_ext_range_size) break;
-                for (size_t j=0;j<n;j++)
-                  pinfo.extend(tmp[j].bounds());
-
-                prims0[i] = tmp[0];
-                for (size_t j=1;j<n;j++)
-                  prims0[ext_range_start+extra_elements+j-1] = tmp[j]; 
-                extra_elements += n-1;
-              }            
-#else
-            const Vec3fa diag = pinfo.geomBounds.size();
-            const size_t dim = maxDim(diag);
-            assert(diag[dim] > 0.0f);
-            const float inv_max_extend = 1.0f / diag[dim];
-            for (size_t i=pinfo.begin;i<pinfo.end;i++)
-            {
-              if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD)
-              {
-                PrimRef tmp[MAX_OPENED_CHILD_NODES];
-                const size_t n = nodeOpenerFunc(prims0[i],tmp);
-                if (extra_elements + n-1 >= max_ext_range_size) break;
-                for (size_t j=0;j<n;j++)
-                  pinfo.extend(tmp[j].bounds());
-
-                prims0[i] = tmp[0];
-                for (size_t j=1;j<n;j++)
-                  prims0[ext_range_start+extra_elements+j-1] = tmp[j]; 
-                extra_elements += n-1;
-              }
-            }            
-#endif
             OPEN_STATS( if (extra_elements) stat_ext_elements += extra_elements );
 
             pinfo.end += extra_elements;
@@ -353,63 +374,6 @@ namespace embree
           ObjectSplit s = binner.best(mapping,logBlockSize);
           binner.getSplitInfo(mapping, s, info);
           return s;
-        }
-
-        /*! open primref */
-        __noinline void create_opened_object_splits(Set& set, PrimInfo& pinfo, const ObjectSplit &split, const BinMapping<OBJECT_BINS> &mapping)
-        {
-          assert(set.has_ext_range());
-          const size_t max_ext_range_size = set.ext_range_size();
-          const size_t ext_range_start = set.end();
-
-          /* atomic counter for number of primref splits */
-          std::atomic<size_t> ext_elements;
-          ext_elements.store(0);
-          
-          const float fpos = split.mapping.pos(split.pos,split.dim);
-
-          parallel_for( set.begin(), set.end(), CREATE_SPLITS_STEP_SIZE, [&](const range<size_t>& r) {
-              for (size_t i=r.begin();i<r.end();i++)
-              {
-                if (unlikely(prims0[i].lower[split.dim] < fpos && prims0[i].upper[split.dim] > fpos))
-                {
-                  PrimRef refs[MAX_OPENED_CHILD_NODES];
-                  size_t n = nodeOpenerFunc(prims0[i],refs);
-                  if (likely(n==1)) continue;
-
-                  const size_t ID = ext_elements.fetch_add(n-1);
-
-                  /* break if the number of subdivided elements are greater than the maximal allowed size */
-                  if (unlikely(ID + n - 1 >= max_ext_range_size)) { 
-                    ext_elements.fetch_add(-(n-1));
-#if 0
-                    PRINT("EXCEED"); 
-#endif
-                    break; 
-                  }
-                  /* only write within the correct bounds */
-                  assert(ID < max_ext_range_size);
-                  prims0[i] = refs[0];
-                  assert(prims0[i].numPrimitives());
-                  for (size_t j=1;j<n;j++)
-                  {
-                    assert(ID+j-1 < max_ext_range_size);
-                    prims0[ext_range_start+ID+j-1] = refs[j];     
-                    assert(prims0[ext_range_start+ID+j-1].numPrimitives());
-                  }
-                }
-              }
-            });
-
-          assert(ext_elements.load() < max_ext_range_size);
-
-          const size_t numExtElements = min(max_ext_range_size,ext_elements.load());          
-          //assert(numExtElements <= max_ext_range_size);
-          assert(set.end()+numExtElements<=set.ext_end());
-          Set nset(set.begin(),set.end()+numExtElements,set.ext_end());
-          pinfo.begin = nset.begin();
-          pinfo.end   = nset.end();
-          set = nset;
         }
         
         /*! array partitioning */
