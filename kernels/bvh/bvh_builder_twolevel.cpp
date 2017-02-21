@@ -33,7 +33,7 @@
 #define SPLIT_MEMORY_RESERVE_FACTOR 1000
 
 
-// for non-opening two-level appraoch set ENABLE_DIRECT_SAH_MERGE_BUILDER and ENABLE_OPEN_SEQUENTIAL to 0
+// for non-opening two-level approach set ENABLE_DIRECT_SAH_MERGE_BUILDER and ENABLE_OPEN_SEQUENTIAL to 0
 
 namespace embree
 {
@@ -215,6 +215,8 @@ namespace embree
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
 
             const size_t extSize = max(max((size_t)1000,refs.size()*2),size_t((float)numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
+            PRINT(refs.size()*2);
+            PRINT(extSize);
             refs.resize(extSize); // reserve?
 
             double tt0 = getSeconds();

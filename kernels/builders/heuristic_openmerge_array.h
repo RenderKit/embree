@@ -247,7 +247,39 @@ namespace embree
             return ext_elements.load();
           }
         } 
-                 
+
+
+        __forceinline size_t openNodesUntilSetIsFull(PrimInfoExtRange& set)
+        {
+          size_t extra_elements = 0;
+          const size_t ext_range_start = set.end();
+          while(set.has_ext_range())
+          {
+            float max_area = neg_inf;
+            ssize_t max_index = -1;
+            for (size_t i=set.begin();i<set.end();i++)
+              if (!prims0[i].node.isLeaf() && max_area < prims0[i].bounds_area)
+              {
+                max_area = prims0[i].bounds_area;
+                max_index = i;
+              }
+            if (max_index == -1) return extra_elements;
+
+            PrimRef tmp[MAX_OPENED_CHILD_NODES];
+            const size_t n = nodeOpenerFunc(prims0[max_index],tmp);
+            if(extra_elements + n-1 > set.ext_range_size()) return extra_elements;
+
+            for (size_t j=0;j<n;j++)
+              set.extend(tmp[j].bounds());
+                  
+            prims0[max_index] = tmp[0];
+            for (size_t j=1;j<n;j++)
+              prims0[ext_range_start+extra_elements+j-1] = tmp[j]; 
+            extra_elements += n-1;            
+          }
+          assert(extra_elements <= set.ext_range_size());
+          return extra_elements;
+        }                 
         // ==========================================================================
         // ==========================================================================
         // ==========================================================================
@@ -283,25 +315,27 @@ namespace embree
           std::pair<float,bool> p(0.0f,false);
 
           /* common geomID */
-          if (set.has_ext_range())
+          if (unlikely(set.has_ext_range()))
           {
             p =  getProperties(set);
-            const size_t est_new_elements = p.first;
             const bool commonGeomID       = p.second;
             if (commonGeomID)
             {
-              const size_t max_ext_range_size = set.ext_range_size();
               size_t extra_elements = 0;
 
+              const size_t est_new_elements = p.first;
+              const size_t max_ext_range_size = set.ext_range_size();
               if (est_new_elements <= max_ext_range_size)
                 extra_elements = openNodesBasedOnExtend(set);
+              else
+                extra_elements = openNodesUntilSetIsFull(set);
 
               set._end += extra_elements;
               set.set_ext_range(set.end()); /* disable opening */
             }
           }
 
-          if (set.has_ext_range())
+          if (unlikely(set.has_ext_range()))
           {
             const size_t max_ext_range_size = set.ext_range_size();
             size_t extra_elements = 0;
