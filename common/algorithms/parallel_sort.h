@@ -236,7 +236,7 @@ namespace embree
           if (b == i) break;
           std::swap(v,morton[head[b]++]);
         }
-        assert(v.get(shift,BUCKETS-1) == i);
+        assert((unsigned(v) >> shift & (BUCKETS-1)) == i);
         morton[head[i]++] = v;
       }
     }
@@ -322,7 +322,7 @@ namespace embree
 #if defined(__X86_64__)
         const size_t index = ((size_t)(Key)src[i] >> (size_t)shift) & (size_t)mask;
 #else
-		const Key index = ((Key)src[i] >> shift) & mask;
+        const Key index = ((Key)src[i] >> shift) & mask;
 #endif
         count[index]++;
       }
@@ -368,7 +368,7 @@ namespace embree
 #if defined(__X86_64__)
         const size_t index = ((size_t)(Key)src[i] >> (size_t)shift) & (size_t)mask;
 #else
-		const size_t index = ((Key)src[i] >> shift) & mask;
+        const size_t index = ((Key)src[i] >> shift) & mask;
 #endif
         dst[offset[index]++] = elt;
       }
