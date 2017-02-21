@@ -61,7 +61,7 @@ namespace embree
                                RTCBuildPrimitive* prims,
                                size_t numPrimitives,
                                RTCCreateNodeFunc createNode,
-                               RTCSetNodeChildFunc setNodeChild,
+                               RTCSetNodeChildrenFunc setNodeChildren,
                                RTCSetNodeBoundsFunc setNodeBounds,
                                RTCCreateLeafFunc createLeaf,
                                RTCBuildProgressFunc buildProgress,
@@ -92,16 +92,15 @@ namespace embree
         [&](BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, FastAllocator::ThreadLocal* alloc) -> void*
         {
           void* node = createNode((RTCThreadLocalAllocator)alloc,N,userPtr);
-          for (size_t i=0; i<N; i++)
-            setNodeBounds(node,i,(RTCBounds&)children[i].prims.geomBounds,userPtr);
+          const RTCBounds* cbounds[GeneralBVHBuilder::MAX_BRANCHING_FACTOR];
+          for (size_t i=0; i<N; i++) cbounds[i] = (const RTCBounds*) &children[i].prims.geomBounds;
+          setNodeBounds(node,cbounds,N,userPtr);
           return node;
         },
 
         /* lambda function that updates BVH nodes */
-        [&](void* node, void** children, const size_t N) -> void*
-        {
-          for (size_t i=0; i<N; i++)
-            setNodeChild(node,i,children[i],userPtr);
+        [&](void* node, void** children, const size_t N) -> void* {
+          setNodeChildren(node,children,N,userPtr);
           return node;
         },
         
@@ -126,7 +125,7 @@ namespace embree
                             RTCBuildPrimitive* prims_i,
                             size_t numPrimitives,
                             RTCCreateNodeFunc createNode,
-                            RTCSetNodeChildFunc setNodeChild,
+                            RTCSetNodeChildrenFunc setNodeChildren,
                             RTCSetNodeBoundsFunc setNodeBounds,
                             RTCCreateLeafFunc createLeaf,
                             RTCBuildProgressFunc buildProgress,
@@ -174,11 +173,15 @@ namespace embree
         [&] (void* node, const std::pair<void*,BBox3fa>* children, size_t N) -> std::pair<void*,BBox3fa>
         {
           BBox3fa bounds = empty;
+          void* childptrs[BVHBuilderMorton::MAX_BRANCHING_FACTOR];
+          const RTCBounds* cbounds[BVHBuilderMorton::MAX_BRANCHING_FACTOR];
           for (size_t i=0; i<N; i++) {
             bounds.extend(children[i].second);
-            setNodeChild(node,i,children[i].first,userPtr);
-            setNodeBounds(node,i,(RTCBounds&)children[i].second,userPtr);
+            childptrs[i] = children[i].first;
+            cbounds[i] = (const RTCBounds*)&children[i].second;
           }
+          setNodeBounds(node,cbounds,N,userPtr);
+          setNodeChildren(node,childptrs,N,userPtr);
           return std::make_pair(node,bounds);
         },
         
@@ -213,7 +216,7 @@ namespace embree
                                  RTCBuildPrimitive* prims,
                                  size_t numPrimitives,
                                  RTCCreateNodeFunc createNode,
-                                 RTCSetNodeChildFunc setNodeChild,
+                                 RTCSetNodeChildrenFunc setNodeChildren,
                                  RTCSetNodeBoundsFunc setNodeBounds,
                                  RTCCreateLeafFunc createLeaf,
                                  RTCBuildProgressFunc buildProgress,
@@ -224,7 +227,7 @@ namespace embree
       RTCORE_TRACE(rtcBuildBVH);
       RTCORE_VERIFY_HANDLE(hbvh);
       RTCORE_VERIFY_HANDLE(createNode);
-      RTCORE_VERIFY_HANDLE(setNodeChild);
+      RTCORE_VERIFY_HANDLE(setNodeChildren);
       RTCORE_VERIFY_HANDLE(setNodeBounds);
       RTCORE_VERIFY_HANDLE(createLeaf);
 
@@ -238,8 +241,8 @@ namespace embree
 
       /* switch between differnet builders based on quality level */
       switch (settings.quality) {
-      case RTC_BUILD_QUALITY_LOW   : return rtcBuildBVHMorton   (bvh,settings,prims,numPrimitives,createNode,setNodeChild,setNodeBounds,createLeaf,buildProgress,userPtr);
-      case RTC_BUILD_QUALITY_NORMAL: return rtcBuildBVHBinnedSAH(bvh,settings,prims,numPrimitives,createNode,setNodeChild,setNodeBounds,createLeaf,buildProgress,userPtr);
+      case RTC_BUILD_QUALITY_LOW   : return rtcBuildBVHMorton   (bvh,settings,prims,numPrimitives,createNode,setNodeChildren,setNodeBounds,createLeaf,buildProgress,userPtr);
+      case RTC_BUILD_QUALITY_NORMAL: return rtcBuildBVHBinnedSAH(bvh,settings,prims,numPrimitives,createNode,setNodeChildren,setNodeBounds,createLeaf,buildProgress,userPtr);
       default: throw_RTCError(RTC_INVALID_OPERATION,"invalid build quality");
       }
 

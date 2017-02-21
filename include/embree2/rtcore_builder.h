@@ -77,11 +77,11 @@ RTCORE_API RTCBVH rtcNewBVH(RTCDevice device);
 /*! Callback to create a node. */
 typedef void* (*RTCCreateNodeFunc) (RTCThreadLocalAllocator allocator, size_t numChildren, void* userPtr);
 
-/*! Callback to set the pointer to the i'th child. */
-typedef void  (*RTCSetNodeChildFunc) (void* nodePtr, size_t i, void* childPtr, void* userPtr);
+/*! Callback to set the pointer to all children. */
+typedef void  (*RTCSetNodeChildrenFunc) (void* nodePtr, void** children, size_t numChildren, void* userPtr);
 
-/*! Callback to set the bounds of the i'th child. */
-typedef void  (*RTCSetNodeBoundsFunc) (void* nodePtr, size_t i, RTCBounds& bounds, void* userPtr);
+/*! Callback to set the bounds of all children. */
+typedef void  (*RTCSetNodeBoundsFunc) (void* nodePtr, const RTCBounds** bounds, size_t numChildren, void* userPtr);
 
 /*! Callback to create a leaf node. */
 typedef void* (*RTCCreateLeafFunc) (RTCThreadLocalAllocator allocator, const RTCBuildPrimitive* prims, size_t numPrims, void* userPtr);
@@ -95,8 +95,8 @@ RTCORE_API void* rtcBuildBVH(RTCBVH bvh,                                     //!
                              RTCBuildPrimitive* prims,                       //!< list of input primitives
                              size_t numPrims,                                //!< number of input primitives
                              RTCCreateNodeFunc createNode,                   //!< creates a node
-                             RTCSetNodeChildFunc setNodeChild,               //!< sets pointer to a child
-                             RTCSetNodeBoundsFunc setNodeBounds,             //!< sets bound of a child
+                             RTCSetNodeChildrenFunc setNodeChildren,         //!< sets pointer to all children
+                             RTCSetNodeBoundsFunc setNodeBounds,             //!< sets bounds of all children
                              RTCCreateLeafFunc createLeaf,                   //!< creates a leaf
                              RTCBuildProgressFunc buildProgress,             //!< used to report build progress
                              void* userPtr                                   //!< user pointer passed to callback functions
