@@ -153,6 +153,7 @@ namespace embree
   {
     enum { N = 16 };
   public:
+    BezierCoefficients() {}
     BezierCoefficients(int shift);
 
     /* coefficients for function evaluation */
