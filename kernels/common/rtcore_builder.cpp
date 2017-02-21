@@ -56,34 +56,17 @@ namespace embree
       return nullptr;
     }
 
-    RTCORE_API void* rtcBuildBVH(RTCBVH hbvh,
-                                 const RTCBuildSettings& settings,
-                                 RTCBuildPrimitive* prims,
-                                 size_t numPrimitives,
-                                 void* userPtr,
-                                 RTCCreateNodeFunc createNode,
-                                 RTCSetNodeChildFunc setNodeChild,
-                                 RTCSetNodeBoundsFunc setNodeBounds,
-                                 RTCCreateLeafFunc createLeaf,
-                                 RTCBuildProgressFunc buildProgress)
+    void* rtcBuildBVHBinnedSAH(BVH* bvh,
+                               const RTCBuildSettings& settings,
+                               RTCBuildPrimitive* prims,
+                               size_t numPrimitives,
+                               RTCCreateNodeFunc createNode,
+                               RTCSetNodeChildFunc setNodeChild,
+                               RTCSetNodeBoundsFunc setNodeBounds,
+                               RTCCreateLeafFunc createLeaf,
+                               RTCBuildProgressFunc buildProgress,
+                               void* userPtr)
     {
-      BVH* bvh = (BVH*) hbvh;
-      RTCORE_CATCH_BEGIN;
-      RTCORE_TRACE(rtcBuildBVH);
-      RTCORE_VERIFY_HANDLE(hbvh);
-      RTCORE_VERIFY_HANDLE(createNode);
-      RTCORE_VERIFY_HANDLE(setNodeChild);
-      RTCORE_VERIFY_HANDLE(setNodeBounds);
-      RTCORE_VERIFY_HANDLE(createLeaf);
-
-      /* if we made this BVH static, we can not re-build it anymore  */
-      if (bvh->isStatic)
-        throw_RTCError(RTC_INVALID_OPERATION,"static BVH cannot get rebuild");
-
-      /* initialize the allocator */
-      bvh->allocator.init_estimate(numPrimitives*sizeof(BBox3fa));
-      bvh->allocator.reset();
-
       /* calculate priminfo */
       auto computeBounds = [&](const range<size_t>& r) -> CentGeomBBox3fa
         {
@@ -136,39 +119,19 @@ namespace embree
         
       bvh->allocator.cleanup();
       return root;
-
-      RTCORE_CATCH_END(bvh->device);
-      return nullptr;
     }
 
-    RTCORE_API void* rtcBuildBVHFast(RTCBVH hbvh,
-                                     const RTCBuildSettings& settings,
-                                     RTCBuildPrimitive* prims_i,
-                                     size_t numPrimitives,
-                                     void* userPtr,
-                                     RTCCreateNodeFunc createNode,
-                                     RTCSetNodeChildFunc setNodeChild,
-                                     RTCSetNodeBoundsFunc setNodeBounds,
-                                     RTCCreateLeafFunc createLeaf,
-                                     RTCBuildProgressFunc buildProgress)
+    void* rtcBuildBVHMorton(BVH* bvh,
+                            const RTCBuildSettings& settings,
+                            RTCBuildPrimitive* prims_i,
+                            size_t numPrimitives,
+                            RTCCreateNodeFunc createNode,
+                            RTCSetNodeChildFunc setNodeChild,
+                            RTCSetNodeBoundsFunc setNodeBounds,
+                            RTCCreateLeafFunc createLeaf,
+                            RTCBuildProgressFunc buildProgress,
+                            void* userPtr)
     {
-      BVH* bvh = (BVH*) hbvh;
-      RTCORE_CATCH_BEGIN;
-      RTCORE_TRACE(rtcBuildBVHFast);
-      RTCORE_VERIFY_HANDLE(hbvh);
-      RTCORE_VERIFY_HANDLE(createNode);
-      RTCORE_VERIFY_HANDLE(setNodeChild);
-      RTCORE_VERIFY_HANDLE(setNodeBounds);
-      RTCORE_VERIFY_HANDLE(createLeaf);
-
-      /* if we made this BVH static, we can not re-build it anymore  */
-      if (bvh->isStatic)
-        throw_RTCError(RTC_INVALID_OPERATION,"static BVH cannot get rebuild");
-
-      /* initialize the allocator */
-      bvh->allocator.init_estimate(numPrimitives*sizeof(BBox3fa));
-      bvh->allocator.reset();
-      
       /* initialize temporary arrays for morton builder */
       PrimRef* prims = (PrimRef*) prims_i;
       mvector<BVHBuilderMorton::BuildPrim>& morton_src = bvh->morton_src;
@@ -243,6 +206,42 @@ namespace embree
 
       bvh->allocator.cleanup();
       return root.first;
+    }
+
+    RTCORE_API void* rtcBuildBVH(RTCBVH hbvh,
+                                 const RTCBuildSettings& settings,
+                                 RTCBuildPrimitive* prims,
+                                 size_t numPrimitives,
+                                 RTCCreateNodeFunc createNode,
+                                 RTCSetNodeChildFunc setNodeChild,
+                                 RTCSetNodeBoundsFunc setNodeBounds,
+                                 RTCCreateLeafFunc createLeaf,
+                                 RTCBuildProgressFunc buildProgress,
+                                 void* userPtr)
+    {
+      BVH* bvh = (BVH*) hbvh;
+      RTCORE_CATCH_BEGIN;
+      RTCORE_TRACE(rtcBuildBVH);
+      RTCORE_VERIFY_HANDLE(hbvh);
+      RTCORE_VERIFY_HANDLE(createNode);
+      RTCORE_VERIFY_HANDLE(setNodeChild);
+      RTCORE_VERIFY_HANDLE(setNodeBounds);
+      RTCORE_VERIFY_HANDLE(createLeaf);
+
+      /* if we made this BVH static, we can not re-build it anymore  */
+      if (bvh->isStatic)
+        throw_RTCError(RTC_INVALID_OPERATION,"static BVH cannot get rebuild");
+
+      /* initialize the allocator */
+      bvh->allocator.init_estimate(numPrimitives*sizeof(BBox3fa));
+      bvh->allocator.reset();
+
+      /* switch between differnet builders based on quality level */
+      switch (settings.quality) {
+      case RTC_BUILD_QUALITY_LOW   : return rtcBuildBVHMorton   (bvh,settings,prims,numPrimitives,createNode,setNodeChild,setNodeBounds,createLeaf,buildProgress,userPtr);
+      case RTC_BUILD_QUALITY_NORMAL: return rtcBuildBVHBinnedSAH(bvh,settings,prims,numPrimitives,createNode,setNodeChild,setNodeBounds,createLeaf,buildProgress,userPtr);
+      default: throw_RTCError(RTC_INVALID_OPERATION,"invalid build quality");
+      }
 
       RTCORE_CATCH_END(bvh->device);
       return nullptr;

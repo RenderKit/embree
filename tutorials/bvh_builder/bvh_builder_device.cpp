@@ -88,7 +88,7 @@ namespace embree
     }
   };
 
-  void build_normal(RTCBuildPrimitive* prims, size_t N, char* cfg)
+  void build(RTCBuildQuality quality, RTCBuildPrimitive* prims, size_t N, char* cfg)
   {
     RTCDevice device = rtcNewDevice(cfg);
     rtcDeviceSetMemoryMonitorFunction2(device,memoryMonitor,nullptr);
@@ -98,6 +98,7 @@ namespace embree
     /* settings for BVH build */
     RTCBuildSettings settings;
     settings.size = sizeof(settings);
+    settings.quality = quality;
     settings.branchingFactor = 2;
     settings.maxDepth = 1024;
     settings.blockSize = 1;
@@ -110,8 +111,8 @@ namespace embree
     {
       std::cout << "iteration " << i << ": building BVH over " << N << " primitives, " << std::flush;
       double t0 = getSeconds();
-      Node* root = (Node*) rtcBuildBVH(bvh,settings,prims,N,nullptr,
-                                       InnerNode::create,InnerNode::setChild,InnerNode::setBounds,LeafNode::create,buildProgress);
+      Node* root = (Node*) rtcBuildBVH(bvh,settings,prims,N,
+                                       InnerNode::create,InnerNode::setChild,InnerNode::setBounds,LeafNode::create,buildProgress,nullptr);
       double t1 = getSeconds();
       
       const float sah = root ? root->sah() : 0.0f;
@@ -121,39 +122,6 @@ namespace embree
     rtcDeleteBVH(bvh);
   }
 
-  void build_fast(RTCBuildPrimitive* prims, size_t N, char* cfg)
-  {
-    RTCDevice device = rtcNewDevice(cfg);
-    rtcDeviceSetMemoryMonitorFunction2(device,memoryMonitor,nullptr);
-
-    RTCBVH bvh = rtcNewBVH(device);
-
-    /* settings for BVH build */
-    RTCBuildSettings settings;
-    settings.size = sizeof(settings);
-    settings.branchingFactor = 2;
-    settings.maxDepth = 1024;
-    settings.blockSize = 1;
-    settings.minLeafSize = 1;
-    settings.maxLeafSize = 1;
-    settings.travCost = 1.0f;
-    settings.intCost = 1.0f;
-    
-    for (size_t i=0; i<10; i++)
-    {
-      std::cout << "iteration " << i << ": building BVH over " << N << " primitives, " << std::flush;
-      double t0 = getSeconds();
-      Node* root = (Node*) rtcBuildBVHFast(bvh,settings,prims,N,nullptr,
-                                           InnerNode::create,InnerNode::setChild,InnerNode::setBounds,LeafNode::create,buildProgress);
-      double t1 = getSeconds();
-      
-      const float sah = root ? root->sah() : 0.0f;
-      std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << sah << " [DONE]" << std::endl;
-    }
-    rtcMakeStaticBVH(bvh);
-    rtcDeleteBVH(bvh);
-  }
-  
   /* called by the C++ code for initialization */
   extern "C" void device_init (char* cfg)
   {
@@ -191,10 +159,10 @@ namespace embree
     }
 
     std::cout << "Normal BVH builder:" << std::endl;
-    build_normal(prims.data(),prims.size(),cfg);
+    build(RTC_BUILD_QUALITY_NORMAL,prims.data(),prims.size(),cfg);
 
     std::cout << "Fast BVH builder:" << std::endl;
-    build_fast(prims.data(),prims.size(),cfg);
+    build(RTC_BUILD_QUALITY_LOW,prims.data(),prims.size(),cfg);
   }
   
   /* task that renders a single screen tile */
