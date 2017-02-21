@@ -90,8 +90,8 @@ namespace embree
     
       mouseMode(0),
       clickX(0), clickY(0),
-      speed(1.0f)
-
+      speed(1.0f),
+      moveDelta(zero)
   {
     /* only a single instance of this class is supported */
     assert(instance == nullptr);
@@ -477,6 +477,11 @@ namespace embree
 
     switch (key)
     {
+    case 'w' : moveDelta.z = +1.0f; break;
+    case 's' : moveDelta.z = -1.0f; break;
+    case 'a' : moveDelta.x = -1.0f; break;
+    case 'd' : moveDelta.x = +1.0f; break;
+
     case 'f' : 
       if (fullscreen) {
         fullscreen = false;
@@ -507,10 +512,21 @@ namespace embree
 
     case '\033': case 'q': case 'Q':
       glutDestroyWindow(windowID);
-#if defined(__MACOSX__)
+#if defined(__MACOSX__) // FIXME: why only on MacOSX
       exit(1);
 #endif
       break;
+    }
+  }
+
+  void TutorialApplication::keyboardUpFunc(unsigned char key, int x, int y)
+  {
+    switch (key)
+    {
+    case 'w' : moveDelta.z = 0.0f; break;
+    case 's' : moveDelta.z = 0.0f; break;
+    case 'a' : moveDelta.x = 0.0f; break;
+    case 'd' : moveDelta.x = 0.0f; break;
     }
   }
 
@@ -545,7 +561,10 @@ namespace embree
     if (state == GLUT_UP) 
     {
       mouseMode = 0;
-      if (button == GLUT_LEFT_BUTTON && glutGetModifiers() == GLUT_ACTIVE_SHIFT) 
+    }
+    else
+    {
+      if (button == GLUT_RIGHT_BUTTON)
       {
         ISPCCamera ispccamera = camera.getISPCCamera(width,height);
         Vec3fa p; bool hit = device_pick(float(x),float(y),ispccamera,p);
@@ -558,21 +577,14 @@ namespace embree
           camera.from += dot(delta,right)*right + dot(delta,up)*up;
         }
       }
-      else if (button == GLUT_LEFT_BUTTON && glutGetModifiers() == (GLUT_ACTIVE_CTRL | GLUT_ACTIVE_SHIFT)) 
+      else
       {
-        ISPCCamera ispccamera = camera.getISPCCamera(width,height);
-        Vec3fa p; bool hit = device_pick(float(x),float(y),ispccamera,p);
-        if (hit) camera.to = p;
+        clickX = x; clickY = y;
+        int modifiers = glutGetModifiers();
+        if      (button == GLUT_LEFT_BUTTON && modifiers == GLUT_ACTIVE_SHIFT) mouseMode = 1;
+        else if (button == GLUT_LEFT_BUTTON && modifiers == GLUT_ACTIVE_CTRL ) mouseMode = 3;
+        else if (button == GLUT_LEFT_BUTTON) mouseMode = 4;
       }
-
-    } else {
-      clickX = x; clickY = y;
-      int modifiers = glutGetModifiers();
-      if      (button == GLUT_LEFT_BUTTON && modifiers == GLUT_ACTIVE_SHIFT) mouseMode = 1;
-      else if (button == GLUT_MIDDLE_BUTTON) mouseMode = 2;
-      else if (button == GLUT_RIGHT_BUTTON ) mouseMode = 3;
-      else if (button == GLUT_LEFT_BUTTON && modifiers == GLUT_ACTIVE_CTRL ) mouseMode = 3;
-      else if (button == GLUT_LEFT_BUTTON  ) mouseMode = 4;
     }
   }
   
@@ -591,6 +603,9 @@ namespace embree
 
   void TutorialApplication::displayFunc(void) 
   {
+    /* update camera */
+    camera.move(moveDelta.x*speed, moveDelta.y*speed, moveDelta.z*speed);
+
     ISPCCamera ispccamera = camera.getISPCCamera(width,height,true);
     
     /* render image using ISPC */
@@ -664,6 +679,9 @@ namespace embree
   void keyboardFunc(unsigned char key, int x, int y) {
     TutorialApplication::instance->keyboardFunc(key,x,y);
   }
+  void keyboardUpFunc(unsigned char key, int x, int y) {
+    TutorialApplication::instance->keyboardUpFunc(key,x,y);
+  }
   void specialFunc(int key, int x, int y) {
     TutorialApplication::instance->specialFunc(key,x,y);
   }
@@ -725,6 +743,7 @@ namespace embree
       glutDisplayFunc(embree::displayFunc);
       glutIdleFunc(embree::idleFunc);
       glutKeyboardFunc(embree::keyboardFunc);
+      glutKeyboardUpFunc(embree::keyboardUpFunc);
       glutSpecialFunc(embree::specialFunc);
       glutMouseFunc(embree::clickFunc);
       glutMotionFunc(embree::motionFunc);

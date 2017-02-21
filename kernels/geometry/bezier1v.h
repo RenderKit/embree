@@ -18,10 +18,11 @@
 
 #include "primitive.h"
 #include "../subdiv/bezier_curve.h"
+#include "../common/primref.h"
 
 namespace embree
 {
-  struct BezierPrim // FIXME: rename to BezierRef
+  struct BezierPrim // FIXME: rename to BezierRef, remove!!!
   {
   public:
 
@@ -60,6 +61,11 @@ namespace embree
       else              return curve.bounds();
     }
 
+    /*! size for bin heuristic is 1 */
+    __forceinline unsigned size() const { 
+      return 1;
+    }
+
     /*! returns bounds and centroid used for binning */
     __forceinline void binBoundsAndCenter(BBox3fa& bounds_o, Vec3fa& center_o) const 
     {
@@ -80,7 +86,7 @@ namespace embree
     }
     
     /*! returns bounds and centroid used for binning */
-    __forceinline void binBoundsAndCenter(BBox3fa& bounds_o, Vec3fa& center_o, const AffineSpace3fa& space) const 
+    __forceinline void binBoundsAndCenter(BBox3fa& bounds_o, Vec3fa& center_o, const AffineSpace3fa& space, void* user) const 
     {
       bounds_o = bounds(space);
       center_o = embree::center2(bounds_o);

@@ -21,7 +21,7 @@ namespace embree
   template<int N>
   BVHNStatistics<N>::BVHNStatistics (BVH* bvh) : bvh(bvh)
   {
-    double A = max(0.0f,halfArea(bvh->getBounds()));
+    double A = max(0.0f,bvh->getLinearBounds().expectedHalfArea());
     if (bvh->msmblur) 
     {
       NodeRef* roots = (NodeRef*)(size_t)bvh->root;
@@ -51,7 +51,7 @@ namespace embree
     if (stat.statAlignedNodes.numNodes    ) stream << "  alignedNodes     : "  << stat.statAlignedNodes.toString(bvh,totalSAH,totalBytes) << std::endl;
     if (stat.statUnalignedNodes.numNodes  ) stream << "  unaligneddNodes  : "  << stat.statUnalignedNodes.toString(bvh,totalSAH,totalBytes) << std::endl;
     if (stat.statAlignedNodesMB.numNodes  ) stream << "  alignedNodesMB   : "  << stat.statAlignedNodesMB.toString(bvh,totalSAH,totalBytes) << std::endl;
-    if (stat.statUnalignedNodesMB.numNodes) stream << "  unaligneddNodesMB: "  << stat.statUnalignedNodesMB.toString(bvh,totalSAH,totalBytes) << std::endl;
+    if (stat.statUnalignedNodesMB.numNodes) stream << "  unalignedNodesMB : "  << stat.statUnalignedNodesMB.toString(bvh,totalSAH,totalBytes) << std::endl;
     if (stat.statTransformNodes.numNodes  ) stream << "  transformNodes   : "  << stat.statTransformNodes.toString(bvh,totalSAH,totalBytes) << std::endl;
     if (stat.statQuantizedNodes.numNodes  ) stream << "  quantizedNodes   : "  << stat.statQuantizedNodes.toString(bvh,totalSAH,totalBytes) << std::endl;
     if (true)                               stream << "  leaves           : "  << stat.statLeaf.toString(bvh,totalSAH,totalBytes) << std::endl;
@@ -63,6 +63,7 @@ namespace embree
   typename BVHNStatistics<N>::Statistics BVHNStatistics<N>::statistics(NodeRef node, const double A, const BBox1f t0t1)
   {
     Statistics s;
+    assert(t0t1.size() > 0.0f);
     double dt = max(0.0f,t0t1.size());
     if (node.isAlignedNode())
     {
@@ -96,7 +97,7 @@ namespace embree
       for (size_t i=0; i<N; i++) {
         if (n->child(i) == BVH::emptyNode) continue;
         s.statAlignedNodesMB.numChildren++;
-        const double Ai = max(0.0f,halfArea(n->extend0(i)));
+        const double Ai = max(0.0f,n->expectedHalfArea(i,t0t1));
         s = s + statistics(n->child(i),Ai,t0t1);
       }
       s.statAlignedNodesMB.numNodes++;

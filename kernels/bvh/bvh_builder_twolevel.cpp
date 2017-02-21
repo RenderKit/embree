@@ -201,64 +201,55 @@ namespace embree
           /* otherwise build toplevel hierarchy */
           else
           {
-            NodeRef root;
+            /* settings for BVH build */
+            GeneralBVHBuilder::Settings settings;
+            settings.branchingFactor = N;
+            settings.maxDepth = BVH::maxBuildDepthLeaf;
+            settings.logBlockSize = __bsr(N);
+            settings.minLeafSize = 1;
+            settings.maxLeafSize = 1;
+            settings.travCost = 1.0f;
+            settings.intCost = 1.0f;
+            settings.singleThreadThreshold = singleThreadThreshold;
+
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
+
             const size_t extSize = max(max((size_t)1000,refs.size()*2),size_t((float)numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
             refs.resize(extSize); // reserve?
 
             double tt0 = getSeconds();
 
-            BVHBuilderBinnedOpenMergeSAH::build<NodeRef,BuildRef>
-              (root,
-               [&] { return bvh->alloc.threadLocal2(); },
-               [&] (const isa::BVHBuilderBinnedOpenMergeSAH::BuildRecord& current, BVHBuilderBinnedOpenMergeSAH::BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc) -> int
-              {
-                AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode)); node->clear();
-                for (size_t i=0; i<n; i++) {
-                  node->set(i,children[i].pinfo.geomBounds);
-                  children[i].parent = (size_t*)&node->child(i);
-                }
-                *current.parent = bvh->encodeNode(node);
-                return 0;
-              },
-               [&] (const BVHBuilderBinnedOpenMergeSAH::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> int
-              {
+            NodeRef root = BVHBuilderBinnedOpenMergeSAH::build<NodeRef,BuildRef>(
+              typename BVH::CreateAlloc(bvh),
+              typename BVH::AlignedNode::Create2(),
+              typename BVH::AlignedNode::Set2(),
+              
+              [&] (const BVHBuilderBinnedOpenMergeSAH::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> NodeRef  {
                 assert(current.prims.size() == 1);
-                *current.parent = (NodeRef) refs[current.prims.begin()].node;
-                return 1;
+                return (NodeRef) refs[current.prims.begin()].node;
               },
-               [&] (BuildRef &bref, BuildRef *refs) -> size_t { 
-                 return openBuildRef(bref,refs);
-               },              
-               [&] (size_t dn) { bvh->scene->progressMonitor(0); },
-               refs.data(),extSize,pinfo,N,BVH::maxBuildDepthLeaf,N,1,1,1.0f,1.0f,singleThreadThreshold);
+              [&] (BuildRef &bref, BuildRef *refs) -> size_t { 
+                return openBuildRef(bref,refs);
+              },              
+              [&] (size_t dn) { bvh->scene->progressMonitor(0); },
+              refs.data(),extSize,pinfo,settings);
 
             double tt1 = getSeconds();
             PRINT(1000.0 * (tt1-tt0));
 #else
-            BVHBuilderBinnedSAH::build<NodeRef>
-              (root,
-               [&] { return bvh->alloc.threadLocal2(); },
-               [&] (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc) -> int
-              {
-                AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode)); node->clear();
-                for (size_t i=0; i<n; i++) {
-                  node->set(i,children[i].pinfo.geomBounds);
-                  children[i].parent = (size_t*)&node->child(i);
-                }
-                *current.parent = bvh->encodeNode(node);
-                return 0;
-              },
-               [&] (const BVHBuilderBinnedSAH::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> int
-              {
+            NodeRef root = BVHBuilderBinnedSAH::build<NodeRef>(
+              typename BVH::CreateAlloc(bvh),
+              typename BVH::AlignedNode::Create2(),
+              typename BVH::AlignedNode::Set2(),
+              
+              [&] (const BVHBuilderBinnedSAH::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> NodeRef {
                 assert(current.prims.size() == 1);
-                *current.parent = (NodeRef) prims[current.prims.begin()].ID();
-                return 1;
+                return (NodeRef) prims[current.prims.begin()].ID();
               },
-               [&] (size_t dn) { bvh->scene->progressMonitor(0); },
-               prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,N,1,1,1.0f,1.0f,singleThreadThreshold);
+              [&] (size_t dn) { bvh->scene->progressMonitor(0); },
+              prims.data(),pinfo,settings);
 #endif
-
+            
             bvh->set(root,LBBox3fa(pinfo.geomBounds),numPrimitives);
           }
         }

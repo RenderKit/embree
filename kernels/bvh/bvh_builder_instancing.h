@@ -18,6 +18,7 @@
 
 #include "bvh.h"
 #include "../common/scene_triangle_mesh.h"
+#include "../common/primref.h"
 
 namespace embree
 {

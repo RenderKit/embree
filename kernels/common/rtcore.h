@@ -100,4 +100,7 @@ namespace embree
   #define throw_RTCError(error,str)                                      \
     throw rtcore_error(error,str);
 #endif
+
+#define RTC_BUILD_SETTINGS_HAS(settings,member)                 \
+  (settings.size > (offsetof(RTCBuildSettings,member)+sizeof(settings.member))) 
 }

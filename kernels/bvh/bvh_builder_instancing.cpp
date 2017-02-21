@@ -236,33 +236,35 @@ namespace embree
       /* otherwise build toplevel hierarchy */
       else
       {
-        NodeRef root;
-        BVHBuilderBinnedSAH::build<NodeRef>
-          (root,
-           [&] { return bvh->alloc.threadLocal2(); },
-           [&] (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc) -> int
-          {
-            AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode)); node->clear();
-            for (size_t i=0; i<num; i++) {
-              node->set(i,children[i].pinfo.geomBounds);
-              children[i].parent = (size_t*)&node->child(i);
-            }
-            *current.parent = bvh->encodeNode(node);
-            return 0;
-          },
-           [&] (const BVHBuilderBinnedSAH::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> int
+        /* settings for BVH build */
+        GeneralBVHBuilder::Settings settings;
+        settings.branchingFactor = N;
+        settings.maxDepth = BVH::maxBuildDepthLeaf;
+        settings.logBlockSize = __bsr(4);
+        settings.minLeafSize = 1;
+        settings.maxLeafSize = 1;
+        settings.travCost = 1.0f;
+        settings.intCost = 1.0f;
+        settings.singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD;
+
+        NodeRef root = BVHBuilderBinnedSAH::build<NodeRef>
+          (
+            typename BVH::CreateAlloc(bvh),
+            typename BVH::AlignedNode::Create2(),
+            typename BVH::AlignedNode::Set2(),
+
+           [&] (const BVHBuilderBinnedSAH::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> NodeRef
           {
             assert(current.prims.size() == 1);
             BuildRef* ref = (BuildRef*) prims[current.prims.begin()].ID();
             TransformNode* node = (TransformNode*) alloc->alloc0->malloc(sizeof(TransformNode));
             new (node) TransformNode(ref->local2world,ref->localBounds,ref->node,ref->mask,ref->instID,ref->xfmID,ref->type); // FIXME: rcp should be precalculated somewhere
-            *current.parent = BVH::encodeNode(node);
-            //*current.parent = ref->node;
-            ((NodeRef*)current.parent)->setBarrier();
-            return 1;
+            NodeRef noderef = BVH::encodeNode(node);
+            noderef.setBarrier();
+            return noderef;
           },
            [&] (size_t dn) { bvh->scene->progressMonitor(0); },
-           prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,4,1,1,1.0f,1.0f,DEFAULT_SINGLE_THREAD_THRESHOLD);
+            prims.data(),pinfo,settings);
         
         bvh->set(root,LBBox3fa(pinfo.geomBounds),numPrimitives);
         numCollapsedTransformNodes = refs.size();

@@ -18,8 +18,8 @@
 
 #include "default.h"
 #include "geometry.h"
-#include "primref.h"
 #include "buffer.h"
+#include "../subdiv/bezier_curve.h"
 
 namespace embree
 {
@@ -127,55 +127,61 @@ namespace embree
     __forceinline BBox3fa bounds(size_t i, size_t itime = 0) const
     {
       const unsigned int index = curve(i);
-      const float r0 = radius(index+0,itime);
-      const float r1 = radius(index+1,itime);
-      const float r2 = radius(index+2,itime);
-      const float r3 = radius(index+3,itime);
       const Vec3fa v0 = vertex(index+0,itime);
       const Vec3fa v1 = vertex(index+1,itime);
       const Vec3fa v2 = vertex(index+2,itime);
       const Vec3fa v3 = vertex(index+3,itime);
-      const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
-      return enlarge(b,Vec3fa(max(r0,r1,r2,r3)));
+      const BezierCurve3fa curve(v0,v1,v2,v3,0.0f,1.0f,0);
+      if (likely(subtype == HAIR)) return curve.bounds(tessellationRate);
+      else                         return curve.bounds();
     }
     
     /*! calculates bounding box of i'th bezier curve */
     __forceinline BBox3fa bounds(const AffineSpace3fa& space, size_t i, size_t itime = 0) const
     {
       const unsigned int index = curve(i);
-      const float r0 = radius(index+0,itime);
-      const float r1 = radius(index+1,itime);
-      const float r2 = radius(index+2,itime);
-      const float r3 = radius(index+3,itime);
-      const Vec3fa v0 = xfmPoint(space,vertex(index+0,itime));
-      const Vec3fa v1 = xfmPoint(space,vertex(index+1,itime));
-      const Vec3fa v2 = xfmPoint(space,vertex(index+2,itime));
-      const Vec3fa v3 = xfmPoint(space,vertex(index+3,itime));
-      const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
-      return enlarge(b,Vec3fa(max(r0,r1,r2,r3)));
-    }
-
-    /*! check if the i'th primitive is valid at the itime'th time step */
-    __forceinline bool valid(size_t i, size_t itime) const
-    {
-      const unsigned int index = curve(i);
-      if (index+3 >= numVertices()) return false;
-
-      const float r0 = radius(index+0,itime);
-      const float r1 = radius(index+1,itime);
-      const float r2 = radius(index+2,itime);
-      const float r3 = radius(index+3,itime);
-      if (!isvalid(r0) || !isvalid(r1) || !isvalid(r2) || !isvalid(r3))
-        return false;
-      if (min(r0,r1,r2,r3) < 0.0f)
-        return false;
-
       const Vec3fa v0 = vertex(index+0,itime);
       const Vec3fa v1 = vertex(index+1,itime);
       const Vec3fa v2 = vertex(index+2,itime);
       const Vec3fa v3 = vertex(index+3,itime);
-      if (!isvalid(v0) || !isvalid(v1) || !isvalid(v2) || !isvalid(v3))
-        return false;
+      Vec3fa w0 = xfmPoint(space,v0); w0.w = v0.w;
+      Vec3fa w1 = xfmPoint(space,v1); w1.w = v1.w;
+      Vec3fa w2 = xfmPoint(space,v2); w2.w = v2.w;
+      Vec3fa w3 = xfmPoint(space,v3); w3.w = v3.w;
+      const BezierCurve3fa curve(w0,w1,w2,w3,0.0f,1.0f,0);
+      if (likely(subtype == HAIR)) return curve.bounds(tessellationRate);
+      else                         return curve.bounds();
+    }
+
+    /*! check if the i'th primitive is valid at the itime'th timestep */
+    __forceinline bool valid(size_t i, size_t itime) const {
+      return valid(i, make_range(itime, itime));
+    }
+
+    /*! check if the i'th primitive is valid at the itime'th time step */
+    __forceinline bool valid(size_t i, const range<size_t>& itime_range) const
+    {
+      const unsigned int index = curve(i);
+      if (index+3 >= numVertices()) return false;
+
+      for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++)
+      {
+        const float r0 = radius(index+0,itime);
+        const float r1 = radius(index+1,itime);
+        const float r2 = radius(index+2,itime);
+        const float r3 = radius(index+3,itime);
+        if (!isvalid(r0) || !isvalid(r1) || !isvalid(r2) || !isvalid(r3))
+          return false;
+        if (min(r0,r1,r2,r3) < 0.0f)
+          return false;
+        
+        const Vec3fa v0 = vertex(index+0,itime);
+        const Vec3fa v1 = vertex(index+1,itime);
+        const Vec3fa v2 = vertex(index+2,itime);
+        const Vec3fa v3 = vertex(index+3,itime);
+        if (!isvalid(v0) || !isvalid(v1) || !isvalid(v2) || !isvalid(v3))
+          return false;
+      }
 
       return true;
     }

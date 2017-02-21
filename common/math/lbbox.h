@@ -21,6 +21,15 @@
 namespace embree
 {
   template<typename T>
+    __forceinline std::pair<T,T> globalLinear(const std::pair<T,T> v, const BBox1f& dt)
+  {
+    const float rcp_dt_size = float(1.0f)/dt.size();
+    const T g0 = lerp(v.first,v.second,-dt.lower*rcp_dt_size);
+    const T g1 = lerp(v.first,v.second,(1.0f-dt.lower)*rcp_dt_size);
+    return std::make_pair(g0,g1);
+  }
+
+  template<typename T>
   struct LBBox
   {
   public:
@@ -58,7 +67,7 @@ namespace embree
       bounds0 = b0;
       bounds1 = b1;
     }
-        
+
   public:
 
     __forceinline bool empty() const {
@@ -73,7 +82,7 @@ namespace embree
       return lerp(bounds0,bounds1,t);
     }
 
-    __forceinline LBBox<T> interpolate( const BBox1f dt ) const {
+    __forceinline LBBox<T> interpolate( const BBox1f& dt ) const {
       return LBBox<T>(interpolate(dt.lower),interpolate(dt.upper));
     }
 
@@ -82,11 +91,9 @@ namespace embree
       bounds1.extend(other.bounds1);
     }
 
-    __forceinline float expectedHalfArea() const {
-      return 0.5f*(halfArea(bounds0) + halfArea(bounds1));  // FIXME: only approximative
-    }
+    __forceinline float expectedHalfArea() const;
 
-    __forceinline float expectedHalfArea(const BBox1f dt) const {
+    __forceinline float expectedHalfArea(const BBox1f& dt) const {
       return interpolate(dt).expectedHalfArea();
     }
 
@@ -116,13 +123,33 @@ namespace embree
     BBox<T> bounds0, bounds1;
   };
 
-  template<typename T> __forceinline float expectedApproxHalfArea(const LBBox<T>& box) {
+  template<typename T>
+    __forceinline T expectedArea(const T& a0, const T& a1, const T& b0, const T& b1)
+  {
+    const T da = a1-a0;
+    const T db = b1-b0;
+    return a0*b0+(a0*db+da*b0)*T(0.5f) + da*db*T(1.0f/3.0f);
+  }
+  
+  template<> __forceinline float LBBox<Vec3fa>::expectedHalfArea() const 
+  {
+    const Vec3fa d0 = bounds0.size();
+    const Vec3fa d1 = bounds1.size();
+    return reduce_add(expectedArea(Vec3fa(d0.x,d0.y,d0.z),
+                                   Vec3fa(d1.x,d1.y,d1.z),
+                                   Vec3fa(d0.y,d0.z,d0.x),
+                                   Vec3fa(d1.y,d1.z,d1.x)));
+  }
+
+  template<typename T>
+  __forceinline float expectedApproxHalfArea(const LBBox<T>& box) {
     return box.expectedApproxHalfArea(); 
   }
 
-  /*! computes the center of the box */
-  template<typename T> __forceinline const T center2(const LBBox<T>& box) { return center2(box.interpolate(0.5f)); }
-  template<typename T> __forceinline const T center (const LBBox<T>& box) { return T(0.5f)*center2(box); }
+  template<typename T>
+  __forceinline LBBox<T> merge(const LBBox<T>& a, const LBBox<T>& b) {
+    return LBBox<T>(merge(a.bounds0, b.bounds0), merge(a.bounds1, b.bounds1));
+  }
 
   /*! default template instantiations */
   typedef LBBox<float> LBBox1f;

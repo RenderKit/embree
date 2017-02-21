@@ -56,6 +56,11 @@ namespace embree
     /*! computes twice the center of the box */
     __forceinline T center2() const { return lower+upper; }
 
+    /*! merges two boxes */
+    __forceinline static const BBox merge (const BBox& a, const BBox& b) {
+      return BBox(min(a.lower, b.lower), max(a.upper, b.upper));
+    }
+    
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////

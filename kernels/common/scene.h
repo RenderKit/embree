@@ -184,6 +184,19 @@ namespace embree
     __forceinline const Geometry* get(size_t i) const { assert(i < geometries.size()); return geometries[i]; }
 
     template<typename Mesh>
+      __forceinline       Mesh* get(size_t i)       { 
+      assert(i < geometries.size()); 
+      assert(geometries[i]->getType() == Mesh::geom_type);
+      return (Mesh*)geometries[i]; 
+    }
+    template<typename Mesh>
+      __forceinline const Mesh* get(size_t i) const { 
+      assert(i < geometries.size()); 
+      assert(geometries[i]->getType() == Mesh::geom_type);
+      return (Mesh*)geometries[i]; 
+    }
+
+    template<typename Mesh>
     __forceinline Mesh* getSafe(size_t i) {
       assert(i < geometries.size());
       if (geometries[i] == nullptr) return nullptr;
@@ -340,7 +353,7 @@ namespace embree
     struct BuildProgressMonitorInterface : public BuildProgressMonitor {
       BuildProgressMonitorInterface(Scene* scene) 
       : scene(scene) {}
-      void operator() (size_t dn) { scene->progressMonitor(double(dn)); }
+      void operator() (size_t dn) const { scene->progressMonitor(double(dn)); }
     private:
       Scene* scene;
     };

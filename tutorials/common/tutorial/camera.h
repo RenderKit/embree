@@ -85,27 +85,39 @@ namespace embree
 
     void rotate (float dtheta, float dphi)
     {
-      Vec3fa view = xfmPoint(world2camera(),to);
-      float theta = atan2f(view.x, view.z); theta += dtheta;
-      float phi   = asinf (view.y);         phi   += dphi;
+      const AffineSpace3fa c2w = AffineSpace3fa::lookat(Vec3fa(zero), Vec3fa(0.0f, 0.0f, -1.0f), up);
+      const AffineSpace3fa w2c = rcp(c2w);
+
+      Vec3fa view = normalize(xfmVector(w2c, to-from));
+      float theta = atan2f(view.x, view.z);
+      theta += dtheta;
+      const float phi_max = float(pi)/2.0f-float(ulp)*16.0f;
+      float phi = clamp(asinf(view.y), -phi_max, phi_max);
+      phi = clamp(phi + dphi, -phi_max, phi_max);
+
       float x = cosf(phi)*sinf(theta);
       float y = sinf(phi);
       float z = cosf(phi)*cosf(theta);
-      to = xfmPoint(camera2world(),length(view)*Vec3fa(x,y,z));
+      to = from + length(to-from) * xfmVector(w2c, Vec3fa(x,y,z));
     }
 
     void rotateOrbit (float dtheta, float dphi)
     {
-      Vec3fa view = normalize(xfmVector(world2camera(),to - from));
-      float theta = atan2f(view.x, view.z); theta += dtheta;
-      float phi   = asinf (view.y);         phi   += dphi;
+      const AffineSpace3fa c2w = AffineSpace3fa::lookat(Vec3fa(zero), Vec3fa(0.0f, 0.0f, -1.0f), up);
+      const AffineSpace3fa w2c = rcp(c2w);
+
+      Vec3fa view = normalize(xfmVector(w2c, to-from));
+      float theta = atan2f(view.x, view.z);
+      theta += dtheta;
+      const float phi_max = float(pi)/2.0f-float(ulp)*16.0f;
+      float phi = clamp(asinf(view.y), -phi_max, phi_max);
+      phi = clamp(phi + dphi, -phi_max, phi_max);
       assert(std::isfinite(theta));
       assert(std::isfinite(phi));
       float x = cosf(phi)*sinf(theta);
       float y = sinf(phi);
       float z = cosf(phi)*cosf(theta);
-      Vec3fa view1 = xfmVector(camera2world(),Vec3fa(x,y,z));
-      from = to - length(to - from) * view1;
+      from = to - length(to-from) * xfmVector(w2c, Vec3fa(x,y,z));
     }
 
     void dolly (float ds)
@@ -119,7 +131,7 @@ namespace embree
     Vec3fa from;   //!< position of camera
     Vec3fa to;     //!< look at point
     Vec3fa up;     //!< up vector
-    float fov;       //!< field of view
+    float fov;     //!< field of view
   };
 
   typedef Camera::ISPCCamera ISPCCamera;

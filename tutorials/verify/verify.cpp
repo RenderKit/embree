@@ -2555,56 +2555,59 @@ namespace embree
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
 
-      const size_t numRays = 1000;
-      RTCRay rays[numRays];
-      VerifyScene scene(device,sflags,to_aflags(imode));
-      scene.addSphere(sampler,gflags,zero,2.0f,100);
-      scene.addHair  (sampler,gflags,zero,1.0f,1.0f,100);
-      rtcCommit (scene);
-
-      double c0 = getSeconds();
-      for (size_t i=0; i<numRays; i++) {
-        Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
-        Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
-        rays[i] = makeRay(org,dir); 
+      bool ok = false;
+      for (size_t i=0; i<10 && !ok; i++)
+      {
+        const size_t numRays = 1000;
+        RTCRay rays[numRays];
+        VerifyScene scene(device,sflags,to_aflags(imode));
+        scene.addSphere(sampler,gflags,zero,2.0f,100);
+        scene.addHair  (sampler,gflags,zero,1.0f,1.0f,100);
+        rtcCommit (scene);
+        
+        double c0 = getSeconds();
+        for (size_t i=0; i<numRays; i++) {
+          Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+          Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+          rays[i] = makeRay(org,dir); 
+        }
+        IntersectWithMode(imode,ivariant,scene,rays,numRays);
+        
+        double c1 = getSeconds();
+        for (size_t i=0; i<numRays; i++) {
+          Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+          Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+          rays[i] = makeRay(org+Vec3fa(nan),dir); 
+        }
+        IntersectWithMode(imode,ivariant,scene,rays,numRays);
+        
+        double c2 = getSeconds();
+        for (size_t i=0; i<numRays; i++) {
+          Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+          Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+          rays[i] = makeRay(org+Vec3fa(nan),dir+Vec3fa(nan)); 
+        }
+        IntersectWithMode(imode,ivariant,scene,rays,numRays);
+        
+        double c3 = getSeconds();
+        for (size_t i=0; i<numRays; i++) {
+          Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+          Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+          rays[i] = makeRay(org,dir,nan,nan); 
+        }
+        IntersectWithMode(imode,ivariant,scene,rays,numRays);
+        
+        double c4 = getSeconds();
+        double d1 = c1-c0;
+        double d2 = c2-c1;
+        double d3 = c3-c2;
+        double d4 = c4-c3;
+        AssertNoError(device);        
+        
+        ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1);
+        double f = max(d2/d1,d3/d1,d4/d1);
+        if (!silent) { printf(" (%3.2fx)",f); fflush(stdout); }
       }
-      IntersectWithMode(imode,ivariant,scene,rays,numRays);
-    
-      double c1 = getSeconds();
-      for (size_t i=0; i<numRays; i++) {
-        Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
-        Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
-        rays[i] = makeRay(org+Vec3fa(nan),dir); 
-      }
-      IntersectWithMode(imode,ivariant,scene,rays,numRays);
-
-      double c2 = getSeconds();
-      for (size_t i=0; i<numRays; i++) {
-        Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
-        Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
-        rays[i] = makeRay(org+Vec3fa(nan),dir+Vec3fa(nan)); 
-      }
-      IntersectWithMode(imode,ivariant,scene,rays,numRays);
-
-      double c3 = getSeconds();
-      for (size_t i=0; i<numRays; i++) {
-        Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
-        Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
-        rays[i] = makeRay(org,dir,nan,nan); 
-      }
-      IntersectWithMode(imode,ivariant,scene,rays,numRays);
-
-      double c4 = getSeconds();
-      double d1 = c1-c0;
-      double d2 = c2-c1;
-      double d3 = c3-c2;
-      double d4 = c4-c3;
-      AssertNoError(device);
-
-      
-      bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1);
-      double f = max(d2/d1,d3/d1,d4/d1);
-      if (!silent) { printf(" (%3.2fx)",f); fflush(stdout); }
       return (VerifyApplication::TestReturnValue) ok;
     }
   };
@@ -2633,57 +2636,61 @@ namespace embree
       rtcCommit (scene);
       AssertNoError(device);
 
-      double c0 = getSeconds();
-      for (size_t i=0; i<numRays; i++) {
-        Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
-        Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
-        rays[i] = makeRay(org,dir); 
+      bool ok = false;
+      for (size_t i=0; i<10 && !ok; i++)
+      {
+        double c0 = getSeconds();
+        for (size_t i=0; i<numRays; i++) {
+          Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+          Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+          rays[i] = makeRay(org,dir); 
+        }
+        IntersectWithMode(imode,ivariant,scene,rays,numRays);
+        
+        double c1 = getSeconds();
+        for (size_t i=0; i<numRays; i++) {
+          Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+          Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+          rays[i] = makeRay(org+Vec3fa(inf),dir); 
+        }
+        IntersectWithMode(imode,ivariant,scene,rays,numRays);
+        
+        double c2 = getSeconds();
+        for (size_t i=0; i<numRays; i++) {
+          Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+          Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+          rays[i] = makeRay(org,dir+Vec3fa(inf)); 
+        }
+        IntersectWithMode(imode,ivariant,scene,rays,numRays);
+        
+        double c3 = getSeconds();
+        for (size_t i=0; i<numRays; i++) {
+          Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+          Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+          rays[i] = makeRay(org+Vec3fa(inf),dir+Vec3fa(inf)); 
+        }
+        IntersectWithMode(imode,ivariant,scene,rays,numRays);
+        
+        double c4 = getSeconds();
+        for (size_t i=0; i<numRays; i++) {
+          Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+          Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+          rays[i] = makeRay(org,dir,-0.0f,inf); 
+        }
+        IntersectWithMode(imode,ivariant,scene,rays,numRays);
+        
+        double c5 = getSeconds();      
+        double d1 = c1-c0;
+        double d2 = c2-c1;
+        double d3 = c3-c2;
+        double d4 = c4-c3;
+        double d5 = c5-c4;
+        AssertNoError(device);
+        
+        ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1) && (d5 < 2.5*d1);
+        double f = max(d2/d1,d3/d1,d4/d1,d5/d1);
+        if (!silent) { printf(" (%3.2fx)",f); fflush(stdout); }
       }
-      IntersectWithMode(imode,ivariant,scene,rays,numRays);
-
-      double c1 = getSeconds();
-      for (size_t i=0; i<numRays; i++) {
-        Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
-        Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
-        rays[i] = makeRay(org+Vec3fa(inf),dir); 
-      }
-      IntersectWithMode(imode,ivariant,scene,rays,numRays);
-
-      double c2 = getSeconds();
-      for (size_t i=0; i<numRays; i++) {
-        Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
-        Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
-        rays[i] = makeRay(org,dir+Vec3fa(inf)); 
-      }
-      IntersectWithMode(imode,ivariant,scene,rays,numRays);
-
-      double c3 = getSeconds();
-      for (size_t i=0; i<numRays; i++) {
-        Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
-        Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
-        rays[i] = makeRay(org+Vec3fa(inf),dir+Vec3fa(inf)); 
-      }
-      IntersectWithMode(imode,ivariant,scene,rays,numRays);
-
-      double c4 = getSeconds();
-      for (size_t i=0; i<numRays; i++) {
-        Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
-        Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
-        rays[i] = makeRay(org,dir,-0.0f,inf); 
-      }
-      IntersectWithMode(imode,ivariant,scene,rays,numRays);
-
-      double c5 = getSeconds();      
-      double d1 = c1-c0;
-      double d2 = c2-c1;
-      double d3 = c3-c2;
-      double d4 = c4-c3;
-      double d5 = c5-c4;
-      AssertNoError(device);
-
-      bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1) && (d5 < 2.5*d1);
-      double f = max(d2/d1,d3/d1,d4/d1,d5/d1);
-      if (!silent) { printf(" (%3.2fx)",f); fflush(stdout); }
       return (VerifyApplication::TestReturnValue) ok;
     }
   };

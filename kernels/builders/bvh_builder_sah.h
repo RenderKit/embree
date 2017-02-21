@@ -21,96 +21,123 @@
 #include "heuristic_openmerge_array.h"
 
 #if defined(__AVX512F__)
-#define NUM_OBJECT_BINS 16
+#  define NUM_OBJECT_BINS 16
+#  define NUM_SPATIAL_BINS 16
 #else
-#define NUM_OBJECT_BINS 32
+#  define NUM_OBJECT_BINS 32
+#  define NUM_SPATIAL_BINS 16
 #endif
 
 namespace embree
 {
   namespace isa
   {  
-    template<typename Set, typename Split, typename PrimInfo>
-      struct GeneralBuildRecord 
+    struct GeneralBVHBuilder
+    {
+      /*! settings for SAH builder */
+      struct Settings
       {
-      public:
-	__forceinline GeneralBuildRecord () {}
-        
-        __forceinline GeneralBuildRecord (size_t depth) 
-          : parent(nullptr), depth(depth), pinfo(empty) {}
-        
-        __forceinline GeneralBuildRecord (const PrimInfo& pinfo, size_t depth, size_t* parent) 
-          : parent(parent), depth(depth), pinfo(pinfo) {}
-        
-        __forceinline GeneralBuildRecord (const PrimInfo& pinfo, size_t depth, size_t* parent, const Set &prims) 
-          : parent(parent), depth(depth), prims(prims), pinfo(pinfo) {}
+        /*! default settings */
+        Settings () 
+        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8), 
+          travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024) {}
 
-        __forceinline BBox3fa bounds() const { return pinfo.geomBounds; }
+        /*! initialize settings from API settings */
+        Settings (const RTCBuildSettings& settings)
+        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8), 
+          travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024)
+        {
+          if (RTC_BUILD_SETTINGS_HAS(settings,branchingFactor)) branchingFactor = settings.branchingFactor;
+          if (RTC_BUILD_SETTINGS_HAS(settings,maxDepth       )) maxDepth        = settings.maxDepth;
+          if (RTC_BUILD_SETTINGS_HAS(settings,blockSize      )) logBlockSize    = __bsr(settings.blockSize);
+          if (RTC_BUILD_SETTINGS_HAS(settings,minLeafSize    )) minLeafSize     = settings.minLeafSize;
+          if (RTC_BUILD_SETTINGS_HAS(settings,maxLeafSize    )) maxLeafSize     = settings.maxLeafSize;
+          if (RTC_BUILD_SETTINGS_HAS(settings,travCost       )) travCost        = settings.travCost;
+          if (RTC_BUILD_SETTINGS_HAS(settings,intCost        )) intCost         = settings.intCost;
+        }
         
-        __forceinline friend bool operator< (const GeneralBuildRecord& a, const GeneralBuildRecord& b) { return a.pinfo.size() < b.pinfo.size(); }
-	__forceinline friend bool operator> (const GeneralBuildRecord& a, const GeneralBuildRecord& b) { return a.pinfo.size() > b.pinfo.size();  }
-        
-
-        __forceinline size_t size() const { return this->pinfo.size(); }
+        Settings (size_t sahBlockSize, size_t minLeafSize, size_t maxLeafSize, float travCost, float intCost, size_t singleThreadThreshold)
+        : branchingFactor(2), maxDepth(32), logBlockSize(__bsr(sahBlockSize)), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), 
+          travCost(travCost), intCost(intCost), singleThreadThreshold(singleThreadThreshold) {}
         
       public:
-        size_t* parent;   //!< Pointer to the parent node's reference to us
-	size_t depth;     //!< Depth of the root of this subtree.
-	Set prims;        //!< The list of primitives.
-	PrimInfo pinfo;   //!< Bounding info of primitives.
-	Split split;      //!< The best split for the primitives.
+        size_t branchingFactor;  //!< branching factor of BVH to build
+        size_t maxDepth;         //!< maximal depth of BVH to build
+        size_t logBlockSize;     //!< log2 of blocksize for SAH heuristic
+        size_t minLeafSize;      //!< minimal size of a leaf
+        size_t maxLeafSize;      //!< maximal size of a leaf
+        float travCost;          //!< estimated cost of one traversal step
+        float intCost;           //!< estimated cost of one primitive intersection
+        size_t singleThreadThreshold; //!< threshold when we switch to single threaded build
       };
-    
-    template<typename BuildRecord, 
-      typename Heuristic, 
-      typename ReductionTy, 
-      typename Allocator, 
-      typename CreateAllocFunc, 
-      typename CreateNodeFunc, 
-      typename UpdateNodeFunc, 
-      typename CreateLeafFunc, 
-      typename ProgressMonitor,
-      typename PrimInfo>
       
-      class GeneralBVHBuilder
+      /*! recursive state of builder */
+      template<typename Set, typename Split>
+        struct BuildRecordT 
+        {
+        public:
+          __forceinline BuildRecordT () {}
+          
+          __forceinline BuildRecordT (size_t depth) 
+            : depth(depth), prims(empty) {}
+          
+          __forceinline BuildRecordT (size_t depth, const Set& prims) 
+            : depth(depth), prims(prims) {}
+          
+          __forceinline BBox3fa bounds() const { return prims.geomBounds; }
+          
+          __forceinline friend bool operator< (const BuildRecordT& a, const BuildRecordT& b) { return a.prims.size() < b.prims.size(); }
+          __forceinline friend bool operator> (const BuildRecordT& a, const BuildRecordT& b) { return a.prims.size() > b.prims.size();  }
+          
+          __forceinline size_t size() const { return prims.size(); }
+          
+        public:
+          size_t depth;     //!< Depth of the root of this subtree.
+          Set prims;        //!< The list of primitives.
+        };
+      
+      template<typename BuildRecord, 
+        typename Heuristic, 
+        typename Set,
+        typename ReductionTy, 
+        typename Allocator, 
+        typename CreateAllocFunc, 
+        typename CreateNodeFunc, 
+        typename UpdateNodeFunc, 
+        typename CreateLeafFunc, 
+        typename ProgressMonitor>
+        
+        class BuilderT : private Settings
       {
+        friend struct GeneralBVHBuilder;
         static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximal supported BVH branching factor
         static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree of we are that many levels before the maximal tree depth
         
-      public:
-        
-        GeneralBVHBuilder (Heuristic& heuristic, 
-                           const ReductionTy& identity,
-                           CreateAllocFunc& createAlloc, 
-                           CreateNodeFunc& createNode, 
-                           UpdateNodeFunc& updateNode, 
-                           CreateLeafFunc& createLeaf,
-                           ProgressMonitor& progressMonitor,
-                           const PrimInfo& pinfo,
-                           const size_t branchingFactor, const size_t maxDepth, 
-                           const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize,
-                           const float travCost, const float intCost, const size_t singleThreadThreshold)
-          : heuristic(heuristic), 
-          identity(identity), 
+        BuilderT (Heuristic& heuristic, 
+                  const CreateAllocFunc& createAlloc, 
+                  const CreateNodeFunc& createNode, 
+                  const UpdateNodeFunc& updateNode, 
+                  const CreateLeafFunc& createLeaf,
+                  const ProgressMonitor& progressMonitor,
+                  const Settings& settings)
+          
+          : Settings(settings),
+          heuristic(heuristic), 
           createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
-          progressMonitor(progressMonitor),
-          pinfo(pinfo), 
-          branchingFactor(branchingFactor), maxDepth(maxDepth),
-          logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
-          travCost(travCost), intCost(intCost), singleThreadThreshold(singleThreadThreshold)
+          progressMonitor(progressMonitor)
         {
           if (branchingFactor > MAX_BRANCHING_FACTOR)
             throw_RTCError(RTC_UNKNOWN_ERROR,"bvh_builder: branching factor too large");
         }
         
-        const ReductionTy createLargeLeaf(BuildRecord& current, Allocator alloc)
+        const ReductionTy createLargeLeaf(const BuildRecord& current, Allocator alloc)
         {
           /* this should never occur but is a fatal error */
           if (current.depth > maxDepth) 
             throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
-
+          
           /* create leaf for few primitives */
-          if (current.pinfo.size() <= maxLeafSize)
+          if (current.prims.size() <= maxLeafSize)
             return createLeaf(current,alloc);
           
           /* fill all children by always splitting the largest one */
@@ -126,12 +153,12 @@ namespace embree
             for (size_t i=0; i<numChildren; i++)
             {
               /* ignore leaves as they cannot get split */
-              if (children[i].pinfo.size() <= maxLeafSize)
+              if (children[i].prims.size() <= maxLeafSize)
                 continue;
               
               /* remember child with largest size */
-              if (children[i].pinfo.size() > bestSize) { 
-                bestSize = children[i].pinfo.size();
+              if (children[i].prims.size() > bestSize) { 
+                bestSize = children[i].prims.size();
                 bestChild = i;
               }
             }
@@ -140,9 +167,7 @@ namespace embree
             /*! split best child into left and right child */
             BuildRecord left(current.depth+1);
             BuildRecord right(current.depth+1);
-            heuristic.splitFallback(children[bestChild].prims,left.pinfo,left.prims,right.pinfo,right.prims);
-            left .split = find(left );
-            right.split = find(right);
+            heuristic.splitFallback(children[bestChild].prims,left.prims,right.prims);
             
             /* add new children left and right */
             children[bestChild] = children[numChildren-1];
@@ -153,7 +178,7 @@ namespace embree
           } while (numChildren < branchingFactor);
           
           /* create node */
-          auto node = createNode(current,children,numChildren,alloc);
+          auto node = createNode(children,numChildren,alloc);
           
           /* recurse into each child  and perform reduction */
           for (size_t i=0; i<numChildren; i++)
@@ -163,88 +188,76 @@ namespace embree
           return updateNode(node,values,numChildren);
         }
         
-        __forceinline const typename Heuristic::Split find(BuildRecord& current) {
-          return heuristic.find (current.prims,current.pinfo,logBlockSize);
-        }
-        
-        __forceinline void partition(BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) {
-          heuristic.split(brecord.split,brecord.pinfo,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
-        }
-        
         const ReductionTy recurse(BuildRecord& current, Allocator alloc, bool toplevel)
         {
+          /* get thread local allocator */
           if (alloc == nullptr)
             alloc = createAlloc();
-
+          
           /* call memory monitor function to signal progress */
           if (toplevel && current.size() <= singleThreadThreshold)
             progressMonitor(current.size());
+
+          /*! find best split */
+          auto split = heuristic.find(current.prims,logBlockSize);
           
           /*! compute leaf and split cost */
-          const float leafSAH  = intCost*current.pinfo.leafSAH(logBlockSize);
-          const float splitSAH = travCost*halfArea(current.pinfo.geomBounds)+intCost*current.split.splitSAH();
-          assert((current.pinfo.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
+          const float leafSAH  = intCost*current.prims.leafSAH(logBlockSize);
+          const float splitSAH = travCost*halfArea(current.prims.geomBounds)+intCost*split.splitSAH();
+          assert((current.prims.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
           
           /*! create a leaf node when threshold reached or SAH tells us to stop */
-          if (current.pinfo.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.pinfo.size() <= maxLeafSize && leafSAH <= splitSAH)) {
+          if (current.prims.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.prims.size() <= maxLeafSize && leafSAH <= splitSAH)) {
             heuristic.deterministic_order(current.prims);
             return createLargeLeaf(current,alloc);
           }
           
-          /*! initialize child list */
+          /*! perform initial split */    
+          Set lprims,rprims;
+          heuristic.split(split,current.prims,lprims,rprims);
+
+          /*! initialize child list with initial split */
           ReductionTy values[MAX_BRANCHING_FACTOR];
           BuildRecord children[MAX_BRANCHING_FACTOR];
-          children[0] = current;
-          size_t numChildren = 1;
+          children[0] = BuildRecord(current.depth+1,lprims);
+          children[1] = BuildRecord(current.depth+1,rprims);
+          size_t numChildren = 2;
           
           /*! split until node is full or SAH tells us to stop */
-          do {
-            
+          while (numChildren < branchingFactor) 
+          {
             /*! find best child to split */
-#if 1
-            float bestSAH = neg_inf;
+            float bestArea = neg_inf;
             ssize_t bestChild = -1;
             for (size_t i=0; i<numChildren; i++) 
             {
-              if (children[i].pinfo.size() <= minLeafSize) continue; 
-              if (area(children[i].pinfo.geomBounds) > bestSAH) { bestChild = i; bestSAH = area(children[i].pinfo.geomBounds); } // FIXME: measure over all scenes if this line creates better tree
-            }
-#else
-            float bestSAH = 0;
-            ssize_t bestChild = -1;
-            for (size_t i=0; i<numChildren; i++) 
-            {
-              float dSAH = children[i].split.splitSAH()-children[i].pinfo.leafSAH(logBlockSize);
-              if (children[i].pinfo.size() <= minLeafSize) continue; 
-              if (children[i].pinfo.size() > maxLeafSize) dSAH = min(dSAH,0.0f); //< force split for large jobs
-              if (dSAH <= bestSAH) { bestChild = i; bestSAH = dSAH; }
-            }
+              /* ignore leaves as they cannot get split */
+              if (children[i].prims.size() <= minLeafSize) continue; 
 
-#endif
-
+              /* find child with largest surface area */
+              if (halfArea(children[i].prims.geomBounds) > bestArea) { 
+                bestChild = i; 
+                bestArea = halfArea(children[i].prims.geomBounds); 
+              }
+            }
             if (bestChild == -1) break;
-
             
             /* perform best found split */
             BuildRecord& brecord = children[bestChild];
             BuildRecord lrecord(current.depth+1);
             BuildRecord rrecord(current.depth+1);
-            partition(brecord,lrecord,rrecord);
-            
-            /* find new splits */
-            lrecord.split = find(lrecord);
-            rrecord.split = find(rrecord);
+            auto split = heuristic.find(brecord.prims,logBlockSize);
+            heuristic.split(split,brecord.prims,lrecord.prims,rrecord.prims);
             children[bestChild  ] = lrecord;
             children[numChildren] = rrecord;
             numChildren++;
-            
-          } while (numChildren < branchingFactor);
+          }
           
-          /* sort buildrecords for simpler shadow ray traversal */
-          std::sort(&children[0],&children[numChildren],std::greater<BuildRecord>()); // FIXME: reduces traversal performance of bvh8.triangle4 (need to verified) !!
+          /* sort buildrecords for faster shadow ray traversal */
+          std::sort(&children[0],&children[numChildren],std::greater<BuildRecord>());
           
           /*! create an inner node */
-          auto node = createNode(current,children,numChildren,alloc);
+          auto node = createNode(children,numChildren,alloc);
           
           /* spawn tasks */
           if (current.size() > singleThreadThreshold) 
@@ -256,396 +269,201 @@ namespace embree
                   _mm_mfence(); // to allow non-temporal stores during build
                 }                
               });
-            /* perform reduction */
+
             return updateNode(node,values,numChildren);
           }
           /* recurse into each child */
           else 
           {
-            //for (size_t i=0; i<numChildren; i++)
-            for (ssize_t i=numChildren-1; i>=0; i--)
+            for (size_t i=0; i<numChildren; i++)
               values[i] = recurse(children[i],alloc,false);
             
-            /* perform reduction */
             return updateNode(node,values,numChildren);
           }
         }
         
-        /*! builder entry function */
-        __forceinline const ReductionTy operator() (BuildRecord& record)
-        {
-          //BuildRecord br(record);
-          record.split = find(record); 
-          ReductionTy ret = recurse(record,nullptr,true);
-          _mm_mfence(); // to allow non-temporal stores during build
-          return ret;
-        }
-        
       private:
         Heuristic& heuristic;
-        const ReductionTy identity;
-        CreateAllocFunc& createAlloc;
-        CreateNodeFunc& createNode;
-        UpdateNodeFunc& updateNode;
-        CreateLeafFunc& createLeaf;
-        ProgressMonitor& progressMonitor;
-        
-      private:
-        const PrimInfo& pinfo;
-        const size_t branchingFactor;
-        const size_t maxDepth;
-        const size_t logBlockSize;
-        const size_t minLeafSize;
-        const size_t maxLeafSize;
-        const float travCost;
-        const float intCost;
-        const size_t singleThreadThreshold;
+        const CreateAllocFunc& createAlloc;
+        const CreateNodeFunc& createNode;
+        const UpdateNodeFunc& updateNode;
+        const CreateLeafFunc& createLeaf;
+        const ProgressMonitor& progressMonitor;
       };
-    
+      
+      template<
+      typename ReductionTy, 
+        typename Heuristic,
+        typename Set,
+        typename CreateAllocFunc, 
+        typename CreateNodeFunc, 
+        typename UpdateNodeFunc, 
+        typename CreateLeafFunc, 
+        typename ProgressMonitor>
+        
+        static ReductionTy build(Heuristic& heuristic,
+                                 const Set& set,
+                                 CreateAllocFunc createAlloc, 
+                                 CreateNodeFunc createNode, UpdateNodeFunc updateNode, 
+                                 const CreateLeafFunc& createLeaf, 
+                                 const ProgressMonitor& progressMonitor,
+                                 const Settings& settings)
+      {
+        typedef BuildRecordT<Set,typename Heuristic::Split> BuildRecord;
+        
+        typedef BuilderT<
+          BuildRecord,
+          Heuristic,
+          Set,
+          ReductionTy,
+          decltype(createAlloc()),
+          CreateAllocFunc,
+          CreateNodeFunc,
+          UpdateNodeFunc,
+          CreateLeafFunc,
+          ProgressMonitor> Builder;
+        
+        /* instantiate builder */
+        Builder builder(heuristic,
+                        createAlloc,
+                        createNode,
+                        updateNode,
+                        createLeaf,
+                        progressMonitor,
+                        settings);
+        
+        /* build hierarchy */
+        BuildRecord record(1,set);
+        const ReductionTy root = builder.recurse(record,nullptr,true);
+        _mm_mfence(); // to allow non-temporal stores during build
+        return root;
+      }
+    };
+
     /* SAH builder that operates on an array of BuildRecords */
     struct BVHBuilderBinnedSAH
     {
-      typedef range<size_t> Set;
+      typedef PrimInfoRange Set;
       typedef HeuristicArrayBinningSAH<PrimRef,NUM_OBJECT_BINS> Heuristic;
-      typedef GeneralBuildRecord<Set,typename Heuristic::Split,PrimInfo> BuildRecord;
-      
-      /*! standard build without reduction */
-      template<typename NodeRef, 
-        typename CreateAllocFunc, 
-        typename CreateNodeFunc, 
-        typename CreateLeafFunc, 
-        typename ProgressMonitor>
-        
-        static void build(NodeRef& root,
-                          CreateAllocFunc createAlloc, 
-                          CreateNodeFunc createNode, 
-                          CreateLeafFunc createLeaf, 
-                          ProgressMonitor progressMonitor, 
-                          PrimRef* prims, const PrimInfo& pinfo, 
-                          const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
-                          const size_t minLeafSize, const size_t maxLeafSize,
-                          const float travCost, const float intCost, const size_t singleThreadThreshold)
-      {
-        /* use dummy reduction over integers */
-        int identity = 0;
-        auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
-        
-        /* initiate builder */
-        build_reduce(root,
-                     createAlloc,
-                     identity,
-                     createNode,
-                     updateNode,
-                     createLeaf,
-                     progressMonitor,
-                     prims,
-                     pinfo,
-                     branchingFactor,maxDepth,blockSize,
-                     minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
-      }
+      typedef GeneralBVHBuilder::BuildRecordT<Set,typename Heuristic::Split> BuildRecord;
+      typedef GeneralBVHBuilder::Settings Settings;
       
       /*! special builder that propagates reduction over the tree */
-      template<typename NodeRef, 
+      template<
+      typename ReductionTy, 
         typename CreateAllocFunc, 
-        typename ReductionTy, 
         typename CreateNodeFunc, 
         typename UpdateNodeFunc, 
         typename CreateLeafFunc, 
         typename ProgressMonitor>
         
-        static ReductionTy build_reduce(NodeRef& root,
-                                        CreateAllocFunc createAlloc, 
-                                        const ReductionTy& identity, 
-                                        CreateNodeFunc createNode, UpdateNodeFunc updateNode, CreateLeafFunc createLeaf, 
-                                        ProgressMonitor progressMonitor,
-                                        PrimRef* prims, const PrimInfo& pinfo, 
-                                        const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
-                                        const size_t minLeafSize, const size_t maxLeafSize,
-                                        const float travCost, const float intCost, const size_t singleThreadThreshold)
+        static ReductionTy build(CreateAllocFunc createAlloc, 
+                                 CreateNodeFunc createNode, UpdateNodeFunc updateNode, 
+                                 const CreateLeafFunc& createLeaf, 
+                                 const ProgressMonitor& progressMonitor,
+                                 PrimRef* prims, const PrimInfo& pinfo, 
+                                 const Settings& settings)
       {
-        /* builder wants log2 of blockSize as input */		  
-        const size_t logBlockSize = __bsr(blockSize); 
-        assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
-
-        /* instantiate array binning heuristic */
         Heuristic heuristic(prims);
-        
-        typedef GeneralBVHBuilder<
-          BuildRecord,
-          Heuristic,
-          ReductionTy,
-          decltype(createAlloc()),
-          CreateAllocFunc,
-          CreateNodeFunc,
-          UpdateNodeFunc,
-          CreateLeafFunc,
-          ProgressMonitor,
-          PrimInfo> Builder;
-        
-        /* instantiate builder */
-        Builder builder(heuristic,
-                        identity,
-                        createAlloc,
-                        createNode,
-                        updateNode,
-                        createLeaf,
-                        progressMonitor,
-                        pinfo,
-                        branchingFactor,maxDepth,logBlockSize,
-                        minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
-        
-        /* build hierarchy */
-        BuildRecord br(pinfo,1,(size_t*)&root,Set(0,pinfo.size()));
-        return builder(br);
+        return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set>(
+          heuristic,
+          PrimInfoRange(0,pinfo.size(),pinfo.geomBounds,pinfo.centBounds),
+          createAlloc,
+          createNode,
+          updateNode,
+          createLeaf,
+          progressMonitor,
+          settings);
       }
     };
-    
-#define FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS 16
 
-    /* Spatial SAH builder that operates on an array of BuildRecords */
+    /* Spatial SAH builder that operates on an double-buffered array of BuildRecords */
     struct BVHBuilderBinnedFastSpatialSAH
     {
-#if defined(__AVX512F__)
-      static const size_t OBJECT_BINS = 16;
-#else
-      static const size_t OBJECT_BINS = 32;
-#endif
-      static const size_t SPATIAL_BINS = FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS;
-
-      typedef extended_range<size_t> Set;
-      typedef Split2<BinSplit<OBJECT_BINS>,SpatialBinSplit<SPATIAL_BINS> > Split;
-      typedef GeneralBuildRecord<Set,Split,PrimInfo> BuildRecord;
-
-      /*! standard build without reduction */
-      template<typename NodeRef, 
-        typename CreateAllocFunc, 
-        typename CreateNodeFunc, 
-        typename CreateLeafFunc, 
-        typename SplitPrimitiveFunc, 
-        typename ProgressMonitor>
-        
-        static void build(NodeRef& root,
-                          CreateAllocFunc createAlloc, 
-                          CreateNodeFunc createNode, 
-                          CreateLeafFunc createLeaf, 
-                          SplitPrimitiveFunc splitPrimitive,
-                          ProgressMonitor progressMonitor, 
-                          PrimRef* prims, const PrimInfo& pinfo, 
-                          const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
-                          const size_t minLeafSize, const size_t maxLeafSize,
-                          const float travCost, const float intCost,
-                          const size_t singleThreadThreshold)
-      {
-        /* use dummy reduction over integers */
-        int identity = 0;
-        auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
-        
-        /* initiate builder */
-        build_reduce(root,
-                     createAlloc,
-                     identity,
-                     createNode,
-                     updateNode,
-                     createLeaf,
-                     splitPrimitive,
-                     progressMonitor,
-                     prims,
-                     pinfo,
-                     branchingFactor,maxDepth,blockSize,
-                     minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
-      }
+      typedef PrimInfoExtRange Set;
+      typedef Split2<BinSplit<NUM_OBJECT_BINS>,SpatialBinSplit<NUM_SPATIAL_BINS> > Split;
+      typedef GeneralBVHBuilder::BuildRecordT<Set,Split> BuildRecord;
+      typedef GeneralBVHBuilder::Settings Settings;
       
       /*! special builder that propagates reduction over the tree */
-      template<typename NodeRef, 
+      template<
+      typename ReductionTy, 
         typename CreateAllocFunc, 
-        typename ReductionTy, 
         typename CreateNodeFunc, 
         typename UpdateNodeFunc, 
         typename CreateLeafFunc, 
         typename SplitPrimitiveFunc, 
         typename ProgressMonitor>
         
-        static ReductionTy build_reduce(NodeRef& root,
-                                        CreateAllocFunc createAlloc, 
-                                        const ReductionTy& identity, 
-                                        CreateNodeFunc createNode, 
-                                        UpdateNodeFunc updateNode, 
-                                        CreateLeafFunc createLeaf, 
-                                        SplitPrimitiveFunc splitPrimitive,
-                                        ProgressMonitor progressMonitor,
-                                        PrimRef* prims0, 
-                                        const size_t extSize,
-                                        const PrimInfo& pinfo, 
-                                        const size_t branchingFactor, 
-                                        const size_t maxDepth, const size_t blockSize, 
-                                        const size_t minLeafSize, const size_t maxLeafSize,
-                                        const float travCost, const float intCost, 
-                                        const size_t singleThreadThreshold)
+        static ReductionTy build(CreateAllocFunc createAlloc, 
+                                 CreateNodeFunc createNode, 
+                                 UpdateNodeFunc updateNode, 
+                                 const CreateLeafFunc& createLeaf, 
+                                 SplitPrimitiveFunc splitPrimitive,
+                                 ProgressMonitor progressMonitor,
+                                 PrimRef* prims, 
+                                 const size_t extSize,
+                                 const PrimInfo& pinfo, 
+                                 const Settings& settings)
       {
-        /* builder wants log2 of blockSize as input */		  
-        const size_t logBlockSize = __bsr(blockSize); 
-        assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
+        typedef HeuristicArraySpatialSAH<SplitPrimitiveFunc,PrimRef,NUM_OBJECT_BINS,NUM_SPATIAL_BINS> Heuristic;
+        Heuristic heuristic(splitPrimitive,prims,pinfo);
 
-
-        typedef HeuristicArraySpatialSAH<SplitPrimitiveFunc, PrimRef,OBJECT_BINS, SPATIAL_BINS> Heuristic;
-
-        /* instantiate array binning heuristic */
-        Heuristic heuristic(splitPrimitive,prims0,pinfo);
-        
-        typedef GeneralBVHBuilder<
-          BuildRecord,
-          Heuristic,
-          ReductionTy,
-          decltype(createAlloc()),
-          CreateAllocFunc,
-          CreateNodeFunc,
-          UpdateNodeFunc,
-          CreateLeafFunc,
-          ProgressMonitor,
-          PrimInfo> Builder;
-        
-        /* instantiate builder */
-        Builder builder(heuristic,
-                        identity,
-                        createAlloc,
-                        createNode,
-                        updateNode,
-                        createLeaf,
-                        progressMonitor,
-                        pinfo,
-                        branchingFactor,maxDepth,logBlockSize,
-                        minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
-        
-        /* build hierarchy */
-        BuildRecord br(pinfo,1,(size_t*)&root,Set(0,pinfo.size(),extSize));
-        return builder(br);
+        return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set>(
+          heuristic,
+          PrimInfoExtRange(0,pinfo.size(),extSize,pinfo.geomBounds,pinfo.centBounds),
+          createAlloc,
+          createNode,
+          updateNode,
+          createLeaf,
+          progressMonitor,
+          settings);
       }
     };
 
-    
     /* Open/Merge SAH builder that operates on an array of BuildRecords */
     struct BVHBuilderBinnedOpenMergeSAH
     {
-#if defined(__AVX512F__)
-      static const size_t OBJECT_BINS = 16;
-#else
-      static const size_t OBJECT_BINS = 32;
-#endif
-
-      typedef extended_range<size_t> Set;
-      typedef SplitOpenMerge<BinSplit<OBJECT_BINS> > Split;
-      typedef GeneralBuildRecord<Set,Split,PrimInfo> BuildRecord;
-
-      /*! standard build without reduction */
-      template<typename NodeRef, 
-        typename BuildRef,
-        typename CreateAllocFunc, 
-        typename CreateNodeFunc, 
-        typename CreateLeafFunc,
-        typename NodeOpenerFunc,
-        typename ProgressMonitor>
-        
-        static void build(NodeRef& root,
-                          CreateAllocFunc createAlloc, 
-                          CreateNodeFunc createNode, 
-                          CreateLeafFunc createLeaf, 
-                          NodeOpenerFunc nodeOpenerFunc,
-                          ProgressMonitor progressMonitor, 
-                          BuildRef* prims,
-                          const size_t extSize,
-                          const PrimInfo& pinfo, 
-                          const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
-                          const size_t minLeafSize, const size_t maxLeafSize,
-                          const float travCost, const float intCost,
-                          const size_t singleThreadThreshold)
-      {
-        /* use dummy reduction over integers */
-        int identity = 0;
-        auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
-        
-        /* initiate builder */
-        build_reduce(root,
-                     createAlloc,
-                     identity,
-                     createNode,
-                     updateNode,
-                     createLeaf,
-                     nodeOpenerFunc,
-                     progressMonitor,
-                     prims,
-                     extSize,
-                     pinfo,
-                     branchingFactor,maxDepth,blockSize,
-                     minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
-      }
+      typedef PrimInfoExtRange Set;
+      typedef SplitOpenMerge<BinSplit<NUM_OBJECT_BINS> > Split;
+      typedef GeneralBVHBuilder::BuildRecordT<Set,Split> BuildRecord;
+      typedef GeneralBVHBuilder::Settings Settings;
       
       /*! special builder that propagates reduction over the tree */
-      template<typename NodeRef, 
+      template<
+        typename ReductionTy, 
         typename BuildRef,
         typename CreateAllocFunc, 
-        typename ReductionTy, 
         typename CreateNodeFunc, 
         typename UpdateNodeFunc, 
         typename CreateLeafFunc, 
-        typename NodeOpenerFunc,
+        typename NodeOpenerFunc, 
         typename ProgressMonitor>
         
-        static ReductionTy build_reduce(NodeRef& root,
-                                        CreateAllocFunc createAlloc, 
-                                        const ReductionTy& identity, 
-                                        CreateNodeFunc createNode, 
-                                        UpdateNodeFunc updateNode, 
-                                        CreateLeafFunc createLeaf, 
-                                        NodeOpenerFunc nodeOpenerFunc,
-                                        ProgressMonitor progressMonitor,
-                                        BuildRef* prims0, 
-                                        const size_t extSize,
-                                        const PrimInfo& pinfo, 
-                                        const size_t branchingFactor, 
-                                        const size_t maxDepth, const size_t blockSize, 
-                                        const size_t minLeafSize, const size_t maxLeafSize,
-                                        const float travCost, const float intCost, 
-                                        const size_t singleThreadThreshold)
+        static ReductionTy build(CreateAllocFunc createAlloc, 
+                                 CreateNodeFunc createNode, 
+                                 UpdateNodeFunc updateNode, 
+                                 const CreateLeafFunc& createLeaf, 
+                                 NodeOpenerFunc nodeOpenerFunc,
+                                 ProgressMonitor progressMonitor,
+                                 BuildRef* prims, 
+                                 const size_t extSize,
+                                 const PrimInfo& pinfo, 
+                                 const Settings& settings)
       {
-        /* builder wants log2 of blockSize as input */		  
-        const size_t logBlockSize = __bsr(blockSize); 
-        assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
+        typedef HeuristicArrayOpenMergeSAH<NodeOpenerFunc,BuildRef,NUM_OBJECT_BINS> Heuristic;
+        Heuristic heuristic(nodeOpenerFunc,prims,pinfo);
 
-        typedef HeuristicArrayOpenMergeSAH<NodeOpenerFunc,BuildRef,OBJECT_BINS> Heuristic;
-
-        /* instantiate array binning heuristic */
-        Heuristic heuristic(nodeOpenerFunc,prims0,pinfo);
-        
-        typedef GeneralBVHBuilder<
-          BuildRecord,
-          Heuristic,
-          ReductionTy,
-          decltype(createAlloc()),
-          CreateAllocFunc,
-          CreateNodeFunc,
-          UpdateNodeFunc,
-          CreateLeafFunc,
-          ProgressMonitor,
-          PrimInfo> Builder;
-        
-        /* instantiate builder */
-        Builder builder(heuristic,
-                        identity,
-                        createAlloc,
-                        createNode,
-                        updateNode,
-                        createLeaf,
-                        progressMonitor,
-                        pinfo,
-                        branchingFactor,maxDepth,logBlockSize,
-                        minLeafSize,maxLeafSize,travCost,intCost,singleThreadThreshold);
-
-        /* build hierarchy */
-        BuildRecord br(pinfo,1,(size_t*)&root,Set(0,pinfo.size(),extSize));
-        return builder(br);
+        return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set>(
+          heuristic,
+          PrimInfoExtRange(0,pinfo.size(),extSize,pinfo.geomBounds,pinfo.centBounds),
+          createAlloc,
+          createNode,
+          updateNode,
+          createLeaf,
+          progressMonitor,
+          settings);
       }
     };
-
-
   }
 }

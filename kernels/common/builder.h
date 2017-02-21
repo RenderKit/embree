@@ -41,7 +41,7 @@ namespace embree
 
   /*! virtual interface for progress monitor class */
   struct BuildProgressMonitor {
-    virtual void operator() (size_t dn) = 0;
+    virtual void operator() (size_t dn) const = 0;
   };
 
   /*! build the progress monitor interface from a closure */
@@ -50,13 +50,9 @@ namespace embree
   {
   public:
     ProgressMonitorClosure (const Closure& closure) : closure(closure) {}
-    void operator() (size_t dn) { closure(dn); }
+    void operator() (size_t dn) const { closure(dn); }
   private:
-#if defined(TASKING_PPL)
-     Closure closure;
-#else
-	 const Closure &closure;
-#endif
+    const Closure closure;
   };
   template<typename Closure> __forceinline const ProgressMonitorClosure<Closure> BuildProgressMonitorFromClosure(const Closure& closure) {
     return ProgressMonitorClosure<Closure>(closure);

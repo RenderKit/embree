@@ -17,6 +17,7 @@
 #pragma once
 
 #include "default.h"
+#include "device.h"
 
 namespace embree
 {
@@ -155,7 +156,7 @@ namespace embree
       ThreadLocal allocators[2];
     };
 
-    FastAllocator (MemoryMonitorInterface* device, bool osAllocation) 
+    FastAllocator (Device* device, bool osAllocation) 
       : device(device), slotMask(0), usedBlocks(nullptr), freeBlocks(nullptr), use_single_mode(false), defaultBlockSize(PAGE_SIZE), 
       growSize(PAGE_SIZE), log2_grow_size_scale(0), bytesUsed(0), bytesWasted(0), thread_local_allocators2(this), osAllocation(osAllocation)
     {
@@ -169,6 +170,11 @@ namespace embree
 
     ~FastAllocator () { 
       clear();
+    }
+
+    /*! returns the device attached to this allocator */
+    Device* getDevice() {
+      return device;
     }
 
     /*! returns first fast thread local allocator */
@@ -586,9 +592,8 @@ namespace embree
       char data[1];              //!< here starts memory to use for allocations
     };
 
-
   private:
-    MemoryMonitorInterface* device;
+    Device* device;
     SpinLock mutex;
     size_t slotMask;
     std::atomic<Block*> threadUsedBlocks[MAX_THREAD_USED_BLOCK_SLOTS];

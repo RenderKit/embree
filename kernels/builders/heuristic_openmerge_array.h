@@ -77,17 +77,13 @@ namespace embree
       };
     
     /*! Performs standard object binning */
-#if defined(__AVX512F__)
-    template<typename NodeOpenerFunc, typename PrimRef, size_t OBJECT_BINS = 16>
-#else
-      template<typename NodeOpenerFunc, typename PrimRef, size_t OBJECT_BINS = 32>
-#endif
+    template<typename NodeOpenerFunc, typename PrimRef, size_t OBJECT_BINS>
       struct HeuristicArrayOpenMergeSAH
       {
         typedef BinSplit<OBJECT_BINS> ObjectSplit;
         typedef BinInfoT<OBJECT_BINS,PrimRef,BBox3fa> ObjectBinner;
 
-        typedef extended_range<size_t> Set;
+        //typedef extended_range<size_t> Set;
         typedef SplitOpenMerge<ObjectSplit> Split;
         
         static const size_t PARALLEL_THRESHOLD = 1024;
@@ -112,7 +108,7 @@ namespace embree
         }
 
         /*! compute extended ranges */
-        __noinline void setExtentedRanges(const Set& set, Set& lset, Set& rset, const size_t lweight, const size_t rweight)
+        __noinline void setExtentedRanges(const PrimInfoExtRange& set, PrimInfoExtRange& lset, PrimInfoExtRange& rset, const size_t lweight, const size_t rweight)
         {
           assert(set.ext_range_size() > 0);
           const float left_factor           = (float)lweight / (lweight + rweight);
@@ -124,7 +120,7 @@ namespace embree
         }
 
         /*! move ranges */
-        __noinline void moveExtentedRange(const Set& set, const Set& lset, const PrimInfo& left, Set& rset, PrimInfo& right)
+        __noinline void moveExtentedRange(const PrimInfoExtRange& set, const PrimInfoExtRange& lset, PrimInfoExtRange& rset)
         {
           const size_t left_ext_range_size = lset.ext_range_size();
           const size_t right_size = rset.size();
@@ -152,8 +148,6 @@ namespace embree
             /* update right range */
             assert(rset.ext_end() + left_ext_range_size == set.ext_end());
             rset.move_right(left_ext_range_size);
-            right.begin = rset.begin();
-            right.end = rset.end();
           }
         }
 
@@ -161,19 +155,19 @@ namespace embree
         // ==========================================================================
         // ==========================================================================
 
-        __forceinline std::pair<size_t,bool> getProperties(const Set& set, const PrimInfo& pinfo)
+        __forceinline std::pair<size_t,bool> getProperties(const PrimInfoExtRange& set)
         {
-          const Vec3fa diag = pinfo.geomBounds.size();
+          const Vec3fa diag = set.geomBounds.size();
           const size_t dim = maxDim(diag);
           assert(diag[dim] > 0.0f);
           const float inv_max_extend = 1.0f / diag[dim];
-          const unsigned int geomID = prims0[pinfo.begin].geomID();
+          const unsigned int geomID = prims0[set.begin()].geomID();
 
-          if (pinfo.size() < PARALLEL_THRESHOLD)
+          if (set.size() < PARALLEL_THRESHOLD)
           {
             bool commonGeomID = true;
             size_t opens = 0;
-            for (size_t i=pinfo.begin;i<pinfo.end;i++)
+            for (size_t i=set.begin(); i<set.end(); i++)
             {
               commonGeomID &= prims0[i].geomID() == geomID; 
               if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD) opens += MAX_OPENED_CHILD_NODES-1; //FIXME              
@@ -198,17 +192,17 @@ namespace embree
         }
 
         //FIXME: should consider maximum available extended size 
-        __forceinline size_t openNodesBasedOnExtend(const Set& set, PrimInfo& pinfo)
+        __forceinline size_t openNodesBasedOnExtend(PrimInfoExtRange& set)
         {
-          const Vec3fa diag = pinfo.geomBounds.size();
+          const Vec3fa diag = set.geomBounds.size();
           const size_t dim = maxDim(diag);
           assert(diag[dim] > 0.0f);
           const float inv_max_extend = 1.0f / diag[dim];
           const size_t ext_range_start = set.end();
 
-          if (pinfo.size() < PARALLEL_THRESHOLD) {
+          if (set.size() < PARALLEL_THRESHOLD) {
             size_t extra_elements = 0;
-            for (size_t i=pinfo.begin;i<pinfo.end;i++)
+            for (size_t i=set.begin(); i<set.end(); i++)
             {
               if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD)
               {
@@ -216,7 +210,7 @@ namespace embree
                 const size_t n = nodeOpenerFunc(prims0[i],tmp);
                 assert(extra_elements + n-1 <= set.ext_range_size());
                 for (size_t j=0;j<n;j++)
-                  pinfo.extend(tmp[j].bounds());
+                  set.extend(tmp[j].bounds());
                   
                 prims0[i] = tmp[0];
                 for (size_t j=1;j<n;j++)
@@ -229,7 +223,7 @@ namespace embree
           else {
             std::atomic<size_t> ext_elements;
             ext_elements.store(0);
-            PrimInfo info = parallel_reduce( pinfo.begin, pinfo.end, CREATE_SPLITS_STEP_SIZE, PrimInfo(empty), [&](const range<size_t>& r) -> PrimInfo {
+            PrimInfo info = parallel_reduce( set.begin(), set.end(), CREATE_SPLITS_STEP_SIZE, PrimInfo(empty), [&](const range<size_t>& r) -> PrimInfo {
                 PrimInfo info(empty);
                 for (size_t i=r.begin();i<r.end();i++)
                   if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD)
@@ -248,7 +242,7 @@ namespace embree
                   }
                 return info;
               }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
-            pinfo.centBounds.extend(info.centBounds);
+            set.centBounds.extend(info.centBounds);
             assert(ext_elements.load() <= set.ext_range_size());
             return ext_elements.load();
           }
@@ -259,14 +253,14 @@ namespace embree
         // ==========================================================================
 
 
-        const Split find(Set& set, PrimInfo& pinfo, const size_t logBlockSize)
+        const Split find(PrimInfoExtRange& set, const size_t logBlockSize)
         {
           /* single element */
-          if (pinfo.size() == 1)
+          if (set.size() == 1)
             return Split(ObjectSplit(),inf);
 
           /* too small */
-          const float area_factor = area(pinfo.geomBounds) * inv_root_area;
+          const float area_factor = area(set.geomBounds) * inv_root_area;
           if (area_factor < 1E-5f) 
             set.set_ext_range(set.end()); /* disable opening */
 
@@ -275,11 +269,11 @@ namespace embree
             /* disjoint test */
             bool disjoint = false;
             const size_t D = 4;
-            if (pinfo.size() <= D)
+            if (set.size() <= D)
             {
               disjoint = true;
-              for (size_t j=pinfo.begin;j<pinfo.end-1;j++)
-                for (size_t i=pinfo.begin+1;i<pinfo.end;i++)
+              for (size_t j=set.begin();j<set.end()-1;j++)
+                for (size_t i=set.begin()+1;i<set.end();i++)
                   if (conjoint(prims0[j].bounds(),prims0[i].bounds()))
                   { disjoint = false; break; }        
             }
@@ -291,7 +285,7 @@ namespace embree
           /* common geomID */
           if (set.has_ext_range())
           {
-            p =  getProperties(set,pinfo);
+            p =  getProperties(set);
             const size_t est_new_elements = p.first;
             const bool commonGeomID       = p.second;
             if (commonGeomID)
@@ -300,11 +294,9 @@ namespace embree
               size_t extra_elements = 0;
 
               if (est_new_elements <= max_ext_range_size)
-                extra_elements = openNodesBasedOnExtend(set,pinfo);
+                extra_elements = openNodesBasedOnExtend(set);
 
-              pinfo.end += extra_elements;
-              Set nset(set.begin(),set.end()+extra_elements,set.ext_end());
-              set = nset;            
+              set._end += extra_elements;
               set.set_ext_range(set.end()); /* disable opening */
             }
           }
@@ -316,37 +308,35 @@ namespace embree
 
             const size_t est_new_elements = p.first;
             if (est_new_elements <= max_ext_range_size)
-              extra_elements = openNodesBasedOnExtend(set,pinfo);
+              extra_elements = openNodesBasedOnExtend(set);
 
             OPEN_STATS( if (extra_elements) stat_ext_elements += extra_elements );
 
-            pinfo.end += extra_elements;
-            Set nset(set.begin(),set.end()+extra_elements,set.ext_end());
-            set = nset;         
+            set._end += extra_elements;
             if (set.ext_range_size() <= 1) set.set_ext_range(set.end()); /* disable opening */
           }
         
             
           /* find best split */
           SplitInfo oinfo;
-          const ObjectSplit object_split = object_find(set,pinfo,logBlockSize,oinfo);
+          const ObjectSplit object_split = object_find(set,logBlockSize,oinfo);
           const float object_split_sah = object_split.splitSAH();
           return Split(object_split,object_split_sah);
         }
 
 
         /*! finds the best object split */
-        __forceinline const ObjectSplit object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo &info)
+        __forceinline const ObjectSplit object_find(const PrimInfoExtRange& set,const size_t logBlockSize, SplitInfo& info)
         {
-          if (pinfo.size() < PARALLEL_THRESHOLD) return sequential_object_find(set,pinfo,logBlockSize,info);
-          else                                   return parallel_object_find  (set,pinfo,logBlockSize,info);
+          if (set.size() < PARALLEL_THRESHOLD) return sequential_object_find(set,logBlockSize,info);
+          else                                 return parallel_object_find  (set,logBlockSize,info);
         }
 
         /*! finds the best object split */
-        __noinline const ObjectSplit sequential_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo &info)
+        __noinline const ObjectSplit sequential_object_find(const PrimInfoExtRange& set, const size_t logBlockSize, SplitInfo& info)
         {
           ObjectBinner binner(empty); 
-          const BinMapping<OBJECT_BINS> mapping(pinfo.centBounds,OBJECT_BINS);
+          const BinMapping<OBJECT_BINS> mapping(set.centBounds,OBJECT_BINS);
 #if USE_SUBTREE_SIZE_FOR_BINNING == 1
           binner.binSubTreeRefs(prims0,set.begin(),set.end(),mapping);
 #else
@@ -358,10 +348,10 @@ namespace embree
         }
 
         /*! finds the best split */
-        __noinline const ObjectSplit parallel_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo &info)
+        __noinline const ObjectSplit parallel_object_find(const PrimInfoExtRange& set, const size_t logBlockSize, SplitInfo& info)
         {
           ObjectBinner binner(empty);
-          const BinMapping<OBJECT_BINS> mapping(pinfo.centBounds,OBJECT_BINS);
+          const BinMapping<OBJECT_BINS> mapping(set.centBounds,OBJECT_BINS);
           const BinMapping<OBJECT_BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
           binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
                                    [&] (const range<size_t>& r) -> ObjectBinner { ObjectBinner binner(empty); 
@@ -378,43 +368,35 @@ namespace embree
         }
         
         /*! array partitioning */
-        void split(const Split& split, const PrimInfo& pinfo_i, const Set& set_i, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        void split(const Split& split, const PrimInfoExtRange& set_i, PrimInfoExtRange& lset, PrimInfoExtRange& rset) 
         {
-          Set set = set_i;
-          PrimInfo pinfo = pinfo_i; 
+          PrimInfoExtRange set = set_i;
 
           /* valid split */
           if (unlikely(!split.valid())) {
             deterministic_order(set);
-            splitFallback(set,left,lset,right,rset);
+            splitFallback(set,lset,rset);
             return;
           }
 
           std::pair<size_t,size_t> ext_weights(0,0);
 
           /* object split */
-          if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
-            ext_weights = sequential_object_split(split.objectSplit(),set,left,lset,right,rset);
+          if (likely(set.size() < PARALLEL_THRESHOLD)) 
+            ext_weights = sequential_object_split(split.objectSplit(),set,lset,rset);
           else
-            ext_weights = parallel_object_split(split.objectSplit(),set,left,lset,right,rset);
+            ext_weights = parallel_object_split(split.objectSplit(),set,lset,rset);
 
           /* if we have an extended range, set extended child ranges and move right split range */
           if (unlikely(set.has_ext_range())) 
           {
             setExtentedRanges(set,lset,rset,ext_weights.first,ext_weights.second);
-            moveExtentedRange(set,lset,left,rset,right);
+            moveExtentedRange(set,lset,rset);
           }
-
-          assert(lset.begin() == left.begin);
-          assert(lset.end()   == left.end);
-          assert(lset.size()  == left.size());
-          assert(rset.begin() == right.begin);
-          assert(rset.end()   == right.end);
-          assert(rset.size()  == right.size());
         }
 
         /*! array partitioning */
-        std::pair<size_t,size_t> sequential_object_split(const ObjectSplit& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        std::pair<size_t,size_t> sequential_object_split(const ObjectSplit& split, const PrimInfoExtRange& set, PrimInfoExtRange& lset, PrimInfoExtRange& rset) 
         {
           const size_t begin = set.begin();
           const size_t end   = set.end();
@@ -442,24 +424,22 @@ namespace embree
           const size_t left_weight  = local_left.end;
           const size_t right_weight = local_right.end;
 
-          new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
-          new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
-          new (&lset) extended_range<size_t>(begin,center,center);
-          new (&rset) extended_range<size_t>(center,end,end);
+          new (&lset) PrimInfoExtRange(begin,center,center,local_left.geomBounds,local_left.centBounds);
+          new (&rset) PrimInfoExtRange(center,end,end,local_right.geomBounds,local_right.centBounds);
+          assert(area(lset.geomBounds) >= 0.0f);
+          assert(area(rset.geomBounds) >= 0.0f);
 
-          assert(area(left.geomBounds) >= 0.0f);
-          assert(area(right.geomBounds) >= 0.0f);
           return std::pair<size_t,size_t>(left_weight,right_weight);
         }
 
 
         /*! array partitioning */
-        __noinline std::pair<size_t,size_t> parallel_object_split(const ObjectSplit& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
+        __noinline std::pair<size_t,size_t> parallel_object_split(const ObjectSplit& split, const PrimInfoExtRange& set, PrimInfoExtRange& lset, PrimInfoExtRange& rset)
         {
           const size_t begin = set.begin();
           const size_t end   = set.end();
-          left.reset(); 
-          right.reset();
+          PrimInfo left; left.reset();
+          PrimInfo right; right.reset();
           const unsigned int splitPos = split.pos;
           const unsigned int splitDim = split.dim;
           const unsigned int splitDimMask = (unsigned int)1 << splitDim;
@@ -482,26 +462,21 @@ namespace embree
           const size_t left_weight  = left.end;
           const size_t right_weight = right.end;
           
-          left.begin  = begin;  left.end  = center; 
-          right.begin = center; right.end = end;
-          
-          new (&lset) extended_range<size_t>(begin,center,center);
-          new (&rset) extended_range<size_t>(center,end,end);
+          new (&lset) PrimInfoExtRange(begin,center,center,left.geomBounds,left.centBounds);
+          new (&rset) PrimInfoExtRange(center,end,end,right.geomBounds,right.centBounds);
+          assert(area(lset.geomBounds) >= 0.0f);
+          assert(area(rset.geomBounds) >= 0.0f);
 
-          assert(area(left.geomBounds) >= 0.0f);
-          assert(area(right.geomBounds) >= 0.0f);
           return std::pair<size_t,size_t>(left_weight,right_weight);
         }
 
-        void deterministic_order(const Set& set) 
+        void deterministic_order(const extended_range<size_t>& set) 
         {
           /* required as parallel partition destroys original primitive order */
           std::sort(&prims0[set.begin()],&prims0[set.end()]);
         }
 
-        void splitFallback(const Set& set, 
-                           PrimInfo& linfo, Set& lset, 
-                           PrimInfo& rinfo, Set& rset)
+        void splitFallback(const PrimInfoExtRange& set, PrimInfoExtRange& lset, PrimInfoExtRange& rset)
         {
           const size_t begin = set.begin();
           const size_t end   = set.end();
@@ -509,28 +484,24 @@ namespace embree
 
           PrimInfo left(empty);
           for (size_t i=begin; i<center; i++)
-          {
             left.add(prims0[i].bounds());
-          }
+
           const size_t lweight = left.end;
-          new (&linfo) PrimInfo(begin,center,left.geomBounds,left.centBounds);
           
           PrimInfo right(empty);
           for (size_t i=center; i<end; i++)
-          {
             right.add(prims0[i].bounds());	
-          }
-          const size_t rweight = right.end;
-          new (&rinfo) PrimInfo(center,end,right.geomBounds,right.centBounds);         
 
-          new (&lset) extended_range<size_t>(begin,center,center);
-          new (&rset) extended_range<size_t>(center,end,end);
+          const size_t rweight = right.end;
+
+          new (&lset) PrimInfoExtRange(begin,center,center,left.geomBounds,left.centBounds);
+          new (&rset) PrimInfoExtRange(center,end,end,right.geomBounds,right.centBounds);
 
           /* if we have an extended range */
           if (set.has_ext_range()) 
           {
             setExtentedRanges(set,lset,rset,lweight,rweight);
-            moveExtentedRange(set,lset,linfo,rset,rinfo);              
+            moveExtentedRange(set,lset,rset);
           }
         }
         
