@@ -187,7 +187,7 @@ namespace embree
           return updateNode(node,values,numChildren);
         }
         
-        const ReductionTy recurse(const BuildRecord& current, Allocator alloc, bool toplevel)
+        const ReductionTy recurse(BuildRecord& current, Allocator alloc, bool toplevel)
         {
           /* get thread local allocator */
           if (alloc == nullptr)
@@ -332,7 +332,8 @@ namespace embree
                         settings);
         
         /* build hierarchy */
-        const ReductionTy root = builder.recurse(BuildRecord(1,set),nullptr,true);
+        BuildRecord record(1,set);
+        const ReductionTy root = builder.recurse(record,nullptr,true);
         _mm_mfence(); // to allow non-temporal stores during build
         return root;
       }
