@@ -151,10 +151,12 @@ namespace embree
       mvector<PrimRef> prims;
       GeneralBVHBuilder::Settings settings;
       
-      BVHNBuilderSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
+      BVHNBuilderSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, 
+                      const size_t mode, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
         : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, singleThreadThreshold) {}
 
-      BVHNBuilderSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
+      BVHNBuilderSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, 
+                      const size_t mode, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
         : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, singleThreadThreshold) {}
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
@@ -449,17 +451,16 @@ namespace embree
         /* primref array could be smaller due to invalid geometry */
         const size_t numPrimitives = pinfo.size();
 
-        /* calculate total surface area */
-        const float A = (float) parallel_reduce(size_t(0),numPrimitives,0.0, [&] (const range<size_t>& r) -> double // FIXME: this sum is not deterministic
-                                                {
-                                                  double A = 0.0f;
-                                                  for (size_t i=r.begin(); i<r.end(); i++)
-                                                  {
-                                                    PrimRef& prim = prims0[i];
-                                                    A += area(prim.bounds());
-                                                  }
-                                                  return A;
-                                                },std::plus<double>());
+        /* calculate total surface area */ // FIXME: this sum is not deterministic
+        const float A = (float) parallel_reduce(size_t(0),numPrimitives,0.0, [&] (const range<size_t>& r) -> double {
+            double A = 0.0f;
+            for (size_t i=r.begin(); i<r.end(); i++)
+            {
+              PrimRef& prim = prims0[i];
+              A += area(prim.bounds());
+            }
+            return A;
+          },std::plus<double>());
 
         const float f = 10.0f;
         const float invA = 1.0f / A;
@@ -487,8 +488,8 @@ namespace embree
 
         NodeRef root = BVHBuilderBinnedFastSpatialSAH::build<NodeRef>(
           typename BVH::CreateAlloc(bvh),
-          typename BVH::CreateAlignedNode(),
-          typename BVH::UpdateAlignedNode(),
+          typename BVH::AlignedNode::Create2(),
+          typename BVH::AlignedNode::Set2(),
           CreateLeafSpatial<N,Primitive>(bvh,prims0.data()),
           splitter,
           bvh->scene->progressInterface,

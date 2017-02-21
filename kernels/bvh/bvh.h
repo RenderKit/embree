@@ -346,83 +346,6 @@ namespace embree
       size_t ptr;
     };
 
-     struct CreateAlignedNode
-    {
-      template<typename BuildRecord>
-      __forceinline NodeRef operator() (BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc) const
-      {
-        AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode), byteNodeAlignment); node->clear();
-        for (size_t i=0; i<num; i++) node->set(i,children[i].bounds());
-        return encodeNode(node);
-      }
-    };
-
-    struct UpdateAlignedNode
-    {
-      __forceinline NodeRef operator() (NodeRef ref, NodeRef* children, const size_t num) const
-      {
-        AlignedNode* node = ref.alignedNode();
-        for (size_t i=0; i<num; i++) node->set(i,children[i]);
-        return ref;
-      }
-    };
-
-    struct CreateAlignedNodeMB
-    {
-      template<typename BuildRecord>
-      __forceinline NodeRef operator() (BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc) const
-      {
-        AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),byteNodeAlignment); node->clear();
-	return encodeNode(node);
-      }
-    };
-
-    struct UpdateAlignedNodeMB
-    {
-      typedef std::pair<NodeRef,LBBox3fa> Ty;
-
-      __forceinline Ty operator() (NodeRef ref, Ty* children, const size_t num) const
-      {
-        AlignedNodeMB* node = ref.alignedNodeMB();
-
-        LBBox3fa bounds = empty;
-        for (size_t i=0; i<num; i++) {
-          node->set(i,children[i].first);
-          node->set(i,children[i].second);
-          bounds.extend(children[i].second);
-        }
-        return std::make_pair(ref,bounds);
-      }
-    };
-
-    /*! Builder interface to create Node */
-    struct CreateQuantizedNode
-    {
-      template<typename BuildRecord>
-      __forceinline NodeRef operator() (BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc) const
-      {
-        __aligned(64) AlignedNode node;
-        node.clear();
-        for (size_t i=0; i<n; i++) {
-          node.set(i,children[i].bounds());
-        }
-        QuantizedNode *qnode = (QuantizedNode*) alloc->alloc0->malloc(sizeof(QuantizedNode), byteNodeAlignment);
-        qnode->init(node);
-
-        return (size_t)qnode | tyQuantizedNode;
-      }
-    };
-
-    struct UpdateQuantizedNode
-    {
-      __forceinline NodeRef operator() (NodeRef ref, NodeRef* children, const size_t num) const
-      {
-        QuantizedNode* node = ref.quantizedNode();
-        for (size_t i=0; i<num; i++) node->set(i,children[i]);
-        return ref;
-      }
-    };
-
     /*! BVHN Base Node */
     struct BaseNode
     {
@@ -472,6 +395,27 @@ namespace embree
         __forceinline void operator() (NodeRef node, size_t i, NodeRef child, const BBox3fa& bounds) const {
           node.alignedNode()->set(i,child);
           node.alignedNode()->set(i,bounds);
+        }
+      };
+
+      struct Create2
+      {
+        template<typename BuildRecord>
+        __forceinline NodeRef operator() (BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc) const
+        {
+          AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode), byteNodeAlignment); node->clear();
+          for (size_t i=0; i<num; i++) node->set(i,children[i].bounds());
+          return encodeNode(node);
+        }
+      };
+
+      struct Set2
+      {
+        __forceinline NodeRef operator() (NodeRef ref, NodeRef* children, const size_t num) const
+        {
+          AlignedNode* node = ref.alignedNode();
+          for (size_t i=0; i<num; i++) node->set(i,children[i]);
+          return ref;
         }
       };
 
@@ -587,6 +531,34 @@ namespace embree
       {
         __forceinline void operator() (NodeRef node, size_t i, const std::tuple<NodeRef,LBBox3fa,BBox1f>& child) const {
           node.alignedNodeMB()->set(i,child);
+        }
+      };
+
+      struct Create2
+      {
+        template<typename BuildRecord>
+        __forceinline NodeRef operator() (BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc) const
+        {
+          AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),byteNodeAlignment); node->clear();
+          return encodeNode(node);
+        }
+      };
+
+      struct Set2
+      {
+        typedef std::pair<NodeRef,LBBox3fa> Ty;
+        
+        __forceinline Ty operator() (NodeRef ref, Ty* children, const size_t num) const
+        {
+          AlignedNodeMB* node = ref.alignedNodeMB();
+          
+          LBBox3fa bounds = empty;
+          for (size_t i=0; i<num; i++) {
+            node->set(i,children[i].first);
+            node->set(i,children[i].second);
+            bounds.extend(children[i].second);
+          }
+          return std::make_pair(ref,bounds);
         }
       };
 
@@ -942,6 +914,33 @@ namespace embree
 
       static const unsigned char MIN_QUAN_8BIT = 0;
       static const unsigned char MAX_QUAN_8BIT = 255;
+
+      struct Create2
+      {
+        template<typename BuildRecord>
+        __forceinline NodeRef operator() (BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc) const
+        {
+          __aligned(64) AlignedNode node;
+          node.clear();
+          for (size_t i=0; i<n; i++) {
+            node.set(i,children[i].bounds());
+          }
+          QuantizedNode *qnode = (QuantizedNode*) alloc->alloc0->malloc(sizeof(QuantizedNode), byteNodeAlignment);
+          qnode->init(node);
+          
+          return (size_t)qnode | tyQuantizedNode;
+        }
+      };
+
+      struct Set2
+      {
+        __forceinline NodeRef operator() (NodeRef ref, NodeRef* children, const size_t num) const
+        {
+          QuantizedNode* node = ref.quantizedNode();
+          for (size_t i=0; i<num; i++) node->set(i,children[i]);
+          return ref;
+        }
+      };
 
       /*! Clears the node. */
       __forceinline void clear() {
