@@ -47,6 +47,9 @@ namespace embree
       Node (bool closed = false)
         : indegree(0), closed(closed) {}
 
+      Node (const std::string& name) 
+        : name(name), indegree(0), closed(false) {}
+
        /* resets indegree and closed parameters */
       void reset()
       {
@@ -94,6 +97,7 @@ namespace embree
 
     public:
       std::string fileName; // when set to some filename the exporter references this file
+      std::string name;     // name of this node
     protected:
       size_t indegree;   // number of nodes pointing to us
       bool closed;       // determines if the subtree may represent an instance
@@ -238,13 +242,16 @@ namespace embree
       return positions_out;
     }
 
-    struct PerspectiveCamera : public Node
+    struct PerspectiveCameraNode : public Node
     {
       ALIGNED_STRUCT;
 
-      PerspectiveCamera (const Vec3fa& from, const Vec3fa& to, const Vec3fa& up, const float fov)
+      PerspectiveCameraNode (const Vec3fa& from, const Vec3fa& to, const Vec3fa& up, const float fov)
         : from(from), to(to), up(up), fov(fov) {}
 
+      PerspectiveCameraNode (const Ref<PerspectiveCameraNode>& other, const AffineSpace3fa& space, const std::string& id)
+        : Node(id), from(xfmPoint(space,other->from)), to(xfmPoint(space,other->to)), up(xfmVector(space,other->up)), fov(other->fov) {}
+        
     public:
       Vec3fa from;   //!< position of camera
       Vec3fa to;     //!< look at point

@@ -136,5 +136,6 @@ namespace embree
     std::vector<FileName> keyFramesFilenames;
     SceneGraph::InstancingMode instancing_mode;
     std::string subdiv_mode;
+    bool print_cameras;
   };
 }

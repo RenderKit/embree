@@ -374,6 +374,10 @@ namespace embree
         subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
         rtcore += subdiv_mode;
       }, "--pregenerate: enabled pregenerate subdiv mode");    
+
+    registerOption("print-cameras", [this] (Ref<ParseStream> cin, const FileName& path) {
+        print_cameras = true;
+      }, "--print-cameras: prints all camera names of the scene");    
   }
 
   void TutorialApplication::renderBenchmark()
@@ -824,6 +828,12 @@ namespace embree
     /* convert model */
     obj_scene.add(SceneGraph::flatten(scene,instancing_mode)); 
     scene = nullptr;
+
+    /* print all cameras */
+    if (print_cameras) {
+      obj_scene.print_camera_names();
+      return 0;
+    }
 
     /* send model */
     set_scene(&obj_scene);

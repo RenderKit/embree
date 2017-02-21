@@ -696,7 +696,7 @@ namespace embree
     const Vec3fa to = xml->parm_Vec3fa("to");
     const Vec3fa up = xml->parm_Vec3fa("up");
     const float fov = xml->parm_float("fov");
-    return new SceneGraph::PerspectiveCamera(from,to,up,fov);
+    return new SceneGraph::PerspectiveCameraNode(from,to,up,fov);
   }
 
   Parms XMLLoader::loadMaterialParms(const Ref<XML>& parms)
@@ -1112,13 +1112,16 @@ namespace embree
     {
       if (xml->parm("type") == "material") 
       {
+        const std::string id = xml->parm("id");
         Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child(0));
-        materialMap[xml->parm("id")] = material;
+        materialMap[id] = material;
+        material->name = id;
         return nullptr;
       }
       else if (xml->parm("type") == "scene")
       {
-        sceneMap[xml->parm("id")] = loadNode(xml->child(0));
+        const std::string id = xml->parm("id");
+        sceneMap[id] = loadNode(xml->child(0));
         return nullptr;
       }
       else 
@@ -1126,47 +1129,51 @@ namespace embree
     }
     else 
     {
+      Ref<SceneGraph::Node> node = nullptr;
       const std::string id = xml->parm("id");
-      if (xml->name == "extern"          ) 
-        return sceneMap[id] = SceneGraph::load(path + xml->parm("src"));
-      else if (xml->name == "extern_combine"          ) 
-        return sceneMap[id] = SceneGraph::load(path + xml->parm("src"),true);
+      if (xml->name == "extern") 
+        node = sceneMap[id] = SceneGraph::load(path + xml->parm("src"));
+      else if (xml->name == "extern_combine") 
+        node = sceneMap[id] = SceneGraph::load(path + xml->parm("src"),true);
       else if (xml->name == "obj"             ) {
         const bool subdiv_mode = xml->parm("subdiv") == "1";
-        return sceneMap[id] = loadOBJ(path + xml->parm("src"),subdiv_mode);
+        node = sceneMap[id] = loadOBJ(path + xml->parm("src"),subdiv_mode);
       }
-      else if (xml->name == "ref"             ) return sceneMap[id] = sceneMap[xml->parm("id")];
-      else if (xml->name == "PointLight"      ) return sceneMap[id] = loadPointLight      (xml);
-      else if (xml->name == "SpotLight"       ) return sceneMap[id] = loadSpotLight       (xml);
-      else if (xml->name == "DirectionalLight") return sceneMap[id] = loadDirectionalLight(xml);
-      else if (xml->name == "DistantLight"    ) return sceneMap[id] = loadDistantLight    (xml);
-      else if (xml->name == "AmbientLight"    ) return sceneMap[id] = loadAmbientLight    (xml);
-      else if (xml->name == "TriangleLight"   ) return sceneMap[id] = loadTriangleLight   (xml);
-      else if (xml->name == "QuadLight"       ) return sceneMap[id] = loadQuadLight       (xml);
-      else if (xml->name == "TriangleMesh"    ) return sceneMap[id] = loadTriangleMesh    (xml);
-      else if (xml->name == "QuadMesh"        ) return sceneMap[id] = loadQuadMesh        (xml);
-      else if (xml->name == "SubdivisionMesh" ) return sceneMap[id] = loadSubdivMesh      (xml);
-      else if (xml->name == "LineSegments"    ) return sceneMap[id] = loadLineSegments    (xml);
-      else if (xml->name == "Hair"            ) return sceneMap[id] = loadBezierCurves    (xml,true);
-      else if (xml->name == "BezierHair"      ) return sceneMap[id] = loadBezierCurves    (xml,true);
-      else if (xml->name == "BSplineHair"     ) return sceneMap[id] = loadBSplineCurves   (xml,true);
-      else if (xml->name == "BezierCurves"    ) return sceneMap[id] = loadBezierCurves    (xml,false);
-      else if (xml->name == "BSplineCurves"   ) return sceneMap[id] = loadBSplineCurves   (xml,false);
-      else if (xml->name == "PerspectiveCamera") return sceneMap[id] = loadPerspectiveCamera(xml);
-      else if (xml->name == "Group"           ) return sceneMap[id] = loadGroupNode       (xml);
-      else if (xml->name == "Transform"       ) return sceneMap[id] = loadTransformNode   (xml);
-      else if (xml->name == "Transform2"      ) return sceneMap[id] = loadTransform2Node  (xml);
-      else if (xml->name == "TransformAnimation") return sceneMap[id] = loadTransformAnimationNode(xml);
-      else if (xml->name == "Animation2"      ) return sceneMap[id] = loadAnimation2Node  (xml);
-      else if (xml->name == "Animation"       ) return sceneMap[id] = loadAnimationNode   (xml);
+      else if (xml->name == "ref"             ) node = sceneMap[id] = sceneMap[xml->parm("id")];
+      else if (xml->name == "PointLight"      ) node = sceneMap[id] = loadPointLight      (xml);
+      else if (xml->name == "SpotLight"       ) node = sceneMap[id] = loadSpotLight       (xml);
+      else if (xml->name == "DirectionalLight") node = sceneMap[id] = loadDirectionalLight(xml);
+      else if (xml->name == "DistantLight"    ) node = sceneMap[id] = loadDistantLight    (xml);
+      else if (xml->name == "AmbientLight"    ) node = sceneMap[id] = loadAmbientLight    (xml);
+      else if (xml->name == "TriangleLight"   ) node = sceneMap[id] = loadTriangleLight   (xml);
+      else if (xml->name == "QuadLight"       ) node = sceneMap[id] = loadQuadLight       (xml);
+      else if (xml->name == "TriangleMesh"    ) node = sceneMap[id] = loadTriangleMesh    (xml);
+      else if (xml->name == "QuadMesh"        ) node = sceneMap[id] = loadQuadMesh        (xml);
+      else if (xml->name == "SubdivisionMesh" ) node = sceneMap[id] = loadSubdivMesh      (xml);
+      else if (xml->name == "LineSegments"    ) node = sceneMap[id] = loadLineSegments    (xml);
+      else if (xml->name == "Hair"            ) node = sceneMap[id] = loadBezierCurves    (xml,true);
+      else if (xml->name == "BezierHair"      ) node = sceneMap[id] = loadBezierCurves    (xml,true);
+      else if (xml->name == "BSplineHair"     ) node = sceneMap[id] = loadBSplineCurves   (xml,true);
+      else if (xml->name == "BezierCurves"    ) node = sceneMap[id] = loadBezierCurves    (xml,false);
+      else if (xml->name == "BSplineCurves"   ) node = sceneMap[id] = loadBSplineCurves   (xml,false);
+      else if (xml->name == "PerspectiveCamera") node = sceneMap[id] = loadPerspectiveCamera(xml);
+      else if (xml->name == "Group"           ) node = sceneMap[id] = loadGroupNode       (xml);
+      else if (xml->name == "Transform"       ) node = sceneMap[id] = loadTransformNode   (xml);
+      else if (xml->name == "Transform2"      ) node = sceneMap[id] = loadTransform2Node  (xml);
+      else if (xml->name == "TransformAnimation") node = sceneMap[id] = loadTransformAnimationNode(xml);
+      else if (xml->name == "Animation2"      ) node = sceneMap[id] = loadAnimation2Node  (xml);
+      else if (xml->name == "Animation"       ) node = sceneMap[id] = loadAnimationNode   (xml);
 
-      else if (xml->name == "ConvertTrianglesToQuads") return convert_triangles_to_quads(sceneMap[id] = loadNode(xml->child(0)));
-      else if (xml->name == "ConvertQuadsToSubdivs"  ) return convert_quads_to_subdivs  (sceneMap[id] = loadNode(xml->child(0)));
-      else if (xml->name == "ConvertBezierToLines"   ) return convert_bezier_to_lines   (sceneMap[id] = loadNode(xml->child(0)));
-      else if (xml->name == "ConvertHairToCurves"    ) return convert_hair_to_curves    (sceneMap[id] = loadNode(xml->child(0)));
-      else if (xml->name == "Flatten"                ) return flatten                   (sceneMap[id] = loadNode(xml->child(0)));
+      else if (xml->name == "ConvertTrianglesToQuads") node = convert_triangles_to_quads(sceneMap[id] = loadNode(xml->child(0)));
+      else if (xml->name == "ConvertQuadsToSubdivs"  ) node = convert_quads_to_subdivs  (sceneMap[id] = loadNode(xml->child(0)));
+      else if (xml->name == "ConvertBezierToLines"   ) node = convert_bezier_to_lines   (sceneMap[id] = loadNode(xml->child(0)));
+      else if (xml->name == "ConvertHairToCurves"    ) node = convert_hair_to_curves    (sceneMap[id] = loadNode(xml->child(0)));
+      else if (xml->name == "Flatten"                ) node = flatten                   (sceneMap[id] = loadNode(xml->child(0)));
 
       else THROW_RUNTIME_ERROR(xml->loc.str()+": unknown tag: "+xml->name);
+
+      node->name = id;
+      return node;
     }
 
     return nullptr;
