@@ -113,6 +113,8 @@ namespace embree
     float speed;
     Vec3f moveDelta;
 
+    bool command_line_camera;
+
     std::unique_ptr<ISPCScene> ispc_scene;
      
   public:
@@ -137,5 +139,6 @@ namespace embree
     SceneGraph::InstancingMode instancing_mode;
     std::string subdiv_mode;
     bool print_cameras;
+    std::string camera_name;
   };
 }

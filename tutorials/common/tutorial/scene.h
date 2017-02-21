@@ -41,6 +41,8 @@ namespace embree
     unsigned materialID(Ref<SceneGraph::MaterialNode> material);
     unsigned geometryID(Ref<SceneGraph::Node> geometry);
     void print_camera_names ();
+    Ref<SceneGraph::PerspectiveCameraNode> getDefaultCamera();
+    Ref<SceneGraph::PerspectiveCameraNode> getCamera(const std::string& name);
     
   public:
     std::vector<Ref<SceneGraph::PerspectiveCameraNode>> cameras;  //!< list of all cameras

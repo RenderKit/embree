@@ -77,4 +77,18 @@ namespace embree
     for (size_t i=0; i<cameras.size(); i++)
       std::cout << "camera " << i << ": " << cameras[i]->name << std::endl;
   }
+
+  Ref<SceneGraph::PerspectiveCameraNode> TutorialScene::getDefaultCamera()
+  {
+    if (cameras.size()) return cameras[0];
+    return nullptr;
+  }
+
+  Ref<SceneGraph::PerspectiveCameraNode> TutorialScene::getCamera(const std::string& name)
+  {
+    for (size_t i=0; i<cameras.size(); i++)
+      if (cameras[i]->name == name) return cameras[i];
+    
+    THROW_RUNTIME_ERROR("camera \"" + name +"\" not found");
+  }
 };
