@@ -56,50 +56,50 @@ namespace embree
   template<typename T> class Stream : public RefCount
   {
     enum { BUF_SIZE = 1024 };
-
+    
   private:
     virtual T next() = 0;
     virtual ParseLocation location() = 0;
-   __forceinline std::pair<T,ParseLocation> nextHelper() {
-     ParseLocation l = location();
-     T v = next();
-     return std::pair<T,ParseLocation>(v,l);
-   }
-   __forceinline void push_back(const std::pair<T,ParseLocation>& v) {
-     if (past+future == BUF_SIZE) pop_front();
-     int end = (start+past+future++)%BUF_SIZE;
-     buffer[end] = v;
-   }
-   __forceinline void pop_front() {
-     if (past == 0) THROW_RUNTIME_ERROR("stream buffer empty");
-     start = (start+1)%BUF_SIZE; past--;
-   }
-  public:
-   Stream () : start(0), past(0), future(0), buffer(BUF_SIZE) {}
-   virtual ~Stream() {}
-
-  public:
-
-   const ParseLocation& loc() {
-     if (future == 0) push_back(nextHelper());
-     return buffer[(start+past)%BUF_SIZE].second;
+    __forceinline std::pair<T,ParseLocation> nextHelper() {
+      ParseLocation l = location();
+      T v = next();
+      return std::pair<T,ParseLocation>(v,l);
     }
-    T get() {
+    __forceinline void push_back(const std::pair<T,ParseLocation>& v) {
+      if (past+future == BUF_SIZE) pop_front();
+      int end = (start+past+future++)%BUF_SIZE;
+      buffer[end] = v;
+    }
+    __forceinline void pop_front() {
+      if (past == 0) THROW_RUNTIME_ERROR("stream buffer empty");
+      start = (start+1)%BUF_SIZE; past--;
+    }
+  public:
+    Stream () : start(0), past(0), future(0), buffer(BUF_SIZE) {}
+    virtual ~Stream() {}
+    
+  public:
+    
+    __forceinline const ParseLocation& loc() {
+      if (future == 0) push_back(nextHelper());
+      return buffer[(start+past)%BUF_SIZE].second;
+    }
+    __forceinline T get() {
       if (future == 0) push_back(nextHelper());
       T t = buffer[(start+past)%BUF_SIZE].first;
       past++; future--;
       return t;
     }
-    const T& peek() {
+    __forceinline const T& peek() {
       if (future == 0) push_back(nextHelper());
       return buffer[(start+past)%BUF_SIZE].first;
     }
-    const T& unget(size_t n = 1) {
+    __forceinline const T& unget(size_t n = 1) {
       if (past < n) THROW_RUNTIME_ERROR ("cannot unget that many items");
       past -= n; future += n;
       return peek();
     }
-    void drop() {
+    __forceinline void drop() {
       if (future == 0) push_back(nextHelper());
       past++; future--;
     }
@@ -107,7 +107,7 @@ namespace embree
     size_t start,past,future;
     std::vector<std::pair<T,ParseLocation> > buffer;
   };
-
+  
   /*! warps an iostream stream */
   class StdStream : public Stream<int>
   {
