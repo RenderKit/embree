@@ -102,9 +102,9 @@ namespace embree
     RTCBuildSettings settings;
     settings.size = sizeof(settings);
     settings.quality = quality;
-    settings.branchingFactor = 2;
+    settings.maxBranchingFactor = 2;
     settings.maxDepth = 1024;
-    settings.blockSize = 1;
+    settings.sahBlockSize = 1;
     settings.minLeafSize = 1;
     settings.maxLeafSize = 1;
     settings.travCost = 1.0f;

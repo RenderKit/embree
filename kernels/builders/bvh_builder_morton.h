@@ -39,10 +39,10 @@ namespace embree
         Settings (const RTCBuildSettings& settings)
         : branchingFactor(2), maxDepth(32), minLeafSize(1), maxLeafSize(8), singleThreadThreshold(1024)
         {
-          if (RTC_BUILD_SETTINGS_HAS(settings,branchingFactor)) branchingFactor = settings.branchingFactor;
-          if (RTC_BUILD_SETTINGS_HAS(settings,maxDepth       )) maxDepth        = settings.maxDepth;
-          if (RTC_BUILD_SETTINGS_HAS(settings,minLeafSize    )) minLeafSize     = settings.minLeafSize;
-          if (RTC_BUILD_SETTINGS_HAS(settings,maxLeafSize    )) maxLeafSize     = settings.maxLeafSize;
+          if (RTC_BUILD_SETTINGS_HAS(settings,maxBranchingFactor)) branchingFactor = settings.maxBranchingFactor;
+          if (RTC_BUILD_SETTINGS_HAS(settings,maxDepth          )) maxDepth        = settings.maxDepth;
+          if (RTC_BUILD_SETTINGS_HAS(settings,minLeafSize       )) minLeafSize     = settings.minLeafSize;
+          if (RTC_BUILD_SETTINGS_HAS(settings,maxLeafSize       )) maxLeafSize     = settings.maxLeafSize;
         }
         
         Settings (size_t branchingFactor, size_t maxDepth, size_t minLeafSize, size_t maxLeafSize, size_t singleThreadThreshold)

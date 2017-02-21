@@ -37,9 +37,9 @@ struct RTCBuildSettings
 {
   unsigned size;             //!< Size of this structure in bytes. Makes future extension easier.
   RTCBuildQuality quality;   //!< quality of BVH build
-  unsigned branchingFactor;  //!< branching factor of BVH to build
+  unsigned maxBranchingFactor; //!< miximal branching factor of BVH to build
   unsigned maxDepth;         //!< maximal depth of BVH to build
-  unsigned blockSize;        //!< blocksize for SAH heuristic
+  unsigned sahBlockSize;     //!< block size for SAH heuristic
   unsigned minLeafSize;      //!< minimal size of a leaf
   unsigned maxLeafSize;      //!< maximal size of a leaf
   float travCost;            //!< estimated cost of one traversal step
@@ -52,9 +52,9 @@ inline RTCBuildSettings rtcDefaultBuildSettings()
   RTCBuildSettings settings;
   settings.size = sizeof(settings);
   settings.quality = RTC_BUILD_QUALITY_NORMAL;
-  settings.branchingFactor = 2;
+  settings.maxBranchingFactor = 2;
   settings.maxDepth = 32;
-  settings.blockSize = 1;
+  settings.sahBlockSize = 1;
   settings.minLeafSize = 1;
   settings.maxLeafSize = 32;
   settings.travCost = 1.0f;
