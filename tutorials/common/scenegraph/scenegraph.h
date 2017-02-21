@@ -815,8 +815,6 @@ namespace embree
       unsigned tessellation_rate;
     };
     
-    Ref<Node> flatten(Ref<Node> node, const Transformations& spaces = Transformations(one));
-
     enum InstancingMode { INSTANCING_NONE, INSTANCING_GEOMETRY, INSTANCING_SCENE_GEOMETRY, INSTANCING_SCENE_GROUP };
     Ref<Node> flatten(Ref<Node> node, InstancingMode mode, const SceneGraph::Transformations& spaces = Transformations(one));
     Ref<GroupNode> flatten(Ref<GroupNode> node, InstancingMode mode, const SceneGraph::Transformations& spaces = Transformations(one));
