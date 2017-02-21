@@ -80,7 +80,9 @@ namespace embree
       }
 
       /* calculates number of primitives */
-      virtual size_t numPrimitives() const = 0;
+      virtual size_t numPrimitives() const {
+        return 0;
+      }
 
       Ref<Node> set_motion_vector(const Vec3fa& dP) {
         SceneGraph::set_motion_vector(this,dP); return this;
@@ -236,6 +238,20 @@ namespace embree
       return positions_out;
     }
 
+    struct PerspectiveCamera : public Node
+    {
+      ALIGNED_STRUCT;
+
+      PerspectiveCamera (const Vec3fa& from, const Vec3fa& to, const Vec3fa& up, const float fov)
+        : from(from), to(to), up(up), fov(fov) {}
+
+    public:
+      Vec3fa from;   //!< position of camera
+      Vec3fa to;     //!< look at point
+      Vec3fa up;     //!< up vector
+      float fov;     //!< vertical field of view
+    };
+
     struct TransformNode : public Node
     {
       ALIGNED_STRUCT;
@@ -364,20 +380,12 @@ namespace embree
       LightNode (Ref<Light> light)
         : light(light) {}
 
-      virtual size_t numPrimitives() const {
-        return 0;
-      }
-
       Ref<Light> light;
     };
     
     struct MaterialNode : public Node
     {
       ALIGNED_STRUCT;
-
-      virtual size_t numPrimitives() const {
-        return 0;
-      }
 
       virtual Material* material() = 0;
     };

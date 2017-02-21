@@ -243,6 +243,7 @@ namespace embree
     Ref<SceneGraph::Node> loadBSplineCurves(const Ref<XML>& xml, bool hair);
 
   private:
+    Ref<SceneGraph::Node> loadPerspectiveCamera(const Ref<XML>& xml);
     Ref<SceneGraph::MaterialNode> loadMaterial(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadTransformNode(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadTransform2Node(const Ref<XML>& xml);
@@ -687,6 +688,15 @@ namespace embree
     
     if (id != "") textureMap[id] = texture;
     return texture;
+  }
+  
+  Ref<SceneGraph::Node> XMLLoader::loadPerspectiveCamera(const Ref<XML>& xml) 
+  {
+    const Vec3fa from = xml->parm_Vec3fa("from");
+    const Vec3fa to = xml->parm_Vec3fa("to");
+    const Vec3fa up = xml->parm_Vec3fa("up");
+    const float fov = xml->parm_float("fov");
+    return new SceneGraph::PerspectiveCamera(from,to,up,fov);
   }
 
   Parms XMLLoader::loadMaterialParms(const Ref<XML>& parms)
@@ -1142,6 +1152,7 @@ namespace embree
       else if (xml->name == "BSplineHair"     ) return sceneMap[id] = loadBSplineCurves   (xml,true);
       else if (xml->name == "BezierCurves"    ) return sceneMap[id] = loadBezierCurves    (xml,false);
       else if (xml->name == "BSplineCurves"   ) return sceneMap[id] = loadBSplineCurves   (xml,false);
+      else if (xml->name == "PerspectiveCamera") return sceneMap[id] = loadPerspectiveCamera(xml);
       else if (xml->name == "Group"           ) return sceneMap[id] = loadGroupNode       (xml);
       else if (xml->name == "Transform"       ) return sceneMap[id] = loadTransformNode   (xml);
       else if (xml->name == "Transform2"      ) return sceneMap[id] = loadTransform2Node  (xml);
