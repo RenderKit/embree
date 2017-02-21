@@ -22,6 +22,10 @@
 
 namespace embree
 {
+  /* Visual Studio 2012 link error workaround */
+  BezierCoefficients bezier_coeff0;
+  BezierCoefficients bezier_coeff1;
+
   /* error reporting function */
   void error_handler(void* userPtr, const RTCError code, const char* str)
   {
