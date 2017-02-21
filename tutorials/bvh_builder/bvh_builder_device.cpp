@@ -114,7 +114,8 @@ namespace embree
                                        InnerNode::create,InnerNode::setChild,InnerNode::setBounds,LeafNode::create,buildProgress);
       double t1 = getSeconds();
       
-      std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << root->sah() << " [DONE]" << std::endl;
+      const float sah = root ? root->sah() : 0.0f;
+      std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << sah << " [DONE]" << std::endl;
     }
     rtcMakeStaticBVH(bvh);
     rtcDeleteBVH(bvh);
@@ -146,7 +147,8 @@ namespace embree
                                            InnerNode::create,InnerNode::setChild,InnerNode::setBounds,LeafNode::create,buildProgress);
       double t1 = getSeconds();
       
-      std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << root->sah() << " [DONE]" << std::endl;
+      const float sah = root ? root->sah() : 0.0f;
+      std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << sah << " [DONE]" << std::endl;
     }
     rtcMakeStaticBVH(bvh);
     rtcDeleteBVH(bvh);
