@@ -375,18 +375,11 @@ namespace embree
   __forceinline vboolf4 le(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return mask & (a <= b); }
 #endif
 
-#if defined(__SSE4_1__) 
-#if defined(__clang__) && !defined(__INTEL_COMPILER) || defined(_MSC_VER) && !defined(__INTEL_COMPILER) || defined(__INTEL_COMPILER) && defined(_DEBUG)
-  __forceinline const vfloat4 select(const int mask, const vfloat4& t, const vfloat4& f) {
-    return select(vboolf4(mask), t, f);
-  }
-#else
-  __forceinline const vfloat4 select(const int mask, const vfloat4& t, const vfloat4& f) {
+  template<int mask>
+    __forceinline const vfloat4 select(const vfloat4& t, const vfloat4& f) {
     return _mm_blend_ps(f, t, mask);
   }
-#endif
-#endif
-
+  
   __forceinline vfloat4 lerp(const vfloat4& a, const vfloat4& b, const vfloat4& t) {
     return madd(t,b-a,a);
   }
@@ -502,15 +495,15 @@ namespace embree
     const vfloat4 b0 = shuffle<1,0,3,2>(a0);
     const vfloat4 c0 = min(a0,b0);
     const vfloat4 d0 = max(a0,b0);
-    const vfloat4 a1 = select(0x5 /* 0b0101 */,c0,d0);
+    const vfloat4 a1 = select<0x5 /* 0b0101 */>(c0,d0);
     const vfloat4 b1 = shuffle<2,3,0,1>(a1);
     const vfloat4 c1 = min(a1,b1);
     const vfloat4 d1 = max(a1,b1);
-    const vfloat4 a2 = select(0x3 /* 0b0011 */,c1,d1);
+    const vfloat4 a2 = select<0x3 /* 0b0011 */>(c1,d1);
     const vfloat4 b2 = shuffle<0,2,1,3>(a2);
     const vfloat4 c2 = min(a2,b2);
     const vfloat4 d2 = max(a2,b2);
-    const vfloat4 a3 = select(0x2 /* 0b0010 */,c2,d2);
+    const vfloat4 a3 = select<0x2 /* 0b0010 */>(c2,d2);
     return a3;
   }
 
