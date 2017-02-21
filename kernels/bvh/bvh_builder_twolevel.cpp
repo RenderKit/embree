@@ -21,7 +21,7 @@
 #include "../common/scene_triangle_mesh.h"
 #include "../common/scene_quad_mesh.h"
 
-#define PROFILE 1
+#define PROFILE 0
 #define MAX_OPEN_SIZE 10000
 
 /* new open/merge builder */
@@ -32,6 +32,7 @@
 
 #define SPLIT_MEMORY_RESERVE_FACTOR 1000
 
+#define DBG_PRINT(x)
 
 // for non-opening two-level approach set ENABLE_DIRECT_SAH_MERGE_BUILDER and ENABLE_OPEN_SEQUENTIAL to 0
 
@@ -67,7 +68,11 @@ namespace embree
             }
           });
       }
-
+      
+#if PROFILE == 1
+      while(1) 
+#endif
+      {
       /* reset memory allocator */
       bvh->alloc.reset();
       
@@ -159,7 +164,7 @@ namespace embree
 
 #endif
 
-        PRINT(refs.size());
+        DBG_PRINT(refs.size());
 
 #if defined(TASKING_TBB) && defined(__AVX512ER__) && USE_TASK_ARENA // KNL
         tbb::task_arena limited(32);
@@ -215,11 +220,9 @@ namespace embree
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
 
             const size_t extSize = max(max((size_t)1000,refs.size()*2),size_t((float)numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
-            PRINT(refs.size()*2);
-            PRINT(extSize);
-            refs.resize(extSize); // reserve?
-
-            double tt0 = getSeconds();
+            DBG_PRINT(refs.size()*2);
+            DBG_PRINT(extSize);
+            refs.resize(extSize); 
 
             NodeRef root = BVHBuilderBinnedOpenMergeSAH::build<NodeRef,BuildRef>(
               typename BVH::CreateAlloc(bvh),
@@ -236,8 +239,6 @@ namespace embree
               [&] (size_t dn) { bvh->scene->progressMonitor(0); },
               refs.data(),extSize,pinfo,settings);
 
-            double tt1 = getSeconds();
-            PRINT(1000.0 * (tt1-tt0));
 #else
             NodeRef root = BVHBuilderBinnedSAH::build<NodeRef>(
               typename BVH::CreateAlloc(bvh),
@@ -267,6 +268,8 @@ namespace embree
       double d1 = getSeconds();
       std::cout << "TOP_LEVEL OPENING/REBUILD TIME " << 1000.0*(d1-d0) << " ms" << std::endl;
 #endif
+      }
+
     }
     
     template<int N, typename Mesh>
@@ -296,7 +299,7 @@ namespace embree
 	return;
 
       size_t num = min(numPrimitives/400,maxOpenSize);
-      PRINT(num);
+      DBG_PRINT(num);
       refs.reserve(num);
 
 #if 1
@@ -329,7 +332,7 @@ namespace embree
           std::push_heap (refs.begin(),refs.end()); 
         }
       }
-      PRINT(refs.size());
+      DBG_PRINT(refs.size());
     }
 
 #if defined(EMBREE_GEOMETRY_LINES)    

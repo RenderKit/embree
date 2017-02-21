@@ -25,6 +25,7 @@
 #include "heuristic_spatial.h"
 
 #define USE_SUBTREE_SIZE_FOR_BINNING 1
+#define REDUCE_BINS 0
 
 #define OPEN_STATS(x) 
 
@@ -108,7 +109,7 @@ namespace embree
         }
 
         /*! compute extended ranges */
-        __noinline void setExtentedRanges(const PrimInfoExtRange& set, PrimInfoExtRange& lset, PrimInfoExtRange& rset, const size_t lweight, const size_t rweight)
+        __forceinline void setExtentedRanges(const PrimInfoExtRange& set, PrimInfoExtRange& lset, PrimInfoExtRange& rset, const size_t lweight, const size_t rweight)
         {
           assert(set.ext_range_size() > 0);
           const float left_factor           = (float)lweight / (lweight + rweight);
@@ -120,7 +121,7 @@ namespace embree
         }
 
         /*! move ranges */
-        __noinline void moveExtentedRange(const PrimInfoExtRange& set, const PrimInfoExtRange& lset, PrimInfoExtRange& rset)
+        __forceinline void moveExtentedRange(const PrimInfoExtRange& set, const PrimInfoExtRange& lset, PrimInfoExtRange& rset)
         {
           const size_t left_ext_range_size = lset.ext_range_size();
           const size_t right_size = rset.size();
@@ -155,7 +156,7 @@ namespace embree
         // ==========================================================================
         // ==========================================================================
 
-        __forceinline std::pair<size_t,bool> getProperties(const PrimInfoExtRange& set)
+        __noinline std::pair<size_t,bool> getProperties(const PrimInfoExtRange& set)
         {
           const Vec3fa diag = set.geomBounds.size();
           const size_t dim = maxDim(diag);
@@ -192,7 +193,7 @@ namespace embree
         }
 
         //FIXME: should consider maximum available extended size 
-        __forceinline size_t openNodesBasedOnExtend(PrimInfoExtRange& set)
+        __noinline size_t openNodesBasedOnExtend(PrimInfoExtRange& set)
         {
           const Vec3fa diag = set.geomBounds.size();
           const size_t dim = maxDim(diag);
@@ -249,7 +250,7 @@ namespace embree
         } 
 
 
-        __forceinline size_t openNodesUntilSetIsFull(PrimInfoExtRange& set)
+        __noinline size_t openNodesUntilSetIsFull(PrimInfoExtRange& set)
         {
           size_t extra_elements = 0;
           const size_t ext_range_start = set.end();
@@ -283,9 +284,9 @@ namespace embree
         // ==========================================================================
         // ==========================================================================
         // ==========================================================================
-
-
-        const Split find(PrimInfoExtRange& set, const size_t logBlockSize)
+        
+        
+        __noinline const Split find(PrimInfoExtRange& set, const size_t logBlockSize)
         {
           /* single element */
           if (set.size() == 1)
@@ -370,7 +371,13 @@ namespace embree
         __noinline const ObjectSplit sequential_object_find(const PrimInfoExtRange& set, const size_t logBlockSize, SplitInfo& info)
         {
           ObjectBinner binner(empty); 
+#if REDUCE_BINS == 1
+          const size_t BINS = min(OBJECT_BINS,size_t(16.0f + 0.05f*set.size()));
+          const BinMapping<OBJECT_BINS> mapping(set.centBounds,BINS);
+#else          
           const BinMapping<OBJECT_BINS> mapping(set.centBounds,OBJECT_BINS);
+#endif
+
 #if USE_SUBTREE_SIZE_FOR_BINNING == 1
           binner.binSubTreeRefs(prims0,set.begin(),set.end(),mapping);
 #else
@@ -385,7 +392,13 @@ namespace embree
         __noinline const ObjectSplit parallel_object_find(const PrimInfoExtRange& set, const size_t logBlockSize, SplitInfo& info)
         {
           ObjectBinner binner(empty);
+#if REDUCE_BINS == 1
+          const size_t BINS = min(OBJECT_BINS,size_t(16.0f + 0.05f*set.size()));
+          const BinMapping<OBJECT_BINS> mapping(set.centBounds,BINS);
+#else
           const BinMapping<OBJECT_BINS> mapping(set.centBounds,OBJECT_BINS);
+#endif
+
           const BinMapping<OBJECT_BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
           binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
                                    [&] (const range<size_t>& r) -> ObjectBinner { ObjectBinner binner(empty); 
@@ -402,7 +415,7 @@ namespace embree
         }
         
         /*! array partitioning */
-        void split(const Split& split, const PrimInfoExtRange& set_i, PrimInfoExtRange& lset, PrimInfoExtRange& rset) 
+        __noinline void split(const Split& split, const PrimInfoExtRange& set_i, PrimInfoExtRange& lset, PrimInfoExtRange& rset) 
         {
           PrimInfoExtRange set = set_i;
 
@@ -416,10 +429,10 @@ namespace embree
           std::pair<size_t,size_t> ext_weights(0,0);
 
           /* object split */
-          if (likely(set.size() < PARALLEL_THRESHOLD)) 
+          //if (likely(set.size() < PARALLEL_THRESHOLD)) 
             ext_weights = sequential_object_split(split.objectSplit(),set,lset,rset);
-          else
-            ext_weights = parallel_object_split(split.objectSplit(),set,lset,rset);
+            //else
+            //ext_weights = parallel_object_split(split.objectSplit(),set,lset,rset);
 
           /* if we have an extended range, set extended child ranges and move right split range */
           if (unlikely(set.has_ext_range())) 
