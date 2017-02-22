@@ -47,7 +47,10 @@ namespace embree
       Node (bool closed = false)
         : indegree(0), closed(closed) {}
 
-       /* resets indegree and closed parameters */
+      Node (const std::string& name) 
+        : name(name), indegree(0), closed(false) {}
+
+      /* resets indegree and closed parameters */
       void reset()
       {
         std::set<Ref<Node>> done;
@@ -80,7 +83,9 @@ namespace embree
       }
 
       /* calculates number of primitives */
-      virtual size_t numPrimitives() const = 0;
+      virtual size_t numPrimitives() const {
+        return 0;
+      }
 
       Ref<Node> set_motion_vector(const Vec3fa& dP) {
         SceneGraph::set_motion_vector(this,dP); return this;
@@ -92,9 +97,9 @@ namespace embree
 
     public:
       std::string fileName; // when set to some filename the exporter references this file
-    protected:
-      size_t indegree;   // number of nodes pointing to us
-      bool closed;       // determines if the subtree may represent an instance
+      std::string name;     // name of this node
+      size_t indegree;      // number of nodes pointing to us
+      bool closed;          // determines if the subtree may represent an instance
     };
 
     struct Transformations
@@ -236,6 +241,23 @@ namespace embree
       return positions_out;
     }
 
+    struct PerspectiveCameraNode : public Node
+    {
+      ALIGNED_STRUCT;
+
+      PerspectiveCameraNode (const Vec3fa& from, const Vec3fa& to, const Vec3fa& up, const float fov)
+        : from(from), to(to), up(up), fov(fov) {}
+
+      PerspectiveCameraNode (const Ref<PerspectiveCameraNode>& other, const AffineSpace3fa& space, const std::string& id)
+        : Node(id), from(xfmPoint(space,other->from)), to(xfmPoint(space,other->to)), up(xfmVector(space,other->up)), fov(other->fov) {}
+        
+    public:
+      Vec3fa from;   //!< position of camera
+      Vec3fa to;     //!< look at point
+      Vec3fa up;     //!< up vector
+      float fov;     //!< vertical field of view
+    };
+
     struct TransformNode : public Node
     {
       ALIGNED_STRUCT;
@@ -364,20 +386,12 @@ namespace embree
       LightNode (Ref<Light> light)
         : light(light) {}
 
-      virtual size_t numPrimitives() const {
-        return 0;
-      }
-
       Ref<Light> light;
     };
     
     struct MaterialNode : public Node
     {
       ALIGNED_STRUCT;
-
-      virtual size_t numPrimitives() const {
-        return 0;
-      }
 
       virtual Material* material() = 0;
     };
@@ -800,8 +814,6 @@ namespace embree
       unsigned tessellation_rate;
     };
     
-    Ref<Node> flatten(Ref<Node> node, const Transformations& spaces = Transformations(one));
-
     enum InstancingMode { INSTANCING_NONE, INSTANCING_GEOMETRY, INSTANCING_SCENE_GEOMETRY, INSTANCING_SCENE_GROUP };
     Ref<Node> flatten(Ref<Node> node, InstancingMode mode, const SceneGraph::Transformations& spaces = Transformations(one));
     Ref<GroupNode> flatten(Ref<GroupNode> node, InstancingMode mode, const SceneGraph::Transformations& spaces = Transformations(one));

@@ -56,34 +56,17 @@ namespace embree
       return nullptr;
     }
 
-    RTCORE_API void* rtcBuildBVH(RTCBVH hbvh,
-                                 const RTCBuildSettings& settings,
-                                 RTCBuildPrimitive* prims,
-                                 size_t numPrimitives,
-                                 void* userPtr,
-                                 RTCCreateNodeFunc createNode,
-                                 RTCSetNodeChildFunc setNodeChild,
-                                 RTCSetNodeBoundsFunc setNodeBounds,
-                                 RTCCreateLeafFunc createLeaf,
-                                 RTCBuildProgressFunc buildProgress)
+    void* rtcBuildBVHBinnedSAH(BVH* bvh,
+                               const RTCBuildSettings& settings,
+                               RTCBuildPrimitive* prims,
+                               size_t numPrimitives,
+                               RTCCreateNodeFunc createNode,
+                               RTCSetNodeChildrenFunc setNodeChildren,
+                               RTCSetNodeBoundsFunc setNodeBounds,
+                               RTCCreateLeafFunc createLeaf,
+                               RTCBuildProgressFunc buildProgress,
+                               void* userPtr)
     {
-      BVH* bvh = (BVH*) hbvh;
-      RTCORE_CATCH_BEGIN;
-      RTCORE_TRACE(rtcBuildBVH);
-      RTCORE_VERIFY_HANDLE(hbvh);
-      RTCORE_VERIFY_HANDLE(createNode);
-      RTCORE_VERIFY_HANDLE(setNodeChild);
-      RTCORE_VERIFY_HANDLE(setNodeBounds);
-      RTCORE_VERIFY_HANDLE(createLeaf);
-
-      /* if we made this BVH static, we can not re-build it anymore  */
-      if (bvh->isStatic)
-        throw_RTCError(RTC_INVALID_OPERATION,"static BVH cannot get rebuild");
-
-      /* initialize the allocator */
-      bvh->allocator.init_estimate(numPrimitives*sizeof(BBox3fa));
-      bvh->allocator.reset();
-
       /* calculate priminfo */
       auto computeBounds = [&](const range<size_t>& r) -> CentGeomBBox3fa
         {
@@ -109,16 +92,15 @@ namespace embree
         [&](BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, FastAllocator::ThreadLocal* alloc) -> void*
         {
           void* node = createNode((RTCThreadLocalAllocator)alloc,N,userPtr);
-          for (size_t i=0; i<N; i++)
-            setNodeBounds(node,i,(RTCBounds&)children[i].prims.geomBounds,userPtr);
+          const RTCBounds* cbounds[GeneralBVHBuilder::MAX_BRANCHING_FACTOR];
+          for (size_t i=0; i<N; i++) cbounds[i] = (const RTCBounds*) &children[i].prims.geomBounds;
+          setNodeBounds(node,cbounds,N,userPtr);
           return node;
         },
 
         /* lambda function that updates BVH nodes */
-        [&](void* node, void** children, const size_t N) -> void*
-        {
-          for (size_t i=0; i<N; i++)
-            setNodeChild(node,i,children[i],userPtr);
+        [&](void* node, void** children, const size_t N) -> void* {
+          setNodeChildren(node,children,N,userPtr);
           return node;
         },
         
@@ -136,39 +118,19 @@ namespace embree
         
       bvh->allocator.cleanup();
       return root;
-
-      RTCORE_CATCH_END(bvh->device);
-      return nullptr;
     }
 
-    RTCORE_API void* rtcBuildBVHFast(RTCBVH hbvh,
-                                     const RTCBuildSettings& settings,
-                                     RTCBuildPrimitive* prims_i,
-                                     size_t numPrimitives,
-                                     void* userPtr,
-                                     RTCCreateNodeFunc createNode,
-                                     RTCSetNodeChildFunc setNodeChild,
-                                     RTCSetNodeBoundsFunc setNodeBounds,
-                                     RTCCreateLeafFunc createLeaf,
-                                     RTCBuildProgressFunc buildProgress)
+    void* rtcBuildBVHMorton(BVH* bvh,
+                            const RTCBuildSettings& settings,
+                            RTCBuildPrimitive* prims_i,
+                            size_t numPrimitives,
+                            RTCCreateNodeFunc createNode,
+                            RTCSetNodeChildrenFunc setNodeChildren,
+                            RTCSetNodeBoundsFunc setNodeBounds,
+                            RTCCreateLeafFunc createLeaf,
+                            RTCBuildProgressFunc buildProgress,
+                            void* userPtr)
     {
-      BVH* bvh = (BVH*) hbvh;
-      RTCORE_CATCH_BEGIN;
-      RTCORE_TRACE(rtcBuildBVHFast);
-      RTCORE_VERIFY_HANDLE(hbvh);
-      RTCORE_VERIFY_HANDLE(createNode);
-      RTCORE_VERIFY_HANDLE(setNodeChild);
-      RTCORE_VERIFY_HANDLE(setNodeBounds);
-      RTCORE_VERIFY_HANDLE(createLeaf);
-
-      /* if we made this BVH static, we can not re-build it anymore  */
-      if (bvh->isStatic)
-        throw_RTCError(RTC_INVALID_OPERATION,"static BVH cannot get rebuild");
-
-      /* initialize the allocator */
-      bvh->allocator.init_estimate(numPrimitives*sizeof(BBox3fa));
-      bvh->allocator.reset();
-      
       /* initialize temporary arrays for morton builder */
       PrimRef* prims = (PrimRef*) prims_i;
       mvector<BVHBuilderMorton::BuildPrim>& morton_src = bvh->morton_src;
@@ -211,11 +173,15 @@ namespace embree
         [&] (void* node, const std::pair<void*,BBox3fa>* children, size_t N) -> std::pair<void*,BBox3fa>
         {
           BBox3fa bounds = empty;
+          void* childptrs[BVHBuilderMorton::MAX_BRANCHING_FACTOR];
+          const RTCBounds* cbounds[BVHBuilderMorton::MAX_BRANCHING_FACTOR];
           for (size_t i=0; i<N; i++) {
             bounds.extend(children[i].second);
-            setNodeChild(node,i,children[i].first,userPtr);
-            setNodeBounds(node,i,(RTCBounds&)children[i].second,userPtr);
+            childptrs[i] = children[i].first;
+            cbounds[i] = (const RTCBounds*)&children[i].second;
           }
+          setNodeBounds(node,cbounds,N,userPtr);
+          setNodeChildren(node,childptrs,N,userPtr);
           return std::make_pair(node,bounds);
         },
         
@@ -243,6 +209,42 @@ namespace embree
 
       bvh->allocator.cleanup();
       return root.first;
+    }
+
+    RTCORE_API void* rtcBuildBVH(RTCBVH hbvh,
+                                 const RTCBuildSettings& settings,
+                                 RTCBuildPrimitive* prims,
+                                 size_t numPrimitives,
+                                 RTCCreateNodeFunc createNode,
+                                 RTCSetNodeChildrenFunc setNodeChildren,
+                                 RTCSetNodeBoundsFunc setNodeBounds,
+                                 RTCCreateLeafFunc createLeaf,
+                                 RTCBuildProgressFunc buildProgress,
+                                 void* userPtr)
+    {
+      BVH* bvh = (BVH*) hbvh;
+      RTCORE_CATCH_BEGIN;
+      RTCORE_TRACE(rtcBuildBVH);
+      RTCORE_VERIFY_HANDLE(hbvh);
+      RTCORE_VERIFY_HANDLE(createNode);
+      RTCORE_VERIFY_HANDLE(setNodeChildren);
+      RTCORE_VERIFY_HANDLE(setNodeBounds);
+      RTCORE_VERIFY_HANDLE(createLeaf);
+
+      /* if we made this BVH static, we can not re-build it anymore  */
+      if (bvh->isStatic)
+        throw_RTCError(RTC_INVALID_OPERATION,"static BVH cannot get rebuild");
+
+      /* initialize the allocator */
+      bvh->allocator.init_estimate(numPrimitives*sizeof(BBox3fa));
+      bvh->allocator.reset();
+
+      /* switch between differnet builders based on quality level */
+      switch (settings.quality) {
+      case RTC_BUILD_QUALITY_LOW   : return rtcBuildBVHMorton   (bvh,settings,prims,numPrimitives,createNode,setNodeChildren,setNodeBounds,createLeaf,buildProgress,userPtr);
+      case RTC_BUILD_QUALITY_NORMAL: return rtcBuildBVHBinnedSAH(bvh,settings,prims,numPrimitives,createNode,setNodeChildren,setNodeBounds,createLeaf,buildProgress,userPtr);
+      default: throw_RTCError(RTC_INVALID_OPERATION,"invalid build quality");
+      }
 
       RTCORE_CATCH_END(bvh->device);
       return nullptr;

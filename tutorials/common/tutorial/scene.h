@@ -37,33 +37,16 @@ namespace embree
   struct TutorialScene
   {
     void add (Ref<SceneGraph::GroupNode> node);
-
-    unsigned addGeometry(Ref<SceneGraph::Node> node) 
-    {
-      if (geometry2id.find(node) == geometry2id.end()) {
-        geometries.push_back(node);
-        geometry2id[node] = unsigned(geometries.size()-1);
-      }
-      return geometry2id[node];
-    }
-    
-    unsigned materialID(Ref<SceneGraph::MaterialNode> material) 
-    {
-      if (material2id.find(material) == material2id.end()) {
-        materials.push_back(material);
-        material2id[material] = unsigned(materials.size()-1);
-      }
-      return material2id[material];
-    }
-
-    unsigned geometryID(Ref<SceneGraph::Node> geometry) 
-    {
-      assert(geometry2id.find(geometry) != geometry2id.end());
-      return geometry2id[geometry];
-    }
+    unsigned addGeometry(Ref<SceneGraph::Node> node);
+    unsigned materialID(Ref<SceneGraph::MaterialNode> material);
+    unsigned geometryID(Ref<SceneGraph::Node> geometry);
+    void print_camera_names ();
+    Ref<SceneGraph::PerspectiveCameraNode> getDefaultCamera();
+    Ref<SceneGraph::PerspectiveCameraNode> getCamera(const std::string& name);
     
   public:
-    std::vector<Ref<SceneGraph::MaterialNode>> materials; //!< list of materials // FIXME: replacing std::vector by avector causes segfault!!
+    std::vector<Ref<SceneGraph::PerspectiveCameraNode>> cameras;  //!< list of all cameras
+    std::vector<Ref<SceneGraph::MaterialNode>> materials; //!< list of materials
     std::vector<Ref<SceneGraph::Node> > geometries;   //!< list of geometries
     std::vector<Ref<SceneGraph::Light>> lights;       //!< list of lights
   public:

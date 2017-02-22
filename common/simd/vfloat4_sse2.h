@@ -376,8 +376,13 @@ namespace embree
 #endif
 
   template<int mask>
-    __forceinline const vfloat4 select(const vfloat4& t, const vfloat4& f) {
+    __forceinline const vfloat4 select(const vfloat4& t, const vfloat4& f) 
+  {
+#if defined(__SSE4_1__) 
     return _mm_blend_ps(f, t, mask);
+#else
+    return select(vboolf4(mask), t, f);
+#endif
   }
   
   __forceinline vfloat4 lerp(const vfloat4& a, const vfloat4& b, const vfloat4& t) {

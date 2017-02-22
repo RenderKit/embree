@@ -25,6 +25,9 @@ namespace embree
   {
     struct BVHBuilderMorton
     {      
+      static const size_t MAX_BRANCHING_FACTOR = 8;          //!< maximal supported BVH branching factor
+      static const size_t MIN_LARGE_LEAF_LEVELS = 8;         //!< create balanced tree of we are that many levels before the maximal tree depth
+
       /*! settings for morton builder */
       struct Settings
       {
@@ -36,10 +39,10 @@ namespace embree
         Settings (const RTCBuildSettings& settings)
         : branchingFactor(2), maxDepth(32), minLeafSize(1), maxLeafSize(8), singleThreadThreshold(1024)
         {
-          if (RTC_BUILD_SETTINGS_HAS(settings,branchingFactor)) branchingFactor = settings.branchingFactor;
-          if (RTC_BUILD_SETTINGS_HAS(settings,maxDepth       )) maxDepth        = settings.maxDepth;
-          if (RTC_BUILD_SETTINGS_HAS(settings,minLeafSize    )) minLeafSize     = settings.minLeafSize;
-          if (RTC_BUILD_SETTINGS_HAS(settings,maxLeafSize    )) maxLeafSize     = settings.maxLeafSize;
+          if (RTC_BUILD_SETTINGS_HAS(settings,maxBranchingFactor)) branchingFactor = settings.maxBranchingFactor;
+          if (RTC_BUILD_SETTINGS_HAS(settings,maxDepth          )) maxDepth        = settings.maxDepth;
+          if (RTC_BUILD_SETTINGS_HAS(settings,minLeafSize       )) minLeafSize     = settings.minLeafSize;
+          if (RTC_BUILD_SETTINGS_HAS(settings,maxLeafSize       )) maxLeafSize     = settings.maxLeafSize;
         }
         
         Settings (size_t branchingFactor, size_t maxDepth, size_t minLeafSize, size_t maxLeafSize, size_t singleThreadThreshold)
@@ -189,11 +192,7 @@ namespace embree
         class BuilderT : private Settings
       {
         ALIGNED_CLASS;
-        
-      protected:
-        static const size_t MAX_BRANCHING_FACTOR = 8;          //!< maximal supported BVH branching factor
-        static const size_t MIN_LARGE_LEAF_LEVELS = 8;         //!< create balanced tree of we are that many levels before the maximal tree depth
-        
+               
       public:
         
         BuilderT (CreateAllocator& createAllocator, 

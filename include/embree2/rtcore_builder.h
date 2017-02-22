@@ -25,13 +25,21 @@ typedef struct __RTCBVH {}* RTCBVH;
 /*! \brief Defines an opaque thread local allocator type */
 typedef struct __RTCThreadLocalAllocator {}* RTCThreadLocalAllocator;
 
+/*! Quality settings for BVH build. */
+enum RTCBuildQuality
+{
+  RTC_BUILD_QUALITY_LOW = 0,     //!< low quality build (good for dynamic scenes)
+  RTC_BUILD_QUALITY_NORMAL = 1,  //!< standard quality level
+};
+
 /*! Settings for builders */
 struct RTCBuildSettings
 {
   unsigned size;             //!< Size of this structure in bytes. Makes future extension easier.
-  unsigned branchingFactor;  //!< branching factor of BVH to build
+  RTCBuildQuality quality;   //!< quality of BVH build
+  unsigned maxBranchingFactor; //!< miximal branching factor of BVH to build
   unsigned maxDepth;         //!< maximal depth of BVH to build
-  unsigned blockSize;        //!< blocksize for SAH heuristic
+  unsigned sahBlockSize;     //!< block size for SAH heuristic
   unsigned minLeafSize;      //!< minimal size of a leaf
   unsigned maxLeafSize;      //!< maximal size of a leaf
   float travCost;            //!< estimated cost of one traversal step
@@ -43,9 +51,10 @@ inline RTCBuildSettings rtcDefaultBuildSettings()
 {
   RTCBuildSettings settings;
   settings.size = sizeof(settings);
-  settings.branchingFactor = 2;
+  settings.quality = RTC_BUILD_QUALITY_NORMAL;
+  settings.maxBranchingFactor = 2;
   settings.maxDepth = 32;
-  settings.blockSize = 1;
+  settings.sahBlockSize = 1;
   settings.minLeafSize = 1;
   settings.maxLeafSize = 32;
   settings.travCost = 1.0f;
@@ -68,11 +77,11 @@ RTCORE_API RTCBVH rtcNewBVH(RTCDevice device);
 /*! Callback to create a node. */
 typedef void* (*RTCCreateNodeFunc) (RTCThreadLocalAllocator allocator, size_t numChildren, void* userPtr);
 
-/*! Callback to set the pointer to the i'th child. */
-typedef void  (*RTCSetNodeChildFunc) (void* nodePtr, size_t i, void* childPtr, void* userPtr);
+/*! Callback to set the pointer to all children. */
+typedef void  (*RTCSetNodeChildrenFunc) (void* nodePtr, void** children, size_t numChildren, void* userPtr);
 
-/*! Callback to set the bounds of the i'th child. */
-typedef void  (*RTCSetNodeBoundsFunc) (void* nodePtr, size_t i, RTCBounds& bounds, void* userPtr);
+/*! Callback to set the bounds of all children. */
+typedef void  (*RTCSetNodeBoundsFunc) (void* nodePtr, const RTCBounds** bounds, size_t numChildren, void* userPtr);
 
 /*! Callback to create a leaf node. */
 typedef void* (*RTCCreateLeafFunc) (RTCThreadLocalAllocator allocator, const RTCBuildPrimitive* prims, size_t numPrims, void* userPtr);
@@ -80,31 +89,18 @@ typedef void* (*RTCCreateLeafFunc) (RTCThreadLocalAllocator allocator, const RTC
 /*! Callback to provide build progress. */
 typedef void (*RTCBuildProgressFunc) (size_t dn, void* userPtr);
 
-/*! Standard BVH builder (internally using binning and SAH heuristic). */
+/*! builds the BVH */
 RTCORE_API void* rtcBuildBVH(RTCBVH bvh,                                     //!< BVH to build
                              const RTCBuildSettings& settings,               //!< settings for BVH builder
                              RTCBuildPrimitive* prims,                       //!< list of input primitives
                              size_t numPrims,                                //!< number of input primitives
-                             void* userPtr,                                  //!< user pointer passed to callback functions
                              RTCCreateNodeFunc createNode,                   //!< creates a node
-                             RTCSetNodeChildFunc setNodeChild,               //!< sets pointer to a child
-                             RTCSetNodeBoundsFunc setNodeBounds,             //!< sets bound of a child
+                             RTCSetNodeChildrenFunc setNodeChildren,         //!< sets pointer to all children
+                             RTCSetNodeBoundsFunc setNodeBounds,             //!< sets bounds of all children
                              RTCCreateLeafFunc createLeaf,                   //!< creates a leaf
-                             RTCBuildProgressFunc buildProgress              //!< used to report build progress
+                             RTCBuildProgressFunc buildProgress,             //!< used to report build progress
+                             void* userPtr                                   //!< user pointer passed to callback functions
   ); 
-
-/*! Faster builder producing lower quality trees (internally operating with morton codes). */
-RTCORE_API void* rtcBuildBVHFast(RTCBVH bvh,                                     //!< BVH to build
-                                 const RTCBuildSettings& settings,               //!< settings for BVH builder
-                                 RTCBuildPrimitive* prims,                       //!< list of input primitives
-                                 size_t numPrims,                                //!< number of input primitives
-                                 void* userPtr,                                  //!< user pointer passed to createThreadLocal callback
-                                 RTCCreateNodeFunc createNode,                   //!< creates a node
-                                 RTCSetNodeChildFunc setNodeChild,               //!< sets pointer to a child
-                                 RTCSetNodeBoundsFunc setNodeBounds,             //!< sets bound of a child
-                                 RTCCreateLeafFunc createLeaf,                   //!< creates a leaf
-                                 RTCBuildProgressFunc buildProgress              //!< used to report build progress
-  );
 
 /*! Allocates memory using the thread local allocator. Use this function to allocate nodes in the callback functions. */
 RTCORE_API void* rtcThreadLocalAlloc(RTCThreadLocalAllocator allocator, size_t bytes, size_t align);

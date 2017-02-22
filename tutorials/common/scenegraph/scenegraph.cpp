@@ -623,39 +623,11 @@ namespace embree
     return node;
   }
 
-  Ref<SceneGraph::Node> SceneGraph::flatten(Ref<SceneGraph::Node> node, const Transformations& spaces)
-  {
-    if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
-      return flatten(xfmNode->child, spaces*xfmNode->spaces);
-    } 
-    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) {
-      for (auto& child : groupNode->children) child = flatten(child,spaces);
-    }
-    else if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) {
-      return new SceneGraph::TriangleMeshNode(mesh,spaces);
-    }
-    else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) {
-      return new SceneGraph::QuadMeshNode(mesh,spaces);
-    }
-    else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) {
-      return new SceneGraph::SubdivMeshNode(mesh,spaces);
-    }
-    else if (Ref<SceneGraph::LineSegmentsNode> mesh = node.dynamicCast<SceneGraph::LineSegmentsNode>()) {
-      return new SceneGraph::LineSegmentsNode(mesh,spaces);
-    }
-    else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>()) {
-      return new SceneGraph::HairSetNode(mesh,spaces);
-    }
-    else {
-      throw std::runtime_error("unsupported node type in SceneGraph::flatten");
-    }
-    return node;
-  }
-
   struct SceneGraphFlattener
   {
     Ref<SceneGraph::Node> node;
     std::map<Ref<SceneGraph::Node>,Ref<SceneGraph::Node>> object_mapping;
+    std::map<std::string,size_t> unique_id;
     
     SceneGraphFlattener (Ref<SceneGraph::Node> in, SceneGraph::InstancingMode instancing, const SceneGraph::Transformations& spaces)
     { 
@@ -675,21 +647,38 @@ namespace embree
       else
         convertGeometries(geometries,in,spaces);
 
-      convertLights(geometries,in,spaces);
+      convertLightsAndCameras(geometries,in,spaces);
 
       node = new SceneGraph::GroupNode(geometries);
     }
 
-    void convertLights(std::vector<Ref<SceneGraph::Node>>& group, Ref<SceneGraph::Node> node, const SceneGraph::Transformations& spaces)
+    std::string makeUniqueID(std::string id) 
+    {
+      if (id == "") id = "camera";
+      std::map<std::string,size_t>::iterator i = unique_id.find(id);
+      if (i == unique_id.end()) {
+        unique_id[id] = 0;
+        return id;
+      }
+      else {
+        size_t n = ++unique_id[id];
+        return id + "_" + std::to_string(n);
+      }
+    }
+
+    void convertLightsAndCameras(std::vector<Ref<SceneGraph::Node>>& group, Ref<SceneGraph::Node> node, const SceneGraph::Transformations& spaces)
     {
       if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
-        convertLights(group,xfmNode->child, spaces*xfmNode->spaces);
+        convertLightsAndCameras(group,xfmNode->child, spaces*xfmNode->spaces);
       } 
       else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) {
-        for (const auto& child : groupNode->children) convertLights(group,child,spaces);
+        for (const auto& child : groupNode->children) convertLightsAndCameras(group,child,spaces);
       }
       else if (Ref<SceneGraph::LightNode> lightNode = node.dynamicCast<SceneGraph::LightNode>()) {
         group.push_back(new SceneGraph::LightNode(lightNode->light->transform(spaces[0])));
+      }
+      else if (Ref<SceneGraph::PerspectiveCameraNode> cameraNode = node.dynamicCast<SceneGraph::PerspectiveCameraNode>()) {
+        group.push_back(new SceneGraph::PerspectiveCameraNode(cameraNode,spaces[0],makeUniqueID(cameraNode->name)));
       }
     }
 

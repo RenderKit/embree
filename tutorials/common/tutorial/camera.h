@@ -43,22 +43,12 @@ namespace embree
     : from(0.0001f,0.0001f,-3.0f), to(0,0,0), up(0,1,0), fov(90) {}
 
     Camera (Vec3fa& from, Vec3fa& to, Vec3fa& up, float fov) 
-      : from(from), to(to), up(up), fov(fov) {}
-
+    : from(from), to(to), up(up), fov(fov) {}
+    
     AffineSpace3fa camera2world () { return AffineSpace3fa::lookat(from, to, up); }
     AffineSpace3fa world2camera () { return rcp(AffineSpace3fa::lookat(from, to, up)); }
     Vec3fa world2camera(const Vec3fa& p) { return xfmPoint(world2camera(),p); }
     Vec3fa camera2world(const Vec3fa& p) { return xfmPoint(camera2world(),p); }
-
-    /*AffineSpace3fa pixel2world (size_t width, size_t height) 
-    {
-      const float fovScale = 1.0f/tanf(deg2rad(0.5f*fov));
-      const AffineSpace3fa local2world = AffineSpace3fa::lookat(from, to, up);
-      return AffineSpace3fa(local2world.l.vx,
-                           -local2world.l.vy,
-                           -0.5f*width*local2world.l.vx + 0.5f*height*local2world.l.vy + 0.5f*height*fovScale*local2world.l.vz,
-                           local2world.p);
-                           }*/
 
     ISPCCamera getISPCCamera (size_t width, size_t height, bool flip_y = false) 
     {
