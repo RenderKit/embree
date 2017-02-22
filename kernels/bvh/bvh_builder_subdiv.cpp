@@ -182,7 +182,9 @@ namespace embree
         settings.intCost = 1.0f;
         settings.singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD;
 
-        BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,settings);
+        NodeRef root = BVHNBuilderVirtual<N>::build(&bvh->alloc,createLeaf,virtualprogress,prims.data(),pinfo,settings);
+        bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
+        bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
         
 	/* clear temporary data for static geometry */
 	if (scene->isStatic()) {
@@ -403,7 +405,9 @@ namespace embree
           settings.singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD;
 
           /* call BVH builder */
-          BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,settings);
+          NodeRef root = BVHNBuilderVirtual<N>::build(&bvh->alloc,createLeaf,virtualprogress,prims.data(),pinfo,settings);
+          bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
+          bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
         }
 
         /* build MBlur BVH over patches */
@@ -443,7 +447,7 @@ namespace embree
 
             /* call BVH builder */
             NodeRef root; LBBox3fa tbounds;
-            std::tie(root, tbounds) = BVHNBuilderMblur<N>::build(bvh,createLeaf,bvh->scene->progressInterface,prims.data(),pinfo,settings);
+            std::tie(root, tbounds) = BVHNBuilderMblurVirtual<N>::build(&bvh->alloc,createLeaf,bvh->scene->progressInterface,prims.data(),pinfo,settings);
             roots[t] = root;
             boxes[t+0] = tbounds.bounds0;
             boxes[t+1] = tbounds.bounds1;

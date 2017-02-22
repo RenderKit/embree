@@ -138,6 +138,7 @@ namespace embree
         // PRINT(refs.size());
         /* compute PrimRefs */
         prims.resize(refs.size());
+        bvh->alloc.init_estimate(refs.size()*16);
 
 #if defined(TASKING_TBB) && defined(__AVX512ER__) && USE_TASK_ARENA // KNL
         tbb::task_arena limited(32);
