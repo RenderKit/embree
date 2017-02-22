@@ -67,6 +67,7 @@ namespace embree
     void store(Ref<SceneGraph::LineSegmentsNode> mesh, ssize_t id);
     void store(Ref<SceneGraph::HairSetNode> hair, ssize_t id);
 
+    void store(Ref<SceneGraph::PerspectiveCameraNode> camera, ssize_t id);
     void store(Ref<SceneGraph::TransformNode> node, ssize_t id);
     void store(Ref<SceneGraph::GroupNode> group, ssize_t id);
     void store(Ref<SceneGraph::Node> node);
@@ -468,6 +469,18 @@ namespace embree
     close("Hair");
   }
 
+  void XMLWriter::store(Ref<SceneGraph::PerspectiveCameraNode> camera, ssize_t id)
+  {
+    tab(); 
+    xml << "<PerspectiveCamera " <<
+      "id=\"" << id << "\" " << 
+      "name=\"" << camera->name << "\" " <<
+      "from=\"" << camera->from.x << " " << camera->from.y << " " << camera->from.z << "\" " <<
+      "to=\"" << camera->to.x << " " << camera->to.y << " " << camera->to.z << "\" " <<
+      "up=\"" << camera->up.x << " " << camera->up.y << " " << camera->up.z << "\" " <<
+      "fov=\"" << camera->fov << "\" " << "/>" << std::endl;
+  }
+
   void XMLWriter::store(Ref<SceneGraph::TransformNode> node, ssize_t id)
   {
     if (node->spaces.size() == 1)
@@ -513,6 +526,7 @@ namespace embree
     else if (Ref<SceneGraph::SubdivMeshNode> cnode = node.dynamicCast<SceneGraph::SubdivMeshNode>()) store(cnode,id);
     else if (Ref<SceneGraph::LineSegmentsNode> cnode = node.dynamicCast<SceneGraph::LineSegmentsNode>()) store(cnode,id);
     else if (Ref<SceneGraph::HairSetNode> cnode = node.dynamicCast<SceneGraph::HairSetNode>()) store(cnode,id);
+    else if (Ref<SceneGraph::PerspectiveCameraNode> cnode = node.dynamicCast<SceneGraph::PerspectiveCameraNode>()) store(cnode,id);
     else if (Ref<SceneGraph::TransformNode> cnode = node.dynamicCast<SceneGraph::TransformNode>()) store(cnode,id);
     else if (Ref<SceneGraph::GroupNode> cnode = node.dynamicCast<SceneGraph::GroupNode>()) store(cnode,id);
     else throw std::runtime_error("unknown node type");

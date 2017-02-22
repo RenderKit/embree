@@ -27,7 +27,7 @@ namespace embree
 #if defined(VECTOR_INIT_ALLOCATOR)
     template<typename M>
     __forceinline vector_t (M alloc) 
-      : alloc(alloc), size_active(0), size_alloced(0), items(nullptr) {}
+    : alloc(alloc), size_active(0), size_alloced(0), items(nullptr) {}
 
     template<typename M>
     __forceinline vector_t (M alloc, size_t sz) 
@@ -50,7 +50,8 @@ namespace embree
         size_active = other.size_active;
         size_alloced = other.size_alloced;
         items = alloc.allocate(size_alloced);
-        for (size_t i=0; i<size_active; i++) items[i] = other.items[i];
+        for (size_t i=0; i<size_active; i++) 
+          ::new (&items[i]) value_type(other.items[i]);
       }
     
       __forceinline vector_t (vector_t&& other)
@@ -64,7 +65,8 @@ namespace embree
       __forceinline vector_t& operator=(const vector_t& other) 
       {
         resize(other.size_active);
-        for (size_t i=0; i<size_active; i++) items[i] = other.items[i];
+        for (size_t i=0; i<size_active; i++) 
+          ::new (&items[i]) value_type(other.items[i]);
         return *this;
       }
 
@@ -132,12 +134,14 @@ namespace embree
       {
         const T v = nt; // need local copy as input reference could point to this vector
         internal_grow(size_active+1);
-        items[size_active++] = v;
+        ::new (&items[size_active++]) T(v);
       }
 
-      __forceinline void pop_back() {
+      __forceinline void pop_back() 
+      {
         assert(!empty());
         size_active--;
+        alloc.destroy(&items[size_active]);
       }
 
       __forceinline void clear() 

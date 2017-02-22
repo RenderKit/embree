@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <scene>
-  <PerspectiveCamera id="frontview" from="278 273 -800" to="278 273 0" up="0 1 0" fov="37"/>
-  <PerspectiveCamera id="small_cube" from="280.1202698 284.0853577 -196.5418854" to="208.7026978 115.5031433 89.10266113" up="0 1 0" fov="45"/>
-  <PerspectiveCamera id="large_cube" from="420.1874695 341.1406555 -148.3326111" to="361.8019409 190.7811584 265.979126" up="0 1 0" fov="45"/>
+  <PerspectiveCamera name="frontview" from="278 273 -800" to="278 273 0" up="0 1 0" fov="37"/>
+  <PerspectiveCamera name="small_cube" from="280.1202698 284.0853577 -196.5418854" to="208.7026978 115.5031433 89.10266113" up="0 1 0" fov="45"/>
+  <PerspectiveCamera name="large_cube" from="420.1874695 341.1406555 -148.3326111" to="361.8019409 190.7811584 265.979126" up="0 1 0" fov="45"/>
   <Group id="0">
     <Group id="1">
       <TriangleMesh id="2">
