@@ -27,13 +27,12 @@
 #define USE_SUBTREE_SIZE_FOR_BINNING 1
 #define REDUCE_BINS 0
 
-#define OPEN_STATS(x) 
+#define OPEN_STATS(x) x 
 
 #define MAX_OPENED_CHILD_NODES 8
 #define MAX_EXTEND_THRESHOLD   0.1f
 
-#define DBG_PRINT(x) 
-//PRINT(x)
+#define DBG_PRINT(x) PRINT(x)
 
 namespace embree
 {
@@ -253,32 +252,35 @@ namespace embree
 
         __noinline size_t openNodesUntilSetIsFull(PrimInfoExtRange& set)
         {
+          const Vec3fa diag = set.geomBounds.size();
+          const size_t dim = maxDim(diag);
+          assert(diag[dim] > 0.0f);
+          const float inv_max_extend = 1.0f / diag[dim];
+
           size_t extra_elements = 0;
           const size_t ext_range_start = set.end();
           while(set.has_ext_range())
+          //for (size_t k=0;k<2;k++)
           {
-            float max_area = neg_inf;
-            ssize_t max_index = -1;
-            for (size_t i=set.begin();i<set.end();i++)
-              if (!prims0[i].node.isLeaf() && max_area < prims0[i].bounds_area)
+            const size_t current_end = set.end()+extra_elements;
+            for (size_t i=set.begin();i<current_end;i++)
+              if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD)
               {
-                max_area = prims0[i].bounds_area;
-                max_index = i;
+                PrimRef tmp[MAX_OPENED_CHILD_NODES];
+                const size_t n = nodeOpenerFunc(prims0[i],tmp);
+                if(unlikely(extra_elements + n-1 > set.ext_range_size())) break; 
+
+                for (size_t j=0;j<n;j++) set.extend(tmp[j].bounds());
+                
+                prims0[i] = tmp[0];
+                for (size_t j=1;j<n;j++)
+                  prims0[ext_range_start+extra_elements+j-1] = tmp[j]; 
+                extra_elements += n-1;            
               }
-            if (max_index == -1) return extra_elements;
 
-            PrimRef tmp[MAX_OPENED_CHILD_NODES];
-            const size_t n = nodeOpenerFunc(prims0[max_index],tmp);
-            if(extra_elements + n-1 > set.ext_range_size()) return extra_elements;
-
-            for (size_t j=0;j<n;j++)
-              set.extend(tmp[j].bounds());
-                  
-            prims0[max_index] = tmp[0];
-            for (size_t j=1;j<n;j++)
-              prims0[ext_range_start+extra_elements+j-1] = tmp[j]; 
-            extra_elements += n-1;            
+            if (unlikely(set.end()+extra_elements == current_end)) break;
           }
+
           assert(extra_elements <= set.ext_range_size());
           return extra_elements;
         }                 
@@ -292,7 +294,7 @@ namespace embree
           /* single element */
           if (set.size() == 1)
             return Split(ObjectSplit(),inf);
-
+#if 1
           if (unlikely(set.has_ext_range()))
           {
             /* disjoint test */
@@ -308,6 +310,7 @@ namespace embree
             }
             if (disjoint) set.set_ext_range(set.end()); /* disable opening */
           }
+#endif
 
           std::pair<float,bool> p(0.0f,false);
 
@@ -315,7 +318,7 @@ namespace embree
           if (unlikely(set.has_ext_range()))
           {
             p =  getProperties(set);
-
+#if 1
             const bool commonGeomID       = p.second;
             if (commonGeomID)
             {
@@ -326,11 +329,13 @@ namespace embree
               if (est_new_elements <= max_ext_range_size)
                 extra_elements = openNodesBasedOnExtend(set);
               else
-                extra_elements = openNodesUntilSetIsFull(set);
+               extra_elements = openNodesUntilSetIsFull(set);
+              OPEN_STATS( if (extra_elements) stat_ext_elements += extra_elements );
 
               set._end += extra_elements;
               set.set_ext_range(set.end()); /* disable opening */
             }
+#endif
           }
           if (unlikely(set.has_ext_range()))
           {

@@ -88,6 +88,7 @@ namespace embree {
   {
     /* if more than a single timestep, mark object as dynamic */
     RTCGeometryFlags object_flags = mesh->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
+    //RTCGeometryFlags object_flags = RTC_GEOMETRY_DYNAMIC;
     /* create object */
     unsigned int geomID = rtcNewTriangleMesh (scene_out, object_flags, mesh->numTriangles, mesh->numVertices, 1);
     /* generate vertex buffer */
