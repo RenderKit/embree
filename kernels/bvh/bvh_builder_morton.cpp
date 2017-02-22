@@ -32,7 +32,7 @@
 
 #define ROTATE_TREE 1 // specifies number of tree rotation rounds to perform
 
-#define BLOCK_SIZE 1024
+#define BLOCK_SIZE size_t(1024)
 
 namespace embree 
 {
@@ -386,11 +386,6 @@ namespace embree
       BVHNMeshBuilderMorton (BVH* bvh, Mesh* mesh, const size_t minLeafSize, const size_t maxLeafSize, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
         : bvh(bvh), mesh(mesh), morton(bvh->device), settings(N,BVH::maxBuildDepth,minLeafSize,maxLeafSize,singleThreadThreshold) {}
       
-      /*! Destruction */
-      ~BVHNMeshBuilderMorton () {
-        //bvh->shrink();
-      }
-      
       /* build function */
       void build(size_t threadIndex, size_t threadCount) 
       {
@@ -415,12 +410,10 @@ namespace embree
         bytesAllocated = max(bytesAllocated,bytesMortonCodes); // the first allocation block is reused to sort the morton codes
         bvh->alloc.init(bytesAllocated,2*bytesAllocated);
 
-        size_t block_size = size_t(BLOCK_SIZE);
-
         /* compute scene bounds */
         std::pair<size_t,BBox3fa> cb_empty(0,empty);
         auto cb = parallel_reduce 
-          ( size_t(0), numPrimitives, block_size, cb_empty, [&](const range<size_t>& r) -> std::pair<size_t,BBox3fa>
+          ( size_t(0), numPrimitives, BLOCK_SIZE, cb_empty, [&](const range<size_t>& r) -> std::pair<size_t,BBox3fa>
             {
               size_t num = 0;
               BBox3fa bounds = empty;
@@ -446,8 +439,9 @@ namespace embree
 
         if (likely(numPrimitivesGen == numPrimitives))
         {
+          /* fast path if all primitives were valid */
           BVHBuilderMorton::MortonCodeMapping mapping(centBounds);
-          parallel_for( size_t(0), numPrimitives, block_size, [&](const range<size_t>& r) -> void {
+          parallel_for( size_t(0), numPrimitives, BLOCK_SIZE, [&](const range<size_t>& r) -> void {
               BVHBuilderMorton::MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
               for (size_t j=r.begin(); j<r.end(); j++)
                 generator(mesh->bounds(j),unsigned(j));
@@ -458,7 +452,7 @@ namespace embree
           /* slow path, fallback in case some primitives were invalid */
           ParallelPrefixSumState<size_t> pstate;
           BVHBuilderMorton::MortonCodeMapping mapping(centBounds);
-          parallel_prefix_sum( pstate, size_t(0), numPrimitives, block_size, size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
+          parallel_prefix_sum( pstate, size_t(0), numPrimitives, BLOCK_SIZE, size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
               size_t num = 0;
               BVHBuilderMorton::MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
               for (size_t j=r.begin(); j<r.end(); j++)
@@ -471,7 +465,7 @@ namespace embree
               return num;
             }, std::plus<size_t>());
 
-          parallel_prefix_sum( pstate, size_t(0), numPrimitives, block_size, size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
+          parallel_prefix_sum( pstate, size_t(0), numPrimitives, BLOCK_SIZE, size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
               size_t num = 0;
               BVHBuilderMorton::MortonCodeGenerator generator(mapping,&morton.data()[base]);
               for (size_t j=r.begin(); j<r.end(); j++)
