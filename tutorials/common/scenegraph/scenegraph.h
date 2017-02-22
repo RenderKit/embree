@@ -50,7 +50,7 @@ namespace embree
       Node (const std::string& name) 
         : name(name), indegree(0), closed(false) {}
 
-       /* resets indegree and closed parameters */
+      /* resets indegree and closed parameters */
       void reset()
       {
         std::set<Ref<Node>> done;
@@ -98,9 +98,8 @@ namespace embree
     public:
       std::string fileName; // when set to some filename the exporter references this file
       std::string name;     // name of this node
-    protected:
-      size_t indegree;   // number of nodes pointing to us
-      bool closed;       // determines if the subtree may represent an instance
+      size_t indegree;      // number of nodes pointing to us
+      bool closed;          // determines if the subtree may represent an instance
     };
 
     struct Transformations

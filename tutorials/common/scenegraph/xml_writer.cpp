@@ -69,6 +69,7 @@ namespace embree
 
     void store(Ref<SceneGraph::PerspectiveCameraNode> camera, ssize_t id);
     void store(Ref<SceneGraph::TransformNode> node, ssize_t id);
+    void store(std::vector<Ref<SceneGraph::TransformNode>> nodes);
     void store(Ref<SceneGraph::GroupNode> group, ssize_t id);
     void store(Ref<SceneGraph::Node> node);
 
@@ -500,11 +501,59 @@ namespace embree
     }
   }
 
+  void XMLWriter::store(std::vector<Ref<SceneGraph::TransformNode>> nodes)
+  {
+    if (nodes.size() == 0)
+      return;
+
+    if (nodes.size() == 1) {
+      store(nodes[0].dynamicCast<SceneGraph::Node>());
+      return;
+    }
+    
+    open("MultiTransform");
+    std::streampos offset = bin.tellg();
+    tab(); xml << "<AffineSpace3f ofs=\"" << offset << "\" size=\"" << nodes.size() << "\"/>" << std::endl;
+    for (size_t i=0; i<nodes.size(); i++) {
+      assert(nodes[i]->spaces.size() == 1);
+      assert(nodes[i]->child == nodes[0]->child);
+      bin.write((char*)&nodes[i]->spaces[0].l.vx,sizeof(Vec3f));
+      bin.write((char*)&nodes[i]->spaces[0].l.vy,sizeof(Vec3f));
+      bin.write((char*)&nodes[i]->spaces[0].l.vz,sizeof(Vec3f));
+      bin.write((char*)&nodes[i]->spaces[0].p,sizeof(Vec3f));
+    }
+    store(nodes[0]->child);
+    close("MultiTransform");
+  }
+
   void XMLWriter::store(Ref<SceneGraph::GroupNode> group, ssize_t id)
   {
     open("Group",id);
+
+    std::map<Ref<SceneGraph::Node>,std::vector<Ref<SceneGraph::TransformNode>>> object_to_transform_map;
     for (size_t i=0; i<group->children.size(); i++)
+    {
+      /* compress transformation of the same object into MultiTransform nodes if possible */
+      if (Ref<SceneGraph::TransformNode> xfmNode = group->children[i].dynamicCast<SceneGraph::TransformNode>())
+      {
+        /* we can only compress non-animated transform nodes and only ones that are referenced once */
+        if (xfmNode->spaces.size() == 1 && xfmNode->indegree == 1) 
+        {
+          Ref<SceneGraph::Node> child = xfmNode->child;
+          if (object_to_transform_map.find(child) == object_to_transform_map.end()) {
+            object_to_transform_map[child] = std::vector<Ref<SceneGraph::TransformNode>>();
+          }
+          object_to_transform_map[child].push_back(xfmNode);
+          continue;
+        }
+      }
       store(group->children[i]);
+    }
+    
+    /* store all compressed transform nodes */
+    for (auto i : object_to_transform_map)
+      store(i.second);
+
     close("Group");
   }
 
@@ -541,6 +590,9 @@ namespace embree
     xml.open (fileName, std::fstream::out);
     bin.exceptions (std::fstream::failbit | std::fstream::badbit);
     bin.open (binFileName, std::fstream::out | std::fstream::binary);
+
+    root->reset();
+    root->calculateInDegree();
 
     xml << "<?xml version=\"1.0\"?>" << std::endl;
     open("scene");
