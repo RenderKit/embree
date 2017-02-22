@@ -91,6 +91,19 @@ namespace embree
       }
       return bounds;
     }
+
+     /* Non temporal store */
+    __forceinline static void store_nt(TriangleMi* dst, const TriangleMi& src)
+    {
+      vint<M>::store_nt(&((vint<M>*)&dst->v0)[0],((vint<M>*)&src.v0)[0]);
+#if defined(__X86_64__)
+      vint<M>::store_nt(&((vint<M>*)&dst->v0)[1],((vint<M>*)&src.v0)[1]);
+#endif
+      vint<M>::store_nt(&dst->v1,src.v1);
+      vint<M>::store_nt(&dst->v2,src.v2);
+      vint<M>::store_nt(&dst->geomIDs,src.geomIDs);
+      vint<M>::store_nt(&dst->primIDs,src.primIDs);
+    }
     
     /* Fill triangle from triangle list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene)

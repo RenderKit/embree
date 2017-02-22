@@ -247,7 +247,7 @@ namespace embree
           v2[i] = 0;
         }
         
-        new (accel) Triangle4i(v0,v1,v2,vgeomID,vprimID);
+        Triangle4i::store_nt(accel,Triangle4i(v0,v1,v2,vgeomID,vprimID));
         BBox3fa box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
 #if ROTATE_TREE
         if (N == 4)
