@@ -30,6 +30,15 @@ namespace embree
   void buildProgress (size_t dn, void* userPtr) {
   }
 
+  void splitPrimitive (const RTCBuildPrimitive& prim, unsigned dim, float pos, RTCBounds& lprim, RTCBounds& rprim, void* userPtr)
+  {
+    assert(dim < 3);
+    (BBox3fa&) lprim = (BBox3fa&) prim; 
+    (BBox3fa&) rprim = (BBox3fa&) prim;
+    (&lprim.upper_x)[dim] = pos;
+    (&rprim.lower_x)[dim] = pos;
+  }
+
   struct Node
   {
     virtual float sah() = 0;
@@ -90,8 +99,8 @@ namespace embree
       return (void*) new (ptr) LeafNode(prims->primID,*(BBox3fa*)prims);
     }
   };
-
-  void build(RTCBuildQuality quality, RTCBuildPrimitive* prims, size_t N, char* cfg)
+  
+  void build(RTCBuildQuality quality, avector<RTCBuildPrimitive>& prims_i, char* cfg, size_t extraSpace = 0)
   {
     RTCDevice device = rtcNewDevice(cfg);
     rtcDeviceSetMemoryMonitorFunction2(device,memoryMonitor,nullptr);
@@ -109,16 +118,24 @@ namespace embree
     settings.maxLeafSize = 1;
     settings.travCost = 1.0f;
     settings.intCost = 1.0f;
+    settings.extraSpace = extraSpace;
 
+    avector<RTCBuildPrimitive> prims; 
+    prims.reserve(prims_i.size()+extraSpace);
+    prims.resize(prims_i.size());
+ 
     for (size_t i=0; i<10; i++)
     {
-      std::cout << "iteration " << i << ": building BVH over " << N << " primitives, " << std::flush;
+      /* we recreate the prims array here, as the builders modify this array */
+      for (size_t i=0; i<prims.size(); i++) prims[i] = prims_i[i];
+  
+      std::cout << "iteration " << i << ": building BVH over " << prims.size() << " primitives, " << std::flush;
       double t0 = getSeconds();
-      Node* root = (Node*) rtcBuildBVH(bvh,settings,prims,N,
-                                       InnerNode::create,InnerNode::setChildren,InnerNode::setBounds,LeafNode::create,buildProgress,nullptr);
+      Node* root = (Node*) rtcBuildBVH(bvh,settings,prims.data(),prims.size(),
+                                       InnerNode::create,InnerNode::setChildren,InnerNode::setBounds,LeafNode::create,splitPrimitive,buildProgress,nullptr);
       double t1 = getSeconds();
       const float sah = root ? root->sah() : 0.0f;
-      std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << sah << " [DONE]" << std::endl;
+      std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(prims.size())/(t1-t0) << " Mprims/s, sah = " << sah << " [DONE]" << std::endl;
     }
 
     rtcMakeStaticBVH(bvh);
@@ -140,7 +157,9 @@ namespace embree
     
     /* create random bounding boxes */
     const size_t N = 2300000;
+    const size_t extraSpace = 1000000;
     avector<RTCBuildPrimitive> prims; 
+    prims.resize(N);
     for (size_t i=0; i<N; i++) 
     {
       const float x = float(drand48());
@@ -158,14 +177,17 @@ namespace embree
       prim.upper_y = b.upper.y;
       prim.upper_z = b.upper.z;
       prim.primID = i;
-      prims.push_back(prim);
+      prims[i] = prim;
     }
 
-    std::cout << "Normal BVH builder:" << std::endl;
-    build(RTC_BUILD_QUALITY_NORMAL,prims.data(),prims.size(),cfg);
-
-    std::cout << "Fast BVH builder:" << std::endl;
-    build(RTC_BUILD_QUALITY_LOW,prims.data(),prims.size(),cfg);
+    std::cout << "Low quality BVH build:" << std::endl;
+    build(RTC_BUILD_QUALITY_LOW,prims,cfg);
+  
+    std::cout << "Normal quality BVH build:" << std::endl;
+    build(RTC_BUILD_QUALITY_NORMAL,prims,cfg);
+  
+    std::cout << "High quality BVH build:" << std::endl;
+    build(RTC_BUILD_QUALITY_HIGH,prims,cfg,extraSpace);
   }
   
   /* task that renders a single screen tile */
