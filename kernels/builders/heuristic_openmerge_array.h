@@ -32,7 +32,8 @@
 #define MAX_OPENED_CHILD_NODES 8
 #define MAX_EXTEND_THRESHOLD   0.1f
 
-#define DBG_PRINT(x)
+#define DBG_PRINT(x) 
+//PRINT(x)
 
 namespace embree
 {
@@ -292,11 +293,6 @@ namespace embree
           if (set.size() == 1)
             return Split(ObjectSplit(),inf);
 
-          /* too small */
-          const float area_factor = area(set.geomBounds) * inv_root_area;
-          if (area_factor < 1E-5f) 
-            set.set_ext_range(set.end()); /* disable opening */
-
           if (unlikely(set.has_ext_range()))
           {
             /* disjoint test */
@@ -319,6 +315,7 @@ namespace embree
           if (unlikely(set.has_ext_range()))
           {
             p =  getProperties(set);
+
             const bool commonGeomID       = p.second;
             if (commonGeomID)
             {
@@ -335,7 +332,6 @@ namespace embree
               set.set_ext_range(set.end()); /* disable opening */
             }
           }
-
           if (unlikely(set.has_ext_range()))
           {
             const size_t max_ext_range_size = set.ext_range_size();

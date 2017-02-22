@@ -404,7 +404,6 @@ namespace embree {
     Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_GEOMETRY_STATIC,RTC_SCENE_STATIC);
     Pause();
     Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_GEOMETRY_STATIC,RTC_SCENE_HIGH_QUALITY);
-
     rtcDeleteDevice(g_device); g_device = nullptr;
   }
 

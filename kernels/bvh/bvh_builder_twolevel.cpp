@@ -32,8 +32,6 @@
 
 #define SPLIT_MEMORY_RESERVE_FACTOR 1000
 
-#define DBG_PRINT(x)
-
 // for non-opening two-level approach set ENABLE_DIRECT_SAH_MERGE_BUILDER and ENABLE_OPEN_SEQUENTIAL to 0
 
 namespace embree
