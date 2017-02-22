@@ -408,8 +408,6 @@ namespace embree
           return;
         }
         
-        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(double(dn)); };
-        
         /* preallocate arrays */
         morton.resize(numPrimitives);
         size_t bytesAllocated = numPrimitives*sizeof(AlignedNode)/(4*N) + size_t(1.2f*Primitive::blocks(numPrimitives)*sizeof(Primitive));
@@ -494,7 +492,7 @@ namespace embree
         auto root = BVHBuilderMorton::build<std::pair<NodeRef,BBox3fa>>(
           typename BVH::CreateAlloc(bvh), 
           typename BVH::AlignedNode::Create(),
-          setBounds,createLeaf,calculateBounds,progress,
+          setBounds,createLeaf,calculateBounds,bvh->scene->progressInterface,
           morton.data(),dest,numPrimitivesGen,settings);
         
         bvh->set(root.first,LBBox3fa(root.second),numPrimitives);
