@@ -1115,7 +1115,7 @@ namespace embree
         const std::string id = xml->parm("id");
         Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child(0));
         materialMap[id] = material;
-        material->name = id;
+        material->name = xml->parm("name");
         return nullptr;
       }
       else if (xml->parm("type") == "scene")
@@ -1171,7 +1171,7 @@ namespace embree
 
       else THROW_RUNTIME_ERROR(xml->loc.str()+": unknown tag: "+xml->name);
 
-      node->name = id;
+      node->name = xml->parm("name");
       return node;
     }
 
