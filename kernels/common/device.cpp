@@ -268,6 +268,8 @@ namespace embree
     /* call user specified error callback */
     if (device->error_function) 
       device->error_function(error,str); 
+    if (device->error_function2) 
+      device->error_function2(device->error_function_userptr,error,str); 
 
     /* record error code */
     device->setDeviceErrorCode(error);
