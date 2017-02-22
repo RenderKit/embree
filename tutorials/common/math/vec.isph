@@ -561,8 +561,8 @@ inline float dot(const Vec3f a, const Vec3f b)
 inline uniform float length(const uniform Vec3f a) { return sqrtf(dot(a,a)); }
 inline varying float length(const varying Vec3f a) { return sqrtf(dot(a,a)); }
 
-inline uniform float distance(const uniform Vec3f a, const uniform Vec3f b) { return length(sub(a,b)); }
-inline varying float distance(const varying Vec3f a, const uniform Vec3f b) { return length(sub(a,b)); }
+inline uniform float distance(const uniform Vec3f a, const uniform Vec3f b) { return length(a - b); }
+inline varying float distance(const varying Vec3f a, const varying Vec3f b) { return length(a - b); }
 
 
 inline uniform float dot(const uniform Vec3fa a, const uniform Vec3fa b) { return a.x*b.x+a.y*b.y+a.z*b.z; }
@@ -571,8 +571,8 @@ inline varying float dot(const varying Vec3fa a, const varying Vec3fa b) { retur
 inline uniform float length(const uniform Vec3fa a) { return sqrtf(dot(a,a)); }
 inline varying float length(const varying Vec3fa a) { return sqrtf(dot(a,a)); }
 
-inline uniform float distance(const uniform Vec3fa a, const uniform Vec3fa b) { return length(sub(a,b)); }
-inline varying float distance(const varying Vec3fa a, const uniform Vec3fa b) { return length(sub(a,b)); }
+inline uniform float distance(const uniform Vec3fa a, const uniform Vec3fa b) { return length(a - b); }
+inline varying float distance(const varying Vec3fa a, const varying Vec3fa b) { return length(a - b); }
 
 // ------------------------------------------------------------------
 // cross product
@@ -820,34 +820,55 @@ inline uniform Vec3f nextafter(const uniform Vec3i &a, const uniform Vec3i &b)
 { return(make_Vec3f(nextafter(a.x, b.x), nextafter(a.y, b.y), nextafter(a.z, b.z))); }
 
 inline varying float reduce_min(const varying Vec3f &a)
-{ return(min(min(a.x, a.y), a.z)); }
-
-inline varying float reduce_min(const varying Vec4f &a)
-{ return(min(min(min(a.x, a.y), a.z), a.w)); }
+{ return min(min(a.x, a.y), a.z); }
 
 inline uniform float reduce_min(const uniform Vec3f &a)
-{ return(min(min(a.x, a.y), a.z)); }
+{ return min(min(a.x, a.y), a.z); }
+
+inline uniform float reduce_min(const uniform Vec3i &a)
+{ return min(min(a.x, a.y), a.z); }
+
+inline varying float reduce_min(const varying Vec3i &a)
+{ return min(min(a.x, a.y), a.z); }
+
+inline varying float reduce_min(const varying Vec4f &a)
+{ return min(min(a.x, a.y), min(a.z, a.w)); }
+
+inline uniform float reduce_min(const uniform Vec4f &a)
+{ return min(min(a.x, a.y), min(a.z, a.w)); }
 
 inline uniform float reduce_max(const uniform Vec3i &a)
-{ return(max(max(a.x, a.y), a.z)); }
+{ return max(max(a.x, a.y), a.z); }
+
+inline varying float reduce_max(const varying Vec3i &a)
+{ return max(max(a.x, a.y), a.z); }
+
+inline varying float reduce_max(const varying Vec3f &a)
+{ return max(max(a.x, a.y), a.z); }
 
 inline uniform float reduce_max(const uniform Vec3f &a)
-{ return(max(max(a.x, a.y), a.z)); }
+{ return max(max(a.x, a.y), a.z); }
+
+inline varying float reduce_max(const varying Vec4f &a)
+{ return max(max(a.x, a.y), max(a.z, a.w)); }
+
+inline uniform float reduce_max(const uniform Vec4f &a)
+{ return max(max(a.x, a.y), max(a.z, a.w)); }
 
 inline uniform float reduce_add(const uniform Vec3f &a)
-{ return(a.x+a.y+a.z); }
+{ return a.x+a.y+a.z; }
 
 inline uniform float reduce_avg(const uniform Vec3f &a)
-{ return((a.x+a.y+a.z)*(1.0f/3.0f)); }
+{ return reduce_add(a)*(1.0f/3.0f); }
 
 inline uniform float luminance(const uniform Vec3f& c)
 { return 0.212671f*c.x + 0.715160f*c.y + 0.072169f*c.z; }
 
 inline varying Vec3f pow(const varying Vec3f &a, const varying float b)
-{ return(make_Vec3f(pow(a.x, b), pow(a.y, b), pow(a.z, b))); }
+{ return make_Vec3f(pow(a.x, b), pow(a.y, b), pow(a.z, b)); }
 
 inline varying Vec4f pow(const varying Vec4f &a, const varying float b)
-{ return(make_Vec4f(pow(a.x, b), pow(a.y, b), pow(a.z, b), pow(a.w, b))); }
+{ return make_Vec4f(pow(a.x, b), pow(a.y, b), pow(a.z, b), pow(a.w, b)); }
 
 inline uniform bool isnan(uniform Vec3f v)
 { return isnan(v.x+v.y+v.z); }
@@ -877,7 +898,9 @@ inline void set(uniform Vec3f &v, const uniform uint32 dim, const uniform float 
 { (&v.x)[dim] = f; }
 
 /*! get vector 'v's value in dimension 'd' */
-inline float get(const uniform Vec3f &v, const uniform uint32 dim)
+inline uniform float get(const uniform Vec3f &v, const uniform uint32 dim)
+{ return (&v.x)[dim]; }
+inline float get(const Vec3f &v, const uniform uint32 dim)
 { return (&v.x)[dim]; }
 
 

@@ -91,7 +91,8 @@ namespace embree
       mouseMode(0),
       clickX(0), clickY(0),
       speed(1.0f),
-      moveDelta(zero)
+      moveDelta(zero),
+      command_line_camera(false)
   {
     /* only a single instance of this class is supported */
     assert(instance == nullptr);
@@ -114,22 +115,27 @@ namespace embree
     /* camera settings */
     registerOption("vp", [this] (Ref<ParseStream> cin, const FileName& path) {
         camera.from = cin->getVec3fa();
+        command_line_camera = true;
       }, "--vp <float> <float> <float>: camera position");
     
     registerOption("vi", [this] (Ref<ParseStream> cin, const FileName& path) {
         camera.to = cin->getVec3fa();
+        command_line_camera = true;
       }, "--vi <float> <float> <float>: camera lookat position");
     
     registerOption("vd", [this] (Ref<ParseStream> cin, const FileName& path) {
         camera.to = camera.from + cin->getVec3fa();
+        command_line_camera = true;
       }, "--vd <float> <float> <float>: camera direction vector");
     
     registerOption("vu", [this] (Ref<ParseStream> cin, const FileName& path) {
         camera.up = cin->getVec3fa();
+        command_line_camera = true;
       }, "--vu <float> <float> <float>: camera up vector");
     
     registerOption("fov", [this] (Ref<ParseStream> cin, const FileName& path) {
         camera.fov = cin->getFloat();
+        command_line_camera = true;
       }, "--fov <float>: vertical field of view");
     
     /* framebuffer settings */
@@ -218,7 +224,7 @@ namespace embree
       convert_hair_to_curves(false),
       sceneFilename(""),
       instancing_mode(SceneGraph::INSTANCING_NONE),
-      subdiv_mode("")
+      print_cameras(false)
   {
     registerOption("i", [this] (Ref<ParseStream> cin, const FileName& path) {
         sceneFilename = path + cin->getFileName();
@@ -374,6 +380,14 @@ namespace embree
         subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
         rtcore += subdiv_mode;
       }, "--pregenerate: enabled pregenerate subdiv mode");    
+
+    registerOption("print-cameras", [this] (Ref<ParseStream> cin, const FileName& path) {
+        print_cameras = true;
+      }, "--print-cameras: prints all camera names of the scene");    
+
+    registerOption("camera", [this] (Ref<ParseStream> cin, const FileName& path) {
+        camera_name = cin->getString();
+      }, "--camera: use camera with specified name");    
   }
 
   void TutorialApplication::renderBenchmark()
@@ -512,7 +526,7 @@ namespace embree
 
     case '\033': case 'q': case 'Q':
       glutDestroyWindow(windowID);
-#if defined(__MACOSX__)
+#if defined(__MACOSX__) // FIXME: why only on MacOSX
       exit(1);
 #endif
       break;
@@ -561,7 +575,10 @@ namespace embree
     if (state == GLUT_UP) 
     {
       mouseMode = 0;
-      if (button == GLUT_LEFT_BUTTON && glutGetModifiers() == GLUT_ACTIVE_SHIFT) 
+    }
+    else
+    {
+      if (button == GLUT_RIGHT_BUTTON)
       {
         ISPCCamera ispccamera = camera.getISPCCamera(width,height);
         Vec3fa p; bool hit = device_pick(float(x),float(y),ispccamera,p);
@@ -574,21 +591,14 @@ namespace embree
           camera.from += dot(delta,right)*right + dot(delta,up)*up;
         }
       }
-      else if (button == GLUT_LEFT_BUTTON && glutGetModifiers() == (GLUT_ACTIVE_CTRL | GLUT_ACTIVE_SHIFT)) 
+      else
       {
-        ISPCCamera ispccamera = camera.getISPCCamera(width,height);
-        Vec3fa p; bool hit = device_pick(float(x),float(y),ispccamera,p);
-        if (hit) camera.to = p;
+        clickX = x; clickY = y;
+        int modifiers = glutGetModifiers();
+        if      (button == GLUT_LEFT_BUTTON && modifiers == GLUT_ACTIVE_SHIFT) mouseMode = 1;
+        else if (button == GLUT_LEFT_BUTTON && modifiers == GLUT_ACTIVE_CTRL ) mouseMode = 3;
+        else if (button == GLUT_LEFT_BUTTON) mouseMode = 4;
       }
-
-    } else {
-      clickX = x; clickY = y;
-      int modifiers = glutGetModifiers();
-      if      (button == GLUT_LEFT_BUTTON && modifiers == GLUT_ACTIVE_SHIFT) mouseMode = 1;
-      else if (button == GLUT_MIDDLE_BUTTON) mouseMode = 2;
-      else if (button == GLUT_RIGHT_BUTTON ) mouseMode = 3;
-      else if (button == GLUT_LEFT_BUTTON && modifiers == GLUT_ACTIVE_CTRL ) mouseMode = 3;
-      else if (button == GLUT_LEFT_BUTTON  ) mouseMode = 4;
     }
   }
   
@@ -828,6 +838,24 @@ namespace embree
     /* convert model */
     obj_scene.add(SceneGraph::flatten(scene,instancing_mode)); 
     scene = nullptr;
+
+    /* print all cameras */
+    if (print_cameras) {
+      obj_scene.print_camera_names();
+      return 0;
+    }
+
+    /* use specified camera */
+    if (camera_name != "") {
+      Ref<SceneGraph::PerspectiveCameraNode> c = obj_scene.getCamera(camera_name);
+      camera = Camera(c->from,c->to,c->up,c->fov);
+    }
+
+    /* otherwise use default camera */
+    else if (!command_line_camera) {
+      Ref<SceneGraph::PerspectiveCameraNode> c = obj_scene.getDefaultCamera();
+      if (c) camera = Camera(c->from,c->to,c->up,c->fov);
+    }
 
     /* send model */
     set_scene(&obj_scene);

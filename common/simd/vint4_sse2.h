@@ -321,17 +321,14 @@ namespace embree
   __forceinline vboolf4 le(const vboolf4& mask, const vint4& a, const vint4& b) { return mask & (a <= b); }
 #endif
 
+  template<int mask>
+  __forceinline const vint4 select(const vint4& t, const vint4& f) {
 #if defined(__SSE4_1__) 
-#if defined(__clang__) && !defined(__INTEL_COMPILER) || defined(_MSC_VER) && !defined(__INTEL_COMPILER) || defined(__GNUC__) && !defined(__INTEL_COMPILER) // still required for clang
-  __forceinline const vint4 select(const int mask, const vint4& t, const vint4& f) {
-          return select(vboolf4(mask), t, f);
-  }
+    return _mm_castps_si128(_mm_blend_ps(_mm_castsi128_ps(f), _mm_castsi128_ps(t), mask));
 #else
-  __forceinline const vint4 select(const int m, const vint4& t, const vint4& f) {
-	  return _mm_castps_si128(_mm_blend_ps(_mm_castsi128_ps(f), _mm_castsi128_ps(t), m));
+    return select(vboolf4(mask), t, f);
+#endif    
   }
-#endif
-#endif
 
   ////////////////////////////////////////////////////////////////////////////////
   // Movement/Shifting/Shuffling Functions
@@ -409,15 +406,15 @@ namespace embree
     const vint4 b0 = shuffle<1,0,3,2>(a0);
     const vint4 c0 = umin(a0,b0);
     const vint4 d0 = umax(a0,b0);
-    const vint4 a1 = select(0x5 /* 0b0101 */,c0,d0);
+    const vint4 a1 = select<0x5 /* 0b0101 */>(c0,d0);
     const vint4 b1 = shuffle<2,3,0,1>(a1);
     const vint4 c1 = umin(a1,b1);
     const vint4 d1 = umax(a1,b1);
-    const vint4 a2 = select(0x3 /* 0b0011 */,c1,d1);
+    const vint4 a2 = select<0x3 /* 0b0011 */>(c1,d1);
     const vint4 b2 = shuffle<0,2,1,3>(a2);
     const vint4 c2 = umin(a2,b2);
     const vint4 d2 = umax(a2,b2);
-    const vint4 a3 = select(0x2 /* 0b0010 */,c2,d2);
+    const vint4 a3 = select<0x2 /* 0b0010 */>(c2,d2);
     return a3;
   }
 #endif

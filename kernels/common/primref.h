@@ -94,11 +94,17 @@ namespace embree
     }
 
     /*! returns the geometry ID */
+    __forceinline unsigned& geomID() { 
+      return lower.u;
+    }
     __forceinline unsigned geomID() const { 
       return lower.a;
     }
 
     /*! returns the primitive ID */
+    __forceinline unsigned& primID() { 
+      return upper.u;
+    }
     __forceinline unsigned primID() const { 
       return upper.a;
     }

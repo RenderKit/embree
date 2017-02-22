@@ -39,42 +39,24 @@ namespace embree
   namespace isa
   {
     template<int N>
-    struct AllocBVHNAlignedNode
-    {
-      typedef BVHN<N> BVH;
-      typedef typename BVH::AlignedNode AlignedNode;
-      typedef typename BVH::NodeRef NodeRef;
-
-      __forceinline AlignedNode* operator() (MortonBuildRecord<NodeRef>& current, MortonBuildRecord<NodeRef>* children, size_t numChildren, FastAllocator::ThreadLocal2* alloc)
-      {
-        AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode),BVH::byteNodeAlignment); 
-        *current.parent = BVH::encodeNode(node);
-        node->clear();
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-		/* need pragma as code generation with VS 2015 + AVX2 is otherwise buggy for this loop */
-#pragma loop(no_vector)
-#endif
-        for (size_t i=0; i<numChildren; i++)
-          children[i].parent = &node->child(i);
-        return node;
-      }
-    };
-    
-    template<int N>
     struct SetBVHNBounds
     {
       typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::AlignedNode AlignedNode;
 
       BVH* bvh;
       __forceinline SetBVHNBounds (BVH* bvh) : bvh(bvh) {}
 
-      __forceinline BBox3fa operator() (AlignedNode* node, const BBox3fa* bounds, size_t num)
+      __forceinline std::pair<NodeRef,BBox3fa> operator() (NodeRef ref, const std::pair<NodeRef,BBox3fa>* children, size_t num)
       {
+        AlignedNode* node = ref.alignedNode();
+
         BBox3fa res = empty;
         for (size_t i=0; i<num; i++) {
-          const BBox3fa b = bounds[i];
+          const BBox3fa b = children[i].second;
           res.extend(b);
+          node->set(i,children[i].first);
           node->set(i,b);
         }
 
@@ -83,11 +65,11 @@ namespace embree
         {
           size_t n = 0;
           for (size_t i=0; i<num; i++)
-            n += bounds[i].lower.a;
+            n += children[i].second.lower.a;
 
           if (n >= 4096) {
             for (size_t i=0; i<num; i++) {
-              if (bounds[i].lower.a < 4096) {
+              if (children[i].second.lower.a < 4096) {
                 for (int j=0; j<ROTATE_TREE; j++)
                   BVHNRotate<N>::rotate(node->child(i));
                 node->child(i).setBarrier();
@@ -98,7 +80,7 @@ namespace embree
         }
 #endif
 
-        return res;
+        return std::make_pair(ref,res);
       }
     };
 
@@ -111,20 +93,20 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
 
-      __forceinline CreateMortonLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
+      __forceinline CreateMortonLeaf (TriangleMesh* mesh, BVHBuilderMorton::BuildPrim* morton)
         : mesh(mesh), morton(morton) {}
 
-      __noinline void operator() (MortonBuildRecord<NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
+      __noinline std::pair<NodeRef,BBox3fa> operator() (const range<unsigned>& current, FastAllocator::ThreadLocal2* alloc)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
         size_t items = current.size();
-        size_t start = current.begin;
+        size_t start = current.begin();
         assert(items<=4);
         
         /* allocate leaf node */
         Triangle4* accel = (Triangle4*) alloc->alloc1->malloc(sizeof(Triangle4));
-        *current.parent = BVH::encodeLeaf((char*)accel,1);
+        NodeRef ref = BVH::encodeLeaf((char*)accel,1);
         vint4 vgeomID = -1, vprimID = -1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
         const unsigned geomID = this->mesh->id;
@@ -147,16 +129,17 @@ namespace embree
         }
 
         Triangle4::store_nt(accel,Triangle4(v0,v1,v2,vgeomID,vprimID));
-        box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
+        BBox3fa box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
 #if ROTATE_TREE
         if (N == 4)
           box_o.lower.a = unsigned(current.size());
 #endif
+        return std::make_pair(ref,box_o);
       }
     
     private:
       TriangleMesh* mesh;
-      MortonID32Bit* morton;
+      BVHBuilderMorton::BuildPrim* morton;
     };
     
     template<int N>
@@ -165,20 +148,20 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
 
-      __forceinline CreateMortonLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
+      __forceinline CreateMortonLeaf (TriangleMesh* mesh, BVHBuilderMorton::BuildPrim* morton)
         : mesh(mesh), morton(morton) {}
       
-      __noinline void operator() (MortonBuildRecord<NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
+      __noinline std::pair<NodeRef,BBox3fa> operator() (const range<unsigned>& current, FastAllocator::ThreadLocal2* alloc)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
         size_t items = current.size();
-        size_t start = current.begin;
+        size_t start = current.begin();
         assert(items<=4);
         
         /* allocate leaf node */
         Triangle4v* accel = (Triangle4v*) alloc->alloc1->malloc(sizeof(Triangle4v));
-        *current.parent = BVH::encodeLeaf((char*)accel,1);       
+        NodeRef ref = BVH::encodeLeaf((char*)accel,1);       
         vint4 vgeomID = -1, vprimID = -1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
         const unsigned geomID = this->mesh->id;
@@ -200,15 +183,16 @@ namespace embree
           v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
         }
         Triangle4v::store_nt(accel,Triangle4v(v0,v1,v2,vgeomID,vprimID));
-        box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
+        BBox3fa box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
 #if ROTATE_TREE
         if (N == 4)
           box_o.lower.a = current.size();
 #endif
+        return std::make_pair(ref,box_o);
       }
     private:
       TriangleMesh* mesh;
-      MortonID32Bit* morton;
+      BVHBuilderMorton::BuildPrim* morton;
     };
 
     template<int N>
@@ -217,20 +201,20 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
 
-      __forceinline CreateMortonLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
+      __forceinline CreateMortonLeaf (TriangleMesh* mesh, BVHBuilderMorton::BuildPrim* morton)
         : mesh(mesh), morton(morton) {}
       
-      __noinline void operator() (MortonBuildRecord<NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
+      __noinline std::pair<NodeRef,BBox3fa> operator() (const range<unsigned>& current, FastAllocator::ThreadLocal2* alloc)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
         size_t items = current.size();
-        size_t start = current.begin;
+        size_t start = current.begin();
         assert(items<=4);
         
         /* allocate leaf node */
         Triangle4i* accel = (Triangle4i*) alloc->alloc1->malloc(sizeof(Triangle4i));
-        *current.parent = BVH::encodeLeaf((char*)accel,1);
+        NodeRef ref = BVH::encodeLeaf((char*)accel,1);
         
         vint4 vgeomID = -1, vprimID = -1;
         Vec3f* v0[4] = { nullptr, nullptr, nullptr, nullptr };
@@ -264,15 +248,16 @@ namespace embree
         }
         
         new (accel) Triangle4i(v0,v1,v2,vgeomID,vprimID);
-        box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
+        BBox3fa box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
 #if ROTATE_TREE
         if (N == 4)
           box_o.lower.a = current.size();
 #endif
+        return std::make_pair(ref,box_o);
       }
     private:
       TriangleMesh* mesh;
-      MortonID32Bit* morton;
+      BVHBuilderMorton::BuildPrim* morton;
     };
 
     template<int N>
@@ -281,20 +266,20 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
 
-      __forceinline CreateMortonLeaf (QuadMesh* mesh, MortonID32Bit* morton)
+      __forceinline CreateMortonLeaf (QuadMesh* mesh, BVHBuilderMorton::BuildPrim* morton)
         : mesh(mesh), morton(morton) {}
       
-      __noinline void operator() (MortonBuildRecord<NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
+      __noinline std::pair<NodeRef,BBox3fa> operator() (const range<unsigned>& current, FastAllocator::ThreadLocal2* alloc)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
         size_t items = current.size();
-        size_t start = current.begin;
+        size_t start = current.begin();
         assert(items<=4);
         
         /* allocate leaf node */
         Quad4v* accel = (Quad4v*) alloc->alloc1->malloc(sizeof(Quad4v));
-        *current.parent = BVH::encodeLeaf((char*)accel,1);
+        NodeRef ref = BVH::encodeLeaf((char*)accel,1);
         
         vint4 vgeomID = -1, vprimID = -1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero, v3 = zero;
@@ -319,15 +304,16 @@ namespace embree
           v3.x[i] = p3.x; v3.y[i] = p3.y; v3.z[i] = p3.z;
         }
         Quad4v::store_nt(accel,Quad4v(v0,v1,v2,v3,vgeomID,vprimID));
-        box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
+        BBox3fa box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
 #if ROTATE_TREE
         if (N == 4)
           box_o.lower.a = current.size();
 #endif
+        return std::make_pair(ref,box_o);
       }
     private:
       QuadMesh* mesh;
-      MortonID32Bit* morton;
+      BVHBuilderMorton::BuildPrim* morton;
     };
 
     template<int N>
@@ -336,20 +322,20 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
 
-      __forceinline CreateMortonLeaf (AccelSet* mesh, MortonID32Bit* morton)
+      __forceinline CreateMortonLeaf (AccelSet* mesh, BVHBuilderMorton::BuildPrim* morton)
         : mesh(mesh), morton(morton) {}
       
-      __noinline void operator() (MortonBuildRecord<NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
+      __noinline std::pair<NodeRef,BBox3fa> operator() (const range<unsigned>& current, FastAllocator::ThreadLocal2* alloc)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
         size_t items = current.size();
-        size_t start = current.begin;
+        size_t start = current.begin();
         assert(items<=4);
         
         /* allocate leaf node */
         Object* accel = (Object*) alloc->alloc1->malloc(items*sizeof(Object));
-        *current.parent = BVH::encodeLeaf((char*)accel,items);
+        NodeRef ref = BVH::encodeLeaf((char*)accel,items);
 
         const unsigned geomID = this->mesh->id;
         const AccelSet* mesh = this->mesh;
@@ -362,15 +348,16 @@ namespace embree
           bounds.extend(mesh->bounds(primID));
           new (&accel[i]) Object(geomID,primID);
         }
-        box_o = bounds;
+        BBox3fa box_o = bounds;
 #if ROTATE_TREE
         if (N == 4)
           box_o.lower.a = current.size();
 #endif
+        return std::make_pair(ref,box_o);
       }
     private:
       AccelSet* mesh;
-      MortonID32Bit* morton;
+      BVHBuilderMorton::BuildPrim* morton;
     };
 
     template<typename Mesh>
@@ -379,7 +366,7 @@ namespace embree
       __forceinline CalculateMeshBounds (Mesh* mesh)
         : mesh(mesh) {}
       
-      __forceinline const BBox3fa operator() (const MortonID32Bit& morton) {
+      __forceinline const BBox3fa operator() (const BVHBuilderMorton::BuildPrim& morton) {
         return mesh->bounds(morton.index);
       }
       
@@ -387,53 +374,6 @@ namespace embree
       Mesh* mesh;
     };        
 
-    struct __aligned(64) BinBuckets {
-
-      static const size_t BUCKETS_SHIFT = 8;
-      static const size_t BUCKETS  = 1 << BUCKETS_SHIFT;
-
-      unsigned int b[BUCKETS];
-
-      __forceinline BinBuckets() {}
-
-      __forceinline BinBuckets( ZeroTy ) { 
-        for (size_t i=0;i<BUCKETS;i++) b[i] = 0; 
-      }
-
-      __forceinline BinBuckets(const BinBuckets &bb) {
-        for (size_t i=0;i<BUCKETS;i++) b[i] = bb.b[i];
-      }
-
-      __forceinline void clear() { 
-        for (size_t i=0;i<BUCKETS;i++) b[i] = 0; 
-      }
-
-      __forceinline void inc(const size_t i) { 
-        b[i>>(32-BUCKETS_SHIFT)]++;
-      }
-
-      __forceinline const unsigned int& operator[](const size_t index) const { 
-        assert(index < BUCKETS); 
-        return b[index]; 
-      }
-
-      __forceinline void operator +=(const BinBuckets& a) { 
-        for (size_t i=0;i<BinBuckets::BUCKETS;i++) 
-          b[i] += a.b[i];
-      }
-
-      __forceinline void print() { 
-        for (size_t i=0;i<BUCKETS;i++) std::cout << "i  = " << i << " -> " << b[i] << std::endl;
-      }
-    };
-
-    __forceinline BinBuckets operator +(const BinBuckets& a, const BinBuckets& b ) { 
-      BinBuckets v;
-      for (size_t i=0;i<BinBuckets::BUCKETS;i++) 
-        v.b[i] = a.b[i] + b.b[i];
-      return v;
-    }
-    
     template<int N, typename Mesh, typename Primitive>
     class BVHNMeshBuilderMorton : public Builder
     {
@@ -441,11 +381,10 @@ namespace embree
       typedef typename BVH::AlignedNode AlignedNode;
       typedef typename BVH::NodeRef NodeRef;
 
-
     public:
       
       BVHNMeshBuilderMorton (BVH* bvh, Mesh* mesh, const size_t minLeafSize, const size_t maxLeafSize, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
-        : bvh(bvh), mesh(mesh), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), morton(bvh->device), singleThreadThreshold(singleThreadThreshold) {}
+        : bvh(bvh), mesh(mesh), morton(bvh->device), settings(N,BVH::maxBuildDepth,minLeafSize,maxLeafSize,singleThreadThreshold) {}
       
       /*! Destruction */
       ~BVHNMeshBuilderMorton () {
@@ -474,7 +413,7 @@ namespace embree
         /* preallocate arrays */
         morton.resize(numPrimitives);
         size_t bytesAllocated = numPrimitives*sizeof(AlignedNode)/(4*N) + size_t(1.2f*Primitive::blocks(numPrimitives)*sizeof(Primitive));
-        size_t bytesMortonCodes = numPrimitives*sizeof(MortonID32Bit);
+        size_t bytesMortonCodes = numPrimitives*sizeof(BVHBuilderMorton::BuildPrim);
         bytesAllocated = max(bytesAllocated,bytesMortonCodes); // the first allocation block is reused to sort the morton codes
         bvh->alloc.init(bytesAllocated,2*bytesAllocated);
 
@@ -505,13 +444,13 @@ namespace embree
         const BBox3fa centBounds = cb.second;
 
         /* compute morton codes */
-        MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc.specialAlloc(bytesMortonCodes);
+        BVHBuilderMorton::BuildPrim* dest = (BVHBuilderMorton::BuildPrim*) bvh->alloc.specialAlloc(bytesMortonCodes);
 
         if (likely(numPrimitivesGen == numPrimitives))
         {
-          MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
+          BVHBuilderMorton::MortonCodeMapping mapping(centBounds);
           parallel_for( size_t(0), numPrimitives, block_size, [&](const range<size_t>& r) -> void {
-              MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
+              BVHBuilderMorton::MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
               for (size_t j=r.begin(); j<r.end(); j++)
                 generator(mesh->bounds(j),unsigned(j));
             });
@@ -520,10 +459,10 @@ namespace embree
         {
           /* slow path, fallback in case some primitives were invalid */
           ParallelPrefixSumState<size_t> pstate;
-          MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
+          BVHBuilderMorton::MortonCodeMapping mapping(centBounds);
           parallel_prefix_sum( pstate, size_t(0), numPrimitives, block_size, size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
               size_t num = 0;
-              MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
+              BVHBuilderMorton::MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
               for (size_t j=r.begin(); j<r.end(); j++)
               {
                 BBox3fa bounds = empty;
@@ -536,7 +475,7 @@ namespace embree
 
           parallel_prefix_sum( pstate, size_t(0), numPrimitives, block_size, size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
               size_t num = 0;
-              MortonCodeGenerator generator(mapping,&morton.data()[base]);
+              BVHBuilderMorton::MortonCodeGenerator generator(mapping,&morton.data()[base]);
               for (size_t j=r.begin(); j<r.end(); j++)
               {
                 BBox3fa bounds = empty;
@@ -549,16 +488,16 @@ namespace embree
         }
 
         /* create BVH */
-        AllocBVHNAlignedNode<N> allocAlignedNode;
         SetBVHNBounds<N> setBounds(bvh);
         CreateMortonLeaf<N,Primitive> createLeaf(mesh,morton.data());
         CalculateMeshBounds<Mesh> calculateBounds(mesh);
-        auto node_bounds = bvh_builder_morton_internal<NodeRef>(
-          typename BVH::CreateAlloc(bvh), BBox3fa(empty),
-          allocAlignedNode,setBounds,createLeaf,calculateBounds,progress,
-          morton.data(),dest,numPrimitivesGen,N,BVH::maxBuildDepth,minLeafSize,maxLeafSize,singleThreadThreshold);
+        auto root = BVHBuilderMorton::build<std::pair<NodeRef,BBox3fa>>(
+          typename BVH::CreateAlloc(bvh), 
+          typename BVH::AlignedNode::Create(),
+          setBounds,createLeaf,calculateBounds,progress,
+          morton.data(),dest,numPrimitivesGen,settings);
         
-        bvh->set(node_bounds.first,LBBox3fa(node_bounds.second),numPrimitives);
+        bvh->set(root.first,LBBox3fa(root.second),numPrimitives);
         
 #if ROTATE_TREE
         if (N == 4)
@@ -585,10 +524,8 @@ namespace embree
     private:
       BVH* bvh;
       Mesh* mesh;
-      const size_t minLeafSize;
-      const size_t maxLeafSize;
-      mvector<MortonID32Bit> morton;
-      const size_t singleThreadThreshold;
+      mvector<BVHBuilderMorton::BuildPrim> morton;
+      BVHBuilderMorton::Settings settings;
     };
 
 #if defined(EMBREE_GEOMETRY_TRIANGLES)

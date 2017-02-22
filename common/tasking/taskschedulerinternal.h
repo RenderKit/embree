@@ -28,19 +28,6 @@
 
 #include <list>
 
-#if !defined(TASKING_INTERNAL)
-#if defined(__WIN32__)
-#  define NOMINMAX
-#  if defined(__clang__) && !defined(__INTEL_COMPILER) 
-#    define __MINGW64__ 1
-#  endif
-#endif
-#define TBB_IMPLEMENT_CPP0X 0
-#define __TBB_NO_IMPLICIT_LINKAGE 1
-#define __TBBMALLOC_NO_IMPLICIT_LINKAGE 1
-#include "tbb/tbb.h"
-#endif
-
 namespace embree
 {
   struct TaskScheduler : public RefCount

@@ -30,10 +30,9 @@ namespace embree
       settings.branchingFactor = N;
       settings.maxDepth = BVH::maxBuildDepthLeaf;
       NodeRef root = BVHBuilderBinnedSAH::build<NodeRef>
-        (typename BVH::CreateAlloc(bvh),typename BVH::CreateAlignedNode(),typename BVH::UpdateAlignedNode(),createLeafFunc,progressFunc,prims,pinfo,settings);
+        (typename BVH::CreateAlloc(bvh),typename BVH::AlignedNode::Create2(),typename BVH::AlignedNode::Set2(),createLeafFunc,progressFunc,prims,pinfo,settings);
 
       bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
-      
       bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
     }
 
@@ -48,7 +47,7 @@ namespace embree
       settings.branchingFactor = N;
       settings.maxDepth = BVH::maxBuildDepthLeaf;
       NodeRef root = BVHBuilderBinnedSAH::build<NodeRef>
-        (typename BVH::CreateAlloc(bvh),typename BVH::CreateQuantizedNode(),typename BVH::UpdateQuantizedNode(),createLeafFunc,progressFunc,prims,pinfo,settings);
+        (typename BVH::CreateAlloc(bvh),typename BVH::QuantizedNode::Create2(),typename BVH::QuantizedNode::Set2(),createLeafFunc,progressFunc,prims,pinfo,settings);
 
       //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: COPY LAYOUT FOR LARGE NODES !!!
       bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
@@ -64,13 +63,11 @@ namespace embree
       settings.branchingFactor = N;
       settings.maxDepth = BVH::maxBuildDepthLeaf;
       auto root = BVHBuilderBinnedSAH::build<std::pair<NodeRef,LBBox3fa>>
-        (typename BVH::CreateAlloc(bvh),typename BVH::CreateAlignedNodeMB(),typename BVH::UpdateAlignedNodeMB(),createLeafFunc,progressFunc,prims,pinfo,settings);
+        (typename BVH::CreateAlloc(bvh),typename BVH::AlignedNodeMB::Create2(),typename BVH::AlignedNodeMB::Set2(),createLeafFunc,progressFunc,prims,pinfo,settings);
 
       /* set bounding box to merge bounds of all time steps */
       bvh->set(root.first,root.second,pinfo.size()); // FIXME: remove later
-
-      //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: implement for Mblur nodes and activate
-      
+      //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: implement for Mblur nodes and activate      
       return root;
     }
 

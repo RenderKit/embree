@@ -263,12 +263,12 @@ namespace embree
             const size_t bin_start = bin0[dim];
             const size_t bin_end   = bin1[dim];
             BBox3fa rest = prim.bounds();
-            const auto splitter = splitterFactory.create(prim);
+            const auto splitter = splitterFactory(prim);
             for (bin=bin_start; bin<bin_end; bin++) 
             {
               const float pos = mapping.pos(bin+1,dim);
               BBox3fa left,right;
-              splitter.split(rest,dim,pos,left,right);
+              splitter(rest,dim,pos,left,right);
               if (unlikely(left.empty())) l++;                
               extend(dim,bin,left);
               rest = right;

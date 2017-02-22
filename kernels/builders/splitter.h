@@ -107,11 +107,11 @@ namespace embree
         inv_length[2] = Vec3fa(1.0f) / (v[0]-v[2]);
       }
       
-      __forceinline void split(const PrimRef& prim, const size_t dim, const float pos, PrimRef& left_o, PrimRef& right_o) const {
+      __forceinline void operator() (const PrimRef& prim, const size_t dim, const float pos, PrimRef& left_o, PrimRef& right_o) const {
         splitPolygon<3>(prim,dim,pos,v,left_o,right_o);
       }
       
-      __forceinline void split(const BBox3fa& prim, const size_t dim, const float pos, BBox3fa& left_o, BBox3fa& right_o) const {
+      __forceinline void operator() (const BBox3fa& prim, const size_t dim, const float pos, BBox3fa& left_o, BBox3fa& right_o) const {
         splitPolygon<3>(prim,dim,pos,v,inv_length,left_o,right_o);
       }
       
@@ -125,7 +125,7 @@ namespace embree
       __forceinline TriangleSplitterFactory(const Scene* scene)
         : scene(scene) {}
       
-      __forceinline TriangleSplitter create(const PrimRef& prim) const {
+      __forceinline TriangleSplitter operator() (const PrimRef& prim) const {
         return TriangleSplitter(scene,prim);
       }
       
@@ -150,11 +150,11 @@ namespace embree
         inv_length[3] = Vec3fa(1.0f) / (v[0]-v[3]);
       }
       
-      __forceinline void split(const PrimRef& prim, const size_t dim, const float pos, PrimRef& left_o, PrimRef& right_o) const {
+      __forceinline void operator() (const PrimRef& prim, const size_t dim, const float pos, PrimRef& left_o, PrimRef& right_o) const {
         splitPolygon<4>(prim,dim,pos,v,left_o,right_o);
       }
       
-      __forceinline void split(const BBox3fa& prim, const size_t dim, const float pos, BBox3fa& left_o, BBox3fa& right_o) const {
+      __forceinline void operator() (const BBox3fa& prim, const size_t dim, const float pos, BBox3fa& left_o, BBox3fa& right_o) const {
         splitPolygon<4>(prim,dim,pos,v,inv_length,left_o,right_o);
       }
       
@@ -168,7 +168,7 @@ namespace embree
       __forceinline QuadSplitterFactory(const Scene* scene)
         : scene(scene) {}
       
-      __forceinline QuadSplitter create(const PrimRef& prim) const {
+      __forceinline QuadSplitter operator() (const PrimRef& prim) const {
         return QuadSplitter(scene,prim);
       }
       

@@ -15,9 +15,6 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial_device.h"
-#include "../../kernels/common/alloc.h"
-#include "../../kernels/builders/bvh_builder_sah.h"
-#include "../../kernels/builders/bvh_builder_morton.h"
 
 namespace embree
 {
@@ -26,11 +23,22 @@ namespace embree
 
   /* This function is called by the builder to signal progress and to
    * report memory consumption. */
-  void memoryMonitor(ssize_t bytes, bool post)
-  {
-    // throw an exception here when nprims>0 to cancel the build operation
+  bool memoryMonitor(void* userPtr, ssize_t bytes, bool post) {
+    return true;
   }
-  
+
+  void buildProgress (size_t dn, void* userPtr) {
+  }
+
+  void splitPrimitive (const RTCBuildPrimitive& prim, unsigned dim, float pos, RTCBounds& lprim, RTCBounds& rprim, void* userPtr)
+  {
+    assert(dim < 3);
+    (BBox3fa&) lprim = (BBox3fa&) prim; 
+    (BBox3fa&) rprim = (BBox3fa&) prim;
+    (&lprim.upper_x)[dim] = pos;
+    (&rprim.lower_x)[dim] = pos;
+  }
+
   struct Node
   {
     virtual float sah() = 0;
@@ -49,179 +57,91 @@ namespace embree
     float sah() {
       return 1.0f + (area(bounds[0])*children[0]->sah() + area(bounds[1])*children[1]->sah())/area(merge(bounds[0],bounds[1]));
     }
+
+    static void* create (RTCThreadLocalAllocator alloc, size_t numChildren, void* userPtr) 
+    {
+      assert(numChildren == 2);
+      void* ptr = rtcThreadLocalAlloc(alloc,sizeof(InnerNode),16);
+      return (void*) new (ptr) InnerNode;
+    }
+    
+    static void  setChildren (void* nodePtr, void** childPtr, size_t numChildren, void* userPtr)
+    {
+      assert(numChildren == 2);
+      for (size_t i=0; i<2; i++)
+        ((InnerNode*)nodePtr)->children[i] = (Node*) childPtr[i];
+    }
+    
+    static void  setBounds (void* nodePtr, const RTCBounds** bounds, size_t numChildren, void* userPtr)
+    {
+      assert(numChildren == 2);
+      for (size_t i=0; i<2; i++)
+        ((InnerNode*)nodePtr)->bounds[i] = *(const BBox3fa*) bounds[i];
+    }
   };
   
   struct LeafNode : public Node
   {
-    size_t id;
+    unsigned id;
     BBox3fa bounds;
     
-    LeafNode (size_t id, const BBox3fa& bounds)
+    LeafNode (unsigned id, const BBox3fa& bounds)
       : id(id), bounds(bounds) {}
     
     float sah() {
       return 1.0f;
     }
+    
+    static void* create (RTCThreadLocalAllocator alloc, const RTCBuildPrimitive* prims, size_t numPrims, void* userPtr)
+    {
+      assert(numPrims == 1);
+      void* ptr = rtcThreadLocalAlloc(alloc,sizeof(LeafNode),16);
+      return (void*) new (ptr) LeafNode(prims->primID,*(BBox3fa*)prims);
+    }
   };
   
-  void build_sah(avector<PrimRef>& prims, isa::PrimInfo& pinfo)
+  void build(RTCBuildQuality quality, avector<RTCBuildPrimitive>& prims_i, char* cfg, size_t extraSpace = 0)
   {
-    size_t N = pinfo.size();
-    
-    /* fast allocator that supports thread local operation */
-    FastAllocator allocator(nullptr,false);
-    
-    for (size_t i=0; i<2; i++)
+    RTCDevice device = rtcNewDevice(cfg);
+    rtcDeviceSetMemoryMonitorFunction2(device,memoryMonitor,nullptr);
+
+    RTCBVH bvh = rtcNewBVH(device);
+
+    /* settings for BVH build */
+    RTCBuildSettings settings;
+    settings.size = sizeof(settings);
+    settings.quality = quality;
+    settings.maxBranchingFactor = 2;
+    settings.maxDepth = 1024;
+    settings.sahBlockSize = 1;
+    settings.minLeafSize = 1;
+    settings.maxLeafSize = 1;
+    settings.travCost = 1.0f;
+    settings.intCost = 1.0f;
+    settings.extraSpace = extraSpace;
+
+    avector<RTCBuildPrimitive> prims; 
+    prims.reserve(prims_i.size()+extraSpace);
+    prims.resize(prims_i.size());
+ 
+    for (size_t i=0; i<10; i++)
     {
-      std::cout << "iteration " << i << ": building BVH over " << N << " primitives, " << std::flush;
-      double t0 = getSeconds();
-      
-      allocator.reset();
-      allocator.init(N);
-
-       /* settings for BVH build */
-      isa::GeneralBVHBuilder::Settings settings;
-      settings.branchingFactor = 2;
-      settings.maxDepth = 1024;
-      settings.logBlockSize = 0;
-      settings.minLeafSize = 1;
-      settings.maxLeafSize = 1;
-      settings.travCost = 1.0f;
-      settings.intCost = 1.0f;
-      settings.singleThreadThreshold = Builder::DEFAULT_SINGLE_THREAD_THRESHOLD;
-      
-      Node* root = isa::BVHBuilderBinnedSAH::build<Node*>(
-
-        /* thread local allocator for fast allocations */
-        [&] () -> FastAllocator::ThreadLocal* { 
-          return allocator.threadLocal(); 
-        },
-
-        /* lambda function that creates BVH nodes */
-        [&](isa::BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, FastAllocator::ThreadLocal* alloc) -> Node*
-        {
-          assert(N <= 2);
-          InnerNode* node = new (alloc->malloc(sizeof(InnerNode))) InnerNode;
-          for (size_t i=0; i<N; i++)
-            node->bounds[i] = children[i].prims.geomBounds;
-          return node;
-        },
-
-        /* lambda function that updates BVH nodes */
-        [&](Node* ref, Node** children, const size_t N) -> Node*
-        {
-          assert(N <= 2);
-          InnerNode* node = (InnerNode*) ref;
-          for (size_t i=0; i<N; i++)
-            node->children[i] = children[i];
-          return ref;
-        },
-        
-        /* lambda function that creates BVH leaves */
-        [&](const isa::BVHBuilderBinnedSAH::BuildRecord& current, FastAllocator::ThreadLocal* alloc) -> Node*
-        {
-          assert(current.prims.size() == 1);
-          Node* node = new (alloc->malloc(sizeof(LeafNode))) LeafNode(prims[current.prims.begin()].ID(),prims[current.prims.begin()].bounds());
-          return node;
-        },
-        
-        /* progress monitor function */
-        [&] (size_t dn) { 
-          // throw an exception here to cancel the build operation
-        },
-        
-        prims.data(),pinfo,settings);
-      
-      double t1 = getSeconds();
-      
-      std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << root->sah() << " [DONE]" << std::endl;
-    }
-  }
+      /* we recreate the prims array here, as the builders modify this array */
+      for (size_t i=0; i<prims.size(); i++) prims[i] = prims_i[i];
   
-  void build_morton(avector<PrimRef>& prims, isa::PrimInfo& pinfo)
-  {
-    unsigned N = unsigned(pinfo.size());
-    /* array for morton builder */
-    avector<isa::MortonID32Bit> morton_src(N);
-    avector<isa::MortonID32Bit> morton_tmp(N);
-    for (unsigned i=0; i<N; i++) 
-      morton_src[i].index = i;
-    
-    /* fast allocator that supports thread local operation */
-    FastAllocator allocator(nullptr,true);
-    
-    for (size_t i=0; i<2; i++)
-    {
-      std::cout << "iteration " << i << ": building BVH over " << N << " primitives, " << std::flush;
+      std::cout << "iteration " << i << ": building BVH over " << prims.size() << " primitives, " << std::flush;
       double t0 = getSeconds();
-      
-      allocator.reset();
-      allocator.init(N);
-      
-      std::pair<Node*,BBox3fa> node_bounds = isa::bvh_builder_morton<Node*>(
-        
-        /* thread local allocator for fast allocations */
-        [&] () -> FastAllocator::ThreadLocal* { 
-          return allocator.threadLocal(); 
-        },
-        
-        BBox3fa(empty),
-        
-        /* lambda function that allocates BVH nodes */
-        [&] ( isa::MortonBuildRecord<Node*>& current, isa::MortonBuildRecord<Node*>* children, size_t N, FastAllocator::ThreadLocal* alloc ) -> InnerNode*
-        {
-          assert(N <= 2);
-          InnerNode* node = new (alloc->malloc(sizeof(InnerNode))) InnerNode;
-          *current.parent = node;
-          for (size_t i=0; i<N; i++) 
-            children[i].parent = &node->children[i];
-          return node;
-        },
-        
-        /* lambda function that sets bounds */
-        [&] (InnerNode* node, const BBox3fa* bounds, size_t N) -> BBox3fa
-        {
-          BBox3fa res = empty;
-          for (size_t i=0; i<N; i++) {
-            const BBox3fa b = bounds[i];
-            res.extend(b);
-            node->bounds[i] = b;
-          }
-          return res;
-        },
-        
-        /* lambda function that creates BVH leaves */
-        [&]( isa::MortonBuildRecord<Node*>& current, FastAllocator::ThreadLocal* alloc, BBox3fa& box_o) -> Node*
-        {
-          assert(current.size() == 1);
-          const size_t id = morton_src[current.begin].index;
-          const BBox3fa bounds = prims[id].bounds(); 
-          Node* node = new (alloc->malloc(sizeof(LeafNode))) LeafNode(id,bounds);
-          *current.parent = node;
-          box_o = bounds;
-          return node;
-        },
-        
-        /* lambda that calculates the bounds for some primitive */
-        [&] (const isa::MortonID32Bit& morton) -> BBox3fa {
-          return prims[morton.index].bounds();
-        },
-        
-        /* progress monitor function */
-        [&] (size_t dn) { 
-          // throw an exception here to cancel the build operation
-        },
-        
-        morton_src.data(),morton_tmp.data(),prims.size(),2,1024,1,1,Builder::DEFAULT_SINGLE_THREAD_THRESHOLD);
-      
-      Node* root = node_bounds.first;
-      
+      Node* root = (Node*) rtcBuildBVH(bvh,settings,prims.data(),prims.size(),
+                                       InnerNode::create,InnerNode::setChildren,InnerNode::setBounds,LeafNode::create,splitPrimitive,buildProgress,nullptr);
       double t1 = getSeconds();
-      
-      std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << root->sah() << " [DONE]" << std::endl;
+      const float sah = root ? root->sah() : 0.0f;
+      std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(prims.size())/(t1-t0) << " Mprims/s, sah = " << sah << " [DONE]" << std::endl;
     }
+
+    rtcMakeStaticBVH(bvh);
+    rtcDeleteBVH(bvh);
   }
-  
+
   /* called by the C++ code for initialization */
   extern "C" void device_init (char* cfg)
   {
@@ -237,21 +157,37 @@ namespace embree
     
     /* create random bounding boxes */
     const size_t N = 2300000;
-    isa::PrimInfo pinfo(empty);
-    avector<PrimRef> prims; 
-    for (size_t i=0; i<N; i++) {
+    const size_t extraSpace = 1000000;
+    avector<RTCBuildPrimitive> prims; 
+    prims.resize(N);
+    for (size_t i=0; i<N; i++) 
+    {
       const float x = float(drand48());
       const float y = float(drand48());
       const float z = float(drand48());
       const Vec3fa p = 1000.0f*Vec3fa(x,y,z);
       const BBox3fa b = BBox3fa(p,p+Vec3fa(1.0f));
-      pinfo.add(b);
-      const PrimRef prim = PrimRef(b,i);
-      prims.push_back(prim);
+
+      RTCBuildPrimitive prim;
+      prim.lower_x = b.lower.x;
+      prim.lower_y = b.lower.y;
+      prim.lower_z = b.lower.z;
+      prim.geomID = 0;
+      prim.upper_x = b.upper.x;
+      prim.upper_y = b.upper.y;
+      prim.upper_z = b.upper.z;
+      prim.primID = i;
+      prims[i] = prim;
     }
-    
-    build_sah(prims,pinfo);
-    build_morton(prims,pinfo);
+
+    std::cout << "Low quality BVH build:" << std::endl;
+    build(RTC_BUILD_QUALITY_LOW,prims,cfg);
+  
+    std::cout << "Normal quality BVH build:" << std::endl;
+    build(RTC_BUILD_QUALITY_NORMAL,prims,cfg);
+  
+    std::cout << "High quality BVH build:" << std::endl;
+    build(RTC_BUILD_QUALITY_HIGH,prims,cfg,extraSpace);
   }
   
   /* task that renders a single screen tile */

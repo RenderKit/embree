@@ -312,8 +312,8 @@ namespace embree
                   assert(splits > 1);
 
                   PrimRef left,right;
-                  const auto splitter = splitterFactory.create(prims0[i]);
-                  splitter.split(prims0[i],split.dim,fpos,left,right);
+                  const auto splitter = splitterFactory(prims0[i]);
+                  splitter(prims0[i],split.dim,fpos,left,right);
                 
                   // no empty splits
                   if (unlikely(left.bounds().empty() || right.bounds().empty())) continue;
