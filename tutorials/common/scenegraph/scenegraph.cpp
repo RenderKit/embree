@@ -627,7 +627,7 @@ namespace embree
   {
     Ref<SceneGraph::Node> node;
     std::map<Ref<SceneGraph::Node>,Ref<SceneGraph::Node>> object_mapping;
-    std::map<std::string,size_t> unique_id;
+    std::map<std::string,int> unique_id;
     
     SceneGraphFlattener (Ref<SceneGraph::Node> in, SceneGraph::InstancingMode instancing, const SceneGraph::Transformations& spaces)
     { 
@@ -655,13 +655,13 @@ namespace embree
     std::string makeUniqueID(std::string id) 
     {
       if (id == "") id = "camera";
-      std::map<std::string,size_t>::iterator i = unique_id.find(id);
+      std::map<std::string,int>::iterator i = unique_id.find(id);
       if (i == unique_id.end()) {
         unique_id[id] = 0;
         return id;
       }
       else {
-        size_t n = ++unique_id[id];
+        int n = ++unique_id[id];
         return id + "_" + std::to_string(n);
       }
     }
