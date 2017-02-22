@@ -110,6 +110,8 @@ namespace embree
     struct BVHNBuilderSAH : public Builder
     {
       typedef BVHN<N> BVH;
+      typedef typename BVHN<N>::NodeRef NodeRef;
+
       BVH* bvh;
       Scene* scene;
       Mesh* mesh;
@@ -164,7 +166,9 @@ namespace embree
 
             /* call BVH builder */            
             bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef),settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD);
-            BVHNBuilder<N>::build(bvh,CreateLeaf<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,settings);
+            NodeRef root = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,settings);
+            bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
+            bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
 
 #if PROFILE
           }); 
@@ -195,6 +199,8 @@ namespace embree
     struct BVHNBuilderSAHQuantized : public Builder
     {
       typedef BVHN<N> BVH;
+      typedef typename BVHN<N>::NodeRef NodeRef;
+
       BVH* bvh;
       Scene* scene;
       Mesh* mesh;
@@ -238,8 +244,9 @@ namespace embree
         
             /* call BVH builder */
             bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef),settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD);
-            BVHNBuilderQuantized<N>::build(bvh,CreateLeafQuantized<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,settings);
-
+            NodeRef root = BVHNBuilderQuantizedVirtual<N>::build(&bvh->alloc,CreateLeafQuantized<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,settings);
+            bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
+            //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: COPY LAYOUT FOR LARGE NODES !!!
 #if PROFILE
           }); 
 #endif	
@@ -333,7 +340,7 @@ namespace embree
           NodeRef root; LBBox3fa tbounds;
           const PrimInfo pinfo = createPrimRefArrayMBlur<Mesh>(t,bvh->numTimeSteps,scene,prims,bvh->scene->progressInterface);
           if (pinfo.size()) {
-            std::tie(root, tbounds) = BVHNBuilderMblur<N>::build(bvh,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),t),bvh->scene->progressInterface,prims.data(),pinfo,settings);
+            std::tie(root, tbounds) = BVHNBuilderMblurVirtual<N>::build(&bvh->alloc,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),t),bvh->scene->progressInterface,prims.data(),pinfo,settings);
           } else {
             tbounds = LBBox3fa(empty);
             root = BVH::emptyNode;
