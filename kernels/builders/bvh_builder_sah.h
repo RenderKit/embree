@@ -384,6 +384,9 @@ namespace embree
       typedef Split2<BinSplit<NUM_OBJECT_BINS>,SpatialBinSplit<NUM_SPATIAL_BINS> > Split;
       typedef GeneralBVHBuilder::BuildRecordT<Set,Split> BuildRecord;
       typedef GeneralBVHBuilder::Settings Settings;
+
+      static const unsigned GEOMID_MASK = 0x00FFFFFF;
+      static const unsigned SPLITS_MASK = 0xFF000000;
       
       template<typename ReductionTy, typename UserCreateLeaf>
       struct CreateLeafExt
@@ -396,7 +399,7 @@ namespace embree
         __noinline ReductionTy operator() (const BuildRecord& current, Allocator alloc) const
         {
           for (size_t i=current.prims.begin(); i<current.prims.end(); i++) 
-            prims[i].lower.a &= 0x00FFFFFF;
+            prims[i].lower.a &= GEOMID_MASK;
 
           return userCreateLeaf(current,alloc);
         }
