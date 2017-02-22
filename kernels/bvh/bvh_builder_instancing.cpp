@@ -206,7 +206,9 @@ namespace embree
         bvh->set(refs[0].node,refs[0].bounds(),numPrimitives);
         return;
         }*/
-      
+
+      bvh->alloc.init_estimate(refs.size()*16);
+
       /* compute PrimRefs */
       prims.resize(refs.size());
       const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(), size_t(1024), PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {

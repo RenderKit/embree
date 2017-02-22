@@ -56,7 +56,8 @@ namespace embree
 
       __forceinline CreateLeaf (BVH* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
       
-      __forceinline NodeRef operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) const
+      template<typename BuildRecord>
+      __forceinline NodeRef operator() (const BuildRecord& current, Allocator* alloc) const
       {
         size_t n = current.prims.size();
         size_t items = Primitive::blocks(n);
@@ -100,37 +101,6 @@ namespace embree
       PrimRef* prims;
     };
 
-
-    template<int N, typename Primitive>
-    struct CreateLeafSpatial
-    {
-      typedef BVHN<N> BVH;
-      typedef typename BVH::NodeRef NodeRef;
-
-      __forceinline CreateLeafSpatial (BVH* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
-      
-      // __noinline is workaround for ICC2016 compiler bug
-      __noinline NodeRef operator() (const BVHBuilderBinnedFastSpatialSAH::BuildRecord& current, Allocator* alloc) const
-      {
-        size_t n = current.prims.size();
-        size_t items = Primitive::blocks(n);
-        size_t start = current.prims.begin();
-
-        // remove number of split encoding
-        for (size_t i=0; i<n; i++) 
-          prims[start+i].lower.a &= 0x00FFFFFF;
-
-        Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
-        for (size_t i=0; i<items; i++) {
-          accel[i].fill(prims,start,current.prims.end(),bvh->scene);
-        }
-        return BVH::encodeLeaf((char*)accel,items);
-      }
-
-      BVH* bvh;
-      PrimRef* prims;
-    };
-    
     /************************************************************************************/ 
     /************************************************************************************/
     /************************************************************************************/
@@ -140,6 +110,8 @@ namespace embree
     struct BVHNBuilderSAH : public Builder
     {
       typedef BVHN<N> BVH;
+      typedef typename BVHN<N>::NodeRef NodeRef;
+
       BVH* bvh;
       Scene* scene;
       Mesh* mesh;
@@ -194,7 +166,9 @@ namespace embree
 
             /* call BVH builder */            
             bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef),settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD);
-            BVHNBuilder<N>::build(bvh,CreateLeaf<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,settings);
+            NodeRef root = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,settings);
+            bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
+            bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
 
 #if PROFILE
           }); 
@@ -225,6 +199,8 @@ namespace embree
     struct BVHNBuilderSAHQuantized : public Builder
     {
       typedef BVHN<N> BVH;
+      typedef typename BVHN<N>::NodeRef NodeRef;
+
       BVH* bvh;
       Scene* scene;
       Mesh* mesh;
@@ -268,8 +244,9 @@ namespace embree
         
             /* call BVH builder */
             bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef),settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD);
-            BVHNBuilderQuantized<N>::build(bvh,CreateLeafQuantized<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,settings);
-
+            NodeRef root = BVHNBuilderQuantizedVirtual<N>::build(&bvh->alloc,CreateLeafQuantized<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,settings);
+            bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
+            //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: COPY LAYOUT FOR LARGE NODES !!!
 #if PROFILE
           }); 
 #endif	
@@ -363,7 +340,7 @@ namespace embree
           NodeRef root; LBBox3fa tbounds;
           const PrimInfo pinfo = createPrimRefArrayMBlur<Mesh>(t,bvh->numTimeSteps,scene,prims,bvh->scene->progressInterface);
           if (pinfo.size()) {
-            std::tie(root, tbounds) = BVHNBuilderMblur<N>::build(bvh,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),t),bvh->scene->progressInterface,prims.data(),pinfo,settings);
+            std::tie(root, tbounds) = BVHNBuilderMblurVirtual<N>::build(&bvh->alloc,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),t),bvh->scene->progressInterface,prims.data(),pinfo,settings);
           } else {
             tbounds = LBBox3fa(empty);
             root = BVH::emptyNode;
@@ -443,38 +420,7 @@ namespace embree
           createPrimRefArray<Mesh>  (mesh ,prims0,bvh->scene->progressInterface) : 
           createPrimRefArray<Mesh,false>(scene,prims0,bvh->scene->progressInterface);
 
-        /* primref array could be smaller due to invalid geometry */
-        const size_t numPrimitives = pinfo.size();
-
-        /* calculate total surface area */ // FIXME: this sum is not deterministic
-        const float A = (float) parallel_reduce(size_t(0),numPrimitives,0.0, [&] (const range<size_t>& r) -> double {
-            double A = 0.0f;
-            for (size_t i=r.begin(); i<r.end(); i++)
-            {
-              PrimRef& prim = prims0[i];
-              A += area(prim.bounds());
-            }
-            return A;
-          },std::plus<double>());
-
-        const float f = 10.0f;
-        const float invA = 1.0f / A;
-        /* calculate maximal number of spatial splits per primitive */
-        parallel_for( size_t(0), numPrimitives, [&](const range<size_t>& r)
-                      {
-                        for (size_t i=r.begin(); i<r.end(); i++)
-                        {
-                          PrimRef& prim = prims0[i];
-                          assert((prim.lower.a & 0xFF000000) == 0);
-                          const float nf = ceilf(f*pinfo.size()*area(prim.bounds()) * invA);
-                          // FIXME: is there a better general heuristic ?
-                          size_t n = 4+min(ssize_t(127-4), max(ssize_t(1), ssize_t(nf)));
-                          prim.lower.a |= n << 24;              
-                        }
-                      });
-        
         Splitter splitter(scene);
-
 
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
 
@@ -485,7 +431,7 @@ namespace embree
           typename BVH::CreateAlloc(bvh),
           typename BVH::AlignedNode::Create2(),
           typename BVH::AlignedNode::Set2(),
-          CreateLeafSpatial<N,Primitive>(bvh,prims0.data()),
+          CreateLeaf<N,Primitive>(bvh,prims0.data()),
           splitter,
           bvh->scene->progressInterface,
           prims0.data(),

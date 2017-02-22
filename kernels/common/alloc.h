@@ -156,6 +156,17 @@ namespace embree
       ThreadLocal allocators[2];
     };
 
+    /*! Builder interface to create thread local allocator */
+    struct CreateAlloc2
+    {
+    public:
+      __forceinline CreateAlloc2 (FastAllocator* allocator) : allocator(allocator) {}
+      __forceinline ThreadLocal2* operator() () const { return allocator->threadLocal2();  }
+
+    private:
+      FastAllocator* allocator;
+    };
+
     FastAllocator (Device* device, bool osAllocation) 
       : device(device), slotMask(0), usedBlocks(nullptr), freeBlocks(nullptr), use_single_mode(false), defaultBlockSize(PAGE_SIZE), 
       growSize(PAGE_SIZE), log2_grow_size_scale(0), bytesUsed(0), bytesWasted(0), thread_local_allocators2(this), osAllocation(osAllocation)

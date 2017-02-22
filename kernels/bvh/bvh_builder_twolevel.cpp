@@ -25,7 +25,7 @@
 #define MAX_OPEN_SIZE 10000
 
 /* new open/merge builder */
-#define ENABLE_DIRECT_SAH_MERGE_BUILDER 0
+#define ENABLE_DIRECT_SAH_MERGE_BUILDER 1
 
 /* sequential opening phase in old code path */
 #define ENABLE_OPEN_SEQUENTIAL 0
@@ -164,6 +164,8 @@ namespace embree
 
         DBG_PRINT(refs.size());
 
+        bvh->alloc.init_estimate(refs.size()*16); // FIXME: increase estimate for opening case
+
 #if defined(TASKING_TBB) && defined(__AVX512ER__) && USE_TASK_ARENA // KNL
         tbb::task_arena limited(32);
         limited.execute([&]
@@ -191,11 +193,6 @@ namespace embree
               return pinfo;
             }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
 #endif   
-
-          /* initialize allocator */
-          // FIXME ?
-          bvh->alloc.initGrowSizeAndNumSlots(pinfo.size()*sizeof(BuildRef));
-
        
           /* skip if all objects where empty */
           if (pinfo.size() == 0)
