@@ -107,33 +107,28 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
 
-      __forceinline CreateLeafSpatial (BVH* bvh, PrimRef* prims0) : bvh(bvh), prims0(prims0) {}
+      __forceinline CreateLeafSpatial (BVH* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
       
-      __forceinline NodeRef operator() (const BVHBuilderBinnedFastSpatialSAH::BuildRecord& current, Allocator* alloc) const
+      // __noinline is workaround for ICC2016 compiler bug
+      __noinline NodeRef operator() (const BVHBuilderBinnedFastSpatialSAH::BuildRecord& current, Allocator* alloc) const
       {
-        PrimRef* const source = prims0;
-
         size_t n = current.prims.size();
-
-
         size_t items = Primitive::blocks(n);
-
         size_t start = current.prims.begin();
 
         // remove number of split encoding
         for (size_t i=0; i<n; i++) 
-          source[start+i].lower.a &= 0x00FFFFFF;
+          prims[start+i].lower.a &= 0x00FFFFFF;
 
         Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
-        typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
-          accel[i].fill(source,start,current.prims.end(),bvh->scene);
+          accel[i].fill(prims,start,current.prims.end(),bvh->scene);
         }
-        return node;
+        return BVH::encodeLeaf((char*)accel,items);
       }
 
       BVH* bvh;
-      PrimRef* prims0;
+      PrimRef* prims;
     };
     
     /************************************************************************************/ 
