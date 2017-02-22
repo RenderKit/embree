@@ -45,7 +45,7 @@ struct RTCBuildSettings
   unsigned maxLeafSize;      //!< maximal size of a leaf
   float travCost;            //!< estimated cost of one traversal step
   float intCost;             //!< estimated cost of one primitive intersection
-  unsigned extraSpace;       //!< for spatial splitting we need extra space in the primitives array
+  unsigned extraSpace;       //!< for spatial splitting we need extra space at end of primitive array
 };
 
 /*! Creates default build settings.  */
@@ -90,7 +90,7 @@ typedef void  (*RTCSetNodeBoundsFunc) (void* nodePtr, const RTCBounds** bounds, 
 typedef void* (*RTCCreateLeafFunc) (RTCThreadLocalAllocator allocator, const RTCBuildPrimitive* prims, size_t numPrims, void* userPtr);
 
 /*! Callback to split a build primitive. */
-typedef void  (*RTCSplitPrimitiveFunc) (const RTCBuildPrimitive& prim, unsigned dim, float pos, RTCBounds& lprim, RTCBounds& rprim, void* userPtr);
+typedef void  (*RTCSplitPrimitiveFunc) (const RTCBuildPrimitive& prim, unsigned dim, float pos, RTCBounds& lbounds, RTCBounds& rbounds, void* userPtr);
 
 /*! Callback to provide build progress. */
 typedef void (*RTCBuildProgressFunc) (size_t dn, void* userPtr);
