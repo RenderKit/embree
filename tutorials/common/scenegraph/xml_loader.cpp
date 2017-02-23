@@ -868,7 +868,7 @@ namespace embree
   Ref<SceneGraph::Node> XMLLoader::loadTriangleMesh(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    SceneGraph::TriangleMeshNode* mesh = new SceneGraph::TriangleMeshNode(material);
+    Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(material);
 
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++)
@@ -887,13 +887,13 @@ namespace embree
       mesh->triangles.push_back(SceneGraph::TriangleMeshNode::Triangle(triangles[i].x,triangles[i].y,triangles[i].z));
 
     mesh->verify();
-    return mesh;
+    return mesh.dynamicCast<SceneGraph::Node>();
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadQuadMesh(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    SceneGraph::QuadMeshNode* mesh = new SceneGraph::QuadMeshNode(material);
+    Ref<SceneGraph::QuadMeshNode> mesh = new SceneGraph::QuadMeshNode(material);
 
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++)
@@ -911,7 +911,7 @@ namespace embree
     for (size_t i=0; i<indices.size(); i++) 
       mesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(indices[i].x,indices[i].y,indices[i].z,indices[i].w));
     mesh->verify();
-    return mesh;
+    return mesh.dynamicCast<SceneGraph::Node>();
   }
 
   RTCSubdivisionMode parseSubdivMode(const Ref<XML>& xml)
@@ -929,7 +929,7 @@ namespace embree
   Ref<SceneGraph::Node> XMLLoader::loadSubdivMesh(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    SceneGraph::SubdivMeshNode* mesh = new SceneGraph::SubdivMeshNode(material);
+    Ref<SceneGraph::SubdivMeshNode> mesh = new SceneGraph::SubdivMeshNode(material);
 
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++)
@@ -962,13 +962,13 @@ namespace embree
     mesh->vertex_creases      = loadUIntArray(xml->childOpt("vertex_creases"));
     mesh->vertex_crease_weights = loadFloatArray(xml->childOpt("vertex_crease_weights"));
     mesh->verify();
-    return mesh;
+    return mesh.dynamicCast<SceneGraph::Node>();
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadLineSegments(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    SceneGraph::LineSegmentsNode* mesh = new SceneGraph::LineSegmentsNode(material);
+    Ref<SceneGraph::LineSegmentsNode> mesh = new SceneGraph::LineSegmentsNode(material);
 
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++)
@@ -981,7 +981,7 @@ namespace embree
 
     mesh->indices = loadUIntArray(xml->childOpt("indices"));
     mesh->verify();
-    return mesh;
+    return mesh.dynamicCast<SceneGraph::Node>();
   }
 
   avector<Vec3fa> convert_bspline_to_bezier(const std::vector<unsigned>& indices, const avector<Vec3fa>& positions)
@@ -1008,7 +1008,7 @@ namespace embree
   Ref<SceneGraph::Node> XMLLoader::loadBezierCurves(const Ref<XML>& xml, bool hair) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    SceneGraph::HairSetNode* mesh = new SceneGraph::HairSetNode(hair,material);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(hair,material);
 
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++)
@@ -1029,13 +1029,13 @@ namespace embree
       mesh->tessellation_rate = atoi(tessellation_rate.c_str());
 
     mesh->verify();
-    return mesh;
+    return mesh.dynamicCast<SceneGraph::Node>();
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadBSplineCurves(const Ref<XML>& xml, bool hair) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    SceneGraph::HairSetNode* mesh = new SceneGraph::HairSetNode(hair,material);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(hair,material);
 
     std::vector<unsigned> indices = loadUIntArray(xml->childOpt("indices"));
     mesh->hairs.resize(indices.size());
@@ -1053,7 +1053,7 @@ namespace embree
     }
 
     mesh->verify();
-    return mesh;
+    return mesh.dynamicCast<SceneGraph::Node>();
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadTransformNode(const Ref<XML>& xml) 
@@ -1231,7 +1231,7 @@ namespace embree
   {
     size_t matid = xml->child("materiallist")->body[0].Int();
     Ref<SceneGraph::MaterialNode> material = id2material.at(matid);
-    SceneGraph::TriangleMeshNode* mesh = new SceneGraph::TriangleMeshNode(material);
+    Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(material);
 
     mesh->positions.push_back(loadVec3faArray(xml->childOpt("vertex")));
     mesh->normals = loadVec3faArray(xml->childOpt("normal"));
@@ -1241,7 +1241,7 @@ namespace embree
     for (size_t i=0; i<triangles.size(); i++) 
       mesh->triangles.push_back(SceneGraph::TriangleMeshNode::Triangle(triangles[i].x,triangles[i].y,triangles[i].z));
 
-    return mesh;
+    return mesh.dynamicCast<SceneGraph::Node>();
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadBGFTransformNode(const Ref<XML>& xml) 
