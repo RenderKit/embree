@@ -1694,24 +1694,24 @@ namespace embree
       rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  interpolation_triangle_indices , 0, 3*sizeof(unsigned int));
       AssertNoError(device);
       
-      float* vertices0 = new float[M];
+      std::vector<float> vertices0(M);
       for (size_t i=0; i<M; i++) vertices0[i] = random_float();
-      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0, 0, N*sizeof(float));
+      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0.data(), 0, N*sizeof(float));
       AssertNoError(device);
       
-      /*float* vertices1 = new float[M];
+      /*std::vector<float> vertices1(M);
         for (size_t i=0; i<M; i++) vertices1[i] = random_float();
-        rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1, 0, N*sizeof(float));
+        rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1.data(), 0, N*sizeof(float));
         AssertNoError(device);*/
       
-      float* user_vertices0 = new float[M];
+      std::vector<float> user_vertices0(M);
       for (size_t i=0; i<M; i++) user_vertices0[i] = random_float();
-      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0, 0, N*sizeof(float));
+      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0.data(), 0, N*sizeof(float));
       AssertNoError(device);
       
-      float* user_vertices1 = new float[M];
+      std::vector<float> user_vertices1(M);
       for (size_t i=0; i<M; i++) user_vertices1[i] = random_float();
-      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1, 0, N*sizeof(float));
+      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1.data(), 0, N*sizeof(float));
       AssertNoError(device);
       
       rtcDisable(scene,geomID);
@@ -1720,20 +1720,16 @@ namespace embree
       AssertNoError(device);
       
       bool passed = true;
-      passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,N,N);
-      //passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,N,N);
-      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,N,N);
-      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,N,N);
+      passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0.data(),N,N);
+      //passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1.data(),N,N);
+      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),N,N);
+      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),N,N);
       
-      passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,1,N);
-      //passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,1,N);
-      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,1,N);
-      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,1,N);
+      passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0.data(),1,N);
+      //passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1.data(),1,N);
+      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),1,N);
+      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),1,N);
       
-      delete[] vertices0;
-      //delete[] vertices1;
-      delete[] user_vertices0;
-      delete[] user_vertices1;
       AssertNoError(device);
 
       return (VerifyApplication::TestReturnValue) passed;
@@ -1803,24 +1799,24 @@ namespace embree
       rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  interpolation_hair_indices , 0, sizeof(unsigned int));
       AssertNoError(device);
       
-      float* vertices0 = new float[M];
+      std::vector<float> vertices0(M);
       for (size_t i=0; i<M; i++) vertices0[i] = random_float();
-      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0, 0, N*sizeof(float));
+      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0.data(), 0, N*sizeof(float));
       AssertNoError(device);
       
-      /*float* vertices1 = new float[M];
+      /*std::vector<float> vertices1(M);
         for (size_t i=0; i<M; i++) vertices1[i] = random_float();
-        rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1, 0, N*sizeof(float));
+        rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1.data(), 0, N*sizeof(float));
         AssertNoError(device);*/
       
-      float* user_vertices0 = new float[M];
+      std::vector<float> user_vertices0(M);
       for (size_t i=0; i<M; i++) user_vertices0[i] = random_float();
-      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0, 0, N*sizeof(float));
+      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0.data(), 0, N*sizeof(float));
       AssertNoError(device);
       
-      float* user_vertices1 = new float[M];
+      std::vector<float> user_vertices1(M);
       for (size_t i=0; i<M; i++) user_vertices1[i] = random_float();
-      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1, 0, N*sizeof(float));
+      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1.data(), 0, N*sizeof(float));
       AssertNoError(device);
       
       rtcDisable(scene,geomID);
@@ -1829,20 +1825,16 @@ namespace embree
       AssertNoError(device);
       
       bool passed = true;
-      passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,N,N);
-      //passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,N,N);
-      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,N,N);
-      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,N,N);
+      passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0.data(),N,N);
+      //passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1.data(),N,N);
+      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),N,N);
+      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),N,N);
       
-      passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,1,N);
-      //passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,1,N);
-      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,1,N);
-      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,1,N);
+      passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0.data(),1,N);
+      //passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1.data(),1,N);
+      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),1,N);
+      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),1,N);
       
-      delete[] vertices0;
-      //delete[] vertices1;
-      delete[] user_vertices0;
-      delete[] user_vertices1;
       AssertNoError(device);
 
       return (VerifyApplication::TestReturnValue) passed;
