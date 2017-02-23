@@ -27,7 +27,7 @@
 #define USE_SUBTREE_SIZE_FOR_BINNING 1
 #define REDUCE_BINS 0
 
-#define OPEN_STATS(x) x 
+#define OPEN_STATS(x) x
 
 #define MAX_OPENED_CHILD_NODES 8
 #define MAX_EXTEND_THRESHOLD   0.1f
@@ -250,12 +250,12 @@ namespace embree
         } 
 
 
-        __noinline size_t openNodesUntilSetIsFull(PrimInfoExtRange& set)
+        __noinline size_t openNodesUntilSetIsFull(PrimInfoExtRange& set, const float threshold = MAX_EXTEND_THRESHOLD)
         {
-          const Vec3fa diag = set.geomBounds.size();
-          const size_t dim = maxDim(diag);
-          assert(diag[dim] > 0.0f);
-          const float inv_max_extend = 1.0f / diag[dim];
+          vfloat4 smallest_extend = pos_inf;
+          for (size_t i=set.begin();i<set.end();i++)            
+            smallest_extend = min(smallest_extend,(vfloat4)prims0[i].bounds().size());
+          const vbool4 mask = smallest_extend > 0.0f;
 
           size_t extra_elements = 0;
           const size_t ext_range_start = set.end();
@@ -264,7 +264,7 @@ namespace embree
           {
             const size_t current_end = set.end()+extra_elements;
             for (size_t i=set.begin();i<current_end;i++)
-              if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD)
+              if (!prims0[i].node.isLeaf() && any(((vfloat4)prims0[i].bounds().size() > smallest_extend) & mask))
               {
                 PrimRef tmp[MAX_OPENED_CHILD_NODES];
                 const size_t n = nodeOpenerFunc(prims0[i],tmp);
@@ -278,12 +278,63 @@ namespace embree
                 extra_elements += n-1;            
               }
 
+            //smallest_extend *= 1.1f;
+
             if (unlikely(set.end()+extra_elements == current_end)) break;
           }
-
+          
           assert(extra_elements <= set.ext_range_size());
           return extra_elements;
         }                 
+
+
+        __noinline void openNodesBasedOnExtendLoop(PrimInfoExtRange& set, const size_t est_new_elements)
+        {
+          const Vec3fa diag = set.geomBounds.size();
+          const size_t dim = maxDim(diag);
+          assert(diag[dim] > 0.0f);
+          const float inv_max_extend = 1.0f / diag[dim];
+          size_t next_iteration_extra_elements = est_new_elements;          
+          while(next_iteration_extra_elements <= set.ext_range_size()) 
+          {
+            next_iteration_extra_elements = 0;
+            size_t extra_elements = 0;
+            const size_t ext_range_start = set.end();
+
+            for (size_t i=set.begin(); i<set.end(); i++)
+            {
+              if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD)
+              {
+                PrimRef tmp[MAX_OPENED_CHILD_NODES];
+                const size_t n = nodeOpenerFunc(prims0[i],tmp);
+                assert(extra_elements + n-1 <= set.ext_range_size());
+                for (size_t j=0;j<n;j++)
+                  set.extend(tmp[j].bounds());
+                  
+                prims0[i] = tmp[0];
+                for (size_t j=1;j<n;j++)
+                  prims0[ext_range_start+extra_elements+j-1] = tmp[j]; 
+                extra_elements += n-1;
+
+                for (size_t j=0;j<n;j++)
+                  if (!tmp[j].node.isLeaf() && tmp[j].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD)
+                    next_iteration_extra_elements += MAX_OPENED_CHILD_NODES-1;
+
+              }
+            }
+            assert( extra_elements <= set.ext_range_size());
+            set._end += extra_elements;
+            OPEN_STATS( if (extra_elements) stat_ext_elements += extra_elements );
+
+            /* PRINT(extra_elements); */
+            /* PRINT(next_iteration_extra_elements); */
+            for (size_t i=set.begin();i<set.end();i++)
+              assert(prims0[i].numPrimitives() > 0);
+
+            if (unlikely(next_iteration_extra_elements == 0)) break;
+          }
+        } 
+
         // ==========================================================================
         // ==========================================================================
         // ==========================================================================
@@ -318,58 +369,89 @@ namespace embree
           if (unlikely(set.has_ext_range()))
           {
             p =  getProperties(set);
-#if 1
             const bool commonGeomID       = p.second;
             if (commonGeomID)
             {
+#if 0
               size_t extra_elements = 0;
 
               const size_t est_new_elements = p.first;
               const size_t max_ext_range_size = set.ext_range_size();
-              if (est_new_elements <= max_ext_range_size)
-                extra_elements = openNodesBasedOnExtend(set);
-              else
-               extra_elements = openNodesUntilSetIsFull(set);
-              OPEN_STATS( if (extra_elements) stat_ext_elements += extra_elements );
 
-              set._end += extra_elements;
-              set.set_ext_range(set.end()); /* disable opening */
-            }
+               if (est_new_elements <= max_ext_range_size) 
+                 extra_elements = openNodesBasedOnExtend(set); 
+               else 
+                 extra_elements = openNodesUntilSetIsFull(set);
+               OPEN_STATS( if (extra_elements) stat_ext_elements += extra_elements );
+               set._end += extra_elements;
 #endif
+               set.set_ext_range(set.end()); /* disable opening */
+            }
           }
+
+          
+
           if (unlikely(set.has_ext_range()))
           {
+            const size_t est_new_elements = p.first;
+#if 0
+            PRINT(set);
+            const ObjectSplit object_split_unopened = object_find(set,logBlockSize);
+            PRINT( object_split_unopened );
+            PrimInfoExtRange old_set = set;
+            PrimRef *old_refs = (PrimRef *)alignedMalloc(sizeof(PrimRef)*set.size(),64);
+            for (size_t i=set.begin();i<set.end();i++)
+              old_refs[i-set.begin()] = prims0[i];
+
+            openNodesBasedOnExtendLoop(set,est_new_elements);
+
+            const ObjectSplit object_split = object_find(set,logBlockSize);
+            PRINT( object_split );
+            ObjectSplit split = object_split;
+
+            if (object_split_unopened.sah <= object_split.sah)
+            {
+              PRINT("RESTORE");
+              const size_t diff = set.end()-old_set.end();
+              OPEN_STATS( stat_ext_elements -= diff );
+              set = old_set;
+              for (size_t i=set.begin();i<set.end();i++)
+                prims0[i] = old_refs[i-set.begin()];
+              split = object_split_unopened;
+            }
+            alignedFree(old_refs);
+            return Split(split,split.sah);
+#else
             const size_t max_ext_range_size = set.ext_range_size();
             size_t extra_elements = 0;
 
-            const size_t est_new_elements = p.first;
             if (est_new_elements <= max_ext_range_size)
               extra_elements = openNodesBasedOnExtend(set);
 
             OPEN_STATS( if (extra_elements) stat_ext_elements += extra_elements );
 
             set._end += extra_elements;
+#endif
             if (set.ext_range_size() <= 1) set.set_ext_range(set.end()); /* disable opening */
           }
         
             
           /* find best split */
-          SplitInfo oinfo;
-          const ObjectSplit object_split = object_find(set,logBlockSize,oinfo);
+          const ObjectSplit object_split = object_find(set,logBlockSize);
           const float object_split_sah = object_split.splitSAH();
           return Split(object_split,object_split_sah);
         }
 
 
         /*! finds the best object split */
-        __forceinline const ObjectSplit object_find(const PrimInfoExtRange& set,const size_t logBlockSize, SplitInfo& info)
+        __forceinline const ObjectSplit object_find(const PrimInfoExtRange& set,const size_t logBlockSize)
         {
-          if (set.size() < PARALLEL_THRESHOLD) return sequential_object_find(set,logBlockSize,info);
-          else                                 return parallel_object_find  (set,logBlockSize,info);
+          if (set.size() < PARALLEL_THRESHOLD) return sequential_object_find(set,logBlockSize);
+          else                                 return parallel_object_find  (set,logBlockSize);
         }
 
         /*! finds the best object split */
-        __noinline const ObjectSplit sequential_object_find(const PrimInfoExtRange& set, const size_t logBlockSize, SplitInfo& info)
+        __noinline const ObjectSplit sequential_object_find(const PrimInfoExtRange& set, const size_t logBlockSize)
         {
           ObjectBinner binner(empty); 
 #if REDUCE_BINS == 1
@@ -385,12 +467,13 @@ namespace embree
           binner.bin(prims0,set.begin(),set.end(),mapping);
 #endif
           ObjectSplit s = binner.best(mapping,logBlockSize);
+          SplitInfo info;
           binner.getSplitInfo(mapping, s, info);
           return s;
         }
 
         /*! finds the best split */
-        __noinline const ObjectSplit parallel_object_find(const PrimInfoExtRange& set, const size_t logBlockSize, SplitInfo& info)
+        __noinline const ObjectSplit parallel_object_find(const PrimInfoExtRange& set, const size_t logBlockSize)
         {
           ObjectBinner binner(empty);
 #if REDUCE_BINS == 1
@@ -411,6 +494,7 @@ namespace embree
                                      return binner; },
                                    [&] (const ObjectBinner& b0, const ObjectBinner& b1) -> ObjectBinner { ObjectBinner r = b0; r.merge(b1,_mapping.size()); return r; });
           ObjectSplit s = binner.best(mapping,logBlockSize);
+          SplitInfo info;
           binner.getSplitInfo(mapping, s, info);
           return s;
         }
