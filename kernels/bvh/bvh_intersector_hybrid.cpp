@@ -50,6 +50,10 @@ namespace embree
       valid &= ray.valid();
 #endif
 
+      /* return if there are no valid rays */
+      const size_t valid_bits = movemask(valid);
+      if (unlikely(valid_bits == 0)) return;
+
       /* verify correct input */
       assert(all(valid,ray.valid()));
       assert(all(valid,ray.tnear >= 0.0f));
@@ -57,9 +61,8 @@ namespace embree
 
       /* if the rays belong to different time segments, immediately switch to single ray traversal */
       Precalculations pre(valid,ray,bvh->numTimeSteps);
-      size_t valid_bits = movemask(valid);
       const size_t valid_first = __bsf(valid_bits);
-      if (unlikely((types & BVH_MB) && valid_bits && (movemask(pre.itime() == pre.itime(valid_first)) != valid_bits)))
+      if (unlikely((types & BVH_MB) && (movemask(pre.itime() == pre.itime(valid_first)) != valid_bits)))
       {
         intersectSingle(valid, bvh, pre, ray, context);
         AVX_ZERO_UPPER();
@@ -79,7 +82,9 @@ namespace embree
 
       /* compute near/far per ray */
       Vec3viK nearXYZ;
+#if FORCE_SINGLE_MODE == 0
       if (single)
+#endif
       {
         nearXYZ.x = select(rdir.x >= 0.0f,vint<K>(0*(int)sizeof(vfloat<N>)),vint<K>(1*(int)sizeof(vfloat<N>)));
         nearXYZ.y = select(rdir.y >= 0.0f,vint<K>(2*(int)sizeof(vfloat<N>)),vint<K>(3*(int)sizeof(vfloat<N>)));
@@ -114,7 +119,7 @@ namespace embree
         const vbool<K> active = curDist < ray_tfar;
         if (unlikely(none(active)))
           continue;
-        
+
         /* switch to single ray traversal */
 #if (!defined(__WIN32__) || defined(__X86_64__)) && defined(__SSE4_2__)
 #if FORCE_SINGLE_MODE == 0
@@ -254,12 +259,15 @@ namespace embree
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
     void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::occluded(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray, IntersectContext* context)
     {
-      /*! filter out already occluded and invalid rays */
+      /* filter out already occluded and invalid rays */
       vbool<K> valid = (*valid_i == -1) & (ray.geomID != 0);
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
       valid &= ray.valid();
 #endif
-      if (none(valid)) return;
+
+      /* return if there are no valid rays */
+      const size_t valid_bits = movemask(valid);
+      if (unlikely(valid_bits == 0)) return;
 
       /* verify correct input */
       assert(all(valid,ray.valid()));
@@ -268,9 +276,8 @@ namespace embree
 
       /* if the rays belong to different time segments, immediately switch to single ray traversal */
       Precalculations pre(valid,ray,bvh->numTimeSteps);
-      size_t valid_bits = movemask(valid);
       const size_t valid_first = __bsf(valid_bits);
-      if (unlikely((types & BVH_MB) && valid_bits && (movemask(pre.itime() == pre.itime(valid_first)) != valid_bits)))
+      if (unlikely((types & BVH_MB) && (movemask(pre.itime() == pre.itime(valid_first)) != valid_bits)))
       {
         occludedSingle(valid, bvh, pre, ray, context);
         AVX_ZERO_UPPER();
