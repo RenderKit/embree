@@ -2804,7 +2804,7 @@ namespace embree
       task->scene = new VerifyScene(thread->device,sflag,aflags_all);
       if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
       if (task->cancelBuild) rtcSetProgressMonitorFunction(*task->scene,monitorProgressFunction,nullptr);
-      avector<Sphere*> spheres;
+      std::vector<std::unique_ptr<Sphere>> spheres;
       
       for (unsigned int j=0; j<10; j++) 
       {
@@ -2831,8 +2831,10 @@ namespace embree
 	case 7: task->scene->addHair  (task->sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,task->test->random_motion_vector(1.0f)); break; 
 
         case 8: {
-	  Sphere* sphere = new Sphere(pos,2.0f); spheres.push_back(sphere); 
-	  task->scene->addUserGeometryEmpty(task->sampler,RTC_GEOMETRY_STATIC,sphere); break;
+	  std::unique_ptr<Sphere> sphere(new Sphere(pos,2.0f));  
+	  task->scene->addUserGeometryEmpty(task->sampler,RTC_GEOMETRY_STATIC,sphere.get());
+          spheres.push_back(std::move(sphere));
+          break;
         }
 	}
         //if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
@@ -2871,10 +2873,7 @@ namespace embree
 	task->barrier.wait();
 
       task->scene = nullptr;
-      if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
-
-      for (size_t i=0; i<spheres.size(); i++)
-	delete spheres[i];
+      if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;
     }
 
     delete thread; thread = nullptr;
