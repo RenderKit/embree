@@ -47,18 +47,18 @@ namespace embree
 
     public:
 
-      static __forceinline void intersect1(const BVH* bvh, 
-                                           NodeRef root, 
-                                           const size_t k, 
-                                           Precalculations& pre,
-                                           RayK<K>& ray, 
-                                           const Vec3vfK &ray_org, 
-                                           const Vec3vfK &ray_dir, 
-                                           const Vec3vfK &ray_rdir, 
-                                           const vfloat<K> &ray_tnear, 
-                                           const vfloat<K> &ray_tfar,
-                                           const Vec3viK& nearXYZ, 
-                                           IntersectContext* context)
+      static void intersect1(const BVH* bvh, 
+                             NodeRef root, 
+                             const size_t k, 
+                             Precalculations& pre,
+                             RayK<K>& ray, 
+                             const Vec3vfK &ray_org, 
+                             const Vec3vfK &ray_dir, 
+                             const Vec3vfK &ray_rdir, 
+                             const vfloat<K> &ray_tnear, 
+                             const vfloat<K> &ray_tfar,
+                             const Vec3viK& nearXYZ, 
+                             IntersectContext* context)
       {
 	/*! stack state */
 	StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
@@ -120,9 +120,9 @@ namespace embree
 	}
       }
       
-      static __forceinline bool occluded1(const BVH* bvh, NodeRef root, const size_t k, Precalculations& pre,
-                                          RayK<K>& ray, const Vec3vfK &ray_org, const Vec3vfK &ray_dir, const Vec3vfK &ray_rdir, const vfloat<K> &ray_tnear, const vfloat<K> &ray_tfar,
-                                          const Vec3viK& nearXYZ, IntersectContext* context)
+      static bool occluded1(const BVH* bvh, NodeRef root, const size_t k, Precalculations& pre,
+                            RayK<K>& ray, const Vec3vfK &ray_org, const Vec3vfK &ray_dir, const Vec3vfK &ray_rdir, const vfloat<K> &ray_tnear, const vfloat<K> &ray_tfar,
+                            const Vec3viK& nearXYZ, IntersectContext* context)
       {
 	/*! stack state */
 	NodeRef stack[stackSizeSingle];  //!< stack of nodes that still need to get traversed
