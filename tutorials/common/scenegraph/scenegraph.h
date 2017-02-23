@@ -50,7 +50,7 @@ namespace embree
       Node (const std::string& name) 
         : name(name), indegree(0), closed(false) {}
 
-       /* resets indegree and closed parameters */
+      /* resets indegree and closed parameters */
       void reset()
       {
         std::set<Ref<Node>> done;
@@ -98,9 +98,8 @@ namespace embree
     public:
       std::string fileName; // when set to some filename the exporter references this file
       std::string name;     // name of this node
-    protected:
-      size_t indegree;   // number of nodes pointing to us
-      bool closed;       // determines if the subtree may represent an instance
+      size_t indegree;      // number of nodes pointing to us
+      bool closed;          // determines if the subtree may represent an instance
     };
 
     struct Transformations
@@ -815,8 +814,6 @@ namespace embree
       unsigned tessellation_rate;
     };
     
-    Ref<Node> flatten(Ref<Node> node, const Transformations& spaces = Transformations(one));
-
     enum InstancingMode { INSTANCING_NONE, INSTANCING_GEOMETRY, INSTANCING_SCENE_GEOMETRY, INSTANCING_SCENE_GROUP };
     Ref<Node> flatten(Ref<Node> node, InstancingMode mode, const SceneGraph::Transformations& spaces = Transformations(one));
     Ref<GroupNode> flatten(Ref<GroupNode> node, InstancingMode mode, const SceneGraph::Transformations& spaces = Transformations(one));

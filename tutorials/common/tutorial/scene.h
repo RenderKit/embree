@@ -46,7 +46,7 @@ namespace embree
     
   public:
     std::vector<Ref<SceneGraph::PerspectiveCameraNode>> cameras;  //!< list of all cameras
-    std::vector<Ref<SceneGraph::MaterialNode>> materials; //!< list of materials // FIXME: replacing std::vector by avector causes segfault!!
+    std::vector<Ref<SceneGraph::MaterialNode>> materials; //!< list of materials
     std::vector<Ref<SceneGraph::Node> > geometries;   //!< list of geometries
     std::vector<Ref<SceneGraph::Light>> lights;       //!< list of lights
   public:

@@ -323,7 +323,11 @@ namespace embree
 
   template<int mask>
   __forceinline const vint4 select(const vint4& t, const vint4& f) {
+#if defined(__SSE4_1__) 
     return _mm_castps_si128(_mm_blend_ps(_mm_castsi128_ps(f), _mm_castsi128_ps(t), mask));
+#else
+    return select(vboolf4(mask), t, f);
+#endif    
   }
 
   ////////////////////////////////////////////////////////////////////////////////

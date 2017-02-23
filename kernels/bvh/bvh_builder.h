@@ -22,14 +22,14 @@ namespace embree
   namespace isa
   {
     template<int N>
-      struct BVHNBuilder
+      struct BVHNBuilderVirtual
       {
         typedef BVHN<N> BVH;
         typedef typename BVH::NodeRef NodeRef;
         typedef FastAllocator::ThreadLocal2 Allocator;
       
         struct BVHNBuilderV {
-          void build(BVH* bvh, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings);
+          NodeRef build(FastAllocator* allocator, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings);
           virtual NodeRef createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) = 0;
         };
 
@@ -48,20 +48,20 @@ namespace embree
         };
 
         template<typename CreateLeafFunc>
-        static void build(BVH* bvh, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings) {
-          BVHNBuilderT<CreateLeafFunc>(createLeaf).build(bvh,progress,prims,pinfo,settings);
+        static NodeRef build(FastAllocator* allocator, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings) {
+          return BVHNBuilderT<CreateLeafFunc>(createLeaf).build(allocator,progress,prims,pinfo,settings);
         }
       };
 
     template<int N>
-      struct BVHNBuilderQuantized
+      struct BVHNBuilderQuantizedVirtual
       {
         typedef BVHN<N> BVH;
         typedef typename BVH::NodeRef NodeRef;
         typedef FastAllocator::ThreadLocal2 Allocator;
       
         struct BVHNBuilderV {
-          void build(BVH* bvh, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings);
+          NodeRef build(FastAllocator* allocator, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings);
           virtual NodeRef createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) = 0;
         };
 
@@ -80,13 +80,13 @@ namespace embree
         };
 
         template<typename CreateLeafFunc>
-        static void build(BVH* bvh, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings) {
-          BVHNBuilderT<CreateLeafFunc>(createLeaf).build(bvh,progress,prims,pinfo,settings);
+        static NodeRef build(FastAllocator* allocator, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings) {
+          return BVHNBuilderT<CreateLeafFunc>(createLeaf).build(allocator,progress,prims,pinfo,settings);
         }
       };
 
     template<int N>
-      struct BVHNBuilderMblur
+      struct BVHNBuilderMblurVirtual
       {
         typedef BVHN<N> BVH;
         typedef typename BVH::AlignedNodeMB AlignedNodeMB;
@@ -94,7 +94,7 @@ namespace embree
         typedef FastAllocator::ThreadLocal2 Allocator;
       
         struct BVHNBuilderV {
-          std::tuple<NodeRef,LBBox3fa> build(BVH* bvh, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings);
+          std::tuple<NodeRef,LBBox3fa> build(FastAllocator* allocator, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings);
           virtual std::pair<NodeRef,LBBox3fa> createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) = 0;
         };
 
@@ -113,8 +113,8 @@ namespace embree
         };
 
         template<typename CreateLeafFunc>
-        static std::tuple<NodeRef,LBBox3fa>  build(BVH* bvh, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings) {
-          return BVHNBuilderT<CreateLeafFunc>(createLeaf).build(bvh,progress,prims,pinfo,settings);
+        static std::tuple<NodeRef,LBBox3fa> build(FastAllocator* allocator, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings) {
+          return BVHNBuilderT<CreateLeafFunc>(createLeaf).build(allocator,progress,prims,pinfo,settings);
         }
       };
   }

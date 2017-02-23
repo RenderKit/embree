@@ -28,8 +28,9 @@ typedef struct __RTCThreadLocalAllocator {}* RTCThreadLocalAllocator;
 /*! Quality settings for BVH build. */
 enum RTCBuildQuality
 {
-  RTC_BUILD_QUALITY_LOW = 0,     //!< low quality build (good for dynamic scenes)
-  RTC_BUILD_QUALITY_NORMAL = 1,  //!< standard quality level
+  RTC_BUILD_QUALITY_LOW = 0,     //!< build low quality BVH (good for dynamic scenes)
+  RTC_BUILD_QUALITY_NORMAL = 1,  //!< build standard quality BVH
+  RTC_BUILD_QUALITY_HIGH = 2,    //!< build high quality BVH
 };
 
 /*! Settings for builders */
@@ -44,6 +45,7 @@ struct RTCBuildSettings
   unsigned maxLeafSize;      //!< maximal size of a leaf
   float travCost;            //!< estimated cost of one traversal step
   float intCost;             //!< estimated cost of one primitive intersection
+  unsigned extraSpace;       //!< for spatial splitting we need extra space at end of primitive array
 };
 
 /*! Creates default build settings.  */
@@ -59,6 +61,7 @@ inline RTCBuildSettings rtcDefaultBuildSettings()
   settings.maxLeafSize = 32;
   settings.travCost = 1.0f;
   settings.intCost = 1.0f;
+  settings.extraSpace = 0;
   return settings;
 }
 
@@ -86,18 +89,22 @@ typedef void  (*RTCSetNodeBoundsFunc) (void* nodePtr, const RTCBounds** bounds, 
 /*! Callback to create a leaf node. */
 typedef void* (*RTCCreateLeafFunc) (RTCThreadLocalAllocator allocator, const RTCBuildPrimitive* prims, size_t numPrims, void* userPtr);
 
+/*! Callback to split a build primitive. */
+typedef void  (*RTCSplitPrimitiveFunc) (const RTCBuildPrimitive& prim, unsigned dim, float pos, RTCBounds& lbounds, RTCBounds& rbounds, void* userPtr);
+
 /*! Callback to provide build progress. */
 typedef void (*RTCBuildProgressFunc) (size_t dn, void* userPtr);
 
 /*! builds the BVH */
 RTCORE_API void* rtcBuildBVH(RTCBVH bvh,                                     //!< BVH to build
                              const RTCBuildSettings& settings,               //!< settings for BVH builder
-                             RTCBuildPrimitive* prims,                       //!< list of input primitives
-                             size_t numPrims,                                //!< number of input primitives
+                             RTCBuildPrimitive* primitives,                  //!< list of input primitives
+                             size_t numPrimitives,                           //!< number of input primitives
                              RTCCreateNodeFunc createNode,                   //!< creates a node
                              RTCSetNodeChildrenFunc setNodeChildren,         //!< sets pointer to all children
                              RTCSetNodeBoundsFunc setNodeBounds,             //!< sets bounds of all children
                              RTCCreateLeafFunc createLeaf,                   //!< creates a leaf
+                             RTCSplitPrimitiveFunc splitPrimitive,           //!< splits a primitive
                              RTCBuildProgressFunc buildProgress,             //!< used to report build progress
                              void* userPtr                                   //!< user pointer passed to callback functions
   ); 

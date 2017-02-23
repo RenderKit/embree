@@ -498,7 +498,7 @@ namespace embree
     }
     else if (Ref<SceneGraph::TriangleMeshNode> tmesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
     {
-      SceneGraph::QuadMeshNode* qmesh = new SceneGraph::QuadMeshNode(tmesh->material);
+      Ref<SceneGraph::QuadMeshNode> qmesh = new SceneGraph::QuadMeshNode(tmesh->material);
 
       for (auto& p : tmesh->positions)
         qmesh->positions.push_back(p);
@@ -532,7 +532,7 @@ namespace embree
         else if (q.first ==  2) qmesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(a1,a2,a3,a0)); 
         i++;
       }
-      return qmesh;
+      return qmesh.dynamicCast<SceneGraph::Node>();
     }
     return node;
   }
@@ -549,7 +549,7 @@ namespace embree
     }
     else if (Ref<SceneGraph::QuadMeshNode> tmesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) 
     {
-      SceneGraph::SubdivMeshNode* smesh = new SceneGraph::SubdivMeshNode(tmesh->material);
+      Ref<SceneGraph::SubdivMeshNode> smesh = new SceneGraph::SubdivMeshNode(tmesh->material);
 
       for (auto& p : tmesh->positions)
         smesh->positions.push_back(p);
@@ -573,7 +573,7 @@ namespace embree
       for (size_t i=0; i<tmesh->quads.size(); i++) 
         smesh->verticesPerFace.push_back(3 + (int)(tmesh->quads[i].v2 != tmesh->quads[i].v3));
 
-      return smesh;
+      return smesh.dynamicCast<SceneGraph::Node>();
     }
     return node;
   }
@@ -590,7 +590,7 @@ namespace embree
     }
     else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
     {
-      SceneGraph::LineSegmentsNode* lmesh = new SceneGraph::LineSegmentsNode(hmesh->material);
+      Ref<SceneGraph::LineSegmentsNode> lmesh = new SceneGraph::LineSegmentsNode(hmesh->material);
 
       for (auto& p : hmesh->positions)
         lmesh->positions.push_back(p);
@@ -600,7 +600,7 @@ namespace embree
         lmesh->indices.push_back(hair.vertex+1);
         lmesh->indices.push_back(hair.vertex+2);
       }
-      return lmesh;
+      return lmesh.dynamicCast<SceneGraph::Node>();
     }
     return node;
   }
@@ -623,40 +623,11 @@ namespace embree
     return node;
   }
 
-  Ref<SceneGraph::Node> SceneGraph::flatten(Ref<SceneGraph::Node> node, const Transformations& spaces)
-  {
-    if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
-      return flatten(xfmNode->child, spaces*xfmNode->spaces);
-    } 
-    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) {
-      for (auto& child : groupNode->children) child = flatten(child,spaces);
-    }
-    else if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) {
-      return new SceneGraph::TriangleMeshNode(mesh,spaces);
-    }
-    else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) {
-      return new SceneGraph::QuadMeshNode(mesh,spaces);
-    }
-    else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) {
-      return new SceneGraph::SubdivMeshNode(mesh,spaces);
-    }
-    else if (Ref<SceneGraph::LineSegmentsNode> mesh = node.dynamicCast<SceneGraph::LineSegmentsNode>()) {
-      return new SceneGraph::LineSegmentsNode(mesh,spaces);
-    }
-    else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>()) {
-      return new SceneGraph::HairSetNode(mesh,spaces);
-    }
-    else {
-      throw std::runtime_error("unsupported node type in SceneGraph::flatten");
-    }
-    return node;
-  }
-
   struct SceneGraphFlattener
   {
     Ref<SceneGraph::Node> node;
     std::map<Ref<SceneGraph::Node>,Ref<SceneGraph::Node>> object_mapping;
-    std::map<std::string,size_t> unique_id;
+    std::map<std::string,int> unique_id;
     
     SceneGraphFlattener (Ref<SceneGraph::Node> in, SceneGraph::InstancingMode instancing, const SceneGraph::Transformations& spaces)
     { 
@@ -684,14 +655,14 @@ namespace embree
     std::string makeUniqueID(std::string id) 
     {
       if (id == "") id = "camera";
-      std::map<std::string,size_t>::iterator i = unique_id.find(id);
+      std::map<std::string,int>::iterator i = unique_id.find(id);
       if (i == unique_id.end()) {
         unique_id[id] = 0;
         return id;
       }
       else {
-        size_t n = ++unique_id[id];
-        return id + "_" + std::to_string(n);
+        int n = ++unique_id[id];
+        return id + "_" + toString(n);
       }
     }
 
