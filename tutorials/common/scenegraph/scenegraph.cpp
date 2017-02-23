@@ -662,7 +662,7 @@ namespace embree
       }
       else {
         int n = ++unique_id[id];
-        return id + "_" + std::to_string(n);
+        return id + "_" + toString(n);
       }
     }
 

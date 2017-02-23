@@ -33,6 +33,7 @@ namespace embree
   void splitPrimitive (const RTCBuildPrimitive& prim, unsigned dim, float pos, RTCBounds& lprim, RTCBounds& rprim, void* userPtr)
   {
     assert(dim < 3);
+    assert(prim.geomID == 0);
     (BBox3fa&) lprim = (BBox3fa&) prim; 
     (BBox3fa&) rprim = (BBox3fa&) prim;
     (&lprim.upper_x)[dim] = pos;
