@@ -27,12 +27,17 @@
 #define USE_SUBTREE_SIZE_FOR_BINNING 1
 #define REDUCE_BINS 0
 
-#define OPEN_STATS(x) x
 
 #define MAX_OPENED_CHILD_NODES 8
 #define MAX_EXTEND_THRESHOLD   0.1f
 
+#if DEBUG
+#define OPEN_STATS(x) x
 #define DBG_PRINT(x) PRINT(x)
+#else
+#define OPEN_STATS(x)
+#define DBG_PRINT(x) 
+#endif
 
 namespace embree
 {
@@ -295,6 +300,7 @@ namespace embree
           assert(diag[dim] > 0.0f);
           const float inv_max_extend = 1.0f / diag[dim];
           size_t next_iteration_extra_elements = est_new_elements;          
+          float threshold = MAX_EXTEND_THRESHOLD;
           while(next_iteration_extra_elements <= set.ext_range_size()) 
           {
             next_iteration_extra_elements = 0;
@@ -303,7 +309,7 @@ namespace embree
 
             for (size_t i=set.begin(); i<set.end(); i++)
             {
-              if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD)
+              if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > threshold)
               {
                 PrimRef tmp[MAX_OPENED_CHILD_NODES];
                 const size_t n = nodeOpenerFunc(prims0[i],tmp);
@@ -326,12 +332,16 @@ namespace embree
             set._end += extra_elements;
             OPEN_STATS( if (extra_elements) stat_ext_elements += extra_elements );
 
-            /* PRINT(extra_elements); */
-            /* PRINT(next_iteration_extra_elements); */
+            if (extra_elements)
+            {
+              DBG_PRINT(extra_elements); 
+              DBG_PRINT(next_iteration_extra_elements); 
+            }
             for (size_t i=set.begin();i<set.end();i++)
               assert(prims0[i].numPrimitives() > 0);
 
             if (unlikely(next_iteration_extra_elements == 0)) break;
+            threshold *= 4.0f;
           }
         } 
 
@@ -345,7 +355,7 @@ namespace embree
           /* single element */
           if (set.size() == 1)
             return Split(ObjectSplit(),inf);
-#if 1
+
           if (unlikely(set.has_ext_range()))
           {
             /* disjoint test */
@@ -361,7 +371,6 @@ namespace embree
             }
             if (disjoint) set.set_ext_range(set.end()); /* disable opening */
           }
-#endif
 
           std::pair<float,bool> p(0.0f,false);
 
@@ -371,56 +380,14 @@ namespace embree
             p =  getProperties(set);
             const bool commonGeomID       = p.second;
             if (commonGeomID)
-            {
-#if 0
-              size_t extra_elements = 0;
-
-              const size_t est_new_elements = p.first;
-              const size_t max_ext_range_size = set.ext_range_size();
-
-               if (est_new_elements <= max_ext_range_size) 
-                 extra_elements = openNodesBasedOnExtend(set); 
-               else 
-                 extra_elements = openNodesUntilSetIsFull(set);
-               OPEN_STATS( if (extra_elements) stat_ext_elements += extra_elements );
-               set._end += extra_elements;
-#endif
-               set.set_ext_range(set.end()); /* disable opening */
-            }
+              set.set_ext_range(set.end()); /* disable opening */
           }
-
-          
-
+         
           if (unlikely(set.has_ext_range()))
           {
             const size_t est_new_elements = p.first;
 #if 0
-            PRINT(set);
-            const ObjectSplit object_split_unopened = object_find(set,logBlockSize);
-            PRINT( object_split_unopened );
-            PrimInfoExtRange old_set = set;
-            PrimRef *old_refs = (PrimRef *)alignedMalloc(sizeof(PrimRef)*set.size(),64);
-            for (size_t i=set.begin();i<set.end();i++)
-              old_refs[i-set.begin()] = prims0[i];
-
             openNodesBasedOnExtendLoop(set,est_new_elements);
-
-            const ObjectSplit object_split = object_find(set,logBlockSize);
-            PRINT( object_split );
-            ObjectSplit split = object_split;
-
-            if (object_split_unopened.sah <= object_split.sah)
-            {
-              PRINT("RESTORE");
-              const size_t diff = set.end()-old_set.end();
-              OPEN_STATS( stat_ext_elements -= diff );
-              set = old_set;
-              for (size_t i=set.begin();i<set.end();i++)
-                prims0[i] = old_refs[i-set.begin()];
-              split = object_split_unopened;
-            }
-            alignedFree(old_refs);
-            return Split(split,split.sah);
 #else
             const size_t max_ext_range_size = set.ext_range_size();
             size_t extra_elements = 0;
@@ -434,8 +401,7 @@ namespace embree
 #endif
             if (set.ext_range_size() <= 1) set.set_ext_range(set.end()); /* disable opening */
           }
-        
-            
+                    
           /* find best split */
           const ObjectSplit object_split = object_find(set,logBlockSize);
           const float object_split_sah = object_split.splitSAH();

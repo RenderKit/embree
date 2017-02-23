@@ -21,6 +21,12 @@
 #define ANTI_ALIASING 0
 #define DUMP_PROFILE_DATA 0
 
+#define AO 0
+#define AMBIENT_OCCLUSION_SAMPLES 64
+#define MAX_AO_DISTANCE 5
+
+//pos_inf 
+
 #include "../common/math/random_sampler.h"
 #include "../common/math/sampling.h"
 #include "../common/tutorial/tutorial_device.h"
@@ -84,7 +90,7 @@ namespace embree {
   // ==================================================================================================
 
 
-  unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
+unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, const size_t id)
   {
     /* if more than a single timestep, mark object as dynamic */
     RTCGeometryFlags object_flags = mesh->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
@@ -214,7 +220,7 @@ namespace embree {
       assert(geomID == i);
     }
     else if (geometry->type == TRIANGLE_MESH) {
-      geomID = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out);
+      geomID = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out, i);
       ((ISPCTriangleMesh*)geometry)->geomID = geomID;
       assert(geomID == i);
     }
@@ -325,6 +331,63 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
+Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
+{
+  RTCRay rays[AMBIENT_OCCLUSION_SAMPLES];
+
+  Vec3fa Ng = normalize(ray.Ng);
+  if (dot(ray.dir,Ng) > 0.0f) Ng = neg(Ng);
+
+  Vec3fa col = Vec3fa(min(1.0f,0.3f+0.8f*abs(dot(Ng,normalize(ray.dir)))));
+
+  /* calculate hit point */
+  float intensity = 0;
+  Vec3fa hitPos = ray.org + ray.tfar * ray.dir;
+
+  RandomSampler sampler;
+  RandomSampler_init(sampler,x,y,0);
+
+  /* enable only valid rays */
+  for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
+  {
+    /* sample random direction */
+    Vec2f s = RandomSampler_get2D(sampler);
+    Sample3f dir;
+    dir.v = cosineSampleHemisphere(s);
+    dir.pdf = cosineSampleHemispherePDF(dir.v);
+    dir.v = frame(Ng) * dir.v;
+
+    /* initialize shadow ray */
+    RTCRay& shadow = rays[i];
+    shadow.org = hitPos;
+    shadow.dir = dir.v;
+    bool mask = 1; { // invalidate inactive rays
+      shadow.tnear = mask ? 0.01f       : (float)(pos_inf);
+      shadow.tfar  = mask ? (float)(MAX_AO_DISTANCE) : (float)(neg_inf);
+    }
+    shadow.geomID = RTC_INVALID_GEOMETRY_ID;
+    shadow.primID = RTC_INVALID_GEOMETRY_ID;
+    shadow.mask = -1;
+    shadow.time = 0;
+  }
+
+  RTCIntersectContext context;
+  context.flags = RTC_INTERSECT_INCOHERENT;
+
+  /* trace occlusion rays */
+  rtcOccluded1M(g_scene,&context,rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(RTCRay));
+
+  /* accumulate illumination */
+  for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++) {
+    if (rays[i].geomID == RTC_INVALID_GEOMETRY_ID)
+      intensity += 1.0f;
+  }
+
+  /* shade pixel */
+  return col * (intensity/AMBIENT_OCCLUSION_SAMPLES);
+}
+
+
 
 /* renders a single screen tile */
   void renderTileStandard(int taskIndex,
@@ -404,7 +467,11 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 #endif
           }
           /* final color */
+#if AO == 1
+          color = ambientOcclusionShading(x,y,ray);
+#else
           color = Vec3fa(abs(dot(ray.dir,normalize(Ng))));
+#endif
         }
 
 #if ANTI_ALIASING == 1

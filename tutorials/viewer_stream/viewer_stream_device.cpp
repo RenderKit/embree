@@ -23,8 +23,7 @@ namespace embree {
 
 #define USE_INTERFACE 0 // 0 = stream, 1 = single rays/packets, 2 = single rays/packets using stream interface
 #define AMBIENT_OCCLUSION_SAMPLES 64
-#define MAX_AO_DISTANCE pos_inf
-// 5.0f
+#define MAX_AO_DISTANCE pos_inf 
 
 //#define rtcOccluded rtcIntersect
 //#define rtcOccluded1M rtcIntersect1M
@@ -43,7 +42,7 @@ RTCScene convertScene(ISPCScene* scene_in)
 {
   int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
   int scene_aflags = RTC_INTERSECT1 | RTC_INTERSECT_STREAM | RTC_INTERPOLATE;
-  RTCScene scene_out = ConvertScene(g_device, scene_in,(RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags, RTC_GEOMETRY_STATIC);
+  RTCScene scene_out = ConvertScene(g_device, scene_in,(RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags,RTC_GEOMETRY_STATIC);
   return scene_out;
 }
 
