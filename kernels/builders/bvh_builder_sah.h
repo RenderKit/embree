@@ -301,7 +301,7 @@ namespace embree
         typename CreateLeafFunc, 
         typename ProgressMonitor>
         
-        static ReductionTy build(Heuristic& heuristic,
+        __noinline static ReductionTy build(Heuristic& heuristic,
                                  const Set& set,
                                  CreateAllocFunc createAlloc, 
                                  CreateNodeFunc createNode, UpdateNodeFunc updateNode, 
