@@ -74,12 +74,6 @@ namespace embree
                                const Vertex& v3)
       : v0(v0), v1(v1), v2(v2), v3(v3) {}
 
-    __forceinline const BBox3fa bounds() const 
-    {
-      const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
-      return enlarge(b,Vertex(b.upper.w));
-    }
-
     __forceinline Vertex eval(const float t) const 
     {
       const Vec4<float> b = BezierBasis::eval(t);
@@ -217,7 +211,7 @@ namespace embree
     }
 
     /* calculates bounds of bezier curve geometry */
-    __forceinline BBox3fa bounds() const
+    __forceinline BBox3fa accurateBounds() const
     {
       const int N = 7;
       const float scale = 1.0f/(3.0f*(N-1));
@@ -239,8 +233,8 @@ namespace embree
       return enlarge(BBox3fa(lower,upper),upper_r);
     }
 
-    /* calculates bounds of bezier curve geometry when tessellated into N line segments */
-    __forceinline BBox3fa bounds(int N) const
+    /* calculates bounds when tessellated into N line segments */
+    __forceinline BBox3fa tessellatedBounds(int N) const
     {
       if (likely(N == 4))
       {

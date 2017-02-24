@@ -132,8 +132,8 @@ namespace embree
       const Vec3fa v2 = vertex(index+2,itime);
       const Vec3fa v3 = vertex(index+3,itime);
       const BezierCurve3fa curve(v0,v1,v2,v3);
-      if (likely(subtype == HAIR)) return curve.bounds(tessellationRate);
-      else                         return curve.bounds();
+      if (likely(subtype == HAIR)) return curve.tessellatedBounds(tessellationRate);
+      else                         return curve.accurateBounds();
     }
     
     /*! calculates bounding box of i'th bezier curve */
@@ -149,8 +149,8 @@ namespace embree
       Vec3fa w2 = xfmPoint(space,v2); w2.w = v2.w;
       Vec3fa w3 = xfmPoint(space,v3); w3.w = v3.w;
       const BezierCurve3fa curve(w0,w1,w2,w3);
-      if (likely(subtype == HAIR)) return curve.bounds(tessellationRate);
-      else                         return curve.bounds();
+      if (likely(subtype == HAIR)) return curve.tessellatedBounds(tessellationRate);
+      else                         return curve.accurateBounds();
     }
 
     /*! check if the i'th primitive is valid at the itime'th timestep */
