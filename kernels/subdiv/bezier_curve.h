@@ -24,56 +24,18 @@ namespace embree
     struct BezierCurveT
   {
     Vertex v0,v1,v2,v3;
-    float t0,t1;
-    int depth;
 
     __forceinline BezierCurveT() {}
 
     __forceinline BezierCurveT(const Vertex& v0, 
                                const Vertex& v1, 
                                const Vertex& v2, 
-                               const Vertex& v3,
-                               const float t0 = 0.0f,
-                               const float t1 = 1.0f,
-                               const int depth = 0)
-      : v0(v0), v1(v1), v2(v2), v3(v3), t0(t0), t1(t1), depth(depth) {}
+                               const Vertex& v3)
+      : v0(v0), v1(v1), v2(v2), v3(v3) {}
 
     __forceinline const BBox3fa bounds() const {
       BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
       return enlarge(b,Vertex(b.upper.w));
-    }
-
-    __forceinline void subdivide(BezierCurveT& left, BezierCurveT& right) const
-    {
-      const Vertex p00 = v0;
-      const Vertex p01 = v1;
-      const Vertex p02 = v2;
-      const Vertex p03 = v3;
-
-      const Vertex p10 = (p00 + p01) * 0.5f;
-      const Vertex p11 = (p01 + p02) * 0.5f;
-      const Vertex p12 = (p02 + p03) * 0.5f;
-      const Vertex p20 = (p10 + p11) * 0.5f;
-      const Vertex p21 = (p11 + p12) * 0.5f;
-      const Vertex p30 = (p20 + p21) * 0.5f;
-
-      const float t01 = (t0 + t1) * 0.5f;
-
-      left.v0 = p00;
-      left.v1 = p10;
-      left.v2 = p20;
-      left.v3 = p30;
-      left.t0 = t0;
-      left.t1 = t01;
-      left.depth = depth-1;
-        
-      right.v0 = p30;
-      right.v1 = p21;
-      right.v2 = p12;
-      right.v3 = p03;
-      right.t0 = t01;
-      right.t1 = t1;
-      right.depth = depth-1;
     }
 
     __forceinline Vertex eval(const float t) const
@@ -131,7 +93,7 @@ namespace embree
     }
 
     friend inline std::ostream& operator<<(std::ostream& cout, const BezierCurveT& curve) {
-      return cout << "{ v0 = " << curve.v0 << ", v1 = " << curve.v1 << ", v2 = " << curve.v2 << ", v3 = " << curve.v3 << ", depth = " << curve.depth << " }";
+      return cout << "{ v0 = " << curve.v0 << ", v1 = " << curve.v1 << ", v2 = " << curve.v2 << ", v3 = " << curve.v3 << " }";
     }
   };
 
@@ -164,8 +126,8 @@ namespace embree
     //using BezierCurveT<Vec3fa>::BezierCurveT; // FIXME: not supported by VS2010
 
     __forceinline BezierCurve3fa() {}
-    __forceinline BezierCurve3fa(const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const float t0 = 0.0f, const float t1 = 1.0f, const int depth = 0)
-      : BezierCurveT<Vec3fa>(v0,v1,v2,v3,t0,t1,depth) {}
+    __forceinline BezierCurve3fa(const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3)
+      : BezierCurveT<Vec3fa>(v0,v1,v2,v3) {}
     
     __forceinline void evalN(const vfloatx& t, Vec4vfx& p, Vec4vfx& dp) const
     {

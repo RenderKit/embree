@@ -238,7 +238,7 @@ namespace embree
         const Vec3fa p2 = v2-ref;
         const Vec3fa p3 = v3-ref;
 
-        const BezierCurve3fa curve(p0,p1,p2,p3,0.0f,1.0f,1);
+        const BezierCurve3fa curve(p0,p1,p2,p3);
         return intersect_bezier_recursive_jacobian(ray,dt,curve,0.0f,1.0f,1,epilog);
       }
     };
@@ -276,7 +276,7 @@ namespace embree
         const Vec3fa p2 = v2-ref;
         const Vec3fa p3 = v3-ref;
 
-        const BezierCurve3fa curve(p0,p1,p2,p3,0.0f,1.0f,1);
+        const BezierCurve3fa curve(p0,p1,p2,p3);
         return intersect_bezier_recursive_jacobian(ray,dt,curve,0.0f,1.0f,1,epilog);
       }
     };
