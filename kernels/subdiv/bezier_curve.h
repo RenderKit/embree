@@ -20,8 +20,6 @@
 
 namespace embree
 {
-  // FIXME: namespace isa
-
   class BezierBasis
   {
   public:
@@ -32,8 +30,8 @@ namespace embree
       const T t1 = u;
       const T t0 = 1.0f-t1;
       const T B0 = t0 * t0 * t0;
-      const T B1 = 3.0f * t1 * t0 * t0;
-      const T B2 = 3.0f * t1 * t1 * t0;
+      const T B1 = 3.0f * t1 * (t0 * t0);
+      const T B2 = 3.0f * (t1 * t1) * t0;
       const T B3 = t1 * t1 * t1;
       return Vec4<T>(B0,B1,B2,B3);
     }
@@ -76,45 +74,28 @@ namespace embree
                                const Vertex& v3)
       : v0(v0), v1(v1), v2(v2), v3(v3) {}
 
-    __forceinline const BBox3fa bounds() const {
-      BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
+    __forceinline const BBox3fa bounds() const 
+    {
+      const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
       return enlarge(b,Vertex(b.upper.w));
     }
 
-    __forceinline Vertex eval(const float t) const
+    __forceinline Vertex eval(const float t) const 
     {
-      const Vertex p00 = v0;
-      const Vertex p01 = v1;
-      const Vertex p02 = v2;
-      const Vertex p03 = v3;
-
-      const Vertex p10 = lerp(p00,p01,t);
-      const Vertex p11 = lerp(p01,p02,t);
-      const Vertex p12 = lerp(p02,p03,t);
-      const Vertex p20 = lerp(p10,p11,t);
-      const Vertex p21 = lerp(p11,p12,t);
-      const Vertex p30 = lerp(p20,p21,t);
-      return p30;
+      const Vec4<float> b = BezierBasis::eval(t);
+      return madd(b.x,v0,madd(b.y,v1,madd(b.z,v2,b.w*v3)));
     }
     
     __forceinline Vertex eval_du(const float t) const
     {
-      const float t0 = 1.0f - t, t1 = t;
-      const float B0 = -(t0*t0);
-      const float B1 = madd(-2.0f,t0*t1,t0*t0);
-      const float B2 = msub(+2.0f,t0*t1,t1*t1);
-      const float B3 = +(t1*t1);
-      return 3.0f*(madd(B0,v0,madd(B1,v1,madd(B2,v2,B3*v3))));
+      const Vec4<float> b = BezierBasis::derivative(t);
+      return madd(b.x,v0,madd(b.y,v1,madd(b.z,v2,b.w*v3)));
     }
 
-    __forceinline Vertex eval_dudu(const float t) const
+    __forceinline Vertex eval_dudu(const float t) const 
     {
-      const float t0 = 1.0f - t, t1 = t;
-      const float C0 = t0;
-      const float C1 = madd(-2.0f,t0,t1);
-      const float C2 = madd(-2.0f,t1,t0);
-      const float C3 = t1;
-      return 6.0f*(madd(C0,v0,madd(C1,v1,madd(C2,v2,C3*v3))));
+      const Vec4<float> b = BezierBasis::derivative2(t);
+      return madd(b.x,v0,madd(b.y,v1,madd(b.z,v2,b.w*v3)));
     }
 
     __forceinline void eval(const float t, Vertex& p, Vertex& dp, Vertex& ddp) const
