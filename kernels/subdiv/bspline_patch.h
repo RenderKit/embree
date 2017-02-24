@@ -17,7 +17,7 @@
 #pragma once
 
 #include "catmullclark_patch.h"
-#include "bezier_curve.h"
+#include "bspline_curve.h"
 
 namespace embree
 {

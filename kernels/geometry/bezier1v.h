@@ -56,7 +56,7 @@ namespace embree
     /*! calculate the bounds of the curve */
     __forceinline const BBox3fa bounds() const 
     {
-      const BezierCurve3fa curve(p0,p1,p2,p3);
+      const Curve3fa curve(p0,p1,p2,p3);
       if (likely(hair)) return curve.tessellatedBounds(N);
       else              return curve.accurateBounds();
     }
@@ -80,7 +80,7 @@ namespace embree
       Vec3fa b1 = xfmPoint(space,p1); b1.w = p1.w;
       Vec3fa b2 = xfmPoint(space,p2); b2.w = p2.w;
       Vec3fa b3 = xfmPoint(space,p3); b3.w = p3.w;
-      const BezierCurve3fa curve(b0,b1,b2,b3);
+      const Curve3fa curve(b0,b1,b2,b3);
       if (likely(hair)) return curve.tessellatedBounds(N);
       else              return curve.accurateBounds();
     }

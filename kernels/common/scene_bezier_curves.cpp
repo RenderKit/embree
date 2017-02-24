@@ -16,7 +16,6 @@
 
 #include "scene_bezier_curves.h"
 #include "scene.h"
-#include "../subdiv/bezier_curve.h"
 
 namespace embree
 {
@@ -197,7 +196,7 @@ namespace embree
       const vfloatx p2 = vfloatx::loadu(valid,(float*)&src[(curve+2)*stride+ofs]);
       const vfloatx p3 = vfloatx::loadu(valid,(float*)&src[(curve+3)*stride+ofs]);
       
-      const BezierCurveT<vfloatx> bezier(p0,p1,p2,p3);
+      const CurveT<vfloatx> bezier(p0,p1,p2,p3);
       if (P      ) vfloatx::storeu(valid,P+i,      bezier.eval(u));
       if (dPdu   ) vfloatx::storeu(valid,dPdu+i,   bezier.eval_du(u));
       if (ddPdudu) vfloatx::storeu(valid,ddPdudu+i,bezier.eval_dudu(u));

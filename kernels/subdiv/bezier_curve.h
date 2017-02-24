@@ -271,4 +271,7 @@ namespace embree
       }
     }
   };
+
+#define CurveT BezierCurveT
+  typedef BezierCurve3fa Curve3fa;
 }

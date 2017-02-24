@@ -20,44 +20,44 @@
 
 namespace embree
 {
-  class BSplineBasis
+  class BSplineBasis2 // FIXME: make compatible with basis from bspline_patch.h
   {
   public:
 
     template<typename T>
-      static __forceinline Vec4<T> eval(const T& u) 
+      static __forceinline Vec4<T>  eval(const T& u) 
     {
-      const T t1 = u;
-      //const T t0 = 1.0f-t1;
-      const T B0 = -1.0f*t1*t1*t1 + 3.0f*t1*t1 -3.0f*t1 + 1.0f;
-      const T B1 = 3.0f*t1*t1*t1 -6.0f*t1*t1 + 0.0f*t1 + 4.0f;
-      const T B2 = -3.0f*t1*t1*t1 + 3.0f*t1*t1 + 3.0f*t1 + 1.0f;
-      const T B3 = t1*t1*t1;
-      return T(1.0f/6.0f)*Vec4<T>(B0,B1,B2,B3);
+      const T t  = u;
+      const T s  = T(1.0f) - u;
+      const T n0 = s*s*s;
+      const T n1 = (4.0f*(s*s*s)+(t*t*t)) + (12.0f*((s*t)*s) + 6.0f*((t*s)*t));
+      const T n2 = (4.0f*(t*t*t)+(s*s*s)) + (12.0f*((t*s)*t) + 6.0f*((s*t)*s));
+      const T n3 = t*t*t;
+      return T(1.0f/6.0f)*Vec4<T>(n0,n1,n2,n3);
     }
     
     template<typename T>
       static __forceinline Vec4<T>  derivative(const T& u)
     {
-      const T t1 = u;
-      //const T t0 = 1.0f-t1;
-      const T B0 = -3.0f*t1*t1 + 6.0f*t1 -3.0f;
-      const T B1 = 9.0f*t1*t1 -12.0f*t1;
-      const T B2 = -9.0f*t1*t1 + 6.0f*t1 + 3.0f;
-      const T B3 = 3.0f*t1*t1;
-      return T(1.0f/6.0f)*Vec4<T>(B0,B1,B2,B3);
+      const T t  =  u;
+      const T s  =  1.0f - u;
+      const T n0 = -s*s;
+      const T n1 = -t*t - 4.0f*(t*s);
+      const T n2 =  s*s + 4.0f*(s*t);
+      const T n3 =  t*t;
+      return T(0.5f)*Vec4<T>(n0,n1,n2,n3);
     }
 
     template<typename T>
       static __forceinline Vec4<T>  derivative2(const T& u)
     {
-      const T t1 = u;
-      //const T t0 = 1.0f-t1;
-      const T B0 = -6.0f*t1 + 6.0f;
-      const T B1 = 18.0f*t1 -12.0f;
-      const T B2 = -18.0f*t1*t1 + 6.0f;
-      const T B3 = 6.0f*t1;
-      return T(1.0f/6.0f)*Vec4<T>(B0,B1,B2,B3);
+      const T t  =  u;
+      const T s  =  1.0f - u;
+      const T n0 = s;
+      const T n1 = t - 2.0f*s;
+      const T n2 = s - 2.0f*t;
+      const T n3 = t;
+      return Vec4<T>(n0,n1,n2,n3);
     }
   };
   
@@ -119,19 +119,19 @@ namespace embree
       
       __forceinline Vertex eval(const float t) const 
       {
-        const Vec4<float> b = BSplineBasis::eval(t);
+        const Vec4<float> b = BSplineBasis2::eval(t);
         return madd(b.x,v0,madd(b.y,v1,madd(b.z,v2,b.w*v3)));
       }
       
       __forceinline Vertex eval_du(const float t) const
       {
-        const Vec4<float> b = BSplineBasis::derivative(t);
+        const Vec4<float> b = BSplineBasis2::derivative(t);
         return madd(b.x,v0,madd(b.y,v1,madd(b.z,v2,b.w*v3)));
       }
       
       __forceinline Vertex eval_dudu(const float t) const 
       {
-        const Vec4<float> b = BSplineBasis::derivative2(t);
+        const Vec4<float> b = BSplineBasis2::derivative2(t);
         return madd(b.x,v0,madd(b.y,v1,madd(b.z,v2,b.w*v3)));
       }
       
@@ -156,21 +156,21 @@ namespace embree
     __forceinline BSplineCurve3fa(const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3)
       : BSplineCurveT<Vec3fa>(v0,v1,v2,v3) {}
     
-    __forceinline Vec4vfx eval(const vfloatx& t) const 
+    __forceinline Vec4vfx eval_(const vfloatx& t) const 
     {
-      const Vec4vfx b = BSplineBasis::eval(t);
+      const Vec4vfx b = BSplineBasis2::eval(t);
       return madd(b.x, Vec4vfx(v0), madd(b.y, Vec4vfx(v1), madd(b.z, Vec4vfx(v2), b.w * Vec4vfx(v3))));
     }
 
     __forceinline Vec4vfx derivative(const vfloatx& t) const 
     {
-      const Vec4vfx b = BSplineBasis::derivative(t);
+      const Vec4vfx b = BSplineBasis2::derivative(t);
       return madd(b.x, Vec4vfx(v0), madd(b.y, Vec4vfx(v1), madd(b.z, Vec4vfx(v2), b.w * Vec4vfx(v3))));
     }
 
     __forceinline void evalN(const vfloatx& t, Vec4vfx& p, Vec4vfx& dp) const
     {
-      p = eval(t);
+      p = eval_(t);
       dp = derivative(t);
     }
     
@@ -261,4 +261,7 @@ namespace embree
       }
     }
   };
+
+//#define CurveT BSplineCurveT
+//  typedef BSplineCurve3fa Curve3fa;
 }

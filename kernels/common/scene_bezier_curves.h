@@ -20,6 +20,7 @@
 #include "geometry.h"
 #include "buffer.h"
 #include "../subdiv/bezier_curve.h"
+#include "../subdiv/bspline_curve.h"
 
 namespace embree
 {
@@ -131,7 +132,7 @@ namespace embree
       const Vec3fa v1 = vertex(index+1,itime);
       const Vec3fa v2 = vertex(index+2,itime);
       const Vec3fa v3 = vertex(index+3,itime);
-      const BezierCurve3fa curve(v0,v1,v2,v3);
+      const Curve3fa curve(v0,v1,v2,v3);
       if (likely(subtype == HAIR)) return curve.tessellatedBounds(tessellationRate);
       else                         return curve.accurateBounds();
     }
@@ -148,7 +149,7 @@ namespace embree
       Vec3fa w1 = xfmPoint(space,v1); w1.w = v1.w;
       Vec3fa w2 = xfmPoint(space,v2); w2.w = v2.w;
       Vec3fa w3 = xfmPoint(space,v3); w3.w = v3.w;
-      const BezierCurve3fa curve(w0,w1,w2,w3);
+      const Curve3fa curve(w0,w1,w2,w3);
       if (likely(subtype == HAIR)) return curve.tessellatedBounds(tessellationRate);
       else                         return curve.accurateBounds();
     }
