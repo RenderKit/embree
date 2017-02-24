@@ -104,7 +104,7 @@ namespace embree
         
         /*! remember prim array */
         __forceinline HeuristicArrayOpenMergeSAH (const NodeOpenerFunc& nodeOpenerFunc, PrimRef* prims0, const PrimInfo &root_info)
-          : prims0(prims0), nodeOpenerFunc(nodeOpenerFunc), root_info(root_info), inv_root_area(1.0f / area(root_info.geomBounds)) { 
+          : prims0(prims0), nodeOpenerFunc(nodeOpenerFunc), root_info(root_info) { 
           OPEN_STATS(stat_ext_elements.store(0));
         }
 
@@ -607,8 +607,6 @@ namespace embree
         PrimRef* const prims0;
         const NodeOpenerFunc& nodeOpenerFunc;
         const PrimInfo& root_info;
-        const float inv_root_area;
-
         /* statistics */
         std::atomic<size_t> stat_ext_elements;
       };

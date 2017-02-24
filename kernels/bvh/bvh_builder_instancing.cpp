@@ -177,6 +177,8 @@ namespace embree
         });
       refs.resize(nextRef);
 
+      PING;
+
 #if 0
       /* compute transform IDs */
       std::sort(refs.begin(),refs.end(), [] (const BuildRef& ref0, const BuildRef& ref1) { return ref0.xfmID < ref1.xfmID; });
@@ -197,7 +199,7 @@ namespace embree
         bvh->set(refs[0].node,refs[0].bounds(),numPrimitives);
         return;
         }*/
-      
+
       /* open all large nodes */  
       open(numPrimitives); 
 
