@@ -24,7 +24,7 @@
 #include "../geometry/quadi_mb.h"
 
 /* new open/merge builder */
-#define ENABLE_DIRECT_SAH_MERGE_BUILDER 0
+#define ENABLE_DIRECT_SAH_MERGE_BUILDER 1
 #define SPLIT_MEMORY_RESERVE_FACTOR 1000
 #define SPLIT_MIN_EXT_SPACE 1000
 
@@ -208,7 +208,9 @@ namespace embree
         }*/
 
       /* open all large nodes */  
-      //open(numPrimitives); 
+#if ENABLE_DIRECT_SAH_MERGE_BUILDER == 0
+      open(numPrimitives); 
+#endif
 
       PRINT(refs.size());
 
@@ -243,8 +245,6 @@ namespace embree
         }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
 
 #endif
-
-      PRINT(refs.size());
       
       /* skip if all objects where empty */
       if (pinfo.size() == 0)
@@ -272,6 +272,37 @@ namespace embree
         settings.travCost = 1.0f;
         settings.intCost = 1.0f;
         settings.singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD;
+
+#if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
+        PRINT("NEW CODE PATH");
+
+        const size_t extSize = max(max((size_t)SPLIT_MIN_EXT_SPACE,refs.size()*2),size_t((float)numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
+        DBG_PRINT(refs.size()*2);
+        DBG_PRINT(extSize);
+        refs.resize(extSize); 
+
+        NodeRef root = BVHBuilderBinnedOpenMergeSAH::build<NodeRef,BuildRef>(
+            typename BVH::CreateAlloc(bvh),
+            typename BVH::AlignedNode::Create2(),
+            typename BVH::AlignedNode::Set2(),
+
+           [&] (const BVHBuilderBinnedOpenMergeSAH::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> NodeRef
+          {
+            assert(current.prims.size() == 1);
+            BuildRef* ref = (BuildRef*) prims[current.prims.begin()].ID();
+            TransformNode* node = (TransformNode*) alloc->alloc0->malloc(sizeof(TransformNode));
+            new (node) TransformNode(ref->local2world,ref->localBounds,ref->node,ref->mask,ref->instID,ref->xfmID,ref->type); // FIXME: rcp should be precalculated somewhere
+            NodeRef noderef = BVH::encodeNode(node);
+            noderef.setBarrier();
+            return noderef;
+          },
+            [&] (BuildRef &bref, BuildRef *refs) -> size_t { 
+              refs[0] = bref; return 1;
+            }, 
+            [&] (size_t dn) { bvh->scene->progressMonitor(0); },
+            refs.data(),extSize,pinfo,settings);
+
+#else
         NodeRef root = BVHBuilderBinnedSAH::build<NodeRef>
           (
             typename BVH::CreateAlloc(bvh),
@@ -290,6 +321,7 @@ namespace embree
           },
            [&] (size_t dn) { bvh->scene->progressMonitor(0); },
             prims.data(),pinfo,settings);
+#endif
         
         bvh->set(root,LBBox3fa(pinfo.geomBounds),numPrimitives);
         numCollapsedTransformNodes = refs.size();

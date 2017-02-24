@@ -72,8 +72,16 @@ namespace embree
           return instID;
         }
 
-        __forceinline unsigned int numPrimitives() { return numPrims; }
+        __forceinline unsigned int primID() const { return numPrims; }
 
+        __forceinline unsigned int numPrimitives() const { return numPrims; } 
+
+        __forceinline void binBoundsAndCenter(BBox3fa& bounds_o, Vec3fa& center_o) const 
+        {
+          bounds_o = bounds();
+          center_o = embree::center2(bounds_o);
+          bounds_o.upper.a = numPrims;
+        }
 
         friend bool operator< (const BuildRef& a, const BuildRef& b) {
           return a.localBounds.lower.w < b.localBounds.lower.w;
