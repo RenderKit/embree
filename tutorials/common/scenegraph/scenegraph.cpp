@@ -498,7 +498,7 @@ namespace embree
     }
     else if (Ref<SceneGraph::TriangleMeshNode> tmesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
     {
-      SceneGraph::QuadMeshNode* qmesh = new SceneGraph::QuadMeshNode(tmesh->material);
+      Ref<SceneGraph::QuadMeshNode> qmesh = new SceneGraph::QuadMeshNode(tmesh->material);
 
       for (auto& p : tmesh->positions)
         qmesh->positions.push_back(p);
@@ -532,7 +532,7 @@ namespace embree
         else if (q.first ==  2) qmesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(a1,a2,a3,a0)); 
         i++;
       }
-      return qmesh;
+      return qmesh.dynamicCast<SceneGraph::Node>();
     }
     return node;
   }
@@ -549,7 +549,7 @@ namespace embree
     }
     else if (Ref<SceneGraph::QuadMeshNode> tmesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) 
     {
-      SceneGraph::SubdivMeshNode* smesh = new SceneGraph::SubdivMeshNode(tmesh->material);
+      Ref<SceneGraph::SubdivMeshNode> smesh = new SceneGraph::SubdivMeshNode(tmesh->material);
 
       for (auto& p : tmesh->positions)
         smesh->positions.push_back(p);
@@ -573,7 +573,7 @@ namespace embree
       for (size_t i=0; i<tmesh->quads.size(); i++) 
         smesh->verticesPerFace.push_back(3 + (int)(tmesh->quads[i].v2 != tmesh->quads[i].v3));
 
-      return smesh;
+      return smesh.dynamicCast<SceneGraph::Node>();
     }
     return node;
   }
@@ -590,7 +590,7 @@ namespace embree
     }
     else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
     {
-      SceneGraph::LineSegmentsNode* lmesh = new SceneGraph::LineSegmentsNode(hmesh->material);
+      Ref<SceneGraph::LineSegmentsNode> lmesh = new SceneGraph::LineSegmentsNode(hmesh->material);
 
       for (auto& p : hmesh->positions)
         lmesh->positions.push_back(p);
@@ -600,7 +600,7 @@ namespace embree
         lmesh->indices.push_back(hair.vertex+1);
         lmesh->indices.push_back(hair.vertex+2);
       }
-      return lmesh;
+      return lmesh.dynamicCast<SceneGraph::Node>();
     }
     return node;
   }
