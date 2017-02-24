@@ -68,12 +68,9 @@ namespace embree
 
     __forceinline BezierCurveT() {}
 
-    __forceinline BezierCurveT(const Vertex& v0, 
-                               const Vertex& v1, 
-                               const Vertex& v2, 
-                               const Vertex& v3)
+    __forceinline BezierCurveT(const Vertex& v0, const Vertex& v1, const Vertex& v2, const Vertex& v3)
       : v0(v0), v1(v1), v2(v2), v3(v3) {}
-
+    
     __forceinline Vertex eval(const float t) const 
     {
       const Vec4<float> b = BezierBasis::eval(t);
@@ -98,7 +95,6 @@ namespace embree
       const Vertex p01 = v1;
       const Vertex p02 = v2;
       const Vertex p03 = v3;
-
       const Vertex p10 = lerp(p00,p01,t);
       const Vertex p11 = lerp(p01,p02,t);
       const Vertex p12 = lerp(p02,p03,t);
