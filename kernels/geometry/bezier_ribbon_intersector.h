@@ -96,14 +96,14 @@ namespace embree
       /* evaluate the bezier curve */
       bool ishit = false;
       vboolx valid = vfloatx(step) < vfloatx(float(N));
-      const Vec4vfx p0 = curve2D.eval0(valid,0,N);
-      const Vec4vfx p1 = curve2D.eval1(valid,0,N);
+      const Vec4vfx p0 = curve2D.eval0<VSIZEX>(0,N);
+      const Vec4vfx p1 = curve2D.eval1<VSIZEX>(0,N);
       valid &= cylinder_culling_test(zero,Vec2vfx(p0.x,p0.y),Vec2vfx(p1.x,p1.y),max(p0.w,p1.w));
       
       if (any(valid)) 
       {
-        const Vec3vfx dp0dt = curve2D.derivative0(valid,0,N);
-        const Vec3vfx dp1dt = curve2D.derivative1(valid,0,N);
+        const Vec3vfx dp0dt = curve2D.derivative0<VSIZEX>(0,N);
+        const Vec3vfx dp1dt = curve2D.derivative1<VSIZEX>(0,N);
         const Vec3vfx n0(dp0dt.y,-dp0dt.x,0.0f);
         const Vec3vfx n1(dp1dt.y,-dp1dt.x,0.0f);
         const Vec3vfx nn0 = normalize(n0);
@@ -130,13 +130,13 @@ namespace embree
         {
           /* evaluate the bezier curve */
           vboolx valid = vintx(i)+vintx(step) < vintx(N);
-          const Vec4vfx p0 = curve2D.eval0(valid,i,N);
-          const Vec4vfx p1 = curve2D.eval1(valid,i,N);
+          const Vec4vfx p0 = curve2D.eval0<VSIZEX>(i,N);
+          const Vec4vfx p1 = curve2D.eval1<VSIZEX>(i,N);
           valid &= cylinder_culling_test(zero,Vec2vfx(p0.x,p0.y),Vec2vfx(p1.x,p1.y),max(p0.w,p1.w));
           if (none(valid)) continue;
           
-          const Vec3vfx dp0dt = curve2D.derivative0(valid,i,N);
-          const Vec3vfx dp1dt = curve2D.derivative1(valid,i,N);
+          const Vec3vfx dp0dt = curve2D.derivative0<VSIZEX>(i,N);
+          const Vec3vfx dp1dt = curve2D.derivative1<VSIZEX>(i,N);
           const Vec3vfx n0(dp0dt.y,-dp0dt.x,0.0f);
           const Vec3vfx n1(dp1dt.y,-dp1dt.x,0.0f);
           const Vec3vfx nn0 = normalize(n0);

@@ -185,28 +185,28 @@ namespace embree
     }
     
     template<int M>
-      __forceinline Vec4<vfloat<M>> eval0(const vbool<M>& valid, const int ofs, const int size) const
+      __forceinline Vec4<vfloat<M>> eval0(const int ofs, const int size) const
     {
       const Vec4<vfloat<M>> b = bezier_basis0.eval<vfloat<M>>(ofs,size);
       return madd(b.x, Vec4<vfloat<M>>(v0), madd(b.y, Vec4<vfloat<M>>(v1), madd(b.z, Vec4<vfloat<M>>(v2), b.w * Vec4<vfloat<M>>(v3))));
     }
     
     template<int M>
-      __forceinline Vec4<vfloat<M>> eval1(const vbool<M>& valid, const int ofs, const int size) const
+      __forceinline Vec4<vfloat<M>> eval1(const int ofs, const int size) const
     {
       const Vec4<vfloat<M>> b = bezier_basis1.eval<vfloat<M>>(ofs,size);
       return madd(b.x, Vec4<vfloat<M>>(v0), madd(b.y, Vec4<vfloat<M>>(v1), madd(b.z, Vec4<vfloat<M>>(v2), b.w * Vec4<vfloat<M>>(v3))));
     }
 
     template<int M>
-      __forceinline Vec4<vfloat<M>> derivative0(const vbool<M>& valid, const int ofs, const int size) const
+      __forceinline Vec4<vfloat<M>> derivative0(const int ofs, const int size) const
     {
       const Vec4<vfloat<M>> b = bezier_basis0.derivative<vfloat<M>>(ofs,size);
       return madd(b.x, Vec4<vfloat<M>>(v0), madd(b.y, Vec4<vfloat<M>>(v1), madd(b.z, Vec4<vfloat<M>>(v2), b.w * Vec4<vfloat<M>>(v3))));
     }
 
     template<int M>
-      __forceinline Vec4<vfloat<M>> derivative1(const vbool<M>& valid, const int ofs, const int size) const
+      __forceinline Vec4<vfloat<M>> derivative1(const int ofs, const int size) const
     {
       const Vec4<vfloat<M>> b = bezier_basis1.derivative<vfloat<M>>(ofs,size);
       return madd(b.x, Vec4<vfloat<M>>(v0), madd(b.y, Vec4<vfloat<M>>(v1), madd(b.z, Vec4<vfloat<M>>(v2), b.w * Vec4<vfloat<M>>(v3))));
@@ -222,8 +222,8 @@ namespace embree
       {
         vintx vi = vintx(i)+vintx(step);
         vboolx valid = vi <= vintx(N);
-        const Vec4vfx p  = eval0(valid,i,N);
-        const Vec4vfx dp = derivative0(valid,i,N);
+        const Vec4vfx p  = eval0<VSIZEX>(i,N);
+        const Vec4vfx dp = derivative0<VSIZEX>(i,N);
         const Vec4vfx pm = p-Vec4vfx(scale)*select(vi!=vintx(0),dp,Vec4vfx(zero));
         const Vec4vfx pp = p+Vec4vfx(scale)*select(vi!=vintx(N),dp,Vec4vfx(zero));
         pl = select(valid,min(pl,p,pm,pp),pl); // FIXME: use masked min
@@ -240,7 +240,7 @@ namespace embree
     {
       if (likely(N == 4))
       {
-        const Vec4vf4 pi = eval0(vbool4(true),0,4);
+        const Vec4vf4 pi = eval0<4>(0,4);
         const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
         const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
         const Vec3fa upper_r = Vec3fa(reduce_max(abs(pi.w)));
@@ -252,7 +252,7 @@ namespace embree
         for (int i=0; i<N; i+=VSIZEX)
         {
           vboolx valid = vintx(i)+vintx(step) < vintx(N);
-          const Vec4vfx pi = eval0(valid,i,N);
+          const Vec4vfx pi = eval0<VSIZEX>(i,N);
           
           pl.x = select(valid,min(pl.x,pi.x),pl.x); // FIXME: use masked min
           pl.y = select(valid,min(pl.y,pi.y),pl.y); 
