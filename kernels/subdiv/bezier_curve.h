@@ -20,6 +20,49 @@
 
 namespace embree
 {
+  // FIXME: namespace isa
+
+  class BezierBasis
+  {
+  public:
+
+    template<typename T>
+      static __forceinline Vec4<T> eval(const T& u) 
+    {
+      const T t1 = u;
+      const T t0 = 1.0f-t1;
+      const T B0 = t0 * t0 * t0;
+      const T B1 = 3.0f * t1 * t0 * t0;
+      const T B2 = 3.0f * t1 * t1 * t0;
+      const T B3 = t1 * t1 * t1;
+      return Vec4<T>(B0,B1,B2,B3);
+    }
+    
+    template<typename T>
+      static __forceinline Vec4<T>  derivative(const T& u)
+    {
+      const T t1 = u;
+      const T t0 = 1.0f-t1;
+      const T B0 = -(t0*t0);
+      const T B1 = madd(-2.0f,t0*t1,t0*t0);
+      const T B2 = msub(+2.0f,t0*t1,t1*t1);
+      const T B3 = +(t1*t1);
+      return T(3.0f)*Vec4<T>(B0,B1,B2,B3);
+    }
+
+    template<typename T>
+      static __forceinline Vec4<T>  derivative2(const T& u)
+    {
+      const T t1 = u;
+      const T t0 = 1.0f-t1;
+      const T B0 = t0;
+      const T B1 = madd(-2.0f,t0,t1);
+      const T B2 = madd(-2.0f,t1,t0);
+      const T B3 = t1;
+      return T(6.0f)*Vec4<T>(B0,B1,B2,B3);
+    }
+  };
+
   template<typename Vertex>
     struct BezierCurveT
   {
