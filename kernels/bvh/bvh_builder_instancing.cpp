@@ -23,6 +23,11 @@
 #include "../geometry/quadi.h"
 #include "../geometry/quadi_mb.h"
 
+/* new open/merge builder */
+#define ENABLE_DIRECT_SAH_MERGE_BUILDER 0
+#define SPLIT_MEMORY_RESERVE_FACTOR 1000
+#define SPLIT_MIN_EXT_SPACE 1000
+
 namespace embree
 {
   namespace isa
@@ -113,6 +118,8 @@ namespace embree
       //numPrimitives += scene->getNumPrimitives<TriangleMesh,false>();
       numPrimitives += scene->instanced.numTriangles;
       numPrimitives += scene->instancedMB.numTriangles;
+      PRINT(numPrimitives);
+
       if (numPrimitives == 0) {
         prims.resize(0);
         bvh->set(BVH::emptyNode,empty,0);
@@ -172,12 +179,12 @@ namespace embree
             if (object == nullptr) continue;
             if (object->getBounds().empty()) continue;
             int s = 0; //slot(geom->getType() & ~Geometry::INSTANCE, geom->numTimeSteps);
-            refs[nextRef++] = BVHNBuilderInstancing::BuildRef(instance->local2world,object->getBounds(),object->root,instance->mask,unsigned(objectID),hash(instance->local2world),s);
+            refs[nextRef++] = BVHNBuilderInstancing::BuildRef(instance->local2world,object->getBounds(),object->root,instance->mask,unsigned(objectID),hash(instance->local2world),s,0,object->numPrimitives);
           }
         });
       refs.resize(nextRef);
 
-      PING;
+      PRINT(refs.size());
 
 #if 0
       /* compute transform IDs */
@@ -201,7 +208,9 @@ namespace embree
         }*/
 
       /* open all large nodes */  
-      open(numPrimitives); 
+      //open(numPrimitives); 
+
+      PRINT(refs.size());
 
       /* fast path for small geometries */
       /*if (refs.size() == 1) { 
@@ -212,6 +221,7 @@ namespace embree
       bvh->alloc.init_estimate(refs.size()*16);
 
       /* compute PrimRefs */
+#if ENABLE_DIRECT_SAH_MERGE_BUILDER == 0
       prims.resize(refs.size());
       const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(), size_t(1024), PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {
           PrimInfo pinfo(empty);
@@ -223,6 +233,18 @@ namespace embree
           }
           return pinfo;
         }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
+#else
+      const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(),  PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {          
+          PrimInfo pinfo(empty);
+          for (size_t i=r.begin(); i<r.end(); i++) {
+            pinfo.add(refs[i].bounds());
+          }
+          return pinfo;
+        }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
+
+#endif
+
+      PRINT(refs.size());
       
       /* skip if all objects where empty */
       if (pinfo.size() == 0)
@@ -244,13 +266,12 @@ namespace embree
         GeneralBVHBuilder::Settings settings;
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxBuildDepthLeaf;
-        settings.logBlockSize = __bsr(4);
+        settings.logBlockSize = __bsr(N);
         settings.minLeafSize = 1;
         settings.maxLeafSize = 1;
         settings.travCost = 1.0f;
         settings.intCost = 1.0f;
         settings.singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD;
-
         NodeRef root = BVHBuilderBinnedSAH::build<NodeRef>
           (
             typename BVH::CreateAlloc(bvh),
