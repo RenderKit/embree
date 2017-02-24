@@ -23,17 +23,15 @@ namespace embree
   struct Tutorial : public SceneLoadingTutorialApplication
   {
     Tutorial()
-      : SceneLoadingTutorialApplication("viewer_anim",FEATURE_RTCORE) {
-      consoleOutput = false;
-    }
+      : SceneLoadingTutorialApplication("viewer_anim",FEATURE_RTCORE) {}
     
     void postParseCommandLine() 
     {
       /* load default scene if none specified */
-      // if (sceneFilename.ext() == "") {
-      //   FileName file = FileName::executableFolder() + FileName("models/cornell_box.ecs");
-      //   parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path());
-      // }
+      if (sceneFilename.ext() == "") {
+        FileName file = FileName::executableFolder() + FileName("models/cornell_box.ecs");
+        parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path());
+      }
       
       g_instancing_mode = instancing_mode;
     }
