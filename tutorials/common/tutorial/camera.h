@@ -21,6 +21,7 @@
 #include "../../../common/math/math.h"
 #include "../../../common/math/vec3.h"
 #include "../../../common/math/affinespace.h"
+#include <sstream>
 
 namespace embree
 {
@@ -44,6 +45,17 @@ namespace embree
 
     Camera (Vec3fa& from, Vec3fa& to, Vec3fa& up, float fov) 
     : from(from), to(to), up(up), fov(fov) {}
+
+    std::string str() const 
+    {
+      std::stringstream stream;
+      stream.precision(10);
+      stream << "-vp " << from.x    << " " << from.y    << " " << from.z    << " " 
+             << "-vi " << to.x << " " << to.y << " " << to.z << " " 
+             << "-vu " << up.x     << " " << up.y     << " " << up.z     << " " 
+             << "-fov " << fov;
+      return stream.str();
+    }
     
     AffineSpace3fa camera2world () { return AffineSpace3fa::lookat(from, to, up); }
     AffineSpace3fa world2camera () { return rcp(AffineSpace3fa::lookat(from, to, up)); }

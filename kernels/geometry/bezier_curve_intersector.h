@@ -52,7 +52,7 @@ namespace embree
     };
     
     template<typename Ray, typename Epilog>
-    __forceinline bool intersect_bezier_iterative_debug(const Ray& ray, const float dt, const BezierCurve3fa& curve, size_t i, 
+    __forceinline bool intersect_bezier_iterative_debug(const Ray& ray, const float dt, const Curve3fa& curve, size_t i, 
                                                         const vfloatx& u, const BBox<vfloatx>& tp, const BBox<vfloatx>& h0, const BBox<vfloatx>& h1, 
                                                         const Vec3vfx& Ng, const Vec4vfx& dP0du, const Vec4vfx& dP3du,
                                                         const Epilog& epilog)
@@ -66,7 +66,7 @@ namespace embree
     }
 
     template<typename Ray, typename Epilog> 
-     __forceinline bool intersect_bezier_iterative_jacobian(const Ray& ray, const float dt, const BezierCurve3fa& curve, float u, float t, const Epilog& epilog)
+     __forceinline bool intersect_bezier_iterative_jacobian(const Ray& ray, const float dt, const Curve3fa& curve, float u, float t, const Epilog& epilog)
     {
       const Vec3fa org = zero;
       const Vec3fa dir = ray.dir;
@@ -125,7 +125,7 @@ namespace embree
     }
 
    template<typename Ray, typename Epilog>
-     bool intersect_bezier_recursive_jacobian(const Ray& ray, const float dt, const BezierCurve3fa& curve, 
+     bool intersect_bezier_recursive_jacobian(const Ray& ray, const float dt, const Curve3fa& curve, 
                                               const float u0, const float u1, const size_t depth, const Epilog& epilog)
     {
       int maxDepth = numBezierSubdivisions;
@@ -238,7 +238,7 @@ namespace embree
         const Vec3fa p2 = v2-ref;
         const Vec3fa p3 = v3-ref;
 
-        const BezierCurve3fa curve(p0,p1,p2,p3,0.0f,1.0f,1);
+        const Curve3fa curve(p0,p1,p2,p3);
         return intersect_bezier_recursive_jacobian(ray,dt,curve,0.0f,1.0f,1,epilog);
       }
     };
@@ -276,7 +276,7 @@ namespace embree
         const Vec3fa p2 = v2-ref;
         const Vec3fa p3 = v3-ref;
 
-        const BezierCurve3fa curve(p0,p1,p2,p3,0.0f,1.0f,1);
+        const Curve3fa curve(p0,p1,p2,p3);
         return intersect_bezier_recursive_jacobian(ray,dt,curve,0.0f,1.0f,1,epilog);
       }
     };

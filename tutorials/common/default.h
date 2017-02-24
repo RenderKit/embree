@@ -17,6 +17,7 @@
 #pragma once
 
 #include "../../common/sys/platform.h"
+#include "../../common/sys/sysinfo.h"
 #include "../../common/sys/ref.h"
 #include "../../common/sys/vector.h"
 #include "../../common/math/vec2.h"
@@ -36,4 +37,4 @@
 #include <memory>
 #include <map>
 #include <set>
-
+#include <deque>
