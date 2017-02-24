@@ -114,6 +114,26 @@ namespace embree
 
       size_t numCollapsedTransformNodes;
       NodeRef collapse(NodeRef& node);
+
+      __forceinline size_t openBuildRef(BuildRef &bref, BuildRef *const refs) {
+        if (bref.node.isLeaf())
+        {
+          refs[0] = bref;
+          return 1;
+        }
+        assert(bref.node.isAlignedNode());
+        NodeRef ref = bref.node;
+        unsigned int numPrims = max((unsigned int)bref.numPrimitives() / N,(unsigned int)1);
+        AlignedNode* node = ref.alignedNode();
+        size_t n = 0;
+        for (size_t i=0; i<N; i++) {
+          if (node->child(i) == BVH::emptyNode) continue;
+          refs[i] = BuildRef(bref.local2world,node->bounds(i),node->child(i),bref.mask,bref.instID,bref.xfmID,bref.type,bref.depth+1,numPrims);
+          n++;
+        }
+        assert(n > 1);
+        return n;        
+      }
       
     public:
       BVH* bvh;

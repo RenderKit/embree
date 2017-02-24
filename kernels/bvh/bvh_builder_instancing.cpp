@@ -297,7 +297,7 @@ namespace embree
             return noderef;
           },
             [&] (BuildRef &bref, BuildRef *refs) -> size_t { 
-              refs[0] = bref; return 1;
+              return openBuildRef(bref,refs);
             }, 
             [&] (size_t dn) { bvh->scene->progressMonitor(0); },
             refs.data(),extSize,pinfo,settings);
