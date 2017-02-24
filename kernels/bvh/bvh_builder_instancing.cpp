@@ -275,12 +275,12 @@ namespace embree
 
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
         PRINT("NEW CODE PATH");
-
-        const size_t extSize = max(max((size_t)SPLIT_MIN_EXT_SPACE,refs.size()*2),size_t((float)numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
-        DBG_PRINT(refs.size()*2);
+        PRINT(pinfo);
+        const size_t extSize = max((size_t)SPLIT_MIN_EXT_SPACE,refs.size()*4);
+        DBG_PRINT(refs.size()*4);
         DBG_PRINT(extSize);
         refs.resize(extSize); 
-
+        PRINT(refs.size());
         NodeRef root = BVHBuilderBinnedOpenMergeSAH::build<NodeRef,BuildRef>(
             typename BVH::CreateAlloc(bvh),
             typename BVH::AlignedNode::Create2(),
@@ -289,7 +289,7 @@ namespace embree
            [&] (const BVHBuilderBinnedOpenMergeSAH::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> NodeRef
           {
             assert(current.prims.size() == 1);
-            BuildRef* ref = (BuildRef*) prims[current.prims.begin()].ID();
+            BuildRef* ref = (BuildRef*)&refs[current.prims.begin()];
             TransformNode* node = (TransformNode*) alloc->alloc0->malloc(sizeof(TransformNode));
             new (node) TransformNode(ref->local2world,ref->localBounds,ref->node,ref->mask,ref->instID,ref->xfmID,ref->type); // FIXME: rcp should be precalculated somewhere
             NodeRef noderef = BVH::encodeNode(node);
