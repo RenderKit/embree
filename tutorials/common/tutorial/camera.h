@@ -25,7 +25,7 @@
 namespace embree
 {
   /* camera settings */
-  struct Camera 
+  struct Camera
   {
     struct ISPCCamera
     {
@@ -39,18 +39,18 @@ namespace embree
 
   public:
 
-    Camera () 
+    Camera ()
     : from(0.0001f,0.0001f,-3.0f), to(0,0,0), up(0,1,0), fov(90) {}
 
-    Camera (Vec3fa& from, Vec3fa& to, Vec3fa& up, float fov) 
+    Camera (Vec3fa& from, Vec3fa& to, Vec3fa& up, float fov)
     : from(from), to(to), up(up), fov(fov) {}
-    
+
     AffineSpace3fa camera2world () { return AffineSpace3fa::lookat(from, to, up); }
     AffineSpace3fa world2camera () { return rcp(AffineSpace3fa::lookat(from, to, up)); }
     Vec3fa world2camera(const Vec3fa& p) { return xfmPoint(world2camera(),p); }
     Vec3fa camera2world(const Vec3fa& p) { return xfmPoint(camera2world(),p); }
 
-    ISPCCamera getISPCCamera (size_t width, size_t height, bool flip_y = false) 
+    ISPCCamera getISPCCamera (size_t width, size_t height, bool flip_y = false)
     {
       const float fovScale = 1.0f/tanf(deg2rad(0.5f*fov));
       const AffineSpace3fa local2world = AffineSpace3fa::lookat(from, to, up);
@@ -75,39 +75,24 @@ namespace embree
 
     void rotate (float dtheta, float dphi)
     {
-      const AffineSpace3fa c2w = AffineSpace3fa::lookat(Vec3fa(zero), Vec3fa(0.0f, 0.0f, -1.0f), up);
-      const AffineSpace3fa w2c = rcp(c2w);
-
-      Vec3fa view = normalize(xfmVector(w2c, to-from));
-      float theta = atan2f(view.x, view.z);
-      theta += dtheta;
-      const float phi_max = float(pi)/2.0f-float(ulp)*16.0f;
-      float phi = clamp(asinf(view.y), -phi_max, phi_max);
-      phi = clamp(phi + dphi, -phi_max, phi_max);
-
-      float x = cosf(phi)*sinf(theta);
-      float y = sinf(phi);
-      float z = cosf(phi)*cosf(theta);
-      to = from + length(to-from) * xfmVector(w2c, Vec3fa(x,y,z));
+      const Vec3fa up1 = normalize(up);
+      Vec3fa view1 = normalize(to-from);
+      view1 = xfmVector(AffineSpace3fa::rotate(up1, dtheta), view1);
+      const float phi = acosf(dot(view1, up1));
+      const float dphi2 = phi - clamp(phi-dphi, 0.001f*float(pi), 0.999f*float(pi));
+      view1 = xfmVector(AffineSpace3fa::rotate(cross(view1, up1), dphi2), view1);
+      to = from + length(to-from) * view1;
     }
 
     void rotateOrbit (float dtheta, float dphi)
     {
-      const AffineSpace3fa c2w = AffineSpace3fa::lookat(Vec3fa(zero), Vec3fa(0.0f, 0.0f, -1.0f), up);
-      const AffineSpace3fa w2c = rcp(c2w);
-
-      Vec3fa view = normalize(xfmVector(w2c, to-from));
-      float theta = atan2f(view.x, view.z);
-      theta += dtheta;
-      const float phi_max = float(pi)/2.0f-float(ulp)*16.0f;
-      float phi = clamp(asinf(view.y), -phi_max, phi_max);
-      phi = clamp(phi + dphi, -phi_max, phi_max);
-      assert(std::isfinite(theta));
-      assert(std::isfinite(phi));
-      float x = cosf(phi)*sinf(theta);
-      float y = sinf(phi);
-      float z = cosf(phi)*cosf(theta);
-      from = to - length(to-from) * xfmVector(w2c, Vec3fa(x,y,z));
+      const Vec3fa up1 = normalize(up);
+      Vec3fa view1 = normalize(to-from);
+      view1 = xfmVector(AffineSpace3fa::rotate(up1, dtheta), view1);
+      const float phi = acosf(dot(view1, up1));
+      const float dphi2 = phi - clamp(phi-dphi, 0.001f*float(pi), 0.999f*float(pi));
+      view1 = xfmVector(AffineSpace3fa::rotate(cross(view1, up1), dphi2), view1);
+      from = to - length(to-from) * view1;
     }
 
     void dolly (float ds)
