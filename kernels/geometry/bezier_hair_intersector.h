@@ -47,7 +47,7 @@ namespace embree
       __forceinline float t  (const size_t i) const { return vt[i]; }
       __forceinline Vec3fa Ng(const size_t i) const 
       { 
-        Vec3fa T = BezierCurve3fa(p0,p1,p2,p3,0.0f,1.0f,0).eval_du(vu[i]);
+        Vec3fa T = Curve3fa(p0,p1,p2,p3).eval_du(vu[i]);
         return T == Vec3fa(zero) ? Vec3fa(one) : T; 
       }
       
@@ -85,12 +85,12 @@ namespace embree
         Vec3fa w1 = xfmVector(ray_space,v1-ray.org); w1.w = v1.w;
         Vec3fa w2 = xfmVector(ray_space,v2-ray.org); w2.w = v2.w;
         Vec3fa w3 = xfmVector(ray_space,v3-ray.org); w3.w = v3.w;
-        BezierCurve3fa curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
+        Curve3fa curve2D(w0,w1,w2,w3);
       
         /* evaluate the bezier curve */
         vboolx valid = vfloatx(step) < vfloatx(float(N));
-        const Vec4vfx p0 = curve2D.eval0(valid,0,N);
-        const Vec4vfx p1 = curve2D.eval1(valid,0,N);
+        const Vec4vfx p0 = curve2D.eval0<VSIZEX>(0,N);
+        const Vec4vfx p1 = curve2D.eval1<VSIZEX>(0,N);
 
         /* approximative intersection with cone */
         const Vec4vfx v = p1-p0;
@@ -119,8 +119,8 @@ namespace embree
           {
             /* evaluate the bezier curve */
             vboolx valid = vintx(i)+vintx(step) < vintx(N);
-            const Vec4vfx p0 = curve2D.eval0(valid,i,N);
-            const Vec4vfx p1 = curve2D.eval1(valid,i,N);
+            const Vec4vfx p0 = curve2D.eval0<VSIZEX>(i,N);
+            const Vec4vfx p1 = curve2D.eval1<VSIZEX>(i,N);
             
             /* approximative intersection with cone */
             const Vec4vfx v = p1-p0;
@@ -184,7 +184,7 @@ namespace embree
         Vec3fa w1 = xfmVector(ray_space[k],v1-ray_org); w1.w = v1.w;
         Vec3fa w2 = xfmVector(ray_space[k],v2-ray_org); w2.w = v2.w;
         Vec3fa w3 = xfmVector(ray_space[k],v3-ray_org); w3.w = v3.w;
-        BezierCurve3fa curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
+        Curve3fa curve2D(w0,w1,w2,w3);
         
         /* process SIMD-size many segments per iteration */
         bool ishit = false;
@@ -192,8 +192,8 @@ namespace embree
         {
           /* evaluate the bezier curve */
           vboolx valid = vintx(i)+vintx(step) < vintx(N);
-          const Vec4vfx p0 = curve2D.eval0(valid,i,N);
-          const Vec4vfx p1 = curve2D.eval1(valid,i,N);
+          const Vec4vfx p0 = curve2D.eval0<VSIZEX>(i,N);
+          const Vec4vfx p1 = curve2D.eval1<VSIZEX>(i,N);
           
           /* approximative intersection with cone */
           const Vec4vfx v = p1-p0;

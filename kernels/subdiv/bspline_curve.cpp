@@ -14,32 +14,30 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "../common/tutorial/tutorial.h"
+#include "bspline_curve.h"
 
 namespace embree
 {
-  extern "C" int g_instancing_mode;
-
-  struct Tutorial : public SceneLoadingTutorialApplication
+  PrecomputedBSplineBasis::PrecomputedBSplineBasis(int dj)
   {
-    Tutorial()
-      : SceneLoadingTutorialApplication("viewer_anim",FEATURE_RTCORE) {}
-    
-    void postParseCommandLine() 
+    for (size_t i=0; i<=N; i++) 
     {
-      /* load default scene if none specified */
-      if (sceneFilename.ext() == "") {
-        FileName file = FileName::executableFolder() + FileName("models/cornell_box.ecs");
-        parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path());
+      for (size_t j=0; j<=N; j++) 
+      {
+        const float u = float(j+dj)/float(i);
+        const Vec4f f = BSplineBasis2::eval(u);
+        c0[i][j] = f.x;
+        c1[i][j] = f.y;
+        c2[i][j] = f.z;
+        c3[i][j] = f.w;
+        const Vec4f d = BSplineBasis2::derivative(u);
+        d0[i][j] = d.x;
+        d1[i][j] = d.y;
+        d2[i][j] = d.z;
+        d3[i][j] = d.w;
       }
-      
-      g_instancing_mode = instancing_mode;
     }
-  };
-
-}
-
-int main(int argc, char** argv) {
-  int t = embree::Tutorial().main(argc,argv);
-  return t;
+  }
+  PrecomputedBSplineBasis bspline_basis0(0);
+  PrecomputedBSplineBasis bspline_basis1(1);
 }
