@@ -719,6 +719,11 @@ namespace embree
   {
     progress_monitor_counter = 0;
 
+    /* build geometry specific stuff */
+    parallel_for(geometries.size(), [&] ( const size_t i ) {
+        if (geometries[i]) geometries[i]->commit();
+      });
+
     /* select fast code path if no intersection filter is present */
     accels.select(numIntersectionFiltersN+numIntersectionFilters4,
                   numIntersectionFiltersN+numIntersectionFilters8,
