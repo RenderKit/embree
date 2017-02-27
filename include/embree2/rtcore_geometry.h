@@ -329,7 +329,7 @@ RTCORE_API unsigned rtcNewSubdivisionMesh (RTCScene scene,                //!< t
   allows the implementation to approximate the intersection
   calculation. This in particular means that zooming onto one hair
   might show geometric artefacts. */
-RTCORE_DEPRECATED RTCORE_API unsigned rtcNewHairGeometry (RTCScene scene,                    //!< the scene the curves belong to
+RTCORE_API RTCORE_DEPRECATED unsigned rtcNewHairGeometry (RTCScene scene,                    //!< the scene the curves belong to
                                                           RTCGeometryFlags flags,            //!< geometry flags
                                                           size_t numCurves,                  //!< number of curves
                                                           size_t numVertices,                //!< number of vertices
@@ -375,7 +375,7 @@ RTCORE_API unsigned rtcNewBSplineHairGeometry (RTCScene scene,                  
   start vertex of the curve. The vertex buffer stores 4 control points
   per curve, each such control point consists of a single precision
   (x,y,z) position and radius, stored in that order in memory. */
-RTCORE_DEPRECATED RTCORE_API unsigned rtcNewCurveGeometry (RTCScene scene,                    //!< the scene the curves belong to
+RTCORE_API RTCORE_DEPRECATED unsigned rtcNewCurveGeometry (RTCScene scene,                    //!< the scene the curves belong to
                                                            RTCGeometryFlags flags,            //!< geometry flags
                                                            size_t numCurves,                  //!< number of curves
                                                            size_t numVertices,                //!< number of vertices
