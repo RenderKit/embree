@@ -27,7 +27,7 @@ namespace embree
 {
   namespace isa
   {
-    template<int M>
+    template<typename NativeCurve3fa, int M>
       struct RibbonHit
     {
       __forceinline RibbonHit() {}
@@ -47,7 +47,7 @@ namespace embree
       __forceinline float t  (const size_t i) const { return vt[i]; }
       __forceinline Vec3fa Ng(const size_t i) const 
       { 
-        Vec3fa T = Curve3fa(p0,p1,p2,p3).eval_du(vu[i]);
+        Vec3fa T = NativeCurve3fa(p0,p1,p2,p3).eval_du(vu[i]);
         return T == Vec3fa(zero) ? Vec3fa(one) : T; 
       }
       
@@ -80,7 +80,7 @@ namespace embree
       return d.first <= r*r*d.second;
     }
 
-    template<typename Epilog>
+    template<typename NativeCurve3fa, typename Epilog>
       __forceinline bool intersect_ribbon(const Vec3fa& ray_org, const Vec3fa& ray_dir, const float ray_tnear, const float ray_tfar,
                                           const float depth_scale, const LinearSpace3fa& ray_space,
                                           const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
@@ -91,19 +91,19 @@ namespace embree
       Vec3fa w1 = xfmVector(ray_space,v1-ray_org); w1.w = v1.w;
       Vec3fa w2 = xfmVector(ray_space,v2-ray_org); w2.w = v2.w;
       Vec3fa w3 = xfmVector(ray_space,v3-ray_org); w3.w = v3.w;
-      Curve3fa curve2D(w0,w1,w2,w3);
+      NativeCurve3fa curve2D(w0,w1,w2,w3);
       
       /* evaluate the bezier curve */
       bool ishit = false;
       vboolx valid = vfloatx(step) < vfloatx(float(N));
-      const Vec4vfx p0 = curve2D.eval0<VSIZEX>(0,N);
-      const Vec4vfx p1 = curve2D.eval1<VSIZEX>(0,N);
+      const Vec4vfx p0 = curve2D.template eval0<VSIZEX>(0,N);
+      const Vec4vfx p1 = curve2D.template eval1<VSIZEX>(0,N);
       valid &= cylinder_culling_test(zero,Vec2vfx(p0.x,p0.y),Vec2vfx(p1.x,p1.y),max(p0.w,p1.w));
       
       if (any(valid)) 
       {
-        const Vec3vfx dp0dt = curve2D.derivative0<VSIZEX>(0,N);
-        const Vec3vfx dp1dt = curve2D.derivative1<VSIZEX>(0,N);
+        const Vec3vfx dp0dt = curve2D.template derivative0<VSIZEX>(0,N);
+        const Vec3vfx dp1dt = curve2D.template derivative1<VSIZEX>(0,N);
         const Vec3vfx n0(dp0dt.y,-dp0dt.x,0.0f);
         const Vec3vfx n1(dp1dt.y,-dp1dt.x,0.0f);
         const Vec3vfx nn0 = normalize(n0);
@@ -118,7 +118,7 @@ namespace embree
         if (any(valid0))
         {
           vv = madd(2.0f,vv,vfloatx(-1.0f));
-          RibbonHit<VSIZEX> bhit(valid0,vu,vv,depth_scale*vt,0,N,v0,v1,v2,v3);
+          RibbonHit<NativeCurve3fa,VSIZEX> bhit(valid0,vu,vv,depth_scale*vt,0,N,v0,v1,v2,v3);
           ishit |= epilog(bhit.valid,bhit);
         }
       }
@@ -130,13 +130,13 @@ namespace embree
         {
           /* evaluate the bezier curve */
           vboolx valid = vintx(i)+vintx(step) < vintx(N);
-          const Vec4vfx p0 = curve2D.eval0<VSIZEX>(i,N);
-          const Vec4vfx p1 = curve2D.eval1<VSIZEX>(i,N);
+          const Vec4vfx p0 = curve2D.template eval0<VSIZEX>(i,N);
+          const Vec4vfx p1 = curve2D.template eval1<VSIZEX>(i,N);
           valid &= cylinder_culling_test(zero,Vec2vfx(p0.x,p0.y),Vec2vfx(p1.x,p1.y),max(p0.w,p1.w));
           if (none(valid)) continue;
           
-          const Vec3vfx dp0dt = curve2D.derivative0<VSIZEX>(i,N);
-          const Vec3vfx dp1dt = curve2D.derivative1<VSIZEX>(i,N);
+          const Vec3vfx dp0dt = curve2D.template derivative0<VSIZEX>(i,N);
+          const Vec3vfx dp1dt = curve2D.template derivative1<VSIZEX>(i,N);
           const Vec3vfx n0(dp0dt.y,-dp0dt.x,0.0f);
           const Vec3vfx n1(dp1dt.y,-dp1dt.x,0.0f);
           const Vec3vfx nn0 = normalize(n0);
@@ -151,7 +151,7 @@ namespace embree
           if (any(valid0))
           {
             vv = madd(2.0f,vv,vfloatx(-1.0f));
-            RibbonHit<VSIZEX> bhit(valid0,vu,vv,depth_scale*vt,i,N,v0,v1,v2,v3);
+            RibbonHit<NativeCurve3fa,VSIZEX> bhit(valid0,vu,vv,depth_scale*vt,i,N,v0,v1,v2,v3);
             ishit |= epilog(bhit.valid,bhit);
           }
         }
@@ -159,7 +159,8 @@ namespace embree
       return ishit;
     }
     
-    struct Ribbon1Intersector1
+    template<typename NativeCurve3fa>
+      struct Ribbon1Intersector1
     {
       float depth_scale;
       LinearSpace3fa ray_space;
@@ -174,14 +175,14 @@ namespace embree
                                    const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
                                    const Epilog& epilog) const
       {
-        return intersect_ribbon(ray.org,ray.dir,ray.tnear,ray.tfar,
-                                depth_scale,ray_space,
-                                v0,v1,v2,v3,N,
-                                epilog);
+        return intersect_ribbon<NativeCurve3fa>(ray.org,ray.dir,ray.tnear,ray.tfar,
+                                                depth_scale,ray_space,
+                                                v0,v1,v2,v3,N,
+                                                epilog);
       }
     };
     
-    template<int K>
+    template<typename NativeCurve3fa, int K>
     struct Ribbon1IntersectorK
     {
       vfloat<K> depth_scale;
@@ -206,10 +207,10 @@ namespace embree
         const Vec3fa ray_dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
         const float ray_tnear = ray.tnear[k];
         const float ray_tfar  = ray.tfar [k];
-        return intersect_ribbon(ray_org,ray_dir,ray_tnear,ray_tfar,
-                                depth_scale[k],ray_space[k],
-                                v0,v1,v2,v3,N,
-                                epilog);
+        return intersect_ribbon<NativeCurve3fa>(ray_org,ray_dir,ray_tnear,ray_tfar,
+                                                depth_scale[k],ray_space[k],
+                                                v0,v1,v2,v3,N,
+                                                epilog);
       }
     };
   }

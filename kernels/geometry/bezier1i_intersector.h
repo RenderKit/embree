@@ -36,8 +36,8 @@ namespace embree
         __forceinline PrecalculationsBase(const Ray& ray, const void* ptr)
           : intersectorHair(ray,ptr), intersectorCurve(ray,ptr) {}
 
-        Bezier1Intersector1 intersectorHair;
-        BezierCurve1Intersector1 intersectorCurve;
+        Bezier1Intersector1<Curve3fa> intersectorHair;
+        BezierCurve1Intersector1<Curve3fa> intersectorCurve;
       };
 
       typedef Intersector1Precalculations<PrecalculationsBase> Precalculations;
@@ -94,8 +94,8 @@ namespace embree
         __forceinline PrecalculationsBase(const RayK<K>& ray, size_t k)
           : intersectorHair(ray,k), intersectorCurve(ray,k) {}
 
-        Bezier1IntersectorK<K> intersectorHair;
-        BezierCurve1IntersectorK<K> intersectorCurve;
+        Bezier1IntersectorK<Curve3fa,K> intersectorHair;
+        BezierCurve1IntersectorK<Curve3fa,K> intersectorCurve;
       };
 
       typedef IntersectorKPrecalculations<K,PrecalculationsBase> Precalculations;
@@ -152,8 +152,8 @@ namespace embree
         __forceinline PrecalculationsBase(const Ray& ray, const void* ptr)
           : intersectorHair(ray,ptr), intersectorCurve(ray,ptr) {}
 
-        Bezier1Intersector1 intersectorHair;
-        BezierCurve1Intersector1 intersectorCurve;
+        Bezier1Intersector1<Curve3fa> intersectorHair;
+        BezierCurve1Intersector1<Curve3fa> intersectorCurve;
       };
 
       typedef Intersector1PrecalculationsMB<PrecalculationsBase> Precalculations;
@@ -196,8 +196,8 @@ namespace embree
         __forceinline PrecalculationsBase(const RayK<K>& ray, size_t k)
           : intersectorHair(ray,k), intersectorCurve(ray,k) {}
 
-        Bezier1IntersectorK<K> intersectorHair;
-        BezierCurve1IntersectorK<K> intersectorCurve;
+        Bezier1IntersectorK<Curve3fa,K> intersectorHair;
+        BezierCurve1IntersectorK<Curve3fa,K> intersectorCurve;
       };
 
       typedef IntersectorKPrecalculationsMB<K,PrecalculationsBase> Precalculations;
