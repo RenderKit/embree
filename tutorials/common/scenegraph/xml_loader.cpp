@@ -1000,44 +1000,6 @@ namespace embree
     }
   }
 
-  avector<Vec3fa> convert_bspline_to_bezier(const std::vector<unsigned>& indices, const avector<Vec3fa>& positions)
-  {
-    avector<Vec3fa> positions_o;
-    positions_o.resize(4*indices.size());
-    for (size_t i=0; i<indices.size(); i++) 
-    {
-      const size_t idx = indices[i];
-      const vfloat4 v0 = vfloat4::loadu(&positions[idx+0]);  
-      const vfloat4 v1 = vfloat4::loadu(&positions[idx+1]);
-      const vfloat4 v2 = vfloat4::loadu(&positions[idx+2]);
-      const vfloat4 v3 = vfloat4::loadu(&positions[idx+3]);
-      positions_o[4*i+0] = Vec3fa((1.0f/6.0f)*v0 + (2.0f/3.0f)*v1 + (1.0f/6.0f)*v2);
-      positions_o[4*i+1] = Vec3fa((2.0f/3.0f)*v1 + (1.0f/3.0f)*v2);
-      positions_o[4*i+2] = Vec3fa((1.0f/3.0f)*v1 + (2.0f/3.0f)*v2);
-      positions_o[4*i+3] = Vec3fa((1.0f/6.0f)*v1 + (2.0f/3.0f)*v2 + (1.0f/6.0f)*v3);
-    }
-    return positions_o;
-  }
-
-  avector<Vec3fa> convert_bezier_to_bspline(const std::vector<unsigned>& indices, const avector<Vec3fa>& positions)
-  {
-    avector<Vec3fa> positions_o;
-    positions_o.resize(4*indices.size());
-    for (size_t i=0; i<indices.size(); i++) 
-    {
-      const size_t idx = indices[i];
-      vfloat4 v0 = vfloat4::loadu(&positions[idx+0]);  
-      vfloat4 v1 = vfloat4::loadu(&positions[idx+1]);
-      vfloat4 v2 = vfloat4::loadu(&positions[idx+2]);
-      vfloat4 v3 = vfloat4::loadu(&positions[idx+3]);
-      positions_o[4*i+0] = Vec3fa( 6.0f*v0 - 7.0f*v1 + 2.0f*v2);
-      positions_o[4*i+1] = Vec3fa( 2.0f*v1 - 1.0f*v2);
-      positions_o[4*i+2] = Vec3fa(-1.0f*v1 + 2.0f*v2);
-      positions_o[4*i+3] = Vec3fa( 2.0f*v1 - 7.0f*v2 + 6.0f*v3);
-    }
-    return positions_o;
-  }
-
   Ref<SceneGraph::Node> XMLLoader::loadBezierCurves(const Ref<XML>& xml, SceneGraph::HairSetNode::Type type) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
@@ -1068,33 +1030,36 @@ namespace embree
   Ref<SceneGraph::Node> XMLLoader::loadBSplineCurves(const Ref<XML>& xml, SceneGraph::HairSetNode::Type type) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(type,SceneGraph::HairSetNode::BEZIER,material);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(type,SceneGraph::HairSetNode::BSPLINE,material);
 
-    std::vector<unsigned> indices = loadUIntArray(xml->childOpt("indices"));
-    for (size_t i=0; i<indices.size(); i++) indices[i] = indices[i]-1; // fix indices
-    mesh->hairs.resize(indices.size());
-    for (size_t i=0; i<indices.size(); i++) {
-      mesh->hairs[i] = SceneGraph::HairSetNode::Hair(unsigned(4*i),0);
-    }
-      
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++) {
-        auto vertices = loadVec4fArray(animation->child(i));
-        fix_bspline_end_points(indices,vertices);
-        mesh->positions.push_back(convert_bspline_to_bezier(indices,vertices));
+        mesh->positions.push_back(loadVec4fArray(animation->child(i)));
       }
     } else {
-      auto vertices = loadVec4fArray(xml->childOpt("positions"));
-      fix_bspline_end_points(indices,vertices);
-      mesh->positions.push_back(convert_bspline_to_bezier(indices,vertices));
+      mesh->positions.push_back(loadVec4fArray(xml->childOpt("positions")));
       if (xml->hasChild("positions2")) {
-        auto vertices = loadVec4fArray(xml->childOpt("positions2"));
-        fix_bspline_end_points(indices,vertices);
-        mesh->positions.push_back(convert_bspline_to_bezier(indices,vertices));
+        mesh->positions.push_back(loadVec4fArray(xml->childOpt("positions2")));
       }
     }
 
+    std::vector<unsigned> indices = loadUIntArray(xml->childOpt("indices"));
+    //std::vector<Vec2i> indices = loadVec2iArray(xml->childOpt("indices")); // FIMXE: enable
+    mesh->hairs.resize(indices.size()); 
+    for (size_t i=0; i<indices.size(); i++) {
+      indices[i] = indices[i]-1; // FIXME: remove
+      mesh->hairs[i] = SceneGraph::HairSetNode::Hair(indices[i],0);
+    }
+
+    for (auto& vertices : mesh->positions)
+      fix_bspline_end_points(indices,vertices);
+
+    std::string tessellation_rate = xml->parm("tessellation_rate");
+    if (tessellation_rate != "")
+      mesh->tessellation_rate = atoi(tessellation_rate.c_str());
+
     mesh->verify();
+    mesh->convert_bspline_to_bezier();
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 

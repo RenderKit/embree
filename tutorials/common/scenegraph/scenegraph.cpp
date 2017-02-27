@@ -184,7 +184,69 @@ namespace embree
       if (size_t(hair.vertex) >= N)
         THROW_RUNTIME_ERROR("invalid hair");
   }
-  
+
+  avector<Vec3fa> bspline_to_bezier_helper(const std::vector<SceneGraph::HairSetNode::Hair>& indices, const avector<Vec3fa>& positions)
+  {
+    avector<Vec3fa> positions_o;
+    positions_o.resize(4*indices.size());
+    for (size_t i=0; i<indices.size(); i++) 
+    {
+      const size_t idx = indices[i].vertex;
+      const vfloat4 v0 = vfloat4::loadu(&positions[idx+0]);  
+      const vfloat4 v1 = vfloat4::loadu(&positions[idx+1]);
+      const vfloat4 v2 = vfloat4::loadu(&positions[idx+2]);
+      const vfloat4 v3 = vfloat4::loadu(&positions[idx+3]);
+      positions_o[4*i+0] = Vec3fa((1.0f/6.0f)*v0 + (2.0f/3.0f)*v1 + (1.0f/6.0f)*v2);
+      positions_o[4*i+1] = Vec3fa((2.0f/3.0f)*v1 + (1.0f/3.0f)*v2);
+      positions_o[4*i+2] = Vec3fa((1.0f/3.0f)*v1 + (2.0f/3.0f)*v2);
+      positions_o[4*i+3] = Vec3fa((1.0f/6.0f)*v1 + (2.0f/3.0f)*v2 + (1.0f/6.0f)*v3);
+    }
+    return positions_o;
+  }
+
+  avector<Vec3fa> bezier_to_bspline_helper(const std::vector<SceneGraph::HairSetNode::Hair>& indices, const avector<Vec3fa>& positions)
+  {
+    avector<Vec3fa> positions_o;
+    positions_o.resize(4*indices.size());
+    for (size_t i=0; i<indices.size(); i++) 
+    {
+      const size_t idx = indices[i].vertex;
+      vfloat4 v0 = vfloat4::loadu(&positions[idx+0]);  
+      vfloat4 v1 = vfloat4::loadu(&positions[idx+1]);
+      vfloat4 v2 = vfloat4::loadu(&positions[idx+2]);
+      vfloat4 v3 = vfloat4::loadu(&positions[idx+3]);
+      positions_o[4*i+0] = Vec3fa( 6.0f*v0 - 7.0f*v1 + 2.0f*v2);
+      positions_o[4*i+1] = Vec3fa( 2.0f*v1 - 1.0f*v2);
+      positions_o[4*i+2] = Vec3fa(-1.0f*v1 + 2.0f*v2);
+      positions_o[4*i+3] = Vec3fa( 2.0f*v1 - 7.0f*v2 + 6.0f*v3);
+    }
+    return positions_o;
+  }
+
+  void SceneGraph::HairSetNode::convert_bezier_to_bspline()
+  {
+    if (basis != BEZIER) return;
+    for (size_t i=0; i<positions.size(); i++) {
+      positions[i] = bezier_to_bspline_helper(hairs,positions[i]);
+    }
+    for (size_t i=0; i<hairs.size(); i++) {
+      hairs[i] = SceneGraph::HairSetNode::Hair(unsigned(4*i),0);
+    }
+    basis = BSPLINE;
+  }
+
+  void SceneGraph::HairSetNode::convert_bspline_to_bezier()
+  {
+    if (basis != BSPLINE) return;
+    for (size_t i=0; i<positions.size(); i++) {
+      positions[i] = bspline_to_bezier_helper(hairs,positions[i]);
+    }
+    for (size_t i=0; i<hairs.size(); i++) {
+      hairs[i] = SceneGraph::HairSetNode::Hair(unsigned(4*i),0);
+    }
+    basis = BSPLINE;
+  }
+
   void SceneGraph::extend_animation(Ref<SceneGraph::Node> node0, Ref<SceneGraph::Node> node1)
   {
     if (node0 == node1) return;

@@ -807,6 +807,9 @@ namespace embree
         return positions.size();
       }
 
+      void convert_bezier_to_bspline();
+      void convert_bspline_to_bezier();
+
       void verify() const;
 
     public:
