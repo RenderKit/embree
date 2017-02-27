@@ -39,9 +39,6 @@ namespace embree
     /*! Geometry destructor */
     virtual ~Geometry();
 
-    /*! writes geometry to disk */
-    virtual void write(std::ofstream& file);
-
     /*! updates intersection filter function counts in scene */
     void updateIntersectionFilters(bool enable);
 
