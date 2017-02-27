@@ -984,7 +984,42 @@ namespace embree
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
+  void fix_bspline_end_points(const std::vector<unsigned>& indices, avector<Vec3fa>& positions)
+  {
+    for (size_t i=0; i<indices.size(); i++) 
+    {
+      const size_t idx = indices[i];
+      vfloat4 v0 = vfloat4::loadu(&positions[idx-1]);  
+      vfloat4 v1 = vfloat4::loadu(&positions[idx+0]);
+      vfloat4 v2 = vfloat4::loadu(&positions[idx+1]);
+      vfloat4 v3 = vfloat4::loadu(&positions[idx+2]);
+      v0 = select(isnan(v0),2.0f*v1-v2,v0); // nan triggers edge rule
+      v3 = select(isnan(v3),2.0f*v2-v1,v3); // nan triggers edge rule
+      vfloat4::storeu(&positions[idx-1],v0);
+      vfloat4::storeu(&positions[idx+2],v3);
+    }
+  }
+
   avector<Vec3fa> convert_bspline_to_bezier(const std::vector<unsigned>& indices, const avector<Vec3fa>& positions)
+  {
+    avector<Vec3fa> positions_o;
+    positions_o.resize(4*indices.size());
+    for (size_t i=0; i<indices.size(); i++) 
+    {
+      const size_t idx = indices[i];
+      const vfloat4 v0 = vfloat4::loadu(&positions[idx-1]);  
+      const vfloat4 v1 = vfloat4::loadu(&positions[idx+0]);
+      const vfloat4 v2 = vfloat4::loadu(&positions[idx+1]);
+      const vfloat4 v3 = vfloat4::loadu(&positions[idx+2]);
+      positions_o[4*i+0] = Vec3fa((1.0f/6.0f)*v0 + (2.0f/3.0f)*v1 + (1.0f/6.0f)*v2);
+      positions_o[4*i+1] = Vec3fa((2.0f/3.0f)*v1 + (1.0f/3.0f)*v2);
+      positions_o[4*i+2] = Vec3fa((1.0f/3.0f)*v1 + (2.0f/3.0f)*v2);
+      positions_o[4*i+3] = Vec3fa((1.0f/6.0f)*v1 + (2.0f/3.0f)*v2 + (1.0f/6.0f)*v3);
+    }
+    return positions_o;
+  }
+
+  avector<Vec3fa> convert_bezier_to_bspline(const std::vector<unsigned>& indices, const avector<Vec3fa>& positions)
   {
     avector<Vec3fa> positions_o;
     positions_o.resize(4*indices.size());
@@ -995,12 +1030,10 @@ namespace embree
       vfloat4 v1 = vfloat4::loadu(&positions[idx+0]);
       vfloat4 v2 = vfloat4::loadu(&positions[idx+1]);
       vfloat4 v3 = vfloat4::loadu(&positions[idx+2]);
-      v0 = select(isnan(v0),2.0f*v1-v2,v0); // nan triggers edge rule
-      v3 = select(isnan(v3),2.0f*v2-v1,v3); // nan triggers edge rule
-      positions_o[4*i+0] = Vec3fa((1.0f/6.0f)*v0 + (2.0f/3.0f)*v1 + (1.0f/6.0f)*v2);
-      positions_o[4*i+1] = Vec3fa((2.0f/3.0f)*v1 + (1.0f/3.0f)*v2);
-      positions_o[4*i+2] = Vec3fa((1.0f/3.0f)*v1 + (2.0f/3.0f)*v2);
-      positions_o[4*i+3] = Vec3fa((1.0f/6.0f)*v1 + (2.0f/3.0f)*v2 + (1.0f/6.0f)*v3);
+      positions_o[4*i+0] = Vec3fa( 6.0f*v0 - 7.0f*v1 + 2.0f*v2);
+      positions_o[4*i+1] = Vec3fa( 2.0f*v1 - 1.0f*v2);
+      positions_o[4*i+2] = Vec3fa(-1.0f*v1 + 2.0f*v2);
+      positions_o[4*i+3] = Vec3fa( 2.0f*v1 - 7.0f*v2 + 6.0f*v3);
     }
     return positions_o;
   }
@@ -1044,12 +1077,20 @@ namespace embree
     }
       
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
-      for (size_t i=0; i<animation->size(); i++)
-        mesh->positions.push_back(convert_bspline_to_bezier(indices,loadVec4fArray(animation->child(i))));
+      for (size_t i=0; i<animation->size(); i++) {
+        auto vertices = loadVec4fArray(animation->child(i));
+        fix_bspline_end_points(indices,vertices);
+        mesh->positions.push_back(convert_bspline_to_bezier(indices,vertices));
+      }
     } else {
-      mesh->positions.push_back(convert_bspline_to_bezier(indices,loadVec4fArray(xml->childOpt("positions"))));
-      if (xml->hasChild("positions2")) 
-        mesh->positions.push_back(convert_bspline_to_bezier(indices,loadVec4fArray(xml->childOpt("positions2"))));
+      auto vertices = loadVec4fArray(xml->childOpt("positions"));
+      fix_bspline_end_points(indices,vertices);
+      mesh->positions.push_back(convert_bspline_to_bezier(indices,vertices));
+      if (xml->hasChild("positions2")) {
+        auto vertices = loadVec4fArray(xml->childOpt("positions2"));
+        fix_bspline_end_points(indices,vertices);
+        mesh->positions.push_back(convert_bspline_to_bezier(indices,vertices));
+      }
     }
 
     mesh->verify();
