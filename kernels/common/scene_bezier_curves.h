@@ -33,10 +33,13 @@ namespace embree
     /*! this geometry represents approximate hair geometry and real bezier surface geometry */
     enum SubType { HAIR = 1, SURFACE = 0 };
 
+    /*! specified the basis the user specified vertices are stored in */
+    enum Basis { BEZIER = 0, BSPLINE = 1 };
+
   public:
     
     /*! bezier curve construction */
-    BezierCurves (Scene* parent, SubType subtype, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
+    BezierCurves (Scene* parent, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
     
   public:
     void enabling();
@@ -270,6 +273,7 @@ namespace embree
     BufferRefT<Vec3fa> vertices0;                     //!< fast access to first vertex buffer
     vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
     vector<APIBuffer<char>> userbuffers;            //!< user buffers
+    Basis basis;                                    //!< basis of user provided vertices
     SubType subtype;                                //!< hair or surface geometry
     int tessellationRate;                           //!< tessellation rate for bezier curve
   };

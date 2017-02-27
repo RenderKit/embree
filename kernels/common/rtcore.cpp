@@ -977,7 +977,22 @@ namespace embree
     RTCORE_TRACE(rtcNewHairGeometry);
     RTCORE_VERIFY_HANDLE(hscene);
 #if defined(EMBREE_GEOMETRY_HAIR)
-    return scene->newBezierCurves(BezierCurves::HAIR,flags,numCurves,numVertices,numTimeSteps);
+    return scene->newBezierCurves(BezierCurves::HAIR,BezierCurves::BEZIER,flags,numCurves,numVertices,numTimeSteps);
+#else
+    throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewHairGeometry is not supported");
+#endif
+    RTCORE_CATCH_END(scene->device);
+    return -1;
+  }
+
+  RTCORE_API unsigned rtcNewBSplineHairGeometry (RTCScene hscene, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcNewBSplineHairGeometry);
+    RTCORE_VERIFY_HANDLE(hscene);
+#if defined(EMBREE_GEOMETRY_HAIR)
+    return scene->newBezierCurves(BezierCurves::HAIR,BezierCurves::BSPLINE,flags,numCurves,numVertices,numTimeSteps);
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewHairGeometry is not supported");
 #endif
@@ -992,7 +1007,22 @@ namespace embree
     RTCORE_TRACE(rtcNewCurveGeometry);
     RTCORE_VERIFY_HANDLE(hscene);
 #if defined(EMBREE_GEOMETRY_HAIR)
-    return scene->newBezierCurves(BezierCurves::SURFACE,flags,numCurves,numVertices,numTimeSteps);
+    return scene->newBezierCurves(BezierCurves::SURFACE,BezierCurves::BEZIER,flags,numCurves,numVertices,numTimeSteps);
+#else
+    throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewCurveGeometry is not supported");
+#endif
+    RTCORE_CATCH_END(scene->device);
+    return -1;
+  }
+
+  RTCORE_API unsigned rtcNewBSplineCurveGeometry (RTCScene hscene, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcNewCurveGeometry);
+    RTCORE_VERIFY_HANDLE(hscene);
+#if defined(EMBREE_GEOMETRY_HAIR)
+    return scene->newBezierCurves(BezierCurves::SURFACE,BezierCurves::BSPLINE,flags,numCurves,numVertices,numTimeSteps);
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewCurveGeometry is not supported");
 #endif
