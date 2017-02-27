@@ -25,7 +25,7 @@
 namespace embree
 {
   /*! represents an array of bicubic bezier curves */
-  struct BezierCurves : public Geometry
+  struct NativeCurves : public Geometry
   {
     /*! type of this geometry */
     static const Geometry::Type geom_type = Geometry::BEZIER_CURVES;
@@ -39,7 +39,7 @@ namespace embree
   public:
     
     /*! bezier curve construction */
-    BezierCurves (Scene* parent, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
+    NativeCurves (Scene* parent, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
     
   public:
     void enabling();

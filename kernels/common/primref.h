@@ -78,7 +78,7 @@ namespace embree
     __forceinline Vec3fa binCenter(const AffineSpace3fa& space, void* user) const // only called by hair builder
     {
       Scene* scene = (Scene*) user;
-      BezierCurves* mesh = (BezierCurves*) scene->get(geomID());
+      NativeCurves* mesh = (NativeCurves*) scene->get(geomID());
       BBox3fa bounds = mesh->bounds(space,primID());
       return embree::center2(bounds);
     }
@@ -87,7 +87,7 @@ namespace embree
     __forceinline void binBoundsAndCenter(BBox3fa& bounds_o, Vec3fa& center_o, const AffineSpace3fa& space, void* user) const // only called by hair builder
     {
       Scene* scene = (Scene*) user;
-      BezierCurves* mesh = (BezierCurves*) scene->get(geomID());
+      NativeCurves* mesh = (NativeCurves*) scene->get(geomID());
       BBox3fa bounds = mesh->bounds(space,primID());
       bounds_o = bounds;
       center_o = embree::center2(bounds);

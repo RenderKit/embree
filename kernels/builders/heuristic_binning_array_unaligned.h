@@ -43,7 +43,7 @@ namespace embree
           Vec3fa axis(0,0,1);
           for (size_t i=set.begin(); i<set.end(); i++)
           {
-            BezierCurves* mesh = (BezierCurves*) scene->get(prims[i].geomID());
+            NativeCurves* mesh = (NativeCurves*) scene->get(prims[i].geomID());
             const unsigned vtxID = mesh->curve(prims[i].primID());
             const Vec3fa p0 = mesh->vertex(vtxID+0);
             const Vec3fa p3 = mesh->vertex(vtxID+3);
@@ -62,7 +62,7 @@ namespace embree
             {
               CentGeomBBox3fa bounds(empty);
               for (size_t i=r.begin(); i<r.end(); i++) {
-                BezierCurves* mesh = (BezierCurves*) scene->get(prims[i].geomID());
+                NativeCurves* mesh = (NativeCurves*) scene->get(prims[i].geomID());
                 bounds.extend(mesh->bounds(space,prims[i].primID()));
               }
               return bounds;

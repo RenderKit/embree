@@ -977,7 +977,7 @@ namespace embree
     RTCORE_TRACE(rtcNewHairGeometry);
     RTCORE_VERIFY_HANDLE(hscene);
 #if defined(EMBREE_GEOMETRY_HAIR)
-    return scene->newBezierCurves(BezierCurves::HAIR,BezierCurves::BEZIER,flags,numCurves,numVertices,numTimeSteps);
+    return scene->newCurves(NativeCurves::HAIR,NativeCurves::BEZIER,flags,numCurves,numVertices,numTimeSteps);
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewHairGeometry is not supported");
 #endif
@@ -992,7 +992,7 @@ namespace embree
     RTCORE_TRACE(rtcNewBSplineHairGeometry);
     RTCORE_VERIFY_HANDLE(hscene);
 #if defined(EMBREE_GEOMETRY_HAIR)
-    return scene->newBezierCurves(BezierCurves::HAIR,BezierCurves::BSPLINE,flags,numCurves,numVertices,numTimeSteps);
+    return scene->newCurves(NativeCurves::HAIR,NativeCurves::BSPLINE,flags,numCurves,numVertices,numTimeSteps);
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewHairGeometry is not supported");
 #endif
@@ -1007,7 +1007,7 @@ namespace embree
     RTCORE_TRACE(rtcNewCurveGeometry);
     RTCORE_VERIFY_HANDLE(hscene);
 #if defined(EMBREE_GEOMETRY_HAIR)
-    return scene->newBezierCurves(BezierCurves::SURFACE,BezierCurves::BEZIER,flags,numCurves,numVertices,numTimeSteps);
+    return scene->newCurves(NativeCurves::SURFACE,NativeCurves::BEZIER,flags,numCurves,numVertices,numTimeSteps);
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewCurveGeometry is not supported");
 #endif
@@ -1022,7 +1022,7 @@ namespace embree
     RTCORE_TRACE(rtcNewCurveGeometry);
     RTCORE_VERIFY_HANDLE(hscene);
 #if defined(EMBREE_GEOMETRY_HAIR)
-    return scene->newBezierCurves(BezierCurves::SURFACE,BezierCurves::BSPLINE,flags,numCurves,numVertices,numTimeSteps);
+    return scene->newCurves(NativeCurves::SURFACE,NativeCurves::BSPLINE,flags,numCurves,numVertices,numTimeSteps);
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewCurveGeometry is not supported");
 #endif

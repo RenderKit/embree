@@ -19,7 +19,7 @@
 
 namespace embree
 {
-  BezierCurves::BezierCurves (Scene* parent, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps) 
+  NativeCurves::NativeCurves (Scene* parent, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps) 
     : Geometry(parent,BEZIER_CURVES,numPrimitives,numTimeSteps,flags), subtype(subtype), basis(basis), tessellationRate(4)
   {
     curves.init(parent->device,numPrimitives,sizeof(int));
@@ -30,19 +30,19 @@ namespace embree
     enabling();
   }
 
-  void BezierCurves::enabling() 
+  void NativeCurves::enabling() 
   { 
     if (numTimeSteps == 1) parent->world.numBezierCurves += numPrimitives; 
     else                   parent->worldMB.numBezierCurves += numPrimitives; 
   }
   
-  void BezierCurves::disabling() 
+  void NativeCurves::disabling() 
   { 
     if (numTimeSteps == 1) parent->world.numBezierCurves -= numPrimitives; 
     else                   parent->worldMB.numBezierCurves -= numPrimitives;
   }
   
-  void BezierCurves::setMask (unsigned mask) 
+  void NativeCurves::setMask (unsigned mask) 
   {
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
@@ -51,7 +51,7 @@ namespace embree
     Geometry::update();
   }
 
-  void BezierCurves::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size) 
+  void NativeCurves::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size) 
   { 
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
@@ -86,7 +86,7 @@ namespace embree
         throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
   }
 
-  void* BezierCurves::map(RTCBufferType type) 
+  void* NativeCurves::map(RTCBufferType type) 
   {
     if (parent->isStatic() && parent->isBuild()) {
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
@@ -105,7 +105,7 @@ namespace embree
     }
   }
 
-  void BezierCurves::unmap(RTCBufferType type) 
+  void NativeCurves::unmap(RTCBufferType type) 
   {
     if (parent->isStatic() && parent->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
@@ -122,7 +122,7 @@ namespace embree
     }
   }
   
-  void BezierCurves::setTessellationRate(float N)
+  void NativeCurves::setTessellationRate(float N)
   {
     if (parent->isStatic() && parent->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
@@ -130,7 +130,7 @@ namespace embree
     tessellationRate = clamp((int)N,1,16);
   }
 
-  void BezierCurves::immutable () 
+  void NativeCurves::immutable () 
   {
     const bool freeIndices = !parent->needBezierIndices;
     const bool freeVertices  = !parent->needBezierVertices;
@@ -140,7 +140,7 @@ namespace embree
         buffer.free();
   }
 
-  bool BezierCurves::verify () 
+  bool NativeCurves::verify () 
   {
     /*! verify consistent size of vertex arrays */
     if (vertices.size() == 0) return false;
@@ -165,7 +165,7 @@ namespace embree
     return true;
   }
 
-  void BezierCurves::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
+  void NativeCurves::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
   {
     /* test if interpolation is enabled */
 #if defined(DEBUG) 

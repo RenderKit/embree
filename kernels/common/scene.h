@@ -144,7 +144,7 @@ namespace embree
     unsigned int newQuadMesh (RTCGeometryFlags flags, size_t maxQuads, size_t maxVertices, size_t numTimeSteps);
 
     /*! Creates a new collection of quadratic bezier curves. */
-    unsigned int newBezierCurves (BezierCurves::SubType subtype, BezierCurves::Basis basis, RTCGeometryFlags flags, size_t maxCurves, size_t maxVertices, size_t numTimeSteps);
+    unsigned int newCurves (NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags flags, size_t maxCurves, size_t maxVertices, size_t numTimeSteps);
 
     /*! Creates a new collection of line segments. */
     unsigned int newLineSegments (RTCGeometryFlags flags, size_t maxSegments, size_t maxVertices, size_t numTimeSteps);
@@ -267,11 +267,11 @@ namespace embree
       else return (AccelSet*) geometries[i]; 
     }
 
-    __forceinline BezierCurves* getBezierCurves(size_t i) { 
+    __forceinline NativeCurves* getCurves(size_t i) { 
       assert(i < geometries.size()); 
       assert(geometries[i]);
       assert(geometries[i]->getType() == Geometry::BEZIER_CURVES);
-      return (BezierCurves*) geometries[i]; 
+      return (NativeCurves*) geometries[i]; 
     }
 
     __forceinline LineSegments* getLineSegments(size_t i) {
@@ -416,8 +416,8 @@ namespace embree
   template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,true>() const { return worldMB.numTriangles; }
   template<> __forceinline size_t Scene::getNumPrimitives<QuadMesh,false>() const { return world.numQuads; }
   template<> __forceinline size_t Scene::getNumPrimitives<QuadMesh,true>() const { return worldMB.numQuads; }
-  template<> __forceinline size_t Scene::getNumPrimitives<BezierCurves,false>() const { return world.numBezierCurves; }
-  template<> __forceinline size_t Scene::getNumPrimitives<BezierCurves,true>() const { return worldMB.numBezierCurves; }
+  template<> __forceinline size_t Scene::getNumPrimitives<NativeCurves,false>() const { return world.numBezierCurves; }
+  template<> __forceinline size_t Scene::getNumPrimitives<NativeCurves,true>() const { return worldMB.numBezierCurves; }
   template<> __forceinline size_t Scene::getNumPrimitives<LineSegments,false>() const { return world.numLineSegments; }
   template<> __forceinline size_t Scene::getNumPrimitives<LineSegments,true>() const { return worldMB.numLineSegments; }
   template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,false>() const { return world.numSubdivPatches; }

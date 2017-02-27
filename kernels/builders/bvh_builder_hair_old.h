@@ -77,7 +77,7 @@ namespace embree
             const BezierPrim& prim = prims[i];
             const size_t geomID = prim.geomID();
             const size_t primID = prim.primID();
-            const BezierCurves* curves = scene->getBezierCurves(geomID);
+            const NativeCurves* curves = scene->get<NativeCurves>(geomID);
             const int curve = curves->curve(primID);
             
             const Vec3fa a3 = curves->vertex(curve+3,0);
@@ -137,7 +137,7 @@ namespace embree
             geomBounds.extend(bounds);
             centBounds.extend(center2(bounds));
 
-            const BezierCurves* curves = scene->getBezierCurves(geomID);
+            const NativeCurves* curves = scene->get<NativeCurves>(geomID);
             const LBBox3fa linearBounds = curves->linearBounds(space,primID,timeSegment,numTimeSteps);
             s0t0.extend(linearBounds.bounds0);
             s1t1.extend(linearBounds.bounds1);

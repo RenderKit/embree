@@ -166,7 +166,7 @@ namespace embree
       i++;
       const unsigned geomID = prim.geomID();
       const unsigned primID = prim.primID();
-      const BezierCurves* curves = scene->getBezierCurves(geomID);
+      const NativeCurves* curves = scene->get<NativeCurves>(geomID);
       const unsigned id = curves->curve(primID);
       const Vec3fa& p0 = curves->vertex(id+0);
       const Vec3fa& p1 = curves->vertex(id+1);

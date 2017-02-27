@@ -73,20 +73,20 @@ namespace embree
       
       __forceinline const Vec3fa direction(const PrimRef& prim)
       {
-        BezierCurves* curves = scene->get<BezierCurves>(prim.geomID());
+        NativeCurves* curves = scene->get<NativeCurves>(prim.geomID());
         const unsigned vtx = curves->curve(prim.primID());
         return curves->vertex(vtx+3)-curves->vertex(vtx+0);
       }
       
       __forceinline const BBox3fa bounds(const PrimRef& prim)
       {
-        BezierCurves* curves = scene->get<BezierCurves>(prim.geomID());
+        NativeCurves* curves = scene->get<NativeCurves>(prim.geomID());
         return curves->bounds(prim.primID());
       }
 
       __forceinline const BBox3fa bounds(const LinearSpace3fa& space, const PrimRef& prim)
       {
-        BezierCurves* curves = scene->get<BezierCurves>(prim.geomID());
+        NativeCurves* curves = scene->get<NativeCurves>(prim.geomID());
         return curves->bounds(space,prim.primID());
       }
 

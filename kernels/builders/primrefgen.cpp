@@ -160,12 +160,12 @@ namespace embree
     PrimInfo createBezierRefArray(Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor)
     {
       ParallelForForPrefixSumState<PrimInfo> pstate;
-      Scene::Iterator<BezierCurves,false> iter(scene);
+      Scene::Iterator<NativeCurves,false> iter(scene);
 
       /* first try */
       progressMonitor(0);
       pstate.init(iter,size_t(1024));
-      PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](BezierCurves* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+      PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](NativeCurves* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
       {
         PrimInfo pinfo(empty);
         for (size_t j=r.begin(); j<r.end(); j++)
@@ -193,7 +193,7 @@ namespace embree
       if (pinfo.size() != prims.size())
       {
         progressMonitor(0);
-        pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](BezierCurves* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+        pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](NativeCurves* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
           k = base.size();
           PrimInfo pinfo(empty);
@@ -224,12 +224,12 @@ namespace embree
     PrimInfo createBezierRefArrayMBlur(size_t timeSegment, size_t numTimeSteps, Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor)
     {
       ParallelForForPrefixSumState<PrimInfo> pstate;
-      Scene::Iterator<BezierCurves,true> iter(scene);
+      Scene::Iterator<NativeCurves,true> iter(scene);
 
       /* first try */
       progressMonitor(0);
       pstate.init(iter,size_t(1024));
-      PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](BezierCurves* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+      PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](NativeCurves* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
       {
         PrimInfo pinfo(empty);
         for (size_t j=r.begin(); j<r.end(); j++)
@@ -247,7 +247,7 @@ namespace embree
       if (pinfo.size() != prims.size())
       {
         progressMonitor(0);
-        pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](BezierCurves* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+        pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](NativeCurves* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
           k = base.size();
           PrimInfo pinfo(empty);
@@ -267,7 +267,7 @@ namespace embree
 
     IF_ENABLED_TRIS (template PrimInfo createPrimRefArray<TriangleMesh>(TriangleMesh* mesh COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
     IF_ENABLED_QUADS(template PrimInfo createPrimRefArray<QuadMesh>(QuadMesh* mesh COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
-    IF_ENABLED_HAIR (template PrimInfo createPrimRefArray<BezierCurves>(BezierCurves* mesh COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
+    IF_ENABLED_HAIR (template PrimInfo createPrimRefArray<NativeCurves>(NativeCurves* mesh COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
     IF_ENABLED_LINES(template PrimInfo createPrimRefArray<LineSegments>(LineSegments* mesh COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
     IF_ENABLED_USER(template PrimInfo createPrimRefArray<AccelSet>(AccelSet* mesh COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
 
@@ -275,7 +275,7 @@ namespace embree
     IF_ENABLED_TRIS (template PrimInfo createPrimRefArray<TriangleMesh COMMA true>(Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
     IF_ENABLED_QUADS(template PrimInfo createPrimRefArray<QuadMesh COMMA false>(Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
     IF_ENABLED_QUADS(template PrimInfo createPrimRefArray<QuadMesh COMMA true>(Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
-    IF_ENABLED_HAIR (template PrimInfo createPrimRefArray<BezierCurves COMMA false>(Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
+    IF_ENABLED_HAIR (template PrimInfo createPrimRefArray<NativeCurves COMMA false>(Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
     IF_ENABLED_LINES(template PrimInfo createPrimRefArray<LineSegments COMMA false>(Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
     IF_ENABLED_LINES(template PrimInfo createPrimRefArray<LineSegments COMMA true>(Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
     IF_ENABLED_USER(template PrimInfo createPrimRefArray<AccelSet COMMA false>(Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));

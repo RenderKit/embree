@@ -627,7 +627,7 @@ namespace embree
 #endif
 
 #if defined(EMBREE_GEOMETRY_HAIR)
-  unsigned Scene::newBezierCurves (BezierCurves::SubType subtype, BezierCurves::Basis basis, RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
+  unsigned Scene::newCurves (NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
@@ -639,7 +639,7 @@ namespace embree
       return -1;
     }
     
-    Geometry* geom = new BezierCurves(this,subtype,basis,gflags,numCurves,numVertices,numTimeSteps);
+    Geometry* geom = new NativeCurves(this,subtype,basis,gflags,numCurves,numVertices,numTimeSteps);
     return geom->id;
   }
 #endif
