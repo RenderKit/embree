@@ -218,8 +218,8 @@ namespace embree
         const float r3 = radius(index+3,t);
         if (!isvalid(r0) || !isvalid(r1) || !isvalid(r2) || !isvalid(r3))
           return false;
-        if (min(r0,r1,r2,r3) < 0.0f)
-          return false;
+        //if (min(r0,r1,r2,r3) < 0.0f)
+        //  return false;
 
         const Vec3fa v0 = vertex(index+0,t);
         const Vec3fa v1 = vertex(index+1,t);
@@ -273,8 +273,8 @@ namespace embree
     BufferRefT<Vec3fa> vertices0;                     //!< fast access to first vertex buffer
     vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
     vector<APIBuffer<char>> userbuffers;            //!< user buffers
-    Basis basis;                                    //!< basis of user provided vertices
     SubType subtype;                                //!< hair or surface geometry
+    Basis basis;                                    //!< basis of user provided vertices
     int tessellationRate;                           //!< tessellation rate for bezier curve
   };
 }

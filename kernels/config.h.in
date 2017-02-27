@@ -29,6 +29,7 @@
 #cmakedefine EMBREE_GEOMETRY_SUBDIV
 #cmakedefine EMBREE_GEOMETRY_USER
 #cmakedefine EMBREE_RAY_PACKETS
+#cmakedefine EMBREE_BSPLINE_HAIR
 
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
   #define IF_ENABLED_TRIS(x) x

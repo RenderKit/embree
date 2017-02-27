@@ -244,7 +244,7 @@ namespace embree
     for (size_t i=0; i<hairs.size(); i++) {
       hairs[i] = SceneGraph::HairSetNode::Hair(unsigned(4*i),0);
     }
-    basis = BSPLINE;
+    basis = BEZIER;
   }
 
   void SceneGraph::extend_animation(Ref<SceneGraph::Node> node0, Ref<SceneGraph::Node> node1)

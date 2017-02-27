@@ -333,6 +333,8 @@ namespace embree
     return BezierCurveT<Vertex>(v0,v1,v2,v3);
   }
   
-//#define CurveT BSplineCurveT
-//  typedef BSplineCurve3fa Curve3fa;
+#if defined(EMBREE_BSPLINE_HAIR)
+#define CurveT BSplineCurveT
+  typedef BSplineCurve3fa Curve3fa;
+#endif
 }

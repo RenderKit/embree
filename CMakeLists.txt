@@ -104,6 +104,7 @@ OPTION(EMBREE_GEOMETRY_HAIR "Enables support for hair geometries." ON)
 OPTION(EMBREE_GEOMETRY_SUBDIV "Enables support for subdiv geometries." ON)
 OPTION(EMBREE_GEOMETRY_USER "Enables support for user geometries." ON)
 OPTION(EMBREE_RAY_PACKETS "Enabled support for ray packets." ON)
+OPTION(EMBREE_BSPLINE_HAIR "Enables support for bspline hair" ON)
 
 SET(EMBREE_TASKING_SYSTEM "TBB" CACHE STRING "Selects tasking system")
 IF (WIN32)

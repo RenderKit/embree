@@ -17,6 +17,7 @@
 #include "xml_loader.h"
 #include "xml_parser.h"
 #include "obj_loader.h"
+#include "config.h"
 
 namespace embree
 {
@@ -1024,6 +1025,9 @@ namespace embree
       mesh->tessellation_rate = atoi(tessellation_rate.c_str());
 
     mesh->verify();
+#if defined(EMBREE_BSPLINE_HAIR)
+    mesh->convert_bezier_to_bspline();
+#endif
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
@@ -1044,7 +1048,7 @@ namespace embree
     }
 
     std::vector<unsigned> indices = loadUIntArray(xml->childOpt("indices"));
-    //std::vector<Vec2i> indices = loadVec2iArray(xml->childOpt("indices")); // FIMXE: enable
+    //std::vector<Vec2i> indices = loadVec2iArray(xml->childOpt("indices")); // FIXME: enable
     mesh->hairs.resize(indices.size()); 
     for (size_t i=0; i<indices.size(); i++) {
       indices[i] = indices[i]-1; // FIXME: remove
@@ -1059,7 +1063,9 @@ namespace embree
       mesh->tessellation_rate = atoi(tessellation_rate.c_str());
 
     mesh->verify();
+#if !defined(EMBREE_BSPLINE_HAIR)
     mesh->convert_bspline_to_bezier();
+#endif
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
