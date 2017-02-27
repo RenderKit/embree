@@ -173,6 +173,8 @@ namespace embree
       p = eval_(t);
       dp = derivative(t);
     }
+
+#if 0
     
     template<int M>
       __forceinline Vec4<vfloat<M>> eval0(const int ofs, const int size) const
@@ -201,6 +203,54 @@ namespace embree
       const Vec4<vfloat<M>> b = bspline_basis1.derivative<vfloat<M>>(ofs,size);
       return madd(b.x, Vec4<vfloat<M>>(v0), madd(b.y, Vec4<vfloat<M>>(v1), madd(b.z, Vec4<vfloat<M>>(v2), b.w * Vec4<vfloat<M>>(v3))));
     }
+
+#else
+
+    template<int M>
+      __forceinline Vec4<vfloat<M>> eval0(const int ofs, const int size) const
+    {
+      assert(size <= PrecomputedBSplineBasis::N);
+      assert(ofs <= size);
+      return madd(vfloat<M>::loadu(&bspline_basis0.c0[size][ofs]), Vec4<vfloat<M>>(v0),
+                  madd(vfloat<M>::loadu(&bspline_basis0.c1[size][ofs]), Vec4<vfloat<M>>(v1),
+                       madd(vfloat<M>::loadu(&bspline_basis0.c2[size][ofs]), Vec4<vfloat<M>>(v2),
+                            vfloat<M>::loadu(&bspline_basis0.c3[size][ofs]) * Vec4<vfloat<M>>(v3))));
+    }
+    
+    template<int M>
+      __forceinline Vec4<vfloat<M>> eval1(const int ofs, const int size) const
+    {
+      assert(size <= PrecomputedBSplineBasis::N);
+      assert(ofs <= size);
+      return madd(vfloat<M>::loadu(&bspline_basis1.c0[size][ofs]), Vec4<vfloat<M>>(v0), 
+                  madd(vfloat<M>::loadu(&bspline_basis1.c1[size][ofs]), Vec4<vfloat<M>>(v1),
+                       madd(vfloat<M>::loadu(&bspline_basis1.c2[size][ofs]), Vec4<vfloat<M>>(v2),
+                            vfloat<M>::loadu(&bspline_basis1.c3[size][ofs]) * Vec4<vfloat<M>>(v3))));
+    }
+
+    template<int M>
+      __forceinline Vec4<vfloat<M>> derivative0(const int ofs, const int size) const
+    {
+      assert(size <= PrecomputedBSplineBasis::N);
+      assert(ofs <= size);
+      return madd(vfloat<M>::loadu(&bspline_basis0.d0[size][ofs]), Vec4<vfloat<M>>(v0),
+                  madd(vfloat<M>::loadu(&bspline_basis0.d1[size][ofs]), Vec4<vfloat<M>>(v1),
+                       madd(vfloat<M>::loadu(&bspline_basis0.d2[size][ofs]), Vec4<vfloat<M>>(v2),
+                            vfloat<M>::loadu(&bspline_basis0.d3[size][ofs]) * Vec4<vfloat<M>>(v3))));
+    }
+
+    template<int M>
+      __forceinline Vec4<vfloat<M>> derivative1(const int ofs, const int size) const
+    {
+      assert(size <= PrecomputedBSplineBasis::N);
+      assert(ofs <= size);
+      return madd(vfloat<M>::loadu(&bspline_basis1.d0[size][ofs]), Vec4<vfloat<M>>(v0),
+                  madd(vfloat<M>::loadu(&bspline_basis1.d1[size][ofs]), Vec4<vfloat<M>>(v1),
+                       madd(vfloat<M>::loadu(&bspline_basis1.d2[size][ofs]), Vec4<vfloat<M>>(v2),
+                            vfloat<M>::loadu(&bspline_basis1.d3[size][ofs]) * Vec4<vfloat<M>>(v3))));
+    }
+
+#endif
 
     /* calculates bounds of bspline curve geometry */
     __forceinline BBox3fa accurateBounds() const
