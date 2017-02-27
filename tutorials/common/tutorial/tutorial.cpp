@@ -653,6 +653,7 @@ namespace embree
       stream << 1.0f/avg_render_time.get() << " fps";
       std::string str = stream.str();
       
+      glColor3f(1.0f, 1.0f, 0.0f);
       glRasterPos2i( width-GLint(str.size())*12, height - 24); 
       for (size_t i=0; i<str.size(); i++)
         glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
