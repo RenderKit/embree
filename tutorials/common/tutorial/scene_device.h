@@ -191,7 +191,7 @@ namespace embree
   struct ISPCHairSet
   {
 #if !defined(ISPC)
-    ISPCHairSet (TutorialScene* scene_in, bool hair, Ref<SceneGraph::HairSetNode> in);
+    ISPCHairSet (TutorialScene* scene_in, SceneGraph::HairSetNode::Type type, Ref<SceneGraph::HairSetNode> in);
     ~ISPCHairSet();
 #endif
 

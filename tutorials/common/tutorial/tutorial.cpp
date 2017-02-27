@@ -347,7 +347,7 @@ namespace embree
         const float len = cin->getFloat();
         const float r = cin->getFloat();
         const size_t N = cin->getInt();
-        scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,true,new OBJMaterial));
+        scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,SceneGraph::HairSetNode::HAIR,new OBJMaterial));
       }, "--hair-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z length radius num: adds a hair plane originated at p0 and spanned by the vectors dx and dy. num hairs are generated with speficied length and radius.");    
     
     registerOption("curve-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -357,7 +357,7 @@ namespace embree
         const float len = cin->getFloat();
         const float r = cin->getFloat();
         const size_t N = cin->getInt();
-        scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,false,new OBJMaterial));
+        scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,SceneGraph::HairSetNode::CURVE,new OBJMaterial));
       }, "--curve-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z length radius: adds a plane build of bezier curves originated at p0 and spanned by the vectors dx and dy. num curves are generated with speficied length and radius.");    
 
     registerOption("triangle-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {

@@ -288,7 +288,7 @@ namespace embree
     
     std::pair<unsigned,Ref<SceneGraph::Node>> addHair (RandomSampler& sampler, RTCGeometryFlags gflag, const Vec3fa& pos, const float scale, const float r, size_t numHairs = 1, const avector<Vec3fa>& motion_vector = avector<Vec3fa>())
     {
-      Ref<SceneGraph::Node> node = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),pos,Vec3fa(1,0,0),Vec3fa(0,0,1),scale,r,numHairs,true);
+      Ref<SceneGraph::Node> node = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),pos,Vec3fa(1,0,0),Vec3fa(0,0,1),scale,r,numHairs,SceneGraph::HairSetNode::HAIR);
       if (motion_vector.size()) SceneGraph::set_motion_vector(node,motion_vector);
       return addGeometry2(gflag,node);
     }
@@ -998,8 +998,8 @@ namespace embree
       scene.addGeometry(gflags,SceneGraph::createQuadSphere(center,radius,50)->set_motion_vector(random_motion_vector(1.0f)));
       scene.addGeometry(gflags,SceneGraph::createSubdivSphere(center,radius,8,20));
       scene.addGeometry(gflags,SceneGraph::createSubdivSphere(center,radius,8,20)->set_motion_vector(random_motion_vector(1.0f)));
-      scene.addGeometry(gflags,SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),center,dx,dy,0.1f,0.01f,100,true));
-      scene.addGeometry(gflags,SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),center,dx,dy,0.1f,0.01f,100,true)->set_motion_vector(random_motion_vector(1.0f)));
+      scene.addGeometry(gflags,SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),center,dx,dy,0.1f,0.01f,100,SceneGraph::HairSetNode::HAIR));
+      scene.addGeometry(gflags,SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),center,dx,dy,0.1f,0.01f,100,SceneGraph::HairSetNode::HAIR)->set_motion_vector(random_motion_vector(1.0f)));
       rtcCommit (scene);
       AssertNoError(device);
 
@@ -1082,11 +1082,11 @@ namespace embree
       subdivmesh2->set_motion_vector(random_motion_vector(1.0f));
       scene.addGeometry(gflags,subdivmesh2.dynamicCast<SceneGraph::Node>());
       
-      Ref<SceneGraph::HairSetNode> hairgeom = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),p,dx,dy,0.2f,0.01f,1,true).dynamicCast<SceneGraph::HairSetNode>();
+      Ref<SceneGraph::HairSetNode> hairgeom = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),p,dx,dy,0.2f,0.01f,1,SceneGraph::HairSetNode::HAIR).dynamicCast<SceneGraph::HairSetNode>();
       for (size_t i=0; i<N; i++) hairgeom->hairs.push_back(hairgeom->hairs.back());
       scene.addGeometry(gflags,hairgeom.dynamicCast<SceneGraph::Node>());
 
-      Ref<SceneGraph::HairSetNode> hairgeom2 = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),p,dx,dy,0.2f,0.01f,1,true)->set_motion_vector(random_motion_vector(1.0f)).dynamicCast<SceneGraph::HairSetNode>();
+      Ref<SceneGraph::HairSetNode> hairgeom2 = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),p,dx,dy,0.2f,0.01f,1,SceneGraph::HairSetNode::HAIR)->set_motion_vector(random_motion_vector(1.0f)).dynamicCast<SceneGraph::HairSetNode>();
       for (size_t i=0; i<N; i++) hairgeom2->hairs.push_back(hairgeom2->hairs.back());
       scene.addGeometry(gflags,hairgeom2.dynamicCast<SceneGraph::Node>());
 
@@ -1152,10 +1152,10 @@ namespace embree
       case SUBDIV_MESH_MB:   mesh = SceneGraph::createSubdivSphere(zero,float(i+1),8,float(numPhi)/8.0f); 
                              NN = 2*8*8; break;
       case HAIR_GEOMETRY:    
-      case HAIR_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi,true); 
+      case HAIR_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi,SceneGraph::HairSetNode::HAIR); 
                              NN = 4*numPhi*numPhi; break;
       case LINE_GEOMETRY:    
-      case LINE_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi/3,true); 
+      case LINE_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi/3,SceneGraph::HairSetNode::HAIR); 
                              NN = (4*numPhi*numPhi/3)*3; break;
       default:               throw std::runtime_error("invalid geometry for benchmark");
       }
@@ -3715,9 +3715,9 @@ namespace embree
         case SUBDIV_MESH:      
         case SUBDIV_MESH_MB:   geometries.push_back(SceneGraph::createSubdivSphere(zero,float(i+1),8,float(numPhi)/8.0f)); break;
         case HAIR_GEOMETRY:    
-        case HAIR_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi,true)); break;
+        case HAIR_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi,SceneGraph::HairSetNode::HAIR)); break;
         case LINE_GEOMETRY: 
-        case LINE_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi/3,true)); break;
+        case LINE_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi/3,SceneGraph::HairSetNode::HAIR)); break;
         default:               throw std::runtime_error("invalid geometry for benchmark");
         }
 

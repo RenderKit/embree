@@ -738,6 +738,9 @@ namespace embree
     {
       typedef Vec3fa Vertex;
 
+      enum Type { HAIR, CURVE };
+      enum Basis { BEZIER, BSPLINE };
+
       struct Hair
       {
       public:
@@ -750,21 +753,21 @@ namespace embree
       };
       
     public:
-      HairSetNode (bool hair, Ref<MaterialNode> material, size_t numTimeSteps = 0)
-        : Node(true), hair(hair), material(material), tessellation_rate(4)
+      HairSetNode (Type type, Basis basis, Ref<MaterialNode> material, size_t numTimeSteps = 0)
+        : Node(true), type(type), basis(basis), material(material), tessellation_rate(4)
       {
         for (size_t i=0; i<numTimeSteps; i++)
           positions.push_back(avector<Vertex>());
       }
 
-      HairSetNode (const avector<Vertex>& positions_in, const std::vector<Hair>& hairs, Ref<MaterialNode> material, bool hair)
-        : Node(true), hair(hair), hairs(hairs), material(material), tessellation_rate(4) 
+      HairSetNode (const avector<Vertex>& positions_in, const std::vector<Hair>& hairs, Ref<MaterialNode> material, Type type, Basis basis)
+        : Node(true), type(type), basis(basis), hairs(hairs), material(material), tessellation_rate(4) 
       {
         positions.push_back(positions_in);
       }
    
       HairSetNode (Ref<SceneGraph::HairSetNode> imesh, const Transformations& spaces)
-        : Node(true), hair(imesh->hair), positions(transformMSMBlurBuffer(imesh->positions,spaces)),
+        : Node(true), type(imesh->type), basis(imesh->basis), positions(transformMSMBlurBuffer(imesh->positions,spaces)),
         hairs(imesh->hairs), material(imesh->material), tessellation_rate(imesh->tessellation_rate) {}
 
       virtual void setMaterial(Ref<MaterialNode> material) {
@@ -807,7 +810,8 @@ namespace embree
       void verify() const;
 
     public:
-      bool hair;                //!< true is this is hair geometry, false if this are curves
+      Type type;                //!< type of geometry (hair or curve)
+      Basis basis;              //!< basis function of curve (bezier or bspline)
       std::vector<avector<Vertex>> positions; //!< hair control points (x,y,z,r) for multiple timesteps
       std::vector<Hair> hairs;  //!< list of hairs
       Ref<MaterialNode> material;

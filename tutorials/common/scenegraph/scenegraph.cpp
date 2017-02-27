@@ -617,7 +617,7 @@ namespace embree
     }
     else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
     {
-      hmesh->hair = false;
+      hmesh->type = SceneGraph::HairSetNode::CURVE;
       return hmesh.dynamicCast<SceneGraph::Node>();
     }
     return node;

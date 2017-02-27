@@ -136,8 +136,8 @@ namespace embree
     delete[] positions;
   }
   
-  ISPCHairSet::ISPCHairSet (TutorialScene* scene_in, bool hair, Ref<SceneGraph::HairSetNode> in) 
-    : geom(hair ? HAIR_SET : CURVES)
+  ISPCHairSet::ISPCHairSet (TutorialScene* scene_in, SceneGraph::HairSetNode::Type type, Ref<SceneGraph::HairSetNode> in) 
+    : geom(type == SceneGraph::HairSetNode::HAIR ? HAIR_SET : CURVES)
   {
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
@@ -194,7 +194,7 @@ namespace embree
     else if (Ref<SceneGraph::LineSegmentsNode> mesh = in.dynamicCast<SceneGraph::LineSegmentsNode>())
       return (ISPCGeometry*) new ISPCLineSegments(scene,mesh);
     else if (Ref<SceneGraph::HairSetNode> mesh = in.dynamicCast<SceneGraph::HairSetNode>())
-      return (ISPCGeometry*) new ISPCHairSet(scene,mesh->hair,mesh);
+      return (ISPCGeometry*) new ISPCHairSet(scene,mesh->type,mesh);
     else if (Ref<SceneGraph::TransformNode> mesh = in.dynamicCast<SceneGraph::TransformNode>())
       return (ISPCGeometry*) ISPCInstance::create(scene,mesh);
     else if (Ref<SceneGraph::GroupNode> mesh = in.dynamicCast<SceneGraph::GroupNode>())
