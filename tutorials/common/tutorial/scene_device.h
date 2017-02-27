@@ -64,6 +64,7 @@ namespace embree
   };
 
   enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP, QUAD_MESH, LINE_SEGMENTS, CURVES };
+  enum ISPCBasis { BEZIER_BASIS, BSPLINE_BASIS };
   
   struct ISPCGeometry
   {
@@ -191,14 +192,14 @@ namespace embree
   struct ISPCHairSet
   {
 #if !defined(ISPC)
-    ISPCHairSet (TutorialScene* scene_in, SceneGraph::HairSetNode::Type type, Ref<SceneGraph::HairSetNode> in);
+    ISPCHairSet (TutorialScene* scene_in, SceneGraph::HairSetNode::Type type, SceneGraph::HairSetNode::Basis basis, Ref<SceneGraph::HairSetNode> in);
     ~ISPCHairSet();
 #endif
 
     ISPCGeometry geom;
     Vec3fa** positions;       //!< hair control points (x,y,z,r)
     ISPCHair* hairs;         //!< for each hair, index to first control point
-    
+    ISPCBasis basis;
     unsigned int numTimeSteps;
     unsigned int numVertices;
     unsigned int numHairs;
