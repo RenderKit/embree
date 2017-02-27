@@ -989,14 +989,14 @@ namespace embree
     for (size_t i=0; i<indices.size(); i++) 
     {
       const size_t idx = indices[i];
-      vfloat4 v0 = vfloat4::loadu(&positions[idx-1]);  
-      vfloat4 v1 = vfloat4::loadu(&positions[idx+0]);
-      vfloat4 v2 = vfloat4::loadu(&positions[idx+1]);
-      vfloat4 v3 = vfloat4::loadu(&positions[idx+2]);
+      vfloat4 v0 = vfloat4::loadu(&positions[idx+0]);  
+      vfloat4 v1 = vfloat4::loadu(&positions[idx+1]);
+      vfloat4 v2 = vfloat4::loadu(&positions[idx+2]);
+      vfloat4 v3 = vfloat4::loadu(&positions[idx+3]);
       v0 = select(isnan(v0),2.0f*v1-v2,v0); // nan triggers edge rule
       v3 = select(isnan(v3),2.0f*v2-v1,v3); // nan triggers edge rule
-      vfloat4::storeu(&positions[idx-1],v0);
-      vfloat4::storeu(&positions[idx+2],v3);
+      vfloat4::storeu(&positions[idx+0],v0);
+      vfloat4::storeu(&positions[idx+3],v3);
     }
   }
 
@@ -1007,10 +1007,10 @@ namespace embree
     for (size_t i=0; i<indices.size(); i++) 
     {
       const size_t idx = indices[i];
-      const vfloat4 v0 = vfloat4::loadu(&positions[idx-1]);  
-      const vfloat4 v1 = vfloat4::loadu(&positions[idx+0]);
-      const vfloat4 v2 = vfloat4::loadu(&positions[idx+1]);
-      const vfloat4 v3 = vfloat4::loadu(&positions[idx+2]);
+      const vfloat4 v0 = vfloat4::loadu(&positions[idx+0]);  
+      const vfloat4 v1 = vfloat4::loadu(&positions[idx+1]);
+      const vfloat4 v2 = vfloat4::loadu(&positions[idx+2]);
+      const vfloat4 v3 = vfloat4::loadu(&positions[idx+3]);
       positions_o[4*i+0] = Vec3fa((1.0f/6.0f)*v0 + (2.0f/3.0f)*v1 + (1.0f/6.0f)*v2);
       positions_o[4*i+1] = Vec3fa((2.0f/3.0f)*v1 + (1.0f/3.0f)*v2);
       positions_o[4*i+2] = Vec3fa((1.0f/3.0f)*v1 + (2.0f/3.0f)*v2);
@@ -1026,10 +1026,10 @@ namespace embree
     for (size_t i=0; i<indices.size(); i++) 
     {
       const size_t idx = indices[i];
-      vfloat4 v0 = vfloat4::loadu(&positions[idx-1]);  
-      vfloat4 v1 = vfloat4::loadu(&positions[idx+0]);
-      vfloat4 v2 = vfloat4::loadu(&positions[idx+1]);
-      vfloat4 v3 = vfloat4::loadu(&positions[idx+2]);
+      vfloat4 v0 = vfloat4::loadu(&positions[idx+0]);  
+      vfloat4 v1 = vfloat4::loadu(&positions[idx+1]);
+      vfloat4 v2 = vfloat4::loadu(&positions[idx+2]);
+      vfloat4 v3 = vfloat4::loadu(&positions[idx+3]);
       positions_o[4*i+0] = Vec3fa( 6.0f*v0 - 7.0f*v1 + 2.0f*v2);
       positions_o[4*i+1] = Vec3fa( 2.0f*v1 - 1.0f*v2);
       positions_o[4*i+2] = Vec3fa(-1.0f*v1 + 2.0f*v2);
@@ -1071,6 +1071,7 @@ namespace embree
     Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(hair,material);
 
     std::vector<unsigned> indices = loadUIntArray(xml->childOpt("indices"));
+    for (size_t i=0; i<indices.size(); i++) indices[i] = indices[i]-1; // fix indices
     mesh->hairs.resize(indices.size());
     for (size_t i=0; i<indices.size(); i++) {
       mesh->hairs[i] = SceneGraph::HairSetNode::Hair(unsigned(4*i),0);
