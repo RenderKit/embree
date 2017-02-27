@@ -17,6 +17,7 @@
 #pragma once
 
 #include "../common/default.h"
+#include "bezier_curve.h"
 
 namespace embree
 {
@@ -312,6 +313,26 @@ namespace embree
     }
   };
 
+  template<typename Vertex>
+    __forceinline const BSplineCurveT<Vertex> BezierToBSplineCurve(const BezierCurveT<Vertex>& curve)
+  {
+    const Vertex v0 = madd(6.0f,curve.v0,madd(-7.0f,curve.v1,2.0f*curve.v2));
+    const Vertex v1 = msub(2.0f,curve.v1,curve.v2);
+    const Vertex v2 = msub(2.0f,curve.v2,curve.v1);
+    const Vertex v3 = madd(2.0f,curve.v1,madd(-7.0f,curve.v2,6.0f*curve.v3));
+    return BSplineCurveT<Vertex>(v0,v1,v2,v3);
+  }
+
+  template<typename Vertex>
+    __forceinline const BSplineCurveT<Vertex> BSplineToBezierCurve(const BezierCurveT<Vertex>& curve)
+  {
+    const Vertex v0 = madd(1.0f/6.0f,curve.v0,madd(2.0f/3.0f*curve.v1,1.0f/6.0f*curve.v2));
+    const Vertex v1 = madd(2.0f/3.0f,curve.v1,1.0f/3.0f*curve.v2);
+    const Vertex v2 = madd(1.0f/3.0f,curve.v1,2.0f/3.0f*curve.v2);
+    const Vertex v3 = madd(1.0f/6.0f,curve.v1,madd(2.0f/3.0f,curve.v2,1.0f/6.0f*curve.v3));
+    return BezierCurveT<Vertex>(v0,v1,v2,v3);
+  }
+  
 //#define CurveT BSplineCurveT
 //  typedef BSplineCurve3fa Curve3fa;
 }
