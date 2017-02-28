@@ -186,6 +186,16 @@ namespace embree
         g_scene->bspline_to_bezier();
       }
 
+      /* flatten scene */
+      else if (tag == "-flatten-group") {
+        g_scene = SceneGraph::flatten(g_scene,SceneGraph::INSTANCING_SCENE_GROUP);
+      }
+
+      /* flatten scene */
+      else if (tag == "-flatten") {
+        g_scene = SceneGraph::flatten(g_scene,SceneGraph::INSTANCING_SCENE_GEOMETRY);
+      }
+
       /* load terrain */
       else if (tag == "-terrain") 
       {
