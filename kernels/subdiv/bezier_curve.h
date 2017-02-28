@@ -301,7 +301,7 @@ namespace embree
         const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
         const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
         const Vec3fa upper_r = Vec3fa(reduce_max(abs(pi.w)));
-        return enlarge(BBox3fa(min(lower,v3),max(upper,v3)),max(upper_r,Vec3fa(v3.w)));
+        return enlarge(BBox3fa(min(lower,v3),max(upper,v3)),max(upper_r,Vec3fa(abs(v3.w))));
       } 
       else
       {

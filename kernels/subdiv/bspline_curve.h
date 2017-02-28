@@ -317,17 +317,14 @@ namespace embree
     /* calculates bounds when tessellated into N line segments */
     __forceinline BBox3fa tessellatedBounds(int N) const
     {
-#if 0
-      BezierCurve3fa bezier; convert(*this,bezier);
-      return bezier.tessellatedBounds(N);
-#else
-      if (likely(N == 3))
+      if (likely(N == 4))
       {
-        const Vec4vf4 pi = eval0<4>(0,3);
+        const Vec4vf4 pi = eval0<4>(0,4);
         const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
         const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
         const Vec3fa upper_r = Vec3fa(reduce_max(abs(pi.w)));
-        return enlarge(BBox3fa(lower,upper),upper_r);
+        const Vec3fa pe = end();
+        return enlarge(BBox3fa(min(lower,pe),max(upper,pe)),max(upper_r,Vec3fa(abs(pe.w))));
       } 
       else
       {
@@ -352,7 +349,6 @@ namespace embree
         const Vec3fa upper_r(reduce_max(ru));
         return enlarge(BBox3fa(lower,upper),upper_r);
       }
-#endif
     }
   };
   
