@@ -639,7 +639,18 @@ namespace embree
       return -1;
     }
     
-    Geometry* geom = new NativeCurves(this,subtype,basis,gflags,numCurves,numVertices,numTimeSteps);
+    Geometry* geom = nullptr;
+#if EMBREE_NATIVE_CURVE_BSPLINE
+    switch (basis) {
+    case NativeCurves::BEZIER : geom = new CurvesBezier(this,subtype,basis,gflags,numCurves,numVertices,numTimeSteps); break;
+    case NativeCurves::BSPLINE: geom = new NativeCurves(this,subtype,basis,gflags,numCurves,numVertices,numTimeSteps); break;
+    }
+#else
+    switch (basis) {
+    case NativeCurves::BEZIER : geom = new NativeCurves (this,subtype,basis,gflags,numCurves,numVertices,numTimeSteps); break;
+    case NativeCurves::BSPLINE: geom = new CurvesBSpline(this,subtype,basis,gflags,numCurves,numVertices,numTimeSteps); break;
+    }
+#endif
     return geom->id;
   }
 #endif

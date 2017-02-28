@@ -313,28 +313,38 @@ namespace embree
     }
   };
 
+   template<typename Vertex>
+    __forceinline void convert(const BezierCurveT<Vertex>& icurve, BezierCurveT<Vertex>& ocurve) {
+     ocurve = icurve;
+   }
+
+   template<typename Vertex>
+    __forceinline void convert(const BSplineCurveT<Vertex>& icurve, BSplineCurveT<Vertex>& ocurve) {
+     ocurve = icurve;
+   }
+
   template<typename Vertex>
-    __forceinline const BSplineCurveT<Vertex> BezierToBSplineCurve(const BezierCurveT<Vertex>& curve)
+    __forceinline void convert(const BezierCurveT<Vertex>& icurve, BSplineCurveT<Vertex>& ocurve)
   {
-    const Vertex v0 = madd(6.0f,curve.v0,madd(-7.0f,curve.v1,2.0f*curve.v2));
-    const Vertex v1 = msub(2.0f,curve.v1,curve.v2);
-    const Vertex v2 = msub(2.0f,curve.v2,curve.v1);
-    const Vertex v3 = madd(2.0f,curve.v1,madd(-7.0f,curve.v2,6.0f*curve.v3));
-    return BSplineCurveT<Vertex>(v0,v1,v2,v3);
+    const Vertex v0 = madd(6.0f,icurve.v0,madd(-7.0f,icurve.v1,2.0f*icurve.v2));
+    const Vertex v1 = msub(2.0f,icurve.v1,icurve.v2);
+    const Vertex v2 = msub(2.0f,icurve.v2,icurve.v1);
+    const Vertex v3 = madd(2.0f,icurve.v1,madd(-7.0f,icurve.v2,6.0f*icurve.v3));
+    ocurve = BSplineCurveT<Vertex>(v0,v1,v2,v3);
   }
 
   template<typename Vertex>
-    __forceinline const BSplineCurveT<Vertex> BSplineToBezierCurve(const BezierCurveT<Vertex>& curve)
+    __forceinline void convert(const BSplineCurveT<Vertex>& icurve, BezierCurveT<Vertex>& ocurve)
   {
-    const Vertex v0 = madd(1.0f/6.0f,curve.v0,madd(2.0f/3.0f*curve.v1,1.0f/6.0f*curve.v2));
-    const Vertex v1 = madd(2.0f/3.0f,curve.v1,1.0f/3.0f*curve.v2);
-    const Vertex v2 = madd(1.0f/3.0f,curve.v1,2.0f/3.0f*curve.v2);
-    const Vertex v3 = madd(1.0f/6.0f,curve.v1,madd(2.0f/3.0f,curve.v2,1.0f/6.0f*curve.v3));
-    return BezierCurveT<Vertex>(v0,v1,v2,v3);
+    const Vertex v0 = madd(1.0f/6.0f,icurve.v0,madd(2.0f/3.0f,icurve.v1,1.0f/6.0f*icurve.v2));
+    const Vertex v1 = madd(2.0f/3.0f,icurve.v1,1.0f/3.0f*icurve.v2);
+    const Vertex v2 = madd(1.0f/3.0f,icurve.v1,2.0f/3.0f*icurve.v2);
+    const Vertex v3 = madd(1.0f/6.0f,icurve.v1,madd(2.0f/3.0f,icurve.v2,1.0f/6.0f*icurve.v3));
+    ocurve = BezierCurveT<Vertex>(v0,v1,v2,v3);
   }
   
-#if defined(EMBREE_BSPLINE_HAIR)
-#define CurveT BSplineCurveT
+#if EMBREE_NATIVE_CURVE_BSPLINE
+  #define CurveT BSplineCurveT
   typedef BSplineCurve3fa Curve3fa;
 #endif
 }

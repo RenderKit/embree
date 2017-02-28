@@ -321,8 +321,8 @@ namespace embree
     }
   };
 
-#if !defined(EMBREE_BSPLINE_HAIR)
-#define CurveT BezierCurveT
+#if !EMBREE_NATIVE_CURVE_BSPLINE
+  #define CurveT BezierCurveT
   typedef BezierCurve3fa Curve3fa;
 #endif
 }

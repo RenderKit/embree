@@ -66,7 +66,6 @@ namespace embree
       size_t t = type - RTC_VERTEX_BUFFER0;
       vertices[t].set(ptr,offset,stride,size); 
       vertices[t].checkPadding16();
-      vertices0 = vertices[0];
     } 
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
     {
@@ -115,7 +114,6 @@ namespace embree
     }
     else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
       vertices[type - RTC_VERTEX_BUFFER0].unmap(parent->numMappedBuffers);
-      vertices0 = vertices[0];
     }
     else {
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
@@ -165,9 +163,24 @@ namespace embree
     return true;
   }
 
-  void NativeCurves::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
+  void NativeCurves::commit()
   {
-    /* test if interpolation is enabled */
+    if (!isEnabled()) return;
+
+    native_curves = (BufferRefT<unsigned>) curves;
+    if (native_vertices.size() != vertices.size())
+      native_vertices.resize(vertices.size());
+
+    native_vertices0 = vertices[0];
+    for (size_t i=0; i<vertices.size(); i++)
+      native_vertices[i] = (BufferRefT<Vec3fa>) vertices[i];
+  }
+
+  template<typename Curve>
+    void NativeCurves::interpolate_helper(unsigned primID, float u, float v, RTCBufferType buffer, 
+                                          float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
+  {
+  /* test if interpolation is enabled */
 #if defined(DEBUG) 
     if ((parent->aflags & RTC_INTERPOLATE) == 0) 
       throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
@@ -196,10 +209,77 @@ namespace embree
       const vfloatx p2 = vfloatx::loadu(valid,(float*)&src[(curve+2)*stride+ofs]);
       const vfloatx p3 = vfloatx::loadu(valid,(float*)&src[(curve+3)*stride+ofs]);
       
-      const CurveT<vfloatx> bezier(p0,p1,p2,p3);
+      const Curve bezier(p0,p1,p2,p3);
       if (P      ) vfloatx::storeu(valid,P+i,      bezier.eval(u));
       if (dPdu   ) vfloatx::storeu(valid,dPdu+i,   bezier.eval_du(u));
       if (ddPdudu) vfloatx::storeu(valid,ddPdudu+i,bezier.eval_dudu(u));
     }
+  }
+
+  void NativeCurves::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, 
+                                 float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
+  {
+    interpolate_helper<CurveT<vfloatx>>(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats);
+  }
+
+  template<typename InputCurve3fa>
+    void NativeCurves::commit_helper()
+  {
+    if (native_curves.size() != curves.size()) 
+    {
+      native_curves = APIBuffer<unsigned>(parent->device,curves.size(),sizeof(unsigned int),true);
+      for (size_t i=0; i<curves.size(); i++) native_curves[i] = 4*i;
+    }
+
+    if (native_vertices.size() != vertices.size())
+      native_vertices.resize(vertices.size());
+
+    for (size_t i=0; i<vertices.size(); i++)
+    {
+      if (native_vertices[i].size() != 4*curves.size())
+        native_vertices[i] = APIBuffer<Vec3fa>(parent->device,4*curves.size(),sizeof(Vec3fa),true);
+      
+      for (size_t j=0; j<curves.size(); j++) 
+      {
+        const unsigned id = curves[j];
+        const Vec3fa v0 = vertices[i][id+0];
+        const Vec3fa v1 = vertices[i][id+1];
+        const Vec3fa v2 = vertices[i][id+2];
+        const Vec3fa v3 = vertices[i][id+3];
+        const InputCurve3fa icurve(v0,v1,v2,v3);
+        Curve3fa ocurve; convert<Vec3fa>(icurve,ocurve);
+        native_vertices[i].store(4*j+0,ocurve.v0);
+        native_vertices[i].store(4*j+1,ocurve.v1);
+        native_vertices[i].store(4*j+2,ocurve.v2);
+        native_vertices[i].store(4*j+3,ocurve.v3);
+      }
+    }
+    native_vertices0 = native_vertices[0];
+  }
+
+  CurvesBezier::CurvesBezier (Scene* parent, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps)
+    : NativeCurves(parent,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps) {}
+  
+  void CurvesBezier::commit() {
+    if (isEnabled()) commit_helper<BezierCurve3fa>();
+  }
+
+  void CurvesBezier::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, 
+                                 float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
+  {
+    interpolate_helper<BezierCurveT<vfloatx>>(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats);
+  }
+
+  CurvesBSpline::CurvesBSpline (Scene* parent, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps)
+    : NativeCurves(parent,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps) {}
+  
+  void CurvesBSpline::commit() {
+    if (isEnabled()) commit_helper<BSplineCurve3fa>();
+  }
+
+  void CurvesBSpline::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, 
+                                 float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
+  {
+    interpolate_helper<BSplineCurveT<vfloatx>>(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats);
   }
 }

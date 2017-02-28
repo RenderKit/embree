@@ -1025,9 +1025,7 @@ namespace embree
       mesh->tessellation_rate = atoi(tessellation_rate.c_str());
 
     mesh->verify();
-#if defined(EMBREE_BSPLINE_HAIR)
-    mesh->convert_bezier_to_bspline();
-#endif
+    //mesh->convert_bezier_to_bspline();
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
@@ -1063,9 +1061,7 @@ namespace embree
       mesh->tessellation_rate = atoi(tessellation_rate.c_str());
 
     mesh->verify();
-#if !defined(EMBREE_BSPLINE_HAIR)
-    mesh->convert_bspline_to_bezier();
-#endif
+    //mesh->convert_bspline_to_bezier();
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 

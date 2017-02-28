@@ -51,8 +51,12 @@ namespace embree
     void immutable ();
     bool verify ();
     void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+    template<typename Curve>
+      void interpolate_helper(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
     void setTessellationRate(float N);
     // FIXME: implement interpolateN
+    void commit();
+    template<typename InputCurve3fa> void commit_helper();
 
   public:
     
@@ -68,27 +72,27 @@ namespace embree
     
     /*! returns the i'th curve */
     __forceinline const unsigned int& curve(size_t i) const {
-      return curves[i];
+      return native_curves[i];
     }
     
     /*! returns i'th vertex of the first time step */
     __forceinline Vec3fa vertex(size_t i) const {
-      return vertices0[i];
+      return native_vertices0[i];
     }
     
     /*! returns i'th radius of the first time step */
     __forceinline float radius(size_t i) const {
-      return vertices0[i].w;
+      return native_vertices0[i].w;
     }
 
     /*! returns i'th vertex of itime'th timestep */
     __forceinline Vec3fa vertex(size_t i, size_t itime) const {
-      return vertices[itime][i];
+      return native_vertices[itime][i];
     }
     
     /*! returns i'th radius of itime'th timestep */
     __forceinline float radius(size_t i, size_t itime) const {
-      return vertices[itime][i].w;
+      return native_vertices[itime][i].w;
     }
 
     /*! gathers the curve starting with i'th vertex of itime'th timestep */
@@ -270,11 +274,28 @@ namespace embree
 
   public:
     APIBuffer<unsigned int> curves;                   //!< array of curve indices
-    BufferRefT<Vec3fa> vertices0;                     //!< fast access to first vertex buffer
     vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
     vector<APIBuffer<char>> userbuffers;            //!< user buffers
     SubType subtype;                                //!< hair or surface geometry
     Basis basis;                                    //!< basis of user provided vertices
     int tessellationRate;                           //!< tessellation rate for bezier curve
+  public:
+    BufferRefT<Vec3fa> native_vertices0;                     //!< fast access to first vertex buffer
+    APIBuffer<unsigned int> native_curves;                   //!< array of curve indices
+    vector<APIBuffer<Vec3fa>> native_vertices;               //!< vertex array for each timestep
+  };
+
+  struct CurvesBezier : public NativeCurves
+  {
+    CurvesBezier (Scene* parent, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
+    void commit();
+    void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+  };
+
+  struct CurvesBSpline : public NativeCurves
+  {
+    CurvesBSpline (Scene* parent, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
+    void commit();
+    void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
   };
 }
