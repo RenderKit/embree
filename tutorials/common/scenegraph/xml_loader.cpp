@@ -1046,11 +1046,11 @@ namespace embree
     }
 
     std::vector<unsigned> indices = loadUIntArray(xml->childOpt("indices"));
-    //std::vector<Vec2i> indices = loadVec2iArray(xml->childOpt("indices")); // FIXME: enable
+    std::vector<unsigned> curveid = loadUIntArray(xml->childOpt("curveid"));
+    curveid.resize(indices.size(),0);
     mesh->hairs.resize(indices.size()); 
     for (size_t i=0; i<indices.size(); i++) {
-      indices[i] = indices[i]-1; // FIXME: remove
-      mesh->hairs[i] = SceneGraph::HairSetNode::Hair(indices[i],0);
+      mesh->hairs[i] = SceneGraph::HairSetNode::Hair(indices[i],curveid[i]);
     }
 
     for (auto& vertices : mesh->positions)
