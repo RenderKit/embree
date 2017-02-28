@@ -192,8 +192,13 @@ namespace embree
       }
 
       /* flatten scene */
-      else if (tag == "-flatten") {
+      else if (tag == "-flatten-geometry") {
         g_scene = SceneGraph::flatten(g_scene,SceneGraph::INSTANCING_SCENE_GEOMETRY);
+      }
+
+      /* flatten scene */
+      else if (tag == "-flatten") {
+        g_scene = SceneGraph::flatten(g_scene,SceneGraph::INSTANCING_NONE);
       }
 
       /* load terrain */
