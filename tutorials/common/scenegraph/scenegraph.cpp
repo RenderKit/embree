@@ -254,7 +254,7 @@ namespace embree
 
     for (ssize_t i=ipos, j=opos; i<ipos+4 && j<(ssize_t)out[0].size(); i++, j++) {
       for (size_t k=0; k<in.size(); k++) {
-        if (any(abs((vfloat4)in[k][i]-(vfloat4)out[k][j]) > 8.0f*float(ulp)*(vfloat4)in[k][i]))
+        if (any(abs((vfloat4)in[k][i]-(vfloat4)out[k][j]) > 0.01f*(vfloat4)max(abs(in[k][i]),abs(out[k][j]))))
           return false;
       }
     }
