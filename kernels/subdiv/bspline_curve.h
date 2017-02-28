@@ -117,6 +117,14 @@ namespace embree
       
       __forceinline BSplineCurveT(const Vertex& v0, const Vertex& v1, const Vertex& v2, const Vertex& v3)
         : v0(v0), v1(v1), v2(v2), v3(v3) {}
+
+      __forceinline Vertex begin() const {
+        return madd(1.0f/6.0f,v0,madd(2.0f/3.0f,v1,1.0f/6.0f*v2));
+      }
+
+      __forceinline Vertex end() const {
+        return madd(1.0f/6.0f,v1,madd(2.0f/3.0f,v2,1.0f/6.0f*v3));
+      }
       
       __forceinline Vertex eval(const float t) const 
       {
@@ -147,7 +155,37 @@ namespace embree
         return cout << "BSplineCurve { v0 = " << curve.v0 << ", v1 = " << curve.v1 << ", v2 = " << curve.v2 << ", v3 = " << curve.v3 << " }";
       }
     };
-  
+
+  template<typename Vertex>
+    __forceinline void convert(const BezierCurveT<Vertex>& icurve, BezierCurveT<Vertex>& ocurve) {
+     ocurve = icurve;
+   }
+
+   template<typename Vertex>
+    __forceinline void convert(const BSplineCurveT<Vertex>& icurve, BSplineCurveT<Vertex>& ocurve) {
+     ocurve = icurve;
+   }
+
+  template<typename Vertex>
+    __forceinline void convert(const BezierCurveT<Vertex>& icurve, BSplineCurveT<Vertex>& ocurve)
+  {
+    const Vertex v0 = madd(6.0f,icurve.v0,madd(-7.0f,icurve.v1,2.0f*icurve.v2));
+    const Vertex v1 = msub(2.0f,icurve.v1,icurve.v2);
+    const Vertex v2 = msub(2.0f,icurve.v2,icurve.v1);
+    const Vertex v3 = madd(2.0f,icurve.v1,madd(-7.0f,icurve.v2,6.0f*icurve.v3));
+    ocurve = BSplineCurveT<Vertex>(v0,v1,v2,v3);
+  }
+
+  template<typename Vertex>
+    __forceinline void convert(const BSplineCurveT<Vertex>& icurve, BezierCurveT<Vertex>& ocurve)
+  {
+    const Vertex v0 = madd(1.0f/6.0f,icurve.v0,madd(2.0f/3.0f,icurve.v1,1.0f/6.0f*icurve.v2));
+    const Vertex v1 = madd(2.0f/3.0f,icurve.v1,1.0f/3.0f*icurve.v2);
+    const Vertex v2 = madd(1.0f/3.0f,icurve.v1,2.0f/3.0f*icurve.v2);
+    const Vertex v3 = madd(1.0f/6.0f,icurve.v1,madd(2.0f/3.0f,icurve.v2,1.0f/6.0f*icurve.v3));
+    ocurve = BezierCurveT<Vertex>(v0,v1,v2,v3);
+  }
+
   struct BSplineCurve3fa : public BSplineCurveT<Vec3fa>
   {
     //using BSplineCurveT<Vec3fa>::BSplineCurveT; // FIXME: not supported by VS2010
@@ -272,27 +310,31 @@ namespace embree
       }
       const Vec3fa lower(reduce_min(pl.x),reduce_min(pl.y),reduce_min(pl.z));
       const Vec3fa upper(reduce_max(pu.x),reduce_max(pu.y),reduce_max(pu.z));
-      const Vec3fa upper_r = Vec3fa(reduce_max(max(-pl.w,pu.w)));
+      const Vec3fa upper_r = Vec3fa(reduce_max(max(abs(pl.w),abs(pu.w))));
       return enlarge(BBox3fa(lower,upper),upper_r);
     }
 
     /* calculates bounds when tessellated into N line segments */
     __forceinline BBox3fa tessellatedBounds(int N) const
     {
-      if (likely(N == 4))
+#if 0
+      BezierCurve3fa bezier; convert(*this,bezier);
+      return bezier.tessellatedBounds(N);
+#else
+      if (likely(N == 3))
       {
-        const Vec4vf4 pi = eval0<4>(0,4);
+        const Vec4vf4 pi = eval0<4>(0,3);
         const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
         const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
         const Vec3fa upper_r = Vec3fa(reduce_max(abs(pi.w)));
-        return enlarge(BBox3fa(min(lower,v3),max(upper,v3)),max(upper_r,Vec3fa(v3.w)));
+        return enlarge(BBox3fa(lower,upper),upper_r);
       } 
       else
       {
         Vec4vfx pl(pos_inf), pu(neg_inf);
-        for (int i=0; i<N; i+=VSIZEX)
+        for (int i=0; i<=N; i+=VSIZEX)
         {
-          vboolx valid = vintx(i)+vintx(step) < vintx(N);
+          vboolx valid = vintx(i)+vintx(step) <= vintx(N);
           const Vec4vfx pi = eval0<VSIZEX>(i,N);
           
           pl.x = select(valid,min(pl.x,pi.x),pl.x); // FIXME: use masked min
@@ -307,41 +349,12 @@ namespace embree
         }
         const Vec3fa lower(reduce_min(pl.x),reduce_min(pl.y),reduce_min(pl.z));
         const Vec3fa upper(reduce_max(pu.x),reduce_max(pu.y),reduce_max(pu.z));
-        const Vec3fa upper_r = Vec3fa(reduce_max(max(-pl.w,pu.w)));
-        return enlarge(BBox3fa(min(lower,v3),max(upper,v3)),max(upper_r,Vec3fa(abs(v3.w))));
+        const Vec3fa upper_r = Vec3fa(reduce_max(max(abs(pl.w),abs(pu.w))));
+        return enlarge(BBox3fa(lower,upper),upper_r);
       }
+#endif
     }
   };
-
-   template<typename Vertex>
-    __forceinline void convert(const BezierCurveT<Vertex>& icurve, BezierCurveT<Vertex>& ocurve) {
-     ocurve = icurve;
-   }
-
-   template<typename Vertex>
-    __forceinline void convert(const BSplineCurveT<Vertex>& icurve, BSplineCurveT<Vertex>& ocurve) {
-     ocurve = icurve;
-   }
-
-  template<typename Vertex>
-    __forceinline void convert(const BezierCurveT<Vertex>& icurve, BSplineCurveT<Vertex>& ocurve)
-  {
-    const Vertex v0 = madd(6.0f,icurve.v0,madd(-7.0f,icurve.v1,2.0f*icurve.v2));
-    const Vertex v1 = msub(2.0f,icurve.v1,icurve.v2);
-    const Vertex v2 = msub(2.0f,icurve.v2,icurve.v1);
-    const Vertex v3 = madd(2.0f,icurve.v1,madd(-7.0f,icurve.v2,6.0f*icurve.v3));
-    ocurve = BSplineCurveT<Vertex>(v0,v1,v2,v3);
-  }
-
-  template<typename Vertex>
-    __forceinline void convert(const BSplineCurveT<Vertex>& icurve, BezierCurveT<Vertex>& ocurve)
-  {
-    const Vertex v0 = madd(1.0f/6.0f,icurve.v0,madd(2.0f/3.0f,icurve.v1,1.0f/6.0f*icurve.v2));
-    const Vertex v1 = madd(2.0f/3.0f,icurve.v1,1.0f/3.0f*icurve.v2);
-    const Vertex v2 = madd(1.0f/3.0f,icurve.v1,2.0f/3.0f*icurve.v2);
-    const Vertex v3 = madd(1.0f/6.0f,icurve.v1,madd(2.0f/3.0f,icurve.v2,1.0f/6.0f*icurve.v3));
-    ocurve = BezierCurveT<Vertex>(v0,v1,v2,v3);
-  }
   
 #if EMBREE_NATIVE_CURVE_BSPLINE
   #define CurveT BSplineCurveT

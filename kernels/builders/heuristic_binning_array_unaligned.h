@@ -45,8 +45,13 @@ namespace embree
           {
             NativeCurves* mesh = (NativeCurves*) scene->get(prims[i].geomID());
             const unsigned vtxID = mesh->curve(prims[i].primID());
-            const Vec3fa p0 = mesh->vertex(vtxID+0);
-            const Vec3fa p3 = mesh->vertex(vtxID+3);
+            const Vec3fa v0 = mesh->vertex(vtxID+0);
+            const Vec3fa v1 = mesh->vertex(vtxID+1);
+            const Vec3fa v2 = mesh->vertex(vtxID+2);
+            const Vec3fa v3 = mesh->vertex(vtxID+3);
+            const Curve3fa curve(v0,v1,v2,v3);
+            const Vec3fa p0 = curve.begin();
+            const Vec3fa p3 = curve.end();
             const Vec3fa axis1 = normalize(p3 - p0);
             if (sqr_length(p3-p0) > 1E-18f) {
               axis = axis1;

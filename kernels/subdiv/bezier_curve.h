@@ -116,7 +116,15 @@ namespace embree
       
       __forceinline BezierCurveT(const Vertex& v0, const Vertex& v1, const Vertex& v2, const Vertex& v3)
         : v0(v0), v1(v1), v2(v2), v3(v3) {}
-      
+
+      __forceinline Vertex begin() const {
+        return v0;
+      }
+
+      __forceinline Vertex end() const {
+        return v3;
+      }
+
       __forceinline Vertex eval(const float t) const 
       {
         const Vec4<float> b = BezierBasis::eval(t);
@@ -280,7 +288,7 @@ namespace embree
       }
       const Vec3fa lower(reduce_min(pl.x),reduce_min(pl.y),reduce_min(pl.z));
       const Vec3fa upper(reduce_max(pu.x),reduce_max(pu.y),reduce_max(pu.z));
-      const Vec3fa upper_r = Vec3fa(reduce_max(max(-pl.w,pu.w)));
+      const Vec3fa upper_r = Vec3fa(reduce_max(max(abs(pl.w),abs(pu.w))));
       return enlarge(BBox3fa(lower,upper),upper_r);
     }
 
@@ -315,7 +323,7 @@ namespace embree
         }
         const Vec3fa lower(reduce_min(pl.x),reduce_min(pl.y),reduce_min(pl.z));
         const Vec3fa upper(reduce_max(pu.x),reduce_max(pu.y),reduce_max(pu.z));
-        const Vec3fa upper_r = Vec3fa(reduce_max(max(-pl.w,pu.w)));
+        const Vec3fa upper_r = Vec3fa(reduce_max(max(abs(pl.w),abs(pu.w))));
         return enlarge(BBox3fa(min(lower,v3),max(upper,v3)),max(upper_r,Vec3fa(abs(v3.w))));
       }
     }

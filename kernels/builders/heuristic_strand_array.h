@@ -73,9 +73,8 @@ namespace embree
       
       __forceinline const Vec3fa direction(const PrimRef& prim)
       {
-        NativeCurves* curves = scene->get<NativeCurves>(prim.geomID());
-        const unsigned vtx = curves->curve(prim.primID());
-        return curves->vertex(vtx+3)-curves->vertex(vtx+0);
+        const Curve3fa curve = scene->get<NativeCurves>(prim.geomID())->getCurve(prim.primID());
+        return curve.end()-curve.begin();
       }
       
       __forceinline const BBox3fa bounds(const PrimRef& prim)

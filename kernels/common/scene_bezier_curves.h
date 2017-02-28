@@ -79,6 +79,17 @@ namespace embree
     __forceinline const unsigned int& curve(size_t i) const {
       return native_curves[i];
     }
+
+    /*! returns the i'th curve */
+    __forceinline const Curve3fa getCurve(size_t i, size_t itime = 0) const 
+    {
+      const unsigned int index = curve(i);
+      const Vec3fa v0 = vertex(index+0,itime);
+      const Vec3fa v1 = vertex(index+1,itime);
+      const Vec3fa v2 = vertex(index+2,itime);
+      const Vec3fa v3 = vertex(index+3,itime);
+      return Curve3fa (v0,v1,v2,v3);
+    }
     
     /*! returns i'th vertex of the first time step */
     __forceinline Vec3fa vertex(size_t i) const {
@@ -139,12 +150,7 @@ namespace embree
     /*! calculates bounding box of i'th bezier curve */
     __forceinline BBox3fa bounds(size_t i, size_t itime = 0) const
     {
-      const unsigned int index = curve(i);
-      const Vec3fa v0 = vertex(index+0,itime);
-      const Vec3fa v1 = vertex(index+1,itime);
-      const Vec3fa v2 = vertex(index+2,itime);
-      const Vec3fa v3 = vertex(index+3,itime);
-      const Curve3fa curve(v0,v1,v2,v3);
+      const Curve3fa curve = getCurve(i,itime);
       if (likely(subtype == HAIR)) return curve.tessellatedBounds(tessellationRate);
       else                         return curve.accurateBounds();
     }
