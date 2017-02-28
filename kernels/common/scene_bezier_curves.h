@@ -69,6 +69,11 @@ namespace embree
     __forceinline size_t numVertices() const {
       return vertices[0].size();
     }
+
+    /*! returns the number of vertices */
+    __forceinline size_t numNativeVertices() const {
+      return native_vertices[0].size();
+    }
     
     /*! returns the i'th curve */
     __forceinline const unsigned int& curve(size_t i) const {
@@ -170,7 +175,7 @@ namespace embree
     __forceinline bool valid(size_t i, const range<size_t>& itime_range) const
     {
       const unsigned int index = curve(i);
-      if (index+3 >= numVertices()) return false;
+      if (index+3 >= numNativeVertices()) return false;
 
       for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++)
       {
@@ -212,7 +217,7 @@ namespace embree
     __forceinline bool buildBounds(size_t i, BBox3fa* bbox = nullptr) const
     {
       const unsigned int index = curve(i);
-      if (index+3 >= numVertices()) return false;
+      if (index+3 >= numNativeVertices()) return false;
 
       for (size_t t=0; t<numTimeSteps; t++)
       {
@@ -241,7 +246,7 @@ namespace embree
     __forceinline bool buildPrim(size_t i, size_t itime, Vec3fa& c0, Vec3fa& c1, Vec3fa& c2, Vec3fa& c3) const
     {
       const unsigned int index = curve(i);
-      if (index+3 >= numVertices()) return false;
+      if (index+3 >= numNativeVertices()) return false;
       const Vec3fa a0 = vertex(index+0,itime+0); if (unlikely(!isvalid((vfloat4)a0))) return false;
       const Vec3fa a1 = vertex(index+1,itime+0); if (unlikely(!isvalid((vfloat4)a1))) return false;
       const Vec3fa a2 = vertex(index+2,itime+0); if (unlikely(!isvalid((vfloat4)a2))) return false;

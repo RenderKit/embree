@@ -228,7 +228,10 @@ namespace embree
     if (native_curves.size() != curves.size()) 
     {
       native_curves = APIBuffer<unsigned>(parent->device,curves.size(),sizeof(unsigned int),true);
-      for (size_t i=0; i<curves.size(); i++) native_curves[i] = 4*i;
+      for (size_t i=0; i<curves.size(); i++) {
+        if (curves[i]+3 >= numVertices()) native_curves[i] = 0xFFFFFFF0; // invalid curves stay invalid this way
+        else                              native_curves[i] = 4*i;
+      }
     }
 
     if (native_vertices.size() != vertices.size())
@@ -242,6 +245,7 @@ namespace embree
       for (size_t j=0; j<curves.size(); j++) 
       {
         const unsigned id = curves[j];
+        if (id+3 >= numVertices()) continue; // ignore invalid curves
         const Vec3fa v0 = vertices[i][id+0];
         const Vec3fa v1 = vertices[i][id+1];
         const Vec3fa v2 = vertices[i][id+2];
