@@ -170,6 +170,8 @@ namespace embree
     bool convert_tris_to_quads;
     bool convert_bezier_to_lines;
     bool convert_hair_to_curves;
+    bool convert_bezier_to_bspline;
+    bool convert_bspline_to_bezier;
     FileName sceneFilename;
     std::vector<FileName> keyFramesFilenames;
     SceneGraph::InstancingMode instancing_mode;

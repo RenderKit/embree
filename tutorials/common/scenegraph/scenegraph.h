@@ -41,6 +41,8 @@ namespace embree
     Ref<Node> convert_quads_to_subdivs(Ref<Node> node);
     Ref<Node> convert_bezier_to_lines(Ref<Node> node);
     Ref<Node> convert_hair_to_curves(Ref<Node> node);
+    Ref<Node> convert_bezier_to_bspline(Ref<Node> node);
+    Ref<Node> convert_bspline_to_bezier(Ref<Node> node);
     
     struct Node : public RefCount
     {
@@ -367,6 +369,18 @@ namespace embree
       {
         for (size_t i=0; i<children.size(); i++)
           children[i] = convert_hair_to_curves(children[i]);
+      }
+
+      void bezier_to_bspline()
+      {
+        for (size_t i=0; i<children.size(); i++)
+          children[i] = convert_bezier_to_bspline(children[i]);
+      }
+
+      void bspline_to_bezier()
+      {
+        for (size_t i=0; i<children.size(); i++)
+          children[i] = convert_bspline_to_bezier(children[i]);
       }
 
       virtual void setMaterial(Ref<MaterialNode> material) {

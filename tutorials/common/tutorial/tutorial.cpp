@@ -233,6 +233,8 @@ namespace embree
       convert_tris_to_quads(false),
       convert_bezier_to_lines(false),
       convert_hair_to_curves(false),
+      convert_bezier_to_bspline(false),
+      convert_bspline_to_bezier(false),
       sceneFilename(""),
       instancing_mode(SceneGraph::INSTANCING_NONE),
       print_scene_cameras(false)
@@ -272,6 +274,14 @@ namespace embree
     registerOption("convert-hair-to-curves", [this] (Ref<ParseStream> cin, const FileName& path) {
         convert_hair_to_curves = true;
       }, "--convert-hair-to-curves: converts all hair geometry to curves when loading");
+    
+    registerOption("convert-bezier-to-bspline", [this] (Ref<ParseStream> cin, const FileName& path) {
+        convert_bezier_to_bspline = true;
+      }, "--convert-bezier-to-bspline: converts all bezier curves to bsplines curves");
+    
+    registerOption("convert-bspline-to-bezier", [this] (Ref<ParseStream> cin, const FileName& path) {
+        convert_bspline_to_bezier = true;
+      }, "--convert-bspline-to-bezier: converts all bsplines curves to bezier curves");
     
     registerOption("instancing", [this] (Ref<ParseStream> cin, const FileName& path) {
         std::string mode = cin->getString();
@@ -832,17 +842,12 @@ namespace embree
     /* clear texture cache */
     Texture::clearTextureCache();
 
-    /* convert triangles to quads */
-    if (convert_tris_to_quads)
-      scene->triangles_to_quads();
-    
-    /* convert bezier to lines */
-    if (convert_bezier_to_lines)
-      scene->bezier_to_lines();
-    
-    /* convert hair to curves */
-    if (convert_hair_to_curves)
-      scene->hair_to_curves();
+    /* perform conversions */
+    if (convert_tris_to_quads    ) scene->triangles_to_quads();
+    if (convert_bezier_to_lines  ) scene->bezier_to_lines();
+    if (convert_hair_to_curves   ) scene->hair_to_curves();
+    if (convert_bezier_to_bspline) scene->bezier_to_bspline();
+    if (convert_bspline_to_bezier) scene->bspline_to_bezier();
     
     /* convert model */
     obj_scene.add(SceneGraph::flatten(scene,instancing_mode)); 

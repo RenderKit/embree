@@ -685,6 +685,38 @@ namespace embree
     return node;
   }
 
+  Ref<SceneGraph::Node> SceneGraph::convert_bezier_to_bspline(Ref<SceneGraph::Node> node)
+  {
+    if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+      convert_bezier_to_bspline(xfmNode->child);
+    }
+    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
+    {
+      for (size_t i=0; i<groupNode->children.size(); i++) 
+        convert_bezier_to_bspline(groupNode->children[i]);
+    }
+    else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) {
+      hmesh->convert_bezier_to_bspline();
+    }
+    return node;
+  }
+
+  Ref<SceneGraph::Node> SceneGraph::convert_bspline_to_bezier(Ref<SceneGraph::Node> node)
+  {
+    if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+      convert_bspline_to_bezier(xfmNode->child);
+    }
+    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
+    {
+      for (size_t i=0; i<groupNode->children.size(); i++) 
+        convert_bspline_to_bezier(groupNode->children[i]);
+    }
+    else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) {
+      hmesh->convert_bspline_to_bezier();
+    }
+    return node;
+  }
+
   struct SceneGraphFlattener
   {
     Ref<SceneGraph::Node> node;
