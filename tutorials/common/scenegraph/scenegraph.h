@@ -823,6 +823,7 @@ namespace embree
 
       void convert_bezier_to_bspline();
       void convert_bspline_to_bezier();
+      void compact_vertices();
 
       void verify() const;
 

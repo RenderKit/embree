@@ -247,6 +247,64 @@ namespace embree
     basis = BEZIER;
   }
 
+  bool test_location(const std::vector<avector<Vec3fa>>& in, ssize_t ipos, std::vector<avector<Vec3fa>>& out, ssize_t opos)
+  {
+    if (opos < 0) 
+      return false;
+
+    for (ssize_t i=ipos, j=opos; i<ipos+4 && j<(ssize_t)out[0].size(); i++, j++) {
+      for (size_t k=0; k<in.size(); k++) {
+        if (any(abs((vfloat4)in[k][i]-(vfloat4)out[k][j]) > 8.0f*float(ulp)*(vfloat4)in[k][i]))
+          return false;
+      }
+    }
+    return true;
+  }
+
+  void SceneGraph::HairSetNode::compact_vertices()
+  {
+    std::vector<avector<Vec3fa>> positions_o(positions.size());
+    for (size_t i=0; i<positions.size(); i++)
+      positions_o.reserve(positions[i].size());
+    
+    for (size_t i=0; i<hairs.size(); i++) 
+    {
+      unsigned idx = hairs[i].vertex;
+      if (test_location(positions,idx,positions_o,positions_o[0].size()-1)) 
+      {
+        hairs[i].vertex = positions_o[0].size()-1;
+        for (size_t k=0; k<positions.size(); k++) {
+          positions_o[k].push_back(positions[k][idx+1]);
+          positions_o[k].push_back(positions[k][idx+2]);
+          positions_o[k].push_back(positions[k][idx+3]);
+        }
+      }
+
+      else if (test_location(positions,idx,positions_o,positions_o[0].size()-3)) 
+      {
+        hairs[i].vertex = positions_o[0].size()-3;
+        for (size_t k=0; k<positions.size(); k++)
+          positions_o[k].push_back(positions[k][idx+3]);
+      }
+
+      else
+      {
+        hairs[i].vertex = positions_o[0].size();
+        for (size_t k=0; k<positions.size(); k++) {
+          positions_o[k].push_back(positions[k][idx+0]);
+          positions_o[k].push_back(positions[k][idx+1]);
+          positions_o[k].push_back(positions[k][idx+2]);
+          positions_o[k].push_back(positions[k][idx+3]);
+        }
+      }
+    }
+
+    for (size_t i=0; i<positions_o.size(); i++)
+      positions_o.shrink_to_fit();
+   
+    positions = std::move(positions_o);
+  }
+
   void SceneGraph::extend_animation(Ref<SceneGraph::Node> node0, Ref<SceneGraph::Node> node1)
   {
     if (node0 == node1) return;
@@ -697,6 +755,7 @@ namespace embree
     }
     else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) {
       hmesh->convert_bezier_to_bspline();
+      //hmesh->compact_vertices();
     }
     return node;
   }
