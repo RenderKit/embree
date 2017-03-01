@@ -25,6 +25,8 @@ namespace embree
   /* Visual Studio 2012 link error workaround */
   PrecomputedBezierBasis bezier_basis0;
   PrecomputedBezierBasis bezier_basis1;
+  PrecomputedBSplineBasis bspline_basis0;
+  PrecomputedBSplineBasis bspline_basis1;
 
   /* error reporting function */
   void error_handler(void* userPtr, const RTCError code, const char* str)
