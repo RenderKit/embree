@@ -101,12 +101,11 @@ namespace embree
       /* create distribution */
       size_t width = distribution->width;
       size_t height = distribution->height;
-      float* values = new float[width*height];
+      std::vector<float> values(width*height);
       for (size_t y=0; y<height; y++)
         for (size_t x=0; x<width; x++)
           values[y*width+x] = luminance(distribution->get(x,y));
-      dist = std::make_shared<Distribution2D>(values,width,height);
-      delete[] values;
+      dist = std::make_shared<Distribution2D>(values.data(),width,height);
     }
         
     void instantiate(Ref<SceneGraph::GroupNode>& group) 
@@ -188,6 +187,31 @@ namespace embree
       /* convert bezier to lines */
       else if (tag == "-convert-bezier-to-lines") {
         g_scene->bezier_to_lines();
+      }
+
+      /* convert bezier to bspline curves */
+      else if (tag == "-convert-bezier-to-bspline") {
+        g_scene->bezier_to_bspline();
+      }
+
+      /* convert bspline to bezier curves */
+      else if (tag == "-convert-bspline-to-bezier") {
+        g_scene->bspline_to_bezier();
+      }
+
+      /* flatten scene */
+      else if (tag == "-flatten-group") {
+        g_scene = SceneGraph::flatten(g_scene,SceneGraph::INSTANCING_SCENE_GROUP);
+      }
+
+      /* flatten scene */
+      else if (tag == "-flatten-geometry") {
+        g_scene = SceneGraph::flatten(g_scene,SceneGraph::INSTANCING_SCENE_GEOMETRY);
+      }
+
+      /* flatten scene */
+      else if (tag == "-flatten") {
+        g_scene = SceneGraph::flatten(g_scene,SceneGraph::INSTANCING_NONE);
       }
 
       /* load terrain */

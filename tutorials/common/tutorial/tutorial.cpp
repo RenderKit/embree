@@ -78,7 +78,6 @@ namespace embree
 
       interactive(true),
       fullscreen(false),
-      consoleOutput(true),
 
       window_width(512),
       window_height(512),
@@ -92,7 +91,11 @@ namespace embree
       clickX(0), clickY(0),
       speed(1.0f),
       moveDelta(zero),
-      command_line_camera(false)
+      command_line_camera(false),
+      print_frame_rate(false),
+      avg_render_time(64,1.0),
+      avg_frame_time(64,1.0),
+      print_camera(false)
   {
     /* only a single instance of this class is supported */
     assert(instance == nullptr);
@@ -162,7 +165,15 @@ namespace embree
         numBenchmarkFrames  = 2048;
         interactive = false;
       }, "--nodisplay: enabled benchmark mode, continously renders frames");
-    
+
+    registerOption("print-frame-rate", [this] (Ref<ParseStream> cin, const FileName& path) {
+        print_frame_rate = true;
+      }, "--print-frame-rate: prints framerate for each frame on console");
+   
+     registerOption("print-camera", [this] (Ref<ParseStream> cin, const FileName& path) {
+         print_camera = true;
+      }, "--print-camera: prints camera for each frame on console");
+   
     /* output filename */
     registerOption("shader", [this] (Ref<ParseStream> cin, const FileName& path) {
         std::string mode = cin->getString();
@@ -222,9 +233,11 @@ namespace embree
       convert_tris_to_quads(false),
       convert_bezier_to_lines(false),
       convert_hair_to_curves(false),
+      convert_bezier_to_bspline(false),
+      convert_bspline_to_bezier(false),
       sceneFilename(""),
       instancing_mode(SceneGraph::INSTANCING_NONE),
-      print_cameras(false)
+      print_scene_cameras(false)
   {
     registerOption("i", [this] (Ref<ParseStream> cin, const FileName& path) {
         sceneFilename = path + cin->getFileName();
@@ -261,6 +274,14 @@ namespace embree
     registerOption("convert-hair-to-curves", [this] (Ref<ParseStream> cin, const FileName& path) {
         convert_hair_to_curves = true;
       }, "--convert-hair-to-curves: converts all hair geometry to curves when loading");
+    
+    registerOption("convert-bezier-to-bspline", [this] (Ref<ParseStream> cin, const FileName& path) {
+        convert_bezier_to_bspline = true;
+      }, "--convert-bezier-to-bspline: converts all bezier curves to bsplines curves");
+    
+    registerOption("convert-bspline-to-bezier", [this] (Ref<ParseStream> cin, const FileName& path) {
+        convert_bspline_to_bezier = true;
+      }, "--convert-bspline-to-bezier: converts all bsplines curves to bezier curves");
     
     registerOption("instancing", [this] (Ref<ParseStream> cin, const FileName& path) {
         std::string mode = cin->getString();
@@ -336,7 +357,7 @@ namespace embree
         const float len = cin->getFloat();
         const float r = cin->getFloat();
         const size_t N = cin->getInt();
-        scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,true,new OBJMaterial));
+        scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,SceneGraph::HairSetNode::HAIR,new OBJMaterial));
       }, "--hair-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z length radius num: adds a hair plane originated at p0 and spanned by the vectors dx and dy. num hairs are generated with speficied length and radius.");    
     
     registerOption("curve-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -346,7 +367,7 @@ namespace embree
         const float len = cin->getFloat();
         const float r = cin->getFloat();
         const size_t N = cin->getInt();
-        scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,false,new OBJMaterial));
+        scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,SceneGraph::HairSetNode::CURVE,new OBJMaterial));
       }, "--curve-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z length radius: adds a plane build of bezier curves originated at p0 and spanned by the vectors dx and dy. num curves are generated with speficied length and radius.");    
 
     registerOption("triangle-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -382,7 +403,7 @@ namespace embree
       }, "--pregenerate: enabled pregenerate subdiv mode");    
 
     registerOption("print-cameras", [this] (Ref<ParseStream> cin, const FileName& path) {
-        print_cameras = true;
+        print_scene_cameras = true;
       }, "--print-cameras: prints all camera names of the scene");    
 
     registerOption("camera", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -507,14 +528,7 @@ namespace embree
         glutFullScreen(); 
       }
       break;
-    case 'c' : {
-      std::cout.precision(10);
-      std::cout << "-vp " << camera.from.x    << " " << camera.from.y    << " " << camera.from.z    << " " 
-                << "-vi " << camera.to.x << " " << camera.to.y << " " << camera.to.z << " " 
-                << "-vu " << camera.up.x     << " " << camera.up.y     << " " << camera.up.z     << " " 
-                << "-fov " << camera.fov << std::endl;
-      break;
-    }
+    case 'c' : std::cout << camera.str() << std::endl; break;
     case '+' : g_debug=clamp(g_debug+0.01f); PRINT(g_debug); break;
     case '-' : g_debug=clamp(g_debug-0.01f); PRINT(g_debug); break;
 
@@ -626,11 +640,12 @@ namespace embree
     double t0 = getSeconds();
     device_render(pixels,width,height,float(time0-t0),ispccamera);
     double dt0 = getSeconds()-t0;
+    avg_render_time.add(dt0);
 
     /* draw pixels to screen */
     glDrawPixels(width,height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
     
-    if (fullscreen || !consoleOutput) 
+    if (fullscreen || !print_frame_rate) 
     {
       glMatrixMode( GL_PROJECTION );
       glPushMatrix();
@@ -644,9 +659,11 @@ namespace embree
       std::ostringstream stream;
       stream.setf(std::ios::fixed, std::ios::floatfield);
       stream.precision(2);
-      stream << 1.0f/dt0 << " fps";
+      
+      stream << 1.0f/avg_render_time.get() << " fps";
       std::string str = stream.str();
       
+      glColor3f(1.0f, 1.0f, 0.0f);
       glRasterPos2i( width-GLint(str.size())*12, height - 24); 
       for (size_t i=0; i<str.size(); i++)
         glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
@@ -661,9 +678,9 @@ namespace embree
     glutSwapBuffers();
     
     double dt1 = getSeconds()-t0;
+    avg_frame_time.add(dt1);
 
-    /* print frame rate */
-    if (consoleOutput)
+    if (print_frame_rate)
     {
       std::ostringstream stream;
       stream.setf(std::ios::fixed, std::ios::floatfield);
@@ -677,6 +694,9 @@ namespace embree
       stream << width << "x" << height << " pixels";
       std::cout << stream.str() << std::endl;
     }
+
+    if (print_camera)
+      std::cout << camera.str() << std::endl;
   }
 
   void TutorialApplication::reshapeFunc(int width, int height) 
@@ -823,24 +843,19 @@ namespace embree
     /* clear texture cache */
     Texture::clearTextureCache();
 
-    /* convert triangles to quads */
-    if (convert_tris_to_quads)
-      scene->triangles_to_quads();
-    
-    /* convert bezier to lines */
-    if (convert_bezier_to_lines)
-      scene->bezier_to_lines();
-    
-    /* convert hair to curves */
-    if (convert_hair_to_curves)
-      scene->hair_to_curves();
+    /* perform conversions */
+    if (convert_tris_to_quads    ) scene->triangles_to_quads();
+    if (convert_bezier_to_lines  ) scene->bezier_to_lines();
+    if (convert_hair_to_curves   ) scene->hair_to_curves();
+    if (convert_bezier_to_bspline) scene->bezier_to_bspline();
+    if (convert_bspline_to_bezier) scene->bspline_to_bezier();
     
     /* convert model */
     obj_scene.add(SceneGraph::flatten(scene,instancing_mode)); 
     scene = nullptr;
 
     /* print all cameras */
-    if (print_cameras) {
+    if (print_scene_cameras) {
       obj_scene.print_camera_names();
       return 0;
     }

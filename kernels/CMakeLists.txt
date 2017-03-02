@@ -47,6 +47,7 @@ SET(EMBREE_LIBRARY_FILES
   common/scene_line_segments.cpp
 
   subdiv/bezier_curve.cpp
+  subdiv/bspline_curve.cpp
 
   geometry/primitive.cpp
   geometry/instance_intersector1.cpp

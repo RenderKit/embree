@@ -177,7 +177,7 @@ namespace embree
             unalignedObjectSAH = travCostUnaligned*halfArea(pinfo.geomBounds) + intCost*unalignedObjectSplit.splitSAH();
             bestSAH = min(unalignedObjectSAH,bestSAH);
           }
-          
+
           /* try splitting into two strands */
           HeuristicStrandSplitSAH::Split strandSplit;
           float strandSAH = inf;
@@ -186,7 +186,7 @@ namespace embree
             strandSAH = travCostUnaligned*halfArea(pinfo.geomBounds) + intCost*strandSplit.splitSAH();
             bestSAH = min(strandSAH,bestSAH);
           }
-     
+
           /* fallback if SAH heuristics failed */
           if (unlikely(!std::isfinite(bestSAH)))
           {

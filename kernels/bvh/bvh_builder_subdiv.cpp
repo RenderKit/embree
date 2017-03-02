@@ -29,6 +29,7 @@
 #include "../../common/algorithms/parallel_for_for_prefix_sum.h"
 
 #include "../subdiv/bezier_curve.h"
+#include "../subdiv/bspline_curve.h"
 
 #include "../geometry/subdivpatch1cached.h"
 #include "../geometry/grid_soa.h"

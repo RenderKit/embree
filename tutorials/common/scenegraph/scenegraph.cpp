@@ -184,7 +184,127 @@ namespace embree
       if (size_t(hair.vertex) >= N)
         THROW_RUNTIME_ERROR("invalid hair");
   }
-  
+
+  avector<Vec3fa> bspline_to_bezier_helper(const std::vector<SceneGraph::HairSetNode::Hair>& indices, const avector<Vec3fa>& positions)
+  {
+    avector<Vec3fa> positions_o;
+    positions_o.resize(4*indices.size());
+    for (size_t i=0; i<indices.size(); i++) 
+    {
+      const size_t idx = indices[i].vertex;
+      const vfloat4 v0 = vfloat4::loadu(&positions[idx+0]);  
+      const vfloat4 v1 = vfloat4::loadu(&positions[idx+1]);
+      const vfloat4 v2 = vfloat4::loadu(&positions[idx+2]);
+      const vfloat4 v3 = vfloat4::loadu(&positions[idx+3]);
+      positions_o[4*i+0] = Vec3fa((1.0f/6.0f)*v0 + (2.0f/3.0f)*v1 + (1.0f/6.0f)*v2);
+      positions_o[4*i+1] = Vec3fa((2.0f/3.0f)*v1 + (1.0f/3.0f)*v2);
+      positions_o[4*i+2] = Vec3fa((1.0f/3.0f)*v1 + (2.0f/3.0f)*v2);
+      positions_o[4*i+3] = Vec3fa((1.0f/6.0f)*v1 + (2.0f/3.0f)*v2 + (1.0f/6.0f)*v3);
+    }
+    return positions_o;
+  }
+
+  avector<Vec3fa> bezier_to_bspline_helper(const std::vector<SceneGraph::HairSetNode::Hair>& indices, const avector<Vec3fa>& positions)
+  {
+    avector<Vec3fa> positions_o;
+    positions_o.resize(4*indices.size());
+    for (size_t i=0; i<indices.size(); i++) 
+    {
+      const size_t idx = indices[i].vertex;
+      vfloat4 v0 = vfloat4::loadu(&positions[idx+0]);  
+      vfloat4 v1 = vfloat4::loadu(&positions[idx+1]);
+      vfloat4 v2 = vfloat4::loadu(&positions[idx+2]);
+      vfloat4 v3 = vfloat4::loadu(&positions[idx+3]);
+      positions_o[4*i+0] = Vec3fa( 6.0f*v0 - 7.0f*v1 + 2.0f*v2);
+      positions_o[4*i+1] = Vec3fa( 2.0f*v1 - 1.0f*v2);
+      positions_o[4*i+2] = Vec3fa(-1.0f*v1 + 2.0f*v2);
+      positions_o[4*i+3] = Vec3fa( 2.0f*v1 - 7.0f*v2 + 6.0f*v3);
+    }
+    return positions_o;
+  }
+
+  void SceneGraph::HairSetNode::convert_bezier_to_bspline()
+  {
+    if (basis != BEZIER) return;
+    for (size_t i=0; i<positions.size(); i++) {
+      positions[i] = bezier_to_bspline_helper(hairs,positions[i]);
+    }
+    for (size_t i=0; i<hairs.size(); i++) {
+      hairs[i] = SceneGraph::HairSetNode::Hair(unsigned(4*i),0);
+    }
+    basis = BSPLINE;
+  }
+
+  void SceneGraph::HairSetNode::convert_bspline_to_bezier()
+  {
+    if (basis != BSPLINE) return;
+    for (size_t i=0; i<positions.size(); i++) {
+      positions[i] = bspline_to_bezier_helper(hairs,positions[i]);
+    }
+    for (size_t i=0; i<hairs.size(); i++) {
+      hairs[i] = SceneGraph::HairSetNode::Hair(unsigned(4*i),0);
+    }
+    basis = BEZIER;
+  }
+
+  bool test_location(const std::vector<avector<Vec3fa>>& in, ssize_t ipos, std::vector<avector<Vec3fa>>& out, ssize_t opos)
+  {
+    if (opos < 0) 
+      return false;
+
+    for (ssize_t i=ipos, j=opos; i<ipos+4 && j<(ssize_t)out[0].size(); i++, j++) {
+      for (size_t k=0; k<in.size(); k++) {
+        if (any(abs((vfloat4)in[k][i]-(vfloat4)out[k][j]) > 0.01f*(vfloat4)max(abs(in[k][i]),abs(out[k][j]))))
+          return false;
+      }
+    }
+    return true;
+  }
+
+  void SceneGraph::HairSetNode::compact_vertices()
+  {
+    std::vector<avector<Vec3fa>> positions_o(positions.size());
+    for (size_t i=0; i<positions.size(); i++)
+      positions_o.reserve(positions[i].size());
+    
+    for (size_t i=0; i<hairs.size(); i++) 
+    {
+      unsigned idx = hairs[i].vertex;
+      if (test_location(positions,idx,positions_o,positions_o[0].size()-1)) 
+      {
+        hairs[i].vertex = positions_o[0].size()-1;
+        for (size_t k=0; k<positions.size(); k++) {
+          positions_o[k].push_back(positions[k][idx+1]);
+          positions_o[k].push_back(positions[k][idx+2]);
+          positions_o[k].push_back(positions[k][idx+3]);
+        }
+      }
+
+      else if (test_location(positions,idx,positions_o,positions_o[0].size()-3)) 
+      {
+        hairs[i].vertex = positions_o[0].size()-3;
+        for (size_t k=0; k<positions.size(); k++)
+          positions_o[k].push_back(positions[k][idx+3]);
+      }
+
+      else
+      {
+        hairs[i].vertex = positions_o[0].size();
+        for (size_t k=0; k<positions.size(); k++) {
+          positions_o[k].push_back(positions[k][idx+0]);
+          positions_o[k].push_back(positions[k][idx+1]);
+          positions_o[k].push_back(positions[k][idx+2]);
+          positions_o[k].push_back(positions[k][idx+3]);
+        }
+      }
+    }
+
+    for (size_t i=0; i<positions_o.size(); i++)
+      positions_o.shrink_to_fit();
+   
+    positions = std::move(positions_o);
+  }
+
   void SceneGraph::extend_animation(Ref<SceneGraph::Node> node0, Ref<SceneGraph::Node> node1)
   {
     if (node0 == node1) return;
@@ -498,7 +618,7 @@ namespace embree
     }
     else if (Ref<SceneGraph::TriangleMeshNode> tmesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
     {
-      SceneGraph::QuadMeshNode* qmesh = new SceneGraph::QuadMeshNode(tmesh->material);
+      Ref<SceneGraph::QuadMeshNode> qmesh = new SceneGraph::QuadMeshNode(tmesh->material);
 
       for (auto& p : tmesh->positions)
         qmesh->positions.push_back(p);
@@ -532,7 +652,7 @@ namespace embree
         else if (q.first ==  2) qmesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(a1,a2,a3,a0)); 
         i++;
       }
-      return qmesh;
+      return qmesh.dynamicCast<SceneGraph::Node>();
     }
     return node;
   }
@@ -549,7 +669,7 @@ namespace embree
     }
     else if (Ref<SceneGraph::QuadMeshNode> tmesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) 
     {
-      SceneGraph::SubdivMeshNode* smesh = new SceneGraph::SubdivMeshNode(tmesh->material);
+      Ref<SceneGraph::SubdivMeshNode> smesh = new SceneGraph::SubdivMeshNode(tmesh->material);
 
       for (auto& p : tmesh->positions)
         smesh->positions.push_back(p);
@@ -573,7 +693,7 @@ namespace embree
       for (size_t i=0; i<tmesh->quads.size(); i++) 
         smesh->verticesPerFace.push_back(3 + (int)(tmesh->quads[i].v2 != tmesh->quads[i].v3));
 
-      return smesh;
+      return smesh.dynamicCast<SceneGraph::Node>();
     }
     return node;
   }
@@ -590,7 +710,7 @@ namespace embree
     }
     else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
     {
-      SceneGraph::LineSegmentsNode* lmesh = new SceneGraph::LineSegmentsNode(hmesh->material);
+      Ref<SceneGraph::LineSegmentsNode> lmesh = new SceneGraph::LineSegmentsNode(hmesh->material);
 
       for (auto& p : hmesh->positions)
         lmesh->positions.push_back(p);
@@ -600,7 +720,7 @@ namespace embree
         lmesh->indices.push_back(hair.vertex+1);
         lmesh->indices.push_back(hair.vertex+2);
       }
-      return lmesh;
+      return lmesh.dynamicCast<SceneGraph::Node>();
     }
     return node;
   }
@@ -617,8 +737,41 @@ namespace embree
     }
     else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
     {
-      hmesh->hair = false;
+      hmesh->type = SceneGraph::HairSetNode::CURVE;
       return hmesh.dynamicCast<SceneGraph::Node>();
+    }
+    return node;
+  }
+
+  Ref<SceneGraph::Node> SceneGraph::convert_bezier_to_bspline(Ref<SceneGraph::Node> node)
+  {
+    if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+      convert_bezier_to_bspline(xfmNode->child);
+    }
+    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
+    {
+      for (size_t i=0; i<groupNode->children.size(); i++) 
+        convert_bezier_to_bspline(groupNode->children[i]);
+    }
+    else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) {
+      hmesh->convert_bezier_to_bspline();
+      //hmesh->compact_vertices();
+    }
+    return node;
+  }
+
+  Ref<SceneGraph::Node> SceneGraph::convert_bspline_to_bezier(Ref<SceneGraph::Node> node)
+  {
+    if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+      convert_bspline_to_bezier(xfmNode->child);
+    }
+    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
+    {
+      for (size_t i=0; i<groupNode->children.size(); i++) 
+        convert_bspline_to_bezier(groupNode->children[i]);
+    }
+    else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) {
+      hmesh->convert_bspline_to_bezier();
     }
     return node;
   }

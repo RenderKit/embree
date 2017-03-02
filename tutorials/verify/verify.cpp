@@ -220,7 +220,12 @@ namespace embree
       }
       else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>())
       {
-        unsigned int geomID = rtcNewHairGeometry (scene, gflag, mesh->hairs.size(), mesh->numVertices(), mesh->numTimeSteps());
+        unsigned int geomID = 0;
+        switch (mesh->basis) {
+        case SceneGraph::HairSetNode::BEZIER : geomID = rtcNewBezierHairGeometry (scene, gflag, mesh->hairs.size(), mesh->numVertices(), mesh->numTimeSteps()); break;
+        case SceneGraph::HairSetNode::BSPLINE: geomID = rtcNewBSplineHairGeometry (scene, gflag, mesh->hairs.size(), mesh->numVertices(), mesh->numTimeSteps()); break;
+        default: assert(false);
+        }
         for (size_t t=0; t<mesh->numTimeSteps(); t++)
           rtcSetBuffer(scene,geomID,RTCBufferType(RTC_VERTEX_BUFFER0+t),mesh->positions[t].data(),0,sizeof(SceneGraph::HairSetNode::Vertex));
         rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,mesh->hairs.data(),0,sizeof(SceneGraph::HairSetNode::Hair));
@@ -288,7 +293,7 @@ namespace embree
     
     std::pair<unsigned,Ref<SceneGraph::Node>> addHair (RandomSampler& sampler, RTCGeometryFlags gflag, const Vec3fa& pos, const float scale, const float r, size_t numHairs = 1, const avector<Vec3fa>& motion_vector = avector<Vec3fa>())
     {
-      Ref<SceneGraph::Node> node = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),pos,Vec3fa(1,0,0),Vec3fa(0,0,1),scale,r,numHairs,true);
+      Ref<SceneGraph::Node> node = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),pos,Vec3fa(1,0,0),Vec3fa(0,0,1),scale,r,numHairs,SceneGraph::HairSetNode::HAIR);
       if (motion_vector.size()) SceneGraph::set_motion_vector(node,motion_vector);
       return addGeometry2(gflag,node);
     }
@@ -678,7 +683,7 @@ namespace embree
       AssertNoError(device);
       rtcNewTriangleMesh (scene, geomFlags, 0, 0);
       AssertNoError(device);
-      rtcNewHairGeometry (scene, geomFlags, 0, 0);
+      rtcNewBezierHairGeometry (scene, geomFlags, 0, 0);
       AssertNoError(device);
       rtcCommit (scene);
       AssertNoError(device);
@@ -812,13 +817,13 @@ namespace embree
       rtcSetUserData(scene,geom4,(void*)5);
       unsigned geom5 = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, 0, 0, 0, 0, 0, 0, 2);
       rtcSetUserData(scene,geom5,(void*)6);
-      unsigned geom6 = rtcNewHairGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
+      unsigned geom6 = rtcNewBezierHairGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
       rtcSetUserData(scene,geom6,(void*)7);
-      unsigned geom7 = rtcNewHairGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 2);
+      unsigned geom7 = rtcNewBezierHairGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 2);
       rtcSetUserData(scene,geom7,(void*)8);
-      unsigned geom8 = rtcNewCurveGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
+      unsigned geom8 = rtcNewBezierCurveGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
       rtcSetUserData(scene,geom8,(void*)9);
-      unsigned geom9 = rtcNewCurveGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 2);
+      unsigned geom9 = rtcNewBezierCurveGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 2);
       rtcSetUserData(scene,geom9,(void*)10);
        unsigned geom10 = rtcNewLineSegments (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
       rtcSetUserData(scene,geom10,(void*)11);
@@ -874,10 +879,10 @@ namespace embree
       case QUAD_MESH_MB     : geomID = rtcNewQuadMesh       (scene, RTC_GEOMETRY_STATIC, 16, 16, 2); break;
       case SUBDIV_MESH      : geomID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC,  0, 16, 16, 0,0,0, 1); break;
       case SUBDIV_MESH_MB   : geomID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC,  0, 16, 16, 0,0,0, 2); break;
-      case HAIR_GEOMETRY    : geomID = rtcNewHairGeometry   (scene, RTC_GEOMETRY_STATIC, 16, 16, 1); break;
-      case HAIR_GEOMETRY_MB : geomID = rtcNewHairGeometry   (scene, RTC_GEOMETRY_STATIC, 16, 16, 2); break;
-      case CURVE_GEOMETRY   : geomID = rtcNewCurveGeometry   (scene, RTC_GEOMETRY_STATIC, 16, 16, 1); break;
-      case CURVE_GEOMETRY_MB: geomID = rtcNewCurveGeometry   (scene, RTC_GEOMETRY_STATIC, 16, 16, 2); break;
+      case HAIR_GEOMETRY    : geomID = rtcNewBezierHairGeometry(scene, RTC_GEOMETRY_STATIC, 16, 16, 1); break;
+      case HAIR_GEOMETRY_MB : geomID = rtcNewBezierHairGeometry(scene, RTC_GEOMETRY_STATIC, 16, 16, 2); break;
+      case CURVE_GEOMETRY   : geomID = rtcNewBezierCurveGeometry   (scene, RTC_GEOMETRY_STATIC, 16, 16, 1); break;
+      case CURVE_GEOMETRY_MB: geomID = rtcNewBezierCurveGeometry   (scene, RTC_GEOMETRY_STATIC, 16, 16, 2); break;
       default               : throw std::runtime_error("unknown geometry type: "+to_string(gtype));
       }
       AssertNoError(device);
@@ -961,10 +966,10 @@ namespace embree
       rtcNewQuadMesh (scene,gflags,0,0,2);
       rtcNewSubdivisionMesh (scene,gflags,0,0,0,0,0,0,1);
       rtcNewSubdivisionMesh (scene,gflags,0,0,0,0,0,0,2);
-      rtcNewHairGeometry (scene,gflags,0,0,1);
-      rtcNewHairGeometry (scene,gflags,0,0,2);
-      rtcNewCurveGeometry (scene,gflags,0,0,1);
-      rtcNewCurveGeometry (scene,gflags,0,0,2);
+      rtcNewBezierHairGeometry (scene,gflags,0,0,1);
+      rtcNewBezierHairGeometry (scene,gflags,0,0,2);
+      rtcNewBezierCurveGeometry (scene,gflags,0,0,1);
+      rtcNewBezierCurveGeometry (scene,gflags,0,0,2);
       rtcNewUserGeometry2 (scene,0,1);
       rtcNewUserGeometry2 (scene,0,2);
       rtcCommit (scene);
@@ -998,8 +1003,8 @@ namespace embree
       scene.addGeometry(gflags,SceneGraph::createQuadSphere(center,radius,50)->set_motion_vector(random_motion_vector(1.0f)));
       scene.addGeometry(gflags,SceneGraph::createSubdivSphere(center,radius,8,20));
       scene.addGeometry(gflags,SceneGraph::createSubdivSphere(center,radius,8,20)->set_motion_vector(random_motion_vector(1.0f)));
-      scene.addGeometry(gflags,SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),center,dx,dy,0.1f,0.01f,100,true));
-      scene.addGeometry(gflags,SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),center,dx,dy,0.1f,0.01f,100,true)->set_motion_vector(random_motion_vector(1.0f)));
+      scene.addGeometry(gflags,SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),center,dx,dy,0.1f,0.01f,100,SceneGraph::HairSetNode::HAIR));
+      scene.addGeometry(gflags,SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),center,dx,dy,0.1f,0.01f,100,SceneGraph::HairSetNode::HAIR)->set_motion_vector(random_motion_vector(1.0f)));
       rtcCommit (scene);
       AssertNoError(device);
 
@@ -1082,11 +1087,11 @@ namespace embree
       subdivmesh2->set_motion_vector(random_motion_vector(1.0f));
       scene.addGeometry(gflags,subdivmesh2.dynamicCast<SceneGraph::Node>());
       
-      Ref<SceneGraph::HairSetNode> hairgeom = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),p,dx,dy,0.2f,0.01f,1,true).dynamicCast<SceneGraph::HairSetNode>();
+      Ref<SceneGraph::HairSetNode> hairgeom = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),p,dx,dy,0.2f,0.01f,1,SceneGraph::HairSetNode::HAIR).dynamicCast<SceneGraph::HairSetNode>();
       for (size_t i=0; i<N; i++) hairgeom->hairs.push_back(hairgeom->hairs.back());
       scene.addGeometry(gflags,hairgeom.dynamicCast<SceneGraph::Node>());
 
-      Ref<SceneGraph::HairSetNode> hairgeom2 = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),p,dx,dy,0.2f,0.01f,1,true)->set_motion_vector(random_motion_vector(1.0f)).dynamicCast<SceneGraph::HairSetNode>();
+      Ref<SceneGraph::HairSetNode> hairgeom2 = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),p,dx,dy,0.2f,0.01f,1,SceneGraph::HairSetNode::HAIR)->set_motion_vector(random_motion_vector(1.0f)).dynamicCast<SceneGraph::HairSetNode>();
       for (size_t i=0; i<N; i++) hairgeom2->hairs.push_back(hairgeom2->hairs.back());
       scene.addGeometry(gflags,hairgeom2.dynamicCast<SceneGraph::Node>());
 
@@ -1152,10 +1157,10 @@ namespace embree
       case SUBDIV_MESH_MB:   mesh = SceneGraph::createSubdivSphere(zero,float(i+1),8,float(numPhi)/8.0f); 
                              NN = 2*8*8; break;
       case HAIR_GEOMETRY:    
-      case HAIR_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi,true); 
+      case HAIR_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi,SceneGraph::HairSetNode::HAIR); 
                              NN = 4*numPhi*numPhi; break;
       case LINE_GEOMETRY:    
-      case LINE_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi/3,true); 
+      case LINE_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi/3,SceneGraph::HairSetNode::HAIR); 
                              NN = (4*numPhi*numPhi/3)*3; break;
       default:               throw std::runtime_error("invalid geometry for benchmark");
       }
@@ -1608,41 +1613,37 @@ namespace embree
       rtcSetBuffer(scene, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER,interpolation_vertex_crease_weights,0, sizeof(float));
       AssertNoError(device);
       
-      float* vertices0 = new float[M];
+      std::vector<float> vertices0(M);
       for (size_t i=0; i<M; i++) vertices0[i] = random_float();
-      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0, 0, N*sizeof(float));
+      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0.data(), 0, N*sizeof(float));
       AssertNoError(device);
       
-      /*float* vertices1 = new float[M];
+      /*std::vector<float> vertices1(M);
         for (size_t i=0; i<M; i++) vertices1[i] = random_float();
-        rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1, 0, N*sizeof(float));
+        rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1.data(), 0, N*sizeof(float));
         AssertNoError(device);*/
       
-      float* user_vertices0 = new float[M];
+      std::vector<float> user_vertices0(M);
       for (size_t i=0; i<M; i++) user_vertices0[i] = random_float();
-      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0, 0, N*sizeof(float));
+      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0.data(), 0, N*sizeof(float));
       AssertNoError(device);
       
-      float* user_vertices1 = new float[M];
+      std::vector<float> user_vertices1(M);
       for (size_t i=0; i<M; i++) user_vertices1[i] = random_float();
-      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1, 0, N*sizeof(float));
+      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1.data(), 0, N*sizeof(float));
       AssertNoError(device);
       
       bool passed = true;
-      passed &= checkSubdivInterpolation(device,scene,geomID,RTC_VERTEX_BUFFER0,vertices0,N,N);
-      //passed &= checkSubdivInterpolation(device,scene,geomID,RTC_VERTEX_BUFFER1,vertices1,N,N);
-      passed &= checkSubdivInterpolation(device,scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,N,N);
-      passed &= checkSubdivInterpolation(device,scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,N,N);
+      passed &= checkSubdivInterpolation(device,scene,geomID,RTC_VERTEX_BUFFER0,vertices0.data(),N,N);
+      //passed &= checkSubdivInterpolation(device,scene,geomID,RTC_VERTEX_BUFFER1,vertices1.data(),N,N);
+      passed &= checkSubdivInterpolation(device,scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),N,N);
+      passed &= checkSubdivInterpolation(device,scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),N,N);
       
-      passed &= checkSubdivInterpolation(device,scene,geomID,RTC_VERTEX_BUFFER0,vertices0,1,N);
-      //passed &= checkSubdivInterpolation(device,scene,geomID,RTC_VERTEX_BUFFER1,vertices1,1,N);
-      passed &= checkSubdivInterpolation(device,scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,1,N);
-      passed &= checkSubdivInterpolation(device,scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,1,N);
+      passed &= checkSubdivInterpolation(device,scene,geomID,RTC_VERTEX_BUFFER0,vertices0.data(),1,N);
+      //passed &= checkSubdivInterpolation(device,scene,geomID,RTC_VERTEX_BUFFER1,vertices1.data(),1,N);
+      passed &= checkSubdivInterpolation(device,scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),1,N);
+      passed &= checkSubdivInterpolation(device,scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),1,N);
       
-      delete[] vertices0;
-      //delete[] vertices1;
-      delete[] user_vertices0;
-      delete[] user_vertices1;
       AssertNoError(device);
 
       return (VerifyApplication::TestReturnValue) passed;
@@ -1698,24 +1699,24 @@ namespace embree
       rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  interpolation_triangle_indices , 0, 3*sizeof(unsigned int));
       AssertNoError(device);
       
-      float* vertices0 = new float[M];
+      std::vector<float> vertices0(M);
       for (size_t i=0; i<M; i++) vertices0[i] = random_float();
-      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0, 0, N*sizeof(float));
+      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0.data(), 0, N*sizeof(float));
       AssertNoError(device);
       
-      /*float* vertices1 = new float[M];
+      /*std::vector<float> vertices1(M);
         for (size_t i=0; i<M; i++) vertices1[i] = random_float();
-        rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1, 0, N*sizeof(float));
+        rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1.data(), 0, N*sizeof(float));
         AssertNoError(device);*/
       
-      float* user_vertices0 = new float[M];
+      std::vector<float> user_vertices0(M);
       for (size_t i=0; i<M; i++) user_vertices0[i] = random_float();
-      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0, 0, N*sizeof(float));
+      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0.data(), 0, N*sizeof(float));
       AssertNoError(device);
       
-      float* user_vertices1 = new float[M];
+      std::vector<float> user_vertices1(M);
       for (size_t i=0; i<M; i++) user_vertices1[i] = random_float();
-      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1, 0, N*sizeof(float));
+      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1.data(), 0, N*sizeof(float));
       AssertNoError(device);
       
       rtcDisable(scene,geomID);
@@ -1724,20 +1725,16 @@ namespace embree
       AssertNoError(device);
       
       bool passed = true;
-      passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,N,N);
-      //passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,N,N);
-      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,N,N);
-      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,N,N);
+      passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0.data(),N,N);
+      //passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1.data(),N,N);
+      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),N,N);
+      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),N,N);
       
-      passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,1,N);
-      //passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,1,N);
-      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,1,N);
-      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,1,N);
+      passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0.data(),1,N);
+      //passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1.data(),1,N);
+      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),1,N);
+      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),1,N);
       
-      delete[] vertices0;
-      //delete[] vertices1;
-      delete[] user_vertices0;
-      delete[] user_vertices1;
       AssertNoError(device);
 
       return (VerifyApplication::TestReturnValue) passed;
@@ -1801,30 +1798,30 @@ namespace embree
       
       RTCSceneRef scene = rtcDeviceNewScene(device,RTC_SCENE_DYNAMIC,RTC_INTERPOLATE);
       AssertNoError(device);
-      unsigned int geomID = rtcNewHairGeometry(scene, RTC_GEOMETRY_STATIC, num_interpolation_hairs, num_interpolation_hair_vertices, 1);
+      unsigned int geomID = rtcNewBezierHairGeometry(scene, RTC_GEOMETRY_STATIC, num_interpolation_hairs, num_interpolation_hair_vertices, 1);
       AssertNoError(device);
       
       rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  interpolation_hair_indices , 0, sizeof(unsigned int));
       AssertNoError(device);
       
-      float* vertices0 = new float[M];
+      std::vector<float> vertices0(M);
       for (size_t i=0; i<M; i++) vertices0[i] = random_float();
-      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0, 0, N*sizeof(float));
+      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0.data(), 0, N*sizeof(float));
       AssertNoError(device);
       
-      /*float* vertices1 = new float[M];
+      /*std::vector<float> vertices1(M);
         for (size_t i=0; i<M; i++) vertices1[i] = random_float();
-        rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1, 0, N*sizeof(float));
+        rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1.data(), 0, N*sizeof(float));
         AssertNoError(device);*/
       
-      float* user_vertices0 = new float[M];
+      std::vector<float> user_vertices0(M);
       for (size_t i=0; i<M; i++) user_vertices0[i] = random_float();
-      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0, 0, N*sizeof(float));
+      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0.data(), 0, N*sizeof(float));
       AssertNoError(device);
       
-      float* user_vertices1 = new float[M];
+      std::vector<float> user_vertices1(M);
       for (size_t i=0; i<M; i++) user_vertices1[i] = random_float();
-      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1, 0, N*sizeof(float));
+      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1.data(), 0, N*sizeof(float));
       AssertNoError(device);
       
       rtcDisable(scene,geomID);
@@ -1833,20 +1830,16 @@ namespace embree
       AssertNoError(device);
       
       bool passed = true;
-      passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,N,N);
-      //passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,N,N);
-      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,N,N);
-      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,N,N);
+      passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0.data(),N,N);
+      //passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1.data(),N,N);
+      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),N,N);
+      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),N,N);
       
-      passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,1,N);
-      //passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,1,N);
-      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,1,N);
-      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,1,N);
+      passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0.data(),1,N);
+      //passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1.data(),1,N);
+      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0.data(),1,N);
+      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1.data(),1,N);
       
-      delete[] vertices0;
-      //delete[] vertices1;
-      delete[] user_vertices0;
-      delete[] user_vertices1;
       AssertNoError(device);
 
       return (VerifyApplication::TestReturnValue) passed;
@@ -2816,7 +2809,7 @@ namespace embree
       task->scene = new VerifyScene(thread->device,sflag,aflags_all);
       if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
       if (task->cancelBuild) rtcSetProgressMonitorFunction(*task->scene,monitorProgressFunction,nullptr);
-      avector<Sphere*> spheres;
+      std::vector<std::unique_ptr<Sphere>> spheres;
       
       for (unsigned int j=0; j<10; j++) 
       {
@@ -2843,8 +2836,10 @@ namespace embree
 	case 7: task->scene->addHair  (task->sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,task->test->random_motion_vector(1.0f)); break; 
 
         case 8: {
-	  Sphere* sphere = new Sphere(pos,2.0f); spheres.push_back(sphere); 
-	  task->scene->addUserGeometryEmpty(task->sampler,RTC_GEOMETRY_STATIC,sphere); break;
+	  std::unique_ptr<Sphere> sphere(new Sphere(pos,2.0f));  
+	  task->scene->addUserGeometryEmpty(task->sampler,RTC_GEOMETRY_STATIC,sphere.get());
+          spheres.push_back(std::move(sphere));
+          break;
         }
 	}
         //if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
@@ -2883,10 +2878,7 @@ namespace embree
 	task->barrier.wait();
 
       task->scene = nullptr;
-      if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
-
-      for (size_t i=0; i<spheres.size(); i++)
-	delete spheres[i];
+      if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;
     }
 
     delete thread; thread = nullptr;
@@ -3728,9 +3720,9 @@ namespace embree
         case SUBDIV_MESH:      
         case SUBDIV_MESH_MB:   geometries.push_back(SceneGraph::createSubdivSphere(zero,float(i+1),8,float(numPhi)/8.0f)); break;
         case HAIR_GEOMETRY:    
-        case HAIR_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi,true)); break;
+        case HAIR_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi,SceneGraph::HairSetNode::HAIR)); break;
         case LINE_GEOMETRY: 
-        case LINE_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi/3,true)); break;
+        case LINE_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi/3,SceneGraph::HairSetNode::HAIR)); break;
         default:               throw std::runtime_error("invalid geometry for benchmark");
         }
 

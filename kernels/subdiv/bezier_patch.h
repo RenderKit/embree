@@ -44,47 +44,6 @@ namespace embree
     return S(3.0f)*(v1_2-v0_2);
   }
 
-  class BezierBasis
-  {
-  public:
-
-    template<class T>
-      static __forceinline Vec4<T>  eval(const T& uu)
-    {
-      const T t  =  uu;
-      const T s  = 1.0f - t;
-      const T n0 = s * s * s;
-      const T n1 = 3.0f * (s * t * s);
-      const T n2 = 3.0f * (t * s * t);
-      const T n3 = t * t * t;
-      return Vec4<T>(n0,n1,n2,n3);
-    }
-    
-    template<class T>
-      static __forceinline Vec4<T>  derivative(const T& u)
-    {
-      const T t  = u;
-      const T s  = 1.0f - u;
-      const T n0 = -3.0f*(s*s);
-      const T n1 = madd(-6.0f,s*t,3.0f*(s*s));
-      const T n2 = msub(+6.0f,s*t,3.0f*(t*t));
-      const T n3 = 3.0f*(t*t);
-      return Vec4<T>(n0,n1,n2,n3);
-    }
-
-    template<class T>
-      static __forceinline Vec4<T>  derivative2(const T& u)
-    {
-      const T t1 = u;
-      const T t0 = 1.0f - t1;
-      const T n0 = 6.0f*t0;
-      const T n1 = msub(6.0f,t1,12.0f*t0);
-      const T n2 = msub(6.0f,t0,12.0f*t1);
-      const T n3 = 6.0f*t1;
-      return Vec4<T>(n0,n1,n2,n3);
-    }
-  };
-
   template<typename Vertex>
     __forceinline Vertex computeInnerBezierControlPoint(const Vertex v[4][4], const size_t y, const size_t x) {
     return 1.0f / 36.0f * (16.0f * v[y][x] + 4.0f * (v[y-1][x] +  v[y+1][x] + v[y][x-1] + v[y][x+1]) + (v[y-1][x-1] + v[y+1][x+1] + v[y-1][x+1] + v[y+1][x-1]));

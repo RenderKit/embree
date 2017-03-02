@@ -574,19 +574,31 @@ namespace embree
       }
 
       size_t getUsedBytes() const {
-	return getBlockUsedBytes() + (next ? next->getUsedBytes() : 0);
+        size_t bytes = 0;
+        for (const Block* block = this; block; block = block->next)
+          bytes += block->getBlockUsedBytes();
+        return bytes;
       }
 
       size_t getAllocatedBytes() const {
-	return getBlockAllocatedBytes() + (next ? next->getAllocatedBytes() : 0);
+        size_t bytes = 0;
+        for (const Block* block = this; block; block = block->next)
+          bytes += block->getBlockAllocatedBytes();
+        return bytes;
       }
 
       size_t getReservedBytes() const {
-	return getBlockReservedBytes() + (next ? next->getReservedBytes() : 0);
+        size_t bytes = 0;
+        for (const Block* block = this; block; block = block->next)
+          bytes += block->getBlockReservedBytes();
+        return bytes;
       }
 
       size_t getFreeBytes() const {
-	return getBlockFreeBytes() + (next ? next->getFreeBytes() : 0);
+        size_t bytes = 0;
+        for (const Block* block = this; block; block = block->next)
+          bytes += block->getBlockFreeBytes();
+        return bytes;
       }
 
       void print() const {

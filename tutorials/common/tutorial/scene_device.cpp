@@ -136,8 +136,8 @@ namespace embree
     delete[] positions;
   }
   
-  ISPCHairSet::ISPCHairSet (TutorialScene* scene_in, bool hair, Ref<SceneGraph::HairSetNode> in) 
-    : geom(hair ? HAIR_SET : CURVES)
+  ISPCHairSet::ISPCHairSet (TutorialScene* scene_in, SceneGraph::HairSetNode::Type type, SceneGraph::HairSetNode::Basis basis, Ref<SceneGraph::HairSetNode> in) 
+    : geom(type == SceneGraph::HairSetNode::HAIR ? HAIR_SET : CURVES), basis(basis == SceneGraph::HairSetNode::BEZIER ? BEZIER_BASIS : BSPLINE_BASIS)
   {
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
@@ -194,7 +194,7 @@ namespace embree
     else if (Ref<SceneGraph::LineSegmentsNode> mesh = in.dynamicCast<SceneGraph::LineSegmentsNode>())
       return (ISPCGeometry*) new ISPCLineSegments(scene,mesh);
     else if (Ref<SceneGraph::HairSetNode> mesh = in.dynamicCast<SceneGraph::HairSetNode>())
-      return (ISPCGeometry*) new ISPCHairSet(scene,mesh->hair,mesh);
+      return (ISPCGeometry*) new ISPCHairSet(scene,mesh->type,mesh->basis,mesh);
     else if (Ref<SceneGraph::TransformNode> mesh = in.dynamicCast<SceneGraph::TransformNode>())
       return (ISPCGeometry*) ISPCInstance::create(scene,mesh);
     else if (Ref<SceneGraph::GroupNode> mesh = in.dynamicCast<SceneGraph::GroupNode>())
@@ -286,7 +286,10 @@ namespace embree
   
   unsigned int ConvertHairSet(ISPCHairSet* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
   {
-    unsigned int geomID = rtcNewHairGeometry (scene_out, gflags, mesh->numHairs, mesh->numVertices, mesh->numTimeSteps);
+    unsigned int geomID = mesh->basis == BEZIER_BASIS ?
+      rtcNewBezierHairGeometry  (scene_out, gflags, mesh->numHairs, mesh->numVertices, mesh->numTimeSteps) :
+      rtcNewBSplineHairGeometry (scene_out, gflags, mesh->numHairs, mesh->numVertices, mesh->numTimeSteps);
+
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t), mesh->positions[t],0,sizeof(Vec3fa));
     }
@@ -299,7 +302,10 @@ namespace embree
   
   unsigned int ConvertCurveGeometry(ISPCHairSet* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
   {
-    unsigned int geomID = rtcNewCurveGeometry (scene_out, gflags, mesh->numHairs, mesh->numVertices, mesh->numTimeSteps);
+    unsigned int geomID = mesh->basis == BEZIER_BASIS ?
+      rtcNewBezierCurveGeometry  (scene_out, gflags, mesh->numHairs, mesh->numVertices, mesh->numTimeSteps) :
+      rtcNewBSplineCurveGeometry (scene_out, gflags, mesh->numHairs, mesh->numVertices, mesh->numTimeSteps);
+
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t), mesh->positions[t],0,sizeof(Vec3fa));
     }

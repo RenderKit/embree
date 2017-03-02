@@ -641,7 +641,7 @@ namespace embree
 #endif
 
 #if defined(EMBREE_GEOMETRY_HAIR)
-  unsigned Scene::newBezierCurves (BezierCurves::SubType subtype, RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
+  unsigned Scene::newCurves (NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
@@ -653,7 +653,18 @@ namespace embree
       return -1;
     }
     
-    Geometry* geom = new BezierCurves(this,subtype,gflags,numCurves,numVertices,numTimeSteps);
+    Geometry* geom = nullptr;
+#if EMBREE_NATIVE_CURVE_BSPLINE
+    switch (basis) {
+    case NativeCurves::BEZIER : geom = new CurvesBezier(this,subtype,basis,gflags,numCurves,numVertices,numTimeSteps); break;
+    case NativeCurves::BSPLINE: geom = new NativeCurves(this,subtype,basis,gflags,numCurves,numVertices,numTimeSteps); break;
+    }
+#else
+    switch (basis) {
+    case NativeCurves::BEZIER : geom = new NativeCurves (this,subtype,basis,gflags,numCurves,numVertices,numTimeSteps); break;
+    case NativeCurves::BSPLINE: geom = new CurvesBSpline(this,subtype,basis,gflags,numCurves,numVertices,numTimeSteps); break;
+    }
+#endif
     return geom->id;
   }
 #endif
@@ -732,6 +743,11 @@ namespace embree
   void Scene::commit_task ()
   {
     progress_monitor_counter = 0;
+
+    /* build geometry specific stuff */
+    parallel_for(geometries.size(), [&] ( const size_t i ) {
+        if (geometries[i]) geometries[i]->commit();
+      });
 
     /* select fast code path if no intersection filter is present */
     accels.select(numIntersectionFiltersN+numIntersectionFilters4,

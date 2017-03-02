@@ -200,10 +200,10 @@ uniform unsigned int addCurveOrHair (RTCScene scene, const uniform Vec3f& pos, b
 {
   uniform unsigned int geomID = 0;
   if (curve) 
-    geomID = rtcNewCurveGeometry (scene, RTC_GEOMETRY_STATIC, 13, 4*13, num_time_steps);
+    geomID = rtcNewBezierCurveGeometry (scene, RTC_GEOMETRY_STATIC, 13, 4*13, num_time_steps);
   else 
   {
-    geomID = rtcNewHairGeometry (scene, RTC_GEOMETRY_STATIC, 13, 4*13, num_time_steps);
+    geomID = rtcNewBezierHairGeometry (scene, RTC_GEOMETRY_STATIC, 13, 4*13, num_time_steps);
     rtcSetTessellationRate (scene,geomID,16.0f);
   }
 
