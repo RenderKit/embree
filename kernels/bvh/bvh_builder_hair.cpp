@@ -76,7 +76,7 @@ namespace embree
           {
             size_t start = set.begin();
             size_t items = set.size();
-            Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive));
+            Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteAlignment);
             for (size_t i=0; i<items; i++) {
               accel[i].fill(prims.data(),start,set.end(),bvh->scene);
             }
@@ -205,7 +205,7 @@ namespace embree
             {
               size_t items = pinfo.size();
               size_t start = pinfo.begin();
-              Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive));
+              Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteAlignment);
               NodeRef node = bvh->encodeLeaf((char*)accel,items);
               for (size_t i=0; i<items; i++) {
                 accel[i].fill(prims.data(),start,pinfo.end(),bvh->scene);
