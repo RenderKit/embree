@@ -26,6 +26,7 @@
 #define VERTEX_INTERPOLATION_BLOCK_SIZE 1024
 
 extern uniform ISPCScene* uniform g_ispc_scene;
+extern uniform RTCIntersectFlags g_iflags;
 
 /* scene data */
 uniform RTCDevice g_device = NULL;
@@ -345,7 +346,7 @@ void renderTileStandard(uniform int taskIndex,
   }
 
   uniform RTCIntersectContext context;
-  context.flags = RTC_INTERSECT_COHERENT;
+  context.flags = g_iflags;
 
   /* trace stream of rays */
   rtcIntersectVM(g_scene,&context,rays,N,sizeof(RTCRay));
@@ -412,7 +413,7 @@ void renderTileStandard(uniform int taskIndex,
         }
         /* trace shadow rays */
         rtcOccludedVM(g_scene,&context,rays,N,sizeof(RTCRay));
-
+        
         /* modify pixel color based on occlusion */
         for (uniform size_t n=0;n<N;n++)
           if (rays[n].geomID != RTC_INVALID_GEOMETRY_ID)

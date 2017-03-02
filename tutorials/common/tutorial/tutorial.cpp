@@ -55,7 +55,11 @@ namespace embree
     int64_t get_tsc() { return read_tsc(); }
 
     unsigned int g_numThreads = 0;
+
+    RTCIntersectFlags g_iflags = RTC_INTERSECT_INCOHERENT;
   }
+
+  extern "C" int g_instancing_mode;
 
   TutorialApplication* TutorialApplication::instance = nullptr; 
 
@@ -237,7 +241,8 @@ namespace embree
       convert_bspline_to_bezier(false),
       sceneFilename(""),
       instancing_mode(SceneGraph::INSTANCING_NONE),
-      print_scene_cameras(false)
+      print_scene_cameras(false),
+      iflags(RTC_INTERSECT_INCOHERENT)
   {
     registerOption("i", [this] (Ref<ParseStream> cin, const FileName& path) {
         sceneFilename = path + cin->getFileName();
@@ -290,6 +295,7 @@ namespace embree
         else if (mode == "scene_geometry") instancing_mode = SceneGraph::INSTANCING_SCENE_GEOMETRY;
         else if (mode == "scene_group"   ) instancing_mode = SceneGraph::INSTANCING_SCENE_GROUP;
         else throw std::runtime_error("unknown instancing mode: "+mode);
+        g_instancing_mode = instancing_mode;
       }, "--instancing: set instancing mode\n"
       "  none: no instancing\n"
       "  geometry: instance individual geometries\n"
@@ -409,6 +415,14 @@ namespace embree
     registerOption("camera", [this] (Ref<ParseStream> cin, const FileName& path) {
         camera_name = cin->getString();
       }, "--camera: use camera with specified name");    
+    
+    registerOption("coherent", [this] (Ref<ParseStream> cin, const FileName& path) {
+        g_iflags = iflags = RTC_INTERSECT_COHERENT;
+      }, "--coherent: use RTC_INTERSECT_COHERENT hint when tracing rays");
+    
+    registerOption("incoherent", [this] (Ref<ParseStream> cin, const FileName& path) {
+        g_iflags = iflags = RTC_INTERSECT_INCOHERENT;
+      }, "--coherent: use RTC_INTERSECT_INCOHERENT hint when tracing rays");
   }
 
   void TutorialApplication::renderBenchmark()

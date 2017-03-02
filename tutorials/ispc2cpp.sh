@@ -109,6 +109,7 @@ sed -i.backup  's/rtcIntersectEx/rtcIntersect1Ex/g' $2
 
 sed -i.backup  's/rtcIntersectVM/rtcIntersect1M/g' $2
 sed -i.backup  's/rtcOccludedVM/rtcOccluded1M/g' $2
+sed -i.backup  's/rtcOccludedEx/rtcOccluded1Ex/g' $2
 
 sed -i.backup  's/Texture_FLOAT32/Texture::FLOAT32/g' $2
 sed -i.backup  's/Texture_RGBA8/Texture::RGBA8/g' $2

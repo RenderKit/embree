@@ -18,24 +18,10 @@
 
 namespace embree
 {
-  extern "C" int g_instancing_mode;
-  extern "C" { RTCIntersectFlags g_iflags; }
-
   struct Tutorial : public SceneLoadingTutorialApplication
   {
-    RTCIntersectFlags iflags;
-    
     Tutorial()
-      : SceneLoadingTutorialApplication("viewer",FEATURE_RTCORE), iflags(RTC_INTERSECT_INCOHERENT) 
-    {
-      registerOption("coherent", [this] (Ref<ParseStream> cin, const FileName& path) {
-          iflags = RTC_INTERSECT_COHERENT;
-        }, "--coherent: use RTC_INTERSECT_COHERENT hint when tracing rays");
-    
-      registerOption("incoherent", [this] (Ref<ParseStream> cin, const FileName& path) {
-          iflags = RTC_INTERSECT_INCOHERENT;
-        }, "--coherent: use RTC_INTERSECT_INCOHERENT hint when tracing rays");
-    }
+      : SceneLoadingTutorialApplication("viewer",FEATURE_RTCORE) {}
     
     void postParseCommandLine() 
     {
@@ -44,9 +30,6 @@ namespace embree
         FileName file = FileName::executableFolder() + FileName("models/cornell_box.ecs");
         parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path());
       }
-      
-      g_instancing_mode = instancing_mode;
-      g_iflags = iflags;
     }
   };
 }

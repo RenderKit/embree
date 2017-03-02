@@ -652,11 +652,11 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
 
-  RTCORE_API void rtcOccludedEx (RTCScene hscene, const RTCIntersectContext* user_context, RTCRay& ray) 
+  RTCORE_API void rtcOccluded1Ex (RTCScene hscene, const RTCIntersectContext* user_context, RTCRay& ray) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcOccludedEx);
+    RTCORE_TRACE(rtcOccluded1Ex);
     STAT3(shadow.travs,1,1,1);
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);

@@ -178,5 +178,6 @@ namespace embree
     std::string subdiv_mode;
     bool print_scene_cameras;
     std::string camera_name;
+    RTCIntersectFlags iflags;
   };
 }
