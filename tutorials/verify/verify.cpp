@@ -220,7 +220,12 @@ namespace embree
       }
       else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>())
       {
-        unsigned int geomID = rtcNewHairGeometry (scene, gflag, mesh->hairs.size(), mesh->numVertices(), mesh->numTimeSteps());
+        unsigned int geomID = 0;
+        switch (mesh->basis) {
+        case SceneGraph::HairSetNode::BEZIER : geomID = rtcNewBezierHairGeometry (scene, gflag, mesh->hairs.size(), mesh->numVertices(), mesh->numTimeSteps()); break;
+        case SceneGraph::HairSetNode::BSPLINE: geomID = rtcNewBSplineHairGeometry (scene, gflag, mesh->hairs.size(), mesh->numVertices(), mesh->numTimeSteps()); break;
+        default: assert(false);
+        }
         for (size_t t=0; t<mesh->numTimeSteps(); t++)
           rtcSetBuffer(scene,geomID,RTCBufferType(RTC_VERTEX_BUFFER0+t),mesh->positions[t].data(),0,sizeof(SceneGraph::HairSetNode::Vertex));
         rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,mesh->hairs.data(),0,sizeof(SceneGraph::HairSetNode::Hair));
@@ -678,7 +683,7 @@ namespace embree
       AssertNoError(device);
       rtcNewTriangleMesh (scene, geomFlags, 0, 0);
       AssertNoError(device);
-      rtcNewHairGeometry (scene, geomFlags, 0, 0);
+      rtcNewBezierHairGeometry (scene, geomFlags, 0, 0);
       AssertNoError(device);
       rtcCommit (scene);
       AssertNoError(device);
@@ -812,13 +817,13 @@ namespace embree
       rtcSetUserData(scene,geom4,(void*)5);
       unsigned geom5 = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, 0, 0, 0, 0, 0, 0, 2);
       rtcSetUserData(scene,geom5,(void*)6);
-      unsigned geom6 = rtcNewHairGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
+      unsigned geom6 = rtcNewBezierHairGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
       rtcSetUserData(scene,geom6,(void*)7);
-      unsigned geom7 = rtcNewHairGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 2);
+      unsigned geom7 = rtcNewBezierHairGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 2);
       rtcSetUserData(scene,geom7,(void*)8);
-      unsigned geom8 = rtcNewCurveGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
+      unsigned geom8 = rtcNewBezierCurveGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
       rtcSetUserData(scene,geom8,(void*)9);
-      unsigned geom9 = rtcNewCurveGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 2);
+      unsigned geom9 = rtcNewBezierCurveGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 2);
       rtcSetUserData(scene,geom9,(void*)10);
        unsigned geom10 = rtcNewLineSegments (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
       rtcSetUserData(scene,geom10,(void*)11);
@@ -874,10 +879,10 @@ namespace embree
       case QUAD_MESH_MB     : geomID = rtcNewQuadMesh       (scene, RTC_GEOMETRY_STATIC, 16, 16, 2); break;
       case SUBDIV_MESH      : geomID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC,  0, 16, 16, 0,0,0, 1); break;
       case SUBDIV_MESH_MB   : geomID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC,  0, 16, 16, 0,0,0, 2); break;
-      case HAIR_GEOMETRY    : geomID = rtcNewHairGeometry   (scene, RTC_GEOMETRY_STATIC, 16, 16, 1); break;
-      case HAIR_GEOMETRY_MB : geomID = rtcNewHairGeometry   (scene, RTC_GEOMETRY_STATIC, 16, 16, 2); break;
-      case CURVE_GEOMETRY   : geomID = rtcNewCurveGeometry   (scene, RTC_GEOMETRY_STATIC, 16, 16, 1); break;
-      case CURVE_GEOMETRY_MB: geomID = rtcNewCurveGeometry   (scene, RTC_GEOMETRY_STATIC, 16, 16, 2); break;
+      case HAIR_GEOMETRY    : geomID = rtcNewBezierHairGeometry(scene, RTC_GEOMETRY_STATIC, 16, 16, 1); break;
+      case HAIR_GEOMETRY_MB : geomID = rtcNewBezierHairGeometry(scene, RTC_GEOMETRY_STATIC, 16, 16, 2); break;
+      case CURVE_GEOMETRY   : geomID = rtcNewBezierCurveGeometry   (scene, RTC_GEOMETRY_STATIC, 16, 16, 1); break;
+      case CURVE_GEOMETRY_MB: geomID = rtcNewBezierCurveGeometry   (scene, RTC_GEOMETRY_STATIC, 16, 16, 2); break;
       default               : throw std::runtime_error("unknown geometry type: "+to_string(gtype));
       }
       AssertNoError(device);
@@ -961,10 +966,10 @@ namespace embree
       rtcNewQuadMesh (scene,gflags,0,0,2);
       rtcNewSubdivisionMesh (scene,gflags,0,0,0,0,0,0,1);
       rtcNewSubdivisionMesh (scene,gflags,0,0,0,0,0,0,2);
-      rtcNewHairGeometry (scene,gflags,0,0,1);
-      rtcNewHairGeometry (scene,gflags,0,0,2);
-      rtcNewCurveGeometry (scene,gflags,0,0,1);
-      rtcNewCurveGeometry (scene,gflags,0,0,2);
+      rtcNewBezierHairGeometry (scene,gflags,0,0,1);
+      rtcNewBezierHairGeometry (scene,gflags,0,0,2);
+      rtcNewBezierCurveGeometry (scene,gflags,0,0,1);
+      rtcNewBezierCurveGeometry (scene,gflags,0,0,2);
       rtcNewUserGeometry2 (scene,0,1);
       rtcNewUserGeometry2 (scene,0,2);
       rtcCommit (scene);
@@ -1793,7 +1798,7 @@ namespace embree
       
       RTCSceneRef scene = rtcDeviceNewScene(device,RTC_SCENE_DYNAMIC,RTC_INTERPOLATE);
       AssertNoError(device);
-      unsigned int geomID = rtcNewHairGeometry(scene, RTC_GEOMETRY_STATIC, num_interpolation_hairs, num_interpolation_hair_vertices, 1);
+      unsigned int geomID = rtcNewBezierHairGeometry(scene, RTC_GEOMETRY_STATIC, num_interpolation_hairs, num_interpolation_hair_vertices, 1);
       AssertNoError(device);
       
       rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  interpolation_hair_indices , 0, sizeof(unsigned int));

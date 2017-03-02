@@ -287,7 +287,7 @@ namespace embree
   unsigned int ConvertHairSet(ISPCHairSet* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
   {
     unsigned int geomID = mesh->basis == BEZIER_BASIS ?
-      rtcNewHairGeometry        (scene_out, gflags, mesh->numHairs, mesh->numVertices, mesh->numTimeSteps) :
+      rtcNewBezierHairGeometry  (scene_out, gflags, mesh->numHairs, mesh->numVertices, mesh->numTimeSteps) :
       rtcNewBSplineHairGeometry (scene_out, gflags, mesh->numHairs, mesh->numVertices, mesh->numTimeSteps);
 
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
@@ -303,7 +303,7 @@ namespace embree
   unsigned int ConvertCurveGeometry(ISPCHairSet* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
   {
     unsigned int geomID = mesh->basis == BEZIER_BASIS ?
-      rtcNewCurveGeometry        (scene_out, gflags, mesh->numHairs, mesh->numVertices, mesh->numTimeSteps) :
+      rtcNewBezierCurveGeometry  (scene_out, gflags, mesh->numHairs, mesh->numVertices, mesh->numTimeSteps) :
       rtcNewBSplineCurveGeometry (scene_out, gflags, mesh->numHairs, mesh->numVertices, mesh->numTimeSteps);
 
     for (size_t t=0; t<mesh->numTimeSteps; t++) {

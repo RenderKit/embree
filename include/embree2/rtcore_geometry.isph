@@ -324,6 +324,30 @@ RTCORE_DEPRECATED uniform unsigned int rtcNewHairGeometry (RTCScene scene,      
   );
 
 /*! \brief Creates a new hair geometry, consisting of multiple hairs
+  represented as cubic bezier curves with varying radii. The number
+  of curves (numCurves), number of vertices (numVertices), and number
+  of time steps have to get specified at construction time. Further,
+  the curve index buffer (RTC_INDEX_BUFFER) and the curve vertex
+  buffer (RTC_VERTEX_BUFFER) have to get set by mapping and writing to
+  the appropiate buffers. In case of motion blur, multiple vertex
+  buffers have to get filled (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1,
+  etc.), one for each time step. The index buffer has the default
+  layout of a single 32 bit integer index for each curve, that
+  references the start vertex of the curve. The vertex buffer stores 4
+  control points per curve, each such control point consists of a
+  single precision (x,y,z) position and radius, stored in that order
+  in memory. Individual hairs are considered to be subpixel sized
+  which allows the implementation to approximate the intersection
+  calculation. This in particular means that zooming onto one hair
+  might show geometric artefacts. */
+RTCORE_API uniform unsigned int rtcNewBezierHairGeometry (RTCScene scene,                    //!< the scene the curves belong to
+                                                          uniform RTCGeometryFlags flags,    //!< geometry flags
+                                                          uniform size_t numCurves,          //!< number of curves
+                                                          uniform size_t numVertices,        //!< number of vertices
+                                                          uniform size_t numTimeSteps = 1    //!< number of motion blur time steps
+  );
+
+/*! \brief Creates a new hair geometry, consisting of multiple hairs
   represented as cubic bspline curves with varying radii. The number
   of curves (numCurves), number of vertices (numVertices), and number
   of time steps have to get specified at construction time. Further,
@@ -340,7 +364,7 @@ RTCORE_DEPRECATED uniform unsigned int rtcNewHairGeometry (RTCScene scene,      
   which allows the implementation to approximate the intersection
   calculation. This in particular means that zooming onto one hair
   might show geometric artefacts. */
-RTCORE_API uniform unsigned int rtcBSplineNewHairGeometry (RTCScene scene,                    //!< the scene the curves belong to
+RTCORE_API uniform unsigned int rtcNewBSplineHairGeometry (RTCScene scene,                    //!< the scene the curves belong to
                                                            uniform RTCGeometryFlags flags,    //!< geometry flags
                                                            uniform size_t numCurves,          //!< number of curves
                                                            uniform size_t numVertices,        //!< number of vertices
@@ -370,6 +394,28 @@ RTCORE_DEPRECATED uniform unsigned int rtcNewCurveGeometry (RTCScene scene,     
   );
 
 /*! \brief Creates a new curve geometry, consisting of multiple curves
+  represented as cubic bezier curves with varying radii. The
+  intersected surface is defined as the sweep of a varying radius
+  circle perpendicular along the curve. The number of curves
+  (numCurves), number of vertices (numVertices), and number of time
+  steps have to get specified at construction time. Further, the curve
+  index buffer (RTC_INDEX_BUFFER) and the curve vertex buffer
+  (RTC_VERTEX_BUFFER) have to get set by mapping and writing to the
+  appropiate buffers. In case of motion blur, multiple vertex buffers
+  have to get filled (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1, etc.),
+  one for each time step. The index buffer has the default layout of a
+  single 32 bit integer index for each curve, that references the
+  start vertex of the curve. The vertex buffer stores 4 control points
+  per curve, each such control point consists of a single precision
+  (x,y,z) position and radius, stored in that order in memory. */
+RTCORE_API uniform unsigned int rtcNewBezierCurveGeometry (RTCScene scene,                    //!< the scene the curves belong to
+                                                           uniform RTCGeometryFlags flags,    //!< geometry flags
+                                                           uniform size_t numCurves,          //!< number of curves
+                                                           uniform size_t numVertices,        //!< number of vertices
+                                                           uniform size_t numTimeSteps = 1    //!< number of motion blur time steps
+  );
+
+/*! \brief Creates a new curve geometry, consisting of multiple curves
   represented as cubic bspline curves with varying radii. The
   intersected surface is defined as the sweep of a varying radius
   circle perpendicular along the curve. The number of curves
@@ -384,11 +430,11 @@ RTCORE_DEPRECATED uniform unsigned int rtcNewCurveGeometry (RTCScene scene,     
   start vertex of the curve. The vertex buffer stores 4 control points
   per curve, each such control point consists of a single precision
   (x,y,z) position and radius, stored in that order in memory. */
-uniform unsigned int rtcNewBSplineCurveGeometry (RTCScene scene,                    //!< the scene the curves belong to
-                                                 uniform RTCGeometryFlags flags,    //!< geometry flags
-                                                 uniform size_t numCurves,          //!< number of curves
-                                                 uniform size_t numVertices,        //!< number of vertices
-                                                 uniform size_t numTimeSteps = 1    //!< number of motion blur time steps
+RTCORE_API uniform unsigned int rtcNewBSplineCurveGeometry (RTCScene scene,                    //!< the scene the curves belong to
+                                                            uniform RTCGeometryFlags flags,    //!< geometry flags
+                                                            uniform size_t numCurves,          //!< number of curves
+                                                            uniform size_t numVertices,        //!< number of vertices
+                                                            uniform size_t numTimeSteps = 1    //!< number of motion blur time steps
   );
 
 /*! Sets a uniform tessellation rate for subdiv meshes and hair
