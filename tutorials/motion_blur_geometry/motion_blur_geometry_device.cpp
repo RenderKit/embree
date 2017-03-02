@@ -202,10 +202,10 @@ unsigned int addCurveOrHair (RTCScene scene, const Vec3fa& pos, bool curve, unsi
 {
   unsigned int geomID = 0;
   if (curve) 
-    geomID = rtcNewBezierCurveGeometry (scene, RTC_GEOMETRY_STATIC, 13, 4*13, num_time_steps);
+    geomID = rtcNewBSplineCurveGeometry (scene, RTC_GEOMETRY_STATIC, 13, 16, num_time_steps);
   else 
   {
-    geomID = rtcNewBezierHairGeometry (scene, RTC_GEOMETRY_STATIC, 13, 4*13, num_time_steps);
+    geomID = rtcNewBSplineHairGeometry (scene, RTC_GEOMETRY_STATIC, 13, 16, num_time_steps);
     rtcSetTessellationRate (scene,geomID,16.0f);
   }
 
@@ -213,13 +213,6 @@ unsigned int addCurveOrHair (RTCScene scene, const Vec3fa& pos, bool curve, unsi
   for (int i=0; i<16; i++) {
     float f = (float)(i)/16.0f;
     bspline[i] = Vec3fa(2.0f*f-1.0f,sin(12.0f*f),cos(12.0f*f));
-  }
-  Vec3fa* bezier = (Vec3fa*) alignedMalloc(4*13*sizeof(Vec3fa));
-  for (int i=0; i<13; i++) {
-    bezier[4*i+0] = (1.0f/6.0f)*bspline[i+0] + (2.0f/3.0f)*bspline[i+1] + (1.0f/6.0f)*bspline[i+2];
-    bezier[4*i+1] = (2.0f/3.0f)*bspline[i+1] + (1.0f/3.0f)*bspline[i+2];
-    bezier[4*i+2] = (1.0f/3.0f)*bspline[i+1] + (2.0f/3.0f)*bspline[i+2];
-    bezier[4*i+3] = (1.0f/6.0f)*bspline[i+1] + (2.0f/3.0f)*bspline[i+2] + (1.0f/6.0f)*bspline[i+3];
   }
 
   for (size_t t=0; t<num_time_steps; t++)
@@ -230,20 +223,17 @@ unsigned int addCurveOrHair (RTCScene scene, const Vec3fa& pos, bool curve, unsi
     AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
     
-    for (int i=0; i<4*13; i++)
-      vertices[i] = Vec3fa(xfmPoint(rotation*scale,bezier[i])+pos,0.2f);
+    for (int i=0; i<16; i++)
+      vertices[i] = Vec3fa(xfmPoint(rotation*scale,bspline[i])+pos,0.2f);
 
     rtcUnmapBuffer(scene,geomID,bufID);
   }
 
   int* indices = (int*) rtcMapBuffer(scene,geomID,RTC_INDEX_BUFFER);
-  for (int i=0; i<13; i++) {
-    indices[i] = 4*i;
-  }
+  for (int i=0; i<13; i++) indices[i] = i;
   rtcUnmapBuffer(scene,geomID,RTC_INDEX_BUFFER);
 
   alignedFree(bspline);
-  alignedFree(bezier);
   return geomID;
 }
 
@@ -273,9 +263,7 @@ unsigned int addLines (RTCScene scene, const Vec3fa& pos, unsigned int num_time_
   }
 
   int* indices = (int*) rtcMapBuffer(scene,geomID,RTC_INDEX_BUFFER);
-  for (int i=0; i<15; i++) {
-    indices[i] = i;
-  }
+  for (int i=0; i<15; i++) indices[i] = i;
   rtcUnmapBuffer(scene,geomID,RTC_INDEX_BUFFER);
 
   alignedFree(bspline);
