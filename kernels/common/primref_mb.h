@@ -97,7 +97,7 @@ namespace embree
     {
       Scene* scene = ((UserPrimRefData*) user)->scene;
       BBox1f time_range = ((UserPrimRefData*) user)->time_range;
-      BezierCurves* mesh = (BezierCurves*) scene->get(geomID());
+      NativeCurves* mesh = scene->get<NativeCurves>(geomID());
       LBBox3fa lbounds = mesh->linearBounds(space,primID(),time_range);
       return center2(lbounds.interpolate(0.5f));
     }
@@ -107,7 +107,7 @@ namespace embree
     {
       Scene* scene = ((UserPrimRefData*) user)->scene;
       BBox1f time_range = ((UserPrimRefData*) user)->time_range;
-      BezierCurves* mesh = (BezierCurves*) scene->get(geomID());
+      NativeCurves* mesh = scene->get<NativeCurves>(geomID());
       LBBox3fa lbounds = mesh->linearBounds(space,primID(),time_range);
       bounds_o = lbounds;
       center_o = center2(lbounds.interpolate(0.5f));
@@ -216,7 +216,7 @@ namespace embree
     {
       Scene* scene = ((UserPrimRefData*) user)->scene;
       BBox1f time_range = ((UserPrimRefData*) user)->time_range;
-      BezierCurves* mesh = (BezierCurves*) scene->get(geomID());
+      NativeCurves* mesh = scene->get<NativeCurves>(geomID());
       LBBox3fa lbounds = mesh->linearBounds(space,primID(),time_range);
       return center2(lbounds.interpolate(0.5f));
     }
@@ -226,7 +226,7 @@ namespace embree
     {
       Scene* scene = ((UserPrimRefData*) user)->scene;
       BBox1f time_range = ((UserPrimRefData*) user)->time_range;
-      BezierCurves* mesh = (BezierCurves*) scene->get(geomID());
+      NativeCurves* mesh = scene->get<NativeCurves>(geomID());
       LBBox3fa lbounds = mesh->linearBounds(space,primID(),time_range);
       bounds_o = lbounds.interpolate(0.5f);
       center_o = center2(bounds_o);

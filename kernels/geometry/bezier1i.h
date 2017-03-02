@@ -71,7 +71,7 @@ namespace embree
       i++;
       const unsigned geomID = prim.geomID();
       const unsigned primID = prim.primID();
-      const BezierCurves* curves = scene->getBezierCurves(geomID);
+      const NativeCurves* curves = scene->get<NativeCurves>(geomID);
       const unsigned vertexID = curves->curve(primID);
       new (this) Bezier1i(vertexID,geomID,primID);
       return curves->linearBounds(primID,time_range);

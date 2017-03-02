@@ -255,7 +255,7 @@ namespace embree
       void build(size_t, size_t) 
       {
         /* fast path for empty BVH */
-        const size_t numPrimitives = scene->getNumPrimitives<BezierCurves,true>();
+        const size_t numPrimitives = scene->getNumPrimitives<NativeCurves,true>();
         if (numPrimitives == 0) {
           bvh->set(BVH::emptyNode,empty,0);
           return;
@@ -267,7 +267,7 @@ namespace embree
 
         /* create primref array */
         mvector<PrimRefMB> prims0(scene->device,numPrimitives);
-        const PrimInfoMB pinfo = createPrimRefMBArray<BezierCurves>(scene,prims0,bvh->scene->progressInterface);
+        const PrimInfoMB pinfo = createPrimRefMBArray<NativeCurves>(scene,prims0,bvh->scene->progressInterface);
 
         /* estimate acceleration structure size */
         const size_t node_bytes = pinfo.num_time_segments*sizeof(typename BVH::AlignedNodeMB)/(4*N);
@@ -301,7 +301,7 @@ namespace embree
         /* build the hierarchy */
         auto root = BVHMBuilderHairMSMBlur::build<NodeRef>
           (scene, prims0, pinfo,
-           RecalculatePrimRef<BezierCurves>(scene),
+           RecalculatePrimRef<NativeCurves>(scene),
            typename BVH::CreateAlloc(bvh),
            typename BVH::AlignedNodeMB::Create(),
            typename BVH::AlignedNodeMB::Set(),

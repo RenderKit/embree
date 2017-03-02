@@ -194,7 +194,7 @@ namespace embree
             const PrimRefMB& prim = (*set.prims)[i];
             const size_t geomID = prim.geomID();
             const size_t primID = prim.primID();
-            const BezierCurves* mesh = scene->getBezierCurves(geomID);
+            const NativeCurves* mesh = scene->get<NativeCurves>(geomID);
 
             const unsigned num_time_segments = mesh->numTimeSegments();
             const range<int> tbounds = getTimeSegmentRange(set.time_range, num_time_segments);
