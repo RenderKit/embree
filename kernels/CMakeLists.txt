@@ -151,6 +151,7 @@ ENDIF()
 SET(EMBREE_LIBRARY_FILES_AVX2
 
     geometry/instance_intersector1.cpp
+    builders/primrefgen.cpp
     bvh/bvh_builder_morton.cpp
     bvh/bvh_rotate.cpp
     bvh/bvh_intersector1.cpp)
