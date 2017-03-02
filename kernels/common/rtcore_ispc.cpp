@@ -172,16 +172,16 @@ namespace embree
     rtcOccluded(scene,ray);
   }
   
-  extern "C" void ispcOccluded4 (const void* valid, RTCScene scene, RTCRay4& ray) {
-    rtcOccluded4(valid,scene,ray);
+  extern "C" void ispcOccluded4 (const void* valid, RTCScene scene, const RTCIntersectContext* context, RTCRay4& ray) {
+    rtcOccluded4Ex(valid,scene,context,ray);
   }
   
-  extern "C" void ispcOccluded8 (const void* valid, RTCScene scene, RTCRay8& ray) {
-    rtcOccluded8(valid,scene,ray);
+  extern "C" void ispcOccluded8 (const void* valid, RTCScene scene, const RTCIntersectContext* context,  RTCRay8& ray) {
+    rtcOccluded8Ex(valid,scene,context,ray);
   }
   
-  extern "C" void ispcOccluded16 (const void* valid, RTCScene scene, RTCRay16& ray) {
-    rtcOccluded16(valid,scene,ray);
+  extern "C" void ispcOccluded16 (const void* valid, RTCScene scene, const RTCIntersectContext* context, RTCRay16& ray) {
+    rtcOccluded16Ex(valid,scene,context,ray);
   }
 
   extern "C" void ispcOccluded1M (RTCScene scene, const RTCIntersectContext* context, RTCRay* rays, const size_t N, const size_t M, const size_t stride) {
