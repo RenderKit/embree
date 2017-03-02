@@ -299,8 +299,8 @@ namespace embree
       }
     }
 
-    for (size_t i=0; i<positions_o.size(); i++)
-      positions_o.shrink_to_fit();
+    for (auto& v : positions_o)
+      v.shrink_to_fit();
    
     positions = std::move(positions_o);
   }
