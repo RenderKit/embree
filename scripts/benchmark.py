@@ -68,6 +68,7 @@ memory_gain = {}
 buildperf = {}
 buildperf_gain = {}
 sah      = {}
+sah_gain = {}
 fps_avg  = {}
 fps_sigma  = {}
 fps_gain = {}
@@ -82,6 +83,7 @@ def extract(name,modelname,prevname):
   buildperf[base] = 0
   buildperf_gain[base] = 0
   sah      [base] = 0
+  sah_gain [base] = 0
   fps_avg  [base] = 0
   fps_sigma[base] = 0
   fps_gain [base] = 0
@@ -94,6 +96,8 @@ def extract(name,modelname,prevname):
         if (prevname != ''):
           buildperf_gain[base] = 100.0*buildperf[base]/buildperf[prevBase]-100.0
         sah   [base] = numbers[2]
+        if (prevname != ''):
+          sah_gain[base] = 100.0*sah[base]/sah[prevBase]-100.0
         memory[base] = numbers[3]
         if (prevname != ''):
           memory_gain[base] = 100.0*memory[base]/memory[prevBase]-100.0
@@ -114,6 +118,7 @@ def extract(name,modelname,prevname):
   fps_avg  [avgBase] += fps_avg  [base] / len(models)
   fps_sigma[avgBase] += fps_sigma[base] / len(models)
   if (prevname != ''):
+    sah_gain  [avgBase] += sah_gain  [base] / len(models)
     memory_gain  [avgBase] += memory_gain  [base] / len(models)
     fps_gain  [avgBase] += fps_gain  [base] / len(models)
     buildperf_gain  [avgBase] += buildperf_gain  [base] / len(models)
@@ -128,6 +133,7 @@ def extractLoop():
     buildperf[avgBase] = 0
     buildperf_gain [avgBase] = 0
     sah      [avgBase] = 0
+    sah_gain [avgBase] = 0
     fps_avg  [avgBase] = 0
     fps_sigma[avgBase] = 0
     fps_gain [avgBase] = 0
@@ -141,7 +147,8 @@ def printData(name,modelname):
   line += (' (%#+6.2f%%)' %  memory_gain[base])
   line += (' %#8.2f M/s' %  (1E-6*buildperf[base]))
   line += (' (%#+6.2f%%)' %  buildperf_gain[base])
-  line += (' %#7.1f ' %  sah[base])
+  line += (' %#7.3f ' %  sah[base])
+  line += (' (%#+6.2f%%)' %  sah_gain[base])
   line += (' %#7.3f fps' %  fps_avg[base])
   line += (' +/-%#6.3f%% ' %  (100.0*fps_sigma[base]/fps_avg[base]))
   line += (' (%#+6.2f%%)' %  fps_gain[base])
@@ -149,8 +156,8 @@ def printData(name,modelname):
   sys.stdout.write(line)
 
 def printHeader():
-  tableWidth = 55 + 91
-  line  = '  ' + '{0:<55}'.format('') + ' |     Memory                  Build               SAH       Render'
+  tableWidth = 55 + 102
+  line  = '  ' + '{0:<55}'.format('') + ' |     Memory                  Build               SAH                 Render'
   print(line)
   line = ''
   while (len(line) < tableWidth): line = line + '-'
