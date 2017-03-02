@@ -260,7 +260,7 @@ namespace embree
     }
     return true;
   }
-
+  
   void SceneGraph::HairSetNode::compact_vertices()
   {
     std::vector<avector<Vec3fa>> positions_o(positions.size());

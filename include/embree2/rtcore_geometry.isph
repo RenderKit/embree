@@ -342,9 +342,9 @@ RTCORE_DEPRECATED uniform unsigned int rtcNewHairGeometry (RTCScene scene,      
   might show geometric artefacts. */
 RTCORE_API uniform unsigned int rtcNewBezierHairGeometry (RTCScene scene,                    //!< the scene the curves belong to
                                                           uniform RTCGeometryFlags flags,    //!< geometry flags
-                                                          uniform size_t numCurves,          //!< number of curves
-                                                          uniform size_t numVertices,        //!< number of vertices
-                                                          uniform size_t numTimeSteps = 1    //!< number of motion blur time steps
+                                                          uniform unsigned int numCurves,          //!< number of curves
+                                                          uniform unsigned int numVertices,        //!< number of vertices
+                                                          uniform unsigned int numTimeSteps = 1    //!< number of motion blur time steps
   );
 
 /*! \brief Creates a new hair geometry, consisting of multiple hairs
@@ -366,9 +366,9 @@ RTCORE_API uniform unsigned int rtcNewBezierHairGeometry (RTCScene scene,       
   might show geometric artefacts. */
 RTCORE_API uniform unsigned int rtcNewBSplineHairGeometry (RTCScene scene,                    //!< the scene the curves belong to
                                                            uniform RTCGeometryFlags flags,    //!< geometry flags
-                                                           uniform size_t numCurves,          //!< number of curves
-                                                           uniform size_t numVertices,        //!< number of vertices
-                                                           uniform size_t numTimeSteps = 1    //!< number of motion blur time steps
+                                                           uniform unsigned int numCurves,          //!< number of curves
+                                                           uniform unsigned int numVertices,        //!< number of vertices
+                                                           uniform unsigned int numTimeSteps = 1    //!< number of motion blur time steps
   );
 
 /*! \brief Creates a new curve geometry, consisting of multiple curves
@@ -410,9 +410,9 @@ RTCORE_DEPRECATED uniform unsigned int rtcNewCurveGeometry (RTCScene scene,     
   (x,y,z) position and radius, stored in that order in memory. */
 RTCORE_API uniform unsigned int rtcNewBezierCurveGeometry (RTCScene scene,                    //!< the scene the curves belong to
                                                            uniform RTCGeometryFlags flags,    //!< geometry flags
-                                                           uniform size_t numCurves,          //!< number of curves
-                                                           uniform size_t numVertices,        //!< number of vertices
-                                                           uniform size_t numTimeSteps = 1    //!< number of motion blur time steps
+                                                           uniform unsigned int numCurves,          //!< number of curves
+                                                           uniform unsigned int numVertices,        //!< number of vertices
+                                                           uniform unsigned int numTimeSteps = 1    //!< number of motion blur time steps
   );
 
 /*! \brief Creates a new curve geometry, consisting of multiple curves
@@ -432,9 +432,9 @@ RTCORE_API uniform unsigned int rtcNewBezierCurveGeometry (RTCScene scene,      
   (x,y,z) position and radius, stored in that order in memory. */
 RTCORE_API uniform unsigned int rtcNewBSplineCurveGeometry (RTCScene scene,                    //!< the scene the curves belong to
                                                             uniform RTCGeometryFlags flags,    //!< geometry flags
-                                                            uniform size_t numCurves,          //!< number of curves
-                                                            uniform size_t numVertices,        //!< number of vertices
-                                                            uniform size_t numTimeSteps = 1    //!< number of motion blur time steps
+                                                            uniform unsigned int numCurves,          //!< number of curves
+                                                            uniform unsigned int numVertices,        //!< number of vertices
+                                                            uniform unsigned int numTimeSteps = 1    //!< number of motion blur time steps
   );
 
 /*! Sets a uniform tessellation rate for subdiv meshes and hair
