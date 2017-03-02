@@ -122,11 +122,22 @@ void rtcGetLinearBounds(RTCScene scene, uniform RTCBounds* uniform bounds_o);
  *  has to be aligned to 16 bytes. */
 void rtcIntersect1 (RTCScene scene, uniform RTCRay1& ray);
 
+/*! Intersects a uniform ray with the scene. This function can only be
+ *  called for scenes with the RTC_INTERSECT_UNIFORM flag set. The ray
+ *  has to be aligned to 16 bytes. */
+void rtcIntersect1Ex (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1& ray);
+
 /*! Intersects a varying ray with the scene. This function can only be
  *  called for scenes with the RTC_INTERSECT_VARYING flag set. The
  *  valid mask and ray have both to be aligned to sizeof(varing float)
  *  bytes. */
 void rtcIntersect (RTCScene scene, varying RTCRay& ray);
+
+/*! Intersects a varying ray with the scene. This function can only be
+ *  called for scenes with the RTC_INTERSECT_VARYING flag set. The
+ *  valid mask and ray have both to be aligned to sizeof(varing float)
+ *  bytes. */
+void rtcIntersectEx (RTCScene scene, const uniform RTCIntersectContext* uniform context, varying RTCRay& ray);
 
 /*! Intersects a stream of M rays in AOS layout with the scene. This
  *  function can only be called for scenes with the RTC_INTERSECT_STREAM
@@ -164,11 +175,22 @@ void rtcIntersectNp (RTCScene scene, const uniform RTCIntersectContext* uniform 
  *  set. The ray has to be aligned to 16 bytes. */
 void rtcOccluded1 (RTCScene scene, uniform RTCRay1& ray);
 
+/*! Tests if a uniform ray is occluded by the scene. This function can
+ *  only be called for scenes with the RTC_INTERSECT_UNIFORM flag
+ *  set. The ray has to be aligned to 16 bytes. */
+void rtcOccluded1Ex (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1& ray);
+
 /*! Tests if a varying ray is occluded by the scene. This function can
  *  only be called for scenes with the RTC_INTERSECT_VARYING flag
  *  set. The valid mask and ray have both to be aligned to
  *  sizeof(varing float) bytes. */
 void rtcOccluded (RTCScene scene, varying RTCRay& ray);
+
+/*! Tests if a varying ray is occluded by the scene. This function can
+ *  only be called for scenes with the RTC_INTERSECT_VARYING flag
+ *  set. The valid mask and ray have both to be aligned to
+ *  sizeof(varing float) bytes. */
+void rtcOccludedEx (RTCScene scene, const uniform RTCIntersectContext* uniform context, varying RTCRay& ray);
 
 /*! Tests if a stream of M rays in AOS layout is occluded by the
  *  scene. This function can only be called for scenes with the
