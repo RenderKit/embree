@@ -105,6 +105,7 @@ sed -i.backup  's/RTCFilterFuncVarying/RTCFilterFunc/g' $2
 
 sed -i.backup  's/RTCRay1/RTCRay/g' $2
 sed -i.backup  's/rtcIntersect1/rtcIntersect/g' $2
+sed -i.backup  's/rtcIntersectEx/rtcIntersect1Ex/g' $2
 
 sed -i.backup  's/rtcIntersectVM/rtcIntersect1M/g' $2
 sed -i.backup  's/rtcOccludedVM/rtcOccluded1M/g' $2
