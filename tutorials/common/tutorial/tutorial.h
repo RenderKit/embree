@@ -151,6 +151,11 @@ namespace embree
     Averaged<double> avg_frame_time;
     bool print_camera;
 
+    int debug0;
+    int debug1;
+    int debug2;
+    int debug3;
+
     std::unique_ptr<ISPCScene> ispc_scene;
      
   public:

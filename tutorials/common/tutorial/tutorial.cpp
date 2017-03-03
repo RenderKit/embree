@@ -99,7 +99,12 @@ namespace embree
       print_frame_rate(false),
       avg_render_time(64,1.0),
       avg_frame_time(64,1.0),
-      print_camera(false)
+      print_camera(false),
+
+      debug0(0),
+      debug1(0),
+      debug2(0),
+      debug3(0)
   {
     /* only a single instance of this class is supported */
     assert(instance == nullptr);
@@ -177,6 +182,22 @@ namespace embree
      registerOption("print-camera", [this] (Ref<ParseStream> cin, const FileName& path) {
          print_camera = true;
       }, "--print-camera: prints camera for each frame on console");
+   
+     registerOption("debug0", [this] (Ref<ParseStream> cin, const FileName& path) {
+         debug0 = cin->getInt();
+       }, "--debug0: sets internal debugging value");
+
+     registerOption("debug1", [this] (Ref<ParseStream> cin, const FileName& path) {
+         debug1 = cin->getInt();
+       }, "--debug1: sets internal debugging value");
+
+     registerOption("debug2", [this] (Ref<ParseStream> cin, const FileName& path) {
+         debug2 = cin->getInt();
+       }, "--debug2: sets internal debugging value");
+
+     registerOption("debug3", [this] (Ref<ParseStream> cin, const FileName& path) {
+         debug3 = cin->getInt();
+       }, "--debug3: sets internal debugging value");
    
     /* output filename */
     registerOption("shader", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -751,6 +772,12 @@ namespace embree
 
   void TutorialApplication::run(int argc, char** argv)
   {
+    /* set debug values */
+    rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000000, debug0); 
+    rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000001, debug1); 
+    rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000002, debug2); 
+    rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000003, debug3); 
+   
     /* initialize ray tracing core */
     device_init(rtcore.c_str());
     
@@ -766,7 +793,7 @@ namespace embree
     case SHADER_GEOMID_PRIMID: device_key_pressed(GLUT_KEY_F7); break;
     case SHADER_AMBIENT_OCCLUSION: device_key_pressed(GLUT_KEY_F11); break;
     };
-    
+     
     /* benchmark mode */
     if (numBenchmarkFrames)
     {
