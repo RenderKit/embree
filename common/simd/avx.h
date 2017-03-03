@@ -29,7 +29,7 @@
 #if defined(__AVX2__)
 #include "vint8_avx2.h"
 #if defined(__X86_64__)
-#include "vlong4_avx2.h"
+#include "vllong4_avx2.h"
 #endif
 #else
 #include "vint8_avx.h"

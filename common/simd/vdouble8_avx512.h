@@ -173,8 +173,8 @@ namespace embree
   __forceinline const vdouble8 operator <<( const vdouble8& a, const unsigned int n ) { return _mm512_castsi512_pd(_mm512_slli_epi64(_mm512_castpd_si512(a), n)); }
   __forceinline const vdouble8 operator >>( const vdouble8& a, const unsigned int n ) { return _mm512_castsi512_pd(_mm512_srai_epi64(_mm512_castpd_si512(a), n)); }
 
-  __forceinline const vdouble8 operator <<( const vdouble8& a, const vlong8& n ) { return _mm512_castsi512_pd(_mm512_sllv_epi64(_mm512_castpd_si512(a), n)); }
-  __forceinline const vdouble8 operator >>( const vdouble8& a, const vlong8& n ) { return _mm512_castsi512_pd(_mm512_srav_epi64(_mm512_castpd_si512(a), n)); }
+  __forceinline const vdouble8 operator <<( const vdouble8& a, const vllong8& n ) { return _mm512_castsi512_pd(_mm512_sllv_epi64(_mm512_castpd_si512(a), n)); }
+  __forceinline const vdouble8 operator >>( const vdouble8& a, const vllong8& n ) { return _mm512_castsi512_pd(_mm512_srav_epi64(_mm512_castpd_si512(a), n)); }
 
   __forceinline const vdouble8 sll ( const vdouble8& a, const unsigned int b ) { return  _mm512_castsi512_pd(_mm512_slli_epi64(_mm512_castpd_si512(a), b)); }
   __forceinline const vdouble8 sra ( const vdouble8& a, const unsigned int b ) { return  _mm512_castsi512_pd(_mm512_srai_epi64(_mm512_castpd_si512(a), b)); }
@@ -331,12 +331,12 @@ namespace embree
   /// Memory load and store operations
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vdouble8 permute(const vdouble8& v, const vlong8& index) {
+  __forceinline vdouble8 permute(const vdouble8& v, const vllong8& index) {
     return _mm512_permutexvar_pd(index,v);  
   }
 
   __forceinline vdouble8 reverse(const vdouble8& a) {
-    return permute(a,vlong8(reverse_step));
+    return permute(a,vllong8(reverse_step));
   }
   
   ////////////////////////////////////////////////////////////////////////////////

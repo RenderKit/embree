@@ -70,7 +70,7 @@ namespace embree
   typedef Vec2<vdouble4> Vec2vd4;
   typedef Vec2<vreal4>   Vec2vr4;
   typedef Vec2<vint4>    Vec2vi4;
-  typedef Vec2<vlong4>   Vec2vl4;
+  typedef Vec2<vllong4>  Vec2vl4;
   typedef Vec2<vbool4>   Vec2vb4;
   typedef Vec2<vboolf4>  Vec2vbf4;
   typedef Vec2<vboold4>  Vec2vbd4;
@@ -79,7 +79,7 @@ namespace embree
   typedef Vec2<vdouble8> Vec2vd8;
   typedef Vec2<vreal8>   Vec2vr8;
   typedef Vec2<vint8>    Vec2vi8;
-  typedef Vec2<vlong8>   Vec2vl8;
+  typedef Vec2<vllong8>  Vec2vl8;
   typedef Vec2<vbool8>   Vec2vb8;
   typedef Vec2<vboolf8>  Vec2vbf8;
   typedef Vec2<vboold8>  Vec2vbd8;
@@ -88,7 +88,7 @@ namespace embree
   typedef Vec2<vdouble16> Vec2vd16;
   typedef Vec2<vreal16>   Vec2vr16;
   typedef Vec2<vint16>    Vec2vi16;
-  typedef Vec2<vlong16>   Vec2vl16;
+  typedef Vec2<vllong16>  Vec2vl16;
   typedef Vec2<vbool16>   Vec2vb16;
   typedef Vec2<vboolf16>  Vec2vbf16;
   typedef Vec2<vboold16>  Vec2vbd16;
@@ -97,7 +97,7 @@ namespace embree
   typedef Vec2<vdoublex> Vec2vdx;
   typedef Vec2<vrealx>   Vec2vrx;
   typedef Vec2<vintx>    Vec2vix;
-  typedef Vec2<vlongx>   Vec2vlx;
+  typedef Vec2<vllongx>  Vec2vlx;
   typedef Vec2<vboolx>   Vec2vbx;
   typedef Vec2<vboolfx>  Vec2vbfx;
   typedef Vec2<vbooldx>  Vec2vbdx;
@@ -110,7 +110,7 @@ namespace embree
   typedef Vec3<vdouble4> Vec3vd4;
   typedef Vec3<vreal4>   Vec3vr4;
   typedef Vec3<vint4>    Vec3vi4;
-  typedef Vec3<vlong4>   Vec3vl4;
+  typedef Vec3<vllong4>  Vec3vl4;
   typedef Vec3<vbool4>   Vec3vb4;
   typedef Vec3<vboolf4>  Vec3vbf4;
   typedef Vec3<vboold4>  Vec3vbd4;
@@ -119,7 +119,7 @@ namespace embree
   typedef Vec3<vdouble8> Vec3vd8;
   typedef Vec3<vreal8>   Vec3vr8;
   typedef Vec3<vint8>    Vec3vi8;
-  typedef Vec3<vlong8>   Vec3vl8;
+  typedef Vec3<vllong8>  Vec3vl8;
   typedef Vec3<vbool8>   Vec3vb8;
   typedef Vec3<vboolf8>  Vec3vbf8;
   typedef Vec3<vboold8>  Vec3vbd8;
@@ -128,7 +128,7 @@ namespace embree
   typedef Vec3<vdouble16> Vec3vd16;
   typedef Vec3<vreal16>   Vec3vr16;
   typedef Vec3<vint16>    Vec3vi16;
-  typedef Vec3<vlong16>   Vec3vl16;
+  typedef Vec3<vllong16>  Vec3vl16;
   typedef Vec3<vbool16>   Vec3vb16;
   typedef Vec3<vboolf16>  Vec3vbf16;
   typedef Vec3<vboold16>  Vec3vbd16;
@@ -137,7 +137,7 @@ namespace embree
   typedef Vec3<vdoublex> Vec3vdx;
   typedef Vec3<vrealx>   Vec3vrx;
   typedef Vec3<vintx>    Vec3vix;
-  typedef Vec3<vlongx>   Vec3vlx;
+  typedef Vec3<vllongx>  Vec3vlx;
   typedef Vec3<vboolx>   Vec3vbx;
   typedef Vec3<vboolfx>  Vec3vbfx;
   typedef Vec3<vbooldx>  Vec3vbdx;
@@ -150,7 +150,7 @@ namespace embree
   typedef Vec4<vdouble4> Vec4vd4;
   typedef Vec4<vreal4>   Vec4vr4;
   typedef Vec4<vint4>    Vec4vi4;
-  typedef Vec4<vlong4>   Vec4vl4;
+  typedef Vec4<vllong4>  Vec4vl4;
   typedef Vec4<vbool4>   Vec4vb4;
   typedef Vec4<vboolf4>  Vec4vbf4;
   typedef Vec4<vboold4>  Vec4vbd4;
@@ -159,7 +159,7 @@ namespace embree
   typedef Vec4<vdouble8> Vec4vd8;
   typedef Vec4<vreal8>   Vec4vr8;
   typedef Vec4<vint8>    Vec4vi8;
-  typedef Vec4<vlong8>   Vec4vl8;
+  typedef Vec4<vllong8>  Vec4vl8;
   typedef Vec4<vbool8>   Vec4vb8;
   typedef Vec4<vboolf8>  Vec4vbf8;
   typedef Vec4<vboold8>  Vec4vbd8;
@@ -168,7 +168,7 @@ namespace embree
   typedef Vec4<vdouble16> Vec4vd16;
   typedef Vec4<vreal16>   Vec4vr16;
   typedef Vec4<vint16>    Vec4vi16;
-  typedef Vec4<vlong16>   Vec4vl16;
+  typedef Vec4<vllong16>  Vec4vl16;
   typedef Vec4<vbool16>   Vec4vb16;
   typedef Vec4<vboolf16>  Vec4vbf16;
   typedef Vec4<vboold16>  Vec4vbd16;
@@ -177,7 +177,7 @@ namespace embree
   typedef Vec4<vdoublex> Vec4vdx;
   typedef Vec4<vrealx>   Vec4vrx;
   typedef Vec4<vintx>    Vec4vix;
-  typedef Vec4<vlongx>   Vec4vlx;
+  typedef Vec4<vllongx>  Vec4vlx;
   typedef Vec4<vboolx>   Vec4vbx;
   typedef Vec4<vboolfx>  Vec4vbfx;
   typedef Vec4<vbooldx>  Vec4vbdx;
