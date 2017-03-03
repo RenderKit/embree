@@ -885,6 +885,37 @@ namespace embree
       return movemask(vmask);
     }
 
+    template<int N, int K>
+      __forceinline vbool<K> intersectNode(const typename BVHN<N>::UnalignedNode* node, const size_t i, 
+                                           const Vec3<vfloat<K>>& org_i, const Vec3<vfloat<K>>& dir_i, const Vec3<vfloat<K>>& rdir_i, const Vec3<vfloat<K>>& org_rdir_i,
+                                           const vfloat<K>& tnear, const vfloat<K>& tfar, vfloat<K>& dist)
+    {
+      typedef Vec3<vfloat<K>> Vec3vfK;
+      typedef AffineSpaceT<LinearSpace3<Vec3vfK>> AffineSpace3vfK;
+      
+      const AffineSpace3vfK naabb(Vec3f(node->naabb.l.vx.x[i],node->naabb.l.vx.y[i],node->naabb.l.vx.z[i]),
+                                  Vec3f(node->naabb.l.vy.x[i],node->naabb.l.vy.y[i],node->naabb.l.vy.z[i]),
+                                  Vec3f(node->naabb.l.vz.x[i],node->naabb.l.vz.y[i],node->naabb.l.vz.z[i]),
+                                  Vec3f(node->naabb.p   .x[i],node->naabb.p   .y[i],node->naabb.p   .z[i]));
+
+      const Vec3<vfloat<K>> dir = xfmVector(naabb,dir_i);
+      const Vec3<vfloat<K>> nrdir = Vec3<vfloat<K>>(vfloat<K>(-1.0f))* rcp_safe(dir); // FIXME: negate instead of mul with -1?
+      const Vec3<vfloat<K>> org = xfmPoint(naabb,org_i);
+
+      const vfloat<K> lclipMinX = org.x * nrdir.x; // (Vec3fa(zero) - org) * rdir;
+      const vfloat<K> lclipMinY = org.y * nrdir.y;
+      const vfloat<K> lclipMinZ = org.z * nrdir.z;
+      const vfloat<K> lclipMaxX  = lclipMinX - nrdir.x; // (Vec3fa(one ) - org) * rdir;
+      const vfloat<K> lclipMaxY  = lclipMinY - nrdir.y;
+      const vfloat<K> lclipMaxZ  = lclipMinZ - nrdir.z;
+      
+      const vfloat<K> lnearP = maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY), mini(lclipMinZ, lclipMaxZ));
+      const vfloat<K> lfarP  = mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY), maxi(lclipMinZ, lclipMaxZ));
+      const vbool<K> lhit    = maxi(lnearP, tnear) <= mini(lfarP, tfar);
+      dist = lnearP;
+      return lhit;
+    }
+
     //////////////////////////////////////////////////////////////////////////////////////
     // fast ray/BVHN::UnalignedNodeMB intersection
     //////////////////////////////////////////////////////////////////////////////////////
@@ -918,6 +949,44 @@ namespace embree
       const vbool<N> vmask = tNear <= tFar;
       dist = tNear;
       return movemask(vmask);
+    }
+
+    template<int N, int K>
+      __forceinline vbool<K> intersectNode(const typename BVHN<N>::UnalignedNodeMB* node, const size_t i, 
+                                           const Vec3<vfloat<K>>& org_i, const Vec3<vfloat<K>>& dir_i, const Vec3<vfloat<K>>& rdir_i, const Vec3<vfloat<K>>& org_rdir_i,
+                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist)
+    {
+      typedef Vec3<vfloat<K>> Vec3vfK;
+      typedef AffineSpaceT<LinearSpace3<Vec3vfK>> AffineSpace3vfK;
+      
+      const AffineSpace3vfK xfm(Vec3f(node->space0.l.vx.x[i],node->space0.l.vx.y[i],node->space0.l.vx.z[i]),
+                                Vec3f(node->space0.l.vy.x[i],node->space0.l.vy.y[i],node->space0.l.vy.z[i]),
+                                Vec3f(node->space0.l.vz.x[i],node->space0.l.vz.y[i],node->space0.l.vz.z[i]),
+                                Vec3f(node->space0.p   .x[i],node->space0.p   .y[i],node->space0.p   .z[i]));
+
+      const Vec3<vfloat<K>> b0_lower = zero;
+      const Vec3<vfloat<K>> b0_upper = one;
+      const Vec3<vfloat<K>> b1_lower(node->b1.lower.x[i],node->b1.lower.y[i],node->b1.lower.z[i]);
+      const Vec3<vfloat<K>> b1_upper(node->b1.upper.x[i],node->b1.upper.y[i],node->b1.upper.z[i]);
+      const Vec3<vfloat<K>> lower = lerp(b0_lower,b1_lower,time);
+      const Vec3<vfloat<K>> upper = lerp(b0_upper,b1_upper,time);
+
+      const Vec3<vfloat<K>> dir = xfmVector(xfm,dir_i);
+      const Vec3<vfloat<K>> rdir = rcp_safe(dir);
+      const Vec3<vfloat<K>> org = xfmPoint(xfm,org_i);
+
+      const vfloat<K> lclipMinX = (lower.x - org.x) * rdir.x;
+      const vfloat<K> lclipMinY = (lower.y - org.y) * rdir.y;
+      const vfloat<K> lclipMinZ = (lower.z - org.z) * rdir.z;
+      const vfloat<K> lclipMaxX  = (upper.x - org.x) * rdir.x;
+      const vfloat<K> lclipMaxY  = (upper.y - org.y) * rdir.y;
+      const vfloat<K> lclipMaxZ  = (upper.z - org.z) * rdir.z;
+      
+      const vfloat<K> lnearP = maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY), mini(lclipMinZ, lclipMaxZ));
+      const vfloat<K> lfarP  = mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY), maxi(lclipMinZ, lclipMaxZ));
+      const vbool<K> lhit    = maxi(lnearP, tnear) <= mini(lfarP, tfar);
+      dist = lnearP;
+      return lhit;
     }
 
     //////////////////////////////////////////////////////////////////////////////////////
@@ -1119,6 +1188,32 @@ namespace embree
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
       {
         vmask = intersectNodeRobust<N,K>(node.alignedNodeMB(),i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
+        return true;
+      }
+    };
+
+    template<int N, int K>
+      struct BVHNNodeIntersectorK<N,K,BVH_AN1_UN1,false>
+    {
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, 
+                                          const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                          const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
+      {
+        if (likely(node.isAlignedNode()))              vmask = intersectNode<N,K>(node.alignedNode(),i,org,dir,rdir,org_rdir,tnear,tfar,dist);
+        else /*if (unlikely(node.isUnalignedNode()))*/ vmask = intersectNode<N,K>(node.unalignedNode(),i,org,dir,rdir,org_rdir,tnear,tfar,dist);
+        return true;
+      }
+    };
+
+    template<int N, int K>
+      struct BVHNNodeIntersectorK<N,K,BVH_AN2_UN2,false>
+    {
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, 
+                                          const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                          const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
+      {
+        if (likely(node.isAlignedNodeMB()))              vmask = intersectNode<N,K>(node.alignedNodeMB(),i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
+        else /*if (unlikely(node.isUnalignedNodeMB()))*/ vmask = intersectNode<N,K>(node.unalignedNodeMB(),i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
         return true;
       }
     };
