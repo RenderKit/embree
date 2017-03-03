@@ -1212,10 +1212,11 @@ namespace embree
       else if (xml->name == "Animation2"      ) node = sceneMap[id] = loadAnimation2Node  (xml);
       else if (xml->name == "Animation"       ) node = sceneMap[id] = loadAnimationNode   (xml);
 
-      else if (xml->name == "ConvertTrianglesToQuads") node = convert_triangles_to_quads(sceneMap[id] = loadNode(xml->child(0)));
-      else if (xml->name == "ConvertQuadsToSubdivs"  ) node = convert_quads_to_subdivs  (sceneMap[id] = loadNode(xml->child(0)));
-      else if (xml->name == "ConvertBezierToLines"   ) node = convert_bezier_to_lines   (sceneMap[id] = loadNode(xml->child(0)));
-      else if (xml->name == "ConvertHairToCurves"    ) node = convert_hair_to_curves    (sceneMap[id] = loadNode(xml->child(0)));
+      else if (xml->name == "ConvertTrianglesToQuads") node = sceneMap[id] = convert_triangles_to_quads(loadNode(xml->child(0)));
+      else if (xml->name == "ConvertQuadsToSubdivs"  ) node = sceneMap[id] = convert_quads_to_subdivs  (loadNode(xml->child(0)));
+      else if (xml->name == "ConvertBezierToLines"   ) node = sceneMap[id] = convert_bezier_to_lines   (loadNode(xml->child(0)));
+      else if (xml->name == "ConvertHairToCurves"    ) node = sceneMap[id] = convert_hair_to_curves    (loadNode(xml->child(0)));
+      else if (xml->name == "Flatten"                ) node = sceneMap[id] = flatten                   (loadNode(xml->child(0)), SceneGraph::INSTANCING_NONE);
 
       else THROW_RUNTIME_ERROR(xml->loc.str()+": unknown tag: "+xml->name);
 
