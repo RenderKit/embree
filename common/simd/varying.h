@@ -32,7 +32,7 @@ namespace embree
   template<int N>
   struct vdouble
   {
-    union { double f[N]; int64_t i[N]; };
+    union { double f[N]; long long i[N]; };
     __forceinline const double& operator [](size_t index) const { assert(index < N); return f[index]; }
     __forceinline       double& operator [](size_t index)       { assert(index < N); return f[index]; }
   };
@@ -54,17 +54,17 @@ namespace embree
   };
 
   template<int N>
-  struct vlong
+  struct vllong
   {
-    int64_t i[N];
-    __forceinline const int64_t& operator [](size_t index) const { assert(index < N); return i[index]; }
-    __forceinline       int64_t& operator [](size_t index)       { assert(index < N); return i[index]; }
+    long long i[N];
+    __forceinline const long long& operator [](size_t index) const { assert(index < N); return i[index]; }
+    __forceinline       long long& operator [](size_t index)       { assert(index < N); return i[index]; }
   };
 
 #if !defined(_MSC_VER) || _MSC_VER >= 1800
   /* Varying bool types */
-  template<int N> struct vboolf { int     i[N]; }; // for float/int
-  template<int N> struct vboold { int64_t i[N]; }; // for double/long
+  template<int N> struct vboolf { int       i[N]; }; // for float/int
+  template<int N> struct vboold { long long i[N]; }; // for double/long long
 
   /* Aliases to default types */
   template<int N> using vreal = vfloat<N>;
@@ -74,8 +74,8 @@ namespace embree
   #define vreal  vfloat
   #define vboolf vbool
 
-  template<int N> struct vboolf { int     i[N]; };
-  template<int N> struct vboold { int64_t i[N]; };
+  template<int N> struct vboolf { int       i[N]; };
+  template<int N> struct vboold { long long i[N]; };
 #endif
 
   /* Maximum supported varying size */
@@ -107,7 +107,7 @@ namespace embree
   typedef vdouble<4> vdouble4;
   typedef vreal<4>   vreal4;
   typedef vint<4>    vint4;
-  typedef vlong<4>   vlong4;
+  typedef vllong<4>  vllong4;
   typedef vbool<4>   vbool4;
   typedef vboolf<4>  vboolf4;
   typedef vboold<4>  vboold4;
@@ -117,7 +117,7 @@ namespace embree
   typedef vdouble<8> vdouble8;
   typedef vreal<8>   vreal8;
   typedef vint<8>    vint8;
-  typedef vlong<8>   vlong8;
+  typedef vllong<8>  vllong8;
   typedef vbool<8>   vbool8;
   typedef vboolf<8>  vboolf8;
   typedef vboold<8>  vboold8;
@@ -128,7 +128,7 @@ namespace embree
   typedef vreal<16>   vreal16;
   typedef vint<16>    vint16;
   typedef vuint<16>   vuint16;
-  typedef vlong<16>   vlong16;
+  typedef vllong<16>  vllong16;
   typedef vbool<16>   vbool16;
   typedef vboolf<16>  vboolf16;
   typedef vboold<16>  vboold16;
@@ -138,7 +138,7 @@ namespace embree
   typedef vdouble<VSIZEX> vdoublex;
   typedef vreal<VSIZEX>   vrealx;
   typedef vint<VSIZEX>    vintx;
-  typedef vlong<VSIZEX>   vlongx;
+  typedef vllong<VSIZEX>  vllongx;
   typedef vbool<VSIZEX>   vboolx;
   typedef vboolf<VSIZEX>  vboolfx;
   typedef vboold<VSIZEX>  vbooldx;
