@@ -32,6 +32,39 @@ namespace embree
   extern "C" void device_key_pressed (int key);
   extern "C" void device_cleanup();
 
+  template<typename Ty>
+    struct Averaged
+  {
+    Averaged (size_t N, double dt)
+    : N(N), dt(dt) {}
+
+    void add(double v)
+    {
+      values.push_front(std::make_pair(getSeconds(),v));
+      if (values.size() > N) values.resize(N);
+    }
+
+    Ty get() const
+    {
+      if (values.size() == 0) return zero;
+      double t_begin = values[0].first-dt;
+
+      Ty sum(zero);
+      size_t num(0);
+      for (size_t i=0; i<values.size(); i++) {
+        if (values[i].first >= t_begin) {
+          sum += values[i].second;
+          num++;
+        }
+      }
+      return sum/Ty(num);
+    }
+
+    std::deque<std::pair<double,Ty>> values;
+    size_t N;
+    double dt;
+  };
+
   class TutorialApplication : public Application
   {
   public:
@@ -97,7 +130,6 @@ namespace embree
     /* window settings */
     bool interactive;
     bool fullscreen;
-    bool consoleOutput;
 
     unsigned window_width;
     unsigned window_height;
@@ -114,6 +146,15 @@ namespace embree
     Vec3f moveDelta;
 
     bool command_line_camera;
+    bool print_frame_rate;
+    Averaged<double> avg_render_time;
+    Averaged<double> avg_frame_time;
+    bool print_camera;
+
+    int debug0;
+    int debug1;
+    int debug2;
+    int debug3;
 
     std::unique_ptr<ISPCScene> ispc_scene;
      
@@ -134,11 +175,14 @@ namespace embree
     bool convert_tris_to_quads;
     bool convert_bezier_to_lines;
     bool convert_hair_to_curves;
+    bool convert_bezier_to_bspline;
+    bool convert_bspline_to_bezier;
     FileName sceneFilename;
     std::vector<FileName> keyFramesFilenames;
     SceneGraph::InstancingMode instancing_mode;
     std::string subdiv_mode;
-    bool print_cameras;
+    bool print_scene_cameras;
     std::string camera_name;
+    RTCIntersectFlags iflags;
   };
 }

@@ -43,7 +43,7 @@ namespace embree
       void build(size_t, size_t) 
       {
         /* fast path for empty BVH */
-        const size_t numPrimitives = scene->getNumPrimitives<BezierCurves,false>();
+        const size_t numPrimitives = scene->getNumPrimitives<NativeCurves,false>();
         if (numPrimitives == 0) {
           prims.clear();
           bvh->set(BVH::emptyNode,empty,0);
@@ -56,7 +56,7 @@ namespace embree
         
         /* create primref array */
         prims.resize(numPrimitives);
-        const PrimInfo pinfo = createPrimRefArray<BezierCurves,false>(scene,prims,scene->progressInterface);
+        const PrimInfo pinfo = createPrimRefArray<NativeCurves,false>(scene,prims,scene->progressInterface);
 
         /* estimate acceleration structure size */
         const size_t node_bytes = pinfo.size()*sizeof(typename BVH::UnalignedNode)/(4*N);
@@ -76,7 +76,7 @@ namespace embree
           {
             size_t start = set.begin();
             size_t items = set.size();
-            Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive));
+            Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteAlignment);
             for (size_t i=0; i<items; i++) {
               accel[i].fill(prims.data(),start,set.end(),bvh->scene);
             }
@@ -134,7 +134,7 @@ namespace embree
         {
           BezierPrim& prim = prims[i];
           const size_t geomID = prim.geomID();
-          const BezierCurves* curves = scene->getBezierCurves(geomID);
+          const NativeCurves* curves = scene->get<NativeCurves>(geomID);
           allBounds.extend(curves->linearBounds(prim.primID(),timeSegment,numTimeSteps));
         }
         return allBounds;
@@ -147,7 +147,7 @@ namespace embree
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
         /* fast path for empty BVH */
-        const size_t numPrimitives = scene->getNumPrimitives<BezierCurves,true>();
+        const size_t numPrimitives = scene->getNumPrimitives<NativeCurves,true>();
         if (numPrimitives == 0) {
           prims.clear();
           bvh->set(BVH::emptyNode,empty,0);
@@ -159,7 +159,7 @@ namespace embree
         //profile(1,5,numPrimitives,[&] (ProfileTimer& timer) {
 
         /* create primref array */
-        bvh->numTimeSteps = scene->getNumTimeSteps<BezierCurves,true>();
+        bvh->numTimeSteps = scene->getNumTimeSteps<NativeCurves,true>();
         const size_t numTimeSegments = bvh->numTimeSteps-1; assert(bvh->numTimeSteps > 1);
         prims.resize(numPrimitives);
         bvh->alloc.init_estimate(numPrimitives*sizeof(Primitive)*numTimeSegments);
@@ -205,7 +205,7 @@ namespace embree
             {
               size_t items = pinfo.size();
               size_t start = pinfo.begin();
-              Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive));
+              Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteAlignment);
               NodeRef node = bvh->encodeLeaf((char*)accel,items);
               for (size_t i=0; i<items; i++) {
                 accel[i].fill(prims.data(),start,pinfo.end(),bvh->scene);

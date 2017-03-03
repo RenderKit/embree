@@ -17,7 +17,7 @@
 #pragma once
 
 #include "catmullclark_patch.h"
-#include "bezier_curve.h"
+#include "bspline_curve.h"
 
 namespace embree
 {
@@ -25,7 +25,7 @@ namespace embree
   {
   public:
 
-    template<class T>
+    template<typename T>
       static __forceinline Vec4<T>  eval(const T& u) 
     {
       const T t  = u;
@@ -37,7 +37,7 @@ namespace embree
       return Vec4<T>(n0,n1,n2,n3);
     }
     
-    template<class T>
+    template<typename T>
       static __forceinline Vec4<T>  derivative(const T& u)
     {
       const T t  =  u;
@@ -49,7 +49,7 @@ namespace embree
       return T(3.0f)*Vec4<T>(n0,n1,n2,n3);
     }
 
-    template<class T>
+    template<typename T>
       static __forceinline Vec4<T>  derivative2(const T& u)
     {
       const T t  =  u;
@@ -334,7 +334,7 @@ namespace embree
         return cross(tv,tu);
       }   
 
-      template<class T>
+      template<typename T>
       __forceinline Vec3<T> eval(const T& uu, const T& vv, const Vec4<T>& u_n, const Vec4<T>& v_n) const
       {
         const T curve0_x = madd(v_n[0],T(v[0][0].x),madd(v_n[1],T(v[1][0].x),madd(v_n[2],T(v[2][0].x),v_n[3] * T(v[3][0].x))));

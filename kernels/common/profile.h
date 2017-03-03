@@ -159,7 +159,7 @@ namespace embree
   template<typename Closure>
     void profile(ProfileTimer& timer, const size_t numSkip, const size_t numIter, const size_t numElements, const Closure& closure) 
     {
-      new (&timer) ProfileTimer(numSkip);
+      timer = ProfileTimer(numSkip);
       
       for (size_t i=0; i<numSkip+numIter; i++) 
       {

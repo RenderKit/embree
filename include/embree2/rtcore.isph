@@ -17,13 +17,19 @@
 #ifndef __RTCORE_ISPH__
 #define __RTCORE_ISPH__
 
+#if !defined(RTCORE_API)
+#define RTCORE_API extern "C" unmasked
+#endif
+
 #ifdef _WIN32
 #  define RTCORE_ALIGN(...) // FIXME: need to specify alignment
 #else
 #  define RTCORE_ALIGN(...) // FIXME: need to specify alignment
 #endif
 
+#if !defined(RTCORE_DEPRECATED)
 #define RTCORE_DEPRECATED // FIXME: deprecation not supported by ISPC
+#endif
 
 /*! Embree API version */
 #define RTCORE_VERSION_MAJOR @EMBREE_VERSION_MAJOR@

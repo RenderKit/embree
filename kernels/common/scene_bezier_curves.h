@@ -20,11 +20,12 @@
 #include "geometry.h"
 #include "buffer.h"
 #include "../subdiv/bezier_curve.h"
+#include "../subdiv/bspline_curve.h"
 
 namespace embree
 {
   /*! represents an array of bicubic bezier curves */
-  struct BezierCurves : public Geometry
+  struct NativeCurves : public Geometry
   {
     /*! type of this geometry */
     static const Geometry::Type geom_type = Geometry::BEZIER_CURVES;
@@ -32,10 +33,13 @@ namespace embree
     /*! this geometry represents approximate hair geometry and real bezier surface geometry */
     enum SubType { HAIR = 1, SURFACE = 0 };
 
+    /*! specified the basis the user specified vertices are stored in */
+    enum Basis { BEZIER = 0, BSPLINE = 1 };
+
   public:
     
     /*! bezier curve construction */
-    BezierCurves (Scene* parent, SubType subtype, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
+    NativeCurves (Scene* parent, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
     
   public:
     void enabling();
@@ -47,8 +51,12 @@ namespace embree
     void immutable ();
     bool verify ();
     void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+    template<typename Curve>
+      void interpolate_helper(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
     void setTessellationRate(float N);
     // FIXME: implement interpolateN
+    void commit();
+    template<typename InputCurve3fa> void commit_helper();
 
   public:
     
@@ -61,30 +69,46 @@ namespace embree
     __forceinline size_t numVertices() const {
       return vertices[0].size();
     }
+
+    /*! returns the number of vertices */
+    __forceinline size_t numNativeVertices() const {
+      return native_vertices[0].size();
+    }
     
     /*! returns the i'th curve */
     __forceinline const unsigned int& curve(size_t i) const {
-      return curves[i];
+      return native_curves[i];
+    }
+
+    /*! returns the i'th curve */
+    __forceinline const Curve3fa getCurve(size_t i, size_t itime = 0) const 
+    {
+      const unsigned int index = curve(i);
+      const Vec3fa v0 = vertex(index+0,itime);
+      const Vec3fa v1 = vertex(index+1,itime);
+      const Vec3fa v2 = vertex(index+2,itime);
+      const Vec3fa v3 = vertex(index+3,itime);
+      return Curve3fa (v0,v1,v2,v3);
     }
     
     /*! returns i'th vertex of the first time step */
     __forceinline Vec3fa vertex(size_t i) const {
-      return vertices0[i];
+      return native_vertices0[i];
     }
     
     /*! returns i'th radius of the first time step */
     __forceinline float radius(size_t i) const {
-      return vertices0[i].w;
+      return native_vertices0[i].w;
     }
 
     /*! returns i'th vertex of itime'th timestep */
     __forceinline Vec3fa vertex(size_t i, size_t itime) const {
-      return vertices[itime][i];
+      return native_vertices[itime][i];
     }
     
     /*! returns i'th radius of itime'th timestep */
     __forceinline float radius(size_t i, size_t itime) const {
-      return vertices[itime][i].w;
+      return native_vertices[itime][i].w;
     }
 
     /*! gathers the curve starting with i'th vertex of itime'th timestep */
@@ -126,14 +150,9 @@ namespace embree
     /*! calculates bounding box of i'th bezier curve */
     __forceinline BBox3fa bounds(size_t i, size_t itime = 0) const
     {
-      const unsigned int index = curve(i);
-      const Vec3fa v0 = vertex(index+0,itime);
-      const Vec3fa v1 = vertex(index+1,itime);
-      const Vec3fa v2 = vertex(index+2,itime);
-      const Vec3fa v3 = vertex(index+3,itime);
-      const BezierCurve3fa curve(v0,v1,v2,v3,0.0f,1.0f,0);
-      if (likely(subtype == HAIR)) return curve.bounds(tessellationRate);
-      else                         return curve.bounds();
+      const Curve3fa curve = getCurve(i,itime);
+      if (likely(subtype == HAIR)) return curve.tessellatedBounds(tessellationRate);
+      else                         return curve.accurateBounds();
     }
     
     /*! calculates bounding box of i'th bezier curve */
@@ -148,9 +167,9 @@ namespace embree
       Vec3fa w1 = xfmPoint(space,v1); w1.w = v1.w;
       Vec3fa w2 = xfmPoint(space,v2); w2.w = v2.w;
       Vec3fa w3 = xfmPoint(space,v3); w3.w = v3.w;
-      const BezierCurve3fa curve(w0,w1,w2,w3,0.0f,1.0f,0);
-      if (likely(subtype == HAIR)) return curve.bounds(tessellationRate);
-      else                         return curve.bounds();
+      const Curve3fa curve(w0,w1,w2,w3);
+      if (likely(subtype == HAIR)) return curve.tessellatedBounds(tessellationRate);
+      else                         return curve.accurateBounds();
     }
 
     /*! check if the i'th primitive is valid at the itime'th timestep */
@@ -162,7 +181,7 @@ namespace embree
     __forceinline bool valid(size_t i, const range<size_t>& itime_range) const
     {
       const unsigned int index = curve(i);
-      if (index+3 >= numVertices()) return false;
+      if (index+3 >= numNativeVertices()) return false;
 
       for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++)
       {
@@ -204,7 +223,7 @@ namespace embree
     __forceinline bool buildBounds(size_t i, BBox3fa* bbox = nullptr) const
     {
       const unsigned int index = curve(i);
-      if (index+3 >= numVertices()) return false;
+      if (index+3 >= numNativeVertices()) return false;
 
       for (size_t t=0; t<numTimeSteps; t++)
       {
@@ -214,8 +233,8 @@ namespace embree
         const float r3 = radius(index+3,t);
         if (!isvalid(r0) || !isvalid(r1) || !isvalid(r2) || !isvalid(r3))
           return false;
-        if (min(r0,r1,r2,r3) < 0.0f)
-          return false;
+        //if (min(r0,r1,r2,r3) < 0.0f)
+        //  return false;
 
         const Vec3fa v0 = vertex(index+0,t);
         const Vec3fa v1 = vertex(index+1,t);
@@ -233,7 +252,7 @@ namespace embree
     __forceinline bool buildPrim(size_t i, size_t itime, Vec3fa& c0, Vec3fa& c1, Vec3fa& c2, Vec3fa& c3) const
     {
       const unsigned int index = curve(i);
-      if (index+3 >= numVertices()) return false;
+      if (index+3 >= numNativeVertices()) return false;
       const Vec3fa a0 = vertex(index+0,itime+0); if (unlikely(!isvalid((vfloat4)a0))) return false;
       const Vec3fa a1 = vertex(index+1,itime+0); if (unlikely(!isvalid((vfloat4)a1))) return false;
       const Vec3fa a2 = vertex(index+2,itime+0); if (unlikely(!isvalid((vfloat4)a2))) return false;
@@ -266,10 +285,28 @@ namespace embree
 
   public:
     APIBuffer<unsigned int> curves;                   //!< array of curve indices
-    BufferRefT<Vec3fa> vertices0;                     //!< fast access to first vertex buffer
     vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
     vector<APIBuffer<char>> userbuffers;            //!< user buffers
     SubType subtype;                                //!< hair or surface geometry
+    Basis basis;                                    //!< basis of user provided vertices
     int tessellationRate;                           //!< tessellation rate for bezier curve
+  public:
+    BufferRefT<Vec3fa> native_vertices0;                     //!< fast access to first vertex buffer
+    APIBuffer<unsigned int> native_curves;                   //!< array of curve indices
+    vector<APIBuffer<Vec3fa>> native_vertices;               //!< vertex array for each timestep
+  };
+
+  struct CurvesBezier : public NativeCurves
+  {
+    CurvesBezier (Scene* parent, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
+    void commit();
+    void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+  };
+
+  struct CurvesBSpline : public NativeCurves
+  {
+    CurvesBSpline (Scene* parent, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
+    void commit();
+    void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
   };
 }

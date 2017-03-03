@@ -17,56 +17,57 @@
 #pragma once
 
 #include "../common/default.h"
+#include "bezier_curve.h"
 
 namespace embree
 {
-  class BezierBasis
+  class BSplineBasis2 // FIXME: make compatible with basis from bspline_patch.h
   {
   public:
 
     template<typename T>
-      static __forceinline Vec4<T> eval(const T& u) 
+      static __forceinline Vec4<T>  eval(const T& u) 
     {
-      const T t1 = u;
-      const T t0 = 1.0f-t1;
-      const T B0 = t0 * t0 * t0;
-      const T B1 = 3.0f * t1 * (t0 * t0);
-      const T B2 = 3.0f * (t1 * t1) * t0;
-      const T B3 = t1 * t1 * t1;
-      return Vec4<T>(B0,B1,B2,B3);
+      const T t  = u;
+      const T s  = T(1.0f) - u;
+      const T n0 = s*s*s;
+      const T n1 = (4.0f*(s*s*s)+(t*t*t)) + (12.0f*((s*t)*s) + 6.0f*((t*s)*t));
+      const T n2 = (4.0f*(t*t*t)+(s*s*s)) + (12.0f*((t*s)*t) + 6.0f*((s*t)*s));
+      const T n3 = t*t*t;
+      return T(1.0f/6.0f)*Vec4<T>(n0,n1,n2,n3);
     }
     
     template<typename T>
       static __forceinline Vec4<T>  derivative(const T& u)
     {
-      const T t1 = u;
-      const T t0 = 1.0f-t1;
-      const T B0 = -(t0*t0);
-      const T B1 = madd(-2.0f,t0*t1,t0*t0);
-      const T B2 = msub(+2.0f,t0*t1,t1*t1);
-      const T B3 = +(t1*t1);
-      return T(3.0f)*Vec4<T>(B0,B1,B2,B3);
+      const T t  =  u;
+      const T s  =  1.0f - u;
+      const T n0 = -s*s;
+      const T n1 = -t*t - 4.0f*(t*s);
+      const T n2 =  s*s + 4.0f*(s*t);
+      const T n3 =  t*t;
+      return T(0.5f)*Vec4<T>(n0,n1,n2,n3);
     }
 
     template<typename T>
       static __forceinline Vec4<T>  derivative2(const T& u)
     {
-      const T t1 = u;
-      const T t0 = 1.0f-t1;
-      const T B0 = t0;
-      const T B1 = madd(-2.0f,t0,t1);
-      const T B2 = madd(-2.0f,t1,t0);
-      const T B3 = t1;
-      return T(6.0f)*Vec4<T>(B0,B1,B2,B3);
+      const T t  =  u;
+      const T s  =  1.0f - u;
+      const T n0 = s;
+      const T n1 = t - 2.0f*s;
+      const T n2 = s - 2.0f*t;
+      const T n3 = t;
+      return Vec4<T>(n0,n1,n2,n3);
     }
   };
   
-  struct PrecomputedBezierBasis
+  struct PrecomputedBSplineBasis
   {
     enum { N = 16 };
   public:
-    PrecomputedBezierBasis() {}
-    PrecomputedBezierBasis(int shift);
+    PrecomputedBSplineBasis() {}
+    PrecomputedBSplineBasis(int shift);
 
     template<typename T>
     __forceinline Vec4<T> eval(const int u, const int size) 
@@ -90,134 +91,155 @@ namespace embree
                      T::loadu(&d3[size][u]));            
     }
     
-    /* basis for bezier evaluation */
+    /* basis for bspline evaluation */
   public:
     float c0[N+1][N+1];
     float c1[N+1][N+1];
     float c2[N+1][N+1];
     float c3[N+1][N+1];
     
-    /* basis for bezier derivative evaluation */
+    /* basis for bspline derivative evaluation */
   public:
     float d0[N+1][N+1];
     float d1[N+1][N+1];
     float d2[N+1][N+1];
     float d3[N+1][N+1];
   };
-  extern PrecomputedBezierBasis bezier_basis0;
-  extern PrecomputedBezierBasis bezier_basis1;
+  extern PrecomputedBSplineBasis bspline_basis0;
+  extern PrecomputedBSplineBasis bspline_basis1;
 
   template<typename Vertex>
-    struct BezierCurveT
+    struct BSplineCurveT
     {
       Vertex v0,v1,v2,v3;
       
-      __forceinline BezierCurveT() {}
+      __forceinline BSplineCurveT() {}
       
-      __forceinline BezierCurveT(const Vertex& v0, const Vertex& v1, const Vertex& v2, const Vertex& v3)
+      __forceinline BSplineCurveT(const Vertex& v0, const Vertex& v1, const Vertex& v2, const Vertex& v3)
         : v0(v0), v1(v1), v2(v2), v3(v3) {}
 
       __forceinline Vertex begin() const {
-        return v0;
+        return madd(1.0f/6.0f,v0,madd(2.0f/3.0f,v1,1.0f/6.0f*v2));
       }
 
       __forceinline Vertex end() const {
-        return v3;
+        return madd(1.0f/6.0f,v1,madd(2.0f/3.0f,v2,1.0f/6.0f*v3));
       }
-
+      
       __forceinline Vertex eval(const float t) const 
       {
-        const Vec4<float> b = BezierBasis::eval(t);
+        const Vec4<float> b = BSplineBasis2::eval(t);
         return madd(b.x,v0,madd(b.y,v1,madd(b.z,v2,b.w*v3)));
       }
       
       __forceinline Vertex eval_du(const float t) const
       {
-        const Vec4<float> b = BezierBasis::derivative(t);
+        const Vec4<float> b = BSplineBasis2::derivative(t);
         return madd(b.x,v0,madd(b.y,v1,madd(b.z,v2,b.w*v3)));
       }
       
       __forceinline Vertex eval_dudu(const float t) const 
       {
-        const Vec4<float> b = BezierBasis::derivative2(t);
+        const Vec4<float> b = BSplineBasis2::derivative2(t);
         return madd(b.x,v0,madd(b.y,v1,madd(b.z,v2,b.w*v3)));
       }
       
       __forceinline void eval(const float t, Vertex& p, Vertex& dp, Vertex& ddp) const
       {
-        const Vertex p00 = v0;
-        const Vertex p01 = v1;
-        const Vertex p02 = v2;
-        const Vertex p03 = v3;
-        const Vertex p10 = lerp(p00,p01,t);
-        const Vertex p11 = lerp(p01,p02,t);
-        const Vertex p12 = lerp(p02,p03,t);
-        const Vertex p20 = lerp(p10,p11,t);
-        const Vertex p21 = lerp(p11,p12,t);
-        const Vertex p30 = lerp(p20,p21,t);
-        p = p30;
-        dp = 3.0f*(p21-p20);
+        p = eval(t);
+        dp = eval_du(t);
         ddp = eval_dudu(t);
       }
       
-      friend inline std::ostream& operator<<(std::ostream& cout, const BezierCurveT& curve) {
-        return cout << "BezierCurve { v0 = " << curve.v0 << ", v1 = " << curve.v1 << ", v2 = " << curve.v2 << ", v3 = " << curve.v3 << " }";
+      friend inline std::ostream& operator<<(std::ostream& cout, const BSplineCurveT& curve) {
+        return cout << "BSplineCurve { v0 = " << curve.v0 << ", v1 = " << curve.v1 << ", v2 = " << curve.v2 << ", v3 = " << curve.v3 << " }";
       }
     };
-  
-  struct BezierCurve3fa : public BezierCurveT<Vec3fa>
-  {
-    //using BezierCurveT<Vec3fa>::BezierCurveT; // FIXME: not supported by VS2010
-    
-    __forceinline BezierCurve3fa() {}
 
-    __forceinline BezierCurve3fa(const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3)
-      : BezierCurveT<Vec3fa>(v0,v1,v2,v3) {}
+  template<typename Vertex>
+    __forceinline void convert(const BezierCurveT<Vertex>& icurve, BezierCurveT<Vertex>& ocurve) {
+     ocurve = icurve;
+   }
+
+   template<typename Vertex>
+    __forceinline void convert(const BSplineCurveT<Vertex>& icurve, BSplineCurveT<Vertex>& ocurve) {
+     ocurve = icurve;
+   }
+
+  template<typename Vertex>
+    __forceinline void convert(const BezierCurveT<Vertex>& icurve, BSplineCurveT<Vertex>& ocurve)
+  {
+    const Vertex v0 = madd(6.0f,icurve.v0,madd(-7.0f,icurve.v1,2.0f*icurve.v2));
+    const Vertex v1 = msub(2.0f,icurve.v1,icurve.v2);
+    const Vertex v2 = msub(2.0f,icurve.v2,icurve.v1);
+    const Vertex v3 = madd(2.0f,icurve.v1,madd(-7.0f,icurve.v2,6.0f*icurve.v3));
+    ocurve = BSplineCurveT<Vertex>(v0,v1,v2,v3);
+  }
+
+  template<typename Vertex>
+    __forceinline void convert(const BSplineCurveT<Vertex>& icurve, BezierCurveT<Vertex>& ocurve)
+  {
+    const Vertex v0 = madd(1.0f/6.0f,icurve.v0,madd(2.0f/3.0f,icurve.v1,1.0f/6.0f*icurve.v2));
+    const Vertex v1 = madd(2.0f/3.0f,icurve.v1,1.0f/3.0f*icurve.v2);
+    const Vertex v2 = madd(1.0f/3.0f,icurve.v1,2.0f/3.0f*icurve.v2);
+    const Vertex v3 = madd(1.0f/6.0f,icurve.v1,madd(2.0f/3.0f,icurve.v2,1.0f/6.0f*icurve.v3));
+    ocurve = BezierCurveT<Vertex>(v0,v1,v2,v3);
+  }
+
+  struct BSplineCurve3fa : public BSplineCurveT<Vec3fa>
+  {
+    //using BSplineCurveT<Vec3fa>::BSplineCurveT; // FIXME: not supported by VS2010
     
-    __forceinline void evalN(const vfloatx& t, Vec4vfx& p, Vec4vfx& dp) const
+    __forceinline BSplineCurve3fa() {}
+
+    __forceinline BSplineCurve3fa(const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3)
+      : BSplineCurveT<Vec3fa>(v0,v1,v2,v3) {}
+    
+    __forceinline Vec4vfx eval_(const vfloatx& t) const 
     {
-      const Vec4vfx p00 = v0;
-      const Vec4vfx p01 = v1;
-      const Vec4vfx p02 = v2;
-      const Vec4vfx p03 = v3;
-      
-      const Vec4vfx p10 = lerp(p00,p01,t);
-      const Vec4vfx p11 = lerp(p01,p02,t);
-      const Vec4vfx p12 = lerp(p02,p03,t);
-      const Vec4vfx p20 = lerp(p10,p11,t);
-      const Vec4vfx p21 = lerp(p11,p12,t);
-      const Vec4vfx p30 = lerp(p20,p21,t);
-      
-      p = p30;
-      dp = vfloatx(3.0f)*(p21-p20);
+      const Vec4vfx b = BSplineBasis2::eval(t);
+      return madd(b.x, Vec4vfx(v0), madd(b.y, Vec4vfx(v1), madd(b.z, Vec4vfx(v2), b.w * Vec4vfx(v3))));
     }
 
-#if 0    
+    __forceinline Vec4vfx derivative(const vfloatx& t) const 
+    {
+      const Vec4vfx b = BSplineBasis2::derivative(t);
+      return madd(b.x, Vec4vfx(v0), madd(b.y, Vec4vfx(v1), madd(b.z, Vec4vfx(v2), b.w * Vec4vfx(v3))));
+    }
+
+    __forceinline void evalN(const vfloatx& t, Vec4vfx& p, Vec4vfx& dp) const
+    {
+      p = eval_(t);
+      dp = derivative(t);
+    }
+
+#if 0
+    
     template<int M>
       __forceinline Vec4<vfloat<M>> eval0(const int ofs, const int size) const
     {
-      const Vec4<vfloat<M>> b = bezier_basis0.eval<vfloat<M>>(ofs,size);
+      const Vec4<vfloat<M>> b = bspline_basis0.eval<vfloat<M>>(ofs,size);
       return madd(b.x, Vec4<vfloat<M>>(v0), madd(b.y, Vec4<vfloat<M>>(v1), madd(b.z, Vec4<vfloat<M>>(v2), b.w * Vec4<vfloat<M>>(v3))));
     }
     
     template<int M>
       __forceinline Vec4<vfloat<M>> eval1(const int ofs, const int size) const
     {
-      const Vec4<vfloat<M>> b = bezier_basis1.eval<vfloat<M>>(ofs,size);
+      const Vec4<vfloat<M>> b = bspline_basis1.eval<vfloat<M>>(ofs,size);
       return madd(b.x, Vec4<vfloat<M>>(v0), madd(b.y, Vec4<vfloat<M>>(v1), madd(b.z, Vec4<vfloat<M>>(v2), b.w * Vec4<vfloat<M>>(v3))));
     }
 
     template<int M>
       __forceinline Vec4<vfloat<M>> derivative0(const int ofs, const int size) const
     {
-      const Vec4<vfloat<M>> b = bezier_basis0.derivative<vfloat<M>>(ofs,size);
+      const Vec4<vfloat<M>> b = bspline_basis0.derivative<vfloat<M>>(ofs,size);
       return madd(b.x, Vec4<vfloat<M>>(v0), madd(b.y, Vec4<vfloat<M>>(v1), madd(b.z, Vec4<vfloat<M>>(v2), b.w * Vec4<vfloat<M>>(v3))));
     }
 
     template<int M>
       __forceinline Vec4<vfloat<M>> derivative1(const int ofs, const int size) const
     {
-      const Vec4<vfloat<M>> b = bezier_basis1.derivative<vfloat<M>>(ofs,size);
+      const Vec4<vfloat<M>> b = bspline_basis1.derivative<vfloat<M>>(ofs,size);
       return madd(b.x, Vec4<vfloat<M>>(v0), madd(b.y, Vec4<vfloat<M>>(v1), madd(b.z, Vec4<vfloat<M>>(v2), b.w * Vec4<vfloat<M>>(v3))));
     }
 
@@ -226,50 +248,50 @@ namespace embree
     template<int M>
       __forceinline Vec4<vfloat<M>> eval0(const int ofs, const int size) const
     {
-      assert(size <= PrecomputedBezierBasis::N);
+      assert(size <= PrecomputedBSplineBasis::N);
       assert(ofs <= size);
-      return madd(vfloat<M>::loadu(&bezier_basis0.c0[size][ofs]), Vec4<vfloat<M>>(v0),
-                  madd(vfloat<M>::loadu(&bezier_basis0.c1[size][ofs]), Vec4<vfloat<M>>(v1),
-                       madd(vfloat<M>::loadu(&bezier_basis0.c2[size][ofs]), Vec4<vfloat<M>>(v2),
-                            vfloat<M>::loadu(&bezier_basis0.c3[size][ofs]) * Vec4<vfloat<M>>(v3))));
+      return madd(vfloat<M>::loadu(&bspline_basis0.c0[size][ofs]), Vec4<vfloat<M>>(v0),
+                  madd(vfloat<M>::loadu(&bspline_basis0.c1[size][ofs]), Vec4<vfloat<M>>(v1),
+                       madd(vfloat<M>::loadu(&bspline_basis0.c2[size][ofs]), Vec4<vfloat<M>>(v2),
+                            vfloat<M>::loadu(&bspline_basis0.c3[size][ofs]) * Vec4<vfloat<M>>(v3))));
     }
     
     template<int M>
       __forceinline Vec4<vfloat<M>> eval1(const int ofs, const int size) const
     {
-      assert(size <= PrecomputedBezierBasis::N);
+      assert(size <= PrecomputedBSplineBasis::N);
       assert(ofs <= size);
-      return madd(vfloat<M>::loadu(&bezier_basis1.c0[size][ofs]), Vec4<vfloat<M>>(v0), 
-                  madd(vfloat<M>::loadu(&bezier_basis1.c1[size][ofs]), Vec4<vfloat<M>>(v1),
-                       madd(vfloat<M>::loadu(&bezier_basis1.c2[size][ofs]), Vec4<vfloat<M>>(v2),
-                            vfloat<M>::loadu(&bezier_basis1.c3[size][ofs]) * Vec4<vfloat<M>>(v3))));
+      return madd(vfloat<M>::loadu(&bspline_basis1.c0[size][ofs]), Vec4<vfloat<M>>(v0), 
+                  madd(vfloat<M>::loadu(&bspline_basis1.c1[size][ofs]), Vec4<vfloat<M>>(v1),
+                       madd(vfloat<M>::loadu(&bspline_basis1.c2[size][ofs]), Vec4<vfloat<M>>(v2),
+                            vfloat<M>::loadu(&bspline_basis1.c3[size][ofs]) * Vec4<vfloat<M>>(v3))));
     }
 
     template<int M>
       __forceinline Vec4<vfloat<M>> derivative0(const int ofs, const int size) const
     {
-      assert(size <= PrecomputedBezierBasis::N);
+      assert(size <= PrecomputedBSplineBasis::N);
       assert(ofs <= size);
-      return madd(vfloat<M>::loadu(&bezier_basis0.d0[size][ofs]), Vec4<vfloat<M>>(v0),
-                  madd(vfloat<M>::loadu(&bezier_basis0.d1[size][ofs]), Vec4<vfloat<M>>(v1),
-                       madd(vfloat<M>::loadu(&bezier_basis0.d2[size][ofs]), Vec4<vfloat<M>>(v2),
-                            vfloat<M>::loadu(&bezier_basis0.d3[size][ofs]) * Vec4<vfloat<M>>(v3))));
+      return madd(vfloat<M>::loadu(&bspline_basis0.d0[size][ofs]), Vec4<vfloat<M>>(v0),
+                  madd(vfloat<M>::loadu(&bspline_basis0.d1[size][ofs]), Vec4<vfloat<M>>(v1),
+                       madd(vfloat<M>::loadu(&bspline_basis0.d2[size][ofs]), Vec4<vfloat<M>>(v2),
+                            vfloat<M>::loadu(&bspline_basis0.d3[size][ofs]) * Vec4<vfloat<M>>(v3))));
     }
 
     template<int M>
       __forceinline Vec4<vfloat<M>> derivative1(const int ofs, const int size) const
     {
-      assert(size <= PrecomputedBezierBasis::N);
+      assert(size <= PrecomputedBSplineBasis::N);
       assert(ofs <= size);
-      return madd(vfloat<M>::loadu(&bezier_basis1.d0[size][ofs]), Vec4<vfloat<M>>(v0),
-                  madd(vfloat<M>::loadu(&bezier_basis1.d1[size][ofs]), Vec4<vfloat<M>>(v1),
-                       madd(vfloat<M>::loadu(&bezier_basis1.d2[size][ofs]), Vec4<vfloat<M>>(v2),
-                            vfloat<M>::loadu(&bezier_basis1.d3[size][ofs]) * Vec4<vfloat<M>>(v3))));
+      return madd(vfloat<M>::loadu(&bspline_basis1.d0[size][ofs]), Vec4<vfloat<M>>(v0),
+                  madd(vfloat<M>::loadu(&bspline_basis1.d1[size][ofs]), Vec4<vfloat<M>>(v1),
+                       madd(vfloat<M>::loadu(&bspline_basis1.d2[size][ofs]), Vec4<vfloat<M>>(v2),
+                            vfloat<M>::loadu(&bspline_basis1.d3[size][ofs]) * Vec4<vfloat<M>>(v3))));
     }
 
 #endif
 
-    /* calculates bounds of bezier curve geometry */
+    /* calculates bounds of bspline curve geometry */
     __forceinline BBox3fa accurateBounds() const
     {
       const int N = 7;
@@ -301,14 +323,15 @@ namespace embree
         const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
         const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
         const Vec3fa upper_r = Vec3fa(reduce_max(abs(pi.w)));
-        return enlarge(BBox3fa(min(lower,v3),max(upper,v3)),max(upper_r,Vec3fa(abs(v3.w))));
+        const Vec3fa pe = end();
+        return enlarge(BBox3fa(min(lower,pe),max(upper,pe)),max(upper_r,Vec3fa(abs(pe.w))));
       } 
       else
       {
         Vec3vfx pl(pos_inf), pu(neg_inf); vfloatx ru(0.0f);
-        for (int i=0; i<N; i+=VSIZEX)
+        for (int i=0; i<=N; i+=VSIZEX)
         {
-          vboolx valid = vintx(i)+vintx(step) < vintx(N);
+          vboolx valid = vintx(i)+vintx(step) <= vintx(N);
           const Vec4vfx pi = eval0<VSIZEX>(i,N);
           
           pl.x = select(valid,min(pl.x,pi.x),pl.x); // FIXME: use masked min
@@ -319,18 +342,18 @@ namespace embree
           pu.y = select(valid,max(pu.y,pi.y),pu.y); 
           pu.z = select(valid,max(pu.z,pi.z),pu.z); 
 
-          ru   = select(valid,max(ru,abs(pi.w)),ru);
+          ru = select(valid,max(ru,abs(pi.w)),ru); 
         }
         const Vec3fa lower(reduce_min(pl.x),reduce_min(pl.y),reduce_min(pl.z));
         const Vec3fa upper(reduce_max(pu.x),reduce_max(pu.y),reduce_max(pu.z));
         const Vec3fa upper_r(reduce_max(ru));
-        return enlarge(BBox3fa(min(lower,v3),max(upper,v3)),max(upper_r,Vec3fa(abs(v3.w))));
+        return enlarge(BBox3fa(lower,upper),upper_r);
       }
     }
   };
-
-#if !EMBREE_NATIVE_CURVE_BSPLINE
-  #define CurveT BezierCurveT
-  typedef BezierCurve3fa Curve3fa;
+  
+#if EMBREE_NATIVE_CURVE_BSPLINE
+  #define CurveT BSplineCurveT
+  typedef BSplineCurve3fa Curve3fa;
 #endif
 }

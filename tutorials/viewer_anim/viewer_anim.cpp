@@ -18,30 +18,26 @@
 
 namespace embree
 {
-  extern "C" int g_instancing_mode;
-
   struct Tutorial : public SceneLoadingTutorialApplication
   {
     Tutorial()
-      : SceneLoadingTutorialApplication("viewer_anim",FEATURE_RTCORE) {
-      consoleOutput = false;
+      : SceneLoadingTutorialApplication("viewer_anim",FEATURE_RTCORE) 
+    {
+      iflags = RTC_INTERSECT_COHERENT;
     }
     
     void postParseCommandLine() 
     {
       /* load default scene if none specified */
-      // if (sceneFilename.ext() == "") {
-      //   FileName file = FileName::executableFolder() + FileName("models/cornell_box.ecs");
-      //   parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path());
-      // }
-      
-      g_instancing_mode = instancing_mode;
+      if (sceneFilename.ext() == "") {
+        FileName file = FileName::executableFolder() + FileName("models/cornell_box.ecs");
+        parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path());
+      }
     }
   };
 
 }
 
 int main(int argc, char** argv) {
-  int t = embree::Tutorial().main(argc,argv);
-  return t;
+  return embree::Tutorial().main(argc,argv);
 }

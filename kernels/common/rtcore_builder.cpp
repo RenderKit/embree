@@ -88,7 +88,7 @@ namespace embree
       parallel_for ( size_t(0), numPrimitives, [&](const range<size_t>& r) {
           BVHBuilderMorton::MortonCodeGenerator generator(mapping,&morton_src[r.begin()]);
           for (size_t i=r.begin(); i<r.end(); i++) {
-            generator(prims[i].bounds(),i);
+            generator(prims[i].bounds(),(unsigned) i);
           }
         });
 

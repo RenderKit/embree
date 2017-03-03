@@ -38,10 +38,6 @@ namespace embree
   Geometry::~Geometry() {
   }
 
-  void Geometry::write(std::ofstream& file) {
-    int type = -1; file.write((char*)&type,sizeof(type));
-  }
-
   void Geometry::updateIntersectionFilters(bool enable)
   {
     const size_t num1  = (intersectionFilter1  != nullptr) + (occlusionFilter1  != nullptr);

@@ -22,6 +22,7 @@
 extern uniform ISPCScene* uniform g_ispc_scene;
 extern uniform bool g_changed;
 extern uniform int g_instancing_mode;
+extern uniform RTCIntersectFlags g_iflags;
 
 /* scene data */
 RTCDevice g_device = NULL;
@@ -254,7 +255,9 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
   ray.time = RandomSampler_get1D(sampler);
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  uniform RTCIntersectContext context;
+  context.flags = g_iflags;
+  rtcIntersectEx(g_scene,&context,ray);
 
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {

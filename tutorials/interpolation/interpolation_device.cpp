@@ -267,7 +267,7 @@ unsigned int addQuadCube (RTCScene scene_i, const Vec3fa& pos)
 /* add curve geometry */
 unsigned int addCurve (RTCScene scene, const Vec3fa& pos)
 {
-  unsigned int geomID = rtcNewCurveGeometry (scene, RTC_GEOMETRY_DYNAMIC, 1, 4);
+  unsigned int geomID = rtcNewBezierCurveGeometry (scene, RTC_GEOMETRY_DYNAMIC, 1, 4);
 
   //rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, hair_vertices, 0, sizeof(Vec3fa));
    Vec3fa* vtx = (Vec3fa*) rtcMapBuffer(scene, geomID, RTC_VERTEX_BUFFER);

@@ -47,6 +47,7 @@ SET(EMBREE_LIBRARY_FILES
   common/scene_line_segments.cpp
 
   subdiv/bezier_curve.cpp
+  subdiv/bspline_curve.cpp
 
   geometry/primitive.cpp
   geometry/instance_intersector1.cpp
@@ -150,6 +151,7 @@ ENDIF()
 SET(EMBREE_LIBRARY_FILES_AVX2
 
     geometry/instance_intersector1.cpp
+    builders/primrefgen.cpp
     bvh/bvh_builder_morton.cpp
     bvh/bvh_rotate.cpp
     bvh/bvh_intersector1.cpp)

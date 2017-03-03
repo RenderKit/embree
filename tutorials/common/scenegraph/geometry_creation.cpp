@@ -301,7 +301,7 @@ namespace embree
 
   Ref<SceneGraph::Node> SceneGraph::createSphereShapedHair(const Vec3fa& center, const float radius, Ref<MaterialNode> material)
   {
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(true,material,1);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(SceneGraph::HairSetNode::HAIR,SceneGraph::HairSetNode::BEZIER,material,1);
     mesh->hairs.push_back(SceneGraph::HairSetNode::Hair(0,0));
     mesh->positions[0].push_back(Vec3fa(center+Vec3fa(-radius,0,0),radius));
     mesh->positions[0].push_back(Vec3fa(center+Vec3fa(0,radius,0),radius));
@@ -310,12 +310,12 @@ namespace embree
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
-  Ref<SceneGraph::Node> SceneGraph::createHairyPlane (int hash, const Vec3fa& pos, const Vec3fa& dx, const Vec3fa& dy, const float len, const float r, size_t numHairs, bool hair, Ref<MaterialNode> material)
+  Ref<SceneGraph::Node> SceneGraph::createHairyPlane (int hash, const Vec3fa& pos, const Vec3fa& dx, const Vec3fa& dy, const float len, const float r, size_t numHairs, SceneGraph::HairSetNode::Type type, Ref<MaterialNode> material)
   {
     RandomSampler sampler;
     RandomSampler_init(sampler,hash);
 
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(hair,material,1);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(type,SceneGraph::HairSetNode::BEZIER,material,1);
 
     if (numHairs == 1) {
       const Vec3fa p0 = pos;
@@ -462,7 +462,7 @@ namespace embree
   {
     RandomSampler sampler;
     RandomSampler_init(sampler,hash);
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(true,material,mblur?2:1);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(SceneGraph::HairSetNode::HAIR,SceneGraph::HairSetNode::BEZIER,material,mblur?2:1);
 
     mesh->hairs.resize(numHairs);
     for (size_t i=0; i<numHairs; i++) {

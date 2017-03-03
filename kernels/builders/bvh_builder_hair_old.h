@@ -57,8 +57,11 @@ namespace embree
           for (size_t i=set.begin(); i<set.end(); i++)
           {
             const BezierPrim& prim = prims[i];
-            const Vec3fa axis1 = normalize(prim.p3 - prim.p0);
-            if (sqr_length(prim.p3 - prim.p0) > 1E-18f) {
+            const Curve3fa curve(prim.p0,prim.p1,prim.p2,prim.p3);
+            const Vec3fa p0 = curve.begin();
+            const Vec3fa p3 = curve.end();
+            const Vec3fa axis1 = normalize(p3 - p0);
+            if (sqr_length(p3 - p0) > 1E-18f) {
               axis = axis1;
               break;
             }
@@ -77,18 +80,24 @@ namespace embree
             const BezierPrim& prim = prims[i];
             const size_t geomID = prim.geomID();
             const size_t primID = prim.primID();
-            const BezierCurves* curves = scene->getBezierCurves(geomID);
+            const NativeCurves* curves = scene->get<NativeCurves>(geomID);
             const int curve = curves->curve(primID);
             
-            const Vec3fa a3 = curves->vertex(curve+3,0);
-            //const Vec3fa a2 = curves->vertex(curve+2,0);
-            //const Vec3fa a1 = curves->vertex(curve+1,0);
-            const Vec3fa a0 = curves->vertex(curve+0,0);
+            const Vec3fa A3 = curves->vertex(curve+3,0);
+            const Vec3fa A2 = curves->vertex(curve+2,0);
+            const Vec3fa A1 = curves->vertex(curve+1,0);
+            const Vec3fa A0 = curves->vertex(curve+0,0);
+            const Curve3fa curveA(A0,A1,A2,A3);
+            const Vec3fa a0 = curveA.begin();
+            const Vec3fa a3 = curveA.end();
             
-            const Vec3fa b3 = curves->vertex(curve+3,1);
-            //const Vec3fa b2 = curves->vertex(curve+2,1);
-            //const Vec3fa b1 = curves->vertex(curve+1,1);
-            const Vec3fa b0 = curves->vertex(curve+0,1);
+            const Vec3fa B3 = curves->vertex(curve+3,1);
+            const Vec3fa B2 = curves->vertex(curve+2,1);
+            const Vec3fa B1 = curves->vertex(curve+1,1);
+            const Vec3fa B0 = curves->vertex(curve+0,1);
+            const Curve3fa curveB(B0,B1,B2,B3);
+            const Vec3fa b0 = curveB.begin();
+            const Vec3fa b3 = curveB.end();
             
             if (sqr_length(a3 - a0) > 1E-18f && sqr_length(b3 - b0) > 1E-18f)
             {
@@ -137,7 +146,7 @@ namespace embree
             geomBounds.extend(bounds);
             centBounds.extend(center2(bounds));
 
-            const BezierCurves* curves = scene->getBezierCurves(geomID);
+            const NativeCurves* curves = scene->get<NativeCurves>(geomID);
             const LBBox3fa linearBounds = curves->linearBounds(space,primID,timeSegment,numTimeSteps);
             s0t0.extend(linearBounds.bounds0);
             s1t1.extend(linearBounds.bounds1);

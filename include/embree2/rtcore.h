@@ -42,12 +42,14 @@ typedef int ssize_t;
 #  define RTCORE_ALIGN(...) __attribute__((aligned(__VA_ARGS__)))
 #endif
 
+#if !defined (RTCORE_DEPRECATED)
 #ifdef __GNUC__
   #define RTCORE_DEPRECATED __attribute__((deprecated))
 #elif defined(_MSC_VER)
   #define RTCORE_DEPRECATED __declspec(deprecated)
 #else
   #define RTCORE_DEPRECATED
+#endif
 #endif
 
 #if defined(_WIN32) 

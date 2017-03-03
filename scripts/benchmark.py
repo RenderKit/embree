@@ -64,9 +64,11 @@ def renderLoop():
 ########################## data extraction ##########################
 
 memory = {}
+memory_gain = {}
 buildperf = {}
 buildperf_gain = {}
 sah      = {}
+sah_gain = {}
 fps_avg  = {}
 fps_sigma  = {}
 fps_gain = {}
@@ -77,9 +79,11 @@ def extract(name,modelname,prevname):
   avgBase = baseName(name,'average')
   logFileName = statDir + dash + base + '.log'
   memory   [base] = 0
+  memory_gain[base] = 0
   buildperf[base] = 0
   buildperf_gain[base] = 0
   sah      [base] = 0
+  sah_gain [base] = 0
   fps_avg  [base] = 0
   fps_sigma[base] = 0
   fps_gain [base] = 0
@@ -92,7 +96,11 @@ def extract(name,modelname,prevname):
         if (prevname != ''):
           buildperf_gain[base] = 100.0*buildperf[base]/buildperf[prevBase]-100.0
         sah   [base] = numbers[2]
+        if (prevname != ''):
+          sah_gain[base] = 100.0*sah[base]/sah[prevBase]-100.0
         memory[base] = numbers[3]
+        if (prevname != ''):
+          memory_gain[base] = 100.0*memory[base]/memory[prevBase]-100.0
       if line.count('BENCHMARK_RENDER_AVG ') == 1:
         numbers = map(float, line[21:].split(" "))
         fps_avg[base] = numbers[0]
@@ -110,6 +118,8 @@ def extract(name,modelname,prevname):
   fps_avg  [avgBase] += fps_avg  [base] / len(models)
   fps_sigma[avgBase] += fps_sigma[base] / len(models)
   if (prevname != ''):
+    sah_gain  [avgBase] += sah_gain  [base] / len(models)
+    memory_gain  [avgBase] += memory_gain  [base] / len(models)
     fps_gain  [avgBase] += fps_gain  [base] / len(models)
     buildperf_gain  [avgBase] += buildperf_gain  [base] / len(models)
 
@@ -119,9 +129,11 @@ def extractLoop():
   for name in names:
     avgBase = baseName(name,'average')
     memory   [avgBase] = 0
+    memory_gain[avgBase] = 0
     buildperf[avgBase] = 0
     buildperf_gain [avgBase] = 0
     sah      [avgBase] = 0
+    sah_gain [avgBase] = 0
     fps_avg  [avgBase] = 0
     fps_sigma[avgBase] = 0
     fps_gain [avgBase] = 0
@@ -132,9 +144,11 @@ def extractLoop():
 def printData(name,modelname):
   base = baseName(name,modelname)
   line = (' %#6.1f MB' %  (1E-6*memory[base]))
+  line += (' (%#+6.2f%%)' %  memory_gain[base])
   line += (' %#8.2f M/s' %  (1E-6*buildperf[base]))
   line += (' (%#+6.2f%%)' %  buildperf_gain[base])
-  line += (' %#7.1f ' %  sah[base])
+  line += (' %#7.3f ' %  sah[base])
+  line += (' (%#+6.2f%%)' %  sah_gain[base])
   line += (' %#7.3f fps' %  fps_avg[base])
   line += (' +/-%#6.3f%% ' %  (100.0*fps_sigma[base]/fps_avg[base]))
   line += (' (%#+6.2f%%)' %  fps_gain[base])
@@ -142,8 +156,8 @@ def printData(name,modelname):
   sys.stdout.write(line)
 
 def printHeader():
-  tableWidth = 55 + 82
-  line  = '  ' + '{0:<55}'.format('') + ' |     Memory        Build               SAH       Render'
+  tableWidth = 55 + 102
+  line  = '  ' + '{0:<55}'.format('') + ' |     Memory                  Build               SAH                 Render'
   print(line)
   line = ''
   while (len(line) < tableWidth): line = line + '-'

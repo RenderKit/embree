@@ -313,7 +313,7 @@ namespace embree
           {
             assert(current.prims.size() == 1);
             BuildRef* ref = (BuildRef*) prims[current.prims.begin()].ID();
-            TransformNode* node = (TransformNode*) alloc->alloc0->malloc(sizeof(TransformNode));
+            TransformNode* node = (TransformNode*) alloc->alloc0->malloc(sizeof(TransformNode),BVH::byteAlignment);
             new (node) TransformNode(ref->local2world,ref->localBounds,ref->node,ref->mask,ref->instID,ref->xfmID,ref->type); // FIXME: rcp should be precalculated somewhere
             NodeRef noderef = BVH::encodeNode(node);
             noderef.setBarrier();
@@ -366,7 +366,7 @@ namespace embree
       /* calculate opening size */
       size_t num = 0;
       if      (scene->device->instancing_block_size ) num = numInstancedPrimitives/scene->device->instancing_block_size;
-      else if (scene->device->instancing_open_factor) num = scene->device->instancing_open_factor*refs.size();
+      else if (scene->device->instancing_open_factor != 0.0f) num = scene->device->instancing_open_factor*refs.size();
       num = max(num,scene->device->instancing_open_min);
       num = min(num,scene->device->instancing_open_max);
       refs.reserve(num);
