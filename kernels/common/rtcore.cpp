@@ -1151,7 +1151,7 @@ namespace embree
     return -1;
   }
 
-  RTCORE_API unsigned rtcNewBezierHairGeometry (RTCScene hscene, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
+  RTCORE_API unsigned rtcNewBezierHairGeometry (RTCScene hscene, RTCGeometryFlags flags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -1166,7 +1166,7 @@ namespace embree
     return -1;
   }
   
-  RTCORE_API unsigned rtcNewBSplineHairGeometry (RTCScene hscene, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
+  RTCORE_API unsigned rtcNewBSplineHairGeometry (RTCScene hscene, RTCGeometryFlags flags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -1196,7 +1196,7 @@ namespace embree
     return -1;
   }
 
-  RTCORE_API unsigned rtcNewBezierCurveGeometry (RTCScene hscene, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
+  RTCORE_API unsigned rtcNewBezierCurveGeometry (RTCScene hscene, RTCGeometryFlags flags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -1211,7 +1211,7 @@ namespace embree
     return -1;
   }
 
-  RTCORE_API unsigned rtcNewBSplineCurveGeometry (RTCScene hscene, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
+  RTCORE_API unsigned rtcNewBSplineCurveGeometry (RTCScene hscene, RTCGeometryFlags flags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
