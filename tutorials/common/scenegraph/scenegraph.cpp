@@ -272,7 +272,7 @@ namespace embree
       unsigned idx = hairs[i].vertex;
       if (test_location(positions,idx,positions_o,positions_o[0].size()-1)) 
       {
-        hairs[i].vertex = positions_o[0].size()-1;
+        hairs[i].vertex = (unsigned) positions_o[0].size()-1;
         for (size_t k=0; k<positions.size(); k++) {
           positions_o[k].push_back(positions[k][idx+1]);
           positions_o[k].push_back(positions[k][idx+2]);
@@ -282,14 +282,14 @@ namespace embree
 
       else if (test_location(positions,idx,positions_o,positions_o[0].size()-3)) 
       {
-        hairs[i].vertex = positions_o[0].size()-3;
+        hairs[i].vertex = (unsigned) positions_o[0].size()-3;
         for (size_t k=0; k<positions.size(); k++)
           positions_o[k].push_back(positions[k][idx+3]);
       }
 
       else
       {
-        hairs[i].vertex = positions_o[0].size();
+        hairs[i].vertex = (unsigned) positions_o[0].size();
         for (size_t k=0; k<positions.size(); k++) {
           positions_o[k].push_back(positions[k][idx+0]);
           positions_o[k].push_back(positions[k][idx+1]);

@@ -231,7 +231,7 @@ namespace embree
       parallel_for(size_t(0), curves.size(), size_t(1024), [&] ( const range<size_t> r) {
           for (size_t i=r.begin(); i<r.end(); i++) {
             if (curves[i]+3 >= numVertices()) native_curves[i] = 0xFFFFFFF0; // invalid curves stay invalid this way
-            else                              native_curves[i] = 4*i;
+            else                              native_curves[i] = unsigned(4*i);
           }
         });
     }

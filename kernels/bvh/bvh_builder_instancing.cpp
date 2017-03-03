@@ -311,7 +311,7 @@ namespace embree
       /* calculate opening size */
       size_t num = 0;
       if      (scene->device->instancing_block_size ) num = numInstancedPrimitives/scene->device->instancing_block_size;
-      else if (scene->device->instancing_open_factor) num = scene->device->instancing_open_factor*refs.size();
+      else if (scene->device->instancing_open_factor != 0.0f) num = scene->device->instancing_open_factor*refs.size();
       num = max(num,scene->device->instancing_open_min);
       num = min(num,scene->device->instancing_open_max);
       refs.reserve(num);

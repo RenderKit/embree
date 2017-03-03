@@ -124,9 +124,9 @@ namespace embree
     for (size_t i=0; i<in->numTimeSteps(); i++)
       positions[i] = in->positions[i].data();
     indices = in->indices.data();
-    numTimeSteps = in->numTimeSteps();
-    numVertices = in->numVertices();
-    numSegments = in->numPrimitives();
+    numTimeSteps = (unsigned) in->numTimeSteps();
+    numVertices = (unsigned) in->numVertices();
+    numSegments = (unsigned) in->numPrimitives();
     materialID = scene_in->materialID(in->material);
     scene = nullptr;
     geomID = -1;
