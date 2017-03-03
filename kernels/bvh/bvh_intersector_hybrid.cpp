@@ -62,7 +62,8 @@ namespace embree
       /* if the rays belong to different time segments, immediately switch to single ray traversal */
       Precalculations pre(valid,ray,bvh->numTimeSteps);
       const size_t valid_first = __bsf(valid_bits);
-      if (unlikely((types & BVH_MB) && (movemask(pre.itime() == pre.itime(valid_first)) != valid_bits)))
+      if (unlikely((types & BVH_MB) && (movemask(pre.itime() == pre.itime(valid_first)) != valid_bits)
+                   || (types == BVH_AN2_AN4D_UN2))) // FIXME: for some reason msmblur hair performs bad with hybrid traversal
       {
         intersectSingle(valid, bvh, pre, ray, context);
         AVX_ZERO_UPPER();
@@ -277,7 +278,8 @@ namespace embree
       /* if the rays belong to different time segments, immediately switch to single ray traversal */
       Precalculations pre(valid,ray,bvh->numTimeSteps);
       const size_t valid_first = __bsf(valid_bits);
-      if (unlikely((types & BVH_MB) && (movemask(pre.itime() == pre.itime(valid_first)) != valid_bits)))
+      if (unlikely((types & BVH_MB) && (movemask(pre.itime() == pre.itime(valid_first)) != valid_bits)
+                   || (types == BVH_AN2_AN4D_UN2))) // FIXME: for some reason msmblur hair performs bad with hybrid traversal
       {
         occludedSingle(valid, bvh, pre, ray, context);
         AVX_ZERO_UPPER();

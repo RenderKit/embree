@@ -1243,5 +1243,19 @@ namespace embree
         return true;
       }
     };
+
+    template<int N, int K>
+    struct BVHNNodeIntersectorK<N,K,BVH_AN2_AN4D_UN2,false>
+    {
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, 
+                                          const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                          const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
+      {
+        if (likely(node.isAlignedNodeMB())) vmask = intersectNode<N,K>(node.alignedNodeMB(),i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
+        else if (node.isAlignedNodeMB4D())  vmask = intersectNode<N,K>(node.alignedNodeMB4D(),i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
+        else /*if (unlikely(node.isUnalignedNodeMB()))*/ { assert(node.isUnalignedNodeMB()); vmask = intersectNode<N,K>(node.unalignedNodeMB(),i,org,dir,rdir,org_rdir,tnear,tfar,time,dist); }
+        return true;
+      }
+    };
   }
 }

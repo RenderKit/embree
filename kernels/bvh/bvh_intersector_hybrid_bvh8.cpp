@@ -59,6 +59,7 @@ namespace embree
   
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR4(BVH8Bezier1vIntersector4Hybrid_OBB, BVHNIntersectorKHybrid<8 COMMA 4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1vIntersectorK<4> > >));
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR4(BVH8Bezier1iIntersector4Hybrid_OBB, BVHNIntersectorKHybrid<8 COMMA 4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorK<4> > >));
+    IF_ENABLED_HAIR(DEFINE_INTERSECTOR4(BVH8MB4DBezier1iMBIntersector4Hybrid_OBB,BVHNIntersectorKHybrid<8 COMMA 4 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorKMB<4> > >));
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR4(BVH8Bezier1iMBIntersector4Hybrid_OBB,BVHNIntersectorKHybrid<8 COMMA 4 COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorKMB<4> > >));
 
 #endif
@@ -102,6 +103,7 @@ namespace embree
   
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR8(BVH8Bezier1vIntersector8Hybrid_OBB, BVHNIntersectorKHybrid<8 COMMA 8 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1vIntersectorK<8> > >));
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR8(BVH8Bezier1iIntersector8Hybrid_OBB, BVHNIntersectorKHybrid<8 COMMA 8 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorK<8> > >));
+    IF_ENABLED_HAIR(DEFINE_INTERSECTOR8(BVH8MB4DBezier1iMBIntersector8Hybrid_OBB,BVHNIntersectorKHybrid<8 COMMA 8 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorKMB<8> > >));
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR8(BVH8Bezier1iMBIntersector8Hybrid_OBB,BVHNIntersectorKHybrid<8 COMMA 8 COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorKMB<8> > >));
 #endif
 
@@ -144,6 +146,7 @@ namespace embree
   
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR16(BVH8Bezier1vIntersector16Hybrid_OBB, BVHNIntersectorKHybrid<8 COMMA 16 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1vIntersectorK<16> > >));
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR16(BVH8Bezier1iIntersector16Hybrid_OBB, BVHNIntersectorKHybrid<8 COMMA 16 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorK<16> > >));
+    IF_ENABLED_HAIR(DEFINE_INTERSECTOR16(BVH8MB4DBezier1iMBIntersector16Hybrid_OBB,BVHNIntersectorKHybrid<8 COMMA 16 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorKMB<
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR16(BVH8Bezier1iMBIntersector16Hybrid_OBB,BVHNIntersectorKHybrid<8 COMMA 16 COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorKMB<16> > >));
 
 #endif
