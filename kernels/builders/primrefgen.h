@@ -21,6 +21,7 @@
 #include "../common/primref_mb.h"
 #include "priminfo.h"
 #include "../geometry/bezier1v.h"
+#include "bvh_builder_morton.h"
 
 namespace embree
 {
@@ -40,6 +41,10 @@ namespace embree
 
     PrimInfo createBezierRefArray(Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor);
     PrimInfo createBezierRefArrayMBlur(size_t timeSegment, size_t numTimeSteps, Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor);
+
+    template<typename Mesh>
+      size_t createMortonCodeArray(Mesh* mesh, mvector<BVHBuilderMorton::BuildPrim>& morton, BuildProgressMonitor& progressMonitor);
+    
   }
 }
 

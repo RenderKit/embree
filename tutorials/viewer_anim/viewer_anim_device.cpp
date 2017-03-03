@@ -29,6 +29,7 @@
 namespace embree {
 
   extern "C" ISPCScene* g_ispc_scene;
+  extern "C" RTCIntersectFlags g_iflags;
 
   /* scene data */
   RTCDevice g_device   = nullptr;
@@ -361,7 +362,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
       }
 
     RTCIntersectContext context;
-    context.flags = RTC_INTERSECT_COHERENT;
+    context.flags = g_iflags;
 
     /* trace stream of rays */
     rtcIntersect1M(g_scene,&context,rays,N,sizeof(RTCRay));

@@ -157,7 +157,7 @@ namespace embree
             if (unlikely(child == BVH::emptyNode)) break;
             vfloat<K> lnearP;
             vbool<K> lhit(false);
-            BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,rdir,org_rdir,ray_tnear,ray_tfar,pre.ftime(),lnearP,lhit);
+            BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,pre.ftime(),lnearP,lhit);
 
             /* if we hit the child we choose to continue with that child if it
                is closer than the current next child, or we push it onto the stack */
@@ -368,7 +368,7 @@ namespace embree
             if (unlikely(child == BVH::emptyNode)) break;
             vfloat<K> lnearP;
             vbool<K> lhit(false);
-            BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,rdir,org_rdir,ray_tnear,ray_tfar,pre.ftime(),lnearP,lhit);
+            BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,pre.ftime(),lnearP,lhit);
 
             /* if we hit the child we choose to continue with that child if it
                is closer than the current next child, or we push it onto the stack */

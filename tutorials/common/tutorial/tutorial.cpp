@@ -55,7 +55,11 @@ namespace embree
     int64_t get_tsc() { return read_tsc(); }
 
     unsigned int g_numThreads = 0;
+
+    RTCIntersectFlags g_iflags = RTC_INTERSECT_INCOHERENT;
   }
+
+  extern "C" int g_instancing_mode;
 
   TutorialApplication* TutorialApplication::instance = nullptr; 
 
@@ -95,7 +99,12 @@ namespace embree
       print_frame_rate(false),
       avg_render_time(64,1.0),
       avg_frame_time(64,1.0),
-      print_camera(false)
+      print_camera(false),
+
+      debug0(0),
+      debug1(0),
+      debug2(0),
+      debug3(0)
   {
     /* only a single instance of this class is supported */
     assert(instance == nullptr);
@@ -174,6 +183,22 @@ namespace embree
          print_camera = true;
       }, "--print-camera: prints camera for each frame on console");
    
+     registerOption("debug0", [this] (Ref<ParseStream> cin, const FileName& path) {
+         debug0 = cin->getInt();
+       }, "--debug0: sets internal debugging value");
+
+     registerOption("debug1", [this] (Ref<ParseStream> cin, const FileName& path) {
+         debug1 = cin->getInt();
+       }, "--debug1: sets internal debugging value");
+
+     registerOption("debug2", [this] (Ref<ParseStream> cin, const FileName& path) {
+         debug2 = cin->getInt();
+       }, "--debug2: sets internal debugging value");
+
+     registerOption("debug3", [this] (Ref<ParseStream> cin, const FileName& path) {
+         debug3 = cin->getInt();
+       }, "--debug3: sets internal debugging value");
+   
     /* output filename */
     registerOption("shader", [this] (Ref<ParseStream> cin, const FileName& path) {
         std::string mode = cin->getString();
@@ -237,7 +262,8 @@ namespace embree
       convert_bspline_to_bezier(false),
       sceneFilename(""),
       instancing_mode(SceneGraph::INSTANCING_NONE),
-      print_scene_cameras(false)
+      print_scene_cameras(false),
+      iflags(RTC_INTERSECT_INCOHERENT)
   {
     registerOption("i", [this] (Ref<ParseStream> cin, const FileName& path) {
         sceneFilename = path + cin->getFileName();
@@ -290,6 +316,7 @@ namespace embree
         else if (mode == "scene_geometry") instancing_mode = SceneGraph::INSTANCING_SCENE_GEOMETRY;
         else if (mode == "scene_group"   ) instancing_mode = SceneGraph::INSTANCING_SCENE_GROUP;
         else throw std::runtime_error("unknown instancing mode: "+mode);
+        g_instancing_mode = instancing_mode;
       }, "--instancing: set instancing mode\n"
       "  none: no instancing\n"
       "  geometry: instance individual geometries\n"
@@ -409,6 +436,14 @@ namespace embree
     registerOption("camera", [this] (Ref<ParseStream> cin, const FileName& path) {
         camera_name = cin->getString();
       }, "--camera: use camera with specified name");    
+    
+    registerOption("coherent", [this] (Ref<ParseStream> cin, const FileName& path) {
+        g_iflags = iflags = RTC_INTERSECT_COHERENT;
+      }, "--coherent: use RTC_INTERSECT_COHERENT hint when tracing rays");
+    
+    registerOption("incoherent", [this] (Ref<ParseStream> cin, const FileName& path) {
+        g_iflags = iflags = RTC_INTERSECT_INCOHERENT;
+      }, "--coherent: use RTC_INTERSECT_INCOHERENT hint when tracing rays");
   }
 
   void TutorialApplication::renderBenchmark()
@@ -737,6 +772,12 @@ namespace embree
 
   void TutorialApplication::run(int argc, char** argv)
   {
+    /* set debug values */
+    rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000000, debug0); 
+    rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000001, debug1); 
+    rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000002, debug2); 
+    rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000003, debug3); 
+   
     /* initialize ray tracing core */
     device_init(rtcore.c_str());
     
@@ -752,7 +793,7 @@ namespace embree
     case SHADER_GEOMID_PRIMID: device_key_pressed(GLUT_KEY_F7); break;
     case SHADER_AMBIENT_OCCLUSION: device_key_pressed(GLUT_KEY_F11); break;
     };
-    
+     
     /* benchmark mode */
     if (numBenchmarkFrames)
     {

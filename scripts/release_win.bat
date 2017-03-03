@@ -12,7 +12,7 @@ REM set release settings
 cmake -L ^
 -G "Visual Studio 12 2013" ^
 -T "Intel C++ Compiler 16.0" ^
--D EMBREE_MAX_ISA=AVX2 ^
+-D EMBREE_MAX_ISA=AVX512SKX ^
 -D EMBREE_TUTORIALS_IMAGE_MAGICK=OFF ^
 -D EMBREE_TUTORIALS_LIBJPEG=OFF  ^
 -D EMBREE_TUTORIALS_LIBPNG=OFF ^
@@ -54,7 +54,7 @@ REM set release settings
 cmake -L ^
 -G "Visual Studio 12 2013 Win64" ^
 -T "Intel C++ Compiler 16.0" ^
--D EMBREE_MAX_ISA=AVX2 ^
+-D EMBREE_MAX_ISA=AVX512SKX ^
 -D EMBREE_TBB_ROOT=%TBB_PATH_LOCAL% ^
 -D ENABLE_XEON_PHI_SUPPORT=OFF ^
 -D EMBREE_TUTORIALS_IMAGE_MAGICK=OFF ^
@@ -87,7 +87,7 @@ cmake ^
 ..
 cmake --build . --config Release --target PACKAGE -- /m /nologo /verbosity:n
 
-del CMakeCache.txt 
+del CMakeCache.txt
 cd ..
 
 :abort

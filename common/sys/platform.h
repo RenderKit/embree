@@ -293,6 +293,8 @@ __forceinline std::string toString(long long value) {
 //#pragma warning(disable:4838) // conversion from 'unsigned int' to 'const int' requires a narrowing conversion)
 //#pragma warning(disable:4227) // anachronism used : qualifiers on reference are ignored
 #pragma warning(disable:4503) // decorated name length exceeded, name was truncated
+#pragma warning(disable:4180) // qualifier applied to function type has no meaning; ignored
+#pragma warning(disable:4258) // definition from the for loop is ignored; the definition from the enclosing scope is used
 #endif
 
 #if defined(__clang__) && !defined(__INTEL_COMPILER)

@@ -222,8 +222,8 @@ namespace embree
       {
         unsigned int geomID = 0;
         switch (mesh->basis) {
-        case SceneGraph::HairSetNode::BEZIER : geomID = rtcNewBezierHairGeometry (scene, gflag, mesh->hairs.size(), mesh->numVertices(), mesh->numTimeSteps()); break;
-        case SceneGraph::HairSetNode::BSPLINE: geomID = rtcNewBSplineHairGeometry (scene, gflag, mesh->hairs.size(), mesh->numVertices(), mesh->numTimeSteps()); break;
+        case SceneGraph::HairSetNode::BEZIER : geomID = rtcNewBezierHairGeometry (scene, gflag, mesh->numPrimitives() , mesh->numVertices(), mesh->numTimeSteps()); break;
+        case SceneGraph::HairSetNode::BSPLINE: geomID = rtcNewBSplineHairGeometry (scene, gflag, mesh->numPrimitives(), mesh->numVertices(), mesh->numTimeSteps()); break;
         default: assert(false);
         }
         for (size_t t=0; t<mesh->numTimeSteps(); t++)

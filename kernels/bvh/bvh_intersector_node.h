@@ -223,7 +223,7 @@ namespace embree
 
     template<int N, int K>
       __forceinline vbool<K> intersectNode(const typename BVHN<N>::AlignedNode* node, size_t i, 
-                                           const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                           const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
                                            const vfloat<K>& tnear, const vfloat<K>& tfar, vfloat<K>& dist)
  
     {
@@ -338,7 +338,7 @@ namespace embree
 
     template<int N, int K>
       __forceinline vbool<K> intersectNodeRobust(const typename BVHN<N>::AlignedNode* node, size_t i, 
-                                                 const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                                 const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
                                                  const vfloat<K>& tnear, const vfloat<K>& tfar, vfloat<K>& dist)
     {
       // FIXME: use per instruction rounding for AVX512
@@ -407,7 +407,7 @@ namespace embree
 
     template<int N, int K>
     __forceinline vbool<K> intersectNode(const typename BVHN<N>::AlignedNodeMB* node, const size_t i, 
-                                         const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                         const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
                                          const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist)
     {
       const vfloat<K> vlower_x = madd(time,vfloat<K>(node->lower_dx[i]),vfloat<K>(node->lower_x[i]));
@@ -488,7 +488,7 @@ namespace embree
 
     template<int N, int K>
     __forceinline vbool<K> intersectNodeRobust(const typename BVHN<N>::AlignedNodeMB* node, const size_t i, 
-                                               const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                               const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
                                                const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist)
     {
       const vfloat<K> vlower_x = madd(time,vfloat<K>(node->lower_dx[i]),vfloat<K>(node->lower_x[i]));
@@ -650,7 +650,7 @@ namespace embree
 
     template<int N, int K>
       __forceinline vbool<K> intersectNodeRobust(const typename BVHN<N>::AlignedNodeMB4D* node, const size_t i, 
-                                                 const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                                 const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
                                                  const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist)
     {
       const vfloat<K> vlower_x = madd(time,vfloat<K>(node->lower_dx[i]),vfloat<K>(node->lower_x[i]));
@@ -1082,10 +1082,10 @@ namespace embree
     template<int N, int K>
     struct BVHNNodeIntersectorK<N,K,BVH_AN1,false>
     {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
       {
-        vmask = intersectNode<N,K>(node.alignedNode(),i,org,rdir,org_rdir,tnear,tfar,dist);
+        vmask = intersectNode<N,K>(node.alignedNode(),i,org,dir,rdir,org_rdir,tnear,tfar,dist);
         return true;
       }
     };
@@ -1093,10 +1093,10 @@ namespace embree
     template<int N, int K>
       struct BVHNNodeIntersectorK<N,K,BVH_AN1,true>
     {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
       {
-        vmask = intersectNodeRobust<N,K>(node.alignedNode(),i,org,rdir,org_rdir,tnear,tfar,dist);
+        vmask = intersectNodeRobust<N,K>(node.alignedNode(),i,org,dir,rdir,org_rdir,tnear,tfar,dist);
         return true;
       }
     };
@@ -1104,10 +1104,10 @@ namespace embree
     template<int N, int K>
     struct BVHNNodeIntersectorK<N,K,BVH_AN2,false>
     {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
       {
-        vmask = intersectNode<N,K>(node.alignedNodeMB(),i,org,rdir,org_rdir,tnear,tfar,time,dist);
+        vmask = intersectNode<N,K>(node.alignedNodeMB(),i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
         return true;
       }
     };
@@ -1115,10 +1115,10 @@ namespace embree
     template<int N, int K>
     struct BVHNNodeIntersectorK<N,K,BVH_AN2,true>
     {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
       {
-        vmask = intersectNodeRobust<N,K>(node.alignedNodeMB(),i,org,rdir,org_rdir,tnear,tfar,time,dist);
+        vmask = intersectNodeRobust<N,K>(node.alignedNodeMB(),i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
         return true;
       }
     };
@@ -1127,11 +1127,11 @@ namespace embree
     struct BVHNNodeIntersectorK<N,K,BVH_AN2_AN4D,false>
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, 
-                                          const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                          const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
       {
-        if (likely(node.isAlignedNodeMB()))    vmask = intersectNode<N,K>(node.alignedNodeMB(),i,org,rdir,org_rdir,tnear,tfar,time,dist);
-        else /*if (node.isAlignedNodeMB4D())*/ vmask = intersectNode<N,K>(node.alignedNodeMB4D(),i,org,rdir,org_rdir,tnear,tfar,time,dist);
+        if (likely(node.isAlignedNodeMB()))    vmask = intersectNode<N,K>(node.alignedNodeMB(),i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
+        else /*if (node.isAlignedNodeMB4D())*/ vmask = intersectNode<N,K>(node.alignedNodeMB4D(),i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
         return true;
       }
     };
@@ -1140,11 +1140,11 @@ namespace embree
     struct BVHNNodeIntersectorK<N,K,BVH_AN2_AN4D,true>
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, 
-                                          const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                          const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
       {
-        if (likely(node.isAlignedNodeMB()))    vmask = intersectNodeRobust<N,K>(node.alignedNodeMB(),i,org,rdir,org_rdir,tnear,tfar,time,dist);
-        else /*if (node.isAlignedNodeMB4D())*/ vmask = intersectNodeRobust<N,K>(node.alignedNodeMB4D(),i,org,rdir,org_rdir,tnear,tfar,time,dist);
+        if (likely(node.isAlignedNodeMB()))    vmask = intersectNodeRobust<N,K>(node.alignedNodeMB(),i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
+        else /*if (node.isAlignedNodeMB4D())*/ vmask = intersectNodeRobust<N,K>(node.alignedNodeMB4D(),i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
         return true;
       }
     };

@@ -32,8 +32,6 @@
 
 #define ROTATE_TREE 1 // specifies number of tree rotation rounds to perform
 
-#define BLOCK_SIZE size_t(1024)
-
 namespace embree 
 {
   namespace isa
@@ -217,8 +215,7 @@ namespace embree
         NodeRef ref = BVH::encodeLeaf((char*)accel,1);
         
         vint4 vgeomID = -1, vprimID = -1;
-        Vec3f* v0[4] = { nullptr, nullptr, nullptr, nullptr };
-        vint4 v1 = zero, v2 = zero;
+        vint4 v0 = zero, v1 = zero, v2 = zero;
         const unsigned geomID = this->mesh->id;
         const TriangleMesh* __restrict__ const mesh = this->mesh;
         
@@ -233,16 +230,17 @@ namespace embree
           upper = max(upper,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
           vgeomID[i] = geomID;
           vprimID[i] = primID;
-          v0[i] = (Vec3f*) mesh->vertexPtr(tri.v[0]); 
-          v1[i] = int(ssize_t((int*)   mesh->vertexPtr(tri.v[1])-(int*)v0[i])); 
-          v2[i] = int(ssize_t((int*)   mesh->vertexPtr(tri.v[2])-(int*)v0[i])); 
+          int* base = (int*) mesh->vertexPtr(tri.v[0]);
+          v0[i] = tri.v[0];
+          v1[i] = int(ssize_t((int*)mesh->vertexPtr(tri.v[1])-base)); 
+          v2[i] = int(ssize_t((int*)mesh->vertexPtr(tri.v[2])-base)); 
         }
         
         for (size_t i=items; i<4; i++)
         {
-          vgeomID[i] = -1;
+          vgeomID[i] = vgeomID[0];
           vprimID[i] = -1;
-          v0[i] = v0[0];
+          v0[i] = 0;
           v1[i] = 0; 
           v2[i] = 0;
         }
@@ -410,74 +408,9 @@ namespace embree
         bytesAllocated = max(bytesAllocated,bytesMortonCodes); // the first allocation block is reused to sort the morton codes
         bvh->alloc.init(bytesAllocated,2*bytesAllocated);
 
-        /* compute scene bounds */
-        std::pair<size_t,BBox3fa> cb_empty(0,empty);
-        auto cb = parallel_reduce 
-          ( size_t(0), numPrimitives, BLOCK_SIZE, cb_empty, [&](const range<size_t>& r) -> std::pair<size_t,BBox3fa>
-            {
-              size_t num = 0;
-              BBox3fa bounds = empty;
-
-              for (size_t j=r.begin(); j<r.end(); j++)
-              {
-                BBox3fa prim_bounds = empty;
-                if (unlikely(!mesh->buildBounds(j,&prim_bounds))) continue;
-                bounds.extend(center2(prim_bounds));
-                num++;
-              }
-              return std::make_pair(num,bounds);
-            }, [] (const std::pair<size_t,BBox3fa>& a, const std::pair<size_t,BBox3fa>& b) {
-              return std::make_pair(a.first + b.first,merge(a.second,b.second)); 
-            });
-
-
-        size_t numPrimitivesGen = cb.first;
-        const BBox3fa centBounds = cb.second;
-
-        /* compute morton codes */
+        /* create morton code array */
         BVHBuilderMorton::BuildPrim* dest = (BVHBuilderMorton::BuildPrim*) bvh->alloc.specialAlloc(bytesMortonCodes);
-
-        if (likely(numPrimitivesGen == numPrimitives))
-        {
-          /* fast path if all primitives were valid */
-          BVHBuilderMorton::MortonCodeMapping mapping(centBounds);
-          parallel_for( size_t(0), numPrimitives, BLOCK_SIZE, [&](const range<size_t>& r) -> void {
-              BVHBuilderMorton::MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
-              for (size_t j=r.begin(); j<r.end(); j++)
-                generator(mesh->bounds(j),unsigned(j));
-            });
-        }
-        else
-        {
-          /* slow path, fallback in case some primitives were invalid */
-          ParallelPrefixSumState<size_t> pstate;
-          BVHBuilderMorton::MortonCodeMapping mapping(centBounds);
-          parallel_prefix_sum( pstate, size_t(0), numPrimitives, BLOCK_SIZE, size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
-              size_t num = 0;
-              BVHBuilderMorton::MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
-              for (size_t j=r.begin(); j<r.end(); j++)
-              {
-                BBox3fa bounds = empty;
-                if (unlikely(!mesh->buildBounds(j,&bounds))) continue;
-                generator(bounds,unsigned(j));
-                num++;
-              }
-              return num;
-            }, std::plus<size_t>());
-
-          parallel_prefix_sum( pstate, size_t(0), numPrimitives, BLOCK_SIZE, size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
-              size_t num = 0;
-              BVHBuilderMorton::MortonCodeGenerator generator(mapping,&morton.data()[base]);
-              for (size_t j=r.begin(); j<r.end(); j++)
-              {
-                BBox3fa bounds = empty;
-                if (!mesh->buildBounds(j,&bounds)) continue;
-                generator(bounds,unsigned(j));
-                num++;
-              }
-              return num;
-            }, std::plus<size_t>());          
-        }
+        size_t numPrimitivesGen = createMortonCodeArray<Mesh>(mesh,morton,bvh->scene->progressInterface);
 
         /* create BVH */
         SetBVHNBounds<N> setBounds(bvh);

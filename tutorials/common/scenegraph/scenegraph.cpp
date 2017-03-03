@@ -260,7 +260,7 @@ namespace embree
     }
     return true;
   }
-
+  
   void SceneGraph::HairSetNode::compact_vertices()
   {
     std::vector<avector<Vec3fa>> positions_o(positions.size());
@@ -272,7 +272,7 @@ namespace embree
       unsigned idx = hairs[i].vertex;
       if (test_location(positions,idx,positions_o,positions_o[0].size()-1)) 
       {
-        hairs[i].vertex = positions_o[0].size()-1;
+        hairs[i].vertex = (unsigned) positions_o[0].size()-1;
         for (size_t k=0; k<positions.size(); k++) {
           positions_o[k].push_back(positions[k][idx+1]);
           positions_o[k].push_back(positions[k][idx+2]);
@@ -282,14 +282,14 @@ namespace embree
 
       else if (test_location(positions,idx,positions_o,positions_o[0].size()-3)) 
       {
-        hairs[i].vertex = positions_o[0].size()-3;
+        hairs[i].vertex = (unsigned) positions_o[0].size()-3;
         for (size_t k=0; k<positions.size(); k++)
           positions_o[k].push_back(positions[k][idx+3]);
       }
 
       else
       {
-        hairs[i].vertex = positions_o[0].size();
+        hairs[i].vertex = (unsigned) positions_o[0].size();
         for (size_t k=0; k<positions.size(); k++) {
           positions_o[k].push_back(positions[k][idx+0]);
           positions_o[k].push_back(positions[k][idx+1]);
@@ -299,8 +299,8 @@ namespace embree
       }
     }
 
-    for (size_t i=0; i<positions_o.size(); i++)
-      positions_o.shrink_to_fit();
+    for (auto& v : positions_o)
+      v.shrink_to_fit();
    
     positions = std::move(positions_o);
   }
