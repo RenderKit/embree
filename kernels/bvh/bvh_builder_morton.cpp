@@ -215,8 +215,7 @@ namespace embree
         NodeRef ref = BVH::encodeLeaf((char*)accel,1);
         
         vint4 vgeomID = -1, vprimID = -1;
-        Vec3f* v0[4] = { nullptr, nullptr, nullptr, nullptr };
-        vint4 v1 = zero, v2 = zero;
+        vint4 v0 = zero, v1 = zero, v2 = zero;
         const unsigned geomID = this->mesh->id;
         const TriangleMesh* __restrict__ const mesh = this->mesh;
         
@@ -231,16 +230,17 @@ namespace embree
           upper = max(upper,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
           vgeomID[i] = geomID;
           vprimID[i] = primID;
-          v0[i] = (Vec3f*) mesh->vertexPtr(tri.v[0]); 
-          v1[i] = int(ssize_t((int*)   mesh->vertexPtr(tri.v[1])-(int*)v0[i])); 
-          v2[i] = int(ssize_t((int*)   mesh->vertexPtr(tri.v[2])-(int*)v0[i])); 
+          int* base = (int*) mesh->vertexPtr(tri.v[0]);
+          v0[i] = tri.v[0];
+          v1[i] = int(ssize_t((int*)mesh->vertexPtr(tri.v[1])-base)); 
+          v2[i] = int(ssize_t((int*)mesh->vertexPtr(tri.v[2])-base)); 
         }
         
         for (size_t i=items; i<4; i++)
         {
-          vgeomID[i] = -1;
+          vgeomID[i] = vgeomID[0];
           vprimID[i] = -1;
-          v0[i] = v0[0];
+          v0[i] = 0;
           v1[i] = 0; 
           v2[i] = 0;
         }

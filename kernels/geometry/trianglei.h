@@ -48,18 +48,14 @@ namespace embree
     __forceinline TriangleMi() {  }
 
     /* Construction from vertices and IDs */
-    __forceinline TriangleMi(Vec3f* base[M], const vint<M>& v1, const vint<M>& v2, const vint<M>& geomIDs, const vint<M>& primIDs)
-      : v1(v1), v2(v2), geomIDs(geomIDs), primIDs(primIDs) 
-    {
-      for (size_t i=0; i<M; i++)
-        v0[i] = base[i];
-    }
-
+    __forceinline TriangleMi(const vint<M>& v0, const vint<M>& v1, const vint<M>& v2, const vint<M>& geomIDs, const vint<M>& primIDs)
+      : v0(v0), v1(v1), v2(v2), geomIDs(geomIDs), primIDs(primIDs) {}
+    
     /* Returns a mask that tells which triangles are valid */
     __forceinline vbool<M> valid() const { return primIDs != vint<M>(-1); }
     
     /* Returns if the specified triangle is valid */
-    __forceinline bool valid(const size_t i) const { assert(i<M); return geomIDs[i] != -1; }
+    __forceinline bool valid(const size_t i) const { assert(i<M); return primIDs[i] != -1; }
     
     /* Returns the number of stored triangles */
     __forceinline size_t size() const { return __bsf(~movemask(valid())); }
@@ -73,32 +69,12 @@ namespace embree
     __forceinline int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
     /* gather the triangles */
-    __forceinline void gather(Vec3<vfloat<M>>& p0, Vec3<vfloat<M>>& p1, Vec3<vfloat<M>>& p2) const;
+    __forceinline void gather(Vec3<vfloat<M>>& p0, Vec3<vfloat<M>>& p1, Vec3<vfloat<M>>& p2, const Scene* const scene) const;
     
-    /* Calculate the bounds of the triangles */
-    __forceinline const BBox3fa bounds() const 
-    {
-      BBox3fa bounds = empty;
-      for (size_t i=0; i<M && geomIDs[i] != -1; i++)
-      {
-	const int* base = (int*) v0[i];
-	const Vec3fa p0 = *(Vec3fa*)(base);
-	const Vec3fa p1 = *(Vec3fa*)(base+v1[i]);
-	const Vec3fa p2 = *(Vec3fa*)(base+v2[i]);
-	bounds.extend(p0);
-	bounds.extend(p1);
-	bounds.extend(p2);
-      }
-      return bounds;
-    }
-
      /* Non temporal store */
     __forceinline static void store_nt(TriangleMi* dst, const TriangleMi& src)
     {
-      vint<M>::store_nt(&((vint<M>*)&dst->v0)[0],((vint<M>*)&src.v0)[0]);
-#if defined(__X86_64__)
-      vint<M>::store_nt(&((vint<M>*)&dst->v0)[1],((vint<M>*)&src.v0)[1]);
-#endif
+      vint<M>::store_nt(&dst->v0,src.v0);
       vint<M>::store_nt(&dst->v1,src.v1);
       vint<M>::store_nt(&dst->v2,src.v2);
       vint<M>::store_nt(&dst->geomIDs,src.geomIDs);
@@ -109,8 +85,7 @@ namespace embree
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene)
     {
       vint<M> geomID = -1, primID = -1;
-      Vec3f* v0[M];
-      vint<M> v1 = zero, v2 = zero;
+      vint<M> v0 = zero, v1 = zero, v2 = zero;
       const PrimRef* prim = &prims[begin];
       
       for (size_t i=0; i<M; i++)
@@ -120,16 +95,17 @@ namespace embree
 	if (begin<end) {
 	  geomID[i] = prim->geomID();
 	  primID[i] = prim->primID();
-	  v0[i] = (Vec3f*) mesh->vertexPtr(tri.v[0]); 
-	  v1[i] = int(size_t((int*)   mesh->vertexPtr(tri.v[1])-(int*)v0[i])); 
-	  v2[i] = int(size_t((int*)   mesh->vertexPtr(tri.v[2])-(int*)v0[i])); 
+          int* base = (int*) mesh->vertexPtr(tri.v[0]);
+	  v0[i] = tri.v[0]; 
+	  v1[i] = int(size_t((int*)mesh->vertexPtr(tri.v[1])-base)); 
+	  v2[i] = int(size_t((int*)mesh->vertexPtr(tri.v[2])-base)); 
 	  begin++;
 	} else {
 	  assert(i);
           if (i > 0) {
-            geomID[i] = -1;
+            geomID[i] = geomID[0];
             primID[i] = -1;
-            v0[i] = v0[i-1];
+            v0[i] = 0;
             v1[i] = 0; 
             v2[i] = 0;
           }
@@ -158,7 +134,7 @@ namespace embree
     }
     
   public:
-    const Vec3f* v0[M]; // pointer to 1st vertex
+    vint<M> v0;         // index to 1st vertex
     vint<M> v1;         // offset to 2nd vertex
     vint<M> v2;         // offset to 3rd vertex
     vint<M> geomIDs;    // geometry ID of mesh
@@ -166,12 +142,12 @@ namespace embree
   };
 
   template<>
-    __forceinline void TriangleMi<4>::gather(Vec3vf4& p0, Vec3vf4& p1, Vec3vf4& p2) const
+    __forceinline void TriangleMi<4>::gather(Vec3vf4& p0, Vec3vf4& p1, Vec3vf4& p2, const Scene* const scene) const
   {
-    const int* base0 = (const int*) v0[0];
-    const int* base1 = (const int*) v0[1];
-    const int* base2 = (const int*) v0[2];
-    const int* base3 = (const int*) v0[3];
+    const int* base0 = (const int*) scene->get<TriangleMesh>(geomIDs[0])->vertexPtr(v0[0]);
+    const int* base1 = (const int*) scene->get<TriangleMesh>(geomIDs[1])->vertexPtr(v0[1]);
+    const int* base2 = (const int*) scene->get<TriangleMesh>(geomIDs[2])->vertexPtr(v0[2]);
+    const int* base3 = (const int*) scene->get<TriangleMesh>(geomIDs[3])->vertexPtr(v0[3]);
     const vfloat4 a0 = vfloat4::loadu(base0      ), a1 = vfloat4::loadu(base1      ), a2 = vfloat4::loadu(base2      ), a3 = vfloat4::loadu(base3      );
     const vfloat4 b0 = vfloat4::loadu(base0+v1[0]), b1 = vfloat4::loadu(base1+v1[1]), b2 = vfloat4::loadu(base2+v1[2]), b3 = vfloat4::loadu(base3+v1[3]);
     const vfloat4 c0 = vfloat4::loadu(base0+v2[0]), c1 = vfloat4::loadu(base1+v2[1]), c2 = vfloat4::loadu(base2+v2[2]), c3 = vfloat4::loadu(base3+v2[3]);
