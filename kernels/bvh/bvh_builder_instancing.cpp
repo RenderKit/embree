@@ -313,6 +313,7 @@ namespace embree
 
            [&] (const BVHBuilderBinnedSAH::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> NodeRef
           {
+            numLeaves++;
             assert(current.prims.size() == 1);
             BuildRef* ref = (BuildRef*) prims[current.prims.begin()].ID();
             TransformNode* node = (TransformNode*) alloc->alloc0->malloc(sizeof(TransformNode),BVH::byteAlignment);
