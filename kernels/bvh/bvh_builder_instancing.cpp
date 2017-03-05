@@ -24,7 +24,7 @@
 #include "../geometry/quadi_mb.h"
 
 /* new open/merge builder */
-#define ENABLE_DIRECT_SAH_MERGE_BUILDER 0
+#define ENABLE_DIRECT_SAH_MERGE_BUILDER 1
 #define SPLIT_MEMORY_RESERVE_FACTOR 4
 #define SPLIT_MIN_EXT_SPACE 1000
 
@@ -209,6 +209,7 @@ namespace embree
 
       /* open all large nodes */  
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER == 0
+      PRINT(refs.size());
       //open(numPrimitives); 
 #endif
 
