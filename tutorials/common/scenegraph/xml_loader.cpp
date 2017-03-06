@@ -17,6 +17,7 @@
 #include "xml_loader.h"
 #include "xml_parser.h"
 #include "obj_loader.h"
+#include "config.h"
 
 namespace embree
 {
@@ -239,8 +240,8 @@ namespace embree
     Ref<SceneGraph::Node> loadQuadMesh(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadSubdivMesh(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadLineSegments(const Ref<XML>& xml);
-    Ref<SceneGraph::Node> loadBezierCurves(const Ref<XML>& xml, bool hair);
-    Ref<SceneGraph::Node> loadBSplineCurves(const Ref<XML>& xml, bool hair);
+    Ref<SceneGraph::Node> loadBezierCurves(const Ref<XML>& xml, SceneGraph::HairSetNode::Type type);
+    Ref<SceneGraph::Node> loadBSplineCurves(const Ref<XML>& xml, SceneGraph::HairSetNode::Type type);
 
   private:
     Ref<SceneGraph::Node> loadPerspectiveCamera(const Ref<XML>& xml);
@@ -984,31 +985,26 @@ namespace embree
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
-  avector<Vec3fa> convert_bspline_to_bezier(const std::vector<unsigned>& indices, const avector<Vec3fa>& positions)
+  void fix_bspline_end_points(const std::vector<unsigned>& indices, avector<Vec3fa>& positions)
   {
-    avector<Vec3fa> positions_o;
-    positions_o.resize(4*indices.size());
     for (size_t i=0; i<indices.size(); i++) 
     {
       const size_t idx = indices[i];
-      vfloat4 v0 = vfloat4::loadu(&positions[idx-1]);  
-      vfloat4 v1 = vfloat4::loadu(&positions[idx+0]);
-      vfloat4 v2 = vfloat4::loadu(&positions[idx+1]);
-      vfloat4 v3 = vfloat4::loadu(&positions[idx+2]);
+      vfloat4 v0 = vfloat4::loadu(&positions[idx+0]);  
+      vfloat4 v1 = vfloat4::loadu(&positions[idx+1]);
+      vfloat4 v2 = vfloat4::loadu(&positions[idx+2]);
+      vfloat4 v3 = vfloat4::loadu(&positions[idx+3]);
       v0 = select(isnan(v0),2.0f*v1-v2,v0); // nan triggers edge rule
       v3 = select(isnan(v3),2.0f*v2-v1,v3); // nan triggers edge rule
-      positions_o[4*i+0] = Vec3fa((1.0f/6.0f)*v0 + (2.0f/3.0f)*v1 + (1.0f/6.0f)*v2);
-      positions_o[4*i+1] = Vec3fa((2.0f/3.0f)*v1 + (1.0f/3.0f)*v2);
-      positions_o[4*i+2] = Vec3fa((1.0f/3.0f)*v1 + (2.0f/3.0f)*v2);
-      positions_o[4*i+3] = Vec3fa((1.0f/6.0f)*v1 + (2.0f/3.0f)*v2 + (1.0f/6.0f)*v3);
+      vfloat4::storeu(&positions[idx+0],v0);
+      vfloat4::storeu(&positions[idx+3],v3);
     }
-    return positions_o;
   }
 
-  Ref<SceneGraph::Node> XMLLoader::loadBezierCurves(const Ref<XML>& xml, bool hair) 
+  Ref<SceneGraph::Node> XMLLoader::loadBezierCurves(const Ref<XML>& xml, SceneGraph::HairSetNode::Type type) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(hair,material);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(type,SceneGraph::HairSetNode::BEZIER,material);
 
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++)
@@ -1029,30 +1025,43 @@ namespace embree
       mesh->tessellation_rate = atoi(tessellation_rate.c_str());
 
     mesh->verify();
+    //mesh->convert_bezier_to_bspline();
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
-  Ref<SceneGraph::Node> XMLLoader::loadBSplineCurves(const Ref<XML>& xml, bool hair) 
+  Ref<SceneGraph::Node> XMLLoader::loadBSplineCurves(const Ref<XML>& xml, SceneGraph::HairSetNode::Type type) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(hair,material);
+    Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(type,SceneGraph::HairSetNode::BSPLINE,material);
+
+    if (Ref<XML> animation = xml->childOpt("animated_positions")) {
+      for (size_t i=0; i<animation->size(); i++) {
+        mesh->positions.push_back(loadVec4fArray(animation->child(i)));
+      }
+    } else {
+      mesh->positions.push_back(loadVec4fArray(xml->childOpt("positions")));
+      if (xml->hasChild("positions2")) {
+        mesh->positions.push_back(loadVec4fArray(xml->childOpt("positions2")));
+      }
+    }
 
     std::vector<unsigned> indices = loadUIntArray(xml->childOpt("indices"));
-    mesh->hairs.resize(indices.size());
+    std::vector<unsigned> curveid = loadUIntArray(xml->childOpt("curveid"));
+    curveid.resize(indices.size(),0);
+    mesh->hairs.resize(indices.size()); 
     for (size_t i=0; i<indices.size(); i++) {
-      mesh->hairs[i] = SceneGraph::HairSetNode::Hair(unsigned(4*i),0);
-    }
-      
-    if (Ref<XML> animation = xml->childOpt("animated_positions")) {
-      for (size_t i=0; i<animation->size(); i++)
-        mesh->positions.push_back(convert_bspline_to_bezier(indices,loadVec4fArray(animation->child(i))));
-    } else {
-      mesh->positions.push_back(convert_bspline_to_bezier(indices,loadVec4fArray(xml->childOpt("positions"))));
-      if (xml->hasChild("positions2")) 
-        mesh->positions.push_back(convert_bspline_to_bezier(indices,loadVec4fArray(xml->childOpt("positions2"))));
+      mesh->hairs[i] = SceneGraph::HairSetNode::Hair(indices[i],curveid[i]);
     }
 
+    for (auto& vertices : mesh->positions)
+      fix_bspline_end_points(indices,vertices);
+
+    std::string tessellation_rate = xml->parm("tessellation_rate");
+    if (tessellation_rate != "")
+      mesh->tessellation_rate = atoi(tessellation_rate.c_str());
+
     mesh->verify();
+    //mesh->convert_bspline_to_bezier();
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
@@ -1189,11 +1198,11 @@ namespace embree
       else if (xml->name == "QuadMesh"        ) node = sceneMap[id] = loadQuadMesh        (xml);
       else if (xml->name == "SubdivisionMesh" ) node = sceneMap[id] = loadSubdivMesh      (xml);
       else if (xml->name == "LineSegments"    ) node = sceneMap[id] = loadLineSegments    (xml);
-      else if (xml->name == "Hair"            ) node = sceneMap[id] = loadBezierCurves    (xml,true);
-      else if (xml->name == "BezierHair"      ) node = sceneMap[id] = loadBezierCurves    (xml,true);
-      else if (xml->name == "BSplineHair"     ) node = sceneMap[id] = loadBSplineCurves   (xml,true);
-      else if (xml->name == "BezierCurves"    ) node = sceneMap[id] = loadBezierCurves    (xml,false);
-      else if (xml->name == "BSplineCurves"   ) node = sceneMap[id] = loadBSplineCurves   (xml,false);
+      else if (xml->name == "Hair"            ) node = sceneMap[id] = loadBezierCurves    (xml,SceneGraph::HairSetNode::HAIR);
+      else if (xml->name == "BezierHair"      ) node = sceneMap[id] = loadBezierCurves    (xml,SceneGraph::HairSetNode::HAIR);
+      else if (xml->name == "BSplineHair"     ) node = sceneMap[id] = loadBSplineCurves   (xml,SceneGraph::HairSetNode::HAIR);
+      else if (xml->name == "BezierCurves"    ) node = sceneMap[id] = loadBezierCurves    (xml,SceneGraph::HairSetNode::CURVE);
+      else if (xml->name == "BSplineCurves"   ) node = sceneMap[id] = loadBSplineCurves   (xml,SceneGraph::HairSetNode::CURVE);
       else if (xml->name == "PerspectiveCamera") node = sceneMap[id] = loadPerspectiveCamera(xml);
       else if (xml->name == "Group"           ) node = sceneMap[id] = loadGroupNode       (xml);
       else if (xml->name == "Transform"       ) node = sceneMap[id] = loadTransformNode   (xml);
@@ -1203,10 +1212,11 @@ namespace embree
       else if (xml->name == "Animation2"      ) node = sceneMap[id] = loadAnimation2Node  (xml);
       else if (xml->name == "Animation"       ) node = sceneMap[id] = loadAnimationNode   (xml);
 
-      else if (xml->name == "ConvertTrianglesToQuads") node = convert_triangles_to_quads(sceneMap[id] = loadNode(xml->child(0)));
-      else if (xml->name == "ConvertQuadsToSubdivs"  ) node = convert_quads_to_subdivs  (sceneMap[id] = loadNode(xml->child(0)));
-      else if (xml->name == "ConvertBezierToLines"   ) node = convert_bezier_to_lines   (sceneMap[id] = loadNode(xml->child(0)));
-      else if (xml->name == "ConvertHairToCurves"    ) node = convert_hair_to_curves    (sceneMap[id] = loadNode(xml->child(0)));
+      else if (xml->name == "ConvertTrianglesToQuads") node = sceneMap[id] = convert_triangles_to_quads(loadNode(xml->child(0)));
+      else if (xml->name == "ConvertQuadsToSubdivs"  ) node = sceneMap[id] = convert_quads_to_subdivs  (loadNode(xml->child(0)));
+      else if (xml->name == "ConvertBezierToLines"   ) node = sceneMap[id] = convert_bezier_to_lines   (loadNode(xml->child(0)));
+      else if (xml->name == "ConvertHairToCurves"    ) node = sceneMap[id] = convert_hair_to_curves    (loadNode(xml->child(0)));
+      else if (xml->name == "Flatten"                ) node = sceneMap[id] = flatten                   (loadNode(xml->child(0)), SceneGraph::INSTANCING_NONE);
 
       else THROW_RUNTIME_ERROR(xml->loc.str()+": unknown tag: "+xml->name);
 

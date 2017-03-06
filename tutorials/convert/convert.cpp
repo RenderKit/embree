@@ -176,6 +176,31 @@ namespace embree
         g_scene->bezier_to_lines();
       }
 
+      /* convert bezier to bspline curves */
+      else if (tag == "-convert-bezier-to-bspline") {
+        g_scene->bezier_to_bspline();
+      }
+
+      /* convert bspline to bezier curves */
+      else if (tag == "-convert-bspline-to-bezier") {
+        g_scene->bspline_to_bezier();
+      }
+
+      /* flatten scene */
+      else if (tag == "-flatten-group") {
+        g_scene = SceneGraph::flatten(g_scene,SceneGraph::INSTANCING_SCENE_GROUP);
+      }
+
+      /* flatten scene */
+      else if (tag == "-flatten-geometry") {
+        g_scene = SceneGraph::flatten(g_scene,SceneGraph::INSTANCING_SCENE_GEOMETRY);
+      }
+
+      /* flatten scene */
+      else if (tag == "-flatten") {
+        g_scene = SceneGraph::flatten(g_scene,SceneGraph::INSTANCING_NONE);
+      }
+
       /* load terrain */
       else if (tag == "-terrain") 
       {

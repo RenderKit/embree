@@ -925,7 +925,7 @@ namespace embree
           for (size_t i=0; i<n; i++) {
             node.set(i,children[i].bounds());
           }
-          QuantizedNode *qnode = (QuantizedNode*) alloc->alloc0->malloc(sizeof(QuantizedNode), byteNodeAlignment);
+          QuantizedNode *qnode = (QuantizedNode*) alloc->alloc0->malloc(sizeof(QuantizedNode), byteAlignment);
           qnode->init(node);
           
           return (size_t)qnode | tyQuantizedNode;

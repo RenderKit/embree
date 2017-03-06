@@ -881,6 +881,7 @@ uniform Vec3fa g_accu_vz;
 uniform Vec3fa g_accu_p;
 extern uniform bool g_changed;
 extern uniform int g_instancing_mode;
+extern uniform RTCIntersectFlags g_iflags;
 
 
 uniform bool g_animation = true;
@@ -1319,7 +1320,9 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
       break;
 
     /* intersect ray with scene */
-    rtcIntersect(g_scene,ray);
+    uniform RTCIntersectContext context;
+    context.flags = g_iflags;
+    rtcIntersectEx(g_scene,&context,ray);
     const Vec3f wo = neg(ray.dir);
 
     /* invoke environment lights if nothing hit */
@@ -1384,7 +1387,7 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
       Light_SampleRes ls = l->sample(l,dg,RandomSampler_get2D(sampler));
       if (ls.pdf <= 0.0f) continue;
       RTCRay shadow = make_Ray(dg.P,ls.dir,dg.tnear_eps,ls.dist,time); shadow.transparency = make_Vec3f(1.0f);
-      rtcOccluded(g_scene,shadow);
+      rtcOccludedEx(g_scene,&context,shadow);
       //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       if (max(max(shadow.transparency.x,shadow.transparency.y),shadow.transparency.z) > 0.0f)
         L = L + Lw*ls.weight*shadow.transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,ls.dir);

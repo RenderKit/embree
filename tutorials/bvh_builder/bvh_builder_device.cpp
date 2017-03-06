@@ -128,7 +128,7 @@ namespace embree
     for (size_t i=0; i<10; i++)
     {
       /* we recreate the prims array here, as the builders modify this array */
-      for (size_t i=0; i<prims.size(); i++) prims[i] = prims_i[i];
+      for (size_t j=0; j<prims.size(); j++) prims[j] = prims_i[j];
   
       std::cout << "iteration " << i << ": building BVH over " << prims.size() << " primitives, " << std::flush;
       double t0 = getSeconds();
@@ -177,7 +177,7 @@ namespace embree
       prim.upper_x = b.upper.x;
       prim.upper_y = b.upper.y;
       prim.upper_z = b.upper.z;
-      prim.primID = i;
+      prim.primID = (unsigned) i;
       prims[i] = prim;
     }
 

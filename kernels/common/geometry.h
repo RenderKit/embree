@@ -39,9 +39,6 @@ namespace embree
     /*! Geometry destructor */
     virtual ~Geometry();
 
-    /*! writes geometry to disk */
-    virtual void write(std::ofstream& file);
-
     /*! updates intersection filter function counts in scene */
     void updateIntersectionFilters(bool enable);
 
@@ -117,6 +114,9 @@ namespace embree
 
     /*! called if geometry is switching from enabled to disabled state */
     virtual void disabling() = 0;
+
+    /*! called before every build */
+    virtual void commit() {};
 
     /*! sets constant tessellation rate for the geometry */
     virtual void setTessellationRate(float N) {

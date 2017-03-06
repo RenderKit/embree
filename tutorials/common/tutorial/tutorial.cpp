@@ -55,7 +55,11 @@ namespace embree
     int64_t get_tsc() { return read_tsc(); }
 
     unsigned int g_numThreads = 0;
+
+    RTCIntersectFlags g_iflags = RTC_INTERSECT_INCOHERENT;
   }
+
+  extern "C" int g_instancing_mode;
 
   TutorialApplication* TutorialApplication::instance = nullptr; 
 
@@ -95,7 +99,12 @@ namespace embree
       print_frame_rate(false),
       avg_render_time(64,1.0),
       avg_frame_time(64,1.0),
-      print_camera(false)
+      print_camera(false),
+
+      debug0(0),
+      debug1(0),
+      debug2(0),
+      debug3(0)
   {
     /* only a single instance of this class is supported */
     assert(instance == nullptr);
@@ -174,6 +183,22 @@ namespace embree
          print_camera = true;
       }, "--print-camera: prints camera for each frame on console");
    
+     registerOption("debug0", [this] (Ref<ParseStream> cin, const FileName& path) {
+         debug0 = cin->getInt();
+       }, "--debug0: sets internal debugging value");
+
+     registerOption("debug1", [this] (Ref<ParseStream> cin, const FileName& path) {
+         debug1 = cin->getInt();
+       }, "--debug1: sets internal debugging value");
+
+     registerOption("debug2", [this] (Ref<ParseStream> cin, const FileName& path) {
+         debug2 = cin->getInt();
+       }, "--debug2: sets internal debugging value");
+
+     registerOption("debug3", [this] (Ref<ParseStream> cin, const FileName& path) {
+         debug3 = cin->getInt();
+       }, "--debug3: sets internal debugging value");
+   
     /* output filename */
     registerOption("shader", [this] (Ref<ParseStream> cin, const FileName& path) {
         std::string mode = cin->getString();
@@ -233,9 +258,12 @@ namespace embree
       convert_tris_to_quads(false),
       convert_bezier_to_lines(false),
       convert_hair_to_curves(false),
+      convert_bezier_to_bspline(false),
+      convert_bspline_to_bezier(false),
       sceneFilename(""),
       instancing_mode(SceneGraph::INSTANCING_NONE),
-      print_scene_cameras(false)
+      print_scene_cameras(false),
+      iflags(RTC_INTERSECT_INCOHERENT)
   {
     registerOption("i", [this] (Ref<ParseStream> cin, const FileName& path) {
         sceneFilename = path + cin->getFileName();
@@ -273,6 +301,14 @@ namespace embree
         convert_hair_to_curves = true;
       }, "--convert-hair-to-curves: converts all hair geometry to curves when loading");
     
+    registerOption("convert-bezier-to-bspline", [this] (Ref<ParseStream> cin, const FileName& path) {
+        convert_bezier_to_bspline = true;
+      }, "--convert-bezier-to-bspline: converts all bezier curves to bsplines curves");
+    
+    registerOption("convert-bspline-to-bezier", [this] (Ref<ParseStream> cin, const FileName& path) {
+        convert_bspline_to_bezier = true;
+      }, "--convert-bspline-to-bezier: converts all bsplines curves to bezier curves");
+    
     registerOption("instancing", [this] (Ref<ParseStream> cin, const FileName& path) {
         std::string mode = cin->getString();
         if      (mode == "none"    ) instancing_mode = SceneGraph::INSTANCING_NONE;
@@ -280,6 +316,7 @@ namespace embree
         else if (mode == "scene_geometry") instancing_mode = SceneGraph::INSTANCING_SCENE_GEOMETRY;
         else if (mode == "scene_group"   ) instancing_mode = SceneGraph::INSTANCING_SCENE_GROUP;
         else throw std::runtime_error("unknown instancing mode: "+mode);
+        g_instancing_mode = instancing_mode;
       }, "--instancing: set instancing mode\n"
       "  none: no instancing\n"
       "  geometry: instance individual geometries\n"
@@ -347,7 +384,7 @@ namespace embree
         const float len = cin->getFloat();
         const float r = cin->getFloat();
         const size_t N = cin->getInt();
-        scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,true,new OBJMaterial));
+        scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,SceneGraph::HairSetNode::HAIR,new OBJMaterial));
       }, "--hair-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z length radius num: adds a hair plane originated at p0 and spanned by the vectors dx and dy. num hairs are generated with speficied length and radius.");    
     
     registerOption("curve-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -357,7 +394,7 @@ namespace embree
         const float len = cin->getFloat();
         const float r = cin->getFloat();
         const size_t N = cin->getInt();
-        scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,false,new OBJMaterial));
+        scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,SceneGraph::HairSetNode::CURVE,new OBJMaterial));
       }, "--curve-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z length radius: adds a plane build of bezier curves originated at p0 and spanned by the vectors dx and dy. num curves are generated with speficied length and radius.");    
 
     registerOption("triangle-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -399,6 +436,14 @@ namespace embree
     registerOption("camera", [this] (Ref<ParseStream> cin, const FileName& path) {
         camera_name = cin->getString();
       }, "--camera: use camera with specified name");    
+    
+    registerOption("coherent", [this] (Ref<ParseStream> cin, const FileName& path) {
+        g_iflags = iflags = RTC_INTERSECT_COHERENT;
+      }, "--coherent: use RTC_INTERSECT_COHERENT hint when tracing rays");
+    
+    registerOption("incoherent", [this] (Ref<ParseStream> cin, const FileName& path) {
+        g_iflags = iflags = RTC_INTERSECT_INCOHERENT;
+      }, "--coherent: use RTC_INTERSECT_INCOHERENT hint when tracing rays");
   }
 
   void TutorialApplication::renderBenchmark()
@@ -652,7 +697,7 @@ namespace embree
       
       stream << 1.0f/avg_render_time.get() << " fps";
       std::string str = stream.str();
-      glColor3f(1.0f, 0.0f, 0.0f);
+      glColor3f(1.0f, 1.0f, 0.0f);
       glRasterPos2i( width-GLint(str.size())*12, height - 24); 
       for (size_t i=0; i<str.size(); i++)
         glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
@@ -726,6 +771,12 @@ namespace embree
 
   void TutorialApplication::run(int argc, char** argv)
   {
+    /* set debug values */
+    rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000000, debug0); 
+    rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000001, debug1); 
+    rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000002, debug2); 
+    rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000003, debug3); 
+   
     /* initialize ray tracing core */
     device_init(rtcore.c_str());
     
@@ -741,7 +792,7 @@ namespace embree
     case SHADER_GEOMID_PRIMID: device_key_pressed(GLUT_KEY_F7); break;
     case SHADER_AMBIENT_OCCLUSION: device_key_pressed(GLUT_KEY_F11); break;
     };
-    
+     
     /* benchmark mode */
     if (numBenchmarkFrames)
     {
@@ -832,17 +883,12 @@ namespace embree
     /* clear texture cache */
     Texture::clearTextureCache();
 
-    /* convert triangles to quads */
-    if (convert_tris_to_quads)
-      scene->triangles_to_quads();
-    
-    /* convert bezier to lines */
-    if (convert_bezier_to_lines)
-      scene->bezier_to_lines();
-    
-    /* convert hair to curves */
-    if (convert_hair_to_curves)
-      scene->hair_to_curves();
+    /* perform conversions */
+    if (convert_tris_to_quads    ) scene->triangles_to_quads();
+    if (convert_bezier_to_lines  ) scene->bezier_to_lines();
+    if (convert_hair_to_curves   ) scene->hair_to_curves();
+    if (convert_bezier_to_bspline) scene->bezier_to_bspline();
+    if (convert_bspline_to_bezier) scene->bspline_to_bezier();
     
     /* convert model */
     obj_scene.add(SceneGraph::flatten(scene,instancing_mode)); 

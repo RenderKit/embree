@@ -75,7 +75,7 @@ namespace embree
       size_t skip_small = (size_t) floor(0.5*fskip_small*double(v.size()));
       size_t skip_large = (size_t) floor(0.5*fskip_large*double(v.size()));
 
-      new (&stat) Statistics;
+      stat = Statistics();
       for (size_t i=skip_small; i<v.size()-skip_large; i++)
         stat.add(v[i]);
     }

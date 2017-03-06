@@ -65,44 +65,10 @@ unsigned int hair_indices[6] = {
 /* add hair geometry */
 unsigned int addCurve (RTCScene scene, const Vec3fa& pos)
 {
-  unsigned int geomID = rtcNewCurveGeometry (scene, RTC_GEOMETRY_STATIC, NUM_CURVES, 4*NUM_CURVES);
-
-  /* converts b-spline to bezier basis */
-  Vec3fa* vtx = (Vec3fa*) rtcMapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
-  for (size_t i=0; i<NUM_CURVES; i++)
-  {
-    Vec3fa P = Vec3fa(pos.x,pos.y,pos.z,0.0f);
-    const Vec3fa v0 = Vec3fa(hair_vertices[i+0][0],hair_vertices[i+0][1],hair_vertices[i+0][2],hair_vertices[i+0][3]);
-    const Vec3fa v1 = Vec3fa(hair_vertices[i+1][0],hair_vertices[i+1][1],hair_vertices[i+1][2],hair_vertices[i+1][3]);
-    const Vec3fa v2 = Vec3fa(hair_vertices[i+2][0],hair_vertices[i+2][1],hair_vertices[i+2][2],hair_vertices[i+2][3]);
-    const Vec3fa v3 = Vec3fa(hair_vertices[i+3][0],hair_vertices[i+3][1],hair_vertices[i+3][2],hair_vertices[i+3][3]);
-    vtx[4*i+0] = P + (1.0f/6.0f)*v0 + (2.0f/3.0f)*v1 + (1.0f/6.0f)*v2;
-    vtx[4*i+1] = P + (2.0f/3.0f)*v1 + (1.0f/3.0f)*v2;
-    vtx[4*i+2] = P + (1.0f/3.0f)*v1 + (2.0f/3.0f)*v2;
-    vtx[4*i+3] = P + (1.0f/6.0f)*v1 + (2.0f/3.0f)*v2 + (1.0f/6.0f)*v3;
-  }
-  rtcUnmapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
-
-  Vec3fa* colors = (Vec3fa*) alignedMalloc(4*NUM_CURVES*sizeof(Vec3fa));
-  for (size_t i=0; i<NUM_CURVES; i++)
-  {
-    const Vec3fa v0 = Vec3fa(hair_vertex_colors[i+0][0],hair_vertex_colors[i+0][1],hair_vertex_colors[i+0][2],hair_vertex_colors[i+0][3]);
-    const Vec3fa v1 = Vec3fa(hair_vertex_colors[i+1][0],hair_vertex_colors[i+1][1],hair_vertex_colors[i+1][2],hair_vertex_colors[i+1][3]);
-    const Vec3fa v2 = Vec3fa(hair_vertex_colors[i+2][0],hair_vertex_colors[i+2][1],hair_vertex_colors[i+2][2],hair_vertex_colors[i+2][3]);
-    const Vec3fa v3 = Vec3fa(hair_vertex_colors[i+3][0],hair_vertex_colors[i+3][1],hair_vertex_colors[i+3][2],hair_vertex_colors[i+3][3]);
-    colors[4*i+0] = (1.0f/6.0f)*v0 + (2.0f/3.0f)*v1 + (1.0f/6.0f)*v2;
-    colors[4*i+1] = (2.0f/3.0f)*v1 + (1.0f/3.0f)*v2;
-    colors[4*i+2] = (1.0f/3.0f)*v1 + (2.0f/3.0f)*v2;
-    colors[4*i+3] = (1.0f/6.0f)*v1 + (2.0f/3.0f)*v2 + (1.0f/6.0f)*v3;
-  }
-
-  int* index = (int*) rtcMapBuffer(scene, geomID, RTC_INDEX_BUFFER);
-  for (int i=0; i<NUM_CURVES; i++) {
-    index[i] = 4*i;
-  }
-  rtcUnmapBuffer(scene,geomID,RTC_INDEX_BUFFER);
-
-  rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, colors, 0, sizeof(Vec3fa));
+  unsigned int geomID = rtcNewBSplineCurveGeometry (scene, RTC_GEOMETRY_STATIC, NUM_CURVES, 4*NUM_CURVES);
+  rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,hair_indices,0,sizeof(unsigned int));
+  rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,hair_vertices,0,sizeof(Vec3fa));
+  rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, hair_vertex_colors, 0, sizeof(Vec3fa));
   return geomID;
 }
 

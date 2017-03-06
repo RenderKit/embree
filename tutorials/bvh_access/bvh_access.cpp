@@ -25,6 +25,8 @@ namespace embree
   /* Visual Studio 2012 link error workaround */
   PrecomputedBezierBasis bezier_basis0;
   PrecomputedBezierBasis bezier_basis1;
+  PrecomputedBSplineBasis bspline_basis0;
+  PrecomputedBSplineBasis bspline_basis1;
 
   /* error reporting function */
   void error_handler(void* userPtr, const RTCError code, const char* str)
@@ -127,7 +129,7 @@ namespace embree
   /* adds a hair to the scene */
   unsigned int addHair(RTCScene scene_i)
   {
-    unsigned int geomID = rtcNewHairGeometry (scene_i, RTC_GEOMETRY_STATIC, 1, 4, 1);
+    unsigned int geomID = rtcNewBezierHairGeometry (scene_i, RTC_GEOMETRY_STATIC, 1, 4, 1);
 
     vfloat4* pos = (vfloat4*) rtcMapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER);
     pos[0] = vfloat4(0.0f,0.0f,0.0f,0.1f);

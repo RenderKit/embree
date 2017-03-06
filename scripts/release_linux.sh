@@ -52,7 +52,7 @@ cmake \
 
 # set release settings
 cmake \
--D EMBREE_MAX_ISA=AVX512KNL \
+-D EMBREE_MAX_ISA=AVX512SKX \
 -D EMBREE_TUTORIALS_IMAGE_MAGICK=OFF \
 -D EMBREE_TUTORIALS_LIBJPEG=OFF \
 -D EMBREE_TUTORIALS_LIBPNG=OFF \
@@ -77,7 +77,7 @@ check_symbols libembree.so CXXABI 1 3 0
 make -j 16 package
 
 # rename RPMs to have component name before version
-for i in embree-${EMBREE_VERSION}-1.*.rpm ; do 
+for i in embree-${EMBREE_VERSION}-1.*.rpm ; do
   newname=`echo $i | sed -e "s/embree-\(.\+\)-\([a-z_]\+\)\.rpm/embree-\2-\1.rpm/"`
   mv $i $newname
 done
@@ -101,4 +101,3 @@ make -j 16 package
 
 rm CMakeCache.txt # reset settings
 cd ..
-

@@ -76,11 +76,8 @@ namespace embree
       : BufferRef(num,stride) {}
 
     /*! access to the ith element of the buffer stream */
-    __forceinline const T& operator[](size_t i) const 
-    {
-      assert(i<num);
-      return *(T*)(ptr_ofs + i*stride);
-    }
+    __forceinline       T& operator[](size_t i)       { assert(i<num); return *(T*)(ptr_ofs + i*stride); }
+    __forceinline const T& operator[](size_t i) const { assert(i<num); return *(T*)(ptr_ofs + i*stride); }
   };
 
   /*! Implements a typed data stream from a data buffer reference. */
@@ -100,6 +97,13 @@ namespace embree
       assert(i<num);
       return Vec3fa(vfloat4::loadu((float*)(ptr_ofs + i*stride)));
     }
+    
+    /*! writes the i'th element */
+    __forceinline void store(size_t i, const Vec3fa& v)
+    {
+      assert(i<num);
+      vfloat4::storeu((float*)(ptr_ofs + i*stride),(vfloat4)v);
+    }
   };
 
   /*! Implements an API data buffer object. This class may or may not own the data. */
@@ -112,9 +116,15 @@ namespace embree
     APIBuffer () 
       : device(nullptr), ptr(nullptr), allocated(false), shared(false), mapped(false), modified(true), userdata(0) {}
     
+    APIBuffer (const BufferRefT<T>& other) 
+      : BufferRefT<T>(other), device(nullptr), ptr(nullptr), allocated(false), shared(true), mapped(false), modified(true), userdata(0) {}
+
     /*! Buffer construction */
-    APIBuffer (MemoryMonitorInterface* device, size_t num_in, size_t stride_in) 
-      : BufferRefT<T>(num_in,stride_in), device(device), ptr(nullptr), allocated(false), shared(false), mapped(false), modified(true), userdata(0) {}
+    APIBuffer (MemoryMonitorInterface* device, size_t num_in, size_t stride_in, bool allocate = false) 
+      : BufferRefT<T>(num_in,stride_in), device(device), ptr(nullptr), allocated(false), shared(false), mapped(false), modified(true), userdata(0) 
+    {
+      if (allocate) alloc();
+    }
     
     /*! Buffer destruction */
     ~APIBuffer () {

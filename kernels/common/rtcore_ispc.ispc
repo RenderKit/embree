@@ -45,20 +45,20 @@ extern "C" void ispcCommitJoin (RTCScene scene);
 extern "C" void ispcCommitThread (RTCScene scene, uniform unsigned int threadID, uniform unsigned int numThreads);
 extern "C" void ispcGetBounds(RTCScene scene, uniform RTCBounds& bounds_o);
 extern "C" void ispcGetLinearBounds(RTCScene scene, uniform RTCBounds* uniform bounds_o);
-extern "C" void ispcIntersect1 (RTCScene scene, uniform RTCRay1& ray);
-extern "C" void ispcIntersect4 (void* uniform valid, RTCScene scene, void* uniform ray);
-extern "C" void ispcIntersect8 (void* uniform valid, RTCScene scene, void* uniform ray);
-extern "C" void ispcIntersect16 (void* uniform valid, RTCScene scene, void* uniform ray);
+extern "C" void ispcIntersect1 (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1& ray);
+extern "C" void ispcIntersect4 (void* uniform valid, RTCScene scene, const uniform RTCIntersectContext* uniform context, void* uniform ray);
+extern "C" void ispcIntersect8 (void* uniform valid, RTCScene scene, const uniform RTCIntersectContext* uniform context, void* uniform ray);
+extern "C" void ispcIntersect16 (void* uniform valid, RTCScene scene, const uniform RTCIntersectContext* uniform context, void* uniform ray);
 extern "C" void ispcIntersect1M  (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1* uniform rays, const uniform size_t M, const uniform size_t stride);
 extern "C" void ispcIntersect1Mp (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1** uniform rays, const uniform size_t M);
 extern "C" void ispcIntersectNM  (RTCScene scene, const uniform RTCIntersectContext* uniform context, struct RTCRayN* uniform rays, const uniform size_t M, const uniform size_t N, const uniform size_t stride);
 extern "C" void ispcIntersectNp  (RTCScene scene, const uniform RTCIntersectContext* uniform context, const uniform RTCRayNp& rays, const uniform size_t N);
 
 
-extern "C" void ispcOccluded1 (RTCScene scene, uniform RTCRay1& ray);
-extern "C" void ispcOccluded4 (void* uniform valid, RTCScene scene, void* uniform ray);
-extern "C" void ispcOccluded8 (void* uniform valid, RTCScene scene, void* uniform ray);
-extern "C" void ispcOccluded16 (void* uniform valid, RTCScene scene, void* uniform ray);
+extern "C" void ispcOccluded1 (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1& ray);
+extern "C" void ispcOccluded4 (void* uniform valid, RTCScene scene, const uniform RTCIntersectContext* uniform context, void* uniform ray);
+extern "C" void ispcOccluded8 (void* uniform valid, RTCScene scene, const uniform RTCIntersectContext* uniform context, void* uniform ray);
+extern "C" void ispcOccluded16 (void* uniform valid, RTCScene scene, const uniform RTCIntersectContext* uniform context, void* uniform ray);
 extern "C" void ispcOccluded1M  (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1* uniform rays, const uniform size_t M, const uniform size_t stride);
 extern "C" void ispcOccluded1Mp (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1** uniform rays, const uniform size_t M);
 extern "C" void ispcOccludedNM (RTCScene scene, const uniform RTCIntersectContext* uniform context, struct RTCRayN* uniform rays, const uniform size_t M, const uniform size_t N, const uniform size_t stride);
@@ -292,7 +292,11 @@ void rtcGetLinearBounds(RTCScene scene, uniform RTCBounds* uniform bounds_o) {
 }
 
 void rtcIntersect1 (RTCScene scene, uniform RTCRay1& ray) {
-  ispcIntersect1(scene,ray);
+  ispcIntersect1(scene,NULL,ray);
+}
+
+void rtcIntersect1Ex (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1& ray) {
+  ispcIntersect1(scene,context,ray);
 }
 
 void rtcIntersect (RTCScene scene, varying RTCRay& ray) 
@@ -303,15 +307,29 @@ void rtcIntersect (RTCScene scene, varying RTCRay& ray)
   }
 
   if (sizeof(varying float) == 16)
-    ispcIntersect4(&imask,scene,&ray);
+    ispcIntersect4(&imask,scene,NULL,&ray);
   else if (sizeof(varying float) == 32)
-    ispcIntersect8(&imask,scene,&ray);
+    ispcIntersect8(&imask,scene,NULL,&ray);
   else if (sizeof(varying float) == 64)
-    ispcIntersect16(&imask,scene,&ray);
+    ispcIntersect16(&imask,scene,NULL,&ray);
+}
+
+void rtcIntersectEx (RTCScene scene, const uniform RTCIntersectContext* uniform context, varying RTCRay& ray) 
+{
+  varying bool mask = __mask;
+  unmasked {
+    varying int imask = mask ? -1 : 0;
+  }
+
+  if (sizeof(varying float) == 16)
+    ispcIntersect4(&imask,scene,context,&ray);
+  else if (sizeof(varying float) == 32)
+    ispcIntersect8(&imask,scene,context,&ray);
+  else if (sizeof(varying float) == 64)
+    ispcIntersect16(&imask,scene,context,&ray);
 }
 
 void rtcIntersect1M (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1* uniform rays, const uniform size_t M, const uniform size_t stride) {
-  //ispcIntersectNM(scene,context,(struct RTCRayN*)rays,1,M,stride);
   ispcIntersect1M(scene,context,rays,M,stride);
 }
 
@@ -332,7 +350,11 @@ void rtcIntersectNp (RTCScene scene, const uniform RTCIntersectContext* uniform 
 }
 
 void rtcOccluded1 (RTCScene scene, uniform RTCRay1& ray) {
-  ispcOccluded1(scene,ray);
+  ispcOccluded1(scene,NULL,ray);
+}
+
+void rtcOccluded1Ex (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1& ray) {
+  ispcOccluded1(scene,context,ray);
 }
 
 void rtcOccluded (RTCScene scene, varying RTCRay& ray) 
@@ -343,15 +365,29 @@ void rtcOccluded (RTCScene scene, varying RTCRay& ray)
   }
 
   if (sizeof(varying float) == 16)
-    ispcOccluded4(&imask,scene,&ray);
+    ispcOccluded4(&imask,scene,NULL,&ray);
   else if (sizeof(varying float) == 32)
-    ispcOccluded8(&imask,scene,&ray);
+    ispcOccluded8(&imask,scene,NULL,&ray);
   else if (sizeof(varying float) == 64)
-    ispcOccluded16(&imask,scene,&ray);
+    ispcOccluded16(&imask,scene,NULL,&ray);
+}
+
+void rtcOccludedEx (RTCScene scene, const uniform RTCIntersectContext* uniform context, varying RTCRay& ray) 
+{
+  varying bool mask = __mask;
+  unmasked {
+    varying int imask = mask ? -1 : 0;
+  }
+
+  if (sizeof(varying float) == 16)
+    ispcOccluded4(&imask,scene,context,&ray);
+  else if (sizeof(varying float) == 32)
+    ispcOccluded8(&imask,scene,context,&ray);
+  else if (sizeof(varying float) == 64)
+    ispcOccluded16(&imask,scene,context,&ray);
 }
 
 void rtcOccluded1M (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1* uniform rays, const uniform size_t M, const uniform size_t stride) {
-  //ispcOccludedNM(scene,context,(struct RTCRayN*)rays,1,M,stride);
   ispcOccluded1M(scene,context,rays,M,stride);
 }
 

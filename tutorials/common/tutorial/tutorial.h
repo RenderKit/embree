@@ -151,6 +151,11 @@ namespace embree
     Averaged<double> avg_frame_time;
     bool print_camera;
 
+    int debug0;
+    int debug1;
+    int debug2;
+    int debug3;
+
     std::unique_ptr<ISPCScene> ispc_scene;
      
   public:
@@ -170,11 +175,14 @@ namespace embree
     bool convert_tris_to_quads;
     bool convert_bezier_to_lines;
     bool convert_hair_to_curves;
+    bool convert_bezier_to_bspline;
+    bool convert_bspline_to_bezier;
     FileName sceneFilename;
     std::vector<FileName> keyFramesFilenames;
     SceneGraph::InstancingMode instancing_mode;
     std::string subdiv_mode;
     bool print_scene_cameras;
     std::string camera_name;
+    RTCIntersectFlags iflags;
   };
 }

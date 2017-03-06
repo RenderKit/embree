@@ -35,7 +35,8 @@ namespace embree
     static const size_t numBezierSubdivisions = 3;
 #endif
 
-    struct BezierCurveHit
+    template<typename NativeCurve3fa>
+      struct BezierCurveHit
     {
       __forceinline BezierCurveHit() {}
 
@@ -51,8 +52,8 @@ namespace embree
       Vec3fa Ng;
     };
     
-    template<typename Ray, typename Epilog>
-    __forceinline bool intersect_bezier_iterative_debug(const Ray& ray, const float dt, const Curve3fa& curve, size_t i, 
+    template<typename NativeCurve3fa, typename Ray, typename Epilog>
+      __forceinline bool intersect_bezier_iterative_debug(const Ray& ray, const float dt, const NativeCurve3fa& curve, size_t i, 
                                                         const vfloatx& u, const BBox<vfloatx>& tp, const BBox<vfloatx>& h0, const BBox<vfloatx>& h1, 
                                                         const Vec3vfx& Ng, const Vec4vfx& dP0du, const Vec4vfx& dP3du,
                                                         const Epilog& epilog)
@@ -61,12 +62,12 @@ namespace embree
       Vec3fa Ng_o = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
       if (h0.lower[i] == tp.lower[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
       if (h1.lower[i] == tp.lower[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
-      BezierCurveHit hit(tp.lower[i]+dt,u[i],Ng_o);
+      BezierCurveHit<NativeCurve3fa> hit(tp.lower[i]+dt,u[i],Ng_o);
       return epilog(hit);
     }
 
-    template<typename Ray, typename Epilog> 
-     __forceinline bool intersect_bezier_iterative_jacobian(const Ray& ray, const float dt, const Curve3fa& curve, float u, float t, const Epilog& epilog)
+    template<typename NativeCurve3fa, typename Ray, typename Epilog> 
+     __forceinline bool intersect_bezier_iterative_jacobian(const Ray& ray, const float dt, const NativeCurve3fa& curve, float u, float t, const Epilog& epilog)
     {
       const Vec3fa org = zero;
       const Vec3fa dir = ray.dir;
@@ -117,16 +118,16 @@ namespace embree
           const Vec3fa R = normalize(Q-P);
           const Vec3fa U = madd(Vec3fa(dPdu.w),R,dPdu);
           const Vec3fa V = cross(dPdu,R);
-          BezierCurveHit hit(t,u,cross(V,U));
+          BezierCurveHit<NativeCurve3fa> hit(t,u,cross(V,U));
           return epilog(hit);
         }
       }
       return false;
     }
 
-   template<typename Ray, typename Epilog>
-     bool intersect_bezier_recursive_jacobian(const Ray& ray, const float dt, const Curve3fa& curve, 
-                                              const float u0, const float u1, const size_t depth, const Epilog& epilog)
+    template<typename NativeCurve3fa, typename Ray, typename Epilog>
+      bool intersect_bezier_recursive_jacobian(const Ray& ray, const float dt, const NativeCurve3fa& curve, 
+                                               const float u0, const float u1, const size_t depth, const Epilog& epilog)
     {
       int maxDepth = numBezierSubdivisions;
       //int maxDepth = Device::debug_int1+1;
@@ -216,8 +217,9 @@ namespace embree
       }
       return found;
     }
-    
-    struct BezierCurve1Intersector1
+
+    template<typename NativeCurve3fa>
+      struct BezierCurve1Intersector1
     {
       __forceinline BezierCurve1Intersector1() {}
 
@@ -238,12 +240,12 @@ namespace embree
         const Vec3fa p2 = v2-ref;
         const Vec3fa p3 = v3-ref;
 
-        const Curve3fa curve(p0,p1,p2,p3);
+        const NativeCurve3fa curve(p0,p1,p2,p3);
         return intersect_bezier_recursive_jacobian(ray,dt,curve,0.0f,1.0f,1,epilog);
       }
     };
 
-    template<int K>
+    template<typename NativeCurve3fa, int K>
       struct BezierCurve1IntersectorK
     {
       struct Ray1
@@ -276,7 +278,7 @@ namespace embree
         const Vec3fa p2 = v2-ref;
         const Vec3fa p3 = v3-ref;
 
-        const Curve3fa curve(p0,p1,p2,p3);
+        const NativeCurve3fa curve(p0,p1,p2,p3);
         return intersect_bezier_recursive_jacobian(ray,dt,curve,0.0f,1.0f,1,epilog);
       }
     };

@@ -797,7 +797,7 @@ namespace embree
                                                      const NearFarPreCompute& pc,
                                                      const RayCtx* __restrict__ const ray_ctx,
                                                      vfloat<Nx>& dist,
-                                                     vlong<Nxd>& maskK)
+                                                     vllong<Nxd>& maskK)
       {
         if (N == 8)
         {
@@ -805,18 +805,18 @@ namespace embree
           const vfloat<N*2> bminmaxX = permute(vfloat<N*2>::load((const float*)&node->lower_x), pc.permX);
           const vfloat<N*2> bminmaxY = permute(vfloat<N*2>::load((const float*)&node->lower_y), pc.permY);
           const vfloat<N*2> bminmaxZ = permute(vfloat<N*2>::load((const float*)&node->lower_z), pc.permZ);
-          const vlong<Nxd> one((size_t)1);
+          const vllong<Nxd> one((size_t)1);
           size_t bits = m_trav_active;
           do
           {            
             STAT3(normal.trav_nodes,1,1,1);                          
             const size_t i = __bscf(bits);
             const RayCtx& ray = ray_ctx[i];
-            const vlong<Nxd> bitmask = one << vlong<Nxd>(i);
+            const vllong<Nxd> bitmask = one << vllong<Nxd>(i);
             const vbool<Nx> vmask = intersectAlignedNode<N, Nx, dist_update, robust>(ray, bminmaxX, bminmaxY, bminmaxZ, dist);
             maskK = mask_or((vboold<Nxd>)vmask, maskK, maskK, bitmask);
           } while(bits);              
-          const vboold<Nxd> vmaskN = maskK != vlong<Nxd>(zero);
+          const vboold<Nxd> vmaskN = maskK != vllong<Nxd>(zero);
           const vbool<Nx> vmask(vmaskN);
           return vmask;
         }
@@ -829,18 +829,18 @@ namespace embree
           const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farY));
           const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farZ));
 
-          const vlong<Nxd> one((size_t)1);
+          const vllong<Nxd> one((size_t)1);
           size_t bits = m_trav_active;
           do
           {            
             STAT3(normal.trav_nodes,1,1,1);                          
             const size_t i = __bscf(bits);
             const RayCtx& ray = ray_ctx[i];
-            const vlong<Nxd> bitmask = one << vlong<Nxd>(i);
+            const vllong<Nxd> bitmask = one << vllong<Nxd>(i);
             const vbool<Nx> vmask = intersectAlignedNode<N, Nx, dist_update, robust>(ray, bminX, bminY, bminZ, bmaxX, bmaxY, bmaxZ, dist);
             maskK = mask_or((vboold<Nxd>)vmask, maskK, maskK, bitmask);
           } while(bits);              
-          const vboold<Nxd> vmaskN = maskK != vlong<Nxd>(zero);
+          const vboold<Nxd> vmaskN = maskK != vllong<Nxd>(zero);
           const vbool<Nx> vmask(vmaskN);
           return vmask;
         }

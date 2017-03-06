@@ -27,7 +27,7 @@ namespace embree
 {
   namespace isa
   {
-    template<int M>
+    template<typename NativeCurve3fa, int M>
       struct HairHit
     {
       __forceinline HairHit() {}
@@ -47,7 +47,7 @@ namespace embree
       __forceinline float t  (const size_t i) const { return vt[i]; }
       __forceinline Vec3fa Ng(const size_t i) const 
       { 
-        Vec3fa T = Curve3fa(p0,p1,p2,p3).eval_du(vu[i]);
+        Vec3fa T = NativeCurve3fa(p0,p1,p2,p3).eval_du(vu[i]);
         return T == Vec3fa(zero) ? Vec3fa(one) : T; 
       }
       
@@ -65,7 +65,8 @@ namespace embree
       vfloat<M> vt;
     };
     
-    struct Hair1Intersector1
+    template<typename NativeCurve3fa>
+      struct Hair1Intersector1
     {
       float depth_scale;
       LinearSpace3fa ray_space;
@@ -85,12 +86,12 @@ namespace embree
         Vec3fa w1 = xfmVector(ray_space,v1-ray.org); w1.w = v1.w;
         Vec3fa w2 = xfmVector(ray_space,v2-ray.org); w2.w = v2.w;
         Vec3fa w3 = xfmVector(ray_space,v3-ray.org); w3.w = v3.w;
-        Curve3fa curve2D(w0,w1,w2,w3);
+        NativeCurve3fa curve2D(w0,w1,w2,w3);
       
         /* evaluate the bezier curve */
         vboolx valid = vfloatx(step) < vfloatx(float(N));
-        const Vec4vfx p0 = curve2D.eval0<VSIZEX>(0,N);
-        const Vec4vfx p1 = curve2D.eval1<VSIZEX>(0,N);
+        const Vec4vfx p0 = curve2D.template eval0<VSIZEX>(0,N);
+        const Vec4vfx p1 = curve2D.template eval1<VSIZEX>(0,N);
 
         /* approximative intersection with cone */
         const Vec4vfx v = p1-p0;
@@ -108,7 +109,7 @@ namespace embree
         /* update hit information */
         bool ishit = false;
         if (unlikely(any(valid))) {
-          HairHit<VSIZEX> hit(valid,u,0.0f,t,0,N,v0,v1,v2,v3);
+          HairHit<NativeCurve3fa,VSIZEX> hit(valid,u,0.0f,t,0,N,v0,v1,v2,v3);
           ishit = ishit | epilog(valid,hit);
         }
 
@@ -119,8 +120,8 @@ namespace embree
           {
             /* evaluate the bezier curve */
             vboolx valid = vintx(i)+vintx(step) < vintx(N);
-            const Vec4vfx p0 = curve2D.eval0<VSIZEX>(i,N);
-            const Vec4vfx p1 = curve2D.eval1<VSIZEX>(i,N);
+            const Vec4vfx p0 = curve2D.template eval0<VSIZEX>(i,N);
+            const Vec4vfx p1 = curve2D.template eval1<VSIZEX>(i,N);
             
             /* approximative intersection with cone */
             const Vec4vfx v = p1-p0;
@@ -137,7 +138,7 @@ namespace embree
 
              /* update hit information */
             if (unlikely(any(valid))) {
-              HairHit<VSIZEX> hit(valid,u,0.0f,t,i,N,v0,v1,v2,v3);
+              HairHit<NativeCurve3fa,VSIZEX> hit(valid,u,0.0f,t,i,N,v0,v1,v2,v3);
               ishit = ishit | epilog(valid,hit);
             }
           }
@@ -146,8 +147,8 @@ namespace embree
       }
     };
 
-    template<int K>
-    struct Hair1IntersectorK
+    template<typename NativeCurve3fa, int K>
+      struct Hair1IntersectorK
     {
       vfloat<K> depth_scale;
       LinearSpace3fa ray_space[K];
@@ -184,7 +185,7 @@ namespace embree
         Vec3fa w1 = xfmVector(ray_space[k],v1-ray_org); w1.w = v1.w;
         Vec3fa w2 = xfmVector(ray_space[k],v2-ray_org); w2.w = v2.w;
         Vec3fa w3 = xfmVector(ray_space[k],v3-ray_org); w3.w = v3.w;
-        Curve3fa curve2D(w0,w1,w2,w3);
+        NativeCurve3fa curve2D(w0,w1,w2,w3);
         
         /* process SIMD-size many segments per iteration */
         bool ishit = false;
@@ -192,8 +193,8 @@ namespace embree
         {
           /* evaluate the bezier curve */
           vboolx valid = vintx(i)+vintx(step) < vintx(N);
-          const Vec4vfx p0 = curve2D.eval0<VSIZEX>(i,N);
-          const Vec4vfx p1 = curve2D.eval1<VSIZEX>(i,N);
+          const Vec4vfx p0 = curve2D.template eval0<VSIZEX>(i,N);
+          const Vec4vfx p1 = curve2D.template eval1<VSIZEX>(i,N);
           
           /* approximative intersection with cone */
           const Vec4vfx v = p1-p0;
@@ -210,7 +211,7 @@ namespace embree
           if (likely(none(valid))) continue;
         
           /* update hit information */
-          HairHit<VSIZEX> hit(valid,u,0.0f,t,i,N,v0,v1,v2,v3);
+          HairHit<NativeCurve3fa,VSIZEX> hit(valid,u,0.0f,t,i,N,v0,v1,v2,v3);
           ishit = ishit | epilog(valid,hit);
         }
         return ishit;

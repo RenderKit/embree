@@ -131,8 +131,8 @@ namespace embree
       /*! Constructor for usage with ThreadLocalData */
       __forceinline ThreadLocal2 (void* alloc) 
       {
-        ::new (&allocators[0]) ThreadLocal(alloc); alloc0 = &allocators[0];
-        ::new (&allocators[1]) ThreadLocal(alloc); alloc1 = &allocators[1];
+        allocators[0] = ThreadLocal(alloc); alloc0 = &allocators[0];
+        allocators[1] = ThreadLocal(alloc); alloc1 = &allocators[1];
         if (((FastAllocator*)alloc)->use_single_mode) alloc1 = &allocators[0];
       }
       

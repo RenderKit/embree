@@ -26,6 +26,7 @@
 #define VERTEX_INTERPOLATION_BLOCK_SIZE 1024
 
 extern uniform ISPCScene* uniform g_ispc_scene;
+extern uniform RTCIntersectFlags g_iflags;
 
 /* scene data */
 uniform RTCDevice g_device = NULL;
@@ -119,7 +120,12 @@ uniform unsigned int convertHairSet(uniform ISPCHairSet* uniform hair, RTCScene 
     /* if more than a single timestep, mark object as dynamic */
     uniform RTCGeometryFlags object_flags = hair->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
     /* create object */
-    uniform unsigned int geomID = rtcNewHairGeometry (scene_out, object_flags, hair->numHairs, hair->numVertices, hair->numTimeSteps);
+    uniform unsigned int geomID = 0;
+    switch (hair->basis) {
+    case BEZIER_BASIS : geomID = rtcNewBezierHairGeometry (scene_out, object_flags, hair->numHairs, hair->numVertices, hair->numTimeSteps); break;
+    case BSPLINE_BASIS: geomID = rtcNewBSplineHairGeometry(scene_out, object_flags, hair->numHairs, hair->numVertices, hair->numTimeSteps); break;
+    default: assert(false);
+    }
     /* generate vertex buffer */
     uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
     for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];        
@@ -135,7 +141,12 @@ uniform unsigned int convertCurveGeometry(uniform ISPCHairSet* uniform hair, RTC
     /* if more than a single timestep, mark object as dynamic */
     uniform RTCGeometryFlags object_flags = hair->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
     /* create object */
-    uniform unsigned int geomID = rtcNewCurveGeometry (scene_out, object_flags, hair->numHairs, hair->numVertices, hair->numTimeSteps);
+    uniform unsigned int geomID = 0;
+    switch (hair->basis) {
+    case BEZIER_BASIS : geomID = rtcNewBezierCurveGeometry (scene_out, object_flags, hair->numHairs, hair->numVertices, hair->numTimeSteps); break;
+    case BSPLINE_BASIS: geomID = rtcNewBSplineCurveGeometry(scene_out, object_flags, hair->numHairs, hair->numVertices, hair->numTimeSteps); break;
+    default: assert(false);
+    }
     /* generate vertex buffer */
     uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
     for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];        
@@ -335,7 +346,7 @@ void renderTileStandard(uniform int taskIndex,
   }
 
   uniform RTCIntersectContext context;
-  context.flags = RTC_INTERSECT_COHERENT;
+  context.flags = g_iflags;
 
   /* trace stream of rays */
   rtcIntersectVM(g_scene,&context,rays,N,sizeof(RTCRay));
@@ -402,7 +413,7 @@ void renderTileStandard(uniform int taskIndex,
         }
         /* trace shadow rays */
         rtcOccludedVM(g_scene,&context,rays,N,sizeof(RTCRay));
-
+        
         /* modify pixel color based on occlusion */
         for (uniform size_t n=0;n<N;n++)
           if (rays[n].geomID != RTC_INVALID_GEOMETRY_ID)
