@@ -676,16 +676,11 @@ namespace embree
   unsigned Scene::add(Geometry* geometry) 
   {
     Lock<SpinLock> lock(geometriesMutex);
-
-    if (usedIDs.size()) {
-      unsigned id = usedIDs.back(); 
-      usedIDs.pop_back();
-      geometries[id] = geometry;
-      return id;
-    } else {
-      geometries.push_back(geometry);
-      return unsigned(geometries.size()-1);
-    }
+    unsigned id = id_pool.allocate();
+    if (id >= geometries.size()) 
+      geometries.resize(id+1);
+    geometries[id] = geometry;
+    return id;
   }
 
   void Scene::deleteGeometry(size_t geomID)
@@ -703,7 +698,7 @@ namespace embree
     
     geometry->disable();
     accels.deleteGeometry(unsigned(geomID));
-    usedIDs.push_back(unsigned(geomID));
+    id_pool.deallocate((unsigned)geomID);
     geometries[geomID] = nullptr;
     delete geometry;
   }
