@@ -700,7 +700,7 @@ extern "C" void device_init (char* cfg)
   RTCAlgorithmFlags aflags;
   if (g_mode == MODE_NORMAL) aflags = RTC_INTERSECT1;
   else                       aflags = RTC_INTERSECT1 | RTC_INTERSECT_STREAM;
-  g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,aflags);
+  g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC | RTC_SCENE_HIGH_QUALITY,aflags);
 
   /* add cube */
   addCube(g_scene,Vec3fa(0.0f,0.0f,0.0f),Vec3fa(10.0f,1.0f,1.0f),45.0f);
