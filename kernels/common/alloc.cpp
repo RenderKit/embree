@@ -70,6 +70,7 @@ namespace embree
         barrier.wait();
         barrier.wait();
       }
+      alloc.cleanup();
 
       /* destroy threads */
       for (size_t i=0; i<numThreads; i++)
