@@ -588,7 +588,7 @@ unsigned int cube_quad_faces[NUM_QUAD_FACES] = {
 };
 
 /* adds a cube to the scene */
-unsigned int addCube (RTCScene scene_i, Vec3fa offset, Vec3fa scale, float rotation)
+unsigned int addCube (RTCScene scene_i, const Vec3fa& offset, const Vec3fa& scale, float rotation)
 {
   /* create a triangulated cube with 12 triangles and 8 vertices */
   unsigned int geomID = rtcNewTriangleMesh (scene_i, RTC_GEOMETRY_STATIC, NUM_TRI_FACES, NUM_VERTICES);
