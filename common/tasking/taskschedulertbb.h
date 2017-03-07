@@ -47,14 +47,17 @@ namespace embree
 #if TBB_INTERFACE_VERSION_MAJOR < 8
       return 0;
 #else
-      return tbb::task_arena::current_thread_index();
+      return tbb::this_task_arena::current_thread_index();
 #endif
     }
   
     /* returns the total number of threads */
     static __forceinline size_t threadCount() {
-      //return tbb::task_scheduler_init::default_num_threads();
+#if TBB_INTERFACE_VERSION_MAJOR < 8
+      return tbb::task_scheduler_init::default_num_threads();
+#else
       return tbb::this_task_arena::max_concurrency();
+#endif
     }
   };
 };

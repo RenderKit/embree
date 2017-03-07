@@ -59,11 +59,11 @@ namespace embree
     /* now either keep default settings or configure number of threads */
     if (numThreads == std::numeric_limits<size_t>::max()) {
       g_tbb_threads_initialized = false;
-      numThreads = tbb::this_task_arena::max_concurrency();
+      numThreads = threadCount();
       //numThreads = tbb::task_scheduler_init::default_num_threads();
     } else {
       g_tbb_threads_initialized = true;
-      const int max_concurrency = tbb::this_task_arena::max_concurrency();
+      const int max_concurrency = threadCount();
       if (numThreads > max_concurrency) numThreads = max_concurrency;
       g_tbb_threads.initialize(int(numThreads));
     }
