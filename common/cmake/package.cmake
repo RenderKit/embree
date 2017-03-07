@@ -234,6 +234,7 @@ ELSE()
     #SET(CPACK_RPM_CHANGELOG_FILE "") # ChangeLog of the RPM; also CHANGELOG.md is not in the required format
     SET(CPACK_RPM_PACKAGE_ARCHITECTURE x86_64)
     SET(CPACK_RPM_PACKAGE_URL http://embree.github.io/)
+    SET(CPACK_RPM_DEFAULT_DIR_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
     # post install and uninstall scripts
     SET(CPACK_RPM_lib_POST_INSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/common/cmake/rpm_ldconfig.sh)
