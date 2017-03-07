@@ -169,7 +169,7 @@ namespace embree
         bvh->alloc.init_estimate(refs.size()*16); // FIXME: increase estimate for opening case
 
 #if defined(TASKING_TBB) && defined(__AVX512ER__) && USE_TASK_ARENA // KNL
-        tbb::task_arena limited(32);
+        tbb::task_arena limited(min(32,(int)TaskScheduler::threadCount()));
         limited.execute([&]
 #endif
         {

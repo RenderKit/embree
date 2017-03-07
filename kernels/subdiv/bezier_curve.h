@@ -329,7 +329,7 @@ namespace embree
     }
   };
 
-#if !EMBREE_NATIVE_CURVE_BSPLINE
+#if !defined(EMBREE_NATIVE_CURVE_BSPLINE)
   #define CurveT BezierCurveT
   typedef BezierCurve3fa Curve3fa;
 #endif
