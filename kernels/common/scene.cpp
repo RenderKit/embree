@@ -640,7 +640,7 @@ namespace embree
     }
     
     Geometry* geom = nullptr;
-#if EMBREE_NATIVE_CURVE_BSPLINE
+#if defined(EMBREE_NATIVE_CURVE_BSPLINE)
     switch (basis) {
     case NativeCurves::BEZIER : geom = new CurvesBezier(this,subtype,basis,gflags,numCurves,numVertices,numTimeSteps); break;
     case NativeCurves::BSPLINE: geom = new NativeCurves(this,subtype,basis,gflags,numCurves,numVertices,numTimeSteps); break;
