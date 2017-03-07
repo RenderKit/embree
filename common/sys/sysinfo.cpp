@@ -391,6 +391,7 @@ namespace embree
       GetSystemInfo(&sysinfo);
       nThreads = sysinfo.dwNumberOfProcessors;
     }
+    assert(nThreads);
     return nThreads;
   }
 
@@ -500,6 +501,7 @@ namespace embree
   {
     static int nThreads = -1;
     if (nThreads == -1) nThreads = sysconf(_SC_NPROCESSORS_CONF);
+    assert(nThreads);
     return nThreads;
   }
 

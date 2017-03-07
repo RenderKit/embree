@@ -146,9 +146,8 @@ namespace embree
   void TaskScheduler::ThreadPool::setNumThreads(size_t newNumThreads, bool startThreads)
   {
     Lock<MutexSys> lock(g_mutex);
-    
-    if (newNumThreads == 0)
-      newNumThreads = getNumberOfLogicalThreads();
+    assert(newNumThreads);
+    newNumThreads = min(newNumThreads, (size_t) getNumberOfLogicalThreads());
 
     numThreads = newNumThreads;
     if (!startThreads && !running) return;

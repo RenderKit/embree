@@ -299,8 +299,8 @@ namespace embree
     size_t maxNumThreads = 0;
     for (std::map<Device*,size_t>::iterator i=g_num_threads_map.begin(); i != g_num_threads_map.end(); i++)
       maxNumThreads = max(maxNumThreads, (*i).second);
-    if (maxNumThreads == std::numeric_limits<size_t>::max()) 
-      maxNumThreads = 0;
+    if (maxNumThreads == 0)
+      maxNumThreads = std::numeric_limits<size_t>::max();
     return maxNumThreads;
   }
 
@@ -336,7 +336,7 @@ namespace embree
     size_t maxNumThreads = getMaxNumThreads();
     TaskScheduler::create(maxNumThreads,State::set_affinity,State::start_threads);
 #if USE_TASK_ARENA
-    arena = make_unique(new tbb::task_arena(int(maxNumThreads)));
+    arena = make_unique(new tbb::task_arena((int)min(maxNumThreads,TaskScheduler::threadCount())));
 #endif
   }
 

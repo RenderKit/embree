@@ -53,7 +53,8 @@ namespace embree
   
     /* returns the total number of threads */
     static __forceinline size_t threadCount() {
-      return tbb::task_scheduler_init::default_num_threads();
+      //return tbb::task_scheduler_init::default_num_threads();
+      return tbb::this_task_arena::max_concurrency();
     }
   };
 };

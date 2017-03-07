@@ -141,7 +141,7 @@ namespace embree
         bvh->alloc.init_estimate(refs.size()*16);
 
 #if defined(TASKING_TBB) && defined(__AVX512ER__) && USE_TASK_ARENA // KNL
-        tbb::task_arena limited(32);
+        tbb::task_arena limited(min(32,(int)tbb::this_task_arena::max_concurrency()));
         limited.execute([&]
 #endif
         {

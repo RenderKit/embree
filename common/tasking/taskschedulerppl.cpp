@@ -22,13 +22,15 @@ namespace embree
     
   void TaskScheduler::create(size_t numThreads, bool set_affinity, bool start_threads)
   {
+    assert(numThreads);
+    
     /* first terminate threads in case we configured them */
     if (g_ppl_threads_initialized) {
       g_ppl_threads_initialized = false;
     }
     
     /* now either keep default settings or configure number of threads */
-    if (numThreads == 0)
+    if (numThreads == std::numeric_limits<size_t>::max())
     {
       g_ppl_threads_initialized = false;
       numThreads = threadCount();
