@@ -1143,6 +1143,7 @@ namespace embree
         case RTC_SCENE_STATIC : return 80.0f*NN; // triangle4
         case RTC_SCENE_ROBUST : return 65.0f*NN; // triangle4v
         case RTC_SCENE_COMPACT: return 40.0f*NN; // triangle4i
+        case RTC_SCENE_DYNAMIC: return (80.0f+8.0f)*NN; // triangle4+morton builder state
         default: return inf;
         }
       case TRIANGLE_MESH_MB: switch (sflags) {
