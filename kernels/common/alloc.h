@@ -477,7 +477,7 @@ namespace embree
             /* full 2M alignment for very first block */
             bytesAllocate = bytesReserve; // FIXME: necessary?
             const size_t alignment = (next == NULL) ? PAGE_SIZE_2M : PAGE_SIZE;
-            if (device) device->memoryMonitor(bytesAllocate,false);
+            if (device) device->memoryMonitor(bytesAllocate+alignment,false);
             ptr = alignedMalloc(bytesAllocate,alignment);           
  
             const size_t ptr_aligned_begin = ((size_t)ptr) & ~(PAGE_SIZE_2M-1);
@@ -486,14 +486,15 @@ namespace embree
             /* second os_advise should succeed as with 4M block */
             os_advise((void*)(ptr_aligned_begin + PAGE_SIZE_2M),PAGE_SIZE_2M);
             
-            return new (ptr) Block(bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next);
+            return new (ptr) Block(bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next,alignment);
           }
           else 
           {
             bytesAllocate = bytesReserve; // FIXME: necessary?
-            if (device) device->memoryMonitor(bytesAllocate,false);
-            ptr = alignedMalloc(bytesAllocate,CACHELINE_SIZE);
-            return new (ptr) Block(bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next);
+            const size_t alignment = CACHELINE_SIZE;
+            if (device) device->memoryMonitor(bytesAllocate+alignment,false);
+            ptr = alignedMalloc(bytesAllocate,alignment);
+            return new (ptr) Block(bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next,alignment);
           }
         } 
         else 
@@ -501,25 +502,24 @@ namespace embree
           if (device) device->memoryMonitor(bytesAllocate,false);
           ptr = os_reserve(bytesReserve);
           os_commit(ptr,bytesAllocate);
-          return new (ptr) Block(bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next);
+          return new (ptr) Block(bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next,0);
         }
       }
 
-      Block (size_t bytesAllocate, size_t bytesReserve, Block* next) 
-      : cur(0), allocEnd(bytesAllocate), reserveEnd(bytesReserve), next(next) 
+      Block (size_t bytesAllocate, size_t bytesReserve, Block* next, size_t wasted) 
+      : cur(0), allocEnd(bytesAllocate), reserveEnd(bytesReserve), next(next), wasted(wasted)
       {
         //for (size_t i=0; i<allocEnd; i+=defaultBlockSize) data[i] = 0;
       }
 
       void clear (MemoryMonitorInterface* device, bool osAllocation) 
       {
-	if (next) next->clear(device,osAllocation); next = nullptr;
+	if (next) next->clear(device,osAllocation); next = nullptr; // FIXME: no recursion here
         const size_t sizeof_Header = offsetof(Block,data[0]);
-        const ssize_t sizeof_Alloced = sizeof_Header+getBlockAllocatedBytes();
-        if (!osAllocation)
+        const ssize_t sizeof_Alloced = wasted+sizeof_Header+getBlockAllocatedBytes();
+        if (!osAllocation) {
           alignedFree(this);
-        else
-        {
+        } else {
          size_t sizeof_This = sizeof_Header+reserveEnd;
          os_free(this,sizeof_This);
         }
@@ -622,7 +622,8 @@ namespace embree
       std::atomic<size_t> allocEnd;   //!< end of the allocated memory region
       std::atomic<size_t> reserveEnd; //!< end of the reserved memory region
       Block* next;               //!< pointer to next block in list
-      char align[maxAlignment-4*sizeof(size_t)]; //!< align data to maxAlignment
+      size_t wasted;
+      char align[maxAlignment-5*sizeof(size_t)]; //!< align data to maxAlignment
       char data[1];              //!< here starts memory to use for allocations
     };
 
