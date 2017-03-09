@@ -471,11 +471,11 @@ namespace embree
        
         /* either use alignedMalloc or os_reserve/os_commit */
         void *ptr = nullptr;
-        if (!osAllocation) {          
+        if (!osAllocation) 
+        {
           if (bytesReserve == (2*PAGE_SIZE_2M))
           {
             /* full 2M alignment for very first block */
-            bytesAllocate = bytesReserve; // FIXME: necessary?
             const size_t alignment = (next == NULL) ? PAGE_SIZE_2M : PAGE_SIZE;
             if (device) device->memoryMonitor(bytesAllocate+alignment,false);
             ptr = alignedMalloc(bytesAllocate,alignment);           
@@ -486,15 +486,14 @@ namespace embree
             /* second os_advise should succeed as with 4M block */
             os_advise((void*)(ptr_aligned_begin + PAGE_SIZE_2M),PAGE_SIZE_2M);
             
-            return new (ptr) Block(bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next,alignment);
+            return new (ptr) Block(bytesAllocate-sizeof_Header,bytesAllocate-sizeof_Header,next,alignment);
           }
           else 
           {
-            bytesAllocate = bytesReserve; // FIXME: necessary?
             const size_t alignment = CACHELINE_SIZE;
             if (device) device->memoryMonitor(bytesAllocate+alignment,false);
             ptr = alignedMalloc(bytesAllocate,alignment);
-            return new (ptr) Block(bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next,alignment);
+            return new (ptr) Block(bytesAllocate-sizeof_Header,bytesAllocate-sizeof_Header,next,alignment);
           }
         } 
         else 
