@@ -468,30 +468,41 @@ namespace embree
         const size_t sizeof_Header = offsetof(Block,data[0]);
         bytesAllocate = ((sizeof_Header+bytesAllocate+PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
         bytesReserve  = ((sizeof_Header+bytesReserve +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
-        if (device) device->memoryMonitor(bytesAllocate,false);
-
+       
         /* either use alignedMalloc or os_reserve/os_commit */
         void *ptr = nullptr;
         if (!osAllocation) {          
           if (bytesReserve == (2*PAGE_SIZE_2M))
           {
             /* full 2M alignment for very first block */
+            bytesAllocate = bytesReserve; // FIXME: necessary?
             const size_t alignment = (next == NULL) ? PAGE_SIZE_2M : PAGE_SIZE;
-            ptr = alignedMalloc(bytesReserve,alignment);            
+            if (device) device->memoryMonitor(bytesAllocate,false);
+            ptr = alignedMalloc(bytesAllocate,alignment);           
+ 
             const size_t ptr_aligned_begin = ((size_t)ptr) & ~(PAGE_SIZE_2M-1);
             /* first os_advise could fail as speculative */
             os_advise((void*)(ptr_aligned_begin +            0),PAGE_SIZE_2M);
             /* second os_advise should succeed as with 4M block */
             os_advise((void*)(ptr_aligned_begin + PAGE_SIZE_2M),PAGE_SIZE_2M);
+            
+            return new (ptr) Block(bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next);
           }
-          else
-            ptr = alignedMalloc(bytesReserve,CACHELINE_SIZE);
-        } else {
+          else 
+          {
+            bytesAllocate = bytesReserve; // FIXME: necessary?
+            if (device) device->memoryMonitor(bytesAllocate,false);
+            ptr = alignedMalloc(bytesAllocate,CACHELINE_SIZE);
+            return new (ptr) Block(bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next);
+          }
+        } 
+        else 
+        {
+          if (device) device->memoryMonitor(bytesAllocate,false);
           ptr = os_reserve(bytesReserve);
           os_commit(ptr,bytesAllocate);
+          return new (ptr) Block(bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next);
         }
-        new (ptr) Block(bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next);
-        return (Block*) ptr;
       }
 
       Block (size_t bytesAllocate, size_t bytesReserve, Block* next) 
