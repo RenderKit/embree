@@ -1130,9 +1130,69 @@ namespace embree
       return true;
     }
 
+    double expected_size(VerifyApplication* state, size_t NN)
+    {
+      switch (gtype)
+      {
+      case TRIANGLE_MESH: switch (sflags) {
+        case RTC_SCENE_STATIC : return 80.0f*NN; // triangle4
+        case RTC_SCENE_ROBUST : return 65.0f*NN; // triangle4v
+        case RTC_SCENE_COMPACT: return 40.0f*NN; // triangle4i
+        default: return inf;
+        }
+      case TRIANGLE_MESH_MB: switch (sflags) {
+        case RTC_SCENE_STATIC : return 42.0f*NN; // triangle4imb
+        case RTC_SCENE_ROBUST : return 42.0f*NN; // triangle4imb
+        case RTC_SCENE_COMPACT: return 42.0f*NN; // triangle4imb
+        default: return inf;
+        }
+        
+      case QUAD_MESH: switch (sflags) {
+        case RTC_SCENE_STATIC : return 80.0f*NN; // quad4v
+        case RTC_SCENE_ROBUST : return 80.0f*NN; // quad4v
+        case RTC_SCENE_COMPACT: return 40.0f*NN; // quad4i
+        default: return inf;
+        }
+      case QUAD_MESH_MB: switch (sflags) {
+        case RTC_SCENE_STATIC : return 52.0f*NN; // quad4imb
+        case RTC_SCENE_ROBUST : return 52.0f*NN; // quad4imb
+        case RTC_SCENE_COMPACT: return 52.0f*NN; // quad4imb
+        default: return inf;
+        }
+      
+      case HAIR_GEOMETRY: switch (sflags) {
+        case RTC_SCENE_STATIC : return 170.0f*NN; // bezier1v
+        case RTC_SCENE_ROBUST : return 170.0f*NN; // bezier1v
+        case RTC_SCENE_COMPACT: return 100.0f*NN; // bezier1i
+        default: return inf;
+        }
+      case HAIR_GEOMETRY_MB: switch (sflags) {
+        case RTC_SCENE_STATIC : return 150.0f*NN; // bezier1i
+        case RTC_SCENE_ROBUST : return 150.0f*NN; // bezier1i
+        case RTC_SCENE_COMPACT: return 150.0f*NN; // bezier1i
+        default: return inf;
+        }
+      
+      case LINE_GEOMETRY: switch (sflags) {
+        case RTC_SCENE_STATIC : return 30.0f*NN; // line4i
+        case RTC_SCENE_ROBUST : return 30.0f*NN; // line4i
+        case RTC_SCENE_COMPACT: return 30.0f*NN; // line4i
+        default: return inf;
+        }
+
+      case LINE_GEOMETRY_MB: switch (sflags) {
+        case RTC_SCENE_STATIC : return 40.0f*NN; // line4i
+        case RTC_SCENE_ROBUST : return 40.0f*NN; // line4i
+        case RTC_SCENE_COMPACT: return 40.0f*NN; // line4i
+        default: return inf;
+        }
+      
+      default: return inf;
+      }
+    }
+
     std::pair<ssize_t,ssize_t> run_build(VerifyApplication* state, size_t N, unsigned numThreads)
     {
-      //if (numThreads != 1) numThreads = 2;
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa) + ",threads="+std::to_string((long long)numThreads);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       errorHandler(rtcDeviceGetError(device));
@@ -1189,18 +1249,34 @@ namespace embree
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
     {
+      VerifyApplication::TestReturnValue ret = VerifyApplication::PASSED;
+
       for (size_t N=128; N<100000; N = (size_t)((float)N * 1.2f)) 
       {
         auto bytes_one_thread  = run_build(state,N,1);
         auto bytes_all_threads = run_build(state,N,0);
-        double overhead = double(bytes_all_threads.second)/double(bytes_one_thread.second);
-        //std::cout << "N = " << bytes_one_thread.first << ", 1 thread = " << 1E-6*bytes_one_thread.second << " MB, all_threads = " << 1E-6*bytes_all_threads.second << " MB (" << 100.0f*overhead << " %)" << std::endl;
+        auto bytes_expected = expected_size(state,bytes_one_thread.first);
+        double expected_to_single = double(bytes_one_thread.second)/double(bytes_expected);
+        double single_to_threaded = double(bytes_all_threads.second)/double(bytes_one_thread.second);
+     
+        /* single threaded build has to stay in expected memory usage bounds */
+        const bool failed0 = expected_to_single > 1.0f;
+        
+        /* FIXME: investigate growSize for quads/line builders */
+        const bool failed1 = single_to_threaded > 1.10f;
 
-        /* right now we use a 38% overhead threshold, FIXME: investigate growSize for quads/line builders */
-        if (overhead > 1.38f) { 
-          return VerifyApplication::FAILED; }
+        if (failed0 || failed1) 
+          ret = VerifyApplication::FAILED;
+
+#if 0
+        double num_primitives = bytes_one_thread.first;
+        std::cout << "N = " << num_primitives << ", " << 
+          "expected = " << bytes_expected/num_primitives << " B, " << 
+          "1 thread = " << bytes_one_thread.second/num_primitives << " B (" << 100.0f*expected_to_single << " %)" << (failed0 ? "[FAILED]" : "") << ", " << 
+          "all_threads = " << bytes_all_threads.second/num_primitives << " B (" << 100.0f*single_to_threaded << " %)" << (failed1 ? "[FAILED]" : "") << std::endl;
+#endif
       }
-      return VerifyApplication::PASSED;
+      return ret;
     }
   };
     
@@ -3970,6 +4046,8 @@ namespace embree
       GeometryType gtypes_memory[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, HAIR_GEOMETRY, HAIR_GEOMETRY_MB, LINE_GEOMETRY, LINE_GEOMETRY_MB };
       std::vector<std::pair<RTCSceneFlags,RTCGeometryFlags>> sflags_gflags_memory;
       sflags_gflags_memory.push_back(std::make_pair(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC));
+      sflags_gflags_memory.push_back(std::make_pair(RTC_SCENE_STATIC | RTC_SCENE_COMPACT,RTC_GEOMETRY_STATIC));
+      sflags_gflags_memory.push_back(std::make_pair(RTC_SCENE_STATIC | RTC_SCENE_ROBUST,RTC_GEOMETRY_STATIC));
       sflags_gflags_memory.push_back(std::make_pair(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC));
 
       push(new TestGroup("memory_consumption",false,false));
