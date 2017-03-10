@@ -104,12 +104,8 @@ namespace embree
       MAYBE_UNUSED char align[64];
     };
 
-    ThreadLocalStorage() 
-      : key(createTls()) {}
-
     ~ThreadLocalStorage() 
     {
-      destroyTls(key);
       for (auto thread : threads)
         delete thread;
     }
@@ -144,11 +140,11 @@ namespace embree
     
     __forceinline ThreadLocal* get_thread_local() 
     {
-      ThreadLocal* tls = (ThreadLocal*) getTls(key);
+      ThreadLocal* tls = t_threadlocal;
       if (unlikely(tls == nullptr)) {
         Lock<SpinLock> lock(mutex);
         tls = new ThreadLocal(ids.size());
-        setTls(key,tls);
+        t_threadlocal = tls;
         threads.push_back(tls);
       }
       return tls;
@@ -157,9 +153,9 @@ namespace embree
   private:
     SpinLock mutex;
     IDPool<size_t> ids;
-    tls_t key;
     std::vector<ThreadLocal*> threads;
     static ThreadLocalStorage single_instance;
+    static thread_local ThreadLocal* t_threadlocal;
   };
 
 #if 0
