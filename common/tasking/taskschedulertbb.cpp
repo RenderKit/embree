@@ -44,6 +44,8 @@ namespace embree
   
   void TaskScheduler::create(size_t numThreads, bool set_affinity, bool start_threads)
   {
+    assert(numThreads);
+
     /* first terminate threads in case we configured them */
     if (g_tbb_threads_initialized) {
       g_tbb_threads.terminate();
@@ -55,11 +57,14 @@ namespace embree
       tbb_affinity.observe(true); 
     
     /* now either keep default settings or configure number of threads */
-    if (numThreads == 0) {
+    if (numThreads == std::numeric_limits<size_t>::max()) {
       g_tbb_threads_initialized = false;
-      numThreads = tbb::task_scheduler_init::default_num_threads();
+      numThreads = threadCount();
+      //numThreads = tbb::task_scheduler_init::default_num_threads();
     } else {
       g_tbb_threads_initialized = true;
+      const int max_concurrency = threadCount();
+      if (numThreads > max_concurrency) numThreads = max_concurrency;
       g_tbb_threads.initialize(int(numThreads));
     }
 

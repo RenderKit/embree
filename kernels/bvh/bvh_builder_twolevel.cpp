@@ -25,12 +25,13 @@
 #define MAX_OPEN_SIZE 10000
 
 /* new open/merge builder */
-#define ENABLE_DIRECT_SAH_MERGE_BUILDER 1
+#define ENABLE_DIRECT_SAH_MERGE_BUILDER 0
 
 /* sequential opening phase in old code path */
 #define ENABLE_OPEN_SEQUENTIAL 0
 
 #define SPLIT_MEMORY_RESERVE_FACTOR 1000
+// 500
 #define SPLIT_MIN_EXT_SPACE 1000
 
 // for non-opening two-level approach set ENABLE_DIRECT_SAH_MERGE_BUILDER and ENABLE_OPEN_SEQUENTIAL to 0
@@ -168,7 +169,7 @@ namespace embree
         bvh->alloc.init_estimate(refs.size()*16); // FIXME: increase estimate for opening case
 
 #if defined(TASKING_TBB) && defined(__AVX512ER__) && USE_TASK_ARENA // KNL
-        tbb::task_arena limited(32);
+        tbb::task_arena limited(min(32,(int)TaskScheduler::threadCount()));
         limited.execute([&]
 #endif
         {

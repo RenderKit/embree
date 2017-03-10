@@ -34,7 +34,7 @@ namespace embree {
 
 #define FIXED_EDGE_TESSELLATION_VALUE 4
 
-#define ENABLE_FILTER_FUNCTION 1
+#define ENABLE_FILTER_FUNCTION 0
 
 #define MAX_EDGE_LEVEL 128.0f
 #define MIN_EDGE_LEVEL   4.0f
@@ -974,7 +974,10 @@ RTCScene convertScene(ISPCScene* scene_in)
   }
 
   /* create scene */
-  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
+  //int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
+  PRINT("WARNING: DYNAMIC MODE");
+  int scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT;
+
   int scene_aflags = RTC_INTERSECT1;
 
   if (g_subdiv_mode)
@@ -1390,6 +1393,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
       if (ls.pdf <= 0.0f) continue;
       RTCRay shadow = RTCRay(dg.P,ls.dir,dg.tnear_eps,ls.dist,time); shadow.transparency = Vec3fa(1.0f);
       rtcOccluded1Ex(g_scene,&context,shadow);
+
       //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       if (max(max(shadow.transparency.x,shadow.transparency.y),shadow.transparency.z) > 0.0f)
         L = L + Lw*ls.weight*shadow.transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,ls.dir);

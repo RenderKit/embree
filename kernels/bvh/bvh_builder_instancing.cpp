@@ -25,7 +25,7 @@
 
 /* new open/merge builder */
 #define ENABLE_DIRECT_SAH_MERGE_BUILDER 1
-#define SPLIT_MEMORY_RESERVE_FACTOR 1000
+#define SPLIT_MEMORY_RESERVE_FACTOR 4
 #define SPLIT_MIN_EXT_SPACE 1000
 
 namespace embree
@@ -209,6 +209,7 @@ namespace embree
 
       /* open all large nodes */  
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER == 0
+      PRINT(refs.size());
       //open(numPrimitives); 
 #endif
 
@@ -277,8 +278,8 @@ namespace embree
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
         PRINT("NEW CODE PATH");
         PRINT(pinfo);
-        const size_t extSize = max((size_t)SPLIT_MIN_EXT_SPACE,refs.size()*4);
-        DBG_PRINT(refs.size()*4);
+        const size_t extSize = max((size_t)SPLIT_MIN_EXT_SPACE,refs.size()*SPLIT_MEMORY_RESERVE_FACTOR);
+        DBG_PRINT(refs.size()*SPLIT_MEMORY_RESERVE_FACTOR);
         DBG_PRINT(extSize);
         refs.resize(extSize); 
         PRINT(refs.size());

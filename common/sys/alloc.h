@@ -17,6 +17,7 @@
 #pragma once
 
 #include "platform.h"
+#include <vector>
 
 namespace embree
 {
@@ -110,6 +111,46 @@ namespace embree
       __forceinline void destroy( pointer p ) {
         p->~T();
       }
+    };
+
+  /*! allocator for IDs */
+  template<typename T>
+    struct IDPool
+    {
+      typedef T value_type;
+
+      IDPool ()
+      : nextID(0) {}
+
+      __forceinline T allocate() 
+      {
+        /* return ID from list */
+        if (IDs.size()) 
+        {
+          T id = IDs.back();
+          IDs.pop_back();
+          return id;
+        } 
+
+        /* allocate new ID */
+        else {
+          return nextID++;
+        }
+      }
+
+      __forceinline void deallocate( T id ) 
+      {
+        assert(id < nextID);
+        IDs.push_back(id);
+      }
+
+      __forceinline size_t size() const {
+        return nextID;
+      }
+
+    private:
+      std::vector<T> IDs;   //!< stores deallocated IDs to be reused
+      size_t nextID;        //!< next ID to use when IDs vector is empty
     };
 }
 
