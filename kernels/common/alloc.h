@@ -380,6 +380,18 @@ namespace embree
       }
     }
 
+    /*! add new block */
+    void addBlock(void* ptr, ssize_t bytes)
+    {
+      Lock<SpinLock> lock(mutex);
+      const size_t sizeof_Header = offsetof(Block,data[0]);
+      void* aptr = (void*) ((((size_t)ptr)+maxAlignment-1) & ~(maxAlignment-1));
+      size_t ofs = (size_t) aptr - (size_t) ptr;
+      bytes -= ofs;
+      if (bytes < 4096) return; // ignore empty or very small blocks
+      freeBlocks = new (aptr) Block(SHARED,bytes-sizeof_Header,bytes-sizeof_Header,freeBlocks,ofs);
+    }
+
     /* special allocation only used from morton builder only a single time for each build */
     void* specialAlloc(size_t bytes) 
     {
@@ -510,6 +522,7 @@ namespace embree
       Block (AllocationType atype, size_t bytesAllocate, size_t bytesReserve, Block* next, size_t wasted) 
       : cur(0), allocEnd(bytesAllocate), reserveEnd(bytesReserve), next(next), wasted(wasted), atype(atype)
       {
+        assert((((size_t)&data[0]) & (maxAlignment-1)) == 0);
         //for (size_t i=0; i<allocEnd; i+=defaultBlockSize) data[i] = 0;
       }
 
@@ -521,13 +534,17 @@ namespace embree
 
         if (atype == ALIGNED_MALLOC) {
           alignedFree(this);
+          if (device) device->memoryMonitor(-sizeof_Alloced,true);
         } 
+
         else if (atype == OS_MALLOC) {
          size_t sizeof_This = sizeof_Header+reserveEnd;
          os_free(this,sizeof_This);
-        } else /* if (atype == SHARED) */ {
+         if (device) device->memoryMonitor(-sizeof_Alloced,true);
+        } 
+
+        else /* if (atype == SHARED) */ {
         }
-        if (device) device->memoryMonitor(-sizeof_Alloced,true);
       }
       
       void* malloc(MemoryMonitorInterface* device, size_t& bytes_in, size_t align, bool partial) 
@@ -568,8 +585,8 @@ namespace embree
           size_t newSize = os_shrink(this,sizeof_Header+getBlockUsedBytes(),reserveEnd+sizeof_Header);
           if (device) device->memoryMonitor(newSize-sizeof_Header-allocEnd,true);
           reserveEnd = allocEnd = newSize-sizeof_Header;
-          if (next) next->shrink(device);
         }
+        if (next) next->shrink(device); // FIXME: no recursion here
       }
 
       size_t getBlockUsedBytes() const {
@@ -617,8 +634,11 @@ namespace embree
       }
 
       void print() const {
+        if (atype == ALIGNED_MALLOC) std::cout << "A";
+        else if (atype == OS_MALLOC) std::cout << "O";
+        else if (atype == SHARED) std::cout << "S";
         std::cout << "[" << getBlockUsedBytes() << ", " << getBlockAllocatedBytes() << ", " << getBlockReservedBytes() << "] ";
-        if (next) next->print();
+        if (next) next->print(); // FIXME: no recursion here
       }
 
     public:

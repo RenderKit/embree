@@ -177,8 +177,12 @@ namespace embree
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
 
 	if (staticGeom) {
+#if 0
+          bvh->primrefs = std::move(prims);
+#else
           prims.clear(); 
           bvh->shrink();
+#endif
         }
 	bvh->cleanup();
         bvh->postBuild(t0);

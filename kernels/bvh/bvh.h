@@ -411,12 +411,43 @@ namespace embree
 
       struct Set2
       {
-        __forceinline NodeRef operator() (NodeRef ref, NodeRef* children, const size_t num) const
+        template<typename BuildRecord>
+        __forceinline NodeRef operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRef* children, const size_t num) const
         {
           AlignedNode* node = ref.alignedNode();
           for (size_t i=0; i<num; i++) node->set(i,children[i]);
           return ref;
         }
+      };
+
+      struct Set3
+      {
+        Set3 (FastAllocator* allocator, PrimRef* prims)
+        : allocator(allocator), prims(prims) {}
+
+        template<typename BuildRecord>
+        __forceinline NodeRef operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRef* children, const size_t num) const
+        {
+          AlignedNode* node = ref.alignedNode();
+          for (size_t i=0; i<num; i++) node->set(i,children[i]);
+#if 0
+          const size_t threshold = 10000;
+          if (precord.prims.size() > threshold) 
+          {
+            for (size_t i=0; i<num; i++) {
+              if (crecords[i].prims.size() > threshold) continue;
+              PrimRef* begin = &prims[crecords[i].prims.begin()];
+              PrimRef* end   = &prims[crecords[i].prims.end()]; // FIXME: extended end for spatial split builder!!!!!
+              size_t bytes = (size_t)end - (size_t)begin;
+              allocator->addBlock(begin,bytes);
+            }
+          }
+#endif
+          return ref;
+        }
+
+        FastAllocator* const allocator;
+        PrimRef* const prims;
       };
 
       /*! Clears the node. */
@@ -548,7 +579,8 @@ namespace embree
       {
         typedef std::pair<NodeRef,LBBox3fa> Ty;
         
-        __forceinline Ty operator() (NodeRef ref, Ty* children, const size_t num) const
+        template<typename BuildRecord>
+        __forceinline Ty operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, Ty* children, const size_t num) const
         {
           AlignedNodeMB* node = ref.alignedNodeMB();
           
@@ -934,7 +966,8 @@ namespace embree
 
       struct Set2
       {
-        __forceinline NodeRef operator() (NodeRef ref, NodeRef* children, const size_t num) const
+        template<typename BuildRecord>
+        __forceinline NodeRef operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRef* children, const size_t num) const
         {
           QuantizedNode* node = ref.quantizedNode();
           for (size_t i=0; i<num; i++) node->set(i,children[i]);
@@ -1272,6 +1305,7 @@ namespace embree
   public:
     std::vector<BVHN*> objects;
     avector<char,aligned_allocator<char,32>> subdiv_patches;
+    mvector<PrimRef> primrefs;
   };
 
   template<>

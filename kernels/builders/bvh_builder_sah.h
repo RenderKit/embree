@@ -185,7 +185,7 @@ namespace embree
             values[i] = createLargeLeaf(children[i],alloc);
           
           /* perform reduction */
-          return updateNode(node,values,numChildren);
+          return updateNode(current,children,node,values,numChildren);
         }
         
         const ReductionTy recurse(BuildRecord& current, Allocator alloc, bool toplevel)
@@ -270,7 +270,7 @@ namespace embree
                 }                
               });
 
-            return updateNode(node,values,numChildren);
+            return updateNode(current,children,node,values,numChildren);
           }
           /* recurse into each child */
           else 
@@ -278,7 +278,7 @@ namespace embree
             for (size_t i=0; i<numChildren; i++)
               values[i] = recurse(children[i],alloc,false);
             
-            return updateNode(node,values,numChildren);
+            return updateNode(current,children,node,values,numChildren);
           }
         }
         
