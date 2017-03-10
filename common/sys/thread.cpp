@@ -429,5 +429,4 @@ namespace embree
 namespace embree
 {
   ThreadLocalStorage ThreadLocalStorage::single_instance;
-  thread_local ThreadLocalStorage::ThreadLocal* ThreadLocalStorage::t_threadlocal;
 }
