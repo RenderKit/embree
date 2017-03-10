@@ -272,9 +272,9 @@ namespace embree
     void shrink () 
     {
       for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++)
-        if (threadUsedBlocks[i].load() != nullptr) threadUsedBlocks[i].load()->shrink(device);
-      if (usedBlocks.load() != nullptr) usedBlocks.load()->shrink(device);
-      if (freeBlocks.load() != nullptr) freeBlocks.load()->clear(device); freeBlocks = nullptr;
+        if (threadUsedBlocks[i].load() != nullptr) threadUsedBlocks[i].load()->shrink_list(device);
+      if (usedBlocks.load() != nullptr) usedBlocks.load()->shrink_list(device);
+      if (freeBlocks.load() != nullptr) freeBlocks.load()->clear_list(device); freeBlocks = nullptr;
     }
 
     /*! resets the allocator, memory blocks get reused */
@@ -286,7 +286,7 @@ namespace embree
       bytesWasted = 0;
 
       /* first reset all used blocks */
-      if (usedBlocks.load() != nullptr) usedBlocks.load()->reset();
+      if (usedBlocks.load() != nullptr) usedBlocks.load()->reset_list();
       
       /* move all used blocks to begin of free block list */
       while (usedBlocks.load() != nullptr) {
@@ -312,8 +312,8 @@ namespace embree
       cleanup();
       bytesUsed = 0;
       bytesWasted = 0;
-      if (usedBlocks.load() != nullptr) usedBlocks.load()->clear(device); usedBlocks = nullptr;
-      if (freeBlocks.load() != nullptr) freeBlocks.load()->clear(device); freeBlocks = nullptr;
+      if (usedBlocks.load() != nullptr) usedBlocks.load()->clear_list(device); usedBlocks = nullptr;
+      if (freeBlocks.load() != nullptr) freeBlocks.load()->clear_list(device); freeBlocks = nullptr;
       for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++) {
         threadUsedBlocks[i] = nullptr;
         threadBlocks[i] = nullptr;
@@ -462,11 +462,11 @@ namespace embree
         std::cout << "  use_single_mode = " << use_single_mode << std::endl;
         std::cout << "  defaultBlockSize = " << defaultBlockSize << std::endl;
         std::cout << "  used blocks = ";
-        if (usedBlocks.load() != nullptr) usedBlocks.load()->print();
+        if (usedBlocks.load() != nullptr) usedBlocks.load()->print_list();
         std::cout << "[END]" << std::endl;
         
         std::cout << "  free blocks = ";
-        if (freeBlocks.load() != nullptr) freeBlocks.load()->print();
+        if (freeBlocks.load() != nullptr) freeBlocks.load()->print_list();
         std::cout << "[END]" << std::endl;
       }
     }
@@ -526,9 +526,18 @@ namespace embree
         //for (size_t i=0; i<allocEnd; i+=defaultBlockSize) data[i] = 0;
       }
 
-      void clear (MemoryMonitorInterface* device) 
+      void clear_list(MemoryMonitorInterface* device) 
       {
-	if (next) next->clear(device); next = nullptr; // FIXME: no recursion here
+        Block* block = this;
+        while (block) {
+          Block* next = block->next;
+          block->clear_block(device);
+          block = next;
+        }
+      }
+
+      void clear_block (MemoryMonitorInterface* device) 
+      {
         const size_t sizeof_Header = offsetof(Block,data[0]);
         const ssize_t sizeof_Alloced = wasted+sizeof_Header+getBlockAllocatedBytes();
 
@@ -570,14 +579,25 @@ namespace embree
         return &data[cur];
       }
 
-      void reset () 
+      void reset_list ()
+      {
+        for (Block* block = this; block; block = block->next)
+          block->reset_block();
+      }
+
+      void reset_block () 
       {
         allocEnd = max(allocEnd,(size_t)cur);
         cur = 0;
-        if (next) next->reset(); 
       }
 
-      void shrink (MemoryMonitorInterface* device) 
+      void shrink_list (MemoryMonitorInterface* device) 
+      {
+        for (Block* block = this; block; block = block->next)
+          block->shrink_block(device);
+      }
+   
+      void shrink_block (MemoryMonitorInterface* device) 
       {
         if (atype == OS_MALLOC)
         {
@@ -586,7 +606,6 @@ namespace embree
           if (device) device->memoryMonitor(newSize-sizeof_Header-allocEnd,true);
           reserveEnd = allocEnd = newSize-sizeof_Header;
         }
-        if (next) next->shrink(device); // FIXME: no recursion here
       }
 
       size_t getBlockUsedBytes() const {
@@ -633,12 +652,18 @@ namespace embree
         return bytes;
       }
 
-      void print() const {
+      void print_list () 
+      {
+        for (const Block* block = this; block; block = block->next)
+          block->print_block();
+      }
+
+      void print_block() const 
+      {
         if (atype == ALIGNED_MALLOC) std::cout << "A";
         else if (atype == OS_MALLOC) std::cout << "O";
         else if (atype == SHARED) std::cout << "S";
         std::cout << "[" << getBlockUsedBytes() << ", " << getBlockAllocatedBytes() << ", " << getBlockReservedBytes() << "] ";
-        if (next) next->print(); // FIXME: no recursion here
       }
 
     public:
