@@ -35,6 +35,8 @@ namespace embree
     
   public:
 
+    enum AllocationType { ALIGNED_MALLOC, OS_MALLOC, SHARED };
+
     /*! Per thread structure holding the current memory block. */
     struct __aligned(64) ThreadLocal 
     {
@@ -169,7 +171,7 @@ namespace embree
 
     FastAllocator (Device* device, bool osAllocation) 
       : device(device), slotMask(0), usedBlocks(nullptr), freeBlocks(nullptr), use_single_mode(false), defaultBlockSize(PAGE_SIZE), 
-      growSize(PAGE_SIZE), log2_grow_size_scale(0), bytesUsed(0), bytesWasted(0), thread_local_allocators2(this), osAllocation(osAllocation)
+        growSize(PAGE_SIZE), log2_grow_size_scale(0), bytesUsed(0), bytesWasted(0), thread_local_allocators2(this), atype(osAllocation ? OS_MALLOC : ALIGNED_MALLOC)
     {
       for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++)
       {
@@ -213,8 +215,6 @@ namespace embree
       if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesAllocate > 16*maxAllocationSize) slotMask = 0x7;
     }
 
-    __forceinline void set_osAllocation(const bool v) { osAllocation = v; }
-
     void internal_fix_used_blocks()
     {
       /* move thread local blocks to global block list */
@@ -238,7 +238,7 @@ namespace embree
       slotMask = MAX_THREAD_USED_BLOCK_SLOTS-1;      
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       if (bytesReserve == 0) bytesReserve = bytesAllocate;
-      freeBlocks = Block::create(device,bytesAllocate,bytesReserve,nullptr,osAllocation);
+      freeBlocks = Block::create(device,bytesAllocate,bytesReserve,nullptr,atype);
       defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE+maxAlignment)); 
       initGrowSizeAndNumSlots(bytesAllocate,bytesReserve);
     }
@@ -272,9 +272,9 @@ namespace embree
     void shrink () 
     {
       for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++)
-        if (threadUsedBlocks[i].load() != nullptr) threadUsedBlocks[i].load()->shrink(device,osAllocation);
-      if (usedBlocks.load() != nullptr) usedBlocks.load()->shrink(device,osAllocation);
-      if (freeBlocks.load() != nullptr) freeBlocks.load()->clear(device,osAllocation); freeBlocks = nullptr;
+        if (threadUsedBlocks[i].load() != nullptr) threadUsedBlocks[i].load()->shrink(device);
+      if (usedBlocks.load() != nullptr) usedBlocks.load()->shrink(device);
+      if (freeBlocks.load() != nullptr) freeBlocks.load()->clear(device); freeBlocks = nullptr;
     }
 
     /*! resets the allocator, memory blocks get reused */
@@ -312,8 +312,8 @@ namespace embree
       cleanup();
       bytesUsed = 0;
       bytesWasted = 0;
-      if (usedBlocks.load() != nullptr) usedBlocks.load()->clear(device,osAllocation); usedBlocks = nullptr;
-      if (freeBlocks.load() != nullptr) freeBlocks.load()->clear(device,osAllocation); freeBlocks = nullptr;
+      if (usedBlocks.load() != nullptr) usedBlocks.load()->clear(device); usedBlocks = nullptr;
+      if (freeBlocks.load() != nullptr) freeBlocks.load()->clear(device); freeBlocks = nullptr;
       for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++) {
         threadUsedBlocks[i] = nullptr;
         threadBlocks[i] = nullptr;
@@ -338,7 +338,7 @@ namespace embree
         size_t slot = threadIndex & slotMask;
 	Block* myUsedBlocks = threadUsedBlocks[slot];
         if (myUsedBlocks) {
-          void* ptr = myUsedBlocks->malloc(device,bytes,align,partial,osAllocation); 
+          void* ptr = myUsedBlocks->malloc(device,bytes,align,partial); 
           if (ptr) return ptr;
         }
         
@@ -353,7 +353,7 @@ namespace embree
           if (myUsedBlocks == threadUsedBlocks[slot]) {
             const size_t allocSize = min(max(growSize,bytes),size_t(maxAllocationSize));
             assert(allocSize >= bytes);
-            threadBlocks[slot] = threadUsedBlocks[slot] = Block::create(device,allocSize,allocSize,threadBlocks[slot],osAllocation);              
+            threadBlocks[slot] = threadUsedBlocks[slot] = Block::create(device,allocSize,allocSize,threadBlocks[slot],atype);
           }
           continue;
         }        
@@ -373,7 +373,7 @@ namespace embree
 	    } else {
 	      //growSize = min(2*growSize,size_t(maxAllocationSize+maxAlignment));
               const size_t allocSize = min(growSize * incGrowSizeScale(),size_t(maxAllocationSize+maxAlignment))-maxAlignment;
-	      usedBlocks = threadUsedBlocks[slot] = Block::create(device,allocSize,allocSize,usedBlocks,osAllocation);
+	      usedBlocks = threadUsedBlocks[slot] = Block::create(device,allocSize,allocSize,usedBlocks,atype);
 	    }
 	  }
         }
@@ -463,7 +463,7 @@ namespace embree
 
     struct Block 
     {
-      static Block* create(MemoryMonitorInterface* device, size_t bytesAllocate, size_t bytesReserve, Block* next, bool osAllocation)
+      static Block* create(MemoryMonitorInterface* device, size_t bytesAllocate, size_t bytesReserve, Block* next, AllocationType atype)
       {
         const size_t sizeof_Header = offsetof(Block,data[0]);
         bytesAllocate = ((sizeof_Header+bytesAllocate+PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
@@ -471,7 +471,7 @@ namespace embree
        
         /* either use alignedMalloc or os_reserve/os_commit */
         void *ptr = nullptr;
-        if (!osAllocation) 
+        if (atype == ALIGNED_MALLOC) 
         {
           if (bytesReserve == (2*PAGE_SIZE_2M))
           {
@@ -486,46 +486,51 @@ namespace embree
             /* second os_advise should succeed as with 4M block */
             os_advise((void*)(ptr_aligned_begin + PAGE_SIZE_2M),PAGE_SIZE_2M);
             
-            return new (ptr) Block(bytesAllocate-sizeof_Header,bytesAllocate-sizeof_Header,next,alignment);
+            return new (ptr) Block(atype,bytesAllocate-sizeof_Header,bytesAllocate-sizeof_Header,next,alignment);
           }
           else 
           {
             const size_t alignment = CACHELINE_SIZE;
             if (device) device->memoryMonitor(bytesAllocate+alignment,false);
             ptr = alignedMalloc(bytesAllocate,alignment);
-            return new (ptr) Block(bytesAllocate-sizeof_Header,bytesAllocate-sizeof_Header,next,alignment);
+            return new (ptr) Block(atype,bytesAllocate-sizeof_Header,bytesAllocate-sizeof_Header,next,alignment);
           }
         } 
-        else 
+        else if (atype == OS_MALLOC)
         {
           if (device) device->memoryMonitor(bytesAllocate,false);
           ptr = os_reserve(bytesReserve);
           os_commit(ptr,bytesAllocate);
-          return new (ptr) Block(bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next,0);
+          return new (ptr) Block(atype,bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next,0);
         }
+        else
+          assert(false);
       }
 
-      Block (size_t bytesAllocate, size_t bytesReserve, Block* next, size_t wasted) 
-      : cur(0), allocEnd(bytesAllocate), reserveEnd(bytesReserve), next(next), wasted(wasted)
+      Block (AllocationType atype, size_t bytesAllocate, size_t bytesReserve, Block* next, size_t wasted) 
+      : cur(0), allocEnd(bytesAllocate), reserveEnd(bytesReserve), next(next), wasted(wasted), atype(atype)
       {
         //for (size_t i=0; i<allocEnd; i+=defaultBlockSize) data[i] = 0;
       }
 
-      void clear (MemoryMonitorInterface* device, bool osAllocation) 
+      void clear (MemoryMonitorInterface* device) 
       {
-	if (next) next->clear(device,osAllocation); next = nullptr; // FIXME: no recursion here
+	if (next) next->clear(device); next = nullptr; // FIXME: no recursion here
         const size_t sizeof_Header = offsetof(Block,data[0]);
         const ssize_t sizeof_Alloced = wasted+sizeof_Header+getBlockAllocatedBytes();
-        if (!osAllocation) {
+
+        if (atype == ALIGNED_MALLOC) {
           alignedFree(this);
-        } else {
+        } 
+        else if (atype == OS_MALLOC) {
          size_t sizeof_This = sizeof_Header+reserveEnd;
          os_free(this,sizeof_This);
+        } else /* if (atype == SHARED) */ {
         }
         if (device) device->memoryMonitor(-sizeof_Alloced,true);
       }
       
-      void* malloc(MemoryMonitorInterface* device, size_t& bytes_in, size_t align, bool partial, bool osAllocation) 
+      void* malloc(MemoryMonitorInterface* device, size_t& bytes_in, size_t align, bool partial) 
       {
         size_t bytes = bytes_in;
         assert(align <= maxAlignment);
@@ -538,7 +543,7 @@ namespace embree
         
 	if (i+bytes > allocEnd) {
           if (device) device->memoryMonitor(i+bytes-max(i,allocEnd),true);
-          if (osAllocation)
+          if (atype == OS_MALLOC)
             os_commit(&data[i],bytes); // FIXME: optimize, may get called frequently
         }
 	return &data[i];
@@ -555,15 +560,15 @@ namespace embree
         if (next) next->reset(); 
       }
 
-      void shrink (MemoryMonitorInterface* device, bool osAllocation) 
+      void shrink (MemoryMonitorInterface* device) 
       {
-        if (osAllocation)
+        if (atype == OS_MALLOC)
         {
           const size_t sizeof_Header = offsetof(Block,data[0]);
           size_t newSize = os_shrink(this,sizeof_Header+getBlockUsedBytes(),reserveEnd+sizeof_Header);
           if (device) device->memoryMonitor(newSize-sizeof_Header-allocEnd,true);
           reserveEnd = allocEnd = newSize-sizeof_Header;
-          if (next) next->shrink(device,osAllocation);
+          if (next) next->shrink(device);
         }
       }
 
@@ -621,8 +626,9 @@ namespace embree
       std::atomic<size_t> allocEnd;   //!< end of the allocated memory region
       std::atomic<size_t> reserveEnd; //!< end of the reserved memory region
       Block* next;               //!< pointer to next block in list
-      size_t wasted;
-      char align[maxAlignment-5*sizeof(size_t)]; //!< align data to maxAlignment
+      size_t wasted;             //!< amount of memory wasted through block alignment
+      AllocationType atype;      //!< allocation mode of the block
+      char align[maxAlignment-5*sizeof(size_t)-sizeof(atype)]; //!< align data to maxAlignment
       char data[1];              //!< here starts memory to use for allocations
     };
 
@@ -644,6 +650,6 @@ namespace embree
     size_t bytesUsed;            //!< number of total bytes used
     size_t bytesWasted;          //!< number of total wasted bytes
     ThreadLocalData<ThreadLocal2> thread_local_allocators2; //!< thread local allocators
-    bool osAllocation;
+    AllocationType atype;
   };
 }
