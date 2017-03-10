@@ -32,7 +32,7 @@
 
 #include "vuint16_avx512.h"
 #include "vboold8_avx512.h"
-#include "vlong8_avx512.h"
+#include "vllong8_avx512.h"
 #include "vdouble8_avx512.h"
 
 namespace embree

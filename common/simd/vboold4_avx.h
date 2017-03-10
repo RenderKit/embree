@@ -28,8 +28,8 @@ namespace embree
     union {                   // data
       __m256d v;
       struct { __m128d vl,vh; };
-      int64_t i[4];
-    };  
+      long long i[4];
+    };
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constructors, Assignment & Cast Operators
@@ -73,8 +73,8 @@ namespace embree
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline bool  operator []( const size_t index ) const { assert(index < 4); return (_mm256_movemask_pd(v) >> index) & 1; }
-    __forceinline int64_t& operator []( const size_t index )       { assert(index < 4); return i[index]; }
+    __forceinline bool       operator []( const size_t index ) const { assert(index < 4); return (_mm256_movemask_pd(v) >> index) & 1; }
+    __forceinline long long& operator []( const size_t index )       { assert(index < 4); return i[index]; }
   };
 
   ////////////////////////////////////////////////////////////////////////////////

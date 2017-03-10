@@ -31,7 +31,6 @@ namespace embree
       intersectionFilterN(nullptr), occlusionFilterN(nullptr),
       hasIntersectionFilterMask(0), hasOcclusionFilterMask(0), ispcIntersectionFilterMask(0), ispcOcclusionFilterMask(0)
   {
-    id = parent->add(this);
     parent->setModified();
   }
 

@@ -23,17 +23,17 @@ namespace embree
   {
     BarrierSys barrier;
     std::atomic<size_t> numFailed;
-    FastAllocator alloc;
+    std::unique_ptr<FastAllocator> alloc;
 
     fast_allocator_regression_test() 
-      : RegressionTest("fast_allocator_regression_test"), numFailed(0), alloc(nullptr,false) 
+      : RegressionTest("fast_allocator_regression_test"), numFailed(0)
     {
       registerRegressionTest(this);
     }
 
     static void thread_alloc(fast_allocator_regression_test* This)
     {
-      FastAllocator::ThreadLocal2* threadalloc = This->alloc.threadLocal2();
+      FastAllocator::ThreadLocal2* threadalloc = This->alloc->threadLocal2();
 
       size_t* ptrs[1000];
       for (size_t j=0; j<1000; j++)
@@ -53,6 +53,7 @@ namespace embree
     
     bool run ()
     {
+      alloc = make_unique(new FastAllocator(nullptr,false));
       numFailed.store(0);
 
       size_t numThreads = getNumberOfLogicalThreads();
@@ -66,14 +67,16 @@ namespace embree
       /* run test */ 
       for (size_t i=0; i<1000; i++)
       {
-        alloc.reset();
+        alloc->reset();
         barrier.wait();
         barrier.wait();
       }
-
+     
       /* destroy threads */
       for (size_t i=0; i<numThreads; i++)
         join(threads[i]);
+
+      alloc = nullptr;
 
       return numFailed == 0;
     }

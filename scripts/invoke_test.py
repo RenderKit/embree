@@ -28,6 +28,7 @@ name = ""
 model = ""
 reference = ""
 modeldir = ""
+sde = "OFF"
 
 def compareImages(image0,image1,dimage):
   if not os.path.isfile(image0) or not os.path.isfile(image1): return False
@@ -46,6 +47,7 @@ def parseArgs(argv):
   global model
   global reference
   global modeldir
+  global sde
   if (argv[0] == '--name'):
     name = argv[1]
     return parseArgs(argv[2:len(argv)])
@@ -57,6 +59,9 @@ def parseArgs(argv):
     return parseArgs(argv[2:len(argv)])
   elif (argv[0] == '--modeldir'):
     modeldir = argv[1]
+    return parseArgs(argv[2:len(argv)])
+  elif (argv[0] == '--sde'):
+    sde = argv[1]
     return parseArgs(argv[2:len(argv)])
   elif (argv[0] == '--execute'):
     return " ".join(argv[1:len(argv)])
@@ -97,6 +102,12 @@ if (model != "" and model != "default"):
 if (model != ""):
   executable = executable + " -o " + outImageFileTga
 
+if (sde != "" and sde != "OFF"):
+  if sys.platform.startswith("win"):
+    executable = "sde -" + sde + " -- " + executable
+  else:
+    executable = "sde64 -" + sde + " -- " + executable
+
 print(executable)
   
 ret = os.system(executable)
@@ -132,6 +143,9 @@ elif ret == -1073741819:
   sys.stdout.write(" [failed] [segfault]\n");  # segfault under windows
   sys.exit(4)
 elif ret == 35584:
+  sys.stdout.write(" [failed] [segfault]\n");  # segfault under linux
+  sys.exit(4)
+elif ret == 139:
   sys.stdout.write(" [failed] [segfault]\n");  # segfault under linux
   sys.exit(4)
 else:

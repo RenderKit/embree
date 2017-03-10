@@ -24,8 +24,8 @@ namespace embree
       : TutorialApplication("intersection_filter",FEATURE_RTCORE | FEATURE_STREAM) 
     {
       /* set default camera */
-      camera.from = Vec3fa(1.4f,1.3f,-1.5f);
-      camera.to   = Vec3fa(0.0f,0.0f,0.0f);
+      camera.from = Vec3fa(-1.27f,1.75f,-6.75f);
+      camera.to   = Vec3fa(0.0f,-2.0f,-3.5f);
     }
   };
 }

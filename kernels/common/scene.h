@@ -312,7 +312,7 @@ namespace embree
     __forceinline bool isBuild() const { return is_build; }
 
   public:
-    std::vector<unsigned> usedIDs; // FIXME: encapsulate this functionality into own class
+    IDPool<unsigned> id_pool;
     std::vector<Geometry*> geometries; //!< list of all user geometries
     
   public:

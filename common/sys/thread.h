@@ -18,7 +18,8 @@
 
 #include "platform.h"
 #include "mutex.h"
-
+#include "alloc.h"
+#include "vector.h"
 #include <vector>
 
 namespace embree
@@ -59,13 +60,176 @@ namespace embree
   /*! destroys thread local storage identifier */
   void destroyTls(tls_t tls);
 
+  /*! thread local storage implementation that supports arbirary number of thread locals */
+  struct ThreadLocalStorage
+  {
+    struct ThreadLocal
+    {
+    public:
+
+      ThreadLocal (size_t num) 
+      {
+        ptrs.resize(num);
+        for (size_t i=0; i<num; i++) ptrs[i] = nullptr; 
+      }
+
+      __forceinline void init(size_t id)
+      {
+        if (likely(id < ptrs.size())) {
+          ptrs[id] = nullptr;
+        }
+        else 
+        {
+          Lock<SpinLock> lock(mutex);
+          if (id >= ptrs.size()) ptrs.resize(id+1);
+          ptrs[id] = nullptr;
+        }
+      }
+
+      __forceinline void* get(size_t id)
+      {
+        Lock<SpinLock> lock(mutex);
+        return ptrs[id];
+      }
+
+      __forceinline void set(size_t id, void* const ptr) 
+      {
+        Lock<SpinLock> lock(mutex);
+        ptrs[id] = ptr;
+      }
+
+    private:
+      SpinLock mutex;
+      avector<void*> ptrs;
+      MAYBE_UNUSED char align[64];
+    };
+
+    ~ThreadLocalStorage() 
+    {
+      for (auto thread : threads)
+        delete thread;
+    }
+    
+    size_t create() 
+    {
+      Lock<SpinLock> lock(mutex);
+      size_t id = ids.allocate();
+      for (auto thread : threads) thread->init(id);
+      return id;
+    }
+
+    __forceinline void* get(size_t id) {
+      return get_thread_local()->get(id);
+    }
+
+    __forceinline void set(size_t id, void* const ptr) {
+      get_thread_local()->set(id,ptr);
+    }
+    
+    void destroy(size_t id)
+    {
+      Lock<SpinLock> lock(mutex);
+      ids.deallocate(id);
+    }
+
+    static __forceinline ThreadLocalStorage* instance() {
+      return &single_instance;
+    }
+    
+  private:
+    
+    __forceinline ThreadLocal* get_thread_local() 
+    {
+      ThreadLocal* tls = t_threadlocal;
+      if (unlikely(tls == nullptr)) {
+        Lock<SpinLock> lock(mutex);
+        tls = new ThreadLocal(ids.size());
+        t_threadlocal = tls;
+        threads.push_back(tls);
+      }
+      return tls;
+    }
+
+  private:
+    SpinLock mutex;
+    IDPool<size_t> ids;
+    std::vector<ThreadLocal*> threads;
+    static ThreadLocalStorage single_instance;
+    static thread_local ThreadLocal* t_threadlocal;
+  };
+
+#if 0
+
   /*! manages thread local variables */
-  template<typename Type>
+  template<typename Type, typename InitType>
   struct ThreadLocalData
   {
   public:
 
-    __forceinline ThreadLocalData (void* init) 
+    __forceinline ThreadLocalData (InitType init) 
+      : ptr(-1), init(init) {}
+
+    __forceinline ~ThreadLocalData () {
+      clear();
+    }
+
+    __forceinline void clear() 
+    {
+      if (ptr != -1) ThreadLocalStorage::instance()->destroy(ptr); ptr = -1;
+      for (size_t i=0; i<threads.size(); i++)
+	delete threads[i];
+      threads.clear();
+    }
+
+    /*! disallow copy */
+    ThreadLocalData(const ThreadLocalData&) DELETED;
+    ThreadLocalData& operator=(const ThreadLocalData&) DELETED;
+
+    template<typename Closure>
+      __forceinline void apply(const Closure& closure)
+    {
+      for (size_t i=0; i<threads.size(); i++)
+        closure(threads[i]);
+    }
+    
+    __forceinline Type* get() const
+    {
+      if (ptr == -1) {
+	Lock<SpinLock> lock(mutex);
+	if (ptr == -1) ptr = ThreadLocalStorage::instance()->create();
+      }
+      Type* lptr = (Type*) ThreadLocalStorage::instance()->get(ptr);
+      if (lptr) return lptr;
+      lptr = new Type(init);
+      ThreadLocalStorage::instance()->set(ptr,lptr);
+      Lock<SpinLock> lock(mutex);
+      threads.push_back(lptr);
+      return lptr;
+    }
+
+    __forceinline const Type& operator  *( void ) const { return *get(); }
+    __forceinline       Type& operator  *( void )       { return *get(); }
+    __forceinline const Type* operator ->( void ) const { return  get(); }
+    __forceinline       Type* operator ->( void )       { return  get(); }
+    
+    
+  private:
+    mutable size_t ptr;
+    InitType init;
+    mutable SpinLock mutex;
+  public:
+    mutable std::vector<Type*> threads;
+  };
+
+#else
+
+  /*! manages thread local variables */
+  template<typename Type, typename InitType>
+  struct ThreadLocalData
+  {
+  public:
+
+    __forceinline ThreadLocalData (InitType init) 
       : ptr(nullptr), init(init) {}
 
     __forceinline ~ThreadLocalData () {
@@ -84,10 +248,11 @@ namespace embree
     ThreadLocalData(const ThreadLocalData&) DELETED;
     ThreadLocalData& operator=(const ThreadLocalData&) DELETED;
 
-    __forceinline void reset()
+    template<typename Closure>
+      __forceinline void apply(const Closure& closure)
     {
       for (size_t i=0; i<threads.size(); i++)
-	threads[i]->reset();
+        closure(threads[i]);
     }
     
     __forceinline Type* get() const
@@ -113,9 +278,11 @@ namespace embree
     
   private:
     mutable tls_t ptr;
-    void* init;
+    InitType init;
     mutable SpinLock mutex;
   public:
     mutable std::vector<Type*> threads;
   };
+
+#endif
 }

@@ -558,8 +558,7 @@ namespace embree
       return -1;
     }
 
-    Geometry* geom = new UserGeometry(this,gflags,items,numTimeSteps);
-    return geom->id;
+    return add(new UserGeometry(this,gflags,items,numTimeSteps));
   }
 
   unsigned Scene::newInstance (Scene* scene, size_t numTimeSteps) 
@@ -569,15 +568,16 @@ namespace embree
       return -1;
     }
 
-    Geometry* geom = Instance::create(this,scene,numTimeSteps);
-    return geom->id;
+    return add(Instance::create(this,scene,numTimeSteps));
   }
 #endif
 
-  unsigned Scene::newGeometryInstance (Geometry* geom) 
+  unsigned Scene::newGeometryInstance (Geometry* geom_in) 
   {
-    Geometry* instance = new GeometryInstance(this,geom);
-    return instance->id;
+    Geometry* geom = new GeometryInstance(this,geom_in);
+    unsigned id = add(geom);
+    geom->id = id;
+    return id;
   }
 
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
@@ -593,8 +593,7 @@ namespace embree
       return -1;
     }
     
-    Geometry* geom = new TriangleMesh(this,gflags,numTriangles,numVertices,numTimeSteps);
-    return geom->id;
+    return add(new TriangleMesh(this,gflags,numTriangles,numVertices,numTimeSteps));
   }
 #endif
 
@@ -611,8 +610,7 @@ namespace embree
       return -1;
     }
     
-    Geometry* geom = new QuadMesh(this,gflags,numQuads,numVertices,numTimeSteps);
-    return geom->id;
+    return add(new QuadMesh(this,gflags,numQuads,numVertices,numTimeSteps));
   }
 #endif
 
@@ -629,14 +627,12 @@ namespace embree
       return -1;
     }
 
-    Geometry* geom = nullptr;
 #if defined(__TARGET_AVX__)
     if (device->hasISA(AVX))
-      geom = new SubdivMeshAVX(this,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
+      return add(new SubdivMeshAVX(this,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps));
     else 
 #endif
-      geom = new SubdivMesh(this,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
-    return geom->id;
+      return add(new SubdivMesh(this,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps));
   }
 #endif
 
@@ -654,7 +650,7 @@ namespace embree
     }
     
     Geometry* geom = nullptr;
-#if EMBREE_NATIVE_CURVE_BSPLINE
+#if defined(EMBREE_NATIVE_CURVE_BSPLINE)
     switch (basis) {
     case NativeCurves::BEZIER : geom = new CurvesBezier(this,subtype,basis,gflags,numCurves,numVertices,numTimeSteps); break;
     case NativeCurves::BSPLINE: geom = new NativeCurves(this,subtype,basis,gflags,numCurves,numVertices,numTimeSteps); break;
@@ -665,7 +661,7 @@ namespace embree
     case NativeCurves::BSPLINE: geom = new CurvesBSpline(this,subtype,basis,gflags,numCurves,numVertices,numTimeSteps); break;
     }
 #endif
-    return geom->id;
+    return add(geom);
   }
 #endif
 
@@ -682,24 +678,19 @@ namespace embree
       return -1;
     }
 
-    Geometry* geom = new LineSegments(this,gflags,numSegments,numVertices,numTimeSteps);
-    return geom->id;
+    return add(new LineSegments(this,gflags,numSegments,numVertices,numTimeSteps));
   }
 #endif
 
   unsigned Scene::add(Geometry* geometry) 
   {
     Lock<SpinLock> lock(geometriesMutex);
-
-    if (usedIDs.size()) {
-      unsigned id = usedIDs.back(); 
-      usedIDs.pop_back();
-      geometries[id] = geometry;
-      return id;
-    } else {
-      geometries.push_back(geometry);
-      return unsigned(geometries.size()-1);
-    }
+    unsigned id = id_pool.allocate();
+    if (id >= geometries.size()) 
+      geometries.resize(id+1);
+    geometries[id] = geometry;
+    geometry->id = id;
+    return id;
   }
 
   void Scene::deleteGeometry(size_t geomID)
@@ -717,7 +708,7 @@ namespace embree
     
     geometry->disable();
     accels.deleteGeometry(unsigned(geomID));
-    usedIDs.push_back(unsigned(geomID));
+    id_pool.deallocate((unsigned)geomID);
     geometries[geomID] = nullptr;
     delete geometry;
   }
