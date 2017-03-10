@@ -145,6 +145,9 @@ elif ret == -1073741819:
 elif ret == 35584:
   sys.stdout.write(" [failed] [segfault]\n");  # segfault under linux
   sys.exit(4)
+elif ret == 139:
+  sys.stdout.write(" [failed] [segfault]\n");  # segfault under linux
+  sys.exit(4)
 else:
   sys.stdout.write(" [failed]\n")
   sys.exit(1)
