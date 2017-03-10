@@ -165,12 +165,12 @@ namespace embree
 #if 0
 
   /*! manages thread local variables */
-  template<typename Type>
+  template<typename Type, typename InitType>
   struct ThreadLocalData
   {
   public:
 
-    __forceinline ThreadLocalData (void* init) 
+    __forceinline ThreadLocalData (InitType init) 
       : ptr(-1), init(init) {}
 
     __forceinline ~ThreadLocalData () {
@@ -189,10 +189,11 @@ namespace embree
     ThreadLocalData(const ThreadLocalData&) DELETED;
     ThreadLocalData& operator=(const ThreadLocalData&) DELETED;
 
-    __forceinline void reset()
+    template<typename Closure>
+      __forceinline void apply(const Closure& closure)
     {
       for (size_t i=0; i<threads.size(); i++)
-	threads[i]->reset();
+        closure(threads[i]);
     }
     
     __forceinline Type* get() const
@@ -218,7 +219,7 @@ namespace embree
     
   private:
     mutable size_t ptr;
-    void* init;
+    InitType init;
     mutable SpinLock mutex;
   public:
     mutable std::vector<Type*> threads;
@@ -227,12 +228,12 @@ namespace embree
 #else
 
   /*! manages thread local variables */
-  template<typename Type>
+  template<typename Type, typename InitType>
   struct ThreadLocalData
   {
   public:
 
-    __forceinline ThreadLocalData (void* init) 
+    __forceinline ThreadLocalData (InitType init) 
       : ptr(nullptr), init(init) {}
 
     __forceinline ~ThreadLocalData () {
@@ -251,10 +252,11 @@ namespace embree
     ThreadLocalData(const ThreadLocalData&) DELETED;
     ThreadLocalData& operator=(const ThreadLocalData&) DELETED;
 
-    __forceinline void reset()
+    template<typename Closure>
+      __forceinline void apply(const Closure& closure)
     {
       for (size_t i=0; i<threads.size(); i++)
-	threads[i]->reset();
+        closure(threads[i]);
     }
     
     __forceinline Type* get() const
@@ -280,7 +282,7 @@ namespace embree
     
   private:
     mutable tls_t ptr;
-    void* init;
+    InitType init;
     mutable SpinLock mutex;
   public:
     mutable std::vector<Type*> threads;

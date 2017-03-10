@@ -46,8 +46,8 @@ namespace embree
       __forceinline ThreadLocal() {}
 
       /*! Constructor for usage with ThreadLocalData */
-      __forceinline ThreadLocal (void* alloc) 
-	: alloc((FastAllocator*)alloc), ptr(nullptr), cur(0), end(0), allocBlockSize(((FastAllocator*)alloc)->defaultBlockSize), bytesUsed(0), bytesWasted(0) {}
+      __forceinline ThreadLocal (FastAllocator* alloc) 
+	: alloc(alloc), ptr(nullptr), cur(0), end(0), allocBlockSize(((FastAllocator*)alloc)->defaultBlockSize), bytesUsed(0), bytesWasted(0) {}
 
       /*! resets the allocator */
       __forceinline void reset() 
@@ -131,11 +131,11 @@ namespace embree
       ALIGNED_STRUCT;
 
       /*! Constructor for usage with ThreadLocalData */
-      __forceinline ThreadLocal2 (void* alloc) 
+      __forceinline ThreadLocal2 (FastAllocator* alloc) 
       {
         allocators[0] = ThreadLocal(alloc); alloc0 = &allocators[0];
         allocators[1] = ThreadLocal(alloc); alloc1 = &allocators[1];
-        if (((FastAllocator*)alloc)->use_single_mode) alloc1 = &allocators[0];
+        if (alloc->use_single_mode) alloc1 = &allocators[0];
       }
       
       /*! resets the allocator */
@@ -303,7 +303,7 @@ namespace embree
       }
       
       /* reset all thread local allocators */
-      thread_local_allocators2.reset();
+      thread_local_allocators2.apply([] (ThreadLocal2* alloc) { alloc->reset(); });
     }
 
     /*! frees all allocated memory */
@@ -669,7 +669,7 @@ namespace embree
     std::atomic<size_t> log2_grow_size_scale; //!< log2 of scaling factor for grow size
     size_t bytesUsed;            //!< number of total bytes used
     size_t bytesWasted;          //!< number of total wasted bytes
-    ThreadLocalData<ThreadLocal2> thread_local_allocators2; //!< thread local allocators
+    ThreadLocalData<ThreadLocal2,FastAllocator*> thread_local_allocators2; //!< thread local allocators
     AllocationType atype;
   };
 }
