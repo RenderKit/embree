@@ -291,7 +291,7 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, con
     }
     else if (geometry->type == TRIANGLE_MESH) {
       ISPCTriangleMesh* mesh = (ISPCTriangleMesh*)geometry;
-#if 0
+#if 1
       /* if static do nothing */
       if (mesh->numTimeSteps <= 1) return;      
       /* interpolate two vertices from two timesteps */
@@ -808,6 +808,7 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
     updateTimeLog(buildTime,buildTimeDelta);
 
     if (unlikely(printStats)) std::cout << "bvh rebuild in :     " << buildTimeDelta << " ms" << std::endl;
+    PRINT(buildTime1-vertexUpdateTime0);
 #endif
     
     frameID = (frameID + 1) % numProfileFrames;

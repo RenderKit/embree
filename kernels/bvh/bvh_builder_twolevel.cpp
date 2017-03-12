@@ -25,7 +25,7 @@
 #define MAX_OPEN_SIZE 10000
 
 /* new open/merge builder */
-#define ENABLE_DIRECT_SAH_MERGE_BUILDER 0
+#define ENABLE_DIRECT_SAH_MERGE_BUILDER 1
 
 /* sequential opening phase in old code path */
 #define ENABLE_OPEN_SEQUENTIAL 0

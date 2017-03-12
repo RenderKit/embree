@@ -24,7 +24,7 @@
 #include "../geometry/quadi_mb.h"
 
 /* new open/merge builder */
-#define ENABLE_DIRECT_SAH_MERGE_BUILDER 1
+#define ENABLE_DIRECT_SAH_MERGE_BUILDER 0
 #define SPLIT_MEMORY_RESERVE_FACTOR 4
 #define SPLIT_MIN_EXT_SPACE 1000
 
@@ -118,7 +118,7 @@ namespace embree
       //numPrimitives += scene->getNumPrimitives<TriangleMesh,false>();
       numPrimitives += scene->instanced.numTriangles;
       numPrimitives += scene->instancedMB.numTriangles;
-      PRINT(numPrimitives);
+      //PRINT(numPrimitives);
 
       if (numPrimitives == 0) {
         prims.resize(0);
@@ -165,6 +165,8 @@ namespace embree
               builder->build(0,0);
           }
         });
+
+      double d0 = getSeconds();
 
       /* creates all instances */
       parallel_for(size_t(0), num, [&] (const range<size_t>& r) {
@@ -323,6 +325,9 @@ namespace embree
            [&] (size_t dn) { bvh->scene->progressMonitor(0); },
             prims.data(),pinfo,settings);
 #endif
+
+        double d1 = getSeconds();
+        PRINT(d1-d0);
         
         bvh->set(root,LBBox3fa(pinfo.geomBounds),numPrimitives);
         numCollapsedTransformNodes = refs.size();
