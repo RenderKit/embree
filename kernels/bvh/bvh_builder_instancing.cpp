@@ -276,6 +276,7 @@ namespace embree
         settings.intCost = 1.0f;
         settings.singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD;
 
+        std::atomic<size_t> numLeaves(0);
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
         PRINT("NEW CODE PATH");
         PRINT(pinfo);
@@ -291,6 +292,7 @@ namespace embree
 
            [&] (const BVHBuilderBinnedOpenMergeSAH::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> NodeRef
           {
+            numLeaves++;
             assert(current.prims.size() == 1);
             BuildRef* ref = (BuildRef*)&refs[current.prims.begin()];
             TransformNode* node = (TransformNode*) alloc->alloc0->malloc(sizeof(TransformNode));
@@ -314,6 +316,7 @@ namespace embree
 
            [&] (const BVHBuilderBinnedSAH::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> NodeRef
           {
+            numLeaves++;
             assert(current.prims.size() == 1);
             BuildRef* ref = (BuildRef*) prims[current.prims.begin()].ID();
             TransformNode* node = (TransformNode*) alloc->alloc0->malloc(sizeof(TransformNode),BVH::byteAlignment);
@@ -330,6 +333,7 @@ namespace embree
         PRINT(d1-d0);
         
         bvh->set(root,LBBox3fa(pinfo.geomBounds),numPrimitives);
+        PRINT(numLeaves.load());
         numCollapsedTransformNodes = refs.size();
         bvh->root = collapse(bvh->root);
         if (scene->device->verbosity(1))

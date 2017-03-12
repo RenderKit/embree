@@ -74,7 +74,10 @@ namespace embree
 
         __forceinline unsigned int primID() const { return numPrims; }
 
+        __forceinline unsigned int size() const { return 1; } 
+
         __forceinline unsigned int numPrimitives() const { return numPrims; } 
+
 
         __forceinline void binBoundsAndCenter(BBox3fa& bounds_o, Vec3fa& center_o) const 
         {

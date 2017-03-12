@@ -27,8 +27,6 @@ namespace embree {
 
 //#define rtcOccluded rtcIntersect
 //#define rtcOccluded1M rtcIntersect1M
-//#define RAYN_FLAGS RTC_INTERSECT_COHERENT
-#define RAYN_FLAGS RTC_INTERSECT_INCOHERENT
 
 #define SIMPLE_SHADING 1
 
