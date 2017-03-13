@@ -104,15 +104,14 @@ RTCORE_API RTCDevice rtcNewDevice(const char* cfg = NULL);
 /*! \brief Deletes an Embree device.
 
   Deletes the Embree device again. After deletion, all scene handles
-  are invalid. The application should invoke this call before
-  terminating. */
+  are invalid. */
 RTCORE_API void rtcDeleteDevice(RTCDevice device);
 
 /*! \brief Initializes the Embree ray tracing core
 
   WARNING: This function is deprecated, use rtcNewDevice instead.
 
-  Initializes the ray tracing core and passed some configuration
+  Initializes the ray tracing core and passes some configuration
   string. The configuration string allows to configure implementation
   specific parameters. If this string is NULL, a default configuration
   is used. The following configuration flags are supported by the
@@ -171,7 +170,7 @@ enum RTCParameter {
   RTC_CONFIG_SUBDIV_GEOMETRY = 21,           //!< checks if subdiv geometries are supported
   RTC_CONFIG_USER_GEOMETRY = 22,             //!< checks if user geometries are supported
 
-  RTC_CONFIG_COMMIT_JOIN = 23,               //!< checks if rtcCommit can be used to join build operation (not supported when compiled with some older TBB versions)
+  RTC_CONFIG_COMMIT_JOIN = 23,               //!< checks if rtcCommitJoin can be used to join build operation (not supported when compiled with some older TBB versions)
   RTC_CONFIG_COMMIT_THREAD = 24,             //!< checks if rtcCommitThread is available (not supported when compiled with some older TBB versions)
 };
 
@@ -241,7 +240,7 @@ RTCORE_API RTCORE_DEPRECATED void rtcDeviceSetErrorFunction(RTCDevice device, RT
 RTCORE_API void rtcDeviceSetErrorFunction2(RTCDevice device, RTCErrorFunc2 func, void* userPtr);
 
 /*! \brief Type of memory consumption callback function.
-   WARNING: This callback function is deprecated, use RTCMemoryMonitorFunc instead.
+   WARNING: This callback function is deprecated, use RTCMemoryMonitorFunc2 instead.
  */
 /*RTCORE_DEPRECATED*/ typedef bool (*RTCMemoryMonitorFunc)(const ssize_t bytes, const bool post);
 RTCORE_DEPRECATED typedef RTCMemoryMonitorFunc RTC_MEMORY_MONITOR_FUNCTION;
@@ -251,12 +250,14 @@ typedef bool (*RTCMemoryMonitorFunc2)(void* ptr, const ssize_t bytes, const bool
 
 /*! \brief Sets the memory consumption callback function which is
  *  called before or after the library allocates or frees memory. 
-   WARNING: This function is deprecated, use rtcDeviceSetMemoryMonitorFunction instead.
+   WARNING: This function is deprecated, use rtcDeviceSetMemoryMonitorFunction2 instead.
 */
 RTCORE_API RTCORE_DEPRECATED void rtcSetMemoryMonitorFunction(RTCMemoryMonitorFunc func);
 
 /*! \brief Sets the memory consumption callback function which is
- *  called before or after the library allocates or frees memory. */
+ *  called before or after the library allocates or frees memory. 
+   WARNING: This function is deprecated, use rtcDeviceSetMemoryMonitorFunction2 instead.
+*/
 RTCORE_API RTCORE_DEPRECATED void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunc func);
 
 /*! \brief Sets the memory consumption callback function which is
@@ -265,10 +266,13 @@ RTCORE_API RTCORE_DEPRECATED void rtcDeviceSetMemoryMonitorFunction(RTCDevice de
  *  function. */
 RTCORE_API void rtcDeviceSetMemoryMonitorFunction2(RTCDevice device, RTCMemoryMonitorFunc2 func, void* userPtr);
 
-/*! \brief Implementation specific (do not call).
+/*! \brief Implementation specific.
 
   This function is implementation specific and only for debugging
-  purposes. Do not call it. */
+  purposes.
+
+  WARNING: This function is deprecated do not use it.
+*/
 RTCORE_API RTCORE_DEPRECATED void rtcDebug(); // FIXME: remove
 
 #include "rtcore_scene.h"
