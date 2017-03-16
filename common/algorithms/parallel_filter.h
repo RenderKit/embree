@@ -78,10 +78,12 @@ namespace embree
     {
       /* destination to write elements to */
       Index dst = pused[taskIndex]+pfree[taskIndex]+nused[taskIndex];
+      Index dst_end = min(dst+nfree[taskIndex],sused);
+      if (dst_end <= dst) return;
 
       /* range of misplaced elements to copy to destination */
       Index r0 = pfree[taskIndex];
-      Index r1 = r0+nfree[taskIndex];
+      Index r1 = r0+dst_end-dst;
 
       /* find range in misplaced elements in back to front order */
       Index k0=0;
@@ -91,12 +93,12 @@ namespace embree
         Index k1 = k0+nused[i];
         Index src = pused[i]+pfree[i]+nused[i];
         for (Index i=max(r0,k0); i<min(r1,k1); i++) {
-          data[dst++] = data[--src];
+          data[dst++] = data[src-i+k0-1];
         }
         k0 = k1;
       }
     });
 
-    return sused;
+    return begin+sused;
   }
 }
