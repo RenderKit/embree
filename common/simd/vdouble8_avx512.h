@@ -301,7 +301,6 @@ namespace embree
   template<int i>
     __forceinline vdouble8 align_shift_right(const vdouble8& a, const vdouble8& b)
   {
-    //return _mm512_alignr_pd(a,b,i); // FIXME: not yet supported in clang v4.0.0
     return _mm512_castsi512_pd(_mm512_alignr_epi64(_mm512_castpd_si512(a),_mm512_castpd_si512(b),i));
   }
 
