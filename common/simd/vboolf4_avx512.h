@@ -114,7 +114,7 @@ namespace embree
   __forceinline int none( const vboolf4& valid, const vboolf4& b ) { return none(valid & b); }
 
   __forceinline size_t movemask( const vboolf4& a ) { return _mm512_kmov(a); }
-  __forceinline size_t popcnt  ( const vboolf4& a ) { return _mm_countbits_64(a.v); }
+  __forceinline size_t popcnt  ( const vboolf4& a ) { return __popcnt(a.v); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Conversion Operations

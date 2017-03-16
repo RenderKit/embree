@@ -47,13 +47,13 @@ namespace embree
     }
     
     __forceinline vllong(const long long a, const long long b, const long long c, const long long d) {
-      v = _mm512_set_4to8_epi64(d,c,b,a);      
+      v = _mm512_set4_epi64(d,c,b,a);      
     }
 
     __forceinline vllong(const long long a0, const long long a1, const long long a2, const long long a3,
                          const long long a4, const long long a5, const long long a6, const long long a7)
     {
-      v = _mm512_set_8to8_epi64(a7,a6,a5,a4,a3,a2,a1,a0);
+      v = _mm512_set_epi64(a7,a6,a5,a4,a3,a2,a1,a0);
     }
    
     
@@ -62,24 +62,23 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
     
     __forceinline vllong( ZeroTy   ) : v(_mm512_setzero_epi32()) {}
-    __forceinline vllong( OneTy    ) : v(_mm512_set_1to8_epi64(1)) {}
-    __forceinline vllong( StepTy   ) : v(_mm512_set_8to8_epi64(7,6,5,4,3,2,1,0)) {}
+    __forceinline vllong( OneTy    ) : v(_mm512_set1_epi64(1)) {}
+    __forceinline vllong( StepTy   ) : v(_mm512_set_epi64(7,6,5,4,3,2,1,0)) {}
     __forceinline vllong( ReverseStepTy )   : v(_mm512_setr_epi64(7,6,5,4,3,2,1,0)) {}
 
     __forceinline static vllong8 zero() { return _mm512_setzero_epi32(); }
-    __forceinline static vllong8 one () { return _mm512_set_1to8_epi64(1); }
-    __forceinline static vllong8 neg_one () { return _mm512_set_1to8_epi64(-1); }
+    __forceinline static vllong8 one () { return _mm512_set1_epi64(1); }
+    __forceinline static vllong8 neg_one () { return _mm512_set1_epi64(-1); }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
 
     static __forceinline void store_nt(void *__restrict__ ptr, const vllong8& a) {
-      _mm512_stream_si512(ptr,a);
+      _mm512_stream_si512((__m512i*)ptr,a);
     }
 
-    static __forceinline vllong8 loadu(const void* addr)
-    {
+    static __forceinline vllong8 loadu(const void* addr) {
       return _mm512_loadu_si512(addr);
     }
 
@@ -107,7 +106,7 @@ namespace embree
       _mm512_mask_store_epi64(addr,mask,v2);
     }
 
-  /* pass by value to avoid compiler generating inefficient code */
+    /* pass by value to avoid compiler generating inefficient code */
     static __forceinline void storeu_compact(const vboold8 mask,void * addr, const vllong8& reg) {
       _mm512_mask_compressstoreu_epi64(addr,mask,reg);
     }
@@ -192,7 +191,7 @@ namespace embree
   __forceinline const vllong8 sll ( const vllong8& a, const long long b ) { return _mm512_slli_epi64(a, b); }
   __forceinline const vllong8 sra ( const vllong8& a, const long long b ) { return _mm512_srai_epi64(a, b); }
   __forceinline const vllong8 srl ( const vllong8& a, const long long b ) { return _mm512_srli_epi64(a, b); }
-  
+
   __forceinline const vllong8 min( const vllong8&  a, const vllong8&  b ) { return _mm512_min_epi64(a, b); }
   __forceinline const vllong8 min( const vllong8&  a, const long long b ) { return min(a,vllong8(b)); }
   __forceinline const vllong8 min( const long long a, const vllong8&  b ) { return min(vllong8(a),b); }
@@ -291,14 +290,25 @@ namespace embree
   // Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vllong8 shuffle (const vllong8& x,int perm32 ) { return _mm512_permutex_epi64(x,perm32); }
-  __forceinline vllong8 shuffle4(const vllong8& x,int perm128) { return _mm512_shuffle_i64x2(x,x,perm128); }
-  
-  template<int D, int C, int B, int A> __forceinline vllong8 shuffle   (const vllong8& v) { return _mm512_permutex_epi64(v,(int)_MM_SHUF_PERM(D,C,B,A)); }
-  template<int A>                      __forceinline vllong8 shuffle   (const vllong8& x) { return shuffle<A,A,A,A>(v); }
+  template<size_t i> 
+    __forceinline const vllong8 shuffle( const vllong8& a ) {
+    return _mm512_castpd_si512(_mm512_permute_pd(_mm512_castsi512_pd(a), _MM_SHUFFLE(i, i, i, i)));
+  }
 
-  template<int D, int C, int B, int A> __forceinline vllong8 shuffle4(const vllong8& v) { return shuffle4(v,(int)_MM_SHUF_PERM(D,C,B,A)); }
-  template<int A>                      __forceinline vllong8 shuffle4(const vllong8& x) { return shuffle4<A,A,A,A>(x); }
+  template<int A, int B, int C, int D> 
+    __forceinline vllong8 shuffle (const vllong8& v) {
+    return _mm512_castpd_si512(_mm512_permute_pd(_mm512_castsi512_pd(v),_MM_SHUFFLE(D,C,B,A))); 
+  }
+
+  template<int i>
+    __forceinline vllong8 shuffle4(const vllong8& x) { 
+    return _mm512_castpd_si512(_mm512_shuffle_f64x2(_mm512_castsi512_pd(x),_mm512_castsi512_pd(x),_MM_SHUFFLE(i,i,i,i)));
+  }
+
+  template<int A, int B>
+    __forceinline vllong8 shuffle4(const vllong8& x) { 
+    return _mm512_castpd_si512(_mm512_shuffle_f64x2(_mm512_castsi512_pd(x),_mm512_castsi512_pd(x),_MM_SHUFFLE(0,0,B,A)));
+  }
 
   template<int i>
     __forceinline vllong8 align_shift_right(const vllong8& a, const vllong8& b)
@@ -319,26 +329,27 @@ namespace embree
   __forceinline long long reduce_min(const vllong8& a) { return _mm512_reduce_min_epi64(a); }
   __forceinline long long reduce_max(const vllong8& a) { return _mm512_reduce_max_epi64(a); }
   __forceinline long long reduce_and(const vllong8& a) { return _mm512_reduce_and_epi64(a); }
-  
-  __forceinline vllong8 vreduce_min2(const vllong8& x) {                                   return min(x,shuffle(x,_MM_SHUF_PERM(2,3,0,1))); }
-  __forceinline vllong8 vreduce_min4(const vllong8& y) { const vllong8 x = vreduce_min2(y); return min(x,shuffle(x,_MM_SHUF_PERM(1,0,3,2))); }
-  __forceinline vllong8 vreduce_min (const vllong8& y) { const vllong8 x = vreduce_min4(y); return min(x,shuffle4(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline long long reduce_or (const vllong8& a) { return _mm512_reduce_or_epi64(a); }
 
-  __forceinline vllong8 vreduce_max2(const vllong8& x) {                                   return max(x,shuffle(x,_MM_SHUF_PERM(1,0,3,2))); }
-  __forceinline vllong8 vreduce_max4(const vllong8& y) { const vllong8 x = vreduce_max2(y); return max(x,shuffle(x,_MM_SHUF_PERM(2,3,0,1))); }
-  __forceinline vllong8 vreduce_max (const vllong8& y) { const vllong8 x = vreduce_max4(y); return max(x,shuffle4(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vllong8 vreduce_add2(vllong8 x) {                      return x + shuffle<1,0,3,2>(x); }
+  __forceinline vllong8 vreduce_add4(vllong8 x) { x = vreduce_add2(x); return x + shuffle<2,3,0,1>(x); }
+  __forceinline vllong8 vreduce_add (vllong8 x) { x = vreduce_add4(x); return x + shuffle4<1,0>(x); }
 
-  __forceinline vllong8 vreduce_and2(const vllong8& x) {                                   return x & shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
-  __forceinline vllong8 vreduce_and4(const vllong8& y) { const vllong8 x = vreduce_and2(y); return x & shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vllong8 vreduce_and (const vllong8& y) { const vllong8 x = vreduce_and4(y); return x & shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vllong8 vreduce_min2(vllong8 x) {                      return min(x,shuffle<1,0,3,2>(x)); }
+  __forceinline vllong8 vreduce_min4(vllong8 x) { x = vreduce_min2(x); return min(x,shuffle<2,3,0,1>(x)); }
+  __forceinline vllong8 vreduce_min (vllong8 x) { x = vreduce_min4(x); return min(x,shuffle4<1,0>(x)); }
 
-  __forceinline vllong8 vreduce_or2(const vllong8& x) {                                  return x | shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
-  __forceinline vllong8 vreduce_or4(const vllong8& y) { const vllong8 x = vreduce_or2(y); return x | shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vllong8 vreduce_or (const vllong8& y) { const vllong8 x = vreduce_or4(y); return x | shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vllong8 vreduce_max2(vllong8 x) {                      return max(x,shuffle<1,0,3,2>(x)); }
+  __forceinline vllong8 vreduce_max4(vllong8 x) { x = vreduce_max2(x); return max(x,shuffle<2,3,0,1>(x)); }
+  __forceinline vllong8 vreduce_max (vllong8 x) { x = vreduce_max4(x); return max(x,shuffle4<1,0>(x)); }
 
-  __forceinline vllong8 vreduce_add2(const vllong8& x) {                                   return x + shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
-  __forceinline vllong8 vreduce_add4(const vllong8& y) { const vllong8 x = vreduce_add2(y); return x + shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vllong8 vreduce_add (const vllong8& y) { const vllong8 x = vreduce_add4(y); return x + shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vllong8 vreduce_and2(vllong8 x) {                      return x & shuffle<1,0,3,2>(x); }
+  __forceinline vllong8 vreduce_and4(vllong8 x) { x = vreduce_and2(x); return x & shuffle<2,3,0,1>(x); }
+  __forceinline vllong8 vreduce_and (vllong8 x) { x = vreduce_and4(x); return x & shuffle4<1,0>(x); }
+
+  __forceinline vllong8 vreduce_or2(vllong8 x) {                     return x | shuffle<1,0,3,2>(x); }
+  __forceinline vllong8 vreduce_or4(vllong8 x) { x = vreduce_or2(x); return x | shuffle<2,3,0,1>(x); }
+  __forceinline vllong8 vreduce_or (vllong8 x) { x = vreduce_or4(x); return x | shuffle4<1,0>(x); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Memory load and store operations

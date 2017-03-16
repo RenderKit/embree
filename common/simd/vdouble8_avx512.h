@@ -43,17 +43,17 @@ namespace embree
     __forceinline operator __m256d () const { return _mm512_castpd512_pd256(v); }
 
     __forceinline vdouble(const double i) {
-      v = _mm512_set_1to8_pd(i);
+      v = _mm512_set1_pd(i);
     }
 
     __forceinline vdouble(const double a, const double b, const double c, const double d) {
-      v = _mm512_set_4to8_pd(d,c,b,a);
+      v = _mm512_set4_pd(d,c,b,a);
     }
 
     __forceinline vdouble(const double a0 , const double a1 , const double a2 , const double a3,
                         const double a4 , const double a5 , const double a6 , const double a7)
     {
-      v = _mm512_set_8to8_pd(a7,a6,a5,a4,a3,a2,a1,a0);
+      v = _mm512_set_pd(a7,a6,a5,a4,a3,a2,a1,a0);
     }
 
 
@@ -62,29 +62,28 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
     __forceinline vdouble( ZeroTy   ) : v(_mm512_setzero_pd()) {}
-    __forceinline vdouble( OneTy    ) : v(_mm512_set_1to8_pd(1)) {}
-    __forceinline vdouble( StepTy   ) : v(_mm512_set_8to8_pd(7.0,6.0,5.0,4.0,3.0,2.0,1.0,0.0)) {}
+    __forceinline vdouble( OneTy    ) : v(_mm512_set1_pd(1)) {}
+    __forceinline vdouble( StepTy   ) : v(_mm512_set_pd(7.0,6.0,5.0,4.0,3.0,2.0,1.0,0.0)) {}
     __forceinline vdouble( ReverseStepTy )   : v(_mm512_setr_pd(7.0,6.0,5.0,4.0,3.0,2.0,1.0,0.0)) {}
 
     __forceinline static vdouble8 zero() { return _mm512_setzero_pd(); }
-    __forceinline static vdouble8 one () { return _mm512_set_1to8_pd(1); }
-    __forceinline static vdouble8 neg_one () { return _mm512_set_1to8_pd(-1); }
+    __forceinline static vdouble8 one () { return _mm512_set1_pd(1); }
+    __forceinline static vdouble8 neg_one () { return _mm512_set1_pd(-1); }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
 
     static __forceinline void store_nt(void *__restrict__ ptr, const vdouble8& a) {
-      _mm512_stream_pd(ptr,a);
+      _mm512_stream_pd((double*)ptr,a);
     }
 
-    static __forceinline vdouble8 loadu(const void* addr)
-    {
-      return _mm512_loadu_pd(addr);
+    static __forceinline vdouble8 loadu(const void* addr) {
+      return _mm512_loadu_pd((double*)addr);
     }
 
     static __forceinline vdouble8 load(const vdouble8* addr) {
-      return _mm512_load_pd(addr);
+      return _mm512_load_pd((double*)addr);
     }
 
     static __forceinline vdouble8 load(const double* addr) {
@@ -107,7 +106,7 @@ namespace embree
       _mm512_mask_store_pd(addr,mask,v2);
     }
 
-  /* pass by value to avoid compiler generating inefficient code */
+    /* pass by value to avoid compiler generating inefficient code */
     static __forceinline void storeu_compact(const vboold8 mask,void * addr, const vdouble8& reg) {
       _mm512_mask_compressstoreu_pd(addr,mask,reg);
     }
@@ -279,23 +278,33 @@ namespace embree
   // Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vdouble8 shuffle (const vdouble8& x,int perm32 ) { return _mm512_permutex_pd(x,perm32); }
-  __forceinline vdouble8 shuffle4(const vdouble8& x,int perm128) { return _mm512_shuffle_f64x2(x,x,perm128); }
+  template<size_t i> 
+    __forceinline const vdouble8 shuffle( const vdouble8& a ) {
+    return _mm512_permute_pd(a, _MM_SHUFFLE(i, i, i, i));
+  }
 
-  template<int D, int C, int B, int A> __forceinline vdouble8 shuffle   (const vdouble8& v) { return _mm512_permutex_pd(v,(int)_MM_SHUF_PERM(D,C,B,A)); }
-  template<int A>                      __forceinline vdouble8 shuffle   (const vdouble8& x) { return shuffle<A,A,A,A>(v); }
+  template<int A, int B, int C, int D> 
+    __forceinline vdouble8 shuffle (const vdouble8& v) {
+    return _mm512_permute_pd(v,_MM_SHUFFLE(D,C,B,A)); 
+  }
 
-  template<int D, int C, int B, int A> __forceinline vdouble8 shuffle4(const vdouble8& v) { return shuffle4(v,(int)_MM_SHUF_PERM(D,C,B,A)); }
-  template<int A>                      __forceinline vdouble8 shuffle4(const vdouble8& x) { return shuffle4<A,A,A,A>(x); }
+  template<int i>
+    __forceinline vdouble8 shuffle4(const vdouble8& x) { 
+    return _mm512_shuffle_f64x2(x,x,_MM_SHUFFLE(i,i,i,i));
+  }
 
+  template<int A, int B>
+    __forceinline vdouble8 shuffle4(const vdouble8& x) { 
+    return _mm512_shuffle_f64x2(x,x,_MM_SHUFFLE(0,0,B,A));
+  }
+  
   template<int i>
     __forceinline vdouble8 align_shift_right(const vdouble8& a, const vdouble8& b)
   {
-    return _mm512_alignr_pd(a,b,i);
-  };
+    return _mm512_castsi512_pd(_mm512_alignr_epi64(_mm512_castpd_si512(a),_mm512_castpd_si512(b),i));
+  }
 
-  __forceinline double toScalar(const vdouble8& a)
-  {
+  __forceinline double toScalar(const vdouble8& a) {
     return _mm256_cvtsd_f64(_mm512_castpd512_pd256(a));
   }
 
@@ -307,25 +316,17 @@ namespace embree
   __forceinline double reduce_min(const vdouble8& a) { return _mm512_reduce_min_pd(a); }
   __forceinline double reduce_max(const vdouble8& a) { return _mm512_reduce_max_pd(a); }
 
-  __forceinline vdouble8 vreduce_min2(const vdouble8& x) {                                     return min(x,shuffle(x,_MM_SHUF_PERM(2,3,0,1))); }
-  __forceinline vdouble8 vreduce_min4(const vdouble8& y) { const vdouble8 x = vreduce_min2(y); return min(x,shuffle(x,_MM_SHUF_PERM(1,0,3,2))); }
-  __forceinline vdouble8 vreduce_min (const vdouble8& y) { const vdouble8 x = vreduce_min4(y); return min(x,shuffle4(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vdouble8 vreduce_add2(vdouble8 x) {                      return x + shuffle<1,0,3,2>(x); }
+  __forceinline vdouble8 vreduce_add4(vdouble8 x) { x = vreduce_add2(x); return x + shuffle<2,3,0,1>(x); }
+  __forceinline vdouble8 vreduce_add (vdouble8 x) { x = vreduce_add4(x); return x + shuffle4<1,0>(x); }
 
-  __forceinline vdouble8 vreduce_max2(const vdouble8& x) {                                     return max(x,shuffle(x,_MM_SHUF_PERM(1,0,3,2))); }
-  __forceinline vdouble8 vreduce_max4(const vdouble8& y) { const vdouble8 x = vreduce_max2(y); return max(x,shuffle(x,_MM_SHUF_PERM(2,3,0,1))); }
-  __forceinline vdouble8 vreduce_max (const vdouble8& y) { const vdouble8 x = vreduce_max4(y); return max(x,shuffle4(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vdouble8 vreduce_min2(vdouble8 x) {                      return min(x,shuffle<1,0,3,2>(x)); }
+  __forceinline vdouble8 vreduce_min4(vdouble8 x) { x = vreduce_min2(x); return min(x,shuffle<2,3,0,1>(x)); }
+  __forceinline vdouble8 vreduce_min (vdouble8 x) { x = vreduce_min4(x); return min(x,shuffle4<1,0>(x)); }
 
-  __forceinline vdouble8 vreduce_and2(const vdouble8& x) {                                     return x & shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
-  __forceinline vdouble8 vreduce_and4(const vdouble8& y) { const vdouble8 x = vreduce_and2(y); return x & shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vdouble8 vreduce_and (const vdouble8& y) { const vdouble8 x = vreduce_and4(y); return x & shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
-
-  __forceinline vdouble8 vreduce_or2(const vdouble8& x) {                                    return x | shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
-  __forceinline vdouble8 vreduce_or4(const vdouble8& y) { const vdouble8 x = vreduce_or2(y); return x | shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vdouble8 vreduce_or (const vdouble8& y) { const vdouble8 x = vreduce_or4(y); return x | shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
-
-  __forceinline vdouble8 vreduce_add2(const vdouble8& x) {                                     return x + shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
-  __forceinline vdouble8 vreduce_add4(const vdouble8& y) { const vdouble8 x = vreduce_add2(y); return x + shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vdouble8 vreduce_add (const vdouble8& y) { const vdouble8 x = vreduce_add4(y); return x + shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vdouble8 vreduce_max2(vdouble8 x) {                      return max(x,shuffle<1,0,3,2>(x)); }
+  __forceinline vdouble8 vreduce_max4(vdouble8 x) { x = vreduce_max2(x); return max(x,shuffle<2,3,0,1>(x)); }
+  __forceinline vdouble8 vreduce_max (vdouble8 x) { x = vreduce_max4(x); return max(x,shuffle4<1,0>(x)); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Memory load and store operations
