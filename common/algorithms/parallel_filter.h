@@ -76,8 +76,7 @@ namespace embree
     parallel_for(taskCount, [&](const Index taskIndex)
     {
       /* destination to write elements to */
-      const Index start = begin+(taskIndex+0)*(end-begin)/taskCount;
-      Index dst = start+nused[taskIndex];
+      Index dst = (taskIndex+0)*(end-begin)/taskCount+nused[taskIndex];
       Index dst_end = min(dst+nfree[taskIndex],sused);
       if (dst_end <= dst) return;
 
@@ -91,8 +90,7 @@ namespace embree
       {
         if (k0 > r1) break;
         Index k1 = k0+nused[i];
-        const Index starti = begin+(i+0)*(end-begin)/taskCount;
-        Index src = starti+nused[i];
+        Index src = begin+(i+0)*(end-begin)/taskCount+nused[i];
         for (Index i=max(r0,k0); i<min(r1,k1); i++) {
           data[dst++] = data[src-i+k0-1];
         }
