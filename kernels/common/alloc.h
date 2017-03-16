@@ -517,6 +517,7 @@ namespace embree
         }
         else
           assert(false);
+        return NULL;
       }
 
       Block (AllocationType atype, size_t bytesAllocate, size_t bytesReserve, Block* next, size_t wasted) 
