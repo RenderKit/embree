@@ -438,4 +438,7 @@ namespace embree
 #endif
 #endif
 
+   __forceinline float mm512_cvtss_f32 (__m512 v) { // FIXME: _mm512_cvtss_f32 not yet supported by clang v4.0.0
+     return _mm256_cvtss_f32(_mm512_castps512_ps256(v));
+   }
 }

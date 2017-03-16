@@ -125,7 +125,8 @@ namespace embree
 #endif
     }
 
-    static __forceinline void store(const vboolf4& mask, void* ptr, const vint4& ofs, const vfloat4& v, const int scale = 1)
+    template<int scale>
+      static __forceinline void scatter(const vboolf4& mask, void* ptr, const vint4& ofs, const vfloat4& v)
     {
 #if defined(__AVX512VL__)
       _mm_mask_i32scatter_ps(ptr,mask,ofs,v,scale);
@@ -138,10 +139,10 @@ namespace embree
     }
 
     static __forceinline void store(const vboolf4& mask, char* ptr, const vint4& ofs, const vfloat4& v) {
-      store(mask,ptr,ofs,v,1);
+      scatter<1>(mask,ptr,ofs,v);
     }
     static __forceinline void store(const vboolf4& mask, float* ptr, const vint4& ofs, const vfloat4& v) {
-      store(mask,ptr,ofs,v,4);
+      scatter<4>(mask,ptr,ofs,v);
     }
     
     ////////////////////////////////////////////////////////////////////////////////
@@ -202,8 +203,14 @@ namespace embree
 #else
     const vfloat4 r = _mm_rsqrt_ps(a.v);
 #endif
-    return _mm_add_ps(_mm_mul_ps(_mm_set_ps(1.5f, 1.5f, 1.5f, 1.5f), r),
-                      _mm_mul_ps(_mm_mul_ps(_mm_mul_ps(a, _mm_set_ps(-0.5f, -0.5f, -0.5f, -0.5f)), r), _mm_mul_ps(r, r)));
+
+#if defined(__AVX2__)
+    return _mm_fmadd_ps(_mm_set1_ps(1.5f), r,
+                        _mm_mul_ps(_mm_mul_ps(_mm_mul_ps(a, _mm_set1_ps(-0.5f)), r), _mm_mul_ps(r, r)));
+#else
+    return _mm_add_ps(_mm_mul_ps(_mm_set1_ps(1.5f), r),
+                      _mm_mul_ps(_mm_mul_ps(_mm_mul_ps(a, _mm_set1_ps(-0.5f)), r), _mm_mul_ps(r, r)));
+#endif
   }
 
   __forceinline const vboolf4 isnan( const vfloat4& a ) {

@@ -48,8 +48,8 @@ namespace embree
 #if defined(__AVX512BW__)
       return _mm_movm_epi8(v);
 #else
-      const __m512i f = _mm512_set_1to8_epi64(0);
-      const __m512i t = _mm512_set_1to8_epi64(-1);
+      const __m512i f = _mm512_set1_epi64(0);
+      const __m512i t = _mm512_set1_epi64(-1);
       const __m512i m =  _mm512_mask_or_epi64(f,v,t,t); 
       return _mm512_cvtepi64_epi8(m);
 #endif
@@ -60,8 +60,8 @@ namespace embree
 #if defined(__AVX512DQ__)
       return _mm512_movm_epi64(v);
 #else
-      const __m512i f = _mm512_set_1to8_epi64(0);
-      const __m512i t = _mm512_set_1to8_epi64(-1);
+      const __m512i f = _mm512_set1_epi64(0);
+      const __m512i t = _mm512_set1_epi64(-1);
       return _mm512_mask_or_epi64(f,v,t,t); 
 #endif
     }
@@ -122,7 +122,7 @@ namespace embree
   __forceinline int none( const vboold8& valid, const vboold8& b ) { return none(valid & b); }
   
   __forceinline size_t movemask( const vboold8& a ) { return _mm512_kmov(a); }
-  __forceinline size_t popcnt  ( const vboold8& a ) { return _mm_countbits_64(a.v); }
+  __forceinline size_t popcnt  ( const vboold8& a ) { return __popcnt(a.v); }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Conversion Operations
