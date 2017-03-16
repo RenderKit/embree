@@ -24,6 +24,7 @@ ADD_LIBRARY(algorithms OBJECT
  parallel_sort.cpp
  parallel_set.cpp
  parallel_map.cpp
+ parallel_filter.cpp
 )
 
 SET_PROPERTY(TARGET algorithms PROPERTY FOLDER common)

@@ -517,6 +517,7 @@ namespace embree
         }
         else
           assert(false);
+        return NULL;
       }
 
       Block (AllocationType atype, size_t bytesAllocate, size_t bytesReserve, Block* next, size_t wasted) 
@@ -673,7 +674,7 @@ namespace embree
       Block* next;               //!< pointer to next block in list
       size_t wasted;             //!< amount of memory wasted through block alignment
       AllocationType atype;      //!< allocation mode of the block
-      char align[maxAlignment-5*sizeof(size_t)-sizeof(atype)]; //!< align data to maxAlignment
+      char align[maxAlignment-5*sizeof(size_t)-sizeof(AllocationType)]; //!< align data to maxAlignment
       char data[1];              //!< here starts memory to use for allocations
     };
 
