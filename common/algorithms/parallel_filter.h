@@ -59,11 +59,10 @@ namespace embree
     /* calculate offsets */
     Index sused=0;
     Index sfree=0;
-    Index pused[MAX_TASKS];
     Index pfree[MAX_TASKS];
     for (Index i=0; i<taskCount; i++) 
     {
-      Index cused = nused[i]; pused[i] = sused; sused+=cused;
+      sused+=nused[i];
       Index cfree = nfree[i]; pfree[i] = sfree; sfree+=cfree;
     }
 
