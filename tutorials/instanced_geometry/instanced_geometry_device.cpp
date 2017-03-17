@@ -147,10 +147,10 @@ extern "C" void device_init (char* cfg)
   rtcCommit (g_scene1);
 
   /* instantiate geometry */
-  g_instance0 = rtcNewInstance(g_scene,g_scene1);
-  g_instance1 = rtcNewInstance(g_scene,g_scene1);
-  g_instance2 = rtcNewInstance(g_scene,g_scene1);
-  g_instance3 = rtcNewInstance(g_scene,g_scene1);
+  g_instance0 = rtcNewInstance2(g_scene,g_scene1,1);
+  g_instance1 = rtcNewInstance2(g_scene,g_scene1,1);
+  g_instance2 = rtcNewInstance2(g_scene,g_scene1,1);
+  g_instance3 = rtcNewInstance2(g_scene,g_scene1,1);
   createGroundPlane(g_scene);
 
   /* set all colors */
@@ -469,10 +469,10 @@ extern "C" void device_render (int* pixels,
     normal_xfm[i] = transposed(rcp(instance_xfm[i].l));
 
   /* set instance transformations */
-  rtcSetTransform(g_scene,g_instance0,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[0]);
-  rtcSetTransform(g_scene,g_instance1,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[1]);
-  rtcSetTransform(g_scene,g_instance2,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[2]);
-  rtcSetTransform(g_scene,g_instance3,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[3]);
+  rtcSetTransform2(g_scene,g_instance0,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[0],1);
+  rtcSetTransform2(g_scene,g_instance1,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[1],1);
+  rtcSetTransform2(g_scene,g_instance2,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[2],1);
+  rtcSetTransform2(g_scene,g_instance3,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[3],1);
 
   /* update scene */
   rtcUpdate(g_scene,g_instance0);
