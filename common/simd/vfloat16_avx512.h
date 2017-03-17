@@ -185,7 +185,6 @@ namespace embree
 
   __forceinline const vfloat16 rsqrt( const vfloat16& a )
   {
-    //return _mm512_invsqrt_ps(a); // FIXME: not yet supported in clang 4.0.0
 #if defined(__AVX512VL__)
     const vfloat16 r = _mm512_rsqrt14_ps(a.v);
     return _mm512_fmadd_ps(_mm512_set1_ps(1.5f), r,
@@ -195,33 +194,6 @@ namespace embree
 #endif
   }
 
-#if !defined(__clang__) // FIXME: not yet supported in clang v4.0.0
-  __forceinline vfloat16 exp(const vfloat16& a) { return _mm512_exp_ps(a); }
-  __forceinline vfloat16 exp2(const vfloat16& a) { return _mm512_exp2_ps(a); }
-  __forceinline vfloat16 pow(const vfloat16& a, vfloat16 b) { return _mm512_pow_ps(a,b); }
-  
-  __forceinline vfloat16 log(const vfloat16& a) { return _mm512_log_ps(a); }
-  __forceinline vfloat16 log2(const vfloat16& a) { return _mm512_log2_ps(a); }
-  __forceinline vfloat16 log10(const vfloat16& a) { return _mm512_log10_ps(a); }
-  
-  __forceinline vfloat16 sin(const vfloat16& a) { return _mm512_sin_ps(a); }
-  __forceinline vfloat16 cos(const vfloat16& a) { return _mm512_cos_ps(a); }
-  __forceinline vfloat16 tan(const vfloat16& a) { return _mm512_tan_ps(a); }
-  
-  __forceinline vfloat16 asin(const vfloat16& a) { return _mm512_asin_ps(a); }
-  __forceinline vfloat16 acos(const vfloat16& a) { return _mm512_acos_ps(a); }
-  __forceinline vfloat16 atan(const vfloat16& a) { return _mm512_atan_ps(a); }
-  __forceinline vfloat16 atan2(const vfloat16& a, vfloat16 b) { return _mm512_atan2_ps(a,b); }
-  
-  __forceinline vfloat16 sinh(const vfloat16& a) { return _mm512_sinh_ps(a); }
-  __forceinline vfloat16 cosh(const vfloat16& a) { return _mm512_cosh_ps(a); }
-  __forceinline vfloat16 tanh(const vfloat16& a) { return _mm512_tan_ps(a); }
-  
-  __forceinline vfloat16 asinh(const vfloat16& a) { return _mm512_asinh_ps(a); }
-  __forceinline vfloat16 acosh(const vfloat16& a) { return _mm512_acosh_ps(a); }
-  __forceinline vfloat16 atanh(const vfloat16& a) { return _mm512_atanh_ps(a); }
-#endif
-  
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
