@@ -454,10 +454,12 @@ namespace embree
   __forceinline vfloat8 permute(const vfloat8 &a, const __m256i &index) {
     return _mm256_permutevar8x32_ps(a,index);
   }
+#endif
 
+#if defined(__AVX512VL__)
   template<int i>
   __forceinline vfloat8 align_shift_right(const vfloat8 &a, const vfloat8 &b) {
-    return _mm256_castsi256_ps(_mm256_alignr_epi8(_mm256_castps_si256(a), _mm256_castps_si256(b), i));
+    return _mm256_castsi256_ps(_mm256_alignr_epi32(_mm256_castps_si256(a), _mm256_castps_si256(b), i));
   }  
 #endif
 
@@ -480,13 +482,17 @@ namespace embree
     return vfloat8::broadcast(&a[k]);
   }
 
-  __forceinline vfloat8 shift_right_1( const vfloat8& x) 
-  {
-    __m256 t0 = _mm256_permute_ps(x,0x39);
-    __m256 t1 = _mm256_permute2f128_ps(t0,t0,0x81);
-    __m256 y  = _mm256_blend_ps(t0,t1,0x88);
-    return y;
+#if defined(__AVX512VL__)
+  __forceinline vfloat8 shift_right_1( const vfloat8& x) {
+    return align_shift_right<1>(zero,x);
   }
+#else
+  __forceinline vfloat8 shift_right_1( const vfloat8& x) {
+    const vfloat8 t0 = shuffle<1,2,3,0>(x);
+    const vfloat8 t1 = shuffle4<1,0>(t0);
+    return _mm256_blend_ps(t0,t1,0x88);
+  }
+#endif
 
   __forceinline vint8 floori (const vfloat8& a) {
     return vint8(floor(a));

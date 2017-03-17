@@ -456,17 +456,13 @@ namespace embree
     return _mm512_castsi512_ps(_mm512_mask_alignr_epi32(_mm512_castps_si512(c),mask,_mm512_castps_si512(a),_mm512_castps_si512(b),i)); 
   };
  
-  __forceinline vfloat16 shl1_zero_extend(const vfloat16 &a)
-  {
+  __forceinline vfloat16 shift_left_1(const vfloat16 &a) {
     vfloat16 z = vfloat16::zero();
     return mask_align_shift_right<15>(0xfffe,z,a,a);
   }
 
-  __forceinline vfloat16 shift_right_1( const vfloat16& x)  // FIXME: same as align_shift_right?
-  {
-    const vfloat16 t0 = shuffle<1,2,3,0>(x);
-    const vfloat16 t1 = shuffle4<1,2,3,0>(t0);
-    return _mm512_mask_blend_ps(0x8888,t0,t1);
+  __forceinline vfloat16 shift_right_1( const vfloat16& x) {
+    return align_shift_right<1>(zero,x);
   }
 
   __forceinline float toScalar(const vfloat16& a) { return mm512_cvtss_f32(a); }
