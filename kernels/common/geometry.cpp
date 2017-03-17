@@ -31,11 +31,24 @@ namespace embree
       intersectionFilterN(nullptr), occlusionFilterN(nullptr),
       hasIntersectionFilterMask(0), hasOcclusionFilterMask(0), ispcIntersectionFilterMask(0), ispcOcclusionFilterMask(0)
   {
-    id = parent->add(this);
     parent->setModified();
   }
 
   Geometry::~Geometry() {
+  }
+
+  void Geometry::preCommit() {
+  }
+
+  void Geometry::postCommit()
+  {
+    /* make static geometry immutable */
+    if (parent->isStatic()) 
+      immutable();
+
+    /* clear modified flag */
+    if (isEnabled()) 
+      clearModified();
   }
 
   void Geometry::updateIntersectionFilters(bool enable)

@@ -127,7 +127,7 @@ namespace embree
 	const PrimRef& prim = prims[begin];
         const unsigned geomID = prim.geomID();
         const unsigned primID = prim.primID();
-        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+        const TriangleMesh* __restrict__ const mesh = scene->get<TriangleMesh>(geomID);
         if (unlikely(mesh->numTimeSteps != numTimeSteps))
           throw_RTCError(RTC_INVALID_OPERATION, "TriangleMvMB is not supported for different number of time steps per mesh");
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);

@@ -90,7 +90,7 @@ namespace embree
       
       for (size_t i=0; i<M; i++)
       {
-	const TriangleMesh* mesh = scene->getTriangleMesh(prim->geomID());
+	const TriangleMesh* mesh = scene->get<TriangleMesh>(prim->geomID());
 	const TriangleMesh::Triangle& tri = mesh->triangle(prim->primID());
 	if (begin<end) {
 	  geomID[i] = prim->geomID();

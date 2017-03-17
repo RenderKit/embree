@@ -123,7 +123,11 @@ typedef void (*RTCFilterFuncN)(int* valid,                            /*!< point
                                const struct RTCHitN* potentialHit,          /*!< potential new hit */
                                const size_t N                         /*!< size of ray packet */);
 
-/*! Displacement mapping function. */
+/*! Displacement mapping function.
+
+  WARNING: This callback is deprecated, use RTCDisplacementFunc2 instead.
+
+ */
 typedef void (*RTCDisplacementFunc)(void* ptr,           /*!< pointer to user data of geometry */
                                     unsigned geomID,     /*!< ID of geometry to displace */
                                     unsigned primID,     /*!< ID of primitive of geometry to displace */
@@ -154,31 +158,36 @@ typedef void (*RTCDisplacementFunc2)(void* ptr,           /*!< pointer to user d
 
 /*! \brief Creates a new scene instance. 
 
+  WARNING: This function is deprecated, use rtcNewInstance2 instead.
+
   A scene instance contains a reference to a scene to instantiate and
   the transformation to instantiate the scene with. An implementation
   will typically transform the ray with the inverse of the provided
   transformation and continue traversing the ray through the provided
   scene. If any geometry is hit, the instance ID (instID) member of
   the ray will get set to the geometry ID of the instance. */
-RTCORE_API unsigned rtcNewInstance (RTCScene target,                  //!< the scene the instance belongs to
-                                    RTCScene source                   //!< the scene to instantiate
+RTCORE_API RTCORE_DEPRECATED unsigned rtcNewInstance (RTCScene target,                  //!< the scene the instance belongs to
+                                                      RTCScene source                   //!< the scene to instantiate
   );
 
 /*! \brief Creates a new scene instance. 
 
   A scene instance contains a reference to a scene to instantiate and
   the transformation to instantiate the scene with. For motion blurred
-  instances, a number of timesteps can get specified (currently only 1
-  or 2 timesteps are supported). An implementation will typically
-  transform the ray with the inverse of the provided transformation
-  and continue traversing the ray through the provided scene. If any
-  geometry is hit, the instance ID (instID) member of the ray will get
-  set to the geometry ID of the instance. */
+  instances, a number of timesteps can get specified. An
+  implementation will typically transform the ray with the inverse of
+  the provided transformation (or inverse of linearly interpolated
+  transformation in case of multi-segment motion blur) and continue
+  traversing the ray through the provided scene. If any geometry is
+  hit, the instance ID (instID) member of the ray will get set to the
+  geometry ID of the instance. */
 RTCORE_API unsigned rtcNewInstance2 (RTCScene target,                  //!< the scene the instance belongs to
                                      RTCScene source,                  //!< the scene to instantiate
                                      size_t numTimeSteps = 1);         //!< number of timesteps, one matrix per timestep
 
 /*! \brief Creates a new geometry instance. 
+
+  WARNING: This function is deprecated, do not use it.
 
   A geometry instance contains a reference to some geometry to
   instantiate and the transformation to instantiate that geometry
@@ -189,11 +198,13 @@ RTCORE_API unsigned rtcNewInstance2 (RTCScene target,                  //!< the 
   instance. */
 RTCORE_API RTCORE_DEPRECATED unsigned rtcNewGeometryInstance(RTCScene scene, unsigned geomID);
 
-/*! \brief Sets transformation of the instance */
-RTCORE_API void rtcSetTransform (RTCScene scene,                          //!< scene handle
-                                 unsigned geomID,                         //!< ID of geometry
-                                 RTCMatrixType layout,                    //!< layout of transformation matrix
-                                 const float* xfm                         //!< pointer to transformation matrix
+/*! \brief Sets transformation of the instance.
+  WARNING: This function is deprecated, use rtcSetTransform2 instead.
+ */
+RTCORE_API RTCORE_DEPRECATED void rtcSetTransform (RTCScene scene,                          //!< scene handle
+                                                   unsigned geomID,                         //!< ID of geometry
+                                                   RTCMatrixType layout,                    //!< layout of transformation matrix
+                                                   const float* xfm                         //!< pointer to transformation matrix
   );
 
 
@@ -207,17 +218,18 @@ RTCORE_API void rtcSetTransform2 (RTCScene scene,                         //!< s
 
 /*! \brief Creates a new triangle mesh. The number of triangles
   (numTriangles), number of vertices (numVertices), and number of time
-  steps (1 for normal meshes, and 2 for linear motion blur), have to
-  get specified. The triangle indices can be set be mapping and
-  writing to the index buffer (RTC_INDEX_BUFFER) and the triangle
-  vertices can be set by mapping and writing into the vertex buffer
-  (RTC_VERTEX_BUFFER). In case of linear motion blur, two vertex
-  buffers have to get filled (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1),
-  one for each time step. The index buffer has the default layout of
-  three 32 bit integer indices for each triangle. An index points to
-  the ith vertex. The vertex buffer stores single precision x,y,z
-  floating point coordinates aligned to 16 bytes. The value of the 4th
-  float used for alignment can be arbitrary. */
+  steps (1 for normal meshes, and up to RTC_MAX_TIME_STEPS for multi
+  segment motion blur), have to get specified. The triangle indices
+  can be set be mapping and writing to the index buffer
+  (RTC_INDEX_BUFFER) and the triangle vertices can be set by mapping
+  and writing into the vertex buffer (RTC_VERTEX_BUFFER). In case of
+  multi-segment motion blur, multiple vertex buffers have to get filled
+  (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1, etc.), one for each time
+  step. The index buffer has the default layout of three 32 bit
+  integer indices for each triangle. An index points to the ith
+  vertex. The vertex buffer stores single precision x,y,z floating
+  point coordinates aligned to 16 bytes. The value of the 4th float
+  used for alignment can be arbitrary. */
 RTCORE_API unsigned rtcNewTriangleMesh (RTCScene scene,                    //!< the scene the mesh belongs to
                                         RTCGeometryFlags flags,            //!< geometry flags
                                         size_t numTriangles,               //!< number of triangles
@@ -226,19 +238,19 @@ RTCORE_API unsigned rtcNewTriangleMesh (RTCScene scene,                    //!< 
   );
 
 
-/*! \brief Creates a new quad mesh. The number of quads
-  (numQuads), number of vertices (numVertices), and number of time
-  steps (1 for normal meshes, and 2 for linear motion blur), have to
-  get specified. The quad indices can be set be mapping and
-  writing to the index buffer (RTC_INDEX_BUFFER) and the quad
+/*! \brief Creates a new quad mesh. The number of quads (numQuads),
+  number of vertices (numVertices), and number of time steps (1 for
+  normal meshes, and up to RTC_MAX_TIME_STEPS for multi-segment motion
+  blur), have to get specified. The quad indices can be set be mapping
+  and writing to the index buffer (RTC_INDEX_BUFFER) and the quad
   vertices can be set by mapping and writing into the vertex buffer
-  (RTC_VERTEX_BUFFER). In case of linear motion blur, two vertex
-  buffers have to get filled (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1),
-  one for each time step. The index buffer has the default layout of
-  three 32 bit integer indices for each quad. An index points to
-  the ith vertex. The vertex buffer stores single precision x,y,z
-  floating point coordinates aligned to 16 bytes. The value of the 4th
-  float used for alignment can be arbitrary. */
+  (RTC_VERTEX_BUFFER). In case of multi-segment motion blur, multiple
+  vertex buffers have to get filled (RTC_VERTEX_BUFFER0,
+  RTC_VERTEX_BUFFER1, etc.), one for each time step. The index buffer has
+  the default layout of three 32 bit integer indices for each quad. An
+  index points to the ith vertex. The vertex buffer stores single
+  precision x,y,z floating point coordinates aligned to 16 bytes. The
+  value of the 4th float used for alignment can be arbitrary. */
 RTCORE_API unsigned rtcNewQuadMesh (RTCScene scene,                //!< the scene the mesh belongs to
                                     RTCGeometryFlags flags,        //!< geometry flags
                                     size_t numQuads,               //!< number of quads
@@ -259,7 +271,9 @@ RTCORE_API unsigned rtcNewQuadMesh (RTCScene scene,                //!< the scen
  numEdges indices in total, the vertex buffer (RTC_VERTEX_BUFFER)
  stores numVertices vertices as single precision x,y,z floating point
  coordinates aligned to 16 bytes. The value of the 4th float used for
- alignment can be arbitrary.
+ alignment can be arbitrary. In case of multi-segment motion blur,
+ multiple vertex buffers have to get filled (RTC_VERTEX_BUFFER0,
+ RTC_VERTEX_BUFFER1, etc.), one for each time step.
 
  Optionally, the application can fill the hole buffer
  (RTC_HOLE_BUFFER) with numHoles many 32 bit indices of faces that
@@ -311,19 +325,23 @@ RTCORE_API unsigned rtcNewSubdivisionMesh (RTCScene scene,                //!< t
                                            size_t numTimeSteps = 1        //!< number of motion blur time steps
   );
 
-/*! \brief Creates a new hair geometry, consisting of multiple hairs
-  represented as cubic bezier curves with varying radii. The number of
-  curves (numCurves), number of vertices (numVertices), and number of
-  time steps (1 for normal curves, and 2 for linear motion blur), have
-  to get specified at construction time. Further, the curve index
-  buffer (RTC_INDEX_BUFFER) and the curve vertex buffer
-  (RTC_VERTEX_BUFFER) have to get set by mapping and writing to the
-  appropiate buffers. In case of linear motion blur, two vertex
-  buffers have to get filled (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1),
-  one for each time step. The index buffer has the default layout of a
-  single 32 bit integer index for each curve, that references the
-  start vertex of the curve. The vertex buffer stores 4 control points
-  per curve, each such control point consists of a single precision
+/*! \brief Creates a new hair geometry consisting of multiple hairs
+  represented as cubic bezier curves with varying radii.
+
+  WARNING: This function is deprecated, use rtcNewBezierHairGeometry instead.
+
+  The number of curves (numCurves), number of vertices (numVertices),
+  and number of time steps (1 for normal meshes, and up to
+  RTC_MAX_TIME_STEPS for multi-segment motion blur), have to get
+  specified at construction time. Further, the curve index buffer
+  (RTC_INDEX_BUFFER) and the curve vertex buffer (RTC_VERTEX_BUFFER)
+  have to get set by mapping and writing to the appropiate buffers. In
+  case of multi-segment motion blur, multiple vertex buffers have to
+  get filled (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1, etc.), one for
+  each time step. The index buffer has the default layout of a single
+  32 bit integer index for each curve, that references the start
+  vertex of the curve. The vertex buffer stores 4 control points per
+  curve, each such control point consists of a single precision
   (x,y,z) position and radius, stored in that order in
   memory. Individual hairs are considered to be subpixel sized which
   allows the implementation to approximate the intersection
@@ -337,22 +355,23 @@ RTCORE_API RTCORE_DEPRECATED unsigned rtcNewHairGeometry (RTCScene scene,       
   );
 
 /*! \brief Creates a new hair geometry, consisting of multiple hairs
-  represented as cubic bezier curves with varying radii. The number
-  of curves (numCurves), number of vertices (numVertices), and number
-  of time steps have to get specified at construction time. Further,
-  the curve index buffer (RTC_INDEX_BUFFER) and the curve vertex
-  buffer (RTC_VERTEX_BUFFER) have to get set by mapping and writing to
-  the appropiate buffers. In case of motion blur multiple vertex
-  buffers have to get filled (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1,
-  etc.), one for each time step. The index buffer has the default
-  layout of a single 32 bit integer index for each curve, that
-  references the start vertex of the curve. The vertex buffer stores 4
-  control points per curve, each such control point consists of a
-  single precision (x,y,z) position and radius, stored in that order
-  in memory. Individual hairs are considered to be subpixel sized
-  which allows the implementation to approximate the intersection
-  calculation. This in particular means that zooming onto one hair
-  might show geometric artefacts. */
+  represented as cubic bezier curves with varying radii. The number of
+  curves (numCurves), number of vertices (numVertices), and number of
+  time steps have to get specified at construction time (1 for normal
+  meshes, and up to RTC_MAX_TIME_STEPS for multi-segment motion
+  blur). Further, the curve index buffer (RTC_INDEX_BUFFER) and the
+  curve vertex buffer (RTC_VERTEX_BUFFER) have to get set by mapping
+  and writing to the appropiate buffers. In case of multi-segment
+  motion blur multiple vertex buffers have to get filled
+  (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1, etc.), one for each time
+  step. The index buffer has the default layout of a single 32 bit
+  integer index for each curve, that references the start vertex of
+  the curve. The vertex buffer stores 4 control points per curve, each
+  such control point consists of a single precision (x,y,z) position
+  and radius, stored in that order in memory. Individual hairs are
+  considered to be subpixel sized which allows the implementation to
+  approximate the intersection calculation. This in particular means
+  that zooming onto one hair might show geometric artefacts. */
 RTCORE_API unsigned rtcNewBezierHairGeometry (RTCScene scene,                    //!< the scene the curves belong to
                                               RTCGeometryFlags flags,            //!< geometry flags
                                               unsigned int numCurves,                  //!< number of curves
@@ -363,20 +382,21 @@ RTCORE_API unsigned rtcNewBezierHairGeometry (RTCScene scene,                   
 /*! \brief Creates a new hair geometry, consisting of multiple hairs
   represented as cubic bspline curves with varying radii. The number
   of curves (numCurves), number of vertices (numVertices), and number
-  of time steps have to get specified at construction time. Further,
-  the curve index buffer (RTC_INDEX_BUFFER) and the curve vertex
-  buffer (RTC_VERTEX_BUFFER) have to get set by mapping and writing to
-  the appropiate buffers. In case of motion blur multiple vertex
-  buffers have to get filled (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1,
-  etc.), one for each time step. The index buffer has the default
-  layout of a single 32 bit integer index for each curve, that
-  references the start vertex of the curve. The vertex buffer stores 4
-  control points per curve, each such control point consists of a
-  single precision (x,y,z) position and radius, stored in that order
-  in memory. Individual hairs are considered to be subpixel sized
-  which allows the implementation to approximate the intersection
-  calculation. This in particular means that zooming onto one hair
-  might show geometric artefacts. */
+  of time steps have to get specified at construction time (1 for
+  normal meshes, and up to RTC_MAX_TIME_STEPS for multi-segment motion
+  blur). Further, the curve index buffer (RTC_INDEX_BUFFER) and the
+  curve vertex buffer (RTC_VERTEX_BUFFER) have to get set by mapping
+  and writing to the appropiate buffers. In case of multi-segment
+  motion blur multiple vertex buffers have to get filled
+  (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1, etc.), one for each time
+  step. The index buffer has the default layout of a single 32 bit
+  integer index for each curve, that references the start vertex of
+  the curve. The vertex buffer stores 4 control points per curve, each
+  such control point consists of a single precision (x,y,z) position
+  and radius, stored in that order in memory. Individual hairs are
+  considered to be subpixel sized which allows the implementation to
+  approximate the intersection calculation. This in particular means
+  that zooming onto one hair might show geometric artefacts. */
 RTCORE_API unsigned rtcNewBSplineHairGeometry (RTCScene scene,                    //!< the scene the curves belong to
                                                RTCGeometryFlags flags,            //!< geometry flags
                                                unsigned int numCurves,                  //!< number of curves
@@ -385,20 +405,25 @@ RTCORE_API unsigned rtcNewBSplineHairGeometry (RTCScene scene,                  
   );
 
 /*! \brief Creates a new curve geometry, consisting of multiple curves
-  represented as cubic bezier curves with varying radii. The
-  intersected surface is defined as the sweep of a varying radius
+  represented as cubic bezier curves with varying radii. 
+
+  WARNING: This function is deprecated, use rtcNewBezierCurveGeometry instead.
+
+  The intersected surface is defined as the sweep of a varying radius
   circle perpendicular along the curve. The number of curves
   (numCurves), number of vertices (numVertices), and number of time
-  steps have to get specified at construction time. Further, the curve
-  index buffer (RTC_INDEX_BUFFER) and the curve vertex buffer
-  (RTC_VERTEX_BUFFER) have to get set by mapping and writing to the
-  appropiate buffers. In case of motion blur, multiple vertex buffers
-  have to get filled (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1, etc.),
-  one for each time step. The index buffer has the default layout of a
-  single 32 bit integer index for each curve, that references the
-  start vertex of the curve. The vertex buffer stores 4 control points
-  per curve, each such control point consists of a single precision
-  (x,y,z) position and radius, stored in that order in memory. */
+  steps have to get specified at construction time (1 for normal
+  meshes, and up to RTC_MAX_TIME_STEPS for multi-segment motion
+  blur). Further, the curve index buffer (RTC_INDEX_BUFFER) and the
+  curve vertex buffer (RTC_VERTEX_BUFFER) have to get set by mapping
+  and writing to the appropiate buffers. In case of multi-segment
+  motion blur, multiple vertex buffers have to get filled
+  (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1, etc.), one for each time
+  step. The index buffer has the default layout of a single 32 bit
+  integer index for each curve, that references the start vertex of
+  the curve. The vertex buffer stores 4 control points per curve, each
+  such control point consists of a single precision (x,y,z) position
+  and radius, stored in that order in memory. */
 RTCORE_API RTCORE_DEPRECATED unsigned rtcNewCurveGeometry (RTCScene scene,                    //!< the scene the curves belong to
                                                            RTCGeometryFlags flags,            //!< geometry flags
                                                            size_t numCurves,                  //!< number of curves
@@ -411,16 +436,18 @@ RTCORE_API RTCORE_DEPRECATED unsigned rtcNewCurveGeometry (RTCScene scene,      
   intersected surface is defined as the sweep of a varying radius
   circle perpendicular along the curve. The number of curves
   (numCurves), number of vertices (numVertices), and number of time
-  steps have to get specified at construction time. Further, the curve
-  index buffer (RTC_INDEX_BUFFER) and the curve vertex buffer
-  (RTC_VERTEX_BUFFER) have to get set by mapping and writing to the
-  appropiate buffers. In case of motion blur, multiple vertex buffers
-  have to get filled (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1, etc.),
-  one for each time step. The index buffer has the default layout of a
-  single 32 bit integer index for each curve, that references the
-  start vertex of the curve. The vertex buffer stores 4 control points
-  per curve, each such control point consists of a single precision
-  (x,y,z) position and radius, stored in that order in memory. */
+  steps have to get specified at construction time (1 for normal
+  meshes, and up to RTC_MAX_TIME_STEPS for multi-segment motion
+  blur). Further, the curve index buffer (RTC_INDEX_BUFFER) and the
+  curve vertex buffer (RTC_VERTEX_BUFFER) have to get set by mapping
+  and writing to the appropiate buffers. In case of multi-segment
+  motion blur, multiple vertex buffers have to get filled
+  (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1, etc.), one for each time
+  step. The index buffer has the default layout of a single 32 bit
+  integer index for each curve, that references the start vertex of
+  the curve. The vertex buffer stores 4 control points per curve, each
+  such control point consists of a single precision (x,y,z) position
+  and radius, stored in that order in memory. */
 RTCORE_API unsigned rtcNewBezierCurveGeometry (RTCScene scene,                    //!< the scene the curves belong to
                                                RTCGeometryFlags flags,            //!< geometry flags
                                                unsigned int numCurves,                  //!< number of curves
@@ -433,16 +460,18 @@ RTCORE_API unsigned rtcNewBezierCurveGeometry (RTCScene scene,                  
   intersected surface is defined as the sweep of a varying radius
   circle perpendicular along the curve. The number of curves
   (numCurves), number of vertices (numVertices), and number of time
-  steps have to get specified at construction time. Further, the curve
-  index buffer (RTC_INDEX_BUFFER) and the curve vertex buffer
-  (RTC_VERTEX_BUFFER) have to get set by mapping and writing to the
-  appropiate buffers. In case of motion blur, multiple vertex buffers
-  have to get filled (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1, etc.),
-  one for each time step. The index buffer has the default layout of a
-  single 32 bit integer index for each curve, that references the
-  start vertex of the curve. The vertex buffer stores 4 control points
-  per curve, each such control point consists of a single precision
-  (x,y,z) position and radius, stored in that order in memory. */
+  steps have to get specified at construction time (1 for normal
+  meshes, and up to RTC_MAX_TIME_STEPS for multi-segment motion
+  blur). Further, the curve index buffer (RTC_INDEX_BUFFER) and the
+  curve vertex buffer (RTC_VERTEX_BUFFER) have to get set by mapping
+  and writing to the appropiate buffers. In case of multi-segment
+  motion blur, multiple vertex buffers have to get filled
+  (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1, etc.), one for each time
+  step. The index buffer has the default layout of a single 32 bit
+  integer index for each curve, that references the start vertex of
+  the curve. The vertex buffer stores 4 control points per curve, each
+  such control point consists of a single precision (x,y,z) position
+  and radius, stored in that order in memory. */
 RTCORE_API unsigned rtcNewBSplineCurveGeometry (RTCScene scene,                    //!< the scene the curves belong to
                                                 RTCGeometryFlags flags,            //!< geometry flags
                                                 unsigned int numCurves,                  //!< number of curves
@@ -450,34 +479,36 @@ RTCORE_API unsigned rtcNewBSplineCurveGeometry (RTCScene scene,                 
                                                 unsigned int numTimeSteps = 1            //!< number of motion blur time steps
   );
 
-/*! Sets a uniform tessellation rate for subdiv meshes and hair
- *  geometry. For subdivision meshes the RTC_LEVEL_BUFFER can also be used
- *  optionally to set a different tessellation rate per edge.*/
-RTCORE_API void rtcSetTessellationRate (RTCScene scene, unsigned geomID, float tessellationRate);
-
 /*! \brief Creates a new line segment geometry, consisting of multiple
   segments with varying radii. The number of line segments
   (numSegments), number of vertices (numVertices), and number of time
-  steps have to get specified at construction time. Further, the
-  segment index buffer (RTC_INDEX_BUFFER) and the segment vertex
-  buffer (RTC_VERTEX_BUFFER) have to get set by mapping and writing to
-  the appropiate buffers. In case of motion blur, multiple vertex
-  buffers have to get filled (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1,
-  etc.), one for each time step. The index buffer has the default
-  layout of a single 32 bit integer index for each line segment, that
-  references the start vertex of the segment.  The vertex buffer
-  stores 2 end points per line segment, each such point consists of a
-  single precision (x,y,z) position and radius, stored in that order
-  in memory. Individual segments are considered to be subpixel sized
-  which allows the implementation to approximate the intersection
-  calculation. This in particular means that zooming onto one line
-  segment might show geometric artefacts. */
+  steps have to get specified at construction time (1 for normal
+  meshes, and up to RTC_MAX_TIME_STEPS for multi-segment motion
+  blur). Further, the segment index buffer (RTC_INDEX_BUFFER) and the
+  segment vertex buffer (RTC_VERTEX_BUFFER) have to get set by mapping
+  and writing to the appropiate buffers. In case of multi-segment
+  motion blur, multiple vertex buffers have to get filled
+  (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1, etc.), one for each time
+  step. The index buffer has the default layout of a single 32 bit
+  integer index for each line segment, that references the start
+  vertex of the segment.  The vertex buffer stores 2 end points per
+  line segment, each such point consists of a single precision (x,y,z)
+  position and radius, stored in that order in memory. Individual
+  segments are considered to be subpixel sized which allows the
+  implementation to approximate the intersection calculation. This in
+  particular means that zooming onto one line segment might show
+  geometric artefacts. */
 RTCORE_API unsigned rtcNewLineSegments (RTCScene scene,                    //!< the scene the line segments belong to
                                         RTCGeometryFlags flags,            //!< geometry flags
                                         size_t numSegments,                //!< number of line segments
                                         size_t numVertices,                //!< number of vertices
                                         size_t numTimeSteps = 1            //!< number of motion blur time steps
   );
+
+/*! Sets a uniform tessellation rate for subdiv meshes and hair
+ *  geometry. For subdivision meshes the RTC_LEVEL_BUFFER can also be used
+ *  optionally to set a different tessellation rate per edge.*/
+RTCORE_API void rtcSetTessellationRate (RTCScene scene, unsigned geomID, float tessellationRate);
 
 /*! \brief Sets 32 bit ray mask. */
 RTCORE_API void rtcSetMask (RTCScene scene, unsigned geomID, int mask);
@@ -504,17 +535,21 @@ RTCORE_API void* rtcMapBuffer(RTCScene scene, unsigned geomID, RTCBufferType typ
 RTCORE_API void rtcUnmapBuffer(RTCScene scene, unsigned geomID, RTCBufferType type);
 
 /*! \brief Shares a data buffer between the application and
- *  Embree. The passed buffer is used by Embree to store index and
- *  vertex data. It has to remain valid as long as the mesh exists,
- *  and the user is responsible to free the data when the mesh gets
+ *  Embree. 
+
+  WARNING: This function is deprecated, use rtcSetBuffer2 instead.
+
+ *  The passed buffer is used by Embree to store index and vertex
+ *  data. It has to remain valid as long as the mesh exists, and the
+ *  user is responsible to free the data when the mesh gets
  *  deleted. One can optionally speficy a byte offset and byte stride
  *  of the elements stored inside the buffer. The addresses
  *  ptr+offset+i*stride have to be aligned to 4 bytes on Xeon CPUs and
  *  16 bytes on Xeon Phi accelerators. For vertex buffers, the 4 bytes
- *  after the z-coordinate of the last vertex have to be readable memory,
- *  thus padding is required for some layouts. If this function is not
- *  called, Embree will allocate and manage buffers of the default
- *  layout. */
+ *  after the z-coordinate of the last vertex have to be readable
+ *  memory, thus padding is required for some layouts. If this
+ *  function is not called, Embree will allocate and manage buffers of
+ *  the default layout. */
 RTCORE_API void rtcSetBuffer(RTCScene scene, unsigned geomID, RTCBufferType type, 
                              const void* ptr, size_t byteOffset, size_t byteStride);
 

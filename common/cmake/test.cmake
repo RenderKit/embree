@@ -32,6 +32,9 @@ IF (BUILD_TESTING)
   SET(EMBREE_TESTING_PACKAGE OFF CACHE BOOL "Packages release as test.")
   SET(EMBREE_TESTING_KLOCWORK OFF CACHE BOOL "Runs Kocwork as test.")
 
+  SET(EMBREE_TESTING_SDE OFF CACHE STRING "Uses SDE to run tests for specified CPU.")
+  SET_PROPERTY(CACHE EMBREE_TESTING_SDE PROPERTY STRINGS OFF pnr nhm wsm snb ivb hsw bdw knl skl skx cnl)
+
   IF(   NOT EXISTS "${EMBREE_TESTING_MODEL_DIR}/embree-models-subdiv.txt"
      OR NOT EXISTS "${EMBREE_TESTING_MODEL_DIR}/embree-models-small-win32.txt"
      OR NOT EXISTS "${EMBREE_TESTING_MODEL_DIR}/embree-models-small-x64.txt"
@@ -75,6 +78,7 @@ IF (BUILD_TESTING)
                      --modeldir ${EMBREE_TESTING_MODEL_DIR}
                      --reference ${reference}
                      --model ${model}
+                     --sde ${EMBREE_TESTING_SDE}
                      --execute ${MY_PROJECT_BINARY_DIR}/${executable} ${args})
                      
     IF (EMBREE_ISPC_SUPPORT AND EMBREE_RAY_PACKETS)
@@ -85,6 +89,7 @@ IF (BUILD_TESTING)
                        --modeldir ${EMBREE_TESTING_MODEL_DIR}
                        --reference ${reference}
                        --model ${model}
+                       --sde ${EMBREE_TESTING_SDE}
                        --execute ${MY_PROJECT_BINARY_DIR}/${executable}_ispc ${args})
     ENDIF()
   ENDMACRO()

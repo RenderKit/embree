@@ -84,7 +84,7 @@ namespace embree
         return NN;
       }
 
-      void build(size_t, size_t) 
+      void build() 
       {
         /* initialize all half edge structures */
         const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,false>();
@@ -305,7 +305,7 @@ namespace embree
 
             BBox3fa bound;
             if (mblur) {
-              size_t patchNumTimeSteps = scene->getSubdivMesh(subdiv_patches[patchIndexMB].geom)->numTimeSteps;
+              size_t patchNumTimeSteps = scene->get<SubdivMesh>(subdiv_patches[patchIndexMB].geom)->numTimeSteps;
               Geometry::buildBounds([&] (size_t itime, BBox3fa& bbox) -> bool
                                     {
                                       bbox = bounds[patchIndexMB+itime];
@@ -427,7 +427,7 @@ namespace embree
               const size_t patchIndexMB = prims[current.prims.begin()].ID();
               SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+0];
               NodeRef ref = bvh->encodeLeaf((char*)&patch,1);
-              size_t patchNumTimeSteps = scene->getSubdivMesh(patch.geom)->numTimeSteps;
+              size_t patchNumTimeSteps = scene->get<SubdivMesh>(patch.geom)->numTimeSteps;
               LBBox3fa lbounds = Geometry::linearBounds([&] (size_t itime) { return bounds[patchIndexMB+itime]; },
                                                         t, numTimeSteps, patchNumTimeSteps);
               return std::make_pair(ref,lbounds);
@@ -501,7 +501,7 @@ namespace embree
         refitter->refit();
       }
 
-      void build(size_t, size_t) 
+      void build() 
       {
         bvh->numTimeSteps = scene->getNumTimeSteps<SubdivMesh,mblur>();
         numTimeSteps = bvh->numTimeSteps;

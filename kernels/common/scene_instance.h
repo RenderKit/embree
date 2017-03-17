@@ -45,7 +45,7 @@ namespace embree
   public:
     virtual void setTransform(const AffineSpace3fa& local2world, size_t timeStep);
     virtual void setMask (unsigned mask);
-    virtual void build(size_t threadIndex, size_t threadCount) {}
+    virtual void build() {}
 
   public:
 

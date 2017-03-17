@@ -45,11 +45,11 @@ namespace embree
     __forceinline operator __m256i () const { return _mm512_castsi512_si256(v); }
 
     __forceinline vuint(const unsigned int i) {
-      v = _mm512_set_1to16_epi32(i);
+      v = _mm512_set1_epi32(i);
     }
     
     __forceinline vuint(const unsigned int a, const unsigned int b, const unsigned int c, const unsigned int d) {
-      v = _mm512_set_4to16_epi32(d,c,b,a);      
+      v = _mm512_set4_epi32(d,c,b,a);      
     }
 
     __forceinline vuint(const unsigned int a0 , const unsigned int a1 , const unsigned int a2 , const unsigned int a3, 
@@ -57,7 +57,7 @@ namespace embree
                         const unsigned int a8 , const unsigned int a9 , const unsigned int a10, const unsigned int a11, 
                         const unsigned int a12, const unsigned int a13, const unsigned int a14, const unsigned int a15)
     {
-      v = _mm512_set_16to16_epi32(a15,a14,a13,a12,a11,a10,a9,a8,a7,a6,a5,a4,a3,a2,a1,a0);
+      v = _mm512_set_epi32(a15,a14,a13,a12,a11,a10,a9,a8,a7,a6,a5,a4,a3,a2,a1,a0);
     }
    
     __forceinline explicit vuint(const __m512& f) {
@@ -69,20 +69,20 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
     
     __forceinline vuint( ZeroTy   ) : v(_mm512_setzero_epi32()) {}
-    __forceinline vuint( OneTy    ) : v(_mm512_set_1to16_epi32(1)) {}
-    __forceinline vuint( StepTy   ) : v(_mm512_set_16to16_epi32(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0)) {}
+    __forceinline vuint( OneTy    ) : v(_mm512_set1_epi32(1)) {}
+    __forceinline vuint( StepTy   ) : v(_mm512_set_epi32(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0)) {}
     __forceinline vuint( ReverseStepTy )   : v(_mm512_setr_epi32(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0)) {}
 
     __forceinline static vuint16 zero() { return _mm512_setzero_epi32(); }
-    __forceinline static vuint16 one () { return _mm512_set_1to16_epi32(1); }
-    __forceinline static vuint16 neg_one () { return _mm512_set_1to16_epi32(-1); }
+    __forceinline static vuint16 one () { return _mm512_set1_epi32(1); }
+    __forceinline static vuint16 neg_one () { return _mm512_set1_epi32(-1); }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
 
     static __forceinline void store_nt(void *__restrict__ ptr, const vuint16& a) {
-      _mm512_stream_si512(ptr,a);
+      _mm512_stream_si512((__m512i*)ptr,a);
     }
 
     static __forceinline vuint16 loadu(const void* addr)
@@ -189,10 +189,10 @@ namespace embree
   __forceinline const vuint16 operator ^( const unsigned int a, const vuint16& b ) { return vuint16(a) ^ b; }
 
   __forceinline const vuint16 operator <<( const vuint16& a, const unsigned int n ) { return _mm512_slli_epi32(a, n); }
-  __forceinline const vuint16 operator >>( const vuint16& a, const unsigned int n ) { return _mm512_srai_epi32(a, n); } // FIXME: why not srl?
+  __forceinline const vuint16 operator >>( const vuint16& a, const unsigned int n ) { return _mm512_srli_epi32(a, n); }
 
   __forceinline const vuint16 operator <<( const vuint16& a, const vuint16& n ) { return _mm512_sllv_epi32(a, n); }
-  __forceinline const vuint16 operator >>( const vuint16& a, const vuint16& n ) { return _mm512_srav_epi32(a, n); } // FIXME: why not srl?
+  __forceinline const vuint16 operator >>( const vuint16& a, const vuint16& n ) { return _mm512_srlv_epi32(a, n); }
 
   __forceinline const vuint16 sll ( const vuint16& a, const unsigned int b ) { return _mm512_slli_epi32(a, b); }
   __forceinline const vuint16 sra ( const vuint16& a, const unsigned int b ) { return _mm512_srai_epi32(a, b); }
@@ -298,39 +298,24 @@ namespace embree
   // Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vuint16 shuffle (const vuint16& x,_MM_SWIZZLE_ENUM perm32 ) { return _mm512_swizzle_epi32(x,perm32); }
-  __forceinline vuint16 shuffle4(const vuint16& x,_MM_PERM_ENUM    perm128) { return _mm512_permute4f128_epi32(x,perm128); }
-  
-  template<int D, int C, int B, int A> __forceinline vuint16 shuffle   (const vuint16& v) { return _mm512_shuffle_epi32(v,_MM_SHUF_PERM(D,C,B,A)); }
-  template<int A>                      __forceinline vuint16 shuffle   (const vuint16& x) { return shuffle<A,A,A,A>(v); }
-  template<>                           __forceinline vuint16 shuffle<0>(const vuint16& x) { return shuffle(x,_MM_SWIZ_REG_AAAA); }
-  template<>                           __forceinline vuint16 shuffle<1>(const vuint16& x) { return shuffle(x,_MM_SWIZ_REG_BBBB); }
-  template<>                           __forceinline vuint16 shuffle<2>(const vuint16& x) { return shuffle(x,_MM_SWIZ_REG_CCCC); }
-  template<>                           __forceinline vuint16 shuffle<3>(const vuint16& x) { return shuffle(x,_MM_SWIZ_REG_DDDD); }
-
-  template<int D, int C, int B, int A> __forceinline vuint16 shuffle4(const vuint16& v) { return shuffle4(v,_MM_SHUF_PERM(D,C,B,A)); }
-  template<int A>                      __forceinline vuint16 shuffle4(const vuint16& x) { return shuffle4<A,A,A,A>(x); }
-
-  __forceinline vuint16 shuffle(const vuint16& x,_MM_PERM_ENUM    perm128, _MM_SWIZZLE_ENUM perm32) { return shuffle(shuffle4(x,perm128),perm32); }
-  
-  __forceinline vuint16 shuffle(const vboolf16& mask, vuint16& v, const vuint16& x,_MM_PERM_ENUM perm128, _MM_SWIZZLE_ENUM perm32)  {
-    return _mm512_mask_swizzle_epi32(_mm512_mask_permute4f128_epi32(v,mask,x,perm128),mask,x,perm32);  
+  template<size_t i> 
+    __forceinline const vuint16 shuffle( const vuint16& a ) {
+    return _mm512_castps_si512(_mm512_permute_ps(_mm512_castsi512_ps(a), _MM_SHUFFLE(i, i, i, i)));
   }
 
-  __forceinline vuint16 swAAAA(const vuint16& x) {
-    return shuffle(x,_MM_SWIZ_REG_AAAA);
+  template<int A, int B, int C, int D> 
+    __forceinline vuint16 shuffle (const vuint16& v) {
+    return _mm512_castps_si512(_mm512_permute_ps(_mm512_castsi512_ps(v),_MM_SHUFFLE(D,C,B,A))); 
   }
 
-  __forceinline vuint16 swBBBB(const vuint16& x) {
-    return shuffle(x,_MM_SWIZ_REG_BBBB);
+  template<int i>
+    __forceinline vuint16 shuffle4(const vuint16& x) { 
+    return _mm512_castps_si512(_mm512_shuffle_f32x4(_mm512_castsi512_ps(x),_mm512_castsi512_ps(x),_MM_SHUFFLE(i,i,i,i)));
   }
 
-  __forceinline vuint16 swCCCC(const vuint16& x) {
-    return shuffle(x,_MM_SWIZ_REG_CCCC);
-  }
-
-  __forceinline vuint16 swDDDD(const vuint16& x) {
-    return shuffle(x,_MM_SWIZ_REG_DDDD);
+  template<int A, int B, int C, int D>
+    __forceinline vuint16 shuffle4(const vuint16& x) { 
+    return _mm512_castps_si512(_mm512_shuffle_f32x4(_mm512_castsi512_ps(x),_mm512_castsi512_ps(x),_MM_SHUFFLE(D,C,B,A)));
   }
 
   template<int i>
@@ -352,104 +337,60 @@ namespace embree
   __forceinline unsigned int reduce_min(vuint16 a) { return _mm512_reduce_min_epu32(a); }
   __forceinline unsigned int reduce_max(vuint16 a) { return _mm512_reduce_max_epu32(a); }
   __forceinline unsigned int reduce_and(vuint16 a) { return _mm512_reduce_and_epi32(a); }
-  
-  __forceinline vuint16 vreduce_min2(vuint16 x) {                      return min(x,shuffle(x,_MM_SWIZ_REG_BADC)); }
-  __forceinline vuint16 vreduce_min4(vuint16 x) { x = vreduce_min2(x); return min(x,shuffle(x,_MM_SWIZ_REG_CDAB)); }
-  __forceinline vuint16 vreduce_min8(vuint16 x) { x = vreduce_min4(x); return min(x,shuffle4(x,_MM_SHUF_PERM(2,3,0,1))); }
-  __forceinline vuint16 vreduce_min (vuint16 x) { x = vreduce_min8(x); return min(x,shuffle4(x,_MM_SHUF_PERM(1,0,3,2))); }
 
-  __forceinline vuint16 vreduce_max2(vuint16 x) {                      return max(x,shuffle(x,_MM_SWIZ_REG_BADC)); }
-  __forceinline vuint16 vreduce_max4(vuint16 x) { x = vreduce_max2(x); return max(x,shuffle(x,_MM_SWIZ_REG_CDAB)); }
-  __forceinline vuint16 vreduce_max8(vuint16 x) { x = vreduce_max4(x); return max(x,shuffle4(x,_MM_SHUF_PERM(2,3,0,1))); }
-  __forceinline vuint16 vreduce_max (vuint16 x) { x = vreduce_max8(x); return max(x,shuffle4(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vuint16 vreduce_min2(vuint16 x) {                      return min(x,shuffle<1,0,3,2>(x)); }
+  __forceinline vuint16 vreduce_min4(vuint16 x) { x = vreduce_min2(x); return min(x,shuffle<2,3,0,1>(x)); }
+  __forceinline vuint16 vreduce_min8(vuint16 x) { x = vreduce_min4(x); return min(x,shuffle4<1,0,3,2>(x)); }
+  __forceinline vuint16 vreduce_min (vuint16 x) { x = vreduce_min8(x); return min(x,shuffle4<2,3,0,1>(x)); }
 
-  __forceinline vuint16 vreduce_and2(vuint16 x) {                      return x & shuffle(x,_MM_SWIZ_REG_BADC); }
-  __forceinline vuint16 vreduce_and4(vuint16 x) { x = vreduce_and2(x); return x & shuffle(x,_MM_SWIZ_REG_CDAB); }
-  __forceinline vuint16 vreduce_and8(vuint16 x) { x = vreduce_and4(x); return x & shuffle4(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vuint16 vreduce_and (vuint16 x) { x = vreduce_and8(x); return x & shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vuint16 vreduce_max2(vuint16 x) {                      return max(x,shuffle<1,0,3,2>(x)); }
+  __forceinline vuint16 vreduce_max4(vuint16 x) { x = vreduce_max2(x); return max(x,shuffle<2,3,0,1>(x)); }
+  __forceinline vuint16 vreduce_max8(vuint16 x) { x = vreduce_max4(x); return max(x,shuffle4<1,0,3,2>(x)); }
+  __forceinline vuint16 vreduce_max (vuint16 x) { x = vreduce_max8(x); return max(x,shuffle4<2,3,0,1>(x)); }
 
-  __forceinline vuint16 vreduce_or2(vuint16 x) {                     return x | shuffle(x,_MM_SWIZ_REG_BADC); }
-  __forceinline vuint16 vreduce_or4(vuint16 x) { x = vreduce_or2(x); return x | shuffle(x,_MM_SWIZ_REG_CDAB); }
-  __forceinline vuint16 vreduce_or8(vuint16 x) { x = vreduce_or4(x); return x | shuffle4(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vuint16 vreduce_or (vuint16 x) { x = vreduce_or8(x); return x | shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vuint16 vreduce_and2(vuint16 x) {                      return x & shuffle<1,0,3,2>(x); }
+  __forceinline vuint16 vreduce_and4(vuint16 x) { x = vreduce_and2(x); return x & shuffle<2,3,0,1>(x); }
+  __forceinline vuint16 vreduce_and8(vuint16 x) { x = vreduce_and4(x); return x & shuffle4<1,0,3,2>(x); }
+  __forceinline vuint16 vreduce_and (vuint16 x) { x = vreduce_and8(x); return x & shuffle4<2,3,0,1>(x); }
 
-  __forceinline vuint16 vreduce_add2(vuint16 x) {                      return x + shuffle(x,_MM_SWIZ_REG_BADC); }
-  __forceinline vuint16 vreduce_add4(vuint16 x) { x = vreduce_add2(x); return x + shuffle(x,_MM_SWIZ_REG_CDAB); }
-  __forceinline vuint16 vreduce_add8(vuint16 x) { x = vreduce_add4(x); return x + shuffle4(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vuint16 vreduce_add (vuint16 x) { x = vreduce_add8(x); return x + shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vuint16 vreduce_or2(vuint16 x) {                     return x | shuffle<1,0,3,2>(x); }
+  __forceinline vuint16 vreduce_or4(vuint16 x) { x = vreduce_or2(x); return x | shuffle<2,3,0,1>(x); }
+  __forceinline vuint16 vreduce_or8(vuint16 x) { x = vreduce_or4(x); return x | shuffle4<1,0,3,2>(x); }
+  __forceinline vuint16 vreduce_or (vuint16 x) { x = vreduce_or8(x); return x | shuffle4<2,3,0,1>(x); }
+
+  __forceinline vuint16 vreduce_add2(vuint16 x) {                      return x + shuffle<1,0,3,2>(x); }
+  __forceinline vuint16 vreduce_add4(vuint16 x) { x = vreduce_add2(x); return x + shuffle<2,3,0,1>(x); }
+  __forceinline vuint16 vreduce_add8(vuint16 x) { x = vreduce_add4(x); return x + shuffle4<1,0,3,2>(x); }
+  __forceinline vuint16 vreduce_add (vuint16 x) { x = vreduce_add8(x); return x + shuffle4<2,3,0,1>(x); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Memory load and store operations
   ////////////////////////////////////////////////////////////////////////////////
 
-
-  __forceinline vuint16 broadcast4to16ui(const unsigned int *const ptr) {
-    return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_NONE,_MM_BROADCAST_4X16,_MM_HINT_NONE);
-  }
-
-  __forceinline vuint16 gather16i_4i(const unsigned int *__restrict__ const ptr0,
-                                     const unsigned int *__restrict__ const ptr1,
-                                     const unsigned int *__restrict__ const ptr2,
-                                     const unsigned int *__restrict__ const ptr3)
-  {
-    vuint16 v =  broadcast4to16ui(ptr0);
-    v = select((vboolf16)0xf0  , broadcast4to16ui(ptr1),v);
-    v = select((vboolf16)0xf00 , broadcast4to16ui(ptr2),v);
-    v = select((vboolf16)0xf000, broadcast4to16ui(ptr3),v);
-    return v;
-  }
-
-
-  __forceinline vuint16 gather16ui_4ui_align(const void *__restrict__ const ptr0,
-                                             const void *__restrict__ const ptr1,
-                                             const void *__restrict__ const ptr2,
-                                             const void *__restrict__ const ptr3)
-  {
-    vuint16 v = broadcast4to16ui((const unsigned int*)ptr3);
-    v = align_shift_right<12>(v,broadcast4to16ui((const unsigned int*)ptr2));
-    v = align_shift_right<12>(v,broadcast4to16ui((const unsigned int*)ptr1));
-    v = align_shift_right<12>(v,broadcast4to16ui((const unsigned int*)ptr0));
-    return v;
-  }
-
-  __forceinline vuint16 gather16i_4i_align(const vuint16& v0,
-                                           const vuint16& v1,
-                                           const vuint16& v2,
-                                           const vuint16& v3)
-  {
-    vuint16 v = v3;
-    v = align_shift_right<12>(v,v2);
-    v = align_shift_right<12>(v,v1);
-    v = align_shift_right<12>(v,v0);
-    return v;
-  }
-
-  
-  __forceinline vuint16 gather16i(const vboolf16& mask, const unsigned int *const ptr, const vuint16& index,const _MM_INDEX_SCALE_ENUM scale) {
-    return _mm512_mask_i32extgather_epi32(_mm512_undefined_epi32(),mask,index,ptr,_MM_UPCONV_EPI32_NONE,scale,0);
+  template<int scale = 4>
+  __forceinline vuint16 gather16i(const vboolf16& mask, const unsigned int *const ptr, const vuint16& index) {
+    return _mm512_mask_i32gather_epi32(_mm512_undefined_epi32(),mask,index,ptr,scale);
   }
   
-  __forceinline vuint16 gather16i(const vboolf16& mask, vuint16& dest, const unsigned int *const ptr, const vuint16& index,const _MM_INDEX_SCALE_ENUM scale) {
-    return _mm512_mask_i32extgather_epi32(dest,mask,index,ptr,_MM_UPCONV_EPI32_NONE,scale,0);
+  template<int scale = 4>
+    __forceinline vuint16 gather16i(const vboolf16& mask, vuint16& dest, const unsigned int *const ptr, const vuint16& index) {
+    return _mm512_mask_i32gather_epi32(dest,mask,index,ptr,scale);
   }
   
-  __forceinline void scatter16i(const vboolf16& mask,int *const ptr, const vuint16& index,const vuint16& v, const _MM_INDEX_SCALE_ENUM scale) {
-    _mm512_mask_i32extscatter_epi32((int*)ptr,mask,index,v,_MM_DOWNCONV_EPI32_NONE,scale,0);
+  template<int scale = 4>
+    __forceinline void scatter16i(const vboolf16& mask,unsigned int *const ptr, const vuint16& index,const vuint16& v) {
+    _mm512_mask_i32scatter_epi32((int*)ptr,mask,index,v,scale);
   }
-    
 
   __forceinline void compactustore16i_low(const vboolf16 mask, void *addr, const vuint16& reg) {
     _mm512_mask_compressstoreu_epi32(addr,mask,reg);
   }
   
-
-  __forceinline vuint16 permute(vuint16 v,vuint16 index)
-  {
-    return _mm512_permutev_epi32(index,v);  
+  __forceinline vuint16 permute(vuint16 v,vuint16 index) {
+    return _mm512_permutexvar_epi32(index,v);  
   }
 
-  __forceinline vuint16 reverse(const vuint16 &a)
-  {
+  __forceinline vuint16 reverse(const vuint16 &a) {
     return permute(a,vuint16(reverse_step));
   }
 
@@ -475,36 +416,6 @@ namespace embree
     return v;  
   }
 
-  __forceinline vuint16 sortNetwork8(const vuint16& v)
-  {
-    const vuint16 a0 = v;
-    const vuint16 b0 = shuffle<1,0,3,2>(a0);
-    const vuint16 c0 = min(a0,b0);
-    const vuint16 d0 = max(a0,b0);
-    const vuint16 a1 = select(0x99 /* 0b10011001 */,c0,d0);
-    const vuint16 b1 = shuffle<2,3,0,1>(a1);
-    const vuint16 c1 = min(a1,b1);
-    const vuint16 d1 = max(a1,b1);
-    const vuint16 a2 = select(0xc3 /* 0b11000011 */,c1,d1);
-    const vuint16 b2 = shuffle<1,0,3,2>(a2);
-    const vuint16 c2 = min(a2,b2);
-    const vuint16 d2 = max(a2,b2);
-    const vuint16 a3 = select(0xa5 /* 0b10100101 */,c2,d2);
-    const vuint16 b3 = shuffle4<1,0,1,0>(a3);
-    const vuint16 c3 = min(a3,b3);
-    const vuint16 d3 = max(a3,b3);
-    const vuint16 a4 = select(0xf /* 0b00001111 */,c3,d3);
-    const vuint16 b4 = shuffle<2,3,0,1>(a4);
-    const vuint16 c4 = min(a4,b4);
-    const vuint16 d4 = max(a4,b4);
-    const vuint16 a5 = select(0x33 /* 0b00110011 */,c4,d4);
-    const vuint16 b5 = shuffle<1,0,3,2>(a5);
-    const vuint16 c5 = min(a5,b5);
-    const vuint16 d5 = max(a5,b5);
-    const vuint16 a6 = select(0x55 /* 0b01010101 */,c5,d5);
-    return a6;
-  }
-  
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////

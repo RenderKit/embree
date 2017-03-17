@@ -114,7 +114,7 @@ namespace embree
 	const PrimRef& prim = prims[begin];
         const unsigned geomID = prim.geomID();
         const unsigned primID = prim.primID();
-        const QuadMesh* __restrict__ const mesh = scene->getQuadMesh(geomID);
+        const QuadMesh* __restrict__ const mesh = scene->get<QuadMesh>(geomID);
         const QuadMesh::Quad& quad = mesh->quad(primID);
         const Vec3fa& p0 = mesh->vertex(quad.v[0]);
         const Vec3fa& p1 = mesh->vertex(quad.v[1]);

@@ -42,6 +42,6 @@ namespace embree
     virtual void setOccludedFunction16 (RTCOccludedFunc16 occluded16, bool ispc);
     virtual void setOccludedFunction1Mp (RTCOccludedFunc1Mp occluded);
     virtual void setOccludedFunctionN (RTCOccludedFuncN occluded);
-    virtual void build(size_t threadIndex, size_t threadCount) {}
+    virtual void build() {}
   };
 }

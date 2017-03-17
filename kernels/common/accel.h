@@ -292,7 +292,7 @@ namespace embree
     virtual void immutable () {}
     
     /*! build acceleration structure */
-    virtual void build (size_t threadIndex, size_t threadCount) = 0;
+    virtual void build () = 0;
 
     /*! Intersects a single ray with the scene. */
     __forceinline void intersect (RTCRay& ray, IntersectContext* context) {

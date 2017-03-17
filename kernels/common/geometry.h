@@ -116,7 +116,10 @@ namespace embree
     virtual void disabling() = 0;
 
     /*! called before every build */
-    virtual void commit() {};
+    virtual void preCommit();
+
+    /*! called after every build */
+    virtual void postCommit();
 
     /*! sets constant tessellation rate for the geometry */
     virtual void setTessellationRate(float N) {

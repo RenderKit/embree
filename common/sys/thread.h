@@ -162,13 +162,15 @@ namespace embree
     static ThreadLocalStorage single_instance;
   };
 
+#if 0
+
   /*! manages thread local variables */
-  template<typename Type>
+  template<typename Type, typename InitType>
   struct ThreadLocalData
   {
   public:
 
-    __forceinline ThreadLocalData (void* init) 
+    __forceinline ThreadLocalData (InitType init) 
       : ptr(-1), init(init) {}
 
     __forceinline ~ThreadLocalData () {
@@ -187,10 +189,11 @@ namespace embree
     ThreadLocalData(const ThreadLocalData&) DELETED;
     ThreadLocalData& operator=(const ThreadLocalData&) DELETED;
 
-    __forceinline void reset()
+    template<typename Closure>
+      __forceinline void apply(const Closure& closure)
     {
       for (size_t i=0; i<threads.size(); i++)
-	threads[i]->reset();
+        closure(threads[i]);
     }
     
     __forceinline Type* get() const
@@ -216,9 +219,74 @@ namespace embree
     
   private:
     mutable size_t ptr;
-    void* init;
+    InitType init;
     mutable SpinLock mutex;
   public:
     mutable std::vector<Type*> threads;
   };
+
+#else
+
+  /*! manages thread local variables */
+  template<typename Type, typename InitType>
+  struct ThreadLocalData
+  {
+  public:
+
+    __forceinline ThreadLocalData (InitType init) 
+      : ptr(nullptr), init(init) {}
+
+    __forceinline ~ThreadLocalData () {
+      clear();
+    }
+
+    __forceinline void clear() 
+    {
+      if (ptr) destroyTls(ptr); ptr = nullptr;
+      for (size_t i=0; i<threads.size(); i++)
+	delete threads[i];
+      threads.clear();
+    }
+
+    /*! disallow copy */
+    ThreadLocalData(const ThreadLocalData&) DELETED;
+    ThreadLocalData& operator=(const ThreadLocalData&) DELETED;
+
+    template<typename Closure>
+      __forceinline void apply(const Closure& closure)
+    {
+      for (size_t i=0; i<threads.size(); i++)
+        closure(threads[i]);
+    }
+    
+    __forceinline Type* get() const
+    {
+      if (ptr == nullptr) {
+	Lock<SpinLock> lock(mutex);
+	if (ptr == nullptr) ptr = createTls();
+      }
+      Type* lptr = (Type*) getTls(ptr);
+      if (lptr) return lptr;
+      lptr = new Type(init);
+      setTls(ptr,lptr);
+      Lock<SpinLock> lock(mutex);
+      threads.push_back(lptr);
+      return lptr;
+    }
+
+    __forceinline const Type& operator  *( void ) const { return *get(); }
+    __forceinline       Type& operator  *( void )       { return *get(); }
+    __forceinline const Type* operator ->( void ) const { return  get(); }
+    __forceinline       Type* operator ->( void )       { return  get(); }
+    
+    
+  private:
+    mutable tls_t ptr;
+    InitType init;
+    mutable SpinLock mutex;
+  public:
+    mutable std::vector<Type*> threads;
+  };
+
+#endif
 }
