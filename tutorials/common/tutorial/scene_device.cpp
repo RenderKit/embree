@@ -340,14 +340,7 @@ namespace embree
   unsigned int ConvertInstance(ISPCScene* scene_in, ISPCInstance* instance, int meshID, RTCScene scene_out)
   {
     if (g_instancing_mode == 1) {
-      if (instance->numTimeSteps == 1) {
-        unsigned int geom_inst = instance->geomID;
-        unsigned int geomID = rtcNewGeometryInstance(scene_out, geom_inst);
-        rtcSetTransform2(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->spaces[0].l.vx.x,0);
-        return geomID;
-      } 
-      else
-        throw std::runtime_error("motion blur not yet supported for geometry instances");
+      throw std::runtime_error("geometry instances not supported yet");
     } 
     else
     {
