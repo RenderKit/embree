@@ -343,7 +343,7 @@ namespace embree
       if (instance->numTimeSteps == 1) {
         unsigned int geom_inst = instance->geomID;
         unsigned int geomID = rtcNewGeometryInstance(scene_out, geom_inst);
-        rtcSetTransform2(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->spaces[0].l.vx.x,1);
+        rtcSetTransform2(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->spaces[0].l.vx.x,0);
         return geomID;
       } 
       else
@@ -354,7 +354,7 @@ namespace embree
       RTCScene scene_inst = scene_in->geomID_to_scene[instance->geomID];
       if (instance->numTimeSteps == 1) {
         unsigned int geomID = rtcNewInstance2(scene_out, scene_inst, 1);
-        rtcSetTransform2(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->spaces[0].l.vx.x,1);
+        rtcSetTransform2(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->spaces[0].l.vx.x,0);
         return geomID;
       }
       else {
