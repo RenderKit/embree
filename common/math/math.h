@@ -22,6 +22,7 @@
 
 #include <emmintrin.h>
 #include <xmmintrin.h>
+#include <immintrin.h>
 
 #if defined(__WIN32__)
 #if (__MSV_VER <= 1700)

@@ -470,10 +470,12 @@ namespace embree
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1  = BVH8Bezier1vIntersector1_OBB();
+#if defined (EMBREE_RAY_PACKETS)
     intersectors.intersector4  = BVH8Bezier1vIntersector4Hybrid_OBB();
     intersectors.intersector8  = BVH8Bezier1vIntersector8Hybrid_OBB();
     intersectors.intersector16 = BVH8Bezier1vIntersector16Hybrid_OBB();
     //intersectors.intersectorN  = BVH8Bezier1vIntersectorStream_OBB();
+#endif
     return intersectors;
   }
 
@@ -482,10 +484,12 @@ namespace embree
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1  = BVH8Bezier1iIntersector1_OBB();
+#if defined (EMBREE_RAY_PACKETS)
     intersectors.intersector4  = BVH8Bezier1iIntersector4Hybrid_OBB();
     intersectors.intersector8  = BVH8Bezier1iIntersector8Hybrid_OBB();
     intersectors.intersector16 = BVH8Bezier1iIntersector16Hybrid_OBB();
     //intersectors.intersectorN  = BVH8Bezier1iIntersectorStream_OBB();
+#endif
     return intersectors;
   }
 
@@ -494,10 +498,12 @@ namespace embree
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1  = BVH8Bezier1iMBIntersector1_OBB();
+#if defined (EMBREE_RAY_PACKETS)
     intersectors.intersector4  = BVH8Bezier1iMBIntersector4Hybrid_OBB();
     intersectors.intersector8  = BVH8Bezier1iMBIntersector8Hybrid_OBB();
     intersectors.intersector16 = BVH8Bezier1iMBIntersector16Hybrid_OBB();
     //intersectors.intersectorN  = BVH8Bezier1iMBIntersectorStream_OBB();
+#endif
     return intersectors;
   }
 
@@ -506,10 +512,12 @@ namespace embree
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1  = BVH8Line4iIntersector1();
+#if defined (EMBREE_RAY_PACKETS)
     intersectors.intersector4  = BVH8Line4iIntersector4();
     intersectors.intersector8  = BVH8Line4iIntersector8();
     intersectors.intersector16 = BVH8Line4iIntersector16();
     //intersectors.intersectorN  = BVH8Line4iIntersectorStream();
+#endif
     return intersectors;
   }
 
@@ -518,10 +526,12 @@ namespace embree
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1  = BVH8Line4iMBIntersector1();
+#if defined (EMBREE_RAY_PACKETS)
     intersectors.intersector4  = BVH8Line4iMBIntersector4();
     intersectors.intersector8  = BVH8Line4iMBIntersector8();
     intersectors.intersector16 = BVH8Line4iMBIntersector16();
     //intersectors.intersectorN  = BVH8Line4iMBIntersectorStream();
+#endif
     return intersectors;
   }
 
@@ -531,6 +541,7 @@ namespace embree
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1           = BVH8Triangle4Intersector1Moeller();
+#if defined (EMBREE_RAY_PACKETS)
     intersectors.intersector4_filter    = BVH8Triangle4Intersector4HybridMoeller();
     intersectors.intersector4_nofilter  = BVH8Triangle4Intersector4HybridMoellerNoFilter();
     intersectors.intersector8_filter    = BVH8Triangle4Intersector8HybridMoeller();
@@ -539,6 +550,7 @@ namespace embree
     intersectors.intersector16_nofilter = BVH8Triangle4Intersector16HybridMoellerNoFilter();
     intersectors.intersectorN_filter    = BVH8Triangle4IntersectorStreamMoeller();
     intersectors.intersectorN_nofilter  = BVH8Triangle4IntersectorStreamMoellerNoFilter();
+#endif
     return intersectors;
   }
   
@@ -548,10 +560,12 @@ namespace embree
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1    = BVH8Triangle4vIntersector1Pluecker();
+#if defined (EMBREE_RAY_PACKETS)
     intersectors.intersector4    = BVH8Triangle4vIntersector4HybridPluecker();
     intersectors.intersector8    = BVH8Triangle4vIntersector8HybridPluecker();
     intersectors.intersector16   = BVH8Triangle4vIntersector16HybridPluecker();
     intersectors.intersectorN    = BVH8Triangle4vIntersectorStreamPluecker();
+#endif
     return intersectors;
   }
 
@@ -563,10 +577,12 @@ namespace embree
       Accel::Intersectors intersectors;
       intersectors.ptr = bvh;
       intersectors.intersector1  = BVH8Triangle4iIntersector1Moeller();
+#if defined (EMBREE_RAY_PACKETS)
       intersectors.intersector4  = BVH8Triangle4iIntersector4HybridMoeller();
       intersectors.intersector8  = BVH8Triangle4iIntersector8HybridMoeller();
       intersectors.intersector16 = BVH8Triangle4iIntersector16HybridMoeller();
       intersectors.intersectorN  = BVH8Triangle4iIntersectorStreamMoeller();
+#endif
       return intersectors;
     }
     case IntersectVariant::ROBUST: 
@@ -574,10 +590,12 @@ namespace embree
       Accel::Intersectors intersectors;
       intersectors.ptr = bvh;
       intersectors.intersector1  = BVH8Triangle4iIntersector1Pluecker();
+#if defined (EMBREE_RAY_PACKETS)
       intersectors.intersector4  = BVH8Triangle4iIntersector4HybridPluecker();
       intersectors.intersector8  = BVH8Triangle4iIntersector8HybridPluecker();
       intersectors.intersector16 = BVH8Triangle4iIntersector16HybridPluecker();
       intersectors.intersectorN  = BVH8Triangle4iIntersectorStreamPluecker();
+#endif
       return intersectors;
     }
     }
@@ -592,10 +610,12 @@ namespace embree
       Accel::Intersectors intersectors;
       intersectors.ptr = bvh;
       intersectors.intersector1  = BVH8Triangle4vMBIntersector1Moeller();
+#if defined (EMBREE_RAY_PACKETS)
       intersectors.intersector4  = BVH8Triangle4vMBIntersector4HybridMoeller();
       intersectors.intersector8  = BVH8Triangle4vMBIntersector8HybridMoeller();
       intersectors.intersector16 = BVH8Triangle4vMBIntersector16HybridMoeller();
       //intersectors.intersectorN  = BVH8Triangle4vMBIntersectorStreamMoeller();
+#endif
       return intersectors;
     }
     case IntersectVariant::ROBUST: 
@@ -603,10 +623,12 @@ namespace embree
       Accel::Intersectors intersectors;
       intersectors.ptr = bvh;
       intersectors.intersector1  = BVH8Triangle4vMBIntersector1Pluecker();
+#if defined (EMBREE_RAY_PACKETS)
       intersectors.intersector4  = BVH8Triangle4vMBIntersector4HybridPluecker();
       intersectors.intersector8  = BVH8Triangle4vMBIntersector8HybridPluecker();
       intersectors.intersector16 = BVH8Triangle4vMBIntersector16HybridPluecker();
       //intersectors.intersectorN  = BVH8Triangle4vMBIntersectorStreamPluecker();
+#endif
       return intersectors;
     }
     }
@@ -621,10 +643,12 @@ namespace embree
       Accel::Intersectors intersectors;
       intersectors.ptr = bvh;
       intersectors.intersector1  = BVH8Triangle4iMBIntersector1Moeller();
+#if defined (EMBREE_RAY_PACKETS)
       intersectors.intersector4  = BVH8Triangle4iMBIntersector4HybridMoeller();
       intersectors.intersector8  = BVH8Triangle4iMBIntersector8HybridMoeller();
       intersectors.intersector16 = BVH8Triangle4iMBIntersector16HybridMoeller();
       //intersectors.intersectorN  = BVH8Triangle4iMBIntersectorStreamMoeller();
+#endif
       return intersectors;
     }
     case IntersectVariant::ROBUST: 
@@ -632,10 +656,12 @@ namespace embree
       Accel::Intersectors intersectors;
       intersectors.ptr = bvh;
       intersectors.intersector1  = BVH8Triangle4iMBIntersector1Pluecker();
+#if defined (EMBREE_RAY_PACKETS)
       intersectors.intersector4  = BVH8Triangle4iMBIntersector4HybridPluecker();
       intersectors.intersector8  = BVH8Triangle4iMBIntersector8HybridPluecker();
       intersectors.intersector16 = BVH8Triangle4iMBIntersector16HybridPluecker();
       //intersectors.intersectorN  = BVH8Triangle4iMBIntersectorStreamPluecker();
+#endif
       return intersectors;
     }
     }
@@ -650,6 +676,7 @@ namespace embree
       Accel::Intersectors intersectors;
       intersectors.ptr = bvh;
       intersectors.intersector1           = BVH8Quad4vIntersector1Moeller();
+#if defined (EMBREE_RAY_PACKETS)
       intersectors.intersector4_filter    = BVH8Quad4vIntersector4HybridMoeller();
       intersectors.intersector4_nofilter  = BVH8Quad4vIntersector4HybridMoellerNoFilter();
       intersectors.intersector8_filter    = BVH8Quad4vIntersector8HybridMoeller();
@@ -658,6 +685,7 @@ namespace embree
       intersectors.intersector16_nofilter = BVH8Quad4vIntersector16HybridMoellerNoFilter();
       intersectors.intersectorN_filter    = BVH8Quad4vIntersectorStreamMoeller();
       intersectors.intersectorN_nofilter  = BVH8Quad4vIntersectorStreamMoellerNoFilter();
+#endif
       return intersectors;
     }
     case IntersectVariant::ROBUST: 
@@ -665,10 +693,12 @@ namespace embree
       Accel::Intersectors intersectors;
       intersectors.ptr = bvh;
       intersectors.intersector1  = BVH8Quad4vIntersector1Pluecker();
+#if defined (EMBREE_RAY_PACKETS)
       intersectors.intersector4  = BVH8Quad4vIntersector4HybridPluecker();
       intersectors.intersector8  = BVH8Quad4vIntersector8HybridPluecker();
       intersectors.intersector16 = BVH8Quad4vIntersector16HybridPluecker();
       intersectors.intersectorN  = BVH8Quad4vIntersectorStreamPluecker();
+#endif
       return intersectors;
     }
     }
@@ -683,10 +713,12 @@ namespace embree
       Accel::Intersectors intersectors;
       intersectors.ptr = bvh;
       intersectors.intersector1  = BVH8Quad4iIntersector1Moeller();
+#if defined (EMBREE_RAY_PACKETS)
       intersectors.intersector4  = BVH8Quad4iIntersector4HybridMoeller();
       intersectors.intersector8  = BVH8Quad4iIntersector8HybridMoeller();
       intersectors.intersector16 = BVH8Quad4iIntersector16HybridMoeller();
       intersectors.intersectorN  = BVH8Quad4iIntersectorStreamMoeller(); 
+#endif
       return intersectors;
     }
     case IntersectVariant::ROBUST: 
@@ -694,10 +726,12 @@ namespace embree
       Accel::Intersectors intersectors;
       intersectors.ptr = bvh;
       intersectors.intersector1  = BVH8Quad4iIntersector1Pluecker();
+#if defined (EMBREE_RAY_PACKETS)
       intersectors.intersector4  = BVH8Quad4iIntersector4HybridPluecker();
       intersectors.intersector8  = BVH8Quad4iIntersector8HybridPluecker();
       intersectors.intersector16 = BVH8Quad4iIntersector16HybridPluecker();
       intersectors.intersectorN  = BVH8Quad4iIntersectorStreamPluecker(); 
+#endif
       return intersectors;
     }
     }
@@ -712,10 +746,12 @@ namespace embree
       Accel::Intersectors intersectors;
       intersectors.ptr = bvh;
       intersectors.intersector1  = BVH8Quad4iMBIntersector1Moeller();
+#if defined (EMBREE_RAY_PACKETS)
       intersectors.intersector4  = BVH8Quad4iMBIntersector4HybridMoeller();
       intersectors.intersector8  = BVH8Quad4iMBIntersector8HybridMoeller();
       intersectors.intersector16 = BVH8Quad4iMBIntersector16HybridMoeller();
       //intersectors.intersectorN  = BVH8Quad4iMBIntersectorStreamMoeller();
+#endif
       return intersectors;
     }
     case IntersectVariant::ROBUST: 
@@ -723,10 +759,12 @@ namespace embree
       Accel::Intersectors intersectors;
       intersectors.ptr = bvh;
       intersectors.intersector1  = BVH8Quad4iMBIntersector1Pluecker();
+#if defined (EMBREE_RAY_PACKETS)
       intersectors.intersector4  = BVH8Quad4iMBIntersector4HybridPluecker();
       intersectors.intersector8  = BVH8Quad4iMBIntersector8HybridPluecker();
       intersectors.intersector16 = BVH8Quad4iMBIntersector16HybridPluecker();
       //intersectors.intersectorN  = BVH8Quad4iMBIntersectorStreamPluecker();
+#endif
       return intersectors;
      }
     }

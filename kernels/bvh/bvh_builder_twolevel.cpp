@@ -56,7 +56,7 @@ namespace embree
     // ===========================================================================
 
     template<int N, typename Mesh>
-    void BVHNBuilderTwoLevel<N,Mesh>::build(size_t threadIndex, size_t threadCount)
+    void BVHNBuilderTwoLevel<N,Mesh>::build()
     {
       /* delete some objects */
       size_t num = scene->size();
@@ -128,7 +128,7 @@ namespace embree
           
           /* build object if it got modified */
           if (mesh->isModified()) 
-            builder->build(0,0);
+            builder->build();
 
           /* create build primitive */
           if (!object->getBounds().empty())

@@ -154,11 +154,11 @@ namespace embree
       accels[i]->immutable();
   }
   
-  void AccelN::build (size_t threadIndex, size_t threadCount) 
+  void AccelN::build () 
   {
     /* build all acceleration structures in parallel */
     parallel_for (accels.size(), [&] (size_t i) { 
-        accels[i]->build(threadIndex,threadCount);
+        accels[i]->build();
       });
 
     /* create list of non-empty acceleration structures */

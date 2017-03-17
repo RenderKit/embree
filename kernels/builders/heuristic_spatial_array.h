@@ -102,9 +102,9 @@ namespace embree
         }
         
       public:
+        __aligned(64) char data[sizeof(ObjectSplit) > sizeof(SpatialSplit) ? sizeof(ObjectSplit) : sizeof(SpatialSplit)];
         bool spatial;
         float sah;
-        __aligned(16) char data[sizeof(ObjectSplit) > sizeof(SpatialSplit) ? sizeof(ObjectSplit) : sizeof(SpatialSplit)];
       };
     
     /*! Performs standard object binning */

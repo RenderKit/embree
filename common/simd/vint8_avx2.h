@@ -87,8 +87,8 @@ namespace embree
     static __forceinline void storeu( void* ptr, const vint8& v ) { _mm256_storeu_ps((float*)ptr,_mm256_castsi256_ps(v)); }
 
 #if defined(__AVX512VL__)
-    static __forceinline vint8 load ( const vboolf8& mask, const void* const ptr ) { return _mm256_mask_load_epi32 (_mm256_setzero_epi32(),mask,ptr); }
-    static __forceinline vint8 loadu( const vboolf8& mask, const void* const ptr ) { return _mm256_mask_loadu_epi32(_mm256_setzero_epi32(),mask,ptr); }
+    static __forceinline vint8 load ( const vboolf8& mask, const void* const ptr ) { return _mm256_mask_load_epi32 (_mm256_setzero_si256(),mask,ptr); }
+    static __forceinline vint8 loadu( const vboolf8& mask, const void* const ptr ) { return _mm256_mask_loadu_epi32(_mm256_setzero_si256(),mask,ptr); }
 
     static __forceinline void store ( const vboolf8& mask, void* ptr, const vint8& v ) { _mm256_mask_store_epi32 (ptr,mask,v); }
     static __forceinline void storeu( const vboolf8& mask, void* ptr, const vint8& v ) { _mm256_mask_storeu_epi32(ptr,mask,v); }

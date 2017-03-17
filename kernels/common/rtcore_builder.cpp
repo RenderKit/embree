@@ -190,7 +190,7 @@ namespace embree
         },
 
         /* lambda function that updates BVH nodes */
-        [&](void* node, void** children, const size_t N) -> void* {
+        [&](const BVHBuilderBinnedSAH::BuildRecord& precord, const BVHBuilderBinnedSAH::BuildRecord* crecords, void* node, void** children, const size_t N) -> void* {
           setNodeChildren(node,children,N,userPtr);
           return node;
         },
@@ -281,7 +281,7 @@ namespace embree
         },
 
         /* lambda function that updates BVH nodes */
-        [&] (void* node, void** children, const size_t N) -> void* {
+        [&] (const BVHBuilderBinnedFastSpatialSAH::BuildRecord& precord, const BVHBuilderBinnedFastSpatialSAH::BuildRecord* crecords, void* node, void** children, const size_t N) -> void* {
           setNodeChildren(node,children,N,userPtr);
           return node;
         },

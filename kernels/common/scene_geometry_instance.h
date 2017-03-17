@@ -26,7 +26,7 @@ namespace embree
     ALIGNED_STRUCT;
   public:
     GeometryInstance (Scene* parent, Geometry* geom); 
-    virtual void build(size_t threadIndex, size_t threadCount) {}
+    virtual void build() {}
     virtual void enabling ();
     virtual void disabling();
     virtual void setMask (unsigned mask);
