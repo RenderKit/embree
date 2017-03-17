@@ -4452,12 +4452,12 @@ namespace embree
     registerOption("database", [this] (Ref<ParseStream> cin, const FileName& path) {
         database = cin->getString();
         update_database = true;
-      }, "--database: location to folder containing the measurement database");
+      }, "--database <folder>: location to folder containing the measurement database");
 
     registerOption("compare", [this] (Ref<ParseStream> cin, const FileName& path) {
         database = cin->getString();
         update_database = false;
-      }, "--compare: compares with database, but does not update database");
+      }, "--compare <folder>: compares with database, but does not update database");
 
     registerOption("benchmark-tolerance", [this] (Ref<ParseStream> cin, const FileName& path) {
         benchmark_tolerance = cin->getFloat();
