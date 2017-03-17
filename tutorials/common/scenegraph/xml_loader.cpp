@@ -784,9 +784,16 @@ namespace embree
       const std::shared_ptr<Texture> map_Kd = parms.getTexture("map_Kd");  
       const Vec3fa Kd = parms.getVec3fa("Kd", one);
       const std::shared_ptr<Texture> map_Ks = parms.getTexture("map_Ks");  
+      PRINT("WARNING OBJ MATERIAL");
+#if 0
       const Vec3fa Ks = parms.getVec3fa("Ks", zero);
       const std::shared_ptr<Texture> map_Ns = parms.getTexture("map_Ns");  
       const float Ns = parms.getFloat("Ns", 10.0f);
+#else
+      const Vec3fa Ks = Vec3fa(0,0,0); //parms.getVec3fa("Ks", zero);
+      const std::shared_ptr<Texture> map_Ns = parms.getTexture("map_Ns");  
+      const float Ns = 0.0f; //parms.getFloat("Ns", 10.0f);
+#endif
       const std::shared_ptr<Texture> map_Bump = parms.getTexture("map_Bump");
       return new OBJMaterial(d,map_d,Kd,map_Kd,Ks,map_Ks,Ns,map_Ns,map_Bump);
     }
