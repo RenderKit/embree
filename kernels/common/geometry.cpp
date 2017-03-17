@@ -37,6 +37,20 @@ namespace embree
   Geometry::~Geometry() {
   }
 
+  void Geometry::preCommit() {
+  }
+
+  void Geometry::postCommit()
+  {
+    /* make static geometry immutable */
+    if (parent->isStatic()) 
+      immutable();
+
+    /* clear modified flag */
+    if (isEnabled()) 
+      clearModified();
+  }
+
   void Geometry::updateIntersectionFilters(bool enable)
   {
     const size_t num1  = (intersectionFilter1  != nullptr) + (occlusionFilter1  != nullptr);

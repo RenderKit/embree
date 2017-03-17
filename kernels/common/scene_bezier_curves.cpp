@@ -163,7 +163,7 @@ namespace embree
     return true;
   }
 
-  void NativeCurves::commit()
+  void NativeCurves::preCommit()
   {
     if (!isEnabled()) return;
 
@@ -269,7 +269,7 @@ namespace embree
   CurvesBezier::CurvesBezier (Scene* parent, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps)
     : NativeCurves(parent,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps) {}
   
-  void CurvesBezier::commit() {
+  void CurvesBezier::preCommit() {
     if (isEnabled()) commit_helper<BezierCurve3fa>();
   }
 
@@ -282,7 +282,7 @@ namespace embree
   CurvesBSpline::CurvesBSpline (Scene* parent, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps)
     : NativeCurves(parent,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps) {}
   
-  void CurvesBSpline::commit() {
+  void CurvesBSpline::preCommit() {
     if (isEnabled()) commit_helper<BSplineCurve3fa>();
   }
 
