@@ -1,7 +1,39 @@
 Version History
 ---------------
 
+### New Features in Embree 2.15.0
+
+-   Added `rtcCommitJoin` mode that allows thread to join a build
+    operation. When using the internal tasking system this allows
+    Embree to solely use the threads that called `rtcCommitJoin` to
+    build the scene, while previously also normal worker threads
+    participated in the build. You should no longer use  `rtcCommit`
+    to join a build.
+-   Added `rtcDeviceSetErrorFunction2` API call, which sets an error
+    callback function which additionally gets passed a user provided
+    pointer (`rtcDeviceSetErrorFunction` is now deprecated).
+-   Added `rtcDeviceSetMemoryMonitorFunction2` API call, which sets a
+    memory monitor callback function which additionally get passed a
+    user provided pointer. (`rtcDeviceSetMemoryMonitorFunction` is now
+    deprecated).
+-   Build performance for hair geometry improved up to 2x.
+-   Added API extension to use internal Morton builder, standard SAH
+    builder, and spatial split SAH builder.
+-   Added support for BSpline hair and curves. Embree uses
+    either the Bezier or BSpline basis internally, and converts other
+    curves, which requiring more memory during rendering. For reduced
+    memory consumption set the EMBREE_NATIVE_SPLINE_BASIS to the basis
+    your application uses (which is set to BEZIER by default).
+-   Setting the number of threads through an application side
+    tbb::taskscheduler_init object is now working properly.
+-   Windows and Linux releases are build using AVX512 support.
+-   Implemented hybrid traversal for hair and line segments for
+    improved ray packet performance.
+-   AVX512 code compiles with Clang 4.0.0
+-   Fixed crash when ray packets were disabled in CMake.
+
 ### New Features in Embree 2.14.0
+
 -   Added `ignore_config_files` option to init flags that allows the
     application to ignore Embree configuration files.
 -   Face-varying interpolation is now supported for subdivision surfaces.
@@ -28,7 +60,7 @@ Version History
 -   Added simple 'viewer_anim' tutorial for rendering key
     frame animations and 'buildbench' for measuring BVH (re-)build
     performance for static and dynamic scenes.
--   Added more AVX512 optimizations for future architectures.
+-   Added more AVX-512 optimizations for future architectures.
 
 ### New Features in Embree 2.13.0
 
@@ -82,7 +114,7 @@ Version History
 -   Fixed `rtcGetBounds` for motion blur scenes.
 -   Thread affinity is now on by default when running on the latest
     Intel® Xeon Phi™ processor.
--   Added AVX512 support for future Intel® Xeon processors.
+-   Added AVX-512 support for future Intel® Xeon processors.
 
 ### New Features in Embree 2.10.0
 
@@ -129,7 +161,7 @@ Version History
 -   Added support for line segment geometry.
 -   Added support for quad geometry (replaces triangle-pairs feature).
 -   Added support for linear motion blur of user geometries.
--   Improved performance through AVX512 optimizations.
+-   Improved performance through AVX-512 optimizations.
 -   Improved performance of lazy scene build (when using TBB 4.4 update 2).
 -   Improved performance through huge page support under linux.
 
@@ -177,7 +209,7 @@ Version History
 -   Reduced virtual address space usage for static geometries.
 -   Fixed some AVX2 code paths when compiling with GCC or Clang.
 -   Bugfix for subdiv patches with non-matching winding order.
--   Bugfix in ISA detection of AVX512.
+-   Bugfix in ISA detection of AVX-512.
 
 ### New Features in Embree 2.6.1
 
@@ -185,7 +217,7 @@ Version History
     e.g. up to 2× faster for scenes where only the tessellation levels
     are changing per frame, and up to 3× faster for scenes with lots of
     crease features
--   Initial support for architectures supporting the new 16-wide AVX512
+-   Initial support for architectures supporting the new 16-wide AVX-512
     ISA
 -   Implemented intersection filter callback support for subdivision
     surfaces
