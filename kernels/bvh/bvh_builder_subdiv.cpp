@@ -84,7 +84,7 @@ namespace embree
         return NN;
       }
 
-      void build(size_t, size_t) 
+      void build() 
       {
         /* initialize all half edge structures */
         const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,false>();
@@ -501,7 +501,7 @@ namespace embree
         refitter->refit();
       }
 
-      void build(size_t, size_t) 
+      void build() 
       {
         bvh->numTimeSteps = scene->getNumTimeSteps<SubdivMesh,mblur>();
         numTimeSteps = bvh->numTimeSteps;

@@ -159,7 +159,7 @@ namespace embree
       virtual void immutable () {}
       
       /*! build accel */
-      virtual void build (size_t threadIndex, size_t threadCount) = 0;
+      virtual void build () = 0;
 
       /*! Calculates the bounds of an item */
       __forceinline BBox3fa bounds(size_t i, size_t itime = 0) const

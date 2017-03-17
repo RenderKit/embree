@@ -158,7 +158,7 @@ namespace embree
     /*! Builds acceleration structure for the scene. */
     void commit (size_t threadIndex, size_t threadCount, bool useThreadPool);
     void commit_task ();
-    void build (size_t threadIndex, size_t threadCount) {}
+    void build () {}
 
     void updateInterface();
 
