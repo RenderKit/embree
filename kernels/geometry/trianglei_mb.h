@@ -77,14 +77,14 @@ namespace embree
 
     __forceinline Vec3fa& getVertex(const vint<M> &v, const size_t index, const Scene *const scene) const
     {
-      const TriangleMesh* mesh = scene->getTriangleMesh(geomID(index));
+      const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(index));
       return *(Vec3fa*)mesh->vertexPtr(v[index]);
     }
 
     template<typename T>
       __forceinline Vec3<T> getVertex(const vint<M> &v, const size_t index, const Scene *const scene, const size_t itime, const T& ftime) const
     {
-      const TriangleMesh* mesh = scene->getTriangleMesh(geomID(index));
+      const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(index));
       const Vec3fa v0 = *(Vec3fa*)mesh->vertexPtr(v[index],itime+0);
       const Vec3fa v1 = *(Vec3fa*)mesh->vertexPtr(v[index],itime+1);
       const Vec3<T> p0(v0.x,v0.y,v0.z);
@@ -102,7 +102,7 @@ namespace embree
                                 const Scene* const scene,
                                 const vfloat<K>& time) const
     {
-      const TriangleMesh* mesh = scene->getTriangleMesh(geomID(index));
+      const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(index));
 
       vfloat<K> ftime;
       const vint<K> itime = getTimeSegment(time, vfloat<K>(mesh->fnumTimeSegments), ftime);
@@ -134,7 +134,7 @@ namespace embree
       BBox3fa bounds = empty;
       for (size_t i=0; i<M && valid(i); i++)
       {
-        const TriangleMesh* mesh = scene->getTriangleMesh(geomID(i));
+        const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(i));
         const Vec3fa &p0 = mesh->vertex(v0[i],itime);
         const Vec3fa &p1 = mesh->vertex(v1[i],itime);
         const Vec3fa &p2 = mesh->vertex(v2[i],itime);
@@ -154,7 +154,7 @@ namespace embree
       LBBox3fa allBounds = empty;
       for (size_t i=0; i<M && valid(i); i++)
       {
-        const TriangleMesh* mesh = scene->getTriangleMesh(geomID(i));
+        const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(i));
         allBounds.extend(mesh->linearBounds(primID(i), itime, numTimeSteps));
       }
       return allBounds;
@@ -169,7 +169,7 @@ namespace embree
 
       for (size_t i=0; i<M; i++)
       {
-        const TriangleMesh* mesh = scene->getTriangleMesh(prim->geomID());
+        const TriangleMesh* mesh = scene->get<TriangleMesh>(prim->geomID());
         const TriangleMesh::Triangle& tri = mesh->triangle(prim->primID());
         if (begin<end) {
           geomID[i] = prim->geomID();
@@ -257,10 +257,10 @@ namespace embree
                                                const Scene *const scene,
                                                const float time) const
   {
-    const TriangleMesh* mesh0 = scene->getTriangleMesh(geomIDs[0]);
-    const TriangleMesh* mesh1 = scene->getTriangleMesh(geomIDs[1]);
-    const TriangleMesh* mesh2 = scene->getTriangleMesh(geomIDs[2]);
-    const TriangleMesh* mesh3 = scene->getTriangleMesh(geomIDs[3]);
+    const TriangleMesh* mesh0 = scene->get<TriangleMesh>(geomIDs[0]);
+    const TriangleMesh* mesh1 = scene->get<TriangleMesh>(geomIDs[1]);
+    const TriangleMesh* mesh2 = scene->get<TriangleMesh>(geomIDs[2]);
+    const TriangleMesh* mesh3 = scene->get<TriangleMesh>(geomIDs[3]);
 
     const vfloat4 numTimeSegments(mesh0->fnumTimeSegments, mesh1->fnumTimeSegments, mesh2->fnumTimeSegments, mesh3->fnumTimeSegments);
     vfloat4 ftime;

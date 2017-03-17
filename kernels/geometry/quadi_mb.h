@@ -78,14 +78,14 @@ namespace embree
 
      __forceinline Vec3fa& getVertex(const vint<M> &v, const size_t index, const Scene *const scene) const
     {
-      const QuadMesh* mesh = scene->getQuadMesh(geomID(index));
+      const QuadMesh* mesh = scene->get<QuadMesh>(geomID(index));
       return *(Vec3fa*)mesh->vertexPtr(v[index]);
     }
 
     template<typename T>
       __forceinline Vec3<T> getVertex(const vint<M> &v, const size_t index, const Scene *const scene, const size_t itime, const T& ftime) const
     {
-      const QuadMesh* mesh = scene->getQuadMesh(geomID(index));
+      const QuadMesh* mesh = scene->get<QuadMesh>(geomID(index));
       const Vec3fa v0 = *(Vec3fa*)mesh->vertexPtr(v[index],itime+0);
       const Vec3fa v1 = *(Vec3fa*)mesh->vertexPtr(v[index],itime+1);
       const Vec3<T> p0(v0.x,v0.y,v0.z);
@@ -104,7 +104,7 @@ namespace embree
                                 const Scene* const scene,
                                 const vfloat<K>& time) const
     {
-      const QuadMesh* mesh = scene->getQuadMesh(geomID(index));
+      const QuadMesh* mesh = scene->get<QuadMesh>(geomID(index));
 
       vfloat<K> ftime;
       const vint<K> itime = getTimeSegment(time, vfloat<K>(mesh->fnumTimeSegments), ftime);
@@ -139,7 +139,7 @@ namespace embree
       BBox3fa bounds = empty;
       for (size_t i=0; i<M && valid(i); i++)
       {
-	const QuadMesh* mesh = scene->getQuadMesh(geomID(i));
+	const QuadMesh* mesh = scene->get<QuadMesh>(geomID(i));
         const Vec3fa &p0 = mesh->vertex(v0[i],itime);
         const Vec3fa &p1 = mesh->vertex(v1[i],itime);
         const Vec3fa &p2 = mesh->vertex(v2[i],itime);
@@ -161,7 +161,7 @@ namespace embree
       LBBox3fa allBounds = empty;
       for (size_t i=0; i<M && valid(i); i++)
       {
-        const QuadMesh* mesh = scene->getQuadMesh(geomID(i));
+        const QuadMesh* mesh = scene->get<QuadMesh>(geomID(i));
         allBounds.extend(mesh->linearBounds(primID(i), itime, numTimeSteps));
       }
       return allBounds;
@@ -176,7 +176,7 @@ namespace embree
       
       for (size_t i=0; i<M; i++)
       {
-	const QuadMesh* mesh = scene->getQuadMesh(prim->geomID());
+	const QuadMesh* mesh = scene->get<QuadMesh>(prim->geomID());
 	const QuadMesh::Quad& q = mesh->quad(prim->primID());
 	if (begin<end) {
 	  geomID[i] = prim->geomID();
@@ -263,10 +263,10 @@ namespace embree
                                            const Scene *const scene,
                                            const float time) const
   {
-    const QuadMesh* mesh0 = scene->getQuadMesh(geomIDs[0]);
-    const QuadMesh* mesh1 = scene->getQuadMesh(geomIDs[1]);
-    const QuadMesh* mesh2 = scene->getQuadMesh(geomIDs[2]);
-    const QuadMesh* mesh3 = scene->getQuadMesh(geomIDs[3]);
+    const QuadMesh* mesh0 = scene->get<QuadMesh>(geomIDs[0]);
+    const QuadMesh* mesh1 = scene->get<QuadMesh>(geomIDs[1]);
+    const QuadMesh* mesh2 = scene->get<QuadMesh>(geomIDs[2]);
+    const QuadMesh* mesh3 = scene->get<QuadMesh>(geomIDs[3]);
 
     const vfloat4 numTimeSegments(mesh0->fnumTimeSegments, mesh1->fnumTimeSegments, mesh2->fnumTimeSegments, mesh3->fnumTimeSegments);
     vfloat4 ftime;
