@@ -41,7 +41,7 @@ namespace embree
       BVHNHairBuilderSAH (BVH* bvh, Scene* scene)
         : bvh(bvh), scene(scene), prims(scene->device) {}
       
-      void build(size_t, size_t) 
+      void build() 
       {
         /* fast path for empty BVH */
         const size_t numPrimitives = scene->getNumPrimitives<NativeCurves,false>();
@@ -141,7 +141,7 @@ namespace embree
         return allBounds;
       }
 
-      void build(size_t, size_t) 
+      void build() 
       {
         /* progress monitor */
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(double(dn)); };
@@ -252,7 +252,7 @@ namespace embree
       BVHNHairMSMBlurBuilderSAH (BVH* bvh, Scene* scene)
         : bvh(bvh), scene(scene) {}
       
-      void build(size_t, size_t) 
+      void build() 
       {
         /* fast path for empty BVH */
         const size_t numPrimitives = scene->getNumPrimitives<NativeCurves,true>();

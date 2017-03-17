@@ -735,9 +735,9 @@ namespace embree
   {
     progress_monitor_counter = 0;
 
-    /* build geometry specific stuff */
+    /* call preCommit function of each geometry */
     parallel_for(geometries.size(), [&] ( const size_t i ) {
-        if (geometries[i]) geometries[i]->commit();
+        if (geometries[i]) geometries[i]->preCommit();
       });
 
     /* select fast code path if no intersection filter is present */
@@ -747,24 +747,16 @@ namespace embree
                   numIntersectionFiltersN);
   
     /* build all hierarchies of this scene */
-    accels.build(0,0);
+    accels.build();
 
     /* make static geometry immutable */
-    if (isStatic()) 
-    {
-      accels.immutable();
-      for (size_t i=0; i<geometries.size(); i++)
-        if (geometries[i]) geometries[i]->immutable();
-    }
+    if (isStatic()) accels.immutable();
 
-    /* clear modified flag */
-    for (size_t i=0; i<geometries.size(); i++)
-    {
-      Geometry* geom = geometries[i];
-      if (!geom) continue;
-      if (geom->isEnabled()) geom->clearModified(); // FIXME: should builders do this?
-    }
-
+    /* call postCommit function of each geometry */
+    parallel_for(geometries.size(), [&] ( const size_t i ) {
+        if (geometries[i]) geometries[i]->postCommit();
+      });
+      
     updateInterface();
 
     if (device->verbosity(2)) {

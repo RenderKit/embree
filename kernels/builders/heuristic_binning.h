@@ -802,18 +802,6 @@ namespace embree
         return c;
       }
 
-      __forceinline vfloat16 shift_right1_zero_extend(const vfloat16 &a) const
-      {
-        vfloat16 z = vfloat16::zero();
-        return align_shift_right<1>(z,a);
-      }  
-
-      __forceinline vint16 shift_right1_zero_extend(const vint16 &a) const
-      {
-        vint16 z = vint16::zero();
-        return align_shift_right<1>(z,a);
-      }  
-
       /*! finds the best split by scanning binning information */
       __forceinline Split best(const BinMapping<16>& mapping, const size_t blocks_shift) const
       {
@@ -822,7 +810,6 @@ namespace embree
 	float bestSAH = inf;
 	int   bestDim = -1;
 	int   bestPos = 0;
-	int   bestLeft = 0;
 	const vint16 blocks_add = (1 << blocks_shift)-1;
         const vfloat16 inf(pos_inf);
 	for (size_t dim=0; dim<3; dim++) 
@@ -838,9 +825,9 @@ namespace embree
 
           /* compute best split in this dimension */
           const vfloat16 leftArea  = lArea16;
-          const vfloat16 rightArea = shift_right1_zero_extend(rArea16);
+          const vfloat16 rightArea = align_shift_right<1>(zero,rArea16);
           const vint16 lC = lCount16;
-          const vint16 rC = shift_right1_zero_extend(rCount16);
+          const vint16 rC = align_shift_right<1>(zero,rCount16);
           const vint16 leftCount  = ( lC + blocks_add) >> blocks_shift;
           const vint16 rightCount = ( rC + blocks_add) >> blocks_shift;
           const vbool16 valid = (leftArea < inf) & (rightArea < inf) & vbool16(0x7fff); // handles inf entries

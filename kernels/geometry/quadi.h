@@ -73,7 +73,7 @@ namespace embree
 
     __forceinline Vec3fa& getVertex(const vint<M> &v, const size_t index, const Scene *const scene) const
     {
-      const QuadMesh* mesh = scene->getQuadMesh(geomID(index));
+      const QuadMesh* mesh = scene->get<QuadMesh>(geomID(index));
       return *(Vec3fa*)mesh->vertexPtr(v[index]); // FIMXE: should use loadu
     }
 
@@ -101,7 +101,7 @@ namespace embree
       
       for (size_t i=0; i<M; i++)
       {
-	const QuadMesh* mesh = scene->getQuadMesh(prim->geomID());
+	const QuadMesh* mesh = scene->get<QuadMesh>(prim->geomID());
 	const QuadMesh::Quad& q = mesh->quad(prim->primID());
 	if (begin<end) {
 	  geomID[i] = prim->geomID();
@@ -164,10 +164,10 @@ namespace embree
     prefetchL1(((char*)this)+0*64);
     prefetchL1(((char*)this)+1*64);
 
-    const QuadMesh* mesh0 = scene->getQuadMesh(geomIDs[0]);
-    const QuadMesh* mesh1 = scene->getQuadMesh(geomIDs[1]);
-    const QuadMesh* mesh2 = scene->getQuadMesh(geomIDs[2]);
-    const QuadMesh* mesh3 = scene->getQuadMesh(geomIDs[3]);
+    const QuadMesh* mesh0 = scene->get<QuadMesh>(geomIDs[0]);
+    const QuadMesh* mesh1 = scene->get<QuadMesh>(geomIDs[1]);
+    const QuadMesh* mesh2 = scene->get<QuadMesh>(geomIDs[2]);
+    const QuadMesh* mesh3 = scene->get<QuadMesh>(geomIDs[3]);
 
     const vfloat4 a0 = vfloat4::loadu(mesh0->vertexPtr(v0[0]));
     const vfloat4 a1 = vfloat4::loadu(mesh1->vertexPtr(v0[1]));
@@ -208,10 +208,10 @@ namespace embree
                                        Vec3vf16& p3,
                                        const Scene *const scene) const
   {
-    const QuadMesh* mesh0 = scene->getQuadMesh(geomIDs[0]);
-    const QuadMesh* mesh1 = scene->getQuadMesh(geomIDs[1]);
-    const QuadMesh* mesh2 = scene->getQuadMesh(geomIDs[2]);
-    const QuadMesh* mesh3 = scene->getQuadMesh(geomIDs[3]);
+    const QuadMesh* mesh0 = scene->get<QuadMesh>(geomIDs[0]);
+    const QuadMesh* mesh1 = scene->get<QuadMesh>(geomIDs[1]);
+    const QuadMesh* mesh2 = scene->get<QuadMesh>(geomIDs[2]);
+    const QuadMesh* mesh3 = scene->get<QuadMesh>(geomIDs[3]);
 
     const vint16 perm(0,4,8,12,1,5,9,13,2,6,10,14,3,7,11,15);
     const vfloat4 &a0 = *(vfloat4*)(mesh0->vertexPtr(v0[0]));

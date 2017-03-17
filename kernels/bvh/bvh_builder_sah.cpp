@@ -132,7 +132,7 @@ namespace embree
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
 
-      void build(size_t, size_t) 
+      void build() 
       {
         /* we reset the allocator when the mesh size changed */
         if (mesh && mesh->numPrimitivesChanged) {
@@ -223,7 +223,7 @@ namespace embree
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
 
-      void build(size_t, size_t) 
+      void build() 
       {
         /* we reset the allocator when the mesh size changed */
         if (mesh && mesh->numPrimitivesChanged) {
@@ -320,7 +320,7 @@ namespace embree
       BVHNBuilderMSMBlurSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
         : bvh(bvh), scene(scene), prims(scene->device), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, singleThreadThreshold) {}
 
-      void build(size_t, size_t) 
+      void build() 
       {
 	/* skip build for empty scene */
         const size_t numPrimitives = scene->getNumPrimitives<Mesh,true>();
@@ -466,7 +466,7 @@ namespace embree
         }
       }
       
-      void build(size_t, size_t) 
+      void build() 
       {
 	/* skip build for empty scene */
         const size_t numPrimitives = scene->getNumPrimitives<Mesh,true>();
@@ -573,7 +573,7 @@ namespace embree
           sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)), 
           singleThreadThreshold(singleThreadThreshold) {}
 
-      void build(size_t, size_t) 
+      void build() 
       {
 	/* skip build for empty scene */
         const size_t numPrimitives = scene->getNumPrimitives<Mesh,true>();
@@ -704,7 +704,7 @@ namespace embree
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
 
-      void build(size_t, size_t) 
+      void build() 
       {
         /* we reset the allocator when the mesh size changed */
         if (mesh && mesh->numPrimitivesChanged) {

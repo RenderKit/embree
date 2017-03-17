@@ -79,7 +79,7 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
   
     __forceinline bool operator []( const size_t index ) const { 
-      assert(index < 16); return (_mm512_mask2int(v) >> index) & 1; 
+      assert(index < 16); return (_mm512_mask2int(v) >> index) & 1;
     }
   };
 
@@ -131,7 +131,7 @@ namespace embree
   __forceinline int none( const vboolf16& valid, const vboolf16& b ) { return none(valid & b); }
   
   __forceinline size_t movemask( const vboolf16& a ) { return _mm512_kmov(a); }
-  __forceinline size_t popcnt  ( const vboolf16& a ) { return _mm_countbits_32(a.v); }
+  __forceinline size_t popcnt  ( const vboolf16& a ) { return __popcnt(a.v); }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Convertion Operations

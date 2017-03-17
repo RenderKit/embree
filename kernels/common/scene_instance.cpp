@@ -30,11 +30,11 @@ namespace embree
   {
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceBoundsFunc);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,InstanceIntersector1);
-    SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,InstanceIntersector1M);
 #if defined (EMBREE_RAY_PACKETS)
     SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,InstanceIntersector4);
     SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,InstanceIntersector8);
     SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,InstanceIntersector16);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,InstanceIntersector1M);
 #endif
   }
 
@@ -47,10 +47,12 @@ namespace embree
     boundsFunc3 = parent->device->instance_factory->InstanceBoundsFunc();
     boundsFuncUserPtr = nullptr;
     intersectors.intersector1 = parent->device->instance_factory->InstanceIntersector1();
+#if defined (EMBREE_RAY_PACKETS)
     intersectors.intersector4 = parent->device->instance_factory->InstanceIntersector4(); 
     intersectors.intersector8 = parent->device->instance_factory->InstanceIntersector8(); 
     intersectors.intersector16 = parent->device->instance_factory->InstanceIntersector16();
     intersectors.intersector1M = parent->device->instance_factory->InstanceIntersector1M();
+#endif
   }
   
   void Instance::setTransform(const AffineSpace3fa& xfm, size_t timeStep)

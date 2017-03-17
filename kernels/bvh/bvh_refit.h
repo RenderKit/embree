@@ -83,7 +83,7 @@ namespace embree
     public:
       BVHNRefitT (BVH* bvh, Builder* builder, Mesh* mesh, size_t mode);
 
-      virtual void build(size_t threadIndex, size_t threadCount);
+      virtual void build();
       
       virtual void clear();
 

@@ -190,11 +190,11 @@ namespace embree
     }
     
     template<int N, typename Mesh, typename Primitive>
-    void BVHNRefitT<N,Mesh,Primitive>::build(size_t threadIndex, size_t threadCount)
+    void BVHNRefitT<N,Mesh,Primitive>::build()
     {
       /* build initial BVH */
       if (builder) {
-        builder->build(threadIndex,threadCount);
+        builder->build();
         builder.reset(nullptr);
         refitter.reset(new BVHNRefitter<N>(bvh,*(typename BVHNRefitter<N>::LeafBoundsInterface*)this));
       }

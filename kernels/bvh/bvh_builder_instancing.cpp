@@ -92,7 +92,7 @@ namespace embree
     }
 
     template<int N, typename Mesh>
-    void BVHNBuilderInstancing<N,Mesh>::build(size_t threadIndex, size_t threadCount)
+    void BVHNBuilderInstancing<N,Mesh>::build()
     {
       /* delete some objects */
       size_t num = scene->size();
@@ -155,7 +155,7 @@ namespace embree
             Builder* builder = builders[objectID]; 
             if (builder == nullptr) continue;
             if (geom->isModified() && geom->isInstanced()) 
-              builder->build(0,0);
+              builder->build();
           }
         });
 

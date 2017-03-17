@@ -32,8 +32,8 @@ namespace embree
     }
 
   public:
-    void build (size_t threadIndex, size_t threadCount) {
-      if (builder) builder->build(threadIndex,threadCount);
+    void build () {
+      if (builder) builder->build();
       bounds = accel->bounds;
     }
 

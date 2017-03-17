@@ -55,7 +55,7 @@ namespace embree
       void interpolate_helper(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
     void setTessellationRate(float N);
     // FIXME: implement interpolateN
-    void commit();
+    void preCommit();
     template<typename InputCurve3fa> void commit_helper();
 
   public:
@@ -316,14 +316,14 @@ namespace embree
   struct CurvesBezier : public NativeCurves
   {
     CurvesBezier (Scene* parent, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
-    void commit();
+    void preCommit();
     void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
   };
 
   struct CurvesBSpline : public NativeCurves
   {
     CurvesBSpline (Scene* parent, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
-    void commit();
+    void preCommit();
     void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
   };
 }

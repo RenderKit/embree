@@ -71,7 +71,7 @@ namespace embree
       ~BVHNBuilderTwoLevel ();
       
       /*! builder entry point */
-      void build(size_t threadIndex, size_t threadCount);
+      void build();
       void deleteGeometry(size_t geomID);
       void clear();
 

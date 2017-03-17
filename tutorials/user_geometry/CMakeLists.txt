@@ -17,5 +17,8 @@
 INCLUDE(tutorial)
 ADD_TUTORIAL(user_geometry)
 ADD_EMBREE_TEST(user_geometry)
-ADD_EMBREE_TEST2(user_geometry_stream_coherent   user_geometry "--mode stream-coherent")
-ADD_EMBREE_TEST2(user_geometry_stream_incoherent user_geometry "--mode stream-incoherent")
+IF(EMBREE_RAY_PACKETS)
+  ADD_EMBREE_TEST2(user_geometry_stream_coherent   user_geometry "--mode stream-coherent")
+  ADD_EMBREE_TEST2(user_geometry_stream_incoherent user_geometry "--mode stream-incoherent")
+ENDIF()
+

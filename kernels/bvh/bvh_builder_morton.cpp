@@ -384,7 +384,7 @@ namespace embree
         : bvh(bvh), mesh(mesh), morton(bvh->device), settings(N,BVH::maxBuildDepth,minLeafSize,maxLeafSize,singleThreadThreshold) {}
       
       /* build function */
-      void build(size_t threadIndex, size_t threadCount) 
+      void build() 
       {
         /* we reset the allocator when the mesh size changed */
         if (mesh->numPrimitivesChanged) {

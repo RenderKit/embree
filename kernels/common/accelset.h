@@ -159,7 +159,7 @@ namespace embree
       virtual void immutable () {}
       
       /*! build accel */
-      virtual void build (size_t threadIndex, size_t threadCount) = 0;
+      virtual void build () = 0;
 
       /*! check if the i'th primitive is valid between the specified time range */
       __forceinline bool valid(size_t i, const range<size_t>& itime_range) const
