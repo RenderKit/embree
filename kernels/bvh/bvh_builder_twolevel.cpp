@@ -25,7 +25,7 @@
 #define MAX_OPEN_SIZE 10000
 
 /* new open/merge builder */
-#define ENABLE_DIRECT_SAH_MERGE_BUILDER 0
+#define ENABLE_DIRECT_SAH_MERGE_BUILDER 1
 
 /* sequential opening phase in old code path */
 #define ENABLE_OPEN_SEQUENTIAL 0
@@ -33,7 +33,8 @@
 #define SPLIT_MEMORY_RESERVE_FACTOR 1000
 // 500
 #define SPLIT_MIN_EXT_SPACE 1000
-
+#undef DBG_PRINT
+#define DBG_PRINT(x) PRINT(x)
 // for non-opening two-level approach set ENABLE_DIRECT_SAH_MERGE_BUILDER and ENABLE_OPEN_SEQUENTIAL to 0
 
 namespace embree
@@ -87,7 +88,6 @@ namespace embree
 
       double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderTwoLevel");
 
-
       /* resize object array if scene got larger */
       if (objects.size()  < num) objects.resize(num);
       if (builders.size() < num) builders.resize(num);
@@ -139,6 +139,9 @@ namespace embree
 #endif
         }
       });
+
+      PING;
+      PRINT(nextRef);
 
 #if PROFILE
       double d0 = getSeconds();
