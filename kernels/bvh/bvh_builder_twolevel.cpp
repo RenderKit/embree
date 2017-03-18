@@ -31,6 +31,7 @@
 #define ENABLE_OPEN_SEQUENTIAL 0
 
 #define SPLIT_MEMORY_RESERVE_FACTOR 1000
+#define SPLIT_MEMORY_RESERVE_SCALE 2
 // 500
 #define SPLIT_MIN_EXT_SPACE 1000
 #undef DBG_PRINT
@@ -218,9 +219,9 @@ namespace embree
             settings.singleThreadThreshold = singleThreadThreshold;
 
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
-
-            const size_t extSize = max(max((size_t)SPLIT_MIN_EXT_SPACE,refs.size()*2),size_t((float)numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
-            DBG_PRINT(refs.size()*2);
+            DBG_PRINT(numPrimitives);
+            const size_t extSize = max(max((size_t)SPLIT_MIN_EXT_SPACE,refs.size()*SPLIT_MEMORY_RESERVE_SCALE),size_t((float)numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
+            DBG_PRINT(refs.size()*SPLIT_MEMORY_RESERVE_SCALE);
             DBG_PRINT(extSize);
             refs.resize(extSize); 
 
