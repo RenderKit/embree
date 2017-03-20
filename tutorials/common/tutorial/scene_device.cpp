@@ -336,10 +336,24 @@ namespace embree
         assert(false);
     }
   }
+
+  unsigned int ConvertGroupGeometry(ISPCGroup* group, RTCGeometryFlags gflags, RTCScene scene_out)
+  {
+    /*std::vector<unsigned> geometries(group->numGeometries);
+    for (size_t i=0; i<group->numGeometries; i++) {
+      geometries[i] = group->geometries[i]->geomID;
+      assert(geometries[i] != -1);
+    }
+    unsigned int geomID = rtcNewGeometryGroup (scene_out, gflags, geometries, group->numGeometries);
+    group->scene = scene_out;
+    group->geomID = geomID;
+    return geomID;*/
+    return 0;
+  }
   
   unsigned int ConvertInstance(ISPCScene* scene_in, ISPCInstance* instance, int meshID, RTCScene scene_out)
   {
-    if (g_instancing_mode == 1) {
+    if (g_instancing_mode == 1 || g_instancing_mode == 4) {
       if (instance->numTimeSteps == 1) {
         unsigned int geom_inst = instance->geomID;
         unsigned int geomID = rtcNewGeometryInstance(scene_out, geom_inst);
@@ -374,7 +388,7 @@ namespace embree
     RTCScene scene_out = rtcDeviceNewScene(g_device,sflags,aflags);
     
     /* use geometry instancing feature */
-    if (g_instancing_mode == 1)
+    if (g_instancing_mode == 1 || g_instancing_mode == 4)
     {
       for (unsigned int i=0; i<scene_in->numGeometries; i++)
       {
@@ -406,6 +420,11 @@ namespace embree
         }
         else if (geometry->type == CURVES) {
           unsigned int geomID = ConvertCurveGeometry((ISPCHairSet*) geometry, gflags, scene_out);
+          assert(geomID == i);
+          rtcDisable(scene_out,geomID);
+        }
+        else if (geometry->type == GROUP) {
+          unsigned int geomID = ConvertGroupGeometry((ISPCGroup*) geometry, gflags, scene_out);
           assert(geomID == i);
           rtcDisable(scene_out,geomID);
         }
