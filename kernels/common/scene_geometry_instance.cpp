@@ -25,7 +25,7 @@ namespace embree
     enabling();
   }
 
-  void GeometryInstance::count(ssize_t f)
+  void GeometryInstance::count(Geometry* geom, ssize_t f)
   {
     if (geom->numTimeSteps == 1)
     {
@@ -52,13 +52,28 @@ namespace embree
   void GeometryInstance::enabling () 
   {
     geom->used++;
-    count(+1);
+    if (geom->getType() == Geometry::GROUP) {
+      GeometryGroup* group = (GeometryGroup*) geom;
+      for (size_t i=0; i<group->size(); i++)
+        count((*group)[i],+1);
+    }
+    else {
+      count(geom,+1);
+    }
   }
 
   void GeometryInstance::disabling() 
   {
     geom->used--;
-    count(-1);
+     geom->used++;
+    if (geom->getType() == Geometry::GROUP) {
+      GeometryGroup* group = (GeometryGroup*) geom;
+      for (size_t i=0; i<group->size(); i++)
+        count((*group)[i],-1);
+    }
+    else {
+      count(geom,-1);
+    }
   }
   
   void GeometryInstance::setMask (unsigned mask) 
