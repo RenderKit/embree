@@ -83,7 +83,7 @@ namespace embree
   }
 
   GeometryGroup::GeometryGroup (Scene* parent, RTCGeometryFlags gflags, const std::vector<Geometry*>& geometries) 
-    : Geometry(parent,geometries.size() ? geometries[0]->getType() : TRIANGLE_MESH, 1, 1, gflags), geometries(geometries)
+    : Geometry(parent,geometries.size() ? geometries[0]->getType() : TRIANGLE_MESH, geometries.size(), 1, gflags), geometries(geometries)
   {
     enabling();
   }

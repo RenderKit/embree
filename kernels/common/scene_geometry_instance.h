@@ -49,6 +49,10 @@ namespace embree
     virtual void enabling ();
     virtual void disabling();
     virtual void setMask (unsigned mask);
+
+    __forceinline       Geometry* operator[] ( const size_t i )       {  return geometries[i]; }
+    __forceinline const Geometry* operator[] ( const size_t i ) const {  return geometries[i]; }
+
   public:
     std::vector<Geometry*> geometries; 
   };
