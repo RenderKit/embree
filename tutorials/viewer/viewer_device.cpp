@@ -80,10 +80,10 @@ void updateMeshEdgeLevelBufferTask (int taskIndex,  ISPCScene* scene_in, const V
   ISPCGeometry* geometry = g_ispc_scene->geometries[taskIndex];
   if (geometry->type != SUBDIV_MESH) return;
   ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
-  unsigned int geomID = mesh->geomID;
+  unsigned int geomID = mesh->geom.geomID;
   if (mesh->numFaces < 10000) {
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
-    rtcUpdateBuffer(g_scene,mesh->geomID,RTC_LEVEL_BUFFER);
+    rtcUpdateBuffer(g_scene,mesh->geom.geomID,RTC_LEVEL_BUFFER);
   }
 }
 #endif
@@ -113,7 +113,7 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 #else
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
-    rtcUpdateBuffer(g_scene,mesh->geomID,RTC_LEVEL_BUFFER);
+    rtcUpdateBuffer(g_scene,mesh->geom.geomID,RTC_LEVEL_BUFFER);
   }
 }
 
@@ -219,7 +219,7 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
     ISPCGeometry* geometry;
     if (g_instancing_mode) {
       instance = g_ispc_scene->geomID_to_inst[geomID];
-      geometry = g_ispc_scene->geometries[instance->geomID];
+      geometry = g_ispc_scene->geometries[instance->geom.geomID];
     } else {
       instance = nullptr;
       geometry = g_ispc_scene->geometries[geomID];
