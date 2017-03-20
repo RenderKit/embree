@@ -15,9 +15,9 @@
 // ======================================================================== //
 
 #define ANIM_FPS 15.0f
-#define ENABLE_ANIM 0
-#define VERTEX_NORMALS 0
-#define SHADOWS 0
+#define ENABLE_ANIM 1
+#define VERTEX_NORMALS 1
+#define SHADOWS 1
 #define ANTI_ALIASING 0
 #define DUMP_PROFILE_DATA 0
 
@@ -464,9 +464,9 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
           ISPCGeometry* geometry = g_ispc_scene->geometries[ray.geomID];
           if (likely(geometry->type == TRIANGLE_MESH))
           {
-#if VERTEX_NORMALS == 1
             ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
-            if (likely(mesh->normals))
+#if VERTEX_NORMALS == 1
+            if (likely(mesh->normals && ray.geomID == 0))
             {
               ISPCTriangle* tri = &mesh->triangles[ray.primID];
               
@@ -476,12 +476,17 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
               Ng = (1.0f-ray.u-ray.v)*n0 + ray.u*n1 + ray.v*n2;          
             }
 #endif
+            int materialID = mesh->materialID;
+            if (g_ispc_scene->materials[materialID]->type == MATERIAL_OBJ) {
+              ISPCOBJMaterial* material = (ISPCOBJMaterial*) g_ispc_scene->materials[materialID];
+              color = Vec3fa(material->Kd);
+            }            
           }
           /* final color */
 #if AO == 1
           color = ambientOcclusionShading(x,y,ray);
 #else
-          color = Vec3fa(abs(dot(ray.dir,normalize(Ng))));
+          color *= Vec3fa(abs(dot(ray.dir,normalize(Ng))));          
 #endif
         }
 
@@ -498,6 +503,7 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
     /* do some hard shadows to point lights */
     if (g_ispc_scene->numLights)
     {
+      const float inv_numLights = 1.0f / g_ispc_scene->numLights;
       for (unsigned int i=0; i<g_ispc_scene->numLights; i++)
       {
         /* init shadow/occlusion rays */
@@ -521,7 +527,7 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
         /* modify pixel color based on occlusion */
         for (int n=0;n<N;n++)
           if (rays[n].geomID != RTC_INVALID_GEOMETRY_ID)
-            colors[n] *= 0.1f;
+            colors[n] *= 0.6f;
         
       }
     }
