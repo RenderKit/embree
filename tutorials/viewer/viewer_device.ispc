@@ -203,7 +203,7 @@ AffineSpace3f calculate_interpolated_space (uniform ISPCInstance* uniform instan
 inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
-  unsigned ray_geomID = g_instancing_mode >= 2 ? ray.instID : ray.geomID;
+  unsigned ray_geomID = ray.instID; //g_instancing_mode >= 2 ? ray.instID : ray.geomID;
   foreach_unique (geomID in ray_geomID)
   {
     /* get instance and geometry pointers */
