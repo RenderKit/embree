@@ -389,9 +389,13 @@ namespace embree
     IF_ENABLED_QUADS(template PrimInfo createPrimRefArray<QuadMesh>(QuadMesh* mesh COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
     IF_ENABLED_HAIR (template PrimInfo createPrimRefArray<NativeCurves>(NativeCurves* mesh COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
     IF_ENABLED_LINES(template PrimInfo createPrimRefArray<LineSegments>(LineSegments* mesh COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
-    IF_ENABLED_USER(template PrimInfo createPrimRefArray<AccelSet>(AccelSet* mesh COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
-
+    IF_ENABLED_USER (template PrimInfo createPrimRefArray<AccelSet>(AccelSet* mesh COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
+    
     IF_ENABLED_TRIS (template PrimInfo createGroupPrimRefArray<TriangleMesh>(GeometryGroup* group COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
+    IF_ENABLED_QUADS(template PrimInfo createGroupPrimRefArray<QuadMesh>(GeometryGroup* group COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
+    IF_ENABLED_HAIR (template PrimInfo createGroupPrimRefArray<NativeCurves>(GeometryGroup* group COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
+    IF_ENABLED_LINES(template PrimInfo createGroupPrimRefArray<LineSegments>(GeometryGroup* group COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
+    IF_ENABLED_USER (template PrimInfo createGroupPrimRefArray<AccelSet>(GeometryGroup* group COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
     
     IF_ENABLED_TRIS (template PrimInfo createPrimRefArray<TriangleMesh COMMA false>(Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
     IF_ENABLED_TRIS (template PrimInfo createPrimRefArray<TriangleMesh COMMA true>(Scene* scene COMMA mvector<PrimRef>& prims COMMA BuildProgressMonitor& progressMonitor));
