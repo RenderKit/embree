@@ -1002,6 +1002,26 @@ namespace embree
     return -1;
   }
 
+  RTCORE_API unsigned rtcNewGeometryGroup (RTCScene hscene, RTCGeometryFlags flags, unsigned* geomIDs, size_t N) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcNewGeometryGroup);
+    RTCORE_VERIFY_HANDLE(hscene);
+    std::vector<Geometry*> geometries(N);
+    for (size_t i=0; i<N; i++) {
+      RTCORE_VERIFY_GEOMID(geomIDs[i]);
+      geometries[i] = scene->get_locked(geomIDs[i]);
+      if (geometries[i]->getType() == Geometry::GROUP)
+        throw_RTCError(RTC_INVALID_ARGUMENT,"geometry groups cannot contain other geometry groups");
+      if (geometries[i]->getType() != geometries[0]->getType())
+        throw_RTCError(RTC_INVALID_ARGUMENT,"geometries inside group have to be of same type");
+    }
+    return scene->newGeometryGroup(flags,geometries);
+    RTCORE_CATCH_END(scene->device);
+    return -1;
+  }
+
   AffineSpace3fa convertTransform(RTCMatrixType layout, const float* xfm)
   {
     AffineSpace3fa transform = one;

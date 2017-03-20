@@ -81,4 +81,27 @@ namespace embree
     local2world = xfm;
     world2local = rcp(xfm);
   }
+
+  GeometryGroup::GeometryGroup (Scene* parent, RTCGeometryFlags gflags, const std::vector<Geometry*>& geometries) 
+    : Geometry(parent,geometries.size() ? geometries[0]->getType() : TRIANGLE_MESH, 1, 1, gflags), geometries(geometries)
+  {
+    enabling();
+  }
+
+  void GeometryGroup::enabling () 
+  {
+  }
+
+  void GeometryGroup::disabling() 
+  {
+  }
+  
+  void GeometryGroup::setMask (unsigned mask) 
+  {
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    this->mask = mask; 
+    Geometry::update();
+  } 
 }

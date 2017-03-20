@@ -38,4 +38,18 @@ namespace embree
     AffineSpace3fa world2local; //!< transforms from world space to local space
     Geometry* geom;             //!< pointer to instanced acceleration structure
   };
+
+  /*! Geometry group */
+  struct GeometryGroup : public Geometry
+  {
+    ALIGNED_STRUCT;
+  public:
+    GeometryGroup (Scene* parent, RTCGeometryFlags gflags, const std::vector<Geometry*>& geometries); 
+    virtual void build() {}
+    virtual void enabling ();
+    virtual void disabling();
+    virtual void setMask (unsigned mask);
+  public:
+    std::vector<Geometry*> geometries; 
+  };
 }
