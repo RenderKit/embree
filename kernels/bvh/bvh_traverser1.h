@@ -289,8 +289,9 @@ namespace embree
 #endif          
           leafType = node->type;
           //context->geomID_to_instID = &node->instID;
-          context->instID = node->instID;
+          context->instID = ray.instID;
           context->geomID = ray.geomID;
+          ray.instID = node->instID;
           ray.geomID = -1;
 
 #if ENABLE_TRANSFORM_CACHE
@@ -329,9 +330,8 @@ namespace embree
           vray = (TravRay<N,Nx>&) tlray;
           ray.org = ((TravRay<N,Nx>&)tlray).org_xyz;
           ray.dir = ((TravRay<N,Nx>&)tlray).dir_xyz;
-          if (ray.geomID != -1) {
+          if (ray.geomID == -1) {
             ray.instID = context->instID;
-          } else {
             ray.geomID = context->geomID;
           }
           return true;
@@ -359,8 +359,9 @@ namespace embree
 #endif
           leafType = node->type;
           //context->geomID_to_instID = &node->instID;
-          context->instID = node->instID;
+          context->instID = ray.instID;
           context->geomID = ray.geomID;
+          ray.instID = node->instID;
           ray.geomID = -1;
 
 #if ENABLE_TRANSFORM_CACHE
@@ -399,9 +400,8 @@ namespace embree
           vray = (TravRay<N,Nx>&) tlray;
           ray.org = ((TravRay<N,Nx>&)tlray).org_xyz;
           ray.dir = ((TravRay<N,Nx>&)tlray).dir_xyz;
-          if (ray.geomID != -1) {
+          if (ray.geomID == -1) {
             ray.instID = context->instID;
-          } else {
             ray.geomID = context->geomID;
           }
           return true;
