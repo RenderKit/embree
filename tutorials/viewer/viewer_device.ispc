@@ -203,24 +203,27 @@ AffineSpace3f calculate_interpolated_space (uniform ISPCInstance* uniform instan
 inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
-  unsigned ray_geomID = g_instancing_mode >= 1 ? ray.instID : ray.geomID;
-  foreach_unique (geomID in ray_geomID)
-  {
-    /* get instance and geometry pointers */
-    ISPCInstance* uniform instance;
-    uniform ISPCGeometry* uniform geometry;
-    if (g_instancing_mode) {
-      instance = g_ispc_scene->geomID_to_inst[geomID];
-      geometry = g_ispc_scene->geometries[instance->geom.geomID];
-    } else {
-      instance = NULL;
-      geometry = g_ispc_scene->geometries[geomID];
+  foreach_unique (instID in ray.instID) {
+    foreach_unique (geomID in ray.geomID) {
+      ISPCGeometry* uniform geometry = NULL;
+      if (g_instancing_mode == 3) {
+        ISPCInstance* uniform instance = g_ispc_scene->geomID_to_inst[instID];
+        geometry = g_ispc_scene->geometries[instance->geom.geomID];
+      } else {
+        geometry = g_ispc_scene->geometries[geomID];
+      }
+      postIntersectGeometry(ray,dg,geometry,materialID);
     }
+  }
 
-    postIntersectGeometry(ray,dg,geometry,materialID);
-
-    /* convert normals */
-    if (instance) {
+  if (g_instancing_mode)
+  {
+    foreach_unique (instID in ray.instID)
+    {
+      /* get instance and geometry pointers */
+      ISPCInstance* uniform instance = g_ispc_scene->geomID_to_inst[instID];
+      
+      /* convert normals */
       //AffineSpace3f space = (1.0f-ray.time)*make_AffineSpace3f(instance->space0) + ray.time*make_AffineSpace3f(instance->space1);
       AffineSpace3f space = calculate_interpolated_space(instance,ray.time);
       dg.Ng = xfmVector(space,dg.Ng);
