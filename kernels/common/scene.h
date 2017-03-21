@@ -137,6 +137,9 @@ namespace embree
     /*! Creates a new geometry instance. */
     unsigned int newGeometryInstance (Geometry* geom);
 
+    /*! Creates a new geometry group. */
+    unsigned int newGeometryGroup (RTCGeometryFlags gflags, const std::vector<Geometry*> geometries);
+
     /*! Creates a new triangle mesh. */
     unsigned int newTriangleMesh (RTCGeometryFlags flags, size_t maxTriangles, size_t maxVertices, size_t numTimeSteps);
 

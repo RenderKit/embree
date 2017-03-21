@@ -25,7 +25,7 @@ namespace embree
     enabling();
   }
 
-  void GeometryInstance::count(ssize_t f)
+  void GeometryInstance::count(Geometry* geom, ssize_t f)
   {
     if (geom->numTimeSteps == 1)
     {
@@ -52,13 +52,28 @@ namespace embree
   void GeometryInstance::enabling () 
   {
     geom->used++;
-    count(+1);
+    if (geom->getType() == Geometry::GROUP) {
+      GeometryGroup* group = (GeometryGroup*) geom;
+      for (size_t i=0; i<group->size(); i++)
+        count((*group)[i],+1);
+    }
+    else {
+      count(geom,+1);
+    }
   }
 
   void GeometryInstance::disabling() 
   {
     geom->used--;
-    count(-1);
+     geom->used++;
+    if (geom->getType() == Geometry::GROUP) {
+      GeometryGroup* group = (GeometryGroup*) geom;
+      for (size_t i=0; i<group->size(); i++)
+        count((*group)[i],-1);
+    }
+    else {
+      count(geom,-1);
+    }
   }
   
   void GeometryInstance::setMask (unsigned mask) 
@@ -81,4 +96,27 @@ namespace embree
     local2world = xfm;
     world2local = rcp(xfm);
   }
+
+  GeometryGroup::GeometryGroup (Scene* parent, RTCGeometryFlags gflags, const std::vector<Geometry*>& geometries) 
+    : Geometry(parent,GROUP, geometries.size(), 1, gflags), geometries(geometries)
+  {
+    enabling();
+  }
+
+  void GeometryGroup::enabling () 
+  {
+  }
+
+  void GeometryGroup::disabling() 
+  {
+  }
+  
+  void GeometryGroup::setMask (unsigned mask) 
+  {
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    this->mask = mask; 
+    Geometry::update();
+  } 
 }

@@ -20,7 +20,9 @@
 
 namespace embree
 {
-  extern "C" int g_instancing_mode = 0;
+  extern "C" int g_instancing_mode = SceneGraph::INSTANCING_NONE;
+
+  std::map<Ref<SceneGraph::Node>,ISPCGeometry*> node2geom;
 
   ISPCTriangleMesh::ISPCTriangleMesh (TutorialScene* scene_in, Ref<SceneGraph::TriangleMeshNode> in) 
     : geom(TRIANGLE_MESH)
@@ -34,8 +36,6 @@ namespace embree
     numTimeSteps = (unsigned) in->numTimeSteps();
     numVertices = (unsigned) in->numVertices();
     numTriangles = (unsigned) in->numPrimitives();
-    scene = nullptr;
-    geomID = -1;
     materialID = scene_in->materialID(in->material);
   }
 
@@ -55,8 +55,6 @@ namespace embree
     numTimeSteps = (unsigned) in->numTimeSteps();
     numVertices = (unsigned) in->numVertices();
     numQuads = (unsigned) in->numPrimitives();
-    scene = nullptr;
-    geomID = -1;
     materialID = scene_in->materialID(in->material);
   }
 
@@ -94,8 +92,6 @@ namespace embree
     numNormals = unsigned(in->normals.size());
     numTexCoords = unsigned(in->texcoords.size());
     materialID = scene_in->materialID(in->material);
-    scene = nullptr;
-    geomID = -1;
     
     size_t numEdges = in->position_indices.size();
     size_t numFaces = in->verticesPerFace.size();
@@ -128,8 +124,6 @@ namespace embree
     numVertices = (unsigned) in->numVertices();
     numSegments = (unsigned) in->numPrimitives();
     materialID = scene_in->materialID(in->material);
-    scene = nullptr;
-    geomID = -1;
   }
 
   ISPCLineSegments::~ISPCLineSegments () {
@@ -147,8 +141,6 @@ namespace embree
     numVertices = (unsigned) in->numVertices();
     numHairs = (unsigned)in->numPrimitives();
     materialID = scene_in->materialID(in->material);
-    scene = nullptr;
-    geomID = -1;
     tessellation_rate = in->tessellation_rate;
   }
 
@@ -161,8 +153,9 @@ namespace embree
   }
   
   ISPCInstance::ISPCInstance (TutorialScene* scene, Ref<SceneGraph::TransformNode> in)
-    : geom(INSTANCE), geomID(scene->geometryID(in->child)), numTimeSteps(unsigned(in->spaces.size())) 
+    : geom(INSTANCE), numTimeSteps(unsigned(in->spaces.size())) 
   {
+    geom.geomID = scene->geometryID(in->child);
     for (size_t i=0; i<numTimeSteps; i++)
       spaces[i] = in->spaces[i];
   }
@@ -185,22 +178,28 @@ namespace embree
 
   ISPCGeometry* ISPCScene::convertGeometry (TutorialScene* scene, Ref<SceneGraph::Node> in)
   {
-    if (Ref<SceneGraph::TriangleMeshNode> mesh = in.dynamicCast<SceneGraph::TriangleMeshNode>())
-      return (ISPCGeometry*) new ISPCTriangleMesh(scene,mesh);
+    ISPCGeometry* geom = nullptr;
+    if (node2geom.find(in) != node2geom.end())
+      return node2geom[in];
+    else if (Ref<SceneGraph::TriangleMeshNode> mesh = in.dynamicCast<SceneGraph::TriangleMeshNode>())
+      geom = (ISPCGeometry*) new ISPCTriangleMesh(scene,mesh);
     else if (Ref<SceneGraph::QuadMeshNode> mesh = in.dynamicCast<SceneGraph::QuadMeshNode>())
-      return (ISPCGeometry*) new ISPCQuadMesh(scene,mesh);
+      geom = (ISPCGeometry*) new ISPCQuadMesh(scene,mesh);
     else if (Ref<SceneGraph::SubdivMeshNode> mesh = in.dynamicCast<SceneGraph::SubdivMeshNode>())
-      return (ISPCGeometry*) new ISPCSubdivMesh(scene,mesh);
+      geom = (ISPCGeometry*) new ISPCSubdivMesh(scene,mesh);
     else if (Ref<SceneGraph::LineSegmentsNode> mesh = in.dynamicCast<SceneGraph::LineSegmentsNode>())
-      return (ISPCGeometry*) new ISPCLineSegments(scene,mesh);
+      geom = (ISPCGeometry*) new ISPCLineSegments(scene,mesh);
     else if (Ref<SceneGraph::HairSetNode> mesh = in.dynamicCast<SceneGraph::HairSetNode>())
-      return (ISPCGeometry*) new ISPCHairSet(scene,mesh->type,mesh->basis,mesh);
+      geom = (ISPCGeometry*) new ISPCHairSet(scene,mesh->type,mesh->basis,mesh);
     else if (Ref<SceneGraph::TransformNode> mesh = in.dynamicCast<SceneGraph::TransformNode>())
-      return (ISPCGeometry*) ISPCInstance::create(scene,mesh);
+      geom = (ISPCGeometry*) ISPCInstance::create(scene,mesh);
     else if (Ref<SceneGraph::GroupNode> mesh = in.dynamicCast<SceneGraph::GroupNode>())
-      return (ISPCGeometry*) new ISPCGroup(scene,mesh);
+      geom = (ISPCGeometry*) new ISPCGroup(scene,mesh);
     else
       THROW_RUNTIME_ERROR("unknown geometry type");
+
+    node2geom[in] = geom;
+    return geom;
   }
 
   unsigned int ConvertTriangleMesh(ISPCTriangleMesh* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
@@ -210,8 +209,8 @@ namespace embree
       rtcSetBuffer(scene_out, geomID, (RTCBufferType)(RTC_VERTEX_BUFFER+t), mesh->positions[t], 0, sizeof(Vec3fa      ));
     }
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
-    mesh->scene = scene_out;
-    mesh->geomID = geomID;
+    mesh->geom.scene = scene_out;
+    mesh->geom.geomID = geomID;
     return geomID;
   }
   
@@ -222,8 +221,8 @@ namespace embree
       rtcSetBuffer(scene_out, geomID, (RTCBufferType)(RTC_VERTEX_BUFFER+t), mesh->positions[t], 0, sizeof(Vec3fa      ));
     }
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(ISPCQuad));
-    mesh->scene = scene_out;
-    mesh->geomID = geomID;
+    mesh->geom.scene = scene_out;
+    mesh->geom.geomID = geomID;
     return geomID;
   }
   
@@ -267,8 +266,8 @@ namespace embree
     rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(float));
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(unsigned int));
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float));
-    mesh->scene = scene_out;
-    mesh->geomID = geomID;
+    mesh->geom.scene = scene_out;
+    mesh->geom.geomID = geomID;
     return geomID;
   }
   
@@ -279,8 +278,8 @@ namespace embree
       rtcSetBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t), mesh->positions[t],0,sizeof(Vec3fa));
     }
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->indices,0,sizeof(int));
-    mesh->scene = scene_out;
-    mesh->geomID = geomID;
+    mesh->geom.scene = scene_out;
+    mesh->geom.geomID = geomID;
     return geomID;
   }
   
@@ -295,8 +294,8 @@ namespace embree
     }
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->hairs,0,sizeof(ISPCHair));
     rtcSetTessellationRate(scene_out,geomID,(float)mesh->tessellation_rate);
-    mesh->scene = scene_out;
-    mesh->geomID = geomID;
+    mesh->geom.scene = scene_out;
+    mesh->geom.geomID = geomID;
     return geomID;
   }
   
@@ -310,8 +309,8 @@ namespace embree
       rtcSetBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t), mesh->positions[t],0,sizeof(Vec3fa));
     }
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->hairs,0,sizeof(ISPCHair));
-    mesh->scene = scene_out;
-    mesh->geomID = geomID;
+    mesh->geom.scene = scene_out;
+    mesh->geom.geomID = geomID;
     return geomID;
   }
   
@@ -336,12 +335,25 @@ namespace embree
         assert(false);
     }
   }
+
+  unsigned int ConvertGroupGeometry(ISPCGroup* group, RTCGeometryFlags gflags, RTCScene scene_out)
+  {
+    std::vector<unsigned> geometries(group->numGeometries);
+    for (size_t i=0; i<group->numGeometries; i++) {
+      geometries[i] = group->geometries[i]->geomID;
+      assert(geometries[i] != -1);
+    }
+    unsigned int geomID = rtcNewGeometryGroup (scene_out, gflags, geometries.data(), geometries.size());
+    group->geom.scene = scene_out;
+    group->geom.geomID = geomID;
+    return geomID;
+  }
   
   unsigned int ConvertInstance(ISPCScene* scene_in, ISPCInstance* instance, int meshID, RTCScene scene_out)
   {
-    if (g_instancing_mode == 1) {
+    if (g_instancing_mode == SceneGraph::INSTANCING_GEOMETRY || g_instancing_mode == SceneGraph::INSTANCING_GEOMETRY_GROUP) {
       if (instance->numTimeSteps == 1) {
-        unsigned int geom_inst = instance->geomID;
+        unsigned int geom_inst = instance->geom.geomID;
         unsigned int geomID = rtcNewGeometryInstance(scene_out, geom_inst);
         rtcSetTransform2(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->spaces[0].l.vx.x,0);
         return geomID;
@@ -351,7 +363,7 @@ namespace embree
     } 
     else
     {
-      RTCScene scene_inst = scene_in->geomID_to_scene[instance->geomID];
+      RTCScene scene_inst = scene_in->geomID_to_scene[instance->geom.geomID];
       if (instance->numTimeSteps == 1) {
         unsigned int geomID = rtcNewInstance2(scene_out, scene_inst, 1);
         rtcSetTransform2(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->spaces[0].l.vx.x,0);
@@ -371,10 +383,11 @@ namespace embree
   
   extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCSceneFlags sflags, RTCAlgorithmFlags aflags, RTCGeometryFlags gflags)
   {
+    node2geom.clear();
     RTCScene scene_out = rtcDeviceNewScene(g_device,sflags,aflags);
     
     /* use geometry instancing feature */
-    if (g_instancing_mode == 1)
+    if (g_instancing_mode == SceneGraph::INSTANCING_GEOMETRY || g_instancing_mode == SceneGraph::INSTANCING_GEOMETRY_GROUP)
     {
       for (unsigned int i=0; i<scene_in->numGeometries; i++)
       {
@@ -409,6 +422,11 @@ namespace embree
           assert(geomID == i);
           rtcDisable(scene_out,geomID);
         }
+        else if (geometry->type == GROUP) {
+          unsigned int geomID = ConvertGroupGeometry((ISPCGroup*) geometry, gflags, scene_out);
+          assert(geomID == i);
+          rtcDisable(scene_out,geomID);
+        }
         else if (geometry->type == INSTANCE) {
           unsigned int geomID = ConvertInstance(scene_in, (ISPCInstance*) geometry, i, scene_out);
           assert(geomID == i); scene_in->geomID_to_inst[geomID] = (ISPCInstance*) geometry;
@@ -419,7 +437,7 @@ namespace embree
     }
     
     /* use scene instancing feature */
-    else if (g_instancing_mode == 2 || g_instancing_mode == 3)
+    else if (g_instancing_mode == SceneGraph::INSTANCING_SCENE_GEOMETRY || g_instancing_mode == SceneGraph::INSTANCING_SCENE_GROUP)
     {
       for (unsigned int i=0; i<scene_in->numGeometries; i++)
       {
