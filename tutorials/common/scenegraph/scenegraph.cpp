@@ -788,7 +788,7 @@ namespace embree
       if (instancing != SceneGraph::INSTANCING_NONE) 
       {
         std::cout << "extracting instances ";
-        if (instancing == SceneGraph::INSTANCING_SCENE_GROUP) 
+        if (instancing == SceneGraph::INSTANCING_SCENE_GROUP || instancing == SceneGraph::INSTANCING_GEOMETRY_GROUP) 
         {
           in->reset();
           in->calculateInDegree();

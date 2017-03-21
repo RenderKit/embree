@@ -143,4 +143,6 @@ Vec2f  getTextureCoordinatesSubdivMesh(void* mesh, const unsigned int primID, co
 float  getTextureTexel1f(const Texture* texture, float u, float v);
 Vec3fa  getTextureTexel3f(const Texture* texture, float u, float v);
 
+enum ISPCInstancingMode { ISPC_INSTANCING_NONE, ISPC_INSTANCING_GEOMETRY, ISPC_INSTANCING_GEOMETRY_GROUP, ISPC_INSTANCING_SCENE_GEOMETRY, ISPC_INSTANCING_SCENE_GROUP };
+
 } // namespace embree

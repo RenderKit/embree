@@ -44,19 +44,21 @@ namespace embree
     /* returns the index of the current thread */
     static __forceinline size_t threadIndex()
     {
-#if TBB_INTERFACE_VERSION_MAJOR < 8
-      return 0;
-#else
+#if TBB_INTERFACE_VERSION >= 9100
       return tbb::this_task_arena::current_thread_index();
+#elif TBB_INTERFACE_VERSION >= 9000
+      return tbb::task_arena::current_thread_index();
+#else
+      return 0;
 #endif
     }
   
     /* returns the total number of threads */
     static __forceinline size_t threadCount() {
-#if TBB_INTERFACE_VERSION_MAJOR < 8
-      return tbb::task_scheduler_init::default_num_threads();
-#else
+#if TBB_INTERFACE_VERSION >= 9100
       return tbb::this_task_arena::max_concurrency();
+#else
+      return tbb::task_scheduler_init::default_num_threads();
 #endif
     }
   };

@@ -197,6 +197,7 @@ RTCORE_API unsigned rtcNewInstance2 (RTCScene target,                  //!< the 
   ID (geomID) member of the ray will get set to the geometry ID of the
   instance. */
 RTCORE_API RTCORE_DEPRECATED unsigned rtcNewGeometryInstance(RTCScene scene, unsigned geomID);
+RTCORE_API RTCORE_DEPRECATED unsigned rtcNewGeometryGroup   (RTCScene scene, RTCGeometryFlags flags, unsigned* geomIDs, size_t N);
 
 /*! \brief Sets transformation of the instance.
   WARNING: This function is deprecated, use rtcSetTransform2 instead.

@@ -313,6 +313,7 @@ namespace embree
         std::string mode = cin->getString();
         if      (mode == "none"    ) instancing_mode = SceneGraph::INSTANCING_NONE;
         else if (mode == "geometry") instancing_mode = SceneGraph::INSTANCING_GEOMETRY;
+        else if (mode == "geometry_group") instancing_mode = SceneGraph::INSTANCING_GEOMETRY_GROUP;
         else if (mode == "scene_geometry") instancing_mode = SceneGraph::INSTANCING_SCENE_GEOMETRY;
         else if (mode == "scene_group"   ) instancing_mode = SceneGraph::INSTANCING_SCENE_GROUP;
         else throw std::runtime_error("unknown instancing mode: "+mode);
@@ -320,6 +321,7 @@ namespace embree
       }, "--instancing: set instancing mode\n"
       "  none: no instancing\n"
       "  geometry: instance individual geometries\n"
+      "  geometry_group: instance geometry groups\n"
       "  scene_geometry: instance individual geometries as scenes\n"
       "  scene_group: instance geometry groups as scenes");
     

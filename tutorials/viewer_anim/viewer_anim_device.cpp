@@ -87,7 +87,7 @@ namespace embree {
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
-    mesh->geomID = geomID;
+    mesh->geom.geomID = geomID;
     return geomID;
   }
 
@@ -104,7 +104,7 @@ namespace embree {
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(ISPCQuad));
-    mesh->geomID = geomID;
+    mesh->geom.geomID = geomID;
     return geomID;
   }
 
@@ -115,7 +115,7 @@ namespace embree {
     /* create object */
     unsigned int geomID = rtcNewSubdivisionMesh(scene_out, object_flags, mesh->numFaces, mesh->numEdges, mesh->numVertices,
                                                 mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles, mesh->numTimeSteps);
-    mesh->geomID = geomID;
+    mesh->geom.geomID = geomID;
     for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 4.0f;
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
@@ -210,32 +210,32 @@ namespace embree {
 
     if (geometry->type == SUBDIV_MESH) {
       geomID = convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out);
-      ((ISPCSubdivMesh*)geometry)->geomID = geomID;
+      ((ISPCSubdivMesh*)geometry)->geom.geomID = geomID;
       assert(geomID == i);
     }
     else if (geometry->type == TRIANGLE_MESH) {
       geomID = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out);
-      ((ISPCTriangleMesh*)geometry)->geomID = geomID;
+      ((ISPCTriangleMesh*)geometry)->geom.geomID = geomID;
       assert(geomID == i);
     }
     else if (geometry->type == QUAD_MESH) {
       geomID = convertQuadMesh((ISPCQuadMesh*) geometry, scene_out);
-      ((ISPCQuadMesh*)geometry)->geomID = geomID;
+      ((ISPCQuadMesh*)geometry)->geom.geomID = geomID;
       assert(geomID == i);
     }
     else if (geometry->type == LINE_SEGMENTS) {
       geomID = convertLineSegments((ISPCLineSegments*) geometry, scene_out);
-      ((ISPCLineSegments*)geometry)->geomID = geomID;
+      ((ISPCLineSegments*)geometry)->geom.geomID = geomID;
       assert(geomID == i);
     }
     else if (geometry->type == HAIR_SET) {
       geomID = convertHairSet((ISPCHairSet*) geometry, scene_out);
-      ((ISPCHairSet*)geometry)->geomID = geomID;
+      ((ISPCHairSet*)geometry)->geom.geomID = geomID;
       assert(geomID == i);
     }
     else if (geometry->type == CURVES) {
       geomID = convertCurveGeometry((ISPCHairSet*) geometry, scene_out);
-      ((ISPCHairSet*)geometry)->geomID = geomID;
+      ((ISPCHairSet*)geometry)->geom.geomID = geomID;
       assert(geomID == i);
     }
     else
@@ -267,7 +267,7 @@ namespace embree {
     ISPCGeometry* geometry = scene_in->geometries[ID];
 
     if (geometry->type == SUBDIV_MESH) {
-      unsigned int geomID = ((ISPCSubdivMesh*)geometry)->geomID;
+      unsigned int geomID = ((ISPCSubdivMesh*)geometry)->geom.geomID;
       /* if static do nothing */
       if (((ISPCSubdivMesh*)geometry)->numTimeSteps <= 1) return;
       rtcUpdate(scene_out,geomID);
@@ -281,7 +281,7 @@ namespace embree {
       const size_t t1 = (keyFrameID+1) % mesh->numTimeSteps;
       const Vec3fa* __restrict__ const input0 = mesh->positions[t0];
       const Vec3fa* __restrict__ const input1 = mesh->positions[t1];
-      interpolateVertices(scene_out, mesh->geomID, mesh->numVertices, input0, input1, tt);
+      interpolateVertices(scene_out, mesh->geom.geomID, mesh->numVertices, input0, input1, tt);
     }
     else if (geometry->type == QUAD_MESH) {
       ISPCQuadMesh* mesh = (ISPCQuadMesh*)geometry;
@@ -292,22 +292,22 @@ namespace embree {
       const size_t t1 = (keyFrameID+1) % mesh->numTimeSteps;
       const Vec3fa* __restrict__ const input0 = mesh->positions[t0];
       const Vec3fa* __restrict__ const input1 = mesh->positions[t1];
-      interpolateVertices(scene_out, mesh->geomID, mesh->numVertices, input0, input1, tt);
+      interpolateVertices(scene_out, mesh->geom.geomID, mesh->numVertices, input0, input1, tt);
     }
     else if (geometry->type == LINE_SEGMENTS) {
-      unsigned int geomID = ((ISPCLineSegments*)geometry)->geomID;
+      unsigned int geomID = ((ISPCLineSegments*)geometry)->geom.geomID;
       /* if static do nothing */
       if (((ISPCLineSegments*)geometry)->numTimeSteps <= 1) return;
       rtcUpdate(scene_out,geomID);
     }
     else if (geometry->type == HAIR_SET) {
-      unsigned int geomID = ((ISPCHairSet*)geometry)->geomID;
+      unsigned int geomID = ((ISPCHairSet*)geometry)->geom.geomID;
       /* if static do nothing */
       if (((ISPCHairSet*)geometry)->numTimeSteps <= 1) return;
       rtcUpdate(scene_out,geomID);
     }
     else if (geometry->type == CURVES) {
-      unsigned int geomID = ((ISPCHairSet*)geometry)->geomID;
+      unsigned int geomID = ((ISPCHairSet*)geometry)->geom.geomID;
       /* if static do nothing */
       if (((ISPCHairSet*)geometry)->numTimeSteps <= 1) return;
       rtcUpdate(scene_out,geomID);

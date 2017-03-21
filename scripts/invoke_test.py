@@ -142,6 +142,9 @@ elif ret == 34304:
 elif ret == -1073741819:
   sys.stdout.write(" [failed] [segfault]\n");  # segfault under windows
   sys.exit(4)
+elif ret == -1073741571:
+  sys.stdout.write(" [failed] [stack overflow]\n");  # stack overflow under windows
+  sys.exit(4)
 elif ret == 35584:
   sys.stdout.write(" [failed] [segfault]\n");  # segfault under linux
   sys.exit(4)
@@ -149,5 +152,5 @@ elif ret == 139:
   sys.stdout.write(" [failed] [segfault]\n");  # segfault under linux
   sys.exit(4)
 else:
-  sys.stdout.write(" [failed]\n")
+  sys.stdout.write(" [failed] [" + str(ret) + "]\n")
   sys.exit(1)
