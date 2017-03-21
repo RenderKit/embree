@@ -30,8 +30,9 @@ namespace embree
       else if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
         if (g_instancing_mode == 4) {
           if (Ref<SceneGraph::GroupNode> groupNode = xfmNode->child.dynamicCast<SceneGraph::GroupNode>()) {
-            for (size_t i=0; i<groupNode->size(); i++)
+            for (size_t i=0; i<groupNode->size(); i++) {
               addGeometry(groupNode->child(i));
+            }
           }
         }
         addGeometry(xfmNode->child);

@@ -25,6 +25,10 @@ namespace embree
   {
     ALIGNED_STRUCT;
   public:
+
+    /*! type of this geometry */
+    static const Geometry::Type geom_type = Geometry::INSTANCE;
+
     GeometryInstance (Scene* parent, Geometry* geom); 
     virtual void build() {}
     virtual void enabling ();
@@ -44,6 +48,10 @@ namespace embree
   {
     ALIGNED_STRUCT;
   public:
+
+    /*! type of this geometry */
+    static const Geometry::Type geom_type = Geometry::GROUP;
+
     GeometryGroup (Scene* parent, RTCGeometryFlags gflags, const std::vector<Geometry*>& geometries); 
     virtual void build() {}
     virtual void enabling ();

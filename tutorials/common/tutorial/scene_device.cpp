@@ -22,6 +22,8 @@ namespace embree
 {
   extern "C" int g_instancing_mode = 0;
 
+  std::map<Ref<SceneGraph::Node>,ISPCGeometry*> node2geom;
+
   ISPCTriangleMesh::ISPCTriangleMesh (TutorialScene* scene_in, Ref<SceneGraph::TriangleMeshNode> in) 
     : geom(TRIANGLE_MESH)
   {
@@ -176,22 +178,28 @@ namespace embree
 
   ISPCGeometry* ISPCScene::convertGeometry (TutorialScene* scene, Ref<SceneGraph::Node> in)
   {
-    if (Ref<SceneGraph::TriangleMeshNode> mesh = in.dynamicCast<SceneGraph::TriangleMeshNode>())
-      return (ISPCGeometry*) new ISPCTriangleMesh(scene,mesh);
+    ISPCGeometry* geom = nullptr;
+    if (node2geom.find(in) != node2geom.end())
+      return node2geom[in];
+    else if (Ref<SceneGraph::TriangleMeshNode> mesh = in.dynamicCast<SceneGraph::TriangleMeshNode>())
+      geom = (ISPCGeometry*) new ISPCTriangleMesh(scene,mesh);
     else if (Ref<SceneGraph::QuadMeshNode> mesh = in.dynamicCast<SceneGraph::QuadMeshNode>())
-      return (ISPCGeometry*) new ISPCQuadMesh(scene,mesh);
+      geom = (ISPCGeometry*) new ISPCQuadMesh(scene,mesh);
     else if (Ref<SceneGraph::SubdivMeshNode> mesh = in.dynamicCast<SceneGraph::SubdivMeshNode>())
-      return (ISPCGeometry*) new ISPCSubdivMesh(scene,mesh);
+      geom = (ISPCGeometry*) new ISPCSubdivMesh(scene,mesh);
     else if (Ref<SceneGraph::LineSegmentsNode> mesh = in.dynamicCast<SceneGraph::LineSegmentsNode>())
-      return (ISPCGeometry*) new ISPCLineSegments(scene,mesh);
+      geom = (ISPCGeometry*) new ISPCLineSegments(scene,mesh);
     else if (Ref<SceneGraph::HairSetNode> mesh = in.dynamicCast<SceneGraph::HairSetNode>())
-      return (ISPCGeometry*) new ISPCHairSet(scene,mesh->type,mesh->basis,mesh);
+      geom = (ISPCGeometry*) new ISPCHairSet(scene,mesh->type,mesh->basis,mesh);
     else if (Ref<SceneGraph::TransformNode> mesh = in.dynamicCast<SceneGraph::TransformNode>())
-      return (ISPCGeometry*) ISPCInstance::create(scene,mesh);
+      geom = (ISPCGeometry*) ISPCInstance::create(scene,mesh);
     else if (Ref<SceneGraph::GroupNode> mesh = in.dynamicCast<SceneGraph::GroupNode>())
-      return (ISPCGeometry*) new ISPCGroup(scene,mesh);
+      geom = (ISPCGeometry*) new ISPCGroup(scene,mesh);
     else
       THROW_RUNTIME_ERROR("unknown geometry type");
+
+    node2geom[in] = geom;
+    return geom;
   }
 
   unsigned int ConvertTriangleMesh(ISPCTriangleMesh* mesh, RTCGeometryFlags gflags, RTCScene scene_out)
@@ -375,6 +383,7 @@ namespace embree
   
   extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCSceneFlags sflags, RTCAlgorithmFlags aflags, RTCGeometryFlags gflags)
   {
+    node2geom.clear();
     RTCScene scene_out = rtcDeviceNewScene(g_device,sflags,aflags);
     
     /* use geometry instancing feature */

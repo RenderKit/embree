@@ -132,17 +132,22 @@ namespace embree
           for (size_t objectID=r.begin(); objectID<r.end(); objectID++)
           {
             Mesh* mesh = scene->getSafe<Mesh>(objectID);
-            
-            /* verify if geometry got deleted properly */
-            if (mesh == nullptr) {
-              assert(objectID < objects.size () && objects[objectID] == nullptr);
-              assert(objectID < builders.size() && builders[objectID] == nullptr);
+            if (mesh) {
+              if (objects[objectID] == nullptr)
+                createMeshAccel(mesh,(AccelData*&)objects[objectID],builders[objectID]);
               continue;
             }
-            
-            /* create BVH and builder for new meshes */
-            if (objects[objectID] == nullptr) 
-              createMeshAccel(mesh,(AccelData*&)objects[objectID],builders[objectID]);
+  
+            GeometryGroup* group = scene->getSafe<GeometryGroup>(objectID);
+            if (group) {
+              if (objects[objectID] == nullptr)
+                createMeshAccel((Mesh*)group,(AccelData*&)objects[objectID],builders[objectID]);
+              continue;
+            }
+
+            /* verify if geometry got deleted properly */
+            assert(objectID < objects.size () && objects[objectID] == nullptr);
+            assert(objectID < builders.size() && builders[objectID] == nullptr);
           }
         });
       
@@ -154,7 +159,7 @@ namespace embree
             if (geom == nullptr) continue;
             Builder* builder = builders[objectID]; 
             if (builder == nullptr) continue;
-            if (geom->isModified() && geom->isInstanced()) 
+            if (geom->isModified() && geom->isInstanced())
               builder->build();
           }
         });
