@@ -142,7 +142,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene,(RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags, RTC_GEOMETRY_STATIC);
 
   /* commit individual objects in case of instancing */
-  if (g_instancing_mode == 2 || g_instancing_mode == 3) 
+  if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP) 
   {
     for (unsigned int i=0; i<scene_in->numGeometries; i++) {
       if (scene_in->geomID_to_scene[i]) rtcCommit(scene_in->geomID_to_scene[i]);
@@ -214,7 +214,7 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
   unsigned int instID = ray.instID; {
     unsigned int geomID = ray.geomID; {
       ISPCGeometry* geometry = nullptr;
-      if (g_instancing_mode == 2 || g_instancing_mode == 3) {
+      if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP) {
         ISPCInstance* instance = g_ispc_scene->geomID_to_inst[instID];
         geometry = g_ispc_scene->geometries[instance->geom.geomID];
       } else {
@@ -224,7 +224,7 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
     }
   }
 
-  if (g_instancing_mode)
+  if (g_instancing_mode != ISPC_INSTANCING_NONE)
   {
     unsigned int instID = ray.instID;
     {

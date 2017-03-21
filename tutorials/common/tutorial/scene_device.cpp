@@ -20,7 +20,7 @@
 
 namespace embree
 {
-  extern "C" int g_instancing_mode = 0;
+  extern "C" int g_instancing_mode = SceneGraph::INSTANCING_NONE;
 
   std::map<Ref<SceneGraph::Node>,ISPCGeometry*> node2geom;
 
@@ -351,7 +351,7 @@ namespace embree
   
   unsigned int ConvertInstance(ISPCScene* scene_in, ISPCInstance* instance, int meshID, RTCScene scene_out)
   {
-    if (g_instancing_mode == 1 || g_instancing_mode == 4) {
+    if (g_instancing_mode == SceneGraph::INSTANCING_GEOMETRY || g_instancing_mode == SceneGraph::INSTANCING_GEOMETRY_GROUP) {
       if (instance->numTimeSteps == 1) {
         unsigned int geom_inst = instance->geom.geomID;
         unsigned int geomID = rtcNewGeometryInstance(scene_out, geom_inst);
@@ -387,7 +387,7 @@ namespace embree
     RTCScene scene_out = rtcDeviceNewScene(g_device,sflags,aflags);
     
     /* use geometry instancing feature */
-    if (g_instancing_mode == 1 || g_instancing_mode == 4)
+    if (g_instancing_mode == SceneGraph::INSTANCING_GEOMETRY || g_instancing_mode == SceneGraph::INSTANCING_GEOMETRY_GROUP)
     {
       for (unsigned int i=0; i<scene_in->numGeometries; i++)
       {
@@ -437,7 +437,7 @@ namespace embree
     }
     
     /* use scene instancing feature */
-    else if (g_instancing_mode == 2 || g_instancing_mode == 3)
+    else if (g_instancing_mode == SceneGraph::INSTANCING_SCENE_GEOMETRY || g_instancing_mode == SceneGraph::INSTANCING_SCENE_GROUP)
     {
       for (unsigned int i=0; i<scene_in->numGeometries; i++)
       {

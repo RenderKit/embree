@@ -28,7 +28,7 @@ namespace embree
         lights.push_back(lightNode->light);
       } 
       else if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
-        if (g_instancing_mode == 4) {
+        if (g_instancing_mode == SceneGraph::INSTANCING_GEOMETRY_GROUP) {
           if (Ref<SceneGraph::GroupNode> groupNode = xfmNode->child.dynamicCast<SceneGraph::GroupNode>()) {
             for (size_t i=0; i<groupNode->size(); i++) {
               addGeometry(groupNode->child(i));
