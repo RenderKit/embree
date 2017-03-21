@@ -214,7 +214,7 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
   unsigned int instID = ray.instID; {
     unsigned int geomID = ray.geomID; {
       ISPCGeometry* geometry = nullptr;
-      if (g_instancing_mode == 3) {
+      if (g_instancing_mode == 2 || g_instancing_mode == 3) {
         ISPCInstance* instance = g_ispc_scene->geomID_to_inst[instID];
         geometry = g_ispc_scene->geometries[instance->geom.geomID];
       } else {

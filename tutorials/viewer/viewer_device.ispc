@@ -206,7 +206,7 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
   foreach_unique (instID in ray.instID) {
     foreach_unique (geomID in ray.geomID) {
       ISPCGeometry* uniform geometry = NULL;
-      if (g_instancing_mode == 3) {
+      if (g_instancing_mode == 2 || g_instancing_mode == 3) {
         ISPCInstance* uniform instance = g_ispc_scene->geomID_to_inst[instID];
         geometry = g_ispc_scene->geometries[instance->geom.geomID];
       } else {
