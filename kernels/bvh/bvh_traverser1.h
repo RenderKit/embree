@@ -288,7 +288,11 @@ namespace embree
           if (unlikely((ray.mask & node->mask) == 0)) return true;
 #endif          
           leafType = node->type;
-          context->geomID_to_instID = &node->instID;
+          //context->geomID_to_instID = &node->instID;
+          context->instID = ray.instID;
+          context->geomID = ray.geomID;
+          ray.instID = node->instID;
+          ray.geomID = -1;
 
 #if ENABLE_TRANSFORM_CACHE
           const vboolx xfm_hit = cacheTag == vintx(node->xfmID);
@@ -322,10 +326,14 @@ namespace embree
         if (cur == BVH::popRay)
         {
           leafType = 0;
-          context->geomID_to_instID = nullptr;
+          //context->geomID_to_instID = nullptr;
           vray = (TravRay<N,Nx>&) tlray;
           ray.org = ((TravRay<N,Nx>&)tlray).org_xyz;
           ray.dir = ((TravRay<N,Nx>&)tlray).dir_xyz;
+          if (ray.geomID == -1) {
+            ray.instID = context->instID;
+            ray.geomID = context->geomID;
+          }
           return true;
         }
 
@@ -350,7 +358,11 @@ namespace embree
           if (unlikely((ray.mask & node->mask) == 0)) return true;
 #endif
           leafType = node->type;
-          context->geomID_to_instID = &node->instID;
+          //context->geomID_to_instID = &node->instID;
+          context->instID = ray.instID;
+          context->geomID = ray.geomID;
+          ray.instID = node->instID;
+          ray.geomID = -1;
 
 #if ENABLE_TRANSFORM_CACHE
           const vboolx xfm_hit = cacheTag == vintx(node->xfmID);
@@ -384,10 +396,14 @@ namespace embree
         if (cur == BVH::popRay)
         {
           leafType = 0;
-          context->geomID_to_instID = nullptr;
+          //context->geomID_to_instID = nullptr;
           vray = (TravRay<N,Nx>&) tlray;
           ray.org = ((TravRay<N,Nx>&)tlray).org_xyz;
           ray.dir = ((TravRay<N,Nx>&)tlray).dir_xyz;
+          if (ray.geomID == -1) {
+            ray.instID = context->instID;
+            ray.geomID = context->geomID;
+          }
           return true;
         }
 

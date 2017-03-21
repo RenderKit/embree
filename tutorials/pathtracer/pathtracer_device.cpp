@@ -900,24 +900,24 @@ void assignShaders(ISPCGeometry* geometry)
   if (geometry->type == SUBDIV_MESH) {
     ISPCSubdivMesh* mesh = (ISPCSubdivMesh* ) geometry;
 #if ENABLE_FILTER_FUNCTION == 1
-    rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&occlusionFilterOpaque);
+    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&occlusionFilterOpaque);
 #endif
   }
   else if (geometry->type == TRIANGLE_MESH) {
     ISPCTriangleMesh* mesh = (ISPCTriangleMesh* ) geometry;
 #if ENABLE_FILTER_FUNCTION == 1
-    rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&occlusionFilterOpaque);
+    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&occlusionFilterOpaque);
     
     ISPCMaterial* material = g_ispc_scene->materials[mesh->materialID];
     //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
-    //  rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&intersectionFilterReject);
+    //  rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&intersectionFilterReject);
     //else
     if (material->type == MATERIAL_OBJ)
     {
       ISPCOBJMaterial* obj = (ISPCOBJMaterial*) material;
       if (obj->d != 1.0f || obj->map_d) {
-        rtcSetIntersectionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&intersectionFilterOBJ);
-        rtcSetOcclusionFilterFunction   (mesh->scene,mesh->geomID,(RTCFilterFunc)&occlusionFilterOBJ);
+        rtcSetIntersectionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&intersectionFilterOBJ);
+        rtcSetOcclusionFilterFunction   (mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&occlusionFilterOBJ);
       }
     }
 #endif
@@ -925,33 +925,33 @@ void assignShaders(ISPCGeometry* geometry)
   else if (geometry->type == QUAD_MESH) {
     ISPCQuadMesh* mesh = (ISPCQuadMesh*) geometry;
 #if ENABLE_FILTER_FUNCTION == 1
-    rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&occlusionFilterOpaque);
+    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&occlusionFilterOpaque);
     
     ISPCMaterial* material = g_ispc_scene->materials[mesh->materialID];
     //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
-    //  rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&intersectionFilterReject);
+    //  rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&intersectionFilterReject);
     //else
     if (material->type == MATERIAL_OBJ)
     {
       ISPCOBJMaterial* obj = (ISPCOBJMaterial*) material;
       if (obj->d != 1.0f || obj->map_d) {
-        rtcSetIntersectionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&intersectionFilterOBJ);
-        rtcSetOcclusionFilterFunction   (mesh->scene,mesh->geomID,(RTCFilterFunc)&occlusionFilterOBJ);
+        rtcSetIntersectionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&intersectionFilterOBJ);
+        rtcSetOcclusionFilterFunction   (mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&occlusionFilterOBJ);
       }
     }
 #endif
   }
   else if (geometry->type == LINE_SEGMENTS) {
     ISPCLineSegments* mesh = (ISPCLineSegments*) geometry;
-    rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&occlusionFilterHair);
+    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&occlusionFilterHair);
   }
   else if (geometry->type == HAIR_SET) {
     ISPCHairSet* mesh = (ISPCHairSet*) geometry;
-    rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&occlusionFilterHair);
+    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&occlusionFilterHair);
   }
   else if (geometry->type == CURVES) {
     ISPCHairSet* mesh = (ISPCHairSet*) geometry;
-    rtcSetOcclusionFilterFunction(mesh->scene,mesh->geomID,(RTCFilterFunc)&occlusionFilterHair);
+    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&occlusionFilterHair);
   }
   else if (geometry->type == GROUP) {
     ISPCGroup* group = (ISPCGroup*) geometry;
@@ -993,7 +993,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   }
 
   /* commit individual objects in case of instancing */
-  if (g_instancing_mode == 2 || g_instancing_mode == 3) 
+  if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP) 
   {
     for (unsigned int i=0; i<scene_in->numGeometries; i++) {
       if (scene_in->geomID_to_scene[i]) rtcCommit(scene_in->geomID_to_scene[i]);
@@ -1163,26 +1163,30 @@ AffineSpace3fa calculate_interpolated_space (ISPCInstance* instance, float gtime
 
 inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 {
-  int materialID = 0;
-  unsigned ray_geomID = g_instancing_mode >= 2 ? ray.instID : ray.geomID;
   dg.tnear_eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
-  unsigned int geomID = ray_geomID;
-  {
-    /* get instance and geometry pointers */
-    ISPCInstance* instance;
-    ISPCGeometry* geometry;
-    if (g_instancing_mode) {
-      instance = g_ispc_scene->geomID_to_inst[geomID];
-      geometry = g_ispc_scene->geometries[instance->geomID];
-    } else {
-      instance = nullptr;
-      geometry = g_ispc_scene->geometries[geomID];
+ 
+  int materialID = 0;
+  unsigned int instID = ray.instID; {
+    unsigned int geomID = ray.geomID; {
+      ISPCGeometry* geometry = nullptr;
+      if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP) {
+        ISPCInstance* instance = g_ispc_scene->geomID_to_inst[instID];
+        geometry = g_ispc_scene->geometries[instance->geom.geomID];
+      } else {
+        geometry = g_ispc_scene->geometries[geomID];
+      }
+      postIntersectGeometry(ray,dg,geometry,materialID);
     }
+  }
 
-    postIntersectGeometry(ray,dg,geometry,materialID);
-
-    /* convert normals */
-    if (instance) {
+  if (g_instancing_mode != ISPC_INSTANCING_NONE)
+  {
+    unsigned int instID = ray.instID;
+    {
+      /* get instance and geometry pointers */
+      ISPCInstance* instance = g_ispc_scene->geomID_to_inst[instID];
+      
+      /* convert normals */
       //AffineSpace3fa space = (1.0f-ray.time)*AffineSpace3fa(instance->space0) + ray.time*AffineSpace3fa(instance->space1);
       AffineSpace3fa space = calculate_interpolated_space(instance,ray.time);
       dg.Ng = xfmVector(space,dg.Ng);
@@ -1522,7 +1526,7 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
     ISPCGeometry* geometry = g_ispc_scene->geometries[g];
     if (geometry->type != SUBDIV_MESH) continue;
     ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
-    unsigned int geomID = mesh->geomID;
+    unsigned int geomID = mesh->geom.geomID;
 #if defined(ISPC)
     parallel_for(size_t(0),size_t( (mesh->numFaces+4095)/4096 ),[&](const range<size_t>& range) {
     for (size_t i=range.begin(); i<range.end(); i++)

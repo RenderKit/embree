@@ -24,7 +24,7 @@ IF (BUILD_TESTING)
 
   CMAKE_HOST_SYSTEM_INFORMATION(RESULT memory QUERY TOTAL_PHYSICAL_MEMORY)
   
-  SET(EMBREE_TESTING_MODEL_DIR "${PROJECT_SOURCE_DIR}/models" CACHE FILEPATH "Path to the folder containing the Embree models for regression testing.")
+  SET(EMBREE_TESTING_MODEL_DIR "${PROJECT_SOURCE_DIR}/models" CACHE PATH "Path to the folder containing the Embree models for regression testing.")
   SET(EMBREE_TESTING_INTENSIVE OFF CACHE BOOL "Turns intensive testing on.")
   SET(EMBREE_TESTING_MEMCHECK OFF CACHE BOOL "Turns on memory checking for some tests.")
   SET(EMBREE_TESTING_BENCHMARK OFF CACHE BOOL "Turns benchmarking on.")

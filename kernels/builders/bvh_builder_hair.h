@@ -151,7 +151,7 @@ namespace embree
         }
         
         /*! performs split */
-        void split(const PrimInfoRange& pinfo, PrimInfoRange& linfo, PrimInfoRange& rinfo, bool& aligned)
+        __noinline void split(const PrimInfoRange& pinfo, PrimInfoRange& linfo, PrimInfoRange& rinfo, bool& aligned) // FIXME: not inlined as ICC otherwise uses much stack
         {
           /* variable to track the SAH of the best splitting approach */
           float bestSAH = inf;

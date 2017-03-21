@@ -78,10 +78,10 @@ task void updateMeshEdgeLevelBufferTask( uniform ISPCScene* uniform scene_in, co
   uniform ISPCGeometry* uniform geometry = g_ispc_scene->geometries[taskIndex];
   if (geometry->type != SUBDIV_MESH) return;
   uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
-  uniform unsigned int geomID = mesh->geomID;
+  uniform unsigned int geomID = mesh->geom.geomID;
   if (mesh->numFaces < 10000) {
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
-    rtcUpdateBuffer(g_scene,mesh->geomID,RTC_LEVEL_BUFFER);
+    rtcUpdateBuffer(g_scene,mesh->geom.geomID,RTC_LEVEL_BUFFER);
   }
 }
 #endif
@@ -105,7 +105,7 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
 #else
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
-    rtcUpdateBuffer(g_scene,mesh->geomID,RTC_LEVEL_BUFFER);
+    rtcUpdateBuffer(g_scene,mesh->geom.geomID,RTC_LEVEL_BUFFER);
   }
 }
 
@@ -134,7 +134,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene,(RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags, RTC_GEOMETRY_STATIC);
 
   /* commit individual objects in case of instancing */
-  if (g_instancing_mode == 2 || g_instancing_mode == 3) 
+  if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP) 
   {
     for (uniform unsigned int i=0; i<scene_in->numGeometries; i++) {
       if (scene_in->geomID_to_scene[i]) rtcCommit(scene_in->geomID_to_scene[i]);
@@ -203,24 +203,27 @@ AffineSpace3f calculate_interpolated_space (uniform ISPCInstance* uniform instan
 inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
-  unsigned ray_geomID = g_instancing_mode >= 2 ? ray.instID : ray.geomID;
-  foreach_unique (geomID in ray_geomID)
-  {
-    /* get instance and geometry pointers */
-    ISPCInstance* uniform instance;
-    uniform ISPCGeometry* uniform geometry;
-    if (g_instancing_mode) {
-      instance = g_ispc_scene->geomID_to_inst[geomID];
-      geometry = g_ispc_scene->geometries[instance->geomID];
-    } else {
-      instance = NULL;
-      geometry = g_ispc_scene->geometries[geomID];
+  foreach_unique (instID in ray.instID) {
+    foreach_unique (geomID in ray.geomID) {
+      ISPCGeometry* uniform geometry = NULL;
+      if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP) {
+        ISPCInstance* uniform instance = g_ispc_scene->geomID_to_inst[instID];
+        geometry = g_ispc_scene->geometries[instance->geom.geomID];
+      } else {
+        geometry = g_ispc_scene->geometries[geomID];
+      }
+      postIntersectGeometry(ray,dg,geometry,materialID);
     }
+  }
 
-    postIntersectGeometry(ray,dg,geometry,materialID);
-
-    /* convert normals */
-    if (instance) {
+  if (g_instancing_mode != ISPC_INSTANCING_NONE)
+  {
+    foreach_unique (instID in ray.instID)
+    {
+      /* get instance and geometry pointers */
+      ISPCInstance* uniform instance = g_ispc_scene->geomID_to_inst[instID];
+      
+      /* convert normals */
       //AffineSpace3f space = (1.0f-ray.time)*make_AffineSpace3f(instance->space0) + ray.time*make_AffineSpace3f(instance->space1);
       AffineSpace3f space = calculate_interpolated_space(instance,ray.time);
       dg.Ng = xfmVector(space,dg.Ng);

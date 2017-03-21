@@ -32,12 +32,12 @@ namespace embree
     
     void on_scheduler_entry( bool ) 
     {
-      ++threadCount;
-      setAffinity(TaskScheduler::threadIndex());
+      const int threadIndex = threadCount++;
+      setAffinity(threadIndex); // do not use TaskScheduler::threadIndex() as old TBB versions to not have that function
     }
     
     void on_scheduler_exit( bool ) { 
-      --threadCount; 
+      threadCount--; 
     }
     
   } tbb_affinity;

@@ -38,7 +38,7 @@ namespace embree {
       rtcSetBuffer(scene_out, geomID, (RTCBufferType)(RTC_VERTEX_BUFFER+t),mesh->positions[t], 0, sizeof(Vec3fa      ));
     }
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
-    mesh->geomID = geomID;
+    mesh->geom.geomID = geomID;
     return geomID;
   }
 
@@ -49,7 +49,7 @@ namespace embree {
       rtcSetBuffer(scene_out, geomID, (RTCBufferType)(RTC_VERTEX_BUFFER+t),mesh->positions[t], 0, sizeof(Vec3fa      ));
     }
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(ISPCQuad));
-    mesh->geomID = geomID;
+    mesh->geom.geomID = geomID;
     return geomID;
   }
 
@@ -57,7 +57,7 @@ namespace embree {
   {
     unsigned int geomID = rtcNewSubdivisionMesh(scene_out,flags, mesh->numFaces, mesh->numEdges, mesh->numVertices,
                                                 mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles, mesh->numTimeSteps);
-    mesh->geomID = geomID;
+    mesh->geom.geomID = geomID;
     for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 16.0f;
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
       rtcSetBuffer(scene_out, geomID, (RTCBufferType)(RTC_VERTEX_BUFFER+t),mesh->positions[t], 0, sizeof(Vec3fa  ));
@@ -133,27 +133,27 @@ namespace embree {
       ISPCGeometry* geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
         unsigned int geomID MAYBE_UNUSED = convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out, gflags);
-        ((ISPCSubdivMesh*)geometry)->geomID = geomID;
+        ((ISPCSubdivMesh*)geometry)->geom.geomID = geomID;
       }
       else if (geometry->type == TRIANGLE_MESH) {
         unsigned int geomID MAYBE_UNUSED = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out, gflags);
-        ((ISPCTriangleMesh*)geometry)->geomID = geomID;
+        ((ISPCTriangleMesh*)geometry)->geom.geomID = geomID;
       }
       else if (geometry->type == QUAD_MESH) {
         unsigned int geomID MAYBE_UNUSED = convertQuadMesh((ISPCQuadMesh*) geometry, scene_out, gflags);
-        ((ISPCQuadMesh*)geometry)->geomID = geomID;
+        ((ISPCQuadMesh*)geometry)->geom.geomID = geomID;
       }
       else if (geometry->type == LINE_SEGMENTS) {
         unsigned int geomID MAYBE_UNUSED = convertLineSegments((ISPCLineSegments*) geometry, scene_out, gflags);
-        ((ISPCLineSegments*)geometry)->geomID = geomID;
+        ((ISPCLineSegments*)geometry)->geom.geomID = geomID;
       }
       else if (geometry->type == HAIR_SET) {
         unsigned int geomID MAYBE_UNUSED = convertHairSet((ISPCHairSet*) geometry, scene_out, gflags);
-        ((ISPCHairSet*)geometry)->geomID = geomID;
+        ((ISPCHairSet*)geometry)->geom.geomID = geomID;
       }
       else if (geometry->type == CURVES) {
         unsigned int geomID MAYBE_UNUSED = convertCurveGeometry((ISPCHairSet*) geometry, scene_out, gflags);
-        ((ISPCHairSet*)geometry)->geomID = geomID;
+        ((ISPCHairSet*)geometry)->geom.geomID = geomID;
       }
       else
         assert(false);
@@ -196,58 +196,58 @@ namespace embree {
     return scene_in->numGeometries;
   }
 
-  void updateObjects(ISPCScene* scene_in, RTCScene scene_out)
+  void updateObjects(ISPCScene* scene_in, RTCScene scene_out)  // FIXME: geomID can be accessed easier now
   {
     size_t numGeometries = scene_in->numGeometries;
     for (size_t i=0; i<numGeometries; i++)
     {
       ISPCGeometry* geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
-        rtcUpdate(scene_out,((ISPCSubdivMesh*)geometry)->geomID);
+        rtcUpdate(scene_out,((ISPCSubdivMesh*)geometry)->geom.geomID);
       }
       else if (geometry->type == TRIANGLE_MESH) {
-        rtcUpdate(scene_out,((ISPCTriangleMesh*)geometry)->geomID);
+        rtcUpdate(scene_out,((ISPCTriangleMesh*)geometry)->geom.geomID);
       }
       else if (geometry->type == QUAD_MESH) {
-        rtcUpdate(scene_out,((ISPCQuadMesh*)geometry)->geomID);
+        rtcUpdate(scene_out,((ISPCQuadMesh*)geometry)->geom.geomID);
       }
       else if (geometry->type == LINE_SEGMENTS) {
-        rtcUpdate(scene_out,((ISPCLineSegments*)geometry)->geomID);
+        rtcUpdate(scene_out,((ISPCLineSegments*)geometry)->geom.geomID);
       }
       else if (geometry->type == HAIR_SET) {
-        rtcUpdate(scene_out,((ISPCHairSet*)geometry)->geomID);
+        rtcUpdate(scene_out,((ISPCHairSet*)geometry)->geom.geomID);
       }
       else if (geometry->type == CURVES) {
-        rtcUpdate(scene_out,((ISPCHairSet*)geometry)->geomID);
+        rtcUpdate(scene_out,((ISPCHairSet*)geometry)->geom.geomID);
       }
       else
         assert(false);
     }
   }
 
-  void deleteObjects(ISPCScene* scene_in, RTCScene scene_out)
+  void deleteObjects(ISPCScene* scene_in, RTCScene scene_out) // FIXME: geomID can be accessed easier now
   {
     size_t numGeometries = scene_in->numGeometries;
     for (size_t i=0; i<numGeometries; i++)
     {
       ISPCGeometry* geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
-        rtcDeleteGeometry(scene_out,((ISPCSubdivMesh*)geometry)->geomID);
+        rtcDeleteGeometry(scene_out,((ISPCSubdivMesh*)geometry)->geom.geomID);
       }
       else if (geometry->type == TRIANGLE_MESH) {
-        rtcDeleteGeometry(scene_out,((ISPCTriangleMesh*)geometry)->geomID);
+        rtcDeleteGeometry(scene_out,((ISPCTriangleMesh*)geometry)->geom.geomID);
       }
       else if (geometry->type == QUAD_MESH) {
-        rtcDeleteGeometry(scene_out,((ISPCQuadMesh*)geometry)->geomID);
+        rtcDeleteGeometry(scene_out,((ISPCQuadMesh*)geometry)->geom.geomID);
       }
       else if (geometry->type == LINE_SEGMENTS) {
-        rtcDeleteGeometry(scene_out,((ISPCLineSegments*)geometry)->geomID);
+        rtcDeleteGeometry(scene_out,((ISPCLineSegments*)geometry)->geom.geomID);
       }
       else if (geometry->type == HAIR_SET) {
-        rtcDeleteGeometry(scene_out,((ISPCHairSet*)geometry)->geomID);
+        rtcDeleteGeometry(scene_out,((ISPCHairSet*)geometry)->geom.geomID);
       }
       else if (geometry->type == CURVES) {
-        rtcDeleteGeometry(scene_out,((ISPCHairSet*)geometry)->geomID);
+        rtcDeleteGeometry(scene_out,((ISPCHairSet*)geometry)->geom.geomID);
       }
       else
         assert(false);

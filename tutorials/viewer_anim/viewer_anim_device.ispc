@@ -54,7 +54,7 @@ uniform unsigned int convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh,
   rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
   /* set index buffer */
   rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(uniform ISPCTriangle));
-  mesh->geomID = geomID;
+  mesh->geom.geomID = geomID;
   return geomID;
 }
 
@@ -70,7 +70,7 @@ uniform unsigned int convertQuadMesh(uniform ISPCQuadMesh* uniform mesh, RTCScen
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(uniform ISPCQuad));
-    mesh->geomID = geomID;
+    mesh->geom.geomID = geomID;
     return geomID;
   }
 
@@ -81,7 +81,7 @@ uniform unsigned int convertSubdivMesh(uniform ISPCSubdivMesh* uniform mesh, RTC
     /* create object */
     uniform unsigned int geomID = rtcNewSubdivisionMesh(scene_out, object_flags, mesh->numFaces, mesh->numEdges, mesh->numVertices,
                                                 mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles, mesh->numTimeSteps);
-    mesh->geomID = geomID;
+    mesh->geom.geomID = geomID;
     for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 4.0f;
     /* generate vertex buffer */
     uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
@@ -176,32 +176,32 @@ uniform unsigned int convertCurveGeometry(uniform ISPCHairSet* uniform hair, RTC
 
     if (geometry->type == SUBDIV_MESH) {
       geomID = convertSubdivMesh((uniform ISPCSubdivMesh* uniform) geometry, scene_out);
-      ((uniform ISPCSubdivMesh* uniform)geometry)->geomID = geomID;
+      ((uniform ISPCSubdivMesh* uniform)geometry)->geom.geomID = geomID;
       assert(geomID == i);
     }
     else if (geometry->type == TRIANGLE_MESH) {
       geomID = convertTriangleMesh((uniform ISPCTriangleMesh* uniform) geometry, scene_out);
-      ((uniform ISPCTriangleMesh* uniform)geometry)->geomID = geomID;
+      ((uniform ISPCTriangleMesh* uniform)geometry)->geom.geomID = geomID;
       assert(geomID == i);
     }
     else if (geometry->type == QUAD_MESH) {
       geomID = convertQuadMesh((uniform ISPCQuadMesh* uniform) geometry, scene_out);
-      ((uniform ISPCQuadMesh* uniform)geometry)->geomID = geomID;
+      ((uniform ISPCQuadMesh* uniform)geometry)->geom.geomID = geomID;
       assert(geomID == i);
     }
     else if (geometry->type == LINE_SEGMENTS) {
       geomID = convertLineSegments((uniform ISPCLineSegments* uniform) geometry, scene_out);
-      ((uniform ISPCLineSegments* uniform)geometry)->geomID = geomID;
+      ((uniform ISPCLineSegments* uniform)geometry)->geom.geomID = geomID;
       assert(geomID == i);
     }
     else if (geometry->type == HAIR_SET) {
       geomID = convertHairSet((uniform ISPCHairSet* uniform) geometry, scene_out);
-      ((uniform ISPCHairSet* uniform)geometry)->geomID = geomID;
+      ((uniform ISPCHairSet* uniform)geometry)->geom.geomID = geomID;
       assert(geomID == i);
     }
     else if (geometry->type == CURVES) {
       geomID = convertCurveGeometry((uniform ISPCHairSet* uniform) geometry, scene_out);
-      ((uniform ISPCHairSet* uniform)geometry)->geomID = geomID;
+      ((uniform ISPCHairSet* uniform)geometry)->geom.geomID = geomID;
       assert(geomID == i);
     }
     else
@@ -255,7 +255,7 @@ uniform unsigned int convertCurveGeometry(uniform ISPCHairSet* uniform hair, RTC
     uniform ISPCGeometry* uniform geometry = scene_in->geometries[ID];
 
     if (geometry->type == SUBDIV_MESH) {
-      uniform unsigned int geomID = ((uniform ISPCSubdivMesh* uniform)geometry)->geomID;
+      uniform unsigned int geomID = ((uniform ISPCSubdivMesh* uniform)geometry)->geom.geomID;
       /* if static do nothing */
       if (((uniform ISPCSubdivMesh* uniform)geometry)->numTimeSteps <= 1) return;
       rtcUpdate(scene_out,geomID);
@@ -269,7 +269,7 @@ uniform unsigned int convertCurveGeometry(uniform ISPCHairSet* uniform hair, RTC
       const uniform size_t t1 = (keyFrameID+1) % mesh->numTimeSteps;
       const uniform Vec3fa* uniform const input0 = mesh->positions[t0];
       const uniform Vec3fa* uniform const input1 = mesh->positions[t1];
-      interpolateVertices(scene_out, mesh->geomID, mesh->numVertices, input0, input1, tt);
+      interpolateVertices(scene_out, mesh->geom.geomID, mesh->numVertices, input0, input1, tt);
     }
     else if (geometry->type == QUAD_MESH) {
       uniform ISPCQuadMesh* uniform mesh = (uniform ISPCQuadMesh* uniform)geometry;
@@ -280,22 +280,22 @@ uniform unsigned int convertCurveGeometry(uniform ISPCHairSet* uniform hair, RTC
       const uniform size_t t1 = (keyFrameID+1) % mesh->numTimeSteps;
       const uniform Vec3fa* uniform const input0 = mesh->positions[t0];
       const uniform Vec3fa* uniform const input1 = mesh->positions[t1];
-      interpolateVertices(scene_out, mesh->geomID, mesh->numVertices, input0, input1, tt);
+      interpolateVertices(scene_out, mesh->geom.geomID, mesh->numVertices, input0, input1, tt);
     }
     else if (geometry->type == LINE_SEGMENTS) {
-      uniform unsigned int geomID = ((uniform ISPCLineSegments* uniform)geometry)->geomID;
+      uniform unsigned int geomID = ((uniform ISPCLineSegments* uniform)geometry)->geom.geomID;
       /* if static do nothing */
       if (((uniform ISPCLineSegments* uniform)geometry)->numTimeSteps <= 1) return;
       rtcUpdate(scene_out,geomID);
     }
     else if (geometry->type == HAIR_SET) {
-      uniform unsigned int geomID = ((uniform ISPCHairSet* uniform)geometry)->geomID;
+      uniform unsigned int geomID = ((uniform ISPCHairSet* uniform)geometry)->geom.geomID;
       /* if static do nothing */
       if (((uniform ISPCHairSet* uniform)geometry)->numTimeSteps <= 1) return;
       rtcUpdate(scene_out,geomID);
     }
     else if (geometry->type == CURVES) {
-      uniform unsigned int geomID = ((uniform ISPCHairSet* uniform)geometry)->geomID;
+      uniform unsigned int geomID = ((uniform ISPCHairSet* uniform)geometry)->geom.geomID;
       /* if static do nothing */
       if (((uniform ISPCHairSet* uniform)geometry)->numTimeSteps <= 1) return;
       rtcUpdate(scene_out,geomID);
