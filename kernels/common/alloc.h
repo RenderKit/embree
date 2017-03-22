@@ -502,7 +502,7 @@ namespace embree
           }
           else 
           {
-            const size_t alignment = CACHELINE_SIZE;
+            const size_t alignment = maxAlignment;
             if (device) device->memoryMonitor(bytesAllocate+alignment,false);
             ptr = alignedMalloc(bytesAllocate,alignment);
             return new (ptr) Block(atype,bytesAllocate-sizeof_Header,bytesAllocate-sizeof_Header,next,alignment);
