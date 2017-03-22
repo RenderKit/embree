@@ -63,7 +63,7 @@ namespace embree
       //numThreads = tbb::task_scheduler_init::default_num_threads();
     } else {
       g_tbb_threads_initialized = true;
-      const int max_concurrency = threadCount();
+      const size_t max_concurrency = threadCount();
       if (numThreads > max_concurrency) numThreads = max_concurrency;
       g_tbb_threads.initialize(int(numThreads));
     }

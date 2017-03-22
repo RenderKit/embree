@@ -20,6 +20,49 @@
 #include "sysinfo.h"
 
 ////////////////////////////////////////////////////////////////////////////////
+/// All Platforms
+////////////////////////////////////////////////////////////////////////////////
+  
+namespace embree
+{
+  void* alignedMalloc(size_t size, size_t align) 
+  {
+    assert((align & (align-1)) == 0);
+    void* ptr = _mm_malloc(size,align);
+
+    if (size != 0 && ptr == nullptr) 
+      throw std::bad_alloc();
+    
+    return ptr;
+  }
+  
+  void alignedFree(void* ptr) {
+    _mm_free(ptr);
+  }
+
+  static bool tryDirectHugePageAllocation = true;
+
+  __forceinline bool isHugePageCandidate(const size_t bytes) 
+  {
+#if defined(__WIN32__)
+    if (GetLargePageMinimum() != PAGE_SIZE_2M)
+      return false;
+#endif
+
+    /* try to use huge pages for large allocations */
+    if (bytes >= PAGE_SIZE_2M)
+    {
+      /* multiple of page size */
+      if ((bytes % PAGE_SIZE_2M) == 0) 
+        return true;
+      else if (bytes >= 64 * PAGE_SIZE_2M) /* will only introduce a 1.5% overhead */
+        return true;
+    }
+    return false;
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 /// Windows Platform
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -31,6 +74,12 @@
 
 namespace embree
 {
+#if 0
+
+  bool win_enable_hugepages(bool verbose)  {
+    return true;
+  }
+
   void* os_malloc(size_t bytes) 
   {
     int flags = MEM_COMMIT | MEM_RESERVE;
@@ -39,15 +88,11 @@ namespace embree
     return ptr;
   }
 
-  void* os_reserve(size_t bytes)
-  {
-    char* ptr = (char*) VirtualAlloc(nullptr,bytes,MEM_RESERVE,PAGE_READWRITE);
-    if (ptr == nullptr) throw std::bad_alloc();
-    return ptr;
+  void* os_reserve(size_t bytes) {
+    return os_malloc(bytes);
   }
 
   void os_commit (void* ptr, size_t bytes) {
-    VirtualAlloc(ptr,bytes,MEM_COMMIT,PAGE_READWRITE);
   }
 
   size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
@@ -57,6 +102,7 @@ namespace embree
     assert(bytesNew <= bytesOld);
     if (bytesNew < bytesOld)
       VirtualFree((char*)ptr+bytesNew,bytesOld-bytesNew,MEM_DECOMMIT);
+
     return bytesNew;
   }
 
@@ -69,6 +115,112 @@ namespace embree
   void os_advise(void *ptr, size_t bytes)
   {
   }
+
+#else
+
+  bool win_enable_hugepages(bool verbose) 
+  {
+    HANDLE hToken;
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &hToken)) {
+      if (verbose) std::cout << "OpenProcessToken failed while trying to enable SeLockMemoryPrivilege: " << GetLastError() << std::endl;
+      return false;
+    }
+
+    LUID luid;
+    if (!LookupPrivilegeValueW(nullptr, L"SeLockMemoryPrivilege", &luid)) {
+      if (verbose) std::cout << "LookupPrivilegeValue failed while trying to enable SeLockMemoryPrivilege: " << GetLastError() << std::endl;
+      return false;
+    }
+
+    TOKEN_PRIVILEGES tp;
+    tp.PrivilegeCount           = 1;
+    tp.Privileges[0].Luid       = luid;
+    tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+    SetLastError(ERROR_SUCCESS);
+    if (!AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(tp), nullptr, 0)) {
+      if (verbose) std::cout << "AdjustTokenPrivileges failed while trying to enable SeLockMemoryPrivilege" << std::endl;
+      return false;
+    }
+    
+    if (GetLastError() == ERROR_NOT_ALL_ASSIGNED) {
+      tryDirectHugePageAllocation = false;
+      std::cout << "AdjustTokenPrivileges failed to enable SeLockMemoryPrivilege" << std::endl;
+      return false;
+    } 
+
+    tryDirectHugePageAllocation = true;
+    return true;
+  }
+
+  void* os_malloc(size_t bytes)
+  {
+    if (isHugePageCandidate(bytes)) 
+    {
+      bytes = (bytes+PAGE_SIZE_2M-1)&ssize_t(-PAGE_SIZE_2M);
+
+      /* try direct huge page allocation first */
+      if (tryDirectHugePageAllocation)
+      {
+        int flags = MEM_COMMIT | MEM_RESERVE | MEM_LARGE_PAGES;
+        char* ptr = (char*) VirtualAlloc(nullptr,bytes,flags,PAGE_READWRITE);
+        if (ptr != nullptr) return ptr;
+
+        /* direct huge page allocation failed, disable it for the future */
+        tryDirectHugePageAllocation = false;     
+      }
+    } 
+    else
+      bytes = (bytes+PAGE_SIZE_4K-1)&ssize_t(-PAGE_SIZE_4K);
+
+    /* fall back to 4k pages */
+    int flags = MEM_COMMIT | MEM_RESERVE;
+    char* ptr = (char*) VirtualAlloc(nullptr,bytes,flags,PAGE_READWRITE);
+    if (ptr == nullptr) throw std::bad_alloc();
+    return ptr;
+  }
+
+  void* os_reserve(size_t bytes) {
+    return os_malloc(bytes);
+  }
+
+  void os_commit (void* ptr, size_t bytes) {
+  }
+
+  size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
+  {
+    /* first try with 4KB pages */
+    bytesNew = (bytesNew+PAGE_SIZE_4K-1) & ~(PAGE_SIZE_4K-1);
+    if (bytesNew >= bytesOld)
+      return bytesOld;
+
+    if (VirtualFree((char*)ptr+bytesNew,bytesOld-bytesNew,MEM_DECOMMIT))
+      return bytesNew;
+
+    /* now try with 2MB pages */
+    bytesNew = (bytesNew+PAGE_SIZE_2M-1) & ~(PAGE_SIZE_2M-1);
+    if (bytesNew >= bytesOld)
+      return bytesOld;
+
+    // decommitting huge pages seems not to work under Windows
+    //if (VirtualFree((char*)ptr+bytesNew,bytesOld-bytesNew,MEM_DECOMMIT))
+    //  return bytesNew;
+    //throw std::bad_alloc();
+
+    return bytesOld;
+  }
+
+  void os_free(void* ptr, size_t bytes) 
+  {
+    if (bytes == 0) return;
+    if (!VirtualFree(ptr,0,MEM_RELEASE))
+      /*throw std::bad_alloc()*/ return;  // we on purpose do not throw an exception when an error occurs, to avoid throwing an exception during error handling
+  }
+
+  void os_advise(void *ptr, size_t bytes)
+  {
+  }
+
+#endif
 
 }
 #endif
@@ -84,28 +236,8 @@ namespace embree
 #include <stdlib.h>
 #include <string.h>
 
-#define UPGRADE_TO_2M_PAGE_LIMIT (256*1024) 
-
 namespace embree
 {
-  __forceinline bool isHugePageCandidate(const size_t bytes) 
-  {
-    /* try to use huge pages for large allocations */
-    if (bytes >= PAGE_SIZE_2M)
-    {
-      /* multiple of page size */
-      if ((bytes % PAGE_SIZE_2M) == 0) 
-        return true;
-      else if (bytes >= 64 * PAGE_SIZE_2M) /* will only introduce a 3% overhead */
-        return true;
-    }
-    return false;
-  }
-
-#if !defined(__MACOSX__)
-  static bool tryDirectHugePageAllocation = true;
-#endif
-
   /* hint for transparent huge pages (THP) */
   void os_advise(void *pptr, size_t bytes)
   {
@@ -114,11 +246,9 @@ namespace embree
       madvise(pptr,bytes,MADV_HUGEPAGE); 
 #endif
   }
-  
+
   void* os_malloc(size_t bytes)
-  {
-    int flags = MAP_PRIVATE | MAP_ANON;
-        
+  {       
     if (isHugePageCandidate(bytes)) 
     {
       bytes = (bytes+PAGE_SIZE_2M-1)&ssize_t(-PAGE_SIZE_2M);
@@ -126,7 +256,7 @@ namespace embree
       /* try direct huge page allocation first */
       if (tryDirectHugePageAllocation)
       {
-        int huge_flags = flags;
+        int huge_flags = MAP_PRIVATE | MAP_ANON;
 #ifdef MAP_HUGETLB
         huge_flags |= MAP_HUGETLB;
 #endif
@@ -134,14 +264,10 @@ namespace embree
         huge_flags |= MAP_ALIGNED_SUPER;
 #endif
         void* ptr = mmap(0, bytes, PROT_READ | PROT_WRITE, huge_flags, -1, 0);
-        
-        if (ptr == nullptr || ptr == MAP_FAILED)
-        {
-          /* direct huge page allocation failed, disable it for the future */
-          tryDirectHugePageAllocation = false;     
-        }
-        else
-          return ptr;
+        if (ptr != MAP_FAILED) return ptr;
+
+        /* direct huge page allocation failed, disable it for the future */
+        tryDirectHugePageAllocation = false;     
       }
 #endif
     } 
@@ -149,18 +275,16 @@ namespace embree
       bytes = (bytes+PAGE_SIZE_4K-1)&ssize_t(-PAGE_SIZE_4K);
 
     /* standard mmap call */
+    int flags = MAP_PRIVATE | MAP_ANON;
     void* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, flags, -1, 0);
-    assert( ptr != MAP_FAILED );
-    if (ptr == nullptr || ptr == MAP_FAILED) throw std::bad_alloc();
+    if (ptr == MAP_FAILED) throw std::bad_alloc();
 
     /* advise huge page hint for THP */
     os_advise(ptr,bytes);
     return ptr;
   }
 
-  void* os_reserve(size_t bytes) 
-  {
-    /* linux always allocates pages on demand, thus just call allocate */
+  void* os_reserve(size_t bytes) {
     return os_malloc(bytes);
   }
 
@@ -207,24 +331,3 @@ namespace embree
 
 #endif
 
-////////////////////////////////////////////////////////////////////////////////
-/// All Platforms
-////////////////////////////////////////////////////////////////////////////////
-  
-namespace embree
-{
-  void* alignedMalloc(size_t size, size_t align) 
-  {
-    assert((align & (align-1)) == 0);
-    void* ptr = _mm_malloc(size,align);
-
-    if (size != 0 && ptr == nullptr) 
-      throw std::bad_alloc();
-    
-    return ptr;
-  }
-  
-  void alignedFree(void* ptr) {
-    _mm_free(ptr);
-  }
-}

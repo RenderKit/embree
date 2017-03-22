@@ -77,6 +77,7 @@ namespace embree
     };
 
   /*! allocates pages directly from OS */
+  bool win_enable_hugepages(bool verbose);
   void* os_malloc (size_t bytes);
   void* os_reserve(size_t bytes);
   void  os_commit (void* ptr, size_t bytes);
@@ -150,7 +151,7 @@ namespace embree
 
     private:
       std::vector<T> IDs;   //!< stores deallocated IDs to be reused
-      size_t nextID;        //!< next ID to use when IDs vector is empty
+      T nextID;        //!< next ID to use when IDs vector is empty
     };
 }
 

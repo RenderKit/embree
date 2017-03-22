@@ -47,8 +47,8 @@ namespace embree
             m[src[i]]++;
 
         /* filter array */
-        //uint32_t M = sequential_filter(src.data(),size_t(0),N,pred);
-        uint32_t M = parallel_filter(src.data(),size_t(0),N,size_t(1024),pred);
+        //size_t_t M = sequential_filter(src.data(),size_t(0),N,pred);
+        size_t M = parallel_filter(src.data(),size_t(0),N,size_t(1024),pred);
         
 	/* check if filtered data is correct */
 	for (size_t i=0; i<M; i++) {

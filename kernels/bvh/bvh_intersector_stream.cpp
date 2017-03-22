@@ -46,7 +46,7 @@ namespace embree
   namespace isa
   {
     /* enable traversal of either two small streams or one large stream */
-#if !defined(__AVX512F__)
+#if !defined(__AVX512ER__) // KNL+
     static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(unsigned int);
 #else
     static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(size_t);
@@ -119,14 +119,13 @@ namespace embree
         }
       }
     }
-    
 
     // =====================================================================================================
     // =====================================================================================================
     // =====================================================================================================
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherentSOA(BVH* __restrict__ bvh, RayK<K>** inputRays, size_t numOctantRays, IntersectContext* context)
+    __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherentSOA(BVH* __restrict__ bvh, RayK<K>** inputRays, size_t numOctantRays, IntersectContext* context)
     {      
       __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  //!< stack of nodes
 
@@ -226,7 +225,7 @@ namespace embree
     }
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherentSOA(BVH* __restrict__ bvh, RayK<K>** inputRays, size_t numOctantRays, IntersectContext* context)
+    __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherentSOA(BVH* __restrict__ bvh, RayK<K>** inputRays, size_t numOctantRays, IntersectContext* context)
     {      
       __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  //!< stack of nodes
 
@@ -330,6 +329,57 @@ namespace embree
 
       } // traversal + intersection
     }
+
+    // =====================================================================================================
+    // =====================================================================================================
+    // =====================================================================================================
+
+    /* do not inline this function to separate 16-wide and 4/8-wide code paths */
+    template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
+    __noinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherent(BVH* __restrict__ bvh, Ray** inputRays, size_t numTotalRays, IntersectContext* context)
+    {
+      if (likely(context->flags == IntersectContext::INPUT_RAY_DATA_AOS))
+      {
+        /* AOS to SOA conversion */
+        RayK<K> rayK[MAX_RAYS / K];
+        RayK<K>* rayK_ptr[MAX_RAYS / K];
+        for (size_t i = 0; i < MAX_RAYS / K; i++) rayK_ptr[i] = &rayK[i];
+        AOStoSOA(rayK, inputRays, numTotalRays);
+        /* stream tracer as fast path */
+        BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherentSOA(bvh, (RayK<K>**)rayK_ptr, numTotalRays, context);
+        /* SOA to AOS conversion */
+        SOAtoAOS<K, false>(inputRays, rayK, numTotalRays);
+      }
+      else
+      {
+        assert(context->getInputSIMDWidth() == K);
+        /* stream tracer as fast path */
+        BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherentSOA(bvh, (RayK<K>**)inputRays, numTotalRays, context);
+      }
+    }
+
+    /* do not inline this function to separate 16-wide and 4/8-wide code paths */
+    template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
+    __noinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherent(BVH* __restrict__ bvh, Ray **inputRays, size_t numTotalRays, IntersectContext* context)
+    {
+      if (likely(context->flags == IntersectContext::INPUT_RAY_DATA_AOS))
+      {
+        /* AOS to SOA conversion */
+        RayK<K> rayK[MAX_RAYS / K];
+        RayK<K>* rayK_ptr[MAX_RAYS / K];
+        for (size_t i = 0; i < MAX_RAYS / K; i++) rayK_ptr[i] = &rayK[i];
+        AOStoSOA(rayK, inputRays, numTotalRays);
+        /* stream tracer as fast path */
+        BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherentSOA(bvh, (RayK<K>**)rayK_ptr, numTotalRays, context);
+        /* SOA to AOS conversion */
+        SOAtoAOS<K, true>(inputRays, rayK, numTotalRays);
+      }
+      else
+      {
+        assert(context->getInputSIMDWidth() == K);
+        BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherentSOA(bvh, (RayK<K>**)inputRays, numTotalRays, context);
+      }
+    }
     
     // =====================================================================================================
     // =====================================================================================================
@@ -337,37 +387,20 @@ namespace embree
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray** inputRays, size_t numTotalRays, IntersectContext* context)
-    {
-      __aligned(64) RayCtx ray_ctx[MAX_RAYS_PER_OCTANT];
-      __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
-      __aligned(64) StackItemMask stack[stackSizeSingle];  //!< stack of nodes
-      
+    { 
 #if ENABLE_COHERENT_STREAM_PATH == 1 
       if (unlikely(PrimitiveIntersector::validIntersectorK && !robust && isCoherent(context->user->flags)))
       {
-        if (likely(context->flags == IntersectContext::INPUT_RAY_DATA_AOS))
-        {
-          /* AOS to SOA conversion */
-          RayK<K> rayK[MAX_RAYS / K];
-          RayK<K>* rayK_ptr[MAX_RAYS / K];
-          for (size_t i = 0; i < MAX_RAYS / K; i++) rayK_ptr[i] = &rayK[i];
-          AOStoSOA(rayK, inputRays, numTotalRays);
-          /* stream tracer as fast path */
-          BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherentSOA(bvh, (RayK<K>**)rayK_ptr, numTotalRays, context);
-          /* SOA to AOS conversion */
-          SOAtoAOS<K, false>(inputRays, rayK, numTotalRays);
-        }
-        else
-        {
-          assert(context->getInputSIMDWidth() == K);
-          /* stream tracer as fast path */
-          BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherentSOA(bvh, (RayK<K>**)inputRays, numTotalRays, context);
-        }
+        intersectCoherent(bvh, inputRays, numTotalRays, context);
         return;
       }
 #endif
       assert(context->flags == IntersectContext::INPUT_RAY_DATA_AOS);
-      
+
+      __aligned(64) RayCtx ray_ctx[MAX_RAYS_PER_OCTANT];
+      __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT];
+      __aligned(64) StackItemMask stack[stackSizeSingle];  //!< stack of nodes
+
       for (size_t r = 0; r < numTotalRays; r += MAX_RAYS_PER_OCTANT)
       {
         Ray** __restrict__ rays = inputRays + r;
@@ -414,7 +447,7 @@ namespace embree
             const AlignedNode* __restrict__ const node = cur.alignedNode();
             assert(m_trav_active);
 
-#if defined(__AVX512F__)
+#if defined(__AVX512ER__) // KNL+
             /* AVX512 path for up to 64 rays */
             vllong<Nxd> maskK(zero);
             vfloat<Nx> dist(inf);
@@ -462,34 +495,18 @@ namespace embree
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, Ray **inputRays, size_t numTotalRays, IntersectContext* context)
     {
-      __aligned(64) RayCtx ray_ctx[MAX_RAYS_PER_OCTANT];
-      __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
-      __aligned(64) StackItemMask stack[stackSizeSingle];  //!< stack of nodes
-
-#if ENABLE_COHERENT_STREAM_PATH == 1 
+#if ENABLE_COHERENT_STREAM_PATH == 1
       if (unlikely(PrimitiveIntersector::validIntersectorK && !robust && isCoherent(context->user->flags)))
       {
-        if (likely(context->flags == IntersectContext::INPUT_RAY_DATA_AOS))
-        {
-          /* AOS to SOA conversion */
-          RayK<K> rayK[MAX_RAYS / K];
-          RayK<K>* rayK_ptr[MAX_RAYS / K];
-          for (size_t i = 0; i < MAX_RAYS / K; i++) rayK_ptr[i] = &rayK[i];
-          AOStoSOA(rayK, inputRays, numTotalRays);
-          /* stream tracer as fast path */
-          BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherentSOA(bvh, (RayK<K>**)rayK_ptr, numTotalRays, context);
-          /* SOA to AOS conversion */
-          SOAtoAOS<K, true>(inputRays, rayK, numTotalRays);
-        }
-        else
-        {
-          assert(context->getInputSIMDWidth() == K);
-          BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherentSOA(bvh, (RayK<K>**)inputRays, numTotalRays, context);
-        }
+        occludedCoherent(bvh, inputRays, numTotalRays, context);
         return;
       }
 #endif
       assert(context->flags == IntersectContext::INPUT_RAY_DATA_AOS);
+
+      __aligned(64) RayCtx ray_ctx[MAX_RAYS_PER_OCTANT];
+      __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
+      __aligned(64) StackItemMask stack[stackSizeSingle];  //!< stack of nodes
 
       for (size_t r = 0; r < numTotalRays; r += MAX_RAYS_PER_OCTANT)
       {
@@ -532,7 +549,7 @@ namespace embree
 
             const AlignedNode* __restrict__ const node = cur.alignedNode();
 
-#if defined(__AVX512F__) 
+#if defined(__AVX512ER__) // KNL+
             /* AVX512 path for up to 64 rays */
             vllong<Nxd> maskK(zero);
             vfloat<Nx> dist(inf);
