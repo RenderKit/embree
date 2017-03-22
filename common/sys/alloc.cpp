@@ -44,6 +44,11 @@ namespace embree
 
   __forceinline bool isHugePageCandidate(const size_t bytes) 
   {
+#if defined(__WIN32__)
+    if (GetLargePageMinimum() != PAGE_SIZE_2M)
+      return false;
+#endif
+
     /* try to use huge pages for large allocations */
     if (bytes >= PAGE_SIZE_2M)
     {
@@ -69,7 +74,7 @@ namespace embree
 
 namespace embree
 {
-#if 1
+#if 0
 
   bool win_enable_hugepages(bool verbose)  {
     return true;
@@ -97,6 +102,7 @@ namespace embree
     assert(bytesNew <= bytesOld);
     if (bytesNew < bytesOld)
       VirtualFree((char*)ptr+bytesNew,bytesOld-bytesNew,MEM_DECOMMIT);
+
     return bytesNew;
   }
 
@@ -142,9 +148,8 @@ namespace embree
       return false;
     } 
 
-    bool correct_page_size = GetLargePageMinimum() == PAGE_SIZE_2M;
-    tryDirectHugePageAllocation = correct_page_size;
-    return correct_page_size;
+    tryDirectHugePageAllocation = true;
+    return true;
   }
 
   void* os_malloc(size_t bytes)
@@ -156,8 +161,8 @@ namespace embree
       /* try direct huge page allocation first */
       if (tryDirectHugePageAllocation)
       {
-        int huge_flags = MEM_COMMIT | MEM_RESERVE | MEM_LARGE_PAGES;
-        void* ptr = mmap(0, bytes, PROT_READ | PROT_WRITE, huge_flags, -1, 0);
+        int flags = MEM_COMMIT | MEM_RESERVE | MEM_LARGE_PAGES;
+        char* ptr = (char*) VirtualAlloc(nullptr,bytes,flags,PAGE_READWRITE);
         if (ptr != nullptr) return ptr;
 
         /* direct huge page allocation failed, disable it for the future */
@@ -185,7 +190,6 @@ namespace embree
   {
     /* first try with 4KB pages */
     bytesNew = (bytesNew+PAGE_SIZE_4K-1) & ~(PAGE_SIZE_4K-1);
-    assert(bytesNew <= bytesOld);
     if (bytesNew >= bytesOld)
       return bytesOld;
 
@@ -194,14 +198,15 @@ namespace embree
 
     /* now try with 2MB pages */
     bytesNew = (bytesNew+PAGE_SIZE_2M-1) & ~(PAGE_SIZE_2M-1);
-    assert(bytesNew <= bytesOld);
     if (bytesNew >= bytesOld)
       return bytesOld;
 
-    if (VirtualFree((char*)ptr+bytesNew,bytesOld-bytesNew,MEM_DECOMMIT))
-      return bytesNew; // this may be too small in case we really used 2MB pages
+    // decommitting huge pages seems not to work under Windows
+    //if (VirtualFree((char*)ptr+bytesNew,bytesOld-bytesNew,MEM_DECOMMIT))
+    //  return bytesNew;
+    //throw std::bad_alloc();
 
-    throw std::bad_alloc();
+    return bytesOld;
   }
 
   void os_free(void* ptr, size_t bytes) 
