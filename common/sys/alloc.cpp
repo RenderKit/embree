@@ -82,6 +82,7 @@ namespace embree
 
   void* os_malloc(size_t bytes) 
   {
+    if (bytes == 0) return nullptr;
     int flags = MEM_COMMIT | MEM_RESERVE;
     char* ptr = (char*) VirtualAlloc(nullptr,bytes,flags,PAGE_READWRITE);
     if (ptr == nullptr) throw std::bad_alloc();
@@ -90,9 +91,7 @@ namespace embree
 
   size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
   {
-    size_t pageSize = 4096;
-    bytesNew = (bytesNew+pageSize-1) & ~(pageSize-1);
-    assert(bytesNew <= bytesOld);
+    bytesNew = (bytesNew+PAGE_SIZE_4K-1) & ~(PAGE_SIZE_4K-1);
     if (bytesNew < bytesOld)
       VirtualFree((char*)ptr+bytesNew,bytesOld-bytesNew,MEM_DECOMMIT);
 
@@ -147,10 +146,10 @@ namespace embree
 
   void* os_malloc(size_t bytes)
   {
+    if (bytes == 0) return nullptr;
+
     if (isHugePageCandidate(bytes)) 
     {
-      bytes = (bytes+PAGE_SIZE_2M-1)&ssize_t(-PAGE_SIZE_2M);
-
       /* try direct huge page allocation first */
       if (tryDirectHugePageAllocation)
       {
@@ -162,8 +161,6 @@ namespace embree
         tryDirectHugePageAllocation = false;     
       }
     } 
-    else
-      bytes = (bytes+PAGE_SIZE_4K-1)&ssize_t(-PAGE_SIZE_4K);
 
     /* fall back to 4k pages */
     int flags = MEM_COMMIT | MEM_RESERVE;
@@ -182,17 +179,20 @@ namespace embree
     if (VirtualFree((char*)ptr+bytesNew,bytesOld-bytesNew,MEM_DECOMMIT))
       return bytesNew;
 
+#if 0 // decommitting huge pages seems not to work under Windows
+
     /* now try with 2MB pages */
     bytesNew = (bytesNew+PAGE_SIZE_2M-1) & ~(PAGE_SIZE_2M-1);
     if (bytesNew >= bytesOld)
       return bytesOld;
 
-    // decommitting huge pages seems not to work under Windows
-    //if (VirtualFree((char*)ptr+bytesNew,bytesOld-bytesNew,MEM_DECOMMIT))
-    //  return bytesNew;
-    //throw std::bad_alloc();
+    if (VirtualFree((char*)ptr+bytesNew,bytesOld-bytesNew,MEM_DECOMMIT))
+      return bytesNew;
+    throw std::bad_alloc();
 
+#else
     return bytesOld;
+#endif
   }
 
   void os_free(void* ptr, size_t bytes) 
@@ -228,20 +228,13 @@ namespace embree
 
 namespace embree
 {
-  /* hint for transparent huge pages (THP) */
-  void os_advise(void *pptr, size_t bytes)
-  {
-#if defined(MADV_HUGEPAGE)
-    if (isHugePageCandidate(bytes)) 
-      madvise(pptr,bytes,MADV_HUGEPAGE); 
-#endif
-  }
-
   void* os_malloc(size_t bytes)
-  {       
+  { 
+    if (bytes == 0)
+      return nullptr;
+
     if (isHugePageCandidate(bytes)) 
     {
-      bytes = (bytes+PAGE_SIZE_2M-1)&ssize_t(-PAGE_SIZE_2M);
 #if !defined(__MACOSX__)
       
       /* try direct huge page allocation first */
@@ -259,8 +252,6 @@ namespace embree
       }
 #endif
     } 
-    else
-      bytes = (bytes+PAGE_SIZE_4K-1)&ssize_t(-PAGE_SIZE_4K);
 
     /* standard mmap call */
     void* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
@@ -289,7 +280,7 @@ namespace embree
       return bytesOld;
 
     if (munmap((char*)ptr+bytesNew,bytesOld-bytesNew) != -1)
-      return bytesNew; // this may be too small in case we really used 2MB pages
+      return bytesNew;
 
     throw std::bad_alloc();
   }
@@ -299,15 +290,17 @@ namespace embree
     if (bytes == 0)
       return;
 
-    size_t pageSize = PAGE_SIZE_4K;
-    if (isHugePageCandidate(bytes)) 
-      pageSize = PAGE_SIZE_2M;
-
-    bytes = (bytes+pageSize-1)&ssize_t(-pageSize);
     if (munmap(ptr,bytes) == -1)
       /*throw std::bad_alloc()*/ return;  // we on purpose do not throw an exception when an error occurs, to avoid throwing an exception during error handling
+  }
+
+  /* hint for transparent huge pages (THP) */
+  void os_advise(void* pptr, size_t bytes)
+  {
+#if defined(MADV_HUGEPAGE)
+    madvise(pptr,bytes,MADV_HUGEPAGE); 
+#endif
   }
 }
 
 #endif
-
