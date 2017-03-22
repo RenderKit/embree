@@ -283,7 +283,6 @@ namespace embree
   {
     /* first try with 4KB pages */
     bytesNew = (bytesNew+PAGE_SIZE_4K-1) & ~(PAGE_SIZE_4K-1);
-    assert(bytesNew <= bytesOld);
     if (bytesNew >= bytesOld)
       return bytesOld;
 
@@ -292,7 +291,6 @@ namespace embree
 
     /* now try with 2MB pages */
     bytesNew = (bytesNew+PAGE_SIZE_2M-1) & ~(PAGE_SIZE_2M-1);
-    assert(bytesNew <= bytesOld);
     if (bytesNew >= bytesOld)
       return bytesOld;
 
