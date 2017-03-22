@@ -31,8 +31,8 @@ ENDIF()
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -std=c++11 -fvisibility-inlines-hidden -fvisibility=hidden -fno-strict-aliasing")
 SET(CMAKE_CXX_FLAGS_DEBUG          "-DDEBUG  -DTBB_USE_DEBUG -g -O0")
-SET(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG                    -O3")
-SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DDEBUG  -DTBB_USE_DEBUG -g -O3")
+SET(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG                    -O3 -fno-tree-vectorize")
+SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DDEBUG  -DTBB_USE_DEBUG -g -O3 -fno-tree-vectorize")
 SET(CMAKE_EXE_LINKER_FLAGS "")
 
 IF (APPLE)

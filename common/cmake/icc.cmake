@@ -31,8 +31,8 @@ ENDIF()
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -std=c++11 -fvisibility-inlines-hidden -fvisibility=hidden -no-ansi-alias -fasm-blocks")
 SET(CMAKE_CXX_FLAGS_DEBUG          "-DDEBUG  -DTBB_USE_DEBUG -g -O0")
-SET(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG                    -O3 -restrict -no-inline-max-total-size -inline-factor=200 -no-inline-max-per-compile")
-SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DDEBUG  -DTBB_USE_DEBUG -g -O3 -restrict -no-inline-max-total-size -inline-factor=200 -no-inline-max-per-compile")
+SET(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG                    -O3 -restrict -no-inline-max-total-size -inline-factor=200 -no-inline-max-per-compile -no-vec")
+SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DDEBUG  -DTBB_USE_DEBUG -g -O3 -restrict -no-inline-max-total-size -inline-factor=200 -no-inline-max-per-compile -no-vec")
 
 # enable -static-intel and avoid to export ICC specific symbols from Embree
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-intel -no-intel-extensions")
