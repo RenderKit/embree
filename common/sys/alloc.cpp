@@ -80,12 +80,13 @@ namespace embree
     return true;
   }
 
-  void* os_malloc(size_t bytes) 
+  void* os_malloc(size_t bytes, bool* huge_pages) 
   {
     if (bytes == 0) return nullptr;
     int flags = MEM_COMMIT | MEM_RESERVE;
     char* ptr = (char*) VirtualAlloc(nullptr,bytes,flags,PAGE_READWRITE);
     if (ptr == nullptr) throw std::bad_alloc();
+    if (huge_pages) *huge_pages = false;
     return ptr;
   }
 
@@ -144,9 +145,12 @@ namespace embree
     return true;
   }
 
-  void* os_malloc(size_t bytes)
+  void* os_malloc(size_t bytes, bool* huge_pages)
   {
-    if (bytes == 0) return nullptr;
+    if (bytes == 0) {
+      if (huge_pages) *huge_pages = false;
+      return nullptr;
+    }
 
     if (isHugePageCandidate(bytes)) 
     {
@@ -155,7 +159,10 @@ namespace embree
       {
         int flags = MEM_COMMIT | MEM_RESERVE | MEM_LARGE_PAGES;
         char* ptr = (char*) VirtualAlloc(nullptr,bytes,flags,PAGE_READWRITE);
-        if (ptr != nullptr) return ptr;
+        if (ptr != nullptr) {
+          if (huge_pages) *huge_pages = true;
+          return ptr;
+        }
 
         /* direct huge page allocation failed, disable it for the future */
         tryDirectHugePageAllocation = false;     
@@ -166,6 +173,7 @@ namespace embree
     int flags = MEM_COMMIT | MEM_RESERVE;
     char* ptr = (char*) VirtualAlloc(nullptr,bytes,flags,PAGE_READWRITE);
     if (ptr == nullptr) throw std::bad_alloc();
+    if (huge_pages) *huge_pages = false;
     return ptr;
   }
 
@@ -228,10 +236,12 @@ namespace embree
 
 namespace embree
 {
-  void* os_malloc(size_t bytes)
+  void* os_malloc(size_t bytes, bool* huge_pages)
   { 
-    if (bytes == 0)
+    if (bytes == 0) {
+      if (huge_pages) *huge_pages = false;
       return nullptr;
+    }
 
     if (isHugePageCandidate(bytes)) 
     {
@@ -242,10 +252,16 @@ namespace embree
       {
 #if defined(__MACOSX__)
         void* ptr = mmap(0, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, VM_FLAGS_SUPERPAGE_SIZE_2MB, 0);
-        if (ptr != MAP_FAILED) return ptr;
+        if (ptr != MAP_FAILED) {
+          if (huge_pages) *huge_pages = true;
+          return ptr;
+        }
 #else
         void* ptr = mmap(0, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON | MAP_HUGETLB, -1, 0);
-        if (ptr != MAP_FAILED) return ptr;
+        if (ptr != MAP_FAILED) {
+          if (huge_pages) *huge_pages = true;
+          return ptr;
+        }
 #endif
         /* direct huge page allocation failed, disable it for the future */
         tryDirectHugePageAllocation = false;     
@@ -256,6 +272,7 @@ namespace embree
     /* standard mmap call */
     void* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
     if (ptr == MAP_FAILED) throw std::bad_alloc();
+    if (huge_pages) *huge_pages = false;
 
     /* advise huge page hint for THP */
     os_advise(ptr,bytes);

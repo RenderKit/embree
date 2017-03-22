@@ -511,16 +511,16 @@ namespace embree
         else if (atype == OS_MALLOC)
         {
           if (device) device->memoryMonitor(bytesAllocate,false);
-          ptr = os_malloc(bytesReserve);
-          return new (ptr) Block(atype,bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next,0);
+          bool huge_pages; ptr = os_malloc(bytesReserve,&huge_pages);
+          return new (ptr) Block(atype,bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next,0,huge_pages);
         }
         else
           assert(false);
         return NULL;
       }
 
-      Block (AllocationType atype, size_t bytesAllocate, size_t bytesReserve, Block* next, size_t wasted) 
-      : cur(0), allocEnd(bytesAllocate), reserveEnd(bytesReserve), next(next), wasted(wasted), atype(atype)
+      Block (AllocationType atype, size_t bytesAllocate, size_t bytesReserve, Block* next, size_t wasted, bool huge_pages = false) 
+      : cur(0), allocEnd(bytesAllocate), reserveEnd(bytesReserve), next(next), wasted(wasted), atype(atype), huge_pages(huge_pages)
       {
         assert((((size_t)&data[0]) & (maxAlignment-1)) == 0);
         //for (size_t i=0; i<allocEnd; i+=defaultBlockSize) data[i] = 0;
@@ -661,6 +661,7 @@ namespace embree
         if (atype == ALIGNED_MALLOC) std::cout << "A";
         else if (atype == OS_MALLOC) std::cout << "O";
         else if (atype == SHARED) std::cout << "S";
+        if (huge_pages) std::cout << "H";
         std::cout << "[" << getBlockUsedBytes() << ", " << getBlockAllocatedBytes() << ", " << getBlockReservedBytes() << "] ";
       }
 
@@ -671,7 +672,8 @@ namespace embree
       Block* next;               //!< pointer to next block in list
       size_t wasted;             //!< amount of memory wasted through block alignment
       AllocationType atype;      //!< allocation mode of the block
-      char align[maxAlignment-5*sizeof(size_t)-sizeof(AllocationType)]; //!< align data to maxAlignment
+      bool huge_pages;           //!< whether the block uses huge pages
+      char align[maxAlignment-5*sizeof(size_t)-sizeof(AllocationType)-sizeof(bool)]; //!< align data to maxAlignment
       char data[1];              //!< here starts memory to use for allocations
     };
 
