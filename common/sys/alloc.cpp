@@ -114,21 +114,20 @@ namespace embree
   bool win_enable_hugepages(bool verbose) 
   {
     HANDLE hToken;
-    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &hToken)) {
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY | TOKEN_ADJUST_PRIVILEGES, &hToken)) {
       if (verbose) std::cout << "OpenProcessToken failed while trying to enable SeLockMemoryPrivilege: " << GetLastError() << std::endl;
       return false;
     }
 
-    LUID luid;
-    if (!LookupPrivilegeValueW(nullptr, L"SeLockMemoryPrivilege", &luid)) {
+    TOKEN_PRIVILEGES tp;
+    tp.PrivilegeCount = 1;
+    tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+    if (!LookupPrivilegeValueW(nullptr, L"SeLockMemoryPrivilege", &tp.Privileges[0].Luid)) {
       if (verbose) std::cout << "LookupPrivilegeValue failed while trying to enable SeLockMemoryPrivilege: " << GetLastError() << std::endl;
       return false;
     }
-
-    TOKEN_PRIVILEGES tp;
-    tp.PrivilegeCount           = 1;
-    tp.Privileges[0].Luid       = luid;
-    tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+    
     SetLastError(ERROR_SUCCESS);
     if (!AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(tp), nullptr, 0)) {
       if (verbose) std::cout << "AdjustTokenPrivileges failed while trying to enable SeLockMemoryPrivilege" << std::endl;
@@ -137,7 +136,7 @@ namespace embree
     
     if (GetLastError() == ERROR_NOT_ALL_ASSIGNED) {
       tryDirectHugePageAllocation = false;
-      std::cout << "AdjustTokenPrivileges failed to enable SeLockMemoryPrivilege" << std::endl;
+      if (verbose) std::cout << "AdjustTokenPrivileges failed to enable SeLockMemoryPrivilege: Add SeLockMemoryPrivilege for current user and run process in elevated mode (Run as administrator)." << std::endl;
       return false;
     } 
 
