@@ -71,7 +71,7 @@ namespace embree
 {
 #if 1
 
-  bool win_enable_huge_pages(bool verbose)  {
+  bool win_enable_hugepages(bool verbose)  {
     return true;
   }
 
@@ -112,7 +112,7 @@ namespace embree
 
 #else
 
-  bool win_enable_huge_pages(bool verbose) 
+  bool win_enable_hugepages(bool verbose) 
   {
     HANDLE hToken;
     if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &hToken)) {

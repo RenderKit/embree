@@ -33,6 +33,7 @@
 #include "../bvh/bvh8_factory.h"
 
 #include "../common/tasking/taskscheduler.h"
+#include "../../common/sys/alloc.h"
 
 namespace embree
 {
@@ -65,7 +66,7 @@ namespace embree
     /*! enable huge page support under windows when desired */
 #if defined(__WIN32__)
     if (State::win_enable_huge_pages)
-      State::win_enable_huge_pages_success = win_enable_huge_pages(State::verbose(3));
+      State::win_enable_huge_pages_success = win_enable_hugepages(State::verbosity(3));
 #endif
     
     /*! set tessellation cache size */
