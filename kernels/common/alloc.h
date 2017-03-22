@@ -481,7 +481,7 @@ namespace embree
         bytesAllocate = ((sizeof_Header+bytesAllocate+PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
         bytesReserve  = ((sizeof_Header+bytesReserve +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
        
-        /* either use alignedMalloc or os_reserve/os_commit */
+        /* either use alignedMalloc or os_malloc */
         void *ptr = nullptr;
         if (atype == ALIGNED_MALLOC) 
         {
@@ -511,8 +511,7 @@ namespace embree
         else if (atype == OS_MALLOC)
         {
           if (device) device->memoryMonitor(bytesAllocate,false);
-          ptr = os_reserve(bytesReserve);
-          os_commit(ptr,bytesAllocate);
+          ptr = os_malloc(bytesReserve);
           return new (ptr) Block(atype,bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next,0);
         }
         else
@@ -570,8 +569,6 @@ namespace embree
         
 	if (i+bytes > allocEnd) {
           if (device) device->memoryMonitor(i+bytes-max(i,allocEnd),true);
-          if (atype == OS_MALLOC)
-            os_commit(&data[i],bytes); // FIXME: optimize, may get called frequently
         }
 	return &data[i];
       }

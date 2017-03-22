@@ -88,13 +88,6 @@ namespace embree
     return ptr;
   }
 
-  void* os_reserve(size_t bytes) {
-    return os_malloc(bytes);
-  }
-
-  void os_commit (void* ptr, size_t bytes) {
-  }
-
   size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
   {
     size_t pageSize = 4096;
@@ -177,13 +170,6 @@ namespace embree
     char* ptr = (char*) VirtualAlloc(nullptr,bytes,flags,PAGE_READWRITE);
     if (ptr == nullptr) throw std::bad_alloc();
     return ptr;
-  }
-
-  void* os_reserve(size_t bytes) {
-    return os_malloc(bytes);
-  }
-
-  void os_commit (void* ptr, size_t bytes) {
   }
 
   size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
@@ -283,13 +269,6 @@ namespace embree
     /* advise huge page hint for THP */
     os_advise(ptr,bytes);
     return ptr;
-  }
-
-  void* os_reserve(size_t bytes) {
-    return os_malloc(bytes);
-  }
-
-  void os_commit (void* ptr, size_t bytes) {
   }
 
   size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
