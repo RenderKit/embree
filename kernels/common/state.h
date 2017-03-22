@@ -128,7 +128,8 @@ namespace embree
     bool start_threads;                    //!< true when threads should be started at device creation time
     int enabled_cpu_features;              //!< CPU ISA features to use
     int enabled_builder_cpu_features;      //!< CPU ISA features to use for builders only
-
+    bool win_enable_huge_pages;            //!< configures the SeLockMemoryPrivilege under Windows to enable huge pages
+    bool win_enable_huge_pages_success;    //!< status for enabling huge pages under windows
   public:
     struct ErrorHandler
     {

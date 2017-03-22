@@ -125,6 +125,8 @@ namespace embree
     if (hasISA(AVX512KNL)) set_affinity = true;
 
     start_threads = false;
+    win_enable_huge_pages = false;
+    win_enable_huge_pages_success = false;
 
     error_function = nullptr;
     error_function2 = nullptr;
@@ -259,6 +261,11 @@ namespace embree
       else if (tok == Token::Id("max_builder_isa") && cin->trySymbol("=")) {
         std::string isa = toLowerCase(cin->get().Identifier());
         enabled_builder_cpu_features &= string_to_cpufeatures(isa);
+      }
+
+      else if (tok == Token::Id("win_enable_huge_pages") && cin->trySymbol("=")) {
+        win_enable_huge_pages = cin->get().Int();
+        win_enable_huge_pages_success = false;
       }
 
       else if (tok == Token::Id("ignore_config_files") && cin->trySymbol("="))
@@ -399,6 +406,12 @@ namespace embree
     std::cout << "  build threads = " << numThreads   << std::endl;
     std::cout << "  start_threads = " << start_threads << std::endl;
     std::cout << "  affinity      = " << set_affinity << std::endl;
+#if defined(__WIN32__)
+    std::cout << "  win_enable_huge_pages = ";
+    if (!win_enable_huge_pages) std::cout << "disabled" << std::endl;
+    else if (win_enable_huge_pages_success) std::cout << "enabled" << std::endl;
+    else std::cout << "failed" << std::endl;
+#endif
     std::cout << "  verbosity     = " << verbose << std::endl;
     std::cout << "  cache_size    = " << float(tessellation_cache_size)*1E-6 << " MB" << std::endl;
     std::cout << "  max_spatial_split_replications = " << max_spatial_split_replications << std::endl;
