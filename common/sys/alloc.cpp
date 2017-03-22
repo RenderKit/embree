@@ -236,6 +236,10 @@ namespace embree
 #include <stdlib.h>
 #include <string.h>
 
+#if defined(__MACOSX__)
+#include <mach/vm_statistics.h>
+#endif
+
 namespace embree
 {
   /* hint for transparent huge pages (THP) */
@@ -253,19 +257,17 @@ namespace embree
     {
       bytes = (bytes+PAGE_SIZE_2M-1)&ssize_t(-PAGE_SIZE_2M);
 #if !defined(__MACOSX__)
+      
       /* try direct huge page allocation first */
       if (tryDirectHugePageAllocation)
       {
-        int huge_flags = MAP_PRIVATE | MAP_ANON;
-#ifdef MAP_HUGETLB
-        huge_flags |= MAP_HUGETLB;
-#endif
-#ifdef MAP_ALIGNED_SUPER
-        huge_flags |= MAP_ALIGNED_SUPER;
-#endif
-        void* ptr = mmap(0, bytes, PROT_READ | PROT_WRITE, huge_flags, -1, 0);
+#if defined(__MACOSX__)
+        void* ptr = mmap(0, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, VM_FLAGS_SUPERPAGE_SIZE_2MB, 0);
         if (ptr != MAP_FAILED) return ptr;
-
+#else
+        void* ptr = mmap(0, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON | MAP_HUGETLB, -1, 0);
+        if (ptr != MAP_FAILED) return ptr;
+#endif
         /* direct huge page allocation failed, disable it for the future */
         tryDirectHugePageAllocation = false;     
       }
@@ -275,8 +277,7 @@ namespace embree
       bytes = (bytes+PAGE_SIZE_4K-1)&ssize_t(-PAGE_SIZE_4K);
 
     /* standard mmap call */
-    int flags = MAP_PRIVATE | MAP_ANON;
-    void* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, flags, -1, 0);
+    void* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
     if (ptr == MAP_FAILED) throw std::bad_alloc();
 
     /* advise huge page hint for THP */
