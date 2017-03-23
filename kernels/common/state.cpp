@@ -125,8 +125,13 @@ namespace embree
     if (hasISA(AVX512KNL)) set_affinity = true;
 
     start_threads = false;
-    win_enable_huge_pages = false;
-    win_enable_huge_pages_success = false;
+    enable_selockmemoryprivilege = false;
+#if defined(__LINUX__)
+    hugepages = true;
+#else
+    hugepages = false;
+#endif
+    hugepages_success = true;
 
     error_function = nullptr;
     error_function2 = nullptr;
@@ -263,9 +268,11 @@ namespace embree
         enabled_builder_cpu_features &= string_to_cpufeatures(isa);
       }
 
-      else if (tok == Token::Id("win_enable_huge_pages") && cin->trySymbol("=")) {
-        win_enable_huge_pages = cin->get().Int();
-        win_enable_huge_pages_success = false;
+      else if (tok == Token::Id("enable_selockmemoryprivilege") && cin->trySymbol("=")) {
+        enable_selockmemoryprivilege = cin->get().Int();
+      }
+      else if (tok == Token::Id("hugepages") && cin->trySymbol("=")) {
+        hugepages = cin->get().Int();
       }
 
       else if (tok == Token::Id("ignore_config_files") && cin->trySymbol("="))
@@ -406,12 +413,12 @@ namespace embree
     std::cout << "  build threads = " << numThreads   << std::endl;
     std::cout << "  start_threads = " << start_threads << std::endl;
     std::cout << "  affinity      = " << set_affinity << std::endl;
-#if defined(__WIN32__)
-    std::cout << "  win_enable_huge_pages = ";
-    if (!win_enable_huge_pages) std::cout << "disabled" << std::endl;
-    else if (win_enable_huge_pages_success) std::cout << "enabled" << std::endl;
+    
+    std::cout << "  hugepages     = ";
+    if (!hugepages) std::cout << "disabled" << std::endl;
+    else if (hugepages_success) std::cout << "enabled" << std::endl;
     else std::cout << "failed" << std::endl;
-#endif
+
     std::cout << "  verbosity     = " << verbose << std::endl;
     std::cout << "  cache_size    = " << float(tessellation_cache_size)*1E-6 << " MB" << std::endl;
     std::cout << "  max_spatial_split_replications = " << max_spatial_split_replications << std::endl;

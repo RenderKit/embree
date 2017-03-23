@@ -600,7 +600,7 @@ namespace embree
         if (atype == OS_MALLOC)
         {
           const size_t sizeof_Header = offsetof(Block,data[0]);
-          size_t newSize = os_shrink(this,sizeof_Header+getBlockUsedBytes(),reserveEnd+sizeof_Header);
+          size_t newSize = os_shrink(this,sizeof_Header+getBlockUsedBytes(),reserveEnd+sizeof_Header,huge_pages);
           if (device) device->memoryMonitor(newSize-sizeof_Header-allocEnd,true);
           reserveEnd = allocEnd = newSize-sizeof_Header;
         }

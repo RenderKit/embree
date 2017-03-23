@@ -148,16 +148,17 @@ namespace embree
     delete[] positions;
   }
 
-  ISPCInstance* ISPCInstance::create (TutorialScene* scene, Ref<SceneGraph::TransformNode> in) {
-    return ::new (alignedMalloc(sizeof(ISPCInstance)+(in->spaces.size()-1)*sizeof(AffineSpace3fa))) ISPCInstance(scene,in);
-  }
-  
   ISPCInstance::ISPCInstance (TutorialScene* scene, Ref<SceneGraph::TransformNode> in)
     : geom(INSTANCE), numTimeSteps(unsigned(in->spaces.size())) 
   {
+    spaces = (AffineSpace3fa*) alignedMalloc(in->spaces.size()*sizeof(AffineSpace3fa));
     geom.geomID = scene->geometryID(in->child);
     for (size_t i=0; i<numTimeSteps; i++)
       spaces[i] = in->spaces[i];
+  }
+
+  ISPCInstance::~ISPCInstance() {
+    alignedFree(spaces);
   }
 
   ISPCGroup::ISPCGroup (TutorialScene* scene, Ref<SceneGraph::GroupNode> in)
@@ -192,7 +193,7 @@ namespace embree
     else if (Ref<SceneGraph::HairSetNode> mesh = in.dynamicCast<SceneGraph::HairSetNode>())
       geom = (ISPCGeometry*) new ISPCHairSet(scene,mesh->type,mesh->basis,mesh);
     else if (Ref<SceneGraph::TransformNode> mesh = in.dynamicCast<SceneGraph::TransformNode>())
-      geom = (ISPCGeometry*) ISPCInstance::create(scene,mesh);
+      geom = (ISPCGeometry*) new ISPCInstance(scene,mesh);
     else if (Ref<SceneGraph::GroupNode> mesh = in.dynamicCast<SceneGraph::GroupNode>())
       geom = (ISPCGeometry*) new ISPCGroup(scene,mesh);
     else
