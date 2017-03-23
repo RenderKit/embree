@@ -44,6 +44,9 @@ namespace embree
 
   __forceinline bool isHugePageCandidate(const size_t bytes) 
   {
+    if (!tryDirectHugePageAllocation)
+      return false;
+
 #if defined(__WIN32__)
     if (GetLargePageMinimum() != PAGE_SIZE_2M)
       return false;
@@ -114,21 +117,18 @@ namespace embree
       return nullptr;
     }
 
+    /* try direct huge page allocation first */
     if (isHugePageCandidate(bytes)) 
     {
-      /* try direct huge page allocation first */
-      if (tryDirectHugePageAllocation)
-      {
-        int flags = MEM_COMMIT | MEM_RESERVE | MEM_LARGE_PAGES;
-        char* ptr = (char*) VirtualAlloc(nullptr,bytes,flags,PAGE_READWRITE);
-        if (ptr != nullptr) {
-          if (huge_pages) *huge_pages = true;
-          return ptr;
-        }
-
-        /* direct huge page allocation failed, disable it for the future */
-        tryDirectHugePageAllocation = false;     
+      int flags = MEM_COMMIT | MEM_RESERVE | MEM_LARGE_PAGES;
+      char* ptr = (char*) VirtualAlloc(nullptr,bytes,flags,PAGE_READWRITE);
+      if (ptr != nullptr) {
+        if (huge_pages) *huge_pages = true;
+        return ptr;
       }
+      
+      /* direct huge page allocation failed, disable it for the future */
+      tryDirectHugePageAllocation = false;     
     } 
 
     /* fall back to 4k pages */
@@ -203,29 +203,25 @@ namespace embree
       return nullptr;
     }
 
+    /* try direct huge page allocation first */
     if (isHugePageCandidate(bytes)) 
     {
 #if !defined(__MACOSX__)
-      
-      /* try direct huge page allocation first */
-      if (tryDirectHugePageAllocation)
-      {
 #if defined(__MACOSX__)
-        void* ptr = mmap(0, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, VM_FLAGS_SUPERPAGE_SIZE_2MB, 0);
-        if (ptr != MAP_FAILED) {
-          if (huge_pages) *huge_pages = true;
-          return ptr;
-        }
-#else
-        void* ptr = mmap(0, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON | MAP_HUGETLB, -1, 0);
-        if (ptr != MAP_FAILED) {
-          if (huge_pages) *huge_pages = true;
-          return ptr;
-        }
-#endif
-        /* direct huge page allocation failed, disable it for the future */
-        tryDirectHugePageAllocation = false;     
+      void* ptr = mmap(0, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, VM_FLAGS_SUPERPAGE_SIZE_2MB, 0);
+      if (ptr != MAP_FAILED) {
+        if (huge_pages) *huge_pages = true;
+        return ptr;
       }
+#else
+      void* ptr = mmap(0, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON | MAP_HUGETLB, -1, 0);
+      if (ptr != MAP_FAILED) {
+        if (huge_pages) *huge_pages = true;
+        return ptr;
+      }
+#endif
+      /* direct huge page allocation failed, disable it for the future */
+      tryDirectHugePageAllocation = false;     
 #endif
     } 
 
