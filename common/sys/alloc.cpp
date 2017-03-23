@@ -49,16 +49,9 @@ namespace embree
     if (!huge_pages_enabled)
       return false;
 
-    /* try to use huge pages for large allocations */
-    if (bytes >= PAGE_SIZE_2M)
-    {
-      /* multiple of page size */
-      if ((bytes % PAGE_SIZE_2M) == 0) 
-        return true;
-      else if (bytes >= 64 * PAGE_SIZE_2M) /* will only introduce a 1.5% overhead */
-        return true;
-    }
-    return false;
+    /* use huge pages only when memory overhead is low */
+    const size_t hbytes = (bytes+PAGE_SIZE_2M-1) & ~size_t(PAGE_SIZE_2M-1);
+    return 66*(hbytes-bytes) < bytes; // at most 1.5% overhead
   }
 }
 
@@ -265,7 +258,7 @@ namespace embree
 #endif
     } 
 
-    /* standard mmap call */
+    /* fallback to 4k pages */
     void* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
     if (ptr == MAP_FAILED) throw std::bad_alloc();
     if (hugepages) *hugepages = false;
