@@ -18,6 +18,7 @@
 #include "alloc.h"
 #include "intrinsics.h"
 #include "sysinfo.h"
+#include "mutex.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// All Platforms
@@ -40,11 +41,12 @@ namespace embree
     _mm_free(ptr);
   }
 
-  static bool tryDirectHugePageAllocation = true;
+  static bool huge_pages_enabled = false;
+  static MutexSys os_init_mutex;
 
   __forceinline bool isHugePageCandidate(const size_t bytes) 
   {
-    if (!tryDirectHugePageAllocation)
+    if (!huge_pages_enabled)
       return false;
 
     /* try to use huge pages for large allocations */
@@ -105,17 +107,19 @@ namespace embree
 
   bool os_init(bool hugepages, bool verbose) 
   {
+    Lock<MutexSys> lock(os_init_mutex);
+
     if (!hugepages) {
-      tryDirectHugePageAllocation = false;
+      huge_pages_enabled = false;
       return true;
     }
 
     if (GetLargePageMinimum() != PAGE_SIZE_2M) {
-      tryDirectHugePageAllocation = false;
+      huge_pages_enabled = false;
       return false;
     }
 
-    tryDirectHugePageAllocation = true;
+    huge_pages_enabled = true;
     return true;
   }
 
@@ -194,8 +198,10 @@ namespace embree
 {
   bool os_init(bool hugepages, bool verbose) 
   {
+    Lock<MutexSys> lock(os_init_mutex);
+
     if (!hugepages) {
-      tryDirectHugePageAllocation = false;
+      huge_pages_enabled = false;
       return true;
     }
 
@@ -205,27 +211,32 @@ namespace embree
 
     std::ifstream file; 
     file.open("/proc/meminfo",std::ios::in);
-    if (!file.is_open()) return false;
+    if (!file.is_open()) {
+      if (verbose) std::cout << "WARNING: Could not open /proc/meminfo. Huge page support cannot get enabled!" << std::endl;
+      huge_pages_enabled = false;
+      return false;
+    }
     
     std::string line;
     int val; char tag[41], unit[6];
     while (getline(file,line)) {
       if (sscanf(line.c_str(),"%40s %i %5s",tag,&val,unit) == 3) {
         if (std::string(tag) == "Hugepagesize:" && std::string(unit) == "kB") {
-          hugepagesize = val;
+          hugepagesize = val*1024;
           break;
         }
       }
     }
     
-    if (hugepagesize != 2048) {
+    if (hugepagesize != PAGE_SIZE_2M) 
+    {
       if (verbose) std::cout << "WARNING: Only 2MB huge pages supported. Huge page support cannot get enabled!" << std::endl;
-      tryDirectHugePageAllocation = false;
+      huge_pages_enabled = false;
       return false;
     }
 #endif
 
-    tryDirectHugePageAllocation = true;
+    huge_pages_enabled = true;
     return true;
   }
 
