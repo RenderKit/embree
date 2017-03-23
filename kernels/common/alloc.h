@@ -485,34 +485,41 @@ namespace embree
         void *ptr = nullptr;
         if (atype == ALIGNED_MALLOC) 
         {
-          if (bytesReserve == (2*PAGE_SIZE_2M))
+          /* special handling for default block size */
+          if (bytesAllocate == (2*PAGE_SIZE_2M))
           {
-            /* full 2M alignment for very first block */
-            const size_t alignment = (next == NULL) ? PAGE_SIZE_2M : PAGE_SIZE;
+            /* full 2M alignment for very first block using os_malloc */
+            if (next == NULL) {
+              if (device) device->memoryMonitor(bytesAllocate,false);
+              bool huge_pages; ptr = os_malloc(bytesReserve,&huge_pages);
+              return new (ptr) Block(OS_MALLOC,bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next,0,huge_pages);
+            }
+            
+            const size_t alignment = maxAlignment;
             if (device) device->memoryMonitor(bytesAllocate+alignment,false);
             ptr = alignedMalloc(bytesAllocate,alignment);           
- 
-            const size_t ptr_aligned_begin = ((size_t)ptr) & ~(PAGE_SIZE_2M-1);
-            /* first os_advise could fail as speculative */
-            os_advise((void*)(ptr_aligned_begin +            0),PAGE_SIZE_2M);
-            /* second os_advise should succeed as with 4M block */
-            os_advise((void*)(ptr_aligned_begin + PAGE_SIZE_2M),PAGE_SIZE_2M);
-            
-            return new (ptr) Block(atype,bytesAllocate-sizeof_Header,bytesAllocate-sizeof_Header,next,alignment);
+
+            /* give hint to transparently convert these pages to 2MB pages */
+            const size_t ptr_aligned_begin = ((size_t)ptr) & ~size_t(PAGE_SIZE_2M-1);
+            os_advise((void*)(ptr_aligned_begin +              0),PAGE_SIZE_2M); // may fail if no memory mapped before block
+            os_advise((void*)(ptr_aligned_begin + 1*PAGE_SIZE_2M),PAGE_SIZE_2M);
+            os_advise((void*)(ptr_aligned_begin + 2*PAGE_SIZE_2M),PAGE_SIZE_2M); // may fail if no memory mapped after block
+
+            return new (ptr) Block(ALIGNED_MALLOC,bytesAllocate-sizeof_Header,bytesAllocate-sizeof_Header,next,alignment);
           }
           else 
           {
             const size_t alignment = maxAlignment;
             if (device) device->memoryMonitor(bytesAllocate+alignment,false);
             ptr = alignedMalloc(bytesAllocate,alignment);
-            return new (ptr) Block(atype,bytesAllocate-sizeof_Header,bytesAllocate-sizeof_Header,next,alignment);
+            return new (ptr) Block(ALIGNED_MALLOC,bytesAllocate-sizeof_Header,bytesAllocate-sizeof_Header,next,alignment);
           }
         } 
         else if (atype == OS_MALLOC)
         {
           if (device) device->memoryMonitor(bytesAllocate,false);
           bool huge_pages; ptr = os_malloc(bytesReserve,&huge_pages);
-          return new (ptr) Block(atype,bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next,0,huge_pages);
+          return new (ptr) Block(OS_MALLOC,bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next,0,huge_pages);
         }
         else
           assert(false);
