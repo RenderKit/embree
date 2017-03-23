@@ -129,8 +129,8 @@ namespace embree
     int enabled_cpu_features;              //!< CPU ISA features to use
     int enabled_builder_cpu_features;      //!< CPU ISA features to use for builders only
     bool enable_selockmemoryprivilege;     //!< configures the SeLockMemoryPrivilege under Windows to enable huge pages
-    bool huge_pages;                       //!< true if huge pages should get used
-    bool huge_pages_success;               //!< status for enabling huge pages
+    bool hugepages;                        //!< true if huge pages should get used
+    bool hugepages_success;                //!< status for enabling huge pages
 
   public:
     struct ErrorHandler

@@ -66,9 +66,9 @@ namespace embree
     /*! enable huge page support if desired */
 #if defined(__WIN32__)
     if (State::win_enable_selockmemoryprivilege)
-      State::huge_pages_success &= enable_selockmemoryprivilege(State::verbosity(3));
+      State::hugepages_success &= enable_selockmemoryprivilege(State::verbosity(3));
 #endif
-    State::huge_pages_success &= os_init(State::huge_pages,State::verbosity(3));
+    State::hugepages_success &= os_init(State::hugepages,State::verbosity(3));
     
     /*! set tessellation cache size */
     setCacheSize( State::tessellation_cache_size );

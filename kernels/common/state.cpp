@@ -127,11 +127,11 @@ namespace embree
     start_threads = false;
     enable_selockmemoryprivilege = false;
 #if defined(__MACOSX__)
-    huge_pages = false; // do not enable by default as this feature is difficult to test under MacOSX
+    hugepages = false; // do not enable by default as this feature is difficult to test under MacOSX
 #else
-    huge_pages = true;
+    hugepages = true;
 #endif
-    huge_pages_success = true;
+    hugepages_success = true;
 
     error_function = nullptr;
     error_function2 = nullptr;
@@ -271,8 +271,8 @@ namespace embree
       else if (tok == Token::Id("enable_selockmemoryprivilege") && cin->trySymbol("=")) {
         enable_selockmemoryprivilege = cin->get().Int();
       }
-      else if (tok == Token::Id("huge_pages") && cin->trySymbol("=")) {
-        huge_pages = cin->get().Int();
+      else if (tok == Token::Id("hugepages") && cin->trySymbol("=")) {
+        hugepages = cin->get().Int();
       }
 
       else if (tok == Token::Id("ignore_config_files") && cin->trySymbol("="))
@@ -414,9 +414,9 @@ namespace embree
     std::cout << "  start_threads = " << start_threads << std::endl;
     std::cout << "  affinity      = " << set_affinity << std::endl;
     
-    std::cout << "  huge_pages    = ";
-    if (!huge_pages) std::cout << "disabled" << std::endl;
-    else if (huge_pages_success) std::cout << "enabled" << std::endl;
+    std::cout << "  hugepages     = ";
+    if (!hugepages) std::cout << "disabled" << std::endl;
+    else if (hugepages_success) std::cout << "enabled" << std::endl;
     else std::cout << "failed" << std::endl;
 
     std::cout << "  verbosity     = " << verbose << std::endl;
