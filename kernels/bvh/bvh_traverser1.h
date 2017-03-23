@@ -252,7 +252,7 @@ namespace embree
     template<int N, int Nx, int types, bool transform>
     class BVHNNodeTraverser1Transform;
 
-#define ENABLE_TRANSFORM_CACHE 0
+#define ENABLE_TRANSFORM_CACHE 1
 
     template<int N, int Nx, int types>
       class BVHNNodeTraverser1Transform<N,Nx,types,true>

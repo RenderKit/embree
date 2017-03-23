@@ -24,8 +24,8 @@
 #include "../geometry/quadi_mb.h"
 
 /* new open/merge builder */
-#define ENABLE_DIRECT_SAH_MERGE_BUILDER 1
-#define SPLIT_MEMORY_RESERVE_FACTOR 2
+#define ENABLE_DIRECT_SAH_MERGE_BUILDER 0
+#define SPLIT_MEMORY_RESERVE_FACTOR 4
 #define SPLIT_MIN_EXT_SPACE 1000
 
 namespace embree
@@ -185,7 +185,7 @@ namespace embree
             BVH* object = objects[instance->geom->id];
             if (object == nullptr) continue;
             if (object->getBounds().empty()) continue;
-            int s = 0; //slot(geom->getType() & ~Geometry::INSTANCE, geom->numTimeSteps);
+            int s = instance->geom->id; //slot(geom->getType() & ~Geometry::INSTANCE, geom->numTimeSteps);
             refs[nextRef++] = BVHNBuilderInstancing::BuildRef(instance->local2world,object->getBounds(),object->root,instance->mask,unsigned(objectID),hash(instance->local2world),s,0,object->numPrimitives);
           }
         });
@@ -285,7 +285,7 @@ namespace embree
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
         PRINT("NEW CODE PATH");
         PRINT(pinfo);
-        const size_t extSize = max((size_t)SPLIT_MIN_EXT_SPACE,refs.size()*SPLIT_MEMORY_RESERVE_FACTOR);
+        const size_t extSize = max((size_t)SPLIT_MIN_EXT_SPACE,(size_t)(refs.size()*SPLIT_MEMORY_RESERVE_FACTOR));
         DBG_PRINT(refs.size()*SPLIT_MEMORY_RESERVE_FACTOR);
         DBG_PRINT(extSize);
         refs.resize(extSize); 

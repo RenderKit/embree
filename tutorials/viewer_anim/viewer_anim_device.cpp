@@ -21,8 +21,8 @@
 #define DUMP_PROFILE_DATA 0
 
 #define AO 0
-#define AMBIENT_OCCLUSION_SAMPLES 64
-#define MAX_AO_DISTANCE 5
+#define AMBIENT_OCCLUSION_SAMPLES 4
+#define MAX_AO_DISTANCE 0.2f
 
 //pos_inf 
 
@@ -37,10 +37,14 @@ namespace embree {
   extern "C" ISPCScene* g_ispc_scene;
   extern "C" RTCIntersectFlags g_iflags;
 
+  struct LSPointSample {
+    Vec3fa position;
+    Vec3fa radiance;
+  };
   /* scene data */
   RTCDevice g_device   = nullptr;
   RTCScene g_scene     = nullptr;
-  Vec3fa *ls_positions = nullptr;
+  LSPointSample *ls_samples = nullptr;
 
   /* animation data */
   size_t frameID         = 0;
@@ -343,7 +347,7 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
 
   /* calculate hit point */
   float intensity = 0;
-  Vec3fa hitPos = ray.org + ray.tfar * ray.dir;
+  Vec3fa hitPos = ray.org + ray.tfar * ray.dir + Ng * 0.01f;
 
   RandomSampler sampler;
   RandomSampler_init(sampler,x,y,0);
@@ -436,18 +440,22 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
     rtcIntersect1M(g_scene,&context,rays,N,sizeof(RTCRay));
 
     /* shade stream of rays */
-    Vec3fa colors[TILE_SIZE_X*TILE_SIZE_Y];
+    Vec3fa diffuse[TILE_SIZE_X*TILE_SIZE_Y];
+    Vec3fa normals[TILE_SIZE_X*TILE_SIZE_Y];
+
     N = 0;
     for (unsigned int y=y0; y<y1; y++) 
       for (unsigned int x=x0; x<x1; x++,N++)
       {
         /* ISPC workaround for mask == 0 */    
         RTCRay& ray = rays[N];
-        Vec3fa Ng = ray.Ng;
 
         /* shading */
-        Vec3fa& color = colors[N];
-        color = Vec3fa(1.0f,1.0f,1.0f);
+        Vec3fa& color = diffuse[N];
+        Vec3fa& Ng    = normals[N];
+        Ng = ray.Ng;
+        
+        color = Vec3fa(0.0f,0.0f,0.0f);
         if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
         {
           /* vertex normals */
@@ -473,15 +481,21 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
             }            
           }
           /* final color */
+          Ng = normalize(Ng);
 #if AO == 1
           color = ambientOcclusionShading(x,y,ray);
 #else
-          color *= Vec3fa(abs(dot(ray.dir,normalize(Ng))));          
+          //color *= ambientOcclusionShading(x,y,ray);          
+          //color *= Vec3fa(abs(dot(ray.dir,normalize(Ng))));          
 #endif
         }
 
       }
 
+#define AMBIENT 0.1f
+    Vec3fa final[TILE_SIZE_X*TILE_SIZE_Y];
+    for (size_t n=0;n<N;n++)
+      final[n] = Vec3fa(AMBIENT);
 
 #if SHADOWS == 1
     /* do some hard shadows to point lights */
@@ -496,7 +510,7 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
           RTCRay& ray = rays[n];
           const bool valid = ray.geomID != RTC_INVALID_GEOMETRY_ID;
           const Vec3fa hitpos = ray.org + ray.tfar*ray.dir;
-          ray.org = ls_positions[i];
+          ray.org = ls_samples[i].position;
           ray.dir = hitpos - ray.org;
           ray.tnear = 1E-4f;
           ray.tfar  = valid ? 0.99f : -1.0f;
@@ -510,9 +524,8 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
 
         /* modify pixel color based on occlusion */
         for (int n=0;n<N;n++)
-          if (rays[n].geomID != RTC_INVALID_GEOMETRY_ID)
-            colors[n] *= 0.6f;
-        
+          if (rays[n].geomID == RTC_INVALID_GEOMETRY_ID)
+            final[n] += diffuse[n] * abs(dot(normalize(rays[n].dir),normals[n])) * inv_numLights * ls_samples[i].radiance;
       }
     }
 #endif
@@ -522,7 +535,7 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
     for (unsigned int y=y0; y<y1; y++) 
       for (unsigned int x=x0; x<x1; x++,N++)
       {
-        Vec3fa& color = colors[N];
+        Vec3fa& color = final[N];
         unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
         unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
         unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
@@ -625,7 +638,7 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
 
     if (g_ispc_scene->numLights)
     {
-      if (ls_positions == nullptr) ls_positions = new Vec3fa[g_ispc_scene->numLights];
+      if (ls_samples == nullptr) ls_samples = new LSPointSample[g_ispc_scene->numLights];
       DifferentialGeometry dg;
       dg.geomID = 0;
       dg.primID = 0;
@@ -638,7 +651,8 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
       {
         const Light* l = g_ispc_scene->lights[i];            
         Light_SampleRes ls = l->sample(l,dg,Vec2f(0.0f,0.0f));
-        ls_positions[i] = ls.dir * ls.dist;
+        ls_samples[i].position = ls.dir * ls.dist;
+        ls_samples[i].radiance = ls.weight;
       }
     }          
 
