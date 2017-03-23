@@ -77,7 +77,8 @@ namespace embree
     };
 
   /*! allocates pages directly from OS */
-  bool win_enable_hugepages(bool verbose);
+  bool enable_selockmemoryprivilege(bool verbose);
+  bool os_init(bool huge_pages, bool verbose);
   void* os_malloc (size_t bytes, bool* huge_pages = nullptr);
   size_t os_shrink (void* ptr, size_t bytesNew, size_t bytesOld, bool huge_pages);
   void  os_free   (void* ptr, size_t bytes);

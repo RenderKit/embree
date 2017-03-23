@@ -63,11 +63,12 @@ namespace embree
     /*! do some internal tests */
     assert(isa::Cylinder::verify());
 
-    /*! enable huge page support under windows when desired */
+    /*! enable huge page support if desired */
 #if defined(__WIN32__)
-    if (State::win_enable_huge_pages)
-      State::win_enable_huge_pages_success = win_enable_hugepages(State::verbosity(3));
+    if (State::win_enable_selockmemoryprivilege)
+      State::huge_pages_success &= enable_selockmemoryprivilege(State::verbosity(3));
 #endif
+    State::huge_pages_success &= os_init(State::huge_pages,State::verbosity(3));
     
     /*! set tessellation cache size */
     setCacheSize( State::tessellation_cache_size );

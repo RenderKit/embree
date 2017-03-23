@@ -47,11 +47,6 @@ namespace embree
     if (!tryDirectHugePageAllocation)
       return false;
 
-#if defined(__WIN32__)
-    if (GetLargePageMinimum() != PAGE_SIZE_2M)
-      return false;
-#endif
-
     /* try to use huge pages for large allocations */
     if (bytes >= PAGE_SIZE_2M)
     {
@@ -77,7 +72,7 @@ namespace embree
 
 namespace embree
 {
-  bool win_enable_hugepages(bool verbose) 
+  bool enable_selockmemoryprivilege (bool verbose)
   {
     HANDLE hToken;
     if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY | TOKEN_ADJUST_PRIVILEGES, &hToken)) {
@@ -101,10 +96,24 @@ namespace embree
     }
     
     if (GetLastError() == ERROR_NOT_ALL_ASSIGNED) {
-      tryDirectHugePageAllocation = false;
       if (verbose) std::cout << "AdjustTokenPrivileges failed to enable SeLockMemoryPrivilege: Add SeLockMemoryPrivilege for current user and run process in elevated mode (Run as administrator)." << std::endl;
       return false;
     } 
+
+    return true;
+  }
+
+  bool os_init(bool huge_pages, bool verbose) 
+  {
+    if (!huge_pages) {
+      tryDirectHugePageAllocation = false;
+      return true;
+    }
+
+    if (GetLargePageMinimum() != PAGE_SIZE_2M) {
+      tryDirectHugePageAllocation = false;
+      return false;
+    }
 
     tryDirectHugePageAllocation = true;
     return true;
@@ -186,6 +195,12 @@ namespace embree
 
 namespace embree
 {
+  bool os_init(bool huge_pages, bool verbose) 
+  {
+    tryDirectHugePageAllocation = huge_pages;
+    return true;
+  }
+
   void* os_malloc(size_t bytes, bool* huge_pages)
   { 
     if (bytes == 0) {
