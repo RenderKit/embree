@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "../simd/simd.h"
 #include "parallel_for.h"
 #include <algorithm>
 
@@ -341,18 +342,22 @@ namespace embree
       
       /* calculate total number of items for each bucket */
       __aligned(64) unsigned int total[BUCKETS];
-#if defined(__INTEL_COMPILER)
-#pragma simd
-#endif
+      /*
       for (size_t i=0; i<BUCKETS; i++)
         total[i] = 0;
+      */
+      for (size_t i=0; i<BUCKETS; i+=VSIZEX)
+        vintx::store(&total[i], zero);
       
       for (size_t i=0; i<threadCount; i++)
-#if defined(__INTEL_COMPILER)
-#pragma simd
-#endif
+      {
+        /*
         for (size_t j=0; j<BUCKETS; j++)
           total[j] += radixCount[i][j];
+        */
+        for (size_t j=0; j<BUCKETS; j+=VSIZEX)
+          vintx::store(&total[j], vintx::load(&total[j]) + vintx::load(&radixCount[i][j]));
+      }
       
       /* calculate start offset of each bucket */
       __aligned(64) unsigned int offset[BUCKETS];
@@ -362,11 +367,14 @@ namespace embree
       
       /* calculate start offset of each bucket for this thread */
       for (size_t i=0; i<threadIndex; i++)
-#if defined(__INTEL_COMPILER)
-#pragma simd
-#endif
+      {
+        /*
         for (size_t j=0; j<BUCKETS; j++)
           offset[j] += radixCount[i][j];
+        */
+        for (size_t j=0; j<BUCKETS; j+=VSIZEX)
+          vintx::store(&offset[j], vintx::load(&offset[j]) + vintx::load(&radixCount[i][j]));
+      }
       
       /* copy items into their buckets */
 #if defined(__INTEL_COMPILER)
