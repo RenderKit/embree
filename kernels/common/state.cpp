@@ -126,10 +126,10 @@ namespace embree
 
     start_threads = false;
     enable_selockmemoryprivilege = false;
-#if defined(__MACOSX__)
-    hugepages = false; // do not enable by default as this feature is difficult to test under MacOSX
-#else
+#if defined(__LINUX__)
     hugepages = true;
+#else
+    hugepages = false;
 #endif
     hugepages_success = true;
 

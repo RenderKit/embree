@@ -135,9 +135,6 @@ namespace embree
         if (hugepages) *hugepages = true;
         return ptr;
       }
-      
-      /* direct huge page allocation failed, disable it for the future */
-      tryDirectHugePageAllocation = false;     
     } 
 
     /* fall back to 4k pages */
@@ -255,8 +252,6 @@ namespace embree
         return ptr;
       }
 #endif
-      /* direct huge page allocation failed, disable it for the future */
-      tryDirectHugePageAllocation = false;     
     } 
 
     /* standard mmap call */
