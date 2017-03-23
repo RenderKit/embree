@@ -18,7 +18,6 @@
 #define ENABLE_ANIM 1
 #define VERTEX_NORMALS 1
 #define SHADOWS 1
-#define ANTI_ALIASING 0
 #define DUMP_PROFILE_DATA 0
 
 #define AO 0
@@ -42,15 +41,6 @@ namespace embree {
   RTCDevice g_device   = nullptr;
   RTCScene g_scene     = nullptr;
   Vec3fa *ls_positions = nullptr;
-
-  struct DeferredShadingBuffer {
-    unsigned int geomID;
-    unsigned int primID;
-    float z;
-  };
-
-  DeferredShadingBuffer *dBuffer = nullptr;
-
 
   /* animation data */
   size_t frameID         = 0;
@@ -490,12 +480,6 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
 #endif
         }
 
-#if ANTI_ALIASING == 1
-        dBuffer[y*width+x].geomID = ray.geomID;
-        dBuffer[y*width+x].primID = ray.primID;
-        dBuffer[y*width+x].z      = ray.tfar;
-
-#endif
       }
 
 
@@ -635,11 +619,6 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
     assert(frameID < vertexUpdateTime.size());
     assert(frameID < buildTime.size());
 
-#if ANTI_ALIASING == 1
-    if (!dBuffer)
-      dBuffer = (DeferredShadingBuffer*) alignedMalloc(width*height*sizeof(DeferredShadingBuffer),64);
-#endif
-
     /* =================================== */
     /* samples LS positions as pointlights */
     /* =================================== */
@@ -692,91 +671,6 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
     if (unlikely(printStats)) std::cout << "rendering frame in : " << renderTimeDelta << " ms" << std::endl;
 
 
-#if ANTI_ALIASING == 1
-
-    /* ============ */
-    /* Adaptive AA  */
-    /* ============ */
-
-    for (size_t py=1; py<height-1; py++) 
-      for (size_t px=1; px<width-1; px++)
-      {
-        const unsigned int geomID = dBuffer[width*py+px].geomID;
-        const unsigned int primID = dBuffer[width*py+px].primID;
-        const float primZ  = dBuffer[width*py+px].z;
-        const float inv_primZ  = 1.0f / dBuffer[width*py+px].z;
-
-        bool debug = false;
-        //if (px == 820 && py == 1013) { debug = true; PRINT("DEBUG"); PRINT(primZ); }
-
-        const Vec3fa normal = normalize(getTriangleNormal(geomID,primID));
-
-        size_t numTris = 0;
-        DeferredShadingBuffer tList[9];
-        float minZdist = neg_inf; //pos_inf;
-        for (size_t y=py-1;y<py+1;y++)
-          for (size_t x=px-1;x<px+1;x++)
-          {
-            if (x == px && y == px) continue;
-            const unsigned int gID = dBuffer[width*y+x].geomID;
-            const unsigned int pID = dBuffer[width*y+x].primID;
-            const float z = dBuffer[width*y+x].z;
-            if (debug) { PRINT(z); PRINT(z*inv_primZ); }
-            if (gID == geomID && pID == primID)
-              minZdist = max(minZdist,abs(z-primZ));
-            if (debug) PRINT(minZdist);
-
-            if (unlikely( gID != geomID || pID != primID))
-            {
-              bool found = false;
-              for (size_t i=0;i<numTris;i++)
-                if (tList[i].geomID == gID && tList[i].primID == pID) { found = true; break; }
-              if (found == true) continue;
-
-              tList[numTris].geomID = gID;
-              tList[numTris].primID = pID;
-              tList[numTris].z = z;
-              if (debug) { PRINT(tList[numTris].z); }
-              numTris++;
-              
-              assert(numTris <= 9);
-            }            
-          }
-
-        if (numTris)
-        {
-          if (debug) PRINT(numTris);
-          for (size_t i=0;i<numTris;i++)
-          {
-            const Vec3fa n = normalize(getTriangleNormal(tList[i].geomID,tList[i].primID));
-            //if (dot(n,normal) >= 0.1f) continue;
-            assert(tList[i].geomID != geomID || tList[i].primID != primID);
-            const float z = tList[i].z;
-            //bool ztest = abs(1.0f - (z*inv_primZ)) > 0.002f;
-//            bool ztest = abs(z-primZ) > minZdist;
-            //bool ztest = abs(1.0f - abs(z-primZ) / minZdist) > 0.15f;
-            bool ztest = tList[i].geomID != geomID;
-          //if (tList[i].geomID != geomID || ztest /* minZdist *1.01f < abs(tList[i].z-primZ)  ||  (dot(normal,n) <= 0.1f) */ )
-          if (ztest)
-            {
-              if (debug) { 
-                PRINT(z); 
-                PRINT(abs(z-primZ)); 
-                PRINT(minZdist);
-                PRINT(abs(z-primZ) < minZdist); 
-                PRINT(abs(1.0f - abs(z-primZ) / minZdist)); 
-
-                PRINT(abs(1.0f - (z*inv_primZ))); PRINT("RED"); /* exit(0); */ 
-              }
-              pixels[py*width+px] = 255;
-            }
-          }
-        }
-
-      }
-
-
-#endif
     /* =============== */
     /* update geometry */
     /* =============== */
