@@ -139,30 +139,20 @@ namespace embree
     return ptr;
   }
 
-  size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
+  size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld, bool huge_pages) 
   {
-    /* first try with 4KB pages */
-    bytesNew = (bytesNew+PAGE_SIZE_4K-1) & ~(PAGE_SIZE_4K-1);
+    if (huge_pages) // decommitting huge pages seems not to work under Windows
+      return bytesOld;
+
+    const size_t pageSize = huge_pages ? PAGE_SIZE_2M : PAGE_SIZE_4K;
+    bytesNew = (bytesNew+pageSize-1) & ~(pageSize-1);
     if (bytesNew >= bytesOld)
       return bytesOld;
 
     if (VirtualFree((char*)ptr+bytesNew,bytesOld-bytesNew,MEM_DECOMMIT))
       return bytesNew;
 
-#if 0 // decommitting huge pages seems not to work under Windows
-
-    /* now try with 2MB pages */
-    bytesNew = (bytesNew+PAGE_SIZE_2M-1) & ~(PAGE_SIZE_2M-1);
-    if (bytesNew >= bytesOld)
-      return bytesOld;
-
-    if (VirtualFree((char*)ptr+bytesNew,bytesOld-bytesNew,MEM_DECOMMIT))
-      return bytesNew;
     throw std::bad_alloc();
-
-#else
-    return bytesOld;
-#endif
   }
 
   void os_free(void* ptr, size_t bytes) 
