@@ -67,7 +67,7 @@ namespace embree
 
 namespace embree
 {
-  bool enable_selockmemoryprivilege (bool verbose)
+  bool win_enable_selockmemoryprivilege (bool verbose)
   {
     HANDLE hToken;
     if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY | TOKEN_ADJUST_PRIVILEGES, &hToken)) {

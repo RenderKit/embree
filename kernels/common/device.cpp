@@ -65,8 +65,8 @@ namespace embree
 
     /*! enable huge page support if desired */
 #if defined(__WIN32__)
-    if (State::win_enable_selockmemoryprivilege)
-      State::hugepages_success &= enable_selockmemoryprivilege(State::verbosity(3));
+    if (State::enable_selockmemoryprivilege)
+      State::hugepages_success &= win_enable_selockmemoryprivilege(State::verbosity(3));
 #endif
     State::hugepages_success &= os_init(State::hugepages,State::verbosity(3));
     
