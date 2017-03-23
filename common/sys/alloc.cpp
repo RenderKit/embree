@@ -74,43 +74,6 @@ namespace embree
 
 namespace embree
 {
-#if 0
-
-  bool win_enable_hugepages(bool verbose)  {
-    return true;
-  }
-
-  void* os_malloc(size_t bytes, bool* huge_pages) 
-  {
-    if (bytes == 0) return nullptr;
-    int flags = MEM_COMMIT | MEM_RESERVE;
-    char* ptr = (char*) VirtualAlloc(nullptr,bytes,flags,PAGE_READWRITE);
-    if (ptr == nullptr) throw std::bad_alloc();
-    if (huge_pages) *huge_pages = false;
-    return ptr;
-  }
-
-  size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
-  {
-    bytesNew = (bytesNew+PAGE_SIZE_4K-1) & ~(PAGE_SIZE_4K-1);
-    if (bytesNew < bytesOld)
-      VirtualFree((char*)ptr+bytesNew,bytesOld-bytesNew,MEM_DECOMMIT);
-
-    return bytesNew;
-  }
-
-  void os_free(void* ptr, size_t bytes) {
-    if (bytes == 0) return;
-    if (!VirtualFree(ptr,0,MEM_RELEASE))
-      /*throw std::bad_alloc()*/ return;  // we on purpose do not throw an exception when an error occurs, to avoid throwing an exception during error handling
-  }
-
-  void os_advise(void *ptr, size_t bytes)
-  {
-  }
-
-#else
-
   bool win_enable_hugepages(bool verbose) 
   {
     HANDLE hToken;
@@ -212,10 +175,8 @@ namespace embree
   void os_advise(void *ptr, size_t bytes)
   {
   }
-
-#endif
-
 }
+
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
