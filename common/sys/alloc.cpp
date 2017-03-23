@@ -196,7 +196,6 @@ namespace embree
     /* try direct huge page allocation first */
     if (isHugePageCandidate(bytes)) 
     {
-#if !defined(__MACOSX__)
 #if defined(__MACOSX__)
       void* ptr = mmap(0, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, VM_FLAGS_SUPERPAGE_SIZE_2MB, 0);
       if (ptr != MAP_FAILED) {
@@ -212,7 +211,6 @@ namespace embree
 #endif
       /* direct huge page allocation failed, disable it for the future */
       tryDirectHugePageAllocation = false;     
-#endif
     } 
 
     /* standard mmap call */
