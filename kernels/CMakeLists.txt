@@ -225,12 +225,8 @@ SET(EMBREE_LIBRARY_FILES_AVX512SKX
 
     geometry/instance_intersector1.cpp
 
-    bvh/bvh_rotate.cpp
     bvh/bvh_intersector1_bvh4.cpp
-    bvh/bvh_intersector1_bvh8.cpp
-
-    builders/primrefgen.cpp
-    bvh/bvh_builder_morton.cpp)
+    bvh/bvh_intersector1_bvh8.cpp)
 
 IF (EMBREE_GEOMETRY_SUBDIV)
   SET(EMBREE_LIBRARY_FILES_AVX512SKX ${EMBREE_LIBRARY_FILES_AVX512SKX}
