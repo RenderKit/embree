@@ -284,17 +284,18 @@ namespace embree
 
       bytesUsed = 0;
       bytesWasted = 0;
-
-      /* first reset all used blocks */
-      if (usedBlocks.load() != nullptr) usedBlocks.load()->reset_list();
       
-      /* move all used blocks to begin of free block list */
+      /* reset all used blocks and move them to begin of free block list */
       while (usedBlocks.load() != nullptr) {
+        usedBlocks.load()->reset_block();
         Block* nextUsedBlock = usedBlocks.load()->next;
         usedBlocks.load()->next = freeBlocks.load();
         freeBlocks = usedBlocks.load();
         usedBlocks = nextUsedBlock;
       }
+
+      /* remove all shared blocks as they are re-added during build */
+      freeBlocks.store(Block::remove_shared_blocks(freeBlocks.load()));
 
       for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++) 
       {
@@ -533,6 +534,16 @@ namespace embree
         //for (size_t i=0; i<allocEnd; i+=defaultBlockSize) data[i] = 0;
       }
 
+      static Block* remove_shared_blocks(Block* head)
+      {
+        Block** prev_next = &head;
+        for (Block* block = head; block; block = block->next) {
+          if (block->atype == SHARED) *prev_next = block->next;
+          else                         prev_next = &block->next;
+        }
+        return head;
+      }
+
       void clear_list(MemoryMonitorInterface* device) 
       {
         Block* block = this;
@@ -582,12 +593,6 @@ namespace embree
       
       void* ptr() {
         return &data[cur];
-      }
-
-      void reset_list ()
-      {
-        for (Block* block = this; block; block = block->next)
-          block->reset_block();
       }
 
       void reset_block () 

@@ -422,32 +422,46 @@ namespace embree
 
       struct Set3
       {
-        Set3 (FastAllocator* allocator, PrimRef* prims)
-        : allocator(allocator), prims(prims) {}
+        Set3 (FastAllocator* allocator, PrimRef* prims, bool primrefarrayalloc)
+        : allocator(allocator), prims(prims), primrefarrayalloc(primrefarrayalloc) {}
 
         template<typename BuildRecord>
         __forceinline NodeRef operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRef* children, const size_t num) const
         {
           AlignedNode* node = ref.alignedNode();
           for (size_t i=0; i<num; i++) node->set(i,children[i]);
-#if 0
-          const size_t threshold = 10000;
-          if (precord.prims.size() > threshold) 
+          if (unlikely(primrefarrayalloc))
           {
-            for (size_t i=0; i<num; i++) {
-              if (crecords[i].prims.size() > threshold) continue;
-              PrimRef* begin = &prims[crecords[i].prims.begin()];
-              PrimRef* end   = &prims[crecords[i].prims.end()]; // FIXME: extended end for spatial split builder!!!!!
+#if 0
+            const size_t threshold = 2000;
+            if (precord.prims.size() > threshold) 
+            {
+              for (size_t i=0; i<num; i++) {
+                if (crecords[i].prims.size() > threshold) continue;
+                PrimRef* begin = &prims[crecords[i].prims.begin()];
+                PrimRef* end   = &prims[crecords[i].prims.end()]; // FIXME: extended end for spatial split builder!!!!!
+                size_t bytes = (size_t)end - (size_t)begin;
+                allocator->addBlock(begin,bytes);
+              }
+            }
+#else
+            if (precord.alloc_barrier) 
+            {
+              PrimRef* begin = &prims[precord.prims.begin()];
+              PrimRef* end   = &prims[precord.prims.end()]; // FIXME: extended end for spatial split builder!!!!!
               size_t bytes = (size_t)end - (size_t)begin;
               allocator->addBlock(begin,bytes);
+              //char* data = new char[100000];
+              //allocator->addBlock(data,100000);
             }
-          }
 #endif
+          }
           return ref;
         }
 
         FastAllocator* const allocator;
         PrimRef* const prims;
+        const bool primrefarrayalloc;
       };
 
       /*! Clears the node. */
@@ -1294,6 +1308,7 @@ namespace embree
     NodeRef root;                      //!< root node
     bool msmblur;                      //!< when true root points to array of roots for MSMBlur mode
     unsigned numTimeSteps;             //!< number of time steps
+    mvector<PrimRef> primrefarray;     //!< primrefarray used to allocate nodes (do not move below alloc member as alloc may use this data!)
     FastAllocator alloc;               //!< allocator used to allocate nodes
 
     /*! statistics data */
@@ -1305,7 +1320,6 @@ namespace embree
   public:
     std::vector<BVHN*> objects;
     avector<char,aligned_allocator<char,32>> subdiv_patches;
-    mvector<PrimRef> primrefs;
   };
 
   template<>

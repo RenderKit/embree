@@ -30,7 +30,7 @@ namespace embree
       settings.branchingFactor = N;
       settings.maxDepth = BVH::maxBuildDepthLeaf;
       return BVHBuilderBinnedSAH::build<NodeRef>
-        (FastAllocator::CreateAlloc2(allocator),typename BVH::AlignedNode::Create2(),typename BVH::AlignedNode::Set3(allocator,prims),createLeafFunc,progressFunc,prims,pinfo,settings);
+        (FastAllocator::CreateAlloc2(allocator),typename BVH::AlignedNode::Create2(),typename BVH::AlignedNode::Set3(allocator,prims,settings.primrefarrayalloc),createLeafFunc,progressFunc,prims,pinfo,settings);
     }
 
 

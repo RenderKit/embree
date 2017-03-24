@@ -23,7 +23,7 @@ namespace embree
   BVHN<N>::BVHN (const PrimitiveType& primTy, Scene* scene)
     : AccelData((N==4) ? AccelData::TY_BVH4 : (N==8) ? AccelData::TY_BVH8 : AccelData::TY_UNKNOWN),
       primTy(primTy), device(scene->device), scene(scene),
-      root(emptyNode), msmblur(false), numTimeSteps(1), alloc(scene->device,scene->isStatic()), numPrimitives(0), numVertices(0) , primrefs(scene->device)
+      root(emptyNode), msmblur(false), numTimeSteps(1), primrefarray(scene->device), alloc(scene->device,scene->isStatic()), numPrimitives(0), numVertices(0)
   {
   }
 
@@ -39,6 +39,7 @@ namespace embree
   {
     set(BVHN::emptyNode,empty,0);
     alloc.clear();
+    primrefarray.clear();
   }
 
   template<int N>

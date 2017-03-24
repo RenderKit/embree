@@ -35,6 +35,7 @@ namespace embree
     {
       static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree of we are that many levels before the maximal tree depth
+      static const size_t ALLOC_BARRIER_THRESHOLD = (8*1024);
 
       /*! settings for SAH builder */
       struct Settings
@@ -42,12 +43,12 @@ namespace embree
         /*! default settings */
         Settings () 
         : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8), 
-          travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024) {}
+          travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024), primrefarrayalloc(false) {}
 
         /*! initialize settings from API settings */
         Settings (const RTCBuildSettings& settings)
         : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8), 
-          travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024)
+          travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024), primrefarrayalloc(false)
         {
           if (RTC_BUILD_SETTINGS_HAS(settings,maxBranchingFactor)) branchingFactor = settings.maxBranchingFactor;
           if (RTC_BUILD_SETTINGS_HAS(settings,maxDepth          )) maxDepth        = settings.maxDepth;
@@ -58,9 +59,9 @@ namespace embree
           if (RTC_BUILD_SETTINGS_HAS(settings,intCost           )) intCost         = settings.intCost;
         }
         
-        Settings (size_t sahBlockSize, size_t minLeafSize, size_t maxLeafSize, float travCost, float intCost, size_t singleThreadThreshold)
+        Settings (size_t sahBlockSize, size_t minLeafSize, size_t maxLeafSize, float travCost, float intCost, size_t singleThreadThreshold, bool primrefarrayalloc = false)
         : branchingFactor(2), maxDepth(32), logBlockSize(__bsr(sahBlockSize)), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), 
-          travCost(travCost), intCost(intCost), singleThreadThreshold(singleThreadThreshold) {}
+          travCost(travCost), intCost(intCost), singleThreadThreshold(singleThreadThreshold), primrefarrayalloc(primrefarrayalloc) {}
         
       public:
         size_t branchingFactor;  //!< branching factor of BVH to build
@@ -71,6 +72,7 @@ namespace embree
         float travCost;          //!< estimated cost of one traversal step
         float intCost;           //!< estimated cost of one primitive intersection
         size_t singleThreadThreshold; //!< threshold when we switch to single threaded build
+        bool primrefarrayalloc;  //!< builder uses prim ref array to allocate nodes and leaves
       };
       
       /*! recursive state of builder */
@@ -81,21 +83,23 @@ namespace embree
           __forceinline BuildRecordT () {}
           
           __forceinline BuildRecordT (size_t depth) 
-            : depth(depth), prims(empty) {}
+            : depth(depth), alloc_barrier(false), prims(empty) {}
           
           __forceinline BuildRecordT (size_t depth, const Set& prims) 
-            : depth(depth), prims(prims) {}
+            : depth(depth), alloc_barrier(false), prims(prims) {}
           
           __forceinline BBox3fa bounds() const { return prims.geomBounds; }
           
           __forceinline friend bool operator< (const BuildRecordT& a, const BuildRecordT& b) { return a.prims.size() < b.prims.size(); }
-          __forceinline friend bool operator> (const BuildRecordT& a, const BuildRecordT& b) { return a.prims.size() > b.prims.size();  }
+          //__forceinline friend bool operator> (const BuildRecordT& a, const BuildRecordT& b) { return a.prims.size() > b.prims.size();  }
+          __forceinline friend bool operator> (const BuildRecordT& a, const BuildRecordT& b) { return a.prims.begin() < b.prims.end();  }
           
           __forceinline size_t size() const { return prims.size(); }
           
         public:
-          size_t depth;     //!< Depth of the root of this subtree.
-          Set prims;        //!< The list of primitives.
+          size_t depth;       //!< Depth of the root of this subtree.
+          bool alloc_barrier; //!< barrier used to reuse primref-array blocks to allocate nodes
+          Set prims;          //!< The list of primitives.
         };
       
       template<typename BuildRecord, 
@@ -168,6 +172,10 @@ namespace embree
             BuildRecord left(current.depth+1);
             BuildRecord right(current.depth+1);
             heuristic.splitFallback(children[bestChild].prims,left.prims,right.prims);
+            if (unlikely(children[bestChild].size() > ALLOC_BARRIER_THRESHOLD)) {
+              left .alloc_barrier = left .size() <= ALLOC_BARRIER_THRESHOLD;
+              right.alloc_barrier = right.size() <= ALLOC_BARRIER_THRESHOLD;
+            }
             
             /* add new children left and right */
             children[bestChild] = children[numChildren-1];
@@ -221,6 +229,10 @@ namespace embree
           BuildRecord children[MAX_BRANCHING_FACTOR];
           children[0] = BuildRecord(current.depth+1,lprims);
           children[1] = BuildRecord(current.depth+1,rprims);
+          if (unlikely(current.size() > ALLOC_BARRIER_THRESHOLD)) {
+            children[0].alloc_barrier = children[0].size() <= ALLOC_BARRIER_THRESHOLD;
+            children[1].alloc_barrier = children[1].size() <= ALLOC_BARRIER_THRESHOLD;
+          }
           size_t numChildren = 2;
           
           /*! split until node is full or SAH tells us to stop */
@@ -248,6 +260,10 @@ namespace embree
             BuildRecord rrecord(current.depth+1);
             auto split = heuristic.find(brecord.prims,logBlockSize);
             heuristic.split(split,brecord.prims,lrecord.prims,rrecord.prims);
+            if (unlikely(brecord.size() > ALLOC_BARRIER_THRESHOLD)) {
+              lrecord.alloc_barrier = lrecord.size() <= ALLOC_BARRIER_THRESHOLD;
+              rrecord.alloc_barrier = rrecord.size() <= ALLOC_BARRIER_THRESHOLD;
+            }
             children[bestChild  ] = lrecord;
             children[numChildren] = rrecord;
             numChildren++;
