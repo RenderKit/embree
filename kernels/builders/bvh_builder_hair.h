@@ -23,6 +23,8 @@
 #include "../builders/heuristic_binning_array_unaligned.h"
 #include "../builders/heuristic_strand_array.h"
 
+#define NUM_HAIR_OBJECT_BINS 32
+
 namespace embree
 {
   namespace isa
@@ -59,8 +61,8 @@ namespace embree
         friend struct BVHNBuilderHair;
         
         typedef FastAllocator::ThreadLocal2* Allocator;
-        typedef HeuristicArrayBinningSAH<PrimRef,NUM_OBJECT_BINS> HeuristicBinningSAH;
-        typedef UnalignedHeuristicArrayBinningSAH<PrimRef,NUM_OBJECT_BINS> UnalignedHeuristicBinningSAH;
+        typedef HeuristicArrayBinningSAH<PrimRef,NUM_HAIR_OBJECT_BINS> HeuristicBinningSAH;
+        typedef UnalignedHeuristicArrayBinningSAH<PrimRef,NUM_HAIR_OBJECT_BINS> UnalignedHeuristicBinningSAH;
         typedef HeuristicStrandSplit HeuristicStrandSplitSAH;
         
         static const size_t MAX_BRANCHING_FACTOR =  8;         //!< maximal supported BVH branching factor

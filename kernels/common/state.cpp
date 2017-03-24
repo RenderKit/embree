@@ -151,10 +151,6 @@ namespace embree
 
   void State::verify()
   {
-    /* CPU has to support at least SSE2 */
-    if (!hasISA(SSE2)) 
-      throw_RTCError(RTC_UNSUPPORTED_CPU,"CPU does not support SSE2");
-
     /* verify that calculations stay in range */
     assert(rcp(min_rcp_input)*FLT_LARGE+FLT_LARGE < 0.01f*FLT_MAX);
 
@@ -163,6 +159,9 @@ namespace embree
      * functions */
 #if defined(DEBUG)
     assert(isa::getISA() == ISA);
+#if defined(__TARGET_SSE2__)
+    assert(sse2::getISA() <= SSE2);
+#endif
 #if defined(__TARGET_SSE42__)
     assert(sse42::getISA() <= SSE42);
 #endif

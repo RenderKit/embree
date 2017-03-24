@@ -52,6 +52,10 @@ namespace embree
   Device::Device (const char* cfg, bool singledevice)
     : State(singledevice)
   {
+    /* check CPU */
+    if (!hasISA(ISA)) 
+      throw_RTCError(RTC_UNSUPPORTED_CPU,"CPU does not support " ISA_STR);
+
     /* initialize global state */
     State::parseString(cfg);
     if (!ignore_config_files && FileName::executableFolder() != FileName(""))
@@ -120,9 +124,9 @@ namespace embree
 
   std::string getEnabledTargets()
   {
-    std::string v = std::string(ISA_STR) + " ";
-#if defined(__TARGET_SSE41__)
-    v += "SSE4.1 ";
+    std::string v;
+#if defined(__TARGET_SSE2__)
+    v += "SSE2 ";
 #endif
 #if defined(__TARGET_SSE42__)
     v += "SSE4.2 ";
