@@ -26,6 +26,7 @@
 
 #define USE_SUBTREE_SIZE_FOR_BINNING 1
 #define REDUCE_BINS 0
+#define EQUAL_GEOMID_STOP_CRITERIA 1
 
 
 #define MAX_OPENED_CHILD_NODES 8
@@ -341,7 +342,7 @@ namespace embree
               assert(prims0[i].numPrimitives() > 0);
 
             if (unlikely(next_iteration_extra_elements == 0)) break;
-            threshold *= 4.0f;
+            //threshold *= 4.0f;
           }
         } 
 
@@ -378,15 +379,16 @@ namespace embree
           if (unlikely(set.has_ext_range()))
           {
             p =  getProperties(set);
+#if EQUAL_GEOMID_STOP_CRITERIA == 1
             const bool commonGeomID       = p.second;
             if (commonGeomID)
               set.set_ext_range(set.end()); /* disable opening */
+#endif         
           }
-         
           if (unlikely(set.has_ext_range()))
           {
             const size_t est_new_elements = p.first;
-#if 0
+#if 1
             openNodesBasedOnExtendLoop(set,est_new_elements);
 #else
             const size_t max_ext_range_size = set.ext_range_size();
