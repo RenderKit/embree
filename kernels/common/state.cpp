@@ -158,7 +158,6 @@ namespace embree
      * call that same or lower ISA version of non-inlined class member
      * functions */
 #if defined(DEBUG)
-    assert(isa::getISA() == ISA);
 #if defined(__TARGET_SSE2__)
     assert(sse2::getISA() <= SSE2);
 #endif

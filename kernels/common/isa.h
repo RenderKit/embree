@@ -23,7 +23,7 @@ namespace embree
   name##Func name;
   
 #define DECLARE_SYMBOL2(type,name)                                       \
-  namespace isa       { extern type name(); }                           \
+  namespace sse2      { extern type name(); }                           \
   namespace sse41     { extern type name(); }                           \
   namespace sse42     { extern type name(); }                           \
   namespace avx       { extern type name(); }                           \
@@ -39,7 +39,7 @@ namespace embree
   symbol##Func symbol;
 
 #define DECLARE_BUILDER2(Accel,Mesh,Args,symbol)                         \
-  namespace isa       { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
+  namespace sse2      { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
   namespace sse41     { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
   namespace avx       { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
   namespace avx2      { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
@@ -267,8 +267,7 @@ namespace embree
       else return getISA(depth-1); 
     }
   };
-  namespace isa       { int getISA(); };
-  namespace sse41     { int getISA(); };
+  namespace sse2      { int getISA(); };
   namespace sse42     { int getISA(); };
   namespace avx       { int getISA(); };
   namespace avx2      { int getISA(); };
