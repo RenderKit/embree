@@ -481,47 +481,53 @@ namespace embree
         bytesAllocate = ((sizeof_Header+bytesAllocate+PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
         bytesReserve  = ((sizeof_Header+bytesReserve +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
        
-        /* either use alignedMalloc or os_reserve/os_commit */
+        /* either use alignedMalloc or os_malloc */
         void *ptr = nullptr;
         if (atype == ALIGNED_MALLOC) 
         {
-          if (bytesReserve == (2*PAGE_SIZE_2M))
+          /* special handling for default block size */
+          if (bytesAllocate == (2*PAGE_SIZE_2M))
           {
-            /* full 2M alignment for very first block */
-            const size_t alignment = (next == NULL) ? PAGE_SIZE_2M : PAGE_SIZE;
+            /* full 2M alignment for very first block using os_malloc */
+            if (next == NULL) {
+              if (device) device->memoryMonitor(bytesAllocate,false);
+              bool huge_pages; ptr = os_malloc(bytesReserve,&huge_pages);
+              return new (ptr) Block(OS_MALLOC,bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next,0,huge_pages);
+            }
+            
+            const size_t alignment = maxAlignment;
             if (device) device->memoryMonitor(bytesAllocate+alignment,false);
             ptr = alignedMalloc(bytesAllocate,alignment);           
- 
-            const size_t ptr_aligned_begin = ((size_t)ptr) & ~(PAGE_SIZE_2M-1);
-            /* first os_advise could fail as speculative */
-            os_advise((void*)(ptr_aligned_begin +            0),PAGE_SIZE_2M);
-            /* second os_advise should succeed as with 4M block */
-            os_advise((void*)(ptr_aligned_begin + PAGE_SIZE_2M),PAGE_SIZE_2M);
-            
-            return new (ptr) Block(atype,bytesAllocate-sizeof_Header,bytesAllocate-sizeof_Header,next,alignment);
+
+            /* give hint to transparently convert these pages to 2MB pages */
+            const size_t ptr_aligned_begin = ((size_t)ptr) & ~size_t(PAGE_SIZE_2M-1);
+            os_advise((void*)(ptr_aligned_begin +              0),PAGE_SIZE_2M); // may fail if no memory mapped before block
+            os_advise((void*)(ptr_aligned_begin + 1*PAGE_SIZE_2M),PAGE_SIZE_2M);
+            os_advise((void*)(ptr_aligned_begin + 2*PAGE_SIZE_2M),PAGE_SIZE_2M); // may fail if no memory mapped after block
+
+            return new (ptr) Block(ALIGNED_MALLOC,bytesAllocate-sizeof_Header,bytesAllocate-sizeof_Header,next,alignment);
           }
           else 
           {
-            const size_t alignment = CACHELINE_SIZE;
+            const size_t alignment = maxAlignment;
             if (device) device->memoryMonitor(bytesAllocate+alignment,false);
             ptr = alignedMalloc(bytesAllocate,alignment);
-            return new (ptr) Block(atype,bytesAllocate-sizeof_Header,bytesAllocate-sizeof_Header,next,alignment);
+            return new (ptr) Block(ALIGNED_MALLOC,bytesAllocate-sizeof_Header,bytesAllocate-sizeof_Header,next,alignment);
           }
         } 
         else if (atype == OS_MALLOC)
         {
           if (device) device->memoryMonitor(bytesAllocate,false);
-          ptr = os_reserve(bytesReserve);
-          os_commit(ptr,bytesAllocate);
-          return new (ptr) Block(atype,bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next,0);
+          bool huge_pages; ptr = os_malloc(bytesReserve,&huge_pages);
+          return new (ptr) Block(OS_MALLOC,bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next,0,huge_pages);
         }
         else
           assert(false);
         return NULL;
       }
 
-      Block (AllocationType atype, size_t bytesAllocate, size_t bytesReserve, Block* next, size_t wasted) 
-      : cur(0), allocEnd(bytesAllocate), reserveEnd(bytesReserve), next(next), wasted(wasted), atype(atype)
+      Block (AllocationType atype, size_t bytesAllocate, size_t bytesReserve, Block* next, size_t wasted, bool huge_pages = false) 
+      : cur(0), allocEnd(bytesAllocate), reserveEnd(bytesReserve), next(next), wasted(wasted), atype(atype), huge_pages(huge_pages)
       {
         assert((((size_t)&data[0]) & (maxAlignment-1)) == 0);
         //for (size_t i=0; i<allocEnd; i+=defaultBlockSize) data[i] = 0;
@@ -570,8 +576,6 @@ namespace embree
         
 	if (i+bytes > allocEnd) {
           if (device) device->memoryMonitor(i+bytes-max(i,allocEnd),true);
-          if (atype == OS_MALLOC)
-            os_commit(&data[i],bytes); // FIXME: optimize, may get called frequently
         }
 	return &data[i];
       }
@@ -603,7 +607,7 @@ namespace embree
         if (atype == OS_MALLOC)
         {
           const size_t sizeof_Header = offsetof(Block,data[0]);
-          size_t newSize = os_shrink(this,sizeof_Header+getBlockUsedBytes(),reserveEnd+sizeof_Header);
+          size_t newSize = os_shrink(this,sizeof_Header+getBlockUsedBytes(),reserveEnd+sizeof_Header,huge_pages);
           if (device) device->memoryMonitor(newSize-sizeof_Header-allocEnd,true);
           reserveEnd = allocEnd = newSize-sizeof_Header;
         }
@@ -664,6 +668,7 @@ namespace embree
         if (atype == ALIGNED_MALLOC) std::cout << "A";
         else if (atype == OS_MALLOC) std::cout << "O";
         else if (atype == SHARED) std::cout << "S";
+        if (huge_pages) std::cout << "H";
         std::cout << "[" << getBlockUsedBytes() << ", " << getBlockAllocatedBytes() << ", " << getBlockReservedBytes() << "] ";
       }
 
@@ -674,7 +679,8 @@ namespace embree
       Block* next;               //!< pointer to next block in list
       size_t wasted;             //!< amount of memory wasted through block alignment
       AllocationType atype;      //!< allocation mode of the block
-      char align[maxAlignment-5*sizeof(size_t)-sizeof(AllocationType)]; //!< align data to maxAlignment
+      bool huge_pages;           //!< whether the block uses huge pages
+      char align[maxAlignment-5*sizeof(size_t)-sizeof(AllocationType)-sizeof(bool)]; //!< align data to maxAlignment
       char data[1];              //!< here starts memory to use for allocations
     };
 

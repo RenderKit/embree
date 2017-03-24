@@ -118,7 +118,8 @@ namespace embree
       typedef typename BVH::AlignedNodeMB AlignedNodeMB;
       typedef typename BVH::UnalignedNodeMB UnalignedNodeMB;
       typedef typename BVH::NodeRef NodeRef;
-      typedef HeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> HeuristicBinningSAH;
+      typedef HeuristicArrayBinningSAH<BezierPrim,NUM_HAIR_OBJECT_BINS> HeuristicBinningSAH;
+      typedef UnalignedHeuristicArrayBinningSAHOld<BezierPrim,NUM_HAIR_OBJECT_BINS> UnalignedHeuristicBinningSAH;
 
       BVH* bvh;
       Scene* scene;
@@ -189,13 +190,13 @@ namespace embree
               return node;
             },
 
-            [&] (const PrimInfoRange* children, const size_t numChildren, UnalignedHeuristicArrayBinningSAHOld<BezierPrim,NUM_OBJECT_BINS> unalignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> UnalignedNodeMB*
+            [&] (const PrimInfoRange* children, const size_t numChildren, UnalignedHeuristicBinningSAH unalignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> UnalignedNodeMB*
             {
               UnalignedNodeMB* node = (UnalignedNodeMB*) alloc->alloc0->malloc(sizeof(UnalignedNodeMB),BVH::byteNodeAlignment); node->clear();
               for (size_t i=0; i<numChildren; i++) 
               {
                 const AffineSpace3fa space = unalignedHeuristic.computeAlignedSpaceMB(scene,children[i]); 
-                UnalignedHeuristicArrayBinningSAHOld<BezierPrim,NUM_OBJECT_BINS>::PrimInfoMB pinfo = unalignedHeuristic.computePrimInfoMB(t,bvh->numTimeSteps,scene,children[i],space);
+                UnalignedHeuristicBinningSAH::PrimInfoMB pinfo = unalignedHeuristic.computePrimInfoMB(t,bvh->numTimeSteps,scene,children[i],space);
                 node->set(i,space,pinfo.s0t0,pinfo.s1t1);
               }
               return node;

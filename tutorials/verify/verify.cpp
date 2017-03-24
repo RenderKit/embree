@@ -3887,7 +3887,9 @@ namespace embree
                                   HAIR_GEOMETRY, HAIR_GEOMETRY_MB, CURVE_GEOMETRY, CURVE_GEOMETRY_MB, LINE_GEOMETRY, LINE_GEOMETRY_MB };
 
     /* create list of all ISAs to test */
+#if defined(__TARGET_SSE2__)
     if (hasISA(SSE2)) isas.push_back(SSE2);
+#endif
 #if defined(__TARGET_SSE42__)
     if (hasISA(SSE42)) isas.push_back(SSE42);
 #endif

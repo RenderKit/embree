@@ -18,6 +18,7 @@
 #include "alloc.h"
 #include "intrinsics.h"
 #include "sysinfo.h"
+#include "mutex.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// All Platforms
@@ -40,25 +41,17 @@ namespace embree
     _mm_free(ptr);
   }
 
-  static bool tryDirectHugePageAllocation = true;
+  static bool huge_pages_enabled = false;
+  static MutexSys os_init_mutex;
 
   __forceinline bool isHugePageCandidate(const size_t bytes) 
   {
-#if defined(__WIN32__)
-    if (GetLargePageMinimum() != PAGE_SIZE_2M)
+    if (!huge_pages_enabled)
       return false;
-#endif
 
-    /* try to use huge pages for large allocations */
-    if (bytes >= PAGE_SIZE_2M)
-    {
-      /* multiple of page size */
-      if ((bytes % PAGE_SIZE_2M) == 0) 
-        return true;
-      else if (bytes >= 64 * PAGE_SIZE_2M) /* will only introduce a 1.5% overhead */
-        return true;
-    }
-    return false;
+    /* use huge pages only when memory overhead is low */
+    const size_t hbytes = (bytes+PAGE_SIZE_2M-1) & ~size_t(PAGE_SIZE_2M-1);
+    return 66*(hbytes-bytes) < bytes; // at most 1.5% overhead
   }
 }
 
@@ -74,139 +67,95 @@ namespace embree
 
 namespace embree
 {
-#if 0
-
-  bool win_enable_hugepages(bool verbose)  {
-    return true;
-  }
-
-  void* os_malloc(size_t bytes) 
-  {
-    int flags = MEM_COMMIT | MEM_RESERVE;
-    char* ptr = (char*) VirtualAlloc(nullptr,bytes,flags,PAGE_READWRITE);
-    if (ptr == nullptr) throw std::bad_alloc();
-    return ptr;
-  }
-
-  void* os_reserve(size_t bytes) {
-    return os_malloc(bytes);
-  }
-
-  void os_commit (void* ptr, size_t bytes) {
-  }
-
-  size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
-  {
-    size_t pageSize = 4096;
-    bytesNew = (bytesNew+pageSize-1) & ~(pageSize-1);
-    assert(bytesNew <= bytesOld);
-    if (bytesNew < bytesOld)
-      VirtualFree((char*)ptr+bytesNew,bytesOld-bytesNew,MEM_DECOMMIT);
-
-    return bytesNew;
-  }
-
-  void os_free(void* ptr, size_t bytes) {
-    if (bytes == 0) return;
-    if (!VirtualFree(ptr,0,MEM_RELEASE))
-      /*throw std::bad_alloc()*/ return;  // we on purpose do not throw an exception when an error occurs, to avoid throwing an exception during error handling
-  }
-
-  void os_advise(void *ptr, size_t bytes)
-  {
-  }
-
-#else
-
-  bool win_enable_hugepages(bool verbose) 
+  bool win_enable_selockmemoryprivilege (bool verbose)
   {
     HANDLE hToken;
-    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &hToken)) {
-      if (verbose) std::cout << "OpenProcessToken failed while trying to enable SeLockMemoryPrivilege: " << GetLastError() << std::endl;
-      return false;
-    }
-
-    LUID luid;
-    if (!LookupPrivilegeValueW(nullptr, L"SeLockMemoryPrivilege", &luid)) {
-      if (verbose) std::cout << "LookupPrivilegeValue failed while trying to enable SeLockMemoryPrivilege: " << GetLastError() << std::endl;
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY | TOKEN_ADJUST_PRIVILEGES, &hToken)) {
+      if (verbose) std::cout << "WARNING: OpenProcessToken failed while trying to enable SeLockMemoryPrivilege: " << GetLastError() << std::endl;
       return false;
     }
 
     TOKEN_PRIVILEGES tp;
-    tp.PrivilegeCount           = 1;
-    tp.Privileges[0].Luid       = luid;
+    tp.PrivilegeCount = 1;
     tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+    if (!LookupPrivilegeValueW(nullptr, L"SeLockMemoryPrivilege", &tp.Privileges[0].Luid)) {
+      if (verbose) std::cout << "WARNING: LookupPrivilegeValue failed while trying to enable SeLockMemoryPrivilege: " << GetLastError() << std::endl;
+      return false;
+    }
+    
     SetLastError(ERROR_SUCCESS);
     if (!AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(tp), nullptr, 0)) {
-      if (verbose) std::cout << "AdjustTokenPrivileges failed while trying to enable SeLockMemoryPrivilege" << std::endl;
+      if (verbose) std::cout << "WARNING: AdjustTokenPrivileges failed while trying to enable SeLockMemoryPrivilege" << std::endl;
       return false;
     }
     
     if (GetLastError() == ERROR_NOT_ALL_ASSIGNED) {
-      tryDirectHugePageAllocation = false;
-      std::cout << "AdjustTokenPrivileges failed to enable SeLockMemoryPrivilege" << std::endl;
+      if (verbose) std::cout << "WARNING: AdjustTokenPrivileges failed to enable SeLockMemoryPrivilege: Add SeLockMemoryPrivilege for current user and run process in elevated mode (Run as administrator)." << std::endl;
       return false;
     } 
 
-    tryDirectHugePageAllocation = true;
     return true;
   }
 
-  void* os_malloc(size_t bytes)
+  bool os_init(bool hugepages, bool verbose) 
   {
+    Lock<MutexSys> lock(os_init_mutex);
+
+    if (!hugepages) {
+      huge_pages_enabled = false;
+      return true;
+    }
+
+    if (GetLargePageMinimum() != PAGE_SIZE_2M) {
+      huge_pages_enabled = false;
+      return false;
+    }
+
+    huge_pages_enabled = true;
+    return true;
+  }
+
+  void* os_malloc(size_t bytes, bool* hugepages)
+  {
+    if (bytes == 0) {
+      if (hugepages) *hugepages = false;
+      return nullptr;
+    }
+
+    /* try direct huge page allocation first */
     if (isHugePageCandidate(bytes)) 
     {
-      bytes = (bytes+PAGE_SIZE_2M-1)&ssize_t(-PAGE_SIZE_2M);
-
-      /* try direct huge page allocation first */
-      if (tryDirectHugePageAllocation)
-      {
-        int flags = MEM_COMMIT | MEM_RESERVE | MEM_LARGE_PAGES;
-        char* ptr = (char*) VirtualAlloc(nullptr,bytes,flags,PAGE_READWRITE);
-        if (ptr != nullptr) return ptr;
-
-        /* direct huge page allocation failed, disable it for the future */
-        tryDirectHugePageAllocation = false;     
+      int flags = MEM_COMMIT | MEM_RESERVE | MEM_LARGE_PAGES;
+      char* ptr = (char*) VirtualAlloc(nullptr,bytes,flags,PAGE_READWRITE);
+      if (ptr != nullptr) {
+        if (hugepages) *hugepages = true;
+        return ptr;
       }
     } 
-    else
-      bytes = (bytes+PAGE_SIZE_4K-1)&ssize_t(-PAGE_SIZE_4K);
 
     /* fall back to 4k pages */
     int flags = MEM_COMMIT | MEM_RESERVE;
     char* ptr = (char*) VirtualAlloc(nullptr,bytes,flags,PAGE_READWRITE);
     if (ptr == nullptr) throw std::bad_alloc();
+    if (hugepages) *hugepages = false;
     return ptr;
   }
 
-  void* os_reserve(size_t bytes) {
-    return os_malloc(bytes);
-  }
-
-  void os_commit (void* ptr, size_t bytes) {
-  }
-
-  size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
+  size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld, bool hugepages) 
   {
-    /* first try with 4KB pages */
-    bytesNew = (bytesNew+PAGE_SIZE_4K-1) & ~(PAGE_SIZE_4K-1);
+    if (hugepages) // decommitting huge pages seems not to work under Windows
+      return bytesOld;
+
+    const size_t pageSize = hugepages ? PAGE_SIZE_2M : PAGE_SIZE_4K;
+    bytesNew = (bytesNew+pageSize-1) & ~(pageSize-1);
     if (bytesNew >= bytesOld)
       return bytesOld;
 
     if (VirtualFree((char*)ptr+bytesNew,bytesOld-bytesNew,MEM_DECOMMIT))
       return bytesNew;
 
-    /* now try with 2MB pages */
-    bytesNew = (bytesNew+PAGE_SIZE_2M-1) & ~(PAGE_SIZE_2M-1);
-    if (bytesNew >= bytesOld)
-      return bytesOld;
-
-    // decommitting huge pages seems not to work under Windows
-    //if (VirtualFree((char*)ptr+bytesNew,bytesOld-bytesNew,MEM_DECOMMIT))
-    //  return bytesNew;
-    //throw std::bad_alloc();
-
-    return bytesOld;
+    throw std::bad_alloc();
   }
 
   void os_free(void* ptr, size_t bytes) 
@@ -219,10 +168,8 @@ namespace embree
   void os_advise(void *ptr, size_t bytes)
   {
   }
-
-#endif
-
 }
+
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -236,80 +183,100 @@ namespace embree
 #include <stdlib.h>
 #include <string.h>
 
+#if defined(__MACOSX__)
+#include <mach/vm_statistics.h>
+#endif
+
 namespace embree
 {
-  /* hint for transparent huge pages (THP) */
-  void os_advise(void *pptr, size_t bytes)
+  bool os_init(bool hugepages, bool verbose) 
   {
-#if defined(MADV_HUGEPAGE)
-    if (isHugePageCandidate(bytes)) 
-      madvise(pptr,bytes,MADV_HUGEPAGE); 
+    Lock<MutexSys> lock(os_init_mutex);
+
+    if (!hugepages) {
+      huge_pages_enabled = false;
+      return true;
+    }
+
+#if defined(__LINUX__)
+
+    int hugepagesize = 0;
+
+    std::ifstream file; 
+    file.open("/proc/meminfo",std::ios::in);
+    if (!file.is_open()) {
+      if (verbose) std::cout << "WARNING: Could not open /proc/meminfo. Huge page support cannot get enabled!" << std::endl;
+      huge_pages_enabled = false;
+      return false;
+    }
+    
+    std::string line;
+    int val; char tag[41], unit[6];
+    while (getline(file,line)) {
+      if (sscanf(line.c_str(),"%40s %i %5s",tag,&val,unit) == 3) {
+        if (std::string(tag) == "Hugepagesize:" && std::string(unit) == "kB") {
+          hugepagesize = val*1024;
+          break;
+        }
+      }
+    }
+    
+    if (hugepagesize != PAGE_SIZE_2M) 
+    {
+      if (verbose) std::cout << "WARNING: Only 2MB huge pages supported. Huge page support cannot get enabled!" << std::endl;
+      huge_pages_enabled = false;
+      return false;
+    }
 #endif
+
+    huge_pages_enabled = true;
+    return true;
   }
 
-  void* os_malloc(size_t bytes)
-  {       
+  void* os_malloc(size_t bytes, bool* hugepages)
+  { 
+    if (bytes == 0) {
+      if (hugepages) *hugepages = false;
+      return nullptr;
+    }
+
+    /* try direct huge page allocation first */
     if (isHugePageCandidate(bytes)) 
     {
-      bytes = (bytes+PAGE_SIZE_2M-1)&ssize_t(-PAGE_SIZE_2M);
-#if !defined(__MACOSX__)
-      /* try direct huge page allocation first */
-      if (tryDirectHugePageAllocation)
-      {
-        int huge_flags = MAP_PRIVATE | MAP_ANON;
-#ifdef MAP_HUGETLB
-        huge_flags |= MAP_HUGETLB;
-#endif
-#ifdef MAP_ALIGNED_SUPER
-        huge_flags |= MAP_ALIGNED_SUPER;
-#endif
-        void* ptr = mmap(0, bytes, PROT_READ | PROT_WRITE, huge_flags, -1, 0);
-        if (ptr != MAP_FAILED) return ptr;
-
-        /* direct huge page allocation failed, disable it for the future */
-        tryDirectHugePageAllocation = false;     
+#if defined(__MACOSX__)
+      void* ptr = mmap(0, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, VM_FLAGS_SUPERPAGE_SIZE_2MB, 0);
+      if (ptr != MAP_FAILED) {
+        if (hugepages) *hugepages = true;
+        return ptr;
+      }
+#else
+      void* ptr = mmap(0, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON | MAP_HUGETLB, -1, 0);
+      if (ptr != MAP_FAILED) {
+        if (hugepages) *hugepages = true;
+        return ptr;
       }
 #endif
     } 
-    else
-      bytes = (bytes+PAGE_SIZE_4K-1)&ssize_t(-PAGE_SIZE_4K);
 
-    /* standard mmap call */
-    int flags = MAP_PRIVATE | MAP_ANON;
-    void* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, flags, -1, 0);
+    /* fallback to 4k pages */
+    void* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
     if (ptr == MAP_FAILED) throw std::bad_alloc();
+    if (hugepages) *hugepages = false;
 
     /* advise huge page hint for THP */
     os_advise(ptr,bytes);
     return ptr;
   }
 
-  void* os_reserve(size_t bytes) {
-    return os_malloc(bytes);
-  }
-
-  void os_commit (void* ptr, size_t bytes) {
-  }
-
-  size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
+  size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld, bool hugepages) 
   {
-    /* first try with 4KB pages */
-    bytesNew = (bytesNew+PAGE_SIZE_4K-1) & ~(PAGE_SIZE_4K-1);
-    assert(bytesNew <= bytesOld);
+    const size_t pageSize = hugepages ? PAGE_SIZE_2M : PAGE_SIZE_4K;
+    bytesNew = (bytesNew+pageSize-1) & ~(pageSize-1);
     if (bytesNew >= bytesOld)
       return bytesOld;
 
     if (munmap((char*)ptr+bytesNew,bytesOld-bytesNew) != -1)
       return bytesNew;
-
-    /* now try with 2MB pages */
-    bytesNew = (bytesNew+PAGE_SIZE_2M-1) & ~(PAGE_SIZE_2M-1);
-    assert(bytesNew <= bytesOld);
-    if (bytesNew >= bytesOld)
-      return bytesOld;
-
-    if (munmap((char*)ptr+bytesNew,bytesOld-bytesNew) != -1)
-      return bytesNew; // this may be too small in case we really used 2MB pages
 
     throw std::bad_alloc();
   }
@@ -319,15 +286,17 @@ namespace embree
     if (bytes == 0)
       return;
 
-    size_t pageSize = PAGE_SIZE_4K;
-    if (isHugePageCandidate(bytes)) 
-      pageSize = PAGE_SIZE_2M;
-
-    bytes = (bytes+pageSize-1)&ssize_t(-pageSize);
     if (munmap(ptr,bytes) == -1)
       /*throw std::bad_alloc()*/ return;  // we on purpose do not throw an exception when an error occurs, to avoid throwing an exception during error handling
+  }
+
+  /* hint for transparent huge pages (THP) */
+  void os_advise(void* pptr, size_t bytes)
+  {
+#if defined(MADV_HUGEPAGE)
+    madvise(pptr,bytes,MADV_HUGEPAGE); 
+#endif
   }
 }
 
 #endif
-

@@ -205,19 +205,13 @@ namespace embree
   struct ISPCInstance
   {
 #if !defined(ISPC)
-    ALIGNED_STRUCT;
-    
-    static ISPCInstance* create (TutorialScene* scene, Ref<SceneGraph::TransformNode> in);
-    
-  private:
     ISPCInstance (TutorialScene* scene, Ref<SceneGraph::TransformNode> in);
-    
-  public:
+    ~ISPCInstance();
 #endif
+
     ISPCGeometry geom;
     unsigned int numTimeSteps;
-    unsigned int align;
-    AffineSpace3fa spaces[1];
+    AffineSpace3fa* spaces;
   };
 
   struct ISPCGroup

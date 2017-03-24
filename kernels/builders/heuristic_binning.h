@@ -90,7 +90,7 @@ namespace embree
         template<typename PrimRef>
         __forceinline bool bin_unsafe(const PrimRef& ref,
                                       const vint4&   vSplitPos,
-                                      const vbool4&  splitDimMask) const
+                                      const vbool4&  splitDimMask) const // FIXME: rename to isLeft
         {
           return any(((vint4)bin_unsafe(center2(ref.bounds())) < vSplitPos) & splitDimMask);
         }
@@ -170,9 +170,11 @@ namespace embree
     /*! stores all binning information */
     template<size_t BINS, typename PrimRef, typename BBox>
       struct __aligned(64) BinInfoT
-    {
-		  
+    {		  
       typedef BinSplit<BINS> Split;
+      typedef vbool4 vbool;
+      typedef vint4 vint;
+      typedef vfloat4 vfloat;
       
       __forceinline BinInfoT() {
       }
@@ -528,7 +530,7 @@ namespace embree
 
      __forceinline int bin_unsafe(const PrimRef& ref,
                                   const vint16&  vSplitPos,
-                                  const vbool16& splitDimMask) const
+                                  const vbool16& splitDimMask) const // FIXME: rename to isLeft
      {
        const vfloat16 lower(*(vfloat4*)&ref.lower);
        const vfloat16 upper(*(vfloat4*)&ref.upper);
@@ -553,6 +555,9 @@ namespace embree
       struct __aligned(64) BinInfoT<16,PrimRef,BBox3fa>
     {
       typedef BinSplit<16> Split;
+      typedef vbool16 vbool;
+      typedef vint16 vint;
+      typedef vfloat16 vfloat;
       
       __forceinline BinInfoT() {
       }

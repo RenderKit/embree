@@ -194,7 +194,7 @@ namespace embree
     if (data) os_free(data,size);
     size      = new_size;
     data      = nullptr;
-    if (size) data = (float*)os_malloc(size); // FIXME: do os_reserve under linux
+    if (size) data = (float*)os_malloc(size);
     maxBlocks = size/BLOCK_SIZE;    
 
     /* invalidate entire cache */

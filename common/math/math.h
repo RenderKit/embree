@@ -17,6 +17,7 @@
 #pragma once
 
 #include "../sys/platform.h"
+#include "../sys/intrinsics.h"
 #include "constants.h"
 #include <cmath>
 

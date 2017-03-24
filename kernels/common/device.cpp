@@ -52,6 +52,10 @@ namespace embree
   Device::Device (const char* cfg, bool singledevice)
     : State(singledevice)
   {
+    /* check CPU */
+    if (!hasISA(ISA)) 
+      throw_RTCError(RTC_UNSUPPORTED_CPU,"CPU does not support " ISA_STR);
+
     /* initialize global state */
     State::parseString(cfg);
     if (!ignore_config_files && FileName::executableFolder() != FileName(""))
@@ -63,11 +67,12 @@ namespace embree
     /*! do some internal tests */
     assert(isa::Cylinder::verify());
 
-    /*! enable huge page support under windows when desired */
+    /*! enable huge page support if desired */
 #if defined(__WIN32__)
-    if (State::win_enable_huge_pages)
-      State::win_enable_huge_pages_success = win_enable_hugepages(State::verbosity(3));
+    if (State::enable_selockmemoryprivilege)
+      State::hugepages_success &= win_enable_selockmemoryprivilege(State::verbosity(3));
 #endif
+    State::hugepages_success &= os_init(State::hugepages,State::verbosity(3));
     
     /*! set tessellation cache size */
     setCacheSize( State::tessellation_cache_size );
@@ -119,9 +124,9 @@ namespace embree
 
   std::string getEnabledTargets()
   {
-    std::string v = std::string(ISA_STR) + " ";
-#if defined(__TARGET_SSE41__)
-    v += "SSE4.1 ";
+    std::string v;
+#if defined(__TARGET_SSE2__)
+    v += "SSE2 ";
 #endif
 #if defined(__TARGET_SSE42__)
     v += "SSE4.2 ";

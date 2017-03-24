@@ -112,13 +112,8 @@ namespace embree
           const unsigned int splitDim = split.dim;
           const unsigned int splitDimMask = (unsigned int)1 << splitDim;
 
-#if defined(__AVX512F__)
-          const vint16 vSplitPos(splitPos);
-          const vbool16 vSplitMask( splitDimMask );
-#else
-          const vint4 vSplitPos(splitPos);
-          const vbool4 vSplitMask( (int)splitDimMask );
-#endif
+          const typename Binner::vint vSplitPos(splitPos);
+          const typename Binner::vbool vSplitMask(splitDimMask);
           auto isLeft = [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask); };
 
           size_t center = 0;
