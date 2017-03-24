@@ -25,9 +25,9 @@
 #include "heuristic_spatial.h"
 
 #define USE_SUBTREE_SIZE_FOR_BINNING 1
-#define REDUCE_BINS 0
 #define EQUAL_GEOMID_STOP_CRITERIA 1
-
+#define USE_LOOP_OPENING 0
+#define REDUCE_BINS 0
 
 #define MAX_OPENED_CHILD_NODES 8
 #define MAX_EXTEND_THRESHOLD   0.1f
@@ -196,6 +196,18 @@ namespace embree
                                      return std::pair<size_t,bool>(opens,commonGeomID); },
                                    [&] (const std::pair<size_t,bool>& b0, const std::pair<size_t,bool>& b1) -> std::pair<size_t,bool> { return std::pair<size_t,bool>(b0.first+b1.first,b0.second && b1.second); });
           }
+        }
+
+        __forceinline size_t countOpenNodes(PrimInfoExtRange& set)
+        {
+          const Vec3fa diag = set.geomBounds.size();
+          const size_t dim = maxDim(diag);
+          const float inv_max_extend = 1.0f / diag[dim];
+          size_t extra_elements = 0;
+          for (size_t i=set.begin(); i<set.end(); i++)
+            if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD)
+              extra_elements++;
+          return extra_elements;
         }
 
         //FIXME: should consider maximum available extended size 
@@ -388,7 +400,7 @@ namespace embree
           if (unlikely(set.has_ext_range()))
           {
             const size_t est_new_elements = p.first;
-#if 1
+#if USE_LOOP_OPENING == 1
             openNodesBasedOnExtendLoop(set,est_new_elements);
 #else
             const size_t max_ext_range_size = set.ext_range_size();
@@ -481,12 +493,15 @@ namespace embree
 
           std::pair<size_t,size_t> ext_weights(0,0);
 
+#if 0
+          ext_weights = sequential_object_split(split.objectSplit(),set,lset,rset);
+#else
           /* object split */
-          //if (likely(set.size() < PARALLEL_THRESHOLD)) 
+          if (likely(set.size() < PARALLEL_THRESHOLD)) 
             ext_weights = sequential_object_split(split.objectSplit(),set,lset,rset);
-            //else
-            //ext_weights = parallel_object_split(split.objectSplit(),set,lset,rset);
-
+          else
+            ext_weights = parallel_object_split(split.objectSplit(),set,lset,rset);
+#endif
           /* if we have an extended range, set extended child ranges and move right split range */
           if (unlikely(set.has_ext_range())) 
           {
@@ -529,7 +544,13 @@ namespace embree
           assert(area(lset.geomBounds) >= 0.0f);
           assert(area(rset.geomBounds) >= 0.0f);
 
+#if 0
+          const size_t new_left_weight   = 1 + countOpenNodes(lset);
+          const size_t new_right_weight  = 1 + countOpenNodes(rset);
+          return std::pair<size_t,size_t>(new_left_weight,new_right_weight);
+#else
           return std::pair<size_t,size_t>(left_weight,right_weight);
+#endif
         }
 
 

@@ -225,12 +225,15 @@ namespace embree
             DBG_PRINT(extSize);
             refs.resize(extSize); 
 
+            std::atomic<size_t> numLeaves(0);
+
             NodeRef root = BVHBuilderBinnedOpenMergeSAH::build<NodeRef,BuildRef>(
               typename BVH::CreateAlloc(bvh),
               typename BVH::AlignedNode::Create2(),
               typename BVH::AlignedNode::Set2(),
               
               [&] (const BVHBuilderBinnedOpenMergeSAH::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> NodeRef  {
+                numLeaves++;
                 assert(current.prims.size() == 1);
                 return (NodeRef) refs[current.prims.begin()].node;
               },
@@ -239,6 +242,7 @@ namespace embree
               },              
               [&] (size_t dn) { bvh->scene->progressMonitor(0); },
               refs.data(),extSize,pinfo,settings);
+            PRINT(numLeaves.load());
 
 #else
             NodeRef root = BVHBuilderBinnedSAH::build<NodeRef>(
@@ -253,6 +257,7 @@ namespace embree
               [&] (size_t dn) { bvh->scene->progressMonitor(0); },
               prims.data(),pinfo,settings);
 #endif
+
             
             bvh->set(root,LBBox3fa(pinfo.geomBounds),numPrimitives);
           }
