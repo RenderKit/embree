@@ -185,7 +185,7 @@ namespace embree
               for (size_t i=0; i<numChildren; i++) 
               {
                 LBBox3fa bounds = computePrimInfoMB(t,bvh->numTimeSteps,scene,children[i]);
-                node->set(i,bounds);
+                node->setBounds(i,bounds);
               }
               return node;
             },
@@ -197,7 +197,7 @@ namespace embree
               {
                 const AffineSpace3fa space = unalignedHeuristic.computeAlignedSpaceMB(scene,children[i]); 
                 UnalignedHeuristicBinningSAH::PrimInfoMB pinfo = unalignedHeuristic.computePrimInfoMB(t,bvh->numTimeSteps,scene,children[i],space);
-                node->set(i,space,pinfo.s0t0,pinfo.s1t1);
+                node->setBounds(i,space,pinfo.s0t0,pinfo.s1t1);
               }
               return node;
             },

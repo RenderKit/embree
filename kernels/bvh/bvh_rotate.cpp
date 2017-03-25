@@ -127,7 +127,7 @@ namespace embree
       /*! perform the best found tree rotation */
       AlignedNode* child2 = parent->child(bestChild2).alignedNode();
       BVH4::swap(parent,bestChild1,child2,bestChild2Child);
-      parent->set(bestChild2,child2->bounds());
+      parent->setBounds(bestChild2,child2->bounds());
       BVH4::compact(parent);
       BVH4::compact(child2);
       

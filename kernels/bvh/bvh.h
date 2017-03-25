@@ -393,8 +393,8 @@ namespace embree
       struct Set
       {
         __forceinline void operator() (NodeRef node, size_t i, NodeRef child, const BBox3fa& bounds) const {
-          node.alignedNode()->set(i,child);
-          node.alignedNode()->set(i,bounds);
+          node.alignedNode()->setID(i,child);
+          node.alignedNode()->setBounds(i,bounds);
         }
       };
 
@@ -404,7 +404,7 @@ namespace embree
         __forceinline NodeRef operator() (BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc) const
         {
           AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode), byteNodeAlignment); node->clear();
-          for (size_t i=0; i<num; i++) node->set(i,children[i].bounds());
+          for (size_t i=0; i<num; i++) node->setBounds(i,children[i].bounds());
           return encodeNode(node);
         }
       };
@@ -415,7 +415,7 @@ namespace embree
         __forceinline NodeRef operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRef* children, const size_t num) const
         {
           AlignedNode* node = ref.alignedNode();
-          for (size_t i=0; i<num; i++) node->set(i,children[i]);
+          for (size_t i=0; i<num; i++) node->setID(i,children[i]);
           return ref;
         }
       };
@@ -429,7 +429,7 @@ namespace embree
         __forceinline NodeRef operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRef* children, const size_t num) const
         {
           AlignedNode* node = ref.alignedNode();
-          for (size_t i=0; i<num; i++) node->set(i,children[i]);
+          for (size_t i=0; i<num; i++) node->setID(i,children[i]);
 #if 0
           const size_t threshold = 10000;
           if (precord.prims.size() > threshold) 
@@ -458,13 +458,13 @@ namespace embree
       }
 
       /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, const NodeRef& childID) {
+      __forceinline void setID(size_t i, const NodeRef& childID) {
         assert(i < N);
         children[i] = childID;
       }
 
       /*! Sets bounding box of child. */
-      __forceinline void set(size_t i, const BBox3fa& bounds)
+      __forceinline void setBounds(size_t i, const BBox3fa& bounds)
       {
         assert(i < N);
         lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
@@ -473,7 +473,7 @@ namespace embree
 
       /*! Sets bounding box and ID of child. */
       __forceinline void set(size_t i, const BBox3fa& bounds, const NodeRef& childID) {
-        set(i,bounds);
+        setBounds(i,bounds);
         children[i] = childID;
       }
 
@@ -586,8 +586,8 @@ namespace embree
           
           LBBox3fa bounds = empty;
           for (size_t i=0; i<num; i++) {
-            node->set(i,children[i].first);
-            node->set(i,children[i].second);
+            node->setID(i,children[i].first);
+            node->setBounds(i,children[i].second);
             bounds.extend(children[i].second);
           }
           return std::make_pair(ref,bounds);
@@ -611,18 +611,18 @@ namespace embree
       }
 
       /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, NodeRef childID) {
+      __forceinline void setID(size_t i, NodeRef childID) {
         children[i] = childID;
       }
 
       /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, const BBox3fa& bounds) {
+      __forceinline void setBounds(size_t i, const BBox3fa& bounds) {
         lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
         upper_x[i] = bounds.upper.x; upper_y[i] = bounds.upper.y; upper_z[i] = bounds.upper.z;
       }
 
       /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, const BBox3fa& bounds0_i, const BBox3fa& bounds1_i)
+      __forceinline void setBounds(size_t i, const BBox3fa& bounds0_i, const BBox3fa& bounds1_i)
       {
         /*! for empty bounds we have to avoid inf-inf=nan */
         const BBox3fa bounds0(min(bounds0_i.lower,Vec3fa(+FLT_MAX)),max(bounds0_i.upper,Vec3fa(-FLT_MAX)));
@@ -639,15 +639,15 @@ namespace embree
       }
 
       /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, const LBBox3fa& bounds) {
-        set(i, bounds.bounds0, bounds.bounds1);
+      __forceinline void setBounds(size_t i, const LBBox3fa& bounds) {
+        setBounds(i, bounds.bounds0, bounds.bounds1);
       }
 
       /*! Sets bounding box and ID of child. */
       __forceinline void set(size_t i, const std::tuple<NodeRef,LBBox3fa,BBox1f>& child) 
       {
-        set(i,std::get<0>(child));
-        set(i, std::get<1>(child).global(std::get<2>(child)));
+        setID(i, std::get<0>(child));
+        setBounds(i, std::get<1>(child).global(std::get<2>(child)));
       }
 
       /*! tests if the node has valid bounds */
@@ -670,11 +670,11 @@ namespace embree
       /*! Returns bounds of node. */
       __forceinline BBox3fa bounds() const {
         return BBox3fa(Vec3fa(reduce_min(min(lower_x,lower_x+lower_dx)),
-                             reduce_min(min(lower_y,lower_y+lower_dy)),
-                             reduce_min(min(lower_z,lower_z+lower_dz))),
-                      Vec3fa(reduce_max(max(upper_x,upper_x+upper_dx)),
-                             reduce_max(max(upper_y,upper_y+upper_dy)),
-                             reduce_max(max(upper_z,upper_z+upper_dz))));
+                              reduce_min(min(lower_y,lower_y+lower_dy)),
+                              reduce_min(min(lower_z,lower_z+lower_dz))),
+                       Vec3fa(reduce_max(max(upper_x,upper_x+upper_dx)),
+                              reduce_max(max(upper_y,upper_y+upper_dy)),
+                              reduce_max(max(upper_z,upper_z+upper_dz))));
       }
 
       /*! Return bounding box of child i */
@@ -777,8 +777,8 @@ namespace embree
       struct Set
       {
         __forceinline void operator() (NodeRef node, size_t i, NodeRef child, const OBBox3fa& bounds) const {
-          node.unalignedNode()->set(i,child);
-          node.unalignedNode()->set(i,bounds);
+          node.unalignedNode()->setID(i,child);
+          node.unalignedNode()->setBounds(i,bounds);
         }
       };
 
@@ -793,7 +793,7 @@ namespace embree
       }
 
       /*! Sets bounding box. */
-      __forceinline void set(size_t i, const OBBox3fa& b)
+      __forceinline void setBounds(size_t i, const OBBox3fa& b)
       {
         assert(i < N);
 
@@ -819,13 +819,13 @@ namespace embree
       }
 
       /*! Sets ID of child. */
-      __forceinline void set(size_t i, const NodeRef& childID) {
+      __forceinline void setID(size_t i, const NodeRef& childID) {
         assert(i < N);
         children[i] = childID;
       }
 
-      /*! Returns the extend of the bounds of the ith child */
-      __forceinline Vec3fa extend(size_t i) const {
+      /*! Returns the extent of the bounds of the ith child */
+      __forceinline Vec3fa extent(size_t i) const {
         assert(i<N);
         const Vec3fa vx(naabb.l.vx.x[i],naabb.l.vx.y[i],naabb.l.vx.z[i]);
         const Vec3fa vy(naabb.l.vy.x[i],naabb.l.vy.y[i],naabb.l.vy.z[i]);
@@ -857,8 +857,8 @@ namespace embree
       struct Set
       {
         __forceinline void operator() (NodeRef node, size_t i, NodeRef child, const LinearSpace3fa& space, const LBBox3fa& lbounds, const BBox1f dt) const {
-          node.unalignedNodeMB()->set(i,child);
-          node.unalignedNodeMB()->set(i,space,lbounds.global(dt));
+          node.unalignedNodeMB()->setID(i,child);
+          node.unalignedNodeMB()->setBounds(i,space,lbounds.global(dt));
         }
       };
 
@@ -872,12 +872,12 @@ namespace embree
       }
 
       /*! Sets space and bounding boxes. */
-      __forceinline void set(size_t i, const AffineSpace3fa& space, const LBBox3fa& lbounds) {
-        set(i,space,lbounds.bounds0,lbounds.bounds1);
+      __forceinline void setBounds(size_t i, const AffineSpace3fa& space, const LBBox3fa& lbounds) {
+        setBounds(i,space,lbounds.bounds0,lbounds.bounds1);
       }
 
       /*! Sets space and bounding boxes. */
-      __forceinline void set(size_t i, const AffineSpace3fa& s0, const BBox3fa& a, const BBox3fa& c)
+      __forceinline void setBounds(size_t i, const AffineSpace3fa& s0, const BBox3fa& a, const BBox3fa& c)
       {
         assert(i < N);
 
@@ -901,13 +901,13 @@ namespace embree
       }
 
       /*! Sets ID of child. */
-      __forceinline void set(size_t i, const NodeRef& childID) {
+      __forceinline void setID(size_t i, const NodeRef& childID) {
         assert(i < N);
         children[i] = childID;
       }
 
-      /*! Returns the extend of the bounds of the ith child */
-      __forceinline Vec3fa extend0(size_t i) const {
+      /*! Returns the extent of the bounds of the ith child */
+      __forceinline Vec3fa extent0(size_t i) const {
         assert(i < N);
         const Vec3fa vx(space0.l.vx.x[i],space0.l.vx.y[i],space0.l.vx.z[i]);
         const Vec3fa vy(space0.l.vy.x[i],space0.l.vy.y[i],space0.l.vy.z[i]);
@@ -955,7 +955,7 @@ namespace embree
           __aligned(64) AlignedNode node;
           node.clear();
           for (size_t i=0; i<n; i++) {
-            node.set(i,children[i].bounds());
+            node.setBounds(i,children[i].bounds());
           }
           QuantizedNode *qnode = (QuantizedNode*) alloc->alloc0->malloc(sizeof(QuantizedNode), byteAlignment);
           qnode->init(node);
@@ -970,7 +970,7 @@ namespace embree
         __forceinline NodeRef operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRef* children, const size_t num) const
         {
           QuantizedNode* node = ref.quantizedNode();
-          for (size_t i=0; i<num; i++) node->set(i,children[i]);
+          for (size_t i=0; i<num; i++) node->setID(i,children[i]);
           return ref;
         }
       };
@@ -982,7 +982,7 @@ namespace embree
         BaseNode::clear();
       }
 
-      __forceinline void set(size_t i, NodeRef childID) {
+      __forceinline void setID(size_t i, NodeRef childID) {
         children[i] = childID;
       }
       
@@ -1000,7 +1000,7 @@ namespace embree
       }
 
       /*! Returns extent of bounds of specified child. */
-      __forceinline Vec3fa extend(size_t i) const {
+      __forceinline Vec3fa extent(size_t i) const {
         return bounds(i).size();
       }
 
