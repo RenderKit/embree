@@ -346,6 +346,15 @@ namespace embree
       size_t ptr;
     };
 
+    struct NodeRecord
+    {
+      __forceinline NodeRecord() {}
+      __forceinline NodeRecord(NodeRef ref, const BBox3fa& bounds) : ref(ref), bounds(bounds) {}
+
+      NodeRef ref;
+      BBox3fa bounds;
+    };
+
     /*! BVHN Base Node */
     struct BaseNode
     {
