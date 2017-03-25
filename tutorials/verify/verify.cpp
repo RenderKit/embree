@@ -3887,7 +3887,9 @@ namespace embree
                                   HAIR_GEOMETRY, HAIR_GEOMETRY_MB, CURVE_GEOMETRY, CURVE_GEOMETRY_MB, LINE_GEOMETRY, LINE_GEOMETRY_MB };
 
     /* create list of all ISAs to test */
+#if defined(__TARGET_SSE2__)
     if (hasISA(SSE2)) isas.push_back(SSE2);
+#endif
 #if defined(__TARGET_SSE42__)
     if (hasISA(SSE42)) isas.push_back(SSE42);
 #endif
@@ -4452,12 +4454,12 @@ namespace embree
     registerOption("database", [this] (Ref<ParseStream> cin, const FileName& path) {
         database = cin->getString();
         update_database = true;
-      }, "--database: location to folder containing the measurement database");
+      }, "--database <folder>: location to folder containing the measurement database");
 
     registerOption("compare", [this] (Ref<ParseStream> cin, const FileName& path) {
         database = cin->getString();
         update_database = false;
-      }, "--compare: compares with database, but does not update database");
+      }, "--compare <folder>: compares with database, but does not update database");
 
     registerOption("benchmark-tolerance", [this] (Ref<ParseStream> cin, const FileName& path) {
         benchmark_tolerance = cin->getFloat();

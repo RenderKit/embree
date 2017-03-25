@@ -245,7 +245,7 @@ namespace embree
         __forceinline void operator() (PrimRef& prim, const size_t dim, const float pos, PrimRef& left_o, PrimRef& right_o) const 
         {
           prim.geomID() &= BVHBuilderBinnedFastSpatialSAH::GEOMID_MASK;
-          splitPrimitive((RTCBuildPrimitive&)prim,dim,pos,(RTCBounds&)left_o,(RTCBounds&)right_o,userPtr);
+          splitPrimitive((RTCBuildPrimitive&)prim,(unsigned)dim,pos,(RTCBounds&)left_o,(RTCBounds&)right_o,userPtr);
           left_o.geomID()  = geomID; left_o.primID()  = primID;
           right_o.geomID() = geomID; right_o.primID() = primID;
         }
@@ -253,7 +253,7 @@ namespace embree
         __forceinline void operator() (const BBox3fa& box, const size_t dim, const float pos, BBox3fa& left_o, BBox3fa& right_o) const 
         {
           PrimRef prim(box,geomID & BVHBuilderBinnedFastSpatialSAH::GEOMID_MASK,primID);
-          splitPrimitive((RTCBuildPrimitive&)prim,dim,pos,(RTCBounds&)left_o,(RTCBounds&)right_o,userPtr);
+          splitPrimitive((RTCBuildPrimitive&)prim,(unsigned)dim,pos,(RTCBounds&)left_o,(RTCBounds&)right_o,userPtr);
         }
    
         RTCSplitPrimitiveFunc splitPrimitive;

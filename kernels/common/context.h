@@ -41,6 +41,8 @@ namespace embree
     const RTCIntersectContext* user;
     size_t flags;
     const unsigned* geomID_to_instID; // required for xfm node handling
+    unsigned instID; // required for xfm node handling
+    unsigned geomID; // required for xfm node handling
 
     static __forceinline size_t encodeSIMDWidth(const size_t width)
     {

@@ -18,18 +18,24 @@
 
 namespace embree
 {
+  extern "C" int g_instancing_mode;
+
   void TutorialScene::add(Ref<SceneGraph::GroupNode> group) 
   {
-    std::set<Ref<SceneGraph::Node>> visited;
     for (auto& node : group->children) 
     {
       if (Ref<SceneGraph::LightNode> lightNode = node.dynamicCast<SceneGraph::LightNode>()) {
         lights.push_back(lightNode->light);
       } 
       else if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
-        if (visited.find(xfmNode->child) == visited.end()) {
-          addGeometry(xfmNode->child);
+        if (g_instancing_mode == SceneGraph::INSTANCING_GEOMETRY_GROUP) {
+          if (Ref<SceneGraph::GroupNode> groupNode = xfmNode->child.dynamicCast<SceneGraph::GroupNode>()) {
+            for (size_t i=0; i<groupNode->size(); i++) {
+              addGeometry(groupNode->child(i));
+            }
+          }
         }
+        addGeometry(xfmNode->child);
         addGeometry(node);
       }
       else if (Ref<SceneGraph::PerspectiveCameraNode> cameraNode = node.dynamicCast<SceneGraph::PerspectiveCameraNode>()) {

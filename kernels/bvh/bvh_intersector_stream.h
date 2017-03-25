@@ -178,7 +178,7 @@ namespace embree
 
       __forceinline RayContext(Ray* ray)
       {
-#if defined(__AVX512F__) && !defined(__AVX512VL__)
+#if defined(__AVX512F__) && !defined(__AVX512VL__) // KNL
         vfloat16 org(vfloat4(ray->org));
         vfloat16 dir(vfloat4(ray->dir));
         vfloat16 rdir     = select(0x7777,rcp_safe(dir),max(vfloat16(ray->tnear),vfloat16(zero)));
@@ -549,7 +549,7 @@ namespace embree
 
       struct NearFarPreCompute
       {
-#if defined(__AVX512F__)
+#if defined(__AVX512ER__) // KNL+
         vint16 permX, permY, permZ;
 #endif
         size_t nearX, nearY, nearZ;
@@ -557,7 +557,7 @@ namespace embree
 
         __forceinline NearFarPreCompute(const Vec3fa& dir)
         {
-#if defined(__AVX512F__)
+#if defined(__AVX512ER__) // KNL+
           /* optimization works only for 8-wide BVHs with 16-wide SIMD */
           const vint<16> id(step);
           const vint<16> id2 = align_shift_right<16/2>(id, id);
@@ -784,13 +784,13 @@ namespace embree
 #else
           maskK = select(vmask, maskK | bitmask, maskK);
 #endif
-        } while(bits);    
+        } while(bits);
         //const vbool<Nx> vmask = dist < inf;
         const vbool<Nx> vmask = maskK != vint<Nx>(zero);
         return vmask;
       }
 
-#if defined(__AVX512F__) 
+#if defined(__AVX512ER__) // KNL+
       template<bool dist_update>
         __forceinline static vbool<Nx> traversalLoop(const size_t &m_trav_active,
                                                      const AlignedNode* __restrict__ const node,
@@ -854,8 +854,10 @@ namespace embree
       static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
 
       static void intersectCoherentSOA(BVH* bvh, RayK<K>** inputRays, size_t numValidStreams, IntersectContext* context);
-
       static void occludedCoherentSOA(BVH* bvh, RayK<K>** inputRays, size_t numValidStreams, IntersectContext* context);
+
+      static void intersectCoherent(BVH* bvh, Ray** ray, size_t numRays, IntersectContext* context);
+      static void occludedCoherent (BVH* bvh, Ray** ray, size_t numRays, IntersectContext* context);
       
     public:
       static void intersect(BVH* bvh, Ray** ray, size_t numRays, IntersectContext* context);

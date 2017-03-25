@@ -56,15 +56,15 @@
 #  define isa sse41
 #  define ISA SSE41
 #  define ISA_STR "SSE4.1"
-#elif defined(__SSSE3__)
-#  define isa ssse3
-#  define ISA SSSE3
-#  define ISA_STR "SSSE3"
-#elif defined(__SSE3__)
-#  define isa sse3
-#  define ISA SSE3
-#  define ISA_STR "SSE3"
-#elif defined(__SSE2__)
+//#elif defined(__SSSE3__) // we demote this to SSE2, MacOSX code compiles with SSSE3 by default with ICC
+//#  define isa ssse3
+//#  define ISA SSSE3
+//#  define ISA_STR "SSSE3"
+//#elif defined(__SSE3__) // we demote this to SSE2, MacOSX code compiles with SSE3 by default with clang
+//#  define isa sse3
+//#  define ISA SSE3
+//#  define ISA_STR "SSE3"
+#elif defined(__SSE2__) || defined(__SSE3__) || defined(__SSSE3__)
 #  define isa sse2
 #  define ISA SSE2
 #  define ISA_STR "SSE2"
@@ -74,16 +74,6 @@
 #  define ISA_STR "SSE"
 #else 
 #error Unknown ISA
-#endif
-
-#if defined (__MACOSX__)
-#if defined (__INTEL_COMPILER)
-#define DEFAULT_ISA SSSE3
-#else
-#define DEFAULT_ISA SSE3
-#endif
-#else
-#define DEFAULT_ISA SSE2
 #endif
 
 namespace embree

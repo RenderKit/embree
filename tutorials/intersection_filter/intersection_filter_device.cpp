@@ -595,7 +595,10 @@ unsigned int addCube (RTCScene scene_i, const Vec3fa& offset, const Vec3fa& scal
   //rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER, cube_vertices,     0, sizeof(Vec3fa  ));
   Vec3fa* ptr = (Vec3fa*) rtcMapBuffer(scene_i, geomID, RTC_VERTEX_BUFFER);
   for (size_t i=0; i<NUM_VERTICES; i++) {
-    Vec3fa vtx = Vec3fa(((Vec3fa*)&cube_vertices[0][0])[i]);
+    float x = cube_vertices[i][0];
+    float y = cube_vertices[i][1];
+    float z = cube_vertices[i][2];
+    Vec3fa vtx = Vec3fa(x,y,z);
     ptr[i] = Vec3fa(offset+LinearSpace3fa::rotate(Vec3fa(0,1,0),rotation)*LinearSpace3fa::scale(scale)*vtx);
   }
   rtcUnmapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER);

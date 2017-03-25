@@ -181,7 +181,7 @@ IF (EMBREE_RAY_PACKETS)
     bvh/bvh_intersector_stream_filters.cpp)
 ENDIF()
 
-SET(EMBREE_LIBRARY_FILES_AVX512
+SET(EMBREE_LIBRARY_FILES_AVX512KNL
 
     geometry/instance_intersector1.cpp
 
@@ -198,14 +198,14 @@ SET(EMBREE_LIBRARY_FILES_AVX512
     bvh/bvh_builder_morton.cpp)
 
 IF (EMBREE_GEOMETRY_SUBDIV)
-  SET(EMBREE_LIBRARY_FILES_AVX512 ${EMBREE_LIBRARY_FILES_AVX512}
+  SET(EMBREE_LIBRARY_FILES_AVX512KNL ${EMBREE_LIBRARY_FILES_AVX512KNL}
   geometry/grid_soa.cpp    
   subdiv/subdivpatch1base_eval.cpp
   bvh/bvh_builder_subdiv.cpp)
 ENDIF()
 
 IF (EMBREE_RAY_PACKETS)
-  SET(EMBREE_LIBRARY_FILES_AVX512 ${EMBREE_LIBRARY_FILES_AVX512}
+  SET(EMBREE_LIBRARY_FILES_AVX512KNL ${EMBREE_LIBRARY_FILES_AVX512KNL}
 
     geometry/instance_intersector.cpp
 
@@ -221,8 +221,35 @@ IF (EMBREE_RAY_PACKETS)
     bvh/bvh_intersector_stream_filters.cpp)
 ENDIF()
 
-SET(EMBREE_LIBRARY_FILES_AVX512KNL ${EMBREE_LIBRARY_FILES_AVX512})
-SET(EMBREE_LIBRARY_FILES_AVX512SKX ${EMBREE_LIBRARY_FILES_AVX512})
+SET(EMBREE_LIBRARY_FILES_AVX512SKX
+
+    geometry/instance_intersector1.cpp
+
+    bvh/bvh_intersector1_bvh4.cpp
+    bvh/bvh_intersector1_bvh8.cpp)
+
+IF (EMBREE_GEOMETRY_SUBDIV)
+  SET(EMBREE_LIBRARY_FILES_AVX512SKX ${EMBREE_LIBRARY_FILES_AVX512SKX}
+  geometry/grid_soa.cpp
+  subdiv/subdivpatch1base_eval.cpp)
+ENDIF()
+
+IF (EMBREE_RAY_PACKETS)
+  SET(EMBREE_LIBRARY_FILES_AVX512SKX ${EMBREE_LIBRARY_FILES_AVX512SKX}
+
+    geometry/instance_intersector.cpp
+
+    bvh/bvh_intersector_single.cpp
+    bvh/bvh_intersector_hybrid4_bvh4.cpp
+    bvh/bvh_intersector_hybrid8_bvh4.cpp
+    bvh/bvh_intersector_hybrid16_bvh4.cpp
+    bvh/bvh_intersector_hybrid4_bvh8.cpp
+    bvh/bvh_intersector_hybrid8_bvh8.cpp
+    bvh/bvh_intersector_hybrid16_bvh8.cpp
+    bvh/bvh_intersector_stream_bvh4.cpp
+    bvh/bvh_intersector_stream_bvh8.cpp
+    bvh/bvh_intersector_stream_filters.cpp)
+ENDIF()
 
 # replaces all .cpp files with a dummy file that includes that .cpp file
 # this is to work around an ICC name mangling issue related to lambda functions under windows
@@ -247,7 +274,9 @@ CreateISADummyFiles(EMBREE_LIBRARY_FILES_AVX512KNL avx512knl ${EMBREE_LIBRARY_FI
 CreateISADummyFiles(EMBREE_LIBRARY_FILES_AVX512SKX avx512skx ${EMBREE_LIBRARY_FILES_AVX512SKX})
 
 ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES} $<TARGET_OBJECTS:algorithms>)
+SET_TARGET_PROPERTIES(embree PROPERTIES COMPILE_FLAGS "${FLAGS_LOWEST}")
 SET_PROPERTY(TARGET embree PROPERTY FOLDER kernels)
+ADD_CUSTOM_TARGET(embree_check_stack_frame_size COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_stack_frame_size.cmake DEPENDS embree)
 
 IF (EMBREE_ISA_SSE42 AND EMBREE_LIBRARY_FILES_SSE42)
   ADD_LIBRARY(embree_sse42 STATIC ${EMBREE_LIBRARY_FILES_SSE42})

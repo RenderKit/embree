@@ -21,7 +21,7 @@ namespace embree
   struct Tutorial : public TutorialApplication 
   {
     Tutorial()
-      : TutorialApplication("intersection_filter",FEATURE_RTCORE) 
+      : TutorialApplication("lazy_geometry",FEATURE_RTCORE) 
     {
       /* set default camera */
       camera.from = Vec3fa(2.5f,2.5f,2.5f);

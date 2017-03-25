@@ -115,7 +115,7 @@ void lazyCreate(uniform LazyGeometry* uniform instance)
   if (atomic_compare_exchange_global((uniform int32*)&instance->state,LAZY_INVALID,LAZY_CREATE) == 0)
   {
     /* create the geometry */
-    print("creating sphere %i\n",instance->userID);
+    print("creating sphere %i (lazy)\n",instance->userID);
     instance->object = rtcDeviceNewScene(g_device,RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
     createTriangulatedSphere(instance->object,instance->center,instance->radius);
 
@@ -142,6 +142,15 @@ void lazyCreate(uniform LazyGeometry* uniform instance)
 
   /* switch to LAZY_VALID state */
   atomic_compare_exchange_global((uniform int32*)&instance->state,LAZY_COMMIT,LAZY_VALID);
+}
+
+void eagerCreate(uniform LazyGeometry* uniform instance)
+{
+  print("creating sphere %i (eager)\n",instance->userID);
+  instance->object = rtcDeviceNewScene(g_device,RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  createTriangulatedSphere(instance->object,instance->center,instance->radius);
+  rtcCommit(instance->object);
+  instance->state = LAZY_VALID;
 }
 
 void instanceIntersectFunc(uniform LazyGeometry* uniform instance, varying RTCRay& ray, uniform size_t item)
@@ -181,6 +190,12 @@ uniform LazyGeometry* uniform createLazyObject (RTCScene scene, uniform int user
   rtcSetBoundsFunction(scene,instance->geometry,(RTCBoundsFunc)&instanceBoundsFunc);
   rtcSetIntersectFunction(scene,instance->geometry,(RTCIntersectFuncVarying)&instanceIntersectFunc);
   rtcSetOccludedFunction (scene,instance->geometry,(RTCOccludedFuncVarying )&instanceOccludedFunc);
+
+  /* if we do not support the join mode then Embree also does not
+   * support lazy build */
+  if (!rtcDeviceGetParameter1i(g_device,RTC_CONFIG_COMMIT_JOIN)) 
+    eagerCreate(instance);
+  
   return instance;
 }
 

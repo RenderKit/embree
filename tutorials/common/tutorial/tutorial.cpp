@@ -313,6 +313,7 @@ namespace embree
         std::string mode = cin->getString();
         if      (mode == "none"    ) instancing_mode = SceneGraph::INSTANCING_NONE;
         else if (mode == "geometry") instancing_mode = SceneGraph::INSTANCING_GEOMETRY;
+        else if (mode == "geometry_group") instancing_mode = SceneGraph::INSTANCING_GEOMETRY_GROUP;
         else if (mode == "scene_geometry") instancing_mode = SceneGraph::INSTANCING_SCENE_GEOMETRY;
         else if (mode == "scene_group"   ) instancing_mode = SceneGraph::INSTANCING_SCENE_GROUP;
         else throw std::runtime_error("unknown instancing mode: "+mode);
@@ -320,6 +321,7 @@ namespace embree
       }, "--instancing: set instancing mode\n"
       "  none: no instancing\n"
       "  geometry: instance individual geometries\n"
+      "  geometry_group: instance geometry groups\n"
       "  scene_geometry: instance individual geometries as scenes\n"
       "  scene_group: instance geometry groups as scenes");
     
@@ -698,7 +700,7 @@ namespace embree
       stream << 1.0f/avg_render_time.get() << " fps";
       std::string str = stream.str();
       
-      glColor3f(1.0f, 1.0f, 0.0f);
+      glColor3f(1.0f, 0.25f, 0.0f);
       glRasterPos2i( width-GLint(str.size())*12, height - 24); 
       for (size_t i=0; i<str.size(); i++)
         glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);

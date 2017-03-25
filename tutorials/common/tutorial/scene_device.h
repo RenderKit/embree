@@ -69,9 +69,11 @@ namespace embree
   struct ISPCGeometry
   {
 #if !defined(ISPC)
-    ISPCGeometry (ISPCType type) : type(type) {}
+    ISPCGeometry (ISPCType type) : type(type), scene(nullptr), geomID(-1) {}
 #endif
     ISPCType type;
+    RTCScene scene;
+    unsigned int geomID;
   };
 
 #if !defined(ISPC)
@@ -98,8 +100,7 @@ namespace embree
     unsigned int numTimeSteps;
     unsigned int numVertices;
     unsigned int numTriangles;
-    RTCScene scene;
-    unsigned int geomID;
+    
     unsigned int materialID;
   };
   
@@ -119,8 +120,6 @@ namespace embree
     unsigned int numTimeSteps;
     unsigned int numVertices;
     unsigned int numQuads;
-    RTCScene scene;
-    unsigned int geomID;
     unsigned int materialID;
   };
   
@@ -166,8 +165,6 @@ namespace embree
     unsigned int numNormals;
     unsigned int numTexCoords;
     unsigned int materialID;
-    RTCScene scene;
-    unsigned int geomID;
   };
   
   struct ISPCLineSegments
@@ -185,8 +182,6 @@ namespace embree
     unsigned int numVertices;
     unsigned int numSegments;
     unsigned int materialID;
-    RTCScene scene;
-    unsigned int geomID;
   };
   
   struct ISPCHairSet
@@ -204,28 +199,19 @@ namespace embree
     unsigned int numVertices;
     unsigned int numHairs;
     unsigned int materialID;
-    RTCScene scene;
-    unsigned int geomID;
     unsigned int tessellation_rate;
   };
   
   struct ISPCInstance
   {
 #if !defined(ISPC)
-    ALIGNED_STRUCT;
-    
-    static ISPCInstance* create (TutorialScene* scene, Ref<SceneGraph::TransformNode> in);
-    
-  private:
     ISPCInstance (TutorialScene* scene, Ref<SceneGraph::TransformNode> in);
-    
-  public:
+    ~ISPCInstance();
 #endif
+
     ISPCGeometry geom;
-    unsigned int geomID;
     unsigned int numTimeSteps;
-    unsigned int align;
-    AffineSpace3fa spaces[1];
+    AffineSpace3fa* spaces;
   };
 
   struct ISPCGroup

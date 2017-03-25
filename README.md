@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 2.14.0
+% Embree: High Performance Ray Tracing Kernels 2.15.0
 % Intel Corporation
 
 Embree Overview
@@ -9,7 +9,7 @@ developed at Intel. The target user of Embree are graphics application
 engineers that want to improve the performance of their application by
 leveraging the optimized ray tracing kernels of Embree. The kernels
 are optimized for photo-realistic rendering on the latest Intel®
-processors with support for SSE, AVX, AVX2, and AVX512. Embree
+processors with support for SSE, AVX, AVX2, and AVX-512. Embree
 supports runtime code selection to choose the traversal and build
 algorithms that best matches the instruction set of your CPU. We
 recommend using Embree through its API to get the highest benefit from
@@ -19,7 +19,7 @@ future improvements. Embree is released as Open Source under the
 Embree supports applications written with the Intel SPMD Program
 Compiler (ISPC, <https://ispc.github.io/>) by also providing an ISPC
 interface to the core ray tracing algorithms. This makes it possible
-to write a renderer in ISPC that leverages SSE, AVX, AVX2, and AVX512
+to write a renderer in ISPC that leverages SSE, AVX, AVX2, and AVX-512
 without any code change. ISPC also supports runtime code selection,
 thus ISPC will select the best code path for your application, while
 Embree selects the optimal code path for the ray tracing algorithms.
@@ -29,7 +29,7 @@ Monte Carlo ray tracing algorithms) and coherent workloads
 (e.g. primary visibility and hard shadow rays). For standard CPUs, the
 single-ray traversal kernels in Embree provide the best performance
 for incoherent workloads and are very easy to integrate into existing
-rendering applications. For AVX512 enabled machines, a renderer
+rendering applications. For AVX-512 enabled machines, a renderer
 written in ISPC using the default hybrid ray/packet traversal
 algorithms have shown to perform best, but requires writing the
 renderer in ISPC. In general for coherent workloads, ISPC outperforms
@@ -94,14 +94,14 @@ Windows Installer
 
 You can install the 64 bit version of the Embree library using the
 Windows installer application
-[embree-2.14.0-x64.exe](https://github.com/embree/embree/releases/download/v2.14.0/embree-2.14.0.x64.exe). This
+[embree-2.15.0-x64.exe](https://github.com/embree/embree/releases/download/v2.15.0/embree-2.15.0.x64.exe). This
 will install the 64 bit Embree version by default in `Program
-Files\Intel\Embree v2.14.0 x64`. To install the 32 bit
+Files\Intel\Embree v2.15.0 x64`. To install the 32 bit
 Embree library use the
-[embree-2.14.0-win32.exe](https://github.com/embree/embree/releases/download/v2.14.0/embree-2.14.0.win32.exe)
+[embree-2.15.0-win32.exe](https://github.com/embree/embree/releases/download/v2.15.0/embree-2.15.0.win32.exe)
 installer. This will install the 32 bit Embree version by default in
-`Program Files\Intel\Embree v2.14.0 win32` on 32 bit
-systems and `Program Files (x86)\Intel\Embree v2.14.0 win32`
+`Program Files\Intel\Embree v2.15.0 win32` on 32 bit
+systems and `Program Files (x86)\Intel\Embree v2.15.0 win32`
 on 64 bit systems.
 
 You have to set the path to the `lib` folder manually to your `PATH`
@@ -113,15 +113,15 @@ Embree installation.
 To uninstall Embree again open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-2.14.0` and uninstall it.
+2.15.0` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree is also delivered as a ZIP file for 64 bit
-[embree-2.14.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.14.0/embree-2.14.0.x64.windows.zip)
+[embree-2.15.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.15.0/embree-2.15.0.x64.windows.zip)
 and 32 bit
-[embree-2.14.0.win32.windows.zip](https://github.com/embree/embree/releases/download/v2.14.0/embree-2.14.0.win32.windows.zip). After
+[embree-2.15.0.win32.windows.zip](https://github.com/embree/embree/releases/download/v2.15.0/embree-2.15.0.win32.windows.zip). After
 unpacking this ZIP file you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree. To compile applications with Embree you also have to set the
@@ -135,18 +135,18 @@ Linux RPMs
 ----------
 
 Uncompress the 'tar.gz' file
-[embree-2.14.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.14.0/embree-2.14.0.x86_64.rpm.tar.gz)
+[embree-2.15.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.15.0/embree-2.15.0.x86_64.rpm.tar.gz)
 to
 obtain the individual RPM files:
 
-    tar xzf embree-2.14.0.x86_64.rpm.tar.gz
+    tar xzf embree-2.15.0.x86_64.rpm.tar.gz
 
 To install the Embree using the RPM packages on your Linux system type
 the following:
 
-    sudo rpm --install embree-lib-2.14.0-1.x86_64.rpm
-    sudo rpm --install embree-devel-2.14.0-1.x86_64.rpm
-    sudo rpm --install embree-examples-2.14.0-1.x86_64.rpm
+    sudo rpm --install embree-lib-2.15.0-1.x86_64.rpm
+    sudo rpm --install embree-devel-2.15.0-1.x86_64.rpm
+    sudo rpm --install embree-examples-2.15.0-1.x86_64.rpm
 
 You also have to install the Intel® Threading Building Blocks (TBB)
 using `yum`:
@@ -176,21 +176,21 @@ the tutorials to start them.
 
 To uninstall Embree again just execute the following:
 
-    sudo rpm --erase embree-lib-2.14.0-1.x86_64
-    sudo rpm --erase embree-devel-2.14.0-1.x86_64
-    sudo rpm --erase embree-examples-2.14.0-1.x86_64
+    sudo rpm --erase embree-lib-2.15.0-1.x86_64
+    sudo rpm --erase embree-devel-2.15.0-1.x86_64
+    sudo rpm --erase embree-examples-2.15.0-1.x86_64
 
 Linux tar.gz files
 ------------------
 
 The Linux version of Embree is also delivered as a tar.gz file
-[embree-2.14.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.14.0/embree-2.14.0.x86_64.linux.tar.gz). Unpack
+[embree-2.15.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.15.0/embree-2.15.0.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.14.0.x64.linux.tar.gz
-    source embree-2.14.0.x64.linux/embree-vars.sh
+    tar xzf embree-2.15.0.x64.linux.tar.gz
+    source embree-2.15.0.x64.linux/embree-vars.sh
 
 If you want to ship Embree with your application best use the Embree
 version provided through the tar.gz file.
@@ -203,7 +203,7 @@ Mac OS X PKG Installer
 
 To install the Embree library on your Mac OS X system use the
 provided package installer inside
-[embree-2.14.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.14.0/embree-2.14.0.x86_64.dmg). This
+[embree-2.15.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.15.0/embree-2.15.0.x86_64.dmg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree2` folder.
@@ -225,13 +225,13 @@ Mac OS X tar.gz file
 ---------------------
 
 The Mac OS X version of Embree is also delivered as a tar.gz file
-[embree-2.14.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.14.0/embree-2.14.0.x86_64.macosx.tar.gz). Unpack
+[embree-2.15.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.15.0/embree-2.15.0.x86_64.macosx.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.14.0.x64.macosx.tar.gz
-    source embree-2.14.0.x64.macosx/embree-vars.sh
+    tar xzf embree-2.15.0.x64.macosx.tar.gz
+    source embree-2.15.0.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application please use the Embree
 library of the provided tar.gz file. The library name of that Embree
@@ -260,7 +260,9 @@ Linux and Mac OS X
 -------------------
 
 To compile Embree you need a modern C++ compiler that supports C++11.
-Embree is tested with Intel® Compiler 16.0.4, Clang 3.8.0, and GCC
+Embree is tested with Intel® Compiler 17.0 (Update 1), Intel®
+Compiler 16.0 (Update 1), Clang 3.8.0 (supports AVX2), Clang 4.0.0
+(supports AVX512) and GCC
 5.4.0. If the GCC that comes with your Fedora/Red Hat/CentOS
 distribution is too old then you can run the provided script
 `scripts/install_linux_gcc.sh` to locally install a recent GCC into
@@ -276,7 +278,7 @@ Embree supports the Intel® SPMD Program Compiler (ISPC), which allows
 straight forward parallelization of an entire renderer. If you do not
 want to use ISPC then you can disable `ENABLE_ISPC_SUPPORT` in
 CMake. Otherwise, download and install the ISPC binaries (we have
-tested ISPC version 1.9.0) from
+tested ISPC version 1.9.1) from
 [ispc.github.io](https://ispc.github.io/downloads.html). After
 installation, put the path to `ispc` permanently into your `PATH`
 environment variable or you need to correctly set the
@@ -321,7 +323,7 @@ Per default CMake will use the compilers specified with the `CC` and
 `CXX` environment variables. Should you want to use a different
 compiler, run `cmake` first and set the `CMAKE_CXX_COMPILER` and
 `CMAKE_C_COMPILER` variables to the desired compiler. For example, to
-use the Intel Compiler instead of the default GCC on most Linux machines
+use the Intel® Compiler instead of the default GCC on most Linux machines
 (`g++` and `gcc`) execute
 
     cmake -DCMAKE_CXX_COMPILER=icpc -DCMAKE_C_COMPILER=icc ..
@@ -361,14 +363,15 @@ your `LD_LIBRARY_PATH`.
 Windows
 -------
 
-Embree is tested under Windows using the Visual Studio 2015 (Update 1)
-compiler (Win32 and x64), Visual Studio 2013 (Update 5) compiler
-(Win32 and x64), Visual Studio 2012 (Update 4) compiler (x64 only),
-Intel® Compiler 16.0.1 (Win32 and x64), and Clang 3.9 (x64
-only). Using the Visual Studio 2015 compiler, Visual Studio 2013
-compiler, Intel Compiler, and Clang you can compile Embree for AVX2, while
-Visual Studio 2012 supports at most AVX. To compile Embree for AVX512
-you have to use the Intel Compiler.
+Embree is tested under Windows using the Visual Studio 2017, Visual
+Studio 2015 (Update 1) compiler (Win32 and x64), Visual Studio 2013
+(Update 5) compiler (Win32 and x64), Visual Studio 2012 (Update 4)
+compiler (x64 only), Intel® Compiler 17.0 (Update 1) (Win32 and x64),
+Intel® Compiler 16.0 (Update 1) (Win32 and x64), and Clang 3.9 (Win32
+and x64). Using the Visual Studio 2015 compiler, Visual Studio 2013
+compiler, Intel® Compiler, and Clang you can compile Embree for AVX2,
+while Visual Studio 2012 supports at most AVX. To compile Embree for
+AVX-512 you have to use the Intel® Compiler.
 
 Embree supports to use the Intel® Threading Building Blocks (TBB) as
 tasking system. For performance and flexibility reasons we recommend
@@ -389,7 +392,7 @@ Embree supports the Intel® SPMD Program Compiler (ISPC), which allows
 straight forward parallelization of an entire renderer. If you do not
 want to use ISPC then you can disable `ENABLE_ISPC_SUPPORT` in
 CMake. Otherwise, download and install the ISPC binaries (we have
-tested ISPC version 1.9.0) from
+tested ISPC version 1.9.1) from
 [ispc.github.io](https://ispc.github.io/downloads.html). After
 installation, put the path to `ispc.exe` permanently into your `PATH`
 environment variable or you need to correctly set the
@@ -426,13 +429,13 @@ parameter)". Most configuration parameters described in the
 
 For compilation of Embree under Windows use the generated Visual Studio
 solution file `embree2.sln`. The solution is by default setup to use the
-Microsoft Compiler. You can switch to the Intel Compiler by right
+Microsoft Compiler. You can switch to the Intel® Compiler by right
 clicking onto the solution in the Solution Explorer and then selecting
-the Intel Compiler. We recommend using 64 bit mode and the Intel
+the Intel® Compiler. We recommend using 64 bit mode and the Intel®
 Compiler for best performance.
 
 To build Embree with support for the AVX2 instruction set you need at
-least Visual Studio 2013 Update 4. When switching to the Intel Compiler
+least Visual Studio 2013 (Update 4). When switching to the Intel® Compiler
 to build with AVX2 you currently need to manually *remove* the switch
 `/arch:AVX2` from the `embree_avx2` project, which can be found under
 Properties ⇒ C/C++ ⇒ All Options ⇒ Additional Options.
@@ -458,9 +461,11 @@ Studio command prompt:
     cmake -G "Visual Studio 12 2013 Win64" ..
     cmake --build . --config Release
 
-To switch to the Intel Compiler use
+To use to the Intel® Compiler set the proper toolset, e.g. for Intel
+Compiler 17.0:
 
-    ICProjConvert150 embree2.sln /IC /s /f
+    cmake -G "Visual Studio 12 2013 Win64" -T "Intel C++ Compiler 17.0" ..
+    cmake --build . --config Release
 
 You can also build only some projects with the `--target` switch.
 Additional parameters after "`--`" will be passed to `msbuild`. For
@@ -476,93 +481,102 @@ The default CMake configuration in the configuration dialog should be
 appropriate for most usages. The following table describes all
 parameters that can be configured in CMake:
 
-  ---------------------------- -------------------------------- --------
-  Option                       Description                      Default
-  ---------------------------- -------------------------------- --------
-  CMAKE_BUILD_TYPE             Can be used to switch between    Release
-                               Debug mode (Debug), Release
-                               mode (Release), and Release
-                               mode with enabled assertions
-                               and debug symbols
-                               (RelWithDebInfo).
+  ------------------------------ -------------------------------- --------
+  Option                         Description                      Default
+  ------------------------------ -------------------------------- --------
+  CMAKE_BUILD_TYPE               Can be used to switch between    Release
+                                 Debug mode (Debug), Release
+                                 mode (Release), and Release
+                                 mode with enabled assertions
+                                 and debug symbols
+                                 (RelWithDebInfo).
 
-  EMBREE_ISPC_SUPPORT          Enables ISPC support of Embree.  ON
+  EMBREE_ISPC_SUPPORT            Enables ISPC support of Embree.  ON
 
-  EMBREE_STATIC_LIB            Builds Embree as a static        OFF
-                               library. When using the
-                               statically compiled Embree
-                               library, you have to define
-                               ENABLE_STATIC_LIB before
-                               including rtcore.h in your
-                               application.
+  EMBREE_STATIC_LIB              Builds Embree as a static        OFF
+                                 library. When using the
+                                 statically compiled Embree
+                                 library, you have to define
+                                 ENABLE_STATIC_LIB before
+                                 including rtcore.h in your
+                                 application.
 
-  EMBREE_TUTORIALS             Enables build of Embree          ON
-                               tutorials.
+  EMBREE_IGNORE_CMAKE_CXX_FLAGS  When enabled Embree ignores      ON
+                                 default CMAKE_CXX_FLAGS.
 
-  EMBREE_BACKFACE_CULLING      Enables backface culling, i.e.   OFF
-                               only surfaces facing a ray can
-                               be hit.
+  EMBREE_TUTORIALS               Enables build of Embree          ON
+                                 tutorials.
 
-  EMBREE_INTERSECTION_FILTER   Enables the intersection filter  ON
-                               feature.
+  EMBREE_BACKFACE_CULLING        Enables backface culling, i.e.   OFF
+                                 only surfaces facing a ray can
+                                 be hit.
 
-  EMBREE_INTERSECTION_FILTER   Restore previous hit when        ON
-  _RESTORE                     ignoring hits.
+  EMBREE_INTERSECTION_FILTER     Enables the intersection filter  ON
+                                 feature.
 
-  EMBREE_RAY_MASK              Enables the ray masking feature. OFF
+  EMBREE_INTERSECTION_FILTER     Restore previous hit when        ON
+  _RESTORE                       ignoring hits.
 
-  EMBREE_RAY_PACKETS           Enables ray packet support.      ON
+  EMBREE_RAY_MASK                Enables the ray masking feature. OFF
 
-  EMBREE_IGNORE_INVALID_RAYS   Makes code robust against the    OFF
-                               risk of full-tree traversals
-                               caused by invalid rays (e.g.
-                               rays containing INF/NaN as
-                               origins).
+  EMBREE_RAY_PACKETS             Enables ray packet support.      ON
 
-  EMBREE_TASKING_SYSTEM        Chooses between Intel® Threading TBB
-                               Building Blocks (TBB) or an
-                               internal tasking system
-                               (INTERNAL).
+  EMBREE_IGNORE_INVALID_RAYS     Makes code robust against the    OFF
+                                 risk of full-tree traversals
+                                 caused by invalid rays (e.g.
+                                 rays containing INF/NaN as
+                                 origins).
 
-  EMBREE_MAX_ISA               Select highest supported ISA     AVX2
-                               (SSE2, SSE4.2, AVX, AVX2,
-                               AVX512KNL, AVX512SKX, or NONE).
-                               When set to NONE the EMBREE_ISA_*
-                               variables can be used to enable
-                               ISAs individually.
+  EMBREE_TASKING_SYSTEM          Chooses between Intel® Threading TBB
+                                 Building Blocks (TBB) or an
+                                 internal tasking system
+                                 (INTERNAL).
 
-  EMBREE_ISA_SSE42             Enables SSE4.2 when               OFF
-                               EMBREE_MAX_ISA is set to NONE.
+  EMBREE_MAX_ISA                 Select highest supported ISA     AVX2
+                                 (SSE2, SSE4.2, AVX, AVX2,
+                                 AVX512KNL, AVX512SKX, or NONE).
+                                 When set to NONE the EMBREE_ISA_*
+                                 variables can be used to enable
+                                 ISAs individually.
 
-  EMBREE_ISA_AVX               Enables AVX when                  OFF
-                               EMBREE_MAX_ISA is set to NONE.
+  EMBREE_ISA_SSE42               Enables SSE4.2 when               OFF
+                                 EMBREE_MAX_ISA is set to NONE.
 
-  EMBREE_ISA_AVX2              Enables AVX2 when                 OFF
-                               EMBREE_MAX_ISA is set to NONE.
+  EMBREE_ISA_AVX                 Enables AVX when                  OFF
+                                 EMBREE_MAX_ISA is set to NONE.
 
-  EMBREE_ISA_AVX512KNL         Enables AVX512 for Xeon Phi when  OFF
-                               EMBREE_MAX_ISA is set to NONE.
+  EMBREE_ISA_AVX2                Enables AVX2 when                 OFF
+                                 EMBREE_MAX_ISA is set to NONE.
 
-  EMBREE_ISA_AVX512SKX         Enables AVX512 for Skylake when   OFF
-                               EMBREE_MAX_ISA is set to NONE.
+  EMBREE_ISA_AVX512KNL           Enables AVX-512 for Xeon Phi when OFF
+                                 EMBREE_MAX_ISA is set to NONE.
 
-  EMBREE_GEOMETRY_TRIANGLES    Enables support for triangle      ON
-                               geometries.
+  EMBREE_ISA_AVX512SKX           Enables AVX-512 for Skylake when  OFF
+                                 EMBREE_MAX_ISA is set to NONE.
 
-  EMBREE_GEOMETRY_QUADS        Enables support for quad          ON
-                               geometries.
+  EMBREE_GEOMETRY_TRIANGLES      Enables support for triangle      ON
+                                 geometries.
 
-  EMBREE_GEOMETRY_LINES        Enables support for line          ON
-                               geometries.
+  EMBREE_GEOMETRY_QUADS          Enables support for quad          ON
+                                 geometries.
 
-  EMBREE_GEOMETRY_HAIR         Enables support for hair          ON
-                               geometries.
+  EMBREE_GEOMETRY_LINES          Enables support for line          ON
+                                 geometries.
 
-  EMBREE_GEOMETRY_SUBDIV       Enables support for subdiv        ON
-                               geometries.
+  EMBREE_GEOMETRY_HAIR           Enables support for hair          ON
+                                 geometries.
 
-  EMBREE_GEOMETRY_USER         Enables support for user          ON
-                               geometries.
+  EMBREE_GEOMETRY_SUBDIV         Enables support for subdiv        ON
+                                 geometries.
+
+  EMBREE_GEOMETRY_USER           Enables support for user          ON
+                                 geometries.
+
+  EMBREE_NATIVE_SPLINE_BASIS     Specifies the spline basis        BEZIER
+                                 Embree uses internally for its
+                                 calculations. Hair and curves
+                                 using this basis can be rendered
+                                 directly, others are converted.
 
   ---------------------------- -------------------------------- --------
   : CMake build options for Embree.
@@ -692,13 +706,19 @@ construction pass `NULL` as device to the `rtcDeviceGetError`
 function. For all other invokations of `rtcDeviceGetError` a proper
 device pointer has to get specified.
 
-Using the `rtcDeviceSetErrorFunction` call, it is also possible to set
-a callback function that is called whenever an error occurs for a
-device. The callback function gets passed the error code, as well as
-some string that describes the error further. Passing `NULL` to
-`rtcDeviceSetErrorFunction` disables the set callback function again. The
-previously described error flags are also set if an error callback
-function is present.
+Using the `rtcDeviceSetErrorFunction2` call, it is also possible to
+set a callback function that is called whenever an error occurs for a
+device.
+
+    typedef void (*RTCErrorFunc2)(void* userPtr, const RTCError code, const char* str);
+    void rtcDeviceSetErrorFunction2(RTCDevice device, RTCErrorFunc2 func, void* userPtr);
+
+When invoked, the registred callback function gets passed a user
+defined pointer `userPtr`, the error code `code`, as well as some
+string `str` that describes the error further. Passing `NULL` as
+function pointer to `rtcDeviceSetErrorFunction2` disables the set
+callback function again. The previously described error flags are also
+set if an error callback function is present.
 
 Scene
 -----
@@ -1051,13 +1071,13 @@ Optionally, the application can fill the level buffer
 (`RTC_LEVEL_BUFFER`) with a tessellation rate for each or the edges of
 each face, making a total of `numEdges` values. The tessellation level
 is a positive floating point value, that specifies how many quads
-along the edge should get generated during tessellation. The
-tessellation level is a lower bound, thus the implementation is free
-to choose a larger level. If no level buffer is specified a level of 1
-is used. Note that some edge may be shared between (typically 2)
-faces. To guarantee a watertight tessellation, the level of these
-shared edges has to be exactly identical. A uniform tessellation rate
-for an entire subdivision mesh can be set by using the
+along the edge should get generated during tessellation. If no level
+buffer is specified a level of 1 is used. The maximally supported edge
+level is 4096 and larger levels get clamped to that value. Note that
+some edge may be shared between (typically 2) faces. To guarantee a
+watertight tessellation, the level of these shared edges has to be
+exactly identical. A uniform tessellation rate for an entire
+subdivision mesh can be set by using the
 `rtcSetTessellationRate(RTCScene scene, unsigned geomID, float rate)`
 function. The existance of a level buffer has preference over the
 uniform tessellation rate.
@@ -1207,11 +1227,11 @@ subdivision surfaces.
 ### Line Segment Hair Geometry
 
 Line segments are supported to render hair geometry. A line segment
-consists of a start and end point, and start and end
-radius. Individual line segments are considered to be subpixel sized which
-allows the implementation to approximate the intersection
-calculation. This in particular means that zooming onto one line segment might
-show geometric artifacts.
+consists of a start and end point, and start and end radius. Individual
+line segments are considered to be subpixel sized which allows the
+implementation to approximate the intersection calculation. This in
+particular means that zooming onto one line segment might show geometric
+artifacts.
 
 Line segments are created using the `rtcNewLineSegments` function
 call, and potentially deleted using the `rtcDeleteGeometry` function
@@ -1234,6 +1254,11 @@ and radius stored in `x`, `y`, `z`, `r` order in memory. The
 radii have to be greater or equal zero. All buffers have to get
 unmapped before an `rtcCommit` call to the scene.
 
+The intersection with the line segment primitive stores the parametric
+hit location along the line segment as `u`-coordinate (range $[0, 1]$;
+`v` is always set to zero). The geometry normal `Ng` is filled with the
+the tangent, i.e. the vector from start to end vertex.
+
 Like for triangle meshes, the user can also specify a geometry mask and
 additional flags that choose the strategy to handle that mesh in dynamic
 scenes.
@@ -1253,18 +1278,19 @@ The following example demonstrates how to create some line segment geometry:
     // fill indices here
     rtcUnmapBuffer(scene, geomID, RTC_INDEX_BUFFER);
 
-### Bézier Hair Geometry
+### Spline Hair Geometry
 
 Hair geometries are supported, which consist of multiple hairs
-represented as cubic Bézier curves with varying radius per control
-point. Individual hairs are considered to be subpixel sized which allows
+represented as cubic spline curves with varying radius per control
+point. As spline basis we currently support Bézier splines and
+B-splines. Individual hairs are considered to be subpixel sized which allows
 the implementation to approximate the intersection calculation. This in
 particular means that zooming onto one hair might show geometric
 artifacts.
 
-Hair geometries are created using the `rtcNewHairGeometry` function
-call, and potentially deleted using the `rtcDeleteGeometry` function
-call.
+Hair geometries are created using the `rtcNewBezierHairGeometry` or
+`rtcNewBSplineHairGeometry` function call, and potentially deleted
+using the `rtcDeleteGeometry` function call.
 
 The number of hair curves, the number of vertices, and optionally the
 number of time steps for multi-segment motion blur have to get
@@ -1301,7 +1327,7 @@ scenes.
 
 The following example demonstrates how to create some hair geometry:
 
-    unsigned geomID = rtcNewHairGeometry(scene, geomFlags, numCurves, numVertices);
+    unsigned geomID = rtcNewBezierHairGeometry(scene, geomFlags, numCurves, numVertices);
 
     struct Vertex { float x, y, z, r; };
 
@@ -1316,19 +1342,20 @@ The following example demonstrates how to create some hair geometry:
 Also see tutorial [Hair] for an example of how to create and use hair
 geometry.
 
-### Bézier Curve Geometry
+### Spline Curve Geometry
 
-The Bézier curve geometry consists of multiple cubic Bézier curves
-with varying radius per control point. The cuve surface is defined as
+The spline curve geometry consists of multiple cubic spline curves
+with varying radius per control point. As spline basis we currently
+support Bézier splines and B-splines. The cuve surface is defined as
 the sweep surface of sweeping a varying radius circle tangential along
 the Bézier curve. As a limitation, the radius of the curve has to be
 smaller than the curvature radius of the Bézier curve at each location
 on the curve. In contrast to hair geometry, the curve geometry is
 rendered properly even in closeups.
 
-Curve geometries are created using the `rtcNewCurveGeometry` function
-call, and potentially deleted using the `rtcDeleteGeometry` function
-call.
+Curve geometries are created using the `rtcNewBezierCurveGeometry` or
+`rtcNewBSplineCurveGeometry` function call, and potentially deleted
+using the `rtcDeleteGeometry` function call.
 
 The number of Bézier curves, the number of vertices, and optionally
 the number of time steps for multi-segment motion blur have to get
@@ -1745,8 +1772,8 @@ operating on single rays is 16 bytes for the ray. Data alignment
 requirements for query functions operating on AOS packets of 4, 8, or
 16 rays, is 16, 32, and 64 bytes respectively, for the valid mask and
 the ray. To operate on packets of 4 rays, the CPU has to support SSE,
-to operate on packets of 8 rays, the CPU has to support AVX-256, and
-to operate on packets of 16 rays, the CPU has to support AVX512
+to operate on packets of 8 rays, the CPU has to support AVX, and
+to operate on packets of 16 rays, the CPU has to support AVX-512
 instructions. Additionally, the required ISA has to be enabled in
 Embree at compile time to use the desired packet size.
 
@@ -2069,6 +2096,12 @@ geometries. If the backfaces should be culled in general for all
 geometries then it is faster to enable `EMBREE_BACKFACE_CULLING` during
 compilation of Embree instead of using filter functions.
 
+If the `RTC_SCENE_HIGH_QUALITY` mode is set, the intersection and
+occlusion filter functions may be called multiple times for the same
+hit. For some usage scenarios, the application may have to work around
+this by collecting already reported hits (geomID/primID pairs) and
+ignoring duplicates for some usage scenarios.
+
 ### Normal Mode
 
 In normal mode the filter functions provided by the user need to have
@@ -2317,23 +2350,31 @@ application threads for hierarchy building.
 Join Build Operation
 --------------------
 
-If `rtcCommit` is called multiple times from different threads on
-the same scene, then all these threads will join the same scene build
-operation.
+The special `rtcCommitJoin` function can be used from multiple threads
+to join a scene build operation. All thread have to consistently call
+`rtcCommitJoin` and no other commit variant.
 
 This feature allows a flexible way to lazily create hierarchies during
 rendering. A thread reaching a not yet constructed sub-scene of a
 two-level scene, can generate the sub-scene geometry and call
-`rtcCommit` on that just generated scene. During construction, further
-threads reaching the not-yet-built scene, can join the build operation
-by also invoking `rtcCommit`. A thread that calls `rtcCommit` after
-the build finishes, will directly return from the `rtcCommit`
-call (even for static scenes).
+`rtcCommitJoin` on that just generated scene. During construction,
+further threads reaching the not-yet-built scene, can join the build
+operation by also invoking `rtcCommitJoin`. A thread that calls
+`rtcCommitJoin` after the build finishes, will directly return from
+the `rtcCommitJoin` call (even for static scenes).
 
 *Note:* When using Embree with the Intel® Threading Building Blocks,
-the join mode only works properly starting with TBB v4.4 Update 1. For
-earlier TBB versions threads that call `rtcCommit` to join a running
-build will just wait for the build to finish.
+thread that call `rtcCommitJoin` will join the build operation, but
+other TBB worker threads might also participate in the build. To avoid
+thread oversubscription, we recommend using TBB also inside the
+application. Further, the join mode only works properly starting with
+TBB v4.4 Update 1. For earlier TBB versions threads that call
+`rtcCommitJoin` to join a running build will just wait for the build
+to finish.
+
+*Note:* When using Embree with the internal tasking system,
+exclusively threads that call `rtcCommitJoin` will perform the build
+operation, and no additional worker threads are scheduled.
 
 Memory Monitor Callback
 ---------------------------
@@ -2342,19 +2383,21 @@ Using the memory monitor callback mechanism, the application can track
 the memory consumption of an Embree device, and optionally terminate
 API calls that consume too much memory.
 
-The user provided memory monitor callback function has to have the
+The user provided memory monitor callback function must have the
 following signature:
 
-    bool (*RTCMemoryMonitorFunc)(const ssize_t bytes, const bool post);
+    bool (*RTCMemoryMonitorFunc2)(void* userPtr, const ssize_t bytes, const bool post);
 
 A single such callback function per device can be registered by calling
 
-    rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunc func);
+    rtcDeviceSetMemoryMonitorFunction2(RTCDevice device, RTCMemoryMonitorFunc2 func, void* userPtr);
 
-and deregistered again by calling it with `NULL`. Once registered the
-Embree device will invoke the callback function before or after it
-allocates or frees important memory blocks. The callback function
-might get called from multiple threads concurrently.
+and deregistered again by calling it with `NULL` as function
+pointer. Once registered the Embree device will invoke the callback
+function before or after it allocates or frees important memory
+blocks. The `userPtr` value that is set at registration time is
+passed to each invokation of the callback function. The callback
+function might get called from multiple threads concurrently.
 
 The application can track the current memory usage of the Embree
 device by atomically accumulating the provided `bytes` input
@@ -2566,6 +2609,165 @@ of adress space for huge page allocation, execute the following as root:
 See the following webpage for more information on huge pages under
 Linux [https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt](https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt).
 
+
+BVH Builder API
+--------------------------------
+
+The Embree API exposes internal BVH builders to build BVHs with any
+desired node and leaf layout. To invoke the BVH builder you have to
+create a BVH object using the `rtcNewBVH` function and deleted again
+using the `rtcDeleteBVH` function.
+
+    RTCBVH rtcNewBVH(RTCDevice device);
+    void rtcDeleteBVH(RTCBVH bvh);
+
+This BVH contains some builder state and fast node allocator. Some
+settings have to be passed to be BVH build function:
+
+    enum RTCBuildQuality
+    {
+      RTC_BUILD_QUALITY_LOW = 0,     //!< build low quality BVH (good for dynamic scenes)
+      RTC_BUILD_QUALITY_NORMAL = 1,  //!< build standard quality BVH
+      RTC_BUILD_QUALITY_HIGH = 2,    //!< build high quality BVH
+    };
+      
+    struct RTCBuildSettings
+    {
+      unsigned size;               //!< size of this structure in bytes
+      RTCBuildQuality quality;     //!< quality of BVH build
+      unsigned maxBranchingFactor; //!< branching factor of BVH to build
+      unsigned maxDepth;           //!< maximal depth of BVH to build
+      unsigned sahBlockSize;       //!< blocksize for SAH heuristic
+      unsigned minLeafSize;        //!< minimal size of a leaf
+      unsigned maxLeafSize;        //!< maximal size of a leaf
+      float travCost;              //!< estimated cost of one traversal step
+      float intCost;               //!< estimated cost of one primitive intersection
+      unsigned extraSpace;         //!< for spatial splitting we need extra space at end of primitive array
+    };
+
+Some default values for the settings can be obtained using the
+`rtcDefaultBuildSettings` function. Using the `quality` setting, one
+can select between a faster low quality build which is good for
+dynamic scenes, and a standard quality build for static scenes. One
+can also specify the desired maximal branching factor of the BVH
+(`maxBranchingFactor` setting), the maximal depth the BVH should have
+(`maxDepth` setting), some power of 2 block size for the SAH heuristic
+(`sahBlockSize`), the minimal and maximal leaf size (`minLeafSize` and
+`maxLeafSize` setting), and the estimated cost of one traversal step
+and primitve intersection (`travCost` and `intCost` setting). To
+spatially split primitives in high quality mode, the builder needs
+some extra space at the end of the build primitive array. The amount
+of extra space can be passed using the `extraSpace` setting, and
+should be about the same size as there are primitives. The `size`
+member has always to be set to the size of the `RTCBuildSettings`
+structure in bytes.
+
+Four callback functions have to get registered which are invoked
+during build to create BVH nodes (`RTCCreateNodeFunc`), set the
+pointers to all children (`RTCSetNodeChildrenFunc`), set the bounding
+boxes of all children (`RTCSetNodeBoundsFunc`), and to create a leaf
+node (`RTCCreateLeafFunc`).
+
+    typedef void* (*RTCCreateNodeFunc) (RTCThreadLocalAllocator allocator,
+                                        size_t numChildren, void* userPtr);
+
+    typedef void  (*RTCSetNodeChildFunc) (void* nodePtr, void** childPtrs, size_t numChildren,
+                                          void* userPtr);
+
+    typedef void  (*RTCSetNodeBoundsFunc) (void* nodePtr, const RTCBounds** bounds, size_t numChildren,
+                                           void* userPtr);
+
+    typedef void* (*RTCCreateLeafFunc) (RTCThreadLocalAllocator allocator,
+                                        const RTCBuildPrimitive* primitives, size_t numPrimitives,
+                                        void* userPtr);
+
+    typedef void  (*RTCSplitPrimitiveFunc) (const RTCBuildPrimitive& prim,
+        unsigned dim, float pos, RTCBounds& lbounds, RTCBounds& rbounds, void* userPtr);
+
+The `RTCCreateNodeFunc` and `RTCCreateLeafFunc` type callbacks are
+passed a thread local allocator object that should be used for fast
+allocation of nodes using the `rtcThreadLocalAlloc` function. 
+
+    void* rtcThreadLocalAlloc(RTCThreadLocalAllocator allocator, size_t bytes, size_t align);
+
+We strongly recommend using this allocation mechanism, as alternative
+approaches like standard `malloc` can be over 10x slower. The
+allocator object passed to the create callbacks has to be used only
+inside the current thread.
+
+The `RTCCreateNodeFunc` callback additionally gets passed the number
+of children for this node in the range from 2 to maxBranchingFactor
+(`numChildren` argument).
+
+The `RTCSetNodeChildFunc` callback function, gets passed a pointer to
+the node as input (`nodePtr` argument), an array of pointers to the
+children (`childPtrs` argument), and the size of this array
+(`numChildren` argument).
+
+The `RTCSetNodeBoundsFunc` callback function, get a pointer to the
+node as input (`nodePtr` argument), an array of pointers to the
+bounding boxes of the children (`bounds` argument), and the size of
+this array (`numChildren` argument).
+
+The `RTCCreateLeafFunc` callback additionally get an array of
+primitives as input (`primitives` argument), and the size of this
+array (`numPrimitives` argument). The callback should read the
+`geomID` and `primID` members from the passed primitives to construct
+the leaf.
+
+The `RTCSplitPrimitiveFunc` callback is invoked in high quality mode
+to split a primitive (`prim` argument) at some specified position
+(`pos` argument) and dimension (`dim` argument). The callback should
+return bounds of the clipped left and right part of the primitive
+(`lbounds` and `rbounds` arguments).
+
+There is an optional progress callback function that can be used to
+get progress on the BVH build.
+
+    typedef void (*RTCBuildProgressFunc) (size_t N, void* userPtr);
+
+This progress function is called with a number `N` of primitives the
+build is finished for. Accumulating over all invokations will sum up
+to the number of primitives passed to be BVH build function.
+
+All callback functions are typically called from multiple threads,
+thus their implementation has to be thread safe.
+
+All callback function get a user defined pointer (`userPtr` argument)
+as input which is provided to the `rtcBuildBVH` call. This pointer can
+be used to access the application scene object inside the callback
+functions.
+
+The BVH build is invoked using the `rtcBuildBVH` function:
+
+    void* rtcBuildBVH(RTCBVH bvh,                             //!< BVH to build
+                      const RTCBuildSettings& settings,       //!< settings for BVH builder
+                      RTCBuildPrimitive* primitives,          //!< list of input primitives
+                      size_t numPrimitives,                   //!< number of input primitives
+                      RTCCreateNodeFunc createNode,           //!< creates a node
+                      RTCSetNodeChildrenFunc setNodeChildren, //!< sets pointer to a child
+                      RTCSetNodeBoundsFunc setNodeBounds,     //!< sets bound of a child
+                      RTCCreateLeafFunc createLeaf,           //!< creates a leaf
+                      RTCSplitPrimitiveFunc splitPrimitive,   //!< splits a primitive into two halves
+                      RTCBuildProgressFunc buildProgress      //!< used to report build progress
+                      void* userPtr);                         //!< user pointer passed to callback functions
+
+The function gets passed the BVH objects (`bvh` argument), the build
+settings to use (`settings` argument), the array of primitives
+(`primitives` argument) and its size (`numPrimitives` argument), the
+previously described callback function pointers, and a user defined
+pointer (`userPtr` argument) that is passed to all callback
+functions. The function pointer to the primitive split function
+(`splitPrimitive` argument) may be `NULL`, however, then no spatial
+splitting in high quality mode is possible. The function pointer used
+to report the build progress (`buildProgress` argument) is optional
+and may also be `NULL`.
+
+For static scenes that do not require a further `rtcBuildBVH` call one
+should use the `rtcMakeStatic` function after the build which clears
+some internal data.
+
+    void rtcMakeStaticBVH(RTCBVH bvh);
 Embree Tutorials
 ================
 

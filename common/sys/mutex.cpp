@@ -70,6 +70,7 @@ namespace embree
 };
 #endif
 
+#if 0
 namespace embree
 {
   template<typename Mutex>
@@ -102,3 +103,4 @@ namespace embree
   mutex_regression_test<MutexSys> mutex_sys_regression("sys_mutex_regression_test");
   mutex_regression_test<SpinLock> mutex_atomic_regression("atomic_mutex_regression_test");
 }
+#endif

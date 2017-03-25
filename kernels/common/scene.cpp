@@ -580,6 +580,14 @@ namespace embree
     return id;
   }
 
+  unsigned int Scene::newGeometryGroup (RTCGeometryFlags gflags, const std::vector<Geometry*> geometries)
+  {
+    Geometry* geom = new GeometryGroup(this,gflags,geometries);
+    unsigned id = add(geom);
+    geom->id = id;
+    return id;
+  }
+
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
   unsigned Scene::newTriangleMesh (RTCGeometryFlags gflags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) 
   {

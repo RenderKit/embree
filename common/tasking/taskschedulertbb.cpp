@@ -23,21 +23,10 @@ namespace embree
   
   class TBBAffinity: public tbb::task_scheduler_observer
   {
-    tbb::atomic<int> threadCount;
-    
   public:
-    TBBAffinity() {
-      threadCount = 0;
-    }
     
-    void on_scheduler_entry( bool ) 
-    {
-      ++threadCount;
-      setAffinity(TaskScheduler::threadIndex());
-    }
-    
-    void on_scheduler_exit( bool ) { 
-      --threadCount; 
+    void on_scheduler_entry( bool ) {
+      setAffinity(TaskScheduler::threadIndex()); 
     }
     
   } tbb_affinity;
@@ -53,8 +42,10 @@ namespace embree
     }
     
     /* only set affinity if requested by the user */
+#if TBB_INTERFACE_VERSION >= 9000 // affinity not properly supported by older TBB versions
     if (set_affinity)
-      tbb_affinity.observe(true); 
+      tbb_affinity.observe(true);
+#endif 
     
     /* now either keep default settings or configure number of threads */
     if (numThreads == std::numeric_limits<size_t>::max()) {
@@ -63,7 +54,7 @@ namespace embree
       //numThreads = tbb::task_scheduler_init::default_num_threads();
     } else {
       g_tbb_threads_initialized = true;
-      const int max_concurrency = threadCount();
+      const size_t max_concurrency = threadCount();
       if (numThreads > max_concurrency) numThreads = max_concurrency;
       g_tbb_threads.initialize(int(numThreads));
     }
