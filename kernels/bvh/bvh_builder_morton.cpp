@@ -54,7 +54,7 @@ namespace embree
         for (size_t i=0; i<num; i++) {
           const BBox3fa b = children[i].second;
           res.extend(b);
-          node->setID(i,children[i].first);
+          node->setRef(i,children[i].first);
           node->setBounds(i,b);
         }
 
