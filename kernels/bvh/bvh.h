@@ -364,6 +364,16 @@ namespace embree
       LBBox3fa lbounds;
     };
 
+    struct NodeRecordMB4D
+    {
+      __forceinline NodeRecordMB4D() {}
+      __forceinline NodeRecordMB4D(NodeRef ref, const LBBox3fa& lbounds, const BBox1f& dt) : ref(ref), lbounds(lbounds), dt(dt) {}
+
+      NodeRef ref;
+      LBBox3fa lbounds;
+      BBox1f dt;
+    };
+
     /*! BVHN Base Node */
     struct BaseNode
     {
@@ -578,7 +588,7 @@ namespace embree
 
       struct Set
       {
-        __forceinline void operator() (NodeRef node, size_t i, const std::tuple<NodeRef,LBBox3fa,BBox1f>& child) const {
+        __forceinline void operator() (NodeRef node, size_t i, const NodeRecordMB4D& child) const {
           node.alignedNodeMB()->set(i,child);
         }
       };
@@ -660,10 +670,10 @@ namespace embree
       }
 
       /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, const std::tuple<NodeRef,LBBox3fa,BBox1f>& child) 
+      __forceinline void set(size_t i, const NodeRecordMB4D& child)
       {
-        setRef(i, std::get<0>(child));
-        setBounds(i, std::get<1>(child).global(std::get<2>(child)));
+        setRef(i, child.ref);
+        setBounds(i, child.lbounds.global(child.dt));
       }
 
       /*! tests if the node has valid bounds */
