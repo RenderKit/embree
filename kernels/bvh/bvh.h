@@ -355,6 +355,15 @@ namespace embree
       BBox3fa bounds;
     };
 
+    struct NodeRecordMB
+    {
+      __forceinline NodeRecordMB() {}
+      __forceinline NodeRecordMB(NodeRef ref, const LBBox3fa& lbounds) : ref(ref), lbounds(lbounds) {}
+
+      NodeRef ref;
+      LBBox3fa lbounds;
+    };
+
     /*! BVHN Base Node */
     struct BaseNode
     {
@@ -585,21 +594,19 @@ namespace embree
       };
 
       struct Set2
-      {
-        typedef std::pair<NodeRef,LBBox3fa> Ty;
-        
+      { 
         template<typename BuildRecord>
-        __forceinline Ty operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, Ty* children, const size_t num) const
+        __forceinline NodeRecordMB operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRecordMB* children, const size_t num) const
         {
           AlignedNodeMB* node = ref.alignedNodeMB();
           
           LBBox3fa bounds = empty;
           for (size_t i=0; i<num; i++) {
-            node->setRef(i,children[i].first);
-            node->setBounds(i,children[i].second);
-            bounds.extend(children[i].second);
+            node->setRef(i,children[i].ref);
+            node->setBounds(i,children[i].lbounds);
+            bounds.extend(children[i].lbounds);
           }
-          return std::make_pair(ref,bounds);
+          return NodeRecordMB(ref,bounds);
         }
       };
 

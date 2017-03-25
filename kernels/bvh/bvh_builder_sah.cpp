@@ -326,10 +326,11 @@ namespace embree
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::NodeRecordMB NodeRecordMB;
 
       __forceinline CreateMSMBlurLeaf (BVH* bvh, PrimRef* prims, size_t time) : bvh(bvh), prims(prims), time(time) {}
       
-      __forceinline std::pair<NodeRef,LBBox3fa> operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) const
+      __forceinline NodeRecordMB operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) const
       {
         size_t items = Primitive::blocks(current.prims.size());
         size_t start = current.prims.begin();
@@ -340,7 +341,7 @@ namespace embree
         for (size_t i=0; i<items; i++)
           allBounds.extend(accel[i].fillMB(prims, start, current.prims.end(), bvh->scene, time, bvh->numTimeSteps));
         
-        return std::make_pair(node,allBounds);
+        return NodeRecordMB(node,allBounds);
       }
 
       BVH* bvh;
@@ -390,7 +391,9 @@ namespace embree
           NodeRef root; LBBox3fa tbounds;
           const PrimInfo pinfo = createPrimRefArrayMBlur<Mesh>(t,bvh->numTimeSteps,scene,prims,bvh->scene->progressInterface);
           if (pinfo.size()) {
-            std::tie(root, tbounds) = BVHNBuilderMblurVirtual<N>::build(&bvh->alloc,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),t),bvh->scene->progressInterface,prims.data(),pinfo,settings);
+            auto rootRecord = BVHNBuilderMblurVirtual<N>::build(&bvh->alloc,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),t),bvh->scene->progressInterface,prims.data(),pinfo,settings);
+            root = rootRecord.ref;
+            tbounds = rootRecord.lbounds;
           } else {
             tbounds = LBBox3fa(empty);
             root = BVH::emptyNode;
