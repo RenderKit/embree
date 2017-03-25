@@ -427,7 +427,7 @@ namespace embree
           settings.singleThreadThreshold = singleThreadThreshold;
 
           auto root = BVHBuilderBinnedSAH::build<std::pair<NodeRef,LBBox3fa>>
-            (typename BVH::CreateAlloc(bvh),typename BVH::AlignedNodeMB::Create2(),typename BVH::AlignedNodeMB::Set2(),
+            (typename BVH::CreateAlloc(bvh),typename BVH::AlignedNodeMB::Create2(),typename BVH::AlignedNodeMB::Set2Global(dt),
              CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),dti.begin()),bvh->scene->progressInterface,
              prims.data(),pinfo,settings);
           
@@ -459,7 +459,7 @@ namespace embree
 
             LBBox3fa cbounds = linearBounds(scene,dt);
 
-            node->set(i,cnode,cbounds,dt);
+            node->set(i,std::make_tuple(cnode,cbounds,dt));
             lbounds.extend(cbounds);
           }
           return bvh->encodeNode(node);

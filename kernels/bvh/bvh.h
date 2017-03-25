@@ -635,6 +635,29 @@ namespace embree
         }
       };
 
+      struct Set2Global
+      {
+        typedef std::pair<NodeRef,LBBox3fa> Ty;
+
+        __forceinline Set2Global(BBox1f tbounds) : tbounds(tbounds) {}
+
+        template<typename BuildRecord>
+        __forceinline Ty operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, Ty* children, const size_t num) const
+        {
+          AlignedNodeMB* node = ref.alignedNodeMB();
+
+          LBBox3fa bounds = empty;
+          for (size_t i=0; i<num; i++) {
+            node->set(i,children[i].first);
+            node->set(i,children[i].second.global(tbounds));
+            bounds.extend(children[i].second);
+          }
+          return std::make_pair(ref,bounds);
+        }
+
+        BBox1f tbounds;
+      };
+
       /*! Clears the node. */
       __forceinline void clear()  {
         lower_x = lower_y = lower_z = vfloat<N>(nan);
