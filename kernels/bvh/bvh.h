@@ -898,7 +898,7 @@ namespace embree
         AlignedNodeMB::clear();
       }
 
-      /*! Sets bounding box and ID of child. */
+      /*! Sets bounding box of child. */
       __forceinline void setBounds(size_t i, const BBox3fa& bounds0_i, const BBox3fa& bounds1_i)
       {
         /*! for empty bounds we have to avoid inf-inf=nan */
@@ -916,23 +916,28 @@ namespace embree
       }
 
       /*! Sets bounding box of child. */
-      __forceinline void setBounds(size_t i, const LBBox3fa& gbounds, const BBox1f& tbounds)
+      __forceinline void setBounds(size_t i, const LBBox3fa& bounds) {
+        setBounds(i, bounds.bounds0, bounds.bounds1);
+      }
+
+      /*! Sets bounding box of child. */
+      __forceinline void setBounds(size_t i, const LBBox3fa& bounds, const BBox1f& tbounds)
       {
-        setBounds(i,gbounds.bounds0,gbounds.bounds1);
+        setBounds(i, bounds.global(tbounds));
         lower_t[i] = tbounds.lower;
         upper_t[i] = tbounds.upper == 1.0f ? 1.0f+float(ulp) : tbounds.upper;
       }
 
-      /*! Sets bounding box of child. */
+      /*! Sets bounding box and ID of child. */
       __forceinline void set(size_t i, NodeRef childID, const LBBox3fa& bounds, const BBox1f& tbounds) 
       {
         AlignedNodeMB::setRef(i,childID);
-        setBounds(i,bounds,tbounds);
+        setBounds(i, bounds, tbounds);
       }
 
       /*! Sets bounding box and ID of child. */
       __forceinline void set(size_t i, const NodeRecordMB4D& child) {
-        set(i, child.ref, child.lbounds.global(child.dt), child.dt);
+        set(i, child.ref, child.lbounds, child.dt);
       }
 
       /*! Returns reference to specified child */
@@ -968,8 +973,8 @@ namespace embree
       }
 
     public:
-      vfloat<N> lower_t;        //!< time dimension of lower bouds of all N children
-      vfloat<N> upper_t;        //!< time dimension of upper bouds of all N children
+      vfloat<N> lower_t;        //!< time dimension of lower bounds of all N children
+      vfloat<N> upper_t;        //!< time dimension of upper bounds of all N children
     };
 
     /*! Node with unaligned bounds */
