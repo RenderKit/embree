@@ -331,10 +331,11 @@ namespace embree
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::NodeRecordMB NodeRecordMB;
 
       __forceinline CreateMSMBlurLeaf (BVH* bvh, PrimRef* prims, size_t time) : bvh(bvh), prims(prims), time(time) {}
       
-      __forceinline std::pair<NodeRef,LBBox3fa> operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) const
+      __forceinline NodeRecordMB operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) const
       {
         size_t items = Primitive::blocks(current.prims.size());
         size_t start = current.prims.begin();
@@ -345,7 +346,7 @@ namespace embree
         for (size_t i=0; i<items; i++)
           allBounds.extend(accel[i].fillMB(prims, start, current.prims.end(), bvh->scene, time, bvh->numTimeSteps));
         
-        return std::make_pair(node,allBounds);
+        return NodeRecordMB(node,allBounds);
       }
 
       BVH* bvh;
@@ -396,7 +397,9 @@ namespace embree
           NodeRef root; LBBox3fa tbounds;
           const PrimInfo pinfo = createPrimRefArrayMBlur<Mesh>(t,bvh->numTimeSteps,scene,prims,bvh->scene->progressInterface);
           if (pinfo.size()) {
-            std::tie(root, tbounds) = BVHNBuilderMblurVirtual<N>::build(&bvh->alloc,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),t),bvh->scene->progressInterface,prims.data(),pinfo,settings);
+            auto rootRecord = BVHNBuilderMblurVirtual<N>::build(&bvh->alloc,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),t),bvh->scene->progressInterface,prims.data(),pinfo,settings);
+            root = rootRecord.ref;
+            tbounds = rootRecord.lbounds;
           } else {
             tbounds = LBBox3fa(empty);
             root = BVH::emptyNode;
@@ -436,6 +439,8 @@ namespace embree
     {
       typedef BVHN<N> BVH;
       typedef typename BVHN<N>::NodeRef NodeRef;
+      typedef typename BVHN<N>::NodeRecordMB NodeRecordMB;
+      typedef typename BVHN<N>::NodeRecordMB4D NodeRecordMB4D;
       typedef typename BVHN<N>::AlignedNodeMB AlignedNodeMB;
       typedef typename BVHN<N>::AlignedNodeMB4D AlignedNodeMB4D;
       BVH* bvh;
@@ -473,12 +478,12 @@ namespace embree
           settings.intCost = intCost;
           settings.singleThreadThreshold = singleThreadThreshold;
 
-          auto root = BVHBuilderBinnedSAH::build<std::pair<NodeRef,LBBox3fa>>
+          auto root = BVHBuilderBinnedSAH::build<NodeRecordMB>
             (typename BVH::CreateAlloc(bvh),typename BVH::AlignedNodeMB::Create2(),typename BVH::AlignedNodeMB::Set2Global(dt),
              CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),dti.begin()),bvh->scene->progressInterface,
              prims.data(),pinfo,settings);
           
-          return root.first;
+          return root.ref;
         }
         else
         {
@@ -506,7 +511,7 @@ namespace embree
 
             LBBox3fa cbounds = linearBounds(scene,dt);
 
-            node->set(i,std::make_tuple(cnode,cbounds,dt));
+            node->set(i,NodeRecordMB4D(cnode,cbounds,dt));
             lbounds.extend(cbounds);
           }
           return bvh->encodeNode(node);
@@ -579,10 +584,11 @@ namespace embree
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::NodeRecordMB4D NodeRecordMB4D;
 
       __forceinline CreateMBlurLeaf (BVH* bvh) : bvh(bvh) {}
       
-      __forceinline const std::tuple<NodeRef,LBBox3fa,BBox1f> operator() (const BVHMBuilderMSMBlur::BuildRecord& current, Allocator* alloc) const
+      __forceinline const NodeRecordMB4D operator() (const BVHMBuilderMSMBlur::BuildRecord& current, Allocator* alloc) const
       {
         size_t items = Primitive::blocks(current.prims.object_range.size());
         size_t start = current.prims.object_range.begin();
@@ -591,7 +597,7 @@ namespace embree
         LBBox3fa allBounds = empty;
         for (size_t i=0; i<items; i++)
           allBounds.extend(accel[i].fillMB(current.prims.prims->data(), start, current.prims.object_range.end(), bvh->scene, current.prims.time_range));
-        return std::make_tuple(node,allBounds,current.prims.time_range);
+        return NodeRecordMB4D(node,allBounds,current.prims.time_range);
       }
 
       BVH* bvh;
@@ -603,6 +609,7 @@ namespace embree
     {
       typedef BVHN<N> BVH;
       typedef typename BVHN<N>::NodeRef NodeRef;
+      typedef typename BVHN<N>::NodeRecordMB NodeRecordMB;
       typedef typename BVHN<N>::AlignedNodeMB AlignedNodeMB;
 
       BVH* bvh;
@@ -674,12 +681,12 @@ namespace embree
         settings.singleThreadThreshold = singleThreadThreshold;
 
         /* build hierarchy */
-        auto root = BVHBuilderBinnedSAH::build<std::pair<NodeRef,LBBox3fa>>
+        auto root = BVHBuilderBinnedSAH::build<NodeRecordMB>
           (typename BVH::CreateAlloc(bvh),typename BVH::AlignedNodeMB::Create2(),typename BVH::AlignedNodeMB::Set2(),
            CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),0),bvh->scene->progressInterface,
            prims.data(),pinfo,settings);
 
-        bvh->set(root.first,root.second,pinfo.size());
+        bvh->set(root.ref,root.lbounds,pinfo.size());
       }
 
       void buildMultiSegment(size_t numPrimitives)
@@ -706,8 +713,7 @@ namespace embree
         settings.singleThreadThreshold = singleThreadThreshold;
         
         /* build hierarchy */
-        NodeRef root; LBBox3fa rootBounds;
-        std::tie (root, rootBounds, std::ignore) = 
+        auto root =
           BVHMBuilderMSMBlur::build<NodeRef>(prims,pinfo,scene->device,
                                              RecalculatePrimRef<Mesh>(scene),
                                              typename BVH::CreateAlloc(bvh),
@@ -716,8 +722,8 @@ namespace embree
                                              CreateMBlurLeaf<N,Mesh,Primitive>(bvh),
                                              bvh->scene->progressInterface,
                                              settings);
-        
-        bvh->set(root,rootBounds,pinfo.num_time_segments);
+
+        bvh->set(root.ref,root.lbounds,pinfo.num_time_segments);
       }
 
       void clear() {

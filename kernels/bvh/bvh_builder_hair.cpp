@@ -186,7 +186,7 @@ namespace embree
               for (size_t i=0; i<numChildren; i++) 
               {
                 LBBox3fa bounds = computePrimInfoMB(t,bvh->numTimeSteps,scene,children[i]);
-                node->set(i,bounds);
+                node->setBounds(i,bounds);
               }
               return node;
             },
@@ -198,7 +198,7 @@ namespace embree
               {
                 const AffineSpace3fa space = unalignedHeuristic.computeAlignedSpaceMB(scene,children[i]); 
                 UnalignedHeuristicBinningSAH::PrimInfoMB pinfo = unalignedHeuristic.computePrimInfoMB(t,bvh->numTimeSteps,scene,children[i],space);
-                node->set(i,space,pinfo.s0t0,pinfo.s1t1);
+                node->setBounds(i,space,pinfo.s0t0,pinfo.s1t1);
               }
               return node;
             },
@@ -246,6 +246,7 @@ namespace embree
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::NodeRecordMB NodeRecordMB;
 
       BVH* bvh;
       Scene* scene;
@@ -284,7 +285,7 @@ namespace embree
         settings.maxLeafSize = BVH::maxLeafBlocks;
 
         /* creates a leaf node */
-        auto createLeaf = [&] (const SetMB& prims, FastAllocator::ThreadLocal2* alloc) -> std::pair<NodeRef,LBBox3fa>
+        auto createLeaf = [&] (const SetMB& prims, FastAllocator::ThreadLocal2* alloc) -> NodeRecordMB
           {
             size_t start = prims.object_range.begin();
             size_t end   = prims.object_range.end();
@@ -296,7 +297,7 @@ namespace embree
             for (size_t i=0; i<items; i++)
               bounds.extend(accel[i].fillMB(prims.prims->data(),start,end,bvh->scene,prims.time_range));
             
-            return std::make_pair(node,bounds);
+            return NodeRecordMB(node,bounds);
           };
 
         /* build the hierarchy */
@@ -314,7 +315,7 @@ namespace embree
            bvh->scene->progressInterface,
            settings);
         
-        bvh->set(root.first,root.second,pinfo.num_time_segments);
+        bvh->set(root.ref,root.lbounds,pinfo.num_time_segments);
         
         //});
         

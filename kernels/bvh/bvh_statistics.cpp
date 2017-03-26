@@ -85,7 +85,7 @@ namespace embree
       for (size_t i=0; i<N; i++) {
         if (n->child(i) == BVH::emptyNode) continue;
         s.statUnalignedNodes.numChildren++;
-        const double Ai = max(0.0f,halfArea(n->extend(i)));
+        const double Ai = max(0.0f,halfArea(n->extent(i)));
         s = s + statistics(n->child(i),Ai,t0t1); 
       }
       s.statUnalignedNodes.numNodes++;
@@ -126,7 +126,7 @@ namespace embree
       for (size_t i=0; i<N; i++) {
         if (n->child(i) == BVH::emptyNode) continue;
         s.statUnalignedNodesMB.numChildren++;
-        const double Ai = max(0.0f,halfArea(n->extend0(i)));
+        const double Ai = max(0.0f,halfArea(n->extent0(i)));
         s = s + statistics(n->child(i),Ai,t0t1); 
       }
       s.statUnalignedNodesMB.numNodes++;
@@ -145,7 +145,7 @@ namespace embree
       for (size_t i=0; i<N; i++) {
         if (n->child(i) == BVH::emptyNode) continue;
         s.statQuantizedNodes.numChildren++;
-        const double Ai = max(0.0f,halfArea(n->extend(i)));
+        const double Ai = max(0.0f,halfArea(n->extent(i)));
         s = s + statistics(n->child(i),Ai,t0t1); 
       }
       s.statQuantizedNodes.numNodes++;

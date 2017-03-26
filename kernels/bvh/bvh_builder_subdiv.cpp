@@ -213,6 +213,7 @@ namespace embree
 
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::NodeRecordMB NodeRecordMB;
       typedef typename BVHN<N>::Allocator BVH_Allocator;
 
       BVH* bvh;
@@ -423,7 +424,7 @@ namespace embree
           size_t num_bvh_primitives = 0;
           for (size_t t=0; t<numTimeSegments; t++)
           {
-            auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> std::pair<NodeRef,LBBox3fa> {
+            auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> NodeRecordMB {
               assert(current.prims.size() == 1);
               const size_t patchIndexMB = prims[current.prims.begin()].ID();
               SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+0];
@@ -431,7 +432,7 @@ namespace embree
               size_t patchNumTimeSteps = scene->get<SubdivMesh>(patch.geom)->numTimeSteps;
               LBBox3fa lbounds = Geometry::linearBounds([&] (size_t itime) { return bounds[patchIndexMB+itime]; },
                                                         t, numTimeSteps, patchNumTimeSteps);
-              return std::make_pair(ref,lbounds);
+              return NodeRecordMB(ref,lbounds);
             };
 
             /* create primrefs */
@@ -447,8 +448,10 @@ namespace embree
             settings.singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD;
 
             /* call BVH builder */
-            NodeRef root; LBBox3fa tbounds;
-            std::tie(root, tbounds) = BVHNBuilderMblurVirtual<N>::build(&bvh->alloc,createLeaf,bvh->scene->progressInterface,prims.data(),pinfo,settings);
+            auto rootRecord = BVHNBuilderMblurVirtual<N>::build(&bvh->alloc,createLeaf,bvh->scene->progressInterface,prims.data(),pinfo,settings);
+            NodeRef root = rootRecord.ref;
+            LBBox3fa tbounds = rootRecord.lbounds;
+
             roots[t] = root;
             boxes[t+0] = tbounds.bounds0;
             boxes[t+1] = tbounds.bounds1;
@@ -592,6 +595,7 @@ namespace embree
 
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::NodeRecordMB4D NodeRecordMB4D;
       typedef typename BVHN<N>::AlignedNodeMB AlignedNodeMB;
       typedef typename BVHN<N>::AlignedNodeMB4D AlignedNodeMB4D;
       typedef typename BVHN<N>::Allocator BVH_Allocator;
@@ -723,7 +727,7 @@ namespace embree
         pinfo.object_range._end = pinfo.object_range.begin();
         pinfo.object_range._begin = 0;
 
-        auto createLeafFunc = [&] (const BVHMBuilderMSMBlur::BuildRecord& current, Allocator* alloc) -> std::tuple<NodeRef,LBBox3fa,BBox1f> {
+        auto createLeafFunc = [&] (const BVHMBuilderMSMBlur::BuildRecord& current, Allocator* alloc) -> NodeRecordMB4D {
           mvector<PrimRefMB>& prims = *current.prims.prims;
           size_t items MAYBE_UNUSED = current.prims.size();
           assert(items == 1);
@@ -732,7 +736,7 @@ namespace embree
           NodeRef node = bvh->encodeLeaf((char*)&patch,1);
           size_t patchNumTimeSteps = scene->get<SubdivMesh>(patch.geom)->numTimeSteps;
           const LBBox3fa lbounds = Geometry::linearBounds([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, current.prims.time_range, patchNumTimeSteps-1);
-          return std::make_tuple(node,lbounds,current.prims.time_range);
+          return NodeRecordMB4D(node,lbounds,current.prims.time_range);
         };
 
         /* configuration for BVH build */
@@ -747,8 +751,7 @@ namespace embree
         settings.singleLeafTimeSegment = false;
 
         /* build hierarchy */
-        NodeRef root; LBBox3fa rootBounds;
-        std::tie(root, rootBounds, std::ignore) =
+        auto root =
           BVHMBuilderMSMBlur::build<NodeRef>(primsMB,pinfo,scene->device,
                                              recalculatePrimRef,
                                              typename BVH::CreateAlloc(bvh),
@@ -758,7 +761,7 @@ namespace embree
                                              bvh->scene->progressInterface,
                                              settings);
         
-        bvh->set(root,rootBounds,pinfo.num_time_segments);
+        bvh->set(root.ref,root.lbounds,pinfo.num_time_segments);
       }
 
       void build() 
