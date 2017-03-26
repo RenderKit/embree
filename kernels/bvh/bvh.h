@@ -49,6 +49,38 @@ namespace embree
     BVH_QN1 = BVH_FLAG_QUANTIZED_NODE
   };
 
+  /* BVH node reference with bounds */
+  template<typename NodeRef>
+  struct BVHNodeRecord
+  {
+    __forceinline BVHNodeRecord() {}
+    __forceinline BVHNodeRecord(NodeRef ref, const BBox3fa& bounds) : ref(ref), bounds(bounds) {}
+
+    NodeRef ref;
+    BBox3fa bounds;
+  };
+
+  template<typename NodeRef>
+  struct BVHNodeRecordMB
+  {
+    __forceinline BVHNodeRecordMB() {}
+    __forceinline BVHNodeRecordMB(NodeRef ref, const LBBox3fa& lbounds) : ref(ref), lbounds(lbounds) {}
+
+    NodeRef ref;
+    LBBox3fa lbounds;
+  };
+
+  template<typename NodeRef>
+  struct BVHNodeRecordMB4D
+  {
+    __forceinline BVHNodeRecordMB4D() {}
+    __forceinline BVHNodeRecordMB4D(NodeRef ref, const LBBox3fa& lbounds, const BBox1f& dt) : ref(ref), lbounds(lbounds), dt(dt) {}
+
+    NodeRef ref;
+    LBBox3fa lbounds;
+    BBox1f dt;
+  };
+
   /*! Multi BVH with N children. Each node stores the bounding box of
    * it's N children as well as N child references. */
   template<int N>
@@ -346,33 +378,9 @@ namespace embree
       size_t ptr;
     };
 
-    struct NodeRecord
-    {
-      __forceinline NodeRecord() {}
-      __forceinline NodeRecord(NodeRef ref, const BBox3fa& bounds) : ref(ref), bounds(bounds) {}
-
-      NodeRef ref;
-      BBox3fa bounds;
-    };
-
-    struct NodeRecordMB
-    {
-      __forceinline NodeRecordMB() {}
-      __forceinline NodeRecordMB(NodeRef ref, const LBBox3fa& lbounds) : ref(ref), lbounds(lbounds) {}
-
-      NodeRef ref;
-      LBBox3fa lbounds;
-    };
-
-    struct NodeRecordMB4D
-    {
-      __forceinline NodeRecordMB4D() {}
-      __forceinline NodeRecordMB4D(NodeRef ref, const LBBox3fa& lbounds, const BBox1f& dt) : ref(ref), lbounds(lbounds), dt(dt) {}
-
-      NodeRef ref;
-      LBBox3fa lbounds;
-      BBox1f dt;
-    };
+    typedef BVHNodeRecord<NodeRef>     NodeRecord;
+    typedef BVHNodeRecordMB<NodeRef>   NodeRecordMB;
+    typedef BVHNodeRecordMB4D<NodeRef> NodeRecordMB4D;
 
     /*! BVHN Base Node */
     struct BaseNode
