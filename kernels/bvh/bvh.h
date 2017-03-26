@@ -520,7 +520,7 @@ namespace embree
       }
 
       /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, const BBox3fa& bounds, const NodeRef& ref) {
+      __forceinline void set(size_t i, const NodeRef& ref, const BBox3fa& bounds) {
         setBounds(i,bounds);
         children[i] = ref;
       }
@@ -699,25 +699,18 @@ namespace embree
         BaseNode::clear();
       }
 
-      /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, const BBox3fa& bounds, NodeRef ref) {
-        lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
-        upper_x[i] = bounds.upper.x; upper_y[i] = bounds.upper.y; upper_z[i] = bounds.upper.z;
-        children[i] = ref;
-      }
-
-      /*! Sets bounding box and ID of child. */
+      /*! Sets ID of child. */
       __forceinline void setRef(size_t i, NodeRef ref) {
         children[i] = ref;
       }
 
-      /*! Sets bounding box and ID of child. */
+      /*! Sets bounding box of child. */
       __forceinline void setBounds(size_t i, const BBox3fa& bounds) {
         lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
         upper_x[i] = bounds.upper.x; upper_y[i] = bounds.upper.y; upper_z[i] = bounds.upper.z;
       }
 
-      /*! Sets bounding box and ID of child. */
+      /*! Sets bounding box of child. */
       __forceinline void setBounds(size_t i, const BBox3fa& bounds0_i, const BBox3fa& bounds1_i)
       {
         /*! for empty bounds we have to avoid inf-inf=nan */
@@ -734,9 +727,16 @@ namespace embree
         upper_dx[i] = dupper.x; upper_dy[i] = dupper.y; upper_dz[i] = dupper.z;
       }
 
-      /*! Sets bounding box and ID of child. */
+      /*! Sets bounding box of child. */
       __forceinline void setBounds(size_t i, const LBBox3fa& bounds) {
         setBounds(i, bounds.bounds0, bounds.bounds1);
+      }
+
+      /*! Sets bounding box and ID of child. */
+      __forceinline void set(size_t i, NodeRef ref, const BBox3fa& bounds) {
+        lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
+        upper_x[i] = bounds.upper.x; upper_y[i] = bounds.upper.y; upper_z[i] = bounds.upper.z;
+        children[i] = ref;
       }
 
       /*! Sets bounding box and ID of child. */
