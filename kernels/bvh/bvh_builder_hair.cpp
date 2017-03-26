@@ -65,7 +65,7 @@ namespace embree
         bvh->alloc.init_estimate(node_bytes+leaf_bytes);
         
         /* builder settings */
-        BVHNBuilderHair::Settings settings;
+        BVHBuilderHair::Settings settings;
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxBuildDepthLeaf;
         settings.logBlockSize = 0;
@@ -85,7 +85,7 @@ namespace embree
           };
           
         /* build hierarchy */
-        typename BVH::NodeRef root = BVHNBuilderHair::build<NodeRef>
+        typename BVH::NodeRef root = BVHBuilderHair::build<NodeRef>
           (typename BVH::CreateAlloc(bvh),
            typename BVH::AlignedNode::Create(),
            typename BVH::AlignedNode::Set(),

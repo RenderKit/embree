@@ -428,48 +428,48 @@ namespace embree
                                  const size_t extSize,
                                  const PrimInfo& pinfo,
                                  const Settings& settings)
-      {
-        typedef HeuristicArraySpatialSAH<SplitPrimitiveFunc,PrimRef,NUM_OBJECT_BINS,NUM_SPATIAL_BINS> Heuristic;
-        Heuristic heuristic(splitPrimitive,prims,pinfo);
+        {
+          typedef HeuristicArraySpatialSAH<SplitPrimitiveFunc,PrimRef,NUM_OBJECT_BINS,NUM_SPATIAL_BINS> Heuristic;
+          Heuristic heuristic(splitPrimitive,prims,pinfo);
 
-        /* calculate total surface area */ // FIXME: this sum is not deterministic
-        const float A = (float) parallel_reduce(size_t(0),pinfo.size(),0.0, [&] (const range<size_t>& r) -> double {
+          /* calculate total surface area */ // FIXME: this sum is not deterministic
+          const float A = (float) parallel_reduce(size_t(0),pinfo.size(),0.0, [&] (const range<size_t>& r) -> double {
 
-            double A = 0.0f;
-            for (size_t i=r.begin(); i<r.end(); i++)
-            {
-              PrimRef& prim = prims[i];
-              A += area(prim.bounds());
-            }
-            return A;
-          },std::plus<double>());
+              double A = 0.0f;
+              for (size_t i=r.begin(); i<r.end(); i++)
+              {
+                PrimRef& prim = prims[i];
+                A += area(prim.bounds());
+              }
+              return A;
+            },std::plus<double>());
 
-        /* calculate maximal number of spatial splits per primitive */
-        const float f = 10.0f;
-        const float invA = 1.0f / A;
-        parallel_for( size_t(0), pinfo.size(), [&](const range<size_t>& r) {
+          /* calculate maximal number of spatial splits per primitive */
+          const float f = 10.0f;
+          const float invA = 1.0f / A;
+          parallel_for( size_t(0), pinfo.size(), [&](const range<size_t>& r) {
 
-            for (size_t i=r.begin(); i<r.end(); i++)
-            {
-              PrimRef& prim = prims[i];
-              assert((prim.lower.a & 0xFF000000) == 0);
-              const float nf = ceilf(f*pinfo.size()*area(prim.bounds()) * invA);
-              // FIXME: is there a better general heuristic ?
-              size_t n = 4+min(ssize_t(127-4), max(ssize_t(1), ssize_t(nf)));
-              prim.lower.a |= n << 24;
-            }
-          });
+              for (size_t i=r.begin(); i<r.end(); i++)
+              {
+                PrimRef& prim = prims[i];
+                assert((prim.lower.a & 0xFF000000) == 0);
+                const float nf = ceilf(f*pinfo.size()*area(prim.bounds()) * invA);
+                // FIXME: is there a better general heuristic ?
+                size_t n = 4+min(ssize_t(127-4), max(ssize_t(1), ssize_t(nf)));
+                prim.lower.a |= n << 24;
+              }
+            });
 
-        return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set>(
-          heuristic,
-          PrimInfoExtRange(0,pinfo.size(),extSize,pinfo.geomBounds,pinfo.centBounds),
-          createAlloc,
-          createNode,
-          updateNode,
-          CreateLeafExt<ReductionTy,CreateLeafFunc>(createLeaf,prims),
-          progressMonitor,
-          settings);
-      }
+          return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set>(
+            heuristic,
+            PrimInfoExtRange(0,pinfo.size(),extSize,pinfo.geomBounds,pinfo.centBounds),
+            createAlloc,
+            createNode,
+            updateNode,
+            CreateLeafExt<ReductionTy,CreateLeafFunc>(createLeaf,prims),
+            progressMonitor,
+            settings);
+        }
     };
   }
 }
