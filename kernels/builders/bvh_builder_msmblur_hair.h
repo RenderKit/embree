@@ -75,7 +75,7 @@ namespace embree
         typename SetAlignedNode4DFunc,
         typename CreateLeafFunc,
         typename ProgressMonitor>
-        
+
         class BuilderT : private Settings
         {
           ALIGNED_CLASS;
@@ -449,33 +449,33 @@ namespace embree
         typename CreateLeafFunc,
         typename ProgressMonitor>
 
-          static BVHNodeRecordMB<NodeRef> build (Scene* scene, mvector<PrimRefMB>& prims, const PrimInfoMB& pinfo,
-                                                 const RecalculatePrimRef& recalculatePrimRef,
-                                                 const CreateAllocFunc& createAlloc,
-                                                 const CreateAlignedNodeFunc& createAlignedNode,
-                                                 const SetAlignedNodeFunc& setAlignedNode,
-                                                 const CreateUnalignedNodeFunc& createUnalignedNode,
-                                                 const SetUnalignedNodeFunc& setUnalignedNode,
-                                                 const CreateAlignedNode4DFunc& createAlignedNode4D,
-                                                 const SetAlignedNode4DFunc& setAlignedNode4D,
-                                                 const CreateLeafFunc& createLeaf,
-                                                 const ProgressMonitor& progressMonitor,
-                                                 const Settings settings)
-      {
-        typedef BuilderT<NodeRef,RecalculatePrimRef,CreateAllocFunc,
-          CreateAlignedNodeFunc,SetAlignedNodeFunc,
-          CreateUnalignedNodeFunc,SetUnalignedNodeFunc,
-          CreateAlignedNode4DFunc,SetAlignedNode4DFunc,
-          CreateLeafFunc,ProgressMonitor> Builder;
+        static BVHNodeRecordMB<NodeRef> build (Scene* scene, mvector<PrimRefMB>& prims, const PrimInfoMB& pinfo,
+                                               const RecalculatePrimRef& recalculatePrimRef,
+                                               const CreateAllocFunc& createAlloc,
+                                               const CreateAlignedNodeFunc& createAlignedNode,
+                                               const SetAlignedNodeFunc& setAlignedNode,
+                                               const CreateUnalignedNodeFunc& createUnalignedNode,
+                                               const SetUnalignedNodeFunc& setUnalignedNode,
+                                               const CreateAlignedNode4DFunc& createAlignedNode4D,
+                                               const SetAlignedNode4DFunc& setAlignedNode4D,
+                                               const CreateLeafFunc& createLeaf,
+                                               const ProgressMonitor& progressMonitor,
+                                               const Settings settings)
+        {
+          typedef BuilderT<NodeRef,RecalculatePrimRef,CreateAllocFunc,
+            CreateAlignedNodeFunc,SetAlignedNodeFunc,
+            CreateUnalignedNodeFunc,SetUnalignedNodeFunc,
+            CreateAlignedNode4DFunc,SetAlignedNode4DFunc,
+            CreateLeafFunc,ProgressMonitor> Builder;
 
-        Builder builder(scene,recalculatePrimRef,createAlloc,
-                        createAlignedNode,setAlignedNode,
-                        createUnalignedNode,setUnalignedNode,
-                        createAlignedNode4D,setAlignedNode4D,
-                        createLeaf,progressMonitor,settings);
+          Builder builder(scene,recalculatePrimRef,createAlloc,
+                          createAlignedNode,setAlignedNode,
+                          createUnalignedNode,setUnalignedNode,
+                          createAlignedNode4D,setAlignedNode4D,
+                          createLeaf,progressMonitor,settings);
 
-        return builder(prims,pinfo);
-      }
+          return builder(prims,pinfo);
+        }
     };
   }
 }

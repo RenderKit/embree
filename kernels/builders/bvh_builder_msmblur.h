@@ -536,29 +536,29 @@ namespace embree
                                                       const CreateLeafFunc createLeaf,
                                                       const ProgressMonitorFunc progressMonitor,
                                                       const Settings& settings)
-      {
-        typedef BuilderT<
-          NodeRef,
-          RecalculatePrimRef,
-          decltype(createAlloc()),
-          CreateAllocFunc,
-          CreateNodeFunc,
-          SetNodeFunc,
-          CreateLeafFunc,
-          ProgressMonitorFunc> Builder;
+        {
+          typedef BuilderT<
+            NodeRef,
+            RecalculatePrimRef,
+            decltype(createAlloc()),
+            CreateAllocFunc,
+            CreateNodeFunc,
+            SetNodeFunc,
+            CreateLeafFunc,
+            ProgressMonitorFunc> Builder;
 
-        Builder builder(device,
-                        recalculatePrimRef,
-                        createAlloc,
-                        createNode,
-                        setNode,
-                        createLeaf,
-                        progressMonitor,
-                        settings);
+          Builder builder(device,
+                          recalculatePrimRef,
+                          createAlloc,
+                          createNode,
+                          setNode,
+                          createLeaf,
+                          progressMonitor,
+                          settings);
 
 
-        return builder(prims,pinfo);
-      }
+          return builder(prims,pinfo);
+        }
     };
   }
 }
