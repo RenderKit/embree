@@ -150,7 +150,7 @@ namespace embree
         }
       };
 
-    struct BVHMBuilderMSMBlur
+    struct BVHBuilderMSMBlur
     {
       /*! settings for msmblur builder */
       struct Settings

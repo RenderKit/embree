@@ -27,7 +27,7 @@ namespace embree
 {
   namespace isa
   {
-    struct BVHMBuilderHairMSMBlur
+    struct BVHBuilderHairMSMBlur
     {
       /*! settings for msmblur builder */
       struct Settings

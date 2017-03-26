@@ -277,7 +277,7 @@ namespace embree
         bvh->alloc.init_estimate(node_bytes+leaf_bytes);
     
         /* settings for BVH build */
-        BVHMBuilderHairMSMBlur::Settings settings;
+        BVHBuilderHairMSMBlur::Settings settings;
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxBuildDepthLeaf;
         settings.logBlockSize = 1;
@@ -301,7 +301,7 @@ namespace embree
           };
 
         /* build the hierarchy */
-        auto root = BVHMBuilderHairMSMBlur::build<NodeRef>
+        auto root = BVHBuilderHairMSMBlur::build<NodeRef>
           (scene, prims0, pinfo,
            RecalculatePrimRef<NativeCurves>(scene),
            typename BVH::CreateAlloc(bvh),

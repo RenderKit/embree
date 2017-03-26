@@ -727,7 +727,7 @@ namespace embree
         pinfo.object_range._end = pinfo.object_range.begin();
         pinfo.object_range._begin = 0;
 
-        auto createLeafFunc = [&] (const BVHMBuilderMSMBlur::BuildRecord& current, Allocator* alloc) -> NodeRecordMB4D {
+        auto createLeafFunc = [&] (const BVHBuilderMSMBlur::BuildRecord& current, Allocator* alloc) -> NodeRecordMB4D {
           mvector<PrimRefMB>& prims = *current.prims.prims;
           size_t items MAYBE_UNUSED = current.prims.size();
           assert(items == 1);
@@ -740,7 +740,7 @@ namespace embree
         };
 
         /* configuration for BVH build */
-        BVHMBuilderMSMBlur::Settings settings;
+        BVHBuilderMSMBlur::Settings settings;
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxDepth;
         settings.logBlockSize = __bsr(N);
@@ -752,7 +752,7 @@ namespace embree
 
         /* build hierarchy */
         auto root =
-          BVHMBuilderMSMBlur::build<NodeRef>(primsMB,pinfo,scene->device,
+          BVHBuilderMSMBlur::build<NodeRef>(primsMB,pinfo,scene->device,
                                              recalculatePrimRef,
                                              typename BVH::CreateAlloc(bvh),
                                              typename BVH::CreateAlignedNodeMB4D(),

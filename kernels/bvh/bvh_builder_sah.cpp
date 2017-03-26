@@ -588,7 +588,7 @@ namespace embree
 
       __forceinline CreateMBlurLeaf (BVH* bvh) : bvh(bvh) {}
       
-      __forceinline const NodeRecordMB4D operator() (const BVHMBuilderMSMBlur::BuildRecord& current, Allocator* alloc) const
+      __forceinline const NodeRecordMB4D operator() (const BVHBuilderMSMBlur::BuildRecord& current, Allocator* alloc) const
       {
         size_t items = Primitive::blocks(current.prims.object_range.size());
         size_t start = current.prims.object_range.begin();
@@ -701,7 +701,7 @@ namespace embree
         bvh->alloc.init_estimate(node_bytes+leaf_bytes);
       
         /* settings for BVH build */
-        BVHMBuilderMSMBlur::Settings settings;
+        BVHBuilderMSMBlur::Settings settings;
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxDepth;
         settings.logBlockSize = __bsr(sahBlockSize);
@@ -714,7 +714,7 @@ namespace embree
         
         /* build hierarchy */
         auto root =
-          BVHMBuilderMSMBlur::build<NodeRef>(prims,pinfo,scene->device,
+          BVHBuilderMSMBlur::build<NodeRef>(prims,pinfo,scene->device,
                                              RecalculatePrimRef<Mesh>(scene),
                                              typename BVH::CreateAlloc(bvh),
                                              typename BVH::CreateAlignedNodeMB4D(),
