@@ -431,26 +431,14 @@ namespace embree
           AlignedNode* node = ref.alignedNode();
           for (size_t i=0; i<num; i++) node->set(i,children[i]);
 
-#if 0
-            if (precord.prims.size() > primrefarrayalloc_threshold) 
-            {
-              for (size_t i=0; i<num; i++) {
-                if (crecords[i].prims.size() > threshold) continue;
-                PrimRef* begin = &prims[crecords[i].prims.begin()];
-                PrimRef* end   = &prims[crecords[i].prims.end()]; // FIXME: extended end for spatial split builder!!!!!
-                size_t bytes = (size_t)end - (size_t)begin;
-                allocator->addBlock(begin,bytes);
-              }
-            }
-#else
-            if (precord.alloc_barrier) 
-            {
-              PrimRef* begin = &prims[precord.prims.begin()];
-              PrimRef* end   = &prims[precord.prims.end()]; // FIXME: extended end for spatial split builder!!!!!
-              size_t bytes = (size_t)end - (size_t)begin;
-              allocator->addBlock(begin,bytes);
-            }
-#endif
+          if (unlikely(precord.alloc_barrier))
+          {
+            PrimRef* begin = &prims[precord.prims.begin()];
+            PrimRef* end   = &prims[precord.prims.end()]; // FIXME: extended end for spatial split builder!!!!!
+            size_t bytes = (size_t)end - (size_t)begin;
+            allocator->addBlock(begin,bytes);
+          }
+
           return ref;
         }
 
