@@ -60,6 +60,7 @@
 #include <algorithm>
 #include <functional>
 #include <utility>
+#include <sstream>
 
 namespace embree
 {
