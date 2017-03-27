@@ -162,7 +162,7 @@ namespace embree
   {
     if (bytes == 0) return;
     if (!VirtualFree(ptr,0,MEM_RELEASE))
-      /*throw std::bad_alloc()*/ return;  // we on purpose do not throw an exception when an error occurs, to avoid throwing an exception during error handling
+      throw std::bad_alloc();
   }
 
   void os_advise(void *ptr, size_t bytes)
@@ -287,7 +287,7 @@ namespace embree
       return;
 
     if (munmap(ptr,bytes) == -1)
-      /*throw std::bad_alloc()*/ return;  // we on purpose do not throw an exception when an error occurs, to avoid throwing an exception during error handling
+      throw std::bad_alloc();
   }
 
   /* hint for transparent huge pages (THP) */
