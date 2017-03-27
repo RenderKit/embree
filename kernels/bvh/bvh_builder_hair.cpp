@@ -269,7 +269,7 @@ namespace embree
 
         /* create primref array */
         mvector<PrimRefMB> prims0(scene->device,numPrimitives);
-        const PrimInfoMB pinfo = createPrimRefMBArray<NativeCurves>(scene,prims0,bvh->scene->progressInterface);
+        const PrimInfoMB pinfo = createPrimRefArrayMSMBlur<NativeCurves>(scene,prims0,bvh->scene->progressInterface);
 
         /* estimate acceleration structure size */
         const size_t node_bytes = pinfo.num_time_segments*sizeof(typename BVH::AlignedNodeMB)/(4*N);
