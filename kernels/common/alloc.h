@@ -201,18 +201,18 @@ namespace embree
     }
 
    /*! initializes the grow size */
-    __forceinline void initGrowSizeAndNumSlots(size_t bytesAllocate, size_t bytesReserve = 0) 
+    __forceinline void initGrowSizeAndNumSlots(size_t bytesAllocate, bool compact) 
     {
-      if (bytesReserve == 0) bytesReserve = bytesAllocate;
-
-      bytesReserve  = ((bytesReserve +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
+      bytesAllocate  = ((bytesAllocate +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
       
-      growSize = clamp(bytesReserve,size_t(PAGE_SIZE),maxAllocationSize); // PAGE_SIZE -maxAlignment ?
+      growSize = clamp(bytesAllocate,size_t(PAGE_SIZE),maxAllocationSize); // PAGE_SIZE -maxAlignment ?
       log2_grow_size_scale = 0;
       slotMask = 0x0;
-      if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesAllocate >  4*maxAllocationSize) slotMask = 0x1;
-      if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesAllocate >  8*maxAllocationSize) slotMask = 0x3;
-      if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesAllocate > 16*maxAllocationSize) slotMask = 0x7;
+      if (!compact) {
+        if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesAllocate >  4*maxAllocationSize) slotMask = 0x1;
+        if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesAllocate >  8*maxAllocationSize) slotMask = 0x3;
+        if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesAllocate > 16*maxAllocationSize) slotMask = 0x7;
+      }
     }
 
     void internal_fix_used_blocks()
@@ -240,19 +240,18 @@ namespace embree
       if (bytesReserve == 0) bytesReserve = bytesAllocate;
       freeBlocks = Block::create(device,bytesAllocate,bytesReserve,nullptr,atype);
       defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE+maxAlignment)); 
-      initGrowSizeAndNumSlots(bytesAllocate,bytesReserve);
+      initGrowSizeAndNumSlots(bytesAllocate,false);
     }
 
     /*! initializes the allocator */
-    void init_estimate(size_t bytesAllocate, const bool single_mode = false) 
+    void init_estimate(size_t bytesAllocate, const bool single_mode = false, const bool compact = false) 
     {      
       internal_fix_used_blocks();
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       /* single allocator mode ? */
       use_single_mode = single_mode; 
       defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE+maxAlignment)); 
-      /* if in memory conservative single_mode, reduce bytesAllocate/growSize by 2 */
-      initGrowSizeAndNumSlots(single_mode == false ? bytesAllocate : bytesAllocate/2);
+      initGrowSizeAndNumSlots(bytesAllocate,compact);
     }
 
     /*! frees state not required after build */
@@ -450,6 +449,7 @@ namespace embree
 
     void print_statistics(bool verbose = false)
     {
+      std::cout << "  slotMask = " << slotMask << ", use_single_mode = " << use_single_mode << ", defaultBlockSize = " << defaultBlockSize << std::endl;
       size_t bytesUsed = getUsedBytes();
       size_t bytesWasted = getWastedBytes();
       Statistics stat_all = getStatistics(ANY_TYPE);
@@ -468,7 +468,6 @@ namespace embree
 
       if (verbose) 
       {
-        std::cout << "  slotMask = " << slotMask << ", use_single_mode = " << use_single_mode << ", defaultBlockSize = " << defaultBlockSize << std::endl;
         std::cout << "  used blocks = ";
         if (usedBlocks.load() != nullptr) usedBlocks.load()->print_list();
         std::cout << "[END]" << std::endl;

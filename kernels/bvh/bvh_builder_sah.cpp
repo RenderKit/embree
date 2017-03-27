@@ -116,11 +116,12 @@ namespace embree
       Mesh* mesh;
       mvector<PrimRef> prims;
       GeneralBVHBuilder::Settings settings;
+      bool primrefarrayalloc;
       
       BVHNBuilderSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, 
                       const size_t mode, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD, bool primrefarrayalloc = false)
         : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device), 
-          settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, singleThreadThreshold, primrefarrayalloc) {}
+          settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, singleThreadThreshold), primrefarrayalloc(primrefarrayalloc) {}
 
       BVHNBuilderSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, 
                       const size_t mode, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
@@ -130,8 +131,6 @@ namespace embree
 
       void build_group(GeometryGroup* group)
       {
-        settings.primrefarrayalloc = inf; // this mode is not supported here
-
         /* we reset the allocator when the group size changed */
         if (group && group->numPrimitivesChanged) {
           bvh->alloc.clear();
@@ -186,7 +185,7 @@ namespace embree
         }
 
         /* if we use the primrefarray for allocations we have to take it back from the BVH */
-        if (settings.primrefarrayalloc)
+        if (settings.primrefarrayalloc != size_t(inf))
           prims = std::move(bvh->primrefarray);
 
 	/* skip build for empty scene */
@@ -204,13 +203,13 @@ namespace embree
 #endif
 
             /* create primref array */
-            bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef),settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD);
-            prims.resize(numPrimitives); 
-            if (settings.primrefarrayalloc) {
-              settings.primrefarrayalloc = numPrimitives/10000;
+            if (primrefarrayalloc) {
+              settings.primrefarrayalloc = numPrimitives/1000;
               if (settings.primrefarrayalloc < 1000)
-                settings.primrefarrayalloc = 0;
+                settings.primrefarrayalloc = inf;
             }
+            bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef),settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD,settings.primrefarrayalloc != size_t(inf));
+            prims.resize(numPrimitives); 
 
             PrimInfo pinfo = mesh ? 
               createPrimRefArray<Mesh>  (mesh ,prims,bvh->scene->progressInterface) : 
@@ -237,7 +236,7 @@ namespace embree
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
 
         /* if we allocated using the primrefarray we have to keep it alive */
-        if (settings.primrefarrayalloc)
+        if (settings.primrefarrayalloc != size_t(inf))
           bvh->primrefarray = std::move(prims);
 
         /* for static geometries we can do some cleanups */
@@ -250,7 +249,7 @@ namespace embree
       }
 
       void clear() {
-        if (!settings.primrefarrayalloc)
+        if (settings.primrefarrayalloc == size_t(inf))
           prims.clear();
       }
     };
