@@ -249,9 +249,9 @@ namespace embree
   DECLARE_BUILDER2(void,AccelSet,size_t,BVH4VirtualMeshBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4VirtualMBSceneBuilderSAH);
 
-  DECLARE_BUILDER2(void,Scene,size_t,BVH4SubdivPatch1EagerBuilderBinnedSAH);
-  DECLARE_BUILDER2(void,Scene,size_t,BVH4SubdivPatch1CachedBuilderBinnedSAH);
-  DECLARE_BUILDER2(void,Scene,size_t,BVH4SubdivPatch1CachedMBBuilderBinnedSAH);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH4SubdivPatch1EagerBuilderSAH);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH4SubdivPatch1CachedBuilderSAH);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH4SubdivPatch1CachedMBBuilderSAH);
 
   DECLARE_BUILDER2(void,LineSegments,size_t,BVH4Line4iMeshRefitSAH);
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4MeshRefitSAH);
@@ -317,9 +317,9 @@ namespace embree
     IF_ENABLED_USER(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4VirtualMeshBuilderSAH));
     IF_ENABLED_USER(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4VirtualMBSceneBuilderSAH));
 
-    IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4SubdivPatch1EagerBuilderBinnedSAH));
-    IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4SubdivPatch1CachedBuilderBinnedSAH));
-    IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4SubdivPatch1CachedMBBuilderBinnedSAH));
+    IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4SubdivPatch1EagerBuilderSAH));
+    IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4SubdivPatch1CachedBuilderSAH));
+    IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4SubdivPatch1CachedMBBuilderSAH));
 
     IF_ENABLED_LINES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Line4iMeshRefitSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4Triangle4MeshRefitSAH));
@@ -1403,7 +1403,7 @@ namespace embree
     {
       BVH4* accel = new BVH4(SubdivPatch1Cached::type_cached,scene);
       Accel::Intersectors intersectors = BVH4SubdivPatch1CachedIntersectors(accel);
-      Builder* builder = BVH4SubdivPatch1CachedBuilderBinnedSAH(accel,scene,1);
+      Builder* builder = BVH4SubdivPatch1CachedBuilderSAH(accel,scene,1);
       scene->needSubdivVertices = true;
       return new AccelInstance(accel,builder,intersectors);
     }
@@ -1411,7 +1411,7 @@ namespace embree
     {
       BVH4* accel = new BVH4(SubdivPatch1Cached::type,scene);
       Accel::Intersectors intersectors = BVH4SubdivPatch1Intersectors(accel);
-      Builder* builder = BVH4SubdivPatch1CachedBuilderBinnedSAH(accel,scene,0);
+      Builder* builder = BVH4SubdivPatch1CachedBuilderSAH(accel,scene,0);
       scene->needSubdivVertices = true;
       return new AccelInstance(accel,builder,intersectors);
     }
@@ -1421,7 +1421,7 @@ namespace embree
   {
     BVH4* accel = new BVH4(SubdivPatch1Cached::type,scene); // FIXME: use different type
     Accel::Intersectors intersectors = BVH4SubdivPatch1EagerIntersectors(accel);
-    Builder* builder = BVH4SubdivPatch1EagerBuilderBinnedSAH(accel,scene,0);
+    Builder* builder = BVH4SubdivPatch1EagerBuilderSAH(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -1431,7 +1431,7 @@ namespace embree
     {
       BVH4* accel = new BVH4(SubdivPatch1Cached::type_cached,scene);
       Accel::Intersectors intersectors = BVH4SubdivPatch1CachedMBIntersectors(accel);
-      Builder* builder = BVH4SubdivPatch1CachedMBBuilderBinnedSAH(accel,scene,1);
+      Builder* builder = BVH4SubdivPatch1CachedMBBuilderSAH(accel,scene,1);
       scene->needSubdivVertices = true;
       return new AccelInstance(accel,builder,intersectors);
     }
@@ -1439,7 +1439,7 @@ namespace embree
     {
       BVH4* accel = new BVH4(SubdivPatch1Cached::type,scene);
       Accel::Intersectors intersectors = BVH4SubdivPatch1MBIntersectors(accel);
-      Builder* builder = BVH4SubdivPatch1CachedMBBuilderBinnedSAH(accel,scene,0);
+      Builder* builder = BVH4SubdivPatch1CachedMBBuilderSAH(accel,scene,0);
       scene->needSubdivVertices = true;
       return new AccelInstance(accel,builder,intersectors);
     }

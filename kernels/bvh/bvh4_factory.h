@@ -325,9 +325,9 @@ namespace embree
     DEFINE_BUILDER2(void,AccelSet,size_t,BVH4VirtualMeshBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4VirtualMBSceneBuilderSAH);
     
-    DEFINE_BUILDER2(void,Scene,size_t,BVH4SubdivPatch1EagerBuilderBinnedSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH4SubdivPatch1CachedBuilderBinnedSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH4SubdivPatch1CachedMBBuilderBinnedSAH);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4SubdivPatch1EagerBuilderSAH);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4SubdivPatch1CachedBuilderSAH);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4SubdivPatch1CachedMBBuilderSAH);
     
     DEFINE_BUILDER2(void,LineSegments,size_t,BVH4Line4iMeshRefitSAH);
     DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4MeshRefitSAH);
