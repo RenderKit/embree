@@ -74,8 +74,12 @@ INCLUDE(test)
 ##############################################################
 # Embree configuration
 ##############################################################
-
-OPTION(EMBREE_STATIC_LIB "Build Embree as a static library." OFF)
+GET_PROPERTY(SHARED_LIBS_SUPPORTED GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS)
+IF(SHARED_LIBS_SUPPORTED)
+  OPTION(EMBREE_STATIC_LIB "Build Embree as a static library." OFF)
+ELSE()
+  OPTION(EMBREE_STATIC_LIB "Build Embree as a static library." ON)
+ENDIF()
 IF (EMBREE_STATIC_LIB)
   SET(EMBREE_LIB_TYPE STATIC)
   ADD_DEFINITIONS(-DEMBREE_STATIC_LIB)
@@ -181,6 +185,9 @@ ELSE (WIN32)
   MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
 
 ENDIF (WIN32)
+IF(CMAKE_CXX_COMPILER_WRAPPER STREQUAL "CrayPrgEnv")
+  INCLUDE(crayprgenv)
+ENDIF()
 
 ##############################################################
 # ISA configuration

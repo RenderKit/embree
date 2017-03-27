@@ -34,8 +34,11 @@ SET(CMAKE_CXX_FLAGS_DEBUG          "-DDEBUG  -DTBB_USE_DEBUG -g -O0")
 SET(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG                    -O3 -restrict -no-inline-max-total-size -inline-factor=200 -no-inline-max-per-compile -no-vec")
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DDEBUG  -DTBB_USE_DEBUG -g -O3 -restrict -no-inline-max-total-size -inline-factor=200 -no-inline-max-per-compile -no-vec")
 
-# enable -static-intel and avoid to export ICC specific symbols from Embree
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-intel -no-intel-extensions")
+# Don't mess with the linker flags used by Cray wrappers
+IF(NOT CMAKE_CXX_COMPILER_WRAPPER STREQUAL "CrayPrgEnv")
+  # enable -static-intel and avoid to export ICC specific symbols from Embree
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-intel -no-intel-extensions")
+ENDIF()
 
 #SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g -debug inline-debug-info")
 #SET(CMAKE_EXE_LINKER_FLAGS "-g") 
