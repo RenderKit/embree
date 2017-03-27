@@ -72,11 +72,11 @@ namespace embree
       }
     };
 
-    class SubdivPatch1EagerMBlurIntersector1
+    class SubdivPatch1EagerMBIntersector1
     {
     public:
       typedef GridSOA Primitive;
-      typedef SubdivPatch1EagerPrecalculations<GridSOAMBlurIntersector1::Precalculations> Precalculations;
+      typedef SubdivPatch1EagerPrecalculations<GridSOAMBIntersector1::Precalculations> Precalculations;
       
       static __forceinline bool processLazyNode(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
@@ -86,7 +86,7 @@ namespace embree
       /*! Intersect a ray with the primitive. */
       static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node) 
       {
-        if (likely(ty == 0)) GridSOAMBlurIntersector1::intersect(pre,ray,context,prim,ty,lazy_node);
+        if (likely(ty == 0)) GridSOAMBIntersector1::intersect(pre,ray,context,prim,ty,lazy_node);
         else                 processLazyNode(pre,ray,context,prim,lazy_node);
       }
       static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, size_t& lazy_node) {
@@ -96,7 +96,7 @@ namespace embree
       /*! Test if the ray is occluded by the primitive */
       static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node) 
       {
-        if (likely(ty == 0)) return GridSOAMBlurIntersector1::occluded(pre,ray,context,prim,ty,lazy_node);
+        if (likely(ty == 0)) return GridSOAMBIntersector1::occluded(pre,ray,context,prim,ty,lazy_node);
         else                 return processLazyNode(pre,ray,context,prim,lazy_node);
       }
       static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, size_t& lazy_node) {
@@ -144,10 +144,10 @@ namespace embree
     typedef SubdivPatch1EagerIntersectorK<16> SubdivPatch1EagerIntersector16;
 
     template <int K>
-      struct SubdivPatch1EagerMBlurIntersectorK
+      struct SubdivPatch1EagerMBIntersectorK
     {
       typedef GridSOA Primitive;
-      typedef SubdivPatch1EagerPrecalculationsK<K,typename GridSOAMBlurIntersectorK<K>::Precalculations> Precalculations;
+      typedef SubdivPatch1EagerPrecalculationsK<K,typename GridSOAMBIntersectorK<K>::Precalculations> Precalculations;
       
       static __forceinline bool processLazyNode(Precalculations& pre, size_t k, IntersectContext* context, const Primitive* prim, size_t& lazy_node) {
         lazy_node = prim->root(pre.itime(k)); pre.grid = (Primitive*) prim; return false;
@@ -155,19 +155,19 @@ namespace embree
       
       static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
       {
-        if (likely(ty == 0)) GridSOAMBlurIntersectorK<K>::intersect(pre,ray,k,context,prim,ty,lazy_node);
+        if (likely(ty == 0)) GridSOAMBIntersectorK<K>::intersect(pre,ray,k,context,prim,ty,lazy_node);
         else                 processLazyNode(pre,k,context,prim,lazy_node);
       }
       
       static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
       {
-        if (likely(ty == 0)) return GridSOAMBlurIntersectorK<K>::occluded(pre,ray,k,context,prim,ty,lazy_node);
+        if (likely(ty == 0)) return GridSOAMBIntersectorK<K>::occluded(pre,ray,k,context,prim,ty,lazy_node);
         else                 return processLazyNode(pre,k,context,prim,lazy_node);
       }
     };
 
-    typedef SubdivPatch1EagerMBlurIntersectorK<4>  SubdivPatch1EagerMBlurIntersector4;
-    typedef SubdivPatch1EagerMBlurIntersectorK<8>  SubdivPatch1EagerMBlurIntersector8;
-    typedef SubdivPatch1EagerMBlurIntersectorK<16> SubdivPatch1EagerMBlurIntersector16;
+    typedef SubdivPatch1EagerMBIntersectorK<4>  SubdivPatch1EagerMBIntersector4;
+    typedef SubdivPatch1EagerMBIntersectorK<8>  SubdivPatch1EagerMBIntersector8;
+    typedef SubdivPatch1EagerMBIntersectorK<16> SubdivPatch1EagerMBIntersector16;
   }
 }
