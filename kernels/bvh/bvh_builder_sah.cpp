@@ -36,7 +36,7 @@
 
 #include "../common/state.h"
 
-// FIXME: remove after removing BVHNBuilderMSMBlur4DSAH
+// FIXME: remove after removing BVHNBuilderMBlurRootTimeSplitsSAH
 #include "../../common/algorithms/parallel_for_for.h"
 #include "../../common/algorithms/parallel_for_for_prefix_sum.h"
 
@@ -448,7 +448,7 @@ namespace embree
 
     /* Motion blur BVH with 4D nodes and root time splits */
     template<int N, typename Mesh, typename Primitive>
-    struct BVHNBuilderMSMBlur4DSAH : public Builder
+    struct BVHNBuilderMBlurRootTimeSplitsSAH : public Builder
     {
       typedef BVHN<N> BVH;
       typedef typename BVHN<N>::NodeRef NodeRef;
@@ -466,7 +466,7 @@ namespace embree
       const size_t mode;
       const size_t singleThreadThreshold;
       
-      BVHNBuilderMSMBlur4DSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, size_t mode, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
+      BVHNBuilderMBlurRootTimeSplitsSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, size_t mode, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
         : bvh(bvh), scene(scene), prims(scene->device), 
           sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)), mode(mode), singleThreadThreshold(singleThreadThreshold) {}
       
@@ -537,7 +537,7 @@ namespace embree
         const size_t numPrimitives = scene->getNumPrimitives<Mesh,true>();
         if (numPrimitives == 0) { prims.clear(); bvh->clear(); return;  }      
         
-        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderMSMBlur4DSAH");
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderMBlurRootTimeSplitsSAH");
 	
         /* allocate buffers */
         const size_t numTimeSteps = scene->getNumTimeSteps<Mesh,true>();
@@ -865,7 +865,7 @@ namespace embree
 
     Builder* BVH4Triangle4vMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMSMBlurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,scene,4,1.0f,4,inf,HIGH_SINGLE_THREAD_THRESHOLD); }
     Builder* BVH4Triangle4iMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMSMBlurSAH<4,TriangleMesh,Triangle4iMB>((BVH4*)bvh,scene,4,1.0f,4,inf,HIGH_SINGLE_THREAD_THRESHOLD); }
-    Builder* BVH4MB4DTriangle4iMBSceneBuilderRootTimeSplitsSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMSMBlur4DSAH<4,TriangleMesh,Triangle4iMB>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
+    Builder* BVH4MB4DTriangle4iMBSceneBuilderRootTimeSplitsSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurRootTimeSplitsSAH<4,TriangleMesh,Triangle4iMB>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH4MB4DTriangle4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<4,TriangleMesh,Triangle4iMB>((BVH4*)bvh,scene,4,1.0f,4,inf,HIGH_SINGLE_THREAD_THRESHOLD); }
     Builder* BVH4MB4DTriangle4vMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,scene,4,1.0f,4,inf,HIGH_SINGLE_THREAD_THRESHOLD); }
 
@@ -885,7 +885,7 @@ namespace embree
     Builder* BVH8Triangle4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,TriangleMesh,Triangle4i>((BVH8*)bvh,scene,4,1.0f,4,inf,mode,DEFAULT_SINGLE_THREAD_THRESHOLD,true); }
     Builder* BVH8Triangle4vMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMSMBlurSAH<8,TriangleMesh,Triangle4vMB>((BVH8*)bvh,scene,4,1.0f,4,inf,HIGH_SINGLE_THREAD_THRESHOLD); }
     Builder* BVH8Triangle4iMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMSMBlurSAH<8,TriangleMesh,Triangle4iMB>((BVH8*)bvh,scene,4,1.0f,4,inf,HIGH_SINGLE_THREAD_THRESHOLD); }
-    Builder* BVH8MB4DTriangle4iMBSceneBuilderRootTimeSplitsSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMSMBlur4DSAH<8,TriangleMesh,Triangle4iMB>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
+    Builder* BVH8MB4DTriangle4iMBSceneBuilderRootTimeSplitsSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurRootTimeSplitsSAH<8,TriangleMesh,Triangle4iMB>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH8MB4DTriangle4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<8,TriangleMesh,Triangle4iMB>((BVH8*)bvh,scene,4,1.0f,4,inf,HIGH_SINGLE_THREAD_THRESHOLD); }
     Builder* BVH8MB4DTriangle4vMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<8,TriangleMesh,Triangle4vMB>((BVH8*)bvh,scene,4,1.0f,4,inf,HIGH_SINGLE_THREAD_THRESHOLD); }
     Builder* BVH8QuantizedTriangle4iSceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<8,TriangleMesh,Triangle4i>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
