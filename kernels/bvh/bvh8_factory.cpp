@@ -207,7 +207,7 @@ namespace embree
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Bezier1vBuilder_OBB_New);
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Bezier1iBuilder_OBB_New);
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Bezier1iMBBuilder_OBB_New);
-  DECLARE_BUILDER2(void,Scene,size_t,BVH8Bezier1iMSMBlurBuilder_OBB);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH8MB4DBezier1iMBBuilder_OBB);
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Line4iSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Line4iMBSceneBuilderSAH);
@@ -263,7 +263,7 @@ namespace embree
     IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX(features,BVH8Bezier1vBuilder_OBB_New));
     IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX(features,BVH8Bezier1iBuilder_OBB_New));
     IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX(features,BVH8Bezier1iMBBuilder_OBB_New));
-    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX(features,BVH8Bezier1iMSMBlurBuilder_OBB));
+    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX(features,BVH8MB4DBezier1iMBBuilder_OBB));
 
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Line4iSceneBuilderSAH));
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Line4iMBSceneBuilderSAH));
@@ -1048,8 +1048,8 @@ namespace embree
     Accel::Intersectors intersectors = BVH8MB4DBezier1iMBIntersectors_OBB(accel);
     
     Builder* builder = nullptr;
-    if      (scene->device->hair_builder_mb == "default"     ) builder = BVH8Bezier1iMSMBlurBuilder_OBB(accel,scene,0);
-    else if (scene->device->hair_builder_mb == "sah"         ) builder = BVH8Bezier1iMSMBlurBuilder_OBB(accel,scene,0);
+    if      (scene->device->hair_builder_mb == "default"     ) builder = BVH8MB4DBezier1iMBBuilder_OBB(accel,scene,0);
+    else if (scene->device->hair_builder_mb == "sah"         ) builder = BVH8MB4DBezier1iMBBuilder_OBB(accel,scene,0);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder_mb+" for BVH8MBOBB<Bezier1iMB>");
     
     scene->needBezierVertices = true;
