@@ -90,8 +90,7 @@ namespace embree
           __forceinline BBox3fa bounds() const { return prims.geomBounds; }
           
           __forceinline friend bool operator< (const BuildRecordT& a, const BuildRecordT& b) { return a.prims.size() < b.prims.size(); }
-          //__forceinline friend bool operator> (const BuildRecordT& a, const BuildRecordT& b) { return a.prims.size() > b.prims.size();  }
-          __forceinline friend bool operator> (const BuildRecordT& a, const BuildRecordT& b) { return a.prims.begin() < b.prims.end();  }
+          __forceinline friend bool operator> (const BuildRecordT& a, const BuildRecordT& b) { return a.prims.size() > b.prims.size();  }
           
           __forceinline size_t size() const { return prims.size(); }
           
