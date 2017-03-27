@@ -279,12 +279,12 @@ namespace embree
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle4vMBSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle4iMBSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH8MB4DTriangle4iMBSceneBuilderRootTimeSplitsSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH8MB4DTriangle4iMBSceneBuilderInternalTimeSplitsSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH8MB4DTriangle4vMBSceneBuilderInternalTimeSplitsSAH);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH8MB4DTriangle4iMBSceneBuilderSAH);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH8MB4DTriangle4vMBSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Quad4vSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Quad4iSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Quad4iMBSceneBuilderSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH8MB4DQuad4iMBSceneBuilderInternalTimeSplitsSAH);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH8MB4DQuad4iMBSceneBuilderSAH);
 
     DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH8Triangle4MeshBuilderSAH);
     DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH8Triangle4vMeshBuilderSAH);
