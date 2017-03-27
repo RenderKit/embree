@@ -224,7 +224,7 @@ namespace embree
     };
 
     template<int K>
-    class GridSOAMBlurIntersectorK
+    class GridSOAMBIntersectorK
     {
     public:
       typedef void Primitive;

@@ -121,7 +121,7 @@ namespace embree
       }      
     };
 
-    class GridSOAMBlurIntersector1
+    class GridSOAMBIntersector1
     {
     public:
       typedef void Primitive;

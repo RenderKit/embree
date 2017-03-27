@@ -132,10 +132,10 @@ namespace embree
     //IF_ENABLED_HAIR(DEFINE_INTERSECTOR4(BVH4MB4DBezier1iMBIntersector4Single_OBB,BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorKMB<4> > >));
     //IF_ENABLED_HAIR(DEFINE_INTERSECTOR4(BVH4Bezier1iMBIntersector4Single_OBB,BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorKMB<4> > >));
 
-    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR4(BVH4Subdivpatch1MBlurIntersector4, BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1MBlurIntersector4>));
-    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR4(BVH4Subdivpatch1MBlurCachedIntersector4, BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1MBlurCachedIntersector4>));
-    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR4(BVH4MB4DSubdivpatch1MBlurIntersector4, BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN2_AN4D COMMA false COMMA SubdivPatch1MBlurIntersector4>)); // FIXME: use hybrid intersector?
-    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR4(BVH4MB4DSubdivpatch1MBlurCachedIntersector4, BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN2_AN4D COMMA false COMMA SubdivPatch1MBlurCachedIntersector4>)); // FIXME: use hybrid intersector?
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR4(BVH4SubdivPatch1MBIntersector4, BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1MBIntersector4>));
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR4(BVH4SubdivPatch1CachedMBIntersector4, BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1CachedMBIntersector4>));
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR4(BVH4MB4DSubdivpatch1MBlurIntersector4, BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN2_AN4D COMMA false COMMA SubdivPatch1MBIntersector4>)); // FIXME: use hybrid intersector?
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR4(BVH4MB4DSubdivpatch1MBlurCachedIntersector4, BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN2_AN4D COMMA false COMMA SubdivPatch1CachedMBIntersector4>)); // FIXME: use hybrid intersector?
 
     ////////////////////////////////////////////////////////////////////////////////
     /// BVH4Intersector8Single Definitions
@@ -154,10 +154,10 @@ namespace embree
     //IF_ENABLED_HAIR(DEFINE_INTERSECTOR8(BVH4MB4DBezier1iMBIntersector8Single_OBB,BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorKMB<8> > >));
     //IF_ENABLED_HAIR(DEFINE_INTERSECTOR8(BVH4Bezier1iMBIntersector8Single_OBB,BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorKMB<8> > >));
 
-    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR8(BVH4Subdivpatch1MBlurIntersector8, BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1MBlurIntersector8>));
-    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR8(BVH4Subdivpatch1MBlurCachedIntersector8, BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1MBlurCachedIntersector8>));
-    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR8(BVH4MB4DSubdivpatch1MBlurIntersector8, BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN2_AN4D COMMA false COMMA SubdivPatch1MBlurIntersector8>));
-    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR8(BVH4MB4DSubdivpatch1MBlurCachedIntersector8, BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN2_AN4D COMMA false COMMA SubdivPatch1MBlurCachedIntersector8>));
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR8(BVH4SubdivPatch1MBIntersector8, BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1MBIntersector8>));
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR8(BVH4SubdivPatch1CachedMBIntersector8, BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1CachedMBIntersector8>));
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR8(BVH4MB4DSubdivpatch1MBlurIntersector8, BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN2_AN4D COMMA false COMMA SubdivPatch1MBIntersector8>));
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR8(BVH4MB4DSubdivpatch1MBlurCachedIntersector8, BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN2_AN4D COMMA false COMMA SubdivPatch1CachedMBIntersector8>));
 #endif
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -177,8 +177,8 @@ namespace embree
     //IF_ENABLED_HAIR(DEFINE_INTERSECTOR16(BVH4MB4DBezier1iMBIntersector16Single_OBB,BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorKMB<16> > >));
     //IF_ENABLED_HAIR(DEFINE_INTERSECTOR16(BVH4Bezier1iMBIntersector16Single_OBB,BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorKMB<16> > >));
     
-    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR16(BVH4Subdivpatch1MBlurIntersector16, BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1MBlurIntersector16>));
-    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR16(BVH4Subdivpatch1MBlurCachedIntersector16, BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1MBlurCachedIntersector16>));
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR16(BVH4SubdivPatch1MBIntersector16, BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1MBIntersector16>));
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR16(BVH4SubdivPatch1CachedMBIntersector16, BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1CachedMBIntersector16>));
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR16(BVH4MB4DSubdivpatch1MBlurIntersector16, BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN2_AN4D COMMA false COMMA SubdivPatch1MBlurIntersector16>));
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR16(BVH4MB4DSubdivpatch1MBlurCachedIntersector16, BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN2_AN4D COMMA false COMMA SubdivPatch1MBlurCachedIntersector16>));
 #endif

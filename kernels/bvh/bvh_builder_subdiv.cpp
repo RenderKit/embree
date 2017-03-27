@@ -41,7 +41,7 @@ namespace embree
     typedef FastAllocator::ThreadLocal2 Allocator;
 
     template<int N>
-    struct BVHNSubdivPatch1EagerBuilderBinnedSAHClass : public Builder
+    struct BVHNSubdivPatch1EagerBuilderBinnedSAH : public Builder
     {
       ALIGNED_STRUCT;
 
@@ -53,7 +53,7 @@ namespace embree
       mvector<PrimRef> prims;
       ParallelForForPrefixSumState<PrimInfo> pstate;
       
-      BVHNSubdivPatch1EagerBuilderBinnedSAHClass (BVH* bvh, Scene* scene)
+      BVHNSubdivPatch1EagerBuilderBinnedSAH (BVH* bvh, Scene* scene)
         : bvh(bvh), scene(scene), prims(scene->device) {}
 
 #define SUBGRID 9
@@ -207,7 +207,7 @@ namespace embree
 
 
     template<int N, bool mblur>
-    struct BVHNSubdivPatch1CachedBuilderBinnedSAHClass : public Builder, public BVHNRefitter<N>::LeafBoundsInterface
+    struct BVHNSubdivPatch1CachedBuilderBinnedSAH : public Builder, public BVHNRefitter<N>::LeafBoundsInterface
     {
       ALIGNED_STRUCT;
 
@@ -226,7 +226,7 @@ namespace embree
       size_t numSubdivEnableDisableEvents;
       bool cached;
 
-      BVHNSubdivPatch1CachedBuilderBinnedSAHClass (BVH* bvh, Scene* scene, bool cached)
+      BVHNSubdivPatch1CachedBuilderBinnedSAH (BVH* bvh, Scene* scene, bool cached)
         : bvh(bvh), refitter(nullptr), scene(scene), numTimeSteps(0), prims(scene->device), bounds(scene->device), numSubdivEnableDisableEvents(0), cached(cached) {}
       
       virtual const BBox3fa leafBounds (NodeRef& ref) const
@@ -523,7 +523,7 @@ namespace embree
           return;
         }
 
-        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1" + (mblur ? "MBlur" : "") + (cached ? "Cached" : "") + "BuilderBinnedSAH");
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1" + (cached ? "Cached" : "") + (mblur ? "MB" : "") + "BuilderBinnedSAH");
         
         /* calculate number of primitives (some patches need initial subdivision) */
         size_t numSubPatches, numSubPatchesMB;
@@ -814,9 +814,9 @@ namespace embree
     };
     
     /* entry functions for the scene builder */
-    Builder* BVH4SubdivPatch1EagerBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1EagerBuilderBinnedSAHClass<4>((BVH4*)bvh,scene); }
-    Builder* BVH4SubdivPatch1CachedBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedBuilderBinnedSAHClass<4,false>((BVH4*)bvh,scene,mode); }
-    Builder* BVH4SubdivPatch1MBlurCachedBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedBuilderBinnedSAHClass<4,true>((BVH4*)bvh,scene,mode); }
+    Builder* BVH4SubdivPatch1EagerBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1EagerBuilderBinnedSAH<4>((BVH4*)bvh,scene); }
+    Builder* BVH4SubdivPatch1CachedBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedBuilderBinnedSAH<4,false>((BVH4*)bvh,scene,mode); }
+    Builder* BVH4SubdivPatch1CachedMBBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedBuilderBinnedSAH<4,true>((BVH4*)bvh,scene,mode); }
     Builder* BVH4MB4DSubdivPatch1MBlurCachedBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNMB4DSubdivPatch1CachedBuilderBinnedSAHClass<4>((BVH4*)bvh,scene,mode); }
   }
 }

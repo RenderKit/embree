@@ -99,11 +99,11 @@ namespace embree
     };
 
     template<bool cached>
-      class SubdivPatch1MBlurCachedIntersector1
+      class SubdivPatch1CachedMBIntersector1
     {
     public:
       typedef SubdivPatch1Cached Primitive;
-      typedef SubdivPatch1CachedPrecalculations<GridSOAMBlurIntersector1::Precalculations,cached> Precalculations;
+      typedef SubdivPatch1CachedPrecalculations<GridSOAMBIntersector1::Precalculations,cached> Precalculations;
       
       static __forceinline bool processLazyNode(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim_i, size_t& lazy_node)
       {
@@ -133,7 +133,7 @@ namespace embree
       /*! Intersect a ray with the primitive. */
       static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node) 
       {
-        if (likely(ty == 0)) GridSOAMBlurIntersector1::intersect(pre,ray,context,prim,ty,lazy_node);
+        if (likely(ty == 0)) GridSOAMBIntersector1::intersect(pre,ray,context,prim,ty,lazy_node);
         else                 processLazyNode(pre,ray,context,prim,lazy_node);
       }
       static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, size_t& lazy_node) {
@@ -143,7 +143,7 @@ namespace embree
       /*! Test if the ray is occluded by the primitive */
       static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node) 
       {
-        if (likely(ty == 0)) return GridSOAMBlurIntersector1::occluded(pre,ray,context,prim,ty,lazy_node);
+        if (likely(ty == 0)) return GridSOAMBIntersector1::occluded(pre,ray,context,prim,ty,lazy_node);
         else                 return processLazyNode(pre,ray,context,prim,lazy_node);
       }
       static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, size_t& lazy_node) {
@@ -212,10 +212,10 @@ namespace embree
     typedef SubdivPatch1CachedIntersectorK<16,true> SubdivPatch1CachedIntersector16;
 
     template <int K, bool cached>
-      struct SubdivPatch1MBlurCachedIntersectorK
+      struct SubdivPatch1CachedMBIntersectorK
     {
       typedef SubdivPatch1Cached Primitive;
-      typedef SubdivPatch1CachedPrecalculationsK<K,typename GridSOAMBlurIntersectorK<K>::Precalculations,cached> Precalculations;
+      typedef SubdivPatch1CachedPrecalculationsK<K,typename GridSOAMBIntersectorK<K>::Precalculations,cached> Precalculations;
       
       static __forceinline bool processLazyNode(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim_i, size_t& lazy_node)
       {
@@ -244,23 +244,23 @@ namespace embree
       
       static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
       {
-        if (likely(ty == 0)) GridSOAMBlurIntersectorK<K>::intersect(pre,ray,k,context,prim,ty,lazy_node);
+        if (likely(ty == 0)) GridSOAMBIntersectorK<K>::intersect(pre,ray,k,context,prim,ty,lazy_node);
         else                 processLazyNode(pre,ray,k,context,prim,lazy_node);
       }
       
       static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
       {
-        if (likely(ty == 0)) return GridSOAMBlurIntersectorK<K>::occluded(pre,ray,k,context,prim,ty,lazy_node);
+        if (likely(ty == 0)) return GridSOAMBIntersectorK<K>::occluded(pre,ray,k,context,prim,ty,lazy_node);
         else                 return processLazyNode(pre,ray,k,context,prim,lazy_node);
       }
     };
 
-    typedef SubdivPatch1MBlurCachedIntersectorK<4,false>  SubdivPatch1MBlurIntersector4;
-    typedef SubdivPatch1MBlurCachedIntersectorK<8,false>  SubdivPatch1MBlurIntersector8;
-    typedef SubdivPatch1MBlurCachedIntersectorK<16,false> SubdivPatch1MBlurIntersector16;
+    typedef SubdivPatch1CachedMBIntersectorK<4,false>  SubdivPatch1MBIntersector4;
+    typedef SubdivPatch1CachedMBIntersectorK<8,false>  SubdivPatch1MBIntersector8;
+    typedef SubdivPatch1CachedMBIntersectorK<16,false> SubdivPatch1MBIntersector16;
 
-    typedef SubdivPatch1MBlurCachedIntersectorK<4,true>  SubdivPatch1MBlurCachedIntersector4;
-    typedef SubdivPatch1MBlurCachedIntersectorK<8,true>  SubdivPatch1MBlurCachedIntersector8;
-    typedef SubdivPatch1MBlurCachedIntersectorK<16,true> SubdivPatch1MBlurCachedIntersector16;
+    typedef SubdivPatch1CachedMBIntersectorK<4,true>  SubdivPatch1CachedMBIntersector4;
+    typedef SubdivPatch1CachedMBIntersectorK<8,true>  SubdivPatch1CachedMBIntersector8;
+    typedef SubdivPatch1CachedMBIntersectorK<16,true> SubdivPatch1CachedMBIntersector16;
   }
 }

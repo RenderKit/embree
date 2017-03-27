@@ -74,13 +74,13 @@ namespace embree
     IF_ENABLED_QUADS(DEFINE_INTERSECTOR1(BVH4MB4DQuad4iMBIntersector1Moeller, BVHNIntersector1<4 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersector1<QuadMiMBIntersector1Moeller <4 COMMA true> > >));
     IF_ENABLED_QUADS(DEFINE_INTERSECTOR1(BVH4MB4DQuad4iMBIntersector1Pluecker,BVHNIntersector1<4 COMMA BVH_AN2_AN4D COMMA true  COMMA ArrayIntersector1<QuadMiMBIntersector1Pluecker<4 COMMA true> > >));
 
-    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR1(BVH4Subdivpatch1Intersector1,BVHNIntersector1<4 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1CachedIntersector1<false>>));
-    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR1(BVH4Subdivpatch1EagerIntersector1,BVHNIntersector1<4 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1EagerIntersector1>));
-    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR1(BVH4Subdivpatch1CachedIntersector1,BVHNIntersector1<4 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1CachedIntersector1<true>>));
-    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR1(BVH4Subdivpatch1MBlurIntersector1,BVHNIntersector1<4 COMMA BVH_AN2 COMMA true COMMA SubdivPatch1MBlurCachedIntersector1<false>>));
-    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR1(BVH4Subdivpatch1MBlurCachedIntersector1,BVHNIntersector1<4 COMMA BVH_AN2 COMMA true COMMA SubdivPatch1MBlurCachedIntersector1<true>>));
-    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR1(BVH4MB4DSubdivpatch1MBlurIntersector1,BVHNIntersector1<4 COMMA BVH_AN2_AN4D COMMA true COMMA SubdivPatch1MBlurCachedIntersector1<false>>));
-    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR1(BVH4MB4DSubdivpatch1MBlurCachedIntersector1,BVHNIntersector1<4 COMMA BVH_AN2_AN4D COMMA true COMMA SubdivPatch1MBlurCachedIntersector1<true>>));
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR1(BVH4SubdivPatch1Intersector1,BVHNIntersector1<4 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1CachedIntersector1<false>>));
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR1(BVH4SubdivPatch1EagerIntersector1,BVHNIntersector1<4 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1EagerIntersector1>));
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR1(BVH4SubdivPatch1CachedIntersector1,BVHNIntersector1<4 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1CachedIntersector1<true>>));
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR1(BVH4SubdivPatch1MBIntersector1,BVHNIntersector1<4 COMMA BVH_AN2 COMMA true COMMA SubdivPatch1CachedMBIntersector1<false>>));
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR1(BVH4SubdivPatch1CachedMBIntersector1,BVHNIntersector1<4 COMMA BVH_AN2 COMMA true COMMA SubdivPatch1CachedMBIntersector1<true>>));
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR1(BVH4MB4DSubdivpatch1MBlurIntersector1,BVHNIntersector1<4 COMMA BVH_AN2_AN4D COMMA true COMMA SubdivPatch1CachedMBIntersector1<false>>));
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR1(BVH4MB4DSubdivpatch1MBlurCachedIntersector1,BVHNIntersector1<4 COMMA BVH_AN2_AN4D COMMA true COMMA SubdivPatch1CachedMBIntersector1<true>>));
     
     IF_ENABLED_USER(DEFINE_INTERSECTOR1(BVH4VirtualIntersector1,BVHNIntersector1<4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<ObjectIntersector1<false>> >));
     IF_ENABLED_USER(DEFINE_INTERSECTOR1(BVH4VirtualMBIntersector1,BVHNIntersector1<4 COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<ObjectIntersector1<true>> >));
