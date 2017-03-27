@@ -249,8 +249,7 @@ namespace embree
       }
 
       void clear() {
-        if (settings.primrefarrayalloc == size_t(inf))
-          prims.clear();
+        prims.clear();
       }
     };
 
