@@ -35,7 +35,7 @@ namespace embree
     
   public:
 
-    enum AllocationType { ALIGNED_MALLOC, OS_MALLOC, SHARED };
+    enum AllocationType { ALIGNED_MALLOC, OS_MALLOC, SHARED, ANY_TYPE };
 
     /*! Per thread structure holding the current memory block. */
     struct __aligned(64) ThreadLocal 
@@ -400,68 +400,75 @@ namespace embree
       return freeBlocks.load()->ptr();
     }
 
-    size_t getAllocatedBytes() const 
+    struct Statistics
     {
-      size_t bytesAllocated = 0;
-      if (freeBlocks.load()) bytesAllocated += freeBlocks.load()->getAllocatedBytes();
-      if (usedBlocks.load()) bytesAllocated += usedBlocks.load()->getAllocatedBytes();
-      return bytesAllocated;
+      Statistics () 
+      : bytesAllocated(0), bytesReserved(0), bytesFree(0) {}
+
+      std::string str() 
+      {
+        std::stringstream str;
+        str.setf(std::ios::fixed, std::ios::floatfield);
+        str << "allocated = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesAllocated << " MB, "
+            << "reserved = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesReserved << " MB, "
+            << "free = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesFree << "(" << std::setw(6) << std::setprecision(2) << 100.0f*bytesFree/bytesAllocated << "%)";
+        return str.str();
+      }
+    
+      size_t bytesAllocated;
+      size_t bytesReserved;
+      size_t bytesFree;
+    };
+
+    Statistics getStatistics(AllocationType atype, bool huge_pages = false) const 
+    {
+      Statistics stat;
+      if (freeBlocks.load()) stat.bytesAllocated += freeBlocks.load()->getAllocatedBytes(atype,huge_pages);
+      if (usedBlocks.load()) stat.bytesAllocated += usedBlocks.load()->getAllocatedBytes(atype,huge_pages);
+      if (freeBlocks.load()) stat.bytesReserved += freeBlocks.load()->getReservedBytes(atype,huge_pages);
+      if (usedBlocks.load()) stat.bytesReserved += usedBlocks.load()->getReservedBytes(atype,huge_pages);
+      if (freeBlocks.load()) stat.bytesFree += freeBlocks.load()->getAllocatedBytes(atype,huge_pages);
+      if (usedBlocks.load()) stat.bytesFree += usedBlocks.load()->getFreeBytes(atype,huge_pages);
+      return stat;
     }
 
-    size_t getReservedBytes() const 
-    {
-      size_t bytesReserved = 0;
-      if (freeBlocks.load()) bytesReserved += freeBlocks.load()->getReservedBytes();
-      if (usedBlocks.load()) bytesReserved += usedBlocks.load()->getReservedBytes();
-      return bytesReserved;
-    }
-
-    size_t getUsedBytes() const 
+    size_t getUsedBytes() 
     {
       size_t bytes = bytesUsed;
-
       for (size_t t=0; t<thread_local_allocators2.threads.size(); t++)
 	bytes += thread_local_allocators2.threads[t]->getUsedBytes();
-
       return bytes;
     }
 
-    size_t getFreeBytes() const 
-    {
-      size_t bytesFree = 0;
-      if (freeBlocks.load()) bytesFree += freeBlocks.load()->getAllocatedBytes();
-      return bytesFree;
-    }
-
-    size_t getWastedBytes() const 
+    size_t getWastedBytes()
     {
       size_t bytes = bytesWasted;
-      if (usedBlocks.load()) bytes += usedBlocks.load()->getFreeBytes();
-
       for (size_t t=0; t<thread_local_allocators2.threads.size(); t++)
 	bytes += thread_local_allocators2.threads[t]->getWastedBytes();
-      
       return bytes;
     }
 
     void print_statistics(bool verbose = false)
     {
-      size_t bytesFree = getFreeBytes();
-      size_t bytesAllocated = getAllocatedBytes();
-      size_t bytesReserved = getReservedBytes();
       size_t bytesUsed = getUsedBytes();
       size_t bytesWasted = getWastedBytes();
-      printf("  allocated = %3.3fMB, reserved = %3.3fMB, used = %3.3fMB (%3.2f%%), wasted = %3.3fMB (%3.2f%%), free = %3.3fMB (%3.2f%%)\n",
-	     1E-6f*bytesAllocated, 1E-6f*bytesReserved,
-	     1E-6f*bytesUsed, 100.0f*bytesUsed/bytesAllocated,
-	     1E-6f*bytesWasted, 100.0f*bytesWasted/bytesAllocated,
-	     1E-6f*bytesFree, 100.0f*bytesFree/bytesAllocated);
-      
+      Statistics stat_all = getStatistics(ANY_TYPE);
+      Statistics stat_malloc = getStatistics(ALIGNED_MALLOC);
+      Statistics stat_4K = getStatistics(OS_MALLOC,false);
+      Statistics stat_2M = getStatistics(OS_MALLOC,true);
+      Statistics stat_shared = getStatistics(SHARED);
+      std::cout << "  total : " << stat_all.str();
+      printf(", used = %3.3f MB (%3.2f%%), wasted = %3.3f MB (%3.2f%%)\n",
+	     1E-6f*bytesUsed, 100.0f*bytesUsed/stat_all.bytesAllocated,
+	     1E-6f*bytesWasted, 100.0f*bytesWasted/stat_all.bytesAllocated);
+      std::cout << "  4K    : " << stat_4K.str() << std::endl;
+      std::cout << "  2M    : " << stat_2M.str() << std::endl;
+      std::cout << "  malloc: " << stat_malloc.str() << std::endl;
+      std::cout << "  shared: " << stat_shared.str() << std::endl;
+
       if (verbose) 
       {
-        std::cout << "  slotMask = " << slotMask << std::endl;
-        std::cout << "  use_single_mode = " << use_single_mode << std::endl;
-        std::cout << "  defaultBlockSize = " << defaultBlockSize << std::endl;
+        std::cout << "  slotMask = " << slotMask << ", use_single_mode = " << use_single_mode << ", defaultBlockSize = " << defaultBlockSize << std::endl;
         std::cout << "  used blocks = ";
         if (usedBlocks.load() != nullptr) usedBlocks.load()->print_list();
         std::cout << "[END]" << std::endl;
@@ -634,31 +641,46 @@ namespace embree
 	return max(allocEnd,size_t(cur))-cur;
       }
 
-      size_t getUsedBytes() const {
+      bool hasType(AllocationType atype_i, bool huge_pages_i) const
+      {
+        if      (atype_i == ANY_TYPE ) return true;
+        else if (atype   == OS_MALLOC) return atype_i == atype && huge_pages_i == huge_pages;
+        else                           return atype_i == atype;
+      }
+
+      size_t getUsedBytes(AllocationType atype, bool huge_pages = false) const {
         size_t bytes = 0;
-        for (const Block* block = this; block; block = block->next)
+        for (const Block* block = this; block; block = block->next) {
+          if (!block->hasType(atype,huge_pages)) continue;
           bytes += block->getBlockUsedBytes();
+        }
         return bytes;
       }
 
-      size_t getAllocatedBytes() const {
+      size_t getAllocatedBytes(AllocationType atype, bool huge_pages = false) const {
         size_t bytes = 0;
-        for (const Block* block = this; block; block = block->next)
+        for (const Block* block = this; block; block = block->next) {
+          if (!block->hasType(atype,huge_pages)) continue;
           bytes += block->getBlockAllocatedBytes();
+        }
         return bytes;
       }
 
-      size_t getReservedBytes() const {
+      size_t getReservedBytes(AllocationType atype, bool huge_pages = false) const {
         size_t bytes = 0;
-        for (const Block* block = this; block; block = block->next)
+        for (const Block* block = this; block; block = block->next){
+          if (!block->hasType(atype,huge_pages)) continue;
           bytes += block->getBlockReservedBytes();
+        }
         return bytes;
       }
 
-      size_t getFreeBytes() const {
+      size_t getFreeBytes(AllocationType atype, bool huge_pages = false) const {
         size_t bytes = 0;
-        for (const Block* block = this; block; block = block->next)
+        for (const Block* block = this; block; block = block->next) {
+          if (!block->hasType(atype,huge_pages)) continue;
           bytes += block->getBlockFreeBytes();
+        }
         return bytes;
       }
 

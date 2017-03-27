@@ -1184,11 +1184,6 @@ namespace embree
     void layoutLargeNodes(size_t num);
     NodeRef layoutLargeNodesRecursion(NodeRef& node, FastAllocator::ThreadLocal& allocator);
 
-    /*! calculates the amount of bytes allocated */
-    size_t bytesAllocated() {
-      return alloc.getAllocatedBytes();
-    }
-
     /*! called by all builders before build starts */
     double preBuild(const std::string& builderName);
 
