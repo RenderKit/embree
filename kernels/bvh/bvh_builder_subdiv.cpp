@@ -589,7 +589,7 @@ namespace embree
     };
 
     template<int N>
-    struct BVHNSubdivPatch1CachedMBlurBuilderBinnedSAH : public Builder
+    struct BVHNSubdivPatch1CachedMBlurBuilderSAH : public Builder
     {
       ALIGNED_STRUCT;
 
@@ -610,7 +610,7 @@ namespace embree
       size_t numSubdivEnableDisableEvents;
       bool cached;
 
-      BVHNSubdivPatch1CachedMBlurBuilderBinnedSAH (BVH* bvh, Scene* scene, bool cached)
+      BVHNSubdivPatch1CachedMBlurBuilderSAH (BVH* bvh, Scene* scene, bool cached)
         : bvh(bvh), scene(scene), primsMB(scene->device), bounds(scene->device), numSubdivEnableDisableEvents(0), cached(cached) {}
 
       bool initializeHalfEdges(size_t& numPrimitives)
@@ -778,7 +778,7 @@ namespace embree
           return;
         }
 
-        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1CachedMBlurBuilderBinnedSAH");
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1CachedMBlurBuilderSAH");
         
         /* calculate number of primitives (some patches need initial subdivision) */
         size_t numSubPatches, numSubPatchesMB;
@@ -817,7 +817,7 @@ namespace embree
     Builder* BVH4SubdivPatch1EagerBuilderSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1EagerBuilderSAH<4>((BVH4*)bvh,scene); }
     Builder* BVH4SubdivPatch1CachedBuilderSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedBuilderSAH<4,false>((BVH4*)bvh,scene,mode); }
     Builder* BVH4SubdivPatch1CachedMBBuilderSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedBuilderSAH<4,true>((BVH4*)bvh,scene,mode); }
-    Builder* BVH4MB4DSubdivPatch1CachedMBBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedMBlurBuilderBinnedSAH<4>((BVH4*)bvh,scene,mode); }
+    Builder* BVH4MB4DSubdivPatch1CachedMBBuilderSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedMBlurBuilderSAH<4>((BVH4*)bvh,scene,mode); }
   }
 }
 #endif

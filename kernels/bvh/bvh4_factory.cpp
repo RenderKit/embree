@@ -314,7 +314,7 @@ namespace embree
   DECLARE_BUILDER2(void,Scene,size_t,BVH4SubdivPatch1EagerBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4SubdivPatch1CachedBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4SubdivPatch1CachedMBBuilderSAH);
-  DECLARE_BUILDER2(void,Scene,size_t,BVH4MB4DSubdivPatch1CachedMBBuilderBinnedSAH);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH4MB4DSubdivPatch1CachedMBBuilderSAH);
 
   DECLARE_BUILDER2(void,LineSegments,size_t,BVH4Line4iMeshRefitSAH);
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4MeshRefitSAH);
@@ -390,7 +390,7 @@ namespace embree
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4SubdivPatch1EagerBuilderSAH));
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4SubdivPatch1CachedBuilderSAH));
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4SubdivPatch1CachedMBBuilderSAH));
-    IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4MB4DSubdivPatch1CachedMBBuilderBinnedSAH));
+    IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4MB4DSubdivPatch1CachedMBBuilderSAH));
 
     IF_ENABLED_LINES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Line4iMeshRefitSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4Triangle4MeshRefitSAH));
@@ -1843,7 +1843,7 @@ namespace embree
     {
       BVH4* accel = new BVH4(SubdivPatch1Cached::type_cached,scene);
       Accel::Intersectors intersectors = BVH4MB4DSubdivPatch1CachedMBIntersectors(accel);
-      Builder* builder = BVH4MB4DSubdivPatch1CachedMBBuilderBinnedSAH(accel,scene,1);
+      Builder* builder = BVH4MB4DSubdivPatch1CachedMBBuilderSAH(accel,scene,1);
       scene->needSubdivVertices = true;
       return new AccelInstance(accel,builder,intersectors);
     }
@@ -1851,7 +1851,7 @@ namespace embree
     {
       BVH4* accel = new BVH4(SubdivPatch1Cached::type,scene);
       Accel::Intersectors intersectors = BVH4MB4DSubdivPatch1MBIntersectors(accel);
-      Builder* builder = BVH4MB4DSubdivPatch1CachedMBBuilderBinnedSAH(accel,scene,0);
+      Builder* builder = BVH4MB4DSubdivPatch1CachedMBBuilderSAH(accel,scene,0);
       scene->needSubdivVertices = true;
       return new AccelInstance(accel,builder,intersectors);
     }
