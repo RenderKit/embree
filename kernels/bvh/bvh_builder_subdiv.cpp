@@ -523,7 +523,7 @@ namespace embree
           return;
         }
 
-        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1" + (cached ? "Cached" : "") + (mblur ? "MB" : "") + "BuilderBinnedSAH");
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1" + (cached ? "Cached" : "") + (mblur ? "MB" : "") + "BuilderSAH");
         
         /* calculate number of primitives (some patches need initial subdivision) */
         size_t numSubPatches, numSubPatchesMB;
