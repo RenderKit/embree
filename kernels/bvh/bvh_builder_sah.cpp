@@ -186,7 +186,7 @@ namespace embree
 
         /* if we use the primrefarray for allocations we have to take it back from the BVH */
         if (settings.primrefarrayalloc != size_t(inf))
-          prims = std::move(bvh->primrefarray);
+          bvh->alloc.unshare(prims);
 
 	/* skip build for empty scene */
         const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
@@ -237,7 +237,7 @@ namespace embree
 
         /* if we allocated using the primrefarray we have to keep it alive */
         if (settings.primrefarrayalloc != size_t(inf))
-          bvh->primrefarray = std::move(prims);
+          bvh->alloc.share(prims);
 
         /* for static geometries we can do some cleanups */
         else if (staticGeom) {

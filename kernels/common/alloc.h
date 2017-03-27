@@ -18,6 +18,8 @@
 
 #include "default.h"
 #include "device.h"
+#include "scene.h"
+#include "primref.h"
 
 namespace embree
 {
@@ -171,7 +173,8 @@ namespace embree
 
     FastAllocator (Device* device, bool osAllocation) 
       : device(device), slotMask(0), usedBlocks(nullptr), freeBlocks(nullptr), use_single_mode(false), defaultBlockSize(PAGE_SIZE), 
-        growSize(PAGE_SIZE), log2_grow_size_scale(0), bytesUsed(0), bytesWasted(0), thread_local_allocators2(this), atype(osAllocation ? OS_MALLOC : ALIGNED_MALLOC)
+        growSize(PAGE_SIZE), log2_grow_size_scale(0), bytesUsed(0), bytesWasted(0), thread_local_allocators2(this), atype(osAllocation ? OS_MALLOC : ALIGNED_MALLOC),
+        primrefarray(device)
     {
       for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++)
       {
@@ -188,6 +191,14 @@ namespace embree
     /*! returns the device attached to this allocator */
     Device* getDevice() {
       return device;
+    }
+
+    void share(mvector<PrimRef>& primrefarray_i) {
+      primrefarray = std::move(primrefarray_i);
+    }
+
+    void unshare(mvector<PrimRef>& primrefarray_o) {
+      primrefarray_o = std::move(primrefarray);
     }
 
     /*! returns first fast thread local allocator */
@@ -318,6 +329,7 @@ namespace embree
         threadUsedBlocks[i] = nullptr;
         threadBlocks[i] = nullptr;
       }
+      primrefarray.clear();
     }
 
     __forceinline size_t incGrowSizeScale()
@@ -729,5 +741,6 @@ namespace embree
     size_t bytesWasted;          //!< number of total wasted bytes
     ThreadLocalData<ThreadLocal2,FastAllocator*> thread_local_allocators2; //!< thread local allocators
     AllocationType atype;
+    mvector<PrimRef> primrefarray;     //!< primrefarray used to allocate nodes
   };
 }

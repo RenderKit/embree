@@ -1285,7 +1285,6 @@ namespace embree
     NodeRef root;                      //!< root node
     bool msmblur;                      //!< when true root points to array of roots for MSMBlur mode
     unsigned numTimeSteps;             //!< number of time steps
-    mvector<PrimRef> primrefarray;     //!< primrefarray used to allocate nodes (do not move below alloc member as alloc may use this data!)
     FastAllocator alloc;               //!< allocator used to allocate nodes
 
     /*! statistics data */
