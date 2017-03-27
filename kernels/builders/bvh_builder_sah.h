@@ -171,10 +171,6 @@ namespace embree
             BuildRecord left(current.depth+1);
             BuildRecord right(current.depth+1);
             heuristic.splitFallback(children[bestChild].prims,left.prims,right.prims);
-            if (unlikely(children[bestChild].size() > primrefarrayalloc)) {
-              left .alloc_barrier = left .size() <= primrefarrayalloc;
-              right.alloc_barrier = right.size() <= primrefarrayalloc;
-            }
             
             /* add new children left and right */
             children[bestChild] = children[numChildren-1];
@@ -183,6 +179,11 @@ namespace embree
             numChildren++;
             
           } while (numChildren < branchingFactor);
+
+          /* set barrier for primrefarrayalloc */
+          if (unlikely(current.size() > primrefarrayalloc))
+            for (size_t i=0; i<numChildren; i++)
+              children[i].alloc_barrier = children[i].size() <= primrefarrayalloc;
           
           /* create node */
           auto node = createNode(children,numChildren,alloc);
@@ -228,10 +229,6 @@ namespace embree
           BuildRecord children[MAX_BRANCHING_FACTOR];
           children[0] = BuildRecord(current.depth+1,lprims);
           children[1] = BuildRecord(current.depth+1,rprims);
-          if (unlikely(current.size() > primrefarrayalloc)) {
-            children[0].alloc_barrier = children[0].size() <= primrefarrayalloc;
-            children[1].alloc_barrier = children[1].size() <= primrefarrayalloc;
-          }
           size_t numChildren = 2;
           
           /*! split until node is full or SAH tells us to stop */
@@ -259,14 +256,15 @@ namespace embree
             BuildRecord rrecord(current.depth+1);
             auto split = heuristic.find(brecord.prims,logBlockSize);
             heuristic.split(split,brecord.prims,lrecord.prims,rrecord.prims);
-            if (unlikely(brecord.size() > primrefarrayalloc)) {
-              lrecord.alloc_barrier = lrecord.size() <= primrefarrayalloc;
-              rrecord.alloc_barrier = rrecord.size() <= primrefarrayalloc;
-            }
             children[bestChild  ] = lrecord;
             children[numChildren] = rrecord;
             numChildren++;
           }
+
+          /* set barrier for primrefarrayalloc */
+          if (unlikely(current.size() > primrefarrayalloc))
+            for (size_t i=0; i<numChildren; i++)
+              children[i].alloc_barrier = children[i].size() <= primrefarrayalloc;
           
           /* sort buildrecords for faster shadow ray traversal */
           std::sort(&children[0],&children[numChildren],std::greater<BuildRecord>());
@@ -278,7 +276,7 @@ namespace embree
           if (current.size() > singleThreadThreshold) 
           {
             /*! parallel_for is faster than spawing sub-tasks */
-            parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) {
+            parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) { // FIXME: no range here!
                 for (size_t i=r.begin(); i<r.end(); i++) {
                   values[i] = recurse(children[i],nullptr,true); 
                   _mm_mfence(); // to allow non-temporal stores during build

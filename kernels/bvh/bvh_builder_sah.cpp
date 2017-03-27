@@ -207,8 +207,8 @@ namespace embree
             bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef),settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD);
             prims.resize(numPrimitives); 
             if (settings.primrefarrayalloc) {
-              settings.primrefarrayalloc = numPrimitives/100;
-              if (settings.primrefarrayalloc < 10000)
+              settings.primrefarrayalloc = numPrimitives/10000;
+              if (settings.primrefarrayalloc < 1000)
                 settings.primrefarrayalloc = 0;
             }
 
