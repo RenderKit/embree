@@ -495,14 +495,14 @@ namespace embree
     if (device->subdiv_accel_mb == "default") 
     {
       if (isIncoherent(flags) && isStatic())
-        accels.add(device->bvh4_factory->BVH4MB4DSubdivPatch1MBlur(this,false));
+        accels.add(device->bvh4_factory->BVH4MB4DSubdivPatch1MB(this,false));
       else
-        accels.add(device->bvh4_factory->BVH4MB4DSubdivPatch1MBlur(this,true));
+        accels.add(device->bvh4_factory->BVH4MB4DSubdivPatch1MB(this,true));
     }
     else if (device->subdiv_accel_mb == "bvh4.subdivpatch1"          ) accels.add(device->bvh4_factory->BVH4SubdivPatch1MB(this,false));
     else if (device->subdiv_accel_mb == "bvh4.subdivpatch1cached"    ) accels.add(device->bvh4_factory->BVH4SubdivPatch1MB(this,true));
-    else if (device->subdiv_accel_mb == "bvh4mb4d.subdivpatch1"      ) accels.add(device->bvh4_factory->BVH4MB4DSubdivPatch1MBlur(this,false));
-    else if (device->subdiv_accel_mb == "bvh4mb4d.subdivpatch1cached") accels.add(device->bvh4_factory->BVH4MB4DSubdivPatch1MBlur(this,true));
+    else if (device->subdiv_accel_mb == "bvh4mb4d.subdivpatch1"      ) accels.add(device->bvh4_factory->BVH4MB4DSubdivPatch1MB(this,false));
+    else if (device->subdiv_accel_mb == "bvh4mb4d.subdivpatch1cached") accels.add(device->bvh4_factory->BVH4MB4DSubdivPatch1MB(this,true));
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown subdiv mblur accel "+device->subdiv_accel_mb);
 #endif
   }
