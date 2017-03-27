@@ -478,19 +478,15 @@ namespace embree
         {
           AlignedNode* node = ref.alignedNode();
           for (size_t i=0; i<num; i++) node->setRef(i,children[i]);
-#if 0
-          const size_t threshold = 10000;
-          if (precord.prims.size() > threshold) 
+
+          if (unlikely(precord.alloc_barrier))
           {
-            for (size_t i=0; i<num; i++) {
-              if (crecords[i].prims.size() > threshold) continue;
-              PrimRef* begin = &prims[crecords[i].prims.begin()];
-              PrimRef* end   = &prims[crecords[i].prims.end()]; // FIXME: extended end for spatial split builder!!!!!
-              size_t bytes = (size_t)end - (size_t)begin;
-              allocator->addBlock(begin,bytes);
-            }
+            PrimRef* begin = &prims[precord.prims.begin()];
+            PrimRef* end   = &prims[precord.prims.end()]; // FIXME: extended end for spatial split builder!!!!!
+            size_t bytes = (size_t)end - (size_t)begin;
+            allocator->addBlock(begin,bytes);
           }
-#endif
+
           return ref;
         }
 
@@ -1393,11 +1389,6 @@ namespace embree
     void layoutLargeNodes(size_t num);
     NodeRef layoutLargeNodesRecursion(NodeRef& node, FastAllocator::ThreadLocal& allocator);
 
-    /*! calculates the amount of bytes allocated */
-    size_t bytesAllocated() {
-      return alloc.getAllocatedBytes();
-    }
-
     /*! called by all builders before build starts */
     double preBuild(const std::string& builderName);
 
@@ -1539,7 +1530,6 @@ namespace embree
   public:
     std::vector<BVHN*> objects;
     avector<char,aligned_allocator<char,32>> subdiv_patches;
-    mvector<PrimRef> primrefs;
   };
 
   template<>

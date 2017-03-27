@@ -42,12 +42,12 @@ namespace embree
         /*! default settings */
         Settings ()
         : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8),
-          travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024) {}
+          travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024), primrefarrayalloc(inf) {}
 
         /*! initialize settings from API settings */
         Settings (const RTCBuildSettings& settings)
         : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8),
-          travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024)
+          travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024), primrefarrayalloc(inf)
         {
           if (RTC_BUILD_SETTINGS_HAS(settings,maxBranchingFactor)) branchingFactor = settings.maxBranchingFactor;
           if (RTC_BUILD_SETTINGS_HAS(settings,maxDepth          )) maxDepth        = settings.maxDepth;
@@ -58,9 +58,9 @@ namespace embree
           if (RTC_BUILD_SETTINGS_HAS(settings,intCost           )) intCost         = settings.intCost;
         }
 
-        Settings (size_t sahBlockSize, size_t minLeafSize, size_t maxLeafSize, float travCost, float intCost, size_t singleThreadThreshold)
+        Settings (size_t sahBlockSize, size_t minLeafSize, size_t maxLeafSize, float travCost, float intCost, size_t singleThreadThreshold, size_t primrefarrayalloc = inf)
         : branchingFactor(2), maxDepth(32), logBlockSize(__bsr(sahBlockSize)), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
-          travCost(travCost), intCost(intCost), singleThreadThreshold(singleThreadThreshold) {}
+          travCost(travCost), intCost(intCost), singleThreadThreshold(singleThreadThreshold), primrefarrayalloc(primrefarrayalloc) {}
 
       public:
         size_t branchingFactor;  //!< branching factor of BVH to build
@@ -71,6 +71,7 @@ namespace embree
         float travCost;          //!< estimated cost of one traversal step
         float intCost;           //!< estimated cost of one primitive intersection
         size_t singleThreadThreshold; //!< threshold when we switch to single threaded build
+        size_t primrefarrayalloc;  //!< builder uses prim ref array to allocate nodes and leaves when a subtree of that size is finished
       };
 
       /*! recursive state of builder */
@@ -81,10 +82,10 @@ namespace embree
           __forceinline BuildRecordT () {}
 
           __forceinline BuildRecordT (size_t depth)
-            : depth(depth), prims(empty) {}
+            : depth(depth), alloc_barrier(false), prims(empty) {}
 
           __forceinline BuildRecordT (size_t depth, const Set& prims)
-            : depth(depth), prims(prims) {}
+            : depth(depth), alloc_barrier(false), prims(prims) {}
 
           __forceinline BBox3fa bounds() const { return prims.geomBounds; }
 
@@ -94,8 +95,9 @@ namespace embree
           __forceinline size_t size() const { return prims.size(); }
 
         public:
-          size_t depth;     //!< Depth of the root of this subtree.
-          Set prims;        //!< The list of primitives.
+          size_t depth;       //!< Depth of the root of this subtree.
+          bool alloc_barrier; //!< barrier used to reuse primref-array blocks to allocate nodes
+          Set prims;          //!< The list of primitives.
         };
 
       template<typename BuildRecord,
@@ -177,6 +179,11 @@ namespace embree
 
             } while (numChildren < branchingFactor);
 
+            /* set barrier for primrefarrayalloc */
+            if (unlikely(current.size() > primrefarrayalloc))
+              for (size_t i=0; i<numChildren; i++)
+                children[i].alloc_barrier = children[i].size() <= primrefarrayalloc;
+
             /* create node */
             auto node = createNode(children,numChildren,alloc);
 
@@ -253,6 +260,11 @@ namespace embree
               numChildren++;
             }
 
+            /* set barrier for primrefarrayalloc */
+            if (unlikely(current.size() > primrefarrayalloc))
+              for (size_t i=0; i<numChildren; i++)
+                children[i].alloc_barrier = children[i].size() <= primrefarrayalloc;
+
             /* sort buildrecords for faster shadow ray traversal */
             std::sort(&children[0],&children[numChildren],std::greater<BuildRecord>());
 
@@ -263,7 +275,7 @@ namespace embree
             if (current.size() > singleThreadThreshold)
             {
               /*! parallel_for is faster than spawing sub-tasks */
-              parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) {
+              parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) { // FIXME: no range here
                   for (size_t i=r.begin(); i<r.end(); i++) {
                     values[i] = recurse(children[i],nullptr,true);
                     _mm_mfence(); // to allow non-temporal stores during build
