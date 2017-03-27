@@ -119,7 +119,8 @@ namespace embree
       
       BVHNBuilderSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, 
                       const size_t mode, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD, bool primrefarrayalloc = false)
-        : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, singleThreadThreshold, primrefarrayalloc) {}
+        : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device), 
+          settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, singleThreadThreshold, primrefarrayalloc) {}
 
       BVHNBuilderSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, 
                       const size_t mode, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
@@ -129,7 +130,7 @@ namespace embree
 
       void build_group(GeometryGroup* group)
       {
-        settings.primrefarrayalloc = false; // this mode is not supported here
+        settings.primrefarrayalloc = inf; // this mode is not supported here
 
         /* we reset the allocator when the group size changed */
         if (group && group->numPrimitivesChanged) {
@@ -204,7 +205,12 @@ namespace embree
 
             /* create primref array */
             bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef),settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD);
-            prims.resize(numPrimitives);
+            prims.resize(numPrimitives); 
+            if (settings.primrefarrayalloc) {
+              settings.primrefarrayalloc = numPrimitives/100;
+              if (settings.primrefarrayalloc < 10000)
+                settings.primrefarrayalloc = 0;
+            }
 
             PrimInfo pinfo = mesh ? 
               createPrimRefArray<Mesh>  (mesh ,prims,bvh->scene->progressInterface) : 

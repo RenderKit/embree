@@ -422,19 +422,17 @@ namespace embree
 
       struct Set3
       {
-        Set3 (FastAllocator* allocator, PrimRef* prims, bool primrefarrayalloc)
-        : allocator(allocator), prims(prims), primrefarrayalloc(primrefarrayalloc) {}
+        Set3 (FastAllocator* allocator, PrimRef* prims)
+        : allocator(allocator), prims(prims) {}
 
         template<typename BuildRecord>
         __forceinline NodeRef operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRef* children, const size_t num) const
         {
           AlignedNode* node = ref.alignedNode();
           for (size_t i=0; i<num; i++) node->set(i,children[i]);
-          if (unlikely(primrefarrayalloc))
-          {
+
 #if 0
-            const size_t threshold = 2000;
-            if (precord.prims.size() > threshold) 
+            if (precord.prims.size() > primrefarrayalloc_threshold) 
             {
               for (size_t i=0; i<num; i++) {
                 if (crecords[i].prims.size() > threshold) continue;
@@ -451,17 +449,13 @@ namespace embree
               PrimRef* end   = &prims[precord.prims.end()]; // FIXME: extended end for spatial split builder!!!!!
               size_t bytes = (size_t)end - (size_t)begin;
               allocator->addBlock(begin,bytes);
-              //char* data = new char[100000];
-              //allocator->addBlock(data,100000);
             }
 #endif
-          }
           return ref;
         }
 
         FastAllocator* const allocator;
         PrimRef* const prims;
-        const bool primrefarrayalloc;
       };
 
       /*! Clears the node. */
