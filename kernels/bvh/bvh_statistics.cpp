@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "bvh_statistics.h"
+#include "../../common/algorithms/parallel_reduce.h"
 
 namespace embree
 {
@@ -68,12 +69,13 @@ namespace embree
     if (node.isAlignedNode())
     {
       AlignedNode* n = node.alignedNode();
-      for (size_t i=0; i<N; i++) {
-        if (n->child(i) == BVH::emptyNode) continue;
-        s.statAlignedNodes.numChildren++;
-        const double Ai = max(0.0f,halfArea(n->extend(i)));
-        s = s + statistics(n->child(i),Ai,t0t1); 
-      }
+      s = s + parallel_reduce(0,N,Statistics(),[&] ( const int i ) {
+          if (n->child(i) == BVH::emptyNode) return Statistics();
+          const double Ai = max(0.0f,halfArea(n->extend(i)));
+          Statistics s = statistics(n->child(i),Ai,t0t1); 
+          s.statAlignedNodes.numChildren++;
+          return s;
+        }, Statistics::add);
       s.statAlignedNodes.numNodes++;
       s.statAlignedNodes.nodeSAH += dt*A;
       s.depth++;
@@ -81,12 +83,13 @@ namespace embree
     else if (node.isUnalignedNode())
     {
       UnalignedNode* n = node.unalignedNode();
-      for (size_t i=0; i<N; i++) {
-        if (n->child(i) == BVH::emptyNode) continue;
-        s.statUnalignedNodes.numChildren++;
-        const double Ai = max(0.0f,halfArea(n->extent(i)));
-        s = s + statistics(n->child(i),Ai,t0t1); 
-      }
+      s = s + parallel_reduce(0,N,Statistics(),[&] ( const int i ) {
+          if (n->child(i) == BVH::emptyNode) return Statistics();
+          const double Ai = max(0.0f,halfArea(n->extent(i)));
+          Statistics s = statistics(n->child(i),Ai,t0t1); 
+          s.statUnalignedNodes.numChildren++;
+          return s;
+        }, Statistics::add);
       s.statUnalignedNodes.numNodes++;
       s.statUnalignedNodes.nodeSAH += dt*A;
       s.depth++;
@@ -94,12 +97,13 @@ namespace embree
     else if (node.isAlignedNodeMB())
     {
       AlignedNodeMB* n = node.alignedNodeMB();
-      for (size_t i=0; i<N; i++) {
-        if (n->child(i) == BVH::emptyNode) continue;
-        s.statAlignedNodesMB.numChildren++;
-        const double Ai = max(0.0f,n->expectedHalfArea(i,t0t1));
-        s = s + statistics(n->child(i),Ai,t0t1);
-      }
+      s = s + parallel_reduce(0,N,Statistics(),[&] ( const int i ) {
+          if (n->child(i) == BVH::emptyNode) return Statistics();
+          const double Ai = max(0.0f,n->expectedHalfArea(i,t0t1));
+          Statistics s = statistics(n->child(i),Ai,t0t1);
+          s.statAlignedNodesMB.numChildren++;
+          return s;
+        }, Statistics::add);
       s.statAlignedNodesMB.numNodes++;
       s.statAlignedNodesMB.nodeSAH += dt*A;
       s.depth++;
@@ -107,12 +111,13 @@ namespace embree
     else if (node.isUnalignedNodeMB())
     {
       UnalignedNodeMB* n = node.unalignedNodeMB();
-      for (size_t i=0; i<N; i++) {
-        if (n->child(i) == BVH::emptyNode) continue;
-        s.statUnalignedNodesMB.numChildren++;
-        const double Ai = max(0.0f,halfArea(n->extent0(i)));
-        s = s + statistics(n->child(i),Ai,t0t1); 
-      }
+      s = s + parallel_reduce(0,N,Statistics(),[&] ( const int i ) {
+          if (n->child(i) == BVH::emptyNode) return Statistics();
+          const double Ai = max(0.0f,halfArea(n->extent0(i)));
+          Statistics s = statistics(n->child(i),Ai,t0t1); 
+          s.statUnalignedNodesMB.numChildren++;
+          return s;
+        }, Statistics::add);
       s.statUnalignedNodesMB.numNodes++;
       s.statUnalignedNodesMB.nodeSAH += dt*A;
       s.depth++;
@@ -126,12 +131,13 @@ namespace embree
     else if (node.isQuantizedNode())
     {
       QuantizedNode* n = node.quantizedNode();
-      for (size_t i=0; i<N; i++) {
-        if (n->child(i) == BVH::emptyNode) continue;
-        s.statQuantizedNodes.numChildren++;
-        const double Ai = max(0.0f,halfArea(n->extent(i)));
-        s = s + statistics(n->child(i),Ai,t0t1); 
-      }
+      s = s + parallel_reduce(0,N,Statistics(),[&] ( const int i ) {
+          if (n->child(i) == BVH::emptyNode) return Statistics();
+          const double Ai = max(0.0f,halfArea(n->extent(i)));
+          Statistics s = statistics(n->child(i),Ai,t0t1); 
+          s.statQuantizedNodes.numChildren++;
+          return s;
+        }, Statistics::add);
       s.statQuantizedNodes.numNodes++;
       s.statQuantizedNodes.nodeSAH += dt*A;
       s.depth++;
