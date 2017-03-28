@@ -41,6 +41,7 @@ namespace embree
   {
     size = 0;
     data = nullptr;
+    hugepages = false;
     maxBlocks              = size/BLOCK_SIZE;
     localTime              = NUM_CACHE_SEGMENTS;
     next_block             = 0;
@@ -191,10 +192,10 @@ namespace embree
         waitForUsersLessEqual(t,THREAD_BLOCK_ATOMIC_ADD);
 
     /* reallocate data */
-    if (data) os_free(data,size);
+    if (data) os_free(data,size,hugepages);
     size      = new_size;
     data      = nullptr;
-    if (size) data = (float*)os_malloc(size);
+    if (size) data = (float*)os_malloc(size,hugepages);
     maxBlocks = size/BLOCK_SIZE;    
 
     /* invalidate entire cache */

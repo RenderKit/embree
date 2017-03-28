@@ -31,7 +31,7 @@ namespace embree
     assert((align & (align-1)) == 0);
     void* ptr = _mm_malloc(size,align);
 
-    if (size != 0 && ptr == nullptr) 
+    if (size != 0 && ptr == nullptr)
       throw std::bad_alloc();
     
     return ptr;
@@ -116,10 +116,10 @@ namespace embree
     return true;
   }
 
-  void* os_malloc(size_t bytes, bool* hugepages)
+  void* os_malloc(size_t bytes, bool& hugepages)
   {
     if (bytes == 0) {
-      if (hugepages) *hugepages = false;
+      hugepages = false;
       return nullptr;
     }
 
@@ -129,7 +129,7 @@ namespace embree
       int flags = MEM_COMMIT | MEM_RESERVE | MEM_LARGE_PAGES;
       char* ptr = (char*) VirtualAlloc(nullptr,bytes,flags,PAGE_READWRITE);
       if (ptr != nullptr) {
-        if (hugepages) *hugepages = true;
+        hugepages = true;
         return ptr;
       }
     } 
@@ -138,7 +138,7 @@ namespace embree
     int flags = MEM_COMMIT | MEM_RESERVE;
     char* ptr = (char*) VirtualAlloc(nullptr,bytes,flags,PAGE_READWRITE);
     if (ptr == nullptr) throw std::bad_alloc();
-    if (hugepages) *hugepages = false;
+    hugepages = false;
     return ptr;
   }
 
@@ -149,18 +149,21 @@ namespace embree
 
     const size_t pageSize = hugepages ? PAGE_SIZE_2M : PAGE_SIZE_4K;
     bytesNew = (bytesNew+pageSize-1) & ~(pageSize-1);
+    bytesOld = (bytesOld+pageSize-1) & ~(pageSize-1);
     if (bytesNew >= bytesOld)
       return bytesOld;
 
-    if (VirtualFree((char*)ptr+bytesNew,bytesOld-bytesNew,MEM_DECOMMIT))
-      return bytesNew;
+    if (!VirtualFree((char*)ptr+bytesNew,bytesOld-bytesNew,MEM_DECOMMIT))
+      throw std::bad_alloc();
 
-    throw std::bad_alloc();
+    return bytesNew;
   }
 
-  void os_free(void* ptr, size_t bytes) 
+  void os_free(void* ptr, size_t bytes, bool hugepages) 
   {
-    if (bytes == 0) return;
+    if (bytes == 0) 
+      return;
+
     if (!VirtualFree(ptr,0,MEM_RELEASE))
       throw std::bad_alloc();
   }
@@ -233,10 +236,10 @@ namespace embree
     return true;
   }
 
-  void* os_malloc(size_t bytes, bool* hugepages)
+  void* os_malloc(size_t bytes, bool& hugepages)
   { 
     if (bytes == 0) {
-      if (hugepages) *hugepages = false;
+      hugepages = false;
       return nullptr;
     }
 
@@ -246,13 +249,13 @@ namespace embree
 #if defined(__MACOSX__)
       void* ptr = mmap(0, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, VM_FLAGS_SUPERPAGE_SIZE_2MB, 0);
       if (ptr != MAP_FAILED) {
-        if (hugepages) *hugepages = true;
+        hugepages = true;
         return ptr;
       }
 #else
       void* ptr = mmap(0, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON | MAP_HUGETLB, -1, 0);
       if (ptr != MAP_FAILED) {
-        if (hugepages) *hugepages = true;
+        hugepages = true;
         return ptr;
       }
 #endif
@@ -261,7 +264,7 @@ namespace embree
     /* fallback to 4k pages */
     void* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
     if (ptr == MAP_FAILED) throw std::bad_alloc();
-    if (hugepages) *hugepages = false;
+    hugepages = false;
 
     /* advise huge page hint for THP */
     os_advise(ptr,bytes);
@@ -272,20 +275,24 @@ namespace embree
   {
     const size_t pageSize = hugepages ? PAGE_SIZE_2M : PAGE_SIZE_4K;
     bytesNew = (bytesNew+pageSize-1) & ~(pageSize-1);
+    bytesOld = (bytesOld+pageSize-1) & ~(pageSize-1);
     if (bytesNew >= bytesOld)
       return bytesOld;
 
-    if (munmap((char*)ptr+bytesNew,bytesOld-bytesNew) != -1)
-      return bytesNew;
+    if (munmap((char*)ptr+bytesNew,bytesOld-bytesNew) == -1)
+      throw std::bad_alloc();
 
-    throw std::bad_alloc();
+    return bytesNew;
   }
 
-  void os_free(void* ptr, size_t bytes) 
+  void os_free(void* ptr, size_t bytes, bool hugepages) 
   {
     if (bytes == 0)
       return;
 
+    /* for hugepages we need to also align the size */
+    const size_t pageSize = hugepages ? PAGE_SIZE_2M : PAGE_SIZE_4K;
+    bytes = (bytes+pageSize-1) & ~(pageSize-1);
     if (munmap(ptr,bytes) == -1)
       throw std::bad_alloc();
   }
