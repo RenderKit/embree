@@ -641,11 +641,13 @@ namespace embree
       }
 
       size_t getBlockAllocatedBytes() const {
-        return min(max(allocEnd,size_t(cur)),reserveEnd);
+        const size_t sizeof_Header = offsetof(Block,data[0]);
+        return min(max(allocEnd,size_t(cur)),reserveEnd) + sizeof_Header + wasted;
       }
 
       size_t getBlockReservedBytes() const {
-        return reserveEnd;
+        const size_t sizeof_Header = offsetof(Block,data[0]);
+        return reserveEnd + sizeof_Header + wasted;
       }
 
       size_t getBlockFreeBytes() const {
