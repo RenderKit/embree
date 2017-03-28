@@ -445,7 +445,7 @@ namespace embree
     
     registerOption("incoherent", [this] (Ref<ParseStream> cin, const FileName& path) {
         g_iflags = iflags = RTC_INTERSECT_INCOHERENT;
-      }, "--coherent: use RTC_INTERSECT_INCOHERENT hint when tracing rays");
+      }, "--incoherent: use RTC_INTERSECT_INCOHERENT hint when tracing rays");
   }
 
   void TutorialApplication::renderBenchmark()
