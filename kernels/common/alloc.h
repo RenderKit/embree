@@ -434,11 +434,11 @@ namespace embree
     Statistics getStatistics(AllocationType atype, bool huge_pages = false) const 
     {
       Statistics stat;
-      if (freeBlocks.load()) stat.bytesAllocated += freeBlocks.load()->getAllocatedBytes(atype,huge_pages);
-      if (usedBlocks.load()) stat.bytesAllocated += usedBlocks.load()->getAllocatedBytes(atype,huge_pages);
-      if (freeBlocks.load()) stat.bytesReserved += freeBlocks.load()->getReservedBytes(atype,huge_pages);
-      if (usedBlocks.load()) stat.bytesReserved += usedBlocks.load()->getReservedBytes(atype,huge_pages);
-      if (freeBlocks.load()) stat.bytesFree += freeBlocks.load()->getAllocatedBytes(atype,huge_pages);
+      if (freeBlocks.load()) stat.bytesAllocated += freeBlocks.load()->getTotalAllocatedBytes(atype,huge_pages);
+      if (usedBlocks.load()) stat.bytesAllocated += usedBlocks.load()->getTotalAllocatedBytes(atype,huge_pages);
+      if (freeBlocks.load()) stat.bytesReserved += freeBlocks.load()->getTotalReservedBytes(atype,huge_pages);
+      if (usedBlocks.load()) stat.bytesReserved += usedBlocks.load()->getTotalReservedBytes(atype,huge_pages);
+      if (freeBlocks.load()) stat.bytesFree += freeBlocks.load()->getTotalAllocatedBytes(atype,huge_pages);
       if (usedBlocks.load()) stat.bytesFree += usedBlocks.load()->getFreeBytes(atype,huge_pages);
       return stat;
     }
@@ -641,11 +641,15 @@ namespace embree
       }
 
       size_t getBlockAllocatedBytes() const {
+        return min(max(allocEnd,size_t(cur)),reserveEnd);
+      }
+
+      size_t getBlockTotalAllocatedBytes() const {
         const size_t sizeof_Header = offsetof(Block,data[0]);
         return min(max(allocEnd,size_t(cur)),reserveEnd) + sizeof_Header + wasted;
       }
 
-      size_t getBlockReservedBytes() const {
+      size_t getBlockTotalReservedBytes() const {
         const size_t sizeof_Header = offsetof(Block,data[0]);
         return reserveEnd + sizeof_Header + wasted;
       }
@@ -670,20 +674,20 @@ namespace embree
         return bytes;
       }
 
-      size_t getAllocatedBytes(AllocationType atype, bool huge_pages = false) const {
+      size_t getTotalAllocatedBytes(AllocationType atype, bool huge_pages = false) const {
         size_t bytes = 0;
         for (const Block* block = this; block; block = block->next) {
           if (!block->hasType(atype,huge_pages)) continue;
-          bytes += block->getBlockAllocatedBytes();
+          bytes += block->getBlockTotalAllocatedBytes();
         }
         return bytes;
       }
 
-      size_t getReservedBytes(AllocationType atype, bool huge_pages = false) const {
+      size_t getTotalReservedBytes(AllocationType atype, bool huge_pages = false) const {
         size_t bytes = 0;
         for (const Block* block = this; block; block = block->next){
           if (!block->hasType(atype,huge_pages)) continue;
-          bytes += block->getBlockReservedBytes();
+          bytes += block->getBlockTotalReservedBytes();
         }
         return bytes;
       }
@@ -709,7 +713,7 @@ namespace embree
         else if (atype == OS_MALLOC) std::cout << "O";
         else if (atype == SHARED) std::cout << "S";
         if (huge_pages) std::cout << "H";
-        std::cout << "[" << getBlockUsedBytes() << ", " << getBlockAllocatedBytes() << ", " << getBlockReservedBytes() << "] ";
+        std::cout << "[" << getBlockUsedBytes() << ", " << getBlockTotalAllocatedBytes() << ", " << getBlockTotalReservedBytes() << "] ";
       }
 
     public:
