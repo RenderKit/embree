@@ -416,13 +416,14 @@ namespace embree
       Statistics () 
       : bytesAllocated(0), bytesReserved(0), bytesFree(0) {}
 
-      std::string str() 
+      std::string str(size_t numPrimitives) 
       {
         std::stringstream str;
         str.setf(std::ios::fixed, std::ios::floatfield);
         str << "allocated = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesAllocated << " MB, "
             << "reserved = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesReserved << " MB, "
-            << "free = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesFree << "(" << std::setw(6) << std::setprecision(2) << 100.0f*bytesFree/bytesAllocated << "%)";
+            << "free = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesFree << "(" << std::setw(6) << std::setprecision(2) << 100.0f*bytesFree/bytesAllocated << "%), "
+            << "#bytes/prim = " << std::setw(6) << std::setprecision(2) << double(bytesAllocated+bytesFree)/double(numPrimitives);
         return str.str();
       }
     
@@ -459,7 +460,7 @@ namespace embree
       return bytes;
     }
 
-    void print_statistics(bool verbose = false)
+    void print_statistics(bool verbose, size_t numPrimitives)
     {
       std::cout << "  slotMask = " << slotMask << ", use_single_mode = " << use_single_mode << ", defaultBlockSize = " << defaultBlockSize << std::endl;
       size_t bytesUsed = getUsedBytes();
@@ -469,14 +470,14 @@ namespace embree
       Statistics stat_4K = getStatistics(OS_MALLOC,false);
       Statistics stat_2M = getStatistics(OS_MALLOC,true);
       Statistics stat_shared = getStatistics(SHARED);
-      std::cout << "  total : " << stat_all.str();
+      std::cout << "  total : " << stat_all.str(numPrimitives);
       printf(", used = %3.3f MB (%3.2f%%), wasted = %3.3f MB (%3.2f%%)\n",
 	     1E-6f*bytesUsed, 100.0f*bytesUsed/stat_all.bytesAllocated,
 	     1E-6f*bytesWasted, 100.0f*bytesWasted/stat_all.bytesAllocated);
-      std::cout << "  4K    : " << stat_4K.str() << std::endl;
-      std::cout << "  2M    : " << stat_2M.str() << std::endl;
-      std::cout << "  malloc: " << stat_malloc.str() << std::endl;
-      std::cout << "  shared: " << stat_shared.str() << std::endl;
+      std::cout << "  4K    : " << stat_4K.str(numPrimitives) << std::endl;
+      std::cout << "  2M    : " << stat_2M.str(numPrimitives) << std::endl;
+      std::cout << "  malloc: " << stat_malloc.str(numPrimitives) << std::endl;
+      std::cout << "  shared: " << stat_shared.str(numPrimitives) << std::endl;
 
       if (verbose) 
       {

@@ -160,7 +160,7 @@ namespace embree
       printStatistics();
 
     if (device->verbosity(2))
-      alloc.print_statistics(device->verbosity(3));
+      alloc.print_statistics(device->verbosity(3),numPrimitives);
 
     /* benchmark mode */
     if (device->benchmark) {
