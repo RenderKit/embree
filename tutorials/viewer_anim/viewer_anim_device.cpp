@@ -58,14 +58,14 @@ namespace embree {
   void device_key_pressed_handler(int key)
   {
     if (key == 111 /*o*/) {
-#if DUMP_PROFILE_DATA == 1 
+#if DUMP_PROFILE_DATA == 1
       std::cout << "dumping build and render times per frame [" << buildTime.size() << " frames]..." << std::flush;
-      dumpBuildAndRenderTimes(); 
+      dumpBuildAndRenderTimes();
       std::cout << "done" << std::endl;
 #endif
     }
     else if (key == 112 /*p*/) {
-      printStats = !printStats; 
+      printStats = !printStats;
     }
     else device_key_pressed_default(key);
   }
@@ -83,7 +83,7 @@ namespace embree {
     unsigned int geomID = rtcNewTriangleMesh (scene_out, object_flags, mesh->numTriangles, mesh->numVertices, 1);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
-    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];        
+    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
@@ -100,7 +100,7 @@ namespace embree {
     unsigned int geomID = rtcNewQuadMesh (scene_out, object_flags, mesh->numQuads, mesh->numVertices, mesh->numTimeSteps);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
-    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];        
+    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(ISPCQuad));
@@ -119,7 +119,7 @@ namespace embree {
     for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 4.0f;
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
-    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];        
+    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set all other buffers */
     rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float));
@@ -142,7 +142,7 @@ namespace embree {
     unsigned int geomID = rtcNewLineSegments (scene_out, object_flags, mesh->numSegments, mesh->numVertices, mesh->numTimeSteps);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
-    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];        
+    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->indices,0,sizeof(int));
@@ -162,7 +162,7 @@ namespace embree {
     }
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
-    for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];        
+    for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
@@ -180,10 +180,10 @@ namespace embree {
     case BEZIER_BASIS : geomID = rtcNewBezierCurveGeometry (scene_out, object_flags, hair->numHairs, hair->numVertices, hair->numTimeSteps); break;
     case BSPLINE_BASIS: geomID = rtcNewBSplineCurveGeometry (scene_out, object_flags, hair->numHairs, hair->numVertices, hair->numTimeSteps); break;
     default: assert(false);
-    }  
+    }
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
-    for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];        
+    for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
@@ -201,7 +201,7 @@ namespace embree {
     int scene_aflags = RTC_INTERSECT1 | RTC_INTERSECT_STREAM | RTC_INTERPOLATE;
     return rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
   }
-    
+
 
   void createObject(const size_t i, ISPCScene* scene_in, RTCScene scene_out)
   {
@@ -253,15 +253,15 @@ namespace embree {
     parallel_for(size_t(0),numVertices,[&](const range<size_t>& range) {
         for (size_t i=range.begin(); i<range.end(); i++)
           vertices[i] = lerp(input0[i],input1[i],tt);
-      }); 
+      });
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     rtcUpdate(scene_out,geomID);
   }
 
-  void updateVertexData(const unsigned int ID, 
-                        ISPCScene* scene_in, 
-                        RTCScene scene_out, 
-                        const size_t keyFrameID, 
+  void updateVertexData(const unsigned int ID,
+                        ISPCScene* scene_in,
+                        RTCScene scene_out,
+                        const size_t keyFrameID,
                         const float tt)
   {
     ISPCGeometry* geometry = scene_in->geometries[ID];
@@ -275,7 +275,7 @@ namespace embree {
     else if (geometry->type == TRIANGLE_MESH) {
       ISPCTriangleMesh* mesh = (ISPCTriangleMesh*)geometry;
       /* if static do nothing */
-      if (mesh->numTimeSteps <= 1) return;      
+      if (mesh->numTimeSteps <= 1) return;
       /* interpolate two vertices from two timesteps */
       const size_t t0 = (keyFrameID+0) % mesh->numTimeSteps;
       const size_t t1 = (keyFrameID+1) % mesh->numTimeSteps;
@@ -286,7 +286,7 @@ namespace embree {
     else if (geometry->type == QUAD_MESH) {
       ISPCQuadMesh* mesh = (ISPCQuadMesh*)geometry;
       /* if static do nothing */
-      if (mesh->numTimeSteps <= 1) return;      
+      if (mesh->numTimeSteps <= 1) return;
       /* interpolate two vertices from two timesteps */
       const size_t t0 = (keyFrameID+0) % mesh->numTimeSteps;
       const size_t t1 = (keyFrameID+1) % mesh->numTimeSteps;
@@ -324,6 +324,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 
 /* renders a single screen tile */
   void renderTileStandard(int taskIndex,
+                          int threadIndex,
                           int* pixels,
                           const unsigned int width,
                           const unsigned int height,
@@ -343,7 +344,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 
     /* generate stream of primary rays */
     int N = 0;
-    for (unsigned int y=y0; y<y1; y++) 
+    for (unsigned int y=y0; y<y1; y++)
       for (unsigned int x=x0; x<x1; x++)
       {
         /* initialize ray */
@@ -370,10 +371,10 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
     /* shade stream of rays */
     Vec3fa colors[TILE_SIZE_X*TILE_SIZE_Y];
     N = 0;
-    for (unsigned int y=y0; y<y1; y++) 
+    for (unsigned int y=y0; y<y1; y++)
       for (unsigned int x=x0; x<x1; x++,N++)
       {
-        /* ISPC workaround for mask == 0 */    
+        /* ISPC workaround for mask == 0 */
         RTCRay& ray = rays[N];
         Vec3fa Ng = ray.Ng;
 
@@ -391,11 +392,11 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
             if (likely(mesh->normals))
             {
               ISPCTriangle* tri = &mesh->triangles[ray.primID];
-              
+
               const Vec3fa n0 = mesh->normals[tri->v0];
               const Vec3fa n1 = mesh->normals[tri->v1];
               const Vec3fa n2 = mesh->normals[tri->v2];
-              Ng = (1.0f-ray.u-ray.v)*n0 + ray.u*n1 + ray.v*n2;          
+              Ng = (1.0f-ray.u-ray.v)*n0 + ray.u*n1 + ray.v*n2;
             }
 #endif
           }
@@ -433,14 +434,14 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
         for (int n=0;n<N;n++)
           if (rays[n].geomID != RTC_INVALID_GEOMETRY_ID)
             colors[n] *= 0.1f;
-        
+
       }
     }
 #endif
 
     /* write colors to framebuffer */
     N = 0;
-    for (unsigned int y=y0; y<y1; y++) 
+    for (unsigned int y=y0; y<y1; y++)
       for (unsigned int x=x0; x<x1; x++,N++)
       {
         Vec3fa& color = colors[N];
@@ -452,7 +453,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
   }
 
 /* task that renders a single screen tile */
-  void renderTileTask (int taskIndex, int* pixels,
+  void renderTileTask (int taskIndex, int threadIndex, int* pixels,
                        const unsigned int width,
                        const unsigned int height,
                        const float time,
@@ -460,7 +461,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
                        const int numTilesX,
                        const int numTilesY)
   {
-    renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+    renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
   }
 
 /* called by the C++ code for initialization */
@@ -499,7 +500,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
         renderTime[i] = 0.0;
         vertexUpdateTime[i] = 0.0;
       }
-      
+
     }
 
     /* set render tile function to use */
@@ -510,10 +511,10 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 
   __forceinline void updateTimeLog(std::vector<double> &times, double time)
   {
-    if (times[frameID] > 0.0f) 
+    if (times[frameID] > 0.0f)
       times[frameID] = (times[frameID] + time) * 0.5f;
     else
-      times[frameID] = time;    
+      times[frameID] = time;
   }
 
 /* called by the C++ code to render */
@@ -544,11 +545,11 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
       dg.Ns = dg.Ng;
       for (size_t i=0; i<g_ispc_scene->numLights; i++)
       {
-        const Light* l = g_ispc_scene->lights[i];            
+        const Light* l = g_ispc_scene->lights[i];
         Light_SampleRes ls = l->sample(l,dg,Vec2f(0.0f,0.0f));
         ls_positions[i] = ls.dir * ls.dist;
       }
-    }          
+    }
 
     /* ============ */
     /* render image */
@@ -559,13 +560,14 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
     const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
 
     parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
+        const int threadIndex = (int)TaskScheduler::threadIndex();
         for (size_t i=range.begin(); i<range.end(); i++)
-        renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
-      }); 
+          renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+      });
 
     const double renderTime1 = getSeconds();
     const double renderTimeDelta = renderTime1-renderTime0;
-    
+
     updateTimeLog(renderTime,renderTimeDelta);
 
     if (unlikely(printStats)) std::cout << "rendering frame in : " << renderTimeDelta << " ms" << std::endl;
@@ -577,19 +579,19 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 
 #if ENABLE_ANIM == 1
 
-    double vertexUpdateTime0 = getSeconds();    
-    
+    double vertexUpdateTime0 = getSeconds();
+
     if (animTime < 0.0f) animTime = getSeconds();
     const double atime = (getSeconds() - animTime) * ANIM_FPS;
     const size_t intpart = (size_t)floor(atime);
     const double fracpart = atime - (double)intpart;
-    const size_t keyFrameID = intpart;      
-    
+    const size_t keyFrameID = intpart;
+
     size_t numObjects = getNumObjects(g_ispc_scene);
     for (unsigned int i=0;i<numObjects;i++)
       updateVertexData(i, g_ispc_scene, g_scene, keyFrameID, (float)fracpart);
 
-    double vertexUpdateTime1 = getSeconds();    
+    double vertexUpdateTime1 = getSeconds();
     const double vertexUpdateTimeDelta = vertexUpdateTime1-vertexUpdateTime0;
 
     updateTimeLog(vertexUpdateTime,vertexUpdateTimeDelta);
@@ -599,9 +601,9 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
     /* =========== */
     /* rebuild bvh */
     /* =========== */
-    
+
     double buildTime0 = getSeconds();
-    rtcCommit(g_scene);      
+    rtcCommit(g_scene);
     double buildTime1 = getSeconds();
     double buildTimeDelta = buildTime1-buildTime0;
 
@@ -609,7 +611,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 
     if (unlikely(printStats)) std::cout << "bvh rebuild in :     " << buildTimeDelta << " ms" << std::endl;
 #endif
-    
+
     frameID = (frameID + 1) % numProfileFrames;
   }
 
@@ -654,7 +656,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 #if DUMP_PROFILE_DATA == 1
     /* dump data at the end of profiling */
     std::cout << "dumping build and render times per frame [" << numProfileFrames << " frames]..." << std::flush;
-    dumpBuildAndRenderTimes(); 
+    dumpBuildAndRenderTimes();
     std::cout << "done" << std::endl;
 #endif
   }

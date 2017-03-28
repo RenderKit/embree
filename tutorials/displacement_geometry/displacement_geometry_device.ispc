@@ -101,8 +101,8 @@ float displacement_dv(const Vec3f& P, const Vec3f& dPdv)
   return (displacement(P+dv*dPdv)-displacement(P))/dv;
 }
 
-unmasked void displacementFunction(void* uniform ptr, 
-                                   uniform unsigned int geomID, 
+unmasked void displacementFunction(void* uniform ptr,
+                                   uniform unsigned int geomID,
                                    uniform unsigned int primID,
                                    uniform unsigned int time,
                                    const uniform float* uniform u,      /*!< u coordinates (source) */
@@ -258,6 +258,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 
 /* renders a single screen tile */
 void renderTileStandard(uniform int taskIndex,
+                        uniform int threadIndex,
                         uniform int* uniform pixels,
                         const uniform unsigned int width,
                         const uniform unsigned int height,
@@ -295,7 +296,7 @@ task void renderTileTask(uniform int* uniform pixels,
                          const uniform int numTilesX,
                          const uniform int numTilesY)
 {
-  renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 /* called by the C++ code to render */

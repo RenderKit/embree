@@ -88,6 +88,7 @@ inline Vec3fa faceforward( const Vec3fa& N, const Vec3fa& I, const Vec3fa& Ng ) 
 
 /* standard shading function */
 typedef void (* renderTileFunc)(int taskIndex,
+                                        int threadIndex,
                                         int* pixels,
                                         const unsigned int width,
                                         const unsigned int height,
@@ -101,6 +102,7 @@ extern "C" void device_key_pressed_default(int key);
 extern "C" void (* key_pressed_handler)(int key);
 
 void renderTileStandard(int taskIndex,
+                        int threadIndex,
                         int* pixels,
                         const unsigned int width,
                         const unsigned int height,

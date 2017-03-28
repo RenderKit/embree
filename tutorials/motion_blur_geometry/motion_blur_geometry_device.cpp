@@ -101,7 +101,7 @@ unsigned int addTriangleCube (RTCScene scene, const Vec3fa& pos, unsigned int nu
   /* create a triangulated cube with 12 triangles and 8 vertices */
   unsigned int geomID = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 12, 8, num_time_steps);
   rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_triangle_indices , 0, 3*sizeof(unsigned int));
-  
+
   for (size_t t=0; t<num_time_steps; t++)
   {
     RTCBufferType bufID = (RTCBufferType)(RTC_VERTEX_BUFFER0+t);
@@ -109,7 +109,7 @@ unsigned int addTriangleCube (RTCScene scene, const Vec3fa& pos, unsigned int nu
 
     AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
-    
+
     for (int i=0; i<8; i++) {
       Vec3fa v = Vec3fa(cube_vertices[i][0],cube_vertices[i][1],cube_vertices[i][2]);
       vertices[i] = Vec3fa(xfmPoint(rotation*scale,v)+pos);
@@ -140,7 +140,7 @@ unsigned int addQuadCube (RTCScene scene, const Vec3fa& pos, unsigned int num_ti
   /* create a quad cube with 6 quads and 8 vertices */
   unsigned int geomID = rtcNewQuadMesh (scene, RTC_GEOMETRY_STATIC, 6, 8, num_time_steps);
   rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_quad_indices , 0, 4*sizeof(unsigned int));
-  
+
   for (size_t t=0; t<num_time_steps; t++)
   {
     RTCBufferType bufID = (RTCBufferType)(RTC_VERTEX_BUFFER0+t);
@@ -148,7 +148,7 @@ unsigned int addQuadCube (RTCScene scene, const Vec3fa& pos, unsigned int num_ti
 
     AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
-    
+
     for (int i=0; i<8; i++) {
       Vec3fa v = Vec3fa(cube_vertices[i][0],cube_vertices[i][1],cube_vertices[i][2]);
       vertices[i] = Vec3fa(xfmPoint(rotation*scale,v)+pos);
@@ -186,7 +186,7 @@ unsigned int addSubdivCube (RTCScene scene, const Vec3fa& pos, unsigned int num_
 
     AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
-    
+
     for (int i=0; i<8; i++) {
       Vec3fa v = Vec3fa(cube_vertices[i][0],cube_vertices[i][1],cube_vertices[i][2]);
       vertices[i] = Vec3fa(xfmPoint(rotation*scale,v)+pos);
@@ -201,9 +201,9 @@ unsigned int addSubdivCube (RTCScene scene, const Vec3fa& pos, unsigned int num_
 unsigned int addCurveOrHair (RTCScene scene, const Vec3fa& pos, bool curve, unsigned int num_time_steps)
 {
   unsigned int geomID = 0;
-  if (curve) 
+  if (curve)
     geomID = rtcNewBSplineCurveGeometry (scene, RTC_GEOMETRY_STATIC, 13, 16, num_time_steps);
-  else 
+  else
   {
     geomID = rtcNewBSplineHairGeometry (scene, RTC_GEOMETRY_STATIC, 13, 16, num_time_steps);
     rtcSetTessellationRate (scene,geomID,16.0f);
@@ -222,7 +222,7 @@ unsigned int addCurveOrHair (RTCScene scene, const Vec3fa& pos, bool curve, unsi
 
     AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
-    
+
     for (int i=0; i<16; i++)
       vertices[i] = Vec3fa(xfmPoint(rotation*scale,bspline[i])+pos,0.2f);
 
@@ -255,7 +255,7 @@ unsigned int addLines (RTCScene scene, const Vec3fa& pos, unsigned int num_time_
 
     AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
-    
+
     for (int i=0; i<16; i++)
       vertices[i] = Vec3fa(xfmPoint(rotation*scale,bspline[i])+pos,0.2f);
 
@@ -278,7 +278,7 @@ unsigned int addInstancedTriangleCube (RTCScene global_scene, const Vec3fa& pos,
   rtcSetBuffer(scene, meshID, RTC_INDEX_BUFFER,  cube_triangle_indices , 0, 3*sizeof(unsigned int));
   rtcSetBuffer(scene, meshID, RTC_VERTEX_BUFFER, cube_vertices, 0, 4*sizeof(float));
   rtcCommit(scene);
-  
+
   unsigned int instID = rtcNewInstance2(global_scene,scene,num_time_steps);
 
   for (size_t t=0; t<num_time_steps; t++)
@@ -298,7 +298,7 @@ unsigned int addInstancedQuadCube (RTCScene global_scene, const Vec3fa& pos, uns
   RTCScene scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT1);
   unsigned int geomID = rtcNewQuadMesh (scene, RTC_GEOMETRY_STATIC, 6, 8, num_time_steps);
   rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_quad_indices , 0, 4*sizeof(unsigned int));
-  
+
   for (size_t t=0; t<num_time_steps; t++)
   {
     RTCBufferType bufID = (RTCBufferType)(RTC_VERTEX_BUFFER0+t);
@@ -306,7 +306,7 @@ unsigned int addInstancedQuadCube (RTCScene global_scene, const Vec3fa& pos, uns
 
     AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),0.5f*2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
-    
+
     for (int i=0; i<8; i++) {
       Vec3fa v = Vec3fa(cube_vertices[i][0],cube_vertices[i][1],cube_vertices[i][2]);
       vertices[i] = Vec3fa(xfmPoint(rotation*scale,v));
@@ -314,7 +314,7 @@ unsigned int addInstancedQuadCube (RTCScene global_scene, const Vec3fa& pos, uns
     rtcUnmapBuffer(scene,geomID,bufID);
   }
   rtcCommit(scene);
-  
+
   unsigned int instID = rtcNewInstance2(global_scene,scene,num_time_steps);
 
   for (size_t t=0; t<num_time_steps; t++)
@@ -544,7 +544,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
-  
+
   /* shade pixels */
   Vec3fa color = Vec3fa(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
@@ -593,6 +593,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex,
+                        int threadIndex,
                         int* pixels,
                         const unsigned int width,
                         const unsigned int height,
@@ -624,7 +625,7 @@ void renderTileStandard(int taskIndex,
 }
 
 /* task that renders a single screen tile */
-void renderTileTask (int taskIndex, int* pixels,
+void renderTileTask (int taskIndex, int threadIndex, int* pixels,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,
@@ -632,7 +633,7 @@ void renderTileTask (int taskIndex, int* pixels,
                          const int numTilesX,
                          const int numTilesY)
 {
-  renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 /* called by the C++ code to render */
@@ -670,8 +671,9 @@ extern "C" void device_render (int* pixels,
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
+    const int threadIndex = (int)TaskScheduler::threadIndex();
     for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
+      renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
 }
 

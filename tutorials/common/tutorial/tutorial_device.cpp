@@ -79,6 +79,7 @@ Vec3fa renderPixelEyeLight(float x, float y, const ISPCCamera& camera)
 }
 
 void renderTileEyeLight(int taskIndex,
+                        int threadIndex,
                         int* pixels,
                         const unsigned int width,
                         const unsigned int height,
@@ -139,6 +140,7 @@ Vec3fa renderPixelWireframe(float x, float y, const ISPCCamera& camera)
 }
 
 void renderTileWireframe(int taskIndex,
+                         int threadIndex,
                          int* pixels,
                          const unsigned int width,
                          const unsigned int height,
@@ -190,6 +192,7 @@ Vec3fa renderPixelUV(float x, float y, const ISPCCamera& camera)
 }
 
 void renderTileUV(int taskIndex,
+                  int threadIndex,
                   int* pixels,
                   const unsigned int width,
                   const unsigned int height,
@@ -238,10 +241,10 @@ Vec3fa renderPixelTexCoords(float x, float y, const ISPCCamera& camera)
   rtcIntersect(g_scene,ray);
 
   /* shade pixel */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
     return Vec3fa(0.0f,0.0f,1.0f);
 
-  else if (g_ispc_scene) 
+  else if (g_ispc_scene)
   {
     Vec2f st = Vec2f(0,0);
     unsigned int geomID = ray.geomID; {
@@ -252,18 +255,19 @@ Vec3fa renderPixelTexCoords(float x, float y, const ISPCCamera& camera)
     else if (render_texcoords_mode%2 == 1)
       return ((int)(10.0f*st.x)+(int)(10.0f*st.y)) % 2 == 0 ? Vec3fa(1,0,0) : Vec3fa(0,1,0);
   }
-  
+
   return Vec3fa(1.0f);
 }
 
 void renderTileTexCoords(int taskIndex,
-                  int* pixels,
-                  const unsigned int width,
-                  const unsigned int height,
-                  const float time,
-                  const ISPCCamera& camera,
-                  const int numTilesX,
-                  const int numTilesY)
+                         int threadIndex,
+                         int* pixels,
+                         const unsigned int width,
+                         const unsigned int height,
+                         const float time,
+                         const ISPCCamera& camera,
+                         const int numTilesX,
+                         const int numTilesY)
 {
   const int t = taskIndex;
   const unsigned int tileY = t / numTilesX;
@@ -309,6 +313,7 @@ Vec3fa renderPixelNg(float x, float y, const ISPCCamera& camera)
 }
 
 void renderTileNg(int taskIndex,
+                  int threadIndex,
                   int* pixels,
                   const unsigned int width,
                   const unsigned int height,
@@ -369,6 +374,7 @@ Vec3fa renderPixelGeomID(float x, float y, const ISPCCamera& camera)
 }
 
 void renderTileGeomID(int taskIndex,
+                      int threadIndex,
                       int* pixels,
                       const unsigned int width,
                       const unsigned int height,
@@ -420,6 +426,7 @@ Vec3fa renderPixelGeomIDPrimID(float x, float y, const ISPCCamera& camera)
 }
 
 void renderTileGeomIDPrimID(int taskIndex,
+                            int threadIndex,
                             int* pixels,
                             const unsigned int width,
                             const unsigned int height,
@@ -472,6 +479,7 @@ Vec3fa renderPixelCycles(float x, float y, const ISPCCamera& camera)
 }
 
 void renderTileCycles(int taskIndex,
+                      int threadIndex,
                       int* pixels,
                       const unsigned int width,
                       const unsigned int height,
@@ -567,6 +575,7 @@ Vec3fa renderPixelAmbientOcclusion(float x, float y, const ISPCCamera& camera)
 }
 
 void renderTileAmbientOcclusion(int taskIndex,
+                                int threadIndex,
                                 int* pixels,
                                 const unsigned int width,
                                 const unsigned int height,
@@ -675,6 +684,7 @@ Vec3fa renderPixelDifferentials(float x, float y, const ISPCCamera& camera)
 }
 
 void renderTileDifferentials(int taskIndex,
+                             int threadIndex,
                              int* pixels,
                              const unsigned int width,
                              const unsigned int height,

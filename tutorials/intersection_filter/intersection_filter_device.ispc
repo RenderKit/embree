@@ -88,7 +88,7 @@ void occlusionFilter(void* uniform ptr, RTCRay2& ray)
   ray.hit_geomIDs[slot] = ray.geomID;
   ray.hit_primIDs[slot] = ray.primID;
   ray.lastHit++;
-  if (ray.lastHit - ray.firstHit >= HIT_LIST_LENGTH) 
+  if (ray.lastHit - ray.firstHit >= HIT_LIST_LENGTH)
     ray.firstHit++;
 
   /* calculate and accumulate transparency */
@@ -168,6 +168,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 
 /* renders a single screen tile */
 void renderTileStandard(uniform int taskIndex,
+                        uniform int threadIndex,
                         uniform int* uniform pixels,
                         const uniform unsigned int width,
                         const uniform unsigned int height,
@@ -322,7 +323,7 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
     bool already_hit = false;
     unsigned int eray_firstHit = gather(eray->firstHit,0,sizeof(RTCRay2),pid,rid);
     unsigned int eray_lastHit =  gather(eray->lastHit,0,sizeof(RTCRay2),pid,rid);
-    for (unsigned int i=eray_firstHit; i<eray_lastHit; i++) 
+    for (unsigned int i=eray_firstHit; i<eray_lastHit; i++)
     {
       unsigned int slot= i%HIT_LIST_LENGTH;
       unsigned int last_geomID = gather(eray->hit_geomIDs[0],slot,sizeof(RTCRay2),pid,rid);
@@ -343,9 +344,9 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
     scatter(eray->hit_primIDs[0],slot,sizeof(RTCRay2),pid,rid,hit_primID);
     eray_lastHit++;
     scatter(eray->lastHit,0,sizeof(RTCRay2),pid,rid,eray_lastHit);
-    if (eray_lastHit - eray_firstHit >= HIT_LIST_LENGTH) 
+    if (eray_lastHit - eray_firstHit >= HIT_LIST_LENGTH)
       scatter(eray->firstHit,0,sizeof(RTCRay2),pid,rid,eray_firstHit+1);
-    
+
     /* calculate transparency */
     Vec3f h = ray_org + ray_dir*hit_t;
     float T = transparencyFunction(h);
@@ -364,6 +365,7 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
 
 /* renders a single screen tile */
 void renderTileStandardStream(uniform int taskIndex,
+                              uniform int threadIndex,
                               uniform int* uniform pixels,
                               const uniform unsigned int width,
                               const uniform unsigned int height,
@@ -728,7 +730,7 @@ task void renderTileTask(uniform int* uniform pixels,
                          const uniform int numTilesX,
                          const uniform int numTilesY)
 {
-  renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 /* called by the C++ code to render */

@@ -157,7 +157,7 @@ extern "C" void device_init (char* cfg)
 }
 
 /* animates the sphere */
-void animateSphere (int taskIndex, Vertex* vertices,
+void animateSphere (int taskIndex, int threadIndex, Vertex* vertices,
                          const float rcpNumTheta,
                          const float rcpNumPhi,
                          const Vec3fa& pos,
@@ -224,6 +224,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex,
+                        int threadIndex,
                         int* pixels,
                         const unsigned int width,
                         const unsigned int height,
@@ -253,7 +254,7 @@ void renderTileStandard(int taskIndex,
 }
 
 /* task that renders a single screen tile */
-void renderTileTask (int taskIndex, int* pixels,
+void renderTileTask (int taskIndex, int threadIndex, int* pixels,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,
@@ -261,7 +262,7 @@ void renderTileTask (int taskIndex, int* pixels,
                          const int numTilesX,
                          const int numTilesY)
 {
-  renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 /* animates a sphere */
@@ -278,8 +279,9 @@ void animateSphere (int id, float time)
   /* loop over all vertices */
 #if 1 // enables parallel execution
   parallel_for(size_t(0),size_t(numPhi+1),[&](const range<size_t>& range) {
+    const int threadIndex = (int)TaskScheduler::threadIndex();
     for (size_t i=range.begin(); i<range.end(); i++)
-      animateSphere((int)i,vertices,rcpNumTheta,rcpNumPhi,pos,r,f);
+      animateSphere((int)i,threadIndex,vertices,rcpNumTheta,rcpNumPhi,pos,r,f);
   }); 
 #else
   for (unsigned int phi=0; phi<numPhi+1; phi++) for (int theta=0; theta<numTheta; theta++)
@@ -317,8 +319,9 @@ extern "C" void device_render (int* pixels,
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
+    const int threadIndex = (int)TaskScheduler::threadIndex();
     for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
+      renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
 }
 

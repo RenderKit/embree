@@ -905,7 +905,7 @@ void assignShaders(ISPCGeometry* uniform geometry)
     ISPCTriangleMesh* uniform mesh = (ISPCTriangleMesh* uniform ) geometry;
 #if ENABLE_FILTER_FUNCTION == 1
     rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFuncVarying)&occlusionFilterOpaque);
-    
+
     ISPCMaterial* uniform material = g_ispc_scene->materials[mesh->materialID];
     //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
     //  rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFuncVarying)&intersectionFilterReject);
@@ -924,7 +924,7 @@ void assignShaders(ISPCGeometry* uniform geometry)
     ISPCQuadMesh* uniform mesh = (ISPCQuadMesh* uniform) geometry;
 #if ENABLE_FILTER_FUNCTION == 1
     rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFuncVarying)&occlusionFilterOpaque);
-    
+
     ISPCMaterial* uniform material = g_ispc_scene->materials[mesh->materialID];
     //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
     //  rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFuncVarying)&intersectionFilterReject);
@@ -988,7 +988,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   }
 
   /* commit individual objects in case of instancing */
-  if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP) 
+  if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP)
   {
     for (uniform unsigned int i=0; i<scene_in->numGeometries; i++) {
       if (scene_in->geomID_to_scene[i]) rtcCommit(scene_in->geomID_to_scene[i]);
@@ -1015,7 +1015,7 @@ inline void evalBezier(const ISPCHairSet* uniform hair, const int primID, const 
   const float t0 = 1.0f - t, t1 = t;
   const Vec3fa* vertices = hair->positions[0];
   const ISPCHair* hairs = hair->hairs;
-  
+
   const int i = hairs[primID].vertex;
   const Vec3fa p00 = vertices[i+0];
   const Vec3fa p01 = vertices[i+1];
@@ -1145,7 +1145,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform 
 
 AffineSpace3f calculate_interpolated_space (uniform ISPCInstance* uniform instance, float gtime)
 {
-  if (instance->numTimeSteps == 1) 
+  if (instance->numTimeSteps == 1)
     return make_AffineSpace3f(instance->spaces[0]);
 
   /* calculate time segment itime and fractional time ftime */
@@ -1159,7 +1159,7 @@ AffineSpace3f calculate_interpolated_space (uniform ISPCInstance* uniform instan
 inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 {
   dg.tnear_eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
- 
+
   int materialID = 0;
   foreach_unique (instID in ray.instID) {
     foreach_unique (geomID in ray.geomID) {
@@ -1180,7 +1180,7 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
     {
       /* get instance and geometry pointers */
       ISPCInstance* uniform instance = g_ispc_scene->geomID_to_inst[instID];
-      
+
       /* convert normals */
       //AffineSpace3f space = (1.0f-ray.time)*make_AffineSpace3f(instance->space0) + ray.time*make_AffineSpace3f(instance->space1);
       AffineSpace3f space = calculate_interpolated_space(instance,ray.time);
@@ -1430,6 +1430,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 
 /* renders a single screen tile */
 void renderTileStandard(uniform int taskIndex,
+                        uniform int threadIndex,
                         uniform int* uniform pixels,
                         const uniform unsigned int width,
                         const uniform unsigned int height,
@@ -1469,7 +1470,7 @@ task void renderTileTask(uniform int* uniform pixels,
                          const uniform int numTilesX,
                          const uniform int numTilesY)
 {
-  renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 

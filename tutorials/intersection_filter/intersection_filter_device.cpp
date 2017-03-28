@@ -90,7 +90,7 @@ void occlusionFilter(void* ptr, RTCRay2& ray)
   ray.hit_geomIDs[slot] = ray.geomID;
   ray.hit_primIDs[slot] = ray.primID;
   ray.lastHit++;
-  if (ray.lastHit - ray.firstHit >= HIT_LIST_LENGTH) 
+  if (ray.lastHit - ray.firstHit >= HIT_LIST_LENGTH)
     ray.firstHit++;
 
   /* calculate and accumulate transparency */
@@ -170,6 +170,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex,
+                        int threadIndex,
                         int* pixels,
                         const unsigned int width,
                         const unsigned int height,
@@ -324,7 +325,7 @@ void occlusionFilterN(int* valid,
     bool already_hit = false;
     unsigned int eray_firstHit = gather(eray->firstHit,0,sizeof(RTCRay2),pid,rid);
     unsigned int eray_lastHit =  gather(eray->lastHit,0,sizeof(RTCRay2),pid,rid);
-    for (unsigned int i=eray_firstHit; i<eray_lastHit; i++) 
+    for (unsigned int i=eray_firstHit; i<eray_lastHit; i++)
     {
       unsigned int slot= i%HIT_LIST_LENGTH;
       unsigned int last_geomID = gather(eray->hit_geomIDs[0],slot,sizeof(RTCRay2),pid,rid);
@@ -345,9 +346,9 @@ void occlusionFilterN(int* valid,
     scatter(eray->hit_primIDs[0],slot,sizeof(RTCRay2),pid,rid,hit_primID);
     eray_lastHit++;
     scatter(eray->lastHit,0,sizeof(RTCRay2),pid,rid,eray_lastHit);
-    if (eray_lastHit - eray_firstHit >= HIT_LIST_LENGTH) 
+    if (eray_lastHit - eray_firstHit >= HIT_LIST_LENGTH)
       scatter(eray->firstHit,0,sizeof(RTCRay2),pid,rid,eray_firstHit+1);
-    
+
     /* calculate transparency */
     Vec3fa h = ray_org + ray_dir*hit_t;
     float T = transparencyFunction(h);
@@ -366,6 +367,7 @@ void occlusionFilterN(int* valid,
 
 /* renders a single screen tile */
 void renderTileStandardStream(int taskIndex,
+                              int threadIndex,
                               int* pixels,
                               const unsigned int width,
                               const unsigned int height,
@@ -722,7 +724,7 @@ extern "C" void device_init (char* cfg)
 }
 
 /* task that renders a single screen tile */
-void renderTileTask (int taskIndex, int* pixels,
+void renderTileTask (int taskIndex, int threadIndex, int* pixels,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,
@@ -730,7 +732,7 @@ void renderTileTask (int taskIndex, int* pixels,
                          const int numTilesX,
                          const int numTilesY)
 {
-  renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 /* called by the C++ code to render */
@@ -743,8 +745,9 @@ extern "C" void device_render (int* pixels,
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
+    const int threadIndex = (int)TaskScheduler::threadIndex();
     for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
+      renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
 }
 

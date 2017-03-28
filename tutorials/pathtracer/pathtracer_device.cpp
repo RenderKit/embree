@@ -907,7 +907,7 @@ void assignShaders(ISPCGeometry* geometry)
     ISPCTriangleMesh* mesh = (ISPCTriangleMesh* ) geometry;
 #if ENABLE_FILTER_FUNCTION == 1
     rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&occlusionFilterOpaque);
-    
+
     ISPCMaterial* material = g_ispc_scene->materials[mesh->materialID];
     //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
     //  rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&intersectionFilterReject);
@@ -926,7 +926,7 @@ void assignShaders(ISPCGeometry* geometry)
     ISPCQuadMesh* mesh = (ISPCQuadMesh*) geometry;
 #if ENABLE_FILTER_FUNCTION == 1
     rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&occlusionFilterOpaque);
-    
+
     ISPCMaterial* material = g_ispc_scene->materials[mesh->materialID];
     //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
     //  rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&intersectionFilterReject);
@@ -990,7 +990,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   }
 
   /* commit individual objects in case of instancing */
-  if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP) 
+  if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP)
   {
     for (unsigned int i=0; i<scene_in->numGeometries; i++) {
       if (scene_in->geomID_to_scene[i]) rtcCommit(scene_in->geomID_to_scene[i]);
@@ -1017,7 +1017,7 @@ inline void evalBezier(const ISPCHairSet* hair, const int primID, const float t,
   const float t0 = 1.0f - t, t1 = t;
   const Vec3fa* vertices = hair->positions[0];
   const ISPCHair* hairs = hair->hairs;
-  
+
   const int i = hairs[primID].vertex;
   const Vec3fa p00 = vertices[i+0];
   const Vec3fa p01 = vertices[i+1];
@@ -1147,7 +1147,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
 
 AffineSpace3fa calculate_interpolated_space (ISPCInstance* instance, float gtime)
 {
-  if (instance->numTimeSteps == 1) 
+  if (instance->numTimeSteps == 1)
     return AffineSpace3fa(instance->spaces[0]);
 
   /* calculate time segment itime and fractional time ftime */
@@ -1161,7 +1161,7 @@ AffineSpace3fa calculate_interpolated_space (ISPCInstance* instance, float gtime
 inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 {
   dg.tnear_eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
- 
+
   int materialID = 0;
   unsigned int instID = ray.instID; {
     unsigned int geomID = ray.geomID; {
@@ -1182,7 +1182,7 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
     {
       /* get instance and geometry pointers */
       ISPCInstance* instance = g_ispc_scene->geomID_to_inst[instID];
-      
+
       /* convert normals */
       //AffineSpace3fa space = (1.0f-ray.time)*AffineSpace3fa(instance->space0) + ray.time*AffineSpace3fa(instance->space1);
       AffineSpace3fa space = calculate_interpolated_space(instance,ray.time);
@@ -1432,6 +1432,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex,
+                        int threadIndex,
                         int* pixels,
                         const unsigned int width,
                         const unsigned int height,
@@ -1463,7 +1464,7 @@ void renderTileStandard(int taskIndex,
 }
 
 /* task that renders a single screen tile */
-void renderTileTask (int taskIndex, int* pixels,
+void renderTileTask (int taskIndex, int threadIndex, int* pixels,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,
@@ -1471,7 +1472,7 @@ void renderTileTask (int taskIndex, int* pixels,
                          const int numTilesX,
                          const int numTilesY)
 {
-  renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 
@@ -1506,7 +1507,7 @@ void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, size_t 
 }
 
 #if defined(ISPC)
-void updateEdgeLevelBufferTask (int taskIndex,  ISPCSubdivMesh* mesh, const Vec3fa& cam_pos )
+void updateEdgeLevelBufferTask (int taskIndex, int threadIndex,  ISPCSubdivMesh* mesh, const Vec3fa& cam_pos )
 {
   const size_t size = mesh->numFaces;
   const size_t startID = ((taskIndex+0)*size)/taskCount;
@@ -1525,8 +1526,9 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
     unsigned int geomID = mesh->geom.geomID;
 #if defined(ISPC)
     parallel_for(size_t(0),size_t( (mesh->numFaces+4095)/4096 ),[&](const range<size_t>& range) {
+    const int threadIndex = (int)TaskScheduler::threadIndex();
     for (size_t i=range.begin(); i<range.end(); i++)
-      updateEdgeLevelBufferTask((int)i,mesh,cam_pos);
+      updateEdgeLevelBufferTask((int)i,threadIndex,mesh,cam_pos);
   }); 
 #else
       updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
@@ -1612,8 +1614,9 @@ extern "C" void device_render (int* pixels,
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
+    const int threadIndex = (int)TaskScheduler::threadIndex();
     for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
+      renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
   //rtcDebug();
 } // device_render

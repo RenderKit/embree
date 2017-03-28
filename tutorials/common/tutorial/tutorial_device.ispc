@@ -77,6 +77,7 @@ Vec3f renderPixelEyeLight(float x, float y, const uniform ISPCCamera& camera)
 }
 
 void renderTileEyeLight(uniform int taskIndex,
+                        uniform int threadIndex,
                         uniform int* uniform pixels,
                         const uniform unsigned int width,
                         const uniform unsigned int height,
@@ -137,6 +138,7 @@ Vec3f renderPixelWireframe(float x, float y, const uniform ISPCCamera& camera)
 }
 
 void renderTileWireframe(uniform int taskIndex,
+                         uniform int threadIndex,
                          uniform int* uniform pixels,
                          const uniform unsigned int width,
                          const uniform unsigned int height,
@@ -188,6 +190,7 @@ Vec3f renderPixelUV(float x, float y, const uniform ISPCCamera& camera)
 }
 
 void renderTileUV(uniform int taskIndex,
+                  uniform int threadIndex,
                   uniform int* uniform pixels,
                   const uniform unsigned int width,
                   const uniform unsigned int height,
@@ -236,10 +239,10 @@ Vec3f renderPixelTexCoords(float x, float y, const uniform ISPCCamera& camera)
   rtcIntersect(g_scene,ray);
 
   /* shade pixel */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
     return make_Vec3f(0.0f,0.0f,1.0f);
 
-  else if (g_ispc_scene) 
+  else if (g_ispc_scene)
   {
     Vec2f st = make_Vec2f(0,0);
     foreach_unique (geomID in ray.geomID) {
@@ -250,18 +253,19 @@ Vec3f renderPixelTexCoords(float x, float y, const uniform ISPCCamera& camera)
     else if (render_texcoords_mode%2 == 1)
       return ((int)(10.0f*st.x)+(int)(10.0f*st.y)) % 2 == 0 ? make_Vec3f(1,0,0) : make_Vec3f(0,1,0);
   }
-  
+
   return make_Vec3f(1.0f);
 }
 
 void renderTileTexCoords(uniform int taskIndex,
-                  uniform int* uniform pixels,
-                  const uniform unsigned int width,
-                  const uniform unsigned int height,
-                  const uniform float time,
-                  const uniform ISPCCamera& camera,
-                  const uniform int numTilesX,
-                  const uniform int numTilesY)
+                         uniform int threadIndex,
+                         uniform int* uniform pixels,
+                         const uniform unsigned int width,
+                         const uniform unsigned int height,
+                         const uniform float time,
+                         const uniform ISPCCamera& camera,
+                         const uniform int numTilesX,
+                         const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
   const uniform unsigned int tileY = t / numTilesX;
@@ -307,6 +311,7 @@ Vec3f renderPixelNg(float x, float y, const uniform ISPCCamera& camera)
 }
 
 void renderTileNg(uniform int taskIndex,
+                  uniform int threadIndex,
                   uniform int* uniform pixels,
                   const uniform unsigned int width,
                   const uniform unsigned int height,
@@ -367,6 +372,7 @@ Vec3f renderPixelGeomID(float x, float y, const uniform ISPCCamera& camera)
 }
 
 void renderTileGeomID(uniform int taskIndex,
+                      uniform int threadIndex,
                       uniform int* uniform pixels,
                       const uniform unsigned int width,
                       const uniform unsigned int height,
@@ -418,6 +424,7 @@ Vec3f renderPixelGeomIDPrimID(float x, float y, const uniform ISPCCamera& camera
 }
 
 void renderTileGeomIDPrimID(uniform int taskIndex,
+                            uniform int threadIndex,
                             uniform int* uniform pixels,
                             const uniform unsigned int width,
                             const uniform unsigned int height,
@@ -470,6 +477,7 @@ Vec3f renderPixelCycles(float x, float y, const uniform ISPCCamera& camera)
 }
 
 void renderTileCycles(uniform int taskIndex,
+                      uniform int threadIndex,
                       uniform int* uniform pixels,
                       const uniform unsigned int width,
                       const uniform unsigned int height,
@@ -565,6 +573,7 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& ca
 }
 
 void renderTileAmbientOcclusion(uniform int taskIndex,
+                                uniform int threadIndex,
                                 uniform int* uniform pixels,
                                 const uniform unsigned int width,
                                 const uniform unsigned int height,
@@ -673,6 +682,7 @@ Vec3f renderPixelDifferentials(float x, float y, const uniform ISPCCamera& camer
 }
 
 void renderTileDifferentials(uniform int taskIndex,
+                             uniform int threadIndex,
                              uniform int* uniform pixels,
                              const uniform unsigned int width,
                              const uniform unsigned int height,
