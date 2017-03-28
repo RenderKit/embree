@@ -31,7 +31,7 @@ namespace embree
     assert((align & (align-1)) == 0);
     void* ptr = _mm_malloc(size,align);
 
-    if (size != 0 && ptr == nullptr) 
+    if (size != 0 && ptr == nullptr)
       throw std::bad_alloc();
     
     return ptr;
@@ -149,23 +149,20 @@ namespace embree
 
     const size_t pageSize = hugepages ? PAGE_SIZE_2M : PAGE_SIZE_4K;
     bytesNew = (bytesNew+pageSize-1) & ~(pageSize-1);
+    bytesOld = (bytesOld+pageSize-1) & ~(pageSize-1);
     if (bytesNew >= bytesOld)
       return bytesOld;
 
-    if (VirtualFree((char*)ptr+bytesNew,bytesOld-bytesNew,MEM_DECOMMIT))
-      return bytesNew;
+    if (!VirtualFree((char*)ptr+bytesNew,bytesOld-bytesNew,MEM_DECOMMIT))
+      throw std::bad_alloc();
 
-    throw std::bad_alloc();
+    return bytesNew;
   }
 
   void os_free(void* ptr, size_t bytes, bool hugepages) 
   {
     if (bytes == 0) 
       return;
-
-    /* for hugepages we need to also align the size */
-    if (hugepages)
-      bytes = (bytes+PAGE_SIZE_2M-1) & ~(PAGE_SIZE_2M-1);
 
     if (!VirtualFree(ptr,0,MEM_RELEASE))
       throw std::bad_alloc();
@@ -278,13 +275,14 @@ namespace embree
   {
     const size_t pageSize = hugepages ? PAGE_SIZE_2M : PAGE_SIZE_4K;
     bytesNew = (bytesNew+pageSize-1) & ~(pageSize-1);
+    bytesOld = (bytesOld+pageSize-1) & ~(pageSize-1);
     if (bytesNew >= bytesOld)
       return bytesOld;
 
-    if (munmap((char*)ptr+bytesNew,bytesOld-bytesNew) != -1)
-      return bytesNew;
+    if (munmap((char*)ptr+bytesNew,bytesOld-bytesNew) == -1)
+      throw std::bad_alloc();
 
-    throw std::bad_alloc();
+    return bytesNew;
   }
 
   void os_free(void* ptr, size_t bytes, bool hugepages) 
@@ -293,9 +291,8 @@ namespace embree
       return;
 
     /* for hugepages we need to also align the size */
-    if (hugepages)
-      bytes = (bytes+PAGE_SIZE_2M-1) & ~(PAGE_SIZE_2M-1);
-
+    const size_t pageSize = hugepages ? PAGE_SIZE_2M : PAGE_SIZE_4K;
+    bytes = (bytes+pageSize-1) & ~(pageSize-1);
     if (munmap(ptr,bytes) == -1)
       throw std::bad_alloc();
   }
