@@ -132,7 +132,13 @@ namespace embree
   template<typename Index, typename Value, typename Func, typename Reduction>
     __forceinline Value parallel_reduce( const Index first, const Index last, const Value& identity, const Func& func, const Reduction& reduction )
   {
-    return parallel_reduce(first,last,Index(1),identity,func,reduction);
+    auto funcr = [&] ( const range<Index> r ) {
+      Value v = identity;
+      for (Index i=r.begin(); i<r.end(); i++)
+        v = reduction(v,func(i));
+      return v;
+    };
+    return parallel_reduce(first,last,Index(1),identity,funcr,reduction);
   }
 
   template<typename Index, typename Value, typename Func, typename Reduction>

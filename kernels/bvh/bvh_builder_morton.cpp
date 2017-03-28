@@ -41,21 +41,22 @@ namespace embree
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::NodeRecord NodeRecord;
       typedef typename BVH::AlignedNode AlignedNode;
 
       BVH* bvh;
       __forceinline SetBVHNBounds (BVH* bvh) : bvh(bvh) {}
 
-      __forceinline std::pair<NodeRef,BBox3fa> operator() (NodeRef ref, const std::pair<NodeRef,BBox3fa>* children, size_t num)
+      __forceinline NodeRecord operator() (NodeRef ref, const NodeRecord* children, size_t num)
       {
         AlignedNode* node = ref.alignedNode();
 
         BBox3fa res = empty;
         for (size_t i=0; i<num; i++) {
-          const BBox3fa b = children[i].second;
+          const BBox3fa b = children[i].bounds;
           res.extend(b);
-          node->set(i,children[i].first);
-          node->set(i,b);
+          node->setRef(i,children[i].ref);
+          node->setBounds(i,b);
         }
 
 #if ROTATE_TREE
@@ -63,11 +64,11 @@ namespace embree
         {
           size_t n = 0;
           for (size_t i=0; i<num; i++)
-            n += children[i].second.lower.a;
+            n += children[i].bounds.lower.a;
 
           if (n >= 4096) {
             for (size_t i=0; i<num; i++) {
-              if (children[i].second.lower.a < 4096) {
+              if (children[i].bounds.lower.a < 4096) {
                 for (int j=0; j<ROTATE_TREE; j++)
                   BVHNRotate<N>::rotate(node->child(i));
                 node->child(i).setBarrier();
@@ -78,7 +79,7 @@ namespace embree
         }
 #endif
 
-        return std::make_pair(ref,res);
+        return NodeRecord(ref,res);
       }
     };
 
@@ -90,11 +91,12 @@ namespace embree
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::NodeRecord NodeRecord;
 
       __forceinline CreateMortonLeaf (TriangleMesh* mesh, BVHBuilderMorton::BuildPrim* morton)
         : mesh(mesh), morton(morton) {}
 
-      __noinline std::pair<NodeRef,BBox3fa> operator() (const range<unsigned>& current, FastAllocator::ThreadLocal2* alloc)
+      __noinline NodeRecord operator() (const range<unsigned>& current, FastAllocator::ThreadLocal2* alloc)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
@@ -132,7 +134,7 @@ namespace embree
         if (N == 4)
           box_o.lower.a = unsigned(current.size());
 #endif
-        return std::make_pair(ref,box_o);
+        return NodeRecord(ref,box_o);
       }
     
     private:
@@ -145,11 +147,12 @@ namespace embree
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::NodeRecord NodeRecord;
 
       __forceinline CreateMortonLeaf (TriangleMesh* mesh, BVHBuilderMorton::BuildPrim* morton)
         : mesh(mesh), morton(morton) {}
       
-      __noinline std::pair<NodeRef,BBox3fa> operator() (const range<unsigned>& current, FastAllocator::ThreadLocal2* alloc)
+      __noinline NodeRecord operator() (const range<unsigned>& current, FastAllocator::ThreadLocal2* alloc)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
@@ -186,7 +189,7 @@ namespace embree
         if (N == 4)
           box_o.lower.a = current.size();
 #endif
-        return std::make_pair(ref,box_o);
+        return NodeRecord(ref,box_o);
       }
     private:
       TriangleMesh* mesh;
@@ -198,11 +201,12 @@ namespace embree
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::NodeRecord NodeRecord;
 
       __forceinline CreateMortonLeaf (TriangleMesh* mesh, BVHBuilderMorton::BuildPrim* morton)
         : mesh(mesh), morton(morton) {}
       
-      __noinline std::pair<NodeRef,BBox3fa> operator() (const range<unsigned>& current, FastAllocator::ThreadLocal2* alloc)
+      __noinline NodeRecord operator() (const range<unsigned>& current, FastAllocator::ThreadLocal2* alloc)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
@@ -251,7 +255,7 @@ namespace embree
         if (N == 4)
           box_o.lower.a = current.size();
 #endif
-        return std::make_pair(ref,box_o);
+        return NodeRecord(ref,box_o);
       }
     private:
       TriangleMesh* mesh;
@@ -263,11 +267,12 @@ namespace embree
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::NodeRecord NodeRecord;
 
       __forceinline CreateMortonLeaf (QuadMesh* mesh, BVHBuilderMorton::BuildPrim* morton)
         : mesh(mesh), morton(morton) {}
       
-      __noinline std::pair<NodeRef,BBox3fa> operator() (const range<unsigned>& current, FastAllocator::ThreadLocal2* alloc)
+      __noinline NodeRecord operator() (const range<unsigned>& current, FastAllocator::ThreadLocal2* alloc)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
@@ -307,7 +312,7 @@ namespace embree
         if (N == 4)
           box_o.lower.a = current.size();
 #endif
-        return std::make_pair(ref,box_o);
+        return NodeRecord(ref,box_o);
       }
     private:
       QuadMesh* mesh;
@@ -319,11 +324,12 @@ namespace embree
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::NodeRecord NodeRecord;
 
       __forceinline CreateMortonLeaf (AccelSet* mesh, BVHBuilderMorton::BuildPrim* morton)
         : mesh(mesh), morton(morton) {}
       
-      __noinline std::pair<NodeRef,BBox3fa> operator() (const range<unsigned>& current, FastAllocator::ThreadLocal2* alloc)
+      __noinline NodeRecord operator() (const range<unsigned>& current, FastAllocator::ThreadLocal2* alloc)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
@@ -350,7 +356,7 @@ namespace embree
         if (N == 4)
           box_o.lower.a = current.size();
 #endif
-        return std::make_pair(ref,box_o);
+        return NodeRecord(ref,box_o);
       }
     private:
       AccelSet* mesh;
@@ -377,6 +383,7 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::AlignedNode AlignedNode;
       typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::NodeRecord NodeRecord;
 
     public:
       
@@ -415,13 +422,13 @@ namespace embree
         SetBVHNBounds<N> setBounds(bvh);
         CreateMortonLeaf<N,Primitive> createLeaf(mesh,morton.data());
         CalculateMeshBounds<Mesh> calculateBounds(mesh);
-        auto root = BVHBuilderMorton::build<std::pair<NodeRef,BBox3fa>>(
+        auto root = BVHBuilderMorton::build<NodeRecord>(
           typename BVH::CreateAlloc(bvh), 
           typename BVH::AlignedNode::Create(),
           setBounds,createLeaf,calculateBounds,bvh->scene->progressInterface,
           morton.data(),dest,numPrimitivesGen,settings);
         
-        bvh->set(root.first,LBBox3fa(root.second),numPrimitives);
+        bvh->set(root.ref,LBBox3fa(root.bounds),numPrimitives);
         
 #if ROTATE_TREE
         if (N == 4)

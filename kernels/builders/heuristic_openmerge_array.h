@@ -521,13 +521,8 @@ namespace embree
           const unsigned int splitDim = split.dim;
           const unsigned int splitDimMask = (unsigned int)1 << splitDim; 
 
-#if defined(__AVX512F__)
-          const vint16 vSplitPos(splitPos);
-          const vbool16 vSplitMask( splitDimMask );
-#else
           const vint4 vSplitPos(splitPos);
           const vbool4 vSplitMask( (int)splitDimMask );
-#endif
 
           size_t center = serial_partitioning(prims0,
                                               begin,end,local_left,local_right,
@@ -565,13 +560,8 @@ namespace embree
           const unsigned int splitDim = split.dim;
           const unsigned int splitDimMask = (unsigned int)1 << splitDim;
 
-#if defined(__AVX512F__)
-          const vint16 vSplitPos(splitPos);
-          const vbool16 vSplitMask( (int)splitDimMask );
-#else
           const vint4 vSplitPos(splitPos);
           const vbool4 vSplitMask( (int)splitDimMask );
-#endif
           auto isLeft = [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask); };
 
           const size_t center = parallel_partitioning(

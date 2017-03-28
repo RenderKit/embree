@@ -91,11 +91,12 @@ namespace embree
         typedef BVHN<N> BVH;
         typedef typename BVH::AlignedNodeMB AlignedNodeMB;
         typedef typename BVH::NodeRef NodeRef;
+        typedef typename BVH::NodeRecordMB NodeRecordMB;
         typedef FastAllocator::ThreadLocal2 Allocator;
       
         struct BVHNBuilderV {
-          std::tuple<NodeRef,LBBox3fa> build(FastAllocator* allocator, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings);
-          virtual std::pair<NodeRef,LBBox3fa> createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) = 0;
+          NodeRecordMB build(FastAllocator* allocator, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings);
+          virtual NodeRecordMB createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) = 0;
         };
 
         template<typename CreateLeafFunc>
@@ -104,7 +105,7 @@ namespace embree
           BVHNBuilderT (CreateLeafFunc createLeafFunc)
             : createLeafFunc(createLeafFunc) {}
 
-          std::pair<NodeRef,LBBox3fa> createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) {
+          NodeRecordMB createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) {
             return createLeafFunc(current,alloc);
           }
 
@@ -113,7 +114,7 @@ namespace embree
         };
 
         template<typename CreateLeafFunc>
-        static std::tuple<NodeRef,LBBox3fa> build(FastAllocator* allocator, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings) {
+        static NodeRecordMB build(FastAllocator* allocator, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings) {
           return BVHNBuilderT<CreateLeafFunc>(createLeaf).build(allocator,progress,prims,pinfo,settings);
         }
       };

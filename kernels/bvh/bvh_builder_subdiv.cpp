@@ -40,7 +40,7 @@ namespace embree
     typedef FastAllocator::ThreadLocal2 Allocator;
 
     template<int N>
-    struct BVHNSubdivPatch1EagerBuilderBinnedSAHClass : public Builder
+    struct BVHNSubdivPatch1EagerBuilderSAH : public Builder
     {
       ALIGNED_STRUCT;
 
@@ -52,7 +52,7 @@ namespace embree
       mvector<PrimRef> prims;
       ParallelForForPrefixSumState<PrimInfo> pstate;
       
-      BVHNSubdivPatch1EagerBuilderBinnedSAHClass (BVH* bvh, Scene* scene)
+      BVHNSubdivPatch1EagerBuilderSAH (BVH* bvh, Scene* scene)
         : bvh(bvh), scene(scene), prims(scene->device) {}
 
 #define SUBGRID 9
@@ -106,7 +106,7 @@ namespace embree
         bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef));
 
 
-        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1EagerBuilderBinnedSAH");
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1EagerBuilderSAH");
 
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(double(dn)); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
@@ -206,12 +206,13 @@ namespace embree
 
 
     template<int N, bool mblur>
-    struct BVHNSubdivPatch1CachedBuilderBinnedSAHClass : public Builder, public BVHNRefitter<N>::LeafBoundsInterface
+    struct BVHNSubdivPatch1CachedBuilderSAH : public Builder, public BVHNRefitter<N>::LeafBoundsInterface
     {
       ALIGNED_STRUCT;
 
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::NodeRecordMB NodeRecordMB;
       typedef typename BVHN<N>::Allocator BVH_Allocator;
 
       BVH* bvh;
@@ -224,7 +225,7 @@ namespace embree
       size_t numSubdivEnableDisableEvents;
       bool cached;
 
-      BVHNSubdivPatch1CachedBuilderBinnedSAHClass (BVH* bvh, Scene* scene, bool cached)
+      BVHNSubdivPatch1CachedBuilderSAH (BVH* bvh, Scene* scene, bool cached)
         : bvh(bvh), refitter(nullptr), scene(scene), numTimeSteps(0), prims(scene->device), bounds(scene->device), numSubdivEnableDisableEvents(0), cached(cached) {}
       
       virtual const BBox3fa leafBounds (NodeRef& ref) const
@@ -422,7 +423,7 @@ namespace embree
           size_t num_bvh_primitives = 0;
           for (size_t t=0; t<numTimeSegments; t++)
           {
-            auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> std::pair<NodeRef,LBBox3fa> {
+            auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> NodeRecordMB {
               assert(current.prims.size() == 1);
               const size_t patchIndexMB = prims[current.prims.begin()].ID();
               SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+0];
@@ -430,7 +431,7 @@ namespace embree
               size_t patchNumTimeSteps = scene->get<SubdivMesh>(patch.geom)->numTimeSteps;
               LBBox3fa lbounds = Geometry::linearBounds([&] (size_t itime) { return bounds[patchIndexMB+itime]; },
                                                         t, numTimeSteps, patchNumTimeSteps);
-              return std::make_pair(ref,lbounds);
+              return NodeRecordMB(ref,lbounds);
             };
 
             /* create primrefs */
@@ -446,8 +447,10 @@ namespace embree
             settings.singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD;
 
             /* call BVH builder */
-            NodeRef root; LBBox3fa tbounds;
-            std::tie(root, tbounds) = BVHNBuilderMblurVirtual<N>::build(&bvh->alloc,createLeaf,bvh->scene->progressInterface,prims.data(),pinfo,settings);
+            auto rootRecord = BVHNBuilderMblurVirtual<N>::build(&bvh->alloc,createLeaf,bvh->scene->progressInterface,prims.data(),pinfo,settings);
+            NodeRef root = rootRecord.ref;
+            LBBox3fa tbounds = rootRecord.lbounds;
+
             roots[t] = root;
             boxes[t+0] = tbounds.bounds0;
             boxes[t+1] = tbounds.bounds1;
@@ -519,7 +522,7 @@ namespace embree
           return;
         }
 
-        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1" + (mblur ? "MBlur" : "") + (cached ? "Cached" : "") + "BuilderBinnedSAH");
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1" + (cached ? "Cached" : "") + (mblur ? "MB" : "") + "BuilderSAH");
         
         /* calculate number of primitives (some patches need initial subdivision) */
         size_t numSubPatches, numSubPatchesMB;
@@ -557,9 +560,9 @@ namespace embree
     };
     
     /* entry functions for the scene builder */
-    Builder* BVH4SubdivPatch1EagerBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1EagerBuilderBinnedSAHClass<4>((BVH4*)bvh,scene); }
-    Builder* BVH4SubdivPatch1CachedBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedBuilderBinnedSAHClass<4,false>((BVH4*)bvh,scene,mode); }
-    Builder* BVH4SubdivPatch1MBlurCachedBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedBuilderBinnedSAHClass<4,true>((BVH4*)bvh,scene,mode); }
+    Builder* BVH4SubdivPatch1EagerBuilderSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1EagerBuilderSAH<4>((BVH4*)bvh,scene); }
+    Builder* BVH4SubdivPatch1CachedBuilderSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedBuilderSAH<4,false>((BVH4*)bvh,scene,mode); }
+    Builder* BVH4SubdivPatch1CachedMBBuilderSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedBuilderSAH<4,true>((BVH4*)bvh,scene,mode); }
   }
 }
 #endif

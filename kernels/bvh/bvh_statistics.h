@@ -246,6 +246,10 @@ namespace embree
                           a.statQuantizedNodes + b.statQuantizedNodes);
       }
 
+      static Statistics add ( const Statistics& a, const Statistics& b ) {
+        return a+b;
+      }
+
     public:
       size_t depth;
       LeafStat statLeaf;

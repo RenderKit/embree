@@ -36,7 +36,7 @@ namespace embree
       typedef std::ptrdiff_t difference_type;
       
       __forceinline aligned_monitored_allocator(MemoryMonitorInterface* device) 
-        : device(device) {}
+        : device(device), hugepages(false) {}
 
       __forceinline pointer allocate( size_type n ) 
       {
@@ -47,7 +47,7 @@ namespace embree
 #if defined(__LINUX__) && defined(__AVX512ER__) // KNL
         if (n*sizeof(value_type) >= 14 * PAGE_SIZE_2M)
         {
-          pointer p =  (pointer) os_malloc(n*sizeof(value_type));
+          pointer p =  (pointer) os_malloc(n*sizeof(value_type),hugepages);
           assert(p);
           return p;
         }
@@ -61,7 +61,7 @@ namespace embree
         {
 #if defined(__LINUX__) && defined(__AVX512ER__) // KNL
           if (n*sizeof(value_type) >= 14 * PAGE_SIZE_2M)
-            os_free(p,n*sizeof(value_type)); 
+            os_free(p,n*sizeof(value_type),hugepages); 
           else
             alignedFree(p);
 #else
@@ -86,6 +86,7 @@ namespace embree
 
     private:
       MemoryMonitorInterface* device;
+      bool hugepages;
     };
 }
 

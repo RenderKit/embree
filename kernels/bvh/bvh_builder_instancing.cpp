@@ -475,7 +475,7 @@ namespace embree
         TransformNode* child = n->child(c).transformNode();
         numCollapsedTransformNodes--;
         const BBox3fa cbounds = child->localBounds;
-        n->set(c,cbounds,child->child);
+        n->set(c,child->child,cbounds);
         bounds.extend(cbounds);
       }
       numCollapsedTransformNodes++;

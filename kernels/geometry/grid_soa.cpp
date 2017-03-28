@@ -141,8 +141,8 @@ namespace embree
         BBox3fa bounds( empty );
         for (unsigned i=0; i<children; i++)
         {
-          BBox3fa box = buildBVH( node->child(i), time, r[i], allocator);
-          node->set(i,box);
+          BBox3fa box = buildBVH(node->child(i), time, r[i], allocator);
+          node->setBounds(i,box);
           bounds.extend(box);
         }
         
@@ -192,7 +192,7 @@ namespace embree
         for (unsigned i=0; i<children; i++)
         {
           LBBox3fa box = buildMBlurBVH(node->child(i), time, r[i], allocator);
-          node->set(i, box);
+          node->setBounds(i, box);
           bounds.extend(box);
         }
         
