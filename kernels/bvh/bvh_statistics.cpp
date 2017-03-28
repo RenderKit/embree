@@ -112,14 +112,15 @@ namespace embree
     else if (node.isAlignedNodeMB4D())
     {
       AlignedNodeMB4D* n = node.alignedNodeMB4D();
-      for (size_t i=0; i<N; i++) {
-        if (n->child(i) == BVH::emptyNode) continue;
-        s.statAlignedNodesMB4D.numChildren++;
-        const BBox1f t0t1i = intersect(t0t1,n->timeRange(i));
-        assert(!t0t1i.empty());
-        const double Ai = n->AlignedNodeMB::expectedHalfArea(i,t0t1i);
-        s = s + statistics(n->child(i),Ai,t0t1i);
-      }
+      s = s + parallel_reduce(0,N,Statistics(),[&] ( const int i ) {
+          if (n->child(i) == BVH::emptyNode) return Statistics();
+          const BBox1f t0t1i = intersect(t0t1,n->timeRange(i));
+          assert(!t0t1i.empty());
+          const double Ai = n->AlignedNodeMB::expectedHalfArea(i,t0t1i);
+          Statistics s =  statistics(n->child(i),Ai,t0t1i);
+          s.statAlignedNodesMB4D.numChildren++;
+          return s;
+        }, Statistics::add);
       s.statAlignedNodesMB4D.numNodes++;
       s.statAlignedNodesMB4D.nodeSAH += dt*A;
       s.depth++;
