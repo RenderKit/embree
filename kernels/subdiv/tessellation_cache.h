@@ -141,6 +141,7 @@ namespace embree
  private:
 
    float *data;
+   bool hugepages;
    size_t size;
    size_t maxBlocks;
    ThreadWorkState *threadWorkState;

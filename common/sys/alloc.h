@@ -79,9 +79,9 @@ namespace embree
   /*! allocates pages directly from OS */
   bool win_enable_selockmemoryprivilege(bool verbose);
   bool os_init(bool hugepages, bool verbose);
-  void* os_malloc (size_t bytes, bool* hugepages = nullptr);
+  void* os_malloc (size_t bytes, bool& hugepages);
   size_t os_shrink (void* ptr, size_t bytesNew, size_t bytesOld, bool hugepages);
-  void  os_free   (void* ptr, size_t bytes);
+  void  os_free   (void* ptr, size_t bytes, bool hugepages);
   void  os_advise (void* ptr, size_t bytes);
 
   /*! allocator that performs OS allocations */
@@ -96,12 +96,15 @@ namespace embree
       typedef std::size_t size_type;
       typedef std::ptrdiff_t difference_type;
 
+      __forceinline os_allocator () 
+        : hugepages(false) {}
+
       __forceinline pointer allocate( size_type n ) {
-        return (pointer) os_malloc(n*sizeof(value_type));
+        return (pointer) os_malloc(n*sizeof(value_type),hugepages);
       }
 
       __forceinline void deallocate( pointer p, size_type n ) {
-        return os_free(p,n*sizeof(value_type));
+        return os_free(p,n*sizeof(value_type),hugepages);
       }
 
       __forceinline void construct( pointer p, const_reference val ) {
@@ -111,6 +114,8 @@ namespace embree
       __forceinline void destroy( pointer p ) {
         p->~T();
       }
+
+      bool hugepages;
     };
 
   /*! allocator for IDs */

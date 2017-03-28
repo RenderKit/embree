@@ -510,7 +510,7 @@ namespace embree
             /* full 2M alignment for very first block using os_malloc */
             if (next == NULL) {
               if (device) device->memoryMonitor(bytesAllocate,false);
-              bool huge_pages; ptr = os_malloc(bytesReserve,&huge_pages);
+              bool huge_pages; ptr = os_malloc(bytesReserve,huge_pages);
               return new (ptr) Block(OS_MALLOC,bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next,0,huge_pages);
             }
             
@@ -537,7 +537,7 @@ namespace embree
         else if (atype == OS_MALLOC)
         {
           if (device) device->memoryMonitor(bytesAllocate,false);
-          bool huge_pages; ptr = os_malloc(bytesReserve,&huge_pages);
+          bool huge_pages; ptr = os_malloc(bytesReserve,huge_pages);
           return new (ptr) Block(OS_MALLOC,bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next,0,huge_pages);
         }
         else
@@ -584,7 +584,7 @@ namespace embree
 
         else if (atype == OS_MALLOC) {
          size_t sizeof_This = sizeof_Header+reserveEnd;
-         os_free(this,sizeof_This);
+         os_free(this,sizeof_This,huge_pages);
          if (device) device->memoryMonitor(-sizeof_Alloced,true);
         } 
 
