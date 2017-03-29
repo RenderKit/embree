@@ -58,10 +58,10 @@ namespace embree
         assert(alloc_i);
         if (alloc == alloc_i) return;
         Lock<SpinLock> lock(mutex);
-        if (alloc == alloc_i) return;
+        //if (alloc == alloc_i) return; // not required as only one thread calls bind
         if (alloc) {
-          //alloc->bytesUsed += bytesUsed;
-          //alloc->bytesWasted += bytesWasted; // FIXME: add slack
+          alloc->bytesUsed += bytesUsed;
+          alloc->bytesWasted += bytesWasted; // FIXME: add slack
         }
         ptr = nullptr;
 	cur = end = 0;
@@ -77,9 +77,9 @@ namespace embree
         assert(alloc_i);
         if (alloc != alloc_i) return;
         Lock<SpinLock> lock(mutex);
-        if (alloc != alloc_i) return;
-        //alloc->bytesUsed += bytesUsed;
-        //alloc->bytesWasted += bytesWasted; // FIXME: add slack
+        if (alloc != alloc_i) return; // required as a different thread calls unbind
+        alloc->bytesUsed += bytesUsed;
+        alloc->bytesWasted += bytesWasted; // FIXME: add slack
         ptr = nullptr;
 	cur = end = 0;
 	bytesWasted = 0;
@@ -271,11 +271,11 @@ namespace embree
       __forceinline CachedAllocator(FastAllocator* alloc, ThreadLocal* talloc)
       : alloc(alloc), talloc(talloc) {}
 
-      __forceinline void* operator() (size_t bytes, size_t align = 16) {
+      __forceinline void* operator() (size_t bytes, size_t align = 16) const {
         return talloc->malloc(alloc,bytes,align);
       }
 
-      __forceinline void* malloc (size_t bytes, size_t align = 16) {
+      __forceinline void* malloc (size_t bytes, size_t align = 16) const {
         return talloc->malloc(alloc,bytes,align);
       }
 
