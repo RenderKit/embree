@@ -213,11 +213,10 @@ namespace embree
     __forceinline ThreadLocal2* threadLocal2() 
     {
       ThreadLocal2* alloc = thread_local_allocator2;
-      if (alloc == nullptr) 
-        thread_local_allocator2 = alloc = new ThreadLocal2;
-      //join(&alloc);
+      if (alloc == nullptr) thread_local_allocator2 = alloc = new ThreadLocal2;
       return alloc;
     }
+
   public:
 
     __forceinline void join(ThreadLocal2* alloc)
