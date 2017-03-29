@@ -69,6 +69,7 @@ namespace embree
         bytesUsed = 0;
         alloc = alloc_i;
         allocBlockSize = alloc->defaultBlockSize;
+        alloc->join(this);
       }
 
       /*! unbind to fast allocator */
@@ -220,12 +221,14 @@ namespace embree
       ThreadLocal2* alloc = thread_local_allocator2;
       if (alloc == nullptr) 
         thread_local_allocator2 = alloc = new ThreadLocal2;
+      return alloc;
+    }
+  public:
 
-      alloc->bind(this);
-      
+    __forceinline void join(ThreadLocal* alloc)
+    {
       Lock<SpinLock> lock(thread_local_allocators_lock);
       thread_local_allocators.push_back(alloc);
-      return alloc;
     }
 
   public:
@@ -805,7 +808,7 @@ namespace embree
     std::atomic<size_t> bytesWasted;          //!< number of total wasted bytes
     static __thread ThreadLocal2* thread_local_allocator2;
     SpinLock thread_local_allocators_lock;
-    std::vector<ThreadLocal2*> thread_local_allocators;
+    std::vector<ThreadLocal*> thread_local_allocators;
     AllocationType atype;
     mvector<PrimRef> primrefarray;     //!< primrefarray used to allocate nodes
   };
