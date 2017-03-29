@@ -430,6 +430,7 @@ namespace embree
         if (usedBlocks) bytesReserved += usedBlocks->getTotalReservedBytes(atype,huge_pages);
         if (freeBlocks) bytesFree += freeBlocks->getTotalAllocatedBytes(atype,huge_pages);
         if (usedBlocks) bytesFree += usedBlocks->getFreeBytes(atype,huge_pages);  
+        
       }
 
       std::string str(size_t numPrimitives) 
@@ -439,6 +440,7 @@ namespace embree
         str << "allocated = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesAllocated << " MB, "
             << "reserved = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesReserved << " MB, "
             << "free = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesFree << "(" << std::setw(6) << std::setprecision(2) << 100.0f*bytesFree/bytesAllocated << "%), "
+            << "total = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesAllocatedTotal() << " MB, "
             << "#bytes/prim = " << std::setw(6) << std::setprecision(2) << double(bytesAllocated+bytesFree)/double(numPrimitives);
         return str.str();
       }
@@ -448,6 +450,10 @@ namespace embree
         return Statistics(a.bytesAllocated+b.bytesAllocated,
                           a.bytesReserved+b.bytesReserved,
                           a.bytesFree+b.bytesFree);
+      }
+
+      size_t bytesAllocatedTotal() const {
+        return bytesAllocated + bytesFree;
       }
       
     public:
@@ -515,8 +521,8 @@ namespace embree
       {
         std::cout << "  total : " << stat_all.str(numPrimitives);
         printf(", used = %3.3f MB (%3.2f%%), wasted = %3.3f MB (%3.2f%%)\n",
-               1E-6f*bytesUsed, 100.0f*bytesUsed/stat_all.bytesAllocated,
-               1E-6f*bytesWasted, 100.0f*bytesWasted/stat_all.bytesAllocated);
+               1E-6f*bytesUsed, 100.0f*bytesUsed/stat_all.bytesAllocatedTotal(),
+               1E-6f*bytesWasted, 100.0f*bytesWasted/stat_all.bytesAllocatedTotal());
         std::cout << "  4K    : " << stat_4K.str(numPrimitives) << std::endl;
         std::cout << "  2M    : " << stat_2M.str(numPrimitives) << std::endl;
         std::cout << "  malloc: " << stat_malloc.str(numPrimitives) << std::endl;
