@@ -46,11 +46,8 @@ namespace embree
     public:
 
       /*! Constructor for usage with ThreadLocalData */
-      __forceinline ThreadLocal (FastAllocator* alloc = nullptr) 
-	: alloc(alloc), ptr(nullptr), cur(0), end(0), allocBlockSize(0), bytesUsed(0), bytesWasted(0) 
-      {
-        if (alloc) allocBlockSize = alloc->defaultBlockSize;
-      }
+      __forceinline ThreadLocal () 
+	: alloc(nullptr), ptr(nullptr), cur(0), end(0), allocBlockSize(0), bytesUsed(0), bytesWasted(0) {}
 
       /*! bind to fast allocator */
       void bind(FastAllocator* alloc_i) 
@@ -138,19 +135,18 @@ namespace embree
       }
 
       /*! returns amount of used bytes */
-      size_t getUsedBytes() const { return bytesUsed; }
+      __forceinline size_t getUsedBytes() const { return bytesUsed; }
       
       /*! returns amount of wasted bytes */
-      size_t getWastedBytes() const { return bytesWasted + (end-cur); }
+      __forceinline size_t getWastedBytes() const { return bytesWasted + (end-cur); }
 
-    public:
+    private:
+      SpinLock mutex;        //!< required as unbind is called from other threads
       FastAllocator* alloc;  //!< parent allocator
       char*  ptr;            //!< pointer to memory block
       size_t cur;            //!< current location of the allocator
       size_t end;            //!< end of the memory block
       size_t allocBlockSize; //!< block size for allocations
-    private:
-      SpinLock mutex;        //!< required as unbind is called from other threads
       size_t bytesUsed;      //!< number of total bytes allocated
       size_t bytesWasted;    //!< number of bytes wasted
     };
