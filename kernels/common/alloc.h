@@ -533,22 +533,17 @@ namespace embree
       Statistics stat_shared;
     };
 
-    void print_statistics(bool verbose, size_t numPrimitives)
+    void print_blocks()
     {
       std::cout << "  slotMask = " << slotMask << ", use_single_mode = " << use_single_mode << ", defaultBlockSize = " << defaultBlockSize << std::endl;
-      AllStatistics stat(this);
-      stat.print(numPrimitives);
+
+      std::cout << "  used blocks = ";
+      if (usedBlocks.load() != nullptr) usedBlocks.load()->print_list();
+      std::cout << "[END]" << std::endl;
       
-      if (verbose) 
-      {
-        std::cout << "  used blocks = ";
-        if (usedBlocks.load() != nullptr) usedBlocks.load()->print_list();
-        std::cout << "[END]" << std::endl;
-        
-        std::cout << "  free blocks = ";
-        if (freeBlocks.load() != nullptr) freeBlocks.load()->print_list();
-        std::cout << "[END]" << std::endl;
-      }
+      std::cout << "  free blocks = ";
+      if (freeBlocks.load() != nullptr) freeBlocks.load()->print_list();
+      std::cout << "[END]" << std::endl;
     }
 
   private:
