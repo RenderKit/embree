@@ -154,26 +154,6 @@ namespace embree
     {
       ALIGNED_CLASS_(64);
     public:
-
-      /*! Constructor for usage with ThreadLocalData */
-      __forceinline ThreadLocal2 (FastAllocator* alloc = nullptr) 
-        : alloc0(alloc), alloc1(alloc) {}
-
-      /*! bind to fast allocator */
-      void bind(FastAllocator* alloc) 
-      {
-        alloc0.bind(alloc);
-        alloc1.bind(alloc);
-      }
-      
-      /*! unbind from fast allocator */
-      void unbind(FastAllocator* alloc) 
-      {
-        alloc0.unbind(alloc);
-        alloc1.unbind(alloc);
-      }
-      
-    public:  
       ThreadLocal alloc0;
       ThreadLocal alloc1;
     };
