@@ -60,8 +60,9 @@ namespace embree
         Lock<SpinLock> lock(mutex);
         //if (alloc == alloc_i) return; // not required as only one thread calls bind
         if (alloc) {
+          assert(cur<=end);
           alloc->bytesUsed += bytesUsed;
-          alloc->bytesWasted += bytesWasted; // FIXME: add slack
+          alloc->bytesWasted += bytesWasted + (end-cur);
         }
         ptr = nullptr;
 	cur = end = 0;
@@ -79,8 +80,9 @@ namespace embree
         if (alloc != alloc_i) return;
         Lock<SpinLock> lock(mutex);
         if (alloc != alloc_i) return; // required as a different thread calls unbind
+        assert(cur<=end);
         alloc->bytesUsed += bytesUsed;
-        alloc->bytesWasted += bytesWasted; // FIXME: add slack
+        alloc->bytesWasted += bytesWasted + (end-cur);
         ptr = nullptr;
 	cur = end = 0;
 	bytesWasted = 0;
