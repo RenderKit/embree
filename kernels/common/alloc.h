@@ -89,11 +89,6 @@ namespace embree
       }
       
       /* Allocate aligned memory from the threads memory block. */
-      //__forceinline void* operator() (size_t bytes, size_t align = 16) {
-      //  return malloc(bytes,align);
-      //}
-
-      /* Allocate aligned memory from the threads memory block. */
       __forceinline void* malloc(FastAllocator* alloc_i, size_t bytes, size_t align = 16) 
       {
         bind(alloc_i);
@@ -141,12 +136,6 @@ namespace embree
         return nullptr;
       }
 
-      /*! returns amount of used bytes */
-      //size_t getUsedBytes() const { return bytesUsed; }
-      
-      /*! returns amount of wasted bytes */
-      //size_t getWastedBytes() const { return bytesWasted + (end-cur); }
-
     public:
       FastAllocator* alloc;  //!< parent allocator
       char*  ptr;            //!< pointer to memory block
@@ -192,12 +181,6 @@ namespace embree
         allocators[1].unbind(alloc);
       }
       
-      /*! returns amount of used bytes */
-      //size_t getUsedBytes() const { return allocators[0].getUsedBytes() + allocators[1].getUsedBytes(); }
-      
-      /*! returns amount of wasted bytes */
-      //size_t getWastedBytes() const { return allocators[0].getWastedBytes() + allocators[1].getWastedBytes(); }
-    
     public:  
       ThreadLocal* alloc0;
       ThreadLocal* alloc1;
