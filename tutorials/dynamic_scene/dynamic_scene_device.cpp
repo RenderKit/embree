@@ -177,7 +177,7 @@ void animateSphere (int taskIndex, int threadIndex, Vertex* vertices,
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
+Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   /* initialize ray */
   RTCRay ray;
@@ -192,6 +192,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
+  RayStats_addRay(stats);
 
   /* shade pixels */
   Vec3fa color = Vec3fa(0.0f);
@@ -214,6 +215,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 
     /* trace shadow ray */
     rtcOccluded(g_scene,shadow);
+    RayStats_addShadowRay(stats);
 
     /* add light contribution */
     if (shadow.geomID)
@@ -243,7 +245,7 @@ void renderTileStandard(int taskIndex,
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixelStandard((float)x,(float)y,camera);
+    Vec3fa color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));

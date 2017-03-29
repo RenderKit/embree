@@ -147,4 +147,21 @@ Vec3fa  getTextureTexel3f(const Texture* texture, float u, float v);
 
 enum ISPCInstancingMode { ISPC_INSTANCING_NONE, ISPC_INSTANCING_GEOMETRY, ISPC_INSTANCING_GEOMETRY_GROUP, ISPC_INSTANCING_SCENE_GEOMETRY, ISPC_INSTANCING_SCENE_GROUP };
 
+/* ray statistics */
+struct RayStats
+{
+  int numRays;
+  int pad[32-1];
+};
+
+#if defined(ISPC)
+inline void RayStats_addRay(RayStats& stats)       { stats.numRays += popcnt(lanemask()); }
+inline void RayStats_addShadowRay(RayStats& stats) { stats.numRays += popcnt(lanemask()); }
+#else
+__forceinline void RayStats_addRay(RayStats& stats)        { stats.numRays++; }
+__forceinline void RayStats_addShadowRay(RayStats& stats)  { stats.numRays++; }
+#endif
+
+extern "C" RayStats* g_stats;
+
 } // namespace embree

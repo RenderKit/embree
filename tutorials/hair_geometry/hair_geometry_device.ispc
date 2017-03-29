@@ -288,7 +288,7 @@ Vec3f occluded(RTCScene scene, RTCRay2& ray)
 }
 
 /* task that renders a single screen tile */
-Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
+Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   RandomSampler sampler;
   RandomSampler_init(sampler, (int)x, (int)y, g_accu_count);
@@ -320,6 +320,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 
     /* intersect ray with scene and gather all hits */
     rtcIntersect(g_scene,*((varying RTCRay*)&ray));
+    RayStats_addRay(stats);
 
     /* exit if we hit environment */
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
@@ -366,6 +367,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
     shadow.tfar = inf;
     shadow.time = time;
     Vec3f T = occluded(g_scene,shadow);
+    RayStats_addShadowRay(stats);
     Vec3f c = AnisotropicBlinn__eval(&brdf,neg(ray.dir),neg(make_Vec3f(g_dirlight_direction)));
     color = color + weight*c*T*make_Vec3f(g_dirlight_intensity);
 
@@ -427,7 +429,7 @@ void renderTileStandard(uniform int taskIndex,
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixelStandard((float)x,(float)y,camera);
+    Vec3f color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     Vec3fa accu_color = g_accu[y*width+x] + make_Vec3fa(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;

@@ -340,6 +340,8 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
     const unsigned int y0 = tileY * TILE_SIZE_Y;
     const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
+    RayStats& stats = g_stats[threadIndex];
+
     RTCRay rays[TILE_SIZE_X*TILE_SIZE_Y];
 
     /* generate stream of primary rays */
@@ -360,6 +362,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
         ray.primID = RTC_INVALID_GEOMETRY_ID;
         ray.mask = -1;
         ray.time = 0.0f;
+        RayStats_addRay(stats);
       }
 
     RTCIntersectContext context;
@@ -426,6 +429,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
           ray.primID = RTC_INVALID_GEOMETRY_ID;
           ray.mask = 0;
           ray.time = 0.0f;
+          RayStats_addShadowRay(stats);
         }
         /* trace shadow rays */
         rtcOccluded1M(g_scene,&context,rays,N,sizeof(RTCRay));

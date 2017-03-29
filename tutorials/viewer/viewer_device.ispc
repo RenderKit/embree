@@ -240,7 +240,7 @@ inline Vec3f face_forward(const Vec3f& dir, const Vec3f& _Ng) {
 }
 
 /* task that renders a single screen tile */
-Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
+Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   /* initialize sampler */
   RandomSampler sampler;
@@ -261,6 +261,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
   uniform RTCIntersectContext context;
   context.flags = g_iflags;
   rtcIntersectEx(g_scene,&context,ray);
+  RayStats_addRay(stats);
 
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
@@ -324,7 +325,7 @@ void renderTileStandard(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    Vec3f color = renderPixelStandard((float)x,(float)y,camera);
+    Vec3f color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));

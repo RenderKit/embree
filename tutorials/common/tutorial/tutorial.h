@@ -149,6 +149,7 @@ namespace embree
     bool print_frame_rate;
     Averaged<double> avg_render_time;
     Averaged<double> avg_frame_time;
+    Averaged<double> avg_mray;
     bool print_camera;
 
     int debug0;
@@ -157,6 +158,11 @@ namespace embree
     int debug3;
 
     std::unique_ptr<ISPCScene> ispc_scene;
+
+  private:
+    /* ray statistics */
+    void initRayStats();
+    int64_t getNumRays();
      
   public:
     static TutorialApplication* instance;

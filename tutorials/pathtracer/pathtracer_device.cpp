@@ -1304,7 +1304,7 @@ void occlusionFilterHair(void* ptr, RTCRay& ray)
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
 }
 
-Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCCamera& camera)
+Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCCamera& camera, RayStats& stats)
 {
   /* radiance accumulator and weight */
   Vec3fa L = Vec3fa(0.0f);
@@ -1329,6 +1329,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
     RTCIntersectContext context;
     context.flags = g_iflags;
     rtcIntersect1Ex(g_scene,&context,ray);
+    RayStats_addRay(stats);
     const Vec3fa wo = neg(ray.dir);
 
     /* invoke environment lights if nothing hit */
@@ -1394,6 +1395,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
       if (ls.pdf <= 0.0f) continue;
       RTCRay shadow = RTCRay(dg.P,ls.dir,dg.tnear_eps,ls.dist,time); shadow.transparency = Vec3fa(1.0f);
       rtcOccluded1Ex(g_scene,&context,shadow);
+      RayStats_addShadowRay(stats);
       //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       if (max(max(shadow.transparency.x,shadow.transparency.y),shadow.transparency.z) > 0.0f)
         L = L + Lw*ls.weight*shadow.transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,ls.dir);
@@ -1411,7 +1413,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
+Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   RandomSampler sampler;
 
@@ -1424,7 +1426,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
     /* calculate pixel color */
     float fx = x + RandomSampler_get1D(sampler);
     float fy = y + RandomSampler_get1D(sampler);
-    L = L + renderPixelFunction(fx,fy,sampler,camera);
+    L = L + renderPixelFunction(fx,fy,sampler,camera,stats);
   }
   L = L*(1.0f/SAMPLES_PER_PIXEL);
   return L;
@@ -1451,7 +1453,7 @@ void renderTileStandard(int taskIndex,
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixelStandard((float)x,(float)y,camera);
+    Vec3fa color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     Vec3fa accu_color = g_accu[y*width+x] + Vec3fa(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;

@@ -102,7 +102,7 @@ void occlusionFilter(void* ptr, RTCRay2& ray)
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
+Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   float weight = 1.0f;
   Vec3fa color = Vec3fa(0.0f);
@@ -123,6 +123,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
   {
     /* intersect ray with scene */
     rtcIntersect(g_scene,*((RTCRay*)&primary));
+    RayStats_addRay(stats);
 
     /* shade pixels */
     if (primary.geomID == RTC_INVALID_GEOMETRY_ID)
@@ -150,6 +151,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 
     /* trace shadow ray */
     rtcOccluded(g_scene,*((RTCRay*)&shadow));
+    RayStats_addShadowRay(stats);
 
     /* add light contribution */
     if (shadow.geomID) {
@@ -189,7 +191,7 @@ void renderTileStandard(int taskIndex,
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixelStandard((float)x,(float)y,camera);
+    Vec3fa color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -383,6 +385,8 @@ void renderTileStandardStream(int taskIndex,
   const unsigned int y0 = tileY * TILE_SIZE_Y;
   const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
+  RayStats& stats = g_stats[threadIndex];
+
   RTCRay2 primary_stream[TILE_SIZE_X*TILE_SIZE_Y];
   RTCRay2 shadow_stream[TILE_SIZE_X*TILE_SIZE_Y];
   Vec3fa color_stream[TILE_SIZE_X*TILE_SIZE_Y];
@@ -420,6 +424,7 @@ void renderTileStandardStream(int taskIndex,
     primary.time = 0.0f;
     primary.transparency = 0.0f;
     N++;
+    RayStats_addRay(stats);
   }
 
   Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
@@ -477,6 +482,7 @@ void renderTileStandardStream(int taskIndex,
       shadow.transparency = 1.0f;
       shadow.firstHit = 0;
       shadow.lastHit = 0;
+      RayStats_addShadowRay(stats);
     }
     N++;
 
@@ -525,6 +531,7 @@ void renderTileStandardStream(int taskIndex,
       primary.geomID = RTC_INVALID_GEOMETRY_ID;
       primary.primID = RTC_INVALID_GEOMETRY_ID;
       primary.transparency = 0.0f;
+      RayStats_addRay(stats);
     }
     N++;
   }

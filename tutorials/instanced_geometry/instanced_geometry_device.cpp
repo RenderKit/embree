@@ -182,7 +182,7 @@ extern "C" void device_init (char* cfg)
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
+Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   /* initialize ray */
   RTCRay ray;
@@ -198,6 +198,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
+  RayStats_addRay(stats);
 
   /* shade pixels */
   Vec3fa color = Vec3fa(0.0f);
@@ -229,6 +230,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 
     /* trace shadow ray */
     rtcOccluded(g_scene,shadow);
+    RayStats_addShadowRay(stats);
 
     /* add light contribution */
     if (shadow.geomID)
@@ -258,7 +260,7 @@ void renderTileStandard(int taskIndex,
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixelStandard((float)x,(float)y,camera);
+    Vec3fa color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -285,6 +287,8 @@ void renderTileStandardStream(int taskIndex,
   const unsigned int x1 = min(x0+TILE_SIZE_X,width);
   const unsigned int y0 = tileY * TILE_SIZE_Y;
   const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
+
+  RayStats& stats = g_stats[threadIndex];
 
   RTCRay primary_stream[TILE_SIZE_X*TILE_SIZE_Y];
   RTCRay shadow_stream[TILE_SIZE_X*TILE_SIZE_Y];
@@ -319,6 +323,7 @@ void renderTileStandardStream(int taskIndex,
     primary.mask = -1;
     primary.time = 0.0f;
     N++;
+    RayStats_addRay(stats);
   }
 
   Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
@@ -377,6 +382,7 @@ void renderTileStandardStream(int taskIndex,
     shadow.primID = RTC_INVALID_GEOMETRY_ID;
     shadow.mask = -1;
     shadow.time = 0;
+    RayStats_addShadowRay(stats);
   }
   N++;
 

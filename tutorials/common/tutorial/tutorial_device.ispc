@@ -55,7 +55,7 @@ unmasked void error_handler(void* uniform userPtr, const uniform RTCError code, 
 }
 
 /* renders a single pixel with eyelight shading */
-Vec3f renderPixelEyeLight(float x, float y, const uniform ISPCCamera& camera)
+Vec3f renderPixelEyeLight(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   /* initialize ray */
   RTCRay ray;
@@ -70,6 +70,7 @@ Vec3f renderPixelEyeLight(float x, float y, const uniform ISPCCamera& camera)
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
+  RayStats_addRay(stats);
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
@@ -96,7 +97,7 @@ void renderTileEyeLight(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    Vec3f color = renderPixelEyeLight((float)x,(float)y,camera);
+    Vec3f color = renderPixelEyeLight((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -107,7 +108,7 @@ void renderTileEyeLight(uniform int taskIndex,
 }
 
 /* renders a single pixel with wireframe shading */
-Vec3f renderPixelWireframe(float x, float y, const uniform ISPCCamera& camera)
+Vec3f renderPixelWireframe(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   /* initialize ray */
   RTCRay ray;
@@ -122,6 +123,7 @@ Vec3f renderPixelWireframe(float x, float y, const uniform ISPCCamera& camera)
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
+  RayStats_addRay(stats);
 
   /* return black if nothing hit */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(1.0f,1.0f,1.0f);
@@ -157,7 +159,7 @@ void renderTileWireframe(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    Vec3f color = renderPixelWireframe((float)x,(float)y,camera);
+    Vec3f color = renderPixelWireframe((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -168,7 +170,7 @@ void renderTileWireframe(uniform int taskIndex,
 }
 
 /* renders a single pixel with UV shading */
-Vec3f renderPixelUV(float x, float y, const uniform ISPCCamera& camera)
+Vec3f renderPixelUV(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   /* initialize ray */
   RTCRay ray;
@@ -183,6 +185,7 @@ Vec3f renderPixelUV(float x, float y, const uniform ISPCCamera& camera)
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
+  RayStats_addRay(stats);
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f,0.0f,1.0f);
@@ -209,7 +212,7 @@ void renderTileUV(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    Vec3f color = renderPixelUV((float)x,(float)y,camera);
+    Vec3f color = renderPixelUV((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -222,7 +225,7 @@ void renderTileUV(uniform int taskIndex,
 uniform unsigned int render_texcoords_mode = 0;
 
 /* renders a single pixel with TexCoords shading */
-Vec3f renderPixelTexCoords(float x, float y, const uniform ISPCCamera& camera)
+Vec3f renderPixelTexCoords(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   /* initialize ray */
   RTCRay ray;
@@ -237,6 +240,7 @@ Vec3f renderPixelTexCoords(float x, float y, const uniform ISPCCamera& camera)
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
+  RayStats_addRay(stats);
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
@@ -277,7 +281,7 @@ void renderTileTexCoords(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    Vec3f color = renderPixelTexCoords((float)x,(float)y,camera);
+    Vec3f color = renderPixelTexCoords((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -288,7 +292,7 @@ void renderTileTexCoords(uniform int taskIndex,
 }
 
 /* renders a single pixel with geometry normal shading */
-Vec3f renderPixelNg(float x, float y, const uniform ISPCCamera& camera)
+Vec3f renderPixelNg(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   /* initialize ray */
   RTCRay ray;
@@ -303,6 +307,7 @@ Vec3f renderPixelNg(float x, float y, const uniform ISPCCamera& camera)
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
+  RayStats_addRay(stats);
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f,0.0f,1.0f);
@@ -330,7 +335,7 @@ void renderTileNg(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    Vec3f color = renderPixelNg((float)x,(float)y,camera);
+    Vec3f color = renderPixelNg((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -350,7 +355,7 @@ Vec3f randomColor(const int ID)
 }
 
 /* geometry ID shading */
-Vec3f renderPixelGeomID(float x, float y, const uniform ISPCCamera& camera)
+Vec3f renderPixelGeomID(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   /* initialize ray */
   RTCRay ray;
@@ -365,6 +370,7 @@ Vec3f renderPixelGeomID(float x, float y, const uniform ISPCCamera& camera)
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
+  RayStats_addRay(stats);
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
@@ -391,7 +397,7 @@ void renderTileGeomID(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    Vec3f color = renderPixelGeomID((float)x,(float)y,camera);
+    Vec3f color = renderPixelGeomID((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -402,7 +408,7 @@ void renderTileGeomID(uniform int taskIndex,
 }
 
 /* geometry ID and primitive ID shading */
-Vec3f renderPixelGeomIDPrimID(float x, float y, const uniform ISPCCamera& camera)
+Vec3f renderPixelGeomIDPrimID(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   /* initialize ray */
   RTCRay ray;
@@ -417,6 +423,7 @@ Vec3f renderPixelGeomIDPrimID(float x, float y, const uniform ISPCCamera& camera
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
+  RayStats_addRay(stats);
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
@@ -443,7 +450,7 @@ void renderTileGeomIDPrimID(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    Vec3f color = renderPixelGeomIDPrimID((float)x,(float)y,camera);
+    Vec3f color = renderPixelGeomIDPrimID((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -454,7 +461,7 @@ void renderTileGeomIDPrimID(uniform int taskIndex,
 }
 
 /* vizualizes the traversal cost of a pixel */
-Vec3f renderPixelCycles(float x, float y, const uniform ISPCCamera& camera)
+Vec3f renderPixelCycles(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   /* initialize ray */
   RTCRay ray;
@@ -471,6 +478,7 @@ Vec3f renderPixelCycles(float x, float y, const uniform ISPCCamera& camera)
   uniform int64 c0 = get_tsc();
   rtcIntersect(g_scene,ray);
   uniform int64 c1 = get_tsc();
+  RayStats_addRay(stats);
 
   /* shade pixel */
   return make_Vec3f((uniform float)(c1-c0)*scale,0.0f,0.0f);
@@ -496,7 +504,7 @@ void renderTileCycles(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    Vec3f color = renderPixelCycles((float)x,(float)y,camera);
+    Vec3f color = renderPixelCycles((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -507,7 +515,7 @@ void renderTileCycles(uniform int taskIndex,
 }
 
 /* renders a single pixel with ambient occlusion */
-Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& camera)
+Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   /* initialize ray */
   RTCRay ray;
@@ -522,6 +530,7 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& ca
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
+  RayStats_addRay(stats);
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
@@ -561,6 +570,7 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& ca
       /* trace shadow ray */
       rtcOccluded(g_scene,shadow);
       //rtcIntersect(g_scene,shadow);
+      RayStats_addShadowRay(stats);
 
       /* add light contribution */
       if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
@@ -592,7 +602,7 @@ void renderTileAmbientOcclusion(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    Vec3f color = renderPixelAmbientOcclusion((float)x,(float)y,camera);
+    Vec3f color = renderPixelAmbientOcclusion((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -604,7 +614,7 @@ void renderTileAmbientOcclusion(uniform int taskIndex,
 
 /* differential visualization */
 static uniform int differentialMode = 0;
-Vec3f renderPixelDifferentials(float x, float y, const uniform ISPCCamera& camera)
+Vec3f renderPixelDifferentials(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   /* initialize ray */
   RTCRay ray;
@@ -619,6 +629,7 @@ Vec3f renderPixelDifferentials(float x, float y, const uniform ISPCCamera& camer
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
+  RayStats_addRay(stats);
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
@@ -701,7 +712,7 @@ void renderTileDifferentials(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    Vec3f color = renderPixelDifferentials((float)x,(float)y,camera);
+    Vec3f color = renderPixelDifferentials((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));

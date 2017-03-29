@@ -57,6 +57,8 @@ namespace embree
     unsigned int g_numThreads = 0;
 
     RTCIntersectFlags g_iflags = RTC_INTERSECT_INCOHERENT;
+
+    RayStats* g_stats = nullptr;
   }
 
   extern "C" int g_instancing_mode;
@@ -99,6 +101,7 @@ namespace embree
       print_frame_rate(false),
       avg_render_time(64,1.0),
       avg_frame_time(64,1.0),
+      avg_mray(64,1.0),
       print_camera(false),
 
       debug0(0),
@@ -239,6 +242,8 @@ namespace embree
         "  stream-coherent  : coherent stream mode\n"
         "  stream-incoherent: incoherent stream mode\n");
     }
+
+    g_stats = (RayStats*)alignedMalloc(TaskScheduler::threadCount() * sizeof(RayStats), sizeof(RayStats));
   }
 
   TutorialApplication::~TutorialApplication()
@@ -249,6 +254,8 @@ namespace embree
     pixels = nullptr;
     width = 0;
     height = 0;
+    alignedFree(g_stats);
+    g_stats = nullptr;
   }
 
   SceneLoadingTutorialApplication::SceneLoadingTutorialApplication (const std::string& tutorialName, int features)
@@ -448,6 +455,20 @@ namespace embree
       }, "--incoherent: use RTC_INTERSECT_INCOHERENT hint when tracing rays");
   }
 
+  void TutorialApplication::initRayStats()
+  {
+    for (size_t i = 0; i < TaskScheduler::threadCount(); i++)
+      g_stats[i].numRays = 0;
+  }
+
+  int64_t TutorialApplication::getNumRays()
+  {
+    int64_t numRays = 0;
+    for (size_t i = 0; i < TaskScheduler::threadCount(); i++)
+      numRays += g_stats[i].numRays;
+    return numRays;
+  }
+
   void TutorialApplication::renderBenchmark()
   {
     IOStreamStateRestorer cout_state(std::cout);
@@ -458,7 +479,8 @@ namespace embree
     ISPCCamera ispccamera = camera.getISPCCamera(width,height);
 
     //Statistics stat;
-    FilteredStatistics stat(0.5f,0.0f);
+    FilteredStatistics fpsStat(0.5f,0.0f);
+    FilteredStatistics mrayStat(0.5f,0.0f);
     for (size_t j=0; j<numBenchmarkRepetitions; j++)
     {
       size_t numTotalFrames = skipBenchmarkFrames + numBenchmarkFrames;
@@ -472,20 +494,25 @@ namespace embree
 
       for (size_t i=skipBenchmarkFrames; i<numTotalFrames; i++)
       {
+        initRayStats();
         double t0 = getSeconds();
         device_render(pixels,width,height,0.0f,ispccamera);
         double t1 = getSeconds();
 
-        float fr = float(1.0/(t1-t0));
-        stat.add(fr);
+        float fps = float(1.0/(t1-t0));
+        fpsStat.add(fps);
+
+        float mray = float(double(getNumRays())/(1000000.0*(t1-t0)));
+        mrayStat.add(mray);
+
         if (numTotalFrames >= 1024 && (i % 64 == 0))
         {
           std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: "
-                    << std::setw(8) << fr << " fps, "
-                    << "min = " << std::setw(8) << stat.getMin() << " fps, "
-                    << "avg = " << std::setw(8) << stat.getAvg() << " fps, "
-                    << "max = " << std::setw(8) << stat.getMax() << " fps, "
-                    << "sigma = " << std::setw(6) << stat.getSigma() << " (" << 100.0f*stat.getSigma()/stat.getAvg() << "%)" << std::endl << std::flush;
+                    << std::setw(8) << fps << " fps, "
+                    << "min = " << std::setw(8) << fpsStat.getMin() << " fps, "
+                    << "avg = " << std::setw(8) << fpsStat.getAvg() << " fps, "
+                    << "max = " << std::setw(8) << fpsStat.getMax() << " fps, "
+                    << "sigma = " << std::setw(6) << fpsStat.getSigma() << " (" << 100.0f*fpsStat.getSigma()/fpsStat.getAvg() << "%)" << std::endl << std::flush;
         }
       }
 
@@ -499,17 +526,25 @@ namespace embree
 
       std::cout << "frame [" << std::setw(3) << skipBenchmarkFrames << " - " << std::setw(3) << numTotalFrames << "]: "
                 << "              "
-                << "min = " << std::setw(8) << stat.getMin() << " fps, "
-                << "avg = " << std::setw(8) << stat.getAvg() << " fps, "
-                << "max = " << std::setw(8) << stat.getMax() << " fps, "
-                << "sigma = " << std::setw(6) << stat.getAvgSigma() << " (" << 100.0f*stat.getAvgSigma()/stat.getAvg() << "%)" << std::endl;
+                << "min = " << std::setw(8) << fpsStat.getMin() << " fps, "
+                << "avg = " << std::setw(8) << fpsStat.getAvg() << " fps, "
+                << "max = " << std::setw(8) << fpsStat.getMax() << " fps, "
+                << "sigma = " << std::setw(6) << fpsStat.getAvgSigma() << " (" << 100.0f*fpsStat.getAvgSigma()/fpsStat.getAvg() << "%)" << std::endl;
     }
 
-    std::cout << "BENCHMARK_RENDER_MIN " << stat.getMin() << std::endl;
-    std::cout << "BENCHMARK_RENDER_AVG " << stat.getAvg() << std::endl;
-    std::cout << "BENCHMARK_RENDER_MAX " << stat.getMax() << std::endl;
-    std::cout << "BENCHMARK_RENDER_SIGMA " << stat.getSigma() << std::endl;
-    std::cout << "BENCHMARK_RENDER_AVG_SIGMA " << stat.getAvgSigma() << std::endl << std::flush;
+    std::cout << "BENCHMARK_RENDER_MIN " << fpsStat.getMin() << std::endl;
+    std::cout << "BENCHMARK_RENDER_AVG " << fpsStat.getAvg() << std::endl;
+    std::cout << "BENCHMARK_RENDER_MAX " << fpsStat.getMax() << std::endl;
+    std::cout << "BENCHMARK_RENDER_SIGMA " << fpsStat.getSigma() << std::endl;
+    std::cout << "BENCHMARK_RENDER_AVG_SIGMA " << fpsStat.getAvgSigma() << std::endl;
+
+    std::cout << "BENCHMARK_RENDER_MRAY_MIN " << mrayStat.getMin() << std::endl;
+    std::cout << "BENCHMARK_RENDER_MRAY_AVG " << mrayStat.getAvg() << std::endl;
+    std::cout << "BENCHMARK_RENDER_MRAY_MAX " << mrayStat.getMax() << std::endl;
+    std::cout << "BENCHMARK_RENDER_MRAY_SIGMA " << mrayStat.getSigma() << std::endl;
+    std::cout << "BENCHMARK_RENDER_MRAY_AVG_SIGMA " << mrayStat.getAvgSigma() << std::endl;
+
+    std::cout << std::flush;
   }
 
   void TutorialApplication::renderToFile(const FileName& fileName)
@@ -674,10 +709,13 @@ namespace embree
     ISPCCamera ispccamera = camera.getISPCCamera(width,height,true);
 
     /* render image using ISPC */
+    initRayStats();
     double t0 = getSeconds();
     device_render(pixels,width,height,float(time0-t0),ispccamera);
     double dt0 = getSeconds()-t0;
     avg_render_time.add(dt0);
+    double mray = double(getNumRays())/(1000000.0*dt0);
+    avg_mray.add(mray);
 
     /* draw pixels to screen */
     glDrawPixels(width,height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
@@ -693,15 +731,22 @@ namespace embree
       glLoadIdentity();
 
       /* print frame rate */
+      glColor3f(1.0f, 0.25f, 0.0f);
+
       std::ostringstream stream;
       stream.setf(std::ios::fixed, std::ios::floatfield);
       stream.precision(2);
 
       stream << 1.0f/avg_render_time.get() << " fps";
       std::string str = stream.str();
+      glRasterPos2i(6, height - 24);
+      for (size_t i=0; i<str.size(); i++)
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
 
-      glColor3f(1.0f, 0.25f, 0.0f);
-      glRasterPos2i( width-GLint(str.size())*12, height - 24);
+      stream.str("");
+      stream << avg_mray.get() << " Mray/s";
+      str = stream.str();
+      glRasterPos2i(6, height - 52);
       for (size_t i=0; i<str.size(); i++)
         glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
 
@@ -725,6 +770,7 @@ namespace embree
       stream << "render: ";
       stream << 1.0f/dt0 << " fps, ";
       stream << dt0*1000.0f << " ms, ";
+      stream << mray << " Mray/s, ";
       stream << "display: ";
       stream << 1.0f/dt1 << " fps, ";
       stream << dt1*1000.0f << " ms, ";

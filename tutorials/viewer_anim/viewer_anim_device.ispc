@@ -322,6 +322,8 @@ void renderTileStandard(uniform int taskIndex,
   const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
   const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
+  uniform RayStats& stats = g_stats[threadIndex];
+
   RTCRay rays[TILE_SIZE_X*TILE_SIZE_Y];
 
   /* generate stream of primary rays */
@@ -344,6 +346,7 @@ void renderTileStandard(uniform int taskIndex,
     ray.primID = RTC_INVALID_GEOMETRY_ID;
     ray.mask = -1;
     ray.time = 0.0f;
+    RayStats_addRay(stats);
   }
 
   uniform RTCIntersectContext context;
@@ -411,6 +414,7 @@ void renderTileStandard(uniform int taskIndex,
           ray.primID = RTC_INVALID_GEOMETRY_ID;
           ray.mask = 0;
           ray.time = 0.0f;
+          RayStats_addShadowRay(stats);
         }
         /* trace shadow rays */
         rtcOccludedVM(g_scene,&context,rays,N,sizeof(RTCRay));

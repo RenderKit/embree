@@ -180,7 +180,7 @@ export void device_init (uniform int8* uniform cfg)
 }
 
 /* task that renders a single screen tile */
-Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
+Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   /* initialize ray */
   RTCRay ray;
@@ -196,6 +196,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
+  RayStats_addRay(stats);
 
   /* shade pixels */
   Vec3f color = make_Vec3f(0.0f);
@@ -227,6 +228,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 
     /* trace shadow ray */
     rtcOccluded(g_scene,shadow);
+    RayStats_addShadowRay(stats);
 
     /* add light contribution */
     if (shadow.geomID)
@@ -256,7 +258,7 @@ void renderTileStandard(uniform int taskIndex,
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixelStandard((float)x,(float)y,camera);
+    Vec3f color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -283,6 +285,8 @@ void renderTileStandardStream(uniform int taskIndex,
   const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
   const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
   const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
+
+  uniform RayStats& stats = g_stats[threadIndex];
 
   RTCRay primary_stream[TILE_SIZE_X*TILE_SIZE_Y];
   RTCRay shadow_stream[TILE_SIZE_X*TILE_SIZE_Y];
@@ -317,6 +321,7 @@ void renderTileStandardStream(uniform int taskIndex,
     primary.mask = -1;
     primary.time = 0.0f;
     N++;
+    RayStats_addRay(stats);
   }
 
   Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
@@ -375,6 +380,7 @@ void renderTileStandardStream(uniform int taskIndex,
     shadow.primID = RTC_INVALID_GEOMETRY_ID;
     shadow.mask = -1;
     shadow.time = 0;
+    RayStats_addShadowRay(stats);
   }
   N++;
 
