@@ -416,6 +416,22 @@ namespace embree
       Statistics () 
       : bytesAllocated(0), bytesReserved(0), bytesFree(0) {}
 
+      Statistics (size_t bytesAllocated, size_t bytesReserved, size_t bytesFree) 
+      : bytesAllocated(bytesAllocated), bytesReserved(bytesReserved), bytesFree(bytesFree) {}
+
+      Statistics (FastAllocator* alloc, AllocationType atype, bool huge_pages = false)
+      : bytesAllocated(0), bytesReserved(0), bytesFree(0) 
+      {
+        Block* usedBlocks = alloc->usedBlocks.load();
+        Block* freeBlocks = alloc->freeBlocks.load();
+        if (freeBlocks) bytesAllocated += freeBlocks->getTotalAllocatedBytes(atype,huge_pages);
+        if (usedBlocks) bytesAllocated += usedBlocks->getTotalAllocatedBytes(atype,huge_pages);
+        if (freeBlocks) bytesReserved += freeBlocks->getTotalReservedBytes(atype,huge_pages);
+        if (usedBlocks) bytesReserved += usedBlocks->getTotalReservedBytes(atype,huge_pages);
+        if (freeBlocks) bytesFree += freeBlocks->getTotalAllocatedBytes(atype,huge_pages);
+        if (usedBlocks) bytesFree += usedBlocks->getFreeBytes(atype,huge_pages);  
+      }
+
       std::string str(size_t numPrimitives) 
       {
         std::stringstream str;
@@ -426,23 +442,19 @@ namespace embree
             << "#bytes/prim = " << std::setw(6) << std::setprecision(2) << double(bytesAllocated+bytesFree)/double(numPrimitives);
         return str.str();
       }
-    
+
+      friend Statistics operator+ ( const Statistics& a, const Statistics& b)
+      {
+        return Statistics(a.bytesAllocated+b.bytesAllocated,
+                          a.bytesReserved+b.bytesReserved,
+                          a.bytesFree+b.bytesFree);
+      }
+      
+    public:
       size_t bytesAllocated;
       size_t bytesReserved;
       size_t bytesFree;
     };
-
-    Statistics getStatistics(AllocationType atype, bool huge_pages = false) const 
-    {
-      Statistics stat;
-      if (freeBlocks.load()) stat.bytesAllocated += freeBlocks.load()->getTotalAllocatedBytes(atype,huge_pages);
-      if (usedBlocks.load()) stat.bytesAllocated += usedBlocks.load()->getTotalAllocatedBytes(atype,huge_pages);
-      if (freeBlocks.load()) stat.bytesReserved += freeBlocks.load()->getTotalReservedBytes(atype,huge_pages);
-      if (usedBlocks.load()) stat.bytesReserved += usedBlocks.load()->getTotalReservedBytes(atype,huge_pages);
-      if (freeBlocks.load()) stat.bytesFree += freeBlocks.load()->getTotalAllocatedBytes(atype,huge_pages);
-      if (usedBlocks.load()) stat.bytesFree += usedBlocks.load()->getFreeBytes(atype,huge_pages);
-      return stat;
-    }
 
     size_t getUsedBytes() 
     {
@@ -460,25 +472,73 @@ namespace embree
       return bytes;
     }
 
+    struct AllStatistics
+    {
+      AllStatistics (FastAllocator* alloc)
+
+      : bytesUsed(alloc->getUsedBytes()),
+        bytesWasted(alloc->getWastedBytes()),
+        stat_all(alloc,ANY_TYPE),
+        stat_malloc(alloc,ALIGNED_MALLOC),
+        stat_4K(alloc,OS_MALLOC,false),
+        stat_2M(alloc,OS_MALLOC,true),
+        stat_shared(alloc,SHARED) {}
+
+      AllStatistics (size_t bytesUsed, 
+                     size_t bytesWasted, 
+                     Statistics stat_all,
+                     Statistics stat_malloc,
+                     Statistics stat_4K,
+                     Statistics stat_2M,
+                     Statistics stat_shared)
+
+      : bytesUsed(bytesUsed), 
+        bytesWasted(bytesWasted),
+        stat_all(stat_all),
+        stat_malloc(stat_malloc),
+        stat_4K(stat_4K),
+        stat_2M(stat_2M),
+        stat_shared(stat_shared) {}
+
+      friend AllStatistics operator+ (const AllStatistics& a, const AllStatistics& b) 
+      {
+        return AllStatistics(a.bytesUsed+b.bytesUsed,
+                             a.bytesWasted+b.bytesWasted,
+                             a.stat_all + b.stat_all,
+                             a.stat_malloc + b.stat_malloc,
+                             a.stat_4K + b.stat_4K,
+                             a.stat_2M + b.stat_2M,
+                             a.stat_shared + b.stat_shared);
+      }
+
+      void print(size_t numPrimitives)
+      {
+        std::cout << "  total : " << stat_all.str(numPrimitives);
+        printf(", used = %3.3f MB (%3.2f%%), wasted = %3.3f MB (%3.2f%%)\n",
+               1E-6f*bytesUsed, 100.0f*bytesUsed/stat_all.bytesAllocated,
+               1E-6f*bytesWasted, 100.0f*bytesWasted/stat_all.bytesAllocated);
+        std::cout << "  4K    : " << stat_4K.str(numPrimitives) << std::endl;
+        std::cout << "  2M    : " << stat_2M.str(numPrimitives) << std::endl;
+        std::cout << "  malloc: " << stat_malloc.str(numPrimitives) << std::endl;
+        std::cout << "  shared: " << stat_shared.str(numPrimitives) << std::endl;
+      }
+
+    private:
+      size_t bytesUsed;
+      size_t bytesWasted;
+      Statistics stat_all;
+      Statistics stat_malloc;
+      Statistics stat_4K;
+      Statistics stat_2M;
+      Statistics stat_shared;
+    };
+
     void print_statistics(bool verbose, size_t numPrimitives)
     {
       std::cout << "  slotMask = " << slotMask << ", use_single_mode = " << use_single_mode << ", defaultBlockSize = " << defaultBlockSize << std::endl;
-      size_t bytesUsed = getUsedBytes();
-      size_t bytesWasted = getWastedBytes();
-      Statistics stat_all = getStatistics(ANY_TYPE);
-      Statistics stat_malloc = getStatistics(ALIGNED_MALLOC);
-      Statistics stat_4K = getStatistics(OS_MALLOC,false);
-      Statistics stat_2M = getStatistics(OS_MALLOC,true);
-      Statistics stat_shared = getStatistics(SHARED);
-      std::cout << "  total : " << stat_all.str(numPrimitives);
-      printf(", used = %3.3f MB (%3.2f%%), wasted = %3.3f MB (%3.2f%%)\n",
-	     1E-6f*bytesUsed, 100.0f*bytesUsed/stat_all.bytesAllocated,
-	     1E-6f*bytesWasted, 100.0f*bytesWasted/stat_all.bytesAllocated);
-      std::cout << "  4K    : " << stat_4K.str(numPrimitives) << std::endl;
-      std::cout << "  2M    : " << stat_2M.str(numPrimitives) << std::endl;
-      std::cout << "  malloc: " << stat_malloc.str(numPrimitives) << std::endl;
-      std::cout << "  shared: " << stat_shared.str(numPrimitives) << std::endl;
-
+      AllStatistics stat(this);
+      stat.print(numPrimitives);
+      
       if (verbose) 
       {
         std::cout << "  used blocks = ";
