@@ -56,6 +56,7 @@ namespace embree
       void bind(FastAllocator* alloc_i) 
       {
         assert(alloc_i);
+        if (alloc == alloc_i) return;
         Lock<SpinLock> lock(mutex);
         if (alloc == alloc_i) return;
         if (alloc) {
@@ -74,6 +75,7 @@ namespace embree
       void unbind(FastAllocator* alloc_i) 
       {
         assert(alloc_i);
+        if (alloc != alloc_i) return;
         Lock<SpinLock> lock(mutex);
         if (alloc != alloc_i) return;
         //alloc->bytesUsed += bytesUsed;
@@ -92,11 +94,9 @@ namespace embree
       //}
 
       /* Allocate aligned memory from the threads memory block. */
-      __forceinline void* malloc(FastAllocator* alloc, size_t bytes, size_t align = 16) 
+      __forceinline void* malloc(FastAllocator* alloc_i, size_t bytes, size_t align = 16) 
       {
-        bind(alloc);
-        Lock<SpinLock> lock(mutex);
-        assert(alloc);
+        bind(alloc_i);
 
         assert(align <= maxAlignment);
 	bytesUsed += bytes;
