@@ -57,7 +57,7 @@ namespace embree
       {
         assert(alloc_i);
         Lock<SpinLock> lock(mutex);
-        if (alloc == alloc_i && alloc->timestep == timestep) return;
+        if (alloc == alloc_i) return;
         if (alloc) {
           //alloc->bytesUsed += bytesUsed;
           //alloc->bytesWasted += bytesWasted; // FIXME: add slack
@@ -67,7 +67,6 @@ namespace embree
 	bytesWasted = 0;
         bytesUsed = 0;
         alloc = alloc_i;
-        timestep = alloc_i->timestep;
         allocBlockSize = alloc->defaultBlockSize;
       }
 
@@ -158,7 +157,6 @@ namespace embree
       SpinLock mutex;        //!< required as unbind is called from other threads
       size_t bytesUsed;      //!< number of total bytes allocated
       size_t bytesWasted;    //!< number of bytes wasted
-      uint64_t timestep;
     };
 
     /*! Two thread local structures. */
@@ -221,7 +219,7 @@ namespace embree
 
     FastAllocator (Device* device, bool osAllocation) 
       : device(device), slotMask(0), usedBlocks(nullptr), freeBlocks(nullptr), use_single_mode(false), defaultBlockSize(PAGE_SIZE), 
-        growSize(PAGE_SIZE), log2_grow_size_scale(0), bytesUsed(0), bytesWasted(0), timestep(0), atype(osAllocation ? OS_MALLOC : ALIGNED_MALLOC),
+        growSize(PAGE_SIZE), log2_grow_size_scale(0), bytesUsed(0), bytesWasted(0), atype(osAllocation ? OS_MALLOC : ALIGNED_MALLOC),
         primrefarray(device)
     {
       for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++)
@@ -327,7 +325,6 @@ namespace embree
     /*! initializes the allocator */
     void init(size_t bytesAllocate, size_t bytesReserve = 0) 
     {     
-      timestep++;
       internal_fix_used_blocks();
       /* distribute the allocation to multiple thread block slots */
       slotMask = MAX_THREAD_USED_BLOCK_SLOTS-1;      
@@ -341,7 +338,6 @@ namespace embree
     /*! initializes the allocator */
     void init_estimate(size_t bytesAllocate, const bool single_mode = false, const bool compact = false) 
     {      
-      timestep++;
       internal_fix_used_blocks();
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       /* single allocator mode ? */
@@ -824,7 +820,6 @@ namespace embree
     static __thread ThreadLocal2* thread_local_allocator2;
     SpinLock thread_local_allocators_lock;
     std::vector<ThreadLocal2*> thread_local_allocators;
-    uint64_t timestep;
     AllocationType atype;
     mvector<PrimRef> primrefarray;     //!< primrefarray used to allocate nodes
   };
