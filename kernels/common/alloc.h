@@ -37,6 +37,7 @@ namespace embree
     
   public:
 
+    struct ThreadLocal2;
     enum AllocationType { ALIGNED_MALLOC, OS_MALLOC, SHARED, ANY_TYPE };
 
     /*! Per thread structure holding the current memory block. */
@@ -46,50 +47,24 @@ namespace embree
     public:
 
       /*! Constructor for usage with ThreadLocalData */
-      __forceinline ThreadLocal () 
-	: alloc(nullptr), ptr(nullptr), cur(0), end(0), allocBlockSize(0), bytesUsed(0), bytesWasted(0) {}
+      __forceinline ThreadLocal (ThreadLocal2* parent) 
+	: parent(parent), ptr(nullptr), cur(0), end(0), allocBlockSize(0), bytesUsed(0), bytesWasted(0) {}
 
-      /*! bind to fast allocator */
-      void bind(FastAllocator* alloc_i) 
+      /*! initialize allocator */
+      void init(FastAllocator* alloc) 
       {
-        assert(alloc_i);
-        if (alloc == alloc_i) return;
-        Lock<SpinLock> lock(mutex);
-        //if (alloc == alloc_i) return; // not required as only one thread calls bind
-        if (alloc) {
-          alloc->bytesUsed += getUsedBytes();
-          alloc->bytesWasted += getWastedBytes();
-        }
         ptr = nullptr;
 	cur = end = 0;
 	bytesWasted = 0;
         bytesUsed = 0;
-        alloc = alloc_i;
-        allocBlockSize = alloc->defaultBlockSize;
-        alloc->join(this);
-      }
-
-      /*! unbind to fast allocator */
-      void unbind(FastAllocator* alloc_i) 
-      {
-        assert(alloc_i);
-        if (alloc != alloc_i) return;
-        Lock<SpinLock> lock(mutex);
-        if (alloc != alloc_i) return; // required as a different thread calls unbind
-        alloc->bytesUsed += getUsedBytes();
-        alloc->bytesWasted += getWastedBytes();
-        ptr = nullptr;
-	cur = end = 0;
-	bytesWasted = 0;
-        bytesUsed = 0;
-        alloc = nullptr;
         allocBlockSize = 0;
+        if (alloc) allocBlockSize = alloc->defaultBlockSize;
       }
-      
+
       /* Allocate aligned memory from the threads memory block. */
-      __forceinline void* malloc(FastAllocator* alloc_i, size_t bytes, size_t align = 16) 
+      __forceinline void* malloc(FastAllocator* alloc, size_t bytes, size_t align = 16) 
       {
-        bind(alloc_i);
+        parent->bind(alloc);
 
         assert(align <= maxAlignment);
 	bytesUsed += bytes;
@@ -141,8 +116,7 @@ namespace embree
       __forceinline size_t getWastedBytes() const { return bytesWasted + (end-cur); }
 
     private:
-      SpinLock mutex;        //!< required as unbind is called from other threads
-      FastAllocator* alloc;  //!< parent allocator
+      ThreadLocal2* parent;
       char*  ptr;            //!< pointer to memory block
       size_t cur;            //!< current location of the allocator
       size_t end;            //!< end of the memory block
@@ -156,6 +130,44 @@ namespace embree
     {
       ALIGNED_CLASS_(64);
     public:
+
+      __forceinline ThreadLocal2()
+        : alloc(nullptr), alloc0(this), alloc1(this) {}
+
+      /*! bind to fast allocator */
+      __forceinline void bind(FastAllocator* alloc_i) 
+      {
+        assert(alloc_i);
+        if (alloc == alloc_i) return;
+        Lock<SpinLock> lock(mutex);
+        //if (alloc == alloc_i) return; // not required as only one thread calls bind
+        if (alloc) {
+          alloc->bytesUsed   += alloc0.getUsedBytes()   + alloc1.getUsedBytes();
+          alloc->bytesWasted += alloc0.getWastedBytes() + alloc1.getWastedBytes();
+        }
+        alloc0.init(alloc_i);
+        alloc1.init(alloc_i);
+        alloc = alloc_i;
+        alloc->join(this);
+      }
+
+      /*! unbind to fast allocator */
+      void unbind(FastAllocator* alloc_i) 
+      {
+        assert(alloc_i);
+        if (alloc != alloc_i) return;
+        Lock<SpinLock> lock(mutex);
+        if (alloc != alloc_i) return; // required as a different thread calls unbind
+        alloc->bytesUsed   += alloc0.getUsedBytes()   + alloc1.getUsedBytes();
+        alloc->bytesWasted += alloc0.getWastedBytes() + alloc1.getWastedBytes();
+        alloc0.init(nullptr);
+        alloc1.init(nullptr);
+        alloc = nullptr;
+      }
+
+    public:
+      SpinLock mutex;        //!< required as unbind is called from other threads
+      FastAllocator* alloc;  //!< parent allocator
       ThreadLocal alloc0;
       ThreadLocal alloc1;
     };
@@ -203,11 +215,12 @@ namespace embree
       ThreadLocal2* alloc = thread_local_allocator2;
       if (alloc == nullptr) 
         thread_local_allocator2 = alloc = new ThreadLocal2;
+      //join(&alloc);
       return alloc;
     }
   public:
 
-    __forceinline void join(ThreadLocal* alloc)
+    __forceinline void join(ThreadLocal2* alloc)
     {
       Lock<SpinLock> lock(thread_local_allocators_lock);
       thread_local_allocators.push_back(alloc);
@@ -790,7 +803,7 @@ namespace embree
     std::atomic<size_t> bytesWasted;          //!< number of total wasted bytes
     static __thread ThreadLocal2* thread_local_allocator2;
     SpinLock thread_local_allocators_lock;
-    std::vector<ThreadLocal*> thread_local_allocators;
+    std::vector<ThreadLocal2*> thread_local_allocators;
     AllocationType atype;
     mvector<PrimRef> primrefarray;     //!< primrefarray used to allocate nodes
   };
