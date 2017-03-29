@@ -257,14 +257,14 @@ namespace embree
         NodeRef root = BVHBuilderBinnedSAH::build<NodeRef>
           (
             typename BVH::CreateAlloc(bvh),
-            typename BVH::AlignedNode::Create2(),
+            typename BVH::AlignedNode::Create2(&bvh->alloc),
             typename BVH::AlignedNode::Set2(),
 
            [&] (const BVHBuilderBinnedSAH::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> NodeRef
           {
             assert(current.prims.size() == 1);
             BuildRef* ref = (BuildRef*) prims[current.prims.begin()].ID();
-            TransformNode* node = (TransformNode*) alloc->alloc0->malloc(sizeof(TransformNode),BVH::byteAlignment);
+            TransformNode* node = (TransformNode*) alloc->alloc0->malloc(&bvh->alloc,sizeof(TransformNode),BVH::byteAlignment);
             new (node) TransformNode(ref->local2world,ref->localBounds,ref->node,ref->mask,ref->instID,ref->xfmID,ref->type); // FIXME: rcp should be precalculated somewhere
             NodeRef noderef = BVH::encodeNode(node);
             noderef.setBarrier();

@@ -102,7 +102,8 @@ namespace embree
         
         /* lambda function that allocates BVH nodes */
         [&] ( FastAllocator::ThreadLocal* alloc, size_t N ) -> void* {
-          return createNode((RTCThreadLocalAllocator)alloc,N,userPtr);
+          FastAllocator::CachedAllocator calloc(&bvh->allocator,alloc);
+          return createNode((RTCThreadLocalAllocator)&calloc,N,userPtr);
         },
         
         /* lambda function that sets bounds */
@@ -124,9 +125,10 @@ namespace embree
         /* lambda function that creates BVH leaves */
         [&]( const range<unsigned>& current, FastAllocator::ThreadLocal* alloc) -> std::pair<void*,BBox3fa>
         {
+          FastAllocator::CachedAllocator calloc(&bvh->allocator,alloc);
           const size_t id = morton_src[current.begin()].index;
           const BBox3fa bounds = prims[id].bounds(); 
-          void* node = createLeaf((RTCThreadLocalAllocator)alloc,prims_i+current.begin(),current.size(),userPtr);
+          void* node = createLeaf((RTCThreadLocalAllocator)&calloc,prims_i+current.begin(),current.size(),userPtr);
           return std::make_pair(node,bounds);
         },
         
@@ -182,7 +184,8 @@ namespace embree
         /* lambda function that creates BVH nodes */
         [&](BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, FastAllocator::ThreadLocal* alloc) -> void*
         {
-          void* node = createNode((RTCThreadLocalAllocator)alloc,N,userPtr);
+          FastAllocator::CachedAllocator calloc(&bvh->allocator,alloc);
+          void* node = createNode((RTCThreadLocalAllocator)&calloc,N,userPtr);
           const RTCBounds* cbounds[GeneralBVHBuilder::MAX_BRANCHING_FACTOR];
           for (size_t i=0; i<N; i++) cbounds[i] = (const RTCBounds*) &children[i].prims.geomBounds;
           setNodeBounds(node,cbounds,N,userPtr);
@@ -197,7 +200,8 @@ namespace embree
         
         /* lambda function that creates BVH leaves */
         [&](const BVHBuilderBinnedSAH::BuildRecord& current, FastAllocator::ThreadLocal* alloc) -> void* {
-          return createLeaf((RTCThreadLocalAllocator)alloc,prims+current.prims.begin(),current.prims.size(),userPtr);
+          FastAllocator::CachedAllocator calloc(&bvh->allocator,alloc);
+          return createLeaf((RTCThreadLocalAllocator)&calloc,prims+current.prims.begin(),current.prims.size(),userPtr);
         },
         
         /* progress monitor function */
@@ -273,7 +277,8 @@ namespace embree
         /* lambda function that creates BVH nodes */
         [&] (BVHBuilderBinnedFastSpatialSAH::BuildRecord* children, const size_t N, FastAllocator::ThreadLocal* alloc) -> void*
         {
-          void* node = createNode((RTCThreadLocalAllocator)alloc,N,userPtr);
+          FastAllocator::CachedAllocator calloc(&bvh->allocator,alloc);
+          void* node = createNode((RTCThreadLocalAllocator)&calloc,N,userPtr);
           const RTCBounds* cbounds[GeneralBVHBuilder::MAX_BRANCHING_FACTOR];
           for (size_t i=0; i<N; i++) cbounds[i] = (const RTCBounds*) &children[i].prims.geomBounds;
           setNodeBounds(node,cbounds,N,userPtr);
@@ -288,7 +293,8 @@ namespace embree
         
         /* lambda function that creates BVH leaves */
         [&] (const BVHBuilderBinnedFastSpatialSAH::BuildRecord& current, FastAllocator::ThreadLocal* alloc) -> void* {
-          return createLeaf((RTCThreadLocalAllocator)alloc,prims+current.prims.begin(),current.prims.size(),userPtr);
+          FastAllocator::CachedAllocator calloc(&bvh->allocator,alloc);
+          return createLeaf((RTCThreadLocalAllocator)&calloc,prims+current.prims.begin(),current.prims.size(),userPtr);
         },
         
         /* returns the splitter */
@@ -360,9 +366,9 @@ namespace embree
     {
       RTCORE_CATCH_BEGIN;
       RTCORE_TRACE(rtcThreadLocalAlloc);
-      FastAllocator::ThreadLocal* alloc = (FastAllocator::ThreadLocal*) localAllocator;
+      FastAllocator::CachedAllocator* alloc = (FastAllocator::CachedAllocator*) localAllocator;
       return alloc->malloc(bytes,align);
-      RTCORE_CATCH_END(((FastAllocator::ThreadLocal*) localAllocator)->alloc->getDevice());
+      RTCORE_CATCH_END(((FastAllocator::CachedAllocator*) localAllocator)->alloc->getDevice());
       return nullptr;
     }
 

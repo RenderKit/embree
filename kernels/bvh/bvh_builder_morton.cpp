@@ -93,8 +93,8 @@ namespace embree
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::NodeRecord NodeRecord;
 
-      __forceinline CreateMortonLeaf (TriangleMesh* mesh, BVHBuilderMorton::BuildPrim* morton)
-        : mesh(mesh), morton(morton) {}
+      __forceinline CreateMortonLeaf (FastAllocator* const allocator, TriangleMesh* mesh, BVHBuilderMorton::BuildPrim* morton)
+        : allocator(allocator), mesh(mesh), morton(morton) {}
 
       __noinline NodeRecord operator() (const range<unsigned>& current, FastAllocator::ThreadLocal2* alloc)
       {
@@ -105,7 +105,7 @@ namespace embree
         assert(items<=4);
         
         /* allocate leaf node */
-        Triangle4* accel = (Triangle4*) alloc->alloc1->malloc(sizeof(Triangle4),BVH::byteAlignment);
+        Triangle4* accel = (Triangle4*) alloc->alloc1->malloc(allocator,sizeof(Triangle4),BVH::byteAlignment);
         NodeRef ref = BVH::encodeLeaf((char*)accel,1);
         vint4 vgeomID = -1, vprimID = -1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
@@ -138,6 +138,7 @@ namespace embree
       }
     
     private:
+      FastAllocator* const allocator;
       TriangleMesh* mesh;
       BVHBuilderMorton::BuildPrim* morton;
     };
@@ -149,8 +150,8 @@ namespace embree
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::NodeRecord NodeRecord;
 
-      __forceinline CreateMortonLeaf (TriangleMesh* mesh, BVHBuilderMorton::BuildPrim* morton)
-        : mesh(mesh), morton(morton) {}
+      __forceinline CreateMortonLeaf (FastAllocator* const allocator, TriangleMesh* mesh, BVHBuilderMorton::BuildPrim* morton)
+        : allocator(allocator), mesh(mesh), morton(morton) {}
       
       __noinline NodeRecord operator() (const range<unsigned>& current, FastAllocator::ThreadLocal2* alloc)
       {
@@ -161,7 +162,7 @@ namespace embree
         assert(items<=4);
         
         /* allocate leaf node */
-        Triangle4v* accel = (Triangle4v*) alloc->alloc1->malloc(sizeof(Triangle4v),BVH::byteAlignment);
+        Triangle4v* accel = (Triangle4v*) alloc->alloc1->malloc(allocator,sizeof(Triangle4v),BVH::byteAlignment);
         NodeRef ref = BVH::encodeLeaf((char*)accel,1);       
         vint4 vgeomID = -1, vprimID = -1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
@@ -192,6 +193,7 @@ namespace embree
         return NodeRecord(ref,box_o);
       }
     private:
+      FastAllocator* const allocator;
       TriangleMesh* mesh;
       BVHBuilderMorton::BuildPrim* morton;
     };
@@ -203,8 +205,8 @@ namespace embree
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::NodeRecord NodeRecord;
 
-      __forceinline CreateMortonLeaf (TriangleMesh* mesh, BVHBuilderMorton::BuildPrim* morton)
-        : mesh(mesh), morton(morton) {}
+      __forceinline CreateMortonLeaf (FastAllocator* const allocator, TriangleMesh* mesh, BVHBuilderMorton::BuildPrim* morton)
+        : allocator(allocator), mesh(mesh), morton(morton) {}
       
       __noinline NodeRecord operator() (const range<unsigned>& current, FastAllocator::ThreadLocal2* alloc)
       {
@@ -215,7 +217,7 @@ namespace embree
         assert(items<=4);
         
         /* allocate leaf node */
-        Triangle4i* accel = (Triangle4i*) alloc->alloc1->malloc(sizeof(Triangle4i),BVH::byteAlignment);
+        Triangle4i* accel = (Triangle4i*) alloc->alloc1->malloc(allocator,sizeof(Triangle4i),BVH::byteAlignment);
         NodeRef ref = BVH::encodeLeaf((char*)accel,1);
         
         vint4 vgeomID = -1, vprimID = -1;
@@ -258,6 +260,7 @@ namespace embree
         return NodeRecord(ref,box_o);
       }
     private:
+      FastAllocator* const allocator;
       TriangleMesh* mesh;
       BVHBuilderMorton::BuildPrim* morton;
     };
@@ -269,8 +272,8 @@ namespace embree
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::NodeRecord NodeRecord;
 
-      __forceinline CreateMortonLeaf (QuadMesh* mesh, BVHBuilderMorton::BuildPrim* morton)
-        : mesh(mesh), morton(morton) {}
+      __forceinline CreateMortonLeaf (FastAllocator* const allocator, QuadMesh* mesh, BVHBuilderMorton::BuildPrim* morton)
+        : allocator(allocator), mesh(mesh), morton(morton) {}
       
       __noinline NodeRecord operator() (const range<unsigned>& current, FastAllocator::ThreadLocal2* alloc)
       {
@@ -281,7 +284,7 @@ namespace embree
         assert(items<=4);
         
         /* allocate leaf node */
-        Quad4v* accel = (Quad4v*) alloc->alloc1->malloc(sizeof(Quad4v),BVH::byteAlignment);
+        Quad4v* accel = (Quad4v*) alloc->alloc1->malloc(allocator,sizeof(Quad4v),BVH::byteAlignment);
         NodeRef ref = BVH::encodeLeaf((char*)accel,1);
         
         vint4 vgeomID = -1, vprimID = -1;
@@ -315,6 +318,7 @@ namespace embree
         return NodeRecord(ref,box_o);
       }
     private:
+      FastAllocator* const allocator;
       QuadMesh* mesh;
       BVHBuilderMorton::BuildPrim* morton;
     };
@@ -326,8 +330,8 @@ namespace embree
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::NodeRecord NodeRecord;
 
-      __forceinline CreateMortonLeaf (AccelSet* mesh, BVHBuilderMorton::BuildPrim* morton)
-        : mesh(mesh), morton(morton) {}
+      __forceinline CreateMortonLeaf (FastAllocator* const allocator, AccelSet* mesh, BVHBuilderMorton::BuildPrim* morton)
+        : allocator(allocator), mesh(mesh), morton(morton) {}
       
       __noinline NodeRecord operator() (const range<unsigned>& current, FastAllocator::ThreadLocal2* alloc)
       {
@@ -337,7 +341,7 @@ namespace embree
         size_t start = current.begin();
         
         /* allocate leaf node */
-        Object* accel = (Object*) alloc->alloc1->malloc(items*sizeof(Object),BVH::byteAlignment);
+        Object* accel = (Object*) alloc->alloc1->malloc(allocator,items*sizeof(Object),BVH::byteAlignment);
         NodeRef ref = BVH::encodeLeaf((char*)accel,items);
 
         const unsigned geomID = this->mesh->id;
@@ -359,6 +363,7 @@ namespace embree
         return NodeRecord(ref,box_o);
       }
     private:
+      FastAllocator* const allocator;
       AccelSet* mesh;
       BVHBuilderMorton::BuildPrim* morton;
     };
@@ -420,11 +425,11 @@ namespace embree
 
         /* create BVH */
         SetBVHNBounds<N> setBounds(bvh);
-        CreateMortonLeaf<N,Primitive> createLeaf(mesh,morton.data());
+        CreateMortonLeaf<N,Primitive> createLeaf(&bvh->alloc,mesh,morton.data());
         CalculateMeshBounds<Mesh> calculateBounds(mesh);
         auto root = BVHBuilderMorton::build<NodeRecord>(
           typename BVH::CreateAlloc(bvh), 
-          typename BVH::AlignedNode::Create(),
+          typename BVH::AlignedNode::Create(&bvh->alloc),
           setBounds,createLeaf,calculateBounds,bvh->scene->progressInterface,
           morton.data(),dest,numPrimitivesGen,settings);
         

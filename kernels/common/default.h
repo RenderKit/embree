@@ -61,6 +61,7 @@
 #include <functional>
 #include <utility>
 #include <sstream>
+#include <forward_list>
 
 namespace embree
 {

@@ -19,6 +19,8 @@
 
 namespace embree
 {
+  __thread FastAllocator::ThreadLocal2* FastAllocator::thread_local_allocator2 = nullptr;
+
   struct fast_allocator_regression_test : public RegressionTest
   {
     BarrierSys barrier;
@@ -40,7 +42,7 @@ namespace embree
       {
         This->barrier.wait();
         for (size_t i=0; i<1000; i++) {
-          ptrs[i] = (size_t*) threadalloc->alloc0->malloc(sizeof(size_t)+(i%32));
+          ptrs[i] = (size_t*) threadalloc->alloc0->malloc(This->alloc.get(),sizeof(size_t)+(i%32));
           *ptrs[i] = size_t(threadalloc) + i;
         }
         for (size_t i=0; i<1000; i++) {

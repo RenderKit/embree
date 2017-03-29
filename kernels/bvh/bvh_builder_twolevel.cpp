@@ -176,7 +176,7 @@ namespace embree
             NodeRef root = BVHBuilderBinnedSAH::build<NodeRef>
               (
                 typename BVH::CreateAlloc(bvh),
-                typename BVH::AlignedNode::Create2(),
+                typename BVH::AlignedNode::Create2(&bvh->alloc),
                 typename BVH::AlignedNode::Set2(),
                
                [&] (const BVHBuilderBinnedSAH::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> NodeRef

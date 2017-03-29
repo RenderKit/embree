@@ -63,7 +63,7 @@ namespace embree
         return w*h;
       }
 
-      __forceinline static unsigned createEager(SubdivPatch1Base& patch, Scene* scene, SubdivMesh* mesh, unsigned primID, FastAllocator::ThreadLocal& alloc, PrimRef* prims)
+      __forceinline static unsigned createEager(SubdivPatch1Base& patch, Scene* scene, SubdivMesh* mesh, unsigned primID, FastAllocator::CachedAllocator& alloc, PrimRef* prims)
       {
         unsigned NN = 0;
         const unsigned x0 = 0, x1 = patch.grid_u_res-1;
@@ -146,7 +146,7 @@ namespace embree
 
         PrimInfo pinfo3 = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
-          FastAllocator::ThreadLocal& alloc = *bvh->alloc.threadLocal();
+          FastAllocator::CachedAllocator alloc = bvh->alloc.getCachedAllocator0();
           
           PrimInfo s(empty);
           for (size_t f=r.begin(); f!=r.end(); ++f) {
@@ -416,7 +416,7 @@ namespace embree
         {
           /* allocate buffers */
           const size_t numTimeSegments = bvh->numTimeSteps-1; assert(bvh->numTimeSteps > 1);
-          NodeRef* roots = (NodeRef*) bvh->alloc.threadLocal()->malloc(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
+          NodeRef* roots = (NodeRef*) bvh->alloc.threadLocal()->malloc(&bvh->alloc,sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
           
           /* build BVH for each timestep */
           avector<BBox3fa> boxes(bvh->numTimeSteps);

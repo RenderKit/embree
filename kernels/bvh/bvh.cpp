@@ -117,7 +117,7 @@ namespace embree
     else if (node.isAlignedNode()) 
     {
       AlignedNode* oldnode = node.alignedNode();
-      AlignedNode* newnode = (BVHN::AlignedNode*) allocator.malloc(sizeof(BVHN::AlignedNode),byteNodeAlignment);
+      AlignedNode* newnode = (BVHN::AlignedNode*) allocator.malloc(&alloc,sizeof(BVHN::AlignedNode),byteNodeAlignment);
       *newnode = *oldnode;
       for (size_t c=0; c<N; c++)
         newnode->child(c) = layoutLargeNodesRecursion(oldnode->child(c),allocator);
