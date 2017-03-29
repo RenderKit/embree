@@ -156,48 +156,25 @@ namespace embree
 
       /*! Constructor for usage with ThreadLocalData */
       __forceinline ThreadLocal2 (FastAllocator* alloc = nullptr) 
-      {
-        allocators[0] = ThreadLocal(alloc); 
-        allocators[1] = ThreadLocal(alloc); 
-        alloc0 = &allocators[0]; 
-        alloc1 = &allocators[1];
-        //if (alloc && alloc->use_single_mode) alloc1 = &allocators[0]; // FIXME: enable
-      }
+        : alloc0(alloc), alloc1(alloc) {}
 
       /*! bind to fast allocator */
       void bind(FastAllocator* alloc) 
       {
-        allocators[0].bind(alloc);
-        allocators[1].bind(alloc);
-        alloc0 = &allocators[0]; 
-        alloc1 = &allocators[1];
-        //if (alloc->use_single_mode) alloc1 = &allocators[0]; // FIXME: enable
+        alloc0.bind(alloc);
+        alloc1.bind(alloc);
       }
       
       /*! unbind from fast allocator */
       void unbind(FastAllocator* alloc) 
       {
-        allocators[0].unbind(alloc);
-        allocators[1].unbind(alloc);
+        alloc0.unbind(alloc);
+        alloc1.unbind(alloc);
       }
       
     public:  
-      ThreadLocal* alloc0;
-      ThreadLocal* alloc1;
-
-    private:
-      ThreadLocal allocators[2];
-    };
-
-    /*! Builder interface to create thread local allocator */
-    struct CreateAlloc2
-    {
-    public:
-      __forceinline CreateAlloc2 (FastAllocator* allocator) : allocator(allocator) {}
-      __forceinline ThreadLocal2* operator() () const { return allocator->threadLocal2();  }
-
-    private:
-      FastAllocator* allocator;
+      ThreadLocal alloc0;
+      ThreadLocal alloc1;
     };
 
     FastAllocator (Device* device, bool osAllocation) 
@@ -231,9 +208,11 @@ namespace embree
     }
 
     /*! returns first fast thread local allocator */
-    __forceinline ThreadLocal* threadLocal() {
-      return threadLocal2()->alloc0;
+    __forceinline ThreadLocal* _threadLocal() {
+      return &threadLocal2()->alloc0;
     }
+
+  private:
 
     /*! returns both fast thread local allocators */
     __forceinline ThreadLocal2* threadLocal2() 
@@ -249,31 +228,55 @@ namespace embree
       return alloc;
     }
 
+  public:
+
     struct CachedAllocator
     {
-      __forceinline CachedAllocator(FastAllocator* alloc, ThreadLocal* talloc)
-      : alloc(alloc), talloc(talloc) {}
-
-      __forceinline void* operator() (size_t bytes, size_t align = 16) const {
-        return talloc->malloc(alloc,bytes,align);
+      __forceinline CachedAllocator(void* ptr)
+        : alloc(nullptr), talloc0(nullptr), talloc1(nullptr) 
+      {
+        assert(ptr == nullptr);
       }
 
-      __forceinline void* malloc (size_t bytes, size_t align = 16) const {
-        return talloc->malloc(alloc,bytes,align);
+      __forceinline CachedAllocator(FastAllocator* alloc, ThreadLocal2* talloc)
+        : alloc(alloc), talloc0(&talloc->alloc0), talloc1(alloc->use_single_mode ? &talloc->alloc0 : &talloc->alloc1) {}
+
+      __forceinline operator bool () const {
+        return alloc != nullptr;
+      }
+
+      __forceinline void* operator() (size_t bytes, size_t align = 16) const {
+        return talloc0->malloc(alloc,bytes,align);
+      }
+
+      __forceinline void* malloc0 (size_t bytes, size_t align = 16) const {
+        return talloc0->malloc(alloc,bytes,align);
+      }
+
+      __forceinline void* malloc1 (size_t bytes, size_t align = 16) const {
+        return talloc1->malloc(alloc,bytes,align);
       }
 
     public:
       FastAllocator* alloc;
-      ThreadLocal* talloc;
+      ThreadLocal* talloc0;
+      ThreadLocal* talloc1;
     };
 
-    __forceinline CachedAllocator getCachedAllocator0() {
-      return CachedAllocator(this,threadLocal2()->alloc0);
+    __forceinline CachedAllocator getCachedAllocator() {
+      return CachedAllocator(this,threadLocal2());
     }
 
-    __forceinline CachedAllocator getCachedAllocator1() {
-      return CachedAllocator(this,threadLocal2()->alloc1);
-    }
+    /*! Builder interface to create thread local allocator */
+    struct Create
+    {
+    public:
+      __forceinline Create (FastAllocator* allocator) : allocator(allocator) {}
+      __forceinline CachedAllocator operator() () const { return allocator->getCachedAllocator();  }
+
+    private:
+      FastAllocator* allocator;
+    };
 
     /*! initializes the grow size */
     __forceinline void initGrowSizeAndNumSlots(size_t bytesAllocate, bool compact) 

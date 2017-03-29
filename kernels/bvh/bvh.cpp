@@ -104,11 +104,11 @@ namespace embree
     for (size_t i=0; i<lst.size(); i++)
       lst[i].node->setBarrier();
       
-    root = layoutLargeNodesRecursion(root,*alloc.threadLocal());
+    root = layoutLargeNodesRecursion(root,alloc.getCachedAllocator());
   }
   
   template<int N>
-  typename BVHN<N>::NodeRef BVHN<N>::layoutLargeNodesRecursion(NodeRef& node, FastAllocator::ThreadLocal& allocator)
+  typename BVHN<N>::NodeRef BVHN<N>::layoutLargeNodesRecursion(NodeRef& node, const FastAllocator::CachedAllocator& allocator)
   {
     if (node.isBarrier()) {
       node.clearBarrier();
@@ -117,7 +117,7 @@ namespace embree
     else if (node.isAlignedNode()) 
     {
       AlignedNode* oldnode = node.alignedNode();
-      AlignedNode* newnode = (BVHN::AlignedNode*) allocator.malloc(&alloc,sizeof(BVHN::AlignedNode),byteNodeAlignment);
+      AlignedNode* newnode = (BVHN::AlignedNode*) allocator.malloc0(sizeof(BVHN::AlignedNode),byteNodeAlignment);
       *newnode = *oldnode;
       for (size_t c=0; c<N; c++)
         newnode->child(c) = layoutLargeNodesRecursion(oldnode->child(c),allocator);

@@ -144,14 +144,8 @@ namespace embree
   public:
 
     /*! Builder interface to create allocator */
-    struct CreateAlloc
-    {
-    public:
-      __forceinline CreateAlloc (BVHN* bvh) : bvh(bvh) {}
-      __forceinline FastAllocator::ThreadLocal2* operator() () const { return bvh->alloc.threadLocal2();  }
-
-    private:
-      BVHN* bvh;
+    struct CreateAlloc : public FastAllocator::Create {
+      __forceinline CreateAlloc (BVHN* bvh) : FastAllocator::Create(&bvh->alloc) {}
     };
 
     /*! Pointer that points to a node or a list of primitives */
@@ -419,14 +413,9 @@ namespace embree
 
       struct Create
       {
-        FastAllocator* const allocator;
-
-        __forceinline Create(FastAllocator* allocator)
-          : allocator(allocator) {}
-
-        __forceinline NodeRef operator() (FastAllocator::ThreadLocal2* alloc, size_t numChildren = 0) const
+        __forceinline NodeRef operator() (const FastAllocator::CachedAllocator& alloc, size_t numChildren = 0) const
         {
-          AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(allocator,sizeof(AlignedNode),byteNodeAlignment); node->clear();
+          AlignedNode* node = (AlignedNode*) alloc.malloc0(sizeof(AlignedNode),byteNodeAlignment); node->clear();
           return BVHN::encodeNode(node);
         }
       };
@@ -441,15 +430,10 @@ namespace embree
 
       struct Create2
       {
-        FastAllocator* const allocator;
-
-        __forceinline Create2(FastAllocator* allocator)
-          : allocator(allocator) {}
-
         template<typename BuildRecord>
-        __forceinline NodeRef operator() (BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc) const
+        __forceinline NodeRef operator() (BuildRecord* children, const size_t num, const FastAllocator::CachedAllocator& alloc) const
         {
-          AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(allocator,sizeof(AlignedNode), byteNodeAlignment); node->clear();
+          AlignedNode* node = (AlignedNode*) alloc.malloc0(sizeof(AlignedNode), byteNodeAlignment); node->clear();
           for (size_t i=0; i<num; i++) node->setBounds(i,children[i].bounds());
           return encodeNode(node);
         }
@@ -593,14 +577,9 @@ namespace embree
 
       struct Create
       {
-        FastAllocator* const allocator;
-
-        __forceinline Create(FastAllocator* allocator)
-          : allocator(allocator) {}
-
-        __forceinline NodeRef operator() (FastAllocator::ThreadLocal2* alloc) const
+        __forceinline NodeRef operator() (const FastAllocator::CachedAllocator& alloc) const
         {
-          AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(allocator,sizeof(AlignedNodeMB),byteNodeAlignment); node->clear();
+          AlignedNodeMB* node = (AlignedNodeMB*) alloc.malloc0(sizeof(AlignedNodeMB),byteNodeAlignment); node->clear();
           return BVHN::encodeNode(node);
         }
       };
@@ -614,15 +593,10 @@ namespace embree
 
       struct Create2
       {
-        FastAllocator* const allocator;
-
-        __forceinline Create2(FastAllocator* allocator)
-          : allocator(allocator) {}
-
         template<typename BuildRecord>
-        __forceinline NodeRef operator() (BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc) const
+        __forceinline NodeRef operator() (BuildRecord* children, const size_t num, const FastAllocator::CachedAllocator& alloc) const
         {
-          AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(allocator,sizeof(AlignedNodeMB),byteNodeAlignment); node->clear();
+          AlignedNodeMB* node = (AlignedNodeMB*) alloc.malloc0(sizeof(AlignedNodeMB),byteNodeAlignment); node->clear();
           return encodeNode(node);
         }
       };
@@ -817,14 +791,9 @@ namespace embree
       
       struct Create
       {
-        FastAllocator* const allocator;
-
-        __forceinline Create(FastAllocator* allocator)
-          : allocator(allocator) {}
-
-        __forceinline NodeRef operator() (FastAllocator::ThreadLocal2* alloc) const
+        __forceinline NodeRef operator() (const FastAllocator::CachedAllocator& alloc) const
         {
-          UnalignedNode* node = (UnalignedNode*) alloc->alloc0->malloc(allocator,sizeof(UnalignedNode),byteNodeAlignment); node->clear();
+          UnalignedNode* node = (UnalignedNode*) alloc.malloc0(sizeof(UnalignedNode),byteNodeAlignment); node->clear();
           return BVHN::encodeNode(node);
         }
       };
@@ -902,14 +871,9 @@ namespace embree
 
       struct Create
       {
-        FastAllocator* const allocator;
-
-        __forceinline Create(FastAllocator* allocator)
-          : allocator(allocator) {}
-
-        __forceinline NodeRef operator() (FastAllocator::ThreadLocal2* alloc) const
+        __forceinline NodeRef operator() (const FastAllocator::CachedAllocator& alloc) const
         {
-          UnalignedNodeMB* node = (UnalignedNodeMB*) alloc->alloc0->malloc(allocator,sizeof(UnalignedNodeMB),byteNodeAlignment); node->clear();
+          UnalignedNodeMB* node = (UnalignedNodeMB*) alloc.malloc0(sizeof(UnalignedNodeMB),byteNodeAlignment); node->clear();
           return encodeNode(node);
         }
       };
@@ -1009,20 +973,15 @@ namespace embree
 
       struct Create2
       {
-        FastAllocator* const allocator;
-
-        __forceinline Create2(FastAllocator* allocator)
-          : allocator(allocator) {}
-
         template<typename BuildRecord>
-        __forceinline NodeRef operator() (BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc) const
+        __forceinline NodeRef operator() (BuildRecord* children, const size_t n, const FastAllocator::CachedAllocator& alloc) const
         {
           __aligned(64) AlignedNode node;
           node.clear();
           for (size_t i=0; i<n; i++) {
             node.setBounds(i,children[i].bounds());
           }
-          QuantizedNode *qnode = (QuantizedNode*) alloc->alloc0->malloc(allocator,sizeof(QuantizedNode), byteAlignment);
+          QuantizedNode *qnode = (QuantizedNode*) alloc.malloc0(sizeof(QuantizedNode), byteAlignment);
           qnode->init(node);
           
           return (size_t)qnode | tyQuantizedNode;
@@ -1239,7 +1198,7 @@ namespace embree
 
     /*! lays out num large nodes of the BVH */
     void layoutLargeNodes(size_t num);
-    NodeRef layoutLargeNodesRecursion(NodeRef& node, FastAllocator::ThreadLocal& allocator);
+    NodeRef layoutLargeNodesRecursion(NodeRef& node, const FastAllocator::CachedAllocator& allocator);
 
     /*! called by all builders before build starts */
     double preBuild(const std::string& builderName);
@@ -1252,7 +1211,7 @@ namespace embree
       BVHN* bvh;
       Allocator (BVHN* bvh) : bvh(bvh) {}
       __forceinline void* operator() (size_t bytes) const { 
-        return bvh->alloc.threadLocal()->malloc(&bvh->alloc,bytes);
+        return bvh->alloc._threadLocal()->malloc(&bvh->alloc,bytes); 
       }
     };
 
