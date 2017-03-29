@@ -708,7 +708,7 @@ namespace embree
 
       size_t getBlockTotalAllocatedBytes() const {
         const size_t sizeof_Header = offsetof(Block,data[0]);
-        return min(max(allocEnd,size_t(cur)),reserveEnd) + sizeof_Header + wasted;
+        return min(cur,reserveEnd) + sizeof_Header + wasted;
       }
 
       size_t getBlockTotalReservedBytes() const {
