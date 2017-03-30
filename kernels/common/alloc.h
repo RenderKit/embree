@@ -138,36 +138,36 @@ namespace embree
       __forceinline void bind(FastAllocator* alloc_i) 
       {
         assert(alloc_i);
-        if (alloc == alloc_i) return;
+        if (alloc.load() == alloc_i) return;
         Lock<SpinLock> lock(mutex);
-        //if (alloc == alloc_i) return; // not required as only one thread calls bind
-        if (alloc) {
-          alloc->bytesUsed   += alloc0.getUsedBytes()   + alloc1.getUsedBytes();
-          alloc->bytesWasted += alloc0.getWastedBytes() + alloc1.getWastedBytes();
+        //if (alloc.load() == alloc_i) return; // not required as only one thread calls bind
+        if (alloc.load()) {
+          alloc.load()->bytesUsed   += alloc0.getUsedBytes()   + alloc1.getUsedBytes();
+          alloc.load()->bytesWasted += alloc0.getWastedBytes() + alloc1.getWastedBytes();
         }
         alloc0.init(alloc_i);
         alloc1.init(alloc_i);
-        alloc = alloc_i;
-        alloc->join(this);
+        alloc.store(alloc_i);
+        alloc_i->join(this);
       }
 
       /*! unbind to fast allocator */
       void unbind(FastAllocator* alloc_i) 
       {
         assert(alloc_i);
-        if (alloc != alloc_i) return;
+        if (alloc.load() != alloc_i) return;
         Lock<SpinLock> lock(mutex);
-        if (alloc != alloc_i) return; // required as a different thread calls unbind
-        alloc->bytesUsed   += alloc0.getUsedBytes()   + alloc1.getUsedBytes();
-        alloc->bytesWasted += alloc0.getWastedBytes() + alloc1.getWastedBytes();
+        if (alloc.load() != alloc_i) return; // required as a different thread calls unbind
+        alloc.load()->bytesUsed   += alloc0.getUsedBytes()   + alloc1.getUsedBytes();
+        alloc.load()->bytesWasted += alloc0.getWastedBytes() + alloc1.getWastedBytes();
         alloc0.init(nullptr);
         alloc1.init(nullptr);
-        alloc = nullptr;
+        alloc.store(nullptr);
       }
 
     public:
       SpinLock mutex;        //!< required as unbind is called from other threads
-      FastAllocator* alloc;  //!< parent allocator
+      std::atomic<FastAllocator*> alloc;  //!< parent allocator
       ThreadLocal alloc0;
       ThreadLocal alloc1;
     };
