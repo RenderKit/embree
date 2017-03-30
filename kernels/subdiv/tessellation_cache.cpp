@@ -332,7 +332,7 @@ namespace isa
 
   cache_regression_test cache_regression;
 
-extern "C" void printTessCacheStats()
+void printTessCacheStats()
 {
   PRINT("SHARED TESSELLATION CACHE");
   SharedTessellationCacheStats::printStats();

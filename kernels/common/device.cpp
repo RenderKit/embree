@@ -103,7 +103,7 @@ namespace isa
 
     bvh4_factory = make_unique(new BVH4Factory(enabled_builder_cpu_features, enabled_cpu_features));
 
-#if defined(__TARGET_AVX__)
+#if defined(__AVX__)
     bvh8_factory = make_unique(new BVH8Factory(enabled_builder_cpu_features, enabled_cpu_features));
 #endif
 

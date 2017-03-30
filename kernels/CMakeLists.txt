@@ -25,6 +25,7 @@ SOURCE_GROUP("" FILES embree.rc)
 
 SET(EMBREE_LIBRARY_FILES 
   embree.rc
+  common/rtcore_main.cpp
 )
 
 IF (EMBREE_RAY_PACKETS)

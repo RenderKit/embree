@@ -187,7 +187,7 @@ namespace isa
   template class BVHN<8>;
 #endif
 
-#if !defined(__AVX__) || !defined(__TARGET_SSE2__) && !defined(__TARGET_SSE42__)
+#if defined(__SSE2__)
   template class BVHN<4>;
 #endif
 }
