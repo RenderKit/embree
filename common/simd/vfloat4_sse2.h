@@ -501,7 +501,7 @@ namespace embree
   /// Sorting Network
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vfloat4 sortNetwork(const vfloat4& v)
+  __forceinline vfloat4 sort_ascending(const vfloat4& v)
   {
     const vfloat4 a0 = v;
     const vfloat4 b0 = shuffle<1,0,3,2>(a0);
@@ -515,6 +515,24 @@ namespace embree
     const vfloat4 b2 = shuffle<0,2,1,3>(a2);
     const vfloat4 c2 = min(a2,b2);
     const vfloat4 d2 = max(a2,b2);
+    const vfloat4 a3 = select<0x2 /* 0b0010 */>(c2,d2);
+    return a3;
+  }
+
+  __forceinline vfloat4 sort_descending(const vfloat4& v)
+  {
+    const vfloat4 a0 = v;
+    const vfloat4 b0 = shuffle<1,0,3,2>(a0);
+    const vfloat4 c0 = max(a0,b0);
+    const vfloat4 d0 = min(a0,b0);
+    const vfloat4 a1 = select<0x5 /* 0b0101 */>(c0,d0);
+    const vfloat4 b1 = shuffle<2,3,0,1>(a1);
+    const vfloat4 c1 = max(a1,b1);
+    const vfloat4 d1 = min(a1,b1);
+    const vfloat4 a2 = select<0x3 /* 0b0011 */>(c1,d1);
+    const vfloat4 b2 = shuffle<0,2,1,3>(a2);
+    const vfloat4 c2 = max(a2,b2);
+    const vfloat4 d2 = min(a2,b2);
     const vfloat4 a3 = select<0x2 /* 0b0010 */>(c2,d2);
     return a3;
   }

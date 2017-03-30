@@ -100,9 +100,9 @@ namespace embree
         const vint<Nx> dist_i = select(vmask, (asInt(tNear) & 0xfffffff8) | vint<Nx>(step), 0x7fffffff);
 #if defined(__AVX512F__) && !defined(__AVX512VL__) // KNL
         const vint<N> tmp = extractN<N,0>(dist_i);
-        const vint<Nx> dist_i_sorted = sortNetwork(tmp);
+        const vint<Nx> dist_i_sorted = sort_ascending(tmp);
 #else
-        const vint<Nx> dist_i_sorted = sortNetwork(dist_i);
+        const vint<Nx> dist_i_sorted = sort_ascending(dist_i);
 #endif
         const vint<Nx> sorted_index = dist_i_sorted & 7;
 
@@ -429,9 +429,9 @@ namespace embree
         const vint<Nx> dist_i = select(vmask, (asInt(tNear) & 0xfffffff8) | vint<Nx>(step), 0x7fffffff);
 #if defined(__AVX512F__) && !defined(__AVX512VL__) // KNL
         const vint<N> tmp = extractN<N,0>(dist_i);
-        const vint<Nx> dist_i_sorted = sortNetwork(tmp);
+        const vint<Nx> dist_i_sorted = sort_ascending(tmp);
 #else
-        const vint<Nx> dist_i_sorted = sortNetwork(dist_i);
+        const vint<Nx> dist_i_sorted = sort_ascending(dist_i);
 #endif
         const vint<Nx> sorted_index = dist_i_sorted & 7;
 
