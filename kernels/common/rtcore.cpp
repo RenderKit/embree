@@ -28,6 +28,8 @@
 
 namespace embree
 {  
+namespace isa
+{
   /* mutex to make API thread safe */
   static MutexSys g_mutex;
 
@@ -1814,4 +1816,5 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
 #endif
+}
 }

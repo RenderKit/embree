@@ -21,6 +21,8 @@
 
 namespace embree
 {
+namespace isa
+{
   class AccelInstance : public Accel
   {
   public:
@@ -51,4 +53,5 @@ namespace embree
     std::unique_ptr<AccelData> accel;
     std::unique_ptr<Builder> builder;
   };
+}
 }

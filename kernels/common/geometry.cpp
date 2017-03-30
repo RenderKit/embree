@@ -19,6 +19,8 @@
 
 namespace embree
 {
+namespace isa
+{
   Geometry::Geometry (Scene* parent, Type type, size_t numPrimitives, size_t numTimeSteps, RTCGeometryFlags flags) 
     : parent(parent), id(0), type(type), 
       numPrimitives(numPrimitives), numPrimitivesChanged(false),
@@ -342,4 +344,5 @@ namespace embree
       }
     }
   }
+}
 }

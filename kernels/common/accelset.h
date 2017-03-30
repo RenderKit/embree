@@ -23,6 +23,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /*! Base class for set of acceleration structures. */
   class AccelSet : public Geometry
   {
@@ -489,4 +491,5 @@ namespace embree
                                   (AccelSet::OccludedFuncN)intersector::occluded, \
                                   TOSTRING(isa) "::" TOSTRING(symbol)); \
   }
+}
 }

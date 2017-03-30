@@ -19,6 +19,8 @@
 
 namespace embree
 {
+namespace isa
+{
   LineSegments::LineSegments (Scene* parent, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps)
     : Geometry(parent,LINE_SEGMENTS,numPrimitives,numTimeSteps,flags)
   {
@@ -191,4 +193,5 @@ namespace embree
       if (ddPdudu) vfloatx::storeu(valid,dPdu+i,vfloatx(zero));
     }
   }
+}
 }

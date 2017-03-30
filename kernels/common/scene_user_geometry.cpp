@@ -19,6 +19,8 @@
 
 namespace embree
 {
+namespace isa
+{
   UserGeometry::UserGeometry (Scene* parent, RTCGeometryFlags gflags, size_t items, size_t numTimeSteps) 
     : AccelSet(parent,gflags,items,numTimeSteps) {}
   
@@ -199,4 +201,5 @@ namespace embree
 
     intersectors.intersectorN.occluded = occluded;
   }
+}
 }

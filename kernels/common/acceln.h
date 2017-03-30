@@ -20,6 +20,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /*! merges N acceleration structures together, by processing them in order */
   class AccelN : public Accel
   {
@@ -59,3 +61,5 @@ namespace embree
     bool validIntersectorN;
   };
 }
+}
+

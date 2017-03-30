@@ -34,6 +34,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /*! Gathers ray tracing statistics. We count 1) how often a code
    *  location is reached, 2) how many SIMD lanes are active, 3) how
    *  many SIMD lanes reach the code location */
@@ -125,4 +127,5 @@ namespace embree
   private:
     static Stat instance;
   };
+}
 }

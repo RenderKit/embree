@@ -31,6 +31,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /********************** Bezier1v **************************/
 
   Bezier1v::Type::Type () 
@@ -184,4 +186,5 @@ namespace embree
   }
 
   Object::Type Object::type;
+}
 }

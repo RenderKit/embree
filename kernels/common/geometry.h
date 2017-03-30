@@ -20,6 +20,8 @@
 
 namespace embree
 {
+namespace isa
+{
   class Scene;
 
   /*! Base class all geometries are derived from */
@@ -550,4 +552,5 @@ namespace embree
     ftime = timeScaled - itimef;
     return vint<N>(itimef);
   }
+}
 }

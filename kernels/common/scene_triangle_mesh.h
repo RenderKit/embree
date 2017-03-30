@@ -21,6 +21,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /*! Triangle Mesh */
   struct TriangleMesh : public Geometry
   {
@@ -272,4 +274,5 @@ namespace embree
     vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
     vector<APIBuffer<char>> userbuffers;         //!< user buffers
   };
+}
 }

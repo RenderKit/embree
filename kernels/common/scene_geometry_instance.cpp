@@ -19,6 +19,8 @@
 
 namespace embree
 {
+namespace isa
+{
   GeometryInstance::GeometryInstance (Scene* parent, Geometry* geom) 
     : Geometry(parent,Type(geom->type | INSTANCE), 1, geom->numTimeSteps, geom->flags), local2world(one), world2local(one), geom(geom) 
   {
@@ -119,4 +121,5 @@ namespace embree
     this->mask = mask; 
     Geometry::update();
   } 
+}
 }

@@ -21,6 +21,8 @@
 
 namespace embree
 {  
+namespace isa
+{
   template<class T, class S>
     static __forceinline T deCasteljau(const S& uu, const T& v0, const T& v1, const T& v2, const T& v3)
   {
@@ -382,4 +384,5 @@ namespace embree
   };
 
   typedef BezierPatchT<Vec3fa,Vec3fa_t> BezierPatch3fa;
+}
 }

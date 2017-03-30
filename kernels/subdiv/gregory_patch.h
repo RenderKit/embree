@@ -23,6 +23,8 @@
 
 namespace embree
 {  
+namespace isa
+{
   template<typename Vertex, typename Vertex_t = Vertex>
   class __aligned(64) GregoryPatchT
   {
@@ -903,4 +905,5 @@ namespace embree
 	for (size_t x=0; x<4; x++)
 	  matrix[y][x] = (Vertex_t)gpatch.v[y][x];
     }
+}
 }

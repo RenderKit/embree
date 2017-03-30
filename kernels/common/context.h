@@ -21,6 +21,8 @@
 
 namespace embree
 {
+namespace isa
+{
   class Scene;
 
   struct IntersectContext
@@ -56,4 +58,5 @@ namespace embree
     }
     
   };
+}
 }

@@ -24,6 +24,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /*! represents an array of bicubic bezier curves */
   struct NativeCurves : public Geometry
   {
@@ -309,4 +311,5 @@ namespace embree
     void preCommit();
     void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
   };
+}
 }

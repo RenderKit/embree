@@ -20,6 +20,8 @@
 
 namespace embree
 {
+namespace isa
+{
   struct Object
   {
     struct Type : public PrimitiveType 
@@ -70,4 +72,5 @@ namespace embree
     unsigned geomID;  //!< geometry ID
     unsigned primID;  //!< primitive ID
   };
+}
 }

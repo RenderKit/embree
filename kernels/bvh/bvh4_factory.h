@@ -23,6 +23,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /*! BVH4 instantiations */
   class BVH4Factory
   {
@@ -346,4 +348,5 @@ namespace embree
     DEFINE_BUILDER2(void,Scene,size_t,BVH4QuantizedQuad4iSceneBuilderSAH);
     
   };
+}
 }

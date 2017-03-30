@@ -21,6 +21,8 @@
 
 namespace embree
 {
+namespace isa
+{
   struct Bezier1i
   {
     struct Type : public PrimitiveType {
@@ -80,4 +82,5 @@ namespace embree
     unsigned geom;     //!< geometry ID
     unsigned prim;     //!< primitive ID
   };
+}
 }

@@ -21,6 +21,8 @@
 
 namespace embree
 {
+namespace isa
+{
 #define MODE_HIGH_QUALITY (1<<8)
 
   /*! virtual interface for all hierarchy builders */
@@ -70,4 +72,5 @@ namespace embree
   typedef void (*createQuadMeshAccelTy)(QuadMesh* mesh, AccelData*& accel, Builder*& builder);
   typedef void (*createAccelSetAccelTy)(AccelSet* mesh, AccelData*& accel, Builder*& builder);
 
+}
 }

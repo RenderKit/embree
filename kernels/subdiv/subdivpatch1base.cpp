@@ -18,6 +18,8 @@
 
 namespace embree
 {
+namespace isa
+{
   SubdivPatch1Base::SubdivPatch1Base (const unsigned int gID,
                                       const unsigned int pID,
                                       const unsigned int subPatch,
@@ -123,4 +125,5 @@ namespace embree
 
     return grid_changed;
   }
+}
 }

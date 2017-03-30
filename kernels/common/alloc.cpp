@@ -19,6 +19,8 @@
 
 namespace embree
 {
+namespace isa
+{
   struct fast_allocator_regression_test : public RegressionTest
   {
     BarrierSys barrier;
@@ -84,5 +86,5 @@ namespace embree
 
   fast_allocator_regression_test fast_allocator_regression;
 }
-
+}
 

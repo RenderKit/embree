@@ -31,6 +31,8 @@
 
 namespace embree
 {
+namespace isa
+{
   class SharedTessellationCacheStats
   {
   public:
@@ -335,4 +337,5 @@ namespace embree
 
    static SharedLazyTessellationCache sharedLazyTessellationCache;
  };
+}
 }

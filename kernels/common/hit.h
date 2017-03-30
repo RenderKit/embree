@@ -20,6 +20,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /* Hit structure for K hits */
   template<int K>
   struct HitK
@@ -88,4 +90,5 @@ namespace embree
                 << "  Ng = " << ray.Ng
                 << "}";
   }
+}
 }

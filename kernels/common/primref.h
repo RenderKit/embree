@@ -21,6 +21,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /*! A primitive reference stores the bounds of the primitive and its ID. */
   struct __aligned(32) PrimRef 
   {
@@ -150,4 +152,5 @@ namespace embree
     std::swap(a,b);
 #endif
   }
+}
 }

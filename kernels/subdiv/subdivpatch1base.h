@@ -29,6 +29,8 @@
 
 namespace embree
 {
+namespace isa
+{
   struct __aligned(64) SubdivPatch1Base
   {
   public:
@@ -125,8 +127,6 @@ namespace embree
     void set_subPatch(const unsigned s) const { ((PatchHalfEdge*)patch_v)->subPatch = s; }
   };
 
-  namespace isa
-  {
     Vec3fa patchEval(const SubdivPatch1Base& patch, const float uu, const float vv);
     Vec3fa patchNormal(const SubdivPatch1Base& patch, const float uu, const float vv);
     
@@ -155,5 +155,5 @@ namespace embree
                            const unsigned y0, const unsigned y1,
                            const unsigned swidth, const unsigned sheight,
                            const SubdivMesh* const geom);
-  }
+}
 }

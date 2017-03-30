@@ -20,6 +20,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /* Precalculated representation for M triangles. Stores for each
      triangle a base vertex, two edges, and the geometry normal to
      speed up intersection calculations */
@@ -173,4 +175,5 @@ namespace embree
   typename TriangleM<M>::Type TriangleM<M>::type;
 
   typedef TriangleM<4> Triangle4;
+}
 }

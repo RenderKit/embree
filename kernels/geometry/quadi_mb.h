@@ -21,6 +21,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /* Stores M motion blur quads from an indexed face set */
   template <int M>
   struct QuadMiMB
@@ -286,4 +288,5 @@ namespace embree
   typename QuadMiMB<M>::Type QuadMiMB<M>::type;
 
   typedef QuadMiMB<4> Quad4iMB;
+}
 }

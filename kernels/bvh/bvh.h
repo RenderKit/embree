@@ -26,6 +26,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /*! flags used to enable specific node types in intersectors */
   enum BVHNodeFlags
   {
@@ -1340,4 +1342,5 @@ namespace embree
 
   typedef BVHN<4> BVH4;
   typedef BVHN<8> BVH8;
+}
 }

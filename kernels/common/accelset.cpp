@@ -19,6 +19,8 @@
 
 namespace embree
 {
+namespace isa
+{
   AccelSet::AccelSet (Scene* parent, RTCGeometryFlags gflags, size_t numItems, size_t numTimeSteps) 
     : Geometry(parent,Geometry::USER_GEOMETRY,numItems,numTimeSteps,gflags), boundsFunc(nullptr), boundsFunc2(nullptr), boundsFunc3(nullptr), boundsFuncUserPtr(nullptr)
   {
@@ -78,4 +80,5 @@ namespace embree
   
   AccelSet::IntersectorN::IntersectorN (IntersectFuncN intersect, OccludedFuncN occluded, const char* name)
     : intersect(intersect), occluded(occluded), name(name) {}
+}
 }

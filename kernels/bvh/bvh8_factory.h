@@ -23,6 +23,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /*! BVH8 instantiations */
   class BVH8Factory
   {
@@ -253,4 +255,5 @@ namespace embree
 
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Quad4vSceneBuilderFastSpatialSAH);
   };
+}
 }

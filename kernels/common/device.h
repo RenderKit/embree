@@ -22,6 +22,8 @@
 
 namespace embree
 {
+namespace isa
+{
   class BVH4Factory;
   class BVH8Factory;
   class InstanceFactory;
@@ -99,4 +101,5 @@ namespace embree
     /* ray streams filter */
     RayStreamFilterFuncs rayStreamFilters;
   };
+}
 }

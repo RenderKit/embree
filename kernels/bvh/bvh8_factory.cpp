@@ -35,6 +35,8 @@
 
 namespace embree
 {
+namespace isa
+{
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Line4iIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Line4iMBIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Bezier1vIntersector1_OBB);
@@ -1010,6 +1012,7 @@ namespace embree
     scene->needQuadVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
+}
 }
 
 #endif

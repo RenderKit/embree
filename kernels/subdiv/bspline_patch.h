@@ -21,6 +21,8 @@
 
 namespace embree
 {
+namespace isa
+{
   class BSplineBasis // FIXME: factor of 1.0f/6.0f should be inside basis
   {
   public:
@@ -500,4 +502,5 @@ namespace embree
     };
   
   typedef BSplinePatchT<Vec3fa,Vec3fa_t> BSplinePatch3fa;
+}
 }

@@ -21,6 +21,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /* Stores M quads from an indexed face set */
   template <int M>
   struct QuadMi
@@ -266,4 +268,5 @@ namespace embree
   typename QuadMi<M>::Type QuadMi<M>::type;
 
   typedef QuadMi<4> Quad4i;
+}
 }

@@ -18,6 +18,8 @@
 
 namespace embree
 {
+namespace isa
+{
   PrecomputedBSplineBasis::PrecomputedBSplineBasis(int dj)
   {
     for (size_t i=0; i<=N; i++) 
@@ -40,4 +42,5 @@ namespace embree
   }
   PrecomputedBSplineBasis bspline_basis0(0);
   PrecomputedBSplineBasis bspline_basis1(1);
+}
 }

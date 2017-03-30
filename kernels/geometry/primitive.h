@@ -23,6 +23,8 @@
 
 namespace embree
 {
+namespace isa
+{
   struct PrimitiveType
   {
     /*! constructs the primitive type */
@@ -150,4 +152,5 @@ namespace embree
     __forceinline IntersectorKPrecalculationsMB(const vbool<K>& valid, const RayK<K>& ray, unsigned numTimeSteps)
       : RayKPrecalculationsMB<K>(valid, ray, numTimeSteps), Precalculations(valid, ray) {}
   };
+}
 }

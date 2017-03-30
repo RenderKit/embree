@@ -19,6 +19,8 @@
 
 namespace embree
 {
+namespace isa
+{
   QuadMesh::QuadMesh (Scene* parent, RTCGeometryFlags flags, size_t numQuads, size_t numVertices, size_t numTimeSteps)
     : Geometry(parent,QUAD_MESH,numQuads,numTimeSteps,flags)
   {
@@ -206,4 +208,5 @@ namespace embree
       }
     }
   }
+}
 }

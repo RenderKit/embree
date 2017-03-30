@@ -18,18 +18,14 @@
 
 namespace embree
 {
+namespace isa
+{
 #define DEFINE_SYMBOL2(type,name)               \
   typedef type (*name##Func)();                 \
   name##Func name;
   
 #define DECLARE_SYMBOL2(type,name)                                       \
-  namespace sse2      { extern type name(); }                           \
-  namespace sse41     { extern type name(); }                           \
-  namespace sse42     { extern type name(); }                           \
-  namespace avx       { extern type name(); }                           \
-  namespace avx2      { extern type name(); }                           \
-  namespace avx512knl { extern type name(); }                           \
-  namespace avx512skx { extern type name(); }                           \
+  extern type name();                                                   \
   void name##_error2() { throw_RTCError(RTC_UNKNOWN_ERROR,"internal error in ISA selection for " TOSTRING(name)); } \
   type name##_error() { return type(name##_error2); }                 \
   type name##_zero() { return type(nullptr); }
@@ -39,12 +35,7 @@ namespace embree
   symbol##Func symbol;
 
 #define DECLARE_BUILDER2(Accel,Mesh,Args,symbol)                         \
-  namespace sse2      { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace sse41     { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace avx       { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace avx2      { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace avx512knl { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace avx512skx { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
+  extern Builder* symbol(Accel* accel, Mesh* scene, Args args);         \
   void symbol##_error() { throw_RTCError(RTC_UNSUPPORTED_CPU,"builder " TOSTRING(symbol) " not supported by your CPU"); } \
 
 #define ZERO_SYMBOL(features,intersector)                      \
@@ -54,7 +45,28 @@ namespace embree
   intersector = decltype(intersector)(intersector##_error);
 
 #define SELECT_SYMBOL_DEFAULT(features,intersector) \
-  intersector = isa::intersector;
+  intersector = embree::isa::intersector;
+
+#if defined(__SSE42__)
+#define SELECT_SYMBOL_SSE42(features,intersector) \
+  intersector = embree::isa::intersector;
+#else
+#define SELECT_SYMBOL_SSE42(features,intersector)
+#endif
+
+#if defined(__AVX__)
+#define SELECT_SYMBOL_AVX(features,intersector) \
+  intersector = embree::isa::intersector;
+#else
+#define SELECT_SYMBOL_AVX(features,intersector)
+#endif
+
+#if defined(__AVX512F__)
+#define SELECT_SYMBOL_AVX512(features,intersector) \
+  intersector = embree::isa::intersector;
+#else
+#define SELECT_SYMBOL_AVX512(features,intersector)
+#endif
 
 #if defined(__SSE__)
 #if !defined(__TARGET_SIMD4__)
@@ -62,126 +74,68 @@ namespace embree
 #endif
 #endif
 
-#if defined(__TARGET_SSE42__)
-#define SELECT_SYMBOL_SSE42(features,intersector) \
-  if ((features & SSE42) == SSE42) intersector = sse42::intersector;
-#else
-#define SELECT_SYMBOL_SSE42(features,intersector)
-#endif
-
 #if defined(__TARGET_AVX__)
 #if !defined(__TARGET_SIMD8__)
 #define __TARGET_SIMD8__
 #endif
-#define SELECT_SYMBOL_AVX(features,intersector) \
-  if ((features & AVX) == AVX) intersector = avx::intersector;
-#else
-#define SELECT_SYMBOL_AVX(features,intersector)
 #endif
 
 #if defined(__TARGET_AVX2__)
 #if !defined(__TARGET_SIMD8__)
 #define __TARGET_SIMD8__
 #endif
-#define SELECT_SYMBOL_AVX2(features,intersector) \
-  if ((features & AVX2) == AVX2) intersector = avx2::intersector;
-#else
-#define SELECT_SYMBOL_AVX2(features,intersector)
 #endif
 
 #if defined(__TARGET_AVX512KNL__)
 #if !defined(__TARGET_SIMD16__)
 #define __TARGET_SIMD16__
 #endif
-#define SELECT_SYMBOL_AVX512KNL(features,intersector) \
-  if ((features & AVX512KNL) == AVX512KNL) intersector = avx512knl::intersector;
-#else
-#define SELECT_SYMBOL_AVX512KNL(features,intersector)
 #endif
 
 #if defined(__TARGET_AVX512SKX__)
 #if !defined(__TARGET_SIMD16__)
 #define __TARGET_SIMD16__
 #endif
-#define SELECT_SYMBOL_AVX512SKX(features,intersector) \
-  if ((features & AVX512SKX) == AVX512SKX) intersector = avx512skx::intersector;
-#else
-#define SELECT_SYMBOL_AVX512SKX(features,intersector)
 #endif
 
 #define SELECT_SYMBOL_DEFAULT_SSE42(features,intersector) \
-  SELECT_SYMBOL_DEFAULT(features,intersector);            \
-  SELECT_SYMBOL_SSE42(features,intersector);                                  
+  SELECT_SYMBOL_DEFAULT(features,intersector);
   
 #define SELECT_SYMBOL_DEFAULT_SSE42_AVX(features,intersector) \
-  SELECT_SYMBOL_DEFAULT(features,intersector);                \
-  SELECT_SYMBOL_SSE42(features,intersector);                  \
-  SELECT_SYMBOL_AVX(features,intersector);                        
+  SELECT_SYMBOL_DEFAULT(features,intersector);
   
 #define SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,intersector) \
-  SELECT_SYMBOL_DEFAULT(features,intersector);                     \
-  SELECT_SYMBOL_SSE42(features,intersector);                       \
-  SELECT_SYMBOL_AVX(features,intersector);                         \
-  SELECT_SYMBOL_AVX2(features,intersector);                       
+  SELECT_SYMBOL_DEFAULT(features,intersector);
 
 #define SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX512SKX(features,intersector) \
-  SELECT_SYMBOL_DEFAULT(features,intersector);                          \
-  SELECT_SYMBOL_SSE42(features,intersector);                            \
-  SELECT_SYMBOL_AVX(features,intersector);                              \
-  SELECT_SYMBOL_AVX512SKX(features,intersector);
+  SELECT_SYMBOL_DEFAULT(features,intersector);
 
 #define SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,intersector) \
-  SELECT_SYMBOL_DEFAULT(features,intersector);                                   \
-  SELECT_SYMBOL_AVX(features,intersector);                                       \
-  SELECT_SYMBOL_AVX2(features,intersector);                                      \
-  SELECT_SYMBOL_AVX512KNL(features,intersector);                                 \
-  SELECT_SYMBOL_AVX512SKX(features,intersector);
+  SELECT_SYMBOL_DEFAULT(features,intersector);
 
 #define SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,intersector) \
-  SELECT_SYMBOL_DEFAULT(features,intersector);                         \
-  SELECT_SYMBOL_AVX(features,intersector);                             \
-  SELECT_SYMBOL_AVX2(features,intersector);                            \
-  SELECT_SYMBOL_AVX512SKX(features,intersector);
+  SELECT_SYMBOL_DEFAULT(features,intersector);
 
 #define SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,intersector) \
-  SELECT_SYMBOL_DEFAULT(features,intersector);                                         \
-  SELECT_SYMBOL_SSE42(features,intersector);                                           \
-  SELECT_SYMBOL_AVX(features,intersector);                                             \
-  SELECT_SYMBOL_AVX2(features,intersector);                                            \
-  SELECT_SYMBOL_AVX512KNL(features,intersector);                                       \
-  SELECT_SYMBOL_AVX512SKX(features,intersector);
+  SELECT_SYMBOL_DEFAULT(features,intersector);
 
 #define SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512SKX(features,intersector) \
-  SELECT_SYMBOL_DEFAULT(features,intersector);                               \
-  SELECT_SYMBOL_SSE42(features,intersector);                                 \
-  SELECT_SYMBOL_AVX(features,intersector);                                   \
-  SELECT_SYMBOL_AVX2(features,intersector);                                  \
-  SELECT_SYMBOL_AVX512SKX(features,intersector);
-  
+  SELECT_SYMBOL_DEFAULT(features,intersector);
+
 #define SELECT_SYMBOL_DEFAULT_AVX(features,intersector) \
   SELECT_SYMBOL_DEFAULT(features,intersector);          \
-  SELECT_SYMBOL_AVX(features,intersector);                        
   
 #define SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,intersector) \
-  SELECT_SYMBOL_DEFAULT(features,intersector);               \
-  SELECT_SYMBOL_AVX(features,intersector);                   \
-  SELECT_SYMBOL_AVX2(features,intersector);                       
+  SELECT_SYMBOL_DEFAULT(features,intersector);
   
 #define SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,intersector) \
-  SELECT_SYMBOL_DEFAULT(features,intersector);                    \
-  SELECT_SYMBOL_AVX(features,intersector);                        \
-  SELECT_SYMBOL_AVX512KNL(features,intersector);
+  SELECT_SYMBOL_DEFAULT(features,intersector);
 
 #define SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,intersector) \
-  SELECT_SYMBOL_DEFAULT(features,intersector);                              \
-  SELECT_SYMBOL_AVX(features,intersector);                                  \
-  SELECT_SYMBOL_AVX512KNL(features,intersector);                            \
-  SELECT_SYMBOL_AVX512SKX(features,intersector);
+  SELECT_SYMBOL_DEFAULT(features,intersector);
 
 #define SELECT_SYMBOL_DEFAULT_AVX_AVX512SKX(features,intersector) \
-  SELECT_SYMBOL_DEFAULT(features,intersector);                    \
-  SELECT_SYMBOL_AVX(features,intersector);                        \
-  SELECT_SYMBOL_AVX512SKX(features,intersector);
+  SELECT_SYMBOL_DEFAULT(features,intersector);
   
 #define SELECT_SYMBOL_INIT_AVX(features,intersector) \
   INIT_SYMBOL(features,intersector);                 \
@@ -189,88 +143,43 @@ namespace embree
   
 #define SELECT_SYMBOL_INIT_AVX_AVX2(features,intersector) \
   INIT_SYMBOL(features,intersector);                      \
-  SELECT_SYMBOL_AVX(features,intersector);                \
-  SELECT_SYMBOL_AVX2(features,intersector);
+  SELECT_SYMBOL_AVX(features,intersector);
 
 #define SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,intersector) \
   INIT_SYMBOL(features,intersector);                                \
-  SELECT_SYMBOL_AVX(features,intersector);                          \
-  SELECT_SYMBOL_AVX2(features,intersector);                         \
-  SELECT_SYMBOL_AVX512SKX(features,intersector);
+  SELECT_SYMBOL_AVX(features,intersector);
 
 #define SELECT_SYMBOL_INIT_SSE42_AVX_AVX2(features,intersector) \
   INIT_SYMBOL(features,intersector);                            \
-  SELECT_SYMBOL_SSE42(features,intersector);                    \
-  SELECT_SYMBOL_AVX(features,intersector);                      \
-  SELECT_SYMBOL_AVX2(features,intersector);
+  SELECT_SYMBOL_SSE42(features,intersector);
   
 #define SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,intersector) \
   INIT_SYMBOL(features,intersector);                           \
-  SELECT_SYMBOL_AVX(features,intersector);                     \
-  SELECT_SYMBOL_AVX512KNL(features,intersector);
+  SELECT_SYMBOL_AVX(features,intersector);
 
 #define SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,intersector) \
   INIT_SYMBOL(features,intersector);                                     \
-  SELECT_SYMBOL_AVX(features,intersector);                               \
-  SELECT_SYMBOL_AVX512KNL(features,intersector);                         \
-  SELECT_SYMBOL_AVX512SKX(features,intersector);
+  SELECT_SYMBOL_AVX(features,intersector);
 
 #define SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,intersector) \
   INIT_SYMBOL(features,intersector);                                \
-  SELECT_SYMBOL_AVX(features,intersector);                          \
-  SELECT_SYMBOL_AVX2(features,intersector);                         \
-  SELECT_SYMBOL_AVX512KNL(features,intersector);
+  SELECT_SYMBOL_AVX(features,intersector);
 
 #define SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,intersector) \
   INIT_SYMBOL(features,intersector);                                          \
-  SELECT_SYMBOL_AVX(features,intersector);                                    \
-  SELECT_SYMBOL_AVX2(features,intersector);                                   \
-  SELECT_SYMBOL_AVX512KNL(features,intersector);                              \
-  SELECT_SYMBOL_AVX512SKX(features,intersector);
+  SELECT_SYMBOL_AVX(features,intersector);
 
 #define SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,intersector) \
   INIT_SYMBOL(features,intersector);                                                \
-  SELECT_SYMBOL_SSE42(features,intersector);                                        \
-  SELECT_SYMBOL_AVX(features,intersector);                                          \
-  SELECT_SYMBOL_AVX2(features,intersector);                                         \
-  SELECT_SYMBOL_AVX512KNL(features,intersector);                                    \
-  SELECT_SYMBOL_AVX512SKX(features,intersector);
+  SELECT_SYMBOL_SSE42(features,intersector);
 
 #define SELECT_SYMBOL_ZERO_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,intersector) \
   ZERO_SYMBOL(features,intersector);                                    \
-  SELECT_SYMBOL_SSE42(features,intersector);                            \
-  SELECT_SYMBOL_AVX(features,intersector);                              \
-  SELECT_SYMBOL_AVX2(features,intersector);                             \
-  SELECT_SYMBOL_AVX512KNL(features,intersector);                               \
-  SELECT_SYMBOL_AVX512SKX(features,intersector);
+  SELECT_SYMBOL_SSE42(features,intersector);
 
-#define SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,intersector) \
-  SELECT_SYMBOL_DEFAULT(features,intersector);                                   \
-  SELECT_SYMBOL_AVX(features,intersector);                                       \
-  SELECT_SYMBOL_AVX2(features,intersector);                                      \
-  SELECT_SYMBOL_AVX512KNL(features,intersector);                                 \
-  SELECT_SYMBOL_AVX512SKX(features,intersector);
-  
 #define SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,intersector) \
   INIT_SYMBOL(features,intersector);                                 \
-  SELECT_SYMBOL_AVX512KNL(features,intersector);                     \
-  SELECT_SYMBOL_AVX512SKX(features,intersector);
-  
-#define SELECT_SYMBOL_SSE42_AVX_AVX2(features,intersector) \
-  SELECT_SYMBOL_SSE42(features,intersector);               \
-  SELECT_SYMBOL_AVX(features,intersector);                 \
-  SELECT_SYMBOL_AVX2(features,intersector);
+  SELECT_SYMBOL_AVX512(features,intersector);
 
-  struct VerifyMultiTargetLinking {
-    static __noinline int getISA(int depth = 5) { 
-      if (depth == 0) return ISA; 
-      else return getISA(depth-1); 
-    }
-  };
-  namespace sse2      { int getISA(); };
-  namespace sse42     { int getISA(); };
-  namespace avx       { int getISA(); };
-  namespace avx2      { int getISA(); };
-  namespace avx512knl { int getISA(); };
-  namespace avx512skx { int getISA(); };
+}
 }

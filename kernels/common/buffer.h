@@ -20,6 +20,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /*! Implements a reference to a data buffer, this class does not own the buffer content. */
   class BufferRef
   {
@@ -277,4 +279,5 @@ namespace embree
   public:
     int userdata;    //!< special data
   };
+}
 }

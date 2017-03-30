@@ -19,6 +19,8 @@
 
 namespace embree
 {
+namespace isa
+{
   template<int N>
   BVHNStatistics<N>::BVHNStatistics (BVH* bvh) : bvh(bvh)
   {
@@ -171,4 +173,5 @@ namespace embree
 #if !defined(__AVX__) || !defined(__TARGET_SSE2__) && !defined(__TARGET_SSE42__)
   template class BVHNStatistics<4>;
 #endif
+}
 }

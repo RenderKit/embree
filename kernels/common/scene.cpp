@@ -21,6 +21,8 @@
  
 namespace embree
 {
+namespace isa
+{
   /* error raising rtcIntersect and rtcOccluded functions */
   void missing_rtcCommit()      { throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed"); }
   void invalid_rtcIntersect1()  { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect and rtcOccluded not enabled"); }
@@ -934,4 +936,5 @@ namespace embree
       }
     }
   }
+}
 }

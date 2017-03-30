@@ -22,6 +22,8 @@
 
 namespace embree
 {
+namespace isa
+{
   struct BezierPrim // FIXME: rename to BezierRef, remove!!!
   {
   public:
@@ -219,4 +221,5 @@ namespace embree
     unsigned geom;      //!< geometry ID
     unsigned prim;      //!< primitive ID
   };
+}
 }

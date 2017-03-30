@@ -21,6 +21,8 @@
 
 namespace embree
 {
+namespace isa
+{
   class BSplineBasis2 // FIXME: make compatible with basis from bspline_patch.h
   {
   public:
@@ -356,4 +358,5 @@ namespace embree
   #define CurveT BSplineCurveT
   typedef BSplineCurve3fa Curve3fa;
 #endif
+}
 }

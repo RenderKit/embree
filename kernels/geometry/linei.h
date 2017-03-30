@@ -20,6 +20,8 @@
 
 namespace embree
 {
+namespace isa
+{
   template <int M>
   struct LineMi
   {
@@ -254,4 +256,5 @@ namespace embree
   typename LineMi<M>::Type LineMi<M>::type;
 
   typedef LineMi<4> Line4i;
+}
 }

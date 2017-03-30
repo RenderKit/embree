@@ -18,6 +18,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /*! invokes the memory monitor callback */
   struct MemoryMonitorInterface {
     virtual void memoryMonitor(ssize_t bytes, bool post) = 0;
@@ -89,11 +91,12 @@ namespace embree
       bool hugepages;
     };
 }
+}
 
 /*! instantiate vector using monitored aligned allocations */
 #define VECTOR_INIT_ALLOCATOR
 #define vector_t mvector
-#define allocator_t aligned_monitored_allocator<T,std::alignment_of<T>::value>
+#define allocator_t isa::aligned_monitored_allocator<T,std::alignment_of<T>::value>
 #include "../common/sys/vector_t.h"
 #undef vector_t
 #undef allocator_t
@@ -101,7 +104,10 @@ namespace embree
 
 namespace embree
 {
+namespace isa
+{
   /*! monitored vector */
   //template<typename T> // FIXME: unfortunately not supported in VS2012
   //using mvector = vector_t<T,aligned_monitored_allocator<T,std::alignment_of<T>::value> >;
+}
 }

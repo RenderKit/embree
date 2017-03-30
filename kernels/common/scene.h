@@ -34,6 +34,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /*! Base class all scenes are derived from */
   class Scene : public Accel
   {
@@ -215,23 +217,23 @@ namespace embree
     }
 
     /* test if this is a static scene */
-    __forceinline bool isStatic() const { return embree::isStatic(flags); }
+    __forceinline bool isStatic() const { return embree::isa::isStatic(flags); }
 
     /* test if this is a dynamic scene */
-    __forceinline bool isDynamic() const { return embree::isDynamic(flags); }
+    __forceinline bool isDynamic() const { return embree::isa::isDynamic(flags); }
 
-    __forceinline bool isCompact() const { return embree::isCompact(flags); }
-    __forceinline bool isCoherent() const { return embree::isCoherent(flags); }
-    __forceinline bool isRobust() const { return embree::isRobust(flags); }
-    __forceinline bool isHighQuality() const { return embree::isHighQuality(flags); }
-    __forceinline bool isInterpolatable() const { return embree::isInterpolatable(aflags); }
-    __forceinline bool isStreamMode() const { return embree::isStreamMode(aflags); }
+    __forceinline bool isCompact() const { return embree::isa::isCompact(flags); }
+    __forceinline bool isCoherent() const { return embree::isa::isCoherent(flags); }
+    __forceinline bool isRobust() const { return embree::isa::isRobust(flags); }
+    __forceinline bool isHighQuality() const { return embree::isa::isHighQuality(flags); }
+    __forceinline bool isInterpolatable() const { return embree::isa::isInterpolatable(aflags); }
+    __forceinline bool isStreamMode() const { return embree::isa::isStreamMode(aflags); }
 
     __forceinline bool isExclusiveIntersect1Mode() const { 
-      if (!embree::isIntersect1Mode(aflags)) return false;
-      if (embree::isIntersect4Mode(aflags))  return false;
-      if (embree::isIntersect8Mode(aflags))  return false;
-      if (embree::isIntersect16Mode(aflags)) return false;
+      if (!isIntersect1Mode(aflags)) return false;
+      if (isIntersect4Mode(aflags))  return false;
+      if (isIntersect8Mode(aflags))  return false;
+      if (isIntersect16Mode(aflags)) return false;
       return true;
     }
 
@@ -351,4 +353,5 @@ namespace embree
   template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,true>() const { return worldMB.numSubdivPatches; }
   template<> __forceinline size_t Scene::getNumPrimitives<AccelSet,false>() const { return world.numUserGeometries; }
   template<> __forceinline size_t Scene::getNumPrimitives<AccelSet,true>() const { return worldMB.numUserGeometries; }
+}
 }

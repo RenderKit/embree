@@ -21,6 +21,8 @@
 
 namespace embree
 {
+namespace isa
+{
   SubdivMeshAVX::SubdivMeshAVX(Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
                                size_t numCreases, size_t numCorners, size_t numHoles, size_t numTimeSteps)
                                : SubdivMesh(parent,flags,numFaces,numEdges,numVertices,numCreases,numCorners,numHoles,numTimeSteps) {}
@@ -64,7 +66,7 @@ namespace embree
       if (i+4 >= numFloats)
       {
         vfloat4 Pt, dPdut, dPdvt, ddPdudut, ddPdvdvt, ddPdudvt;; 
-        isa::PatchEval<vfloat4>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
+        PatchEval<vfloat4>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
                                 topo->getHalfEdge(primID),src+i*sizeof(float),stride,u,v,
                                 has_P ? &Pt : nullptr, 
                                 has_dP ? &dPdut : nullptr, 
@@ -97,7 +99,7 @@ namespace embree
       else
       {
         vfloat8 Pt, dPdut, dPdvt, ddPdudut, ddPdvdvt, ddPdudvt; 
-        isa::PatchEval<vfloat8>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
+        PatchEval<vfloat8>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
                                 topo->getHalfEdge(primID),src+i*sizeof(float),stride,u,v,
                                 has_P ? &Pt : nullptr, 
                                 has_dP ? &dPdut : nullptr, 
@@ -165,7 +167,7 @@ namespace embree
         if (j+4 >= numFloats)
         {
           const size_t M = min(size_t(4),numFloats-j);
-          isa::PatchEvalSimd<vbool,vint,vfloat,vfloat4>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
+          PatchEvalSimd<vbool,vint,vfloat,vfloat4>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
                                                         topo->getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
                                                         P ? P+j*numUVs : nullptr,
                                                         dPdu ? dPdu+j*numUVs : nullptr,
@@ -179,7 +181,7 @@ namespace embree
         else
         {
           const size_t M = min(size_t(8),numFloats-j);
-          isa::PatchEvalSimd<vbool,vint,vfloat,vfloat8>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
+          PatchEvalSimd<vbool,vint,vfloat,vfloat8>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
                                                         topo->getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
                                                         P ? P+j*numUVs : nullptr,
                                                         dPdu ? dPdu+j*numUVs : nullptr,
@@ -239,4 +241,5 @@ namespace embree
     }
     AVX_ZERO_UPPER();
   }
+}
 }

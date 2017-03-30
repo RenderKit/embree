@@ -20,6 +20,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /*! An item on the stack holds the node ID and distance of that node. */
   template<typename T>
     struct __aligned(16) StackItemT
@@ -82,4 +84,5 @@ namespace embree
     T ptr; 
     unsigned dist;
   };
+}
 }

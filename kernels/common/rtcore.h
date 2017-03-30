@@ -20,6 +20,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /*! decoding of geometry flags */
   __forceinline bool isStatic    (RTCSceneFlags flags) { return (flags & 1) == RTC_SCENE_STATIC; }
   __forceinline bool isDynamic   (RTCSceneFlags flags) { return (flags & 1) == RTC_SCENE_DYNAMIC; }
@@ -103,4 +105,5 @@ namespace embree
 
 #define RTC_BUILD_SETTINGS_HAS(settings,member)                 \
   (settings.size > (offsetof(RTCBuildSettings,member)+sizeof(settings.member))) 
+}
 }

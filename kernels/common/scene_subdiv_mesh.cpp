@@ -25,6 +25,8 @@
 
 namespace embree
 {
+namespace isa
+{
   SubdivMesh::SubdivMesh (Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
 			  size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps)
     : Geometry(parent,SUBDIV_MESH,numFaces,numTimeSteps,flags), 
@@ -804,7 +806,7 @@ namespace embree
     for (size_t i=0; i<numFloats; i+=4)
     {
       vfloat4 Pt, dPdut, dPdvt, ddPdudut, ddPdvdvt, ddPdudvt;
-      isa::PatchEval<vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,i/4,stride)),parent->commitCounterSubdiv,
+      PatchEval<vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,i/4,stride)),parent->commitCounterSubdiv,
                                       topo->getHalfEdge(primID),src+i*sizeof(float),stride,u,v,
                                       has_P ? &Pt : nullptr, 
                                       has_dP ? &dPdut : nullptr, 
@@ -884,7 +886,7 @@ namespace embree
         for (size_t j=0; j<numFloats; j+=4) 
         {
           const size_t M = min(size_t(4),numFloats-j);
-          isa::PatchEvalSimd<vbool4,vint4,vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,j/4,stride)),parent->commitCounterSubdiv,
+          PatchEvalSimd<vbool4,vint4,vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,j/4,stride)),parent->commitCounterSubdiv,
                                                            topo->getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
                                                            P ? P+j*numUVs+i : nullptr,
                                                            dPdu ? dPdu+j*numUVs+i : nullptr,
@@ -897,4 +899,5 @@ namespace embree
       });
     }
   }
+}
 }

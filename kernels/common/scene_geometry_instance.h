@@ -20,6 +20,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /*! Instanced geometry */
   struct GeometryInstance : public Geometry
   {
@@ -64,4 +66,5 @@ namespace embree
   public:
     std::vector<Geometry*> geometries; 
   };
+}
 }

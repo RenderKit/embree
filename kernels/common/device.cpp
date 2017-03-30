@@ -37,6 +37,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /*! some global variables that can be set via rtcSetParameter1i for debugging purposes */
   ssize_t Device::debug_int0 = 0;
   ssize_t Device::debug_int1 = 0;
@@ -65,7 +67,7 @@ namespace embree
     State::verify();
 
     /*! do some internal tests */
-    assert(isa::Cylinder::verify());
+    assert(Cylinder::verify());
 
     /*! enable huge page support if desired */
 #if defined(__WIN32__)
@@ -527,4 +529,5 @@ namespace embree
     default: throw_RTCError(RTC_INVALID_ARGUMENT, "unknown readable parameter"); break;
     };
   }
+}
 }

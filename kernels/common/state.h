@@ -20,6 +20,8 @@
 
 namespace embree
 {
+namespace isa
+{
   struct State
   {
   public:
@@ -186,4 +188,5 @@ namespace embree
     RTCMemoryMonitorFunc2 memory_monitor_function2;
     void* memory_monitor_userptr;
   };
+}
 }

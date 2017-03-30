@@ -20,6 +20,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /* Stores the vertices of M quads in struct of array layout */
   template <int M>
   struct QuadMv
@@ -172,4 +174,5 @@ namespace embree
   typename QuadMv<M>::Type QuadMv<M>::type;
 
   typedef QuadMv<4> Quad4v;
+}
 }

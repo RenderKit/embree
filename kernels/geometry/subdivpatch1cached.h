@@ -21,7 +21,8 @@
 
 namespace embree
 {
-
+namespace isa
+{
   struct __aligned(64) SubdivPatch1Cached : public SubdivPatch1Base
   {
     struct Type : public PrimitiveType 
@@ -54,4 +55,5 @@ namespace embree
                         const int simd_width) 
       : SubdivPatch1Base(gID,pID,subPatch,mesh,time,uv,edge_level,subdiv,simd_width) {}
   };
+}
 }

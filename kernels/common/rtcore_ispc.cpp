@@ -29,6 +29,8 @@
 
 namespace embree
 {
+namespace isa
+{
 #define size_t int   // FIXME: workaround for ISPC bug (ISPC bug still present in ISPC v1.8.2)
 #define ssize_t int  // FIXME: workaround for ISPC bug (ISPC bug still present in ISPC v1.8.2) 
 
@@ -630,4 +632,5 @@ namespace embree
   {
     rtcInterpolateN2(scene,geomID,valid,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats);
   }
+}
 }

@@ -20,6 +20,8 @@
 
 namespace embree
 {
+namespace isa
+{
   class InstanceFactory
   {
   public:
@@ -89,4 +91,5 @@ namespace embree
     AffineSpace3fa world2local0;   //!< transformation from world space to local space for timestep 0
     AffineSpace3fa local2world[1]; //!< transformation from local space to world space for each timestep
   };
+}
 }

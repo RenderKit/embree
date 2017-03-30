@@ -22,6 +22,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /*! represents an array of line segments */
   struct LineSegments : public Geometry
   {
@@ -177,4 +179,5 @@ namespace embree
     vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
     vector<APIBuffer<char>> userbuffers;              //!< user buffers
   };
+}
 }

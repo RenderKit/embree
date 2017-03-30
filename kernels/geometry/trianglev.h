@@ -20,6 +20,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /* Stores the vertices of M triangles in struct of array layout */
   template <int M>
   struct TriangleMv
@@ -164,4 +166,5 @@ namespace embree
   typename TriangleMv<M>::Type TriangleMv<M>::type;
 
   typedef TriangleMv<4> Triangle4v;
+}
 }

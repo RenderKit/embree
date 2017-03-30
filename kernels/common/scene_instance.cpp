@@ -19,6 +19,8 @@
 
 namespace embree
 {
+namespace isa
+{
   DECLARE_SYMBOL2(RTCBoundsFunc3,InstanceBoundsFunc);
   DECLARE_SYMBOL2(AccelSet::Intersector1,InstanceIntersector1);
   DECLARE_SYMBOL2(AccelSet::Intersector4,InstanceIntersector4);
@@ -75,4 +77,5 @@ namespace embree
     this->mask = mask; 
     Geometry::update();
   }
+}
 }

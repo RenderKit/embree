@@ -19,6 +19,8 @@
 
 namespace embree
 {
+namespace isa
+{
   State::ErrorHandler State::g_errorHandler;
 
   State::ErrorHandler::ErrorHandler()
@@ -153,30 +155,6 @@ namespace embree
   {
     /* verify that calculations stay in range */
     assert(rcp(min_rcp_input)*FLT_LARGE+FLT_LARGE < 0.01f*FLT_MAX);
-
-    /* here we verify that CPP files compiled for a specific ISA only
-     * call that same or lower ISA version of non-inlined class member
-     * functions */
-#if defined(DEBUG)
-#if defined(__TARGET_SSE2__)
-    assert(sse2::getISA() <= SSE2);
-#endif
-#if defined(__TARGET_SSE42__)
-    assert(sse42::getISA() <= SSE42);
-#endif
-#if defined(__TARGET_AVX__)
-    assert(avx::getISA() <= AVX);
-#endif
-#if defined(__TARGET_AVX2__)
-    assert(avx2::getISA() <= AVX2);
-#endif
-#if defined (__TARGET_AVX512KNL__)
-    assert(avx512knl::getISA() <= AVX512KNL);
-#endif
-#if defined (__TARGET_AVX512SKX__)
-    assert(avx512skx::getISA() <= AVX512SKX);
-#endif
-#endif
   }
 
   const char* symbols[3] = { "=", ",", "|" };
@@ -472,4 +450,5 @@ namespace embree
     std::cout << "  min_leaf_size = " << object_accel_mb_min_leaf_size << std::endl;
     std::cout << "  max_leaf_size = " << object_accel_mb_max_leaf_size << std::endl;
   }
+}
 }

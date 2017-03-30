@@ -65,6 +65,8 @@
 
 namespace embree
 {
+namespace isa
+{
   template<typename Vertex, typename Vertex_t = Vertex>
     struct __aligned(64) PatchT
     {
@@ -381,4 +383,5 @@ namespace embree
   };
 
   typedef PatchT<Vec3fa,Vec3fa_t> Patch3fa;
+}
 }

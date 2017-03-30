@@ -27,6 +27,8 @@
 
 namespace embree
 {
+namespace isa
+{
   class SubdivMesh : public Geometry
   {
     ALIGNED_CLASS;
@@ -344,4 +346,5 @@ namespace embree
       void interpolateHelper(const vbool& valid1, const vint& primID, const vfloat& uu, const vfloat& vv, size_t numUVs, 
                              RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
   };
-};
+}
+}

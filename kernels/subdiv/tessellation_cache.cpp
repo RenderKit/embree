@@ -18,6 +18,8 @@
 
 namespace embree
 {
+namespace isa
+{
   SharedLazyTessellationCache SharedLazyTessellationCache::sharedLazyTessellationCache;
 
   __thread ThreadWorkState* SharedLazyTessellationCache::init_t_state = nullptr;
@@ -329,11 +331,13 @@ namespace embree
   };
 
   cache_regression_test cache_regression;
-};
 
 extern "C" void printTessCacheStats()
 {
   PRINT("SHARED TESSELLATION CACHE");
-  embree::SharedTessellationCacheStats::printStats();
-  embree::SharedTessellationCacheStats::clearStats();
+  SharedTessellationCacheStats::printStats();
+  SharedTessellationCacheStats::clearStats();
+}
+
+}
 }

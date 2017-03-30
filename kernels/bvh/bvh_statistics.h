@@ -21,6 +21,8 @@
 
 namespace embree
 {
+namespace isa
+{
   template<int N>
   class BVHNStatistics
   {
@@ -287,4 +289,5 @@ namespace embree
 
   typedef BVHNStatistics<4> BVH4Statistics;
   typedef BVHNStatistics<8> BVH8Statistics;
+}
 }

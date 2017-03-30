@@ -22,6 +22,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /* Visual Studio 2012 link error workaround */
   PrecomputedBezierBasis bezier_basis0;
   PrecomputedBezierBasis bezier_basis1;
@@ -229,7 +231,7 @@ namespace embree
 
     /* create new Embree device and force bvh4.triangle4v hierarchy for triangles */
     RTCDevice device = rtcNewDevice("tri_accel=bvh4.triangle4v");
-    error_handler(nullptr,rtcDeviceGetError(device));
+    error_handler(nullptr,rtcDeviceGetError(device),nullptr);
     
     /* set error handler */
     rtcDeviceSetErrorFunction2(device,error_handler,nullptr);
@@ -252,11 +254,12 @@ namespace embree
     return 0;
   }
 }
+}
 
 int main(int argc, char** argv)
 {
   try {
-    return embree::main(argc, argv);
+    return embree::isa::main(argc, argv);
   }
   catch (const std::exception& e) {
     std::cout << "Error: " << e.what() << std::endl;

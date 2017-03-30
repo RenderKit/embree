@@ -22,6 +22,9 @@
 
 namespace embree
 {
+namespace isa
+{
+
   class Scene;
 
   /*! Base class for the acceleration structure data. */
@@ -496,4 +499,5 @@ namespace embree
   }; 
 
   typedef RayStreamFilterFuncs (*RayStreamFilterFuncsType)();
+}
 }

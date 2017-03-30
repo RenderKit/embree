@@ -19,6 +19,8 @@
 
 namespace embree
 {
+namespace isa
+{
   template<int N>
   BVHN<N>::BVHN (const PrimitiveType& primTy, Scene* scene)
     : AccelData((N==4) ? AccelData::TY_BVH4 : (N==8) ? AccelData::TY_BVH8 : AccelData::TY_UNKNOWN),
@@ -188,5 +190,6 @@ namespace embree
 #if !defined(__AVX__) || !defined(__TARGET_SSE2__) && !defined(__TARGET_SSE42__)
   template class BVHN<4>;
 #endif
+}
 }
 

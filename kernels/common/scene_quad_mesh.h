@@ -21,6 +21,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /*! Quad Mesh */
   struct QuadMesh : public Geometry
   {
@@ -213,4 +215,5 @@ namespace embree
     vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
     vector<APIBuffer<char>> userbuffers;              //!< user buffers
   };
+}
 }

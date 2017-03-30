@@ -21,6 +21,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /* Stores M motion blur triangles from an indexed face set */
   template <int M>
   struct TriangleMiMB
@@ -279,4 +281,5 @@ namespace embree
   typename TriangleMiMB<M>::Type TriangleMiMB<M>::type;
 
   typedef TriangleMiMB<4> Triangle4iMB;
+}
 }

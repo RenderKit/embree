@@ -21,6 +21,8 @@
 
 namespace embree
 {
+namespace isa
+{
   AccelN::AccelN () 
     : Accel(AccelData::TY_ACCELN), accels(nullptr), validAccels(nullptr), validIntersectorN(false) {}
 
@@ -207,4 +209,4 @@ namespace embree
       accels[i]->clear();
   }
 }
-
+}

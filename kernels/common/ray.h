@@ -22,6 +22,8 @@
 
 namespace embree
 {
+namespace isa
+{
   /* Ray structure for K rays */
   template<int K>
   struct RayK
@@ -660,4 +662,5 @@ namespace embree
     }
 
   };
+}
 }
