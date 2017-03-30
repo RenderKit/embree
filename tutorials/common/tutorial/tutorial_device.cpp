@@ -14,6 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#include "../math/random_sampler.h"
+#include "../math/sampling.h"
 #include "tutorial_device.h"
 #include "scene_device.h"
 
@@ -546,38 +548,32 @@ Vec3fa renderPixelAmbientOcclusion(float x, float y, const ISPCCamera& camera, R
 
 #define AMBIENT_OCCLUSION_SAMPLES 64
   /* trace some ambient occlusion rays */
-  int seed = 34*(int)x+12*(int)y;
+  RandomSampler sampler;
+  RandomSampler_init(sampler, (int)x, (int)y, 0);
   for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
-     {
-      Vec3fa dir;
-      const float oneOver10000f = 1.f/10000.f;
-      seed = 1103515245 * seed + 12345;
-      dir.x = (seed%10000)*oneOver10000f;
-      seed = 1103515245 * seed + 12345;
-      dir.y = (seed%10000)*oneOver10000f;
-      seed = 1103515245 * seed + 12345;
-      dir.z = (seed%10000)*oneOver10000f;
+  {
+    Vec3fa dir = cosineSampleHemisphere(RandomSampler_get2D(sampler));
 
-      /* initialize shadow ray */
-      RTCRay shadow;
-      shadow.org = hitPos;
-      shadow.dir = dir;
-      shadow.tnear = 0.001f;
-      shadow.tfar = inf;
-      shadow.geomID = RTC_INVALID_GEOMETRY_ID;
-      shadow.primID = RTC_INVALID_GEOMETRY_ID;
-      shadow.mask = -1;
-      shadow.time = g_debug;
+    /* initialize shadow ray */
+    RTCRay shadow;
+    shadow.org = hitPos;
+    shadow.dir = dir;
+    shadow.tnear = 0.001f;
+    shadow.tfar = inf;
+    shadow.geomID = RTC_INVALID_GEOMETRY_ID;
+    shadow.primID = RTC_INVALID_GEOMETRY_ID;
+    shadow.mask = -1;
+    shadow.time = g_debug;
 
-      /* trace shadow ray */
-      rtcOccluded(g_scene,shadow);
-      //rtcIntersect(g_scene,shadow);
-      RayStats_addShadowRay(stats);
+    /* trace shadow ray */
+    rtcOccluded(g_scene,shadow);
+    //rtcIntersect(g_scene,shadow);
+    RayStats_addShadowRay(stats);
 
-      /* add light contribution */
-      if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
-        intensity += 1.0f;
-     }
+    /* add light contribution */
+    if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
+      intensity += 1.0f;
+  }
   intensity *= 1.0f/AMBIENT_OCCLUSION_SAMPLES;
 
   /* shade pixel */
