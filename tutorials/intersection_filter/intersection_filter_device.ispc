@@ -88,7 +88,7 @@ void occlusionFilter(void* uniform ptr, RTCRay2& ray)
   ray.hit_geomIDs[slot] = ray.geomID;
   ray.hit_primIDs[slot] = ray.primID;
   ray.lastHit++;
-  if (ray.lastHit - ray.firstHit >= HIT_LIST_LENGTH) 
+  if (ray.lastHit - ray.firstHit >= HIT_LIST_LENGTH)
     ray.firstHit++;
 
   /* calculate and accumulate transparency */
@@ -100,7 +100,7 @@ void occlusionFilter(void* uniform ptr, RTCRay2& ray)
 }
 
 /* task that renders a single screen tile */
-Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
+Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   float weight = 1.0f;
   Vec3f color = make_Vec3f(0.0f);
@@ -121,6 +121,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
   {
     /* intersect ray with scene */
     rtcIntersect(g_scene,*((varying RTCRay*)&primary));
+    RayStats_addRay(stats);
 
     /* shade pixels */
     if (primary.geomID == RTC_INVALID_GEOMETRY_ID)
@@ -148,6 +149,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 
     /* trace shadow ray */
     rtcOccluded(g_scene,*((varying RTCRay*)&shadow));
+    RayStats_addShadowRay(stats);
 
     /* add light contribution */
     if (shadow.geomID) {
@@ -168,6 +170,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 
 /* renders a single screen tile */
 void renderTileStandard(uniform int taskIndex,
+                        uniform int threadIndex,
                         uniform int* uniform pixels,
                         const uniform unsigned int width,
                         const uniform unsigned int height,
@@ -186,7 +189,7 @@ void renderTileStandard(uniform int taskIndex,
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixelStandard((float)x,(float)y,camera);
+    Vec3f color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -322,7 +325,7 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
     bool already_hit = false;
     unsigned int eray_firstHit = gather(eray->firstHit,0,sizeof(RTCRay2),pid,rid);
     unsigned int eray_lastHit =  gather(eray->lastHit,0,sizeof(RTCRay2),pid,rid);
-    for (unsigned int i=eray_firstHit; i<eray_lastHit; i++) 
+    for (unsigned int i=eray_firstHit; i<eray_lastHit; i++)
     {
       unsigned int slot= i%HIT_LIST_LENGTH;
       unsigned int last_geomID = gather(eray->hit_geomIDs[0],slot,sizeof(RTCRay2),pid,rid);
@@ -343,9 +346,9 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
     scatter(eray->hit_primIDs[0],slot,sizeof(RTCRay2),pid,rid,hit_primID);
     eray_lastHit++;
     scatter(eray->lastHit,0,sizeof(RTCRay2),pid,rid,eray_lastHit);
-    if (eray_lastHit - eray_firstHit >= HIT_LIST_LENGTH) 
+    if (eray_lastHit - eray_firstHit >= HIT_LIST_LENGTH)
       scatter(eray->firstHit,0,sizeof(RTCRay2),pid,rid,eray_firstHit+1);
-    
+
     /* calculate transparency */
     Vec3f h = ray_org + ray_dir*hit_t;
     float T = transparencyFunction(h);
@@ -364,6 +367,7 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
 
 /* renders a single screen tile */
 void renderTileStandardStream(uniform int taskIndex,
+                              uniform int threadIndex,
                               uniform int* uniform pixels,
                               const uniform unsigned int width,
                               const uniform unsigned int height,
@@ -378,6 +382,8 @@ void renderTileStandardStream(uniform int taskIndex,
   const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
   const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
   const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
+
+  uniform RayStats& stats = g_stats[threadIndex];
 
   RTCRay2 primary_stream[TILE_SIZE_X*TILE_SIZE_Y];
   RTCRay2 shadow_stream[TILE_SIZE_X*TILE_SIZE_Y];
@@ -416,6 +422,7 @@ void renderTileStandardStream(uniform int taskIndex,
     primary.time = 0.0f;
     primary.transparency = 0.0f;
     N++;
+    RayStats_addRay(stats);
   }
 
   Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
@@ -473,6 +480,7 @@ void renderTileStandardStream(uniform int taskIndex,
       shadow.transparency = 1.0f;
       shadow.firstHit = 0;
       shadow.lastHit = 0;
+      RayStats_addShadowRay(stats);
     }
     N++;
 
@@ -521,6 +529,7 @@ void renderTileStandardStream(uniform int taskIndex,
       primary.geomID = RTC_INVALID_GEOMETRY_ID;
       primary.primID = RTC_INVALID_GEOMETRY_ID;
       primary.transparency = 0.0f;
+      RayStats_addRay(stats);
     }
     N++;
   }
@@ -728,7 +737,7 @@ task void renderTileTask(uniform int* uniform pixels,
                          const uniform int numTilesX,
                          const uniform int numTilesY)
 {
-  renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 /* called by the C++ code to render */

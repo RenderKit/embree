@@ -271,7 +271,7 @@ namespace embree {
       double t1 = getSeconds();
       if (i >= skip_iterations)
       {
-        time += t1 - t0;      
+        time += t1 - t0;
         iterations++;
       }
     }
@@ -286,11 +286,11 @@ namespace embree {
       FATAL("unknown flags");
 
     std::cout << "(" << primitives << " primitives, " << objects << " objects)  :  "
-              << " avg. time  = " <<  time/iterations 
+              << " avg. time  = " <<  time/iterations
               << " , avg. build perf " << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
 
-    rtcDeleteScene (g_scene); 
-    g_scene = nullptr;    
+    rtcDeleteScene (g_scene);
+    g_scene = nullptr;
   }
 
   void Benchmark_Dynamic_Create(ISPCScene* scene_in, size_t benchmark_iterations, RTCGeometryFlags gflags = RTC_GEOMETRY_STATIC)
@@ -311,7 +311,7 @@ namespace embree {
       double t1 = getSeconds();
       if (i >= skip_iterations)
       {
-        time += t1 - t0;      
+        time += t1 - t0;
         iterations++;
       }
     }
@@ -325,11 +325,11 @@ namespace embree {
       FATAL("unknown flags");
 
     std::cout << "(" << primitives << " primitives, " << objects << " objects)  :  "
-              << " avg. time  = " <<  time/iterations 
+              << " avg. time  = " <<  time/iterations
               << " , avg. build perf " << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
 
-    rtcDeleteScene (g_scene); 
-    g_scene = nullptr;    
+    rtcDeleteScene (g_scene);
+    g_scene = nullptr;
   }
 
   void Benchmark_Static_Create(ISPCScene* scene_in, size_t benchmark_iterations, RTCGeometryFlags gflags = RTC_GEOMETRY_STATIC, RTCSceneFlags sflags = RTC_SCENE_STATIC)
@@ -349,10 +349,10 @@ namespace embree {
       double t1 = getSeconds();
       if (i >= skip_iterations)
       {
-        time += t1 - t0;      
+        time += t1 - t0;
         iterations++;
       }
-      rtcDeleteScene (g_scene);       
+      rtcDeleteScene (g_scene);
     }
 
     if (sflags & RTC_SCENE_HIGH_QUALITY)
@@ -370,16 +370,16 @@ namespace embree {
       FATAL("unknown flags");
 
     std::cout << "(" << primitives << " primitives, " << objects << " objects)  :  "
-              << " avg. time  = " <<  time/iterations 
+              << " avg. time  = " <<  time/iterations
               << " , avg. build perf " << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
 
-    g_scene = nullptr;    
+    g_scene = nullptr;
   }
 
   void Pause()
   {
     std::cout << "sleeping..." << std::flush;
-    sleepSeconds(3);    
+    sleepSeconds(3);
     std::cout << "done" << std::endl;
   }
 
@@ -429,6 +429,7 @@ namespace embree {
 
 /* renders a single screen tile */
   void renderTileStandard(int taskIndex,
+                          int threadIndex,
                           int* pixels,
                           const unsigned int width,
                           const unsigned int height,

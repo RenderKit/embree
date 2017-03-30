@@ -24,10 +24,10 @@
 #  include <GLUT/glut.h>
 #elif defined(__WIN32__)
 #  include <windows.h>
-#  include <GL/gl.h>   
+#  include <GL/gl.h>
 #  include <GL/glut.h>
 #else
-#  include <GL/gl.h>   
+#  include <GL/gl.h>
 #  include <GL/glut.h>
 #endif
 
@@ -42,7 +42,7 @@
 
 namespace embree
 {
-  extern "C" 
+  extern "C"
   {
     float g_debug = 0.0f;
     Mode g_mode = MODE_NORMAL;
@@ -57,11 +57,13 @@ namespace embree
     unsigned int g_numThreads = 0;
 
     RTCIntersectFlags g_iflags = RTC_INTERSECT_INCOHERENT;
+
+    RayStats* g_stats = nullptr;
   }
 
   extern "C" int g_instancing_mode;
 
-  TutorialApplication* TutorialApplication::instance = nullptr; 
+  TutorialApplication* TutorialApplication::instance = nullptr;
 
   TutorialApplication::TutorialApplication (const std::string& tutorialName, int features)
 
@@ -90,7 +92,7 @@ namespace embree
       time0(getSeconds()),
       debug_int0(0),
       debug_int1(0),
-    
+
       mouseMode(0),
       clickX(0), clickY(0),
       speed(1.0f),
@@ -99,6 +101,7 @@ namespace embree
       print_frame_rate(false),
       avg_render_time(64,1.0),
       avg_frame_time(64,1.0),
+      avg_mray(64,1.0),
       print_camera(false),
 
       debug0(0),
@@ -113,58 +116,58 @@ namespace embree
     /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
-    
+
     registerOption("c", [this] (Ref<ParseStream> cin, const FileName& path) {
         FileName file = path + cin->getFileName();
         parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path());
       }, "-c <filename>: parses command line option from <filename>");
-    
+
     registerOption("o", [this] (Ref<ParseStream> cin, const FileName& path) {
         outputImageFilename = cin->getFileName();
         interactive = false;
       }, "-o <filename>: output image filename");
-    
+
     /* camera settings */
     registerOption("vp", [this] (Ref<ParseStream> cin, const FileName& path) {
         camera.from = cin->getVec3fa();
         command_line_camera = true;
       }, "--vp <float> <float> <float>: camera position");
-    
+
     registerOption("vi", [this] (Ref<ParseStream> cin, const FileName& path) {
         camera.to = cin->getVec3fa();
         command_line_camera = true;
       }, "--vi <float> <float> <float>: camera lookat position");
-    
+
     registerOption("vd", [this] (Ref<ParseStream> cin, const FileName& path) {
         camera.to = camera.from + cin->getVec3fa();
         command_line_camera = true;
       }, "--vd <float> <float> <float>: camera direction vector");
-    
+
     registerOption("vu", [this] (Ref<ParseStream> cin, const FileName& path) {
         camera.up = cin->getVec3fa();
         command_line_camera = true;
       }, "--vu <float> <float> <float>: camera up vector");
-    
+
     registerOption("fov", [this] (Ref<ParseStream> cin, const FileName& path) {
         camera.fov = cin->getFloat();
         command_line_camera = true;
       }, "--fov <float>: vertical field of view");
-    
+
     /* framebuffer settings */
     registerOption("size", [this] (Ref<ParseStream> cin, const FileName& path) {
         width = cin->getInt();
         height = cin->getInt();
       }, "--size <width> <height>: sets image size");
-    
+
     registerOption("fullscreen", [this] (Ref<ParseStream> cin, const FileName& path) {
         fullscreen = true;
       }, "--fullscreen: starts in fullscreen mode");
-        
+
     registerOption("benchmark", [this] (Ref<ParseStream> cin, const FileName& path) {
         skipBenchmarkFrames = cin->getInt();
         numBenchmarkFrames  = cin->getInt();
         if (cin->peek() != "" && cin->peek()[0] != '-')
-          numBenchmarkRepetitions = cin->getInt();          
+          numBenchmarkRepetitions = cin->getInt();
         interactive = false;
         rtcore += ",benchmark=1,start_threads=1";
       }, "--benchmark <N> <M> <R>: enabled benchmark mode, builds scene, skips N frames, renders M frames, and repeats this R times");
@@ -178,11 +181,11 @@ namespace embree
     registerOption("print-frame-rate", [this] (Ref<ParseStream> cin, const FileName& path) {
         print_frame_rate = true;
       }, "--print-frame-rate: prints framerate for each frame on console");
-   
+
      registerOption("print-camera", [this] (Ref<ParseStream> cin, const FileName& path) {
          print_camera = true;
       }, "--print-camera: prints camera for each frame on console");
-   
+
      registerOption("debug0", [this] (Ref<ParseStream> cin, const FileName& path) {
          debug0 = cin->getInt();
        }, "--debug0: sets internal debugging value");
@@ -198,7 +201,7 @@ namespace embree
      registerOption("debug3", [this] (Ref<ParseStream> cin, const FileName& path) {
          debug3 = cin->getInt();
        }, "--debug3: sets internal debugging value");
-   
+
     /* output filename */
     registerOption("shader", [this] (Ref<ParseStream> cin, const FileName& path) {
         std::string mode = cin->getString();
@@ -212,7 +215,7 @@ namespace embree
         else if (mode == "primID"  ) shader = SHADER_GEOMID_PRIMID;
         else if (mode == "ao"      ) shader = SHADER_AMBIENT_OCCLUSION;
         else throw std::runtime_error("invalid shader:" +mode);
-      }, 
+      },
       "--shader <string>: sets shader to use at startup\n"
       "  default: default tutorial shader\n"
       "  eyelight: eyelight shading\n"
@@ -233,22 +236,26 @@ namespace embree
           else if (mode == "stream-coherent"  ) g_mode = MODE_STREAM_COHERENT;
           else if (mode == "stream-incoherent") g_mode = MODE_STREAM_INCOHERENT;
           else throw std::runtime_error("invalid mode:" +mode);
-        }, 
+        },
         "--mode: sets rendering mode\n"
         "  normal           : normal mode\n"
         "  stream-coherent  : coherent stream mode\n"
         "  stream-incoherent: incoherent stream mode\n");
     }
+
+    g_stats = (RayStats*)alignedMalloc(TaskScheduler::threadCount() * sizeof(RayStats), sizeof(RayStats));
   }
 
   TutorialApplication::~TutorialApplication()
   {
     g_ispc_scene = nullptr;
     device_cleanup();
-    alignedFree(pixels); 
+    alignedFree(pixels);
     pixels = nullptr;
     width = 0;
     height = 0;
+    alignedFree(g_stats);
+    g_stats = nullptr;
   }
 
   SceneLoadingTutorialApplication::SceneLoadingTutorialApplication (const std::string& tutorialName, int features)
@@ -288,27 +295,27 @@ namespace embree
           }
         }
       }, "-animlist <filename>: parses a sequence of .obj/.xml files listed in <filename> and adds them to the scene");
-    
+
     registerOption("convert-triangles-to-quads", [this] (Ref<ParseStream> cin, const FileName& path) {
         convert_tris_to_quads = true;
       }, "--convert-triangles-to-quads: converts all triangles to quads when loading");
-    
+
     registerOption("convert-bezier-to-lines", [this] (Ref<ParseStream> cin, const FileName& path) {
         convert_bezier_to_lines = true;
       }, "--convert-bezier-to-lines: converts all bezier curves to line segments when loading");
-    
+
     registerOption("convert-hair-to-curves", [this] (Ref<ParseStream> cin, const FileName& path) {
         convert_hair_to_curves = true;
       }, "--convert-hair-to-curves: converts all hair geometry to curves when loading");
-    
+
     registerOption("convert-bezier-to-bspline", [this] (Ref<ParseStream> cin, const FileName& path) {
         convert_bezier_to_bspline = true;
       }, "--convert-bezier-to-bspline: converts all bezier curves to bsplines curves");
-    
+
     registerOption("convert-bspline-to-bezier", [this] (Ref<ParseStream> cin, const FileName& path) {
         convert_bspline_to_bezier = true;
       }, "--convert-bspline-to-bezier: converts all bsplines curves to bezier curves");
-    
+
     registerOption("instancing", [this] (Ref<ParseStream> cin, const FileName& path) {
         std::string mode = cin->getString();
         if      (mode == "none"    ) instancing_mode = SceneGraph::INSTANCING_NONE;
@@ -324,7 +331,7 @@ namespace embree
       "  geometry_group: instance geometry groups\n"
       "  scene_geometry: instance individual geometries as scenes\n"
       "  scene_group: instance geometry groups as scenes");
-    
+
     registerOption("ambientlight", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa L = cin->getVec3fa();
         scene->add(new SceneGraph::LightNode(new SceneGraph::AmbientLight(L)));
@@ -336,14 +343,14 @@ namespace embree
         const Vec3fa I = cin->getVec3fa();
         scene->add(new SceneGraph::LightNode(new SceneGraph::PointLight(P,I)));
       }, "--pointlight x y z r g b: adds a point light at position xyz with intensity rgb");
-    
+
     registerOption("directionallight", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa D = cin->getVec3fa();
         const Vec3fa E = cin->getVec3fa();
         scene->add(new SceneGraph::LightNode(new SceneGraph::DirectionalLight(D,E)));
       }, "--directionallight x y z r g b: adds a directional light with direction xyz and intensity rgb");
     registerOptionAlias("directionallight","dirlight");
-    
+
     registerOption("distantlight", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa D = cin->getVec3fa();
         const Vec3fa L = cin->getVec3fa();
@@ -359,7 +366,7 @@ namespace embree
         const size_t height = cin->getInt();
         scene->add(SceneGraph::createTrianglePlane(p0,dx,dy,width,height,new OBJMaterial));
       }, "--triangle-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z width height: adds a plane build of triangles originated at p0 and spanned by the vectors dx and dy with a tesselation width/height.");
-    
+
     registerOption("quad-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa p0 = cin->getVec3fa();
         const Vec3fa dx = cin->getVec3fa();
@@ -368,7 +375,7 @@ namespace embree
         const size_t height = cin->getInt();
         scene->add(SceneGraph::createQuadPlane(p0,dx,dy,width,height,new OBJMaterial));
       }, "--quad-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z width height: adds a plane build of quadrilaterals originated at p0 and spanned by the vectors dx and dy with a tesselation width/height.");
-    
+
     registerOption("subdiv-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa p0 = cin->getVec3fa();
         const Vec3fa dx = cin->getVec3fa();
@@ -378,7 +385,7 @@ namespace embree
         const float tessellationRate = cin->getFloat();
         scene->add(SceneGraph::createSubdivPlane(p0,dx,dy,width,height,tessellationRate,new OBJMaterial));
       }, "--subdiv-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z width height tessellationRate: adds a plane build as a Catmull Clark subdivision surface originated at p0 and spanned by the vectors dx and dy. The plane consists of widt x height many patches, and each patch has the specified tesselation rate.");
-   
+
     registerOption("hair-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa p0 = cin->getVec3fa();
         const Vec3fa dx = cin->getVec3fa();
@@ -387,8 +394,8 @@ namespace embree
         const float r = cin->getFloat();
         const size_t N = cin->getInt();
         scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,SceneGraph::HairSetNode::HAIR,new OBJMaterial));
-      }, "--hair-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z length radius num: adds a hair plane originated at p0 and spanned by the vectors dx and dy. num hairs are generated with speficied length and radius.");    
-    
+      }, "--hair-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z length radius num: adds a hair plane originated at p0 and spanned by the vectors dx and dy. num hairs are generated with speficied length and radius.");
+
     registerOption("curve-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa p0 = cin->getVec3fa();
         const Vec3fa dx = cin->getVec3fa();
@@ -397,7 +404,7 @@ namespace embree
         const float r = cin->getFloat();
         const size_t N = cin->getInt();
         scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,SceneGraph::HairSetNode::CURVE,new OBJMaterial));
-      }, "--curve-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z length radius: adds a plane build of bezier curves originated at p0 and spanned by the vectors dx and dy. num curves are generated with speficied length and radius.");    
+      }, "--curve-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z length radius: adds a plane build of bezier curves originated at p0 and spanned by the vectors dx and dy. num curves are generated with speficied length and radius.");
 
     registerOption("triangle-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa p = cin->getVec3fa();
@@ -405,14 +412,14 @@ namespace embree
         const size_t numPhi = cin->getInt();
         scene->add(SceneGraph::createTriangleSphere(p,r,numPhi,new OBJMaterial));
       }, "--triangle-sphere p.x p.y p.z r numPhi: adds a sphere at position p with radius r and tesselation numPhi build of triangles.");
-   
+
     registerOption("quad-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa p = cin->getVec3fa();
         const float  r = cin->getFloat();
         const size_t numPhi = cin->getInt();
         scene->add(SceneGraph::createQuadSphere(p,r,numPhi,new OBJMaterial));
       }, "--quad-sphere p.x p.y p.z r numPhi: adds a sphere at position p with radius r and tesselation numPhi build of quadrilaterals.");
-   
+
     registerOption("subdiv-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa p = cin->getVec3fa();
         const float  r = cin->getFloat();
@@ -420,32 +427,46 @@ namespace embree
         const float tessellationRate = cin->getFloat();
         scene->add(SceneGraph::createSubdivSphere(p,r,numPhi,tessellationRate,new OBJMaterial));
       }, "--subdiv-sphere p.x p.y p.z r numPhi: adds a sphere at position p with radius r build of Catmull Clark subdivision surfaces. The sphere consists of numPhi x numPhi many patches and each path has the specified tessellation rate.");
-   
+
     registerOption("cache", [this] (Ref<ParseStream> cin, const FileName& path) {
         subdiv_mode = ",subdiv_accel=bvh4.subdivpatch1cached";
         rtcore += subdiv_mode;
       }, "--cache: enabled cached subdiv mode");
-    
+
     registerOption("pregenerate", [this] (Ref<ParseStream> cin, const FileName& path) {
         subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
         rtcore += subdiv_mode;
-      }, "--pregenerate: enabled pregenerate subdiv mode");    
+      }, "--pregenerate: enabled pregenerate subdiv mode");
 
     registerOption("print-cameras", [this] (Ref<ParseStream> cin, const FileName& path) {
         print_scene_cameras = true;
-      }, "--print-cameras: prints all camera names of the scene");    
+      }, "--print-cameras: prints all camera names of the scene");
 
     registerOption("camera", [this] (Ref<ParseStream> cin, const FileName& path) {
         camera_name = cin->getString();
-      }, "--camera: use camera with specified name");    
-    
+      }, "--camera: use camera with specified name");
+
     registerOption("coherent", [this] (Ref<ParseStream> cin, const FileName& path) {
         g_iflags = iflags = RTC_INTERSECT_COHERENT;
       }, "--coherent: use RTC_INTERSECT_COHERENT hint when tracing rays");
-    
+
     registerOption("incoherent", [this] (Ref<ParseStream> cin, const FileName& path) {
         g_iflags = iflags = RTC_INTERSECT_INCOHERENT;
-      }, "--coherent: use RTC_INTERSECT_INCOHERENT hint when tracing rays");
+      }, "--incoherent: use RTC_INTERSECT_INCOHERENT hint when tracing rays");
+  }
+
+  void TutorialApplication::initRayStats()
+  {
+    for (size_t i = 0; i < TaskScheduler::threadCount(); i++)
+      g_stats[i].numRays = 0;
+  }
+
+  int64_t TutorialApplication::getNumRays()
+  {
+    int64_t numRays = 0;
+    for (size_t i = 0; i < TaskScheduler::threadCount(); i++)
+      numRays += g_stats[i].numRays;
+    return numRays;
   }
 
   void TutorialApplication::renderBenchmark()
@@ -458,34 +479,40 @@ namespace embree
     ISPCCamera ispccamera = camera.getISPCCamera(width,height);
 
     //Statistics stat;
-    FilteredStatistics stat(0.5f,0.0f);
+    FilteredStatistics fpsStat(0.5f,0.0f);
+    FilteredStatistics mrayStat(0.5f,0.0f);
     for (size_t j=0; j<numBenchmarkRepetitions; j++)
     {
       size_t numTotalFrames = skipBenchmarkFrames + numBenchmarkFrames;
-      for (size_t i=0; i<skipBenchmarkFrames; i++) 
+      for (size_t i=0; i<skipBenchmarkFrames; i++)
       {
         double t0 = getSeconds();
         device_render(pixels,width,height,0.0f,ispccamera);
         double t1 = getSeconds();
         std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " <<  std::setw(8) << 1.0/(t1-t0) << " fps (skipped)" << std::endl << std::flush;
       }
-      
-      for (size_t i=skipBenchmarkFrames; i<numTotalFrames; i++) 
+
+      for (size_t i=skipBenchmarkFrames; i<numTotalFrames; i++)
       {
+        initRayStats();
         double t0 = getSeconds();
         device_render(pixels,width,height,0.0f,ispccamera);
         double t1 = getSeconds();
 
-        float fr = float(1.0/(t1-t0));
-        stat.add(fr);
+        float fps = float(1.0/(t1-t0));
+        fpsStat.add(fps);
+
+        float mray = float(double(getNumRays())/(1000000.0*(t1-t0)));
+        mrayStat.add(mray);
+
         if (numTotalFrames >= 1024 && (i % 64 == 0))
         {
-          std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " 
-                    << std::setw(8) << fr << " fps, " 
-                    << "min = " << std::setw(8) << stat.getMin() << " fps, " 
-                    << "avg = " << std::setw(8) << stat.getAvg() << " fps, "
-                    << "max = " << std::setw(8) << stat.getMax() << " fps, "
-                    << "sigma = " << std::setw(6) << stat.getSigma() << " (" << 100.0f*stat.getSigma()/stat.getAvg() << "%)" << std::endl << std::flush;
+          std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: "
+                    << std::setw(8) << fps << " fps, "
+                    << "min = " << std::setw(8) << fpsStat.getMin() << " fps, "
+                    << "avg = " << std::setw(8) << fpsStat.getAvg() << " fps, "
+                    << "max = " << std::setw(8) << fpsStat.getMax() << " fps, "
+                    << "sigma = " << std::setw(6) << fpsStat.getSigma() << " (" << 100.0f*fpsStat.getSigma()/fpsStat.getAvg() << "%)" << std::endl << std::flush;
         }
       }
 
@@ -494,22 +521,30 @@ namespace embree
       {
         device_cleanup();
         device_init(rtcore.c_str());
-        resize(width,height);     
+        resize(width,height);
       }
- 
-      std::cout << "frame [" << std::setw(3) << skipBenchmarkFrames << " - " << std::setw(3) << numTotalFrames << "]: " 
-                << "              " 
-                << "min = " << std::setw(8) << stat.getMin() << " fps, " 
-                << "avg = " << std::setw(8) << stat.getAvg() << " fps, "
-                << "max = " << std::setw(8) << stat.getMax() << " fps, "
-                << "sigma = " << std::setw(6) << stat.getAvgSigma() << " (" << 100.0f*stat.getAvgSigma()/stat.getAvg() << "%)" << std::endl;
+
+      std::cout << "frame [" << std::setw(3) << skipBenchmarkFrames << " - " << std::setw(3) << numTotalFrames << "]: "
+                << "              "
+                << "min = " << std::setw(8) << fpsStat.getMin() << " fps, "
+                << "avg = " << std::setw(8) << fpsStat.getAvg() << " fps, "
+                << "max = " << std::setw(8) << fpsStat.getMax() << " fps, "
+                << "sigma = " << std::setw(6) << fpsStat.getAvgSigma() << " (" << 100.0f*fpsStat.getAvgSigma()/fpsStat.getAvg() << "%)" << std::endl;
     }
 
-    std::cout << "BENCHMARK_RENDER_MIN " << stat.getMin() << std::endl;
-    std::cout << "BENCHMARK_RENDER_AVG " << stat.getAvg() << std::endl;
-    std::cout << "BENCHMARK_RENDER_MAX " << stat.getMax() << std::endl;
-    std::cout << "BENCHMARK_RENDER_SIGMA " << stat.getSigma() << std::endl;
-    std::cout << "BENCHMARK_RENDER_AVG_SIGMA " << stat.getAvgSigma() << std::endl << std::flush;
+    std::cout << "BENCHMARK_RENDER_MIN " << fpsStat.getMin() << std::endl;
+    std::cout << "BENCHMARK_RENDER_AVG " << fpsStat.getAvg() << std::endl;
+    std::cout << "BENCHMARK_RENDER_MAX " << fpsStat.getMax() << std::endl;
+    std::cout << "BENCHMARK_RENDER_SIGMA " << fpsStat.getSigma() << std::endl;
+    std::cout << "BENCHMARK_RENDER_AVG_SIGMA " << fpsStat.getAvgSigma() << std::endl;
+
+    std::cout << "BENCHMARK_RENDER_MRAY_MIN " << mrayStat.getMin() << std::endl;
+    std::cout << "BENCHMARK_RENDER_MRAY_AVG " << mrayStat.getAvg() << std::endl;
+    std::cout << "BENCHMARK_RENDER_MRAY_MAX " << mrayStat.getMax() << std::endl;
+    std::cout << "BENCHMARK_RENDER_MRAY_SIGMA " << mrayStat.getSigma() << std::endl;
+    std::cout << "BENCHMARK_RENDER_MRAY_AVG_SIGMA " << mrayStat.getAvgSigma() << std::endl;
+
+    std::cout << std::flush;
   }
 
   void TutorialApplication::renderToFile(const FileName& fileName)
@@ -527,7 +562,7 @@ namespace embree
 
   void TutorialApplication::resize(unsigned width, unsigned height)
   {
-    if (width == this->width && height == this->height && pixels) 
+    if (width == this->width && height == this->height && pixels)
       return;
 
     if (pixels) alignedFree(pixels);
@@ -536,7 +571,7 @@ namespace embree
     pixels = (unsigned*) alignedMalloc(width*height*sizeof(unsigned),64);
   }
 
-  void TutorialApplication::set_scene (TutorialScene* in) 
+  void TutorialApplication::set_scene (TutorialScene* in)
   {
     ispc_scene.reset(new ISPCScene(in));
     g_ispc_scene = ispc_scene.get();
@@ -554,7 +589,7 @@ namespace embree
     case 'a' : moveDelta.x = -1.0f; break;
     case 'd' : moveDelta.x = +1.0f; break;
 
-    case 'f' : 
+    case 'f' :
       if (fullscreen) {
         fullscreen = false;
         glutReshapeWindow(window_width,window_height);
@@ -562,7 +597,7 @@ namespace embree
         fullscreen = true;
         window_width = width;
         window_height = height;
-        glutFullScreen(); 
+        glutFullScreen();
       }
       break;
     case 'c' : std::cout << camera.str() << std::endl; break;
@@ -598,7 +633,7 @@ namespace embree
   void TutorialApplication::specialFunc(int key, int x, int y)
   {
     device_key_pressed(key);
-    
+
     if (glutGetModifiers() == GLUT_ACTIVE_CTRL)
     {
       switch (key) {
@@ -621,9 +656,9 @@ namespace embree
     }
   }
 
-  void TutorialApplication::clickFunc(int button, int state, int x, int y) 
+  void TutorialApplication::clickFunc(int button, int state, int x, int y)
   {
-    if (state == GLUT_UP) 
+    if (state == GLUT_UP)
     {
       mouseMode = 0;
     }
@@ -652,7 +687,7 @@ namespace embree
       }
     }
   }
-  
+
   void TutorialApplication::motionFunc(int x, int y)
   {
     float dClickX = float(clickX - x), dClickY = float(clickY - y);
@@ -666,23 +701,26 @@ namespace embree
     }
   }
 
-  void TutorialApplication::displayFunc(void) 
+  void TutorialApplication::displayFunc(void)
   {
     /* update camera */
     camera.move(moveDelta.x*speed, moveDelta.y*speed, moveDelta.z*speed);
 
     ISPCCamera ispccamera = camera.getISPCCamera(width,height,true);
-    
+
     /* render image using ISPC */
+    initRayStats();
     double t0 = getSeconds();
     device_render(pixels,width,height,float(time0-t0),ispccamera);
     double dt0 = getSeconds()-t0;
     avg_render_time.add(dt0);
+    double mray = double(getNumRays())/(1000000.0*dt0);
+    avg_mray.add(mray);
 
     /* draw pixels to screen */
     glDrawPixels(width,height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
-    
-    if (fullscreen || !print_frame_rate) 
+
+    if (fullscreen || !print_frame_rate)
     {
       glMatrixMode( GL_PROJECTION );
       glPushMatrix();
@@ -691,29 +729,36 @@ namespace embree
       glMatrixMode( GL_MODELVIEW );
       glPushMatrix();
       glLoadIdentity();
-      
+
       /* print frame rate */
+      glColor3f(1.0f, 0.25f, 0.0f);
+
       std::ostringstream stream;
       stream.setf(std::ios::fixed, std::ios::floatfield);
       stream.precision(2);
-      
+
       stream << 1.0f/avg_render_time.get() << " fps";
       std::string str = stream.str();
-      
-      glColor3f(1.0f, 0.25f, 0.0f);
-      glRasterPos2i( width-GLint(str.size())*12, height - 24); 
+      glRasterPos2i(6, height - 24);
       for (size_t i=0; i<str.size(); i++)
         glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
-      
-      glRasterPos2i( 0, 0 ); 
+
+      stream.str("");
+      stream << avg_mray.get() << " Mray/s";
+      str = stream.str();
+      glRasterPos2i(6, height - 52);
+      for (size_t i=0; i<str.size(); i++)
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
+
+      glRasterPos2i( 0, 0 );
       glPopMatrix();
       glMatrixMode( GL_PROJECTION );
       glPopMatrix();
       glMatrixMode( GL_MODELVIEW );
     }
-    
+
     glutSwapBuffers();
-    
+
     double dt1 = getSeconds()-t0;
     avg_frame_time.add(dt1);
 
@@ -725,6 +770,7 @@ namespace embree
       stream << "render: ";
       stream << 1.0f/dt0 << " fps, ";
       stream << dt0*1000.0f << " ms, ";
+      stream << mray << " Mray/s, ";
       stream << "display: ";
       stream << 1.0f/dt1 << " fps, ";
       stream << dt1*1000.0f << " ms, ";
@@ -736,13 +782,13 @@ namespace embree
       std::cout << camera.str() << std::endl;
   }
 
-  void TutorialApplication::reshapeFunc(int width, int height) 
+  void TutorialApplication::reshapeFunc(int width, int height)
   {
     resize(width,height);
     glViewport(0, 0, width, height);
     this->width = width; this->height = height;
   }
-  
+
   void TutorialApplication::idleFunc() {
     glutPostRedisplay();
   }
@@ -775,14 +821,14 @@ namespace embree
   void TutorialApplication::run(int argc, char** argv)
   {
     /* set debug values */
-    rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000000, debug0); 
-    rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000001, debug1); 
-    rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000002, debug2); 
-    rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000003, debug3); 
-   
+    rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000000, debug0);
+    rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000001, debug1);
+    rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000002, debug2);
+    rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000003, debug3);
+
     /* initialize ray tracing core */
     device_init(rtcore.c_str());
-    
+
     /* set shader mode */
     switch (shader) {
     case SHADER_DEFAULT  : break;
@@ -795,19 +841,19 @@ namespace embree
     case SHADER_GEOMID_PRIMID: device_key_pressed(GLUT_KEY_F7); break;
     case SHADER_AMBIENT_OCCLUSION: device_key_pressed(GLUT_KEY_F11); break;
     };
-     
+
     /* benchmark mode */
     if (numBenchmarkFrames)
     {
       renderBenchmark();
     }
-    
+
     /* render to disk */
     if (outputImageFilename.str() != "")
       renderToFile(outputImageFilename);
-    
+
     /* interactive mode */
-    if (interactive) 
+    if (interactive)
     {
       resize(width,height);
 
@@ -840,7 +886,7 @@ namespace embree
     /* start tutorial */
     run(argc,argv);
     return 0;
-  }  
+  }
   catch (const std::exception& e) {
     std::cout << "Error: " << e.what() << std::endl;
     return 1;
@@ -892,9 +938,9 @@ namespace embree
     if (convert_hair_to_curves   ) scene->hair_to_curves();
     if (convert_bezier_to_bspline) scene->bezier_to_bspline();
     if (convert_bspline_to_bezier) scene->bspline_to_bezier();
-    
+
     /* convert model */
-    obj_scene.add(SceneGraph::flatten(scene,instancing_mode)); 
+    obj_scene.add(SceneGraph::flatten(scene,instancing_mode));
     scene = nullptr;
 
     /* print all cameras */
@@ -917,12 +963,12 @@ namespace embree
 
     /* send model */
     set_scene(&obj_scene);
-    
+
     /* start tutorial */
     run(argc,argv);
 
     return 0;
-  }  
+  }
   catch (const std::exception& e) {
     std::cout << "Error: " << e.what() << std::endl;
     return 1;
@@ -935,14 +981,14 @@ namespace embree
   /* draws progress bar */
   static int progressWidth = 0;
   static std::atomic<size_t> progressDots(0);
-  
-  extern "C" void progressStart() 
+
+  extern "C" void progressStart()
   {
     progressDots = 0;
     progressWidth = max(3,getTerminalWidth());
     std::cout << "[" << std::flush;
   }
-  
+
   extern "C" bool progressMonitor(void* ptr, const double n)
   {
     size_t olddots = progressDots;
@@ -952,7 +998,7 @@ namespace embree
       for (size_t i=olddots; i<newdots; i++) std::cout << "." << std::flush;
     return true;
   }
-  
+
   extern "C" void progressEnd() {
     std::cout << "]" << std::endl;
   }
