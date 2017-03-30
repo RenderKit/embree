@@ -23,10 +23,18 @@ SOURCE_GROUP("Source Files\\tasking" "/tasking/" )
 SOURCE_GROUP("Source Files\\algorithms" "/algorithms/")
 SOURCE_GROUP("" FILES embree.rc)
 
-SET(EMBREE_LIBRARY_FILES
- 
+SET(EMBREE_LIBRARY_FILES 
   embree.rc
+)
 
+IF (EMBREE_RAY_PACKETS)
+  SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
+  common/rtcore_ispc.cpp
+  common/rtcore_ispc.ispc)
+ENDIF()
+
+SET(EMBREE_LIBRARY_FILES_CORE
+ 
   common/device.cpp
   common/stat.cpp
   common/acceln.cpp
@@ -51,7 +59,6 @@ SET(EMBREE_LIBRARY_FILES
 
   geometry/primitive.cpp
   geometry/instance_intersector1.cpp
-  geometry/instance_intersector.cpp
   builders/primrefgen.cpp
 
   bvh/bvh.cpp
@@ -69,11 +76,13 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh_builder_instancing.cpp
 
   bvh/bvh_intersector1_bvh4.cpp
-  )
+  bvh/bvh_intersector1_bvh8.cpp
+)
 
 IF (EMBREE_GEOMETRY_SUBDIV)
-  SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
+  SET(EMBREE_LIBRARY_FILES_CORE ${EMBREE_LIBRARY_FILES_CORE}
   common/scene_subdiv_mesh.cpp
+  common/scene_subdiv_mesh_avx.cpp
   subdiv/tessellation_cache.cpp
   subdiv/subdivpatch1base.cpp
   subdiv/catmullclark_coefficients.cpp
@@ -83,173 +92,27 @@ IF (EMBREE_GEOMETRY_SUBDIV)
 ENDIF()
 
 IF (EMBREE_RAY_PACKETS)
-  SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
+  SET(EMBREE_LIBRARY_FILES_CORE ${EMBREE_LIBRARY_FILES_CORE}
 
-  common/rtcore_ispc.cpp
-  common/rtcore_ispc.ispc
-
+  geometry/instance_intersector.cpp
   bvh/bvh_intersector_single.cpp
   bvh/bvh_intersector_hybrid4_bvh4.cpp
+  bvh/bvh_intersector_hybrid8_bvh4.cpp
+  bvh/bvh_intersector_hybrid16_bvh4.cpp
+  bvh/bvh_intersector_hybrid4_bvh8.cpp
+  bvh/bvh_intersector_hybrid8_bvh8.cpp
+  bvh/bvh_intersector_hybrid16_bvh8.cpp
+  bvh/bvh_intersector_stream_bvh4.cpp
+  bvh/bvh_intersector_stream_bvh8.cpp
   bvh/bvh_intersector_stream_filters.cpp)
 ENDIF()
 
-SET(EMBREE_LIBRARY_FILES_SSE42
-    bvh/bvh_intersector1_bvh4.cpp)
-
-IF (EMBREE_GEOMETRY_SUBDIV)
-  SET(EMBREE_LIBRARY_FILES_SSE42 ${EMBREE_LIBRARY_FILES_SSE42}
-    geometry/grid_soa.cpp
-    subdiv/subdivpatch1base_eval.cpp)
-ENDIF()
-
-IF (EMBREE_RAY_PACKETS)
-    SET(EMBREE_LIBRARY_FILES_SSE42 ${EMBREE_LIBRARY_FILES_SSE42}
-    bvh/bvh_intersector_single.cpp
-    bvh/bvh_intersector_hybrid4_bvh4.cpp
-    bvh/bvh_intersector_stream_bvh4.cpp
-    bvh/bvh_intersector_stream_filters.cpp)
-ENDIF()
-
-SET(EMBREE_LIBRARY_FILES_AVX
-   
-    geometry/instance_intersector1.cpp
-    builders/primrefgen.cpp
-
-    bvh/bvh_rotate.cpp
-    bvh/bvh_refit.cpp
-    bvh/bvh_builder.cpp
-    bvh/bvh_builder_hair.cpp
-    bvh/bvh_builder_morton.cpp
-    bvh/bvh_builder_sah.cpp
-    bvh/bvh_builder_twolevel.cpp
-    bvh/bvh_builder_instancing.cpp
-    bvh/bvh_intersector1_bvh4.cpp
-    bvh/bvh_intersector1_bvh8.cpp
-    
-    bvh/bvh.cpp
-    bvh/bvh_statistics.cpp)
-
-IF (EMBREE_GEOMETRY_SUBDIV)
-  SET(EMBREE_LIBRARY_FILES_AVX ${EMBREE_LIBRARY_FILES_AVX}
-  geometry/grid_soa.cpp
-  subdiv/subdivpatch1base_eval.cpp
-  common/scene_subdiv_mesh_avx.cpp
-  bvh/bvh_builder_subdiv.cpp)
-ENDIF()
-
-IF (EMBREE_RAY_PACKETS)
-  SET(EMBREE_LIBRARY_FILES_AVX ${EMBREE_LIBRARY_FILES_AVX}
-
-    geometry/instance_intersector.cpp
-
-    bvh/bvh_intersector_single.cpp
-    bvh/bvh_intersector_hybrid4_bvh4.cpp
-    bvh/bvh_intersector_hybrid8_bvh4.cpp
-    bvh/bvh_intersector_hybrid4_bvh8.cpp
-    bvh/bvh_intersector_hybrid8_bvh8.cpp
-    bvh/bvh_intersector_stream_bvh4.cpp
-    bvh/bvh_intersector_stream_bvh8.cpp
-    bvh/bvh_intersector_stream_filters.cpp)
-ENDIF()
-
-SET(EMBREE_LIBRARY_FILES_AVX2
-
-    geometry/instance_intersector1.cpp
-    builders/primrefgen.cpp
-    bvh/bvh_builder_morton.cpp
-    bvh/bvh_rotate.cpp
-    bvh/bvh_intersector1_bvh4.cpp
-    bvh/bvh_intersector1_bvh8.cpp)
-
-IF (EMBREE_GEOMETRY_SUBDIV)
-  SET(EMBREE_LIBRARY_FILES_AVX2 ${EMBREE_LIBRARY_FILES_AVX2}
-  geometry/grid_soa.cpp
-  subdiv/subdivpatch1base_eval.cpp)
-ENDIF()
-
-IF (EMBREE_RAY_PACKETS)
-  SET(EMBREE_LIBRARY_FILES_AVX2 ${EMBREE_LIBRARY_FILES_AVX2}
-    geometry/instance_intersector.cpp
-
-    bvh/bvh_intersector_single.cpp
-    bvh/bvh_intersector_hybrid4_bvh4.cpp
-    bvh/bvh_intersector_hybrid8_bvh4.cpp
-    bvh/bvh_intersector_hybrid4_bvh8.cpp
-    bvh/bvh_intersector_hybrid8_bvh8.cpp
-    bvh/bvh_intersector_stream_bvh4.cpp
-    bvh/bvh_intersector_stream_bvh8.cpp
-    bvh/bvh_intersector_stream_filters.cpp)
-ENDIF()
-
-SET(EMBREE_LIBRARY_FILES_AVX512KNL
-
-    geometry/instance_intersector1.cpp
-
-    bvh/bvh_refit.cpp
-    bvh/bvh_rotate.cpp
-    bvh/bvh_intersector1_bvh4.cpp
-    bvh/bvh_intersector1_bvh8.cpp
-
-    builders/primrefgen.cpp
-    bvh/bvh_builder.cpp
-    bvh/bvh_builder_sah.cpp
-    bvh/bvh_builder_twolevel.cpp
-    bvh/bvh_builder_instancing.cpp
-    bvh/bvh_builder_morton.cpp)
-
-IF (EMBREE_GEOMETRY_SUBDIV)
-  SET(EMBREE_LIBRARY_FILES_AVX512KNL ${EMBREE_LIBRARY_FILES_AVX512KNL}
-  geometry/grid_soa.cpp    
-  subdiv/subdivpatch1base_eval.cpp
-  bvh/bvh_builder_subdiv.cpp)
-ENDIF()
-
-IF (EMBREE_RAY_PACKETS)
-  SET(EMBREE_LIBRARY_FILES_AVX512KNL ${EMBREE_LIBRARY_FILES_AVX512KNL}
-
-    geometry/instance_intersector.cpp
-
-    bvh/bvh_intersector_single.cpp
-    bvh/bvh_intersector_hybrid4_bvh4.cpp
-    bvh/bvh_intersector_hybrid8_bvh4.cpp
-    bvh/bvh_intersector_hybrid16_bvh4.cpp
-    bvh/bvh_intersector_hybrid4_bvh8.cpp
-    bvh/bvh_intersector_hybrid8_bvh8.cpp
-    bvh/bvh_intersector_hybrid16_bvh8.cpp
-    bvh/bvh_intersector_stream_bvh4.cpp
-    bvh/bvh_intersector_stream_bvh8.cpp
-    bvh/bvh_intersector_stream_filters.cpp)
-ENDIF()
-
-SET(EMBREE_LIBRARY_FILES_AVX512SKX
-
-    geometry/instance_intersector1.cpp
-
-    bvh/bvh_intersector1_bvh4.cpp
-    bvh/bvh_intersector1_bvh8.cpp)
-
-IF (EMBREE_GEOMETRY_SUBDIV)
-  SET(EMBREE_LIBRARY_FILES_AVX512SKX ${EMBREE_LIBRARY_FILES_AVX512SKX}
-  geometry/grid_soa.cpp
-  subdiv/subdivpatch1base_eval.cpp)
-ENDIF()
-
-IF (EMBREE_RAY_PACKETS)
-  SET(EMBREE_LIBRARY_FILES_AVX512SKX ${EMBREE_LIBRARY_FILES_AVX512SKX}
-
-    geometry/instance_intersector.cpp
-
-    bvh/bvh_intersector_single.cpp
-    bvh/bvh_intersector_hybrid4_bvh4.cpp
-    bvh/bvh_intersector_hybrid8_bvh4.cpp
-    bvh/bvh_intersector_hybrid16_bvh4.cpp
-    bvh/bvh_intersector_hybrid4_bvh8.cpp
-    bvh/bvh_intersector_hybrid8_bvh8.cpp
-    bvh/bvh_intersector_hybrid16_bvh8.cpp
-    bvh/bvh_intersector_stream_bvh4.cpp
-    bvh/bvh_intersector_stream_bvh8.cpp
-    bvh/bvh_intersector_stream_filters.cpp)
-ENDIF()
+SET(EMBREE_LIBRARY_FILES_SSE2 ${EMBREE_LIBRARY_FILES_CORE})
+SET(EMBREE_LIBRARY_FILES_SSE42 ${EMBREE_LIBRARY_FILES_CORE})
+SET(EMBREE_LIBRARY_FILES_AVX ${EMBREE_LIBRARY_FILES_CORE})
+SET(EMBREE_LIBRARY_FILES_AVX2 ${EMBREE_LIBRARY_FILES_CORE})
+SET(EMBREE_LIBRARY_FILES_AVX512KNL ${EMBREE_LIBRARY_FILES_CORE})
+SET(EMBREE_LIBRARY_FILES_AVX512SKX ${EMBREE_LIBRARY_FILES_CORE})
 
 # replaces all .cpp files with a dummy file that includes that .cpp file
 # this is to work around an ICC name mangling issue related to lambda functions under windows
@@ -267,6 +130,7 @@ MACRO (CreateISADummyFiles list isa)
       DEPENDS ${src_file})
   ENDFOREACH()
 ENDMACRO()
+CreateISADummyFiles(EMBREE_LIBRARY_FILES_SSE2      sse2      ${EMBREE_LIBRARY_FILES_SSE2})
 CreateISADummyFiles(EMBREE_LIBRARY_FILES_SSE42     sse42     ${EMBREE_LIBRARY_FILES_SSE42})
 CreateISADummyFiles(EMBREE_LIBRARY_FILES_AVX       avx       ${EMBREE_LIBRARY_FILES_AVX})
 CreateISADummyFiles(EMBREE_LIBRARY_FILES_AVX2      avx2      ${EMBREE_LIBRARY_FILES_AVX2})
@@ -278,12 +142,20 @@ SET_TARGET_PROPERTIES(embree PROPERTIES COMPILE_FLAGS "${FLAGS_LOWEST}")
 SET_PROPERTY(TARGET embree PROPERTY FOLDER kernels)
 ADD_CUSTOM_TARGET(embree_check_stack_frame_size COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_stack_frame_size.cmake DEPENDS embree)
 
+IF (EMBREE_ISA_SSE2 AND EMBREE_LIBRARY_FILES_SSE2)
+  ADD_LIBRARY(embree_sse2 STATIC ${EMBREE_LIBRARY_FILES_SSE2})
+  SET_TARGET_PROPERTIES(embree_sse2 PROPERTIES COMPILE_FLAGS "${FLAGS_SSE2}")
+  SET_PROPERTY(TARGET embree_sse2 PROPERTY FOLDER kernels)
+  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_sse2)
+#  ADD_CUSTOM_TARGET(embree_sse2_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree_sse2> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS embree_sse2)
+ENDIF ()
+
 IF (EMBREE_ISA_SSE42 AND EMBREE_LIBRARY_FILES_SSE42)
   ADD_LIBRARY(embree_sse42 STATIC ${EMBREE_LIBRARY_FILES_SSE42})
   SET_TARGET_PROPERTIES(embree_sse42 PROPERTIES COMPILE_FLAGS "${FLAGS_SSE42}")
   SET_PROPERTY(TARGET embree_sse42 PROPERTY FOLDER kernels)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_sse42)
-  ADD_CUSTOM_TARGET(embree_sse42_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree_sse42> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS embree_sse42)
+#  ADD_CUSTOM_TARGET(embree_sse42_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree_sse42> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS embree_sse42)
 ENDIF ()
 
 IF (EMBREE_ISA_AVX  AND EMBREE_LIBRARY_FILES_AVX)
@@ -291,7 +163,7 @@ IF (EMBREE_ISA_AVX  AND EMBREE_LIBRARY_FILES_AVX)
   SET_TARGET_PROPERTIES(embree_avx PROPERTIES COMPILE_FLAGS "${FLAGS_AVX}")
   SET_PROPERTY(TARGET embree_avx PROPERTY FOLDER kernels)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx)
-  ADD_CUSTOM_TARGET(embree_avx_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree_avx> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS embree_avx)
+#  ADD_CUSTOM_TARGET(embree_avx_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree_avx> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS embree_avx)
 ENDIF()
 
 IF (EMBREE_ISA_AVX2 AND EMBREE_LIBRARY_FILES_AVX2)
@@ -299,7 +171,7 @@ IF (EMBREE_ISA_AVX2 AND EMBREE_LIBRARY_FILES_AVX2)
   SET_TARGET_PROPERTIES(embree_avx2 PROPERTIES COMPILE_FLAGS "${FLAGS_AVX2}")
   SET_PROPERTY(TARGET embree_avx2 PROPERTY FOLDER kernels)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx2)
-  ADD_CUSTOM_TARGET(embree_avx2_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree_avx2> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS embree_avx2)
+#  ADD_CUSTOM_TARGET(embree_avx2_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree_avx2> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS embree_avx2)
 ENDIF()
 
 IF (EMBREE_ISA_AVX512KNL AND EMBREE_LIBRARY_FILES_AVX512KNL)
@@ -307,7 +179,7 @@ IF (EMBREE_ISA_AVX512KNL AND EMBREE_LIBRARY_FILES_AVX512KNL)
   SET_TARGET_PROPERTIES(embree_avx512knl PROPERTIES COMPILE_FLAGS "${FLAGS_AVX512KNL}")
   SET_PROPERTY(TARGET embree_avx512knl PROPERTY FOLDER kernels)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx512knl)
-  ADD_CUSTOM_TARGET(embree_avx512knl_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree_avx512knl> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS embree_avx512knl)
+#  ADD_CUSTOM_TARGET(embree_avx512knl_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree_avx512knl> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS embree_avx512knl)
 ENDIF()
 
 IF (EMBREE_ISA_AVX512SKX AND EMBREE_LIBRARY_FILES_AVX512SKX)
@@ -315,7 +187,7 @@ IF (EMBREE_ISA_AVX512SKX AND EMBREE_LIBRARY_FILES_AVX512SKX)
   SET_TARGET_PROPERTIES(embree_avx512skx PROPERTIES COMPILE_FLAGS "${FLAGS_AVX512SKX}")
   SET_PROPERTY(TARGET embree_avx512skx PROPERTY FOLDER kernels)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx512skx)
-  ADD_CUSTOM_TARGET(embree_avx512skx_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree_avx512skx> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS embree_avx512skx)
+#  ADD_CUSTOM_TARGET(embree_avx512skx_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree_avx512skx> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS embree_avx512skx)
 ENDIF()
 
 TARGET_LINK_LIBRARIES(embree ${EMBREE_LIBRARIES} sys simd lexers tasking)
@@ -329,7 +201,6 @@ ELSE()
   SET_TARGET_PROPERTIES(embree PROPERTIES LINK_FLAGS -Wl,--version-script=${PROJECT_SOURCE_DIR}/kernels/export.linux.map)
   SET_SOURCE_FILES_PROPERTIES(common/rtcore.cpp PROPERTIES OBJECT_DEPENDS ${PROJECT_SOURCE_DIR}/kernels/export.linux.map)
 ENDIF()
-
 
 IF (EMBREE_ZIP_MODE)
   SET_TARGET_PROPERTIES(embree PROPERTIES VERSION ${EMBREE_VERSION_MAJOR} SOVERSION ${EMBREE_VERSION_MAJOR})

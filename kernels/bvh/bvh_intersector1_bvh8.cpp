@@ -14,6 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#if defined (__AVX__)
+
 #include "bvh_intersector1.cpp"
 
 namespace embree
@@ -52,3 +54,5 @@ namespace embree
     IF_ENABLED_LINES(DEFINE_INTERSECTOR1(BVH8Line4iMBIntersector1,BVHNIntersector1<8 COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<LineMiMBIntersector1<SIMD_MODE(4) COMMA true> > >));
   }
 }
+
+#endif

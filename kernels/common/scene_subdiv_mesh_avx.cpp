@@ -14,6 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#if defined (__AVX__)
+
 #include "scene_subdiv_mesh.h"
 #include "scene.h"
 #include "../subdiv/patch_eval.h"
@@ -243,3 +245,5 @@ namespace isa
   }
 }
 }
+
+#endif

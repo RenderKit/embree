@@ -14,6 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#if defined (__AVX__)
+
 #include "bvh_intersector_stream.cpp"
 
 namespace embree
@@ -54,3 +56,5 @@ namespace embree
     //IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH8Quad4iMBIntersectorStreamPluecker,BVHNIntersectorStream<SIMD_MODE(8) COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<QuadMiMBIntersector1Pluecker<4 COMMA true> > >));
   }
 }
+
+#endif

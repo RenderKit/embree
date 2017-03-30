@@ -14,6 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#if defined (__AVX512F__)
+
 #include "bvh_intersector_hybrid.cpp"
 
 namespace embree
@@ -62,3 +64,4 @@ namespace embree
   }
 }
 
+#endif
