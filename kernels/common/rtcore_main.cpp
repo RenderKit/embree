@@ -26,59 +26,6 @@
 #include "context.h"
 #include "../../include/embree2/rtcore_ray.h"
 
-#define DECLARE_SYMBOL(fun)                                     \
-  namespace sse2      { extern fun; }                           \
-  namespace sse41     { extern fun; }                           \
-  namespace sse42     { extern fun; }                           \
-  namespace avx       { extern fun; }                           \
-  namespace avx2      { extern fun; }                           \
-  namespace avx512knl { extern fun; }                           \
-  namespace avx512skx { extern fun; }
-
-#if defined(__TARGET_SSE2__)
-#define SELECT_SSE2(f,name) if (hasISA(SSE2)) f = &sse2::name;
-#else
-#define SELECT_SSE2(f,name)
-#endif
-
-#if defined(__TARGET_SSE42__)
-#define SELECT_SSE42(f,name) if (hasISA(SSE42)) f = &sse42::name;
-#else
-#define SELECT_SSE42(f,name)
-#endif
-
-#if defined(__TARGET_AVX__)
-#define SELECT_AVX(f,name) if (hasISA(AVX)) f = &avx::name;
-#else
-#define SELECT_AVX(f,name)
-#endif
-
-#if defined(__TARGET_AVX2__)
-#define SELECT_AVX2(f,name) if (hasISA(AVX2)) f = &avx2::name;
-#else
-#define SELECT_AVX2(f,name)
-#endif
-
-#if defined(__TARGET_AVX512KNL__)
-#define SELECT_AVX512KNL(f,name) if (hasISA(AVX512KNL)) f = &avx512knl::name;
-#else
-#define SELECT_AVX512KNL(f,name)
-#endif
-
-#if defined(__TARGET_AVX512SKX__)
-#define SELECT_AVX512SKX(f,name) if (hasISA(AVX512SKX)) f = &avx512skx::name;
-#else
-#define SELECT_AVX512SKX(f,name)
-#endif
-
-#define SELECT_SYMBOL(f,name)                   \
-  decltype(name)* f = nullptr;                  \
-  SELECT_AVX512SKX(f,name);                     \
-  SELECT_AVX512KNL(f,name);                     \
-  SELECT_AVX2(f,name);                          \
-  SELECT_AVX(f,name);                           \
-  SELECT_SSE42(f,name);                         \
-  SELECT_SSE2(f,name);
 
 #define NARGS(...) NARGS_(__VA_ARGS__,RSEQ())
 #define NARGS_(...) ARGS_N(__VA_ARGS__)
@@ -137,11 +84,66 @@
 #define PAIRS_(N,...) PAIRS__(N,__VA_ARGS__)
 #define PAIRS(...) PAIRS_(NARGS(__VA_ARGS__),__VA_ARGS__)
 
-#define BIND_FUNCTION(dty,name,...) \
-  DECLARE_SYMBOL(dty name(PAIRS(__VA_ARGS__)));                         \
+#if defined(__TARGET_SSE2__)
+#define SELECT_SSE2(f,name) if (hasISA(SSE2)) f = &sse2::name;
+#else
+#define SELECT_SSE2(f,name)
+#endif
+
+#if defined(__TARGET_SSE42__)
+#define SELECT_SSE42(f,name) if (hasISA(SSE42)) f = &sse42::name;
+#else
+#define SELECT_SSE42(f,name)
+#endif
+
+#if defined(__TARGET_AVX__)
+#define SELECT_AVX(f,name) if (hasISA(AVX)) f = &avx::name;
+#else
+#define SELECT_AVX(f,name)
+#endif
+
+#if defined(__TARGET_AVX2__)
+#define SELECT_AVX2(f,name) if (hasISA(AVX2)) f = &avx2::name;
+#else
+#define SELECT_AVX2(f,name)
+#endif
+
+#if defined(__TARGET_AVX512KNL__)
+#define SELECT_AVX512KNL(f,name) if (hasISA(AVX512KNL)) f = &avx512knl::name;
+#else
+#define SELECT_AVX512KNL(f,name)
+#endif
+
+#if defined(__TARGET_AVX512SKX__)
+#define SELECT_AVX512SKX(f,name) if (hasISA(AVX512SKX)) f = &avx512skx::name;
+#else
+#define SELECT_AVX512SKX(f,name)
+#endif
+
+#define DECLARE_SYMBOL(dty,name,...)                               \
+  namespace sse2      { extern dty name(PAIRS(__VA_ARGS__)); }          \
+  namespace sse41     { extern dty name(PAIRS(__VA_ARGS__)); }          \
+  namespace sse42     { extern dty name(PAIRS(__VA_ARGS__)); }          \
+  namespace avx       { extern dty name(PAIRS(__VA_ARGS__)); }          \
+  namespace avx2      { extern dty name(PAIRS(__VA_ARGS__)); }          \
+  namespace avx512knl { extern dty name(PAIRS(__VA_ARGS__)); }          \
+  namespace avx512skx { extern dty name(PAIRS(__VA_ARGS__)); }          \
+  extern dty (*selected_##name) (PAIRS(__VA_ARGS__));                     \
+  dty select_##name(PAIRS(__VA_ARGS__)) {                               \
+    SELECT_SSE2(selected_##name,name)                                   \
+    SELECT_SSE42(selected_##name,name)                                \
+    SELECT_AVX(selected_##name,name)                                  \
+    SELECT_AVX2(selected_##name,name)                                   \
+    SELECT_AVX512KNL(selected_##name,name)                                 \
+    SELECT_AVX512SKX(selected_##name,name)                            \
+    return selected_##name(CALL(__VA_ARGS__));                          \
+  }                                                                     \
+  dty (*selected_##name) (PAIRS(__VA_ARGS__)) = &select_##name;
+
+#define FORWARD_FUNCTION(dty,name,...)                   \
+  DECLARE_SYMBOL(dty,name,__VA_ARGS__)                             \
   RTCORE_API dty name(PAIRS(__VA_ARGS__)) {                             \
-    SELECT_SYMBOL(f,name);                                              \
-    return f(CALL(__VA_ARGS__));                                        \
+    return selected_##name(CALL(__VA_ARGS__));                          \
   }
 
 namespace embree
@@ -150,122 +152,122 @@ namespace embree
     return (getCPUFeatures() & _isa) == _isa;
   }
 
-  BIND_FUNCTION(RTCDevice,rtcNewDevice,const char*,cfg);
-  BIND_FUNCTION(void,rtcDeleteDevice,RTCDevice,device);
-  BIND_FUNCTION(void,rtcInit,const char*,cfg);
-  BIND_FUNCTION(void,rtcExit,void);
-  BIND_FUNCTION(void,rtcSetParameter1i,const RTCParameter,parm,ssize_t,val);
-  BIND_FUNCTION(ssize_t,rtcGetParameter1i,const RTCParameter,parm);
-  BIND_FUNCTION(void,rtcDeviceSetParameter1i,RTCDevice,hdevice,const RTCParameter,parm,ssize_t,val);
-  BIND_FUNCTION(ssize_t,rtcDeviceGetParameter1i,RTCDevice,hdevice,const RTCParameter,parm);
-  BIND_FUNCTION(RTCError,rtcGetError,void);
-  BIND_FUNCTION(RTCError,rtcDeviceGetError,RTCDevice,hdevice);
-  BIND_FUNCTION(void,rtcSetErrorFunction,RTCErrorFunc,func);
-  BIND_FUNCTION(void,rtcDeviceSetErrorFunction,RTCDevice,hdevice,RTCErrorFunc,func);
-  BIND_FUNCTION(void,rtcDeviceSetErrorFunction2,RTCDevice,hdevice,RTCErrorFunc2,func,void*,userPtr);
-  BIND_FUNCTION(void,rtcSetMemoryMonitorFunction,RTCMemoryMonitorFunc,func);
-  BIND_FUNCTION(void,rtcDeviceSetMemoryMonitorFunction,RTCDevice,hdevice,RTCMemoryMonitorFunc,func);
-  BIND_FUNCTION(void,rtcDeviceSetMemoryMonitorFunction2,RTCDevice,hdevice,RTCMemoryMonitorFunc2,func,void*,userPtr);
-  BIND_FUNCTION(void,rtcDebug,void);
-  BIND_FUNCTION(RTCScene,rtcNewScene,RTCSceneFlags,flags,RTCAlgorithmFlags,aflags);
-  BIND_FUNCTION(RTCScene,rtcDeviceNewScene,RTCDevice,device,RTCSceneFlags,flags,RTCAlgorithmFlags,aflags);
-  BIND_FUNCTION(void,rtcSetProgressMonitorFunction,RTCScene,hscene,RTCProgressMonitorFunc,func,void*,ptr);
-  BIND_FUNCTION(void,rtcCommit,RTCScene,hscene);
-  BIND_FUNCTION(void,rtcCommitJoin,RTCScene,hscene);
-  BIND_FUNCTION(void,rtcCommitThread,RTCScene,hscene,unsigned int,threadID,unsigned int,numThreads);
-  BIND_FUNCTION(void,rtcGetBounds,RTCScene,hscene,RTCBounds&,bounds_o);
-  BIND_FUNCTION(void,rtcGetLinearBounds,RTCScene,hscene,RTCBounds*,bounds_o);
-  BIND_FUNCTION(void,rtcIntersect,RTCScene,hscene,RTCRay&,ray);
-  BIND_FUNCTION(void,rtcIntersect1Ex,RTCScene,hscene,const RTCIntersectContext*,user_context,RTCRay&,ray);
-  BIND_FUNCTION(void,rtcIntersect4,const void*,valid,RTCScene,hscene,RTCRay4&,ray);
-  BIND_FUNCTION(void,rtcIntersect4Ex,const void*,valid,RTCScene,hscene,const RTCIntersectContext*,user_context,RTCRay4&,ray);
-  BIND_FUNCTION(void,rtcIntersect8,const void*,valid,RTCScene,hscene,RTCRay8&,ray);
-  BIND_FUNCTION(void,rtcIntersect8Ex,const void*,valid,RTCScene,hscene,const RTCIntersectContext*,user_context,RTCRay8&,ray);
-  BIND_FUNCTION(void,rtcIntersect16,const void*,valid,RTCScene,hscene,RTCRay16&,ray);
-  BIND_FUNCTION(void,rtcIntersect16Ex,const void*,valid,RTCScene,hscene,const RTCIntersectContext*,user_context,RTCRay16&,ray);
-  BIND_FUNCTION(void,rtcIntersect1M,RTCScene,hscene,const RTCIntersectContext*,user_context,RTCRay*,rays,const size_t,M,const size_t,stride);
-  BIND_FUNCTION(void,rtcIntersect1Mp,RTCScene,hscene,const RTCIntersectContext*,user_context,RTCRay**,rays,const size_t,M);
-  BIND_FUNCTION(void,rtcIntersectNM,RTCScene,hscene,const RTCIntersectContext*,user_context,struct RTCRayN*,rays,const size_t,N,const size_t,M,const size_t,stride);
-  BIND_FUNCTION(void,rtcIntersectNp,RTCScene,hscene,const RTCIntersectContext*,user_context,const RTCRayNp&,rays,const size_t,N);
-  BIND_FUNCTION(void,rtcOccluded,RTCScene,hscene,RTCRay&,ray);
-  BIND_FUNCTION(void,rtcOccluded1Ex,RTCScene,hscene,const RTCIntersectContext*,user_context,RTCRay&,ray);
-  BIND_FUNCTION(void,rtcOccluded4,const void*,valid,RTCScene,hscene,RTCRay4&,ray);
-  BIND_FUNCTION(void,rtcOccluded4Ex,const void*,valid,RTCScene,hscene,const RTCIntersectContext*,user_context,RTCRay4&,ray);
-  BIND_FUNCTION(void,rtcOccluded8,const void*,valid,RTCScene,hscene,RTCRay8&,ray);
-  BIND_FUNCTION(void,rtcOccluded8Ex,const void*,valid,RTCScene,hscene,const RTCIntersectContext*,user_context,RTCRay8&,ray);
-  BIND_FUNCTION(void,rtcOccluded16,const void*,valid,RTCScene,hscene,RTCRay16&,ray);
-  BIND_FUNCTION(void,rtcOccluded16Ex,const void*,valid,RTCScene,hscene,const RTCIntersectContext*,user_context,RTCRay16&,ray);
-  BIND_FUNCTION(void,rtcOccluded1M,RTCScene,hscene,const RTCIntersectContext*,user_context,RTCRay*,rays,const size_t,M,const size_t,stride);
-  BIND_FUNCTION(void,rtcOccluded1Mp,RTCScene,hscene,const RTCIntersectContext*,user_context,RTCRay**,rays,const size_t,M);
-  BIND_FUNCTION(void,rtcOccludedNM,RTCScene,hscene,const RTCIntersectContext*,user_context,RTCRayN*,rays,const size_t,N,const size_t,M,const size_t,stride);
-  BIND_FUNCTION(void,rtcOccludedNp,RTCScene,hscene,const RTCIntersectContext*,user_context,const RTCRayNp&,rays,const size_t,N);
-  BIND_FUNCTION(void,rtcDeleteScene,RTCScene,hscene);
-  BIND_FUNCTION(unsigned,rtcNewInstance,RTCScene,htarget,RTCScene,hsource);
-  BIND_FUNCTION(unsigned,rtcNewInstance2,RTCScene,htarget,RTCScene,hsource,size_t,numTimeSteps);
-  BIND_FUNCTION(unsigned,rtcNewGeometryInstance,RTCScene,hscene,unsigned,geomID);
-  BIND_FUNCTION(unsigned,rtcNewGeometryGroup,RTCScene,hscene,RTCGeometryFlags,flags,unsigned*,geomIDs,size_t,N);
-  BIND_FUNCTION(void,rtcSetTransform,RTCScene,hscene,unsigned,geomID,RTCMatrixType,layout,const float*,xfm);
-  BIND_FUNCTION(void,rtcSetTransform2,RTCScene,hscene,unsigned,geomID,RTCMatrixType,layout,const float*,xfm,size_t,timeStep);
-  BIND_FUNCTION(unsigned,rtcNewUserGeometry,RTCScene,hscene,size_t,numItems);
-  BIND_FUNCTION(unsigned,rtcNewUserGeometry2,RTCScene,hscene,size_t,numItems,size_t,numTimeSteps);
-  BIND_FUNCTION(unsigned,rtcNewUserGeometry3,RTCScene,hscene,RTCGeometryFlags,gflags,size_t,numItems,size_t,numTimeSteps);
-  BIND_FUNCTION(unsigned,rtcNewTriangleMesh,RTCScene,hscene,RTCGeometryFlags,flags,size_t,numTriangles,size_t,numVertices,size_t,numTimeSteps);
-  BIND_FUNCTION(unsigned,rtcNewQuadMesh,RTCScene,hscene,RTCGeometryFlags,flags,size_t,numQuads,size_t,numVertices,size_t,numTimeSteps);
-  BIND_FUNCTION(unsigned,rtcNewHairGeometry,RTCScene,hscene,RTCGeometryFlags,flags,size_t,numCurves,size_t,numVertices,size_t,numTimeSteps);
-  BIND_FUNCTION(unsigned,rtcNewBezierHairGeometry,RTCScene,hscene,RTCGeometryFlags,flags,unsigned int,numCurves,unsigned int,numVertices,unsigned int,numTimeSteps);
-  BIND_FUNCTION(unsigned,rtcNewBSplineHairGeometry,RTCScene,hscene,RTCGeometryFlags,flags,unsigned int,numCurves,unsigned int,numVertices,unsigned int,numTimeSteps);
-  BIND_FUNCTION(unsigned,rtcNewCurveGeometry,RTCScene,hscene,RTCGeometryFlags,flags,size_t,numCurves,size_t,numVertices,size_t,numTimeSteps);
-  BIND_FUNCTION(unsigned,rtcNewBezierCurveGeometry,RTCScene,hscene,RTCGeometryFlags,flags,unsigned int,numCurves,unsigned int,numVertices,unsigned int,numTimeSteps);
-  BIND_FUNCTION(unsigned,rtcNewBSplineCurveGeometry,RTCScene,hscene,RTCGeometryFlags,flags,unsigned int,numCurves,unsigned int,numVertices,unsigned int,numTimeSteps);
-  BIND_FUNCTION(unsigned,rtcNewLineSegments,RTCScene,hscene,RTCGeometryFlags,flags,size_t,numSegments,size_t,numVertices,size_t,numTimeSteps);
-  BIND_FUNCTION(unsigned,rtcNewSubdivisionMesh,RTCScene,hscene,RTCGeometryFlags,flags,size_t,numFaces,size_t,numEdges,size_t,numVertices,size_t,numEdgeCreases,size_t,numVertexCreases,size_t,numHoles,size_t,numTimeSteps);
-  BIND_FUNCTION(void,rtcSetMask,RTCScene,hscene,unsigned,geomID,int,mask);
-  BIND_FUNCTION(void,rtcSetBoundaryMode,RTCScene,hscene,unsigned,geomID,RTCBoundaryMode,mode);
-  BIND_FUNCTION(void,rtcSetSubdivisionMode,RTCScene,hscene,unsigned,geomID,unsigned,topologyID,RTCSubdivisionMode,mode);
-  BIND_FUNCTION(void,rtcSetIndexBuffer,RTCScene,hscene,unsigned,geomID,RTCBufferType,vertexBuffer,RTCBufferType,indexBuffer);
-  BIND_FUNCTION(void*,rtcMapBuffer,RTCScene,hscene,unsigned,geomID,RTCBufferType,type);
-  BIND_FUNCTION(void,rtcUnmapBuffer,RTCScene,hscene,unsigned,geomID,RTCBufferType,type);
-  BIND_FUNCTION(void,rtcSetBuffer,RTCScene,hscene,unsigned,geomID,RTCBufferType,type,const void*,ptr,size_t,offset,size_t,stride);
-  BIND_FUNCTION(void,rtcSetBuffer2,RTCScene,hscene,unsigned,geomID,RTCBufferType,type,const void*,ptr,size_t,offset,size_t,stride,size_t,size);
-  BIND_FUNCTION(void,rtcEnable,RTCScene,hscene,unsigned,geomID);
-  BIND_FUNCTION(void,rtcUpdate,RTCScene,hscene,unsigned,geomID);
-  BIND_FUNCTION(void,rtcUpdateBuffer,RTCScene,hscene,unsigned,geomID,RTCBufferType,type);
-  BIND_FUNCTION(void,rtcDisable,RTCScene,hscene,unsigned,geomID);
-  BIND_FUNCTION(void,rtcDeleteGeometry,RTCScene,hscene,unsigned,geomID);
-  BIND_FUNCTION(void,rtcSetTessellationRate,RTCScene,hscene,unsigned,geomID,float,tessellationRate);
-  BIND_FUNCTION(void,rtcSetUserData,RTCScene,hscene,unsigned,geomID,void*,ptr);
-  BIND_FUNCTION(void*,rtcGetUserData,RTCScene,hscene,unsigned,geomID);
-  BIND_FUNCTION(void,rtcSetBoundsFunction,RTCScene,hscene,unsigned,geomID,RTCBoundsFunc,bounds);
-  BIND_FUNCTION(void,rtcSetBoundsFunction2,RTCScene,hscene,unsigned,geomID,RTCBoundsFunc2,bounds,void*,userPtr);
-  BIND_FUNCTION(void,rtcSetBoundsFunction3,RTCScene,hscene,unsigned,geomID,RTCBoundsFunc3,bounds,void*,userPtr);
-  BIND_FUNCTION(void,rtcSetDisplacementFunction,RTCScene,hscene,unsigned,geomID,RTCDisplacementFunc,func,RTCBounds*,bounds);
-  BIND_FUNCTION(void,rtcSetDisplacementFunction2,RTCScene,hscene,unsigned,geomID,RTCDisplacementFunc2,func,RTCBounds*,bounds);
-  BIND_FUNCTION(void,rtcSetIntersectFunction,RTCScene,hscene,unsigned,geomID,RTCIntersectFunc,intersect);
-  BIND_FUNCTION(void,rtcSetIntersectFunction4,RTCScene,hscene,unsigned,geomID,RTCIntersectFunc4,intersect4);
-  BIND_FUNCTION(void,rtcSetIntersectFunction8,RTCScene,hscene,unsigned,geomID,RTCIntersectFunc8,intersect8);
-  BIND_FUNCTION(void,rtcSetIntersectFunction16,RTCScene,hscene,unsigned,geomID,RTCIntersectFunc16,intersect16);
-  BIND_FUNCTION(void,rtcSetIntersectFunction1Mp,RTCScene,hscene,unsigned,geomID,RTCIntersectFunc1Mp,intersect);
-  BIND_FUNCTION(void,rtcSetIntersectFunctionN,RTCScene,hscene,unsigned,geomID,RTCIntersectFuncN,intersect);
-  BIND_FUNCTION(void,rtcSetOccludedFunction,RTCScene,hscene,unsigned,geomID,RTCOccludedFunc,occluded);
-  BIND_FUNCTION(void,rtcSetOccludedFunction4,RTCScene,hscene,unsigned,geomID,RTCOccludedFunc4,occluded4);
-  BIND_FUNCTION(void,rtcSetOccludedFunction8,RTCScene,hscene,unsigned,geomID,RTCOccludedFunc8,occluded8);
-  BIND_FUNCTION(void,rtcSetOccludedFunction16,RTCScene,hscene,unsigned,geomID,RTCOccludedFunc16,occluded16);
-  BIND_FUNCTION(void,rtcSetOccludedFunction1Mp,RTCScene,hscene,unsigned,geomID,RTCOccludedFunc1Mp,occluded);
-  BIND_FUNCTION(void,rtcSetOccludedFunctionN,RTCScene,hscene,unsigned,geomID,RTCOccludedFuncN,occluded);
-  BIND_FUNCTION(void,rtcSetIntersectionFilterFunction,RTCScene,hscene,unsigned,geomID,RTCFilterFunc,intersect);
-  BIND_FUNCTION(void,rtcSetIntersectionFilterFunction4,RTCScene,hscene,unsigned,geomID,RTCFilterFunc4,filter4);
-  BIND_FUNCTION(void,rtcSetIntersectionFilterFunction8,RTCScene,hscene,unsigned,geomID,RTCFilterFunc8,filter8);
-  BIND_FUNCTION(void,rtcSetIntersectionFilterFunction16,RTCScene,hscene,unsigned,geomID,RTCFilterFunc16,filter16);
-  BIND_FUNCTION(void,rtcSetIntersectionFilterFunctionN,RTCScene,hscene,unsigned,geomID,RTCFilterFuncN,filterN);
-  BIND_FUNCTION(void,rtcSetOcclusionFilterFunction,RTCScene,hscene,unsigned,geomID,RTCFilterFunc,intersect);
-  BIND_FUNCTION(void,rtcSetOcclusionFilterFunction4,RTCScene,hscene,unsigned,geomID,RTCFilterFunc4,filter4);
-  BIND_FUNCTION(void,rtcSetOcclusionFilterFunction8,RTCScene,hscene,unsigned,geomID,RTCFilterFunc8,filter8);
-  BIND_FUNCTION(void,rtcSetOcclusionFilterFunction16,RTCScene,hscene,unsigned,geomID,RTCFilterFunc16,filter16);
-  BIND_FUNCTION(void,rtcSetOcclusionFilterFunctionN,RTCScene,hscene,unsigned,geomID,RTCFilterFuncN,filterN);
-  BIND_FUNCTION(void,rtcInterpolate,RTCScene,hscene,unsigned,geomID,unsigned,primID,float,u,float,v,RTCBufferType,buffer,float*,P,float*,dPdu,float*,dPdv,size_t,numFloats);
-  BIND_FUNCTION(void,rtcInterpolate2,RTCScene,hscene,unsigned,geomID,unsigned,primID,float,u,float,v,RTCBufferType,buffer,float*,P,float*,dPdu,float*,dPdv,float*,ddPdudu,float*,ddPdvdv,float*,ddPdudv,size_t,numFloats);
+  FORWARD_FUNCTION(RTCDevice,rtcNewDevice,const char*,cfg);
+  FORWARD_FUNCTION(void,rtcDeleteDevice,RTCDevice,device);
+  FORWARD_FUNCTION(void,rtcInit,const char*,cfg);
+  FORWARD_FUNCTION(void,rtcExit,void);
+  FORWARD_FUNCTION(void,rtcSetParameter1i,const RTCParameter,parm,ssize_t,val);
+  FORWARD_FUNCTION(ssize_t,rtcGetParameter1i,const RTCParameter,parm);
+  FORWARD_FUNCTION(void,rtcDeviceSetParameter1i,RTCDevice,hdevice,const RTCParameter,parm,ssize_t,val);
+  FORWARD_FUNCTION(ssize_t,rtcDeviceGetParameter1i,RTCDevice,hdevice,const RTCParameter,parm);
+  FORWARD_FUNCTION(RTCError,rtcGetError,void);
+  FORWARD_FUNCTION(RTCError,rtcDeviceGetError,RTCDevice,hdevice);
+  FORWARD_FUNCTION(void,rtcSetErrorFunction,RTCErrorFunc,func);
+  FORWARD_FUNCTION(void,rtcDeviceSetErrorFunction,RTCDevice,hdevice,RTCErrorFunc,func);
+  FORWARD_FUNCTION(void,rtcDeviceSetErrorFunction2,RTCDevice,hdevice,RTCErrorFunc2,func,void*,userPtr);
+  FORWARD_FUNCTION(void,rtcSetMemoryMonitorFunction,RTCMemoryMonitorFunc,func);
+  FORWARD_FUNCTION(void,rtcDeviceSetMemoryMonitorFunction,RTCDevice,hdevice,RTCMemoryMonitorFunc,func);
+  FORWARD_FUNCTION(void,rtcDeviceSetMemoryMonitorFunction2,RTCDevice,hdevice,RTCMemoryMonitorFunc2,func,void*,userPtr);
+  FORWARD_FUNCTION(void,rtcDebug,void);
+  FORWARD_FUNCTION(RTCScene,rtcNewScene,RTCSceneFlags,flags,RTCAlgorithmFlags,aflags);
+  FORWARD_FUNCTION(RTCScene,rtcDeviceNewScene,RTCDevice,device,RTCSceneFlags,flags,RTCAlgorithmFlags,aflags);
+  FORWARD_FUNCTION(void,rtcSetProgressMonitorFunction,RTCScene,hscene,RTCProgressMonitorFunc,func,void*,ptr);
+  FORWARD_FUNCTION(void,rtcCommit,RTCScene,hscene);
+  FORWARD_FUNCTION(void,rtcCommitJoin,RTCScene,hscene);
+  FORWARD_FUNCTION(void,rtcCommitThread,RTCScene,hscene,unsigned int,threadID,unsigned int,numThreads);
+  FORWARD_FUNCTION(void,rtcGetBounds,RTCScene,hscene,RTCBounds&,bounds_o);
+  FORWARD_FUNCTION(void,rtcGetLinearBounds,RTCScene,hscene,RTCBounds*,bounds_o);
+  FORWARD_FUNCTION(void,rtcIntersect,RTCScene,hscene,RTCRay&,ray);
+  FORWARD_FUNCTION(void,rtcIntersect1Ex,RTCScene,hscene,const RTCIntersectContext*,user_context,RTCRay&,ray);
+  FORWARD_FUNCTION(void,rtcIntersect4,const void*,valid,RTCScene,hscene,RTCRay4&,ray);
+  FORWARD_FUNCTION(void,rtcIntersect4Ex,const void*,valid,RTCScene,hscene,const RTCIntersectContext*,user_context,RTCRay4&,ray);
+  FORWARD_FUNCTION(void,rtcIntersect8,const void*,valid,RTCScene,hscene,RTCRay8&,ray);
+  FORWARD_FUNCTION(void,rtcIntersect8Ex,const void*,valid,RTCScene,hscene,const RTCIntersectContext*,user_context,RTCRay8&,ray);
+  FORWARD_FUNCTION(void,rtcIntersect16,const void*,valid,RTCScene,hscene,RTCRay16&,ray);
+  FORWARD_FUNCTION(void,rtcIntersect16Ex,const void*,valid,RTCScene,hscene,const RTCIntersectContext*,user_context,RTCRay16&,ray);
+  FORWARD_FUNCTION(void,rtcIntersect1M,RTCScene,hscene,const RTCIntersectContext*,user_context,RTCRay*,rays,const size_t,M,const size_t,stride);
+  FORWARD_FUNCTION(void,rtcIntersect1Mp,RTCScene,hscene,const RTCIntersectContext*,user_context,RTCRay**,rays,const size_t,M);
+  FORWARD_FUNCTION(void,rtcIntersectNM,RTCScene,hscene,const RTCIntersectContext*,user_context,struct RTCRayN*,rays,const size_t,N,const size_t,M,const size_t,stride);
+  FORWARD_FUNCTION(void,rtcIntersectNp,RTCScene,hscene,const RTCIntersectContext*,user_context,const RTCRayNp&,rays,const size_t,N);
+  FORWARD_FUNCTION(void,rtcOccluded,RTCScene,hscene,RTCRay&,ray);
+  FORWARD_FUNCTION(void,rtcOccluded1Ex,RTCScene,hscene,const RTCIntersectContext*,user_context,RTCRay&,ray);
+  FORWARD_FUNCTION(void,rtcOccluded4,const void*,valid,RTCScene,hscene,RTCRay4&,ray);
+  FORWARD_FUNCTION(void,rtcOccluded4Ex,const void*,valid,RTCScene,hscene,const RTCIntersectContext*,user_context,RTCRay4&,ray);
+  FORWARD_FUNCTION(void,rtcOccluded8,const void*,valid,RTCScene,hscene,RTCRay8&,ray);
+  FORWARD_FUNCTION(void,rtcOccluded8Ex,const void*,valid,RTCScene,hscene,const RTCIntersectContext*,user_context,RTCRay8&,ray);
+  FORWARD_FUNCTION(void,rtcOccluded16,const void*,valid,RTCScene,hscene,RTCRay16&,ray);
+  FORWARD_FUNCTION(void,rtcOccluded16Ex,const void*,valid,RTCScene,hscene,const RTCIntersectContext*,user_context,RTCRay16&,ray);
+  FORWARD_FUNCTION(void,rtcOccluded1M,RTCScene,hscene,const RTCIntersectContext*,user_context,RTCRay*,rays,const size_t,M,const size_t,stride);
+  FORWARD_FUNCTION(void,rtcOccluded1Mp,RTCScene,hscene,const RTCIntersectContext*,user_context,RTCRay**,rays,const size_t,M);
+  FORWARD_FUNCTION(void,rtcOccludedNM,RTCScene,hscene,const RTCIntersectContext*,user_context,RTCRayN*,rays,const size_t,N,const size_t,M,const size_t,stride);
+  FORWARD_FUNCTION(void,rtcOccludedNp,RTCScene,hscene,const RTCIntersectContext*,user_context,const RTCRayNp&,rays,const size_t,N);
+  FORWARD_FUNCTION(void,rtcDeleteScene,RTCScene,hscene);
+  FORWARD_FUNCTION(unsigned,rtcNewInstance,RTCScene,htarget,RTCScene,hsource);
+  FORWARD_FUNCTION(unsigned,rtcNewInstance2,RTCScene,htarget,RTCScene,hsource,size_t,numTimeSteps);
+  FORWARD_FUNCTION(unsigned,rtcNewGeometryInstance,RTCScene,hscene,unsigned,geomID);
+  FORWARD_FUNCTION(unsigned,rtcNewGeometryGroup,RTCScene,hscene,RTCGeometryFlags,flags,unsigned*,geomIDs,size_t,N);
+  FORWARD_FUNCTION(void,rtcSetTransform,RTCScene,hscene,unsigned,geomID,RTCMatrixType,layout,const float*,xfm);
+  FORWARD_FUNCTION(void,rtcSetTransform2,RTCScene,hscene,unsigned,geomID,RTCMatrixType,layout,const float*,xfm,size_t,timeStep);
+  FORWARD_FUNCTION(unsigned,rtcNewUserGeometry,RTCScene,hscene,size_t,numItems);
+  FORWARD_FUNCTION(unsigned,rtcNewUserGeometry2,RTCScene,hscene,size_t,numItems,size_t,numTimeSteps);
+  FORWARD_FUNCTION(unsigned,rtcNewUserGeometry3,RTCScene,hscene,RTCGeometryFlags,gflags,size_t,numItems,size_t,numTimeSteps);
+  FORWARD_FUNCTION(unsigned,rtcNewTriangleMesh,RTCScene,hscene,RTCGeometryFlags,flags,size_t,numTriangles,size_t,numVertices,size_t,numTimeSteps);
+  FORWARD_FUNCTION(unsigned,rtcNewQuadMesh,RTCScene,hscene,RTCGeometryFlags,flags,size_t,numQuads,size_t,numVertices,size_t,numTimeSteps);
+  FORWARD_FUNCTION(unsigned,rtcNewHairGeometry,RTCScene,hscene,RTCGeometryFlags,flags,size_t,numCurves,size_t,numVertices,size_t,numTimeSteps);
+  FORWARD_FUNCTION(unsigned,rtcNewBezierHairGeometry,RTCScene,hscene,RTCGeometryFlags,flags,unsigned int,numCurves,unsigned int,numVertices,unsigned int,numTimeSteps);
+  FORWARD_FUNCTION(unsigned,rtcNewBSplineHairGeometry,RTCScene,hscene,RTCGeometryFlags,flags,unsigned int,numCurves,unsigned int,numVertices,unsigned int,numTimeSteps);
+  FORWARD_FUNCTION(unsigned,rtcNewCurveGeometry,RTCScene,hscene,RTCGeometryFlags,flags,size_t,numCurves,size_t,numVertices,size_t,numTimeSteps);
+  FORWARD_FUNCTION(unsigned,rtcNewBezierCurveGeometry,RTCScene,hscene,RTCGeometryFlags,flags,unsigned int,numCurves,unsigned int,numVertices,unsigned int,numTimeSteps);
+  FORWARD_FUNCTION(unsigned,rtcNewBSplineCurveGeometry,RTCScene,hscene,RTCGeometryFlags,flags,unsigned int,numCurves,unsigned int,numVertices,unsigned int,numTimeSteps);
+  FORWARD_FUNCTION(unsigned,rtcNewLineSegments,RTCScene,hscene,RTCGeometryFlags,flags,size_t,numSegments,size_t,numVertices,size_t,numTimeSteps);
+  FORWARD_FUNCTION(unsigned,rtcNewSubdivisionMesh,RTCScene,hscene,RTCGeometryFlags,flags,size_t,numFaces,size_t,numEdges,size_t,numVertices,size_t,numEdgeCreases,size_t,numVertexCreases,size_t,numHoles,size_t,numTimeSteps);
+  FORWARD_FUNCTION(void,rtcSetMask,RTCScene,hscene,unsigned,geomID,int,mask);
+  FORWARD_FUNCTION(void,rtcSetBoundaryMode,RTCScene,hscene,unsigned,geomID,RTCBoundaryMode,mode);
+  FORWARD_FUNCTION(void,rtcSetSubdivisionMode,RTCScene,hscene,unsigned,geomID,unsigned,topologyID,RTCSubdivisionMode,mode);
+  FORWARD_FUNCTION(void,rtcSetIndexBuffer,RTCScene,hscene,unsigned,geomID,RTCBufferType,vertexBuffer,RTCBufferType,indexBuffer);
+  FORWARD_FUNCTION(void*,rtcMapBuffer,RTCScene,hscene,unsigned,geomID,RTCBufferType,type);
+  FORWARD_FUNCTION(void,rtcUnmapBuffer,RTCScene,hscene,unsigned,geomID,RTCBufferType,type);
+  FORWARD_FUNCTION(void,rtcSetBuffer,RTCScene,hscene,unsigned,geomID,RTCBufferType,type,const void*,ptr,size_t,offset,size_t,stride);
+  FORWARD_FUNCTION(void,rtcSetBuffer2,RTCScene,hscene,unsigned,geomID,RTCBufferType,type,const void*,ptr,size_t,offset,size_t,stride,size_t,size);
+  FORWARD_FUNCTION(void,rtcEnable,RTCScene,hscene,unsigned,geomID);
+  FORWARD_FUNCTION(void,rtcUpdate,RTCScene,hscene,unsigned,geomID);
+  FORWARD_FUNCTION(void,rtcUpdateBuffer,RTCScene,hscene,unsigned,geomID,RTCBufferType,type);
+  FORWARD_FUNCTION(void,rtcDisable,RTCScene,hscene,unsigned,geomID);
+  FORWARD_FUNCTION(void,rtcDeleteGeometry,RTCScene,hscene,unsigned,geomID);
+  FORWARD_FUNCTION(void,rtcSetTessellationRate,RTCScene,hscene,unsigned,geomID,float,tessellationRate);
+  FORWARD_FUNCTION(void,rtcSetUserData,RTCScene,hscene,unsigned,geomID,void*,ptr);
+  FORWARD_FUNCTION(void*,rtcGetUserData,RTCScene,hscene,unsigned,geomID);
+  FORWARD_FUNCTION(void,rtcSetBoundsFunction,RTCScene,hscene,unsigned,geomID,RTCBoundsFunc,bounds);
+  FORWARD_FUNCTION(void,rtcSetBoundsFunction2,RTCScene,hscene,unsigned,geomID,RTCBoundsFunc2,bounds,void*,userPtr);
+  FORWARD_FUNCTION(void,rtcSetBoundsFunction3,RTCScene,hscene,unsigned,geomID,RTCBoundsFunc3,bounds,void*,userPtr);
+  FORWARD_FUNCTION(void,rtcSetDisplacementFunction,RTCScene,hscene,unsigned,geomID,RTCDisplacementFunc,func,RTCBounds*,bounds);
+  FORWARD_FUNCTION(void,rtcSetDisplacementFunction2,RTCScene,hscene,unsigned,geomID,RTCDisplacementFunc2,func,RTCBounds*,bounds);
+  FORWARD_FUNCTION(void,rtcSetIntersectFunction,RTCScene,hscene,unsigned,geomID,RTCIntersectFunc,intersect);
+  FORWARD_FUNCTION(void,rtcSetIntersectFunction4,RTCScene,hscene,unsigned,geomID,RTCIntersectFunc4,intersect4);
+  FORWARD_FUNCTION(void,rtcSetIntersectFunction8,RTCScene,hscene,unsigned,geomID,RTCIntersectFunc8,intersect8);
+  FORWARD_FUNCTION(void,rtcSetIntersectFunction16,RTCScene,hscene,unsigned,geomID,RTCIntersectFunc16,intersect16);
+  FORWARD_FUNCTION(void,rtcSetIntersectFunction1Mp,RTCScene,hscene,unsigned,geomID,RTCIntersectFunc1Mp,intersect);
+  FORWARD_FUNCTION(void,rtcSetIntersectFunctionN,RTCScene,hscene,unsigned,geomID,RTCIntersectFuncN,intersect);
+  FORWARD_FUNCTION(void,rtcSetOccludedFunction,RTCScene,hscene,unsigned,geomID,RTCOccludedFunc,occluded);
+  FORWARD_FUNCTION(void,rtcSetOccludedFunction4,RTCScene,hscene,unsigned,geomID,RTCOccludedFunc4,occluded4);
+  FORWARD_FUNCTION(void,rtcSetOccludedFunction8,RTCScene,hscene,unsigned,geomID,RTCOccludedFunc8,occluded8);
+  FORWARD_FUNCTION(void,rtcSetOccludedFunction16,RTCScene,hscene,unsigned,geomID,RTCOccludedFunc16,occluded16);
+  FORWARD_FUNCTION(void,rtcSetOccludedFunction1Mp,RTCScene,hscene,unsigned,geomID,RTCOccludedFunc1Mp,occluded);
+  FORWARD_FUNCTION(void,rtcSetOccludedFunctionN,RTCScene,hscene,unsigned,geomID,RTCOccludedFuncN,occluded);
+  FORWARD_FUNCTION(void,rtcSetIntersectionFilterFunction,RTCScene,hscene,unsigned,geomID,RTCFilterFunc,intersect);
+  FORWARD_FUNCTION(void,rtcSetIntersectionFilterFunction4,RTCScene,hscene,unsigned,geomID,RTCFilterFunc4,filter4);
+  FORWARD_FUNCTION(void,rtcSetIntersectionFilterFunction8,RTCScene,hscene,unsigned,geomID,RTCFilterFunc8,filter8);
+  FORWARD_FUNCTION(void,rtcSetIntersectionFilterFunction16,RTCScene,hscene,unsigned,geomID,RTCFilterFunc16,filter16);
+  FORWARD_FUNCTION(void,rtcSetIntersectionFilterFunctionN,RTCScene,hscene,unsigned,geomID,RTCFilterFuncN,filterN);
+  FORWARD_FUNCTION(void,rtcSetOcclusionFilterFunction,RTCScene,hscene,unsigned,geomID,RTCFilterFunc,intersect);
+  FORWARD_FUNCTION(void,rtcSetOcclusionFilterFunction4,RTCScene,hscene,unsigned,geomID,RTCFilterFunc4,filter4);
+  FORWARD_FUNCTION(void,rtcSetOcclusionFilterFunction8,RTCScene,hscene,unsigned,geomID,RTCFilterFunc8,filter8);
+  FORWARD_FUNCTION(void,rtcSetOcclusionFilterFunction16,RTCScene,hscene,unsigned,geomID,RTCFilterFunc16,filter16);
+  FORWARD_FUNCTION(void,rtcSetOcclusionFilterFunctionN,RTCScene,hscene,unsigned,geomID,RTCFilterFuncN,filterN);
+  FORWARD_FUNCTION(void,rtcInterpolate,RTCScene,hscene,unsigned,geomID,unsigned,primID,float,u,float,v,RTCBufferType,buffer,float*,P,float*,dPdu,float*,dPdv,size_t,numFloats);
+  FORWARD_FUNCTION(void,rtcInterpolate2,RTCScene,hscene,unsigned,geomID,unsigned,primID,float,u,float,v,RTCBufferType,buffer,float*,P,float*,dPdu,float*,dPdv,float*,ddPdudu,float*,ddPdvdv,float*,ddPdudv,size_t,numFloats);
 #if defined(EMBREE_RAY_PACKETS)
-  BIND_FUNCTION(void,rtcInterpolateN,RTCScene,hscene,unsigned,geomID,const void*,valid_i,const unsigned*,primIDs,const float*,u,const float*,v,size_t,numUVs,RTCBufferType,buffer,float*,P,float*,dPdu,float*,dPdv,size_t,numFloats);
-  BIND_FUNCTION(void,rtcInterpolateN2,RTCScene,hscene,unsigned,geomID,const void*,valid_i,const unsigned*,primIDs,const float*,u,const float*,v,size_t,numUVs,RTCBufferType,buffer,float*,P,float*,dPdu,float*,dPdv,float*,ddPdudu,float*,ddPdvdv,float*,ddPdudv,size_t,numFloats);
+  FORWARD_FUNCTION(void,rtcInterpolateN,RTCScene,hscene,unsigned,geomID,const void*,valid_i,const unsigned*,primIDs,const float*,u,const float*,v,size_t,numUVs,RTCBufferType,buffer,float*,P,float*,dPdu,float*,dPdv,size_t,numFloats);
+  FORWARD_FUNCTION(void,rtcInterpolateN2,RTCScene,hscene,unsigned,geomID,const void*,valid_i,const unsigned*,primIDs,const float*,u,const float*,v,size_t,numUVs,RTCBufferType,buffer,float*,P,float*,dPdu,float*,dPdv,float*,ddPdudu,float*,ddPdvdv,float*,ddPdudv,size_t,numFloats);
 #endif
 }
