@@ -320,7 +320,7 @@ namespace embree
   /// Sorting networks
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vint8 sort_ascending(const vint8& v)
+  __forceinline vint8 usort_ascending(const vint8& v)
   {
     const vint8 a0 = v;
     const vint8 b0 = shuffle<1,0,3,2>(a0);
@@ -350,7 +350,7 @@ namespace embree
     return a6;
   }
 
-  __forceinline vint8 sort_descending(const vint8& v)
+  __forceinline vint8 usort_descending(const vint8& v)
   {
     const vint8 a0 = v;
     const vint8 b0 = shuffle<1,0,3,2>(a0);
