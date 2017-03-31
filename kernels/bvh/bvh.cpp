@@ -163,7 +163,9 @@ namespace embree
     {
       FastAllocator::AllStatistics stat(&alloc);
       for (size_t i=0; i<objects.size(); i++)
-        stat = stat + FastAllocator::AllStatistics(&objects[i]->alloc);
+        if (objects[i]) 
+          stat = stat + FastAllocator::AllStatistics(&objects[i]->alloc);
+
       stat.print(numPrimitives);
     }
 
