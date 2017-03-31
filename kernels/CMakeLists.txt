@@ -90,6 +90,7 @@ IF (EMBREE_RAY_PACKETS)
 
   bvh/bvh_intersector_single.cpp
   bvh/bvh_intersector_hybrid4_bvh4.cpp
+  bvh/bvh_intersector_stream_bvh4.cpp
   bvh/bvh_intersector_stream_filters.cpp)
 ENDIF()
 
