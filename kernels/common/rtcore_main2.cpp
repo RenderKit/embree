@@ -198,7 +198,7 @@ namespace embree
     const bool internal_parm = (size_t)parm >= 1000000 && (size_t)parm < 1000004;
     if (!internal_parm) RTCORE_VERIFY_HANDLE(hdevice); // allow NULL device for special internal settings
     Lock<MutexSys> lock(g_mutex);
-    device->setParameter1i(parm,val);
+    if (device) device->setParameter1i(parm,val);
     RTCORE_CATCH_END(device);
   }
 
@@ -209,7 +209,28 @@ namespace embree
     RTCORE_TRACE(rtcDeviceGetParameter1i);
     RTCORE_VERIFY_HANDLE(hdevice);
     Lock<MutexSys> lock(g_mutex);
-    return device->getParameter1i(parm);
+
+    size_t iparm = (size_t)parm;
+
+    /* get name of internal regression test */
+    if (iparm >= 2000000 && iparm < 3000000)
+    {
+      RegressionTest* test = getRegressionTest(iparm-2000000);
+      if (test) return (ssize_t) test->name.c_str();
+      else      return 0;
+    }
+
+    /* run internal regression test */
+    if (iparm >= 3000000 && iparm < 4000000)
+    {
+      RegressionTest* test = getRegressionTest(iparm-3000000);
+      if (test) return test->run();
+      else      return 0;
+    }
+
+    if (device)
+      return device->getParameter1i(parm);
+
     RTCORE_CATCH_END(device);
     return 0;
   }
