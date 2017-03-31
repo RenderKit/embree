@@ -569,13 +569,6 @@ namespace embree
           /* special handling for default block size */
           if (bytesAllocate == (2*PAGE_SIZE_2M))
           {
-            /* full 2M alignment for very first block using os_malloc */
-            if (next == NULL) {
-              if (device) device->memoryMonitor(bytesAllocate,false);
-              bool huge_pages; ptr = os_malloc(bytesReserve,huge_pages);
-              return new (ptr) Block(OS_MALLOC,bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next,0,huge_pages);
-            }
-            
             const size_t alignment = maxAlignment;
             if (device) device->memoryMonitor(bytesAllocate+alignment,false);
             ptr = alignedMalloc(bytesAllocate,alignment);           
@@ -611,7 +604,6 @@ namespace embree
       : cur(0), allocEnd(bytesAllocate), reserveEnd(bytesReserve), next(next), wasted(wasted), atype(atype), huge_pages(huge_pages)
       {
         assert((((size_t)&data[0]) & (maxAlignment-1)) == 0);
-        //for (size_t i=0; i<allocEnd; i+=defaultBlockSize) data[i] = 0;
       }
 
       static Block* remove_shared_blocks(Block* head)
