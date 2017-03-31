@@ -134,7 +134,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene,(RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags, RTC_GEOMETRY_STATIC);
 
   /* commit individual objects in case of instancing */
-  if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP) 
+  if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP)
   {
     for (uniform unsigned int i=0; i<scene_in->numGeometries; i++) {
       if (scene_in->geomID_to_scene[i]) rtcCommit(scene_in->geomID_to_scene[i]);
@@ -189,7 +189,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform 
 
 AffineSpace3f calculate_interpolated_space (uniform ISPCInstance* uniform instance, float gtime)
 {
-  if (instance->numTimeSteps == 1) 
+  if (instance->numTimeSteps == 1)
     return make_AffineSpace3f(instance->spaces[0]);
 
    /* calculate time segment itime and fractional time ftime */
@@ -222,7 +222,7 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
     {
       /* get instance and geometry pointers */
       ISPCInstance* uniform instance = g_ispc_scene->geomID_to_inst[instID];
-      
+
       /* convert normals */
       //AffineSpace3f space = (1.0f-ray.time)*make_AffineSpace3f(instance->space0) + ray.time*make_AffineSpace3f(instance->space1);
       AffineSpace3f space = calculate_interpolated_space(instance,ray.time);
@@ -240,7 +240,7 @@ inline Vec3f face_forward(const Vec3f& dir, const Vec3f& _Ng) {
 }
 
 /* task that renders a single screen tile */
-Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
+Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   /* initialize sampler */
   RandomSampler sampler;
@@ -261,6 +261,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
   uniform RTCIntersectContext context;
   context.flags = g_iflags;
   rtcIntersectEx(g_scene,&context,ray);
+  RayStats_addRay(stats);
 
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
@@ -305,6 +306,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 
 /* renders a single screen tile */
 void renderTileStandard(uniform int taskIndex,
+                        uniform int threadIndex,
                         uniform int* uniform pixels,
                         const uniform unsigned int width,
                         const uniform unsigned int height,
@@ -323,7 +325,7 @@ void renderTileStandard(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    Vec3f color = renderPixelStandard((float)x,(float)y,camera);
+    Vec3f color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -342,7 +344,7 @@ task void renderTileTask(uniform int* uniform pixels,
                          const uniform int numTilesX,
                          const uniform int numTilesY)
 {
-  renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 uniform Vec3fa old_p;

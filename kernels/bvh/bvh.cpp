@@ -160,7 +160,21 @@ namespace embree
       printStatistics();
 
     if (device->verbosity(2))
-      alloc.print_statistics(device->verbosity(3),numPrimitives);
+    {
+      FastAllocator::AllStatistics stat(&alloc);
+      for (size_t i=0; i<objects.size(); i++)
+        if (objects[i]) 
+          stat = stat + FastAllocator::AllStatistics(&objects[i]->alloc);
+
+      stat.print(numPrimitives);
+    }
+
+    if (device->verbosity(3))
+    {
+      alloc.print_blocks();
+      for (size_t i=0; i<objects.size(); i++)
+        objects[i]->alloc.print_blocks();
+    }
 
     /* benchmark mode */
     if (device->benchmark) {

@@ -34,7 +34,7 @@ namespace embree
   {
     assert(dim < 3);
     assert(prim.geomID == 0);
-    (BBox3fa&) lprim = (BBox3fa&) prim; 
+    (BBox3fa&) lprim = (BBox3fa&) prim;
     (BBox3fa&) rprim = (BBox3fa&) prim;
     (&lprim.upper_x)[dim] = pos;
     (&rprim.lower_x)[dim] = pos;
@@ -44,35 +44,35 @@ namespace embree
   {
     virtual float sah() = 0;
   };
-  
+
   struct InnerNode : public Node
   {
     BBox3fa bounds[2];
     Node* children[2];
-    
+
     InnerNode() {
       bounds[0] = bounds[1] = empty;
       children[0] = children[1] = nullptr;
     }
-    
+
     float sah() {
       return 1.0f + (area(bounds[0])*children[0]->sah() + area(bounds[1])*children[1]->sah())/area(merge(bounds[0],bounds[1]));
     }
 
-    static void* create (RTCThreadLocalAllocator alloc, size_t numChildren, void* userPtr) 
+    static void* create (RTCThreadLocalAllocator alloc, size_t numChildren, void* userPtr)
     {
       assert(numChildren == 2);
       void* ptr = rtcThreadLocalAlloc(alloc,sizeof(InnerNode),16);
       return (void*) new (ptr) InnerNode;
     }
-    
+
     static void  setChildren (void* nodePtr, void** childPtr, size_t numChildren, void* userPtr)
     {
       assert(numChildren == 2);
       for (size_t i=0; i<2; i++)
         ((InnerNode*)nodePtr)->children[i] = (Node*) childPtr[i];
     }
-    
+
     static void  setBounds (void* nodePtr, const RTCBounds** bounds, size_t numChildren, void* userPtr)
     {
       assert(numChildren == 2);
@@ -80,19 +80,19 @@ namespace embree
         ((InnerNode*)nodePtr)->bounds[i] = *(const BBox3fa*) bounds[i];
     }
   };
-  
+
   struct LeafNode : public Node
   {
     unsigned id;
     BBox3fa bounds;
-    
+
     LeafNode (unsigned id, const BBox3fa& bounds)
       : id(id), bounds(bounds) {}
-    
+
     float sah() {
       return 1.0f;
     }
-    
+
     static void* create (RTCThreadLocalAllocator alloc, const RTCBuildPrimitive* prims, size_t numPrims, void* userPtr)
     {
       assert(numPrims == 1);
@@ -100,7 +100,7 @@ namespace embree
       return (void*) new (ptr) LeafNode(prims->primID,*(BBox3fa*)prims);
     }
   };
-  
+
   void build(RTCBuildQuality quality, avector<RTCBuildPrimitive>& prims_i, char* cfg, size_t extraSpace = 0)
   {
     RTCDevice device = rtcNewDevice(cfg);
@@ -121,15 +121,15 @@ namespace embree
     settings.intCost = 1.0f;
     settings.extraSpace = extraSpace;
 
-    avector<RTCBuildPrimitive> prims; 
+    avector<RTCBuildPrimitive> prims;
     prims.reserve(prims_i.size()+extraSpace);
     prims.resize(prims_i.size());
- 
+
     for (size_t i=0; i<10; i++)
     {
       /* we recreate the prims array here, as the builders modify this array */
       for (size_t j=0; j<prims.size(); j++) prims[j] = prims_i[j];
-  
+
       std::cout << "iteration " << i << ": building BVH over " << prims.size() << " primitives, " << std::flush;
       double t0 = getSeconds();
       Node* root = (Node*) rtcBuildBVH(bvh,settings,prims.data(),prims.size(),
@@ -149,19 +149,19 @@ namespace embree
     /* create new Embree device */
     g_device = rtcNewDevice(cfg);
     error_handler(nullptr,rtcDeviceGetError(g_device));
-    
+
     /* set error handler */
     rtcDeviceSetErrorFunction2(g_device,error_handler,nullptr);
-    
+
     /* set start render mode */
     renderTile = renderTileStandard;
-    
+
     /* create random bounding boxes */
     const size_t N = 2300000;
     const size_t extraSpace = 1000000;
-    avector<RTCBuildPrimitive> prims; 
+    avector<RTCBuildPrimitive> prims;
     prims.resize(N);
-    for (size_t i=0; i<N; i++) 
+    for (size_t i=0; i<N; i++)
     {
       const float x = float(drand48());
       const float y = float(drand48());
@@ -183,36 +183,36 @@ namespace embree
 
     std::cout << "Low quality BVH build:" << std::endl;
     build(RTC_BUILD_QUALITY_LOW,prims,cfg);
-  
+
     std::cout << "Normal quality BVH build:" << std::endl;
     build(RTC_BUILD_QUALITY_NORMAL,prims,cfg);
-  
+
     std::cout << "High quality BVH build:" << std::endl;
     build(RTC_BUILD_QUALITY_HIGH,prims,cfg,extraSpace);
   }
-  
+
   /* task that renders a single screen tile */
-  void renderTileStandard(int taskIndex, int* pixels,
+  void renderTileStandard(int taskIndex, int threadIndex, int* pixels,
                           const unsigned int width,
-                          const unsigned int height, 
+                          const unsigned int height,
                           const float time,
                           const ISPCCamera& camera,
-                          const int numTilesX, 
+                          const int numTilesX,
                           const int numTilesY)
   {
   }
-  
+
   /* task that renders a single screen tile */
-  void renderTileTask(int taskIndex, int* pixels,
+  void renderTileTask(int taskIndex, int threadIndex, int* pixels,
                       const unsigned int width,
-                      const unsigned int height, 
+                      const unsigned int height,
                       const float time,
                       const ISPCCamera& camera,
-                      const int numTilesX, 
+                      const int numTilesX,
                       const int numTilesY)
   {
   }
-  
+
   /* called by the C++ code to render */
   extern "C" void device_render (int* pixels,
                                  const int width,
@@ -221,9 +221,9 @@ namespace embree
                                  const ISPCCamera& camera)
   {
   }
-  
+
   /* called by the C++ code for cleanup */
   extern "C" void device_cleanup () {
     rtcDeleteDevice(g_device);
-  } 
+  }
 }

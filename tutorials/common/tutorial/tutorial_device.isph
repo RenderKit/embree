@@ -86,6 +86,7 @@ inline Vec3f faceforward( const Vec3f& N, const Vec3f& I, const Vec3f& Ng ) {
 
 /* standard shading function */
 typedef void (* uniform renderTileFunc)(uniform int taskIndex,
+                                        uniform int threadIndex,
                                         uniform int* uniform pixels,
                                         const uniform unsigned int width,
                                         const uniform unsigned int height,
@@ -99,6 +100,7 @@ extern void device_key_pressed_default(uniform int key);
 extern void (* uniform key_pressed_handler)(uniform int key);
 
 void renderTileStandard(uniform int taskIndex,
+                        uniform int threadIndex,
                         uniform int* uniform pixels,
                         const uniform unsigned int width,
                         const uniform unsigned int height,
@@ -142,3 +144,20 @@ float  getTextureTexel1f(const uniform Texture* uniform texture, float u, float 
 Vec3f  getTextureTexel3f(const uniform Texture* uniform texture, float u, float v);
 
 enum ISPCInstancingMode { ISPC_INSTANCING_NONE, ISPC_INSTANCING_GEOMETRY, ISPC_INSTANCING_GEOMETRY_GROUP, ISPC_INSTANCING_SCENE_GEOMETRY, ISPC_INSTANCING_SCENE_GROUP };
+
+/* ray statistics */
+struct RayStats
+{
+  int numRays;
+  int pad[32-1];
+};
+
+#if defined(ISPC)
+inline void RayStats_addRay(uniform RayStats& stats)       { stats.numRays += popcnt(lanemask()); }
+inline void RayStats_addShadowRay(uniform RayStats& stats) { stats.numRays += popcnt(lanemask()); }
+#else
+__forceinline void RayStats_addRay(RayStats& stats)        { stats.numRays++; }
+__forceinline void RayStats_addShadowRay(RayStats& stats)  { stats.numRays++; }
+#endif
+
+extern uniform RayStats* uniform g_stats;

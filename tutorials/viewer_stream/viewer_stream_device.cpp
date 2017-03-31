@@ -44,7 +44,7 @@ RTCScene convertScene(ISPCScene* scene_in)
 }
 
 /* renders a single pixel casting with ambient occlusion */
-Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
+Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray, RayStats& stats)
 {
   RTCRay rays[AMBIENT_OCCLUSION_SAMPLES];
 
@@ -82,6 +82,7 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
     shadow.primID = RTC_INVALID_GEOMETRY_ID;
     shadow.mask = -1;
     shadow.time = 0;
+    RayStats_addShadowRay(stats);
   }
 
   RTCIntersectContext context;
@@ -110,6 +111,7 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
 
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex,
+                        int threadIndex,
                         int* pixels,
                         const unsigned int width,
                         const unsigned int height,
@@ -125,6 +127,8 @@ void renderTileStandard(int taskIndex,
   const unsigned int y0 = tileY * TILE_SIZE_Y;
   const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
+  RayStats& stats = g_stats[threadIndex];
+
   RTCRay rays[TILE_SIZE_X*TILE_SIZE_Y];
 
   /* generate stream of primary rays */
@@ -139,7 +143,6 @@ void renderTileStandard(int taskIndex,
 
     /* initialize ray */
     RTCRay& ray = rays[N++];
-
     ray.org = Vec3fa(camera.xfm.p);
     ray.dir = Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz));
     bool mask = 1; { // invalidates inactive rays
@@ -150,6 +153,7 @@ void renderTileStandard(int taskIndex,
     ray.primID = RTC_INVALID_GEOMETRY_ID;
     ray.mask = -1;
     ray.time = RandomSampler_get1D(sampler);
+    RayStats_addRay(stats);
   }
 
   RTCIntersectContext context;
@@ -180,7 +184,7 @@ void renderTileStandard(int taskIndex,
 #if SIMPLE_SHADING == 1
       color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
 #else
-      color = ambientOcclusionShading(x,y,ray);
+      color = ambientOcclusionShading(x,y,ray,g_stats[threadIndex]);
 #endif
 
     /* write color to framebuffer */
@@ -192,7 +196,7 @@ void renderTileStandard(int taskIndex,
 }
 
 /* task that renders a single screen tile */
-void renderTileTask (int taskIndex, int* pixels,
+void renderTileTask (int taskIndex, int threadIndex, int* pixels,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,
@@ -200,7 +204,7 @@ void renderTileTask (int taskIndex, int* pixels,
                          const int numTilesX,
                          const int numTilesY)
 {
-  renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 /* called by the C++ code for initialization */
@@ -233,8 +237,9 @@ extern "C" void device_render (int* pixels,
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
+    const int threadIndex = (int)TaskScheduler::threadIndex();
     for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
+      renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
 }
 

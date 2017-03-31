@@ -157,7 +157,7 @@ extern "C" void device_init (char* cfg)
 }
 
 /* animates the sphere */
-void animateSphere (int taskIndex, Vertex* vertices,
+void animateSphere (int taskIndex, int threadIndex, Vertex* vertices,
                          const float rcpNumTheta,
                          const float rcpNumPhi,
                          const Vec3fa& pos,
@@ -177,7 +177,7 @@ void animateSphere (int taskIndex, Vertex* vertices,
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
+Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   /* initialize ray */
   RTCRay ray;
@@ -192,6 +192,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
+  RayStats_addRay(stats);
 
   /* shade pixels */
   Vec3fa color = Vec3fa(0.0f);
@@ -214,6 +215,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 
     /* trace shadow ray */
     rtcOccluded(g_scene,shadow);
+    RayStats_addShadowRay(stats);
 
     /* add light contribution */
     if (shadow.geomID)
@@ -224,6 +226,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex,
+                        int threadIndex,
                         int* pixels,
                         const unsigned int width,
                         const unsigned int height,
@@ -242,7 +245,7 @@ void renderTileStandard(int taskIndex,
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixelStandard((float)x,(float)y,camera);
+    Vec3fa color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -253,7 +256,7 @@ void renderTileStandard(int taskIndex,
 }
 
 /* task that renders a single screen tile */
-void renderTileTask (int taskIndex, int* pixels,
+void renderTileTask (int taskIndex, int threadIndex, int* pixels,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,
@@ -261,7 +264,7 @@ void renderTileTask (int taskIndex, int* pixels,
                          const int numTilesX,
                          const int numTilesY)
 {
-  renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 /* animates a sphere */
@@ -278,8 +281,9 @@ void animateSphere (int id, float time)
   /* loop over all vertices */
 #if 1 // enables parallel execution
   parallel_for(size_t(0),size_t(numPhi+1),[&](const range<size_t>& range) {
+    const int threadIndex = (int)TaskScheduler::threadIndex();
     for (size_t i=range.begin(); i<range.end(); i++)
-      animateSphere((int)i,vertices,rcpNumTheta,rcpNumPhi,pos,r,f);
+      animateSphere((int)i,threadIndex,vertices,rcpNumTheta,rcpNumPhi,pos,r,f);
   }); 
 #else
   for (unsigned int phi=0; phi<numPhi+1; phi++) for (int theta=0; theta<numTheta; theta++)
@@ -317,8 +321,9 @@ extern "C" void device_render (int* pixels,
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
+    const int threadIndex = (int)TaskScheduler::threadIndex();
     for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
+      renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
 }
 
