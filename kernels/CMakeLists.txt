@@ -34,6 +34,11 @@ IF (EMBREE_RAY_PACKETS)
   common/rtcore_ispc.ispc)
 ENDIF()
 
+#IF (EMBREE_GEOMETRY_SUBDIV)
+#  SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
+#  subdiv/tessellation_cache.cpp)
+#ENDIF()
+
 SET(EMBREE_LIBRARY_FILES_CORE
  
   common/device.cpp
@@ -84,7 +89,7 @@ IF (EMBREE_GEOMETRY_SUBDIV)
   SET(EMBREE_LIBRARY_FILES_CORE ${EMBREE_LIBRARY_FILES_CORE}
   common/scene_subdiv_mesh.cpp
   common/scene_subdiv_mesh_avx.cpp
-  subdiv/tessellation_cache.cpp
+#  subdiv/tessellation_cache.cpp
   subdiv/subdivpatch1base.cpp
   subdiv/catmullclark_coefficients.cpp
   geometry/grid_soa.cpp	
