@@ -96,17 +96,17 @@ namespace embree
         }
 
         /*! slow path for more than two hits */
-        const size_t hits = __popcnt(movemask(vmask));
-        const vint<Nx> dist_i = select(vmask, (asInt(tNear) & 0xfffffff8) | vint<Nx>(step), 0x7fffffff);
+        size_t hits = movemask(vmask);
+        const vint<Nx> dist_i = select(vmask, (asInt(tNear) & 0xfffffff8) | vint<Nx>(step), 0);
 #if defined(__AVX512F__) && !defined(__AVX512VL__) // KNL
         const vint<N> tmp = extractN<N,0>(dist_i);
-        const vint<Nx> dist_i_sorted = sortNetwork(tmp);
+        const vint<Nx> dist_i_sorted = usort_descending(tmp);
 #else
-        const vint<Nx> dist_i_sorted = sortNetwork(dist_i);
+        const vint<Nx> dist_i_sorted = usort_descending(dist_i);
 #endif
         const vint<Nx> sorted_index = dist_i_sorted & 7;
 
-        size_t i = hits-1;
+        size_t i = 0;
         for (;;)
         {
           const unsigned int index = sorted_index[i];
@@ -115,8 +115,9 @@ namespace embree
           m_trav_active = tMask[index];
           assert(m_trav_active);
           cur.prefetch(types);
-          if (unlikely(i==0)) break;
-          i--;
+          __bscf(hits);
+          if (unlikely(hits==0)) break;
+          i++;
           assert(cur != BVH::emptyNode);
           stackPtr->ptr = cur; 
           stackPtr->mask = m_trav_active;
@@ -425,17 +426,17 @@ namespace embree
         }
 
         /*! slow path for more than two hits */
-        const size_t hits = __popcnt(movemask(vmask));
-        const vint<Nx> dist_i = select(vmask, (asInt(tNear) & 0xfffffff8) | vint<Nx>(step), 0x7fffffff);
+        size_t hits = movemask(vmask);
+        const vint<Nx> dist_i = select(vmask, (asInt(tNear) & 0xfffffff8) | vint<Nx>(step), 0);
 #if defined(__AVX512F__) && !defined(__AVX512VL__) // KNL
         const vint<N> tmp = extractN<N,0>(dist_i);
-        const vint<Nx> dist_i_sorted = sortNetwork(tmp);
+        const vint<Nx> dist_i_sorted = usort_descending(tmp);
 #else
-        const vint<Nx> dist_i_sorted = sortNetwork(dist_i);
+        const vint<Nx> dist_i_sorted = usort_descending(dist_i);
 #endif
         const vint<Nx> sorted_index = dist_i_sorted & 7;
 
-        size_t i = hits-1;
+        size_t i = 0;
         for (;;)
         {
           const unsigned int index = sorted_index[i];
@@ -444,8 +445,9 @@ namespace embree
           m_trav_active = tMask[index];
           assert(m_trav_active);
           cur.prefetch(types);
-          if (unlikely(i==0)) break;
-          i--;
+          __bscf(hits);
+          if (unlikely(hits==0)) break;
+          i++;
           assert(cur != BVH::emptyNode);
           assert(tNear[index] >= 0.0f);
           stackPtr->mask    = m_trav_active;
