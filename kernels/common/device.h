@@ -43,6 +43,8 @@ namespace isa
     /*! prints info about the device */
     void print();
 
+    virtual SceneInterface* newScene (RTCSceneFlags flags, RTCAlgorithmFlags aflags);
+
     /*! sets the error code */
     void setDeviceErrorCode(RTCError error);
 
@@ -57,6 +59,7 @@ namespace isa
 
     /*! processes error codes, do not call directly */
     static void process_error(Device* device, RTCError error, const char* str);
+    virtual void processError(RTCError error, const char* str);
 
     /*! invokes the memory monitor callback */
     void memoryMonitor(ssize_t bytes, bool post);

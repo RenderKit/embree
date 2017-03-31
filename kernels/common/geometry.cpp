@@ -25,7 +25,7 @@ namespace isa
     : parent(parent), id(0), type(type), 
       numPrimitives(numPrimitives), numPrimitivesChanged(false),
       numTimeSteps(unsigned(numTimeSteps)), fnumTimeSegments(float(numTimeSteps-1)), flags(flags),
-      enabled(true), modified(true), userPtr(nullptr), mask(-1), used(1),
+      enabled(true), modified(true), mask(-1), used(1),
       intersectionFilter1(nullptr), occlusionFilter1(nullptr),
       intersectionFilter4(nullptr), occlusionFilter4(nullptr),
       intersectionFilter8(nullptr), occlusionFilter8(nullptr),

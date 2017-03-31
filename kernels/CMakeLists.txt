@@ -25,7 +25,9 @@ SOURCE_GROUP("" FILES embree.rc)
 
 SET(EMBREE_LIBRARY_FILES 
   embree.rc
-  common/rtcore_main.cpp
+# common/rtcore_main.cpp
+  common/rtcore_main2.cpp
+  common/rtcore_builder.cpp
 )
 
 IF (EMBREE_RAY_PACKETS)
@@ -47,7 +49,6 @@ SET(EMBREE_LIBRARY_FILES_CORE
   common/accelset.cpp
   common/state.cpp
   common/rtcore.cpp
-  common/rtcore_builder.cpp
   common/scene.cpp
   common/alloc.cpp
   common/geometry.cpp
@@ -153,7 +154,7 @@ IF (EMBREE_ISA_SSE2 AND EMBREE_LIBRARY_FILES_SSE2)
   SET_TARGET_PROPERTIES(embree_sse2 PROPERTIES COMPILE_FLAGS "${FLAGS_SSE2}")
   SET_PROPERTY(TARGET embree_sse2 PROPERTY FOLDER kernels)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_sse2)
-  ADD_CUSTOM_TARGET(embree_sse2_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree_sse2> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS embree_sse2)
+#  ADD_CUSTOM_TARGET(embree_sse2_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree_sse2> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS embree_sse2)
 ENDIF ()
 
 IF (EMBREE_ISA_SSE42 AND EMBREE_LIBRARY_FILES_SSE42)
@@ -161,7 +162,7 @@ IF (EMBREE_ISA_SSE42 AND EMBREE_LIBRARY_FILES_SSE42)
   SET_TARGET_PROPERTIES(embree_sse42 PROPERTIES COMPILE_FLAGS "${FLAGS_SSE42}")
   SET_PROPERTY(TARGET embree_sse42 PROPERTY FOLDER kernels)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_sse42)
-  ADD_CUSTOM_TARGET(embree_sse42_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree_sse42> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS embree_sse42)
+#  ADD_CUSTOM_TARGET(embree_sse42_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree_sse42> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS embree_sse42)
 ENDIF ()
 
 IF (EMBREE_ISA_AVX  AND EMBREE_LIBRARY_FILES_AVX)
@@ -169,7 +170,7 @@ IF (EMBREE_ISA_AVX  AND EMBREE_LIBRARY_FILES_AVX)
   SET_TARGET_PROPERTIES(embree_avx PROPERTIES COMPILE_FLAGS "${FLAGS_AVX}")
   SET_PROPERTY(TARGET embree_avx PROPERTY FOLDER kernels)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx)
-  ADD_CUSTOM_TARGET(embree_avx_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree_avx> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS embree_avx)
+#  ADD_CUSTOM_TARGET(embree_avx_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree_avx> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS embree_avx)
 ENDIF()
 
 IF (EMBREE_ISA_AVX2 AND EMBREE_LIBRARY_FILES_AVX2)
@@ -177,7 +178,7 @@ IF (EMBREE_ISA_AVX2 AND EMBREE_LIBRARY_FILES_AVX2)
   SET_TARGET_PROPERTIES(embree_avx2 PROPERTIES COMPILE_FLAGS "${FLAGS_AVX2}")
   SET_PROPERTY(TARGET embree_avx2 PROPERTY FOLDER kernels)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx2)
-  ADD_CUSTOM_TARGET(embree_avx2_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree_avx2> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS embree_avx2)
+#  ADD_CUSTOM_TARGET(embree_avx2_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree_avx2> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS embree_avx2)
 ENDIF()
 
 IF (EMBREE_ISA_AVX512KNL AND EMBREE_LIBRARY_FILES_AVX512KNL)
@@ -185,7 +186,7 @@ IF (EMBREE_ISA_AVX512KNL AND EMBREE_LIBRARY_FILES_AVX512KNL)
   SET_TARGET_PROPERTIES(embree_avx512knl PROPERTIES COMPILE_FLAGS "${FLAGS_AVX512KNL}")
   SET_PROPERTY(TARGET embree_avx512knl PROPERTY FOLDER kernels)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx512knl)
-  ADD_CUSTOM_TARGET(embree_avx512knl_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree_avx512knl> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS embree_avx512knl)
+#  ADD_CUSTOM_TARGET(embree_avx512knl_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree_avx512knl> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS embree_avx512knl)
 ENDIF()
 
 IF (EMBREE_ISA_AVX512SKX AND EMBREE_LIBRARY_FILES_AVX512SKX)
@@ -193,7 +194,7 @@ IF (EMBREE_ISA_AVX512SKX AND EMBREE_LIBRARY_FILES_AVX512SKX)
   SET_TARGET_PROPERTIES(embree_avx512skx PROPERTIES COMPILE_FLAGS "${FLAGS_AVX512SKX}")
   SET_PROPERTY(TARGET embree_avx512skx PROPERTY FOLDER kernels)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx512skx)
-  ADD_CUSTOM_TARGET(embree_avx512skx_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree_avx512skx> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS embree_avx512skx)
+#  ADD_CUSTOM_TARGET(embree_avx512skx_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree_avx512skx> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS embree_avx512skx)
 ENDIF()
 
 TARGET_LINK_LIBRARIES(embree ${EMBREE_LIBRARIES} sys simd lexers tasking)

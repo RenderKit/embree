@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "scene.h"
+#include "../../include/embree2/rtcore_ray.h"
 
 #include "../bvh/bvh4_factory.h"
 #include "../bvh/bvh8_factory.h"
@@ -533,9 +534,9 @@ namespace isa
   void Scene::clear() {
   }
 
-#if defined(EMBREE_GEOMETRY_USER)
   unsigned Scene::newUserGeometry (RTCGeometryFlags gflags, size_t items, size_t numTimeSteps) 
   {
+#if defined(EMBREE_GEOMETRY_USER)
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
       return -1;
@@ -547,18 +548,24 @@ namespace isa
     }
 
     return add(new UserGeometry(this,gflags,items,numTimeSteps));
+#else
+    return -1;
+#endif
   }
 
-  unsigned Scene::newInstance (Scene* scene, size_t numTimeSteps) 
+  unsigned Scene::newInstance (SceneInterface* scene, size_t numTimeSteps) 
   {
+#if defined(EMBREE_GEOMETRY_USER)
     if (numTimeSteps == 0 || numTimeSteps > RTC_MAX_TIME_STEPS) {
       throw_RTCError(RTC_INVALID_OPERATION,"maximal number of timesteps exceeded");
       return -1;
     }
 
-    return add(Instance::create(this,scene,numTimeSteps));
-  }
+    return add(Instance::create(this,dynamic_cast<Scene*>(scene),numTimeSteps));
+#else
+    return -1;
 #endif
+  }
 
   unsigned Scene::newGeometryInstance (Geometry* geom_in) 
   {
@@ -566,6 +573,10 @@ namespace isa
     unsigned id = add(geom);
     geom->id = id;
     return id;
+  }
+
+  unsigned Scene::newGeometryInstance (unsigned geomID) {
+    return newGeometryInstance(get_locked(geomID));
   }
 
   unsigned int Scene::newGeometryGroup (RTCGeometryFlags gflags, const std::vector<Geometry*> geometries)
@@ -576,9 +587,23 @@ namespace isa
     return id;
   }
 
-#if defined(EMBREE_GEOMETRY_TRIANGLES)
+  unsigned int Scene::newGeometryGroup (RTCGeometryFlags gflags, unsigned* geomIDs, size_t N)
+  {
+    std::vector<Geometry*> geometries(N);
+    for (size_t i=0; i<N; i++) {
+      geometries[i] = get_locked(geomIDs[i]);
+      if (geometries[i]->getType() == Geometry::GROUP)
+        throw_RTCError(RTC_INVALID_ARGUMENT,"geometry groups cannot contain other geometry groups");
+      if (geometries[i]->getType() != geometries[0]->getType())
+        throw_RTCError(RTC_INVALID_ARGUMENT,"geometries inside group have to be of same type");
+    }
+    return newGeometryGroup(gflags,geometries);
+  }
+
   unsigned Scene::newTriangleMesh (RTCGeometryFlags gflags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) 
   {
+#if defined(EMBREE_GEOMETRY_TRIANGLES)
+
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
       return -1;
@@ -590,12 +615,15 @@ namespace isa
     }
     
     return add(new TriangleMesh(this,gflags,numTriangles,numVertices,numTimeSteps));
-  }
+#else
+    return -1;
 #endif
+  }
 
-#if defined(EMBREE_GEOMETRY_QUADS)
   unsigned Scene::newQuadMesh (RTCGeometryFlags gflags, size_t numQuads, size_t numVertices, size_t numTimeSteps) 
   {
+#if defined(EMBREE_GEOMETRY_QUADS)
+
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
       return -1;
@@ -607,12 +635,15 @@ namespace isa
     }
     
     return add(new QuadMesh(this,gflags,numQuads,numVertices,numTimeSteps));
-  }
+#else
+    return -1;
 #endif
+  }
 
-#if defined(EMBREE_GEOMETRY_SUBDIV)
   unsigned Scene::newSubdivisionMesh (RTCGeometryFlags gflags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps) 
   {
+#if defined(EMBREE_GEOMETRY_SUBDIV)
+
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
       return -1;
@@ -629,12 +660,18 @@ namespace isa
     else 
 #endif
       return add(new SubdivMesh(this,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps));
-  }
+#else
+    return -1;
 #endif
+  }
 
-#if defined(EMBREE_GEOMETRY_HAIR)
-  unsigned Scene::newCurves (NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
+  unsigned Scene::newCurves (int subtype_i, int basis_i, RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
   {
+    NativeCurves::SubType subtype = (NativeCurves::SubType) subtype_i;
+    NativeCurves::Basis basis = (NativeCurves::Basis) basis_i;
+    
+#if defined(EMBREE_GEOMETRY_HAIR)
+
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
       return -1;
@@ -658,12 +695,15 @@ namespace isa
     }
 #endif
     return add(geom);
-  }
+#else
+    return -1;
 #endif
+  }
 
-#if defined(EMBREE_GEOMETRY_LINES)
   unsigned Scene::newLineSegments (RTCGeometryFlags gflags, size_t numSegments, size_t numVertices, size_t numTimeSteps)
   {
+#if defined(EMBREE_GEOMETRY_LINES)
+
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
       return -1;
@@ -675,8 +715,10 @@ namespace isa
     }
 
     return add(new LineSegments(this,gflags,numSegments,numVertices,numTimeSteps));
-  }
+#else
+    return -1;
 #endif
+  }
 
   unsigned Scene::add(Geometry* geometry) 
   {
@@ -935,6 +977,530 @@ namespace isa
         throw_RTCError(RTC_CANCELLED,"progress monitor forced termination");
       }
     }
+  }
+
+  DeviceInterface* Scene::getDevice() {
+    return device;
+  }
+
+  GeometryInterface* Scene::getGeometry (unsigned geomID) {
+    return get(geomID);
+  }
+
+  GeometryInterface* Scene::getGeometryLocked (unsigned geomID) {
+    return get_locked(geomID);
+  }
+
+  void Scene::rtcGetBounds(RTCBounds& bounds_o)
+  {
+    if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    BBox3fa bounds = this->bounds.bounds();
+    bounds_o.lower_x = bounds.lower.x;
+    bounds_o.lower_y = bounds.lower.y;
+    bounds_o.lower_z = bounds.lower.z;
+    bounds_o.align0  = 0;
+    bounds_o.upper_x = bounds.upper.x;
+    bounds_o.upper_y = bounds.upper.y;
+    bounds_o.upper_z = bounds.upper.z;
+    bounds_o.align1  = 0;
+  }
+
+  void Scene::rtcGetLinearBounds(RTCBounds* bounds_o)
+  {
+    if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    bounds_o[0].lower_x = bounds.bounds0.lower.x;
+    bounds_o[0].lower_y = bounds.bounds0.lower.y;
+    bounds_o[0].lower_z = bounds.bounds0.lower.z;
+    bounds_o[0].align0  = 0;
+    bounds_o[0].upper_x = bounds.bounds0.upper.x;
+    bounds_o[0].upper_y = bounds.bounds0.upper.y;
+    bounds_o[0].upper_z = bounds.bounds0.upper.z;
+    bounds_o[0].align1  = 0;
+    bounds_o[1].lower_x = bounds.bounds1.lower.x;
+    bounds_o[1].lower_y = bounds.bounds1.lower.y;
+    bounds_o[1].lower_z = bounds.bounds1.lower.z;
+    bounds_o[1].align0  = 0;
+    bounds_o[1].upper_x = bounds.bounds1.upper.x;
+    bounds_o[1].upper_y = bounds.bounds1.upper.y;
+    bounds_o[1].upper_z = bounds.bounds1.upper.z;
+    bounds_o[1].align1  = 0;
+  }
+  
+  void Scene::rtcIntersect (RTCRay& ray) 
+  {
+#if defined(DEBUG)
+    if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)&ray) & 0x0F        ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
+#endif
+    STAT3(normal.travs,1,1,1);
+    IntersectContext context(this,nullptr);
+    intersect(ray,&context);
+  }
+
+  void Scene::rtcIntersect1Ex (const RTCIntersectContext* user_context, RTCRay& ray) 
+  {
+#if defined(DEBUG)
+    if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)&ray) & 0x0F        ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
+#endif
+    STAT3(normal.travs,1,1,1);
+    IntersectContext context(this,user_context);
+    intersect(ray,&context);
+  }
+
+  void Scene::rtcIntersect4 (const void* valid, RTCRay4& ray) 
+  {
+#if defined(__TARGET_SIMD4__) && defined (EMBREE_RAY_PACKETS)
+#if defined(DEBUG)
+    if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)valid) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "mask not aligned to 16 bytes");   
+    if (((size_t)&ray ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
+#endif
+    STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
+    STAT3(normal.travs,1,cnt,4);
+    IntersectContext context(this,nullptr);
+    intersect4(valid,ray,&context);
+#else
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect4 not supported");  
+#endif
+  }
+
+  void Scene::rtcIntersect4Ex (const void* valid, const RTCIntersectContext* user_context, RTCRay4& ray) 
+  {
+#if defined(__TARGET_SIMD4__) && defined (EMBREE_RAY_PACKETS)
+#if defined(DEBUG)
+    if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)valid) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "mask not aligned to 16 bytes");   
+    if (((size_t)&ray ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
+#endif
+    STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
+    STAT3(normal.travs,1,cnt,4);
+    IntersectContext context(this,user_context);
+    intersect4(valid,ray,&context);
+#else
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect4Ex not supported");  
+#endif
+  }
+  
+  void Scene::rtcIntersect8 (const void* valid, RTCRay8& ray) 
+  {
+#if defined(__TARGET_SIMD8__) && defined (EMBREE_RAY_PACKETS)
+#if defined(DEBUG)
+    if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)valid) & 0x1F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "mask not aligned to 32 bytes");   
+    if (((size_t)&ray ) & 0x1F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 32 bytes");   
+#endif
+    STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
+    STAT3(normal.travs,1,cnt,8);
+    IntersectContext context(this,nullptr);
+    intersect8(valid,ray,&context);
+#else
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect8 not supported");      
+#endif
+  }
+
+  void Scene::rtcIntersect8Ex (const void* valid, const RTCIntersectContext* user_context, RTCRay8& ray) 
+  {
+#if defined(__TARGET_SIMD8__) && defined (EMBREE_RAY_PACKETS)
+#if defined(DEBUG)
+    if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)valid) & 0x1F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "mask not aligned to 32 bytes");   
+    if (((size_t)&ray ) & 0x1F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 32 bytes");   
+#endif
+    STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
+    STAT3(normal.travs,1,cnt,8);
+    IntersectContext context(this,user_context);
+    intersect8(valid,ray,&context);
+#else
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect8Ex not supported");
+#endif
+  }
+  
+  void Scene::rtcIntersect16 (const void* valid, RTCRay16& ray) 
+  {
+#if defined(__TARGET_SIMD16__) && defined (EMBREE_RAY_PACKETS)
+#if defined(DEBUG)
+    RTCORE_VERIFY_HANDLE(hscene);
+    if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)valid) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "mask not aligned to 64 bytes");   
+    if (((size_t)&ray ) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
+#endif
+    STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
+    STAT3(normal.travs,1,cnt,16);
+    IntersectContext context(this,nullptr);
+    intersect16(valid,ray,&context);
+#else
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect16 not supported");
+#endif
+  }
+
+  void Scene::rtcIntersect16Ex (const void* valid, const RTCIntersectContext* user_context, RTCRay16& ray) 
+  {
+#if defined(__TARGET_SIMD16__) && defined (EMBREE_RAY_PACKETS)
+#if defined(DEBUG)
+    RTCORE_VERIFY_HANDLE(hscene);
+    if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)valid) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "mask not aligned to 64 bytes");   
+    if (((size_t)&ray ) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
+#endif
+    STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
+    STAT3(normal.travs,1,cnt,16);
+    IntersectContext context(this,user_context);
+    intersect16(valid,ray,&context);
+#else
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect16Ex not supported");
+#endif
+  }
+
+  void Scene::rtcIntersect1M (const RTCIntersectContext* user_context, RTCRay* rays, const size_t M, const size_t stride) 
+  {
+#if defined (EMBREE_RAY_PACKETS)
+#if defined(DEBUG)
+    if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)rays ) & 0x03) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 4 bytes");   
+#endif
+    STAT3(normal.travs,M,M,M);
+    IntersectContext context(this,user_context);
+
+    /* fast codepath for single rays */
+    if (likely(M == 1)) {
+      if (likely(rays->tnear <= rays->tfar)) 
+        intersect(*rays,&context);
+    } 
+
+    /* codepath for streams */
+    else {
+      device->rayStreamFilters.filterAOS(this,rays,M,stride,&context,true);   
+    }
+#else
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect1M not supported");
+#endif
+  }
+
+  void Scene::rtcIntersect1Mp (const RTCIntersectContext* user_context, RTCRay** rays, const size_t M) 
+  {
+#if defined (EMBREE_RAY_PACKETS)
+#if defined(DEBUG)
+    if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)rays ) & 0x03) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 4 bytes");   
+#endif
+    STAT3(normal.travs,M,M,M);
+    IntersectContext context(this,user_context);
+
+    /* fast codepath for single rays */
+    if (likely(M == 1)) {
+      if (likely(rays[0]->tnear <= rays[0]->tfar)) 
+        intersect(*rays[0],&context);
+    } 
+
+    /* codepath for streams */
+    else {
+      device->rayStreamFilters.filterAOP(this,rays,M,&context,true);   
+    }
+#else
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect1Mp not supported");
+#endif
+  }
+
+  void Scene::rtcIntersectNM (const RTCIntersectContext* user_context, struct RTCRayN* rays, const size_t N, const size_t M, const size_t stride) 
+  {
+#if defined (EMBREE_RAY_PACKETS)
+#if defined(DEBUG)
+    if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)rays ) & 0x03) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 4 bytes");   
+#endif
+    STAT3(normal.travs,N*M,N*M,N*M);
+    IntersectContext context(this,user_context);
+
+    /* code path for single ray streams */
+    if (likely(N == 1))
+    {
+      /* fast code path for streams of size 1 */
+      if (likely(M == 1)) {
+        if (likely(((RTCRay*)rays)->tnear <= ((RTCRay*)rays)->tfar))
+          intersect(*(RTCRay*)rays,&context);
+      } 
+      /* normal codepath for single ray streams */
+      else {
+        device->rayStreamFilters.filterAOS(this,(RTCRay*)rays,M,stride,&context,true);
+      }
+    }
+    /* code path for ray packet streams */
+    else {
+      device->rayStreamFilters.filterSOA(this,(char*)rays,N,M,stride,&context,true);
+    }
+#else
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersectNM not supported");
+#endif
+  }
+
+  void Scene::rtcIntersectNp (const RTCIntersectContext* user_context, const RTCRayNp& rays, const size_t N) 
+  {
+#if defined (EMBREE_RAY_PACKETS)
+#if defined(DEBUG)
+    if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)rays.orgx   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.orgx not aligned to 4 bytes");   
+    if (((size_t)rays.orgy   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.orgy not aligned to 4 bytes");   
+    if (((size_t)rays.orgz   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.orgz not aligned to 4 bytes");   
+    if (((size_t)rays.dirx   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.dirx not aligned to 4 bytes");   
+    if (((size_t)rays.diry   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.diry not aligned to 4 bytes");   
+    if (((size_t)rays.dirz   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.dirz not aligned to 4 bytes");   
+    if (((size_t)rays.tnear  ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.dirx not aligned to 4 bytes");   
+    if (((size_t)rays.tfar   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.tnear not aligned to 4 bytes");   
+    if (((size_t)rays.time   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.time not aligned to 4 bytes");   
+    if (((size_t)rays.mask   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.mask not aligned to 4 bytes");   
+    if (((size_t)rays.Ngx    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.Ngx not aligned to 4 bytes");   
+    if (((size_t)rays.Ngy    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.Ngy not aligned to 4 bytes");   
+    if (((size_t)rays.Ngz    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.Ngz not aligned to 4 bytes");   
+    if (((size_t)rays.u      ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.u not aligned to 4 bytes");   
+    if (((size_t)rays.v      ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.v not aligned to 4 bytes");   
+    if (((size_t)rays.geomID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.geomID not aligned to 4 bytes");   
+    if (((size_t)rays.primID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.primID not aligned to 4 bytes");   
+    if (((size_t)rays.instID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.instID not aligned to 4 bytes");   
+#endif
+    STAT3(normal.travs,N,N,N);
+    IntersectContext context(this,user_context);
+    device->rayStreamFilters.filterSOP(this,rays,N,&context,true);
+#else
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersectNp not supported");
+#endif
+  }
+  
+  void Scene::rtcOccluded (RTCRay& ray) 
+  {
+    STAT3(shadow.travs,1,1,1);
+#if defined(DEBUG)
+    if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)&ray) & 0x0F        ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
+#endif
+    IntersectContext context(this,nullptr);
+    occluded(ray,&context);
+  }
+
+  void Scene::rtcOccluded1Ex (const RTCIntersectContext* user_context, RTCRay& ray) 
+  {
+    STAT3(shadow.travs,1,1,1);
+#if defined(DEBUG)
+    if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)&ray) & 0x0F        ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
+#endif
+    IntersectContext context(this,user_context);
+    occluded(ray,&context);
+  }
+  
+  void Scene::rtcOccluded4 (const void* valid, RTCRay4& ray) 
+  {
+#if defined(__TARGET_SIMD4__) && defined (EMBREE_RAY_PACKETS)
+#if defined(DEBUG)
+    if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)valid) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "mask not aligned to 16 bytes");   
+    if (((size_t)&ray ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
+#endif
+    STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
+    STAT3(shadow.travs,1,cnt,4);
+    IntersectContext context(this,nullptr);
+    occluded4(valid,ray,&context);
+#else
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded4 not supported");
+#endif
+  }
+
+  void Scene::rtcOccluded4Ex (const void* valid, const RTCIntersectContext* user_context, RTCRay4& ray) 
+  {
+#if defined(__TARGET_SIMD4__) && defined (EMBREE_RAY_PACKETS)
+#if defined(DEBUG)
+    if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)valid) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "mask not aligned to 16 bytes");   
+    if (((size_t)&ray ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
+#endif
+    STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
+    STAT3(shadow.travs,1,cnt,4);
+    IntersectContext context(this,user_context);
+    occluded4(valid,ray,&context);
+#else
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded4Ex not supported");
+#endif
+  }
+ 
+  void Scene::rtcOccluded8 (const void* valid, RTCRay8& ray) 
+  {
+#if defined(__TARGET_SIMD8__) && defined (EMBREE_RAY_PACKETS)
+#if defined(DEBUG)
+    if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)valid) & 0x1F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "mask not aligned to 32 bytes");   
+    if (((size_t)&ray ) & 0x1F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 32 bytes");   
+#endif
+    STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
+    STAT3(shadow.travs,1,cnt,8);
+    IntersectContext context(this,nullptr);
+    occluded8(valid,ray,&context);
+#else
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded8 not supported");
+#endif
+  }
+
+  void Scene::rtcOccluded8Ex (const void* valid, const RTCIntersectContext* user_context, RTCRay8& ray) 
+  {
+#if defined(__TARGET_SIMD8__) && defined (EMBREE_RAY_PACKETS)
+#if defined(DEBUG)
+    if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)valid) & 0x1F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "mask not aligned to 32 bytes");   
+    if (((size_t)&ray ) & 0x1F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 32 bytes");   
+#endif
+    STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
+    STAT3(shadow.travs,1,cnt,8);
+    IntersectContext context(this,user_context);
+    occluded8(valid,ray,&context);
+#else
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded8Ex not supported");
+#endif
+  }
+  
+  void Scene::rtcOccluded16 (const void* valid, RTCRay16& ray) 
+  {
+#if defined(__TARGET_SIMD16__) && defined (EMBREE_RAY_PACKETS)
+#if defined(DEBUG)
+    if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)valid) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "mask not aligned to 64 bytes");   
+    if (((size_t)&ray ) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
+#endif
+    STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
+    STAT3(shadow.travs,1,cnt,16);
+    IntersectContext context(this,nullptr);
+    occluded16(valid,ray,&context);
+#else
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded16 not supported");
+#endif
+  }
+
+  void Scene::rtcOccluded16Ex (const void* valid, const RTCIntersectContext* user_context, RTCRay16& ray) 
+  {
+#if defined(__TARGET_SIMD16__) && defined (EMBREE_RAY_PACKETS)
+#if defined(DEBUG)
+    if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)valid) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "mask not aligned to 64 bytes");   
+    if (((size_t)&ray ) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
+#endif
+    STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
+    STAT3(shadow.travs,1,cnt,16);
+    IntersectContext context(this,user_context);
+    occluded16(valid,ray,&context);
+#else
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded16Ex not supported");
+#endif
+  }
+  
+  void Scene::rtcOccluded1M(const RTCIntersectContext* user_context, RTCRay* rays, const size_t M, const size_t stride) 
+  {
+#if defined (EMBREE_RAY_PACKETS)
+#if defined(DEBUG)
+    if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)rays ) & 0x03) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 4 bytes");   
+#endif
+    STAT3(shadow.travs,M,M,M);
+    IntersectContext context(this,user_context);
+
+    /* fast codepath for streams of size 1 */
+    if (likely(M == 1)) {
+      if (likely(rays->tnear <= rays->tfar)) 
+        occluded (*rays,&context);
+    } 
+    /* codepath for normal streams */
+    else {
+      device->rayStreamFilters.filterAOS(this,rays,M,stride,&context,false);
+    }
+#else
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded1M not supported");
+#endif
+  }
+
+  void Scene::rtcOccluded1Mp(const RTCIntersectContext* user_context, RTCRay** rays, const size_t M) 
+  {
+#if defined (EMBREE_RAY_PACKETS)
+#if defined(DEBUG)
+    if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)rays ) & 0x03) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 4 bytes");   
+#endif
+    STAT3(shadow.travs,M,M,M);
+    IntersectContext context(this,user_context);
+
+    /* fast codepath for streams of size 1 */
+    if (likely(M == 1)) {
+      if (likely(rays[0]->tnear <= rays[0]->tfar)) 
+        occluded (*rays[0],&context);
+    } 
+    /* codepath for normal streams */
+    else {
+      device->rayStreamFilters.filterAOP(this,rays,M,&context,false);
+    }
+#else
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded1Mp not supported");
+#endif
+  }
+
+  void Scene::rtcOccludedNM(const RTCIntersectContext* user_context, RTCRayN* rays, const size_t N, const size_t M, const size_t stride) 
+  {
+#if defined (EMBREE_RAY_PACKETS)
+#if defined(DEBUG)
+    if (stride < sizeof(RTCRay)) throw_RTCError(RTC_INVALID_OPERATION,"stride too small");
+    if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)rays ) & 0x03) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 4 bytes");   
+#endif
+    STAT3(shadow.travs,N*M,N*N,N*N);
+    IntersectContext context(this,user_context);
+
+    /* codepath for single rays */
+    if (likely(N == 1))
+    {
+      /* fast path for streams of size 1 */
+      if (likely(M == 1)) {
+        if (likely(((RTCRay*)rays)->tnear <= ((RTCRay*)rays)->tfar))
+          occluded (*(RTCRay*)rays,&context);
+      } 
+      /* codepath for normal ray streams */
+      else {
+        device->rayStreamFilters.filterAOS(this,(RTCRay*)rays,M,stride,&context,false);
+      }
+    }
+    /* code path for ray packet streams */
+    else {
+      device->rayStreamFilters.filterSOA(this,(char*)rays,N,M,stride,&context,false);
+    }
+#else
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcOccludedNM not supported");
+#endif
+  }
+
+  void Scene::rtcOccludedNp(const RTCIntersectContext* user_context, const RTCRayNp& rays, const size_t N) 
+  {
+#if defined (EMBREE_RAY_PACKETS)
+#if defined(DEBUG)
+    if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)rays.orgx   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.orgx not aligned to 4 bytes");   
+    if (((size_t)rays.orgy   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.orgy not aligned to 4 bytes");   
+    if (((size_t)rays.orgz   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.orgz not aligned to 4 bytes");   
+    if (((size_t)rays.dirx   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.dirx not aligned to 4 bytes");   
+    if (((size_t)rays.diry   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.diry not aligned to 4 bytes");   
+    if (((size_t)rays.dirz   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.dirz not aligned to 4 bytes");   
+    if (((size_t)rays.tnear  ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.dirx not aligned to 4 bytes");   
+    if (((size_t)rays.tfar   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.tnear not aligned to 4 bytes");   
+    if (((size_t)rays.time   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.time not aligned to 4 bytes");   
+    if (((size_t)rays.mask   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.mask not aligned to 4 bytes");   
+    if (((size_t)rays.Ngx    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.Ngx not aligned to 4 bytes");   
+    if (((size_t)rays.Ngy    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.Ngy not aligned to 4 bytes");   
+    if (((size_t)rays.Ngz    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.Ngz not aligned to 4 bytes");   
+    if (((size_t)rays.u      ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.u not aligned to 4 bytes");   
+    if (((size_t)rays.v      ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.v not aligned to 4 bytes");   
+    if (((size_t)rays.geomID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.geomID not aligned to 4 bytes");   
+    if (((size_t)rays.primID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.primID not aligned to 4 bytes");   
+    if (((size_t)rays.instID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.instID not aligned to 4 bytes");   
+#endif
+    STAT3(shadow.travs,N,N,N);
+    IntersectContext context(this,user_context);
+    device->rayStreamFilters.filterSOP(this,rays,N,&context,false);
+#else
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcOccludedNp not supported");
+#endif
   }
 }
 }

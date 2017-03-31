@@ -29,6 +29,8 @@
 
 namespace embree
 {
+  void process_error(DeviceInterface* device, RTCError error, const char* str);
+
 namespace isa
 {
 #define size_t int   // FIXME: workaround for ISPC bug (ISPC bug still present in ISPC v1.8.2)

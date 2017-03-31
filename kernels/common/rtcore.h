@@ -20,8 +20,8 @@
 
 namespace embree
 {
-namespace isa
-{
+//namespace isa
+//{
   /*! decoding of geometry flags */
   __forceinline bool isStatic    (RTCSceneFlags flags) { return (flags & 1) == RTC_SCENE_STATIC; }
   __forceinline bool isDynamic   (RTCSceneFlags flags) { return (flags & 1) == RTC_SCENE_DYNAMIC; }
@@ -54,13 +54,13 @@ namespace isa
 #define RTCORE_CATCH_BEGIN try {
 #define RTCORE_CATCH_END(device)                                        \
   } catch (std::bad_alloc&) {                                            \
-    Device::process_error(device,RTC_OUT_OF_MEMORY,"out of memory");    \
+    process_error(device,RTC_OUT_OF_MEMORY,"out of memory");    \
   } catch (rtcore_error& e) {                                           \
-    Device::process_error(device,e.error,e.what());                     \
+    process_error(device,e.error,e.what());                     \
   } catch (std::exception& e) {                                         \
-    Device::process_error(device,RTC_UNKNOWN_ERROR,e.what()); \
+    process_error(device,RTC_UNKNOWN_ERROR,e.what()); \
   } catch (...) {                                                       \
-    Device::process_error(device,RTC_UNKNOWN_ERROR,"unknown exception caught"); \
+    process_error(device,RTC_UNKNOWN_ERROR,"unknown exception caught"); \
   }
 
 #define RTCORE_VERIFY_HANDLE(handle)                                    \
@@ -105,5 +105,5 @@ namespace isa
 
 #define RTC_BUILD_SETTINGS_HAS(settings,member)                 \
   (settings.size > (offsetof(RTCBuildSettings,member)+sizeof(settings.member))) 
-}
+//}
 }

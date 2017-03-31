@@ -34,13 +34,60 @@
 
 namespace embree
 {
+  struct DeviceInterface;
+  struct SceneInterface
+  {
+    virtual ~SceneInterface() {};
+    virtual DeviceInterface* getDevice() = 0;
+    virtual void setProgressMonitorFunction(RTCProgressMonitorFunc func, void* ptr) = 0;
+    virtual unsigned int newUserGeometry (RTCGeometryFlags gflags, size_t items, size_t numTimeSteps) = 0;
+    virtual unsigned int newInstance (SceneInterface* scene, size_t numTimeSteps) = 0;
+    virtual unsigned int newGeometryInstance (unsigned geomID) = 0;
+    virtual unsigned int newGeometryGroup (RTCGeometryFlags gflags, unsigned* geomIDs, size_t N) = 0;
+    virtual unsigned int newTriangleMesh (RTCGeometryFlags flags, size_t maxTriangles, size_t maxVertices, size_t numTimeSteps) = 0;
+    virtual unsigned int newQuadMesh (RTCGeometryFlags flags, size_t maxQuads, size_t maxVertices, size_t numTimeSteps) = 0;
+    virtual unsigned int newCurves (int subtype, int basis, RTCGeometryFlags flags, size_t maxCurves, size_t maxVertices, size_t numTimeSteps) = 0;
+    virtual unsigned int newLineSegments (RTCGeometryFlags flags, size_t maxSegments, size_t maxVertices, size_t numTimeSteps) = 0;
+    virtual unsigned int newSubdivisionMesh (RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps) = 0;
+    virtual void commit (size_t threadIndex, size_t threadCount, bool useThreadPool) = 0;
+    virtual GeometryInterface* getGeometry(unsigned geomID) = 0;
+    virtual GeometryInterface* getGeometryLocked(unsigned geomID) = 0;
+    virtual void deleteGeometry(size_t geomID) = 0;
+    virtual void rtcGetBounds(RTCBounds& bounds_o) = 0;
+    virtual void rtcGetLinearBounds(RTCBounds* bounds_o) = 0;
+    virtual void rtcIntersect (RTCRay& ray) = 0;
+    virtual void rtcIntersect1Ex (const RTCIntersectContext* user_context, RTCRay& ray) = 0;
+    virtual void rtcIntersect4 (const void* valid, RTCRay4& ray) = 0;
+    virtual void rtcIntersect4Ex (const void* valid, const RTCIntersectContext* user_context, RTCRay4& ray) = 0;
+    virtual void rtcIntersect8 (const void* valid, RTCRay8& ray) = 0;
+    virtual void rtcIntersect8Ex (const void* valid, const RTCIntersectContext* user_context, RTCRay8& ray) = 0;
+    virtual void rtcIntersect16 (const void* valid, RTCRay16& ray) = 0;
+    virtual void rtcIntersect16Ex (const void* valid, const RTCIntersectContext* user_context, RTCRay16& ray) = 0;
+    virtual void rtcIntersect1M (const RTCIntersectContext* user_context, RTCRay* rays, const size_t M, const size_t stride) = 0;
+    virtual void rtcIntersect1Mp (const RTCIntersectContext* user_context, RTCRay** rays, const size_t M) = 0;
+    virtual void rtcIntersectNM (const RTCIntersectContext* user_context, struct RTCRayN* rays, const size_t N, const size_t M, const size_t stride) = 0;
+    virtual void rtcIntersectNp (const RTCIntersectContext* user_context, const RTCRayNp& rays, const size_t N) = 0;
+    virtual void rtcOccluded (RTCRay& ray) = 0;
+    virtual void rtcOccluded1Ex (const RTCIntersectContext* user_context, RTCRay& ray) = 0;
+    virtual void rtcOccluded4 (const void* valid, RTCRay4& ray) = 0;
+    virtual void rtcOccluded4Ex (const void* valid, const RTCIntersectContext* user_context, RTCRay4& ray) = 0;
+    virtual void rtcOccluded8 (const void* valid, RTCRay8& ray) = 0;
+    virtual void rtcOccluded8Ex (const void* valid, const RTCIntersectContext* user_context, RTCRay8& ray) = 0;
+    virtual void rtcOccluded16 (const void* valid, RTCRay16& ray) = 0;
+    virtual void rtcOccluded16Ex (const void* valid, const RTCIntersectContext* user_context, RTCRay16& ray) = 0;
+    virtual void rtcOccluded1M(const RTCIntersectContext* user_context, RTCRay* rays, const size_t M, const size_t stride) = 0;
+    virtual void rtcOccluded1Mp(const RTCIntersectContext* user_context, RTCRay** rays, const size_t M) = 0;
+    virtual void rtcOccludedNM(const RTCIntersectContext* user_context, RTCRayN* rays, const size_t N, const size_t M, const size_t stride) = 0;
+    virtual void rtcOccludedNp(const RTCIntersectContext* user_context, const RTCRayNp& rays, const size_t N) = 0;
+  };
+
 namespace isa
 {
   /*! Base class all scenes are derived from */
-  class Scene : public Accel
+  class Scene : public SceneInterface, public Accel
   {
     ALIGNED_CLASS;
-
+ 
   public:
     template<typename Ty, bool mblur = false>
       class Iterator
@@ -134,13 +181,15 @@ namespace isa
     unsigned int newUserGeometry (RTCGeometryFlags gflags, size_t items, size_t numTimeSteps);
 
     /*! Creates a new scene instance. */
-    unsigned int newInstance (Scene* scene, size_t numTimeSteps);
+    unsigned int newInstance (SceneInterface* scene, size_t numTimeSteps);
 
     /*! Creates a new geometry instance. */
     unsigned int newGeometryInstance (Geometry* geom);
+    unsigned int newGeometryInstance (unsigned geomID);
 
     /*! Creates a new geometry group. */
     unsigned int newGeometryGroup (RTCGeometryFlags gflags, const std::vector<Geometry*> geometries);
+    unsigned int newGeometryGroup (RTCGeometryFlags gflags, unsigned* geomIDs, size_t N);
 
     /*! Creates a new triangle mesh. */
     unsigned int newTriangleMesh (RTCGeometryFlags flags, size_t maxTriangles, size_t maxVertices, size_t numTimeSteps);
@@ -149,7 +198,7 @@ namespace isa
     unsigned int newQuadMesh (RTCGeometryFlags flags, size_t maxQuads, size_t maxVertices, size_t numTimeSteps);
 
     /*! Creates a new collection of quadratic bezier curves. */
-    unsigned int newCurves (NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags flags, size_t maxCurves, size_t maxVertices, size_t numTimeSteps);
+    unsigned int newCurves (int subtype, int basis, RTCGeometryFlags flags, size_t maxCurves, size_t maxVertices, size_t numTimeSteps);
 
     /*! Creates a new collection of line segments. */
     unsigned int newLineSegments (RTCGeometryFlags flags, size_t maxSegments, size_t maxVertices, size_t numTimeSteps);
@@ -217,17 +266,17 @@ namespace isa
     }
 
     /* test if this is a static scene */
-    __forceinline bool isStatic() const { return embree::isa::isStatic(flags); }
+    __forceinline bool isStatic() const { return embree::isStatic(flags); }
 
     /* test if this is a dynamic scene */
-    __forceinline bool isDynamic() const { return embree::isa::isDynamic(flags); }
+    __forceinline bool isDynamic() const { return embree::isDynamic(flags); }
 
-    __forceinline bool isCompact() const { return embree::isa::isCompact(flags); }
-    __forceinline bool isCoherent() const { return embree::isa::isCoherent(flags); }
-    __forceinline bool isRobust() const { return embree::isa::isRobust(flags); }
-    __forceinline bool isHighQuality() const { return embree::isa::isHighQuality(flags); }
-    __forceinline bool isInterpolatable() const { return embree::isa::isInterpolatable(aflags); }
-    __forceinline bool isStreamMode() const { return embree::isa::isStreamMode(aflags); }
+    __forceinline bool isCompact() const { return embree::isCompact(flags); }
+    __forceinline bool isCoherent() const { return embree::isCoherent(flags); }
+    __forceinline bool isRobust() const { return embree::isRobust(flags); }
+    __forceinline bool isHighQuality() const { return embree::isHighQuality(flags); }
+    __forceinline bool isInterpolatable() const { return embree::isInterpolatable(aflags); }
+    __forceinline bool isStreamMode() const { return embree::isStreamMode(aflags); }
 
     __forceinline bool isExclusiveIntersect1Mode() const { 
       if (!isIntersect1Mode(aflags)) return false;
@@ -339,6 +388,37 @@ namespace isa
     std::atomic<size_t> numIntersectionFilters8;   //!< number of enabled intersection/occlusion filters for 8-wide ray packets
     std::atomic<size_t> numIntersectionFilters16;  //!< number of enabled intersection/occlusion filters for 16-wide ray packets
     std::atomic<size_t> numIntersectionFiltersN;   //!< number of enabled intersection/occlusion filters for N-wide ray packets
+
+ public:
+    virtual DeviceInterface* getDevice();
+    virtual GeometryInterface* getGeometry(unsigned geomID);
+    virtual GeometryInterface* getGeometryLocked(unsigned geomID);
+    virtual void rtcGetBounds(RTCBounds& bounds_o);
+    virtual void rtcGetLinearBounds(RTCBounds* bounds_o);
+    virtual void rtcIntersect (RTCRay& ray);
+    virtual void rtcIntersect1Ex (const RTCIntersectContext* user_context, RTCRay& ray);
+    virtual void rtcIntersect4 (const void* valid, RTCRay4& ray);
+    virtual void rtcIntersect4Ex (const void* valid, const RTCIntersectContext* user_context, RTCRay4& ray);
+    virtual void rtcIntersect8 (const void* valid, RTCRay8& ray);
+    virtual void rtcIntersect8Ex (const void* valid, const RTCIntersectContext* user_context, RTCRay8& ray);
+    virtual void rtcIntersect16 (const void* valid, RTCRay16& ray);
+    virtual void rtcIntersect16Ex (const void* valid, const RTCIntersectContext* user_context, RTCRay16& ray);
+    virtual void rtcIntersect1M (const RTCIntersectContext* user_context, RTCRay* rays, const size_t M, const size_t stride);
+    virtual void rtcIntersect1Mp (const RTCIntersectContext* user_context, RTCRay** rays, const size_t M);
+    virtual void rtcIntersectNM (const RTCIntersectContext* user_context, struct RTCRayN* rays, const size_t N, const size_t M, const size_t stride);
+    virtual void rtcIntersectNp (const RTCIntersectContext* user_context, const RTCRayNp& rays, const size_t N);
+    virtual void rtcOccluded (RTCRay& ray);
+    virtual void rtcOccluded1Ex (const RTCIntersectContext* user_context, RTCRay& ray);
+    virtual void rtcOccluded4 (const void* valid, RTCRay4& ray);
+    virtual void rtcOccluded4Ex (const void* valid, const RTCIntersectContext* user_context, RTCRay4& ray);
+    virtual void rtcOccluded8 (const void* valid, RTCRay8& ray);
+    virtual void rtcOccluded8Ex (const void* valid, const RTCIntersectContext* user_context, RTCRay8& ray);
+    virtual void rtcOccluded16 (const void* valid, RTCRay16& ray);
+    virtual void rtcOccluded16Ex (const void* valid, const RTCIntersectContext* user_context, RTCRay16& ray);
+    virtual void rtcOccluded1M(const RTCIntersectContext* user_context, RTCRay* rays, const size_t M, const size_t stride);
+    virtual void rtcOccluded1Mp(const RTCIntersectContext* user_context, RTCRay** rays, const size_t M);
+    virtual void rtcOccludedNM(const RTCIntersectContext* user_context, RTCRayN* rays, const size_t N, const size_t M, const size_t stride);
+    virtual void rtcOccludedNp(const RTCIntersectContext* user_context, const RTCRayNp& rays, const size_t N);
   };
 
   template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,false>() const { return world.numTriangles; }

@@ -20,9 +20,24 @@
 
 namespace embree
 {
+  struct SceneInterface;
+  struct DeviceInterface
+  {
+    virtual ~DeviceInterface() {};
+    virtual void setParameter1i(const RTCParameter parm, ssize_t val) = 0;
+    virtual ssize_t getParameter1i(const RTCParameter parm) = 0;
+    virtual RTCError getDeviceErrorCode() = 0;
+    virtual void setErrorFunction(RTCErrorFunc fptr) = 0;
+    virtual void setErrorFunction(RTCErrorFunc2 fptr, void* uptr) = 0;
+    virtual void setMemoryMonitorFunction(RTCMemoryMonitorFunc fptr) = 0;
+    virtual void setMemoryMonitorFunction(RTCMemoryMonitorFunc2 fptr, void* uptr) = 0;
+    virtual void processError(RTCError error, const char* str) = 0;
+    virtual SceneInterface* newScene (RTCSceneFlags flags, RTCAlgorithmFlags aflags) = 0;
+  };
+
 namespace isa
 {
-  struct State
+  struct State : public DeviceInterface
   {
   public:
     /*! state construction */

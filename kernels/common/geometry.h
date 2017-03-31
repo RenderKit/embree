@@ -20,12 +20,186 @@
 
 namespace embree
 {
+  struct GeometryInterface
+  {
+    __forceinline GeometryInterface ()
+      : userPtr(nullptr) {}
+
+    void* userPtr;             //!< user pointer
+
+    /*! Get user data pointer. */
+    __forceinline void* getUserData() const {
+      return userPtr;
+    }
+
+  public:
+    /*! Geometry destructor */
+    virtual ~GeometryInterface() {}
+
+    /*! for all geometries */
+  public:
+
+    /*! Enable geometry. */
+    virtual void enable () = 0;
+
+    /*! Update geometry. */
+    virtual void update () = 0;
+
+    /*! Update geometry buffer. */
+    virtual void updateBuffer (RTCBufferType type) = 0;
+    
+    /*! Disable geometry. */
+    virtual void disable () = 0;
+
+    /*! Free buffers that are unused */
+    virtual void immutable () = 0;
+
+    /*! Verify the geometry */
+    virtual bool verify () = 0;
+
+    /*! called if geometry is switching from disabled to enabled state */
+    virtual void enabling() = 0;
+
+    /*! called if geometry is switching from enabled to disabled state */
+    virtual void disabling() = 0;
+
+    /*! called before every build */
+    virtual void preCommit() = 0;
+
+    /*! called after every build */
+    virtual void postCommit() = 0;
+
+    /*! sets constant tessellation rate for the geometry */
+    virtual void setTessellationRate(float N) = 0;
+
+    /*! Set user data pointer. */
+    virtual void setUserData (void* ptr) = 0;
+      
+    /*! interpolates user data to the specified u/v location */
+    virtual void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) = 0;
+
+    /*! interpolates user data to the specified u/v locations */
+    virtual void interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
+                              RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) = 0;
+
+    /*! for subdivision surfaces only */
+  public:
+    virtual void setSubdivisionMode (unsigned topologyID, RTCSubdivisionMode mode)  = 0;
+
+    virtual void setIndexBuffer(RTCBufferType vertexBuffer, RTCBufferType indexBuffer) = 0;
+
+    /*! for triangle meshes and bezier curves only */
+  public:
+
+    /*! Sets ray mask. */
+    virtual void setMask (unsigned mask) = 0;
+
+    /*! Maps specified buffer. */
+    virtual void* map(RTCBufferType type) = 0;
+
+    /*! Unmap specified buffer. */
+    virtual void unmap(RTCBufferType type) = 0;
+
+    /*! Sets specified buffer. */
+    virtual void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size) = 0;
+
+    /*! Set displacement function. */
+    virtual void setDisplacementFunction (RTCDisplacementFunc filter, RTCBounds* bounds) = 0;
+
+    /*! Set displacement function. */
+    virtual void setDisplacementFunction2 (RTCDisplacementFunc2 filter, RTCBounds* bounds) = 0;
+
+    /*! Set intersection filter function for single rays. */
+    virtual void setIntersectionFilterFunction (RTCFilterFunc filter, bool ispc = false) = 0;
+    
+    /*! Set intersection filter function for ray packets of size 4. */
+    virtual void setIntersectionFilterFunction4 (RTCFilterFunc4 filter4, bool ispc = false) = 0;
+    
+    /*! Set intersection filter function for ray packets of size 8. */
+    virtual void setIntersectionFilterFunction8 (RTCFilterFunc8 filter8, bool ispc = false) = 0;
+    
+    /*! Set intersection filter function for ray packets of size 16. */
+    virtual void setIntersectionFilterFunction16 (RTCFilterFunc16 filter16, bool ispc = false) = 0;
+
+    /*! Set intersection filter function for ray packets of size N. */
+    virtual void setIntersectionFilterFunctionN (RTCFilterFuncN filterN) = 0;
+
+    /*! Set occlusion filter function for single rays. */
+    virtual void setOcclusionFilterFunction (RTCFilterFunc filter, bool ispc = false) = 0;
+    
+    /*! Set occlusion filter function for ray packets of size 4. */
+    virtual void setOcclusionFilterFunction4 (RTCFilterFunc4 filter4, bool ispc = false) = 0;
+    
+    /*! Set occlusion filter function for ray packets of size 8. */
+    virtual void setOcclusionFilterFunction8 (RTCFilterFunc8 filter8, bool ispc = false) = 0;
+    
+    /*! Set occlusion filter function for ray packets of size 16. */
+    virtual void setOcclusionFilterFunction16 (RTCFilterFunc16 filter16, bool ispc = false) = 0;
+
+    /*! Set occlusion filter function for ray packets of size N. */
+    virtual void setOcclusionFilterFunctionN (RTCFilterFuncN filterN) = 0;
+
+    /*! for instances only */
+  public:
+    
+    /*! Sets transformation of the instance */
+    virtual void setTransform(const AffineSpace3fa& transform, size_t timeStep) = 0;
+
+    /*! for user geometries only */
+  public:
+
+    /*! Set bounds function. */
+    virtual void setBoundsFunction (RTCBoundsFunc bounds) = 0;
+
+    /*! Set bounds function. */
+    virtual void setBoundsFunction2 (RTCBoundsFunc2 bounds, void* userPtr) = 0;
+
+    /*! Set bounds function. */
+    virtual void setBoundsFunction3 (RTCBoundsFunc3 bounds, void* userPtr) = 0;
+
+    /*! Set intersect function for single rays. */
+    virtual void setIntersectFunction (RTCIntersectFunc intersect, bool ispc = false) = 0;
+    
+    /*! Set intersect function for ray packets of size 4. */
+    virtual void setIntersectFunction4 (RTCIntersectFunc4 intersect4, bool ispc = false) = 0;
+    
+    /*! Set intersect function for ray packets of size 8. */
+    virtual void setIntersectFunction8 (RTCIntersectFunc8 intersect8, bool ispc = false) = 0;
+    
+    /*! Set intersect function for ray packets of size 16. */
+    virtual void setIntersectFunction16 (RTCIntersectFunc16 intersect16, bool ispc = false) = 0;
+
+    /*! Set intersect function for streams of single rays. */
+    virtual void setIntersectFunction1Mp (RTCIntersectFunc1Mp intersect) = 0;
+
+    /*! Set intersect function for ray packets of size N. */
+    virtual void setIntersectFunctionN (RTCIntersectFuncN intersect) = 0;
+    
+    /*! Set occlusion function for single rays. */
+    virtual void setOccludedFunction (RTCOccludedFunc occluded, bool ispc = false) = 0;
+    
+    /*! Set occlusion function for ray packets of size 4. */
+    virtual void setOccludedFunction4 (RTCOccludedFunc4 occluded4, bool ispc = false) = 0;
+    
+    /*! Set occlusion function for ray packets of size 8. */
+    virtual void setOccludedFunction8 (RTCOccludedFunc8 occluded8, bool ispc = false) = 0;
+    
+    /*! Set occlusion function for ray packets of size 16. */
+    virtual void setOccludedFunction16 (RTCOccludedFunc16 occluded16, bool ispc = false) = 0;
+
+    /*! Set occlusion function for streams of single rays. */
+    virtual void setOccludedFunction1Mp (RTCOccludedFunc1Mp occluded) = 0;
+
+    /*! Set occlusion function for ray packets of size N. */
+    virtual void setOccludedFunctionN (RTCOccludedFuncN occluded) = 0;
+  };
+
 namespace isa
 {
   class Scene;
 
   /*! Base class all geometries are derived from */
-  class Geometry
+  class Geometry : public GeometryInterface
   {
     friend class Scene;
   public:
@@ -130,11 +304,6 @@ namespace isa
 
     /*! Set user data pointer. */
     virtual void setUserData (void* ptr);
-      
-    /*! Get user data pointer. */
-    __forceinline void* getUserData() const {
-      return userPtr;
-    }
 
     /*! interpolates user data to the specified u/v location */
     virtual void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) {
@@ -486,7 +655,6 @@ namespace isa
     RTCGeometryFlags flags;    //!< flags of geometry
     bool enabled;              //!< true if geometry is enabled
     bool modified;             //!< true if geometry is modified
-    void* userPtr;             //!< user pointer
     unsigned mask;             //!< for masking out geometry
     std::atomic<size_t> used;  //!< counts by how many enabled instances this geometry is used
     

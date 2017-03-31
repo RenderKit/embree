@@ -227,6 +227,10 @@ namespace isa
     std::cout << std::endl;
   }
 
+  SceneInterface* Device::newScene (RTCSceneFlags flags, RTCAlgorithmFlags aflags) {
+    return new Scene(this,flags,aflags);
+  }
+
   void Device::setDeviceErrorCode(RTCError error)
   {
     RTCError* stored_error = errorHandler.error();
@@ -260,11 +264,14 @@ namespace isa
   void Device::process_error(Device* device, RTCError error, const char* str)
   { 
     /* store global error code when device construction failed */
-    if (!device)
-      return setThreadErrorCode(error);
+    if (!device) return setThreadErrorCode(error);
+    else         return device->processError(error,str);
+  }
 
+  void Device::processError(RTCError error, const char* str)
+  { 
     /* print error when in verbose mode */
-    if (device->verbosity(1)) 
+    if (verbosity(1)) 
     {
       switch (error) {
       case RTC_NO_ERROR         : std::cerr << "Embree: No error"; break;
@@ -280,13 +287,13 @@ namespace isa
     }
 
     /* call user specified error callback */
-    if (device->error_function) 
-      device->error_function(error,str); 
-    if (device->error_function2) 
-      device->error_function2(device->error_function_userptr,error,str); 
+    if (error_function) 
+      error_function(error,str); 
+    if (error_function2) 
+      error_function2(error_function_userptr,error,str); 
 
     /* record error code */
-    device->setDeviceErrorCode(error);
+    setDeviceErrorCode(error);
   }
 
   void Device::memoryMonitor(ssize_t bytes, bool post)

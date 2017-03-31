@@ -31,6 +31,8 @@
 
 namespace embree
 { 
+  void process_error(DeviceInterface* device, RTCError error, const char* str);
+
   namespace isa // FIXME: support more ISAs for builders
   {
     struct BVH
