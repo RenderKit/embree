@@ -39,12 +39,6 @@ namespace embree
 {
 namespace isa
 {
-  /*! some global variables that can be set via rtcSetParameter1i for debugging purposes */
-  ssize_t Device::debug_int0 = 0;
-  ssize_t Device::debug_int1 = 0;
-  ssize_t Device::debug_int2 = 0;
-  ssize_t Device::debug_int3 = 0;
-
   DECLARE_SYMBOL2(RayStreamFilterFuncs,rayStreamFilterFuncs);
 
   Device::Device (const char* cfg, bool singledevice)

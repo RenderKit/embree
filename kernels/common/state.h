@@ -39,6 +39,13 @@ namespace embree
     static void setCacheSize(DeviceInterface* device, size_t bytes);
     static void setNumThreads(DeviceInterface* device, size_t numThreads);
     static bool unsetNumThreads(DeviceInterface* device);
+
+    /*! some variables that can be set via rtcSetParameter1i for debugging purposes */
+  public:
+    static ssize_t debug_int0;
+    static ssize_t debug_int1;
+    static ssize_t debug_int2;
+    static ssize_t debug_int3;
   };
 
 namespace isa

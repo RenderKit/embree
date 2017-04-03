@@ -58,6 +58,12 @@ namespace embree
   static std::map<DeviceInterface*,size_t> g_cache_size_map;
   static std::map<DeviceInterface*,size_t> g_num_threads_map;
 
+  /*! some global variables that can be set via rtcSetParameter1i for debugging purposes */
+  ssize_t DeviceInterface::debug_int0 = 0;
+  ssize_t DeviceInterface::debug_int1 = 0;
+  ssize_t DeviceInterface::debug_int2 = 0;
+  ssize_t DeviceInterface::debug_int3 = 0;
+
   size_t DeviceInterface::getMaxNumThreads()
   {
     size_t maxNumThreads = 0;
