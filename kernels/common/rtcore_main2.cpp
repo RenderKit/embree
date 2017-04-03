@@ -47,12 +47,52 @@ namespace embree
     *stored_error = RTC_NO_ERROR;
     return error;
   }
-
+  
   void process_error(DeviceInterface* device, RTCError error, const char* str)
   {
     /* store global error code when device construction failed */
     if (!device) return setThreadErrorCode(error);
     else         return device->processError(error,str);
+  }
+
+  static std::map<DeviceInterface*,size_t> g_cache_size_map;
+  static std::map<DeviceInterface*,size_t> g_num_threads_map;
+
+  size_t DeviceInterface::getMaxNumThreads()
+  {
+    size_t maxNumThreads = 0;
+    for (std::map<DeviceInterface*,size_t>::iterator i=g_num_threads_map.begin(); i != g_num_threads_map.end(); i++)
+      maxNumThreads = max(maxNumThreads, (*i).second);
+    if (maxNumThreads == 0)
+      maxNumThreads = std::numeric_limits<size_t>::max();
+    return maxNumThreads;
+  }
+
+  size_t DeviceInterface::getMaxCacheSize()
+  {
+    size_t maxCacheSize = 0;
+    for (std::map<DeviceInterface*,size_t>::iterator i=g_cache_size_map.begin(); i!= g_cache_size_map.end(); i++)
+      maxCacheSize = max(maxCacheSize, (*i).second);
+    return maxCacheSize;
+  }
+ 
+  void DeviceInterface::setCacheSize(DeviceInterface* device, size_t bytes) 
+  {
+    if (bytes == 0) g_cache_size_map.erase(device);
+    else            g_cache_size_map[device] = bytes;
+  }
+
+  void DeviceInterface::setNumThreads(DeviceInterface* device, size_t numThreads) 
+  {
+    if (numThreads == 0) 
+      g_num_threads_map[device] = std::numeric_limits<size_t>::max();
+    else 
+      g_num_threads_map[device] = numThreads;
+  }
+
+  bool DeviceInterface::unsetNumThreads(DeviceInterface* device) {
+    g_num_threads_map.erase(device);
+    return g_num_threads_map.size() == 0;
   }
 
   __forceinline bool hasISA(int _isa) {

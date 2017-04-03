@@ -33,6 +33,12 @@ namespace embree
     virtual void setMemoryMonitorFunction(RTCMemoryMonitorFunc2 fptr, void* uptr) = 0;
     virtual void processError(RTCError error, const char* str) = 0;
     virtual SceneInterface* newScene (RTCSceneFlags flags, RTCAlgorithmFlags aflags) = 0;
+
+    static size_t getMaxNumThreads();
+    static size_t getMaxCacheSize();
+    static void setCacheSize(DeviceInterface* device, size_t bytes);
+    static void setNumThreads(DeviceInterface* device, size_t numThreads);
+    static bool unsetNumThreads(DeviceInterface* device);
   };
 
 namespace isa

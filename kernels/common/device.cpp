@@ -47,10 +47,6 @@ namespace isa
 
   DECLARE_SYMBOL2(RayStreamFilterFuncs,rayStreamFilterFuncs);
 
-  static MutexSys g_mutex;
-  static std::map<Device*,size_t> g_cache_size_map;
-  static std::map<Device*,size_t> g_num_threads_map;
-
   Device::Device (const char* cfg, bool singledevice)
     : State(singledevice)
   {
@@ -292,47 +288,20 @@ namespace isa
       }
     }
   }
-
-  size_t getMaxNumThreads()
-  {
-    size_t maxNumThreads = 0;
-    for (std::map<Device*,size_t>::iterator i=g_num_threads_map.begin(); i != g_num_threads_map.end(); i++)
-      maxNumThreads = max(maxNumThreads, (*i).second);
-    if (maxNumThreads == 0)
-      maxNumThreads = std::numeric_limits<size_t>::max();
-    return maxNumThreads;
-  }
-
-  size_t getMaxCacheSize()
-  {
-    size_t maxCacheSize = 0;
-    for (std::map<Device*,size_t>::iterator i=g_cache_size_map.begin(); i!= g_cache_size_map.end(); i++)
-      maxCacheSize = max(maxCacheSize, (*i).second);
-    return maxCacheSize;
-  }
  
   void Device::setCacheSize(size_t bytes) 
   {
 #if defined(EMBREE_GEOMETRY_SUBDIV)
-    Lock<MutexSys> lock(g_mutex);
-    if (bytes == 0) g_cache_size_map.erase(this);
-    else            g_cache_size_map[this] = bytes;
-    
-    size_t maxCacheSize = getMaxCacheSize();
+    DeviceInterface::setCacheSize(this,bytes);
+    size_t maxCacheSize = DeviceInterface::getMaxCacheSize();
     resizeTessellationCache(maxCacheSize);
 #endif
   }
 
   void Device::initTaskingSystem(size_t numThreads) 
   {
-    Lock<MutexSys> lock(g_mutex);
-    if (numThreads == 0) 
-      g_num_threads_map[this] = std::numeric_limits<size_t>::max();
-    else 
-      g_num_threads_map[this] = numThreads;
-
-    /* create task scheduler */
-    size_t maxNumThreads = getMaxNumThreads();
+    DeviceInterface::setNumThreads(this,numThreads);
+    size_t maxNumThreads = DeviceInterface::getMaxNumThreads();
     TaskScheduler::create(maxNumThreads,State::set_affinity,State::start_threads);
 #if USE_TASK_ARENA
     arena = make_unique(new tbb::task_arena((int)min(maxNumThreads,TaskScheduler::threadCount())));
@@ -341,16 +310,13 @@ namespace isa
 
   void Device::exitTaskingSystem() 
   {
-    Lock<MutexSys> lock(g_mutex);
-    g_num_threads_map.erase(this);
-
     /* terminate tasking system */
-    if (g_num_threads_map.size() == 0) {
+    if (DeviceInterface::unsetNumThreads(this)) {
       TaskScheduler::destroy();
     } 
     /* or configure new number of threads */
     else {
-      size_t maxNumThreads = getMaxNumThreads();
+      size_t maxNumThreads = DeviceInterface::getMaxNumThreads();
       TaskScheduler::create(maxNumThreads,State::set_affinity,State::start_threads);
     }
 #if USE_TASK_ARENA
