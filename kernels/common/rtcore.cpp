@@ -28,7 +28,7 @@
 #include "../../include/embree2/rtcore_ray.h"
 
 namespace embree
-{  
+{ 
 namespace isa
 {
   /* mutex to make API thread safe */
@@ -38,9 +38,15 @@ namespace isa
     Device::process_error(device,error,str);
   }
 
+#if 1
+  RTCORE_API DeviceInterface* createDevice(const char* cfg, bool single) {
+    return new Device(cfg,single);
+  }
+#else
   RTCORE_API2 DeviceInterface* createDevice(const char* cfg, bool single) {
     return new Device(cfg,single);
   }
+#endif
 
   RTCORE_API RTCDevice rtcNewDevice(const char* cfg)
   {

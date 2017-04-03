@@ -1120,7 +1120,6 @@ namespace isa
   {
 #if defined(__TARGET_SIMD16__) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
-    RTCORE_VERIFY_HANDLE(hscene);
     if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
     if (((size_t)valid) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "mask not aligned to 64 bytes");   
     if (((size_t)&ray ) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
@@ -1138,7 +1137,6 @@ namespace isa
   {
 #if defined(__TARGET_SIMD16__) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
-    RTCORE_VERIFY_HANDLE(hscene);
     if (isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
     if (((size_t)valid) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "mask not aligned to 64 bytes");   
     if (((size_t)&ray ) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   

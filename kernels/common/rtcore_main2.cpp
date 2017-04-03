@@ -104,7 +104,7 @@ namespace embree
   namespace avx512knl { extern DeviceInterface* createDevice(const char* cfg, bool single); }
   namespace avx512skx { extern DeviceInterface* createDevice(const char* cfg, bool single); }
 
-#if 0
+#if 1
   DeviceInterface* createDevice(const char* cfg, bool single)
   {
     DeviceInterface* (*newDevice) (const char* cfg, bool single) = nullptr;
