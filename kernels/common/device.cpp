@@ -41,20 +41,31 @@ namespace isa
 {
   DECLARE_SYMBOL2(RayStreamFilterFuncs,rayStreamFilterFuncs);
 
+  Device::Device (const State& state)
+    : State(state) 
+  {
+    init();
+  }
+
   Device::Device (const char* cfg, bool singledevice)
-    : State(singledevice)
+    : State(cfg,singledevice)
+  {
+    init();
+  }
+
+  void Device::init()
   {
     /* check CPU */
     if (!hasISA(ISA)) 
       throw_RTCError(RTC_UNSUPPORTED_CPU,"CPU does not support " ISA_STR);
 
-    /* initialize global state */
-    State::parseString(cfg);
-    if (!ignore_config_files && FileName::executableFolder() != FileName(""))
-      State::parseFile(FileName::executableFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
-    if (!ignore_config_files && FileName::homeFolder() != FileName(""))
-      State::parseFile(FileName::homeFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
-    State::verify();
+    error_function = nullptr;
+    error_function2 = nullptr;
+    error_function_userptr = nullptr;
+
+    memory_monitor_function = nullptr;
+    memory_monitor_function2 = nullptr;
+    memory_monitor_userptr = nullptr;
 
     /*! do some internal tests */
     assert(Cylinder::verify());
@@ -266,16 +277,16 @@ namespace isa
 
   void Device::memoryMonitor(ssize_t bytes, bool post)
   {
-    if (State::memory_monitor_function && bytes != 0) {
-      if (!State::memory_monitor_function(bytes,post)) {
+    if (memory_monitor_function && bytes != 0) {
+      if (!memory_monitor_function(bytes,post)) {
         if (bytes > 0) { // only throw exception when we allocate memory to never throw inside a destructor
           throw_RTCError(RTC_OUT_OF_MEMORY,"memory monitor forced termination");
         }
       }
     }
 
-    if (State::memory_monitor_function2 && bytes != 0) {
-      if (!State::memory_monitor_function2(State::memory_monitor_userptr,bytes,post)) {
+    if (memory_monitor_function2 && bytes != 0) {
+      if (!memory_monitor_function2(memory_monitor_userptr,bytes,post)) {
         if (bytes > 0) { // only throw exception when we allocate memory to never throw inside a destructor
           throw_RTCError(RTC_OUT_OF_MEMORY,"memory monitor forced termination");
         }

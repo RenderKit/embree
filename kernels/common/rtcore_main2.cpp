@@ -101,40 +101,40 @@ namespace embree
     return g_num_threads_map.size() == 0;
   }
 
-  __forceinline bool hasISA(int _isa) {
-    return (getCPUFeatures() & _isa) == _isa;
-  }
-
-  namespace sse2      { extern DeviceInterface* createDevice(const char* cfg, bool single); }
-  namespace sse42     { extern DeviceInterface* createDevice(const char* cfg, bool single); }
-  namespace avx       { extern DeviceInterface* createDevice(const char* cfg, bool single); }
-  namespace avx2      { extern DeviceInterface* createDevice(const char* cfg, bool single); }
-  namespace avx512knl { extern DeviceInterface* createDevice(const char* cfg, bool single); }
-  namespace avx512skx { extern DeviceInterface* createDevice(const char* cfg, bool single); }
+  namespace sse2      { extern DeviceInterface* createDevice(const State& state); }
+  namespace sse42     { extern DeviceInterface* createDevice(const State& state); }
+  namespace avx       { extern DeviceInterface* createDevice(const State& state); }
+  namespace avx2      { extern DeviceInterface* createDevice(const State& state); }
+  namespace avx512knl { extern DeviceInterface* createDevice(const State& state); }
+  namespace avx512skx { extern DeviceInterface* createDevice(const State& state); }
 
 #if 1
   DeviceInterface* createDevice(const char* cfg, bool single)
   {
-    DeviceInterface* (*newDevice) (const char* cfg, bool single) = nullptr;
+    const State state(cfg,single);
+    DeviceInterface* (*newDevice) (const State& state) = nullptr;
 #if defined(__TARGET_SSE2__)
-    if (hasISA(SSE2)) newDevice = &sse2::createDevice;
+    if (state.hasISA(SSE2)) newDevice = &sse2::createDevice;
 #endif
 #if defined(__TARGET_SSE42__)
-    if (hasISA(SSE42)) newDevice = &sse42::createDevice;
+    if (state.hasISA(SSE42)) newDevice = &sse42::createDevice;
 #endif
 #if defined(__TARGET_AVX__)
-    if (hasISA(AVX)) newDevice = &avx::createDevice;
+    if (state.hasISA(AVX)) newDevice = &avx::createDevice;
 #endif
 #if defined(__TARGET_AVX2__)
-    if (hasISA(AVX2)) newDevice = &avx2::createDevice;
+    if (state.hasISA(AVX2)) newDevice = &avx2::createDevice;
 #endif
 #if defined(__TARGET_AVX512KNL__)
-    if (hasISA(AVX512KNL)) newDevice = &avx512knl::createDevice;
+    if (state.hasISA(AVX512KNL)) newDevice = &avx512knl::createDevice;
 #endif
 #if defined(__TARGET_AVX512SKX__)
-    if (hasISA(AVX512SKX)) newDevice = &avx512skx::createDevice;
+    if (state.hasISA(AVX512SKX)) newDevice = &avx512skx::createDevice;
 #endif
-    return newDevice(cfg,single);
+    if (newDevice == nullptr) 
+      throw_RTCError(RTC_UNKNOWN_ERROR,"cannot create device");
+    
+    return newDevice(state);
   }
 #else
   DeviceInterface* createDevice(const char* cfg, bool single)

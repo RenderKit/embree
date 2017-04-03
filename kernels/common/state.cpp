@@ -19,9 +19,9 @@
 
 namespace embree
 {
-namespace isa
-{
-  State::State (bool singledevice) 
+//namespace isa
+//{
+  State::State (const char* cfg, bool singledevice) 
     : enabled_cpu_features(getCPUFeatures()),
       enabled_builder_cpu_features(enabled_cpu_features)
   {
@@ -109,19 +109,19 @@ namespace isa
 #endif
     hugepages_success = true;
 
-    error_function = nullptr;
-    error_function2 = nullptr;
-    error_function_userptr = nullptr;
-
-    memory_monitor_function = nullptr;
-    memory_monitor_function2 = nullptr;
-    memory_monitor_userptr = nullptr;
+    /* initialize global state */
+    parseString(cfg);
+    if (!ignore_config_files && FileName::executableFolder() != FileName(""))
+      parseFile(FileName::executableFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
+    if (!ignore_config_files && FileName::homeFolder() != FileName(""))
+      parseFile(FileName::homeFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
+    verify();
   }
 
   State::~State() {
   }
 
-  bool State::hasISA(const int isa) {
+  bool State::hasISA(const int isa) const {
     return (enabled_cpu_features & isa) == isa;
   }
 
@@ -424,5 +424,5 @@ namespace isa
     std::cout << "  min_leaf_size = " << object_accel_mb_min_leaf_size << std::endl;
     std::cout << "  max_leaf_size = " << object_accel_mb_max_leaf_size << std::endl;
   }
-}
+//}
 }

@@ -38,8 +38,8 @@ namespace embree
 namespace isa
 {
 #if 1
-  RTCORE_API DeviceInterface* createDevice(const char* cfg, bool single) {
-    return new Device(cfg,single);
+  RTCORE_API DeviceInterface* createDevice(const State& state) {
+    return new Device(state);
   }
 #else
   RTCORE_API2 DeviceInterface* createDevice(const char* cfg, bool single) {

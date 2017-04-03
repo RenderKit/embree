@@ -26,6 +26,7 @@ SOURCE_GROUP("" FILES embree.rc)
 SET(EMBREE_LIBRARY_FILES 
   embree.rc
 # common/rtcore_main.cpp
+  common/state.cpp
   common/rtcore_main2.cpp
   common/rtcore_builder.cpp
   common/tasksys.cpp
@@ -53,7 +54,6 @@ SET(EMBREE_LIBRARY_FILES_CORE
   common/device.cpp
   common/acceln.cpp
   common/accelset.cpp
-  common/state.cpp
   common/rtcore.cpp
   common/scene.cpp
   common/geometry.cpp
