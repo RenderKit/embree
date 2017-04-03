@@ -34,8 +34,28 @@ namespace isa
   /* mutex to make API thread safe */
   static MutexSys g_mutex;
 
-  static void process_error(Device* device, RTCError error, const char* str) {
-    Device::process_error(device,error,str);
+  static ErrorHandler g_errorHandler;
+  
+  static void setThreadErrorCode(RTCError error)
+  {
+    RTCError* stored_error = g_errorHandler.error();
+    if (*stored_error == RTC_NO_ERROR)
+      *stored_error = error;
+  }
+
+  static RTCError getThreadErrorCode()
+  {
+    RTCError* stored_error = g_errorHandler.error();
+    RTCError error = *stored_error;
+    *stored_error = RTC_NO_ERROR;
+    return error;
+  }
+
+  void process_error(Device* device, RTCError error, const char* str)
+  {
+    /* store global error code when device construction failed */
+    if (!device) return setThreadErrorCode(error);
+    else         return device->processError(error,str);
   }
 
 #if 1
@@ -139,7 +159,7 @@ namespace isa
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcGetError);
-    if (g_device == nullptr) return Device::getThreadErrorCode();
+    if (g_device == nullptr) return getThreadErrorCode();
     else                     return g_device->getDeviceErrorCode();
     RTCORE_CATCH_END(g_device);
     return RTC_UNKNOWN_ERROR;
@@ -150,7 +170,7 @@ namespace isa
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcDeviceGetError);
-    if (device == nullptr) return Device::getThreadErrorCode();
+    if (device == nullptr) return getThreadErrorCode();
     else                   return device->getDeviceErrorCode();
     RTCORE_CATCH_END(device);
     return RTC_UNKNOWN_ERROR;

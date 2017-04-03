@@ -150,22 +150,8 @@ namespace isa
     bool hugepages_success;                //!< status for enabling huge pages
 
   public:
-    struct ErrorHandler
-    {
-    public:
-      ErrorHandler();
-      ~ErrorHandler();
-      RTCError* error();
-
-    public:
-      tls_t thread_error;
-      std::vector<RTCError*> thread_errors;
-      MutexSys errors_mutex;
-    };
     ErrorHandler errorHandler;
-    static ErrorHandler g_errorHandler;
 
-  public:
     void setErrorFunction(RTCErrorFunc fptr) 
     {
       error_function = fptr;

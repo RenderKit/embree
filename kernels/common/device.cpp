@@ -246,28 +246,6 @@ namespace isa
     return error;
   }
 
-  void Device::setThreadErrorCode(RTCError error)
-  {
-    RTCError* stored_error = g_errorHandler.error();
-    if (*stored_error == RTC_NO_ERROR)
-      *stored_error = error;
-  }
-
-  RTCError Device::getThreadErrorCode()
-  {
-    RTCError* stored_error = g_errorHandler.error();
-    RTCError error = *stored_error;
-    *stored_error = RTC_NO_ERROR;
-    return error;
-  }
-
-  void Device::process_error(Device* device, RTCError error, const char* str)
-  { 
-    /* store global error code when device construction failed */
-    if (!device) return setThreadErrorCode(error);
-    else         return device->processError(error,str);
-  }
-
   void Device::processError(RTCError error, const char* str)
   { 
     /* print error when in verbose mode */

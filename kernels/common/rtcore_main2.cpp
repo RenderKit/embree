@@ -29,43 +29,6 @@
 
 namespace embree
 {  
-  struct ErrorHandler
-  {
-  public:
-    ErrorHandler();
-    ~ErrorHandler();
-    RTCError* error();
-    
-  public:
-    tls_t thread_error;
-    std::vector<RTCError*> thread_errors;
-    MutexSys errors_mutex;
-  };
-
-  ErrorHandler::ErrorHandler()
-    : thread_error(createTls()) {}
-  
-  ErrorHandler::~ErrorHandler()
-  {
-    Lock<MutexSys> lock(errors_mutex);
-    for (size_t i=0; i<thread_errors.size(); i++)
-      delete thread_errors[i];
-    destroyTls(thread_error);
-    thread_errors.clear();
-  }
-
-  RTCError* ErrorHandler::error() 
-  {
-    RTCError* stored_error = (RTCError*) getTls(thread_error);
-    if (stored_error) return stored_error;
-
-    Lock<MutexSys> lock(errors_mutex);
-    stored_error = new RTCError(RTC_NO_ERROR);
-    thread_errors.push_back(stored_error);
-    setTls(thread_error,stored_error);
-    return stored_error;
-  }
-
   static ErrorHandler g_errorHandler;
   
   static void setThreadErrorCode(RTCError error)
@@ -88,7 +51,7 @@ namespace embree
     /* store global error code when device construction failed */
     if (!device) return setThreadErrorCode(error);
     else         return device->processError(error,str);
-   }
+  }
 
   __forceinline bool hasISA(int _isa) {
     return (getCPUFeatures() & _isa) == _isa;

@@ -51,14 +51,7 @@ namespace isa
     /*! returns and clears the error code */
     RTCError getDeviceErrorCode();
 
-    /*! sets the error code */
-    static void setThreadErrorCode(RTCError error);
-
-    /*! returns and clears the error code */
-    static RTCError getThreadErrorCode();
-
     /*! processes error codes, do not call directly */
-    static void process_error(Device* device, RTCError error, const char* str);
     virtual void processError(RTCError error, const char* str);
 
     /*! invokes the memory monitor callback */

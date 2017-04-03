@@ -21,32 +21,6 @@ namespace embree
 {
 namespace isa
 {
-  State::ErrorHandler State::g_errorHandler;
-
-  State::ErrorHandler::ErrorHandler()
-    : thread_error(createTls()) {}
-
-  State::ErrorHandler::~ErrorHandler()
-  {
-    Lock<MutexSys> lock(errors_mutex);
-    for (size_t i=0; i<thread_errors.size(); i++)
-      delete thread_errors[i];
-    destroyTls(thread_error);
-    thread_errors.clear();
-  }
-
-  RTCError* State::ErrorHandler::error() 
-  {
-    RTCError* stored_error = (RTCError*) getTls(thread_error);
-    if (stored_error) return stored_error;
-
-    Lock<MutexSys> lock(errors_mutex);
-    stored_error = new RTCError(RTC_NO_ERROR);
-    thread_errors.push_back(stored_error);
-    setTls(thread_error,stored_error);
-    return stored_error;
-  }
-
   State::State (bool singledevice) 
     : enabled_cpu_features(getCPUFeatures()),
       enabled_builder_cpu_features(enabled_cpu_features)

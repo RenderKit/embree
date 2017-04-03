@@ -105,5 +105,40 @@ namespace embree
 
 #define RTC_BUILD_SETTINGS_HAS(settings,member)                 \
   (settings.size > (offsetof(RTCBuildSettings,member)+sizeof(settings.member))) 
+
+  struct ErrorHandler
+  {
+  public:
+    ErrorHandler()
+      : thread_error(createTls()) {}
+
+    ~ErrorHandler()
+    {
+      Lock<MutexSys> lock(errors_mutex);
+      for (size_t i=0; i<thread_errors.size(); i++)
+        delete thread_errors[i];
+      destroyTls(thread_error);
+      thread_errors.clear();
+    }
+
+    RTCError* error()
+    {
+      RTCError* stored_error = (RTCError*) getTls(thread_error);
+      if (stored_error) return stored_error;
+      
+      Lock<MutexSys> lock(errors_mutex);
+      stored_error = new RTCError(RTC_NO_ERROR);
+      thread_errors.push_back(stored_error);
+      setTls(thread_error,stored_error);
+      return stored_error;
+    }
+    
+  public:
+    tls_t thread_error;
+    std::vector<RTCError*> thread_errors;
+    MutexSys errors_mutex;
+  };
+
+
 //}
 }
