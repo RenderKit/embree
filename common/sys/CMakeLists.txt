@@ -29,7 +29,6 @@ ADD_LIBRARY(sys STATIC
   mutex.cpp
   condition.cpp
   barrier.cpp
-  ../../kernels/subdiv/tessellation_cache.cpp
 )
 
 TARGET_LINK_LIBRARIES(sys ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})

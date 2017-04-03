@@ -45,7 +45,7 @@ ENDIF()
 IF (EMBREE_GEOMETRY_SUBDIV)
   SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
     subdiv/catmullclark_coefficients.cpp
- #  subdiv/tessellation_cache.cpp
+    subdiv/tessellation_cache.cpp
 )
 ENDIF()
 
