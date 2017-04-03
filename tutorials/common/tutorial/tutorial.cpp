@@ -487,6 +487,7 @@ namespace embree
       size_t numTotalFrames = skipBenchmarkFrames + numBenchmarkFrames;
       for (size_t i=0; i<skipBenchmarkFrames; i++)
       {
+        initRayStats();
         double t0 = getSeconds();
         device_render(pixels,width,height,0.0f,ispccamera);
         double t1 = getSeconds();
