@@ -252,6 +252,7 @@ namespace isa
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetProgressMonitorFunction);
     RTCORE_VERIFY_HANDLE(hscene);
+    Lock<MutexSys> lock(g_api_mutex);
     scene->setProgressMonitorFunction(func,ptr);
     RTCORE_CATCH_END(scene->device);
   }
