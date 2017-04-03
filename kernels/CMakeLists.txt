@@ -91,7 +91,6 @@ IF (EMBREE_GEOMETRY_SUBDIV)
   SET(EMBREE_LIBRARY_FILES_CORE ${EMBREE_LIBRARY_FILES_CORE}
   common/scene_subdiv_mesh.cpp
   common/scene_subdiv_mesh_avx.cpp
-#  subdiv/tessellation_cache.cpp
   subdiv/subdivpatch1base.cpp
   geometry/grid_soa.cpp	
   subdiv/subdivpatch1base_eval.cpp
