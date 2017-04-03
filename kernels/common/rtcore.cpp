@@ -47,6 +47,7 @@ namespace isa
   }
 #endif
 
+#if 0
   RTCORE_API RTCDevice rtcNewDevice(const char* cfg)
   {
     RTCORE_CATCH_BEGIN;
@@ -1830,6 +1831,7 @@ namespace isa
     scene->get(geomID)->interpolateN(valid_i,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats); // this call is on purpose not thread safe
     RTCORE_CATCH_END(scene->device);
   }
+#endif
 #endif
 }
 }
