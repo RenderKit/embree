@@ -19,13 +19,13 @@
 
 namespace embree
 {
-namespace isa
-{
+//namespace isa
+//{
   struct fast_allocator_regression_test : public RegressionTest
   {
     BarrierSys barrier;
     std::atomic<size_t> numFailed;
-    std::unique_ptr<FastAllocator> alloc;
+    std::unique_ptr<isa::FastAllocator> alloc;
 
     fast_allocator_regression_test() 
       : RegressionTest("fast_allocator_regression_test"), numFailed(0)
@@ -35,7 +35,7 @@ namespace isa
 
     static void thread_alloc(fast_allocator_regression_test* This)
     {
-      FastAllocator::ThreadLocal2* threadalloc = This->alloc->threadLocal2();
+      isa::FastAllocator::ThreadLocal2* threadalloc = This->alloc->threadLocal2();
 
       size_t* ptrs[1000];
       for (size_t j=0; j<1000; j++)
@@ -55,7 +55,7 @@ namespace isa
     
     bool run ()
     {
-      alloc = make_unique(new FastAllocator(nullptr,false));
+      alloc = make_unique(new isa::FastAllocator(nullptr,false));
       numFailed.store(0);
 
       size_t numThreads = getNumberOfLogicalThreads();
@@ -85,6 +85,6 @@ namespace isa
   };
 
   fast_allocator_regression_test fast_allocator_regression;
-}
+//}
 }
 
