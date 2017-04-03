@@ -18,8 +18,8 @@
 
 namespace embree
 {
-namespace isa
-{
+//namespace isa
+//{
   CatmullClarkPrecomputedCoefficients CatmullClarkPrecomputedCoefficients::table;
 
   CatmullClarkPrecomputedCoefficients::CatmullClarkPrecomputedCoefficients()
@@ -52,5 +52,5 @@ namespace isa
       delete [] table_limittangent_b[n];
     }
   }
-}
+//}
 }

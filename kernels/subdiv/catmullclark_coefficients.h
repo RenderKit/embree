@@ -20,8 +20,8 @@
 
 namespace embree
 {
-namespace isa
-{
+//namespace isa
+//{
   static const size_t MAX_PATCH_VALENCE = 16;         //!< maximal number of vertices of a patch
   static const size_t MAX_RING_FACE_VALENCE = 32;     //!< maximal number of faces per ring
   static const size_t MAX_RING_EDGE_VALENCE = 2*32;   //!< maximal number of edges per ring
@@ -97,5 +97,5 @@ namespace isa
     CatmullClarkPrecomputedCoefficients();    
     ~CatmullClarkPrecomputedCoefficients();    
   };
-}
+//}
 }
