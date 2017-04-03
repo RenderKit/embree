@@ -80,26 +80,26 @@ namespace embree
     
   public:
     
-    __forceinline const ParseLocation& loc() {
+    const ParseLocation& loc() {
       if (future == 0) push_back(nextHelper());
       return buffer[(start+past)%BUF_SIZE].second;
     }
-    __forceinline T get() {
+    T get() {
       if (future == 0) push_back(nextHelper());
       T t = buffer[(start+past)%BUF_SIZE].first;
       past++; future--;
       return t;
     }
-    __forceinline const T& peek() {
+    const T& peek() {
       if (future == 0) push_back(nextHelper());
       return buffer[(start+past)%BUF_SIZE].first;
     }
-    __forceinline const T& unget(size_t n = 1) {
+    const T& unget(size_t n = 1) {
       if (past < n) THROW_RUNTIME_ERROR ("cannot unget that many items");
       past -= n; future += n;
       return peek();
     }
-    __forceinline void drop() {
+    void drop() {
       if (future == 0) push_back(nextHelper());
       past++; future--;
     }
