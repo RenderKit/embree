@@ -28,36 +28,15 @@
 #include "../../include/embree2/rtcore_ray.h"
 
 namespace embree
-{ 
+{
+  extern MutexSys g_api_mutex;
+
+  void setThreadErrorCode(RTCError error);
+  RTCError getThreadErrorCode();
+  void process_error(DeviceInterface* device, RTCError error, const char* str);
+
 namespace isa
 {
-  /* mutex to make API thread safe */
-  static MutexSys g_mutex;
-
-  static ErrorHandler g_errorHandler;
-  
-  static void setThreadErrorCode(RTCError error)
-  {
-    RTCError* stored_error = g_errorHandler.error();
-    if (*stored_error == RTC_NO_ERROR)
-      *stored_error = error;
-  }
-
-  static RTCError getThreadErrorCode()
-  {
-    RTCError* stored_error = g_errorHandler.error();
-    RTCError error = *stored_error;
-    *stored_error = RTC_NO_ERROR;
-    return error;
-  }
-
-  void process_error(Device* device, RTCError error, const char* str)
-  {
-    /* store global error code when device construction failed */
-    if (!device) return setThreadErrorCode(error);
-    else         return device->processError(error,str);
-  }
-
 #if 1
   RTCORE_API DeviceInterface* createDevice(const char* cfg, bool single) {
     return new Device(cfg,single);
@@ -72,7 +51,7 @@ namespace isa
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewDevice);
-    Lock<MutexSys> lock(g_mutex);
+    Lock<MutexSys> lock(g_api_mutex);
     return (RTCDevice) new Device(cfg,false);
     RTCORE_CATCH_END(nullptr);
     return (RTCDevice) nullptr;
@@ -83,7 +62,7 @@ namespace isa
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcDeleteDevice);
     RTCORE_VERIFY_HANDLE(device);
-    Lock<MutexSys> lock(g_mutex);
+    Lock<MutexSys> lock(g_api_mutex);
     delete (Device*) device;
     RTCORE_CATCH_END(nullptr);
   }
@@ -95,7 +74,7 @@ namespace isa
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcInit);
-    Lock<MutexSys> lock(g_mutex);
+    Lock<MutexSys> lock(g_api_mutex);
     if (g_device) throw_RTCError(RTC_INVALID_OPERATION,"already initialized");
     g_device = new Device(cfg,true);
     RTCORE_CATCH_END(g_device);
@@ -105,7 +84,7 @@ namespace isa
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcExit);
-    Lock<MutexSys> lock(g_mutex);
+    Lock<MutexSys> lock(g_api_mutex);
     if (!g_device) throw_RTCError(RTC_INVALID_OPERATION,"rtcInit has to get called before rtcExit");
     delete g_device; g_device = nullptr;
     RTCORE_CATCH_END(g_device);
@@ -115,7 +94,7 @@ namespace isa
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetParameter1i);
-    Lock<MutexSys> lock(g_mutex);
+    Lock<MutexSys> lock(g_api_mutex);
     if (g_device) g_device->setParameter1i(parm,val);
     RTCORE_CATCH_END(g_device);
   }
@@ -125,7 +104,7 @@ namespace isa
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcGetParameter1i);
     assert(g_device);
-    Lock<MutexSys> lock(g_mutex);
+    Lock<MutexSys> lock(g_api_mutex);
     return g_device->getParameter1i(parm);
     RTCORE_CATCH_END(g_device);
     return 0;
@@ -138,7 +117,7 @@ namespace isa
     RTCORE_TRACE(rtcDeviceSetParameter1i);
     const bool internal_parm = (size_t)parm >= 1000000 && (size_t)parm < 1000004;
     if (!internal_parm) RTCORE_VERIFY_HANDLE(hdevice); // allow NULL device for special internal settings
-    Lock<MutexSys> lock(g_mutex);
+    Lock<MutexSys> lock(g_api_mutex);
     device->setParameter1i(parm,val);
     RTCORE_CATCH_END(device);
   }
@@ -149,7 +128,7 @@ namespace isa
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcDeviceGetParameter1i);
     RTCORE_VERIFY_HANDLE(hdevice);
-    Lock<MutexSys> lock(g_mutex);
+    Lock<MutexSys> lock(g_api_mutex);
     return device->getParameter1i(parm);
     RTCORE_CATCH_END(device);
     return 0;

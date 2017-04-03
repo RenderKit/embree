@@ -29,16 +29,18 @@
 
 namespace embree
 {  
+  MutexSys g_api_mutex;
+
   static ErrorHandler g_errorHandler;
   
-  static void setThreadErrorCode(RTCError error)
+  void setThreadErrorCode(RTCError error)
   {
     RTCError* stored_error = g_errorHandler.error();
     if (*stored_error == RTC_NO_ERROR)
       *stored_error = error;
   }
 
-  static RTCError getThreadErrorCode()
+  RTCError getThreadErrorCode()
   {
     RTCError* stored_error = g_errorHandler.error();
     RTCError error = *stored_error;
@@ -56,9 +58,6 @@ namespace embree
   __forceinline bool hasISA(int _isa) {
     return (getCPUFeatures() & _isa) == _isa;
   }
-
-  /* mutex to make API thread safe */
-  static MutexSys g_mutex;
 
   namespace sse2      { extern DeviceInterface* createDevice(const char* cfg, bool single); }
   namespace sse42     { extern DeviceInterface* createDevice(const char* cfg, bool single); }
@@ -133,7 +132,7 @@ namespace embree
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewDevice);
-    Lock<MutexSys> lock(g_mutex);
+    Lock<MutexSys> lock(g_api_mutex);
     return (RTCDevice) createDevice(cfg,false);
     RTCORE_CATCH_END(nullptr);
     return (RTCDevice) nullptr;
@@ -144,7 +143,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcDeleteDevice);
     RTCORE_VERIFY_HANDLE(device);
-    Lock<MutexSys> lock(g_mutex);
+    Lock<MutexSys> lock(g_api_mutex);
     delete (DeviceInterface*) device;
     RTCORE_CATCH_END(nullptr);
   }
@@ -156,7 +155,7 @@ namespace embree
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcInit);
-    Lock<MutexSys> lock(g_mutex);
+    Lock<MutexSys> lock(g_api_mutex);
     if (g_device) throw_RTCError(RTC_INVALID_OPERATION,"already initialized");
     g_device = createDevice(cfg,true);
     RTCORE_CATCH_END(g_device);
@@ -166,7 +165,7 @@ namespace embree
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcExit);
-    Lock<MutexSys> lock(g_mutex);
+    Lock<MutexSys> lock(g_api_mutex);
     if (!g_device) throw_RTCError(RTC_INVALID_OPERATION,"rtcInit has to get called before rtcExit");
     delete g_device; g_device = nullptr;
     RTCORE_CATCH_END(g_device);
@@ -176,7 +175,7 @@ namespace embree
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetParameter1i);
-    Lock<MutexSys> lock(g_mutex);
+    Lock<MutexSys> lock(g_api_mutex);
     if (g_device) g_device->setParameter1i(parm,val);
     RTCORE_CATCH_END(g_device);
   }
@@ -186,7 +185,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcGetParameter1i);
     assert(g_device);
-    Lock<MutexSys> lock(g_mutex);
+    Lock<MutexSys> lock(g_api_mutex);
     return g_device->getParameter1i(parm);
     RTCORE_CATCH_END(g_device);
     return 0;
@@ -199,7 +198,7 @@ namespace embree
     RTCORE_TRACE(rtcDeviceSetParameter1i);
     const bool internal_parm = (size_t)parm >= 1000000 && (size_t)parm < 1000004;
     if (!internal_parm) RTCORE_VERIFY_HANDLE(hdevice); // allow NULL device for special internal settings
-    Lock<MutexSys> lock(g_mutex);
+    Lock<MutexSys> lock(g_api_mutex);
     if (device) device->setParameter1i(parm,val);
     RTCORE_CATCH_END(device);
   }
@@ -210,7 +209,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcDeviceGetParameter1i);
     RTCORE_VERIFY_HANDLE(hdevice);
-    Lock<MutexSys> lock(g_mutex);
+    Lock<MutexSys> lock(g_api_mutex);
 
     size_t iparm = (size_t)parm;
 
