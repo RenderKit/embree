@@ -33,8 +33,7 @@ namespace embree
   lib_t openLibrary(const std::string& file)
   {
     std::string fullName = file+".dll";
-    FileName executable = getExecutableFileName();
-    HANDLE handle = LoadLibrary((executable.path() + fullName).c_str());
+    HANDLE handle = LoadLibrary(fullName.c_str());
     return lib_t(handle);
   }
 
@@ -69,15 +68,12 @@ namespace embree
     std::string fullName = "lib"+file+".so";
 #endif
     void* lib = dlopen(fullName.c_str(), RTLD_NOW);
-    if (lib) return lib_t(lib);
-    FileName executable = getExecutableFileName();
-    lib = dlopen((executable.path() + fullName).c_str(),RTLD_NOW);
     if (lib == nullptr) {
       const char* error = dlerror();
       if (error) { 
         THROW_RUNTIME_ERROR(error);
       } else {
-        THROW_RUNTIME_ERROR("could not load library "+executable.str());
+        THROW_RUNTIME_ERROR("could not load library "+fullName);
       }
     }
     return lib_t(lib);

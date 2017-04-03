@@ -14,11 +14,11 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-/*#ifdef _WIN32
-#  define RTCORE_API extern "C" __declspec(dllexport)
+#ifdef _WIN32
+#  define RTCORE_API2 extern "C" __declspec(dllexport)
 #else
-#  define RTCORE_API extern "C" __attribute__ ((visibility ("default")))
-#endif*/
+#  define RTCORE_API2 extern "C" __attribute__ ((visibility ("default")))
+#endif
 #define RTCORE_API
 
 #include "default.h"
@@ -38,7 +38,7 @@ namespace isa
     Device::process_error(device,error,str);
   }
 
-  DeviceInterface* createDevice(const char* cfg, bool single) {
+  RTCORE_API2 DeviceInterface* createDevice(const char* cfg, bool single) {
     return new Device(cfg,single);
   }
 
