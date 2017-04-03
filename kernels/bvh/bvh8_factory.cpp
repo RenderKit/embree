@@ -394,28 +394,28 @@ namespace isa
   void BVH8Factory::createTriangleMeshTriangle4Morton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     BVH8Factory* factory = mesh->parent->device->bvh8_factory.get();
-    accel = new BVH8(Triangle4::type,mesh->parent);
+    accel = new BVH8(Triangle4::type(),mesh->parent);
     builder = factory->BVH8Triangle4MeshBuilderMortonGeneral(accel,mesh,0);
   }
 
   void BVH8Factory::createTriangleMeshTriangle4vMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     BVH8Factory* factory = mesh->parent->device->bvh8_factory.get();
-    accel = new BVH8(Triangle4v::type,mesh->parent);
+    accel = new BVH8(Triangle4v::type(),mesh->parent);
     builder = factory->BVH8Triangle4vMeshBuilderMortonGeneral(accel,mesh,0);
   }
 
   void BVH8Factory::createTriangleMeshTriangle4iMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     BVH8Factory* factory = mesh->parent->device->bvh8_factory.get();
-    accel = new BVH8(Triangle4i::type,mesh->parent);
+    accel = new BVH8(Triangle4i::type(),mesh->parent);
     builder = factory->BVH8Triangle4iMeshBuilderMortonGeneral(accel,mesh,0); 
   }
 
   void BVH8Factory::createTriangleMeshTriangle4(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     BVH8Factory* factory = mesh->parent->device->bvh8_factory.get();
-    accel = new BVH8(Triangle4::type,mesh->parent);
+    accel = new BVH8(Triangle4::type(),mesh->parent);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH8Triangle4MeshBuilderSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH8Triangle4MeshRefitSAH(accel,mesh,0); break;
@@ -427,7 +427,7 @@ namespace isa
   void BVH8Factory::createTriangleMeshTriangle4v(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     BVH8Factory* factory = mesh->parent->device->bvh8_factory.get();
-    accel = new BVH8(Triangle4v::type,mesh->parent);
+    accel = new BVH8(Triangle4v::type(),mesh->parent);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH8Triangle4vMeshBuilderSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH8Triangle4vMeshRefitSAH(accel,mesh,0); break;
@@ -439,7 +439,7 @@ namespace isa
   void BVH8Factory::createTriangleMeshTriangle4i(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     BVH8Factory* factory = mesh->parent->device->bvh8_factory.get();
-    accel = new BVH8(Triangle4i::type,mesh->parent);
+    accel = new BVH8(Triangle4i::type(),mesh->parent);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH8Triangle4iMeshBuilderSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH8Triangle4iMeshRefitSAH(accel,mesh,0); break;
@@ -451,7 +451,7 @@ namespace isa
   void BVH8Factory::createQuadMeshQuad4v(QuadMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     BVH8Factory* factory = mesh->parent->device->bvh8_factory.get();
-    accel = new BVH8(Quad4v::type,mesh->parent);
+    accel = new BVH8(Quad4v::type(),mesh->parent);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH8Quad4vMeshBuilderSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH8Quad4vMeshRefitSAH(accel,mesh,0); break;
@@ -463,7 +463,7 @@ namespace isa
   void BVH8Factory::createQuadMeshQuad4vMorton(QuadMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     BVH8Factory* factory = mesh->parent->device->bvh8_factory.get();
-    accel = new BVH8(Quad4v::type,mesh->parent);
+    accel = new BVH8(Quad4v::type(),mesh->parent);
     builder = factory->BVH8Quad4vMeshBuilderMortonGeneral(accel,mesh,0);
   }
 
@@ -791,7 +791,7 @@ namespace isa
 
   Accel* BVH8Factory::BVH8OBBBezier1v(Scene* scene)
   {
-    BVH8* accel = new BVH8(Bezier1v::type,scene);
+    BVH8* accel = new BVH8(Bezier1v::type(),scene);
     Accel::Intersectors intersectors = BVH8Bezier1vIntersectors_OBB(accel);
     Builder* builder = BVH8Bezier1vBuilder_OBB_New(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
@@ -799,7 +799,7 @@ namespace isa
 
   Accel* BVH8Factory::BVH8OBBBezier1i(Scene* scene)
   {
-    BVH8* accel = new BVH8(Bezier1i::type,scene);
+    BVH8* accel = new BVH8(Bezier1i::type(),scene);
     Accel::Intersectors intersectors = BVH8Bezier1iIntersectors_OBB(accel);
     Builder* builder = BVH8Bezier1iBuilder_OBB_New(accel,scene,0);
     scene->needBezierVertices = true;
@@ -808,7 +808,7 @@ namespace isa
 
   Accel* BVH8Factory::BVH8OBBBezier1iMB(Scene* scene)
   {
-    BVH8* accel = new BVH8(Bezier1i::type,scene);
+    BVH8* accel = new BVH8(Bezier1i::type(),scene);
     Accel::Intersectors intersectors = BVH8Bezier1iMBIntersectors_OBB(accel);
     Builder* builder = BVH8Bezier1iMBBuilder_OBB_New(accel,scene,0);
     scene->needBezierVertices = true;
@@ -817,7 +817,7 @@ namespace isa
 
   Accel* BVH8Factory::BVH8Line4i(Scene* scene)
   {
-    BVH8* accel = new BVH8(Line4i::type,scene);
+    BVH8* accel = new BVH8(Line4i::type(),scene);
     Accel::Intersectors intersectors = BVH8Line4iIntersectors(accel);
     Builder* builder = nullptr;
     if      (scene->device->line_builder == "default"     ) builder = BVH8Line4iSceneBuilderSAH(accel,scene,0);
@@ -828,7 +828,7 @@ namespace isa
 
   Accel* BVH8Factory::BVH8Line4iMB(Scene* scene)
   {
-    BVH8* accel = new BVH8(Line4i::type,scene);
+    BVH8* accel = new BVH8(Line4i::type(),scene);
     Accel::Intersectors intersectors = BVH8Line4iMBIntersectors(accel);
     Builder* builder = nullptr;
     if      (scene->device->line_builder_mb == "default"     ) builder = BVH8Line4iMBSceneBuilderSAH(accel,scene,0);
@@ -839,7 +839,7 @@ namespace isa
 
   Accel* BVH8Factory::BVH8Triangle4(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
-    BVH8* accel = new BVH8(Triangle4::type,scene);
+    BVH8* accel = new BVH8(Triangle4::type(),scene);
     Accel::Intersectors intersectors= BVH8Triangle4Intersectors(accel,ivariant);
     Builder* builder = nullptr;
     if (scene->device->tri_builder == "default")  {
@@ -861,7 +861,7 @@ namespace isa
 
   Accel* BVH8Factory::BVH8Triangle4v(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
-    BVH8* accel = new BVH8(Triangle4v::type,scene);
+    BVH8* accel = new BVH8(Triangle4v::type(),scene);
     Accel::Intersectors intersectors= BVH8Triangle4vIntersectors(accel,ivariant);
     Builder* builder = nullptr;
     if (scene->device->tri_builder == "default")  {
@@ -877,7 +877,7 @@ namespace isa
 
   Accel* BVH8Factory::BVH8Triangle4i(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
-    BVH8* accel = new BVH8(Triangle4i::type,scene);
+    BVH8* accel = new BVH8(Triangle4i::type(),scene);
     Accel::Intersectors intersectors = BVH8Triangle4iIntersectors(accel,ivariant);
 
     Builder* builder = nullptr;
@@ -898,7 +898,7 @@ namespace isa
 
   Accel* BVH8Factory::BVH8Triangle4vMB(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
-    BVH8* accel = new BVH8(Triangle4vMB::type,scene);
+    BVH8* accel = new BVH8(Triangle4vMB::type(),scene);
     Accel::Intersectors intersectors= BVH8Triangle4vMBIntersectors(accel,ivariant);
 
     Builder* builder = nullptr;
@@ -917,7 +917,7 @@ namespace isa
 
   Accel* BVH8Factory::BVH8Triangle4iMB(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
-    BVH8* accel = new BVH8(Triangle4iMB::type,scene);
+    BVH8* accel = new BVH8(Triangle4iMB::type(),scene);
     Accel::Intersectors intersectors= BVH8Triangle4iMBIntersectors(accel,ivariant);
 
     Builder* builder = nullptr;
@@ -936,7 +936,7 @@ namespace isa
 
   Accel* BVH8Factory::BVH8QuantizedTriangle4i(Scene* scene)
   {
-    BVH8* accel = new BVH8(Triangle4i::type,scene);
+    BVH8* accel = new BVH8(Triangle4i::type(),scene);
     Accel::Intersectors intersectors = QBVH8Triangle4iIntersectors(accel);
     Builder* builder = BVH8QuantizedTriangle4iSceneBuilderSAH(accel,scene,0);
     scene->needTriangleVertices = true;
@@ -945,7 +945,7 @@ namespace isa
 
   Accel* BVH8Factory::BVH8Quad4v(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
-    BVH8* accel = new BVH8(Quad4v::type,scene);
+    BVH8* accel = new BVH8(Quad4v::type(),scene);
     Accel::Intersectors intersectors = BVH8Quad4vIntersectors(accel,ivariant);
 
     Builder* builder = nullptr;
@@ -966,7 +966,7 @@ namespace isa
 
   Accel* BVH8Factory::BVH8Quad4i(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
-    BVH8* accel = new BVH8(Quad4i::type,scene);
+    BVH8* accel = new BVH8(Quad4i::type(),scene);
     Accel::Intersectors intersectors = BVH8Quad4iIntersectors(accel,ivariant);
 
     Builder* builder = nullptr;
@@ -985,7 +985,7 @@ namespace isa
 
   Accel* BVH8Factory::BVH8Quad4iMB(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
-    BVH8* accel = new BVH8(Quad4iMB::type,scene);
+    BVH8* accel = new BVH8(Quad4iMB::type(),scene);
     Accel::Intersectors intersectors = BVH8Quad4iMBIntersectors(accel,ivariant);
 
     Builder* builder = nullptr;
@@ -1004,7 +1004,7 @@ namespace isa
 
   Accel* BVH8Factory::BVH8QuantizedQuad4i(Scene* scene)
   {
-    BVH8* accel = new BVH8(Quad4i::type,scene);
+    BVH8* accel = new BVH8(Quad4i::type(),scene);
     Accel::Intersectors intersectors = QBVH8Quad4iIntersectors(accel);
     Builder* builder = nullptr;
     if      (scene->device->quad_builder == "default"     ) builder = BVH8QuantizedQuad4iSceneBuilderSAH(accel,scene,0);

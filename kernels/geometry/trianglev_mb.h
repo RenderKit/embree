@@ -35,7 +35,7 @@ namespace isa
       size_t size(const char* This) const;
     };
 
-    static Type type;
+    static const Type& type();
 
   public:
     
@@ -163,8 +163,8 @@ namespace isa
     vint<M> primIDs; // primitive ID
   };
 
-  template<int M>
-  typename TriangleMvMB<M>::Type TriangleMvMB<M>::type;
+  //template<int M>
+  //typename TriangleMvMB<M>::Type TriangleMvMB<M>::type;
 
   typedef TriangleMvMB<4> Triangle4vMB;
 }

@@ -35,7 +35,7 @@ namespace isa
       Type();
       size_t size(const char* This) const;
     };
-    static Type type;
+    static const Type& type();
 
   public:
 
@@ -283,9 +283,9 @@ namespace isa
     p2 = lerp(a2,b2,ftime);
     p3 = lerp(a3,b3,ftime);
   }
-
-  template<int M>
-  typename QuadMiMB<M>::Type QuadMiMB<M>::type;
+  
+  //template<int M>
+  //typename QuadMiMB<M>::Type QuadMiMB<M>::type;
 
   typedef QuadMiMB<4> Quad4iMB;
 }

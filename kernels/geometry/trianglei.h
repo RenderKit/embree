@@ -34,7 +34,7 @@ namespace isa
       Type();
       size_t size(const char* This) const;
     };
-    static Type type;
+    static const Type& type();
 
   public:
 
@@ -176,8 +176,8 @@ namespace isa
     }
   }
 
-  template<int M>
-  typename TriangleMi<M>::Type TriangleMi<M>::type;
+  //template<int M>
+  //typename TriangleMi<M>::Type TriangleMi<M>::type;
 
   typedef TriangleMi<4> Triangle4i;
 }

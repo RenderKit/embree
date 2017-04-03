@@ -981,7 +981,7 @@ namespace isa
   void BVH4Factory::createLineSegmentsLine4i(LineSegments* mesh, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
-    accel = new BVH4(Line4i::type,mesh->parent);
+    accel = new BVH4(Line4i::type(),mesh->parent);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH4Line4iMeshBuilderSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH4Line4iMeshRefitSAH(accel,mesh,0); break;
@@ -993,35 +993,35 @@ namespace isa
   void BVH4Factory::createTriangleMeshTriangle4Morton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
-    accel = new BVH4(Triangle4::type,mesh->parent);
+    accel = new BVH4(Triangle4::type(),mesh->parent);
     builder = factory->BVH4Triangle4MeshBuilderMortonGeneral(accel,mesh,0);
   }
 
   void BVH4Factory::createTriangleMeshTriangle4vMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
-    accel = new BVH4(Triangle4v::type,mesh->parent);
+    accel = new BVH4(Triangle4v::type(),mesh->parent);
     builder = factory->BVH4Triangle4vMeshBuilderMortonGeneral(accel,mesh,0);
   }
 
   void BVH4Factory::createTriangleMeshTriangle4iMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
-    accel = new BVH4(Triangle4i::type,mesh->parent);
+    accel = new BVH4(Triangle4i::type(),mesh->parent);
     builder = factory->BVH4Triangle4iMeshBuilderMortonGeneral(accel,mesh,0); 
   }
 
   void BVH4Factory::createQuadMeshQuad4vMorton(QuadMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
-    accel = new BVH4(Quad4v::type,mesh->parent);
+    accel = new BVH4(Quad4v::type(),mesh->parent);
     builder = factory->BVH4Quad4vMeshBuilderMortonGeneral(accel,mesh,0);
   }
 
   void BVH4Factory::createTriangleMeshTriangle4(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
-    accel = new BVH4(Triangle4::type,mesh->parent);
+    accel = new BVH4(Triangle4::type(),mesh->parent);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH4Triangle4MeshBuilderSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH4Triangle4MeshRefitSAH(accel,mesh,0); break;
@@ -1033,7 +1033,7 @@ namespace isa
   void BVH4Factory::createTriangleMeshTriangle4v(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
-    accel = new BVH4(Triangle4v::type,mesh->parent);
+    accel = new BVH4(Triangle4v::type(),mesh->parent);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH4Triangle4vMeshBuilderSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH4Triangle4vMeshRefitSAH(accel,mesh,0); break;
@@ -1045,7 +1045,7 @@ namespace isa
   void BVH4Factory::createTriangleMeshTriangle4i(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
-    accel = new BVH4(Triangle4i::type,mesh->parent);
+    accel = new BVH4(Triangle4i::type(),mesh->parent);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH4Triangle4iMeshBuilderSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH4Triangle4iMeshRefitSAH(accel,mesh,0); break;
@@ -1057,7 +1057,7 @@ namespace isa
   void BVH4Factory::createQuadMeshQuad4v(QuadMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
-    accel = new BVH4(Quad4v::type,mesh->parent);
+    accel = new BVH4(Quad4v::type(),mesh->parent);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH4Quad4vMeshBuilderSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH4Quad4vMeshRefitSAH(accel,mesh,0); break;
@@ -1069,7 +1069,7 @@ namespace isa
   void BVH4Factory::createAccelSetMesh(AccelSet* mesh, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
-    accel = new BVH4(Object::type,mesh->parent);
+    accel = new BVH4(Object::type(),mesh->parent);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH4VirtualMeshBuilderSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH4VirtualMeshRefitSAH(accel,mesh,0); break;
@@ -1080,7 +1080,7 @@ namespace isa
 
   Accel* BVH4Factory::BVH4Bezier1v(Scene* scene)
   {
-    BVH4* accel = new BVH4(Bezier1v::type,scene);
+    BVH4* accel = new BVH4(Bezier1v::type(),scene);
     Accel::Intersectors intersectors = BVH4Bezier1vIntersectors(accel);
 
     Builder* builder = nullptr;
@@ -1093,7 +1093,7 @@ namespace isa
 
   Accel* BVH4Factory::BVH4Bezier1i(Scene* scene)
   {
-    BVH4* accel = new BVH4(Bezier1i::type,scene);
+    BVH4* accel = new BVH4(Bezier1i::type(),scene);
     Accel::Intersectors intersectors = BVH4Bezier1iIntersectors(accel);
 
     Builder* builder = nullptr;
@@ -1107,7 +1107,7 @@ namespace isa
 
   Accel* BVH4Factory::BVH4Line4i(Scene* scene, BuildVariant bvariant)
   {
-    BVH4* accel = new BVH4(Line4i::type,scene);
+    BVH4* accel = new BVH4(Line4i::type(),scene);
     Accel::Intersectors intersectors = BVH4Line4iIntersectors(accel);
 
     Builder* builder = nullptr;
@@ -1128,7 +1128,7 @@ namespace isa
 
   Accel* BVH4Factory::BVH4Line4iMB(Scene* scene)
   {
-    BVH4* accel = new BVH4(Line4i::type,scene);
+    BVH4* accel = new BVH4(Line4i::type(),scene);
     Accel::Intersectors intersectors = BVH4Line4iMBIntersectors(accel);
 
     Builder* builder = nullptr;
@@ -1142,7 +1142,7 @@ namespace isa
 
   Accel* BVH4Factory::BVH4OBBBezier1v(Scene* scene)
   {
-    BVH4* accel = new BVH4(Bezier1v::type,scene);
+    BVH4* accel = new BVH4(Bezier1v::type(),scene);
     Accel::Intersectors intersectors = BVH4Bezier1vIntersectors_OBB(accel);
 
     Builder* builder = nullptr;
@@ -1155,7 +1155,7 @@ namespace isa
 
   Accel* BVH4Factory::BVH4OBBBezier1i(Scene* scene)
   {
-    BVH4* accel = new BVH4(Bezier1i::type,scene);
+    BVH4* accel = new BVH4(Bezier1i::type(),scene);
     Accel::Intersectors intersectors = BVH4Bezier1iIntersectors_OBB(accel);
 
     Builder* builder = nullptr;
@@ -1169,7 +1169,7 @@ namespace isa
 
   Accel* BVH4Factory::BVH4OBBBezier1iMB(Scene* scene)
   {
-    BVH4* accel = new BVH4(Bezier1i::type,scene);
+    BVH4* accel = new BVH4(Bezier1i::type(),scene);
     Accel::Intersectors intersectors = BVH4Bezier1iMBIntersectors_OBB(accel);
 
     Builder* builder = nullptr;
@@ -1183,7 +1183,7 @@ namespace isa
 
   Accel* BVH4Factory::BVH4InstancedBVH4Triangle4ObjectSplit(Scene* scene)
   {
-    BVH4* accel = new BVH4(Triangle4::type,scene);
+    BVH4* accel = new BVH4(Triangle4::type(),scene);
     Accel::Intersectors intersectors = BVH4Triangle4IntersectorsInstancing(accel);
     Builder* builder = BVH4BuilderInstancingTriangleMeshSAH(accel,scene,&createTriangleMeshTriangle4);
     return new AccelInstance(accel,builder,intersectors);
@@ -1191,7 +1191,7 @@ namespace isa
 
   Accel* BVH4Factory::BVH4Triangle4(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
-    BVH4* accel = new BVH4(Triangle4::type,scene);
+    BVH4* accel = new BVH4(Triangle4::type(),scene);
 
     Accel::Intersectors intersectors;
     if      (scene->device->tri_traverser == "default") intersectors = BVH4Triangle4Intersectors(accel,ivariant);
@@ -1218,7 +1218,7 @@ namespace isa
 
   Accel* BVH4Factory::BVH4Triangle4v(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
-    BVH4* accel = new BVH4(Triangle4v::type,scene);
+    BVH4* accel = new BVH4(Triangle4v::type(),scene);
 
     Accel::Intersectors intersectors;
     if      (scene->device->tri_traverser == "default") intersectors = BVH4Triangle4vIntersectors(accel,ivariant);
@@ -1246,7 +1246,7 @@ namespace isa
 
   Accel* BVH4Factory::BVH4Triangle4i(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
-    BVH4* accel = new BVH4(Triangle4i::type,scene);
+    BVH4* accel = new BVH4(Triangle4i::type(),scene);
     
     Accel::Intersectors intersectors;
     if      (scene->device->tri_traverser == "default") intersectors = BVH4Triangle4iIntersectors(accel,ivariant);
@@ -1275,7 +1275,7 @@ namespace isa
 
    Accel* BVH4Factory::BVH4Triangle4vMB(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
-    BVH4* accel = new BVH4(Triangle4vMB::type,scene);
+    BVH4* accel = new BVH4(Triangle4vMB::type(),scene);
 
     Accel::Intersectors intersectors;
     if      (scene->device->tri_traverser_mb == "default") intersectors = BVH4Triangle4vMBIntersectors(accel,ivariant);
@@ -1298,7 +1298,7 @@ namespace isa
 
   Accel* BVH4Factory::BVH4Triangle4iMB(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
-    BVH4* accel = new BVH4(Triangle4iMB::type,scene);
+    BVH4* accel = new BVH4(Triangle4iMB::type(),scene);
 
     Accel::Intersectors intersectors;
     if      (scene->device->tri_traverser_mb == "default") intersectors = BVH4Triangle4iMBIntersectors(accel,ivariant);
@@ -1323,7 +1323,7 @@ namespace isa
   
   Accel* BVH4Factory::BVH4Quad4v(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
-    BVH4* accel = new BVH4(Quad4v::type,scene);
+    BVH4* accel = new BVH4(Quad4v::type(),scene);
     Accel::Intersectors intersectors = BVH4Quad4vIntersectors(accel,ivariant);
    
     Builder* builder = nullptr;
@@ -1344,7 +1344,7 @@ namespace isa
 
   Accel* BVH4Factory::BVH4Quad4i(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
-    BVH4* accel = new BVH4(Quad4i::type,scene);
+    BVH4* accel = new BVH4(Quad4i::type(),scene);
     Accel::Intersectors intersectors = BVH4Quad4iIntersectors(accel,ivariant);
 
     Builder* builder = nullptr;
@@ -1364,7 +1364,7 @@ namespace isa
 
   Accel* BVH4Factory::BVH4Quad4iMB(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
-    BVH4* accel = new BVH4(Quad4iMB::type,scene);
+    BVH4* accel = new BVH4(Quad4iMB::type(),scene);
     Accel::Intersectors intersectors = BVH4Quad4iMBIntersectors(accel,ivariant);
 
     Builder* builder = nullptr;
@@ -1384,7 +1384,7 @@ namespace isa
 
   Accel* BVH4Factory::BVH4QuantizedQuad4i(Scene* scene)
   {
-    BVH4* accel = new BVH4(Quad4i::type,scene);
+    BVH4* accel = new BVH4(Quad4i::type(),scene);
     Builder* builder = BVH4QuantizedQuad4iSceneBuilderSAH(accel,scene,0);
     Accel::Intersectors intersectors = QBVH4Quad4iIntersectors(accel);
     scene->needQuadVertices = true;
@@ -1393,7 +1393,7 @@ namespace isa
 
   Accel* BVH4Factory::BVH4QuantizedTriangle4i(Scene* scene)
   {
-    BVH4* accel = new BVH4(Triangle4i::type,scene);
+    BVH4* accel = new BVH4(Triangle4i::type(),scene);
     Builder* builder = BVH4QuantizedTriangle4iSceneBuilderSAH(accel,scene,0);
     Accel::Intersectors intersectors = QBVH4Triangle4iIntersectors(accel);
     scene->needTriangleVertices = true;
@@ -1404,7 +1404,7 @@ namespace isa
   {
     if (cached)
     {
-      BVH4* accel = new BVH4(SubdivPatch1Cached::type_cached,scene);
+      BVH4* accel = new BVH4(SubdivPatch1Cached::type_cached(),scene);
       Accel::Intersectors intersectors = BVH4SubdivPatch1CachedIntersectors(accel);
       Builder* builder = BVH4SubdivPatch1CachedBuilderSAH(accel,scene,1);
       scene->needSubdivVertices = true;
@@ -1412,7 +1412,7 @@ namespace isa
     }
     else 
     {
-      BVH4* accel = new BVH4(SubdivPatch1Cached::type,scene);
+      BVH4* accel = new BVH4(SubdivPatch1Cached::type(),scene);
       Accel::Intersectors intersectors = BVH4SubdivPatch1Intersectors(accel);
       Builder* builder = BVH4SubdivPatch1CachedBuilderSAH(accel,scene,0);
       scene->needSubdivVertices = true;
@@ -1422,7 +1422,7 @@ namespace isa
 
   Accel* BVH4Factory::BVH4SubdivPatch1Eager(Scene* scene)
   {
-    BVH4* accel = new BVH4(SubdivPatch1Cached::type,scene); // FIXME: use different type
+    BVH4* accel = new BVH4(SubdivPatch1Cached::type(),scene); // FIXME: use different type
     Accel::Intersectors intersectors = BVH4SubdivPatch1EagerIntersectors(accel);
     Builder* builder = BVH4SubdivPatch1EagerBuilderSAH(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
@@ -1432,7 +1432,7 @@ namespace isa
   {
     if (cached)
     {
-      BVH4* accel = new BVH4(SubdivPatch1Cached::type_cached,scene);
+      BVH4* accel = new BVH4(SubdivPatch1Cached::type_cached(),scene);
       Accel::Intersectors intersectors = BVH4SubdivPatch1CachedMBIntersectors(accel);
       Builder* builder = BVH4SubdivPatch1CachedMBBuilderSAH(accel,scene,1);
       scene->needSubdivVertices = true;
@@ -1440,7 +1440,7 @@ namespace isa
     }
     else
     {
-      BVH4* accel = new BVH4(SubdivPatch1Cached::type,scene);
+      BVH4* accel = new BVH4(SubdivPatch1Cached::type(),scene);
       Accel::Intersectors intersectors = BVH4SubdivPatch1MBIntersectors(accel);
       Builder* builder = BVH4SubdivPatch1CachedMBBuilderSAH(accel,scene,0);
       scene->needSubdivVertices = true;
@@ -1450,7 +1450,7 @@ namespace isa
 
   Accel* BVH4Factory::BVH4UserGeometry(Scene* scene, BuildVariant bvariant)
   {
-    BVH4* accel = new BVH4(Object::type,scene);
+    BVH4* accel = new BVH4(Object::type(),scene);
     Accel::Intersectors intersectors = BVH4UserGeometryIntersectors(accel);
 
     Builder* builder = nullptr;
@@ -1470,7 +1470,7 @@ namespace isa
 
   Accel* BVH4Factory::BVH4UserGeometryMB(Scene* scene)
   {
-    BVH4* accel = new BVH4(Object::type,scene);
+    BVH4* accel = new BVH4(Object::type(),scene);
     Accel::Intersectors intersectors = BVH4UserGeometryMBIntersectors(accel);
     Builder* builder = BVH4VirtualMBSceneBuilderSAH(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);

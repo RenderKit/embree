@@ -34,7 +34,7 @@ namespace isa
       Type();
       size_t size(const char* This) const;
     };
-    static Type type;
+    static const Type& type();
 
   public:
 
@@ -170,8 +170,8 @@ namespace isa
     vint<M> primIDs; // primitive ID
   };
 
-  template<int M>
-  typename QuadMv<M>::Type QuadMv<M>::type;
+  //template<int M>
+  //typename QuadMv<M>::Type QuadMv<M>::type;
 
   typedef QuadMv<4> Quad4v;
 }

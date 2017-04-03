@@ -35,7 +35,7 @@ namespace isa
       Type();
       size_t size(const char* This) const;
     };
-    static Type type;
+    static const Type& type();
 
   public:
 
@@ -264,8 +264,8 @@ namespace isa
 
 #endif
 
-  template<int M>
-  typename QuadMi<M>::Type QuadMi<M>::type;
+  //template<int M>
+  //typename QuadMi<M>::Type QuadMi<M>::type;
 
   typedef QuadMi<4> Quad4i;
 }

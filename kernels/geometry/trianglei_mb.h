@@ -35,7 +35,7 @@ namespace isa
       Type();
       size_t size(const char* This) const;
     };
-    static Type type;
+    static const Type& type();
 
   public:
 
@@ -277,8 +277,8 @@ namespace isa
     p2 = lerp(a2,b2,ftime);
   }
 
-  template<int M>
-  typename TriangleMiMB<M>::Type TriangleMiMB<M>::type;
+  //template<int M>
+  //typename TriangleMiMB<M>::Type TriangleMiMB<M>::type;
 
   typedef TriangleMiMB<4> Triangle4iMB;
 }

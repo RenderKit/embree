@@ -31,7 +31,7 @@ namespace isa
       size_t size(const char* This) const;
     };
     
-    static Type type;
+    static const Type& type();
 
     struct TypeCached : public PrimitiveType 
     {
@@ -39,7 +39,7 @@ namespace isa
       size_t size(const char* This) const;
     };
     
-    static TypeCached type_cached;
+    static const TypeCached& type_cached();
 
   public:
 

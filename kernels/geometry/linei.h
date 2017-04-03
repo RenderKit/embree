@@ -33,7 +33,7 @@ namespace isa
       Type();
       size_t size(const char* This) const;
     };
-    static Type type;
+    static const Type& type();
 
   public:
 
@@ -252,8 +252,8 @@ namespace isa
     p1 = lerp(a1,b1,ftime);
   }
 
-  template<int M>
-  typename LineMi<M>::Type LineMi<M>::type;
+  //template<int M>
+  //typename LineMi<M>::Type LineMi<M>::type;
 
   typedef LineMi<4> Line4i;
 }
