@@ -108,7 +108,6 @@ namespace embree
   namespace avx512knl { extern DeviceInterface* createDevice(const State& state); }
   namespace avx512skx { extern DeviceInterface* createDevice(const State& state); }
 
-#if 1
   DeviceInterface* createDevice(const char* cfg, bool single)
   {
     const State state(cfg,single);
@@ -136,43 +135,6 @@ namespace embree
     
     return newDevice(state);
   }
-#else
-  DeviceInterface* createDevice(const char* cfg, bool single)
-  {
-    lib_t library = nullptr;
-#if defined(__TARGET_AVX512SKX__)
-    if (hasISA(AVX512SKX)) library = openLibrary("embree_avx512skx"); else
-#endif
-#if defined(__TARGET_AVX512KNL__)
-    if (hasISA(AVX512KNL)) library = openLibrary("embree_avx512knl"); else
-#endif
-#if defined(__TARGET_AVX2__)
-    if (hasISA(AVX2)) library = openLibrary("embree_avx2"); else
-#endif
-#if defined(__TARGET_AVX__)
-    if (hasISA(AVX)) library = openLibrary("embree_avx"); else
-#endif
-#if defined(__TARGET_SSE42__)
-    if (hasISA(SSE42)) library = openLibrary("embree_sse42"); else
-#endif
-#if defined(__TARGET_SSE2__)
-    if (hasISA(SSE2)) library = openLibrary("embree_sse2"); else
-#endif
-    {
-      throw_RTCError(RTC_UNKNOWN_ERROR,"ISA not supported");
-    }
-
-    if (library == nullptr) 
-      throw_RTCError(RTC_UNKNOWN_ERROR,"cannot open embree library");
-
-    DeviceInterface* (*newDevice) (const char* cfg, bool single);
-    newDevice = (decltype(newDevice)) getSymbol(library,"createDevice");
-    if (newDevice == nullptr)
-      throw_RTCError(RTC_UNKNOWN_ERROR,"cannot find entry symbol");
-
-    return newDevice(cfg,single);
-  }
-#endif
 
   RTCORE_API RTCDevice rtcNewDevice(const char* cfg)
   {
