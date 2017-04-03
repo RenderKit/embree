@@ -20,8 +20,8 @@
 
 namespace embree
 {
-namespace isa
-{
+//namespace isa
+//{
   class BezierBasis
   {
   public:
@@ -108,6 +108,9 @@ namespace isa
   };
   extern PrecomputedBezierBasis bezier_basis0;
   extern PrecomputedBezierBasis bezier_basis1;
+
+  namespace isa
+  {
 
   template<typename Vertex>
     struct BezierCurveT
@@ -335,5 +338,5 @@ namespace isa
   #define CurveT BezierCurveT
   typedef BezierCurve3fa Curve3fa;
 #endif
-}
+  }
 }

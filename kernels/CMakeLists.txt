@@ -30,6 +30,9 @@ SET(EMBREE_LIBRARY_FILES
   common/rtcore_builder.cpp
   common/tasksys.cpp
   common/stat.cpp
+
+  subdiv/bezier_curve.cpp
+  subdiv/bspline_curve.cpp
 )
 
 IF (EMBREE_RAY_PACKETS)
@@ -60,9 +63,6 @@ SET(EMBREE_LIBRARY_FILES_CORE
   common/scene_quad_mesh.cpp
   common/scene_bezier_curves.cpp
   common/scene_line_segments.cpp
-
-  subdiv/bezier_curve.cpp
-  subdiv/bspline_curve.cpp
 
   geometry/primitive.cpp
   geometry/instance_intersector1.cpp

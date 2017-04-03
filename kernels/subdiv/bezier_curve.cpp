@@ -18,8 +18,8 @@
 
 namespace embree
 {
-namespace isa
-{
+//namespace isa
+//{
   PrecomputedBezierBasis::PrecomputedBezierBasis(int dj)
   {
     for (size_t i=0; i<=N; i++) 
@@ -42,5 +42,5 @@ namespace isa
   }
   PrecomputedBezierBasis bezier_basis0(0);
   PrecomputedBezierBasis bezier_basis1(1);
-}
+//}
 }

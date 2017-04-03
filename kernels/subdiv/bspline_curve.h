@@ -21,8 +21,8 @@
 
 namespace embree
 {
-namespace isa
-{
+//namespace isa
+//{
   class BSplineBasis2 // FIXME: make compatible with basis from bspline_patch.h
   {
   public:
@@ -109,6 +109,9 @@ namespace isa
   };
   extern PrecomputedBSplineBasis bspline_basis0;
   extern PrecomputedBSplineBasis bspline_basis1;
+
+  namespace isa
+  {
 
   template<typename Vertex>
     struct BSplineCurveT
@@ -358,5 +361,5 @@ namespace isa
   #define CurveT BSplineCurveT
   typedef BSplineCurve3fa Curve3fa;
 #endif
-}
+  }
 }
