@@ -242,8 +242,6 @@ namespace embree
         "  stream-coherent  : coherent stream mode\n"
         "  stream-incoherent: incoherent stream mode\n");
     }
-
-    g_stats = (RayStats*)alignedMalloc(TaskScheduler::threadCount() * sizeof(RayStats), sizeof(RayStats));
   }
 
   TutorialApplication::~TutorialApplication()
@@ -457,6 +455,9 @@ namespace embree
 
   void TutorialApplication::initRayStats()
   {
+    if (g_stats) alignedFree(g_stats);
+    g_stats = (RayStats*)alignedMalloc(TaskScheduler::threadCount() * sizeof(RayStats), sizeof(RayStats));
+    
     for (size_t i = 0; i < TaskScheduler::threadCount(); i++)
       g_stats[i].numRays = 0;
   }
@@ -828,7 +829,7 @@ namespace embree
 
     /* initialize ray tracing core */
     device_init(rtcore.c_str());
-
+  
     /* set shader mode */
     switch (shader) {
     case SHADER_DEFAULT  : break;
