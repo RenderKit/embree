@@ -41,10 +41,11 @@ namespace embree
 
       static const size_t stackSizeChunk = 1+(N-1)*BVH::maxDepth;
 
-      static const size_t switchThreshold = (K==4)  ? 3 :
-                                            (K==8)  ? ((N==4) ? 5 : 7) :
-                                            (K==16) ? 7 :
-                                                      0;
+      static const size_t switchThresholdIncoherent = \
+      (K==4)  ? 3 :
+      (K==8)  ? ((N==4) ? 5 : 7) :
+      (K==16) ? 15 :
+      0;
 
     private:
       static void intersectSingle(const vbool<K>& valid, BVH* bvh, Precalculations& pre, RayK<K>& ray, IntersectContext* context);
