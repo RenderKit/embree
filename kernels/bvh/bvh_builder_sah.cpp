@@ -125,7 +125,7 @@ namespace embree
 
       BVHNBuilderSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, 
                       const size_t mode, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
-        : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, singleThreadThreshold) {}
+        : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, singleThreadThreshold), primrefarrayalloc(false) {}
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
 
