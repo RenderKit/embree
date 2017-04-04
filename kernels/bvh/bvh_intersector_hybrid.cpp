@@ -92,7 +92,7 @@ namespace embree
       }
 
       /* determine switch threshold based on flags */
-      const size_t switchThreshold = (context->user && isCoherent(context->user->flags)) ? 1 : switchThresholdIncoherent;
+      const size_t switchThreshold = (context->user && isCoherent(context->user->flags)) ? 2 : switchThresholdIncoherent;
 
       /* allocate stack and push root node */
       vfloat<K> stack_near[stackSizeChunk];
@@ -308,7 +308,7 @@ namespace embree
       }
 
       /* determine switch threshold based on flags */
-      const size_t switchThreshold = (context->user && isCoherent(context->user->flags)) ? 1 : switchThresholdIncoherent;
+      const size_t switchThreshold = (context->user && isCoherent(context->user->flags)) ? 2 : switchThresholdIncoherent;
 
       /* allocate stack and push root node */
       vfloat<K> stack_near[stackSizeChunk];
