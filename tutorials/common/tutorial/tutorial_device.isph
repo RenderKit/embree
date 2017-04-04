@@ -146,18 +146,27 @@ Vec3f  getTextureTexel3f(const uniform Texture* uniform texture, float u, float 
 enum ISPCInstancingMode { ISPC_INSTANCING_NONE, ISPC_INSTANCING_GEOMETRY, ISPC_INSTANCING_GEOMETRY_GROUP, ISPC_INSTANCING_SCENE_GEOMETRY, ISPC_INSTANCING_SCENE_GROUP };
 
 /* ray statistics */
+#if !defined(TASKING_PPL) // not supported with PPL because threadIndex is not unique and atomics are too expensive
+#define RAY_STATS
+#endif
+
 struct RayStats
 {
   int numRays;
   int pad[32-1];
 };
 
+#if defined(RAY_STATS)
 #if defined(ISPC)
 inline void RayStats_addRay(uniform RayStats& stats)       { stats.numRays += popcnt(lanemask()); }
 inline void RayStats_addShadowRay(uniform RayStats& stats) { stats.numRays += popcnt(lanemask()); }
-#else
+#else // C++
 __forceinline void RayStats_addRay(RayStats& stats)        { stats.numRays++; }
 __forceinline void RayStats_addShadowRay(RayStats& stats)  { stats.numRays++; }
+#endif
+#else // disabled
+inline void RayStats_addRay(uniform RayStats& stats)       {}
+inline void RayStats_addShadowRay(uniform RayStats& stats) {}
 #endif
 
 extern uniform RayStats* uniform g_stats;
