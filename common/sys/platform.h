@@ -317,6 +317,8 @@ __forceinline std::string toString(long long value) {
 //#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 //#pragma GCC diagnostic ignored "-Warray-bounds"
 #pragma GCC diagnostic ignored "-Wattributes"
+#pragma GCC diagnostic ignored "-Wmisleading-indentation"
+#pragma GCC diagnostic ignored "-Wsign-compare"
 #endif
 
 #if defined(__clang__) && defined(__WIN32__)
