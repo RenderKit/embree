@@ -29,8 +29,6 @@ namespace embree {
 #define SIMPLE_SHADING 1
 
 extern "C" ISPCScene* g_ispc_scene;
-extern "C" RTCIntersectFlags g_iflags_coherent;
-extern "C" RTCIntersectFlags g_iflags_incoherent;
 
 /* scene data */
 RTCDevice g_device = nullptr;

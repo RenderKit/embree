@@ -881,8 +881,6 @@ uniform Vec3fa g_accu_vz;
 uniform Vec3fa g_accu_p;
 extern uniform bool g_changed;
 extern uniform int g_instancing_mode;
-extern uniform RTCIntersectFlags g_iflags_coherent;
-extern uniform RTCIntersectFlags g_iflags_incoherent;
 
 
 uniform bool g_animation = true;

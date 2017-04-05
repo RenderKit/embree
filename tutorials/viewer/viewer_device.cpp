@@ -24,7 +24,6 @@ namespace embree {
 extern "C" ISPCScene* g_ispc_scene;
 extern "C" bool g_changed;
 extern "C" int g_instancing_mode;
-extern "C" RTCIntersectFlags g_iflags_coherent;
 
 /* scene data */
 RTCDevice g_device = nullptr;

@@ -233,15 +233,13 @@ namespace embree
       /* register parsing of stream mode */
       registerOption("mode", [this] (Ref<ParseStream> cin, const FileName& path) {
           std::string mode = cin->getString();
-          if      (mode == "normal"           ) g_mode = MODE_NORMAL;
-          else if (mode == "stream-coherent"  ) g_mode = MODE_STREAM_COHERENT;
-          else if (mode == "stream-incoherent") g_mode = MODE_STREAM_INCOHERENT;
+          if      (mode == "normal") g_mode = MODE_NORMAL;
+          else if (mode == "stream") g_mode = MODE_STREAM;
           else throw std::runtime_error("invalid mode:" +mode);
         },
         "--mode: sets rendering mode\n"
-        "  normal           : normal mode\n"
-        "  stream-coherent  : coherent stream mode\n"
-        "  stream-incoherent: incoherent stream mode\n");
+        "  normal  : normal mode\n"
+        "  stream  : stream mode\n");
     }
   }
 

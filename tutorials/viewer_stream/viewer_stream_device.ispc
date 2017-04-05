@@ -27,8 +27,6 @@
 #define SIMPLE_SHADING 1
 
 extern uniform ISPCScene* uniform g_ispc_scene;
-extern uniform RTCIntersectFlags g_iflags_coherent;
-extern uniform RTCIntersectFlags g_iflags_incoherent;
 
 /* scene data */
 RTCDevice g_device = NULL;

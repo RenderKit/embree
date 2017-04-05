@@ -47,11 +47,12 @@ namespace embree {
 
 enum Mode {
   MODE_NORMAL = 0,
-  MODE_STREAM_COHERENT = 1,
-  MODE_STREAM_INCOHERENT = 2
+  MODE_STREAM = 1
 };
 
 extern "C" Mode g_mode;
+extern "C" RTCIntersectFlags g_iflags_coherent;
+extern "C" RTCIntersectFlags g_iflags_incoherent;
 
 /* error reporting function */
 void error_handler(void* userPtr, const RTCError code, const char* str = nullptr);
