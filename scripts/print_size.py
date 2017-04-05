@@ -167,6 +167,8 @@ total_by_isa=sum_components(components)
 total=0
 for x in total_by_isa:
   total = total + x
+if total == 0:
+  total=1
 
 def print_component(c):
   if type(c) is tuple:
