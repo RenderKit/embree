@@ -261,7 +261,7 @@ namespace embree
 
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
-      typedef FastAllocator::ThreadLocal2* Allocator;
+      typedef FastAllocator::CachedAllocator Allocator;
       typedef HeuristicArrayBinningSAH<BezierPrim,NUM_HAIR_OBJECT_BINS> HeuristicBinningSAH;
       typedef UnalignedHeuristicArrayBinningSAHOld<BezierPrim,NUM_HAIR_OBJECT_BINS> UnalignedHeuristicBinningSAH;
       //typedef HeuristicStrandSplit HeuristicStrandSplitSAH;
@@ -442,7 +442,7 @@ namespace embree
       /*! recursive build */
       NodeRef recurse(size_t depth, const PrimInfoRange& pinfo, Allocator alloc, bool toplevel)
       {
-        if (alloc == nullptr) 
+        if (!alloc) 
           alloc = createAlloc();
 
         /* call memory monitor function to signal progress */
