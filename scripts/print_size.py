@@ -145,20 +145,31 @@ components = eval_components(component_names)
 def add7((a0,a1,a2,a3,a4,a5,a6),(b0,b1,b2,b3,b4,b5,b6)):
   return (a0+b0,a1+b1,a2+b2,a3+b3,a4+b4,a5+b5,a6+b6)
 
-#total_by_isa=(0,0,0,0,0,0,0)
-#for c in components:
-#  total_by_isa = add7(total_by_isa,c[1])
-#total=0
-#for x in total_by_isa:
-#  total = total + x
-
 def print_header():
    sys.stdout.write(' ' + '{0:<40}'.format("Component"))
    sys.stdout.write('        NONE        SSE2      SSE4.2         AVX        AVX2   AVX512knl   AVX512skx         SUM\n')
 
+def sum_component(c):
+  if type(c) is tuple:
+    return sum_component_group(c)
+  else:
+    return c[1]
+def sum_component_group((name,components)):
+  return sum_components(components)
+def sum_components(components):
+  sum=(0,0,0,0,0,0,0)
+  for c in components:
+    sum = add7(sum,sum_component(c))
+  return sum
+
+total_by_isa=sum_components(components)
+total=0
+for x in total_by_isa:
+  total = total + x
+
 def print_component(c):
   if type(c) is tuple:
-    return print_component_group(c)
+    print_component_group(c)
   else:
     sys.stdout.write(' ' + '{0:<40}'.format(c[0]))
     sum=0;
@@ -166,22 +177,21 @@ def print_component(c):
       sys.stdout.write((' %#8.3f MB' %  (1E-6*s)))  
       sum = sum + s
     sys.stdout.write((' %#8.3f MB' %  (1E-6*sum)))
-    #sys.stdout.write((' %#6.2f %%' %  (100.0*sum/total)))
+    sys.stdout.write((' %#7.2f %%' %  (100.0*sum/total)))
     sys.stdout.write('\n')
-    return c[1]
 def print_component_group((name,components)):
-  return print_components(components)
+  sum=sum_components(components)
+  sys.stdout.write('\n')
+  print_component([name,sum])
+  print_components(components)
 def print_components(components):
-  sum=(0,0,0,0,0,0,0)
   for c in components:
-    s = print_component(c)
-    sum = add7(sum,s)
-  return sum
+    print_component(c)
 
-#print(components)
 print_header()
-sum=print_components(components)
-print_component(["sum",sum])
+print_components(components)
+sys.stdout.write('\n')
+print_component(["sum",total_by_isa])
 
 #for sym in isa_symbols[1]:
 #  print sym
