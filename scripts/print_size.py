@@ -128,9 +128,38 @@ component_names=[
 ]
 for n in component_names:
   (components,isa_symbols) = count_feature2(n,components,isa_symbols)
+  
+def add7((a0,a1,a2,a3,a4,a5,a6),(b0,b1,b2,b3,b4,b5,b6)):
+  return (a0+b0,a1+b1,a2+b2,a3+b3,a4+b4,a5+b5,a6+b6)
 
+total_by_isa=(0,0,0,0,0,0,0)
 for c in components:
-  print c
+  total_by_isa = add7(total_by_isa,c[1])
+total=0
+for x in total_by_isa:
+  total = total + x
+
+def print_header():
+   sys.stdout.write(' ' + '{0:<40}'.format("Component"))
+   sys.stdout.write('        NONE        SSE2      SSE4.2         AVX        AVX2   AVX512knl   AVX512skx         SUM\n')
+
+def print_component((name,sizes)):
+  sys.stdout.write(' ' + '{0:<40}'.format(name))
+  sum=0;
+  for s in sizes:
+    sys.stdout.write((' %#8.3f MB' %  (1E-6*s)))  
+    sum = sum + s
+  sys.stdout.write((' %#8.3f MB' %  (1E-6*sum)))
+  sys.stdout.write((' %#6.2f %%' %  (100.0*sum/total)))
+  sys.stdout.write('\n')
+
+
+print_header()
+sum=(0,0,0,0,0,0,0)
+for c in components:
+  print_component(c)
+  sum = add7(sum,c[1])
+print_component(("sum",sum))
 
 for sym in isa_symbols[1]:
   print sym
