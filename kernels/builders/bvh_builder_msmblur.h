@@ -386,7 +386,7 @@ namespace embree
             } while (children.size() < branchingFactor);
 
             /* create node */
-            auto node = createNode(hasTimeSplits,alloc);
+            auto node = createNode(alloc, hasTimeSplits);
 
             /* recurse into each child and perform reduction */
             LBBox3fa gbounds = empty;
@@ -461,7 +461,7 @@ namespace embree
             //std::sort(&children[0],&children[children.size()],std::greater<BuildRecord>()); // FIXME: reduces traversal performance of bvh8.triangle4 (need to verified) !!
 
             /*! create an inner node */
-            auto node = createNode(hasTimeSplits,alloc);
+            auto node = createNode(alloc, hasTimeSplits);
             LBBox3fa gbounds = empty;
 
             /* spawn tasks */

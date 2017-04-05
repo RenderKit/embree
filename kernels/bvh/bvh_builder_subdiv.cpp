@@ -755,8 +755,8 @@ namespace embree
           BVHBuilderMSMBlur::build<NodeRef>(primsMB,pinfo,scene->device,
                                              recalculatePrimRef,
                                              typename BVH::CreateAlloc(bvh),
-                                             typename BVH::CreateAlignedNodeMB4D(),
-                                             typename BVH::SetAlignedNodeMB4D(),
+                                             typename BVH::AlignedNodeMB4D::Create(),
+                                             typename BVH::AlignedNodeMB4D::Set(),
                                              createLeafFunc,
                                              bvh->scene->progressInterface,
                                              settings);

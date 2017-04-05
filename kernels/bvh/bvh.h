@@ -582,35 +582,6 @@ namespace embree
       vfloat<N> upper_z;           //!< Z dimension of upper bounds of all N children.
     };
 
-    struct CreateAlignedNodeMB4D
-    {
-      __forceinline NodeRef operator() (bool hasTimeSplits, const FastAllocator::CachedAllocator& alloc) const
-      {
-        if (hasTimeSplits)
-        {
-          AlignedNodeMB4D* node = (AlignedNodeMB4D*) alloc.malloc0(sizeof(AlignedNodeMB4D),byteNodeAlignment); node->clear();
-          return BVHN::encodeNode(node);
-        }
-        else
-        {
-          AlignedNodeMB* node = (AlignedNodeMB*) alloc.malloc0(sizeof(AlignedNodeMB),byteNodeAlignment); node->clear();
-          return BVHN::encodeNode(node);
-        }
-      }
-    };
-
-    struct SetAlignedNodeMB4D
-    {
-      __forceinline void operator() (NodeRef ref, const size_t i, const NodeRecordMB4D& child) const
-      {
-        if (likely(ref.isAlignedNodeMB())) {
-          ref.alignedNodeMB()->set(i, child);
-        } else {
-          ref.alignedNodeMB4D()->set(i, child);
-        }
-      }
-    };
-
     /*! Motion Blur AlignedNode */
     struct AlignedNodeMB : public BaseNode
     {
@@ -867,17 +838,30 @@ namespace embree
 
       struct Create
       {
-        __forceinline NodeRef operator() (const FastAllocator::CachedAllocator& alloc) const
+        __forceinline NodeRef operator() (const FastAllocator::CachedAllocator& alloc, bool hasTimeSplits = true) const
         {
-          AlignedNodeMB4D* node = (AlignedNodeMB4D*) alloc.malloc0(sizeof(AlignedNodeMB4D),byteNodeAlignment); node->clear();
-          return encodeNode(node);
+          if (hasTimeSplits)
+          {
+            AlignedNodeMB4D* node = (AlignedNodeMB4D*) alloc.malloc0(sizeof(AlignedNodeMB4D),byteNodeAlignment); node->clear();
+            return encodeNode(node);
+          }
+          else
+          {
+            AlignedNodeMB* node = (AlignedNodeMB*) alloc.malloc0(sizeof(AlignedNodeMB),byteNodeAlignment); node->clear();
+            return encodeNode(node);
+          }
         }
       };
-      
+
       struct Set
       {
-        __forceinline void operator() (NodeRef node, size_t i, const NodeRecordMB4D& child) const {
-          node.alignedNodeMB4D()->set(i,child);
+        __forceinline void operator() (NodeRef ref, size_t i, const NodeRecordMB4D& child) const
+        {
+          if (likely(ref.isAlignedNodeMB())) {
+            ref.alignedNodeMB()->set(i, child);
+          } else {
+            ref.alignedNodeMB4D()->set(i, child);
+          }
         }
       };
 
