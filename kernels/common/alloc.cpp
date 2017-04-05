@@ -19,8 +19,11 @@
 
 namespace embree
 {
-//namespace isa
-//{
+namespace isa
+{
+  __thread isa::FastAllocator::ThreadLocal2* isa::FastAllocator::thread_local_allocator2 = nullptr;
+
+#if 0
   struct fast_allocator_regression_test : public RegressionTest
   {
     BarrierSys barrier;
@@ -35,18 +38,18 @@ namespace embree
 
     static void thread_alloc(fast_allocator_regression_test* This)
     {
-      isa::FastAllocator::ThreadLocal2* threadalloc = This->alloc->threadLocal2();
+      isa::FastAllocator::CachedAllocator threadalloc = This->alloc->getCachedAllocator();
 
       size_t* ptrs[1000];
       for (size_t j=0; j<1000; j++)
       {
         This->barrier.wait();
         for (size_t i=0; i<1000; i++) {
-          ptrs[i] = (size_t*) threadalloc->alloc0->malloc(sizeof(size_t)+(i%32));
-          *ptrs[i] = size_t(threadalloc) + i;
+          ptrs[i] = (size_t*) threadalloc.malloc0(sizeof(size_t)+(i%32));
+          *ptrs[i] = size_t(threadalloc.talloc0) + i;
         }
         for (size_t i=0; i<1000; i++) {
-          if (*ptrs[i] != size_t(threadalloc) + i) 
+          if (*ptrs[i] != size_t(threadalloc.talloc0) + i) 
             This->numFailed++;
         }
         This->barrier.wait();
@@ -85,6 +88,7 @@ namespace embree
   };
 
   fast_allocator_regression_test fast_allocator_regression;
-//}
+#endif
+}
 }
 

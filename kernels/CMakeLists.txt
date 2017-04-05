@@ -31,7 +31,7 @@ SET(EMBREE_LIBRARY_FILES
   common/rtcore_builder.cpp
   common/tasksys.cpp
   common/stat.cpp
-  common/alloc.cpp
+#  common/alloc.cpp
   subdiv/bezier_curve.cpp
   subdiv/bspline_curve.cpp
 )
@@ -56,6 +56,7 @@ SET(EMBREE_LIBRARY_FILES_CORE
   common/accelset.cpp
   common/rtcore.cpp
   common/scene.cpp
+  common/alloc.cpp
   common/geometry.cpp
   common/scene_user_geometry.cpp
   common/scene_instance.cpp

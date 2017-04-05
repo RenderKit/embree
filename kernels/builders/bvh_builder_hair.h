@@ -60,7 +60,7 @@ namespace embree
           ALIGNED_CLASS;
           friend struct BVHBuilderHair;
 
-          typedef FastAllocator::ThreadLocal2* Allocator;
+          typedef FastAllocator::CachedAllocator Allocator;
           typedef HeuristicArrayBinningSAH<PrimRef,NUM_HAIR_OBJECT_BINS> HeuristicBinningSAH;
           typedef UnalignedHeuristicArrayBinningSAH<PrimRef,NUM_HAIR_OBJECT_BINS> UnalignedHeuristicBinningSAH;
           typedef HeuristicStrandSplit HeuristicStrandSplitSAH;
@@ -222,7 +222,7 @@ namespace embree
           NodeRef recurse(size_t depth, const PrimInfoRange& pinfo, Allocator alloc, bool toplevel)
           {
             /* get thread local allocator */
-            if (alloc == nullptr)
+            if (!alloc)
               alloc = createAlloc();
 
             /* call memory monitor function to signal progress */

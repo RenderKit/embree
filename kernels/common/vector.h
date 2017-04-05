@@ -46,14 +46,12 @@ namespace isa
           assert(device);
           device->memoryMonitor(n*sizeof(T),false);
         }
-#if defined(__LINUX__) && defined(__AVX512ER__) // KNL
         if (n*sizeof(value_type) >= 14 * PAGE_SIZE_2M)
         {
           pointer p =  (pointer) os_malloc(n*sizeof(value_type),hugepages);
           assert(p);
           return p;
         }
-#endif
         return (pointer) alignedMalloc(n*sizeof(value_type),alignment);
       }
 
@@ -61,14 +59,10 @@ namespace isa
       {
         if (p)
         {
-#if defined(__LINUX__) && defined(__AVX512ER__) // KNL
           if (n*sizeof(value_type) >= 14 * PAGE_SIZE_2M)
             os_free(p,n*sizeof(value_type),hugepages); 
           else
             alignedFree(p);
-#else
-          alignedFree(p);
-#endif
         }
         else assert(n == 0);
 

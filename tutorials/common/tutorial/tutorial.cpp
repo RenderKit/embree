@@ -457,7 +457,7 @@ namespace embree
   {
     if (!g_stats)
       g_stats = (RayStats*)alignedMalloc(TaskScheduler::threadCount() * sizeof(RayStats), sizeof(RayStats));
-    
+
     for (size_t i = 0; i < TaskScheduler::threadCount(); i++)
       g_stats[i].numRays = 0;
   }
@@ -540,11 +540,13 @@ namespace embree
     std::cout << "BENCHMARK_RENDER_SIGMA " << fpsStat.getSigma() << std::endl;
     std::cout << "BENCHMARK_RENDER_AVG_SIGMA " << fpsStat.getAvgSigma() << std::endl;
 
+#if defined(RAY_STATS)
     std::cout << "BENCHMARK_RENDER_MRAY_MIN " << mrayStat.getMin() << std::endl;
     std::cout << "BENCHMARK_RENDER_MRAY_AVG " << mrayStat.getAvg() << std::endl;
     std::cout << "BENCHMARK_RENDER_MRAY_MAX " << mrayStat.getMax() << std::endl;
     std::cout << "BENCHMARK_RENDER_MRAY_SIGMA " << mrayStat.getSigma() << std::endl;
     std::cout << "BENCHMARK_RENDER_MRAY_AVG_SIGMA " << mrayStat.getAvgSigma() << std::endl;
+#endif
 
     std::cout << std::flush;
   }
@@ -553,6 +555,7 @@ namespace embree
   {
     resize(width,height);
     ISPCCamera ispccamera = camera.getISPCCamera(width,height);
+    initRayStats();
     device_render(pixels,width,height,0.0f,ispccamera);
     Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels);
     storeImage(image, fileName);
@@ -745,12 +748,14 @@ namespace embree
       for (size_t i=0; i<str.size(); i++)
         glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
 
+#if defined(RAY_STATS)
       stream.str("");
       stream << avg_mray.get() << " Mray/s";
       str = stream.str();
       glRasterPos2i(6, height - 52);
       for (size_t i=0; i<str.size(); i++)
         glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
+#endif
 
       glRasterPos2i( 0, 0 );
       glPopMatrix();
@@ -772,7 +777,9 @@ namespace embree
       stream << "render: ";
       stream << 1.0f/dt0 << " fps, ";
       stream << dt0*1000.0f << " ms, ";
+#if defined(RAY_STATS)
       stream << mray << " Mray/s, ";
+#endif
       stream << "display: ";
       stream << 1.0f/dt1 << " fps, ";
       stream << dt1*1000.0f << " ms, ";
@@ -830,7 +837,7 @@ namespace embree
 
     /* initialize ray tracing core */
     device_init(rtcore.c_str());
-  
+
     /* set shader mode */
     switch (shader) {
     case SHADER_DEFAULT  : break;
