@@ -68,7 +68,7 @@ def count_feature2(f,symbols):
   r=map(lambda x: count_feature(f,x),symbols)
   b=map(lambda (x,y): x,r)
   l=map(lambda (x,y): y,r)
-  return ([f,b],l)
+  return (b,l)
 
 def split_list(l,s):
   a=filter(lambda x: x[1].find(s) != -1,l)
@@ -134,7 +134,8 @@ def eval_component(name):
     return eval_component_group(name)
   else: 
     (component,isa_symbols) = count_feature2(name,isa_symbols)
-    return component
+    if name == "": return ["remaining",component]
+    else: return [name,component]
 def eval_component_group((name,names)):
   return (name,eval_components(names))
 def eval_components(names):
@@ -191,7 +192,7 @@ def print_components(components):
 print_header()
 print_components(components)
 sys.stdout.write('\n')
-print_component(["sum",total_by_isa])
+print_component(["SUM",total_by_isa])
 
 #for sym in isa_symbols[1]:
 #  print sym
