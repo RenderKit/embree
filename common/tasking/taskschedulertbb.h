@@ -47,7 +47,7 @@ namespace embree
       return threadIndex();
     }
 
-    /* returns the index of the current thread */
+    /* returns the index (0..threadCount-1) of the current thread */
     static __forceinline size_t threadIndex()
     {
 #if TBB_INTERFACE_VERSION >= 9100

@@ -24,7 +24,6 @@ namespace embree {
 extern "C" ISPCScene* g_ispc_scene;
 extern "C" bool g_changed;
 extern "C" int g_instancing_mode;
-extern "C" RTCIntersectFlags g_iflags;
 
 /* scene data */
 RTCDevice g_device = nullptr;
@@ -267,7 +266,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 
   /* intersect ray with scene */
   RTCIntersectContext context;
-  context.flags = g_iflags;
+  context.flags = RTC_INTERSECT_COHERENT;
   rtcIntersect1Ex(g_scene,&context,ray);
   RayStats_addRay(stats);
 

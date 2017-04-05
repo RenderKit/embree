@@ -391,9 +391,6 @@ void renderTileStandardStream(uniform int taskIndex,
   float weight_stream[TILE_SIZE_X*TILE_SIZE_Y];
   bool valid_stream[TILE_SIZE_X*TILE_SIZE_Y];
 
-  /* select stream mode */
-  uniform RTCIntersectFlags iflags = g_mode == MODE_STREAM_COHERENT ?  RTC_INTERSECT_COHERENT : RTC_INTERSECT_INCOHERENT;
-
   /* generate stream of primary rays */
   uniform int N = 0;
   uniform int numActive = 0;
@@ -431,7 +428,7 @@ void renderTileStandardStream(uniform int taskIndex,
   {
     /* trace rays */
     uniform RTCIntersectContext primary_context;
-    primary_context.flags = iflags;
+    primary_context.flags = g_iflags_coherent;
     primary_context.userRayExt = &primary_stream;
     rtcIntersectVM(g_scene,&primary_context,(varying RTCRay* uniform)&primary_stream,N,sizeof(RTCRay2));
 
@@ -486,7 +483,7 @@ void renderTileStandardStream(uniform int taskIndex,
 
     /* trace shadow rays */
     uniform RTCIntersectContext shadow_context;
-    shadow_context.flags = iflags;
+    shadow_context.flags = g_iflags_coherent;
     shadow_context.userRayExt = &shadow_stream;
     rtcOccludedVM(g_scene,&shadow_context,(varying RTCRay* uniform)&shadow_stream,N,sizeof(RTCRay2));
 
