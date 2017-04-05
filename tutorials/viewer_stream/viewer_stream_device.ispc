@@ -27,7 +27,8 @@
 #define SIMPLE_SHADING 1
 
 extern uniform ISPCScene* uniform g_ispc_scene;
-extern uniform RTCIntersectFlags g_iflags;
+extern uniform RTCIntersectFlags g_iflags_coherent;
+extern uniform RTCIntersectFlags g_iflags_incoherent;
 
 /* scene data */
 RTCDevice g_device = NULL;
@@ -84,7 +85,7 @@ Vec3f ambientOcclusionShading(int x, int y, RTCRay& ray, uniform RayStats& stats
   }
 
   uniform RTCIntersectContext context;
-  context.flags = g_iflags;
+  context.flags = g_iflags_incoherent;
 
   /* trace occlusion rays */
 #if USE_INTERFACE == 0
@@ -155,7 +156,7 @@ void renderTileStandard(uniform int taskIndex,
   }
 
   uniform RTCIntersectContext context;
-  context.flags = g_iflags;
+  context.flags = g_iflags_coherent;
 
   /* trace stream of rays */
 #if USE_INTERFACE == 0

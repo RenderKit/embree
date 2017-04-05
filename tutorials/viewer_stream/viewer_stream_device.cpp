@@ -29,7 +29,8 @@ namespace embree {
 #define SIMPLE_SHADING 1
 
 extern "C" ISPCScene* g_ispc_scene;
-extern "C" RTCIntersectFlags g_iflags;
+extern "C" RTCIntersectFlags g_iflags_coherent;
+extern "C" RTCIntersectFlags g_iflags_incoherent;
 
 /* scene data */
 RTCDevice g_device = nullptr;
@@ -86,7 +87,7 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray, RayStats& stats)
   }
 
   RTCIntersectContext context;
-  context.flags = g_iflags;
+  context.flags = g_iflags_incoherent;
 
   /* trace occlusion rays */
 #if USE_INTERFACE == 0
@@ -157,7 +158,7 @@ void renderTileStandard(int taskIndex,
   }
 
   RTCIntersectContext context;
-  context.flags = g_iflags;
+  context.flags = g_iflags_coherent;
 
   /* trace stream of rays */
 #if USE_INTERFACE == 0

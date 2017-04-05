@@ -22,7 +22,7 @@
 extern uniform ISPCScene* uniform g_ispc_scene;
 extern uniform bool g_changed;
 extern uniform int g_instancing_mode;
-extern uniform RTCIntersectFlags g_iflags;
+extern uniform RTCIntersectFlags g_iflags_coherent;
 
 /* scene data */
 RTCDevice g_device = NULL;

@@ -80,19 +80,19 @@ namespace embree
 
     /* callback called after command line parsing finished */
     virtual void postParseCommandLine() {}
-   
+
     /* benchmark mode */
     void renderBenchmark();
-    
+
     /* render to file mode */
     void renderToFile(const FileName& fileName);
 
     /* passes parameters to the backend */
     void set_parameter(size_t parm, ssize_t val);
-    
+
     /* resize framebuffer */
     void resize(unsigned width, unsigned height);
-    
+
     /* set scene to use */
     void set_scene (TutorialScene* in);
 
@@ -106,14 +106,14 @@ namespace embree
     virtual void displayFunc(void);
     virtual void reshapeFunc(int width, int height);
     virtual void idleFunc();
-    
+
   public:
     std::string tutorialName;
-          
+
     /* render settings */
     Camera camera;
     Shader shader;
-    
+
     /* framebuffer settings */
     unsigned width;
     unsigned height;
@@ -126,7 +126,7 @@ namespace embree
     size_t skipBenchmarkFrames;
     size_t numBenchmarkFrames;
     size_t numBenchmarkRepetitions;
-  
+
     /* window settings */
     bool interactive;
     bool fullscreen;
@@ -134,14 +134,14 @@ namespace embree
     unsigned window_width;
     unsigned window_height;
     int windowID;
-    
+
     double time0;
     int debug_int0;
     int debug_int1;
-    
+
     int mouseMode;
     int clickX, clickY;
-    
+
     float speed;
     Vec3f moveDelta;
 
@@ -163,7 +163,7 @@ namespace embree
     /* ray statistics */
     void initRayStats();
     int64_t getNumRays();
-     
+
   public:
     static TutorialApplication* instance;
   };
@@ -189,6 +189,7 @@ namespace embree
     std::string subdiv_mode;
     bool print_scene_cameras;
     std::string camera_name;
-    RTCIntersectFlags iflags;
+    RTCIntersectFlags iflags_coherent;
+    RTCIntersectFlags iflags_incoherent;
   };
 }
