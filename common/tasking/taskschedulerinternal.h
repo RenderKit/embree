@@ -325,7 +325,7 @@ namespace embree
     /* returns the ID of the current thread */
     __dllexport static size_t threadID();
 
-    /* returns the index of the current thread */
+    /* returns the index (0..threadCount-1) of the current thread */
     __dllexport static size_t threadIndex();
 
     /* returns the total number of threads */

@@ -45,10 +45,10 @@ namespace embree
       return GetCurrentThreadId();
     }
 
-    /* returns the index of the current thread */
-    /* FIXME: this is a hack, threadIndex is NOT guaranteed to be unique! */
+    /* returns the index (0..threadCount-1) of the current thread */
+    /* FIXME: threadIndex is NOT supported by PPL! */
     static __forceinline size_t threadIndex() {
-      return threadID() % threadCount();
+      return 0;
     }
 
     /* returns the total number of threads */
