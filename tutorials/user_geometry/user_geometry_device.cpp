@@ -734,9 +734,6 @@ void renderTileStandardStream(int taskIndex,
   Vec3fa color_stream[TILE_SIZE_X*TILE_SIZE_Y];
   bool valid_stream[TILE_SIZE_X*TILE_SIZE_Y];
 
-  /* select stream mode */
-  RTCIntersectFlags iflags = g_mode == MODE_STREAM_COHERENT ?  RTC_INTERSECT_COHERENT : RTC_INTERSECT_INCOHERENT;
-
   /* generate stream of primary rays */
   int N = 0;
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
@@ -769,7 +766,7 @@ void renderTileStandardStream(int taskIndex,
 
   /* trace rays */
   RTCIntersectContext primary_context;
-  primary_context.flags = iflags;
+  primary_context.flags = g_iflags_coherent;
   primary_context.userRayExt = &primary_stream;
   rtcIntersect1M(g_scene,&primary_context,(RTCRay*)&primary_stream,N,sizeof(RTCRay));
 
@@ -821,7 +818,7 @@ void renderTileStandardStream(int taskIndex,
 
   /* trace shadow rays */
   RTCIntersectContext shadow_context;
-  shadow_context.flags = iflags;
+  shadow_context.flags = g_iflags_coherent;
   shadow_context.userRayExt = &shadow_stream;
   rtcOccluded1M(g_scene,&shadow_context,(RTCRay*)&shadow_stream,N,sizeof(RTCRay));
 
