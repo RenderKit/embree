@@ -207,7 +207,9 @@ namespace embree
 
         /*! intersect stream of rays with all primitives */
         size_t lazy_node = 0;
+#if defined(__SSE4_2__)
         STAT_USER(1,(__popcnt(bits)+K-1)/K*4);
+#endif
         do
         {
           size_t i = __bsf(bits) / K;
@@ -313,7 +315,9 @@ namespace embree
         size_t bits = m_trav_active & m_active;
         /*! intersect stream of rays with all primitives */
         size_t lazy_node = 0;
+#if defined(__SSE4_2__)
         STAT_USER(1,(__popcnt(bits)+K-1)/K*4);
+#endif
         while(bits)
         {
           size_t i = __bsf(bits) / K;

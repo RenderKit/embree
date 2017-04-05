@@ -22,7 +22,6 @@
 extern uniform ISPCScene* uniform g_ispc_scene;
 extern uniform bool g_changed;
 extern uniform int g_instancing_mode;
-extern uniform RTCIntersectFlags g_iflags;
 
 /* scene data */
 RTCDevice g_device = NULL;
@@ -259,7 +258,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
 
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
-  context.flags = g_iflags;
+  context.flags = RTC_INTERSECT_COHERENT;
   rtcIntersectEx(g_scene,&context,ray);
   RayStats_addRay(stats);
 

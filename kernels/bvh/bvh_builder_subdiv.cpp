@@ -38,7 +38,7 @@ namespace embree
 {
   namespace isa
   {
-    typedef FastAllocator::ThreadLocal2 Allocator;
+    typedef FastAllocator::CachedAllocator Allocator;
 
     template<int N>
     struct BVHNSubdivPatch1EagerBuilderSAH : public Builder
@@ -64,7 +64,7 @@ namespace embree
         return w*h;
       }
 
-      __forceinline static unsigned createEager(SubdivPatch1Base& patch, Scene* scene, SubdivMesh* mesh, unsigned primID, FastAllocator::ThreadLocal& alloc, PrimRef* prims)
+      __forceinline static unsigned createEager(SubdivPatch1Base& patch, Scene* scene, SubdivMesh* mesh, unsigned primID, Allocator& alloc, PrimRef* prims)
       {
         unsigned NN = 0;
         const unsigned x0 = 0, x1 = patch.grid_u_res-1;
@@ -147,7 +147,7 @@ namespace embree
 
         PrimInfo pinfo3 = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
-          FastAllocator::ThreadLocal& alloc = *bvh->alloc.threadLocal();
+          Allocator alloc = bvh->alloc.getCachedAllocator();
           
           PrimInfo s(empty);
           for (size_t f=r.begin(); f!=r.end(); ++f) {
@@ -168,7 +168,7 @@ namespace embree
 
         PrimInfo pinfo(pinfo3.end,pinfo3.geomBounds,pinfo3.centBounds);
         
-        auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> NodeRef {
+        auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator alloc) -> NodeRef {
           assert(current.prims.size() == 1);
           size_t leaf = (size_t) prims[current.prims.begin()].ID();
           return NodeRef(leaf);
@@ -388,7 +388,7 @@ namespace embree
         /* build normal BVH over patches */
         if (!mblur)
         {
-          auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> NodeRef {
+          auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, const Allocator& alloc) -> NodeRef {
             assert(current.prims.size() == 1);
             const size_t patchIndex = prims[current.prims.begin()].ID();
             return bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
@@ -417,14 +417,14 @@ namespace embree
         {
           /* allocate buffers */
           const size_t numTimeSegments = bvh->numTimeSteps-1; assert(bvh->numTimeSteps > 1);
-          NodeRef* roots = (NodeRef*) bvh->alloc.threadLocal()->malloc(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
+          NodeRef* roots = (NodeRef*) bvh->alloc.getCachedAllocator().malloc0(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
           
           /* build BVH for each timestep */
           avector<BBox3fa> boxes(bvh->numTimeSteps);
           size_t num_bvh_primitives = 0;
           for (size_t t=0; t<numTimeSegments; t++)
           {
-            auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> NodeRecordMB {
+            auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, const Allocator& alloc) -> NodeRecordMB {
               assert(current.prims.size() == 1);
               const size_t patchIndexMB = prims[current.prims.begin()].ID();
               SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+0];
@@ -727,7 +727,7 @@ namespace embree
         pinfo.object_range._end = pinfo.object_range.begin();
         pinfo.object_range._begin = 0;
 
-        auto createLeafFunc = [&] (const BVHBuilderMSMBlur::BuildRecord& current, Allocator* alloc) -> NodeRecordMB4D {
+        auto createLeafFunc = [&] (const BVHBuilderMSMBlur::BuildRecord& current, const Allocator& alloc) -> NodeRecordMB4D {
           mvector<PrimRefMB>& prims = *current.prims.prims;
           size_t items MAYBE_UNUSED = current.prims.size();
           assert(items == 1);

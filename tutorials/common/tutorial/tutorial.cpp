@@ -56,7 +56,8 @@ namespace embree
 
     unsigned int g_numThreads = 0;
 
-    RTCIntersectFlags g_iflags = RTC_INTERSECT_INCOHERENT;
+    RTCIntersectFlags g_iflags_coherent = RTC_INTERSECT_COHERENT;
+    RTCIntersectFlags g_iflags_incoherent = RTC_INTERSECT_INCOHERENT;
 
     RayStats* g_stats = nullptr;
   }
@@ -232,18 +233,14 @@ namespace embree
       /* register parsing of stream mode */
       registerOption("mode", [this] (Ref<ParseStream> cin, const FileName& path) {
           std::string mode = cin->getString();
-          if      (mode == "normal"           ) g_mode = MODE_NORMAL;
-          else if (mode == "stream-coherent"  ) g_mode = MODE_STREAM_COHERENT;
-          else if (mode == "stream-incoherent") g_mode = MODE_STREAM_INCOHERENT;
+          if      (mode == "normal") g_mode = MODE_NORMAL;
+          else if (mode == "stream") g_mode = MODE_STREAM;
           else throw std::runtime_error("invalid mode:" +mode);
         },
         "--mode: sets rendering mode\n"
-        "  normal           : normal mode\n"
-        "  stream-coherent  : coherent stream mode\n"
-        "  stream-incoherent: incoherent stream mode\n");
+        "  normal  : normal mode\n"
+        "  stream  : stream mode\n");
     }
-
-    g_stats = (RayStats*)alignedMalloc(TaskScheduler::threadCount() * sizeof(RayStats), sizeof(RayStats));
   }
 
   TutorialApplication::~TutorialApplication()
@@ -270,7 +267,8 @@ namespace embree
       sceneFilename(""),
       instancing_mode(SceneGraph::INSTANCING_NONE),
       print_scene_cameras(false),
-      iflags(RTC_INTERSECT_INCOHERENT)
+      iflags_coherent(RTC_INTERSECT_COHERENT),
+      iflags_incoherent(RTC_INTERSECT_INCOHERENT)
   {
     registerOption("i", [this] (Ref<ParseStream> cin, const FileName& path) {
         sceneFilename = path + cin->getFileName();
@@ -447,16 +445,21 @@ namespace embree
       }, "--camera: use camera with specified name");
 
     registerOption("coherent", [this] (Ref<ParseStream> cin, const FileName& path) {
-        g_iflags = iflags = RTC_INTERSECT_COHERENT;
-      }, "--coherent: use RTC_INTERSECT_COHERENT hint when tracing rays");
+        g_iflags_coherent   = iflags_coherent   = RTC_INTERSECT_COHERENT;
+        g_iflags_incoherent = iflags_incoherent = RTC_INTERSECT_COHERENT;
+      }, "--coherent: force using RTC_INTERSECT_COHERENT hint when tracing rays");
 
     registerOption("incoherent", [this] (Ref<ParseStream> cin, const FileName& path) {
-        g_iflags = iflags = RTC_INTERSECT_INCOHERENT;
-      }, "--incoherent: use RTC_INTERSECT_INCOHERENT hint when tracing rays");
+        g_iflags_coherent   = iflags_coherent   = RTC_INTERSECT_INCOHERENT;
+        g_iflags_incoherent = iflags_incoherent = RTC_INTERSECT_INCOHERENT;
+      }, "--incoherent: force using RTC_INTERSECT_INCOHERENT hint when tracing rays");
   }
 
   void TutorialApplication::initRayStats()
   {
+    if (!g_stats)
+      g_stats = (RayStats*)alignedMalloc(TaskScheduler::threadCount() * sizeof(RayStats), sizeof(RayStats));
+
     for (size_t i = 0; i < TaskScheduler::threadCount(); i++)
       g_stats[i].numRays = 0;
   }
@@ -486,6 +489,7 @@ namespace embree
       size_t numTotalFrames = skipBenchmarkFrames + numBenchmarkFrames;
       for (size_t i=0; i<skipBenchmarkFrames; i++)
       {
+        initRayStats();
         double t0 = getSeconds();
         device_render(pixels,width,height,0.0f,ispccamera);
         double t1 = getSeconds();
@@ -538,11 +542,13 @@ namespace embree
     std::cout << "BENCHMARK_RENDER_SIGMA " << fpsStat.getSigma() << std::endl;
     std::cout << "BENCHMARK_RENDER_AVG_SIGMA " << fpsStat.getAvgSigma() << std::endl;
 
+#if defined(RAY_STATS)
     std::cout << "BENCHMARK_RENDER_MRAY_MIN " << mrayStat.getMin() << std::endl;
     std::cout << "BENCHMARK_RENDER_MRAY_AVG " << mrayStat.getAvg() << std::endl;
     std::cout << "BENCHMARK_RENDER_MRAY_MAX " << mrayStat.getMax() << std::endl;
     std::cout << "BENCHMARK_RENDER_MRAY_SIGMA " << mrayStat.getSigma() << std::endl;
     std::cout << "BENCHMARK_RENDER_MRAY_AVG_SIGMA " << mrayStat.getAvgSigma() << std::endl;
+#endif
 
     std::cout << std::flush;
   }
@@ -551,6 +557,7 @@ namespace embree
   {
     resize(width,height);
     ISPCCamera ispccamera = camera.getISPCCamera(width,height);
+    initRayStats();
     device_render(pixels,width,height,0.0f,ispccamera);
     Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels);
     storeImage(image, fileName);
@@ -743,12 +750,14 @@ namespace embree
       for (size_t i=0; i<str.size(); i++)
         glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
 
+#if defined(RAY_STATS)
       stream.str("");
       stream << avg_mray.get() << " Mray/s";
       str = stream.str();
       glRasterPos2i(6, height - 52);
       for (size_t i=0; i<str.size(); i++)
         glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
+#endif
 
       glRasterPos2i( 0, 0 );
       glPopMatrix();
@@ -770,7 +779,9 @@ namespace embree
       stream << "render: ";
       stream << 1.0f/dt0 << " fps, ";
       stream << dt0*1000.0f << " ms, ";
+#if defined(RAY_STATS)
       stream << mray << " Mray/s, ";
+#endif
       stream << "display: ";
       stream << 1.0f/dt1 << " fps, ";
       stream << dt1*1000.0f << " ms, ";

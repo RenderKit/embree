@@ -104,9 +104,11 @@ namespace embree
         const float* const grid_z  = grid_x + 2 * dim_offset;
         const float* const grid_uv = grid_x + 3 * dim_offset;
 
-        for (size_t y=0; y<2; y++)
+        const size_t max_x = pre.grid->width  == 2 ? 1 : 2;
+        const size_t max_y = pre.grid->height == 2 ? 1 : 2;
+        for (size_t y=0; y<max_y; y++)        
         {
-          for (size_t x=0; x<2; x++)
+          for (size_t x=0; x<max_x; x++)
           {
             const size_t ofs00 = (y+0)*line_offset+(x+0);
             const size_t ofs01 = (y+0)*line_offset+(x+1);
@@ -116,6 +118,7 @@ namespace embree
             const Vec3vfK p01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
             const Vec3vfK p10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
             const Vec3vfK p11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
+
             pre.intersector.intersectK(valid_i,ray,p00,p01,p10,MapUV0(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,context,pre.grid->geomID,pre.grid->primID));
             pre.intersector.intersectK(valid_i,ray,p10,p01,p11,MapUV1(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,context,pre.grid->geomID,pre.grid->primID));
           }
@@ -133,9 +136,11 @@ namespace embree
         const float* const grid_uv = grid_x + 3 * dim_offset;
 
         vbool<K> valid = valid_i;
-        for (size_t y=0; y<2; y++)
+        const size_t max_x = pre.grid->width  == 2 ? 1 : 2;
+        const size_t max_y = pre.grid->height == 2 ? 1 : 2;
+        for (size_t y=0; y<max_y; y++)        
         {
-          for (size_t x=0; x<2; x++)
+          for (size_t x=0; x<max_x; x++)
           {
             const size_t ofs00 = (y+0)*line_offset+(x+0);
             const size_t ofs01 = (y+0)*line_offset+(x+1);
@@ -195,7 +200,6 @@ namespace embree
         const size_t line_offset   = pre.grid->width;
         const size_t lines         = pre.grid->height;
         const float* const grid_x  = pre.grid->decodeLeaf(0,prim);
-
 #if defined(__AVX__)
         intersect<GridSOA::Gather3x3>( ray, k, context, grid_x, line_offset, lines, pre);
 #else

@@ -26,7 +26,6 @@
 #define VERTEX_INTERPOLATION_BLOCK_SIZE 1024
 
 extern uniform ISPCScene* uniform g_ispc_scene;
-extern uniform RTCIntersectFlags g_iflags;
 
 /* scene data */
 uniform RTCDevice g_device = NULL;
@@ -350,7 +349,7 @@ void renderTileStandard(uniform int taskIndex,
   }
 
   uniform RTCIntersectContext context;
-  context.flags = g_iflags;
+  context.flags = g_iflags_coherent;
 
   /* trace stream of rays */
   rtcIntersectVM(g_scene,&context,rays,N,sizeof(RTCRay));

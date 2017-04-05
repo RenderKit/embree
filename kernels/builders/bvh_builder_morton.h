@@ -362,7 +362,7 @@ namespace embree
         ReductionTy recurse(size_t depth, const range<unsigned>& current, Allocator alloc, bool toplevel)
         {
           /* get thread local allocator */
-          if (alloc == nullptr)
+          if (!alloc)
             alloc = createAllocator();
 
           /* call memory monitor function to signal progress */

@@ -51,8 +51,6 @@ namespace embree
     MAYBE_UNUSED static const size_t DEFAULT_SINGLE_THREAD_THRESHOLD = 1024;
     MAYBE_UNUSED static const size_t HIGH_SINGLE_THREAD_THRESHOLD    = 3*1024;
 
-    typedef FastAllocator::ThreadLocal2 Allocator;
-
     template<int N, typename Primitive>
     struct CreateLeaf
     {
@@ -62,12 +60,12 @@ namespace embree
       __forceinline CreateLeaf (BVH* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
       
       template<typename BuildRecord>
-      __forceinline NodeRef operator() (const BuildRecord& current, Allocator* alloc) const
+      __forceinline NodeRef operator() (const BuildRecord& current, const FastAllocator::CachedAllocator& alloc) const
       {
         size_t n = current.prims.size();
         size_t items = Primitive::blocks(n);
         size_t start = current.prims.begin();
-        Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteAlignment);
+        Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
           accel[i].fill(prims,start,current.prims.end(),bvh->scene);
@@ -88,12 +86,12 @@ namespace embree
 
       __forceinline CreateLeafQuantized (BVH* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
       
-      __forceinline NodeRef operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) const
+      __forceinline NodeRef operator() (const BVHBuilderBinnedSAH::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) const
       {
         size_t n = current.prims.size();
         size_t items = Primitive::blocks(n);
         size_t start = current.prims.begin();
-        Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteAlignment);
+        Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
           accel[i].fill(prims,start,current.prims.end(),bvh->scene);
@@ -130,7 +128,7 @@ namespace embree
 
       BVHNBuilderSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, 
                       const size_t mode, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
-        : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, singleThreadThreshold) {}
+        : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, singleThreadThreshold), primrefarrayalloc(false) {}
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
 
@@ -348,11 +346,11 @@ namespace embree
 
       __forceinline CreateMBlurLeaf (BVH* bvh, PrimRef* prims, size_t time) : bvh(bvh), prims(prims), time(time) {}
       
-      __forceinline NodeRecordMB operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) const
+      __forceinline NodeRecordMB operator() (const BVHBuilderBinnedSAH::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) const
       {
         size_t items = Primitive::blocks(current.prims.size());
         size_t start = current.prims.begin();
-        Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteAlignment);
+        Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
         NodeRef node = bvh->encodeLeaf((char*)accel,items);
 
         LBBox3fa allBounds = empty;
@@ -399,7 +397,7 @@ namespace embree
         const size_t numTimeSegments = bvh->numTimeSteps-1; assert(bvh->numTimeSteps > 1);
         prims.resize(numPrimitives);
         bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef)*numTimeSegments,settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD);
-        NodeRef* roots = (NodeRef*) bvh->alloc.threadLocal()->malloc(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
+        NodeRef* roots = (NodeRef*) bvh->alloc.getCachedAllocator().malloc0(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
 
         /* build BVH for each timestep */
         avector<BBox3fa> bounds(bvh->numTimeSteps);
@@ -514,7 +512,7 @@ namespace embree
           }
           
           LBBox3fa lbounds = empty;
-          AlignedNodeMB4D* node = (AlignedNodeMB4D*) bvh->alloc.threadLocal2()->alloc0->malloc(sizeof(AlignedNodeMB4D), BVH::byteNodeAlignment); node->clear();
+          AlignedNodeMB4D* node = (AlignedNodeMB4D*) bvh->alloc.getCachedAllocator().malloc0(sizeof(AlignedNodeMB4D), BVH::byteNodeAlignment); node->clear();
           for (size_t i=0; i<c.size(); i++) 
           {
             NodeRef cnode = recurse(c[i]);
@@ -601,11 +599,11 @@ namespace embree
 
       __forceinline CreateMSMBlurLeaf (BVH* bvh) : bvh(bvh) {}
       
-      __forceinline const NodeRecordMB4D operator() (const BVHBuilderMSMBlur::BuildRecord& current, Allocator* alloc) const
+      __forceinline const NodeRecordMB4D operator() (const BVHBuilderMSMBlur::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) const
       {
         size_t items = Primitive::blocks(current.prims.object_range.size());
         size_t start = current.prims.object_range.begin();
-        Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
+        Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteNodeAlignment);
         NodeRef node = bvh->encodeLeaf((char*)accel,items);
         LBBox3fa allBounds = empty;
         for (size_t i=0; i<items; i++)

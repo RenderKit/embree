@@ -92,6 +92,9 @@ namespace embree
         nearXYZ.z = select(rdir.z >= 0.0f,vint<K>(4*(int)sizeof(vfloat<N>)),vint<K>(5*(int)sizeof(vfloat<N>)));
       }
 
+      /* determine switch threshold based on flags */
+      const size_t switchThreshold = (context->user && isCoherent(context->user->flags)) ? 2 : switchThresholdIncoherent;
+
       /* allocate stack and push root node */
       vfloat<K> stack_near[stackSizeChunk];
       NodeRef stack_node[stackSizeChunk];
@@ -102,7 +105,7 @@ namespace embree
       NodeRef* stackEnd MAYBE_UNUSED = stack_node+stackSizeChunk;
       NodeRef* __restrict__ sptr_node = stack_node + 2;
       vfloat<K>* __restrict__ sptr_near = stack_near + 2;
-      
+
       while (1) pop:
       {
         /* pop next node from stack */
@@ -305,6 +308,9 @@ namespace embree
         nearXYZ.y = select(rdir.y >= 0.0f,vint<K>(2*(int)sizeof(vfloat<N>)),vint<K>(3*(int)sizeof(vfloat<N>)));
         nearXYZ.z = select(rdir.z >= 0.0f,vint<K>(4*(int)sizeof(vfloat<N>)),vint<K>(5*(int)sizeof(vfloat<N>)));
       }
+
+      /* determine switch threshold based on flags */
+      const size_t switchThreshold = (context->user && isCoherent(context->user->flags)) ? 2 : switchThresholdIncoherent;
 
       /* allocate stack and push root node */
       vfloat<K> stack_near[stackSizeChunk];

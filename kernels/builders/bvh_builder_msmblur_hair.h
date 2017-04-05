@@ -87,7 +87,7 @@ namespace embree
           typedef BVHNodeRecordMB<NodeRef> NodeRecordMB;
           typedef BVHNodeRecordMB4D<NodeRef> NodeRecordMB4D;
 
-          typedef FastAllocator::ThreadLocal2* Allocator;
+          typedef FastAllocator::CachedAllocator Allocator;
           typedef LocalChildListT<BuildRecord,MAX_BRANCHING_FACTOR> LocalChildList;
 
           typedef HeuristicMBlurTemporalSplit<PrimRefMB,RecalculatePrimRef,NUM_TEMPORAL_BINS> HeuristicTemporal;
@@ -262,7 +262,7 @@ namespace embree
           NodeRecordMB recurse(BuildRecord& current, Allocator alloc, bool toplevel)
           {
             /* get thread local allocator */
-            if (alloc == nullptr)
+            if (!alloc)
               alloc = createAlloc();
 
             /* call memory monitor function to signal progress */

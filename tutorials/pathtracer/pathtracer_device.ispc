@@ -881,7 +881,6 @@ uniform Vec3fa g_accu_vz;
 uniform Vec3fa g_accu_p;
 extern uniform bool g_changed;
 extern uniform int g_instancing_mode;
-extern uniform RTCIntersectFlags g_iflags;
 
 
 uniform bool g_animation = true;
@@ -1325,7 +1324,7 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
 
     /* intersect ray with scene */
     uniform RTCIntersectContext context;
-    context.flags = g_iflags;
+    context.flags = (i == 0) ? g_iflags_coherent : g_iflags_incoherent;
     rtcIntersectEx(g_scene,&context,ray);
     RayStats_addRay(stats);
     const Vec3f wo = neg(ray.dir);

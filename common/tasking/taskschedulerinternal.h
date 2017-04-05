@@ -39,7 +39,7 @@ namespace embree
     static const size_t CLOSURE_STACK_SIZE = 256*1024;    //!< stack for task closures
 
     struct Thread;
-    
+
     /*! virtual interface for all tasks */
     struct TaskFunction {
       virtual void execute() = 0;
@@ -54,16 +54,16 @@ namespace embree
       void execute() { closure(); };
     };
 
-    struct __aligned(64) Task 
+    struct __aligned(64) Task
     {
       /*! states a task can be in */
       enum { DONE, INITIALIZED };
 
       /*! switch from one state to another */
-      __forceinline void switch_state(int from, int to) 
+      __forceinline void switch_state(int from, int to)
       {
 	__memory_barrier();
-	bool success = state.compare_exchange_strong(from,to);
+        MAYBE_UNUSED bool success = state.compare_exchange_strong(from,to);
 	assert(success);
       }
 
@@ -74,16 +74,16 @@ namespace embree
       }
 
        /*! increment/decrement dependency counter */
-      void add_dependencies(int n) { 
-	dependencies+=n; 
+      void add_dependencies(int n) {
+	dependencies+=n;
       }
 
       /*! initialize all tasks to DONE state by default */
       __forceinline Task()
-	: state(DONE) {} 
+	: state(DONE) {}
 
       /*! construction of new task */
-      __forceinline Task (TaskFunction* closure, Task* parent, size_t stackPtr, size_t N) 
+      __forceinline Task (TaskFunction* closure, Task* parent, size_t stackPtr, size_t N)
         : dependencies(1), stealable(true), closure(closure), parent(parent), stackPtr(stackPtr), N(N)
       {
         if (parent) parent->add_dependencies(+1);
@@ -91,7 +91,7 @@ namespace embree
       }
 
       /*! construction of stolen task, stealing thread will decrement initial dependency */
-      __forceinline Task (TaskFunction* closure, Task* parent) 
+      __forceinline Task (TaskFunction* closure, Task* parent)
         : dependencies(1), stealable(false), closure(closure), parent(parent), stackPtr(-1), N(1)
       {
 	switch_state(DONE,INITIALIZED);
@@ -104,8 +104,8 @@ namespace embree
 	if (!try_switch_state(INITIALIZED,DONE)) return false;
 	new (&child) Task(closure, this);
         return true;
-      } 
-      
+      }
+
       /*! run this task */
       __dllexport void run(Thread& thread);
 
@@ -123,18 +123,18 @@ namespace embree
     {
       TaskQueue ()
       : left(0), right(0), stackPtr(0) {}
-      
+
       __forceinline void* alloc(size_t bytes, size_t align = 64) {
         stackPtr += bytes + ((align - stackPtr) & (align-1));
         assert(stackPtr <= CLOSURE_STACK_SIZE);
         return &stack[stackPtr-bytes];
       }
-      
+
       template<typename Closure>
-      __forceinline void push_right(Thread& thread, const size_t size, const Closure& closure) 
+      __forceinline void push_right(Thread& thread, const size_t size, const Closure& closure)
       {
         assert(right < TASK_STACK_SIZE);
-        
+
 	/* allocate new task on right side of stack */
         size_t oldStackPtr = stackPtr;
         TaskFunction* func = new (alloc(sizeof(ClosureTaskFunction<Closure>))) ClosureTaskFunction<Closure>(closure);
@@ -143,7 +143,7 @@ namespace embree
 	/* also move left pointer */
 	if (left >= right-1) left = right-1;
       }
-      
+
       __dllexport bool execute_local(Thread& thread, Task* parent);
       bool steal(Thread& thread);
       size_t getTaskSizeAtLeft();
@@ -156,14 +156,14 @@ namespace embree
       Task tasks[TASK_STACK_SIZE];
       __aligned(64) std::atomic<size_t> left;   //!< threads steal from left
       __aligned(64) std::atomic<size_t> right;  //!< new tasks are added to the right
-      
+
       /* closure stack */
       __aligned(64) char stack[CLOSURE_STACK_SIZE];
       size_t stackPtr;
     };
-    
+
     /*! thread local structure for each thread */
-    struct Thread 
+    struct Thread
     {
       ALIGNED_STRUCT;
 
@@ -173,7 +173,7 @@ namespace embree
       __forceinline size_t threadCount() {
         return scheduler->threadCounter;
       }
-      
+
       size_t threadIndex;              //!< ID of this thread
       TaskQueue tasks;                 //!< local task queue
       Task* task;                      //!< current active task
@@ -203,7 +203,7 @@ namespace embree
 
       /*! main loop for all threads */
       void thread_loop(size_t threadIndex);
-      
+
     private:
       std::atomic<size_t> numThreads;
       std::atomic<size_t> numThreadsRunning;
@@ -225,7 +225,7 @@ namespace embree
 
     /*! destroys the task scheduler again */
     static void destroy();
-    
+
     /*! lets new worker threads join the tasking system */
     void join();
     void reset();
@@ -247,10 +247,10 @@ namespace embree
 
     /* spawn a new task at the top of the threads task stack */
     template<typename Closure>
-      void spawn_root(const Closure& closure, size_t size = 1, bool useThreadPool = true) 
+      void spawn_root(const Closure& closure, size_t size = 1, bool useThreadPool = true)
     {
       if (useThreadPool) startThreads();
-      
+
       size_t threadIndex = allocThreadIndex();
       std::unique_ptr<Thread> mthread(new Thread(threadIndex,this)); // too large for stack allocation
       Thread& thread = *mthread;
@@ -264,13 +264,13 @@ namespace embree
         hasRootTask = true;
         condition.notify_all();
       }
-      
+
       if (useThreadPool) addScheduler(this);
 
       while (thread.tasks.execute_local(thread,nullptr));
       anyTasksRunning--;
       if (useThreadPool) removeScheduler(this);
-      
+
       threadLocal[threadIndex] = nullptr;
       swapThread(oldThread);
 
@@ -284,13 +284,13 @@ namespace embree
       cancellingException = nullptr;
 
       /* re-throw proper exception */
-      if (except != nullptr) 
+      if (except != nullptr)
         std::rethrow_exception(except);
     }
 
     /* spawn a new task at the top of the threads task stack */
     template<typename Closure>
-    static __forceinline void spawn(size_t size, const Closure& closure) 
+    static __forceinline void spawn(size_t size, const Closure& closure)
     {
       Thread* thread = TaskScheduler::thread();
       if (likely(thread != nullptr)) thread->tasks.push_right(*thread,size,closure);
@@ -305,9 +305,9 @@ namespace embree
 
     /* spawn a new task set  */
     template<typename Index, typename Closure>
-    static void spawn(const Index begin, const Index end, const Index blockSize, const Closure& closure) 
+    static void spawn(const Index begin, const Index end, const Index blockSize, const Closure& closure)
     {
-      spawn(end-begin, [=,&closure]() 
+      spawn(end-begin, [=,&closure]()
         {
 	  if (end-begin <= blockSize) {
 	    return closure(range<Index>(begin,end));
@@ -322,7 +322,10 @@ namespace embree
     /* work on spawned subtasks and wait until all have finished */
     __dllexport static bool wait();
 
-    /* returns the index of the current thread */
+    /* returns the ID of the current thread */
+    __dllexport static size_t threadID();
+
+    /* returns the index (0..threadCount-1) of the current thread */
     __dllexport static size_t threadIndex();
 
     /* returns the total number of threads */
@@ -364,4 +367,3 @@ namespace embree
     static ThreadPool* threadPool;
   };
 };
-

@@ -47,11 +47,12 @@ namespace embree {
 
 enum Mode {
   MODE_NORMAL = 0,
-  MODE_STREAM_COHERENT = 1,
-  MODE_STREAM_INCOHERENT = 2
+  MODE_STREAM = 1
 };
 
 extern "C" Mode g_mode;
+extern "C" RTCIntersectFlags g_iflags_coherent;
+extern "C" RTCIntersectFlags g_iflags_incoherent;
 
 /* error reporting function */
 void error_handler(void* userPtr, const RTCError code, const char* str = nullptr);
@@ -148,18 +149,27 @@ Vec3fa  getTextureTexel3f(const Texture* texture, float u, float v);
 enum ISPCInstancingMode { ISPC_INSTANCING_NONE, ISPC_INSTANCING_GEOMETRY, ISPC_INSTANCING_GEOMETRY_GROUP, ISPC_INSTANCING_SCENE_GEOMETRY, ISPC_INSTANCING_SCENE_GROUP };
 
 /* ray statistics */
+#if !defined(TASKING_PPL) // not supported with PPL because threadIndex is not unique and atomics are too expensive
+#define RAY_STATS
+#endif
+
 struct RayStats
 {
   int numRays;
   int pad[32-1];
 };
 
+#if defined(RAY_STATS)
 #if defined(ISPC)
 inline void RayStats_addRay(RayStats& stats)       { stats.numRays += popcnt(lanemask()); }
 inline void RayStats_addShadowRay(RayStats& stats) { stats.numRays += popcnt(lanemask()); }
-#else
+#else // C++
 __forceinline void RayStats_addRay(RayStats& stats)        { stats.numRays++; }
 __forceinline void RayStats_addShadowRay(RayStats& stats)  { stats.numRays++; }
+#endif
+#else // disabled
+inline void RayStats_addRay(RayStats& stats)       {}
+inline void RayStats_addShadowRay(RayStats& stats) {}
 #endif
 
 extern "C" RayStats* g_stats;

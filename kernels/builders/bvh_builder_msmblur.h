@@ -406,7 +406,7 @@ namespace embree
           const NodeRecordMB4D recurse(const BuildRecord& current, Allocator alloc, bool toplevel)
           {
             /* get thread local allocator */
-            if (alloc == nullptr)
+            if (!alloc)
               alloc = createAlloc();
 
             /* call memory monitor function to signal progress */
