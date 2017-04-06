@@ -90,7 +90,7 @@ void occlusionFilter(void* ptr, RTCRay2& ray)
   ray.hit_geomIDs[slot] = ray.geomID;
   ray.hit_primIDs[slot] = ray.primID;
   ray.lastHit++;
-  if (ray.lastHit - ray.firstHit >= HIT_LIST_LENGTH) 
+  if (ray.lastHit - ray.firstHit >= HIT_LIST_LENGTH)
     ray.firstHit++;
 
   /* calculate and accumulate transparency */
@@ -102,7 +102,7 @@ void occlusionFilter(void* ptr, RTCRay2& ray)
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
+Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   float weight = 1.0f;
   Vec3fa color = Vec3fa(0.0f);
@@ -123,6 +123,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
   {
     /* intersect ray with scene */
     rtcIntersect(g_scene,*((RTCRay*)&primary));
+    RayStats_addRay(stats);
 
     /* shade pixels */
     if (primary.geomID == RTC_INVALID_GEOMETRY_ID)
@@ -150,6 +151,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 
     /* trace shadow ray */
     rtcOccluded(g_scene,*((RTCRay*)&shadow));
+    RayStats_addShadowRay(stats);
 
     /* add light contribution */
     if (shadow.geomID) {
@@ -170,6 +172,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex,
+                        int threadIndex,
                         int* pixels,
                         const unsigned int width,
                         const unsigned int height,
@@ -188,7 +191,7 @@ void renderTileStandard(int taskIndex,
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixelStandard((float)x,(float)y,camera);
+    Vec3fa color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -324,7 +327,7 @@ void occlusionFilterN(int* valid,
     bool already_hit = false;
     unsigned int eray_firstHit = gather(eray->firstHit,0,sizeof(RTCRay2),pid,rid);
     unsigned int eray_lastHit =  gather(eray->lastHit,0,sizeof(RTCRay2),pid,rid);
-    for (unsigned int i=eray_firstHit; i<eray_lastHit; i++) 
+    for (unsigned int i=eray_firstHit; i<eray_lastHit; i++)
     {
       unsigned int slot= i%HIT_LIST_LENGTH;
       unsigned int last_geomID = gather(eray->hit_geomIDs[0],slot,sizeof(RTCRay2),pid,rid);
@@ -345,9 +348,9 @@ void occlusionFilterN(int* valid,
     scatter(eray->hit_primIDs[0],slot,sizeof(RTCRay2),pid,rid,hit_primID);
     eray_lastHit++;
     scatter(eray->lastHit,0,sizeof(RTCRay2),pid,rid,eray_lastHit);
-    if (eray_lastHit - eray_firstHit >= HIT_LIST_LENGTH) 
+    if (eray_lastHit - eray_firstHit >= HIT_LIST_LENGTH)
       scatter(eray->firstHit,0,sizeof(RTCRay2),pid,rid,eray_firstHit+1);
-    
+
     /* calculate transparency */
     Vec3fa h = ray_org + ray_dir*hit_t;
     float T = transparencyFunction(h);
@@ -366,6 +369,7 @@ void occlusionFilterN(int* valid,
 
 /* renders a single screen tile */
 void renderTileStandardStream(int taskIndex,
+                              int threadIndex,
                               int* pixels,
                               const unsigned int width,
                               const unsigned int height,
@@ -381,14 +385,13 @@ void renderTileStandardStream(int taskIndex,
   const unsigned int y0 = tileY * TILE_SIZE_Y;
   const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
+  RayStats& stats = g_stats[threadIndex];
+
   RTCRay2 primary_stream[TILE_SIZE_X*TILE_SIZE_Y];
   RTCRay2 shadow_stream[TILE_SIZE_X*TILE_SIZE_Y];
   Vec3fa color_stream[TILE_SIZE_X*TILE_SIZE_Y];
   float weight_stream[TILE_SIZE_X*TILE_SIZE_Y];
   bool valid_stream[TILE_SIZE_X*TILE_SIZE_Y];
-
-  /* select stream mode */
-  RTCIntersectFlags iflags = g_mode == MODE_STREAM_COHERENT ?  RTC_INTERSECT_COHERENT : RTC_INTERSECT_INCOHERENT;
 
   /* generate stream of primary rays */
   int N = 0;
@@ -418,6 +421,7 @@ void renderTileStandardStream(int taskIndex,
     primary.time = 0.0f;
     primary.transparency = 0.0f;
     N++;
+    RayStats_addRay(stats);
   }
 
   Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
@@ -426,7 +430,7 @@ void renderTileStandardStream(int taskIndex,
   {
     /* trace rays */
     RTCIntersectContext primary_context;
-    primary_context.flags = iflags;
+    primary_context.flags = g_iflags_coherent;
     primary_context.userRayExt = &primary_stream;
     rtcIntersect1M(g_scene,&primary_context,(RTCRay*)&primary_stream,N,sizeof(RTCRay2));
 
@@ -475,12 +479,13 @@ void renderTileStandardStream(int taskIndex,
       shadow.transparency = 1.0f;
       shadow.firstHit = 0;
       shadow.lastHit = 0;
+      RayStats_addShadowRay(stats);
     }
     N++;
 
     /* trace shadow rays */
     RTCIntersectContext shadow_context;
-    shadow_context.flags = iflags;
+    shadow_context.flags = g_iflags_coherent;
     shadow_context.userRayExt = &shadow_stream;
     rtcOccluded1M(g_scene,&shadow_context,(RTCRay*)&shadow_stream,N,sizeof(RTCRay2));
 
@@ -523,6 +528,7 @@ void renderTileStandardStream(int taskIndex,
       primary.geomID = RTC_INVALID_GEOMETRY_ID;
       primary.primID = RTC_INVALID_GEOMETRY_ID;
       primary.transparency = 0.0f;
+      RayStats_addRay(stats);
     }
     N++;
   }
@@ -722,7 +728,7 @@ extern "C" void device_init (char* cfg)
 }
 
 /* task that renders a single screen tile */
-void renderTileTask (int taskIndex, int* pixels,
+void renderTileTask (int taskIndex, int threadIndex, int* pixels,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,
@@ -730,7 +736,7 @@ void renderTileTask (int taskIndex, int* pixels,
                          const int numTilesX,
                          const int numTilesY)
 {
-  renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 /* called by the C++ code to render */
@@ -743,8 +749,9 @@ extern "C" void device_render (int* pixels,
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
+    const int threadIndex = (int)TaskScheduler::threadIndex();
     for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
+      renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
 }
 

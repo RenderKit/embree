@@ -33,10 +33,11 @@ sed -i.backup  's/NULL/nullptr/g' $2
 
 sed -i.backup  's/programIndex/0/g' $2
 sed -i.backup  's/programCount/1/g' $2
-sed -i.backup  's/task[ ]*void[ ]*\([a-zA-Z0-9_]*\)[ ]*(/void \1 (int taskIndex, /g' $2
+sed -i.backup  's/task[ ]*void[ ]*\([a-zA-Z0-9_]*\)[ ]*(/void \1 (int taskIndex, int threadIndex, /g' $2
 sed -i.backup  's/launch\[\([^]]*\)\][ ]*\([a-zA-Z0-9_]*\)[ ]*(\([^)]*\))/parallel_for(size_t(0),size_t(\1),[\&](const range<size_t>\& range) \{\
+    const int threadIndex = (int)TaskScheduler::threadIndex();\
     for (size_t i=range.begin(); i<range.end(); i++)\
-      \2((int)i,\3);\
+      \2((int)i,threadIndex,\3);\
   \})/g' $2
 
 sed -i.backup  's/foreach[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*)/for (unsigned int \1=\2; \1<\3; \1++)/g' $2

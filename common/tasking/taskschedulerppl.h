@@ -31,7 +31,7 @@
 #include <ppl.h>
 
 namespace embree
-{  
+{
   struct TaskScheduler
   {
     /*! initializes the task scheduler */
@@ -39,16 +39,21 @@ namespace embree
 
     /*! destroys the task scheduler again */
     static void destroy();
-    
-    /* returns the index of the current thread */
-    static __forceinline size_t threadIndex() {
+
+    /* returns the ID of the current thread */
+    static __forceinline size_t threadID() {
       return GetCurrentThreadId();
     }
-  
+
+    /* returns the index (0..threadCount-1) of the current thread */
+    /* FIXME: threadIndex is NOT supported by PPL! */
+    static __forceinline size_t threadIndex() {
+      return 0;
+    }
+
     /* returns the total number of threads */
     static __forceinline size_t threadCount() {
-      return GetMaximumProcessorCount(ALL_PROCESSOR_GROUPS);
+      return GetMaximumProcessorCount(ALL_PROCESSOR_GROUPS) + 1;
     }
   };
 };
-

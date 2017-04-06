@@ -199,7 +199,7 @@ namespace embree
           const ReductionTy recurse(BuildRecord& current, Allocator alloc, bool toplevel)
           {
             /* get thread local allocator */
-            if (alloc == nullptr)
+            if (!alloc)
               alloc = createAlloc();
 
             /* call memory monitor function to signal progress */

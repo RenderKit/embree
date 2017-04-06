@@ -219,23 +219,6 @@ namespace embree
   __forceinline const vint4 sra ( const vint4& a, const int& b ) { return _mm_srai_epi32(a.v, b); }
   __forceinline const vint4 srl ( const vint4& a, const int& b ) { return _mm_srli_epi32(a.v, b); }
   
-#if defined(__SSE4_1__)
-  __forceinline const vint4 min( const vint4& a, const vint4& b ) { return _mm_min_epi32(a.v, b.v); }
-  __forceinline const vint4 max( const vint4& a, const vint4& b ) { return _mm_max_epi32(a.v, b.v); }
-
-  __forceinline const vint4 umin( const vint4& a, const vint4& b ) { return _mm_min_epu32(a.v, b.v); }
-  __forceinline const vint4 umax( const vint4& a, const vint4& b ) { return _mm_max_epu32(a.v, b.v); }
-
-#else
-  __forceinline const vint4 min( const vint4& a, const vint4& b ) { return vint4(min(a[0],b[0]),min(a[1],b[1]),min(a[2],b[2]),min(a[3],b[3])); }
-  __forceinline const vint4 max( const vint4& a, const vint4& b ) { return vint4(max(a[0],b[0]),max(a[1],b[1]),max(a[2],b[2]),max(a[3],b[3])); }
-#endif
-
-  __forceinline const vint4 min( const vint4& a, const int&   b ) { return min(a,vint4(b)); }
-  __forceinline const vint4 min( const int&   a, const vint4& b ) { return min(vint4(a),b); }
-  __forceinline const vint4 max( const vint4& a, const int&   b ) { return max(a,vint4(b)); }
-  __forceinline const vint4 max( const int&   a, const vint4& b ) { return max(vint4(a),b); }
-
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
   ////////////////////////////////////////////////////////////////////////////////
@@ -330,6 +313,23 @@ namespace embree
 #endif    
   }
 
+#if defined(__SSE4_1__)
+  __forceinline const vint4 min( const vint4& a, const vint4& b ) { return _mm_min_epi32(a.v, b.v); }
+  __forceinline const vint4 max( const vint4& a, const vint4& b ) { return _mm_max_epi32(a.v, b.v); }
+
+  __forceinline const vint4 umin( const vint4& a, const vint4& b ) { return _mm_min_epu32(a.v, b.v); }
+  __forceinline const vint4 umax( const vint4& a, const vint4& b ) { return _mm_max_epu32(a.v, b.v); }
+
+#else
+  __forceinline const vint4 min( const vint4& a, const vint4& b ) { return select(a < b,a,b); }
+  __forceinline const vint4 max( const vint4& a, const vint4& b ) { return select(a < b,b,a); }
+#endif
+
+  __forceinline const vint4 min( const vint4& a, const int&   b ) { return min(a,vint4(b)); }
+  __forceinline const vint4 min( const int&   a, const vint4& b ) { return min(vint4(a),b); }
+  __forceinline const vint4 max( const vint4& a, const int&   b ) { return max(a,vint4(b)); }
+  __forceinline const vint4 max( const int&   a, const vint4& b ) { return max(vint4(a),b); }
+
   ////////////////////////////////////////////////////////////////////////////////
   // Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
@@ -400,7 +400,8 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__SSE4_1__)
-  __forceinline vint4 sortNetwork(const vint4& v)
+
+  __forceinline vint4 usort_ascending(const vint4& v)
   {
     const vint4 a0 = v;
     const vint4 b0 = shuffle<1,0,3,2>(a0);
@@ -417,6 +418,63 @@ namespace embree
     const vint4 a3 = select<0x2 /* 0b0010 */>(c2,d2);
     return a3;
   }
+
+  __forceinline vint4 usort_descending(const vint4& v)
+  {
+    const vint4 a0 = v;
+    const vint4 b0 = shuffle<1,0,3,2>(a0);
+    const vint4 c0 = umax(a0,b0);
+    const vint4 d0 = umin(a0,b0);
+    const vint4 a1 = select<0x5 /* 0b0101 */>(c0,d0);
+    const vint4 b1 = shuffle<2,3,0,1>(a1);
+    const vint4 c1 = umax(a1,b1);
+    const vint4 d1 = umin(a1,b1);
+    const vint4 a2 = select<0x3 /* 0b0011 */>(c1,d1);
+    const vint4 b2 = shuffle<0,2,1,3>(a2);
+    const vint4 c2 = umax(a2,b2);
+    const vint4 d2 = umin(a2,b2);
+    const vint4 a3 = select<0x2 /* 0b0010 */>(c2,d2);
+    return a3;
+  }
+
+#else
+
+  __forceinline vint4 usort_ascending(const vint4& v)
+  {
+    const vint4 a0 = v-vint4(0x80000000);
+    const vint4 b0 = shuffle<1,0,3,2>(a0);
+    const vint4 c0 = min(a0,b0);
+    const vint4 d0 = max(a0,b0);
+    const vint4 a1 = select<0x5 /* 0b0101 */>(c0,d0);
+    const vint4 b1 = shuffle<2,3,0,1>(a1);
+    const vint4 c1 = min(a1,b1);
+    const vint4 d1 = max(a1,b1);
+    const vint4 a2 = select<0x3 /* 0b0011 */>(c1,d1);
+    const vint4 b2 = shuffle<0,2,1,3>(a2);
+    const vint4 c2 = min(a2,b2);
+    const vint4 d2 = max(a2,b2);
+    const vint4 a3 = select<0x2 /* 0b0010 */>(c2,d2);
+    return a3+vint4(0x80000000);
+  }
+
+  __forceinline vint4 usort_descending(const vint4& v)
+  {
+    const vint4 a0 = v-vint4(0x80000000);
+    const vint4 b0 = shuffle<1,0,3,2>(a0);
+    const vint4 c0 = max(a0,b0);
+    const vint4 d0 = min(a0,b0);
+    const vint4 a1 = select<0x5 /* 0b0101 */>(c0,d0);
+    const vint4 b1 = shuffle<2,3,0,1>(a1);
+    const vint4 c1 = max(a1,b1);
+    const vint4 d1 = min(a1,b1);
+    const vint4 a2 = select<0x3 /* 0b0011 */>(c1,d1);
+    const vint4 b2 = shuffle<0,2,1,3>(a2);
+    const vint4 c2 = max(a2,b2);
+    const vint4 d2 = min(a2,b2);
+    const vint4 a3 = select<0x2 /* 0b0010 */>(c2,d2);
+    return a3+vint4(0x80000000);
+  }
+
 #endif
 
   ////////////////////////////////////////////////////////////////////////////////

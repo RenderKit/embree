@@ -72,11 +72,11 @@ namespace embree
         settings.maxLeafSize = BVH::maxLeafBlocks;
 
         /* creates a leaf node */
-        auto createLeaf = [&] (size_t depth, const range<size_t>& set, FastAllocator::ThreadLocal2* alloc) -> NodeRef
+        auto createLeaf = [&] (size_t depth, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) -> NodeRef
           {
             size_t start = set.begin();
             size_t items = set.size();
-            Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteAlignment);
+            Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
             for (size_t i=0; i<items; i++) {
               accel[i].fill(prims.data(),start,set.end(),bvh->scene);
             }
@@ -164,7 +164,7 @@ namespace embree
         const size_t numTimeSegments = bvh->numTimeSteps-1; assert(bvh->numTimeSteps > 1);
         prims.resize(numPrimitives);
         bvh->alloc.init_estimate(numPrimitives*sizeof(Primitive)*numTimeSegments);
-        NodeRef* roots = (NodeRef*) bvh->alloc.threadLocal()->malloc(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
+        NodeRef* roots = (NodeRef*) bvh->alloc.getCachedAllocator().malloc0(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
 
         /* build BVH for each timestep */
         avector<BBox3fa> bounds(bvh->numTimeSteps);
@@ -177,11 +177,11 @@ namespace embree
         
           NodeRef root = bvh_obb_builder_binned_sah<N>
           (
-            [&] () { return bvh->alloc.threadLocal2(); },
+            typename BVH::CreateAlloc(bvh),
 
-            [&] (const PrimInfoRange* children, const size_t numChildren, HeuristicBinningSAH alignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> AlignedNodeMB*
+            [&] (const PrimInfoRange* children, const size_t numChildren, HeuristicBinningSAH alignedHeuristic, const FastAllocator::CachedAllocator& alloc) -> AlignedNodeMB*
             {
-              AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),BVH::byteNodeAlignment); node->clear();
+              AlignedNodeMB* node = (AlignedNodeMB*) alloc.malloc0(sizeof(AlignedNodeMB),BVH::byteNodeAlignment); node->clear();
               for (size_t i=0; i<numChildren; i++) 
               {
                 LBBox3fa bounds = computePrimInfoMB(t,bvh->numTimeSteps,scene,children[i]);
@@ -190,9 +190,9 @@ namespace embree
               return node;
             },
 
-            [&] (const PrimInfoRange* children, const size_t numChildren, UnalignedHeuristicBinningSAH unalignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> UnalignedNodeMB*
+            [&] (const PrimInfoRange* children, const size_t numChildren, UnalignedHeuristicBinningSAH unalignedHeuristic, const FastAllocator::CachedAllocator& alloc) -> UnalignedNodeMB*
             {
-              UnalignedNodeMB* node = (UnalignedNodeMB*) alloc->alloc0->malloc(sizeof(UnalignedNodeMB),BVH::byteNodeAlignment); node->clear();
+              UnalignedNodeMB* node = (UnalignedNodeMB*) alloc.malloc0(sizeof(UnalignedNodeMB),BVH::byteNodeAlignment); node->clear();
               for (size_t i=0; i<numChildren; i++) 
               {
                 const AffineSpace3fa space = unalignedHeuristic.computeAlignedSpaceMB(scene,children[i]); 
@@ -202,11 +202,11 @@ namespace embree
               return node;
             },
 
-            [&] (size_t depth, const PrimInfoRange& pinfo, FastAllocator::ThreadLocal2* alloc) -> NodeRef
+            [&] (size_t depth, const PrimInfoRange& pinfo, const FastAllocator::CachedAllocator& alloc) -> NodeRef
             {
               size_t items = pinfo.size();
               size_t start = pinfo.begin();
-              Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteAlignment);
+              Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
               NodeRef node = bvh->encodeLeaf((char*)accel,items);
               for (size_t i=0; i<items; i++) {
                 accel[i].fill(prims.data(),start,pinfo.end(),bvh->scene);

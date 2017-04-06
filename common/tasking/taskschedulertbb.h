@@ -32,7 +32,7 @@
 #include "tbb/parallel_sort.h"
 
 namespace embree
-{  
+{
   struct TaskScheduler
   {
     /*! initializes the task scheduler */
@@ -40,8 +40,14 @@ namespace embree
 
     /*! destroys the task scheduler again */
     static void destroy();
-    
-    /* returns the index of the current thread */
+
+    /* returns the ID of the current thread */
+    static __forceinline size_t threadID()
+    {
+      return threadIndex();
+    }
+
+    /* returns the index (0..threadCount-1) of the current thread */
     static __forceinline size_t threadIndex()
     {
 #if TBB_INTERFACE_VERSION >= 9100
@@ -52,7 +58,7 @@ namespace embree
       return 0;
 #endif
     }
-  
+
     /* returns the total number of threads */
     static __forceinline size_t threadCount() {
 #if TBB_INTERFACE_VERSION >= 9100
@@ -63,4 +69,3 @@ namespace embree
     }
   };
 };
-

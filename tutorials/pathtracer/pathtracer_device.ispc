@@ -881,7 +881,6 @@ uniform Vec3fa g_accu_vz;
 uniform Vec3fa g_accu_p;
 extern uniform bool g_changed;
 extern uniform int g_instancing_mode;
-extern uniform RTCIntersectFlags g_iflags;
 
 
 uniform bool g_animation = true;
@@ -905,7 +904,7 @@ void assignShaders(ISPCGeometry* uniform geometry)
     ISPCTriangleMesh* uniform mesh = (ISPCTriangleMesh* uniform ) geometry;
 #if ENABLE_FILTER_FUNCTION == 1
     rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFuncVarying)&occlusionFilterOpaque);
-    
+
     ISPCMaterial* uniform material = g_ispc_scene->materials[mesh->materialID];
     //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
     //  rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFuncVarying)&intersectionFilterReject);
@@ -924,7 +923,7 @@ void assignShaders(ISPCGeometry* uniform geometry)
     ISPCQuadMesh* uniform mesh = (ISPCQuadMesh* uniform) geometry;
 #if ENABLE_FILTER_FUNCTION == 1
     rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFuncVarying)&occlusionFilterOpaque);
-    
+
     ISPCMaterial* uniform material = g_ispc_scene->materials[mesh->materialID];
     //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
     //  rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFuncVarying)&intersectionFilterReject);
@@ -988,7 +987,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   }
 
   /* commit individual objects in case of instancing */
-  if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP) 
+  if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP)
   {
     for (uniform unsigned int i=0; i<scene_in->numGeometries; i++) {
       if (scene_in->geomID_to_scene[i]) rtcCommit(scene_in->geomID_to_scene[i]);
@@ -1015,7 +1014,7 @@ inline void evalBezier(const ISPCHairSet* uniform hair, const int primID, const 
   const float t0 = 1.0f - t, t1 = t;
   const Vec3fa* vertices = hair->positions[0];
   const ISPCHair* hairs = hair->hairs;
-  
+
   const int i = hairs[primID].vertex;
   const Vec3fa p00 = vertices[i+0];
   const Vec3fa p01 = vertices[i+1];
@@ -1145,7 +1144,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform 
 
 AffineSpace3f calculate_interpolated_space (uniform ISPCInstance* uniform instance, float gtime)
 {
-  if (instance->numTimeSteps == 1) 
+  if (instance->numTimeSteps == 1)
     return make_AffineSpace3f(instance->spaces[0]);
 
   /* calculate time segment itime and fractional time ftime */
@@ -1159,7 +1158,7 @@ AffineSpace3f calculate_interpolated_space (uniform ISPCInstance* uniform instan
 inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 {
   dg.tnear_eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
- 
+
   int materialID = 0;
   foreach_unique (instID in ray.instID) {
     foreach_unique (geomID in ray.geomID) {
@@ -1180,7 +1179,7 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
     {
       /* get instance and geometry pointers */
       ISPCInstance* uniform instance = g_ispc_scene->geomID_to_inst[instID];
-      
+
       /* convert normals */
       //AffineSpace3f space = (1.0f-ray.time)*make_AffineSpace3f(instance->space0) + ray.time*make_AffineSpace3f(instance->space1);
       AffineSpace3f space = calculate_interpolated_space(instance,ray.time);
@@ -1302,7 +1301,7 @@ void occlusionFilterHair(void* uniform ptr, RTCRay& ray)
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
 }
 
-Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const uniform ISPCCamera& camera)
+Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   /* radiance accumulator and weight */
   Vec3f L = make_Vec3f(0.0f);
@@ -1325,8 +1324,9 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
 
     /* intersect ray with scene */
     uniform RTCIntersectContext context;
-    context.flags = g_iflags;
+    context.flags = (i == 0) ? g_iflags_coherent : g_iflags_incoherent;
     rtcIntersectEx(g_scene,&context,ray);
+    RayStats_addRay(stats);
     const Vec3f wo = neg(ray.dir);
 
     /* invoke environment lights if nothing hit */
@@ -1392,6 +1392,7 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
       if (ls.pdf <= 0.0f) continue;
       RTCRay shadow = make_Ray(dg.P,ls.dir,dg.tnear_eps,ls.dist,time); shadow.transparency = make_Vec3f(1.0f);
       rtcOccludedEx(g_scene,&context,shadow);
+      RayStats_addShadowRay(stats);
       //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       if (max(max(shadow.transparency.x,shadow.transparency.y),shadow.transparency.z) > 0.0f)
         L = L + Lw*ls.weight*shadow.transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,ls.dir);
@@ -1409,7 +1410,7 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
 }
 
 /* task that renders a single screen tile */
-Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
+Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   RandomSampler sampler;
 
@@ -1422,7 +1423,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
     /* calculate pixel color */
     float fx = x + RandomSampler_get1D(sampler);
     float fy = y + RandomSampler_get1D(sampler);
-    L = L + renderPixelFunction(fx,fy,sampler,camera);
+    L = L + renderPixelFunction(fx,fy,sampler,camera,stats);
   }
   L = L*(1.0f/SAMPLES_PER_PIXEL);
   return L;
@@ -1430,6 +1431,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 
 /* renders a single screen tile */
 void renderTileStandard(uniform int taskIndex,
+                        uniform int threadIndex,
                         uniform int* uniform pixels,
                         const uniform unsigned int width,
                         const uniform unsigned int height,
@@ -1448,7 +1450,7 @@ void renderTileStandard(uniform int taskIndex,
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixelStandard((float)x,(float)y,camera);
+    Vec3f color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     Vec3fa accu_color = g_accu[y*width+x] + make_Vec3fa(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
@@ -1469,7 +1471,7 @@ task void renderTileTask(uniform int* uniform pixels,
                          const uniform int numTilesX,
                          const uniform int numTilesY)
 {
-  renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 

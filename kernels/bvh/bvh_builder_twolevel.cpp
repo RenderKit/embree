@@ -232,7 +232,7 @@ namespace embree
               typename BVH::AlignedNode::Create2(),
               typename BVH::AlignedNode::Set2(),
               
-              [&] (const BVHBuilderBinnedOpenMergeSAH::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> NodeRef  {
+              [&] (const BVHBuilderBinnedOpenMergeSAH::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) -> NodeRef  {
                 numLeaves++;
                 assert(current.prims.size() == 1);
                 return (NodeRef) refs[current.prims.begin()].node;
@@ -250,7 +250,15 @@ namespace embree
               typename BVH::AlignedNode::Create2(),
               typename BVH::AlignedNode::Set2(),
               
-              [&] (const BVHBuilderBinnedSAH::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> NodeRef {
+              [&] (const BVHBuilderBinnedSAH::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) -> NodeRef {
+            // NodeRef root = BVHBuilderBinnedSAH::build<NodeRef>
+            //   (
+            //     typename BVH::CreateAlloc(bvh),
+            //     typename BVH::AlignedNode::Create2(),
+            //     typename BVH::AlignedNode::Set2(),
+               
+            //    [&] (const BVHBuilderBinnedSAH::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) -> NodeRef
+            //   {
                 assert(current.prims.size() == 1);
                 return (NodeRef) prims[current.prims.begin()].ID();
               },

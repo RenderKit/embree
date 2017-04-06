@@ -47,11 +47,12 @@ namespace embree {
 
 enum Mode {
   MODE_NORMAL = 0,
-  MODE_STREAM_COHERENT = 1,
-  MODE_STREAM_INCOHERENT = 2
+  MODE_STREAM = 1
 };
 
 extern "C" Mode g_mode;
+extern "C" RTCIntersectFlags g_iflags_coherent;
+extern "C" RTCIntersectFlags g_iflags_incoherent;
 
 /* error reporting function */
 void error_handler(void* userPtr, const RTCError code, const char* str = nullptr);
@@ -88,6 +89,7 @@ inline Vec3fa faceforward( const Vec3fa& N, const Vec3fa& I, const Vec3fa& Ng ) 
 
 /* standard shading function */
 typedef void (* renderTileFunc)(int taskIndex,
+                                        int threadIndex,
                                         int* pixels,
                                         const unsigned int width,
                                         const unsigned int height,
@@ -101,6 +103,7 @@ extern "C" void device_key_pressed_default(int key);
 extern "C" void (* key_pressed_handler)(int key);
 
 void renderTileStandard(int taskIndex,
+                        int threadIndex,
                         int* pixels,
                         const unsigned int width,
                         const unsigned int height,
@@ -144,5 +147,31 @@ float  getTextureTexel1f(const Texture* texture, float u, float v);
 Vec3fa  getTextureTexel3f(const Texture* texture, float u, float v);
 
 enum ISPCInstancingMode { ISPC_INSTANCING_NONE, ISPC_INSTANCING_GEOMETRY, ISPC_INSTANCING_GEOMETRY_GROUP, ISPC_INSTANCING_SCENE_GEOMETRY, ISPC_INSTANCING_SCENE_GROUP };
+
+/* ray statistics */
+#if !defined(TASKING_PPL) // not supported with PPL because threadIndex is not unique and atomics are too expensive
+#define RAY_STATS
+#endif
+
+struct RayStats
+{
+  int numRays;
+  int pad[32-1];
+};
+
+#if defined(RAY_STATS)
+#if defined(ISPC)
+inline void RayStats_addRay(RayStats& stats)       { stats.numRays += popcnt(lanemask()); }
+inline void RayStats_addShadowRay(RayStats& stats) { stats.numRays += popcnt(lanemask()); }
+#else // C++
+__forceinline void RayStats_addRay(RayStats& stats)        { stats.numRays++; }
+__forceinline void RayStats_addShadowRay(RayStats& stats)  { stats.numRays++; }
+#endif
+#else // disabled
+inline void RayStats_addRay(RayStats& stats)       {}
+inline void RayStats_addShadowRay(RayStats& stats) {}
+#endif
+
+extern "C" RayStats* g_stats;
 
 } // namespace embree

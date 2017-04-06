@@ -27,7 +27,6 @@
 #define SIMPLE_SHADING 1
 
 extern uniform ISPCScene* uniform g_ispc_scene;
-extern uniform RTCIntersectFlags g_iflags;
 
 /* scene data */
 RTCDevice g_device = NULL;
@@ -42,7 +41,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 }
 
 /* renders a single pixel casting with ambient occlusion */
-Vec3f ambientOcclusionShading(int x, int y, RTCRay& ray)
+Vec3f ambientOcclusionShading(int x, int y, RTCRay& ray, uniform RayStats& stats)
 {
   RTCRay rays[AMBIENT_OCCLUSION_SAMPLES];
 
@@ -80,10 +79,11 @@ Vec3f ambientOcclusionShading(int x, int y, RTCRay& ray)
     shadow.primID = RTC_INVALID_GEOMETRY_ID;
     shadow.mask = -1;
     shadow.time = 0;
+    RayStats_addShadowRay(stats);
   }
 
   uniform RTCIntersectContext context;
-  context.flags = g_iflags;
+  context.flags = g_iflags_incoherent;
 
   /* trace occlusion rays */
 #if USE_INTERFACE == 0
@@ -108,6 +108,7 @@ Vec3f ambientOcclusionShading(int x, int y, RTCRay& ray)
 
 /* renders a single screen tile */
 void renderTileStandard(uniform int taskIndex,
+                        uniform int threadIndex,
                         uniform int* uniform pixels,
                         const uniform unsigned int width,
                         const uniform unsigned int height,
@@ -123,6 +124,8 @@ void renderTileStandard(uniform int taskIndex,
   const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
   const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
+  uniform RayStats& stats = g_stats[threadIndex];
+
   RTCRay rays[TILE_SIZE_X*TILE_SIZE_Y];
 
   /* generate stream of primary rays */
@@ -137,7 +140,6 @@ void renderTileStandard(uniform int taskIndex,
 
     /* initialize ray */
     RTCRay& ray = rays[N++];
-
     ray.org = make_Vec3f(camera.xfm.p);
     ray.dir = make_Vec3f(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz));
     bool mask = __mask; unmasked { // invalidates inactive rays
@@ -148,10 +150,11 @@ void renderTileStandard(uniform int taskIndex,
     ray.primID = RTC_INVALID_GEOMETRY_ID;
     ray.mask = -1;
     ray.time = RandomSampler_get1D(sampler);
+    RayStats_addRay(stats);
   }
 
   uniform RTCIntersectContext context;
-  context.flags = g_iflags;
+  context.flags = g_iflags_coherent;
 
   /* trace stream of rays */
 #if USE_INTERFACE == 0
@@ -178,7 +181,7 @@ void renderTileStandard(uniform int taskIndex,
 #if SIMPLE_SHADING == 1
       color = make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
 #else
-      color = ambientOcclusionShading(x,y,ray);
+      color = ambientOcclusionShading(x,y,ray,g_stats[threadIndex]);
 #endif
 
     /* write color to framebuffer */
@@ -198,7 +201,7 @@ task void renderTileTask(uniform int* uniform pixels,
                          const uniform int numTilesX,
                          const uniform int numTilesY)
 {
-  renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 /* called by the C++ code for initialization */

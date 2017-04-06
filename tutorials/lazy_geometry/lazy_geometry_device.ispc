@@ -193,9 +193,9 @@ uniform LazyGeometry* uniform createLazyObject (RTCScene scene, uniform int user
 
   /* if we do not support the join mode then Embree also does not
    * support lazy build */
-  if (!rtcDeviceGetParameter1i(g_device,RTC_CONFIG_COMMIT_JOIN)) 
+  if (!rtcDeviceGetParameter1i(g_device,RTC_CONFIG_COMMIT_JOIN))
     eagerCreate(instance);
-  
+
   return instance;
 }
 
@@ -252,7 +252,7 @@ export void device_init (uniform int8* uniform cfg)
 }
 
 /* task that renders a single screen tile */
-Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
+Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   /* initialize ray */
   RTCRay ray;
@@ -268,6 +268,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
+  RayStats_addRay(stats);
 
   /* shade pixels */
   Vec3f color = make_Vec3f(0.0f);
@@ -290,6 +291,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 
     /* trace shadow ray */
     rtcOccluded(g_scene,shadow);
+    RayStats_addShadowRay(stats);
 
     /* add light contribution */
     if (shadow.geomID)
@@ -300,6 +302,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 
 /* renders a single screen tile */
 void renderTileStandard(uniform int taskIndex,
+                        uniform int threadIndex,
                         uniform int* uniform pixels,
                         const uniform unsigned int width,
                         const uniform unsigned int height,
@@ -318,7 +321,7 @@ void renderTileStandard(uniform int taskIndex,
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixelStandard((float)x,(float)y,camera);
+    Vec3f color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -337,7 +340,7 @@ task void renderTileTask(uniform int* uniform pixels,
                          const uniform int numTilesX,
                          const uniform int numTilesY)
 {
-  renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 /* called by the C++ code to render */

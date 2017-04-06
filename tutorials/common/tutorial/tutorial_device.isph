@@ -45,11 +45,12 @@ struct Triangle { int v0, v1, v2; };
 
 enum Mode {
   MODE_NORMAL = 0,
-  MODE_STREAM_COHERENT = 1,
-  MODE_STREAM_INCOHERENT = 2
+  MODE_STREAM = 1
 };
 
 extern uniform Mode g_mode;
+extern uniform RTCIntersectFlags g_iflags_coherent;
+extern uniform RTCIntersectFlags g_iflags_incoherent;
 
 /* error reporting function */
 unmasked void error_handler(void* uniform userPtr, const uniform RTCError code, const uniform int8* uniform str = NULL);
@@ -86,6 +87,7 @@ inline Vec3f faceforward( const Vec3f& N, const Vec3f& I, const Vec3f& Ng ) {
 
 /* standard shading function */
 typedef void (* uniform renderTileFunc)(uniform int taskIndex,
+                                        uniform int threadIndex,
                                         uniform int* uniform pixels,
                                         const uniform unsigned int width,
                                         const uniform unsigned int height,
@@ -99,6 +101,7 @@ extern void device_key_pressed_default(uniform int key);
 extern void (* uniform key_pressed_handler)(uniform int key);
 
 void renderTileStandard(uniform int taskIndex,
+                        uniform int threadIndex,
                         uniform int* uniform pixels,
                         const uniform unsigned int width,
                         const uniform unsigned int height,
@@ -142,3 +145,29 @@ float  getTextureTexel1f(const uniform Texture* uniform texture, float u, float 
 Vec3f  getTextureTexel3f(const uniform Texture* uniform texture, float u, float v);
 
 enum ISPCInstancingMode { ISPC_INSTANCING_NONE, ISPC_INSTANCING_GEOMETRY, ISPC_INSTANCING_GEOMETRY_GROUP, ISPC_INSTANCING_SCENE_GEOMETRY, ISPC_INSTANCING_SCENE_GROUP };
+
+/* ray statistics */
+#if !defined(TASKING_PPL) // not supported with PPL because threadIndex is not unique and atomics are too expensive
+#define RAY_STATS
+#endif
+
+struct RayStats
+{
+  int numRays;
+  int pad[32-1];
+};
+
+#if defined(RAY_STATS)
+#if defined(ISPC)
+inline void RayStats_addRay(uniform RayStats& stats)       { stats.numRays += popcnt(lanemask()); }
+inline void RayStats_addShadowRay(uniform RayStats& stats) { stats.numRays += popcnt(lanemask()); }
+#else // C++
+__forceinline void RayStats_addRay(RayStats& stats)        { stats.numRays++; }
+__forceinline void RayStats_addShadowRay(RayStats& stats)  { stats.numRays++; }
+#endif
+#else // disabled
+inline void RayStats_addRay(uniform RayStats& stats)       {}
+inline void RayStats_addShadowRay(uniform RayStats& stats) {}
+#endif
+
+extern uniform RayStats* uniform g_stats;

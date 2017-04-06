@@ -295,12 +295,12 @@ namespace embree
             typename BVH::AlignedNode::Create2(),
             typename BVH::AlignedNode::Set2(),
 
-           [&] (const BVHBuilderBinnedOpenMergeSAH::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> NodeRef
+           [&] (const BVHBuilderBinnedOpenMergeSAH::BuildRecord& current,  const FastAllocator::CachedAllocator& alloc) -> NodeRef
           {
             numLeaves++;
             assert(current.prims.size() == 1);
             BuildRef* ref = (BuildRef*)&refs[current.prims.begin()];
-            TransformNode* node = (TransformNode*) alloc->alloc0->malloc(sizeof(TransformNode));
+            TransformNode* node = (TransformNode*) alloc.malloc0(sizeof(TransformNode),BVH::byteAlignment);
             new (node) TransformNode(ref->local2world,ref->localBounds,ref->node,ref->mask,ref->instID,ref->xfmID,ref->type); // FIXME: rcp should be precalculated somewhere
             NodeRef noderef = BVH::encodeNode(node);
             noderef.setBarrier();
@@ -319,12 +319,12 @@ namespace embree
             typename BVH::AlignedNode::Create2(),
             typename BVH::AlignedNode::Set2(),
 
-           [&] (const BVHBuilderBinnedSAH::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> NodeRef
+           [&] (const BVHBuilderBinnedSAH::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) -> NodeRef
           {
             numLeaves++;
             assert(current.prims.size() == 1);
             BuildRef* ref = (BuildRef*) prims[current.prims.begin()].ID();
-            TransformNode* node = (TransformNode*) alloc->alloc0->malloc(sizeof(TransformNode),BVH::byteAlignment);
+            TransformNode* node = (TransformNode*) alloc.malloc0(sizeof(TransformNode),BVH::byteAlignment);
             new (node) TransformNode(ref->local2world,ref->localBounds,ref->node,ref->mask,ref->instID,ref->xfmID,ref->type); // FIXME: rcp should be precalculated somewhere
             NodeRef noderef = BVH::encodeNode(node);
             noderef.setBarrier();

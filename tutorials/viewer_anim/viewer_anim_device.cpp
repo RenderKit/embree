@@ -35,7 +35,6 @@
 namespace embree {
 
   extern "C" ISPCScene* g_ispc_scene;
-  extern "C" RTCIntersectFlags g_iflags;
 
   struct LSPointSample {
     Vec3fa position;
@@ -68,14 +67,14 @@ namespace embree {
   void device_key_pressed_handler(int key)
   {
     if (key == 111 /*o*/) {
-#if DUMP_PROFILE_DATA == 1 
+#if DUMP_PROFILE_DATA == 1
       std::cout << "dumping build and render times per frame [" << buildTime.size() << " frames]..." << std::flush;
-      dumpBuildAndRenderTimes(); 
+      dumpBuildAndRenderTimes();
       std::cout << "done" << std::endl;
 #endif
     }
     else if (key == 112 /*p*/) {
-      printStats = !printStats; 
+      printStats = !printStats;
     }
     else device_key_pressed_default(key);
   }
@@ -94,7 +93,7 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, con
     unsigned int geomID = rtcNewTriangleMesh (scene_out, object_flags, mesh->numTriangles, mesh->numVertices, 1);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
-    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];        
+    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
@@ -111,7 +110,7 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, con
     unsigned int geomID = rtcNewQuadMesh (scene_out, object_flags, mesh->numQuads, mesh->numVertices, mesh->numTimeSteps);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
-    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];        
+    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(ISPCQuad));
@@ -130,7 +129,7 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, con
     for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 4.0f;
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
-    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];        
+    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set all other buffers */
     rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float));
@@ -153,7 +152,7 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, con
     unsigned int geomID = rtcNewLineSegments (scene_out, object_flags, mesh->numSegments, mesh->numVertices, mesh->numTimeSteps);
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
-    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];        
+    for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->indices,0,sizeof(int));
@@ -173,7 +172,7 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, con
     }
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
-    for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];        
+    for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
@@ -191,10 +190,10 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, con
     case BEZIER_BASIS : geomID = rtcNewBezierCurveGeometry (scene_out, object_flags, hair->numHairs, hair->numVertices, hair->numTimeSteps); break;
     case BSPLINE_BASIS: geomID = rtcNewBSplineCurveGeometry (scene_out, object_flags, hair->numHairs, hair->numVertices, hair->numTimeSteps); break;
     default: assert(false);
-    }  
+    }
     /* generate vertex buffer */
     Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
-    for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];        
+    for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
@@ -212,7 +211,7 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, con
     int scene_aflags = RTC_INTERSECT1 | RTC_INTERSECT_STREAM | RTC_INTERPOLATE;
     return rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
   }
-    
+
 
   void createObject(const size_t i, ISPCScene* scene_in, RTCScene scene_out)
   {
@@ -264,15 +263,15 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, con
     parallel_for(size_t(0),numVertices,[&](const range<size_t>& range) {
         for (size_t i=range.begin(); i<range.end(); i++)
           vertices[i] = lerp(input0[i],input1[i],tt);
-      }); 
+      });
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     rtcUpdate(scene_out,geomID);
   }
 
-  void updateVertexData(const unsigned int ID, 
-                        ISPCScene* scene_in, 
-                        RTCScene scene_out, 
-                        const size_t keyFrameID, 
+  void updateVertexData(const unsigned int ID,
+                        ISPCScene* scene_in,
+                        RTCScene scene_out,
+                        const size_t keyFrameID,
                         const float tt)
   {
     ISPCGeometry* geometry = scene_in->geometries[ID];
@@ -287,7 +286,7 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, con
       ISPCTriangleMesh* mesh = (ISPCTriangleMesh*)geometry;
 #if 1
       /* if static do nothing */
-      if (mesh->numTimeSteps <= 1) return;      
+      if (mesh->numTimeSteps <= 1) return;
       /* interpolate two vertices from two timesteps */
       const size_t t0 = (keyFrameID+0) % mesh->numTimeSteps;
       const size_t t1 = (keyFrameID+1) % mesh->numTimeSteps;
@@ -301,7 +300,7 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, con
     else if (geometry->type == QUAD_MESH) {
       ISPCQuadMesh* mesh = (ISPCQuadMesh*)geometry;
       /* if static do nothing */
-      if (mesh->numTimeSteps <= 1) return;      
+      if (mesh->numTimeSteps <= 1) return;
       /* interpolate two vertices from two timesteps */
       const size_t t0 = (keyFrameID+0) % mesh->numTimeSteps;
       const size_t t1 = (keyFrameID+1) % mesh->numTimeSteps;
@@ -396,6 +395,7 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
 
 /* renders a single screen tile */
   void renderTileStandard(int taskIndex,
+                          int threadIndex,
                           int* pixels,
                           const unsigned int width,
                           const unsigned int height,
@@ -411,11 +411,13 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
     const unsigned int y0 = tileY * TILE_SIZE_Y;
     const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
+    RayStats& stats = g_stats[threadIndex];
+
     RTCRay rays[TILE_SIZE_X*TILE_SIZE_Y];
 
     /* generate stream of primary rays */
     int N = 0;
-    for (unsigned int y=y0; y<y1; y++) 
+    for (unsigned int y=y0; y<y1; y++)
       for (unsigned int x=x0; x<x1; x++)
       {
         /* initialize ray */
@@ -431,10 +433,11 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
         ray.primID = RTC_INVALID_GEOMETRY_ID;
         ray.mask = -1;
         ray.time = 0.0f;
+        RayStats_addRay(stats);
       }
 
     RTCIntersectContext context;
-    context.flags = g_iflags;
+    context.flags = g_iflags_coherent;
 
     /* trace stream of rays */
     rtcIntersect1M(g_scene,&context,rays,N,sizeof(RTCRay));
@@ -444,10 +447,10 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
     Vec3fa normals[TILE_SIZE_X*TILE_SIZE_Y];
 
     N = 0;
-    for (unsigned int y=y0; y<y1; y++) 
+    for (unsigned int y=y0; y<y1; y++)
       for (unsigned int x=x0; x<x1; x++,N++)
       {
-        /* ISPC workaround for mask == 0 */    
+        /* ISPC workaround for mask == 0 */
         RTCRay& ray = rays[N];
 
         /* shading */
@@ -467,11 +470,11 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
             if (likely(mesh->normals && ray.geomID == 0))
             {
               ISPCTriangle* tri = &mesh->triangles[ray.primID];
-              
+
               const Vec3fa n0 = mesh->normals[tri->v0];
               const Vec3fa n1 = mesh->normals[tri->v1];
               const Vec3fa n2 = mesh->normals[tri->v2];
-              Ng = (1.0f-ray.u-ray.v)*n0 + ray.u*n1 + ray.v*n2;          
+              Ng = (1.0f-ray.u-ray.v)*n0 + ray.u*n1 + ray.v*n2;
             }
 #endif
             int materialID = mesh->materialID;
@@ -518,6 +521,7 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
           ray.primID = RTC_INVALID_GEOMETRY_ID;
           ray.mask = 0;
           ray.time = 0.0f;
+          RayStats_addShadowRay(stats);
         }
         /* trace shadow rays */
         rtcOccluded1M(g_scene,&context,rays,N,sizeof(RTCRay));
@@ -526,13 +530,15 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
         for (int n=0;n<N;n++)
           if (rays[n].geomID == RTC_INVALID_GEOMETRY_ID)
             final[n] += diffuse[n] * abs(dot(normalize(rays[n].dir),normals[n])) * inv_numLights * ls_samples[i].radiance;
+          // if (rays[n].geomID != RTC_INVALID_GEOMETRY_ID)
+          //   colors[n] *= 0.1f;
       }
     }
 #endif
 
     /* write colors to framebuffer */
     N = 0;
-    for (unsigned int y=y0; y<y1; y++) 
+    for (unsigned int y=y0; y<y1; y++)
       for (unsigned int x=x0; x<x1; x++,N++)
       {
         Vec3fa& color = final[N];
@@ -544,7 +550,7 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
   }
 
 /* task that renders a single screen tile */
-  void renderTileTask (int taskIndex, int* pixels,
+  void renderTileTask (int taskIndex, int threadIndex, int* pixels,
                        const unsigned int width,
                        const unsigned int height,
                        const float time,
@@ -552,7 +558,7 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
                        const int numTilesX,
                        const int numTilesY)
   {
-    renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+    renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
   }
 
 /* called by the C++ code for initialization */
@@ -591,7 +597,7 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
         renderTime[i] = 0.0;
         vertexUpdateTime[i] = 0.0;
       }
-      
+
     }
 
     /* set render tile function to use */
@@ -602,10 +608,10 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
 
   __forceinline void updateTimeLog(std::vector<double> &times, double time)
   {
-    if (times[frameID] > 0.0f) 
+    if (times[frameID] > 0.0f)
       times[frameID] = (times[frameID] + time) * 0.5f;
     else
-      times[frameID] = time;    
+      times[frameID] = time;
   }
 
   __forceinline Vec3fa getTriangleNormal(const unsigned int geomID,
@@ -649,12 +655,12 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
       dg.Ns = dg.Ng;
       for (size_t i=0; i<g_ispc_scene->numLights; i++)
       {
-        const Light* l = g_ispc_scene->lights[i];            
+        const Light* l = g_ispc_scene->lights[i];
         Light_SampleRes ls = l->sample(l,dg,Vec2f(0.0f,0.0f));
         ls_samples[i].position = ls.dir * ls.dist;
         ls_samples[i].radiance = ls.weight;
       }
-    }          
+    }
 
     /* ============ */
     /* render image */
@@ -673,13 +679,14 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
     const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
 
     parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
+        const int threadIndex = (int)TaskScheduler::threadIndex();
         for (size_t i=range.begin(); i<range.end(); i++)
-        renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
-      }); 
+          renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+      });
 
     const double renderTime1 = getSeconds();
     const double renderTimeDelta = renderTime1-renderTime0;
-    
+
     updateTimeLog(renderTime,renderTimeDelta);
 
     if (unlikely(printStats)) std::cout << "rendering frame in : " << renderTimeDelta << " ms" << std::endl;
@@ -691,19 +698,19 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
 
 #if ENABLE_ANIM == 1
 
-    double vertexUpdateTime0 = getSeconds();    
-    
+    double vertexUpdateTime0 = getSeconds();
+
     if (animTime < 0.0f) animTime = getSeconds();
     const double atime = (getSeconds() - animTime) * ANIM_FPS;
     const size_t intpart = (size_t)floor(atime);
     const double fracpart = atime - (double)intpart;
-    const size_t keyFrameID = intpart;      
-    
+    const size_t keyFrameID = intpart;
+
     size_t numObjects = getNumObjects(g_ispc_scene);
     for (unsigned int i=0;i<numObjects;i++)
       updateVertexData(i, g_ispc_scene, g_scene, keyFrameID, (float)fracpart);
 
-    double vertexUpdateTime1 = getSeconds();    
+    double vertexUpdateTime1 = getSeconds();
     const double vertexUpdateTimeDelta = vertexUpdateTime1-vertexUpdateTime0;
 
     updateTimeLog(vertexUpdateTime,vertexUpdateTimeDelta);
@@ -713,9 +720,9 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
     /* =========== */
     /* rebuild bvh */
     /* =========== */
-    
+
     double buildTime0 = getSeconds();
-    rtcCommit(g_scene);      
+    rtcCommit(g_scene);
     double buildTime1 = getSeconds();
     double buildTimeDelta = buildTime1-buildTime0;
 
@@ -724,7 +731,7 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
     if (unlikely(printStats)) std::cout << "bvh rebuild in :     " << buildTimeDelta << " ms" << std::endl;
     PRINT(buildTime1-vertexUpdateTime0);
 #endif
-    
+
     frameID = (frameID + 1) % numProfileFrames;
   }
 
@@ -769,7 +776,7 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
 #if DUMP_PROFILE_DATA == 1
     /* dump data at the end of profiling */
     std::cout << "dumping build and render times per frame [" << numProfileFrames << " frames]..." << std::flush;
-    dumpBuildAndRenderTimes(); 
+    dumpBuildAndRenderTimes();
     std::cout << "done" << std::endl;
 #endif
   }

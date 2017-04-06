@@ -23,41 +23,41 @@ namespace embree
     template<int N>
     typename BVHN<N>::NodeRef BVHNBuilderVirtual<N>::BVHNBuilderV::build(FastAllocator* allocator, BuildProgressMonitor& progressFunc, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings)
     {
-      auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> NodeRef {
+      auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, const Allocator& alloc) -> NodeRef {
         return createLeaf(current,alloc);
       };
       
       settings.branchingFactor = N;
       settings.maxDepth = BVH::maxBuildDepthLeaf;
       return BVHBuilderBinnedSAH::build<NodeRef>
-        (FastAllocator::CreateAlloc2(allocator),typename BVH::AlignedNode::Create2(),typename BVH::AlignedNode::Set3(allocator,prims),createLeafFunc,progressFunc,prims,pinfo,settings);
+        (FastAllocator::Create(allocator),typename BVH::AlignedNode::Create2(),typename BVH::AlignedNode::Set3(allocator,prims),createLeafFunc,progressFunc,prims,pinfo,settings);
     }
 
 
     template<int N>
     typename BVHN<N>::NodeRef BVHNBuilderQuantizedVirtual<N>::BVHNBuilderV::build(FastAllocator* allocator, BuildProgressMonitor& progressFunc, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings)
     {
-      auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> NodeRef {
+      auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, const Allocator& alloc) -> NodeRef {
         return createLeaf(current,alloc);
       };
             
       settings.branchingFactor = N;
       settings.maxDepth = BVH::maxBuildDepthLeaf;
       return BVHBuilderBinnedSAH::build<NodeRef>
-        (FastAllocator::CreateAlloc2(allocator),typename BVH::QuantizedNode::Create2(),typename BVH::QuantizedNode::Set2(),createLeafFunc,progressFunc,prims,pinfo,settings);
+        (FastAllocator::Create(allocator),typename BVH::QuantizedNode::Create2(),typename BVH::QuantizedNode::Set2(),createLeafFunc,progressFunc,prims,pinfo,settings);
     }
 
     template<int N>
     typename BVHN<N>::NodeRecordMB BVHNBuilderMblurVirtual<N>::BVHNBuilderV::build(FastAllocator* allocator, BuildProgressMonitor& progressFunc, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings)
     {
-      auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> NodeRecordMB {
+      auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, const Allocator& alloc) -> NodeRecordMB {
         return createLeaf(current,alloc);
       };
 
       settings.branchingFactor = N;
       settings.maxDepth = BVH::maxBuildDepthLeaf;
       return BVHBuilderBinnedSAH::build<NodeRecordMB>
-        (FastAllocator::CreateAlloc2(allocator),typename BVH::AlignedNodeMB::Create2(),typename BVH::AlignedNodeMB::Set2(),createLeafFunc,progressFunc,prims,pinfo,settings);
+        (FastAllocator::Create(allocator),typename BVH::AlignedNodeMB::Create2(),typename BVH::AlignedNodeMB::Set2(),createLeafFunc,progressFunc,prims,pinfo,settings);
     }
 
     template struct BVHNBuilderVirtual<4>;

@@ -24,7 +24,6 @@ namespace embree {
 extern "C" ISPCScene* g_ispc_scene;
 extern "C" bool g_changed;
 extern "C" int g_instancing_mode;
-extern "C" RTCIntersectFlags g_iflags;
 
 /* scene data */
 RTCDevice g_device = nullptr;
@@ -32,8 +31,6 @@ RTCScene g_scene = nullptr;
 bool g_subdiv_mode = false;
 
 #define SPP 1
-
-#define FIXED_EDGE_TESSELLATION_VALUE 3
 
 #define MAX_EDGE_LEVEL 64.0f
 #define MIN_EDGE_LEVEL  4.0f
@@ -68,14 +65,14 @@ void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, size_t 
 }
 
 #if defined(ISPC)
-void updateSubMeshEdgeLevelBufferTask (int taskIndex,  ISPCSubdivMesh* mesh, const Vec3fa& cam_pos )
+void updateSubMeshEdgeLevelBufferTask (int taskIndex, int threadIndex,  ISPCSubdivMesh* mesh, const Vec3fa& cam_pos )
 {
   const size_t size = mesh->numFaces;
   const size_t startID = ((taskIndex+0)*size)/taskCount;
   const size_t endID   = ((taskIndex+1)*size)/taskCount;
   updateEdgeLevelBuffer(mesh,cam_pos,startID,endID);
 }
-void updateMeshEdgeLevelBufferTask (int taskIndex,  ISPCScene* scene_in, const Vec3fa& cam_pos )
+void updateMeshEdgeLevelBufferTask (int taskIndex, int threadIndex,  ISPCScene* scene_in, const Vec3fa& cam_pos )
 {
   ISPCGeometry* geometry = g_ispc_scene->geometries[taskIndex];
   if (geometry->type != SUBDIV_MESH) return;
@@ -93,8 +90,9 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
   /* first update small meshes */
 #if defined(ISPC)
   parallel_for(size_t(0),size_t( scene_in->numGeometries ),[&](const range<size_t>& range) {
+    const int threadIndex = (int)TaskScheduler::threadIndex();
     for (size_t i=range.begin(); i<range.end(); i++)
-      updateMeshEdgeLevelBufferTask((int)i,scene_in,cam_pos);
+      updateMeshEdgeLevelBufferTask((int)i,threadIndex,scene_in,cam_pos);
   }); 
 #endif
 
@@ -107,8 +105,9 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 #if defined(ISPC)
     if (mesh->numFaces < 10000) continue;
     parallel_for(size_t(0),size_t( (mesh->numFaces+4095)/4096 ),[&](const range<size_t>& range) {
+    const int threadIndex = (int)TaskScheduler::threadIndex();
     for (size_t i=range.begin(); i<range.end(); i++)
-      updateSubMeshEdgeLevelBufferTask((int)i,mesh,cam_pos);
+      updateSubMeshEdgeLevelBufferTask((int)i,threadIndex,mesh,cam_pos);
   }); 
 #else
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
@@ -142,7 +141,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene,(RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags, RTC_GEOMETRY_STATIC);
 
   /* commit individual objects in case of instancing */
-  if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP) 
+  if (g_instancing_mode == ISPC_INSTANCING_SCENE_GEOMETRY || g_instancing_mode == ISPC_INSTANCING_SCENE_GROUP)
   {
     for (unsigned int i=0; i<scene_in->numGeometries; i++) {
       if (scene_in->geomID_to_scene[i]) rtcCommit(scene_in->geomID_to_scene[i]);
@@ -197,7 +196,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
 
 AffineSpace3fa calculate_interpolated_space (ISPCInstance* instance, float gtime)
 {
-  if (instance->numTimeSteps == 1) 
+  if (instance->numTimeSteps == 1)
     return AffineSpace3fa(instance->spaces[0]);
 
    /* calculate time segment itime and fractional time ftime */
@@ -230,7 +229,7 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
     {
       /* get instance and geometry pointers */
       ISPCInstance* instance = g_ispc_scene->geomID_to_inst[instID];
-      
+
       /* convert normals */
       //AffineSpace3fa space = (1.0f-ray.time)*AffineSpace3fa(instance->space0) + ray.time*AffineSpace3fa(instance->space1);
       AffineSpace3fa space = calculate_interpolated_space(instance,ray.time);
@@ -248,7 +247,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
+Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   /* initialize sampler */
   RandomSampler sampler;
@@ -267,8 +266,9 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 
   /* intersect ray with scene */
   RTCIntersectContext context;
-  context.flags = g_iflags;
+  context.flags = RTC_INTERSECT_COHERENT;
   rtcIntersect1Ex(g_scene,&context,ray);
+  RayStats_addRay(stats);
 
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
@@ -313,6 +313,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex,
+                        int threadIndex,
                         int* pixels,
                         const unsigned int width,
                         const unsigned int height,
@@ -331,7 +332,7 @@ void renderTileStandard(int taskIndex,
 
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
-    Vec3fa color = renderPixelStandard((float)x,(float)y,camera);
+    Vec3fa color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -342,7 +343,7 @@ void renderTileStandard(int taskIndex,
 }
 
 /* task that renders a single screen tile */
-void renderTileTask (int taskIndex, int* pixels,
+void renderTileTask (int taskIndex, int threadIndex, int* pixels,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,
@@ -350,7 +351,7 @@ void renderTileTask (int taskIndex, int* pixels,
                          const int numTilesX,
                          const int numTilesY)
 {
-  renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 Vec3fa old_p;
@@ -407,8 +408,9 @@ extern "C" void device_render (int* pixels,
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
+    const int threadIndex = (int)TaskScheduler::threadIndex();
     for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
+      renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
   //rtcDebug();
 }

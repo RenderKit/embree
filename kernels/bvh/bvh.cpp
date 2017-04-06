@@ -104,11 +104,11 @@ namespace embree
     for (size_t i=0; i<lst.size(); i++)
       lst[i].node->setBarrier();
       
-    root = layoutLargeNodesRecursion(root,*alloc.threadLocal());
+    root = layoutLargeNodesRecursion(root,alloc.getCachedAllocator());
   }
   
   template<int N>
-  typename BVHN<N>::NodeRef BVHN<N>::layoutLargeNodesRecursion(NodeRef& node, FastAllocator::ThreadLocal& allocator)
+  typename BVHN<N>::NodeRef BVHN<N>::layoutLargeNodesRecursion(NodeRef& node, const FastAllocator::CachedAllocator& allocator)
   {
     if (node.isBarrier()) {
       node.clearBarrier();
@@ -117,7 +117,7 @@ namespace embree
     else if (node.isAlignedNode()) 
     {
       AlignedNode* oldnode = node.alignedNode();
-      AlignedNode* newnode = (BVHN::AlignedNode*) allocator.malloc(sizeof(BVHN::AlignedNode),byteNodeAlignment);
+      AlignedNode* newnode = (BVHN::AlignedNode*) allocator.malloc0(sizeof(BVHN::AlignedNode),byteNodeAlignment);
       *newnode = *oldnode;
       for (size_t c=0; c<N; c++)
         newnode->child(c) = layoutLargeNodesRecursion(oldnode->child(c),allocator);
@@ -160,7 +160,21 @@ namespace embree
       printStatistics();
 
     if (device->verbosity(2))
-      alloc.print_statistics(device->verbosity(3));
+    {
+      FastAllocator::AllStatistics stat(&alloc);
+      for (size_t i=0; i<objects.size(); i++)
+        if (objects[i]) 
+          stat = stat + FastAllocator::AllStatistics(&objects[i]->alloc);
+
+      stat.print(numPrimitives);
+    }
+
+    if (device->verbosity(3))
+    {
+      alloc.print_blocks();
+      for (size_t i=0; i<objects.size(); i++)
+        objects[i]->alloc.print_blocks();
+    }
 
     /* benchmark mode */
     if (device->benchmark) {

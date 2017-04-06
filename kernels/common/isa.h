@@ -24,7 +24,6 @@ namespace embree
   
 #define DECLARE_SYMBOL2(type,name)                                       \
   namespace sse2      { extern type name(); }                           \
-  namespace sse41     { extern type name(); }                           \
   namespace sse42     { extern type name(); }                           \
   namespace avx       { extern type name(); }                           \
   namespace avx2      { extern type name(); }                           \
@@ -40,7 +39,7 @@ namespace embree
 
 #define DECLARE_BUILDER2(Accel,Mesh,Args,symbol)                         \
   namespace sse2      { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace sse41     { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
+  namespace sse42     { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
   namespace avx       { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
   namespace avx2      { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
   namespace avx512knl { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
