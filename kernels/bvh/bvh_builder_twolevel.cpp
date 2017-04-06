@@ -141,8 +141,6 @@ namespace embree
         }
       });
 
-      PING;
-      PRINT(nextRef);
 
 #if PROFILE
       double d0 = getSeconds();
@@ -225,7 +223,7 @@ namespace embree
             DBG_PRINT(extSize);
             refs.resize(extSize); 
 
-            std::atomic<size_t> numLeaves(0);
+            //std::atomic<size_t> numLeaves(0);
 
             NodeRef root = BVHBuilderBinnedOpenMergeSAH::build<NodeRef,BuildRef>(
               typename BVH::CreateAlloc(bvh),
@@ -233,7 +231,7 @@ namespace embree
               typename BVH::AlignedNode::Set2(),
               
               [&] (const BVHBuilderBinnedOpenMergeSAH::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) -> NodeRef  {
-                numLeaves++;
+                //numLeaves++;
                 assert(current.prims.size() == 1);
                 return (NodeRef) refs[current.prims.begin()].node;
               },
@@ -242,7 +240,7 @@ namespace embree
               },              
               [&] (size_t dn) { bvh->scene->progressMonitor(0); },
               refs.data(),extSize,pinfo,settings);
-            PRINT(numLeaves.load());
+            //DBG_PRINT(numLeaves.load());
 
 #else
             NodeRef root = BVHBuilderBinnedSAH::build<NodeRef>(
