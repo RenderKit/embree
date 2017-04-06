@@ -606,7 +606,7 @@ namespace embree
   
   template<int scale = 4>
     __forceinline void scatter16f(const vboolf16& mask,const float *const ptr, const __m512i index,const vfloat16 v) {
-    _mm512_mask_i32scatter_ps((void*)ptr,mask,index,v,scale);
+    _mm512_mask_i32scatter_ps(ptr,mask,index,v,scale);
   }
 
   __forceinline vfloat16 loadAOS4to16f(const float& x,const float& y, const float& z)
