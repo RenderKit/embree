@@ -482,11 +482,6 @@ namespace embree
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline float reduce_add(const vfloat16 &a) { return _mm512_reduce_add_ps(a); }
-  __forceinline float reduce_mul(const vfloat16 &a) { return _mm512_reduce_mul_ps(a); }
-  __forceinline float reduce_min(const vfloat16 &a) { return _mm512_reduce_min_ps(a); }
-  __forceinline float reduce_max(const vfloat16 &a) { return _mm512_reduce_max_ps(a); }
-
   __forceinline vfloat16 vreduce_add2(vfloat16 x) {                      return x + shuffle<1,0,3,2>(x); }
   __forceinline vfloat16 vreduce_add4(vfloat16 x) { x = vreduce_add2(x); return x + shuffle<2,3,0,1>(x); }
   __forceinline vfloat16 vreduce_add8(vfloat16 x) { x = vreduce_add4(x); return x + shuffle4<1,0,3,2>(x); }
@@ -502,6 +497,10 @@ namespace embree
   __forceinline vfloat16 vreduce_max8(vfloat16 x) { x = vreduce_max4(x); return max(x,shuffle4<1,0,3,2>(x)); }
   __forceinline vfloat16 vreduce_max (vfloat16 x) { x = vreduce_max8(x); return max(x,shuffle4<2,3,0,1>(x)); }
 
+  __forceinline float reduce_add(const vfloat16& v) { return toScalar(vreduce_add(v)); }
+  __forceinline float reduce_min(const vfloat16& v) { return toScalar(vreduce_min(v)); }
+  __forceinline float reduce_max(const vfloat16& v) { return toScalar(vreduce_max(v)); }
+ 
   __forceinline size_t select_min(const vfloat16& v) { 
     return __bsf(_mm512_kmov(_mm512_cmp_epi32_mask(_mm512_castps_si512(v),_mm512_castps_si512(vreduce_min(v)),_MM_CMPINT_EQ)));
   }

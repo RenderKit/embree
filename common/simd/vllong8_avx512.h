@@ -325,16 +325,6 @@ namespace embree
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline long long reduce_add(const vllong8& a) { return _mm512_reduce_add_epi64(a); }
-  __forceinline long long reduce_min(const vllong8& a) { return _mm512_reduce_min_epi64(a); }
-  __forceinline long long reduce_max(const vllong8& a) { return _mm512_reduce_max_epi64(a); }
-  __forceinline long long reduce_and(const vllong8& a) { return _mm512_reduce_and_epi64(a); }
-  __forceinline long long reduce_or (const vllong8& a) { return _mm512_reduce_or_epi64(a); }
-
-  __forceinline vllong8 vreduce_add2(vllong8 x) {                      return x + shuffle<1,0,3,2>(x); }
-  __forceinline vllong8 vreduce_add4(vllong8 x) { x = vreduce_add2(x); return x + shuffle<2,3,0,1>(x); }
-  __forceinline vllong8 vreduce_add (vllong8 x) { x = vreduce_add4(x); return x + shuffle4<1,0>(x); }
-
   __forceinline vllong8 vreduce_min2(vllong8 x) {                      return min(x,shuffle<1,0,3,2>(x)); }
   __forceinline vllong8 vreduce_min4(vllong8 x) { x = vreduce_min2(x); return min(x,shuffle<2,3,0,1>(x)); }
   __forceinline vllong8 vreduce_min (vllong8 x) { x = vreduce_min4(x); return min(x,shuffle4<1,0>(x)); }
@@ -350,6 +340,16 @@ namespace embree
   __forceinline vllong8 vreduce_or2(vllong8 x) {                     return x | shuffle<1,0,3,2>(x); }
   __forceinline vllong8 vreduce_or4(vllong8 x) { x = vreduce_or2(x); return x | shuffle<2,3,0,1>(x); }
   __forceinline vllong8 vreduce_or (vllong8 x) { x = vreduce_or4(x); return x | shuffle4<1,0>(x); }
+
+  __forceinline vllong8 vreduce_add2(vllong8 x) {                      return x + shuffle<1,0,3,2>(x); }
+  __forceinline vllong8 vreduce_add4(vllong8 x) { x = vreduce_add2(x); return x + shuffle<2,3,0,1>(x); }
+  __forceinline vllong8 vreduce_add (vllong8 x) { x = vreduce_add4(x); return x + shuffle4<1,0>(x); }
+
+  __forceinline long long reduce_min(const vllong8& v) { return toScalar(vreduce_min(v)); }
+  __forceinline long long reduce_max(const vllong8& v) { return toScalar(vreduce_max(v)); }
+  __forceinline long long reduce_and(const vllong8& v) { return toScalar(vreduce_and(v)); }
+  __forceinline long long reduce_or (const vllong8& v) { return toScalar(vreduce_or (v)); }
+  __forceinline long long reduce_add(const vllong8& v) { return toScalar(vreduce_add(v)); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Memory load and store operations
