@@ -398,14 +398,6 @@ namespace embree
   __forceinline vfloat16 ceil (const vfloat16& a) {
     return _mm512_ceil_ps(a);
   }
-#if !defined (__clang__) // FIXME: not yet supported in clang v4.0.0
-  __forceinline vfloat16 trunc(const vfloat16& a) {
-    return _mm512_trunc_ps(a);
-  } 
-  __forceinline vfloat16 frac( const vfloat16& a ) {
-    return a-trunc(a);
-  }
-#endif
   __forceinline vint16 floori (const vfloat16& a) {
     return _mm512_cvt_roundps_epi32(a, _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC);
   }
