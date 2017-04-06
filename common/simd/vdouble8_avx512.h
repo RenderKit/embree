@@ -305,7 +305,7 @@ namespace embree
   }
 
   __forceinline double toScalar(const vdouble8& a) {
-    return _mm256_cvtsd_f64(_mm512_castpd512_pd256(a));
+    return _mm_cvtsd_f64(_mm512_castpd512_pd128(a));
   }
 
   ////////////////////////////////////////////////////////////////////////////////
