@@ -157,6 +157,9 @@ namespace embree
     int debug2;
     int debug3;
 
+    RTCIntersectFlags iflags_coherent;
+    RTCIntersectFlags iflags_incoherent;
+
     std::unique_ptr<ISPCScene> ispc_scene;
 
   private:
@@ -189,7 +192,5 @@ namespace embree
     std::string subdiv_mode;
     bool print_scene_cameras;
     std::string camera_name;
-    RTCIntersectFlags iflags_coherent;
-    RTCIntersectFlags iflags_incoherent;
   };
 }
