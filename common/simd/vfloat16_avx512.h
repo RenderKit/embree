@@ -145,7 +145,7 @@ namespace embree
     __forceinline vfloat( StepTy )   : v(_mm512_set_ps(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0)) {}
     __forceinline vfloat( NaNTy    ) : v(_mm512_set1_ps(nan)) {}
 
-    __forceinline static vfloat16 undefined() { return _mm512_undefined(); }
+    __forceinline static vfloat16 undefined() { return _mm512_undefined_ps(); }
     __forceinline static vfloat16 zero() { return _mm512_setzero_ps(); }
     __forceinline static vfloat16 one () { return _mm512_set1_ps(1.0f); }
     __forceinline static vfloat16 ulp () { return _mm512_set1_ps(embree::ulp); }
