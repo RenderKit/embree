@@ -1216,15 +1216,13 @@ namespace embree
     };
 
     /*! shrink allocated memory */
-    void shrink() {
-      alloc.shrink();
+    void shrink() { // FIXME: remove
     }
 
     /*! post build cleanup */
     void cleanup() {
       alloc.cleanup();
     }
-
 
     /*! return the true root */
     __forceinline NodeRef getRoot(const RayPrecalculations& pre) const {

@@ -372,7 +372,6 @@ namespace embree
       RTCORE_CATCH_BEGIN;
       RTCORE_TRACE(rtcStaticBVH);
       RTCORE_VERIFY_HANDLE(hbvh);
-      bvh->allocator.shrink();
       bvh->morton_src.clear();
       bvh->morton_tmp.clear();
       bvh->isStatic = true;

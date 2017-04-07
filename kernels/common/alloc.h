@@ -340,15 +340,6 @@ namespace embree
       thread_local_allocators.clear();
     }
 
-    /*! shrinks all memory blocks to the actually used size */
-    void shrink ()
-    {
-      for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++)
-        if (threadUsedBlocks[i].load() != nullptr) threadUsedBlocks[i].load()->shrink_list(device);
-      if (usedBlocks.load() != nullptr) usedBlocks.load()->shrink_list(device);
-      if (freeBlocks.load() != nullptr) freeBlocks.load()->clear_list(device); freeBlocks = nullptr;
-    }
-
     /*! resets the allocator, memory blocks get reused */
     void reset ()
     {
@@ -744,23 +735,6 @@ namespace embree
       {
         allocEnd = max(allocEnd,(size_t)cur);
         cur = 0;
-      }
-
-      void shrink_list (MemoryMonitorInterface* device)
-      {
-        for (Block* block = this; block; block = block->next)
-          block->shrink_block(device);
-      }
-
-      void shrink_block (MemoryMonitorInterface* device)
-      {
-        if (atype == OS_MALLOC)
-        {
-          const size_t sizeof_Header = offsetof(Block,data[0]);
-          size_t newSize = os_shrink(this,sizeof_Header+getBlockUsedBytes(),reserveEnd+sizeof_Header,huge_pages);
-          if (device) device->memoryMonitor(newSize-sizeof_Header-allocEnd,true);
-          reserveEnd = allocEnd = newSize-sizeof_Header;
-        }
       }
 
       size_t getBlockUsedBytes() const {
