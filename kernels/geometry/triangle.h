@@ -51,7 +51,7 @@ namespace embree
 
     /* Construction from vertices and IDs */
     __forceinline TriangleM(const Vec3vfM& v0, const Vec3vfM& v1, const Vec3vfM& v2, const vint<M>& geomIDs, const vint<M>& primIDs)
-      : v0(v0), e1(v0-v1), e2(v2-v0), Ng(cross(e1,e2)), geomIDs(geomIDs), primIDs(primIDs) {}
+      : v0(v0), e1(v0-v1), e2(v2-v0), geomIDs(geomIDs), primIDs(primIDs) {}
 
     /* Returns a mask that tells which triangles are valid */
     __forceinline vbool<M> valid() const { return geomIDs != vint<M>(-1); }
@@ -101,9 +101,6 @@ namespace embree
       vfloat<M>::store_nt(&dst->e2.x,src.e2.x);
       vfloat<M>::store_nt(&dst->e2.y,src.e2.y);
       vfloat<M>::store_nt(&dst->e2.z,src.e2.z);
-      vfloat<M>::store_nt(&dst->Ng.x,src.Ng.x);
-      vfloat<M>::store_nt(&dst->Ng.y,src.Ng.y);
-      vfloat<M>::store_nt(&dst->Ng.z,src.Ng.z);
       vint<M>::store_nt(&dst->geomIDs,src.geomIDs);
       vint<M>::store_nt(&dst->primIDs,src.primIDs);
     }
@@ -164,7 +161,6 @@ namespace embree
     Vec3vfM v0;      // base vertex of the triangles
     Vec3vfM e1;      // 1st edge of the triangles (v0-v1)
     Vec3vfM e2;      // 2nd edge of the triangles (v2-v0)
-    Vec3vfM Ng;      // geometry normal of the triangles (cross(e1,e2))
     vint<M> geomIDs; // geometry IDs
     vint<M> primIDs; // primitive IDs
   };
