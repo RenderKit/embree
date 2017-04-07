@@ -108,7 +108,10 @@ namespace embree
       debug0(0),
       debug1(0),
       debug2(0),
-      debug3(0)
+      debug3(0),
+
+      iflags_coherent(RTC_INTERSECT_COHERENT),
+      iflags_incoherent(RTC_INTERSECT_INCOHERENT)
   {
     /* only a single instance of this class is supported */
     assert(instance == nullptr);
@@ -241,6 +244,16 @@ namespace embree
         "  normal  : normal mode\n"
         "  stream  : stream mode\n");
     }
+
+    registerOption("coherent", [this] (Ref<ParseStream> cin, const FileName& path) {
+        g_iflags_coherent   = iflags_coherent   = RTC_INTERSECT_COHERENT;
+        g_iflags_incoherent = iflags_incoherent = RTC_INTERSECT_COHERENT;
+      }, "--coherent: force using RTC_INTERSECT_COHERENT hint when tracing rays");
+
+    registerOption("incoherent", [this] (Ref<ParseStream> cin, const FileName& path) {
+        g_iflags_coherent   = iflags_coherent   = RTC_INTERSECT_INCOHERENT;
+        g_iflags_incoherent = iflags_incoherent = RTC_INTERSECT_INCOHERENT;
+      }, "--incoherent: force using RTC_INTERSECT_INCOHERENT hint when tracing rays");
   }
 
   TutorialApplication::~TutorialApplication()
@@ -266,9 +279,7 @@ namespace embree
       convert_bspline_to_bezier(false),
       sceneFilename(""),
       instancing_mode(SceneGraph::INSTANCING_NONE),
-      print_scene_cameras(false),
-      iflags_coherent(RTC_INTERSECT_COHERENT),
-      iflags_incoherent(RTC_INTERSECT_INCOHERENT)
+      print_scene_cameras(false)
   {
     registerOption("i", [this] (Ref<ParseStream> cin, const FileName& path) {
         sceneFilename = path + cin->getFileName();
@@ -443,16 +454,6 @@ namespace embree
     registerOption("camera", [this] (Ref<ParseStream> cin, const FileName& path) {
         camera_name = cin->getString();
       }, "--camera: use camera with specified name");
-
-    registerOption("coherent", [this] (Ref<ParseStream> cin, const FileName& path) {
-        g_iflags_coherent   = iflags_coherent   = RTC_INTERSECT_COHERENT;
-        g_iflags_incoherent = iflags_incoherent = RTC_INTERSECT_COHERENT;
-      }, "--coherent: force using RTC_INTERSECT_COHERENT hint when tracing rays");
-
-    registerOption("incoherent", [this] (Ref<ParseStream> cin, const FileName& path) {
-        g_iflags_coherent   = iflags_coherent   = RTC_INTERSECT_INCOHERENT;
-        g_iflags_incoherent = iflags_incoherent = RTC_INTERSECT_INCOHERENT;
-      }, "--incoherent: force using RTC_INTERSECT_INCOHERENT hint when tracing rays");
   }
 
   void TutorialApplication::initRayStats()
