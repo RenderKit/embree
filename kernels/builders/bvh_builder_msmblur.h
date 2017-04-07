@@ -17,6 +17,7 @@
 #pragma once
 
 #define NUM_TEMPORAL_BINS 2
+#define NUM_MBLUR_OBJECT_BINS 32
 
 #include "../bvh/bvh.h"
 #include "../common/primref_mb.h"
@@ -181,7 +182,7 @@ namespace embree
         __forceinline BuildRecord (size_t depth)
           : depth(depth) {}
 
-        __forceinline BuildRecord (const SetMB& prims, const BinSplit<NUM_OBJECT_BINS>& split, size_t depth)
+        __forceinline BuildRecord (const SetMB& prims, const BinSplit<NUM_MBLUR_OBJECT_BINS>& split, size_t depth)
           : depth(depth), prims(prims), split(split) {}
 
         __forceinline friend bool operator< (const BuildRecord& a, const BuildRecord& b) {
@@ -195,7 +196,7 @@ namespace embree
       public:
 	size_t depth;                     //!< Depth of the root of this subtree.
 	SetMB prims;                      //!< The list of primitives.
-	BinSplit<NUM_OBJECT_BINS> split;  //!< The best split for the primitives.
+	BinSplit<NUM_MBLUR_OBJECT_BINS> split;  //!< The best split for the primitives.
       };
 
       template<
@@ -216,7 +217,7 @@ namespace embree
 
           typedef BVHNodeRecordMB4D<NodeRef> NodeRecordMB4D;
 
-          typedef BinSplit<NUM_OBJECT_BINS> Split;
+          typedef BinSplit<NUM_MBLUR_OBJECT_BINS> Split;
           typedef mvector<PrimRefMB>* PrimRefVector;
           typedef SharedVector<mvector<PrimRefMB>> SharedPrimRefVector;
           typedef LocalChildListT<BuildRecord,MAX_BRANCHING_FACTOR> LocalChildList;
@@ -508,7 +509,7 @@ namespace embree
           }
 
         private:
-          HeuristicArrayBinningMB<PrimRefMB,NUM_OBJECT_BINS> heuristicObjectSplit;
+          HeuristicArrayBinningMB<PrimRefMB,NUM_MBLUR_OBJECT_BINS> heuristicObjectSplit;
           HeuristicMBlurTemporalSplit<PrimRefMB,RecalculatePrimRef,NUM_TEMPORAL_BINS> heuristicTemporalSplit;
           const RecalculatePrimRef recalculatePrimRef;
           const CreateAllocFunc createAlloc;

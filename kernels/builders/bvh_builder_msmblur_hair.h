@@ -91,8 +91,8 @@ namespace embree
           typedef LocalChildListT<BuildRecord,MAX_BRANCHING_FACTOR> LocalChildList;
 
           typedef HeuristicMBlurTemporalSplit<PrimRefMB,RecalculatePrimRef,NUM_TEMPORAL_BINS> HeuristicTemporal;
-          typedef HeuristicArrayBinningMB<PrimRefMB,NUM_OBJECT_BINS> HeuristicBinning;
-          typedef UnalignedHeuristicArrayBinningMB<PrimRefMB,NUM_OBJECT_BINS> UnalignedHeuristicBinning;
+          typedef HeuristicArrayBinningMB<PrimRefMB,NUM_MBLUR_OBJECT_BINS> HeuristicBinning;
+          typedef UnalignedHeuristicArrayBinningMB<PrimRefMB,NUM_MBLUR_OBJECT_BINS> UnalignedHeuristicBinning;
 
         public:
 

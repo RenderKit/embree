@@ -28,7 +28,7 @@ namespace embree
     template<typename PrimRefMB, typename RecalculatePrimRef, size_t BINS>
       struct HeuristicMBlurTemporalSplit
       {
-        typedef BinSplit<NUM_OBJECT_BINS> Split;
+        typedef BinSplit<NUM_MBLUR_OBJECT_BINS> Split;
         typedef mvector<PrimRefMB>* PrimRefVector;
         typedef typename PrimRefMB::BBox BBox; 
 

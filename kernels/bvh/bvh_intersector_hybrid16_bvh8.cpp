@@ -59,7 +59,7 @@ namespace embree
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR16(BVH8Bezier1vIntersector16Hybrid_OBB, BVHNIntersectorKHybrid<8 COMMA 16 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1vIntersectorK<16> > >));
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR16(BVH8Bezier1iIntersector16Hybrid_OBB, BVHNIntersectorKHybrid<8 COMMA 16 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorK<16> > >));
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR16(BVH8Bezier1iMBIntersector16Hybrid_OBB,BVHNIntersectorKHybrid<8 COMMA 16 COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorKMB<16> > >));
-    IF_ENABLED_HAIR(DEFINE_INTERSECTOR16(BVH8MB4DBezier1iMBIntersector16Hybrid_OBB,BVHNIntersectorKHybrid<8 COMMA 16 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorKMB<
+    IF_ENABLED_HAIR(DEFINE_INTERSECTOR16(BVH8MB4DBezier1iMBIntersector16Hybrid_OBB,BVHNIntersectorKHybrid<8 COMMA 16 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorKMB<16> > >));
   }
 }
 
