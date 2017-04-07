@@ -650,7 +650,7 @@ namespace embree
     size_t testID;
   };
 
-  struct VMAllocTest : public VerifyApplication::Test
+  struct os_shrink_test : public VerifyApplication::Test
   {
     struct Allocation 
     {
@@ -667,9 +667,10 @@ namespace embree
         ptr = nullptr;
       }
 
-      void shrink() {
-        if (!ptr) return;
+      size_t shrink() {
+        if (!ptr) return 0;
         bytes = os_shrink(ptr,bytes/2,bytes,hugepages);
+        return bytes;
       }
 
     private:
@@ -678,8 +679,8 @@ namespace embree
       bool hugepages;
     };
 
-    VMAllocTest ()
-      : VerifyApplication::Test("vm_alloc_test",ISA,VerifyApplication::TEST_SHOULD_PASS,false) {}
+    os_shrink_test ()
+      : VerifyApplication::Test("os_shrink_test",ISA,VerifyApplication::TEST_SHOULD_PASS,false) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
     {
@@ -688,8 +689,9 @@ namespace embree
       for (size_t i=0; i<1024*1024; i++) 
       {
         std::unique_ptr<Allocation> alloc(new Allocation(2*4096));
-        alloc->shrink();
+        if (allocations.size() > 1) allocations.back()->shrink();
         allocations.push_back(std::move(alloc)); 
+        
       }
       allocations.clear();
       return VerifyApplication::PASSED;
@@ -4061,7 +4063,7 @@ namespace embree
       if (testName == nullptr) break;
       groups.top()->add(new EmbreeInternalTest(testName,i-2000000));
     }
-    groups.top()->add(new VMAllocTest());
+    groups.top()->add(new os_shrink_test());
 
     for (auto isa : isas)
     {
