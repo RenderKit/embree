@@ -672,6 +672,7 @@ namespace embree
         bytes = os_shrink(ptr,bytes/2,bytes,hugepages);
       }
 
+    private:
       void* ptr;
       size_t bytes;
       bool hugepages;
@@ -682,16 +683,15 @@ namespace embree
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
     {
-     
-      std::vector<Allocation> allocations;
+      std::vector<std::unique_ptr<Allocation>> allocations;
       allocations.reserve(1024*1024);
       for (size_t i=0; i<1024*1024; i++) 
       {
-        allocations.push_back(Allocation(2*4096));
-        allocations.back().shrink();
+        std::unique_ptr<Allocation> alloc(new Allocation(2*4096));
+        alloc->shrink();
+        allocations.push_back(std::move(alloc)); 
       }
       allocations.clear();
-
       return VerifyApplication::PASSED;
     }
   };
