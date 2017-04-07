@@ -650,6 +650,52 @@ namespace embree
     size_t testID;
   };
 
+  struct VMAllocTest : public VerifyApplication::Test
+  {
+    struct Allocation 
+    {
+      Allocation (size_t bytes) 
+        : ptr(os_malloc(bytes,hugepages)), bytes(bytes) {}
+
+      ~Allocation() {
+        free();
+      }
+
+      void free() {
+        if (!ptr) return;
+        os_free(ptr,bytes,hugepages);
+        ptr = nullptr;
+      }
+
+      void shrink() {
+        if (!ptr) return;
+        bytes = os_shrink(ptr,bytes/2,bytes,hugepages);
+      }
+
+      void* ptr;
+      size_t bytes;
+      bool hugepages;
+    };
+
+    VMAllocTest ()
+      : VerifyApplication::Test("vm_alloc_test",ISA,VerifyApplication::TEST_SHOULD_PASS,false) {}
+    
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+     
+      std::vector<Allocation> allocations;
+      allocations.reserve(1024*1024);
+      for (size_t i=0; i<1024*1024; i++) 
+      {
+        allocations.push_back(Allocation(2*4096));
+        allocations.back().shrink();
+      }
+      allocations.clear();
+
+      return VerifyApplication::PASSED;
+    }
+  };
+
   struct MultipleDevicesTest : public VerifyApplication::Test
   {
     MultipleDevicesTest (std::string name, int isa)
@@ -979,6 +1025,54 @@ namespace embree
       rtcNewUserGeometry2 (scene,0,2);
       rtcCommit (scene);
       AssertNoError(device);
+      return VerifyApplication::PASSED;
+    }
+  };
+
+  struct ManyBuildTest : public VerifyApplication::Test
+  {
+    RTCSceneFlags sflags;
+    RTCGeometryFlags gflags; 
+    
+    ManyBuildTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags)
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), gflags(gflags) {}
+    
+    VerifyApplication::TestReturnValue run (VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      errorHandler(rtcDeviceGetError(device));
+      rtcDeviceSetErrorFunction2(device,error_handler,nullptr);
+      
+      std::vector<Vec3f> p;
+      p.reserve(4);
+      p.push_back(Vec3f(0.0f, 0.0f, 0.0f));
+      p.push_back(Vec3f(1.0f, 0.0f, 0.0f));
+      p.push_back(Vec3f(0.0f, 0.5f, 1.0f));
+      
+      std::vector<uint32_t> indices;
+      indices.push_back(0);
+      indices.push_back(1);
+      indices.push_back(2);
+      
+      const size_t numTriangles = 1;
+      const size_t numVertices = 3;
+      
+      for (size_t i = 0; i < 1024*1024; ++i)
+      {
+        if (i%100 == 0) PRINT(i);
+        rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000000, i);
+        
+        RTCScene scene = rtcDeviceNewScene(device, sflags, RTC_INTERSECT1);
+        
+        unsigned geomID = rtcNewTriangleMesh(scene, gflags, numTriangles, numVertices, 1);
+        rtcSetBuffer2(scene, geomID, RTC_VERTEX_BUFFER, p.data(), 0, 3 * sizeof(float), numVertices);
+        rtcSetBuffer2(scene, geomID, RTC_INDEX_BUFFER, indices.data(), 0, 3 * sizeof(uint32_t), numTriangles);
+        
+        rtcCommit(scene);
+      }
+      AssertNoError(device);
+
       return VerifyApplication::PASSED;
     }
   };
@@ -3960,13 +4054,14 @@ namespace embree
     };
 
     groups.top()->add(new InitExitTest("init_exit"));
-
+    
     /* add Embree internal tests */
     for (size_t i=2000000; i<3000000; i++) {
       const char* testName = (const char*) rtcDeviceGetParameter1i(device,(RTCParameter)i);
       if (testName == nullptr) break;
       groups.top()->add(new EmbreeInternalTest(testName,i-2000000));
     }
+    groups.top()->add(new VMAllocTest());
 
     for (auto isa : isas)
     {
@@ -4016,6 +4111,11 @@ namespace embree
         groups.top()->add(new EmptyGeometryTest(to_string(sflags),isa,sflags,RTC_GEOMETRY_STATIC));
       groups.pop();
       
+      push(new TestGroup("many_build",false,false,false));
+      for (auto sflags : sceneFlags) 
+        groups.top()->add(new ManyBuildTest(to_string(sflags),isa,sflags,RTC_GEOMETRY_STATIC));
+      groups.pop();
+
       push(new TestGroup("build",true,true));
       for (auto sflags : sceneFlags) 
         groups.top()->add(new BuildTest(to_string(sflags),isa,sflags,RTC_GEOMETRY_STATIC));
