@@ -175,7 +175,7 @@ namespace embree
         const Split find(const SetMB& set, const size_t logBlockSize)
         {
           ObjectBinner binner(empty);
-          const BinMapping<BINS> mapping(set.centBounds,set.size());
+          const BinMapping<BINS> mapping(set.size(),set.centBounds);
           bin_parallel(binner,set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,mapping);
           Split osplit = binner.best(mapping,logBlockSize);
           osplit.sah *= set.time_range.size();

@@ -34,7 +34,7 @@ namespace embree
         __forceinline BinMapping() {}
         
         /*! calculates the mapping */
-        __forceinline BinMapping(const BBox3fa& centBounds, size_t N) 
+        __forceinline BinMapping(size_t N, const BBox3fa& centBounds) 
         {
           num = min(BINS,size_t(4.0f + 0.05f*N));
           const vfloat4 diag = (vfloat4) centBounds.size();
