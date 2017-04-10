@@ -90,9 +90,9 @@ namespace embree
           typedef FastAllocator::CachedAllocator Allocator;
           typedef LocalChildListT<BuildRecord,MAX_BRANCHING_FACTOR> LocalChildList;
 
-          typedef HeuristicMBlurTemporalSplit<PrimRefMB,RecalculatePrimRef,NUM_TEMPORAL_BINS> HeuristicTemporal;
-          typedef HeuristicArrayBinningMB<PrimRefMB,NUM_MBLUR_OBJECT_BINS> HeuristicBinning;
-          typedef UnalignedHeuristicArrayBinningMB<PrimRefMB,NUM_MBLUR_OBJECT_BINS> UnalignedHeuristicBinning;
+          typedef HeuristicMBlurTemporalSplit<PrimRefMB,RecalculatePrimRef,MBLUR_NUM_TEMPORAL_BINS> HeuristicTemporal;
+          typedef HeuristicArrayBinningMB<PrimRefMB,MBLUR_NUM_OBJECT_BINS> HeuristicBinning;
+          typedef UnalignedHeuristicArrayBinningMB<PrimRefMB,MBLUR_NUM_OBJECT_BINS> UnalignedHeuristicBinning;
 
         public:
 
