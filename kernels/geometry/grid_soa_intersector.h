@@ -31,7 +31,7 @@ namespace embree
       typedef void Primitive;
       typedef Vec3<vfloat<K>> Vec3vfK;
 
-      class PrecalculationsBase
+      class Precalculations
       {
 #if defined(__AVX__)
         static const int M = 8;
@@ -40,17 +40,15 @@ namespace embree
 #endif
 
       public:
-        __forceinline PrecalculationsBase (const vbool<K>& valid, const RayK<K>& ray)
+        __forceinline Precalculations (const vbool<K>& valid, const RayK<K>& ray)
           : grid(nullptr), intersector(valid,ray) {}
 
       public:
         GridSOA* grid;
-        int _itime;
-        float _ftime;
+        int itime;
+        float ftime;
         PlueckerIntersectorK<M,K> intersector; // FIXME: use quad intersector
       };
-
-      typedef IntersectorKPrecalculations<K,PrecalculationsBase> Precalculations;
 
       struct MapUV0
       {
@@ -233,8 +231,7 @@ namespace embree
     public:
       typedef void Primitive;
       typedef Vec3<vfloat<K>> Vec3vfK;
-      typedef typename GridSOAIntersectorK<K>::PrecalculationsBase PrecalculationsBase;
-      typedef IntersectorKPrecalculationsMB<K,PrecalculationsBase> Precalculations;
+      typedef typename GridSOAIntersectorK<K>::Precalculations Precalculations;
 
       template<typename Loader>
         static __forceinline void intersect(RayK<K>& ray, size_t k,
@@ -299,7 +296,7 @@ namespace embree
       { 
         //float ftime;
         //const size_t itime = getTimeSegment(ray.time[k], float(pre.grid->time_steps-1), ftime);
-        float ftime = pre._ftime; int itime = pre._itime;
+        float ftime = pre.ftime; int itime = pre.itime;
 
         const size_t line_offset   = pre.grid->width;
         const size_t lines         = pre.grid->height;
@@ -319,7 +316,7 @@ namespace embree
       {
         //float ftime;
         //const size_t itime = getTimeSegment(ray.time[k], float(pre.grid->time_steps-1), ftime);
-        float ftime = pre._ftime; int itime = pre._itime;
+        float ftime = pre.ftime; int itime = pre.itime;
 
         const size_t line_offset   = pre.grid->width;
         const size_t lines         = pre.grid->height;

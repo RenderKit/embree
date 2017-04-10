@@ -60,9 +60,9 @@ namespace embree
       assert(!(types & BVH_MB) || all(valid,(ray.time >= 0.0f) & (ray.time <= 1.0f)));
 
       /* if the rays belong to different time segments, immediately switch to single ray traversal */
-      Precalculations pre(valid,ray,bvh->numTimeSteps);
+      Precalculations pre(valid,ray);
       const size_t valid_first = __bsf(valid_bits);
-      if (unlikely((types & BVH_MB) && (movemask(pre.itime() == pre.itime(valid_first)) != valid_bits)
+      if (unlikely((types & BVH_MB) && bvh->multiRoot
                    || (types == BVH_AN2_AN4D_UN2))) // FIXME: for some reason msmblur hair performs bad with hybrid traversal
       {
         intersectSingle(valid, bvh, pre, ray, context);
@@ -100,7 +100,7 @@ namespace embree
       NodeRef stack_node[stackSizeChunk];
       stack_node[0] = BVH::invalidNode;
       stack_near[0] = inf;
-      stack_node[1] = bvh->getRoot(pre, ray, valid_first);
+      stack_node[1] = bvh->template getRoot<types>(ray, valid_first);
       stack_near[1] = ray_tnear; 
       NodeRef* stackEnd MAYBE_UNUSED = stack_node+stackSizeChunk;
       NodeRef* __restrict__ sptr_node = stack_node + 2;
@@ -161,7 +161,7 @@ namespace embree
             if (unlikely(child == BVH::emptyNode)) break;
             vfloat<K> lnearP;
             vbool<K> lhit(false);
-            BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,pre.ftime(),lnearP,lhit);
+            BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP,lhit);
 
             /* if we hit the child we choose to continue with that child if it
                is closer than the current next child, or we push it onto the stack */
@@ -252,7 +252,7 @@ namespace embree
       /* iterates over all rays in the packet using single ray traversal */
       size_t bits = movemask(valid);
       for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-        BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::intersect1(bvh, bvh->getRoot(pre,ray,i), i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ, context);
+        BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::intersect1(bvh, bvh->template getRoot<types>(ray,i), i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ, context);
       }
     }
 
@@ -279,9 +279,9 @@ namespace embree
       assert(!(types & BVH_MB) || all(valid,(ray.time >= 0.0f) & (ray.time <= 1.0f)));
 
       /* if the rays belong to different time segments, immediately switch to single ray traversal */
-      Precalculations pre(valid,ray,bvh->numTimeSteps);
+      Precalculations pre(valid,ray);
       const size_t valid_first = __bsf(valid_bits);
-      if (unlikely((types & BVH_MB) && (movemask(pre.itime() == pre.itime(valid_first)) != valid_bits)
+      if (unlikely((types & BVH_MB) && bvh->multiRoot
                    || (types == BVH_AN2_AN4D_UN2))) // FIXME: for some reason msmblur hair performs bad with hybrid traversal
       {
         occludedSingle(valid, bvh, pre, ray, context);
@@ -317,7 +317,7 @@ namespace embree
       NodeRef stack_node[stackSizeChunk];
       stack_node[0] = BVH::invalidNode;
       stack_near[0] = inf;
-      stack_node[1] = bvh->getRoot(pre, ray, valid_first);
+      stack_node[1] = bvh->template getRoot<types>(ray, valid_first);
       stack_near[1] = ray_tnear; 
       NodeRef* stackEnd MAYBE_UNUSED = stack_node+stackSizeChunk;
       NodeRef* __restrict__ sptr_node = stack_node + 2;
@@ -376,7 +376,7 @@ namespace embree
             if (unlikely(child == BVH::emptyNode)) break;
             vfloat<K> lnearP;
             vbool<K> lhit(false);
-            BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,pre.ftime(),lnearP,lhit);
+            BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP,lhit);
 
             /* if we hit the child we choose to continue with that child if it
                is closer than the current next child, or we push it onto the stack */
@@ -469,7 +469,7 @@ namespace embree
       /* iterates over all rays in the packet using single ray traversal */
       size_t bits = movemask(valid);
       for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-        if (BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::occluded1(bvh,bvh->getRoot(pre,ray,i),i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ,context))
+        if (BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::occluded1(bvh,bvh->template getRoot<types>(ray,i),i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ,context))
           set(terminated, i);
       }
       vint<K>::store(valid & terminated,&ray.geomID,0);

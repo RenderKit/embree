@@ -630,9 +630,9 @@ namespace embree
         }
       };
 
-      struct Set2Global
+      struct Set2TimeRange
       {
-        __forceinline Set2Global(BBox1f tbounds) : tbounds(tbounds) {}
+        __forceinline Set2TimeRange(BBox1f tbounds) : tbounds(tbounds) {}
 
         template<typename BuildRecord>
         __forceinline NodeRecordMB operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRecordMB* children, const size_t num) const
@@ -1399,34 +1399,26 @@ namespace embree
 
 
     /*! return the true root */
-    __forceinline NodeRef getRoot(const RayPrecalculations& pre, const Ray& ray) const {
-      return root;
-    }
-
-    __forceinline NodeRef getRoot(RayPrecalculationsMB& pre, const Ray& ray) const {
-      if (msmblur) { 
+    template<int types>
+    __forceinline NodeRef getRoot(const Ray& ray) const {
+      if (unlikely((types && BVH_MB) && multiRoot)) {
+        float ftime;
+        int itime = getTimeSegment(ray.time, float(int(numTimeSteps-1)), ftime);
         NodeRef* roots = (NodeRef*)(size_t)root;
-        return roots[pre.itime()];
-      } else { // FIXME: workaround to get BVHMB4D working
-        pre.itime_ = 0;
-        pre.ftime_ = ray.time;
+        return roots[itime];
+      } else {
         return root;
       }
     }
 
-    template<int K>
-      __forceinline NodeRef getRoot(const RayKPrecalculations<K>& pre, const RayK<K> ray, size_t k) const {
-      return root;
-    }
-
-    template<int K>
-      __forceinline NodeRef getRoot(RayKPrecalculationsMB<K>& pre, const RayK<K> ray, size_t k) const {
-      if (msmblur) {
+    template<int types, int K>
+      __forceinline NodeRef getRoot(const RayK<K> ray, size_t k) const {
+      if (unlikely((types && BVH_MB) && multiRoot)) {
+        float ftime;
+        int itime = getTimeSegment(ray.time[k], float(int(numTimeSteps-1)), ftime);
         NodeRef* roots = (NodeRef*)(size_t)root;
-        return roots[pre.itime(k)];
-      } else { // FIXME: workaround to get BVHMB4D working
-        pre.itime_ = 0;
-        pre.ftime_ = ray.time;
+        return roots[itime];
+      } else {
         return root;
       }
     }
@@ -1500,7 +1492,7 @@ namespace embree
     Device* device;                    //!< device pointer
     Scene* scene;                      //!< scene pointer
     NodeRef root;                      //!< root node
-    bool msmblur;                      //!< when true root points to array of roots for MSMBlur mode
+    bool multiRoot;                      //!< when true root points to array of roots for MSMBlur mode
     unsigned numTimeSteps;             //!< number of time steps
     FastAllocator alloc;               //!< allocator used to allocate nodes
 

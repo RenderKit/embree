@@ -23,7 +23,7 @@ namespace embree
   BVHNStatistics<N>::BVHNStatistics (BVH* bvh) : bvh(bvh)
   {
     double A = max(0.0f,bvh->getLinearBounds().expectedHalfArea());
-    if (bvh->msmblur) 
+    if (bvh->multiRoot)
     {
       NodeRef* roots = (NodeRef*)(size_t)bvh->root;
       for (size_t i=0; i<bvh->numTimeSteps-1; i++) {

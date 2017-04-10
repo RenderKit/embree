@@ -29,8 +29,8 @@ namespace embree
       class SubdivPatch1CachedPrecalculations : public T
     { 
     public:
-      __forceinline SubdivPatch1CachedPrecalculations (const Ray& ray, const void* ptr, unsigned numTimeSteps)
-        : T(ray,ptr,numTimeSteps) {}
+      __forceinline SubdivPatch1CachedPrecalculations (const Ray& ray, const void* ptr)
+        : T(ray,ptr) {}
       
       __forceinline ~SubdivPatch1CachedPrecalculations() {
         if (cached && this->grid) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
@@ -41,8 +41,8 @@ namespace embree
       class SubdivPatch1CachedPrecalculationsK : public T
     { 
     public:
-      __forceinline SubdivPatch1CachedPrecalculationsK (const vbool<K>& valid, RayK<K>& ray, unsigned numTimeSteps)
-        : T(valid,ray,numTimeSteps) {}
+      __forceinline SubdivPatch1CachedPrecalculationsK (const vbool<K>& valid, RayK<K>& ray)
+        : T(valid,ray) {}
       
       __forceinline ~SubdivPatch1CachedPrecalculationsK() {
         if (cached && this->grid) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
@@ -235,8 +235,8 @@ namespace embree
         else {
           grid = (GridSOA*) prim->root_ref.get();
         }
-        pre._itime = getTimeSegment(ray.time[k], float(grid->time_steps-1), pre._ftime);
-        lazy_node = grid->root(pre._itime);
+        pre.itime = getTimeSegment(ray.time[k], float(grid->time_steps-1), pre.ftime);
+        lazy_node = grid->root(pre.itime);
         //lazy_node = grid->root(pre.itime(k));
         pre.grid = grid;
         return false;

@@ -408,7 +408,9 @@ namespace embree
           NodeRef root; LBBox3fa tbounds;
           const PrimInfo pinfo = createPrimRefArrayMBlur<Mesh>(t,bvh->numTimeSteps,scene,prims,bvh->scene->progressInterface);
           if (pinfo.size()) {
-            auto rootRecord = BVHNBuilderMblurVirtual<N>::build(&bvh->alloc,CreateMBlurLeaf<N,Primitive>(bvh,prims.data(),t),bvh->scene->progressInterface,prims.data(),pinfo,settings);
+            const BBox1f dt(float(t  )/float(numTimeSegments),
+                            float(t+1)/float(numTimeSegments));
+            auto rootRecord = BVHNBuilderMblurVirtual<N>::build(&bvh->alloc,CreateMBlurLeaf<N,Primitive>(bvh,prims.data(),t),bvh->scene->progressInterface,prims.data(),pinfo,settings,dt);
             root = rootRecord.ref;
             tbounds = rootRecord.lbounds;
           } else {
@@ -421,7 +423,7 @@ namespace embree
           num_bvh_primitives = max(num_bvh_primitives,pinfo.size());
         }
         bvh->set(NodeRef((size_t)roots),LBBox3fa(bounds),num_bvh_primitives);
-        bvh->msmblur = true;
+        bvh->multiRoot = true;
 
 	/* clear temporary data for static geometry */
 	if (scene->isStatic()) 
@@ -490,7 +492,7 @@ namespace embree
           settings.singleThreadThreshold = singleThreadThreshold;
 
           auto root = BVHBuilderBinnedSAH::build<NodeRecordMB>
-            (typename BVH::CreateAlloc(bvh),typename BVH::AlignedNodeMB::Create2(),typename BVH::AlignedNodeMB::Set2Global(dt),
+            (typename BVH::CreateAlloc(bvh),typename BVH::AlignedNodeMB::Create2(),typename BVH::AlignedNodeMB::Set2TimeRange(dt),
              CreateMBlurLeaf<N,Primitive>(bvh,prims.data(),dti.begin()),bvh->scene->progressInterface,
              prims.data(),pinfo,settings);
           

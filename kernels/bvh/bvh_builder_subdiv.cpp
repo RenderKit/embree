@@ -448,7 +448,9 @@ namespace embree
             settings.singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD;
 
             /* call BVH builder */
-            auto rootRecord = BVHNBuilderMblurVirtual<N>::build(&bvh->alloc,createLeaf,bvh->scene->progressInterface,prims.data(),pinfo,settings);
+            const BBox1f dt(float(t  )/float(numTimeSegments),
+                            float(t+1)/float(numTimeSegments));
+            auto rootRecord = BVHNBuilderMblurVirtual<N>::build(&bvh->alloc,createLeaf,bvh->scene->progressInterface,prims.data(),pinfo,settings,dt);
             NodeRef root = rootRecord.ref;
             LBBox3fa tbounds = rootRecord.lbounds;
 
@@ -458,7 +460,7 @@ namespace embree
             num_bvh_primitives = max(num_bvh_primitives,pinfo.size());
           }
           bvh->set(NodeRef((size_t)roots),LBBox3fa(boxes),num_bvh_primitives);
-          bvh->msmblur = true;
+          bvh->multiRoot = true;
         }
       }
 

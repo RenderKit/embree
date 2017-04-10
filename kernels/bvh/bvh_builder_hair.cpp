@@ -223,7 +223,7 @@ namespace embree
           num_bvh_primitives = max(num_bvh_primitives,pinfo.size());
         }
         bvh->set(NodeRef((size_t)roots),LBBox3fa(bounds),num_bvh_primitives);
-        bvh->msmblur = true;
+        bvh->multiRoot = true;
 
         //});
         

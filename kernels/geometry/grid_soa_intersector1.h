@@ -29,10 +29,10 @@ namespace embree
     public:
       typedef void Primitive;
       
-      class PrecalculationsBase
+      class Precalculations
       { 
       public:
-        __forceinline PrecalculationsBase (const Ray& ray, const void* ptr)
+        __forceinline Precalculations (const Ray& ray, const void* ptr)
           : grid(nullptr) {}
         
       public:
@@ -40,8 +40,6 @@ namespace embree
         int _itime;
         float _ftime;
       };
-
-      typedef Intersector1Precalculations<PrecalculationsBase> Precalculations;
       
       template<typename Loader>
         static __forceinline void intersect(Ray& ray,
@@ -123,8 +121,7 @@ namespace embree
     {
     public:
       typedef void Primitive;
-      typedef GridSOAIntersector1::PrecalculationsBase PrecalculationsBase;
-      typedef Intersector1PrecalculationsMB<PrecalculationsBase> Precalculations;
+      typedef GridSOAIntersector1::Precalculations Precalculations;
       
       template<typename Loader>
         static __forceinline void intersect(Ray& ray, const float ftime,

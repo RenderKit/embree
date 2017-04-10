@@ -29,16 +29,16 @@ namespace embree
       class SubdivPatch1EagerPrecalculations : public T
     { 
     public:
-      __forceinline SubdivPatch1EagerPrecalculations (const Ray& ray, const void* ptr, unsigned numTimeSteps)
-        : T(ray,ptr,numTimeSteps) {}
+      __forceinline SubdivPatch1EagerPrecalculations (const Ray& ray, const void* ptr)
+        : T(ray,ptr) {}
     };
 
     template<int K, typename T>
       class SubdivPatch1EagerPrecalculationsK : public T
     { 
     public:
-      __forceinline SubdivPatch1EagerPrecalculationsK (const vbool<K>& valid, RayK<K>& ray, unsigned numTimeSteps)
-        : T(valid,ray,numTimeSteps) {}
+      __forceinline SubdivPatch1EagerPrecalculationsK (const vbool<K>& valid, RayK<K>& ray)
+        : T(valid,ray) {}
     };
 
     class SubdivPatch1EagerIntersector1
@@ -80,7 +80,9 @@ namespace embree
       
       static __forceinline bool processLazyNode(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
-        lazy_node = prim->root(pre.itime()); pre.grid = (Primitive*) prim; return false;
+        // FIXME
+        //lazy_node = prim->root(pre.itime()); pre.grid = (Primitive*) prim; return false;
+        return false;
       }
 
       /*! Intersect a ray with the primitive. */
