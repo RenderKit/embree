@@ -641,8 +641,8 @@ namespace embree
 
           LBBox3fa bounds = empty;
           for (size_t i=0; i<num; i++) {
-            node->setRef(i,children[i].ref);
-            node->setBounds(i,children[i].lbounds.global(tbounds));
+            node->setRef(i, children[i].ref);
+            node->setBounds(i, children[i].lbounds, tbounds);
             bounds.extend(children[i].lbounds);
           }
           return NodeRecordMB(ref,bounds);
@@ -693,6 +693,11 @@ namespace embree
         setBounds(i, bounds.bounds0, bounds.bounds1);
       }
 
+      /*! Sets bounding box of child. */
+      __forceinline void setBounds(size_t i, const LBBox3fa& bounds, const BBox1f& tbounds) {
+        setBounds(i, bounds.global(tbounds));
+      }
+
       /*! Sets bounding box and ID of child. */
       __forceinline void set(size_t i, NodeRef ref, const BBox3fa& bounds) {
         lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
@@ -704,7 +709,7 @@ namespace embree
       __forceinline void set(size_t i, const NodeRecordMB4D& child)
       {
         setRef(i, child.ref);
-        setBounds(i, child.lbounds.global(child.dt));
+        setBounds(i, child.lbounds, child.dt);
       }
 
       /*! tests if the node has valid bounds */
