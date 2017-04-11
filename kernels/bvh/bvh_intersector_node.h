@@ -575,13 +575,15 @@ namespace embree
       const size_t mask = movemask(vmask);
       dist = tNear;
       return mask;
-    }
+     }
 
     template<int N, int K>
-    __forceinline vbool<K> intersectNode(const typename BVHN<N>::AlignedNodeMB4D* node, const size_t i, 
-                                         const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
-                                         const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist)
+    __forceinline vbool<K> intersectNodeMB4D(const typename BVHN<N>::NodeRef ref, const size_t i, 
+                                             const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                             const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist)
     {
+      const typename BVHN<N>::AlignedNodeMB* node = ref.alignedNodeMB();
+      
       const vfloat<K> vlower_x = madd(time,vfloat<K>(node->lower_dx[i]),vfloat<K>(node->lower_x[i]));
       const vfloat<K> vlower_y = madd(time,vfloat<K>(node->lower_dy[i]),vfloat<K>(node->lower_y[i]));
       const vfloat<K> vlower_z = madd(time,vfloat<K>(node->lower_dz[i]),vfloat<K>(node->lower_z[i]));
@@ -607,10 +609,13 @@ namespace embree
 
       const vfloat<K> lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
       const vfloat<K> lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
-      const vbool<K>  lhit   = maxi(lnearP,tnear) <= mini(lfarP,tfar);
-      const vbool<K>  thit   = (vfloat<K>(node->lower_t[i]) <= time) & (time < vfloat<K>(node->upper_t[i]));
+      vbool<K> lhit = maxi(lnearP,tnear) <= mini(lfarP,tfar);
+      if (unlikely(ref.isAlignedNodeMB4D())) {
+        const typename BVHN<N>::AlignedNodeMB4D* node1 = (const typename BVHN<N>::AlignedNodeMB4D*) node;
+        lhit = lhit & (vfloat<K>(node1->lower_t[i]) <= time) & (time < vfloat<K>(node1->upper_t[i]));
+      }
       dist = lnearP;
-      return lhit & thit;
+      return lhit;
     }
 
     //////////////////////////////////////////////////////////////////////////////////////
@@ -650,10 +655,12 @@ namespace embree
     }
 
     template<int N, int K>
-      __forceinline vbool<K> intersectNodeRobust(const typename BVHN<N>::AlignedNodeMB4D* node, const size_t i, 
-                                                 const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
-                                                 const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist)
+      __forceinline vbool<K> intersectNodeMB4DRobust(const typename BVHN<N>::NodeRef ref, const size_t i, 
+                                                     const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                                     const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist)
     {
+      const typename BVHN<N>::AlignedNodeMB* node = ref.alignedNodeMB();
+
       const vfloat<K> vlower_x = madd(time,vfloat<K>(node->lower_dx[i]),vfloat<K>(node->lower_x[i]));
       const vfloat<K> vlower_y = madd(time,vfloat<K>(node->lower_dy[i]),vfloat<K>(node->lower_y[i]));
       const vfloat<K> vlower_z = madd(time,vfloat<K>(node->lower_dz[i]),vfloat<K>(node->lower_z[i]));
@@ -672,10 +679,14 @@ namespace embree
       const vfloat<K> lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
       const float round_down = 1.0f-2.0f*float(ulp);
       const float round_up   = 1.0f+2.0f*float(ulp);
-      const vbool<K>  lhit   = round_down*maxi(lnearP,tnear) <= round_up*mini(lfarP,tfar);
-      const vbool<K>  thit   = (vfloat<K>(node->lower_t[i]) <= time) & (time < vfloat<K>(node->upper_t[i]));
+      vbool<K> lhit = round_down*maxi(lnearP,tnear) <= round_up*mini(lfarP,tfar);
+      
+      if (unlikely(ref.isAlignedNodeMB4D())) {
+        const typename BVHN<N>::AlignedNodeMB4D* node1 = (const typename BVHN<N>::AlignedNodeMB4D*) node;
+        lhit = lhit & (vfloat<K>(node1->lower_t[i]) <= time) & (time < vfloat<K>(node1->upper_t[i]));
+      }
       dist = lnearP;
-      return lhit & thit;
+      return lhit;
     }
 
     //////////////////////////////////////////////////////////////////////////////////////
@@ -1226,8 +1237,7 @@ namespace embree
                                           const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
       {
-        if (likely(node.isAlignedNodeMB()))    vmask = intersectNode<N,K>(node.alignedNodeMB(),i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
-        else /*if (node.isAlignedNodeMB4D())*/ vmask = intersectNode<N,K>(node.alignedNodeMB4D(),i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
+        vmask &= intersectNodeMB4D<N,K>(node,i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
         return true;
       }
     };
@@ -1239,8 +1249,7 @@ namespace embree
                                           const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
       {
-        if (likely(node.isAlignedNodeMB()))    vmask = intersectNodeRobust<N,K>(node.alignedNodeMB(),i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
-        else /*if (node.isAlignedNodeMB4D())*/ vmask = intersectNodeRobust<N,K>(node.alignedNodeMB4D(),i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
+        vmask &= intersectNodeMB4DRobust<N,K>(node,i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
         return true;
       }
     };
@@ -1252,9 +1261,11 @@ namespace embree
                                           const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
       {
-        if (likely(node.isAlignedNodeMB())) vmask = intersectNode<N,K>(node.alignedNodeMB(),i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
-        else if (node.isAlignedNodeMB4D())  vmask = intersectNode<N,K>(node.alignedNodeMB4D(),i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
-        else /*if (unlikely(node.isUnalignedNodeMB()))*/ { assert(node.isUnalignedNodeMB()); vmask = intersectNode<N,K>(node.unalignedNodeMB(),i,org,dir,rdir,org_rdir,tnear,tfar,time,dist); }
+        if (likely(node.isAlignedNodeMB() || node.isAlignedNodeMB4D())) 
+          vmask &= intersectNodeMB4D<N,K>(node,i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
+        else /*if (unlikely(node.isUnalignedNodeMB()))*/ { 
+          assert(node.isUnalignedNodeMB()); vmask &= intersectNode<N,K>(node.unalignedNodeMB(),i,org,dir,rdir,org_rdir,tnear,tfar,time,dist); 
+        }
         return true;
       }
     };
