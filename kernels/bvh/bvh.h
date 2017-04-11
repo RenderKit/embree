@@ -1401,9 +1401,8 @@ namespace embree
     /*! return the true root */
     template<int types>
     __forceinline NodeRef getRoot(const Ray& ray) const {
-      if (unlikely((types && BVH_MB) && multiRoot)) {
-        float ftime;
-        int itime = getTimeSegment(ray.time, float(int(numTimeSteps-1)), ftime);
+      if (unlikely((types & BVH_MB) && !(types & BVH_FLAG_ALIGNED_NODE_MB4D) && multiRoot)) {
+        int itime = getTimeSegment(ray.time, float(int(numTimeSteps-1)));
         NodeRef* roots = (NodeRef*)(size_t)root;
         return roots[itime];
       } else {
@@ -1413,9 +1412,8 @@ namespace embree
 
     template<int types, int K>
       __forceinline NodeRef getRoot(const RayK<K> ray, size_t k) const {
-      if (unlikely((types && BVH_MB) && multiRoot)) {
-        float ftime;
-        int itime = getTimeSegment(ray.time[k], float(int(numTimeSteps-1)), ftime);
+      if (unlikely((types & BVH_MB) && !(types & BVH_FLAG_ALIGNED_NODE_MB4D) && multiRoot)) {
+        int itime = getTimeSegment(ray.time[k], float(int(numTimeSteps-1)));
         NodeRef* roots = (NodeRef*)(size_t)root;
         return roots[itime];
       } else {

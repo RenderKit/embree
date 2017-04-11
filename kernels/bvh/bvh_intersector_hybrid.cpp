@@ -62,11 +62,15 @@ namespace embree
       /* if the rays belong to different time segments, immediately switch to single ray traversal */
       Precalculations pre(valid,ray);
       const size_t valid_first = __bsf(valid_bits);
-      if (unlikely((types & BVH_MB) && bvh->multiRoot))
+      if (unlikely((types & BVH_MB) && !(types & BVH_FLAG_ALIGNED_NODE_MB4D) && bvh->multiRoot))
       {
-        intersectSingle(valid, bvh, pre, ray, context);
-        AVX_ZERO_UPPER();
-        return;
+        const vint<K> itime = getTimeSegment(ray.time, vfloat<K>(float(int(bvh->numTimeSteps-1))));
+        if (likely((movemask(itime == itime[valid_first]) & valid_bits) != valid_bits))
+        {
+          intersectSingle(valid, bvh, pre, ray, context);
+          AVX_ZERO_UPPER();
+          return;
+        }
       }
       
       /* load ray */
@@ -281,11 +285,15 @@ namespace embree
       /* if the rays belong to different time segments, immediately switch to single ray traversal */
       Precalculations pre(valid,ray);
       const size_t valid_first = __bsf(valid_bits);
-      if (unlikely((types & BVH_MB) && bvh->multiRoot))
+      if (unlikely((types & BVH_MB) && !(types & BVH_FLAG_ALIGNED_NODE_MB4D) && bvh->multiRoot))
       {
-        occludedSingle(valid, bvh, pre, ray, context);
-        AVX_ZERO_UPPER();
-        return;
+        const vint<K> itime = getTimeSegment(ray.time, vfloat<K>(float(int(bvh->numTimeSteps-1))));
+        if (likely((movemask(itime == itime[valid_first]) & valid_bits) != valid_bits))
+        {
+          occludedSingle(valid, bvh, pre, ray, context);
+          AVX_ZERO_UPPER();
+          return;
+        }
       }
 
       /* load ray */
