@@ -17,6 +17,7 @@
 #include "../../include/embree2/rtcore.isph" 
 #include "../../include/embree2/rtcore_ray.isph" 
 
+/* This is necessary as the size_t type under ISPC may be 32 or 64 bits wide depending on the ISPC addressing mode used. */
 #define size_t uintptr_t
 #define ssize_t intptr_t
 
@@ -174,6 +175,7 @@ extern "C" void ispcInterpolateN2(RTCScene scene, uniform unsigned int geomID,
                                  uniform size_t numFloats);
 
 
+/* put all extern declarations before this line */
 #undef size_t
 #undef ssize_t
 
