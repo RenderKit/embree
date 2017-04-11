@@ -64,8 +64,9 @@ inline float transparencyFunction(Vec3fa& h)
 }
 
 /* intersection filter function */
-void intersectionFilter(void* ptr, RTCRay2& ray)
+void intersectionFilter(void* ptr, RTCRay& ray_i)
 {
+  RTCRay2& ray = (RTCRay2&) ray_i;
   Vec3fa h = ray.org + ray.dir*ray.tfar;
   float T = transparencyFunction(h);
   if (T >= 1.0f) ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -73,8 +74,9 @@ void intersectionFilter(void* ptr, RTCRay2& ray)
 }
 
 /* occlusion filter function */
-void occlusionFilter(void* ptr, RTCRay2& ray)
+void occlusionFilter(void* ptr, RTCRay& ray_i)
 {
+  RTCRay2& ray = (RTCRay2&) ray_i;
   /* The occlusion filter function may be called multiple times with
    * the same hit. We remember the last N hits, and skip duplicates. */
   for (size_t i=ray.firstHit; i<ray.lastHit; i++) {
@@ -627,12 +629,12 @@ unsigned int addCube (RTCScene scene_i, const Vec3fa& offset, const Vec3fa& scal
 
   /* set intersection filter for the cube */
   if (g_mode != MODE_NORMAL) {
-    rtcSetIntersectionFilterFunctionN(scene_i,geomID,(RTCFilterFuncN)&intersectionFilterN);
-    rtcSetOcclusionFilterFunctionN   (scene_i,geomID,(RTCFilterFuncN)&occlusionFilterN);
+    rtcSetIntersectionFilterFunctionN(scene_i,geomID,intersectionFilterN);
+    rtcSetOcclusionFilterFunctionN   (scene_i,geomID,occlusionFilterN);
   }
   else {
-    rtcSetIntersectionFilterFunction(scene_i,geomID,(RTCFilterFunc)&intersectionFilter);
-    rtcSetOcclusionFilterFunction   (scene_i,geomID,(RTCFilterFunc)&occlusionFilter);
+    rtcSetIntersectionFilterFunction(scene_i,geomID,intersectionFilter);
+    rtcSetOcclusionFilterFunction   (scene_i,geomID,occlusionFilter);
   }
 
   return geomID;
@@ -661,12 +663,12 @@ unsigned int addSubdivCube (RTCScene scene_i)
 
   /* set intersection filter for the cube */
   if (g_mode != MODE_NORMAL) {
-    rtcSetIntersectionFilterFunctionN(scene_i,geomID,(RTCFilterFuncN)&intersectionFilterN);
-    rtcSetOcclusionFilterFunctionN   (scene_i,geomID,(RTCFilterFuncN)&occlusionFilterN);
+    rtcSetIntersectionFilterFunctionN(scene_i,geomID,intersectionFilterN);
+    rtcSetOcclusionFilterFunctionN   (scene_i,geomID,occlusionFilterN);
   }
   else {
-    rtcSetIntersectionFilterFunction(scene_i,geomID,(RTCFilterFunc)&intersectionFilter);
-    rtcSetOcclusionFilterFunction   (scene_i,geomID,(RTCFilterFunc)&occlusionFilter);
+    rtcSetIntersectionFilterFunction(scene_i,geomID,intersectionFilter);
+    rtcSetOcclusionFilterFunction   (scene_i,geomID,occlusionFilter);
   }
 
   return geomID;

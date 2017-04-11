@@ -43,16 +43,17 @@ struct LazyGeometry
   float radius;
 };
 
-unmasked void instanceBoundsFunc(const uniform LazyGeometry* uniform instance, uniform size_t item, uniform RTCBounds* uniform bounds_o)
+unmasked void instanceBoundsFunc(void* uniform instance_i, uniform size_t item, uniform RTCBounds& bounds_o)
 {
+  const uniform LazyGeometry* uniform instance = (const uniform LazyGeometry* uniform) instance_i;
   uniform Vec3f lower = instance->center-make_Vec3f(instance->radius);
   uniform Vec3f upper = instance->center+make_Vec3f(instance->radius);
-  bounds_o->lower_x = lower.x;
-  bounds_o->lower_y = lower.y;
-  bounds_o->lower_z = lower.z;
-  bounds_o->upper_x = upper.x;
-  bounds_o->upper_y = upper.y;
-  bounds_o->upper_z = upper.z;
+  bounds_o.lower_x = lower.x;
+  bounds_o.lower_y = lower.y;
+  bounds_o.lower_z = lower.z;
+  bounds_o.upper_x = upper.x;
+  bounds_o.upper_y = upper.y;
+  bounds_o.upper_z = upper.z;
 }
 
 uniform unsigned int createTriangulatedSphere (RTCScene scene, const uniform Vec3f& p, uniform float r)
@@ -153,8 +154,10 @@ void eagerCreate(uniform LazyGeometry* uniform instance)
   instance->state = LAZY_VALID;
 }
 
-void instanceIntersectFunc(uniform LazyGeometry* uniform instance, varying RTCRay& ray, uniform size_t item)
+void instanceIntersectFunc(void* uniform instance_i, varying RTCRay& ray, uniform size_t item)
 {
+  uniform LazyGeometry* uniform instance = (uniform LazyGeometry* uniform) instance_i;
+
   /* create the object if it is not yet created */
   if (instance->state != LAZY_VALID)
     lazyCreate(instance);
@@ -167,8 +170,10 @@ void instanceIntersectFunc(uniform LazyGeometry* uniform instance, varying RTCRa
   else ray.instID = instance->userID;
 }
 
-void instanceOccludedFunc(uniform LazyGeometry* uniform instance, varying RTCRay& ray, uniform size_t item)
+void instanceOccludedFunc(void* uniform instance_i, varying RTCRay& ray, uniform size_t item)
 {
+  uniform LazyGeometry* uniform instance = (uniform LazyGeometry* uniform) instance_i;
+
   /* create the object if it is not yet created */
   if (instance->state != LAZY_VALID)
     lazyCreate(instance);
@@ -187,9 +192,9 @@ uniform LazyGeometry* uniform createLazyObject (RTCScene scene, uniform int user
   instance->radius = radius;
   instance->geometry = rtcNewUserGeometry(scene,1);
   rtcSetUserData(scene,instance->geometry,instance);
-  rtcSetBoundsFunction(scene,instance->geometry,(RTCBoundsFunc)&instanceBoundsFunc);
-  rtcSetIntersectFunction(scene,instance->geometry,(RTCIntersectFuncVarying)&instanceIntersectFunc);
-  rtcSetOccludedFunction (scene,instance->geometry,(RTCOccludedFuncVarying )&instanceOccludedFunc);
+  rtcSetBoundsFunction(scene,instance->geometry,instanceBoundsFunc);
+  rtcSetIntersectFunction(scene,instance->geometry,instanceIntersectFunc);
+  rtcSetOccludedFunction (scene,instance->geometry,instanceOccludedFunc);
 
   /* if we do not support the join mode then Embree also does not
    * support lazy build */

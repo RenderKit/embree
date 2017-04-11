@@ -897,24 +897,24 @@ void assignShaders(ISPCGeometry* uniform geometry)
   if (geometry->type == SUBDIV_MESH) {
     ISPCSubdivMesh* uniform mesh = (ISPCSubdivMesh* uniform ) geometry;
 #if ENABLE_FILTER_FUNCTION == 1
-    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFuncVarying)&occlusionFilterOpaque);
+    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,occlusionFilterOpaque);
 #endif
   }
   else if (geometry->type == TRIANGLE_MESH) {
     ISPCTriangleMesh* uniform mesh = (ISPCTriangleMesh* uniform ) geometry;
 #if ENABLE_FILTER_FUNCTION == 1
-    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFuncVarying)&occlusionFilterOpaque);
+    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,occlusionFilterOpaque);
 
     ISPCMaterial* uniform material = g_ispc_scene->materials[mesh->materialID];
     //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
-    //  rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFuncVarying)&intersectionFilterReject);
+    //  rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,intersectionFilterReject);
     //else
     if (material->type == MATERIAL_OBJ)
     {
       ISPCOBJMaterial* uniform obj = (ISPCOBJMaterial* uniform) material;
       if (obj->d != 1.0f || obj->map_d) {
-        rtcSetIntersectionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFuncVarying)&intersectionFilterOBJ);
-        rtcSetOcclusionFilterFunction   (mesh->geom.scene,mesh->geom.geomID,(RTCFilterFuncVarying)&occlusionFilterOBJ);
+        rtcSetIntersectionFilterFunction(mesh->geom.scene,mesh->geom.geomID,intersectionFilterOBJ);
+        rtcSetOcclusionFilterFunction   (mesh->geom.scene,mesh->geom.geomID,occlusionFilterOBJ);
       }
     }
 #endif
@@ -922,33 +922,33 @@ void assignShaders(ISPCGeometry* uniform geometry)
   else if (geometry->type == QUAD_MESH) {
     ISPCQuadMesh* uniform mesh = (ISPCQuadMesh* uniform) geometry;
 #if ENABLE_FILTER_FUNCTION == 1
-    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFuncVarying)&occlusionFilterOpaque);
+    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,occlusionFilterOpaque);
 
     ISPCMaterial* uniform material = g_ispc_scene->materials[mesh->materialID];
     //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
-    //  rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFuncVarying)&intersectionFilterReject);
+    //  rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,intersectionFilterReject);
     //else
     if (material->type == MATERIAL_OBJ)
     {
       ISPCOBJMaterial* uniform obj = (ISPCOBJMaterial* uniform) material;
       if (obj->d != 1.0f || obj->map_d) {
-        rtcSetIntersectionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFuncVarying)&intersectionFilterOBJ);
-        rtcSetOcclusionFilterFunction   (mesh->geom.scene,mesh->geom.geomID,(RTCFilterFuncVarying)&occlusionFilterOBJ);
+        rtcSetIntersectionFilterFunction(mesh->geom.scene,mesh->geom.geomID,intersectionFilterOBJ);
+        rtcSetOcclusionFilterFunction   (mesh->geom.scene,mesh->geom.geomID,occlusionFilterOBJ);
       }
     }
 #endif
   }
   else if (geometry->type == LINE_SEGMENTS) {
     ISPCLineSegments* uniform mesh = (ISPCLineSegments* uniform) geometry;
-    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFuncVarying)&occlusionFilterHair);
+    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,occlusionFilterHair);
   }
   else if (geometry->type == HAIR_SET) {
     ISPCHairSet* uniform mesh = (ISPCHairSet* uniform) geometry;
-    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFuncVarying)&occlusionFilterHair);
+    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,occlusionFilterHair);
   }
   else if (geometry->type == CURVES) {
     ISPCHairSet* uniform mesh = (ISPCHairSet* uniform) geometry;
-    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFuncVarying)&occlusionFilterHair);
+    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,occlusionFilterHair);
   }
   else if (geometry->type == GROUP) {
     ISPCGroup* uniform group = (ISPCGroup* uniform) geometry;

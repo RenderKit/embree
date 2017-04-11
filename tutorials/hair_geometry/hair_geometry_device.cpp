@@ -44,7 +44,7 @@ Vec3fa hair_dK;
 Vec3fa hair_Kr;    //!< reflectivity of hair
 Vec3fa hair_Kt;    //!< transparency of hair
 
-void filterDispatch(void* ptr, struct RTCRay2& ray);
+void filterDispatch(void* ptr, RTCRay& ray);
 
 /* scene data */
 extern "C" ISPCScene* g_ispc_scene;
@@ -66,7 +66,7 @@ void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
     rtcSetBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t),mesh->positions[t],0,sizeof(Vertex));
   }
   rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->triangles,0,sizeof(ISPCTriangle));
-  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&filterDispatch);
+  rtcSetOcclusionFilterFunction(scene_out,geomID,filterDispatch);
 }
 
 void convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
@@ -76,7 +76,7 @@ void convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
     rtcSetBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t),hair->positions[t],0,sizeof(Vertex));
   }
   rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
-  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&filterDispatch);
+  rtcSetOcclusionFilterFunction(scene_out,geomID,filterDispatch);
   rtcSetTessellationRate(scene_out,geomID,hair->tessellation_rate);
 }
 
@@ -257,14 +257,17 @@ struct RTCRay2
 bool enableFilterDispatch = false;
 
 /* filter dispatch function */
-void filterDispatch(void* ptr, RTCRay2& ray) {
+void filterDispatch(void* ptr, RTCRay& ray_i) 
+{
+  RTCRay2& ray = (RTCRay2&) ray_i;
   if (!enableFilterDispatch) return;
   if (ray.filter) ray.filter(ptr,*((RTCRay*)&ray));
 }
 
 /* occlusion filter function */
-void occlusionFilter(void* ptr, RTCRay2& ray)
+void occlusionFilter(void* ptr, RTCRay& ray_i)
 {
+  RTCRay2& ray = (RTCRay2&) ray_i;
   /* make all surfaces opaque */
   ISPCGeometry* geometry = g_ispc_scene->geometries[ray.geomID];
   if (geometry->type == TRIANGLE_MESH) {
@@ -282,7 +285,7 @@ Vec3fa occluded(RTCScene scene, RTCRay2& ray)
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.filter = (RTCFilterFunc) &occlusionFilter;
+  ray.filter = occlusionFilter;
   ray.transparency = Vec3fa(1.0f);
   rtcOccluded(scene,*((RTCRay*)&ray));
 

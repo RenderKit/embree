@@ -48,8 +48,9 @@ struct Instance
   Vec3fa upper;
 };
 
-void instanceBoundsFunc(const Instance* instance, size_t item, RTCBounds* bounds_o)
+void instanceBoundsFunc(void* instance_i, size_t item, RTCBounds& bounds_o)
 {
+  const Instance* instance = (const Instance*) instance_i;
   Vec3fa l = instance->lower;
   Vec3fa u = instance->upper;
   Vec3fa p000 = xfmPoint(instance->local2world,Vec3fa(l.x,l.y,l.z));
@@ -62,16 +63,17 @@ void instanceBoundsFunc(const Instance* instance, size_t item, RTCBounds* bounds
   Vec3fa p111 = xfmPoint(instance->local2world,Vec3fa(u.x,u.y,u.z));
   Vec3fa lower = min(min(min(p000,p001),min(p010,p011)),min(min(p100,p101),min(p110,p111)));
   Vec3fa upper = max(max(max(p000,p001),max(p010,p011)),max(max(p100,p101),max(p110,p111)));
-  bounds_o->lower_x = lower.x;
-  bounds_o->lower_y = lower.y;
-  bounds_o->lower_z = lower.z;
-  bounds_o->upper_x = upper.x;
-  bounds_o->upper_y = upper.y;
-  bounds_o->upper_z = upper.z;
+  bounds_o.lower_x = lower.x;
+  bounds_o.lower_y = lower.y;
+  bounds_o.lower_z = lower.z;
+  bounds_o.upper_x = upper.x;
+  bounds_o.upper_y = upper.y;
+  bounds_o.upper_z = upper.z;
 }
 
-void instanceIntersectFunc(const Instance* instance, RTCRay& ray, size_t item)
+void instanceIntersectFunc(void* instance_i, RTCRay& ray, size_t item)
 {
+  const Instance* instance = (const Instance*) instance_i;
   const Vec3fa ray_org = ray.org;
   const Vec3fa ray_dir = ray.dir;
   const int geomID = ray.geomID;
@@ -88,8 +90,9 @@ void instanceIntersectFunc(const Instance* instance, RTCRay& ray, size_t item)
   }
 }
 
-void instanceOccludedFunc(const Instance* instance, RTCRay& ray, size_t item)
+void instanceOccludedFunc(void* instance_i, RTCRay& ray, size_t item)
 {
+  const Instance* instance = (const Instance*) instance_i;
   const Vec3fa ray_org = ray.org;
   const Vec3fa ray_dir = ray.dir;
   ray.org = xfmPoint (instance->world2local,ray_org);
@@ -213,13 +216,13 @@ Instance* createInstance (RTCScene scene, RTCScene object, int userID, const Vec
   instance->local2world.p    = Vec3fa(0,0,0);
   instance->geometry = rtcNewUserGeometry(scene,1);
   rtcSetUserData(scene,instance->geometry,instance);
-  rtcSetBoundsFunction(scene,instance->geometry,(RTCBoundsFunc)&instanceBoundsFunc);
+  rtcSetBoundsFunction(scene,instance->geometry,instanceBoundsFunc);
   if (g_mode == MODE_NORMAL) {
-    rtcSetIntersectFunction(scene,instance->geometry,(RTCIntersectFunc)&instanceIntersectFunc);
-    rtcSetOccludedFunction (scene,instance->geometry,(RTCOccludedFunc )&instanceOccludedFunc);
+    rtcSetIntersectFunction(scene,instance->geometry,instanceIntersectFunc);
+    rtcSetOccludedFunction (scene,instance->geometry,instanceOccludedFunc);
   } else {
-    rtcSetIntersectFunctionN(scene,instance->geometry,&instanceIntersectFuncN);
-    rtcSetOccludedFunctionN (scene,instance->geometry,&instanceOccludedFuncN);
+    rtcSetIntersectFunctionN(scene,instance->geometry,instanceIntersectFuncN);
+    rtcSetOccludedFunctionN (scene,instance->geometry,instanceOccludedFuncN);
   }
   return instance;
 }
@@ -243,19 +246,21 @@ struct Sphere
   unsigned int geomID;
 };
 
-void sphereBoundsFunc(const Sphere* spheres, size_t item, RTCBounds* bounds_o)
+void sphereBoundsFunc(void* spheres_i, size_t item, RTCBounds& bounds_o)
 {
+  const Sphere* spheres = (const Sphere*) spheres_i;
   const Sphere& sphere = spheres[item];
-  bounds_o->lower_x = sphere.p.x-sphere.r;
-  bounds_o->lower_y = sphere.p.y-sphere.r;
-  bounds_o->lower_z = sphere.p.z-sphere.r;
-  bounds_o->upper_x = sphere.p.x+sphere.r;
-  bounds_o->upper_y = sphere.p.y+sphere.r;
-  bounds_o->upper_z = sphere.p.z+sphere.r;
+  bounds_o.lower_x = sphere.p.x-sphere.r;
+  bounds_o.lower_y = sphere.p.y-sphere.r;
+  bounds_o.lower_z = sphere.p.z-sphere.r;
+  bounds_o.upper_x = sphere.p.x+sphere.r;
+  bounds_o.upper_y = sphere.p.y+sphere.r;
+  bounds_o.upper_z = sphere.p.z+sphere.r;
 }
 
-void sphereIntersectFunc(const Sphere* spheres, RTCRay& ray, size_t item)
+void sphereIntersectFunc(void* spheres_i, RTCRay& ray, size_t item)
 {
+  const Sphere* spheres = (const Sphere*) spheres_i;
   const Sphere& sphere = spheres[item];
   const Vec3fa v = ray.org-sphere.p;
   const float A = dot(ray.dir,ray.dir);
@@ -285,8 +290,9 @@ void sphereIntersectFunc(const Sphere* spheres, RTCRay& ray, size_t item)
   }
 }
 
-void sphereOccludedFunc(const Sphere* spheres, RTCRay& ray, size_t item)
+void sphereOccludedFunc(void* spheres_i, RTCRay& ray, size_t item)
 {
+  const Sphere* spheres = (const Sphere*) spheres_i;
   const Sphere& sphere = spheres[item];
   const Vec3fa v = ray.org-sphere.p;
   const float A = dot(ray.dir,ray.dir);
@@ -421,13 +427,13 @@ Sphere* createAnalyticalSphere (RTCScene scene, const Vec3fa& p, float r)
   sphere->r = r;
   sphere->geomID = geomID;
   rtcSetUserData(scene,geomID,sphere);
-  rtcSetBoundsFunction(scene,geomID,(RTCBoundsFunc)&sphereBoundsFunc);
+  rtcSetBoundsFunction(scene,geomID,sphereBoundsFunc);
   if (g_mode == MODE_NORMAL) {
-    rtcSetIntersectFunction(scene,geomID,(RTCIntersectFunc)&sphereIntersectFunc);
-    rtcSetOccludedFunction (scene,geomID,(RTCOccludedFunc )&sphereOccludedFunc);
+    rtcSetIntersectFunction(scene,geomID,sphereIntersectFunc);
+    rtcSetOccludedFunction (scene,geomID,sphereOccludedFunc);
   } else {
-    rtcSetIntersectFunctionN(scene,geomID,&sphereIntersectFuncN);
-    rtcSetOccludedFunctionN (scene,geomID,&sphereOccludedFuncN);
+    rtcSetIntersectFunctionN(scene,geomID,sphereIntersectFuncN);
+    rtcSetOccludedFunctionN (scene,geomID,sphereOccludedFuncN);
   }
   return sphere;
 }
@@ -438,10 +444,10 @@ Sphere* createAnalyticalSpheres (RTCScene scene, size_t N)
   Sphere* spheres = (Sphere*) alignedMalloc(N*sizeof(Sphere));
   for (size_t i=0; i<N; i++) spheres[i].geomID = geomID;
   rtcSetUserData(scene,geomID,spheres);
-  rtcSetBoundsFunction(scene,geomID,(RTCBoundsFunc)&sphereBoundsFunc);
+  rtcSetBoundsFunction(scene,geomID,sphereBoundsFunc);
   if (g_mode == MODE_NORMAL) {
-    rtcSetIntersectFunction(scene,geomID,(RTCIntersectFunc)&sphereIntersectFunc);
-    rtcSetOccludedFunction (scene,geomID,(RTCOccludedFunc )&sphereOccludedFunc);
+    rtcSetIntersectFunction(scene,geomID,sphereIntersectFunc);
+    rtcSetOccludedFunction (scene,geomID,sphereOccludedFunc);
   } else {
     rtcSetIntersectFunctionN(scene,geomID,sphereIntersectFuncN);
     rtcSetOccludedFunctionN (scene,geomID,sphereOccludedFuncN);
