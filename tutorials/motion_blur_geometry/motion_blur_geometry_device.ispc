@@ -338,7 +338,7 @@ struct Sphere
   unsigned int num_time_steps;
 };
 
-unmasked void sphereBoundsFunc(void* uniform userPtr, void* uniform spheres_i, uniform size_t item, uniform size_t time, uniform RTCBounds& bounds_o)
+unmasked void sphereBoundsFunc(void* uniform userPtr, void* uniform spheres_i, uniform uintptr_t item, uniform uintptr_t time, uniform RTCBounds& bounds_o)
 {
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) spheres_i;
   const uniform Sphere& sphere = spheres[item];
@@ -352,7 +352,7 @@ unmasked void sphereBoundsFunc(void* uniform userPtr, void* uniform spheres_i, u
   bounds_o.upper_z = p.z+sphere.r;
 }
 
-void sphereIntersectFunc(void* uniform spheres_i, varying RTCRay& ray, uniform size_t item)
+void sphereIntersectFunc(void* uniform spheres_i, varying RTCRay& ray, uniform uintptr_t item)
 {
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) spheres_i;
   const uniform Sphere& sphere = spheres[item];
@@ -395,7 +395,7 @@ void sphereIntersectFunc(void* uniform spheres_i, varying RTCRay& ray, uniform s
   }
 }
 
-void sphereOccludedFunc(void* uniform spheres_i, varying RTCRay& ray, uniform size_t item)
+void sphereOccludedFunc(void* uniform spheres_i, varying RTCRay& ray, uniform uintptr_t item)
 {
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) spheres_i;
   const uniform Sphere& sphere = spheres[item];

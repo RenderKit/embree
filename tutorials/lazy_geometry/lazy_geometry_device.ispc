@@ -43,7 +43,7 @@ struct LazyGeometry
   float radius;
 };
 
-unmasked void instanceBoundsFunc(void* uniform instance_i, uniform size_t item, uniform RTCBounds& bounds_o)
+unmasked void instanceBoundsFunc(void* uniform instance_i, uniform uintptr_t item, uniform RTCBounds& bounds_o)
 {
   const uniform LazyGeometry* uniform instance = (const uniform LazyGeometry* uniform) instance_i;
   uniform Vec3f lower = instance->center-make_Vec3f(instance->radius);
@@ -154,7 +154,7 @@ void eagerCreate(uniform LazyGeometry* uniform instance)
   instance->state = LAZY_VALID;
 }
 
-void instanceIntersectFunc(void* uniform instance_i, varying RTCRay& ray, uniform size_t item)
+void instanceIntersectFunc(void* uniform instance_i, varying RTCRay& ray, uniform uintptr_t item)
 {
   uniform LazyGeometry* uniform instance = (uniform LazyGeometry* uniform) instance_i;
 
@@ -170,7 +170,7 @@ void instanceIntersectFunc(void* uniform instance_i, varying RTCRay& ray, unifor
   else ray.instID = instance->userID;
 }
 
-void instanceOccludedFunc(void* uniform instance_i, varying RTCRay& ray, uniform size_t item)
+void instanceOccludedFunc(void* uniform instance_i, varying RTCRay& ray, uniform uintptr_t item)
 {
   uniform LazyGeometry* uniform instance = (uniform LazyGeometry* uniform) instance_i;
 

@@ -46,7 +46,7 @@ struct Instance
   Vec3f upper;
 };
 
-unmasked void instanceBoundsFunc(void* uniform instance_i, uniform size_t item, uniform RTCBounds& bounds_o)
+unmasked void instanceBoundsFunc(void* uniform instance_i, uniform uintptr_t item, uniform RTCBounds& bounds_o)
 {
   const uniform Instance* uniform instance = (const uniform Instance* uniform) instance_i;
   uniform Vec3f l = instance->lower;
@@ -69,7 +69,7 @@ unmasked void instanceBoundsFunc(void* uniform instance_i, uniform size_t item, 
   bounds_o.upper_z = upper.z;
 }
 
-void instanceIntersectFunc(void* uniform instance_i, varying RTCRay& ray, uniform size_t item)
+void instanceIntersectFunc(void* uniform instance_i, varying RTCRay& ray, uniform uintptr_t item)
 {
   const uniform Instance* uniform instance = (const uniform Instance* uniform) instance_i;
   const Vec3f ray_org = ray.org;
@@ -88,7 +88,7 @@ void instanceIntersectFunc(void* uniform instance_i, varying RTCRay& ray, unifor
   }
 }
 
-void instanceOccludedFunc(void* uniform instance_i, varying RTCRay& ray, uniform size_t item)
+void instanceOccludedFunc(void* uniform instance_i, varying RTCRay& ray, uniform uintptr_t item)
 {
   const uniform Instance* uniform instance = (const uniform Instance* uniform) instance_i;
   const Vec3f ray_org = ray.org;
@@ -104,8 +104,8 @@ unmasked void instanceIntersectFuncN(const uniform int* uniform valid,
                                      void* uniform ptr,
                                      const uniform RTCIntersectContext* uniform context,
                                      RTCRayN* uniform rays,
-                                     uniform size_t N,
-                                     uniform size_t item)
+                                     uniform uintptr_t N,
+                                     uniform uintptr_t item)
 {
   /* avoid crashing when debug visualizations are used */
   if (context == NULL)
@@ -159,8 +159,8 @@ unmasked void instanceOccludedFuncN(const uniform int* uniform valid,
                                     void* uniform ptr,
                                     const uniform RTCIntersectContext* uniform context,
                                     RTCRayN* uniform rays,
-                                    uniform size_t N,
-                                    uniform size_t item)
+                                    uniform uintptr_t N,
+                                    uniform uintptr_t item)
 {
   /* avoid crashing when debug visualizations are used */
   if (context == NULL)
@@ -244,7 +244,7 @@ struct Sphere
   unsigned int geomID;
 };
 
-unmasked void sphereBoundsFunc(void* uniform spheres_i, uniform size_t item, uniform RTCBounds& bounds_o)
+unmasked void sphereBoundsFunc(void* uniform spheres_i, uniform uintptr_t item, uniform RTCBounds& bounds_o)
 {
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) spheres_i;
   const uniform Sphere& sphere = spheres[item];
@@ -256,7 +256,7 @@ unmasked void sphereBoundsFunc(void* uniform spheres_i, uniform size_t item, uni
   bounds_o.upper_z = sphere.p.z+sphere.r;
 }
 
-void sphereIntersectFunc(void* uniform spheres_i, varying RTCRay& ray, uniform size_t item)
+void sphereIntersectFunc(void* uniform spheres_i, varying RTCRay& ray, uniform uintptr_t item)
 {
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) spheres_i;
   const uniform Sphere& sphere = spheres[item];
@@ -288,7 +288,7 @@ void sphereIntersectFunc(void* uniform spheres_i, varying RTCRay& ray, uniform s
   }
 }
 
-void sphereOccludedFunc(void* uniform spheres_i, varying RTCRay& ray, uniform size_t item)
+void sphereOccludedFunc(void* uniform spheres_i, varying RTCRay& ray, uniform uintptr_t item)
 {
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) spheres_i;
   const uniform Sphere& sphere = spheres[item];
@@ -314,8 +314,8 @@ unmasked void sphereIntersectFuncN(const uniform int* uniform valid,
                                    void* uniform ptr,
                                    const uniform RTCIntersectContext* uniform context,
                                    RTCRayN* uniform rays,
-                                   uniform size_t N,
-                                   uniform size_t item)
+                                   uniform uintptr_t N,
+                                   uniform uintptr_t item)
 {
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) ptr;
 
@@ -377,8 +377,8 @@ unmasked void sphereOccludedFuncN(const uniform int* uniform valid,
                                   void* uniform ptr,
                                   const uniform RTCIntersectContext* uniform context,
                                   RTCRayN* uniform rays,
-                                  uniform size_t N,
-                                  uniform size_t item)
+                                  uniform uintptr_t N,
+                                  uniform uintptr_t item)
 {
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) ptr;
 
