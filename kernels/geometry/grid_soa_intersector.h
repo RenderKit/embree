@@ -294,40 +294,32 @@ namespace embree
       /*! Intersect a ray with the primitive. */
       static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
       { 
-        //float ftime;
-        //const size_t itime = getTimeSegment(ray.time[k], float(pre.grid->time_steps-1), ftime);
-        float ftime = pre.ftime; int itime = pre.itime;
-
         const size_t line_offset   = pre.grid->width;
         const size_t lines         = pre.grid->height;
-        const float* const grid_x  = pre.grid->decodeLeaf(itime,prim);
+        const float* const grid_x  = pre.grid->decodeLeaf(pre.itime,prim);
 
 #if defined(__AVX__)
-        intersect<GridSOA::Gather3x3>( ray, k, ftime, context, grid_x, line_offset, lines, pre);
+        intersect<GridSOA::Gather3x3>( ray, k, pre.ftime, context, grid_x, line_offset, lines, pre);
 #else
-        intersect<GridSOA::Gather2x3>(ray, k, ftime, context, grid_x            , line_offset, lines, pre);
+        intersect<GridSOA::Gather2x3>(ray, k, pre.ftime, context, grid_x, line_offset, lines, pre);
         if (likely(lines > 2))
-          intersect<GridSOA::Gather2x3>(ray, k, ftime, context, grid_x+line_offset, line_offset, lines, pre);
+          intersect<GridSOA::Gather2x3>(ray, k, pre.ftime, context, grid_x+line_offset, line_offset, lines, pre);
 #endif
       }
 
       /*! Test if the ray is occluded by the primitive */
       static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
       {
-        //float ftime;
-        //const size_t itime = getTimeSegment(ray.time[k], float(pre.grid->time_steps-1), ftime);
-        float ftime = pre.ftime; int itime = pre.itime;
-
         const size_t line_offset   = pre.grid->width;
         const size_t lines         = pre.grid->height;
-        const float* const grid_x  = pre.grid->decodeLeaf(itime,prim);
+        const float* const grid_x  = pre.grid->decodeLeaf(pre.itime,prim);
 
 #if defined(__AVX__)
-        return occluded<GridSOA::Gather3x3>( ray, k, ftime, context, grid_x, line_offset, lines, pre);
+        return occluded<GridSOA::Gather3x3>( ray, k, pre.ftime, context, grid_x, line_offset, lines, pre);
 #else
-        if (occluded<GridSOA::Gather2x3>(ray, k, ftime, context, grid_x            , line_offset, lines, pre)) return true;
+        if (occluded<GridSOA::Gather2x3>(ray, k, pre.ftime, context, grid_x, line_offset, lines, pre)) return true;
         if (likely(lines > 2))
-          if (occluded<GridSOA::Gather2x3>(ray, k, ftime, context, grid_x+line_offset, line_offset, lines, pre)) return true;
+          if (occluded<GridSOA::Gather2x3>(ray, k, pre.ftime, context, grid_x+line_offset, line_offset, lines, pre)) return true;
 #endif
         return false;
       }
