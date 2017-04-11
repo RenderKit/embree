@@ -1237,7 +1237,7 @@ namespace embree
                                           const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
       {
-        vmask = intersectNodeMB4D<N,K>(node,i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
+        vmask &= intersectNodeMB4D<N,K>(node,i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
         return true;
       }
     };
@@ -1249,7 +1249,7 @@ namespace embree
                                           const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
       {
-        vmask = intersectNodeMB4DRobust<N,K>(node,i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
+        vmask &= intersectNodeMB4DRobust<N,K>(node,i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
         return true;
       }
     };
@@ -1262,9 +1262,9 @@ namespace embree
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
       {
         if (likely(node.isAlignedNodeMB() || node.isAlignedNodeMB4D())) 
-          vmask = intersectNodeMB4D<N,K>(node,i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
+          vmask &= intersectNodeMB4D<N,K>(node,i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
         else /*if (unlikely(node.isUnalignedNodeMB()))*/ { 
-          assert(node.isUnalignedNodeMB()); vmask = intersectNode<N,K>(node.unalignedNodeMB(),i,org,dir,rdir,org_rdir,tnear,tfar,time,dist); 
+          assert(node.isUnalignedNodeMB()); vmask &= intersectNode<N,K>(node.unalignedNodeMB(),i,org,dir,rdir,org_rdir,tnear,tfar,time,dist); 
         }
         return true;
       }

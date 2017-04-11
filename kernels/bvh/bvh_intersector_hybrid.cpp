@@ -62,8 +62,7 @@ namespace embree
       /* if the rays belong to different time segments, immediately switch to single ray traversal */
       Precalculations pre(valid,ray,bvh->numTimeSteps);
       const size_t valid_first = __bsf(valid_bits);
-      if (unlikely((types & BVH_MB) && (movemask(pre.itime() == pre.itime(valid_first)) != valid_bits)
-                   || (types == BVH_AN2_AN4D_UN2))) // FIXME: for some reason msmblur hair performs bad with hybrid traversal
+      if (unlikely((types & BVH_MB) && (movemask(pre.itime() == pre.itime(valid_first)) != valid_bits)))
       {
         intersectSingle(valid, bvh, pre, ray, context);
         AVX_ZERO_UPPER();
@@ -146,7 +145,8 @@ namespace embree
         while (likely(!cur.isLeaf()))
         {
           /* process nodes */
-          STAT(const vbool<K> valid_node = ray_tfar > curDist);
+          const vbool<K> valid_node = ray_tfar > curDist
+          STAT(valid_node);
           STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
           const NodeRef nodeRef = cur;
           const BaseNode* __restrict__ const node = nodeRef.baseNode(types);
@@ -160,7 +160,7 @@ namespace embree
             const NodeRef child = node->children[i];
             if (unlikely(child == BVH::emptyNode)) break;
             vfloat<K> lnearP;
-            vbool<K> lhit(false);
+            vbool<K> lhit(valid_node);
             BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,pre.ftime(),lnearP,lhit);
 
             /* if we hit the child we choose to continue with that child if it
@@ -281,8 +281,7 @@ namespace embree
       /* if the rays belong to different time segments, immediately switch to single ray traversal */
       Precalculations pre(valid,ray,bvh->numTimeSteps);
       const size_t valid_first = __bsf(valid_bits);
-      if (unlikely((types & BVH_MB) && (movemask(pre.itime() == pre.itime(valid_first)) != valid_bits)
-                   || (types == BVH_AN2_AN4D_UN2))) // FIXME: for some reason msmblur hair performs bad with hybrid traversal
+      if (unlikely((types & BVH_MB) && (movemask(pre.itime() == pre.itime(valid_first)) != valid_bits)))
       {
         occludedSingle(valid, bvh, pre, ray, context);
         AVX_ZERO_UPPER();
@@ -361,7 +360,8 @@ namespace embree
         while (likely(!cur.isLeaf()))
         {
           /* process nodes */
-          STAT(const vbool<K> valid_node = ray_tfar > curDist);
+          const vbool<K> valid_node = ray_tfar > curDist
+          STAT(valid_node);
           STAT3(shadow.trav_nodes,1,popcnt(valid_node),K);
           const NodeRef nodeRef = cur;
           const BaseNode* __restrict__ const node = nodeRef.baseNode(types);
@@ -375,7 +375,7 @@ namespace embree
             const NodeRef child = node->children[i];
             if (unlikely(child == BVH::emptyNode)) break;
             vfloat<K> lnearP;
-            vbool<K> lhit(false);
+            vbool<K> lhit(valid_node);
             BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,pre.ftime(),lnearP,lhit);
 
             /* if we hit the child we choose to continue with that child if it
