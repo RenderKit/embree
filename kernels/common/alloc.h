@@ -756,7 +756,7 @@ namespace embree
       }
 
       size_t getBlockFreeBytes() const {
-	return max(allocEnd,size_t(cur))-cur;
+	return reserveEnd - min(cur,reserveEnd);
       }
 
       bool hasType(AllocationType atype_i, bool huge_pages_i) const
