@@ -288,10 +288,10 @@ namespace embree
     /*! initializes the grow size */
     __forceinline void initGrowSizeAndNumSlots(size_t bytesEstimated, bool compact) 
     {
-      defaultBlockSize = clamp(alignSize(bytesEstimated/4),size_t(128),size_t(PAGE_SIZE-maxAlignment));
-      maxGrowSize = clamp(alignSize(bytesEstimated/20),size_t(1024-maxAlignment),maxAllocationSize);
-      use_single_mode = 2*defaultBlockSize >= bytesEstimated/100;
+      maxGrowSize = clamp(alignSize(bytesEstimated/40),size_t(1024-maxAlignment),maxAllocationSize);
+      defaultBlockSize = clamp(alignSize(maxGrowSize),size_t(128),size_t(PAGE_SIZE-maxAlignment));
       growSize = clamp(alignSize(bytesEstimated/40),size_t(1024-maxAlignment),maxGrowSize);
+      use_single_mode = 2*defaultBlockSize >= bytesEstimated/100;
       log2_grow_size_scale = 0;
       slotMask = 0x0;
       if (!compact) {
@@ -641,10 +641,15 @@ namespace embree
         if (atype == OS_MALLOC && bytesAllocate < 2*1024*1024)
           atype = ALIGNED_MALLOC;
 
+        /* we need to additionally allocate some header */
         const size_t sizeof_Header = offsetof(Block,data[0]);
+        bytesAllocate = sizeof_Header+bytesAllocate;
+        bytesReserve  = sizeof_Header+bytesReserve;
+
+        /* consume full 4k pages with using os_malloc */
         if (atype == OS_MALLOC) {
-          bytesAllocate = ((sizeof_Header+bytesAllocate+PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
-          bytesReserve  = ((sizeof_Header+bytesReserve +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
+          bytesAllocate = ((bytesAllocate+PAGE_SIZE-1) & ~(PAGE_SIZE-1));
+          bytesReserve  = ((bytesReserve +PAGE_SIZE-1) & ~(PAGE_SIZE-1));
         }
 
         /* either use alignedMalloc or os_malloc */
