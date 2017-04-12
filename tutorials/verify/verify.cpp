@@ -1310,20 +1310,15 @@ namespace embree
       int i = 0;
       switch (gtype) {
       case TRIANGLE_MESH:    
-      case TRIANGLE_MESH_MB: mesh = SceneGraph::createTriangleSphere(zero,float(i+1),numPhi); 
-                             NN = 4*numPhi*numPhi; break;
+      case TRIANGLE_MESH_MB: mesh = SceneGraph::createTriangleSphere(zero,float(i+1),numPhi); break;
       case QUAD_MESH:        
-      case QUAD_MESH_MB:     mesh = SceneGraph::createQuadSphere(zero,float(i+1),numPhi); 
-                             NN = 2*numPhi*numPhi; break;
+      case QUAD_MESH_MB:     mesh = SceneGraph::createQuadSphere(zero,float(i+1),numPhi); break;
       case SUBDIV_MESH:      
-      case SUBDIV_MESH_MB:   mesh = SceneGraph::createSubdivSphere(zero,float(i+1),8,float(numPhi)/8.0f); 
-                             NN = 2*8*8; break;
+      case SUBDIV_MESH_MB:   mesh = SceneGraph::createSubdivSphere(zero,float(i+1),8,float(numPhi)/8.0f); break;
       case HAIR_GEOMETRY:    
-      case HAIR_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi,SceneGraph::HairSetNode::HAIR); 
-                             NN = 4*numPhi*numPhi; break;
+      case HAIR_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi,SceneGraph::HairSetNode::HAIR); break;
       case LINE_GEOMETRY:    
-      case LINE_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi/3,SceneGraph::HairSetNode::HAIR); 
-                             NN = (4*numPhi*numPhi/3)*3; break;
+      case LINE_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi/3,SceneGraph::HairSetNode::HAIR); break;
       default:               throw std::runtime_error("invalid geometry for benchmark");
       }
       
@@ -1341,7 +1336,7 @@ namespace embree
       case LINE_GEOMETRY_MB: mesh = mesh->set_motion_vector(random_motion_vector2(0.0001f)); break;
       default: break;
       }
-      
+      NN = mesh->numPrimitives(); 
       scene.addGeometry(gflags,mesh);
       rtcCommit (scene);
       AssertNoError(device);
