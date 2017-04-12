@@ -288,9 +288,9 @@ namespace embree
     /*! initializes the grow size */
     __forceinline void initGrowSizeAndNumSlots(size_t bytesEstimated, bool compact) 
     {
-      maxGrowSize = clamp(alignSize(bytesEstimated/40),size_t(10*128),maxAllocationSize);
+      maxGrowSize = clamp(alignSize(bytesEstimated/20),size_t(10*128),maxAllocationSize);
       defaultBlockSize = clamp(alignSize(maxGrowSize),size_t(128),size_t(PAGE_SIZE-maxAlignment));
-      growSize = clamp(alignSize(bytesEstimated/40),size_t(10*128),maxGrowSize);
+      growSize = maxGrowSize; //clamp(alignSize(bytesEstimated/40),size_t(10*128),maxGrowSize);
       use_single_mode = 2*defaultBlockSize >= bytesEstimated/100;
       log2_grow_size_scale = 0;
       slotMask = 0x0;
