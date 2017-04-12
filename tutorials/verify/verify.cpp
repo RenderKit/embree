@@ -1368,8 +1368,7 @@ namespace embree
 
 #if 0
         double num_primitives = bytes_one_thread.first;
-        //PRINT(ceilf(sqrtf(N/4.0f)));
-        std::cout << "N = " << num_primitives << ", " << 
+        std::cout << "N = " << num_primitives << ", n = " << ceilf(sqrtf(N/4.0f)) << ", "
           "expected = " << bytes_expected/num_primitives << " B, " << 
           "1 thread = " << bytes_one_thread.second/num_primitives << " B (" << 100.0f*expected_to_single << " %)" << (failed0 ? "[FAILED]" : "") << ", " << 
           "all_threads = " << bytes_all_threads.second/num_primitives << " B (" << 100.0f*single_to_threaded << " %)" << (failed1 ? "[FAILED]" : "") << std::endl;
