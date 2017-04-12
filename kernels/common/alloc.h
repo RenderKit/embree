@@ -175,7 +175,7 @@ namespace embree
 
     FastAllocator (Device* device, bool osAllocation) 
       : device(device), slotMask(0), usedBlocks(nullptr), freeBlocks(nullptr), use_single_mode(false), defaultBlockSize(PAGE_SIZE), estimatedSize(0),
-        growSize(PAGE_SIZE), log2_grow_size_scale(0), bytesUsed(0), bytesWasted(0), atype(osAllocation ? OS_MALLOC : ALIGNED_MALLOC),
+        growSize(PAGE_SIZE), maxGrowSize(maxAllocationSize), log2_grow_size_scale(0), bytesUsed(0), bytesWasted(0), atype(osAllocation ? OS_MALLOC : ALIGNED_MALLOC),
         primrefarray(device)
     {
       for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++)
@@ -282,6 +282,7 @@ namespace embree
       bytesAllocate  = ((bytesAllocate +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
 
       growSize = clamp(bytesAllocate,size_t(PAGE_SIZE),maxAllocationSize); // PAGE_SIZE -maxAlignment ?
+      maxGrowSize = maxAllocationSize;
       log2_grow_size_scale = 0;
       slotMask = 0x0;
       if (!compact) {
@@ -418,7 +419,7 @@ namespace embree
         {
           Lock<SpinLock> lock(slotMutex[slot]);
           if (myUsedBlocks == threadUsedBlocks[slot]) {
-            const size_t allocSize = min(max(growSize,bytes),size_t(maxAllocationSize));
+            const size_t allocSize = min(max(growSize,bytes),maxGrowSize);
             assert(allocSize >= bytes);
             threadBlocks[slot] = threadUsedBlocks[slot] = Block::create(device,allocSize,allocSize,threadBlocks[slot],atype);
           }
@@ -439,10 +440,10 @@ namespace embree
 	      freeBlocks = nextFreeBlock;
 	    } else {
 	      //growSize = min(2*growSize,size_t(maxAllocationSize+maxAlignment));
-              const size_t allocSize = min(growSize * incGrowSizeScale(),size_t(maxAllocationSize+maxAlignment))-maxAlignment;
+              const size_t allocSize = min(growSize*incGrowSizeScale(),maxGrowSize);
 	      usedBlocks = threadUsedBlocks[slot] = Block::create(device,allocSize,allocSize,usedBlocks,atype);
 	    }
-	  }
+          }
         }
       }
     }
@@ -845,6 +846,7 @@ namespace embree
     size_t defaultBlockSize;
     size_t estimatedSize;
     size_t growSize;
+    size_t maxGrowSize;
     std::atomic<size_t> log2_grow_size_scale; //!< log2 of scaling factor for grow size
     std::atomic<size_t> bytesUsed;            //!< number of total bytes used
     std::atomic<size_t> bytesWasted;          //!< number of total wasted bytes
