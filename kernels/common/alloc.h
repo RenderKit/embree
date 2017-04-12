@@ -55,8 +55,8 @@ namespace embree
       {
         ptr = nullptr;
 	cur = end = 0;
-	bytesWasted = 0;
         bytesUsed = 0;
+	bytesWasted = 0;
         allocBlockSize = 0;
         if (alloc) allocBlockSize = alloc->defaultBlockSize;
       }
@@ -112,10 +112,13 @@ namespace embree
 
       /*! returns amount of used bytes */
       __forceinline size_t getUsedBytes() const { return bytesUsed; }
+  
+      /*! returns amount of free bytes */
+      __forceinline size_t getFreeBytes() const { return end-cur; }
       
       /*! returns amount of wasted bytes */
-      __forceinline size_t getWastedBytes() const { return bytesWasted + (end-cur); }
-
+      __forceinline size_t getWastedBytes() const { return bytesWasted; }
+  
     private:
       ThreadLocal2* parent;
       char*  ptr;            //!< pointer to memory block
@@ -144,6 +147,7 @@ namespace embree
         //if (alloc.load() == alloc_i) return; // not required as only one thread calls bind
         if (alloc.load()) {
           alloc.load()->bytesUsed   += alloc0.getUsedBytes()   + alloc1.getUsedBytes();
+          alloc.load()->bytesFree   += alloc0.getFreeBytes()   + alloc1.getFreeBytes();
           alloc.load()->bytesWasted += alloc0.getWastedBytes() + alloc1.getWastedBytes();
         }
         alloc0.init(alloc_i);
@@ -160,6 +164,7 @@ namespace embree
         Lock<SpinLock> lock(mutex);
         if (alloc.load() != alloc_i) return; // required as a different thread calls unbind
         alloc.load()->bytesUsed   += alloc0.getUsedBytes()   + alloc1.getUsedBytes();
+        alloc.load()->bytesFree   += alloc0.getFreeBytes()   + alloc1.getFreeBytes();
         alloc.load()->bytesWasted += alloc0.getWastedBytes() + alloc1.getWastedBytes();
         alloc0.init(nullptr);
         alloc1.init(nullptr);
@@ -175,7 +180,7 @@ namespace embree
 
     FastAllocator (Device* device, bool osAllocation) 
       : device(device), slotMask(0), usedBlocks(nullptr), freeBlocks(nullptr), use_single_mode(false), defaultBlockSize(PAGE_SIZE), estimatedSize(0),
-        growSize(PAGE_SIZE), maxGrowSize(maxAllocationSize), log2_grow_size_scale(0), bytesUsed(0), bytesWasted(0), atype(osAllocation ? OS_MALLOC : ALIGNED_MALLOC),
+        growSize(PAGE_SIZE), maxGrowSize(maxAllocationSize), log2_grow_size_scale(0), bytesUsed(0), bytesFree(0), bytesWasted(0), atype(osAllocation ? OS_MALLOC : ALIGNED_MALLOC),
         primrefarray(device)
     {
       for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++)
@@ -347,6 +352,7 @@ namespace embree
       internal_fix_used_blocks();
 
       bytesUsed.store(0);
+      bytesFree.store(0);
       bytesWasted.store(0);
       
       /* reset all used blocks and move them to begin of free block list */
@@ -377,6 +383,7 @@ namespace embree
     {
       cleanup();
       bytesUsed.store(0);
+      bytesFree.store(0);
       bytesWasted.store(0);
       if (usedBlocks.load() != nullptr) usedBlocks.load()->clear_list(device); usedBlocks = nullptr;
       if (freeBlocks.load() != nullptr) freeBlocks.load()->clear_list(device); freeBlocks = nullptr;
@@ -530,8 +537,9 @@ namespace embree
     {
       AllStatistics (FastAllocator* alloc)
 
-      : bytesUsed(alloc->getUsedBytes()),
-        bytesWasted(alloc->getWastedBytes()),
+      : bytesUsed(alloc->bytesUsed),
+        bytesFree(alloc->bytesFree),
+        bytesWasted(alloc->bytesWasted),
         stat_all(alloc,ANY_TYPE),
         stat_malloc(alloc,ALIGNED_MALLOC),
         stat_4K(alloc,OS_MALLOC,false),
@@ -539,6 +547,7 @@ namespace embree
         stat_shared(alloc,SHARED) {}
 
       AllStatistics (size_t bytesUsed,
+                     size_t bytesFree,
                      size_t bytesWasted,
                      Statistics stat_all,
                      Statistics stat_malloc,
@@ -547,6 +556,7 @@ namespace embree
                      Statistics stat_shared)
 
       : bytesUsed(bytesUsed),
+        bytesFree(bytesFree),
         bytesWasted(bytesWasted),
         stat_all(stat_all),
         stat_malloc(stat_malloc),
@@ -557,6 +567,7 @@ namespace embree
       friend AllStatistics operator+ (const AllStatistics& a, const AllStatistics& b)
       {
         return AllStatistics(a.bytesUsed+b.bytesUsed,
+                             a.bytesFree+b.bytesFree,
                              a.bytesWasted+b.bytesWasted,
                              a.stat_all + b.stat_all,
                              a.stat_malloc + b.stat_malloc,
@@ -579,10 +590,10 @@ namespace embree
         str1.setf(std::ios::fixed, std::ios::floatfield);
         str1 << "  alloc : " 
              << "used = " << std::setw(7) << std::setprecision(3) << 1E-3f*bytesUsed << " kB, "
-             << "                   " 
+             << "free = " << std::setw(7) << std::setprecision(3) << 1E-3f*bytesFree << " kB, "            
              << "wasted = " << std::setw(7) << std::setprecision(3) << 1E-3f*bytesWasted << " kB, "            
              << "total = " << std::setw(7) << std::setprecision(3) << 1E-3f*(bytesUsed+bytesWasted) << " kB, "
-             << "#bytes/prim = " << std::setw(6) << std::setprecision(2) << double(bytesUsed+bytesWasted)/double(numPrimitives);
+             << "#bytes/prim = " << std::setw(6) << std::setprecision(2) << double(bytesUsed+bytesFree+bytesWasted)/double(numPrimitives);
         std::cout << str1.str() << std::endl;
      
         std::cout << "  total : " << stat_all.str(numPrimitives) << std::endl;
@@ -594,6 +605,7 @@ namespace embree
 
     private:
       size_t bytesUsed;
+      size_t bytesFree;
       size_t bytesWasted;
       Statistics stat_all;
       Statistics stat_malloc;
@@ -855,8 +867,9 @@ namespace embree
     size_t growSize;
     size_t maxGrowSize;
     std::atomic<size_t> log2_grow_size_scale; //!< log2 of scaling factor for grow size
-    std::atomic<size_t> bytesUsed;            //!< number of total bytes used
-    std::atomic<size_t> bytesWasted;          //!< number of total wasted bytes
+    std::atomic<size_t> bytesUsed;
+    std::atomic<size_t> bytesFree;
+    std::atomic<size_t> bytesWasted;
     static __thread ThreadLocal2* thread_local_allocator2;
     SpinLock thread_local_allocators_lock;
     std::vector<ThreadLocal2*> thread_local_allocators;
