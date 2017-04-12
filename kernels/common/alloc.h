@@ -281,15 +281,17 @@ namespace embree
       FastAllocator* allocator;
     };
 
+    __forceinline size_t alignSize(size_t i) {
+      return (i+128)/128*128;
+    }
+
     /*! initializes the grow size */
     __forceinline void initGrowSizeAndNumSlots(size_t bytesEstimated, bool compact) 
     {
-      defaultBlockSize = clamp(bytesEstimated/4,size_t(128),size_t(PAGE_SIZE-maxAlignment));
-
-      //bytesEstimated  = ((bytesEstimated +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
-      maxGrowSize = clamp(bytesEstimated/20,size_t(1024-maxAlignment),maxAllocationSize);
+      defaultBlockSize = clamp(alignSize(bytesEstimated/4),size_t(128),size_t(PAGE_SIZE-maxAlignment));
+      maxGrowSize = clamp(alignSize(bytesEstimated/20),size_t(1024-maxAlignment),maxAllocationSize);
       use_single_mode = 2*defaultBlockSize >= bytesEstimated/100;
-      growSize = clamp(bytesEstimated/40,size_t(1024-maxAlignment),maxGrowSize);
+      growSize = clamp(alignSize(bytesEstimated/40),size_t(1024-maxAlignment),maxGrowSize);
       log2_grow_size_scale = 0;
       slotMask = 0x0;
       if (!compact) {
