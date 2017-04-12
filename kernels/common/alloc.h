@@ -281,10 +281,10 @@ namespace embree
     {
       defaultBlockSize = clamp(bytesEstimated/4,size_t(128),size_t(PAGE_SIZE-maxAlignment));
 
-      bytesEstimated  = ((bytesEstimated +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
-      maxGrowSize = clamp(bytesEstimated/20,size_t(PAGE_SIZE-maxAlignment),maxAllocationSize);
+      //bytesEstimated  = ((bytesEstimated +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
+      maxGrowSize = clamp(bytesEstimated/20,size_t(1024-maxAlignment),maxAllocationSize);
       use_single_mode = 2*defaultBlockSize >= bytesEstimated/100;
-      growSize = clamp(bytesEstimated/40,size_t(PAGE_SIZE-maxAlignment),maxGrowSize);
+      growSize = clamp(bytesEstimated/40,size_t(1024-maxAlignment),maxGrowSize);
       log2_grow_size_scale = 0;
       slotMask = 0x0;
       if (!compact) {
@@ -489,10 +489,10 @@ namespace embree
       {
         std::stringstream str;
         str.setf(std::ios::fixed, std::ios::floatfield);
-        str << "used = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesUsed << " MB, "
-            << "free = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesFree << " MB, "
-            << "wasted = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesWasted << " MB, "            
-            << "total = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesAllocatedTotal() << " MB, "
+        str << "used = " << std::setw(7) << std::setprecision(3) << 1E-3f*bytesUsed << " kB, "
+            << "free = " << std::setw(7) << std::setprecision(3) << 1E-3f*bytesFree << " kB, "
+            << "wasted = " << std::setw(7) << std::setprecision(3) << 1E-3f*bytesWasted << " kB, "            
+            << "total = " << std::setw(7) << std::setprecision(3) << 1E-3f*bytesAllocatedTotal() << " kB, "
             << "#bytes/prim = " << std::setw(6) << std::setprecision(2) << double(bytesAllocatedTotal())/double(numPrimitives);
         return str.str();
       }
@@ -570,7 +570,7 @@ namespace embree
         std::stringstream str0;
         str0.setf(std::ios::fixed, std::ios::floatfield);
         str0 << "  alloc : " 
-             << "used = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesUsed << " MB, "
+             << "used = " << std::setw(7) << std::setprecision(3) << 1E-3f*bytesUsed << " kB, "
              << "                                                            " 
              << "#bytes/prim = " << std::setw(6) << std::setprecision(2) << double(bytesUsed)/double(numPrimitives);
         std::cout << str0.str() << std::endl;
@@ -578,10 +578,10 @@ namespace embree
         std::stringstream str1;
         str1.setf(std::ios::fixed, std::ios::floatfield);
         str1 << "  alloc : " 
-             << "used = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesUsed << " MB, "
+             << "used = " << std::setw(7) << std::setprecision(3) << 1E-3f*bytesUsed << " kB, "
              << "                   " 
-             << "wasted = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesWasted << " MB, "            
-             << "total = " << std::setw(7) << std::setprecision(3) << 1E-6f*(bytesUsed+bytesWasted) << " MB, "
+             << "wasted = " << std::setw(7) << std::setprecision(3) << 1E-3f*bytesWasted << " kB, "            
+             << "total = " << std::setw(7) << std::setprecision(3) << 1E-3f*(bytesUsed+bytesWasted) << " kB, "
              << "#bytes/prim = " << std::setw(6) << std::setprecision(2) << double(bytesUsed+bytesWasted)/double(numPrimitives);
         std::cout << str1.str() << std::endl;
      
@@ -628,8 +628,10 @@ namespace embree
           atype = ALIGNED_MALLOC;
 
         const size_t sizeof_Header = offsetof(Block,data[0]);
-        bytesAllocate = ((sizeof_Header+bytesAllocate+PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
-        bytesReserve  = ((sizeof_Header+bytesReserve +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
+        if (atype == OS_MALLOC) {
+          bytesAllocate = ((sizeof_Header+bytesAllocate+PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
+          bytesReserve  = ((sizeof_Header+bytesReserve +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
+        }
 
         /* either use alignedMalloc or os_malloc */
         void *ptr = nullptr;
