@@ -592,7 +592,7 @@ namespace embree
              << "used = " << std::setw(7) << std::setprecision(3) << 1E-3f*bytesUsed << " kB, "
              << "free = " << std::setw(7) << std::setprecision(3) << 1E-3f*bytesFree << " kB, "            
              << "wasted = " << std::setw(7) << std::setprecision(3) << 1E-3f*bytesWasted << " kB, "            
-             << "total = " << std::setw(7) << std::setprecision(3) << 1E-3f*(bytesUsed+bytesWasted) << " kB, "
+             << "total = " << std::setw(7) << std::setprecision(3) << 1E-3f*(bytesUsed+bytesFree+bytesWasted) << " kB, "
              << "#bytes/prim = " << std::setw(6) << std::setprecision(2) << double(bytesUsed+bytesFree+bytesWasted)/double(numPrimitives);
         std::cout << str1.str() << std::endl;
      
@@ -736,10 +736,10 @@ namespace embree
         bytes = (bytes+(align-1)) & ~(align-1);
 	if (unlikely(cur+bytes > reserveEnd && !partial)) return nullptr;
 	const size_t i = cur.fetch_add(bytes);
-	if (unlikely(i+bytes > reserveEnd && !partial)) return nullptr;
+        if (unlikely(i+bytes > reserveEnd && !partial)) return nullptr;
         if (unlikely(i > reserveEnd)) return nullptr;
         bytes_in = bytes = min(bytes,reserveEnd-i);
-
+        
 	if (i+bytes > allocEnd) {
           if (device) device->memoryMonitor(i+bytes-max(i,allocEnd),true);
         }
