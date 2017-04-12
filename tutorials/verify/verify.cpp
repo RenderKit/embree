@@ -1366,9 +1366,9 @@ namespace embree
         if (failed0 || failed1) 
           ret = VerifyApplication::FAILED;
 
-#if 1
+#if 0
         double num_primitives = bytes_one_thread.first;
-        PRINT(ceilf(sqrtf(N/4.0f)));
+        //PRINT(ceilf(sqrtf(N/4.0f)));
         std::cout << "N = " << num_primitives << ", " << 
           "expected = " << bytes_expected/num_primitives << " B, " << 
           "1 thread = " << bytes_one_thread.second/num_primitives << " B (" << 100.0f*expected_to_single << " %)" << (failed0 ? "[FAILED]" : "") << ", " << 
