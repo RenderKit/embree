@@ -72,8 +72,8 @@ namespace embree
         
         /* perform depth test */
         const vfloat<N> T = dot(v0,Ng);
-        valid &= ((T^sgnDen) >= absDen*vfloat<N>(ray_tnear));
-        valid &=(absDen*vfloat<N>(ray_tfar) >= (T^sgnDen));
+        valid &= absDen*vfloat<N>(ray_tnear) < (T^sgnDen);
+        valid &= (T^sgnDen) <= absDen*vfloat<N>(ray_tfar);
         if (unlikely(none(valid))) return false;
         
         /* avoid division by 0 */

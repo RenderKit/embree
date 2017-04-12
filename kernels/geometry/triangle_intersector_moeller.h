@@ -105,7 +105,7 @@ namespace embree
         
         /* perform depth test */
         const vfloat<M> T = dot(Vec3vfM(tri_Ng),C) ^ sgnDen;
-        valid &= (T > absDen*vfloat<M>(ray.tnear)) & (T < absDen*vfloat<M>(ray.tfar));
+        valid &= (absDen*vfloat<M>(ray.tnear) < T) & (T <= absDen*vfloat<M>(ray.tfar));
         if (likely(none(valid))) return false;
         
         /* update hit information */
@@ -223,7 +223,7 @@ namespace embree
         
         /* perform depth test */
         const vfloat<M> T = dot(Vec3vfM(tri_Ng),C) ^ sgnDen;
-        valid &= (T > absDen*ray_tnear) & (T < absDen*ray_tfar);
+        valid &= (absDen*ray_tnear < T) & (T <= absDen*ray_tfar);
         if (likely(none(valid))) return false;
         
         /* update hit information */
@@ -319,7 +319,7 @@ namespace embree
         
         /* perform depth test */
         const vfloat<K> T = dot(tri_Ng,C) ^ sgnDen;
-        valid &= (T >= absDen*ray_tnear) & (absDen*ray_tfar >= T);
+        valid &= (absDen*ray_tnear < T) & (T <= absDen*ray_tfar);
         if (unlikely(none(valid))) return false;
         
         /* perform backface culling */
@@ -399,7 +399,7 @@ namespace embree
         
         /* perform depth test */
         const vfloat<M> T = dot(Vec3vfM(tri_Ng),C) ^ sgnDen;
-        valid &= (T > absDen*vfloat<M>(ray.tnear[k])) & (T < absDen*vfloat<M>(ray.tfar[k]));
+        valid &= (absDen*vfloat<M>(ray.tnear[k]) < T) & (T <= absDen*vfloat<M>(ray.tfar[k]));
         if (likely(none(valid))) return false;
         
         /* calculate hit information */

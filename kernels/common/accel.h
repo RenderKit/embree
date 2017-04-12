@@ -336,7 +336,7 @@ namespace embree
           for (size_t i=0; i<numPackets; i++)
           {
             RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)rayN[i];
-            vbool<VSIZEX> valid = ray.tnear <= ray.tfar;
+            vbool<VSIZEX> valid = ray.tnear < ray.tfar;
             intersect(valid,ray,context);
           }      
         }
@@ -406,7 +406,7 @@ namespace embree
           for (size_t i=0; i<numPackets; i++)
           {
             RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)rayN[i];
-            vbool<VSIZEX> valid = ray.tnear <= ray.tfar;
+            vbool<VSIZEX> valid = ray.tnear < ray.tfar;
             occluded(valid,ray,context);
           }      
         }
