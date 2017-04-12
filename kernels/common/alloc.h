@@ -174,7 +174,7 @@ namespace embree
     };
 
     FastAllocator (Device* device, bool osAllocation) 
-      : device(device), slotMask(0), usedBlocks(nullptr), freeBlocks(nullptr), use_single_mode(false), defaultBlockSize(PAGE_SIZE), 
+      : device(device), slotMask(0), usedBlocks(nullptr), freeBlocks(nullptr), use_single_mode(false), defaultBlockSize(PAGE_SIZE), estimatedSize(0),
         growSize(PAGE_SIZE), log2_grow_size_scale(0), bytesUsed(0), bytesWasted(0), atype(osAllocation ? OS_MALLOC : ALIGNED_MALLOC),
         primrefarray(device)
     {
@@ -325,6 +325,7 @@ namespace embree
       internal_fix_used_blocks();
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       /* single allocator mode ? */
+      estimatedSize = bytesAllocate;
       use_single_mode = single_mode;
       defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE+maxAlignment));
       initGrowSizeAndNumSlots(bytesAllocate,compact);
@@ -599,7 +600,7 @@ namespace embree
 
     void print_blocks()
     {
-      std::cout << "  slotMask = " << slotMask << ", use_single_mode = " << use_single_mode << ", defaultBlockSize = " << defaultBlockSize << std::endl;
+      std::cout << "  slotMask = " << slotMask << ", use_single_mode = " << use_single_mode << ", defaultBlockSize = " << defaultBlockSize << ", estimatedSize = " << estimatedSize << std::endl;
 
       std::cout << "  used blocks = ";
       if (usedBlocks.load() != nullptr) usedBlocks.load()->print_list();
@@ -842,6 +843,7 @@ namespace embree
 
     bool use_single_mode;
     size_t defaultBlockSize;
+    size_t estimatedSize;
     size_t growSize;
     std::atomic<size_t> log2_grow_size_scale; //!< log2 of scaling factor for grow size
     std::atomic<size_t> bytesUsed;            //!< number of total bytes used
