@@ -1231,7 +1231,7 @@ namespace embree
       return true;
     }
 
-    double expected_size(VerifyApplication* state, size_t NN)
+    double expected_size_helper(VerifyApplication* state, size_t NN)
     {
       switch (gtype)
       {
@@ -1293,6 +1293,13 @@ namespace embree
       }
     }
 
+    double expected_size(VerifyApplication* state, size_t NN)
+    {
+      double bytes_expected = expected_size_helper(state,NN);
+      double blockSize = clamp(bytes_expected/20,1280.0,double(4*1024*1024-64));
+      return bytes_expected + (bytes_expected/blockSize)*128 + blockSize;
+    }
+
     std::pair<ssize_t,ssize_t> run_build(VerifyApplication* state, size_t N, unsigned numThreads)
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa) + ",threads="+std::to_string((long long)numThreads);
@@ -1348,12 +1355,11 @@ namespace embree
     {
       VerifyApplication::TestReturnValue ret = VerifyApplication::PASSED;
 
-      for (size_t N=128; N<1000000; N = (size_t)((float)N * 1.2f)) 
-      //size_t N = 1000000;
+      for (size_t N=128; N<100000; N = (size_t)((float)N * 1.2f)) 
       {
         auto bytes_one_thread  = run_build(state,N,1);
         auto bytes_all_threads = run_build(state,N,0);
-        auto bytes_expected = expected_size(state,bytes_one_thread.first);
+        double bytes_expected = expected_size(state,bytes_one_thread.first);
         double expected_to_single = double(bytes_one_thread.second)/double(bytes_expected);
         double single_to_threaded = double(bytes_all_threads.second)/double(bytes_one_thread.second);
      
@@ -1361,12 +1367,12 @@ namespace embree
         const bool failed0 = expected_to_single > 1.0f;
         
         /* FIXME: investigate growSize for quads/line builders */
-        const bool failed1 = single_to_threaded > 1.10f;
+        const bool failed1 = single_to_threaded > 1.20f;
 
         if (failed0 || failed1) 
           ret = VerifyApplication::FAILED;
 
-#if 1
+#if 0
         double num_primitives = bytes_one_thread.first;
         std::cout << "N = " << num_primitives << ", n = " << ceilf(sqrtf(N/4.0f)) << ", "
           "expected = " << bytes_expected/num_primitives << " B, " << 
