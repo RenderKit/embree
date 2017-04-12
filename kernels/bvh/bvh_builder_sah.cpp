@@ -206,7 +206,8 @@ namespace embree
               if (settings.primrefarrayalloc < 1000)
                 settings.primrefarrayalloc = inf;
             }
-            bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef),settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD,settings.primrefarrayalloc != size_t(inf));
+            size_t bytesEstimated = numPrimitives*sizeof(typename BVH::AlignedNode)/(4*N) + size_t(1.2f*Primitive::blocks(numPrimitives)*sizeof(Primitive));
+            bvh->alloc.init_estimate(bytesEstimated,settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD,settings.primrefarrayalloc != size_t(inf));
             prims.resize(numPrimitives); 
 
             PrimInfo pinfo = mesh ? 
