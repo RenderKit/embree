@@ -756,7 +756,7 @@ namespace embree
       }
 
       size_t getBlockFreeBytes() const {
-	return reserveEnd - min(cur,reserveEnd);
+	return reserveEnd - getBlockUsedBytes();
       }
 
       bool hasType(AllocationType atype_i, bool huge_pages_i) const
@@ -814,7 +814,7 @@ namespace embree
         else if (atype == OS_MALLOC) std::cout << "O";
         else if (atype == SHARED) std::cout << "S";
         if (huge_pages) std::cout << "H";
-        std::cout << "[" << getBlockUsedBytes() << ", " << getBlockTotalAllocatedBytes() << ", " << getBlockTotalReservedBytes() << "] ";
+        std::cout << "[" << getBlockUsedBytes() << ", " << getBlockFreeBytes() << ", " << getBlockTotalReservedBytes() << "] ";
       }
 
     public:
