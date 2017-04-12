@@ -326,8 +326,8 @@ namespace embree
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       /* single allocator mode ? */
       estimatedSize = bytesAllocate;
-      use_single_mode = single_mode;
       defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE-maxAlignment));
+      use_single_mode = 8*defaultBlockSize > bytesAllocate; //single_mode;
       initGrowSizeAndNumSlots(bytesAllocate,compact);
     }
 
