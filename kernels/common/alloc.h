@@ -277,18 +277,17 @@ namespace embree
     };
 
     /*! initializes the grow size */
-    __forceinline void initGrowSizeAndNumSlots(size_t bytesAllocate, bool compact) 
+    __forceinline void initGrowSizeAndNumSlots(size_t bytesEstimated, bool compact) 
     {
-      bytesAllocate  = ((bytesAllocate +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
-
-      growSize = clamp(bytesAllocate,size_t(PAGE_SIZE),maxAllocationSize); // PAGE_SIZE -maxAlignment ?
-      maxGrowSize = maxAllocationSize;
+      bytesEstimated  = ((bytesEstimated +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
+      maxGrowSize = clamp(bytesEstimated/20,size_t(PAGE_SIZE-maxAlignment),maxAllocationSize);
+      growSize = clamp(bytesEstimated/40,size_t(PAGE_SIZE-maxAlignment),maxGrowSize);
       log2_grow_size_scale = 0;
       slotMask = 0x0;
       if (!compact) {
-        if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesAllocate >  4*maxAllocationSize) slotMask = 0x1;
-        if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesAllocate >  8*maxAllocationSize) slotMask = 0x3;
-        if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesAllocate > 16*maxAllocationSize) slotMask = 0x7;
+        if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesEstimated >  4*maxAllocationSize) slotMask = 0x1;
+        if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesEstimated >  8*maxAllocationSize) slotMask = 0x3;
+        if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesEstimated > 16*maxAllocationSize) slotMask = 0x7;
       }
     }
 
@@ -316,7 +315,7 @@ namespace embree
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       if (bytesReserve == 0) bytesReserve = bytesAllocate;
       freeBlocks = Block::create(device,bytesAllocate,bytesReserve,nullptr,atype);
-      defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE+maxAlignment));
+      defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE-maxAlignment));
       initGrowSizeAndNumSlots(bytesAllocate,false);
     }
 
@@ -328,7 +327,7 @@ namespace embree
       /* single allocator mode ? */
       estimatedSize = bytesAllocate;
       use_single_mode = single_mode;
-      defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE+maxAlignment));
+      defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE-maxAlignment));
       initGrowSizeAndNumSlots(bytesAllocate,compact);
     }
 
@@ -419,7 +418,7 @@ namespace embree
         {
           Lock<SpinLock> lock(slotMutex[slot]);
           if (myUsedBlocks == threadUsedBlocks[slot]) {
-            const size_t allocSize = min(max(growSize,bytes),maxGrowSize);
+            const size_t allocSize = max(min(growSize,maxGrowSize),bytes);
             assert(allocSize >= bytes);
             threadBlocks[slot] = threadUsedBlocks[slot] = Block::create(device,allocSize,allocSize,threadBlocks[slot],atype);
           }
@@ -439,7 +438,6 @@ namespace embree
               threadUsedBlocks[slot] = freeBlocks.load();
 	      freeBlocks = nextFreeBlock;
 	    } else {
-	      //growSize = min(2*growSize,size_t(maxAllocationSize+maxAlignment));
               const size_t allocSize = min(growSize*incGrowSizeScale(),maxGrowSize);
 	      usedBlocks = threadUsedBlocks[slot] = Block::create(device,allocSize,allocSize,usedBlocks,atype);
 	    }
