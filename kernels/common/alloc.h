@@ -279,8 +279,11 @@ namespace embree
     /*! initializes the grow size */
     __forceinline void initGrowSizeAndNumSlots(size_t bytesEstimated, bool compact) 
     {
+      defaultBlockSize = clamp(bytesEstimated/4,size_t(128),size_t(PAGE_SIZE-maxAlignment));
+
       bytesEstimated  = ((bytesEstimated +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
       maxGrowSize = clamp(bytesEstimated/20,size_t(PAGE_SIZE-maxAlignment),maxAllocationSize);
+      use_single_mode = 2*defaultBlockSize >= bytesEstimated/100;
       growSize = clamp(bytesEstimated/40,size_t(PAGE_SIZE-maxAlignment),maxGrowSize);
       log2_grow_size_scale = 0;
       slotMask = 0x0;
@@ -315,7 +318,6 @@ namespace embree
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       if (bytesReserve == 0) bytesReserve = bytesAllocate;
       freeBlocks = Block::create(device,bytesAllocate,bytesReserve,nullptr,atype);
-      defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE-maxAlignment));
       initGrowSizeAndNumSlots(bytesAllocate,false);
     }
 
@@ -326,8 +328,6 @@ namespace embree
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       /* single allocator mode ? */
       estimatedSize = bytesAllocate;
-      defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE-maxAlignment));
-      use_single_mode = 8*defaultBlockSize > bytesAllocate; //single_mode;
       initGrowSizeAndNumSlots(bytesAllocate,compact);
     }
 
