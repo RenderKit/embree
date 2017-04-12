@@ -601,7 +601,7 @@ namespace embree
 
     void print_blocks()
     {
-      std::cout << "  slotMask = " << slotMask << ", use_single_mode = " << use_single_mode << ", defaultBlockSize = " << defaultBlockSize << ", estimatedSize = " << estimatedSize << std::endl;
+      std::cout << "  estimatedSize = " << estimatedSize << ", slotMask = " << slotMask << ", use_single_mode = " << use_single_mode << ", maxGrowSize = " << maxGrowSize << ", defaultBlockSize = " << defaultBlockSize << std::endl;
 
       std::cout << "  used blocks = ";
       if (usedBlocks.load() != nullptr) usedBlocks.load()->print_list();
