@@ -318,6 +318,27 @@ namespace embree
       }
     }
 
+#else
+
+    /*! initializes the grow size */
+    __forceinline void initGrowSizeAndNumSlots(size_t bytesAllocate, bool single_mode, bool compact) 
+    {
+      bytesAllocate  = ((bytesAllocate +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
+      defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE+maxAlignment));
+      growSize = clamp(bytesAllocate,size_t(PAGE_SIZE),maxAllocationSize); // PAGE_SIZE -maxAlignment ?
+      maxGrowSize = maxAllocationSize;
+      use_single_mode = single_mode;     
+      log2_grow_size_scale = 0;
+      slotMask = 0x0;
+      if (!compact) {
+        if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesAllocate >  4*maxAllocationSize) slotMask = 0x1;
+        if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesAllocate >  8*maxAllocationSize) slotMask = 0x3;
+        if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesAllocate > 16*maxAllocationSize) slotMask = 0x7;
+      }
+    }
+
+#endif
+
     /*! initializes the allocator */
     void init(size_t bytesAllocate, size_t bytesReserve = 0)
     {
@@ -339,49 +360,6 @@ namespace embree
       estimatedSize = bytesAllocate;
       initGrowSizeAndNumSlots(bytesAllocate,single_mode,compact);
     }
-
-#else
-
-     /*! initializes the grow size */
-    __forceinline void initGrowSizeAndNumSlots(size_t bytesAllocate, bool single_mode, bool compact) 
-    {
-      bytesAllocate  = ((bytesAllocate +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
-      defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE+maxAlignment));
-      growSize = clamp(bytesAllocate,size_t(PAGE_SIZE),maxAllocationSize); // PAGE_SIZE -maxAlignment ?
-      maxGrowSize = maxAllocationSize;
-      use_single_mode = single_mode;     
-      log2_grow_size_scale = 0;
-      slotMask = 0x0;
-      if (!compact) {
-        if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesAllocate >  4*maxAllocationSize) slotMask = 0x1;
-        if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesAllocate >  8*maxAllocationSize) slotMask = 0x3;
-        if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesAllocate > 16*maxAllocationSize) slotMask = 0x7;
-      }
-    }
-
-    /*! initializes the allocator */
-    void init(size_t bytesAllocate, size_t bytesReserve = 0)
-    {
-      internal_fix_used_blocks();
-      /* distribute the allocation to multiple thread block slots */
-      slotMask = MAX_THREAD_USED_BLOCK_SLOTS-1;
-      if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
-      if (bytesReserve == 0) bytesReserve = bytesAllocate;
-      freeBlocks = Block::create(device,bytesAllocate,bytesReserve,nullptr,atype);
-      initGrowSizeAndNumSlots(bytesAllocate,false,false);
-    }
-
-    /*! initializes the allocator */
-    void init_estimate(size_t bytesAllocate, const bool single_mode = false, const bool compact = false)
-    {
-      internal_fix_used_blocks();
-      if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
-      /* single allocator mode ? */
-      estimatedSize = bytesAllocate; 
-      initGrowSizeAndNumSlots(bytesAllocate,single_mode,compact);
-    }
-
-#endif
 
     /*! frees state not required after build */
     __forceinline void cleanup()
