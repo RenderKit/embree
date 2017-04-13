@@ -1233,10 +1233,11 @@ namespace embree
 
     double expected_size_helper(VerifyApplication* state, size_t NN)
     {
+      bool bvh8 = (isa & AVX) == AVX;
       switch (gtype)
       {
       case TRIANGLE_MESH: switch (sflags) {
-        case RTC_SCENE_STATIC : return 75.0f*NN; // triangle4
+        case RTC_SCENE_STATIC : return bvh8 ? 79.0f*NN : 75.0f*NN; // triangle4
         case RTC_SCENE_ROBUST : return 63.0f*NN; // triangle4v
         case RTC_SCENE_COMPACT: return 35.0f*NN; // triangle4i
         case RTC_SCENE_DYNAMIC: return (109.0f+8.0f)*NN; // triangle4+morton builder state
@@ -1380,7 +1381,7 @@ namespace embree
         } else {
           std::cout << state->green ("+") << std::flush;
         }
-#if 0
+#if 1
         double num_primitives = bytes_one_thread.first;
         std::cout << "N = " << num_primitives << ", n = " << ceilf(sqrtf(N/4.0f)) << ", "
           "expected = " << bytes_expected/num_primitives << " B, " << 
