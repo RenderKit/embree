@@ -429,6 +429,16 @@ namespace embree
         scene->add(SceneGraph::createQuadSphere(p,r,numPhi,new OBJMaterial));
       }, "--quad-sphere p.x p.y p.z r numPhi: adds a sphere at position p with radius r and tesselation numPhi build of quadrilaterals.");
 
+    registerOption("quad-sphere-mblur", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3fa p = cin->getVec3fa();
+        const Vec3fa dp = cin->getVec3fa();
+        const float  r = cin->getFloat();
+        const size_t numPhi = cin->getInt();
+        Ref<SceneGraph::Node> mesh = SceneGraph::createQuadSphere(p,r,numPhi,new OBJMaterial);
+        mesh->set_motion_vector(dp); 
+        scene->add(mesh);
+      }, "--quad-sphere-mb p.x p.y p.z d.x d.y d.z r numPhi : adds a motion blurred sphere build of quadrilaterals at position p, with motion vector d, radius r, and tesselation numPhi.");
+
     registerOption("subdiv-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa p = cin->getVec3fa();
         const float  r = cin->getFloat();

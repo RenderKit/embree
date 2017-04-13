@@ -1237,10 +1237,10 @@ namespace embree
       switch (gtype)
       {
       case TRIANGLE_MESH: switch (sflags) {
-        case RTC_SCENE_STATIC : return bvh8 ? 79.0f*NN : 75.0f*NN; // triangle4
-        case RTC_SCENE_ROBUST : return 63.0f*NN; // triangle4v
-        case RTC_SCENE_COMPACT: return 35.0f*NN; // triangle4i
-        case RTC_SCENE_DYNAMIC: return (109.0f+8.0f)*NN; // triangle4+morton builder state
+        case RTC_SCENE_STATIC : return bvh8 ?  79.0f*NN :  75.0f*NN; // triangle4
+        case RTC_SCENE_ROBUST : return bvh8 ?  70.0f*NN :  63.0f*NN; // triangle4v
+        case RTC_SCENE_COMPACT: return bvh8 ?  42.0f*NN :  35.0f*NN; // triangle4i
+        case RTC_SCENE_DYNAMIC: return bvh8 ? 131.0f*NN : 117.0f*NN; // triangle4+morton builder state
         default: return inf;
         }
       case TRIANGLE_MESH_MB: switch (sflags) {
@@ -1251,15 +1251,15 @@ namespace embree
         }
         
       case QUAD_MESH: switch (sflags) {
-        case RTC_SCENE_STATIC : return 79.0f*NN; // quad4v
-        case RTC_SCENE_ROBUST : return 79.0f*NN; // quad4v
-        case RTC_SCENE_COMPACT: return 41.0f*NN; // quad4i
+        case RTC_SCENE_STATIC : return bvh8 ? 82.0f*NN : 79.0f*NN; // quad4v
+        case RTC_SCENE_ROBUST : return bvh8 ? 82.0f*NN : 79.0f*NN; // quad4v
+        case RTC_SCENE_COMPACT: return bvh8 ? 41.0f*NN : 41.0f*NN; // quad4i
         default: return inf;
         }
       case QUAD_MESH_MB: switch (sflags) {
-        case RTC_SCENE_STATIC : return 53.0f*NN; // quad4imb
-        case RTC_SCENE_ROBUST : return 53.0f*NN; // quad4imb
-        case RTC_SCENE_COMPACT: return 53.0f*NN; // quad4imb
+        case RTC_SCENE_STATIC : return bvh8 ? 68.0f*NN : 53.0f*NN; // quad4imb
+        case RTC_SCENE_ROBUST : return bvh8 ? 68.0f*NN : 53.0f*NN; // quad4imb
+        case RTC_SCENE_COMPACT: return bvh8 ? 68.0f*NN : 53.0f*NN; // quad4imb
         default: return inf;
         }
       
@@ -1278,16 +1278,16 @@ namespace embree
         }
       
       case LINE_GEOMETRY: switch (sflags) {
-        case RTC_SCENE_STATIC : return 26.0f*NN; // line4i
-        case RTC_SCENE_ROBUST : return 26.0f*NN; // line4i
-        case RTC_SCENE_COMPACT: return 26.0f*NN; // line4i
+        case RTC_SCENE_STATIC : return bvh8 ? 32.0f*NN : 26.0f*NN; // line4i
+        case RTC_SCENE_ROBUST : return bvh8 ? 32.0f*NN : 26.0f*NN; // line4i
+        case RTC_SCENE_COMPACT: return bvh8 ? 26.0f*NN : 26.0f*NN; // line4i
         default: return inf;
         }
 
       case LINE_GEOMETRY_MB: switch (sflags) {
-        case RTC_SCENE_STATIC : return 36.0f*NN; // line4i
-        case RTC_SCENE_ROBUST : return 36.0f*NN; // line4i
-        case RTC_SCENE_COMPACT: return 36.0f*NN; // line4i
+        case RTC_SCENE_STATIC : return bvh8 ? 45.0f*NN : 36.0f*NN; // line4i
+        case RTC_SCENE_ROBUST : return bvh8 ? 45.0f*NN : 36.0f*NN; // line4i
+        case RTC_SCENE_COMPACT: return bvh8 ? 45.0f*NN : 36.0f*NN; // line4i
         default: return inf;
         }
       
