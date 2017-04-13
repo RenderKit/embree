@@ -670,7 +670,7 @@ namespace embree
         /* We avoid using os_malloc for small blocks as this could
          * cause a risk of fragmenting the virtual address space and
          * reach the limit of vm.max_map_count = 65k under Linux. */
-        if (atype == OS_MALLOC && bytesAllocate < 2*1024*1024)
+        if (atype == OS_MALLOC && bytesAllocate < maxAllocationSize)
           atype = ALIGNED_MALLOC;
 
         /* we need to additionally allocate some header */
