@@ -1364,7 +1364,16 @@ namespace embree
     {
       VerifyApplication::TestReturnValue ret = VerifyApplication::PASSED;
 
-      for (size_t N=128; N<1000000; N = (size_t)((float)N * 1.5f)) 
+      size_t maxN = 0;
+      switch (gtype) {
+      case LINE_GEOMETRY:    
+      case LINE_GEOMETRY_MB: 
+      case HAIR_GEOMETRY:
+      case HAIR_GEOMETRY_MB: maxN = 100000; break;
+      default: maxN = 250000; break;
+      }
+      
+      for (size_t N=128; N<maxN; N = (size_t)((float)N * 1.5f)) 
       {
         auto bytes_one_thread  = run_build(state,N,1);
         auto bytes_all_threads = run_build(state,N,0);
