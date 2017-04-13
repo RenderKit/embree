@@ -308,7 +308,11 @@ namespace embree
               createPrimRefArray<Mesh,false>(scene,prims,bvh->scene->progressInterface);
         
             /* call BVH builder */
-            bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef),settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD);
+            double bytesPerPrimitive = double(sizeof(typename BVH::QuantizedNode))/(4*N) + 1.2*sizeof(Primitive)/double(Primitive::max_size());
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
+            settings.singleThreadThreshold = size_t(20*4096/bytesPerPrimitive);
+#endif
+            bvh->alloc.init_estimate(pinfo.size()*bytesPerPrimitive,settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD);
             NodeRef root = BVHNBuilderQuantizedVirtual<N>::build(&bvh->alloc,CreateLeafQuantized<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,settings);
             bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
             //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: COPY LAYOUT FOR LARGE NODES !!!
@@ -394,7 +398,11 @@ namespace embree
         bvh->numTimeSteps = scene->getNumTimeSteps<Mesh,true>();
         const size_t numTimeSegments = bvh->numTimeSteps-1; assert(bvh->numTimeSteps > 1);
         prims.resize(numPrimitives);
-        bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef)*numTimeSegments,settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD);
+        double bytesPerPrimitive = double(sizeof(typename BVH::AlignedNodeMB))/(4*N) + 1.2*sizeof(Primitive)/double(Primitive::max_size());
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
+        settings.singleThreadThreshold = size_t(20*4096/bytesPerPrimitive);
+#endif
+        bvh->alloc.init_estimate(numPrimitives*bytesPerPrimitive*numTimeSegments,settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD);
         NodeRef* roots = (NodeRef*) bvh->alloc.getCachedAllocator().malloc0(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
 
         /* build BVH for each timestep */
@@ -489,8 +497,11 @@ namespace embree
           createPrimRefArray<Mesh,false>(scene,prims0,bvh->scene->progressInterface);
 
         Splitter splitter(scene);
-
-        bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
+        double bytesPerPrimitive = double(sizeof(typename BVH::AlignedNode))/(4*N) + 1.2*sizeof(Primitive)/double(Primitive::max_size());
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
+        settings.singleThreadThreshold = size_t(20*4096/bytesPerPrimitive);
+#endif
+        bvh->alloc.init_estimate(pinfo.size()*bytesPerPrimitive);
 
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxBuildDepthLeaf;

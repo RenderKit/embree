@@ -1243,9 +1243,9 @@ namespace embree
         default: return inf;
         }
       case TRIANGLE_MESH_MB: switch (sflags) {
-        case RTC_SCENE_STATIC : return 48.0f*NN; // triangle4imb
-        case RTC_SCENE_ROBUST : return 48.0f*NN; // triangle4imb
-        case RTC_SCENE_COMPACT: return 48.0f*NN; // triangle4imb
+        case RTC_SCENE_STATIC : return 45.0f*NN; // triangle4imb
+        case RTC_SCENE_ROBUST : return 45.0f*NN; // triangle4imb
+        case RTC_SCENE_COMPACT: return 45.0f*NN; // triangle4imb
         default: return inf;
         }
         
@@ -1270,9 +1270,9 @@ namespace embree
         }
 
       case HAIR_GEOMETRY_MB: switch (sflags) {
-        case RTC_SCENE_STATIC : return 180.0f*NN; // bezier1i
-        case RTC_SCENE_ROBUST : return 180.0f*NN; // bezier1i
-        case RTC_SCENE_COMPACT: return 180.0f*NN; // bezier1i
+        case RTC_SCENE_STATIC : return 170.0f*NN; // bezier1i
+        case RTC_SCENE_ROBUST : return 170.0f*NN; // bezier1i
+        case RTC_SCENE_COMPACT: return 170.0f*NN; // bezier1i
         default: return inf;
         }
       
@@ -1363,9 +1363,7 @@ namespace embree
     {
       VerifyApplication::TestReturnValue ret = VerifyApplication::PASSED;
 
-      //for (size_t N=128; N<1000000; N = (size_t)((float)N * 1.2f)) 
       for (size_t N=128; N<1000000; N = (size_t)((float)N * 1.5f)) 
-      //size_t N = 266256;
       {
         auto bytes_one_thread  = run_build(state,N,1);
         auto bytes_all_threads = run_build(state,N,0);
@@ -1379,10 +1377,13 @@ namespace embree
         /* FIXME: investigate growSize for quads/line builders */
         const bool failed1 = single_to_threaded > 1.12f;
 
-        if (failed0 || failed1) 
+        if (failed0 || failed1) {
+          std::cout << state->red ("-") << std::flush;
           ret = VerifyApplication::FAILED;
-
-#if 1
+        } else {
+          std::cout << state->green ("+") << std::flush;
+        }
+#if 0
         double num_primitives = bytes_one_thread.first;
         std::cout << "N = " << num_primitives << ", n = " << ceilf(sqrtf(N/4.0f)) << ", "
           "expected = " << bytes_expected/num_primitives << " B, " << 
@@ -4498,7 +4499,7 @@ namespace embree
     /* ignore failure of some tests that are known to fail */
     map_tests(tests, [&] (Ref<Test> test) { 
         if (test->name.find("watertight_subdiv") != std::string::npos) test->ignoreFailure = true;
-        if (test->name.find("memory_consumption") != std::string::npos) test->ignoreFailure = true;
+        //if (test->name.find("memory_consumption") != std::string::npos) test->ignoreFailure = true;
 
       });
     
