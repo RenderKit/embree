@@ -1239,13 +1239,13 @@ namespace embree
         case RTC_SCENE_STATIC : return 75.0f*NN; // triangle4
         case RTC_SCENE_ROBUST : return 63.0f*NN; // triangle4v
         case RTC_SCENE_COMPACT: return 35.0f*NN; // triangle4i
-        case RTC_SCENE_DYNAMIC: return (97.0f+8.0f)*NN; // triangle4+morton builder state
+        case RTC_SCENE_DYNAMIC: return (109.0f+8.0f)*NN; // triangle4+morton builder state
         default: return inf;
         }
       case TRIANGLE_MESH_MB: switch (sflags) {
-        case RTC_SCENE_STATIC : return 44.0f*NN; // triangle4imb
-        case RTC_SCENE_ROBUST : return 44.0f*NN; // triangle4imb
-        case RTC_SCENE_COMPACT: return 44.0f*NN; // triangle4imb
+        case RTC_SCENE_STATIC : return 48.0f*NN; // triangle4imb
+        case RTC_SCENE_ROBUST : return 48.0f*NN; // triangle4imb
+        case RTC_SCENE_COMPACT: return 48.0f*NN; // triangle4imb
         default: return inf;
         }
         
@@ -1296,13 +1296,10 @@ namespace embree
     double expected_size(VerifyApplication* state, size_t NN)
     {
       double bytes_expected = expected_size_helper(state,NN);
-      //PRINT(bytes_expected);
       double blockSize = clamp(bytes_expected/20,1280.0,double(4*1024*1024-64));
-      //PRINT(blockSize);
-      //PRINT(bytes_expected/blockSize);
-      //PRINT((bytes_expected/blockSize)*128);
       double allocBlockSize = clamp(blockSize,double(128),double(PAGE_SIZE-64));
-      //PRINT((bytes_expected/allocBlockSize)*128);
+      //if (sflags == RTC_SCENE_DYNAMIC && gflags == RTC_GEOMETRY_DYNAMIC)
+      //  bytes_expected += NN*32; // primrefarray not cleared for dynamic meshes
       return bytes_expected + ceil(bytes_expected/blockSize)*128 + ceil(bytes_expected/allocBlockSize)*128 + blockSize;
     }
 
@@ -1362,7 +1359,7 @@ namespace embree
       VerifyApplication::TestReturnValue ret = VerifyApplication::PASSED;
 
       for (size_t N=128; N<10000000; N = (size_t)((float)N * 1.2f)) 
-      //size_t N = 440;
+        //size_t N = 265224;
       {
         auto bytes_one_thread  = run_build(state,N,1);
         auto bytes_all_threads = run_build(state,N,0);
@@ -1383,8 +1380,8 @@ namespace embree
         double num_primitives = bytes_one_thread.first;
         std::cout << "N = " << num_primitives << ", n = " << ceilf(sqrtf(N/4.0f)) << ", "
           "expected = " << bytes_expected/num_primitives << " B, " << 
-          "1 thread = " << bytes_one_thread.second/num_primitives << " B (" << 100.0f*expected_to_single << " %)" << (failed0 ? "[FAILED]" : "") << ", " << 
-          "all_threads = " << bytes_all_threads.second/num_primitives << " B (" << 100.0f*single_to_threaded << " %)" << (failed1 ? "[FAILED]" : "") << std::endl;
+          "1 thread = " << bytes_one_thread.second/num_primitives << " B (" << 100.0f*expected_to_single << " %)" << (failed0 ? state->red("[FAILED]") : "") << ", " << 
+          "all_threads = " << bytes_all_threads.second/num_primitives << " B (" << 100.0f*single_to_threaded << " %)" << (failed1 ? state->red("[FAILED]") : "") << std::endl;
 #endif
       }
       return ret;
