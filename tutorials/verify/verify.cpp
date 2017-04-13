@@ -1236,7 +1236,7 @@ namespace embree
       switch (gtype)
       {
       case TRIANGLE_MESH: switch (sflags) {
-        case RTC_SCENE_STATIC : return 80.0f*NN; // triangle4
+        case RTC_SCENE_STATIC : return 75.0f*NN; // triangle4
         case RTC_SCENE_ROBUST : return 65.0f*NN; // triangle4v
         case RTC_SCENE_COMPACT: return 40.0f*NN; // triangle4i
         case RTC_SCENE_DYNAMIC: return (80.0f+8.0f)*NN; // triangle4+morton builder state
@@ -1296,8 +1296,14 @@ namespace embree
     double expected_size(VerifyApplication* state, size_t NN)
     {
       double bytes_expected = expected_size_helper(state,NN);
+      //PRINT(bytes_expected);
       double blockSize = clamp(bytes_expected/20,1280.0,double(4*1024*1024-64));
-      return bytes_expected + (bytes_expected/blockSize)*128 + blockSize;
+      //PRINT(blockSize);
+      //PRINT(bytes_expected/blockSize);
+      //PRINT((bytes_expected/blockSize)*128);
+      double allocBlockSize = clamp(blockSize,double(128),double(PAGE_SIZE-64));
+      //PRINT((bytes_expected/allocBlockSize)*128);
+      return bytes_expected + (bytes_expected/blockSize)*128 + (bytes_expected/allocBlockSize)*128 + blockSize;
     }
 
     std::pair<ssize_t,ssize_t> run_build(VerifyApplication* state, size_t N, unsigned numThreads)
@@ -1356,6 +1362,7 @@ namespace embree
       VerifyApplication::TestReturnValue ret = VerifyApplication::PASSED;
 
       for (size_t N=128; N<10000000; N = (size_t)((float)N * 1.2f)) 
+      //size_t N = 440;
       {
         auto bytes_one_thread  = run_build(state,N,1);
         auto bytes_all_threads = run_build(state,N,0);
