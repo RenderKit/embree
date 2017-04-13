@@ -310,7 +310,7 @@ namespace embree
     /*! initializes the grow size */
     __forceinline void initGrowSizeAndNumSlots(size_t bytesEstimated, bool single_mode, bool compact, bool fast) 
     {
-      size_t blockSize = alignSize(bytesEstimated/(fast ? 4 : 20));
+      size_t blockSize = alignSize(bytesEstimated/(fast ? 8 : 20));
       growSize = maxGrowSize = clamp(blockSize,size_t(10*128),maxAllocationSize);
       defaultBlockSize       = clamp(blockSize,size_t(10*128),size_t(PAGE_SIZE));
       use_single_mode = !fast && (2*defaultBlockSize >= bytesEstimated/100);
