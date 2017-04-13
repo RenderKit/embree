@@ -1355,7 +1355,7 @@ namespace embree
     {
       VerifyApplication::TestReturnValue ret = VerifyApplication::PASSED;
 
-      for (size_t N=128; N<100000; N = (size_t)((float)N * 1.2f)) 
+      for (size_t N=128; N<10000000; N = (size_t)((float)N * 1.2f)) 
       {
         auto bytes_one_thread  = run_build(state,N,1);
         auto bytes_all_threads = run_build(state,N,0);
@@ -1367,12 +1367,12 @@ namespace embree
         const bool failed0 = expected_to_single > 1.0f;
         
         /* FIXME: investigate growSize for quads/line builders */
-        const bool failed1 = single_to_threaded > 1.20f;
+        const bool failed1 = single_to_threaded > 1.12f;
 
         if (failed0 || failed1) 
           ret = VerifyApplication::FAILED;
 
-#if 0
+#if 1
         double num_primitives = bytes_one_thread.first;
         std::cout << "N = " << num_primitives << ", n = " << ceilf(sqrtf(N/4.0f)) << ", "
           "expected = " << bytes_expected/num_primitives << " B, " << 

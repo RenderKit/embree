@@ -207,7 +207,9 @@ namespace embree
                 settings.primrefarrayalloc = inf;
             }
             double bytesPerPrimitive = double(sizeof(typename BVH::AlignedNode))/(4*N) + 1.2*sizeof(Primitive)/double(Primitive::max_size());
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
             settings.singleThreadThreshold = size_t(20*4096/bytesPerPrimitive);
+#endif
             bvh->alloc.init_estimate(numPrimitives*bytesPerPrimitive,settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD,settings.primrefarrayalloc != size_t(inf));
             prims.resize(numPrimitives); 
 

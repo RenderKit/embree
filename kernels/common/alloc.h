@@ -32,8 +32,13 @@ namespace embree
 
     /* default settings */
     //static const size_t defaultBlockSize = 4096;
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
+#define maxAllocationSize size_t(2*1024*1024-maxAlignment)
+    static const size_t MAX_THREAD_USED_BLOCK_SLOTS = 8;
+#else
 #define maxAllocationSize size_t(4*1024*1024-maxAlignment)
     static const size_t MAX_THREAD_USED_BLOCK_SLOTS = 8;
+#endif
 
   public:
 
@@ -315,9 +320,9 @@ namespace embree
       log2_grow_size_scale = 0;
       slotMask = 0x0;
       if (!compact) {
-        if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesEstimated >  4*maxAllocationSize) slotMask = 0x1;
-        if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesEstimated >  8*maxAllocationSize) slotMask = 0x3;
-        if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesEstimated > 16*maxAllocationSize) slotMask = 0x7;
+        if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesEstimated >  8*maxAllocationSize) slotMask = 0x1;
+        if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesEstimated > 32*maxAllocationSize) slotMask = 0x3;
+        if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesEstimated > 64*maxAllocationSize) slotMask = 0x7;
       }
     }
 
@@ -347,7 +352,7 @@ namespace embree
     {
       internal_fix_used_blocks();
       /* distribute the allocation to multiple thread block slots */
-      slotMask = MAX_THREAD_USED_BLOCK_SLOTS-1;
+      slotMask = MAX_THREAD_USED_BLOCK_SLOTS-1; // FIXME: remove
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       if (bytesReserve == 0) bytesReserve = bytesAllocate;
       freeBlocks = Block::create(device,bytesAllocate,bytesReserve,nullptr,atype);
