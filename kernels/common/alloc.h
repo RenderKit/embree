@@ -296,7 +296,7 @@ namespace embree
       }
     }
 
-#if 0
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
 
     __forceinline size_t alignSize(size_t i) {
       return (i+127)/128*128;
@@ -308,7 +308,10 @@ namespace embree
       maxGrowSize = clamp(alignSize(bytesEstimated/20),size_t(10*128),maxAllocationSize);
       defaultBlockSize = clamp(alignSize(maxGrowSize),size_t(128),size_t(PAGE_SIZE-maxAlignment));
       growSize = maxGrowSize; //clamp(alignSize(bytesEstimated/40),size_t(10*128),maxGrowSize);
-      use_single_mode = 2*defaultBlockSize >= bytesEstimated/100;
+      //growSize = clamp(bytesEstimated,size_t(PAGE_SIZE),maxAllocationSize); // PAGE_SIZE -maxAlignment ?
+      //maxGrowSize = maxAllocationSize;
+      use_single_mode = single_mode;    
+      //use_single_mode = 2*defaultBlockSize >= bytesEstimated/100;
       log2_grow_size_scale = 0;
       slotMask = 0x0;
       if (!compact) {
@@ -348,6 +351,7 @@ namespace embree
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       if (bytesReserve == 0) bytesReserve = bytesAllocate;
       freeBlocks = Block::create(device,bytesAllocate,bytesReserve,nullptr,atype);
+      estimatedSize = bytesAllocate;
       initGrowSizeAndNumSlots(bytesAllocate,false,false);
     }
 
