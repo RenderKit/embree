@@ -1237,15 +1237,15 @@ namespace embree
       {
       case TRIANGLE_MESH: switch (sflags) {
         case RTC_SCENE_STATIC : return 75.0f*NN; // triangle4
-        case RTC_SCENE_ROBUST : return 65.0f*NN; // triangle4v
-        case RTC_SCENE_COMPACT: return 40.0f*NN; // triangle4i
+        case RTC_SCENE_ROBUST : return 63.0f*NN; // triangle4v
+        case RTC_SCENE_COMPACT: return 35.0f*NN; // triangle4i
         case RTC_SCENE_DYNAMIC: return (80.0f+8.0f)*NN; // triangle4+morton builder state
         default: return inf;
         }
       case TRIANGLE_MESH_MB: switch (sflags) {
-        case RTC_SCENE_STATIC : return 42.0f*NN; // triangle4imb
-        case RTC_SCENE_ROBUST : return 42.0f*NN; // triangle4imb
-        case RTC_SCENE_COMPACT: return 42.0f*NN; // triangle4imb
+        case RTC_SCENE_STATIC : return 44.0f*NN; // triangle4imb
+        case RTC_SCENE_ROBUST : return 44.0f*NN; // triangle4imb
+        case RTC_SCENE_COMPACT: return 44.0f*NN; // triangle4imb
         default: return inf;
         }
         
@@ -1303,7 +1303,7 @@ namespace embree
       //PRINT((bytes_expected/blockSize)*128);
       double allocBlockSize = clamp(blockSize,double(128),double(PAGE_SIZE-64));
       //PRINT((bytes_expected/allocBlockSize)*128);
-      return bytes_expected + (bytes_expected/blockSize)*128 + (bytes_expected/allocBlockSize)*128 + blockSize;
+      return bytes_expected + ceil(bytes_expected/blockSize)*128 + ceil(bytes_expected/allocBlockSize)*128 + blockSize;
     }
 
     std::pair<ssize_t,ssize_t> run_build(VerifyApplication* state, size_t N, unsigned numThreads)
