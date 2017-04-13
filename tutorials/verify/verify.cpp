@@ -1250,42 +1250,43 @@ namespace embree
         }
         
       case QUAD_MESH: switch (sflags) {
-        case RTC_SCENE_STATIC : return 80.0f*NN; // quad4v
-        case RTC_SCENE_ROBUST : return 80.0f*NN; // quad4v
-        case RTC_SCENE_COMPACT: return 40.0f*NN; // quad4i
+        case RTC_SCENE_STATIC : return 79.0f*NN; // quad4v
+        case RTC_SCENE_ROBUST : return 79.0f*NN; // quad4v
+        case RTC_SCENE_COMPACT: return 41.0f*NN; // quad4i
         default: return inf;
         }
       case QUAD_MESH_MB: switch (sflags) {
-        case RTC_SCENE_STATIC : return 52.0f*NN; // quad4imb
-        case RTC_SCENE_ROBUST : return 52.0f*NN; // quad4imb
-        case RTC_SCENE_COMPACT: return 52.0f*NN; // quad4imb
+        case RTC_SCENE_STATIC : return 53.0f*NN; // quad4imb
+        case RTC_SCENE_ROBUST : return 53.0f*NN; // quad4imb
+        case RTC_SCENE_COMPACT: return 53.0f*NN; // quad4imb
         default: return inf;
         }
       
       case HAIR_GEOMETRY: switch (sflags) {
         case RTC_SCENE_STATIC : return 170.0f*NN; // bezier1v
         case RTC_SCENE_ROBUST : return 170.0f*NN; // bezier1v
-        case RTC_SCENE_COMPACT: return 100.0f*NN; // bezier1i
+        case RTC_SCENE_COMPACT: return 110.0f*NN; // bezier1i
         default: return inf;
         }
+
       case HAIR_GEOMETRY_MB: switch (sflags) {
-        case RTC_SCENE_STATIC : return 150.0f*NN; // bezier1i
-        case RTC_SCENE_ROBUST : return 150.0f*NN; // bezier1i
-        case RTC_SCENE_COMPACT: return 150.0f*NN; // bezier1i
+        case RTC_SCENE_STATIC : return 146.0f*NN; // bezier1i
+        case RTC_SCENE_ROBUST : return 146.0f*NN; // bezier1i
+        case RTC_SCENE_COMPACT: return 146.0f*NN; // bezier1i
         default: return inf;
         }
       
       case LINE_GEOMETRY: switch (sflags) {
-        case RTC_SCENE_STATIC : return 30.0f*NN; // line4i
-        case RTC_SCENE_ROBUST : return 30.0f*NN; // line4i
-        case RTC_SCENE_COMPACT: return 30.0f*NN; // line4i
+        case RTC_SCENE_STATIC : return 36.0f*NN; // line4i
+        case RTC_SCENE_ROBUST : return 36.0f*NN; // line4i
+        case RTC_SCENE_COMPACT: return 36.0f*NN; // line4i
         default: return inf;
         }
 
       case LINE_GEOMETRY_MB: switch (sflags) {
-        case RTC_SCENE_STATIC : return 40.0f*NN; // line4i
-        case RTC_SCENE_ROBUST : return 40.0f*NN; // line4i
-        case RTC_SCENE_COMPACT: return 40.0f*NN; // line4i
+        case RTC_SCENE_STATIC : return 47.0f*NN; // line4i
+        case RTC_SCENE_ROBUST : return 47.0f*NN; // line4i
+        case RTC_SCENE_COMPACT: return 47.0f*NN; // line4i
         default: return inf;
         }
       
@@ -1326,9 +1327,9 @@ namespace embree
       case SUBDIV_MESH:      
       case SUBDIV_MESH_MB:   mesh = SceneGraph::createSubdivSphere(zero,float(i+1),8,float(numPhi)/8.0f); break;
       case HAIR_GEOMETRY:    
-      case HAIR_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi,SceneGraph::HairSetNode::HAIR); break;
+      case HAIR_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,1,0),Vec3fa(0,1,1),0.01f,0.00001f,4*numPhi*numPhi,SceneGraph::HairSetNode::HAIR); break;
       case LINE_GEOMETRY:    
-      case LINE_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi/3,SceneGraph::HairSetNode::HAIR); break;
+      case LINE_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,1,0),Vec3fa(0,1,1),0.01f,0.00001f,4*numPhi*numPhi/3,SceneGraph::HairSetNode::HAIR); break;
       default:               throw std::runtime_error("invalid geometry for benchmark");
       }
       
@@ -1358,8 +1359,9 @@ namespace embree
     {
       VerifyApplication::TestReturnValue ret = VerifyApplication::PASSED;
 
-      for (size_t N=128; N<10000000; N = (size_t)((float)N * 1.2f)) 
-        //size_t N = 265224;
+      //for (size_t N=128; N<1000000; N = (size_t)((float)N * 1.2f)) 
+      for (size_t N=128; N<1000000; N = (size_t)((float)N * 1.5f)) 
+      //size_t N = 266256;
       {
         auto bytes_one_thread  = run_build(state,N,1);
         auto bytes_all_threads = run_build(state,N,0);
@@ -1380,8 +1382,8 @@ namespace embree
         double num_primitives = bytes_one_thread.first;
         std::cout << "N = " << num_primitives << ", n = " << ceilf(sqrtf(N/4.0f)) << ", "
           "expected = " << bytes_expected/num_primitives << " B, " << 
-          "1 thread = " << bytes_one_thread.second/num_primitives << " B (" << 100.0f*expected_to_single << " %)" << (failed0 ? state->red("[FAILED]") : "") << ", " << 
-          "all_threads = " << bytes_all_threads.second/num_primitives << " B (" << 100.0f*single_to_threaded << " %)" << (failed1 ? state->red("[FAILED]") : "") << std::endl;
+          "1 thread = " << bytes_one_thread.second/num_primitives << " B (" << 100.0f*expected_to_single << " %)" << (failed0 ? state->red(" [FAILED]") : "") << ", " << 
+          "all_threads = " << bytes_all_threads.second/num_primitives << " B (" << 100.0f*single_to_threaded << " %)" << (failed1 ? state->red(" [FAILED]") : "") << std::endl;
 #endif
       }
       return ret;
