@@ -312,7 +312,7 @@ namespace embree
     {
       size_t blockSize = alignSize(bytesEstimated/(fast ? 4 : 20));
       growSize = maxGrowSize = clamp(blockSize,size_t(10*128),maxAllocationSize);
-      defaultBlockSize       = clamp(blockSize,size_t( 1*128),size_t(PAGE_SIZE));
+      defaultBlockSize       = clamp(blockSize,size_t(10*128),size_t(PAGE_SIZE));
       use_single_mode = !fast && (2*defaultBlockSize >= bytesEstimated/100);
       if (bytesEstimated == 0) maxGrowSize = maxAllocationSize; // special mode if builder cannot estimate tree size
       log2_grow_size_scale = 0;
