@@ -1371,10 +1371,7 @@ namespace embree
         double expected_to_single = double(bytes_one_thread.second)/double(bytes_expected);
         double single_to_threaded = double(bytes_all_threads.second)/double(bytes_one_thread.second);
      
-        /* single threaded build has to stay in expected memory usage bounds */
         const bool failed0 = expected_to_single > 1.0f;
-        
-        /* FIXME: investigate growSize for quads/line builders */
         const bool failed1 = single_to_threaded > 1.12f;
 
         if (failed0 || failed1) {
