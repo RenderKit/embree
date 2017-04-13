@@ -308,11 +308,12 @@ namespace embree
     }
 
     /*! initializes the grow size */
-    __forceinline void initGrowSizeAndNumSlots(size_t bytesEstimated, bool single_mode, bool compact) 
+    __forceinline void initGrowSizeAndNumSlots(size_t bytesEstimated, bool single_mode, bool compact, bool fast) 
     {
-      growSize = maxGrowSize = clamp(alignSize(bytesEstimated/20),size_t(10*128),maxAllocationSize);
-      defaultBlockSize = clamp(maxGrowSize,size_t(128),size_t(PAGE_SIZE));
-      use_single_mode = 2*defaultBlockSize >= bytesEstimated/100;
+      size_t blockSize = alignSize(bytesEstimated/(fast ? 4 : 20));
+      growSize = maxGrowSize = clamp(blockSize,size_t(10*128),maxAllocationSize);
+      defaultBlockSize       = clamp(blockSize,size_t( 1*128),size_t(PAGE_SIZE));
+      use_single_mode = !fast && (2*defaultBlockSize >= bytesEstimated/100);
       if (bytesEstimated == 0) maxGrowSize = maxAllocationSize; // special mode if builder cannot estimate tree size
       log2_grow_size_scale = 0;
       slotMask = 0x0;
@@ -354,7 +355,7 @@ namespace embree
       if (bytesReserve == 0) bytesReserve = bytesAllocate;
       freeBlocks = Block::create(device,bytesAllocate,bytesReserve,nullptr,atype);
       estimatedSize = bytesEstimate;
-      initGrowSizeAndNumSlots(bytesEstimate,false,false);
+      initGrowSizeAndNumSlots(bytesEstimate,false,false,true);
     }
 
     /*! initializes the allocator */
@@ -364,7 +365,7 @@ namespace embree
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       /* single allocator mode ? */
       estimatedSize = bytesAllocate;
-      initGrowSizeAndNumSlots(bytesAllocate,single_mode,compact);
+      initGrowSizeAndNumSlots(bytesAllocate,single_mode,compact,false);
     }
 
     /*! frees state not required after build */
