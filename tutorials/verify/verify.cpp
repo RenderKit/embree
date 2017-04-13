@@ -1263,30 +1263,30 @@ namespace embree
         }
       
       case HAIR_GEOMETRY: switch (sflags) {
-        case RTC_SCENE_STATIC : return 170.0f*NN; // bezier1v
-        case RTC_SCENE_ROBUST : return 170.0f*NN; // bezier1v
-        case RTC_SCENE_COMPACT: return 110.0f*NN; // bezier1i
+        case RTC_SCENE_STATIC : return 163.0f*NN; // bezier1v
+        case RTC_SCENE_ROBUST : return 163.0f*NN; // bezier1v
+        case RTC_SCENE_COMPACT: return 105.0f*NN; // bezier1i
         default: return inf;
         }
 
       case HAIR_GEOMETRY_MB: switch (sflags) {
-        case RTC_SCENE_STATIC : return 146.0f*NN; // bezier1i
-        case RTC_SCENE_ROBUST : return 146.0f*NN; // bezier1i
-        case RTC_SCENE_COMPACT: return 146.0f*NN; // bezier1i
+        case RTC_SCENE_STATIC : return 180.0f*NN; // bezier1i
+        case RTC_SCENE_ROBUST : return 180.0f*NN; // bezier1i
+        case RTC_SCENE_COMPACT: return 180.0f*NN; // bezier1i
         default: return inf;
         }
       
       case LINE_GEOMETRY: switch (sflags) {
-        case RTC_SCENE_STATIC : return 36.0f*NN; // line4i
-        case RTC_SCENE_ROBUST : return 36.0f*NN; // line4i
-        case RTC_SCENE_COMPACT: return 36.0f*NN; // line4i
+        case RTC_SCENE_STATIC : return 26.0f*NN; // line4i
+        case RTC_SCENE_ROBUST : return 26.0f*NN; // line4i
+        case RTC_SCENE_COMPACT: return 26.0f*NN; // line4i
         default: return inf;
         }
 
       case LINE_GEOMETRY_MB: switch (sflags) {
-        case RTC_SCENE_STATIC : return 47.0f*NN; // line4i
-        case RTC_SCENE_ROBUST : return 47.0f*NN; // line4i
-        case RTC_SCENE_COMPACT: return 47.0f*NN; // line4i
+        case RTC_SCENE_STATIC : return 36.0f*NN; // line4i
+        case RTC_SCENE_ROBUST : return 36.0f*NN; // line4i
+        case RTC_SCENE_COMPACT: return 36.0f*NN; // line4i
         default: return inf;
         }
       
@@ -1316,6 +1316,10 @@ namespace embree
       
       int numPhi = (size_t) ceilf(sqrtf(N/4.0f));
       ssize_t NN = 0;
+
+      float plen = sqrtf(N/100000.0f);
+      Vec3fa planeX = plen*normalize(Vec3fa(1,1,0));
+      Vec3fa planeY = plen*normalize(Vec3fa(0,1,1));
       
       Ref<SceneGraph::Node> mesh;
       int i = 0;
@@ -1327,9 +1331,9 @@ namespace embree
       case SUBDIV_MESH:      
       case SUBDIV_MESH_MB:   mesh = SceneGraph::createSubdivSphere(zero,float(i+1),8,float(numPhi)/8.0f); break;
       case HAIR_GEOMETRY:    
-      case HAIR_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,1,0),Vec3fa(0,1,1),0.01f,0.00001f,4*numPhi*numPhi,SceneGraph::HairSetNode::HAIR); break;
+      case HAIR_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),planeX,planeY,0.01f,0.00001f,4*numPhi*numPhi,SceneGraph::HairSetNode::HAIR); break;
       case LINE_GEOMETRY:    
-      case LINE_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,1,0),Vec3fa(0,1,1),0.01f,0.00001f,4*numPhi*numPhi/3,SceneGraph::HairSetNode::HAIR); break;
+      case LINE_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),planeX,planeY,0.01f,0.00001f,4*numPhi*numPhi/3,SceneGraph::HairSetNode::HAIR); break;
       default:               throw std::runtime_error("invalid geometry for benchmark");
       }
       
