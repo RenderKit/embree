@@ -310,8 +310,8 @@ namespace embree
       growSize = maxGrowSize; //clamp(alignSize(bytesEstimated/40),size_t(10*128),maxGrowSize);
       //growSize = clamp(bytesEstimated,size_t(PAGE_SIZE),maxAllocationSize); // PAGE_SIZE -maxAlignment ?
       //maxGrowSize = maxAllocationSize;
-      use_single_mode = single_mode;    
-      //use_single_mode = 2*defaultBlockSize >= bytesEstimated/100;
+      //use_single_mode = single_mode;    
+      use_single_mode = 2*defaultBlockSize >= bytesEstimated/100;
       log2_grow_size_scale = 0;
       slotMask = 0x0;
       if (!compact) {
