@@ -412,7 +412,11 @@ namespace embree
         size_t bytesAllocated = numPrimitives*sizeof(AlignedNode)/(4*N) + size_t(1.2f*Primitive::blocks(numPrimitives)*sizeof(Primitive));
         size_t bytesMortonCodes = numPrimitives*sizeof(BVHBuilderMorton::BuildPrim);
         bytesAllocated = max(bytesAllocated,bytesMortonCodes); // the first allocation block is reused to sort the morton codes
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
+        bvh->alloc.init(bytesMortonCodes);
+#else
         bvh->alloc.init(bytesAllocated,2*bytesAllocated);
+#endif  
 
         /* create morton code array */
         BVHBuilderMorton::BuildPrim* dest = (BVHBuilderMorton::BuildPrim*) bvh->alloc.specialAlloc(bytesMortonCodes);
