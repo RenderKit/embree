@@ -102,7 +102,7 @@ namespace embree
       print_frame_rate(false),
       avg_render_time(64,1.0),
       avg_frame_time(64,1.0),
-      avg_mray(64,1.0),
+      avg_mrayps(64,1.0),
       print_camera(false),
 
       debug0(0),
@@ -483,7 +483,7 @@ namespace embree
 
     //Statistics stat;
     FilteredStatistics fpsStat(0.5f,0.0f);
-    FilteredStatistics mrayStat(0.5f,0.0f);
+    FilteredStatistics mraypsStat(0.5f,0.0f);
     for (size_t j=0; j<numBenchmarkRepetitions; j++)
     {
       size_t numTotalFrames = skipBenchmarkFrames + numBenchmarkFrames;
@@ -506,8 +506,8 @@ namespace embree
         float fps = float(1.0/(t1-t0));
         fpsStat.add(fps);
 
-        float mray = float(double(getNumRays())/(1000000.0*(t1-t0)));
-        mrayStat.add(mray);
+        float mrayps = float(double(getNumRays())/(1000000.0*(t1-t0)));
+        mraypsStat.add(mrayps);
 
         if (numTotalFrames >= 1024 && (i % 64 == 0))
         {
@@ -543,11 +543,11 @@ namespace embree
     std::cout << "BENCHMARK_RENDER_AVG_SIGMA " << fpsStat.getAvgSigma() << std::endl;
 
 #if defined(RAY_STATS)
-    std::cout << "BENCHMARK_RENDER_MRAY_MIN " << mrayStat.getMin() << std::endl;
-    std::cout << "BENCHMARK_RENDER_MRAY_AVG " << mrayStat.getAvg() << std::endl;
-    std::cout << "BENCHMARK_RENDER_MRAY_MAX " << mrayStat.getMax() << std::endl;
-    std::cout << "BENCHMARK_RENDER_MRAY_SIGMA " << mrayStat.getSigma() << std::endl;
-    std::cout << "BENCHMARK_RENDER_MRAY_AVG_SIGMA " << mrayStat.getAvgSigma() << std::endl;
+    std::cout << "BENCHMARK_RENDER_MRAYPS_MIN " << mraypsStat.getMin() << std::endl;
+    std::cout << "BENCHMARK_RENDER_MRAYPS_AVG " << mraypsStat.getAvg() << std::endl;
+    std::cout << "BENCHMARK_RENDER_MRAYPS_MAX " << mraypsStat.getMax() << std::endl;
+    std::cout << "BENCHMARK_RENDER_MRAYPS_SIGMA " << mraypsStat.getSigma() << std::endl;
+    std::cout << "BENCHMARK_RENDER_MRAYPS_AVG_SIGMA " << mraypsStat.getAvgSigma() << std::endl;
 #endif
 
     std::cout << std::flush;
@@ -721,8 +721,8 @@ namespace embree
     device_render(pixels,width,height,float(time0-t0),ispccamera);
     double dt0 = getSeconds()-t0;
     avg_render_time.add(dt0);
-    double mray = double(getNumRays())/(1000000.0*dt0);
-    avg_mray.add(mray);
+    double mrayps = double(getNumRays())/(1000000.0*dt0);
+    avg_mrayps.add(mrayps);
 
     /* draw pixels to screen */
     glDrawPixels(width,height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
@@ -752,7 +752,7 @@ namespace embree
 
 #if defined(RAY_STATS)
       stream.str("");
-      stream << avg_mray.get() << " Mray/s";
+      stream << avg_mrayps.get() << " Mray/s";
       str = stream.str();
       glRasterPos2i(6, height - 52);
       for (size_t i=0; i<str.size(); i++)
@@ -780,7 +780,7 @@ namespace embree
       stream << 1.0f/dt0 << " fps, ";
       stream << dt0*1000.0f << " ms, ";
 #if defined(RAY_STATS)
-      stream << mray << " Mray/s, ";
+      stream << mrayps << " Mray/s, ";
 #endif
       stream << "display: ";
       stream << 1.0f/dt1 << " fps, ";

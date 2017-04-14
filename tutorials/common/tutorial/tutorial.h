@@ -149,7 +149,7 @@ namespace embree
     bool print_frame_rate;
     Averaged<double> avg_render_time;
     Averaged<double> avg_frame_time;
-    Averaged<double> avg_mray;
+    Averaged<double> avg_mrayps;
     bool print_camera;
 
     int debug0;
