@@ -776,39 +776,46 @@ namespace embree
     return node;
   }
 
-  Ref<SceneGraph::Node> SceneGraph::remove_non_mblur(Ref<SceneGraph::Node> node)
+  Ref<SceneGraph::Node> SceneGraph::remove_mblur(Ref<SceneGraph::Node> node, bool mblur)
   {
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
-      xfmNode->child = remove_non_mblur(xfmNode->child);
+      if (mblur) {
+        if (xfmNode->spaces.size() > 1)
+          return nullptr;
+      } else {
+        if (xfmNode->spaces.size() > 1)
+          return node;
+      }
+      xfmNode->child = remove_mblur(xfmNode->child, mblur);
     }
     else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>())
     {
       for (size_t i=0; i<groupNode->children.size(); i++)
-        groupNode->children[i] = remove_non_mblur(groupNode->children[i]);
+        groupNode->children[i] = remove_mblur(groupNode->children[i], mblur);
     }
     else if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>())
     {
-      if (mesh->numTimeSteps() == 1)
+      if ((mesh->numTimeSteps() > 1) == mblur)
         return nullptr;
     }
     else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>())
     {
-      if (mesh->numTimeSteps() == 1)
+      if ((mesh->numTimeSteps() > 1) == mblur)
         return nullptr;
     }
     else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>())
     {
-      if (mesh->numTimeSteps() == 1)
+      if ((mesh->numTimeSteps() > 1) == mblur)
         return nullptr;
     }
     else if (Ref<SceneGraph::LineSegmentsNode> mesh = node.dynamicCast<SceneGraph::LineSegmentsNode>())
     {
-      if (mesh->numTimeSteps() == 1)
+      if ((mesh->numTimeSteps() > 1) == mblur)
         return nullptr;
     }
     else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>())
     {
-      if (mesh->numTimeSteps() == 1)
+      if ((mesh->numTimeSteps() > 1) == mblur)
         return nullptr;
     }
     return node;

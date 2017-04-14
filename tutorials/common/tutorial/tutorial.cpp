@@ -264,6 +264,7 @@ namespace embree
       convert_hair_to_curves(false),
       convert_bezier_to_bspline(false),
       convert_bspline_to_bezier(false),
+      remove_mblur(false),
       remove_non_mblur(false),
       sceneFilename(""),
       instancing_mode(SceneGraph::INSTANCING_NONE),
@@ -315,9 +316,13 @@ namespace embree
         convert_bspline_to_bezier = true;
       }, "--convert-bspline-to-bezier: converts all bsplines curves to bezier curves");
 
+    registerOption("remove-mblur", [this] (Ref<ParseStream> cin, const FileName& path) {
+         remove_mblur = true;
+      }, "--remove-mblur: removes all motion blur geometry");
+
     registerOption("remove-non-mblur", [this] (Ref<ParseStream> cin, const FileName& path) {
          remove_non_mblur = true;
-      }, "--remove-non-mblur: removes all non-motion-blur geometry");
+      }, "--remove-non-mblur: removes all non-motion blur geometry");
 
     registerOption("instancing", [this] (Ref<ParseStream> cin, const FileName& path) {
         std::string mode = cin->getString();
@@ -948,8 +953,11 @@ namespace embree
     /* clear texture cache */
     Texture::clearTextureCache();
 
+    /* perform removals */
+    if (remove_mblur)     scene->remove_mblur(true);
+    if (remove_non_mblur) scene->remove_mblur(false);
+
     /* perform conversions */
-    if (remove_non_mblur         ) scene->remove_non_mblur();
     if (convert_tris_to_quads    ) scene->triangles_to_quads();
     if (convert_bezier_to_lines  ) scene->bezier_to_lines();
     if (convert_hair_to_curves   ) scene->hair_to_curves();
