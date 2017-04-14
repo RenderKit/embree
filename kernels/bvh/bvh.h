@@ -1490,8 +1490,8 @@ namespace embree
     Device* device;                    //!< device pointer
     Scene* scene;                      //!< scene pointer
     NodeRef root;                      //!< root node
-    bool multiRoot;                      //!< when true root points to array of roots for MSMBlur mode
-    unsigned numTimeSteps;             //!< number of time steps
+    bool multiRoot;                    //!< when true root points to array of roots for MSMBlur mode
+    unsigned numTimeSteps;             //!< maximum number of time steps
     FastAllocator alloc;               //!< allocator used to allocate nodes
 
     /*! statistics data */

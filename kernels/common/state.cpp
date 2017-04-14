@@ -19,6 +19,8 @@
 
 namespace embree
 {
+  MutexSys g_printMutex;
+
   State::ErrorHandler State::g_errorHandler;
 
   State::ErrorHandler::ErrorHandler()
