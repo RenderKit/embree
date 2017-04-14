@@ -43,6 +43,7 @@ namespace embree
     Ref<Node> convert_hair_to_curves(Ref<Node> node);
     Ref<Node> convert_bezier_to_bspline(Ref<Node> node);
     Ref<Node> convert_bspline_to_bezier(Ref<Node> node);
+    Ref<Node> remove_non_mblur(Ref<Node> node);
     
     struct Node : public RefCount
     {
@@ -381,6 +382,12 @@ namespace embree
       {
         for (size_t i=0; i<children.size(); i++)
           children[i] = convert_bspline_to_bezier(children[i]);
+      }
+
+      void remove_non_mblur()
+      {
+        for (size_t i=0; i<children.size(); i++)
+          SceneGraph::remove_non_mblur(children[i]);
       }
 
       virtual void setMaterial(Ref<MaterialNode> material) {

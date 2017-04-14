@@ -776,6 +776,44 @@ namespace embree
     return node;
   }
 
+  Ref<SceneGraph::Node> SceneGraph::remove_non_mblur(Ref<SceneGraph::Node> node)
+  {
+    if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+      xfmNode->child = remove_non_mblur(xfmNode->child);
+    }
+    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>())
+    {
+      for (size_t i=0; i<groupNode->children.size(); i++)
+        groupNode->children[i] = remove_non_mblur(groupNode->children[i]);
+    }
+    else if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>())
+    {
+      if (mesh->numTimeSteps() == 1)
+        return nullptr;
+    }
+    else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>())
+    {
+      if (mesh->numTimeSteps() == 1)
+        return nullptr;
+    }
+    else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>())
+    {
+      if (mesh->numTimeSteps() == 1)
+        return nullptr;
+    }
+    else if (Ref<SceneGraph::LineSegmentsNode> mesh = node.dynamicCast<SceneGraph::LineSegmentsNode>())
+    {
+      if (mesh->numTimeSteps() == 1)
+        return nullptr;
+    }
+    else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>())
+    {
+      if (mesh->numTimeSteps() == 1)
+        return nullptr;
+    }
+    return node;
+  }
+
   struct SceneGraphFlattener
   {
     Ref<SceneGraph::Node> node;

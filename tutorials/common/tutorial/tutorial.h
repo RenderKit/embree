@@ -183,6 +183,7 @@ namespace embree
     bool convert_hair_to_curves;
     bool convert_bezier_to_bspline;
     bool convert_bspline_to_bezier;
+    bool remove_non_mblur;
     FileName sceneFilename;
     std::vector<FileName> keyFramesFilenames;
     SceneGraph::InstancingMode instancing_mode;
