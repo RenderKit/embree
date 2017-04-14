@@ -1084,7 +1084,7 @@ namespace embree
     Accel::Intersectors intersectors = BVH8MB4DLine4iMBIntersectors(accel);
     Builder* builder = nullptr;
     if      (scene->device->line_builder_mb == "default"     ) builder = BVH8MB4DLine4iMBSceneBuilderSAH(accel,scene,0);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->line_builder_mb+" for BVH8MB4DMB<Line4i>");
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->line_builder_mb+" for BVH8MB4D<Line4i>");
     scene->needLineVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -1307,7 +1307,7 @@ namespace embree
       case BuildVariant::HIGH_QUALITY: assert(false); break;
       }
     }
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->quad_builder_mb+" for BVH8MB4DMB<Quad4i>");
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->quad_builder_mb+" for BVH8MB4D<Quad4i>");
 
     scene->needQuadVertices = true;
     return new AccelInstance(accel,builder,intersectors);
