@@ -327,7 +327,7 @@ namespace embree
 #else
 
     /*! initializes the grow size */
-    __forceinline void initGrowSizeAndNumSlots(size_t bytesAllocate, bool single_mode, bool compact) 
+    __forceinline void initGrowSizeAndNumSlots(size_t bytesAllocate, bool single_mode, bool compact, bool fast) 
     {
       bytesAllocate  = ((bytesAllocate +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
       defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE+maxAlignment));
@@ -457,7 +457,8 @@ namespace embree
         {
           Lock<SpinLock> lock(slotMutex[slot]);
           if (myUsedBlocks == threadUsedBlocks[slot]) {
-            const size_t allocSize = max(min(growSize,maxGrowSize),bytes);
+            const size_t alignedBytes = (bytes+(align-1)) & ~(align-1);
+            const size_t allocSize = max(min(growSize,maxGrowSize),alignedBytes);
             assert(allocSize >= bytes);
             threadBlocks[slot] = threadUsedBlocks[slot] = Block::create(device,allocSize,allocSize,threadBlocks[slot],atype);
           }
