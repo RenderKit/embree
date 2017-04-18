@@ -460,7 +460,8 @@ namespace embree
             const size_t alignedBytes = (bytes+(align-1)) & ~(align-1);
             const size_t allocSize = max(min(growSize,maxGrowSize),alignedBytes);
             assert(allocSize >= bytes);
-            threadBlocks[slot] = threadUsedBlocks[slot] = Block::create(device,allocSize,allocSize,threadBlocks[slot],atype);
+            threadBlocks[slot] = threadUsedBlocks[slot] = Block::create(device,allocSize,allocSize,threadBlocks[slot],atype); // FIXME: a large allocation might throw away a block here!
+            // FIXME: a direct allocation should allocate inside the block here, and not in the next loop! a different thread could do some allocation and make the large allocation fail.
           }
           continue;
         }
@@ -479,7 +480,7 @@ namespace embree
 	      freeBlocks = nextFreeBlock;
 	    } else {
               const size_t allocSize = min(growSize*incGrowSizeScale(),maxGrowSize);
-	      usedBlocks = threadUsedBlocks[slot] = Block::create(device,allocSize,allocSize,usedBlocks,atype);
+	      usedBlocks = threadUsedBlocks[slot] = Block::create(device,allocSize,allocSize,usedBlocks,atype); // FIXME: a large allocation should get delivered directly, like above!
 	    }
           }
         }
