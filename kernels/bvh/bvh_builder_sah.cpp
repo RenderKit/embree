@@ -38,7 +38,7 @@
 #define PROFILE 0
 #define PROFILE_RUNS 20
 
-#define SINGLE_THREADED_BYTES (30*4096)
+#define SINGLE_THREADED_BYTES (19*4096)
 
 namespace embree
 {
