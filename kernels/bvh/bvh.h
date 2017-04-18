@@ -1396,29 +1396,6 @@ namespace embree
       alloc.cleanup();
     }
 
-    /*! return the true root */
-    template<int types>
-    __forceinline NodeRef getRoot(const Ray& ray) const {
-      if (unlikely((types & BVH_MB) && !(types & BVH_FLAG_ALIGNED_NODE_MB4D) && multiRoot)) {
-        int itime = getTimeSegment(ray.time, float(int(numTimeSteps-1)));
-        NodeRef* roots = (NodeRef*)(size_t)root;
-        return roots[itime];
-      } else {
-        return root;
-      }
-    }
-
-    template<int types, int K>
-      __forceinline NodeRef getRoot(const RayK<K> ray, size_t k) const {
-      if (unlikely((types & BVH_MB) && !(types & BVH_FLAG_ALIGNED_NODE_MB4D) && multiRoot)) {
-        int itime = getTimeSegment(ray.time[k], float(int(numTimeSteps-1)));
-        NodeRef* roots = (NodeRef*)(size_t)root;
-        return roots[itime];
-      } else {
-        return root;
-      }
-    }
-
   public:
 
     /*! Encodes a node */
@@ -1488,7 +1465,6 @@ namespace embree
     Device* device;                    //!< device pointer
     Scene* scene;                      //!< scene pointer
     NodeRef root;                      //!< root node
-    bool multiRoot;                    //!< when true root points to array of roots for MSMBlur mode
     unsigned numTimeSteps;             //!< maximum number of time steps
     FastAllocator alloc;               //!< allocator used to allocate nodes
 

@@ -213,13 +213,9 @@ namespace embree
         }
       }
     }
-    else if (device->tri_accel_mb == "bvh4.triangle4vmb") accels.add(device->bvh4_factory->BVH4Triangle4vMB(this));
-    else if (device->tri_accel_mb == "bvh4.triangle4imb") accels.add(device->bvh4_factory->BVH4Triangle4iMB(this));
     else if (device->tri_accel_mb == "bvh4mb4d.triangle4imb") accels.add(device->bvh4_factory->BVH4MB4DTriangle4iMB(this));
     else if (device->tri_accel_mb == "bvh4mb4d.triangle4vmb") accels.add(device->bvh4_factory->BVH4MB4DTriangle4vMB(this));
 #if defined (__TARGET_AVX__)
-    else if (device->tri_accel_mb == "bvh8.triangle4vmb") accels.add(device->bvh8_factory->BVH8Triangle4vMB(this));
-    else if (device->tri_accel_mb == "bvh8.triangle4imb") accels.add(device->bvh8_factory->BVH8Triangle4iMB(this));
     else if (device->tri_accel_mb == "bvh8mb4d.triangle4imb") accels.add(device->bvh8_factory->BVH8MB4DTriangle4iMB(this));
     else if (device->tri_accel_mb == "bvh8mb4d.triangle4vmb") accels.add(device->bvh8_factory->BVH8MB4DTriangle4vMB(this));
 #endif
@@ -333,14 +329,12 @@ namespace embree
           accels.add(device->bvh4_factory->BVH4MB4DQuad4iMB(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::ROBUST));
         break;
 
-      case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4Quad4iMB(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::FAST  )); break;
-      case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Quad4iMB(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::ROBUST)); break;
+      case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4MB4DQuad4iMB(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::FAST  )); break;
+      case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4MB4DQuad4iMB(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::ROBUST)); break;
       }
     }
-    else if (device->quad_accel_mb == "bvh4.quad4imb"    ) accels.add(device->bvh4_factory->BVH4Quad4iMB(this));
     else if (device->quad_accel_mb == "bvh4mb4d.quad4imb") accels.add(device->bvh4_factory->BVH4MB4DQuad4iMB(this));
 #if defined (__TARGET_AVX__)
-    else if (device->quad_accel_mb == "bvh8.quad4imb"    ) accels.add(device->bvh8_factory->BVH8Quad4iMB(this));
     else if (device->quad_accel_mb == "bvh8mb4d.quad4imb") accels.add(device->bvh8_factory->BVH8MB4DQuad4iMB(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown quad motion blur acceleration structure "+device->quad_accel_mb);
@@ -414,10 +408,8 @@ namespace embree
         accels.add(device->bvh4_factory->BVH4MB4DBezier1iMB(this));
       }
     }
-    else if (device->hair_accel_mb == "bvh4obb.bezier1imb" ) accels.add(device->bvh4_factory->BVH4OBBBezier1iMB(this));
     else if (device->hair_accel_mb == "bvh4mb4d.bezier1imb") accels.add(device->bvh4_factory->BVH4MB4DBezier1iMB(this));
 #if defined (__TARGET_AVX__)
-    else if (device->hair_accel_mb == "bvh8obb.bezier1imb" ) accels.add(device->bvh8_factory->BVH8OBBBezier1iMB(this));
     else if (device->hair_accel_mb == "bvh8mb4d.bezier1imb") accels.add(device->bvh8_factory->BVH8MB4DBezier1iMB(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown motion blur hair acceleration structure "+device->hair_accel_mb);
@@ -463,10 +455,8 @@ namespace embree
 #endif
         accels.add(device->bvh4_factory->BVH4MB4DLine4iMB(this));
     }
-    else if (device->line_accel_mb == "bvh4.line4imb"    ) accels.add(device->bvh4_factory->BVH4Line4iMB(this));
     else if (device->line_accel_mb == "bvh4mb4d.line4imb") accels.add(device->bvh4_factory->BVH4MB4DLine4iMB(this));
 #if defined (__TARGET_AVX__)
-    else if (device->line_accel_mb == "bvh8.line4imb"    ) accels.add(device->bvh8_factory->BVH8Line4iMB(this));
     else if (device->line_accel_mb == "bvh8mb4d.line4imb") accels.add(device->bvh8_factory->BVH8MB4DLine4iMB(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown motion blur line segment acceleration structure "+device->line_accel_mb);
@@ -501,8 +491,6 @@ namespace embree
       else
         accels.add(device->bvh4_factory->BVH4MB4DSubdivPatch1MB(this,true));
     }
-    else if (device->subdiv_accel_mb == "bvh4.subdivpatch1"          ) accels.add(device->bvh4_factory->BVH4SubdivPatch1MB(this,false));
-    else if (device->subdiv_accel_mb == "bvh4.subdivpatch1cached"    ) accels.add(device->bvh4_factory->BVH4SubdivPatch1MB(this,true));
     else if (device->subdiv_accel_mb == "bvh4mb4d.subdivpatch1"      ) accels.add(device->bvh4_factory->BVH4MB4DSubdivPatch1MB(this,false));
     else if (device->subdiv_accel_mb == "bvh4mb4d.subdivpatch1cached") accels.add(device->bvh4_factory->BVH4MB4DSubdivPatch1MB(this,true));
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown subdiv mblur accel "+device->subdiv_accel_mb);
@@ -529,7 +517,6 @@ namespace embree
   {
 #if defined(EMBREE_GEOMETRY_USER)
     if      (device->object_accel_mb == "default"        ) accels.add(device->bvh4_factory->BVH4MB4DUserGeometryMB(this));
-    else if (device->object_accel_mb == "bvh4.object"    ) accels.add(device->bvh4_factory->BVH4UserGeometryMB(this)); 
     else if (device->object_accel_mb == "bvh4mb4d.object") accels.add(device->bvh4_factory->BVH4MB4DUserGeometryMB(this)); 
 #endif
   }
