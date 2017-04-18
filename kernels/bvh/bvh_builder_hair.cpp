@@ -16,6 +16,7 @@
 
 #include "../builders/bvh_builder_hair.h"
 #include "../builders/bvh_builder_hair_old.h"
+#include "../builders/bvh_builder_msmblur_hair.h"
 #include "../builders/primrefgen.h"
 
 #include "../geometry/bezier1v.h"
@@ -50,7 +51,7 @@ namespace embree
           return;
         }
 
-        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderHairSAH");
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "HairBuilderSAH");
 
         //profile(1,5,numPrimitives,[&] (ProfileTimer& timer) {
         
@@ -111,8 +112,8 @@ namespace embree
     };
 
 
-     template<int N, typename Primitive>
-    struct BVHNHairMBBuilderSAH : public Builder
+    template<int N, typename Primitive>
+    struct BVHNHairMBlurMultiRootBuilderSAH : public Builder
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::AlignedNodeMB AlignedNodeMB;
@@ -125,7 +126,7 @@ namespace embree
       Scene* scene;
       mvector<BezierPrim> prims;
 
-      BVHNHairMBBuilderSAH (BVH* bvh, Scene* scene)
+      BVHNHairMBlurMultiRootBuilderSAH (BVH* bvh, Scene* scene)
         : bvh(bvh), scene(scene), prims(scene->device) {}
       
       const LBBox3fa computePrimInfoMB(size_t timeSegment, size_t numTimeSteps, Scene* scene, const PrimInfoRange& pinfo)
@@ -155,7 +156,7 @@ namespace embree
           return;
         }
         
-        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderMBHairSAH");
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "HairMBlurMultiRootBuilderSAH");
 
         //profile(1,5,numPrimitives,[&] (ProfileTimer& timer) {
 
@@ -222,7 +223,7 @@ namespace embree
           num_bvh_primitives = max(num_bvh_primitives,pinfo.size());
         }
         bvh->set(NodeRef((size_t)roots),LBBox3fa(bounds),num_bvh_primitives);
-        bvh->msmblur = true;
+        bvh->multiRoot = true;
 
         //});
         
@@ -239,16 +240,107 @@ namespace embree
         prims.clear();
       }
     };
+
+    /* FIXME: add fast path for single-segment motion blur */
+    template<int N, typename Primitive>
+    struct BVHNHairMBlurBuilderSAH : public Builder
+    {
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::NodeRecordMB NodeRecordMB;
+
+      BVH* bvh;
+      Scene* scene;
+
+      BVHNHairMBlurBuilderSAH (BVH* bvh, Scene* scene)
+        : bvh(bvh), scene(scene) {}
+      
+      void build() 
+      {
+        /* fast path for empty BVH */
+        const size_t numPrimitives = scene->getNumPrimitives<NativeCurves,true>();
+        if (numPrimitives == 0) {
+          bvh->set(BVH::emptyNode,empty,0);
+          return;
+        }
+
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "HairMBlurBuilderSAH");
+
+        //profile(1,5,numPrimitives,[&] (ProfileTimer& timer) {
+
+        /* create primref array */
+        mvector<PrimRefMB> prims0(scene->device,numPrimitives);
+        const PrimInfoMB pinfo = createPrimRefArrayMSMBlur<NativeCurves>(scene,prims0,bvh->scene->progressInterface);
+
+        /* estimate acceleration structure size */
+        const size_t node_bytes = pinfo.num_time_segments*sizeof(typename BVH::AlignedNodeMB)/(4*N);
+        const size_t leaf_bytes = size_t(1.2*Primitive::blocks(pinfo.num_time_segments)*sizeof(Primitive));
+        bvh->alloc.init_estimate(node_bytes+leaf_bytes);
+    
+        /* settings for BVH build */
+        BVHBuilderHairMSMBlur::Settings settings;
+        settings.branchingFactor = N;
+        settings.maxDepth = BVH::maxBuildDepthLeaf;
+        settings.logBlockSize = 1;
+        settings.minLeafSize = 1;
+        settings.maxLeafSize = BVH::maxLeafBlocks;
+
+        /* creates a leaf node */
+        auto createLeaf = [&] (const SetMB& prims, const FastAllocator::CachedAllocator& alloc) -> NodeRecordMB
+          {
+            size_t start = prims.object_range.begin();
+            size_t end   = prims.object_range.end();
+            size_t items = prims.object_range.size();
+            Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive));
+            const NodeRef node = bvh->encodeLeaf((char*)accel,items);
+
+            LBBox3fa bounds = empty;
+            for (size_t i=0; i<items; i++)
+              bounds.extend(accel[i].fillMB(prims.prims->data(),start,end,bvh->scene,prims.time_range));
+            
+            return NodeRecordMB(node,bounds);
+          };
+
+        /* build the hierarchy */
+        auto root = BVHBuilderHairMSMBlur::build<NodeRef>
+          (scene, prims0, pinfo,
+           RecalculatePrimRef<NativeCurves>(scene),
+           typename BVH::CreateAlloc(bvh),
+           typename BVH::AlignedNodeMB::Create(),
+           typename BVH::AlignedNodeMB::Set(),
+           typename BVH::UnalignedNodeMB::Create(),
+           typename BVH::UnalignedNodeMB::Set(),
+           typename BVH::AlignedNodeMB4D::Create(),
+           typename BVH::AlignedNodeMB4D::Set(),
+           createLeaf,
+           bvh->scene->progressInterface,
+           settings);
+        
+        bvh->set(root.ref,root.lbounds,pinfo.num_time_segments);
+        
+        //});
+        
+        /* clear temporary data for static geometry */
+        if (scene->isStatic()) bvh->shrink();
+        bvh->cleanup();
+        bvh->postBuild(t0);
+      }
+
+      void clear() {
+      }
+    };
     
     /*! entry functions for the builder */
     Builder* BVH4Bezier1vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Bezier1v>((BVH4*)bvh,scene); }
     Builder* BVH4Bezier1iBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Bezier1i>((BVH4*)bvh,scene); }
-    Builder* BVH4Bezier1iMBBuilder_OBB_New (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBBuilderSAH<4,Bezier1i>((BVH4*)bvh,scene); }
+    Builder* BVH4Bezier1iMBBuilder_OBB_New (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurMultiRootBuilderSAH<4,Bezier1i>((BVH4*)bvh,scene); }
+    Builder* BVH4MB4DBezier1iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<4,Bezier1i>((BVH4*)bvh,scene); }
 
 #if defined(__AVX__)
     Builder* BVH8Bezier1vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<8,Bezier1v>((BVH8*)bvh,scene); }
     Builder* BVH8Bezier1iBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<8,Bezier1i>((BVH8*)bvh,scene); }
-    Builder* BVH8Bezier1iMBBuilder_OBB_New (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBBuilderSAH<8,Bezier1i>((BVH8*)bvh,scene); }
+    Builder* BVH8Bezier1iMBBuilder_OBB_New (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurMultiRootBuilderSAH<8,Bezier1i>((BVH8*)bvh,scene); }
+    Builder* BVH8MB4DBezier1iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<8,Bezier1i>((BVH8*)bvh,scene); }
 #endif
 
   }

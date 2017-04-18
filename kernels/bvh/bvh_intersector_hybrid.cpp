@@ -60,13 +60,17 @@ namespace embree
       assert(!(types & BVH_MB) || all(valid,(ray.time >= 0.0f) & (ray.time <= 1.0f)));
 
       /* if the rays belong to different time segments, immediately switch to single ray traversal */
-      Precalculations pre(valid,ray,bvh->numTimeSteps);
+      Precalculations pre(valid,ray);
       const size_t valid_first = __bsf(valid_bits);
-      if (unlikely((types & BVH_MB) && ((movemask(pre.itime() == pre.itime(valid_first)) & valid_bits) != valid_bits)))
+      if (unlikely((types & BVH_MB) && !(types & BVH_FLAG_ALIGNED_NODE_MB4D) && bvh->multiRoot))
       {
-        intersectSingle(valid, bvh, pre, ray, context);
-        AVX_ZERO_UPPER();
-        return;
+        const vint<K> itime = getTimeSegment(ray.time, vfloat<K>(float(int(bvh->numTimeSteps-1))));
+        if (likely((movemask(itime == itime[valid_first]) & valid_bits) != valid_bits))
+        {
+          intersectSingle(valid, bvh, pre, ray, context);
+          AVX_ZERO_UPPER();
+          return;
+        }
       }
       
       /* load ray */
@@ -99,7 +103,7 @@ namespace embree
       NodeRef stack_node[stackSizeChunk];
       stack_node[0] = BVH::invalidNode;
       stack_near[0] = inf;
-      stack_node[1] = bvh->getRoot(pre, valid_first);
+      stack_node[1] = bvh->template getRoot<types>(ray, valid_first);
       stack_near[1] = ray_tnear; 
       NodeRef* stackEnd MAYBE_UNUSED = stack_node+stackSizeChunk;
       NodeRef* __restrict__ sptr_node = stack_node + 2;
@@ -145,7 +149,8 @@ namespace embree
         while (likely(!cur.isLeaf()))
         {
           /* process nodes */
-          STAT(const vbool<K> valid_node = ray_tfar > curDist);
+          const vbool<K> valid_node = ray_tfar > curDist
+          STAT(valid_node);
           STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
           const NodeRef nodeRef = cur;
           const BaseNode* __restrict__ const node = nodeRef.baseNode(types);
@@ -159,8 +164,8 @@ namespace embree
             const NodeRef child = node->children[i];
             if (unlikely(child == BVH::emptyNode)) break;
             vfloat<K> lnearP;
-            vbool<K> lhit(false);
-            BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,pre.ftime(),lnearP,lhit);
+            vbool<K> lhit(valid_node);
+            BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP,lhit);
 
             /* if we hit the child we choose to continue with that child if it
                is closer than the current next child, or we push it onto the stack */
@@ -251,7 +256,7 @@ namespace embree
       /* iterates over all rays in the packet using single ray traversal */
       size_t bits = movemask(valid);
       for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-        BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::intersect1(bvh, bvh->getRoot(pre,i), i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ, context);
+        BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::intersect1(bvh, bvh->template getRoot<types>(ray,i), i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ, context);
       }
     }
 
@@ -278,13 +283,17 @@ namespace embree
       assert(!(types & BVH_MB) || all(valid,(ray.time >= 0.0f) & (ray.time <= 1.0f)));
 
       /* if the rays belong to different time segments, immediately switch to single ray traversal */
-      Precalculations pre(valid,ray,bvh->numTimeSteps);
+      Precalculations pre(valid,ray);
       const size_t valid_first = __bsf(valid_bits);
-      if (unlikely((types & BVH_MB) && ((movemask(pre.itime() == pre.itime(valid_first)) & valid_bits) != valid_bits)))
+      if (unlikely((types & BVH_MB) && !(types & BVH_FLAG_ALIGNED_NODE_MB4D) && bvh->multiRoot))
       {
-        occludedSingle(valid, bvh, pre, ray, context);
-        AVX_ZERO_UPPER();
-        return;
+        const vint<K> itime = getTimeSegment(ray.time, vfloat<K>(float(int(bvh->numTimeSteps-1))));
+        if (likely((movemask(itime == itime[valid_first]) & valid_bits) != valid_bits))
+        {
+          occludedSingle(valid, bvh, pre, ray, context);
+          AVX_ZERO_UPPER();
+          return;
+        }
       }
 
       /* load ray */
@@ -315,7 +324,7 @@ namespace embree
       NodeRef stack_node[stackSizeChunk];
       stack_node[0] = BVH::invalidNode;
       stack_near[0] = inf;
-      stack_node[1] = bvh->getRoot(pre, valid_first);
+      stack_node[1] = bvh->template getRoot<types>(ray, valid_first);
       stack_near[1] = ray_tnear; 
       NodeRef* stackEnd MAYBE_UNUSED = stack_node+stackSizeChunk;
       NodeRef* __restrict__ sptr_node = stack_node + 2;
@@ -359,7 +368,8 @@ namespace embree
         while (likely(!cur.isLeaf()))
         {
           /* process nodes */
-          STAT(const vbool<K> valid_node = ray_tfar > curDist);
+          const vbool<K> valid_node = ray_tfar > curDist
+          STAT(valid_node);
           STAT3(shadow.trav_nodes,1,popcnt(valid_node),K);
           const NodeRef nodeRef = cur;
           const BaseNode* __restrict__ const node = nodeRef.baseNode(types);
@@ -373,8 +383,8 @@ namespace embree
             const NodeRef child = node->children[i];
             if (unlikely(child == BVH::emptyNode)) break;
             vfloat<K> lnearP;
-            vbool<K> lhit(false);
-            BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,pre.ftime(),lnearP,lhit);
+            vbool<K> lhit(valid_node);
+            BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP,lhit);
 
             /* if we hit the child we choose to continue with that child if it
                is closer than the current next child, or we push it onto the stack */
@@ -467,7 +477,7 @@ namespace embree
       /* iterates over all rays in the packet using single ray traversal */
       size_t bits = movemask(valid);
       for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-        if (BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::occluded1(bvh,bvh->getRoot(pre,i),i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ,context))
+        if (BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::occluded1(bvh,bvh->template getRoot<types>(ray,i),i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ,context))
           set(terminated, i);
       }
       vint<K>::store(valid & terminated,&ray.geomID,0);

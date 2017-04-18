@@ -29,7 +29,7 @@ namespace embree
       struct QuadMiMBIntersector1Moeller
     {
       typedef QuadMiMB<M> Primitive;
-      typedef Intersector1PrecalculationsMB<QuadMIntersector1MoellerTrumbore<M,filter>> Precalculations;
+      typedef QuadMIntersector1MoellerTrumbore<M,filter> Precalculations;
         
       /*! Intersect a ray with the M quads and updates the hit. */
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& quad)
@@ -53,7 +53,7 @@ namespace embree
       struct QuadMiMBIntersectorKMoeller
       {
         typedef QuadMiMB<M> Primitive;
-        typedef IntersectorKPrecalculationsMB<K,QuadMIntersectorKMoellerTrumbore<M,K,filter>> Precalculations;
+        typedef QuadMIntersectorKMoellerTrumbore<M,K,filter> Precalculations;
         
         /*! Intersects K rays with M quads. */
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const QuadMiMB<M>& quad)
@@ -104,7 +104,7 @@ namespace embree
       struct QuadMiMBIntersector1Pluecker
     {
       typedef QuadMiMB<M> Primitive;
-      typedef Intersector1PrecalculationsMB<QuadMIntersector1Pluecker<M,filter>> Precalculations;
+      typedef QuadMIntersector1Pluecker<M,filter> Precalculations;
         
       /*! Intersect a ray with the M quads and updates the hit. */
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& quad)
@@ -128,7 +128,7 @@ namespace embree
       struct QuadMiMBIntersectorKPluecker
       {
         typedef QuadMiMB<M> Primitive;
-        typedef IntersectorKPrecalculationsMB<K,QuadMIntersectorKPluecker<M,K,filter>> Precalculations;
+        typedef QuadMIntersectorKPluecker<M,K,filter> Precalculations;
         
         /*! Intersects K rays with M quads. */
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const QuadMiMB<M>& quad)

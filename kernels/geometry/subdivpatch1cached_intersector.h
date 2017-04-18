@@ -29,8 +29,8 @@ namespace embree
       class SubdivPatch1CachedPrecalculations : public T
     { 
     public:
-      __forceinline SubdivPatch1CachedPrecalculations (const Ray& ray, const void* ptr, unsigned numTimeSteps)
-        : T(ray,ptr,numTimeSteps) {}
+      __forceinline SubdivPatch1CachedPrecalculations (const Ray& ray, const void* ptr)
+        : T(ray,ptr) {}
       
       __forceinline ~SubdivPatch1CachedPrecalculations() {
         if (cached && this->grid) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
@@ -41,8 +41,8 @@ namespace embree
       class SubdivPatch1CachedPrecalculationsK : public T
     { 
     public:
-      __forceinline SubdivPatch1CachedPrecalculationsK (const vbool<K>& valid, RayK<K>& ray, unsigned numTimeSteps)
-        : T(valid,ray,numTimeSteps) {}
+      __forceinline SubdivPatch1CachedPrecalculationsK (const vbool<K>& valid, RayK<K>& ray)
+        : T(valid,ray) {}
       
       __forceinline ~SubdivPatch1CachedPrecalculationsK() {
         if (cached && this->grid) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
@@ -115,13 +115,15 @@ namespace embree
           if (pre.grid) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
           grid = (GridSOA*) SharedLazyTessellationCache::lookup(prim->entry(),scene->commitCounterSubdiv,[&] () {
               auto alloc = [] (const size_t bytes) { return SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(bytes); };
-              return GridSOA::create((SubdivPatch1Base*)prim,(unsigned)scene->get<SubdivMesh>(prim->geom)->numTimeSteps,pre.numTimeSteps(),scene,alloc);
+              const unsigned num_time_steps = (unsigned)scene->get<SubdivMesh>(prim->geom)->numTimeSteps;
+              return GridSOA::create((SubdivPatch1Base*)prim,num_time_steps,num_time_steps,scene,alloc);
             });
         }
         else {
           grid = (GridSOA*) prim->root_ref.get();
         }
-        lazy_node = grid->root(pre.itime());
+        pre.itime = getTimeSegment(ray.time, float(grid->time_steps-1), pre.ftime);
+        lazy_node = grid->root(pre.itime);
         pre.grid = grid;
         return false;
       }
@@ -223,13 +225,15 @@ namespace embree
           if (pre.grid) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
           grid = (GridSOA*) SharedLazyTessellationCache::lookup(prim->entry(),scene->commitCounterSubdiv,[&] () {
               auto alloc = [] (const size_t bytes) { return SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(bytes); };
-              return GridSOA::create((SubdivPatch1Base*)prim,(unsigned)scene->get<SubdivMesh>(prim->geom)->numTimeSteps,pre.numTimeSteps(),scene,alloc);
+              const unsigned num_time_steps = (unsigned)scene->get<SubdivMesh>(prim->geom)->numTimeSteps;
+              return GridSOA::create((SubdivPatch1Base*)prim,num_time_steps,num_time_steps,scene,alloc);
             });
         }
         else {
           grid = (GridSOA*) prim->root_ref.get();
         }
-        lazy_node = grid->root(pre.itime(k));
+        pre.itime = getTimeSegment(ray.time[k], float(grid->time_steps-1), pre.ftime);
+        lazy_node = grid->root(pre.itime);
         pre.grid = grid;
         return false;
       }

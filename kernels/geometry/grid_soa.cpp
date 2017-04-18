@@ -191,8 +191,11 @@ namespace embree
         LBBox3fa bounds(empty);
         for (unsigned i=0; i<children; i++)
         {
+          const BBox1f time_range(float(time+0)/float(time_steps-1),
+                                  float(time+1)/float(time_steps-1));
           LBBox3fa box = buildMBlurBVH(node->child(i), time, r[i], allocator);
-          node->setBounds(i, box);
+          //node->setBounds(i, box);
+          node->setBounds(i,box.global(time_range));
           bounds.extend(box);
         }
         

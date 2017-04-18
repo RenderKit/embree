@@ -28,7 +28,7 @@ namespace embree
       struct TriangleMIntersector1Moeller
       {
         typedef TriangleM<M> Primitive;
-        typedef Intersector1Precalculations<MoellerTrumboreIntersector1<Mx>> Precalculations;
+        typedef MoellerTrumboreIntersector1<Mx> Precalculations;
         
         /*! Intersect a ray with the M triangles and updates the hit. */
         static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const TriangleM<M>& tri)
@@ -67,7 +67,7 @@ namespace embree
         static const size_t Mx = 8;
 
         typedef TriangleM<M> Primitive;
-        typedef Intersector1Precalculations<MoellerTrumboreIntersector1<Mx>> Precalculations;
+        typedef MoellerTrumboreIntersector1<Mx> Precalculations;
 
         static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const TriangleM<M>& tri)
         {
@@ -104,7 +104,7 @@ namespace embree
       struct TriangleMIntersectorKMoeller
       {
         typedef TriangleM<M> Primitive;
-        typedef IntersectorKPrecalculations<K,MoellerTrumboreIntersectorK<Mx,K>> Precalculations;
+        typedef MoellerTrumboreIntersectorK<Mx,K> Precalculations;
         
         /*! Intersects K rays with M triangles. */
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const TriangleM<M>& tri)

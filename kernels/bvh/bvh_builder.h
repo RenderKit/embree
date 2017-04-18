@@ -95,7 +95,7 @@ namespace embree
         typedef FastAllocator::CachedAllocator Allocator;
       
         struct BVHNBuilderV {
-          NodeRecordMB build(FastAllocator* allocator, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings);
+          NodeRecordMB build(FastAllocator* allocator, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings, const BBox1f& timeRange);
           virtual NodeRecordMB createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, const Allocator& alloc) = 0;
         };
 
@@ -114,8 +114,8 @@ namespace embree
         };
 
         template<typename CreateLeafFunc>
-        static NodeRecordMB build(FastAllocator* allocator, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings) {
-          return BVHNBuilderT<CreateLeafFunc>(createLeaf).build(allocator,progress,prims,pinfo,settings);
+        static NodeRecordMB build(FastAllocator* allocator, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings, const BBox1f& timeRange) {
+          return BVHNBuilderT<CreateLeafFunc>(createLeaf).build(allocator,progress,prims,pinfo,settings,timeRange);
         }
       };
   }

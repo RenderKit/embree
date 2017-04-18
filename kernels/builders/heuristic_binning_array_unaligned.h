@@ -168,5 +168,84 @@ namespace embree
         Scene* const scene;
         PrimRef* const prims;
       };
+
+    /*! Performs standard object binning */
+    template<typename PrimRefMB, size_t BINS>
+      struct UnalignedHeuristicArrayBinningMB
+      {
+        typedef BinSplit<BINS> Split;
+        typedef typename PrimRefMB::BBox BBox;
+        typedef BinInfoT<BINS,PrimRefMB,BBox> ObjectBinner;
+        
+        static const size_t PARALLEL_THRESHOLD = 3 * 1024;
+        static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
+        static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;
+
+        UnalignedHeuristicArrayBinningMB(Scene* scene)
+        : scene(scene) {}
+
+        const LinearSpace3fa computeAlignedSpaceMB(Scene* scene, const SetMB& set)
+        {
+          Vec3fa axis0(0,0,1);
+
+          /*! find first curve that defines valid direction */
+          for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++)
+          {
+            const PrimRefMB& prim = (*set.prims)[i];
+            const size_t geomID = prim.geomID();
+            const size_t primID = prim.primID();
+            const NativeCurves* mesh = scene->get<NativeCurves>(geomID);
+
+            const unsigned num_time_segments = mesh->numTimeSegments();
+            const range<int> tbounds = getTimeSegmentRange(set.time_range, num_time_segments);
+            if (tbounds.size() == 0) continue;
+
+            const size_t t = (tbounds.begin()+tbounds.end())/2;
+            const int curve = mesh->curve(primID);
+            const Vec3fa a0 = mesh->vertex(curve+0,t);
+            const Vec3fa a3 = mesh->vertex(curve+3,t);
+            
+            if (sqr_length(a3 - a0) > 1E-18f) {
+              axis0 = normalize(a3 - a0);
+              break;
+            }
+          }
+
+          return frame(axis0).transposed();
+        }
+
+        /*! finds the best split */
+        const Split find(const SetMB& set, const size_t logBlockSize, const LinearSpace3fa& space)
+        {
+          UserPrimRefData user(scene,set.time_range);
+          ObjectBinner binner(empty);
+          const BinMapping<BINS> mapping(set.size(),set.centBounds);
+          bin_parallel(binner,set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,mapping,space,&user);
+          Split osplit = binner.best(mapping,logBlockSize);
+          osplit.sah *= set.time_range.size();
+          if (!osplit.valid()) osplit.data = Split::SPLIT_FALLBACK; // use fallback split
+          return osplit;
+        }
+        
+        /*! array partitioning */
+        __forceinline void split(const Split& split, const LinearSpace3fa& space, const SetMB& set, SetMB& lset, SetMB& rset)
+        {
+          UserPrimRefData user(scene,set.time_range);
+          const size_t begin = set.object_range.begin();
+          const size_t end   = set.object_range.end();
+          PrimInfoMB left = empty;
+          PrimInfoMB right = empty;
+          const vint4 vSplitPos(split.pos);
+          const vbool4 vSplitMask(1 << split.dim);
+          auto isLeft = [&] (const PrimRefMB &ref) { return any(((vint4)split.mapping.bin_unsafe(ref,space,&user) < vSplitPos) & vSplitMask); };
+          auto reduction = [] (PrimInfoMB& pinfo, const PrimRefMB& ref) { pinfo.add_primref(ref); };
+          size_t center = parallel_partitioning(set.prims->data(),begin,end,EmptyTy(),left,right,isLeft,reduction,PrimInfoMB::merge2,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD);
+          new (&lset) SetMB(left,set.prims,range<size_t>(begin,center),set.time_range);
+          new (&rset) SetMB(right,set.prims,range<size_t>(center,end ),set.time_range);
+        }
+
+      private:
+        Scene* scene;
+      };
   }
 }
