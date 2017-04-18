@@ -196,28 +196,28 @@ namespace embree
       if (device->hasISA(AVX2)) // BVH8 reduces performance on AVX only-machines
       {
         switch (mode) {
-        case /*0b00*/ 0: accels.add(device->bvh8_factory->BVH8MB4DTriangle4iMB(this,BVH8Factory::BuildVariant::STATIC,BVH8Factory::IntersectVariant::FAST  )); break;
-        case /*0b01*/ 1: accels.add(device->bvh8_factory->BVH8MB4DTriangle4iMB(this,BVH8Factory::BuildVariant::STATIC,BVH8Factory::IntersectVariant::ROBUST)); break;
-        case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4MB4DTriangle4iMB(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::FAST  )); break;
-        case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4MB4DTriangle4iMB(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::ROBUST)); break;
+        case /*0b00*/ 0: accels.add(device->bvh8_factory->BVH8Triangle4iMB(this,BVH8Factory::BuildVariant::STATIC,BVH8Factory::IntersectVariant::FAST  )); break;
+        case /*0b01*/ 1: accels.add(device->bvh8_factory->BVH8Triangle4iMB(this,BVH8Factory::BuildVariant::STATIC,BVH8Factory::IntersectVariant::ROBUST)); break;
+        case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4Triangle4iMB(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::FAST  )); break;
+        case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Triangle4iMB(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::ROBUST)); break;
         }
       }
       else
 #endif
       {
         switch (mode) {
-        case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4MB4DTriangle4iMB(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::FAST  )); break;
-        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4MB4DTriangle4iMB(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::ROBUST)); break;
-        case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4MB4DTriangle4iMB(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::FAST  )); break;
-        case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4MB4DTriangle4iMB(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::ROBUST)); break;
+        case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4Triangle4iMB(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::FAST  )); break;
+        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Triangle4iMB(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::ROBUST)); break;
+        case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4Triangle4iMB(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::FAST  )); break;
+        case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Triangle4iMB(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::ROBUST)); break;
         }
       }
     }
-    else if (device->tri_accel_mb == "bvh4mb4d.triangle4imb") accels.add(device->bvh4_factory->BVH4MB4DTriangle4iMB(this));
-    else if (device->tri_accel_mb == "bvh4mb4d.triangle4vmb") accels.add(device->bvh4_factory->BVH4MB4DTriangle4vMB(this));
+    else if (device->tri_accel_mb == "bvh4mb4d.triangle4imb") accels.add(device->bvh4_factory->BVH4Triangle4iMB(this));
+    else if (device->tri_accel_mb == "bvh4mb4d.triangle4vmb") accels.add(device->bvh4_factory->BVH4Triangle4vMB(this));
 #if defined (__TARGET_AVX__)
-    else if (device->tri_accel_mb == "bvh8mb4d.triangle4imb") accels.add(device->bvh8_factory->BVH8MB4DTriangle4iMB(this));
-    else if (device->tri_accel_mb == "bvh8mb4d.triangle4vmb") accels.add(device->bvh8_factory->BVH8MB4DTriangle4vMB(this));
+    else if (device->tri_accel_mb == "bvh8mb4d.triangle4imb") accels.add(device->bvh8_factory->BVH8Triangle4iMB(this));
+    else if (device->tri_accel_mb == "bvh8mb4d.triangle4vmb") accels.add(device->bvh8_factory->BVH8Triangle4vMB(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown motion blur triangle acceleration structure "+device->tri_accel_mb);
 #endif
@@ -314,28 +314,28 @@ namespace embree
       case /*0b00*/ 0:
 #if defined (__TARGET_AVX__)
         if (device->hasISA(AVX))
-          accels.add(device->bvh8_factory->BVH8MB4DQuad4iMB(this,BVH8Factory::BuildVariant::STATIC,BVH8Factory::IntersectVariant::FAST));
+          accels.add(device->bvh8_factory->BVH8Quad4iMB(this,BVH8Factory::BuildVariant::STATIC,BVH8Factory::IntersectVariant::FAST));
         else
 #endif
-          accels.add(device->bvh4_factory->BVH4MB4DQuad4iMB(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::FAST));
+          accels.add(device->bvh4_factory->BVH4Quad4iMB(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::FAST));
         break;
 
       case /*0b01*/ 1:
 #if defined (__TARGET_AVX__)
         if (device->hasISA(AVX))
-          accels.add(device->bvh8_factory->BVH8MB4DQuad4iMB(this,BVH8Factory::BuildVariant::STATIC,BVH8Factory::IntersectVariant::ROBUST));
+          accels.add(device->bvh8_factory->BVH8Quad4iMB(this,BVH8Factory::BuildVariant::STATIC,BVH8Factory::IntersectVariant::ROBUST));
         else
 #endif
-          accels.add(device->bvh4_factory->BVH4MB4DQuad4iMB(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::ROBUST));
+          accels.add(device->bvh4_factory->BVH4Quad4iMB(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::ROBUST));
         break;
 
-      case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4MB4DQuad4iMB(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::FAST  )); break;
-      case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4MB4DQuad4iMB(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::ROBUST)); break;
+      case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4Quad4iMB(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::FAST  )); break;
+      case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Quad4iMB(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::ROBUST)); break;
       }
     }
-    else if (device->quad_accel_mb == "bvh4mb4d.quad4imb") accels.add(device->bvh4_factory->BVH4MB4DQuad4iMB(this));
+    else if (device->quad_accel_mb == "bvh4mb4d.quad4imb") accels.add(device->bvh4_factory->BVH4Quad4iMB(this));
 #if defined (__TARGET_AVX__)
-    else if (device->quad_accel_mb == "bvh8mb4d.quad4imb") accels.add(device->bvh8_factory->BVH8MB4DQuad4iMB(this));
+    else if (device->quad_accel_mb == "bvh8mb4d.quad4imb") accels.add(device->bvh8_factory->BVH8Quad4iMB(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown quad motion blur acceleration structure "+device->quad_accel_mb);
 #endif
@@ -400,17 +400,17 @@ namespace embree
 #if defined (__TARGET_AVX__)
       if (device->hasISA(AVX2)) // only enable on HSW machines, on SNB this codepath is slower
       {
-        accels.add(device->bvh8_factory->BVH8MB4DBezier1iMB(this));
+        accels.add(device->bvh8_factory->BVH8OBBBezier1iMB(this));
       }
       else
 #endif
       {
-        accels.add(device->bvh4_factory->BVH4MB4DBezier1iMB(this));
+        accels.add(device->bvh4_factory->BVH4OBBBezier1iMB(this));
       }
     }
-    else if (device->hair_accel_mb == "bvh4mb4d.bezier1imb") accels.add(device->bvh4_factory->BVH4MB4DBezier1iMB(this));
+    else if (device->hair_accel_mb == "bvh4mb4d.bezier1imb") accels.add(device->bvh4_factory->BVH4OBBBezier1iMB(this));
 #if defined (__TARGET_AVX__)
-    else if (device->hair_accel_mb == "bvh8mb4d.bezier1imb") accels.add(device->bvh8_factory->BVH8MB4DBezier1iMB(this));
+    else if (device->hair_accel_mb == "bvh8mb4d.bezier1imb") accels.add(device->bvh8_factory->BVH8OBBBezier1iMB(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown motion blur hair acceleration structure "+device->hair_accel_mb);
 #endif
@@ -450,14 +450,14 @@ namespace embree
     {
 #if defined (__TARGET_AVX__)
       if (device->hasISA(AVX) && !isCompact())
-        accels.add(device->bvh8_factory->BVH8MB4DLine4iMB(this));
+        accels.add(device->bvh8_factory->BVH8Line4iMB(this));
       else
 #endif
-        accels.add(device->bvh4_factory->BVH4MB4DLine4iMB(this));
+        accels.add(device->bvh4_factory->BVH4Line4iMB(this));
     }
-    else if (device->line_accel_mb == "bvh4mb4d.line4imb") accels.add(device->bvh4_factory->BVH4MB4DLine4iMB(this));
+    else if (device->line_accel_mb == "bvh4mb4d.line4imb") accels.add(device->bvh4_factory->BVH4Line4iMB(this));
 #if defined (__TARGET_AVX__)
-    else if (device->line_accel_mb == "bvh8mb4d.line4imb") accels.add(device->bvh8_factory->BVH8MB4DLine4iMB(this));
+    else if (device->line_accel_mb == "bvh8mb4d.line4imb") accels.add(device->bvh8_factory->BVH8Line4iMB(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown motion blur line segment acceleration structure "+device->line_accel_mb);
 #endif
@@ -487,12 +487,12 @@ namespace embree
     if (device->subdiv_accel_mb == "default") 
     {
       if (isIncoherent(flags) && isStatic())
-        accels.add(device->bvh4_factory->BVH4MB4DSubdivPatch1MB(this,false));
+        accels.add(device->bvh4_factory->BVH4SubdivPatch1MB(this,false));
       else
-        accels.add(device->bvh4_factory->BVH4MB4DSubdivPatch1MB(this,true));
+        accels.add(device->bvh4_factory->BVH4SubdivPatch1MB(this,true));
     }
-    else if (device->subdiv_accel_mb == "bvh4mb4d.subdivpatch1"      ) accels.add(device->bvh4_factory->BVH4MB4DSubdivPatch1MB(this,false));
-    else if (device->subdiv_accel_mb == "bvh4mb4d.subdivpatch1cached") accels.add(device->bvh4_factory->BVH4MB4DSubdivPatch1MB(this,true));
+    else if (device->subdiv_accel_mb == "bvh4mb4d.subdivpatch1"      ) accels.add(device->bvh4_factory->BVH4SubdivPatch1MB(this,false));
+    else if (device->subdiv_accel_mb == "bvh4mb4d.subdivpatch1cached") accels.add(device->bvh4_factory->BVH4SubdivPatch1MB(this,true));
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown subdiv mblur accel "+device->subdiv_accel_mb);
 #endif
   }
@@ -516,8 +516,8 @@ namespace embree
   void Scene::createUserGeometryMBAccel()
   {
 #if defined(EMBREE_GEOMETRY_USER)
-    if      (device->object_accel_mb == "default"        ) accels.add(device->bvh4_factory->BVH4MB4DUserGeometryMB(this));
-    else if (device->object_accel_mb == "bvh4mb4d.object") accels.add(device->bvh4_factory->BVH4MB4DUserGeometryMB(this)); 
+    if      (device->object_accel_mb == "default"        ) accels.add(device->bvh4_factory->BVH4UserGeometryMB(this));
+    else if (device->object_accel_mb == "bvh4mb4d.object") accels.add(device->bvh4_factory->BVH4UserGeometryMB(this)); 
 #endif
   }
   
