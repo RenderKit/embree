@@ -25,7 +25,51 @@ namespace embree
   namespace isa
   {
     template<int K>
-    class GridSOAIntersectorK
+      struct MapUV0
+    {
+      const float* const grid_uv;
+      size_t ofs00, ofs01, ofs10, ofs11;
+      
+      __forceinline MapUV0(const float* const grid_uv, size_t ofs00, size_t ofs01, size_t ofs10, size_t ofs11)
+        : grid_uv(grid_uv), ofs00(ofs00), ofs01(ofs01), ofs10(ofs10), ofs11(ofs11) {}
+      
+      __forceinline void operator() (vfloat<K>& u, vfloat<K>& v) const {
+        const vfloat<K> uv00(grid_uv[ofs00]);
+        const vfloat<K> uv01(grid_uv[ofs01]);
+        const vfloat<K> uv10(grid_uv[ofs10]);
+        const vfloat<K> uv11(grid_uv[ofs11]);
+        const Vec2<vfloat<K>> uv0 = GridSOA::decodeUV(uv00);
+        const Vec2<vfloat<K>> uv1 = GridSOA::decodeUV(uv01);
+        const Vec2<vfloat<K>> uv2 = GridSOA::decodeUV(uv10);
+        const Vec2<vfloat<K>> uv = madd(u,uv1,madd(v,uv2,(1.0f-u-v)*uv0));
+        u = uv[0]; v = uv[1];
+      }
+    };
+    
+    template<int K>
+      struct MapUV1
+    {
+      const float* const grid_uv;
+      size_t ofs00, ofs01, ofs10, ofs11;
+      
+      __forceinline MapUV1(const float* const grid_uv, size_t ofs00, size_t ofs01, size_t ofs10, size_t ofs11)
+        : grid_uv(grid_uv), ofs00(ofs00), ofs01(ofs01), ofs10(ofs10), ofs11(ofs11) {}
+      
+      __forceinline void operator() (vfloat<K>& u, vfloat<K>& v) const {
+        const vfloat<K> uv00(grid_uv[ofs00]);
+        const vfloat<K> uv01(grid_uv[ofs01]);
+        const vfloat<K> uv10(grid_uv[ofs10]);
+        const vfloat<K> uv11(grid_uv[ofs11]);
+        const Vec2<vfloat<K>> uv0 = GridSOA::decodeUV(uv10);
+        const Vec2<vfloat<K>> uv1 = GridSOA::decodeUV(uv01);
+        const Vec2<vfloat<K>> uv2 = GridSOA::decodeUV(uv11);
+        const Vec2<vfloat<K>> uv = madd(u,uv1,madd(v,uv2,(1.0f-u-v)*uv0));
+        u = uv[0]; v = uv[1];
+      }
+    };
+    
+    template<int K>
+      class GridSOAIntersectorK
     {
     public:
       typedef void Primitive;
@@ -46,48 +90,6 @@ namespace embree
       public:
         GridSOA* grid;
         PlueckerIntersectorK<M,K> intersector; // FIXME: use quad intersector
-      };
-
-      struct MapUV0
-      {
-        const float* const grid_uv;
-        size_t ofs00, ofs01, ofs10, ofs11;
-
-        __forceinline MapUV0(const float* const grid_uv, size_t ofs00, size_t ofs01, size_t ofs10, size_t ofs11)
-          : grid_uv(grid_uv), ofs00(ofs00), ofs01(ofs01), ofs10(ofs10), ofs11(ofs11) {}
-
-        __forceinline void operator() (vfloat<K>& u, vfloat<K>& v) const {
-          const vfloat<K> uv00(grid_uv[ofs00]);
-          const vfloat<K> uv01(grid_uv[ofs01]);
-          const vfloat<K> uv10(grid_uv[ofs10]);
-          const vfloat<K> uv11(grid_uv[ofs11]);
-          const Vec2<vfloat<K>> uv0 = GridSOA::decodeUV(uv00);
-          const Vec2<vfloat<K>> uv1 = GridSOA::decodeUV(uv01);
-          const Vec2<vfloat<K>> uv2 = GridSOA::decodeUV(uv10);
-          const Vec2<vfloat<K>> uv = madd(u,uv1,madd(v,uv2,(1.0f-u-v)*uv0));
-          u = uv[0]; v = uv[1];
-        }
-      };
-
-      struct MapUV1
-      {
-        const float* const grid_uv;
-        size_t ofs00, ofs01, ofs10, ofs11;
-
-        __forceinline MapUV1(const float* const grid_uv, size_t ofs00, size_t ofs01, size_t ofs10, size_t ofs11)
-          : grid_uv(grid_uv), ofs00(ofs00), ofs01(ofs01), ofs10(ofs10), ofs11(ofs11) {}
-
-        __forceinline void operator() (vfloat<K>& u, vfloat<K>& v) const {
-          const vfloat<K> uv00(grid_uv[ofs00]);
-          const vfloat<K> uv01(grid_uv[ofs01]);
-          const vfloat<K> uv10(grid_uv[ofs10]);
-          const vfloat<K> uv11(grid_uv[ofs11]);
-          const Vec2<vfloat<K>> uv0 = GridSOA::decodeUV(uv10);
-          const Vec2<vfloat<K>> uv1 = GridSOA::decodeUV(uv01);
-          const Vec2<vfloat<K>> uv2 = GridSOA::decodeUV(uv11);
-          const Vec2<vfloat<K>> uv = madd(u,uv1,madd(v,uv2,(1.0f-u-v)*uv0));
-          u = uv[0]; v = uv[1];
-        }
       };
 
       /*! Intersect a ray with the primitive. */
@@ -115,8 +117,8 @@ namespace embree
             const Vec3vfK p10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
             const Vec3vfK p11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
 
-            pre.intersector.intersectK(valid_i,ray,p00,p01,p10,MapUV0(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,context,pre.grid->geomID,pre.grid->primID));
-            pre.intersector.intersectK(valid_i,ray,p10,p01,p11,MapUV1(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,context,pre.grid->geomID,pre.grid->primID));
+            pre.intersector.intersectK(valid_i,ray,p00,p01,p10,MapUV0<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,context,pre.grid->geomID,pre.grid->primID));
+            pre.intersector.intersectK(valid_i,ray,p10,p01,p11,MapUV1<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,context,pre.grid->geomID,pre.grid->primID));
           }
         }
       }
@@ -147,9 +149,9 @@ namespace embree
             const Vec3vfK p10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
             const Vec3vfK p11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
 
-            pre.intersector.intersectK(valid,ray,p00,p01,p10,MapUV0(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogMU<1,K,true>(valid,ray,context,pre.grid->geomID,pre.grid->primID));
+            pre.intersector.intersectK(valid,ray,p00,p01,p10,MapUV0<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogMU<1,K,true>(valid,ray,context,pre.grid->geomID,pre.grid->primID));
             if (none(valid)) break;
-            pre.intersector.intersectK(valid,ray,p10,p01,p11,MapUV1(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogMU<1,K,true>(valid,ray,context,pre.grid->geomID,pre.grid->primID));
+            pre.intersector.intersectK(valid,ray,p10,p01,p11,MapUV1<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogMU<1,K,true>(valid,ray,context,pre.grid->geomID,pre.grid->primID));
             if (none(valid)) break;
           }
         }
@@ -230,6 +232,132 @@ namespace embree
       typedef void Primitive;
       typedef Vec3<vfloat<K>> Vec3vfK;
       typedef typename GridSOAIntersectorK<K>::Precalculations Precalculations;
+
+      /*! Intersect a ray with the primitive. */
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      {
+        vfloat<K> vftime;
+        vint<K> vitime = getTimeSegment(ray.time, vfloat<K>(pre.grid->time_steps-1), vftime);
+
+        vbool<K> valid1 = valid_i;
+        while (any(valid1)) {
+          const int j = int(__bsf(movemask(valid1)));
+          const int itime = vitime[j];
+          const vbool<K> valid2 = valid1 & (itime == vitime);
+          valid1 = valid1 & !valid2;
+          intersect(valid2,pre,ray,vftime,itime,context,prim,ty,lazy_node);
+        }
+      }
+
+      /*! Intersect a ray with the primitive. */
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, vfloat<K> ftime, int itime, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      {
+        const size_t grid_offset   = pre.grid->gridBytes >> 2;
+        const size_t dim_offset    = pre.grid->dim_offset;
+        const size_t line_offset   = pre.grid->width;
+        const float* const grid_x  = pre.grid->decodeLeaf(itime,prim);
+        const float* const grid_y  = grid_x + 1 * dim_offset;
+        const float* const grid_z  = grid_x + 2 * dim_offset;
+        const float* const grid_uv = grid_x + 3 * dim_offset;
+
+        const size_t max_x = pre.grid->width  == 2 ? 1 : 2;
+        const size_t max_y = pre.grid->height == 2 ? 1 : 2;
+        for (size_t y=0; y<max_y; y++)        
+        {
+          for (size_t x=0; x<max_x; x++)
+          {
+            size_t ofs00 = (y+0)*line_offset+(x+0);
+            size_t ofs01 = (y+0)*line_offset+(x+1);
+            size_t ofs10 = (y+1)*line_offset+(x+0);
+            size_t ofs11 = (y+1)*line_offset+(x+1);
+            const Vec3vfK a00(grid_x[ofs00],grid_y[ofs00],grid_z[ofs00]);
+            const Vec3vfK a01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
+            const Vec3vfK a10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
+            const Vec3vfK a11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
+            ofs00 += grid_offset;
+            ofs01 += grid_offset;
+            ofs10 += grid_offset;
+            ofs11 += grid_offset;
+            const Vec3vfK b00(grid_x[ofs00],grid_y[ofs00],grid_z[ofs00]);
+            const Vec3vfK b01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
+            const Vec3vfK b10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
+            const Vec3vfK b11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
+            const Vec3vfK p00 = lerp(a00,b00,ray.time);
+            const Vec3vfK p01 = lerp(a01,b01,ray.time);
+            const Vec3vfK p10 = lerp(a10,b10,ray.time);
+            const Vec3vfK p11 = lerp(a11,b11,ray.time);
+
+            pre.intersector.intersectK(valid_i,ray,p00,p01,p10,MapUV0<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,context,pre.grid->geomID,pre.grid->primID));
+            pre.intersector.intersectK(valid_i,ray,p10,p01,p11,MapUV1<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,context,pre.grid->geomID,pre.grid->primID));
+          }
+        }
+      }
+
+      /*! Test if the ray is occluded by the primitive */
+      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      {
+        vfloat<K> vftime;
+        vint<K> vitime = getTimeSegment(ray.time, vfloat<K>(pre.grid->time_steps-1), vftime);
+
+        vbool<K> hit = !valid_i;
+        vbool<K> valid1 = valid_i;
+        while (any(valid1)) {
+          const int j = int(__bsf(movemask(valid1)));
+          const int itime = vitime[j];
+          const vbool<K> valid2 = valid1 & (itime == vitime);
+          valid1 = valid1 & !valid2;
+          hit |= occluded(valid2,pre,ray,vftime,itime,context,prim,ty,lazy_node);
+        }
+        return hit;
+      }
+
+      /*! Test if the ray is occluded by the primitive */
+      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, vfloat<K> ftime, int itime, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      {
+        const size_t grid_offset   = pre.grid->gridBytes >> 2;
+        const size_t dim_offset    = pre.grid->dim_offset;
+        const size_t line_offset   = pre.grid->width;
+        const float* const grid_x  = pre.grid->decodeLeaf(itime,prim);
+        const float* const grid_y  = grid_x + 1 * dim_offset;
+        const float* const grid_z  = grid_x + 2 * dim_offset;
+        const float* const grid_uv = grid_x + 3 * dim_offset;
+
+        vbool<K> valid = valid_i;
+        const size_t max_x = pre.grid->width  == 2 ? 1 : 2;
+        const size_t max_y = pre.grid->height == 2 ? 1 : 2;
+        for (size_t y=0; y<max_y; y++)        
+        {
+          for (size_t x=0; x<max_x; x++)
+          {
+            size_t ofs00 = (y+0)*line_offset+(x+0);
+            size_t ofs01 = (y+0)*line_offset+(x+1);
+            size_t ofs10 = (y+1)*line_offset+(x+0);
+            size_t ofs11 = (y+1)*line_offset+(x+1);
+            const Vec3vfK a00(grid_x[ofs00],grid_y[ofs00],grid_z[ofs00]);
+            const Vec3vfK a01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
+            const Vec3vfK a10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
+            const Vec3vfK a11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
+            ofs00 += grid_offset;
+            ofs01 += grid_offset;
+            ofs10 += grid_offset;
+            ofs11 += grid_offset;
+            const Vec3vfK b00(grid_x[ofs00],grid_y[ofs00],grid_z[ofs00]);
+            const Vec3vfK b01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
+            const Vec3vfK b10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
+            const Vec3vfK b11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
+            const Vec3vfK p00 = lerp(a00,b00,ray.time);
+            const Vec3vfK p01 = lerp(a01,b01,ray.time);
+            const Vec3vfK p10 = lerp(a10,b10,ray.time);
+            const Vec3vfK p11 = lerp(a11,b11,ray.time);
+
+            pre.intersector.intersectK(valid,ray,p00,p01,p10,MapUV0<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogMU<1,K,true>(valid,ray,context,pre.grid->geomID,pre.grid->primID));
+            if (none(valid)) break;
+            pre.intersector.intersectK(valid,ray,p10,p01,p11,MapUV1<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogMU<1,K,true>(valid,ray,context,pre.grid->geomID,pre.grid->primID));
+            if (none(valid)) break;
+          }
+        }
+        return !valid;
+      }
 
       template<typename Loader>
         static __forceinline void intersect(RayK<K>& ray, size_t k,

@@ -56,6 +56,8 @@ namespace embree
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR16(BVH4SubdivPatch1Intersector16, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1Intersector16>));
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR16(BVH4SubdivPatch1EagerIntersector16, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1EagerIntersector16>));
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR16(BVH4SubdivPatch1CachedIntersector16, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1CachedIntersector16>));
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR16(BVH4SubdivPatch1MBIntersector16, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN2_AN4D COMMA false COMMA SubdivPatch1MBIntersector16>));
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR16(BVH4SubdivPatch1CachedMBIntersector16, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN2_AN4D COMMA false COMMA SubdivPatch1CachedMBIntersector16>));
 
     IF_ENABLED_USER(DEFINE_INTERSECTOR16(BVH4VirtualIntersector16Chunk, BVHNIntersectorKChunk<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA ObjectIntersector16> >));
     IF_ENABLED_USER(DEFINE_INTERSECTOR16(BVH4VirtualMBIntersector16Chunk, BVHNIntersectorKChunk<4 COMMA 16 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersectorK_1<16 COMMA ObjectIntersector16MB> >));

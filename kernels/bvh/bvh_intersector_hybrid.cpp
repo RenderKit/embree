@@ -107,7 +107,7 @@ namespace embree
           assert(sptr_node == stack_node);
           break;
         }
-        
+
         /* cull node if behind closest hit point */
         vfloat<K> curDist = *sptr_near;
         const vbool<K> active = curDist < ray_tfar;
