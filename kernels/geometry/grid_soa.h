@@ -50,10 +50,8 @@ namespace embree
         if (time_steps == 1) 
           bvhBytes = getBVHBytes(range,sizeof(BVH4::AlignedNode),0);
         else {
-          bvhBytes = getBVHBytes(range,sizeof(BVH4::AlignedNodeMB),0);
-          bvhBytes  = (time_steps-1)*bvhBytes;
-          size_t tbvhBytes = getTemporalBVHBytes(make_range(0,int(time_steps-1)),sizeof(BVH4::AlignedNodeMB4D));
-          bvhBytes += tbvhBytes;
+          bvhBytes = (time_steps-1)*getBVHBytes(range,sizeof(BVH4::AlignedNodeMB),0);
+          bvhBytes += getTemporalBVHBytes(make_range(0,int(time_steps-1)),sizeof(BVH4::AlignedNodeMB4D));
         }
         const size_t gridBytes = 4*size_t(width)*size_t(height)*sizeof(float);  
         size_t rootBytes = time_steps*sizeof(BVH4::NodeRef);
@@ -123,16 +121,16 @@ namespace embree
       }
 
       /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
-      BVH4::NodeRef buildBVH(BBox3fa* bounds_o);
+      std::pair<BVH4::NodeRef,BBox3fa> buildBVH(BBox3fa* bounds_o);
       
       /*! Create BVH4 tree over grid. */
-      BBox3fa buildBVH(BVH4::NodeRef& curNode, const GridRange& range, size_t& allocator);
+      std::pair<BVH4::NodeRef,BBox3fa> buildBVH(const GridRange& range, size_t& allocator);
 
       /*! Evaluates grid over patch and builds MSMBlur BVH4 tree over the grid. */
       std::pair<BVH4::NodeRef,LBBox3fa> buildMSMBlurBVH(const range<int> time_range, BBox3fa* bounds_o);
       
       /*! Create MBlur BVH4 tree over grid. */
-      LBBox3fa buildMBlurBVH(BVH4::NodeRef& curNode, size_t time, const GridRange& range, size_t& allocator);
+      std::pair<BVH4::NodeRef,LBBox3fa> buildMBlurBVH(size_t time, const GridRange& range, size_t& allocator);
 
       /*! Create MSMBlur BVH4 tree over grid. */
       std::pair<BVH4::NodeRef,LBBox3fa> buildMSMBlurBVH(const range<int> time_range, size_t& allocator, BBox3fa* bounds_o);

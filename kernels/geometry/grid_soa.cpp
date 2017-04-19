@@ -64,7 +64,7 @@ namespace embree
 
       /* create normal BVH when no motion blur is active */
       if (time_steps == 1)
-        root(0) = buildBVH(bounds_o);
+        root(0) = buildBVH(bounds_o).first;
 
       /* otherwise build MBlur BVH */
       else {
@@ -105,16 +105,16 @@ namespace embree
       return bytes;
     }
 
-    BBox3fa GridSOA::buildBVH(BVH4::NodeRef& curNode, const GridRange& range, size_t& allocator)
+    std::pair<BVH4::NodeRef,BBox3fa> GridSOA::buildBVH(const GridRange& range, size_t& allocator)
     {
       /*! create leaf node */
       if (unlikely(range.hasLeafSize()))
       {
         /* we store index of first subgrid vertex as leaf node */
-        curNode = BVH4::encodeTypedLeaf(encodeLeaf(range.u_start,range.v_start),0);
+        BVH4::NodeRef curNode = BVH4::encodeTypedLeaf(encodeLeaf(range.u_start,range.v_start),0);
 
         /* return bounding box */
-        return calculateBounds(0,range);
+        return std::make_pair(curNode,calculateBounds(0,range));
       }
       
       /* create internal node */
@@ -133,39 +133,37 @@ namespace embree
         BBox3fa bounds( empty );
         for (unsigned i=0; i<children; i++)
         {
-          BBox3fa box = buildBVH(node->child(i), r[i], allocator);
-          node->setBounds(i,box);
-          bounds.extend(box);
+          std::pair<BVH4::NodeRef,BBox3fa> node_bounds = buildBVH(r[i], allocator);
+          node->set(i,node_bounds.first,node_bounds.second);
+          bounds.extend(node_bounds.second);
         }
-        
-        curNode = BVH4::encodeNode(node);
         assert(is_finite(bounds));
-        return bounds;
+        return std::make_pair(BVH4::encodeNode(node),bounds);
       }
     }
 
-     BVH4::NodeRef GridSOA::buildBVH(BBox3fa* bounds_o)
+    std::pair<BVH4::NodeRef,BBox3fa> GridSOA::buildBVH(BBox3fa* bounds_o)
     {
-      BVH4::NodeRef root = 0; size_t allocator = 0;
+      size_t allocator = 0;
       GridRange range(0,width-1,0,height-1);
-      BBox3fa bounds = buildBVH(root,range,allocator);
-      if (bounds_o) *bounds_o = bounds;
+      std::pair<BVH4::NodeRef,BBox3fa> root_bounds = buildBVH(range,allocator);
+      if (bounds_o) *bounds_o = root_bounds.second;
       assert(allocator == gridOffset);
-      return root;
+      return root_bounds;
     }
 
-    LBBox3fa GridSOA::buildMBlurBVH(BVH4::NodeRef& curNode, size_t time, const GridRange& range, size_t& allocator)
+    std::pair<BVH4::NodeRef,LBBox3fa> GridSOA::buildMBlurBVH(size_t time, const GridRange& range, size_t& allocator)
     {
       /*! create leaf node */
       if (unlikely(range.hasLeafSize()))
       {
         /* we store index of first subgrid vertex as leaf node */
-        curNode = BVH4::encodeTypedLeaf(encodeLeaf(range.u_start,range.v_start),0);
+        BVH4::NodeRef curNode = BVH4::encodeTypedLeaf(encodeLeaf(range.u_start,range.v_start),0);
 
         /* return bounding box */
         const BBox3fa b0 = calculateBounds(time+0,range);
         const BBox3fa b1 = calculateBounds(time+1,range);
-        return LBBox3fa(b0,b1);
+        return std::make_pair(curNode,LBBox3fa(b0,b1));
       }
       
       /* create internal node */
@@ -186,15 +184,15 @@ namespace embree
         {
           const BBox1f time_range(float(time+0)/float(time_steps-1),
                                   float(time+1)/float(time_steps-1));
-          LBBox3fa box = buildMBlurBVH(node->child(i), time, r[i], allocator);
-          node->setBounds(i,box.global(time_range));
-          bounds.extend(box);
+          std::pair<BVH4::NodeRef,LBBox3fa> node_bounds = buildMBlurBVH(time, r[i], allocator);
+          node->setRef(i,node_bounds.first);
+          node->setBounds(i,node_bounds.second.global(time_range));
+          bounds.extend(node_bounds.second);
         }
-        
-        curNode = BVH4::encodeNode(node);
         assert(is_finite(bounds.bounds0));
         assert(is_finite(bounds.bounds1));
-        return bounds;
+        
+        return std::make_pair(BVH4::encodeNode(node),bounds);
       }
     }
 
@@ -205,13 +203,11 @@ namespace embree
       {
         size_t t = time_range.begin();
         GridRange range(0,width-1,0,height-1);
-        size_t alloc0 = allocator;
-        LBBox3fa bounds = buildMBlurBVH(root(t),t,range,allocator);
-        alloc0 = allocator-alloc0;
-        assert(alloc0 == getBVHBytes(range,sizeof(BVH4::AlignedNodeMB),0));
-        bounds_o[t+0] = bounds.bounds0;
-        bounds_o[t+1] = bounds.bounds1;
-        return std::make_pair(root(t),bounds);
+        std::pair<BVH4::NodeRef,LBBox3fa> root_bounds = buildMBlurBVH(t,range,allocator);
+        root(t) = root_bounds.first;
+        bounds_o[t+0] = root_bounds.second.bounds0;
+        bounds_o[t+1] = root_bounds.second.bounds1;
+        return root_bounds;
       }
 
       /* allocate new bvh4 node */
