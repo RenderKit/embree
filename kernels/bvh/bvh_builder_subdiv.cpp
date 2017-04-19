@@ -77,7 +77,7 @@ namespace embree
             const unsigned lx0 = x, lx1 = min(lx0+SUBGRID-1,x1);
             const unsigned ly0 = y, ly1 = min(ly0+SUBGRID-1,y1);
             BBox3fa bounds;
-            GridSOA* leaf = GridSOA::create(&patch,1,1,lx0,lx1,ly0,ly1,scene,alloc,&bounds);
+            GridSOA* leaf = GridSOA::create(&patch,1,lx0,lx1,ly0,ly1,scene,alloc,&bounds);
             *prims = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,1)); prims++;
             NN++;
           }
@@ -219,7 +219,6 @@ namespace embree
       BVH* bvh;
       std::unique_ptr<BVHNRefitter<N>> refitter;
       Scene* scene;
-      size_t numTimeSteps;
       mvector<PrimRef> prims; 
       mvector<BBox3fa> bounds; 
       ParallelForForPrefixSumState<PrimInfo> pstate;
@@ -227,7 +226,7 @@ namespace embree
       bool cached;
 
       BVHNSubdivPatch1CachedBuilderSAH (BVH* bvh, Scene* scene, bool cached)
-        : bvh(bvh), refitter(nullptr), scene(scene), numTimeSteps(0), prims(scene->device), bounds(scene->device), numSubdivEnableDisableEvents(0), cached(cached) {}
+        : bvh(bvh), refitter(nullptr), scene(scene), prims(scene->device), bounds(scene->device), numSubdivEnableDisableEvents(0), cached(cached) {}
       
       virtual const BBox3fa leafBounds (NodeRef& ref) const
       {
@@ -260,7 +259,6 @@ namespace embree
               fastUpdate &= !iter[i]->vertex_creases.isModified();
               fastUpdate &= !iter[i]->vertex_crease_weights.isModified();               
               iter[i]->initializeHalfEdgeStructures();
-              //iter[i]->patch_eval_trees.resize(iter[i]->size()*numTimeSteps);
             }
             return fastUpdate;
           }, [](const bool a, const bool b) { return a && b; });
@@ -312,11 +310,11 @@ namespace embree
         return pinfo;
       }
 
-      void rebuild(size_t numPrimitives)
+      void rebuild(size_t numPrimitives, size_t numSubPatchesMB)
       {
         SubdivPatch1Cached* const subdiv_patches = (SubdivPatch1Cached*) bvh->subdiv_patches.data();
         //bvh->alloc.reset();
-        bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef)*numTimeSteps);
+        bvh->alloc.init_estimate(numSubPatchesMB*sizeof(PrimRef));
 
         Scene::Iterator<SubdivMesh,false> iter(scene);
         parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
@@ -328,9 +326,6 @@ namespace embree
             if (!mesh->valid(f)) continue;
             
             BVH_Allocator alloc(bvh);
-            //for (size_t t=0; t<numTimeSteps; t++)
-            //mesh->patch_eval_trees[f*numTimeSteps+t] = Patch3fa::create(alloc, mesh->getHalfEdge(0,f), mesh->getVertexBuffer(t).getPtr(), mesh->getVertexBuffer(t).getStride());
-
             patch_eval_subdivision(mesh->getHalfEdge(0,f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
               const size_t patchIndex = base.begin+s;
@@ -355,7 +350,7 @@ namespace embree
               else
               {
                 SubdivPatch1Base& patch0 = subdiv_patches[patchIndexMB];
-                patch0.root_ref.set((int64_t) GridSOA::create(&patch0,(unsigned)mesh->numTimeSteps,(unsigned)numTimeSteps,scene,alloc,&bounds[patchIndexMB]));
+                patch0.root_ref.set((int64_t) GridSOA::create(&patch0,(unsigned)mesh->numTimeSteps,scene,alloc,&bounds[patchIndexMB]));
               }
 
               prims[patchIndex] = PrimRef(empty,patchIndexMB);
@@ -440,9 +435,6 @@ namespace embree
 
       void build() 
       {
-        bvh->numTimeSteps = scene->getNumTimeSteps<SubdivMesh,false>();
-        numTimeSteps = bvh->numTimeSteps;
-
         /* initialize all half edge structures */
         size_t numPatches;
         bool fastUpdateMode = initializeHalfEdges(numPatches);
@@ -476,7 +468,7 @@ namespace embree
 
         /* switch between fast and slow mode */
         if (cached && fastUpdateMode) cachedUpdate(numSubPatches);
-        else rebuild(numSubPatches);
+        else rebuild(numSubPatches,numSubPatchesMB);
         
 	/* clear temporary data for static geometry */
 	if (scene->isStatic()) {
@@ -568,7 +560,6 @@ namespace embree
               fastUpdate &= !iter[i]->vertex_crease_weights.isModified(); 
               fastUpdate &= iter[i]->levels.isModified() == true;
               iter[i]->initializeHalfEdgeStructures();
-              //iter[i]->patch_eval_trees.resize(iter[i]->size()*numTimeSteps);
             }
             return fastUpdate;
           }, [](const bool a, const bool b) { return a && b; });
@@ -644,7 +635,7 @@ namespace embree
               else
               {
                 SubdivPatch1Base& patch0 = subdiv_patches[patchIndexMB];
-                patch0.root_ref.set((int64_t) GridSOA::create(&patch0,(unsigned)mesh->numTimeSteps,(unsigned)mesh->numTimeSteps,scene,alloc,&bounds[patchIndexMB]));
+                patch0.root_ref.set((int64_t) GridSOA::create(&patch0,(unsigned)mesh->numTimeSteps,scene,alloc,&bounds[patchIndexMB]));
               }
               primsMB[patchIndex] = recalculatePrimRef(patchIndexMB,mesh->numTimeSegments(),BBox1f(0.0f,1.0f));
               s++;

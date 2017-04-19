@@ -20,13 +20,13 @@ namespace embree
 {
   namespace isa
   {  
-    GridSOA::GridSOA(const SubdivPatch1Base* patches, unsigned time_steps, unsigned time_steps_global,
+    GridSOA::GridSOA(const SubdivPatch1Base* patches, unsigned time_steps,
                      const unsigned x0, const unsigned x1, const unsigned y0, const unsigned y1, const unsigned swidth, const unsigned sheight,
                      const SubdivMesh* const geom, const size_t bvhBytes, const size_t gridBytes, BBox3fa* bounds_o)
       : align0(0), 
-        time_steps_global(time_steps_global),time_steps(time_steps), width(x1-x0+1), height(y1-y0+1), dim_offset(width*height),
+        time_steps(time_steps), width(x1-x0+1), height(y1-y0+1), dim_offset(width*height),
         geomID(patches->geom), primID(patches->prim), 
-        bvhBytes(unsigned(bvhBytes)), gridOffset(max(1u,time_steps_global-1)*unsigned(bvhBytes)), gridBytes(unsigned(gridBytes)), rootOffset(unsigned(gridOffset+time_steps*gridBytes))
+        bvhBytes(unsigned(bvhBytes)), gridOffset(max(1u,time_steps-1)*unsigned(bvhBytes)), gridBytes(unsigned(gridBytes)), rootOffset(unsigned(gridOffset+time_steps*gridBytes))
     {      
       /* the generate loops need padded arrays, thus first store into these temporary arrays */
       unsigned temp_size = width*height+VSIZEX;
@@ -70,21 +70,14 @@ namespace embree
       /* otherwise build MBlur BVH */
       else
       {
-        for (size_t t=0; t<time_steps_global-1; t++)
+        for (size_t t=0; t<time_steps-1; t++)
         {
           LBBox3fa bounds;
           root(t) = buildMBlurBVH(t,&bounds);
-          if (bounds_o && time_steps == time_steps_global) {
+          if (bounds_o) {
             bounds_o[t+0] = bounds.bounds0;
             bounds_o[t+1] = bounds.bounds1;
           }
-        }
-
-        if (bounds_o && time_steps != time_steps_global)
-        {
-          GridRange range(0,width-1,0,height-1);
-          for (size_t t=0; t<time_steps; t++)
-            bounds_o[t] = calculateBounds(t,range);
         }
       }
     }
@@ -171,8 +164,9 @@ namespace embree
         curNode = BVH4::encodeTypedLeaf(encodeLeaf(range.u_start,range.v_start),0);
 
         /* return bounding box */
-        return Geometry::linearBounds([&] (size_t itime) { return calculateBounds(itime,range); },
-                                      time, time_steps_global, time_steps);
+        const BBox3fa b0 = calculateBounds(time+0,range);
+        const BBox3fa b1 = calculateBounds(time+1,range);
+        return LBBox3fa(b0,b1);
       }
       
       /* create internal node */
@@ -194,7 +188,6 @@ namespace embree
           const BBox1f time_range(float(time+0)/float(time_steps-1),
                                   float(time+1)/float(time_steps-1));
           LBBox3fa box = buildMBlurBVH(node->child(i), time, r[i], allocator);
-          //node->setBounds(i, box);
           node->setBounds(i,box.global(time_range));
           bounds.extend(box);
         }
