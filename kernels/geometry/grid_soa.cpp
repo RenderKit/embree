@@ -215,7 +215,7 @@ namespace embree
       allocator += sizeof(BVH4::AlignedNodeMB4D);
       node->clear();
 
-      for (size_t i=0; i<4; i++) 
+      for (size_t i=0, j=0; i<4; i++) 
       {
         const int begin = time_range.begin() + (i+0)*time_range.size()/4;
         const int end   = time_range.begin() + (i+1)*time_range.size()/4;
@@ -223,7 +223,8 @@ namespace embree
         std::pair<BVH4::NodeRef,LBBox3fa> node_bounds = buildMSMBlurBVH(make_range(begin,end),allocator,bounds_o);
         const float t0 = float(begin)/float(time_steps-1);
         const float t1 = float(end  )/float(time_steps-1);
-        node->set(i,node_bounds.first,node_bounds.second,BBox1f(t0,t1));
+        node->set(j,node_bounds.first,node_bounds.second,BBox1f(t0,t1));
+        j++;
       }
 
       const LBBox3fa lbounds = Geometry::linearBounds([&] ( int i ) { return bounds_o[i]; }, time_range, time_steps-1);
