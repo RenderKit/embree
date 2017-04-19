@@ -41,6 +41,9 @@ namespace embree
 
         struct TemporalBinInfo
         {
+          __forceinline TemporalBinInfo () {
+          }
+
           __forceinline TemporalBinInfo (EmptyTy)
           {
             for (size_t i=0; i<BINS-1; i++)
