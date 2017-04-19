@@ -35,7 +35,7 @@ namespace embree
       /*! GridSOA constructor */
       GridSOA(const SubdivPatch1Base* patches, const unsigned time_steps,
               const unsigned x0, const unsigned x1, const unsigned y0, const unsigned y1, const unsigned swidth, const unsigned sheight,
-              const SubdivMesh* const geom, const size_t bvhBytes, const size_t gridBytes, BBox3fa* bounds_o = nullptr);
+              const SubdivMesh* const geom, const size_t totalBvhBytes, const size_t gridBytes, BBox3fa* bounds_o = nullptr);
 
       /*! Subgrid creation */
       template<typename Allocator>
@@ -46,14 +46,21 @@ namespace embree
         const unsigned width = x1-x0+1;  
         const unsigned height = y1-y0+1; 
         const GridRange range(0,width-1,0,height-1);
-        const size_t nodeBytes = time_steps == 1 ? sizeof(BVH4::AlignedNode) : sizeof(BVH4::AlignedNodeMB);
-        const size_t bvhBytes  = getBVHBytes(range,nodeBytes,0);
+        size_t bvhBytes = 0;
+        if (time_steps == 1) 
+          bvhBytes = getBVHBytes(range,sizeof(BVH4::AlignedNode),0);
+        else {
+          bvhBytes = getBVHBytes(range,sizeof(BVH4::AlignedNodeMB),0);
+          bvhBytes  = (time_steps-1)*bvhBytes;
+          size_t tbvhBytes = getTemporalBVHBytes(make_range(0,int(time_steps-1)),sizeof(BVH4::AlignedNodeMB4D));
+          bvhBytes += tbvhBytes;
+        }
         const size_t gridBytes = 4*size_t(width)*size_t(height)*sizeof(float);  
         size_t rootBytes = time_steps*sizeof(BVH4::NodeRef);
 #if !defined(__X86_64__)
         rootBytes += 4; // We read 2 elements behind the grid. As we store at least 8 root bytes after the grid we are fine in 64 bit mode. But in 32 bit mode we have to do additional padding.
 #endif
-        void* data = alloc(offsetof(GridSOA,data)+max(1u,time_steps-1)*bvhBytes+time_steps*gridBytes+rootBytes);
+        void* data = alloc(offsetof(GridSOA,data)+bvhBytes+time_steps*gridBytes+rootBytes);
         assert(data);
         return new (data) GridSOA(patches,time_steps,x0,x1,y0,y1,patches->grid_u_res,patches->grid_v_res,scene->get<SubdivMesh>(patches->geom),bvhBytes,gridBytes,bounds_o);
       }
@@ -71,8 +78,8 @@ namespace embree
       __forceinline const BVH4::NodeRef& root(size_t t = 0) const { return (BVH4::NodeRef&)data[rootOffset + t*sizeof(BVH4::NodeRef)]; }
 
       /*! returns pointer to BVH array */
-      __forceinline       char* bvhData(size_t t = 0)       { return &data[t*bvhBytes]; }
-      __forceinline const char* bvhData(size_t t = 0) const { return &data[t*bvhBytes]; }
+      __forceinline       char* bvhData()       { return &data[0]; }
+      __forceinline const char* bvhData() const { return &data[0]; }
 
       /*! returns pointer to Grid array */
       __forceinline       float* gridData(size_t t = 0)       { return (float*) &data[gridOffset + t*gridBytes]; }
@@ -87,6 +94,9 @@ namespace embree
 
       /*! returns the size of the BVH over the grid in bytes */
       static size_t getBVHBytes(const GridRange& range, const size_t nodeBytes, const size_t leafBytes);
+
+      /*! returns the size of the temporal BVH over the time range BVHs */
+      static size_t getTemporalBVHBytes(const range<int> time_range, const size_t nodeBytes);
 
       /*! calculates bounding box of grid range */
       __forceinline BBox3fa calculateBounds(size_t time, const GridRange& range) const
@@ -113,16 +123,19 @@ namespace embree
       }
 
       /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
-      BVH4::NodeRef buildBVH(size_t time, BBox3fa* bounds_o);
+      BVH4::NodeRef buildBVH(BBox3fa* bounds_o);
       
       /*! Create BVH4 tree over grid. */
-      BBox3fa buildBVH(BVH4::NodeRef& curNode, size_t time, const GridRange& range, size_t& allocator);
+      BBox3fa buildBVH(BVH4::NodeRef& curNode, const GridRange& range, size_t& allocator);
 
-      /*! Evaluates grid over patch and builds MBlur BVH4 tree over the grid. */
-      BVH4::NodeRef buildMBlurBVH(size_t time, LBBox3fa* bounds_o);
+      /*! Evaluates grid over patch and builds MSMBlur BVH4 tree over the grid. */
+      std::pair<BVH4::NodeRef,LBBox3fa> buildMSMBlurBVH(const range<int> time_range, BBox3fa* bounds_o);
       
       /*! Create MBlur BVH4 tree over grid. */
       LBBox3fa buildMBlurBVH(BVH4::NodeRef& curNode, size_t time, const GridRange& range, size_t& allocator);
+
+      /*! Create MSMBlur BVH4 tree over grid. */
+      std::pair<BVH4::NodeRef,LBBox3fa> buildMSMBlurBVH(const range<int> time_range, size_t& allocator, BBox3fa* bounds_o);
 
       template<typename Loader>
         struct MapUV
@@ -247,8 +260,10 @@ namespace embree
       }
 
     public:
-      unsigned align0;
+      BVH4::NodeRef troot;
+#if !defined(__X86_64__)
       unsigned align1;
+#endif
       unsigned time_steps;
       unsigned width;
 
@@ -257,7 +272,7 @@ namespace embree
       unsigned geomID;
       unsigned primID;
 
-      unsigned bvhBytes;
+      unsigned align2;
       unsigned gridOffset;
       unsigned gridBytes;
       unsigned rootOffset;
