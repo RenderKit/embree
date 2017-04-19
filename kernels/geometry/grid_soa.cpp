@@ -221,8 +221,8 @@ namespace embree
         const int end   = time_range.begin() + (i+1)*time_range.size()/4;
         if (end-begin <= 0) continue;
         std::pair<BVH4::NodeRef,LBBox3fa> node_bounds = buildMSMBlurBVH(make_range(begin,end),allocator,bounds_o);
-        const float t0 = float(begin)/float(time_steps);
-        const float t1 = float(end  )/float(time_steps);
+        const float t0 = float(begin)/float(time_steps-1);
+        const float t1 = float(end  )/float(time_steps-1);
         node->set(i,node_bounds.first,node_bounds.second,BBox1f(t0,t1));
       }
 
