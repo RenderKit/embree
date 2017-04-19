@@ -23,7 +23,7 @@ namespace embree
   BVHN<N>::BVHN (const PrimitiveType& primTy, Scene* scene)
     : AccelData((N==4) ? AccelData::TY_BVH4 : (N==8) ? AccelData::TY_BVH8 : AccelData::TY_UNKNOWN),
       primTy(primTy), device(scene->device), scene(scene),
-      root(emptyNode), numTimeSteps(1), alloc(scene->device,scene->isStatic()), numPrimitives(0), numVertices(0)
+      root(emptyNode), alloc(scene->device,scene->isStatic()), numPrimitives(0), numVertices(0)
   {
   }
 
@@ -158,7 +158,7 @@ namespace embree
     {
       const size_t usedBytes = alloc.getUsedBytes();
       Lock<MutexSys> lock(g_printMutex);
-      std::cout << "finished BVH" << N << (numTimeSteps > 1 ? "MB" : "") << "<" << primTy.name << "> : " << 1000.0f*dt << "ms, " << 1E-6*double(numPrimitives)/dt << " Mprim/s, " << 1E-9*double(usedBytes)/dt << " GB/s" << std::endl;
+      std::cout << "finished BVH" << N << "<" << primTy.name << "> : " << 1000.0f*dt << "ms, " << 1E-6*double(numPrimitives)/dt << " Mprim/s, " << 1E-9*double(usedBytes)/dt << " GB/s" << std::endl;
     
       if (device->verbosity(2))
         printStatistics();
@@ -188,7 +188,7 @@ namespace embree
     {
       BVHNStatistics<N> stat(this);
       Lock<MutexSys> lock(g_printMutex);
-      std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << " BVH" << N << (numTimeSteps > 1 ? "MB" : "") << "<" << primTy.name << ">" << std::endl << std::flush;
+      std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << " BVH" << N << "<" << primTy.name << ">" << std::endl << std::flush;
     }
   }
 

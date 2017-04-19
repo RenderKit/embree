@@ -355,7 +355,7 @@ namespace embree
 
         LBBox3fa allBounds = empty;
         for (size_t i=0; i<items; i++)
-          allBounds.extend(accel[i].fillMB(prims, start, current.prims.end(), bvh->scene, time, bvh->numTimeSteps));
+          allBounds.extend(accel[i].fillMB(prims, start, current.prims.end(), bvh->scene, time, 2)); // FIXME: optimize fillMB, last argument is always 2
         
         return NodeRecordMB(node,allBounds);
       }
@@ -428,7 +428,6 @@ namespace embree
 
         const size_t numTimeSteps = scene->getNumTimeSteps<Mesh,true>();
         const size_t numTimeSegments = numTimeSteps-1; assert(numTimeSteps > 1);
-        bvh->numTimeSteps = numTimeSteps;
 
         if (numTimeSegments == 1)
           buildSingleSegment(numPrimitives);

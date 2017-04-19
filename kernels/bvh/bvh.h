@@ -1465,7 +1465,6 @@ namespace embree
     Device* device;                    //!< device pointer
     Scene* scene;                      //!< scene pointer
     NodeRef root;                      //!< root node
-    unsigned numTimeSteps;             //!< maximum number of time steps
     FastAllocator alloc;               //!< allocator used to allocate nodes
 
     /*! statistics data */
