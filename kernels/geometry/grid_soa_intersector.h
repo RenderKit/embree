@@ -299,16 +299,16 @@ namespace embree
         vfloat<K> vftime;
         vint<K> vitime = getTimeSegment(ray.time, vfloat<K>(pre.grid->time_steps-1), vftime);
 
-        vbool<K> hit = !valid_i;
+        vbool<K> valid_o = valid_i;
         vbool<K> valid1 = valid_i;
         while (any(valid1)) {
           const int j = int(__bsf(movemask(valid1)));
           const int itime = vitime[j];
           const vbool<K> valid2 = valid1 & (itime == vitime);
           valid1 = valid1 & !valid2;
-          hit |= occluded(valid2,pre,ray,vftime,itime,context,prim,ty,lazy_node);
+          valid_o &= !valid2 | occluded(valid2,pre,ray,vftime,itime,context,prim,ty,lazy_node);
         }
-        return hit;
+        return !valid_o;
       }
 
       /*! Test if the ray is occluded by the primitive */
@@ -356,7 +356,7 @@ namespace embree
             if (none(valid)) break;
           }
         }
-        return !valid;
+        return valid;
       }
 
       template<typename Loader>
