@@ -47,10 +47,6 @@ namespace embree
       (K==16) ? 15 :
       0;
 
-    private:
-      static void intersectSingle(const vbool<K>& valid, BVH* bvh, Precalculations& pre, RayK<K>& ray, IntersectContext* context);
-      static void occludedSingle (const vbool<K>& valid, BVH* bvh, Precalculations& pre, RayK<K>& ray, IntersectContext* context);
-
     public:
       static void intersect(vint<K>* valid, BVH* bvh, RayK<K>& ray, IntersectContext* context);
       static void occluded (vint<K>* valid, BVH* bvh, RayK<K>& ray, IntersectContext* context);
