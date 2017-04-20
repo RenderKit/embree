@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "bvh_intersector_stream.h"
-#include "bvh_intersector_single.h"
 #include "bvh_intersector_node.h"
 
 #include "../geometry/intersector_iterators.h"
