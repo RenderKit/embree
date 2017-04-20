@@ -250,7 +250,7 @@ namespace embree
       }
 
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, vfloat<K> ftime, int itime, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const vfloat<K>& ftime, int itime, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
       {
         const size_t grid_offset   = pre.grid->gridBytes >> 2;
         const size_t dim_offset    = pre.grid->dim_offset;
@@ -312,7 +312,7 @@ namespace embree
       }
 
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, vfloat<K> ftime, int itime, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const vfloat<K>& ftime, int itime, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
       {
         const size_t grid_offset   = pre.grid->gridBytes >> 2;
         const size_t dim_offset    = pre.grid->dim_offset;
