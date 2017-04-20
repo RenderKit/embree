@@ -77,7 +77,7 @@ namespace embree
           return numChildren;
         }
 
-        __forceinline void split(int bestChild, const BuildRecord& lrecord, const BuildRecord& rrecord, std::unique_ptr<mvector<PrimRefMB>> new_vector)
+        __forceinline void split(ssize_t bestChild, const BuildRecord& lrecord, const BuildRecord& rrecord, std::unique_ptr<mvector<PrimRefMB>> new_vector)
         {
           SharedPrimRefVector* bsharedPrimVec = primvecs[bestChild];
           if (lrecord.prims.prims == bsharedPrimVec->prims) {
