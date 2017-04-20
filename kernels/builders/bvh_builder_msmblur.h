@@ -528,7 +528,7 @@ namespace embree
         typename ProgressMonitorFunc>
 
         static const BVHNodeRecordMB4D<NodeRef> build(mvector<PrimRefMB>& prims,
-                                                      PrimInfoMB pinfo,
+                                                      const PrimInfoMB& pinfo,
                                                       MemoryMonitorInterface* device,
                                                       const RecalculatePrimRef recalculatePrimRef,
                                                       const CreateAllocFunc createAlloc,
@@ -537,7 +537,7 @@ namespace embree
                                                       const CreateLeafFunc createLeaf,
                                                       const ProgressMonitorFunc progressMonitor,
                                                       const Settings& settings)
-        {
+      {
           typedef BuilderT<
             NodeRef,
             RecalculatePrimRef,
