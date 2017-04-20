@@ -181,7 +181,7 @@ namespace embree
               BuildRecord left(current.depth+1);
               BuildRecord right(current.depth+1);
               splitFallback(children[bestChild].prims,left.prims,right.prims);
-              children.split(bestChild,left,right,0);
+              children.split(bestChild,left,right,std::unique_ptr<mvector<PrimRefMB>>());
 
             } while (children.size() < branchingFactor);
 
