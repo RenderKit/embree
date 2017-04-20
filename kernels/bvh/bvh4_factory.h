@@ -58,8 +58,10 @@ namespace embree
     Accel* BVH4SubdivPatch1Eager(Scene* scene);
     Accel* BVH4SubdivPatch1(Scene* scene, bool cached);
     Accel* BVH4SubdivPatch1MB(Scene* scene, bool cached);
+
     Accel* BVH4UserGeometry(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC);
     Accel* BVH4UserGeometryMB(Scene* scene);
+
     Accel* BVH4InstancedBVH4Triangle4ObjectSplit(Scene* scene);
 
   private:
@@ -114,6 +116,7 @@ namespace embree
   private:
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4Line4iIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4Line4iMBIntersector1);
+
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4Bezier1vIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4Bezier1iIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4Bezier1vIntersector1_OBB);
@@ -286,53 +289,63 @@ namespace embree
     //DEFINE_SYMBOL2(Accel::IntersectorN,BVH4SubdivPatch1CachedIntersectorStream);
     DEFINE_SYMBOL2(Accel::IntersectorN,BVH4VirtualIntersectorStream);
     //DEFINE_SYMBOL2(Accel::IntersectorN,QBVH4Triangle4IntersectorStreamMoeller);
-    
-    DEFINE_BUILDER2(void,Scene,const createLineSegmentsAccelTy,BVH4BuilderTwoLevelLineSegmentsSAH);
-    DEFINE_BUILDER2(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderTwoLevelTriangleMeshSAH);
-    DEFINE_BUILDER2(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderInstancingTriangleMeshSAH);
-    DEFINE_BUILDER2(void,Scene,const createQuadMeshAccelTy,BVH4BuilderTwoLevelQuadMeshSAH);
-    DEFINE_BUILDER2(void,Scene,const createAccelSetAccelTy,BVH4BuilderTwoLevelVirtualSAH);
-    //DEFINE_BUILDER2(void,Scene,const createQuadMeshAccelTy,BVH4BuilderInstancingQuadMeshSAH);
-    
+       
+    // SAH scene builders
+  private:
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4Line4iSceneBuilderSAH);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4Line4iMBSceneBuilderSAH);
+  
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Bezier1vBuilder_OBB_New);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Bezier1iBuilder_OBB_New);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4OBBBezier1iMBBuilder_OBB);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4Bezier1vSceneBuilderSAH);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4Bezier1iSceneBuilderSAH);
     
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4SceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4vSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4iSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4iMBSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4vMBSceneBuilderSAH);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4QuantizedTriangle4iSceneBuilderSAH);
+    
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Quad4vSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Quad4iSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Quad4iMBSceneBuilderSAH);
-    
-    DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4SceneBuilderFastSpatialSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4vSceneBuilderFastSpatialSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4iSceneBuilderFastSpatialSAH);
-
-    DEFINE_BUILDER2(void,Scene,size_t,BVH4Quad4vSceneBuilderFastSpatialSAH);
-    
-    DEFINE_BUILDER2(void,LineSegments,size_t,BVH4Line4iMeshBuilderSAH);
-    //DEFINE_BUILDER2(void,LineSegments,size_t,BVH4Line4iMBMeshBuilderSAH);
-    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4MeshBuilderSAH);
-    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4vMeshBuilderSAH);
-    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4iMeshBuilderSAH);
-    DEFINE_BUILDER2(void,QuadMesh,size_t,BVH4Quad4vMeshBuilderSAH);
-    //DEFINE_BUILDER2(void,QuadMesh,size_t,BVH4Quad4iMeshBuilderSAH);
-
-    DEFINE_BUILDER2(void,Scene,size_t,BVH4Bezier1vSceneBuilderSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH4Bezier1iSceneBuilderSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH4Line4iSceneBuilderSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH4Line4iMBSceneBuilderSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH4VirtualSceneBuilderSAH);
-    DEFINE_BUILDER2(void,AccelSet,size_t,BVH4VirtualMeshBuilderSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH4VirtualMBSceneBuilderSAH);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4QuantizedQuad4iSceneBuilderSAH);
     
     DEFINE_BUILDER2(void,Scene,size_t,BVH4SubdivPatch1EagerBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4SubdivPatch1CachedBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4SubdivPatch1CachedMBBuilderSAH);
     
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4VirtualSceneBuilderSAH);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4VirtualMBSceneBuilderSAH);
+
+    // spatial scene builder
+  private:
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4SceneBuilderFastSpatialSAH);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4vSceneBuilderFastSpatialSAH);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4iSceneBuilderFastSpatialSAH);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4Quad4vSceneBuilderFastSpatialSAH);
+    
+    // twolevel scene builders
+  private:
+    DEFINE_BUILDER2(void,Scene,const createLineSegmentsAccelTy,BVH4BuilderTwoLevelLineSegmentsSAH);
+    DEFINE_BUILDER2(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderTwoLevelTriangleMeshSAH);
+    DEFINE_BUILDER2(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderInstancingTriangleMeshSAH);
+    DEFINE_BUILDER2(void,Scene,const createQuadMeshAccelTy,BVH4BuilderTwoLevelQuadMeshSAH);
+    DEFINE_BUILDER2(void,Scene,const createAccelSetAccelTy,BVH4BuilderTwoLevelVirtualSAH);
+ 
+    // SAH mesh builders
+  private:
+    DEFINE_BUILDER2(void,LineSegments,size_t,BVH4Line4iMeshBuilderSAH);
+    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4MeshBuilderSAH);
+    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4vMeshBuilderSAH);
+    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4iMeshBuilderSAH);
+    DEFINE_BUILDER2(void,QuadMesh,size_t,BVH4Quad4vMeshBuilderSAH);
+    DEFINE_BUILDER2(void,AccelSet,size_t,BVH4VirtualMeshBuilderSAH);
+
+    // mesh refitters
+  private:
     DEFINE_BUILDER2(void,LineSegments,size_t,BVH4Line4iMeshRefitSAH);
     DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4MeshRefitSAH);
     DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4vMeshRefitSAH);
@@ -340,14 +353,12 @@ namespace embree
     DEFINE_BUILDER2(void,QuadMesh,size_t,BVH4Quad4vMeshRefitSAH);
     DEFINE_BUILDER2(void,AccelSet,size_t,BVH4VirtualMeshRefitSAH);
     
+    // morton mesh builders
+  private:
     DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4MeshBuilderMortonGeneral);
     DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4vMeshBuilderMortonGeneral);
     DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4iMeshBuilderMortonGeneral);
     DEFINE_BUILDER2(void,QuadMesh,size_t,BVH4Quad4vMeshBuilderMortonGeneral);
     DEFINE_BUILDER2(void,AccelSet,size_t,BVH4VirtualMeshBuilderMortonGeneral);
-
-    DEFINE_BUILDER2(void,Scene,size_t,BVH4QuantizedTriangle4iSceneBuilderSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH4QuantizedQuad4iSceneBuilderSAH);
-    
   };
 }

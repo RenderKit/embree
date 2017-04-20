@@ -502,13 +502,29 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_USER)
     if (device->object_accel == "default") 
     {
-      if (isStatic()) {
-        accels.add(device->bvh4_factory->BVH4UserGeometry(this,BVH4Factory::BuildVariant::STATIC));
-      } else {
-        accels.add(device->bvh4_factory->BVH4UserGeometry(this,BVH4Factory::BuildVariant::DYNAMIC));
-      }
+#if defined (__TARGET_AVX__)
+        if (device->hasISA(AVX))
+        {
+          if (isStatic()) {
+            accels.add(device->bvh8_factory->BVH8UserGeometry(this,BVH8Factory::BuildVariant::STATIC));
+          } else {
+            accels.add(device->bvh8_factory->BVH8UserGeometry(this,BVH8Factory::BuildVariant::DYNAMIC));
+          }
+        }
+        else
+#endif
+        {
+          if (isStatic()) {
+            accels.add(device->bvh4_factory->BVH4UserGeometry(this,BVH4Factory::BuildVariant::STATIC));
+          } else {
+            accels.add(device->bvh4_factory->BVH4UserGeometry(this,BVH4Factory::BuildVariant::DYNAMIC));
+          }
+        }
     }
     else if (device->object_accel == "bvh4.object") accels.add(device->bvh4_factory->BVH4UserGeometry(this));
+#if defined (__TARGET_AVX__)
+    else if (device->object_accel == "bvh8.object") accels.add(device->bvh8_factory->BVH8UserGeometry(this));
+#endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown user geometry accel "+device->object_accel);
 #endif
   }
@@ -516,8 +532,19 @@ namespace embree
   void Scene::createUserGeometryMBAccel()
   {
 #if defined(EMBREE_GEOMETRY_USER)
-    if      (device->object_accel_mb == "default"    ) accels.add(device->bvh4_factory->BVH4UserGeometryMB(this));
+    if (device->object_accel_mb == "default"    ) {
+#if defined (__TARGET_AVX__)
+        if (device->hasISA(AVX))
+          accels.add(device->bvh8_factory->BVH8UserGeometryMB(this));
+        else
+#endif
+          accels.add(device->bvh4_factory->BVH4UserGeometryMB(this));
+    }
     else if (device->object_accel_mb == "bvh4.object") accels.add(device->bvh4_factory->BVH4UserGeometryMB(this));
+#if defined (__TARGET_AVX__)
+    else if (device->object_accel_mb == "bvh8.object") accels.add(device->bvh8_factory->BVH8UserGeometryMB(this));
+#endif
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown user geometry mblur accel "+device->object_accel_mb);
 #endif
   }
   

@@ -479,6 +479,9 @@ namespace embree
 
 #if defined(EMBREE_GEOMETRY_USER)
     Builder* BVH4VirtualMeshBuilderMortonGeneral (void* bvh, AccelSet* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<4,AccelSet,Object>((BVH4*)bvh,mesh,1,BVH4::maxLeafBlocks); }
+#if defined(__AVX__)
+    Builder* BVH8VirtualMeshBuilderMortonGeneral (void* bvh, AccelSet* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<8,AccelSet,Object>((BVH8*)bvh,mesh,1,BVH4::maxLeafBlocks); }    
+#endif
 #endif
 
   }
