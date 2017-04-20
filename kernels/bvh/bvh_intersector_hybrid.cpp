@@ -136,7 +136,7 @@ namespace embree
         while (likely(!cur.isLeaf()))
         {
           /* process nodes */
-          const vbool<K> valid_node = ray_tfar > curDist
+          const vbool<K> valid_node = ray_tfar > curDist;
           STAT(valid_node);
           STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
           const NodeRef nodeRef = cur;
@@ -342,7 +342,7 @@ namespace embree
         while (likely(!cur.isLeaf()))
         {
           /* process nodes */
-          const vbool<K> valid_node = ray_tfar > curDist
+          const vbool<K> valid_node = ray_tfar > curDist;
           STAT(valid_node);
           STAT3(shadow.trav_nodes,1,popcnt(valid_node),K);
           const NodeRef nodeRef = cur;

@@ -77,7 +77,7 @@ namespace embree
           return numChildren;
         }
 
-        __forceinline void split(int bestChild, const BuildRecord& lrecord, const BuildRecord& rrecord, std::unique_ptr<mvector<PrimRefMB>> new_vector)
+        __forceinline void split(ssize_t bestChild, const BuildRecord& lrecord, const BuildRecord& rrecord, std::unique_ptr<mvector<PrimRefMB>> new_vector)
         {
           SharedPrimRefVector* bsharedPrimVec = primvecs[bestChild];
           if (lrecord.prims.prims == bsharedPrimVec->prims) {
@@ -528,7 +528,7 @@ namespace embree
         typename ProgressMonitorFunc>
 
         static const BVHNodeRecordMB4D<NodeRef> build(mvector<PrimRefMB>& prims,
-                                                      PrimInfoMB pinfo,
+                                                      const PrimInfoMB& pinfo,
                                                       MemoryMonitorInterface* device,
                                                       const RecalculatePrimRef recalculatePrimRef,
                                                       const CreateAllocFunc createAlloc,
@@ -537,7 +537,7 @@ namespace embree
                                                       const CreateLeafFunc createLeaf,
                                                       const ProgressMonitorFunc progressMonitor,
                                                       const Settings& settings)
-        {
+      {
           typedef BuilderT<
             NodeRef,
             RecalculatePrimRef,

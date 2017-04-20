@@ -21,7 +21,7 @@
 namespace embree
 {
   template<typename T>
-    __forceinline std::pair<T,T> globalLinear(const std::pair<T,T> v, const BBox1f& dt)
+    __forceinline std::pair<T,T> globalLinear(const std::pair<T,T>& v, const BBox1f& dt)
   {
     const float rcp_dt_size = float(1.0f)/dt.size();
     const T g0 = lerp(v.first,v.second,-dt.lower*rcp_dt_size);
