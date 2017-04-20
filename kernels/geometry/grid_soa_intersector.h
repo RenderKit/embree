@@ -282,10 +282,10 @@ namespace embree
             const Vec3vfK b01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
             const Vec3vfK b10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
             const Vec3vfK b11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
-            const Vec3vfK p00 = lerp(a00,b00,ray.time);
-            const Vec3vfK p01 = lerp(a01,b01,ray.time);
-            const Vec3vfK p10 = lerp(a10,b10,ray.time);
-            const Vec3vfK p11 = lerp(a11,b11,ray.time);
+            const Vec3vfK p00 = lerp(a00,b00,ftime);
+            const Vec3vfK p01 = lerp(a01,b01,ftime);
+            const Vec3vfK p10 = lerp(a10,b10,ftime);
+            const Vec3vfK p11 = lerp(a11,b11,ftime);
 
             pre.intersector.intersectK(valid_i,ray,p00,p01,p10,MapUV0<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,context,pre.grid->geomID,pre.grid->primID));
             pre.intersector.intersectK(valid_i,ray,p10,p01,p11,MapUV1<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,context,pre.grid->geomID,pre.grid->primID));
@@ -345,10 +345,10 @@ namespace embree
             const Vec3vfK b01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
             const Vec3vfK b10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
             const Vec3vfK b11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
-            const Vec3vfK p00 = lerp(a00,b00,ray.time);
-            const Vec3vfK p01 = lerp(a01,b01,ray.time);
-            const Vec3vfK p10 = lerp(a10,b10,ray.time);
-            const Vec3vfK p11 = lerp(a11,b11,ray.time);
+            const Vec3vfK p00 = lerp(a00,b00,ftime);
+            const Vec3vfK p01 = lerp(a01,b01,ftime);
+            const Vec3vfK p10 = lerp(a10,b10,ftime);
+            const Vec3vfK p11 = lerp(a11,b11,ftime);
 
             pre.intersector.intersectK(valid,ray,p00,p01,p10,MapUV0<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogMU<1,K,true>(valid,ray,context,pre.grid->geomID,pre.grid->primID));
             if (none(valid)) break;
