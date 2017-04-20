@@ -28,6 +28,9 @@ namespace embree
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single = true>
     class BVHNIntersectorKHybrid
     {
+      /* right now AVX512KNL SIMD extension only for standard node types */
+      static const size_t Nx = types == BVH_AN1 ? vextend<N>::size : N;
+
       /* shortcuts for frequently used types */
       typedef typename PrimitiveIntersectorK::Precalculations Precalculations;
       typedef typename PrimitiveIntersectorK::Primitive Primitive;
@@ -38,7 +41,8 @@ namespace embree
       typedef typename BVH::AlignedNodeMB AlignedNodeMB;
       typedef Vec3<vfloat<K>> Vec3vfK;
       typedef Vec3<vint<K>> Vec3viK;
-
+      
+      static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
       static const size_t stackSizeChunk = 1+(N-1)*BVH::maxDepth;
 
       static const size_t switchThresholdIncoherent = \
@@ -46,6 +50,12 @@ namespace embree
       (K==8)  ? ((N==4) ? 5 : 7) :
       (K==16) ? 15 :
       0;
+
+    private:
+      static void intersect1(const BVH* bvh, NodeRef root, const size_t k, Precalculations& pre, 
+                             RayK<K>& ray, const Vec3vfK &ray_org, const Vec3vfK &ray_dir, const Vec3vfK &ray_rdir, const vfloat<K> &ray_tnear, const vfloat<K> &ray_tfar, const Vec3viK& nearXYZ, IntersectContext* context);
+      static bool occluded1(const BVH* bvh, NodeRef root, const size_t k, Precalculations& pre, 
+                            RayK<K>& ray, const Vec3vfK &ray_org, const Vec3vfK &ray_dir, const Vec3vfK &ray_rdir, const vfloat<K> &ray_tnear, const vfloat<K> &ray_tfar, const Vec3viK& nearXYZ, IntersectContext* context);
 
     public:
       static void intersect(vint<K>* valid, BVH* bvh, RayK<K>& ray, IntersectContext* context);
