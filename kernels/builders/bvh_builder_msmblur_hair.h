@@ -255,7 +255,7 @@ namespace embree
             else
               assert(false);
 
-            return nullptr;
+            return std::unique_ptr<mvector<PrimRefMB>>();
           }
 
           /*! recursive build */
