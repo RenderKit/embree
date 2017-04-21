@@ -211,7 +211,6 @@ namespace embree
         {
           /* process nodes */
           const vbool<K> valid_node = ray_tfar > curDist;
-          STAT(valid_node);
           STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
           const NodeRef nodeRef = cur;
           const BaseNode* __restrict__ const node = nodeRef.baseNode(types);
@@ -454,7 +453,6 @@ namespace embree
         {
           /* process nodes */
           const vbool<K> valid_node = ray_tfar > curDist;
-          STAT(valid_node);
           STAT3(shadow.trav_nodes,1,popcnt(valid_node),K);
           const NodeRef nodeRef = cur;
           const BaseNode* __restrict__ const node = nodeRef.baseNode(types);
