@@ -20,6 +20,9 @@
 
 namespace embree
 {
+  /* mutex to make printing to cout thread safe */
+  extern MutexSys g_printMutex;
+
   struct State
   {
   public:
@@ -97,8 +100,10 @@ namespace embree
     int object_accel_max_leaf_size;         //!< maximal leaf size for object acceleration structure
 
   public:
-    int object_accel_mb_min_leaf_size;         //!< minimal leaf size for mblur object acceleration structure
-    int object_accel_mb_max_leaf_size;         //!< maximal leaf size for mblur object acceleration structure
+    std::string object_accel_mb;            //!< acceleration structure for user geometries
+    std::string object_builder_mb;          //!< builder for user geometries
+    int object_accel_mb_min_leaf_size;      //!< minimal leaf size for mblur object acceleration structure
+    int object_accel_mb_max_leaf_size;      //!< maximal leaf size for mblur object acceleration structure
 
   public:
     std::string subdiv_accel;              //!< acceleration structure to use for subdivision surfaces

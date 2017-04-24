@@ -161,6 +161,15 @@ namespace embree
       /*! build accel */
       virtual void build () = 0;
 
+      /*! check if the i'th primitive is valid between the specified time range */
+      __forceinline bool valid(size_t i, const range<size_t>& itime_range) const
+      {
+        for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++)
+          if (!isvalid(bounds(i,itime))) return false;
+        
+        return true;
+      }
+
       /*! Calculates the bounds of an item */
       __forceinline BBox3fa bounds(size_t i, size_t itime = 0) const
       {
@@ -210,6 +219,18 @@ namespace embree
         const BBox3fa bounds1 = bounds(i,itime+1);
         bbox = bounds0; // use bounding box of first timestep to build BVH
         return isvalid(bounds0) && isvalid(bounds1);
+      }
+
+      /*! calculates the linear bounds of the i'th primitive for the specified time range */
+      __forceinline LBBox3fa linearBounds(size_t primID, const BBox1f& time_range) const {
+        return Geometry::linearBounds([&] (size_t itime) { return bounds(primID, itime); }, time_range, fnumTimeSegments);
+      }
+      
+      /*! calculates the linear bounds of the i'th primitive for the specified time range */
+      __forceinline bool linearBounds(size_t i, const BBox1f& time_range, LBBox3fa& bbox) const  {
+        if (!valid(i, getTimeSegmentRange(time_range, fnumTimeSegments))) return false;
+        bbox = linearBounds(i, time_range);
+        return true;
       }
 
       /*! calculates the build bounds of the i'th item at the itimeGlobal'th time segment, if it's valid */

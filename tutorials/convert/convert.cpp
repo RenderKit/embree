@@ -160,6 +160,19 @@ namespace embree
           g_scene->add(object);
       }
 
+      /* used to generate some test scene automatically */
+      else if (tag == "-special-barbarian-instantiate") {
+        for (int x=0; x<10; x++) {
+          for (int y=0; y<10; y++) {
+            const char* model = "barbarian_mblur.xml";
+            if (random<int>()%4 == 0) model = "barbarian_msmblur_translate.xml";
+            else if (random<int>()%32 == 0) model = "barbarian_msmblur_rotate0_5.xml";
+            else if (random<int>()%32 == 0) model = "barbarian_msmblur.xml";
+            printf("<Transform><AffineSpace translate=\"%7.2f %7.2f %7.2f\"/><extern src=\"%s\"/></Transform>\n",float(x*400)+200.0f*drand48(),0.0f,float(y*400)+200.0f*drand48(),model);
+          }
+        }
+      }
+
       /* convert triangles to quads */
       else if (tag == "-convert-triangles-to-quads") {
         g_scene->triangles_to_quads();

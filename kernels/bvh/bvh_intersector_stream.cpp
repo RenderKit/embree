@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "bvh_intersector_stream.h"
-#include "bvh_intersector_single.h"
 #include "bvh_intersector_node.h"
 
 #include "../geometry/intersector_iterators.h"
@@ -418,7 +417,7 @@ namespace embree
         /* do per ray precalculations */
         for (size_t i = 0; i < numOctantRays; i++) {
           new (&ray_ctx[i]) RayCtx(rays[i]);
-          new (&pre[i]) Precalculations(*rays[i], bvh, bvh->numTimeSteps);
+          new (&pre[i]) Precalculations(*rays[i], bvh);
         }
 
         stack[0].ptr  = BVH::invalidNode;
@@ -522,7 +521,7 @@ namespace embree
         /* do per ray precalculations */
         for (size_t i = 0; i < numOctantRays; i++) {
           new (&ray_ctx[i]) RayCtx(rays[i]);
-          new (&pre[i]) Precalculations(*rays[i], bvh, bvh->numTimeSteps);
+          new (&pre[i]) Precalculations(*rays[i], bvh);
         }
 
         stack[0].ptr  = BVH::invalidNode;

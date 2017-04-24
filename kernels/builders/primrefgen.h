@@ -18,6 +18,7 @@
 
 #include "../common/scene.h"
 #include "../common/primref.h"
+#include "../common/primref_mb.h"
 #include "priminfo.h"
 #include "../geometry/bezier1v.h"
 #include "bvh_builder_morton.h"
@@ -37,6 +38,9 @@ namespace embree
 
     template<typename Mesh>
       PrimInfo createPrimRefArrayMBlur(size_t timeSegment, size_t numTimeSteps, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+
+    template<typename Mesh>
+      PrimInfoMB createPrimRefArrayMSMBlur(Scene* scene, mvector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1 = BBox1f(0.0f,1.0f));
 
     PrimInfo createBezierRefArray(Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor);
     PrimInfo createBezierRefArrayMBlur(size_t timeSegment, size_t numTimeSteps, Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor);

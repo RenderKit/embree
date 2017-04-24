@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "bvh_intersector_hybrid.h"
-#include "bvh_intersector_single.h"
+#include "bvh_traverser1.h"
 #include "bvh_intersector_node.h"
 
 #include "../geometry/intersector_iterators.h"
@@ -43,6 +43,80 @@ namespace embree
   {
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
+    void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::intersect1(const BVH* bvh, 
+                                                                                           NodeRef root, 
+                                                                                           const size_t k, 
+                                                                                           Precalculations& pre,
+                                                                                           RayK<K>& ray, 
+                                                                                           const Vec3vfK &ray_org, 
+                                                                                           const Vec3vfK &ray_dir, 
+                                                                                           const Vec3vfK &ray_rdir, 
+                                                                                           const vfloat<K> &ray_tnear, 
+                                                                                           const vfloat<K> &ray_tfar,
+                                                                                           const Vec3viK& nearXYZ, 
+                                                                                           IntersectContext* context)
+    {
+      /*! stack state */
+      StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
+      StackItemT<NodeRef>* stackPtr = stack + 1;        //!< current stack pointer
+      StackItemT<NodeRef>* stackEnd = stack + stackSizeSingle;
+      stack[0].ptr = root;
+      stack[0].dist = neg_inf;
+      
+      /*! load the ray into SIMD registers */
+      TravRay<N,Nx> vray(k,ray_org,ray_dir,ray_rdir,nearXYZ);
+      vfloat<Nx> ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
+      
+      /* pop loop */
+      while (true) pop:
+      {
+        /*! pop next node */
+        if (unlikely(stackPtr == stack)) break;
+        stackPtr--;
+        NodeRef cur = NodeRef(stackPtr->ptr);
+	
+        /*! if popped node is too far, pop next one */
+        if (unlikely(*(float*)&stackPtr->dist > ray.tfar[k]))
+          continue;
+        
+        /* downtraversal loop */
+        while (true)
+        {
+          /*! stop if we found a leaf node */
+          if (unlikely(cur.isLeaf())) break;
+          STAT3(normal.trav_nodes,1,1,1);
+          
+          /* intersect node */
+          size_t mask = 0;
+          vfloat<Nx> tNear;
+          BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
+          
+          /*! if no child is hit, pop next node */
+          if (unlikely(mask == 0))
+            goto pop;
+          
+          /* select next child and push other children */
+          BVHNNodeTraverser1<N,Nx,types>::traverseClosestHit(cur,mask,tNear,stackPtr,stackEnd);
+        }
+        
+        /*! this is a leaf node */
+        assert(cur != BVH::emptyNode);
+        STAT3(normal.trav_leaves, 1, 1, 1);
+        size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
+        
+        size_t lazy_node = 0;
+        PrimitiveIntersectorK::intersect(pre, ray, k, context, prim, num, lazy_node);
+        ray_far = ray.tfar[k];
+        
+        if (unlikely(lazy_node)) {
+          stackPtr->ptr = lazy_node;
+          stackPtr->dist = neg_inf;
+          stackPtr++;
+        }
+      }
+    }
+    
+    template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
     void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::intersect(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray, IntersectContext* context)
     {
       /* filter out invalid rays */
@@ -59,18 +133,7 @@ namespace embree
       assert(all(valid,ray.valid()));
       assert(all(valid,ray.tnear >= 0.0f));
       assert(!(types & BVH_MB) || all(valid,(ray.time >= 0.0f) & (ray.time <= 1.0f)));
-
-      /* if the rays belong to different time segments, immediately switch to single ray traversal */
-      Precalculations pre(valid,ray,bvh->numTimeSteps);
-      const size_t valid_first = __bsf(valid_bits);
-#if FORCE_SINGLE_MODE == 0
-      if (unlikely((types & BVH_MB) && (movemask(pre.itime() == pre.itime(valid_first)) != valid_bits)))
-#endif
-      {
-        intersectSingle(valid, bvh, pre, ray, context);
-        AVX_ZERO_UPPER();
-        return;
-      }
+      Precalculations pre(valid,ray);
 
       /* load ray */
       Vec3vfK ray_org = ray.org;
@@ -102,7 +165,7 @@ namespace embree
       NodeRef stack_node[stackSizeChunk];
       stack_node[0] = BVH::invalidNode;
       stack_near[0] = inf;
-      stack_node[1] = bvh->getRoot(pre, valid_first);
+      stack_node[1] = bvh->root;
       stack_near[1] = ray_tnear; 
       NodeRef* stackEnd MAYBE_UNUSED = stack_node+stackSizeChunk;
       NodeRef* __restrict__ sptr_node = stack_node + 2;
@@ -119,7 +182,7 @@ namespace embree
           assert(sptr_node == stack_node);
           break;
         }
-        
+
         /* cull node if behind closest hit point */
         vfloat<K> curDist = *sptr_near;
         const vbool<K> active = curDist < ray_tfar;
@@ -138,7 +201,7 @@ namespace embree
 #endif
           {
             for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-              BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::intersect1(bvh, cur, i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ, context);
+              intersect1(bvh, cur, i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ, context);
             }
             ray_tfar = min(ray_tfar,ray.tfar);
             continue;
@@ -148,7 +211,7 @@ namespace embree
         while (likely(!cur.isLeaf()))
         {
           /* process nodes */
-          STAT(const vbool<K> valid_node = ray_tfar > curDist);
+          const vbool<K> valid_node = ray_tfar > curDist;
           STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
           const NodeRef nodeRef = cur;
           const BaseNode* __restrict__ const node = nodeRef.baseNode(types);
@@ -162,8 +225,8 @@ namespace embree
             const NodeRef child = node->children[i];
             if (unlikely(child == BVH::emptyNode)) break;
             vfloat<K> lnearP;
-            vbool<K> lhit(false);
-            BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,pre.ftime(),lnearP,lhit);
+            vbool<K> lhit(valid_node);
+            BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP,lhit);
 
             /* if we hit the child we choose to continue with that child if it
                is closer than the current next child, or we push it onto the stack */
@@ -233,34 +296,71 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
+    // ===================================================================================================================================================================
+    // ===================================================================================================================================================================
+    // ===================================================================================================================================================================
+
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
-    void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::intersectSingle(const vbool<K>& __restrict__ valid, BVH* __restrict__ bvh, Precalculations& __restrict__ pre, RayK<K>& __restrict__ ray, IntersectContext* context)
-    {
-      /* load ray */
-      Vec3vfK ray_org = ray.org;
-      Vec3vfK ray_dir = ray.dir;
-      vfloat<K> ray_tnear = max(ray.tnear,0.0f);
-      vfloat<K> ray_tfar  = max(ray.tfar ,0.0f);
-      const Vec3vfK rdir = rcp_safe(ray_dir);
-      ray_tnear = select(valid,ray_tnear,vfloat<K>(pos_inf));
-      ray_tfar  = select(valid,ray_tfar ,vfloat<K>(neg_inf));
+    bool BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::occluded1(const BVH* bvh, NodeRef root, const size_t k, Precalculations& pre,
+                                                                                          RayK<K>& ray, const Vec3vfK &ray_org, const Vec3vfK &ray_dir, const Vec3vfK &ray_rdir, const vfloat<K> &ray_tnear, const vfloat<K> &ray_tfar,
+                                                                                          const Vec3viK& nearXYZ, IntersectContext* context)
+      {
+	/*! stack state */
+	NodeRef stack[stackSizeSingle];  //!< stack of nodes that still need to get traversed
+        NodeRef* stackPtr = stack+1;     //!< current stack pointer
+	NodeRef* stackEnd = stack+stackSizeSingle;
+	stack[0]  = root;
+      
+	/*! load the ray into SIMD registers */
+        TravRay<N,Nx> vray(k,ray_org,ray_dir,ray_rdir,nearXYZ);
+        const vfloat<Nx> ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
+	
+	/* pop loop */
+	while (true) pop:
+	{
+	  /*! pop next node */
+	  if (unlikely(stackPtr == stack)) break;
+	  stackPtr--;
+	  NodeRef cur = (NodeRef) *stackPtr;
+	  
+          /* downtraversal loop */
+          while (true)
+          {
+            /*! stop if we found a leaf node */
+            if (unlikely(cur.isLeaf())) break;
+            STAT3(shadow.trav_nodes,1,1,1);
 
-      /* compute near/far per ray */
-      Vec3viK nearXYZ;
-      nearXYZ.x = select(rdir.x >= 0.0f,vint<K>(0*(int)sizeof(vfloat<N>)),vint<K>(1*(int)sizeof(vfloat<N>)));
-      nearXYZ.y = select(rdir.y >= 0.0f,vint<K>(2*(int)sizeof(vfloat<N>)),vint<K>(3*(int)sizeof(vfloat<N>)));
-      nearXYZ.z = select(rdir.z >= 0.0f,vint<K>(4*(int)sizeof(vfloat<N>)),vint<K>(5*(int)sizeof(vfloat<N>)));
+            /* intersect node */
+            size_t mask = 0;
+            vfloat<Nx> tNear;
+            BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
 
-      /* iterates over all rays in the packet using single ray traversal */
-      size_t bits = movemask(valid);
-      for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-        BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::intersect1(bvh, bvh->getRoot(pre,i), i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ, context);
+            /*! if no child is hit, pop next node */
+            if (unlikely(mask == 0))
+              goto pop;
+
+            /* select next child and push other children */
+            BVHNNodeTraverser1<N,Nx,types>::traverseAnyHit(cur,mask,tNear,stackPtr,stackEnd);
+          }
+
+	  /*! this is a leaf node */
+          assert(cur != BVH::emptyNode);
+	  STAT3(shadow.trav_leaves,1,1,1);
+	  size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
+
+          size_t lazy_node = 0;
+          if (PrimitiveIntersectorK::occluded(pre,ray,k,context,prim,num,lazy_node)) {
+	    ray.geomID[k] = 0;
+	    return true;
+	  }
+
+          if (unlikely(lazy_node)) {
+            *stackPtr = lazy_node;
+            stackPtr++;
+          }
+	}
+	return false;
       }
-    }
-
-    // ===================================================================================================================================================================
-    // ===================================================================================================================================================================
-    // ===================================================================================================================================================================
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
     void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::occluded(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray, IntersectContext* context)
@@ -279,16 +379,7 @@ namespace embree
       assert(all(valid,ray.valid()));
       assert(all(valid,ray.tnear >= 0.0f));
       assert(!(types & BVH_MB) || all(valid,(ray.time >= 0.0f) & (ray.time <= 1.0f)));
-
-      /* if the rays belong to different time segments, immediately switch to single ray traversal */
-      Precalculations pre(valid,ray,bvh->numTimeSteps);
-      const size_t valid_first = __bsf(valid_bits);
-      if (unlikely((types & BVH_MB) && (movemask(pre.itime() == pre.itime(valid_first)) != valid_bits)))
-      {
-        occludedSingle(valid, bvh, pre, ray, context);
-        AVX_ZERO_UPPER();
-        return;
-      }
+      Precalculations pre(valid,ray);
 
       /* load ray */
       vbool<K> terminated = !valid;
@@ -318,7 +409,7 @@ namespace embree
       NodeRef stack_node[stackSizeChunk];
       stack_node[0] = BVH::invalidNode;
       stack_near[0] = inf;
-      stack_node[1] = bvh->getRoot(pre, valid_first);
+      stack_node[1] = bvh->root;
       stack_near[1] = ray_tnear; 
       NodeRef* stackEnd MAYBE_UNUSED = stack_node+stackSizeChunk;
       NodeRef* __restrict__ sptr_node = stack_node + 2;
@@ -349,7 +440,7 @@ namespace embree
           size_t bits = movemask(active);
           if (unlikely(__popcnt(bits) <= switchThreshold)) {
             for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-              if (BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::occluded1(bvh,cur,i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ,context))
+              if (occluded1(bvh,cur,i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ,context))
                 set(terminated, i);
             }
             if (all(terminated)) break;
@@ -362,7 +453,7 @@ namespace embree
         while (likely(!cur.isLeaf()))
         {
           /* process nodes */
-          STAT(const vbool<K> valid_node = ray_tfar > curDist);
+          const vbool<K> valid_node = ray_tfar > curDist;
           STAT3(shadow.trav_nodes,1,popcnt(valid_node),K);
           const NodeRef nodeRef = cur;
           const BaseNode* __restrict__ const node = nodeRef.baseNode(types);
@@ -376,8 +467,8 @@ namespace embree
             const NodeRef child = node->children[i];
             if (unlikely(child == BVH::emptyNode)) break;
             vfloat<K> lnearP;
-            vbool<K> lhit(false);
-            BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,pre.ftime(),lnearP,lhit);
+            vbool<K> lhit(valid_node);
+            BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP,lhit);
 
             /* if we hit the child we choose to continue with that child if it
                is closer than the current next child, or we push it onto the stack */
@@ -447,33 +538,6 @@ namespace embree
       }
       vint<K>::store(valid & terminated,&ray.geomID,0);
       AVX_ZERO_UPPER();
-    }
-
-    template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
-    void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::occludedSingle(const vbool<K>& __restrict__ valid, BVH* __restrict__ bvh, Precalculations& __restrict__ pre, RayK<K>& __restrict__ ray, IntersectContext* context)
-    {
-      /* load ray */
-      vbool<K> terminated = !valid;
-      Vec3vfK ray_org = ray.org, ray_dir = ray.dir;
-      vfloat<K> ray_tnear = max(ray.tnear,0.0f);
-      vfloat<K> ray_tfar  = max(ray.tfar ,0.0f);
-      const Vec3vfK rdir = rcp_safe(ray_dir);
-      ray_tnear = select(valid,ray_tnear,vfloat<K>(pos_inf));
-      ray_tfar  = select(valid,ray_tfar ,vfloat<K>(neg_inf));
-
-      /* compute near/far per ray */
-      Vec3viK nearXYZ;
-      nearXYZ.x = select(rdir.x >= 0.0f,vint<K>(0*(int)sizeof(vfloat<N>)),vint<K>(1*(int)sizeof(vfloat<N>)));
-      nearXYZ.y = select(rdir.y >= 0.0f,vint<K>(2*(int)sizeof(vfloat<N>)),vint<K>(3*(int)sizeof(vfloat<N>)));
-      nearXYZ.z = select(rdir.z >= 0.0f,vint<K>(4*(int)sizeof(vfloat<N>)),vint<K>(5*(int)sizeof(vfloat<N>)));
-
-      /* iterates over all rays in the packet using single ray traversal */
-      size_t bits = movemask(valid);
-      for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-        if (BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::occluded1(bvh,bvh->getRoot(pre,i),i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ,context))
-          set(terminated, i);
-      }
-      vint<K>::store(valid & terminated,&ray.geomID,0);
     }
   }
 }

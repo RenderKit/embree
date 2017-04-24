@@ -110,7 +110,7 @@ typedef unmasked void (*uniform RTCFilterFuncN)(uniform int* uniform valid,     
                                                 const uniform RTCIntersectContext* uniform context,  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
                                                 struct RTCRayN* uniform ray,                  /*!< ray and previous hit */
                                                 const struct RTCHitN* uniform potentialHit,         /*!< potential new hit */
-                                                uniform const size_t N              /*!< number of rays in ray packet */);
+                                                uniform const uintptr_t N              /*!< number of rays in ray packet */);
 
 /*! Type of displacement callback functions */
 typedef unmasked void (*RTCDisplacementFunc)(void* uniform ptr,               /*!< pointer to user data of geometry */
@@ -124,7 +124,7 @@ typedef unmasked void (*RTCDisplacementFunc)(void* uniform ptr,               /*
                                              uniform float* uniform px,       /*!< x coordinates of points to displace (source and target) */
                                              uniform float* uniform py,       /*!< y coordinates of points to displace (source and target) */
                                              uniform float* uniform pz,       /*!< z coordinates of points to displace (source and target) */
-                                             uniform size_t N                 /*!< number of points to displace */ );
+                                             uniform uintptr_t N                 /*!< number of points to displace */ );
 
 /*! Type of displacement callback functions */
 typedef unmasked void (*RTCDisplacementFunc2)(void* uniform ptr,               /*!< pointer to user data of geometry */
@@ -139,7 +139,7 @@ typedef unmasked void (*RTCDisplacementFunc2)(void* uniform ptr,               /
                                               uniform float* uniform px,       /*!< x coordinates of points to displace (source and target) */
                                              uniform float* uniform py,       /*!< y coordinates of points to displace (source and target) */
                                               uniform float* uniform pz,       /*!< z coordinates of points to displace (source and target) */
-                                              uniform size_t N                 /*!< number of points to displace */ );
+                                              uniform uintptr_t N                 /*!< number of points to displace */ );
 
 /*! \brief Creates a new scene instance. 
 

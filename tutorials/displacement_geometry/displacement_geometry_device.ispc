@@ -113,7 +113,7 @@ unmasked void displacementFunction(void* uniform ptr,
                                    uniform float* uniform px,           /*!< x coordinates of points to displace (source and target) */
                                    uniform float* uniform py,           /*!< y coordinates of points to displace (source and target) */
                                    uniform float* uniform pz,           /*!< z coordinates of points to displace (source and target) */
-                                   uniform size_t N)
+                                   uniform uintptr_t N)
 {
   foreach (i=0 ... N) {
     const Vec3f P = make_Vec3f(px[i],py[i],pz[i]);

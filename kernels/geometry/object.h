@@ -31,6 +31,9 @@ namespace embree
 
   public:
 
+    /* primitive supports multiple time segments */
+    static const bool singleTimeSegment = false;
+
     /* Returns maximal number of stored primitives */
     static __forceinline size_t max_size() { return 1; }
 
@@ -59,6 +62,17 @@ namespace embree
       new (this) Object(geomID, primID);
       AccelSet* accel = (AccelSet*) scene->get(geomID);
       return accel->linearBounds(primID,itime,numTimeSteps);
+    }
+
+    /*! fill triangle from triangle list */
+    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& i, size_t end, Scene* scene, const BBox1f time_range)
+    {
+      const PrimRefMB& prim = prims[i]; i++;
+      const unsigned geomID = prim.geomID();
+      const unsigned primID = prim.primID();
+      new (this) Object(geomID, primID);
+      AccelSet* accel = (AccelSet*) scene->get(geomID);
+      return accel->linearBounds(primID,time_range);
     }
 
     /* Updates the primitive */

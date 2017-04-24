@@ -29,7 +29,7 @@ namespace embree
       struct TriangleMiIntersector1Moeller
     {
       typedef TriangleMi<M> Primitive;
-      typedef Intersector1Precalculations<MoellerTrumboreIntersector1<Mx>> Precalculations;
+      typedef MoellerTrumboreIntersector1<Mx> Precalculations;
       
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& tri)
       {
@@ -66,7 +66,7 @@ namespace embree
       struct TriangleMiIntersectorKMoeller
       {
         typedef TriangleMi<M> Primitive;
-        typedef IntersectorKPrecalculations<K,MoellerTrumboreIntersectorK<Mx,K>> Precalculations;
+        typedef MoellerTrumboreIntersectorK<Mx,K> Precalculations;
         
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& tri)
         {
@@ -124,7 +124,7 @@ namespace embree
     struct TriangleMiIntersector1Pluecker
     {
       typedef TriangleMi<M> Primitive;
-      typedef Intersector1Precalculations<PlueckerIntersector1<Mx>> Precalculations;
+      typedef PlueckerIntersector1<Mx> Precalculations;
       
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& tri)
       {
@@ -161,7 +161,7 @@ namespace embree
       struct TriangleMiIntersectorKPluecker
       {
         typedef TriangleMi<M> Primitive;
-        typedef IntersectorKPrecalculations<K,PlueckerIntersectorK<Mx,K>> Precalculations;
+        typedef PlueckerIntersectorK<Mx,K> Precalculations;
         
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& tri)
         {

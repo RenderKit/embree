@@ -32,6 +32,8 @@ bool g_subdiv_mode = false;
 
 #define SPP 1
 
+#define FIXED_EDGE_TESSELLATION_VALUE 3
+
 #define MAX_EDGE_LEVEL 64.0f
 #define MIN_EDGE_LEVEL  4.0f
 #define LEVEL_FACTOR   64.0f
