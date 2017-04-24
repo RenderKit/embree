@@ -24,6 +24,7 @@ namespace embree
   template<int M>
   struct TriangleMvMB
   {
+    typedef BBox<vfloat<M>> BBox1vfM;
     typedef Vec3<vfloat<M>> Vec3vfM;
 
   public:
@@ -36,7 +37,10 @@ namespace embree
     static Type type;
 
   public:
-    
+
+    /* primitive supports single time segments */
+    static const bool singleTimeSegment = true;
+
     /* Returns maximal number of stored triangles */
     static __forceinline size_t max_size() { return M; }
     
@@ -149,7 +153,50 @@ namespace embree
       new (this) TriangleMvMB(va0,va1,vb0,vb1,vc0,vc1,vgeomID,vprimID);
       return LBBox3fa(bounds0,bounds1);
     }
-   
+
+    /* Fill triangle from triangle list */
+    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range)
+    {
+      vint<M> vgeomID = -1, vprimID = -1;
+      Vec3vfM va0 = zero, vb0 = zero, vc0 = zero;
+      Vec3vfM va1 = zero, vb1 = zero, vc1 = zero;
+
+      LBBox3fa allBounds = empty;
+      for (size_t i=0; i<M && begin<end; i++, begin++)
+      {
+        const PrimRefMB& prim = prims[begin];
+        const unsigned geomID = prim.geomID();
+        const unsigned primID = prim.primID();
+        const TriangleMesh* const mesh = scene->get<TriangleMesh>(geomID);
+        const unsigned numTimeSegments = mesh->numTimeSegments();
+        const range<int> itime_range = getTimeSegmentRange(time_range, numTimeSegments);
+        assert(itime_range.size() == 1);
+        const int ilower = itime_range.begin();
+        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
+        allBounds.extend(mesh->linearBounds(primID, time_range));
+        const Vec3fa& a0 = mesh->vertex(tri.v[0],ilower+0);
+        const Vec3fa& a1 = mesh->vertex(tri.v[0],ilower+1);
+        const Vec3fa& b0 = mesh->vertex(tri.v[1],ilower+0);
+        const Vec3fa& b1 = mesh->vertex(tri.v[1],ilower+1);
+        const Vec3fa& c0 = mesh->vertex(tri.v[2],ilower+0);
+        const Vec3fa& c1 = mesh->vertex(tri.v[2],ilower+1);
+        const BBox1f time_range_v(float(ilower+0)/float(numTimeSegments),float(ilower+1)/float(numTimeSegments));
+        auto a01 = globalLinear(std::make_pair(a0,a1),time_range_v);
+        auto b01 = globalLinear(std::make_pair(b0,b1),time_range_v);
+        auto c01 = globalLinear(std::make_pair(c0,c1),time_range_v);
+        vgeomID [i] = geomID;
+        vprimID [i] = primID;
+        va0.x[i] = a01.first .x; va0.y[i] = a01.first .y; va0.z[i] = a01.first .z;
+	va1.x[i] = a01.second.x; va1.y[i] = a01.second.y; va1.z[i] = a01.second.z;
+	vb0.x[i] = b01.first .x; vb0.y[i] = b01.first .y; vb0.z[i] = b01.first .z;
+	vb1.x[i] = b01.second.x; vb1.y[i] = b01.second.y; vb1.z[i] = b01.second.z;
+	vc0.x[i] = c01.first .x; vc0.y[i] = c01.first .y; vc0.z[i] = c01.first .z;
+	vc1.x[i] = c01.second.x; vc1.y[i] = c01.second.y; vc1.z[i] = c01.second.z;
+      }
+      new (this) TriangleMvMB(va0,va1,vb0,vb1,vc0,vc1,vgeomID,vprimID);
+      return allBounds;
+    }
+
   public:
     Vec3vfM v0;      // 1st vertex of the triangles
     Vec3vfM v1;      // 2nd vertex of the triangles

@@ -17,7 +17,7 @@
 #pragma once
 
 #include "default.h"
-#include "scene_bezier_curves.h"
+#include "scene.h"
 
 namespace embree
 {

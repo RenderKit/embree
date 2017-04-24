@@ -29,7 +29,7 @@ namespace embree
       struct TriangleMiMBIntersector1Moeller
       {
         typedef TriangleMiMB<M> Primitive;
-        typedef Intersector1PrecalculationsMB<MoellerTrumboreIntersector1<Mx>> Precalculations;
+        typedef MoellerTrumboreIntersector1<Mx> Precalculations;
         
         /*! Intersect a ray with the M triangles and updates the hit. */
         static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& tri)
@@ -53,7 +53,7 @@ namespace embree
       struct TriangleMiMBIntersectorKMoeller
       {
         typedef TriangleMiMB<M> Primitive;
-        typedef IntersectorKPrecalculationsMB<K,MoellerTrumboreIntersectorK<Mx,K>> Precalculations;
+        typedef MoellerTrumboreIntersectorK<Mx,K> Precalculations;
         
         /*! Intersects K rays with M triangles. */
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const TriangleMiMB<M>& tri)
@@ -104,7 +104,7 @@ namespace embree
       struct TriangleMiMBIntersector1Pluecker
       {
         typedef TriangleMiMB<M> Primitive;
-        typedef Intersector1PrecalculationsMB<PlueckerIntersector1<Mx>> Precalculations;
+        typedef PlueckerIntersector1<Mx> Precalculations;
         
         /*! Intersect a ray with the M triangles and updates the hit. */
         static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& tri)
@@ -128,7 +128,7 @@ namespace embree
       struct TriangleMiMBIntersectorKPluecker
       {
         typedef TriangleMiMB<M> Primitive;
-        typedef IntersectorKPrecalculationsMB<K,PlueckerIntersectorK<Mx,K>> Precalculations;
+        typedef PlueckerIntersectorK<Mx,K> Precalculations;
         
         /*! Intersects K rays with M triangles. */
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const TriangleMiMB<M>& tri)

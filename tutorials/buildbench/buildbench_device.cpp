@@ -276,18 +276,18 @@ namespace embree {
       }
     }
 
-    if (gflags == RTC_GEOMETRY_DYNAMIC)
-      std::cout << "Update dynamic scene, dynamic geometry    ";
-    else if (gflags == RTC_GEOMETRY_STATIC)
-      std::cout << "Update dynamic scene, static geometry     ";
+    if (gflags == RTC_GEOMETRY_STATIC)
+      std::cout << "BENCHMARK_UPDATE_DYNAMIC_STATIC ";
+    else if (gflags == RTC_GEOMETRY_DYNAMIC)
+      std::cout << "BENCHMARK_UPDATE_DYNAMIC_DYNAMIC ";
     else if (gflags == RTC_GEOMETRY_DEFORMABLE)
-      std::cout << "Update dynamic scene, deformable geometry ";
+      std::cout << "BENCHMARK_UPDATE_DYNAMIC_DEFORMABLE ";
     else
       FATAL("unknown flags");
 
-    std::cout << "(" << primitives << " primitives, " << objects << " objects)  :  "
-              << " avg. time  = " <<  time/iterations
-              << " , avg. build perf " << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
+    std::cout << primitives << " primitives, " << objects << " objects, "
+              << time/iterations << " s, "
+              << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
 
     rtcDeleteScene (g_scene);
     g_scene = nullptr;
@@ -315,18 +315,19 @@ namespace embree {
         iterations++;
       }
     }
+
     if (gflags == RTC_GEOMETRY_STATIC)
-      std::cout << "Create dynamic scene, static geometry     ";
+      std::cout << "BENCHMARK_CREATE_DYNAMIC_STATIC ";
     else if (gflags == RTC_GEOMETRY_DYNAMIC)
-      std::cout << "Create dynamic scene, dynamic geometry    ";
+      std::cout << "BENCHMARK_CREATE_DYNAMIC_DYNAMIC ";
     else if (gflags == RTC_GEOMETRY_DEFORMABLE)
-      std::cout << "Create dynamic scene, deformable geometry ";
+      std::cout << "BENCHMARK_CREATE_DYNAMIC_DEFORMABLE ";
     else
       FATAL("unknown flags");
 
-    std::cout << "(" << primitives << " primitives, " << objects << " objects)  :  "
-              << " avg. time  = " <<  time/iterations
-              << " , avg. build perf " << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
+    std::cout << primitives << " primitives, " << objects << " objects, "
+              << time/iterations << " s, "
+              << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
 
     rtcDeleteScene (g_scene);
     g_scene = nullptr;
@@ -356,22 +357,22 @@ namespace embree {
     }
 
     if (sflags & RTC_SCENE_HIGH_QUALITY)
-      std::cout << "Create static (HQ) scene, ";
+      std::cout << "BENCHMARK_CREATE_HQ_STATIC_";
     else
-      std::cout << "Create static scene, ";
+      std::cout << "BENCHMARK_CREATE_STATIC_";
 
     if (gflags == RTC_GEOMETRY_STATIC)
-      std::cout << "static geometry      ";
+      std::cout << "STATIC ";
     else if (gflags == RTC_GEOMETRY_DYNAMIC)
-      std::cout << "dynamic geometry    ";
+      std::cout << "DYNAMIC ";
     else if (gflags == RTC_GEOMETRY_DEFORMABLE)
-      std::cout << "deformable geometry ";
+      std::cout << "DEFORMABLE ";
     else
       FATAL("unknown flags");
 
-    std::cout << "(" << primitives << " primitives, " << objects << " objects)  :  "
-              << " avg. time  = " <<  time/iterations
-              << " , avg. build perf " << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
+    std::cout << primitives << " primitives, " << objects << " objects, "
+              << time/iterations << " s, "
+              << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
 
     g_scene = nullptr;
   }
@@ -399,6 +400,7 @@ namespace embree {
 
     /* set error handler */
     rtcDeviceSetErrorFunction2(g_device,error_handler,nullptr);
+
     Benchmark_Dynamic_Update(g_ispc_scene,iterations_dynamic_dynamic,RTC_GEOMETRY_DEFORMABLE);
     Pause();
     Benchmark_Dynamic_Update(g_ispc_scene,iterations_dynamic_dynamic,RTC_GEOMETRY_DYNAMIC);
