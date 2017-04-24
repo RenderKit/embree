@@ -372,11 +372,14 @@ namespace embree
                                      const Vec3<vfloat<M>>& tri_v0, 
                                      const Vec3<vfloat<M>>& tri_e1, 
                                      const Vec3<vfloat<M>>& tri_e2, 
-                                     const Vec3<vfloat<M>>& tri_Ng,
+                                     //const Vec3<vfloat<M>>& tri_Ng,
+                                     const Vec3<vfloat<M>>& old_tri_Ng,
                                      const Epilog& epilog) const
       {
         /* calculate denominator */
         typedef Vec3<vfloat<M>> Vec3vfM;
+        const Vec3<vfloat<M>> tri_Ng = cross(tri_e1,tri_e2);
+
         const Vec3vfM O = broadcast<vfloat<M>>(ray.org,k);
         const Vec3vfM D = broadcast<vfloat<M>>(ray.dir,k);
         const Vec3vfM C = Vec3vfM(tri_v0) - O;

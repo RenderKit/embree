@@ -35,12 +35,13 @@
 #include "../geometry/object_intersector.h"
 
 #define SWITCH_DURING_DOWN_TRAVERSAL 1
-#define FORCE_SINGLE_MODE 0
+#define FORCE_SINGLE_MODE 1
 
 namespace embree
 {
   namespace isa
   {
+
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
     void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::intersect(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray, IntersectContext* context)
     {
@@ -62,13 +63,15 @@ namespace embree
       /* if the rays belong to different time segments, immediately switch to single ray traversal */
       Precalculations pre(valid,ray,bvh->numTimeSteps);
       const size_t valid_first = __bsf(valid_bits);
+#if FORCE_SINGLE_MODE == 0
       if (unlikely((types & BVH_MB) && (movemask(pre.itime() == pre.itime(valid_first)) != valid_bits)))
+#endif
       {
         intersectSingle(valid, bvh, pre, ray, context);
         AVX_ZERO_UPPER();
         return;
       }
-      
+
       /* load ray */
       Vec3vfK ray_org = ray.org;
       Vec3vfK ray_dir = ray.dir;
