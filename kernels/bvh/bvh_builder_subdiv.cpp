@@ -116,7 +116,7 @@ namespace embree
         Scene::Iterator<SubdivMesh> iter(scene);
         pstate.init(iter,size_t(1024));
 
-        PrimInfo pinfo1 = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+        PrimInfo pinfo1 = parallel_for_for_prefix_sum0( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k) -> PrimInfo
         { 
           size_t p = 0;
           size_t g = 0;
@@ -145,7 +145,7 @@ namespace embree
           return;
         }
 
-        PrimInfo pinfo3 = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+        PrimInfo pinfo3 = parallel_for_for_prefix_sum1( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
           Allocator alloc = bvh->alloc.getCachedAllocator();
           
@@ -275,7 +275,7 @@ namespace embree
         Scene::Iterator<SubdivMesh,false> iter(scene);
         pstate.init(iter,size_t(1024));
 
-        PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+        PrimInfo pinfo = parallel_for_for_prefix_sum0( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k) -> PrimInfo
         { 
           size_t s = 0;
           size_t sMB = 0;
@@ -317,7 +317,7 @@ namespace embree
         bvh->alloc.init_estimate(numSubPatchesMB*sizeof(PrimRef));
 
         Scene::Iterator<SubdivMesh,false> iter(scene);
-        parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+        parallel_for_for_prefix_sum1( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
           size_t s = 0;
           size_t sMB = 0;
@@ -395,7 +395,7 @@ namespace embree
         SubdivPatch1Cached* const subdiv_patches = (SubdivPatch1Cached*) bvh->subdiv_patches.data();
 
         Scene::Iterator<SubdivMesh,false> iter(scene);
-        parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+        parallel_for_for_prefix_sum1( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
           size_t s = 0;
           for (size_t f=r.begin(); f!=r.end(); ++f) 
@@ -576,7 +576,7 @@ namespace embree
         Scene::Iterator<SubdivMesh,true> iter(scene);
         pstate.init(iter,size_t(1024));
 
-        PrimInfoMB pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfoMB(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfoMB& base) -> PrimInfoMB
+        PrimInfoMB pinfo = parallel_for_for_prefix_sum0( pstate, iter, PrimInfoMB(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k) -> PrimInfoMB
         { 
           size_t s = 0;
           size_t sMB = 0;
@@ -601,7 +601,7 @@ namespace embree
         bvh->alloc.reset();
 
         Scene::Iterator<SubdivMesh,true> iter(scene);
-        PrimInfoMB pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfoMB(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfoMB& base) -> PrimInfoMB
+        PrimInfoMB pinfo = parallel_for_for_prefix_sum1( pstate, iter, PrimInfoMB(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfoMB& base) -> PrimInfoMB
         {
           size_t s = 0;
           size_t sMB = 0;
