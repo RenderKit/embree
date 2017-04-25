@@ -1362,9 +1362,6 @@ namespace embree
     /*! sets BVH members after build */
     void set (NodeRef root, const LBBox3fa& bounds, size_t numPrimitives);
 
-    /*! prints statistics about the BVH */
-    void printStatistics();
-
     /*! Clears the barrier bits of a subtree. */
     void clearBarrier(NodeRef& node);
 
