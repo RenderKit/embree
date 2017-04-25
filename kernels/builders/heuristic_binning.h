@@ -560,6 +560,7 @@ namespace embree
       /*! bins an array of primitives */
       __forceinline void bin (const PrimRef* prims, size_t N, const BinMapping<16>& mapping)
       {
+        if (unlikely(N == 0)) return;
 
         const vfloat16 init_min(pos_inf);
         const vfloat16 init_max(neg_inf);
@@ -810,7 +811,6 @@ namespace embree
       /*! finds the best split by scanning binning information */
       __forceinline Split best(const BinMapping<16>& mapping, const size_t blocks_shift) const
       {
-
 	/* find best dimension */
 	float bestSAH = inf;
 	int   bestDim = -1;
