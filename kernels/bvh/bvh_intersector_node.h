@@ -31,12 +31,12 @@ namespace embree
         : org_xyz(ray_org), dir_xyz(ray_dir) 
       {
         const Vec3fa ray_rdir = rcp_safe(ray_dir);
-        org = Vec3<vfloat<N>>(ray_org.x,ray_org.y,ray_org.z);
-        dir = Vec3<vfloat<N>>(ray_dir.x,ray_dir.y,ray_dir.z);
-        rdir = Vec3<vfloat<N>>(ray_rdir.x,ray_rdir.y,ray_rdir.z);
+        org = Vec3vf<N>(ray_org.x,ray_org.y,ray_org.z);
+        dir = Vec3vf<N>(ray_dir.x,ray_dir.y,ray_dir.z);
+        rdir = Vec3vf<N>(ray_rdir.x,ray_rdir.y,ray_rdir.z);
 #if defined(__AVX2__)
         const Vec3fa ray_org_rdir = ray_org*ray_rdir;
-        org_rdir = Vec3<vfloat<N>>(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
+        org_rdir = Vec3vf<N>(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
 #endif
         nearX = ray_rdir.x >= 0.0f ? 0*sizeof(vfloat<N>) : 1*sizeof(vfloat<N>);
         nearY = ray_rdir.y >= 0.0f ? 2*sizeof(vfloat<N>) : 3*sizeof(vfloat<N>);
@@ -47,12 +47,12 @@ namespace embree
       }
 
       template<int K>
-      __forceinline TravRay (size_t k, const Vec3<vfloat<K>> &ray_org, const Vec3<vfloat<K>> &ray_dir, 
-                             const Vec3<vfloat<K>> &ray_rdir, const Vec3<vint<K>>& nearXYZ, const size_t flip = sizeof(vfloat<N>))
+      __forceinline TravRay (size_t k, const Vec3vf<K> &ray_org, const Vec3vf<K> &ray_dir,
+                             const Vec3vf<K> &ray_rdir, const Vec3vi<K>& nearXYZ, const size_t flip = sizeof(vfloat<N>))
       {
-        org = Vec3<vfloat<N>>(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
-	dir = Vec3<vfloat<N>>(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
-	rdir = Vec3<vfloat<N>>(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
+        org = Vec3vf<N>(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
+        dir = Vec3vf<N>(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
+        rdir = Vec3vf<N>(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
 #if defined(__AVX2__)
 	org_rdir = org*rdir;
 #endif
@@ -83,9 +83,9 @@ namespace embree
       }
 
       Vec3fa org_xyz, dir_xyz;
-      Vec3<vfloat<Nx>> org, dir, rdir;
+      Vec3vf<Nx> org, dir, rdir;
 #if defined(__AVX2__)
-      Vec3<vfloat<Nx>> org_rdir;
+      Vec3vf<Nx> org_rdir;
 #endif
       size_t nearX, nearY, nearZ;
       size_t farX, farY, farZ;
@@ -224,7 +224,7 @@ namespace embree
 
     template<int N, int K>
       __forceinline vbool<K> intersectNode(const typename BVHN<N>::AlignedNode* node, size_t i, 
-                                           const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                           const Vec3vf<K>& org, const Vec3vf<K>& dir, const Vec3vf<K>& rdir, const Vec3vf<K>& org_rdir,
                                            const vfloat<K>& tnear, const vfloat<K>& tfar, vfloat<K>& dist)
  
     {
@@ -339,7 +339,7 @@ namespace embree
 
     template<int N, int K>
       __forceinline vbool<K> intersectNodeRobust(const typename BVHN<N>::AlignedNode* node, size_t i, 
-                                                 const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                                 const Vec3vf<K>& org, const Vec3vf<K>& dir, const Vec3vf<K>& rdir, const Vec3vf<K>& org_rdir,
                                                  const vfloat<K>& tnear, const vfloat<K>& tfar, vfloat<K>& dist)
     {
       // FIXME: use per instruction rounding for AVX512
@@ -408,7 +408,7 @@ namespace embree
 
     template<int N, int K>
     __forceinline vbool<K> intersectNode(const typename BVHN<N>::AlignedNodeMB* node, const size_t i, 
-                                         const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                         const Vec3vf<K>& org, const Vec3vf<K>& dir, const Vec3vf<K>& rdir, const Vec3vf<K>& org_rdir,
                                          const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist)
     {
       const vfloat<K> vlower_x = madd(time,vfloat<K>(node->lower_dx[i]),vfloat<K>(node->lower_x[i]));
@@ -489,7 +489,7 @@ namespace embree
 
     template<int N, int K>
     __forceinline vbool<K> intersectNodeRobust(const typename BVHN<N>::AlignedNodeMB* node, const size_t i, 
-                                               const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                               const Vec3vf<K>& org, const Vec3vf<K>& dir, const Vec3vf<K>& rdir, const Vec3vf<K>& org_rdir,
                                                const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist)
     {
       const vfloat<K> vlower_x = madd(time,vfloat<K>(node->lower_dx[i]),vfloat<K>(node->lower_x[i]));
@@ -579,7 +579,7 @@ namespace embree
 
     template<int N, int K>
     __forceinline vbool<K> intersectNodeMB4D(const typename BVHN<N>::NodeRef ref, const size_t i, 
-                                             const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                             const Vec3vf<K>& org, const Vec3vf<K>& dir, const Vec3vf<K>& rdir, const Vec3vf<K>& org_rdir,
                                              const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist)
     {
       const typename BVHN<N>::AlignedNodeMB* node = ref.alignedNodeMB();
@@ -656,7 +656,7 @@ namespace embree
 
     template<int N, int K>
       __forceinline vbool<K> intersectNodeMB4DRobust(const typename BVHN<N>::NodeRef ref, const size_t i, 
-                                                     const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                                     const Vec3vf<K>& org, const Vec3vf<K>& dir, const Vec3vf<K>& rdir, const Vec3vf<K>& org_rdir,
                                                      const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist)
     {
       const typename BVHN<N>::AlignedNodeMB* node = ref.alignedNodeMB();
@@ -877,12 +877,12 @@ namespace embree
       __forceinline size_t intersectNode(const typename BVHN<N>::UnalignedNode* node, const TravRay<N,N>& ray, 
                                          const vfloat<N>& tnear, const vfloat<N>& tfar, vfloat<N>& dist)
     {
-      const Vec3<vfloat<N>> dir = xfmVector(node->naabb,ray.dir);
-      //const Vec3<vfloat<N>> nrdir = Vec3<vfloat<N>>(vfloat<N>(-1.0f))/dir;
-      const Vec3<vfloat<N>> nrdir = Vec3<vfloat<N>>(vfloat<N>(-1.0f))*rcp_safe(dir);
-      const Vec3<vfloat<N>> org = xfmPoint(node->naabb,ray.org);
-      const Vec3<vfloat<N>> tLowerXYZ = org * nrdir;       // (Vec3fa(zero) - org) * rdir;
-      const Vec3<vfloat<N>> tUpperXYZ = tLowerXYZ - nrdir; // (Vec3fa(one ) - org) * rdir;
+      const Vec3vf<N> dir = xfmVector(node->naabb,ray.dir);
+      //const Vec3vf<N> nrdir = Vec3vf<N>(vfloat<N>(-1.0f))/dir;
+      const Vec3vf<N> nrdir = Vec3vf<N>(vfloat<N>(-1.0f))*rcp_safe(dir);
+      const Vec3vf<N> org = xfmPoint(node->naabb,ray.org);
+      const Vec3vf<N> tLowerXYZ = org * nrdir;       // (Vec3fa(zero) - org) * rdir;
+      const Vec3vf<N> tUpperXYZ = tLowerXYZ - nrdir; // (Vec3fa(one ) - org) * rdir;
 
       const vfloat<N> tNearX = mini(tLowerXYZ.x,tUpperXYZ.x);
       const vfloat<N> tNearY = mini(tLowerXYZ.y,tUpperXYZ.y);
@@ -899,20 +899,17 @@ namespace embree
 
     template<int N, int K>
       __forceinline vbool<K> intersectNode(const typename BVHN<N>::UnalignedNode* node, const size_t i, 
-                                           const Vec3<vfloat<K>>& org_i, const Vec3<vfloat<K>>& dir_i, const Vec3<vfloat<K>>& rdir_i, const Vec3<vfloat<K>>& org_rdir_i,
+                                           const Vec3vf<K>& org_i, const Vec3vf<K>& dir_i, const Vec3vf<K>& rdir_i, const Vec3vf<K>& org_rdir_i,
                                            const vfloat<K>& tnear, const vfloat<K>& tfar, vfloat<K>& dist)
-    {
-      typedef Vec3<vfloat<K>> Vec3vfK;
-      typedef AffineSpaceT<LinearSpace3<Vec3vfK>> AffineSpace3vfK;
-      
-      const AffineSpace3vfK naabb(Vec3f(node->naabb.l.vx.x[i],node->naabb.l.vx.y[i],node->naabb.l.vx.z[i]),
+    { 
+      const AffineSpace3vf<K> naabb(Vec3f(node->naabb.l.vx.x[i],node->naabb.l.vx.y[i],node->naabb.l.vx.z[i]),
                                   Vec3f(node->naabb.l.vy.x[i],node->naabb.l.vy.y[i],node->naabb.l.vy.z[i]),
                                   Vec3f(node->naabb.l.vz.x[i],node->naabb.l.vz.y[i],node->naabb.l.vz.z[i]),
                                   Vec3f(node->naabb.p   .x[i],node->naabb.p   .y[i],node->naabb.p   .z[i]));
 
-      const Vec3<vfloat<K>> dir = xfmVector(naabb,dir_i);
-      const Vec3<vfloat<K>> nrdir = Vec3<vfloat<K>>(vfloat<K>(-1.0f))* rcp_safe(dir); // FIXME: negate instead of mul with -1?
-      const Vec3<vfloat<K>> org = xfmPoint(naabb,org_i);
+      const Vec3vf<K> dir = xfmVector(naabb,dir_i);
+      const Vec3vf<K> nrdir = Vec3vf<K>(vfloat<K>(-1.0f))* rcp_safe(dir); // FIXME: negate instead of mul with -1?
+      const Vec3vf<K> org = xfmPoint(naabb,org_i);
 
       const vfloat<K> lclipMinX = org.x * nrdir.x; // (Vec3fa(zero) - org) * rdir;
       const vfloat<K> lclipMinY = org.y * nrdir.y;
@@ -936,19 +933,19 @@ namespace embree
       __forceinline size_t intersectNode(const typename BVHN<N>::UnalignedNodeMB* node, const TravRay<N,N>& ray, 
                                          const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist)
     {
-      const AffineSpaceT<LinearSpace3<Vec3<vfloat<N>>>> xfm = node->space0;
-      const Vec3<vfloat<N>> b0_lower = zero;
-      const Vec3<vfloat<N>> b0_upper = one;
-      const Vec3<vfloat<N>> lower = lerp(b0_lower,node->b1.lower,vfloat<N>(time));
-      const Vec3<vfloat<N>> upper = lerp(b0_upper,node->b1.upper,vfloat<N>(time));
+      const AffineSpace3vf<N> xfm = node->space0;
+      const Vec3vf<N> b0_lower = zero;
+      const Vec3vf<N> b0_upper = one;
+      const Vec3vf<N> lower = lerp(b0_lower,node->b1.lower,vfloat<N>(time));
+      const Vec3vf<N> upper = lerp(b0_upper,node->b1.upper,vfloat<N>(time));
 
-      const BBox<Vec3<vfloat<N>>> bounds(lower,upper);
-      const Vec3<vfloat<N>> dir = xfmVector(xfm,ray.dir);
-      const Vec3<vfloat<N>> rdir = rcp_safe(dir);
-      const Vec3<vfloat<N>> org = xfmPoint(xfm,ray.org);
+      const BBox3vf<N> bounds(lower,upper);
+      const Vec3vf<N> dir = xfmVector(xfm,ray.dir);
+      const Vec3vf<N> rdir = rcp_safe(dir);
+      const Vec3vf<N> org = xfmPoint(xfm,ray.org);
 
-      const Vec3<vfloat<N>> tLowerXYZ = (bounds.lower - org) * rdir;
-      const Vec3<vfloat<N>> tUpperXYZ = (bounds.upper - org) * rdir;
+      const Vec3vf<N> tLowerXYZ = (bounds.lower - org) * rdir;
+      const Vec3vf<N> tUpperXYZ = (bounds.upper - org) * rdir;
 
       const vfloat<N> tNearX = mini(tLowerXYZ.x,tUpperXYZ.x);
       const vfloat<N> tNearY = mini(tLowerXYZ.y,tUpperXYZ.y);
@@ -965,27 +962,24 @@ namespace embree
 
     template<int N, int K>
       __forceinline vbool<K> intersectNode(const typename BVHN<N>::UnalignedNodeMB* node, const size_t i, 
-                                           const Vec3<vfloat<K>>& org_i, const Vec3<vfloat<K>>& dir_i, const Vec3<vfloat<K>>& rdir_i, const Vec3<vfloat<K>>& org_rdir_i,
+                                           const Vec3vf<K>& org_i, const Vec3vf<K>& dir_i, const Vec3vf<K>& rdir_i, const Vec3vf<K>& org_rdir_i,
                                            const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist)
-    {
-      typedef Vec3<vfloat<K>> Vec3vfK;
-      typedef AffineSpaceT<LinearSpace3<Vec3vfK>> AffineSpace3vfK;
-      
-      const AffineSpace3vfK xfm(Vec3f(node->space0.l.vx.x[i],node->space0.l.vx.y[i],node->space0.l.vx.z[i]),
+    { 
+      const AffineSpace3vf<K> xfm(Vec3f(node->space0.l.vx.x[i],node->space0.l.vx.y[i],node->space0.l.vx.z[i]),
                                 Vec3f(node->space0.l.vy.x[i],node->space0.l.vy.y[i],node->space0.l.vy.z[i]),
                                 Vec3f(node->space0.l.vz.x[i],node->space0.l.vz.y[i],node->space0.l.vz.z[i]),
                                 Vec3f(node->space0.p   .x[i],node->space0.p   .y[i],node->space0.p   .z[i]));
 
-      const Vec3<vfloat<K>> b0_lower = zero;
-      const Vec3<vfloat<K>> b0_upper = one;
-      const Vec3<vfloat<K>> b1_lower(node->b1.lower.x[i],node->b1.lower.y[i],node->b1.lower.z[i]);
-      const Vec3<vfloat<K>> b1_upper(node->b1.upper.x[i],node->b1.upper.y[i],node->b1.upper.z[i]);
-      const Vec3<vfloat<K>> lower = lerp(b0_lower,b1_lower,time);
-      const Vec3<vfloat<K>> upper = lerp(b0_upper,b1_upper,time);
+      const Vec3vf<K> b0_lower = zero;
+      const Vec3vf<K> b0_upper = one;
+      const Vec3vf<K> b1_lower(node->b1.lower.x[i],node->b1.lower.y[i],node->b1.lower.z[i]);
+      const Vec3vf<K> b1_upper(node->b1.upper.x[i],node->b1.upper.y[i],node->b1.upper.z[i]);
+      const Vec3vf<K> lower = lerp(b0_lower,b1_lower,time);
+      const Vec3vf<K> upper = lerp(b0_upper,b1_upper,time);
 
-      const Vec3<vfloat<K>> dir = xfmVector(xfm,dir_i);
-      const Vec3<vfloat<K>> rdir = rcp_safe(dir);
-      const Vec3<vfloat<K>> org = xfmPoint(xfm,org_i);
+      const Vec3vf<K> dir = xfmVector(xfm,dir_i);
+      const Vec3vf<K> rdir = rcp_safe(dir);
+      const Vec3vf<K> org = xfmPoint(xfm,org_i);
 
       const vfloat<K> lclipMinX = (lower.x - org.x) * rdir.x;
       const vfloat<K> lclipMinY = (lower.y - org.y) * rdir.y;
@@ -1163,7 +1157,7 @@ namespace embree
     template<int N, int K>
     struct BVHNNodeIntersectorK<N,K,BVH_AN1,false>
     {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, const Vec3vf<K>& org, const Vec3vf<K>& dir, const Vec3vf<K>& rdir, const Vec3vf<K>& org_rdir,
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
       {
         vmask = intersectNode<N,K>(node.alignedNode(),i,org,dir,rdir,org_rdir,tnear,tfar,dist);
@@ -1174,7 +1168,7 @@ namespace embree
     template<int N, int K>
       struct BVHNNodeIntersectorK<N,K,BVH_AN1,true>
     {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, const Vec3vf<K>& org, const Vec3vf<K>& dir, const Vec3vf<K>& rdir, const Vec3vf<K>& org_rdir,
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
       {
         vmask = intersectNodeRobust<N,K>(node.alignedNode(),i,org,dir,rdir,org_rdir,tnear,tfar,dist);
@@ -1185,7 +1179,7 @@ namespace embree
     template<int N, int K>
     struct BVHNNodeIntersectorK<N,K,BVH_AN2,false>
     {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, const Vec3vf<K>& org, const Vec3vf<K>& dir, const Vec3vf<K>& rdir, const Vec3vf<K>& org_rdir,
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
       {
         vmask = intersectNode<N,K>(node.alignedNodeMB(),i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
@@ -1196,7 +1190,7 @@ namespace embree
     template<int N, int K>
     struct BVHNNodeIntersectorK<N,K,BVH_AN2,true>
     {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, const Vec3vf<K>& org, const Vec3vf<K>& dir, const Vec3vf<K>& rdir, const Vec3vf<K>& org_rdir,
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
       {
         vmask = intersectNodeRobust<N,K>(node.alignedNodeMB(),i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
@@ -1208,7 +1202,7 @@ namespace embree
       struct BVHNNodeIntersectorK<N,K,BVH_AN1_UN1,false>
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, 
-                                          const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                          const Vec3vf<K>& org, const Vec3vf<K>& dir, const Vec3vf<K>& rdir, const Vec3vf<K>& org_rdir,
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
       {
         if (likely(node.isAlignedNode()))              vmask = intersectNode<N,K>(node.alignedNode(),i,org,dir,rdir,org_rdir,tnear,tfar,dist);
@@ -1221,7 +1215,7 @@ namespace embree
       struct BVHNNodeIntersectorK<N,K,BVH_AN2_UN2,false>
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, 
-                                          const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                          const Vec3vf<K>& org, const Vec3vf<K>& dir, const Vec3vf<K>& rdir, const Vec3vf<K>& org_rdir,
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
       {
         if (likely(node.isAlignedNodeMB()))              vmask = intersectNode<N,K>(node.alignedNodeMB(),i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
@@ -1234,7 +1228,7 @@ namespace embree
     struct BVHNNodeIntersectorK<N,K,BVH_AN2_AN4D,false>
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, 
-                                          const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                          const Vec3vf<K>& org, const Vec3vf<K>& dir, const Vec3vf<K>& rdir, const Vec3vf<K>& org_rdir,
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
       {
         vmask &= intersectNodeMB4D<N,K>(node,i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
@@ -1246,7 +1240,7 @@ namespace embree
     struct BVHNNodeIntersectorK<N,K,BVH_AN2_AN4D,true>
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, 
-                                          const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                          const Vec3vf<K>& org, const Vec3vf<K>& dir, const Vec3vf<K>& rdir, const Vec3vf<K>& org_rdir,
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
       {
         vmask &= intersectNodeMB4DRobust<N,K>(node,i,org,dir,rdir,org_rdir,tnear,tfar,time,dist);
@@ -1258,7 +1252,7 @@ namespace embree
     struct BVHNNodeIntersectorK<N,K,BVH_AN2_AN4D_UN2,false>
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, 
-                                          const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                          const Vec3vf<K>& org, const Vec3vf<K>& dir, const Vec3vf<K>& rdir, const Vec3vf<K>& org_rdir,
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
       {
         if (likely(node.isAlignedNodeMB() || node.isAlignedNodeMB4D())) 

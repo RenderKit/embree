@@ -194,77 +194,77 @@ namespace embree
 
 #if 0    
     template<int M>
-      __forceinline Vec4<vfloat<M>> eval0(const int ofs, const int size) const
+      __forceinline Vec4vf<M> eval0(const int ofs, const int size) const
     {
-      const Vec4<vfloat<M>> b = bezier_basis0.eval<vfloat<M>>(ofs,size);
-      return madd(b.x, Vec4<vfloat<M>>(v0), madd(b.y, Vec4<vfloat<M>>(v1), madd(b.z, Vec4<vfloat<M>>(v2), b.w * Vec4<vfloat<M>>(v3))));
+      const Vec4vf<M> b = bezier_basis0.eval<vfloat<M>>(ofs,size);
+      return madd(b.x, Vec4vf<M>(v0), madd(b.y, Vec4vf<M>(v1), madd(b.z, Vec4vf<M>(v2), b.w * Vec4vf<M>(v3))));
     }
     
     template<int M>
-      __forceinline Vec4<vfloat<M>> eval1(const int ofs, const int size) const
+      __forceinline Vec4vf<M> eval1(const int ofs, const int size) const
     {
-      const Vec4<vfloat<M>> b = bezier_basis1.eval<vfloat<M>>(ofs,size);
-      return madd(b.x, Vec4<vfloat<M>>(v0), madd(b.y, Vec4<vfloat<M>>(v1), madd(b.z, Vec4<vfloat<M>>(v2), b.w * Vec4<vfloat<M>>(v3))));
+      const Vec4vf<M> b = bezier_basis1.eval<vfloat<M>>(ofs,size);
+      return madd(b.x, Vec4vf<M>(v0), madd(b.y, Vec4vf<M>(v1), madd(b.z, Vec4vf<M>(v2), b.w * Vec4vf<M>(v3))));
     }
 
     template<int M>
-      __forceinline Vec4<vfloat<M>> derivative0(const int ofs, const int size) const
+      __forceinline Vec4vf<M> derivative0(const int ofs, const int size) const
     {
-      const Vec4<vfloat<M>> b = bezier_basis0.derivative<vfloat<M>>(ofs,size);
-      return madd(b.x, Vec4<vfloat<M>>(v0), madd(b.y, Vec4<vfloat<M>>(v1), madd(b.z, Vec4<vfloat<M>>(v2), b.w * Vec4<vfloat<M>>(v3))));
+      const Vec4vf<M> b = bezier_basis0.derivative<vfloat<M>>(ofs,size);
+      return madd(b.x, Vec4vf<M>(v0), madd(b.y, Vec4vf<M>(v1), madd(b.z, Vec4vf<M>(v2), b.w * Vec4vf<M>(v3))));
     }
 
     template<int M>
-      __forceinline Vec4<vfloat<M>> derivative1(const int ofs, const int size) const
+      __forceinline Vec4vf<M> derivative1(const int ofs, const int size) const
     {
-      const Vec4<vfloat<M>> b = bezier_basis1.derivative<vfloat<M>>(ofs,size);
-      return madd(b.x, Vec4<vfloat<M>>(v0), madd(b.y, Vec4<vfloat<M>>(v1), madd(b.z, Vec4<vfloat<M>>(v2), b.w * Vec4<vfloat<M>>(v3))));
+      const Vec4vf<M> b = bezier_basis1.derivative<vfloat<M>>(ofs,size);
+      return madd(b.x, Vec4vf<M>(v0), madd(b.y, Vec4vf<M>(v1), madd(b.z, Vec4vf<M>(v2), b.w * Vec4vf<M>(v3))));
     }
 
 #else
 
     template<int M>
-      __forceinline Vec4<vfloat<M>> eval0(const int ofs, const int size) const
+      __forceinline Vec4vf<M> eval0(const int ofs, const int size) const
     {
       assert(size <= PrecomputedBezierBasis::N);
       assert(ofs <= size);
-      return madd(vfloat<M>::loadu(&bezier_basis0.c0[size][ofs]), Vec4<vfloat<M>>(v0),
-                  madd(vfloat<M>::loadu(&bezier_basis0.c1[size][ofs]), Vec4<vfloat<M>>(v1),
-                       madd(vfloat<M>::loadu(&bezier_basis0.c2[size][ofs]), Vec4<vfloat<M>>(v2),
-                            vfloat<M>::loadu(&bezier_basis0.c3[size][ofs]) * Vec4<vfloat<M>>(v3))));
+      return madd(vfloat<M>::loadu(&bezier_basis0.c0[size][ofs]), Vec4vf<M>(v0),
+                  madd(vfloat<M>::loadu(&bezier_basis0.c1[size][ofs]), Vec4vf<M>(v1),
+                       madd(vfloat<M>::loadu(&bezier_basis0.c2[size][ofs]), Vec4vf<M>(v2),
+                            vfloat<M>::loadu(&bezier_basis0.c3[size][ofs]) * Vec4vf<M>(v3))));
     }
     
     template<int M>
-      __forceinline Vec4<vfloat<M>> eval1(const int ofs, const int size) const
+      __forceinline Vec4vf<M> eval1(const int ofs, const int size) const
     {
       assert(size <= PrecomputedBezierBasis::N);
       assert(ofs <= size);
-      return madd(vfloat<M>::loadu(&bezier_basis1.c0[size][ofs]), Vec4<vfloat<M>>(v0), 
-                  madd(vfloat<M>::loadu(&bezier_basis1.c1[size][ofs]), Vec4<vfloat<M>>(v1),
-                       madd(vfloat<M>::loadu(&bezier_basis1.c2[size][ofs]), Vec4<vfloat<M>>(v2),
-                            vfloat<M>::loadu(&bezier_basis1.c3[size][ofs]) * Vec4<vfloat<M>>(v3))));
+      return madd(vfloat<M>::loadu(&bezier_basis1.c0[size][ofs]), Vec4vf<M>(v0), 
+                  madd(vfloat<M>::loadu(&bezier_basis1.c1[size][ofs]), Vec4vf<M>(v1),
+                       madd(vfloat<M>::loadu(&bezier_basis1.c2[size][ofs]), Vec4vf<M>(v2),
+                            vfloat<M>::loadu(&bezier_basis1.c3[size][ofs]) * Vec4vf<M>(v3))));
     }
 
     template<int M>
-      __forceinline Vec4<vfloat<M>> derivative0(const int ofs, const int size) const
+      __forceinline Vec4vf<M> derivative0(const int ofs, const int size) const
     {
       assert(size <= PrecomputedBezierBasis::N);
       assert(ofs <= size);
-      return madd(vfloat<M>::loadu(&bezier_basis0.d0[size][ofs]), Vec4<vfloat<M>>(v0),
-                  madd(vfloat<M>::loadu(&bezier_basis0.d1[size][ofs]), Vec4<vfloat<M>>(v1),
-                       madd(vfloat<M>::loadu(&bezier_basis0.d2[size][ofs]), Vec4<vfloat<M>>(v2),
-                            vfloat<M>::loadu(&bezier_basis0.d3[size][ofs]) * Vec4<vfloat<M>>(v3))));
+      return madd(vfloat<M>::loadu(&bezier_basis0.d0[size][ofs]), Vec4vf<M>(v0),
+                  madd(vfloat<M>::loadu(&bezier_basis0.d1[size][ofs]), Vec4vf<M>(v1),
+                       madd(vfloat<M>::loadu(&bezier_basis0.d2[size][ofs]), Vec4vf<M>(v2),
+                            vfloat<M>::loadu(&bezier_basis0.d3[size][ofs]) * Vec4vf<M>(v3))));
     }
 
     template<int M>
-      __forceinline Vec4<vfloat<M>> derivative1(const int ofs, const int size) const
+      __forceinline Vec4vf<M> derivative1(const int ofs, const int size) const
     {
       assert(size <= PrecomputedBezierBasis::N);
       assert(ofs <= size);
-      return madd(vfloat<M>::loadu(&bezier_basis1.d0[size][ofs]), Vec4<vfloat<M>>(v0),
-                  madd(vfloat<M>::loadu(&bezier_basis1.d1[size][ofs]), Vec4<vfloat<M>>(v1),
-                       madd(vfloat<M>::loadu(&bezier_basis1.d2[size][ofs]), Vec4<vfloat<M>>(v2),
-                            vfloat<M>::loadu(&bezier_basis1.d3[size][ofs]) * Vec4<vfloat<M>>(v3))));
+      return madd(vfloat<M>::loadu(&bezier_basis1.d0[size][ofs]), Vec4vf<M>(v0),
+                  madd(vfloat<M>::loadu(&bezier_basis1.d1[size][ofs]), Vec4vf<M>(v1),
+                       madd(vfloat<M>::loadu(&bezier_basis1.d2[size][ofs]), Vec4vf<M>(v2),
+                            vfloat<M>::loadu(&bezier_basis1.d3[size][ofs]) * Vec4vf<M>(v3))));
     }
 
 #endif

@@ -24,8 +24,6 @@ namespace embree
   template <int M>
   struct TriangleMi
   {
-    typedef Vec3<vfloat<M>> Vec3vfM;
-
     /* Virtual interface to query information about the triangle type */
     struct Type : public PrimitiveType
     {
@@ -69,7 +67,7 @@ namespace embree
     __forceinline int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
     /* gather the triangles */
-    __forceinline void gather(Vec3<vfloat<M>>& p0, Vec3<vfloat<M>>& p1, Vec3<vfloat<M>>& p2, const Scene* const scene) const;
+    __forceinline void gather(Vec3vf<M>& p0, Vec3vf<M>& p1, Vec3vf<M>& p2, const Scene* const scene) const;
     
      /* Non temporal store */
     __forceinline static void store_nt(TriangleMi* dst, const TriangleMi& src)

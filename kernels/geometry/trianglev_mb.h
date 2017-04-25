@@ -24,9 +24,6 @@ namespace embree
   template<int M>
   struct TriangleMvMB
   {
-    typedef BBox<vfloat<M>> BBox1vfM;
-    typedef Vec3<vfloat<M>> Vec3vfM;
-
   public:
     struct Type : public PrimitiveType 
     {
@@ -53,9 +50,9 @@ namespace embree
     __forceinline TriangleMvMB() {}
 
     /* Construction from vertices and IDs */
-    __forceinline TriangleMvMB(const Vec3vfM& a0, const Vec3vfM& a1,
-                               const Vec3vfM& b0, const Vec3vfM& b1,
-                               const Vec3vfM& c0, const Vec3vfM& c1,
+    __forceinline TriangleMvMB(const Vec3vf<M>& a0, const Vec3vf<M>& a1,
+                               const Vec3vf<M>& b0, const Vec3vf<M>& b1,
+                               const Vec3vf<M>& c0, const Vec3vf<M>& c1,
                                const vint<M>& geomIDs, const vint<M>& primIDs)
       : v0(a0), v1(b0), v2(c0), dv0(a1-a0), dv1(b1-b0), dv2(c1-c0), geomIDs(geomIDs), primIDs(primIDs) {}
 
@@ -79,8 +76,8 @@ namespace embree
     /* Calculate the bounds of the triangles at t0 */
     __forceinline BBox3fa bounds0() const 
     {
-      Vec3vfM lower = min(v0,v1,v2);
-      Vec3vfM upper = max(v0,v1,v2);
+      Vec3vf<M> lower = min(v0,v1,v2);
+      Vec3vf<M> upper = max(v0,v1,v2);
       const vbool<M> mask = valid();
       lower.x = select(mask,lower.x,vfloat<M>(pos_inf));
       lower.y = select(mask,lower.y,vfloat<M>(pos_inf));
@@ -95,11 +92,11 @@ namespace embree
     /* Calculate the bounds of the triangles at t1 */
     __forceinline BBox3fa bounds1() const 
     {
-      const Vec3vfM p0 = v0+dv0;
-      const Vec3vfM p1 = v1+dv1;
-      const Vec3vfM p2 = v2+dv2;
-      Vec3vfM lower = min(p0,p1,p2);
-      Vec3vfM upper = max(p0,p1,p2);
+      const Vec3vf<M> p0 = v0+dv0;
+      const Vec3vf<M> p1 = v1+dv1;
+      const Vec3vf<M> p2 = v2+dv2;
+      Vec3vf<M> lower = min(p0,p1,p2);
+      Vec3vf<M> upper = max(p0,p1,p2);
       const vbool<M> mask = valid();
       lower.x = select(mask,lower.x,vfloat<M>(pos_inf));
       lower.y = select(mask,lower.y,vfloat<M>(pos_inf));
@@ -120,8 +117,8 @@ namespace embree
     __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime, size_t numTimeSteps)
     {
       vint<M> vgeomID = -1, vprimID = -1;
-      Vec3vfM va0 = zero, vb0 = zero, vc0 = zero;
-      Vec3vfM va1 = zero, vb1 = zero, vc1 = zero;
+      Vec3vf<M> va0 = zero, vb0 = zero, vc0 = zero;
+      Vec3vf<M> va1 = zero, vb1 = zero, vc1 = zero;
 
       BBox3fa bounds0 = empty;
       BBox3fa bounds1 = empty;
@@ -158,8 +155,8 @@ namespace embree
     __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range)
     {
       vint<M> vgeomID = -1, vprimID = -1;
-      Vec3vfM va0 = zero, vb0 = zero, vc0 = zero;
-      Vec3vfM va1 = zero, vb1 = zero, vc1 = zero;
+      Vec3vf<M> va0 = zero, vb0 = zero, vc0 = zero;
+      Vec3vf<M> va1 = zero, vb1 = zero, vc1 = zero;
 
       LBBox3fa allBounds = empty;
       for (size_t i=0; i<M && begin<end; i++, begin++)
@@ -198,12 +195,12 @@ namespace embree
     }
 
   public:
-    Vec3vfM v0;      // 1st vertex of the triangles
-    Vec3vfM v1;      // 2nd vertex of the triangles
-    Vec3vfM v2;      // 3rd vertex of the triangles
-    Vec3vfM dv0;     // difference vector between time steps t0 and t1 for first vertex
-    Vec3vfM dv1;     // difference vector between time steps t0 and t1 for second vertex
-    Vec3vfM dv2;     // difference vector between time steps t0 and t1 for third vertex
+    Vec3vf<M> v0;      // 1st vertex of the triangles
+    Vec3vf<M> v1;      // 2nd vertex of the triangles
+    Vec3vf<M> v2;      // 3rd vertex of the triangles
+    Vec3vf<M> dv0;     // difference vector between time steps t0 and t1 for first vertex
+    Vec3vf<M> dv1;     // difference vector between time steps t0 and t1 for second vertex
+    Vec3vf<M> dv2;     // difference vector between time steps t0 and t1 for third vertex
     vint<M> geomIDs; // geometry ID
     vint<M> primIDs; // primitive ID
   };

@@ -25,8 +25,6 @@ namespace embree
   template <int M>
   struct QuadMiMB
   {
-    typedef Vec3<vfloat<M>> Vec3vfM;
-
     /* Virtual interface to query information about the quad type */
     struct Type : public PrimitiveType
     {
@@ -115,10 +113,10 @@ namespace embree
     /* gather the quads */
     template<int K>
       __forceinline void gather(const vbool<K>& valid,
-                                Vec3<vfloat<K>>& p0,
-                                Vec3<vfloat<K>>& p1,
-                                Vec3<vfloat<K>>& p2,
-                                Vec3<vfloat<K>>& p3,
+                                Vec3vf<K>& p0,
+                                Vec3vf<K>& p1,
+                                Vec3vf<K>& p2,
+                                Vec3vf<K>& p3,
                                 const size_t index,
                                 const Scene* const scene,
                                 const vfloat<K>& time) const
@@ -145,20 +143,20 @@ namespace embree
       }
     }
 
-    __forceinline void gather(Vec3<vfloat<M>>& p0, 
-                              Vec3<vfloat<M>>& p1, 
-                              Vec3<vfloat<M>>& p2, 
-                              Vec3<vfloat<M>>& p3,
+    __forceinline void gather(Vec3vf<M>& p0,
+                              Vec3vf<M>& p1,
+                              Vec3vf<M>& p2,
+                              Vec3vf<M>& p3,
                               const QuadMesh* mesh0,
                               const QuadMesh* mesh1,
                               const QuadMesh* mesh2,
                               const QuadMesh* mesh3,
                               const vint<M>& itime) const;
 
-    __forceinline void gather(Vec3<vfloat<M>>& p0, 
-                              Vec3<vfloat<M>>& p1, 
-                              Vec3<vfloat<M>>& p2, 
-                              Vec3<vfloat<M>>& p3,
+    __forceinline void gather(Vec3vf<M>& p0,
+                              Vec3vf<M>& p1,
+                              Vec3vf<M>& p2,
+                              Vec3vf<M>& p3,
                               const Scene *const scene,
                               const float time) const;
     
