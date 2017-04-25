@@ -156,7 +156,7 @@ namespace embree
     public:
 
       /*! Default topology construction */
-      Topology () : halfEdges(nullptr) {}
+      Topology () : halfEdges(nullptr,0) {}
 
       /*! Topology initialization */
       Topology (SubdivMesh* mesh, size_t numEdges);

@@ -119,7 +119,7 @@ namespace embree
             bounds[i] = refit_toplevel(child,subtrees,subTreeBounds,depth+1); 
         }
         
-        BBox<Vec3<vfloat<N>>> boundsT = transpose<N>(bounds);
+        BBox3vf<N> boundsT = transpose<N>(bounds);
       
         /* set new bounds */
         node->lower_x = boundsT.lower.x;
@@ -165,7 +165,7 @@ namespace embree
         bounds[i] = recurse_bottom(node->child(i));
       
       /* AOS to SOA transform */
-      BBox<Vec3<vfloat<N>>> boundsT = transpose<N>(bounds);
+      BBox3vf<N> boundsT = transpose<N>(bounds);
       
       /* set new bounds */
       node->lower_x = boundsT.lower.x;

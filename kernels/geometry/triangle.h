@@ -26,8 +26,6 @@ namespace embree
   template<int M>
   struct TriangleM
   {
-    typedef Vec3<vfloat<M>> Vec3vfM;
-
   public:
     struct Type : public PrimitiveType 
     {
@@ -50,7 +48,7 @@ namespace embree
     __forceinline TriangleM() {}
 
     /* Construction from vertices and IDs */
-    __forceinline TriangleM(const Vec3vfM& v0, const Vec3vfM& v1, const Vec3vfM& v2, const vint<M>& geomIDs, const vint<M>& primIDs)
+    __forceinline TriangleM(const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const vint<M>& geomIDs, const vint<M>& primIDs)
       : v0(v0), e1(v0-v1), e2(v2-v0), geomIDs(geomIDs), primIDs(primIDs) {}
 
     /* Returns a mask that tells which triangles are valid */
@@ -73,11 +71,11 @@ namespace embree
     /* Calculate the bounds of the triangle */
     __forceinline BBox3fa bounds() const 
     {
-      Vec3vfM p0 = v0;
-      Vec3vfM p1 = v0-e1;
-      Vec3vfM p2 = v0+e2;
-      Vec3vfM lower = min(p0,p1,p2);
-      Vec3vfM upper = max(p0,p1,p2);
+      Vec3vf<M> p0 = v0;
+      Vec3vf<M> p1 = v0-e1;
+      Vec3vf<M> p2 = v0+e2;
+      Vec3vf<M> lower = min(p0,p1,p2);
+      Vec3vf<M> upper = max(p0,p1,p2);
       vbool<M> mask = valid();
       lower.x = select(mask,lower.x,vfloat<M>(pos_inf));
       lower.y = select(mask,lower.y,vfloat<M>(pos_inf));
@@ -109,7 +107,7 @@ namespace embree
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene)
     {
       vint<M> vgeomID = -1, vprimID = -1;
-      Vec3vfM v0 = zero, v1 = zero, v2 = zero;
+      Vec3vf<M> v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<M && begin<end; i++, begin++)
       {
@@ -135,7 +133,7 @@ namespace embree
     {
       BBox3fa bounds = empty;
       vint<M> vgeomID = -1, vprimID = -1;
-      Vec3vfM v0 = zero, v1 = zero, v2 = zero;
+      Vec3vf<M> v0 = zero, v1 = zero, v2 = zero;
 
 	  for (size_t i=0; i<M; i++)
       {
@@ -158,9 +156,9 @@ namespace embree
     }
 
   public:
-    Vec3vfM v0;      // base vertex of the triangles
-    Vec3vfM e1;      // 1st edge of the triangles (v0-v1)
-    Vec3vfM e2;      // 2nd edge of the triangles (v2-v0)
+    Vec3vf<M> v0;      // base vertex of the triangles
+    Vec3vf<M> e1;      // 1st edge of the triangles (v0-v1)
+    Vec3vf<M> e2;      // 2nd edge of the triangles (v2-v0)
     vint<M> geomIDs; // geometry IDs
     vint<M> primIDs; // primitive IDs
   };

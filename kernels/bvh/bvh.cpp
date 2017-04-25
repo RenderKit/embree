@@ -47,12 +47,6 @@ namespace embree
     this->root = root;
     this->bounds = bounds;
     this->numPrimitives = numPrimitives;
-  }
-
-  template<int N>
-  void BVHN<N>::printStatistics()
-  {
-    std::cout << BVHNStatistics<N>(this).str();
   }	
 
   template<int N>
@@ -153,15 +147,18 @@ namespace embree
     if (device->benchmark || device->verbosity(1)) 
       dt = getSeconds()-t0;
 
+    std::unique_ptr<BVHNStatistics<N>> stat;
+
     /* print statistics */
     if (device->verbosity(1))
     {
+      if (!stat) stat.reset(new BVHNStatistics<N>(this));
       const size_t usedBytes = alloc.getUsedBytes();
       Lock<MutexSys> lock(g_printMutex);
       std::cout << "finished BVH" << N << "<" << primTy.name << "> : " << 1000.0f*dt << "ms, " << 1E-6*double(numPrimitives)/dt << " Mprim/s, " << 1E-9*double(usedBytes)/dt << " GB/s" << std::endl;
     
       if (device->verbosity(2))
-        printStatistics();
+        std::cout << stat->str();
 
       if (device->verbosity(2))
       {
@@ -186,9 +183,9 @@ namespace embree
     /* benchmark mode */
     if (device->benchmark)
     {
-      BVHNStatistics<N> stat(this);
+      if (!stat) stat.reset(new BVHNStatistics<N>(this));
       Lock<MutexSys> lock(g_printMutex);
-      std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << " BVH" << N << "<" << primTy.name << ">" << std::endl << std::flush;
+      std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat->sah() << " " << stat->bytesUsed() << " BVH" << N << "<" << primTy.name << ">" << std::endl << std::flush;
     }
   }
 

@@ -33,24 +33,23 @@ namespace embree
     {
         template<int M, typename Epilog>
         static __forceinline bool intersect(Ray& ray, 
-                                     const Vec3<vfloat<M>>& tri_v0, 
-                                     const Vec3<vfloat<M>>& tri_v1, 
-                                     const Vec3<vfloat<M>>& tri_v2, 
-                                     const vbool<M>& flags,
-                                     const Epilog& epilog)
+                                            const Vec3vf<M>& tri_v0,
+                                            const Vec3vf<M>& tri_v1,
+                                            const Vec3vf<M>& tri_v2,
+                                            const vbool<M>& flags,
+                                            const Epilog& epilog)
         {
           /* calculate vertices relative to ray origin */
-          typedef Vec3<vfloat<M>> Vec3vfM;
-          const Vec3vfM O = Vec3vfM(ray.org);
-          const Vec3vfM D = Vec3vfM(ray.dir);
-          const Vec3vfM v0 = tri_v0-O;
-          const Vec3vfM v1 = tri_v1-O;
-          const Vec3vfM v2 = tri_v2-O;
+          const Vec3vf<M> O = Vec3vf<M>(ray.org);
+          const Vec3vf<M> D = Vec3vf<M>(ray.dir);
+          const Vec3vf<M> v0 = tri_v0-O;
+          const Vec3vf<M> v1 = tri_v1-O;
+          const Vec3vf<M> v2 = tri_v2-O;
           
           /* calculate triangle edges */
-          const Vec3vfM e0 = v2-v0;
-          const Vec3vfM e1 = v0-v1;
-          const Vec3vfM e2 = v1-v2;
+          const Vec3vf<M> e0 = v2-v0;
+          const Vec3vf<M> e1 = v0-v1;
+          const Vec3vf<M> e2 = v1-v2;
           
           /* perform edge tests */
           const vfloat<M> U = dot(cross(v2+v0,e0),D);
@@ -67,7 +66,7 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* calculate geometry normal and denominator */
-          const Vec3vfM Ng = stable_triangle_normal(e2,e1,e0);
+          const Vec3vf<M> Ng = stable_triangle_normal(e2,e1,e0);
           const vfloat<M> den = twice(dot(Ng,D));
           const vfloat<M> absDen = abs(den);
           const vfloat<M> sgnDen = signmsk(den);
@@ -97,7 +96,7 @@ namespace embree
       __forceinline QuadMIntersector1Pluecker(const Ray& ray, const void* ptr) {}
 
       __forceinline void intersect(Ray& ray, IntersectContext* context,
-                                   const Vec3<vfloat<M>>& v0, const Vec3<vfloat<M>>& v1, const Vec3<vfloat<M>>& v2, const Vec3<vfloat<M>>& v3, 
+                                   const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const Vec3vf<M>& v3,
                                    const vint<M>& geomID, const vint<M>& primID) const
       {
         Intersect1EpilogM<M,M,filter> epilog(ray,context,geomID,primID);
@@ -106,7 +105,7 @@ namespace embree
       }
       
       __forceinline bool occluded(Ray& ray, IntersectContext* context,
-                                  const Vec3<vfloat<M>>& v0, const Vec3<vfloat<M>>& v1, const Vec3<vfloat<M>>& v2, const Vec3<vfloat<M>>& v3, 
+                                  const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const Vec3vf<M>& v3,
                                   const vint<M>& geomID, const vint<M>& primID) const
       {
         Occluded1EpilogM<M,M,filter> epilog(ray,context,geomID,primID);
@@ -213,25 +212,24 @@ namespace embree
       /*! Intersect k'th ray from ray packet of size K with M triangles. */
       template<int M, int K, typename Epilog>
        static  __forceinline bool intersect1(RayK<K>& ray, 
-                                     size_t k,
-                                     const Vec3<vfloat<M>>& tri_v0, 
-                                     const Vec3<vfloat<M>>& tri_v1, 
-                                     const Vec3<vfloat<M>>& tri_v2, 
-                                     const vbool<M>& flags,                                     
-                                     const Epilog& epilog)
+                                             size_t k,
+                                             const Vec3vf<M>& tri_v0,
+                                             const Vec3vf<M>& tri_v1,
+                                             const Vec3vf<M>& tri_v2,
+                                             const vbool<M>& flags,
+                                             const Epilog& epilog)
       {
         /* calculate vertices relative to ray origin */
-          typedef Vec3<vfloat<M>> Vec3vfM;
-          const Vec3vfM O = broadcast<vfloat<M>>(ray.org,k);
-          const Vec3vfM D = broadcast<vfloat<M>>(ray.dir,k);
-          const Vec3vfM v0 = tri_v0-O;
-          const Vec3vfM v1 = tri_v1-O;
-          const Vec3vfM v2 = tri_v2-O;
+          const Vec3vf<M> O = broadcast<vfloat<M>>(ray.org,k);
+          const Vec3vf<M> D = broadcast<vfloat<M>>(ray.dir,k);
+          const Vec3vf<M> v0 = tri_v0-O;
+          const Vec3vf<M> v1 = tri_v1-O;
+          const Vec3vf<M> v2 = tri_v2-O;
           
           /* calculate triangle edges */
-          const Vec3vfM e0 = v2-v0;
-          const Vec3vfM e1 = v0-v1;
-          const Vec3vfM e2 = v1-v2;
+          const Vec3vf<M> e0 = v2-v0;
+          const Vec3vf<M> e1 = v0-v1;
+          const Vec3vf<M> e2 = v1-v2;
           
           /* perform edge tests */
           const vfloat<M> U = dot(cross(v2+v0,e0),D);
@@ -247,7 +245,7 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* calculate geometry normal and denominator */
-          const Vec3vfM Ng = stable_triangle_normal(e2,e1,e0);
+          const Vec3vf<M> Ng = stable_triangle_normal(e2,e1,e0);
           const vfloat<M> den = twice(dot(Ng,D));
           const vfloat<M> absDen = abs(den);
           const vfloat<M> sgnDen = signmsk(den);
@@ -277,30 +275,29 @@ namespace embree
       template<typename Epilog>
         __forceinline vbool<K> intersectK(const vbool<K>& valid0, 
                                           RayK<K>& ray, 
-                                          const Vec3<vfloat<K>>& tri_v0, 
-                                          const Vec3<vfloat<K>>& tri_v1, 
-                                          const Vec3<vfloat<K>>& tri_v2, 
+                                          const Vec3vf<K>& tri_v0,
+                                          const Vec3vf<K>& tri_v1,
+                                          const Vec3vf<K>& tri_v2,
                                           const vbool<K>& flags,
                                           const Epilog& epilog) const
       {
         /* calculate vertices relative to ray origin */
-          typedef Vec3<vfloat<K>> Vec3vfK;
           vbool<K> valid = valid0;
-          const Vec3vfK O = ray.org;
-          const Vec3vfK D = ray.dir;
-          const Vec3vfK v0 = tri_v0-O;
-          const Vec3vfK v1 = tri_v1-O;
-          const Vec3vfK v2 = tri_v2-O;
+          const Vec3vf<K> O = ray.org;
+          const Vec3vf<K> D = ray.dir;
+          const Vec3vf<K> v0 = tri_v0-O;
+          const Vec3vf<K> v1 = tri_v1-O;
+          const Vec3vf<K> v2 = tri_v2-O;
           
           /* calculate triangle edges */
-          const Vec3vfK e0 = v2-v0;
-          const Vec3vfK e1 = v0-v1;
-          const Vec3vfK e2 = v1-v2;
+          const Vec3vf<K> e0 = v2-v0;
+          const Vec3vf<K> e1 = v0-v1;
+          const Vec3vf<K> e2 = v1-v2;
            
           /* perform edge tests */
-          const vfloat<K> U = dot(Vec3vfK(cross(v2+v0,e0)),D);
-          const vfloat<K> V = dot(Vec3vfK(cross(v0+v1,e1)),D);
-          const vfloat<K> W = dot(Vec3vfK(cross(v1+v2,e2)),D);
+          const vfloat<K> U = dot(Vec3vf<K>(cross(v2+v0,e0)),D);
+          const vfloat<K> V = dot(Vec3vf<K>(cross(v0+v1,e1)),D);
+          const vfloat<K> W = dot(Vec3vf<K>(cross(v1+v2,e2)),D);
 #if defined(EMBREE_BACKFACE_CULLING)
           const vfloat<K> maxUVW = max(U,V,W);
           valid &= maxUVW <= 0.0f;
@@ -312,13 +309,13 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
            /* calculate geometry normal and denominator */
-          const Vec3vfK Ng = stable_triangle_normal(e2,e1,e0);
-          const vfloat<K> den = twice(dot(Vec3vfK(Ng),D));
+          const Vec3vf<K> Ng = stable_triangle_normal(e2,e1,e0);
+          const vfloat<K> den = twice(dot(Vec3vf<K>(Ng),D));
           const vfloat<K> absDen = abs(den);
           const vfloat<K> sgnDen = signmsk(den);
 
           /* perform depth test */
-          const vfloat<K> T = twice(dot(v0,Vec3vfK(Ng)));
+          const vfloat<K> T = twice(dot(v0,Vec3vf<K>(Ng)));
           valid &= absDen*ray.tnear < (T^sgnDen);
           valid &= (T^sgnDen) <= absDen*ray.tfar;
           if (unlikely(none(valid))) return false;
@@ -336,10 +333,10 @@ namespace embree
       template<typename Epilog>
       __forceinline bool intersectK(const vbool<K>& valid0, 
                                     RayK<K>& ray, 
-                                    const Vec3<vfloat<K>>& v0, 
-                                    const Vec3<vfloat<K>>& v1, 
-                                    const Vec3<vfloat<K>>& v2, 
-                                    const Vec3<vfloat<K>>& v3, 
+                                    const Vec3vf<K>& v0,
+                                    const Vec3vf<K>& v1,
+                                    const Vec3vf<K>& v2,
+                                    const Vec3vf<K>& v3,
                                     const Epilog& epilog) const
       {
         intersectK(valid0,ray,v0,v1,v3,vbool<K>(false),epilog);
@@ -356,7 +353,7 @@ namespace embree
         : QuadMIntersectorKPlueckerBase<M,K,filter>(valid,ray) {}
 
       __forceinline void intersect1(RayK<K>& ray, size_t k, IntersectContext* context,
-                                    const Vec3<vfloat<M>>& v0, const Vec3<vfloat<M>>& v1, const Vec3<vfloat<M>>& v2, const Vec3<vfloat<M>>& v3, 
+                                    const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const Vec3vf<M>& v3,
                                     const vint<M>& geomID, const vint<M>& primID) const
       {
         Intersect1KEpilogM<M,M,K,filter> epilog(ray,k,context,geomID,primID);
@@ -365,7 +362,7 @@ namespace embree
       }
       
       __forceinline bool occluded1(RayK<K>& ray, size_t k, IntersectContext* context,
-                                   const Vec3<vfloat<M>>& v0, const Vec3<vfloat<M>>& v1, const Vec3<vfloat<M>>& v2, const Vec3<vfloat<M>>& v3, 
+                                   const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const Vec3vf<M>& v3,
                                    const vint<M>& geomID, const vint<M>& primID) const
       {
         Occluded1KEpilogM<M,M,K,filter> epilog(ray,k,context,geomID,primID);

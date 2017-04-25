@@ -61,7 +61,6 @@ namespace embree
     __forceinline       long long& operator [](size_t index)       { assert(index < N); return i[index]; }
   };
 
-#if !defined(_MSC_VER) || _MSC_VER >= 1800
   /* Varying bool types */
   template<int N> struct vboolf { int       i[N]; }; // for float/int
   template<int N> struct vboold { long long i[N]; }; // for double/long long
@@ -69,14 +68,6 @@ namespace embree
   /* Aliases to default types */
   template<int N> using vreal = vfloat<N>;
   template<int N> using vbool = vboolf<N>;
-#else
-  /* Workaround for VS2012 */
-  #define vreal  vfloat
-  #define vboolf vbool
-
-  template<int N> struct vboolf { int       i[N]; };
-  template<int N> struct vboold { long long i[N]; };
-#endif
 
   /* Maximum supported varying size */
 #if defined(__AVX512F__)

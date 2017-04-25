@@ -38,10 +38,10 @@ namespace embree
         const vfloat<K> uv01(grid_uv[ofs01]);
         const vfloat<K> uv10(grid_uv[ofs10]);
         const vfloat<K> uv11(grid_uv[ofs11]);
-        const Vec2<vfloat<K>> uv0 = GridSOA::decodeUV(uv00);
-        const Vec2<vfloat<K>> uv1 = GridSOA::decodeUV(uv01);
-        const Vec2<vfloat<K>> uv2 = GridSOA::decodeUV(uv10);
-        const Vec2<vfloat<K>> uv = madd(u,uv1,madd(v,uv2,(1.0f-u-v)*uv0));
+        const Vec2vf<K> uv0 = GridSOA::decodeUV(uv00);
+        const Vec2vf<K> uv1 = GridSOA::decodeUV(uv01);
+        const Vec2vf<K> uv2 = GridSOA::decodeUV(uv10);
+        const Vec2vf<K> uv = madd(u,uv1,madd(v,uv2,(1.0f-u-v)*uv0));
         u = uv[0]; v = uv[1];
       }
     };
@@ -60,10 +60,10 @@ namespace embree
         const vfloat<K> uv01(grid_uv[ofs01]);
         const vfloat<K> uv10(grid_uv[ofs10]);
         const vfloat<K> uv11(grid_uv[ofs11]);
-        const Vec2<vfloat<K>> uv0 = GridSOA::decodeUV(uv10);
-        const Vec2<vfloat<K>> uv1 = GridSOA::decodeUV(uv01);
-        const Vec2<vfloat<K>> uv2 = GridSOA::decodeUV(uv11);
-        const Vec2<vfloat<K>> uv = madd(u,uv1,madd(v,uv2,(1.0f-u-v)*uv0));
+        const Vec2vf<K> uv0 = GridSOA::decodeUV(uv10);
+        const Vec2vf<K> uv1 = GridSOA::decodeUV(uv01);
+        const Vec2vf<K> uv2 = GridSOA::decodeUV(uv11);
+        const Vec2vf<K> uv = madd(u,uv1,madd(v,uv2,(1.0f-u-v)*uv0));
         u = uv[0]; v = uv[1];
       }
     };
@@ -73,7 +73,6 @@ namespace embree
     {
     public:
       typedef void Primitive;
-      typedef Vec3<vfloat<K>> Vec3vfK;
 
       class Precalculations
       {
@@ -112,10 +111,10 @@ namespace embree
             const size_t ofs01 = (y+0)*line_offset+(x+1);
             const size_t ofs10 = (y+1)*line_offset+(x+0);
             const size_t ofs11 = (y+1)*line_offset+(x+1);
-            const Vec3vfK p00(grid_x[ofs00],grid_y[ofs00],grid_z[ofs00]);
-            const Vec3vfK p01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
-            const Vec3vfK p10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
-            const Vec3vfK p11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
+            const Vec3vf<K> p00(grid_x[ofs00],grid_y[ofs00],grid_z[ofs00]);
+            const Vec3vf<K> p01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
+            const Vec3vf<K> p10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
+            const Vec3vf<K> p11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
 
             pre.intersector.intersectK(valid_i,ray,p00,p01,p10,MapUV0<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,context,pre.grid->geomID,pre.grid->primID));
             pre.intersector.intersectK(valid_i,ray,p10,p01,p11,MapUV1<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,context,pre.grid->geomID,pre.grid->primID));
@@ -144,10 +143,10 @@ namespace embree
             const size_t ofs01 = (y+0)*line_offset+(x+1);
             const size_t ofs10 = (y+1)*line_offset+(x+0);
             const size_t ofs11 = (y+1)*line_offset+(x+1);
-            const Vec3vfK p00(grid_x[ofs00],grid_y[ofs00],grid_z[ofs00]);
-            const Vec3vfK p01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
-            const Vec3vfK p10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
-            const Vec3vfK p11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
+            const Vec3vf<K> p00(grid_x[ofs00],grid_y[ofs00],grid_z[ofs00]);
+            const Vec3vf<K> p01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
+            const Vec3vf<K> p10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
+            const Vec3vf<K> p11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
 
             pre.intersector.intersectK(valid,ray,p00,p01,p10,MapUV0<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogMU<1,K,true>(valid,ray,context,pre.grid->geomID,pre.grid->primID));
             if (none(valid)) break;
@@ -230,7 +229,6 @@ namespace embree
     {
     public:
       typedef void Primitive;
-      typedef Vec3<vfloat<K>> Vec3vfK;
       typedef typename GridSOAIntersectorK<K>::Precalculations Precalculations;
 
       /*! Intersect a ray with the primitive. */
@@ -270,22 +268,22 @@ namespace embree
             size_t ofs01 = (y+0)*line_offset+(x+1);
             size_t ofs10 = (y+1)*line_offset+(x+0);
             size_t ofs11 = (y+1)*line_offset+(x+1);
-            const Vec3vfK a00(grid_x[ofs00],grid_y[ofs00],grid_z[ofs00]);
-            const Vec3vfK a01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
-            const Vec3vfK a10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
-            const Vec3vfK a11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
+            const Vec3vf<K> a00(grid_x[ofs00],grid_y[ofs00],grid_z[ofs00]);
+            const Vec3vf<K> a01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
+            const Vec3vf<K> a10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
+            const Vec3vf<K> a11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
             ofs00 += grid_offset;
             ofs01 += grid_offset;
             ofs10 += grid_offset;
             ofs11 += grid_offset;
-            const Vec3vfK b00(grid_x[ofs00],grid_y[ofs00],grid_z[ofs00]);
-            const Vec3vfK b01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
-            const Vec3vfK b10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
-            const Vec3vfK b11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
-            const Vec3vfK p00 = lerp(a00,b00,ftime);
-            const Vec3vfK p01 = lerp(a01,b01,ftime);
-            const Vec3vfK p10 = lerp(a10,b10,ftime);
-            const Vec3vfK p11 = lerp(a11,b11,ftime);
+            const Vec3vf<K> b00(grid_x[ofs00],grid_y[ofs00],grid_z[ofs00]);
+            const Vec3vf<K> b01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
+            const Vec3vf<K> b10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
+            const Vec3vf<K> b11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
+            const Vec3vf<K> p00 = lerp(a00,b00,ftime);
+            const Vec3vf<K> p01 = lerp(a01,b01,ftime);
+            const Vec3vf<K> p10 = lerp(a10,b10,ftime);
+            const Vec3vf<K> p11 = lerp(a11,b11,ftime);
 
             pre.intersector.intersectK(valid_i,ray,p00,p01,p10,MapUV0<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,context,pre.grid->geomID,pre.grid->primID));
             pre.intersector.intersectK(valid_i,ray,p10,p01,p11,MapUV1<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,context,pre.grid->geomID,pre.grid->primID));
@@ -333,22 +331,22 @@ namespace embree
             size_t ofs01 = (y+0)*line_offset+(x+1);
             size_t ofs10 = (y+1)*line_offset+(x+0);
             size_t ofs11 = (y+1)*line_offset+(x+1);
-            const Vec3vfK a00(grid_x[ofs00],grid_y[ofs00],grid_z[ofs00]);
-            const Vec3vfK a01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
-            const Vec3vfK a10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
-            const Vec3vfK a11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
+            const Vec3vf<K> a00(grid_x[ofs00],grid_y[ofs00],grid_z[ofs00]);
+            const Vec3vf<K> a01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
+            const Vec3vf<K> a10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
+            const Vec3vf<K> a11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
             ofs00 += grid_offset;
             ofs01 += grid_offset;
             ofs10 += grid_offset;
             ofs11 += grid_offset;
-            const Vec3vfK b00(grid_x[ofs00],grid_y[ofs00],grid_z[ofs00]);
-            const Vec3vfK b01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
-            const Vec3vfK b10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
-            const Vec3vfK b11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
-            const Vec3vfK p00 = lerp(a00,b00,ftime);
-            const Vec3vfK p01 = lerp(a01,b01,ftime);
-            const Vec3vfK p10 = lerp(a10,b10,ftime);
-            const Vec3vfK p11 = lerp(a11,b11,ftime);
+            const Vec3vf<K> b00(grid_x[ofs00],grid_y[ofs00],grid_z[ofs00]);
+            const Vec3vf<K> b01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
+            const Vec3vf<K> b10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
+            const Vec3vf<K> b11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
+            const Vec3vf<K> p00 = lerp(a00,b00,ftime);
+            const Vec3vf<K> p01 = lerp(a01,b01,ftime);
+            const Vec3vf<K> p10 = lerp(a10,b10,ftime);
+            const Vec3vf<K> p11 = lerp(a11,b11,ftime);
 
             pre.intersector.intersectK(valid,ray,p00,p01,p10,MapUV0<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogMU<1,K,true>(valid,ray,context,pre.grid->geomID,pre.grid->primID));
             if (none(valid)) break;

@@ -48,12 +48,12 @@ namespace embree
                                                                                            const size_t k, 
                                                                                            Precalculations& pre,
                                                                                            RayK<K>& ray, 
-                                                                                           const Vec3vfK &ray_org, 
-                                                                                           const Vec3vfK &ray_dir, 
-                                                                                           const Vec3vfK &ray_rdir, 
+                                                                                           const Vec3vf<K> &ray_org, 
+                                                                                           const Vec3vf<K> &ray_dir, 
+                                                                                           const Vec3vf<K> &ray_rdir, 
                                                                                            const vfloat<K> &ray_tnear, 
                                                                                            const vfloat<K> &ray_tfar,
-                                                                                           const Vec3viK& nearXYZ, 
+                                                                                           const Vec3vi<K>& nearXYZ, 
                                                                                            IntersectContext* context)
     {
       /*! stack state */
@@ -136,18 +136,18 @@ namespace embree
       Precalculations pre(valid,ray);
 
       /* load ray */
-      Vec3vfK ray_org = ray.org;
-      Vec3vfK ray_dir = ray.dir;
+      Vec3vf<K> ray_org = ray.org;
+      Vec3vf<K> ray_dir = ray.dir;
       vfloat<K> ray_tnear = max(ray.tnear,0.0f);
       vfloat<K> ray_tfar  = max(ray.tfar ,0.0f);
-      const Vec3vfK rdir = rcp_safe(ray_dir);
-      const Vec3vfK org(ray_org), org_rdir = org * rdir;
+      const Vec3vf<K> rdir = rcp_safe(ray_dir);
+      const Vec3vf<K> org(ray_org), org_rdir = org * rdir;
       ray_tnear = select(valid,ray_tnear,vfloat<K>(pos_inf));
       ray_tfar  = select(valid,ray_tfar ,vfloat<K>(neg_inf));
       const vfloat<K> inf = vfloat<K>(pos_inf);
 
       /* compute near/far per ray */
-      Vec3viK nearXYZ;
+      Vec3vi<K> nearXYZ;
 #if FORCE_SINGLE_MODE == 0
       if (single)
 #endif
@@ -302,8 +302,8 @@ namespace embree
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
     bool BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::occluded1(const BVH* bvh, NodeRef root, const size_t k, Precalculations& pre,
-                                                                                          RayK<K>& ray, const Vec3vfK &ray_org, const Vec3vfK &ray_dir, const Vec3vfK &ray_rdir, const vfloat<K> &ray_tnear, const vfloat<K> &ray_tfar,
-                                                                                          const Vec3viK& nearXYZ, IntersectContext* context)
+                                                                                          RayK<K>& ray, const Vec3vf<K> &ray_org, const Vec3vf<K> &ray_dir, const Vec3vf<K> &ray_rdir, const vfloat<K> &ray_tnear, const vfloat<K> &ray_tfar,
+                                                                                          const Vec3vi<K>& nearXYZ, IntersectContext* context)
       {
 	/*! stack state */
 	NodeRef stack[stackSizeSingle];  //!< stack of nodes that still need to get traversed
@@ -383,17 +383,17 @@ namespace embree
 
       /* load ray */
       vbool<K> terminated = !valid;
-      Vec3vfK ray_org = ray.org, ray_dir = ray.dir;
+      Vec3vf<K> ray_org = ray.org, ray_dir = ray.dir;
       vfloat<K> ray_tnear = max(ray.tnear,0.0f);
       vfloat<K> ray_tfar  = max(ray.tfar ,0.0f);
-      const Vec3vfK rdir = rcp_safe(ray_dir);
-      const Vec3vfK org(ray_org), org_rdir = org * rdir;
+      const Vec3vf<K> rdir = rcp_safe(ray_dir);
+      const Vec3vf<K> org(ray_org), org_rdir = org * rdir;
       ray_tnear = select(valid,ray_tnear,vfloat<K>(pos_inf));
       ray_tfar  = select(valid,ray_tfar ,vfloat<K>(neg_inf));
       const vfloat<K> inf = vfloat<K>(pos_inf);
 
       /* compute near/far per ray */
-      Vec3viK nearXYZ;
+      Vec3vi<K> nearXYZ;
       if (single)
       {
         nearXYZ.x = select(rdir.x >= 0.0f,vint<K>(0*(int)sizeof(vfloat<N>)),vint<K>(1*(int)sizeof(vfloat<N>)));

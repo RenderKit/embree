@@ -31,7 +31,7 @@ namespace embree
 
     /* Constructs a ray from origin, direction, and ray segment. Near
      * has to be smaller than far */
-    __forceinline RayK(const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir,
+    __forceinline RayK(const Vec3vf<K>& org, const Vec3vf<K>& dir,
                        const vfloat<K>& tnear = zero, const vfloat<K>& tfar = inf,
                        const vfloat<K>& time = zero, const vint<K>& mask = -1)
       : org(org), dir(dir), tnear(tnear), tfar(tfar), time(time), mask(mask), geomID(-1), primID(-1), instID(-1) {}
@@ -104,20 +104,20 @@ namespace embree
 
 
     /* Ray data */
-    Vec3<vfloat<K>> org; // ray origin
-    Vec3<vfloat<K>> dir; // ray direction
-    vfloat<K> tnear;     // start of ray segment
-    vfloat<K> tfar;      // end of ray segment
-    vfloat<K> time;      // time of this ray for motion blur.
-    vint<K> mask;        // used to mask out objects during traversal
+    Vec3vf<K> org;   // ray origin
+    Vec3vf<K> dir;   // ray direction
+    vfloat<K> tnear; // start of ray segment
+    vfloat<K> tfar;  // end of ray segment
+    vfloat<K> time;  // time of this ray for motion blur.
+    vint<K> mask;    // used to mask out objects during traversal
 
     /* Hit data */
-    Vec3<vfloat<K>> Ng;  // geometry normal
-    vfloat<K> u;         // barycentric u coordinate of hit
-    vfloat<K> v;         // barycentric v coordinate of hit
-    vint<K> geomID;      // geometry ID
-    vint<K> primID;      // primitive ID
-    vint<K> instID;      // instance ID
+    Vec3vf<K> Ng;    // geometry normal
+    vfloat<K> u;     // barycentric u coordinate of hit
+    vfloat<K> v;     // barycentric v coordinate of hit
+    vint<K> geomID;  // geometry ID
+    vint<K> primID;  // primitive ID
+    vint<K> instID;  // instance ID
   };
 
 #if defined(__AVX512F__)

@@ -30,33 +30,32 @@ namespace embree
                                                              const Vec3fa& ray_dir,
                                                              const float ray_tnear,
                                                              const float ray_tfar,
-                                                             const Vec3<vfloat<N>>& quad_v0, 
-                                                             const Vec3<vfloat<N>>& quad_v1, 
-                                                             const Vec3<vfloat<N>>& quad_v2, 
-                                                             const Vec3<vfloat<N>>& quad_v3, 
+                                                             const Vec3vf<N>& quad_v0,
+                                                             const Vec3vf<N>& quad_v1,
+                                                             const Vec3vf<N>& quad_v2,
+                                                             const Vec3vf<N>& quad_v3,
                                                              vfloat<N>& u_o, 
                                                              vfloat<N>& v_o,
                                                              vfloat<N>& t_o)
       {
         /* calculate vertices relative to ray origin */
         vbool<N> valid = valid0;
-        typedef Vec3<vfloat<N>> Vec3vfN;
-        const Vec3vfN O = Vec3vfN(ray_org);
-        const Vec3vfN D = Vec3vfN(ray_dir);
-        const Vec3vfN va = quad_v0-O;
-        const Vec3vfN vb = quad_v1-O;
-        const Vec3vfN vc = quad_v2-O;
-        const Vec3vfN vd = quad_v3-O;
+        const Vec3vf<N> O = Vec3vf<N>(ray_org);
+        const Vec3vf<N> D = Vec3vf<N>(ray_dir);
+        const Vec3vf<N> va = quad_v0-O;
+        const Vec3vf<N> vb = quad_v1-O;
+        const Vec3vf<N> vc = quad_v2-O;
+        const Vec3vf<N> vd = quad_v3-O;
         
-        const Vec3vfN edb = vb-vd;
+        const Vec3vf<N> edb = vb-vd;
         const vfloat<N> WW = dot(cross(vd,edb),D);
-        const Vec3vfN v0 = select(WW <= 0.0f,va,vc);
-        const Vec3vfN v1 = select(WW <= 0.0f,vb,vd);
-        const Vec3vfN v2 = select(WW <= 0.0f,vd,vb);
+        const Vec3vf<N> v0 = select(WW <= 0.0f,va,vc);
+        const Vec3vf<N> v1 = select(WW <= 0.0f,vb,vd);
+        const Vec3vf<N> v2 = select(WW <= 0.0f,vd,vb);
 
         /* calculate edges */
-        const Vec3vfN e0 = v2-v0;
-        const Vec3vfN e1 = v0-v1;
+        const Vec3vf<N> e0 = v2-v0;
+        const Vec3vf<N> e1 = v0-v1;
                 
         /* perform edge tests */
         const vfloat<N> U = dot(cross(v0,e0),D);
@@ -65,7 +64,7 @@ namespace embree
         if (unlikely(none(valid))) return false;
         
         /* calculate geometry normal and denominator */
-        const Vec3vfN Ng = cross(e1,e0);
+        const Vec3vf<N> Ng = cross(e1,e0);
         const vfloat<N> den = dot(Ng,D);
         const vfloat<N> absDen = abs(den);
         const vfloat<N> sgnDen = signmsk(den);

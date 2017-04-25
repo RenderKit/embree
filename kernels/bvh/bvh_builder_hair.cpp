@@ -38,7 +38,7 @@ namespace embree
       mvector<PrimRef> prims;
 
       BVHNHairBuilderSAH (BVH* bvh, Scene* scene)
-        : bvh(bvh), scene(scene), prims(scene->device) {}
+        : bvh(bvh), scene(scene), prims(scene->device,0) {}
       
       void build() 
       {

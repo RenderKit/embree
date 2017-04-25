@@ -39,8 +39,6 @@ namespace embree
       typedef typename BVH::BaseNode BaseNode;
       typedef typename BVH::AlignedNode AlignedNode;
       typedef typename BVH::AlignedNodeMB AlignedNodeMB;
-      typedef Vec3<vfloat<K>> Vec3vfK;
-      typedef Vec3<vint<K>> Vec3viK;
       
       static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
       static const size_t stackSizeChunk = 1+(N-1)*BVH::maxDepth;
@@ -53,9 +51,9 @@ namespace embree
 
     private:
       static void intersect1(const BVH* bvh, NodeRef root, const size_t k, Precalculations& pre, 
-                             RayK<K>& ray, const Vec3vfK &ray_org, const Vec3vfK &ray_dir, const Vec3vfK &ray_rdir, const vfloat<K> &ray_tnear, const vfloat<K> &ray_tfar, const Vec3viK& nearXYZ, IntersectContext* context);
+                             RayK<K>& ray, const Vec3vf<K> &ray_org, const Vec3vf<K> &ray_dir, const Vec3vf<K> &ray_rdir, const vfloat<K> &ray_tnear, const vfloat<K> &ray_tfar, const Vec3vi<K>& nearXYZ, IntersectContext* context);
       static bool occluded1(const BVH* bvh, NodeRef root, const size_t k, Precalculations& pre, 
-                            RayK<K>& ray, const Vec3vfK &ray_org, const Vec3vfK &ray_dir, const Vec3vfK &ray_rdir, const vfloat<K> &ray_tnear, const vfloat<K> &ray_tfar, const Vec3viK& nearXYZ, IntersectContext* context);
+                            RayK<K>& ray, const Vec3vf<K> &ray_org, const Vec3vf<K> &ray_dir, const Vec3vf<K> &ray_rdir, const vfloat<K> &ray_tnear, const vfloat<K> &ray_tfar, const Vec3vi<K>& nearXYZ, IntersectContext* context);
 
     public:
       static void intersect(vint<K>* valid, BVH* bvh, RayK<K>& ray, IntersectContext* context);

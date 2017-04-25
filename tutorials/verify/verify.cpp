@@ -1037,7 +1037,7 @@ namespace embree
     RTCGeometryFlags gflags; 
     
     ManyBuildTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags)
-      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), gflags(gflags) {}
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS,false), sflags(sflags), gflags(gflags) {}
     
     VerifyApplication::TestReturnValue run (VerifyApplication* state, bool silent)
     {

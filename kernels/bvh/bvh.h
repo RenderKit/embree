@@ -139,13 +139,6 @@ namespace embree
     /*! Maximal number of primitive blocks in a leaf. */
     static const size_t maxLeafBlocks = items_mask-tyLeaf;
 
-  private:
-
-    /*! Shortcuts */
-    typedef Vec3<vfloat<N>> Vec3vfN;
-    typedef BBox<Vec3vfN> BBox3vfN;
-    typedef AffineSpaceT<LinearSpace3<Vec3vfN>> AffineSpace3vfN;
-
   public:
 
     /*! Builder interface to create allocator */
@@ -1034,7 +1027,7 @@ namespace embree
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
 
     public:
-      AffineSpace3vfN naabb;   //!< non-axis aligned bounding boxes (bounds are [0,1] in specified space)
+      AffineSpace3vf<N> naabb;   //!< non-axis aligned bounding boxes (bounds are [0,1] in specified space)
     };
 
     struct UnalignedNodeMB : public BaseNode
@@ -1112,9 +1105,9 @@ namespace embree
       }
 
     public:
-      AffineSpace3vfN space0;
-      //BBox3vfN b0; // these are the unit bounds
-      BBox3vfN b1;
+      AffineSpace3vf<N> space0;
+      //BBox3vf<N> b0; // these are the unit bounds
+      BBox3vf<N> b1;
     };
 
     struct TransformNode
@@ -1362,9 +1355,6 @@ namespace embree
     /*! sets BVH members after build */
     void set (NodeRef root, const LBBox3fa& bounds, size_t numPrimitives);
 
-    /*! prints statistics about the BVH */
-    void printStatistics();
-
     /*! Clears the barrier bits of a subtree. */
     void clearBarrier(NodeRef& node);
 
@@ -1475,7 +1465,7 @@ namespace embree
     /*! data arrays for special builders */
   public:
     std::vector<BVHN*> objects;
-    avector<char,aligned_allocator<char,32>> subdiv_patches;
+    vector_t<char,aligned_allocator<char,32>> subdiv_patches;
   };
 
   template<>
