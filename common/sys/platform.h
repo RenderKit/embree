@@ -107,12 +107,6 @@
   #define __SSE2__
 #endif
 
-#if defined(CONFIG_SSE41) && defined(_MSC_VER) && !defined(__INTEL_COMPILER) && !defined(__clang__)
-  #define __SSE3__
-  #define __SSSE3__
-  #define __SSE4_1__
-#endif
-
 #if defined(CONFIG_SSE42) && defined(_MSC_VER) && !defined(__INTEL_COMPILER) && !defined(__clang__)
   #define __SSE3__
   #define __SSSE3__
