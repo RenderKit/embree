@@ -143,6 +143,54 @@ namespace embree
         dist = select(m_leq_shift,dist_shift,dist);
         ptr  = select(vboold8(m_leq_shift),ptr_shift,ptr);
       }
+
+      __forceinline static void isort_quick_update(const vbool16 &mask, vfloat16 &dist, vllong8 &ptr, const vfloat16 &d, const vllong8 &p)
+      {
+        dist = select(mask,d,dist);
+        ptr  = select(vboold8(mask),p,ptr);
+      }
+
+      __forceinline static vllong8 getPushPermuteVector(const vllong8 &input)
+      {
+        const vllong8 one(1);
+        vllong8 counter(zero);
+        const vllong8 input1 = align_shift_right<1>(input,input);
+        counter = mask_add(input1 < input,counter,counter,one);
+        const vllong8 input2 = align_shift_right<2>(input,input);
+        counter = mask_add(input2 < input,counter,counter,one);
+        const vllong8 input3 = align_shift_right<3>(input,input);
+        counter = mask_add(input3 < input,counter,counter,one);
+        const vllong8 input4 = align_shift_right<4>(input,input);
+        counter = mask_add(input4 < input,counter,counter,one);
+        const vllong8 input5 = align_shift_right<5>(input,input);
+        counter = mask_add(input5 < input,counter,counter,one);
+        const vllong8 input6 = align_shift_right<6>(input,input);
+        counter = mask_add(input6 < input,counter,counter,one);
+        const vllong8 input7 = align_shift_right<7>(input,input);
+        counter = mask_add(input7 < input,counter,counter,one);
+        return counter;
+      }
+
+        /* const vfloat16 tNear16(tNear); */
+        /* const vllong8 children = vllong8::loadu(node->children);             */
+        /* const vuint16 ui_dist = select(vboolf16((int)mask),asUInt((__m512)tNear16),vuint16(0x7fffffff)); */
+        /* const vuint16 toLongPerm(0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7); */
+        /* const vuint16 ui_dist_perm = permute(ui_dist,toLongPerm); */
+        /* const vllong8 dist = (vllong8((__m512i)ui_dist_perm) << 32) | vllong8(step); */
+        /* const vllong8 perm = getPermuteVector(dist); */
+        /* vllong8 children_perm = permute(children,perm); */
+        /* vllong8 dist_perm = permute(dist,perm) >> 32; */
+        /* cur = toScalar(children_perm); */
+
+        /* stackPtr += hits - 1; */
+        /* for (size_t i=0;i<hits-1;i++) */
+        /* { */
+        /*   dist_perm = align_shift_right<1>(dist_perm,dist_perm); */
+        /*   children_perm  = align_shift_right<1>(children_perm,children_perm);           */
+        /*   stackPtr[-1-i].ptr = toScalar(children_perm); */
+        /*   stackPtr[-1-i].dist = (unsigned int)(toScalar(dist_perm)); */
+        /* } */
+
 #endif
 
     /* Specialization for BVH8. */
@@ -168,6 +216,62 @@ namespace embree
         /*! one child is hit, continue with that child */
         const size_t hits = __popcnt(mask);
 
+        /* vllong8 c = vllong8::loadu(node->children);             */
+        /* c = vllong8::compact((__mmask16)mask,c); */
+        /* cur = vllong8::extract64bit(c); */
+
+        STAT3(normal.trav_hit_boxes[hits],1,1,1);
+
+#if 0
+
+        vllong8 c = vllong8::loadu(node->children);   
+        c = vllong8::compact((__mmask16)mask,c); 
+        cur = toScalar(c); 
+        cur.prefetch(types);
+        if (likely(hits == 1)) {
+          assert(cur != BVH::emptyNode);
+          return;
+        }
+
+        const vfloat16 tNear16(tNear);
+        vuint16 ui_dist = asUInt((__m512)tNear16);
+        ui_dist = vuint16::compact((__mmask16)mask,ui_dist);
+        const vllong8 dist_index = (zeroExtend32Bit(ui_dist) << 32) | vllong8(step);
+
+        vllong8 broadcast_perm(zero);
+        vllong8 ptr(0x7fffffff00000007);
+
+        for (size_t i=0;i<hits;i++)
+        {
+          const vllong8 element = permute(dist_index,broadcast_perm);
+          cur = toScalar(element);
+          broadcast_perm += 1;
+          const vllong8 ptr_shift  = align_shift_right<7>(ptr,ptr);
+          const vboold8 m_leq = element <= ptr;
+          const vboold8 m_leq_shift = m_leq << 1;
+          ptr  = select(m_leq,element,ptr);
+          ptr  = select(m_leq_shift,ptr_shift,ptr);
+        }
+        const vllong8 perm_index = ptr & 0xffffffff;
+        vllong8 c_perm = permute(c,perm_index);
+        ptr = ptr >> 32;
+        cur = toScalar(c_perm);
+        cur.prefetch();
+        stackPtr += hits - 1;
+
+        for (size_t i=0;i<hits-1;i++)
+          assert(ptr[i] <= ptr[i+1]);
+
+        for (size_t i=0;i<hits-1;i++)
+        {
+          ptr = align_shift_right<1>(ptr,ptr);
+          c_perm  = align_shift_right<1>(c_perm,c_perm);          
+          NodeRef cur_store = toScalar(c_perm);
+          cur_store.prefetch();
+          stackPtr[-1-i].ptr  = cur_store;
+          stackPtr[-1-i].dist = toScalar(vuint16((__m512i)ptr));
+        }
+#else
         size_t r = __bscf(mask);
         cur = node->child(r);
         cur.prefetch(types);
@@ -231,10 +335,18 @@ namespace embree
         vfloat16 dist(pos_inf);
         vllong8 ptr(zero);
 
+#if 1
         isort_update(dist,ptr,d0,c0);
-        isort_update(dist,ptr,d1,c1);
+        isort_update(dist,ptr,d1,c1); 
         isort_update(dist,ptr,d2,c2);
-
+#else
+        vbool16 m_insert(1);
+        isort_update(dist,ptr,d_near1,c_near1);
+        m_insert = m_insert << 1;
+        isort_update(dist,ptr,d_near2,c_near2);
+        m_insert = m_insert << 1;
+        isort_update(dist,ptr,d_far2,c_far2);
+#endif
         do {
           const size_t r = __bscf(mask);
           cur = node->child(r);
@@ -253,6 +365,7 @@ namespace embree
           stackPtr[-1-i].ptr  = toScalar(ptr);
           *(float*)&stackPtr[-1-i].dist = toScalar(dist);
         }
+#endif
 
 #else
         /*! one child is hit, continue with that child */
