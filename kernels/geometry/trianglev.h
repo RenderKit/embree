@@ -24,8 +24,6 @@ namespace embree
   template <int M>
   struct TriangleMv
   { 
-    typedef Vec3<vfloat<M>> Vec3vfM;
-
   public:
     struct Type : public PrimitiveType 
     {
@@ -48,7 +46,7 @@ namespace embree
     __forceinline TriangleMv() {}
 
     /* Construction from vertices and IDs */
-    __forceinline TriangleMv(const Vec3vfM& v0, const Vec3vfM& v1, const Vec3vfM& v2, const vint<M>& geomIDs, const vint<M>& primIDs)
+    __forceinline TriangleMv(const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const vint<M>& geomIDs, const vint<M>& primIDs)
       : v0(v0), v1(v1), v2(v2), geomIDs(geomIDs), primIDs(primIDs) {}
     
     /* Returns a mask that tells which triangles are valid */
@@ -71,8 +69,8 @@ namespace embree
     /* Calculate the bounds of the triangles */
     __forceinline BBox3fa bounds() const 
     {
-      Vec3vfM lower = min(v0,v1,v2);
-      Vec3vfM upper = max(v0,v1,v2);
+      Vec3vf<M> lower = min(v0,v1,v2);
+      Vec3vf<M> upper = max(v0,v1,v2);
       vbool<M> mask = valid();
       lower.x = select(mask,lower.x,vfloat<M>(pos_inf));
       lower.y = select(mask,lower.y,vfloat<M>(pos_inf));
@@ -104,7 +102,7 @@ namespace embree
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene)
     {
       vint<M> vgeomID = -1, vprimID = -1;
-      Vec3vfM v0 = zero, v1 = zero, v2 = zero;
+      Vec3vf<M> v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<M && begin<end; i++, begin++)
       {
@@ -130,7 +128,7 @@ namespace embree
     {
       BBox3fa bounds = empty;
       vint<M> vgeomID = -1, vprimID = -1;
-      Vec3vfM v0 = zero, v1 = zero, v2 = zero;
+      Vec3vf<M> v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<M; i++)
       {
@@ -153,9 +151,9 @@ namespace embree
     }
    
   public:
-    Vec3vfM v0;      // 1st vertex of the triangles
-    Vec3vfM v1;      // 2nd vertex of the triangles
-    Vec3vfM v2;      // 3rd vertex of the triangles
+    Vec3vf<M> v0;      // 1st vertex of the triangles
+    Vec3vf<M> v1;      // 2nd vertex of the triangles
+    Vec3vf<M> v2;      // 3rd vertex of the triangles
     vint<M> geomIDs; // geometry ID
     vint<M> primIDs; // primitive ID
   };

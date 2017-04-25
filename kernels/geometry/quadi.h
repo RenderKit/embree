@@ -25,8 +25,6 @@ namespace embree
   template <int M>
   struct QuadMi
   {
-    typedef Vec3<vfloat<M>> Vec3vfM;
-
     /* Virtual interface to query information about the quad type */
     struct Type : public PrimitiveType
     {
@@ -78,10 +76,10 @@ namespace embree
     }
 
     /* gather the quads */
-    __forceinline void gather(Vec3<vfloat<M>>& p0, 
-                              Vec3<vfloat<M>>& p1, 
-                              Vec3<vfloat<M>>& p2, 
-                              Vec3<vfloat<M>>& p3,
+    __forceinline void gather(Vec3vf<M>& p0,
+                              Vec3vf<M>& p1,
+                              Vec3vf<M>& p2,
+                              Vec3vf<M>& p3,
                               const Scene *const scene) const;       
 
 #if defined(__AVX512F__)

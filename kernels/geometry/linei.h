@@ -20,11 +20,9 @@
 
 namespace embree
 {
-  template <int M>
+  template<int M>
   struct LineMi
   {
-    typedef Vec3<vfloat<M>> Vec3vfM;
-
     /* Virtual interface to query information about the line segment type */
     struct Type : public PrimitiveType
     {
@@ -71,20 +69,20 @@ namespace embree
     __forceinline int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
     /* gather the line segments */
-    __forceinline void gather(Vec4<vfloat<M>>& p0,
-                              Vec4<vfloat<M>>& p1,
+    __forceinline void gather(Vec4vf<M>& p0,
+                              Vec4vf<M>& p1,
                               const Scene* scene) const;
 
-    __forceinline void gather(Vec4<vfloat<M>>& p0,
-                              Vec4<vfloat<M>>& p1,
+    __forceinline void gather(Vec4vf<M>& p0,
+                              Vec4vf<M>& p1,
                               const LineSegments* geom0,
                               const LineSegments* geom1,
                               const LineSegments* geom2,
                               const LineSegments* geom3,
                               const vint<M>& itime) const;
 
-    __forceinline void gather(Vec4<vfloat<M>>& p0,
-                              Vec4<vfloat<M>>& p1,
+    __forceinline void gather(Vec4vf<M>& p0,
+                              Vec4vf<M>& p1,
                               const Scene* scene,
                               float time) const;
 

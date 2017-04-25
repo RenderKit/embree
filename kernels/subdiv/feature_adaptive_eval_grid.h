@@ -163,8 +163,8 @@ namespace embree
         foreach2(lx0,lx1,ly0,ly1,[&](const vboolx& valid, const vintx& ix, const vintx& iy) {
             const vfloatx lu = select(ix == swidth -1, vfloatx(1.0f), (vfloatx(ix)-srange.lower.x)*scale_x);
             const vfloatx lv = select(iy == sheight-1, vfloatx(1.0f), (vfloatx(iy)-srange.lower.y)*scale_y);
-            const Vec3<vfloatx> p = patch.eval(lu,lv);
-            Vec3<vfloatx> n = zero;
+            const Vec3vfx p = patch.eval(lu,lv);
+            Vec3vfx n = zero;
             if (unlikely(Nx != nullptr)) n = normalize_safe(patch.normal(lu,lv));
             const vfloatx u = vfloatx(ix)*rcp_swidth;
             const vfloatx v = vfloatx(iy)*rcp_sheight;

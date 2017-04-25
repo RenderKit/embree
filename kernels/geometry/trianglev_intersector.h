@@ -74,9 +74,9 @@ namespace embree
           {
             if (!tri.valid(i)) break;
             STAT3(normal.trav_prims,1,popcnt(valid_i),K);
-            const Vec3<vfloat<K>> v0 = broadcast<vfloat<K>>(tri.v0,i);
-            const Vec3<vfloat<K>> v1 = broadcast<vfloat<K>>(tri.v1,i);
-            const Vec3<vfloat<K>> v2 = broadcast<vfloat<K>>(tri.v2,i);
+            const Vec3vf<K> v0 = broadcast<vfloat<K>>(tri.v0,i);
+            const Vec3vf<K> v1 = broadcast<vfloat<K>>(tri.v1,i);
+            const Vec3vf<K> v2 = broadcast<vfloat<K>>(tri.v2,i);
             pre.intersectK(valid_i,ray,v0,v1,v2,/*UVIdentity<K>(),*/IntersectKEpilogM<M,K,filter>(ray,context,tri.geomIDs,tri.primIDs,i));
           }
         }
@@ -90,9 +90,9 @@ namespace embree
           {
             if (!tri.valid(i)) break;
             STAT3(shadow.trav_prims,1,popcnt(valid_i),K);
-            const Vec3<vfloat<K>> v0 = broadcast<vfloat<K>>(tri.v0,i);
-            const Vec3<vfloat<K>> v1 = broadcast<vfloat<K>>(tri.v1,i);
-            const Vec3<vfloat<K>> v2 = broadcast<vfloat<K>>(tri.v2,i);
+            const Vec3vf<K> v0 = broadcast<vfloat<K>>(tri.v0,i);
+            const Vec3vf<K> v1 = broadcast<vfloat<K>>(tri.v1,i);
+            const Vec3vf<K> v2 = broadcast<vfloat<K>>(tri.v2,i);
             pre.intersectK(valid0,ray,v0,v1,v2,/*UVIdentity<K>(),*/OccludedKEpilogM<M,K,filter>(valid0,ray,context,tri.geomIDs,tri.primIDs,i));
             if (none(valid0)) break;
           }
@@ -164,9 +164,9 @@ namespace embree
           {
             if (!tri.valid(i)) break;
             STAT3(normal.trav_prims,1,popcnt(valid_i),K);
-            const Vec3<vfloat<K>> v0 = broadcast<vfloat<K>>(tri.v0,i);
-            const Vec3<vfloat<K>> v1 = broadcast<vfloat<K>>(tri.v1,i);
-            const Vec3<vfloat<K>> v2 = broadcast<vfloat<K>>(tri.v2,i);
+            const Vec3vf<K> v0 = broadcast<vfloat<K>>(tri.v0,i);
+            const Vec3vf<K> v1 = broadcast<vfloat<K>>(tri.v1,i);
+            const Vec3vf<K> v2 = broadcast<vfloat<K>>(tri.v2,i);
             pre.intersectK(valid_i,ray,v0,v1,v2,UVIdentity<K>(),IntersectKEpilogM<M,K,filter>(ray,context,tri.geomIDs,tri.primIDs,i));
           }
         }
@@ -180,9 +180,9 @@ namespace embree
           {
             if (!tri.valid(i)) break;
             STAT3(shadow.trav_prims,1,popcnt(valid_i),K);
-            const Vec3<vfloat<K>> v0 = broadcast<vfloat<K>>(tri.v0,i);
-            const Vec3<vfloat<K>> v1 = broadcast<vfloat<K>>(tri.v1,i);
-            const Vec3<vfloat<K>> v2 = broadcast<vfloat<K>>(tri.v2,i);
+            const Vec3vf<K> v0 = broadcast<vfloat<K>>(tri.v0,i);
+            const Vec3vf<K> v1 = broadcast<vfloat<K>>(tri.v1,i);
+            const Vec3vf<K> v2 = broadcast<vfloat<K>>(tri.v2,i);
             pre.intersectK(valid0,ray,v0,v1,v2,UVIdentity<K>(),OccludedKEpilogM<M,K,filter>(valid0,ray,context,tri.geomIDs,tri.primIDs,i));
             if (none(valid0)) break;
           }

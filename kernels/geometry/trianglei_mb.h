@@ -25,8 +25,6 @@ namespace embree
   template <int M>
   struct TriangleMiMB
   {
-    typedef Vec3<vfloat<M>> Vec3vfM;
-
     /* Virtual interface to query information about the triangle type */
     struct Type : public PrimitiveType
     {
@@ -114,9 +112,9 @@ namespace embree
     /* gather the triangles */
     template<int K>
       __forceinline void gather(const vbool<K>& valid,
-                                Vec3<vfloat<K>>& p0,
-                                Vec3<vfloat<K>>& p1,
-                                Vec3<vfloat<K>>& p2,
+                                Vec3vf<K>& p0,
+                                Vec3vf<K>& p1,
+                                Vec3vf<K>& p2,
                                 const size_t index,
                                 const Scene* const scene,
                                 const vfloat<K>& time) const
@@ -139,18 +137,18 @@ namespace embree
       }
     }
 
-    __forceinline void gather(Vec3<vfloat<M>>& p0,
-                              Vec3<vfloat<M>>& p1,
-                              Vec3<vfloat<M>>& p2,
+    __forceinline void gather(Vec3vf<M>& p0,
+                              Vec3vf<M>& p1,
+                              Vec3vf<M>& p2,
                               const TriangleMesh* mesh0,
                               const TriangleMesh* mesh1,
                               const TriangleMesh* mesh2,
                               const TriangleMesh* mesh3,
                               const vint<M>& itime) const;
 
-    __forceinline void gather(Vec3<vfloat<M>>& p0,
-                              Vec3<vfloat<M>>& p1,
-                              Vec3<vfloat<M>>& p2,
+    __forceinline void gather(Vec3vf<M>& p0,
+                              Vec3vf<M>& p1,
+                              Vec3vf<M>& p2,
                               const Scene *const scene,
                               const float time) const;
 
