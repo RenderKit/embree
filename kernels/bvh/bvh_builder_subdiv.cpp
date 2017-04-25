@@ -54,7 +54,7 @@ namespace embree
       ParallelForForPrefixSumState<PrimInfo> pstate;
       
       BVHNSubdivPatch1EagerBuilderSAH (BVH* bvh, Scene* scene)
-        : bvh(bvh), scene(scene), prims(scene->device) {}
+        : bvh(bvh), scene(scene), prims(scene->device,0) {}
 
 #define SUBGRID 9
 
@@ -226,7 +226,7 @@ namespace embree
       bool cached;
 
       BVHNSubdivPatch1CachedBuilderSAH (BVH* bvh, Scene* scene, bool cached)
-        : bvh(bvh), refitter(nullptr), scene(scene), prims(scene->device), bounds(scene->device), numSubdivEnableDisableEvents(0), cached(cached) {}
+        : bvh(bvh), refitter(nullptr), scene(scene), prims(scene->device,0), bounds(scene->device,0), numSubdivEnableDisableEvents(0), cached(cached) {}
       
       virtual const BBox3fa leafBounds (NodeRef& ref) const
       {
@@ -535,7 +535,7 @@ namespace embree
       bool cached;
 
       BVHNSubdivPatch1CachedMBlurBuilderSAH (BVH* bvh, Scene* scene, bool cached)
-        : bvh(bvh), scene(scene), primsMB(scene->device), bounds(scene->device), numSubdivEnableDisableEvents(0), cached(cached) {}
+        : bvh(bvh), scene(scene), primsMB(scene->device,0), bounds(scene->device,0), numSubdivEnableDisableEvents(0), cached(cached) {}
 
       bool initializeHalfEdges(size_t& numPrimitives)
       {

@@ -24,23 +24,16 @@ namespace embree
       typedef T* iterator;
       typedef const T* const_iterator;
     
-#if defined(VECTOR_INIT_ALLOCATOR)
-    template<typename M>
-    __forceinline vector_t (M alloc) 
-    : alloc(alloc), size_active(0), size_alloced(0), items(nullptr) {}
-
-    template<typename M>
-    __forceinline vector_t (M alloc, size_t sz) 
-      : alloc(alloc), size_active(0), size_alloced(0), items(nullptr) { internal_resize_init(sz); }
-
-#else
       __forceinline vector_t () 
         : size_active(0), size_alloced(0), items(nullptr) {}
     
       __forceinline explicit vector_t (size_t sz) 
         : size_active(0), size_alloced(0), items(nullptr) { internal_resize_init(sz); }
-#endif
-      
+    
+      template<typename M>
+      __forceinline explicit vector_t (M alloc, size_t sz) 
+      : alloc(alloc), size_active(0), size_alloced(0), items(nullptr) { internal_resize_init(sz); }
+    
       __forceinline ~vector_t() {
         clear();
       }

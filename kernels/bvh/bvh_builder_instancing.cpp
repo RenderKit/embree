@@ -29,7 +29,7 @@ namespace embree
   {
     template<int N, typename Mesh>
     BVHNBuilderInstancing<N,Mesh>::BVHNBuilderInstancing (BVH* bvh, Scene* scene, const createMeshAccelTy createMeshAccel)
-      : bvh(bvh), objects(bvh->objects), createMeshAccel(createMeshAccel), scene(scene), refs(scene->device), prims(scene->device), nextRef(0) {}
+      : bvh(bvh), objects(bvh->objects), createMeshAccel(createMeshAccel), scene(scene), refs(scene->device,0), prims(scene->device,0), nextRef(0) {}
     
     template<int N, typename Mesh>
     BVHNBuilderInstancing<N,Mesh>::~BVHNBuilderInstancing ()
