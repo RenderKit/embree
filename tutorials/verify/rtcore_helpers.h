@@ -858,7 +858,7 @@ namespace embree
     /* verify occluded result against intersect */
     if ((ivariant & VARIANT_INTERSECT_OCCLUDED) == VARIANT_INTERSECT_OCCLUDED)
     {
-      avector<RTCRay,aligned_allocator<RTCRay,16>> rays2(N);
+      vector_t<RTCRay,aligned_allocator<RTCRay,16>> rays2(N);
       for (size_t i=0; i<N; i++) rays2[i] = rays[i];
       IntersectWithModeInternal(mode,IntersectVariant(ivariant & ~VARIANT_OCCLUDED),scene,rays,N);
       IntersectWithModeInternal(mode,IntersectVariant(ivariant & ~VARIANT_INTERSECT),scene,rays2.data(),N);

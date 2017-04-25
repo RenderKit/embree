@@ -82,18 +82,8 @@ namespace embree
       MemoryMonitorInterface* device;
       bool hugepages;
     };
-}
 
-/*! instantiate vector using monitored aligned allocations */
-#define vector_t mvector
-#define allocator_t aligned_monitored_allocator<T,std::alignment_of<T>::value>
-#include "../common/sys/vector_t.h"
-#undef vector_t
-#undef allocator_t
-
-namespace embree
-{
   /*! monitored vector */
-  //template<typename T> // FIXME: unfortunately not supported in VS2012
-  //using mvector = vector_t<T,aligned_monitored_allocator<T,std::alignment_of<T>::value> >;
+  template<typename T>
+    using mvector = vector_t<T,aligned_monitored_allocator<T,std::alignment_of<T>::value> >;
 }
