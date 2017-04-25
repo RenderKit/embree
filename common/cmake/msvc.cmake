@@ -14,12 +14,10 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-SET(FLAGS_SSE2  "/arch:SSE2")
-SET(FLAGS_SSE42 "/arch:SSE2 /DCONFIG_SSE42")
-SET(FLAGS_AVX   "/arch:AVX /DCONFIG_AVX")
-SET(FLAGS_AVX2  "/arch:AVX2 /DCONFIG_AVX2")
-SET(FLAGS_AVX512KNL "")
-SET(FLAGS_AVX512SKX "")
+SET(FLAGS_SSE2  "/D__SSE__ /D__SSE2__")
+SET(FLAGS_SSE42 "${FLAGS_SSE2} /D__SSE3__ /D__SSSE3__ /D__SSE4_1__ /D__SSE4_2__")
+SET(FLAGS_AVX   "${FLAGS_SSE42} /arch:AVX")
+SET(FLAGS_AVX2  "${FLAGS_SSE42} /arch:AVX2")
 
 SET(COMMON_CXX_FLAGS "/EHsc /MP /GR /GS-")
 
