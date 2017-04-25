@@ -150,58 +150,14 @@ CONFIGURE_FILE(
 )
 
 ##############################################################
-# Compiler
-##############################################################
-
-SET(CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo")
-
-IF (WIN32)
-  IF (NOT DEFAULT_CMAKE_CONFIGURATION_TYPES_SET)
-    SET(CMAKE_CONFIGURATION_TYPES "${CONFIGURATION_TYPES}" CACHE STRING "List of generated configurations." FORCE)
-    SET(DEFAULT_CMAKE_CONFIGURATION_TYPES_SET ON CACHE INTERNAL "Default CMake configuration types set.")
-  ENDIF()
-  SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
-
-  IF (${CMAKE_GENERATOR_TOOLSET} MATCHES "^LLVM" )
-    MESSAGE("CLANG detected")
-    INCLUDE(clang)
-  ELSEIF(${CMAKE_GENERATOR_TOOLSET} MATCHES "^Intel")
-    MESSAGE("Intel Compiler detected")
-    INCLUDE (icc)
-  ELSE()
-    INCLUDE (msvc)
-  ENDIF()
-
-ELSE (WIN32)
-  IF (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-    INCLUDE (gcc)
-  ELSEIF (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-    INCLUDE (clang)
-  ELSEIF (${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
-    INCLUDE (icc)
-  ELSE ()
-    MESSAGE(FATAL_ERROR "Unsupported compiler: " ${CMAKE_CXX_COMPILER_ID})
-  ENDIF ()
-
-  IF(NOT CMAKE_BUILD_TYPE)
-    SET(CMAKE_BUILD_TYPE "Release" CACHE STRING "Specifies the build type." FORCE)
-    SET_PROPERTY(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${CONFIGURATION_TYPES})
-  ENDIF(NOT CMAKE_BUILD_TYPE)
-
-  OPTION(CMAKE_VERBOSE_MAKEFILE "Enables verbose mode.")
-  MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
-
-ENDIF (WIN32)
-
-IF(CMAKE_CXX_COMPILER_WRAPPER STREQUAL "CrayPrgEnv")
-  INCLUDE(crayprgenv)
-ENDIF()
-
-##############################################################
 # ISA configuration
 ##############################################################
 
-SET(EMBREE_MAX_ISA "AVX2" CACHE STRING "Selects highest ISA to support.")
+IF(CMAKE_CXX_COMPILER_WRAPPER STREQUAL "CrayPrgEnv")
+  SET(EMBREE_MAX_ISA "NONE" CACHE STRING "Selects highest ISA to support.")
+ELSE()
+  SET(EMBREE_MAX_ISA "AVX2" CACHE STRING "Selects highest ISA to support.")
+ENDIF()
 SET_PROPERTY(CACHE EMBREE_MAX_ISA PROPERTY STRINGS NONE SSE2 SSE4.2 AVX AVX2 AVX512KNL AVX512SKX)
 
 IF (EMBREE_MAX_ISA STREQUAL "NONE")
@@ -269,6 +225,59 @@ ELSE()
     SET(EMBREE_ISA_AVX512SKX  ON)
   ENDIF ()
 ENDIF()
+
+##############################################################
+# Compiler
+##############################################################
+
+SET(CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo")
+
+IF (WIN32)
+  IF (NOT DEFAULT_CMAKE_CONFIGURATION_TYPES_SET)
+    SET(CMAKE_CONFIGURATION_TYPES "${CONFIGURATION_TYPES}" CACHE STRING "List of generated configurations." FORCE)
+    SET(DEFAULT_CMAKE_CONFIGURATION_TYPES_SET ON CACHE INTERNAL "Default CMake configuration types set.")
+  ENDIF()
+  SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
+
+  IF (${CMAKE_GENERATOR_TOOLSET} MATCHES "^LLVM" )
+    MESSAGE("CLANG detected")
+    INCLUDE(clang)
+  ELSEIF(${CMAKE_GENERATOR_TOOLSET} MATCHES "^Intel")
+    MESSAGE("Intel Compiler detected")
+    INCLUDE (icc)
+  ELSE()
+    IF (EMBREE_ISA_AVX512KNL OR EMBREE_ISA_AVX512SKX)
+      MESSAGE(FATAL_ERROR "Microsoft Visual C++ Compiler does not support AVX512. Please use Intel Compiler or Clang.")
+    ENDIF()
+    INCLUDE (msvc)
+  ENDIF()
+
+ELSE (WIN32)
+  IF(CMAKE_CXX_COMPILER_WRAPPER STREQUAL "CrayPrgEnv")
+    INCLUDE(crayprgenv)
+  ELSEIF (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+    INCLUDE (gcc)
+  ELSEIF (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+    INCLUDE (clang)
+  ELSEIF (${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
+    INCLUDE (icc)
+  ELSE ()
+    MESSAGE(FATAL_ERROR "Unsupported compiler: " ${CMAKE_CXX_COMPILER_ID})
+  ENDIF ()
+
+  IF(NOT CMAKE_BUILD_TYPE)
+    SET(CMAKE_BUILD_TYPE "Release" CACHE STRING "Specifies the build type." FORCE)
+    SET_PROPERTY(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${CONFIGURATION_TYPES})
+  ENDIF(NOT CMAKE_BUILD_TYPE)
+
+  OPTION(CMAKE_VERBOSE_MAKEFILE "Enables verbose mode.")
+  MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
+
+ENDIF (WIN32)
+
+##############################################################
+# ISA configuration continued
+##############################################################
 
 UNSET(FLAGS_LOWEST)
 
