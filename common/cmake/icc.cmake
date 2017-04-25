@@ -14,17 +14,14 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-SET(FLAGS_SSE2   "-xsse2")
-SET(FLAGS_SSE3   "-xsse3")
-SET(FLAGS_SSSE3  "-xssse3")
-SET(FLAGS_SSE41  "-xsse4.1")
-SET(FLAGS_SSE42  "-xsse4.2")
-SET(FLAGS_AVX    "-xAVX")
-SET(FLAGS_AVX2   "-xCORE-AVX2")
-SET(FLAGS_AVX512KNL "-xMIC-AVX512")
-SET(FLAGS_AVX512SKX "-xCORE-AVX512")
-
 IF (WIN32)
+
+  SET(FLAGS_SSE2  "/QxSSE2")
+  SET(FLAGS_SSE42 "/QxSSE4.2")
+  SET(FLAGS_AVX   "/arch:AVX")
+  SET(FLAGS_AVX2  "/QxCORE-AVX2")
+  SET(FLAGS_AVX512KNL "/QxMIC-AVX512")
+  SET(FLAGS_AVX512SKX "/QxCORE-AVX512")
 
   SET(COMMON_CXX_FLAGS "/EHsc /MP /GR /GS-")
   SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /Qdiag-disable:11074 ")  # remark #11074: Inlining inhibited by limit max-size
@@ -35,7 +32,6 @@ IF (WIN32)
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${COMMON_CXX_FLAGS} /Ox /Oi /Gy /Qinline-max-total-size- /Qinline-factor=200 /Qvec- ")
   
   SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /DEBUG")
-  SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /Qdiag-disable:11082 ")  # warning #11082: locally defined symbol XXX imported
   SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /IGNORE:4217")  # locally defined symbol XXX imported in function YYY (happens as the ISPC API layer uses exported library functions)
   SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /IGNORE:4049")  # warning LNK4049: locally defined symbol _rtcOccluded1M imported
   SET(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} /DEBUG")
@@ -43,6 +39,16 @@ IF (WIN32)
   INCLUDE(msvc_post)
 
 ELSE()
+
+  SET(FLAGS_SSE2   "-xsse2")
+  SET(FLAGS_SSE3   "-xsse3")
+  SET(FLAGS_SSSE3  "-xssse3")
+  SET(FLAGS_SSE41  "-xsse4.1")
+  SET(FLAGS_SSE42  "-xsse4.2")
+  SET(FLAGS_AVX    "-xAVX")
+  SET(FLAGS_AVX2   "-xCORE-AVX2")
+  SET(FLAGS_AVX512KNL "-xMIC-AVX512")
+  SET(FLAGS_AVX512SKX "-xCORE-AVX512")
 
   OPTION(EMBREE_IGNORE_CMAKE_CXX_FLAGS "When enabled Embree ignores default CMAKE_CXX_FLAGS." ON)
   IF (EMBREE_IGNORE_CMAKE_CXX_FLAGS)
