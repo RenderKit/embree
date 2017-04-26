@@ -29,7 +29,7 @@ namespace embree
     typedef vfloat4 Float;
 
     enum  { size = 4 };             // number of SIMD elements
-    union { __m128i v; uint i[4]; }; // data
+    union { __m128i v; unsigned i[4]; }; // data
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constructors, Assignment & Cast Operators
