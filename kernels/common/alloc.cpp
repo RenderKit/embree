@@ -19,7 +19,7 @@
 
 namespace embree
 {
-  thread_local std::unique_ptr<FastAllocator::ThreadLocal2> FastAllocator::thread_local_allocator2 = nullptr;
+  __thread FastAllocator::ThreadLocal2* FastAllocator::thread_local_allocator2 = nullptr;
 
   struct fast_allocator_regression_test : public RegressionTest
   {

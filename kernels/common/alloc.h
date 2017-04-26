@@ -213,11 +213,8 @@ namespace embree
     /*! returns both fast thread local allocators */
     __forceinline ThreadLocal2* threadLocal2() 
     {
-      ThreadLocal2* alloc = thread_local_allocator2.get();
-      if (alloc == nullptr) {
-        alloc = new ThreadLocal2;
-        thread_local_allocator2.reset(alloc);
-      }
+      ThreadLocal2* alloc = thread_local_allocator2;
+      if (alloc == nullptr) thread_local_allocator2 = alloc = new ThreadLocal2;
       return alloc;
     }
 
@@ -849,7 +846,7 @@ namespace embree
     std::atomic<size_t> log2_grow_size_scale; //!< log2 of scaling factor for grow size
     std::atomic<size_t> bytesUsed;            //!< number of total bytes used
     std::atomic<size_t> bytesWasted;          //!< number of total wasted bytes
-    static thread_local std::unique_ptr<ThreadLocal2> thread_local_allocator2;
+    static __thread ThreadLocal2* thread_local_allocator2;
     SpinLock thread_local_allocators_lock;
     std::vector<ThreadLocal2*> thread_local_allocators;
     AllocationType atype;
