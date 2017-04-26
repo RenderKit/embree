@@ -208,6 +208,11 @@ namespace embree
       return &threadLocal2()->alloc0;
     }
 
+    void setOSallocation(bool flag)
+    {
+      atype = flag ? OS_MALLOC : ALIGNED_MALLOC;
+    }
+
   private:
 
     /*! returns both fast thread local allocators */
