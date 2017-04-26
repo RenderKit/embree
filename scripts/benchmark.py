@@ -91,24 +91,24 @@ def extract(name,modelname,prevname):
     logFile = open(logFileName, 'r')
     for line in logFile:
       if line.count('BENCHMARK_BUILD ') == 1:
-        numbers = map(float, line[(line.index('BENCHMARK_BUILD ')+16):].split(" "))
-        buildperf[base] = numbers[1]
+        numbers = line[(line.index('BENCHMARK_BUILD ')+16):].split(" ")
+        buildperf[base] = float(numbers[1])
         if (prevname != ''):
           buildperf_gain[base] = 100.0*buildperf[base]/buildperf[prevBase]-100.0
-        sah   [base] = numbers[2]
+        sah   [base] = float(numbers[2])
         if (prevname != ''):
           sah_gain[base] = 100.0*sah[base]/sah[prevBase]-100.0
-        memory[base] = numbers[3]
+        memory[base] = float(numbers[3])
         if (prevname != ''):
           memory_gain[base] = 100.0*memory[base]/memory[prevBase]-100.0
       if line.count('BENCHMARK_RENDER_AVG ') == 1:
-        numbers = map(float, line[21:].split(" "))
-        fps_avg[base] = numbers[0]
+        numbers = line[21:].split(" ")
+        fps_avg[base] = float(numbers[0])
         if (prevname != ''):
           fps_gain[base] = 100.0*fps_avg[base]/fps_avg[prevBase]-100.0
       if line.count('BENCHMARK_RENDER_AVG_SIGMA ') == 1:
-        numbers = map(float, line[27:].split(" "))
-        fps_sigma[base] = numbers[0]
+        numbers = line[27:].split(" ")
+        fps_sigma[base] = float(numbers[0])
   except IOError :
     print('cannot open ' + logFileName)
 

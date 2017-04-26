@@ -159,6 +159,10 @@ namespace embree
     return true;
   }
 
+  void TriangleMesh::postCommit () {
+    parent->vertices[id] = (int*) vertexPtr(0);
+  }
+
   void TriangleMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
   {
     /* test if interpolation is enabled */

@@ -710,8 +710,10 @@ namespace embree
   {
     Lock<SpinLock> lock(geometriesMutex);
     unsigned id = id_pool.allocate();
-    if (id >= geometries.size()) 
+    if (id >= geometries.size()) {
       geometries.resize(id+1);
+      vertices.resize(id+1);
+    }
     geometries[id] = geometry;
     geometry->id = id;
     return id;
@@ -734,6 +736,7 @@ namespace embree
     accels.deleteGeometry(unsigned(geomID));
     id_pool.deallocate((unsigned)geomID);
     geometries[geomID] = nullptr;
+    vertices[geomID] = nullptr;
     delete geometry;
   }
 

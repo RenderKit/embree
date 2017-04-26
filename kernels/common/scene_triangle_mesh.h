@@ -113,6 +113,7 @@ namespace embree
     bool verify ();
     void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
     // FIXME: implement interpolateN
+    virtual void postCommit();
 
   public:
 

@@ -241,6 +241,7 @@ namespace embree
   public:
     IDPool<unsigned> id_pool;
     std::vector<Geometry*> geometries; //!< list of all user geometries
+    vector<int*> vertices;
     
   public:
     Device* device;

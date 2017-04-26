@@ -70,13 +70,15 @@ namespace embree
         
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& tri)
         {
+          const Scene* scene = context->scene;
           for (size_t i=0; i<Primitive::max_size(); i++)
           {
             if (!tri.valid(i)) break;
             STAT3(normal.trav_prims,1,popcnt(valid_i),RayK<K>::size());
-            const Vec3f& p0 = *(const Vec3f*) context->scene->get<TriangleMesh>(tri.geomID(i))->vertexPtr(tri.v0[i]);
-            const Vec3f& p1 = *(Vec3f*)((int*)&p0 + tri.v1[i]);
-            const Vec3f& p2 = *(Vec3f*)((int*)&p0 + tri.v2[i]);
+            const int* vertices = scene->vertices[tri.geomID(i)];
+            const Vec3f& p0 = (const Vec3f&) vertices[tri.v0[i]];
+            const Vec3f& p1 = (const Vec3f&) vertices[tri.v1[i]];
+            const Vec3f& p2 = (const Vec3f&) vertices[tri.v2[i]];
             const Vec3vf<K> v0 = Vec3vf<K>(p0);
             const Vec3vf<K> v1 = Vec3vf<K>(p1);
             const Vec3vf<K> v2 = Vec3vf<K>(p2);
@@ -87,14 +89,16 @@ namespace embree
         static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& tri)
         {
           vbool<K> valid0 = valid_i;
-          
+          const Scene* scene = context->scene;
+
           for (size_t i=0; i<Primitive::max_size(); i++)
           {
             if (!tri.valid(i)) break;
             STAT3(shadow.trav_prims,1,popcnt(valid_i),RayK<K>::size());
-            const Vec3f& p0 = *(const Vec3f*) context->scene->get<TriangleMesh>(tri.geomID(i))->vertexPtr(tri.v0[i]);
-            const Vec3f& p1 = *(Vec3f*)((int*)&p0 + tri.v1[i]);
-            const Vec3f& p2 = *(Vec3f*)((int*)&p0 + tri.v2[i]);
+            const int* vertices = scene->vertices[tri.geomID(i)];
+            const Vec3f& p0 = (const Vec3f&) vertices[tri.v0[i]];
+            const Vec3f& p1 = (const Vec3f&) vertices[tri.v1[i]];
+            const Vec3f& p2 = (const Vec3f&) vertices[tri.v2[i]];
             const Vec3vf<K> v0 = Vec3vf<K>(p0);
             const Vec3vf<K> v1 = Vec3vf<K>(p1);
             const Vec3vf<K> v2 = Vec3vf<K>(p2);
@@ -165,13 +169,15 @@ namespace embree
         
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& tri)
         {
+          const Scene* scene = context->scene;
           for (size_t i=0; i<Primitive::max_size(); i++)
           {
             if (!tri.valid(i)) break;
             STAT3(normal.trav_prims,1,popcnt(valid_i),RayK<K>::size());
-            const Vec3f& p0 = *(const Vec3f*) context->scene->get<TriangleMesh>(tri.geomID(i))->vertexPtr(tri.v0[i]);
-            const Vec3f& p1 = *(Vec3f*)((int*)&p0 + tri.v1[i]);
-            const Vec3f& p2 = *(Vec3f*)((int*)&p0 + tri.v2[i]);
+            const int* vertices = scene->vertices[tri.geomID(i)];
+            const Vec3f& p0 = (const Vec3f&) vertices[tri.v0[i]];
+            const Vec3f& p1 = (const Vec3f&) vertices[tri.v1[i]];
+            const Vec3f& p2 = (const Vec3f&) vertices[tri.v2[i]];
             const Vec3vf<K> v0 = Vec3vf<K>(p0);
             const Vec3vf<K> v1 = Vec3vf<K>(p1);
             const Vec3vf<K> v2 = Vec3vf<K>(p2);
@@ -182,14 +188,16 @@ namespace embree
         static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& tri)
         {
           vbool<K> valid0 = valid_i;
+          const Scene* scene = context->scene;
           
           for (size_t i=0; i<Primitive::max_size(); i++)
           {
             if (!tri.valid(i)) break;
             STAT3(shadow.trav_prims,1,popcnt(valid_i),RayK<K>::size());
-            const Vec3f& p0 = *(const Vec3f*) context->scene->get<TriangleMesh>(tri.geomID(i))->vertexPtr(tri.v0[i]);
-            const Vec3f& p1 = *(Vec3f*)((int*)&p0 + tri.v1[i]);
-            const Vec3f& p2 = *(Vec3f*)((int*)&p0 + tri.v2[i]);
+            const int* vertices = scene->vertices[tri.geomID(i)];
+            const Vec3f& p0 = (const Vec3f&) vertices[tri.v0[i]];
+            const Vec3f& p1 = (const Vec3f&) vertices[tri.v1[i]];
+            const Vec3f& p2 = (const Vec3f&) vertices[tri.v2[i]];
             const Vec3vf<K> v0 = Vec3vf<K>(p0);
             const Vec3vf<K> v1 = Vec3vf<K>(p1);
             const Vec3vf<K> v2 = Vec3vf<K>(p2);
