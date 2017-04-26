@@ -144,10 +144,12 @@ namespace embree
         ptr  = select(vboold8(m_leq_shift),ptr_shift,ptr);
       }
 
-      __forceinline static void isort_quick_update(const vbool16 &mask, vfloat16 &dist, vllong8 &ptr, const vfloat16 &d, const vllong8 &p)
+      __forceinline static void isort_quick_update(vfloat16 &dist, vllong8 &ptr, const vfloat16 &d, const vllong8 &p)
       {
-        dist = select(mask,d,dist);
-        ptr  = select(vboold8(mask),p,ptr);
+        dist = align_shift_right<15>(dist,d);
+        ptr  = align_shift_right<7>(ptr,p);
+        //dist = select(mask,d,dist);
+        //ptr  = select(vboold8(mask),p,ptr);
       }
 #endif
 
@@ -169,91 +171,11 @@ namespace embree
         assert(mask != 0);
         const BaseNode* node = cur.baseNode(types);
 
-#if defined(__AVX512F__)
+#if defined(__AVX512CD__)
 
         const size_t hits = __popcnt(mask);
         STAT3(normal.trav_hit_boxes[hits],1,1,1);
 
-#if 0
-        /*! one child is hit, continue with that child */
-
-        const vint16 perm0(0,0,0,1,1,2,3,3,3,3,3,3,3,3,3,3);
-        const vint16 perm1(1,2,3,2,3,3,3,3,3,3,3,3,3,3,3,3);
-        vllong8 pptr = vllong8::loadu(node->children);             
-        pptr = vllong8::compact((__mmask16)mask,pptr);
-        cur = toScalar(pptr);
-        cur.prefetch(types);
-
-        if (likely(hits == 1)) {
-          assert(cur != BVH::emptyNode);
-          return;
-        }
-        
-        vfloat16 distp(tNear);
-        distp = vfloat16::compact((__mmask16)mask,vfloat16(pos_inf),distp);
-#if 1
-        const vfloat16 distp_perm0   = permute(distp,perm0);
-        const vfloat16 distp_perm1   = permute(distp,perm1);
-        const vboolf16 m_distp_perm  = distp_perm0 < distp_perm1;
-        const size_t distp_index     = movemask(m_distp_perm);
-        const vint16 perm_dist       = vint16::load(&permuteTable4[distp_index][0]);
-        const vllong8 perm_pptr      = vllong8::load(&permuteTable4[distp_index][0]);
-        vllong8  ordered_pptr        = permute(pptr,perm_pptr);
-        vfloat16 ordered_distp       = permute(distp,perm_dist);
-
-        cur = toScalar(ordered_pptr);
-#if 0
-        std::cout << std::endl;
-        PRINT(select((__mmask16)mask,vfloat16(tNear),pos_inf));
-        PRINT(distp); 
-        PRINT(distp_perm0); 
-        PRINT(distp_perm1); 
-        PRINT(distp_index); 
-        assert(distp_index < 64);
-        PRINT(perm_pptr); 
-        PRINT(ordered_distp); 
-        PRINT(ordered_pptr); 
-        PRINT(cur);
-#endif
-        if (likely(hits <= 4))
-        {
-          stackPtr += hits - 1;
-          for (size_t i=0;i<hits-1;i++)
-          {
-            ordered_distp = align_shift_right<1>(ordered_distp,ordered_distp);
-            ordered_pptr  = align_shift_right<1>(ordered_pptr,ordered_pptr);          
-            stackPtr[-1-i].ptr  = toScalar(ordered_pptr);
-            *(float*)&stackPtr[-1-i].dist = toScalar(ordered_distp);
-          }
-        }
-        else
-#endif
-        {
-          vfloat16 dist(pos_inf);
-          vllong8 ptr(zero);
-
-          for (size_t i=0;i<hits;i++)
-          {
-            cur = pptr[i];
-            const vfloat16 new_dist(distp[i]);
-            const vllong8 new_ptr(cur);
-            cur.prefetch(types);
-            isort_update(dist,ptr,new_dist,new_ptr);
-          } 
-
-          cur = toScalar(ptr);
-          stackPtr += hits - 1;
-          for (size_t i=0;i<hits-1;i++)
-          {
-            dist = align_shift_right<1>(dist,dist);
-            ptr  = align_shift_right<1>(ptr,ptr);          
-            stackPtr[-1-i].ptr  = toScalar(ptr);
-            *(float*)&stackPtr[-1-i].dist = toScalar(dist);
-          }
-
-         }
-        //permuteTable4
-#else
         size_t r = __bscf(mask);
         cur = node->child(r);
         cur.prefetch(types);
@@ -293,7 +215,7 @@ namespace embree
         const vfloat16 d2(tNear[r]);
 
         const vboolf16 m_dist1 = d_near <= d2;
-        //const vfloat16 d_near1  = select(m_dist1, d_near, d2);
+        //
         const vfloat16 d_far1   = select(m_dist1, d2, d_near);
         const vllong8  c_near1  = select(vboold8(m_dist1), c_near, c2);
         const vllong8  c_far1   = select(vboold8(m_dist1), c2, c_near);
@@ -315,20 +237,19 @@ namespace embree
           return;
         }
 
+        const vfloat16 d_near1  = select(m_dist1, d_near, d2);
+
         vfloat16 dist(pos_inf);
         vllong8 ptr(zero);
 
-#if 1
+#if 0
         isort_update(dist,ptr,d0,c0);
         isort_update(dist,ptr,d1,c1); 
         isort_update(dist,ptr,d2,c2);
 #else
-        vbool16 m_insert(1);
-        isort_update(dist,ptr,d_near1,c_near1);
-        m_insert = m_insert << 1;
-        isort_update(dist,ptr,d_near2,c_near2);
-        m_insert = m_insert << 1;
-        isort_update(dist,ptr,d_far2,c_far2);
+        isort_quick_update(dist,ptr,d_far2,c_far2);
+        isort_quick_update(dist,ptr,d_near2,c_near2);
+        isort_quick_update(dist,ptr,d_near1,c_near1);
 #endif
         do {
           const size_t r = __bscf(mask);
@@ -348,7 +269,6 @@ namespace embree
           stackPtr[-1-i].ptr  = toScalar(ptr);
           *(float*)&stackPtr[-1-i].dist = toScalar(dist);
         }
-#endif
 
 #else
         /*! one child is hit, continue with that child */
