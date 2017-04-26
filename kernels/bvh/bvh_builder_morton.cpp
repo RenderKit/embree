@@ -234,10 +234,10 @@ namespace embree
           upper = max(upper,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
           vgeomID[i] = geomID;
           vprimID[i] = primID;
-          int* base = (int*) mesh->vertexPtr(tri.v[0]);
-          v0[i] = tri.v[0];
-          v1[i] = int(ssize_t((int*)mesh->vertexPtr(tri.v[1])-base)); 
-          v2[i] = int(ssize_t((int*)mesh->vertexPtr(tri.v[2])-base)); 
+          unsigned int_stride = mesh->vertices0.getStride()/4;
+	  v0[i] = tri.v[0] * int_stride; 
+	  v1[i] = tri.v[1] * int_stride;
+	  v2[i] = tri.v[2] * int_stride;
         }
         
         for (size_t i=items; i<4; i++)
