@@ -35,8 +35,6 @@ namespace embree
 
   extern const __m128  _mm_lookupmask_ps[16];
   extern const __m128d _mm_lookupmask_pd[4];
-
-  extern const unsigned char permuteTable4[64][16];
 }
 
 #if defined(__AVX512VL__)
