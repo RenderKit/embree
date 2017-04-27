@@ -301,6 +301,18 @@ namespace embree
       }
     }
 
+    /* calculates a single threaded threshold for the builders such
+     * that for small scenes the overhead of partly allocated blocks
+     * per thread is low */
+    static size_t fixSingleThreadThreshold(size_t defaultThreshold, size_t numPrimitives, double bytesPerPrimitive)
+    {
+      size_t singleThreadBytes = 19*PAGE_SIZE;
+      if (ceil(numPrimitives*bytesPerPrimitive/singleThreadBytes) >= TaskScheduler::threadCount())
+        return defaultThreshold;
+      else
+        return 8*singleThreadBytes/bytesPerPrimitive; // for BVH8 the switching point may be singleThreadThreshold/8
+    }
+
 #if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
 
     __forceinline size_t alignSize(size_t i) {

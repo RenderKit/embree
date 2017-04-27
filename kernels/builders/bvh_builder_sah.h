@@ -274,7 +274,7 @@ namespace embree
             /* spawn tasks */
             if (current.size() > singleThreadThreshold)
             {
-#if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
+#if 0 //defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
 
               /* calculate ranges to more accurately fulfill singleThreadThreshold */
               int numRanges = 0;

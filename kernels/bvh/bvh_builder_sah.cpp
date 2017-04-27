@@ -210,7 +210,7 @@ namespace embree
             }
             double bytesPerPrimitive = double(sizeof(typename BVH::AlignedNode))/(4*N) + 1.2*sizeof(Primitive)/double(Primitive::max_size());
 #if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
-            settings.singleThreadThreshold = size_t(SINGLE_THREADED_BYTES/bytesPerPrimitive);
+            settings.singleThreadThreshold = FastAllocator::fixSingleThreadThreshold(DEFAULT_SINGLE_THREAD_THRESHOLD,numPrimitives,bytesPerPrimitive);
 #endif
             bvh->alloc.init_estimate(numPrimitives*bytesPerPrimitive,settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD,settings.primrefarrayalloc != size_t(inf));
             prims.resize(numPrimitives); 
@@ -312,7 +312,7 @@ namespace embree
             /* call BVH builder */
             double bytesPerPrimitive = double(sizeof(typename BVH::QuantizedNode))/(4*N) + 1.2*sizeof(Primitive)/double(Primitive::max_size());
 #if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
-            settings.singleThreadThreshold = size_t(SINGLE_THREADED_BYTES/bytesPerPrimitive);
+            settings.singleThreadThreshold = FastAllocator::fixSingleThreadThreshold(DEFAULT_SINGLE_THREAD_THRESHOLD,numPrimitives,bytesPerPrimitive);
 #endif
             bvh->alloc.init_estimate(pinfo.size()*bytesPerPrimitive,settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD);
             NodeRef root = BVHNBuilderQuantizedVirtual<N>::build(&bvh->alloc,CreateLeafQuantized<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,settings);
@@ -402,7 +402,7 @@ namespace embree
         prims.resize(numPrimitives);
         double bytesPerPrimitive = double(sizeof(typename BVH::AlignedNodeMB))/(4*N) + 1.2*sizeof(Primitive)/double(Primitive::max_size());
 #if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
-        settings.singleThreadThreshold = size_t(SINGLE_THREADED_BYTES/bytesPerPrimitive);
+        settings.singleThreadThreshold = FastAllocator::fixSingleThreadThreshold(DEFAULT_SINGLE_THREAD_THRESHOLD,numPrimitives,bytesPerPrimitive);
 #endif
         bvh->alloc.init_estimate(numPrimitives*bytesPerPrimitive*numTimeSegments,settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD);
         NodeRef* roots = (NodeRef*) bvh->alloc.getCachedAllocator().malloc0(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
@@ -501,7 +501,7 @@ namespace embree
         Splitter splitter(scene);
         double bytesPerPrimitive = double(sizeof(typename BVH::AlignedNode))/(4*N) + 1.2*sizeof(Primitive)/double(Primitive::max_size());
 #if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
-        settings.singleThreadThreshold = size_t(SINGLE_THREADED_BYTES/bytesPerPrimitive);
+        settings.singleThreadThreshold = FastAllocator::fixSingleThreadThreshold(DEFAULT_SINGLE_THREAD_THRESHOLD,pinfo.size(),bytesPerPrimitive);
 #endif
         bvh->alloc.init_estimate(pinfo.size()*bytesPerPrimitive);
 

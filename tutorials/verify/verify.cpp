@@ -1370,8 +1370,8 @@ namespace embree
       case LINE_GEOMETRY:    
       case LINE_GEOMETRY_MB: 
       case HAIR_GEOMETRY:
-      case HAIR_GEOMETRY_MB: maxN = 100000; break;
-      default: maxN = 250000; break;
+      case HAIR_GEOMETRY_MB: maxN = 1000000; break;
+      default: maxN = 2500000; break;
       }
       
       for (size_t N=128; N<maxN; N = (size_t)((float)N * 1.5f)) 
