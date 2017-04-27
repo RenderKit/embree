@@ -16,10 +16,6 @@
 
 #pragma once
 
-#define _CRT_SECURE_NO_WARNINGS
-
-//__asm__(".symver memcpy,memcpy@GLIBC_2.2.5");
-
 #include <cstddef>
 #include <cassert>
 #include <cstdlib>
