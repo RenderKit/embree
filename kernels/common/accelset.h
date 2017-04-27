@@ -197,13 +197,6 @@ namespace embree
         return LBBox3fa(box[0],box[1]);
       }
 
-      /*! calculates the linear bounds of the i'th item at the itimeGlobal'th time segment */
-      __forceinline LBBox3fa linearBounds(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
-      {
-        return Geometry::linearBounds([&] (size_t itime) { return bounds(i, itime); },
-                                      itimeGlobal, numTimeStepsGlobal, numTimeSteps);
-      }
-
       /*! calculates the build bounds of the i'th item, if it's valid */
       __forceinline bool buildBounds(size_t i, BBox3fa* bbox = nullptr) const
       {

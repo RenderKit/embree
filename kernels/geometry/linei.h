@@ -158,10 +158,10 @@ namespace embree
       new (this) LineMi(v0,geomID,primID); // FIXME: use non temporal store
     }
 
-    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime, size_t numTimeSteps)
+    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime)
     {
       fill(prims,begin,end,scene);
-      return linearBounds(scene,itime,numTimeSteps);
+      return linearBounds(scene,itime);
     }
 
     __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range)

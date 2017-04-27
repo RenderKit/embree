@@ -114,7 +114,7 @@ namespace embree
     }
 
     /* Fill triangle from triangle list */
-    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime, size_t numTimeSteps)
+    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime)
     {
       vint<M> vgeomID = -1, vprimID = -1;
       Vec3vf<M> va0 = zero, vb0 = zero, vc0 = zero;
@@ -129,8 +129,6 @@ namespace embree
         const unsigned geomID = prim.geomID();
         const unsigned primID = prim.primID();
         const TriangleMesh* __restrict__ const mesh = scene->get<TriangleMesh>(geomID);
-        if (unlikely(mesh->numTimeSteps != numTimeSteps))
-          throw_RTCError(RTC_INVALID_OPERATION, "TriangleMvMB is not supported for different number of time steps per mesh");
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         const Vec3fa& a0 = mesh->vertex(tri.v[0],itime+0); bounds0.extend(a0);
         const Vec3fa& a1 = mesh->vertex(tri.v[0],itime+1); bounds1.extend(a1);

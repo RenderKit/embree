@@ -206,17 +206,13 @@ namespace embree
     }
 
     /*! calculates the linear bounds of the i'th primitive at the itimeGlobal'th time segment */
-    __forceinline LBBox3fa linearBounds(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
-    {
-      return Geometry::linearBounds([&] (size_t itime) { return bounds(i, itime); },
-                                    itimeGlobal, numTimeStepsGlobal, numTimeSteps);
+    __forceinline LBBox3fa linearBounds(size_t i, size_t itime) const {
+      return LBBox3fa(bounds(i,itime+0),bounds(i,itime+1));
     }
 
     /*! calculates the linear bounds of the i'th primitive at the itimeGlobal'th time segment */
-    __forceinline LBBox3fa linearBounds(const AffineSpace3fa& space, size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
-    {
-      return Geometry::linearBounds([&] (size_t itime) { return bounds(space, i, itime); },
-                                    itimeGlobal, numTimeStepsGlobal, numTimeSteps);
+    __forceinline LBBox3fa linearBounds(const AffineSpace3fa& space, size_t i, size_t itime) const {
+      return LBBox3fa(bounds(space,i,itime+0),bounds(space,i,itime+1));
     }
 
     /*! calculates the linear bounds of the i'th primitive for the specified time range */

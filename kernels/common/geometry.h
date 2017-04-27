@@ -425,58 +425,6 @@ namespace embree
       return LBBox3fa(b0, b1);
     }
 
-    /*! calculates the linear bounds of a primitive at the itimeGlobal'th time segment */
-    template<typename BoundsFunc>
-    __forceinline static LBBox3fa linearBounds(const BoundsFunc& bounds, size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps)
-    {
-      if (numTimeStepsGlobal == numTimeSteps)
-      {
-        const BBox3fa bounds0 = bounds(itimeGlobal+0);
-        const BBox3fa bounds1 = bounds(itimeGlobal+1);
-        return LBBox3fa(bounds0, bounds1);
-      }
-
-      const int timeSegments = int(numTimeSteps-1);
-      const int timeSegmentsGlobal = int(numTimeStepsGlobal-1);
-      const float invTimeSegmentsGlobal = rcp(float(timeSegmentsGlobal));
-
-      const int itimeScaled = int(itimeGlobal) * timeSegments;
-
-      const int itime0 = itimeScaled / timeSegmentsGlobal;
-      const int rtime0 = itimeScaled % timeSegmentsGlobal;
-      const float ftime0 = float(rtime0) * invTimeSegmentsGlobal;
-      const int rtime1 = rtime0 + timeSegments;
-
-      if (rtime1 <= timeSegmentsGlobal)
-      {
-        const BBox3fa b0 = bounds(itime0+0);
-        const BBox3fa b1 = bounds(itime0+1);
-
-        const float ftime1 = float(rtime1) * invTimeSegmentsGlobal;
-
-        return LBBox3fa(lerp(b0, b1, ftime0), lerp(b0, b1, ftime1));
-      }
-
-      const BBox3fa b0 = bounds(itime0+0);
-      const BBox3fa b1 = bounds(itime0+1);
-      const BBox3fa b2 = bounds(itime0+2);
-
-      const float ftime1 = float(rtime1-timeSegmentsGlobal) * invTimeSegmentsGlobal;
-
-      BBox3fa bounds0 = lerp(b0, b1, ftime0);
-      BBox3fa bounds1 = lerp(b1, b2, ftime1);
-
-      const BBox3fa b1Lerp = lerp(bounds0, bounds1, float(timeSegmentsGlobal-rtime0) * rcp(float(timeSegments)));
-
-      bounds0.lower = min(bounds0.lower, bounds0.lower - (b1Lerp.lower - b1.lower));
-      bounds1.lower = min(bounds1.lower, bounds1.lower - (b1Lerp.lower - b1.lower));
-
-      bounds0.upper = max(bounds0.upper, bounds0.upper + (b1.upper - b1Lerp.upper));
-      bounds1.upper = max(bounds1.upper, bounds1.upper + (b1.upper - b1Lerp.upper));
-
-      return LBBox3fa(bounds0, bounds1);
-    }
-
     /*! calculates the linear bounds of a primitive at the itimeGlobal'th time segment, if it's valid */
     template<typename BoundsFunc>
     __forceinline static bool linearBounds(const BoundsFunc& bounds, size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, LBBox3fa& lbbox)
