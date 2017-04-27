@@ -131,6 +131,11 @@ namespace embree
       return _mm512_mask_compress_epi32(a,mask,b);
     }
 
+    static __forceinline vuint16 expand(const vboolf16& mask, const vuint16& a, vuint16& b) {
+      return _mm512_mask_expand_epi32(b,mask,a);
+    }
+
+
     static __forceinline vuint16 broadcast64bit(size_t v) {
       return _mm512_set1_epi64(v);
     }

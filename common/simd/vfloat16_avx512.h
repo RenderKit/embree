@@ -120,6 +120,10 @@ namespace embree
       return _mm512_mask_compress_ps(a,mask,b);
     }
 
+    static __forceinline vfloat16 expand(const vboolf16& mask, const vfloat16& a, vfloat16& b) {
+      return _mm512_mask_expand_ps(b,mask,a);
+    }
+
     static __forceinline vfloat16 loadu_compact(const vboolf16& mask, const void *const ptr) {
       return _mm512_mask_expandloadu_ps(vfloat16::undefined(),mask,(float*)ptr);
     }
