@@ -321,6 +321,10 @@ namespace embree
     return _mm_cvtsi128_si64(_mm512_castsi512_si128(a));
   }
 
+  __forceinline vllong8 zeroExtend32Bit(const __m512i &a) {
+    return _mm512_cvtepu32_epi64(_mm512_castsi512_si256(a));
+  }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////

@@ -109,6 +109,7 @@ namespace embree
     void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size);
     void* map(RTCBufferType type);
     void unmap(RTCBufferType type);
+    void postCommit();
     void immutable ();
     bool verify ();
     void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
@@ -251,6 +252,18 @@ namespace embree
       
       /* use bounds of first time step in builder */
       bbox = BBox3fa(min(a0,a1,a2),max(a0,a1,a2));
+      return true;
+    }
+
+    /*! calculates the linear bounds of the i'th primitive for the specified time range */
+    __forceinline LBBox3fa linearBounds(size_t primID, const BBox1f& time_range) const {
+      return Geometry::linearBounds([&] (size_t itime) { return bounds(primID, itime); }, time_range, fnumTimeSegments);
+    }
+
+    /*! calculates the linear bounds of the i'th primitive for the specified time range */
+    __forceinline bool linearBounds(size_t i, const BBox1f& time_range, LBBox3fa& bbox) const  {
+      if (!valid(i, getTimeSegmentRange(time_range, fnumTimeSegments))) return false;
+      bbox = linearBounds(i, time_range);
       return true;
     }
 

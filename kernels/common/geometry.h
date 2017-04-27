@@ -22,6 +22,47 @@ namespace embree
 {
   class Scene;
 
+  /* calculate time segment itime and fractional time ftime */
+  __forceinline int getTimeSegment(float time, float numTimeSegments, float& ftime)
+  {
+    const float timeScaled = time * numTimeSegments;
+    const float itimef = clamp(floor(timeScaled), 0.0f, numTimeSegments-1.0f);
+    ftime = timeScaled - itimef;
+    return int(itimef);
+  }
+
+  __forceinline int getTimeSegment(float time, float numTimeSegments)
+  {
+    const float timeScaled = time * numTimeSegments;
+    const float itimef = clamp(floor(timeScaled), 0.0f, numTimeSegments-1.0f);
+    return int(itimef);
+  }
+
+  template<int N>
+  __forceinline vint<N> getTimeSegment(const vfloat<N>& time, const vfloat<N>& numTimeSegments, vfloat<N>& ftime)
+  {
+    const vfloat<N> timeScaled = time * numTimeSegments;
+    const vfloat<N> itimef = clamp(floor(timeScaled), vfloat<N>(zero), numTimeSegments-1.0f);
+    ftime = timeScaled - itimef;
+    return vint<N>(itimef);
+  }
+
+  template<int N>
+  __forceinline vint<N> getTimeSegment(const vfloat<N>& time, const vfloat<N>& numTimeSegments)
+  {
+    const vfloat<N> timeScaled = time * numTimeSegments;
+    const vfloat<N> itimef = clamp(floor(timeScaled), vfloat<N>(zero), numTimeSegments-1.0f);
+    return vint<N>(itimef);
+  }
+
+  /* calculate overlapping time segment range */
+  __forceinline range<int> getTimeSegmentRange(const BBox1f& time_range, float numTimeSegments)
+  {
+    const int itime_lower = (int)floor(time_range.lower*numTimeSegments);
+    const int itime_upper = (int)ceil (time_range.upper*numTimeSegments);
+    return make_range(itime_lower, itime_upper);
+  }
+
   /*! Base class all geometries are derived from */
   class Geometry
   {
@@ -319,6 +360,86 @@ namespace embree
 
   public:
 
+    /*! calculates the interpolated bounds of a primitive at the specified time */
+    template<typename BoundsFunc>
+    __forceinline static BBox3fa interpolateBounds(const BoundsFunc& bounds, float time, float numTimeSegments)
+    {
+      float ftime; size_t itime = getTimeSegment(time, numTimeSegments, ftime);
+      const BBox3fa b0 = bounds(itime+0);
+      const BBox3fa b1 = bounds(itime+1);
+      return lerp(b0, b1, ftime);
+    }
+
+    /*! calculates the linear bounds of a primitive for the specified time range */
+    template<typename BoundsFunc>
+    __forceinline static LBBox3fa linearBounds(const BoundsFunc& bounds, const BBox1f& time_range, float numTimeSegments)
+    {
+      const float lower = time_range.lower*numTimeSegments;
+      const float upper = time_range.upper*numTimeSegments;
+      const float ilowerf = floor(lower);
+      const float iupperf = ceil(upper);
+      const int ilower = (int)ilowerf;
+      const int iupper = (int)iupperf;
+
+      const BBox3fa blower0 = bounds(ilower);
+      const BBox3fa bupper1 = bounds(iupper);
+
+      if (iupper-ilower == 1)
+      {
+        const BBox3fa b0 = blower0;
+        const BBox3fa b1 = bupper1;
+
+        return LBBox3fa(lerp(b0, b1, lower-ilowerf),
+                        lerp(b1, b0, iupperf-upper));
+      }
+
+      const BBox3fa blower1 = bounds(ilower+1);
+      const BBox3fa bupper0 = bounds(iupper-1);
+     
+      BBox3fa b0 = lerp(blower0, blower1, lower-ilowerf);
+      BBox3fa b1 = lerp(bupper1, bupper0, iupperf-upper);
+
+      for (size_t i = ilower+1; i < iupper; i++)
+      {
+        const float f = (float(i)/numTimeSegments - time_range.lower) / time_range.size();
+        const BBox3fa bt = lerp(b0, b1, f);
+        const BBox3fa bi = bounds(i);
+        const Vec3fa dlower = min(bi.lower-bt.lower, Vec3fa(zero));
+        const Vec3fa dupper = max(bi.upper-bt.upper, Vec3fa(zero));
+        b0.lower += dlower; b1.lower += dlower;
+        b0.upper += dupper; b1.upper += dupper;
+      }
+
+      return LBBox3fa(b0, b1);
+    }
+
+    /*! calculates the linear bounds of a primitive for the specified time range */
+    template<typename BoundsFunc>
+    __forceinline static LBBox3fa linearBounds(const BoundsFunc& bounds, const range<int>& time_range, int numTimeSegments)
+    {
+      const int ilower = time_range.begin();
+      const int iupper = time_range.end();
+
+      BBox3fa b0 = bounds(ilower);
+      BBox3fa b1 = bounds(iupper);
+
+      if (iupper-ilower == 1)
+        return LBBox3fa(b0,b1);      
+  
+      for (size_t i = ilower+1; i<iupper; i++)
+      {
+        const float f = float(i - time_range.begin()) / float(time_range.size());
+        const BBox3fa bt = lerp(b0, b1, f);
+        const BBox3fa bi = bounds(i);
+        const Vec3fa dlower = min(bi.lower-bt.lower, Vec3fa(zero));
+        const Vec3fa dupper = max(bi.upper-bt.upper, Vec3fa(zero));
+        b0.lower += dlower; b1.lower += dlower;
+        b0.upper += dupper; b1.upper += dupper;
+      }
+
+      return LBBox3fa(b0, b1);
+    }
+
     /*! calculates the linear bounds of a primitive at the itimeGlobal'th time segment */
     template<typename BoundsFunc>
     __forceinline static LBBox3fa linearBounds(const BoundsFunc& bounds, size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps)
@@ -327,7 +448,6 @@ namespace embree
       {
         const BBox3fa bounds0 = bounds(itimeGlobal+0);
         const BBox3fa bounds1 = bounds(itimeGlobal+1);
-
         return LBBox3fa(bounds0, bounds1);
       }
 
@@ -532,22 +652,4 @@ namespace embree
   template<> __forceinline bool Geometry::hasISPCIntersectionFilter<vfloat16>() const { return (ispcIntersectionFilterMask & HAS_FILTER16) != 0; }
   template<> __forceinline bool Geometry::hasISPCOcclusionFilter   <vfloat16>() const { return (ispcOcclusionFilterMask    & HAS_FILTER16) != 0; }
 #endif
-
-  /* calculate time segment itime and fractional time ftime */
-  __forceinline int getTimeSegment(float time, float numTimeSegments, float& ftime)
-  {
-    const float timeScaled = time * numTimeSegments;
-    const float itimef = clamp(floor(timeScaled), 0.0f, numTimeSegments-1.0f);
-    ftime = timeScaled - itimef;
-    return int(itimef);
-  }
-
-  template<int N>
-  __forceinline vint<N> getTimeSegment(const vfloat<N>& time, const vfloat<N>& numTimeSegments, vfloat<N>& ftime)
-  {
-    const vfloat<N> timeScaled = time * numTimeSegments;
-    const vfloat<N> itimef = clamp(floor(timeScaled), vfloat<N>(zero), numTimeSegments-1.0f);
-    ftime = timeScaled - itimef;
-    return vint<N>(itimef);
-  }
 }

@@ -34,7 +34,7 @@ namespace embree
         __forceinline BinMapping() {}
         
         /*! calculates the mapping */
-        __forceinline BinMapping(const BBox3fa& centBounds, size_t N) 
+        __forceinline BinMapping(size_t N, const BBox3fa& centBounds) 
         {
           num = min(BINS,size_t(4.0f + 0.05f*N));
           const vfloat4 diag = (vfloat4) centBounds.size();
@@ -113,6 +113,13 @@ namespace embree
     template<size_t BINS>
       struct BinSplit
       {
+        enum
+        {
+          SPLIT_OBJECT   =  0,
+          SPLIT_TEMPORAL = -1,
+          SPLIT_FALLBACK = -2,
+        };
+
         /*! construct an invalid split by default */
         __forceinline BinSplit()
           : sah(inf), dim(-1), pos(0), data(0) {}
@@ -553,6 +560,7 @@ namespace embree
       /*! bins an array of primitives */
       __forceinline void bin (const PrimRef* prims, size_t N, const BinMapping<16>& mapping)
       {
+        if (unlikely(N == 0)) return;
 
         const vfloat16 init_min(pos_inf);
         const vfloat16 init_max(neg_inf);
@@ -803,7 +811,6 @@ namespace embree
       /*! finds the best split by scanning binning information */
       __forceinline Split best(const BinMapping<16>& mapping, const size_t blocks_shift) const
       {
-
 	/* find best dimension */
 	float bestSAH = inf;
 	int   bestDim = -1;

@@ -28,14 +28,14 @@ namespace embree
     __forceinline HitK() {}
 
     /* Constructs a hit */
-    __forceinline HitK(const vint<K>& instID, const vint<K>& geomID, const vint<K>& primID, const vfloat<K>& u, const vfloat<K>& v, const vfloat<K>& t, const Vec3<vfloat<K>>& Ng)
+    __forceinline HitK(const vint<K>& instID, const vint<K>& geomID, const vint<K>& primID, const vfloat<K>& u, const vfloat<K>& v, const vfloat<K>& t, const Vec3vf<K>& Ng)
       : Ng(Ng), instID(instID), geomID(geomID), primID(primID), u(u), v(v), t(t) {}
 
     /* Returns the size of the hit */
     static __forceinline size_t size() { return K; }
 
   public:
-    Vec3<vfloat<K>> Ng;  // geometry normal
+    Vec3vf<K> Ng;  // geometry normal
     vint<K> instID;      // instance ID
     vint<K> geomID;      // geometry ID
     vint<K> primID;      // primitive ID

@@ -178,12 +178,12 @@ namespace embree
         {
           const vfloatx u = vfloatx::load(&grid_u[i*VSIZEX]);
           const vfloatx v = vfloatx::load(&grid_v[i*VSIZEX]);
-          Vec3<vfloatx> vtx = patchEval(patch,u,v);
+          Vec3vfx vtx = patchEval(patch,u,v);
         
           /* evaluate displacement function */
           if (unlikely(geom->displFunc != nullptr))
           {
-            const Vec3<vfloatx> normal = normalize_safe(patchNormal(patch, u, v));
+            const Vec3vfx normal = normalize_safe(patchNormal(patch, u, v));
             geom->displFunc(geom->userPtr,patch.geom,patch.prim,
                             &u[0],&v[0],&normal.x[0],&normal.y[0],&normal.z[0],
                             &vtx.x[0],&vtx.y[0],&vtx.z[0],VSIZEX);
@@ -191,7 +191,7 @@ namespace embree
           } 
           else if (unlikely(geom->displFunc2 != nullptr))
           {
-            const Vec3<vfloatx> normal = normalize_safe(patchNormal(patch, u, v));
+            const Vec3vfx normal = normalize_safe(patchNormal(patch, u, v));
             geom->displFunc2(geom->userPtr,patch.geom,patch.prim,patch.time(),
                              &u[0],&v[0],&normal.x[0],&normal.y[0],&normal.z[0],
                              &vtx.x[0],&vtx.y[0],&vtx.z[0],VSIZEX);
@@ -320,12 +320,12 @@ namespace embree
           stitchUVGrid(patch.level,swidth,sheight,x0,y0,dwidth,dheight,grid_u,grid_v);
       
         /* iterates over all grid points */
-        Vec3<vfloatx> bounds_min;
+        Vec3vfx bounds_min;
         bounds_min[0] = pos_inf;
         bounds_min[1] = pos_inf;
         bounds_min[2] = pos_inf;
 
-        Vec3<vfloatx> bounds_max;
+        Vec3vfx bounds_max;
         bounds_max[0] = neg_inf;
         bounds_max[1] = neg_inf;
         bounds_max[2] = neg_inf;
@@ -334,12 +334,12 @@ namespace embree
         {
           const vfloatx u = vfloatx::load(&grid_u[i*VSIZEX]);
           const vfloatx v = vfloatx::load(&grid_v[i*VSIZEX]);
-          Vec3<vfloatx> vtx = patchEval(patch,u,v);
+          Vec3vfx vtx = patchEval(patch,u,v);
         
           /* evaluate displacement function */
           if (unlikely(geom->displFunc != nullptr))
           {
-            const Vec3<vfloatx> normal = normalize_safe(patchNormal(patch,u,v));
+            const Vec3vfx normal = normalize_safe(patchNormal(patch,u,v));
             geom->displFunc(geom->userPtr,patch.geom,patch.prim,
                             &u[0],&v[0],&normal.x[0],&normal.y[0],&normal.z[0],
                             &vtx.x[0],&vtx.y[0],&vtx.z[0],VSIZEX);
@@ -347,7 +347,7 @@ namespace embree
           }
           else if (unlikely(geom->displFunc2 != nullptr))
           {
-            const Vec3<vfloatx> normal = normalize_safe(patchNormal(patch,u,v));
+            const Vec3vfx normal = normalize_safe(patchNormal(patch,u,v));
             geom->displFunc2(geom->userPtr,patch.geom,patch.prim,patch.time(),
                             &u[0],&v[0],&normal.x[0],&normal.y[0],&normal.z[0],
                             &vtx.x[0],&vtx.y[0],&vtx.z[0],VSIZEX);

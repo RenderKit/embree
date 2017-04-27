@@ -46,16 +46,16 @@ namespace embree
     template<int M>
       struct HalfPlaneN
       {
-        const Vec3<vfloat<M>> P;  //!< plane origin
-        const Vec3<vfloat<M>> N;  //!< plane normal
+        const Vec3vf<M> P;  //!< plane origin
+        const Vec3vf<M> N;  //!< plane normal
 
-        __forceinline HalfPlaneN(const Vec3<vfloat<M>>& P, const Vec3<vfloat<M>>& N)
+        __forceinline HalfPlaneN(const Vec3vf<M>& P, const Vec3vf<M>& N)
           : P(P), N(N) {}
 
         __forceinline BBox<vfloat<M>> intersect(const Vec3fa& ray_org, const Vec3fa& ray_dir) const
         {
-          Vec3<vfloat<M>> O = Vec3<vfloat<M>>(ray_org) - P;
-          Vec3<vfloat<M>> D = Vec3<vfloat<M>>(ray_dir);
+          Vec3vf<M> O = Vec3vf<M>(ray_org) - P;
+          Vec3vf<M> D = Vec3vf<M>(ray_dir);
           vfloat<M> ON = dot(O,N);
           vfloat<M> DN = dot(D,N);
           vfloat<M> t = -ON*rcp(select(abs(DN) < min_rcp_input, min_rcp_input, DN) );

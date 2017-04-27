@@ -234,10 +234,10 @@ namespace embree
           upper = max(upper,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
           vgeomID[i] = geomID;
           vprimID[i] = primID;
-          int* base = (int*) mesh->vertexPtr(tri.v[0]);
-          v0[i] = tri.v[0];
-          v1[i] = int(ssize_t((int*)mesh->vertexPtr(tri.v[1])-base)); 
-          v2[i] = int(ssize_t((int*)mesh->vertexPtr(tri.v[2])-base)); 
+          unsigned int_stride = mesh->vertices0.getStride()/4;
+	  v0[i] = tri.v[0] * int_stride; 
+	  v1[i] = tri.v[1] * int_stride;
+	  v2[i] = tri.v[2] * int_stride;
         }
         
         for (size_t i=items; i<4; i++)
@@ -388,7 +388,7 @@ namespace embree
     public:
       
       BVHNMeshBuilderMorton (BVH* bvh, Mesh* mesh, const size_t minLeafSize, const size_t maxLeafSize, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
-        : bvh(bvh), mesh(mesh), morton(bvh->device), settings(N,BVH::maxBuildDepth,minLeafSize,maxLeafSize,singleThreadThreshold) {}
+        : bvh(bvh), mesh(mesh), morton(bvh->device,0), settings(N,BVH::maxBuildDepth,minLeafSize,maxLeafSize,singleThreadThreshold) {}
       
       /* build function */
       void build() 
@@ -483,6 +483,9 @@ namespace embree
 
 #if defined(EMBREE_GEOMETRY_USER)
     Builder* BVH4VirtualMeshBuilderMortonGeneral (void* bvh, AccelSet* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<4,AccelSet,Object>((BVH4*)bvh,mesh,1,BVH4::maxLeafBlocks); }
+#if defined(__AVX__)
+    Builder* BVH8VirtualMeshBuilderMortonGeneral (void* bvh, AccelSet* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<8,AccelSet,Object>((BVH8*)bvh,mesh,1,BVH4::maxLeafBlocks); }    
+#endif
 #endif
 
   }

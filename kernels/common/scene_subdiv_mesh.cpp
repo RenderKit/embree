@@ -33,8 +33,8 @@ namespace embree
       displBounds(empty),
       tessellationRate(2.0f),
       numHalfEdges(0),
-      faceStartEdge(parent->device),
-      invalid_face(parent->device)
+      faceStartEdge(parent->device,0),
+      invalid_face(parent->device,0)
   {
     vertices.resize(numTimeSteps);
     vertex_buffer_tags.resize(numTimeSteps);
@@ -358,7 +358,7 @@ namespace embree
   }
 
   SubdivMesh::Topology::Topology(SubdivMesh* mesh, size_t numEdges)
-    : mesh(mesh), subdiv_mode(RTC_SUBDIV_SMOOTH_BOUNDARY), halfEdges(mesh->parent->device)
+    : mesh(mesh), subdiv_mode(RTC_SUBDIV_SMOOTH_BOUNDARY), halfEdges(mesh->parent->device,0)
   {
     vertexIndices.init(mesh->parent->device,numEdges,sizeof(unsigned int));
   }

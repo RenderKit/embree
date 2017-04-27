@@ -194,7 +194,7 @@ namespace embree
         
         static __forceinline void intersectK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayK<K>& ray, IntersectContext* context, const PrimitiveK* prim, size_t num, size_t& lazy_node)
         {
-          PrecalculationsK pre(valid,ray,1); //todo: might cause trouble
+          PrecalculationsK pre(valid,ray); //todo: might cause trouble
 
           for (size_t i=0; i<num; i++) {
             IntersectorK::intersect(valid,pre,ray,context,prim[i]);
@@ -203,7 +203,7 @@ namespace embree
         
         static __forceinline vbool<K> occludedK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayK<K>& ray, IntersectContext* context, const PrimitiveK* prim, size_t num, size_t& lazy_node)
         {
-          PrecalculationsK pre(valid,ray,1); //todo: might cause trouble
+          PrecalculationsK pre(valid,ray); //todo: might cause trouble
           vbool<K> valid0 = valid;
           for (size_t i=0; i<num; i++) {
             valid0 &= !IntersectorK::occluded(valid0,pre,ray,context,prim[i]);

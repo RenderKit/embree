@@ -186,7 +186,7 @@ namespace embree
     FastAllocator (Device* device, bool osAllocation) 
       : device(device), slotMask(0), usedBlocks(nullptr), freeBlocks(nullptr), use_single_mode(false), defaultBlockSize(PAGE_SIZE), estimatedSize(0),
         growSize(PAGE_SIZE), maxGrowSize(maxAllocationSize), log2_grow_size_scale(0), bytesUsed(0), bytesFree(0), bytesWasted(0), atype(osAllocation ? OS_MALLOC : ALIGNED_MALLOC),
-        primrefarray(device)
+        primrefarray(device,0)
     {
       for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++)
       {
@@ -218,13 +218,22 @@ namespace embree
       return &threadLocal2()->alloc0;
     }
 
+    void setOSallocation(bool flag)
+    {
+      atype = flag ? OS_MALLOC : ALIGNED_MALLOC;
+    }
+
   private:
 
     /*! returns both fast thread local allocators */
     __forceinline ThreadLocal2* threadLocal2() 
     {
       ThreadLocal2* alloc = thread_local_allocator2;
-      if (alloc == nullptr) thread_local_allocator2 = alloc = new ThreadLocal2;
+      if (alloc == nullptr) {
+        thread_local_allocator2 = alloc = new ThreadLocal2;
+        Lock<SpinLock> lock(s_thread_local_allocators_lock);
+        s_thread_local_allocators.push_back(make_unique(alloc));
+      }
       return alloc;
     }
 
@@ -304,13 +313,16 @@ namespace embree
     /* calculates a single threaded threshold for the builders such
      * that for small scenes the overhead of partly allocated blocks
      * per thread is low */
-    static size_t fixSingleThreadThreshold(size_t defaultThreshold, size_t numPrimitives, double bytesPerPrimitive)
+    static size_t fixSingleThreadThreshold(size_t defaultThreshold, size_t numPrimitives, size_t bytesEstimated)
     {
+      if (numPrimitives == 0) 
+        return defaultThreshold;
+
       size_t singleThreadBytes = 19*PAGE_SIZE;
-      if (ceil(numPrimitives*bytesPerPrimitive/singleThreadBytes) >= TaskScheduler::threadCount())
+      if ((numPrimitives*bytesEstimated+(numPrimitives*singleThreadBytes-1))/(numPrimitives*singleThreadBytes) >= TaskScheduler::threadCount())
         return defaultThreshold;
       else
-        return 8*singleThreadBytes/bytesPerPrimitive; // for BVH8 the switching point may be singleThreadThreshold/8
+        return 8*singleThreadBytes*numPrimitives/bytesEstimated; // for BVH8 the switching point may be singleThreadThreshold/8
     }
 
 #if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
@@ -922,6 +934,8 @@ namespace embree
     std::atomic<size_t> bytesFree;
     std::atomic<size_t> bytesWasted;
     static __thread ThreadLocal2* thread_local_allocator2;
+    static SpinLock s_thread_local_allocators_lock;
+    static std::vector<std::unique_ptr<ThreadLocal2>> s_thread_local_allocators;
     SpinLock thread_local_allocators_lock;
     std::vector<ThreadLocal2*> thread_local_allocators;
     AllocationType atype;

@@ -30,14 +30,10 @@ namespace embree
      
       static const bool validIntersectorK = false;
 
-      struct PrecalculationsBase {
-        __forceinline PrecalculationsBase() {}
-        __forceinline PrecalculationsBase (const Ray& ray, const void *ptr) {}
+      struct Precalculations {
+        __forceinline Precalculations() {}
+        __forceinline Precalculations (const Ray& ray, const void *ptr) {}
       };
-
-      typedef typename std::conditional<mblur, 
-        Intersector1PrecalculationsMB<PrecalculationsBase>,
-        Intersector1Precalculations<PrecalculationsBase>>::type Precalculations;
       
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim) 
       {
@@ -170,13 +166,9 @@ namespace embree
     {
       typedef Object Primitive;
       
-      struct PrecalculationsBase {
-        __forceinline PrecalculationsBase (const vbool<K>& valid, const RayK<K>& ray) {}
+      struct Precalculations {
+        __forceinline Precalculations (const vbool<K>& valid, const RayK<K>& ray) {}
       };
-
-      typedef typename std::conditional<mblur, 
-        IntersectorKPrecalculationsMB<K,PrecalculationsBase>,
-        IntersectorKPrecalculations<K,PrecalculationsBase>>::type Precalculations;
       
       static __forceinline void intersect(const vbool<K>& valid_i, const Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim)
       {

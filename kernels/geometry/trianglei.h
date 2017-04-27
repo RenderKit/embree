@@ -24,8 +24,6 @@ namespace embree
   template <int M>
   struct TriangleMi
   {
-    typedef Vec3<vfloat<M>> Vec3vfM;
-
     /* Virtual interface to query information about the triangle type */
     struct Type : public PrimitiveType
     {
@@ -68,8 +66,15 @@ namespace embree
     __forceinline vint<M> primID() const { return primIDs; }
     __forceinline int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
+    /* loads a single vertex */
+    __forceinline Vec3f& getVertex(const vint<M>& v, const size_t index, const Scene *const scene) const
+    {
+      const int* vertices = scene->vertices[geomID(index)];
+      return (Vec3f&) vertices[v[index]];
+    }
+
     /* gather the triangles */
-    __forceinline void gather(Vec3<vfloat<M>>& p0, Vec3<vfloat<M>>& p1, Vec3<vfloat<M>>& p2, const Scene* const scene) const;
+    __forceinline void gather(Vec3vf<M>& p0, Vec3vf<M>& p1, Vec3vf<M>& p2, const Scene* const scene) const;
     
      /* Non temporal store */
     __forceinline static void store_nt(TriangleMi* dst, const TriangleMi& src)
@@ -95,10 +100,10 @@ namespace embree
 	if (begin<end) {
 	  geomID[i] = prim->geomID();
 	  primID[i] = prim->primID();
-          int* base = (int*) mesh->vertexPtr(tri.v[0]);
-	  v0[i] = tri.v[0]; 
-	  v1[i] = int(size_t((int*)mesh->vertexPtr(tri.v[1])-base)); 
-	  v2[i] = int(size_t((int*)mesh->vertexPtr(tri.v[2])-base)); 
+          unsigned int_stride = mesh->vertices0.getStride()/4;
+	  v0[i] = tri.v[0] * int_stride; 
+	  v1[i] = tri.v[1] * int_stride;
+	  v2[i] = tri.v[2] * int_stride;
 	  begin++;
 	} else {
 	  assert(i);
@@ -134,9 +139,9 @@ namespace embree
     }
     
   public:
-    vint<M> v0;         // index to 1st vertex
-    vint<M> v1;         // offset to 2nd vertex
-    vint<M> v2;         // offset to 3rd vertex
+    vint<M> v0;         // 4 byte offset of 1st vertex
+    vint<M> v1;         // 4 byte offset of 2nd vertex
+    vint<M> v2;         // 4 byte offset of 3rd vertex
     vint<M> geomIDs;    // geometry ID of mesh
     vint<M> primIDs;    // primitive ID of primitive inside mesh
   };
@@ -144,34 +149,25 @@ namespace embree
   template<>
     __forceinline void TriangleMi<4>::gather(Vec3vf4& p0, Vec3vf4& p1, Vec3vf4& p2, const Scene* const scene) const
   {
-    const bool samegeom = all(geomIDs == vint4(geomIDs[0]));
-    if (likely(samegeom))
-    {
-      const TriangleMesh* mesh = scene->get<TriangleMesh>(geomIDs[0]);
-      const int* base0 = (const int*) mesh->vertexPtr(v0[0]);
-      const int* base1 = (const int*) mesh->vertexPtr(v0[1]);
-      const int* base2 = (const int*) mesh->vertexPtr(v0[2]);
-      const int* base3 = (const int*) mesh->vertexPtr(v0[3]);
-      const vfloat4 a0 = vfloat4::loadu(base0      ), a1 = vfloat4::loadu(base1      ), a2 = vfloat4::loadu(base2      ), a3 = vfloat4::loadu(base3      );
-      const vfloat4 b0 = vfloat4::loadu(base0+v1[0]), b1 = vfloat4::loadu(base1+v1[1]), b2 = vfloat4::loadu(base2+v1[2]), b3 = vfloat4::loadu(base3+v1[3]);
-      const vfloat4 c0 = vfloat4::loadu(base0+v2[0]), c1 = vfloat4::loadu(base1+v2[1]), c2 = vfloat4::loadu(base2+v2[2]), c3 = vfloat4::loadu(base3+v2[3]);
-      transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
-      transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
-      transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
-    }
-    else
-    {
-      const int* base0 = (const int*) scene->get<TriangleMesh>(geomIDs[0])->vertexPtr(v0[0]);
-      const int* base1 = (const int*) scene->get<TriangleMesh>(geomIDs[1])->vertexPtr(v0[1]);
-      const int* base2 = (const int*) scene->get<TriangleMesh>(geomIDs[2])->vertexPtr(v0[2]);
-      const int* base3 = (const int*) scene->get<TriangleMesh>(geomIDs[3])->vertexPtr(v0[3]);
-      const vfloat4 a0 = vfloat4::loadu(base0      ), a1 = vfloat4::loadu(base1      ), a2 = vfloat4::loadu(base2      ), a3 = vfloat4::loadu(base3      );
-      const vfloat4 b0 = vfloat4::loadu(base0+v1[0]), b1 = vfloat4::loadu(base1+v1[1]), b2 = vfloat4::loadu(base2+v1[2]), b3 = vfloat4::loadu(base3+v1[3]);
-      const vfloat4 c0 = vfloat4::loadu(base0+v2[0]), c1 = vfloat4::loadu(base1+v2[1]), c2 = vfloat4::loadu(base2+v2[2]), c3 = vfloat4::loadu(base3+v2[3]);
-      transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
-      transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
-      transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
-    }
+    const int* vertices0 = scene->vertices[geomIDs[0]];
+    const int* vertices1 = scene->vertices[geomIDs[1]];
+    const int* vertices2 = scene->vertices[geomIDs[2]];
+    const int* vertices3 = scene->vertices[geomIDs[3]];
+    const vfloat4 a0 = vfloat4::loadu(vertices0 + v0[0]);
+    const vfloat4 a1 = vfloat4::loadu(vertices1 + v0[1]);
+    const vfloat4 a2 = vfloat4::loadu(vertices2 + v0[2]);
+    const vfloat4 a3 = vfloat4::loadu(vertices3 + v0[3]);
+    const vfloat4 b0 = vfloat4::loadu(vertices0 + v1[0]);
+    const vfloat4 b1 = vfloat4::loadu(vertices1 + v1[1]);
+    const vfloat4 b2 = vfloat4::loadu(vertices2 + v1[2]);
+    const vfloat4 b3 = vfloat4::loadu(vertices3 + v1[3]);
+    const vfloat4 c0 = vfloat4::loadu(vertices0 + v2[0]);
+    const vfloat4 c1 = vfloat4::loadu(vertices1 + v2[1]);
+    const vfloat4 c2 = vfloat4::loadu(vertices2 + v2[2]);
+    const vfloat4 c3 = vfloat4::loadu(vertices3 + v2[3]);
+    transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
+    transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
+    transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
   }
 
   template<int M>

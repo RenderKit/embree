@@ -30,18 +30,16 @@ namespace embree
     {
       typedef Bezier1v Primitive;
 
-      struct PrecalculationsBase
+      struct Precalculations
       {
-        __forceinline PrecalculationsBase() {}
+        __forceinline Precalculations() {}
 
-        __forceinline PrecalculationsBase(const Ray& ray, const void* ptr)
+        __forceinline Precalculations(const Ray& ray, const void* ptr)
           : intersectorHair(ray,ptr), intersectorCurve(ray,ptr) {}
 
         Bezier1Intersector1<Curve3fa> intersectorHair;
         BezierCurve1Intersector1<Curve3fa> intersectorCurve;
       };
-
-      typedef Intersector1Precalculations<PrecalculationsBase> Precalculations;
       
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim)
       {
@@ -84,21 +82,19 @@ namespace embree
     {
       typedef Bezier1v Primitive;
 
-      struct PrecalculationsBase
+      struct Precalculations
       {
-        __forceinline PrecalculationsBase() {}
+        __forceinline Precalculations() {}
 
-        __forceinline PrecalculationsBase(const vbool<K>& valid, const RayK<K>& ray)
+        __forceinline Precalculations(const vbool<K>& valid, const RayK<K>& ray)
           : intersectorHair(valid,ray), intersectorCurve(valid,ray) {}
 
-        __forceinline PrecalculationsBase(const RayK<K>& ray, size_t k)
+        __forceinline Precalculations(const RayK<K>& ray, size_t k)
           : intersectorHair(ray,k), intersectorCurve(ray,k) {}
 
         Bezier1IntersectorK<Curve3fa,K> intersectorHair;
         BezierCurve1IntersectorK<Curve3fa,K> intersectorCurve;
       };
-
-      typedef IntersectorKPrecalculations<K,PrecalculationsBase> Precalculations;
       
       static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim) 
       {

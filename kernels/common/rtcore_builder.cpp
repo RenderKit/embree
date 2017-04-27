@@ -36,7 +36,7 @@ namespace embree
     struct BVH
     {
       BVH (Device* device)
-        : device(device), isStatic(false), allocator(device,true), morton_src(device), morton_tmp(device) {}
+        : device(device), isStatic(false), allocator(device,true), morton_src(device,0), morton_tmp(device,0) {}
 
     public:
       Device* device;

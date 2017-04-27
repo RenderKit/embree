@@ -20,11 +20,9 @@
 
 namespace embree
 {
-  template <int M>
+  template<int M>
   struct LineMi
   {
-    typedef Vec3<vfloat<M>> Vec3vfM;
-
     /* Virtual interface to query information about the line segment type */
     struct Type : public PrimitiveType
     {
@@ -34,6 +32,9 @@ namespace embree
     static Type type;
 
   public:
+
+    /* primitive supports multiple time segments */
+    static const bool singleTimeSegment = false;
 
     /* Returns maximal number of stored line segments */
     static __forceinline size_t max_size() { return M; }
@@ -68,20 +69,20 @@ namespace embree
     __forceinline int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
     /* gather the line segments */
-    __forceinline void gather(Vec4<vfloat<M>>& p0,
-                              Vec4<vfloat<M>>& p1,
+    __forceinline void gather(Vec4vf<M>& p0,
+                              Vec4vf<M>& p1,
                               const Scene* scene) const;
 
-    __forceinline void gather(Vec4<vfloat<M>>& p0,
-                              Vec4<vfloat<M>>& p1,
+    __forceinline void gather(Vec4vf<M>& p0,
+                              Vec4vf<M>& p1,
                               const LineSegments* geom0,
                               const LineSegments* geom1,
                               const LineSegments* geom2,
                               const LineSegments* geom3,
                               const vint<M>& itime) const;
 
-    __forceinline void gather(Vec4<vfloat<M>>& p0,
-                              Vec4<vfloat<M>>& p1,
+    __forceinline void gather(Vec4vf<M>& p0,
+                              Vec4vf<M>& p1,
                               const Scene* scene,
                               float time) const;
 
@@ -116,12 +117,24 @@ namespace embree
       return allBounds;
     }
 
+    __forceinline LBBox3fa linearBounds(const Scene *const scene, const BBox1f time_range) 
+    {
+      LBBox3fa allBounds = empty;
+      for (size_t i=0; i<M && valid(i); i++)
+      {
+        const LineSegments* geom = scene->get<LineSegments>(geomID(i));
+        allBounds.extend(geom->linearBounds(primID(i), time_range));
+      }
+      return allBounds;
+    }
+
     /* Fill line segment from line segment list */
-    __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene)
+    template<typename PrimRefT>
+    __forceinline void fill(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene)
     {
       vint<M> geomID, primID;
       vint<M> v0;
-      const PrimRef* prim = &prims[begin];
+      const PrimRefT* prim = &prims[begin];
 
       for (size_t i=0; i<M; i++)
       {
@@ -145,11 +158,16 @@ namespace embree
       new (this) LineMi(v0,geomID,primID); // FIXME: use non temporal store
     }
 
-    /* Fill line segment from line segment list */
     __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime, size_t numTimeSteps)
     {
       fill(prims,begin,end,scene);
       return linearBounds(scene,itime,numTimeSteps);
+    }
+
+    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range)
+    {
+      fill(prims,begin,end,scene);
+      return linearBounds(scene,time_range);
     }
 
     /* Updates the primitive */

@@ -20,7 +20,9 @@
 
 namespace embree
 {
-  extern "C" int g_instancing_mode = SceneGraph::INSTANCING_NONE;
+  extern "C" {
+    int g_instancing_mode = SceneGraph::INSTANCING_NONE;
+  }
 
   std::map<Ref<SceneGraph::Node>,ISPCGeometry*> node2geom;
 
@@ -344,7 +346,9 @@ namespace embree
       geometries[i] = group->geometries[i]->geomID;
       assert(geometries[i] != -1);
     }
+    DISABLE_DEPRECATED_WARNING;
     unsigned int geomID = rtcNewGeometryGroup (scene_out, gflags, geometries.data(), geometries.size());
+    ENABLE_DEPRECATED_WARNING;
     group->geom.scene = scene_out;
     group->geom.geomID = geomID;
     return geomID;
@@ -355,7 +359,9 @@ namespace embree
     if (g_instancing_mode == SceneGraph::INSTANCING_GEOMETRY || g_instancing_mode == SceneGraph::INSTANCING_GEOMETRY_GROUP) {
       if (instance->numTimeSteps == 1) {
         unsigned int geom_inst = instance->geom.geomID;
+        DISABLE_DEPRECATED_WARNING;
         unsigned int geomID = rtcNewGeometryInstance(scene_out, geom_inst);
+        ENABLE_DEPRECATED_WARNING;
         rtcSetTransform2(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->spaces[0].l.vx.x,0);
         return geomID;
       } 

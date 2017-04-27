@@ -25,8 +25,6 @@ namespace embree
   template <int M>
   struct TriangleMiMB
   {
-    typedef Vec3<vfloat<M>> Vec3vfM;
-
     /* Virtual interface to query information about the triangle type */
     struct Type : public PrimitiveType
     {
@@ -36,6 +34,9 @@ namespace embree
     static Type type;
 
   public:
+    
+    /* primitive supports multiple time segments */
+    static const bool singleTimeSegment = false;
 
     /* Returns maximal number of stored triangles */
     static __forceinline size_t max_size() { return M; }
@@ -82,7 +83,7 @@ namespace embree
     }
 
     template<typename T>
-      __forceinline Vec3<T> getVertex(const vint<M> &v, const size_t index, const Scene *const scene, const size_t itime, const T& ftime) const
+      __forceinline Vec3<T> getVertex(const vint<M>& v, const size_t index, const Scene *const scene, const size_t itime, const T& ftime) const
     {
       const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(index));
       const Vec3fa v0 = *(Vec3fa*)mesh->vertexPtr(v[index],itime+0);
@@ -92,12 +93,28 @@ namespace embree
       return lerp(p0,p1,ftime);
     }
 
+    template<int K, typename T>
+    __forceinline Vec3<T> getVertex(const vbool<K>& valid, const vint<M>& v, const size_t index, const Scene *const scene, const vint<K>& itime, const T& ftime) const
+    {
+      Vec3<T> p0, p1;
+      const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(index));
+      
+      for (size_t mask=movemask(valid), i=__bsf(mask); mask; mask=__btc(mask,i), i=__bsf(mask))
+      {
+        const Vec3fa& v0 = *(Vec3fa*)mesh->vertexPtr(v[index],itime[i]+0);
+        const Vec3fa& v1 = *(Vec3fa*)mesh->vertexPtr(v[index],itime[i]+1);
+        p0.x[i] = v0.x; p0.y[i] = v0.y; p0.z[i] = v0.z;
+        p1.x[i] = v1.x; p1.y[i] = v1.y; p1.z[i] = v1.z;
+      }
+      return (T(one)-ftime)*p0 + ftime*p1;
+    }
+
     /* gather the triangles */
     template<int K>
       __forceinline void gather(const vbool<K>& valid,
-                                Vec3<vfloat<K>>& p0,
-                                Vec3<vfloat<K>>& p1,
-                                Vec3<vfloat<K>>& p2,
+                                Vec3vf<K>& p0,
+                                Vec3vf<K>& p1,
+                                Vec3vf<K>& p2,
                                 const size_t index,
                                 const Scene* const scene,
                                 const vfloat<K>& time) const
@@ -106,25 +123,32 @@ namespace embree
 
       vfloat<K> ftime;
       const vint<K> itime = getTimeSegment(time, vfloat<K>(mesh->fnumTimeSegments), ftime);
-
-      const size_t first = __bsf(movemask(valid)); // assume itime is uniform
-      p0 = getVertex(v0, index, scene, itime[first], ftime);
-      p1 = getVertex(v1, index, scene, itime[first], ftime);
-      p2 = getVertex(v2, index, scene, itime[first], ftime);
+      
+      const size_t first = __bsf(movemask(valid)); 
+      if (likely(all(valid,itime[first] == itime)))
+      {
+        p0 = getVertex(v0, index, scene, itime[first], ftime);
+        p1 = getVertex(v1, index, scene, itime[first], ftime);
+        p2 = getVertex(v2, index, scene, itime[first], ftime);
+      } else {
+        p0 = getVertex(valid, v0, index, scene, itime, ftime);
+        p1 = getVertex(valid, v1, index, scene, itime, ftime);
+        p2 = getVertex(valid, v2, index, scene, itime, ftime);
+      }
     }
 
-    __forceinline void gather(Vec3<vfloat<M>>& p0,
-                              Vec3<vfloat<M>>& p1,
-                              Vec3<vfloat<M>>& p2,
+    __forceinline void gather(Vec3vf<M>& p0,
+                              Vec3vf<M>& p1,
+                              Vec3vf<M>& p2,
                               const TriangleMesh* mesh0,
                               const TriangleMesh* mesh1,
                               const TriangleMesh* mesh2,
                               const TriangleMesh* mesh3,
                               const vint<M>& itime) const;
 
-    __forceinline void gather(Vec3<vfloat<M>>& p0,
-                              Vec3<vfloat<M>>& p1,
-                              Vec3<vfloat<M>>& p2,
+    __forceinline void gather(Vec3vf<M>& p0,
+                              Vec3vf<M>& p1,
+                              Vec3vf<M>& p2,
                               const Scene *const scene,
                               const float time) const;
 
@@ -150,7 +174,8 @@ namespace embree
       return LBBox3fa(bounds(scene,itime+0),bounds(scene,itime+1));
     }
 
-    __forceinline LBBox3fa linearBounds(const Scene *const scene, size_t itime, size_t numTimeSteps) {
+    __forceinline LBBox3fa linearBounds(const Scene *const scene, size_t itime, size_t numTimeSteps) 
+    {
       LBBox3fa allBounds = empty;
       for (size_t i=0; i<M && valid(i); i++)
       {
@@ -160,12 +185,24 @@ namespace embree
       return allBounds;
     }
 
+    __forceinline LBBox3fa linearBounds(const Scene *const scene, const BBox1f time_range) 
+    {
+      LBBox3fa allBounds = empty;
+      for (size_t i=0; i<M && valid(i); i++)
+      {
+        const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(i));
+        allBounds.extend(mesh->linearBounds(primID(i), time_range));
+      }
+      return allBounds;
+    }
+
     /* Fill triangle from triangle list */
-    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime, size_t numTimeSteps)
+    template<typename PrimRefT>
+    __forceinline void fillMB(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene)
     {
       vint<M> geomID = -1, primID = -1;
       vint<M> v0 = zero, v1 = zero, v2 = zero;
-      const PrimRef* prim = &prims[begin];
+      const PrimRefT* prim = &prims[begin];
 
       for (size_t i=0; i<M; i++)
       {
@@ -190,7 +227,20 @@ namespace embree
       }
 
       new (this) TriangleMiMB(v0,v1,v2,geomID,primID); // FIXME: use non temporal store
+    }
+
+    /* Fill triangle from triangle list */
+    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime, size_t numTimeSteps) 
+    {
+      fillMB(prims,begin,end,scene);
       return linearBounds(scene,itime,numTimeSteps);
+    }
+
+    /* Fill triangle from triangle list */
+    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range)
+    {
+      fillMB(prims,begin,end,scene);
+      return linearBounds(scene,time_range);
     }
 
     /* Updates the primitive */

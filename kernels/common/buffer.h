@@ -38,7 +38,12 @@ namespace embree
     }
 
     /*! returns pointer to first element */
-    __forceinline const char* getPtr( size_t i = 0 ) const {
+    __forceinline const char* getPtr() const {
+      return ptr_ofs;
+    }
+
+    /*! returns pointer to first element */
+    __forceinline const char* getPtr( size_t i ) const {
       assert(i<num);
       return ptr_ofs + i*stride;
     }

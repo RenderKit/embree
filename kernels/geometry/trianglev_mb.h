@@ -24,8 +24,6 @@ namespace embree
   template<int M>
   struct TriangleMvMB
   {
-    typedef Vec3<vfloat<M>> Vec3vfM;
-
   public:
     struct Type : public PrimitiveType 
     {
@@ -36,7 +34,10 @@ namespace embree
     static Type type;
 
   public:
-    
+
+    /* primitive supports single time segments */
+    static const bool singleTimeSegment = true;
+
     /* Returns maximal number of stored triangles */
     static __forceinline size_t max_size() { return M; }
     
@@ -49,9 +50,9 @@ namespace embree
     __forceinline TriangleMvMB() {}
 
     /* Construction from vertices and IDs */
-    __forceinline TriangleMvMB(const Vec3vfM& a0, const Vec3vfM& a1,
-                               const Vec3vfM& b0, const Vec3vfM& b1,
-                               const Vec3vfM& c0, const Vec3vfM& c1,
+    __forceinline TriangleMvMB(const Vec3vf<M>& a0, const Vec3vf<M>& a1,
+                               const Vec3vf<M>& b0, const Vec3vf<M>& b1,
+                               const Vec3vf<M>& c0, const Vec3vf<M>& c1,
                                const vint<M>& geomIDs, const vint<M>& primIDs)
       : v0(a0), v1(b0), v2(c0), dv0(a1-a0), dv1(b1-b0), dv2(c1-c0), geomIDs(geomIDs), primIDs(primIDs) {}
 
@@ -75,8 +76,8 @@ namespace embree
     /* Calculate the bounds of the triangles at t0 */
     __forceinline BBox3fa bounds0() const 
     {
-      Vec3vfM lower = min(v0,v1,v2);
-      Vec3vfM upper = max(v0,v1,v2);
+      Vec3vf<M> lower = min(v0,v1,v2);
+      Vec3vf<M> upper = max(v0,v1,v2);
       const vbool<M> mask = valid();
       lower.x = select(mask,lower.x,vfloat<M>(pos_inf));
       lower.y = select(mask,lower.y,vfloat<M>(pos_inf));
@@ -91,11 +92,11 @@ namespace embree
     /* Calculate the bounds of the triangles at t1 */
     __forceinline BBox3fa bounds1() const 
     {
-      const Vec3vfM p0 = v0+dv0;
-      const Vec3vfM p1 = v1+dv1;
-      const Vec3vfM p2 = v2+dv2;
-      Vec3vfM lower = min(p0,p1,p2);
-      Vec3vfM upper = max(p0,p1,p2);
+      const Vec3vf<M> p0 = v0+dv0;
+      const Vec3vf<M> p1 = v1+dv1;
+      const Vec3vf<M> p2 = v2+dv2;
+      Vec3vf<M> lower = min(p0,p1,p2);
+      Vec3vf<M> upper = max(p0,p1,p2);
       const vbool<M> mask = valid();
       lower.x = select(mask,lower.x,vfloat<M>(pos_inf));
       lower.y = select(mask,lower.y,vfloat<M>(pos_inf));
@@ -116,8 +117,8 @@ namespace embree
     __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime, size_t numTimeSteps)
     {
       vint<M> vgeomID = -1, vprimID = -1;
-      Vec3vfM va0 = zero, vb0 = zero, vc0 = zero;
-      Vec3vfM va1 = zero, vb1 = zero, vc1 = zero;
+      Vec3vf<M> va0 = zero, vb0 = zero, vc0 = zero;
+      Vec3vf<M> va1 = zero, vb1 = zero, vc1 = zero;
 
       BBox3fa bounds0 = empty;
       BBox3fa bounds1 = empty;
@@ -149,14 +150,57 @@ namespace embree
       new (this) TriangleMvMB(va0,va1,vb0,vb1,vc0,vc1,vgeomID,vprimID);
       return LBBox3fa(bounds0,bounds1);
     }
-   
+
+    /* Fill triangle from triangle list */
+    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range)
+    {
+      vint<M> vgeomID = -1, vprimID = -1;
+      Vec3vf<M> va0 = zero, vb0 = zero, vc0 = zero;
+      Vec3vf<M> va1 = zero, vb1 = zero, vc1 = zero;
+
+      LBBox3fa allBounds = empty;
+      for (size_t i=0; i<M && begin<end; i++, begin++)
+      {
+        const PrimRefMB& prim = prims[begin];
+        const unsigned geomID = prim.geomID();
+        const unsigned primID = prim.primID();
+        const TriangleMesh* const mesh = scene->get<TriangleMesh>(geomID);
+        const unsigned numTimeSegments = mesh->numTimeSegments();
+        const range<int> itime_range = getTimeSegmentRange(time_range, numTimeSegments);
+        assert(itime_range.size() == 1);
+        const int ilower = itime_range.begin();
+        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
+        allBounds.extend(mesh->linearBounds(primID, time_range));
+        const Vec3fa& a0 = mesh->vertex(tri.v[0],ilower+0);
+        const Vec3fa& a1 = mesh->vertex(tri.v[0],ilower+1);
+        const Vec3fa& b0 = mesh->vertex(tri.v[1],ilower+0);
+        const Vec3fa& b1 = mesh->vertex(tri.v[1],ilower+1);
+        const Vec3fa& c0 = mesh->vertex(tri.v[2],ilower+0);
+        const Vec3fa& c1 = mesh->vertex(tri.v[2],ilower+1);
+        const BBox1f time_range_v(float(ilower+0)/float(numTimeSegments),float(ilower+1)/float(numTimeSegments));
+        auto a01 = globalLinear(std::make_pair(a0,a1),time_range_v);
+        auto b01 = globalLinear(std::make_pair(b0,b1),time_range_v);
+        auto c01 = globalLinear(std::make_pair(c0,c1),time_range_v);
+        vgeomID [i] = geomID;
+        vprimID [i] = primID;
+        va0.x[i] = a01.first .x; va0.y[i] = a01.first .y; va0.z[i] = a01.first .z;
+	va1.x[i] = a01.second.x; va1.y[i] = a01.second.y; va1.z[i] = a01.second.z;
+	vb0.x[i] = b01.first .x; vb0.y[i] = b01.first .y; vb0.z[i] = b01.first .z;
+	vb1.x[i] = b01.second.x; vb1.y[i] = b01.second.y; vb1.z[i] = b01.second.z;
+	vc0.x[i] = c01.first .x; vc0.y[i] = c01.first .y; vc0.z[i] = c01.first .z;
+	vc1.x[i] = c01.second.x; vc1.y[i] = c01.second.y; vc1.z[i] = c01.second.z;
+      }
+      new (this) TriangleMvMB(va0,va1,vb0,vb1,vc0,vc1,vgeomID,vprimID);
+      return allBounds;
+    }
+
   public:
-    Vec3vfM v0;      // 1st vertex of the triangles
-    Vec3vfM v1;      // 2nd vertex of the triangles
-    Vec3vfM v2;      // 3rd vertex of the triangles
-    Vec3vfM dv0;     // difference vector between time steps t0 and t1 for first vertex
-    Vec3vfM dv1;     // difference vector between time steps t0 and t1 for second vertex
-    Vec3vfM dv2;     // difference vector between time steps t0 and t1 for third vertex
+    Vec3vf<M> v0;      // 1st vertex of the triangles
+    Vec3vf<M> v1;      // 2nd vertex of the triangles
+    Vec3vf<M> v2;      // 3rd vertex of the triangles
+    Vec3vf<M> dv0;     // difference vector between time steps t0 and t1 for first vertex
+    Vec3vf<M> dv1;     // difference vector between time steps t0 and t1 for second vertex
+    Vec3vf<M> dv2;     // difference vector between time steps t0 and t1 for third vertex
     vint<M> geomIDs; // geometry ID
     vint<M> primIDs; // primitive ID
   };

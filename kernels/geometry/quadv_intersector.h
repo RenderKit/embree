@@ -29,7 +29,7 @@ namespace embree
       struct QuadMvIntersector1Moeller
     {
       typedef QuadMv<M> Primitive;
-      typedef Intersector1Precalculations<QuadMIntersector1MoellerTrumbore<M,filter>> Precalculations;
+      typedef QuadMIntersector1MoellerTrumbore<M,filter> Precalculations;
         
       /*! Intersect a ray with the M quads and updates the hit. */
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& quad)
@@ -66,7 +66,7 @@ namespace embree
       struct QuadMvIntersectorKMoeller
       {
         typedef QuadMv<M> Primitive;
-        typedef IntersectorKPrecalculations<K,QuadMIntersectorKMoellerTrumbore<M,K,filter>> Precalculations;
+        typedef QuadMIntersectorKMoellerTrumbore<M,K,filter> Precalculations;
         
         /*! Intersects K rays with M triangles. */
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const QuadMv<M>& quad)
@@ -75,10 +75,10 @@ namespace embree
           {
             if (!quad.valid(i)) break;
             STAT3(normal.trav_prims,1,popcnt(valid_i),K);
-            const Vec3<vfloat<K>> p0 = broadcast<vfloat<K>>(quad.v0,i);
-            const Vec3<vfloat<K>> p1 = broadcast<vfloat<K>>(quad.v1,i);
-            const Vec3<vfloat<K>> p2 = broadcast<vfloat<K>>(quad.v2,i);
-            const Vec3<vfloat<K>> p3 = broadcast<vfloat<K>>(quad.v3,i);
+            const Vec3vf<K> p0 = broadcast<vfloat<K>>(quad.v0,i);
+            const Vec3vf<K> p1 = broadcast<vfloat<K>>(quad.v1,i);
+            const Vec3vf<K> p2 = broadcast<vfloat<K>>(quad.v2,i);
+            const Vec3vf<K> p3 = broadcast<vfloat<K>>(quad.v3,i);
             pre.intersectK(valid_i,ray,p0,p1,p2,p3,IntersectKEpilogM<M,K,filter>(ray,context,quad.geomIDs,quad.primIDs,i));
           }
         }
@@ -92,10 +92,10 @@ namespace embree
           {
             if (!quad.valid(i)) break;
             STAT3(shadow.trav_prims,1,popcnt(valid0),K);
-            const Vec3<vfloat<K>> p0 = broadcast<vfloat<K>>(quad.v0,i);
-            const Vec3<vfloat<K>> p1 = broadcast<vfloat<K>>(quad.v1,i);
-            const Vec3<vfloat<K>> p2 = broadcast<vfloat<K>>(quad.v2,i);
-            const Vec3<vfloat<K>> p3 = broadcast<vfloat<K>>(quad.v3,i);
+            const Vec3vf<K> p0 = broadcast<vfloat<K>>(quad.v0,i);
+            const Vec3vf<K> p1 = broadcast<vfloat<K>>(quad.v1,i);
+            const Vec3vf<K> p2 = broadcast<vfloat<K>>(quad.v2,i);
+            const Vec3vf<K> p3 = broadcast<vfloat<K>>(quad.v3,i);
             if (pre.intersectK(valid0,ray,p0,p1,p2,p3,OccludedKEpilogM<M,K,filter>(valid0,ray,context,quad.geomIDs,quad.primIDs,i))) 
               break;
           }
@@ -122,7 +122,7 @@ namespace embree
       struct QuadMvIntersector1Pluecker
     {
       typedef QuadMv<M> Primitive;
-      typedef Intersector1Precalculations<QuadMIntersector1Pluecker<M,filter>> Precalculations;
+      typedef QuadMIntersector1Pluecker<M,filter> Precalculations;
         
       /*! Intersect a ray with the M quads and updates the hit. */
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& quad)
@@ -159,7 +159,7 @@ namespace embree
       struct QuadMvIntersectorKPluecker
       {
         typedef QuadMv<M> Primitive;
-        typedef IntersectorKPrecalculations<K,QuadMIntersectorKPluecker<M,K,filter>> Precalculations;
+        typedef QuadMIntersectorKPluecker<M,K,filter> Precalculations;
         
         /*! Intersects K rays with M triangles. */
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const QuadMv<M>& quad)
@@ -168,10 +168,10 @@ namespace embree
           {
             if (!quad.valid(i)) break;
             STAT3(normal.trav_prims,1,popcnt(valid_i),K);
-            const Vec3<vfloat<K>> p0 = broadcast<vfloat<K>>(quad.v0,i);
-            const Vec3<vfloat<K>> p1 = broadcast<vfloat<K>>(quad.v1,i);
-            const Vec3<vfloat<K>> p2 = broadcast<vfloat<K>>(quad.v2,i);
-            const Vec3<vfloat<K>> p3 = broadcast<vfloat<K>>(quad.v3,i);
+            const Vec3vf<K> p0 = broadcast<vfloat<K>>(quad.v0,i);
+            const Vec3vf<K> p1 = broadcast<vfloat<K>>(quad.v1,i);
+            const Vec3vf<K> p2 = broadcast<vfloat<K>>(quad.v2,i);
+            const Vec3vf<K> p3 = broadcast<vfloat<K>>(quad.v3,i);
             pre.intersectK(valid_i,ray,p0,p1,p2,p3,IntersectKEpilogM<M,K,filter>(ray,context,quad.geomIDs,quad.primIDs,i));
           }
         }
@@ -185,10 +185,10 @@ namespace embree
           {
             if (!quad.valid(i)) break;
             STAT3(shadow.trav_prims,1,popcnt(valid0),K);
-            const Vec3<vfloat<K>> p0 = broadcast<vfloat<K>>(quad.v0,i);
-            const Vec3<vfloat<K>> p1 = broadcast<vfloat<K>>(quad.v1,i);
-            const Vec3<vfloat<K>> p2 = broadcast<vfloat<K>>(quad.v2,i);
-            const Vec3<vfloat<K>> p3 = broadcast<vfloat<K>>(quad.v3,i);
+            const Vec3vf<K> p0 = broadcast<vfloat<K>>(quad.v0,i);
+            const Vec3vf<K> p1 = broadcast<vfloat<K>>(quad.v1,i);
+            const Vec3vf<K> p2 = broadcast<vfloat<K>>(quad.v2,i);
+            const Vec3vf<K> p3 = broadcast<vfloat<K>>(quad.v3,i);
             if (pre.intersectK(valid0,ray,p0,p1,p2,p3,OccludedKEpilogM<M,K,filter>(valid0,ray,context,quad.geomIDs,quad.primIDs,i))) 
               break;
           }

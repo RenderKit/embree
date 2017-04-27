@@ -28,19 +28,19 @@ namespace embree
     struct LineMiIntersector1
     {
       typedef LineMi<M> Primitive;
-      typedef Intersector1Precalculations<typename LineIntersector1<Mx>::Precalculations> Precalculations;
+      typedef typename LineIntersector1<Mx>::Precalculations Precalculations;
 
       static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line)
       {
         STAT3(normal.trav_prims,1,1,1);
-        Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,context->scene);
+        Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene);
         LineIntersector1<Mx>::intersect(ray,pre,v0,v1,Intersect1EpilogM<M,Mx,filter>(ray,context,line.geomIDs,line.primIDs));
       }
 
       static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line)
       {
         STAT3(shadow.trav_prims,1,1,1);
-        Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,context->scene);
+        Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene);
         return LineIntersector1<Mx>::intersect(ray,pre,v0,v1,Occluded1EpilogM<M,Mx,filter>(ray,context,line.geomIDs,line.primIDs));
       }
 
@@ -63,19 +63,19 @@ namespace embree
     struct LineMiMBIntersector1
     {
       typedef LineMi<M> Primitive;
-      typedef Intersector1PrecalculationsMB<typename LineIntersector1<Mx>::Precalculations> Precalculations;
+      typedef typename LineIntersector1<Mx>::Precalculations Precalculations;
 
       static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line)
       {
         STAT3(normal.trav_prims,1,1,1);
-        Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,context->scene,ray.time);
+        Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene,ray.time);
         LineIntersector1<Mx>::intersect(ray,pre,v0,v1,Intersect1EpilogM<M,Mx,filter>(ray,context,line.geomIDs,line.primIDs));
       }
 
       static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line)
       {
         STAT3(shadow.trav_prims,1,1,1);
-        Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,context->scene,ray.time);
+        Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene,ray.time);
         return LineIntersector1<Mx>::intersect(ray,pre,v0,v1,Occluded1EpilogM<M,Mx,filter>(ray,context,line.geomIDs,line.primIDs));
       }
 
@@ -98,12 +98,12 @@ namespace embree
     struct LineMiIntersectorK
     {
       typedef LineMi<M> Primitive;
-      typedef IntersectorKPrecalculations<K, typename LineIntersectorK<Mx,K>::Precalculations> Precalculations;
+      typedef typename LineIntersectorK<Mx,K>::Precalculations Precalculations;
 
       static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& line)
       {
         STAT3(normal.trav_prims,1,1,1);
-        Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,context->scene);
+        Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene);
         LineIntersectorK<Mx,K>::intersect(ray,k,pre,v0,v1,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomIDs,line.primIDs));
       }
 
@@ -116,7 +116,7 @@ namespace embree
       static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& line)
       {
         STAT3(shadow.trav_prims,1,1,1);
-        Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,context->scene);
+        Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene);
         return LineIntersectorK<Mx,K>::intersect(ray,k,pre,v0,v1,Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomIDs,line.primIDs));
       }
 
@@ -137,12 +137,12 @@ namespace embree
     struct LineMiMBIntersectorK
     {
       typedef LineMi<M> Primitive;
-      typedef IntersectorKPrecalculationsMB<K, typename LineIntersectorK<Mx,K>::Precalculations> Precalculations;
+      typedef typename LineIntersectorK<Mx,K>::Precalculations Precalculations;
 
       static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context,  const Primitive& line)
       {
         STAT3(normal.trav_prims,1,1,1);
-        Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,context->scene,ray.time[k]);
+        Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene,ray.time[k]);
         LineIntersectorK<Mx,K>::intersect(ray,k,pre,v0,v1,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomIDs,line.primIDs));
       }
 
@@ -155,7 +155,7 @@ namespace embree
       static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& line)
       {
         STAT3(shadow.trav_prims,1,1,1);
-        Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,context->scene,ray.time[k]);
+        Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene,ray.time[k]);
         return LineIntersectorK<Mx,K>::intersect(ray,k,pre,v0,v1,Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomIDs,line.primIDs));
       }
       

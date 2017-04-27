@@ -31,7 +31,7 @@ namespace embree
   {
     template<int N, typename Mesh>
     BVHNBuilderTwoLevel<N,Mesh>::BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, const createMeshAccelTy createMeshAccel, const size_t singleThreadThreshold)
-      : bvh(bvh), objects(bvh->objects), scene(scene), createMeshAccel(createMeshAccel), refs(scene->device), prims(scene->device), singleThreadThreshold(singleThreadThreshold) {}
+      : bvh(bvh), objects(bvh->objects), scene(scene), createMeshAccel(createMeshAccel), refs(scene->device,0), prims(scene->device,0), singleThreadThreshold(singleThreadThreshold) {}
     
     template<int N, typename Mesh>
     BVHNBuilderTwoLevel<N,Mesh>::~BVHNBuilderTwoLevel ()

@@ -25,8 +25,6 @@ namespace embree
   template <int M>
   struct QuadMi
   {
-    typedef Vec3<vfloat<M>> Vec3vfM;
-
     /* Virtual interface to query information about the quad type */
     struct Type : public PrimitiveType
     {
@@ -71,17 +69,17 @@ namespace embree
     __forceinline vint<M> primID() const { return primIDs; }
     __forceinline int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
-    __forceinline Vec3fa& getVertex(const vint<M> &v, const size_t index, const Scene *const scene) const
+    __forceinline Vec3f& getVertex(const vint<M>& v, const size_t index, const Scene *const scene) const
     {
-      const QuadMesh* mesh = scene->get<QuadMesh>(geomID(index));
-      return *(Vec3fa*)mesh->vertexPtr(v[index]); // FIMXE: should use loadu
+      const int* vertices = scene->vertices[geomID(index)];
+      return (Vec3f&) vertices[v[index]];
     }
 
     /* gather the quads */
-    __forceinline void gather(Vec3<vfloat<M>>& p0, 
-                              Vec3<vfloat<M>>& p1, 
-                              Vec3<vfloat<M>>& p2, 
-                              Vec3<vfloat<M>>& p3,
+    __forceinline void gather(Vec3vf<M>& p0,
+                              Vec3vf<M>& p1,
+                              Vec3vf<M>& p2,
+                              Vec3vf<M>& p3,
                               const Scene *const scene) const;       
 
 #if defined(__AVX512F__)
@@ -106,10 +104,11 @@ namespace embree
 	if (begin<end) {
 	  geomID[i] = prim->geomID();
 	  primID[i] = prim->primID();
-	  v0[i] = q.v[0]; 
-	  v1[i] = q.v[1]; 
-	  v2[i] = q.v[2]; 
-	  v3[i] = q.v[3]; 
+          unsigned int_stride = mesh->vertices0.getStride()/4;
+	  v0[i] = q.v[0] * int_stride; 
+	  v1[i] = q.v[1] * int_stride; 
+	  v2[i] = q.v[2] * int_stride; 
+	  v3[i] = q.v[3] * int_stride; 
 	  begin++;
 	} else {
 	  assert(i);
@@ -146,10 +145,10 @@ namespace embree
 
     
   public:
-    vint<M> v0;         // index of 1st vertex
-    vint<M> v1;         // index of 2nd vertex
-    vint<M> v2;         // index of 3rd vertex
-    vint<M> v3;         // index of 4rd vertex
+    vint<M> v0;         // 4 byte offset of 1st vertex
+    vint<M> v1;         // 4 byte offset of 2nd vertex
+    vint<M> v2;         // 4 byte offset of 3rd vertex
+    vint<M> v3;         // 4 byte offset of 4th vertex
     vint<M> geomIDs;    // geometry ID of mesh
     vint<M> primIDs;    // primitive ID of primitive inside mesh
   };
@@ -163,40 +162,30 @@ namespace embree
   {
     prefetchL1(((char*)this)+0*64);
     prefetchL1(((char*)this)+1*64);
-
-    const QuadMesh* mesh0 = scene->get<QuadMesh>(geomIDs[0]);
-    const QuadMesh* mesh1 = scene->get<QuadMesh>(geomIDs[1]);
-    const QuadMesh* mesh2 = scene->get<QuadMesh>(geomIDs[2]);
-    const QuadMesh* mesh3 = scene->get<QuadMesh>(geomIDs[3]);
-
-    const vfloat4 a0 = vfloat4::loadu(mesh0->vertexPtr(v0[0]));
-    const vfloat4 a1 = vfloat4::loadu(mesh1->vertexPtr(v0[1]));
-    const vfloat4 a2 = vfloat4::loadu(mesh2->vertexPtr(v0[2]));
-    const vfloat4 a3 = vfloat4::loadu(mesh3->vertexPtr(v0[3]));
-
+    const int* vertices0 = scene->vertices[geomIDs[0]];
+    const int* vertices1 = scene->vertices[geomIDs[1]];
+    const int* vertices2 = scene->vertices[geomIDs[2]];
+    const int* vertices3 = scene->vertices[geomIDs[3]];
+    const vfloat4 a0 = vfloat4::loadu(vertices0 + v0[0]);
+    const vfloat4 a1 = vfloat4::loadu(vertices1 + v0[1]);
+    const vfloat4 a2 = vfloat4::loadu(vertices2 + v0[2]);
+    const vfloat4 a3 = vfloat4::loadu(vertices3 + v0[3]);
+    const vfloat4 b0 = vfloat4::loadu(vertices0 + v1[0]);
+    const vfloat4 b1 = vfloat4::loadu(vertices1 + v1[1]);
+    const vfloat4 b2 = vfloat4::loadu(vertices2 + v1[2]);
+    const vfloat4 b3 = vfloat4::loadu(vertices3 + v1[3]);
+    const vfloat4 c0 = vfloat4::loadu(vertices0 + v2[0]);
+    const vfloat4 c1 = vfloat4::loadu(vertices1 + v2[1]);
+    const vfloat4 c2 = vfloat4::loadu(vertices2 + v2[2]);
+    const vfloat4 c3 = vfloat4::loadu(vertices3 + v2[3]);
+    const vfloat4 d0 = vfloat4::loadu(vertices0 + v3[0]);
+    const vfloat4 d1 = vfloat4::loadu(vertices1 + v3[1]);
+    const vfloat4 d2 = vfloat4::loadu(vertices2 + v3[2]);
+    const vfloat4 d3 = vfloat4::loadu(vertices3 + v3[3]);
     transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
-
-    const vfloat4 b0 = vfloat4::loadu(mesh0->vertexPtr(v1[0]));
-    const vfloat4 b1 = vfloat4::loadu(mesh1->vertexPtr(v1[1]));
-    const vfloat4 b2 = vfloat4::loadu(mesh2->vertexPtr(v1[2]));
-    const vfloat4 b3 = vfloat4::loadu(mesh3->vertexPtr(v1[3]));
-
     transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
-
-    const vfloat4 c0 = vfloat4::loadu(mesh0->vertexPtr(v2[0]));
-    const vfloat4 c1 = vfloat4::loadu(mesh1->vertexPtr(v2[1]));
-    const vfloat4 c2 = vfloat4::loadu(mesh2->vertexPtr(v2[2]));
-    const vfloat4 c3 = vfloat4::loadu(mesh3->vertexPtr(v2[3]));
-
     transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
-
-    const vfloat4 d0 = vfloat4::loadu(mesh0->vertexPtr(v3[0]));
-    const vfloat4 d1 = vfloat4::loadu(mesh1->vertexPtr(v3[1]));
-    const vfloat4 d2 = vfloat4::loadu(mesh2->vertexPtr(v3[2]));
-    const vfloat4 d3 = vfloat4::loadu(mesh3->vertexPtr(v3[3]));
-
     transpose(d0,d1,d2,d3,p3.x,p3.y,p3.z);
-
   }
 
 
@@ -206,40 +195,36 @@ namespace embree
                                        Vec3vf16& p1, 
                                        Vec3vf16& p2, 
                                        Vec3vf16& p3,
-                                       const Scene *const scene) const
+                                       const Scene *const scene) const // FIXME: why do we have this special path here and not for triangles?
   {
-    const QuadMesh* mesh0 = scene->get<QuadMesh>(geomIDs[0]);
-    const QuadMesh* mesh1 = scene->get<QuadMesh>(geomIDs[1]);
-    const QuadMesh* mesh2 = scene->get<QuadMesh>(geomIDs[2]);
-    const QuadMesh* mesh3 = scene->get<QuadMesh>(geomIDs[3]);
-
     const vint16 perm(0,4,8,12,1,5,9,13,2,6,10,14,3,7,11,15);
-    const vfloat4 &a0 = *(vfloat4*)(mesh0->vertexPtr(v0[0]));
-    const vfloat4 &a1 = *(vfloat4*)(mesh1->vertexPtr(v0[1]));
-    const vfloat4 &a2 = *(vfloat4*)(mesh2->vertexPtr(v0[2]));
-    const vfloat4 &a3 = *(vfloat4*)(mesh3->vertexPtr(v0[3]));
-
+    const int* vertices0 = scene->vertices[geomIDs[0]];
+    const int* vertices1 = scene->vertices[geomIDs[1]];
+    const int* vertices2 = scene->vertices[geomIDs[2]];
+    const int* vertices3 = scene->vertices[geomIDs[3]];
+        
+    const vfloat4 a0 = vfloat4::loadu(vertices0 + v0[0]);
+    const vfloat4 a1 = vfloat4::loadu(vertices1 + v0[1]);
+    const vfloat4 a2 = vfloat4::loadu(vertices2 + v0[2]);
+    const vfloat4 a3 = vfloat4::loadu(vertices3 + v0[3]);
     const vfloat16 _p0(permute(vfloat16(a0,a1,a2,a3),perm));
 
-    const vfloat4 &b0 = *(vfloat4*)(mesh0->vertexPtr(v1[0]));
-    const vfloat4 &b1 = *(vfloat4*)(mesh1->vertexPtr(v1[1]));
-    const vfloat4 &b2 = *(vfloat4*)(mesh2->vertexPtr(v1[2]));
-    const vfloat4 &b3 = *(vfloat4*)(mesh3->vertexPtr(v1[3]));
-
+    const vfloat4 b0 = vfloat4::loadu(vertices0 + v1[0]);
+    const vfloat4 b1 = vfloat4::loadu(vertices1 + v1[1]);
+    const vfloat4 b2 = vfloat4::loadu(vertices2 + v1[2]);
+    const vfloat4 b3 = vfloat4::loadu(vertices3 + v1[3]);
     const vfloat16 _p1(permute(vfloat16(b0,b1,b2,b3),perm));
 
-    const vfloat4 &c0 = *(vfloat4*)(mesh0->vertexPtr(v2[0]));
-    const vfloat4 &c1 = *(vfloat4*)(mesh1->vertexPtr(v2[1]));
-    const vfloat4 &c2 = *(vfloat4*)(mesh2->vertexPtr(v2[2]));
-    const vfloat4 &c3 = *(vfloat4*)(mesh3->vertexPtr(v2[3]));
-
+    const vfloat4 c0 = vfloat4::loadu(vertices0 + v2[0]);
+    const vfloat4 c1 = vfloat4::loadu(vertices1 + v2[1]);
+    const vfloat4 c2 = vfloat4::loadu(vertices2 + v2[2]);
+    const vfloat4 c3 = vfloat4::loadu(vertices3 + v2[3]);
     const vfloat16 _p2(permute(vfloat16(c0,c1,c2,c3),perm));
 
-    const vfloat4 &d0 = *(vfloat4*)(mesh0->vertexPtr(v3[0]));
-    const vfloat4 &d1 = *(vfloat4*)(mesh1->vertexPtr(v3[1]));
-    const vfloat4 &d2 = *(vfloat4*)(mesh2->vertexPtr(v3[2]));
-    const vfloat4 &d3 = *(vfloat4*)(mesh3->vertexPtr(v3[3]));
-
+    const vfloat4 d0 = vfloat4::loadu(vertices0 + v3[0]);
+    const vfloat4 d1 = vfloat4::loadu(vertices1 + v3[1]);
+    const vfloat4 d2 = vfloat4::loadu(vertices2 + v3[2]);
+    const vfloat4 d3 = vfloat4::loadu(vertices3 + v3[3]);
     const vfloat16 _p3(permute(vfloat16(d0,d1,d2,d3),perm));
 
     p0.x = shuffle4<0>(_p0);
@@ -257,7 +242,6 @@ namespace embree
     p3.x = shuffle4<0>(_p3);
     p3.y = shuffle4<1>(_p3);
     p3.z = shuffle4<2>(_p3);
-
   }
 
 #endif

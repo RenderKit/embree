@@ -13,11 +13,8 @@
 ## See the License for the specific language governing permissions and      ##
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
-SET(EMBREE_MAX_ISA "NONE" CACHE INTERNAL "")
+
 SET(FLAGS_SSE2      "-target-cpu=xeon")
-SET(FLAGS_SSE3      "-target-cpu=x86_64")
-SET(FLAGS_SSSE3     "ERROR_ISA_NOT_SUPPORTED")
-SET(FLAGS_SSE41     "ERROR_ISA_NOT_SUPPORTED")
 SET(FLAGS_SSE42     "ERROR_ISA_NOT_SUPPORTED")
 SET(FLAGS_AVX       "-target-cpu=sandybridge")
 SET(FLAGS_AVX2      "-target-cpu=haswell")

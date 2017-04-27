@@ -28,20 +28,20 @@ namespace embree
       struct TriangleMIntersector1Moeller
       {
         typedef TriangleM<M> Primitive;
-        typedef Intersector1Precalculations<MoellerTrumboreIntersector1<Mx>> Precalculations;
+        typedef MoellerTrumboreIntersector1<Mx> Precalculations;
         
         /*! Intersect a ray with the M triangles and updates the hit. */
         static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const TriangleM<M>& tri)
         {
           STAT3(normal.trav_prims,1,1,1);
-          pre.intersect(ray,tri.v0,tri.e1,tri.e2,tri.Ng,Intersect1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs));
+          pre.intersectEdge(ray,tri.v0,tri.e1,tri.e2,Intersect1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs));
         }
         
         /*! Test if the ray is occluded by one of M triangles. */
         static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const TriangleM<M>& tri)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          return pre.intersect(ray,tri.v0,tri.e1,tri.e2,tri.Ng,Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs));
+          return pre.intersectEdge(ray,tri.v0,tri.e1,tri.e2,Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs));
         }
 
         /*! Intersect an array of rays with an array of M primitives. */
@@ -67,19 +67,19 @@ namespace embree
         static const size_t Mx = 8;
 
         typedef TriangleM<M> Primitive;
-        typedef Intersector1Precalculations<MoellerTrumboreIntersector1<Mx>> Precalculations;
+        typedef MoellerTrumboreIntersector1<Mx> Precalculations;
 
         static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const TriangleM<M>& tri)
         {
           STAT3(normal.trav_prims,1,1,1);
-          pre.intersect(ray,tri.v0,tri.e1,tri.e2,tri.Ng,Intersect1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs));
+          pre.intersect(ray,tri.v0,tri.e1,tri.e2,Intersect1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs));
         }
 
         /*! Test if the ray is occluded by one of M triangles. */
         static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const TriangleM<M>& tri)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          return pre.intersect(ray,tri.v0,tri.e1,tri.e2,tri.Ng,Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs));
+          return pre.intersect(ray,tri.v0,tri.e1,tri.e2,Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs));
         }
 
 
@@ -104,7 +104,7 @@ namespace embree
       struct TriangleMIntersectorKMoeller
       {
         typedef TriangleM<M> Primitive;
-        typedef IntersectorKPrecalculations<K,MoellerTrumboreIntersectorK<Mx,K>> Precalculations;
+        typedef MoellerTrumboreIntersectorK<Mx,K> Precalculations;
         
         /*! Intersects K rays with M triangles. */
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const TriangleM<M>& tri)
@@ -114,11 +114,10 @@ namespace embree
           {
             if (!tri.valid(i)) break;
             STAT3(normal.trav_prims,1,popcnt(valid_i),K);
-            const Vec3<vfloat<K>> p0 = broadcast<vfloat<K>>(tri.v0,i);
-            const Vec3<vfloat<K>> e1 = broadcast<vfloat<K>>(tri.e1,i);
-            const Vec3<vfloat<K>> e2 = broadcast<vfloat<K>>(tri.e2,i);
-            const Vec3<vfloat<K>> Ng = broadcast<vfloat<K>>(tri.Ng,i);
-            pre.intersectK(valid_i,ray,p0,e1,e2,Ng,IntersectKEpilogM<M,K,filter>(ray,context,tri.geomIDs,tri.primIDs,i));
+            const Vec3vf<K> p0 = broadcast<vfloat<K>>(tri.v0,i);
+            const Vec3vf<K> e1 = broadcast<vfloat<K>>(tri.e1,i);
+            const Vec3vf<K> e2 = broadcast<vfloat<K>>(tri.e2,i);
+            pre.intersectEdgeK(valid_i,ray,p0,e1,e2,IntersectKEpilogM<M,K,filter>(ray,context,tri.geomIDs,tri.primIDs,i));
           }
         }
         
@@ -131,11 +130,10 @@ namespace embree
           {
             if (!tri.valid(i)) break;
             STAT3(shadow.trav_prims,1,popcnt(valid0),K);
-            const Vec3<vfloat<K>> p0 = broadcast<vfloat<K>>(tri.v0,i);
-            const Vec3<vfloat<K>> e1 = broadcast<vfloat<K>>(tri.e1,i);
-            const Vec3<vfloat<K>> e2 = broadcast<vfloat<K>>(tri.e2,i);
-            const Vec3<vfloat<K>> Ng = broadcast<vfloat<K>>(tri.Ng,i);
-            pre.intersectK(valid0,ray,p0,e1,e2,Ng,OccludedKEpilogM<M,K,filter>(valid0,ray,context,tri.geomIDs,tri.primIDs,i));
+            const Vec3vf<K> p0 = broadcast<vfloat<K>>(tri.v0,i);
+            const Vec3vf<K> e1 = broadcast<vfloat<K>>(tri.e1,i);
+            const Vec3vf<K> e2 = broadcast<vfloat<K>>(tri.e2,i);
+            pre.intersectEdgeK(valid0,ray,p0,e1,e2,OccludedKEpilogM<M,K,filter>(valid0,ray,context,tri.geomIDs,tri.primIDs,i));
             if (none(valid0)) break;
           }
           return !valid0;
@@ -145,14 +143,14 @@ namespace embree
         static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const TriangleM<M>& tri)
         {
           STAT3(normal.trav_prims,1,1,1);
-          pre.intersect(ray,k,tri.v0,tri.e1,tri.e2,tri.Ng,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,tri.geomIDs,tri.primIDs));
+          pre.intersectEdge(ray,k,tri.v0,tri.e1,tri.e2,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,tri.geomIDs,tri.primIDs));
         }
         
         /*! Test if the ray is occluded by one of the M triangles. */
         static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const TriangleM<M>& tri)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          return pre.intersect(ray,k,tri.v0,tri.e1,tri.e2,tri.Ng,Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,tri.geomIDs,tri.primIDs));
+          return pre.intersectEdge(ray,k,tri.v0,tri.e1,tri.e2,Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,tri.geomIDs,tri.primIDs));
         }
       };
   }
