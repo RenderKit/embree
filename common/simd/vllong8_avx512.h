@@ -90,6 +90,10 @@ namespace embree
       return _mm512_load_si512(addr);
     }
 
+    static __forceinline const vllong8 load( const unsigned char* const ptr ) { 
+      return _mm512_cvtepu8_epi64(*(__m128i*)ptr); 
+    }
+
     static __forceinline void store(void* ptr, const vllong8& v) {
       _mm512_store_si512(ptr,v);
     }

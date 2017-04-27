@@ -62,7 +62,6 @@ namespace embree
       StackItemT<NodeRef>* stackEnd = stack + stackSizeSingle;
       stack[0].ptr = root;
       stack[0].dist = neg_inf;
-      
       /*! load the ray into SIMD registers */
       TravRay<N,Nx> vray(k,ray_org,ray_dir,ray_rdir,nearXYZ);
       vfloat<Nx> ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
@@ -76,8 +75,8 @@ namespace embree
         NodeRef cur = NodeRef(stackPtr->ptr);
 	
         /*! if popped node is too far, pop next one */
-        if (unlikely(*(float*)&stackPtr->dist > ray.tfar[k]))
-          continue;
+        //if (unlikely(*(float*)&stackPtr->dist > ray.tfar[k])) continue;
+        if (unlikely(stackPtr->dist > *(unsigned int*)&ray.tfar[k])) continue;
         
         /* downtraversal loop */
         while (true)

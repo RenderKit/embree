@@ -43,4 +43,5 @@ namespace embree
     _mm_castsi128_pd(_mm_set_epi32(-1,-1, 0, 0)),
     _mm_castsi128_pd(_mm_set_epi32(-1,-1,-1,-1))
   };
+
 }
