@@ -377,7 +377,7 @@ namespace embree
 
         LBBox3fa allBounds = empty;
         for (size_t i=0; i<items; i++)
-          allBounds.extend(accel[i].fillMB(prims, start, current.prims.end(), bvh->scene, time, 2)); // FIXME: optimize fillMB, last argument is always 2
+          allBounds.extend(accel[i].fillMB(prims, start, current.prims.end(), bvh->scene, time));
         
         return NodeRecordMB(node,allBounds);
       }
