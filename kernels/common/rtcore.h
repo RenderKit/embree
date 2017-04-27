@@ -71,6 +71,11 @@ namespace embree
     throw_RTCError(RTC_INVALID_ARGUMENT,"invalid argument");       \
   }
 
+#define RTCORE_VERIFY_UPPER(id,upper)                              \
+  if (id > upper) {                                                \
+    throw_RTCError(RTC_INVALID_ARGUMENT,"invalid argument");       \
+  }
+
 #if 0 // enable to debug print all API calls
 #define RTCORE_TRACE(x) std::cout << #x << std::endl;
 #else
