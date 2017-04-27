@@ -31,27 +31,12 @@ namespace embree
     return int(itimef);
   }
 
-  __forceinline int getTimeSegment(float time, float numTimeSegments)
-  {
-    const float timeScaled = time * numTimeSegments;
-    const float itimef = clamp(floor(timeScaled), 0.0f, numTimeSegments-1.0f);
-    return int(itimef);
-  }
-
   template<int N>
   __forceinline vint<N> getTimeSegment(const vfloat<N>& time, const vfloat<N>& numTimeSegments, vfloat<N>& ftime)
   {
     const vfloat<N> timeScaled = time * numTimeSegments;
     const vfloat<N> itimef = clamp(floor(timeScaled), vfloat<N>(zero), numTimeSegments-1.0f);
     ftime = timeScaled - itimef;
-    return vint<N>(itimef);
-  }
-
-  template<int N>
-  __forceinline vint<N> getTimeSegment(const vfloat<N>& time, const vfloat<N>& numTimeSegments)
-  {
-    const vfloat<N> timeScaled = time * numTimeSegments;
-    const vfloat<N> itimef = clamp(floor(timeScaled), vfloat<N>(zero), numTimeSegments-1.0f);
     return vint<N>(itimef);
   }
 
