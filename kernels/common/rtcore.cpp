@@ -1351,6 +1351,7 @@ namespace embree
     RTCORE_TRACE(rtcSetBuffer);
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
+    RTCORE_VERIFY_UPPER(stride,unsigned(inf));
     scene->get_locked(geomID)->setBuffer(type,(void*)ptr,offset,stride,-1);
     RTCORE_CATCH_END(scene->device);
   }
@@ -1362,6 +1363,7 @@ namespace embree
     RTCORE_TRACE(rtcSetBuffer2);
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
+    RTCORE_VERIFY_UPPER(stride,unsigned(inf));
     scene->get_locked(geomID)->setBuffer(type,(void*)ptr,offset,stride,size);
     RTCORE_CATCH_END(scene->device);
   }

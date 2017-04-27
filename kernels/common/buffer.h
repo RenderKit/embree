@@ -59,8 +59,9 @@ namespace embree
     }
     
     /*! returns buffer stride */
-    __forceinline size_t getStride() const {
-      return stride;
+    __forceinline unsigned getStride() const {
+      assert(stride <= unsigned(inf));
+      return unsigned(stride);
     }
 
   protected:
