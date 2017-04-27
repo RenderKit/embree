@@ -59,10 +59,14 @@ namespace embree
     /* verify that all accesses are 4 bytes aligned */
     if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) 
       throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
-    
+
     unsigned bid = type & 0xFFFF;
     if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) 
     {
+      /* if buffer is larger than 16GB the premultiplied index optimization does not work */
+      if (stride*size > 16ll*1024ll*1024ll*1024ll)
+       throw_RTCError(RTC_INVALID_OPERATION,"vertex buffer can be at most 16GB large");
+
       size_t t = type - RTC_VERTEX_BUFFER0;
       vertices[t].set(ptr,offset,stride,size);
       vertices[t].checkPadding16();
