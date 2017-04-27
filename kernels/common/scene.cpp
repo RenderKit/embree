@@ -468,7 +468,7 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_SUBDIV)
     if (device->subdiv_accel == "default") 
     {
-      if (isIncoherent(flags) && isStatic())
+      if (isStatic()) /* always select 'eager' for static scenes */
         accels.add(device->bvh4_factory->BVH4SubdivPatch1Eager(this));
       else
         accels.add(device->bvh4_factory->BVH4SubdivPatch1(this,true));
