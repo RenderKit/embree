@@ -170,9 +170,7 @@ namespace embree
         const BaseNode* node = cur.baseNode(types);
 
 #if defined(__AVX512CD__)
-
-        const size_t hits = __popcnt(mask);
-        STAT3(normal.trav_hit_boxes[hits],1,1,1);
+        STAT3(normal.trav_hit_boxes[__popcnt(mask)],1,1,1);
 
         size_t r = __bscf(mask);
         cur = node->child(r);
@@ -238,7 +236,7 @@ namespace embree
         /* 4 hits: order A2 B2 C2 D2 */
 
         const vfloat16 dist_A1  = select(m_dist1, dist_A0, d2);
-
+#if 1
         r = __bscf(mask);
         cur = node->child(r);
         cur.prefetch(types);
@@ -274,20 +272,26 @@ namespace embree
           return;
         }
 
+
         /* >=5 hits: reverse to descending order for writing to stack */
 
-        const vfloat16 dist_A2  = select(m_dist3, dist_A1, d3);
+        const size_t hits = 4 + __popcnt(mask);
 
+        const vfloat16 dist_A2  = select(m_dist3, dist_A1, d3);
+#endif
         vfloat16 dist(neg_inf);
         vllong8 ptr(zero);
 
+#if 1
         isort_quick_update(dist,ptr,dist_A2,ptr_A2);
         isort_quick_update(dist,ptr,dist_B2,ptr_B2);
         isort_quick_update(dist,ptr,dist_C2,ptr_C2);
         isort_quick_update(dist,ptr,dist_D2,ptr_D2);
-
-        const vboold8 m_stack_ptr(0x55);  // 10101010 (lsb -> msb)
-        const vboolf16 m_stack_dist(0x4444); // 0010001000100010 (lsb -> msb)
+#else
+        isort_quick_update(dist,ptr,dist_A1,ptr_A1);
+        isort_quick_update(dist,ptr,dist_B1,ptr_B1);
+        isort_quick_update(dist,ptr,dist_C1,ptr_C1);
+#endif
 
         do {
           const size_t r = __bscf(mask);
@@ -299,6 +303,9 @@ namespace embree
         } while(mask);
 
 #if 1
+        const vboold8 m_stack_ptr(0x55);  // 10101010 (lsb -> msb)
+        const vboolf16 m_stack_dist(0x4444); // 0010001000100010 (lsb -> msb)
+
         /* extract current noderef */
         cur = toScalar(permute(ptr,vllong8(hits-1)));
         /* rearrange pointers to beginning of 16 bytes block */
