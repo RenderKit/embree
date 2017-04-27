@@ -54,14 +54,14 @@ namespace embree
     }
 
     /*! fill triangle from triangle list */
-    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& i, size_t end, Scene* scene, size_t itime, size_t numTimeSteps)
+    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& i, size_t end, Scene* scene, size_t itime)
     {
       const PrimRef& prim = prims[i]; i++;
       const unsigned geomID = prim.geomID();
       const unsigned primID = prim.primID();
       new (this) Object(geomID, primID);
       AccelSet* accel = (AccelSet*) scene->get(geomID);
-      return accel->linearBounds(primID,itime,numTimeSteps);
+      return accel->linearBounds(primID,itime);
     }
 
     /*! fill triangle from triangle list */
