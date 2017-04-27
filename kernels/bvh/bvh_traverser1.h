@@ -298,7 +298,7 @@ namespace embree
           isort_update(dist,ptr,new_dist,new_ptr);
         } while(mask);
 
-#if 1
+#if 0
         /* extract current noderef */
         cur = toScalar(permute(ptr,vllong8(hits-1)));
         /* rearrange pointers to beginning of 16 bytes block */
