@@ -50,7 +50,7 @@ namespace embree
 #endif
     __forceinline vuint( unsigned  a, unsigned  b, unsigned  c, unsigned  d) : v(_mm_set_epi32(d, c, b, a)) {}
 
-    __forceinline explicit vuint( const __m128 a ) : v(_mm_cvtps_epu32(a)) {}
+    //__forceinline explicit vuint( const __m128 a ) : v(_mm_cvtps_epu32(a)) {}
 #if defined(__AVX512VL__)
     __forceinline explicit vuint( const vboolf4 &a ) : v(_mm_movm_epi32(a)) {}
 #else
@@ -304,7 +304,7 @@ namespace embree
 #endif    
   }
 
-#if defined(__SSE4_1__)
+/*#if defined(__SSE4_1__)
   __forceinline const vuint4 min( const vuint4& a, const vuint4& b ) { return _mm_min_epu32(a.v, b.v); }
   __forceinline const vuint4 max( const vuint4& a, const vuint4& b ) { return _mm_max_epu32(a.v, b.v); }
 
@@ -316,7 +316,7 @@ namespace embree
   __forceinline const vuint4 min( const vuint4& a, const unsigned&   b ) { return min(a,vuint4(b)); }
   __forceinline const vuint4 min( const unsigned&   a, const vuint4& b ) { return min(vuint4(a),b); }
   __forceinline const vuint4 max( const vuint4& a, const unsigned&   b ) { return max(a,vuint4(b)); }
-  __forceinline const vuint4 max( const unsigned&   a, const vuint4& b ) { return max(vuint4(a),b); }
+  __forceinline const vuint4 max( const unsigned&   a, const vuint4& b ) { return max(vuint4(a),b); }*/
 
   ////////////////////////////////////////////////////////////////////////////////
   // Movement/Shifting/Shuffling Functions
@@ -360,6 +360,7 @@ namespace embree
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
 
+#if 0
 #if defined(__SSE4_1__)
 
   __forceinline const vuint4 vreduce_min(const vuint4& v) { vuint4 h = min(shuffle<1,0,3,2>(v),v); return min(shuffle<2,3,0,1>(h),h); }
@@ -382,6 +383,7 @@ namespace embree
   __forceinline unsigned reduce_max(const vuint4& v) { return max(v[0],v[1],v[2],v[3]); }
   __forceinline unsigned reduce_add(const vuint4& v) { return v[0]+v[1]+v[2]+v[3]; }
 
+#endif
 #endif
 
   ////////////////////////////////////////////////////////////////////////////////
