@@ -50,7 +50,7 @@ namespace embree
 #endif
     __forceinline vuint( unsigned  a, unsigned  b, unsigned  c, unsigned  d) : v(_mm_set_epi32(d, c, b, a)) {}
 
-    __forceinline explicit vuint( const __m128 a ) : v(_mm_cvtps_epi32(a)) {}
+    __forceinline explicit vuint( const __m128 a ) : v(_mm_cvtps_epu32(a)) {}
 #if defined(__AVX512VL__)
     __forceinline explicit vuint( const vboolf4 &a ) : v(_mm_movm_epi32(a)) {}
 #else
@@ -62,8 +62,8 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
     __forceinline vuint( ZeroTy   ) : v(_mm_setzero_si128()) {}
-    __forceinline vuint( OneTy    ) : v(_mm_set_epi32(1, 1, 1, 1)) {}
-    __forceinline vuint( PosInfTy ) : v(_mm_set_epi32(pos_inf, pos_inf, pos_inf, pos_inf)) {}
+    __forceinline vuint( OneTy    ) : v(_mm_set1_epi32(1)) {}
+    __forceinline vuint( PosInfTy ) : v(_mm_set1_epi32(unsigned(pos_inf))) {}
     __forceinline vuint( StepTy   ) : v(_mm_set_epi32(3, 2, 1, 0)) {}
     __forceinline vuint( TrueTy   ) { v = _mm_cmpeq_epi32(v,v); }
 
@@ -145,10 +145,6 @@ namespace embree
 #endif
     }
 
-#if defined(__x86_64__)
-    static __forceinline vuint4 broadcast64(const long long &a) { return _mm_set1_epi64x(a); }
-#endif
-
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
@@ -174,9 +170,6 @@ namespace embree
   __forceinline const vuint4 asUint     ( const __m128& a ) { return _mm_castps_si128(a); }
   __forceinline const vuint4 operator +( const vuint4&  a ) { return a; }
   __forceinline const vuint4 operator -( const vuint4&  a ) { return _mm_sub_epi32(_mm_setzero_si128(), a.v); }
-#if defined(__SSSE3__)
-  __forceinline const vuint4 abs       ( const vuint4&  a ) { return _mm_abs_epi32(a.v); }
-#endif
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
@@ -190,13 +183,13 @@ namespace embree
   __forceinline const vuint4 operator -( const vuint4& a, const unsigned&   b ) { return a - vuint4(b); }
   __forceinline const vuint4 operator -( const unsigned&   a, const vuint4& b ) { return vuint4(a) - b; }
 
-#if defined(__SSE4_1__)
-  __forceinline const vuint4 operator *( const vuint4& a, const vuint4& b ) { return _mm_mullo_epi32(a.v, b.v); }
-#else
-  __forceinline const vuint4 operator *( const vuint4& a, const vuint4& b ) { return vuint4(a[0]*b[0],a[1]*b[1],a[2]*b[2],a[3]*b[3]); }
-#endif
-  __forceinline const vuint4 operator *( const vuint4& a, const unsigned&   b ) { return a * vuint4(b); }
-  __forceinline const vuint4 operator *( const unsigned&   a, const vuint4& b ) { return vuint4(a) * b; }
+//#if defined(__SSE4_1__)
+//  __forceinline const vuint4 operator *( const vuint4& a, const vuint4& b ) { return _mm_mullo_epu32(a.v, b.v); }
+//#else
+//  __forceinline const vuint4 operator *( const vuint4& a, const vuint4& b ) { return vuint4(a[0]*b[0],a[1]*b[1],a[2]*b[2],a[3]*b[3]); }
+//#endif
+//  __forceinline const vuint4 operator *( const vuint4& a, const unsigned&   b ) { return a * vuint4(b); }
+//  __forceinline const vuint4 operator *( const unsigned&   a, const vuint4& b ) { return vuint4(a) * b; }
 
   __forceinline const vuint4 operator &( const vuint4& a, const vuint4& b ) { return _mm_and_si128(a.v, b.v); }
   __forceinline const vuint4 operator &( const vuint4& a, const unsigned&   b ) { return a & vuint4(b); }
@@ -211,7 +204,7 @@ namespace embree
   __forceinline const vuint4 operator ^( const unsigned&   a, const vuint4& b ) { return vuint4(a) ^ b; }
 
   __forceinline const vuint4 operator <<( const vuint4& a, const unsigned& n ) { return _mm_slli_epi32(a.v, n); }
-  __forceinline const vuint4 operator >>( const vuint4& a, const unsigned& n ) { return _mm_srai_epi32(a.v, n); }
+  __forceinline const vuint4 operator >>( const vuint4& a, const unsigned& n ) { return _mm_srli_epi32(a.v, n); }
 
   __forceinline const vuint4 sll ( const vuint4& a, const unsigned& b ) { return _mm_slli_epi32(a.v, b); }
   __forceinline const vuint4 sra ( const vuint4& a, const unsigned& b ) { return _mm_srai_epi32(a.v, b); }
@@ -227,10 +220,10 @@ namespace embree
   __forceinline vuint4& operator -=( vuint4& a, const vuint4& b ) { return a = a - b; }
   __forceinline vuint4& operator -=( vuint4& a, const unsigned&   b ) { return a = a - b; }
 
-#if defined(__SSE4_1__)
-  __forceinline vuint4& operator *=( vuint4& a, const vuint4& b ) { return a = a * b; }
-  __forceinline vuint4& operator *=( vuint4& a, const unsigned&   b ) { return a = a * b; }
-#endif
+//#if defined(__SSE4_1__)
+//  __forceinline vuint4& operator *=( vuint4& a, const vuint4& b ) { return a = a * b; }
+//  __forceinline vuint4& operator *=( vuint4& a, const unsigned&   b ) { return a = a * b; }
+//#endif
   
   __forceinline vuint4& operator &=( vuint4& a, const vuint4& b ) { return a = a & b; }
   __forceinline vuint4& operator &=( vuint4& a, const unsigned&   b ) { return a = a & b; }
@@ -246,19 +239,19 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX512VL__)
-  __forceinline const vboolf4 operator ==( const vuint4& a, const vuint4& b ) { return _mm_cmp_epi32_mask(a,b,_MM_CMPINT_EQ); }
-  __forceinline const vboolf4 operator !=( const vuint4& a, const vuint4& b ) { return _mm_cmp_epi32_mask(a,b,_MM_CMPINT_NE); }
-  __forceinline const vboolf4 operator < ( const vuint4& a, const vuint4& b ) { return _mm_cmp_epi32_mask(a,b,_MM_CMPINT_LT); }
-  __forceinline const vboolf4 operator >=( const vuint4& a, const vuint4& b ) { return _mm_cmp_epi32_mask(a,b,_MM_CMPINT_GE); }
-  __forceinline const vboolf4 operator > ( const vuint4& a, const vuint4& b ) { return _mm_cmp_epi32_mask(a,b,_MM_CMPINT_GT); }
-  __forceinline const vboolf4 operator <=( const vuint4& a, const vuint4& b ) { return _mm_cmp_epi32_mask(a,b,_MM_CMPINT_LE); }
+  __forceinline const vboolf4 operator ==( const vuint4& a, const vuint4& b ) { return _mm_cmp_epu32_mask(a,b,_MM_CMPINT_EQ); }
+  __forceinline const vboolf4 operator !=( const vuint4& a, const vuint4& b ) { return _mm_cmp_epu32_mask(a,b,_MM_CMPINT_NE); }
+  //__forceinline const vboolf4 operator < ( const vuint4& a, const vuint4& b ) { return _mm_cmp_epu32_mask(a,b,_MM_CMPINT_LT); }
+  //__forceinline const vboolf4 operator >=( const vuint4& a, const vuint4& b ) { return _mm_cmp_epu32_mask(a,b,_MM_CMPINT_GE); }
+  //__forceinline const vboolf4 operator > ( const vuint4& a, const vuint4& b ) { return _mm_cmp_epu32_mask(a,b,_MM_CMPINT_GT); }
+  //__forceinline const vboolf4 operator <=( const vuint4& a, const vuint4& b ) { return _mm_cmp_epu32_mask(a,b,_MM_CMPINT_LE); }
 #else
   __forceinline const vboolf4 operator ==( const vuint4& a, const vuint4& b ) { return _mm_castsi128_ps(_mm_cmpeq_epi32(a, b)); }
   __forceinline const vboolf4 operator !=( const vuint4& a, const vuint4& b ) { return !(a == b); }
-  __forceinline const vboolf4 operator < ( const vuint4& a, const vuint4& b ) { return _mm_castsi128_ps(_mm_cmplt_epi32(a, b)); }
-  __forceinline const vboolf4 operator >=( const vuint4& a, const vuint4& b ) { return !(a <  b); }
-  __forceinline const vboolf4 operator > ( const vuint4& a, const vuint4& b ) { return _mm_castsi128_ps(_mm_cmpgt_epi32(a, b)); }
-  __forceinline const vboolf4 operator <=( const vuint4& a, const vuint4& b ) { return !(a >  b); }
+  //__forceinline const vboolf4 operator < ( const vuint4& a, const vuint4& b ) { return _mm_castsi128_ps(_mm_cmplt_epu32(a, b)); }
+  //__forceinline const vboolf4 operator >=( const vuint4& a, const vuint4& b ) { return !(a <  b); }
+  //__forceinline const vboolf4 operator > ( const vuint4& a, const vuint4& b ) { return _mm_castsi128_ps(_mm_cmpgt_epu32(a, b)); }
+  //__forceinline const vboolf4 operator <=( const vuint4& a, const vuint4& b ) { return !(a >  b); }
 #endif
 
   __forceinline const vboolf4 operator ==( const vuint4& a, const unsigned&   b ) { return a == vuint4(b); }
@@ -267,39 +260,39 @@ namespace embree
   __forceinline const vboolf4 operator !=( const vuint4& a, const unsigned&   b ) { return a != vuint4(b); }
   __forceinline const vboolf4 operator !=( const unsigned&   a, const vuint4& b ) { return vuint4(a) != b; }
 
-  __forceinline const vboolf4 operator < ( const vuint4& a, const unsigned&   b ) { return a <  vuint4(b); }
-  __forceinline const vboolf4 operator < ( const unsigned&   a, const vuint4& b ) { return vuint4(a) <  b; }
+  //__forceinline const vboolf4 operator < ( const vuint4& a, const unsigned&   b ) { return a <  vuint4(b); }
+  //__forceinline const vboolf4 operator < ( const unsigned&   a, const vuint4& b ) { return vuint4(a) <  b; }
 
-  __forceinline const vboolf4 operator >=( const vuint4& a, const unsigned&   b ) { return a >= vuint4(b); }
-  __forceinline const vboolf4 operator >=( const unsigned&   a, const vuint4& b ) { return vuint4(a) >= b; }
+  //__forceinline const vboolf4 operator >=( const vuint4& a, const unsigned&   b ) { return a >= vuint4(b); }
+  //__forceinline const vboolf4 operator >=( const unsigned&   a, const vuint4& b ) { return vuint4(a) >= b; }
 
-  __forceinline const vboolf4 operator > ( const vuint4& a, const unsigned&   b ) { return a >  vuint4(b); }
-  __forceinline const vboolf4 operator > ( const unsigned&   a, const vuint4& b ) { return vuint4(a) >  b; }
+  //__forceinline const vboolf4 operator > ( const vuint4& a, const unsigned&   b ) { return a >  vuint4(b); }
+  //__forceinline const vboolf4 operator > ( const unsigned&   a, const vuint4& b ) { return vuint4(a) >  b; }
 
-  __forceinline const vboolf4 operator <=( const vuint4& a, const unsigned&   b ) { return a <= vuint4(b); }
-  __forceinline const vboolf4 operator <=( const unsigned&   a, const vuint4& b ) { return vuint4(a) <= b; }
+  //__forceinline const vboolf4 operator <=( const vuint4& a, const unsigned&   b ) { return a <= vuint4(b); }
+  //__forceinline const vboolf4 operator <=( const unsigned&   a, const vuint4& b ) { return vuint4(a) <= b; }
 
   __forceinline vboolf4 eq(const vuint4& a, const vuint4& b) { return a == b; }
   __forceinline vboolf4 ne(const vuint4& a, const vuint4& b) { return a != b; }
-  __forceinline vboolf4 lt(const vuint4& a, const vuint4& b) { return a <  b; }
-  __forceinline vboolf4 ge(const vuint4& a, const vuint4& b) { return a >= b; }
-  __forceinline vboolf4 gt(const vuint4& a, const vuint4& b) { return a >  b; }
-  __forceinline vboolf4 le(const vuint4& a, const vuint4& b) { return a <= b; }
+  //__forceinline vboolf4 lt(const vuint4& a, const vuint4& b) { return a <  b; }
+  //__forceinline vboolf4 ge(const vuint4& a, const vuint4& b) { return a >= b; }
+  //__forceinline vboolf4 gt(const vuint4& a, const vuint4& b) { return a >  b; }
+  //__forceinline vboolf4 le(const vuint4& a, const vuint4& b) { return a <= b; }
 
 #if defined(__AVX512VL__)
-  __forceinline vboolf4 eq(const vboolf4& mask, const vuint4& a, const vuint4& b) { return _mm_mask_cmp_epi32_mask(mask, a, b, _MM_CMPINT_EQ); }
-  __forceinline vboolf4 ne(const vboolf4& mask, const vuint4& a, const vuint4& b) { return _mm_mask_cmp_epi32_mask(mask, a, b, _MM_CMPINT_NE); }
-  __forceinline vboolf4 lt(const vboolf4& mask, const vuint4& a, const vuint4& b) { return _mm_mask_cmp_epi32_mask(mask, a, b, _MM_CMPINT_LT); }
-  __forceinline vboolf4 ge(const vboolf4& mask, const vuint4& a, const vuint4& b) { return _mm_mask_cmp_epi32_mask(mask, a, b, _MM_CMPINT_GE); }
-  __forceinline vboolf4 gt(const vboolf4& mask, const vuint4& a, const vuint4& b) { return _mm_mask_cmp_epi32_mask(mask, a, b, _MM_CMPINT_GT); }
-  __forceinline vboolf4 le(const vboolf4& mask, const vuint4& a, const vuint4& b) { return _mm_mask_cmp_epi32_mask(mask, a, b, _MM_CMPINT_LE); }
+  __forceinline vboolf4 eq(const vboolf4& mask, const vuint4& a, const vuint4& b) { return _mm_mask_cmp_epu32_mask(mask, a, b, _MM_CMPINT_EQ); }
+  __forceinline vboolf4 ne(const vboolf4& mask, const vuint4& a, const vuint4& b) { return _mm_mask_cmp_epu32_mask(mask, a, b, _MM_CMPINT_NE); }
+  //__forceinline vboolf4 lt(const vboolf4& mask, const vuint4& a, const vuint4& b) { return _mm_mask_cmp_epu32_mask(mask, a, b, _MM_CMPINT_LT); }
+  //__forceinline vboolf4 ge(const vboolf4& mask, const vuint4& a, const vuint4& b) { return _mm_mask_cmp_epu32_mask(mask, a, b, _MM_CMPINT_GE); }
+  //__forceinline vboolf4 gt(const vboolf4& mask, const vuint4& a, const vuint4& b) { return _mm_mask_cmp_epu32_mask(mask, a, b, _MM_CMPINT_GT); }
+  //__forceinline vboolf4 le(const vboolf4& mask, const vuint4& a, const vuint4& b) { return _mm_mask_cmp_epu32_mask(mask, a, b, _MM_CMPINT_LE); }
 #else
   __forceinline vboolf4 eq(const vboolf4& mask, const vuint4& a, const vuint4& b) { return mask & (a == b); }
   __forceinline vboolf4 ne(const vboolf4& mask, const vuint4& a, const vuint4& b) { return mask & (a != b); }
-  __forceinline vboolf4 lt(const vboolf4& mask, const vuint4& a, const vuint4& b) { return mask & (a <  b); }
-  __forceinline vboolf4 ge(const vboolf4& mask, const vuint4& a, const vuint4& b) { return mask & (a >= b); }
-  __forceinline vboolf4 gt(const vboolf4& mask, const vuint4& a, const vuint4& b) { return mask & (a >  b); }
-  __forceinline vboolf4 le(const vboolf4& mask, const vuint4& a, const vuint4& b) { return mask & (a <= b); }
+  //__forceinline vboolf4 lt(const vboolf4& mask, const vuint4& a, const vuint4& b) { return mask & (a <  b); }
+  //__forceinline vboolf4 ge(const vboolf4& mask, const vuint4& a, const vuint4& b) { return mask & (a >= b); }
+  //__forceinline vboolf4 gt(const vboolf4& mask, const vuint4& a, const vuint4& b) { return mask & (a >  b); }
+  //__forceinline vboolf4 le(const vboolf4& mask, const vuint4& a, const vuint4& b) { return mask & (a <= b); }
 #endif
 
   template<int mask>
@@ -312,11 +305,8 @@ namespace embree
   }
 
 #if defined(__SSE4_1__)
-  __forceinline const vuint4 min( const vuint4& a, const vuint4& b ) { return _mm_min_epi32(a.v, b.v); }
-  __forceinline const vuint4 max( const vuint4& a, const vuint4& b ) { return _mm_max_epi32(a.v, b.v); }
-
-  __forceinline const vuint4 umin( const vuint4& a, const vuint4& b ) { return _mm_min_epu32(a.v, b.v); }
-  __forceinline const vuint4 umax( const vuint4& a, const vuint4& b ) { return _mm_max_epu32(a.v, b.v); }
+  __forceinline const vuint4 min( const vuint4& a, const vuint4& b ) { return _mm_min_epu32(a.v, b.v); }
+  __forceinline const vuint4 max( const vuint4& a, const vuint4& b ) { return _mm_max_epu32(a.v, b.v); }
 
 #else
   __forceinline const vuint4 min( const vuint4& a, const vuint4& b ) { return select(a < b,a,b); }
