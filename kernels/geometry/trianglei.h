@@ -66,6 +66,13 @@ namespace embree
     __forceinline vint<M> primID() const { return primIDs; }
     __forceinline int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
+    /* loads a single vertex */
+    __forceinline Vec3f& getVertex(const vint<M>& v, const size_t index, const Scene *const scene) const
+    {
+      const int* vertices = scene->vertices[geomID(index)];
+      return (Vec3f&) vertices[v[index]];
+    }
+
     /* gather the triangles */
     __forceinline void gather(Vec3vf<M>& p0, Vec3vf<M>& p1, Vec3vf<M>& p2, const Scene* const scene) const;
     
@@ -132,9 +139,9 @@ namespace embree
     }
     
   public:
-    vint<M> v0;         // index to 1st vertex
-    vint<M> v1;         // offset to 2nd vertex
-    vint<M> v2;         // offset to 3rd vertex
+    vint<M> v0;         // 4 byte offset of 1st vertex
+    vint<M> v1;         // 4 byte offset of 2nd vertex
+    vint<M> v2;         // 4 byte offset of 3rd vertex
     vint<M> geomIDs;    // geometry ID of mesh
     vint<M> primIDs;    // primitive ID of primitive inside mesh
   };

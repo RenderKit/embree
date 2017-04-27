@@ -120,6 +120,12 @@ namespace embree
     }
   }
 
+  void QuadMesh::postCommit () 
+  {
+    parent->vertices[id] = (int*) vertices0.getPtr();
+    Geometry::postCommit();
+  }
+
   void QuadMesh::immutable () 
   {
     const bool freeQuads = !parent->needQuadIndices;

@@ -75,13 +75,9 @@ namespace embree
           {
             if (!tri.valid(i)) break;
             STAT3(normal.trav_prims,1,popcnt(valid_i),RayK<K>::size());
-            const int* vertices = scene->vertices[tri.geomID(i)];
-            const Vec3f& p0 = (const Vec3f&) vertices[tri.v0[i]];
-            const Vec3f& p1 = (const Vec3f&) vertices[tri.v1[i]];
-            const Vec3f& p2 = (const Vec3f&) vertices[tri.v2[i]];
-            const Vec3vf<K> v0 = Vec3vf<K>(p0);
-            const Vec3vf<K> v1 = Vec3vf<K>(p1);
-            const Vec3vf<K> v2 = Vec3vf<K>(p2);
+            const Vec3vf<K> v0 = tri.getVertex(tri.v0,i,scene);
+            const Vec3vf<K> v1 = tri.getVertex(tri.v1,i,scene);
+            const Vec3vf<K> v2 = tri.getVertex(tri.v2,i,scene);
             pre.intersectK(valid_i,ray,v0,v1,v2,/*UVIdentity<K>(),*/IntersectKEpilogM<M,K,filter>(ray,context,tri.geomIDs,tri.primIDs,i));
           }
         }
@@ -95,13 +91,9 @@ namespace embree
           {
             if (!tri.valid(i)) break;
             STAT3(shadow.trav_prims,1,popcnt(valid_i),RayK<K>::size());
-            const int* vertices = scene->vertices[tri.geomID(i)];
-            const Vec3f& p0 = (const Vec3f&) vertices[tri.v0[i]];
-            const Vec3f& p1 = (const Vec3f&) vertices[tri.v1[i]];
-            const Vec3f& p2 = (const Vec3f&) vertices[tri.v2[i]];
-            const Vec3vf<K> v0 = Vec3vf<K>(p0);
-            const Vec3vf<K> v1 = Vec3vf<K>(p1);
-            const Vec3vf<K> v2 = Vec3vf<K>(p2);
+            const Vec3vf<K> v0 = tri.getVertex(tri.v0,i,scene);
+            const Vec3vf<K> v1 = tri.getVertex(tri.v1,i,scene);
+            const Vec3vf<K> v2 = tri.getVertex(tri.v2,i,scene);
             pre.intersectK(valid0,ray,v0,v1,v2,/*UVIdentity<K>(),*/OccludedKEpilogM<M,K,filter>(valid0,ray,context,tri.geomIDs,tri.primIDs,i));
             if (none(valid0)) break;
           }
@@ -174,13 +166,9 @@ namespace embree
           {
             if (!tri.valid(i)) break;
             STAT3(normal.trav_prims,1,popcnt(valid_i),RayK<K>::size());
-            const int* vertices = scene->vertices[tri.geomID(i)];
-            const Vec3f& p0 = (const Vec3f&) vertices[tri.v0[i]];
-            const Vec3f& p1 = (const Vec3f&) vertices[tri.v1[i]];
-            const Vec3f& p2 = (const Vec3f&) vertices[tri.v2[i]];
-            const Vec3vf<K> v0 = Vec3vf<K>(p0);
-            const Vec3vf<K> v1 = Vec3vf<K>(p1);
-            const Vec3vf<K> v2 = Vec3vf<K>(p2);
+            const Vec3vf<K> v0 = tri.getVertex(tri.v0,i,scene);
+            const Vec3vf<K> v1 = tri.getVertex(tri.v1,i,scene);
+            const Vec3vf<K> v2 = tri.getVertex(tri.v2,i,scene);
             pre.intersectK(valid_i,ray,v0,v1,v2,UVIdentity<K>(),IntersectKEpilogM<M,K,filter>(ray,context,tri.geomIDs,tri.primIDs,i));
           }
         }
@@ -194,13 +182,9 @@ namespace embree
           {
             if (!tri.valid(i)) break;
             STAT3(shadow.trav_prims,1,popcnt(valid_i),RayK<K>::size());
-            const int* vertices = scene->vertices[tri.geomID(i)];
-            const Vec3f& p0 = (const Vec3f&) vertices[tri.v0[i]];
-            const Vec3f& p1 = (const Vec3f&) vertices[tri.v1[i]];
-            const Vec3f& p2 = (const Vec3f&) vertices[tri.v2[i]];
-            const Vec3vf<K> v0 = Vec3vf<K>(p0);
-            const Vec3vf<K> v1 = Vec3vf<K>(p1);
-            const Vec3vf<K> v2 = Vec3vf<K>(p2);
+            const Vec3vf<K> v0 = tri.getVertex(tri.v0,i,scene);
+            const Vec3vf<K> v1 = tri.getVertex(tri.v1,i,scene);
+            const Vec3vf<K> v2 = tri.getVertex(tri.v2,i,scene);
             pre.intersectK(valid0,ray,v0,v1,v2,UVIdentity<K>(),OccludedKEpilogM<M,K,filter>(valid0,ray,context,tri.geomIDs,tri.primIDs,i));
             if (none(valid0)) break;
           }

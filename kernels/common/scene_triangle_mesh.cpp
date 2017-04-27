@@ -120,6 +120,12 @@ namespace embree
     }
   }
 
+  void TriangleMesh::postCommit () 
+  {
+    parent->vertices[id] = (int*) vertices0.getPtr();
+    Geometry::postCommit();
+  }
+
   void TriangleMesh::immutable () 
   {
     const bool freeTriangles = !parent->needTriangleIndices;
@@ -157,10 +163,6 @@ namespace embree
 	  return false;
 
     return true;
-  }
-
-  void TriangleMesh::postCommit () {
-    parent->vertices[id] = (int*) vertices0.getPtr();
   }
 
   void TriangleMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
