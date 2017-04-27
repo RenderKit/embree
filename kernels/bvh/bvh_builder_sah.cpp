@@ -159,7 +159,7 @@ namespace embree
         if (unlikely(pinfo.size() == 0)) {
           prims.clear(); bvh->clear(); return;
         }
-        
+
         /* call BVH builder */            
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef),settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD);
         NodeRef root = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,settings);
@@ -211,6 +211,11 @@ namespace embree
               if (settings.primrefarrayalloc < 1000)
                 settings.primrefarrayalloc = inf;
             }
+
+            /* enable os_malloc for static scenes or dynamic scenes with static geometry */
+            if (mesh == NULL || mesh->isStatic())
+              bvh->alloc.setOSallocation(true);
+
             bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef),settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD,settings.primrefarrayalloc != size_t(inf));
             prims.resize(numPrimitives); 
 
@@ -307,6 +312,10 @@ namespace embree
             PrimInfo pinfo = mesh ? 
               createPrimRefArray<Mesh>  (mesh ,prims,bvh->scene->progressInterface) : 
               createPrimRefArray<Mesh,false>(scene,prims,bvh->scene->progressInterface);
+
+            /* enable os_malloc for static scenes or dynamic scenes with static geometry */
+            if (mesh == NULL || mesh->isStatic())
+              bvh->alloc.setOSallocation(true);
         
             /* call BVH builder */
             bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef),settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD);
@@ -569,6 +578,10 @@ namespace embree
           createPrimRefArray<Mesh,false>(scene,prims0,bvh->scene->progressInterface);
 
         Splitter splitter(scene);
+
+        /* enable os_malloc for static scenes or dynamic scenes with static geometry */
+        if (mesh == NULL || mesh->isStatic())
+          bvh->alloc.setOSallocation(true);
 
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
 

@@ -14,12 +14,12 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-SET(FLAGS_SSE2  "")
+SET(FLAGS_SSE2  "/D__SSE__ /D__SSE2__")
 SET(FLAGS_SSE42 "${FLAGS_SSE2} /D__SSE3__ /D__SSSE3__ /D__SSE4_1__ /D__SSE4_2__")
 SET(FLAGS_AVX   "${FLAGS_SSE42} /arch:AVX")
 SET(FLAGS_AVX2  "${FLAGS_SSE42} /arch:AVX2")
 
-SET(COMMON_CXX_FLAGS "/EHsc /MP /GR /GS- /D__SSE__ /D__SSE2__")
+SET(COMMON_CXX_FLAGS "/EHsc /MP /GR /GS- ${FLAGS_SSE2}")
 
 SET(CMAKE_CXX_FLAGS_DEBUG          "${CMAKE_CXX_FLAGS_DEBUG} ${COMMON_CXX_FLAGS}")
 SET(CMAKE_CXX_FLAGS_RELEASE        "${CMAKE_CXX_FLAGS_RELEASE}        ${COMMON_CXX_FLAGS} /Ox /Oi /Gy")

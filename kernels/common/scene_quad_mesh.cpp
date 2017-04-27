@@ -64,6 +64,12 @@ namespace embree
     if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) 
     {
       size_t t = type - RTC_VERTEX_BUFFER0;
+      if (size == -1) size = vertices[t].size();
+
+      /* if buffer is larger than 16GB the premultiplied index optimization does not work */
+      if (stride*size > 16ll*1024ll*1024ll*1024ll) 
+       throw_RTCError(RTC_INVALID_OPERATION,"vertex buffer can be at most 16GB large");
+
       vertices[t].set(ptr,offset,stride,size); 
       vertices[t].checkPadding16();
       vertices0 = vertices[0];
@@ -118,6 +124,12 @@ namespace embree
     else {
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
     }
+  }
+
+  void QuadMesh::postCommit () 
+  {
+    parent->vertices[id] = (int*) vertices0.getPtr();
+    Geometry::postCommit();
   }
 
   void QuadMesh::immutable () 

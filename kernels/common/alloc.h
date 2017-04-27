@@ -208,13 +208,22 @@ namespace embree
       return &threadLocal2()->alloc0;
     }
 
+    void setOSallocation(bool flag)
+    {
+      atype = flag ? OS_MALLOC : ALIGNED_MALLOC;
+    }
+
   private:
 
     /*! returns both fast thread local allocators */
     __forceinline ThreadLocal2* threadLocal2() 
     {
       ThreadLocal2* alloc = thread_local_allocator2;
-      if (alloc == nullptr) thread_local_allocator2 = alloc = new ThreadLocal2;
+      if (alloc == nullptr) {
+        thread_local_allocator2 = alloc = new ThreadLocal2;
+        Lock<SpinLock> lock(s_thread_local_allocators_lock);
+        s_thread_local_allocators.push_back(make_unique(alloc));
+      }
       return alloc;
     }
 
@@ -847,6 +856,8 @@ namespace embree
     std::atomic<size_t> bytesUsed;            //!< number of total bytes used
     std::atomic<size_t> bytesWasted;          //!< number of total wasted bytes
     static __thread ThreadLocal2* thread_local_allocator2;
+    static SpinLock s_thread_local_allocators_lock;
+    static std::vector<std::unique_ptr<ThreadLocal2>> s_thread_local_allocators;
     SpinLock thread_local_allocators_lock;
     std::vector<ThreadLocal2*> thread_local_allocators;
     AllocationType atype;

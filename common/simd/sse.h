@@ -45,4 +45,5 @@ namespace embree
 #include "vboolf4_sse2.h"
 #endif
 #include "vint4_sse2.h"
+#include "vuint4_sse2.h"
 #include "vfloat4_sse2.h"

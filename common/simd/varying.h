@@ -98,6 +98,7 @@ namespace embree
   typedef vdouble<4> vdouble4;
   typedef vreal<4>   vreal4;
   typedef vint<4>    vint4;
+  typedef vuint<4>  vuint4;
   typedef vllong<4>  vllong4;
   typedef vbool<4>   vbool4;
   typedef vboolf<4>  vboolf4;
