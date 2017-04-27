@@ -1264,9 +1264,9 @@ namespace embree
         }
 
       case HAIR_GEOMETRY_MB: switch (sflags) {
-        case RTC_SCENE_STATIC : return avx2 ?  260.0f*NN : 175.0f*NN; // bezier1i
-        case RTC_SCENE_ROBUST : return avx2 ?  260.0f*NN : 175.0f*NN; // bezier1i
-        case RTC_SCENE_COMPACT: return avx2 ?  260.0f*NN : 175.0f*NN; // bezier1i
+        case RTC_SCENE_STATIC : return avx2 ?  276.0f*NN : 190.0f*NN; // bezier1i
+        case RTC_SCENE_ROBUST : return avx2 ?  276.0f*NN : 190.0f*NN; // bezier1i
+        case RTC_SCENE_COMPACT: return avx2 ?  276.0f*NN : 190.0f*NN; // bezier1i
         default: return inf;
         }
       
