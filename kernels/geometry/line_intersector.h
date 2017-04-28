@@ -63,11 +63,13 @@ namespace embree
         };
         
         template<typename Epilog>
-        static __forceinline bool intersect(Ray& ray, const Precalculations& pre,
+        static __forceinline bool intersect(const vbool<M>& valid_i,
+                                            Ray& ray, const Precalculations& pre,
                                             const Vec4vf<M>& v0, const Vec4vf<M>& v1,
                                             const Epilog& epilog)
         {
           /* transform end points into ray space */
+          vbool<M> valid = valid_i;
           Vec4vf<M> p0(xfmVector(pre.ray_space,v0.xyz()-Vec3vf<M>(ray.org)), v0.w);
           Vec4vf<M> p1(xfmVector(pre.ray_space,v1.xyz()-Vec3vf<M>(ray.org)), v1.w);
           
@@ -82,7 +84,7 @@ namespace embree
           const vfloat<M> d2 = madd(p.x,p.x,p.y*p.y);
           const vfloat<M> r = p.w;
           const vfloat<M> r2 = r*r;
-          vbool<M> valid = (d2 <= r2) & (vfloat<M>(ray.tnear) < t) & (t <= vfloat<M>(ray.tfar));
+          valid &= (d2 <= r2) & (vfloat<M>(ray.tnear) < t) & (t <= vfloat<M>(ray.tfar));
           if (unlikely(none(valid))) return false;
           
           /* ignore denormalized segments */
@@ -116,11 +118,13 @@ namespace embree
         };
         
         template<typename Epilog>
-        static __forceinline bool intersect(RayK<K>& ray, size_t k, const Precalculations& pre,
+        static __forceinline bool intersect(const vbool<M>& valid_i,
+                                            RayK<K>& ray, size_t k, const Precalculations& pre,
                                             const Vec4vf<M>& v0, const Vec4vf<M>& v1,
                                             const Epilog& epilog)
         {
           /* transform end points into ray space */
+          vbool<M> valid = valid_i;
           const Vec3vf<M> ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
           const Vec3vf<M> ray_dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
           Vec4vf<M> p0(xfmVector(pre.ray_space[k],v0.xyz()-ray_org), v0.w);
@@ -137,7 +141,7 @@ namespace embree
           const vfloat<M> d2 = madd(p.x,p.x,p.y*p.y);
           const vfloat<M> r = p.w;
           const vfloat<M> r2 = r*r;
-          vbool<M> valid = (d2 <= r2) & (vfloat<M>(ray.tnear[k]) < t) & (t <= vfloat<M>(ray.tfar[k]));
+          valid &= (d2 <= r2) & (vfloat<M>(ray.tnear[k]) < t) & (t <= vfloat<M>(ray.tfar[k]));
           if (unlikely(none(valid))) return false;
           
           /* ignore denormalized segments */
