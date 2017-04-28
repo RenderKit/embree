@@ -226,17 +226,6 @@ namespace embree
         return true;
       }
 
-      /*! calculates the build bounds of the i'th item at the itimeGlobal'th time segment, if it's valid */
-      __forceinline bool buildBounds(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal, BBox3fa& bbox) const
-      {
-        return Geometry::buildBounds([&] (size_t itime, BBox3fa& bbox) -> bool
-                                     {
-                                       bbox = bounds(i, itime);
-                                       return isvalid(bbox);
-                                     },
-                                     itimeGlobal, numTimeStepsGlobal, numTimeSteps, bbox);
-      }
-      
       void enabling ();
       void disabling();
 

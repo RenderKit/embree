@@ -265,18 +265,6 @@ namespace embree
       return true;
     }
 
-    /*! calculates the build bounds of the i'th primitive at the itimeGlobal'th time segment, if it's valid */
-    __forceinline bool buildBounds(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal, BBox3fa& bbox) const
-    {
-      return Geometry::buildBounds([&] (size_t itime, BBox3fa& bbox) -> bool
-                                   {
-                                     if (unlikely(!valid(i, itime))) return false;
-                                     bbox = bounds(i, itime);
-                                     return true;
-                                   },
-                                   itimeGlobal, numTimeStepsGlobal, numTimeSteps, bbox);
-    }
-    
   public:
     APIBuffer<Triangle> triangles;                    //!< array of triangles
     BufferRefT<Vec3fa> vertices0;                     //!< fast access to first vertex buffer

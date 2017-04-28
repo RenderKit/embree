@@ -345,16 +345,6 @@ namespace embree
 
   public:
 
-    /*! calculates the interpolated bounds of a primitive at the specified time */
-    template<typename BoundsFunc>
-    __forceinline static BBox3fa interpolateBounds(const BoundsFunc& bounds, float time, float numTimeSegments)
-    {
-      float ftime; size_t itime = getTimeSegment(time, numTimeSegments, ftime);
-      const BBox3fa b0 = bounds(itime+0);
-      const BBox3fa b1 = bounds(itime+1);
-      return lerp(b0, b1, ftime);
-    }
-
     /*! calculates the linear bounds of a primitive for the specified time range */
     template<typename BoundsFunc>
     __forceinline static LBBox3fa linearBounds(const BoundsFunc& bounds, const BBox1f& time_range, float numTimeSegments)
@@ -423,74 +413,6 @@ namespace embree
       }
 
       return LBBox3fa(b0, b1);
-    }
-
-    /*! calculates the linear bounds of a primitive at the itimeGlobal'th time segment, if it's valid */
-    template<typename BoundsFunc>
-    __forceinline static bool linearBounds(const BoundsFunc& bounds, size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, LBBox3fa& lbbox)
-    {
-      if (numTimeStepsGlobal == numTimeSteps)
-      {
-        BBox3fa bounds0; if (unlikely(!bounds(itimeGlobal+0, bounds0))) return false;
-        BBox3fa bounds1; if (unlikely(!bounds(itimeGlobal+1, bounds1))) return false;
-
-        lbbox = LBBox3fa(bounds0, bounds1);
-        return true;
-      }
-
-      const int timeSegments = int(numTimeSteps-1);
-      const int timeSegmentsGlobal = int(numTimeStepsGlobal-1);
-      const float invTimeSegmentsGlobal = rcp(float(timeSegmentsGlobal));
-
-      const int itimeScaled = int(itimeGlobal) * timeSegments;
-
-      const int itime0 = itimeScaled / timeSegmentsGlobal;
-      const int rtime0 = itimeScaled % timeSegmentsGlobal;
-      const float ftime0 = float(rtime0) * invTimeSegmentsGlobal;
-      const int rtime1 = rtime0 + timeSegments;
-
-      if (rtime1 <= timeSegmentsGlobal)
-      { 
-        BBox3fa b0; if (unlikely(!bounds(itime0+0, b0))) return false;
-        BBox3fa b1; if (unlikely(!bounds(itime0+1, b1))) return false;
-
-        const float ftime1 = float(rtime1) * invTimeSegmentsGlobal;
-
-        lbbox = LBBox3fa(lerp(b0, b1, ftime0), lerp(b0, b1, ftime1));
-        return true;
-      }
-
-      BBox3fa b0; if (unlikely(!bounds(itime0+0, b0))) return false;
-      BBox3fa b1; if (unlikely(!bounds(itime0+1, b1))) return false;
-      BBox3fa b2; if (unlikely(!bounds(itime0+2, b2))) return false;
-
-      const float ftime1 = float(rtime1-timeSegmentsGlobal) * invTimeSegmentsGlobal;
-
-      BBox3fa bounds0 = lerp(b0, b1, ftime0);
-      BBox3fa bounds1 = lerp(b1, b2, ftime1);
-
-      const BBox3fa b1Lerp = lerp(bounds0, bounds1, float(timeSegmentsGlobal-rtime0) * rcp(float(timeSegments)));
-
-      bounds0.lower = min(bounds0.lower, bounds0.lower - (b1Lerp.lower - b1.lower));
-      bounds1.lower = min(bounds1.lower, bounds1.lower - (b1Lerp.lower - b1.lower));
-
-      bounds0.upper = max(bounds0.upper, bounds0.upper + (b1.upper - b1Lerp.upper));
-      bounds1.upper = max(bounds1.upper, bounds1.upper + (b1.upper - b1Lerp.upper));
-
-      lbbox = LBBox3fa(bounds0, bounds1);
-      return true;
-    }
-
-    /*! calculates the build bounds of a primitive at the itimeGlobal'th time segment, if it's valid */
-    template<typename BoundsFunc>
-    __forceinline static bool buildBounds(const BoundsFunc& bounds, size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, BBox3fa& bbox)
-    {
-      LBBox3fa lbbox;
-      if (!linearBounds(bounds, itimeGlobal, numTimeStepsGlobal, numTimeSteps, lbbox))
-        return false;
-
-      bbox = 0.5f * (lbbox.bounds0 + lbbox.bounds1);
-      return true;
     }
 
     /*! checks if a primitive is valid at the itimeGlobal'th time segment */
