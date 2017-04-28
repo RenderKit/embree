@@ -276,19 +276,6 @@ namespace embree
       return true;
     }
 
-    /*! calculates the i'th build primitive at the itimeGlobal'th time segment, if it's valid */
-    __forceinline bool buildPrim(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal, Vec3fa& c0, Vec3fa& c1, Vec3fa& c2, Vec3fa& c3) const
-    {
-      if (!Geometry::validLinearBounds([&] (size_t itime) { return valid(i, itime); },
-                                       itimeGlobal, numTimeStepsGlobal, numTimeSteps))
-        return false;
-
-      const unsigned int index = curve(i);
-      float time = (float(int(itimeGlobal)) + 0.5f) / float(int(numTimeStepsGlobal-1));
-      gather(c0,c1,c2,c3,index,time);
-      return true;
-    }
-
     /*! calculates the linear bounds of the i'th primitive for the specified time range */
     __forceinline bool linearBounds(size_t i, const BBox1f& time_range, LBBox3fa& bbox) const  {
       if (!valid(i, getTimeSegmentRange(time_range, fnumTimeSegments))) return false;

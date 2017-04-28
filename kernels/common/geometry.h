@@ -415,39 +415,6 @@ namespace embree
       return LBBox3fa(b0, b1);
     }
 
-    /*! checks if a primitive is valid at the itimeGlobal'th time segment */
-    template<typename ValidFunc>
-    __forceinline static bool validLinearBounds(const ValidFunc& valid, size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps)
-    {
-      if (numTimeStepsGlobal == numTimeSteps)
-      {
-        if (unlikely(!valid(itimeGlobal+0))) return false;
-        if (unlikely(!valid(itimeGlobal+1))) return false;
-        return true;
-      }
-
-      const int timeSegments = int(numTimeSteps-1);
-      const int timeSegmentsGlobal = int(numTimeStepsGlobal-1);
-
-      const int itimeScaled = int(itimeGlobal) * timeSegments;
-
-      const int itime0 = itimeScaled / timeSegmentsGlobal;
-      const int rtime0 = itimeScaled % timeSegmentsGlobal;
-      const int rtime1 = rtime0 + timeSegments;
-
-      if (rtime1 <= timeSegmentsGlobal)
-      {
-        if (unlikely(!valid(itime0+0))) return false;
-        if (unlikely(!valid(itime0+1))) return false;
-        return true;
-      }
-
-      if (unlikely(!valid(itime0+0))) return false;
-      if (unlikely(!valid(itime0+1))) return false;
-      if (unlikely(!valid(itime0+2))) return false;
-      return true;
-    }
-
   public:
     Scene* parent;             //!< pointer to scene this mesh belongs to
     unsigned id;               //!< internal geometry ID
