@@ -53,6 +53,10 @@ namespace embree
     /* Returns a mask that tells which line segments are valid */
     __forceinline vbool<M> valid() const { return primIDs != vint<M>(-1); }
 
+      /* Returns a mask that tells which line segments are valid */
+    template<int Mx>
+    __forceinline vbool<Mx> valid() const { return vint<Mx>(primIDs) != vint<Mx>(-1); }
+
     /* Returns if the specified line segment is valid */
     __forceinline bool valid(const size_t i) const { assert(i<M); return primIDs[i] != -1; }
 
