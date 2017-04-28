@@ -440,7 +440,7 @@ namespace embree
       {
 	/* skip build for empty scene */
         const size_t numPrimitives = scene->getNumPrimitives<Mesh,true>();
-        if (numPrimitives == 0) { bvh->clear(); return; }
+        if (numPrimitives == 0) {  bvh->clear();  return; }
         
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderMBlurSAH");
 

@@ -410,7 +410,7 @@ namespace embree
       bytesUsed.store(0);
       bytesFree.store(0);
       bytesWasted.store(0);
-      
+
       /* reset all used blocks and move them to begin of free block list */
       while (usedBlocks.load() != nullptr) {
         usedBlocks.load()->reset_block();
