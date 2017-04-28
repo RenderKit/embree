@@ -114,14 +114,17 @@ namespace embree
       
       /*! perform DNS lookup */
       struct hostent* server = ::gethostbyname(host);
-      if (!server) THROW_RUNTIME_ERROR("server "+std::string(host)+" not found");
-      
+      if (!server) 
+        THROW_RUNTIME_ERROR("server "+std::string(host)+" not found");
+      if (server->h_length != sizeof(in_addr))
+        THROW_RUNTIME_ERROR("gethostbyname error");
+     
       /*! perform connection */
       struct sockaddr_in serv_addr;
       memset((char*)&serv_addr, 0, sizeof(serv_addr));
       serv_addr.sin_family = AF_INET;
       serv_addr.sin_port = (unsigned short) htons(port);
-      memcpy((char*)&serv_addr.sin_addr.s_addr, (char*)server->h_addr, server->h_length);
+      serv_addr.sin_addr = *(in_addr*) server->h_addr;
       
       if (::connect(sockfd,(struct sockaddr*) &serv_addr,sizeof(serv_addr)) < 0)
         THROW_RUNTIME_ERROR("connection to "+std::string(host)+":"+toString(port)+" failed");
