@@ -332,8 +332,7 @@ namespace embree
           }
 #endif
 
-          vbool<Mx> finalMask(((unsigned int)1 << i));
-          ray.update(finalMask,hit.vt,hit.vu,hit.vv,hit.vNg.x,hit.vNg.y,hit.vNg.z,instID,primIDs);
+          ray.update(1 << i,hit.vt,hit.vu,hit.vv,hit.vNg.x,hit.vNg.y,hit.vNg.z,instID,primIDs[i]);
           return true;
 
         }
