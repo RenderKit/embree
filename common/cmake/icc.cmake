@@ -40,7 +40,11 @@ IF (WIN32)
 
 ELSE()
 
-  SET(FLAGS_SSE2   "-xsse2")
+  IF (APPLE)
+    SET(FLAGS_SSE2   "-xssse3") # in MacOSX ICC does not support SSE2
+  ELSE()
+    SET(FLAGS_SSE2   "-xsse2")
+  ENDIF()
   SET(FLAGS_SSE42  "-xsse4.2")
   SET(FLAGS_AVX    "-xAVX")
   SET(FLAGS_AVX2   "-xCORE-AVX2")

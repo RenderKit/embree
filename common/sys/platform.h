@@ -16,6 +16,10 @@
 
 #pragma once
 
+#define _CRT_SECURE_NO_WARNINGS
+
+//__asm__(".symver memcpy,memcpy@GLIBC_2.2.5");
+
 #include <cstddef>
 #include <cassert>
 #include <cstdlib>
@@ -228,6 +232,7 @@ __forceinline std::string toString(long long value) {
 //#pragma warning(disable:177 ) // label was declared but never referenced
 //#pragma warning(disable:114 ) // function was referenced but not defined
 //#pragma warning(disable:819 ) // template nesting depth does not match the previous declaration of function
+#pragma warning(disable:15335)  // was not vectorized: vectorization possible but seems inefficient
 #endif
 
 #if defined(_MSC_VER)
@@ -284,10 +289,7 @@ __forceinline std::string toString(long long value) {
 #endif
 
 /* disabling deprecated warning, please use only where use of deprecated Embree API functions is desired */
-#if defined(__INTEL_COMPILER)
-#define DISABLE_DEPRECATED_WARNING _Pragma("warning (disable: 1478)") // warning: function was declared deprecated
-#define ENABLE_DEPRECATED_WARNING  _Pragma("warning (enable : 1478)") // warning: function was declared deprecated
-#elif defined(__clang__)
+#if defined(__clang__)
 #define DISABLE_DEPRECATED_WARNING _Pragma("clang diagnostic ignored \"-Wdeprecated-declarations\"") // warning: xxx is deprecated
 #define ENABLE_DEPRECATED_WARNING  _Pragma("clang diagnostic warning \"-Wdeprecated-declarations\"") // warning: xxx is deprecated
 #elif defined(__GNUC__)
@@ -296,6 +298,9 @@ __forceinline std::string toString(long long value) {
 #elif defined(_MSC_VER)
 #define DISABLE_DEPRECATED_WARNING __pragma("warning (disable: 4996)") // warning: function was declared deprecated
 #define ENABLE_DEPRECATED_WARNING  __pragma("warning (enable : 4996)") // warning: function was declared deprecated
+#elif defined(__INTEL_COMPILER)
+#define DISABLE_DEPRECATED_WARNING _Pragma("warning (disable: 1478)") // warning: function was declared deprecated
+#define ENABLE_DEPRECATED_WARNING  _Pragma("warning (enable : 1478)") // warning: function was declared deprecated
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
