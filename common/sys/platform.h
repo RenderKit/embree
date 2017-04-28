@@ -284,10 +284,7 @@ __forceinline std::string toString(long long value) {
 #endif
 
 /* disabling deprecated warning, please use only where use of deprecated Embree API functions is desired */
-#if defined(__INTEL_COMPILER)
-#define DISABLE_DEPRECATED_WARNING _Pragma("warning (disable: 1478)") // warning: function was declared deprecated
-#define ENABLE_DEPRECATED_WARNING  _Pragma("warning (enable : 1478)") // warning: function was declared deprecated
-#elif defined(__clang__)
+#if defined(__clang__)
 #define DISABLE_DEPRECATED_WARNING _Pragma("clang diagnostic ignored \"-Wdeprecated-declarations\"") // warning: xxx is deprecated
 #define ENABLE_DEPRECATED_WARNING  _Pragma("clang diagnostic warning \"-Wdeprecated-declarations\"") // warning: xxx is deprecated
 #elif defined(__GNUC__)
@@ -296,6 +293,9 @@ __forceinline std::string toString(long long value) {
 #elif defined(_MSC_VER)
 #define DISABLE_DEPRECATED_WARNING __pragma("warning (disable: 4996)") // warning: function was declared deprecated
 #define ENABLE_DEPRECATED_WARNING  __pragma("warning (enable : 4996)") // warning: function was declared deprecated
+#elif defined(__INTEL_COMPILER)
+#define DISABLE_DEPRECATED_WARNING _Pragma("warning (disable: 1478)") // warning: function was declared deprecated
+#define ENABLE_DEPRECATED_WARNING  _Pragma("warning (enable : 1478)") // warning: function was declared deprecated
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
