@@ -345,7 +345,7 @@ namespace embree
 
   public:
     Scene* parent;             //!< pointer to scene this mesh belongs to
-    unsigned id;               //!< internal geometry ID
+    unsigned geomID;               //!< internal geometry ID
     Type type;                 //!< geometry type 
     size_t numPrimitives;      //!< number of primitives of this geometry
     bool numPrimitivesChanged; //!< true if number of primitives changed

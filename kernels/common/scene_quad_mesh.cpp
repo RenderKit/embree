@@ -128,7 +128,7 @@ namespace embree
 
   void QuadMesh::postCommit () 
   {
-    parent->vertices[id] = (int*) vertices0.getPtr();
+    parent->vertices[geomID] = (int*) vertices0.getPtr();
     Geometry::postCommit();
   }
 

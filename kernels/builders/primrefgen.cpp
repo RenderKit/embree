@@ -38,7 +38,7 @@ namespace embree
           BBox3fa bounds = empty;
           if (!mesh->buildBounds(j,&bounds)) continue;
 
-          const PrimRef prim(bounds,mesh->id,unsigned(j));          
+          const PrimRef prim(bounds,mesh->geomID,unsigned(j));          
           pinfo.add(bounds,bounds.center2());
           prims[k++] = prim;
         }
@@ -57,7 +57,7 @@ namespace embree
           {
             BBox3fa bounds = empty;
             if (!mesh->buildBounds(j,&bounds)) continue;
-            const PrimRef prim(bounds,mesh->id,unsigned(j));
+            const PrimRef prim(bounds,mesh->geomID,unsigned(j));
             pinfo.add(bounds,bounds.center2());
             prims[k++] = prim;
           }
@@ -83,7 +83,7 @@ namespace embree
         {
           BBox3fa bounds = empty;
           if (!mesh->buildBounds(j,&bounds)) continue;
-          const PrimRef prim(bounds,mesh->id,unsigned(j));
+          const PrimRef prim(bounds,mesh->geomID,unsigned(j));
           pinfo.add(bounds,bounds.center2());
           prims[k++] = prim;
         }
@@ -103,7 +103,7 @@ namespace embree
           {
             BBox3fa bounds = empty;
             if (!mesh->buildBounds(j,&bounds)) continue;
-            const PrimRef prim(bounds,mesh->id,unsigned(j));
+            const PrimRef prim(bounds,mesh->geomID,unsigned(j));
             pinfo.add(bounds,bounds.center2());
             prims[k++] = prim;
           }
@@ -129,7 +129,7 @@ namespace embree
         {
           BBox3fa bounds = empty;
           if (!mesh->buildBounds(j,&bounds)) continue;
-          const PrimRef prim(bounds,mesh->id,unsigned(j));
+          const PrimRef prim(bounds,mesh->geomID,unsigned(j));
           pinfo.add(bounds,bounds.center2());
           prims[k++] = prim;
         }
@@ -148,7 +148,7 @@ namespace embree
           {
             BBox3fa bounds = empty;
             if (!mesh->buildBounds(j,&bounds)) continue;
-            const PrimRef prim(bounds,mesh->id,unsigned(j));
+            const PrimRef prim(bounds,mesh->geomID,unsigned(j));
             pinfo.add(bounds,bounds.center2());
             prims[k++] = prim;
           }
@@ -174,7 +174,7 @@ namespace embree
         {
           BBox3fa bounds = empty;
           if (!mesh->buildBounds(j,timeSegment,bounds)) continue;
-          const PrimRef prim(bounds,mesh->id,unsigned(j));
+          const PrimRef prim(bounds,mesh->geomID,unsigned(j));
           pinfo.add(bounds,bounds.center2());
           prims[k++] = prim;
         }
@@ -193,7 +193,7 @@ namespace embree
           {
             BBox3fa bounds = empty;
             if (!mesh->buildBounds(j,timeSegment,bounds)) continue;
-            const PrimRef prim(bounds,mesh->id,unsigned(j));
+            const PrimRef prim(bounds,mesh->geomID,unsigned(j));
             pinfo.add(bounds,bounds.center2());
             prims[k++] = prim;
           }
@@ -219,7 +219,7 @@ namespace embree
         {
           LBBox3fa bounds = empty;
           if (!mesh->linearBounds(j,t0t1,bounds)) continue;
-          const PrimRefMB prim(bounds,mesh->numTimeSegments(),mesh->numTimeSegments(),mesh->id,unsigned(j));
+          const PrimRefMB prim(bounds,mesh->numTimeSegments(),mesh->numTimeSegments(),mesh->geomID,unsigned(j));
           pinfo.add_primref(prim);
           prims[k++] = prim;
         }
@@ -238,7 +238,7 @@ namespace embree
           {
             LBBox3fa bounds = empty;
             if (!mesh->linearBounds(j,t0t1,bounds)) continue;
-            const PrimRefMB prim(bounds,mesh->numTimeSegments(),mesh->numTimeSegments(),mesh->id,unsigned(j));
+            const PrimRefMB prim(bounds,mesh->numTimeSegments(),mesh->numTimeSegments(),mesh->geomID,unsigned(j));
             pinfo.add_primref(prim);
             prims[k++] = prim;
           }
@@ -273,7 +273,7 @@ namespace embree
           if (!isvalid((vfloat4)p0) || !isvalid((vfloat4)p1) || !isvalid((vfloat4)p2) || !isvalid((vfloat4)p3))
               continue;
 
-	  const BezierPrim bezier(mesh->subtype,p0,p1,p2,p3,mesh->tessellationRate,mesh->id,unsigned(j));
+	  const BezierPrim bezier(mesh->subtype,p0,p1,p2,p3,mesh->tessellationRate,mesh->geomID,unsigned(j));
           const BBox3fa bounds = bezier.bounds();
           pinfo.add(bounds);
           prims[k++] = bezier;
@@ -302,7 +302,7 @@ namespace embree
             if (!isvalid((vfloat4)p0) || !isvalid((vfloat4)p1) || !isvalid((vfloat4)p2) || !isvalid((vfloat4)p3))
               continue;
             
-            const BezierPrim bezier(mesh->subtype,p0,p1,p2,p3,mesh->tessellationRate,mesh->id,unsigned(j));
+            const BezierPrim bezier(mesh->subtype,p0,p1,p2,p3,mesh->tessellationRate,mesh->geomID,unsigned(j));
             const BBox3fa bounds = bezier.bounds();
             pinfo.add(bounds);
             prims[k++] = bezier;
@@ -328,7 +328,7 @@ namespace embree
         {
           Vec3fa c0,c1,c2,c3;
           if (!mesh->buildPrim(j,timeSegment,c0,c1,c2,c3)) continue;
-          const BezierPrim bezier(mesh->subtype,c0,c1,c2,c3,mesh->tessellationRate,mesh->id,unsigned(j));
+          const BezierPrim bezier(mesh->subtype,c0,c1,c2,c3,mesh->tessellationRate,mesh->geomID,unsigned(j));
           pinfo.add(bezier.bounds());
           prims[k++] = bezier;
         }
@@ -347,7 +347,7 @@ namespace embree
           {
             Vec3fa c0,c1,c2,c3;
             if (!mesh->buildPrim(j,timeSegment,c0,c1,c2,c3)) continue;
-            const BezierPrim bezier(mesh->subtype,c0,c1,c2,c3,mesh->tessellationRate,mesh->id,unsigned(j));
+            const BezierPrim bezier(mesh->subtype,c0,c1,c2,c3,mesh->tessellationRate,mesh->geomID,unsigned(j));
             pinfo.add(bezier.bounds());
             prims[k++] = bezier;
           }
