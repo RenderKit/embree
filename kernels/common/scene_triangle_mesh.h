@@ -99,7 +99,7 @@ namespace embree
   public:
 
     /*! triangle mesh construction */
-    TriangleMesh (Scene* parent, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps); 
+    TriangleMesh (Scene* scene, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps); 
 
     /* geometry interface */
   public:

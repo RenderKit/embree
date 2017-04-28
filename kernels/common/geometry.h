@@ -344,8 +344,8 @@ namespace embree
     template<typename simd> __forceinline bool hasISPCOcclusionFilter() const;
 
   public:
-    Scene* parent;             //!< pointer to scene this mesh belongs to
-    unsigned geomID;               //!< internal geometry ID
+    Scene* scene;              //!< pointer to scene this mesh belongs to
+    unsigned geomID;           //!< internal geometry ID
     Type type;                 //!< geometry type 
     size_t numPrimitives;      //!< number of primitives of this geometry
     bool numPrimitivesChanged; //!< true if number of primitives changed

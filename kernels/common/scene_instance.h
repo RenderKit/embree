@@ -37,11 +37,11 @@ namespace embree
   {
     ALIGNED_STRUCT;
   public:
-    static Instance* create (Scene* parent, Scene* object, size_t numTimeSteps) {
-      return ::new (alignedMalloc(sizeof(Instance)+(numTimeSteps-1)*sizeof(AffineSpace3fa))) Instance(parent,object,numTimeSteps);
+    static Instance* create (Scene* scene, Scene* object, size_t numTimeSteps) {
+      return ::new (alignedMalloc(sizeof(Instance)+(numTimeSteps-1)*sizeof(AffineSpace3fa))) Instance(scene,object,numTimeSteps);
     }
   private:
-    Instance (Scene* parent, Scene* object, size_t numTimeSteps); 
+    Instance (Scene* scene, Scene* object, size_t numTimeSteps); 
   public:
     virtual void setTransform(const AffineSpace3fa& local2world, size_t timeStep);
     virtual void setMask (unsigned mask);

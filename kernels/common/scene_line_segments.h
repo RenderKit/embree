@@ -31,7 +31,7 @@ namespace embree
   public:
 
     /*! line segments construction */
-    LineSegments (Scene* parent, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps);
+    LineSegments (Scene* scene, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps);
 
   public:
     void enabling();

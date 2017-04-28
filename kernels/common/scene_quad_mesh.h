@@ -41,7 +41,7 @@ namespace embree
   public:
 
     /*! quad mesh construction */
-    QuadMesh (Scene* parent, RTCGeometryFlags flags, size_t numQuads, size_t numVertices, size_t numTimeSteps); 
+    QuadMesh (Scene* scene, RTCGeometryFlags flags, size_t numQuads, size_t numVertices, size_t numTimeSteps); 
   
     /* geometry interface */
   public:

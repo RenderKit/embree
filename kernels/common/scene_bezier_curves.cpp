@@ -19,32 +19,32 @@
 
 namespace embree
 {
-  NativeCurves::NativeCurves (Scene* parent, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps) 
-    : Geometry(parent,BEZIER_CURVES,numPrimitives,numTimeSteps,flags), subtype(subtype), basis(basis), tessellationRate(4)
+  NativeCurves::NativeCurves (Scene* scene, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps) 
+    : Geometry(scene,BEZIER_CURVES,numPrimitives,numTimeSteps,flags), subtype(subtype), basis(basis), tessellationRate(4)
   {
-    curves.init(parent->device,numPrimitives,sizeof(int));
+    curves.init(scene->device,numPrimitives,sizeof(int));
     vertices.resize(numTimeSteps);
     for (size_t i=0; i<numTimeSteps; i++) {
-      vertices[i].init(parent->device,numVertices,sizeof(Vec3fa));
+      vertices[i].init(scene->device,numVertices,sizeof(Vec3fa));
     }
     enabling();
   }
 
   void NativeCurves::enabling() 
   { 
-    if (numTimeSteps == 1) parent->world.numBezierCurves += numPrimitives; 
-    else                   parent->worldMB.numBezierCurves += numPrimitives; 
+    if (numTimeSteps == 1) scene->world.numBezierCurves += numPrimitives; 
+    else                   scene->worldMB.numBezierCurves += numPrimitives; 
   }
   
   void NativeCurves::disabling() 
   { 
-    if (numTimeSteps == 1) parent->world.numBezierCurves -= numPrimitives; 
-    else                   parent->worldMB.numBezierCurves -= numPrimitives;
+    if (numTimeSteps == 1) scene->world.numBezierCurves -= numPrimitives; 
+    else                   scene->worldMB.numBezierCurves -= numPrimitives;
   }
   
   void NativeCurves::setMask (unsigned mask) 
   {
-    if (parent->isStatic() && parent->isBuild())
+    if (scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
 
     this->mask = mask; 
@@ -53,7 +53,7 @@ namespace embree
 
   void NativeCurves::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size) 
   { 
-    if (parent->isStatic() && parent->isBuild())
+    if (scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
 
     /* verify that all accesses are 4 bytes aligned */
@@ -70,7 +70,7 @@ namespace embree
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
     {
       if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
-      userbuffers[bid] = APIBuffer<char>(parent->device,numVertices(),stride);
+      userbuffers[bid] = APIBuffer<char>(scene->device,numVertices(),stride);
       userbuffers[bid].set(ptr,offset,stride,size);  
       userbuffers[bid].checkPadding16();
     }
@@ -87,16 +87,16 @@ namespace embree
 
   void* NativeCurves::map(RTCBufferType type) 
   {
-    if (parent->isStatic() && parent->isBuild()) {
+    if (scene->isStatic() && scene->isBuild()) {
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
       return nullptr;
     }
 
     if (type == RTC_INDEX_BUFFER) {
-      return curves.map(parent->numMappedBuffers);
+      return curves.map(scene->numMappedBuffers);
     }
     else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
-      return vertices[type - RTC_VERTEX_BUFFER0].map(parent->numMappedBuffers);
+      return vertices[type - RTC_VERTEX_BUFFER0].map(scene->numMappedBuffers);
     }
     else {
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
@@ -106,14 +106,14 @@ namespace embree
 
   void NativeCurves::unmap(RTCBufferType type) 
   {
-    if (parent->isStatic() && parent->isBuild()) 
+    if (scene->isStatic() && scene->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
 
     if (type == RTC_INDEX_BUFFER) {
-      curves.unmap(parent->numMappedBuffers);
+      curves.unmap(scene->numMappedBuffers);
     }
     else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
-      vertices[type - RTC_VERTEX_BUFFER0].unmap(parent->numMappedBuffers);
+      vertices[type - RTC_VERTEX_BUFFER0].unmap(scene->numMappedBuffers);
     }
     else {
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
@@ -122,7 +122,7 @@ namespace embree
   
   void NativeCurves::setTessellationRate(float N)
   {
-    if (parent->isStatic() && parent->isBuild()) 
+    if (scene->isStatic() && scene->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
 
     tessellationRate = clamp((int)N,1,16);
@@ -130,8 +130,8 @@ namespace embree
 
   void NativeCurves::immutable () 
   {
-    const bool freeIndices = !parent->needBezierIndices;
-    const bool freeVertices  = !parent->needBezierVertices;
+    const bool freeIndices = !scene->needBezierIndices;
+    const bool freeVertices  = !scene->needBezierVertices;
     if (freeIndices) curves.free();
     if (freeVertices )
       for (auto& buffer : vertices)
@@ -182,7 +182,7 @@ namespace embree
   {
   /* test if interpolation is enabled */
 #if defined(DEBUG) 
-    if ((parent->aflags & RTC_INTERPOLATE) == 0) 
+    if ((scene->aflags & RTC_INTERPOLATE) == 0) 
       throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
 #endif
 
@@ -227,7 +227,7 @@ namespace embree
   {
     if (native_curves.size() != curves.size()) 
     {
-      native_curves = APIBuffer<unsigned>(parent->device,curves.size(),sizeof(unsigned int),true);
+      native_curves = APIBuffer<unsigned>(scene->device,curves.size(),sizeof(unsigned int),true);
       parallel_for(size_t(0), curves.size(), size_t(1024), [&] ( const range<size_t> r) {
           for (size_t i=r.begin(); i<r.end(); i++) {
             if (curves[i]+3 >= numVertices()) native_curves[i] = 0xFFFFFFF0; // invalid curves stay invalid this way
@@ -242,7 +242,7 @@ namespace embree
     parallel_for(vertices.size(), [&] ( const size_t i ) {
         
         if (native_vertices[i].size() != 4*curves.size())
-          native_vertices[i] = APIBuffer<Vec3fa>(parent->device,4*curves.size(),sizeof(Vec3fa),true);
+          native_vertices[i] = APIBuffer<Vec3fa>(scene->device,4*curves.size(),sizeof(Vec3fa),true);
         
         parallel_for(size_t(0), curves.size(), size_t(1024), [&] ( const range<size_t> rj ) {
 
@@ -266,8 +266,8 @@ namespace embree
     native_vertices0 = native_vertices[0];
   }
 
-  CurvesBezier::CurvesBezier (Scene* parent, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps)
-    : NativeCurves(parent,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps) {}
+  CurvesBezier::CurvesBezier (Scene* scene, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps)
+    : NativeCurves(scene,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps) {}
   
   void CurvesBezier::preCommit() {
     if (isEnabled()) commit_helper<BezierCurve3fa>();
@@ -279,8 +279,8 @@ namespace embree
     interpolate_helper<BezierCurveT<vfloatx>>(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats);
   }
 
-  CurvesBSpline::CurvesBSpline (Scene* parent, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps)
-    : NativeCurves(parent,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps) {}
+  CurvesBSpline::CurvesBSpline (Scene* scene, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps)
+    : NativeCurves(scene,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps) {}
   
   void CurvesBSpline::preCommit() {
     if (isEnabled()) commit_helper<BSplineCurve3fa>();
