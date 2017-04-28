@@ -60,7 +60,7 @@ namespace embree
 
       static unsigned getNumEagerLeaves(unsigned width, unsigned height) {
         const unsigned w = (width+SUBGRID-1)/SUBGRID;
-        const unsigned h = (width+SUBGRID-1)/SUBGRID;
+        const unsigned h = (height+SUBGRID-1)/SUBGRID;
         return w*h;
       }
 
