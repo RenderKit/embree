@@ -50,7 +50,7 @@ namespace embree
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
       ray.geomID = RTC_INVALID_GEOMETRY_ID;
-      ray.instID = instance->id;
+      ray.instID = instance->geomID;
       IntersectContext context(instance->object,nullptr);
       instance->object->intersect((RTCRay&)ray,&context);
       ray.org = ray_org;
@@ -69,7 +69,7 @@ namespace embree
       const Vec3fa ray_dir = ray.dir;
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
-      ray.instID = instance->id;
+      ray.instID = instance->geomID;
       IntersectContext context(instance->object,nullptr);
       instance->object->occluded((RTCRay&)ray,&context);
       ray.org = ray_org;
@@ -96,7 +96,7 @@ namespace embree
         lrays[i].time = rays[i]->time;
         lrays[i].mask = rays[i]->mask;
         lrays[i].geomID = RTC_INVALID_GEOMETRY_ID;
-        lrays[i].instID = instance->id;
+        lrays[i].instID = instance->geomID;
       }
 
       rtcIntersect1M((RTCScene)instance->object,context,(RTCRay*)lrays,M,sizeof(Ray));
@@ -132,7 +132,7 @@ namespace embree
         lrays[i].time = rays[i]->time;
         lrays[i].mask = rays[i]->mask;
         lrays[i].geomID = RTC_INVALID_GEOMETRY_ID;
-        lrays[i].instID = instance->id;
+        lrays[i].instID = instance->geomID;
       }
 
       rtcOccluded1M((RTCScene)instance->object,context,(RTCRay*)lrays,M,sizeof(Ray));

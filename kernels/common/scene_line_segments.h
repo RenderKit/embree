@@ -31,7 +31,7 @@ namespace embree
   public:
 
     /*! line segments construction */
-    LineSegments (Scene* parent, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps);
+    LineSegments (Scene* scene, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps);
 
   public:
     void enabling();
@@ -159,7 +159,7 @@ namespace embree
 
     /*! calculates the linear bounds of the i'th primitive for the specified time range */
     __forceinline LBBox3fa linearBounds(size_t primID, const BBox1f& time_range) const {
-      return Geometry::linearBounds([&] (size_t itime) { return bounds(primID, itime); }, time_range, fnumTimeSegments);
+      return LBBox3fa([&] (size_t itime) { return bounds(primID, itime); }, time_range, fnumTimeSegments);
     }
 
     /*! calculates the linear bounds of the i'th primitive for the specified time range */

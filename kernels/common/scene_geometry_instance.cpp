@@ -19,8 +19,8 @@
 
 namespace embree
 {
-  GeometryInstance::GeometryInstance (Scene* parent, Geometry* geom) 
-    : Geometry(parent,Type(geom->type | INSTANCE), 1, geom->numTimeSteps, geom->flags), local2world(one), world2local(one), geom(geom) 
+  GeometryInstance::GeometryInstance (Scene* scene, Geometry* geom) 
+    : Geometry(scene,Type(geom->type | INSTANCE), 1, geom->numTimeSteps, geom->flags), local2world(one), world2local(one), geom(geom) 
   {
     enabling();
   }
@@ -30,20 +30,20 @@ namespace embree
     if (geom->numTimeSteps == 1)
     {
       switch (geom->type) {
-      case TRIANGLE_MESH: parent->instanced.numTriangles      += f*ssize_t(geom->size()); break;
-      case USER_GEOMETRY: parent->instanced.numUserGeometries += f*ssize_t(geom->size()); break;
-      case BEZIER_CURVES: parent->instanced.numBezierCurves   += f*ssize_t(geom->size()); break;
-      case SUBDIV_MESH  : parent->instanced.numSubdivPatches  += f*ssize_t(geom->size()); break;
+      case TRIANGLE_MESH: scene->instanced.numTriangles      += f*ssize_t(geom->size()); break;
+      case USER_GEOMETRY: scene->instanced.numUserGeometries += f*ssize_t(geom->size()); break;
+      case BEZIER_CURVES: scene->instanced.numBezierCurves   += f*ssize_t(geom->size()); break;
+      case SUBDIV_MESH  : scene->instanced.numSubdivPatches  += f*ssize_t(geom->size()); break;
       default           : throw_RTCError(RTC_INVALID_OPERATION,"cannot instantiate this geometry ");
       };
     }
     else
     {
       switch (geom->type) {
-      case TRIANGLE_MESH: parent->instancedMB.numTriangles      += f*ssize_t(geom->size()); break;
-      case USER_GEOMETRY: parent->instancedMB.numUserGeometries += f*ssize_t(geom->size()); break;
-      case BEZIER_CURVES: parent->instancedMB.numBezierCurves   += f*ssize_t(geom->size()); break;
-      case SUBDIV_MESH  : parent->instancedMB.numSubdivPatches  += f*ssize_t(geom->size()); break;
+      case TRIANGLE_MESH: scene->instancedMB.numTriangles      += f*ssize_t(geom->size()); break;
+      case USER_GEOMETRY: scene->instancedMB.numUserGeometries += f*ssize_t(geom->size()); break;
+      case BEZIER_CURVES: scene->instancedMB.numBezierCurves   += f*ssize_t(geom->size()); break;
+      case SUBDIV_MESH  : scene->instancedMB.numSubdivPatches  += f*ssize_t(geom->size()); break;
       default           : throw_RTCError(RTC_INVALID_OPERATION,"cannot instantiate this geometry");
       };
     }
@@ -78,7 +78,7 @@ namespace embree
   
   void GeometryInstance::setMask (unsigned mask) 
   {
-    if (parent->isStatic() && parent->isBuild())
+    if (scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     this->mask = mask; 
@@ -87,7 +87,7 @@ namespace embree
 
   void GeometryInstance::setTransform(const AffineSpace3fa& xfm, size_t timeStep)
   {
-    if (parent->isStatic() && parent->isBuild())
+    if (scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     if (timeStep != 0)
@@ -97,8 +97,8 @@ namespace embree
     world2local = rcp(xfm);
   }
 
-  GeometryGroup::GeometryGroup (Scene* parent, RTCGeometryFlags gflags, const std::vector<Geometry*>& geometries) 
-    : Geometry(parent,GROUP, geometries.size(), 1, gflags), geometries(geometries)
+  GeometryGroup::GeometryGroup (Scene* scene, RTCGeometryFlags gflags, const std::vector<Geometry*>& geometries) 
+    : Geometry(scene,GROUP, geometries.size(), 1, gflags), geometries(geometries)
   {
     enabling();
   }
@@ -113,7 +113,7 @@ namespace embree
   
   void GeometryGroup::setMask (unsigned mask) 
   {
-    if (parent->isStatic() && parent->isBuild())
+    if (scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     this->mask = mask; 

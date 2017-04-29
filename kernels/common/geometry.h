@@ -344,80 +344,8 @@ namespace embree
     template<typename simd> __forceinline bool hasISPCOcclusionFilter() const;
 
   public:
-
-    /*! calculates the linear bounds of a primitive for the specified time range */
-    template<typename BoundsFunc>
-    __forceinline static LBBox3fa linearBounds(const BoundsFunc& bounds, const BBox1f& time_range, float numTimeSegments)
-    {
-      const float lower = time_range.lower*numTimeSegments;
-      const float upper = time_range.upper*numTimeSegments;
-      const float ilowerf = floor(lower);
-      const float iupperf = ceil(upper);
-      const int ilower = (int)ilowerf;
-      const int iupper = (int)iupperf;
-
-      const BBox3fa blower0 = bounds(ilower);
-      const BBox3fa bupper1 = bounds(iupper);
-
-      if (iupper-ilower == 1)
-      {
-        const BBox3fa b0 = blower0;
-        const BBox3fa b1 = bupper1;
-
-        return LBBox3fa(lerp(b0, b1, lower-ilowerf),
-                        lerp(b1, b0, iupperf-upper));
-      }
-
-      const BBox3fa blower1 = bounds(ilower+1);
-      const BBox3fa bupper0 = bounds(iupper-1);
-     
-      BBox3fa b0 = lerp(blower0, blower1, lower-ilowerf);
-      BBox3fa b1 = lerp(bupper1, bupper0, iupperf-upper);
-
-      for (size_t i = ilower+1; i < iupper; i++)
-      {
-        const float f = (float(i)/numTimeSegments - time_range.lower) / time_range.size();
-        const BBox3fa bt = lerp(b0, b1, f);
-        const BBox3fa bi = bounds(i);
-        const Vec3fa dlower = min(bi.lower-bt.lower, Vec3fa(zero));
-        const Vec3fa dupper = max(bi.upper-bt.upper, Vec3fa(zero));
-        b0.lower += dlower; b1.lower += dlower;
-        b0.upper += dupper; b1.upper += dupper;
-      }
-
-      return LBBox3fa(b0, b1);
-    }
-
-    /*! calculates the linear bounds of a primitive for the specified time range */
-    template<typename BoundsFunc>
-    __forceinline static LBBox3fa linearBounds(const BoundsFunc& bounds, const range<int>& time_range, int numTimeSegments)
-    {
-      const int ilower = time_range.begin();
-      const int iupper = time_range.end();
-
-      BBox3fa b0 = bounds(ilower);
-      BBox3fa b1 = bounds(iupper);
-
-      if (iupper-ilower == 1)
-        return LBBox3fa(b0,b1);      
-  
-      for (size_t i = ilower+1; i<iupper; i++)
-      {
-        const float f = float(i - time_range.begin()) / float(time_range.size());
-        const BBox3fa bt = lerp(b0, b1, f);
-        const BBox3fa bi = bounds(i);
-        const Vec3fa dlower = min(bi.lower-bt.lower, Vec3fa(zero));
-        const Vec3fa dupper = max(bi.upper-bt.upper, Vec3fa(zero));
-        b0.lower += dlower; b1.lower += dlower;
-        b0.upper += dupper; b1.upper += dupper;
-      }
-
-      return LBBox3fa(b0, b1);
-    }
-
-  public:
-    Scene* parent;             //!< pointer to scene this mesh belongs to
-    unsigned id;               //!< internal geometry ID
+    Scene* scene;              //!< pointer to scene this mesh belongs to
+    unsigned geomID;           //!< internal geometry ID
     Type type;                 //!< geometry type 
     size_t numPrimitives;      //!< number of primitives of this geometry
     bool numPrimitivesChanged; //!< true if number of primitives changed
