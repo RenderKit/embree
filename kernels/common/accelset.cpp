@@ -19,30 +19,23 @@
 
 namespace embree
 {
-  AccelSet::AccelSet (Scene* parent, RTCGeometryFlags gflags, size_t numItems, size_t numTimeSteps) 
-    : Geometry(parent,Geometry::USER_GEOMETRY,numItems,numTimeSteps,gflags), boundsFunc(nullptr), boundsFunc2(nullptr), boundsFunc3(nullptr), boundsFuncUserPtr(nullptr)
+  AccelSet::AccelSet (Scene* scene, RTCGeometryFlags gflags, size_t numItems, size_t numTimeSteps) 
+    : Geometry(scene,Geometry::USER_GEOMETRY,numItems,numTimeSteps,gflags), boundsFunc(nullptr), boundsFunc2(nullptr), boundsFunc3(nullptr), boundsFuncUserPtr(nullptr)
   {
     intersectors.ptr = nullptr; 
     enabling();
   }
 
   void AccelSet::enabling () {
-    if (numTimeSteps == 1) parent->world.numUserGeometries += numPrimitives;
-    else                   parent->worldMB.numUserGeometries += numPrimitives;
+    if (numTimeSteps == 1) scene->world.numUserGeometries += numPrimitives;
+    else                   scene->worldMB.numUserGeometries += numPrimitives;
   }
   
   void AccelSet::disabling() { 
-    if (numTimeSteps == 1) parent->world.numUserGeometries -= numPrimitives;
-    else                   parent->worldMB.numUserGeometries -= numPrimitives;
+    if (numTimeSteps == 1) scene->world.numUserGeometries -= numPrimitives;
+    else                   scene->worldMB.numUserGeometries -= numPrimitives;
   }
 
-  /* This is a workaround for some Clang 3.8.0-2ubuntu4 optimization
-   * that creates issues with the ISA selection. This code essentially
-   * is compiled with non-SSE2 ISA, but has to run on SSE2
-   * machines. Clang 3.8.0-2ubuntu4 issues AVX-128 instuctions to
-   * update intersect and occluded pointers at once. Only providing
-   * these functions for SSE2 ISA fixes this issue. */
-  
   AccelSet::Intersector1::Intersector1 (ErrorFunc error) 
     : intersect((IntersectFunc)error), occluded((OccludedFunc)error), name(nullptr) {}
   

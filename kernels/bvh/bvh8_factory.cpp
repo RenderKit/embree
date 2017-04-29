@@ -429,29 +429,29 @@ namespace embree
 
   void BVH8Factory::createTriangleMeshTriangle4Morton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->parent->device->bvh8_factory.get();
-    accel = new BVH8(Triangle4::type,mesh->parent);
+    BVH8Factory* factory = mesh->scene->device->bvh8_factory.get();
+    accel = new BVH8(Triangle4::type,mesh->scene);
     builder = factory->BVH8Triangle4MeshBuilderMortonGeneral(accel,mesh,0);
   }
 
   void BVH8Factory::createTriangleMeshTriangle4vMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->parent->device->bvh8_factory.get();
-    accel = new BVH8(Triangle4v::type,mesh->parent);
+    BVH8Factory* factory = mesh->scene->device->bvh8_factory.get();
+    accel = new BVH8(Triangle4v::type,mesh->scene);
     builder = factory->BVH8Triangle4vMeshBuilderMortonGeneral(accel,mesh,0);
   }
 
   void BVH8Factory::createTriangleMeshTriangle4iMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->parent->device->bvh8_factory.get();
-    accel = new BVH8(Triangle4i::type,mesh->parent);
+    BVH8Factory* factory = mesh->scene->device->bvh8_factory.get();
+    accel = new BVH8(Triangle4i::type,mesh->scene);
     builder = factory->BVH8Triangle4iMeshBuilderMortonGeneral(accel,mesh,0); 
   }
 
   void BVH8Factory::createTriangleMeshTriangle4(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->parent->device->bvh8_factory.get();
-    accel = new BVH8(Triangle4::type,mesh->parent);
+    BVH8Factory* factory = mesh->scene->device->bvh8_factory.get();
+    accel = new BVH8(Triangle4::type,mesh->scene);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH8Triangle4MeshBuilderSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH8Triangle4MeshRefitSAH(accel,mesh,0); break;
@@ -462,8 +462,8 @@ namespace embree
 
   void BVH8Factory::createTriangleMeshTriangle4v(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->parent->device->bvh8_factory.get();
-    accel = new BVH8(Triangle4v::type,mesh->parent);
+    BVH8Factory* factory = mesh->scene->device->bvh8_factory.get();
+    accel = new BVH8(Triangle4v::type,mesh->scene);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH8Triangle4vMeshBuilderSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH8Triangle4vMeshRefitSAH(accel,mesh,0); break;
@@ -474,8 +474,8 @@ namespace embree
 
   void BVH8Factory::createTriangleMeshTriangle4i(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->parent->device->bvh8_factory.get();
-    accel = new BVH8(Triangle4i::type,mesh->parent);
+    BVH8Factory* factory = mesh->scene->device->bvh8_factory.get();
+    accel = new BVH8(Triangle4i::type,mesh->scene);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH8Triangle4iMeshBuilderSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH8Triangle4iMeshRefitSAH(accel,mesh,0); break;
@@ -486,8 +486,8 @@ namespace embree
 
   void BVH8Factory::createQuadMeshQuad4v(QuadMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->parent->device->bvh8_factory.get();
-    accel = new BVH8(Quad4v::type,mesh->parent);
+    BVH8Factory* factory = mesh->scene->device->bvh8_factory.get();
+    accel = new BVH8(Quad4v::type,mesh->scene);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH8Quad4vMeshBuilderSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH8Quad4vMeshRefitSAH(accel,mesh,0); break;
@@ -498,15 +498,15 @@ namespace embree
 
   void BVH8Factory::createQuadMeshQuad4vMorton(QuadMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->parent->device->bvh8_factory.get();
-    accel = new BVH8(Quad4v::type,mesh->parent);
+    BVH8Factory* factory = mesh->scene->device->bvh8_factory.get();
+    accel = new BVH8(Quad4v::type,mesh->scene);
     builder = factory->BVH8Quad4vMeshBuilderMortonGeneral(accel,mesh,0);
   }
 
   void BVH8Factory::createAccelSetMesh(AccelSet* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->parent->device->bvh8_factory.get();
-    accel = new BVH8(Object::type,mesh->parent);
+    BVH8Factory* factory = mesh->scene->device->bvh8_factory.get();
+    accel = new BVH8(Object::type,mesh->scene);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH8VirtualMeshBuilderSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH8VirtualMeshRefitSAH(accel,mesh,0); break;

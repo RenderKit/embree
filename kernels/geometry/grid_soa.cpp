@@ -227,7 +227,7 @@ namespace embree
         j++;
       }
 
-      const LBBox3fa lbounds = Geometry::linearBounds([&] ( int i ) { return bounds_o[i]; }, time_range, time_steps-1);
+      const LBBox3fa lbounds = LBBox3fa([&] ( int i ) { return bounds_o[i]; }, time_range, time_steps-1);
       return std::make_pair(BVH4::encodeNode(node),lbounds);
     }
 

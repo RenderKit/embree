@@ -41,7 +41,7 @@ namespace embree
   public:
 
     /*! quad mesh construction */
-    QuadMesh (Scene* parent, RTCGeometryFlags flags, size_t numQuads, size_t numVertices, size_t numTimeSteps); 
+    QuadMesh (Scene* scene, RTCGeometryFlags flags, size_t numQuads, size_t numVertices, size_t numTimeSteps); 
   
     /* geometry interface */
   public:
@@ -198,7 +198,7 @@ namespace embree
 
     /*! calculates the linear bounds of the i'th primitive for the specified time range */
     __forceinline LBBox3fa linearBounds(size_t primID, const BBox1f& time_range) const {
-      return Geometry::linearBounds([&] (size_t itime) { return bounds(primID, itime); }, time_range, fnumTimeSegments);
+      return LBBox3fa([&] (size_t itime) { return bounds(primID, itime); }, time_range, fnumTimeSegments);
     }
 
     /*! calculates the linear bounds of the i'th primitive for the specified time range */
@@ -209,18 +209,6 @@ namespace embree
       return true;
     }
 
-    /*! calculates the build bounds of the i'th primitive at the itimeGlobal'th time segment, if it's valid */
-    __forceinline bool buildBounds(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal, BBox3fa& bbox) const
-    {
-      return Geometry::buildBounds([&] (size_t itime, BBox3fa& bbox) -> bool
-                                   {
-                                     if (unlikely(!valid(i, itime))) return false;
-                                     bbox = bounds(i, itime);
-                                     return true;
-                                   },
-                                   itimeGlobal, numTimeStepsGlobal, numTimeSteps, bbox);
-    }
-    
   public:
     APIBuffer<Quad> quads;                            //!< array of quads
     BufferRefT<Vec3fa> vertices0;                     //!< fast access to first vertex buffer

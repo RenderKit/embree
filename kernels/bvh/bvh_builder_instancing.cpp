@@ -173,7 +173,7 @@ namespace embree
             if (!(geom->getType() & Geometry::INSTANCE)) continue;
             GeometryInstance* instance = (GeometryInstance*) geom;
             if (!instance->isEnabled()) continue;
-            BVH* object = objects[instance->geom->id];
+            BVH* object = objects[instance->geom->geomID];
             if (object == nullptr) continue;
             if (object->getBounds().empty()) continue;
             int s = 0; //slot(geom->getType() & ~Geometry::INSTANCE, geom->numTimeSteps);

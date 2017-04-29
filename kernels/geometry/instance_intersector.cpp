@@ -54,7 +54,7 @@ namespace embree
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
       ray.geomID = RTC_INVALID_GEOMETRY_ID;
-      ray.instID = instance->id;
+      ray.instID = instance->geomID;
       IntersectContext context(instance->object,nullptr); 
       intersectObject(validi,instance->object,&context,ray);
       ray.org = ray_org;
@@ -76,7 +76,7 @@ namespace embree
       const Vec3vf<K> ray_dir = ray.dir;
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
-      ray.instID = instance->id;
+      ray.instID = instance->geomID;
       IntersectContext context(instance->object,nullptr);
       occludedObject(validi,instance->object,&context,ray);
       ray.org = ray_org;
