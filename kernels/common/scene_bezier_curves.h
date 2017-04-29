@@ -39,7 +39,7 @@ namespace embree
   public:
     
     /*! bezier curve construction */
-    NativeCurves (Scene* parent, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
+    NativeCurves (Scene* scene, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
     
   public:
     void enabling();
@@ -217,12 +217,12 @@ namespace embree
 
     /*! calculates the linear bounds of the i'th primitive for the specified time range */
     __forceinline LBBox3fa linearBounds(size_t primID, const BBox1f& time_range) const {
-      return Geometry::linearBounds([&] (size_t itime) { return bounds(primID, itime); }, time_range, fnumTimeSegments);
+      return LBBox3fa([&] (size_t itime) { return bounds(primID, itime); }, time_range, fnumTimeSegments);
     }
 
     /*! calculates the linear bounds of the i'th primitive for the specified time range */
     __forceinline LBBox3fa linearBounds(const AffineSpace3fa& space, size_t primID, const BBox1f& time_range) const {
-      return Geometry::linearBounds([&] (size_t itime) { return bounds(space, primID, itime); }, time_range, fnumTimeSegments);
+      return LBBox3fa([&] (size_t itime) { return bounds(space, primID, itime); }, time_range, fnumTimeSegments);
     }
 
     /*! calculates the build bounds of the i'th primitive, if it's valid */
@@ -276,19 +276,6 @@ namespace embree
       return true;
     }
 
-    /*! calculates the i'th build primitive at the itimeGlobal'th time segment, if it's valid */
-    __forceinline bool buildPrim(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal, Vec3fa& c0, Vec3fa& c1, Vec3fa& c2, Vec3fa& c3) const
-    {
-      if (!Geometry::validLinearBounds([&] (size_t itime) { return valid(i, itime); },
-                                       itimeGlobal, numTimeStepsGlobal, numTimeSteps))
-        return false;
-
-      const unsigned int index = curve(i);
-      float time = (float(int(itimeGlobal)) + 0.5f) / float(int(numTimeStepsGlobal-1));
-      gather(c0,c1,c2,c3,index,time);
-      return true;
-    }
-
     /*! calculates the linear bounds of the i'th primitive for the specified time range */
     __forceinline bool linearBounds(size_t i, const BBox1f& time_range, LBBox3fa& bbox) const  {
       if (!valid(i, getTimeSegmentRange(time_range, fnumTimeSegments))) return false;
@@ -311,14 +298,14 @@ namespace embree
 
   struct CurvesBezier : public NativeCurves
   {
-    CurvesBezier (Scene* parent, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
+    CurvesBezier (Scene* scene, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
     void preCommit();
     void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
   };
 
   struct CurvesBSpline : public NativeCurves
   {
-    CurvesBSpline (Scene* parent, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
+    CurvesBSpline (Scene* scene, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
     void preCommit();
     void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
   };

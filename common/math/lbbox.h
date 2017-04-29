@@ -17,6 +17,7 @@
 #pragma once
 
 #include "bbox.h"
+#include "range.h"
 
 namespace embree
 {
@@ -64,6 +65,77 @@ namespace embree
         b0.lower += dlower; b1.lower += dlower;
         b0.upper += dupper; b1.upper += dupper;
       }
+      bounds0 = b0;
+      bounds1 = b1;
+    }
+
+    /*! calculates the linear bounds of a primitive for the specified time range */
+    template<typename BoundsFunc>
+    __forceinline LBBox(const BoundsFunc& bounds, const BBox1f& time_range, float numTimeSegments)
+    {
+      const float lower = time_range.lower*numTimeSegments;
+      const float upper = time_range.upper*numTimeSegments;
+      const float ilowerf = floor(lower);
+      const float iupperf = ceil(upper);
+      const int ilower = (int)ilowerf;
+      const int iupper = (int)iupperf;
+
+      const BBox<T> blower0 = bounds(ilower);
+      const BBox<T> bupper1 = bounds(iupper);
+
+      if (iupper-ilower == 1) {
+        bounds0 = lerp(blower0, bupper1, lower-ilowerf);
+        bounds1 = lerp(bupper1, blower0, iupperf-upper);
+        return;
+      }
+
+      const BBox<T> blower1 = bounds(ilower+1);
+      const BBox<T> bupper0 = bounds(iupper-1);
+      BBox<T> b0 = lerp(blower0, blower1, lower-ilowerf);
+      BBox<T> b1 = lerp(bupper1, bupper0, iupperf-upper);
+
+      for (size_t i = ilower+1; i < iupper; i++)
+      {
+        const float f = (float(i)/numTimeSegments - time_range.lower) / time_range.size();
+        const BBox<T> bt = lerp(b0, b1, f);
+        const BBox<T> bi = bounds(i);
+        const T dlower = min(bi.lower-bt.lower, T(zero));
+        const T dupper = max(bi.upper-bt.upper, T(zero));
+        b0.lower += dlower; b1.lower += dlower;
+        b0.upper += dupper; b1.upper += dupper;
+      }
+
+      bounds0 = b0;
+      bounds1 = b1;
+    }
+
+    /*! calculates the linear bounds of a primitive for the specified time range */
+    template<typename BoundsFunc>
+    __forceinline LBBox(const BoundsFunc& bounds, const range<int>& time_range, int numTimeSegments)
+    {
+      const int ilower = time_range.begin();
+      const int iupper = time_range.end();
+
+      BBox<T> b0 = bounds(ilower);
+      BBox<T> b1 = bounds(iupper);
+
+      if (iupper-ilower == 1) {
+        bounds0 = b0;
+        bounds1 = b1;
+        return;
+      }
+  
+      for (size_t i = ilower+1; i<iupper; i++)
+      {
+        const float f = float(i - time_range.begin()) / float(time_range.size());
+        const BBox<T> bt = lerp(b0, b1, f);
+        const BBox<T> bi = bounds(i);
+        const T dlower = min(bi.lower-bt.lower, T(zero));
+        const T dupper = max(bi.upper-bt.upper, T(zero));
+        b0.lower += dlower; b1.lower += dlower;
+        b0.upper += dupper; b1.upper += dupper;
+      }
+
       bounds0 = b0;
       bounds1 = b1;
     }

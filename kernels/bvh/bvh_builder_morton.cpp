@@ -109,7 +109,7 @@ namespace embree
         NodeRef ref = BVH::encodeLeaf((char*)accel,1);
         vint4 vgeomID = -1, vprimID = -1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
-        const unsigned geomID = this->mesh->id;
+        const unsigned geomID = this->mesh->geomID;
         const TriangleMesh* __restrict__ const mesh = this->mesh;
 
         for (size_t i=0; i<items; i++)
@@ -165,7 +165,7 @@ namespace embree
         NodeRef ref = BVH::encodeLeaf((char*)accel,1);       
         vint4 vgeomID = -1, vprimID = -1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
-        const unsigned geomID = this->mesh->id;
+        const unsigned geomID = this->mesh->geomID;
         const TriangleMesh* __restrict__ mesh = this->mesh;
 
         for (size_t i=0; i<items; i++)
@@ -220,7 +220,7 @@ namespace embree
         
         vint4 vgeomID = -1, vprimID = -1;
         vint4 v0 = zero, v1 = zero, v2 = zero;
-        const unsigned geomID = this->mesh->id;
+        const unsigned geomID = this->mesh->geomID;
         const TriangleMesh* __restrict__ const mesh = this->mesh;
         
         for (size_t i=0; i<items; i++)
@@ -286,7 +286,7 @@ namespace embree
         
         vint4 vgeomID = -1, vprimID = -1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero, v3 = zero;
-        const unsigned geomID = this->mesh->id;
+        const unsigned geomID = this->mesh->geomID;
         const QuadMesh* __restrict__ mesh = this->mesh;
 
         for (size_t i=0; i<items; i++)
@@ -340,7 +340,7 @@ namespace embree
         Object* accel = (Object*) alloc.malloc1(items*sizeof(Object),BVH::byteAlignment);
         NodeRef ref = BVH::encodeLeaf((char*)accel,items);
 
-        const unsigned geomID = this->mesh->id;
+        const unsigned geomID = this->mesh->geomID;
         const AccelSet* mesh = this->mesh;
         
         BBox3fa bounds = empty;

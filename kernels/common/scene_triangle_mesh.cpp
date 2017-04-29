@@ -19,32 +19,32 @@
 
 namespace embree
 {
-  TriangleMesh::TriangleMesh (Scene* parent, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps)
-    : Geometry(parent,TRIANGLE_MESH,numTriangles,numTimeSteps,flags)
+  TriangleMesh::TriangleMesh (Scene* scene, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps)
+    : Geometry(scene,TRIANGLE_MESH,numTriangles,numTimeSteps,flags)
   {
-    triangles.init(parent->device,numTriangles,sizeof(Triangle));
+    triangles.init(scene->device,numTriangles,sizeof(Triangle));
     vertices.resize(numTimeSteps);
     for (size_t i=0; i<numTimeSteps; i++) {
-      vertices[i].init(parent->device,numVertices,sizeof(Vec3fa));
+      vertices[i].init(scene->device,numVertices,sizeof(Vec3fa));
     }
     enabling();
   }
 
   void TriangleMesh::enabling() 
   { 
-    if (numTimeSteps == 1) parent->world.numTriangles += triangles.size();
-    else                   parent->worldMB.numTriangles += triangles.size();
+    if (numTimeSteps == 1) scene->world.numTriangles += triangles.size();
+    else                   scene->worldMB.numTriangles += triangles.size();
   }
   
   void TriangleMesh::disabling() 
   { 
-    if (numTimeSteps == 1) parent->world.numTriangles -= triangles.size();
-    else                   parent->worldMB.numTriangles -= triangles.size();
+    if (numTimeSteps == 1) scene->world.numTriangles -= triangles.size();
+    else                   scene->worldMB.numTriangles -= triangles.size();
   }
 
   void TriangleMesh::setMask (unsigned mask) 
   {
-    if (parent->isStatic() && parent->isBuild())
+    if (scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     this->mask = mask; 
@@ -53,7 +53,7 @@ namespace embree
 
   void TriangleMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size) 
   { 
-    if (parent->isStatic() && parent->isBuild()) 
+    if (scene->isStatic() && scene->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     /* verify that all accesses are 4 bytes aligned */
@@ -77,7 +77,7 @@ namespace embree
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
     {
       if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
-      userbuffers[bid] = APIBuffer<char>(parent->device,numVertices(),stride);
+      userbuffers[bid] = APIBuffer<char>(scene->device,numVertices(),stride);
       userbuffers[bid].set(ptr,offset,stride,size);
       userbuffers[bid].checkPadding16();
     }
@@ -94,14 +94,14 @@ namespace embree
 
   void* TriangleMesh::map(RTCBufferType type) 
   {
-    if (parent->isStatic() && parent->isBuild())
+    if (scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
     
     if (type == RTC_INDEX_BUFFER) {
-      return triangles.map(parent->numMappedBuffers);
+      return triangles.map(scene->numMappedBuffers);
     }
     else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
-      return vertices[type - RTC_VERTEX_BUFFER0].map(parent->numMappedBuffers);
+      return vertices[type - RTC_VERTEX_BUFFER0].map(scene->numMappedBuffers);
     }
     else {
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
@@ -111,14 +111,14 @@ namespace embree
 
   void TriangleMesh::unmap(RTCBufferType type) 
   {
-    if (parent->isStatic() && parent->isBuild())
+    if (scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     if (type == RTC_INDEX_BUFFER) {
-      triangles.unmap(parent->numMappedBuffers);
+      triangles.unmap(scene->numMappedBuffers);
     }
     else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
-      vertices[type - RTC_VERTEX_BUFFER0].unmap(parent->numMappedBuffers);
+      vertices[type - RTC_VERTEX_BUFFER0].unmap(scene->numMappedBuffers);
       vertices0 = vertices[0];
     }
     else {
@@ -128,14 +128,14 @@ namespace embree
 
   void TriangleMesh::postCommit () 
   {
-    parent->vertices[id] = (int*) vertices0.getPtr();
+    scene->vertices[geomID] = (int*) vertices0.getPtr();
     Geometry::postCommit();
   }
 
   void TriangleMesh::immutable () 
   {
-    const bool freeTriangles = !parent->needTriangleIndices;
-    const bool freeVertices  = !parent->needTriangleVertices;
+    const bool freeTriangles = !scene->needTriangleIndices;
+    const bool freeVertices  = !scene->needTriangleVertices;
     if (freeTriangles) triangles.free(); 
     if (freeVertices )
       for (auto& buffer : vertices)
@@ -175,7 +175,7 @@ namespace embree
   {
     /* test if interpolation is enabled */
 #if defined(DEBUG)
-    if ((parent->aflags & RTC_INTERPOLATE) == 0) 
+    if ((scene->aflags & RTC_INTERPOLATE) == 0) 
       throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
 #endif
 

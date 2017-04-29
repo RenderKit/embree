@@ -153,7 +153,7 @@ namespace embree
     public:
       
       /*! construction */
-      AccelSet (Scene* parent, RTCGeometryFlags gflags, size_t items, size_t numTimeSteps);
+      AccelSet (Scene* scene, RTCGeometryFlags gflags, size_t items, size_t numTimeSteps);
       
       /*! makes the acceleration structure immutable */
       virtual void immutable () {}
@@ -216,7 +216,7 @@ namespace embree
 
       /*! calculates the linear bounds of the i'th primitive for the specified time range */
       __forceinline LBBox3fa linearBounds(size_t primID, const BBox1f& time_range) const {
-        return Geometry::linearBounds([&] (size_t itime) { return bounds(primID, itime); }, time_range, fnumTimeSegments);
+        return LBBox3fa([&] (size_t itime) { return bounds(primID, itime); }, time_range, fnumTimeSegments);
       }
       
       /*! calculates the linear bounds of the i'th primitive for the specified time range */
@@ -226,17 +226,6 @@ namespace embree
         return true;
       }
 
-      /*! calculates the build bounds of the i'th item at the itimeGlobal'th time segment, if it's valid */
-      __forceinline bool buildBounds(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal, BBox3fa& bbox) const
-      {
-        return Geometry::buildBounds([&] (size_t itime, BBox3fa& bbox) -> bool
-                                     {
-                                       bbox = bounds(i, itime);
-                                       return isvalid(bbox);
-                                     },
-                                     itimeGlobal, numTimeStepsGlobal, numTimeSteps, bbox);
-      }
-      
       void enabling ();
       void disabling();
 
