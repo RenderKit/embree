@@ -215,7 +215,6 @@ namespace embree
             /* enable os_malloc for static scenes or dynamic scenes with static geometry */
             if (mesh == NULL || mesh->isStatic())
               bvh->alloc.setOSallocation(true);
-
             bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef),settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD,settings.primrefarrayalloc != size_t(inf));
             prims.resize(numPrimitives); 
 
