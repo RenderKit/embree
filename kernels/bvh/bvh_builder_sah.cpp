@@ -225,6 +225,7 @@ namespace embree
             settings.singleThreadThreshold = FastAllocator::fixSingleThreadThreshold(DEFAULT_SINGLE_THREAD_THRESHOLD,numPrimitives,node_bytes+leaf_bytes);
 #endif
             bvh->alloc.init_estimate(node_bytes+leaf_bytes,settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD,settings.primrefarrayalloc != size_t(inf));
+            //bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef),settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD,settings.primrefarrayalloc != size_t(inf));
             prims.resize(numPrimitives); 
 
             PrimInfo pinfo = mesh ? 
