@@ -75,8 +75,14 @@ namespace embree
         NodeRef cur = NodeRef(stackPtr->ptr);
 	
         /*! if popped node is too far, pop next one */
+#if defined(__AVX512CD__)
+        /* much faster on KNL */
+        if (unlikely(any(vfloat<Nx>(*(float*)&stackPtr->dist) > ray_far))) 
+          continue;
+#else
         if (unlikely(*(float*)&stackPtr->dist > ray.tfar[k])) 
           continue;
+#endif
         
         /* downtraversal loop */
         while (true)
@@ -199,7 +205,9 @@ namespace embree
           if (unlikely(__popcnt(bits) <= switchThreshold)) 
 #endif
           {
-            for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
+            //for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
+            for (; bits!=0; ) {
+              const size_t i = __bscf(bits);
               intersect1(bvh, cur, i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ, context);
             }
             ray_tfar = min(ray_tfar,ray.tfar);
@@ -438,7 +446,9 @@ namespace embree
         {
           size_t bits = movemask(active);
           if (unlikely(__popcnt(bits) <= switchThreshold)) {
-            for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
+            //for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
+            for (; bits!=0; ) {
+              const size_t i = __bscf(bits);
               if (occluded1(bvh,cur,i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ,context))
                 set(terminated, i);
             }
