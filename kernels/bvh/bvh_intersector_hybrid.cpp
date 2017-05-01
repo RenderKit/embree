@@ -62,6 +62,7 @@ namespace embree
       StackItemT<NodeRef>* stackEnd = stack + stackSizeSingle;
       stack[0].ptr = root;
       stack[0].dist = neg_inf;
+
       /*! load the ray into SIMD registers */
       TravRay<N,Nx> vray(k,ray_org,ray_dir,ray_rdir,nearXYZ);
       vfloat<Nx> ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
@@ -94,8 +95,8 @@ namespace embree
           /* intersect node */
           size_t mask = 0;
           vfloat<Nx> tNear;
-          BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
-          
+          BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);          
+
           /*! if no child is hit, pop next node */
           if (unlikely(mask == 0))
             goto pop;
@@ -114,7 +115,6 @@ namespace embree
         
         ray_far = ray.tfar[k];
         
-
         if (unlikely(lazy_node)) {
           stackPtr->ptr = lazy_node;
           stackPtr->dist = neg_inf;

@@ -1129,7 +1129,8 @@ namespace embree
     };
 
     /*! BVHN Quantized Node */
-#if 0
+#if 1
+    /* 8 bit quantization */
     struct __aligned(16) QuantizedNode : public BaseNode
     {
       using BaseNode::children;
@@ -1273,6 +1274,16 @@ namespace embree
       template <int M>
       __forceinline vfloat<M> dequantize(const size_t offset) const { return vfloat<M>(vint<M>::loadu(all_planes+offset)); }
 
+#if defined(__AVX512F__)
+      template <int M>
+      __forceinline vfloat<M> dequantizeLowerUpperX(const vint<M> &p) const { return madd(vfloat<M>(permute(vint<M>::load(lower_x),p)),scale.x,vfloat<M>(start.x)); }
+
+      template <int M>
+      __forceinline vfloat<M> dequantizeLowerUpperY(const vint<M> &p) const { return madd(vfloat<M>(permute(vint<M>::load(lower_y),p)),scale.y,vfloat<M>(start.y)); }
+
+      template <int M>
+      __forceinline vfloat<M> dequantizeLowerUpperZ(const vint<M> &p) const { return madd(vfloat<M>(permute(vint<M>::load(lower_z),p)),scale.z,vfloat<M>(start.z)); }      
+#endif
 
       union {
         struct {
@@ -1290,7 +1301,7 @@ namespace embree
       Vec3f scale;
     };
 #else
-
+    /* 16 bit quantization */
     struct __aligned(32) QuantizedNode : public BaseNode
     {
       using BaseNode::children;
@@ -1433,6 +1444,17 @@ namespace embree
 
       template <int M>
       __forceinline vfloat<M> dequantize(const size_t offset) const { return vfloat<M>(vint<M>::loadu(all_planes+offset)); }
+
+#if defined(__AVX512F__)
+      template <int M>
+      __forceinline vfloat<M> dequantizeLowerUpperX(const vint<M> &p) const { return madd(vfloat<M>(permute(vint<M>::load(lower_x),p)),scale.x,vfloat<M>(start.x)); }
+
+      template <int M>
+      __forceinline vfloat<M> dequantizeLowerUpperY(const vint<M> &p) const { return madd(vfloat<M>(permute(vint<M>::load(lower_y),p)),scale.y,vfloat<M>(start.y)); }
+
+      template <int M>
+      __forceinline vfloat<M> dequantizeLowerUpperZ(const vint<M> &p) const { return madd(vfloat<M>(permute(vint<M>::load(lower_z),p)),scale.z,vfloat<M>(start.z)); }      
+#endif
 
 
       union {
