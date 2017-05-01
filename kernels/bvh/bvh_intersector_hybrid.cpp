@@ -35,7 +35,7 @@
 #include "../geometry/object_intersector.h"
 
 #define SWITCH_DURING_DOWN_TRAVERSAL 1
-#define FORCE_SINGLE_MODE 1
+#define FORCE_SINGLE_MODE 0
 
 namespace embree
 {
@@ -75,7 +75,7 @@ namespace embree
         NodeRef cur = NodeRef(stackPtr->ptr);
 	
         /*! if popped node is too far, pop next one */
-#if defined(__AVX512CD__)
+#if defined(__AVX512ER__)
         /* much faster on KNL */
         if (unlikely(any(vfloat<Nx>(*(float*)&stackPtr->dist) > ray_far))) 
           continue;
@@ -111,8 +111,10 @@ namespace embree
         
         size_t lazy_node = 0;
         PrimitiveIntersectorK::intersect(pre, ray, k, context, prim, num, lazy_node);
+        
         ray_far = ray.tfar[k];
         
+
         if (unlikely(lazy_node)) {
           stackPtr->ptr = lazy_node;
           stackPtr->dist = neg_inf;
@@ -205,7 +207,6 @@ namespace embree
           if (unlikely(__popcnt(bits) <= switchThreshold)) 
 #endif
           {
-            //for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
             for (; bits!=0; ) {
               const size_t i = __bscf(bits);
               intersect1(bvh, cur, i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ, context);
@@ -446,7 +447,6 @@ namespace embree
         {
           size_t bits = movemask(active);
           if (unlikely(__popcnt(bits) <= switchThreshold)) {
-            //for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
             for (; bits!=0; ) {
               const size_t i = __bscf(bits);
               if (occluded1(bvh,cur,i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ,context))

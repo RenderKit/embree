@@ -131,7 +131,7 @@ namespace embree
     };
 
 
-#if defined(__AVX512F__)
+#if defined(__AVX512ER__)
       __forceinline static void isort_update(vfloat16 &dist, vllong8 &ptr, const vfloat16 &d, const vllong8 &p)
       {
         const vfloat16 dist_shift = align_shift_right<15>(dist,dist);
@@ -169,7 +169,7 @@ namespace embree
         assert(mask != 0);
         const BaseNode* node = cur.baseNode(types);
 
-#if defined(__AVX512CD__)
+#if defined(__AVX512ER__)
         STAT3(normal.trav_hit_boxes[__popcnt(mask)],1,1,1);
 
         size_t r = __bscf(mask);

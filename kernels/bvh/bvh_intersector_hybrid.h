@@ -40,7 +40,7 @@ namespace embree
       typedef typename BVH::AlignedNode AlignedNode;
       typedef typename BVH::AlignedNodeMB AlignedNodeMB;
       
-      static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
+      static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth+3; // +3 due to 16-wide store
       static const size_t stackSizeChunk = 1+(N-1)*BVH::maxDepth;
 
       static const size_t switchThresholdIncoherent = \
