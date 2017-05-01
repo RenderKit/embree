@@ -98,6 +98,9 @@ namespace embree
       return _mm512_load_si512(addr);
     }
 
+    static __forceinline vuint16 load( const unsigned short* const ptr ) { return _mm512_cvtepu16_epi32(*(__m256i*)ptr); }
+
+
     static __forceinline void store(void* ptr, const vuint16& v) {
       _mm512_store_si512(ptr,v);
     }
