@@ -1230,7 +1230,7 @@ namespace embree
       switch (gtype)
       {
       case TRIANGLE_MESH: switch (sflags) {
-        case RTC_SCENE_STATIC : return avx ?  65.0f*NN :  60.0f*NN; // triangle4
+        case RTC_SCENE_STATIC : return avx ?  69.0f*NN :  60.0f*NN; // triangle4
         case RTC_SCENE_ROBUST : return avx ?  70.0f*NN :  63.0f*NN; // triangle4v
         case RTC_SCENE_COMPACT: return avx ?  42.0f*NN :  35.0f*NN; // triangle4i
         case RTC_SCENE_DYNAMIC: return avx ? 131.0f*NN : 117.0f*NN; // triangle4
@@ -1291,11 +1291,12 @@ namespace embree
     double expected_size(VerifyApplication* state, size_t NN)
     {
       double bytes_expected = expected_size_helper(state,NN);
-      double blockSize = clamp(bytes_expected/20,1280.0,double(4*1024*1024-64));
-      double allocBlockSize = clamp(blockSize,double(128),double(PAGE_SIZE-64));
-      //if (sflags == RTC_SCENE_DYNAMIC && gflags == RTC_GEOMETRY_DYNAMIC)
-      //  bytes_expected += NN*32; // primrefarray not cleared for dynamic meshes
-      return bytes_expected + ceil(bytes_expected/blockSize)*128 + ceil(bytes_expected/allocBlockSize)*128 + blockSize;
+      bool use_single_mode = bytes_expected < 1000000;
+      double mainBlockSize = clamp(bytes_expected/20,1024.0,double(2*1024*1024-64));
+      double threadLocalBlockSize = clamp(bytes_expected/20,double(1024),double(PAGE_SIZE));
+      double expected = bytes_expected + ceil(bytes_expected/mainBlockSize)*128 + ceil(bytes_expected/threadLocalBlockSize)*128 + mainBlockSize;
+      if (use_single_mode == false) expected += mainBlockSize;
+      return expected;
     }
 
     std::pair<ssize_t,ssize_t> run_build(VerifyApplication* state, size_t N, unsigned numThreads)
