@@ -315,14 +315,19 @@ namespace embree
      * per thread is low */
     static size_t fixSingleThreadThreshold(size_t defaultThreshold, size_t numPrimitives, size_t bytesEstimated)
     {
-      if (numPrimitives == 0) 
+      if (numPrimitives == 0 || bytesEstimated == 0) 
         return defaultThreshold;
 
+      size_t threadCount = TaskScheduler::threadCount();
+      size_t thresholdAccuracy = 8; // for BVH8 the switching point may be singleThreadThreshold/8
       size_t singleThreadBytes = 19*PAGE_SIZE;
-      if ((numPrimitives*bytesEstimated+(numPrimitives*singleThreadBytes-1))/(numPrimitives*singleThreadBytes) >= TaskScheduler::threadCount())
+
+      if ( (bytesEstimated+(singleThreadBytes-1))/singleThreadBytes >= threadCount)
         return defaultThreshold;
-      else
-        return 8*singleThreadBytes*numPrimitives/bytesEstimated; // for BVH8 the switching point may be singleThreadThreshold/8
+      else {
+        double bytesPerPrimitive = double(bytesEstimated)/double(numPrimitives);
+        return size_t(ceil(thresholdAccuracy*singleThreadBytes/bytesPerPrimitive)); 
+      }
     }
 
 #if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
@@ -338,7 +343,12 @@ namespace embree
       growSize = maxGrowSize = clamp(blockSize,size_t(10*128),maxAllocationSize);
       defaultBlockSize       = clamp(blockSize,size_t(10*128),size_t(PAGE_SIZE+maxAlignment));
 
-      use_single_mode = !fast && (2*defaultBlockSize >= bytesEstimated/100);
+      size_t threadCount = TaskScheduler::threadCount();
+      size_t singleThreadBytes = 19*PAGE_SIZE;
+      if ( (bytesEstimated+(singleThreadBytes-1))/singleThreadBytes >= threadCount)
+        defaultBlockSize = min(max(size_t(4096),bytesEstimated/(19*threadCount)),growSize);
+
+      use_single_mode = !fast && bytesEstimated < 1000000; //(2*defaultBlockSize >= bytesEstimated/100);
       if (bytesEstimated == 0) maxGrowSize = maxAllocationSize; // special mode if builder cannot estimate tree size
       log2_grow_size_scale = 0;
       slotMask = 0x0;
