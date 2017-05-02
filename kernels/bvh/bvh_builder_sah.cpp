@@ -221,11 +221,10 @@ namespace embree
             /* initialize allocator */
             const size_t node_bytes = numPrimitives*sizeof(typename BVH::AlignedNodeMB)/(4*N);
             const size_t leaf_bytes = size_t(1.2*Primitive::blocks(numPrimitives)*sizeof(Primitive));
-#if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
-            settings.singleThreadThreshold = FastAllocator::fixSingleThreadThreshold(DEFAULT_SINGLE_THREAD_THRESHOLD,numPrimitives,node_bytes+leaf_bytes);
-#endif
             bvh->alloc.init_estimate(node_bytes+leaf_bytes,settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD,settings.primrefarrayalloc != size_t(inf));
-            //bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef),settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD,settings.primrefarrayalloc != size_t(inf));
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
+            settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,numPrimitives,node_bytes+leaf_bytes);
+#endif
             prims.resize(numPrimitives); 
 
             PrimInfo pinfo = mesh ? 
@@ -329,10 +328,10 @@ namespace embree
             /* call BVH builder */
             const size_t node_bytes = numPrimitives*sizeof(typename BVH::QuantizedNode)/(4*N);
             const size_t leaf_bytes = size_t(1.2*Primitive::blocks(numPrimitives)*sizeof(Primitive));
-#if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
-            settings.singleThreadThreshold = FastAllocator::fixSingleThreadThreshold(DEFAULT_SINGLE_THREAD_THRESHOLD,numPrimitives,node_bytes+leaf_bytes);
-#endif
             bvh->alloc.init_estimate(node_bytes+leaf_bytes,settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD);
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
+            settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,numPrimitives,node_bytes+leaf_bytes);
+#endif
             NodeRef root = BVHNBuilderQuantizedVirtual<N>::build(&bvh->alloc,CreateLeafQuantized<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,settings);
             bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
             //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: COPY LAYOUT FOR LARGE NODES !!!
@@ -489,7 +488,7 @@ namespace embree
         settings.intCost = intCost;
         settings.singleThreadThreshold = singleThreadThreshold;
 #if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
-        settings.singleThreadThreshold = FastAllocator::fixSingleThreadThreshold(DEFAULT_SINGLE_THREAD_THRESHOLD,pinfo.size(),node_bytes+leaf_bytes);
+        settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,pinfo.size(),node_bytes+leaf_bytes);
 #endif
 
         /* build hierarchy */
@@ -524,7 +523,7 @@ namespace embree
         settings.singleLeafTimeSegment = Primitive::singleTimeSegment;
         settings.singleThreadThreshold = singleThreadThreshold;
 #if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
-        settings.singleThreadThreshold = FastAllocator::fixSingleThreadThreshold(DEFAULT_SINGLE_THREAD_THRESHOLD,pinfo.size(),node_bytes+leaf_bytes);
+        settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,pinfo.size(),node_bytes+leaf_bytes);
 #endif
         
         /* build hierarchy */
@@ -604,10 +603,10 @@ namespace embree
         Splitter splitter(scene);
         const size_t node_bytes = pinfo.size()*sizeof(typename BVH::AlignedNode)/(4*N);
         const size_t leaf_bytes = size_t(1.2*Primitive::blocks(pinfo.size())*sizeof(Primitive));
-#if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
-        settings.singleThreadThreshold = FastAllocator::fixSingleThreadThreshold(DEFAULT_SINGLE_THREAD_THRESHOLD,pinfo.size(),node_bytes+leaf_bytes);
-#endif
         bvh->alloc.init_estimate(node_bytes+leaf_bytes);
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
+        settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,pinfo.size(),node_bytes+leaf_bytes);
+#endif
 
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxBuildDepthLeaf;

@@ -313,20 +313,19 @@ namespace embree
     /* calculates a single threaded threshold for the builders such
      * that for small scenes the overhead of partly allocated blocks
      * per thread is low */
-    static size_t fixSingleThreadThreshold(size_t defaultThreshold, size_t numPrimitives, size_t bytesEstimated)
+    size_t fixSingleThreadThreshold(size_t branchingFactor, size_t defaultThreshold, size_t numPrimitives, size_t bytesEstimated)
     {
       if (numPrimitives == 0 || bytesEstimated == 0) 
         return defaultThreshold;
 
       size_t threadCount = TaskScheduler::threadCount();
-      size_t thresholdAccuracy = 8; // for BVH8 the switching point may be singleThreadThreshold/8
       size_t singleThreadBytes = 19*PAGE_SIZE;
 
       if ( (bytesEstimated+(singleThreadBytes-1))/singleThreadBytes >= threadCount)
         return defaultThreshold;
       else {
         double bytesPerPrimitive = double(bytesEstimated)/double(numPrimitives);
-        return size_t(ceil(thresholdAccuracy*singleThreadBytes/bytesPerPrimitive)); 
+        return size_t(ceil(branchingFactor*singleThreadBytes/bytesPerPrimitive)); 
       }
     }
 
