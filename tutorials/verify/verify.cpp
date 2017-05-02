@@ -4126,12 +4126,10 @@ namespace embree
         groups.top()->add(new EmptyGeometryTest(to_string(sflags),isa,sflags,RTC_GEOMETRY_STATIC));
       groups.pop();
       
-#if 0
       push(new TestGroup("many_build",false,false,false));
       for (auto sflags : sceneFlags) 
         groups.top()->add(new ManyBuildTest(to_string(sflags),isa,sflags,RTC_GEOMETRY_STATIC));
       groups.pop();
-#endif
 
       push(new TestGroup("build",true,true));
       for (auto sflags : sceneFlags) 
