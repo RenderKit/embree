@@ -345,8 +345,8 @@ namespace embree
     {
       size_t mainAllocOverhead = fast ? mainAllocOverheadDynamic : mainAllocOverheadStatic;
       size_t blockSize = alignSize(bytesEstimated/mainAllocOverhead);
-      growSize = maxGrowSize = clamp(blockSize,size_t(10*128),maxAllocationSize);
-      defaultBlockSize       = clamp(blockSize,size_t(10*128),size_t(PAGE_SIZE+maxAlignment));
+      growSize = maxGrowSize = clamp(blockSize,size_t(1024),maxAllocationSize);
+      defaultBlockSize       = clamp(blockSize,size_t(1024),size_t(PAGE_SIZE+maxAlignment));
 
       size_t threadCount = TaskScheduler::threadCount();
       size_t singleThreadBytes = threadLocalAllocOverhead*PAGE_SIZE;

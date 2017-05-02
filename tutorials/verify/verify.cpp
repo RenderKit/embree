@@ -1230,7 +1230,7 @@ namespace embree
       switch (gtype)
       {
       case TRIANGLE_MESH: switch (sflags) {
-        case RTC_SCENE_STATIC : return avx ?  79.0f*NN :  75.0f*NN; // triangle4
+        case RTC_SCENE_STATIC : return avx ?  65.0f*NN :  60.0f*NN; // triangle4
         case RTC_SCENE_ROBUST : return avx ?  70.0f*NN :  63.0f*NN; // triangle4v
         case RTC_SCENE_COMPACT: return avx ?  42.0f*NN :  35.0f*NN; // triangle4i
         case RTC_SCENE_DYNAMIC: return avx ? 131.0f*NN : 117.0f*NN; // triangle4
