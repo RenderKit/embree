@@ -353,7 +353,7 @@ namespace embree
       if ( (bytesEstimated+(singleThreadBytes-1))/singleThreadBytes >= threadCount)
         defaultBlockSize = min(max(size_t(4096),bytesEstimated/(threadLocalAllocOverhead*threadCount)),growSize);
 
-      use_single_mode = !fast && bytesEstimated < 1000000; //(2*defaultBlockSize >= bytesEstimated/100);
+      use_single_mode = false; //!fast && bytesEstimated < 100000;
       if (bytesEstimated == 0) maxGrowSize = maxAllocationSize; // special mode if builder cannot estimate tree size
       log2_grow_size_scale = 0;
       slotMask = 0x0;

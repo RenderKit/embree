@@ -1291,7 +1291,7 @@ namespace embree
     double expected_size(VerifyApplication* state, size_t NN)
     {
       double bytes_expected = expected_size_helper(state,NN);
-      bool use_single_mode = bytes_expected < 1000000;
+      bool use_single_mode = false; //bytes_expected < 100000;
       double mainBlockSize = clamp(bytes_expected/20,1024.0,double(2*1024*1024-64));
       double threadLocalBlockSize = clamp(bytes_expected/20,double(1024),double(PAGE_SIZE));
       double expected = bytes_expected + ceil(bytes_expected/mainBlockSize)*128 + ceil(bytes_expected/threadLocalBlockSize)*128 + mainBlockSize;
