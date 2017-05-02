@@ -310,6 +310,8 @@ namespace embree
       }
     }
 
+    static const size_t threadLocalAllocOverhead = 20; //! 20 means 5% parallel allocation overhead
+
     /* calculates a single threaded threshold for the builders such
      * that for small scenes the overhead of partly allocated blocks
      * per thread is low */
@@ -319,7 +321,8 @@ namespace embree
         return defaultThreshold;
 
       size_t threadCount = TaskScheduler::threadCount();
-      size_t singleThreadBytes = 19*PAGE_SIZE;
+      size_t singleThreadBytes = threadLocalAllocOverhead*defaultBlockSize;
+      if (!use_single_mode) singleThreadBytes *= 2;
 
       if ( (bytesEstimated+(singleThreadBytes-1))/singleThreadBytes >= threadCount)
         return defaultThreshold;
@@ -343,9 +346,9 @@ namespace embree
       defaultBlockSize       = clamp(blockSize,size_t(10*128),size_t(PAGE_SIZE+maxAlignment));
 
       size_t threadCount = TaskScheduler::threadCount();
-      size_t singleThreadBytes = 19*PAGE_SIZE;
+      size_t singleThreadBytes = threadLocalAllocOverhead*PAGE_SIZE;
       if ( (bytesEstimated+(singleThreadBytes-1))/singleThreadBytes >= threadCount)
-        defaultBlockSize = min(max(size_t(4096),bytesEstimated/(19*threadCount)),growSize);
+        defaultBlockSize = min(max(size_t(4096),bytesEstimated/(threadLocalAllocOverhead*threadCount)),growSize);
 
       use_single_mode = !fast && bytesEstimated < 1000000; //(2*defaultBlockSize >= bytesEstimated/100);
       if (bytesEstimated == 0) maxGrowSize = maxAllocationSize; // special mode if builder cannot estimate tree size
@@ -400,13 +403,13 @@ namespace embree
     }
 
     /*! initializes the allocator */
-    void init_estimate(size_t bytesAllocate, const bool single_mode = false, const bool compact = false)
+    void init_estimate(size_t bytesEstimate, const bool single_mode = false, const bool compact = false)
     {
       internal_fix_used_blocks();
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       /* single allocator mode ? */
-      estimatedSize = bytesAllocate;
-      initGrowSizeAndNumSlots(bytesAllocate,single_mode,compact,false);
+      estimatedSize = bytesEstimate;
+      initGrowSizeAndNumSlots(bytesEstimate,single_mode,compact,false);
     }
 
     /*! frees state not required after build */
