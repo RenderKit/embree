@@ -323,7 +323,7 @@ namespace embree
         return defaultThreshold;
 
       /* calculate block size in bytes to fulfill threadLocalAllocOverhead constraint */
-      const size_t single_mode_factor = use_single_mode ? 2 : 1;
+      const size_t single_mode_factor = use_single_mode ? 1 : 2;
       const size_t threadCount = TaskScheduler::threadCount();
       const size_t singleThreadBytes = single_mode_factor*threadLocalAllocOverhead*defaultBlockSize;
 
@@ -348,7 +348,7 @@ namespace embree
     __forceinline void initGrowSizeAndNumSlots(size_t bytesEstimated, bool single_mode, bool compact, bool fast) 
     {
       use_single_mode = false; //!fast && bytesEstimated < 100000;
-      const size_t single_mode_factor = use_single_mode ? 2 : 1;
+      const size_t single_mode_factor = use_single_mode ? 1 : 2;
   
       /* calculate growSize such that at most mainAllocationOverhead gets wasted when a block stays unused */
       size_t mainAllocOverhead = fast ? mainAllocOverheadDynamic : mainAllocOverheadStatic;
