@@ -169,36 +169,42 @@ namespace embree
       static const size_t MAX_COHERENT_RAY_PACKETS = MAX_RAYS_PER_OCTANT / VSIZEX;
       __aligned(64) RayK<VSIZEX> *rays_ptr[MAX_RAYS_PER_OCTANT / VSIZEX];
 
-      /* check for common direction */
-      vfloatx min_x(pos_inf), max_x(neg_inf);
-      vfloatx min_y(pos_inf), max_y(neg_inf);
-      vfloatx min_z(pos_inf), max_z(neg_inf);
-      vboolx all_active(true);
-      for (size_t s=0; s<streams; s++)
-      {
-        const size_t offset = s*stream_offset;
-        RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)(rayData + offset);
-        min_x = min(min_x,ray.dir.x);
-        min_y = min(min_y,ray.dir.y);
-        min_z = min(min_z,ray.dir.z);
-        max_x = max(max_x,ray.dir.x);
-        max_y = max(max_y,ray.dir.y);
-        max_z = max(max_z,ray.dir.z);
-        all_active &= ray.tnear <= ray.tfar;
-#if defined(EMBREE_IGNORE_INVALID_RAYS)
-        all_active &= ray.valid();
-#endif
-      }
-      const bool commonDirection =                                    \
-        (all(max_x < vfloatx(zero)) || all(min_x >= vfloatx(zero))) &&
-        (all(max_y < vfloatx(zero)) || all(min_y >= vfloatx(zero))) &&
-        (all(max_z < vfloatx(zero)) || all(min_z >= vfloatx(zero)));
+      /* all valid accels need to have a intersectN/occludedN */
+      bool chunkFallback = scene->isRobust() || !scene->accels.validIsecN();
 
-      /* fallback to chunk in case of non-common directions */
-      if (unlikely(commonDirection == false
-                   || !all(all_active)
-                   || scene->isRobust()
-                   || !scene->accels.validIsecN() ) ) /* all valid accels need to have a intersectN/occludedN */
+      /* check for common direction */
+      if (unlikely(!chunkFallback))
+      {
+        vfloatx min_x(pos_inf), max_x(neg_inf);
+        vfloatx min_y(pos_inf), max_y(neg_inf);
+        vfloatx min_z(pos_inf), max_z(neg_inf);
+        vboolx all_active(true);
+        for (size_t s=0; s<streams; s++)
+        {
+          const size_t offset = s*stream_offset;
+          RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)(rayData + offset);
+          min_x = min(min_x,ray.dir.x);
+          min_y = min(min_y,ray.dir.y);
+          min_z = min(min_z,ray.dir.z);
+          max_x = max(max_x,ray.dir.x);
+          max_y = max(max_y,ray.dir.y);
+          max_z = max(max_z,ray.dir.z);
+          all_active &= ray.tnear <= ray.tfar;
+#if defined(EMBREE_IGNORE_INVALID_RAYS)
+          all_active &= ray.valid();
+#endif
+        }
+        const bool commonDirection =                                    \
+          (all(max_x < vfloatx(zero)) || all(min_x >= vfloatx(zero))) &&
+          (all(max_y < vfloatx(zero)) || all(min_y >= vfloatx(zero))) &&
+          (all(max_z < vfloatx(zero)) || all(min_z >= vfloatx(zero)));
+
+        /* fallback to chunk in case of non-common directions */
+        chunkFallback |= !commonDirection || !all(all_active);
+      }
+
+      /* fallback to chunk if necessary */
+      if (unlikely(chunkFallback))
       {
         for (size_t s=0; s<streams; s++)
         {
