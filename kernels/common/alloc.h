@@ -310,7 +310,9 @@ namespace embree
       }
     }
 
-    static const size_t threadLocalAllocOverhead = 20; //! 20 means 5% parallel allocation overhead
+    static const size_t threadLocalAllocOverhead = 20; //! 20 means 5% parallel allocation overhead through unfilled thread local blocks
+    static const size_t mainAllocOverheadStatic = 20;  //! 20 means 5% allocation overhead through unfilled main alloc blocks
+    static const size_t mainAllocOverheadDynamic = 8;  //! 20 means 12.5% allocation overhead through unfilled main alloc blocks
 
     /* calculates a single threaded threshold for the builders such
      * that for small scenes the overhead of partly allocated blocks
@@ -341,7 +343,8 @@ namespace embree
     /*! initializes the grow size */
     __forceinline void initGrowSizeAndNumSlots(size_t bytesEstimated, bool single_mode, bool compact, bool fast) 
     {
-      size_t blockSize = alignSize(bytesEstimated/(fast ? 8 : 20));
+      size_t mainAllocOverhead = fast ? mainAllocOverheadDynamic : mainAllocOverheadStatic;
+      size_t blockSize = alignSize(bytesEstimated/mainAllocOverhead);
       growSize = maxGrowSize = clamp(blockSize,size_t(10*128),maxAllocationSize);
       defaultBlockSize       = clamp(blockSize,size_t(10*128),size_t(PAGE_SIZE+maxAlignment));
 
@@ -355,9 +358,9 @@ namespace embree
       log2_grow_size_scale = 0;
       slotMask = 0x0;
       if (!compact) {
-        if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesEstimated >  8*maxAllocationSize) slotMask = 0x1;
-        if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesEstimated > 32*maxAllocationSize) slotMask = 0x3;
-        if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesEstimated > 64*maxAllocationSize) slotMask = 0x7;
+        if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesEstimated > 2*mainAllocOverhead*growSize) slotMask = 0x1;
+        if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesEstimated > 4*mainAllocOverhead*growSize) slotMask = 0x3;
+        if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesEstimated > 8*mainAllocOverhead*growSize) slotMask = 0x7;
       }
       
       if (device->alloc_main_block_size != 0) growSize = device->alloc_main_block_size;
