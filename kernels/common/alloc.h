@@ -322,12 +322,16 @@ namespace embree
       if (numPrimitives == 0 || bytesEstimated == 0) 
         return defaultThreshold;
 
-      size_t threadCount = TaskScheduler::threadCount();
-      size_t singleThreadBytes = threadLocalAllocOverhead*defaultBlockSize;
-      if (!use_single_mode) singleThreadBytes *= 2;
+      /* calculate block size in bytes to fulfill threadLocalAllocOverhead constraint */
+      const size_t single_mode_factor = use_single_mode ? 2 : 1;
+      const size_t threadCount = TaskScheduler::threadCount();
+      const size_t singleThreadBytes = single_mode_factor*threadLocalAllocOverhead*defaultBlockSize;
 
+      /* if we do not have to limit number of threads use optimal thresdhold */
       if ( (bytesEstimated+(singleThreadBytes-1))/singleThreadBytes >= threadCount)
         return defaultThreshold;
+
+      /* otherwise limit number of threads by calculating proper single thread threshold */
       else {
         double bytesPerPrimitive = double(bytesEstimated)/double(numPrimitives);
         return size_t(ceil(branchingFactor*singleThreadBytes/bytesPerPrimitive)); 
@@ -343,25 +347,42 @@ namespace embree
     /*! initializes the grow size */
     __forceinline void initGrowSizeAndNumSlots(size_t bytesEstimated, bool single_mode, bool compact, bool fast) 
     {
+      use_single_mode = false; //!fast && bytesEstimated < 100000;
+      const size_t single_mode_factor = use_single_mode ? 2 : 1;
+  
+      /* calculate growSize such that at most mainAllocationOverhead gets wasted when a block stays unused */
       size_t mainAllocOverhead = fast ? mainAllocOverheadDynamic : mainAllocOverheadStatic;
       size_t blockSize = alignSize(bytesEstimated/mainAllocOverhead);
       growSize = maxGrowSize = clamp(blockSize,size_t(1024),maxAllocationSize);
-      defaultBlockSize       = clamp(blockSize,size_t(1024),size_t(PAGE_SIZE+maxAlignment));
 
-      size_t threadCount = TaskScheduler::threadCount();
-      size_t singleThreadBytes = threadLocalAllocOverhead*PAGE_SIZE;
-      if ( (bytesEstimated+(singleThreadBytes-1))/singleThreadBytes >= threadCount)
-        defaultBlockSize = min(max(size_t(4096),bytesEstimated/(threadLocalAllocOverhead*threadCount)),growSize);
-
-      use_single_mode = false; //!fast && bytesEstimated < 100000;
-      if (bytesEstimated == 0) maxGrowSize = maxAllocationSize; // special mode if builder cannot estimate tree size
-      log2_grow_size_scale = 0;
+      /* if we reached the maxAllocationSize for growSize, we can
+       * increase the number of allocation slots by still guaranteeing
+       * the mainAllocationOverhead */
       slotMask = 0x0;
       if (!compact) {
         if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesEstimated > 2*mainAllocOverhead*growSize) slotMask = 0x1;
         if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesEstimated > 4*mainAllocOverhead*growSize) slotMask = 0x3;
         if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesEstimated > 8*mainAllocOverhead*growSize) slotMask = 0x7;
       }
+
+      /* set the thread local alloc block size */
+      size_t threadCount = TaskScheduler::threadCount();
+      size_t defaultBlockSizeSwitch = PAGE_SIZE+maxAlignment;
+      size_t singleThreadBytes = single_mode_factor*threadLocalAllocOverhead*defaultBlockSizeSwitch;
+
+      /* for sufficiently large scene we can increase the defaultBlockSize over the defaultBlockSizeSwitch size */
+      if ( (bytesEstimated+(singleThreadBytes-1))/singleThreadBytes >= threadCount)
+        defaultBlockSize = min(max(defaultBlockSizeSwitch,bytesEstimated/(single_mode_factor*threadLocalAllocOverhead*threadCount)),growSize);
+
+      /* otherwise we grow the defaultBlockSize up to defaultBlockSizeSwitch */
+      else
+        defaultBlockSize = clamp(blockSize,size_t(1024),defaultBlockSizeSwitch);
+
+      if (bytesEstimated == 0) {
+        maxGrowSize = maxAllocationSize; // special mode if builder cannot estimate tree size
+        defaultBlockSize = defaultBlockSizeSwitch;
+      }
+      log2_grow_size_scale = 0;
       
       if (device->alloc_main_block_size != 0) growSize = device->alloc_main_block_size;
       if (device->alloc_num_main_slots >= 1 ) slotMask = 0x1;
@@ -952,7 +973,7 @@ namespace embree
     size_t estimatedSize;
     size_t growSize;
     size_t maxGrowSize;
-    std::atomic<size_t> log2_grow_size_scale; //!< log2 of scaling factor for grow size
+    std::atomic<size_t> log2_grow_size_scale; //!< log2 of scaling factor for grow size // FIXME: remove
     std::atomic<size_t> bytesUsed;
     std::atomic<size_t> bytesFree;
     std::atomic<size_t> bytesWasted;
