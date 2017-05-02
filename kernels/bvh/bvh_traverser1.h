@@ -251,8 +251,8 @@ namespace embree
         const vllong8  ptr_tmp_B2  = select(vboold8(m_dist3), c3, ptr_A1);
 
         const vboolf16 m_dist4     = dist_B1 <= dist_tmp_B2;
-        const vfloat16 dist_B2     = select(m_dist4, dist_B2 , dist_tmp_B2);
-        const vfloat16 dist_tmp_C2 = select(m_dist4, dist_tmp_B2, dist_B2);
+        const vfloat16 dist_B2     = select(m_dist4, dist_B1 , dist_tmp_B2);
+        const vfloat16 dist_tmp_C2 = select(m_dist4, dist_tmp_B2, dist_B1);
         const vllong8  ptr_B2      = select(vboold8(m_dist4), ptr_B1, ptr_tmp_B2);
         const vllong8  ptr_tmp_C2  = select(vboold8(m_dist4), ptr_tmp_B2, ptr_B1);
 
