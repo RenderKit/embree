@@ -126,6 +126,14 @@ namespace embree
     }
   }
 
+  void QuadMesh::preCommit () 
+  {
+    /* verify that stride of all time steps are identical */
+    for (size_t t=0; t<numTimeSteps; t++)
+      if (vertices[t].getStride() != vertices[0].getStride())
+        throw_RTCError(RTC_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
+  }
+
   void QuadMesh::postCommit () 
   {
     scene->vertices[geomID] = (int*) vertices0.getPtr();

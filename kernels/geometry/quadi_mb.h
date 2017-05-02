@@ -77,18 +77,22 @@ namespace embree
     __forceinline vint<M> primID() const { return primIDs; }
     __forceinline int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
+#if 0
      __forceinline Vec3fa& getVertex(const vint<M> &v, const size_t index, const Scene *const scene) const
     {
       const QuadMesh* mesh = scene->get<QuadMesh>(geomID(index));
       return *(Vec3fa*)mesh->vertexPtr(v[index]);
     }
+#endif
 
     template<typename T>
       __forceinline Vec3<T> getVertex(const vint<M> &v, const size_t index, const Scene *const scene, const size_t itime, const T& ftime) const
     {
       const QuadMesh* mesh = scene->get<QuadMesh>(geomID(index));
-      const Vec3fa v0 = *(Vec3fa*)mesh->vertexPtr(v[index],itime+0);
-      const Vec3fa v1 = *(Vec3fa*)mesh->vertexPtr(v[index],itime+1);
+      const int* vertices0 = (const int*) mesh->vertexPtr(0,itime+0);
+      const int* vertices1 = (const int*) mesh->vertexPtr(0,itime+1);
+      const Vec3fa v0 = Vec3fa::loadu(vertices0+v[index]);
+      const Vec3fa v1 = Vec3fa::loadu(vertices1+v[index]);
       const Vec3<T> p0(v0.x,v0.y,v0.z);
       const Vec3<T> p1(v1.x,v1.y,v1.z);
       return lerp(p0,p1,ftime);
@@ -102,8 +106,10 @@ namespace embree
       
       for (size_t mask=movemask(valid), i=__bsf(mask); mask; mask=__btc(mask,i), i=__bsf(mask))
       {
-        const Vec3fa& v0 = *(Vec3fa*)mesh->vertexPtr(v[index],itime[i]+0);
-        const Vec3fa& v1 = *(Vec3fa*)mesh->vertexPtr(v[index],itime[i]+1);
+        const int* vertices0 = (const int*) mesh->vertexPtr(0,itime[i]+0);
+        const int* vertices1 = (const int*) mesh->vertexPtr(0,itime[i]+1);
+        const Vec3fa v0 = Vec3fa::loadu(vertices0+v[index]);
+        const Vec3fa v1 = Vec3fa::loadu(vertices1+v[index]);
         p0.x[i] = v0.x; p0.y[i] = v0.y; p0.z[i] = v0.z;
         p1.x[i] = v1.x; p1.y[i] = v1.y; p1.z[i] = v1.z;
       }
@@ -166,15 +172,11 @@ namespace embree
       BBox3fa bounds = empty;
       for (size_t i=0; i<M && valid(i); i++)
       {
-	const QuadMesh* mesh = scene->get<QuadMesh>(geomID(i));
-        const Vec3fa &p0 = mesh->vertex(v0[i],itime);
-        const Vec3fa &p1 = mesh->vertex(v1[i],itime);
-        const Vec3fa &p2 = mesh->vertex(v2[i],itime);
-        const Vec3fa &p3 = mesh->vertex(v3[i],itime);
-	bounds.extend(p0);
-	bounds.extend(p1);
-	bounds.extend(p2);
-	bounds.extend(p3);
+        const int* vertices = (const int*) scene->get<QuadMesh>(geomID(i))->vertexPtr(0,itime);
+        bounds.extend(Vec3fa::loadu(vertices+v0[i]));
+        bounds.extend(Vec3fa::loadu(vertices+v1[i]));
+        bounds.extend(Vec3fa::loadu(vertices+v2[i]));
+        bounds.extend(Vec3fa::loadu(vertices+v3[i]));
       }
       return bounds;
     }
@@ -220,10 +222,11 @@ namespace embree
 	if (begin<end) {
 	  geomID[i] = prim->geomID();
 	  primID[i] = prim->primID();
-	  v0[i] = q.v[0]; 
-	  v1[i] = q.v[1]; 
-	  v2[i] = q.v[2]; 
-	  v3[i] = q.v[3]; 
+          unsigned int_stride = mesh->vertices0.getStride()/4;
+	  v0[i] = q.v[0] * int_stride; 
+	  v1[i] = q.v[1] * int_stride; 
+	  v2[i] = q.v[2] * int_stride; 
+	  v3[i] = q.v[3] * int_stride; 
 	  begin++;
 	} else {
 	  assert(i);
@@ -257,10 +260,10 @@ namespace embree
     }
 
   public:
-    vint<M> v0;         // index of 1st vertex
-    vint<M> v1;         // index of 2nd vertex
-    vint<M> v2;         // index of 3rd vertex
-    vint<M> v3;         // index of 4th vertex
+    vint<M> v0;         // 4 byte offset of 1st vertex
+    vint<M> v1;         // 4 byte offset of 2nd vertex
+    vint<M> v2;         // 4 byte offset of 3rd vertex
+    vint<M> v3;         // 4 byte offset of 4th vertex
     vint<M> geomIDs;    // geometry ID of mesh
     vint<M> primIDs;    // primitive ID of primitive inside mesh
   };
@@ -276,32 +279,29 @@ namespace embree
                                            const QuadMesh* mesh3,
                                            const vint4& itime) const
   {
-    const vfloat4 a0 = vfloat4::loadu(mesh0->vertexPtr(v0[0],itime[0]));
-    const vfloat4 a1 = vfloat4::loadu(mesh1->vertexPtr(v0[1],itime[1]));
-    const vfloat4 a2 = vfloat4::loadu(mesh2->vertexPtr(v0[2],itime[2]));
-    const vfloat4 a3 = vfloat4::loadu(mesh3->vertexPtr(v0[3],itime[3]));
-
+    const int* vertices0 = (const int*) mesh0->vertexPtr(0,itime[0]);
+    const int* vertices1 = (const int*) mesh1->vertexPtr(0,itime[1]);
+    const int* vertices2 = (const int*) mesh2->vertexPtr(0,itime[2]);
+    const int* vertices3 = (const int*) mesh3->vertexPtr(0,itime[3]);
+    const vfloat4 a0 = vfloat4::loadu(vertices0 + v0[0]);
+    const vfloat4 a1 = vfloat4::loadu(vertices1 + v0[1]);
+    const vfloat4 a2 = vfloat4::loadu(vertices2 + v0[2]);
+    const vfloat4 a3 = vfloat4::loadu(vertices3 + v0[3]);
+    const vfloat4 b0 = vfloat4::loadu(vertices0 + v1[0]);
+    const vfloat4 b1 = vfloat4::loadu(vertices1 + v1[1]);
+    const vfloat4 b2 = vfloat4::loadu(vertices2 + v1[2]);
+    const vfloat4 b3 = vfloat4::loadu(vertices3 + v1[3]);
+    const vfloat4 c0 = vfloat4::loadu(vertices0 + v2[0]);
+    const vfloat4 c1 = vfloat4::loadu(vertices1 + v2[1]);
+    const vfloat4 c2 = vfloat4::loadu(vertices2 + v2[2]);
+    const vfloat4 c3 = vfloat4::loadu(vertices3 + v2[3]);
+    const vfloat4 d0 = vfloat4::loadu(vertices0 + v3[0]);
+    const vfloat4 d1 = vfloat4::loadu(vertices1 + v3[1]);
+    const vfloat4 d2 = vfloat4::loadu(vertices2 + v3[2]);
+    const vfloat4 d3 = vfloat4::loadu(vertices3 + v3[3]);
     transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
-
-    const vfloat4 b0 = vfloat4::loadu(mesh0->vertexPtr(v1[0],itime[0]));
-    const vfloat4 b1 = vfloat4::loadu(mesh1->vertexPtr(v1[1],itime[1]));
-    const vfloat4 b2 = vfloat4::loadu(mesh2->vertexPtr(v1[2],itime[2]));
-    const vfloat4 b3 = vfloat4::loadu(mesh3->vertexPtr(v1[3],itime[3]));
-
     transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
-
-    const vfloat4 c0 = vfloat4::loadu(mesh0->vertexPtr(v2[0],itime[0]));
-    const vfloat4 c1 = vfloat4::loadu(mesh1->vertexPtr(v2[1],itime[1]));
-    const vfloat4 c2 = vfloat4::loadu(mesh2->vertexPtr(v2[2],itime[2]));
-    const vfloat4 c3 = vfloat4::loadu(mesh3->vertexPtr(v2[3],itime[3]));
-
     transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
-
-    const vfloat4 d0 = vfloat4::loadu(mesh0->vertexPtr(v3[0],itime[0]));
-    const vfloat4 d1 = vfloat4::loadu(mesh1->vertexPtr(v3[1],itime[1]));
-    const vfloat4 d2 = vfloat4::loadu(mesh2->vertexPtr(v3[2],itime[2]));
-    const vfloat4 d3 = vfloat4::loadu(mesh3->vertexPtr(v3[3],itime[3]));
-
     transpose(d0,d1,d2,d3,p3.x,p3.y,p3.z);
   }
 
@@ -322,10 +322,8 @@ namespace embree
     vfloat4 ftime;
     const vint4 itime = getTimeSegment(vfloat4(time), numTimeSegments, ftime);
 
-    Vec3vf4 a0,a1,a2,a3;
-    gather(a0,a1,a2,a3,mesh0,mesh1,mesh2,mesh3,itime);
-    Vec3vf4 b0,b1,b2,b3;
-    gather(b0,b1,b2,b3,mesh0,mesh1,mesh2,mesh3,itime+1);
+    Vec3vf4 a0,a1,a2,a3; gather(a0,a1,a2,a3,mesh0,mesh1,mesh2,mesh3,itime);
+    Vec3vf4 b0,b1,b2,b3; gather(b0,b1,b2,b3,mesh0,mesh1,mesh2,mesh3,itime+1);
     p0 = lerp(a0,b0,ftime);
     p1 = lerp(a1,b1,ftime);
     p2 = lerp(a2,b2,ftime);
