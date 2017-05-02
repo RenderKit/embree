@@ -137,6 +137,11 @@ namespace embree
 #endif
     hugepages_success = true;
 
+    alloc_main_block_size = 0;
+    alloc_num_main_slots = 0;
+    alloc_thread_block_size = 0;
+    alloc_single_thread_alloc = -1;
+
     error_function = nullptr;
     error_function2 = nullptr;
     error_function_userptr = nullptr;
@@ -404,6 +409,15 @@ namespace embree
         tessellation_cache_size = size_t(cin->get().Float()*1024.0f*1024.0f);
       else if (tok == Token::Id("cache_size") && cin->trySymbol("="))
         tessellation_cache_size = size_t(cin->get().Float()*1024.0f*1024.0f);
+
+      else if (tok == Token::Id("alloc_main_block_size") && cin->trySymbol("="))
+        alloc_main_block_size = cin->get().Int();
+       else if (tok == Token::Id("alloc_num_main_slots") && cin->trySymbol("="))
+        alloc_num_main_slots = cin->get().Int();
+       else if (tok == Token::Id("alloc_thread_block_size") && cin->trySymbol("="))
+         alloc_thread_block_size = cin->get().Int();
+       else if (tok == Token::Id("alloc_single_thread_alloc") && cin->trySymbol("="))
+         alloc_single_thread_alloc = cin->get().Int();
 
       cin->trySymbol(","); // optional , separator
     }

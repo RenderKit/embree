@@ -138,6 +138,12 @@ namespace embree
     bool hugepages_success;                //!< status for enabling huge pages
 
   public:
+    size_t alloc_main_block_size;          //!< main allocation block size (shared between threads)
+    int alloc_num_main_slots;              //!< number of such shared blocks to be used to allocate
+    size_t alloc_thread_block_size;        //!< size of thread local allocator block size
+    int alloc_single_thread_alloc;         //!< in single mode nodes and leaves use same thread local allocator
+
+  public:
     struct ErrorHandler
     {
     public:

@@ -347,6 +347,13 @@ namespace embree
         if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesEstimated > 32*maxAllocationSize) slotMask = 0x3;
         if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesEstimated > 64*maxAllocationSize) slotMask = 0x7;
       }
+      
+      if (device->alloc_main_block_size != 0) growSize = device->alloc_main_block_size;
+      if (device->alloc_num_main_slots >= 1 ) slotMask = 0x1;
+      if (device->alloc_num_main_slots >= 4 ) slotMask = 0x3;
+      if (device->alloc_num_main_slots >= 8 ) slotMask = 0x7;
+      if (device->alloc_thread_block_size != 0) defaultBlockSize = device->alloc_thread_block_size;
+      if (device->alloc_single_thread_alloc != -1) use_single_mode = device->alloc_single_thread_alloc;
     }
 
 #else
