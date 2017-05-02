@@ -56,7 +56,7 @@ ELSE ()
 
   FIND_PATH(EMBREE_TBB_ROOT include/tbb/tbb.h
     DOC "Root of TBB installation"
-    PATHS ${PROJECT_SOURCE_DIR}/tbb /opt/intel/composerxe/tbb 
+    PATHS ${PROJECT_SOURCE_DIR}/tbb /opt/intel/tbb
     NO_DEFAULT_PATH
   )
   FIND_PATH(EMBREE_TBB_ROOT include/tbb/tbb.h)

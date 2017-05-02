@@ -34,14 +34,16 @@ namespace embree
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene);
-        LineIntersector1<Mx>::intersect(ray,pre,v0,v1,Intersect1EpilogM<M,Mx,filter>(ray,context,line.geomIDs,line.primIDs));
+        const vbool<Mx> valid = line.template valid<Mx>();
+        LineIntersector1<Mx>::intersect(valid,ray,pre,v0,v1,Intersect1EpilogM<M,Mx,filter>(ray,context,line.geomIDs,line.primIDs));
       }
 
       static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line)
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene);
-        return LineIntersector1<Mx>::intersect(ray,pre,v0,v1,Occluded1EpilogM<M,Mx,filter>(ray,context,line.geomIDs,line.primIDs));
+        const vbool<Mx> valid = line.template valid<Mx>();
+        return LineIntersector1<Mx>::intersect(valid,ray,pre,v0,v1,Occluded1EpilogM<M,Mx,filter>(ray,context,line.geomIDs,line.primIDs));
       }
 
       /*! Intersect an array of rays with an array of M primitives. */
@@ -69,14 +71,16 @@ namespace embree
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene,ray.time);
-        LineIntersector1<Mx>::intersect(ray,pre,v0,v1,Intersect1EpilogM<M,Mx,filter>(ray,context,line.geomIDs,line.primIDs));
+        const vbool<Mx> valid = line.template valid<Mx>();
+        LineIntersector1<Mx>::intersect(valid,ray,pre,v0,v1,Intersect1EpilogM<M,Mx,filter>(ray,context,line.geomIDs,line.primIDs));
       }
 
       static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line)
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene,ray.time);
-        return LineIntersector1<Mx>::intersect(ray,pre,v0,v1,Occluded1EpilogM<M,Mx,filter>(ray,context,line.geomIDs,line.primIDs));
+        const vbool<Mx> valid = line.template valid<Mx>();
+        return LineIntersector1<Mx>::intersect(valid,ray,pre,v0,v1,Occluded1EpilogM<M,Mx,filter>(ray,context,line.geomIDs,line.primIDs));
       }
 
       /*! Intersect an array of rays with an array of M primitives. */
@@ -104,7 +108,8 @@ namespace embree
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene);
-        LineIntersectorK<Mx,K>::intersect(ray,k,pre,v0,v1,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomIDs,line.primIDs));
+        const vbool<Mx> valid = line.template valid<Mx>();
+        LineIntersectorK<Mx,K>::intersect(valid,ray,k,pre,v0,v1,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomIDs,line.primIDs));
       }
 
       static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim)
@@ -117,7 +122,8 @@ namespace embree
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene);
-        return LineIntersectorK<Mx,K>::intersect(ray,k,pre,v0,v1,Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomIDs,line.primIDs));
+        const vbool<Mx> valid = line.template valid<Mx>();
+        return LineIntersectorK<Mx,K>::intersect(valid,ray,k,pre,v0,v1,Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomIDs,line.primIDs));
       }
 
       static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim)
@@ -143,7 +149,8 @@ namespace embree
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene,ray.time[k]);
-        LineIntersectorK<Mx,K>::intersect(ray,k,pre,v0,v1,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomIDs,line.primIDs));
+        const vbool<Mx> valid = line.template valid<Mx>();
+        LineIntersectorK<Mx,K>::intersect(valid,ray,k,pre,v0,v1,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomIDs,line.primIDs));
       }
 
       static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim)
@@ -156,7 +163,8 @@ namespace embree
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene,ray.time[k]);
-        return LineIntersectorK<Mx,K>::intersect(ray,k,pre,v0,v1,Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomIDs,line.primIDs));
+        const vbool<Mx> valid = line.template valid<Mx>();
+        return LineIntersectorK<Mx,K>::intersect(valid,ray,k,pre,v0,v1,Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomIDs,line.primIDs));
       }
       
       static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim)
