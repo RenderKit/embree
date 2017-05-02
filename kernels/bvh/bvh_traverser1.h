@@ -131,7 +131,7 @@ namespace embree
     };
 
 
-#if defined(__AVX512F__)
+#if defined(__AVX512ER__)
       __forceinline static void isort_update(vfloat16 &dist, vllong8 &ptr, const vfloat16 &d, const vllong8 &p)
       {
         const vfloat16 dist_shift = align_shift_right<15>(dist,dist);
@@ -169,10 +169,8 @@ namespace embree
         assert(mask != 0);
         const BaseNode* node = cur.baseNode(types);
 
-#if defined(__AVX512CD__)
-
-        const size_t hits = __popcnt(mask);
-        STAT3(normal.trav_hit_boxes[hits],1,1,1);
+#if defined(__AVX512ER__)
+        STAT3(normal.trav_hit_boxes[__popcnt(mask)],1,1,1);
 
         size_t r = __bscf(mask);
         cur = node->child(r);
@@ -238,7 +236,7 @@ namespace embree
         /* 4 hits: order A2 B2 C2 D2 */
 
         const vfloat16 dist_A1  = select(m_dist1, dist_A0, d2);
-
+#if 1
         r = __bscf(mask);
         cur = node->child(r);
         cur.prefetch(types);
@@ -274,17 +272,26 @@ namespace embree
           return;
         }
 
+
         /* >=5 hits: reverse to descending order for writing to stack */
 
-        const vfloat16 dist_A2  = select(m_dist3, dist_A1, d3);
+        const size_t hits = 4 + __popcnt(mask);
 
+        const vfloat16 dist_A2  = select(m_dist3, dist_A1, d3);
+#endif
         vfloat16 dist(neg_inf);
         vllong8 ptr(zero);
 
+#if 1
         isort_quick_update(dist,ptr,dist_A2,ptr_A2);
         isort_quick_update(dist,ptr,dist_B2,ptr_B2);
         isort_quick_update(dist,ptr,dist_C2,ptr_C2);
         isort_quick_update(dist,ptr,dist_D2,ptr_D2);
+#else
+        isort_quick_update(dist,ptr,dist_A1,ptr_A1);
+        isort_quick_update(dist,ptr,dist_B1,ptr_B1);
+        isort_quick_update(dist,ptr,dist_C1,ptr_C1);
+#endif
 
         do {
           const size_t r = __bscf(mask);
@@ -295,6 +302,32 @@ namespace embree
           isort_update(dist,ptr,new_dist,new_ptr);
         } while(mask);
 
+#if 1
+        const vboold8 m_stack_ptr(0x55);  // 10101010 (lsb -> msb)
+        const vboolf16 m_stack_dist(0x4444); // 0010001000100010 (lsb -> msb)
+
+        /* extract current noderef */
+        cur = toScalar(permute(ptr,vllong8(hits-1)));
+        /* rearrange pointers to beginning of 16 bytes block */
+        vllong8 stackElementA0;
+        stackElementA0 = vllong8::expand(m_stack_ptr,ptr,stackElementA0);
+        /* put distances in between */
+        vuint16 stackElementA1((__m512i)stackElementA0);
+        stackElementA1 = vuint16::expand(m_stack_dist,asUInt(dist),stackElementA1);
+        /* write out first 4 x 16 bytes block to stack */
+        vuint16::storeu(stackPtr,stackElementA1);
+        /* get upper half of dist and ptr */
+        dist = align_shift_right<4>(dist,dist);
+        ptr  = align_shift_right<4>(ptr,ptr);
+        /* assemble and write out second block */
+        vllong8 stackElementB0;
+        stackElementB0 = vllong8::expand(m_stack_ptr,ptr,stackElementB0);
+        vuint16 stackElementB1((__m512i)stackElementB0);
+        stackElementB1 = vuint16::expand(m_stack_dist,asUInt(dist),stackElementB1);
+        vuint16::storeu(stackPtr + 4,stackElementB1);
+        /* increase stack pointer */
+        stackPtr += hits-1;
+#else
         for (size_t i=0;i<hits-1;i++)
         {
           stackPtr->ptr  = toScalar(ptr);
@@ -304,6 +337,7 @@ namespace embree
           stackPtr++;
         }
         cur = toScalar(ptr);
+#endif        
 
 #else
         /*! one child is hit, continue with that child */

@@ -44,6 +44,15 @@ namespace embree
         farX  = nearX ^ sizeof(vfloat<N>);
         farY  = nearY ^ sizeof(vfloat<N>);
         farZ  = nearZ ^ sizeof(vfloat<N>);
+
+#if defined(__AVX512ER__) // KNL+
+        /* optimization works only for 8-wide BVHs with 16-wide SIMD */
+        const vint<16> id(step);
+        const vint<16> id2 = align_shift_right<16/2>(id, id);
+        permX = select(vfloat<16>(dir.x) >= 0.0f, id, id2);
+        permY = select(vfloat<16>(dir.y) >= 0.0f, id, id2);
+        permZ = select(vfloat<16>(dir.z) >= 0.0f, id, id2);
+#endif
       }
 
       template<int K>
@@ -62,6 +71,15 @@ namespace embree
         farX  = nearX ^ flip;
         farY  = nearY ^ flip;
         farZ  = nearZ ^ flip;
+
+#if defined(__AVX512ER__) // KNL+
+        /* optimization works only for 8-wide BVHs with 16-wide SIMD */
+        const vint<16> id(step);
+        const vint<16> id2 = align_shift_right<16/2>(id, id);
+        permX = select(vfloat<16>(dir.x) >= 0.0f, id, id2);
+        permY = select(vfloat<16>(dir.y) >= 0.0f, id, id2);
+        permZ = select(vfloat<16>(dir.z) >= 0.0f, id, id2);
+#endif
       }
 
       __forceinline TravRay (const TravRay& ray)
@@ -80,6 +98,15 @@ namespace embree
         farX = ray.farX;
         farY = ray.farY;
         farZ = ray.farZ;
+
+#if defined(__AVX512ER__) // KNL+
+        /* optimization works only for 8-wide BVHs with 16-wide SIMD */
+        const vint<16> id(step);
+        const vint<16> id2 = align_shift_right<16/2>(id, id);
+        permX = select(vfloat<16>(dir.x) >= 0.0f, id, id2);
+        permY = select(vfloat<16>(dir.y) >= 0.0f, id, id2);
+        permZ = select(vfloat<16>(dir.z) >= 0.0f, id, id2);
+#endif
       }
 
       Vec3fa org_xyz, dir_xyz;
@@ -87,6 +114,10 @@ namespace embree
 #if defined(__AVX2__)
       Vec3vf<Nx> org_rdir;
 #endif
+#if defined(__AVX512ER__) // KNL+
+      vint16 permX, permY, permZ;
+#endif
+
       size_t nearX, nearY, nearZ;
       size_t farX, farY, farZ;
     };
@@ -205,6 +236,19 @@ namespace embree
     template<>
       __forceinline size_t intersectNode<8,16>(const typename BVH8::AlignedNode* node, const TravRay<8,16>& ray, const vfloat16& tnear, const vfloat16& tfar, vfloat16& dist)
     {
+#if defined(__AVX512ER__)
+      const vllong8 invalid((size_t)BVH8::emptyNode);
+      const vboold8 m_valid(invalid != vllong8::loadu(node->children));
+      const vfloat16 bminmaxX  = permute(vfloat16::load((const float*)&node->lower_x), ray.permX);
+      const vfloat16 bminmaxY  = permute(vfloat16::load((const float*)&node->lower_y), ray.permY);
+      const vfloat16 bminmaxZ  = permute(vfloat16::load((const float*)&node->lower_z), ray.permZ);
+      const vfloat16 tNearFarX = msub(bminmaxX, ray.rdir.x, ray.org_rdir.x);
+      const vfloat16 tNearFarY = msub(bminmaxY, ray.rdir.y, ray.org_rdir.y);
+      const vfloat16 tNearFarZ = msub(bminmaxZ, ray.rdir.z, ray.org_rdir.z);
+      const vfloat16 tNear     = max(tNearFarX, tNearFarY, tNearFarZ, tnear);
+      const vfloat16 tFar      = min(tNearFarX, tNearFarY, tNearFarZ, tfar);
+      const vbool16 vmask      = le(vboolf16(m_valid),tNear,align_shift_right<8>(tFar, tFar));
+#else
       const vfloat16 tNearX = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+ray.nearX)), ray.rdir.x, ray.org_rdir.x);
       const vfloat16 tNearY = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+ray.nearY)), ray.rdir.y, ray.org_rdir.y);
       const vfloat16 tNearZ = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+ray.nearZ)), ray.rdir.z, ray.org_rdir.z);
@@ -215,6 +259,7 @@ namespace embree
       const vfloat16 tNear  = max(tNearX,tNearY,tNearZ,tnear);
       const vfloat16 tFar   = min(tFarX ,tFarY ,tFarZ ,tfar);
       const vbool16 vmask   = le(vbool16(0xff),tNear,tFar);
+#endif
       const size_t mask     = movemask(vmask);
       dist = tNear;
       return mask;
@@ -811,16 +856,16 @@ namespace embree
     {
       const vfloat16 start_x(node->start.x);
       const vfloat16 scale_x(node->scale.x);
-      const vfloat16 lower_x = madd(vfloat16(node->dequantize<16>(ray.nearX >> 2)),scale_x,start_x);
-      const vfloat16 upper_x = madd(vfloat16(node->dequantize<16>(ray.farX  >> 2)),scale_x,start_x);
+      const vfloat16 lower_x = madd(vfloat16(node->dequantize<4>(ray.nearX >> 2)),scale_x,start_x);
+      const vfloat16 upper_x = madd(vfloat16(node->dequantize<4>(ray.farX  >> 2)),scale_x,start_x);
       const vfloat16 start_y(node->start.y);
       const vfloat16 scale_y(node->scale.y);
-      const vfloat16 lower_y = madd(vfloat16(node->dequantize<16>(ray.nearY >> 2)),scale_y,start_y);
-      const vfloat16 upper_y = madd(vfloat16(node->dequantize<16>(ray.farY  >> 2)),scale_y,start_y);
+      const vfloat16 lower_y = madd(vfloat16(node->dequantize<4>(ray.nearY >> 2)),scale_y,start_y);
+      const vfloat16 upper_y = madd(vfloat16(node->dequantize<4>(ray.farY  >> 2)),scale_y,start_y);
       const vfloat16 start_z(node->start.z);
       const vfloat16 scale_z(node->scale.z);
-      const vfloat16 lower_z = madd(vfloat16(node->dequantize<16>(ray.nearZ >> 2)),scale_z,start_z);
-      const vfloat16 upper_z = madd(vfloat16(node->dequantize<16>(ray.farZ  >> 2)),scale_z,start_z);
+      const vfloat16 lower_z = madd(vfloat16(node->dequantize<4>(ray.nearZ >> 2)),scale_z,start_z);
+      const vfloat16 upper_z = madd(vfloat16(node->dequantize<4>(ray.farZ  >> 2)),scale_z,start_z);
 
       const vfloat16 tNearX = msub(lower_x, ray.rdir.x, ray.org_rdir.x);
       const vfloat16 tNearY = msub(lower_y, ray.rdir.y, ray.org_rdir.y);
@@ -839,19 +884,31 @@ namespace embree
     template<>
       __forceinline size_t intersectNode<8,16>(const typename BVH8::QuantizedNode* node, const TravRay<8,16>& ray, const vfloat16& tnear, const vfloat16& tfar, vfloat16& dist)
     {
+#if defined(__AVX512ER__)
+      const vllong8 invalid((size_t)BVH8::emptyNode);
+      const vboold8 m_valid(invalid != vllong8::loadu(node->children));
+      const vfloat16 bminmaxX = node->dequantizeLowerUpperX<16>(ray.permX);
+      const vfloat16 bminmaxY = node->dequantizeLowerUpperY<16>(ray.permY);
+      const vfloat16 bminmaxZ = node->dequantizeLowerUpperZ<16>(ray.permZ);
+      const vfloat16 tNearFarX = msub(bminmaxX, ray.rdir.x, ray.org_rdir.x);
+      const vfloat16 tNearFarY = msub(bminmaxY, ray.rdir.y, ray.org_rdir.y);
+      const vfloat16 tNearFarZ = msub(bminmaxZ, ray.rdir.z, ray.org_rdir.z);
+      const vfloat16 tNear     = max(tNearFarX, tNearFarY, tNearFarZ, tnear);
+      const vfloat16 tFar      = min(tNearFarX, tNearFarY, tNearFarZ, tfar);
+      const vbool16 vmask      = le(vboolf16(m_valid),tNear,align_shift_right<8>(tFar, tFar));
+#else
       const vfloat16 start_x(node->start.x);
       const vfloat16 scale_x(node->scale.x);
-      const vfloat16 lower_x = madd(vfloat16(node->dequantize<16>(ray.nearX >> 2)),scale_x,start_x);
-      const vfloat16 upper_x = madd(vfloat16(node->dequantize<16>(ray.farX  >> 2)),scale_x,start_x);
+      const vfloat16 lower_x = madd(vfloat16(node->dequantize<8>(ray.nearX >> 2)),scale_x,start_x);
+      const vfloat16 upper_x = madd(vfloat16(node->dequantize<8>(ray.farX  >> 2)),scale_x,start_x);
       const vfloat16 start_y(node->start.y);
       const vfloat16 scale_y(node->scale.y);
-      const vfloat16 lower_y = madd(vfloat16(node->dequantize<16>(ray.nearY >> 2)),scale_y,start_y);
-      const vfloat16 upper_y = madd(vfloat16(node->dequantize<16>(ray.farY  >> 2)),scale_y,start_y);
+      const vfloat16 lower_y = madd(vfloat16(node->dequantize<8>(ray.nearY >> 2)),scale_y,start_y);
+      const vfloat16 upper_y = madd(vfloat16(node->dequantize<8>(ray.farY  >> 2)),scale_y,start_y);
       const vfloat16 start_z(node->start.z);
       const vfloat16 scale_z(node->scale.z);
-      const vfloat16 lower_z = madd(vfloat16(node->dequantize<16>(ray.nearZ >> 2)),scale_z,start_z);
-      const vfloat16 upper_z = madd(vfloat16(node->dequantize<16>(ray.farZ  >> 2)),scale_z,start_z);
-
+      const vfloat16 lower_z = madd(vfloat16(node->dequantize<8>(ray.nearZ >> 2)),scale_z,start_z);
+      const vfloat16 upper_z = madd(vfloat16(node->dequantize<8>(ray.farZ  >> 2)),scale_z,start_z);
       const vfloat16 tNearX = msub(lower_x, ray.rdir.x, ray.org_rdir.x);
       const vfloat16 tNearY = msub(lower_y, ray.rdir.y, ray.org_rdir.y);
       const vfloat16 tNearZ = msub(lower_z, ray.rdir.z, ray.org_rdir.z);
@@ -862,6 +919,7 @@ namespace embree
       const vfloat16 tNear  = max(tNearX,tNearY,tNearZ,tnear);
       const vfloat16 tFar   = min(tFarX ,tFarY ,tFarZ ,tfar);
       const vbool16 vmask   = le(vbool16(0xff),tNear,tFar);
+#endif
       const size_t mask     = movemask(vmask);
       dist = tNear;
       return mask;

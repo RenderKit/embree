@@ -131,6 +131,10 @@ namespace embree
       return _mm512_mask_compress_epi64(a,mask,b);
     }
 
+    static __forceinline vllong8 expand(const vboold8& mask, const vllong8& a, vllong8& b) {
+      return _mm512_mask_expand_epi64(b,mask,a);
+    }
+
     static __forceinline vllong8 broadcast64bit(size_t v) {
       return _mm512_set1_epi64(v);
     }

@@ -99,12 +99,30 @@ namespace embree
       return vint8(il,ih);
     }
 
+    static __forceinline vint8 load( const unsigned short* const ptr ) {
+      vint4 il = vint4::load(ptr+0);
+      vint4 ih = vint4::load(ptr+4);
+      return vint8(il,ih);
+    }
+
+    static __forceinline vint8 loadu( const unsigned short* const ptr ) {
+      vint4 il = vint4::loadu(ptr+0);
+      vint4 ih = vint4::loadu(ptr+4);
+      return vint8(il,ih);
+    }
+
     static __forceinline void store_uchar( unsigned char* const ptr, const vint8& i ) {
       vint4 il(i.vl);
       vint4 ih(i.vh);
       vint4::store_uchar(ptr + 0,il);
       vint4::store_uchar(ptr + 4,ih);
     }
+
+    static __forceinline void store_ushort( unsigned short* const ptr, const vint8& v ) {
+      for (size_t i=0;i<8;i++)
+        ptr[i] = (unsigned short)v[i];
+    }
+
 
     static __forceinline vint8 broadcast64(const long long &a) { return _mm256_set1_epi64x(a); }
     

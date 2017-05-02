@@ -129,6 +129,11 @@ namespace embree
 #endif
     }
 
+    static __forceinline void store_uchar( unsigned short* const ptr, const vuint4& v ) {
+      for (size_t i=0;i<4;i++)
+        ptr[i] = (unsigned short)v[i];
+    }
+
     static __forceinline vuint4 load_nt (void* ptr) {
 #if defined(__SSE4_1__)
       return _mm_stream_load_si128((__m128i*)ptr); 

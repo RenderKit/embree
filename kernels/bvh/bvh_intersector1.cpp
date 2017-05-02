@@ -78,8 +78,14 @@ namespace embree
         NodeRef cur = NodeRef(stackPtr->ptr);
 
         /*! if popped node is too far, pop next one */
+#if defined(__AVX512ER__)
+        /* much faster on KNL */
+        if (unlikely(any(vfloat<Nx>(*(float*)&stackPtr->dist) > ray_far))) 
+          continue;
+#else
         if (unlikely(*(float*)&stackPtr->dist > ray.tfar))
           continue;
+#endif
 
         /* downtraversal loop */
         while (true)
@@ -116,15 +122,6 @@ namespace embree
           stackPtr->dist = neg_inf;
           stackPtr++;
         }
-
-        // perform stack compaction
-        /*StackItemT<NodeRef>* left=stack;
-        for (StackItemT<NodeRef>* right=stack; right<stackPtr; right++) 
-        {
-          if (*(float*)&right->dist >= ray.tfar) continue;
-          *left = *right; left++;
-        }
-        stackPtr = left;*/
       }
       AVX_ZERO_UPPER();
     }
