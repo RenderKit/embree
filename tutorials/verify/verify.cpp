@@ -1230,7 +1230,7 @@ namespace embree
       switch (gtype)
       {
       case TRIANGLE_MESH: switch (sflags) {
-        case RTC_SCENE_STATIC : return avx ?  69.0f*NN :  60.0f*NN; // triangle4
+        case RTC_SCENE_STATIC : return avx ?  70.0f*NN :  63.0f*NN; // triangle4
         case RTC_SCENE_ROBUST : return avx ?  70.0f*NN :  63.0f*NN; // triangle4v
         case RTC_SCENE_COMPACT: return avx ?  42.0f*NN :  35.0f*NN; // triangle4i
         case RTC_SCENE_DYNAMIC: return avx ? 131.0f*NN : 117.0f*NN; // triangle4
@@ -1257,8 +1257,8 @@ namespace embree
         }
       
       case HAIR_GEOMETRY: switch (sflags) {
-        case RTC_SCENE_STATIC : return avx2 ?  220.0f*NN : 163.0f*NN; // bezier1v
-        case RTC_SCENE_ROBUST : return avx2 ?  220.0f*NN : 163.0f*NN; // bezier1v
+        case RTC_SCENE_STATIC : return avx2 ?  222.0f*NN : 165.0f*NN; // bezier1v
+        case RTC_SCENE_ROBUST : return avx2 ?  222.0f*NN : 165.0f*NN; // bezier1v
         case RTC_SCENE_COMPACT: return avx2 ?  160.0f*NN : 105.0f*NN; // bezier1i
         default: return inf;
         }
@@ -1363,8 +1363,8 @@ namespace embree
       case LINE_GEOMETRY:    
       case LINE_GEOMETRY_MB: 
       case HAIR_GEOMETRY:
-      case HAIR_GEOMETRY_MB: maxN = 1000000; break;
-      default: maxN = 8000000; break;
+      case HAIR_GEOMETRY_MB: maxN = 250000; break;
+      default: maxN = 1000000; break;
       }
       
       for (size_t N=128; N<maxN; N = (size_t)((float)N * 1.5f)) 
