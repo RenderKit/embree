@@ -385,7 +385,8 @@ namespace embree
       log2_grow_size_scale = 0;
       
       if (device->alloc_main_block_size != 0) growSize = device->alloc_main_block_size;
-      if (device->alloc_num_main_slots >= 1 ) slotMask = 0x1;
+      if (device->alloc_num_main_slots >= 1 ) slotMask = 0x0;
+      if (device->alloc_num_main_slots >= 2 ) slotMask = 0x1;
       if (device->alloc_num_main_slots >= 4 ) slotMask = 0x3;
       if (device->alloc_num_main_slots >= 8 ) slotMask = 0x7;
       if (device->alloc_thread_block_size != 0) defaultBlockSize = device->alloc_thread_block_size;
