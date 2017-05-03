@@ -139,6 +139,14 @@ RTCORE_API unsigned rtcNewUserGeometry3 (RTCScene scene,          /*!< the scene
                                          size_t numGeometries,    /*!< the number of geometries contained in the set */
                                          size_t numTimeSteps = 1  /*!< number of motion blur time steps */);
 
+RTCORE_API unsigned rtcNewUserGeometry4 (RTCScene scene,          /*!< the scene the user geometry set is created in */
+                                         RTCGeometryFlags gflags, //!< geometry flags
+                                         size_t numGeometries,    /*!< the number of geometries contained in the set */
+                                         size_t numTimeSteps = 1, /*!< number of motion blur time steps */
+                                         unsigned int geomID = -1 /*!< optional geometry ID to assign */
+  );
+
+
 /*! Sets the bounding function to calculate bounding boxes of the user
  *  geometry items when building spatial index structures. The
  *  calculated bounding box have to be conservative and should be

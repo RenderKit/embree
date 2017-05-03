@@ -213,20 +213,20 @@ namespace embree
     return rtcSetTransform2(scene,geomID,layout,xfm,timeStep);
   }
   
-  extern "C" unsigned ispcNewUserGeometry (RTCScene scene, RTCGeometryFlags gflags, size_t numItems, size_t numTimeSteps) {
-    return rtcNewUserGeometry3(scene,gflags,numItems,numTimeSteps);
+  extern "C" unsigned ispcNewUserGeometry (RTCScene scene, RTCGeometryFlags gflags, size_t numItems, size_t numTimeSteps, unsigned int geomID) {
+    return rtcNewUserGeometry4(scene,gflags,numItems,numTimeSteps,geomID);
   }
 
-  extern "C" unsigned ispcNewTriangleMesh (RTCScene scene, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) {
-    return rtcNewTriangleMesh((RTCScene)scene,flags,numTriangles,numVertices,numTimeSteps);
+  extern "C" unsigned ispcNewTriangleMesh (RTCScene scene, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps, unsigned int geomID) {
+    return rtcNewTriangleMesh2(scene,flags,numTriangles,numVertices,numTimeSteps,geomID);
   }
 
-  extern "C" unsigned ispcNewQuadMesh (RTCScene scene, RTCGeometryFlags flags, size_t numQuads, size_t numVertices, size_t numTimeSteps) {
-    return rtcNewQuadMesh((RTCScene)scene,flags,numQuads,numVertices,numTimeSteps);
+  extern "C" unsigned ispcNewQuadMesh (RTCScene scene, RTCGeometryFlags flags, size_t numQuads, size_t numVertices, size_t numTimeSteps, unsigned int geomID) {
+    return rtcNewQuadMesh2(scene,flags,numQuads,numVertices,numTimeSteps,geomID);
   }
 
-  extern "C" unsigned ispcNewLineSegments (RTCScene scene, RTCGeometryFlags flags, size_t numSegments, size_t numVertices, size_t numTimeSteps) {
-    return rtcNewLineSegments(scene,flags,numSegments,numVertices,numTimeSteps);
+  extern "C" unsigned ispcNewLineSegments (RTCScene scene, RTCGeometryFlags flags, size_t numSegments, size_t numVertices, size_t numTimeSteps, unsigned int geomID) {
+    return rtcNewLineSegments2(scene,flags,numSegments,numVertices,numTimeSteps,geomID);
   }
 
   extern "C" unsigned ispcNewHairGeometry (RTCScene scene, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) {
@@ -238,9 +238,9 @@ namespace embree
   }
 
   extern "C" unsigned ispcNewSubdivisionMesh (RTCScene scene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, 
-                                              size_t numVertices, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps) 
+                                              size_t numVertices, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps, unsigned int geomID) 
   {
-    return rtcNewSubdivisionMesh(scene,flags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
+    return rtcNewSubdivisionMesh2(scene,flags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps,geomID);
   }
 
   extern "C" void ispcSetRayMask (RTCScene scene, unsigned geomID, int mask) {

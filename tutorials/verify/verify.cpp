@@ -1440,6 +1440,54 @@ namespace embree
     }
   };
 
+  struct UserGeometryIDTest : public VerifyApplication::Test
+  {
+    RTCSceneFlags sflags;
+
+    UserGeometryIDTest (std::string name, int isa, RTCSceneFlags sflags)
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags) {}
+    
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      errorHandler(nullptr,rtcDeviceGetError(device));
+      VerifyScene scene(device,sflags,aflags_all);
+      AssertNoError(device);
+
+      int geom[128];
+      for (size_t i=0; i<128; i++) geom[i] = -1;
+      
+      for (size_t i=0; i<size_t(50*state->intensity); i++) 
+      {
+        for (size_t j=0; j<10; j++) 
+        {
+          int index = random_int()%128;
+          if (geom[index] == -1) {
+            if (random_bool()) {
+              unsigned int geomID = rtcNewTriangleMesh2(scene,RTC_GEOMETRY_STATIC,0,0,1,index);
+              geom[geomID] = geomID;
+              AssertNoError(device);
+            } else {
+              unsigned int geomID = rtcNewTriangleMesh(scene,RTC_GEOMETRY_STATIC,0,0,1);
+              geom[geomID] = geomID;
+              AssertNoError(device);
+            }
+          } else {
+             if (random_bool()) {
+               rtcDeleteGeometry(scene,geom[index]);     
+               AssertNoError(device);
+               geom[index] = -1; 
+             }
+          }
+        }
+        rtcCommit(scene);
+        AssertNoError(device);
+      }
+      return VerifyApplication::PASSED;
+    }
+  };
+
   struct EnableDisableGeometryTest : public VerifyApplication::Test
   {
     RTCSceneFlags sflags;
@@ -4123,6 +4171,11 @@ namespace embree
       push(new TestGroup("new_delete_geometry",true,true));
       for (auto sflags : sceneFlagsDynamic) 
         groups.top()->add(new NewDeleteGeometryTest(to_string(sflags),isa,sflags));
+      groups.pop();
+
+      push(new TestGroup("user_geometry_id",true,true));
+      for (auto sflags : sceneFlagsDynamic) 
+        groups.top()->add(new UserGeometryIDTest(to_string(sflags),isa,sflags));
       groups.pop();
       
       push(new TestGroup("enable_disable_geometry",true,true));
