@@ -591,18 +591,11 @@ namespace embree
 
   unsigned Scene::newGeometryInstance (Geometry* geom_in) 
   {
-    Geometry* geom = new GeometryInstance(this,geom_in);
-    unsigned geomID = add(geom);
-    geom->geomID = geomID;
-    return geomID;
+    return add(new GeometryInstance(this,geom_in));
   }
 
-  unsigned int Scene::newGeometryGroup (RTCGeometryFlags gflags, const std::vector<Geometry*> geometries)
-  {
-    Geometry* geom = new GeometryGroup(this,gflags,geometries);
-    unsigned geomID = add(geom);
-    geom->geomID = geomID;
-    return geomID;
+  unsigned int Scene::newGeometryGroup (RTCGeometryFlags gflags, const std::vector<Geometry*> geometries) {
+    return add(new GeometryGroup(this,gflags,geometries));
   }
 
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
