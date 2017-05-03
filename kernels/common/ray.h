@@ -60,6 +60,26 @@ namespace embree
 
     __forceinline void copy(const size_t dest, const size_t source);
 
+    __forceinline void update(const vbool<K>& m_mask,
+                              const vfloat<K>& new_t,
+                              const vfloat<K>& new_u,
+                              const vfloat<K>& new_v,
+                              const vfloat<K>& new_gnormalx,
+                              const vfloat<K>& new_gnormaly,
+                              const vfloat<K>& new_gnormalz,
+                              const vint<K>& new_geomID,
+                              const vint<K>& new_primID)
+    {
+      vfloat<K>::store(m_mask,(float*)&tfar,new_t);
+      vfloat<K>::store(m_mask,(float*)&u,new_u);
+      vfloat<K>::store(m_mask,(float*)&v,new_v);
+      vfloat<K>::store(m_mask,(float*)&Ng.x,new_gnormalx);
+      vfloat<K>::store(m_mask,(float*)&Ng.y,new_gnormaly);
+      vfloat<K>::store(m_mask,(float*)&Ng.z,new_gnormalz);
+      vint<K>::store(m_mask,(int*)&geomID,new_geomID);
+      vint<K>::store(m_mask,(int*)&primID,new_primID);
+    }
+
     template<int M>
     __forceinline void updateK(const size_t i,
                                const size_t rayIndex,
@@ -174,7 +194,7 @@ namespace embree
     unsigned instID;  // instance ID
 
 #if defined(__AVX512F__)
-    __forceinline void update(const int i,
+    __forceinline void update(const vbool16& m_mask,
                               const vfloat16& new_t,
                               const vfloat16& new_u,
                               const vfloat16& new_v,
@@ -184,9 +204,29 @@ namespace embree
 			      const int new_geomID,
 			      const int new_primID)
     {
-      const vbool16 m_mask(1 << i);
       geomID = new_geomID;
       primID = new_primID;
+
+      vfloat16::storeu_compact_single(m_mask,&tfar,new_t);
+      vfloat16::storeu_compact_single(m_mask,&u,new_u); 
+      vfloat16::storeu_compact_single(m_mask,&v,new_v); 
+      vfloat16::storeu_compact_single(m_mask,&Ng.x,new_gnormalx); 
+      vfloat16::storeu_compact_single(m_mask,&Ng.y,new_gnormaly); 
+      vfloat16::storeu_compact_single(m_mask,&Ng.z,new_gnormalz);       
+    }
+
+    __forceinline void update(const vbool16& m_mask,
+                              const vfloat16& new_t,
+                              const vfloat16& new_u,
+                              const vfloat16& new_v,
+                              const vfloat16& new_gnormalx,
+                              const vfloat16& new_gnormaly,
+                              const vfloat16& new_gnormalz,
+			      const vint16 &new_geomID,
+			      const vint16 &new_primID)
+    {
+      vint16::storeu_compact_single(m_mask,&geomID,new_geomID);
+      vint16::storeu_compact_single(m_mask,&primID,new_primID);
       vfloat16::storeu_compact_single(m_mask,&tfar,new_t);
       vfloat16::storeu_compact_single(m_mask,&u,new_u); 
       vfloat16::storeu_compact_single(m_mask,&v,new_v); 
