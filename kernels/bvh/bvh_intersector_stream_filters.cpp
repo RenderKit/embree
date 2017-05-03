@@ -447,12 +447,14 @@ namespace embree
 
     void RayStream::filterSOP(Scene *scene, const RTCRayNp& _rayN, const size_t N, IntersectContext* context, const bool intersect)
     {
-      /* use packet intersector for coherent ray mode */
+      /* use fast path for coherent ray mode */
+#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
       if (unlikely(isCoherent(context->user->flags)))
       {
         filterSOPCoherent(scene, _rayN, N, context, intersect);
         return;
       }
+#endif
       
       /* otherwise use stream intersector */
       RayPN& rayN = *(RayPN*)&_rayN;
