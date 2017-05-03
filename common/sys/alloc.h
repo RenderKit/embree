@@ -149,10 +149,6 @@ namespace embree
         IDs.push_back(id);
       }
 
-      __forceinline size_t size() const {
-        return nextID;
-      }
-
     private:
       std::vector<T> IDs;   //!< stores deallocated IDs to be reused
       T nextID;        //!< next ID to use when IDs vector is empty
