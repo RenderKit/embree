@@ -197,11 +197,7 @@ namespace embree
     rtcDeleteScene(scene);
   }
   
-  extern "C" unsigned ispcNewInstance (RTCScene target, RTCScene source) {
-    return rtcNewInstance(target,source);
-  }
-  
-  extern "C" unsigned ispcNewInstance2 (RTCScene target, RTCScene source, size_t numTimeSteps) {
+  extern "C" unsigned ispcNewInstance (RTCScene target, RTCScene source, size_t numTimeSteps) {
     return rtcNewInstance2(target,source,numTimeSteps);
   }
 
@@ -217,15 +213,7 @@ namespace embree
     return rtcSetTransform2(scene,geomID,layout,xfm,timeStep);
   }
   
-  extern "C" unsigned ispcNewUserGeometry (RTCScene scene, size_t numItems) {
-    return rtcNewUserGeometry(scene,numItems);
-  }
-
-  extern "C" unsigned ispcNewUserGeometry2 (RTCScene scene, size_t numItems, size_t numTimeSteps) {
-    return rtcNewUserGeometry2(scene,numItems,numTimeSteps);
-  }
-
-  extern "C" unsigned ispcNewUserGeometry3 (RTCScene scene, RTCGeometryFlags gflags, size_t numItems, size_t numTimeSteps) {
+  extern "C" unsigned ispcNewUserGeometry (RTCScene scene, RTCGeometryFlags gflags, size_t numItems, size_t numTimeSteps) {
     return rtcNewUserGeometry3(scene,gflags,numItems,numTimeSteps);
   }
 
