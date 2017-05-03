@@ -166,9 +166,6 @@ namespace embree
     /* do not inline this function to separate 16-wide and 4/8-wide code paths */
     __noinline void RayStream::filterSOACoherent(Scene *scene, char* rayData, const size_t streams, const size_t stream_offset, IntersectContext* context, const bool intersect)
     {
-      static const size_t MAX_COHERENT_RAY_PACKETS = MAX_RAYS_PER_OCTANT / VSIZEX;
-      __aligned(64) RayK<VSIZEX> *rays_ptr[MAX_RAYS_PER_OCTANT / VSIZEX];
-
       /* all valid accels need to have a intersectN/occludedN */
       bool chunkFallback = scene->isRobust() || !scene->accels.validIsecN();
 
@@ -216,6 +213,9 @@ namespace embree
         }
         return;
       }
+
+      static const size_t MAX_COHERENT_RAY_PACKETS = MAX_RAYS_PER_OCTANT / VSIZEX;
+      __aligned(64) RayK<VSIZEX> *rays_ptr[MAX_RAYS_PER_OCTANT / VSIZEX];
 
       /* prevent SOA to AOS conversion by setting context flag */
       context->flags = IntersectContext::encodeSIMDWidth(VSIZEX);
@@ -346,15 +346,13 @@ namespace embree
       RayPN& rayN = *(RayPN*)&_rayN;
       size_t rayStartIndex = 0;
 
-      size_t s = 0;
-      size_t stream_offset = 0;
       const size_t numPackets = (N+VSIZEX-1) / VSIZEX;
       rayStartIndex += numPackets * VSIZEX;
       for (size_t i=0; i<numPackets * VSIZEX; i+=VSIZEX)
       {
         const vintx vi = vintx(int(i))+vintx(step);
         vboolx valid = vi < vintx(int(N));
-        const size_t offset = s*stream_offset + sizeof(float) * i;
+        const size_t offset = sizeof(float) * i;
         RayK<VSIZEX> ray = rayN.gather<VSIZEX>(valid,offset);
         valid &= ray.tnear <= ray.tfar;
         if (intersect) scene->intersect(valid,ray,context);
