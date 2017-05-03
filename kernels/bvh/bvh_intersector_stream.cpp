@@ -355,7 +355,7 @@ namespace embree
       }
       else
       {
-        assert(context->getInputSIMDWidth() == K);
+        assert(context->getInputSOAWidth() == K);
         /* stream tracer as fast path */
         BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherentSOA(bvh, (RayK<K>**)inputRays, numTotalRays, context);
       }
@@ -379,7 +379,7 @@ namespace embree
       }
       else
       {
-        assert(context->getInputSIMDWidth() == K);
+        assert(context->getInputSOAWidth() == K);
         BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherentSOA(bvh, (RayK<K>**)inputRays, numTotalRays, context);
       }
     }

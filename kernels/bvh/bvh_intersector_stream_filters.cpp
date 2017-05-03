@@ -217,8 +217,8 @@ namespace embree
       static const size_t MAX_COHERENT_RAY_PACKETS = MAX_RAYS_PER_OCTANT / VSIZEX;
       __aligned(64) RayK<VSIZEX> *rays_ptr[MAX_RAYS_PER_OCTANT / VSIZEX];
 
-      /* prevent SOA to AOS conversion by setting context flag */
-      context->flags = IntersectContext::encodeSIMDWidth(VSIZEX);
+      /* set input layout to SOA */
+      context->setInputSOA(VSIZEX);
       size_t numStreams = 0;
 
       for (size_t s=0; s<streams; s++)
@@ -409,8 +409,8 @@ namespace embree
       __aligned(64) RayK<VSIZEX> rays[MAX_COHERENT_RAY_PACKETS];
       __aligned(64) RayK<VSIZEX>* rays_ptr[MAX_COHERENT_RAY_PACKETS];
 
-      /* prevent SOA to AOS conversion by setting context flag */
-      context->flags = IntersectContext::encodeSIMDWidth(VSIZEX);
+      /* set input layout to SOA */
+      context->setInputSOA(VSIZEX);
 
       for (size_t i = 0; i < N; i += MAX_COHERENT_RAY_PACKETS * VSIZEX)
       {
