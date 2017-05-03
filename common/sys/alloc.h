@@ -18,6 +18,7 @@
 
 #include "platform.h"
 #include <vector>
+#include <set>
 
 namespace embree
 {
@@ -127,13 +128,13 @@ namespace embree
       IDPool ()
       : nextID(0) {}
 
-      __forceinline T allocate() 
+      T allocate() 
       {
         /* return ID from list */
-        if (IDs.size()) 
+        if (!IDs.empty()) 
         {
-          T id = IDs.back();
-          IDs.pop_back();
+          T id = *IDs.begin();
+          IDs.erase(IDs.begin());
           return id;
         } 
 
@@ -143,15 +144,38 @@ namespace embree
         }
       }
 
-      __forceinline void deallocate( T id ) 
+      /* adds an ID provided by the user */
+      bool add(T id)
+      {
+        /* check if ID should be in IDs set */
+        if (id < nextID) {
+          auto p = IDs.find(id);
+          if (p == IDs.end()) return false;
+          IDs.erase(p);
+          return true;
+        }
+
+        /* otherwise increase ID set */
+        else
+        {
+          for (T i=nextID; i<id; i++) {
+            IDs.insert(i);
+          }
+          nextID = id+1;
+          return true;
+        }
+      }
+
+      void deallocate( T id ) 
       {
         assert(id < nextID);
-        IDs.push_back(id);
+        MAYBE_UNUSED auto done = IDs.insert(id).second;
+        assert(done);
       }
 
     private:
-      std::vector<T> IDs;   //!< stores deallocated IDs to be reused
-      T nextID;        //!< next ID to use when IDs vector is empty
+      std::set<T> IDs;   //!< stores deallocated IDs to be reused
+      T nextID;          //!< next ID to use when IDs vector is empty
     };
 }
 
