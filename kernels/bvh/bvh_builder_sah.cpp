@@ -43,8 +43,6 @@
 #define PROFILE 0
 #define PROFILE_RUNS 20
 
-#define SINGLE_THREADED_BYTES (19*4096)
-
 namespace embree
 {
   namespace isa
@@ -440,7 +438,7 @@ namespace embree
       {
 	/* skip build for empty scene */
         const size_t numPrimitives = scene->getNumPrimitives<Mesh,true>();
-        if (numPrimitives == 0) {  bvh->clear();  return; }
+        if (numPrimitives == 0) { bvh->clear(); return; }
         
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderMBlurSAH");
 
@@ -595,12 +593,13 @@ namespace embree
         PrimInfo pinfo = mesh ? 
           createPrimRefArray<Mesh>  (mesh ,prims0,bvh->scene->progressInterface) : 
           createPrimRefArray<Mesh,false>(scene,prims0,bvh->scene->progressInterface);
-        
+
+        Splitter splitter(scene);
+
         /* enable os_malloc for static scenes or dynamic scenes with static geometry */
         if (mesh == NULL || mesh->isStatic())
           bvh->alloc.setOSallocation(true);
 
-        Splitter splitter(scene);
         const size_t node_bytes = pinfo.size()*sizeof(typename BVH::AlignedNode)/(4*N);
         const size_t leaf_bytes = size_t(1.2*Primitive::blocks(pinfo.size())*sizeof(Primitive));
         bvh->alloc.init_estimate(node_bytes+leaf_bytes);

@@ -274,36 +274,13 @@ namespace embree
             /* spawn tasks */
             if (current.size() > singleThreadThreshold)
             {
-#if 0 //defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
-
-              /* calculate ranges to more accurately fulfill singleThreadThreshold */
-              int numRanges = 0;
-              range<int> ranges[MAX_BRANCHING_FACTOR];
-              for (size_t i=0, j=0, sum=0; i<numChildren; i++) {
-                sum += children[i].size();
-                if (sum > singleThreadThreshold || i+1 == numChildren) {
-                  ranges[numRanges++] = range<int>(j,i+1);
-                  j = i+1; sum = 0;
-                }
-              }
-
-              /* parallel execution of large subtrees */
-              parallel_for(numRanges, [&] ( size_t r ) {
-                  for (size_t i=ranges[r].begin(); i<ranges[r].end(); i++) {
+              /*! parallel_for is faster than spawing sub-tasks */
+              parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) { // FIXME: no range here
+                  for (size_t i=r.begin(); i<r.end(); i++) {
                     values[i] = recurse(children[i],nullptr,true);
                     _mm_mfence(); // to allow non-temporal stores during build
                   }
                 });
-
-#else
-
-              /* parallel execution of large subtrees */
-              parallel_for(numChildren, [&] ( size_t i ) {
-                  values[i] = recurse(children[i],nullptr,true);
-                  _mm_mfence(); // to allow non-temporal stores during build
-                });
-
-#endif
 
               return updateNode(current,children,node,values,numChildren);
             }
