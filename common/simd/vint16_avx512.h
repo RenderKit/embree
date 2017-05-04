@@ -94,7 +94,8 @@ namespace embree
 
     static __forceinline vint16 load (const void* addr) { return _mm512_load_si512((int*)addr); }
 
-    static __forceinline const vint16 load( const unsigned char* const ptr ) { return _mm512_cvtepu8_epi32(_mm_load_si128((__m128i*)ptr)); }
+    static __forceinline const vint16 load( const unsigned char*  const ptr ) { return _mm512_cvtepu8_epi32(_mm_load_si128((__m128i*)ptr)); }
+    static __forceinline const vint16 load( const unsigned short* const ptr ) { return _mm512_cvtepu16_epi32(*(__m256i*)ptr); }
 
     static __forceinline vint16 loadu(const void* addr) { return _mm512_loadu_si512(addr); }
 
@@ -129,6 +130,10 @@ namespace embree
 
     static __forceinline vint16 compact(const vboolf16& mask, const vint16 &a, vint16 &b) {
       return _mm512_mask_compress_epi32(a,mask,b);
+    }
+
+    static __forceinline vint16 expand(const vboolf16& mask, const vint16& a, vint16& b) {
+      return _mm512_mask_expand_epi32(b,mask,a);
     }
 
     static __forceinline vint16 broadcast64bit(size_t v) {

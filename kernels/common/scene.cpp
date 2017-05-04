@@ -180,6 +180,7 @@ namespace embree
     else if (device->tri_accel == "bvh8.triangle4v")      accels.add(device->bvh8_factory->BVH8Triangle4v(this));
     else if (device->tri_accel == "bvh8.triangle4i")      accels.add(device->bvh8_factory->BVH8Triangle4i(this));
     else if (device->tri_accel == "qbvh8.triangle4i")     accels.add(device->bvh8_factory->BVH8QuantizedTriangle4i(this));
+    else if (device->tri_accel == "qbvh8.triangle4")      accels.add(device->bvh8_factory->BVH8QuantizedTriangle4(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown triangle acceleration structure "+device->tri_accel);
 #endif
@@ -562,7 +563,7 @@ namespace embree
   }
 
 #if defined(EMBREE_GEOMETRY_USER)
-  unsigned Scene::newUserGeometry (RTCGeometryFlags gflags, size_t items, size_t numTimeSteps) 
+  unsigned Scene::newUserGeometry (unsigned geomID, RTCGeometryFlags gflags, size_t items, size_t numTimeSteps) 
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
@@ -574,38 +575,31 @@ namespace embree
       return -1;
     }
 
-    return add(new UserGeometry(this,gflags,items,numTimeSteps));
+    return bind(geomID, new UserGeometry(this,gflags,items,numTimeSteps));
   }
 
-  unsigned Scene::newInstance (Scene* scene, size_t numTimeSteps) 
+  unsigned Scene::newInstance (unsigned geomID, Scene* scene, size_t numTimeSteps) 
   {
     if (numTimeSteps == 0 || numTimeSteps > RTC_MAX_TIME_STEPS) {
       throw_RTCError(RTC_INVALID_OPERATION,"maximal number of timesteps exceeded");
       return -1;
     }
 
-    return add(Instance::create(this,scene,numTimeSteps));
+    return bind(geomID,Instance::create(this,scene,numTimeSteps));
   }
 #endif
 
-  unsigned Scene::newGeometryInstance (Geometry* geom_in) 
+  unsigned Scene::newGeometryInstance (unsigned geomID, Geometry* geom_in) 
   {
-    Geometry* geom = new GeometryInstance(this,geom_in);
-    unsigned geomID = add(geom);
-    geom->geomID = geomID;
-    return geomID;
+    return bind(geomID,new GeometryInstance(this,geom_in));
   }
 
-  unsigned int Scene::newGeometryGroup (RTCGeometryFlags gflags, const std::vector<Geometry*> geometries)
-  {
-    Geometry* geom = new GeometryGroup(this,gflags,geometries);
-    unsigned geomID = add(geom);
-    geom->geomID = geomID;
-    return geomID;
+  unsigned int Scene::newGeometryGroup (unsigned geomID, RTCGeometryFlags gflags, const std::vector<Geometry*> geometries) {
+    return bind(geomID,new GeometryGroup(this,gflags,geometries));
   }
 
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
-  unsigned Scene::newTriangleMesh (RTCGeometryFlags gflags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) 
+  unsigned Scene::newTriangleMesh (unsigned geomID, RTCGeometryFlags gflags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) 
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
@@ -617,12 +611,12 @@ namespace embree
       return -1;
     }
     
-    return add(new TriangleMesh(this,gflags,numTriangles,numVertices,numTimeSteps));
+    return bind(geomID,new TriangleMesh(this,gflags,numTriangles,numVertices,numTimeSteps));
   }
 #endif
 
 #if defined(EMBREE_GEOMETRY_QUADS)
-  unsigned Scene::newQuadMesh (RTCGeometryFlags gflags, size_t numQuads, size_t numVertices, size_t numTimeSteps) 
+  unsigned Scene::newQuadMesh (unsigned geomID, RTCGeometryFlags gflags, size_t numQuads, size_t numVertices, size_t numTimeSteps) 
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
@@ -634,12 +628,12 @@ namespace embree
       return -1;
     }
     
-    return add(new QuadMesh(this,gflags,numQuads,numVertices,numTimeSteps));
+    return bind(geomID, new QuadMesh(this,gflags,numQuads,numVertices,numTimeSteps));
   }
 #endif
 
 #if defined(EMBREE_GEOMETRY_SUBDIV)
-  unsigned Scene::newSubdivisionMesh (RTCGeometryFlags gflags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps) 
+  unsigned Scene::newSubdivisionMesh (unsigned geomID, RTCGeometryFlags gflags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps) 
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
@@ -653,15 +647,15 @@ namespace embree
 
 #if defined(__TARGET_AVX__)
     if (device->hasISA(AVX))
-      return add(new SubdivMeshAVX(this,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps));
+      return bind(geomID,new SubdivMeshAVX(this,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps));
     else 
 #endif
-      return add(new SubdivMesh(this,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps));
+      return bind(geomID,new SubdivMesh(this,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps));
   }
 #endif
 
 #if defined(EMBREE_GEOMETRY_HAIR)
-  unsigned Scene::newCurves (NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
+  unsigned Scene::newCurves (unsigned geomID, NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
@@ -685,12 +679,12 @@ namespace embree
     case NativeCurves::BSPLINE: geom = new CurvesBSpline(this,subtype,basis,gflags,numCurves,numVertices,numTimeSteps); break;
     }
 #endif
-    return add(geom);
+    return bind(geomID,geom);
   }
 #endif
 
 #if defined(EMBREE_GEOMETRY_LINES)
-  unsigned Scene::newLineSegments (RTCGeometryFlags gflags, size_t numSegments, size_t numVertices, size_t numTimeSteps)
+  unsigned Scene::newLineSegments (unsigned geomID, RTCGeometryFlags gflags, size_t numSegments, size_t numVertices, size_t numTimeSteps)
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
@@ -702,21 +696,26 @@ namespace embree
       return -1;
     }
 
-    return add(new LineSegments(this,gflags,numSegments,numVertices,numTimeSteps));
+    return bind(geomID,new LineSegments(this,gflags,numSegments,numVertices,numTimeSteps));
   }
 #endif
 
-  unsigned Scene::add(Geometry* geometry) 
+  unsigned Scene::bind(unsigned geomID, Geometry* geometry) 
   {
     Lock<SpinLock> lock(geometriesMutex);
-    unsigned id = id_pool.allocate();
-    if (id >= geometries.size()) {
-      geometries.resize(id+1);
-      vertices.resize(id+1);
+    if (geomID == RTC_INVALID_GEOMETRY_ID)
+      geomID = id_pool.allocate();
+    else {
+      if (!id_pool.add(geomID))
+        throw_RTCError(RTC_INVALID_OPERATION,"provided geometry ID already assigned to a geometry");
     }
-    geometries[id] = geometry;
-    geometry->geomID = id;
-    return id;
+    if (geomID >= geometries.size()) {
+      geometries.resize(geomID+1);
+      vertices.resize(geomID+1);
+    }
+    geometries[geomID] = geometry;
+    geometry->geomID = geomID;
+    return geomID;
   }
 
   void Scene::deleteGeometry(size_t geomID)

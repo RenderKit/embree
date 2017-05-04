@@ -129,31 +129,31 @@ namespace embree
     void clear();
 
     /*! Creates new user geometry. */
-    unsigned int newUserGeometry (RTCGeometryFlags gflags, size_t items, size_t numTimeSteps);
+    unsigned int newUserGeometry (unsigned int geomID, RTCGeometryFlags gflags, size_t items, size_t numTimeSteps);
 
     /*! Creates a new scene instance. */
-    unsigned int newInstance (Scene* scene, size_t numTimeSteps);
+    unsigned int newInstance (unsigned int geomID, Scene* scene, size_t numTimeSteps);
 
     /*! Creates a new geometry instance. */
-    unsigned int newGeometryInstance (Geometry* geom);
+    unsigned int newGeometryInstance (unsigned int geomID, Geometry* geom);
 
     /*! Creates a new geometry group. */
-    unsigned int newGeometryGroup (RTCGeometryFlags gflags, const std::vector<Geometry*> geometries);
+    unsigned int newGeometryGroup (unsigned int geomID, RTCGeometryFlags gflags, const std::vector<Geometry*> geometries);
 
     /*! Creates a new triangle mesh. */
-    unsigned int newTriangleMesh (RTCGeometryFlags flags, size_t maxTriangles, size_t maxVertices, size_t numTimeSteps);
+    unsigned int newTriangleMesh (unsigned int geomID, RTCGeometryFlags flags, size_t maxTriangles, size_t maxVertices, size_t numTimeSteps);
 
     /*! Creates a new quad mesh. */
-    unsigned int newQuadMesh (RTCGeometryFlags flags, size_t maxQuads, size_t maxVertices, size_t numTimeSteps);
+    unsigned int newQuadMesh (unsigned int geomID, RTCGeometryFlags flags, size_t maxQuads, size_t maxVertices, size_t numTimeSteps);
 
     /*! Creates a new collection of quadratic bezier curves. */
-    unsigned int newCurves (NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags flags, size_t maxCurves, size_t maxVertices, size_t numTimeSteps);
+    unsigned int newCurves (unsigned int geomID, NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags flags, size_t maxCurves, size_t maxVertices, size_t numTimeSteps);
 
     /*! Creates a new collection of line segments. */
-    unsigned int newLineSegments (RTCGeometryFlags flags, size_t maxSegments, size_t maxVertices, size_t numTimeSteps);
+    unsigned int newLineSegments (unsigned int geomID, RTCGeometryFlags flags, size_t maxSegments, size_t maxVertices, size_t numTimeSteps);
 
     /*! Creates a new subdivision mesh. */
-    unsigned int newSubdivisionMesh (RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps);
+    unsigned int newSubdivisionMesh (unsigned int geomID, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps);
 
     /*! deletes some geometry */
     void deleteGeometry(size_t geomID);
@@ -168,8 +168,8 @@ namespace embree
     /* return number of geometries */
     __forceinline size_t size() const { return geometries.size(); }
     
-    /* add user geometry to scene */
-    unsigned int add (Geometry* geometry);
+    /* bind geometry to the scene */
+    unsigned int bind (unsigned geomID, Geometry* geometry);
     
     /* determines of the scene is ready to get build */
     bool ready() { return numMappedBuffers == 0; }

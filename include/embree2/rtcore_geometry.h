@@ -185,6 +185,11 @@ RTCORE_API unsigned rtcNewInstance2 (RTCScene target,                  //!< the 
                                      RTCScene source,                  //!< the scene to instantiate
                                      size_t numTimeSteps = 1);         //!< number of timesteps, one matrix per timestep
 
+RTCORE_API unsigned rtcNewInstance3 (RTCScene target,                  //!< the scene the instance belongs to
+                                     RTCScene source,                  //!< the scene to instantiate
+                                     size_t numTimeSteps = 1,          //!< number of timesteps, one matrix per timestep
+                                     unsigned int geomID = -1);        //!< optional geometry ID to assign
+
 /*! \brief Creates a new geometry instance. 
 
   WARNING: This function is deprecated, do not use it.
@@ -238,6 +243,14 @@ RTCORE_API unsigned rtcNewTriangleMesh (RTCScene scene,                    //!< 
                                         size_t numTimeSteps = 1            //!< number of motion blur time steps
   );
 
+RTCORE_API unsigned rtcNewTriangleMesh2 (RTCScene scene,                    //!< the scene the mesh belongs to
+                                         RTCGeometryFlags flags,            //!< geometry flags
+                                         size_t numTriangles,               //!< number of triangles
+                                         size_t numVertices,                //!< number of vertices
+                                         size_t numTimeSteps = 1,           //!< number of motion blur time steps
+                                         unsigned int geomID = -1           //!< optional geometry ID to assign
+  );
+
 
 /*! \brief Creates a new quad mesh. The number of quads (numQuads),
   number of vertices (numVertices), and number of time steps (1 for
@@ -257,6 +270,14 @@ RTCORE_API unsigned rtcNewQuadMesh (RTCScene scene,                //!< the scen
                                     size_t numQuads,               //!< number of quads
                                     size_t numVertices,            //!< number of vertices
                                     size_t numTimeSteps = 1        //!< number of motion blur time steps
+  );
+
+RTCORE_API unsigned rtcNewQuadMesh2(RTCScene scene,                //!< the scene the mesh belongs to
+                                    RTCGeometryFlags flags,        //!< geometry flags
+                                    size_t numQuads,               //!< number of quads
+                                    size_t numVertices,            //!< number of vertices
+                                    size_t numTimeSteps = 1,       //!< number of motion blur time steps
+                                    unsigned int geomID = -1       //!< optional geometry ID to assign
   );
 
 /*! \brief Creates a new subdivision mesh. The number of faces
@@ -326,6 +347,18 @@ RTCORE_API unsigned rtcNewSubdivisionMesh (RTCScene scene,                //!< t
                                            size_t numTimeSteps = 1        //!< number of motion blur time steps
   );
 
+RTCORE_API unsigned rtcNewSubdivisionMesh2(RTCScene scene,                //!< the scene the mesh belongs to
+                                           RTCGeometryFlags flags,        //!< geometry flags
+                                           size_t numFaces,               //!< number of faces
+                                           size_t numEdges,               //!< number of edges
+                                           size_t numVertices,            //!< number of vertices
+                                           size_t numEdgeCreases,         //!< number of edge creases
+                                           size_t numVertexCreases,       //!< number of vertex creases
+                                           size_t numHoles,               //!< number of holes
+                                           size_t numTimeSteps = 1,       //!< number of motion blur time steps
+                                           unsigned int geomID = -1       //!< optional geometry ID to assign
+  );
+
 /*! \brief Creates a new hair geometry consisting of multiple hairs
   represented as cubic bezier curves with varying radii.
 
@@ -380,6 +413,14 @@ RTCORE_API unsigned rtcNewBezierHairGeometry (RTCScene scene,                   
                                               unsigned int numTimeSteps = 1            //!< number of motion blur time steps
   );
 
+RTCORE_API unsigned rtcNewBezierHairGeometry2(RTCScene scene,                    //!< the scene the curves belong to
+                                              RTCGeometryFlags flags,            //!< geometry flags
+                                              unsigned int numCurves,            //!< number of curves
+                                              unsigned int numVertices,          //!< number of vertices
+                                              unsigned int numTimeSteps = 1,     //!< number of motion blur time steps
+                                              unsigned int geomID = -1           //!< optional geometry ID to assign
+  );
+
 /*! \brief Creates a new hair geometry, consisting of multiple hairs
   represented as cubic bspline curves with varying radii. The number
   of curves (numCurves), number of vertices (numVertices), and number
@@ -403,6 +444,14 @@ RTCORE_API unsigned rtcNewBSplineHairGeometry (RTCScene scene,                  
                                                unsigned int numCurves,                  //!< number of curves
                                                unsigned int numVertices,                //!< number of vertices
                                                unsigned int numTimeSteps = 1            //!< number of motion blur time steps
+  );
+
+RTCORE_API unsigned rtcNewBSplineHairGeometry2(RTCScene scene,                    //!< the scene the curves belong to
+                                               RTCGeometryFlags flags,            //!< geometry flags
+                                               unsigned int numCurves,            //!< number of curves
+                                               unsigned int numVertices,          //!< number of vertices
+                                               unsigned int numTimeSteps = 1,     //!< number of motion blur time steps
+                                               unsigned int geomID = -1           //!< optional geometry ID to assign
   );
 
 /*! \brief Creates a new curve geometry, consisting of multiple curves
@@ -456,6 +505,14 @@ RTCORE_API unsigned rtcNewBezierCurveGeometry (RTCScene scene,                  
                                                unsigned int numTimeSteps = 1            //!< number of motion blur time steps
   );
 
+RTCORE_API unsigned rtcNewBezierCurveGeometry2(RTCScene scene,                    //!< the scene the curves belong to
+                                               RTCGeometryFlags flags,            //!< geometry flags
+                                               unsigned int numCurves,            //!< number of curves
+                                               unsigned int numVertices,          //!< number of vertices
+                                               unsigned int numTimeSteps = 1,     //!< number of motion blur time steps
+                                               unsigned int geomID = -1           //!< optional geometry ID to assign
+  );
+
 /*! \brief Creates a new curve geometry, consisting of multiple curves
   represented as cubic bspline curves with varying radii. The
   intersected surface is defined as the sweep of a varying radius
@@ -478,6 +535,14 @@ RTCORE_API unsigned rtcNewBSplineCurveGeometry (RTCScene scene,                 
                                                 unsigned int numCurves,                  //!< number of curves
                                                 unsigned int numVertices,                //!< number of vertices
                                                 unsigned int numTimeSteps = 1            //!< number of motion blur time steps
+  );
+
+RTCORE_API unsigned rtcNewBSplineCurveGeometry2(RTCScene scene,                    //!< the scene the curves belong to
+                                                RTCGeometryFlags flags,            //!< geometry flags
+                                                unsigned int numCurves,            //!< number of curves
+                                                unsigned int numVertices,          //!< number of vertices
+                                                unsigned int numTimeSteps = 1,     //!< number of motion blur time steps
+                                                unsigned int geomID = -1           //!< optional geometry ID to assign
   );
 
 /*! \brief Creates a new line segment geometry, consisting of multiple
@@ -504,6 +569,14 @@ RTCORE_API unsigned rtcNewLineSegments (RTCScene scene,                    //!< 
                                         size_t numSegments,                //!< number of line segments
                                         size_t numVertices,                //!< number of vertices
                                         size_t numTimeSteps = 1            //!< number of motion blur time steps
+  );
+
+RTCORE_API unsigned rtcNewLineSegments2(RTCScene scene,                    //!< the scene the line segments belong to
+                                        RTCGeometryFlags flags,            //!< geometry flags
+                                        size_t numSegments,                //!< number of line segments
+                                        size_t numVertices,                //!< number of vertices
+                                        size_t numTimeSteps = 1,           //!< number of motion blur time steps
+                                        unsigned int geomID = -1           //!< optional geometry ID to assign
   );
 
 /*! Sets a uniform tessellation rate for subdiv meshes and hair

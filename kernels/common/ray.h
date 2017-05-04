@@ -60,6 +60,26 @@ namespace embree
 
     __forceinline void copy(const size_t dest, const size_t source);
 
+    __forceinline void update(const vbool<K>& m_mask,
+                              const vfloat<K>& new_t,
+                              const vfloat<K>& new_u,
+                              const vfloat<K>& new_v,
+                              const vfloat<K>& new_gnormalx,
+                              const vfloat<K>& new_gnormaly,
+                              const vfloat<K>& new_gnormalz,
+                              const vint<K>& new_geomID,
+                              const vint<K>& new_primID)
+    {
+      vfloat<K>::store(m_mask,(float*)&tfar,new_t);
+      vfloat<K>::store(m_mask,(float*)&u,new_u);
+      vfloat<K>::store(m_mask,(float*)&v,new_v);
+      vfloat<K>::store(m_mask,(float*)&Ng.x,new_gnormalx);
+      vfloat<K>::store(m_mask,(float*)&Ng.y,new_gnormaly);
+      vfloat<K>::store(m_mask,(float*)&Ng.z,new_gnormalz);
+      vint<K>::store(m_mask,(int*)&geomID,new_geomID);
+      vint<K>::store(m_mask,(int*)&primID,new_primID);
+    }
+
     template<int M>
     __forceinline void updateK(const size_t i,
                                const size_t rayIndex,
@@ -174,7 +194,7 @@ namespace embree
     unsigned instID;  // instance ID
 
 #if defined(__AVX512F__)
-    __forceinline void update(const int i,
+    __forceinline void update(const vbool16& m_mask,
                               const vfloat16& new_t,
                               const vfloat16& new_u,
                               const vfloat16& new_v,
@@ -184,9 +204,29 @@ namespace embree
 			      const int new_geomID,
 			      const int new_primID)
     {
-      const vbool16 m_mask(1 << i);
       geomID = new_geomID;
       primID = new_primID;
+
+      vfloat16::storeu_compact_single(m_mask,&tfar,new_t);
+      vfloat16::storeu_compact_single(m_mask,&u,new_u); 
+      vfloat16::storeu_compact_single(m_mask,&v,new_v); 
+      vfloat16::storeu_compact_single(m_mask,&Ng.x,new_gnormalx); 
+      vfloat16::storeu_compact_single(m_mask,&Ng.y,new_gnormaly); 
+      vfloat16::storeu_compact_single(m_mask,&Ng.z,new_gnormalz);       
+    }
+
+    __forceinline void update(const vbool16& m_mask,
+                              const vfloat16& new_t,
+                              const vfloat16& new_u,
+                              const vfloat16& new_v,
+                              const vfloat16& new_gnormalx,
+                              const vfloat16& new_gnormaly,
+                              const vfloat16& new_gnormalz,
+			      const vint16 &new_geomID,
+			      const vint16 &new_primID)
+    {
+      vint16::storeu_compact_single(m_mask,&geomID,new_geomID);
+      vint16::storeu_compact_single(m_mask,&primID,new_primID);
       vfloat16::storeu_compact_single(m_mask,&tfar,new_t);
       vfloat16::storeu_compact_single(m_mask,&u,new_u); 
       vfloat16::storeu_compact_single(m_mask,&v,new_v); 
@@ -366,7 +406,7 @@ namespace embree
       ray.geomID = geomID(4*i)[0];
     }
 
-    __forceinline Ray gather(const size_t offset)
+    __forceinline Ray gatherByOffset(const size_t offset)
     {
       Ray ray;
       ray.org.x = orgx(offset)[0];
@@ -385,7 +425,7 @@ namespace embree
     }
 
     template<int K>
-    __forceinline RayK<K> gather(const size_t offset)
+    __forceinline RayK<K> gatherByOffset(const size_t offset)
     {
       RayK<K> ray;
       ray.org.x = vfloat<K>::loadu(orgx(offset));
@@ -403,7 +443,7 @@ namespace embree
       return ray;
     }
 
-    __forceinline void scatter(const size_t offset, const Ray& ray, const bool all)
+    __forceinline void scatterByOffset(const size_t offset, const Ray& ray, const bool all)
     {
       geomID(offset)[0] = ray.geomID;
       if (all && ray.geomID !=  RTC_INVALID_GEOMETRY_ID)
@@ -420,7 +460,7 @@ namespace embree
     }
 
     template<int K>
-    __forceinline void scatter(const vbool<K>& valid_i, const size_t offset, const RayK<K>& ray, const bool all)
+    __forceinline void scatterByOffset(const vbool<K>& valid_i, const size_t offset, const RayK<K>& ray, const bool all)
     {
       vbool<K> valid = valid_i;
       vint<K>::storeu(valid,geomID(offset),ray.geomID);
@@ -439,7 +479,7 @@ namespace embree
       vint<K>  ::storeu(valid,instID(offset),ray.instID);
     }
 
-    __forceinline size_t getOctant(const size_t offset)
+    __forceinline size_t getOctantByOffset(const size_t offset)
     {
       const float dx = dirx(offset)[0];
       const float dy = diry(offset)[0];
@@ -448,7 +488,7 @@ namespace embree
       return octantID;
     }
 
-    __forceinline bool isValid(const size_t offset)
+    __forceinline bool isValidByOffset(const size_t offset)
     {
       const float nnear = tnear(offset)[0];
       const float ffar  = tfar(offset)[0];
@@ -548,7 +588,7 @@ namespace embree
     }
 
     template<int K>
-    __forceinline RayK<K> gather(const vbool<K>& valid, const size_t offset)
+    __forceinline RayK<K> gatherByOffset(const vbool<K>& valid, const size_t offset)
     {
       RayK<K> ray;
       ray.org.x = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)orgx + offset));
@@ -564,6 +604,16 @@ namespace embree
       ray.instID = instID  ? vint<K>::loadu(valid,(const void * __restrict__ )((char*)instID  + offset)) : -1;
       ray.geomID = RTC_INVALID_GEOMETRY_ID;
       return ray;
+    }
+
+    template<int K>
+    __forceinline Vec3vf<K> gatherDirByOffset(const vbool<K>& valid, const size_t offset)
+    {
+      Vec3vf<K> dir;
+      dir.x = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)dirx + offset));
+      dir.y = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)diry + offset));
+      dir.z = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)dirz + offset));
+      return dir;
     }
 
     __forceinline void scatterByOffset(const size_t offset, const Ray& ray, const bool all=true)
@@ -584,7 +634,7 @@ namespace embree
     }
 
     template<int K>
-    __forceinline void scatter(const vbool<K>& valid_i, const size_t offset, const RayK<K>& ray, const bool all=true)
+    __forceinline void scatterByOffset(const vbool<K>& valid_i, const size_t offset, const RayK<K>& ray, const bool all=true)
     {
       vbool<K> valid = valid_i;
       vint<K>::storeu(valid,(int * __restrict__ )((char*)geomID + offset), ray.geomID);
@@ -619,5 +669,12 @@ namespace embree
       return nnear <= ffar;
     }
 
+    template<int K>
+    __forceinline vbool<K> isValidByOffset(const vbool<K>& valid, const size_t offset)
+    {
+      const vfloat<K> nnear = tnear ? vfloat<K>::loadu(valid,(float* __restrict__ )((char*)tnear + offset)) : 0.0f;
+      const vfloat<K> ffar  = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)tfar + offset));
+      return nnear <= ffar;
+    }
   };
 }

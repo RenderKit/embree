@@ -331,7 +331,7 @@ namespace embree
             intersect(*rayN[i],context);
         else
         {
-          assert(context->getInputSIMDWidth() == VSIZEX);
+          assert(context->getInputSOAWidth() == VSIZEX);
           const size_t numPackets = (N+VSIZEX-1)/VSIZEX;
           for (size_t i=0; i<numPackets; i++)
           {
@@ -401,7 +401,7 @@ namespace embree
             occluded(*rayN[i],context);
         else
         {
-          assert(context->getInputSIMDWidth() == VSIZEX);
+          assert(context->getInputSOAWidth() == VSIZEX);
           const size_t numPackets = (N+VSIZEX-1)/VSIZEX;
           for (size_t i=0; i<numPackets; i++)
           {

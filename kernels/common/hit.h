@@ -35,7 +35,7 @@ namespace embree
     static __forceinline size_t size() { return K; }
 
   public:
-    Vec3vf<K> Ng;        // geometry normal
+    Vec3vf<K> Ng;  // geometry normal
     vint<K> instID;      // instance ID
     vint<K> geomID;      // geometry ID
     vint<K> primID;      // primitive ID

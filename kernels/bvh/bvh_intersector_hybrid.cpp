@@ -62,6 +62,7 @@ namespace embree
       StackItemT<NodeRef>* stackEnd = stack + stackSizeSingle;
       stack[0].ptr = root;
       stack[0].dist = neg_inf;
+
       /*! load the ray into SIMD registers */
       TravRay<N,Nx> vray(k,ray_org,ray_dir,ray_rdir,nearXYZ);
       vfloat<Nx> ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
@@ -75,8 +76,14 @@ namespace embree
         NodeRef cur = NodeRef(stackPtr->ptr);
 	
         /*! if popped node is too far, pop next one */
+#if defined(__AVX512ER__)
+        /* much faster on KNL */
+        if (unlikely(any(vfloat<Nx>(*(float*)&stackPtr->dist) > ray_far))) 
+          continue;
+#else
         if (unlikely(*(float*)&stackPtr->dist > ray.tfar[k])) 
           continue;
+#endif
         
         /* downtraversal loop */
         while (true)
@@ -88,8 +95,8 @@ namespace embree
           /* intersect node */
           size_t mask = 0;
           vfloat<Nx> tNear;
-          BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
-          
+          BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);          
+
           /*! if no child is hit, pop next node */
           if (unlikely(mask == 0))
             goto pop;
@@ -105,6 +112,7 @@ namespace embree
         
         size_t lazy_node = 0;
         PrimitiveIntersectorK::intersect(pre, ray, k, context, prim, num, lazy_node);
+        
         ray_far = ray.tfar[k];
         
         if (unlikely(lazy_node)) {
@@ -199,7 +207,8 @@ namespace embree
           if (unlikely(__popcnt(bits) <= switchThreshold)) 
 #endif
           {
-            for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
+            for (; bits!=0; ) {
+              const size_t i = __bscf(bits);
               intersect1(bvh, cur, i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ, context);
             }
             ray_tfar = min(ray_tfar,ray.tfar);
@@ -438,7 +447,8 @@ namespace embree
         {
           size_t bits = movemask(active);
           if (unlikely(__popcnt(bits) <= switchThreshold)) {
-            for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
+            for (; bits!=0; ) {
+              const size_t i = __bscf(bits);
               if (occluded1(bvh,cur,i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ,context))
                 set(terminated, i);
             }
