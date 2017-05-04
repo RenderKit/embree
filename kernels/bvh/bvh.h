@@ -1241,7 +1241,7 @@ namespace embree
         start = minF;
         scale = scale_diff;
 
-#if 1
+#if defined(DEBUG)
         vfloat<N> extract_lower( vint<N>::load(lower_quant) );
         vfloat<N> extract_upper( vint<N>::load(upper_quant) );
         vfloat<N> final_extract_lower = madd(extract_lower,scale_diff,minF);
@@ -1411,7 +1411,7 @@ namespace embree
         start = minF;
         scale = scale_diff;
 
-#if 1
+#if defined(DEBUG)
         vfloat<N> extract_lower( vint<N>::load(lower_quant) );
         vfloat<N> extract_upper( vint<N>::load(upper_quant) );
         vfloat<N> final_extract_lower = madd(extract_lower,scale_diff,minF);
