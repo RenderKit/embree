@@ -180,29 +180,11 @@ namespace embree
   {
 #if defined (__WIN32__)
     int64_t xcr0 = 0; // int64_t is workaround for compiler bug under VS2013, Win32
-#if defined(__INTEL_COMPILER) 
     xcr0 = _xgetbv(0);
-#elif (defined(_MSC_VER) && (_MSC_FULL_VER >= 160040219)) // min VS2010 SP1 compiler is required
-    xcr0 = _xgetbv(0); 
-#else
-#pragma message ("WARNING: AVX not supported by your compiler.")
-    xcr0 = 0;
-#endif
     return xcr0;
-
 #else
-
     int xcr0 = 0;
-#if defined(__INTEL_COMPILER) 
     __asm__ ("xgetbv" : "=a" (xcr0) : "c" (0) : "%edx" );
-#elif ((__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4)) && (!defined(__MACOSX__) || defined(__TARGET_AVX__) || defined(__TARGET_AVX2__))
-    __asm__ ("xgetbv" : "=a" (xcr0) : "c" (0) : "%edx" );
-#elif ((__clang_major__ > 3) || (__clang_major__ == 3 && __clang_minor__ >= 1))
-    __asm__ ("xgetbv" : "=a" (xcr0) : "c" (0) : "%edx" );
-#else
-#pragma message ("WARNING: AVX not supported by your compiler.")
-    xcr0 = 0;
-#endif
     return xcr0;
 #endif
   }
