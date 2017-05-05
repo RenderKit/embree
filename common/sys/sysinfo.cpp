@@ -102,7 +102,6 @@ namespace embree
     __cpuid(out, 1);
     int family = ((out[0] >> 8) & 0x0F) + ((out[0] >> 20) & 0xFF);
     int model  = ((out[0] >> 4) & 0x0F) | ((out[0] >> 12) & 0xF0);
-    if (family ==  11) return CPU_KNC;
     if (family !=   6) return CPU_UNKNOWN;           // earlier than P6
     if (model == 0x0E) return CPU_CORE1;             // Core 1
     if (model == 0x0F) return CPU_CORE2;             // Core 2, 65 nm
@@ -123,12 +122,13 @@ namespace embree
   std::string stringOfCPUModel(CPUModel model)
   {
     switch (model) {
-    case CPU_KNC             : return "Knights Corner";
     case CPU_CORE1           : return "Core1";
     case CPU_CORE2           : return "Core2";
     case CPU_CORE_NEHALEM    : return "Nehalem";
     case CPU_CORE_SANDYBRIDGE: return "SandyBridge";
     case CPU_HASWELL         : return "Haswell";
+    case CPU_KNIGHTS_LANDING : return "Knights Landing";
+    case CPU_SKYLAKE         : return "Skylake";
     default                  : return "Unknown CPU";
     }
   }
@@ -279,7 +279,6 @@ namespace embree
     if (features & CPU_FEATURE_LZCNT ) str += "LZCNT ";
     if (features & CPU_FEATURE_BMI1  ) str += "BMI1 ";
     if (features & CPU_FEATURE_BMI2  ) str += "BMI2 ";
-    if (features & CPU_FEATURE_KNC   ) str += "KNC ";
     if (features & CPU_FEATURE_AVX512F) str += "AVX512F ";
     if (features & CPU_FEATURE_AVX512DQ) str += "AVX512DQ ";
     if (features & CPU_FEATURE_AVX512PF) str += "AVX512PF ";
@@ -304,7 +303,6 @@ namespace embree
     if (isa == AVX2) return "AVX2";
     if (isa == AVX512KNL) return "AVX512KNL";
     if (isa == AVX512SKX) return "AVX512SKX";
-    if (isa == KNC) return "KNC";
     return "UNKNOWN";
   }
 
@@ -326,7 +324,6 @@ namespace embree
     if (hasISA(features,AVX2)) v += "AVX2 ";
     if (hasISA(features,AVX512KNL)) v += "AVX512KNL ";
     if (hasISA(features,AVX512SKX)) v += "AVX512SKX ";
-    if (hasISA(features,KNC)) v += "KNC ";
     return v;
   }
 }

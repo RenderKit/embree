@@ -85,8 +85,8 @@ namespace embree
     CPU_CORE_NEHALEM,
     CPU_CORE_SANDYBRIDGE,
     CPU_HASWELL,
-    CPU_KNC,
-    CPU_KNL
+    CPU_KNIGHTS_LANDING,
+    CPU_SKYLAKE
   };
 
   /*! get the full path to the running executable */
@@ -123,7 +123,6 @@ namespace embree
   static const int CPU_FEATURE_LZCNT  = 1 << 12;
   static const int CPU_FEATURE_BMI1   = 1 << 13;
   static const int CPU_FEATURE_BMI2   = 1 << 14;
-  static const int CPU_FEATURE_KNC    = 1 << 15;
   static const int CPU_FEATURE_AVX512F = 1 << 16;
   static const int CPU_FEATURE_AVX512DQ = 1 << 17;    
   static const int CPU_FEATURE_AVX512PF = 1 << 18;
@@ -155,7 +154,6 @@ namespace embree
   static const int AVX2   = AVXI | CPU_FEATURE_AVX2 | CPU_FEATURE_FMA3 | CPU_FEATURE_BMI1 | CPU_FEATURE_BMI2 | CPU_FEATURE_LZCNT;
   static const int AVX512KNL = AVX2 | CPU_FEATURE_AVX512F | CPU_FEATURE_AVX512PF | CPU_FEATURE_AVX512ER | CPU_FEATURE_AVX512CD;
   static const int AVX512SKX = AVX2 | CPU_FEATURE_AVX512F | CPU_FEATURE_AVX512DQ | CPU_FEATURE_AVX512CD | CPU_FEATURE_AVX512BW | CPU_FEATURE_AVX512VL;
-  static const int KNC    = CPU_FEATURE_KNC;
 
   /*! converts ISA bitvector into a string */
   std::string stringOfISA(int features);
