@@ -50,7 +50,11 @@ namespace embree
     __forceinline TriangleMi() {  }
 
     /* Construction from vertices and IDs */
-    __forceinline TriangleMi(const vint<M>& v0, const vint<M>& v1, const vint<M>& v2, const vint<M>& geomIDs, const vint<M>& primIDs)
+    __forceinline TriangleMi(const vint<M>& v0,
+                             const vint<M>& v1,
+                             const vint<M>& v2,
+                             const vint<M>& geomIDs,
+                             const vint<M>& primIDs)
       : v0(v0), v1(v1), v2(v2), geomIDs(geomIDs), primIDs(primIDs) {}
 
     /* Returns a mask that tells which triangles are valid */
