@@ -20,9 +20,8 @@
 #include "linei.h"
 #include "triangle.h"
 #include "trianglev.h"
-#include "trianglei.h"
 #include "trianglev_mb.h"
-#include "trianglei_mb.h"
+#include "trianglei.h"
 #include "quadv.h"
 #include "quadi.h"
 #include "quadi_mb.h"
@@ -106,17 +105,6 @@ namespace embree
   template<>
   size_t Triangle4vMB::Type::size(const char* This) const {
     return ((Triangle4vMB*)This)->size();
-  }
-
-  /********************** Triangle4iMB **************************/
-
-  template<>
-  Triangle4iMB::Type::Type ()
-  : PrimitiveType("triangle4imb",sizeof(Triangle4iMB),4) {}
-
-  template<>
-  size_t Triangle4iMB::Type::size(const char* This) const {
-    return ((Triangle4iMB*)This)->size();
   }
 
   /********************** Quad4v **************************/

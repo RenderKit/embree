@@ -22,9 +22,8 @@
 #include "../geometry/linei.h"
 #include "../geometry/triangle.h"
 #include "../geometry/trianglev.h"
-#include "../geometry/trianglei.h"
 #include "../geometry/trianglev_mb.h"
-#include "../geometry/trianglei_mb.h"
+#include "../geometry/trianglei.h"
 #include "../geometry/quadv.h"
 #include "../geometry/quadi.h"
 #include "../geometry/quadi_mb.h"
@@ -1270,7 +1269,7 @@ namespace embree
 
   Accel* BVH4Factory::BVH4Triangle4iMB(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
-    BVH4* accel = new BVH4(Triangle4iMB::type,scene);
+    BVH4* accel = new BVH4(Triangle4i::type,scene);
 
     Accel::Intersectors intersectors;
     if      (scene->device->tri_traverser_mb == "default") intersectors = BVH4Triangle4iMBIntersectors(accel,ivariant);

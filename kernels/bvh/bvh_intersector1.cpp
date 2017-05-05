@@ -23,7 +23,6 @@
 #include "../geometry/trianglev_intersector.h"
 #include "../geometry/trianglev_mb_intersector.h"
 #include "../geometry/trianglei_intersector.h"
-#include "../geometry/trianglei_mb_intersector.h"
 #include "../geometry/quadv_intersector.h"
 #include "../geometry/quadi_intersector.h"
 #include "../geometry/quadi_mb_intersector.h"

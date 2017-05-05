@@ -26,7 +26,6 @@
 #include "../geometry/trianglev.h"
 #include "../geometry/trianglev_mb.h"
 #include "../geometry/trianglei.h"
-#include "../geometry/trianglei_mb.h"
 #include "../geometry/quadv.h"
 #include "../geometry/quadi.h"
 #include "../geometry/quadi_mb.h"
@@ -989,7 +988,7 @@ namespace embree
 
   Accel* BVH8Factory::BVH8Triangle4iMB(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
-    BVH8* accel = new BVH8(Triangle4iMB::type,scene);
+    BVH8* accel = new BVH8(Triangle4i::type,scene);
     Accel::Intersectors intersectors = BVH8Triangle4iMBIntersectors(accel,ivariant);
 
     Builder* builder = nullptr;
