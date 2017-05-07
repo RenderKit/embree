@@ -139,7 +139,7 @@ namespace embree
       stack[0].parent  = 0;
       stack[0].child   = bvh->root;
       stack[0].childID = (unsigned int)-1;
-      stack[0].dist    = (unsigned int)-1;
+      //stack[0].dist    = (unsigned int)-1;
 
       ///////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////////////////////////////////////////////////////
@@ -244,7 +244,7 @@ namespace embree
       stack[0].parent  = 0;
       stack[0].child   = bvh->root;
       stack[0].childID = (unsigned int)-1;
-      stack[0].dist    = (unsigned int)-1;
+      //stack[0].dist    = (unsigned int)-1;
 
       ///////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////////////////////////////////////////////////////
