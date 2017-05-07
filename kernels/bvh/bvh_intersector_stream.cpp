@@ -335,9 +335,8 @@ namespace embree
     // =====================================================================================================
     // =====================================================================================================
 
-    /* do not inline this function to separate 16-wide and 4/8-wide code paths */
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    __noinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherent(BVH* __restrict__ bvh, Ray** inputRays, size_t numTotalRays, IntersectContext* context)
+    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherent(BVH* __restrict__ bvh, Ray** inputRays, size_t numTotalRays, IntersectContext* context)
     {
       if (likely(context->flags == IntersectContext::INPUT_RAY_DATA_AOS))
       {
@@ -359,9 +358,8 @@ namespace embree
       }
     }
 
-    /* do not inline this function to separate 16-wide and 4/8-wide code paths */
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    __noinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherent(BVH* __restrict__ bvh, Ray **inputRays, size_t numTotalRays, IntersectContext* context)
+    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherent(BVH* __restrict__ bvh, Ray **inputRays, size_t numTotalRays, IntersectContext* context)
     {
       if (likely(context->flags == IntersectContext::INPUT_RAY_DATA_AOS))
       {
