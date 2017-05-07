@@ -549,7 +549,7 @@ namespace embree
 
       struct NearFarPreCompute
       {
-#if defined(__AVX512ER__) // KNL+
+#if defined(__AVX512F__)
         vint16 permX, permY, permZ;
 #endif
         size_t nearX, nearY, nearZ;
@@ -557,7 +557,7 @@ namespace embree
 
         __forceinline NearFarPreCompute(const Vec3fa& dir)
         {
-#if defined(__AVX512ER__) // KNL+
+#if defined(__AVX512F__)
           /* optimization works only for 8-wide BVHs with 16-wide SIMD */
           const vint<16> id(step);
           const vint<16> id2 = align_shift_right<16/2>(id, id);
@@ -790,7 +790,7 @@ namespace embree
         return vmask;
       }
 
-#if defined(__AVX512ER__) // KNL+
+#if defined(__AVX512F__)
       template<bool dist_update>
         __forceinline static vbool<Nx> traversalLoop(const size_t &m_trav_active,
                                                      const AlignedNode* __restrict__ const node,

@@ -43,7 +43,7 @@ namespace embree
   namespace isa
   {
     /* enable traversal of either two small streams or one large stream */
-#if !defined(__AVX512ER__) // KNL+
+#if !defined(__AVX512F__)
     static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(unsigned int);
 #else
     static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(size_t);
@@ -448,7 +448,7 @@ namespace embree
             const AlignedNode* __restrict__ const node = cur.alignedNode();
             assert(m_trav_active);
 
-#if defined(__AVX512ER__) // KNL+
+#if defined(__AVX512F__)
             /* AVX512 path for up to 64 rays */
             vllong<Nxd> maskK(zero);
             vfloat<Nx> dist(inf);
@@ -550,7 +550,7 @@ namespace embree
 
             const AlignedNode* __restrict__ const node = cur.alignedNode();
 
-#if defined(__AVX512ER__) // KNL+
+#if defined(__AVX512F__)
             /* AVX512 path for up to 64 rays */
             vllong<Nxd> maskK(zero);
             vfloat<Nx> dist(inf);
