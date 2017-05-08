@@ -251,11 +251,10 @@ namespace embree
               /* if we hit the child we choose to continue with that child if it
                  is closer than the current next child, or we push it onto the stack */
               if (likely(any(lhit)))
-              {                
+              {                                
                 assert(sptr_node < stackEnd);
                 assert(child != BVH::emptyNode);
                 const vfloat<K> childDist = select(lhit,lnearP,inf);
-
                 /* push cur node onto stack and continue with hit child */
                 if (any(childDist < curDist))
                 {

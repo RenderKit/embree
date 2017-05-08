@@ -46,7 +46,7 @@ namespace embree
       static const size_t switchThresholdIncoherent = \
       (K==4)  ? 3 :
       (K==8)  ? ((N==4) ? 5 : 7) :
-      (K==16) ? 14 :
+      (K==16) ? 14 : // 14 seems to work best for KNL due to better ordered chunk traversal
       0;
 
     private:
