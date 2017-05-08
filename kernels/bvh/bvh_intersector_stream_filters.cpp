@@ -163,8 +163,7 @@ namespace embree
       }
     }
 
-    /* do not inline this function to separate 16-wide and 4/8-wide code paths */
-    __noinline void RayStream::filterSOACoherent(Scene *scene, char* rayData, const size_t streams, const size_t stream_offset, IntersectContext* context, const bool intersect)
+    void RayStream::filterSOACoherent(Scene *scene, char* rayData, const size_t streams, const size_t stream_offset, IntersectContext* context, const bool intersect)
     {
       /* all valid accels need to have a intersectN/occludedN */
       bool chunkFallback = scene->isRobust() || !scene->accels.validIsecN();
@@ -340,8 +339,7 @@ namespace embree
         }
     }
 
-    /* do not inline this function to separate 16-wide and 4/8-wide code paths */
-    __noinline void RayStream::filterSOPCoherent(Scene *scene, const RTCRayNp& _rayN, const size_t N, IntersectContext* context, const bool intersect)
+    void RayStream::filterSOPCoherent(Scene *scene, const RTCRayNp& _rayN, const size_t N, IntersectContext* context, const bool intersect)
     {
       RayPN& rayN = *(RayPN*)&_rayN;
 

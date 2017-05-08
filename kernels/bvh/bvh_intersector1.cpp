@@ -23,10 +23,8 @@
 #include "../geometry/trianglev_intersector.h"
 #include "../geometry/trianglev_mb_intersector.h"
 #include "../geometry/trianglei_intersector.h"
-#include "../geometry/trianglei_mb_intersector.h"
 #include "../geometry/quadv_intersector.h"
 #include "../geometry/quadi_intersector.h"
-#include "../geometry/quadi_mb_intersector.h"
 #include "../geometry/bezier1v_intersector.h"
 #include "../geometry/bezier1i_intersector.h"
 #include "../geometry/linei_intersector.h"
@@ -35,7 +33,7 @@
 #include "../geometry/object_intersector.h"
 
 namespace embree
-{ 
+{
   namespace isa
   {
     template<int N, int types, bool robust, typename PrimitiveIntersector1>
@@ -45,7 +43,7 @@ namespace embree
       Precalculations pre(ray,bvh);
 
       /*! stack state */
-      StackItemT<NodeRef> stack[stackSize];           //!< stack of nodes 
+      StackItemT<NodeRef> stack[stackSize];           //!< stack of nodes
       StackItemT<NodeRef>* stackPtr = stack+1;        //!< current stack pointer
       StackItemT<NodeRef>* stackEnd = stack+stackSize;
       stack[0].ptr  = bvh->root;
@@ -80,7 +78,7 @@ namespace embree
         /*! if popped node is too far, pop next one */
 #if defined(__AVX512ER__)
         /* much faster on KNL */
-        if (unlikely(any(vfloat<Nx>(*(float*)&stackPtr->dist) > ray_far))) 
+        if (unlikely(any(vfloat<Nx>(*(float*)&stackPtr->dist) > ray_far)))
           continue;
 #else
         if (unlikely(*(float*)&stackPtr->dist > ray.tfar))
@@ -103,11 +101,11 @@ namespace embree
           /* select next child and push other children */
           nodeTraverser.traverseClosestHit(cur,mask,tNear,stackPtr,stackEnd);
         }
-        
+
         /* ray transformation support */
         if (unlikely(nodeTraverser.traverseTransform(cur,ray,vray,leafType,context,stackPtr,stackEnd)))
           goto pop;
-        
+
         /*! this is a leaf node */
         assert(cur != BVH::emptyNode);
         STAT3(normal.trav_leaves,1,1,1);
@@ -125,7 +123,7 @@ namespace embree
       }
       AVX_ZERO_UPPER();
     }
-    
+
     template<int N, int types, bool robust, typename PrimitiveIntersector1>
     void BVHNIntersector1<N,types,robust,PrimitiveIntersector1>::occluded(const BVH* __restrict__ bvh, Ray& __restrict__ ray, IntersectContext* context)
     {
@@ -141,7 +139,7 @@ namespace embree
       NodeRef* stackPtr = stack+1;        //!< current stack pointer
       NodeRef* stackEnd = stack+stackSize;
       stack[0] = bvh->root;
-      
+
       /* filter out invalid rays */
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
       if (!ray.valid()) return;
@@ -169,7 +167,7 @@ namespace embree
         if (unlikely(stackPtr == stack)) break;
         stackPtr--;
         NodeRef cur = (NodeRef) *stackPtr;
-        
+
         /* downtraversal loop */
         while (true)
         {
@@ -200,7 +198,7 @@ namespace embree
           ray.geomID = 0;
           break;
         }
-        
+
         /*! push lazy node onto stack */
         if (unlikely(lazy_node)) {
           *stackPtr = (NodeRef)lazy_node;
