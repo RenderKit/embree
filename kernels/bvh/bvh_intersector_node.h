@@ -59,9 +59,9 @@ namespace embree
       __forceinline TravRay (size_t k, const Vec3vf<K> &ray_org, const Vec3vf<K> &ray_dir,
                              const Vec3vf<K> &ray_rdir, const Vec3vi<K>& nearXYZ, const size_t flip = sizeof(vfloat<N>))
       {
-        org = Vec3vf<N>(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
-        dir = Vec3vf<N>(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
-        rdir = Vec3vf<N>(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
+        org  = Vec3vf<Nx>(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
+        dir  = Vec3vf<Nx>(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
+        rdir = Vec3vf<Nx>(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
 #if defined(__AVX2__)
 	org_rdir = org*rdir;
 #endif
