@@ -16,20 +16,14 @@
 
 #pragma once
 
-#include "../bvh/bvh.h"
-#include "../common/isa.h"
-#include "../common/accel.h"
-#include "../common/scene.h"
+#include "bvh_factory.h"
 
 namespace embree
 {
   /*! BVH8 instantiations */
-  class BVH8Factory
+  class BVH8Factory : public BVHFactory
   {
   public:
-    enum class BuildVariant     { STATIC, DYNAMIC, HIGH_QUALITY };
-    enum class IntersectVariant { FAST, ROBUST };
-
     BVH8Factory(int bfeatures, int ifeatures);
 
   public:

@@ -416,6 +416,7 @@ namespace embree
       {
         const size_t size = min(N-i, MAX_COHERENT_RAY_PACKETS * VSIZEX);
 
+        /* convert from SOP to SOA */
         for (size_t j = 0; j < size; j += VSIZEX)
         {
           const vintx vi = vintx(int(i+j)) + vintx(step);
@@ -424,7 +425,7 @@ namespace embree
           const size_t packetID = j / VSIZEX;
 
           rays[packetID] = rayN.gatherByOffset(valid, offset);
-          rays_ptr[packetID] = &rays[packetID];
+          rays_ptr[packetID] = &rays[packetID]; // rays_ptr might get reordered for occludedN
         }
 
         /* trace as stream */
@@ -433,6 +434,7 @@ namespace embree
         else
           scene->occludedN((RTCRay**)rays_ptr, size, context);
 
+        /* convert from SOA to SOP */
         for (size_t j = 0; j < size; j += VSIZEX)
         {
           const vintx vi = vintx(int(i+j)) + vintx(step);

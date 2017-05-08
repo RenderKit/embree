@@ -61,7 +61,7 @@ namespace embree
         ptr = nullptr;
 	cur = end = 0;
         bytesUsed = 0;
-	bytesWasted = 0;
+        bytesWasted = 0;
         allocBlockSize = 0;
         if (alloc) allocBlockSize = alloc->defaultBlockSize;
       }
@@ -115,6 +115,7 @@ namespace embree
         return nullptr;
       }
 
+      
       /*! returns amount of used bytes */
       __forceinline size_t getUsedBytes() const { return bytesUsed; }
   
@@ -295,6 +296,21 @@ namespace embree
       FastAllocator* allocator;
     };
 
+    /*! initializes the grow size */
+    __forceinline void initGrowSizeAndNumSlots(size_t bytesAllocate, bool compact) 
+    {
+      bytesAllocate  = ((bytesAllocate +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
+
+      growSize = maxGrowSize = clamp(bytesAllocate,size_t(PAGE_SIZE),maxAllocationSize); // PAGE_SIZE -maxAlignment ?
+      log2_grow_size_scale = 0;
+      slotMask = 0x0;
+      if (!compact) {
+        if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesAllocate >  4*maxAllocationSize) slotMask = 0x1;
+        if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesAllocate >  8*maxAllocationSize) slotMask = 0x3;
+        if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesAllocate > 16*maxAllocationSize) slotMask = 0x7;
+      }
+    }
+
     void internal_fix_used_blocks()
     {
       /* move thread local blocks to global block list */
@@ -371,7 +387,7 @@ namespace embree
       size_t singleThreadBytes = single_mode_factor*threadLocalAllocOverhead*defaultBlockSizeSwitch;
 
       /* for sufficiently large scene we can increase the defaultBlockSize over the defaultBlockSizeSwitch size */
-      if ( (bytesEstimated+(singleThreadBytes-1))/singleThreadBytes >= threadCount)
+      if (0) // (bytesEstimated+(singleThreadBytes-1))/singleThreadBytes >= threadCount)
         defaultBlockSize = min(max(defaultBlockSizeSwitch,bytesEstimated/(single_mode_factor*threadLocalAllocOverhead*threadCount)),growSize);
 
       /* otherwise we grow the defaultBlockSize up to defaultBlockSizeSwitch */

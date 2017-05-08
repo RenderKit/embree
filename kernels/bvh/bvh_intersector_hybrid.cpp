@@ -23,10 +23,8 @@
 #include "../geometry/trianglev_intersector.h"
 #include "../geometry/trianglev_mb_intersector.h"
 #include "../geometry/trianglei_intersector.h"
-#include "../geometry/trianglei_mb_intersector.h"
 #include "../geometry/quadv_intersector.h"
 #include "../geometry/quadi_intersector.h"
-#include "../geometry/quadi_mb_intersector.h"
 #include "../geometry/bezier1v_intersector.h"
 #include "../geometry/bezier1i_intersector.h"
 #include "../geometry/linei_intersector.h"
@@ -43,21 +41,21 @@ namespace embree
   {
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
-    void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::intersect1(const BVH* bvh, 
-                                                                                           NodeRef root, 
-                                                                                           const size_t k, 
+    void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::intersect1(const BVH* bvh,
+                                                                                           NodeRef root,
+                                                                                           const size_t k,
                                                                                            Precalculations& pre,
-                                                                                           RayK<K>& ray, 
-                                                                                           const Vec3vf<K> &ray_org, 
-                                                                                           const Vec3vf<K> &ray_dir, 
-                                                                                           const Vec3vf<K> &ray_rdir, 
-                                                                                           const vfloat<K> &ray_tnear, 
+                                                                                           RayK<K>& ray,
+                                                                                           const Vec3vf<K> &ray_org,
+                                                                                           const Vec3vf<K> &ray_dir,
+                                                                                           const Vec3vf<K> &ray_rdir,
+                                                                                           const vfloat<K> &ray_tnear,
                                                                                            const vfloat<K> &ray_tfar,
-                                                                                           const Vec3vi<K>& nearXYZ, 
+                                                                                           const Vec3vi<K>& nearXYZ,
                                                                                            IntersectContext* context)
     {
       /*! stack state */
-      StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
+      StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes
       StackItemT<NodeRef>* stackPtr = stack + 1;        //!< current stack pointer
       StackItemT<NodeRef>* stackEnd = stack + stackSizeSingle;
       stack[0].ptr = root;
@@ -66,7 +64,7 @@ namespace embree
       /*! load the ray into SIMD registers */
       TravRay<N,Nx> vray(k,ray_org,ray_dir,ray_rdir,nearXYZ);
       vfloat<Nx> ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
-      
+
       /* pop loop */
       while (true) pop:
       {
@@ -74,47 +72,47 @@ namespace embree
         if (unlikely(stackPtr == stack)) break;
         stackPtr--;
         NodeRef cur = NodeRef(stackPtr->ptr);
-	
+
         /*! if popped node is too far, pop next one */
 #if defined(__AVX512ER__)
         /* much faster on KNL */
-        if (unlikely(any(vfloat<Nx>(*(float*)&stackPtr->dist) > ray_far))) 
+        if (unlikely(any(vfloat<Nx>(*(float*)&stackPtr->dist) > ray_far)))
           continue;
 #else
-        if (unlikely(*(float*)&stackPtr->dist > ray.tfar[k])) 
+        if (unlikely(*(float*)&stackPtr->dist > ray.tfar[k]))
           continue;
 #endif
-        
+
         /* downtraversal loop */
         while (true)
         {
           /*! stop if we found a leaf node */
           if (unlikely(cur.isLeaf())) break;
           STAT3(normal.trav_nodes,1,1,1);
-          
+
           /* intersect node */
           size_t mask = 0;
           vfloat<Nx> tNear;
-          BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);          
+          BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
 
           /*! if no child is hit, pop next node */
           if (unlikely(mask == 0))
             goto pop;
-          
+
           /* select next child and push other children */
           BVHNNodeTraverser1<N,Nx,types>::traverseClosestHit(cur,mask,tNear,stackPtr,stackEnd);
         }
-        
+
         /*! this is a leaf node */
         assert(cur != BVH::emptyNode);
         STAT3(normal.trav_leaves, 1, 1, 1);
         size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
-        
+
         size_t lazy_node = 0;
         PrimitiveIntersectorK::intersect(pre, ray, k, context, prim, num, lazy_node);
-        
+
         ray_far = ray.tfar[k];
-        
+
         if (unlikely(lazy_node)) {
           stackPtr->ptr = lazy_node;
           stackPtr->dist = neg_inf;
@@ -122,7 +120,7 @@ namespace embree
         }
       }
     }
-    
+
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
     void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::intersect(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray, IntersectContext* context)
     {
@@ -173,7 +171,7 @@ namespace embree
       stack_node[0] = BVH::invalidNode;
       stack_near[0] = inf;
       stack_node[1] = bvh->root;
-      stack_near[1] = ray_tnear; 
+      stack_near[1] = ray_tnear;
       NodeRef* stackEnd MAYBE_UNUSED = stack_node+stackSizeChunk;
       NodeRef* __restrict__ sptr_node = stack_node + 2;
       vfloat<K>* __restrict__ sptr_near = stack_near + 2;
@@ -204,7 +202,7 @@ namespace embree
         {
           size_t bits = movemask(active);
 #if FORCE_SINGLE_MODE == 0
-          if (unlikely(__popcnt(bits) <= switchThreshold)) 
+          if (unlikely(__popcnt(bits) <= switchThreshold))
 #endif
           {
             for (; bits!=0; ) {
@@ -278,13 +276,13 @@ namespace embree
           }
 #endif
 	}
-        
+
         /* return if stack is empty */
         if (unlikely(cur == BVH::invalidNode)) {
           assert(sptr_node == stack_node);
           break;
         }
-        
+
         /* intersect leaf */
         assert(cur != BVH::emptyNode);
         const vbool<K> valid_leaf = ray_tfar > curDist;
@@ -318,11 +316,11 @@ namespace embree
         NodeRef* stackPtr = stack+1;     //!< current stack pointer
 	NodeRef* stackEnd = stack+stackSizeSingle;
 	stack[0]  = root;
-      
+
 	/*! load the ray into SIMD registers */
         TravRay<N,Nx> vray(k,ray_org,ray_dir,ray_rdir,nearXYZ);
         const vfloat<Nx> ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
-	
+
 	/* pop loop */
 	while (true) pop:
 	{
@@ -330,7 +328,7 @@ namespace embree
 	  if (unlikely(stackPtr == stack)) break;
 	  stackPtr--;
 	  NodeRef cur = (NodeRef) *stackPtr;
-	  
+
           /* downtraversal loop */
           while (true)
           {
@@ -418,11 +416,11 @@ namespace embree
       stack_node[0] = BVH::invalidNode;
       stack_near[0] = inf;
       stack_node[1] = bvh->root;
-      stack_near[1] = ray_tnear; 
+      stack_near[1] = ray_tnear;
       NodeRef* stackEnd MAYBE_UNUSED = stack_node+stackSizeChunk;
       NodeRef* __restrict__ sptr_node = stack_node + 2;
       vfloat<K>* __restrict__ sptr_near = stack_near + 2;
-      
+
       while (1) pop:
       {
         /* pop next node from stack */
@@ -438,9 +436,9 @@ namespace embree
         /* cull node if behind closest hit point */
         vfloat<K> curDist = *sptr_near;
         const vbool<K> active = curDist < ray_tfar;
-        if (unlikely(none(active))) 
+        if (unlikely(none(active)))
           continue;
-        
+
         /* switch to single ray traversal */
 #if (!defined(__WIN32__) || defined(__X86_64__)) && defined(__SSE4_2__)
         if (single)
@@ -458,7 +456,7 @@ namespace embree
           }
         }
 #endif
-                
+
         while (likely(!cur.isLeaf()))
         {
           /* process nodes */
@@ -521,14 +519,14 @@ namespace embree
           }
 #endif
 	}
-        
+
         /* return if stack is empty */
         if (unlikely(cur == BVH::invalidNode)) {
           assert(sptr_node == stack_node);
           break;
         }
 
-        
+
         /* intersect leaf */
         assert(cur != BVH::emptyNode);
         STAT(const vbool<K> valid_leaf = ray_tfar > curDist);
@@ -550,4 +548,3 @@ namespace embree
     }
   }
 }
-
