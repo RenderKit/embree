@@ -238,7 +238,7 @@ namespace embree
             cur = BVH::emptyNode;
             curDist = pos_inf;
 
-            size_t m_child_hit = 0;
+            size_t num_child_hits = 0;
 
             for (unsigned i=0; i<N; i++)
             {
@@ -251,7 +251,7 @@ namespace embree
               /* if we hit the child we choose to continue with that child if it
                  is closer than the current next child, or we push it onto the stack */
               if (likely(any(lhit)))
-              {
+              {                
                 assert(sptr_node < stackEnd);
                 assert(child != BVH::emptyNode);
                 const vfloat<K> childDist = select(lhit,lnearP,inf);
@@ -259,8 +259,8 @@ namespace embree
                 /* push cur node onto stack and continue with hit child */
                 if (any(childDist < curDist))
                 {
-                  m_child_hit |= (size_t)1 << i;
                   if (likely(cur != BVH::emptyNode)) {
+                    num_child_hits++;
                     *sptr_node = cur; sptr_node++;
                     *sptr_near = curDist; sptr_near++;
                   }
@@ -270,6 +270,7 @@ namespace embree
 
                 /* push hit child onto stack */
                 else {
+                  num_child_hits++;                  
                   *sptr_node = child; sptr_node++;
                   *sptr_near = childDist; sptr_near++;
                 }
@@ -277,12 +278,34 @@ namespace embree
             }
 
 #if defined(__AVX__)
-            STAT3(normal.trav_hit_boxes[__popcnt(m_child_hit)],1,1,1);
+            STAT3(normal.trav_hit_boxes[num_child_hits],1,1,1);
 #endif
 
-            
             if (unlikely(cur == BVH::emptyNode))
               goto pop;
+            
+            /* improved distance sorting for 3 or more hits */
+            if (unlikely(num_child_hits >= 2))
+            {
+              if (any(sptr_near[-2] < sptr_near[-1]))
+              {
+                std::swap(sptr_near[-2],sptr_near[-1]);
+                std::swap(sptr_node[-2],sptr_node[-1]);
+              }
+              if (unlikely(num_child_hits >= 3))
+              {
+                if (any(sptr_near[-3] < sptr_near[-1]))
+                {
+                  std::swap(sptr_near[-3],sptr_near[-1]);
+                  std::swap(sptr_node[-3],sptr_node[-1]);
+                }
+                if (any(sptr_near[-3] < sptr_near[-2]))
+                {
+                  std::swap(sptr_near[-3],sptr_near[-2]);
+                  std::swap(sptr_node[-3],sptr_node[-2]);
+                }
+              }
+            }
 
 #if SWITCH_DURING_DOWN_TRAVERSAL == 1
             if (single)
