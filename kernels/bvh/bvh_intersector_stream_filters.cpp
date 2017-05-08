@@ -290,7 +290,7 @@ namespace embree
           if (unlikely(!rayN.isValidByOffset(offset))) continue;
 
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
-          __aligned(64) Ray ray = rayN.gather(offset);
+          __aligned(64) Ray ray = rayN.gatherByOffset(offset);
           if (unlikely(!ray.valid())) continue; 
 #endif
 
@@ -372,6 +372,7 @@ namespace embree
 
           vboolx active = rayN.isValidByOffset(valid, offset);
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
+          __aligned(64) Ray ray = rayN.gatherByOffset(offset);
           active &= ray.valid();
 #endif
           all_active = select(valid, all_active & active, all_active);
