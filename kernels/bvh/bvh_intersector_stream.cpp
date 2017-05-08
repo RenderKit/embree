@@ -43,7 +43,7 @@ namespace embree
   namespace isa
   {
     /* enable traversal of either two small streams or one large stream */
-#if !defined(__AVX512ER__) // KNL+
+#if !defined(__AVX512F__)
     static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(unsigned int);
 #else
     static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(size_t);
@@ -139,7 +139,7 @@ namespace embree
       stack[0].parent  = 0;
       stack[0].child   = bvh->root;
       stack[0].childID = (unsigned int)-1;
-      stack[0].dist    = (unsigned int)-1;
+      //stack[0].dist    = (unsigned int)-1;
 
       ///////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////////////////////////////////////////////////////
@@ -244,7 +244,7 @@ namespace embree
       stack[0].parent  = 0;
       stack[0].child   = bvh->root;
       stack[0].childID = (unsigned int)-1;
-      stack[0].dist    = (unsigned int)-1;
+      //stack[0].dist    = (unsigned int)-1;
 
       ///////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////////////////////////////////////////////////////
@@ -335,9 +335,8 @@ namespace embree
     // =====================================================================================================
     // =====================================================================================================
 
-    /* do not inline this function to separate 16-wide and 4/8-wide code paths */
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    __noinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherent(BVH* __restrict__ bvh, Ray** inputRays, size_t numTotalRays, IntersectContext* context)
+    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherent(BVH* __restrict__ bvh, Ray** inputRays, size_t numTotalRays, IntersectContext* context)
     {
       if (likely(context->flags == IntersectContext::INPUT_RAY_DATA_AOS))
       {
@@ -359,9 +358,8 @@ namespace embree
       }
     }
 
-    /* do not inline this function to separate 16-wide and 4/8-wide code paths */
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    __noinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherent(BVH* __restrict__ bvh, Ray **inputRays, size_t numTotalRays, IntersectContext* context)
+    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherent(BVH* __restrict__ bvh, Ray **inputRays, size_t numTotalRays, IntersectContext* context)
     {
       if (likely(context->flags == IntersectContext::INPUT_RAY_DATA_AOS))
       {
@@ -448,7 +446,7 @@ namespace embree
             const AlignedNode* __restrict__ const node = cur.alignedNode();
             assert(m_trav_active);
 
-#if defined(__AVX512ER__) // KNL+
+#if defined(__AVX512F__)
             /* AVX512 path for up to 64 rays */
             vllong<Nxd> maskK(zero);
             vfloat<Nx> dist(inf);
@@ -550,7 +548,7 @@ namespace embree
 
             const AlignedNode* __restrict__ const node = cur.alignedNode();
 
-#if defined(__AVX512ER__) // KNL+
+#if defined(__AVX512F__)
             /* AVX512 path for up to 64 rays */
             vllong<Nxd> maskK(zero);
             vfloat<Nx> dist(inf);
