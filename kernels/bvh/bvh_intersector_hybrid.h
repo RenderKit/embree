@@ -46,7 +46,7 @@ namespace embree
       static const size_t switchThresholdIncoherent = \
       (K==4)  ? 3 :
       (K==8)  ? ((N==4) ? 5 : 7) :
-      (K==16) ? 15 :
+      (K==16) ? 14 :
       0;
 
     private:

@@ -131,7 +131,7 @@ namespace embree
 #endif
 
       /* return if there are no valid rays */
-      const size_t valid_bits = movemask(valid);
+      size_t valid_bits = movemask(valid);
       if (unlikely(valid_bits == 0)) return;
 
       /* verify correct input */
@@ -165,139 +165,161 @@ namespace embree
       /* determine switch threshold based on flags */
       const size_t switchThreshold = (context->user && isCoherent(context->user->flags)) ? 2 : switchThresholdIncoherent;
 
-      /* allocate stack and push root node */
-      vfloat<K> stack_near[stackSizeChunk];
-      NodeRef stack_node[stackSizeChunk];
-      stack_node[0] = BVH::invalidNode;
-      stack_near[0] = inf;
-      stack_node[1] = bvh->root;
-      stack_near[1] = ray_tnear;
-      NodeRef* stackEnd MAYBE_UNUSED = stack_node+stackSizeChunk;
-      NodeRef* __restrict__ sptr_node = stack_node + 2;
-      vfloat<K>* __restrict__ sptr_near = stack_near + 2;
-
-      while (1) pop:
+      vint<K> octant =                                                \
+        select(vfloat<K>(rdir.x) < 0.0f,vint<K>(1),vint<K>(zero)) |
+        select(vfloat<K>(rdir.y) < 0.0f,vint<K>(2),vint<K>(zero)) |
+        select(vfloat<K>(rdir.z) < 0.0f,vint<K>(4),vint<K>(zero));
+      
+      octant = select(valid,octant,vint<K>(0xffffffff));
+      do
       {
-        /* pop next node from stack */
-        assert(sptr_node > stack_node);
-        sptr_node--;
-        sptr_near--;
-        NodeRef cur = *sptr_node;
-        if (unlikely(cur == BVH::invalidNode)) {
-          assert(sptr_node == stack_node);
-          break;
-        }
+        const size_t valid_index = __bsf(valid_bits);
+        const vbool<K> octant_valid = octant[valid_index] == octant;
+        valid_bits &= ~movemask(octant_valid);
 
-        /* cull node if behind closest hit point */
-        vfloat<K> curDist = *sptr_near;
-        const vbool<K> active = curDist < ray_tfar;
-        if (unlikely(none(active)))
-          continue;
+        /* allocate stack and push root node */
+        vfloat<K> stack_near[stackSizeChunk];
+        NodeRef stack_node[stackSizeChunk];
+        stack_node[0] = BVH::invalidNode;
+        stack_near[0] = inf;
+        stack_node[1] = bvh->root;
+        stack_near[1] = select(octant_valid,ray_tnear,inf);
+        NodeRef* stackEnd MAYBE_UNUSED = stack_node+stackSizeChunk;
+        NodeRef* __restrict__ sptr_node = stack_node + 2;
+        vfloat<K>* __restrict__ sptr_near = stack_near + 2;
 
-        /* switch to single ray traversal */
+        while (1) pop:
+        {
+          /* pop next node from stack */
+          assert(sptr_node > stack_node);
+          sptr_node--;
+          sptr_near--;
+          NodeRef cur = *sptr_node;
+          if (unlikely(cur == BVH::invalidNode)) {
+            assert(sptr_node == stack_node);
+            break;
+          }
+
+          /* cull node if behind closest hit point */
+          vfloat<K> curDist = *sptr_near;
+          const vbool<K> active = curDist < ray_tfar;
+          if (unlikely(none(active)))
+            continue;
+
+          /* switch to single ray traversal */
 #if (!defined(__WIN32__) || defined(__X86_64__)) && defined(__SSE4_2__)
 #if FORCE_SINGLE_MODE == 0
-        if (single)
+          if (single)
 #endif
-        {
-          size_t bits = movemask(active);
+          {
+            size_t bits = movemask(active);
 #if FORCE_SINGLE_MODE == 0
-          if (unlikely(__popcnt(bits) <= switchThreshold))
+            if (unlikely(__popcnt(bits) <= switchThreshold))
 #endif
-          {
-            for (; bits!=0; ) {
-              const size_t i = __bscf(bits);
-              intersect1(bvh, cur, i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ, context);
-            }
-            ray_tfar = min(ray_tfar,ray.tfar);
-            continue;
-          }
-        }
-#endif
-        while (likely(!cur.isLeaf()))
-        {
-          /* process nodes */
-          const vbool<K> valid_node = ray_tfar > curDist;
-          STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
-          const NodeRef nodeRef = cur;
-          const BaseNode* __restrict__ const node = nodeRef.baseNode(types);
-
-          /* set cur to invalid */
-          cur = BVH::emptyNode;
-          curDist = pos_inf;
-
-          for (unsigned i=0; i<N; i++)
-          {
-            const NodeRef child = node->children[i];
-            if (unlikely(child == BVH::emptyNode)) break;
-            vfloat<K> lnearP;
-            vbool<K> lhit(valid_node);
-            BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP,lhit);
-
-            /* if we hit the child we choose to continue with that child if it
-               is closer than the current next child, or we push it onto the stack */
-            if (likely(any(lhit)))
             {
-              assert(sptr_node < stackEnd);
-              assert(child != BVH::emptyNode);
-              const vfloat<K> childDist = select(lhit,lnearP,inf);
-
-              /* push cur node onto stack and continue with hit child */
-              if (any(childDist < curDist))
-              {
-                if (likely(cur != BVH::emptyNode)) {
-                  *sptr_node = cur; sptr_node++;
-                  *sptr_near = curDist; sptr_near++;
-                }
-                curDist = childDist;
-                cur = child;
+              for (; bits!=0; ) {
+                const size_t i = __bscf(bits);
+                intersect1(bvh, cur, i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ, context);
               }
-
-              /* push hit child onto stack */
-              else {
-                *sptr_node = child; sptr_node++;
-                *sptr_near = childDist; sptr_near++;
-              }
+              ray_tfar = min(ray_tfar,ray.tfar);
+              continue;
             }
           }
-          if (unlikely(cur == BVH::emptyNode))
-            goto pop;
+#endif
+          while (likely(!cur.isLeaf()))
+          {
+            /* process nodes */
+            const vbool<K> valid_node = ray_tfar > curDist;
+            STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
+            const NodeRef nodeRef = cur;
+            const BaseNode* __restrict__ const node = nodeRef.baseNode(types);
+
+            /* set cur to invalid */
+            cur = BVH::emptyNode;
+            curDist = pos_inf;
+
+            size_t m_child_hit = 0;
+
+            for (unsigned i=0; i<N; i++)
+            {
+              const NodeRef child = node->children[i];
+              if (unlikely(child == BVH::emptyNode)) break;
+              vfloat<K> lnearP;
+              vbool<K> lhit(valid_node);
+              BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP,lhit);
+
+              /* if we hit the child we choose to continue with that child if it
+                 is closer than the current next child, or we push it onto the stack */
+              if (likely(any(lhit)))
+              {
+                assert(sptr_node < stackEnd);
+                assert(child != BVH::emptyNode);
+                const vfloat<K> childDist = select(lhit,lnearP,inf);
+
+                /* push cur node onto stack and continue with hit child */
+                if (any(childDist < curDist))
+                {
+                  m_child_hit |= (size_t)1 << i;
+                  if (likely(cur != BVH::emptyNode)) {
+                    *sptr_node = cur; sptr_node++;
+                    *sptr_near = curDist; sptr_near++;
+                  }
+                  curDist = childDist;
+                  cur = child;
+                }
+
+                /* push hit child onto stack */
+                else {
+                  *sptr_node = child; sptr_node++;
+                  *sptr_near = childDist; sptr_near++;
+                }
+              }
+            }
+
+#if defined(__AVX__)
+            STAT3(normal.trav_hit_boxes[__popcnt(m_child_hit)],1,1,1);
+#endif
+
+            
+            if (unlikely(cur == BVH::emptyNode))
+              goto pop;
 
 #if SWITCH_DURING_DOWN_TRAVERSAL == 1
-          if (single)
-          {
-            // seems to be the best place for testing utilization
-            if (unlikely(popcnt(ray_tfar > curDist) <= switchThreshold))
+            if (single)
             {
-              *sptr_node++ = cur;
-              *sptr_near++ = curDist;
-              goto pop;
+              // seems to be the best place for testing utilization
+              if (unlikely(popcnt(ray_tfar > curDist) <= switchThreshold))
+              {
+                *sptr_node++ = cur;
+                *sptr_near++ = curDist;
+                goto pop;
+              }
             }
-          }
 #endif
-	}
+          }
 
-        /* return if stack is empty */
-        if (unlikely(cur == BVH::invalidNode)) {
-          assert(sptr_node == stack_node);
-          break;
+          /* return if stack is empty */
+          if (unlikely(cur == BVH::invalidNode)) {
+            assert(sptr_node == stack_node);
+            break;
+          }
+
+          /* intersect leaf */
+          assert(cur != BVH::emptyNode);
+          const vbool<K> valid_leaf = ray_tfar > curDist;
+          STAT3(normal.trav_leaves,1,popcnt(valid_leaf),K);
+          size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
+
+          size_t lazy_node = 0;
+          PrimitiveIntersectorK::intersect(valid_leaf,pre,ray,context,prim,items,lazy_node);
+          ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
+
+          if (unlikely(lazy_node)) {
+            *sptr_node = lazy_node; sptr_node++;
+            *sptr_near = neg_inf;   sptr_near++;
+          }
         }
-
-        /* intersect leaf */
-        assert(cur != BVH::emptyNode);
-        const vbool<K> valid_leaf = ray_tfar > curDist;
-        STAT3(normal.trav_leaves,1,popcnt(valid_leaf),K);
-        size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
-
-        size_t lazy_node = 0;
-        PrimitiveIntersectorK::intersect(valid_leaf,pre,ray,context,prim,items,lazy_node);
-        ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
-
-        if (unlikely(lazy_node)) {
-          *sptr_node = lazy_node; sptr_node++;
-          *sptr_near = neg_inf;   sptr_near++;
-        }
-      }
+      } while(valid_bits);
 
       AVX_ZERO_UPPER();
     }
