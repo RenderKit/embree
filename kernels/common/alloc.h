@@ -387,11 +387,14 @@ namespace embree
       size_t singleThreadBytes = single_mode_factor*threadLocalAllocOverhead*defaultBlockSizeSwitch;
 
       /* for sufficiently large scene we can increase the defaultBlockSize over the defaultBlockSizeSwitch size */
-      if (0) // (bytesEstimated+(singleThreadBytes-1))/singleThreadBytes >= threadCount)
+      /* 4160 as defaultBlockSize seems to be optimal for performance and does not cause a noticable build perf regression */
+#if 0
+      if (bytesEstimated+(singleThreadBytes-1))/singleThreadBytes >= threadCount)
         defaultBlockSize = min(max(defaultBlockSizeSwitch,bytesEstimated/(single_mode_factor*threadLocalAllocOverhead*threadCount)),growSize);
 
       /* otherwise we grow the defaultBlockSize up to defaultBlockSizeSwitch */
-      else
+        else
+#endif
         defaultBlockSize = clamp(blockSize,size_t(1024),defaultBlockSizeSwitch);
 
       if (bytesEstimated == 0) {
