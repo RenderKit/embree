@@ -77,19 +77,9 @@ namespace embree
       return curves->linearBounds(primID,time_range);
     }
 
-    /*! fill curve from curve list */
-    __forceinline void fill(const BezierPrim* prims, size_t& i, size_t end, Scene* scene)
-    {
-      const BezierPrim& curve = prims[i]; i++;
-      const unsigned geomID = curve.geomID();
-      const unsigned primID = curve.primID();
-      const NativeCurves* curves = scene->get<NativeCurves>(geomID);
-      const unsigned vertexID = curves->curve(primID);
-      new (this) Bezier1i(vertexID,geomID,primID);
-    }
-
   public:
     unsigned vertexID; //!< index of start vertex
+  private:
     unsigned geom;     //!< geometry ID
     unsigned prim;     //!< primitive ID
   };

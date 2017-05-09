@@ -65,11 +65,13 @@ namespace embree
     __forceinline size_t size() const { return __bsf(~movemask(valid())); }
 
     /* Returns the geometry IDs */
-    __forceinline vint<M> geomID() const { return geomIDs; }
+    __forceinline       vint<M>& geomID()       { return geomIDs; }
+    __forceinline const vint<M>& geomID() const { return geomIDs; }
     __forceinline int geomID(const size_t i) const { assert(i<M); return geomIDs[i]; }
 
     /* Returns the primitive IDs */
-    __forceinline vint<M> primID() const { return primIDs; }
+    __forceinline       vint<M>& primID()       { return primIDs; }
+    __forceinline const vint<M>& primID() const { return primIDs; }
     __forceinline int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
     /* gather the line segments */
@@ -196,6 +198,7 @@ namespace embree
     
   public:
     vint<M> v0;      // index of start vertex
+  private:
     vint<M> geomIDs; // geometry ID
     vint<M> primIDs; // primitive ID
   };
@@ -205,10 +208,10 @@ namespace embree
                                          Vec4vf4& p1,
                                          const Scene* scene) const
   {
-    const LineSegments* geom0 = scene->get<LineSegments>(geomIDs[0]);
-    const LineSegments* geom1 = scene->get<LineSegments>(geomIDs[1]);
-    const LineSegments* geom2 = scene->get<LineSegments>(geomIDs[2]);
-    const LineSegments* geom3 = scene->get<LineSegments>(geomIDs[3]);
+    const LineSegments* geom0 = scene->get<LineSegments>(geomID(0));
+    const LineSegments* geom1 = scene->get<LineSegments>(geomID(1));
+    const LineSegments* geom2 = scene->get<LineSegments>(geomID(2));
+    const LineSegments* geom3 = scene->get<LineSegments>(geomID(3));
 
     const vfloat4 a0 = vfloat4::loadu(geom0->vertexPtr(v0[0]));
     const vfloat4 a1 = vfloat4::loadu(geom1->vertexPtr(v0[1]));
@@ -255,10 +258,10 @@ namespace embree
                                          const Scene* scene,
                                          float time) const
   {
-    const LineSegments* geom0 = scene->get<LineSegments>(geomIDs[0]);
-    const LineSegments* geom1 = scene->get<LineSegments>(geomIDs[1]);
-    const LineSegments* geom2 = scene->get<LineSegments>(geomIDs[2]);
-    const LineSegments* geom3 = scene->get<LineSegments>(geomIDs[3]);
+    const LineSegments* geom0 = scene->get<LineSegments>(geomID(0));
+    const LineSegments* geom1 = scene->get<LineSegments>(geomID(1));
+    const LineSegments* geom2 = scene->get<LineSegments>(geomID(2));
+    const LineSegments* geom3 = scene->get<LineSegments>(geomID(3));
 
     const vfloat4 numTimeSegments(geom0->fnumTimeSegments, geom1->fnumTimeSegments, geom2->fnumTimeSegments, geom3->fnumTimeSegments);
     vfloat4 ftime;

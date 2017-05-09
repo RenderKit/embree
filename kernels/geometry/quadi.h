@@ -68,11 +68,13 @@ namespace embree
     __forceinline size_t size() const { return __bsf(~movemask(valid())); }
 
     /* Returns the geometry IDs */
-    __forceinline vint<M> geomID() const { return geomIDs; }
+    __forceinline       vint<M>& geomID()       { return geomIDs; }
+    __forceinline const vint<M>& geomID() const { return geomIDs; }
     __forceinline int geomID(const size_t i) const { assert(i<M); assert(geomIDs[i] != -1); return geomIDs[i]; }
 
     /* Returns the primitive IDs */
-    __forceinline vint<M> primID() const { return primIDs; }
+    __forceinline       vint<M>& primID()       { return primIDs; }
+    __forceinline const vint<M>& primID() const { return primIDs; }
     __forceinline int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
     __forceinline Vec3f& getVertex(const vint<M>& v, const size_t index, const Scene *const scene) const
@@ -297,6 +299,7 @@ namespace embree
     vint<M> v1;         // 4 byte offset of 2nd vertex
     vint<M> v2;         // 4 byte offset of 3rd vertex
     vint<M> v3;         // 4 byte offset of 4th vertex
+  private:
     vint<M> geomIDs;    // geometry ID of mesh
     vint<M> primIDs;    // primitive ID of primitive inside mesh
   };
@@ -310,10 +313,10 @@ namespace embree
   {
     prefetchL1(((char*)this)+0*64);
     prefetchL1(((char*)this)+1*64);
-    const int* vertices0 = scene->vertices[geomIDs[0]];
-    const int* vertices1 = scene->vertices[geomIDs[1]];
-    const int* vertices2 = scene->vertices[geomIDs[2]];
-    const int* vertices3 = scene->vertices[geomIDs[3]];
+    const int* vertices0 = scene->vertices[geomID(0)];
+    const int* vertices1 = scene->vertices[geomID(1)];
+    const int* vertices2 = scene->vertices[geomID(2)];
+    const int* vertices3 = scene->vertices[geomID(3)];
     const vfloat4 a0 = vfloat4::loadu(vertices0 + v0[0]);
     const vfloat4 a1 = vfloat4::loadu(vertices1 + v0[1]);
     const vfloat4 a2 = vfloat4::loadu(vertices2 + v0[2]);
@@ -345,10 +348,10 @@ namespace embree
                                        const Scene *const scene) const // FIXME: why do we have this special path here and not for triangles?
   {
     const vint16 perm(0,4,8,12,1,5,9,13,2,6,10,14,3,7,11,15);
-    const int* vertices0 = scene->vertices[geomIDs[0]];
-    const int* vertices1 = scene->vertices[geomIDs[1]];
-    const int* vertices2 = scene->vertices[geomIDs[2]];
-    const int* vertices3 = scene->vertices[geomIDs[3]];
+    const int* vertices0 = scene->vertices[geomID(0)];
+    const int* vertices1 = scene->vertices[geomID(1)];
+    const int* vertices2 = scene->vertices[geomID(2)];
+    const int* vertices3 = scene->vertices[geomID(3)];
 
     const vfloat4 a0 = vfloat4::loadu(vertices0 + v0[0]);
     const vfloat4 a1 = vfloat4::loadu(vertices1 + v0[1]);
@@ -437,10 +440,10 @@ namespace embree
                                        const Scene *const scene,
                                        const float time) const
   {
-    const QuadMesh* mesh0 = scene->get<QuadMesh>(geomIDs[0]);
-    const QuadMesh* mesh1 = scene->get<QuadMesh>(geomIDs[1]);
-    const QuadMesh* mesh2 = scene->get<QuadMesh>(geomIDs[2]);
-    const QuadMesh* mesh3 = scene->get<QuadMesh>(geomIDs[3]);
+    const QuadMesh* mesh0 = scene->get<QuadMesh>(geomID(0));
+    const QuadMesh* mesh1 = scene->get<QuadMesh>(geomID(1));
+    const QuadMesh* mesh2 = scene->get<QuadMesh>(geomID(2));
+    const QuadMesh* mesh3 = scene->get<QuadMesh>(geomID(3));
 
     const vfloat4 numTimeSegments(mesh0->fnumTimeSegments, mesh1->fnumTimeSegments, mesh2->fnumTimeSegments, mesh3->fnumTimeSegments);
     vfloat4 ftime;

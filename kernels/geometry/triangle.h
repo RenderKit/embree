@@ -61,11 +61,13 @@ namespace embree
     __forceinline size_t size() const { return __bsf(~movemask(valid()));  }
 
     /* Returns the geometry IDs */
-    __forceinline vint<M> geomID() const { return geomIDs;  }
+    __forceinline       vint<M>& geomID()       { return geomIDs;  }
+    __forceinline const vint<M>& geomID() const { return geomIDs;  }
     __forceinline int geomID(const size_t i) const { assert(i<M); return geomIDs[i]; }
 
     /* Returns the primitive IDs */
-    __forceinline vint<M> primID() const { return primIDs; }
+    __forceinline       vint<M>& primID()       { return primIDs; }
+    __forceinline const vint<M>& primID() const { return primIDs; }
     __forceinline int  primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
     /* Calculate the bounds of the triangle */
@@ -159,6 +161,7 @@ namespace embree
     Vec3vf<M> v0;      // base vertex of the triangles
     Vec3vf<M> e1;      // 1st edge of the triangles (v0-v1)
     Vec3vf<M> e2;      // 2nd edge of the triangles (v2-v0)
+  private:
     vint<M> geomIDs; // geometry IDs
     vint<M> primIDs; // primitive IDs
   };

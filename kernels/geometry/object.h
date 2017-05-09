@@ -44,7 +44,15 @@ namespace embree
 
     /*! constructs a virtual object */
     Object (unsigned geomID, unsigned primID) 
-    : geomID(geomID), primID(primID) {}
+    : _geomID(geomID), _primID(primID) {}
+
+    __forceinline unsigned geomID() const {
+      return _geomID;
+    }
+
+    __forceinline unsigned primID() const {
+      return _primID;
+    }
 
     /*! fill triangle from triangle list */
     __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene)
@@ -77,11 +85,11 @@ namespace embree
 
     /* Updates the primitive */
     __forceinline BBox3fa update(AccelSet* mesh) {
-      return mesh->bounds(primID);
+      return mesh->bounds(primID());
     }
 
-  public:
-    unsigned geomID;  //!< geometry ID
-    unsigned primID;  //!< primitive ID
+  private:
+    unsigned _geomID;  //!< geometry ID
+    unsigned _primID;  //!< primitive ID
   };
 }

@@ -35,14 +35,14 @@ namespace embree
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& quad)
       {
         STAT3(normal.trav_prims,1,1,1);
-        pre.intersect(ray,context,quad.v0,quad.v1,quad.v2,quad.v3,quad.geomIDs,quad.primIDs);
+        pre.intersect(ray,context,quad.v0,quad.v1,quad.v2,quad.v3,quad.geomID(),quad.primID());
       }
         
       /*! Test if the ray is occluded by one of M quads. */
       static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& quad)
       {
         STAT3(shadow.trav_prims,1,1,1);
-        return pre.occluded(ray,context, quad.v0,quad.v1,quad.v2,quad.v3,quad.geomIDs,quad.primIDs);
+        return pre.occluded(ray,context, quad.v0,quad.v1,quad.v2,quad.v3,quad.geomID(),quad.primID());
       }
 
       /*! Intersect an array of rays with an array of M primitives. */
@@ -79,7 +79,7 @@ namespace embree
             const Vec3vf<K> p1 = broadcast<vfloat<K>>(quad.v1,i);
             const Vec3vf<K> p2 = broadcast<vfloat<K>>(quad.v2,i);
             const Vec3vf<K> p3 = broadcast<vfloat<K>>(quad.v3,i);
-            pre.intersectK(valid_i,ray,p0,p1,p2,p3,IntersectKEpilogM<M,K,filter>(ray,context,quad.geomIDs,quad.primIDs,i));
+            pre.intersectK(valid_i,ray,p0,p1,p2,p3,IntersectKEpilogM<M,K,filter>(ray,context,quad.geomID(),quad.primID(),i));
           }
         }
         
@@ -96,7 +96,7 @@ namespace embree
             const Vec3vf<K> p1 = broadcast<vfloat<K>>(quad.v1,i);
             const Vec3vf<K> p2 = broadcast<vfloat<K>>(quad.v2,i);
             const Vec3vf<K> p3 = broadcast<vfloat<K>>(quad.v3,i);
-            if (pre.intersectK(valid0,ray,p0,p1,p2,p3,OccludedKEpilogM<M,K,filter>(valid0,ray,context,quad.geomIDs,quad.primIDs,i))) 
+            if (pre.intersectK(valid0,ray,p0,p1,p2,p3,OccludedKEpilogM<M,K,filter>(valid0,ray,context,quad.geomID(),quad.primID(),i))) 
               break;
           }
           return !valid0;
@@ -106,14 +106,14 @@ namespace embree
         static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const QuadMv<M>& quad)
         {
           STAT3(normal.trav_prims,1,1,1);
-          pre.intersect1(ray,k,context,quad.v0,quad.v1,quad.v2,quad.v3,quad.geomIDs,quad.primIDs); 
+          pre.intersect1(ray,k,context,quad.v0,quad.v1,quad.v2,quad.v3,quad.geomID(),quad.primID()); 
         }
         
         /*! Test if the ray is occluded by one of the M triangles. */
         static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const QuadMv<M>& quad)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          return pre.occluded1(ray,k,context,quad.v0,quad.v1,quad.v2,quad.v3,quad.geomIDs,quad.primIDs); 
+          return pre.occluded1(ray,k,context,quad.v0,quad.v1,quad.v2,quad.v3,quad.geomID(),quad.primID()); 
         }
       };
 
@@ -128,14 +128,14 @@ namespace embree
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& quad)
       {
         STAT3(normal.trav_prims,1,1,1);
-        pre.intersect(ray,context,quad.v0,quad.v1,quad.v2,quad.v3,quad.geomIDs,quad.primIDs);
+        pre.intersect(ray,context,quad.v0,quad.v1,quad.v2,quad.v3,quad.geomID(),quad.primID());
       }
         
       /*! Test if the ray is occluded by one of M quads. */
       static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& quad)
       {
         STAT3(shadow.trav_prims,1,1,1);
-        return pre.occluded(ray,context, quad.v0,quad.v1,quad.v2,quad.v3,quad.geomIDs,quad.primIDs);
+        return pre.occluded(ray,context, quad.v0,quad.v1,quad.v2,quad.v3,quad.geomID(),quad.primID());
       }
 
       /*! Intersect an array of rays with an array of M primitives. */
@@ -172,7 +172,7 @@ namespace embree
             const Vec3vf<K> p1 = broadcast<vfloat<K>>(quad.v1,i);
             const Vec3vf<K> p2 = broadcast<vfloat<K>>(quad.v2,i);
             const Vec3vf<K> p3 = broadcast<vfloat<K>>(quad.v3,i);
-            pre.intersectK(valid_i,ray,p0,p1,p2,p3,IntersectKEpilogM<M,K,filter>(ray,context,quad.geomIDs,quad.primIDs,i));
+            pre.intersectK(valid_i,ray,p0,p1,p2,p3,IntersectKEpilogM<M,K,filter>(ray,context,quad.geomID(),quad.primID(),i));
           }
         }
         
@@ -189,7 +189,7 @@ namespace embree
             const Vec3vf<K> p1 = broadcast<vfloat<K>>(quad.v1,i);
             const Vec3vf<K> p2 = broadcast<vfloat<K>>(quad.v2,i);
             const Vec3vf<K> p3 = broadcast<vfloat<K>>(quad.v3,i);
-            if (pre.intersectK(valid0,ray,p0,p1,p2,p3,OccludedKEpilogM<M,K,filter>(valid0,ray,context,quad.geomIDs,quad.primIDs,i))) 
+            if (pre.intersectK(valid0,ray,p0,p1,p2,p3,OccludedKEpilogM<M,K,filter>(valid0,ray,context,quad.geomID(),quad.primID(),i))) 
               break;
           }
           return !valid0;
@@ -199,14 +199,14 @@ namespace embree
         static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const QuadMv<M>& quad)
         {
           STAT3(normal.trav_prims,1,1,1);
-          pre.intersect1(ray,k,context,quad.v0,quad.v1,quad.v2,quad.v3,quad.geomIDs,quad.primIDs); 
+          pre.intersect1(ray,k,context,quad.v0,quad.v1,quad.v2,quad.v3,quad.geomID(),quad.primID()); 
         }
         
         /*! Test if the ray is occluded by one of the M triangles. */
         static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const QuadMv<M>& quad)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          return pre.occluded1(ray,k,context,quad.v0,quad.v1,quad.v2,quad.v3,quad.geomIDs,quad.primIDs); 
+          return pre.occluded1(ray,k,context,quad.v0,quad.v1,quad.v2,quad.v3,quad.geomID(),quad.primID()); 
         }
       };
   }
