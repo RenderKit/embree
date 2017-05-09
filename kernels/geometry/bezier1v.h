@@ -74,24 +74,6 @@ namespace embree
       new (this) Bezier1v(p0,p1,p2,p3,geomID,primID);
     }
 
-    /*! calculate the center of the curve */
-    __forceinline const Vec3fa center2() const {
-      return p0+p3;
-    }
-
-    /*! calculate the center of the curve */
-    __forceinline const Vec3fa center2(const AffineSpace3fa& space) const {
-      return xfmPoint(space,p0)+xfmPoint(space,p3);
-    }
-
-    __forceinline uint64_t id64() const {
-      return (((uint64_t)prim) << 32) + (uint64_t)geom;
-    }
-
-    friend __forceinline bool operator<(const Bezier1v& p0, const Bezier1v& p1) {
-      return p0.id64() < p1.id64();
-    }
-
     friend std::ostream& operator<<(std::ostream& cout, const Bezier1v& b) 
     {
       return std::cout << "Bezier1v { " << std::endl << 
