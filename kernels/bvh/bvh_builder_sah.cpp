@@ -218,9 +218,7 @@ namespace embree
             const size_t node_bytes = numPrimitives*sizeof(typename BVH::AlignedNodeMB)/(4*N);
             const size_t leaf_bytes = size_t(1.2*Primitive::blocks(numPrimitives)*sizeof(Primitive));
             bvh->alloc.init_estimate(node_bytes+leaf_bytes,settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD,settings.primrefarrayalloc != size_t(inf));
-#if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
             settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,numPrimitives,node_bytes+leaf_bytes);
-#endif
             prims.resize(numPrimitives); 
 
             PrimInfo pinfo = mesh ?
@@ -325,9 +323,7 @@ namespace embree
             const size_t node_bytes = numPrimitives*sizeof(typename BVH::QuantizedNode)/(4*N);
             const size_t leaf_bytes = size_t(1.2*Primitive::blocks(numPrimitives)*sizeof(Primitive));
             bvh->alloc.init_estimate(node_bytes+leaf_bytes,settings.singleThreadThreshold != DEFAULT_SINGLE_THREAD_THRESHOLD);
-#if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
             settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,numPrimitives,node_bytes+leaf_bytes);
-#endif
             NodeRef root = BVHNBuilderQuantizedVirtual<N>::build(&bvh->alloc,CreateLeafQuantized<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,settings);
             bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
             //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: COPY LAYOUT FOR LARGE NODES !!!
@@ -482,10 +478,7 @@ namespace embree
         settings.maxLeafSize = maxLeafSize;
         settings.travCost = travCost;
         settings.intCost = intCost;
-        settings.singleThreadThreshold = singleThreadThreshold;
-#if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
         settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,pinfo.size(),node_bytes+leaf_bytes);
-#endif
 
         /* build hierarchy */
         auto root = BVHBuilderBinnedSAH::build<NodeRecordMB>
@@ -517,10 +510,7 @@ namespace embree
         settings.travCost = travCost;
         settings.intCost = intCost;
         settings.singleLeafTimeSegment = Primitive::singleTimeSegment;
-        settings.singleThreadThreshold = singleThreadThreshold;
-#if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
         settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,pinfo.size(),node_bytes+leaf_bytes);
-#endif
         
         /* build hierarchy */
         auto root =
@@ -601,9 +591,7 @@ namespace embree
         const size_t node_bytes = pinfo.size()*sizeof(typename BVH::AlignedNode)/(4*N);
         const size_t leaf_bytes = size_t(1.2*Primitive::blocks(pinfo.size())*sizeof(Primitive));
         bvh->alloc.init_estimate(node_bytes+leaf_bytes);
-#if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
         settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,pinfo.size(),node_bytes+leaf_bytes);
-#endif
 
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxBuildDepthLeaf;

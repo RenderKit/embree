@@ -4553,8 +4553,6 @@ namespace embree
     /* ignore failure of some tests that are known to fail */
     map_tests(tests, [&] (Ref<Test> test) { 
         if (test->name.find("watertight_subdiv") != std::string::npos) test->ignoreFailure = true;
-        //if (test->name.find("memory_consumption") != std::string::npos) test->ignoreFailure = true;
-
       });
     
     /**************************************************************************/

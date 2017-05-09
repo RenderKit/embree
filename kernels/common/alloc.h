@@ -32,13 +32,8 @@ namespace embree
 
     /* default settings */
     //static const size_t defaultBlockSize = 4096;
-#if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
 #define maxAllocationSize size_t(2*1024*1024-maxAlignment)
     static const size_t MAX_THREAD_USED_BLOCK_SLOTS = 8;
-#else
-#define maxAllocationSize size_t(4*1024*1024-maxAlignment)
-    static const size_t MAX_THREAD_USED_BLOCK_SLOTS = 8;
-#endif
 
   public:
 
@@ -354,8 +349,6 @@ namespace embree
       }
     }
 
-#if defined(EMBREE_INTERSECTION_FILTER_RESTORE) // FIXME: remove
-
     __forceinline size_t alignSize(size_t i) {
       return (i+127)/128*128;
     }
@@ -410,27 +403,6 @@ namespace embree
       if (device->alloc_thread_block_size != 0) defaultBlockSize = device->alloc_thread_block_size;
       if (device->alloc_single_thread_alloc != -1) use_single_mode = device->alloc_single_thread_alloc;
     }
-
-#else
-
-    /*! initializes the grow size */
-    __forceinline void initGrowSizeAndNumSlots(size_t bytesAllocate, bool single_mode, bool compact, bool fast) 
-    {
-      bytesAllocate  = ((bytesAllocate +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
-      defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE+maxAlignment));
-      growSize = clamp(bytesAllocate,size_t(PAGE_SIZE),maxAllocationSize); // PAGE_SIZE -maxAlignment ?
-      maxGrowSize = maxAllocationSize;
-      use_single_mode = single_mode;     
-      log2_grow_size_scale = 0;
-      slotMask = 0x0;
-      if (!compact) {
-        if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesAllocate >  4*maxAllocationSize) slotMask = 0x1;
-        if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesAllocate >  8*maxAllocationSize) slotMask = 0x3;
-        if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesAllocate > 16*maxAllocationSize) slotMask = 0x7;
-      }
-    }
-
-#endif
 
     /*! initializes the allocator */
     void init(size_t bytesAllocate, size_t bytesReserve, size_t bytesEstimate)
