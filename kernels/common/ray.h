@@ -31,7 +31,7 @@ namespace embree
 
     /* Constructs a ray from origin, direction, and ray segment. Near
      * has to be smaller than far */
-    __forceinline RayK(const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir,
+    __forceinline RayK(const Vec3vf<K>& org, const Vec3vf<K>& dir,
                        const vfloat<K>& tnear = zero, const vfloat<K>& tfar = inf,
                        const vfloat<K>& time = zero, const vint<K>& mask = -1)
       : org(org), dir(dir), tnear(tnear), tfar(tfar), time(time), mask(mask), geomID(-1), primID(-1), instID(-1) {}
@@ -104,20 +104,20 @@ namespace embree
 
 
     /* Ray data */
-    Vec3<vfloat<K>> org; // ray origin
-    Vec3<vfloat<K>> dir; // ray direction
-    vfloat<K> tnear;     // start of ray segment
-    vfloat<K> tfar;      // end of ray segment
-    vfloat<K> time;      // time of this ray for motion blur.
-    vint<K> mask;        // used to mask out objects during traversal
+    Vec3vf<K> org;   // ray origin
+    Vec3vf<K> dir;   // ray direction
+    vfloat<K> tnear; // start of ray segment
+    vfloat<K> tfar;  // end of ray segment
+    vfloat<K> time;  // time of this ray for motion blur.
+    vint<K> mask;    // used to mask out objects during traversal
 
     /* Hit data */
-    Vec3<vfloat<K>> Ng;  // geometry normal
-    vfloat<K> u;         // barycentric u coordinate of hit
-    vfloat<K> v;         // barycentric v coordinate of hit
-    vint<K> geomID;      // geometry ID
-    vint<K> primID;      // primitive ID
-    vint<K> instID;      // instance ID
+    Vec3vf<K> Ng;    // geometry normal
+    vfloat<K> u;     // barycentric u coordinate of hit
+    vfloat<K> v;     // barycentric v coordinate of hit
+    vint<K> geomID;  // geometry ID
+    vint<K> primID;  // primitive ID
+    vint<K> instID;  // instance ID
   };
 
 #if defined(__AVX512F__)
@@ -406,7 +406,7 @@ namespace embree
       ray.geomID = geomID(4*i)[0];
     }
 
-    __forceinline Ray gather(const size_t offset)
+    __forceinline Ray gatherByOffset(const size_t offset)
     {
       Ray ray;
       ray.org.x = orgx(offset)[0];
@@ -425,7 +425,7 @@ namespace embree
     }
 
     template<int K>
-    __forceinline RayK<K> gather(const size_t offset)
+    __forceinline RayK<K> gatherByOffset(const size_t offset)
     {
       RayK<K> ray;
       ray.org.x = vfloat<K>::loadu(orgx(offset));
@@ -443,7 +443,7 @@ namespace embree
       return ray;
     }
 
-    __forceinline void scatter(const size_t offset, const Ray& ray, const bool all)
+    __forceinline void scatterByOffset(const size_t offset, const Ray& ray, const bool all)
     {
       geomID(offset)[0] = ray.geomID;
       if (all && ray.geomID !=  RTC_INVALID_GEOMETRY_ID)
@@ -460,7 +460,7 @@ namespace embree
     }
 
     template<int K>
-    __forceinline void scatter(const vbool<K>& valid_i, const size_t offset, const RayK<K>& ray, const bool all)
+    __forceinline void scatterByOffset(const vbool<K>& valid_i, const size_t offset, const RayK<K>& ray, const bool all)
     {
       vbool<K> valid = valid_i;
       vint<K>::storeu(valid,geomID(offset),ray.geomID);
@@ -479,7 +479,7 @@ namespace embree
       vint<K>  ::storeu(valid,instID(offset),ray.instID);
     }
 
-    __forceinline size_t getOctant(const size_t offset)
+    __forceinline size_t getOctantByOffset(const size_t offset)
     {
       const float dx = dirx(offset)[0];
       const float dy = diry(offset)[0];
@@ -488,7 +488,7 @@ namespace embree
       return octantID;
     }
 
-    __forceinline bool isValid(const size_t offset)
+    __forceinline bool isValidByOffset(const size_t offset)
     {
       const float nnear = tnear(offset)[0];
       const float ffar  = tfar(offset)[0];
@@ -588,7 +588,7 @@ namespace embree
     }
 
     template<int K>
-    __forceinline RayK<K> gather(const vbool<K>& valid, const size_t offset)
+    __forceinline RayK<K> gatherByOffset(const vbool<K>& valid, const size_t offset)
     {
       RayK<K> ray;
       ray.org.x = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)orgx + offset));
@@ -604,6 +604,16 @@ namespace embree
       ray.instID = instID  ? vint<K>::loadu(valid,(const void * __restrict__ )((char*)instID  + offset)) : -1;
       ray.geomID = RTC_INVALID_GEOMETRY_ID;
       return ray;
+    }
+
+    template<int K>
+    __forceinline Vec3vf<K> gatherDirByOffset(const vbool<K>& valid, const size_t offset)
+    {
+      Vec3vf<K> dir;
+      dir.x = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)dirx + offset));
+      dir.y = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)diry + offset));
+      dir.z = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)dirz + offset));
+      return dir;
     }
 
     __forceinline void scatterByOffset(const size_t offset, const Ray& ray, const bool all=true)
@@ -624,7 +634,7 @@ namespace embree
     }
 
     template<int K>
-    __forceinline void scatter(const vbool<K>& valid_i, const size_t offset, const RayK<K>& ray, const bool all=true)
+    __forceinline void scatterByOffset(const vbool<K>& valid_i, const size_t offset, const RayK<K>& ray, const bool all=true)
     {
       vbool<K> valid = valid_i;
       vint<K>::storeu(valid,(int * __restrict__ )((char*)geomID + offset), ray.geomID);
@@ -659,5 +669,12 @@ namespace embree
       return nnear <= ffar;
     }
 
+    template<int K>
+    __forceinline vbool<K> isValidByOffset(const vbool<K>& valid, const size_t offset)
+    {
+      const vfloat<K> nnear = tnear ? vfloat<K>::loadu(valid,(float* __restrict__ )((char*)tnear + offset)) : 0.0f;
+      const vfloat<K> ffar  = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)tfar + offset));
+      return nnear <= ffar;
+    }
   };
 }

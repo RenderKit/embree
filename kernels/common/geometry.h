@@ -22,6 +22,32 @@ namespace embree
 {
   class Scene;
 
+  /* calculate time segment itime and fractional time ftime */
+  __forceinline int getTimeSegment(float time, float numTimeSegments, float& ftime)
+  {
+    const float timeScaled = time * numTimeSegments;
+    const float itimef = clamp(floor(timeScaled), 0.0f, numTimeSegments-1.0f);
+    ftime = timeScaled - itimef;
+    return int(itimef);
+  }
+
+  template<int N>
+  __forceinline vint<N> getTimeSegment(const vfloat<N>& time, const vfloat<N>& numTimeSegments, vfloat<N>& ftime)
+  {
+    const vfloat<N> timeScaled = time * numTimeSegments;
+    const vfloat<N> itimef = clamp(floor(timeScaled), vfloat<N>(zero), numTimeSegments-1.0f);
+    ftime = timeScaled - itimef;
+    return vint<N>(itimef);
+  }
+
+  /* calculate overlapping time segment range */
+  __forceinline range<int> getTimeSegmentRange(const BBox1f& time_range, float numTimeSegments)
+  {
+    const int itime_lower = (int)floor(time_range.lower*numTimeSegments);
+    const int itime_upper = (int)ceil (time_range.upper*numTimeSegments);
+    return make_range(itime_lower, itime_upper);
+  }
+
   /*! Base class all geometries are derived from */
   class Geometry
   {
@@ -318,164 +344,8 @@ namespace embree
     template<typename simd> __forceinline bool hasISPCOcclusionFilter() const;
 
   public:
-
-    /*! calculates the linear bounds of a primitive at the itimeGlobal'th time segment */
-    template<typename BoundsFunc>
-    __forceinline static LBBox3fa linearBounds(const BoundsFunc& bounds, size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps)
-    {
-      if (numTimeStepsGlobal == numTimeSteps)
-      {
-        const BBox3fa bounds0 = bounds(itimeGlobal+0);
-        const BBox3fa bounds1 = bounds(itimeGlobal+1);
-
-        return LBBox3fa(bounds0, bounds1);
-      }
-
-      const int timeSegments = int(numTimeSteps-1);
-      const int timeSegmentsGlobal = int(numTimeStepsGlobal-1);
-      const float invTimeSegmentsGlobal = rcp(float(timeSegmentsGlobal));
-
-      const int itimeScaled = int(itimeGlobal) * timeSegments;
-
-      const int itime0 = itimeScaled / timeSegmentsGlobal;
-      const int rtime0 = itimeScaled % timeSegmentsGlobal;
-      const float ftime0 = float(rtime0) * invTimeSegmentsGlobal;
-      const int rtime1 = rtime0 + timeSegments;
-
-      if (rtime1 <= timeSegmentsGlobal)
-      {
-        const BBox3fa b0 = bounds(itime0+0);
-        const BBox3fa b1 = bounds(itime0+1);
-
-        const float ftime1 = float(rtime1) * invTimeSegmentsGlobal;
-
-        return LBBox3fa(lerp(b0, b1, ftime0), lerp(b0, b1, ftime1));
-      }
-
-      const BBox3fa b0 = bounds(itime0+0);
-      const BBox3fa b1 = bounds(itime0+1);
-      const BBox3fa b2 = bounds(itime0+2);
-
-      const float ftime1 = float(rtime1-timeSegmentsGlobal) * invTimeSegmentsGlobal;
-
-      BBox3fa bounds0 = lerp(b0, b1, ftime0);
-      BBox3fa bounds1 = lerp(b1, b2, ftime1);
-
-      const BBox3fa b1Lerp = lerp(bounds0, bounds1, float(timeSegmentsGlobal-rtime0) * rcp(float(timeSegments)));
-
-      bounds0.lower = min(bounds0.lower, bounds0.lower - (b1Lerp.lower - b1.lower));
-      bounds1.lower = min(bounds1.lower, bounds1.lower - (b1Lerp.lower - b1.lower));
-
-      bounds0.upper = max(bounds0.upper, bounds0.upper + (b1.upper - b1Lerp.upper));
-      bounds1.upper = max(bounds1.upper, bounds1.upper + (b1.upper - b1Lerp.upper));
-
-      return LBBox3fa(bounds0, bounds1);
-    }
-
-    /*! calculates the linear bounds of a primitive at the itimeGlobal'th time segment, if it's valid */
-    template<typename BoundsFunc>
-    __forceinline static bool linearBounds(const BoundsFunc& bounds, size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, LBBox3fa& lbbox)
-    {
-      if (numTimeStepsGlobal == numTimeSteps)
-      {
-        BBox3fa bounds0; if (unlikely(!bounds(itimeGlobal+0, bounds0))) return false;
-        BBox3fa bounds1; if (unlikely(!bounds(itimeGlobal+1, bounds1))) return false;
-
-        lbbox = LBBox3fa(bounds0, bounds1);
-        return true;
-      }
-
-      const int timeSegments = int(numTimeSteps-1);
-      const int timeSegmentsGlobal = int(numTimeStepsGlobal-1);
-      const float invTimeSegmentsGlobal = rcp(float(timeSegmentsGlobal));
-
-      const int itimeScaled = int(itimeGlobal) * timeSegments;
-
-      const int itime0 = itimeScaled / timeSegmentsGlobal;
-      const int rtime0 = itimeScaled % timeSegmentsGlobal;
-      const float ftime0 = float(rtime0) * invTimeSegmentsGlobal;
-      const int rtime1 = rtime0 + timeSegments;
-
-      if (rtime1 <= timeSegmentsGlobal)
-      { 
-        BBox3fa b0; if (unlikely(!bounds(itime0+0, b0))) return false;
-        BBox3fa b1; if (unlikely(!bounds(itime0+1, b1))) return false;
-
-        const float ftime1 = float(rtime1) * invTimeSegmentsGlobal;
-
-        lbbox = LBBox3fa(lerp(b0, b1, ftime0), lerp(b0, b1, ftime1));
-        return true;
-      }
-
-      BBox3fa b0; if (unlikely(!bounds(itime0+0, b0))) return false;
-      BBox3fa b1; if (unlikely(!bounds(itime0+1, b1))) return false;
-      BBox3fa b2; if (unlikely(!bounds(itime0+2, b2))) return false;
-
-      const float ftime1 = float(rtime1-timeSegmentsGlobal) * invTimeSegmentsGlobal;
-
-      BBox3fa bounds0 = lerp(b0, b1, ftime0);
-      BBox3fa bounds1 = lerp(b1, b2, ftime1);
-
-      const BBox3fa b1Lerp = lerp(bounds0, bounds1, float(timeSegmentsGlobal-rtime0) * rcp(float(timeSegments)));
-
-      bounds0.lower = min(bounds0.lower, bounds0.lower - (b1Lerp.lower - b1.lower));
-      bounds1.lower = min(bounds1.lower, bounds1.lower - (b1Lerp.lower - b1.lower));
-
-      bounds0.upper = max(bounds0.upper, bounds0.upper + (b1.upper - b1Lerp.upper));
-      bounds1.upper = max(bounds1.upper, bounds1.upper + (b1.upper - b1Lerp.upper));
-
-      lbbox = LBBox3fa(bounds0, bounds1);
-      return true;
-    }
-
-    /*! calculates the build bounds of a primitive at the itimeGlobal'th time segment, if it's valid */
-    template<typename BoundsFunc>
-    __forceinline static bool buildBounds(const BoundsFunc& bounds, size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, BBox3fa& bbox)
-    {
-      LBBox3fa lbbox;
-      if (!linearBounds(bounds, itimeGlobal, numTimeStepsGlobal, numTimeSteps, lbbox))
-        return false;
-
-      bbox = 0.5f * (lbbox.bounds0 + lbbox.bounds1);
-      return true;
-    }
-
-    /*! checks if a primitive is valid at the itimeGlobal'th time segment */
-    template<typename ValidFunc>
-    __forceinline static bool validLinearBounds(const ValidFunc& valid, size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps)
-    {
-      if (numTimeStepsGlobal == numTimeSteps)
-      {
-        if (unlikely(!valid(itimeGlobal+0))) return false;
-        if (unlikely(!valid(itimeGlobal+1))) return false;
-        return true;
-      }
-
-      const int timeSegments = int(numTimeSteps-1);
-      const int timeSegmentsGlobal = int(numTimeStepsGlobal-1);
-
-      const int itimeScaled = int(itimeGlobal) * timeSegments;
-
-      const int itime0 = itimeScaled / timeSegmentsGlobal;
-      const int rtime0 = itimeScaled % timeSegmentsGlobal;
-      const int rtime1 = rtime0 + timeSegments;
-
-      if (rtime1 <= timeSegmentsGlobal)
-      {
-        if (unlikely(!valid(itime0+0))) return false;
-        if (unlikely(!valid(itime0+1))) return false;
-        return true;
-      }
-
-      if (unlikely(!valid(itime0+0))) return false;
-      if (unlikely(!valid(itime0+1))) return false;
-      if (unlikely(!valid(itime0+2))) return false;
-      return true;
-    }
-
-  public:
-    Scene* parent;             //!< pointer to scene this mesh belongs to
-    unsigned id;               //!< internal geometry ID
+    Scene* scene;              //!< pointer to scene this mesh belongs to
+    unsigned geomID;           //!< internal geometry ID
     Type type;                 //!< geometry type 
     size_t numPrimitives;      //!< number of primitives of this geometry
     bool numPrimitivesChanged; //!< true if number of primitives changed
@@ -532,22 +402,4 @@ namespace embree
   template<> __forceinline bool Geometry::hasISPCIntersectionFilter<vfloat16>() const { return (ispcIntersectionFilterMask & HAS_FILTER16) != 0; }
   template<> __forceinline bool Geometry::hasISPCOcclusionFilter   <vfloat16>() const { return (ispcOcclusionFilterMask    & HAS_FILTER16) != 0; }
 #endif
-
-  /* calculate time segment itime and fractional time ftime */
-  __forceinline int getTimeSegment(float time, float numTimeSegments, float& ftime)
-  {
-    const float timeScaled = time * numTimeSegments;
-    const float itimef = clamp(floor(timeScaled), 0.0f, numTimeSegments-1.0f);
-    ftime = timeScaled - itimef;
-    return int(itimef);
-  }
-
-  template<int N>
-  __forceinline vint<N> getTimeSegment(const vfloat<N>& time, const vfloat<N>& numTimeSegments, vfloat<N>& ftime)
-  {
-    const vfloat<N> timeScaled = time * numTimeSegments;
-    const vfloat<N> itimef = clamp(floor(timeScaled), vfloat<N>(zero), numTimeSegments-1.0f);
-    ftime = timeScaled - itimef;
-    return vint<N>(itimef);
-  }
 }

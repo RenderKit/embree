@@ -90,6 +90,10 @@ namespace embree
       return _mm512_load_si512(addr);
     }
 
+    static __forceinline const vllong8 load( const unsigned char* const ptr ) { 
+      return _mm512_cvtepu8_epi64(*(__m128i*)ptr); 
+    }
+
     static __forceinline void store(void* ptr, const vllong8& v) {
       _mm512_store_si512(ptr,v);
     }
@@ -125,6 +129,10 @@ namespace embree
 
     static __forceinline vllong8 compact(const vboold8& mask, const vllong8& a, vllong8& b) {
       return _mm512_mask_compress_epi64(a,mask,b);
+    }
+
+    static __forceinline vllong8 expand(const vboold8& mask, const vllong8& a, vllong8& b) {
+      return _mm512_mask_expand_epi64(b,mask,a);
     }
 
     static __forceinline vllong8 broadcast64bit(size_t v) {
@@ -321,19 +329,13 @@ namespace embree
     return _mm_cvtsi128_si64(_mm512_castsi512_si128(a));
   }
 
+  __forceinline vllong8 zeroExtend32Bit(const __m512i &a) {
+    return _mm512_cvtepu32_epi64(_mm512_castsi512_si256(a));
+  }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
-
-  __forceinline long long reduce_add(const vllong8& a) { return _mm512_reduce_add_epi64(a); }
-  __forceinline long long reduce_min(const vllong8& a) { return _mm512_reduce_min_epi64(a); }
-  __forceinline long long reduce_max(const vllong8& a) { return _mm512_reduce_max_epi64(a); }
-  __forceinline long long reduce_and(const vllong8& a) { return _mm512_reduce_and_epi64(a); }
-  __forceinline long long reduce_or (const vllong8& a) { return _mm512_reduce_or_epi64(a); }
-
-  __forceinline vllong8 vreduce_add2(vllong8 x) {                      return x + shuffle<1,0,3,2>(x); }
-  __forceinline vllong8 vreduce_add4(vllong8 x) { x = vreduce_add2(x); return x + shuffle<2,3,0,1>(x); }
-  __forceinline vllong8 vreduce_add (vllong8 x) { x = vreduce_add4(x); return x + shuffle4<1,0>(x); }
 
   __forceinline vllong8 vreduce_min2(vllong8 x) {                      return min(x,shuffle<1,0,3,2>(x)); }
   __forceinline vllong8 vreduce_min4(vllong8 x) { x = vreduce_min2(x); return min(x,shuffle<2,3,0,1>(x)); }
@@ -350,6 +352,16 @@ namespace embree
   __forceinline vllong8 vreduce_or2(vllong8 x) {                     return x | shuffle<1,0,3,2>(x); }
   __forceinline vllong8 vreduce_or4(vllong8 x) { x = vreduce_or2(x); return x | shuffle<2,3,0,1>(x); }
   __forceinline vllong8 vreduce_or (vllong8 x) { x = vreduce_or4(x); return x | shuffle4<1,0>(x); }
+
+  __forceinline vllong8 vreduce_add2(vllong8 x) {                      return x + shuffle<1,0,3,2>(x); }
+  __forceinline vllong8 vreduce_add4(vllong8 x) { x = vreduce_add2(x); return x + shuffle<2,3,0,1>(x); }
+  __forceinline vllong8 vreduce_add (vllong8 x) { x = vreduce_add4(x); return x + shuffle4<1,0>(x); }
+
+  __forceinline long long reduce_min(const vllong8& v) { return toScalar(vreduce_min(v)); }
+  __forceinline long long reduce_max(const vllong8& v) { return toScalar(vreduce_max(v)); }
+  __forceinline long long reduce_and(const vllong8& v) { return toScalar(vreduce_and(v)); }
+  __forceinline long long reduce_or (const vllong8& v) { return toScalar(vreduce_or (v)); }
+  __forceinline long long reduce_add(const vllong8& v) { return toScalar(vreduce_add(v)); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Memory load and store operations

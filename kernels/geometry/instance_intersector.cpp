@@ -41,23 +41,20 @@ namespace embree
 
     template<int K>
     void FastInstanceIntersectorK<K>::intersect(vint<K>* validi, const Instance* instance, RayK<K>& ray, size_t item)
-    {
-      typedef Vec3<vfloat<K>> Vec3vfK;
-      typedef AffineSpaceT<LinearSpace3<Vec3vfK>> AffineSpace3vfK;
-      
-      AffineSpace3vfK world2local;
+    { 
+      AffineSpace3vf<K> world2local;
       const vbool<K> valid = *validi == vint<K>(-1);
       if (likely(instance->numTimeSteps == 1)) world2local = instance->getWorld2Local();
       else                                     world2local = instance->getWorld2Local<K>(valid,ray.time);
 
-      const Vec3vfK ray_org = ray.org;
-      const Vec3vfK ray_dir = ray.dir;
+      const Vec3vf<K> ray_org = ray.org;
+      const Vec3vf<K> ray_dir = ray.dir;
       const vint<K> ray_geomID = ray.geomID;
       const vint<K> ray_instID = ray.instID;
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
       ray.geomID = RTC_INVALID_GEOMETRY_ID;
-      ray.instID = instance->id;
+      ray.instID = instance->geomID;
       IntersectContext context(instance->object,nullptr); 
       intersectObject(validi,instance->object,&context,ray);
       ray.org = ray_org;
@@ -70,19 +67,16 @@ namespace embree
     template<int K>
     void FastInstanceIntersectorK<K>::occluded(vint<K>* validi, const Instance* instance, RayK<K>& ray, size_t item)
     {
-      typedef Vec3<vfloat<K>> Vec3vfK;
-      typedef AffineSpaceT<LinearSpace3<Vec3vfK>> AffineSpace3vfK;
-
-      AffineSpace3vfK world2local;
+      AffineSpace3vf<K> world2local;
       const vbool<K> valid = *validi == vint<K>(-1);
       if (likely(instance->numTimeSteps == 1)) world2local = instance->getWorld2Local();
       else                                     world2local = instance->getWorld2Local<K>(valid,ray.time);
 
-      const Vec3vfK ray_org = ray.org;
-      const Vec3vfK ray_dir = ray.dir;
+      const Vec3vf<K> ray_org = ray.org;
+      const Vec3vf<K> ray_dir = ray.dir;
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
-      ray.instID = instance->id;
+      ray.instID = instance->geomID;
       IntersectContext context(instance->object,nullptr);
       occludedObject(validi,instance->object,&context,ray);
       ray.org = ray_org;

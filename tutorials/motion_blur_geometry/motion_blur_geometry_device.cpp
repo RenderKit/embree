@@ -340,8 +340,9 @@ struct Sphere
   unsigned int num_time_steps;
 };
 
-void sphereBoundsFunc(void* userPtr, const Sphere* spheres, size_t item, size_t time, RTCBounds& bounds_o)
+void sphereBoundsFunc(void* userPtr, void* spheres_i, size_t item, size_t time, RTCBounds& bounds_o)
 {
+  const Sphere* spheres = (const Sphere*) spheres_i;
   const Sphere& sphere = spheres[item];
   float ft = 2.0f*float(pi) * (float) time / (float) (sphere.num_time_steps-1);
   Vec3fa p = sphere.p + Vec3fa(cos(ft),0.0f,sin(ft));
@@ -353,8 +354,9 @@ void sphereBoundsFunc(void* userPtr, const Sphere* spheres, size_t item, size_t 
   bounds_o.upper_z = p.z+sphere.r;
 }
 
-void sphereIntersectFunc(const Sphere* spheres, RTCRay& ray, size_t item)
+void sphereIntersectFunc(void* spheres_i, RTCRay& ray, size_t item)
 {
+  const Sphere* spheres = (const Sphere*) spheres_i;
   const Sphere& sphere = spheres[item];
 
   const int time_segments = sphere.num_time_steps-1;
@@ -395,8 +397,9 @@ void sphereIntersectFunc(const Sphere* spheres, RTCRay& ray, size_t item)
   }
 }
 
-void sphereOccludedFunc(const Sphere* spheres, RTCRay& ray, size_t item)
+void sphereOccludedFunc(void* spheres_i, RTCRay& ray, size_t item)
 {
+  const Sphere* spheres = (const Sphere*) spheres_i;
   const Sphere& sphere = spheres[item];
 
   const int time_segments = sphere.num_time_steps-1;
@@ -436,9 +439,9 @@ Sphere* addUserGeometrySphere (RTCScene scene, const Vec3fa& p, float r, unsigne
   sphere->geomID = geomID;
   sphere->num_time_steps = num_time_steps;
   rtcSetUserData(scene,geomID,sphere);
-  rtcSetBoundsFunction3(scene,geomID,(RTCBoundsFunc3)&sphereBoundsFunc,nullptr);
-  rtcSetIntersectFunction(scene,geomID,(RTCIntersectFunc)&sphereIntersectFunc);
-  rtcSetOccludedFunction (scene,geomID,(RTCOccludedFunc )&sphereOccludedFunc);
+  rtcSetBoundsFunction3(scene,geomID,sphereBoundsFunc,nullptr);
+  rtcSetIntersectFunction(scene,geomID,sphereIntersectFunc);
+  rtcSetOccludedFunction (scene,geomID,sphereOccludedFunc);
   return sphere;
 }
 

@@ -32,7 +32,7 @@ namespace embree
 
     /* default settings */
     //static const size_t defaultBlockSize = 4096;
-#define maxAllocationSize size_t(4*1024*1024-maxAlignment)
+#define maxAllocationSize size_t(2*1024*1024-maxAlignment)
     static const size_t MAX_THREAD_USED_BLOCK_SLOTS = 8;
 
   public:
@@ -55,8 +55,8 @@ namespace embree
       {
         ptr = nullptr;
 	cur = end = 0;
-	bytesWasted = 0;
         bytesUsed = 0;
+        bytesWasted = 0;
         allocBlockSize = 0;
         if (alloc) allocBlockSize = alloc->defaultBlockSize;
       }
@@ -110,12 +110,16 @@ namespace embree
         return nullptr;
       }
 
+      
       /*! returns amount of used bytes */
       __forceinline size_t getUsedBytes() const { return bytesUsed; }
+  
+      /*! returns amount of free bytes */
+      __forceinline size_t getFreeBytes() const { return end-cur; }
       
       /*! returns amount of wasted bytes */
-      __forceinline size_t getWastedBytes() const { return bytesWasted + (end-cur); }
-
+      __forceinline size_t getWastedBytes() const { return bytesWasted; }
+  
     private:
       ThreadLocal2* parent;
       char*  ptr;            //!< pointer to memory block
@@ -144,6 +148,7 @@ namespace embree
         //if (alloc.load() == alloc_i) return; // not required as only one thread calls bind
         if (alloc.load()) {
           alloc.load()->bytesUsed   += alloc0.getUsedBytes()   + alloc1.getUsedBytes();
+          alloc.load()->bytesFree   += alloc0.getFreeBytes()   + alloc1.getFreeBytes();
           alloc.load()->bytesWasted += alloc0.getWastedBytes() + alloc1.getWastedBytes();
         }
         alloc0.init(alloc_i);
@@ -160,6 +165,7 @@ namespace embree
         Lock<SpinLock> lock(mutex);
         if (alloc.load() != alloc_i) return; // required as a different thread calls unbind
         alloc.load()->bytesUsed   += alloc0.getUsedBytes()   + alloc1.getUsedBytes();
+        alloc.load()->bytesFree   += alloc0.getFreeBytes()   + alloc1.getFreeBytes();
         alloc.load()->bytesWasted += alloc0.getWastedBytes() + alloc1.getWastedBytes();
         alloc0.init(nullptr);
         alloc1.init(nullptr);
@@ -174,9 +180,9 @@ namespace embree
     };
 
     FastAllocator (Device* device, bool osAllocation) 
-      : device(device), slotMask(0), usedBlocks(nullptr), freeBlocks(nullptr), use_single_mode(false), defaultBlockSize(PAGE_SIZE), 
-        growSize(PAGE_SIZE), log2_grow_size_scale(0), bytesUsed(0), bytesWasted(0), atype(osAllocation ? OS_MALLOC : ALIGNED_MALLOC),
-        primrefarray(device)
+      : device(device), slotMask(0), usedBlocks(nullptr), freeBlocks(nullptr), use_single_mode(false), defaultBlockSize(PAGE_SIZE), estimatedSize(0),
+        growSize(PAGE_SIZE), maxGrowSize(maxAllocationSize), log2_grow_size_scale(0), bytesUsed(0), bytesFree(0), bytesWasted(0), atype(osAllocation ? OS_MALLOC : ALIGNED_MALLOC),
+        primrefarray(device,0)
     {
       for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++)
       {
@@ -208,13 +214,22 @@ namespace embree
       return &threadLocal2()->alloc0;
     }
 
+    void setOSallocation(bool flag)
+    {
+      atype = flag ? OS_MALLOC : ALIGNED_MALLOC;
+    }
+
   private:
 
     /*! returns both fast thread local allocators */
     __forceinline ThreadLocal2* threadLocal2() 
     {
       ThreadLocal2* alloc = thread_local_allocator2;
-      if (alloc == nullptr) thread_local_allocator2 = alloc = new ThreadLocal2;
+      if (alloc == nullptr) {
+        thread_local_allocator2 = alloc = new ThreadLocal2;
+        Lock<SpinLock> lock(s_thread_local_allocators_lock);
+        s_thread_local_allocators.push_back(make_unique(alloc));
+      }
       return alloc;
     }
 
@@ -276,21 +291,6 @@ namespace embree
       FastAllocator* allocator;
     };
 
-    /*! initializes the grow size */
-    __forceinline void initGrowSizeAndNumSlots(size_t bytesAllocate, bool compact) 
-    {
-      bytesAllocate  = ((bytesAllocate +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
-
-      growSize = clamp(bytesAllocate,size_t(PAGE_SIZE),maxAllocationSize); // PAGE_SIZE -maxAlignment ?
-      log2_grow_size_scale = 0;
-      slotMask = 0x0;
-      if (!compact) {
-        if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesAllocate >  4*maxAllocationSize) slotMask = 0x1;
-        if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesAllocate >  8*maxAllocationSize) slotMask = 0x3;
-        if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesAllocate > 16*maxAllocationSize) slotMask = 0x7;
-      }
-    }
-
     void internal_fix_used_blocks()
     {
       /* move thread local blocks to global block list */
@@ -306,28 +306,109 @@ namespace embree
       }
     }
 
-    /*! initializes the allocator */
-    void init(size_t bytesAllocate, size_t bytesReserve = 0)
+    static const size_t threadLocalAllocOverhead = 20; //! 20 means 5% parallel allocation overhead through unfilled thread local blocks
+    static const size_t mainAllocOverheadStatic = 20;  //! 20 means 5% allocation overhead through unfilled main alloc blocks
+    static const size_t mainAllocOverheadDynamic = 8;  //! 20 means 12.5% allocation overhead through unfilled main alloc blocks
+
+    /* calculates a single threaded threshold for the builders such
+     * that for small scenes the overhead of partly allocated blocks
+     * per thread is low */
+    size_t fixSingleThreadThreshold(size_t branchingFactor, size_t defaultThreshold, size_t numPrimitives, size_t bytesEstimated)
     {
-      internal_fix_used_blocks();
-      /* distribute the allocation to multiple thread block slots */
-      slotMask = MAX_THREAD_USED_BLOCK_SLOTS-1;
-      if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
-      if (bytesReserve == 0) bytesReserve = bytesAllocate;
-      freeBlocks = Block::create(device,bytesAllocate,bytesReserve,nullptr,atype);
-      defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE+maxAlignment));
-      initGrowSizeAndNumSlots(bytesAllocate,false);
+      if (numPrimitives == 0 || bytesEstimated == 0) 
+        return defaultThreshold;
+
+      /* calculate block size in bytes to fulfill threadLocalAllocOverhead constraint */
+      const size_t single_mode_factor = use_single_mode ? 1 : 2;
+      const size_t threadCount = TaskScheduler::threadCount();
+      const size_t singleThreadBytes = single_mode_factor*threadLocalAllocOverhead*defaultBlockSize;
+
+      /* if we do not have to limit number of threads use optimal thresdhold */
+      if ( (bytesEstimated+(singleThreadBytes-1))/singleThreadBytes >= threadCount)
+        return defaultThreshold;
+
+      /* otherwise limit number of threads by calculating proper single thread threshold */
+      else {
+        double bytesPerPrimitive = double(bytesEstimated)/double(numPrimitives);
+        return size_t(ceil(branchingFactor*singleThreadBytes/bytesPerPrimitive)); 
+      }
+    }
+
+    __forceinline size_t alignSize(size_t i) {
+      return (i+127)/128*128;
+    }
+
+    /*! initializes the grow size */
+    __forceinline void initGrowSizeAndNumSlots(size_t bytesEstimated, bool fast) 
+    {
+      /* we do not need single thread local allocator mode */
+      use_single_mode = false;
+     
+      /* calculate growSize such that at most mainAllocationOverhead gets wasted when a block stays unused */
+      size_t mainAllocOverhead = fast ? mainAllocOverheadDynamic : mainAllocOverheadStatic;
+      size_t blockSize = alignSize(bytesEstimated/mainAllocOverhead);
+      growSize = maxGrowSize = clamp(blockSize,size_t(1024),maxAllocationSize);
+
+      /* if we reached the maxAllocationSize for growSize, we can
+       * increase the number of allocation slots by still guaranteeing
+       * the mainAllocationOverhead */
+      slotMask = 0x0;
+      if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesEstimated > 2*mainAllocOverhead*growSize) slotMask = 0x1;
+      if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesEstimated > 4*mainAllocOverhead*growSize) slotMask = 0x3;
+      if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesEstimated > 8*mainAllocOverhead*growSize) slotMask = 0x7;
+      
+      /* set the thread local alloc block size */
+      size_t defaultBlockSizeSwitch = PAGE_SIZE+maxAlignment;
+      
+      /* for sufficiently large scene we can increase the defaultBlockSize over the defaultBlockSizeSwitch size */
+#if 0 // we do not do this as a block size of 4160 if for some reason best for KNL
+      const size_t threadCount = TaskScheduler::threadCount();
+      const size_t single_mode_factor = use_single_mode ? 1 : 2;
+      const size_t singleThreadBytes = single_mode_factor*threadLocalAllocOverhead*defaultBlockSizeSwitch;
+      if (bytesEstimated+(singleThreadBytes-1))/singleThreadBytes >= threadCount)
+        defaultBlockSize = min(max(defaultBlockSizeSwitch,bytesEstimated/(single_mode_factor*threadLocalAllocOverhead*threadCount)),growSize);
+
+      /* otherwise we grow the defaultBlockSize up to defaultBlockSizeSwitch */
+        else
+#endif
+        defaultBlockSize = clamp(blockSize,size_t(1024),defaultBlockSizeSwitch);
+
+      if (bytesEstimated == 0) {
+        maxGrowSize = maxAllocationSize; // special mode if builder cannot estimate tree size
+        defaultBlockSize = defaultBlockSizeSwitch;
+      }
+      log2_grow_size_scale = 0;
+      
+      if (device->alloc_main_block_size != 0) growSize = device->alloc_main_block_size;
+      if (device->alloc_num_main_slots >= 1 ) slotMask = 0x0;
+      if (device->alloc_num_main_slots >= 2 ) slotMask = 0x1;
+      if (device->alloc_num_main_slots >= 4 ) slotMask = 0x3;
+      if (device->alloc_num_main_slots >= 8 ) slotMask = 0x7;
+      if (device->alloc_thread_block_size != 0) defaultBlockSize = device->alloc_thread_block_size;
+      if (device->alloc_single_thread_alloc != -1) use_single_mode = device->alloc_single_thread_alloc;
     }
 
     /*! initializes the allocator */
-    void init_estimate(size_t bytesAllocate, const bool single_mode = false, const bool compact = false)
+    void init(size_t bytesAllocate, size_t bytesReserve, size_t bytesEstimate)
+    {
+      internal_fix_used_blocks();
+      /* distribute the allocation to multiple thread block slots */
+      slotMask = MAX_THREAD_USED_BLOCK_SLOTS-1; // FIXME: remove
+      if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
+      if (bytesReserve == 0) bytesReserve = bytesAllocate;
+      freeBlocks = Block::create(device,bytesAllocate,bytesReserve,nullptr,atype);
+      estimatedSize = bytesEstimate;
+      initGrowSizeAndNumSlots(bytesEstimate,true);
+    }
+
+    /*! initializes the allocator */
+    void init_estimate(size_t bytesEstimate)
     {
       internal_fix_used_blocks();
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       /* single allocator mode ? */
-      use_single_mode = single_mode;
-      defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE+maxAlignment));
-      initGrowSizeAndNumSlots(bytesAllocate,compact);
+      estimatedSize = bytesEstimate;
+      initGrowSizeAndNumSlots(bytesEstimate,false);
     }
 
     /*! frees state not required after build */
@@ -340,23 +421,15 @@ namespace embree
       thread_local_allocators.clear();
     }
 
-    /*! shrinks all memory blocks to the actually used size */
-    void shrink ()
-    {
-      for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++)
-        if (threadUsedBlocks[i].load() != nullptr) threadUsedBlocks[i].load()->shrink_list(device);
-      if (usedBlocks.load() != nullptr) usedBlocks.load()->shrink_list(device);
-      if (freeBlocks.load() != nullptr) freeBlocks.load()->clear_list(device); freeBlocks = nullptr;
-    }
-
     /*! resets the allocator, memory blocks get reused */
     void reset ()
     {
       internal_fix_used_blocks();
 
       bytesUsed.store(0);
+      bytesFree.store(0);
       bytesWasted.store(0);
-      
+
       /* reset all used blocks and move them to begin of free block list */
       while (usedBlocks.load() != nullptr) {
         usedBlocks.load()->reset_block();
@@ -385,6 +458,7 @@ namespace embree
     {
       cleanup();
       bytesUsed.store(0);
+      bytesFree.store(0);
       bytesWasted.store(0);
       if (usedBlocks.load() != nullptr) usedBlocks.load()->clear_list(device); usedBlocks = nullptr;
       if (freeBlocks.load() != nullptr) freeBlocks.load()->clear_list(device); freeBlocks = nullptr;
@@ -426,9 +500,11 @@ namespace embree
         {
           Lock<SpinLock> lock(slotMutex[slot]);
           if (myUsedBlocks == threadUsedBlocks[slot]) {
-            const size_t allocSize = min(max(growSize,bytes),size_t(maxAllocationSize));
+            const size_t alignedBytes = (bytes+(align-1)) & ~(align-1);
+            const size_t allocSize = max(min(growSize,maxGrowSize),alignedBytes);
             assert(allocSize >= bytes);
-            threadBlocks[slot] = threadUsedBlocks[slot] = Block::create(device,allocSize,allocSize,threadBlocks[slot],atype);
+            threadBlocks[slot] = threadUsedBlocks[slot] = Block::create(device,allocSize,allocSize,threadBlocks[slot],atype); // FIXME: a large allocation might throw away a block here!
+            // FIXME: a direct allocation should allocate inside the block here, and not in the next loop! a different thread could do some allocation and make the large allocation fail.
           }
           continue;
         }
@@ -446,11 +522,10 @@ namespace embree
               threadUsedBlocks[slot] = freeBlocks.load();
 	      freeBlocks = nextFreeBlock;
 	    } else {
-	      //growSize = min(2*growSize,size_t(maxAllocationSize+maxAlignment));
-              const size_t allocSize = min(growSize * incGrowSizeScale(),size_t(maxAllocationSize+maxAlignment))-maxAlignment;
-	      usedBlocks = threadUsedBlocks[slot] = Block::create(device,allocSize,allocSize,usedBlocks,atype);
+              const size_t allocSize = min(growSize*incGrowSizeScale(),maxGrowSize);
+	      usedBlocks = threadUsedBlocks[slot] = Block::create(device,allocSize,allocSize,usedBlocks,atype); // FIXME: a large allocation should get delivered directly, like above!
 	    }
-	  }
+          }
         }
       }
     }
@@ -477,64 +552,54 @@ namespace embree
     struct Statistics
     {
       Statistics ()
-      : bytesAllocated(0), bytesReserved(0), bytesFree(0) {}
+      : bytesUsed(0), bytesFree(0), bytesWasted(0) {}
 
-      Statistics (size_t bytesAllocated, size_t bytesReserved, size_t bytesFree)
-      : bytesAllocated(bytesAllocated), bytesReserved(bytesReserved), bytesFree(bytesFree) {}
+      Statistics (size_t bytesUsed, size_t bytesFree, size_t bytesWasted)
+      : bytesUsed(bytesUsed), bytesFree(bytesFree), bytesWasted(bytesWasted) {}
 
       Statistics (FastAllocator* alloc, AllocationType atype, bool huge_pages = false)
-      : bytesAllocated(0), bytesReserved(0), bytesFree(0)
+      : bytesUsed(0), bytesFree(0), bytesWasted(0)
       {
         Block* usedBlocks = alloc->usedBlocks.load();
         Block* freeBlocks = alloc->freeBlocks.load();
-        if (freeBlocks) bytesAllocated += freeBlocks->getTotalAllocatedBytes(atype,huge_pages);
-        if (usedBlocks) bytesAllocated += usedBlocks->getTotalAllocatedBytes(atype,huge_pages);
-        if (freeBlocks) bytesReserved += freeBlocks->getTotalReservedBytes(atype,huge_pages);
-        if (usedBlocks) bytesReserved += usedBlocks->getTotalReservedBytes(atype,huge_pages);
-        if (freeBlocks) bytesFree += freeBlocks->getTotalAllocatedBytes(atype,huge_pages);
+        if (usedBlocks) bytesUsed += usedBlocks->getUsedBytes(atype,huge_pages);
+        if (freeBlocks) bytesFree += freeBlocks->getAllocatedBytes(atype,huge_pages);
         if (usedBlocks) bytesFree += usedBlocks->getFreeBytes(atype,huge_pages);
-
+        if (freeBlocks) bytesWasted += freeBlocks->getWastedBytes(atype,huge_pages);
+        if (usedBlocks) bytesWasted += usedBlocks->getWastedBytes(atype,huge_pages);
       }
 
       std::string str(size_t numPrimitives)
       {
         std::stringstream str;
         str.setf(std::ios::fixed, std::ios::floatfield);
-        str << "allocated = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesAllocated << " MB, "
-            << "reserved = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesReserved << " MB, "
-            << "free = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesFree << "(" << std::setw(6) << std::setprecision(2) << 100.0f*bytesFree/bytesAllocated << "%), "
+        str << "used = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesUsed << " MB, "
+            << "free = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesFree << " MB, "
+            << "wasted = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesWasted << " MB, "            
             << "total = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesAllocatedTotal() << " MB, "
-            << "#bytes/prim = " << std::setw(6) << std::setprecision(2) << double(bytesAllocated+bytesFree)/double(numPrimitives);
+            << "#bytes/prim = " << std::setw(6) << std::setprecision(2) << double(bytesAllocatedTotal())/double(numPrimitives);
         return str.str();
       }
 
       friend Statistics operator+ ( const Statistics& a, const Statistics& b)
       {
-        return Statistics(a.bytesAllocated+b.bytesAllocated,
-                          a.bytesReserved+b.bytesReserved,
-                          a.bytesFree+b.bytesFree);
+        return Statistics(a.bytesUsed+b.bytesUsed,
+                          a.bytesFree+b.bytesFree,
+                          a.bytesWasted+b.bytesWasted);
       }
 
       size_t bytesAllocatedTotal() const {
-        return bytesAllocated + bytesFree;
+        return bytesUsed + bytesFree + bytesWasted;
       }
 
     public:
-      size_t bytesAllocated;
-      size_t bytesReserved;
+      size_t bytesUsed;
       size_t bytesFree;
+      size_t bytesWasted;
     };
 
-    Statistics getStatistics(AllocationType atype, bool huge_pages = false) const 
-    {
-      Statistics stat;
-      if (freeBlocks.load()) stat.bytesAllocated += freeBlocks.load()->getTotalAllocatedBytes(atype,huge_pages);
-      if (usedBlocks.load()) stat.bytesAllocated += usedBlocks.load()->getTotalAllocatedBytes(atype,huge_pages);
-      if (freeBlocks.load()) stat.bytesReserved += freeBlocks.load()->getTotalReservedBytes(atype,huge_pages);
-      if (usedBlocks.load()) stat.bytesReserved += usedBlocks.load()->getTotalReservedBytes(atype,huge_pages);
-      if (freeBlocks.load()) stat.bytesFree += freeBlocks.load()->getTotalAllocatedBytes(atype,huge_pages);
-      if (usedBlocks.load()) stat.bytesFree += usedBlocks.load()->getFreeBytes(atype,huge_pages);
-      return stat;
+    Statistics getStatistics(AllocationType atype, bool huge_pages = false) {
+      return Statistics(this,atype,huge_pages);
     }
 
     size_t getUsedBytes() {
@@ -549,8 +614,9 @@ namespace embree
     {
       AllStatistics (FastAllocator* alloc)
 
-      : bytesUsed(alloc->getUsedBytes()),
-        bytesWasted(alloc->getWastedBytes()),
+      : bytesUsed(alloc->bytesUsed),
+        bytesFree(alloc->bytesFree),
+        bytesWasted(alloc->bytesWasted),
         stat_all(alloc,ANY_TYPE),
         stat_malloc(alloc,ALIGNED_MALLOC),
         stat_4K(alloc,OS_MALLOC,false),
@@ -558,6 +624,7 @@ namespace embree
         stat_shared(alloc,SHARED) {}
 
       AllStatistics (size_t bytesUsed,
+                     size_t bytesFree,
                      size_t bytesWasted,
                      Statistics stat_all,
                      Statistics stat_malloc,
@@ -566,6 +633,7 @@ namespace embree
                      Statistics stat_shared)
 
       : bytesUsed(bytesUsed),
+        bytesFree(bytesFree),
         bytesWasted(bytesWasted),
         stat_all(stat_all),
         stat_malloc(stat_malloc),
@@ -576,6 +644,7 @@ namespace embree
       friend AllStatistics operator+ (const AllStatistics& a, const AllStatistics& b)
       {
         return AllStatistics(a.bytesUsed+b.bytesUsed,
+                             a.bytesFree+b.bytesFree,
                              a.bytesWasted+b.bytesWasted,
                              a.stat_all + b.stat_all,
                              a.stat_malloc + b.stat_malloc,
@@ -586,10 +655,25 @@ namespace embree
 
       void print(size_t numPrimitives)
       {
-        std::cout << "  total : " << stat_all.str(numPrimitives);
-        printf(", used = %3.3f MB (%3.2f%%), wasted = %3.3f MB (%3.2f%%)\n",
-               1E-6f*bytesUsed, 100.0f*bytesUsed/stat_all.bytesAllocatedTotal(),
-               1E-6f*bytesWasted, 100.0f*bytesWasted/stat_all.bytesAllocatedTotal());
+        std::stringstream str0;
+        str0.setf(std::ios::fixed, std::ios::floatfield);
+        str0 << "  alloc : " 
+             << "used = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesUsed << " MB, "
+             << "                                                            " 
+             << "#bytes/prim = " << std::setw(6) << std::setprecision(2) << double(bytesUsed)/double(numPrimitives);
+        std::cout << str0.str() << std::endl;
+      
+        std::stringstream str1;
+        str1.setf(std::ios::fixed, std::ios::floatfield);
+        str1 << "  alloc : " 
+             << "used = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesUsed << " MB, "
+             << "free = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesFree << " MB, "            
+             << "wasted = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesWasted << " MB, "            
+             << "total = " << std::setw(7) << std::setprecision(3) << 1E-6f*(bytesUsed+bytesFree+bytesWasted) << " MB, "
+             << "#bytes/prim = " << std::setw(6) << std::setprecision(2) << double(bytesUsed+bytesFree+bytesWasted)/double(numPrimitives);
+        std::cout << str1.str() << std::endl;
+     
+        std::cout << "  total : " << stat_all.str(numPrimitives) << std::endl;
         std::cout << "  4K    : " << stat_4K.str(numPrimitives) << std::endl;
         std::cout << "  2M    : " << stat_2M.str(numPrimitives) << std::endl;
         std::cout << "  malloc: " << stat_malloc.str(numPrimitives) << std::endl;
@@ -598,6 +682,7 @@ namespace embree
 
     private:
       size_t bytesUsed;
+      size_t bytesFree;
       size_t bytesWasted;
       Statistics stat_all;
       Statistics stat_malloc;
@@ -608,7 +693,7 @@ namespace embree
 
     void print_blocks()
     {
-      std::cout << "  slotMask = " << slotMask << ", use_single_mode = " << use_single_mode << ", defaultBlockSize = " << defaultBlockSize << std::endl;
+      std::cout << "  estimatedSize = " << estimatedSize << ", slotMask = " << slotMask << ", use_single_mode = " << use_single_mode << ", maxGrowSize = " << maxGrowSize << ", defaultBlockSize = " << defaultBlockSize << std::endl;
 
       std::cout << "  used blocks = ";
       if (usedBlocks.load() != nullptr) usedBlocks.load()->print_list();
@@ -625,9 +710,22 @@ namespace embree
     {
       static Block* create(MemoryMonitorInterface* device, size_t bytesAllocate, size_t bytesReserve, Block* next, AllocationType atype)
       {
+        /* We avoid using os_malloc for small blocks as this could
+         * cause a risk of fragmenting the virtual address space and
+         * reach the limit of vm.max_map_count = 65k under Linux. */
+        if (atype == OS_MALLOC && bytesAllocate < maxAllocationSize)
+          atype = ALIGNED_MALLOC;
+
+        /* we need to additionally allocate some header */
         const size_t sizeof_Header = offsetof(Block,data[0]);
-        bytesAllocate = ((sizeof_Header+bytesAllocate+PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
-        bytesReserve  = ((sizeof_Header+bytesReserve +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
+        bytesAllocate = sizeof_Header+bytesAllocate;
+        bytesReserve  = sizeof_Header+bytesReserve;
+
+        /* consume full 4k pages with using os_malloc */
+        if (atype == OS_MALLOC) {
+          bytesAllocate = ((bytesAllocate+PAGE_SIZE-1) & ~(PAGE_SIZE-1));
+          bytesReserve  = ((bytesReserve +PAGE_SIZE-1) & ~(PAGE_SIZE-1));
+        }
 
         /* either use alignedMalloc or os_malloc */
         void *ptr = nullptr;
@@ -720,10 +818,10 @@ namespace embree
         bytes = (bytes+(align-1)) & ~(align-1);
 	if (unlikely(cur+bytes > reserveEnd && !partial)) return nullptr;
 	const size_t i = cur.fetch_add(bytes);
-	if (unlikely(i+bytes > reserveEnd && !partial)) return nullptr;
+        if (unlikely(i+bytes > reserveEnd && !partial)) return nullptr;
         if (unlikely(i > reserveEnd)) return nullptr;
         bytes_in = bytes = min(bytes,reserveEnd-i);
-
+        
 	if (i+bytes > allocEnd) {
           if (device) device->memoryMonitor(i+bytes-max(i,allocEnd),true);
         }
@@ -740,45 +838,27 @@ namespace embree
         cur = 0;
       }
 
-      void shrink_list (MemoryMonitorInterface* device)
-      {
-        for (Block* block = this; block; block = block->next)
-          block->shrink_block(device);
-      }
-
-      void shrink_block (MemoryMonitorInterface* device)
-      {
-        if (atype == OS_MALLOC)
-        {
-          const size_t sizeof_Header = offsetof(Block,data[0]);
-          size_t newSize = os_shrink(this,sizeof_Header+getBlockUsedBytes(),reserveEnd+sizeof_Header,huge_pages);
-          if (device) device->memoryMonitor(newSize-sizeof_Header-allocEnd,true);
-          reserveEnd = allocEnd = newSize-sizeof_Header;
-        }
-      }
-
       size_t getBlockUsedBytes() const {
         return min(size_t(cur),reserveEnd);
+      }
+
+      size_t getBlockFreeBytes() const {
+	return getBlockAllocatedBytes() - getBlockUsedBytes();
       }
 
       size_t getBlockAllocatedBytes() const {
         return min(max(allocEnd,size_t(cur)),reserveEnd);
       }
 
-      size_t getBlockTotalAllocatedBytes() const {
+      size_t getBlockWastedBytes() const {
         const size_t sizeof_Header = offsetof(Block,data[0]);
-        return min(cur,reserveEnd) + sizeof_Header + wasted;
+        return sizeof_Header + wasted;
       }
 
-      size_t getBlockTotalReservedBytes() const {
-        const size_t sizeof_Header = offsetof(Block,data[0]);
-        return reserveEnd + sizeof_Header + wasted;
+      size_t getBlockReservedBytes() const {
+        return reserveEnd;
       }
-
-      size_t getBlockFreeBytes() const {
-	return max(allocEnd,size_t(cur))-cur;
-      }
-
+  
       bool hasType(AllocationType atype_i, bool huge_pages_i) const
       {
         if      (atype_i == ANY_TYPE ) return true;
@@ -795,29 +875,29 @@ namespace embree
         return bytes;
       }
 
-      size_t getTotalAllocatedBytes(AllocationType atype, bool huge_pages = false) const {
-        size_t bytes = 0;
-        for (const Block* block = this; block; block = block->next) {
-          if (!block->hasType(atype,huge_pages)) continue;
-          bytes += block->getBlockTotalAllocatedBytes();
-        }
-        return bytes;
-      }
-
-      size_t getTotalReservedBytes(AllocationType atype, bool huge_pages = false) const {
-        size_t bytes = 0;
-        for (const Block* block = this; block; block = block->next){
-          if (!block->hasType(atype,huge_pages)) continue;
-          bytes += block->getBlockTotalReservedBytes();
-        }
-        return bytes;
-      }
-
       size_t getFreeBytes(AllocationType atype, bool huge_pages = false) const {
         size_t bytes = 0;
         for (const Block* block = this; block; block = block->next) {
           if (!block->hasType(atype,huge_pages)) continue;
           bytes += block->getBlockFreeBytes();
+        }
+        return bytes;
+      }
+
+      size_t getWastedBytes(AllocationType atype, bool huge_pages = false) const {
+        size_t bytes = 0;
+        for (const Block* block = this; block; block = block->next) {
+          if (!block->hasType(atype,huge_pages)) continue;
+          bytes += block->getBlockWastedBytes();
+        }
+        return bytes;
+      }
+
+      size_t getAllocatedBytes(AllocationType atype, bool huge_pages = false) const {
+        size_t bytes = 0;
+        for (const Block* block = this; block; block = block->next) {
+          if (!block->hasType(atype,huge_pages)) continue;
+          bytes += block->getBlockAllocatedBytes();
         }
         return bytes;
       }
@@ -834,7 +914,10 @@ namespace embree
         else if (atype == OS_MALLOC) std::cout << "O";
         else if (atype == SHARED) std::cout << "S";
         if (huge_pages) std::cout << "H";
-        std::cout << "[" << getBlockUsedBytes() << ", " << getBlockTotalAllocatedBytes() << ", " << getBlockTotalReservedBytes() << "] ";
+        size_t bytesUsed = getBlockUsedBytes();
+        size_t bytesFree = getBlockFreeBytes();
+        size_t bytesWasted = getBlockWastedBytes();
+        std::cout << "[" << bytesUsed << ", " << bytesFree << ", " << bytesWasted << "] ";
       }
 
     public:
@@ -862,11 +945,16 @@ namespace embree
 
     bool use_single_mode;
     size_t defaultBlockSize;
+    size_t estimatedSize;
     size_t growSize;
-    std::atomic<size_t> log2_grow_size_scale; //!< log2 of scaling factor for grow size
-    std::atomic<size_t> bytesUsed;            //!< number of total bytes used
-    std::atomic<size_t> bytesWasted;          //!< number of total wasted bytes
+    size_t maxGrowSize;
+    std::atomic<size_t> log2_grow_size_scale; //!< log2 of scaling factor for grow size // FIXME: remove
+    std::atomic<size_t> bytesUsed;
+    std::atomic<size_t> bytesFree;
+    std::atomic<size_t> bytesWasted;
     static __thread ThreadLocal2* thread_local_allocator2;
+    static SpinLock s_thread_local_allocators_lock;
+    static std::vector<std::unique_ptr<ThreadLocal2>> s_thread_local_allocators;
     SpinLock thread_local_allocators_lock;
     std::vector<ThreadLocal2*> thread_local_allocators;
     AllocationType atype;

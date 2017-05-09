@@ -22,12 +22,10 @@
 #include "../geometry/linei.h"
 #include "../geometry/triangle.h"
 #include "../geometry/trianglev.h"
-#include "../geometry/trianglei.h"
 #include "../geometry/trianglev_mb.h"
-#include "../geometry/trianglei_mb.h"
+#include "../geometry/trianglei.h"
 #include "../geometry/quadv.h"
 #include "../geometry/quadi.h"
-#include "../geometry/quadi_mb.h"
 #include "../geometry/subdivpatch1cached.h"
 #include "../geometry/object.h"
 #include "../common/accelinstance.h"
@@ -40,7 +38,7 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Bezier1iIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Bezier1vIntersector1_OBB);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Bezier1iIntersector1_OBB);
-  DECLARE_SYMBOL2(Accel::Intersector1,BVH4Bezier1iMBIntersector1_OBB);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH4OBBBezier1iMBIntersector1_OBB);
 
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4XfmTriangle4Intersector1Moeller);
 
@@ -72,14 +70,15 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4SubdivPatch1CachedMBIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4VirtualIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4VirtualMBIntersector1);
-  
+
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Line4iIntersector4);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Line4iMBIntersector4);
+
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Bezier1vIntersector4Hybrid);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Bezier1iIntersector4Hybrid);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Bezier1vIntersector4Hybrid_OBB);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Bezier1iIntersector4Hybrid_OBB);
-  DECLARE_SYMBOL2(Accel::Intersector4,BVH4Bezier1iMBIntersector4Hybrid_OBB);
+  DECLARE_SYMBOL2(Accel::Intersector4,BVH4OBBBezier1iMBIntersector4Hybrid_OBB);
 
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Triangle4Intersector4HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Triangle4Intersector4HybridMoellerNoFilter);
@@ -111,11 +110,12 @@ namespace embree
 
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Line4iIntersector8);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Line4iMBIntersector8);
+
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Bezier1vIntersector8Hybrid);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Bezier1iIntersector8Hybrid);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Bezier1vIntersector8Hybrid_OBB);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Bezier1iIntersector8Hybrid_OBB);
-  DECLARE_SYMBOL2(Accel::Intersector8,BVH4Bezier1iMBIntersector8Hybrid_OBB);
+  DECLARE_SYMBOL2(Accel::Intersector8,BVH4OBBBezier1iMBIntersector8Hybrid_OBB);
 
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Triangle4Intersector8HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Triangle4Intersector8HybridMoellerNoFilter);
@@ -147,11 +147,12 @@ namespace embree
 
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4Line4iIntersector16);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4Line4iMBIntersector16);
+
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4Bezier1vIntersector16Hybrid);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4Bezier1iIntersector16Hybrid);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4Bezier1vIntersector16Hybrid_OBB);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4Bezier1iIntersector16Hybrid_OBB);
-  DECLARE_SYMBOL2(Accel::Intersector16,BVH4Bezier1iMBIntersector16Hybrid_OBB);
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH4OBBBezier1iMBIntersector16Hybrid_OBB);
 
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4Triangle4Intersector16HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4Triangle4Intersector16HybridMoellerNoFilter);
@@ -182,12 +183,10 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4VirtualMBIntersector16Chunk);
 
   DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Line4iIntersectorStream);
-  //DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Line4iMBIntersectorStream);
   DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Bezier1vIntersectorStream);
   DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Bezier1iIntersectorStream);
   //DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Bezier1vIntersectorStream_OBB);
   //DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Bezier1iIntersectorStream_OBB);
-  //DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Bezier1iMBIntersectorStream_OBB);
 
   DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Triangle4IntersectorStreamMoeller);
   DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Triangle4IntersectorStreamMoellerNoFilter);
@@ -203,8 +202,7 @@ namespace embree
 
   //DECLARE_SYMBOL2(Accel::IntersectorN,BVH4SubdivPatch1CachedIntersectorStream);
   DECLARE_SYMBOL2(Accel::IntersectorN,BVH4VirtualIntersectorStream);
-  //DECLARE_SYMBOL2(Accel::IntersectorN,BVH4VirtualMBIntersectorStream);
-  
+
   DECLARE_BUILDER2(void,Scene,const createLineSegmentsAccelTy,BVH4BuilderTwoLevelLineSegmentsSAH);
   DECLARE_BUILDER2(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderTwoLevelTriangleMeshSAH);
   DECLARE_BUILDER2(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderInstancingTriangleMeshSAH);
@@ -213,13 +211,13 @@ namespace embree
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Bezier1vBuilder_OBB_New);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Bezier1iBuilder_OBB_New);
-  DECLARE_BUILDER2(void,Scene,size_t,BVH4Bezier1iMBBuilder_OBB_New);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH4OBBBezier1iMBBuilder_OBB);
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Triangle4SceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Triangle4vSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Triangle4iSceneBuilderSAH);
-  DECLARE_BUILDER2(void,Scene,size_t,BVH4Triangle4vMBSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Triangle4iMBSceneBuilderSAH);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH4Triangle4vMBSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4QuantizedTriangle4iSceneBuilderSAH);
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Quad4vSceneBuilderSAH);
@@ -283,13 +281,13 @@ namespace embree
 
     IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1vBuilder_OBB_New));
     IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iBuilder_OBB_New));
-    IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iMBBuilder_OBB_New));
+    IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4OBBBezier1iMBBuilder_OBB));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4Triangle4SceneBuilderSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4Triangle4vSceneBuilderSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4Triangle4iSceneBuilderSAH));
-    IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMBSceneBuilderSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iMBSceneBuilderSAH));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMBSceneBuilderSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4QuantizedTriangle4iSceneBuilderSAH));
 
     IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4Quad4vSceneBuilderSAH));
@@ -344,7 +342,7 @@ namespace embree
     IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4Bezier1iIntersector1));
     IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4Bezier1vIntersector1_OBB));
     IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4Bezier1iIntersector1_OBB));
-    IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4Bezier1iMBIntersector1_OBB));
+    IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4OBBBezier1iMBIntersector1_OBB));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4XfmTriangle4Intersector1Moeller));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4Triangle4Intersector1Moeller));
@@ -375,7 +373,7 @@ namespace embree
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512SKX(features,BVH4SubdivPatch1CachedMBIntersector1));
     IF_ENABLED_USER(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512SKX(features,BVH4VirtualIntersector1));
     IF_ENABLED_USER(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512SKX(features,BVH4VirtualMBIntersector1));
-    
+
 #if defined (EMBREE_RAY_PACKETS)
 
     /* select intersectors4 */
@@ -385,7 +383,7 @@ namespace embree
     IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4Bezier1iIntersector4Hybrid));
     IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4Bezier1vIntersector4Hybrid_OBB));
     IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4Bezier1iIntersector4Hybrid_OBB));
-    IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4Bezier1iMBIntersector4Hybrid_OBB));
+    IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4OBBBezier1iMBIntersector4Hybrid_OBB));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512SKX(features,BVH4Triangle4Intersector4HybridMoeller));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512SKX(features,BVH4Triangle4Intersector4HybridMoellerNoFilter));
@@ -419,11 +417,12 @@ namespace embree
     /* select intersectors8 */
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4Line4iIntersector8));
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4Line4iMBIntersector8));
+
     IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4Bezier1vIntersector8Hybrid));
     IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4Bezier1iIntersector8Hybrid));
     IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4Bezier1vIntersector8Hybrid_OBB));
     IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4Bezier1iIntersector8Hybrid_OBB));
-    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4Bezier1iMBIntersector8Hybrid_OBB));
+    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4OBBBezier1iMBIntersector8Hybrid_OBB));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4Triangle4Intersector8HybridMoeller));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4Triangle4Intersector8HybridMoellerNoFilter));
@@ -456,11 +455,12 @@ namespace embree
     /* select intersectors16 */
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Line4iIntersector16));
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Line4iMBIntersector16));
+
     IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Bezier1vIntersector16Hybrid));
     IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Bezier1iIntersector16Hybrid));
     IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Bezier1vIntersector16Hybrid_OBB));
     IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Bezier1iIntersector16Hybrid_OBB));
-    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Bezier1iMBIntersector16Hybrid_OBB));
+    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4OBBBezier1iMBIntersector16Hybrid_OBB));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Triangle4Intersector16HybridMoeller));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Triangle4Intersector16HybridMoellerNoFilter));
@@ -492,19 +492,17 @@ namespace embree
 
     /* select stream intersectors */
     IF_ENABLED_LINES(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX    (features,BVH4Line4iIntersectorStream));
-    //IF_ENABLED_LINES(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2      (features,BVH4Line4iMBIntersectorStream));
     IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX      (features,BVH4Bezier1vIntersectorStream));
     IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX      (features,BVH4Bezier1iIntersectorStream));
     //IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2      (features,BVH4Bezier1vIntersectorStream_OBB));
     //IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2      (features,BVH4Bezier1iIntersectorStream_OBB));
-    //IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2      (features,BVH4Bezier1iMBIntersectorStream_OBB));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4Triangle4IntersectorStreamMoeller));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4Triangle4IntersectorStreamMoellerNoFilter));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4Triangle4iIntersectorStreamMoeller));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4Triangle4vIntersectorStreamPluecker));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4Triangle4iIntersectorStreamPluecker));
-        
+
     IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4Quad4vIntersectorStreamMoeller));
     IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4Quad4vIntersectorStreamMoellerNoFilter));
     IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4Quad4iIntersectorStreamMoeller));
@@ -513,8 +511,6 @@ namespace embree
 
     //IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4SubdivPatch1CachedIntersectorStream));
     IF_ENABLED_USER(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4VirtualIntersectorStream));
-    //IF_ENABLED_USER(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4VirtualStreamMBIntersector));
-    //IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4Quad4iStreamMBIntersectorPluecker));
 
 #endif
   }
@@ -603,16 +599,16 @@ namespace embree
     return intersectors;
   }
 
-  Accel::Intersectors BVH4Factory::BVH4Bezier1iMBIntersectors_OBB(BVH4* bvh)
+  Accel::Intersectors BVH4Factory::BVH4OBBBezier1iMBIntersectors_OBB(BVH4* bvh)
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1  = BVH4Bezier1iMBIntersector1_OBB();
+    intersectors.intersector1  = BVH4OBBBezier1iMBIntersector1_OBB();
 #if defined (EMBREE_RAY_PACKETS)
-    intersectors.intersector4  = BVH4Bezier1iMBIntersector4Hybrid_OBB();
-    intersectors.intersector8  = BVH4Bezier1iMBIntersector8Hybrid_OBB();
-    intersectors.intersector16 = BVH4Bezier1iMBIntersector16Hybrid_OBB();
-    //intersectors.intersectorN  = BVH4Bezier1iMBIntersectorStream_OBB();
+    intersectors.intersector4  = BVH4OBBBezier1iMBIntersector4Hybrid_OBB();
+    intersectors.intersector8  = BVH4OBBBezier1iMBIntersector8Hybrid_OBB();
+    intersectors.intersector16 = BVH4OBBBezier1iMBIntersector16Hybrid_OBB();
+    //intersectors.intersectorN  = BVH4OBBBezier1iMBIntersectorStream_OBB();
 #endif
     return intersectors;
   }
@@ -662,7 +658,7 @@ namespace embree
   Accel::Intersectors BVH4Factory::BVH4Triangle4iIntersectors(BVH4* bvh, IntersectVariant ivariant)
   {
     switch (ivariant) {
-    case IntersectVariant::FAST: 
+    case IntersectVariant::FAST:
     {
       Accel::Intersectors intersectors;
       intersectors.ptr = bvh;
@@ -675,7 +671,7 @@ namespace embree
 #endif
       return intersectors;
     }
-    case IntersectVariant::ROBUST: 
+    case IntersectVariant::ROBUST:
     {
       Accel::Intersectors intersectors;
       intersectors.ptr = bvh;
@@ -695,7 +691,7 @@ namespace embree
   Accel::Intersectors BVH4Factory::BVH4Triangle4vMBIntersectors(BVH4* bvh, IntersectVariant ivariant)
   {
     switch (ivariant) {
-    case IntersectVariant::FAST: 
+    case IntersectVariant::FAST:
     {
       Accel::Intersectors intersectors;
       intersectors.ptr = bvh;
@@ -708,7 +704,7 @@ namespace embree
 #endif
       return intersectors;
     }
-    case IntersectVariant::ROBUST: 
+    case IntersectVariant::ROBUST:
     {
       Accel::Intersectors intersectors;
       intersectors.ptr = bvh;
@@ -728,7 +724,7 @@ namespace embree
   Accel::Intersectors BVH4Factory::BVH4Triangle4iMBIntersectors(BVH4* bvh, IntersectVariant ivariant)
   {
     switch (ivariant) {
-    case IntersectVariant::FAST: 
+    case IntersectVariant::FAST:
     {
       Accel::Intersectors intersectors;
       intersectors.ptr = bvh;
@@ -741,7 +737,7 @@ namespace embree
 #endif
       return intersectors;
     }
-    case IntersectVariant::ROBUST: 
+    case IntersectVariant::ROBUST:
     {
       Accel::Intersectors intersectors;
       intersectors.ptr = bvh;
@@ -761,7 +757,7 @@ namespace embree
   Accel::Intersectors BVH4Factory::BVH4Quad4vIntersectors(BVH4* bvh, IntersectVariant ivariant)
   {
     switch (ivariant) {
-    case IntersectVariant::FAST: 
+    case IntersectVariant::FAST:
     {
       Accel::Intersectors intersectors;
       intersectors.ptr = bvh;
@@ -778,7 +774,7 @@ namespace embree
 #endif
       return intersectors;
     }
-    case IntersectVariant::ROBUST: 
+    case IntersectVariant::ROBUST:
     {
       Accel::Intersectors intersectors;
       intersectors.ptr = bvh;
@@ -798,7 +794,7 @@ namespace embree
   Accel::Intersectors BVH4Factory::BVH4Quad4iIntersectors(BVH4* bvh, IntersectVariant ivariant)
   {
     switch (ivariant) {
-    case IntersectVariant::FAST: 
+    case IntersectVariant::FAST:
     {
       Accel::Intersectors intersectors;
       intersectors.ptr = bvh;
@@ -807,11 +803,11 @@ namespace embree
       intersectors.intersector4 = BVH4Quad4iIntersector4HybridMoeller();
       intersectors.intersector8 = BVH4Quad4iIntersector8HybridMoeller();
       intersectors.intersector16= BVH4Quad4iIntersector16HybridMoeller();
-      intersectors.intersectorN = BVH4Quad4iIntersectorStreamMoeller(); 
+      intersectors.intersectorN = BVH4Quad4iIntersectorStreamMoeller();
 #endif
       return intersectors;
     }
-    case IntersectVariant::ROBUST: 
+    case IntersectVariant::ROBUST:
     {
       Accel::Intersectors intersectors;
       intersectors.ptr = bvh;
@@ -820,7 +816,7 @@ namespace embree
       intersectors.intersector4 = BVH4Quad4iIntersector4HybridPluecker();
       intersectors.intersector8 = BVH4Quad4iIntersector8HybridPluecker();
       intersectors.intersector16= BVH4Quad4iIntersector16HybridPluecker();
-      intersectors.intersectorN = BVH4Quad4iIntersectorStreamPluecker(); 
+      intersectors.intersectorN = BVH4Quad4iIntersectorStreamPluecker();
 #endif
       return intersectors;
     }
@@ -831,7 +827,7 @@ namespace embree
   Accel::Intersectors BVH4Factory::BVH4Quad4iMBIntersectors(BVH4* bvh, IntersectVariant ivariant)
   {
     switch (ivariant) {
-    case IntersectVariant::FAST: 
+    case IntersectVariant::FAST:
     {
       Accel::Intersectors intersectors;
       intersectors.ptr = bvh;
@@ -844,7 +840,7 @@ namespace embree
 #endif
       return intersectors;
     }
-    case IntersectVariant::ROBUST: 
+    case IntersectVariant::ROBUST:
     {
       Accel::Intersectors intersectors;
       intersectors.ptr = bvh;
@@ -977,8 +973,8 @@ namespace embree
 
   void BVH4Factory::createLineSegmentsLine4i(LineSegments* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
-    accel = new BVH4(Line4i::type,mesh->parent);
+    BVH4Factory* factory = mesh->scene->device->bvh4_factory.get();
+    accel = new BVH4(Line4i::type,mesh->scene);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH4Line4iMeshBuilderSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH4Line4iMeshRefitSAH(accel,mesh,0); break;
@@ -989,36 +985,36 @@ namespace embree
 
   void BVH4Factory::createTriangleMeshTriangle4Morton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
-    accel = new BVH4(Triangle4::type,mesh->parent);
+    BVH4Factory* factory = mesh->scene->device->bvh4_factory.get();
+    accel = new BVH4(Triangle4::type,mesh->scene);
     builder = factory->BVH4Triangle4MeshBuilderMortonGeneral(accel,mesh,0);
   }
 
   void BVH4Factory::createTriangleMeshTriangle4vMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
-    accel = new BVH4(Triangle4v::type,mesh->parent);
+    BVH4Factory* factory = mesh->scene->device->bvh4_factory.get();
+    accel = new BVH4(Triangle4v::type,mesh->scene);
     builder = factory->BVH4Triangle4vMeshBuilderMortonGeneral(accel,mesh,0);
   }
 
   void BVH4Factory::createTriangleMeshTriangle4iMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
-    accel = new BVH4(Triangle4i::type,mesh->parent);
-    builder = factory->BVH4Triangle4iMeshBuilderMortonGeneral(accel,mesh,0); 
+    BVH4Factory* factory = mesh->scene->device->bvh4_factory.get();
+    accel = new BVH4(Triangle4i::type,mesh->scene);
+    builder = factory->BVH4Triangle4iMeshBuilderMortonGeneral(accel,mesh,0);
   }
 
   void BVH4Factory::createQuadMeshQuad4vMorton(QuadMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
-    accel = new BVH4(Quad4v::type,mesh->parent);
+    BVH4Factory* factory = mesh->scene->device->bvh4_factory.get();
+    accel = new BVH4(Quad4v::type,mesh->scene);
     builder = factory->BVH4Quad4vMeshBuilderMortonGeneral(accel,mesh,0);
   }
 
   void BVH4Factory::createTriangleMeshTriangle4(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
-    accel = new BVH4(Triangle4::type,mesh->parent);
+    BVH4Factory* factory = mesh->scene->device->bvh4_factory.get();
+    accel = new BVH4(Triangle4::type,mesh->scene);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH4Triangle4MeshBuilderSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH4Triangle4MeshRefitSAH(accel,mesh,0); break;
@@ -1029,8 +1025,8 @@ namespace embree
 
   void BVH4Factory::createTriangleMeshTriangle4v(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
-    accel = new BVH4(Triangle4v::type,mesh->parent);
+    BVH4Factory* factory = mesh->scene->device->bvh4_factory.get();
+    accel = new BVH4(Triangle4v::type,mesh->scene);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH4Triangle4vMeshBuilderSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH4Triangle4vMeshRefitSAH(accel,mesh,0); break;
@@ -1041,8 +1037,8 @@ namespace embree
 
   void BVH4Factory::createTriangleMeshTriangle4i(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
-    accel = new BVH4(Triangle4i::type,mesh->parent);
+    BVH4Factory* factory = mesh->scene->device->bvh4_factory.get();
+    accel = new BVH4(Triangle4i::type,mesh->scene);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH4Triangle4iMeshBuilderSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH4Triangle4iMeshRefitSAH(accel,mesh,0); break;
@@ -1053,8 +1049,8 @@ namespace embree
 
   void BVH4Factory::createQuadMeshQuad4v(QuadMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
-    accel = new BVH4(Quad4v::type,mesh->parent);
+    BVH4Factory* factory = mesh->scene->device->bvh4_factory.get();
+    accel = new BVH4(Quad4v::type,mesh->scene);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH4Quad4vMeshBuilderSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH4Quad4vMeshRefitSAH(accel,mesh,0); break;
@@ -1065,8 +1061,8 @@ namespace embree
 
   void BVH4Factory::createAccelSetMesh(AccelSet* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
-    accel = new BVH4(Object::type,mesh->parent);
+    BVH4Factory* factory = mesh->scene->device->bvh4_factory.get();
+    accel = new BVH4(Object::type,mesh->scene);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH4VirtualMeshBuilderSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH4VirtualMeshRefitSAH(accel,mesh,0); break;
@@ -1131,7 +1127,7 @@ namespace embree
     Builder* builder = nullptr;
     if      (scene->device->line_builder_mb == "default"     ) builder = BVH4Line4iMBSceneBuilderSAH(accel,scene,0);
     else if (scene->device->line_builder_mb == "sah"         ) builder = BVH4Line4iMBSceneBuilderSAH(accel,scene,0);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->line_builder_mb+" for BVH4MB<Line4iMB>");
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->line_builder_mb+" for BVH4<Line4iMB>");
 
     scene->needLineVertices = true;
     return new AccelInstance(accel,builder,intersectors);
@@ -1146,7 +1142,7 @@ namespace embree
     if      (scene->device->hair_builder == "default"     ) builder = BVH4Bezier1vBuilder_OBB_New(accel,scene,0);
     else if (scene->device->hair_builder == "sah"         ) builder = BVH4Bezier1vBuilder_OBB_New(accel,scene,0);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder+" for BVH4OBB<Bezier1v>");
-    
+
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -1159,7 +1155,7 @@ namespace embree
     if      (scene->device->hair_builder == "default"     ) builder = BVH4Bezier1iBuilder_OBB_New(accel,scene,0);
     else if (scene->device->hair_builder == "sah"         ) builder = BVH4Bezier1iBuilder_OBB_New(accel,scene,0);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder+" for BVH4OBB<Bezier1i>");
-    
+
     scene->needBezierVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -1167,12 +1163,12 @@ namespace embree
   Accel* BVH4Factory::BVH4OBBBezier1iMB(Scene* scene)
   {
     BVH4* accel = new BVH4(Bezier1i::type,scene);
-    Accel::Intersectors intersectors = BVH4Bezier1iMBIntersectors_OBB(accel);
+    Accel::Intersectors intersectors = BVH4OBBBezier1iMBIntersectors_OBB(accel);
 
     Builder* builder = nullptr;
-    if      (scene->device->hair_builder_mb == "default"     ) builder = BVH4Bezier1iMBBuilder_OBB_New(accel,scene,0);
-    else if (scene->device->hair_builder_mb == "sah"         ) builder = BVH4Bezier1iMBBuilder_OBB_New(accel,scene,0);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder_mb+" for BVH4MBOBB<Bezier1iMB>");   
+    if      (scene->device->hair_builder_mb == "default"     ) builder = BVH4OBBBezier1iMBBuilder_OBB(accel,scene,0);
+    else if (scene->device->hair_builder_mb == "sah"         ) builder = BVH4OBBBezier1iMBBuilder_OBB(accel,scene,0);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder_mb+" for BVH4OBB<Bezier1iMB>");
 
     scene->needBezierVertices = true;
     return new AccelInstance(accel,builder,intersectors);
@@ -1244,7 +1240,7 @@ namespace embree
   Accel* BVH4Factory::BVH4Triangle4i(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
     BVH4* accel = new BVH4(Triangle4i::type,scene);
-    
+
     Accel::Intersectors intersectors;
     if      (scene->device->tri_traverser == "default") intersectors = BVH4Triangle4iIntersectors(accel,ivariant);
     else if (scene->device->tri_traverser == "fast"   ) intersectors = BVH4Triangle4iIntersectors(accel,IntersectVariant::FAST);
@@ -1270,38 +1266,15 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-   Accel* BVH4Factory::BVH4Triangle4vMB(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
-  {
-    BVH4* accel = new BVH4(Triangle4vMB::type,scene);
-
-    Accel::Intersectors intersectors;
-    if      (scene->device->tri_traverser_mb == "default") intersectors = BVH4Triangle4vMBIntersectors(accel,ivariant);
-    else if (scene->device->tri_traverser_mb == "fast"   ) intersectors = BVH4Triangle4vMBIntersectors(accel,IntersectVariant::FAST);
-    else if (scene->device->tri_traverser_mb == "robust" ) intersectors = BVH4Triangle4vMBIntersectors(accel,IntersectVariant::ROBUST);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown traverser "+scene->device->tri_traverser_mb+" for BVH4MB<Triangle4vMB>");
-
-    Builder* builder = nullptr;
-    if (scene->device->tri_builder_mb == "default") {
-      switch (bvariant) {
-      case BuildVariant::STATIC      : builder = BVH4Triangle4vMBSceneBuilderSAH(accel,scene,0); break;
-      case BuildVariant::DYNAMIC     : assert(false); break; // FIXME: implement
-      case BuildVariant::HIGH_QUALITY: assert(false); break;
-      }
-    }
-    else  if (scene->device->tri_builder_mb == "sah") builder = BVH4Triangle4vMBSceneBuilderSAH(accel,scene,0);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder_mb+" for BVH4<Triangle4vMB>");
-    return new AccelInstance(accel,builder,intersectors);
-  }
-
   Accel* BVH4Factory::BVH4Triangle4iMB(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
-    BVH4* accel = new BVH4(Triangle4iMB::type,scene);
+    BVH4* accel = new BVH4(Triangle4i::type,scene);
 
     Accel::Intersectors intersectors;
     if      (scene->device->tri_traverser_mb == "default") intersectors = BVH4Triangle4iMBIntersectors(accel,ivariant);
     else if (scene->device->tri_traverser_mb == "fast"   ) intersectors = BVH4Triangle4iMBIntersectors(accel,IntersectVariant::FAST);
     else if (scene->device->tri_traverser_mb == "robust" ) intersectors = BVH4Triangle4iMBIntersectors(accel,IntersectVariant::ROBUST);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown traverser "+scene->device->tri_traverser_mb+" for BVH4MB<Triangle4iMB>");
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown traverser "+scene->device->tri_traverser_mb+" for BVH4<Triangle4iMB>");
 
     Builder* builder = nullptr;
     if (scene->device->tri_builder_mb == "default") {
@@ -1311,18 +1284,42 @@ namespace embree
       case BuildVariant::HIGH_QUALITY: assert(false); break;
       }
     }
-    else  if (scene->device->tri_builder_mb == "sah") builder = BVH4Triangle4iMBSceneBuilderSAH(accel,scene,0);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder_mb+" for BVH4MB<Triangle4iMB>");
+    else  if (scene->device->tri_builder_mb == "internal_time_splits") builder = BVH4Triangle4iMBSceneBuilderSAH(accel,scene,0);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder_mb+" for BVH4<Triangle4iMB>");
 
     scene->needTriangleVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
-  
+
+  Accel* BVH4Factory::BVH4Triangle4vMB(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
+  {
+    BVH4* accel = new BVH4(Triangle4vMB::type,scene);
+
+    Accel::Intersectors intersectors;
+    if      (scene->device->tri_traverser_mb == "default") intersectors = BVH4Triangle4vMBIntersectors(accel,ivariant);
+    else if (scene->device->tri_traverser_mb == "fast"   ) intersectors = BVH4Triangle4vMBIntersectors(accel,IntersectVariant::FAST);
+    else if (scene->device->tri_traverser_mb == "robust" ) intersectors = BVH4Triangle4vMBIntersectors(accel,IntersectVariant::ROBUST);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown traverser "+scene->device->tri_traverser_mb+" for BVH4<Triangle4vMB>");
+
+    Builder* builder = nullptr;
+    if (scene->device->tri_builder_mb == "default") {
+      switch (bvariant) {
+      case BuildVariant::STATIC      : builder = BVH4Triangle4vMBSceneBuilderSAH(accel,scene,0); break;
+      case BuildVariant::DYNAMIC     : assert(false); break; // FIXME: implement
+      case BuildVariant::HIGH_QUALITY: assert(false); break;
+      }
+    }
+    else  if (scene->device->tri_builder_mb == "internal_time_splits") builder = BVH4Triangle4vMBSceneBuilderSAH(accel,scene,0);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder_mb+" for BVH4<Triangle4vMB>");
+
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
   Accel* BVH4Factory::BVH4Quad4v(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
     BVH4* accel = new BVH4(Quad4v::type,scene);
     Accel::Intersectors intersectors = BVH4Quad4vIntersectors(accel,ivariant);
-   
+
     Builder* builder = nullptr;
     if (scene->device->quad_builder == "default") {
       switch (bvariant) {
@@ -1335,7 +1332,7 @@ namespace embree
     else if (scene->device->quad_builder == "sah_fast_spatial" ) builder = BVH4Quad4vSceneBuilderFastSpatialSAH(accel,scene,0);
     else if (scene->device->quad_builder == "dynamic"          ) builder = BVH4BuilderTwoLevelQuadMeshSAH(accel,scene,&createQuadMeshQuad4v);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->quad_builder+" for BVH4<Quad4v>");
-        
+
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -1354,14 +1351,14 @@ namespace embree
     }
     else if (scene->device->quad_builder == "sah") builder = BVH4Quad4iSceneBuilderSAH(accel,scene,0);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->quad_builder+" for BVH4<Quad4i>");
-    
+
     scene->needQuadVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 
   Accel* BVH4Factory::BVH4Quad4iMB(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
-    BVH4* accel = new BVH4(Quad4iMB::type,scene);
+    BVH4* accel = new BVH4(Quad4i::type,scene);
     Accel::Intersectors intersectors = BVH4Quad4iMBIntersectors(accel,ivariant);
 
     Builder* builder = nullptr;
@@ -1373,8 +1370,8 @@ namespace embree
       }
     }
     else if (scene->device->quad_builder_mb == "sah") builder = BVH4Quad4iMBSceneBuilderSAH(accel,scene,0);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->quad_builder_mb+" for BVH4MB<Quad4iMB>");
-    
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->quad_builder_mb+" for BVH4<Quad4iMB>");
+
     scene->needQuadVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -1407,7 +1404,7 @@ namespace embree
       scene->needSubdivVertices = true;
       return new AccelInstance(accel,builder,intersectors);
     }
-    else 
+    else
     {
       BVH4* accel = new BVH4(SubdivPatch1Cached::type,scene);
       Accel::Intersectors intersectors = BVH4SubdivPatch1Intersectors(accel);
@@ -1457,11 +1454,11 @@ namespace embree
       case BuildVariant::DYNAMIC     : builder = BVH4BuilderTwoLevelVirtualSAH(accel,scene,&createAccelSetMesh); break;
       case BuildVariant::HIGH_QUALITY: assert(false); break;
       }
-    } 
+    }
     else if (scene->device->object_builder == "sah") builder = BVH4VirtualSceneBuilderSAH(accel,scene,0);
     else if (scene->device->object_builder == "dynamic") builder = BVH4BuilderTwoLevelVirtualSAH(accel,scene,&createAccelSetMesh);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->object_builder+" for BVH4<Object>");
-    
+
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -1473,5 +1470,3 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 }
-
-

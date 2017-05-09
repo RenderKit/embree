@@ -48,7 +48,7 @@ namespace embree
     }
 
     template<int N>
-    typename BVHN<N>::NodeRecordMB BVHNBuilderMblurVirtual<N>::BVHNBuilderV::build(FastAllocator* allocator, BuildProgressMonitor& progressFunc, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings)
+    typename BVHN<N>::NodeRecordMB BVHNBuilderMblurVirtual<N>::BVHNBuilderV::build(FastAllocator* allocator, BuildProgressMonitor& progressFunc, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings, const BBox1f& timeRange)
     {
       auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, const Allocator& alloc) -> NodeRecordMB {
         return createLeaf(current,alloc);
@@ -57,7 +57,7 @@ namespace embree
       settings.branchingFactor = N;
       settings.maxDepth = BVH::maxBuildDepthLeaf;
       return BVHBuilderBinnedSAH::build<NodeRecordMB>
-        (FastAllocator::Create(allocator),typename BVH::AlignedNodeMB::Create2(),typename BVH::AlignedNodeMB::Set2(),createLeafFunc,progressFunc,prims,pinfo,settings);
+        (FastAllocator::Create(allocator),typename BVH::AlignedNodeMB::Create2(),typename BVH::AlignedNodeMB::Set2TimeRange(timeRange),createLeafFunc,progressFunc,prims,pinfo,settings);
     }
 
     template struct BVHNBuilderVirtual<4>;

@@ -35,15 +35,18 @@ namespace embree
     BVH_FLAG_UNALIGNED_NODE_MB = 0x01000,
     BVH_FLAG_TRANSFORM_NODE = 0x10000,
     BVH_FLAG_QUANTIZED_NODE = 0x100000,
+    BVH_FLAG_ALIGNED_NODE_MB4D = 0x1000000,
 
     /* short versions */
     BVH_AN1 = BVH_FLAG_ALIGNED_NODE,
     BVH_AN2 = BVH_FLAG_ALIGNED_NODE_MB,
+    BVH_AN2_AN4D = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_ALIGNED_NODE_MB4D,
     BVH_UN1 = BVH_FLAG_UNALIGNED_NODE,
     BVH_UN2 = BVH_FLAG_UNALIGNED_NODE_MB,
     BVH_MB = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_UNALIGNED_NODE_MB,
     BVH_AN1_UN1 = BVH_FLAG_ALIGNED_NODE | BVH_FLAG_UNALIGNED_NODE,
     BVH_AN2_UN2 = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_UNALIGNED_NODE_MB,
+    BVH_AN2_AN4D_UN2 = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_ALIGNED_NODE_MB4D | BVH_FLAG_UNALIGNED_NODE_MB,
     BVH_TN_AN1 = BVH_FLAG_TRANSFORM_NODE | BVH_FLAG_ALIGNED_NODE,
     BVH_TN_AN1_AN2 = BVH_FLAG_TRANSFORM_NODE | BVH_FLAG_ALIGNED_NODE | BVH_FLAG_ALIGNED_NODE_MB,
     BVH_QN1 = BVH_FLAG_QUANTIZED_NODE
@@ -94,6 +97,7 @@ namespace embree
     struct BaseNode;
     struct AlignedNode;
     struct AlignedNodeMB;
+    struct AlignedNodeMB4D;
     struct UnalignedNode;
     struct UnalignedNodeMB;
     struct TransformNode;
@@ -113,6 +117,7 @@ namespace embree
     /*! different supported node types */
     static const size_t tyAlignedNode = 0;
     static const size_t tyAlignedNodeMB = 1;
+    static const size_t tyAlignedNodeMB4D = 6;
     static const size_t tyUnalignedNode = 2;
     static const size_t tyUnalignedNodeMB = 3;
     static const size_t tyTransformNode = 4;
@@ -133,13 +138,6 @@ namespace embree
 
     /*! Maximal number of primitive blocks in a leaf. */
     static const size_t maxLeafBlocks = items_mask-tyLeaf;
-
-  private:
-
-    /*! Shortcuts */
-    typedef Vec3<vfloat<N>> Vec3vfN;
-    typedef BBox<Vec3vfN> BBox3vfN;
-    typedef AffineSpaceT<LinearSpace3<Vec3vfN>> AffineSpace3vfN;
 
   public:
 
@@ -297,6 +295,9 @@ namespace embree
       /*! checks if this is a motion blur node */
       __forceinline int isAlignedNodeMB() const { return (ptr & (size_t)align_mask) == tyAlignedNodeMB; }
 
+      /*! checks if this is a 4D motion blur node */
+      __forceinline int isAlignedNodeMB4D() const { return (ptr & (size_t)align_mask) == tyAlignedNodeMB4D; }
+
       /*! checks if this is a node with unaligned bounding boxes */
       __forceinline int isUnalignedNode() const { return (ptr & (size_t)align_mask) == tyUnalignedNode; }
 
@@ -337,8 +338,12 @@ namespace embree
       __forceinline const AlignedNode* alignedNode() const { assert(isAlignedNode()); return (const AlignedNode*)ptr; }
 
       /*! returns motion blur node pointer */
-      __forceinline       AlignedNodeMB* alignedNodeMB()       { assert(isAlignedNodeMB()); return (      AlignedNodeMB*)(ptr & ~(size_t)align_mask); }
-      __forceinline const AlignedNodeMB* alignedNodeMB() const { assert(isAlignedNodeMB()); return (const AlignedNodeMB*)(ptr & ~(size_t)align_mask); }
+      __forceinline       AlignedNodeMB* alignedNodeMB()       { assert(isAlignedNodeMB() || isAlignedNodeMB4D()); return (      AlignedNodeMB*)(ptr & ~(size_t)align_mask); }
+      __forceinline const AlignedNodeMB* alignedNodeMB() const { assert(isAlignedNodeMB() || isAlignedNodeMB4D()); return (const AlignedNodeMB*)(ptr & ~(size_t)align_mask); }
+
+      /*! returns 4D motion blur node pointer */
+      __forceinline       AlignedNodeMB4D* alignedNodeMB4D()       { assert(isAlignedNodeMB4D()); return (      AlignedNodeMB4D*)(ptr & ~(size_t)align_mask); }
+      __forceinline const AlignedNodeMB4D* alignedNodeMB4D() const { assert(isAlignedNodeMB4D()); return (const AlignedNodeMB4D*)(ptr & ~(size_t)align_mask); }
 
       /*! returns unaligned node pointer */
       __forceinline       UnalignedNode* unalignedNode()       { assert(isUnalignedNode()); return (      UnalignedNode*)(ptr & ~(size_t)align_mask); }
@@ -618,6 +623,27 @@ namespace embree
         }
       };
 
+      struct Set2TimeRange
+      {
+        __forceinline Set2TimeRange(BBox1f tbounds) : tbounds(tbounds) {}
+
+        template<typename BuildRecord>
+        __forceinline NodeRecordMB operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRecordMB* children, const size_t num) const
+        {
+          AlignedNodeMB* node = ref.alignedNodeMB();
+
+          LBBox3fa bounds = empty;
+          for (size_t i=0; i<num; i++) {
+            node->setRef(i, children[i].ref);
+            node->setBounds(i, children[i].lbounds, tbounds);
+            bounds.extend(children[i].lbounds);
+          }
+          return NodeRecordMB(ref,bounds);
+        }
+
+        BBox1f tbounds;
+      };
+
       /*! Clears the node. */
       __forceinline void clear()  {
         lower_x = lower_y = lower_z = vfloat<N>(nan);
@@ -660,6 +686,11 @@ namespace embree
         setBounds(i, bounds.bounds0, bounds.bounds1);
       }
 
+      /*! Sets bounding box of child. */
+      __forceinline void setBounds(size_t i, const LBBox3fa& bounds, const BBox1f& tbounds) {
+        setBounds(i, bounds.global(tbounds));
+      }
+
       /*! Sets bounding box and ID of child. */
       __forceinline void set(size_t i, NodeRef ref, const BBox3fa& bounds) {
         lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
@@ -671,7 +702,7 @@ namespace embree
       __forceinline void set(size_t i, const NodeRecordMB4D& child)
       {
         setRef(i, child.ref);
-        setBounds(i, child.lbounds.global(child.dt));
+        setBounds(i, child.lbounds, child.dt);
       }
 
       /*! tests if the node has valid bounds */
@@ -784,6 +815,140 @@ namespace embree
       vfloat<N> upper_dz;        //!< Z dimension of upper bounds of all N children.
     };
 
+    /*! Aligned 4D Motion Blur Node */
+    struct AlignedNodeMB4D : public AlignedNodeMB
+    {
+      using BaseNode::children;
+      using AlignedNodeMB::set;
+      using AlignedNodeMB::bounds;
+      using AlignedNodeMB::lower_x;
+      using AlignedNodeMB::lower_y;
+      using AlignedNodeMB::lower_z;
+      using AlignedNodeMB::upper_x;
+      using AlignedNodeMB::upper_y;
+      using AlignedNodeMB::upper_z;
+      using AlignedNodeMB::lower_dx;
+      using AlignedNodeMB::lower_dy;
+      using AlignedNodeMB::lower_dz;
+      using AlignedNodeMB::upper_dx;
+      using AlignedNodeMB::upper_dy;
+      using AlignedNodeMB::upper_dz;
+
+      struct Create
+      {
+        __forceinline NodeRef operator() (const FastAllocator::CachedAllocator& alloc, bool hasTimeSplits = true) const
+        {
+          if (hasTimeSplits)
+          {
+            AlignedNodeMB4D* node = (AlignedNodeMB4D*) alloc.malloc0(sizeof(AlignedNodeMB4D),byteNodeAlignment); node->clear();
+            return encodeNode(node);
+          }
+          else
+          {
+            AlignedNodeMB* node = (AlignedNodeMB*) alloc.malloc0(sizeof(AlignedNodeMB),byteNodeAlignment); node->clear();
+            return encodeNode(node);
+          }
+        }
+      };
+
+      struct Set
+      {
+        __forceinline void operator() (NodeRef ref, size_t i, const NodeRecordMB4D& child) const
+        {
+          if (likely(ref.isAlignedNodeMB())) {
+            ref.alignedNodeMB()->set(i, child);
+          } else {
+            ref.alignedNodeMB4D()->set(i, child);
+          }
+        }
+      };
+
+      /*! Clears the node. */
+      __forceinline void clear()  {
+        lower_t = vfloat<N>(pos_inf);
+        upper_t = vfloat<N>(neg_inf);
+        AlignedNodeMB::clear();
+      }
+
+      /*! Sets bounding box of child. */
+      __forceinline void setBounds(size_t i, const BBox3fa& bounds0_i, const BBox3fa& bounds1_i)
+      {
+        /*! for empty bounds we have to avoid inf-inf=nan */
+        const BBox3fa bounds0(min(bounds0_i.lower,Vec3fa(+FLT_MAX)),max(bounds0_i.upper,Vec3fa(-FLT_MAX)));
+        const BBox3fa bounds1(min(bounds1_i.lower,Vec3fa(+FLT_MAX)),max(bounds1_i.upper,Vec3fa(-FLT_MAX)));
+
+        lower_x[i] = bounds0.lower.x; lower_y[i] = bounds0.lower.y; lower_z[i] = bounds0.lower.z;
+        upper_x[i] = bounds0.upper.x; upper_y[i] = bounds0.upper.y; upper_z[i] = bounds0.upper.z;
+
+        /*! standard case */
+        const Vec3fa dlower = bounds1.lower-bounds0.lower;
+        const Vec3fa dupper = bounds1.upper-bounds0.upper;
+        lower_dx[i] = dlower.x; lower_dy[i] = dlower.y; lower_dz[i] = dlower.z;
+        upper_dx[i] = dupper.x; upper_dy[i] = dupper.y; upper_dz[i] = dupper.z;
+      }
+
+      /*! Sets bounding box of child. */
+      __forceinline void setBounds(size_t i, const LBBox3fa& bounds) {
+        setBounds(i, bounds.bounds0, bounds.bounds1);
+      }
+
+      /*! Sets bounding box of child. */
+      __forceinline void setBounds(size_t i, const LBBox3fa& bounds, const BBox1f& tbounds)
+      {
+        setBounds(i, bounds.global(tbounds));
+        lower_t[i] = tbounds.lower;
+        upper_t[i] = tbounds.upper == 1.0f ? 1.0f+float(ulp) : tbounds.upper;
+      }
+
+      /*! Sets bounding box and ID of child. */
+      __forceinline void set(size_t i, NodeRef childID, const LBBox3fa& bounds, const BBox1f& tbounds) 
+      {
+        AlignedNodeMB::setRef(i,childID);
+        setBounds(i, bounds, tbounds);
+      }
+
+      /*! Sets bounding box and ID of child. */
+      __forceinline void set(size_t i, const NodeRecordMB4D& child) {
+        set(i, child.ref, child.lbounds, child.dt);
+      }
+
+      /*! Returns reference to specified child */
+      __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
+      __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
+
+      /*! Returns the expected surface area when randomly sampling the time. */
+      __forceinline float expectedHalfArea(size_t i) const {
+        return AlignedNodeMB::lbounds(i).expectedHalfArea(timeRange(i));
+      }
+
+      /*! returns time range for specified child */
+      __forceinline BBox1f timeRange(size_t i) const {
+        return BBox1f(lower_t[i],upper_t[i]);
+      }
+
+      /*! stream output operator */
+      friend std::ostream& operator<<(std::ostream& cout, const AlignedNodeMB4D& n) 
+      {
+        cout << "AlignedNodeMB4D {" << std::endl;
+        for (size_t i=0; i<N; i++) 
+        {
+          const BBox3fa b0 = n.bounds0(i);
+          const BBox3fa b1 = n.bounds1(i);
+          cout << "  child" << i << " { " << std::endl;
+          cout << "    bounds0 = " << lerp(b0,b1,n.lower_t[i]) << ", " << std::endl;
+          cout << "    bounds1 = " << lerp(b0,b1,n.upper_t[i]) << ", " << std::endl;
+          cout << "    time_bounds = " << n.lower_t[i] << ", " << n.upper_t[i] << std::endl;
+          cout << "  }";
+        }
+        cout << "}";
+        return cout;
+      }
+
+    public:
+      vfloat<N> lower_t;        //!< time dimension of lower bounds of all N children
+      vfloat<N> upper_t;        //!< time dimension of upper bounds of all N children
+    };
+
     /*! Node with unaligned bounds */
     struct UnalignedNode : public BaseNode
     {
@@ -862,7 +1027,7 @@ namespace embree
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
 
     public:
-      AffineSpace3vfN naabb;   //!< non-axis aligned bounding boxes (bounds are [0,1] in specified space)
+      AffineSpace3vf<N> naabb;   //!< non-axis aligned bounding boxes (bounds are [0,1] in specified space)
     };
 
     struct UnalignedNodeMB : public BaseNode
@@ -940,9 +1105,9 @@ namespace embree
       }
 
     public:
-      AffineSpace3vfN space0;
-      //BBox3vfN b0; // these are the unit bounds
-      BBox3vfN b1;
+      AffineSpace3vf<N> space0;
+      //BBox3vf<N> b0; // these are the unit bounds
+      BBox3vf<N> b1;
     };
 
     struct TransformNode
@@ -964,6 +1129,8 @@ namespace embree
     };
 
     /*! BVHN Quantized Node */
+#if 1
+    /* 8 bit quantization */
     struct __aligned(16) QuantizedNode : public BaseNode
     {
       using BaseNode::children;
@@ -1056,6 +1223,8 @@ namespace embree
         vint<N> i_floor_lower( floor_lower );
         vint<N> i_ceil_upper ( ceil_upper  );
 
+        i_ceil_upper = min(i_ceil_upper,(int)MAX_QUAN_8BIT);
+
         /* lower/upper correction */
         vbool<N> m_lower_correction = ((madd(vfloat<N>(i_floor_lower),scale_diff,minF)) > lower) & m_valid;
         vbool<N> m_upper_correction = ((madd(vfloat<N>(i_ceil_upper),scale_diff,minF)) < upper) & m_valid;
@@ -1072,7 +1241,7 @@ namespace embree
         start = minF;
         scale = scale_diff;
 
-#if 0
+#if defined(DEBUG)
         vfloat<N> extract_lower( vint<N>::load(lower_quant) );
         vfloat<N> extract_upper( vint<N>::load(upper_quant) );
         vfloat<N> final_extract_lower = madd(extract_lower,scale_diff,minF);
@@ -1105,6 +1274,16 @@ namespace embree
       template <int M>
       __forceinline vfloat<M> dequantize(const size_t offset) const { return vfloat<M>(vint<M>::loadu(all_planes+offset)); }
 
+#if defined(__AVX512F__)
+      template <int M>
+      __forceinline vfloat<M> dequantizeLowerUpperX(const vint<M> &p) const { return madd(vfloat<M>(permute(vint<M>::load(lower_x),p)),scale.x,vfloat<M>(start.x)); }
+
+      template <int M>
+      __forceinline vfloat<M> dequantizeLowerUpperY(const vint<M> &p) const { return madd(vfloat<M>(permute(vint<M>::load(lower_y),p)),scale.y,vfloat<M>(start.y)); }
+
+      template <int M>
+      __forceinline vfloat<M> dequantizeLowerUpperZ(const vint<M> &p) const { return madd(vfloat<M>(permute(vint<M>::load(lower_z),p)),scale.z,vfloat<M>(start.z)); }      
+#endif
 
       union {
         struct {
@@ -1121,7 +1300,180 @@ namespace embree
       Vec3f start;
       Vec3f scale;
     };
+#else
+    /* 16 bit quantization */
+    struct __aligned(32) QuantizedNode : public BaseNode
+    {
+      using BaseNode::children;
 
+      static const unsigned short MIN_QUAN_16BIT = 0;
+      static const unsigned short MAX_QUAN_16BIT = 65535;
+
+      struct Create2
+      {
+        template<typename BuildRecord>
+        __forceinline NodeRef operator() (BuildRecord* children, const size_t n, const FastAllocator::CachedAllocator& alloc) const
+        {
+          __aligned(64) AlignedNode node;
+          node.clear();
+          for (size_t i=0; i<n; i++) {
+            node.setBounds(i,children[i].bounds());
+          }
+          QuantizedNode *qnode = (QuantizedNode*) alloc.malloc0(sizeof(QuantizedNode), byteAlignment);
+          qnode->init(node);
+          
+          return (size_t)qnode | tyQuantizedNode;
+        }
+      };
+
+      struct Set2
+      {
+        template<typename BuildRecord>
+        __forceinline NodeRef operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRef* children, const size_t num) const
+        {
+          QuantizedNode* node = ref.quantizedNode();
+          for (size_t i=0; i<num; i++) node->setRef(i,children[i]);
+          return ref;
+        }
+      };
+
+      /*! Clears the node. */
+      __forceinline void clear() {
+        for (size_t i=0; i<N; i++) lower_x[i] = lower_y[i] = lower_z[i] = MAX_QUAN_16BIT;
+        for (size_t i=0; i<N; i++) upper_x[i] = upper_y[i] = upper_z[i] = MIN_QUAN_16BIT;
+        BaseNode::clear();
+      }
+
+      __forceinline void setRef(size_t i, NodeRef ref) {
+        children[i] = ref;
+      }
+      
+      /*! Returns bounds of specified child. */
+      __forceinline BBox3fa bounds(size_t i) const
+      {
+        assert(i < N);
+        const Vec3fa lower(madd(scale.x,(float)lower_x[i],start.x),
+                           madd(scale.y,(float)lower_y[i],start.y),
+                           madd(scale.z,(float)lower_z[i],start.z));
+        const Vec3fa upper(madd(scale.x,(float)upper_x[i],start.x),
+                           madd(scale.y,(float)upper_y[i],start.y),
+                           madd(scale.z,(float)upper_z[i],start.z));
+        return BBox3fa(lower,upper);
+      }
+
+      /*! Returns extent of bounds of specified child. */
+      __forceinline Vec3fa extent(size_t i) const {
+        return bounds(i).size();
+      }
+
+      static __forceinline void init_dim(const vfloat<N> &lower,
+                                         const vfloat<N> &upper,
+                                         unsigned short lower_quant[N],
+                                         unsigned short upper_quant[N],
+                                         float &start,
+                                         float &scale)
+      {
+        const vbool<N> m_valid = lower != vfloat<N>(pos_inf);
+        const float minF = reduce_min(lower);
+        const float maxF = reduce_max(upper);
+        float diff = maxF - minF; //todo: add extracted difference here
+        float scale_diff = diff / 65535.0f;
+        /* accomodate floating point accuracy issues in 'diff' */
+        size_t iterations = 0;
+        size_t upperLimit = 65535;
+        while(minF + scale_diff * (float)upperLimit < maxF)
+        {
+          diff = nextafter(diff, FLT_MAX);
+          scale_diff = diff / 65535.0f;
+          iterations++;
+        }
+        const float inv_diff   = 65535.0f / diff;
+
+        vfloat<N> floor_lower = floor(  (lower - vfloat<N>(minF)) * vfloat<N>(inv_diff) );
+        vfloat<N> ceil_upper  = ceil (  (upper - vfloat<N>(minF)) * vfloat<N>(inv_diff) );
+        vint<N> i_floor_lower( floor_lower );
+        vint<N> i_ceil_upper ( ceil_upper  );
+        i_ceil_upper = min(i_ceil_upper,(int)MAX_QUAN_16BIT);
+
+        /* lower/upper correction */
+        vbool<N> m_lower_correction = ((madd(vfloat<N>(i_floor_lower),scale_diff,minF)) > lower) & m_valid;
+        vbool<N> m_upper_correction = ((madd(vfloat<N>(i_ceil_upper),scale_diff,minF)) < upper) & m_valid;
+        i_floor_lower  = select(m_lower_correction,i_floor_lower-1,i_floor_lower);
+        i_ceil_upper   = select(m_upper_correction,i_ceil_upper +1,i_ceil_upper);
+
+        /* disable invalid lanes */
+        i_floor_lower = select(m_valid,i_floor_lower,65535);
+        i_ceil_upper  = select(m_valid,i_ceil_upper ,0);
+
+        /* store as ushort to memory */
+        vint<N>::store_ushort(lower_quant,i_floor_lower);
+        vint<N>::store_ushort(upper_quant,i_ceil_upper);
+        start = minF;
+        scale = scale_diff;
+
+#if defined(DEBUG)
+        vfloat<N> extract_lower( vint<N>::load(lower_quant) );
+        vfloat<N> extract_upper( vint<N>::load(upper_quant) );
+        vfloat<N> final_extract_lower = madd(extract_lower,scale_diff,minF);
+        vfloat<N> final_extract_upper = madd(extract_upper,scale_diff,minF);
+        assert( (movemask(final_extract_lower <= lower ) & movemask(m_valid)) == movemask(m_valid));
+        assert( (movemask(final_extract_upper >= upper ) & movemask(m_valid)) == movemask(m_valid));
+       
+#endif
+      }
+
+      __forceinline void init(AlignedNode& node)
+      {
+        for (size_t i=0;i<N;i++) children[i] = emptyNode;
+        init_dim(node.lower_x,node.upper_x,lower_x,upper_x,start.x,scale.x);
+        init_dim(node.lower_y,node.upper_y,lower_y,upper_y,start.y,scale.y);
+        init_dim(node.lower_z,node.upper_z,lower_z,upper_z,start.z,scale.z);
+      }
+
+      __forceinline vfloat<N> dequantizeLowerX() const { return madd(vfloat<N>(vint<N>::load(lower_x)),scale.x,vfloat<N>(start.x)); }
+
+      __forceinline vfloat<N> dequantizeUpperX() const { return madd(vfloat<N>(vint<N>::load(upper_x)),scale.x,vfloat<N>(start.x)); }
+
+      __forceinline vfloat<N> dequantizeLowerY() const { return madd(vfloat<N>(vint<N>::load(lower_y)),scale.y,vfloat<N>(start.y)); }
+
+      __forceinline vfloat<N> dequantizeUpperY() const { return madd(vfloat<N>(vint<N>::load(upper_y)),scale.y,vfloat<N>(start.y)); }
+
+      __forceinline vfloat<N> dequantizeLowerZ() const { return madd(vfloat<N>(vint<N>::load(lower_z)),scale.z,vfloat<N>(start.z)); }
+
+      __forceinline vfloat<N> dequantizeUpperZ() const { return madd(vfloat<N>(vint<N>::load(upper_z)),scale.z,vfloat<N>(start.z)); }
+
+      template <int M>
+      __forceinline vfloat<M> dequantize(const size_t offset) const { return vfloat<M>(vint<M>::loadu(all_planes+offset)); }
+
+#if defined(__AVX512F__)
+      template <int M>
+      __forceinline vfloat<M> dequantizeLowerUpperX(const vint<M> &p) const { return madd(vfloat<M>(permute(vint<M>::load(lower_x),p)),scale.x,vfloat<M>(start.x)); }
+
+      template <int M>
+      __forceinline vfloat<M> dequantizeLowerUpperY(const vint<M> &p) const { return madd(vfloat<M>(permute(vint<M>::load(lower_y),p)),scale.y,vfloat<M>(start.y)); }
+
+      template <int M>
+      __forceinline vfloat<M> dequantizeLowerUpperZ(const vint<M> &p) const { return madd(vfloat<M>(permute(vint<M>::load(lower_z),p)),scale.z,vfloat<M>(start.z)); }      
+#endif
+
+
+      union {
+        struct {
+          unsigned short lower_x[N]; //!< 8bit discretized X dimension of lower bounds of all N children
+          unsigned short upper_x[N]; //!< 8bit discretized X dimension of upper bounds of all N children
+          unsigned short lower_y[N]; //!< 8bit discretized Y dimension of lower bounds of all N children
+          unsigned short upper_y[N]; //!< 8bit discretized Y dimension of upper bounds of all N children
+          unsigned short lower_z[N]; //!< 8bit discretized Z dimension of lower bounds of all N children
+          unsigned short upper_z[N]; //!< 8bit discretized Z dimension of upper bounds of all N children
+        };
+        unsigned short all_planes[6*N];
+      };
+
+      Vec3f start;
+      Vec3f scale;
+    };
+
+#endif
 
     /*! swap the children of two nodes */
     __forceinline static void swap(AlignedNode* a, size_t i, AlignedNode* b, size_t j)
@@ -1190,9 +1542,6 @@ namespace embree
     /*! sets BVH members after build */
     void set (NodeRef root, const LBBox3fa& bounds, size_t numPrimitives);
 
-    /*! prints statistics about the BVH */
-    void printStatistics();
-
     /*! Clears the barrier bits of a subtree. */
     void clearBarrier(NodeRef& node);
 
@@ -1216,35 +1565,12 @@ namespace embree
     };
 
     /*! shrink allocated memory */
-    void shrink() {
-      alloc.shrink();
+    void shrink() { // FIXME: remove
     }
 
     /*! post build cleanup */
     void cleanup() {
       alloc.cleanup();
-    }
-
-
-    /*! return the true root */
-    __forceinline NodeRef getRoot(const RayPrecalculations& pre) const {
-      return root;
-    }
-
-    __forceinline NodeRef getRoot(const RayPrecalculationsMB& pre) const {
-      NodeRef* roots = (NodeRef*)(size_t)root;
-      return roots[pre.itime()];
-    }
-
-    template<int K>
-      __forceinline NodeRef getRoot(const RayKPrecalculations<K>& pre, size_t k) const {
-      return root;
-    }
-
-    template<int K>
-      __forceinline NodeRef getRoot(const RayKPrecalculationsMB<K>& pre, size_t k) const {
-      NodeRef* roots = (NodeRef*)(size_t)root;
-      return roots[pre.itime(k)];
     }
 
   public:
@@ -1272,6 +1598,11 @@ namespace embree
     static __forceinline NodeRef encodeNode(AlignedNodeMB* node) {
       assert(!((size_t)node & align_mask));
       return NodeRef((size_t) node | tyAlignedNodeMB);
+    }
+
+    static __forceinline NodeRef encodeNode(AlignedNodeMB4D* node) {
+      assert(!((size_t)node & align_mask));
+      return NodeRef((size_t) node | tyAlignedNodeMB4D);
     }
 
     /*! Encodes an unaligned node */
@@ -1311,8 +1642,6 @@ namespace embree
     Device* device;                    //!< device pointer
     Scene* scene;                      //!< scene pointer
     NodeRef root;                      //!< root node
-    bool msmblur;                      //!< when true root points to array of roots for MSMBlur mode
-    unsigned numTimeSteps;             //!< number of time steps
     FastAllocator alloc;               //!< allocator used to allocate nodes
 
     /*! statistics data */
@@ -1323,7 +1652,7 @@ namespace embree
     /*! data arrays for special builders */
   public:
     std::vector<BVHN*> objects;
-    avector<char,aligned_allocator<char,32>> subdiv_patches;
+    vector_t<char,aligned_allocator<char,32>> subdiv_patches;
   };
 
   template<>

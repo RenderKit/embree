@@ -159,5 +159,46 @@ namespace embree
       private:
         PrimRef* const prims;
       };
+
+    /*! Performs standard object binning */
+    template<typename PrimRefMB, size_t BINS>
+      struct HeuristicArrayBinningMB
+      {
+        typedef BinSplit<BINS> Split;
+        typedef typename PrimRefMB::BBox BBox;
+        typedef BinInfoT<BINS,PrimRefMB,BBox> ObjectBinner;
+        static const size_t PARALLEL_THRESHOLD = 3 * 1024;
+        static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
+        static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;
+
+        /*! finds the best split */
+        const Split find(const SetMB& set, const size_t logBlockSize)
+        {
+          ObjectBinner binner(empty);
+          const BinMapping<BINS> mapping(set.size(),set.centBounds);
+          bin_parallel(binner,set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,mapping);
+          Split osplit = binner.best(mapping,logBlockSize);
+          osplit.sah *= set.time_range.size();
+          if (!osplit.valid()) osplit.data = Split::SPLIT_FALLBACK; // use fallback split
+          return osplit;
+        }
+        
+        /*! array partitioning */
+        __forceinline void split(const Split& split, const SetMB& set, SetMB& lset, SetMB& rset)
+        {
+          const size_t begin = set.object_range.begin();
+          const size_t end   = set.object_range.end();
+          PrimInfoMB left = empty;
+          PrimInfoMB right = empty;
+          const vint4 vSplitPos(split.pos);
+          const vbool4 vSplitMask(1 << split.dim);
+          auto isLeft = [&] (const PrimRefMB &ref) { return any(((vint4)split.mapping.bin_unsafe(ref) < vSplitPos) & vSplitMask); };
+          auto reduction = [] (PrimInfoMB& pinfo, const PrimRefMB& ref) { pinfo.add_primref(ref); };
+          auto reduction2 = [] (PrimInfoMB& pinfo0,const PrimInfoMB& pinfo1) { pinfo0.merge(pinfo1); };
+          size_t center = parallel_partitioning(set.prims->data(),begin,end,EmptyTy(),left,right,isLeft,reduction,reduction2,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD);
+          new (&lset) SetMB(left, set.prims,range<size_t>(begin,center),set.time_range);
+          new (&rset) SetMB(right,set.prims,range<size_t>(center,end  ),set.time_range);
+        }
+      };
   }
 }

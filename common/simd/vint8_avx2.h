@@ -76,9 +76,10 @@ namespace embree
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
 
-    static __forceinline const vint8 load( const unsigned char* const ptr ) { return _mm256_cvtepu8_epi32(_mm_load_si128((__m128i*)ptr)); }
-
+    static __forceinline const vint8 load( const unsigned char* const ptr )  { return _mm256_cvtepu8_epi32(_mm_load_si128((__m128i*)ptr)); }
     static __forceinline const vint8 loadu( const unsigned char* const ptr ) { return _mm256_cvtepu8_epi32(_mm_loadu_si128((__m128i*)ptr)); }
+    static __forceinline const vint8 load( const unsigned short* const ptr )  { return _mm256_cvtepu16_epi32(_mm_load_si128((__m128i*)ptr)); }
+    static __forceinline const vint8 loadu( const unsigned short* const ptr ) { return _mm256_cvtepu16_epi32(_mm_loadu_si128((__m128i*)ptr)); }
 
     static __forceinline const vint8 load( const void* const ptr ) { return _mm256_load_si256((__m256i*)ptr); }
     static __forceinline const vint8 loadu(const void* const ptr ) { return _mm256_loadu_si256((__m256i*)ptr); }
@@ -120,6 +121,11 @@ namespace embree
       for (size_t i = 0; i < 8; i++)
         ptr[i] = ((unsigned char*)&x)[i];
 #endif
+    }
+
+    static __forceinline void store_ushort( unsigned short* const ptr, const vint8& v ) {
+      for (size_t i=0;i<8;i++)
+        ptr[i] = (unsigned short)v[i];
     }
 
     static __forceinline vint8 broadcast64(const long long &a) { return _mm256_set1_epi64x(a); }

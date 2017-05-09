@@ -23,7 +23,7 @@ namespace embree
   BVHN<N>::BVHN (const PrimitiveType& primTy, Scene* scene)
     : AccelData((N==4) ? AccelData::TY_BVH4 : (N==8) ? AccelData::TY_BVH8 : AccelData::TY_UNKNOWN),
       primTy(primTy), device(scene->device), scene(scene),
-      root(emptyNode), msmblur(false), numTimeSteps(1), alloc(scene->device,scene->isStatic()), numPrimitives(0), numVertices(0)
+      root(emptyNode), alloc(scene->device,scene->isStatic()), numPrimitives(0), numVertices(0)
   {
   }
 
@@ -47,12 +47,6 @@ namespace embree
     this->root = root;
     this->bounds = bounds;
     this->numPrimitives = numPrimitives;
-  }
-
-  template<int N>
-  void BVHN<N>::printStatistics()
-  {
-    std::cout << BVHNStatistics<N>(this).str();
   }	
 
   template<int N>
@@ -133,7 +127,10 @@ namespace embree
       return inf;
 
     if (device->verbosity(1))
-      std::cout << "building BVH" << N << "<" << primTy.name << "> using " << builderName << " ..." << std::flush;
+    {
+      Lock<MutexSys> lock(g_printMutex);
+      std::cout << "building BVH" << N << (builderName.find("MBlur") != std::string::npos ? "MB" : "") << "<" << primTy.name << "> using " << builderName << " ..." << std::endl << std::flush;
+    }
 
     double t0 = 0.0;
     if (device->benchmark || device->verbosity(1)) t0 = getSeconds();
@@ -150,36 +147,45 @@ namespace embree
     if (device->benchmark || device->verbosity(1)) 
       dt = getSeconds()-t0;
 
+    std::unique_ptr<BVHNStatistics<N>> stat;
+
     /* print statistics */
-    if (device->verbosity(1)) {
+    if (device->verbosity(1))
+    {
+      if (!stat) stat.reset(new BVHNStatistics<N>(this));
       const size_t usedBytes = alloc.getUsedBytes();
-      std::cout << " [DONE]" << "  " << 1000.0f*dt << "ms, " << 1E-6*double(numPrimitives)/dt << " Mprim/s, " << 1E-9*double(usedBytes)/dt << " GB/s" << std::endl;
-    }
+      Lock<MutexSys> lock(g_printMutex);
+      std::cout << "finished BVH" << N << "<" << primTy.name << "> : " << 1000.0f*dt << "ms, " << 1E-6*double(numPrimitives)/dt << " Mprim/s, " << 1E-9*double(usedBytes)/dt << " GB/s" << std::endl;
     
-    if (device->verbosity(2))
-      printStatistics();
+      if (device->verbosity(2))
+        std::cout << stat->str();
 
-    if (device->verbosity(2))
-    {
-      FastAllocator::AllStatistics stat(&alloc);
-      for (size_t i=0; i<objects.size(); i++)
-        if (objects[i]) 
-          stat = stat + FastAllocator::AllStatistics(&objects[i]->alloc);
+      if (device->verbosity(2))
+      {
+        FastAllocator::AllStatistics stat(&alloc);
+        for (size_t i=0; i<objects.size(); i++)
+          if (objects[i])
+            stat = stat + FastAllocator::AllStatistics(&objects[i]->alloc);
 
-      stat.print(numPrimitives);
-    }
+        stat.print(numPrimitives);
+      }
 
-    if (device->verbosity(3))
-    {
-      alloc.print_blocks();
-      for (size_t i=0; i<objects.size(); i++)
-        objects[i]->alloc.print_blocks();
+      if (device->verbosity(3))
+      {
+        alloc.print_blocks();
+        for (size_t i=0; i<objects.size(); i++)
+          objects[i]->alloc.print_blocks();
+      }
+
+      std::cout << std::flush;
     }
 
     /* benchmark mode */
-    if (device->benchmark) {
-      BVHNStatistics<N> stat(this);
-      std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
+    if (device->benchmark)
+    {
+      if (!stat) stat.reset(new BVHNStatistics<N>(this));
+      Lock<MutexSys> lock(g_printMutex);
+      std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat->sah() << " " << stat->bytesUsed() << " BVH" << N << "<" << primTy.name << ">" << std::endl << std::flush;
     }
   }
 

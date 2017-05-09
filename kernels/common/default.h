@@ -28,6 +28,7 @@
 #include "../common/sys/array.h"
 #include "../common/sys/string.h"
 #include "../common/sys/regression.h"
+#include "../common/sys/vector.h"
 
 #include "../common/math/math.h"
 #include "../common/simd/simd.h"
@@ -67,6 +68,15 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
   /// Vec2 shortcuts
   ////////////////////////////////////////////////////////////////////////////////
+
+  template<int N> using Vec2vf  = Vec2<vfloat<N>>;
+  template<int N> using Vec2vd  = Vec2<vdouble<N>>;
+  template<int N> using Vec2vr  = Vec2<vreal<N>>;
+  template<int N> using Vec2vi  = Vec2<vint<N>>;
+  template<int N> using Vec2vl  = Vec2<vllong<N>>;
+  template<int N> using Vec2vb  = Vec2<vbool<N>>;
+  template<int N> using Vec2vbf = Vec2<vboolf<N>>;
+  template<int N> using Vec2vbd = Vec2<vboold<N>>;
 
   typedef Vec2<vfloat4>  Vec2vf4;
   typedef Vec2<vdouble4> Vec2vd4;
@@ -108,6 +118,15 @@ namespace embree
   /// Vec3 shortcuts
   ////////////////////////////////////////////////////////////////////////////////
 
+  template<int N> using Vec3vf  = Vec3<vfloat<N>>;
+  template<int N> using Vec3vd  = Vec3<vdouble<N>>;
+  template<int N> using Vec3vr  = Vec3<vreal<N>>;
+  template<int N> using Vec3vi  = Vec3<vint<N>>;
+  template<int N> using Vec3vl  = Vec3<vllong<N>>;
+  template<int N> using Vec3vb  = Vec3<vbool<N>>;
+  template<int N> using Vec3vbf = Vec3<vboolf<N>>;
+  template<int N> using Vec3vbd = Vec3<vboold<N>>;
+
   typedef Vec3<vfloat4>  Vec3vf4;
   typedef Vec3<vdouble4> Vec3vd4;
   typedef Vec3<vreal4>   Vec3vr4;
@@ -147,6 +166,15 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
   /// Vec4 shortcuts
   ////////////////////////////////////////////////////////////////////////////////
+
+  template<int N> using Vec4vf  = Vec4<vfloat<N>>;
+  template<int N> using Vec4vd  = Vec4<vdouble<N>>;
+  template<int N> using Vec4vr  = Vec4<vreal<N>>;
+  template<int N> using Vec4vi  = Vec4<vint<N>>;
+  template<int N> using Vec4vl  = Vec4<vllong<N>>;
+  template<int N> using Vec4vb  = Vec4<vbool<N>>;
+  template<int N> using Vec4vbf = Vec4<vboolf<N>>;
+  template<int N> using Vec4vbd = Vec4<vboold<N>>;
 
   typedef Vec4<vfloat4>  Vec4vf4;
   typedef Vec4<vdouble4> Vec4vd4;
@@ -188,14 +216,17 @@ namespace embree
   /// Other shortcuts
   ////////////////////////////////////////////////////////////////////////////////
 
+  template<int N> using LinearSpace3vf = LinearSpace3<Vec3vf<N>>;
   typedef LinearSpace3<Vec3vf4>  LinearSpace3vf4;
   typedef LinearSpace3<Vec3vf8>  LinearSpace3vf8;
   typedef LinearSpace3<Vec3vf16> LinearSpace3vf16;
 
+  template<int N> using AffineSpace3vf = AffineSpaceT<LinearSpace3<Vec3vf<N>>>;
   typedef AffineSpaceT<LinearSpace3<Vec3vf4>>  AffineSpace3vf4;
   typedef AffineSpaceT<LinearSpace3<Vec3vf8>>  AffineSpace3vf8;
   typedef AffineSpaceT<LinearSpace3<Vec3vf16>> AffineSpace3vf16;
 
+  template<int N> using BBox3vf = BBox<Vec3vf<N>>;
   typedef BBox<Vec3vf4>  BBox3vf4;
   typedef BBox<Vec3vf8>  BBox3vf8;
   typedef BBox<Vec3vf16> BBox3vf16;

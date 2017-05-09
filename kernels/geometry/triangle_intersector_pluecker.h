@@ -35,7 +35,7 @@ namespace embree
     template<int M, typename UVMapper>
       struct PlueckerHitM
     {
-      __forceinline PlueckerHitM(const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& T, const vfloat<M>& den, const Vec3<vfloat<M>>& Ng, const UVMapper& mapUV)
+      __forceinline PlueckerHitM(const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& T, const vfloat<M>& den, const Vec3vf<M>& Ng, const UVMapper& mapUV)
         : U(U), V(V), T(T), den(den), mapUV(mapUV), vNg(Ng) {}
       
       __forceinline void finalize() 
@@ -62,7 +62,7 @@ namespace embree
       vfloat<M> vu;
       vfloat<M> vv;
       vfloat<M> vt;
-      Vec3<vfloat<M>> vNg;
+      Vec3vf<M> vNg;
     };
 
     template<int M>
@@ -74,24 +74,23 @@ namespace embree
         
         template<typename UVMapper, typename Epilog>
           __forceinline bool intersect(Ray& ray, 
-                                       const Vec3<vfloat<M>>& tri_v0, 
-                                       const Vec3<vfloat<M>>& tri_v1, 
-                                       const Vec3<vfloat<M>>& tri_v2,  
+                                       const Vec3vf<M>& tri_v0,
+                                       const Vec3vf<M>& tri_v1,
+                                       const Vec3vf<M>& tri_v2,
                                        const UVMapper& mapUV,
                                        const Epilog& epilog) const
         {
           /* calculate vertices relative to ray origin */
-          typedef Vec3<vfloat<M>> Vec3vfM;
-          const Vec3vfM O = Vec3vfM(ray.org);
-          const Vec3vfM D = Vec3vfM(ray.dir);
-          const Vec3vfM v0 = tri_v0-O;
-          const Vec3vfM v1 = tri_v1-O;
-          const Vec3vfM v2 = tri_v2-O;
+          const Vec3vf<M> O = Vec3vf<M>(ray.org);
+          const Vec3vf<M> D = Vec3vf<M>(ray.dir);
+          const Vec3vf<M> v0 = tri_v0-O;
+          const Vec3vf<M> v1 = tri_v1-O;
+          const Vec3vf<M> v2 = tri_v2-O;
           
           /* calculate triangle edges */
-          const Vec3vfM e0 = v2-v0;
-          const Vec3vfM e1 = v0-v1;
-          const Vec3vfM e2 = v1-v2;
+          const Vec3vf<M> e0 = v2-v0;
+          const Vec3vf<M> e1 = v0-v1;
+          const Vec3vf<M> e2 = v1-v2;
           
           /* perform edge tests */
           const vfloat<M> U = dot(cross(v2+v0,e0),D);
@@ -108,15 +107,15 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* calculate geometry normal and denominator */
-          const Vec3vfM Ng = stable_triangle_normal(e2,e1,e0);
+          const Vec3vf<M> Ng = stable_triangle_normal(e2,e1,e0);
           const vfloat<M> den = twice(dot(Ng,D));
           const vfloat<M> absDen = abs(den);
           const vfloat<M> sgnDen = signmsk(den);
           
           /* perform depth test */
           const vfloat<M> T = twice(dot(v0,Ng));
-          valid &= ((T^sgnDen) >= absDen*vfloat<M>(ray.tnear));
-          valid &=(absDen*vfloat<M>(ray.tfar) >= (T^sgnDen));
+          valid &= absDen*vfloat<M>(ray.tnear) < (T^sgnDen);
+          valid &= (T^sgnDen) <= absDen*vfloat<M>(ray.tfar);
           if (unlikely(none(valid))) return false;
           
           /* avoid division by 0 */
@@ -132,10 +131,10 @@ namespace embree
     template<int K, typename UVMapper>
       struct PlueckerHitK
     {
-      __forceinline PlueckerHitK(const vfloat<K>& U, const vfloat<K>& V, const vfloat<K>& T, const vfloat<K>& den, const Vec3<vfloat<K>>& Ng, const UVMapper& mapUV)
+      __forceinline PlueckerHitK(const vfloat<K>& U, const vfloat<K>& V, const vfloat<K>& T, const vfloat<K>& den, const Vec3vf<K>& Ng, const UVMapper& mapUV)
         : U(U), V(V), T(T), den(den), Ng(Ng), mapUV(mapUV) {}
       
-      __forceinline std::tuple<vfloat<K>,vfloat<K>,vfloat<K>,Vec3<vfloat<K>>> operator() () const
+      __forceinline std::tuple<vfloat<K>,vfloat<K>,vfloat<K>,Vec3vf<K>> operator() () const
       {
         const vfloat<K> rcpDen = rcp(den);
         const vfloat<K> t = T * rcpDen;
@@ -150,7 +149,7 @@ namespace embree
       const vfloat<K> V;
       const vfloat<K> T;
       const vfloat<K> den;
-      const Vec3<vfloat<K>> Ng;
+      const Vec3vf<K> Ng;
       const UVMapper& mapUV;
     };
     
@@ -163,30 +162,29 @@ namespace embree
         template<typename UVMapper, typename Epilog>
           __forceinline vbool<K> intersectK(const vbool<K>& valid0, 
                                             RayK<K>& ray, 
-                                            const Vec3<vfloat<K>>& tri_v0, 
-                                            const Vec3<vfloat<K>>& tri_v1, 
-                                            const Vec3<vfloat<K>>& tri_v2, 
+                                            const Vec3vf<K>& tri_v0,
+                                            const Vec3vf<K>& tri_v1,
+                                            const Vec3vf<K>& tri_v2,
                                             const UVMapper& mapUV,
                                             const Epilog& epilog) const
         {
           /* calculate vertices relative to ray origin */
-          typedef Vec3<vfloat<K>> Vec3vfK;
           vbool<K> valid = valid0;
-          const Vec3vfK O = ray.org;
-          const Vec3vfK D = ray.dir;
-          const Vec3vfK v0 = tri_v0-O;
-          const Vec3vfK v1 = tri_v1-O;
-          const Vec3vfK v2 = tri_v2-O;
+          const Vec3vf<K> O = ray.org;
+          const Vec3vf<K> D = ray.dir;
+          const Vec3vf<K> v0 = tri_v0-O;
+          const Vec3vf<K> v1 = tri_v1-O;
+          const Vec3vf<K> v2 = tri_v2-O;
           
           /* calculate triangle edges */
-          const Vec3vfK e0 = v2-v0;
-          const Vec3vfK e1 = v0-v1;
-          const Vec3vfK e2 = v1-v2;
+          const Vec3vf<K> e0 = v2-v0;
+          const Vec3vf<K> e1 = v0-v1;
+          const Vec3vf<K> e2 = v1-v2;
            
           /* perform edge tests */
-          const vfloat<K> U = dot(Vec3vfK(cross(v2+v0,e0)),D);
-          const vfloat<K> V = dot(Vec3vfK(cross(v0+v1,e1)),D);
-          const vfloat<K> W = dot(Vec3vfK(cross(v1+v2,e2)),D);
+          const vfloat<K> U = dot(Vec3vf<K>(cross(v2+v0,e0)),D);
+          const vfloat<K> V = dot(Vec3vf<K>(cross(v0+v1,e1)),D);
+          const vfloat<K> W = dot(Vec3vf<K>(cross(v1+v2,e2)),D);
 #if defined(EMBREE_BACKFACE_CULLING)
           const vfloat<K> maxUVW = max(U,V,W);
           valid &= maxUVW <= 0.0f;
@@ -198,15 +196,15 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
            /* calculate geometry normal and denominator */
-          const Vec3vfK Ng = stable_triangle_normal(e2,e1,e0);
-          const vfloat<K> den = twice(dot(Vec3vfK(Ng),D));
+          const Vec3vf<K> Ng = stable_triangle_normal(e2,e1,e0);
+          const vfloat<K> den = twice(dot(Vec3vf<K>(Ng),D));
           const vfloat<K> absDen = abs(den);
           const vfloat<K> sgnDen = signmsk(den);
 
           /* perform depth test */
-          const vfloat<K> T = twice(dot(v0,Vec3vfK(Ng)));
-          valid &= ((T^sgnDen) >= absDen*ray.tnear);
-          valid &= (absDen*ray.tfar >= (T^sgnDen));
+          const vfloat<K> T = twice(dot(v0,Vec3vf<K>(Ng)));
+          valid &= absDen*ray.tnear < (T^sgnDen);
+          valid &= (T^sgnDen) <= absDen*ray.tfar;
           if (unlikely(none(valid))) return false;
           
           /* avoid division by 0 */
@@ -221,24 +219,23 @@ namespace embree
         /*! Intersect k'th ray from ray packet of size K with M triangles. */
         template<typename UVMapper, typename Epilog>
           __forceinline bool intersect(RayK<K>& ray, size_t k,
-                                       const Vec3<vfloat<M>>& tri_v0, 
-                                       const Vec3<vfloat<M>>& tri_v1, 
-                                       const Vec3<vfloat<M>>& tri_v2, 
+                                       const Vec3vf<M>& tri_v0,
+                                       const Vec3vf<M>& tri_v1,
+                                       const Vec3vf<M>& tri_v2,
                                        const UVMapper& mapUV,
                                        const Epilog& epilog) const
         {
           /* calculate vertices relative to ray origin */
-          typedef Vec3<vfloat<M>> Vec3vfM;
-          const Vec3vfM O = broadcast<vfloat<M>>(ray.org,k);
-          const Vec3vfM D = broadcast<vfloat<M>>(ray.dir,k);
-          const Vec3vfM v0 = tri_v0-O;
-          const Vec3vfM v1 = tri_v1-O;
-          const Vec3vfM v2 = tri_v2-O;
+          const Vec3vf<M> O = broadcast<vfloat<M>>(ray.org,k);
+          const Vec3vf<M> D = broadcast<vfloat<M>>(ray.dir,k);
+          const Vec3vf<M> v0 = tri_v0-O;
+          const Vec3vf<M> v1 = tri_v1-O;
+          const Vec3vf<M> v2 = tri_v2-O;
           
           /* calculate triangle edges */
-          const Vec3vfM e0 = v2-v0;
-          const Vec3vfM e1 = v0-v1;
-          const Vec3vfM e2 = v1-v2;
+          const Vec3vf<M> e0 = v2-v0;
+          const Vec3vf<M> e1 = v0-v1;
+          const Vec3vf<M> e2 = v1-v2;
           
           /* perform edge tests */
           const vfloat<M> U = dot(cross(v2+v0,e0),D);
@@ -255,15 +252,15 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* calculate geometry normal and denominator */
-          const Vec3vfM Ng = stable_triangle_normal(e2,e1,e0);
+          const Vec3vf<M> Ng = stable_triangle_normal(e2,e1,e0);
           const vfloat<M> den = twice(dot(Ng,D));
           const vfloat<M> absDen = abs(den);
           const vfloat<M> sgnDen = signmsk(den);
 
           /* perform depth test */
           const vfloat<M> T = twice(dot(v0,Ng));
-          valid &= ((T^sgnDen) >= absDen*vfloat<M>(ray.tnear[k]));
-          valid &= (absDen*vfloat<M>(ray.tfar[k]) >= (T^sgnDen));
+          valid &= absDen*vfloat<M>(ray.tnear[k]) < (T^sgnDen);
+          valid &= (T^sgnDen) <= absDen*vfloat<M>(ray.tfar[k]);
           if (unlikely(none(valid))) return false;
           
           /* avoid division by 0 */

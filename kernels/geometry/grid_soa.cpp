@@ -20,13 +20,13 @@ namespace embree
 {
   namespace isa
   {  
-    GridSOA::GridSOA(const SubdivPatch1Base* patches, unsigned time_steps, unsigned time_steps_global,
+    GridSOA::GridSOA(const SubdivPatch1Base* patches, unsigned time_steps,
                      const unsigned x0, const unsigned x1, const unsigned y0, const unsigned y1, const unsigned swidth, const unsigned sheight,
-                     const SubdivMesh* const geom, const size_t bvhBytes, const size_t gridBytes, BBox3fa* bounds_o)
-      : align0(0), 
-        time_steps_global(time_steps_global),time_steps(time_steps), width(x1-x0+1), height(y1-y0+1), dim_offset(width*height),
+                     const SubdivMesh* const geom, const size_t gridOffset, const size_t gridBytes, BBox3fa* bounds_o)
+      : troot(BVH4::emptyNode),
+        time_steps(time_steps), width(x1-x0+1), height(y1-y0+1), dim_offset(width*height),
         geomID(patches->geom), primID(patches->prim), 
-        bvhBytes(unsigned(bvhBytes)), gridOffset(max(1u,time_steps_global-1)*unsigned(bvhBytes)), gridBytes(unsigned(gridBytes)), rootOffset(unsigned(gridOffset+time_steps*gridBytes))
+        gridOffset(gridOffset), gridBytes(unsigned(gridBytes)), rootOffset(unsigned(gridOffset+time_steps*gridBytes))
     {      
       /* the generate loops need padded arrays, thus first store into these temporary arrays */
       unsigned temp_size = width*height+VSIZEX;
@@ -63,29 +63,17 @@ namespace embree
       }
 
       /* create normal BVH when no motion blur is active */
-      if (time_steps == 1) {
-        root(0) = buildBVH(0,bounds_o);
-      }
+      if (time_steps == 1)
+        root(0) = buildBVH(bounds_o).first;
 
       /* otherwise build MBlur BVH */
-      else
-      {
-        for (size_t t=0; t<time_steps_global-1; t++)
-        {
-          LBBox3fa bounds;
-          root(t) = buildMBlurBVH(t,&bounds);
-          if (bounds_o && time_steps == time_steps_global) {
-            bounds_o[t+0] = bounds.bounds0;
-            bounds_o[t+1] = bounds.bounds1;
-          }
-        }
+      else {
+        BBox3fa gbounds[RTC_MAX_TIME_STEPS];
+        troot = buildMSMBlurBVH(make_range(0,int(time_steps-1)),gbounds).first;
 
-        if (bounds_o && time_steps != time_steps_global)
-        {
-          GridRange range(0,width-1,0,height-1);
-          for (size_t t=0; t<time_steps; t++)
-            bounds_o[t] = calculateBounds(t,range);
-        }
+        if (bounds_o)
+          for (size_t i=0; i<time_steps; i++) 
+            bounds_o[i] = gbounds[i];
       }
     }
 
@@ -102,34 +90,38 @@ namespace embree
         bytes += getBVHBytes(r[i],nodeBytes,leafBytes);
       return bytes;
     }
-    
-    BVH4::NodeRef GridSOA::buildBVH(size_t time, BBox3fa* bounds_o)
+
+    size_t GridSOA::getTemporalBVHBytes(const range<int> time_range, const size_t nodeBytes)
     {
-      BVH4::NodeRef root = 0; size_t allocator = 0;
-      GridRange range(0,width-1,0,height-1);
-      BBox3fa bounds = buildBVH(root,time,range,allocator);
-      if (bounds_o) *bounds_o = bounds;
-      assert(allocator == bvhBytes);
-      return root;
+      if (time_range.size() <= 1)
+        return 0;
+
+      size_t bytes = nodeBytes;
+      for (size_t i=0; i<4; i++) {
+        const int begin = time_range.begin() + (i+0)*time_range.size()/4;
+        const int end   = time_range.begin() + (i+1)*time_range.size()/4;
+        bytes += getTemporalBVHBytes(make_range(begin,end),nodeBytes);
+      }
+      return bytes;
     }
 
-    BBox3fa GridSOA::buildBVH(BVH4::NodeRef& curNode, size_t time, const GridRange& range, size_t& allocator)
+    std::pair<BVH4::NodeRef,BBox3fa> GridSOA::buildBVH(const GridRange& range, size_t& allocator)
     {
       /*! create leaf node */
       if (unlikely(range.hasLeafSize()))
       {
         /* we store index of first subgrid vertex as leaf node */
-        curNode = BVH4::encodeTypedLeaf(encodeLeaf(range.u_start,range.v_start),0);
+        BVH4::NodeRef curNode = BVH4::encodeTypedLeaf(encodeLeaf(range.u_start,range.v_start),0);
 
         /* return bounding box */
-        return calculateBounds(time,range);
+        return std::make_pair(curNode,calculateBounds(0,range));
       }
       
       /* create internal node */
       else 
       {
         /* allocate new bvh4 node */
-        BVH4::AlignedNode* node = (BVH4::AlignedNode *)&bvhData(time)[allocator];
+        BVH4::AlignedNode* node = (BVH4::AlignedNode *)&bvhData()[allocator];
         allocator += sizeof(BVH4::AlignedNode);
         node->clear();
         
@@ -141,45 +133,44 @@ namespace embree
         BBox3fa bounds( empty );
         for (unsigned i=0; i<children; i++)
         {
-          BBox3fa box = buildBVH(node->child(i), time, r[i], allocator);
-          node->setBounds(i,box);
-          bounds.extend(box);
+          std::pair<BVH4::NodeRef,BBox3fa> node_bounds = buildBVH(r[i], allocator);
+          node->set(i,node_bounds.first,node_bounds.second);
+          bounds.extend(node_bounds.second);
         }
-        
-        curNode = BVH4::encodeNode(node);
         assert(is_finite(bounds));
-        return bounds;
+        return std::make_pair(BVH4::encodeNode(node),bounds);
       }
     }
 
-    BVH4::NodeRef GridSOA::buildMBlurBVH(size_t time, LBBox3fa* bounds_o)
+    std::pair<BVH4::NodeRef,BBox3fa> GridSOA::buildBVH(BBox3fa* bounds_o)
     {
-      BVH4::NodeRef root = 0; size_t allocator = 0;
+      size_t allocator = 0;
       GridRange range(0,width-1,0,height-1);
-      LBBox3fa bounds = buildMBlurBVH(root,time,range,allocator);
-      if (bounds_o) *bounds_o = bounds;
-      assert(allocator == bvhBytes);
-      return root;
+      std::pair<BVH4::NodeRef,BBox3fa> root_bounds = buildBVH(range,allocator);
+      if (bounds_o) *bounds_o = root_bounds.second;
+      assert(allocator == gridOffset);
+      return root_bounds;
     }
 
-    LBBox3fa GridSOA::buildMBlurBVH(BVH4::NodeRef& curNode, size_t time, const GridRange& range, size_t& allocator)
+    std::pair<BVH4::NodeRef,LBBox3fa> GridSOA::buildMBlurBVH(size_t time, const GridRange& range, size_t& allocator)
     {
       /*! create leaf node */
       if (unlikely(range.hasLeafSize()))
       {
         /* we store index of first subgrid vertex as leaf node */
-        curNode = BVH4::encodeTypedLeaf(encodeLeaf(range.u_start,range.v_start),0);
+        BVH4::NodeRef curNode = BVH4::encodeTypedLeaf(encodeLeaf(range.u_start,range.v_start),0);
 
         /* return bounding box */
-        return Geometry::linearBounds([&] (size_t itime) { return calculateBounds(itime,range); },
-                                      time, time_steps_global, time_steps);
+        const BBox3fa b0 = calculateBounds(time+0,range);
+        const BBox3fa b1 = calculateBounds(time+1,range);
+        return std::make_pair(curNode,LBBox3fa(b0,b1));
       }
       
       /* create internal node */
       else 
       {
         /* allocate new bvh4 node */
-        BVH4::AlignedNodeMB* node = (BVH4::AlignedNodeMB *)&bvhData(time)[allocator];
+        BVH4::AlignedNodeMB* node = (BVH4::AlignedNodeMB *)&bvhData()[allocator];
         allocator += sizeof(BVH4::AlignedNodeMB);
         node->clear();
         
@@ -191,16 +182,61 @@ namespace embree
         LBBox3fa bounds(empty);
         for (unsigned i=0; i<children; i++)
         {
-          LBBox3fa box = buildMBlurBVH(node->child(i), time, r[i], allocator);
-          node->setBounds(i, box);
-          bounds.extend(box);
+          const BBox1f time_range(float(time+0)/float(time_steps-1),
+                                  float(time+1)/float(time_steps-1));
+          std::pair<BVH4::NodeRef,LBBox3fa> node_bounds = buildMBlurBVH(time, r[i], allocator);
+          node->setRef(i,node_bounds.first);
+          node->setBounds(i,node_bounds.second.global(time_range));
+          bounds.extend(node_bounds.second);
         }
-        
-        curNode = BVH4::encodeNode(node);
         assert(is_finite(bounds.bounds0));
         assert(is_finite(bounds.bounds1));
-        return bounds;
+        
+        return std::make_pair(BVH4::encodeNode(node),bounds);
       }
+    }
+
+    std::pair<BVH4::NodeRef,LBBox3fa> GridSOA::buildMSMBlurBVH(const range<int> time_range, size_t& allocator, BBox3fa* bounds_o)
+    {
+      assert(time_range.size() > 0);
+      if (time_range.size() == 1) 
+      {
+        size_t t = time_range.begin();
+        GridRange range(0,width-1,0,height-1);
+        std::pair<BVH4::NodeRef,LBBox3fa> root_bounds = buildMBlurBVH(t,range,allocator);
+        root(t) = root_bounds.first;
+        bounds_o[t+0] = root_bounds.second.bounds0;
+        bounds_o[t+1] = root_bounds.second.bounds1;
+        return root_bounds;
+      }
+
+      /* allocate new bvh4 node */
+      BVH4::AlignedNodeMB4D* node = (BVH4::AlignedNodeMB4D*)&bvhData()[allocator];
+      allocator += sizeof(BVH4::AlignedNodeMB4D);
+      node->clear();
+
+      for (size_t i=0, j=0; i<4; i++) 
+      {
+        const int begin = time_range.begin() + (i+0)*time_range.size()/4;
+        const int end   = time_range.begin() + (i+1)*time_range.size()/4;
+        if (end-begin <= 0) continue;
+        std::pair<BVH4::NodeRef,LBBox3fa> node_bounds = buildMSMBlurBVH(make_range(begin,end),allocator,bounds_o);
+        const float t0 = float(begin)/float(time_steps-1);
+        const float t1 = float(end  )/float(time_steps-1);
+        node->set(j,node_bounds.first,node_bounds.second,BBox1f(t0,t1));
+        j++;
+      }
+
+      const LBBox3fa lbounds = LBBox3fa([&] ( int i ) { return bounds_o[i]; }, time_range, time_steps-1);
+      return std::make_pair(BVH4::encodeNode(node),lbounds);
+    }
+
+    std::pair<BVH4::NodeRef,LBBox3fa> GridSOA::buildMSMBlurBVH(const range<int> time_range, BBox3fa* bounds_o)
+    {
+      size_t allocator = 0;
+      std::pair<BVH4::NodeRef,LBBox3fa> root = buildMSMBlurBVH(time_range,allocator,bounds_o);
+      assert(allocator == gridOffset);
+      return root;
     }
   }
 }

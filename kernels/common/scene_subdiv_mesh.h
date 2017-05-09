@@ -61,7 +61,7 @@ namespace embree
   public:
 
     /*! subdiv mesh construction */
-    SubdivMesh(Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
+    SubdivMesh(Scene* scene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
                size_t numCreases, size_t numCorners, size_t numHoles, size_t numTimeSteps);
 
   public:
@@ -156,7 +156,7 @@ namespace embree
     public:
 
       /*! Default topology construction */
-      Topology () : halfEdges(nullptr) {}
+      Topology () : halfEdges(nullptr,0) {}
 
       /*! Topology initialization */
       Topology (SubdivMesh* mesh, size_t numEdges);
@@ -333,7 +333,7 @@ namespace embree
   {
   public:
     //using SubdivMesh::SubdivMesh; // inherit all constructors // FIXME: compiler bug under VS2013
-    SubdivMeshAVX (Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
+    SubdivMeshAVX (Scene* scene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
                   size_t numCreases, size_t numCorners, size_t numHoles, size_t numTimeSteps);
 
     void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);

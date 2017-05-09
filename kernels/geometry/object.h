@@ -31,6 +31,9 @@ namespace embree
 
   public:
 
+    /* primitive supports multiple time segments */
+    static const bool singleTimeSegment = false;
+
     /* Returns maximal number of stored primitives */
     static __forceinline size_t max_size() { return 1; }
 
@@ -41,7 +44,15 @@ namespace embree
 
     /*! constructs a virtual object */
     Object (unsigned geomID, unsigned primID) 
-    : geomID(geomID), primID(primID) {}
+    : _geomID(geomID), _primID(primID) {}
+
+    __forceinline unsigned geomID() const {
+      return _geomID;
+    }
+
+    __forceinline unsigned primID() const {
+      return _primID;
+    }
 
     /*! fill triangle from triangle list */
     __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene)
@@ -51,23 +62,34 @@ namespace embree
     }
 
     /*! fill triangle from triangle list */
-    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& i, size_t end, Scene* scene, size_t itime, size_t numTimeSteps)
+    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& i, size_t end, Scene* scene, size_t itime)
     {
       const PrimRef& prim = prims[i]; i++;
       const unsigned geomID = prim.geomID();
       const unsigned primID = prim.primID();
       new (this) Object(geomID, primID);
       AccelSet* accel = (AccelSet*) scene->get(geomID);
-      return accel->linearBounds(primID,itime,numTimeSteps);
+      return accel->linearBounds(primID,itime);
+    }
+
+    /*! fill triangle from triangle list */
+    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& i, size_t end, Scene* scene, const BBox1f time_range)
+    {
+      const PrimRefMB& prim = prims[i]; i++;
+      const unsigned geomID = prim.geomID();
+      const unsigned primID = prim.primID();
+      new (this) Object(geomID, primID);
+      AccelSet* accel = (AccelSet*) scene->get(geomID);
+      return accel->linearBounds(primID,time_range);
     }
 
     /* Updates the primitive */
     __forceinline BBox3fa update(AccelSet* mesh) {
-      return mesh->bounds(primID);
+      return mesh->bounds(primID());
     }
 
-  public:
-    unsigned geomID;  //!< geometry ID
-    unsigned primID;  //!< primitive ID
+  private:
+    unsigned _geomID;  //!< geometry ID
+    unsigned _primID;  //!< primitive ID
   };
 }

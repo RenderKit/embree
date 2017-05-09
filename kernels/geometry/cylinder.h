@@ -146,29 +146,27 @@ namespace embree
 
     template<int N>
       struct CylinderN
-    {
-      typedef Vec3<vfloat<N>> Vec3vfN;
-      
-      const Vec3vfN p0;     //!< start location
-      const Vec3vfN p1;     //!< end position
+    { 
+      const Vec3vf<N> p0;     //!< start location
+      const Vec3vf<N> p1;     //!< end position
       const vfloat<N> rr;   //!< squared radius of cylinder
 
-      __forceinline CylinderN(const Vec3vfN& p0, const Vec3vfN& p1, const vfloat<N>& r) 
+      __forceinline CylinderN(const Vec3vf<N>& p0, const Vec3vf<N>& p1, const vfloat<N>& r)
         : p0(p0), p1(p1), rr(sqr(r)) {}
 
-      __forceinline CylinderN(const Vec3vfN& p0, const Vec3vfN& p1, const vfloat<N>& rr, bool) 
+      __forceinline CylinderN(const Vec3vf<N>& p0, const Vec3vf<N>& p1, const vfloat<N>& rr, bool)
         : p0(p0), p1(p1), rr(rr) {}
 
      
       __forceinline vbool<N> intersect(const Vec3fa& org, const Vec3fa& dir, 
                                        BBox<vfloat<N>>& t_o, 
-                                       vfloat<N>& u0_o, Vec3vfN& Ng0_o,
-                                       vfloat<N>& u1_o, Vec3vfN& Ng1_o) const
+                                       vfloat<N>& u0_o, Vec3vf<N>& Ng0_o,
+                                       vfloat<N>& u1_o, Vec3vf<N>& Ng1_o) const
       {
         /* calculate quadratic equation to solve */
         const vfloat<N> rl = rcp_length(p1-p0);
-        const Vec3vfN P0 = p0, dP = (p1-p0)*rl;
-        const Vec3vfN O = Vec3vfN(org)-P0, dO = dir;
+        const Vec3vf<N> P0 = p0, dP = (p1-p0)*rl;
+        const Vec3vf<N> O = Vec3vf<N>(org)-P0, dO = dir;
         
         const vfloat<N> dOdO = dot(dO,dO);
         const vfloat<N> OdO = dot(dO,O);
@@ -197,16 +195,16 @@ namespace embree
         /* calculates u and Ng for near hit */
         {
           u0_o = madd(t0,dOz,Oz)*rl;
-          const Vec3vfN Pr = t0*Vec3vfN(dir);
-          const Vec3vfN Pl = madd(u0_o,p1-p0,p0);
+          const Vec3vf<N> Pr = t0*Vec3vf<N>(dir);
+          const Vec3vf<N> Pl = madd(u0_o,p1-p0,p0);
           Ng0_o = Pr-Pl;
         }
         
         /* calculates u and Ng for far hit */
         {
           u1_o = madd(t1,dOz,Oz)*rl;
-          const Vec3vfN Pr = t1*Vec3vfN(dir);
-          const Vec3vfN Pl = madd(u1_o,p1-p0,p0);
+          const Vec3vf<N> Pr = t1*Vec3vf<N>(dir);
+          const Vec3vf<N> Pl = madd(u1_o,p1-p0,p0);
           Ng1_o = Pr-Pl;
         }
 
@@ -228,8 +226,8 @@ namespace embree
 
       __forceinline vbool<N> intersect(const Vec3fa& org_i, const Vec3fa& dir, BBox<vfloat<N>>& t_o) const
       {
-        vfloat<N> u0_o; Vec3vfN Ng0_o;
-        vfloat<N> u1_o; Vec3vfN Ng1_o;
+        vfloat<N> u0_o; Vec3vf<N> Ng0_o;
+        vfloat<N> u1_o; Vec3vf<N> Ng1_o;
         return intersect(org_i,dir,t_o,u0_o,Ng0_o,u1_o,Ng1_o);
       }
     };

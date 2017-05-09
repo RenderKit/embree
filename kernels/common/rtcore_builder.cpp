@@ -36,7 +36,7 @@ namespace embree
     struct BVH
     {
       BVH (Device* device)
-        : device(device), isStatic(false), allocator(device,true), morton_src(device), morton_tmp(device) {}
+        : device(device), isStatic(false), allocator(device,true), morton_src(device,0), morton_tmp(device,0) {}
 
     public:
       Device* device;
@@ -372,7 +372,6 @@ namespace embree
       RTCORE_CATCH_BEGIN;
       RTCORE_TRACE(rtcStaticBVH);
       RTCORE_VERIFY_HANDLE(hbvh);
-      bvh->allocator.shrink();
       bvh->morton_src.clear();
       bvh->morton_tmp.clear();
       bvh->isStatic = true;

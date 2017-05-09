@@ -22,71 +22,71 @@
 
 /*! Type of bounding function. */
 typedef unmasked void (*RTCBoundsFunc)(void* uniform ptr,                 /*!< pointer to user data */
-                                       uniform size_t item,               /*!< item to calculate bounds for */
+                                       uniform uintptr_t item,               /*!< item to calculate bounds for */
                                        uniform RTCBounds& bounds_o        /*!< returns calculated bounds */);
 
 /*! Type of bounding function. */
 typedef unmasked void (*RTCBoundsFunc2)(void* uniform userPtr,            /*!< pointer to user data */
                                         void* uniform geomUserPtr,        /*!< pointer to geometry user data */
-                                        uniform size_t item,              /*!< item to calculate bounds for */
+                                        uniform uintptr_t item,              /*!< item to calculate bounds for */
                                         RTCBounds* uniform bounds_o       /*!< returns calculated bounds */);
 
 /*! Type of bounding function. */
 typedef unmasked void (*RTCBoundsFunc3)(void* uniform userPtr,            /*!< pointer to user data */
                                         void* uniform geomUserPtr,        /*!< pointer to geometry user data */
-                                        uniform size_t item,              /*!< item to calculate bounds for */
-                                        uniform size_t time,              /*!< time to calculate bounds for */
+                                        uniform uintptr_t item,              /*!< item to calculate bounds for */
+                                        uniform uintptr_t time,              /*!< time to calculate bounds for */
                                         uniform RTCBounds& bounds_o       /*!< returns calculated bounds */);
 
 /*! Type of intersect function pointer for uniform rays. */
 typedef unmasked void (*RTCIntersectFuncUniform)(void* uniform ptr,       /*!< pointer to user data */
                                                  uniform RTCRay1& ray,    /*!< ray to intersect */
-                                                 uniform size_t item      /*< item to intersect */);
+                                                 uniform uintptr_t item      /*< item to intersect */);
 
 /*! Type of intersect function pointer for varying rays. */
 typedef void (*RTCIntersectFuncVarying)(void* uniform ptr,       /*!< pointer to user data */
                                         varying RTCRay& ray,     /*!< ray to intersect */
-                                        uniform size_t item      /*< item to intersect */);
+                                        uniform uintptr_t item      /*< item to intersect */);
 
 /*! Type of intersect function pointer for stream of uniform rays. */
 typedef unmasked void (*RTCIntersectFunc1Mp)(void* uniform ptr,              /*!< pointer to geometry user data */
                                              const uniform RTCIntersectContext* uniform context,  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
                                              uniform RTCRay1** uniform ray,  /*!< pointers to rays to intersect */
-                                             uniform size_t M,               /*< number of rays in stream */
-                                             uniform size_t item             /*< item to intersect */);
+                                             uniform uintptr_t M,               /*< number of rays in stream */
+                                             uniform uintptr_t item             /*< item to intersect */);
 
 /*! Type of intersect function pointer for ray packets of size N. */
 typedef unmasked void (*RTCIntersectFuncN)(const uniform int* uniform valid, /*! pointer to valid mask */
                                            void* uniform ptr,                /*!< pointer to geometry user data */
                                            const uniform RTCIntersectContext* uniform context,  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
                                            RTCRayN* uniform rays,               /*!< ray packet of size N */
-                                           uniform size_t N,                 /*< number of rays in ray packet */
-                                           uniform size_t item              /*< item to intersect */);
+                                           uniform uintptr_t N,                 /*< number of rays in ray packet */
+                                           uniform uintptr_t item              /*< item to intersect */);
 
 /*! Type of occlusion function pointer for uniform rays. */
 typedef unmasked void (*RTCOccludedFuncUniform) (void* uniform ptr,       /*!< pointer to user data */ 
                                                  uniform RTCRay1& ray,    /*!< ray to test occlusion */
-                                                 uniform size_t item      /*< item to test for occlusion */);
+                                                 uniform uintptr_t item      /*< item to test for occlusion */);
 
 /*! Type of occlusion function pointer for varying rays. */
 typedef void (*RTCOccludedFuncVarying) (void* uniform ptr,       /*!< pointer to user data */ 
                                         varying RTCRay& ray,     /*!< ray to test occlusion */
-                                        uniform size_t item      /*< item to test for occlusion */);
+                                        uniform uintptr_t item      /*< item to test for occlusion */);
 
 /*! Type of occlusion function pointer for stream of uniform rays. */
 typedef unmasked void (*RTCOccludedFunc1Mp) (void* uniform ptr,             /*!< pointer to geometry user data */ 
                                              const uniform RTCIntersectContext* uniform context,  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
                                              uniform RTCRay1** uniform ray, /*!< pointers to rays to test occlusion */
-                                             uniform size_t M,              /*< number of rays in stream */
-                                             uniform size_t item            /*< item to test for occlusion */);
+                                             uniform uintptr_t M,              /*< number of rays in stream */
+                                             uniform uintptr_t item            /*< item to test for occlusion */);
 
 /*! Type of occlusion function pointer for ray packets of size N. */
 typedef unmasked void (*RTCOccludedFuncN) (const uniform int* uniform valid,  /*! pointer to valid mask */
                                            void* uniform ptr,                 /*!< pointer to geometry user data */ 
                                            const uniform RTCIntersectContext* uniform context,  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
                                            RTCRayN* uniform ray,                 /*!< ray packet of size N */
-                                           uniform size_t N,                  /*< number of rays in ray packet*/
-                                           uniform size_t item                /*< item to test for occlusion */);
+                                           uniform uintptr_t N,                  /*< number of rays in ray packet*/
+                                           uniform uintptr_t item                /*< item to test for occlusion */);
 
 
 /*! Creates a new user geometry object. This feature makes it possible
@@ -113,6 +113,14 @@ uniform unsigned int rtcNewUserGeometry3 (RTCScene scene,                 /*!< t
                                           uniform RTCGeometryFlags flags,  //!< geometry flags
                                           uniform size_t numGeometries,    /*!< the number of geometries contained in the set */
                                           uniform size_t numTimeSteps = 1  /*!< number of motion blur time steps */);
+
+
+uniform unsigned int rtcNewUserGeometry4 (RTCScene scene,                  /*!< the scene the user geometry set is created in */
+                                          uniform RTCGeometryFlags flags,  //!< geometry flags
+                                          uniform size_t numGeometries,    /*!< the number of geometries contained in the set */
+                                          uniform size_t numTimeSteps = 1, /*!< number of motion blur time steps */
+                                          uniform unsigned int geomID = -1 /*!< optional geometry ID to assign */
+  );
 
 /*! Sets the bounding function to calculate bounding boxes of the user
  *  geometry items when building spatial index structures. The

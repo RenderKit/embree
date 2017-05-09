@@ -43,6 +43,7 @@ namespace embree
         RandomSampler_init(sampler,0x23F67E21);
       }
 
+      bool   random_bool  () { return RandomSampler_getInt  (sampler) % 2; }
       float  random_float () { return RandomSampler_getFloat(sampler); }
       int    random_int   () { return RandomSampler_getInt  (sampler); }
       Vec3fa random_Vec3fa() { return RandomSampler_get3D   (sampler); }

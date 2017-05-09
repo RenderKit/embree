@@ -99,6 +99,7 @@ namespace embree
 #if defined(__WIN32__) && (__MSC_VER <= 1700)
   __forceinline float nextafter(float x, float y) { if ((x<y) == (x>0)) return x*(1.1f+float(ulp)); else return x*(0.9f-float(ulp)); }
   __forceinline double nextafter(double x, double y) { return _nextafter(x, y); }
+  __forceinline int roundf(float f) { return (int)(f + 0.5f); }
 #else
   __forceinline float nextafter(float x, float y) { return ::nextafterf(x, y); }
   __forceinline double nextafter(double x, double y) { return ::nextafter(x, y); }

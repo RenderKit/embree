@@ -20,6 +20,9 @@
 
 namespace embree
 {
+  /* mutex to make printing to cout thread safe */
+  extern MutexSys g_printMutex;
+
   struct State
   {
   public:
@@ -97,8 +100,10 @@ namespace embree
     int object_accel_max_leaf_size;         //!< maximal leaf size for object acceleration structure
 
   public:
-    int object_accel_mb_min_leaf_size;         //!< minimal leaf size for mblur object acceleration structure
-    int object_accel_mb_max_leaf_size;         //!< maximal leaf size for mblur object acceleration structure
+    std::string object_accel_mb;            //!< acceleration structure for user geometries
+    std::string object_builder_mb;          //!< builder for user geometries
+    int object_accel_mb_min_leaf_size;      //!< minimal leaf size for mblur object acceleration structure
+    int object_accel_mb_max_leaf_size;      //!< maximal leaf size for mblur object acceleration structure
 
   public:
     std::string subdiv_accel;              //!< acceleration structure to use for subdivision surfaces
@@ -131,6 +136,12 @@ namespace embree
     bool enable_selockmemoryprivilege;     //!< configures the SeLockMemoryPrivilege under Windows to enable huge pages
     bool hugepages;                        //!< true if huge pages should get used
     bool hugepages_success;                //!< status for enabling huge pages
+
+  public:
+    size_t alloc_main_block_size;          //!< main allocation block size (shared between threads)
+    int alloc_num_main_slots;              //!< number of such shared blocks to be used to allocate
+    size_t alloc_thread_block_size;        //!< size of thread local allocator block size
+    int alloc_single_thread_alloc;         //!< in single mode nodes and leaves use same thread local allocator
 
   public:
     struct ErrorHandler

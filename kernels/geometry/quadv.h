@@ -24,8 +24,6 @@ namespace embree
   template <int M>
   struct QuadMv
   { 
-    typedef Vec3<vfloat<M>> Vec3vfM;
-
   public:
     struct Type : public PrimitiveType 
     {
@@ -48,7 +46,7 @@ namespace embree
     __forceinline QuadMv() {}
 
     /* Construction from vertices and IDs */
-    __forceinline QuadMv(const Vec3vfM& v0, const Vec3vfM& v1, const Vec3vfM& v2, const Vec3vfM& v3, const vint<M>& geomIDs, const vint<M>& primIDs)
+    __forceinline QuadMv(const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const Vec3vf<M>& v3, const vint<M>& geomIDs, const vint<M>& primIDs)
       : v0(v0), v1(v1), v2(v2), v3(v3), geomIDs(geomIDs), primIDs(primIDs) {}
     
     /* Returns a mask that tells which quads are valid */
@@ -61,18 +59,20 @@ namespace embree
     __forceinline size_t size() const { return __bsf(~movemask(valid())); }
 
     /* Returns the geometry IDs */
-    __forceinline vint<M> geomID() const { return geomIDs; }
+    __forceinline       vint<M>& geomID()       { return geomIDs; }
+    __forceinline const vint<M>& geomID() const { return geomIDs; }
     __forceinline int geomID(const size_t i) const { assert(i<M); return geomIDs[i]; }
 
     /* Returns the primitive IDs */
-    __forceinline vint<M> primID() const { return primIDs; }
+    __forceinline       vint<M> primID()       { return primIDs; }
+    __forceinline const vint<M> primID() const { return primIDs; }
     __forceinline int  primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
     /* Calculate the bounds of the quads */
     __forceinline BBox3fa bounds() const 
     {
-      Vec3vfM lower = min(v0,v1,v2,v3);
-      Vec3vfM upper = max(v0,v1,v2,v3);
+      Vec3vf<M> lower = min(v0,v1,v2,v3);
+      Vec3vf<M> upper = max(v0,v1,v2,v3);
       vbool<M> mask = valid();
       lower.x = select(mask,lower.x,vfloat<M>(pos_inf));
       lower.y = select(mask,lower.y,vfloat<M>(pos_inf));
@@ -107,7 +107,7 @@ namespace embree
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene)
     {
       vint<M> vgeomID = -1, vprimID = -1;
-      Vec3vfM v0 = zero, v1 = zero, v2 = zero, v3 = zero;
+      Vec3vf<M> v0 = zero, v1 = zero, v2 = zero, v3 = zero;
       
       for (size_t i=0; i<M && begin<end; i++, begin++)
       {
@@ -135,7 +135,7 @@ namespace embree
     {
       BBox3fa bounds = empty;
       vint<M> vgeomID = -1, vprimID = -1;
-      Vec3vfM v0 = zero, v1 = zero, v2 = zero;
+      Vec3vf<M> v0 = zero, v1 = zero, v2 = zero;
 	
       for (size_t i=0; i<M; i++)
       {
@@ -160,10 +160,11 @@ namespace embree
     }
    
   public:
-    Vec3vfM v0;      // 1st vertex of the quads
-    Vec3vfM v1;      // 2nd vertex of the quads
-    Vec3vfM v2;      // 3rd vertex of the quads
-    Vec3vfM v3;      // 4rd vertex of the quads
+    Vec3vf<M> v0;      // 1st vertex of the quads
+    Vec3vf<M> v1;      // 2nd vertex of the quads
+    Vec3vf<M> v2;      // 3rd vertex of the quads
+    Vec3vf<M> v3;      // 4rd vertex of the quads
+  private:
     vint<M> geomIDs; // geometry ID
     vint<M> primIDs; // primitive ID
   };

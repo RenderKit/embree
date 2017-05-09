@@ -19,6 +19,8 @@
 
 namespace embree
 {
+  MutexSys g_printMutex;
+
   State::ErrorHandler State::g_errorHandler;
 
   State::ErrorHandler::ErrorHandler()
@@ -86,6 +88,8 @@ namespace embree
     object_accel_min_leaf_size = 1;
     object_accel_max_leaf_size = 1;
 
+    object_accel_mb = "default";
+    object_builder_mb = "default";
     object_accel_mb_min_leaf_size = 1;
     object_accel_mb_max_leaf_size = 1;
 
@@ -132,6 +136,11 @@ namespace embree
     hugepages = false;
 #endif
     hugepages_success = true;
+
+    alloc_main_block_size = 0;
+    alloc_num_main_slots = 0;
+    alloc_thread_block_size = 0;
+    alloc_single_thread_alloc = -1;
 
     error_function = nullptr;
     error_function2 = nullptr;
@@ -343,6 +352,10 @@ namespace embree
       else if (tok == Token::Id("object_accel_max_leaf_size") && cin->trySymbol("="))
         object_accel_max_leaf_size = cin->get().Int();
 
+      else if (tok == Token::Id("object_accel_mb") && cin->trySymbol("="))
+        object_accel_mb = cin->get().Identifier();
+      else if (tok == Token::Id("object_builder_mb") && cin->trySymbol("="))
+        object_builder_mb = cin->get().Identifier();
       else if (tok == Token::Id("object_accel_mb_min_leaf_size") && cin->trySymbol("="))
         object_accel_mb_min_leaf_size = cin->get().Int();
       else if (tok == Token::Id("object_accel_mb_max_leaf_size") && cin->trySymbol("="))
@@ -396,6 +409,15 @@ namespace embree
         tessellation_cache_size = size_t(cin->get().Float()*1024.0f*1024.0f);
       else if (tok == Token::Id("cache_size") && cin->trySymbol("="))
         tessellation_cache_size = size_t(cin->get().Float()*1024.0f*1024.0f);
+
+      else if (tok == Token::Id("alloc_main_block_size") && cin->trySymbol("="))
+        alloc_main_block_size = cin->get().Int();
+       else if (tok == Token::Id("alloc_num_main_slots") && cin->trySymbol("="))
+        alloc_num_main_slots = cin->get().Int();
+       else if (tok == Token::Id("alloc_thread_block_size") && cin->trySymbol("="))
+         alloc_thread_block_size = cin->get().Int();
+       else if (tok == Token::Id("alloc_single_thread_alloc") && cin->trySymbol("="))
+         alloc_single_thread_alloc = cin->get().Int();
 
       cin->trySymbol(","); // optional , separator
     }

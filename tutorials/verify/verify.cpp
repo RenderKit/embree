@@ -29,20 +29,10 @@
 #define DEFAULT_STACK_SIZE 4*1024*1024
 #define TEXT_ALIGN 85
  
-#if defined(__INTEL_COMPILER)
-#pragma warning (disable: 1478) // warning: function was declared deprecated
-#elif defined(_MSC_VER)
-#pragma warning (disable: 4996) // warning: function was declared deprecated
-#elif defined(__clang__)
-#pragma clang diagnostic ignored "-Wdeprecated-declarations" // warning: xxx is deprecated
-#elif defined(__GNUC__)
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations" // warning: xxx is deprecated
-#endif
-
 namespace embree
 {
   /* error reporting function */
-  void errorHandler(const RTCError code, const char* str = nullptr)
+  void errorHandler(void* userPtr, const RTCError code, const char* str = nullptr)
   {
     if (code == RTC_NO_ERROR)
       return;
@@ -628,9 +618,11 @@ namespace embree
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
     {
+      DISABLE_DEPRECATED_WARNING;
       rtcInit("verbose=1");
-      errorHandler(rtcGetError());
+      errorHandler(nullptr,rtcGetError());
       rtcExit();
+      ENABLE_DEPRECATED_WARNING;
       return VerifyApplication::PASSED;
     }
   };
@@ -648,6 +640,54 @@ namespace embree
     }
 
     size_t testID;
+  };
+
+  struct os_shrink_test : public VerifyApplication::Test
+  {
+    struct Allocation 
+    {
+      Allocation (size_t bytes) 
+        : ptr(os_malloc(bytes,hugepages)), bytes(bytes) {}
+
+      ~Allocation() {
+        free();
+      }
+
+      void free() {
+        if (!ptr) return;
+        os_free(ptr,bytes,hugepages);
+        ptr = nullptr;
+      }
+
+      size_t shrink() {
+        if (!ptr) return 0;
+        bytes = os_shrink(ptr,bytes/2,bytes,hugepages);
+        return bytes;
+      }
+
+    private:
+      void* ptr;
+      size_t bytes;
+      bool hugepages;
+    };
+
+    os_shrink_test ()
+      : VerifyApplication::Test("os_shrink_test",ISA,VerifyApplication::TEST_SHOULD_PASS,false) {}
+    
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      std::vector<std::unique_ptr<Allocation>> allocations;
+      allocations.reserve(1024*1024);
+      for (size_t i=0; i<1024*1024; i++) 
+      {
+        std::unique_ptr<Allocation> alloc(new Allocation(2*4096));
+        if (allocations.size() > 1) allocations.back()->shrink();
+        allocations.push_back(std::move(alloc)); 
+        
+      }
+      allocations.clear();
+      return VerifyApplication::PASSED;
+    }
   };
 
   struct MultipleDevicesTest : public VerifyApplication::Test
@@ -683,7 +723,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       RTCSceneRef scene = rtcDeviceNewScene(device,sceneFlags,aflags);
       AssertNoError(device);
       rtcNewTriangleMesh (scene, geomFlags, 0, 0);
@@ -705,7 +745,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       VerifyScene scene(device,RTC_SCENE_STATIC,aflags);
       AssertNoError(device);
       unsigned geom0 = scene.addSphere(sampler,RTC_GEOMETRY_STATIC,zero,1.0f,50).first;
@@ -731,7 +771,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       VerifyScene scene(device,RTC_SCENE_STATIC,RTC_INTERSECT1);
       AssertNoError(device);
 
@@ -769,7 +809,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(nullptr,rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       VerifyScene scene(device,RTC_SCENE_STATIC,RTC_INTERSECT1);
       AssertNoError(device);
 
@@ -806,7 +846,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       RTCSceneRef scene = rtcDeviceNewScene(device,RTC_SCENE_STATIC,RTC_INTERSECT1);
       AssertNoError(device);
 
@@ -872,7 +912,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       RTCSceneRef scene = rtcDeviceNewScene(device,RTC_SCENE_STATIC,aflags);
       AssertNoError(device);
 
@@ -939,7 +979,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       RTCSceneRef scene = rtcDeviceNewScene(device,sflags,aflags);
       AssertNoError(device);
       rtcCommit (scene);
@@ -963,7 +1003,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       RTCSceneRef scene = rtcDeviceNewScene(device,sflags,aflags);
       rtcNewTriangleMesh (scene,gflags,0,0,1);
       rtcNewTriangleMesh (scene,gflags,0,0,2);
@@ -983,6 +1023,54 @@ namespace embree
     }
   };
 
+  struct ManyBuildTest : public VerifyApplication::Test
+  {
+    RTCSceneFlags sflags;
+    RTCGeometryFlags gflags; 
+    
+    ManyBuildTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags)
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS,false), sflags(sflags), gflags(gflags) {}
+    
+    VerifyApplication::TestReturnValue run (VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      errorHandler(nullptr,rtcDeviceGetError(device));
+      rtcDeviceSetErrorFunction2(device,errorHandler,nullptr);
+      
+      std::vector<Vec3f> p;
+      p.reserve(4);
+      p.push_back(Vec3f(0.0f, 0.0f, 0.0f));
+      p.push_back(Vec3f(1.0f, 0.0f, 0.0f));
+      p.push_back(Vec3f(0.0f, 0.5f, 1.0f));
+      
+      std::vector<uint32_t> indices;
+      indices.push_back(0);
+      indices.push_back(1);
+      indices.push_back(2);
+      
+      const size_t numTriangles = 1;
+      const size_t numVertices = 3;
+      
+      for (size_t i = 0; i < 1024*1024; ++i)
+      {
+        if (i%100 == 0) PRINT(i);
+        rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000000, i);
+        
+        RTCScene scene = rtcDeviceNewScene(device, sflags, RTC_INTERSECT1);
+        
+        unsigned geomID = rtcNewTriangleMesh(scene, gflags, numTriangles, numVertices, 1);
+        rtcSetBuffer2(scene, geomID, RTC_VERTEX_BUFFER, p.data(), 0, 3 * sizeof(float), numVertices);
+        rtcSetBuffer2(scene, geomID, RTC_INDEX_BUFFER, indices.data(), 0, 3 * sizeof(uint32_t), numTriangles);
+        
+        rtcCommit(scene);
+      }
+      AssertNoError(device);
+
+      return VerifyApplication::PASSED;
+    }
+  };
+
   struct BuildTest : public VerifyApplication::Test
   {
     RTCSceneFlags sflags;
@@ -995,7 +1083,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       VerifyScene scene(device,sflags,aflags);
 
       const Vec3fa center = zero;
@@ -1039,7 +1127,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       VerifyScene scene(device,sflags,aflags);
       AssertNoError(device);
 
@@ -1135,61 +1223,64 @@ namespace embree
       return true;
     }
 
-    double expected_size(VerifyApplication* state, size_t NN)
+    double expected_size_helper(VerifyApplication* state, size_t NN)
     {
+      bool avx = (isa & AVX) == AVX;
+      bool avx2 = (isa & AVX2) == AVX2;
       switch (gtype)
       {
       case TRIANGLE_MESH: switch (sflags) {
-        case RTC_SCENE_STATIC : return 80.0f*NN; // triangle4
-        case RTC_SCENE_ROBUST : return 65.0f*NN; // triangle4v
-        case RTC_SCENE_COMPACT: return 40.0f*NN; // triangle4i
-        case RTC_SCENE_DYNAMIC: return (80.0f+8.0f)*NN; // triangle4+morton builder state
+        case RTC_SCENE_STATIC : return avx ?  70.0f*NN :  63.0f*NN; // triangle4
+        case RTC_SCENE_ROBUST : return avx ?  70.0f*NN :  63.0f*NN; // triangle4v
+        case RTC_SCENE_COMPACT: return avx ?  35.0f*NN :  35.0f*NN; // triangle4i
+        case RTC_SCENE_DYNAMIC: return avx ? 131.0f*NN : 117.0f*NN; // triangle4
         default: return inf;
         }
       case TRIANGLE_MESH_MB: switch (sflags) {
-        case RTC_SCENE_STATIC : return 42.0f*NN; // triangle4imb
-        case RTC_SCENE_ROBUST : return 42.0f*NN; // triangle4imb
-        case RTC_SCENE_COMPACT: return 42.0f*NN; // triangle4imb
+        case RTC_SCENE_STATIC : return avx2 ? 55.0f*NN : 45.0f*NN; // triangle4imb
+        case RTC_SCENE_ROBUST : return avx2 ? 55.0f*NN : 45.0f*NN; // triangle4imb
+        case RTC_SCENE_COMPACT: return avx2 ? 45.0f*NN : 45.0f*NN; // triangle4imb
         default: return inf;
         }
         
       case QUAD_MESH: switch (sflags) {
-        case RTC_SCENE_STATIC : return 80.0f*NN; // quad4v
-        case RTC_SCENE_ROBUST : return 80.0f*NN; // quad4v
-        case RTC_SCENE_COMPACT: return 40.0f*NN; // quad4i
+        case RTC_SCENE_STATIC : return avx ? 85.0f*NN : 79.0f*NN; // quad4v
+        case RTC_SCENE_ROBUST : return avx ? 85.0f*NN : 79.0f*NN; // quad4v
+        case RTC_SCENE_COMPACT: return avx ? 41.0f*NN : 41.0f*NN; // quad4i
         default: return inf;
         }
       case QUAD_MESH_MB: switch (sflags) {
-        case RTC_SCENE_STATIC : return 52.0f*NN; // quad4imb
-        case RTC_SCENE_ROBUST : return 52.0f*NN; // quad4imb
-        case RTC_SCENE_COMPACT: return 52.0f*NN; // quad4imb
+        case RTC_SCENE_STATIC : return avx ? 68.0f*NN : 53.0f*NN; // quad4imb
+        case RTC_SCENE_ROBUST : return avx ? 68.0f*NN : 53.0f*NN; // quad4imb
+        case RTC_SCENE_COMPACT: return avx ? 53.0f*NN : 53.0f*NN; // quad4imb
         default: return inf;
         }
       
       case HAIR_GEOMETRY: switch (sflags) {
-        case RTC_SCENE_STATIC : return 170.0f*NN; // bezier1v
-        case RTC_SCENE_ROBUST : return 170.0f*NN; // bezier1v
-        case RTC_SCENE_COMPACT: return 100.0f*NN; // bezier1i
+        case RTC_SCENE_STATIC : return avx2 ?  222.0f*NN : 165.0f*NN; // bezier1v
+        case RTC_SCENE_ROBUST : return avx2 ?  222.0f*NN : 165.0f*NN; // bezier1v
+        case RTC_SCENE_COMPACT: return avx2 ?  105.0f*NN : 105.0f*NN; // bezier1i
         default: return inf;
         }
+
       case HAIR_GEOMETRY_MB: switch (sflags) {
-        case RTC_SCENE_STATIC : return 150.0f*NN; // bezier1i
-        case RTC_SCENE_ROBUST : return 150.0f*NN; // bezier1i
-        case RTC_SCENE_COMPACT: return 150.0f*NN; // bezier1i
+        case RTC_SCENE_STATIC : return avx2 ?  346.0f*NN : 190.0f*NN; // bezier1i // FIXME: 346 are very loose bounds
+        case RTC_SCENE_ROBUST : return avx2 ?  346.0f*NN : 190.0f*NN; // bezier1i // FIXME: 346 are very loose bounds 
+        case RTC_SCENE_COMPACT: return avx2 ?  190.0f*NN : 190.0f*NN; // bezier1i
         default: return inf;
         }
       
       case LINE_GEOMETRY: switch (sflags) {
-        case RTC_SCENE_STATIC : return 30.0f*NN; // line4i
-        case RTC_SCENE_ROBUST : return 30.0f*NN; // line4i
-        case RTC_SCENE_COMPACT: return 30.0f*NN; // line4i
+        case RTC_SCENE_STATIC : return avx ? 32.0f*NN : 26.0f*NN; // line4i
+        case RTC_SCENE_ROBUST : return avx ? 32.0f*NN : 26.0f*NN; // line4i
+        case RTC_SCENE_COMPACT: return avx ? 26.0f*NN : 26.0f*NN; // line4i
         default: return inf;
         }
 
       case LINE_GEOMETRY_MB: switch (sflags) {
-        case RTC_SCENE_STATIC : return 40.0f*NN; // line4i
-        case RTC_SCENE_ROBUST : return 40.0f*NN; // line4i
-        case RTC_SCENE_COMPACT: return 40.0f*NN; // line4i
+        case RTC_SCENE_STATIC : return avx ? 45.0f*NN : 36.0f*NN; // line4i
+        case RTC_SCENE_ROBUST : return avx ? 45.0f*NN : 36.0f*NN; // line4i
+        case RTC_SCENE_COMPACT: return avx ? 36.0f*NN : 36.0f*NN; // line4i
         default: return inf;
         }
       
@@ -1197,11 +1288,22 @@ namespace embree
       }
     }
 
+    double expected_size(VerifyApplication* state, size_t NN)
+    {
+      double bytes_expected = expected_size_helper(state,NN);
+      bool use_single_mode = false; //bytes_expected < 100000;
+      double mainBlockSize = clamp(bytes_expected/20,1024.0,double(2*1024*1024-64));
+      double threadLocalBlockSize = clamp(bytes_expected/20,double(1024),double(PAGE_SIZE));
+      double expected = bytes_expected + ceil(bytes_expected/mainBlockSize)*128 + ceil(bytes_expected/threadLocalBlockSize)*128 + mainBlockSize;
+      if (use_single_mode == false) expected += mainBlockSize;
+      return expected;
+    }
+
     std::pair<ssize_t,ssize_t> run_build(VerifyApplication* state, size_t N, unsigned numThreads)
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa) + ",threads="+std::to_string((long long)numThreads);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       memory_consumption_bytes_used = 0;
       rtcDeviceSetMemoryMonitorFunction2(device,memoryMonitor,nullptr);
       VerifyScene scene(device,sflags,aflags);
@@ -1209,25 +1311,24 @@ namespace embree
       
       int numPhi = (size_t) ceilf(sqrtf(N/4.0f));
       ssize_t NN = 0;
+
+      float plen = sqrtf(N/100000.0f);
+      Vec3fa planeX = plen*normalize(Vec3fa(1,1,0));
+      Vec3fa planeY = plen*normalize(Vec3fa(0,1,1));
       
       Ref<SceneGraph::Node> mesh;
       int i = 0;
       switch (gtype) {
       case TRIANGLE_MESH:    
-      case TRIANGLE_MESH_MB: mesh = SceneGraph::createTriangleSphere(zero,float(i+1),numPhi); 
-                             NN = 4*numPhi*numPhi; break;
+      case TRIANGLE_MESH_MB: mesh = SceneGraph::createTriangleSphere(zero,float(i+1),numPhi); break;
       case QUAD_MESH:        
-      case QUAD_MESH_MB:     mesh = SceneGraph::createQuadSphere(zero,float(i+1),numPhi); 
-                             NN = 2*numPhi*numPhi; break;
+      case QUAD_MESH_MB:     mesh = SceneGraph::createQuadSphere(zero,float(i+1),numPhi); break;
       case SUBDIV_MESH:      
-      case SUBDIV_MESH_MB:   mesh = SceneGraph::createSubdivSphere(zero,float(i+1),8,float(numPhi)/8.0f); 
-                             NN = 2*8*8; break;
+      case SUBDIV_MESH_MB:   mesh = SceneGraph::createSubdivSphere(zero,float(i+1),8,float(numPhi)/8.0f); break;
       case HAIR_GEOMETRY:    
-      case HAIR_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi,SceneGraph::HairSetNode::HAIR); 
-                             NN = 4*numPhi*numPhi; break;
+      case HAIR_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),planeX,planeY,0.01f,0.00001f,4*numPhi*numPhi,SceneGraph::HairSetNode::HAIR); break;
       case LINE_GEOMETRY:    
-      case LINE_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi/3,SceneGraph::HairSetNode::HAIR); 
-                             NN = (4*numPhi*numPhi/3)*3; break;
+      case LINE_GEOMETRY_MB: mesh = SceneGraph::createHairyPlane(i,Vec3fa(float(i)),planeX,planeY,0.01f,0.00001f,4*numPhi*numPhi/3,SceneGraph::HairSetNode::HAIR); break;
       default:               throw std::runtime_error("invalid geometry for benchmark");
       }
       
@@ -1245,7 +1346,7 @@ namespace embree
       case LINE_GEOMETRY_MB: mesh = mesh->set_motion_vector(random_motion_vector2(0.0001f)); break;
       default: break;
       }
-      
+      NN = mesh->numPrimitives(); 
       scene.addGeometry(gflags,mesh);
       rtcCommit (scene);
       AssertNoError(device);
@@ -1257,29 +1358,38 @@ namespace embree
     {
       VerifyApplication::TestReturnValue ret = VerifyApplication::PASSED;
 
-      for (size_t N=128; N<100000; N = (size_t)((float)N * 1.2f)) 
+      size_t maxN = 0;
+      switch (gtype) {
+      case LINE_GEOMETRY:    
+      case LINE_GEOMETRY_MB: 
+      case HAIR_GEOMETRY:
+      case HAIR_GEOMETRY_MB: maxN = 250000; break;
+      default: maxN = 1000000; break;
+      }
+      
+      for (size_t N=128; N<maxN; N = (size_t)((float)N * 1.5f)) 
       {
         auto bytes_one_thread  = run_build(state,N,1);
         auto bytes_all_threads = run_build(state,N,0);
-        auto bytes_expected = expected_size(state,bytes_one_thread.first);
+        double bytes_expected = expected_size(state,bytes_one_thread.first);
         double expected_to_single = double(bytes_one_thread.second)/double(bytes_expected);
         double single_to_threaded = double(bytes_all_threads.second)/double(bytes_one_thread.second);
      
-        /* single threaded build has to stay in expected memory usage bounds */
         const bool failed0 = expected_to_single > 1.0f;
-        
-        /* FIXME: investigate growSize for quads/line builders */
-        const bool failed1 = single_to_threaded > 1.10f;
+        const bool failed1 = sflags == RTC_SCENE_DYNAMIC ? single_to_threaded > 1.25f : single_to_threaded > 1.12f;
 
-        if (failed0 || failed1) 
+        if (failed0 || failed1) {
+          std::cout << state->red ("-") << std::flush;
           ret = VerifyApplication::FAILED;
-
+        } else {
+          std::cout << state->green ("+") << std::flush;
+        }
 #if 0
         double num_primitives = bytes_one_thread.first;
-        std::cout << "N = " << num_primitives << ", " << 
+        std::cout << "N = " << num_primitives << ", n = " << ceilf(sqrtf(N/4.0f)) << ", "
           "expected = " << bytes_expected/num_primitives << " B, " << 
-          "1 thread = " << bytes_one_thread.second/num_primitives << " B (" << 100.0f*expected_to_single << " %)" << (failed0 ? "[FAILED]" : "") << ", " << 
-          "all_threads = " << bytes_all_threads.second/num_primitives << " B (" << 100.0f*single_to_threaded << " %)" << (failed1 ? "[FAILED]" : "") << std::endl;
+          "1 thread = " << bytes_one_thread.second/num_primitives << " B (" << 100.0f*expected_to_single << " %)" << (failed0 ? state->red(" [FAILED]") : "") << ", " << 
+          "all_threads = " << bytes_all_threads.second/num_primitives << " B (" << 100.0f*single_to_threaded << " %)" << (failed1 ? state->red(" [FAILED]") : "") << std::endl;
 #endif
       }
       return ret;
@@ -1297,7 +1407,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       VerifyScene scene(device,sflags,aflags_all);
       AssertNoError(device);
       int geom[128];
@@ -1352,6 +1462,54 @@ namespace embree
     }
   };
 
+  struct UserGeometryIDTest : public VerifyApplication::Test
+  {
+    RTCSceneFlags sflags;
+
+    UserGeometryIDTest (std::string name, int isa, RTCSceneFlags sflags)
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags) {}
+    
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      errorHandler(nullptr,rtcDeviceGetError(device));
+      VerifyScene scene(device,sflags,aflags_all);
+      AssertNoError(device);
+
+      int geom[128];
+      for (size_t i=0; i<128; i++) geom[i] = -1;
+      
+      for (size_t i=0; i<size_t(50*state->intensity); i++) 
+      {
+        for (size_t j=0; j<10; j++) 
+        {
+          int index = random_int()%128;
+          if (geom[index] == -1) {
+            if (random_bool()) {
+              unsigned int geomID = rtcNewTriangleMesh2(scene,RTC_GEOMETRY_STATIC,0,0,1,index);
+              geom[geomID] = geomID;
+              AssertNoError(device);
+            } else {
+              unsigned int geomID = rtcNewTriangleMesh(scene,RTC_GEOMETRY_STATIC,0,0,1);
+              geom[geomID] = geomID;
+              AssertNoError(device);
+            }
+          } else {
+             if (random_bool()) {
+               rtcDeleteGeometry(scene,geom[index]);     
+               AssertNoError(device);
+               geom[index] = -1; 
+             }
+          }
+        }
+        rtcCommit(scene);
+        AssertNoError(device);
+      }
+      return VerifyApplication::PASSED;
+    }
+  };
+
   struct EnableDisableGeometryTest : public VerifyApplication::Test
   {
     RTCSceneFlags sflags;
@@ -1363,7 +1521,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       VerifyScene scene(device,sflags,aflags);
       AssertNoError(device);
       unsigned geom0 = scene.addSphere      (sampler,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,-1),1.0f,50).first;
@@ -1423,7 +1581,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
       
@@ -1481,7 +1639,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + "isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
 
       for (size_t i=0; i<size_t(1000*state->intensity); i++) 
       {
@@ -1646,7 +1804,7 @@ namespace embree
     
     bool checkSubdivInterpolation(const RTCDeviceRef& device, const RTCSceneRef& scene, int geomID, RTCBufferType buffer, float* vertices0, size_t N, size_t N_total)
     {
-      rtcSetBoundaryMode(scene,geomID,RTC_BOUNDARY_SMOOTH);
+      rtcSetSubdivisionMode(scene,geomID,0,RTC_SUBDIV_SMOOTH_BOUNDARY);
       AssertNoError(device);
       rtcDisable(scene,geomID);
       AssertNoError(device);
@@ -1679,7 +1837,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
       
       RTCSceneRef scene = rtcDeviceNewScene(device,RTC_SCENE_DYNAMIC,RTC_INTERPOLATE);
@@ -1769,7 +1927,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
 
       size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
       
@@ -1874,7 +2032,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
 
       size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
       
@@ -1954,7 +2112,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
      
@@ -2021,7 +2179,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
      
@@ -2089,7 +2247,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
 
@@ -2146,7 +2304,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
        
@@ -2295,7 +2453,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
 
@@ -2374,7 +2532,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
 
@@ -2436,7 +2594,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
 
@@ -2511,7 +2669,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
 
@@ -2579,7 +2737,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
 
@@ -2626,7 +2784,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
 
@@ -2699,7 +2857,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
 
@@ -3207,7 +3365,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
 
       /* only test supported intersect modes */
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT1)) intersectModes.push_back(MODE_INTERSECT1);
@@ -3296,7 +3454,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
+      errorHandler(nullptr,rtcDeviceGetError(device));
       
       /* only test supported intersect modes */
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT1)) intersectModes.push_back(MODE_INTERSECT1);
@@ -3437,8 +3595,8 @@ namespace embree
 
       std::string cfg = state->rtcore + ",start_threads=1,set_affinity=1,isa="+stringOfISA(isa);
       device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
-      rtcDeviceSetErrorFunction(device,errorHandler);
+      errorHandler(nullptr,rtcDeviceGetError(device));
+      rtcDeviceSetErrorFunction2(device,errorHandler,nullptr);
       if (!supportsIntersectMode(device,imode))
         return false;
 
@@ -3609,8 +3767,8 @@ namespace embree
 
       std::string cfg = state->rtcore + ",start_threads=1,set_affinity=1,isa="+stringOfISA(isa);
       device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
-      rtcDeviceSetErrorFunction(device,errorHandler);
+      errorHandler(nullptr,rtcDeviceGetError(device));
+      rtcDeviceSetErrorFunction2(device,errorHandler,nullptr);
       if (!supportsIntersectMode(device,imode))
         return false;
 
@@ -3778,7 +3936,7 @@ namespace embree
       }
     }
 
-    static bool memoryMonitor(const ssize_t bytes, const bool /*post*/)
+    static bool memoryMonitor(void* userPtr, const ssize_t bytes, const bool /*post*/)
     {
       create_geometry_bytes_used += bytes;
       return true;
@@ -3788,9 +3946,9 @@ namespace embree
     {
       std::string cfg = "start_threads=1,set_affinity=1,isa="+stringOfISA(isa) + ",threads=" + std::to_string((long long)numThreads)+","+state->rtcore;
       device = rtcNewDevice(cfg.c_str());
-      errorHandler(rtcDeviceGetError(device));
-      rtcDeviceSetErrorFunction(device,errorHandler);
-      if (!dobenchmark) rtcDeviceSetMemoryMonitorFunction(device,memoryMonitor);
+      errorHandler(nullptr,rtcDeviceGetError(device));
+      rtcDeviceSetErrorFunction2(device,errorHandler,nullptr);
+      if (!dobenchmark) rtcDeviceSetMemoryMonitorFunction2(device,memoryMonitor,nullptr);
 
       for (unsigned int i=0; i<numMeshes; i++)
       {
@@ -3960,13 +4118,14 @@ namespace embree
     };
 
     groups.top()->add(new InitExitTest("init_exit"));
-
+    
     /* add Embree internal tests */
     for (size_t i=2000000; i<3000000; i++) {
       const char* testName = (const char*) rtcDeviceGetParameter1i(device,(RTCParameter)i);
       if (testName == nullptr) break;
       groups.top()->add(new EmbreeInternalTest(testName,i-2000000));
     }
+    groups.top()->add(new os_shrink_test());
 
     for (auto isa : isas)
     {
@@ -4016,6 +4175,11 @@ namespace embree
         groups.top()->add(new EmptyGeometryTest(to_string(sflags),isa,sflags,RTC_GEOMETRY_STATIC));
       groups.pop();
       
+      push(new TestGroup("many_build",false,false,false));
+      for (auto sflags : sceneFlags) 
+        groups.top()->add(new ManyBuildTest(to_string(sflags),isa,sflags,RTC_GEOMETRY_STATIC));
+      groups.pop();
+
       push(new TestGroup("build",true,true));
       for (auto sflags : sceneFlags) 
         groups.top()->add(new BuildTest(to_string(sflags),isa,sflags,RTC_GEOMETRY_STATIC));
@@ -4029,6 +4193,11 @@ namespace embree
       push(new TestGroup("new_delete_geometry",true,true));
       for (auto sflags : sceneFlagsDynamic) 
         groups.top()->add(new NewDeleteGeometryTest(to_string(sflags),isa,sflags));
+      groups.pop();
+
+      push(new TestGroup("user_geometry_id",true,true));
+      for (auto sflags : sceneFlagsDynamic) 
+        groups.top()->add(new UserGeometryIDTest(to_string(sflags),isa,sflags));
       groups.pop();
       
       push(new TestGroup("enable_disable_geometry",true,true));
@@ -4384,8 +4553,6 @@ namespace embree
     /* ignore failure of some tests that are known to fail */
     map_tests(tests, [&] (Ref<Test> test) { 
         if (test->name.find("watertight_subdiv") != std::string::npos) test->ignoreFailure = true;
-        if (test->name.find("memory_consumption") != std::string::npos) test->ignoreFailure = true;
-
       });
     
     /**************************************************************************/

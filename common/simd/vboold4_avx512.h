@@ -120,7 +120,7 @@ namespace embree
   /// Conversion Operations
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline unsigned int toInt(const vboold4 &a) { return _mm512_mask2int(a); }
+  __forceinline unsigned int toInt(const vboold4 &a) { return mm512_mask2int(a); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Get/Set Functions

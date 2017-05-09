@@ -149,13 +149,16 @@ namespace embree
     bool print_frame_rate;
     Averaged<double> avg_render_time;
     Averaged<double> avg_frame_time;
-    Averaged<double> avg_mray;
+    Averaged<double> avg_mrayps;
     bool print_camera;
 
     int debug0;
     int debug1;
     int debug2;
     int debug3;
+
+    RTCIntersectFlags iflags_coherent;
+    RTCIntersectFlags iflags_incoherent;
 
     std::unique_ptr<ISPCScene> ispc_scene;
 
@@ -183,13 +186,13 @@ namespace embree
     bool convert_hair_to_curves;
     bool convert_bezier_to_bspline;
     bool convert_bspline_to_bezier;
+    bool remove_mblur;
+    bool remove_non_mblur;
     FileName sceneFilename;
     std::vector<FileName> keyFramesFilenames;
     SceneGraph::InstancingMode instancing_mode;
     std::string subdiv_mode;
     bool print_scene_cameras;
     std::string camera_name;
-    RTCIntersectFlags iflags_coherent;
-    RTCIntersectFlags iflags_incoherent;
   };
 }

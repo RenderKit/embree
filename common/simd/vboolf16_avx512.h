@@ -79,7 +79,7 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
   
     __forceinline bool operator []( const size_t index ) const { 
-      assert(index < 16); return (_mm512_mask2int(v) >> index) & 1;
+      assert(index < 16); return (mm512_mask2int(v) >> index) & 1;
     }
   };
 
@@ -137,8 +137,8 @@ namespace embree
   /// Convertion Operations
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline unsigned int toInt (const vboolf16 &a) { return _mm512_mask2int(a); }
-  __forceinline vboolf16     toMask(const int &a)      { return _mm512_int2mask(a); }
+  __forceinline unsigned int toInt (const vboolf16 &a) { return mm512_mask2int(a); }
+  __forceinline vboolf16     toMask(const int &a)      { return mm512_int2mask(a); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Get/Set Functions

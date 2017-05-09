@@ -38,26 +38,26 @@ namespace embree
 #endif
   }
 
-  Instance::Instance (Scene* parent, Scene* object, size_t numTimeSteps) 
-    : AccelSet(parent,RTC_GEOMETRY_STATIC,1,numTimeSteps), object(object)
+  Instance::Instance (Scene* scene, Scene* object, size_t numTimeSteps) 
+    : AccelSet(scene,RTC_GEOMETRY_STATIC,1,numTimeSteps), object(object)
   {
     world2local0 = one;
     for (size_t i=0; i<numTimeSteps; i++) local2world[i] = one;
     intersectors.ptr = this;
-    boundsFunc3 = parent->device->instance_factory->InstanceBoundsFunc();
+    boundsFunc3 = scene->device->instance_factory->InstanceBoundsFunc();
     boundsFuncUserPtr = nullptr;
-    intersectors.intersector1 = parent->device->instance_factory->InstanceIntersector1();
+    intersectors.intersector1 = scene->device->instance_factory->InstanceIntersector1();
 #if defined (EMBREE_RAY_PACKETS)
-    intersectors.intersector4 = parent->device->instance_factory->InstanceIntersector4(); 
-    intersectors.intersector8 = parent->device->instance_factory->InstanceIntersector8(); 
-    intersectors.intersector16 = parent->device->instance_factory->InstanceIntersector16();
-    intersectors.intersector1M = parent->device->instance_factory->InstanceIntersector1M();
+    intersectors.intersector4 = scene->device->instance_factory->InstanceIntersector4(); 
+    intersectors.intersector8 = scene->device->instance_factory->InstanceIntersector8(); 
+    intersectors.intersector16 = scene->device->instance_factory->InstanceIntersector16();
+    intersectors.intersector1M = scene->device->instance_factory->InstanceIntersector1M();
 #endif
   }
   
   void Instance::setTransform(const AffineSpace3fa& xfm, size_t timeStep)
   {
-    if (parent->isStatic() && parent->isBuild())
+    if (scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     if (timeStep >= numTimeSteps)
@@ -69,7 +69,7 @@ namespace embree
 
   void Instance::setMask (unsigned mask) 
   {
-    if (parent->isStatic() && parent->isBuild())
+    if (scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     this->mask = mask; 

@@ -305,16 +305,12 @@ namespace embree
   }
 
   __forceinline double toScalar(const vdouble8& a) {
-    return _mm256_cvtsd_f64(_mm512_castpd512_pd256(a));
+    return _mm_cvtsd_f64(_mm512_castpd512_pd128(a));
   }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
-
-  __forceinline double reduce_add(const vdouble8& a) { return _mm512_reduce_add_pd(a); }
-  __forceinline double reduce_min(const vdouble8& a) { return _mm512_reduce_min_pd(a); }
-  __forceinline double reduce_max(const vdouble8& a) { return _mm512_reduce_max_pd(a); }
 
   __forceinline vdouble8 vreduce_add2(vdouble8 x) {                      return x + shuffle<1,0,3,2>(x); }
   __forceinline vdouble8 vreduce_add4(vdouble8 x) { x = vreduce_add2(x); return x + shuffle<2,3,0,1>(x); }
@@ -327,6 +323,10 @@ namespace embree
   __forceinline vdouble8 vreduce_max2(vdouble8 x) {                      return max(x,shuffle<1,0,3,2>(x)); }
   __forceinline vdouble8 vreduce_max4(vdouble8 x) { x = vreduce_max2(x); return max(x,shuffle<2,3,0,1>(x)); }
   __forceinline vdouble8 vreduce_max (vdouble8 x) { x = vreduce_max4(x); return max(x,shuffle4<1,0>(x)); }
+
+  __forceinline double reduce_add(const vdouble8& v) { return toScalar(vreduce_add(v)); }
+  __forceinline double reduce_min(const vdouble8& v) { return toScalar(vreduce_min(v)); }
+  __forceinline double reduce_max(const vdouble8& v) { return toScalar(vreduce_max(v)); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Memory load and store operations

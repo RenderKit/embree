@@ -58,7 +58,7 @@ namespace embree
                                                         const Vec3vfx& Ng, const Vec4vfx& dP0du, const Vec4vfx& dP3du,
                                                         const Epilog& epilog)
     {
-      if (tp.lower[i]+dt >= ray.tfar) return false;
+      if (tp.lower[i]+dt > ray.tfar) return false;
       Vec3fa Ng_o = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
       if (h0.lower[i] == tp.lower[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
       if (h1.lower[i] == tp.lower[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
@@ -113,7 +113,7 @@ namespace embree
         if (converged_u && converged_t) 
         {
           t+=dt;
-          if (t < ray.tnear || t > ray.tfar) return false;
+          if (t <= ray.tnear || t > ray.tfar) return false;
           if (u < 0.0f || u > 1.0f) return false;
           const Vec3fa R = normalize(Q-P);
           const Vec3fa U = madd(Vec3fa(dPdu.w),R,dPdu);
@@ -201,9 +201,9 @@ namespace embree
         if (depth >= termDepth) found = found | intersect_bezier_iterative_jacobian(ray,dt,curve,u_outer0[i],tp0.lower[i],epilog);
         //if (depth >= maxDepth) found = found | intersect_bezier_iterative_debug   (ray,dt,curve,i,u_outer0,tp0,h0,h1,Ng_outer0,dP0du,dP3du,epilog);
         else                   found = found | intersect_bezier_recursive_jacobian(ray,dt,curve,vu0[i+0],vu0[i+1],depth+1,epilog);
-        valid0 &= tp0.lower+dt < ray.tfar;
+        valid0 &= tp0.lower+dt <= ray.tfar;
       }
-      valid1 &= tp1.lower+dt < ray.tfar;
+      valid1 &= tp1.lower+dt <= ray.tfar;
 
       /* iterate over all second hits front to back */
       while (any(valid1))
@@ -213,7 +213,7 @@ namespace embree
         if (depth >= termDepth) found = found | intersect_bezier_iterative_jacobian(ray,dt,curve,u_outer1[i],tp1.upper[i],epilog);
         //if (depth >= maxDepth) found = found | intersect_bezier_iterative_debug   (ray,dt,curve,i,u_outer1,tp1,h0,h1,Ng_outer1,dP0du,dP3du,epilog);
         else                   found = found | intersect_bezier_recursive_jacobian(ray,dt,curve,vu0[i+0],vu0[i+1],depth+1,epilog);
-        valid1 &= tp1.lower+dt < ray.tfar;
+        valid1 &= tp1.lower+dt <= ray.tfar;
       }
       return found;
     }

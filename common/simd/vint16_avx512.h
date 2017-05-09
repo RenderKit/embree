@@ -94,7 +94,8 @@ namespace embree
 
     static __forceinline vint16 load (const void* addr) { return _mm512_load_si512((int*)addr); }
 
-    static __forceinline const vint16 load( const unsigned char* const ptr ) { return _mm512_cvtepu8_epi32(_mm_load_si128((__m128i*)ptr)); }
+    static __forceinline const vint16 load( const unsigned char*  const ptr ) { return _mm512_cvtepu8_epi32(_mm_load_si128((__m128i*)ptr)); }
+    static __forceinline const vint16 load( const unsigned short* const ptr ) { return _mm512_cvtepu16_epi32(*(__m256i*)ptr); }
 
     static __forceinline vint16 loadu(const void* addr) { return _mm512_loadu_si512(addr); }
 
@@ -129,6 +130,10 @@ namespace embree
 
     static __forceinline vint16 compact(const vboolf16& mask, const vint16 &a, vint16 &b) {
       return _mm512_mask_compress_epi32(a,mask,b);
+    }
+
+    static __forceinline vint16 expand(const vboolf16& mask, const vint16& a, vint16& b) {
+      return _mm512_mask_expand_epi32(b,mask,a);
     }
 
     static __forceinline vint16 broadcast64bit(size_t v) {
@@ -361,12 +366,6 @@ namespace embree
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline int reduce_add(vint16 a) { return _mm512_reduce_add_epi32(a); }
-  __forceinline int reduce_mul(vint16 a) { return _mm512_reduce_mul_epi32(a); }
-  __forceinline int reduce_min(vint16 a) { return _mm512_reduce_min_epi32(a); }
-  __forceinline int reduce_max(vint16 a) { return _mm512_reduce_max_epi32(a); }
-  __forceinline int reduce_and(vint16 a) { return _mm512_reduce_and_epi32(a); }
-
   __forceinline vint16 vreduce_min2(vint16 x) {                      return min(x,shuffle<1,0,3,2>(x)); }
   __forceinline vint16 vreduce_min4(vint16 x) { x = vreduce_min2(x); return min(x,shuffle<2,3,0,1>(x)); }
   __forceinline vint16 vreduce_min8(vint16 x) { x = vreduce_min4(x); return min(x,shuffle4<1,0,3,2>(x)); }
@@ -391,6 +390,12 @@ namespace embree
   __forceinline vint16 vreduce_add4(vint16 x) { x = vreduce_add2(x); return x + shuffle<2,3,0,1>(x); }
   __forceinline vint16 vreduce_add8(vint16 x) { x = vreduce_add4(x); return x + shuffle4<1,0,3,2>(x); }
   __forceinline vint16 vreduce_add (vint16 x) { x = vreduce_add8(x); return x + shuffle4<2,3,0,1>(x); }
+  
+  __forceinline int reduce_min(const vint16& v) { return toScalar(vreduce_min(v)); }
+  __forceinline int reduce_max(const vint16& v) { return toScalar(vreduce_max(v)); }
+  __forceinline int reduce_and(const vint16& v) { return toScalar(vreduce_and(v)); }
+  __forceinline int reduce_or (const vint16& v) { return toScalar(vreduce_or (v)); }
+  __forceinline int reduce_add(const vint16& v) { return toScalar(vreduce_add(v)); }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Memory load and store operations

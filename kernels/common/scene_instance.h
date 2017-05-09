@@ -37,11 +37,11 @@ namespace embree
   {
     ALIGNED_STRUCT;
   public:
-    static Instance* create (Scene* parent, Scene* object, size_t numTimeSteps) {
-      return ::new (alignedMalloc(sizeof(Instance)+(numTimeSteps-1)*sizeof(AffineSpace3fa))) Instance(parent,object,numTimeSteps);
+    static Instance* create (Scene* scene, Scene* object, size_t numTimeSteps) {
+      return ::new (alignedMalloc(sizeof(Instance)+(numTimeSteps-1)*sizeof(AffineSpace3fa))) Instance(scene,object,numTimeSteps);
     }
   private:
-    Instance (Scene* parent, Scene* object, size_t numTimeSteps); 
+    Instance (Scene* scene, Scene* object, size_t numTimeSteps); 
   public:
     virtual void setTransform(const AffineSpace3fa& local2world, size_t timeStep);
     virtual void setMask (unsigned mask);
@@ -61,10 +61,8 @@ namespace embree
     }
 
     template<int K>
-      __forceinline AffineSpaceT<LinearSpace3<Vec3<vfloat<K>>>> getWorld2Local(const vbool<K>& valid, const vfloat<K>& t) const
-    {
-      typedef AffineSpaceT<LinearSpace3<Vec3<vfloat<K>>>> AffineSpace3vfK;
-      
+      __forceinline AffineSpace3vf<K> getWorld2Local(const vbool<K>& valid, const vfloat<K>& t) const
+    { 
       vfloat<K> ftime;
       const vint<K> itime_k = getTimeSegment(t, vfloat<K>(fnumTimeSegments), ftime);
       assert(any(valid));
@@ -72,13 +70,13 @@ namespace embree
       const int itime = itime_k[index];
       const vfloat<K> t0 = vfloat<K>(1.0f)-ftime, t1 = ftime;
       if (likely(all(valid,itime_k == vint<K>(itime)))) {
-        return rcp(t0*AffineSpace3vfK(local2world[itime+0])+t1*AffineSpace3vfK(local2world[itime+1]));
+        return rcp(t0*AffineSpace3vf<K>(local2world[itime+0])+t1*AffineSpace3vf<K>(local2world[itime+1]));
       } 
       else {
-        AffineSpace3vfK space0,space1;
+        AffineSpace3vf<K> space0,space1;
         foreach_unique(valid,itime_k,[&] (const vbool<K>& valid, int itime) {
-            space0 = select(valid,AffineSpace3vfK(local2world[itime+0]),space0);
-            space1 = select(valid,AffineSpace3vfK(local2world[itime+1]),space1);
+            space0 = select(valid,AffineSpace3vf<K>(local2world[itime+0]),space0);
+            space1 = select(valid,AffineSpace3vf<K>(local2world[itime+1]),space1);
           });
         return rcp(t0*space0+t1*space1);
       }

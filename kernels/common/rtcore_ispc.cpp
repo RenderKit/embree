@@ -17,20 +17,13 @@
 #include "default.h"
 #include "scene.h"
 
-#if defined(__INTEL_COMPILER)
-#pragma warning (disable: 1478)   // warning: function was declared deprecated
-#elif defined(_MSC_VER)
-#pragma warning (disable: 4996) // warning: function was declared deprecated
-#elif defined(__clang__)
-#pragma clang diagnostic ignored "-Wdeprecated-declarations" // warning: xxx is deprecated
-#elif defined(__GNUC__)
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations" // warning: xxx is deprecated
-#endif
+DISABLE_DEPRECATED_WARNING;
 
 namespace embree
 {
-#define size_t int   // FIXME: workaround for ISPC bug (ISPC bug still present in ISPC v1.8.2)
-#define ssize_t int  // FIXME: workaround for ISPC bug (ISPC bug still present in ISPC v1.8.2) 
+/* This is necessary as the size_t type under ISPC may be 32 or 64 bits wide depending on the ISPC addressing mode used. */
+#define size_t int
+#define ssize_t int
 
   extern "C" RTCDevice ispcNewDevice(const char* cfg) {
     return rtcNewDevice(cfg);
@@ -204,11 +197,7 @@ namespace embree
     rtcDeleteScene(scene);
   }
   
-  extern "C" unsigned ispcNewInstance (RTCScene target, RTCScene source) {
-    return rtcNewInstance(target,source);
-  }
-  
-  extern "C" unsigned ispcNewInstance2 (RTCScene target, RTCScene source, size_t numTimeSteps) {
+  extern "C" unsigned ispcNewInstance (RTCScene target, RTCScene source, size_t numTimeSteps) {
     return rtcNewInstance2(target,source,numTimeSteps);
   }
 
@@ -224,28 +213,20 @@ namespace embree
     return rtcSetTransform2(scene,geomID,layout,xfm,timeStep);
   }
   
-  extern "C" unsigned ispcNewUserGeometry (RTCScene scene, size_t numItems) {
-    return rtcNewUserGeometry(scene,numItems);
+  extern "C" unsigned ispcNewUserGeometry (RTCScene scene, RTCGeometryFlags gflags, size_t numItems, size_t numTimeSteps, unsigned int geomID) {
+    return rtcNewUserGeometry4(scene,gflags,numItems,numTimeSteps,geomID);
   }
 
-  extern "C" unsigned ispcNewUserGeometry2 (RTCScene scene, size_t numItems, size_t numTimeSteps) {
-    return rtcNewUserGeometry2(scene,numItems,numTimeSteps);
+  extern "C" unsigned ispcNewTriangleMesh (RTCScene scene, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps, unsigned int geomID) {
+    return rtcNewTriangleMesh2(scene,flags,numTriangles,numVertices,numTimeSteps,geomID);
   }
 
-  extern "C" unsigned ispcNewUserGeometry3 (RTCScene scene, RTCGeometryFlags gflags, size_t numItems, size_t numTimeSteps) {
-    return rtcNewUserGeometry3(scene,gflags,numItems,numTimeSteps);
+  extern "C" unsigned ispcNewQuadMesh (RTCScene scene, RTCGeometryFlags flags, size_t numQuads, size_t numVertices, size_t numTimeSteps, unsigned int geomID) {
+    return rtcNewQuadMesh2(scene,flags,numQuads,numVertices,numTimeSteps,geomID);
   }
 
-  extern "C" unsigned ispcNewTriangleMesh (RTCScene scene, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) {
-    return rtcNewTriangleMesh((RTCScene)scene,flags,numTriangles,numVertices,numTimeSteps);
-  }
-
-  extern "C" unsigned ispcNewQuadMesh (RTCScene scene, RTCGeometryFlags flags, size_t numQuads, size_t numVertices, size_t numTimeSteps) {
-    return rtcNewQuadMesh((RTCScene)scene,flags,numQuads,numVertices,numTimeSteps);
-  }
-
-  extern "C" unsigned ispcNewLineSegments (RTCScene scene, RTCGeometryFlags flags, size_t numSegments, size_t numVertices, size_t numTimeSteps) {
-    return rtcNewLineSegments(scene,flags,numSegments,numVertices,numTimeSteps);
+  extern "C" unsigned ispcNewLineSegments (RTCScene scene, RTCGeometryFlags flags, size_t numSegments, size_t numVertices, size_t numTimeSteps, unsigned int geomID) {
+    return rtcNewLineSegments2(scene,flags,numSegments,numVertices,numTimeSteps,geomID);
   }
 
   extern "C" unsigned ispcNewHairGeometry (RTCScene scene, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) {
@@ -257,9 +238,9 @@ namespace embree
   }
 
   extern "C" unsigned ispcNewSubdivisionMesh (RTCScene scene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, 
-                                              size_t numVertices, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps) 
+                                              size_t numVertices, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps, unsigned int geomID) 
   {
-    return rtcNewSubdivisionMesh(scene,flags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
+    return rtcNewSubdivisionMesh2(scene,flags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps,geomID);
   }
 
   extern "C" void ispcSetRayMask (RTCScene scene, unsigned geomID, int mask) {

@@ -98,6 +98,9 @@ namespace embree
       return _mm512_load_si512(addr);
     }
 
+    static __forceinline vuint16 load( const unsigned short* const ptr ) { return _mm512_cvtepu16_epi32(*(__m256i*)ptr); }
+
+
     static __forceinline void store(void* ptr, const vuint16& v) {
       _mm512_store_si512(ptr,v);
     }
@@ -130,6 +133,11 @@ namespace embree
     static __forceinline vuint16 compact(const vboolf16& mask, const vuint16 &a, vuint16 &b) {
       return _mm512_mask_compress_epi32(a,mask,b);
     }
+
+    static __forceinline vuint16 expand(const vboolf16& mask, const vuint16& a, vuint16& b) {
+      return _mm512_mask_expand_epi32(b,mask,a);
+    }
+
 
     static __forceinline vuint16 broadcast64bit(size_t v) {
       return _mm512_set1_epi64(v);
@@ -333,11 +341,6 @@ namespace embree
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline unsigned int reduce_add(vuint16 a) { return _mm512_reduce_add_epi32(a); }
-  __forceinline unsigned int reduce_min(vuint16 a) { return _mm512_reduce_min_epu32(a); }
-  __forceinline unsigned int reduce_max(vuint16 a) { return _mm512_reduce_max_epu32(a); }
-  __forceinline unsigned int reduce_and(vuint16 a) { return _mm512_reduce_and_epi32(a); }
-
   __forceinline vuint16 vreduce_min2(vuint16 x) {                      return min(x,shuffle<1,0,3,2>(x)); }
   __forceinline vuint16 vreduce_min4(vuint16 x) { x = vreduce_min2(x); return min(x,shuffle<2,3,0,1>(x)); }
   __forceinline vuint16 vreduce_min8(vuint16 x) { x = vreduce_min4(x); return min(x,shuffle4<1,0,3,2>(x)); }
@@ -362,6 +365,12 @@ namespace embree
   __forceinline vuint16 vreduce_add4(vuint16 x) { x = vreduce_add2(x); return x + shuffle<2,3,0,1>(x); }
   __forceinline vuint16 vreduce_add8(vuint16 x) { x = vreduce_add4(x); return x + shuffle4<1,0,3,2>(x); }
   __forceinline vuint16 vreduce_add (vuint16 x) { x = vreduce_add8(x); return x + shuffle4<2,3,0,1>(x); }
+
+  __forceinline unsigned int reduce_min(const vuint16& v) { return toScalar(vreduce_min(v)); }
+  __forceinline unsigned int reduce_max(const vuint16& v) { return toScalar(vreduce_max(v)); }
+  __forceinline unsigned int reduce_and(const vuint16& v) { return toScalar(vreduce_and(v)); }
+  __forceinline unsigned int reduce_or (const vuint16& v) { return toScalar(vreduce_or (v)); }
+  __forceinline unsigned int reduce_add(const vuint16& v) { return toScalar(vreduce_add(v)); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Memory load and store operations

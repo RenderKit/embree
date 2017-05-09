@@ -352,7 +352,7 @@ namespace embree
       size_t parent;
       size_t child;
       unsigned int childID;
-      unsigned int dist;
+      //unsigned int dist;
     };
 
     template<int N, int Nx, int types>
@@ -405,7 +405,7 @@ namespace embree
             stackPtr->parent  = parent;
             stackPtr->child   = c1;
             stackPtr->childID = (unsigned int)r1;
-            stackPtr->dist    = d1;
+            //stackPtr->dist    = d1;
             stackPtr++; 
             cur = c0; 
             m_trav_active = tMask[r0]; 
@@ -417,7 +417,7 @@ namespace embree
             stackPtr->parent  = parent;
             stackPtr->child   = c0;
             stackPtr->childID = (unsigned int)r0;
-            stackPtr->dist    = d0;
+            //stackPtr->dist    = d0;
             stackPtr++; 
             cur = c1; 
             m_trav_active = tMask[r1]; 
@@ -454,7 +454,7 @@ namespace embree
           stackPtr->parent  = parent;
           stackPtr->child   = cur;
           stackPtr->childID = index;
-          stackPtr->dist = tNear_i[index];
+          //stackPtr->dist = tNear_i[index];
           stackPtr++;
         }
       }
@@ -524,8 +524,6 @@ namespace embree
       typedef typename BVH::BaseNode BaseNode;
       typedef typename BVH::AlignedNode AlignedNode;
       typedef typename BVH::AlignedNodeMB AlignedNodeMB;
-      typedef Vec3<vfloat<K>> Vec3vfK;
-      typedef Vec3<vint<K>> Vec3viK;
 
       // =============================================================================================
       // =============================================================================================
@@ -533,8 +531,8 @@ namespace embree
 
       struct Packet
       {
-        Vec3vfK rdir;
-        Vec3vfK org_rdir;
+        Vec3vf<K> rdir;
+        Vec3vf<K> org_rdir;
         vfloat<K> min_dist;
         vfloat<K> max_dist;
       };
@@ -551,7 +549,7 @@ namespace embree
 
       struct NearFarPreCompute
       {
-#if defined(__AVX512ER__) // KNL+
+#if defined(__AVX512F__)
         vint16 permX, permY, permZ;
 #endif
         size_t nearX, nearY, nearZ;
@@ -559,7 +557,7 @@ namespace embree
 
         __forceinline NearFarPreCompute(const Vec3fa& dir)
         {
-#if defined(__AVX512ER__) // KNL+
+#if defined(__AVX512F__)
           /* optimization works only for 8-wide BVHs with 16-wide SIMD */
           const vint<16> id(step);
           const vint<16> id2 = align_shift_right<16/2>(id, id);
@@ -581,10 +579,10 @@ namespace embree
       {
         const size_t numPackets = (numOctantRays+K-1)/K;
 
-        Vec3vfK   tmp_min_rdir(pos_inf); 
-        Vec3vfK   tmp_max_rdir(neg_inf);
-        Vec3vfK   tmp_min_org(pos_inf); 
-        Vec3vfK   tmp_max_org(neg_inf);
+        Vec3vf<K>   tmp_min_rdir(pos_inf);
+        Vec3vf<K>   tmp_max_rdir(neg_inf);
+        Vec3vf<K>   tmp_min_org(pos_inf);
+        Vec3vf<K>   tmp_max_org(neg_inf);
         vfloat<K> tmp_min_dist(pos_inf);
         vfloat<K> tmp_max_dist(neg_inf);
 
@@ -602,18 +600,18 @@ namespace embree
           tmp_min_dist = min(tmp_min_dist, packet[i].min_dist);
           tmp_max_dist = max(tmp_max_dist, packet[i].max_dist);
 
-          const Vec3vfK& org     = inputPackets[i]->org;
-          const Vec3vfK& dir     = inputPackets[i]->dir;
-          const Vec3vfK rdir     = rcp_safe(dir);
-          const Vec3vfK org_rdir = org * rdir;
+          const Vec3vf<K>& org     = inputPackets[i]->org;
+          const Vec3vf<K>& dir     = inputPackets[i]->dir;
+          const Vec3vf<K> rdir     = rcp_safe(dir);
+          const Vec3vf<K> org_rdir = org * rdir;
         
           packet[i].rdir     = rdir;
           packet[i].org_rdir = org_rdir;
 
-          tmp_min_rdir = min(tmp_min_rdir, select(m_valid,rdir, Vec3vfK(pos_inf)));
-          tmp_max_rdir = max(tmp_max_rdir, select(m_valid,rdir, Vec3vfK(neg_inf)));
-          tmp_min_org  = min(tmp_min_org , select(m_valid,org , Vec3vfK(pos_inf)));
-          tmp_max_org  = max(tmp_max_org , select(m_valid,org , Vec3vfK(neg_inf)));
+          tmp_min_rdir = min(tmp_min_rdir, select(m_valid,rdir, Vec3vf<K>(pos_inf)));
+          tmp_max_rdir = max(tmp_max_rdir, select(m_valid,rdir, Vec3vf<K>(neg_inf)));
+          tmp_min_org  = min(tmp_min_org , select(m_valid,org , Vec3vf<K>(pos_inf)));
+          tmp_max_org  = max(tmp_max_org , select(m_valid,org , Vec3vf<K>(neg_inf)));
         }
 
         m_active &= (numOctantRays == (8 * sizeof(size_t))) ? (size_t)-1 : (((size_t)1 << numOctantRays)-1);
@@ -792,7 +790,7 @@ namespace embree
         return vmask;
       }
 
-#if defined(__AVX512ER__) // KNL+
+#if defined(__AVX512F__)
       template<bool dist_update>
         __forceinline static vbool<Nx> traversalLoop(const size_t &m_trav_active,
                                                      const AlignedNode* __restrict__ const node,

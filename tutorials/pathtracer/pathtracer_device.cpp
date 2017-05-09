@@ -34,7 +34,7 @@ namespace embree {
 
 #define FIXED_EDGE_TESSELLATION_VALUE 4
 
-#define ENABLE_FILTER_FUNCTION 0
+#define ENABLE_FILTER_FUNCTION 1
 
 #define MAX_EDGE_LEVEL 128.0f
 #define MIN_EDGE_LEVEL   4.0f
@@ -899,24 +899,24 @@ void assignShaders(ISPCGeometry* geometry)
   if (geometry->type == SUBDIV_MESH) {
     ISPCSubdivMesh* mesh = (ISPCSubdivMesh* ) geometry;
 #if ENABLE_FILTER_FUNCTION == 1
-    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&occlusionFilterOpaque);
+    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,occlusionFilterOpaque);
 #endif
   }
   else if (geometry->type == TRIANGLE_MESH) {
     ISPCTriangleMesh* mesh = (ISPCTriangleMesh* ) geometry;
 #if ENABLE_FILTER_FUNCTION == 1
-    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&occlusionFilterOpaque);
+    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,occlusionFilterOpaque);
 
     ISPCMaterial* material = g_ispc_scene->materials[mesh->materialID];
     //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
-    //  rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&intersectionFilterReject);
+    //  rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,intersectionFilterReject);
     //else
     if (material->type == MATERIAL_OBJ)
     {
       ISPCOBJMaterial* obj = (ISPCOBJMaterial*) material;
       if (obj->d != 1.0f || obj->map_d) {
-        rtcSetIntersectionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&intersectionFilterOBJ);
-        rtcSetOcclusionFilterFunction   (mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&occlusionFilterOBJ);
+        rtcSetIntersectionFilterFunction(mesh->geom.scene,mesh->geom.geomID,intersectionFilterOBJ);
+        rtcSetOcclusionFilterFunction   (mesh->geom.scene,mesh->geom.geomID,occlusionFilterOBJ);
       }
     }
 #endif
@@ -924,33 +924,33 @@ void assignShaders(ISPCGeometry* geometry)
   else if (geometry->type == QUAD_MESH) {
     ISPCQuadMesh* mesh = (ISPCQuadMesh*) geometry;
 #if ENABLE_FILTER_FUNCTION == 1
-    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&occlusionFilterOpaque);
+    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,occlusionFilterOpaque);
 
     ISPCMaterial* material = g_ispc_scene->materials[mesh->materialID];
     //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
-    //  rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&intersectionFilterReject);
+    //  rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,intersectionFilterReject);
     //else
     if (material->type == MATERIAL_OBJ)
     {
       ISPCOBJMaterial* obj = (ISPCOBJMaterial*) material;
       if (obj->d != 1.0f || obj->map_d) {
-        rtcSetIntersectionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&intersectionFilterOBJ);
-        rtcSetOcclusionFilterFunction   (mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&occlusionFilterOBJ);
+        rtcSetIntersectionFilterFunction(mesh->geom.scene,mesh->geom.geomID,intersectionFilterOBJ);
+        rtcSetOcclusionFilterFunction   (mesh->geom.scene,mesh->geom.geomID,occlusionFilterOBJ);
       }
     }
 #endif
   }
   else if (geometry->type == LINE_SEGMENTS) {
     ISPCLineSegments* mesh = (ISPCLineSegments*) geometry;
-    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&occlusionFilterHair);
+    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,occlusionFilterHair);
   }
   else if (geometry->type == HAIR_SET) {
     ISPCHairSet* mesh = (ISPCHairSet*) geometry;
-    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&occlusionFilterHair);
+    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,occlusionFilterHair);
   }
   else if (geometry->type == CURVES) {
     ISPCHairSet* mesh = (ISPCHairSet*) geometry;
-    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,(RTCFilterFunc)&occlusionFilterHair);
+    rtcSetOcclusionFilterFunction(mesh->geom.scene,mesh->geom.geomID,occlusionFilterHair);
   }
   else if (geometry->type == GROUP) {
     ISPCGroup* group = (ISPCGroup*) geometry;
@@ -973,10 +973,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   }
 
   /* create scene */
-  //int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
-  PRINT("WARNING: DYNAMIC MODE");
-  int scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT;
-
+  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
   int scene_aflags = RTC_INTERSECT1;
 
   if (g_subdiv_mode)
@@ -1000,11 +997,11 @@ RTCScene convertScene(ISPCScene* scene_in)
   }
 
   /* commit changes to scene */
-  progressStart();
-  rtcSetProgressMonitorFunction(scene_out,(RTCProgressMonitorFunc)&progressMonitor,nullptr);
+  //progressStart();
+  //rtcSetProgressMonitorFunction(scene_out,(RTCProgressMonitorFunc)&progressMonitor,nullptr);
   rtcCommit (scene_out);
-  rtcSetProgressMonitorFunction(scene_out,nullptr,nullptr);
-  progressEnd();
+  //rtcSetProgressMonitorFunction(scene_out,nullptr,nullptr);
+  //progressEnd();
 
   return scene_out;
 } // convertScene
@@ -1398,7 +1395,6 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
       RTCRay shadow = RTCRay(dg.P,ls.dir,dg.tnear_eps,ls.dist,time); shadow.transparency = Vec3fa(1.0f);
       rtcOccluded1Ex(g_scene,&context,shadow);
       RayStats_addShadowRay(stats);
-      if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       if (max(max(shadow.transparency.x,shadow.transparency.y),shadow.transparency.z) > 0.0f)
         L = L + Lw*ls.weight*shadow.transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,ls.dir);

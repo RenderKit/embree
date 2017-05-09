@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "bvh_intersector_stream.h"
-#include "bvh_intersector_single.h"
 #include "bvh_intersector_node.h"
 
 #include "../geometry/intersector_iterators.h"
@@ -23,10 +22,8 @@
 #include "../geometry/trianglev_intersector.h"
 #include "../geometry/trianglev_mb_intersector.h"
 #include "../geometry/trianglei_intersector.h"
-#include "../geometry/trianglei_mb_intersector.h"
 #include "../geometry/quadv_intersector.h"
 #include "../geometry/quadi_intersector.h"
-#include "../geometry/quadi_mb_intersector.h"
 #include "../geometry/bezier1v_intersector.h"
 #include "../geometry/bezier1i_intersector.h"
 #include "../geometry/linei_intersector.h"
@@ -46,7 +43,7 @@ namespace embree
   namespace isa
   {
     /* enable traversal of either two small streams or one large stream */
-#if !defined(__AVX512ER__) // KNL+
+#if !defined(__AVX512F__)
     static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(unsigned int);
 #else
     static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(size_t);
@@ -86,7 +83,7 @@ namespace embree
         rayK[packetID].tfar[slotID]   = tfar;
         rayK[packetID].mask[slotID]   = inputRays[i]->mask;
         rayK[packetID].instID[slotID] = inputRays[i]->instID;
-      }      
+      }
       const size_t sign_min_dir = movemask(vfloat4(min_dir) < 0.0f);
       const size_t sign_max_dir = movemask(vfloat4(max_dir) < 0.0f);
       return ((sign_min_dir^sign_max_dir) & 0x7);
@@ -126,7 +123,7 @@ namespace embree
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
     __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherentSOA(BVH* __restrict__ bvh, RayK<K>** inputRays, size_t numOctantRays, IntersectContext* context)
-    {      
+    {
       __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  //!< stack of nodes
 
       RayK<K>** __restrict__ inputPackets = (RayK<K>**)inputRays;
@@ -136,13 +133,13 @@ namespace embree
       __aligned(64) Frusta frusta;
 
       const size_t m_active = initPacketsAndFrusta(inputPackets, numOctantRays, packet, frusta);
-      if (unlikely(m_active == 0)) return; 
+      if (unlikely(m_active == 0)) return;
 
       stack[0].mask    = m_active;
       stack[0].parent  = 0;
       stack[0].child   = bvh->root;
       stack[0].childID = (unsigned int)-1;
-      stack[0].dist    = (unsigned int)-1;
+      //stack[0].dist    = (unsigned int)-1;
 
       ///////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////////////////////////////////////////////////////
@@ -153,16 +150,16 @@ namespace embree
       StackItemMaskCoherent* stackPtr = stack + 1;
 
       while (1) pop:
-      {          
+      {
         if (unlikely(stackPtr == stack)) break;
 
-        STAT3(normal.trav_stack_pop,1,1,1);                          
+        STAT3(normal.trav_stack_pop,1,1,1);
         stackPtr--;
         /*! pop next node */
         NodeRef cur = NodeRef(stackPtr->child);
         size_t m_trav_active = stackPtr->mask;
         assert(m_trav_active);
-         
+
         /* non-root and leaf => full culling test for all rays */
         if (unlikely(stackPtr->parent != 0 && cur.isLeaf()))
         {
@@ -219,7 +216,7 @@ namespace embree
 
           vbool<K> m_valid = (inputPackets[i]->tnear <= inputPackets[i]->tfar);
           PrimitiveIntersector::intersectK(m_valid, *inputPackets[i], context, prim, num, lazy_node);
-          Packet &p = packet[i]; 
+          Packet &p = packet[i];
           p.max_dist = min(p.max_dist, inputPackets[i]->tfar);
         } while(bits);
 
@@ -228,7 +225,7 @@ namespace embree
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
     __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherentSOA(BVH* __restrict__ bvh, RayK<K>** inputRays, size_t numOctantRays, IntersectContext* context)
-    {      
+    {
       __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  //!< stack of nodes
 
       RayK<K>** __restrict__ inputPackets = (RayK<K>**)inputRays;
@@ -241,13 +238,13 @@ namespace embree
       size_t m_active = initPacketsAndFrusta(inputPackets, numOctantRays, packet, frusta);
 
       /* valid rays */
-      if (unlikely(m_active == 0)) return; 
+      if (unlikely(m_active == 0)) return;
 
       stack[0].mask    = m_active;
       stack[0].parent  = 0;
       stack[0].child   = bvh->root;
       stack[0].childID = (unsigned int)-1;
-      stack[0].dist    = (unsigned int)-1;
+      //stack[0].dist    = (unsigned int)-1;
 
       ///////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////////////////////////////////////////////////////
@@ -258,10 +255,10 @@ namespace embree
       StackItemMaskCoherent* stackPtr = stack + 1;
 
       while (1) pop:
-      {          
+      {
         if (unlikely(stackPtr == stack)) break;
 
-        STAT3(normal.trav_stack_pop,1,1,1);                          
+        STAT3(normal.trav_stack_pop,1,1,1);
         stackPtr--;
         /*! pop next node */
         NodeRef cur = NodeRef(stackPtr->child);
@@ -285,7 +282,7 @@ namespace embree
           const vfloat<K> maxX = vfloat<K>(*(const float*)((const char*)ptr + pc.farX));
           const vfloat<K> maxY = vfloat<K>(*(const float*)((const char*)ptr + pc.farY));
           const vfloat<K> maxZ = vfloat<K>(*(const float*)((const char*)ptr + pc.farZ));
-          
+
           m_trav_active = intersectAlignedNodePacket(packet, minX, minY, minZ, maxX, maxY, maxZ, m_trav_active);
 
           if (m_trav_active == 0) goto pop;
@@ -329,7 +326,7 @@ namespace embree
           vbool<K> m_hit = PrimitiveIntersector::occludedK(m_valid, *inputPackets[i], context, prim, num, lazy_node);
           inputPackets[i]->geomID = select(m_hit, vint<K>(zero), inputPackets[i]->geomID);
           m_active &= ~((size_t)movemask(m_hit) << (i*K));
-        } 
+        }
 
       } // traversal + intersection
     }
@@ -338,9 +335,8 @@ namespace embree
     // =====================================================================================================
     // =====================================================================================================
 
-    /* do not inline this function to separate 16-wide and 4/8-wide code paths */
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    __noinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherent(BVH* __restrict__ bvh, Ray** inputRays, size_t numTotalRays, IntersectContext* context)
+    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherent(BVH* __restrict__ bvh, Ray** inputRays, size_t numTotalRays, IntersectContext* context)
     {
       if (likely(context->flags == IntersectContext::INPUT_RAY_DATA_AOS))
       {
@@ -356,15 +352,14 @@ namespace embree
       }
       else
       {
-        assert(context->getInputSIMDWidth() == K);
+        assert(context->getInputSOAWidth() == K);
         /* stream tracer as fast path */
         BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherentSOA(bvh, (RayK<K>**)inputRays, numTotalRays, context);
       }
     }
 
-    /* do not inline this function to separate 16-wide and 4/8-wide code paths */
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    __noinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherent(BVH* __restrict__ bvh, Ray **inputRays, size_t numTotalRays, IntersectContext* context)
+    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherent(BVH* __restrict__ bvh, Ray **inputRays, size_t numTotalRays, IntersectContext* context)
     {
       if (likely(context->flags == IntersectContext::INPUT_RAY_DATA_AOS))
       {
@@ -380,19 +375,19 @@ namespace embree
       }
       else
       {
-        assert(context->getInputSIMDWidth() == K);
+        assert(context->getInputSOAWidth() == K);
         BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherentSOA(bvh, (RayK<K>**)inputRays, numTotalRays, context);
       }
     }
-    
+
     // =====================================================================================================
     // =====================================================================================================
     // =====================================================================================================
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray** inputRays, size_t numTotalRays, IntersectContext* context)
-    { 
-#if ENABLE_COHERENT_STREAM_PATH == 1 
+    {
+#if ENABLE_COHERENT_STREAM_PATH == 1
       if (unlikely(PrimitiveIntersector::validIntersectorK && !robust && isCoherent(context->user->flags)))
       {
         intersectCoherent(bvh, inputRays, numTotalRays, context);
@@ -418,7 +413,7 @@ namespace embree
         /* do per ray precalculations */
         for (size_t i = 0; i < numOctantRays; i++) {
           new (&ray_ctx[i]) RayCtx(rays[i]);
-          new (&pre[i]) Precalculations(*rays[i], bvh, bvh->numTimeSteps);
+          new (&pre[i]) Precalculations(*rays[i], bvh);
         }
 
         stack[0].ptr  = BVH::invalidNode;
@@ -431,15 +426,15 @@ namespace embree
         ///////////////////////////////////////////////////////////////////////////////////
 
         const NearFarPreCompute pc(ray_ctx[0].rdir);
-        
+
         StackItemMask* stackPtr = stack + 2;
 
         while (1) pop:
-        {          
+        {
           /*! pop next node */
-          STAT3(normal.trav_stack_pop,1,1,1);                          
+          STAT3(normal.trav_stack_pop,1,1,1);
           stackPtr--;
-          NodeRef cur = NodeRef(stackPtr->ptr);            
+          NodeRef cur = NodeRef(stackPtr->ptr);
           size_t m_trav_active = stackPtr->mask;
           assert(m_trav_active);
 
@@ -451,7 +446,7 @@ namespace embree
             const AlignedNode* __restrict__ const node = cur.alignedNode();
             assert(m_trav_active);
 
-#if defined(__AVX512ER__) // KNL+
+#if defined(__AVX512F__)
             /* AVX512 path for up to 64 rays */
             vllong<Nxd> maskK(zero);
             vfloat<Nx> dist(inf);
@@ -477,7 +472,7 @@ namespace embree
           assert(cur != BVH::emptyNode);
           STAT3(normal.trav_leaves, 1, 1, 1);
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
-          
+
           size_t bits = m_trav_active;
 
           /*! intersect stream of rays with all primitives */
@@ -509,7 +504,7 @@ namespace embree
       assert(context->flags == IntersectContext::INPUT_RAY_DATA_AOS);
 
       __aligned(64) RayCtx ray_ctx[MAX_RAYS_PER_OCTANT];
-      __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
+      __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT];
       __aligned(64) StackItemMask stack[stackSizeSingle];  //!< stack of nodes
 
       for (size_t r = 0; r < numTotalRays; r += MAX_RAYS_PER_OCTANT)
@@ -522,7 +517,7 @@ namespace embree
         /* do per ray precalculations */
         for (size_t i = 0; i < numOctantRays; i++) {
           new (&ray_ctx[i]) RayCtx(rays[i]);
-          new (&pre[i]) Precalculations(*rays[i], bvh, bvh->numTimeSteps);
+          new (&pre[i]) Precalculations(*rays[i], bvh);
         }
 
         stack[0].ptr  = BVH::invalidNode;
@@ -537,7 +532,7 @@ namespace embree
         while (1) pop:
         {
           /*! pop next node */
-          STAT3(shadow.trav_stack_pop,1,1,1);                          
+          STAT3(shadow.trav_stack_pop,1,1,1);
           stackPtr--;
           NodeRef cur = NodeRef(stackPtr->ptr);
           assert(stackPtr->mask);
@@ -553,7 +548,7 @@ namespace embree
 
             const AlignedNode* __restrict__ const node = cur.alignedNode();
 
-#if defined(__AVX512ER__) // KNL+
+#if defined(__AVX512F__)
             /* AVX512 path for up to 64 rays */
             vllong<Nxd> maskK(zero);
             vfloat<Nx> dist(inf);
@@ -580,13 +575,13 @@ namespace embree
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
           size_t lazy_node = 0;
-          size_t bits = m_trav_active & m_active;          
+          size_t bits = m_trav_active & m_active;
 
           assert(bits);
           m_active = m_active & ~PrimitiveIntersector::occluded(pre, bits, rays, context, 0, prim, num, lazy_node);
           if (unlikely(m_active == 0)) break;
-        } // traversal + intersection        
-      }      
+        } // traversal + intersection
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -624,7 +619,7 @@ namespace embree
     typedef ArrayIntersectorKStream<VSIZEX,
                                     QuadMiIntersector1Moeller<4 COMMA true >,
                                     QuadMiIntersectorKMoeller<4 COMMA VSIZEX COMMA true > > Quad4iIntersectorStreamMoeller;
-    
+
     typedef ArrayIntersectorKStream<VSIZEX,
                                     QuadMvIntersector1Pluecker<4 COMMA true >,
                                     QuadMvIntersectorKPluecker<4 COMMA VSIZEX COMMA true > > Quad4vIntersectorStreamPluecker;

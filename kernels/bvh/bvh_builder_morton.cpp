@@ -109,7 +109,7 @@ namespace embree
         NodeRef ref = BVH::encodeLeaf((char*)accel,1);
         vint4 vgeomID = -1, vprimID = -1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
-        const unsigned geomID = this->mesh->id;
+        const unsigned geomID = this->mesh->geomID;
         const TriangleMesh* __restrict__ const mesh = this->mesh;
 
         for (size_t i=0; i<items; i++)
@@ -165,7 +165,7 @@ namespace embree
         NodeRef ref = BVH::encodeLeaf((char*)accel,1);       
         vint4 vgeomID = -1, vprimID = -1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
-        const unsigned geomID = this->mesh->id;
+        const unsigned geomID = this->mesh->geomID;
         const TriangleMesh* __restrict__ mesh = this->mesh;
 
         for (size_t i=0; i<items; i++)
@@ -220,7 +220,7 @@ namespace embree
         
         vint4 vgeomID = -1, vprimID = -1;
         vint4 v0 = zero, v1 = zero, v2 = zero;
-        const unsigned geomID = this->mesh->id;
+        const unsigned geomID = this->mesh->geomID;
         const TriangleMesh* __restrict__ const mesh = this->mesh;
         
         for (size_t i=0; i<items; i++)
@@ -234,10 +234,10 @@ namespace embree
           upper = max(upper,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
           vgeomID[i] = geomID;
           vprimID[i] = primID;
-          int* base = (int*) mesh->vertexPtr(tri.v[0]);
-          v0[i] = tri.v[0];
-          v1[i] = int(ssize_t((int*)mesh->vertexPtr(tri.v[1])-base)); 
-          v2[i] = int(ssize_t((int*)mesh->vertexPtr(tri.v[2])-base)); 
+          unsigned int_stride = mesh->vertices0.getStride()/4;
+	  v0[i] = tri.v[0] * int_stride; 
+	  v1[i] = tri.v[1] * int_stride;
+	  v2[i] = tri.v[2] * int_stride;
         }
         
         for (size_t i=items; i<4; i++)
@@ -286,7 +286,7 @@ namespace embree
         
         vint4 vgeomID = -1, vprimID = -1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero, v3 = zero;
-        const unsigned geomID = this->mesh->id;
+        const unsigned geomID = this->mesh->geomID;
         const QuadMesh* __restrict__ mesh = this->mesh;
 
         for (size_t i=0; i<items; i++)
@@ -340,7 +340,7 @@ namespace embree
         Object* accel = (Object*) alloc.malloc1(items*sizeof(Object),BVH::byteAlignment);
         NodeRef ref = BVH::encodeLeaf((char*)accel,items);
 
-        const unsigned geomID = this->mesh->id;
+        const unsigned geomID = this->mesh->geomID;
         const AccelSet* mesh = this->mesh;
         
         BBox3fa bounds = empty;
@@ -388,7 +388,7 @@ namespace embree
     public:
       
       BVHNMeshBuilderMorton (BVH* bvh, Mesh* mesh, const size_t minLeafSize, const size_t maxLeafSize, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
-        : bvh(bvh), mesh(mesh), morton(bvh->device), settings(N,BVH::maxBuildDepth,minLeafSize,maxLeafSize,singleThreadThreshold) {}
+        : bvh(bvh), mesh(mesh), morton(bvh->device,0), settings(N,BVH::maxBuildDepth,minLeafSize,maxLeafSize,singleThreadThreshold) {}
       
       /* build function */
       void build() 
@@ -409,10 +409,10 @@ namespace embree
         
         /* preallocate arrays */
         morton.resize(numPrimitives);
-        size_t bytesAllocated = numPrimitives*sizeof(AlignedNode)/(4*N) + size_t(1.2f*Primitive::blocks(numPrimitives)*sizeof(Primitive));
+        size_t bytesEstimated = numPrimitives*sizeof(AlignedNode)/(4*N) + size_t(1.2f*Primitive::blocks(numPrimitives)*sizeof(Primitive));
         size_t bytesMortonCodes = numPrimitives*sizeof(BVHBuilderMorton::BuildPrim);
-        bytesAllocated = max(bytesAllocated,bytesMortonCodes); // the first allocation block is reused to sort the morton codes
-        bvh->alloc.init(bytesAllocated,2*bytesAllocated);
+        bytesEstimated = max(bytesEstimated,bytesMortonCodes); // the first allocation block is reused to sort the morton codes
+        bvh->alloc.init(bytesMortonCodes,bytesMortonCodes,bytesEstimated);
 
         /* create morton code array */
         BVHBuilderMorton::BuildPrim* dest = (BVHBuilderMorton::BuildPrim*) bvh->alloc.specialAlloc(bytesMortonCodes);
@@ -479,6 +479,9 @@ namespace embree
 
 #if defined(EMBREE_GEOMETRY_USER)
     Builder* BVH4VirtualMeshBuilderMortonGeneral (void* bvh, AccelSet* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<4,AccelSet,Object>((BVH4*)bvh,mesh,1,BVH4::maxLeafBlocks); }
+#if defined(__AVX__)
+    Builder* BVH8VirtualMeshBuilderMortonGeneral (void* bvh, AccelSet* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<8,AccelSet,Object>((BVH8*)bvh,mesh,1,BVH4::maxLeafBlocks); }    
+#endif
 #endif
 
   }

@@ -99,51 +99,6 @@
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-/// ISA configuration
-////////////////////////////////////////////////////////////////////////////////
-
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER) && !defined(__clang__)
-  #define __SSE__
-  #define __SSE2__
-#endif
-
-#if defined(CONFIG_SSE41) && defined(_MSC_VER) && !defined(__INTEL_COMPILER) && !defined(__clang__)
-  #define __SSE3__
-  #define __SSSE3__
-  #define __SSE4_1__
-#endif
-
-#if defined(CONFIG_SSE42) && defined(_MSC_VER) && !defined(__INTEL_COMPILER) && !defined(__clang__)
-  #define __SSE3__
-  #define __SSSE3__
-  #define __SSE4_1__
-  #define __SSE4_2__
-#endif
-
-#if defined(CONFIG_AVX) && defined(_MSC_VER) && !defined(__INTEL_COMPILER) && !defined(__clang__)
-  #define __SSE3__
-  #define __SSSE3__
-  #define __SSE4_1__
-  #define __SSE4_2__
-  #if !defined(__AVX__)
-    #define __AVX__
-  #endif
-#endif
-
-#if defined(CONFIG_AVX2) && defined(_MSC_VER) && !defined(__INTEL_COMPILER) && !defined(__clang__)
-  #define __SSE3__
-  #define __SSSE3__
-  #define __SSE4_1__
-  #define __SSE4_2__
-  #if !defined(__AVX__)
-    #define __AVX__
-  #endif
-  #if !defined(__AVX2__)
-    #define __AVX2__
-  #endif
-#endif
-
-////////////////////////////////////////////////////////////////////////////////
 /// Makros
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -277,6 +232,7 @@ __forceinline std::string toString(long long value) {
 //#pragma warning(disable:177 ) // label was declared but never referenced
 //#pragma warning(disable:114 ) // function was referenced but not defined
 //#pragma warning(disable:819 ) // template nesting depth does not match the previous declaration of function
+#pragma warning(disable:15335)  // was not vectorized: vectorization possible but seems inefficient
 #endif
 
 #if defined(_MSC_VER)
@@ -312,6 +268,7 @@ __forceinline std::string toString(long long value) {
 #endif
 
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wpragmas"
 //#pragma GCC diagnostic ignored "-Wnarrowing"
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 //#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -319,6 +276,7 @@ __forceinline std::string toString(long long value) {
 #pragma GCC diagnostic ignored "-Wattributes"
 #pragma GCC diagnostic ignored "-Wmisleading-indentation"
 #pragma GCC diagnostic ignored "-Wsign-compare"
+#pragma GCC diagnostic ignored "-Wparentheses"
 #endif
 
 #if defined(__clang__) && defined(__WIN32__)
@@ -328,6 +286,24 @@ __forceinline std::string toString(long long value) {
 #pragma clang diagnostic ignored "-Wmicrosoft-include"
 #pragma clang diagnostic ignored "-Wunused-function"
 #pragma clang diagnostic ignored "-Wunknown-pragmas"
+#endif
+
+/* disabling deprecated warning, please use only where use of deprecated Embree API functions is desired */
+#if defined(__WIN32__) && defined(__INTEL_COMPILER)
+#define DISABLE_DEPRECATED_WARNING __pragma(warning (disable: 1478)) // warning: function was declared deprecated
+#define ENABLE_DEPRECATED_WARNING  __pragma(warning (enable:  1478)) // warning: function was declared deprecated
+#elif defined(__INTEL_COMPILER)
+#define DISABLE_DEPRECATED_WARNING _Pragma("warning (disable: 1478)") // warning: function was declared deprecated
+#define ENABLE_DEPRECATED_WARNING  _Pragma("warning (enable : 1478)") // warning: function was declared deprecated
+#elif defined(__clang__)
+#define DISABLE_DEPRECATED_WARNING _Pragma("clang diagnostic ignored \"-Wdeprecated-declarations\"") // warning: xxx is deprecated
+#define ENABLE_DEPRECATED_WARNING  _Pragma("clang diagnostic warning \"-Wdeprecated-declarations\"") // warning: xxx is deprecated
+#elif defined(__GNUC__)
+#define DISABLE_DEPRECATED_WARNING _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"") // warning: xxx is deprecated
+#define ENABLE_DEPRECATED_WARNING  _Pragma("GCC diagnostic warning \"-Wdeprecated-declarations\"") // warning: xxx is deprecated
+#elif defined(_MSC_VER)
+#define DISABLE_DEPRECATED_WARNING __pragma(warning (disable: 4996)) // warning: function was declared deprecated
+#define ENABLE_DEPRECATED_WARNING  __pragma(warning (enable : 4996)) // warning: function was declared deprecated
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////

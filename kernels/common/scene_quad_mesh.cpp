@@ -19,32 +19,32 @@
 
 namespace embree
 {
-  QuadMesh::QuadMesh (Scene* parent, RTCGeometryFlags flags, size_t numQuads, size_t numVertices, size_t numTimeSteps)
-    : Geometry(parent,QUAD_MESH,numQuads,numTimeSteps,flags)
+  QuadMesh::QuadMesh (Scene* scene, RTCGeometryFlags flags, size_t numQuads, size_t numVertices, size_t numTimeSteps)
+    : Geometry(scene,QUAD_MESH,numQuads,numTimeSteps,flags)
   {
-    quads.init(parent->device,numQuads,sizeof(Quad));
+    quads.init(scene->device,numQuads,sizeof(Quad));
     vertices.resize(numTimeSteps);
     for (size_t i=0; i<numTimeSteps; i++) {
-      vertices[i].init(parent->device,numVertices,sizeof(Vec3fa));
+      vertices[i].init(scene->device,numVertices,sizeof(Vec3fa));
     }
     enabling();
   }
 
   void QuadMesh::enabling() 
   { 
-    if (numTimeSteps == 1) parent->world.numQuads += quads.size();
-    else                   parent->worldMB.numQuads += quads.size();
+    if (numTimeSteps == 1) scene->world.numQuads += quads.size();
+    else                   scene->worldMB.numQuads += quads.size();
   }
   
   void QuadMesh::disabling() 
   { 
-    if (numTimeSteps == 1) parent->world.numQuads -= quads.size();
-    else                   parent->worldMB.numQuads -= quads.size();
+    if (numTimeSteps == 1) scene->world.numQuads -= quads.size();
+    else                   scene->worldMB.numQuads -= quads.size();
   }
 
   void QuadMesh::setMask (unsigned mask) 
   {
-    if (parent->isStatic() && parent->isBuild())
+    if (scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     this->mask = mask; 
@@ -53,7 +53,7 @@ namespace embree
 
   void QuadMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size) 
   { 
-    if (parent->isStatic() && parent->isBuild()) 
+    if (scene->isStatic() && scene->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     /* verify that all accesses are 4 bytes aligned */
@@ -64,6 +64,12 @@ namespace embree
     if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) 
     {
       size_t t = type - RTC_VERTEX_BUFFER0;
+      if (size == -1) size = vertices[t].size();
+
+      /* if buffer is larger than 16GB the premultiplied index optimization does not work */
+      if (stride*size > 16ll*1024ll*1024ll*1024ll) 
+       throw_RTCError(RTC_INVALID_OPERATION,"vertex buffer can be at most 16GB large");
+
       vertices[t].set(ptr,offset,stride,size); 
       vertices[t].checkPadding16();
       vertices0 = vertices[0];
@@ -71,7 +77,7 @@ namespace embree
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
     {
       if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
-      userbuffers[bid] = APIBuffer<char>(parent->device,numVertices(),stride);
+      userbuffers[bid] = APIBuffer<char>(scene->device,numVertices(),stride);
       userbuffers[bid].set(ptr,offset,stride,size);  
       userbuffers[bid].checkPadding16();
     }
@@ -88,14 +94,14 @@ namespace embree
 
   void* QuadMesh::map(RTCBufferType type) 
   {
-    if (parent->isStatic() && parent->isBuild())
+    if (scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
 	if (type == RTC_INDEX_BUFFER) {
-      return quads.map(parent->numMappedBuffers);
+      return quads.map(scene->numMappedBuffers);
     }
     else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
-      return vertices[type - RTC_VERTEX_BUFFER0].map(parent->numMappedBuffers);
+      return vertices[type - RTC_VERTEX_BUFFER0].map(scene->numMappedBuffers);
     }
     else {
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
@@ -105,14 +111,14 @@ namespace embree
 
   void QuadMesh::unmap(RTCBufferType type) 
   {
-    if (parent->isStatic() && parent->isBuild())
+    if (scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     if (type == RTC_INDEX_BUFFER) {
-      quads.unmap(parent->numMappedBuffers);
+      quads.unmap(scene->numMappedBuffers);
     }
     else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
-      vertices[type - RTC_VERTEX_BUFFER0].unmap(parent->numMappedBuffers);
+      vertices[type - RTC_VERTEX_BUFFER0].unmap(scene->numMappedBuffers);
       vertices0 = vertices[0];
     }
     else {
@@ -120,10 +126,24 @@ namespace embree
     }
   }
 
+  void QuadMesh::preCommit () 
+  {
+    /* verify that stride of all time steps are identical */
+    for (size_t t=0; t<numTimeSteps; t++)
+      if (vertices[t].getStride() != vertices[0].getStride())
+        throw_RTCError(RTC_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
+  }
+
+  void QuadMesh::postCommit () 
+  {
+    scene->vertices[geomID] = (int*) vertices0.getPtr();
+    Geometry::postCommit();
+  }
+
   void QuadMesh::immutable () 
   {
-    const bool freeQuads = !parent->needQuadIndices;
-    const bool freeVertices  = !parent->needQuadVertices;
+    const bool freeQuads = !scene->needQuadIndices;
+    const bool freeVertices  = !scene->needQuadVertices;
     if (freeQuads) quads.free(); 
     if (freeVertices )
       for (auto& buffer : vertices)
@@ -159,7 +179,7 @@ namespace embree
   {
     /* test if interpolation is enabled */
 #if defined(DEBUG)
-    if ((parent->aflags & RTC_INTERPOLATE) == 0) 
+    if ((scene->aflags & RTC_INTERPOLATE) == 0) 
       throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
 #endif
 

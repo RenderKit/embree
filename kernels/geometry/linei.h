@@ -20,11 +20,9 @@
 
 namespace embree
 {
-  template <int M>
+  template<int M>
   struct LineMi
   {
-    typedef Vec3<vfloat<M>> Vec3vfM;
-
     /* Virtual interface to query information about the line segment type */
     struct Type : public PrimitiveType
     {
@@ -34,6 +32,9 @@ namespace embree
     static Type type;
 
   public:
+
+    /* primitive supports multiple time segments */
+    static const bool singleTimeSegment = false;
 
     /* Returns maximal number of stored line segments */
     static __forceinline size_t max_size() { return M; }
@@ -53,6 +54,10 @@ namespace embree
     /* Returns a mask that tells which line segments are valid */
     __forceinline vbool<M> valid() const { return primIDs != vint<M>(-1); }
 
+      /* Returns a mask that tells which line segments are valid */
+    template<int Mx>
+    __forceinline vbool<Mx> valid() const { return vint<Mx>(primIDs) != vint<Mx>(-1); }
+
     /* Returns if the specified line segment is valid */
     __forceinline bool valid(const size_t i) const { assert(i<M); return primIDs[i] != -1; }
 
@@ -60,28 +65,30 @@ namespace embree
     __forceinline size_t size() const { return __bsf(~movemask(valid())); }
 
     /* Returns the geometry IDs */
-    __forceinline vint<M> geomID() const { return geomIDs; }
+    __forceinline       vint<M>& geomID()       { return geomIDs; }
+    __forceinline const vint<M>& geomID() const { return geomIDs; }
     __forceinline int geomID(const size_t i) const { assert(i<M); return geomIDs[i]; }
 
     /* Returns the primitive IDs */
-    __forceinline vint<M> primID() const { return primIDs; }
+    __forceinline       vint<M>& primID()       { return primIDs; }
+    __forceinline const vint<M>& primID() const { return primIDs; }
     __forceinline int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
     /* gather the line segments */
-    __forceinline void gather(Vec4<vfloat<M>>& p0,
-                              Vec4<vfloat<M>>& p1,
+    __forceinline void gather(Vec4vf<M>& p0,
+                              Vec4vf<M>& p1,
                               const Scene* scene) const;
 
-    __forceinline void gather(Vec4<vfloat<M>>& p0,
-                              Vec4<vfloat<M>>& p1,
+    __forceinline void gather(Vec4vf<M>& p0,
+                              Vec4vf<M>& p1,
                               const LineSegments* geom0,
                               const LineSegments* geom1,
                               const LineSegments* geom2,
                               const LineSegments* geom3,
                               const vint<M>& itime) const;
 
-    __forceinline void gather(Vec4<vfloat<M>>& p0,
-                              Vec4<vfloat<M>>& p1,
+    __forceinline void gather(Vec4vf<M>& p0,
+                              Vec4vf<M>& p1,
                               const Scene* scene,
                               float time) const;
 
@@ -116,12 +123,24 @@ namespace embree
       return allBounds;
     }
 
+    __forceinline LBBox3fa linearBounds(const Scene *const scene, const BBox1f time_range) 
+    {
+      LBBox3fa allBounds = empty;
+      for (size_t i=0; i<M && valid(i); i++)
+      {
+        const LineSegments* geom = scene->get<LineSegments>(geomID(i));
+        allBounds.extend(geom->linearBounds(primID(i), time_range));
+      }
+      return allBounds;
+    }
+
     /* Fill line segment from line segment list */
-    __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene)
+    template<typename PrimRefT>
+    __forceinline void fill(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene)
     {
       vint<M> geomID, primID;
       vint<M> v0;
-      const PrimRef* prim = &prims[begin];
+      const PrimRefT* prim = &prims[begin];
 
       for (size_t i=0; i<M; i++)
       {
@@ -145,11 +164,16 @@ namespace embree
       new (this) LineMi(v0,geomID,primID); // FIXME: use non temporal store
     }
 
-    /* Fill line segment from line segment list */
-    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime, size_t numTimeSteps)
+    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime)
     {
       fill(prims,begin,end,scene);
-      return linearBounds(scene,itime,numTimeSteps);
+      return linearBounds(scene,itime);
+    }
+
+    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range)
+    {
+      fill(prims,begin,end,scene);
+      return linearBounds(scene,time_range);
     }
 
     /* Updates the primitive */
@@ -174,6 +198,7 @@ namespace embree
     
   public:
     vint<M> v0;      // index of start vertex
+  private:
     vint<M> geomIDs; // geometry ID
     vint<M> primIDs; // primitive ID
   };
@@ -183,10 +208,10 @@ namespace embree
                                          Vec4vf4& p1,
                                          const Scene* scene) const
   {
-    const LineSegments* geom0 = scene->get<LineSegments>(geomIDs[0]);
-    const LineSegments* geom1 = scene->get<LineSegments>(geomIDs[1]);
-    const LineSegments* geom2 = scene->get<LineSegments>(geomIDs[2]);
-    const LineSegments* geom3 = scene->get<LineSegments>(geomIDs[3]);
+    const LineSegments* geom0 = scene->get<LineSegments>(geomID(0));
+    const LineSegments* geom1 = scene->get<LineSegments>(geomID(1));
+    const LineSegments* geom2 = scene->get<LineSegments>(geomID(2));
+    const LineSegments* geom3 = scene->get<LineSegments>(geomID(3));
 
     const vfloat4 a0 = vfloat4::loadu(geom0->vertexPtr(v0[0]));
     const vfloat4 a1 = vfloat4::loadu(geom1->vertexPtr(v0[1]));
@@ -233,10 +258,10 @@ namespace embree
                                          const Scene* scene,
                                          float time) const
   {
-    const LineSegments* geom0 = scene->get<LineSegments>(geomIDs[0]);
-    const LineSegments* geom1 = scene->get<LineSegments>(geomIDs[1]);
-    const LineSegments* geom2 = scene->get<LineSegments>(geomIDs[2]);
-    const LineSegments* geom3 = scene->get<LineSegments>(geomIDs[3]);
+    const LineSegments* geom0 = scene->get<LineSegments>(geomID(0));
+    const LineSegments* geom1 = scene->get<LineSegments>(geomID(1));
+    const LineSegments* geom2 = scene->get<LineSegments>(geomID(2));
+    const LineSegments* geom3 = scene->get<LineSegments>(geomID(3));
 
     const vfloat4 numTimeSegments(geom0->fnumTimeSegments, geom1->fnumTimeSegments, geom2->fnumTimeSegments, geom3->fnumTimeSegments);
     vfloat4 ftime;

@@ -90,30 +90,30 @@ struct RTCRay
 #ifndef __RTCRayN__
 #define __RTCRayN__
 struct RTCRayN {};
-inline varying float& RTCRayN_org_x(RTCRayN* uniform ptr, uniform size_t N, uniform size_t i) { uniform size_t N1 = (uniform size_t)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[0*N+0*N1+i]); }  //!< x coordinate of ray origin
-inline varying float& RTCRayN_org_y(RTCRayN* uniform ptr, uniform size_t N, uniform size_t i) { uniform size_t N1 = (uniform size_t)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[1*N+0*N1+i]); }  //!< y coordinate of ray origin
-inline varying float& RTCRayN_org_z(RTCRayN* uniform ptr, uniform size_t N, uniform size_t i) { uniform size_t N1 = (uniform size_t)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[2*N+0*N1+i]); }; //!< z coordinate of ray origin
+inline varying float& RTCRayN_org_x(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { uniform unsigned int N1 = (uniform unsigned int)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[0*N+0*N1+i]); }  //!< x coordinate of ray origin
+inline varying float& RTCRayN_org_y(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { uniform unsigned int N1 = (uniform unsigned int)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[1*N+0*N1+i]); }  //!< y coordinate of ray origin
+inline varying float& RTCRayN_org_z(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { uniform unsigned int N1 = (uniform unsigned int)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[2*N+0*N1+i]); }; //!< z coordinate of ray origin
 
-inline varying float& RTCRayN_dir_x(RTCRayN* uniform ptr, uniform size_t N, uniform size_t i) { uniform size_t N1 = (uniform size_t)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[3*N+1*N1+i]); }; //!< x coordinate of ray direction
-inline varying float& RTCRayN_dir_y(RTCRayN* uniform ptr, uniform size_t N, uniform size_t i) { uniform size_t N1 = (uniform size_t)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[4*N+1*N1+i]); }; //!< y coordinate of ray direction
-inline varying float& RTCRayN_dir_z(RTCRayN* uniform ptr, uniform size_t N, uniform size_t i) { uniform size_t N1 = (uniform size_t)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[5*N+1*N1+i]); }; //!< z coordinate of ray direction
+inline varying float& RTCRayN_dir_x(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { uniform unsigned int N1 = (uniform unsigned int)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[3*N+1*N1+i]); }; //!< x coordinate of ray direction
+inline varying float& RTCRayN_dir_y(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { uniform unsigned int N1 = (uniform unsigned int)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[4*N+1*N1+i]); }; //!< y coordinate of ray direction
+inline varying float& RTCRayN_dir_z(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { uniform unsigned int N1 = (uniform unsigned int)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[5*N+1*N1+i]); }; //!< z coordinate of ray direction
 
-inline varying float& RTCRayN_tnear(RTCRayN* uniform ptr, uniform size_t N, uniform size_t i) { uniform size_t N1 = (uniform size_t)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[6*N+2*N1+i]); }; //!< Start of ray segment 
-inline varying float& RTCRayN_tfar (RTCRayN* uniform ptr, uniform size_t N, uniform size_t i) { uniform size_t N1 = (uniform size_t)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[7*N+2*N1+i]); }; //!< End of ray segment (set to hit distance)
+inline varying float& RTCRayN_tnear(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { uniform unsigned int N1 = (uniform unsigned int)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[6*N+2*N1+i]); }; //!< Start of ray segment 
+inline varying float& RTCRayN_tfar (RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { uniform unsigned int N1 = (uniform unsigned int)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[7*N+2*N1+i]); }; //!< End of ray segment (set to hit distance)
 
-inline varying float& RTCRayN_time(RTCRayN* uniform ptr, uniform size_t N, uniform size_t i) { uniform size_t N1 = (uniform size_t)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[8*N+2*N1+i]); };  //!< Time of this ray for motion blur 
-inline varying unsigned int&   RTCRayN_mask(RTCRayN* uniform ptr, uniform size_t N, uniform size_t i) { uniform size_t N1 = (uniform size_t)(N == 1); return *((varying unsigned int* uniform) &((uniform unsigned int*)ptr)[9*N+2*N1+i]); };  //!< Used to mask out objects during traversal
+inline varying float& RTCRayN_time(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { uniform unsigned int N1 = (uniform unsigned int)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[8*N+2*N1+i]); };  //!< Time of this ray for motion blur 
+inline varying unsigned int&   RTCRayN_mask(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { uniform unsigned int N1 = (uniform unsigned int)(N == 1); return *((varying unsigned int* uniform) &((uniform unsigned int*)ptr)[9*N+2*N1+i]); };  //!< Used to mask out objects during traversal
 
-inline varying float& RTCRayN_Ng_x(RTCRayN* uniform ptr, uniform size_t N, uniform size_t i) { uniform size_t N1 = (uniform size_t)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[10*N+2*N1+i]); }; //!< x coordinate of geometry normal
-inline varying float& RTCRayN_Ng_y(RTCRayN* uniform ptr, uniform size_t N, uniform size_t i) { uniform size_t N1 = (uniform size_t)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[11*N+2*N1+i]); }; //!< y coordinate of geometry normal
-inline varying float& RTCRayN_Ng_z(RTCRayN* uniform ptr, uniform size_t N, uniform size_t i) { uniform size_t N1 = (uniform size_t)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[12*N+2*N1+i]); }; //!< z coordinate of geometry normal
+inline varying float& RTCRayN_Ng_x(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { uniform unsigned int N1 = (uniform unsigned int)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[10*N+2*N1+i]); }; //!< x coordinate of geometry normal
+inline varying float& RTCRayN_Ng_y(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { uniform unsigned int N1 = (uniform unsigned int)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[11*N+2*N1+i]); }; //!< y coordinate of geometry normal
+inline varying float& RTCRayN_Ng_z(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { uniform unsigned int N1 = (uniform unsigned int)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[12*N+2*N1+i]); }; //!< z coordinate of geometry normal
 
-inline varying float& RTCRayN_u   (RTCRayN* uniform ptr, uniform size_t N, uniform size_t i) { uniform size_t N1 = (uniform size_t)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[13*N+3*N1+i]); }; //!< Barycentric u coordinate of hit
-inline varying float& RTCRayN_v   (RTCRayN* uniform ptr, uniform size_t N, uniform size_t i) { uniform size_t N1 = (uniform size_t)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[14*N+3*N1+i]); }; //!< Barycentric v coordinate of hit
+inline varying float& RTCRayN_u   (RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { uniform unsigned int N1 = (uniform unsigned int)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[13*N+3*N1+i]); }; //!< Barycentric u coordinate of hit
+inline varying float& RTCRayN_v   (RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { uniform unsigned int N1 = (uniform unsigned int)(N == 1); return *((varying float* uniform) &((uniform float*)ptr)[14*N+3*N1+i]); }; //!< Barycentric v coordinate of hit
 
-inline varying unsigned int& RTCRayN_geomID(RTCRayN* uniform ptr, uniform size_t N, uniform size_t i) { uniform size_t N1 = (uniform size_t)(N == 1); return *((varying unsigned int*   uniform) &((uniform unsigned int*  )ptr)[15*N+3*N1+i]); }; //!< geometry ID
-inline varying unsigned int& RTCRayN_primID(RTCRayN* uniform ptr, uniform size_t N, uniform size_t i) { uniform size_t N1 = (uniform size_t)(N == 1); return *((varying unsigned int*   uniform) &((uniform unsigned int*  )ptr)[16*N+3*N1+i]); }; //!< primitive ID
-inline varying unsigned int& RTCRayN_instID(RTCRayN* uniform ptr, uniform size_t N, uniform size_t i) { uniform size_t N1 = (uniform size_t)(N == 1); return *((varying unsigned int*   uniform) &((uniform unsigned int*  )ptr)[17*N+3*N1+i]); }; //!< instance ID
+inline varying unsigned int& RTCRayN_geomID(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { uniform unsigned int N1 = (uniform unsigned int)(N == 1); return *((varying unsigned int*   uniform) &((uniform unsigned int*  )ptr)[15*N+3*N1+i]); }; //!< geometry ID
+inline varying unsigned int& RTCRayN_primID(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { uniform unsigned int N1 = (uniform unsigned int)(N == 1); return *((varying unsigned int*   uniform) &((uniform unsigned int*  )ptr)[16*N+3*N1+i]); }; //!< primitive ID
+inline varying unsigned int& RTCRayN_instID(RTCRayN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { uniform unsigned int N1 = (uniform unsigned int)(N == 1); return *((varying unsigned int*   uniform) &((uniform unsigned int*  )ptr)[17*N+3*N1+i]); }; //!< instance ID
 #endif
 
 /*! \brief Ray structure template for packets of N rays in pointer SOA layout. */
@@ -154,17 +154,17 @@ struct RTCRayNp
 #ifndef __RTCHitN__
 #define __RTCHitN__
 struct RTCHitN {};
-inline varying float& RTCHitN_Ng_x(const RTCHitN* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying float* uniform) &((float* uniform)ptr)[0*N+i]); }; //!< x coordinate of geometry normal
-inline varying float& RTCHitN_Ng_y(const RTCHitN* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying float* uniform) &((float* uniform)ptr)[1*N+i]); }; //!< y coordinate of geometry normal
-inline varying float& RTCHitN_Ng_z(const RTCHitN* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying float* uniform) &((float* uniform)ptr)[2*N+i]); }; //!< z coordinate of geometry normal
+inline varying float& RTCHitN_Ng_x(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[0*N+i]); }; //!< x coordinate of geometry normal
+inline varying float& RTCHitN_Ng_y(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[1*N+i]); }; //!< y coordinate of geometry normal
+inline varying float& RTCHitN_Ng_z(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[2*N+i]); }; //!< z coordinate of geometry normal
 
-inline varying unsigned int& RTCHitN_instID(const RTCHitN* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying unsigned int*   uniform) &((unsigned int* uniform  )ptr)[3*N+i]); }; //!< instance ID
-inline varying unsigned int& RTCHitN_geomID(const RTCHitN* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying unsigned int*   uniform) &((unsigned int* uniform  )ptr)[4*N+i]); }; //!< geometry ID
-inline varying unsigned int& RTCHitN_primID(const RTCHitN* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying unsigned int*   uniform) &((unsigned int* uniform  )ptr)[5*N+i]); }; //!< primitive ID
+inline varying unsigned int& RTCHitN_instID(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int*   uniform) &((unsigned int* uniform  )ptr)[3*N+i]); }; //!< instance ID
+inline varying unsigned int& RTCHitN_geomID(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int*   uniform) &((unsigned int* uniform  )ptr)[4*N+i]); }; //!< geometry ID
+inline varying unsigned int& RTCHitN_primID(const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int*   uniform) &((unsigned int* uniform  )ptr)[5*N+i]); }; //!< primitive ID
 
-inline varying float& RTCHitN_u   (const RTCHitN* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying float* uniform) &((float* uniform)ptr)[6*N+i]); }; //!< Barycentric u coordinate of hit
-inline varying float& RTCHitN_v   (const RTCHitN* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying float* uniform) &((float* uniform)ptr)[7*N+i]); }; //!< Barycentric v coordinate of hit
-inline varying float& RTCHitN_t   (const RTCHitN* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying float* uniform) &((float* uniform)ptr)[8*N+i]); }; //!< hit distance
+inline varying float& RTCHitN_u   (const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[6*N+i]); }; //!< Barycentric u coordinate of hit
+inline varying float& RTCHitN_v   (const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[7*N+i]); }; //!< Barycentric v coordinate of hit
+inline varying float& RTCHitN_t   (const RTCHitN* uniform ptr, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)ptr)[8*N+i]); }; //!< hit distance
 #endif
 
 /*! @} */
