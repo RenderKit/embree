@@ -15,7 +15,11 @@
 ## ======================================================================== ##
 
 SET(FLAGS_SSE2      "-target-cpu=xeon")
-SET(FLAGS_SSE42     "ERROR_ISA_NOT_SUPPORTED")
+IF(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+  SET(FLAGS_SSE42   "-target-cpu=xeon -msse4.2")
+ELSE()#Intel
+  SET(FLAGS_SSE42   "-target-cpu=xeon -xsse4.2 -fPIC")
+ENDIF()
 SET(FLAGS_AVX       "-target-cpu=sandybridge")
 SET(FLAGS_AVX2      "-target-cpu=haswell")
 SET(FLAGS_AVX512KNL "-target-cpu=mic-knl")
