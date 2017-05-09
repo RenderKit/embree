@@ -215,7 +215,7 @@ namespace embree
             /* initialize allocator */
             const size_t node_bytes = numPrimitives*sizeof(typename BVH::AlignedNodeMB)/(4*N);
             const size_t leaf_bytes = size_t(1.2*Primitive::blocks(numPrimitives)*sizeof(Primitive));
-            bvh->alloc.init_estimate(node_bytes+leaf_bytes,settings.primrefarrayalloc != size_t(inf));
+            bvh->alloc.init_estimate(node_bytes+leaf_bytes);
             settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,numPrimitives,node_bytes+leaf_bytes);
             prims.resize(numPrimitives); 
 

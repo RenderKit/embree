@@ -291,21 +291,6 @@ namespace embree
       FastAllocator* allocator;
     };
 
-    /*! initializes the grow size */
-    __forceinline void initGrowSizeAndNumSlots(size_t bytesAllocate, bool compact) 
-    {
-      bytesAllocate  = ((bytesAllocate +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
-
-      growSize = maxGrowSize = clamp(bytesAllocate,size_t(PAGE_SIZE),maxAllocationSize); // PAGE_SIZE -maxAlignment ?
-      log2_grow_size_scale = 0;
-      slotMask = 0x0;
-      if (!compact) {
-        if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesAllocate >  4*maxAllocationSize) slotMask = 0x1;
-        if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesAllocate >  8*maxAllocationSize) slotMask = 0x3;
-        if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesAllocate > 16*maxAllocationSize) slotMask = 0x7;
-      }
-    }
-
     void internal_fix_used_blocks()
     {
       /* move thread local blocks to global block list */
@@ -354,7 +339,7 @@ namespace embree
     }
 
     /*! initializes the grow size */
-    __forceinline void initGrowSizeAndNumSlots(size_t bytesEstimated, bool compact, bool fast) 
+    __forceinline void initGrowSizeAndNumSlots(size_t bytesEstimated, bool fast) 
     {
       /* we do not need single thread local allocator mode */
       use_single_mode = false;
@@ -368,12 +353,10 @@ namespace embree
        * increase the number of allocation slots by still guaranteeing
        * the mainAllocationOverhead */
       slotMask = 0x0;
-      if (!compact) {
-        if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesEstimated > 2*mainAllocOverhead*growSize) slotMask = 0x1;
-        if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesEstimated > 4*mainAllocOverhead*growSize) slotMask = 0x3;
-        if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesEstimated > 8*mainAllocOverhead*growSize) slotMask = 0x7;
-      }
-
+      if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesEstimated > 2*mainAllocOverhead*growSize) slotMask = 0x1;
+      if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesEstimated > 4*mainAllocOverhead*growSize) slotMask = 0x3;
+      if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesEstimated > 8*mainAllocOverhead*growSize) slotMask = 0x7;
+      
       /* set the thread local alloc block size */
       size_t defaultBlockSizeSwitch = PAGE_SIZE+maxAlignment;
       
@@ -415,17 +398,17 @@ namespace embree
       if (bytesReserve == 0) bytesReserve = bytesAllocate;
       freeBlocks = Block::create(device,bytesAllocate,bytesReserve,nullptr,atype);
       estimatedSize = bytesEstimate;
-      initGrowSizeAndNumSlots(bytesEstimate,false,true);
+      initGrowSizeAndNumSlots(bytesEstimate,true);
     }
 
     /*! initializes the allocator */
-    void init_estimate(size_t bytesEstimate, const bool compact = false)
+    void init_estimate(size_t bytesEstimate)
     {
       internal_fix_used_blocks();
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       /* single allocator mode ? */
       estimatedSize = bytesEstimate;
-      initGrowSizeAndNumSlots(bytesEstimate,compact,false);
+      initGrowSizeAndNumSlots(bytesEstimate,false);
     }
 
     /*! frees state not required after build */
