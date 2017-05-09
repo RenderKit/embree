@@ -230,12 +230,12 @@ namespace embree
           begin++;
         } else {
           assert(i);
-          if (i > 0) {
+          if (likely(i > 0)) {
             geomID[i] = geomID[0];
             primID[i] = -1;
-            v0[i] = 0;
-            v1[i] = 0;
-            v2[i] = 0;
+            v0[i] = v0[0];
+            v1[i] = v0[0];
+            v2[i] = v0[0];
           }
         }
         if (begin<end) prim = &prims[begin];
