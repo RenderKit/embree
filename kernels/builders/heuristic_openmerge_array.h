@@ -436,9 +436,9 @@ namespace embree
           ObjectBinner binner(empty); 
 #if REDUCE_BINS == 1
           const size_t BINS = min(OBJECT_BINS,size_t(16.0f + 0.05f*set.size()));
-          const BinMapping<OBJECT_BINS> mapping(set.centBounds,BINS);
+          const BinMapping<OBJECT_BINS> mapping(BINS,set.centBounds);
 #else          
-          const BinMapping<OBJECT_BINS> mapping(set.centBounds,OBJECT_BINS);
+          const BinMapping<OBJECT_BINS> mapping(OBJECT_BINS,set.centBounds);
 #endif
 
 #if USE_SUBTREE_SIZE_FOR_BINNING == 1
@@ -458,9 +458,9 @@ namespace embree
           ObjectBinner binner(empty);
 #if REDUCE_BINS == 1
           const size_t BINS = min(OBJECT_BINS,size_t(16.0f + 0.05f*set.size()));
-          const BinMapping<OBJECT_BINS> mapping(set.centBounds,BINS);
+          const BinMapping<OBJECT_BINS> mapping(BINS,set.centBounds);
 #else
-          const BinMapping<OBJECT_BINS> mapping(set.centBounds,OBJECT_BINS);
+          const BinMapping<OBJECT_BINS> mapping(OBJECT_BINS,set.centBounds);
 #endif
 
           const BinMapping<OBJECT_BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround

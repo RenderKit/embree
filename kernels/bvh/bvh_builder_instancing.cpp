@@ -184,13 +184,11 @@ namespace embree
             BVH* object = objects[instance->geom->geomID];
             if (object == nullptr) continue;
             if (object->getBounds().empty()) continue;
-            int s = instance->geom->id; //slot(geom->getType() & ~Geometry::INSTANCE, geom->numTimeSteps);
+            int s = instance->geom->geomID; //slot(geom->getType() & ~Geometry::INSTANCE, geom->numTimeSteps);
             refs[nextRef++] = BVHNBuilderInstancing::BuildRef(instance->local2world,object->getBounds(),object->root,instance->mask,unsigned(objectID),hash(instance->local2world),s,0,object->numPrimitives);
           }
         });
       refs.resize(nextRef);
-
-      PRINT(refs.size());
 
 #if 0
       /* compute transform IDs */
@@ -215,11 +213,8 @@ namespace embree
 
       /* open all large nodes */  
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER == 0
-      PRINT(refs.size());
       //open(numPrimitives); 
 #endif
-
-      PRINT(refs.size());
 
       /* fast path for small geometries */
       /*if (refs.size() == 1) {
@@ -242,7 +237,6 @@ namespace embree
           }
           return pinfo;
         }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
-<<<<<<< HEAD
 #else
       const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(),  PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {          
           PrimInfo pinfo(empty);
@@ -254,9 +248,6 @@ namespace embree
 
 #endif
       
-=======
-
->>>>>>> origin/devel
       /* skip if all objects where empty */
       if (pinfo.size() == 0)
         bvh->set(BVH::emptyNode,empty,0);
@@ -286,13 +277,13 @@ namespace embree
 
         std::atomic<size_t> numLeaves(0);
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
-        PRINT("NEW INSTANCE CODE PATH");
-        PRINT(pinfo);
+        //PRINT("NEW INSTANCE CODE PATH");
+        //PRINT(pinfo);
         const size_t extSize = max((size_t)SPLIT_MIN_EXT_SPACE,(size_t)(refs.size()*SPLIT_MEMORY_RESERVE_SCALE_FACTOR));
-        DBG_PRINT(refs.size()*SPLIT_MEMORY_RESERVE_SCALE_FACTOR);
-        DBG_PRINT(extSize);
+        //DBG_PRINT(refs.size()*SPLIT_MEMORY_RESERVE_SCALE_FACTOR);
+        //DBG_PRINT(extSize);
         refs.resize(extSize); 
-        PRINT(refs.size());
+        //PRINT(refs.size());
         NodeRef root = BVHBuilderBinnedOpenMergeSAH::build<NodeRef,BuildRef>(
             typename BVH::CreateAlloc(bvh),
             typename BVH::AlignedNode::Create2(),
@@ -335,17 +326,13 @@ namespace embree
           },
            [&] (size_t dn) { bvh->scene->progressMonitor(0); },
             prims.data(),pinfo,settings);
-<<<<<<< HEAD
 #endif
 
         double d1 = getSeconds();
-        PRINT(d1-d0);
+        //PRINT(d1-d0);
         
-=======
-
->>>>>>> origin/devel
         bvh->set(root,LBBox3fa(pinfo.geomBounds),numPrimitives);
-        PRINT(numLeaves.load());
+        //PRINT(numLeaves.load());
         numCollapsedTransformNodes = refs.size();
         bvh->root = collapse(bvh->root);
         if (scene->device->verbosity(1))
