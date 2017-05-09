@@ -242,12 +242,14 @@ namespace embree
           begin++;
         } else {
           assert(i);
-          geomID[i] = geomID[0]; // always valid geomIDs
-          primID[i] = -1;        // indicates invalid data
-          v0[i] = 0;
-          v1[i] = 0;
-          v2[i] = 0;
-          v3[i] = 0;
+          if (likely(i > 0)) {
+            geomID[i] = geomID[0]; // always valid geomIDs
+            primID[i] = -1;        // indicates invalid data
+            v0[i] = v0[0];
+            v1[i] = v0[0];
+            v2[i] = v0[0];
+            v3[i] = v0[0];
+          }
         }
         if (begin<end) prim = &prims[begin];
       }
