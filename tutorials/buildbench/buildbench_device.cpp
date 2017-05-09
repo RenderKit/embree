@@ -405,9 +405,7 @@ namespace embree {
     Pause();
     Benchmark_Dynamic_Update(g_ispc_scene,iterations_dynamic_dynamic,RTC_GEOMETRY_DYNAMIC);
     Pause();
-#endif
     Benchmark_Dynamic_Update(g_ispc_scene,iterations_dynamic_static ,RTC_GEOMETRY_STATIC);
-#if 0
     Pause();
     Benchmark_Dynamic_Create(g_ispc_scene,iterations_dynamic_dynamic,RTC_GEOMETRY_DEFORMABLE);
     Pause();
@@ -415,10 +413,10 @@ namespace embree {
     Pause();
     Benchmark_Dynamic_Create(g_ispc_scene,iterations_dynamic_static ,RTC_GEOMETRY_STATIC);
     Pause();
+#endif
     Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_GEOMETRY_STATIC,RTC_SCENE_STATIC);
     Pause();
     Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_GEOMETRY_STATIC,RTC_SCENE_HIGH_QUALITY);
-#endif
     rtcDeleteDevice(g_device); g_device = nullptr;
   }
 

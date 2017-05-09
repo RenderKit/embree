@@ -363,9 +363,8 @@ namespace embree
     /*! initializes the grow size */
     __forceinline void initGrowSizeAndNumSlots(size_t bytesEstimated, bool single_mode, bool compact, bool fast) 
     {
-      use_single_mode = false; //!fast && bytesEstimated < 100000;
-      const size_t single_mode_factor = use_single_mode ? 1 : 2;
-  
+      use_single_mode = false;
+     
       /* calculate growSize such that at most mainAllocationOverhead gets wasted when a block stays unused */
       size_t mainAllocOverhead = fast ? mainAllocOverheadDynamic : mainAllocOverheadStatic;
       size_t blockSize = alignSize(bytesEstimated/mainAllocOverhead);
@@ -382,13 +381,13 @@ namespace embree
       }
 
       /* set the thread local alloc block size */
-      size_t threadCount = TaskScheduler::threadCount();
       size_t defaultBlockSizeSwitch = PAGE_SIZE+maxAlignment;
-      size_t singleThreadBytes = single_mode_factor*threadLocalAllocOverhead*defaultBlockSizeSwitch;
-
+      
       /* for sufficiently large scene we can increase the defaultBlockSize over the defaultBlockSizeSwitch size */
-      /* 4160 as defaultBlockSize seems to be optimal for performance and does not cause a noticable build perf regression */
-#if 0
+#if 0 // we do not do this as a block size of 4160 if for some reason best for KNL
+      const size_t threadCount = TaskScheduler::threadCount();
+      const size_t single_mode_factor = use_single_mode ? 1 : 2;
+      const size_t singleThreadBytes = single_mode_factor*threadLocalAllocOverhead*defaultBlockSizeSwitch;
       if (bytesEstimated+(singleThreadBytes-1))/singleThreadBytes >= threadCount)
         defaultBlockSize = min(max(defaultBlockSizeSwitch,bytesEstimated/(single_mode_factor*threadLocalAllocOverhead*threadCount)),growSize);
 
