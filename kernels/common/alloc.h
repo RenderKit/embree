@@ -354,8 +354,9 @@ namespace embree
     }
 
     /*! initializes the grow size */
-    __forceinline void initGrowSizeAndNumSlots(size_t bytesEstimated, bool single_mode, bool compact, bool fast) 
+    __forceinline void initGrowSizeAndNumSlots(size_t bytesEstimated, bool compact, bool fast) 
     {
+      /* we do not need single thread local allocator mode */
       use_single_mode = false;
      
       /* calculate growSize such that at most mainAllocationOverhead gets wasted when a block stays unused */
@@ -414,17 +415,17 @@ namespace embree
       if (bytesReserve == 0) bytesReserve = bytesAllocate;
       freeBlocks = Block::create(device,bytesAllocate,bytesReserve,nullptr,atype);
       estimatedSize = bytesEstimate;
-      initGrowSizeAndNumSlots(bytesEstimate,false,false,true);
+      initGrowSizeAndNumSlots(bytesEstimate,false,true);
     }
 
     /*! initializes the allocator */
-    void init_estimate(size_t bytesEstimate, const bool single_mode = false, const bool compact = false)
+    void init_estimate(size_t bytesEstimate, const bool compact = false)
     {
       internal_fix_used_blocks();
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       /* single allocator mode ? */
       estimatedSize = bytesEstimate;
-      initGrowSizeAndNumSlots(bytesEstimate,single_mode,compact,false);
+      initGrowSizeAndNumSlots(bytesEstimate,compact,false);
     }
 
     /*! frees state not required after build */

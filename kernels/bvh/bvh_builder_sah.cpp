@@ -157,7 +157,7 @@ namespace embree
         }
 
         /* call BVH builder */
-        bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef),false);
+        bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
         NodeRef root = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,settings);
         bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
         bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
@@ -215,7 +215,7 @@ namespace embree
             /* initialize allocator */
             const size_t node_bytes = numPrimitives*sizeof(typename BVH::AlignedNodeMB)/(4*N);
             const size_t leaf_bytes = size_t(1.2*Primitive::blocks(numPrimitives)*sizeof(Primitive));
-            bvh->alloc.init_estimate(node_bytes+leaf_bytes,false,settings.primrefarrayalloc != size_t(inf));
+            bvh->alloc.init_estimate(node_bytes+leaf_bytes,settings.primrefarrayalloc != size_t(inf));
             settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,numPrimitives,node_bytes+leaf_bytes);
             prims.resize(numPrimitives); 
 
@@ -320,7 +320,7 @@ namespace embree
             /* call BVH builder */
             const size_t node_bytes = numPrimitives*sizeof(typename BVH::QuantizedNode)/(4*N);
             const size_t leaf_bytes = size_t(1.2*Primitive::blocks(numPrimitives)*sizeof(Primitive));
-            bvh->alloc.init_estimate(node_bytes+leaf_bytes,false);
+            bvh->alloc.init_estimate(node_bytes+leaf_bytes);
             settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,numPrimitives,node_bytes+leaf_bytes);
             NodeRef root = BVHNBuilderQuantizedVirtual<N>::build(&bvh->alloc,CreateLeafQuantized<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,settings);
             bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
