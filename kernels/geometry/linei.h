@@ -48,8 +48,8 @@ namespace embree
     __forceinline LineMi() {  }
 
     /* Construction from vertices and IDs */
-    __forceinline LineMi(const vint<M>& v0, const vint<M>& geomIDs, const vint<M>& primIDs)
-      : v0(v0), geomIDs(geomIDs), primIDs(primIDs) {}
+    __forceinline LineMi(const vint<M>& v0, const vint<M>& geomIDs, const vint<M>& primIDs, const Leaf::Type ty)
+      : geomIDs(Leaf::encode(ty,geomIDs)), primIDs(primIDs), v0(v0) {}
 
     /* Returns a mask that tells which line segments are valid */
     __forceinline vbool<M> valid() const { return primIDs != vint<M>(-1); }
@@ -67,12 +67,12 @@ namespace embree
     /* Returns the geometry IDs */
     __forceinline       vint<M>& geomID()       { return geomIDs; }
     __forceinline const vint<M>& geomID() const { return geomIDs; }
-    __forceinline int geomID(const size_t i) const { assert(i<M); return geomIDs[i]; }
+    __forceinline unsigned geomID(const size_t i) const { assert(i<M); return Leaf::decodeID(geomIDs[i]); }
 
     /* Returns the primitive IDs */
     __forceinline       vint<M>& primID()       { return primIDs; }
     __forceinline const vint<M>& primID() const { return primIDs; }
-    __forceinline int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
+    __forceinline unsigned primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
     /* gather the line segments */
     __forceinline void gather(Vec4vf<M>& p0,
@@ -136,7 +136,7 @@ namespace embree
 
     /* Fill line segment from line segment list */
     template<typename PrimRefT>
-    __forceinline void fill(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene)
+    __forceinline void fill(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene, const Leaf::Type ty = Leaf::TY_LINE)
     {
       vint<M> geomID, primID;
       vint<M> v0;
@@ -161,18 +161,18 @@ namespace embree
         if (begin<end) prim = &prims[begin];
       }
 
-      new (this) LineMi(v0,geomID,primID); // FIXME: use non temporal store
+      new (this) LineMi(v0,geomID,primID,ty); // FIXME: use non temporal store
     }
 
     __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime)
     {
-      fill(prims,begin,end,scene);
+      fill(prims,begin,end,scene,Leaf::TY_LINE_MB);
       return linearBounds(scene,itime);
     }
 
     __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range)
     {
-      fill(prims,begin,end,scene);
+      fill(prims,begin,end,scene,Leaf::TY_LINE_MB);
       return linearBounds(scene,time_range);
     }
 
@@ -180,8 +180,9 @@ namespace embree
     __forceinline BBox3fa update(LineSegments* geom)
     {
       BBox3fa bounds = empty;
-      for (size_t i=0; i<M && valid(i); i++)
+      for (size_t i=0; i<M; i++)
       {
+        if (!valid(i)) break;
         const Vec3fa& p0 = geom->vertex(v0[i]+0);
         const Vec3fa& p1 = geom->vertex(v0[i]+1);
         BBox3fa b = merge(BBox3fa(p0),BBox3fa(p1));
@@ -196,12 +197,12 @@ namespace embree
       return cout << "Line" << M << "i {" << line.v0 << ", " << line.geomIDs << ", " << line.primIDs << "}";
     }
     
-  public:
-    vint<M> v0;      // index of start vertex
   private:
     vint<M> geomIDs; // geometry ID
     vint<M> primIDs; // primitive ID
-  };
+  public:
+    vint<M> v0;      // index of start vertex
+   };
 
   template<>
     __forceinline void LineMi<4>::gather(Vec4vf4& p0,

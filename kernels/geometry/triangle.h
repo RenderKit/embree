@@ -49,7 +49,7 @@ namespace embree
 
     /* Construction from vertices and IDs */
     __forceinline TriangleM(const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const vint<M>& geomIDs, const vint<M>& primIDs)
-      : v0(v0), e1(v0-v1), e2(v2-v0), geomIDs(geomIDs), primIDs(primIDs) {}
+      : geomIDs(Leaf::encode(Leaf::TY_TRIANGLE,geomIDs)), primIDs(primIDs), v0(v0), e1(v0-v1), e2(v2-v0) {}
 
     /* Returns a mask that tells which triangles are valid */
     __forceinline vbool<M> valid() const { return geomIDs != vint<M>(-1); }
@@ -63,12 +63,12 @@ namespace embree
     /* Returns the geometry IDs */
     __forceinline       vint<M>& geomID()       { return geomIDs;  }
     __forceinline const vint<M>& geomID() const { return geomIDs;  }
-    __forceinline int geomID(const size_t i) const { assert(i<M); return geomIDs[i]; }
+    __forceinline unsigned geomID(const size_t i) const { assert(i<M); return Leaf::decodeID(geomIDs[i]); }
 
     /* Returns the primitive IDs */
     __forceinline       vint<M>& primID()       { return primIDs; }
     __forceinline const vint<M>& primID() const { return primIDs; }
-    __forceinline int  primID(const size_t i) const { assert(i<M); return primIDs[i]; }
+    __forceinline unsigned primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
     /* Calculate the bounds of the triangle */
     __forceinline BBox3fa bounds() const 
@@ -137,9 +137,9 @@ namespace embree
       vint<M> vgeomID = -1, vprimID = -1;
       Vec3vf<M> v0 = zero, v1 = zero, v2 = zero;
 
-	  for (size_t i=0; i<M; i++)
+      for (size_t i=0; i<M; i++)
       {
-        if (unlikely(geomID(i) == -1)) break;
+        if (!valid(i)) break;
         const unsigned geomId = geomID(i);
         const unsigned primId = primID(i);
         const TriangleMesh::Triangle& tri = mesh->triangle(primId);
@@ -157,13 +157,13 @@ namespace embree
       return bounds;
     }
 
+  private:
+    vint<M> geomIDs; // geometry IDs
+    vint<M> primIDs; // primitive IDs
   public:
     Vec3vf<M> v0;      // base vertex of the triangles
     Vec3vf<M> e1;      // 1st edge of the triangles (v0-v1)
     Vec3vf<M> e2;      // 2nd edge of the triangles (v2-v0)
-  private:
-    vint<M> geomIDs; // geometry IDs
-    vint<M> primIDs; // primitive IDs
   };
 
   template<int M>

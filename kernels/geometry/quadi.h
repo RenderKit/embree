@@ -55,8 +55,9 @@ namespace embree
                          const vint<M>& v2,
                          const vint<M>& v3,
                          const vint<M>& geomIDs,
-                         const vint<M>& primIDs)
-      : v0(v0),v1(v1), v2(v2), v3(v3), geomIDs(geomIDs), primIDs(primIDs) {}
+                         const vint<M>& primIDs,
+                         const Leaf::Type ty)
+      : geomIDs(Leaf::encode(ty,geomIDs)), primIDs(primIDs), v0(v0),v1(v1), v2(v2), v3(v3) {}
 
     /* Returns a mask that tells which quads are valid */
     __forceinline vbool<M> valid() const { return primIDs != vint<M>(-1); }
@@ -70,12 +71,12 @@ namespace embree
     /* Returns the geometry IDs */
     __forceinline       vint<M>& geomID()       { return geomIDs; }
     __forceinline const vint<M>& geomID() const { return geomIDs; }
-    __forceinline int geomID(const size_t i) const { assert(i<M); assert(geomIDs[i] != -1); return geomIDs[i]; }
+    __forceinline unsigned geomID(const size_t i) const { assert(i<M); return Leaf::decodeID(geomIDs[i]); }
 
     /* Returns the primitive IDs */
     __forceinline       vint<M>& primID()       { return primIDs; }
     __forceinline const vint<M>& primID() const { return primIDs; }
-    __forceinline int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
+    __forceinline unsigned primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
     __forceinline Vec3f& getVertex(const vint<M>& v, const size_t index, const Scene *const scene) const
     {
@@ -223,7 +224,7 @@ namespace embree
 
     /* Fill quad from quad list */
     template<typename PrimRefT>
-    __forceinline void fill(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene)
+    __forceinline void fill(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene, const Leaf::Type ty = Leaf::TY_QUAD)
     {
       vint<M> geomID = -1, primID = -1;
       vint<M> v0 = zero, v1 = zero, v2 = zero, v3 = zero;
@@ -256,18 +257,18 @@ namespace embree
         if (begin<end) prim = &prims[begin];
       }
 
-      new (this) QuadMi(v0,v1,v2,v3,geomID,primID); // FIXME: use non temporal store
+      new (this) QuadMi(v0,v1,v2,v3,geomID,primID,ty); // FIXME: use non temporal store
     }
 
     __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime)
     {
-      fill(prims, begin, end, scene);
+      fill(prims, begin, end, scene, Leaf::TY_QUAD_MB);
       return linearBounds(scene, itime);
     }
 
     __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range)
     {
-      fill(prims, begin, end, scene);
+      fill(prims, begin, end, scene, Leaf::TY_QUAD_MB);
       return linearBounds(scene, time_range);
     }
 
@@ -293,15 +294,14 @@ namespace embree
       return bounds;
     }
 
-
+  private:
+    vint<M> geomIDs;    // geometry ID of mesh
+    vint<M> primIDs;    // primitive ID of primitive inside mesh
   public:
     vint<M> v0;         // 4 byte offset of 1st vertex
     vint<M> v1;         // 4 byte offset of 2nd vertex
     vint<M> v2;         // 4 byte offset of 3rd vertex
     vint<M> v3;         // 4 byte offset of 4th vertex
-  private:
-    vint<M> geomIDs;    // geometry ID of mesh
-    vint<M> primIDs;    // primitive ID of primitive inside mesh
   };
 
   template<>

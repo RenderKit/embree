@@ -44,15 +44,13 @@ namespace embree
 
     /*! constructs a virtual object */
     Object (unsigned geomID, unsigned primID) 
-    : _geomID(geomID), _primID(primID) {}
+    : _geomID(Leaf::encode(Leaf::TY_OBJECT,geomID)), _primID(primID) {}
 
-    __forceinline unsigned geomID() const {
-      return _geomID;
-    }
+    /*! returns geomID */
+    __forceinline unsigned geomID() const { return Leaf::decodeID(_geomID); }
 
-    __forceinline unsigned primID() const {
-      return _primID;
-    }
+    /*! returns primID */
+    __forceinline unsigned primID() const { return _primID; }
 
     /*! fill triangle from triangle list */
     __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene)

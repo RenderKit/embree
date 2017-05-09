@@ -43,11 +43,11 @@ namespace embree
     __forceinline Bezier1i () {}
 
     /*! Construction from vertices and IDs. */
-    __forceinline Bezier1i (const unsigned vertexID, const unsigned geomID, const unsigned primID)
-      : vertexID(vertexID), geom(geomID), prim(primID) {}
+    __forceinline Bezier1i (const unsigned vertexID, const unsigned geomID, const unsigned primID, const Leaf::Type ty)
+      : geom(Leaf::encode(ty,geomID)), prim(primID), vertexID(vertexID) {}
 
     /*! returns geometry ID */
-    __forceinline unsigned geomID() const { return geom; }
+    __forceinline unsigned geomID() const { return Leaf::decodeID(geom); }
 
     /*! returns primitive ID */
     __forceinline unsigned primID() const { return prim; }
@@ -61,7 +61,7 @@ namespace embree
       const unsigned primID = prim.primID();
       const NativeCurves* curves = scene->get<NativeCurves>(geomID);
       const unsigned vertexID = curves->curve(primID);
-      new (this) Bezier1i(vertexID,geomID,primID);
+      new (this) Bezier1i(vertexID,geomID,primID,Leaf::TY_HAIR);
     }
 
     /*! fill curve from curve list */
@@ -73,14 +73,14 @@ namespace embree
       const unsigned primID = prim.primID();
       const NativeCurves* curves = scene->get<NativeCurves>(geomID);
       const unsigned vertexID = curves->curve(primID);
-      new (this) Bezier1i(vertexID,geomID,primID);
+      new (this) Bezier1i(vertexID,geomID,primID,Leaf::TY_HAIR_MB);
       return curves->linearBounds(primID,time_range);
     }
 
-  public:
-    unsigned vertexID; //!< index of start vertex
   private:
     unsigned geom;     //!< geometry ID
     unsigned prim;     //!< primitive ID
+  public:
+    unsigned vertexID; //!< index of start vertex
   };
 }

@@ -54,7 +54,7 @@ namespace embree
                                const Vec3vf<M>& b0, const Vec3vf<M>& b1,
                                const Vec3vf<M>& c0, const Vec3vf<M>& c1,
                                const vint<M>& geomIDs, const vint<M>& primIDs)
-      : v0(a0), v1(b0), v2(c0), dv0(a1-a0), dv1(b1-b0), dv2(c1-c0), geomIDs(geomIDs), primIDs(primIDs) {}
+      : geomIDs(Leaf::encode(Leaf::TY_TRIANGLE_MB,geomIDs)), primIDs(primIDs), v0(a0), v1(b0), v2(c0), dv0(a1-a0), dv1(b1-b0), dv2(c1-c0) {}
 
     /* Returns a mask that tells which triangles are valid */
     __forceinline vbool<M> valid() const { return geomIDs != vint<M>(-1); }
@@ -68,12 +68,12 @@ namespace embree
     /* Returns the geometry IDs */
     __forceinline       vint<M>& geomID()       { return geomIDs; }
     __forceinline const vint<M>& geomID() const { return geomIDs; }
-    __forceinline int geomID(const size_t i) const { assert(i<M); return geomIDs[i]; }
+    __forceinline unsigned geomID(const size_t i) const { assert(i<M); return Leaf::decodeID(geomIDs[i]); }
 
     /* Returns the primitive IDs */
     __forceinline       vint<M>& primID()       { return primIDs; }
     __forceinline const vint<M>& primID() const { return primIDs; }
-    __forceinline int  primID(const size_t i) const { assert(i<M); return primIDs[i]; }
+    __forceinline unsigned primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
     /* Calculate the bounds of the triangles at t0 */
     __forceinline BBox3fa bounds0() const 
@@ -194,6 +194,9 @@ namespace embree
       return allBounds;
     }
 
+  private:
+    vint<M> geomIDs; // geometry ID
+    vint<M> primIDs; // primitive ID
   public:
     Vec3vf<M> v0;      // 1st vertex of the triangles
     Vec3vf<M> v1;      // 2nd vertex of the triangles
@@ -201,9 +204,6 @@ namespace embree
     Vec3vf<M> dv0;     // difference vector between time steps t0 and t1 for first vertex
     Vec3vf<M> dv1;     // difference vector between time steps t0 and t1 for second vertex
     Vec3vf<M> dv2;     // difference vector between time steps t0 and t1 for third vertex
-  private:
-    vint<M> geomIDs; // geometry ID
-    vint<M> primIDs; // primitive ID
   };
 
   template<int M>

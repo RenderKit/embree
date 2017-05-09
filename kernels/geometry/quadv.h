@@ -47,7 +47,7 @@ namespace embree
 
     /* Construction from vertices and IDs */
     __forceinline QuadMv(const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const Vec3vf<M>& v3, const vint<M>& geomIDs, const vint<M>& primIDs)
-      : v0(v0), v1(v1), v2(v2), v3(v3), geomIDs(geomIDs), primIDs(primIDs) {}
+      : geomIDs(Leaf::encode(Leaf::TY_QUAD,geomIDs)), primIDs(primIDs), v0(v0), v1(v1), v2(v2), v3(v3) {}
     
     /* Returns a mask that tells which quads are valid */
     __forceinline vbool<M> valid() const { return geomIDs != vint<M>(-1); }
@@ -61,12 +61,12 @@ namespace embree
     /* Returns the geometry IDs */
     __forceinline       vint<M>& geomID()       { return geomIDs; }
     __forceinline const vint<M>& geomID() const { return geomIDs; }
-    __forceinline int geomID(const size_t i) const { assert(i<M); return geomIDs[i]; }
+    __forceinline unsigned geomID(const size_t i) const { assert(i<M); return Leaf::decodeID(geomIDs[i]); }
 
     /* Returns the primitive IDs */
     __forceinline       vint<M> primID()       { return primIDs; }
     __forceinline const vint<M> primID() const { return primIDs; }
-    __forceinline int  primID(const size_t i) const { assert(i<M); return primIDs[i]; }
+    __forceinline unsigned primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
     /* Calculate the bounds of the quads */
     __forceinline BBox3fa bounds() const 
@@ -139,7 +139,7 @@ namespace embree
 	
       for (size_t i=0; i<M; i++)
       {
-        if (primID(i) == -1) break;
+        if (!valid(i)) break;
         const unsigned geomId = geomID(i);
         const unsigned primId = primID(i);
         const QuadMesh::Quad& quad = mesh->quad(primId);
@@ -159,14 +159,14 @@ namespace embree
       return bounds;
     }
    
+  private:
+    vint<M> geomIDs; // geometry ID
+    vint<M> primIDs; // primitive ID
   public:
     Vec3vf<M> v0;      // 1st vertex of the quads
     Vec3vf<M> v1;      // 2nd vertex of the quads
     Vec3vf<M> v2;      // 3rd vertex of the quads
     Vec3vf<M> v3;      // 4rd vertex of the quads
-  private:
-    vint<M> geomIDs; // geometry ID
-    vint<M> primIDs; // primitive ID
   };
 
   template<int M>

@@ -45,18 +45,14 @@ namespace embree
     __forceinline Bezier1v () {}
 
     /*! Construction from vertices and IDs. */
-    __forceinline Bezier1v (const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const Vec3fa& p3, const unsigned int geomID, const unsigned int primID)
-      : p0(p0), p1(p1), p2(p2), p3(p3), geom(geomID), prim(primID) {}
+    __forceinline Bezier1v (const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const Vec3fa& p3, const unsigned int geomID, const unsigned int primID, const Leaf::Type ty)
+      : geom(Leaf::encode(ty,geomID)), prim(primID), p0(p0), p1(p1), p2(p2), p3(p3) {}
 
-    /*! return primitive ID */
-    __forceinline unsigned int primID() const { 
-      return prim;
-    }
+    /*! returns geometry ID */
+    __forceinline unsigned geomID() const { return Leaf::decodeID(geom); }
 
-    /*! return geometry ID */
-    __forceinline unsigned int geomID() const { 
-      return geom; 
-    }
+    /*! returns primitive ID */
+    __forceinline unsigned primID() const { return prim; }
 
     /*! fill triangle from triangle list */
     __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene)
@@ -71,7 +67,7 @@ namespace embree
       const Vec3fa& p1 = curves->vertex(id+1);
       const Vec3fa& p2 = curves->vertex(id+2);
       const Vec3fa& p3 = curves->vertex(id+3);
-      new (this) Bezier1v(p0,p1,p2,p3,geomID,primID);
+      new (this) Bezier1v(p0,p1,p2,p3,geomID,primID,Leaf::TY_HAIR);
     }
 
     friend std::ostream& operator<<(std::ostream& cout, const Bezier1v& b) 
@@ -85,13 +81,13 @@ namespace embree
       "}";
     }
     
+  private:
+    unsigned geom;      //!< geometry ID
+    unsigned prim;      //!< primitive ID
   public:
     Vec3fa p0;            //!< 1st control point (x,y,z,r)
     Vec3fa p1;            //!< 2nd control point (x,y,z,r)
     Vec3fa p2;            //!< 3rd control point (x,y,z,r)
     Vec3fa p3;            //!< 4th control point (x,y,z,r)
-  private:
-    unsigned geom;      //!< geometry ID
-    unsigned prim;      //!< primitive ID
   };
 }

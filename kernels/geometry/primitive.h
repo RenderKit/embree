@@ -24,6 +24,41 @@
 
 namespace embree
 {
+  struct Leaf
+  {
+    static const unsigned SHIFT = (32-4);
+    static const unsigned MASK = 0x0FFFFFFF;
+
+    enum Type
+    {
+      TY_TRIANGLE = 1,
+      TY_TRIANGLE_MB = 2,
+      TY_QUAD = 3,
+      TY_QUAD_MB = 4,
+      TY_OBJECT = 5,
+      TY_LINE = 6,
+      TY_LINE_MB = 7,
+      TY_SUBDIV = 8,
+      TY_SUBDIV_MB = 9,
+      TY_HAIR = 10,
+      TY_HAIR_MB = 11
+    };
+
+    template<typename T>
+    static __forceinline T encode(Type ty, const T& ID) {
+      return (((T)ty) << SHIFT) | ID;
+    }
+
+    static __forceinline Type decodeTy(unsigned ID) {
+      return (Type) (ID >> SHIFT);
+    }
+
+    static __forceinline unsigned decodeID(unsigned ID) {
+      return ID & MASK;
+    }
+  };
+  
+
   struct PrimitiveType
   {
     /*! constructs the primitive type */

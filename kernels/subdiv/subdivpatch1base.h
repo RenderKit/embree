@@ -93,6 +93,8 @@ namespace embree
     }
 
   public:    
+    unsigned int geom;                          //!< geometry ID of the subdivision mesh this patch belongs to
+    unsigned int prim;                          //!< primitive ID of this subdivision patch
     SharedLazyTessellationCache::Tag root_ref;
     SpinLock mtx;
 
@@ -103,8 +105,6 @@ namespace embree
     unsigned char flags;
     unsigned char type;
     unsigned short grid_u_res;
-    unsigned int geom;                          //!< geometry ID of the subdivision mesh this patch belongs to
-    unsigned int prim;                          //!< primitive ID of this subdivision patch
     unsigned short grid_v_res;
 
     unsigned short grid_size_simd_blocks;
