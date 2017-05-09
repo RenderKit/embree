@@ -288,10 +288,10 @@ namespace embree
                                            Vec3vf4& p2,
                                            const Scene* const scene) const
   {
-    const int* vertices0 = scene->vertices[geomIDs[0]];
-    const int* vertices1 = scene->vertices[geomIDs[1]];
-    const int* vertices2 = scene->vertices[geomIDs[2]];
-    const int* vertices3 = scene->vertices[geomIDs[3]];
+    const int* vertices0 = scene->vertices[geomID(0)];
+    const int* vertices1 = scene->vertices[geomID(1)];
+    const int* vertices2 = scene->vertices[geomID(2)];
+    const int* vertices3 = scene->vertices[geomID(3)];
     const vfloat4 a0 = vfloat4::loadu(vertices0 + v0[0]);
     const vfloat4 a1 = vfloat4::loadu(vertices1 + v0[1]);
     const vfloat4 a2 = vfloat4::loadu(vertices2 + v0[2]);
@@ -347,10 +347,10 @@ namespace embree
                                            const Scene *const scene,
                                            const float time) const
   {
-    const TriangleMesh* mesh0 = scene->get<TriangleMesh>(geomIDs[0]);
-    const TriangleMesh* mesh1 = scene->get<TriangleMesh>(geomIDs[1]);
-    const TriangleMesh* mesh2 = scene->get<TriangleMesh>(geomIDs[2]);
-    const TriangleMesh* mesh3 = scene->get<TriangleMesh>(geomIDs[3]);
+    const TriangleMesh* mesh0 = scene->get<TriangleMesh>(geomID(0));
+    const TriangleMesh* mesh1 = scene->get<TriangleMesh>(geomID(1));
+    const TriangleMesh* mesh2 = scene->get<TriangleMesh>(geomID(2));
+    const TriangleMesh* mesh3 = scene->get<TriangleMesh>(geomID(3));
 
     const vfloat4 numTimeSegments(mesh0->fnumTimeSegments, mesh1->fnumTimeSegments, mesh2->fnumTimeSegments, mesh3->fnumTimeSegments);
     vfloat4 ftime;

@@ -208,10 +208,10 @@ namespace embree
                                          Vec4vf4& p1,
                                          const Scene* scene) const
   {
-    const LineSegments* geom0 = scene->get<LineSegments>(geomIDs[0]);
-    const LineSegments* geom1 = scene->get<LineSegments>(geomIDs[1]);
-    const LineSegments* geom2 = scene->get<LineSegments>(geomIDs[2]);
-    const LineSegments* geom3 = scene->get<LineSegments>(geomIDs[3]);
+    const LineSegments* geom0 = scene->get<LineSegments>(geomID(0));
+    const LineSegments* geom1 = scene->get<LineSegments>(geomID(1));
+    const LineSegments* geom2 = scene->get<LineSegments>(geomID(2));
+    const LineSegments* geom3 = scene->get<LineSegments>(geomID(3));
 
     const vfloat4 a0 = vfloat4::loadu(geom0->vertexPtr(v0[0]));
     const vfloat4 a1 = vfloat4::loadu(geom1->vertexPtr(v0[1]));
@@ -258,10 +258,10 @@ namespace embree
                                          const Scene* scene,
                                          float time) const
   {
-    const LineSegments* geom0 = scene->get<LineSegments>(geomIDs[0]);
-    const LineSegments* geom1 = scene->get<LineSegments>(geomIDs[1]);
-    const LineSegments* geom2 = scene->get<LineSegments>(geomIDs[2]);
-    const LineSegments* geom3 = scene->get<LineSegments>(geomIDs[3]);
+    const LineSegments* geom0 = scene->get<LineSegments>(geomID(0));
+    const LineSegments* geom1 = scene->get<LineSegments>(geomID(1));
+    const LineSegments* geom2 = scene->get<LineSegments>(geomID(2));
+    const LineSegments* geom3 = scene->get<LineSegments>(geomID(3));
 
     const vfloat4 numTimeSegments(geom0->fnumTimeSegments, geom1->fnumTimeSegments, geom2->fnumTimeSegments, geom3->fnumTimeSegments);
     vfloat4 ftime;
