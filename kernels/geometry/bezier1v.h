@@ -216,6 +216,7 @@ namespace embree
     Vec3fa p1;            //!< 2nd control point (x,y,z,r)
     Vec3fa p2;            //!< 3rd control point (x,y,z,r)
     Vec3fa p3;            //!< 4th control point (x,y,z,r)
+  private:
     unsigned geom;      //!< geometry ID
     unsigned prim;      //!< primitive ID
   };

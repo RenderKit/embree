@@ -277,6 +277,7 @@ namespace embree
     vint<M> v0;         // 4 byte offset of 1st vertex
     vint<M> v1;         // 4 byte offset of 2nd vertex
     vint<M> v2;         // 4 byte offset of 3rd vertex
+  private:
     vint<M> geomIDs;    // geometry ID of mesh
     vint<M> primIDs;    // primitive ID of primitive inside mesh
   };

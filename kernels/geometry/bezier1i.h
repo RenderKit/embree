@@ -90,6 +90,7 @@ namespace embree
 
   public:
     unsigned vertexID; //!< index of start vertex
+  private:
     unsigned geom;     //!< geometry ID
     unsigned prim;     //!< primitive ID
   };
