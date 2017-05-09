@@ -1232,14 +1232,14 @@ namespace embree
       case TRIANGLE_MESH: switch (sflags) {
         case RTC_SCENE_STATIC : return avx ?  70.0f*NN :  63.0f*NN; // triangle4
         case RTC_SCENE_ROBUST : return avx ?  70.0f*NN :  63.0f*NN; // triangle4v
-        case RTC_SCENE_COMPACT: return avx ?  42.0f*NN :  35.0f*NN; // triangle4i
+        case RTC_SCENE_COMPACT: return avx ?  35.0f*NN :  35.0f*NN; // triangle4i
         case RTC_SCENE_DYNAMIC: return avx ? 131.0f*NN : 117.0f*NN; // triangle4
         default: return inf;
         }
       case TRIANGLE_MESH_MB: switch (sflags) {
         case RTC_SCENE_STATIC : return avx2 ? 55.0f*NN : 45.0f*NN; // triangle4imb
         case RTC_SCENE_ROBUST : return avx2 ? 55.0f*NN : 45.0f*NN; // triangle4imb
-        case RTC_SCENE_COMPACT: return avx2 ? 55.0f*NN : 45.0f*NN; // triangle4imb
+        case RTC_SCENE_COMPACT: return avx2 ? 45.0f*NN : 45.0f*NN; // triangle4imb
         default: return inf;
         }
         
@@ -1252,21 +1252,21 @@ namespace embree
       case QUAD_MESH_MB: switch (sflags) {
         case RTC_SCENE_STATIC : return avx ? 68.0f*NN : 53.0f*NN; // quad4imb
         case RTC_SCENE_ROBUST : return avx ? 68.0f*NN : 53.0f*NN; // quad4imb
-        case RTC_SCENE_COMPACT: return avx ? 68.0f*NN : 53.0f*NN; // quad4imb
+        case RTC_SCENE_COMPACT: return avx ? 53.0f*NN : 53.0f*NN; // quad4imb
         default: return inf;
         }
       
       case HAIR_GEOMETRY: switch (sflags) {
         case RTC_SCENE_STATIC : return avx2 ?  222.0f*NN : 165.0f*NN; // bezier1v
         case RTC_SCENE_ROBUST : return avx2 ?  222.0f*NN : 165.0f*NN; // bezier1v
-        case RTC_SCENE_COMPACT: return avx2 ?  160.0f*NN : 105.0f*NN; // bezier1i
+        case RTC_SCENE_COMPACT: return avx2 ?  105.0f*NN : 105.0f*NN; // bezier1i
         default: return inf;
         }
 
       case HAIR_GEOMETRY_MB: switch (sflags) {
-        case RTC_SCENE_STATIC : return avx2 ?  276.0f*NN : 190.0f*NN; // bezier1i
-        case RTC_SCENE_ROBUST : return avx2 ?  276.0f*NN : 190.0f*NN; // bezier1i
-        case RTC_SCENE_COMPACT: return avx2 ?  276.0f*NN : 190.0f*NN; // bezier1i
+        case RTC_SCENE_STATIC : return avx2 ?  346.0f*NN : 190.0f*NN; // bezier1i // FIXME: 346 are very loose bounds
+        case RTC_SCENE_ROBUST : return avx2 ?  346.0f*NN : 190.0f*NN; // bezier1i // FIXME: 346 are very loose bounds 
+        case RTC_SCENE_COMPACT: return avx2 ?  190.0f*NN : 190.0f*NN; // bezier1i
         default: return inf;
         }
       
@@ -1280,7 +1280,7 @@ namespace embree
       case LINE_GEOMETRY_MB: switch (sflags) {
         case RTC_SCENE_STATIC : return avx ? 45.0f*NN : 36.0f*NN; // line4i
         case RTC_SCENE_ROBUST : return avx ? 45.0f*NN : 36.0f*NN; // line4i
-        case RTC_SCENE_COMPACT: return avx ? 45.0f*NN : 36.0f*NN; // line4i
+        case RTC_SCENE_COMPACT: return avx ? 36.0f*NN : 36.0f*NN; // line4i
         default: return inf;
         }
       
