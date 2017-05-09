@@ -34,6 +34,7 @@
 #define SPLIT_MEMORY_RESERVE_SCALE 2
 // 500
 #define SPLIT_MIN_EXT_SPACE 1000
+
 #undef DBG_PRINT
 #define DBG_PRINT(x) PRINT(x)
 // for non-opening two-level approach set ENABLE_DIRECT_SAH_MERGE_BUILDER and ENABLE_OPEN_SEQUENTIAL to 0
