@@ -59,9 +59,9 @@ namespace embree
     /* initialize global state */
     State::parseString(cfg);
     if (!ignore_config_files && FileName::executableFolder() != FileName(""))
-      State::parseFile(FileName::executableFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
+      State::parseFile(FileName::executableFolder()+FileName(".embree" TOSTRING(RTCORE_VERSION_MAJOR)));
     if (!ignore_config_files && FileName::homeFolder() != FileName(""))
-      State::parseFile(FileName::homeFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
+      State::parseFile(FileName::homeFolder()+FileName(".embree" TOSTRING(RTCORE_VERSION_MAJOR)));
     State::verify();
 
     /*! do some internal tests */
@@ -164,7 +164,7 @@ namespace embree
   void Device::print()
   {
     const int cpu_features = getCPUFeatures();
-    std::cout << "Embree Ray Tracing Kernels " << __EMBREE_VERSION__ << " (" << __EMBREE_HASH__ << ")" << std::endl;
+    std::cout << "Embree Ray Tracing Kernels " << RTCORE_VERSION_STRING << " (" << RTCORE_HASH << ")" << std::endl;
     std::cout << "  Compiler  : " << getCompilerName() << std::endl;
     std::cout << "  Build     : ";
 #if defined(DEBUG)
@@ -411,10 +411,10 @@ namespace embree
     /* documented parameters */
     switch (parm) 
     {
-    case RTC_CONFIG_VERSION_MAJOR: return __EMBREE_VERSION_MAJOR__;
-    case RTC_CONFIG_VERSION_MINOR: return __EMBREE_VERSION_MINOR__;
-    case RTC_CONFIG_VERSION_PATCH: return __EMBREE_VERSION_PATCH__;
-    case RTC_CONFIG_VERSION      : return __EMBREE_VERSION_NUMBER__;
+    case RTC_CONFIG_VERSION_MAJOR: return RTCORE_VERSION_MAJOR;
+    case RTC_CONFIG_VERSION_MINOR: return RTCORE_VERSION_MINOR;
+    case RTC_CONFIG_VERSION_PATCH: return RTCORE_VERSION_PATCH;
+    case RTC_CONFIG_VERSION      : return RTCORE_VERSION_NUMBER;
 
     case RTC_CONFIG_INTERSECT1: return 1;
 
