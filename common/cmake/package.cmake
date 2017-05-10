@@ -39,12 +39,7 @@ ENDIF()
 ##############################################################
 # Install Headers
 ##############################################################
-
 INSTALL(DIRECTORY include/embree2 DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT devel)
-CONFIGURE_FILE(include/embree2/rtcore.h rtcore.h @ONLY)
-CONFIGURE_FILE(include/embree2/rtcore.isph rtcore.isph @ONLY)
-INSTALL(FILES ${PROJECT_BINARY_DIR}/rtcore.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/embree2 COMPONENT devel)
-INSTALL(FILES ${PROJECT_BINARY_DIR}/rtcore.isph DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/embree2 COMPONENT devel)
 
 ##############################################################
 # Install Models

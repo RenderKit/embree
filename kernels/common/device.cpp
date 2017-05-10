@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "device.h"
+#include "hash.h"
 #include "scene_triangle_mesh.h"
 #include "scene_user_geometry.h"
 #include "scene_instance.h"

@@ -46,6 +46,10 @@ CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/rtcore_version.h.in"
   "${PROJECT_SOURCE_DIR}/include/embree2/rtcore_version.h"
 )
+CONFIGURE_FILE(
+  "${PROJECT_SOURCE_DIR}/kernels/hash.h.in"
+  "${PROJECT_BINARY_DIR}/hash.h"
+)
 FILE(WRITE "${PROJECT_BINARY_DIR}/hash" "${EMBREE_HASH}")
 
 IF(COMMAND cmake_policy)
