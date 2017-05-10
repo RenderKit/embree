@@ -700,7 +700,7 @@ namespace embree
     /* create interpolation cache mapping for interpolatable meshes */
     if (scene->isInterpolatable()) 
     {
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
       auto numInterpolationSlots = [&] (size_t stride) {
         if (scene->device->hasISA(AVX)) return numInterpolationSlots8(stride); else return numInterpolationSlots4(stride);
       };

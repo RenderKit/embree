@@ -56,21 +56,21 @@ namespace embree
   intersector = isa::intersector;
 
 #if defined(__SSE__)
-#if !defined(__TARGET_SIMD4__)
-#define __TARGET_SIMD4__
+#if !defined(EMBREE_TARGET_SIMD4)
+#define EMBREE_TARGET_SIMD4
 #endif
 #endif
 
-#if defined(__TARGET_SSE42__)
+#if defined(EMBREE_TARGET_SSE42)
 #define SELECT_SYMBOL_SSE42(features,intersector) \
   if ((features & SSE42) == SSE42) intersector = sse42::intersector;
 #else
 #define SELECT_SYMBOL_SSE42(features,intersector)
 #endif
 
-#if defined(__TARGET_AVX__)
-#if !defined(__TARGET_SIMD8__)
-#define __TARGET_SIMD8__
+#if defined(EMBREE_TARGET_AVX)
+#if !defined(EMBREE_TARGET_SIMD8)
+#define EMBREE_TARGET_SIMD8
 #endif
 #define SELECT_SYMBOL_AVX(features,intersector) \
   if ((features & AVX) == AVX) intersector = avx::intersector;
@@ -78,9 +78,9 @@ namespace embree
 #define SELECT_SYMBOL_AVX(features,intersector)
 #endif
 
-#if defined(__TARGET_AVX2__)
-#if !defined(__TARGET_SIMD8__)
-#define __TARGET_SIMD8__
+#if defined(EMBREE_TARGET_AVX2)
+#if !defined(EMBREE_TARGET_SIMD8)
+#define EMBREE_TARGET_SIMD8
 #endif
 #define SELECT_SYMBOL_AVX2(features,intersector) \
   if ((features & AVX2) == AVX2) intersector = avx2::intersector;
@@ -88,9 +88,9 @@ namespace embree
 #define SELECT_SYMBOL_AVX2(features,intersector)
 #endif
 
-#if defined(__TARGET_AVX512KNL__)
-#if !defined(__TARGET_SIMD16__)
-#define __TARGET_SIMD16__
+#if defined(EMBREE_TARGET_AVX512KNL)
+#if !defined(EMBREE_TARGET_SIMD16)
+#define EMBREE_TARGET_SIMD16
 #endif
 #define SELECT_SYMBOL_AVX512KNL(features,intersector) \
   if ((features & AVX512KNL) == AVX512KNL) intersector = avx512knl::intersector;
@@ -98,9 +98,9 @@ namespace embree
 #define SELECT_SYMBOL_AVX512KNL(features,intersector)
 #endif
 
-#if defined(__TARGET_AVX512SKX__)
-#if !defined(__TARGET_SIMD16__)
-#define __TARGET_SIMD16__
+#if defined(EMBREE_TARGET_AVX512SKX)
+#if !defined(EMBREE_TARGET_SIMD16)
+#define EMBREE_TARGET_SIMD16
 #endif
 #define SELECT_SYMBOL_AVX512SKX(features,intersector) \
   if ((features & AVX512SKX) == AVX512SKX) intersector = avx512skx::intersector;

@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
 
 #include "bvh8_factory.h"
 #include "../bvh/bvh.h"

@@ -101,7 +101,7 @@ namespace embree
 
     bvh4_factory = make_unique(new BVH4Factory(enabled_builder_cpu_features, enabled_cpu_features));
 
-#if defined(__TARGET_AVX__)
+#if defined(EMBREE_TARGET_AVX)
     bvh8_factory = make_unique(new BVH8Factory(enabled_builder_cpu_features, enabled_cpu_features));
 #endif
 
@@ -125,22 +125,22 @@ namespace embree
   std::string getEnabledTargets()
   {
     std::string v;
-#if defined(__TARGET_SSE2__)
+#if defined(EMBREE_TARGET_SSE2)
     v += "SSE2 ";
 #endif
-#if defined(__TARGET_SSE42__)
+#if defined(EMBREE_TARGET_SSE42)
     v += "SSE4.2 ";
 #endif
-#if defined(__TARGET_AVX__)
+#if defined(EMBREE_TARGET_AVX)
     v += "AVX ";
 #endif
-#if defined(__TARGET_AVX2__)
+#if defined(EMBREE_TARGET_AVX2)
     v += "AVX2 ";
 #endif
-#if defined(__TARGET_AVX512KNL__)
+#if defined(EMBREE_TARGET_AVX512KNL)
     v += "AVX512KNL ";
 #endif
-#if defined(__TARGET_AVX512SKX__)
+#if defined(EMBREE_TARGET_AVX512SKX)
     v += "AVX512SKX ";
 #endif
     return v;
@@ -418,19 +418,19 @@ namespace embree
 
     case RTC_CONFIG_INTERSECT1: return 1;
 
-#if defined(__TARGET_SIMD4__) && defined(EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD4) && defined(EMBREE_RAY_PACKETS)
     case RTC_CONFIG_INTERSECT4:  return hasISA(SSE2);
 #else
     case RTC_CONFIG_INTERSECT4:  return 0;
 #endif
 
-#if defined(__TARGET_SIMD8__) && defined(EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD8) && defined(EMBREE_RAY_PACKETS)
     case RTC_CONFIG_INTERSECT8:  return hasISA(AVX);
 #else
     case RTC_CONFIG_INTERSECT8:  return 0;
 #endif
 
-#if defined(__TARGET_SIMD16__) && defined(EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD16) && defined(EMBREE_RAY_PACKETS)
     case RTC_CONFIG_INTERSECT16: return hasISA(AVX512KNL) | hasISA(AVX512SKX);
 #else
     case RTC_CONFIG_INTERSECT16: return 0;
