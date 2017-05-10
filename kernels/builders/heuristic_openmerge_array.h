@@ -32,14 +32,6 @@
 #define MAX_OPENED_CHILD_NODES 8
 #define MAX_EXTEND_THRESHOLD   0.1f
 
-#if DEBUG
-#define OPEN_STATS(x) x
-#define DBG_PRINT(x) PRINT(x)
-#else
-#define OPEN_STATS(x)
-#define DBG_PRINT(x) 
-#endif
-
 namespace embree
 {
   namespace isa
@@ -106,12 +98,10 @@ namespace embree
         /*! remember prim array */
         __forceinline HeuristicArrayOpenMergeSAH (const NodeOpenerFunc& nodeOpenerFunc, PrimRef* prims0, const PrimInfo &root_info)
           : prims0(prims0), nodeOpenerFunc(nodeOpenerFunc), root_info(root_info) { 
-          OPEN_STATS(stat_ext_elements.store(0));
         }
 
         __forceinline ~HeuristicArrayOpenMergeSAH()
         {
-          OPEN_STATS(PRINT(stat_ext_elements.load()));
         }
 
         /*! compute extended ranges */
@@ -343,13 +333,7 @@ namespace embree
             }
             assert( extra_elements <= set.ext_range_size());
             set._end += extra_elements;
-            OPEN_STATS( if (extra_elements) stat_ext_elements += extra_elements );
 
-            if (extra_elements)
-            {
-              DBG_PRINT(extra_elements); 
-              DBG_PRINT(next_iteration_extra_elements); 
-            }
             for (size_t i=set.begin();i<set.end();i++)
               assert(prims0[i].numPrimitives() > 0);
 
@@ -408,8 +392,6 @@ namespace embree
 
             if (est_new_elements <= max_ext_range_size)
               extra_elements = openNodesBasedOnExtend(set);
-
-            OPEN_STATS( if (extra_elements) stat_ext_elements += extra_elements );
 
             set._end += extra_elements;
 #endif
@@ -620,8 +602,6 @@ namespace embree
         PrimRef* const prims0;
         const NodeOpenerFunc& nodeOpenerFunc;
         const PrimInfo& root_info;
-        /* statistics */
-        std::atomic<size_t> stat_ext_elements;
       };
   }
 }
