@@ -170,7 +170,7 @@ namespace embree
         const BaseNode* node = cur.baseNode(types);
 
 #if defined(__AVX512ER__)
-        //STAT3(normal.trav_hit_boxes[__popcnt(mask)],1,1,1);
+        STAT3(normal.trav_hit_boxes[__popcnt(mask)],1,1,1);
 
         size_t r = __bscf(mask);
         cur = node->child(r);

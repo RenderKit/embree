@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "../geometry/primitive.h"
 #include "bspline_patch.h"
 #include "bezier_patch.h"
 #include "gregory_patch.h"
@@ -92,9 +93,19 @@ namespace embree
       return (SharedLazyTessellationCache::CacheEntry&) root_ref;
     }
 
-  public:    
+    __forceinline unsigned int geomID() const  {
+      return geom;
+    } 
+
+    __forceinline unsigned int primID() const  {
+      return prim;
+    } 
+
+  private:    
     unsigned int geom;                          //!< geometry ID of the subdivision mesh this patch belongs to
     unsigned int prim;                          //!< primitive ID of this subdivision patch
+
+  public:
     SharedLazyTessellationCache::Tag root_ref;
     SpinLock mtx;
 
