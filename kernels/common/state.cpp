@@ -167,22 +167,22 @@ namespace embree
      * call that same or lower ISA version of non-inlined class member
      * functions */
 #if defined(DEBUG)
-#if defined(__TARGET_SSE2__)
+#if defined(EMBREE_TARGET_SSE2)
     assert(sse2::getISA() <= SSE2);
 #endif
-#if defined(__TARGET_SSE42__)
+#if defined(EMBREE_TARGET_SSE42)
     assert(sse42::getISA() <= SSE42);
 #endif
-#if defined(__TARGET_AVX__)
+#if defined(EMBREE_TARGET_AVX)
     assert(avx::getISA() <= AVX);
 #endif
-#if defined(__TARGET_AVX2__)
+#if defined(EMBREE_TARGET_AVX2)
     assert(avx2::getISA() <= AVX2);
 #endif
-#if defined (__TARGET_AVX512KNL__)
+#if defined (EMBREE_TARGET_AVX512KNL)
     assert(avx512knl::getISA() <= AVX512KNL);
 #endif
-#if defined (__TARGET_AVX512SKX__)
+#if defined (EMBREE_TARGET_AVX512SKX)
     assert(avx512skx::getISA() <= AVX512SKX);
 #endif
 #endif

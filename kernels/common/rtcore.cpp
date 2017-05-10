@@ -366,7 +366,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcIntersect4);
 
-#if defined(__TARGET_SIMD4__) && defined (EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD4) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -389,7 +389,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcIntersect4Ex);
 
-#if defined(__TARGET_SIMD4__) && defined (EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD4) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -412,7 +412,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcIntersect8);
 
-#if defined(__TARGET_SIMD8__) && defined (EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD8) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -435,7 +435,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcIntersect8Ex);
 
-#if defined(__TARGET_SIMD8__) && defined (EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD8) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -458,7 +458,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcIntersect16);
 
-#if defined(__TARGET_SIMD16__) && defined (EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD16) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -481,7 +481,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcIntersect16Ex);
 
-#if defined(__TARGET_SIMD16__) && defined (EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD16) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -674,7 +674,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcOccluded4);
 
-#if defined(__TARGET_SIMD4__) && defined (EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD4) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -697,7 +697,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcOccluded4Ex);
 
-#if defined(__TARGET_SIMD4__) && defined (EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD4) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -720,7 +720,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcOccluded8);
 
-#if defined(__TARGET_SIMD8__) && defined (EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD8) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -743,7 +743,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcOccluded8Ex);
 
-#if defined(__TARGET_SIMD8__) && defined (EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD8) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -766,7 +766,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcOccluded16);
 
-#if defined(__TARGET_SIMD16__) && defined (EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD16) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -789,7 +789,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcOccluded16Ex);
 
-#if defined(__TARGET_SIMD16__) && defined (EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD16) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");

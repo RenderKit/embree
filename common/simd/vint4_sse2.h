@@ -119,7 +119,7 @@ namespace embree
 #endif
     } 
 
-    static __forceinline void store_uchar( unsigned char* const ptr, const vint4& v ) {
+    static __forceinline void store( unsigned char* const ptr, const vint4& v ) {
 #if defined(__SSE4_1__)
       __m128i x = v;
       x = _mm_packus_epi32(x, x);
@@ -131,7 +131,7 @@ namespace embree
 #endif
     }
 
-    static __forceinline void store_ushort( unsigned short* const ptr, const vint4& v ) {
+    static __forceinline void store( unsigned short* const ptr, const vint4& v ) {
       for (size_t i=0;i<4;i++)
         ptr[i] = (unsigned short)v[i];
     }

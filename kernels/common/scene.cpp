@@ -99,7 +99,7 @@ namespace embree
         int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
         switch (mode) {
         case /*0b00*/ 0: 
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
           if (device->hasISA(AVX))
 	  {
             if (isHighQuality()) 
@@ -118,7 +118,7 @@ namespace embree
           break;
 
         case /*0b01*/ 1: 
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
           if (device->hasISA(AVX)) 
             accels.add(device->bvh8_factory->BVH8Triangle4v(this,BVHFactory::BuildVariant::STATIC,BVHFactory::IntersectVariant::ROBUST));
           else
@@ -132,7 +132,7 @@ namespace embree
       }
       else /* dynamic */
       {
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
           if (device->hasISA(AVX))
 	  {
             int mode =  2*(int)isCompact() + 1*(int)isRobust();
@@ -161,7 +161,7 @@ namespace embree
     else if (device->tri_accel == "bvh4.triangle4i")      accels.add(device->bvh4_factory->BVH4Triangle4i(this));
     else if (device->tri_accel == "qbvh4.triangle4i")     accels.add(device->bvh4_factory->BVH4QuantizedTriangle4i(this));
 
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
     else if (device->tri_accel == "bvh8.triangle4")       accels.add(device->bvh8_factory->BVH8Triangle4 (this));
     else if (device->tri_accel == "bvh8.triangle4v")      accels.add(device->bvh8_factory->BVH8Triangle4v(this));
     else if (device->tri_accel == "bvh8.triangle4i")      accels.add(device->bvh8_factory->BVH8Triangle4i(this));
@@ -179,7 +179,7 @@ namespace embree
     {
       int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
       
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
       if (device->hasISA(AVX2)) // BVH8 reduces performance on AVX only-machines
       {
         switch (mode) {
@@ -202,7 +202,7 @@ namespace embree
     }
     else if (device->tri_accel_mb == "bvh4.triangle4imb") accels.add(device->bvh4_factory->BVH4Triangle4iMB(this));
     else if (device->tri_accel_mb == "bvh4.triangle4vmb") accels.add(device->bvh4_factory->BVH4Triangle4vMB(this));
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
     else if (device->tri_accel_mb == "bvh8.triangle4imb") accels.add(device->bvh8_factory->BVH8Triangle4iMB(this));
     else if (device->tri_accel_mb == "bvh8.triangle4vmb") accels.add(device->bvh8_factory->BVH8Triangle4vMB(this));
 #endif
@@ -221,7 +221,7 @@ namespace embree
         int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
         switch (mode) {
         case /*0b00*/ 0:
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
           if (device->hasISA(AVX))
           {
             if (isHighQuality()) 
@@ -240,7 +240,7 @@ namespace embree
           break;
 
         case /*0b01*/ 1:
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
           if (device->hasISA(AVX))
             accels.add(device->bvh8_factory->BVH8Quad4v(this,BVHFactory::BuildVariant::STATIC,BVHFactory::IntersectVariant::ROBUST));
           else
@@ -254,7 +254,7 @@ namespace embree
       }
       else /* dynamic */
       {
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
           if (device->hasISA(AVX))
 	  {
             int mode =  2*(int)isCompact() + 1*(int)isRobust();
@@ -282,7 +282,7 @@ namespace embree
     else if (device->quad_accel == "bvh4.quad4i")       accels.add(device->bvh4_factory->BVH4Quad4i(this));
     else if (device->quad_accel == "qbvh4.quad4i")      accels.add(device->bvh4_factory->BVH4QuantizedQuad4i(this));
 
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
     else if (device->quad_accel == "bvh8.quad4v")       accels.add(device->bvh8_factory->BVH8Quad4v(this));
     else if (device->quad_accel == "bvh8.quad4i")       accels.add(device->bvh8_factory->BVH8Quad4i(this));
     else if (device->quad_accel == "qbvh8.quad4i")      accels.add(device->bvh8_factory->BVH8QuantizedQuad4i(this));
@@ -299,7 +299,7 @@ namespace embree
       int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
       switch (mode) {
       case /*0b00*/ 0:
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
         if (device->hasISA(AVX))
           accels.add(device->bvh8_factory->BVH8Quad4iMB(this,BVHFactory::BuildVariant::STATIC,BVHFactory::IntersectVariant::FAST));
         else
@@ -308,7 +308,7 @@ namespace embree
         break;
 
       case /*0b01*/ 1:
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
         if (device->hasISA(AVX))
           accels.add(device->bvh8_factory->BVH8Quad4iMB(this,BVHFactory::BuildVariant::STATIC,BVHFactory::IntersectVariant::ROBUST));
         else
@@ -321,7 +321,7 @@ namespace embree
       }
     }
     else if (device->quad_accel_mb == "bvh4.quad4imb") accels.add(device->bvh4_factory->BVH4Quad4iMB(this));
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
     else if (device->quad_accel_mb == "bvh8.quad4imb") accels.add(device->bvh8_factory->BVH8Quad4iMB(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown quad motion blur acceleration structure "+device->quad_accel_mb);
@@ -336,7 +336,7 @@ namespace embree
       int mode = 2*(int)isCompact() + 1*(int)isRobust();
       if (isStatic())
       {
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
         if (device->hasISA(AVX2)) // only enable on HSW machines, for SNB this codepath is slower
         {
           switch (mode) {
@@ -371,7 +371,7 @@ namespace embree
     else if (device->hair_accel == "bvh4.bezier1i"    ) accels.add(device->bvh4_factory->BVH4Bezier1i(this));
     else if (device->hair_accel == "bvh4obb.bezier1v" ) accels.add(device->bvh4_factory->BVH4OBBBezier1v(this));
     else if (device->hair_accel == "bvh4obb.bezier1i" ) accels.add(device->bvh4_factory->BVH4OBBBezier1i(this));
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
     else if (device->hair_accel == "bvh8obb.bezier1v" ) accels.add(device->bvh8_factory->BVH8OBBBezier1v(this));
     else if (device->hair_accel == "bvh8obb.bezier1i" ) accels.add(device->bvh8_factory->BVH8OBBBezier1i(this));
 #endif
@@ -384,7 +384,7 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_HAIR)
     if (device->hair_accel_mb == "default")
     {
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
       if (device->hasISA(AVX2) && !isCompact()) // only enable on HSW machines, on SNB this codepath is slower
       {
         accels.add(device->bvh8_factory->BVH8OBBBezier1iMB(this));
@@ -396,7 +396,7 @@ namespace embree
       }
     }
     else if (device->hair_accel_mb == "bvh4.bezier1imb") accels.add(device->bvh4_factory->BVH4OBBBezier1iMB(this));
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
     else if (device->hair_accel_mb == "bvh8.bezier1imb") accels.add(device->bvh8_factory->BVH8OBBBezier1iMB(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown motion blur hair acceleration structure "+device->hair_accel_mb);
@@ -410,7 +410,7 @@ namespace embree
     {
       if (isStatic())
       {
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
         if (device->hasISA(AVX) && !isCompact())
           accels.add(device->bvh8_factory->BVH8Line4i(this));
         else
@@ -423,7 +423,7 @@ namespace embree
       }
     }
     else if (device->line_accel == "bvh4.line4i") accels.add(device->bvh4_factory->BVH4Line4i(this));
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
     else if (device->line_accel == "bvh8.line4i") accels.add(device->bvh8_factory->BVH8Line4i(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown line segment acceleration structure "+device->line_accel);
@@ -435,7 +435,7 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_LINES)
     if (device->line_accel_mb == "default")
     {
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
       if (device->hasISA(AVX) && !isCompact())
         accels.add(device->bvh8_factory->BVH8Line4iMB(this));
       else
@@ -443,7 +443,7 @@ namespace embree
         accels.add(device->bvh4_factory->BVH4Line4iMB(this));
     }
     else if (device->line_accel_mb == "bvh4.line4imb") accels.add(device->bvh4_factory->BVH4Line4iMB(this));
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
     else if (device->line_accel_mb == "bvh8.line4imb") accels.add(device->bvh8_factory->BVH8Line4iMB(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown motion blur line segment acceleration structure "+device->line_accel_mb);
@@ -489,7 +489,7 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_USER)
     if (device->object_accel == "default") 
     {
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
       if (device->hasISA(AVX) && !isCompact())
       {
         if (isStatic()) {
@@ -509,7 +509,7 @@ namespace embree
       }
     }
     else if (device->object_accel == "bvh4.object") accels.add(device->bvh4_factory->BVH4UserGeometry(this));
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
     else if (device->object_accel == "bvh8.object") accels.add(device->bvh8_factory->BVH8UserGeometry(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown user geometry accel "+device->object_accel);
@@ -520,7 +520,7 @@ namespace embree
   {
 #if defined(EMBREE_GEOMETRY_USER)
     if (device->object_accel_mb == "default"    ) {
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
       if (device->hasISA(AVX) && !isCompact())
         accels.add(device->bvh8_factory->BVH8UserGeometryMB(this));
       else
@@ -528,7 +528,7 @@ namespace embree
         accels.add(device->bvh4_factory->BVH4UserGeometryMB(this));
     }
     else if (device->object_accel_mb == "bvh4.object") accels.add(device->bvh4_factory->BVH4UserGeometryMB(this));
-#if defined (__TARGET_AVX__)
+#if defined (EMBREE_TARGET_AVX)
     else if (device->object_accel_mb == "bvh8.object") accels.add(device->bvh8_factory->BVH8UserGeometryMB(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown user geometry mblur accel "+device->object_accel_mb);
@@ -631,7 +631,7 @@ namespace embree
       return -1;
     }
 
-#if defined(__TARGET_AVX__)
+#if defined(EMBREE_TARGET_AVX)
     if (device->hasISA(AVX))
       return bind(geomID,new SubdivMeshAVX(this,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps));
     else 

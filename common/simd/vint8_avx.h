@@ -111,14 +111,14 @@ namespace embree
       return vint8(il,ih);
     }
 
-    static __forceinline void store_uchar( unsigned char* const ptr, const vint8& i ) {
+    static __forceinline void store( unsigned char* const ptr, const vint8& i ) {
       vint4 il(i.vl);
       vint4 ih(i.vh);
-      vint4::store_uchar(ptr + 0,il);
-      vint4::store_uchar(ptr + 4,ih);
+      vint4::store(ptr + 0,il);
+      vint4::store(ptr + 4,ih);
     }
 
-    static __forceinline void store_ushort( unsigned short* const ptr, const vint8& v ) {
+    static __forceinline void store( unsigned short* const ptr, const vint8& v ) {
       for (size_t i=0;i<8;i++)
         ptr[i] = (unsigned short)v[i];
     }
