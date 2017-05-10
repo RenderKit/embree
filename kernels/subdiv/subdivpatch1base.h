@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "../geometry/primitive.h"
 #include "bspline_patch.h"
 #include "bezier_patch.h"
 #include "gregory_patch.h"
@@ -93,6 +94,15 @@ namespace embree
     }
 
   public:    
+    __forceinline unsigned int geomID() const  {
+      return geom;
+    } 
+
+    __forceinline unsigned int primID() const  {
+      return prim;
+    } 
+
+  public:
     SharedLazyTessellationCache::Tag root_ref;
     SpinLock mtx;
 

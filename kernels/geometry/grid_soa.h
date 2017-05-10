@@ -60,7 +60,7 @@ namespace embree
 #endif
         void* data = alloc(offsetof(GridSOA,data)+bvhBytes+time_steps*gridBytes+rootBytes);
         assert(data);
-        return new (data) GridSOA(patches,time_steps,x0,x1,y0,y1,patches->grid_u_res,patches->grid_v_res,scene->get<SubdivMesh>(patches->geom),bvhBytes,gridBytes,bounds_o);
+        return new (data) GridSOA(patches,time_steps,x0,x1,y0,y1,patches->grid_u_res,patches->grid_v_res,scene->get<SubdivMesh>(patches->geomID()),bvhBytes,gridBytes,bounds_o);
       }
 
       /*! Grid creation */
