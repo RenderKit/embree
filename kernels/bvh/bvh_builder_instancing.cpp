@@ -23,7 +23,7 @@
 #include "../geometry/quadi.h"
 
 /* new open/merge builder */
-#define ENABLE_DIRECT_SAH_MERGE_BUILDER 0
+#define ENABLE_DIRECT_SAH_MERGE_BUILDER 1
 #define SPLIT_MEMORY_RESERVE_SCALE_FACTOR 4
 #define SPLIT_MIN_EXT_SPACE 1000
 

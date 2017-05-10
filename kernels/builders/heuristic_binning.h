@@ -36,9 +36,18 @@ namespace embree
         /*! calculates the mapping */
         __forceinline BinMapping(size_t N, const BBox3fa& centBounds) 
         {
-          //num = min(BINS,size_t(4.0f + 0.05f*N));
-          num = min(BINS,max(N,(size_t)1)); // minimum of 1 bin
+          num = min(BINS,size_t(4.0f + 0.05f*N));
           assert(num >= 1);
+          const vfloat4 diag = (vfloat4) centBounds.size();
+          scale = select(diag > vfloat4(1E-34f),vfloat4(0.99f*num)/diag,vfloat4(0.0f));
+          ofs  = (vfloat4) centBounds.lower;
+        }
+
+        /*! calculates the mapping */
+        __forceinline BinMapping(const BBox3fa& centBounds, size_t N) 
+        {
+          assert(N >= 1);
+          num = min(BINS,N); 
           const vfloat4 diag = (vfloat4) centBounds.size();
           scale = select(diag > vfloat4(1E-34f),vfloat4(0.99f*num)/diag,vfloat4(0.0f));
           ofs  = (vfloat4) centBounds.lower;
