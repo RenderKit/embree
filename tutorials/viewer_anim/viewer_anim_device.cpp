@@ -20,12 +20,6 @@
 #define SHADOWS 1
 #define DUMP_PROFILE_DATA 0
 
-#define AO 0
-#define AMBIENT_OCCLUSION_SAMPLES 4
-#define MAX_AO_DISTANCE 0.2f
-
-//pos_inf 
-
 #include "../common/math/random_sampler.h"
 #include "../common/math/sampling.h"
 #include "../common/tutorial/tutorial_device.h"
@@ -36,14 +30,10 @@ namespace embree {
 
   extern "C" ISPCScene* g_ispc_scene;
 
-  struct LSPointSample {
-    Vec3fa position;
-    Vec3fa radiance;
-  };
   /* scene data */
   RTCDevice g_device   = nullptr;
   RTCScene g_scene     = nullptr;
-  LSPointSample *ls_samples = nullptr;
+  Vec3fa *ls_positions = nullptr;
 
   /* animation data */
   size_t frameID         = 0;
@@ -84,11 +74,10 @@ namespace embree {
   // ==================================================================================================
 
 
-unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, const size_t id)
+  unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
   {
     /* if more than a single timestep, mark object as dynamic */
     RTCGeometryFlags object_flags = mesh->numTimeSteps > 1 ? RTC_GEOMETRY_DYNAMIC : RTC_GEOMETRY_STATIC;
-    //RTCGeometryFlags object_flags = RTC_GEOMETRY_DYNAMIC;
     /* create object */
     unsigned int geomID = rtcNewTriangleMesh (scene_out, object_flags, mesh->numTriangles, mesh->numVertices, 1);
     /* generate vertex buffer */
@@ -224,7 +213,7 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, con
       assert(geomID == i);
     }
     else if (geometry->type == TRIANGLE_MESH) {
-      geomID = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out, i);
+      geomID = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out);
       ((ISPCTriangleMesh*)geometry)->geom.geomID = geomID;
       assert(geomID == i);
     }
@@ -284,7 +273,6 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, con
     }
     else if (geometry->type == TRIANGLE_MESH) {
       ISPCTriangleMesh* mesh = (ISPCTriangleMesh*)geometry;
-#if 1
       /* if static do nothing */
       if (mesh->numTimeSteps <= 1) return;
       /* interpolate two vertices from two timesteps */
@@ -293,9 +281,6 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, con
       const Vec3fa* __restrict__ const input0 = mesh->positions[t0];
       const Vec3fa* __restrict__ const input1 = mesh->positions[t1];
       interpolateVertices(scene_out, mesh->geom.geomID, mesh->numVertices, input0, input1, tt);
-#else
-      rtcUpdate(scene_out,mesh->geomID);
-#endif
     }
     else if (geometry->type == QUAD_MESH) {
       ISPCQuadMesh* mesh = (ISPCQuadMesh*)geometry;
@@ -334,63 +319,6 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
   const Vec3fa Ng = _Ng;
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
-
-Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
-{
-  RTCRay rays[AMBIENT_OCCLUSION_SAMPLES];
-
-  Vec3fa Ng = normalize(ray.Ng);
-  if (dot(ray.dir,Ng) > 0.0f) Ng = neg(Ng);
-
-  Vec3fa col = Vec3fa(min(1.0f,0.3f+0.8f*abs(dot(Ng,normalize(ray.dir)))));
-
-  /* calculate hit point */
-  float intensity = 0;
-  Vec3fa hitPos = ray.org + ray.tfar * ray.dir + Ng * 0.01f;
-
-  RandomSampler sampler;
-  RandomSampler_init(sampler,x,y,0);
-
-  /* enable only valid rays */
-  for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
-  {
-    /* sample random direction */
-    Vec2f s = RandomSampler_get2D(sampler);
-    Sample3f dir;
-    dir.v = cosineSampleHemisphere(s);
-    dir.pdf = cosineSampleHemispherePDF(dir.v);
-    dir.v = frame(Ng) * dir.v;
-
-    /* initialize shadow ray */
-    RTCRay& shadow = rays[i];
-    shadow.org = hitPos;
-    shadow.dir = dir.v;
-    bool mask = 1; { // invalidate inactive rays
-      shadow.tnear = mask ? 0.01f       : (float)(pos_inf);
-      shadow.tfar  = mask ? (float)(MAX_AO_DISTANCE) : (float)(neg_inf);
-    }
-    shadow.geomID = RTC_INVALID_GEOMETRY_ID;
-    shadow.primID = RTC_INVALID_GEOMETRY_ID;
-    shadow.mask = -1;
-    shadow.time = 0;
-  }
-
-  RTCIntersectContext context;
-  context.flags = RTC_INTERSECT_INCOHERENT;
-
-  /* trace occlusion rays */
-  rtcOccluded1M(g_scene,&context,rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(RTCRay));
-
-  /* accumulate illumination */
-  for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++) {
-    if (rays[i].geomID == RTC_INVALID_GEOMETRY_ID)
-      intensity += 1.0f;
-  }
-
-  /* shade pixel */
-  return col * (intensity/AMBIENT_OCCLUSION_SAMPLES);
-}
-
 
 
 /* renders a single screen tile */
@@ -443,31 +371,27 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
     rtcIntersect1M(g_scene,&context,rays,N,sizeof(RTCRay));
 
     /* shade stream of rays */
-    Vec3fa diffuse[TILE_SIZE_X*TILE_SIZE_Y];
-    Vec3fa normals[TILE_SIZE_X*TILE_SIZE_Y];
-
+    Vec3fa colors[TILE_SIZE_X*TILE_SIZE_Y];
     N = 0;
     for (unsigned int y=y0; y<y1; y++)
       for (unsigned int x=x0; x<x1; x++,N++)
       {
         /* ISPC workaround for mask == 0 */
         RTCRay& ray = rays[N];
+        Vec3fa Ng = ray.Ng;
 
         /* shading */
-        Vec3fa& color = diffuse[N];
-        Vec3fa& Ng    = normals[N];
-        Ng = ray.Ng;
-        
-        color = Vec3fa(0.0f,0.0f,0.0f);
+        Vec3fa& color = colors[N];
+        color = Vec3fa(1.0f,1.0f,1.0f);
         if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
         {
           /* vertex normals */
           ISPCGeometry* geometry = g_ispc_scene->geometries[ray.geomID];
           if (likely(geometry->type == TRIANGLE_MESH))
           {
-            ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
 #if VERTEX_NORMALS == 1
-            if (likely(mesh->normals && ray.geomID == 0))
+            ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
+            if (likely(mesh->normals))
             {
               ISPCTriangle* tri = &mesh->triangles[ray.primID];
 
@@ -477,34 +401,17 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
               Ng = (1.0f-ray.u-ray.v)*n0 + ray.u*n1 + ray.v*n2;
             }
 #endif
-            int materialID = mesh->materialID;
-            if (g_ispc_scene->materials[materialID]->type == MATERIAL_OBJ) {
-              ISPCOBJMaterial* material = (ISPCOBJMaterial*) g_ispc_scene->materials[materialID];
-              color = Vec3fa(material->Kd);
-            }            
           }
           /* final color */
-          Ng = normalize(Ng);
-#if AO == 1
-          color = ambientOcclusionShading(x,y,ray);
-#else
-          //color *= ambientOcclusionShading(x,y,ray);          
-          //color *= Vec3fa(abs(dot(ray.dir,normalize(Ng))));          
-#endif
+          color = Vec3fa(abs(dot(ray.dir,normalize(Ng))));
         }
-
       }
 
-#define AMBIENT 0.1f
-    Vec3fa final[TILE_SIZE_X*TILE_SIZE_Y];
-    for (size_t n=0;n<N;n++)
-      final[n] = Vec3fa(AMBIENT);
 
 #if SHADOWS == 1
     /* do some hard shadows to point lights */
     if (g_ispc_scene->numLights)
     {
-      const float inv_numLights = 1.0f / g_ispc_scene->numLights;
       for (unsigned int i=0; i<g_ispc_scene->numLights; i++)
       {
         /* init shadow/occlusion rays */
@@ -513,7 +420,7 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
           RTCRay& ray = rays[n];
           const bool valid = ray.geomID != RTC_INVALID_GEOMETRY_ID;
           const Vec3fa hitpos = ray.org + ray.tfar*ray.dir;
-          ray.org = ls_samples[i].position;
+          ray.org = ls_positions[i];
           ray.dir = hitpos - ray.org;
           ray.tnear = 1E-4f;
           ray.tfar  = valid ? 0.99f : -1.0f;
@@ -528,10 +435,9 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
 
         /* modify pixel color based on occlusion */
         for (int n=0;n<N;n++)
-          if (rays[n].geomID == RTC_INVALID_GEOMETRY_ID)
-            final[n] += diffuse[n] * abs(dot(normalize(rays[n].dir),normals[n])) * inv_numLights * ls_samples[i].radiance;
-          // if (rays[n].geomID != RTC_INVALID_GEOMETRY_ID)
-          //   colors[n] *= 0.1f;
+          if (rays[n].geomID != RTC_INVALID_GEOMETRY_ID)
+            colors[n] *= 0.1f;
+
       }
     }
 #endif
@@ -541,7 +447,7 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
     for (unsigned int y=y0; y<y1; y++)
       for (unsigned int x=x0; x<x1; x++,N++)
       {
-        Vec3fa& color = final[N];
+        Vec3fa& color = colors[N];
         unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
         unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
         unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
@@ -614,19 +520,6 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
       times[frameID] = time;
   }
 
-  __forceinline Vec3fa getTriangleNormal(const unsigned int geomID,
-                                         const unsigned int primID)
-  {
-    ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
-    assert(geometry->type == TRIANGLE_MESH);
-    ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
-    ISPCTriangle* tri = &mesh->triangles[primID];             
-    const Vec3fa v0 = mesh->positions[0][tri->v0];
-    const Vec3fa v1 = mesh->positions[0][tri->v1];
-    const Vec3fa v2 = mesh->positions[0][tri->v2];
-    return cross((v1-v0),(v2-v0));    
-  }
-
 /* called by the C++ code to render */
   extern "C" void device_render (int* pixels,
                                  const unsigned int width,
@@ -644,7 +537,7 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
 
     if (g_ispc_scene->numLights)
     {
-      if (ls_samples == nullptr) ls_samples = new LSPointSample[g_ispc_scene->numLights];
+      if (ls_positions == nullptr) ls_positions = new Vec3fa[g_ispc_scene->numLights];
       DifferentialGeometry dg;
       dg.geomID = 0;
       dg.primID = 0;
@@ -657,22 +550,13 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
       {
         const Light* l = g_ispc_scene->lights[i];
         Light_SampleRes ls = l->sample(l,dg,Vec2f(0.0f,0.0f));
-        ls_samples[i].position = ls.dir * ls.dist;
-        ls_samples[i].radiance = ls.weight;
+        ls_positions[i] = ls.dir * ls.dist;
       }
     }
 
     /* ============ */
     /* render image */
     /* ============ */
- 
-#if 0
-    // size_t numObjects = getNumObjects(g_ispc_scene);
-    // for (unsigned int i=0;i<numObjects;i++)
-    //   updateVertexData(i, g_ispc_scene, g_scene, 0, 0);
-    rtcCommit(g_scene);
-    return;
-#endif
 
     const double renderTime0 = getSeconds();
     const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
@@ -729,7 +613,6 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
     updateTimeLog(buildTime,buildTimeDelta);
 
     if (unlikely(printStats)) std::cout << "bvh rebuild in :     " << buildTimeDelta << " ms" << std::endl;
-    PRINT(buildTime1-vertexUpdateTime0);
 #endif
 
     frameID = (frameID + 1) % numProfileFrames;
