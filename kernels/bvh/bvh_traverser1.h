@@ -239,6 +239,9 @@ namespace embree
                                                    StackItemT<NodeRef>* stackEnd)
       {
         assert(mask != 0);
+#if defined(__AVX512ER__)
+        traverseClosestHitAVX512<4,Nx,types,NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
+#else
         const BaseNode* node = cur.baseNode(types);
 
         /*! one child is hit, continue with that child */
@@ -290,6 +293,7 @@ namespace embree
         assert(c != BVH::emptyNode);
         sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
         cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+#endif
       }
 
       /* Traverses a node with at least one hit child. Optimized for finding any hit (occlusion). */
