@@ -49,7 +49,7 @@ namespace embree
 
     /* Construction from vertices and IDs */
     __forceinline TriangleM(const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const vint<M>& geomIDs, const vint<M>& primIDs)
-      : geomIDs(Leaf::encode(Leaf::TY_TRIANGLE,geomIDs)), primIDs(primIDs), v0(v0), e1(v0-v1), e2(v2-v0) {}
+      : geomIDs(Leaf::encode(Leaf::TY_TRIANGLE,geomIDs)), v0(v0), e1(v0-v1), e2(v2-v0), primIDs(primIDs) {}
 
     /* Returns a mask that tells which triangles are valid */
     __forceinline vbool<M> valid() const { return geomIDs != vint<M>(-1); }
@@ -157,13 +157,12 @@ namespace embree
       return bounds;
     }
 
-  private:
-    vint<M> geomIDs; // geometry IDs
-    vint<M> primIDs; // primitive IDs
   public:
+    vint<M> geomIDs; // geometry IDs
     Vec3vf<M> v0;      // base vertex of the triangles
     Vec3vf<M> e1;      // 1st edge of the triangles (v0-v1)
     Vec3vf<M> e2;      // 2nd edge of the triangles (v2-v0)
+    vint<M> primIDs; // primitive IDs
   };
 
   template<int M>

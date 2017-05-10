@@ -56,7 +56,7 @@ namespace embree
                              const vint<M>& geomIDs,
                              const vint<M>& primIDs,
                              const Leaf::Type ty)
-      : geomIDs(Leaf::encode(ty,geomIDs)), primIDs(primIDs), v0(v0), v1(v1), v2(v2) {}
+      : geomIDs(Leaf::encode(ty,geomIDs)), v0(v0), v1(v1), v2(v2), primIDs(primIDs) {}
 
     /* Returns a mask that tells which triangles are valid */
     __forceinline vbool<M> valid() const { return primIDs != vint<M>(-1); }
@@ -274,13 +274,12 @@ namespace embree
       return bounds;
     }
 
-  private:
-    vint<M> geomIDs;    // geometry ID of mesh
-    vint<M> primIDs;    // primitive ID of primitive inside mesh
   public:
+    vint<M> geomIDs;    // geometry ID of mesh
     vint<M> v0;         // 4 byte offset of 1st vertex
     vint<M> v1;         // 4 byte offset of 2nd vertex
     vint<M> v2;         // 4 byte offset of 3rd vertex
+    vint<M> primIDs;    // primitive ID of primitive inside mesh
   };
 
   template<>

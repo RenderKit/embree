@@ -47,7 +47,7 @@ namespace embree
 
     /* Construction from vertices and IDs */
     __forceinline QuadMv(const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const Vec3vf<M>& v3, const vint<M>& geomIDs, const vint<M>& primIDs)
-      : geomIDs(Leaf::encode(Leaf::TY_QUAD,geomIDs)), primIDs(primIDs), v0(v0), v1(v1), v2(v2), v3(v3) {}
+      : geomIDs(Leaf::encode(Leaf::TY_QUAD,geomIDs)), v0(v0), v1(v1), v2(v2), v3(v3), primIDs(primIDs) {}
     
     /* Returns a mask that tells which quads are valid */
     __forceinline vbool<M> valid() const { return geomIDs != vint<M>(-1); }
@@ -159,14 +159,13 @@ namespace embree
       return bounds;
     }
    
-  private:
-    vint<M> geomIDs; // geometry ID
-    vint<M> primIDs; // primitive ID
   public:
+    vint<M> geomIDs; // geometry ID
     Vec3vf<M> v0;      // 1st vertex of the quads
     Vec3vf<M> v1;      // 2nd vertex of the quads
     Vec3vf<M> v2;      // 3rd vertex of the quads
     Vec3vf<M> v3;      // 4rd vertex of the quads
+    vint<M> primIDs; // primitive ID
   };
 
   template<int M>
