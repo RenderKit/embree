@@ -4045,22 +4045,22 @@ namespace embree
                                   HAIR_GEOMETRY, HAIR_GEOMETRY_MB, CURVE_GEOMETRY, CURVE_GEOMETRY_MB, LINE_GEOMETRY, LINE_GEOMETRY_MB };
 
     /* create list of all ISAs to test */
-#if defined(__TARGET_SSE2__)
+#if defined(EMBREE_TARGET_SSE2)
     if (hasISA(SSE2)) isas.push_back(SSE2);
 #endif
-#if defined(__TARGET_SSE42__)
+#if defined(EMBREE_TARGET_SSE42)
     if (hasISA(SSE42)) isas.push_back(SSE42);
 #endif
-#if defined(__TARGET_AVX__)
+#if defined(EMBREE_TARGET_AVX)
     if (hasISA(AVX)) isas.push_back(AVX);
 #endif
-#if defined(__TARGET_AVX2__)
+#if defined(EMBREE_TARGET_AVX2)
     if (hasISA(AVX2)) isas.push_back(AVX2);
 #endif
-#if defined(__TARGET_AVX512KNL__)
+#if defined(EMBREE_TARGET_AVX512KNL)
     if (hasISA(AVX512KNL)) isas.push_back(AVX512KNL);
 #endif
-#if defined(__TARGET_AVX512SKX__)
+#if defined(EMBREE_TARGET_AVX512SKX)
     if (hasISA(AVX512SKX)) isas.push_back(AVX512SKX);
 #endif
     
