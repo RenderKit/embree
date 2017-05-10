@@ -35,9 +35,6 @@
 // 500
 #define SPLIT_MIN_EXT_SPACE 1000
 
-#undef DBG_PRINT
-#define DBG_PRINT(x) 
-// PRINT(x)
 // for non-opening two-level approach set ENABLE_DIRECT_SAH_MERGE_BUILDER and ENABLE_OPEN_SEQUENTIAL to 0
 
 namespace embree
@@ -168,8 +165,6 @@ namespace embree
 
 #endif
 
-        DBG_PRINT(refs.size());
-
         bvh->alloc.init_estimate(refs.size()*16); // FIXME: increase estimate for opening case
 
 #if defined(TASKING_TBB) && defined(__AVX512ER__) && USE_TASK_ARENA // KNL
@@ -219,13 +214,11 @@ namespace embree
             settings.singleThreadThreshold = singleThreadThreshold;
 
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
-            DBG_PRINT(numPrimitives);
+            //DBG_PRINT(numPrimitives);
             const size_t extSize = max(max((size_t)SPLIT_MIN_EXT_SPACE,refs.size()*SPLIT_MEMORY_RESERVE_SCALE),size_t((float)numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
-            DBG_PRINT(refs.size()*SPLIT_MEMORY_RESERVE_SCALE);
-            DBG_PRINT(extSize);
+            //DBG_PRINT(refs.size()*SPLIT_MEMORY_RESERVE_SCALE);
+            //DBG_PRINT(extSize);
             refs.resize(extSize); 
-
-            //std::atomic<size_t> numLeaves(0);
 
             NodeRef root = BVHBuilderBinnedOpenMergeSAH::build<NodeRef,BuildRef>(
               typename BVH::CreateAlloc(bvh),
@@ -233,7 +226,6 @@ namespace embree
               typename BVH::AlignedNode::Set2(),
               
               [&] (const BVHBuilderBinnedOpenMergeSAH::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) -> NodeRef  {
-                //numLeaves++;
                 assert(current.prims.size() == 1);
                 return (NodeRef) refs[current.prims.begin()].node;
               },
@@ -242,8 +234,6 @@ namespace embree
               },              
               [&] (size_t dn) { bvh->scene->progressMonitor(0); },
               refs.data(),extSize,pinfo,settings);
-            //DBG_PRINT(numLeaves.load());
-
 #else
             NodeRef root = BVHBuilderBinnedSAH::build<NodeRef>(
               typename BVH::CreateAlloc(bvh),
@@ -313,7 +303,6 @@ namespace embree
 	return;
 
       size_t num = min(numPrimitives/400,maxOpenSize);
-      DBG_PRINT(num);
       refs.reserve(num);
 
 #if 1
@@ -346,7 +335,6 @@ namespace embree
           std::push_heap (refs.begin(),refs.end()); 
         }
       }
-      DBG_PRINT(refs.size());
     }
 
 #if defined(EMBREE_GEOMETRY_LINES)    
