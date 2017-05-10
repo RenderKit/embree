@@ -1264,8 +1264,8 @@ namespace embree
         }
 
       case HAIR_GEOMETRY_MB: switch (sflags) {
-        case RTC_SCENE_STATIC : return avx2 ?  346.0f*NN : 190.0f*NN; // bezier1i // FIXME: 346 are very loose bounds
-        case RTC_SCENE_ROBUST : return avx2 ?  346.0f*NN : 190.0f*NN; // bezier1i // FIXME: 346 are very loose bounds 
+        case RTC_SCENE_STATIC : return avx2 ?  386.0f*NN : 190.0f*NN; // bezier1i // FIXME: 386 are very loose bounds
+        case RTC_SCENE_ROBUST : return avx2 ?  386.0f*NN : 190.0f*NN; // bezier1i // FIXME: 386 are very loose bounds 
         case RTC_SCENE_COMPACT: return avx2 ?  190.0f*NN : 190.0f*NN; // bezier1i
         default: return inf;
         }
