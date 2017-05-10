@@ -41,7 +41,9 @@ namespace embree
       TY_SUBDIV = 8,
       TY_SUBDIV_MB = 9,
       TY_HAIR = 10,
-      TY_HAIR_MB = 11
+      TY_HAIR_MB = 11,
+      TY_GRID = 12,
+      TY_GRID_MB = 13
     };
 
     template<typename T>

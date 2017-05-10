@@ -23,11 +23,17 @@ namespace embree
     GridSOA::GridSOA(const SubdivPatch1Base* patches, unsigned time_steps,
                      const unsigned x0, const unsigned x1, const unsigned y0, const unsigned y1, const unsigned swidth, const unsigned sheight,
                      const SubdivMesh* const geom, const size_t gridOffset, const size_t gridBytes, BBox3fa* bounds_o)
-      : troot(BVH4::emptyNode),
+      : _geomID(0), _primID(patches->primID()), 
+        troot(BVH4::emptyNode),
         time_steps(time_steps), width(x1-x0+1), height(y1-y0+1), dim_offset(width*height),
-        _geomID(patches->tyGeomID()), _primID(patches->primID()), 
         gridOffset(gridOffset), gridBytes(unsigned(gridBytes)), rootOffset(unsigned(gridOffset+time_steps*gridBytes))
     {
+      /* encode leaf type */
+      if (patches->ltype() == Leaf::TY_SUBDIV)
+        _geomID = Leaf::encode(Leaf::TY_GRID,patches->geomID());
+      else
+        _geomID = Leaf::encode(Leaf::TY_GRID_MB,patches->geomID());
+
       /* the generate loops need padded arrays, thus first store into these temporary arrays */
       unsigned temp_size = width*height+VSIZEX;
       dynamic_large_stack_array(float,local_grid_u,temp_size,64*64*sizeof(float));

@@ -94,8 +94,8 @@ namespace embree
       return (SharedLazyTessellationCache::CacheEntry&) root_ref;
     }
 
-    __forceinline unsigned int tyGeomID() const  {
-      return geom;
+    __forceinline Leaf::Type ltype() const  {
+      return Leaf::decodeTy(geom);
     } 
 
     __forceinline unsigned int geomID() const  {

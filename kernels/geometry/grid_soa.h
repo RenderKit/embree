@@ -265,17 +265,16 @@ namespace embree
         return _primID;
       } 
 
-    private:
+    public:
       unsigned _geomID;
       unsigned _primID;
-    public:
       BVH4::NodeRef troot;
 #if !defined(__X86_64__)
       unsigned align1;
 #endif
+
       unsigned time_steps;
       unsigned width;
-
       unsigned height;
       unsigned dim_offset;
 
