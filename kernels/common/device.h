@@ -88,7 +88,7 @@ namespace embree
 
     std::unique_ptr<InstanceFactory> instance_factory;
     std::unique_ptr<BVH4Factory> bvh4_factory;
-#if defined(__TARGET_AVX__)
+#if defined(EMBREE_TARGET_AVX)
     std::unique_ptr<BVH8Factory> bvh8_factory;
 #endif
     

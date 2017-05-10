@@ -58,7 +58,7 @@ namespace embree
         Loader::gather(grid_x,grid_y,grid_z,line_offset,lines,v0,v1,v2);       
         GridSOA::MapUV<Loader> mapUV(grid_uv,line_offset,lines);
         PlueckerIntersector1<Loader::M> intersector(ray,nullptr);
-        intersector.intersect(ray,v0,v1,v2,mapUV,Intersect1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID));
+        intersector.intersect(ray,v0,v1,v2,mapUV,Intersect1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID(),pre.grid->primID()));
       };
       
       template<typename Loader>
@@ -80,7 +80,7 @@ namespace embree
         
         GridSOA::MapUV<Loader> mapUV(grid_uv,line_offset,lines);
         PlueckerIntersector1<Loader::M> intersector(ray,nullptr);
-        return intersector.intersect(ray,v0,v1,v2,mapUV,Occluded1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID));
+        return intersector.intersect(ray,v0,v1,v2,mapUV,Occluded1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID(),pre.grid->primID()));
       }
       
       /*! Intersect a ray with the primitive. */
@@ -150,7 +150,7 @@ namespace embree
 
         GridSOA::MapUV<Loader> mapUV(grid_uv,line_offset,lines);
         PlueckerIntersector1<Loader::M> intersector(ray,nullptr);
-        intersector.intersect(ray,v0,v1,v2,mapUV,Intersect1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID));
+        intersector.intersect(ray,v0,v1,v2,mapUV,Intersect1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID(),pre.grid->primID()));
       };
       
       template<typename Loader>
@@ -180,7 +180,7 @@ namespace embree
         
         GridSOA::MapUV<Loader> mapUV(grid_uv,line_offset,lines);
         PlueckerIntersector1<Loader::M> intersector(ray,nullptr);
-        return intersector.intersect(ray,v0,v1,v2,mapUV,Occluded1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID));
+        return intersector.intersect(ray,v0,v1,v2,mapUV,Occluded1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID(),pre.grid->primID()));
       }
       
       /*! Intersect a ray with the primitive. */

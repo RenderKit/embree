@@ -60,7 +60,7 @@ namespace embree
 #endif
         void* data = alloc(offsetof(GridSOA,data)+bvhBytes+time_steps*gridBytes+rootBytes);
         assert(data);
-        return new (data) GridSOA(patches,time_steps,x0,x1,y0,y1,patches->grid_u_res,patches->grid_v_res,scene->get<SubdivMesh>(patches->geom),bvhBytes,gridBytes,bounds_o);
+        return new (data) GridSOA(patches,time_steps,x0,x1,y0,y1,patches->grid_u_res,patches->grid_v_res,scene->get<SubdivMesh>(patches->geomID()),bvhBytes,gridBytes,bounds_o);
       }
 
       /*! Grid creation */
@@ -256,6 +256,14 @@ namespace embree
 	const vfloat v = (vfloat)iv * vfloat(1.0f/0xFFFF);
 	return Vec2<vfloat>(u,v);
       }
+      
+      __forceinline unsigned int geomID() const  {
+        return _geomID;
+      } 
+      
+      __forceinline unsigned int primID() const  {
+        return _primID;
+      } 
 
     public:
       BVH4::NodeRef troot;
@@ -267,8 +275,8 @@ namespace embree
 
       unsigned height;
       unsigned dim_offset;
-      unsigned geomID;
-      unsigned primID;
+      unsigned _geomID;
+      unsigned _primID;
 
       unsigned align2;
       unsigned gridOffset;
