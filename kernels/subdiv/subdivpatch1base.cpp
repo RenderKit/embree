@@ -18,7 +18,8 @@
 
 namespace embree
 {
-  SubdivPatch1Base::SubdivPatch1Base (const unsigned int gID,
+  SubdivPatch1Base::SubdivPatch1Base (const Leaf::Type ltype,
+                                      const unsigned int gID,
                                       const unsigned int pID,
                                       const unsigned int subPatch,
                                       const SubdivMesh *const mesh,
@@ -27,7 +28,7 @@ namespace embree
                                       const float edge_level[4],
                                       const int subdiv[4],
                                       const int simd_width)
-  : geom(gID), prim(pID), flags(0), type(INVALID_PATCH), time_(unsigned(time))
+  : geom(Leaf::encode(ltype,gID)), prim(pID), flags(0), type(INVALID_PATCH), time_(unsigned(time))
   {
     static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
 

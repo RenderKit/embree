@@ -50,7 +50,8 @@ namespace embree
     /*! Default constructor. */
     __forceinline SubdivPatch1Base () {}
 
-    SubdivPatch1Base (const unsigned int gID,
+    SubdivPatch1Base (const Leaf::Type type,
+                      const unsigned int gID,
                       const unsigned int pID,
                       const unsigned int subPatch,
                       const SubdivMesh *const mesh,
@@ -94,7 +95,7 @@ namespace embree
     }
 
     __forceinline unsigned int geomID() const  {
-      return geom;
+      return Leaf::decodeID(geom);
     } 
 
     __forceinline unsigned int primID() const  {

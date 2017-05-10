@@ -43,7 +43,8 @@ namespace embree
   public:
 
     /*! constructor for cached subdiv patch */
-    SubdivPatch1Cached (const unsigned int gID,
+    SubdivPatch1Cached (const Leaf::Type type,
+                        const unsigned int gID,
                         const unsigned int pID,
                         const unsigned int subPatch,
                         const SubdivMesh *const mesh,
@@ -52,6 +53,6 @@ namespace embree
                         const float edge_level[4],
                         const int subdiv[4],
                         const int simd_width) 
-      : SubdivPatch1Base(gID,pID,subPatch,mesh,time,uv,edge_level,subdiv,simd_width) {}
+      : SubdivPatch1Base(type,gID,pID,subPatch,mesh,time,uv,edge_level,subdiv,simd_width) {}
   };
 }
