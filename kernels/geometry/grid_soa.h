@@ -256,6 +256,14 @@ namespace embree
 	const vfloat v = (vfloat)iv * vfloat(1.0f/0xFFFF);
 	return Vec2<vfloat>(u,v);
       }
+      
+      __forceinline unsigned int geomID() const  {
+        return _geomID;
+      } 
+      
+      __forceinline unsigned int primID() const  {
+        return _primID;
+      } 
 
     public:
       BVH4::NodeRef troot;
@@ -267,8 +275,8 @@ namespace embree
 
       unsigned height;
       unsigned dim_offset;
-      unsigned geomID;
-      unsigned primID;
+      unsigned _geomID;
+      unsigned _primID;
 
       unsigned align2;
       unsigned gridOffset;
