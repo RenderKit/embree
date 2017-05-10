@@ -43,8 +43,8 @@ IF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
 ENDIF()
 
 CONFIGURE_FILE(
-  "${PROJECT_SOURCE_DIR}/kernels/version.h.in"
-  "${PROJECT_BINARY_DIR}/version.h"
+  "${PROJECT_SOURCE_DIR}/kernels/rtcore_version.h.in"
+  "${PROJECT_SOURCE_DIR}/include/embree2/rtcore_version.h"
 )
 FILE(WRITE "${PROJECT_BINARY_DIR}/hash" "${EMBREE_HASH}")
 

@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "device.h"
-#include "version.h"
 #include "scene_triangle_mesh.h"
 #include "scene_user_geometry.h"
 #include "scene_instance.h"
@@ -414,7 +413,7 @@ namespace embree
     case RTC_CONFIG_VERSION_MAJOR: return RTCORE_VERSION_MAJOR;
     case RTC_CONFIG_VERSION_MINOR: return RTCORE_VERSION_MINOR;
     case RTC_CONFIG_VERSION_PATCH: return RTCORE_VERSION_PATCH;
-    case RTC_CONFIG_VERSION      : return RTCORE_VERSION_NUMBER;
+    case RTC_CONFIG_VERSION      : return RTCORE_VERSION;
 
     case RTC_CONFIG_INTERSECT1: return 1;
 
