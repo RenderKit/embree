@@ -23,8 +23,6 @@ namespace embree {
 
 #define USE_INTERFACE 0 // 0 = stream, 1 = single rays/packets, 2 = single rays/packets using stream interface
 #define AMBIENT_OCCLUSION_SAMPLES 64
-#define MAX_AO_DISTANCE pos_inf 
-
 //#define rtcOccluded rtcIntersect
 //#define rtcOccluded1M rtcIntersect1M
 
@@ -40,7 +38,7 @@ RTCScene convertScene(ISPCScene* scene_in)
 {
   int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
   int scene_aflags = RTC_INTERSECT1 | RTC_INTERSECT_STREAM | RTC_INTERPOLATE;
-  RTCScene scene_out = ConvertScene(g_device, scene_in,(RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags,RTC_GEOMETRY_STATIC);
+  RTCScene scene_out = ConvertScene(g_device, scene_in,(RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags, RTC_GEOMETRY_STATIC);
   return scene_out;
 }
 
@@ -76,8 +74,8 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray, RayStats& stats)
     shadow.org = hitPos;
     shadow.dir = dir.v;
     bool mask = 1; { // invalidate inactive rays
-      shadow.tnear = mask ? 0.01f       : (float)(pos_inf);
-      shadow.tfar  = mask ? (float)(MAX_AO_DISTANCE) : (float)(neg_inf);
+      shadow.tnear = mask ? 0.001f       : (float)(pos_inf);
+      shadow.tfar  = mask ? (float)(inf) : (float)(neg_inf);
     }
     shadow.geomID = RTC_INVALID_GEOMETRY_ID;
     shadow.primID = RTC_INVALID_GEOMETRY_ID;

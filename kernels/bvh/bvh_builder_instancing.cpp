@@ -26,6 +26,7 @@
 #define ENABLE_DIRECT_SAH_MERGE_BUILDER 1
 #define SPLIT_MEMORY_RESERVE_SCALE_FACTOR 4
 #define SPLIT_MIN_EXT_SPACE 1000
+#define PROFILE(x)
 
 namespace embree
 {
@@ -170,7 +171,7 @@ namespace embree
           }
         });
 
-      double d0 = getSeconds();
+      PROFILE(double d0 = getSeconds());
 
       /* creates all instances */
       parallel_for(size_t(0), num, [&] (const range<size_t>& r) {
@@ -275,15 +276,9 @@ namespace embree
         settings.intCost = 1.0f;
         settings.singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD;
 
-        std::atomic<size_t> numLeaves(0);
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
-        //PRINT("NEW INSTANCE CODE PATH");
-        //PRINT(pinfo);
         const size_t extSize = max((size_t)SPLIT_MIN_EXT_SPACE,(size_t)(refs.size()*SPLIT_MEMORY_RESERVE_SCALE_FACTOR));
-        //DBG_PRINT(refs.size()*SPLIT_MEMORY_RESERVE_SCALE_FACTOR);
-        //DBG_PRINT(extSize);
         refs.resize(extSize); 
-        //PRINT(refs.size());
         NodeRef root = BVHBuilderBinnedOpenMergeSAH::build<NodeRef,BuildRef>(
             typename BVH::CreateAlloc(bvh),
             typename BVH::AlignedNode::Create2(),
@@ -291,7 +286,6 @@ namespace embree
 
            [&] (const BVHBuilderBinnedOpenMergeSAH::BuildRecord& current,  const FastAllocator::CachedAllocator& alloc) -> NodeRef
           {
-            numLeaves++;
             assert(current.prims.size() == 1);
             BuildRef* ref = (BuildRef*)&refs[current.prims.begin()];
             TransformNode* node = (TransformNode*) alloc.malloc0(sizeof(TransformNode),BVH::byteAlignment);
@@ -315,7 +309,6 @@ namespace embree
 
            [&] (const BVHBuilderBinnedSAH::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) -> NodeRef
           {
-            numLeaves++;
             assert(current.prims.size() == 1);
             BuildRef* ref = (BuildRef*) prims[current.prims.begin()].ID();
             TransformNode* node = (TransformNode*) alloc.malloc0(sizeof(TransformNode),BVH::byteAlignment);
@@ -328,11 +321,10 @@ namespace embree
             prims.data(),pinfo,settings);
 #endif
 
-        double d1 = getSeconds();
-        //PRINT(d1-d0);
+        PROFILE(double d1 = getSeconds());
+        PROFILE(PRINT(d1-d0));
         
         bvh->set(root,LBBox3fa(pinfo.geomBounds),numPrimitives);
-        //PRINT(numLeaves.load());
         numCollapsedTransformNodes = refs.size();
         bvh->root = collapse(bvh->root);
         if (scene->device->verbosity(1))
