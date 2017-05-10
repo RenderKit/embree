@@ -18,6 +18,7 @@
 
 #include "heuristic_binning_array_aligned.h"
 #include "heuristic_spatial_array.h"
+#include "heuristic_openmerge_array.h"
 
 #if defined(__AVX512F__)
 #  define NUM_OBJECT_BINS 16
@@ -482,6 +483,52 @@ namespace embree
             progressMonitor,
             settings);
         }
+    };
+
+    /* Open/Merge SAH builder that operates on an array of BuildRecords */
+    struct BVHBuilderBinnedOpenMergeSAH
+    {
+      static const size_t NUM_OBJECT_BINS_HQ = 32;
+      typedef PrimInfoExtRange Set;
+      typedef SplitOpenMerge<BinSplit<NUM_OBJECT_BINS_HQ> > Split;
+      typedef GeneralBVHBuilder::BuildRecordT<Set,Split> BuildRecord;
+      typedef GeneralBVHBuilder::Settings Settings;
+      
+      /*! special builder that propagates reduction over the tree */
+      template<
+        typename ReductionTy, 
+        typename BuildRef,
+        typename CreateAllocFunc, 
+        typename CreateNodeFunc, 
+        typename UpdateNodeFunc, 
+        typename CreateLeafFunc, 
+        typename NodeOpenerFunc, 
+        typename ProgressMonitor>
+        
+        static ReductionTy build(CreateAllocFunc createAlloc, 
+                                 CreateNodeFunc createNode, 
+                                 UpdateNodeFunc updateNode, 
+                                 const CreateLeafFunc& createLeaf, 
+                                 NodeOpenerFunc nodeOpenerFunc,
+                                 ProgressMonitor progressMonitor,
+                                 BuildRef* prims, 
+                                 const size_t extSize,
+                                 const PrimInfo& pinfo, 
+                                 const Settings& settings)
+      {
+        typedef HeuristicArrayOpenMergeSAH<NodeOpenerFunc,BuildRef,NUM_OBJECT_BINS_HQ> Heuristic;
+        Heuristic heuristic(nodeOpenerFunc,prims,pinfo);
+
+        return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set>(
+          heuristic,
+          PrimInfoExtRange(0,pinfo.size(),extSize,pinfo.geomBounds,pinfo.centBounds),
+          createAlloc,
+          createNode,
+          updateNode,
+          createLeaf,
+          progressMonitor,
+          settings);
+      }
     };
   }
 }

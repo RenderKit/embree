@@ -807,7 +807,7 @@ namespace embree
     /* wait for all threads in rtcCommitThread mode */
     if (threadCount != 0)
       scheduler->wait_for_threads(threadCount);
-
+    
     /* fast path for unchanged scenes */
     if (!isModified()) {
       scheduler->spawn_root([&]() { this->scheduler = nullptr; }, 1, useThreadPool);
@@ -875,7 +875,7 @@ namespace embree
       return;
     }
 
-    if (!isModified()) {
+    if (!isModified() /* && 0 */) {
       if (threadCount) group_barrier.wait(threadCount);
       return;
     }

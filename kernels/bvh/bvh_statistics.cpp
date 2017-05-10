@@ -130,6 +130,10 @@ namespace embree
     }
     else if (node.isTransformNode())
     {
+#if 0
+      TransformNode* n = node.transformNode();
+      s = s + statistics(n->child,0.0f,t0t1); 
+#endif
       s.statTransformNodes.numNodes++;
       s.statTransformNodes.nodeSAH += dt*A;
       s.depth++;
