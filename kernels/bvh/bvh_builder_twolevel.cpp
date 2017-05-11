@@ -21,7 +21,7 @@
 #include "../common/scene_triangle_mesh.h"
 #include "../common/scene_quad_mesh.h"
 
-#define PROFILE 1
+#define PROFILE 0
 
 /* new open/merge builder */
 #define ENABLE_DIRECT_SAH_MERGE_BUILDER 1
@@ -112,6 +112,10 @@ namespace embree
             createMeshAccel(mesh,(AccelData*&)objects[objectID],builders[objectID]);
         }
       });
+      /* count total primitive count of all objects */
+      std::atomic<int> totalPrims(0);
+
+
       /* parallel build of acceleration structures */
       parallel_for(size_t(0), num, [&] (const range<size_t>& r)
       {
@@ -131,11 +135,14 @@ namespace embree
 
           /* create build primitive */
           if (!object->getBounds().empty())
+          {
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
             refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root,objectID,mesh->size());
+            totalPrims += mesh->size();
 #else
-          refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root);
+            refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root);
 #endif
+          }
         }
       });
 
@@ -164,7 +171,8 @@ namespace embree
 
 #endif
 
-        bvh->alloc.init_estimate(refs.size()*16); // FIXME: increase estimate for opening case
+        bvh->alloc.init_estimate(refs.size()*SPLIT_MEMORY_RESERVE_FACTOR*sizeof(PrimRef)); // FIXME: increase estimate for opening case
+        //bvh->alloc.init_estimate(totalPrims.load() * sizeof(PrimRef));
 
 #if defined(TASKING_TBB) && defined(__AVX512ER__) && USE_TASK_ARENA // KNL
         tbb::task_arena limited(min(32,(int)TaskScheduler::threadCount()));
