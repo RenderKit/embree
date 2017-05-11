@@ -205,12 +205,6 @@ namespace embree
       }
 #endif
 
-      /* fast path for single geometry scenes */
-      /*if (nextRef == 1) {
-        bvh->set(refs[0].node,refs[0].bounds(),numPrimitives);
-        return;
-        }*/
-
       /* open all large nodes */  
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER == 0
       //open(numPrimitives); 
