@@ -516,8 +516,7 @@ namespace embree
                                  const PrimInfo& pinfo, 
                                  const Settings& settings)
       {
-        // FIXME: replace 8 by N
-        typedef HeuristicArrayOpenMergeSAH<NodeOpenerFunc,BuildRef,NUM_OBJECT_BINS_HQ,8> Heuristic;
+        typedef HeuristicArrayOpenMergeSAH<NodeOpenerFunc,BuildRef,NUM_OBJECT_BINS_HQ> Heuristic;
         Heuristic heuristic(nodeOpenerFunc,prims,pinfo);
 
         return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set>(

@@ -27,8 +27,8 @@
 #define USE_SUBTREE_SIZE_FOR_BINNING 1
 #define EQUAL_GEOMID_STOP_CRITERIA 1
 #define USE_LOOP_OPENING 0
-
 #define MAX_EXTEND_THRESHOLD   0.1f
+#define MAX_OPENED_CHILD_NODES 8
 
 namespace embree
 {
@@ -74,7 +74,7 @@ namespace embree
       };
     
     /*! Performs standard object binning */
-    template<typename NodeOpenerFunc, typename PrimRef, size_t OBJECT_BINS, size_t MAX_OPENED_CHILD_NODES>
+    template<typename NodeOpenerFunc, typename PrimRef, size_t OBJECT_BINS>
       struct HeuristicArrayOpenMergeSAH
       {
         typedef BinSplit<OBJECT_BINS> ObjectSplit;
@@ -165,7 +165,7 @@ namespace embree
             for (size_t i=set.begin(); i<set.end(); i++)
             {
               commonGeomID &= prims0[i].geomID() == geomID; 
-              if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD) opens += MAX_OPENED_CHILD_NODES-1; //FIXME              
+              if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD) { opens += prims0[i].node.getN()-1; } // coarse approximation
             }
             return std::pair<size_t,bool>(opens,commonGeomID);
           }
@@ -179,7 +179,7 @@ namespace embree
                                      for (size_t i=r.begin();i<r.end();i++)
                                      {
                                        commonGeomID &= prims0[i].geomID() == geomID; 
-                                       if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD) opens += MAX_OPENED_CHILD_NODES-1; //FIXME
+                                       if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD) opens += prims0[i].node.getN()-1; // coarse approximation
                                      }
                                      return std::pair<size_t,bool>(opens,commonGeomID); },
                                    [&] (const std::pair<size_t,bool>& b0, const std::pair<size_t,bool>& b1) -> std::pair<size_t,bool> { return std::pair<size_t,bool>(b0.first+b1.first,b0.second && b1.second); });
@@ -325,7 +325,7 @@ namespace embree
 
                 for (size_t j=0;j<n;j++)
                   if (!tmp[j].node.isLeaf() && tmp[j].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD)
-                    next_iteration_extra_elements += MAX_OPENED_CHILD_NODES-1;
+                    next_iteration_extra_elements += tmp[j].node.getN()-1; // coarse approximation
 
               }
             }
