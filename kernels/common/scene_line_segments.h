@@ -176,4 +176,15 @@ namespace embree
     vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
     vector<APIBuffer<char>> userbuffers;              //!< user buffers
   };
+
+  namespace isa
+  {
+    struct LineSegmentsISA : public LineSegments
+    {
+      LineSegmentsISA (Scene* scene, RTCGeometryFlags flags, size_t numLineSegments, size_t numVertices, size_t numTimeSteps)
+        : LineSegments(scene,flags,numLineSegments,numVertices,numTimeSteps) {}
+    };
+  }
+
+  DECLARE_ISA_FUNCTION(LineSegments*, createLineSegments, Scene* COMMA RTCGeometryFlags COMMA size_t COMMA size_t COMMA size_t);
 }

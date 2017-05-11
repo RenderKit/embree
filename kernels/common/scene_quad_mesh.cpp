@@ -19,6 +19,8 @@
 
 namespace embree
 {
+#if defined(EMBREE_LOWEST_ISA)
+
   QuadMesh::QuadMesh (Scene* scene, RTCGeometryFlags flags, size_t numQuads, size_t numVertices, size_t numTimeSteps)
     : Geometry(scene,QUAD_MESH,numQuads,numTimeSteps,flags)
   {
@@ -224,6 +226,14 @@ namespace embree
         assert(ddPdvdv); vfloatx::storeu(valid,ddPdvdv+i,vfloatx(zero));
         assert(ddPdudv); vfloatx::storeu(valid,ddPdudv+i,vfloatx(zero));
       }
+    }
+  }
+#endif
+
+  namespace isa
+  {
+    QuadMesh* createQuadMesh(Scene* scene, RTCGeometryFlags flags, size_t numQuads, size_t numVertices, size_t numTimeSteps) {
+      return new QuadMeshISA(scene,flags,numQuads,numVertices,numTimeSteps);
     }
   }
 }

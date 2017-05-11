@@ -80,9 +80,6 @@ namespace embree
     bool verify ();
     void setDisplacementFunction (RTCDisplacementFunc func, RTCBounds* bounds);
     void setDisplacementFunction2 (RTCDisplacementFunc2 func, RTCBounds* bounds);
-    void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
-    void interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
-                      RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
 
   public:
 
@@ -306,11 +303,7 @@ namespace embree
     static __forceinline size_t numInterpolationSlots4(size_t stride) { return (stride+15)/16; }
     static __forceinline size_t numInterpolationSlots8(size_t stride) { return (stride+31)/32; }
     static __forceinline size_t interpolationSlot(size_t prim, size_t slot, size_t stride) {
-#if defined (__AVX__)
-      const size_t slots = numInterpolationSlots8(stride); 
-#else
       const size_t slots = numInterpolationSlots4(stride); 
-#endif
       assert(slot < slots); 
       return slots*prim+slot;
     }
@@ -329,19 +322,23 @@ namespace embree
     parallel_map<uint64_t,float> edgeCreaseMap;
   };
 
-  class SubdivMeshAVX : public SubdivMesh
+  namespace isa
   {
-  public:
-    //using SubdivMesh::SubdivMesh; // inherit all constructors // FIXME: compiler bug under VS2013
-    SubdivMeshAVX (Scene* scene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
-                  size_t numCreases, size_t numCorners, size_t numHoles, size_t numTimeSteps);
+    struct SubdivMeshISA : public SubdivMesh
+    {
+      SubdivMeshISA (Scene* scene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numCreases, size_t numCorners, size_t numHoles, size_t numTimeSteps)
+        : SubdivMesh(scene,flags,numFaces,numEdges,numVertices,numCreases,numCorners,numHoles,numTimeSteps) {}
 
-    void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
-    void interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
-                      RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+      void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+      void interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
+                        RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+      
+      template<typename vbool, typename vint, typename vfloat>
+        void interpolateHelper(const vbool& valid1, const vint& primID, const vfloat& uu, const vfloat& vv, size_t numUVs, 
+                               RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+      
+    };
+  }
 
-    template<typename vbool, typename vint, typename vfloat>
-      void interpolateHelper(const vbool& valid1, const vint& primID, const vfloat& uu, const vfloat& vv, size_t numUVs, 
-                             RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
-  };
+  DECLARE_ISA_FUNCTION(SubdivMesh*, createSubdivMesh, Scene* COMMA RTCGeometryFlags COMMA size_t COMMA size_t COMMA size_t COMMA size_t COMMA size_t COMMA size_t COMMA size_t);
 };

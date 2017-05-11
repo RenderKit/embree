@@ -19,6 +19,8 @@
 
 namespace embree
 {
+#if defined(EMBREE_LOWEST_ISA)
+
   NativeCurves::NativeCurves (Scene* scene, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps) 
     : Geometry(scene,BEZIER_CURVES,numPrimitives,numTimeSteps,flags), subtype(subtype), basis(basis), tessellationRate(4)
   {
@@ -199,30 +201,24 @@ namespace embree
       stride = vertices[buffer&0xFFFF].getStride();
     }
 
-    for (size_t i=0; i<numFloats; i+=VSIZEX)
+    for (size_t i=0; i<numFloats; i+=4)
     {
       size_t ofs = i*sizeof(float);
       const size_t curve = curves[primID];
-      const vboolx valid = vintx((int)i)+vintx(step) < vintx(numFloats);
-      const vfloatx p0 = vfloatx::loadu(valid,(float*)&src[(curve+0)*stride+ofs]);
-      const vfloatx p1 = vfloatx::loadu(valid,(float*)&src[(curve+1)*stride+ofs]);
-      const vfloatx p2 = vfloatx::loadu(valid,(float*)&src[(curve+2)*stride+ofs]);
-      const vfloatx p3 = vfloatx::loadu(valid,(float*)&src[(curve+3)*stride+ofs]);
+      const vbool4 valid = vint4((int)i)+vint4(step) < vint4(numFloats);
+      const vfloat4 p0 = vfloat4::loadu(valid,(float*)&src[(curve+0)*stride+ofs]);
+      const vfloat4 p1 = vfloat4::loadu(valid,(float*)&src[(curve+1)*stride+ofs]);
+      const vfloat4 p2 = vfloat4::loadu(valid,(float*)&src[(curve+2)*stride+ofs]);
+      const vfloat4 p3 = vfloat4::loadu(valid,(float*)&src[(curve+3)*stride+ofs]);
       
       const Curve bezier(p0,p1,p2,p3);
-      if (P      ) vfloatx::storeu(valid,P+i,      bezier.eval(u));
-      if (dPdu   ) vfloatx::storeu(valid,dPdu+i,   bezier.eval_du(u));
-      if (ddPdudu) vfloatx::storeu(valid,ddPdudu+i,bezier.eval_dudu(u));
+      if (P      ) vfloat4::storeu(valid,P+i,      bezier.eval(u));
+      if (dPdu   ) vfloat4::storeu(valid,dPdu+i,   bezier.eval_du(u));
+      if (ddPdudu) vfloat4::storeu(valid,ddPdudu+i,bezier.eval_dudu(u));
     }
   }
 
-  void NativeCurves::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, 
-                                 float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
-  {
-    interpolate_helper<CurveT<vfloatx>>(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats);
-  }
-
-  template<typename InputCurve3fa>
+  template<typename InputCurve3fa, typename OutputCurve3fa>
     void NativeCurves::commit_helper()
   {
     if (native_curves.size() != curves.size()) 
@@ -255,7 +251,7 @@ namespace embree
               const Vec3fa v2 = vertices[i][id+2];
               const Vec3fa v3 = vertices[i][id+3];
               const InputCurve3fa icurve(v0,v1,v2,v3);
-              Curve3fa ocurve; convert<Vec3fa>(icurve,ocurve);
+              OutputCurve3fa ocurve; convert<Vec3fa>(icurve,ocurve);
               native_vertices[i].store(4*j+0,ocurve.v0);
               native_vertices[i].store(4*j+1,ocurve.v1);
               native_vertices[i].store(4*j+2,ocurve.v2);
@@ -266,29 +262,44 @@ namespace embree
     native_vertices0 = native_vertices[0];
   }
 
-  CurvesBezier::CurvesBezier (Scene* scene, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps)
-    : NativeCurves(scene,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps) {}
-  
-  void CurvesBezier::preCommit() {
-    if (isEnabled()) commit_helper<BezierCurve3fa>();
-  }
+#endif
 
-  void CurvesBezier::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, 
-                                 float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
+  namespace isa
   {
-    interpolate_helper<BezierCurveT<vfloatx>>(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats);
-  }
-
-  CurvesBSpline::CurvesBSpline (Scene* scene, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps)
-    : NativeCurves(scene,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps) {}
-  
-  void CurvesBSpline::preCommit() {
-    if (isEnabled()) commit_helper<BSplineCurve3fa>();
-  }
-
-  void CurvesBSpline::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, 
-                                 float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
-  {
-    interpolate_helper<BSplineCurveT<vfloatx>>(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats);
+    NativeCurves* createCurvesBezier(Scene* scene, NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps) {
+      return new CurvesBezier(scene,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps);
+    }
+    
+    void CurvesBezier::preCommit() {
+#if defined(EMBREE_NATIVE_CURVE_BSPLINE)
+      if (isEnabled()) commit_helper<BezierCurve3fa,BSplineCurve3fa>();
+#else
+      NativeCurves::preCommit();
+#endif
+    }
+    
+    void CurvesBezier::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, 
+                                   float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
+    {
+      interpolate_helper<BezierCurveT<vfloat4>>(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats);
+    }
+    
+    NativeCurves* createCurvesBSpline(Scene* scene, NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps) {
+      return new CurvesBSpline(scene,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps);
+    }
+    
+    void CurvesBSpline::preCommit() {
+#if defined(EMBREE_NATIVE_CURVE_BSPLINE)
+      NativeCurves::preCommit();
+#else
+      if (isEnabled()) commit_helper<BSplineCurve3fa,BezierCurve3fa>();
+#endif
+    }
+    
+    void CurvesBSpline::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, 
+                                    float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
+    {
+      interpolate_helper<BSplineCurveT<vfloat4>>(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats);
+    }
   }
 }

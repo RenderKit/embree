@@ -65,7 +65,7 @@ namespace embree
       }
       
       //template<typename Context>
-      static __forceinline size_t intersect(Precalculations* pre, size_t valid_in, Ray** rays, IntersectContext* context, size_t ty, const Primitive* prims, size_t num /*, size_t& lazy_node */)
+      static __forceinline size_t intersect(Precalculations* pre, size_t valid_in, Ray** rays, IntersectContext* context, const Primitive* prims, size_t num /*, size_t& lazy_node */)
       {
         AVX_ZERO_UPPER();
         
@@ -104,7 +104,7 @@ namespace embree
         return valid_in;
       }
 
-      static __forceinline size_t occluded(Precalculations* pre, size_t valid_in, Ray** rays, IntersectContext* context, size_t ty, const Primitive* prims, size_t num /*, size_t& lazy_node */)
+      static __forceinline size_t occluded(Precalculations* pre, size_t valid_in, Ray** rays, IntersectContext* context, const Primitive* prims, size_t num /*, size_t& lazy_node */)
       {
         AVX_ZERO_UPPER();
         size_t hit = 0;

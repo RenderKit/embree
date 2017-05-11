@@ -19,6 +19,8 @@
 
 namespace embree
 {
+#if defined(EMBREE_LOWEST_ISA)
+
   TriangleMesh::TriangleMesh (Scene* scene, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps)
     : Geometry(scene,TRIANGLE_MESH,numTriangles,numTimeSteps,flags)
   {
@@ -178,7 +180,7 @@ namespace embree
 
     return true;
   }
-
+  
   void TriangleMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
   {
     /* test if interpolation is enabled */
@@ -186,7 +188,7 @@ namespace embree
     if ((scene->aflags & RTC_INTERPOLATE) == 0) 
       throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
 #endif
-
+    
     /* calculate base pointer and stride */
     assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
@@ -199,7 +201,7 @@ namespace embree
       src    = vertices[buffer&0xFFFF].getPtr();
       stride = vertices[buffer&0xFFFF].getStride();
     }
-
+    
     for (size_t i=0; i<numFloats; i+=VSIZEX)
     {
       size_t ofs = i*sizeof(float);
@@ -222,6 +224,15 @@ namespace embree
         assert(ddPdvdv); vfloatx::storeu(valid,ddPdvdv+i,vfloatx(zero));
         assert(ddPdudv); vfloatx::storeu(valid,ddPdudv+i,vfloatx(zero));
       }
+    }
+  }
+  
+#endif
+  
+  namespace isa
+  {
+    TriangleMesh* createTriangleMesh(Scene* scene, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) {
+      return new TriangleMeshISA(scene,flags,numTriangles,numVertices,numTimeSteps);
     }
   }
 }
