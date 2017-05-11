@@ -19,11 +19,56 @@
 #include "../common/scene.h"
 #include "../common/ray.h"
 #include "../common/accel.h"
+#include "../geometry/primitive.h"
 
 namespace embree
 {
   namespace isa
   {
+    template<
+      typename Intersector1,
+      typename Intersector2,
+      typename Intersector3,
+      typename Intersector4>
+
+      struct Virtual4LeafIntersector1
+      {
+        typedef void* Primitive;
+
+        struct Precalculations
+        {
+          typename Intersector1::Precalculations pre0;
+          typename Intersector1::Precalculations pre1;
+          typename Intersector1::Precalculations pre2;
+          typename Intersector1::Precalculations pre3;
+
+          __forceinline Precalculations (const Ray& ray, const void* ptr)
+            : pre0(ray,ptr), pre1(ray,ptr), pre2(ray,ptr), pre3(ray,ptr) 
+          {
+            table[0] = &pre0;
+            table[1] = &pre1;
+            table[2] = &pre2;
+            table[3] = &pre3;
+          }
+
+          void* table[4];
+        };
+
+        static __forceinline void intersect(Precalculations& pre, const AccelData* accel, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
+        {
+          const unsigned int ty = (unsigned int) Leaf::decodeTy(*(unsigned int*)prim);
+          assert(ty < 4);
+          accel->leaf_intersector->vtable[ty].intersect1(pre.table[ty],ray,context,prim,num,lazy_node);
+        }
+        
+        static __forceinline bool occluded(Precalculations& pre, const AccelData* accel, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node) 
+        {
+          const unsigned int ty = (unsigned int) Leaf::decodeTy(*(unsigned int*)prim);
+          assert(ty < 4);
+          return accel->leaf_intersector->vtable[ty].occluded1(pre.table[ty],ray,context,prim,num,lazy_node);
+        }
+      };
+
     template<typename Intersector>
       struct ArrayIntersector1
       {

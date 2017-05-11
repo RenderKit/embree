@@ -24,6 +24,20 @@ namespace embree
 {
   class Scene;
 
+  struct LeafIntersector
+  {
+    typedef void (*Intersect1LeafFunc) (void* pre, Ray& ray, IntersectContext* context, const void* leaf, size_t num);
+    typedef bool (*Occluded1LeafFunc ) (void* pre, Ray& ray, IntersectContext* context, const void* leaf, size_t num); 
+    
+    struct Functions {
+      Intersect1LeafFunc intersect1;
+      Occluded1LeafFunc occluded1;
+    };
+    
+  public:
+    Functions vtable[32];
+  };
+
   /*! Base class for the acceleration structure data. */
   class AccelData : public RefCount 
   {
@@ -32,7 +46,7 @@ namespace embree
 
   public:
     AccelData (const Type type) 
-      : bounds(empty), type(type) {}
+      : bounds(empty), type(type), leaf_intersector(nullptr) {}
 
     /*! notifies the acceleration structure about the deletion of some geometry */
     virtual void deleteGeometry(size_t geomID) {};
@@ -53,6 +67,7 @@ namespace embree
   public:
     LBBox3fa bounds; // linear bounds
     Type type;
+    LeafIntersector* leaf_intersector;
   };
 
   /*! Base class for all intersectable and buildable acceleration structures. */
