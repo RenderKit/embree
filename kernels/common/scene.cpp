@@ -597,7 +597,9 @@ namespace embree
       return -1;
     }
     
-    return bind(geomID,new TriangleMesh(this,gflags,numTriangles,numVertices,numTimeSteps));
+    createTriangleMeshTy createTriangleMesh = nullptr;
+    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(device->enabled_cpu_features,createTriangleMesh);
+    return bind(geomID,createTriangleMesh(this,gflags,numTriangles,numVertices,numTimeSteps));
   }
 #endif
 

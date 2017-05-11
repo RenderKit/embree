@@ -32,6 +32,15 @@ namespace embree
   void name##_error2() { throw_RTCError(RTC_UNKNOWN_ERROR,"internal error in ISA selection for " TOSTRING(name)); } \
   type name##_error() { return type(name##_error2); }                 \
   type name##_zero() { return type(nullptr); }
+
+#define DECLARE_ISA_FUNCTION(type,name,args)                            \
+  namespace sse2      { extern type name(args); }                       \
+  namespace sse42     { extern type name(args); }                       \
+  namespace avx       { extern type name(args); }                       \
+  namespace avx2      { extern type name(args); }                       \
+  namespace avx512knl { extern type name(args); }                       \
+  namespace avx512skx { extern type name(args); }                       \
+  typedef type (*name##Ty)(args);
   
 #define DEFINE_BUILDER2(Accel,Mesh,Args,symbol)                         \
   typedef Builder* (*symbol##Func)(Accel* accel, Mesh* mesh, Args args); \
