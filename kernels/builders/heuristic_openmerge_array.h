@@ -27,7 +27,6 @@
 #define USE_SUBTREE_SIZE_FOR_BINNING 1
 #define EQUAL_GEOMID_STOP_CRITERIA 1
 #define USE_LOOP_OPENING 0
-#define REDUCE_BINS 0
 
 #define MAX_OPENED_CHILD_NODES 8
 #define MAX_EXTEND_THRESHOLD   0.1f
@@ -416,12 +415,7 @@ namespace embree
         __noinline const ObjectSplit sequential_object_find(const PrimInfoExtRange& set, const size_t logBlockSize)
         {
           ObjectBinner binner(empty); 
-#if REDUCE_BINS == 1
-          const size_t BINS = min(OBJECT_BINS,size_t(16.0f + 0.05f*set.size()));
-          const BinMapping<OBJECT_BINS> mapping(set.centBounds,BINS);
-#else          
           const BinMapping<OBJECT_BINS> mapping(set.centBounds,OBJECT_BINS);
-#endif
 
 #if USE_SUBTREE_SIZE_FOR_BINNING == 1
           binner.binSubTreeRefs(prims0,set.begin(),set.end(),mapping);
@@ -438,13 +432,7 @@ namespace embree
         __noinline const ObjectSplit parallel_object_find(const PrimInfoExtRange& set, const size_t logBlockSize)
         {
           ObjectBinner binner(empty);
-#if REDUCE_BINS == 1
-          const size_t BINS = min(OBJECT_BINS,size_t(16.0f + 0.05f*set.size()));
-          const BinMapping<OBJECT_BINS> mapping(set.centBounds,BINS);
-#else
           const BinMapping<OBJECT_BINS> mapping(set.centBounds,OBJECT_BINS);
-#endif
-
           const BinMapping<OBJECT_BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
           binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
                                    [&] (const range<size_t>& r) -> ObjectBinner { ObjectBinner binner(empty); 
@@ -475,15 +463,12 @@ namespace embree
 
           std::pair<size_t,size_t> ext_weights(0,0);
 
-#if 0
-          ext_weights = sequential_object_split(split.objectSplit(),set,lset,rset);
-#else
           /* object split */
           if (likely(set.size() < PARALLEL_THRESHOLD)) 
             ext_weights = sequential_object_split(split.objectSplit(),set,lset,rset);
           else
             ext_weights = parallel_object_split(split.objectSplit(),set,lset,rset);
-#endif
+
           /* if we have an extended range, set extended child ranges and move right split range */
           if (unlikely(set.has_ext_range())) 
           {
