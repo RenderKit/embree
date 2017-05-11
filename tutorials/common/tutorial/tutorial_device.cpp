@@ -739,8 +739,7 @@ extern "C" bool device_pick(const float x,
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
-  std::cout << "pick: geomID = " << ray.geomID << ", primID = " << ray.primID << std::endl;
-
+  std::cout << "pick: x = " << x << ", y = " << y << ", geomID = " << ray.geomID << ", primID = " << ray.primID << std::endl;
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
     hitPos = Vec3fa(0.0f,0.0f,0.0f);

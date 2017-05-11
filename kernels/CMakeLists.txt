@@ -110,7 +110,11 @@ IF (EMBREE_RAY_PACKETS)
 ENDIF()
 
 SET(EMBREE_LIBRARY_FILES_AVX
-   
+    common/scene_triangle_mesh.cpp
+    common/scene_quad_mesh.cpp 
+    common/scene_bezier_curves.cpp
+    common/scene_line_segments.cpp
+
     geometry/instance_intersector1.cpp
     builders/primrefgen.cpp
 
@@ -130,9 +134,9 @@ SET(EMBREE_LIBRARY_FILES_AVX
 
 IF (EMBREE_GEOMETRY_SUBDIV)
   SET(EMBREE_LIBRARY_FILES_AVX ${EMBREE_LIBRARY_FILES_AVX}
+  common/scene_subdiv_mesh.cpp
   geometry/grid_soa.cpp
   subdiv/subdivpatch1base_eval.cpp
-  common/scene_subdiv_mesh_avx.cpp
   bvh/bvh_builder_subdiv.cpp)
 ENDIF()
 
@@ -151,7 +155,6 @@ IF (EMBREE_RAY_PACKETS)
 ENDIF()
 
 SET(EMBREE_LIBRARY_FILES_AVX2
-
     geometry/instance_intersector1.cpp
     builders/primrefgen.cpp
     bvh/bvh_builder_morton.cpp
@@ -179,7 +182,6 @@ IF (EMBREE_RAY_PACKETS)
 ENDIF()
 
 SET(EMBREE_LIBRARY_FILES_AVX512KNL
-
     geometry/instance_intersector1.cpp
 
     bvh/bvh_refit.cpp
@@ -218,7 +220,6 @@ IF (EMBREE_RAY_PACKETS)
 ENDIF()
 
 SET(EMBREE_LIBRARY_FILES_AVX512SKX
-
     geometry/instance_intersector1.cpp
 
     bvh/bvh_intersector1_bvh4.cpp
@@ -270,6 +271,7 @@ CreateISADummyFiles(EMBREE_LIBRARY_FILES_AVX512SKX avx512skx ${EMBREE_LIBRARY_FI
 
 ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES} $<TARGET_OBJECTS:algorithms>)
 SET_TARGET_PROPERTIES(embree PROPERTIES COMPILE_FLAGS "${FLAGS_LOWEST}")
+SET_TARGET_PROPERTIES(embree PROPERTIES COMPILE_DEFINITIONS "EMBREE_LOWEST_ISA")
 SET_PROPERTY(TARGET embree PROPERTY FOLDER kernels)
 ADD_CUSTOM_TARGET(embree_check_stack_frame_size COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_stack_frame_size.cmake DEPENDS embree)
 

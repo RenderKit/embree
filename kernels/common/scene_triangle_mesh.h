@@ -272,4 +272,15 @@ namespace embree
     vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
     vector<APIBuffer<char>> userbuffers;         //!< user buffers
   };
+
+  namespace isa
+  {
+    struct TriangleMeshISA : public TriangleMesh
+    {
+      TriangleMeshISA (Scene* scene, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps)
+        : TriangleMesh(scene,flags,numTriangles,numVertices,numTimeSteps) {}
+    };
+  }
+
+  DECLARE_ISA_FUNCTION(TriangleMesh*, createTriangleMesh, Scene* COMMA RTCGeometryFlags COMMA size_t COMMA size_t COMMA size_t);
 }

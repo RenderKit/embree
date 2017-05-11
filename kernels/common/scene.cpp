@@ -597,7 +597,9 @@ namespace embree
       return -1;
     }
     
-    return bind(geomID,new TriangleMesh(this,gflags,numTriangles,numVertices,numTimeSteps));
+    createTriangleMeshTy createTriangleMesh = nullptr;
+    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createTriangleMesh);
+    return bind(geomID,createTriangleMesh(this,gflags,numTriangles,numVertices,numTimeSteps));
   }
 #endif
 
@@ -614,7 +616,9 @@ namespace embree
       return -1;
     }
     
-    return bind(geomID, new QuadMesh(this,gflags,numQuads,numVertices,numTimeSteps));
+    createQuadMeshTy createQuadMesh = nullptr;
+    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createQuadMesh);
+    return bind(geomID,createQuadMesh(this,gflags,numQuads,numVertices,numTimeSteps));
   }
 #endif
 
@@ -631,12 +635,9 @@ namespace embree
       return -1;
     }
 
-#if defined(EMBREE_TARGET_AVX)
-    if (device->hasISA(AVX))
-      return bind(geomID,new SubdivMeshAVX(this,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps));
-    else 
-#endif
-      return bind(geomID,new SubdivMesh(this,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps));
+    createSubdivMeshTy createSubdivMesh = nullptr;
+    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createSubdivMesh);
+    return bind(geomID,createSubdivMesh(this,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps));
   }
 #endif
 
@@ -653,18 +654,16 @@ namespace embree
       return -1;
     }
     
+    createCurvesBezierTy createCurvesBezier = nullptr;
+    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createCurvesBezier);
+    createCurvesBSplineTy createCurvesBSpline = nullptr;
+    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createCurvesBSpline);
+
     Geometry* geom = nullptr;
-#if defined(EMBREE_NATIVE_CURVE_BSPLINE)
     switch (basis) {
-    case NativeCurves::BEZIER : geom = new CurvesBezier(this,subtype,basis,gflags,numCurves,numVertices,numTimeSteps); break;
-    case NativeCurves::BSPLINE: geom = new NativeCurves(this,subtype,basis,gflags,numCurves,numVertices,numTimeSteps); break;
+    case NativeCurves::BEZIER : geom = createCurvesBezier (this,subtype,basis,gflags,numCurves,numVertices,numTimeSteps); break;
+    case NativeCurves::BSPLINE: geom = createCurvesBSpline(this,subtype,basis,gflags,numCurves,numVertices,numTimeSteps); break;
     }
-#else
-    switch (basis) {
-    case NativeCurves::BEZIER : geom = new NativeCurves (this,subtype,basis,gflags,numCurves,numVertices,numTimeSteps); break;
-    case NativeCurves::BSPLINE: geom = new CurvesBSpline(this,subtype,basis,gflags,numCurves,numVertices,numTimeSteps); break;
-    }
-#endif
     return bind(geomID,geom);
   }
 #endif
@@ -682,7 +681,9 @@ namespace embree
       return -1;
     }
 
-    return bind(geomID,new LineSegments(this,gflags,numSegments,numVertices,numTimeSteps));
+    createLineSegmentsTy createLineSegments = nullptr;
+    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createLineSegments);
+    return bind(geomID,createLineSegments(this,gflags,numSegments,numVertices,numTimeSteps));
   }
 #endif
 
