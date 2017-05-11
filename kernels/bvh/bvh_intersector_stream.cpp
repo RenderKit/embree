@@ -477,7 +477,7 @@ namespace embree
 
           /*! intersect stream of rays with all primitives */
           size_t lazy_node = 0;
-          size_t valid_isec MAYBE_UNUSED = PrimitiveIntersector::intersect(pre, bits, rays, context, 0, prim, num, lazy_node);
+          size_t valid_isec MAYBE_UNUSED = PrimitiveIntersector::intersect(pre, bits, rays, context, prim, num, lazy_node);
 
           /* update tfar in ray context on successful hit */
           size_t isec_bits = valid_isec;
@@ -578,7 +578,7 @@ namespace embree
           size_t bits = m_trav_active & m_active;
 
           assert(bits);
-          m_active = m_active & ~PrimitiveIntersector::occluded(pre, bits, rays, context, 0, prim, num, lazy_node);
+          m_active = m_active & ~PrimitiveIntersector::occluded(pre, bits, rays, context, prim, num, lazy_node);
           if (unlikely(m_active == 0)) break;
         } // traversal + intersection
       }

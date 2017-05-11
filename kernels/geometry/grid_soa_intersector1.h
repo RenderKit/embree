@@ -84,7 +84,7 @@ namespace embree
       }
       
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node) 
+      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t& lazy_node) 
       {
         const size_t line_offset   = pre.grid->width;
         const size_t lines         = pre.grid->height;
@@ -100,7 +100,7 @@ namespace embree
       }
       
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node) 
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t& lazy_node) 
       {
         const size_t line_offset   = pre.grid->width;
         const size_t lines         = pre.grid->height;
@@ -184,7 +184,7 @@ namespace embree
       }
       
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node) 
+      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t& lazy_node) 
       { 
         const size_t line_offset   = pre.grid->width;
         const size_t lines         = pre.grid->height;
@@ -200,7 +200,7 @@ namespace embree
       }
       
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node) 
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t& lazy_node) 
       {
         const size_t line_offset   = pre.grid->width;
         const size_t lines         = pre.grid->height;

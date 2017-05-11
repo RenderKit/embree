@@ -92,7 +92,7 @@ namespace embree
       };
 
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
@@ -123,7 +123,7 @@ namespace embree
       }
 
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
@@ -192,7 +192,7 @@ namespace embree
       }
 
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         const size_t line_offset   = pre.grid->width;
         const size_t lines         = pre.grid->height;
@@ -207,7 +207,7 @@ namespace embree
       }
 
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         const size_t line_offset   = pre.grid->width;
         const size_t lines         = pre.grid->height;
@@ -232,7 +232,7 @@ namespace embree
       typedef typename GridSOAIntersectorK<K>::Precalculations Precalculations;
 
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         vfloat<K> vftime;
         vint<K> vitime = getTimeSegment(ray.time, vfloat<K>(pre.grid->time_steps-1), vftime);
@@ -243,12 +243,12 @@ namespace embree
           const int itime = vitime[j];
           const vbool<K> valid2 = valid1 & (itime == vitime);
           valid1 = valid1 & !valid2;
-          intersect(valid2,pre,ray,vftime,itime,context,prim,ty,lazy_node);
+          intersect(valid2,pre,ray,vftime,itime,context,prim,lazy_node);
         }
       }
 
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const vfloat<K>& ftime, int itime, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const vfloat<K>& ftime, int itime, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         const size_t grid_offset   = pre.grid->gridBytes >> 2;
         const size_t dim_offset    = pre.grid->dim_offset;
@@ -292,7 +292,7 @@ namespace embree
       }
 
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         vfloat<K> vftime;
         vint<K> vitime = getTimeSegment(ray.time, vfloat<K>(pre.grid->time_steps-1), vftime);
@@ -304,13 +304,13 @@ namespace embree
           const int itime = vitime[j];
           const vbool<K> valid2 = valid1 & (itime == vitime);
           valid1 = valid1 & !valid2;
-          valid_o &= !valid2 | occluded(valid2,pre,ray,vftime,itime,context,prim,ty,lazy_node);
+          valid_o &= !valid2 | occluded(valid2,pre,ray,vftime,itime,context,prim,lazy_node);
         }
         return !valid_o;
       }
 
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const vfloat<K>& ftime, int itime, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const vfloat<K>& ftime, int itime, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         const size_t grid_offset   = pre.grid->gridBytes >> 2;
         const size_t dim_offset    = pre.grid->dim_offset;
@@ -416,7 +416,7 @@ namespace embree
       }
 
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       { 
         float ftime;
         int itime = getTimeSegment(ray.time[k], float(pre.grid->time_steps-1), ftime);
@@ -435,7 +435,7 @@ namespace embree
       }
 
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         float ftime;
         int itime = getTimeSegment(ray.time[k], float(pre.grid->time_steps-1), ftime);

@@ -58,7 +58,6 @@ namespace embree
       assert(!(types & BVH_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
 
       /*! load the ray into SIMD registers */
-      size_t leafType = 0;
       context->geomID_to_instID = nullptr;
       TravRay<N,Nx> vray(ray.org,ray.dir);
       vfloat<Nx> ray_near = max(ray.tnear,0.0f);
@@ -103,7 +102,7 @@ namespace embree
         }
 
         /* ray transformation support */
-        if (unlikely(nodeTraverser.traverseTransform(cur,ray,vray,leafType,context,stackPtr,stackEnd)))
+        if (unlikely(nodeTraverser.traverseTransform(cur,ray,vray,context,stackPtr,stackEnd)))
           goto pop;
 
         /*! this is a leaf node */
@@ -111,7 +110,7 @@ namespace embree
         STAT3(normal.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
         size_t lazy_node = 0;
-        PrimitiveIntersector1::intersect(pre,ray,context,leafType,prim,num,lazy_node);
+        PrimitiveIntersector1::intersect(pre,ray,context,prim,num,lazy_node);
         ray_far = ray.tfar;
 
         /*! push lazy node onto stack */
@@ -151,7 +150,6 @@ namespace embree
       assert(!(types & BVH_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
 
       /*! load the ray into SIMD registers */
-      size_t leafType = 0;
       context->geomID_to_instID = nullptr;
       TravRay<N,Nx> vray(ray.org,ray.dir);
       vfloat<Nx> ray_near = max(ray.tnear,0.0f);
@@ -186,7 +184,7 @@ namespace embree
         }
 
         /* ray transformation support */
-        if (unlikely(nodeTraverser.traverseTransform(cur,ray,vray,leafType,context,stackPtr,stackEnd)))
+        if (unlikely(nodeTraverser.traverseTransform(cur,ray,vray,context,stackPtr,stackEnd)))
           goto pop;
 
         /*! this is a leaf node */
@@ -194,7 +192,7 @@ namespace embree
         STAT3(shadow.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
         size_t lazy_node = 0;
-        if (PrimitiveIntersector1::occluded(pre,ray,context,leafType,prim,num,lazy_node)) {
+        if (PrimitiveIntersector1::occluded(pre,ray,context,prim,num,lazy_node)) {
           ray.geomID = 0;
           break;
         }

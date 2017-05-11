@@ -477,7 +477,6 @@ namespace embree
       __forceinline bool traverseTransform(NodeRef& cur,
                                            Ray& ray,
                                            TravRay<N,Nx>& vray,
-                                           size_t& leafType,
                                            IntersectContext* context,
                                            StackItemT<NodeRef>*& stackPtr,
                                            StackItemT<NodeRef>* stackEnd)
@@ -490,7 +489,6 @@ namespace embree
 #if defined(EMBREE_RAY_MASK)
           if (unlikely((ray.mask & node->mask) == 0)) return true;
 #endif          
-          leafType = node->type;
           //context->geomID_to_instID = &node->instID;
           context->instID = ray.instID;
           context->geomID = ray.geomID;
@@ -528,7 +526,6 @@ namespace embree
         /*! restore toplevel ray */
         if (cur == BVH::popRay)
         {
-          leafType = 0;
           //context->geomID_to_instID = nullptr;
           vray = (TravRay<N,Nx>&) tlray;
           ray.org = ((TravRay<N,Nx>&)tlray).org_xyz;
@@ -547,7 +544,6 @@ namespace embree
       __forceinline bool traverseTransform(NodeRef& cur,
                                            Ray& ray,
                                            TravRay<N,Nx>& vray,
-                                           size_t& leafType,
                                            IntersectContext* context,
                                            NodeRef*& stackPtr,
                                            NodeRef* stackEnd)
@@ -560,7 +556,6 @@ namespace embree
 #if defined(EMBREE_RAY_MASK)
           if (unlikely((ray.mask & node->mask) == 0)) return true;
 #endif
-          leafType = node->type;
           //context->geomID_to_instID = &node->instID;
           context->instID = ray.instID;
           context->geomID = ray.geomID;
@@ -598,7 +593,6 @@ namespace embree
         /*! restore toplevel ray */
         if (cur == BVH::popRay)
         {
-          leafType = 0;
           //context->geomID_to_instID = nullptr;
           vray = (TravRay<N,Nx>&) tlray;
           ray.org = ((TravRay<N,Nx>&)tlray).org_xyz;
@@ -636,7 +630,6 @@ namespace embree
       __forceinline bool traverseTransform(NodeRef& cur,
                                            Ray& ray,
                                            TravRay<N,Nx>& vray,
-                                           size_t& leafType,
                                            IntersectContext* context,
                                            StackItemT<NodeRef>*& stackPtr,
                                            StackItemT<NodeRef>* stackEnd)
@@ -647,7 +640,6 @@ namespace embree
       __forceinline bool traverseTransform(NodeRef& cur,
                                            Ray& ray,
                                            TravRay<N,Nx>& vray,
-                                           size_t& leafType,
                                            IntersectContext* context,
                                            NodeRef*& stackPtr,
                                            NodeRef* stackEnd)
