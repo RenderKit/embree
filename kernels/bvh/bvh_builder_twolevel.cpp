@@ -30,9 +30,9 @@
 #define SPLIT_MEMORY_RESERVE_SCALE 2
 #define SPLIT_MIN_EXT_SPACE 1000
 
-// for non-opening two-level approach set ENABLE_DIRECT_SAH_MERGE_BUILDER and ENABLE_OPEN_SEQUENTIAL to 0
-
+/* for non-opening two-level approach set ENABLE_DIRECT_SAH_MERGE_BUILDER and ENABLE_OPEN_SEQUENTIAL to 0 */
 /* sequential opening phase in old code path */
+
 #define MAX_OPEN_SIZE 10000
 #define ENABLE_OPEN_SEQUENTIAL 0
 
@@ -171,7 +171,8 @@ namespace embree
 
 #endif
 
-        bvh->alloc.init_estimate(refs.size()*SPLIT_MEMORY_RESERVE_FACTOR*sizeof(PrimRef)); // FIXME: increase estimate for opening case
+        // FIXME: find a resonable estimate with respect to the conservative memory allocator
+        bvh->alloc.init_estimate(refs.size()*SPLIT_MEMORY_RESERVE_FACTOR*sizeof(PrimRef)); 
         //bvh->alloc.init_estimate(totalPrims.load() * sizeof(PrimRef));
 
 #if defined(TASKING_TBB) && defined(__AVX512ER__) && USE_TASK_ARENA // KNL
