@@ -28,7 +28,6 @@
 #define EQUAL_GEOMID_STOP_CRITERIA 1
 #define USE_LOOP_OPENING 0
 
-#define MAX_OPENED_CHILD_NODES 8
 #define MAX_EXTEND_THRESHOLD   0.1f
 
 namespace embree
@@ -75,7 +74,7 @@ namespace embree
       };
     
     /*! Performs standard object binning */
-    template<typename NodeOpenerFunc, typename PrimRef, size_t OBJECT_BINS>
+    template<typename NodeOpenerFunc, typename PrimRef, size_t OBJECT_BINS, size_t MAX_OPENED_CHILD_NODES>
       struct HeuristicArrayOpenMergeSAH
       {
         typedef BinSplit<OBJECT_BINS> ObjectSplit;
