@@ -18,6 +18,7 @@
 
 #include "../common/scene.h"
 #include "../common/ray.h"
+#include "../common/accel.h"
 
 namespace embree
 {
@@ -31,13 +32,13 @@ namespace embree
 
         static const bool validIntersectorK = false;
 
-        static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
+        static __forceinline void intersect(Precalculations& pre, const AccelData* accel, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
         {
           for (size_t i=0; i<num; i++)
             Intersector::intersect(pre,ray,context,prim[i]);
         }
         
-        static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node) 
+        static __forceinline bool occluded(Precalculations& pre, const AccelData* accel, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node) 
         {
           for (size_t i=0; i<num; i++) {
             if (Intersector::occluded(pre,ray,context,prim[i]))
@@ -68,7 +69,7 @@ namespace embree
           size_t hit = 0;
           do {
             const size_t i = __bscf(valid);            
-            if (occluded(pre[i],*rays[i],context,prim,num,lazy_node))
+            if (occluded(pre[i],nullptr,*rays[i],context,prim,num,lazy_node))
             {
               hit |= (size_t)1 << i;
               rays[i]->geomID = 0;
