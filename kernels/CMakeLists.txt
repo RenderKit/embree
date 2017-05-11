@@ -112,7 +112,7 @@ ENDIF()
 SET(EMBREE_LIBRARY_FILES_AVX
     common/scene_triangle_mesh.cpp
     common/scene_quad_mesh.cpp 
-#    common/scene_bezier_curves.cpp
+    common/scene_bezier_curves.cpp
     common/scene_line_segments.cpp
 
     geometry/instance_intersector1.cpp
