@@ -216,12 +216,6 @@ namespace embree
     }
   }
 
-  void NativeCurves::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, 
-                                 float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
-  {
-    interpolate_helper<CurveT<vfloatx>>(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats);
-  }
-
   template<typename InputCurve3fa>
     void NativeCurves::commit_helper()
   {
@@ -270,7 +264,11 @@ namespace embree
     : NativeCurves(scene,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps) {}
   
   void CurvesBezier::preCommit() {
+#if defined(EMBREE_NATIVE_CURVE_BSPLINE)
     if (isEnabled()) commit_helper<BezierCurve3fa>();
+#else
+    NativeCurves::preCommit();
+#endif
   }
 
   void CurvesBezier::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, 
@@ -283,7 +281,11 @@ namespace embree
     : NativeCurves(scene,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps) {}
   
   void CurvesBSpline::preCommit() {
+#if defined(EMBREE_NATIVE_CURVE_BSPLINE)
+    NativeCurves::preCommit();
+#else
     if (isEnabled()) commit_helper<BSplineCurve3fa>();
+#endif
   }
 
   void CurvesBSpline::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, 
