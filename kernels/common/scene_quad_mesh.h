@@ -216,4 +216,15 @@ namespace embree
     vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
     vector<APIBuffer<char>> userbuffers;              //!< user buffers
   };
+
+  namespace isa
+  {
+    struct QuadMeshISA : public QuadMesh
+    {
+      QuadMeshISA (Scene* scene, RTCGeometryFlags flags, size_t numQuads, size_t numVertices, size_t numTimeSteps)
+        : QuadMesh(scene,flags,numQuads,numVertices,numTimeSteps) {}
+    };
+  }
+
+  DECLARE_ISA_FUNCTION(QuadMesh*, createQuadMesh, Scene* COMMA RTCGeometryFlags COMMA size_t COMMA size_t COMMA size_t);
 }

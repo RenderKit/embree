@@ -19,6 +19,8 @@
 
 namespace embree
 {
+#if defined(EMBREE_LOWEST_ISA)
+
   LineSegments::LineSegments (Scene* scene, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps)
     : Geometry(scene,LINE_SEGMENTS,numPrimitives,numTimeSteps,flags)
   {
@@ -189,6 +191,14 @@ namespace embree
       if (P      ) vfloatx::storeu(valid,P+i,lerp(p0,p1,u));
       if (dPdu   ) vfloatx::storeu(valid,dPdu+i,p1-p0);
       if (ddPdudu) vfloatx::storeu(valid,dPdu+i,vfloatx(zero));
+    }
+  }
+#endif
+
+  namespace isa
+  {
+    LineSegments* createLineSegments(Scene* scene, RTCGeometryFlags flags, size_t numSegments, size_t numVertices, size_t numTimeSteps) {
+      return new LineSegmentsISA(scene,flags,numSegments,numVertices,numTimeSteps);
     }
   }
 }

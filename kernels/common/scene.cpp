@@ -616,7 +616,9 @@ namespace embree
       return -1;
     }
     
-    return bind(geomID, new QuadMesh(this,gflags,numQuads,numVertices,numTimeSteps));
+    createQuadMeshTy createQuadMesh = nullptr;
+    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createQuadMesh);
+    return bind(geomID,createQuadMesh(this,gflags,numQuads,numVertices,numTimeSteps));
   }
 #endif
 
@@ -681,7 +683,9 @@ namespace embree
       return -1;
     }
 
-    return bind(geomID,new LineSegments(this,gflags,numSegments,numVertices,numTimeSteps));
+    createLineSegmentsTy createLineSegments = nullptr;
+    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createLineSegments);
+    return bind(geomID,createLineSegments(this,gflags,numSegments,numVertices,numTimeSteps));
   }
 #endif
 
