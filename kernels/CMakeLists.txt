@@ -94,7 +94,6 @@ IF (EMBREE_RAY_PACKETS)
 ENDIF()
 
 SET(EMBREE_LIBRARY_FILES_SSE42
-    common/scene_triangle_mesh.cpp
     bvh/bvh_intersector1_bvh4.cpp)
 
 IF (EMBREE_GEOMETRY_SUBDIV)
@@ -132,9 +131,9 @@ SET(EMBREE_LIBRARY_FILES_AVX
 
 IF (EMBREE_GEOMETRY_SUBDIV)
   SET(EMBREE_LIBRARY_FILES_AVX ${EMBREE_LIBRARY_FILES_AVX}
+  common/scene_subdiv_mesh.cpp
   geometry/grid_soa.cpp
   subdiv/subdivpatch1base_eval.cpp
-  common/scene_subdiv_mesh_avx.cpp
   bvh/bvh_builder_subdiv.cpp)
 ENDIF()
 
@@ -153,8 +152,6 @@ IF (EMBREE_RAY_PACKETS)
 ENDIF()
 
 SET(EMBREE_LIBRARY_FILES_AVX2
-    common/scene_triangle_mesh.cpp
-
     geometry/instance_intersector1.cpp
     builders/primrefgen.cpp
     bvh/bvh_builder_morton.cpp
