@@ -16,7 +16,6 @@
 
 // TODO: 
 //       - adjust parallel build thresholds
-//       - do statistics about how many nodes are opened
 //       - openNodesBasedOnExtend should consider max extended size
   
 #pragma once
@@ -24,11 +23,16 @@
 #include "heuristic_binning.h"
 #include "heuristic_spatial.h"
 
+/* use subtree size for binning */
 #define USE_SUBTREE_SIZE_FOR_BINNING 1
+/* stop opening of all bref.geomIDs are the same */
 #define EQUAL_GEOMID_STOP_CRITERIA 1
-#define USE_LOOP_OPENING 0
+/* 10% spatial extend threshold */
 #define MAX_EXTEND_THRESHOLD   0.1f
+/* maximum is 8 children */
 #define MAX_OPENED_CHILD_NODES 8
+/* open until all build refs are below threshold size in one step */
+#define USE_LOOP_OPENING 0
 
 namespace embree
 {
