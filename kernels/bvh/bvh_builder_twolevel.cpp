@@ -21,21 +21,20 @@
 #include "../common/scene_triangle_mesh.h"
 #include "../common/scene_quad_mesh.h"
 
-#define PROFILE 0
-#define MAX_OPEN_SIZE 10000
+#define PROFILE 1
 
 /* new open/merge builder */
 #define ENABLE_DIRECT_SAH_MERGE_BUILDER 1
 
-/* sequential opening phase in old code path */
-#define ENABLE_OPEN_SEQUENTIAL 0
-
 #define SPLIT_MEMORY_RESERVE_FACTOR 1000
 #define SPLIT_MEMORY_RESERVE_SCALE 2
-// 500
 #define SPLIT_MIN_EXT_SPACE 1000
 
 // for non-opening two-level approach set ENABLE_DIRECT_SAH_MERGE_BUILDER and ENABLE_OPEN_SEQUENTIAL to 0
+
+/* sequential opening phase in old code path */
+#define MAX_OPEN_SIZE 10000
+#define ENABLE_OPEN_SEQUENTIAL 0
 
 namespace embree
 {
@@ -214,10 +213,8 @@ namespace embree
             settings.singleThreadThreshold = singleThreadThreshold;
 
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
-            //DBG_PRINT(numPrimitives);
+            /* this probably needs some more tuning */
             const size_t extSize = max(max((size_t)SPLIT_MIN_EXT_SPACE,refs.size()*SPLIT_MEMORY_RESERVE_SCALE),size_t((float)numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
-            //DBG_PRINT(refs.size()*SPLIT_MEMORY_RESERVE_SCALE);
-            //DBG_PRINT(extSize);
             refs.resize(extSize); 
 
             NodeRef root = BVHBuilderBinnedOpenMergeSAH::build<NodeRef,BuildRef>(
@@ -241,14 +238,6 @@ namespace embree
               typename BVH::AlignedNode::Set2(),
               
               [&] (const BVHBuilderBinnedSAH::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) -> NodeRef {
-            // NodeRef root = BVHBuilderBinnedSAH::build<NodeRef>
-            //   (
-            //     typename BVH::CreateAlloc(bvh),
-            //     typename BVH::AlignedNode::Create2(),
-            //     typename BVH::AlignedNode::Set2(),
-               
-            //    [&] (const BVHBuilderBinnedSAH::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) -> NodeRef
-            //   {
                 assert(current.prims.size() == 1);
                 return (NodeRef) prims[current.prims.begin()].ID();
               },

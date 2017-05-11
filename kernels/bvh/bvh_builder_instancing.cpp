@@ -118,7 +118,6 @@ namespace embree
       //numPrimitives += scene->getNumPrimitives<TriangleMesh,false>();
       numPrimitives += scene->instanced.numTriangles;
       numPrimitives += scene->instancedMB.numTriangles;
-      //PRINT(numPrimitives);
 
       if (numPrimitives == 0) {
         prims.resize(0);
