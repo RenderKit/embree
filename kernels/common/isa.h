@@ -33,28 +33,20 @@ namespace embree
   type name##_error() { return type(name##_error2); }                 \
   type name##_zero() { return type(nullptr); }
 
-#define DECLARE_ISA_FUNCTION(type,name,args)                            \
-  namespace sse2      { extern type name(args); }                       \
-  namespace sse42     { extern type name(args); }                       \
-  namespace avx       { extern type name(args); }                       \
-  namespace avx2      { extern type name(args); }                       \
-  namespace avx512knl { extern type name(args); }                       \
-  namespace avx512skx { extern type name(args); }                       \
-  typedef type (*name##Ty)(args);
+#define DECLARE_ISA_FUNCTION(type,symbol,args)                            \
+  namespace sse2      { extern type symbol(args); }                       \
+  namespace sse42     { extern type symbol(args); }                       \
+  namespace avx       { extern type symbol(args); }                       \
+  namespace avx2      { extern type symbol(args); }                       \
+  namespace avx512knl { extern type symbol(args); }                       \
+  namespace avx512skx { extern type symbol(args); }                     \
+  inline void symbol##_error() { throw_RTCError(RTC_UNSUPPORTED_CPU,"function " TOSTRING(symbol) " not supported by your CPU"); } \
+  typedef type (*symbol##Ty)(args);                                       \
   
-#define DEFINE_BUILDER2(Accel,Mesh,Args,symbol)                         \
-  typedef Builder* (*symbol##Func)(Accel* accel, Mesh* mesh, Args args); \
+#define DEFINE_ISA_FUNCTION(type,symbol,args)   \
+  typedef type (*symbol##Func)(args);           \
   symbol##Func symbol;
-
-#define DECLARE_BUILDER2(Accel,Mesh,Args,symbol)                         \
-  namespace sse2      { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace sse42     { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace avx       { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace avx2      { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace avx512knl { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace avx512skx { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  void symbol##_error() { throw_RTCError(RTC_UNSUPPORTED_CPU,"builder " TOSTRING(symbol) " not supported by your CPU"); } \
-
+  
 #define ZERO_SYMBOL(features,intersector)                      \
   intersector = intersector##_zero;
 
