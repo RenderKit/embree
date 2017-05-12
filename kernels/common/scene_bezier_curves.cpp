@@ -178,94 +178,94 @@ namespace embree
       native_vertices[i] = (BufferRefT<Vec3fa>) vertices[i];
   }
 
-  template<typename Curve>
-    void NativeCurves::interpolate_helper(unsigned primID, float u, float v, RTCBufferType buffer, 
-                                          float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
-  {
-  /* test if interpolation is enabled */
-#if defined(DEBUG) 
-    if ((scene->aflags & RTC_INTERPOLATE) == 0) 
-      throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
-#endif
-
-    /* calculate base pointer and stride */
-    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) ||
-           (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
-    const char* src = nullptr; 
-    size_t stride = 0;
-    if (buffer >= RTC_USER_VERTEX_BUFFER0) {
-      src    = userbuffers[buffer&0xFFFF].getPtr();
-      stride = userbuffers[buffer&0xFFFF].getStride();
-    } else {
-      src    = vertices[buffer&0xFFFF].getPtr();
-      stride = vertices[buffer&0xFFFF].getStride();
-    }
-
-    for (size_t i=0; i<numFloats; i+=4)
-    {
-      size_t ofs = i*sizeof(float);
-      const size_t curve = curves[primID];
-      const vbool4 valid = vint4((int)i)+vint4(step) < vint4(numFloats);
-      const vfloat4 p0 = vfloat4::loadu(valid,(float*)&src[(curve+0)*stride+ofs]);
-      const vfloat4 p1 = vfloat4::loadu(valid,(float*)&src[(curve+1)*stride+ofs]);
-      const vfloat4 p2 = vfloat4::loadu(valid,(float*)&src[(curve+2)*stride+ofs]);
-      const vfloat4 p3 = vfloat4::loadu(valid,(float*)&src[(curve+3)*stride+ofs]);
-      
-      const Curve bezier(p0,p1,p2,p3);
-      if (P      ) vfloat4::storeu(valid,P+i,      bezier.eval(u));
-      if (dPdu   ) vfloat4::storeu(valid,dPdu+i,   bezier.eval_du(u));
-      if (ddPdudu) vfloat4::storeu(valid,ddPdudu+i,bezier.eval_dudu(u));
-    }
-  }
-
-  template<typename InputCurve3fa, typename OutputCurve3fa>
-    void NativeCurves::commit_helper()
-  {
-    if (native_curves.size() != curves.size()) 
-    {
-      native_curves = APIBuffer<unsigned>(scene->device,curves.size(),sizeof(unsigned int),true);
-      parallel_for(size_t(0), curves.size(), size_t(1024), [&] ( const range<size_t> r) {
-          for (size_t i=r.begin(); i<r.end(); i++) {
-            if (curves[i]+3 >= numVertices()) native_curves[i] = 0xFFFFFFF0; // invalid curves stay invalid this way
-            else                              native_curves[i] = unsigned(4*i);
-          }
-        });
-    }
-
-    if (native_vertices.size() != vertices.size())
-      native_vertices.resize(vertices.size());
-
-    parallel_for(vertices.size(), [&] ( const size_t i ) {
-        
-        if (native_vertices[i].size() != 4*curves.size())
-          native_vertices[i] = APIBuffer<Vec3fa>(scene->device,4*curves.size(),sizeof(Vec3fa),true);
-        
-        parallel_for(size_t(0), curves.size(), size_t(1024), [&] ( const range<size_t> rj ) {
-
-            for (size_t j=rj.begin(); j<rj.end(); j++)
-            {
-              const unsigned id = curves[j];
-              if (id+3 >= numVertices()) continue; // ignore invalid curves
-              const Vec3fa v0 = vertices[i][id+0];
-              const Vec3fa v1 = vertices[i][id+1];
-              const Vec3fa v2 = vertices[i][id+2];
-              const Vec3fa v3 = vertices[i][id+3];
-              const InputCurve3fa icurve(v0,v1,v2,v3);
-              OutputCurve3fa ocurve; convert<Vec3fa>(icurve,ocurve);
-              native_vertices[i].store(4*j+0,ocurve.v0);
-              native_vertices[i].store(4*j+1,ocurve.v1);
-              native_vertices[i].store(4*j+2,ocurve.v2);
-              native_vertices[i].store(4*j+3,ocurve.v3);
-            }
-        });
-      });
-    native_vertices0 = native_vertices[0];
-  }
-
 #endif
 
   namespace isa
   {
+    template<typename Curve>
+    __forceinline void NativeCurvesISA::interpolate_helper(unsigned primID, float u, float v, RTCBufferType buffer, 
+                                                           float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
+    {
+      /* test if interpolation is enabled */
+#if defined(DEBUG) 
+      if ((scene->aflags & RTC_INTERPOLATE) == 0) 
+        throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
+#endif
+      
+      /* calculate base pointer and stride */
+      assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) ||
+             (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
+      const char* src = nullptr; 
+      size_t stride = 0;
+      if (buffer >= RTC_USER_VERTEX_BUFFER0) {
+        src    = userbuffers[buffer&0xFFFF].getPtr();
+        stride = userbuffers[buffer&0xFFFF].getStride();
+      } else {
+        src    = vertices[buffer&0xFFFF].getPtr();
+        stride = vertices[buffer&0xFFFF].getStride();
+      }
+      
+      for (size_t i=0; i<numFloats; i+=4)
+      {
+        size_t ofs = i*sizeof(float);
+        const size_t curve = curves[primID];
+        const vbool4 valid = vint4((int)i)+vint4(step) < vint4(numFloats);
+        const vfloat4 p0 = vfloat4::loadu(valid,(float*)&src[(curve+0)*stride+ofs]);
+        const vfloat4 p1 = vfloat4::loadu(valid,(float*)&src[(curve+1)*stride+ofs]);
+        const vfloat4 p2 = vfloat4::loadu(valid,(float*)&src[(curve+2)*stride+ofs]);
+        const vfloat4 p3 = vfloat4::loadu(valid,(float*)&src[(curve+3)*stride+ofs]);
+        
+        const Curve bezier(p0,p1,p2,p3);
+        if (P      ) vfloat4::storeu(valid,P+i,      bezier.eval(u));
+        if (dPdu   ) vfloat4::storeu(valid,dPdu+i,   bezier.eval_du(u));
+        if (ddPdudu) vfloat4::storeu(valid,ddPdudu+i,bezier.eval_dudu(u));
+      }
+    }
+    
+    template<typename InputCurve3fa, typename OutputCurve3fa>
+    void NativeCurvesISA::commit_helper()
+    {
+      if (native_curves.size() != curves.size()) 
+      {
+        native_curves = APIBuffer<unsigned>(scene->device,curves.size(),sizeof(unsigned int),true);
+        parallel_for(size_t(0), curves.size(), size_t(1024), [&] ( const range<size_t> r) {
+            for (size_t i=r.begin(); i<r.end(); i++) {
+              if (curves[i]+3 >= numVertices()) native_curves[i] = 0xFFFFFFF0; // invalid curves stay invalid this way
+              else                              native_curves[i] = unsigned(4*i);
+            }
+          });
+      }
+      
+      if (native_vertices.size() != vertices.size())
+        native_vertices.resize(vertices.size());
+      
+      parallel_for(vertices.size(), [&] ( const size_t i ) {
+          
+          if (native_vertices[i].size() != 4*curves.size())
+            native_vertices[i] = APIBuffer<Vec3fa>(scene->device,4*curves.size(),sizeof(Vec3fa),true);
+          
+          parallel_for(size_t(0), curves.size(), size_t(1024), [&] ( const range<size_t> rj ) {
+              
+              for (size_t j=rj.begin(); j<rj.end(); j++)
+              {
+                const unsigned id = curves[j];
+                if (id+3 >= numVertices()) continue; // ignore invalid curves
+                const Vec3fa v0 = vertices[i][id+0];
+                const Vec3fa v1 = vertices[i][id+1];
+                const Vec3fa v2 = vertices[i][id+2];
+                const Vec3fa v3 = vertices[i][id+3];
+                const InputCurve3fa icurve(v0,v1,v2,v3);
+                OutputCurve3fa ocurve; convert<Vec3fa>(icurve,ocurve);
+                native_vertices[i].store(4*j+0,ocurve.v0);
+                native_vertices[i].store(4*j+1,ocurve.v1);
+                native_vertices[i].store(4*j+2,ocurve.v2);
+                native_vertices[i].store(4*j+3,ocurve.v3);
+              }
+            });
+        });
+      native_vertices0 = native_vertices[0];
+    }
+    
     NativeCurves* createCurvesBezier(Scene* scene, NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps) {
       return new CurvesBezier(scene,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps);
     }

@@ -76,7 +76,7 @@ namespace embree
         typedef typename Intersector::Primitive Primitive;
         typedef typename Intersector::Precalculations Precalculations;
 
-        static const bool validIntersectorK = false;
+        static const bool validIntersectorK = false; // FIXME: why do we need this
 
         static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
         {
@@ -103,19 +103,14 @@ namespace embree
 
         static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context,  const Primitive* prim, size_t num, size_t& lazy_node)
         {
-#if 0
           size_t valid_isec = 0;
           do {
             const size_t i = __bscf(valid);
             const float old_far = rays[i]->tfar;
-            for (size_t n=0; n<num; n++)
-              Intersector::intersect(pre[i],*rays[i],context,prim[n]);
+            intersect(pre[i],*rays[i],context,prim,num,lazy_node);
             valid_isec |= (rays[i]->tfar < old_far) ? ((size_t)1 << i) : 0;            
           } while(unlikely(valid));
           return valid_isec;
-#else
-          return Intersector::intersect(pre,valid,rays,context,prim,num);
-#endif
         }
 
         static __forceinline size_t occluded(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node) 
@@ -200,7 +195,7 @@ namespace embree
         
         static __forceinline void intersectK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayK<K>& ray, IntersectContext* context, const PrimitiveK* prim, size_t num, size_t& lazy_node)
         {
-          PrecalculationsK pre(valid,ray); //todo: might cause trouble
+          PrecalculationsK pre(valid,ray); // FIXME: might cause trouble
 
           for (size_t i=0; i<num; i++) {
             IntersectorK::intersect(valid,pre,ray,context,prim[i]);
@@ -209,7 +204,7 @@ namespace embree
         
         static __forceinline vbool<K> occludedK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayK<K>& ray, IntersectContext* context, const PrimitiveK* prim, size_t num, size_t& lazy_node)
         {
-          PrecalculationsK pre(valid,ray); //todo: might cause trouble
+          PrecalculationsK pre(valid,ray); // FIXME: might cause trouble
           vbool<K> valid0 = valid;
           for (size_t i=0; i<num; i++) {
             valid0 &= !IntersectorK::occluded(valid0,pre,ray,context,prim[i]);
@@ -235,12 +230,18 @@ namespace embree
 
         static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context,  const Primitive* prim, size_t num, size_t& lazy_node)
         {
-          return Intersector1::intersect(pre,valid,rays,context,prim,num);
+          size_t valid_isec = 0;
+          do {
+            const size_t i = __bscf(valid);
+            const float old_far = rays[i]->tfar;
+            intersect(pre[i],*rays[i],context,prim,num,lazy_node);
+            valid_isec |= (rays[i]->tfar < old_far) ? ((size_t)1 << i) : 0;            
+          } while(unlikely(valid));
+          return valid_isec;
         }
 
         static __forceinline size_t occluded(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node) 
         {
-          //todo : fix
           size_t hit = 0;
           do {
             const size_t i = __bscf(valid);            
