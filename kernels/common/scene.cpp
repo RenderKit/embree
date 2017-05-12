@@ -73,7 +73,9 @@ namespace embree
 #if defined (EMBREE_TARGET_AVX)    
     if (device->tri_accel == "bvh8.multi.fast")
       accels.add(device->bvh8_factory->BVH8MultiFast(this));
-#else
+    else
+#endif
+    {
     createTriangleAccel();
     createTriangleMBAccel();
     createQuadAccel();
@@ -84,7 +86,7 @@ namespace embree
     createHairMBAccel();
     createLineAccel();
     createLineMBAccel();
-#endif
+    }
 
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
     accels.add(device->bvh4_factory->BVH4InstancedBVH4Triangle4ObjectSplit(this));
