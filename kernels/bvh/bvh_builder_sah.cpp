@@ -309,7 +309,7 @@ namespace embree
       BVHNBuilderMultiSAH (BVH* bvh, Scene* scene, Geometry::Type type, const VirtualCreateLeaf<N>& createLeaf, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize,
                            bool primrefarrayalloc = false)
         : bvh(bvh), scene(scene), mesh(nullptr), type(type), createLeaf(createLeaf), prims(scene->device,0),
-          settings(sahBlockSize, minLeafSize, min(maxLeafSize,/*Primitive::max_size()*/BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), primrefarrayalloc(primrefarrayalloc) {} // FIXME: minLeafSize too small
+          settings(sahBlockSize, minLeafSize, min(maxLeafSize,/*Primitive::max_size()*/4*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), primrefarrayalloc(primrefarrayalloc) {} // FIXME: minLeafSize too small
 
       //BVHNBuilderMultiSAH (BVH* bvh, Geometry* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
       //  : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), primrefarrayalloc(false) {}
