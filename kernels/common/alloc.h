@@ -356,7 +356,7 @@ namespace embree
       if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesEstimated > 2*mainAllocOverhead*growSize) slotMask = 0x1;
       if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesEstimated > 4*mainAllocOverhead*growSize) slotMask = 0x3;
       if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesEstimated > 8*mainAllocOverhead*growSize) slotMask = 0x7;
-      
+
       /* set the thread local alloc block size */
       size_t defaultBlockSizeSwitch = PAGE_SIZE+maxAlignment;
       
@@ -386,6 +386,7 @@ namespace embree
       if (device->alloc_num_main_slots >= 8 ) slotMask = 0x7;
       if (device->alloc_thread_block_size != 0) defaultBlockSize = device->alloc_thread_block_size;
       if (device->alloc_single_thread_alloc != -1) use_single_mode = device->alloc_single_thread_alloc;
+
     }
 
     /*! initializes the allocator */
@@ -408,7 +409,9 @@ namespace embree
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       /* single allocator mode ? */
       estimatedSize = bytesEstimate;
+      //initGrowSizeAndNumSlots(bytesEstimate,false);
       initGrowSizeAndNumSlots(bytesEstimate,false);
+
     }
 
     /*! frees state not required after build */

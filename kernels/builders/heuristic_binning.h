@@ -37,6 +37,17 @@ namespace embree
         __forceinline BinMapping(size_t N, const BBox3fa& centBounds) 
         {
           num = min(BINS,size_t(4.0f + 0.05f*N));
+          assert(num >= 1);
+          const vfloat4 diag = (vfloat4) centBounds.size();
+          scale = select(diag > vfloat4(1E-34f),vfloat4(0.99f*num)/diag,vfloat4(0.0f));
+          ofs  = (vfloat4) centBounds.lower;
+        }
+
+        /*! calculates the mapping */
+        __forceinline BinMapping(const BBox3fa& centBounds, size_t N) 
+        {
+          assert(N >= 1);
+          num = min(BINS,N); 
           const vfloat4 diag = (vfloat4) centBounds.size();
           scale = select(diag > vfloat4(1E-34f),vfloat4(0.99f*num)/diag,vfloat4(0.0f));
           ofs  = (vfloat4) centBounds.lower;
@@ -92,6 +103,11 @@ namespace embree
                                       const vbool4&  splitDimMask) const // FIXME: rename to isLeft
         {
           return any(((vint4)bin_unsafe(center2(ref.bounds())) < vSplitPos) & splitDimMask);
+        }
+
+        /*! calculates left spatial position of bin */
+        __forceinline float pos(const size_t bin, const size_t dim) const {
+          return madd(float(bin),1.0f / scale[dim],ofs[dim]);
         }
 
         /*! returns true if the mapping is invalid in some dimension */
@@ -302,6 +318,66 @@ namespace embree
       __forceinline void bin(const PrimRef* prims, size_t begin, size_t end, const BinMapping<BINS>& mapping, const AffineSpace3fa& space, void* user = nullptr) {
 	bin(prims+begin,end-begin,mapping,space,user);
       }   
+
+
+      /*! bins an array of primitives using subtree counts */
+      __forceinline void binSubTreeRefs (const PrimRef* prims, size_t N, const BinMapping<BINS>& mapping)
+      {
+	if (unlikely(N == 0)) return;
+	size_t i; 
+	for (i=0; i<N-1; i+=2)
+        {
+          /*! map even and odd primitive to bin */
+          BBox prim0; Vec3fa center0;
+          prims[i+0].binBoundsAndCenter(prim0,center0);
+          const vint4 bin0 = (vint4)mapping.bin(center0); 
+          
+          BBox prim1; Vec3fa center1;
+          prims[i+1].binBoundsAndCenter(prim1,center1); 
+          const vint4 bin1 = (vint4)mapping.bin(center1); 
+          
+          /*! increase bounds for bins for even primitive */
+          const unsigned int b00 = extract<0>(bin0); bounds(b00,0).extend(prim0); 
+          const unsigned int b01 = extract<1>(bin0); bounds(b01,1).extend(prim0); 
+          const unsigned int b02 = extract<2>(bin0); bounds(b02,2).extend(prim0); 
+          const unsigned int n0  = prims[i+0].primID();
+          assert(n0);
+          counts(b00,0)+=n0;
+          counts(b01,1)+=n0;
+          counts(b02,2)+=n0;
+
+          /*! increase bounds of bins for odd primitive */
+          const unsigned int b10 = extract<0>(bin1);  bounds(b10,0).extend(prim1); 
+          const unsigned int b11 = extract<1>(bin1);  bounds(b11,1).extend(prim1); 
+          const unsigned int b12 = extract<2>(bin1);  bounds(b12,2).extend(prim1); 
+          const unsigned int n1  = prims[i+1].primID();
+
+          assert(n1);
+          counts(b10,0)+=n1;
+          counts(b11,1)+=n1;
+          counts(b12,2)+=n1;
+        }
+	/*! for uneven number of primitives */
+	if (i < N)
+        {
+          /*! map primitive to bin */
+          BBox prim0; Vec3fa center0;
+          prims[i].binBoundsAndCenter(prim0,center0); 
+          const vint4 bin0 = (vint4)mapping.bin(center0); 
+          
+          /*! increase bounds of bins */
+          const unsigned int num = prims[i].primID();
+          assert(num);
+
+          const unsigned int b00 = extract<0>(bin0); counts(b00,0)+=num; bounds(b00,0).extend(prim0);
+          const unsigned int b01 = extract<1>(bin0); counts(b01,1)+=num; bounds(b01,1).extend(prim0);
+          const unsigned int b02 = extract<2>(bin0); counts(b02,2)+=num; bounds(b02,2).extend(prim0);
+        }
+      }
+
+      __forceinline void binSubTreeRefs(const PrimRef* prims, size_t begin, size_t end, const BinMapping<BINS>& mapping) {
+	binSubTreeRefs(prims+begin,end-begin,mapping);
+      }
 
       /*! merges in other binning information */
       __forceinline void merge (const BinInfoT& other, size_t numBins)

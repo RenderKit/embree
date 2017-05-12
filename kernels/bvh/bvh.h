@@ -373,6 +373,9 @@ namespace embree
         ptr &= ~(size_t)align_mask;
       }
 
+      /*! returns the wideness */
+      __forceinline size_t getN() const { return N; }
+
     private:
       size_t ptr;
     };

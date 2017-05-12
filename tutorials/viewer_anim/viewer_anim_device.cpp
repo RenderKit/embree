@@ -16,7 +16,7 @@
 
 #define ANIM_FPS 15.0f
 #define ENABLE_ANIM 1
-#define VERTEX_NORMALS 1
+#define VERTEX_NORMALS 0
 #define SHADOWS 1
 #define DUMP_PROFILE_DATA 0
 

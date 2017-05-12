@@ -22,6 +22,12 @@
 #include "../geometry/quadv.h"
 #include "../geometry/quadi.h"
 
+/* new open/merge builder */
+#define ENABLE_DIRECT_SAH_MERGE_BUILDER 1
+#define SPLIT_MEMORY_RESERVE_SCALE_FACTOR 4
+#define SPLIT_MIN_EXT_SPACE 1000
+#define PROFILE(x)
+
 namespace embree
 {
   namespace isa
@@ -112,6 +118,7 @@ namespace embree
       //numPrimitives += scene->getNumPrimitives<TriangleMesh,false>();
       numPrimitives += scene->instanced.numTriangles;
       numPrimitives += scene->instancedMB.numTriangles;
+
       if (numPrimitives == 0) {
         prims.resize(0);
         bvh->set(BVH::emptyNode,empty,0);
@@ -163,6 +170,8 @@ namespace embree
           }
         });
 
+      PROFILE(double d0 = getSeconds());
+
       /* creates all instances */
       parallel_for(size_t(0), num, [&] (const range<size_t>& r) {
           for (size_t objectID=r.begin(); objectID<r.end(); objectID++)
@@ -175,8 +184,8 @@ namespace embree
             BVH* object = objects[instance->geom->geomID];
             if (object == nullptr) continue;
             if (object->getBounds().empty()) continue;
-            int s = 0; //slot(geom->getType() & ~Geometry::INSTANCE, geom->numTimeSteps);
-            refs[nextRef++] = BVHNBuilderInstancing::BuildRef(instance->local2world,object->getBounds(),object->root,instance->mask,unsigned(objectID),hash(instance->local2world),s);
+            int s = instance->geom->geomID; //slot(geom->getType() & ~Geometry::INSTANCE, geom->numTimeSteps);
+            refs[nextRef++] = BVHNBuilderInstancing::BuildRef(instance->local2world,object->getBounds(),object->root,instance->mask,unsigned(objectID),hash(instance->local2world),s,0,object->numPrimitives);
           }
         });
       refs.resize(nextRef);
@@ -196,14 +205,10 @@ namespace embree
       }
 #endif
 
-      /* fast path for single geometry scenes */
-      /*if (nextRef == 1) {
-        bvh->set(refs[0].node,refs[0].bounds(),numPrimitives);
-        return;
-        }*/
-
-      /* open all large nodes */
-      open(numPrimitives);
+      /* open all large nodes */  
+#if ENABLE_DIRECT_SAH_MERGE_BUILDER == 0
+      //open(numPrimitives); 
+#endif
 
       /* fast path for small geometries */
       /*if (refs.size() == 1) {
@@ -214,6 +219,7 @@ namespace embree
       bvh->alloc.init_estimate(refs.size()*16);
 
       /* compute PrimRefs */
+#if ENABLE_DIRECT_SAH_MERGE_BUILDER == 0
       prims.resize(refs.size());
       const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(), size_t(1024), PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {
           PrimInfo pinfo(empty);
@@ -225,7 +231,17 @@ namespace embree
           }
           return pinfo;
         }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
+#else
+      const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(),  PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {          
+          PrimInfo pinfo(empty);
+          for (size_t i=r.begin(); i<r.end(); i++) {
+            pinfo.add(refs[i].bounds());
+          }
+          return pinfo;
+        }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
 
+#endif
+      
       /* skip if all objects where empty */
       if (pinfo.size() == 0)
         bvh->set(BVH::emptyNode,empty,0);
@@ -246,13 +262,38 @@ namespace embree
         GeneralBVHBuilder::Settings settings;
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxBuildDepthLeaf;
-        settings.logBlockSize = __bsr(4);
+        settings.logBlockSize = __bsr(N);
         settings.minLeafSize = 1;
         settings.maxLeafSize = 1;
         settings.travCost = 1.0f;
         settings.intCost = 1.0f;
         settings.singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD;
 
+#if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
+        const size_t extSize = max((size_t)SPLIT_MIN_EXT_SPACE,(size_t)(refs.size()*SPLIT_MEMORY_RESERVE_SCALE_FACTOR));
+        refs.resize(extSize); 
+        NodeRef root = BVHBuilderBinnedOpenMergeSAH::build<NodeRef,BuildRef>(
+            typename BVH::CreateAlloc(bvh),
+            typename BVH::AlignedNode::Create2(),
+            typename BVH::AlignedNode::Set2(),
+
+           [&] (const BVHBuilderBinnedOpenMergeSAH::BuildRecord& current,  const FastAllocator::CachedAllocator& alloc) -> NodeRef
+          {
+            assert(current.prims.size() == 1);
+            BuildRef* ref = (BuildRef*)&refs[current.prims.begin()];
+            TransformNode* node = (TransformNode*) alloc.malloc0(sizeof(TransformNode),BVH::byteAlignment);
+            new (node) TransformNode(ref->local2world,ref->localBounds,ref->node,ref->mask,ref->instID,ref->xfmID,ref->type); // FIXME: rcp should be precalculated somewhere
+            NodeRef noderef = BVH::encodeNode(node);
+            noderef.setBarrier();
+            return noderef;
+          },
+            [&] (BuildRef &bref, BuildRef *refs) -> size_t { 
+              return openBuildRef(bref,refs);
+            }, 
+            [&] (size_t dn) { bvh->scene->progressMonitor(0); },
+            refs.data(),extSize,pinfo,settings);
+
+#else
         NodeRef root = BVHBuilderBinnedSAH::build<NodeRef>
           (
             typename BVH::CreateAlloc(bvh),
@@ -271,7 +312,11 @@ namespace embree
           },
            [&] (size_t dn) { bvh->scene->progressMonitor(0); },
             prims.data(),pinfo,settings);
+#endif
 
+        PROFILE(double d1 = getSeconds());
+        PROFILE(PRINT(d1-d0));
+        
         bvh->set(root,LBBox3fa(pinfo.geomBounds),numPrimitives);
         numCollapsedTransformNodes = refs.size();
         bvh->root = collapse(bvh->root);
