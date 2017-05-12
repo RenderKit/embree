@@ -130,6 +130,18 @@ namespace embree
       TriangleM::store_nt(this,TriangleM(v0,v1,v2,vgeomID,vprimID));
     }
 
+    template<typename BVH>
+    __forceinline char* createLeaf(const FastAllocator::CachedAllocator& alloc, PrimRef* prims, const range<size_t>& range, BVH* bvh)
+    {
+      size_t cur = range.begin();
+      size_t items = blocks(range.size());
+      TriangleM* accel = (TriangleM*) alloc.malloc1(items*sizeof(TriangleM),BVH::byteAlignment);
+      for (size_t i=0; i<items; i++) {
+        accel[i].fill(prims,cur,range.end(),bvh->scene);
+      }
+      return BVH::encodeLeaf((char*)accel,items);
+    }
+      
     /* Updates the primitive */
     __forceinline BBox3fa update(TriangleMesh* mesh)
     {

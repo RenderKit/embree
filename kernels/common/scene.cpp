@@ -90,6 +90,14 @@ namespace embree
     createUserGeometryMBAccel();
   }
 
+  size_t Scene::getNumPrimitives(Geometry::Type type, bool mblur)
+  {
+    size_t num = 0;
+    num += world.size(type);
+    if (mblur) num += worldMB.size(type);
+    return num;
+  }
+
   void Scene::createTriangleAccel()
   {
 #if defined(EMBREE_GEOMETRY_TRIANGLES)

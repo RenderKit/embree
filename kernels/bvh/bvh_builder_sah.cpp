@@ -265,6 +265,160 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 
+    struct VirtualCreateLeaf
+    {
+      virtual size_t operator() (const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) const = 0;
+    };
+
+    template<int N, typename Primitive0, typename Primitive1, typename Primitive2, typename Primitive3>
+    struct CreateMultiLeaf : public VirtualCreateLeaf
+    {
+      typedef BVHN<N> BVH;
+      typedef typename BVHN<N>::NodeRef NodeRef;
+
+      __forceinline CreateMultiLeaf (BVH* bvh, PrimRef* prims) 
+        : bvh(bvh), prims(prims) {}
+
+      size_t operator() (const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) const
+      {
+        assert(range.size() > 0);
+        Leaf::Type ty = (Leaf::Type) 0; //prims[start].ty();
+        switch (ty) {
+        case 0: return Primitive0::createLeaf(alloc,prims,range,bvh);
+        case 1: return Primitive1::createLeaf(alloc,prims,range,bvh);
+        case 2: return Primitive2::createLeaf(alloc,prims,range,bvh);
+        case 3: return Primitive3::createLeaf(alloc,prims,range,bvh);
+        default: assert(false); return BVH::emptyLeaf;
+        }
+      }
+
+    private:
+      BVH* bvh;
+      PrimRef* prims;
+    };
+
+    template<int N>
+    struct BVHNBuilderMultiSAH : public Builder
+    {
+      typedef BVHN<N> BVH;
+      typedef typename BVHN<N>::NodeRef NodeRef;
+
+      BVH* bvh;
+      Scene* scene;
+      Geometry* mesh;
+      Geometry::Type type;
+      const VirtualCreateLeaf& createLeaf;
+      mvector<PrimRef> prims;
+      GeneralBVHBuilder::Settings settings;
+      bool primrefarrayalloc;
+
+      BVHNBuilderMultiSAH (BVH* bvh, Scene* scene, Geometry::Type type, const VirtualCreateLeaf& createLeaf, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize,
+                           const size_t mode, bool primrefarrayalloc = false)
+        : bvh(bvh), scene(scene), mesh(nullptr), type(type), createLeaf(createLeaf), prims(scene->device,0),
+          settings(sahBlockSize, minLeafSize, min(maxLeafSize,/*Primitive::max_size()*/BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), primrefarrayalloc(primrefarrayalloc) {} // FIXME: minLeafSize too small
+
+      //BVHNBuilderMultiSAH (BVH* bvh, Geometry* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+      //  : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), primrefarrayalloc(false) {}
+
+      void build()
+      {
+        /* we reset the allocator when the mesh size changed */
+        if (mesh && mesh->numPrimitivesChanged) {
+          bvh->alloc.clear();
+          mesh->numPrimitivesChanged = false;
+        }
+
+        /* if we use the primrefarray for allocations we have to take it back from the BVH */
+        if (settings.primrefarrayalloc != size_t(inf))
+          bvh->alloc.unshare(prims);
+
+	/* skip build for empty scene */
+        const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives(type,false);
+        if (numPrimitives == 0) {
+          bvh->clear();
+          prims.clear();
+          return;
+        }
+
+        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderMultiSAH");
+
+#if PROFILE
+        profile(2,PROFILE_RUNS,numPrimitives,[&] (ProfileTimer& timer) {
+#endif
+
+            /* create primref array */
+            if (primrefarrayalloc) {
+              settings.primrefarrayalloc = numPrimitives/1000;
+              if (settings.primrefarrayalloc < 1000)
+                settings.primrefarrayalloc = inf;
+            }
+
+            /* enable os_malloc for static scenes or dynamic scenes with static geometry */
+            if (mesh == NULL || mesh->isStatic())
+              bvh->alloc.setOSallocation(true);
+
+            /* initialize allocator */
+            const size_t node_bytes = numPrimitives*sizeof(typename BVH::AlignedNodeMB)/(4*N);
+            const size_t leaf_bytes = numPrimitives*44; //size_t(1.2*Primitive::blocks(numPrimitives)*sizeof(Primitive));
+            bvh->alloc.init_estimate(node_bytes+leaf_bytes);
+            settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,numPrimitives,node_bytes+leaf_bytes);
+            prims.resize(numPrimitives); 
+
+            PrimInfo pinfo = //mesh ?
+              //createPrimRefArray<Mesh>  (mesh ,prims,bvh->scene->progressInterface) :
+              createMultiPrimRefArray(scene,type,false,prims,bvh->scene->progressInterface);
+
+            /* pinfo might has zero size due to invalid geometry */
+            if (unlikely(pinfo.size() == 0))
+            {
+              bvh->clear();
+              prims.clear();
+              return;
+            }
+
+            /* call BVH builder */
+            settings.branchingFactor = N;
+            settings.maxDepth = BVH::maxBuildDepthLeaf;
+            NodeRef root = BVHBuilderBinnedSAH::build<NodeRef>
+              (FastAllocator::Create(&bvh->alloc),
+               typename BVH::AlignedNode::Create2(),
+               typename BVH::AlignedNode::Set3(&bvh->alloc,prims),
+               createLeaf,
+               bvh->scene->progressInterface,prims.data(),pinfo,settings);
+  
+            bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
+            bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
+
+#if PROFILE
+          });
+#endif
+
+	/* clear temporary data for static geometry */
+	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
+
+        /* if we allocated using the primrefarray we have to keep it alive */
+        if (settings.primrefarrayalloc != size_t(inf))
+          bvh->alloc.share(prims);
+
+        /* for static geometries we can do some cleanups */
+        else if (staticGeom) {
+          bvh->shrink();
+          prims.clear();
+        }
+	bvh->cleanup();
+        bvh->postBuild(t0);
+      }
+
+      void clear() {
+        prims.clear();
+      }
+    };
+
+    /************************************************************************************/
+    /************************************************************************************/
+    /************************************************************************************/
+    /************************************************************************************/
+
     template<int N, typename Mesh, typename Primitive>
     struct BVHNBuilderSAHQuantized : public Builder
     {

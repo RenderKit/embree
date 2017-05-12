@@ -21,6 +21,7 @@
 #include "../common/simd/simd.h"
 #include "../common/primref.h"
 #include "../common/primref_mb.h"
+#include "../common/alloc.h"
 
 namespace embree
 {

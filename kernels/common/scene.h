@@ -334,6 +334,18 @@ namespace embree
         return numTriangles + numQuads + numBezierCurves + numLineSegments + numSubdivPatches + numUserGeometries;
       }
 
+      __forceinline size_t size(Geometry::Type ty) const 
+      {
+        size_t num = 0;
+        if (ty & Geometry::TRIANGLE_MESH ) num += numTriangles;
+        if (ty & Geometry::QUAD_MESH     ) num += numQuads;
+        if (ty & Geometry::BEZIER_CURVES ) num += numBezierCurves;
+        if (ty & Geometry::LINE_SEGMENTS ) num += numLineSegments;
+        if (ty & Geometry::SUBDIV_MESH   ) num += numSubdivPatches;
+        if (ty & Geometry::USER_GEOMETRY ) num += numUserGeometries;
+        return num;
+      }
+
       std::atomic<size_t> numTriangles;             //!< number of enabled triangles
       std::atomic<size_t> numQuads;                 //!< number of enabled quads
       std::atomic<size_t> numBezierCurves;          //!< number of enabled curves
@@ -365,6 +377,8 @@ namespace embree
       return iter.maxTimeStepsPerGeometry();
     }
    
+    size_t getNumPrimitives(Geometry::Type type, bool mblur);
+
     std::atomic<size_t> numIntersectionFilters1;   //!< number of enabled intersection/occlusion filters for single rays
     std::atomic<size_t> numIntersectionFilters4;   //!< number of enabled intersection/occlusion filters for 4-wide ray packets
     std::atomic<size_t> numIntersectionFilters8;   //!< number of enabled intersection/occlusion filters for 8-wide ray packets
