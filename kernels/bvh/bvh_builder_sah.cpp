@@ -56,16 +56,15 @@ namespace embree
 
       __forceinline CreateLeaf (BVH* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
 
-      template<typename BuildRecord>
-      __forceinline NodeRef operator() (const BuildRecord& current, const FastAllocator::CachedAllocator& alloc) const
+      __forceinline NodeRef operator() (const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) const
       {
-        size_t n = current.prims.size();
+        size_t n = set.size();
         size_t items = Primitive::blocks(n);
-        size_t start = current.prims.begin();
+        size_t start = set.begin();
         Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
-          accel[i].fill(prims,start,current.prims.end(),bvh->scene);
+          accel[i].fill(prims,start,set.end(),bvh->scene);
         }
         return node;
       }
@@ -83,15 +82,15 @@ namespace embree
 
       __forceinline CreateLeafQuantized (BVH* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
 
-      __forceinline NodeRef operator() (const BVHBuilderBinnedSAH::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) const
+      __forceinline NodeRef operator() (const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) const
       {
-        size_t n = current.prims.size();
+        size_t n = set.size();
         size_t items = Primitive::blocks(n);
-        size_t start = current.prims.begin();
+        size_t start = set.begin();
         Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
-          accel[i].fill(prims,start,current.prims.end(),bvh->scene);
+          accel[i].fill(prims,start,set.end(),bvh->scene);
         }
         return node;
       }
@@ -358,16 +357,16 @@ namespace embree
 
       __forceinline CreateMBlurLeaf (BVH* bvh, PrimRef* prims, size_t time) : bvh(bvh), prims(prims), time(time) {}
 
-      __forceinline NodeRecordMB operator() (const BVHBuilderBinnedSAH::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) const
+      __forceinline NodeRecordMB operator() (const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) const
       {
-        size_t items = Primitive::blocks(current.prims.size());
-        size_t start = current.prims.begin();
+        size_t items = Primitive::blocks(set.size());
+        size_t start = set.begin();
         Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
         NodeRef node = bvh->encodeLeaf((char*)accel,items);
 
         LBBox3fa allBounds = empty;
         for (size_t i=0; i<items; i++)
-          allBounds.extend(accel[i].fillMB(prims, start, current.prims.end(), bvh->scene, time));
+          allBounds.extend(accel[i].fillMB(prims, start, set.end(), bvh->scene, time));
 
         return NodeRecordMB(node,allBounds);
       }

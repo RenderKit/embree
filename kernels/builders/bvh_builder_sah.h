@@ -141,7 +141,7 @@ namespace embree
 
             /* create leaf for few primitives */
             if (current.prims.size() <= maxLeafSize)
-              return createLeaf(current,alloc);
+              return createLeaf(current.prims,alloc);
 
             /* fill all children by always splitting the largest one */
             ReductionTy values[MAX_BRANCHING_FACTOR];
@@ -409,12 +409,12 @@ namespace embree
 
         // __noinline is workaround for ICC2016 compiler bug
         template<typename Allocator>
-        __noinline ReductionTy operator() (const BuildRecord& current, Allocator alloc) const
+        __noinline ReductionTy operator() (const range<size_t>& range, Allocator alloc) const
         {
-          for (size_t i=current.prims.begin(); i<current.prims.end(); i++)
+          for (size_t i=range.begin(); i<range.end(); i++)
             prims[i].lower.a &= GEOMID_MASK;
 
-          return userCreateLeaf(current,alloc);
+          return userCreateLeaf(range,alloc);
         }
 
         const UserCreateLeaf userCreateLeaf;

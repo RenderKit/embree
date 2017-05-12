@@ -277,10 +277,10 @@ namespace embree
             typename BVH::AlignedNode::Create2(),
             typename BVH::AlignedNode::Set2(),
 
-           [&] (const BVHBuilderBinnedOpenMergeSAH::BuildRecord& current,  const FastAllocator::CachedAllocator& alloc) -> NodeRef
+            [&] (const range<size_t>& range,  const FastAllocator::CachedAllocator& alloc) -> NodeRef
           {
-            assert(current.prims.size() == 1);
-            BuildRef* ref = (BuildRef*)&refs[current.prims.begin()];
+            assert(range.size() == 1);
+            BuildRef* ref = (BuildRef*)&refs[range.begin()];
             TransformNode* node = (TransformNode*) alloc.malloc0(sizeof(TransformNode),BVH::byteAlignment);
             new (node) TransformNode(ref->local2world,ref->localBounds,ref->node,ref->mask,ref->instID,ref->xfmID,ref->type); // FIXME: rcp should be precalculated somewhere
             NodeRef noderef = BVH::encodeNode(node);
@@ -300,10 +300,10 @@ namespace embree
             typename BVH::AlignedNode::Create2(),
             typename BVH::AlignedNode::Set2(),
 
-           [&] (const BVHBuilderBinnedSAH::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) -> NodeRef
+            [&] (const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) -> NodeRef
           {
-            assert(current.prims.size() == 1);
-            BuildRef* ref = (BuildRef*) prims[current.prims.begin()].ID();
+            assert(range.size() == 1);
+            BuildRef* ref = (BuildRef*) prims[range.begin()].ID();
             TransformNode* node = (TransformNode*) alloc.malloc0(sizeof(TransformNode),BVH::byteAlignment);
             new (node) TransformNode(ref->local2world,ref->localBounds,ref->node,ref->mask,ref->instID,ref->xfmID,ref->type); // FIXME: rcp should be precalculated somewhere
             NodeRef noderef = BVH::encodeNode(node);

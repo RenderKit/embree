@@ -168,9 +168,9 @@ namespace embree
 
         PrimInfo pinfo(pinfo3.end,pinfo3.geomBounds,pinfo3.centBounds);
         
-        auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator alloc) -> NodeRef {
-          assert(current.prims.size() == 1);
-          size_t leaf = (size_t) prims[current.prims.begin()].ID();
+        auto createLeaf = [&] (const range<size_t>& range, Allocator alloc) -> NodeRef {
+          assert(range.size() == 1);
+          size_t leaf = (size_t) prims[range.begin()].ID();
           return NodeRef(leaf);
         };
 
@@ -366,9 +366,9 @@ namespace embree
           });
         
         /* build normal BVH over patches */
-        auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, const Allocator& alloc) -> NodeRef {
-          assert(current.prims.size() == 1);
-          const size_t patchIndex = prims[current.prims.begin()].ID();
+        auto createLeaf = [&] (const range<size_t>& range, const Allocator& alloc) -> NodeRef {
+          assert(range.size() == 1);
+          const size_t patchIndex = prims[range.begin()].ID();
           return bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
         };
         

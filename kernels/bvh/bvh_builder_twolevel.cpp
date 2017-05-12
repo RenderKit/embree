@@ -231,9 +231,9 @@ namespace embree
               typename BVH::AlignedNode::Create2(),
               typename BVH::AlignedNode::Set2(),
               
-              [&] (const BVHBuilderBinnedOpenMergeSAH::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) -> NodeRef  {
-                assert(current.prims.size() == 1);
-                return (NodeRef) refs[current.prims.begin()].node;
+              [&] (const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) -> NodeRef  {
+                assert(range.size() == 1);
+                return (NodeRef) refs[range.begin()].node;
               },
               [&] (BuildRef &bref, BuildRef *refs) -> size_t { 
                 return openBuildRef(bref,refs);
@@ -246,9 +246,9 @@ namespace embree
               typename BVH::AlignedNode::Create2(),
               typename BVH::AlignedNode::Set2(),
               
-              [&] (const BVHBuilderBinnedSAH::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) -> NodeRef {
-                assert(current.prims.size() == 1);
-                return (NodeRef) prims[current.prims.begin()].ID();
+              [&] (const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) -> NodeRef {
+                assert(range.size() == 1);
+                return (NodeRef) prims[range.begin()].ID();
               },
               [&] (size_t dn) { bvh->scene->progressMonitor(0); },
               prims.data(),pinfo,settings);
