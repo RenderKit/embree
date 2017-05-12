@@ -273,14 +273,14 @@ namespace embree
     };
 
     template<int N, typename Primitive0, typename Primitive1, typename Primitive2, typename Primitive3>
-    struct CreateMultiLeaf : public VirtualCreateLeaf<N>
+    struct CreateMultiLeaf4 : public VirtualCreateLeaf<N>
     {
       typedef BVHN<N> BVH;
       
       size_t operator() (BVH* bvh, PrimRef* prims, const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) const
       {
         assert(range.size() > 0);
-        Leaf::Type ty = (Leaf::Type) 0; //prims[start].ty();
+        const Leaf::Type ty = prims[range.begin()].type();
         switch (ty) {
         case 0: return Primitive0::createLeaf(alloc,prims,range,bvh);
         case 1: return Primitive1::createLeaf(alloc,prims,range,bvh);
@@ -850,11 +850,11 @@ namespace embree
 
 #if defined(__AVX__)
     Builder* BVH8MultiFastSceneBuilderSAH     (void* bvh, Scene* scene, Geometry::Type type) { 
-      static CreateMultiLeaf<8,
-                             Triangle4,
-                             Triangle4,
-                             Quad4v,
-                             Quad4v> createLeaf;
+      static CreateMultiLeaf4<8,
+                              Triangle4,
+                              Triangle4,
+                              Quad4v,
+                              Quad4v> createLeaf;
 
       return new BVHNBuilderMultiSAH<8>((BVH8*)bvh,scene,type,createLeaf,4,1.0f,4,inf); 
     }

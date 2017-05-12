@@ -17,6 +17,7 @@
 #pragma once
 
 #include "default.h"
+#include "../geometry/leaftype.h"
 
 namespace embree
 {
@@ -37,6 +38,12 @@ namespace embree
     __forceinline PrimRef (const BBox3fa& bounds, unsigned int geomID, unsigned int primID) 
     {
       lower = bounds.lower; lower.a = geomID;
+      upper = bounds.upper; upper.a = primID;
+    }
+
+    __forceinline PrimRef (const BBox3fa& bounds, Leaf::Type ty, unsigned int geomID, unsigned int primID) 
+    {
+      lower = bounds.lower; lower.a = Leaf::encode(ty,geomID);
       upper = bounds.upper; upper.a = primID;
     }
 
@@ -80,9 +87,14 @@ namespace embree
       return upper.u;
     }
     
+    /*! returns the primitive type */
+    __forceinline Leaf::Type type() const { 
+      return Leaf::decodeTy(lower.a);
+    }
+
     /*! returns the geometry ID */
     __forceinline unsigned geomID() const { 
-      return lower.a;
+      return Leaf::decodeID(lower.a);
     }
 
     /*! returns the primitive ID */

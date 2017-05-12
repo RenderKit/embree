@@ -17,27 +17,42 @@
 #pragma once
 
 #include "../common/default.h"
-#include "../common/scene.h"
-#include "../common/simd/simd.h"
-#include "../common/primref.h"
-#include "../common/primref_mb.h"
-#include "../common/alloc.h"
-#include "leaftype.h"
 
 namespace embree
 {
-  struct PrimitiveType
+  struct Leaf
   {
-    /*! constructs the primitive type */
-    PrimitiveType (const std::string& name, size_t bytes, size_t blockSize) 
-    : name(name), bytes(bytes), blockSize(blockSize) {} 
+    static const unsigned SHIFT = (32-4);
+    static const unsigned MASK = 0x0FFFFFFF;
 
-    /*! Returns the number of stored primitives in a block. */
-    virtual size_t size(const char* This) const = 0;
+    enum Type
+    {
+      TY_TRIANGLE = 0,
+      TY_TRIANGLE_MB = 1,
+      TY_QUAD = 2,
+      TY_QUAD_MB = 3,
+      TY_OBJECT = 4,
+      TY_LINE = 5,
+      TY_LINE_MB = 6,
+      TY_SUBDIV = 7,
+      TY_SUBDIV_MB = 8,
+      TY_HAIR = 9,
+      TY_HAIR_MB = 10,
+      TY_GRID = 11,
+      TY_GRID_MB = 12
+    };
 
-  public:
-    std::string name;       //!< name of this primitive type
-    size_t bytes;           //!< number of bytes of the triangle data
-    size_t blockSize;       //!< block size
+    template<typename T>
+    static __forceinline T encode(Type ty, const T& ID) {
+      return (((T)ty) << SHIFT) | ID;
+    }
+
+    static __forceinline Type decodeTy(unsigned ID) {
+      return (Type) (ID >> SHIFT);
+    }
+
+    static __forceinline unsigned decodeID(unsigned ID) {
+      return ID & MASK;
+    }
   };
 }
