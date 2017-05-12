@@ -73,18 +73,19 @@ namespace embree
       center_o = embree::center2(bounds_o);
     }
 
-    /*! returns the geometry ID */
-    __forceinline unsigned& geomID() { 
+    __forceinline unsigned& geomIDref() {  // FIXME: remove !!!!!!!
       return lower.u;
     }
+    __forceinline unsigned& primIDref() {  // FIXME: remove !!!!!!!
+      return upper.u;
+    }
+    
+    /*! returns the geometry ID */
     __forceinline unsigned geomID() const { 
       return lower.a;
     }
 
     /*! returns the primitive ID */
-    __forceinline unsigned& primID() { 
-      return upper.u;
-    }
     __forceinline unsigned primID() const { 
       return upper.a;
     }
