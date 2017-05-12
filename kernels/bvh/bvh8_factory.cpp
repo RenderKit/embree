@@ -176,6 +176,8 @@ namespace embree
 
   DECLARE_SYMBOL2(Accel::IntersectorN,BVH8VirtualIntersectorStream);
 
+  DECLARE_ISA_FUNCTION(Builder*,BVH8FastSceneBuilderSAH,void* COMMA Scene* COMMA Geometry::Type);
+
   DECLARE_ISA_FUNCTION(Builder*,BVH8Line4iSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH8Line4iMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
 
@@ -233,6 +235,8 @@ namespace embree
 
   void BVH8Factory::selectBuilders(int features)
   {
+    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8FastSceneBuilderSAH));
+    
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Line4iSceneBuilderSAH));
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Line4iMBSceneBuilderSAH));
 
@@ -895,7 +899,8 @@ namespace embree
   {
     BVH8* accel = new BVH8(Triangle4::type,scene); // FIXME: wrong type !!!!!!!
     Accel::Intersectors intersectors = BVH8FastIntersectors(accel);
-    Builder* builder = BVH8Triangle4SceneBuilderSAH(accel,scene,0); // FIXME: wrong builder type !!!!
+    unsigned ty = Geometry::TRIANGLE_MESH | Geometry::QUAD_MESH;
+    Builder* builder = BVH8FastSceneBuilderSAH(accel,scene,(Geometry::Type)ty);
     return new AccelInstance(accel,builder,intersectors);
   }
 

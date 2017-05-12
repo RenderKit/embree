@@ -239,6 +239,8 @@ namespace embree
 
     // SAH scene builders
   private:
+    DEFINE_ISA_FUNCTION(Builder*,BVH8FastSceneBuilderSAH,void* COMMA Scene* COMMA Geometry::Type); 
+      
     DEFINE_ISA_FUNCTION(Builder*,BVH8Line4iSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
     DEFINE_ISA_FUNCTION(Builder*,BVH8Line4iMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
 
