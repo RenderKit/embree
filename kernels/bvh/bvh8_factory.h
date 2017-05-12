@@ -27,6 +27,8 @@ namespace embree
     BVH8Factory(int bfeatures, int ifeatures);
 
   public:
+    Accel* BVH8Fast(Scene* scene);
+
     Accel* BVH8OBBBezier1v(Scene* scene);
     Accel* BVH8OBBBezier1i(Scene* scene);
     Accel* BVH8OBBBezier1iMB(Scene* scene);
@@ -68,6 +70,8 @@ namespace embree
     void selectIntersectors(int features);
 
   private:
+    Accel::Intersectors BVH8FastIntersectors(BVH8* bvh);
+
     Accel::Intersectors BVH8Line4iIntersectors(BVH8* bvh);
     Accel::Intersectors BVH8Line4iMBIntersectors(BVH8* bvh);
     Accel::Intersectors BVH8Bezier1vIntersectors_OBB(BVH8* bvh);
@@ -92,6 +96,8 @@ namespace embree
     Accel::Intersectors BVH8UserGeometryMBIntersectors(BVH8* bvh);
 
   private:
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH8FastIntersector1);
+
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Line4iIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Line4iMBIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Bezier1vIntersector1_OBB);

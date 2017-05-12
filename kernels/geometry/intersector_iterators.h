@@ -19,6 +19,7 @@
 #include "../common/scene.h"
 #include "../common/ray.h"
 #include "../common/accel.h"
+#include "../geometry/primitive.h"
 
 namespace embree
 {
@@ -36,35 +37,36 @@ namespace embree
 
         struct Precalculations
         {
-          typename Intersector1::Precalculations pre0;
-          typename Intersector1::Precalculations pre1;
-          typename Intersector1::Precalculations pre2;
-          typename Intersector1::Precalculations pre3;
-
-          __forceinline Precalculations (const Ray& ray, const void* ptr)
-            : pre0(ray,ptr), pre1(ray,ptr), pre2(ray,ptr), pre3(ray,ptr) 
+          __forceinline Precalculations (const Ray& ray, const AccelData* accel)
+            : leaf_intersector(accel->leaf_intersector), pre0(ray,accel), pre1(ray,accel), pre2(ray,accel), pre3(ray,accel) 
           {
             table[0] = &pre0;
             table[1] = &pre1;
             table[2] = &pre2;
             table[3] = &pre3;
           }
-
+        
+        public:
+          const LeafIntersector* leaf_intersector;
+          typename Intersector1::Precalculations pre0;
+          typename Intersector1::Precalculations pre1;
+          typename Intersector1::Precalculations pre2;
+          typename Intersector1::Precalculations pre3;
           void* table[4];
         };
 
-        static __forceinline void intersect(Precalculations& pre, const AccelData* accel, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
+        static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
         {
           const unsigned int ty = (unsigned int) Leaf::decodeTy(*(unsigned int*)prim);
           assert(ty < 4);
-          accel->leaf_intersector->vtable[ty].intersect1(pre.table[ty],ray,context,prim,num,lazy_node);
+          pre.leaf_intersector->vtable1[ty].intersect(pre.table[ty],ray,context,prim,num,lazy_node);
         }
         
-        static __forceinline bool occluded(Precalculations& pre, const AccelData* accel, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node) 
+        static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node) 
         {
           const unsigned int ty = (unsigned int) Leaf::decodeTy(*(unsigned int*)prim);
           assert(ty < 4);
-          return accel->leaf_intersector->vtable[ty].occluded1(pre.table[ty],ray,context,prim,num,lazy_node);
+          return pre.leaf_intersector->vtable1[ty].occluded(pre.table[ty],ray,context,prim,num,lazy_node);
         }
       };
 
@@ -81,6 +83,10 @@ namespace embree
           for (size_t i=0; i<num; i++)
             Intersector::intersect(pre,ray,context,prim[i]);
         }
+
+        static __forceinline void vintersect(void* pre, Ray& ray, IntersectContext* context, const void* prim, size_t num, size_t& lazy_node) {
+          intersect((Precalculations&)pre,ray,context,(const Primitive*)prim,num,lazy_node);
+        }
         
         static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node) 
         {
@@ -89,6 +95,10 @@ namespace embree
               return true;
           }
           return false;
+        }
+
+        static __forceinline bool voccluded(void* pre, Ray& ray, IntersectContext* context, const void* prim, size_t num, size_t& lazy_node) {
+          return occluded((Precalculations&)pre,ray,context,(const Primitive*)prim,num,lazy_node);
         }
 
         static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context,  const Primitive* prim, size_t num, size_t& lazy_node)

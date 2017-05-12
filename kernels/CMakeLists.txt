@@ -49,6 +49,7 @@ SET(EMBREE_LIBRARY_FILES
   subdiv/bezier_curve.cpp
   subdiv/bspline_curve.cpp
 
+  geometry/leaf_intersector.cpp
   geometry/primitive.cpp
   geometry/instance_intersector1.cpp
   geometry/instance_intersector.cpp
@@ -115,6 +116,7 @@ SET(EMBREE_LIBRARY_FILES_AVX
     common/scene_bezier_curves.cpp
     common/scene_line_segments.cpp
 
+    geometry/leaf_intersector.cpp
     geometry/instance_intersector1.cpp
     builders/primrefgen.cpp
 
@@ -155,6 +157,7 @@ IF (EMBREE_RAY_PACKETS)
 ENDIF()
 
 SET(EMBREE_LIBRARY_FILES_AVX2
+    geometry/leaf_intersector.cpp
     geometry/instance_intersector1.cpp
     builders/primrefgen.cpp
     bvh/bvh_builder_morton.cpp
@@ -182,6 +185,7 @@ IF (EMBREE_RAY_PACKETS)
 ENDIF()
 
 SET(EMBREE_LIBRARY_FILES_AVX512KNL
+    geometry/leaf_intersector.cpp
     geometry/instance_intersector1.cpp
 
     bvh/bvh_refit.cpp
@@ -220,6 +224,7 @@ IF (EMBREE_RAY_PACKETS)
 ENDIF()
 
 SET(EMBREE_LIBRARY_FILES_AVX512SKX
+    geometry/leaf_intersector.cpp
     geometry/instance_intersector1.cpp
 
     bvh/bvh_intersector1_bvh4.cpp

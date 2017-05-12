@@ -30,10 +30,13 @@
 #include "../geometry/quadi.h"
 #include "../geometry/subdivpatch1cached.h"
 #include "../geometry/object.h"
+#include "../geometry/leaf_intersector.h"
 #include "../common/accelinstance.h"
 
 namespace embree
 {
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH8FastIntersector1);
+
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Line4iIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Line4iMBIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Bezier1vIntersector1_OBB);
@@ -284,6 +287,8 @@ namespace embree
   void BVH8Factory::selectIntersectors(int features)
   {
     /* select intersectors1 */
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8FastIntersector1);
+
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Line4iIntersector1));
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Line4iMBIntersector1));
 
@@ -515,6 +520,17 @@ namespace embree
     case RTC_GEOMETRY_DYNAMIC:    builder = factory->BVH8VirtualMeshBuilderMortonGeneral(accel,mesh,0); break;
     default: throw_RTCError(RTC_UNKNOWN_ERROR,"invalid geometry flag");
     }
+  }
+
+  Accel::Intersectors BVH8Factory::BVH8FastIntersectors(BVH8* bvh)
+  {
+    CreateLeafIntersectorFast(bvh->device->enabled_cpu_features);
+    bvh->leaf_intersector = LeafIntersectorFast();
+
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1 = BVH8FastIntersector1();
+    return intersectors;
   }
 
   Accel::Intersectors BVH8Factory::BVH8Bezier1vIntersectors_OBB(BVH8* bvh)
@@ -873,6 +889,14 @@ namespace embree
     //intersectors.intersectorN  = BVH8VirtualMBIntersectorStream();
 #endif
     return intersectors;
+  }
+
+  Accel* BVH8Factory::BVH8Fast(Scene* scene)
+  {
+    BVH8* accel = new BVH8(Triangle4::type,scene); // FIXME: wrong type !!!!!!!
+    Accel::Intersectors intersectors = BVH8FastIntersectors(accel);
+    Builder* builder = BVH8Triangle4SceneBuilderSAH(accel,scene,0); // FIXME: wrong builder type !!!!
+    return new AccelInstance(accel,builder,intersectors);
   }
 
   Accel* BVH8Factory::BVH8OBBBezier1v(Scene* scene)

@@ -56,5 +56,17 @@ namespace embree
 
     IF_ENABLED_USER(DEFINE_INTERSECTOR1(BVH8VirtualIntersector1,BVHNIntersector1<8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<ObjectIntersector1<false>> >));
     IF_ENABLED_USER(DEFINE_INTERSECTOR1(BVH8VirtualMBIntersector1,BVHNIntersector1<8 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersector1<ObjectIntersector1<true>> >));
+    
+    typedef ArrayIntersector1<TriangleMIntersector1Moeller  <SIMD_MODE(4) COMMA true> > ArrayTriangleMIntersector1Moeller;
+    typedef ArrayIntersector1<TriangleMvMBIntersector1Moeller <SIMD_MODE(4) COMMA true> > ArrayTriangleMvMBIntersector1Moeller;
+    typedef ArrayIntersector1<QuadMvIntersector1Moeller <4 COMMA true> > ArrayQuadMvIntersector1Moeller;
+    typedef ArrayIntersector1<QuadMiMBIntersector1Moeller <4 COMMA true> > ArrayQuadMiMBIntersector1Moeller;
+    DEFINE_INTERSECTOR1(BVH8FastIntersector1,BVHNIntersector1<8 COMMA BVH_AN1 COMMA false COMMA Virtual4LeafIntersector1<
+                        ArrayTriangleMIntersector1Moeller COMMA
+                        ArrayTriangleMvMBIntersector1Moeller COMMA
+                        ArrayQuadMvIntersector1Moeller COMMA
+                        ArrayQuadMiMBIntersector1Moeller
+                        > >);
+    
   }
 }

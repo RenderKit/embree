@@ -24,18 +24,24 @@ namespace embree
 {
   class Scene;
 
+  struct LeafIntersector1
+  {
+    typedef void (*Intersect1LeafFunc) (void* pre, Ray& ray, IntersectContext* context, const void* leaf, size_t num, size_t& lazy_node);
+    typedef bool (*Occluded1LeafFunc ) (void* pre, Ray& ray, IntersectContext* context, const void* leaf, size_t num, size_t& lazy_node); 
+  
+    __forceinline LeafIntersector1 ()
+      : intersect(nullptr), occluded(nullptr) {}
+
+    __forceinline LeafIntersector1 (Intersect1LeafFunc intersect, Occluded1LeafFunc occluded)
+      : intersect(intersect), occluded(occluded) {}
+  
+    Intersect1LeafFunc intersect;
+    Occluded1LeafFunc occluded;
+  };
+  
   struct LeafIntersector
   {
-    typedef void (*Intersect1LeafFunc) (void* pre, Ray& ray, IntersectContext* context, const void* leaf, size_t num);
-    typedef bool (*Occluded1LeafFunc ) (void* pre, Ray& ray, IntersectContext* context, const void* leaf, size_t num); 
-    
-    struct Functions {
-      Intersect1LeafFunc intersect1;
-      Occluded1LeafFunc occluded1;
-    };
-    
-  public:
-    Functions vtable[32];
+    LeafIntersector1 vtable1[32];
   };
 
   /*! Base class for the acceleration structure data. */

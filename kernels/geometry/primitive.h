@@ -31,19 +31,19 @@ namespace embree
 
     enum Type
     {
-      TY_TRIANGLE = 1,
-      TY_TRIANGLE_MB = 2,
-      TY_QUAD = 3,
-      TY_QUAD_MB = 4,
-      TY_OBJECT = 5,
-      TY_LINE = 6,
-      TY_LINE_MB = 7,
-      TY_SUBDIV = 8,
-      TY_SUBDIV_MB = 9,
-      TY_HAIR = 10,
-      TY_HAIR_MB = 11,
-      TY_GRID = 12,
-      TY_GRID_MB = 13
+      TY_TRIANGLE = 0,
+      TY_TRIANGLE_MB = 1,
+      TY_QUAD = 2,
+      TY_QUAD_MB = 3,
+      TY_OBJECT = 4,
+      TY_LINE = 5,
+      TY_LINE_MB = 6,
+      TY_SUBDIV = 7,
+      TY_SUBDIV_MB = 8,
+      TY_HAIR = 9,
+      TY_HAIR_MB = 10,
+      TY_GRID = 11,
+      TY_GRID_MB = 12
     };
 
     template<typename T>
@@ -60,7 +60,6 @@ namespace embree
     }
   };
   
-
   struct PrimitiveType
   {
     /*! constructs the primitive type */
