@@ -239,63 +239,63 @@ namespace embree
 
     // SAH scene builders
   private:
-    DEFINE_BUILDER2(void,Scene,size_t,BVH8Line4iSceneBuilderSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH8Line4iMBSceneBuilderSAH);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Line4iSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Line4iMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
 
-    DEFINE_BUILDER2(void,Scene,size_t,BVH8Bezier1vBuilder_OBB_New);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH8Bezier1iBuilder_OBB_New);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH8OBBBezier1iMBBuilder_OBB);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Bezier1vBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Bezier1iBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8OBBBezier1iMBBuilder_OBB,void* COMMA Scene* COMMA size_t);
  
-    DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle4SceneBuilderSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle4vSceneBuilderSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle4iSceneBuilderSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle4iMBSceneBuilderSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle4vMBSceneBuilderSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH8QuantizedTriangle4iSceneBuilderSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH8QuantizedTriangle4SceneBuilderSAH);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4SceneBuilderSAH,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4vSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4iSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4iMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4vMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8QuantizedTriangle4iSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8QuantizedTriangle4SceneBuilderSAH,void* COMMA Scene* COMMA size_t);
  
-    DEFINE_BUILDER2(void,Scene,size_t,BVH8Quad4vSceneBuilderSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH8Quad4iSceneBuilderSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH8Quad4iMBSceneBuilderSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH8QuantizedQuad4iSceneBuilderSAH);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Quad4vSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Quad4iSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Quad4iMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8QuantizedQuad4iSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
     
-    DEFINE_BUILDER2(void,Scene,size_t,BVH8VirtualSceneBuilderSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH8VirtualMBSceneBuilderSAH);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8VirtualSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8VirtualMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
 
     // SAH spatial scene builders
   private:
-    DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle4SceneBuilderFastSpatialSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle4vSceneBuilderFastSpatialSAH);
-    DEFINE_BUILDER2(void,Scene,size_t,BVH8Quad4vSceneBuilderFastSpatialSAH);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4SceneBuilderFastSpatialSAH,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4vSceneBuilderFastSpatialSAH,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Quad4vSceneBuilderFastSpatialSAH,void* COMMA Scene* COMMA size_t);
 
     // twolevel scene builders
   private:
-    DEFINE_BUILDER2(void,Scene,const createTriangleMeshAccelTy,BVH8BuilderTwoLevelTriangleMeshSAH);
-    DEFINE_BUILDER2(void,Scene,const createQuadMeshAccelTy,BVH8BuilderTwoLevelQuadMeshSAH);
-    DEFINE_BUILDER2(void,Scene,const createAccelSetAccelTy,BVH8BuilderTwoLevelVirtualSAH);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8BuilderTwoLevelTriangleMeshSAH,void* COMMA Scene* COMMA const createTriangleMeshAccelTy);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8BuilderTwoLevelQuadMeshSAH,void* COMMA Scene* COMMA const createQuadMeshAccelTy);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8BuilderTwoLevelVirtualSAH,void* COMMA Scene* COMMA const createAccelSetAccelTy);
  
     // SAH mesh builders
   private:
-    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH8Triangle4MeshBuilderSAH);
-    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH8Triangle4vMeshBuilderSAH);
-    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH8Triangle4iMeshBuilderSAH);
-    DEFINE_BUILDER2(void,QuadMesh,size_t,BVH8Quad4vMeshBuilderSAH);
-    DEFINE_BUILDER2(void,AccelSet,size_t,BVH8VirtualMeshBuilderSAH);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4MeshBuilderSAH,void* COMMA TriangleMesh* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4vMeshBuilderSAH,void* COMMA TriangleMesh* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4iMeshBuilderSAH,void* COMMA TriangleMesh* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Quad4vMeshBuilderSAH,void* COMMA QuadMesh* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8VirtualMeshBuilderSAH,void* COMMA AccelSet* COMMA size_t);
 
     // mesh refitters
   private:
-    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH8Triangle4MeshRefitSAH);
-    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH8Triangle4vMeshRefitSAH);
-    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH8Triangle4iMeshRefitSAH);
-    DEFINE_BUILDER2(void,QuadMesh,size_t,BVH8Quad4vMeshRefitSAH);
-    DEFINE_BUILDER2(void,AccelSet,size_t,BVH8VirtualMeshRefitSAH);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4MeshRefitSAH,void* COMMA TriangleMesh* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4vMeshRefitSAH,void* COMMA TriangleMesh* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4iMeshRefitSAH,void* COMMA TriangleMesh* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Quad4vMeshRefitSAH,void* COMMA QuadMesh* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8VirtualMeshRefitSAH,void* COMMA AccelSet* COMMA size_t);
  
     // morton mesh builders
   private:
-    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH8Triangle4MeshBuilderMortonGeneral);
-    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH8Triangle4vMeshBuilderMortonGeneral);
-    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH8Triangle4iMeshBuilderMortonGeneral);
-    DEFINE_BUILDER2(void,QuadMesh,size_t,BVH8Quad4vMeshBuilderMortonGeneral);
-    DEFINE_BUILDER2(void,AccelSet,size_t,BVH8VirtualMeshBuilderMortonGeneral);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4MeshBuilderMortonGeneral,void* COMMA TriangleMesh* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4vMeshBuilderMortonGeneral,void* COMMA TriangleMesh* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4iMeshBuilderMortonGeneral,void* COMMA TriangleMesh* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Quad4vMeshBuilderMortonGeneral,void* COMMA QuadMesh* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8VirtualMeshBuilderMortonGeneral,void* COMMA AccelSet* COMMA size_t);
   };
 }
