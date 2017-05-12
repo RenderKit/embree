@@ -242,7 +242,7 @@ namespace embree
       {
         BBox3fa bounds = empty;
         if (!buildBounds(j,&bounds)) continue;
-        const PrimRef prim(bounds,geomID,unsigned(j));
+        const PrimRef prim(bounds,Leaf::TY_TRIANGLE,geomID,unsigned(j));
         pinfo.add(bounds,bounds.center2());
         prims[dst++] = prim;
       }
