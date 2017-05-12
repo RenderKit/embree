@@ -141,7 +141,7 @@ namespace embree
 
         __forceinline bool sameType(const range<size_t>& range)
         {
-          assert(range.size());
+          //assert(range.size());
           Leaf::Type ty0 = prims[range.begin()].type();
           for (size_t i=range.begin()+1; i<range.end(); i++)
             if (ty0 != prims[i].type()) 
