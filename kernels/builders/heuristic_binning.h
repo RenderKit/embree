@@ -92,9 +92,9 @@ namespace embree
         }
 
         /*! faster but unsafe binning */
-        template<typename PrimRef>
-        __forceinline Vec3ia bin_unsafe(const PrimRef& p, const LinearSpace3fa& space, void* user = nullptr) const {
-          return bin_unsafe(p.binCenter(space,user));
+        template<typename PrimRef, typename BinBoundsAndCenter>
+        __forceinline Vec3ia bin_unsafe(const PrimRef& p, const BinBoundsAndCenter& binBoundsAndCenter) const {
+          return bin_unsafe(binBoundsAndCenter.binCenter(p));
         }
 
         template<typename PrimRef>
@@ -270,7 +270,8 @@ namespace embree
       }
 
       /*! bins an array of primitives */
-      __forceinline void bin (const PrimRef* prims, size_t N, const BinMapping<BINS>& mapping, const AffineSpace3fa& space, void* user = nullptr)
+      template<typename BinBoundsAndCenter>
+        __forceinline void bin (const PrimRef* prims, size_t N, const BinMapping<BINS>& mapping, const BinBoundsAndCenter& binBoundsAndCenter)
       {
 	if (N == 0) return;
         
@@ -278,9 +279,9 @@ namespace embree
 	for (i=0; i<N-1; i+=2)
         {
           /*! map even and odd primitive to bin */
-          BBox prim0; Vec3fa center0; prims[i+0].binBoundsAndCenter(prim0,center0,space,user); 
+          BBox prim0; Vec3fa center0; binBoundsAndCenter.binBoundsAndCenter(prims[i+0],prim0,center0); 
           const vint4 bin0 = (vint4)mapping.bin(center0); 
-          BBox prim1; Vec3fa center1; prims[i+1].binBoundsAndCenter(prim1,center1,space,user); 
+          BBox prim1; Vec3fa center1; binBoundsAndCenter.binBoundsAndCenter(prims[i+1],prim1,center1); 
           const vint4 bin1 = (vint4)mapping.bin(center1); 
           
           /*! increase bounds for bins for even primitive */
@@ -300,7 +301,7 @@ namespace embree
 	if (i < N)
         {
           /*! map primitive to bin */
-          BBox prim0; Vec3fa center0; prims[i+0].binBoundsAndCenter(prim0,center0,space,user); 
+          BBox prim0; Vec3fa center0; binBoundsAndCenter.binBoundsAndCenter(prims[i+0],prim0,center0); 
           const vint4 bin0 = (vint4)mapping.bin(center0); 
           
           /*! increase bounds of bins */
@@ -315,10 +316,10 @@ namespace embree
 	bin(prims+begin,end-begin,mapping);
       }
 
-      __forceinline void bin(const PrimRef* prims, size_t begin, size_t end, const BinMapping<BINS>& mapping, const AffineSpace3fa& space, void* user = nullptr) {
-	bin(prims+begin,end-begin,mapping,space,user);
-      }   
-
+      template<typename BinBoundsAndCenter>
+        __forceinline void bin(const PrimRef* prims, size_t begin, size_t end, const BinMapping<BINS>& mapping, const BinBoundsAndCenter& binBoundsAndCenter) {
+	bin<BinBoundsAndCenter>(prims+begin,end-begin,mapping,binBoundsAndCenter);
+      }
 
       /*! bins an array of primitives using subtree counts */
       __forceinline void binSubTreeRefs (const PrimRef* prims, size_t N, const BinMapping<BINS>& mapping)
@@ -1001,14 +1002,14 @@ namespace embree
     }
   }
 
-  template<typename BinInfoT, typename BinMapping, typename PrimRef>
-  __forceinline void bin_parallel(BinInfoT& binner, const PrimRef* prims, size_t begin, size_t end, size_t blockSize, size_t parallelThreshold, const BinMapping& mapping, const AffineSpace3fa& space, void* user = nullptr)
+  template<typename BinBoundsAndCenter, typename BinInfoT, typename BinMapping, typename PrimRef>
+  __forceinline void bin_parallel(BinInfoT& binner, const PrimRef* prims, size_t begin, size_t end, size_t blockSize, size_t parallelThreshold, const BinMapping& mapping, const BinBoundsAndCenter& binBoundsAndCenter)
   {
     if (likely(end-begin < parallelThreshold)) {
-      binner.bin(prims,begin,end,mapping,space,user);
+      binner.bin(prims,begin,end,mapping,binBoundsAndCenter);
     } else {
       binner = parallel_reduce(begin,end,blockSize,binner,
-                              [&](const range<size_t>& r) -> BinInfoT { BinInfoT binner(empty); binner.bin(prims + r.begin(), r.size(), mapping, space, user); return binner; },
+                              [&](const range<size_t>& r) -> BinInfoT { BinInfoT binner(empty); binner.bin(prims + r.begin(), r.size(), mapping, binBoundsAndCenter); return binner; },
                               [&](const BinInfoT& b0, const BinInfoT& b1) -> BinInfoT { BinInfoT r = b0; r.merge(b1, mapping.size()); return r; });
     }
   }
@@ -1025,14 +1026,14 @@ namespace embree
     }
   }
 
-  template<bool parallel, typename BinInfoT, typename BinMapping, typename PrimRef>
-  __forceinline void bin_serial_or_parallel(BinInfoT& binner, const PrimRef* prims, size_t begin, size_t end, size_t blockSize, const BinMapping& mapping, const AffineSpace3fa& space, void* user = nullptr)
+  template<bool parallel, typename BinBoundsAndCenter, typename BinInfoT, typename BinMapping, typename PrimRef>
+  __forceinline void bin_serial_or_parallel(BinInfoT& binner, const PrimRef* prims, size_t begin, size_t end, size_t blockSize, const BinMapping& mapping, const BinBoundsAndCenter& binBoundsAndCenter)
   {
     if (!parallel) {
-      binner.bin(prims,begin,end,mapping,space,user);
+      binner.bin(prims,begin,end,mapping,binBoundsAndCenter);
     } else {
       binner = parallel_reduce(begin,end,blockSize,binner,
-                              [&](const range<size_t>& r) -> BinInfoT { BinInfoT binner(empty); binner.bin(prims + r.begin(), r.size(), mapping, space, user); return binner; },
+                              [&](const range<size_t>& r) -> BinInfoT { BinInfoT binner(empty); binner.bin(prims + r.begin(), r.size(), mapping, binBoundsAndCenter); return binner; },
                               [&](const BinInfoT& b0, const BinInfoT& b1) -> BinInfoT { BinInfoT r = b0; r.merge(b1, mapping.size()); return r; });
     }
   }

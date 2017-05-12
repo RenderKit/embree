@@ -78,6 +78,33 @@ namespace embree
 
           return PrimInfo(set.begin(),set.end(),bounds.geomBounds,bounds.centBounds);
         }
+
+        struct BinBoundsAndCenter
+        {
+          __forceinline BinBoundsAndCenter(Scene* scene, const LinearSpace3fa& space)
+            : scene(scene), space(space) {}
+          
+            /*! returns center for binning */
+          __forceinline Vec3fa binCenter(const PrimRef& ref) const
+          {
+            NativeCurves* mesh = (NativeCurves*) scene->get(ref.geomID());
+            BBox3fa bounds = mesh->bounds(space,ref.primID());
+            return embree::center2(bounds);
+          }
+          
+          /*! returns bounds and centroid used for binning */
+          __forceinline void binBoundsAndCenter(const PrimRef& ref, BBox3fa& bounds_o, Vec3fa& center_o) const
+          {
+            NativeCurves* mesh = (NativeCurves*) scene->get(ref.geomID());
+            BBox3fa bounds = mesh->bounds(space,ref.primID());
+            bounds_o = bounds;
+            center_o = embree::center2(bounds);
+          }
+
+        private:
+          Scene* scene;
+          const LinearSpace3fa space;
+        };
         
         /*! finds the best split */
         __forceinline const Split find(const PrimInfoRange& pinfo, const size_t logBlockSize, const LinearSpace3fa& space)
@@ -94,7 +121,8 @@ namespace embree
         {
           Binner binner(empty);
           const BinMapping<BINS> mapping(set);
-          bin_serial_or_parallel<parallel>(binner,prims,set.begin(),set.end(),size_t(4096),mapping,space,scene);
+          BinBoundsAndCenter binBoundsAndCenter(scene,space);
+          bin_serial_or_parallel<parallel>(binner,prims,set.begin(),set.end(),size_t(4096),mapping,binBoundsAndCenter);
           return binner.best(mapping,logBlockSize);
         }
         
@@ -122,15 +150,16 @@ namespace embree
           CentGeomBBox3fa local_right(empty);
           const int splitPos = split.pos;
           const int splitDim = split.dim;
+          BinBoundsAndCenter binBoundsAndCenter(scene,space);
 
           size_t center = 0;
           if (likely(set.size() < 10000))
             center = serial_partitioning(prims,begin,end,local_left,local_right,
-                                         [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(ref,space,scene)[splitDim] < splitPos; },
+                                         [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(ref,binBoundsAndCenter)[splitDim] < splitPos; },
                                          [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });
           else
             center = parallel_partitioning(prims,begin,end,EmptyTy(),local_left,local_right,
-                                           [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(ref,space,scene)[splitDim] < splitPos; },
+                                           [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(ref,binBoundsAndCenter)[splitDim] < splitPos; },
                                            [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); },
                                            [] (CentGeomBBox3fa& pinfo0,const CentGeomBBox3fa& pinfo1) { pinfo0.merge(pinfo1); },
                                            128);
@@ -214,13 +243,51 @@ namespace embree
           return frame(axis0).transposed();
         }
 
+        struct BinBoundsAndCenter
+        {
+          __forceinline BinBoundsAndCenter(Scene* scene, BBox1f time_range, const LinearSpace3fa& space)
+            : scene(scene), time_range(time_range), space(space) {}
+          
+          /*! returns center for binning */
+          template<typename PrimRef>
+          __forceinline Vec3fa binCenter(const PrimRef& ref) const
+          {
+            NativeCurves* mesh = scene->get<NativeCurves>(ref.geomID());
+            LBBox3fa lbounds = mesh->linearBounds(space,ref.primID(),time_range);
+            return center2(lbounds.interpolate(0.5f));
+          }
+
+          /*! returns bounds and centroid used for binning */
+          __forceinline void binBoundsAndCenter (const PrimRefMB& ref, BBox3fa& bounds_o, Vec3fa& center_o) const
+          {
+            NativeCurves* mesh = scene->get<NativeCurves>(ref.geomID());
+            LBBox3fa lbounds = mesh->linearBounds(space,ref.primID(),time_range);
+            bounds_o = lbounds.interpolate(0.5f);
+            center_o = center2(bounds_o);
+          }
+
+          /*! returns bounds and centroid used for binning */
+          __forceinline void binBoundsAndCenter (const PrimRefMB& ref, LBBox3fa& bounds_o, Vec3fa& center_o) const
+          {
+            NativeCurves* mesh = scene->get<NativeCurves>(ref.geomID());
+            LBBox3fa lbounds = mesh->linearBounds(space,ref.primID(),time_range);
+            bounds_o = lbounds;
+            center_o = center2(lbounds.interpolate(0.5f));
+          }
+          
+        private:
+          Scene* scene;
+          BBox1f time_range;
+          const LinearSpace3fa space;
+        };
+
         /*! finds the best split */
         const Split find(const SetMB& set, const size_t logBlockSize, const LinearSpace3fa& space)
         {
-          UserPrimRefData user(scene,set.time_range);
+          BinBoundsAndCenter binBoundsAndCenter(scene,set.time_range,space);
           ObjectBinner binner(empty);
           const BinMapping<BINS> mapping(set.size(),set.centBounds);
-          bin_parallel(binner,set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,mapping,space,&user);
+          bin_parallel(binner,set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,mapping,binBoundsAndCenter);
           Split osplit = binner.best(mapping,logBlockSize);
           osplit.sah *= set.time_range.size();
           if (!osplit.valid()) osplit.data = Split::SPLIT_FALLBACK; // use fallback split
@@ -230,14 +297,14 @@ namespace embree
         /*! array partitioning */
         __forceinline void split(const Split& split, const LinearSpace3fa& space, const SetMB& set, SetMB& lset, SetMB& rset)
         {
-          UserPrimRefData user(scene,set.time_range);
+          BinBoundsAndCenter binBoundsAndCenter(scene,set.time_range,space);
           const size_t begin = set.object_range.begin();
           const size_t end   = set.object_range.end();
           PrimInfoMB left = empty;
           PrimInfoMB right = empty;
           const vint4 vSplitPos(split.pos);
           const vbool4 vSplitMask(1 << split.dim);
-          auto isLeft = [&] (const PrimRefMB &ref) { return any(((vint4)split.mapping.bin_unsafe(ref,space,&user) < vSplitPos) & vSplitMask); };
+          auto isLeft = [&] (const PrimRefMB &ref) { return any(((vint4)split.mapping.bin_unsafe(ref,binBoundsAndCenter) < vSplitPos) & vSplitMask); };
           auto reduction = [] (PrimInfoMB& pinfo, const PrimRefMB& ref) { pinfo.add_primref(ref); };
           auto reduction2 = [] (PrimInfoMB& pinfo0,const PrimInfoMB& pinfo1) { pinfo0.merge(pinfo1); };
           size_t center = parallel_partitioning(set.prims->data(),begin,end,EmptyTy(),left,right,isLeft,reduction,reduction2,PARALLEL_PARTITION_BLOCK_SIZE,PARALLEL_THRESHOLD);
