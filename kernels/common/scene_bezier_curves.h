@@ -50,12 +50,9 @@ namespace embree
     void unmap(RTCBufferType type);
     void immutable ();
     bool verify ();
-    template<typename Curve>
-      void interpolate_helper(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
     void setTessellationRate(float N);
     // FIXME: implement interpolateN
     void preCommit();
-    template<typename InputCurve3fa, typename OutputCurve3fa> void commit_helper();
 
   public:
     
@@ -297,19 +294,29 @@ namespace embree
 
   namespace isa
   {
-    struct CurvesBezier : public NativeCurves
+    struct NativeCurvesISA : public NativeCurves
+    {
+      NativeCurvesISA (Scene* scene, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps)
+        : NativeCurves(scene,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps) {}
+
+      template<typename Curve> void interpolate_helper(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+      
+      template<typename InputCurve3fa, typename OutputCurve3fa> void commit_helper();
+    };
+    
+    struct CurvesBezier : public NativeCurvesISA
     {
       CurvesBezier (Scene* scene, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps)
-         : NativeCurves(scene,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps) {}
+         : NativeCurvesISA(scene,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps) {}
 
       void preCommit();
       void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
     };
     
-    struct CurvesBSpline : public NativeCurves
+    struct CurvesBSpline : public NativeCurvesISA
     {
       CurvesBSpline (Scene* scene, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps)
-         : NativeCurves(scene,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps) {}
+         : NativeCurvesISA(scene,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps) {}
 
       void preCommit();
       void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
