@@ -234,5 +234,19 @@ namespace embree
     TriangleMesh* createTriangleMesh(Scene* scene, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) {
       return new TriangleMeshISA(scene,flags,numTriangles,numVertices,numTimeSteps);
     }
+
+    PrimInfo TriangleMeshISA::createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& src, size_t dst)
+    {
+      PrimInfo pinfo(empty);
+      for (size_t j=src.begin(); j<src.end(); j++)
+      {
+        BBox3fa bounds = empty;
+        if (!buildBounds(j,&bounds)) continue;
+        const PrimRef prim(bounds,geomID,unsigned(j));
+        pinfo.add(bounds,bounds.center2());
+        prims[dst++] = prim;
+      }
+      return pinfo;
+    }
   }
 }

@@ -17,6 +17,7 @@
 #pragma once
 
 #include "default.h"
+#include "../builders/priminfo.h"
 
 namespace embree
 {
@@ -68,6 +69,10 @@ namespace embree
     /*! updates intersection filter function counts in scene */
     void updateIntersectionFilters(bool enable);
 
+    virtual PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& src, size_t dst) {
+      throw std::runtime_error("createPrimRefArray not implemented for this type");
+    }
+  
   public:
 
     /*! tests if geometry is enabled */

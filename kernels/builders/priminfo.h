@@ -22,8 +22,8 @@
 
 namespace embree
 {
-  namespace isa
-  {
+  //namespace isa
+  //{
     template<typename BBox>
       class CentGeom
     {
@@ -346,5 +346,5 @@ namespace embree
     public:
       PrimRefVector prims;
     };
-  }
+  //}
 }

@@ -223,6 +223,8 @@ namespace embree
     {
       QuadMeshISA (Scene* scene, RTCGeometryFlags flags, size_t numQuads, size_t numVertices, size_t numTimeSteps)
         : QuadMesh(scene,flags,numQuads,numVertices,numTimeSteps) {}
+
+      virtual PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& src, size_t dst);
     };
   }
 

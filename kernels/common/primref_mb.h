@@ -17,12 +17,14 @@
 #pragma once
 
 #include "default.h"
-#include "scene.h"
+//#include "scene.h"
 
 #define MBLUR_BIN_LBBOX 0
 
 namespace embree
 {
+  class Scene;
+
   struct UserPrimRefData
   {
     __forceinline UserPrimRefData(Scene* scene, BBox1f time_range)
@@ -95,22 +97,27 @@ namespace embree
     /*! returns center for binning */
     __forceinline Vec3fa binCenter(const AffineSpace3fa& space, void* user) const // only called by bezier msmblur builder
     {
+#if 0
       Scene* scene = ((UserPrimRefData*) user)->scene;
       BBox1f time_range = ((UserPrimRefData*) user)->time_range;
       NativeCurves* mesh = scene->get<NativeCurves>(geomID());
       LBBox3fa lbounds = mesh->linearBounds(space,primID(),time_range);
       return center2(lbounds.interpolate(0.5f));
+#endif
+      return zero;
     }
 
     /*! returns bounds and centroid used for binning */
     __forceinline void binBoundsAndCenter(LBBox3fa& bounds_o, Vec3fa& center_o, const AffineSpace3fa& space, void* user) const // only called by bezier msmblur builder
     {
+#if 0
       Scene* scene = ((UserPrimRefData*) user)->scene;
       BBox1f time_range = ((UserPrimRefData*) user)->time_range;
       NativeCurves* mesh = scene->get<NativeCurves>(geomID());
       LBBox3fa lbounds = mesh->linearBounds(space,primID(),time_range);
       bounds_o = lbounds;
       center_o = center2(lbounds.interpolate(0.5f));
+#endif
     }
 
     /*! returns the geometry ID */
@@ -214,22 +221,27 @@ namespace embree
     /*! returns center for binning */
     __forceinline Vec3fa binCenter(const AffineSpace3fa& space, void* user) const // only called by bezier msmblur builder
     {
+#if 0
       Scene* scene = ((UserPrimRefData*) user)->scene;
       BBox1f time_range = ((UserPrimRefData*) user)->time_range;
       NativeCurves* mesh = scene->get<NativeCurves>(geomID());
       LBBox3fa lbounds = mesh->linearBounds(space,primID(),time_range);
       return center2(lbounds.interpolate(0.5f));
+#endif
+      return zero;
     }
 
     /*! returns bounds and centroid used for binning */
     __forceinline void binBoundsAndCenter(BBox3fa& bounds_o, Vec3fa& center_o, const AffineSpace3fa& space, void* user) const // only called by bezier msmblur builder
     {
+#if 0
       Scene* scene = ((UserPrimRefData*) user)->scene;
       BBox1f time_range = ((UserPrimRefData*) user)->time_range;
       NativeCurves* mesh = scene->get<NativeCurves>(geomID());
       LBBox3fa lbounds = mesh->linearBounds(space,primID(),time_range);
       bounds_o = lbounds.interpolate(0.5f);
       center_o = center2(bounds_o);
+#endif
     }
 
     /*! returns the geometry ID */

@@ -279,6 +279,8 @@ namespace embree
     {
       TriangleMeshISA (Scene* scene, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps)
         : TriangleMesh(scene,flags,numTriangles,numVertices,numTimeSteps) {}
+
+      virtual PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& src, size_t dst);
     };
   }
 

@@ -36,6 +36,8 @@ namespace embree
     template<typename Mesh, bool mblur>
       PrimInfo createPrimRefArray(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
 
+    PrimInfo createMultiPrimRefArray(Scene* scene, Geometry::Type ty, bool mblur, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+  
     template<typename Mesh>
       PrimInfo createPrimRefArrayMBlur(size_t timeSegment, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
 

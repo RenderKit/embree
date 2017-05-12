@@ -98,6 +98,38 @@ namespace embree
       bool all;
       };
 
+    class MultiIterator
+    {
+    public:
+      MultiIterator ()  {}
+      
+      MultiIterator (Scene* scene, Geometry::Type ty, bool mblur) 
+        : scene(scene), ty(ty), mblur(mblur) {}
+      
+      __forceinline Geometry* at(const size_t i)
+      {
+        Geometry* geom = scene->geometries[i];
+        if (geom == nullptr) return nullptr;
+        if (!geom->isEnabled()) return nullptr;
+        if (!(geom->getType() & ty)) return nullptr;
+        if ((geom->numTimeSteps != 1) != mblur) return nullptr;
+        return geom;
+      }
+
+      __forceinline Geometry* operator[] (const size_t i) {
+        return at(i);
+      }
+
+      __forceinline size_t size() const {
+        return scene->size();
+      }
+
+    private:
+      Scene* scene;
+      Geometry::Type ty;
+      bool mblur;
+    };
+
   public:
     
     /*! Scene construction */
