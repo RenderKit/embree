@@ -70,7 +70,7 @@ namespace embree
           return cout << "{ lower = " << ref.lower << ", upper = " << ref.upper << ", center2 = " << ref.center2() << ", geomID = " << ref.geomID() << ", numPrimitives = " << ref.numPrimitives() << ", bounds_area = " << ref.bounds_area << " }";
         }
 
-        __forceinline unsigned int numPrimitives() { return primID(); }
+        __forceinline unsigned int numPrimitives() const { return primID(); }
 
       public:
         NodeRef node;
