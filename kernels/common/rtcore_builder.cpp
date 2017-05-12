@@ -196,8 +196,8 @@ namespace embree
         },
         
         /* lambda function that creates BVH leaves */
-        [&](const BVHBuilderBinnedSAH::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) -> void* {
-          return createLeaf((RTCThreadLocalAllocator)&alloc,prims+current.prims.begin(),current.prims.size(),userPtr);
+        [&](const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) -> void* {
+          return createLeaf((RTCThreadLocalAllocator)&alloc,prims+range.begin(),range.size(),userPtr);
         },
         
         /* progress monitor function */
@@ -287,8 +287,8 @@ namespace embree
         },
         
         /* lambda function that creates BVH leaves */
-        [&] (const BVHBuilderBinnedFastSpatialSAH::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) -> void* {
-          return createLeaf((RTCThreadLocalAllocator)&alloc,prims+current.prims.begin(),current.prims.size(),userPtr);
+        [&] (const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) -> void* {
+          return createLeaf((RTCThreadLocalAllocator)&alloc,prims+range.begin(),range.size(),userPtr);
         },
         
         /* returns the splitter */
