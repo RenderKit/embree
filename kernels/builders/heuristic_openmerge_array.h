@@ -557,6 +557,10 @@ namespace embree
           std::sort(&prims0[set.begin()],&prims0[set.end()]);
         }
 
+        __forceinline bool sameType(const range<size_t>& range) {
+          return true;
+        }
+      
         void splitFallback(const PrimInfoExtRange& set, PrimInfoExtRange& lset, PrimInfoExtRange& rset)
         {
           const size_t begin = set.begin();

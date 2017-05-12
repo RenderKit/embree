@@ -139,21 +139,53 @@ namespace embree
           std::sort(&prims[pinfo.begin()],&prims[pinfo.end()]);
         }
 
-        void splitFallback(const PrimInfoRange& pinfo, PrimInfoRange& linfo, PrimInfoRange& rinfo)
+        __forceinline bool sameType(const range<size_t>& range)
         {
-          const size_t begin = pinfo.begin();
-          const size_t end   = pinfo.end();
-          const size_t center = (begin + end)/2;
+          assert(range.size());
+          Leaf::Type ty0 = prims[range.begin()].type();
+          for (size_t i=range.begin()+1; i<range.end(); i++)
+            if (ty0 != prims[i].type()) 
+              return false;
+          return true;
+        }
 
+        void splitAtCenter(const range<size_t>& range, PrimInfoRange& linfo, PrimInfoRange& rinfo)
+        {
+          const size_t begin = range.begin();
+          const size_t end   = range.end();
+          const size_t center = (begin + end)/2;
+          
           CentGeomBBox3fa left; left.reset();
           for (size_t i=begin; i<center; i++)
             left.extend(prims[i].bounds());
           new (&linfo) PrimInfoRange(begin,center,left.geomBounds,left.centBounds);
-
+          
           CentGeomBBox3fa right; right.reset();
           for (size_t i=center; i<end; i++)
             right.extend(prims[i].bounds());
           new (&rinfo) PrimInfoRange(center,end,right.geomBounds,right.centBounds);
+        }
+
+        void splitByType(const range<size_t>& range, Leaf::Type type, PrimInfoRange& linfo, PrimInfoRange& rinfo)
+        {
+          CentGeomBBox3fa left; left.reset();
+          CentGeomBBox3fa right; right.reset();
+          size_t center = serial_partitioning(prims,range.begin(),range.end(),left,right,
+                                              [&] ( const PrimRef& prim ) { return prim.type() == type; },
+                                              [ ] ( CentGeomBBox3fa& a, const PrimRef& b ) { a.extend(b.bounds()); });
+
+          new (&linfo) PrimInfoRange(range.begin(),center,left.geomBounds,left.centBounds);
+          new (&rinfo) PrimInfoRange(center,range.end(),right.geomBounds,right.centBounds);
+        }
+
+        void splitFallback(const range<size_t>& range, PrimInfoRange& linfo, PrimInfoRange& rinfo)
+        {
+          if (sameType(range))
+            splitAtCenter(range,linfo,rinfo);
+          else {
+            const Leaf::Type ty = prims[range.begin()].type();
+            splitByType(range,ty,linfo,rinfo);
+          }
         }
 
       private:

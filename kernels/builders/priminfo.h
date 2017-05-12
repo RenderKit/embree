@@ -66,6 +66,9 @@ namespace embree
 	centBounds.extend(other.centBounds);
       }
 
+      static __forceinline const CentGeom extend( CentGeom& a, const CentGeom& b ) {
+        a.extend(b);
+      }
       static __forceinline const CentGeom merge2(const CentGeom& a, const CentGeom& b) {
         CentGeom r = a; r.merge(b); return r;
       }

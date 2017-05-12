@@ -139,8 +139,11 @@ namespace embree
             if (current.depth > maxDepth)
               throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
 
+            /* check if all primitives are of the same leaf type */
+            bool same_type = heuristic.sameType(current.prims);
+
             /* create leaf for few primitives */
-            if (current.prims.size() <= maxLeafSize)
+            if (current.prims.size() <= maxLeafSize && same_type)
               return createLeaf(current.prims,alloc);
 
             /* fill all children by always splitting the largest one */
