@@ -35,7 +35,7 @@
 
 namespace embree
 {
-  DECLARE_SYMBOL2(Accel::Intersector1,BVH8FastIntersector1);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH8MultiFastIntersector1);
 
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Line4iIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Line4iMBIntersector1);
@@ -176,7 +176,7 @@ namespace embree
 
   DECLARE_SYMBOL2(Accel::IntersectorN,BVH8VirtualIntersectorStream);
 
-  DECLARE_ISA_FUNCTION(Builder*,BVH8FastSceneBuilderSAH,void* COMMA Scene* COMMA Geometry::Type);
+  DECLARE_ISA_FUNCTION(Builder*,BVH8MultiFastSceneBuilderSAH,void* COMMA Scene* COMMA Geometry::Type);
 
   DECLARE_ISA_FUNCTION(Builder*,BVH8Line4iSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH8Line4iMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
@@ -235,7 +235,7 @@ namespace embree
 
   void BVH8Factory::selectBuilders(int features)
   {
-    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8FastSceneBuilderSAH));
+    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8MultiFastSceneBuilderSAH));
     
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Line4iSceneBuilderSAH));
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Line4iMBSceneBuilderSAH));
@@ -291,7 +291,7 @@ namespace embree
   void BVH8Factory::selectIntersectors(int features)
   {
     /* select intersectors1 */
-    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8FastIntersector1);
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8MultiFastIntersector1);
 
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Line4iIntersector1));
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Line4iMBIntersector1));
@@ -526,14 +526,14 @@ namespace embree
     }
   }
 
-  Accel::Intersectors BVH8Factory::BVH8FastIntersectors(BVH8* bvh)
+  Accel::Intersectors BVH8Factory::BVH8MultiFastIntersectors(BVH8* bvh)
   {
     CreateLeafIntersectorFast(bvh->device->enabled_cpu_features);
     bvh->leaf_intersector = LeafIntersectorFast();
 
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1 = BVH8FastIntersector1();
+    intersectors.intersector1 = BVH8MultiFastIntersector1();
     return intersectors;
   }
 
@@ -895,12 +895,12 @@ namespace embree
     return intersectors;
   }
 
-  Accel* BVH8Factory::BVH8Fast(Scene* scene)
+  Accel* BVH8Factory::BVH8MultiFast(Scene* scene)
   {
     BVH8* accel = new BVH8(Triangle4::type,scene); // FIXME: wrong type !!!!!!!
-    Accel::Intersectors intersectors = BVH8FastIntersectors(accel);
+    Accel::Intersectors intersectors = BVH8MultiFastIntersectors(accel);
     unsigned ty = Geometry::TRIANGLE_MESH | Geometry::QUAD_MESH;
-    Builder* builder = BVH8FastSceneBuilderSAH(accel,scene,(Geometry::Type)ty);
+    Builder* builder = BVH8MultiFastSceneBuilderSAH(accel,scene,(Geometry::Type)ty);
     return new AccelInstance(accel,builder,intersectors);
   }
 

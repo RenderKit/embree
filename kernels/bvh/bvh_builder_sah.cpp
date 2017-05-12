@@ -849,7 +849,7 @@ namespace embree
 #endif
 
 #if defined(__AVX__)
-    Builder* BVH8FastSceneBuilderSAH     (void* bvh, Scene* scene, Geometry::Type type) { 
+    Builder* BVH8MultiFastSceneBuilderSAH     (void* bvh, Scene* scene, Geometry::Type type) { 
       static CreateMultiLeaf<8,
                              Triangle4,
                              Triangle4,

@@ -27,7 +27,7 @@ namespace embree
     BVH8Factory(int bfeatures, int ifeatures);
 
   public:
-    Accel* BVH8Fast(Scene* scene);
+    Accel* BVH8MultiFast(Scene* scene);
 
     Accel* BVH8OBBBezier1v(Scene* scene);
     Accel* BVH8OBBBezier1i(Scene* scene);
@@ -70,7 +70,7 @@ namespace embree
     void selectIntersectors(int features);
 
   private:
-    Accel::Intersectors BVH8FastIntersectors(BVH8* bvh);
+    Accel::Intersectors BVH8MultiFastIntersectors(BVH8* bvh);
 
     Accel::Intersectors BVH8Line4iIntersectors(BVH8* bvh);
     Accel::Intersectors BVH8Line4iMBIntersectors(BVH8* bvh);
@@ -96,7 +96,7 @@ namespace embree
     Accel::Intersectors BVH8UserGeometryMBIntersectors(BVH8* bvh);
 
   private:
-    DEFINE_SYMBOL2(Accel::Intersector1,BVH8FastIntersector1);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH8MultiFastIntersector1);
 
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Line4iIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Line4iMBIntersector1);
@@ -239,7 +239,7 @@ namespace embree
 
     // SAH scene builders
   private:
-    DEFINE_ISA_FUNCTION(Builder*,BVH8FastSceneBuilderSAH,void* COMMA Scene* COMMA Geometry::Type); 
+    DEFINE_ISA_FUNCTION(Builder*,BVH8MultiFastSceneBuilderSAH,void* COMMA Scene* COMMA Geometry::Type); 
       
     DEFINE_ISA_FUNCTION(Builder*,BVH8Line4iSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
     DEFINE_ISA_FUNCTION(Builder*,BVH8Line4iMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
