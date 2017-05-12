@@ -130,6 +130,18 @@ namespace embree
       QuadMv::store_nt(this,QuadMv(v0,v1,v2,v3,vgeomID,vprimID));
     }
 
+    template<typename BVH>
+    __forceinline static typename BVH::NodeRef createLeaf(const FastAllocator::CachedAllocator& alloc, PrimRef* prims, const range<size_t>& range, BVH* bvh)
+    {
+      size_t cur = range.begin();
+      size_t items = blocks(range.size());
+      QuadMv* accel = (QuadMv*) alloc.malloc1(items*sizeof(QuadMv),BVH::byteAlignment);
+      for (size_t i=0; i<items; i++) {
+        accel[i].fill(prims,cur,range.end(),bvh->scene);
+      }
+      return BVH::encodeLeaf((char*)accel,items);
+    }
+
     /* Updates the primitive */
     __forceinline BBox3fa update(QuadMesh* mesh)
     {

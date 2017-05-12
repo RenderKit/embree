@@ -265,21 +265,19 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 
+    template<int N>
     struct VirtualCreateLeaf
     {
-      virtual size_t operator() (const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) const = 0;
+      typedef BVHN<N> BVH;
+      virtual size_t operator() (BVH* bvh, PrimRef* prims, const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) const = 0;
     };
 
     template<int N, typename Primitive0, typename Primitive1, typename Primitive2, typename Primitive3>
-    struct CreateMultiLeaf : public VirtualCreateLeaf
+    struct CreateMultiLeaf : public VirtualCreateLeaf<N>
     {
       typedef BVHN<N> BVH;
-      typedef typename BVHN<N>::NodeRef NodeRef;
-
-      __forceinline CreateMultiLeaf (BVH* bvh, PrimRef* prims) 
-        : bvh(bvh), prims(prims) {}
-
-      size_t operator() (const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) const
+      
+      size_t operator() (BVH* bvh, PrimRef* prims, const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) const
       {
         assert(range.size() > 0);
         Leaf::Type ty = (Leaf::Type) 0; //prims[start].ty();
@@ -288,13 +286,9 @@ namespace embree
         case 1: return Primitive1::createLeaf(alloc,prims,range,bvh);
         case 2: return Primitive2::createLeaf(alloc,prims,range,bvh);
         case 3: return Primitive3::createLeaf(alloc,prims,range,bvh);
-        default: assert(false); return BVH::emptyLeaf;
+        default: assert(false); return BVH::emptyNode;
         }
       }
-
-    private:
-      BVH* bvh;
-      PrimRef* prims;
     };
 
     template<int N>
@@ -307,13 +301,13 @@ namespace embree
       Scene* scene;
       Geometry* mesh;
       Geometry::Type type;
-      const VirtualCreateLeaf& createLeaf;
+      const VirtualCreateLeaf<N>& createLeaf;
       mvector<PrimRef> prims;
       GeneralBVHBuilder::Settings settings;
       bool primrefarrayalloc;
 
-      BVHNBuilderMultiSAH (BVH* bvh, Scene* scene, Geometry::Type type, const VirtualCreateLeaf& createLeaf, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize,
-                           const size_t mode, bool primrefarrayalloc = false)
+      BVHNBuilderMultiSAH (BVH* bvh, Scene* scene, Geometry::Type type, const VirtualCreateLeaf<N>& createLeaf, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize,
+                           bool primrefarrayalloc = false)
         : bvh(bvh), scene(scene), mesh(nullptr), type(type), createLeaf(createLeaf), prims(scene->device,0),
           settings(sahBlockSize, minLeafSize, min(maxLeafSize,/*Primitive::max_size()*/BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), primrefarrayalloc(primrefarrayalloc) {} // FIXME: minLeafSize too small
 
@@ -382,8 +376,10 @@ namespace embree
             NodeRef root = BVHBuilderBinnedSAH::build<NodeRef>
               (FastAllocator::Create(&bvh->alloc),
                typename BVH::AlignedNode::Create2(),
-               typename BVH::AlignedNode::Set3(&bvh->alloc,prims),
-               createLeaf,
+               typename BVH::AlignedNode::Set3(&bvh->alloc,prims.data()),
+               [&] (const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) -> NodeRef { 
+                  return createLeaf(bvh,prims.data(),range,alloc);
+               },
                bvh->scene->progressInterface,prims.data(),pinfo,settings);
   
             bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
@@ -850,6 +846,18 @@ namespace embree
     Builder* BVH8Quad4vSceneBuilderFastSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderFastSpatialSAH<8,QuadMesh,Quad4v,QuadSplitterFactory>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
 
 #endif
+#endif
+
+#if defined(__AVX__)
+    Builder* BVH8FastSceneBuilderSAH     (void* bvh, Scene* scene, Geometry::Type type) { 
+      static CreateMultiLeaf<8,
+                             Triangle4,
+                             Triangle4,
+                             Quad4v,
+                             Quad4v> createLeaf;
+
+      return new BVHNBuilderMultiSAH<8>((BVH8*)bvh,scene,type,createLeaf,4,1.0f,4,inf); 
+    }
 #endif
 
 #if defined(EMBREE_GEOMETRY_USER)

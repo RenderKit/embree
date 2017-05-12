@@ -131,7 +131,7 @@ namespace embree
     }
 
     template<typename BVH>
-    __forceinline char* createLeaf(const FastAllocator::CachedAllocator& alloc, PrimRef* prims, const range<size_t>& range, BVH* bvh)
+    __forceinline static typename BVH::NodeRef createLeaf(const FastAllocator::CachedAllocator& alloc, PrimRef* prims, const range<size_t>& range, BVH* bvh)
     {
       size_t cur = range.begin();
       size_t items = blocks(range.size());
