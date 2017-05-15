@@ -72,7 +72,7 @@ namespace embree
           });
       }
       
-#if PROFILE == 1
+#if PROFILE
       while(1) 
 #endif
       {
@@ -96,14 +96,14 @@ namespace embree
       if (refs.size()     < num) refs.resize(num);
       nextRef.store(0);
       
-      /* create of acceleration structures */
+      /* create acceleration structures */
       parallel_for(size_t(0), num, [&] (const range<size_t>& r)
       {
         for (size_t objectID=r.begin(); objectID<r.end(); objectID++)
         {
           Mesh* mesh = scene->getSafe<Mesh>(objectID);
           
-          /* verify meshes got deleted properly */
+          /* verify if meshes got deleted properly */
           if (mesh == nullptr || mesh->numTimeSteps != 1) {
             assert(objectID < objects.size () && objects[objectID] == nullptr);
             assert(objectID < builders.size() && builders[objectID] == nullptr);
@@ -136,7 +136,7 @@ namespace embree
           /* create build primitive */
           if (!object->getBounds().empty())
           {
-#if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
+#if ENABLE_DIRECT_SAH_MERGE_BUILDER
             refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root,objectID,mesh->size());
 #else
             refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root);
@@ -163,15 +163,13 @@ namespace embree
         const size_t extSize = max(max((size_t)SPLIT_MIN_EXT_SPACE,refs.size()*SPLIT_MEMORY_RESERVE_SCALE),size_t((float)numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
         //PRINT(extSize);
  
-#if ENABLE_DIRECT_SAH_MERGE_BUILDER == 0
+#if !ENABLE_DIRECT_SAH_MERGE_BUILDER
 
-#if ENABLE_OPEN_SEQUENTIAL == 1
+#if ENABLE_OPEN_SEQUENTIAL
         open_sequential(extSize); 
 #endif
         /* compute PrimRefs */
         prims.resize(refs.size());
-#else
-
 #endif
 
         /* calculate the size of the entire BVH */
@@ -184,7 +182,7 @@ namespace embree
         limited.execute([&]
 #endif
         {
-#if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
+#if ENABLE_DIRECT_SAH_MERGE_BUILDER
 
           const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(),  PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {
 
@@ -225,7 +223,7 @@ namespace embree
             settings.intCost = 1.0f;
             settings.singleThreadThreshold = singleThreadThreshold;
       
-#if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
+#if ENABLE_DIRECT_SAH_MERGE_BUILDER
             refs.resize(extSize); 
          
             NodeRef root = BVHBuilderBinnedOpenMergeSAH::build<NodeRef,BuildRef>(
