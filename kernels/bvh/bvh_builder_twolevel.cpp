@@ -37,7 +37,6 @@
 /* for non-opening two-level approach set ENABLE_DIRECT_SAH_MERGE_BUILDER and ENABLE_OPEN_SEQUENTIAL to 0 */
 /* sequential opening phase in old code path */
 
-#define MAX_OPEN_SIZE 600000
 #define ENABLE_OPEN_SEQUENTIAL 1
 
 namespace embree
