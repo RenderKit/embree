@@ -37,8 +37,8 @@
 /* for non-opening two-level approach set ENABLE_DIRECT_SAH_MERGE_BUILDER and ENABLE_OPEN_SEQUENTIAL to 0 */
 /* sequential opening phase in old code path */
 
-#define MAX_OPEN_SIZE 10000
-#define ENABLE_OPEN_SEQUENTIAL 0
+#define MAX_OPEN_SIZE 600000
+#define ENABLE_OPEN_SEQUENTIAL 1
 
 namespace embree
 {
@@ -156,14 +156,18 @@ namespace embree
       }
 
       else
-      {
+      {     
         /* open all large nodes */
         refs.resize(nextRef);
 
+        /* this probably needs some more tuning */
+        const size_t extSize = max(max((size_t)SPLIT_MIN_EXT_SPACE,refs.size()*SPLIT_MEMORY_RESERVE_SCALE),size_t((float)numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
+        //PRINT(extSize);
+ 
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER == 0
 
 #if ENABLE_OPEN_SEQUENTIAL == 1
-        open_sequential(numPrimitives,MAX_OPEN_SIZE); 
+        open_sequential(extSize); 
 #endif
         /* compute PrimRefs */
         prims.resize(refs.size());
@@ -221,12 +225,10 @@ namespace embree
             settings.travCost = 1.0f;
             settings.intCost = 1.0f;
             settings.singleThreadThreshold = singleThreadThreshold;
-
+      
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
-            /* this probably needs some more tuning */
-            const size_t extSize = max(max((size_t)SPLIT_MIN_EXT_SPACE,refs.size()*SPLIT_MEMORY_RESERVE_SCALE),size_t((float)numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
             refs.resize(extSize); 
-
+         
             NodeRef root = BVHBuilderBinnedOpenMergeSAH::build<NodeRef,BuildRef>(
               typename BVH::CreateAlloc(bvh),
               typename BVH::AlignedNode::Create2(),
@@ -296,13 +298,12 @@ namespace embree
     }
 
     template<int N, typename Mesh>
-    void BVHNBuilderTwoLevel<N,Mesh>::open_sequential(const size_t numPrimitives, const size_t maxOpenSize)
+    void BVHNBuilderTwoLevel<N,Mesh>::open_sequential(const size_t extSize)
     {
       if (refs.size() == 0)
 	return;
 
-      size_t num = min(numPrimitives/400,maxOpenSize);
-      refs.reserve(num);
+      refs.reserve(extSize);
 
 #if 1
       for (size_t i=0;i<refs.size();i++)
@@ -314,7 +315,7 @@ namespace embree
 #endif
 
       std::make_heap(refs.begin(),refs.end());
-      while (refs.size()+3 <= num)
+      while (refs.size()+3 <= extSize)
       {
         std::pop_heap (refs.begin(),refs.end()); 
         NodeRef ref = refs.back().node;
