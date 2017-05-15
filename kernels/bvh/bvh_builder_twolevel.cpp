@@ -24,7 +24,11 @@
 #define PROFILE 0
 
 /* new open/merge builder */
+//#if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
 #define ENABLE_DIRECT_SAH_MERGE_BUILDER 1
+//#else
+//#define ENABLE_DIRECT_SAH_MERGE_BUILDER 0
+//#endif
 
 #define SPLIT_MEMORY_RESERVE_FACTOR 1000
 #define SPLIT_MEMORY_RESERVE_SCALE 2
@@ -112,9 +116,6 @@ namespace embree
             createMeshAccel(mesh,(AccelData*&)objects[objectID],builders[objectID]);
         }
       });
-      /* count total primitive count of all objects */
-      std::atomic<int> totalPrims(0);
-
 
       /* parallel build of acceleration structures */
       parallel_for(size_t(0), num, [&] (const range<size_t>& r)
@@ -138,7 +139,6 @@ namespace embree
           {
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
             refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root,objectID,mesh->size());
-            totalPrims += mesh->size();
 #else
             refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root);
 #endif
@@ -171,9 +171,10 @@ namespace embree
 
 #endif
 
-        // FIXME: find a resonable estimate with respect to the conservative memory allocator
-        bvh->alloc.init_estimate(refs.size()*SPLIT_MEMORY_RESERVE_FACTOR*sizeof(PrimRef)); 
-        //bvh->alloc.init_estimate(totalPrims.load() * sizeof(PrimRef));
+        /* calculate the size of the entire BVH */
+        const size_t node_bytes = numPrimitives*sizeof(typename BVH::AlignedNodeMB)/(4*N);
+        const size_t leaf_bytes = size_t(1.2*44*numPrimitives); // assumes triangles
+        bvh->alloc.init_estimate(node_bytes+leaf_bytes); 
 
 #if defined(TASKING_TBB) && defined(__AVX512ER__) && USE_TASK_ARENA // KNL
         tbb::task_arena limited(min(32,(int)TaskScheduler::threadCount()));
