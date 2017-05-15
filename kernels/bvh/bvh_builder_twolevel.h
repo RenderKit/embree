@@ -62,6 +62,10 @@ namespace embree
             bounds_area = area(this->bounds());
         }
 
+        __forceinline size_t size() const {
+          return primID();
+        }
+
         friend bool operator< (const BuildRef& a, const BuildRef& b) {
           return a.bounds_area < b.bounds_area;
         }

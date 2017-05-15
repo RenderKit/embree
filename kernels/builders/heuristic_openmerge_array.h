@@ -23,8 +23,6 @@
 #include "heuristic_binning.h"
 #include "heuristic_spatial.h"
 
-/* use subtree size for binning */
-#define USE_SUBTREE_SIZE_FOR_BINNING 1
 /* stop opening of all bref.geomIDs are the same */
 #define EQUAL_GEOMID_STOP_CRITERIA 1
 /* 10% spatial extend threshold */
@@ -419,12 +417,7 @@ namespace embree
         {
           ObjectBinner binner(empty); 
           const BinMapping<OBJECT_BINS> mapping(set.centBounds,OBJECT_BINS);
-
-#if USE_SUBTREE_SIZE_FOR_BINNING == 1
-          binner.binSubTreeRefs(prims0,set.begin(),set.end(),mapping);
-#else
           binner.bin(prims0,set.begin(),set.end(),mapping);
-#endif
           ObjectSplit s = binner.best(mapping,logBlockSize);
           SplitInfo info;
           binner.getSplitInfo(mapping, s, info);
@@ -439,11 +432,7 @@ namespace embree
           const BinMapping<OBJECT_BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
           binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
                                    [&] (const range<size_t>& r) -> ObjectBinner { ObjectBinner binner(empty); 
-#if USE_SUBTREE_SIZE_FOR_BINNING == 1
-                                     binner.binSubTreeRefs(prims0+r.begin(),r.size(),_mapping); 
-#else
                                      binner.bin(prims0+r.begin(),r.size(),_mapping); 
-#endif
                                      return binner; },
                                    [&] (const ObjectBinner& b0, const ObjectBinner& b1) -> ObjectBinner { ObjectBinner r = b0; r.merge(b1,_mapping.size()); return r; });
           ObjectSplit s = binner.best(mapping,logBlockSize);
