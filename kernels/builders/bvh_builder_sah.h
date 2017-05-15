@@ -490,7 +490,7 @@ namespace embree
     {
       static const size_t NUM_OBJECT_BINS_HQ = 32;
       typedef PrimInfoExtRange Set;
-      typedef SplitOpenMerge<BinSplit<NUM_OBJECT_BINS_HQ> > Split;
+      typedef BinSplit<NUM_OBJECT_BINS_HQ> Split;
       typedef GeneralBVHBuilder::BuildRecordT<Set,Split> BuildRecord;
       typedef GeneralBVHBuilder::Settings Settings;
       

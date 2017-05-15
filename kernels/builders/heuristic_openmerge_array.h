@@ -25,10 +25,13 @@
 
 /* stop opening of all bref.geomIDs are the same */
 #define EQUAL_GEOMID_STOP_CRITERIA 1
+
 /* 10% spatial extend threshold */
 #define MAX_EXTEND_THRESHOLD   0.1f
+
 /* maximum is 8 children */
 #define MAX_OPENED_CHILD_NODES 8
+
 /* open until all build refs are below threshold size in one step */
 #define USE_LOOP_OPENING 0
 
@@ -36,45 +39,6 @@ namespace embree
 {
   namespace isa
   { 
-    template<typename ObjectSplit>
-      struct SplitOpenMerge
-      {
-        __forceinline SplitOpenMerge () {}
-        
-        __forceinline SplitOpenMerge (const SplitOpenMerge& other) 
-        {
-          sah    = other.sah;
-          objectSplit()  = other.objectSplit();
-        }
-        
-        __forceinline SplitOpenMerge& operator= (const SplitOpenMerge& other) 
-        {
-          sah    = other.sah;
-          objectSplit()  = other.objectSplit();
-          return *this;
-        }
-          
-        __forceinline       ObjectSplit&  objectSplit()        { return split; }
-        __forceinline const ObjectSplit&  objectSplit() const  { return split; }
-        
-        __forceinline SplitOpenMerge (const ObjectSplit& objectSplit, float sah)
-          : sah(sah), split(objectSplit)
-        {
-        }
-                
-        __forceinline float splitSAH() const { 
-          return sah; 
-        }
-        
-        __forceinline bool valid() const {
-          return sah < float(inf);
-        }
-        
-      public:
-        float sah;
-        ObjectSplit split;
-      };
-    
     /*! Performs standard object binning */
     template<typename NodeOpenerFunc, typename PrimRef, size_t OBJECT_BINS>
       struct HeuristicArrayOpenMergeSAH
@@ -82,8 +46,7 @@ namespace embree
         typedef BinSplit<OBJECT_BINS> ObjectSplit;
         typedef BinInfoT<OBJECT_BINS,PrimRef,BBox3fa> ObjectBinner;
 
-        //typedef extended_range<size_t> Set;
-        typedef SplitOpenMerge<ObjectSplit> Split;
+        typedef ObjectSplit Split;
         
         static const size_t PARALLEL_THRESHOLD = 1024;
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 512;
@@ -351,7 +314,7 @@ namespace embree
         {
           /* single element */
           if (set.size() == 1)
-            return Split(ObjectSplit(),inf);
+            return ObjectSplit();
 
           if (unlikely(set.has_ext_range()))
           {
@@ -399,9 +362,7 @@ namespace embree
           }
                     
           /* find best split */
-          const ObjectSplit object_split = object_find(set,logBlockSize);
-          const float object_split_sah = object_split.splitSAH();
-          return Split(object_split,object_split_sah);
+          return object_find(set,logBlockSize);
         }
 
 
@@ -457,9 +418,9 @@ namespace embree
 
           /* object split */
           if (likely(set.size() < PARALLEL_THRESHOLD)) 
-            ext_weights = sequential_object_split(split.objectSplit(),set,lset,rset);
+            ext_weights = sequential_object_split(split,set,lset,rset);
           else
-            ext_weights = parallel_object_split(split.objectSplit(),set,lset,rset);
+            ext_weights = parallel_object_split(split,set,lset,rset);
 
           /* if we have an extended range, set extended child ranges and move right split range */
           if (unlikely(set.has_ext_range())) 
