@@ -346,10 +346,7 @@ namespace embree
           Binner binner(empty); 
           const BinMapping<OBJECT_BINS> mapping(set.centBounds);
           binner.bin(prims0,set.begin(),set.end(),mapping);
-          Split s = binner.best(mapping,logBlockSize);
-          SplitInfo info;
-          binner.getSplitInfo(mapping, s, info);
-          return s;
+          return binner.best(mapping,logBlockSize);
         }
 
         /*! finds the best split */
@@ -363,10 +360,7 @@ namespace embree
                                      binner.bin(prims0+r.begin(),r.size(),_mapping); 
                                      return binner; },
                                    [&] (const Binner& b0, const Binner& b1) -> Binner { Binner r = b0; r.merge(b1,_mapping.size()); return r; });
-          Split s = binner.best(mapping,logBlockSize);
-          SplitInfo info;
-          binner.getSplitInfo(mapping, s, info);
-          return s;
+          return binner.best(mapping,logBlockSize);
         }
         
         /*! array partitioning */
