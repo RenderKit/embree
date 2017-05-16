@@ -355,11 +355,13 @@ namespace embree
           Binner binner(empty);
           const BinMapping<OBJECT_BINS> mapping(set.centBounds);
           const BinMapping<OBJECT_BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
-          binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
-                                   [&] (const range<size_t>& r) -> Binner { Binner binner(empty); 
-                                     binner.bin(prims0+r.begin(),r.size(),_mapping); 
-                                     return binner; },
-                                   [&] (const Binner& b0, const Binner& b1) -> Binner { Binner r = b0; r.merge(b1,_mapping.size()); return r; });
+          auto body = [&] (const range<size_t>& r) -> Binner { 
+            Binner binner(empty); binner.bin(prims0+r.begin(),r.size(),_mapping); return binner; 
+          };
+          auto reduction = [&] (const Binner& b0, const Binner& b1) -> Binner { 
+            Binner r = b0; r.merge(b1,_mapping.size()); return r; 
+          };
+          binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,body,reduction);
           return binner.best(mapping,logBlockSize);
         }
         
