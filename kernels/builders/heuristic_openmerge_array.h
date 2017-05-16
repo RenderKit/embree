@@ -141,7 +141,8 @@ namespace embree
           const float inv_max_extend = 1.0f / diag[dim];
           const size_t ext_range_start = set.end();
 
-          if (set.size() < PARALLEL_THRESHOLD) {
+          if (set.size() < PARALLEL_THRESHOLD) 
+          {
             size_t extra_elements = 0;
             for (size_t i=set.begin(); i<set.end(); i++)
             {
@@ -150,24 +151,24 @@ namespace embree
                 PrimRef tmp[MAX_OPENED_CHILD_NODES];
                 const size_t n = nodeOpenerFunc(prims0[i],tmp);
                 assert(extra_elements + n-1 <= set.ext_range_size());
-                for (size_t j=0;j<n;j++)
+                for (size_t j=0; j<n; j++)
                   set.extend(tmp[j].bounds());
-                  
+
                 prims0[i] = tmp[0];
-                for (size_t j=1;j<n;j++)
+                for (size_t j=1; j<n; j++)
                   prims0[ext_range_start+extra_elements+j-1] = tmp[j]; 
                 extra_elements += n-1;
               }
             }
             set._end += extra_elements;
-            //return extra_elements;
           }
-          else {
+          else 
+          {
             std::atomic<size_t> ext_elements;
             ext_elements.store(0);
             PrimInfo info = parallel_reduce( set.begin(), set.end(), CREATE_SPLITS_STEP_SIZE, PrimInfo(empty), [&](const range<size_t>& r) -> PrimInfo {
                 PrimInfo info(empty);
-                for (size_t i=r.begin();i<r.end();i++)
+                for (size_t i=r.begin(); i<r.end(); i++)
                   if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD)
                   {
                     PrimRef tmp[MAX_OPENED_CHILD_NODES];
@@ -175,11 +176,11 @@ namespace embree
                     const size_t ID = ext_elements.fetch_add(n-1);
                     assert(ID + n-1 <= set.ext_range_size());
 
-                    for (size_t j=0;j<n;j++)
+                    for (size_t j=0; j<n; j++)
                       info.extend(tmp[j].bounds());
 
                     prims0[i] = tmp[0];
-                    for (size_t j=1;j<n;j++)
+                    for (size_t j=1; j<n; j++)
                       prims0[ext_range_start+ID+j-1] = tmp[j]; 
                   }
                 return info;
