@@ -63,6 +63,25 @@ namespace embree
           assert(max_open_size <= MAX_OPENED_CHILD_NODES);
         }
 
+        struct OpenHeuristic
+        {
+          __forceinline OpenHeuristic( const PrimInfoExtRange& pinfo )
+          {
+            const Vec3fa diag = pinfo.geomBounds.size();
+            dim = maxDim(diag);
+            assert(diag[dim] > 0.0f);
+            inv_max_extend = 1.0f / diag[dim];
+          }
+
+          __forceinline bool operator () ( PrimRef& prim ) const {
+            return !prim.node.isLeaf() && prim.bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD;
+          }
+
+        private:
+          size_t dim;
+          float inv_max_extend;
+        };
+
         /*! compute extended ranges */
         __forceinline void setExtentedRanges(const PrimInfoExtRange& set, PrimInfoExtRange& lset, PrimInfoExtRange& rset, const size_t lweight, const size_t rweight)
         {
@@ -110,10 +129,7 @@ namespace embree
         /* estimates the extra space required when opening, and checks if all primitives are from same geometry */
         __noinline std::pair<size_t,bool> getProperties(const PrimInfoExtRange& set)
         {
-          const Vec3fa diag = set.geomBounds.size();
-          const size_t dim = maxDim(diag);
-          assert(diag[dim] > 0.0f);
-          const float inv_max_extend = 1.0f / diag[dim];
+          const OpenHeuristic heuristic(set);
           const unsigned int geomID = prims0[set.begin()].geomID();
           
           auto body = [&] (const range<size_t>& r) -> std::pair<size_t,bool> { 
@@ -121,7 +137,7 @@ namespace embree
             size_t opens = 0;
             for (size_t i=r.begin(); i<r.end(); i++) {
               commonGeomID &= prims0[i].geomID() == geomID; 
-              if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD) 
+              if (heuristic(prims0[i]))
                 opens += prims0[i].node.getN()-1; // coarse approximation
             }
             return std::pair<size_t,bool>(opens,commonGeomID); 
@@ -135,10 +151,7 @@ namespace embree
         // FIXME: should consider maximum available extended size 
         __noinline void openNodesBasedOnExtend(PrimInfoExtRange& set)
         {
-          const Vec3fa diag = set.geomBounds.size();
-          const size_t dim = maxDim(diag);
-          assert(diag[dim] > 0.0f);
-          const float inv_max_extend = 1.0f / diag[dim];
+          const OpenHeuristic heuristic(set);
           const size_t ext_range_start = set.end();
 
           if (false && set.size() < PARALLEL_THRESHOLD) 
@@ -146,7 +159,7 @@ namespace embree
             size_t extra_elements = 0;
             for (size_t i=set.begin(); i<set.end(); i++)
             {
-              if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD)
+              if (heuristic(prims0[i]))
               {
                 PrimRef tmp[MAX_OPENED_CHILD_NODES];
                 const size_t n = nodeOpenerFunc(prims0[i],tmp);
@@ -169,7 +182,7 @@ namespace embree
             PrimInfo info = parallel_reduce( set.begin(), set.end(), CREATE_SPLITS_STEP_SIZE, PrimInfo(empty), [&](const range<size_t>& r) -> PrimInfo {
                 PrimInfo info(empty);
                 for (size_t i=r.begin(); i<r.end(); i++)
-                  if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD)
+                  if (heuristic(prims0[i]))
                   {
                     PrimRef tmp[MAX_OPENED_CHILD_NODES];
                     const size_t n = nodeOpenerFunc(prims0[i],tmp);
@@ -193,13 +206,10 @@ namespace embree
 
         __noinline void openNodesBasedOnExtendLoop(PrimInfoExtRange& set, const size_t est_new_elements)
         {
-          const Vec3fa diag = set.geomBounds.size();
-          const size_t dim = maxDim(diag);
-          assert(diag[dim] > 0.0f);
-          const float inv_max_extend = 1.0f / diag[dim];
+          const OpenHeuristic heuristic(set);
           size_t next_iteration_extra_elements = est_new_elements;          
-          float threshold = MAX_EXTEND_THRESHOLD;
-          while(next_iteration_extra_elements <= set.ext_range_size()) 
+          
+          while (next_iteration_extra_elements <= set.ext_range_size()) 
           {
             next_iteration_extra_elements = 0;
             size_t extra_elements = 0;
@@ -207,7 +217,7 @@ namespace embree
 
             for (size_t i=set.begin(); i<set.end(); i++)
             {
-              if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > threshold)
+              if (heuristic(prims0[i]))
               {
                 PrimRef tmp[MAX_OPENED_CHILD_NODES];
                 const size_t n = nodeOpenerFunc(prims0[i],tmp);
@@ -220,8 +230,8 @@ namespace embree
                   prims0[ext_range_start+extra_elements+j-1] = tmp[j]; 
                 extra_elements += n-1;
 
-                for (size_t j=0;j<n;j++)
-                  if (!tmp[j].node.isLeaf() && tmp[j].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD)
+                for (size_t j=0; j<n; j++)
+                  if (heuristic(tmp[j]))
                     next_iteration_extra_elements += tmp[j].node.getN()-1; // coarse approximation
 
               }
