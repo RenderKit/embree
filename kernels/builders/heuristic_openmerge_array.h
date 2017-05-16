@@ -132,18 +132,6 @@ namespace embree
           return parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,std::pair<size_t,bool>(0,true),body,reduction);
         }
 
-        __forceinline size_t countOpenNodes(PrimInfoExtRange& set)
-        {
-          const Vec3fa diag = set.geomBounds.size();
-          const size_t dim = maxDim(diag);
-          const float inv_max_extend = 1.0f / diag[dim];
-          size_t extra_elements = 0;
-          for (size_t i=set.begin(); i<set.end(); i++)
-            if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD)
-              extra_elements++;
-          return extra_elements;
-        }
-
         //FIXME: should consider maximum available extended size 
         __noinline size_t openNodesBasedOnExtend(PrimInfoExtRange& set)
         {
@@ -433,21 +421,12 @@ namespace embree
           
           const size_t left_weight  = local_left.end;
           const size_t right_weight = local_right.end;
-
           new (&lset) PrimInfoExtRange(begin,center,center,local_left.geomBounds,local_left.centBounds);
           new (&rset) PrimInfoExtRange(center,end,end,local_right.geomBounds,local_right.centBounds);
           assert(area(lset.geomBounds) >= 0.0f);
           assert(area(rset.geomBounds) >= 0.0f);
-
-#if 0
-          const size_t new_left_weight   = 1 + countOpenNodes(lset);
-          const size_t new_right_weight  = 1 + countOpenNodes(rset);
-          return std::pair<size_t,size_t>(new_left_weight,new_right_weight);
-#else
           return std::pair<size_t,size_t>(left_weight,right_weight);
-#endif
         }
-
 
         /*! array partitioning */
         __noinline std::pair<size_t,size_t> parallel_object_split(const Split& split, const PrimInfoExtRange& set, PrimInfoExtRange& lset, PrimInfoExtRange& rset)
