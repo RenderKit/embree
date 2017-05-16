@@ -141,7 +141,7 @@ namespace embree
           const float inv_max_extend = 1.0f / diag[dim];
           const size_t ext_range_start = set.end();
 
-          if (set.size() < PARALLEL_THRESHOLD) 
+          if (false && set.size() < PARALLEL_THRESHOLD) 
           {
             size_t extra_elements = 0;
             for (size_t i=set.begin(); i<set.end(); i++)
@@ -188,7 +188,6 @@ namespace embree
             set.centBounds.extend(info.centBounds);
             assert(ext_elements.load() <= set.ext_range_size());
             set._end += ext_elements.load();
-            //return ext_elements.load();
           }
         } 
 
