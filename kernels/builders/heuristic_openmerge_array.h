@@ -119,10 +119,10 @@ namespace embree
           auto body = [&] (const range<size_t>& r) -> std::pair<size_t,bool> { 
             bool commonGeomID = true;
             size_t opens = 0;
-            for (size_t i=r.begin();i<r.end();i++)
-            {
+            for (size_t i=r.begin(); i<r.end(); i++) {
               commonGeomID &= prims0[i].geomID() == geomID; 
-              if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD) opens += prims0[i].node.getN()-1; // coarse approximation
+              if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD) 
+                opens += prims0[i].node.getN()-1; // coarse approximation
             }
             return std::pair<size_t,bool>(opens,commonGeomID); 
           };
