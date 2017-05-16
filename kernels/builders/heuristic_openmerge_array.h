@@ -58,7 +58,10 @@ namespace embree
         
         /*! remember prim array */
         __forceinline HeuristicArrayOpenMergeSAH (const NodeOpenerFunc& nodeOpenerFunc, PrimRef* prims0, size_t max_open_size)
-          : prims0(prims0), nodeOpenerFunc(nodeOpenerFunc), max_open_size(max_open_size) {}
+          : prims0(prims0), nodeOpenerFunc(nodeOpenerFunc), max_open_size(max_open_size) 
+        {
+          assert(max_open_size <= MAX_OPENED_CHILD_NODES);
+        }
 
         /*! compute extended ranges */
         __forceinline void setExtentedRanges(const PrimInfoExtRange& set, PrimInfoExtRange& lset, PrimInfoExtRange& rset, const size_t lweight, const size_t rweight)
@@ -104,10 +107,7 @@ namespace embree
           }
         }
 
-        // ==========================================================================
-        // ==========================================================================
-        // ==========================================================================
-
+        /* estimates the extra space required when opening, and checks if all primitives are from same geometry */
         __noinline std::pair<size_t,bool> getProperties(const PrimInfoExtRange& set)
         {
           const Vec3fa diag = set.geomBounds.size();
@@ -132,7 +132,7 @@ namespace embree
           return parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,std::pair<size_t,bool>(0,true),body,reduction);
         }
 
-        //FIXME: should consider maximum available extended size 
+        // FIXME: should consider maximum available extended size 
         __noinline void openNodesBasedOnExtend(PrimInfoExtRange& set)
         {
           const Vec3fa diag = set.geomBounds.size();
@@ -191,45 +191,6 @@ namespace embree
           }
         } 
 
-
-        __noinline size_t openNodesUntilSetIsFull(PrimInfoExtRange& set, const float threshold = MAX_EXTEND_THRESHOLD)
-        {
-          vfloat4 smallest_extend = pos_inf;
-          for (size_t i=set.begin();i<set.end();i++)            
-            smallest_extend = min(smallest_extend,(vfloat4)prims0[i].bounds().size());
-          const vbool4 mask = smallest_extend > 0.0f;
-
-          size_t extra_elements = 0;
-          const size_t ext_range_start = set.end();
-          while(set.has_ext_range())
-          //for (size_t k=0;k<2;k++)
-          {
-            const size_t current_end = set.end()+extra_elements;
-            for (size_t i=set.begin();i<current_end;i++)
-              if (!prims0[i].node.isLeaf() && any(((vfloat4)prims0[i].bounds().size() > smallest_extend) & mask))
-              {
-                PrimRef tmp[MAX_OPENED_CHILD_NODES];
-                const size_t n = nodeOpenerFunc(prims0[i],tmp);
-                if(unlikely(extra_elements + n-1 > set.ext_range_size())) break; 
-
-                for (size_t j=0;j<n;j++) set.extend(tmp[j].bounds());
-                
-                prims0[i] = tmp[0];
-                for (size_t j=1;j<n;j++)
-                  prims0[ext_range_start+extra_elements+j-1] = tmp[j]; 
-                extra_elements += n-1;            
-              }
-
-            //smallest_extend *= 1.1f;
-
-            if (unlikely(set.end()+extra_elements == current_end)) break;
-          }
-          
-          assert(extra_elements <= set.ext_range_size());
-          return extra_elements;
-        }                 
-
-
         __noinline void openNodesBasedOnExtendLoop(PrimInfoExtRange& set, const size_t est_new_elements)
         {
           const Vec3fa diag = set.geomBounds.size();
@@ -276,11 +237,6 @@ namespace embree
           }
         } 
 
-        // ==========================================================================
-        // ==========================================================================
-        // ==========================================================================
-        
-        
         __noinline const Split find(PrimInfoExtRange& set, const size_t logBlockSize)
         {
           /* single element */
