@@ -309,20 +309,19 @@ namespace embree
           if (set.size() == 1)
             return Split();
 
-          if (unlikely(set.has_ext_range()))
+          /* disable opening if there is no overlap */
+          const size_t D = 4;
+          if (unlikely(set.has_ext_range() && set.size() <= D))
           {
-            /* disjoint test */
-            bool disjoint = false;
-            const size_t D = 4;
-            if (set.size() <= D)
-            {
-              disjoint = true;
-              for (size_t j=set.begin();j<set.end()-1;j++)
-                for (size_t i=set.begin()+1;i<set.end();i++)
-                  if (conjoint(prims0[j].bounds(),prims0[i].bounds()))
-                  { disjoint = false; break; }        
+            bool disjoint = true;
+            for (size_t j=set.begin(); j<set.end()-1; j++) {
+              for (size_t i=set.begin()+1; i<set.end(); i++) {
+                if (conjoint(prims0[j].bounds(),prims0[i].bounds())) { 
+                  disjoint = false; break; 
+                }
+              }
             }
-            if (disjoint) set.set_ext_range(set.end()); /* disable opening */
+            if (disjoint) set.set_ext_range(set.end()); /* disables opening */
           }
 
           std::pair<float,bool> p(0.0f,false);
