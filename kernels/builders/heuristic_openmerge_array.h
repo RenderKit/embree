@@ -306,7 +306,7 @@ namespace embree
         __noinline const Split find(PrimInfoExtRange& set, const size_t logBlockSize)
         {
           /* single element */
-          if (set.size() == 1)
+          if (set.size() <= 1)
             return Split();
 
           /* disable opening if there is no overlap */
