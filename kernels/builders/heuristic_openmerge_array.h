@@ -243,7 +243,6 @@ namespace embree
               assert(prims0[i].numPrimitives() > 0);
 
             if (unlikely(next_iteration_extra_elements == 0)) break;
-            //threshold *= 4.0f;
           }
         } 
 
