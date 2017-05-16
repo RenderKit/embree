@@ -409,18 +409,14 @@ namespace embree
 
           size_t center = serial_partitioning(prims0,
                                               begin,end,local_left,local_right,
-                                              [&] (const PrimRef& ref) { 
-                                                return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask);
-                                              },
+                                              [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask); },
                                               [] (PrimInfo& pinfo,const PrimRef& ref) { pinfo.add(ref.bounds()); });          
           
-          const size_t left_weight  = local_left.end;
-          const size_t right_weight = local_right.end;
           new (&lset) PrimInfoExtRange(begin,center,center,local_left.geomBounds,local_left.centBounds);
           new (&rset) PrimInfoExtRange(center,end,end,local_right.geomBounds,local_right.centBounds);
           assert(area(lset.geomBounds) >= 0.0f);
           assert(area(rset.geomBounds) >= 0.0f);
-          return std::pair<size_t,size_t>(left_weight,right_weight);
+          return std::pair<size_t,size_t>(local_left.size(),local_right.size());
         }
 
         /*! array partitioning */
@@ -444,15 +440,12 @@ namespace embree
             [] (PrimInfo& pinfo0,const PrimInfo& pinfo1) { pinfo0.merge(pinfo1); },
             PARALLEL_PARTITION_BLOCK_SIZE);
 
-          const size_t left_weight  = left.end;
-          const size_t right_weight = right.end;
-          
           new (&lset) PrimInfoExtRange(begin,center,center,left.geomBounds,left.centBounds);
           new (&rset) PrimInfoExtRange(center,end,end,right.geomBounds,right.centBounds);
           assert(area(lset.geomBounds) >= 0.0f);
           assert(area(rset.geomBounds) >= 0.0f);
 
-          return std::pair<size_t,size_t>(left_weight,right_weight);
+          return std::pair<size_t,size_t>(left.size(),right.size());
         }
 
         void deterministic_order(const extended_range<size_t>& set) 
