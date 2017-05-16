@@ -133,7 +133,7 @@ namespace embree
         }
 
         //FIXME: should consider maximum available extended size 
-        __noinline size_t openNodesBasedOnExtend(PrimInfoExtRange& set)
+        __noinline void openNodesBasedOnExtend(PrimInfoExtRange& set)
         {
           const Vec3fa diag = set.geomBounds.size();
           const size_t dim = maxDim(diag);
@@ -159,7 +159,8 @@ namespace embree
                 extra_elements += n-1;
               }
             }
-            return extra_elements;
+            set._end += extra_elements;
+            //return extra_elements;
           }
           else {
             std::atomic<size_t> ext_elements;
@@ -185,7 +186,8 @@ namespace embree
               }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
             set.centBounds.extend(info.centBounds);
             assert(ext_elements.load() <= set.ext_range_size());
-            return ext_elements.load();
+            set._end += ext_elements.load();
+            //return ext_elements.load();
           }
         } 
 
@@ -316,16 +318,11 @@ namespace embree
           /* open nodes when we have sufficient space available */
           if (unlikely(set.has_ext_range()))
           {
-            const size_t est_new_elements = p.first;
 #if USE_LOOP_OPENING == 1
-            openNodesBasedOnExtendLoop(set,est_new_elements);
+            openNodesBasedOnExtendLoop(set,p.first);
 #else
-            const size_t max_ext_range_size = set.ext_range_size();
-            size_t extra_elements = 0;
-            if (est_new_elements <= max_ext_range_size)
-              extra_elements = openNodesBasedOnExtend(set);
-
-            set._end += extra_elements;
+            if (p.first <= set.ext_range_size())
+              openNodesBasedOnExtend(set);
 #endif
             if (set.ext_range_size() <= 1) set.set_ext_range(set.end()); /* disable opening */
           }
