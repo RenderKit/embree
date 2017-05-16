@@ -322,6 +322,8 @@ namespace embree
             if (p.first <= set.ext_range_size())
               openNodesBasedOnExtend(set);
 #endif
+
+            /* disable opening when unsufficient space for opening a node available */
             if (set.ext_range_size() < max_open_size-1) 
               set.set_ext_range(set.end()); /* disable opening */
           }
@@ -342,7 +344,7 @@ namespace embree
         __noinline const Split sequential_object_find(const PrimInfoExtRange& set, const size_t logBlockSize)
         {
           Binner binner(empty); 
-          const BinMapping<OBJECT_BINS> mapping(set.centBounds,OBJECT_BINS);
+          const BinMapping<OBJECT_BINS> mapping(set.centBounds);
           binner.bin(prims0,set.begin(),set.end(),mapping);
           Split s = binner.best(mapping,logBlockSize);
           SplitInfo info;
@@ -354,7 +356,7 @@ namespace embree
         __noinline const Split parallel_object_find(const PrimInfoExtRange& set, const size_t logBlockSize)
         {
           Binner binner(empty);
-          const BinMapping<OBJECT_BINS> mapping(set.centBounds,OBJECT_BINS);
+          const BinMapping<OBJECT_BINS> mapping(set.centBounds);
           const BinMapping<OBJECT_BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
           binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
                                    [&] (const range<size_t>& r) -> Binner { Binner binner(empty); 
