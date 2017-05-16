@@ -33,59 +33,61 @@ namespace embree
   void Stat::print(std::ostream& cout)
   {
     Counters& cntrs = instance.cntrs;
+    Counters::Data& data = instance.cntrs.code;
+    //Counters::Data& data = instance.cntrs.active;
 
     /* print absolute numbers */
     cout << "--------- ABSOLUTE ---------" << std::endl;
-    cout << "  #normal_travs   = " << float(cntrs.code.normal.travs            )*1E-6 << "M" << std::endl;
-    cout << "    #nodes        = " << float(cntrs.code.normal.trav_nodes       )*1E-6 << "M" << std::endl;
-    cout << "    #nodes_xfm    = " << float(cntrs.code.normal.trav_xfm_nodes   )*1E-6 << "M" << std::endl;
-    cout << "    #leaves       = " << float(cntrs.code.normal.trav_leaves      )*1E-6 << "M" << std::endl;
-    cout << "    #prims        = " << float(cntrs.code.normal.trav_prims       )*1E-6 << "M" << std::endl;
-    cout << "    #prim_hits    = " << float(cntrs.code.normal.trav_prim_hits   )*1E-6 << "M" << std::endl;
+    cout << "  #normal_travs   = " << float(data.normal.travs            )*1E-6 << "M" << std::endl;
+    cout << "    #nodes        = " << float(data.normal.trav_nodes       )*1E-6 << "M" << std::endl;
+    cout << "    #nodes_xfm    = " << float(data.normal.trav_xfm_nodes   )*1E-6 << "M" << std::endl;
+    cout << "    #leaves       = " << float(data.normal.trav_leaves      )*1E-6 << "M" << std::endl;
+    cout << "    #prims        = " << float(data.normal.trav_prims       )*1E-6 << "M" << std::endl;
+    cout << "    #prim_hits    = " << float(data.normal.trav_prim_hits   )*1E-6 << "M" << std::endl;
 
-    cout << "    #stack nodes  = " << float(cntrs.code.normal.trav_stack_nodes )*1E-6 << "M" << std::endl;
-    cout << "    #stack pop    = " << float(cntrs.code.normal.trav_stack_pop )*1E-6 << "M" << std::endl;
+    cout << "    #stack nodes  = " << float(data.normal.trav_stack_nodes )*1E-6 << "M" << std::endl;
+    cout << "    #stack pop    = " << float(data.normal.trav_stack_pop )*1E-6 << "M" << std::endl;
 
     size_t normal_box_hits = 0;
     size_t weighted_box_hits = 0;
     for (size_t i=0;i<SIZE_HISTOGRAM;i++) { 
-      normal_box_hits += cntrs.code.normal.trav_hit_boxes[i];
-      weighted_box_hits += cntrs.code.normal.trav_hit_boxes[i]*i;
+      normal_box_hits += data.normal.trav_hit_boxes[i];
+      weighted_box_hits += data.normal.trav_hit_boxes[i]*i;
     }
     cout << "    #hit_boxes    = " << normal_box_hits << " (total) distribution: ";
     float average = 0.0f;
     for (size_t i=0;i<SIZE_HISTOGRAM;i++) 
     {
-      float value = 100.0f * cntrs.code.normal.trav_hit_boxes[i] / normal_box_hits;
+      float value = 100.0f * data.normal.trav_hit_boxes[i] / normal_box_hits;
       cout << "[" << i << "] " << value << " ";
-      average += (float)i*cntrs.code.normal.trav_hit_boxes[i] / normal_box_hits;
+      average += (float)i*data.normal.trav_hit_boxes[i] / normal_box_hits;
     }
     cout << "    average = " << average << std::endl;
-    for (size_t i=0;i<SIZE_HISTOGRAM;i++) cout << "[" << i << "] " << 100.0f * cntrs.code.normal.trav_hit_boxes[i]*i / weighted_box_hits << " ";
+    for (size_t i=0;i<SIZE_HISTOGRAM;i++) cout << "[" << i << "] " << 100.0f * data.normal.trav_hit_boxes[i]*i / weighted_box_hits << " ";
     cout << std::endl;
 
-    if (cntrs.code.shadow.travs) {
-      cout << "  #shadow_travs = " << float(cntrs.code.shadow.travs         )*1E-6 << "M" << std::endl;
-      cout << "    #nodes      = " << float(cntrs.code.shadow.trav_nodes    )*1E-6 << "M" << std::endl;
-      cout << "    #nodes_xfm  = " << float(cntrs.code.shadow.trav_xfm_nodes)*1E-6 << "M" << std::endl;
-      cout << "    #leaves     = " << float(cntrs.code.shadow.trav_leaves   )*1E-6 << "M" << std::endl;
-      cout << "    #prims      = " << float(cntrs.code.shadow.trav_prims    )*1E-6 << "M" << std::endl;
-      cout << "    #prim_hits  = " << float(cntrs.code.shadow.trav_prim_hits)*1E-6 << "M" << std::endl;
+    if (data.shadow.travs) {
+      cout << "  #shadow_travs = " << float(data.shadow.travs         )*1E-6 << "M" << std::endl;
+      cout << "    #nodes      = " << float(data.shadow.trav_nodes    )*1E-6 << "M" << std::endl;
+      cout << "    #nodes_xfm  = " << float(data.shadow.trav_xfm_nodes)*1E-6 << "M" << std::endl;
+      cout << "    #leaves     = " << float(data.shadow.trav_leaves   )*1E-6 << "M" << std::endl;
+      cout << "    #prims      = " << float(data.shadow.trav_prims    )*1E-6 << "M" << std::endl;
+      cout << "    #prim_hits  = " << float(data.shadow.trav_prim_hits)*1E-6 << "M" << std::endl;
 
-      cout << "    #stack nodes = " << float(cntrs.code.shadow.trav_stack_nodes )*1E-6 << "M" << std::endl;
-      cout << "    #stack pop   = " << float(cntrs.code.shadow.trav_stack_pop )*1E-6 << "M" << std::endl;
+      cout << "    #stack nodes = " << float(data.shadow.trav_stack_nodes )*1E-6 << "M" << std::endl;
+      cout << "    #stack pop   = " << float(data.shadow.trav_stack_pop )*1E-6 << "M" << std::endl;
 
       size_t shadow_box_hits = 0;
       size_t weighted_shadow_box_hits = 0;
 
       for (size_t i=0;i<SIZE_HISTOGRAM;i++) {        
-        shadow_box_hits += cntrs.code.shadow.trav_hit_boxes[i];
-        weighted_shadow_box_hits += cntrs.code.shadow.trav_hit_boxes[i]*i;
+        shadow_box_hits += data.shadow.trav_hit_boxes[i];
+        weighted_shadow_box_hits += data.shadow.trav_hit_boxes[i]*i;
       }
       cout << "    #hit_boxes    = ";
-      for (size_t i=0;i<SIZE_HISTOGRAM;i++) cout << "[" << i << "] " << 100.0f * cntrs.code.shadow.trav_hit_boxes[i] / shadow_box_hits << " ";
+      for (size_t i=0;i<SIZE_HISTOGRAM;i++) cout << "[" << i << "] " << 100.0f * data.shadow.trav_hit_boxes[i] / shadow_box_hits << " ";
       cout << std::endl;
-      for (size_t i=0;i<SIZE_HISTOGRAM;i++) cout << "[" << i << "] " << 100.0f * cntrs.code.shadow.trav_hit_boxes[i]*i / weighted_shadow_box_hits << " ";
+      for (size_t i=0;i<SIZE_HISTOGRAM;i++) cout << "[" << i << "] " << 100.0f * data.shadow.trav_hit_boxes[i]*i / weighted_shadow_box_hits << " ";
       cout << std::endl;
     }
     cout << std::endl;

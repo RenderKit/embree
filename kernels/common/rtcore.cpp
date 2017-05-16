@@ -374,7 +374,7 @@ namespace embree
     if (((size_t)&ray ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(normal.travs,1,cnt,4);
+    STAT3(normal.travs,cnt,cnt,cnt);
     IntersectContext context(scene,nullptr);
     scene->intersect4(valid,ray,&context);
 #else
@@ -397,7 +397,7 @@ namespace embree
     if (((size_t)&ray ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(normal.travs,1,cnt,4);
+    STAT3(normal.travs,cnt,cnt,cnt);
     IntersectContext context(scene,user_context);
     scene->intersect4(valid,ray,&context);
 #else
@@ -420,7 +420,7 @@ namespace embree
     if (((size_t)&ray ) & 0x1F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 32 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(normal.travs,1,cnt,8);
+    STAT3(normal.travs,cnt,cnt,cnt);
     IntersectContext context(scene,nullptr);
     scene->intersect8(valid,ray,&context);
 #else
@@ -443,7 +443,8 @@ namespace embree
     if (((size_t)&ray ) & 0x1F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 32 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(normal.travs,1,cnt,8);
+    STAT3(normal.travs,cnt,cnt,cnt);
+
     IntersectContext context(scene,user_context);
     scene->intersect8(valid,ray,&context);
 #else
@@ -466,7 +467,8 @@ namespace embree
     if (((size_t)&ray ) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(normal.travs,1,cnt,16);
+    STAT3(normal.travs,cnt,cnt,cnt);
+
     IntersectContext context(scene,nullptr);
     scene->intersect16(valid,ray,&context);
 #else
@@ -489,7 +491,8 @@ namespace embree
     if (((size_t)&ray ) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(normal.travs,1,cnt,16);
+    STAT3(normal.travs,cnt,cnt,cnt);
+
     IntersectContext context(scene,user_context);
     scene->intersect16(valid,ray,&context);
 #else
@@ -682,7 +685,7 @@ namespace embree
     if (((size_t)&ray ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(shadow.travs,1,cnt,4);
+    STAT3(shadow.travs,cnt,cnt,cnt);
     IntersectContext context(scene,nullptr);
     scene->occluded4(valid,ray,&context);
 #else
@@ -705,7 +708,7 @@ namespace embree
     if (((size_t)&ray ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(shadow.travs,1,cnt,4);
+    STAT3(shadow.travs,cnt,cnt,cnt);
     IntersectContext context(scene,user_context);
     scene->occluded4(valid,ray,&context);
 #else
@@ -728,7 +731,7 @@ namespace embree
     if (((size_t)&ray ) & 0x1F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 32 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(shadow.travs,1,cnt,8);
+    STAT3(shadow.travs,cnt,cnt,cnt);
     IntersectContext context(scene,nullptr);
     scene->occluded8(valid,ray,&context);
 #else
@@ -751,7 +754,8 @@ namespace embree
     if (((size_t)&ray ) & 0x1F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 32 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(shadow.travs,1,cnt,8);
+    STAT3(shadow.travs,cnt,cnt,cnt);
+
     IntersectContext context(scene,user_context);
     scene->occluded8(valid,ray,&context);
 #else
@@ -774,7 +778,8 @@ namespace embree
     if (((size_t)&ray ) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(shadow.travs,1,cnt,16);
+    STAT3(shadow.travs,cnt,cnt,cnt);
+
     IntersectContext context(scene,nullptr);
     scene->occluded16(valid,ray,&context);
 #else
@@ -797,7 +802,8 @@ namespace embree
     if (((size_t)&ray ) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(shadow.travs,1,cnt,16);
+    STAT3(shadow.travs,cnt,cnt,cnt);
+
     IntersectContext context(scene,user_context);
     scene->occluded16(valid,ray,&context);
 #else
