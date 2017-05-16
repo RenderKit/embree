@@ -302,7 +302,7 @@ namespace embree
 
           std::pair<size_t,bool> p(0,false);
 
-          /* common geomID */
+          /* disable opening when all primitives are from same geometry */
           if (unlikely(set.has_ext_range()))
           {
             p =  getProperties(set);
@@ -312,6 +312,8 @@ namespace embree
               set.set_ext_range(set.end()); /* disable opening */
 #endif         
           }
+
+          /* open nodes when we have sufficient space available */
           if (unlikely(set.has_ext_range()))
           {
             const size_t est_new_elements = p.first;
@@ -320,7 +322,6 @@ namespace embree
 #else
             const size_t max_ext_range_size = set.ext_range_size();
             size_t extra_elements = 0;
-
             if (est_new_elements <= max_ext_range_size)
               extra_elements = openNodesBasedOnExtend(set);
 
