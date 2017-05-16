@@ -258,7 +258,7 @@ namespace embree
           }
 
           /*! returns bounds and centroid used for binning */
-          __forceinline void binBoundsAndCenter (const PrimRefMB& ref, BBox3fa& bounds_o, Vec3fa& center_o) const
+          __noinline void binBoundsAndCenter (const PrimRefMB& ref, BBox3fa& bounds_o, Vec3fa& center_o) const // __noinline is workaround for ICC16 bug under MacOSX
           {
             NativeCurves* mesh = scene->get<NativeCurves>(ref.geomID());
             LBBox3fa lbounds = mesh->linearBounds(space,ref.primID(),time_range);
@@ -267,7 +267,7 @@ namespace embree
           }
 
           /*! returns bounds and centroid used for binning */
-          __forceinline void binBoundsAndCenter (const PrimRefMB& ref, LBBox3fa& bounds_o, Vec3fa& center_o) const
+          __noinline void binBoundsAndCenter (const PrimRefMB& ref, LBBox3fa& bounds_o, Vec3fa& center_o) const // __noinline is workaround for ICC16 bug under MacOSX
           {
             NativeCurves* mesh = scene->get<NativeCurves>(ref.geomID());
             LBBox3fa lbounds = mesh->linearBounds(space,ref.primID(),time_range);
