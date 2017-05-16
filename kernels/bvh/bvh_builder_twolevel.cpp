@@ -24,20 +24,11 @@
 #define PROFILE 0
 
 /* new open/merge builder */
-//#if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
 #define ENABLE_DIRECT_SAH_MERGE_BUILDER 1
-//#else
-//#define ENABLE_DIRECT_SAH_MERGE_BUILDER 0
-//#endif
-
+#define ENABLE_OPEN_SEQUENTIAL 0
 #define SPLIT_MEMORY_RESERVE_FACTOR 1000
 #define SPLIT_MEMORY_RESERVE_SCALE 2
 #define SPLIT_MIN_EXT_SPACE 1000
-
-/* for non-opening two-level approach set ENABLE_DIRECT_SAH_MERGE_BUILDER and ENABLE_OPEN_SEQUENTIAL to 0 */
-/* sequential opening phase in old code path */
-
-#define ENABLE_OPEN_SEQUENTIAL 1
 
 namespace embree
 {
