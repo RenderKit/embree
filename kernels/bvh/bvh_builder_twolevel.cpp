@@ -130,7 +130,7 @@ namespace embree
           Builder* builder = builders[objectID]; assert(builder);
           
           /* build object if it got modified */
-          if (mesh->isModified()) 
+          if (mesh->isModified())
             builder->build();
 
           /* create build primitive */

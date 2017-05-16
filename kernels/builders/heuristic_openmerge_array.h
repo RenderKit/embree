@@ -57,8 +57,8 @@ namespace embree
           : prims0(nullptr) {}
         
         /*! remember prim array */
-        __forceinline HeuristicArrayOpenMergeSAH (const NodeOpenerFunc& nodeOpenerFunc, PrimRef* prims0)
-          : prims0(prims0), nodeOpenerFunc(nodeOpenerFunc) {}
+        __forceinline HeuristicArrayOpenMergeSAH (const NodeOpenerFunc& nodeOpenerFunc, PrimRef* prims0, size_t max_open_size)
+          : prims0(prims0), nodeOpenerFunc(nodeOpenerFunc), max_open_size(max_open_size) {}
 
         /*! compute extended ranges */
         __forceinline void setExtentedRanges(const PrimInfoExtRange& set, PrimInfoExtRange& lset, PrimInfoExtRange& rset, const size_t lweight, const size_t rweight)
@@ -309,9 +309,7 @@ namespace embree
           {
             p =  getProperties(set);
 #if EQUAL_GEOMID_STOP_CRITERIA == 1
-            const bool commonGeomID       = p.second;
-            if (commonGeomID)
-              set.set_ext_range(set.end()); /* disable opening */
+            if (p.second) set.set_ext_range(set.end()); /* disable opening */
 #endif         
           }
 
@@ -324,7 +322,8 @@ namespace embree
             if (p.first <= set.ext_range_size())
               openNodesBasedOnExtend(set);
 #endif
-            if (set.ext_range_size() <= 1) set.set_ext_range(set.end()); /* disable opening */
+            if (set.ext_range_size() < max_open_size-1) 
+              set.set_ext_range(set.end()); /* disable opening */
           }
                     
           /* find best split */
@@ -496,6 +495,7 @@ namespace embree
       private:
         PrimRef* const prims0;
         const NodeOpenerFunc& nodeOpenerFunc;
+        size_t max_open_size;
       };
   }
 }
