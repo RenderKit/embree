@@ -115,33 +115,21 @@ namespace embree
           assert(diag[dim] > 0.0f);
           const float inv_max_extend = 1.0f / diag[dim];
           const unsigned int geomID = prims0[set.begin()].geomID();
-
-          if (set.size() < PARALLEL_THRESHOLD)
-          {
+          
+          auto body = [&] (const range<size_t>& r) -> std::pair<size_t,bool> { 
             bool commonGeomID = true;
             size_t opens = 0;
-            for (size_t i=set.begin(); i<set.end(); i++)
+            for (size_t i=r.begin();i<r.end();i++)
             {
               commonGeomID &= prims0[i].geomID() == geomID; 
-              if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD) { opens += prims0[i].node.getN()-1; } // coarse approximation
+              if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD) opens += prims0[i].node.getN()-1; // coarse approximation
             }
-            return std::pair<size_t,bool>(opens,commonGeomID);
-          }
-          else
-          {
-            std::pair<size_t,bool> emptyProp(0,true);
-            return parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,emptyProp,
-                                   [&] (const range<size_t>& r) -> std::pair<size_t,bool> { 
-                                     bool commonGeomID = true;
-                                     size_t opens = 0;
-                                     for (size_t i=r.begin();i<r.end();i++)
-                                     {
-                                       commonGeomID &= prims0[i].geomID() == geomID; 
-                                       if (!prims0[i].node.isLeaf() && prims0[i].bounds().size()[dim] * inv_max_extend > MAX_EXTEND_THRESHOLD) opens += prims0[i].node.getN()-1; // coarse approximation
-                                     }
-                                     return std::pair<size_t,bool>(opens,commonGeomID); },
-                                   [&] (const std::pair<size_t,bool>& b0, const std::pair<size_t,bool>& b1) -> std::pair<size_t,bool> { return std::pair<size_t,bool>(b0.first+b1.first,b0.second && b1.second); });
-          }
+            return std::pair<size_t,bool>(opens,commonGeomID); 
+          };
+          auto reduction = [&] (const std::pair<size_t,bool>& b0, const std::pair<size_t,bool>& b1) -> std::pair<size_t,bool> { 
+            return std::pair<size_t,bool>(b0.first+b1.first,b0.second && b1.second); 
+          };
+          return parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,std::pair<size_t,bool>(0,true),body,reduction);
         }
 
         __forceinline size_t countOpenNodes(PrimInfoExtRange& set)
