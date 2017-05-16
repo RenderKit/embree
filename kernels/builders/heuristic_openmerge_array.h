@@ -43,10 +43,8 @@ namespace embree
     template<typename NodeOpenerFunc, typename PrimRef, size_t OBJECT_BINS>
       struct HeuristicArrayOpenMergeSAH
       {
-        typedef BinSplit<OBJECT_BINS> ObjectSplit;
-        typedef BinInfoT<OBJECT_BINS,PrimRef,BBox3fa> ObjectBinner;
-
-        typedef ObjectSplit Split;
+        typedef BinSplit<OBJECT_BINS> Split;
+        typedef BinInfoT<OBJECT_BINS,PrimRef,BBox3fa> Binner;
         
         static const size_t PARALLEL_THRESHOLD = 1024;
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 512;
@@ -59,13 +57,8 @@ namespace embree
           : prims0(nullptr) {}
         
         /*! remember prim array */
-        __forceinline HeuristicArrayOpenMergeSAH (const NodeOpenerFunc& nodeOpenerFunc, PrimRef* prims0, const PrimInfo &root_info)
-          : prims0(prims0), nodeOpenerFunc(nodeOpenerFunc), root_info(root_info) { 
-        }
-
-        __forceinline ~HeuristicArrayOpenMergeSAH()
-        {
-        }
+        __forceinline HeuristicArrayOpenMergeSAH (const NodeOpenerFunc& nodeOpenerFunc, PrimRef* prims0, const PrimInfo& root_info)
+          : prims0(prims0), nodeOpenerFunc(nodeOpenerFunc), root_info(root_info) {}
 
         /*! compute extended ranges */
         __forceinline void setExtentedRanges(const PrimInfoExtRange& set, PrimInfoExtRange& lset, PrimInfoExtRange& rset, const size_t lweight, const size_t rweight)
@@ -314,7 +307,7 @@ namespace embree
         {
           /* single element */
           if (set.size() == 1)
-            return ObjectSplit();
+            return Split();
 
           if (unlikely(set.has_ext_range()))
           {
@@ -367,36 +360,36 @@ namespace embree
 
 
         /*! finds the best object split */
-        __forceinline const ObjectSplit object_find(const PrimInfoExtRange& set,const size_t logBlockSize)
+        __forceinline const Split object_find(const PrimInfoExtRange& set,const size_t logBlockSize)
         {
           if (set.size() < PARALLEL_THRESHOLD) return sequential_object_find(set,logBlockSize);
           else                                 return parallel_object_find  (set,logBlockSize);
         }
 
         /*! finds the best object split */
-        __noinline const ObjectSplit sequential_object_find(const PrimInfoExtRange& set, const size_t logBlockSize)
+        __noinline const Split sequential_object_find(const PrimInfoExtRange& set, const size_t logBlockSize)
         {
-          ObjectBinner binner(empty); 
+          Binner binner(empty); 
           const BinMapping<OBJECT_BINS> mapping(set.centBounds,OBJECT_BINS);
           binner.bin(prims0,set.begin(),set.end(),mapping);
-          ObjectSplit s = binner.best(mapping,logBlockSize);
+          Split s = binner.best(mapping,logBlockSize);
           SplitInfo info;
           binner.getSplitInfo(mapping, s, info);
           return s;
         }
 
         /*! finds the best split */
-        __noinline const ObjectSplit parallel_object_find(const PrimInfoExtRange& set, const size_t logBlockSize)
+        __noinline const Split parallel_object_find(const PrimInfoExtRange& set, const size_t logBlockSize)
         {
-          ObjectBinner binner(empty);
+          Binner binner(empty);
           const BinMapping<OBJECT_BINS> mapping(set.centBounds,OBJECT_BINS);
           const BinMapping<OBJECT_BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
           binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
-                                   [&] (const range<size_t>& r) -> ObjectBinner { ObjectBinner binner(empty); 
+                                   [&] (const range<size_t>& r) -> Binner { Binner binner(empty); 
                                      binner.bin(prims0+r.begin(),r.size(),_mapping); 
                                      return binner; },
-                                   [&] (const ObjectBinner& b0, const ObjectBinner& b1) -> ObjectBinner { ObjectBinner r = b0; r.merge(b1,_mapping.size()); return r; });
-          ObjectSplit s = binner.best(mapping,logBlockSize);
+                                   [&] (const Binner& b0, const Binner& b1) -> Binner { Binner r = b0; r.merge(b1,_mapping.size()); return r; });
+          Split s = binner.best(mapping,logBlockSize);
           SplitInfo info;
           binner.getSplitInfo(mapping, s, info);
           return s;
@@ -431,7 +424,7 @@ namespace embree
         }
 
         /*! array partitioning */
-        std::pair<size_t,size_t> sequential_object_split(const ObjectSplit& split, const PrimInfoExtRange& set, PrimInfoExtRange& lset, PrimInfoExtRange& rset) 
+        std::pair<size_t,size_t> sequential_object_split(const Split& split, const PrimInfoExtRange& set, PrimInfoExtRange& lset, PrimInfoExtRange& rset) 
         {
           const size_t begin = set.begin();
           const size_t end   = set.end();
@@ -470,7 +463,7 @@ namespace embree
 
 
         /*! array partitioning */
-        __noinline std::pair<size_t,size_t> parallel_object_split(const ObjectSplit& split, const PrimInfoExtRange& set, PrimInfoExtRange& lset, PrimInfoExtRange& rset)
+        __noinline std::pair<size_t,size_t> parallel_object_split(const Split& split, const PrimInfoExtRange& set, PrimInfoExtRange& lset, PrimInfoExtRange& rset)
         {
           const size_t begin = set.begin();
           const size_t end   = set.end();
@@ -482,12 +475,12 @@ namespace embree
 
           const vint4 vSplitPos(splitPos);
           const vbool4 vSplitMask( (int)splitDimMask );
-          auto isLeft = [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask); };
+          auto isLeft = [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask); };
 
           const size_t center = parallel_partitioning(
             prims0,begin,end,EmptyTy(),left,right,isLeft,
-            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds()); },
-            [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); },
+            [] (PrimInfo& pinfo,const PrimRef& ref) { pinfo.add(ref.bounds()); },
+            [] (PrimInfo& pinfo0,const PrimInfo& pinfo1) { pinfo0.merge(pinfo1); },
             PARALLEL_PARTITION_BLOCK_SIZE);
 
           const size_t left_weight  = left.end;
