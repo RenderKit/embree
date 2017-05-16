@@ -300,7 +300,7 @@ namespace embree
             if (disjoint) set.set_ext_range(set.end()); /* disables opening */
           }
 
-          std::pair<float,bool> p(0.0f,false);
+          std::pair<size_t,bool> p(0,false);
 
           /* common geomID */
           if (unlikely(set.has_ext_range()))
