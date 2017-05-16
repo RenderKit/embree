@@ -517,7 +517,7 @@ namespace embree
                                  const Settings& settings)
       {
         typedef HeuristicArrayOpenMergeSAH<NodeOpenerFunc,BuildRef,NUM_OBJECT_BINS_HQ> Heuristic;
-        Heuristic heuristic(nodeOpenerFunc,prims,pinfo);
+        Heuristic heuristic(nodeOpenerFunc,prims);
 
         return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set>(
           heuristic,

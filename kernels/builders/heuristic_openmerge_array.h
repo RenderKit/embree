@@ -57,8 +57,8 @@ namespace embree
           : prims0(nullptr) {}
         
         /*! remember prim array */
-        __forceinline HeuristicArrayOpenMergeSAH (const NodeOpenerFunc& nodeOpenerFunc, PrimRef* prims0, const PrimInfo& root_info)
-          : prims0(prims0), nodeOpenerFunc(nodeOpenerFunc), root_info(root_info) {}
+        __forceinline HeuristicArrayOpenMergeSAH (const NodeOpenerFunc& nodeOpenerFunc, PrimRef* prims0)
+          : prims0(prims0), nodeOpenerFunc(nodeOpenerFunc) {}
 
         /*! compute extended ranges */
         __forceinline void setExtentedRanges(const PrimInfoExtRange& set, PrimInfoExtRange& lset, PrimInfoExtRange& rset, const size_t lweight, const size_t rweight)
@@ -532,7 +532,6 @@ namespace embree
       private:
         PrimRef* const prims0;
         const NodeOpenerFunc& nodeOpenerFunc;
-        const PrimInfo& root_info;
       };
   }
 }
