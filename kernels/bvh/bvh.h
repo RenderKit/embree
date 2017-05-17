@@ -358,8 +358,8 @@ namespace embree
       __forceinline const TransformNode* transformNode() const { assert(isTransformNode()); return (const TransformNode*)(ptr & ~(size_t)align_mask); }
 
       /*! returns quantized node pointer */
-      __forceinline       QuantizedNode* quantizedNode()       { assert(isQuantizedNode()); return (      QuantizedNode*)(ptr /* & ~(size_t)align_mask */); }
-      __forceinline const QuantizedNode* quantizedNode() const { assert(isQuantizedNode()); return (const QuantizedNode*)(ptr /* & ~(size_t)align_mask */); }
+      __forceinline       QuantizedNode* quantizedNode()       { assert(isQuantizedNode()); return (      QuantizedNode*)(ptr  & ~(size_t)align_mask ); }
+      __forceinline const QuantizedNode* quantizedNode() const { assert(isQuantizedNode()); return (const QuantizedNode*)(ptr  & ~(size_t)align_mask ); }
 
       /*! returns leaf pointer */
       __forceinline char* leaf(size_t& num) const {
@@ -1135,7 +1135,7 @@ namespace embree
     struct __aligned(64) QuantizedNode : public BaseNode
     {
       using BaseNode::children;
-#if 1
+#if 0
       typedef unsigned char T;
       static const T MIN_QUAN = 0;
       static const T MAX_QUAN = 255;
