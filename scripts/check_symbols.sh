@@ -34,6 +34,6 @@ function check_symbols
 }
 
 check_symbols $1 GLIBC 2 4 0
-check_symbols $1 GLIBCXX 3 4 5
+check_symbols $1 GLIBCXX 3 4 11
 check_symbols $1 CXXABI 1 3 0
 

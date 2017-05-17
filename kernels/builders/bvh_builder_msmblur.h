@@ -131,7 +131,8 @@ namespace embree
           return PrimRefMB (lbounds, tbounds.size(), num_time_segments, geomID, primID);
         }
 
-        __forceinline PrimRefMB operator() (const PrimRefMB& prim, const BBox1f time_range, const LinearSpace3fa& space) const
+        // __noinline is workaround for ICC16 bug under MacOSX
+        __noinline PrimRefMB operator() (const PrimRefMB& prim, const BBox1f time_range, const LinearSpace3fa& space) const
         {
           const unsigned geomID = prim.geomID();
           const unsigned primID = prim.primID();
@@ -146,7 +147,8 @@ namespace embree
           return scene->get<Mesh>(prim.geomID())->linearBounds(prim.primID(), time_range);
         }
 
-        __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range, const LinearSpace3fa& space) const {
+        // __noinline is workaround for ICC16 bug under MacOSX
+        __noinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range, const LinearSpace3fa& space) const {
           return scene->get<Mesh>(prim.geomID())->linearBounds(space, prim.primID(), time_range);
         }
       };

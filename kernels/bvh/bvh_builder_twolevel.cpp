@@ -25,16 +25,10 @@
 
 /* new open/merge builder */
 #define ENABLE_DIRECT_SAH_MERGE_BUILDER 1
-
+#define ENABLE_OPEN_SEQUENTIAL 0
 #define SPLIT_MEMORY_RESERVE_FACTOR 1000
 #define SPLIT_MEMORY_RESERVE_SCALE 2
 #define SPLIT_MIN_EXT_SPACE 1000
-
-/* for non-opening two-level approach set ENABLE_DIRECT_SAH_MERGE_BUILDER and ENABLE_OPEN_SEQUENTIAL to 0 */
-/* sequential opening phase in old code path */
-
-#define MAX_OPEN_SIZE 10000
-#define ENABLE_OPEN_SEQUENTIAL 0
 
 namespace embree
 {
@@ -69,7 +63,7 @@ namespace embree
           });
       }
       
-#if PROFILE == 1
+#if PROFILE
       while(1) 
 #endif
       {
@@ -93,14 +87,14 @@ namespace embree
       if (refs.size()     < num) refs.resize(num);
       nextRef.store(0);
       
-      /* create of acceleration structures */
+      /* create acceleration structures */
       parallel_for(size_t(0), num, [&] (const range<size_t>& r)
       {
         for (size_t objectID=r.begin(); objectID<r.end(); objectID++)
         {
           Mesh* mesh = scene->getSafe<Mesh>(objectID);
           
-          /* verify meshes got deleted properly */
+          /* verify if meshes got deleted properly */
           if (mesh == nullptr || mesh->numTimeSteps != 1) {
             assert(objectID < objects.size () && objects[objectID] == nullptr);
             assert(objectID < builders.size() && builders[objectID] == nullptr);
@@ -112,9 +106,6 @@ namespace embree
             createMeshAccel(mesh,(AccelData*&)objects[objectID],builders[objectID]);
         }
       });
-      /* count total primitive count of all objects */
-      std::atomic<int> totalPrims(0);
-
 
       /* parallel build of acceleration structures */
       parallel_for(size_t(0), num, [&] (const range<size_t>& r)
@@ -130,15 +121,14 @@ namespace embree
           Builder* builder = builders[objectID]; assert(builder);
           
           /* build object if it got modified */
-          if (mesh->isModified()) 
+          if (mesh->isModified())
             builder->build();
 
           /* create build primitive */
           if (!object->getBounds().empty())
           {
-#if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
+#if ENABLE_DIRECT_SAH_MERGE_BUILDER
             refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root,objectID,mesh->size());
-            totalPrims += mesh->size();
 #else
             refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root);
 #endif
@@ -156,31 +146,34 @@ namespace embree
       }
 
       else
-      {
+      {     
         /* open all large nodes */
         refs.resize(nextRef);
 
-#if ENABLE_DIRECT_SAH_MERGE_BUILDER == 0
+        /* this probably needs some more tuning */
+        const size_t extSize = max(max((size_t)SPLIT_MIN_EXT_SPACE,refs.size()*SPLIT_MEMORY_RESERVE_SCALE),size_t((float)numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
+        //PRINT(extSize);
+ 
+#if !ENABLE_DIRECT_SAH_MERGE_BUILDER
 
-#if ENABLE_OPEN_SEQUENTIAL == 1
-        open_sequential(numPrimitives,MAX_OPEN_SIZE); 
+#if ENABLE_OPEN_SEQUENTIAL
+        open_sequential(extSize); 
 #endif
         /* compute PrimRefs */
         prims.resize(refs.size());
-#else
-
 #endif
 
-        // FIXME: find a resonable estimate with respect to the conservative memory allocator
-        bvh->alloc.init_estimate(refs.size()*SPLIT_MEMORY_RESERVE_FACTOR*sizeof(PrimRef)); 
-        //bvh->alloc.init_estimate(totalPrims.load() * sizeof(PrimRef));
+        /* calculate the size of the entire BVH */
+        const size_t node_bytes = numPrimitives*sizeof(typename BVH::AlignedNodeMB)/(4*N);
+        const size_t leaf_bytes = size_t(1.2*44*numPrimitives); // assumes triangles
+        bvh->alloc.init_estimate(node_bytes+leaf_bytes); 
 
 #if defined(TASKING_TBB) && defined(__AVX512ER__) && USE_TASK_ARENA // KNL
         tbb::task_arena limited(min(32,(int)TaskScheduler::threadCount()));
         limited.execute([&]
 #endif
         {
-#if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
+#if ENABLE_DIRECT_SAH_MERGE_BUILDER
 
           const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(),  PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {
 
@@ -220,12 +213,10 @@ namespace embree
             settings.travCost = 1.0f;
             settings.intCost = 1.0f;
             settings.singleThreadThreshold = singleThreadThreshold;
-
-#if ENABLE_DIRECT_SAH_MERGE_BUILDER == 1
-            /* this probably needs some more tuning */
-            const size_t extSize = max(max((size_t)SPLIT_MIN_EXT_SPACE,refs.size()*SPLIT_MEMORY_RESERVE_SCALE),size_t((float)numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
+      
+#if ENABLE_DIRECT_SAH_MERGE_BUILDER
             refs.resize(extSize); 
-
+         
             NodeRef root = BVHBuilderBinnedOpenMergeSAH::build<NodeRef,BuildRef>(
               typename BVH::CreateAlloc(bvh),
               typename BVH::AlignedNode::Create2(),
@@ -295,13 +286,12 @@ namespace embree
     }
 
     template<int N, typename Mesh>
-    void BVHNBuilderTwoLevel<N,Mesh>::open_sequential(const size_t numPrimitives, const size_t maxOpenSize)
+    void BVHNBuilderTwoLevel<N,Mesh>::open_sequential(const size_t extSize)
     {
       if (refs.size() == 0)
 	return;
 
-      size_t num = min(numPrimitives/400,maxOpenSize);
-      refs.reserve(num);
+      refs.reserve(extSize);
 
 #if 1
       for (size_t i=0;i<refs.size();i++)
@@ -313,7 +303,7 @@ namespace embree
 #endif
 
       std::make_heap(refs.begin(),refs.end());
-      while (refs.size()+3 <= num)
+      while (refs.size()+3 <= extSize)
       {
         std::pop_heap (refs.begin(),refs.end()); 
         NodeRef ref = refs.back().node;

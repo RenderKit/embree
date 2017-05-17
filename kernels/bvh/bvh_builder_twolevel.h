@@ -62,6 +62,10 @@ namespace embree
             bounds_area = area(this->bounds());
         }
 
+        __forceinline size_t size() const {
+          return primID();
+        }
+
         friend bool operator< (const BuildRef& a, const BuildRef& b) {
           return a.bounds_area < b.bounds_area;
         }
@@ -109,7 +113,7 @@ namespace embree
       void deleteGeometry(size_t geomID);
       void clear();
 
-      void open_sequential(const size_t numPrimitives, const size_t maxOpenSize);
+      void open_sequential(const size_t extSize);
 
     public:
       BVH* bvh;

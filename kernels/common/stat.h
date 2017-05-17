@@ -67,7 +67,7 @@ namespace embree
     public:
 
 	/* per packet and per ray stastics */
-	struct 
+	struct Data
         {
           void clear () {
             normal.clear();

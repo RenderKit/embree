@@ -1376,7 +1376,7 @@ namespace embree
         double single_to_threaded = double(bytes_all_threads.second)/double(bytes_one_thread.second);
      
         const bool failed0 = expected_to_single > 1.0f;
-        const bool failed1 = sflags == RTC_SCENE_DYNAMIC ? single_to_threaded > 1.25f : single_to_threaded > 1.12f;
+        const bool failed1 = sflags == RTC_SCENE_DYNAMIC ? single_to_threaded > 1.30f : single_to_threaded > 1.12f;
 
         if (failed0 || failed1) {
           std::cout << state->red ("-") << std::flush;
