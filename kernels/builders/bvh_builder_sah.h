@@ -159,7 +159,7 @@ namespace embree
               for (size_t i=0; i<numChildren; i++)
               {
                 /* ignore leaves as they cannot get split */
-                if (children[i].prims.size() <= maxLeafSize)
+                if (children[i].prims.size() <= maxLeafSize && heuristic.sameType(children[i].prims))
                   continue;
 
                 /* remember child with largest size */
