@@ -29,7 +29,7 @@ namespace embree
     class BVHNIntersectorKHybrid
     {
       /* right now AVX512KNL SIMD extension only for standard node types */
-      static const size_t Nx = types == BVH_AN1 ? vextend<N>::size : N;
+      static const size_t Nx = (types == BVH_AN1 | types == BVH_QN1) ? vextend<N>::size : N;
 
       /* shortcuts for frequently used types */
       typedef typename PrimitiveIntersectorK::Precalculations Precalculations;

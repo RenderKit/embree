@@ -1132,7 +1132,7 @@ namespace embree
     };
 
     /*! BVHN Quantized Node */
-    struct __aligned(64) QuantizedNode : public BaseNode
+    struct __aligned(32) QuantizedNode : public BaseNode
     {
       using BaseNode::children;
 #if 0

@@ -927,6 +927,50 @@ namespace embree
     
 #endif
 
+
+    template<int N, int K>
+      __forceinline vbool<K> intersectNode(const typename BVHN<N>::QuantizedNode* node, size_t i, 
+                                           const Vec3vf<K>& org, const Vec3vf<K>& dir, const Vec3vf<K>& rdir, const Vec3vf<K>& org_rdir,
+                                           const vfloat<K>& tnear, const vfloat<K>& tfar, vfloat<K>& dist)
+ 
+    {
+      const vfloat8 start_x(node->start.x);
+      const vfloat8 scale_x(node->scale.x);
+      const vfloat8 lower_x = madd(node->dequantizeLowerX(),scale_x,start_x);
+      const vfloat8 upper_x = madd(node->dequantizeUpperX(),scale_x,start_x);
+      const vfloat8 start_y(node->start.y);
+      const vfloat8 scale_y(node->scale.y);
+      const vfloat8 lower_y = madd(node->dequantizeLowerX(),scale_y,start_y);
+      const vfloat8 upper_y = madd(node->dequantizeUpperX(),scale_y,start_y);
+      const vfloat8 start_z(node->start.z);
+      const vfloat8 scale_z(node->scale.z);
+      const vfloat8 lower_z = madd(node->dequantizeLowerX(),scale_z,start_z);
+      const vfloat8 upper_z = madd(node->dequantizeUpperX(),scale_z,start_z);
+
+#if defined(__AVX2__)
+      const vfloat<K> lclipMinX = msub(lower_x[i],rdir.x,org_rdir.x);
+      const vfloat<K> lclipMinY = msub(lower_y[i],rdir.y,org_rdir.y);
+      const vfloat<K> lclipMinZ = msub(lower_z[i],rdir.z,org_rdir.z);
+      const vfloat<K> lclipMaxX = msub(upper_x[i],rdir.x,org_rdir.x);
+      const vfloat<K> lclipMaxY = msub(upper_y[i],rdir.y,org_rdir.y);
+      const vfloat<K> lclipMaxZ = msub(upper_z[i],rdir.z,org_rdir.z);
+#else
+      const vfloat<K> lclipMinX = (lower_x[i] - org.x) * rdir.x;
+      const vfloat<K> lclipMinY = (lower_y[i] - org.y) * rdir.y;
+      const vfloat<K> lclipMinZ = (lower_z[i] - org.z) * rdir.z;
+      const vfloat<K> lclipMaxX = (upper_x[i] - org.x) * rdir.x;
+      const vfloat<K> lclipMaxY = (upper_y[i] - org.y) * rdir.y;
+      const vfloat<K> lclipMaxZ = (upper_z[i] - org.z) * rdir.z;
+#endif  
+
+      /* use mixed float/int min/max */
+      const vfloat<K> lnearP = maxi(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY), min(lclipMinZ, lclipMaxZ));
+      const vfloat<K> lfarP  = mini(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY), max(lclipMinZ, lclipMaxZ));
+      const vbool<K> lhit    = asInt(maxi(lnearP, tnear)) <= asInt(mini(lfarP, tfar));
+      dist = lnearP;
+      return lhit;
+    }
+
     //////////////////////////////////////////////////////////////////////////////////////
     // fast ray/BVHN::UnalignedNode intersection
     //////////////////////////////////////////////////////////////////////////////////////
@@ -1321,5 +1365,18 @@ namespace embree
         return true;
       }
     };
+
+    template<int N, int K>
+    struct BVHNNodeIntersectorK<N,K,BVH_QN1,false>
+    {
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, const Vec3vf<K>& org, const Vec3vf<K>& dir, const Vec3vf<K>& rdir, const Vec3vf<K>& org_rdir,
+                                          const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
+      {
+        vmask = intersectNode<N,K>(node.quantizedNode(),i,org,dir,rdir,org_rdir,tnear,tfar,dist);
+        return true;
+      }
+    };
+
+
   }
 }
