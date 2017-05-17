@@ -416,16 +416,27 @@ namespace embree
           new (&pre[i]) Precalculations(*rays[i], bvh);
         }
 
+        const NearFarPreCompute pc(ray_ctx[0].rdir);
+
+        /*
+        size_t bits = m_active;
+        for (; bits!=0; ) {
+          const size_t i = __bscf(bits);
+          intersect1(bvh, bvh->root, pre[i], *rays[i], ray_ctx[i], pc, context);
+        }
+        continue;
+        */
+
         stack[0].ptr  = BVH::invalidNode;
         stack[0].mask = (size_t)-1;
+        stack[0].dist = neg_inf;
         stack[1].ptr  = bvh->root;
         stack[1].mask = m_active;
+        stack[1].dist = neg_inf;
 
         ///////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////
-
-        const NearFarPreCompute pc(ray_ctx[0].rdir);
 
         StackItemMask* stackPtr = stack + 2;
 
@@ -434,8 +445,54 @@ namespace embree
           /*! pop next node */
           STAT3(normal.trav_stack_pop,1,1,1);
           stackPtr--;
+
           NodeRef cur = NodeRef(stackPtr->ptr);
+          if (unlikely(cur == BVH::invalidNode)) {
+            break;
+          }
+
           size_t m_trav_active = stackPtr->mask;
+
+#if 1
+          /* culling */
+          size_t active_bits = m_trav_active;
+          do
+          {
+            const size_t i = __bscf(active_bits);
+            if (likely(*(float*)&stackPtr->dist <= ray_ctx[i].tfar()))
+              goto trav;
+            m_trav_active = active_bits;
+          } while (active_bits);
+          continue;
+        trav:
+#endif
+
+#if 0
+#if defined(__SSE4_2__)
+          /* switch to single */
+          /*
+          if (__popcnt(m_trav_active) <= 2)
+          {
+            size_t bits = m_trav_active;
+            for (; bits!=0; ) {
+              const size_t i = __bscf(bits);
+              intersect1(bvh, cur, pre[i], *rays[i], ray_ctx[i], pc, context);
+              ray_ctx[i].update(rays[i]);
+            }
+            continue;
+          }
+          */
+
+          if (__popcnt(m_trav_active) == 1)
+          {
+            const size_t i = __bsf(m_trav_active);
+            intersect1(bvh, cur, pre[i], *rays[i], ray_ctx[i], pc, context);
+            ray_ctx[i].update(rays[i]);
+            continue;
+          }
+#endif
+#endif
+
           assert(m_trav_active);
 
           const vfloat<Nx> inf(pos_inf);
@@ -487,6 +544,107 @@ namespace embree
             ray_ctx[i].update(rays[i]);
           }
         } // traversal + intersection
+      }
+    }
+
+    template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
+    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersect1(const BVH* bvh,
+                                                                                          NodeRef root,
+                                                                                          Precalculations& pre,
+                                                                                          Ray& ray,
+                                                                                          RayCtx& ray_ctx,
+                                                                                          const NearFarPreCompute& pc,
+                                                                                          IntersectContext* context)
+    {
+      /*! stack state */
+      StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes
+      StackItemT<NodeRef>* stackPtr = stack + 1;        //!< current stack pointer
+      StackItemT<NodeRef>* stackEnd = stack + stackSizeSingle;
+      stack[0].ptr = root;
+      stack[0].dist = neg_inf;
+
+      /*! load the ray into SIMD registers */
+      size_t leafType = 0;
+
+      /*
+      TravRay<N,Nx> vray(ray.org,ray.dir);
+      vfloat<Nx> ray_near = max(ray.tnear,0.0f);
+      vfloat<Nx> ray_far  = max(ray.tfar ,0.0f);
+      */
+
+      TravRay<N,Nx> vray;
+      vray.org_xyz = ray.org;
+      vray.dir_xyz = ray.dir;
+      vray.org = Vec3vf<N>(ray.org.x,ray.org.y,ray.org.z);
+      vray.dir = Vec3vf<N>(ray.dir.x,ray.dir.y,ray.dir.z);
+      vray.rdir = Vec3vf<N>(ray_ctx.rdir.x,ray_ctx.rdir.y,ray_ctx.rdir.z);
+#if defined(__AVX2__)
+      const Vec3fa ray_org_rdir = ray_ctx.org_rdir;
+      vray.org_rdir = Vec3vf<N>(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
+#endif
+      vray.nearX = pc.nearX;
+      vray.nearY = pc.nearY;
+      vray.nearZ = pc.nearZ;
+      vray.farX  = pc.farX;
+      vray.farY  = pc.farY;
+      vray.farZ  = pc.farZ;
+
+      vfloat<Nx> ray_near = max(ray.tnear,0.0f);
+      vfloat<Nx> ray_far  = max(ray_ctx.tfar(), 0.0f);
+
+      /* pop loop */
+      while (true) pop:
+      {
+        /*! pop next node */
+        if (unlikely(stackPtr == stack)) break;
+        stackPtr--;
+        NodeRef cur = NodeRef(stackPtr->ptr);
+
+        /*! if popped node is too far, pop next one */
+#if defined(__AVX512ER__)
+        /* much faster on KNL */
+        if (unlikely(any(vfloat<Nx>(*(float*)&stackPtr->dist) > ray_far)))
+          continue;
+#else
+        if (unlikely(*(float*)&stackPtr->dist > ray.tfar))
+          continue;
+#endif
+
+        /* downtraversal loop */
+        while (true)
+        {
+          /*! stop if we found a leaf node */
+          if (unlikely(cur.isLeaf())) break;
+          STAT3(normal.trav_nodes,1,1,1);
+
+          /* intersect node */
+          size_t mask = 0;
+          vfloat<Nx> tNear;
+          BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time,tNear,mask);
+
+          /*! if no child is hit, pop next node */
+          if (unlikely(mask == 0))
+            goto pop;
+
+          /* select next child and push other children */
+          BVHNNodeTraverser1<N,Nx,types>::traverseClosestHit(cur,mask,tNear,stackPtr,stackEnd);
+        }
+
+        /*! this is a leaf node */
+        assert(cur != BVH::emptyNode);
+        STAT3(normal.trav_leaves, 1, 1, 1);
+        size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
+
+        size_t lazy_node = 0;
+        PrimitiveIntersector::intersect(pre,ray,context,leafType,prim,num,lazy_node);
+
+        ray_far = ray.tfar;
+
+        if (unlikely(lazy_node)) {
+          stackPtr->ptr = lazy_node;
+          stackPtr->dist = neg_inf;
+          stackPtr++;
+        }
       }
     }
 

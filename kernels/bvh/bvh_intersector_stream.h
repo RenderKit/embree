@@ -31,7 +31,8 @@ namespace embree
     struct __aligned(8) StackItemMask
     {
       size_t mask;
-      size_t ptr; 
+      size_t ptr;
+      unsigned int dist;
     };
 
     template<int N, int Nx, int types>
@@ -80,6 +81,7 @@ namespace embree
           if (d0 < d1) { 
             stackPtr->ptr = c1; 
             stackPtr->mask = tMask[r1]; 
+            stackPtr->dist = d1;
             stackPtr++; 
             cur = c0; 
             m_trav_active = tMask[r0]; 
@@ -88,6 +90,7 @@ namespace embree
           else { 
             stackPtr->ptr = c0; 
             stackPtr->mask = tMask[r0]; 
+            stackPtr->dist = d0;
             stackPtr++; 
             cur = c1; 
             m_trav_active = tMask[r1]; 
@@ -121,6 +124,7 @@ namespace embree
           assert(cur != BVH::emptyNode);
           stackPtr->ptr = cur; 
           stackPtr->mask = m_trav_active;
+          stackPtr->dist = tNear_i[index];
           stackPtr++;
         }
       }
@@ -852,6 +856,8 @@ namespace embree
       // =============================================================================================
 
       static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
+
+      static void intersect1(const BVH* bvh, NodeRef root, Precalculations& pre, Ray& ray, RayCtx& ray_ctx, const NearFarPreCompute& pc, IntersectContext* context);
 
       static void intersectCoherentSOA(BVH* bvh, RayK<K>** inputRays, size_t numValidStreams, IntersectContext* context);
       static void occludedCoherentSOA(BVH* bvh, RayK<K>** inputRays, size_t numValidStreams, IntersectContext* context);
