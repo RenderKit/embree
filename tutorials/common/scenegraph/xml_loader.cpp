@@ -1212,7 +1212,8 @@ namespace embree
       else if (xml->name == "Animation2"      ) node = sceneMap[id] = loadAnimation2Node  (xml);
       else if (xml->name == "Animation"       ) node = sceneMap[id] = loadAnimationNode   (xml);
 
-      else if (xml->name == "ConvertTrianglesToQuads") node = sceneMap[id] = convert_triangles_to_quads(loadNode(xml->child(0)));
+      else if (xml->name == "ConvertTrianglesToQuads") node = sceneMap[id] = convert_triangles_to_quads(loadNode(xml->child(0)),inf);
+      else if (xml->name == "ConvertTrianglesToTrianglesAndQuads") node = sceneMap[id] = convert_triangles_to_quads(loadNode(xml->child(0)),0.5f);
       else if (xml->name == "ConvertQuadsToSubdivs"  ) node = sceneMap[id] = convert_quads_to_subdivs  (loadNode(xml->child(0)));
       else if (xml->name == "ConvertBezierToLines"   ) node = sceneMap[id] = convert_bezier_to_lines   (loadNode(xml->child(0)));
       else if (xml->name == "ConvertHairToCurves"    ) node = sceneMap[id] = convert_hair_to_curves    (loadNode(xml->child(0)));

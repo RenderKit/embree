@@ -29,6 +29,7 @@ namespace embree
     struct Node;
     struct MaterialNode;
     struct Transformations;
+    struct TriangleMeshNode;
 
     Ref<Node> load(const FileName& fname, bool singleObject = false);
     void store(Ref<Node> root, const FileName& fname, bool embedTextures);
@@ -37,7 +38,8 @@ namespace embree
     void set_motion_vector(Ref<Node> node, const Vec3fa& dP);
     void set_motion_vector(Ref<Node> node, const avector<Vec3fa>& motion_vector);
     void resize_randomly(RandomSampler& sampler, Ref<Node> node, const size_t N);
-    Ref<Node> convert_triangles_to_quads(Ref<Node> node);
+    Ref<Node> convert_triangles_to_quads(Ref<Node> node, float prop);
+    Ref<Node> convert_triangles_to_quads( Ref<TriangleMeshNode> tmesh );
     Ref<Node> convert_quads_to_subdivs(Ref<Node> node);
     Ref<Node> convert_bezier_to_lines(Ref<Node> node);
     Ref<Node> convert_hair_to_curves(Ref<Node> node);
@@ -348,10 +350,10 @@ namespace embree
         return n;
       }
 
-      void triangles_to_quads()
+      void triangles_to_quads(float prop = inf)
       {
         for (size_t i=0; i<children.size(); i++)
-          children[i] = convert_triangles_to_quads(children[i]);
+          children[i] = convert_triangles_to_quads(children[i],prop);
       }
 
       void quads_to_subdivs()
@@ -535,7 +537,7 @@ namespace embree
         const LinearSpace3fa nspace0 = rcp(spaces[0].l).transposed();
         for (auto& n : normals) n = xfmVector(nspace0,n);
       }
-      
+   
       virtual void setMaterial(Ref<MaterialNode> material) {
         this->material = material;
       }

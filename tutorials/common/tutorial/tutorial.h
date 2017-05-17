@@ -182,6 +182,7 @@ namespace embree
     TutorialScene obj_scene;
     Ref<SceneGraph::GroupNode> scene;
     bool convert_tris_to_quads;
+    float convert_tris_to_quads_prop;
     bool convert_bezier_to_lines;
     bool convert_hair_to_curves;
     bool convert_bezier_to_bspline;

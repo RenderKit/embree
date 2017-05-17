@@ -273,6 +273,7 @@ namespace embree
     : TutorialApplication(tutorialName, features),
       scene(new SceneGraph::GroupNode),
       convert_tris_to_quads(false),
+      convert_tris_to_quads_prop(inf),
       convert_bezier_to_lines(false),
       convert_hair_to_curves(false),
       convert_bezier_to_bspline(false),
@@ -309,7 +310,13 @@ namespace embree
 
     registerOption("convert-triangles-to-quads", [this] (Ref<ParseStream> cin, const FileName& path) {
         convert_tris_to_quads = true;
+        convert_tris_to_quads_prop = inf;
       }, "--convert-triangles-to-quads: converts all triangles to quads when loading");
+
+    registerOption("convert-triangles-to-triangles-and-quads", [this] (Ref<ParseStream> cin, const FileName& path) {
+        convert_tris_to_quads = true;
+        convert_tris_to_quads_prop = 0.5f;
+      }, "--convert-triangles-to-triangles-and-quads: converts to mixed triangle/quad scene");
 
     registerOption("convert-bezier-to-lines", [this] (Ref<ParseStream> cin, const FileName& path) {
         convert_bezier_to_lines = true;
@@ -969,7 +976,7 @@ namespace embree
     if (remove_non_mblur) scene->remove_mblur(false);
 
     /* perform conversions */
-    if (convert_tris_to_quads    ) scene->triangles_to_quads();
+    if (convert_tris_to_quads    ) scene->triangles_to_quads(convert_tris_to_quads_prop);
     if (convert_bezier_to_lines  ) scene->bezier_to_lines();
     if (convert_hair_to_curves   ) scene->hair_to_curves();
     if (convert_bezier_to_bspline) scene->bezier_to_bspline();

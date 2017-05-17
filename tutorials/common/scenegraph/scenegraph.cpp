@@ -606,53 +606,58 @@ namespace embree
     else return std::make_pair(0,-1);
   }
   
-  Ref<SceneGraph::Node> SceneGraph::convert_triangles_to_quads(Ref<SceneGraph::Node> node)
+  Ref<SceneGraph::Node> SceneGraph::convert_triangles_to_quads ( Ref<SceneGraph::TriangleMeshNode> tmesh )
+  {
+    Ref<SceneGraph::QuadMeshNode> qmesh = new SceneGraph::QuadMeshNode(tmesh->material);
+
+    for (auto& p : tmesh->positions)
+      qmesh->positions.push_back(p);
+    
+    qmesh->normals = tmesh->normals;
+    qmesh->texcoords = tmesh->texcoords;
+    
+    for (size_t i=0; i<tmesh->triangles.size(); i++)
+    {
+      const int a0 = tmesh->triangles[i+0].v0;
+      const int a1 = tmesh->triangles[i+0].v1;
+      const int a2 = tmesh->triangles[i+0].v2;
+      if (i+1 == tmesh->triangles.size()) {
+        qmesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(a0,a1,a2,a2));
+        continue;
+      }
+      
+      const int b0 = tmesh->triangles[i+1].v0;
+      const int b1 = tmesh->triangles[i+1].v1;
+      const int b2 = tmesh->triangles[i+1].v2;
+      const std::pair<int,int> q = quad_index3(a0,a1,a2,b0,b1,b2);
+      const int a3 = q.second;
+      if (a3 == -1) {
+        qmesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(a0,a1,a2,a2));
+        continue;
+      }
+      
+      if      (q.first == -1) qmesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(a1,a2,a3,a0));
+      else if (q.first ==  0) qmesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(a3,a1,a2,a0));
+      else if (q.first ==  1) qmesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(a0,a1,a3,a2));
+      else if (q.first ==  2) qmesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(a1,a2,a3,a0)); 
+      i++;
+    }
+    return qmesh.dynamicCast<SceneGraph::Node>();
+  }
+
+  Ref<SceneGraph::Node> SceneGraph::convert_triangles_to_quads(Ref<SceneGraph::Node> node, float prop)
   {
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
-      xfmNode->child = convert_triangles_to_quads(xfmNode->child);
+      xfmNode->child = convert_triangles_to_quads(xfmNode->child,prop);
     } 
     else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
     {
       for (size_t i=0; i<groupNode->children.size(); i++) 
-        groupNode->children[i] = convert_triangles_to_quads(groupNode->children[i]);
+        groupNode->children[i] = convert_triangles_to_quads(groupNode->children[i],prop);
     }
-    else if (Ref<SceneGraph::TriangleMeshNode> tmesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
-    {
-      Ref<SceneGraph::QuadMeshNode> qmesh = new SceneGraph::QuadMeshNode(tmesh->material);
-
-      for (auto& p : tmesh->positions)
-        qmesh->positions.push_back(p);
-
-      qmesh->normals = tmesh->normals;
-      qmesh->texcoords = tmesh->texcoords;
-
-      for (size_t i=0; i<tmesh->triangles.size(); i++)
-      {
-        const int a0 = tmesh->triangles[i+0].v0;
-        const int a1 = tmesh->triangles[i+0].v1;
-        const int a2 = tmesh->triangles[i+0].v2;
-        if (i+1 == tmesh->triangles.size()) {
-          qmesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(a0,a1,a2,a2));
-          continue;
-        }
-
-        const int b0 = tmesh->triangles[i+1].v0;
-        const int b1 = tmesh->triangles[i+1].v1;
-        const int b2 = tmesh->triangles[i+1].v2;
-        const std::pair<int,int> q = quad_index3(a0,a1,a2,b0,b1,b2);
-        const int a3 = q.second;
-        if (a3 == -1) {
-          qmesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(a0,a1,a2,a2));
-          continue;
-        }
-
-        if      (q.first == -1) qmesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(a1,a2,a3,a0));
-        else if (q.first ==  0) qmesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(a3,a1,a2,a0));
-        else if (q.first ==  1) qmesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(a0,a1,a3,a2));
-        else if (q.first ==  2) qmesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(a1,a2,a3,a0)); 
-        i++;
-      }
-      return qmesh.dynamicCast<SceneGraph::Node>();
+    else if (Ref<SceneGraph::TriangleMeshNode> tmesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) {
+      if (random<float>() <= prop) return convert_triangles_to_quads(tmesh);
+      else                         return node;
     }
     return node;
   }
