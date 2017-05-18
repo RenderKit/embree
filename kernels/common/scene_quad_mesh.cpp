@@ -267,7 +267,7 @@ namespace embree
       for (size_t j=src.begin(); j<src.end(); j++)
       {
         LBBox3fa bounds = empty;
-        if (!linearBounds(j,t0t1,bounds)) continue;
+        if (!linearBoundsSafe(j,t0t1,bounds)) continue;
         const PrimRefMB prim(bounds,numTimeSegments(),numTimeSegments(),ty,geomID,unsigned(j));
         pinfo.add_primref(prim);
         prims[dst++] = prim;
