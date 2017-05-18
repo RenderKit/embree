@@ -262,7 +262,6 @@ namespace embree
     {
       PrimInfoMB pinfo(empty);
       Leaf::Type ty = numTimeSteps == 1 ? Leaf::TY_TRIANGLE : Leaf::TY_TRIANGLE_MB; // FIXME: move to function
-      if (numTimeSteps == 1) PING;
       for (size_t j=src.begin(); j<src.end(); j++)
       {
         LBBox3fa bounds = empty;
