@@ -118,7 +118,7 @@ namespace embree
     }
 
     /*! check if the i'th primitive is valid at the itime'th timestep */
-    __forceinline bool valid(size_t i, size_t itime) const {
+    __forceinline bool valid(size_t i, size_t itime = 0) const {
       return valid(i, make_range(itime, itime));
     }
 
@@ -208,6 +208,23 @@ namespace embree
       if (!valid(i, getTimeSegmentRange(time_range, fnumTimeSegments))) return false;
       bbox = linearBounds(i, time_range);
       return true;
+    }
+
+    /*! calculates the linear bounds of the i'th primitive for the specified time range */
+    __forceinline bool linearBoundsSafe(size_t i, const BBox1f& time_range, LBBox3fa& bbox) const  
+    {
+      if (numTimeSteps == 1)
+      {
+        if (!valid(i)) return false;
+        bbox = LBBox3fa(bounds(i));
+        return true;
+      } 
+      else
+      {
+        if (!valid(i, getTimeSegmentRange(time_range, fnumTimeSegments))) return false;
+        bbox = linearBounds(i, time_range);
+        return true;
+      }
     }
 
   public:

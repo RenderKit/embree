@@ -112,7 +112,7 @@ namespace embree
         if (geom == nullptr) return nullptr;
         if (!geom->isEnabled()) return nullptr;
         if (!(geom->getType() & ty)) return nullptr;
-        if ((geom->numTimeSteps != 1) != mblur) return nullptr;
+        if (!mblur && geom->numTimeSteps != 1) return nullptr;
         return geom;
       }
 

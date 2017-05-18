@@ -237,8 +237,12 @@ namespace embree
       return new QuadMeshISA(scene,flags,numQuads,numVertices,numTimeSteps);
     }
 
-    LBBox3fa QuadMeshISA::virtualLinearBounds(size_t primID, const BBox1f& time_range) const {
-      return linearBounds(primID,time_range);
+    LBBox3fa QuadMeshISA::virtualLinearBounds(size_t primID, const BBox1f& time_range) const 
+    {
+      if (numTimeSteps == 1)
+        return LBBox3fa(bounds(primID));
+      else
+        return linearBounds(primID,time_range);
     }
 
     PrimInfo QuadMeshISA::createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& src, size_t dst)

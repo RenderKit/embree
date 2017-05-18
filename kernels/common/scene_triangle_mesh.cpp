@@ -235,8 +235,12 @@ namespace embree
       return new TriangleMeshISA(scene,flags,numTriangles,numVertices,numTimeSteps);
     }
 
-    LBBox3fa TriangleMeshISA::virtualLinearBounds(size_t primID, const BBox1f& time_range) const {
-      return linearBounds(primID,time_range);
+    LBBox3fa TriangleMeshISA::virtualLinearBounds(size_t primID, const BBox1f& time_range) const 
+    {
+      if (numTimeSteps == 1)
+        return LBBox3fa(bounds(primID));
+      else
+        return linearBounds(primID,time_range);
     }
   
     PrimInfo TriangleMeshISA::createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& src, size_t dst)
@@ -258,10 +262,11 @@ namespace embree
     {
       PrimInfoMB pinfo(empty);
       Leaf::Type ty = numTimeSteps == 1 ? Leaf::TY_TRIANGLE : Leaf::TY_TRIANGLE_MB; // FIXME: move to function
+      if (numTimeSteps == 1) PING;
       for (size_t j=src.begin(); j<src.end(); j++)
       {
         LBBox3fa bounds = empty;
-        if (!linearBounds(j,t0t1,bounds)) continue;
+        if (!linearBoundsSafe(j,t0t1,bounds)) continue;
         const PrimRefMB prim(bounds,numTimeSegments(),numTimeSegments(),ty,geomID,unsigned(j));
         pinfo.add_primref(prim);
         prims[dst++] = prim;

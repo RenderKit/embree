@@ -34,6 +34,7 @@ namespace embree
     __forceinline PrimRefMB (const LBBox3fa& lbounds_i, unsigned int activeTimeSegments, unsigned int totalTimeSegments, unsigned int geomID, unsigned int primID)
       : lbounds(lbounds_i)
     {
+      if (totalTimeSegments == 0) activeTimeSegments = 1; // we count non-mblur geometry with weight 1
       assert(activeTimeSegments > 0);
       lbounds.bounds0.lower.a = geomID;
       lbounds.bounds0.upper.a = primID;
@@ -44,6 +45,7 @@ namespace embree
     __forceinline PrimRefMB (const LBBox3fa& lbounds_i, unsigned int activeTimeSegments, unsigned int totalTimeSegments, Leaf::Type ty, unsigned int geomID, unsigned int primID)
       : lbounds(lbounds_i)
     {
+      if (totalTimeSegments == 0) activeTimeSegments = 1; // we count non-mblur geometry with weight 1
       assert(activeTimeSegments > 0);
       lbounds.bounds0.lower.a = Leaf::encode(ty,geomID);
       lbounds.bounds0.upper.a = primID;
@@ -147,6 +149,7 @@ namespace embree
     __forceinline PrimRefMB (const LBBox3fa& bounds, unsigned int activeTimeSegments, unsigned int totalTimeSegments, unsigned int geomID, unsigned int primID)
       : bbox(bounds.interpolate(0.5f))
     {
+      if (totalTimeSegments == 0) activeTimeSegments = 1; // we count non-mblur geometry with weight 1
       assert(activeTimeSegments > 0);
       bbox.lower.a = geomID;
       bbox.upper.a = primID;
@@ -157,6 +160,7 @@ namespace embree
     __forceinline PrimRefMB (const LBBox3fa& bounds, unsigned int activeTimeSegments, unsigned int totalTimeSegments, Leaf::Type ty, unsigned int geomID, unsigned int primID)
       : bbox(bounds.interpolate(0.5f))
     {
+      if (totalTimeSegments == 0) activeTimeSegments = 1; // we count non-mblur geometry with weight 1
       assert(activeTimeSegments > 0);
       bbox.lower.a = Leaf::encode(ty,geomID);
       bbox.upper.a = primID;
@@ -167,6 +171,7 @@ namespace embree
     __forceinline PrimRefMB (const LBBox3fa& bounds, unsigned int activeTimeSegments, unsigned int totalTimeSegments, size_t id)
       : bbox(bounds.interpolate(0.5f))
     {
+      if (totalTimeSegments == 0) activeTimeSegments = 1; // we count non-mblur geometry with weight 1
       assert(activeTimeSegments > 0);
 #if defined(__X86_64__)
       bbox.lower.u = id & 0xFFFFFFFF;
