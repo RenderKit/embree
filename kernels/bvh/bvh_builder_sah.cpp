@@ -979,7 +979,7 @@ namespace embree
 #endif
 
 #if defined(__AVX__)
-    Builder* BVH8MultiFastSceneBuilderSAH     (void* bvh, Scene* scene, Geometry::Type type) { 
+    Builder* BVH8MultiFastSceneBuilder     (void* bvh, Scene* scene, Geometry::Type type) { 
       static CreateMultiLeaf4<8,
                               Triangle4,
                               Triangle4,
@@ -989,7 +989,7 @@ namespace embree
       return new BVHNBuilderMultiSAH<8>((BVH8*)bvh,scene,type,createLeaf,4,1.0f,4,inf); 
     }
 
-    Builder* BVH8MultiFastSceneBuilderMBSAH     (void* bvh, Scene* scene, Geometry::Type type) { 
+    Builder* BVH8MultiFastSceneBuilderMB     (void* bvh, Scene* scene, Geometry::Type type) { 
       static CreateMSMBlurMultiLeaf4<8,
                                      Triangle4,
                                      Triangle4vMB,
