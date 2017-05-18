@@ -71,6 +71,7 @@ namespace embree
 
   private:
     Accel::Intersectors BVH8MultiFastIntersectors(BVH8* bvh);
+    Accel::Intersectors BVH8MultiFastMBIntersectors(BVH8* bvh);
 
     Accel::Intersectors BVH8Line4iIntersectors(BVH8* bvh);
     Accel::Intersectors BVH8Line4iMBIntersectors(BVH8* bvh);
@@ -97,6 +98,7 @@ namespace embree
 
   private:
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8MultiFastIntersector1);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH8MultiFastMBIntersector1);
 
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Line4iIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Line4iMBIntersector1);

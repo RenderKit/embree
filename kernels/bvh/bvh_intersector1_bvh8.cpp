@@ -61,12 +61,13 @@ namespace embree
     typedef ArrayIntersector1<TriangleMvMBIntersector1Moeller <SIMD_MODE(4) COMMA true> > ArrayTriangleMvMBIntersector1Moeller;
     typedef ArrayIntersector1<QuadMvIntersector1Moeller <4 COMMA true> > ArrayQuadMvIntersector1Moeller;
     typedef ArrayIntersector1<QuadMiMBIntersector1Moeller <4 COMMA true> > ArrayQuadMiMBIntersector1Moeller;
-    DEFINE_INTERSECTOR1(BVH8MultiFastIntersector1,BVHNIntersector1<8 COMMA BVH_AN1 COMMA false COMMA Virtual4LeafIntersector1<
-                        ArrayTriangleMIntersector1Moeller COMMA
-                        ArrayTriangleMvMBIntersector1Moeller COMMA
-                        ArrayQuadMvIntersector1Moeller COMMA
-                        ArrayQuadMiMBIntersector1Moeller
-                        > >);
-    
+    #define LEAF_INTERSECTORS_FAST \
+      ArrayTriangleMIntersector1Moeller,                                \
+      ArrayTriangleMvMBIntersector1Moeller,                           \
+      ArrayQuadMvIntersector1Moeller,                                 \
+      ArrayQuadMiMBIntersector1Moeller
+
+    DEFINE_INTERSECTOR1(BVH8MultiFastIntersector1,BVHNIntersector1<8 COMMA BVH_AN1          COMMA false COMMA Virtual4LeafIntersector1<LEAF_INTERSECTORS_FAST> >);
+    DEFINE_INTERSECTOR1(BVH8MultiFastMBIntersector1,BVHNIntersector1<8 COMMA BVH_AN1_AN2_AN4D COMMA false COMMA Virtual4LeafIntersector1<LEAF_INTERSECTORS_FAST> >);
   }
 }
