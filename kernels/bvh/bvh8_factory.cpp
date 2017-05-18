@@ -177,7 +177,6 @@ namespace embree
   DECLARE_SYMBOL2(Accel::IntersectorN,BVH8VirtualIntersectorStream);
 
   DECLARE_ISA_FUNCTION(Builder*,BVH8MultiFastSceneBuilder,void* COMMA Scene* COMMA Geometry::Type);
-  DECLARE_ISA_FUNCTION(Builder*,BVH8MultiFastSceneBuilderMB,void* COMMA Scene* COMMA Geometry::Type);
 
   DECLARE_ISA_FUNCTION(Builder*,BVH8Line4iSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH8Line4iMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
@@ -237,7 +236,6 @@ namespace embree
   void BVH8Factory::selectBuilders(int features)
   {
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8MultiFastSceneBuilder));
-    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8MultiFastSceneBuilderMB));
     
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Line4iSceneBuilderSAH));
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Line4iMBSceneBuilderSAH));
@@ -905,13 +903,7 @@ namespace embree
     Accel::Intersectors intersectors = BVH8MultiFastIntersectors(accel);
     
     Builder* builder = nullptr;
-    if (scene->device->tri_builder == "default") {
-      const size_t mblur = scene->getNumPrimitives(ty,true);
-      if (mblur) builder = BVH8MultiFastSceneBuilderMB(accel,scene,ty);
-      else       builder = BVH8MultiFastSceneBuilder  (accel,scene,ty);
-    }
-    else if (scene->device->tri_builder == "normal" ) builder = BVH8MultiFastSceneBuilder  (accel,scene,ty);
-    else if (scene->device->tri_builder == "mblur"  ) builder = BVH8MultiFastSceneBuilderMB(accel,scene,ty);
+    if (scene->device->tri_builder == "default") builder = BVH8MultiFastSceneBuilder  (accel,scene,ty);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder_mb+" for BVH8MBOBB<Bezier1iMB>");
 
     return new AccelInstance(accel,builder,intersectors);

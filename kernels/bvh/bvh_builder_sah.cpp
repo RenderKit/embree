@@ -979,25 +979,61 @@ namespace embree
 #endif
 
 #if defined(__AVX__)
-    Builder* BVH8MultiFastSceneBuilder     (void* bvh, Scene* scene, Geometry::Type type) { 
-      static CreateMultiLeaf4<8,
-                              Triangle4,
-                              Triangle4,
-                              Quad4v,
-                              Quad4v> createLeaf;
+  
+    struct BVH8MultiFastSceneBuilderSelect : public Builder 
+    {
+      BVH8* bvh;
+      Scene* scene;
+      Geometry::Type type;
+      Ref<Builder> builder;
 
-      return new BVHNBuilderMultiSAH<8>((BVH8*)bvh,scene,type,createLeaf,4,1.0f,4,inf); 
-    }
+      BVH8MultiFastSceneBuilderSelect ( BVH8* bvh, Scene* scene, Geometry::Type type )
+        : bvh(bvh), scene(scene), type(type) {}
 
-    Builder* BVH8MultiFastSceneBuilderMB     (void* bvh, Scene* scene, Geometry::Type type) { 
-      static CreateMSMBlurMultiLeaf4<8,
-                                     Triangle4,
-                                     Triangle4vMB,
-                                     Quad4v,
-                                     Quad4iMB> createLeaf;
+      virtual void build() 
+      {
+        if (!builder) 
+        {
+          const size_t num1 = scene->getNumPrimitives(type,false);
+          const size_t num2 = scene->getNumPrimitives(type,true);
+          
+          if (num1 < num2) 
+          {
+            static CreateMSMBlurMultiLeaf4<8,
+                                           Triangle4,
+                                           Triangle4vMB,
+                                           Quad4v,
+                                           Quad4iMB> createLeaf;
       
-      return new BVHNMultiBuilderMBlurSAH<8>((BVH8*)bvh,scene,type,createLeaf,4,1.0f,4,inf); 
+            builder = new BVHNMultiBuilderMBlurSAH<8>((BVH8*)bvh,scene,type,createLeaf,4,1.0f,4,inf); 
+          }
+          else
+          {
+            static CreateMultiLeaf4<8,
+                                    Triangle4,
+                                    Triangle4,
+                                    Quad4v,
+                                    Quad4v> createLeaf;
+
+            builder = new BVHNBuilderMultiSAH<8>((BVH8*)bvh,scene,type,createLeaf,4,1.0f,4,inf); 
+          }
+        }
+        builder->build();
+      }
+
+      virtual void deleteGeometry(size_t geomID) {
+        if (builder) builder->deleteGeometry(geomID);
+      }
+
+      virtual void clear() {
+        if (builder) builder->clear();
+      }
+    };
+
+    Builder* BVH8MultiFastSceneBuilder     (void* bvh, Scene* scene, Geometry::Type type) { 
+      return new BVH8MultiFastSceneBuilderSelect((BVH8*)bvh,scene,type);
     }
+
 #endif
 
 #if defined(EMBREE_GEOMETRY_USER)
