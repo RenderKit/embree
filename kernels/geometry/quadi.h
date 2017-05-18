@@ -303,6 +303,13 @@ namespace embree
     vint<M> primIDs;    // primitive ID of primitive inside mesh
   };
 
+    /* Stores M quads from an indexed face set */
+  template <int M>
+    struct QuadMiMB : public QuadMi<M>
+  {
+    
+  };
+
   template<>
   __forceinline void QuadMi<4>::gather(Vec3vf4& p0,
                                        Vec3vf4& p1,
@@ -460,4 +467,5 @@ namespace embree
   typename QuadMi<M>::Type QuadMi<M>::type;
 
   typedef QuadMi<4> Quad4i;
+  typedef QuadMiMB<4> Quad4iMB;
 }

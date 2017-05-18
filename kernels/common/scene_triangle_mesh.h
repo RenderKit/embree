@@ -280,7 +280,9 @@ namespace embree
       TriangleMeshISA (Scene* scene, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps)
         : TriangleMesh(scene,flags,numTriangles,numVertices,numTimeSteps) {}
 
+      virtual LBBox3fa virtualLinearBounds(size_t primID, const BBox1f& time_range) const;
       virtual PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& src, size_t dst);
+      virtual PrimInfoMB createPrimRefArrayMB(mvector<PrimRefMB>& prims, const BBox1f t0t1, const range<size_t>& src, size_t dst);
     };
   }
 

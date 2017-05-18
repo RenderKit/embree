@@ -237,15 +237,35 @@ namespace embree
       return new QuadMeshISA(scene,flags,numQuads,numVertices,numTimeSteps);
     }
 
+    LBBox3fa QuadMeshISA::virtualLinearBounds(size_t primID, const BBox1f& time_range) const {
+      return linearBounds(primID,time_range);
+    }
+
     PrimInfo QuadMeshISA::createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& src, size_t dst)
     {
       PrimInfo pinfo(empty);
+      Leaf::Type ty = numTimeSteps == 1 ? Leaf::TY_QUAD : Leaf::TY_QUAD_MB; // FIXME: move to function
       for (size_t j=src.begin(); j<src.end(); j++)
       {
         BBox3fa bounds = empty;
         if (!buildBounds(j,&bounds)) continue;
-        const PrimRef prim(bounds,Leaf::TY_QUAD,geomID,unsigned(j));
+        const PrimRef prim(bounds,ty,geomID,unsigned(j));
         pinfo.add(bounds,bounds.center2());
+        prims[dst++] = prim;
+      }
+      return pinfo;
+    }
+
+    PrimInfoMB QuadMeshISA::createPrimRefArrayMB(mvector<PrimRefMB>& prims, const BBox1f t0t1, const range<size_t>& src, size_t dst) 
+    {
+      PrimInfoMB pinfo(empty);
+      Leaf::Type ty = numTimeSteps == 1 ? Leaf::TY_QUAD : Leaf::TY_QUAD_MB; // FIXME: move to function
+      for (size_t j=src.begin(); j<src.end(); j++)
+      {
+        LBBox3fa bounds = empty;
+        if (!linearBounds(j,t0t1,bounds)) continue;
+        const PrimRefMB prim(bounds,numTimeSegments(),numTimeSegments(),ty,geomID,unsigned(j));
+        pinfo.add_primref(prim);
         prims[dst++] = prim;
       }
       return pinfo;

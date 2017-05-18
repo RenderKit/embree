@@ -69,8 +69,16 @@ namespace embree
     /*! updates intersection filter function counts in scene */
     void updateIntersectionFilters(bool enable);
 
+    virtual LBBox3fa virtualLinearBounds(size_t primID, const BBox1f& time_range) const {
+      throw std::runtime_error("virtualLinearBounds not implemented for this geometry type");
+    }
+   
     virtual PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& src, size_t dst) {
-      throw std::runtime_error("createPrimRefArray not implemented for this type");
+      throw std::runtime_error("createPrimRefArray not implemented for this geometry type");
+    }
+
+    virtual PrimInfoMB createPrimRefArrayMB(mvector<PrimRefMB>& prims, const BBox1f t0t1, const range<size_t>& src, size_t dst) {
+      throw std::runtime_error("createPrimRefArrayMB not implemented for this geometry type");
     }
   
   public:

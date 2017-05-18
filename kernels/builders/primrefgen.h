@@ -44,6 +44,8 @@ namespace embree
     template<typename Mesh>
       PrimInfoMB createPrimRefArrayMSMBlur(Scene* scene, mvector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1 = BBox1f(0.0f,1.0f));
 
+    PrimInfoMB createMultiPrimRefArrayMSMBlur(Scene* scene, Geometry::Type ty, mvector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1 = BBox1f(0.0f,1.0f));
+
     template<typename Mesh>
       size_t createMortonCodeArray(Mesh* mesh, mvector<BVHBuilderMorton::BuildPrim>& morton, BuildProgressMonitor& progressMonitor);
   }

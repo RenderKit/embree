@@ -677,6 +677,136 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 
+    template<int N>
+    struct VirtualCreateMSMBlurLeaf
+    {
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRecordMB4D NodeRecordMB4D;
+
+      virtual const NodeRecordMB4D operator() (BVH* bvh, const SetMB& set, const FastAllocator::CachedAllocator& alloc) const = 0;
+    };
+
+    template<int N, typename Primitive0, typename Primitive1, typename Primitive2, typename Primitive3>
+    struct CreateMSMBlurMultiLeaf4 : public VirtualCreateMSMBlurLeaf<N>
+    {
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRecordMB4D NodeRecordMB4D;
+
+      __forceinline const NodeRecordMB4D operator() (BVH* bvh, const SetMB& set, const FastAllocator::CachedAllocator& alloc) const
+      {
+        assert(set.object_range.size() > 0);
+        const Leaf::Type ty = (*set.prims)[set.object_range.begin()].type();
+        switch (ty) {
+          //case 0: return Primitive0::createLeafMB(bvh,set,alloc);
+          //case 1: return Primitive1::createLeafMB(bvh,set,alloc);
+          //case 2: return Primitive2::createLeafMB(bvh,set,alloc);
+          //case 3: return Primitive3::createLeafMB(bvh,set,alloc);
+        default: assert(false); return NodeRecordMB4D(BVH::emptyNode,empty,empty);
+        }
+      }
+
+      BVH* bvh;
+    };
+
+    /* Motion blur BVH with 4D nodes and internal time splits */
+    template<int N>
+    struct BVHNMultiBuilderMBlurSAH : public Builder
+    {
+      typedef BVHN<N> BVH;
+      typedef typename BVHN<N>::NodeRef NodeRef;
+      typedef typename BVHN<N>::NodeRecordMB NodeRecordMB;
+      typedef typename BVHN<N>::AlignedNodeMB AlignedNodeMB;
+
+      BVH* bvh;
+      Scene* scene;
+      Geometry::Type type;
+      const VirtualCreateMSMBlurLeaf<N>& createLeaf;
+      const size_t sahBlockSize;
+      const float intCost;
+      const size_t minLeafSize;
+      const size_t maxLeafSize;
+
+      BVHNMultiBuilderMBlurSAH (BVH* bvh, Scene* scene, Geometry::Type type, const VirtualCreateMSMBlurLeaf<N>& createLeaf, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
+        : bvh(bvh), scene(scene), type(type), createLeaf(createLeaf), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,/*Primitive::max_size()*/BVH::maxLeafBlocks)) {} // FIXME: Primitive::max_size() assumed to be 4
+
+      void build()
+      {
+	/* skip build for empty scene */
+        const size_t numPrimitives = scene->getNumPrimitives(type,true);
+        if (numPrimitives == 0) { bvh->clear(); return; }
+
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderMultiMBlurSAH");
+
+#if PROFILE
+        profile(2,PROFILE_RUNS,numPrimitives,[&] (ProfileTimer& timer) {
+#endif
+
+        //const size_t numTimeSteps = scene->getNumTimeSteps<Mesh,true>();
+        //const size_t numTimeSegments = numTimeSteps-1; assert(numTimeSteps > 1);
+
+        //if (numTimeSegments == 1)
+        //  buildSingleSegment(numPrimitives);
+        //else
+          buildMultiSegment(numPrimitives);
+
+#if PROFILE
+          });
+#endif
+
+	/* clear temporary data for static geometry */
+        if (scene->isStatic()) bvh->shrink();
+	bvh->cleanup();
+        bvh->postBuild(t0);
+      }
+
+      void buildMultiSegment(size_t numPrimitives)
+      {
+        /* create primref array */
+        mvector<PrimRefMB> prims(scene->device,numPrimitives);
+        PrimInfoMB pinfo = createMultiPrimRefArrayMSMBlur(scene,type,prims,bvh->scene->progressInterface);
+
+        /* estimate acceleration structure size */
+        const size_t node_bytes = pinfo.num_time_segments*sizeof(AlignedNodeMB)/(4*N);
+        const size_t leaf_bytes = size_t(1.2*pinfo.num_time_segments*44);//sizeof(Primitive)); // FIXME: assumes 44 bytes for primitive
+        bvh->alloc.init_estimate(node_bytes+leaf_bytes);
+
+        /* settings for BVH build */
+        BVHBuilderMSMBlur::Settings settings;
+        settings.branchingFactor = N;
+        settings.maxDepth = BVH::maxDepth;
+        settings.logBlockSize = __bsr(sahBlockSize);
+        settings.minLeafSize = minLeafSize;
+        settings.maxLeafSize = maxLeafSize;
+        settings.travCost = travCost;
+        settings.intCost = intCost;
+        settings.singleLeafTimeSegment = true; //Primitive::singleTimeSegment; // FIXME: this is very conservative
+        settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,pinfo.size(),node_bytes+leaf_bytes);
+        
+        /* build hierarchy */
+        auto root =
+          BVHBuilderMSMBlur::build<NodeRef>(prims,pinfo,scene->device,
+                                            VirtualRecalculatePrimRef(scene),
+                                            typename BVH::CreateAlloc(bvh),
+                                            typename BVH::AlignedNodeMB4D::Create(),
+                                            typename BVH::AlignedNodeMB4D::Set(),
+                                            [&] (const BVHBuilderMSMBlur::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) { 
+                                              return createLeaf(bvh,current.prims,alloc);
+                                            },
+                                            bvh->scene->progressInterface,
+                                            settings);
+
+        bvh->set(root.ref,root.lbounds,pinfo.num_time_segments);
+      }
+
+      void clear() {
+      }
+    };
+
+    /************************************************************************************/
+    /************************************************************************************/
+    /************************************************************************************/
+    /************************************************************************************/
+
     template<int N, typename Mesh, typename Primitive, typename Splitter>
     struct BVHNBuilderFastSpatialSAH : public Builder
     {
@@ -857,6 +987,16 @@ namespace embree
                               Quad4v> createLeaf;
 
       return new BVHNBuilderMultiSAH<8>((BVH8*)bvh,scene,type,createLeaf,4,1.0f,4,inf); 
+    }
+
+    Builder* BVH8MultiFastSceneBuilderMBSAH     (void* bvh, Scene* scene, Geometry::Type type) { 
+      static CreateMSMBlurMultiLeaf4<8,
+                                     Triangle4,
+                                     Triangle4vMB,
+                                     Quad4v,
+                                     Quad4iMB> createLeaf;
+      
+      return new BVHNMultiBuilderMBlurSAH<8>((BVH8*)bvh,scene,type,createLeaf,4,1.0f,4,inf); 
     }
 #endif
 

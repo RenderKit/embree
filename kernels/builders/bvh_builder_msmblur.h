@@ -153,6 +153,29 @@ namespace embree
         }
       };
 
+    struct VirtualRecalculatePrimRef
+    {
+      Scene* scene;
+      
+      __forceinline VirtualRecalculatePrimRef (Scene* scene)
+        : scene(scene) {}
+      
+      __forceinline PrimRefMB operator() (const PrimRefMB& prim, const BBox1f time_range) const
+      {
+        const unsigned geomID = prim.geomID();
+        const unsigned primID = prim.primID();
+        const Geometry* mesh = scene->get(geomID);
+        const LBBox3fa lbounds = mesh->virtualLinearBounds(primID, time_range);
+        const unsigned num_time_segments = mesh->numTimeSegments();
+        const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
+        return PrimRefMB (lbounds, tbounds.size(), num_time_segments, prim.type(), geomID, primID);
+      }
+      
+      __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range) const {
+        return scene->get(prim.geomID())->virtualLinearBounds(prim.primID(), time_range);
+      }
+    };
+    
     struct BVHBuilderMSMBlur
     {
       /*! settings for msmblur builder */
@@ -284,7 +307,11 @@ namespace embree
             /* perform fallback split */
             else if (unlikely(brecord.split.data == Split::SPLIT_FALLBACK)) {
               brecord.prims.deterministic_order();
-              splitFallback(brecord.prims,lrecord.prims,rrecord.prims);
+              splitAtCenter(brecord.prims,lrecord.prims,rrecord.prims);
+            }
+            /* perform type split */
+            else if (unlikely(brecord.split.data == Split::SPLIT_TYPE)) {
+              splitByType(brecord.prims,lrecord.prims,rrecord.prims);
             }
             else
               assert(false);
@@ -292,9 +319,24 @@ namespace embree
             return std::unique_ptr<mvector<PrimRefMB>>();
           }
 
+          __forceinline bool sameType(const SetMB& set)
+          {
+            //assert(set.object_range.size());
+            if (set.object_range.size() == 0) return true;
+            Leaf::Type ty0 = (*set.prims)[set.object_range.begin()].type();
+            for (size_t i=set.object_range.begin()+1; i<set.object_range.end(); i++)
+              if (ty0 != (*set.prims)[i].type()) 
+                return false;
+            
+            return true;
+          }
+
           /*! finds the best fallback split */
           __forceinline Split findFallback(const SetMB& set)
           {
+            if (set.size() <= 1)
+              return Split(0.0f,Split::SPLIT_NONE);
+
             /* if a leaf can only hold a single time-segment, we might have to do additional temporal splits */
             if (singleLeafTimeSegment)
             {
@@ -313,12 +355,20 @@ namespace embree
               }
             }
 
-            /* otherwise return fallback split */
-            return Split(0.0f,Split::SPLIT_FALLBACK);
+            /* if primitives are of different type perform type splits */
+            if (!sameType(set))
+              return Split(0.0f,Split::SPLIT_TYPE);
+
+            /* if the leaf is too large we also have to perform additional splits */
+            if (set.size() > maxLeafSize)
+              return Split(0.0f,Split::SPLIT_FALLBACK);
+
+            /* otherwise perform no splits anymore */
+            return Split(0.0f,Split::SPLIT_NONE);
           }
 
           /*! performs fallback split */
-          void splitFallback(const SetMB& set, SetMB& lset, SetMB& rset)
+          void splitAtCenter(const SetMB& set, SetMB& lset, SetMB& rset)
           {
             mvector<PrimRefMB>& prims = *set.prims;
 
@@ -338,6 +388,25 @@ namespace embree
             new (&rset) SetMB(rinfo,set.prims,range<size_t>(center,end  ),set.time_range);
           }
 
+          /*! split by primitive type */
+          void splitByType(const SetMB& set, SetMB& lset, SetMB& rset)
+          {
+            assert(set.size());
+            mvector<PrimRefMB>& prims = *set.prims;
+            const size_t begin = set.object_range.begin();
+            const size_t end   = set.object_range.end();
+          
+            Leaf::Type type = prims[begin].type();
+            PrimInfoMB linfo = empty;
+            PrimInfoMB rinfo = empty;
+            size_t center = serial_partitioning(prims.data(),begin,end,linfo,rinfo,
+                                                [&] ( const PrimRefMB& prim ) { return prim.type() == type; },
+                                                [ ] ( PrimInfoMB& a, const PrimRefMB& b ) { a.add_primref(b); });
+            
+            new (&lset) SetMB(linfo,set.prims,range<size_t>(begin,center),set.time_range);
+            new (&rset) SetMB(rinfo,set.prims,range<size_t>(center,end  ),set.time_range);
+          }
+
           const NodeRecordMB4D createLargeLeaf(const BuildRecord& in, Allocator alloc)
           {
             /* this should never occur but is a fatal error */
@@ -345,10 +414,10 @@ namespace embree
               throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
 
             /* replace already found split by fallback split */
-            const BuildRecord current(in.prims,findFallback(in.prims),in.depth);
+            const BuildRecord current(in.prims,findFallback(in.prims),in.depth); // FIXME: findFallback invoked too often!
 
             /* create leaf for few primitives */
-            if (current.size() <= maxLeafSize && current.split.data != Split::SPLIT_TEMPORAL)
+            if (current.split.data == Split::SPLIT_NONE)
               return createLeaf(current,alloc);
 
             /* fill all children by always splitting the largest one */
@@ -363,7 +432,7 @@ namespace embree
               for (size_t i=0; i<children.size(); i++)
               {
                 /* ignore leaves as they cannot get split */
-                if (children[i].size() <= maxLeafSize && children[i].split.data != Split::SPLIT_TEMPORAL)
+                if (children[i].split.data == Split::SPLIT_NONE)
                   continue;
 
                 /* remember child with largest size */

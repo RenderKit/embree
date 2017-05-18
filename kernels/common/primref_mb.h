@@ -41,6 +41,16 @@ namespace embree
       lbounds.bounds1.upper.a = totalTimeSegments;
     }
 
+    __forceinline PrimRefMB (const LBBox3fa& lbounds_i, unsigned int activeTimeSegments, unsigned int totalTimeSegments, Leaf::Type ty, unsigned int geomID, unsigned int primID)
+      : lbounds(lbounds_i)
+    {
+      assert(activeTimeSegments > 0);
+      lbounds.bounds0.lower.a = Leaf::encode(ty,geomID);
+      lbounds.bounds0.upper.a = primID;
+      lbounds.bounds1.lower.a = activeTimeSegments;
+      lbounds.bounds1.upper.a = totalTimeSegments;
+    }
+
     __forceinline PrimRefMB (const LBBox3fa& lbounds_i, unsigned int activeTimeSegments, unsigned int totalTimeSegments, size_t id)
       : lbounds(lbounds_i)
     {
@@ -82,9 +92,14 @@ namespace embree
       center_o = binCenter();
     }
 
+    /*! returns the type */
+    __forceinline Leaf::Type type() const { 
+      return Leaf::decodeTy(lbounds.bounds0.lower.a);
+    }
+
     /*! returns the geometry ID */
     __forceinline unsigned geomID() const {
-      return lbounds.bounds0.lower.a;
+      return Leaf::decodeID(lbounds.bounds0.lower.a);
     }
 
     /*! returns the primitive ID */
@@ -139,6 +154,16 @@ namespace embree
       num.y = totalTimeSegments;
     }
 
+    __forceinline PrimRefMB (const LBBox3fa& bounds, unsigned int activeTimeSegments, unsigned int totalTimeSegments, Leaf::Type ty, unsigned int geomID, unsigned int primID)
+      : bbox(bounds.interpolate(0.5f))
+    {
+      assert(activeTimeSegments > 0);
+      bbox.lower.a = Leaf::encode(ty,geomID);
+      bbox.upper.a = primID;
+      num.x = activeTimeSegments;
+      num.y = totalTimeSegments;
+    }
+
     __forceinline PrimRefMB (const LBBox3fa& bounds, unsigned int activeTimeSegments, unsigned int totalTimeSegments, size_t id)
       : bbox(bounds.interpolate(0.5f))
     {
@@ -180,9 +205,14 @@ namespace embree
       center_o = center2(bounds());
     }
 
+    /*! returns the type */
+    __forceinline Leaf::Type type() const { 
+      return Leaf::decodeTy(bbox.lower.a);
+    }
+
     /*! returns the geometry ID */
     __forceinline unsigned geomID() const { 
-      return bbox.lower.a;
+      return Leaf::decodeID(bbox.lower.a);
     }
 
     /*! returns the primitive ID */
