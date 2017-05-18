@@ -334,7 +334,7 @@ namespace embree
           /*! finds the best fallback split */
           __forceinline Split findFallback(const SetMB& set)
           {
-            if (set.size() <= 1)
+            if (set.size() == 0)
               return Split(0.0f,Split::SPLIT_NONE);
 
             /* if a leaf can only hold a single time-segment, we might have to do additional temporal splits */
