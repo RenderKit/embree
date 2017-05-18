@@ -345,8 +345,7 @@ namespace embree
               {
                 const PrimRefMB& prim = (*set.prims)[i];
                 const range<int> itime_range = getTimeSegmentRange(set.time_range,prim.totalTimeSegments());
-                const int localTimeSegments = itime_range.size();
-                if (localTimeSegments > 1) {
+                if (itime_range.size() > 1) {
                   const int icenter = (itime_range.begin() + itime_range.end())/2;
                   const float splitTime = float(icenter)/float(prim.totalTimeSegments());
                   return Split(0.0f,(unsigned)Split::SPLIT_TEMPORAL,0,splitTime);
