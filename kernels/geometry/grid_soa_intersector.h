@@ -92,7 +92,7 @@ namespace embree
       };
 
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
@@ -116,14 +116,14 @@ namespace embree
             const Vec3vf<K> p10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
             const Vec3vf<K> p11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
 
-            pre.intersector.intersectK(valid_i,ray,p00,p01,p10,MapUV0<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,context,pre.grid->geomID,pre.grid->primID));
-            pre.intersector.intersectK(valid_i,ray,p10,p01,p11,MapUV1<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,context,pre.grid->geomID,pre.grid->primID));
+            pre.intersector.intersectK(valid_i,ray,p00,p01,p10,MapUV0<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,context,pre.grid->geomID(),pre.grid->primID()));
+            pre.intersector.intersectK(valid_i,ray,p10,p01,p11,MapUV1<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,context,pre.grid->geomID(),pre.grid->primID()));
           }
         }
       }
 
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
@@ -148,9 +148,9 @@ namespace embree
             const Vec3vf<K> p10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
             const Vec3vf<K> p11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
 
-            pre.intersector.intersectK(valid,ray,p00,p01,p10,MapUV0<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogMU<1,K,true>(valid,ray,context,pre.grid->geomID,pre.grid->primID));
+            pre.intersector.intersectK(valid,ray,p00,p01,p10,MapUV0<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogMU<1,K,true>(valid,ray,context,pre.grid->geomID(),pre.grid->primID()));
             if (none(valid)) break;
-            pre.intersector.intersectK(valid,ray,p10,p01,p11,MapUV1<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogMU<1,K,true>(valid,ray,context,pre.grid->geomID,pre.grid->primID));
+            pre.intersector.intersectK(valid,ray,p10,p01,p11,MapUV1<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogMU<1,K,true>(valid,ray,context,pre.grid->geomID(),pre.grid->primID()));
             if (none(valid)) break;
           }
         }
@@ -171,7 +171,7 @@ namespace embree
         const float* const grid_z  = grid_x + 2 * dim_offset;
         const float* const grid_uv = grid_x + 3 * dim_offset;
         Vec3<vfloat> v0, v1, v2; Loader::gather(grid_x,grid_y,grid_z,line_offset,lines,v0,v1,v2);
-        pre.intersector.intersect(ray,k,v0,v1,v2,GridSOA::MapUV<Loader>(grid_uv,line_offset,lines),Intersect1KEpilogMU<Loader::M,K,true>(ray,k,context,pre.grid->geomID,pre.grid->primID));
+        pre.intersector.intersect(ray,k,v0,v1,v2,GridSOA::MapUV<Loader>(grid_uv,line_offset,lines),Intersect1KEpilogMU<Loader::M,K,true>(ray,k,context,pre.grid->geomID(),pre.grid->primID()));
       };
 
       template<typename Loader>
@@ -188,11 +188,11 @@ namespace embree
         const float* const grid_z  = grid_x + 2 * dim_offset;
         const float* const grid_uv = grid_x + 3 * dim_offset;
         Vec3<vfloat> v0, v1, v2; Loader::gather(grid_x,grid_y,grid_z,line_offset,lines,v0,v1,v2);
-        return pre.intersector.intersect(ray,k,v0,v1,v2,GridSOA::MapUV<Loader>(grid_uv,line_offset,lines),Occluded1KEpilogMU<Loader::M,K,true>(ray,k,context,pre.grid->geomID,pre.grid->primID));
+        return pre.intersector.intersect(ray,k,v0,v1,v2,GridSOA::MapUV<Loader>(grid_uv,line_offset,lines),Occluded1KEpilogMU<Loader::M,K,true>(ray,k,context,pre.grid->geomID(),pre.grid->primID()));
       }
 
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         const size_t line_offset   = pre.grid->width;
         const size_t lines         = pre.grid->height;
@@ -207,7 +207,7 @@ namespace embree
       }
 
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         const size_t line_offset   = pre.grid->width;
         const size_t lines         = pre.grid->height;
@@ -232,7 +232,7 @@ namespace embree
       typedef typename GridSOAIntersectorK<K>::Precalculations Precalculations;
 
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         vfloat<K> vftime;
         vint<K> vitime = getTimeSegment(ray.time, vfloat<K>(pre.grid->time_steps-1), vftime);
@@ -243,12 +243,12 @@ namespace embree
           const int itime = vitime[j];
           const vbool<K> valid2 = valid1 & (itime == vitime);
           valid1 = valid1 & !valid2;
-          intersect(valid2,pre,ray,vftime,itime,context,prim,ty,lazy_node);
+          intersect(valid2,pre,ray,vftime,itime,context,prim,lazy_node);
         }
       }
 
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const vfloat<K>& ftime, int itime, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const vfloat<K>& ftime, int itime, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         const size_t grid_offset   = pre.grid->gridBytes >> 2;
         const size_t dim_offset    = pre.grid->dim_offset;
@@ -285,14 +285,14 @@ namespace embree
             const Vec3vf<K> p10 = lerp(a10,b10,ftime);
             const Vec3vf<K> p11 = lerp(a11,b11,ftime);
 
-            pre.intersector.intersectK(valid_i,ray,p00,p01,p10,MapUV0<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,context,pre.grid->geomID,pre.grid->primID));
-            pre.intersector.intersectK(valid_i,ray,p10,p01,p11,MapUV1<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,context,pre.grid->geomID,pre.grid->primID));
+            pre.intersector.intersectK(valid_i,ray,p00,p01,p10,MapUV0<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,context,pre.grid->geomID(),pre.grid->primID()));
+            pre.intersector.intersectK(valid_i,ray,p10,p01,p11,MapUV1<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,context,pre.grid->geomID(),pre.grid->primID()));
           }
         }
       }
 
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         vfloat<K> vftime;
         vint<K> vitime = getTimeSegment(ray.time, vfloat<K>(pre.grid->time_steps-1), vftime);
@@ -304,13 +304,13 @@ namespace embree
           const int itime = vitime[j];
           const vbool<K> valid2 = valid1 & (itime == vitime);
           valid1 = valid1 & !valid2;
-          valid_o &= !valid2 | occluded(valid2,pre,ray,vftime,itime,context,prim,ty,lazy_node);
+          valid_o &= !valid2 | occluded(valid2,pre,ray,vftime,itime,context,prim,lazy_node);
         }
         return !valid_o;
       }
 
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const vfloat<K>& ftime, int itime, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const vfloat<K>& ftime, int itime, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         const size_t grid_offset   = pre.grid->gridBytes >> 2;
         const size_t dim_offset    = pre.grid->dim_offset;
@@ -348,9 +348,9 @@ namespace embree
             const Vec3vf<K> p10 = lerp(a10,b10,ftime);
             const Vec3vf<K> p11 = lerp(a11,b11,ftime);
 
-            pre.intersector.intersectK(valid,ray,p00,p01,p10,MapUV0<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogMU<1,K,true>(valid,ray,context,pre.grid->geomID,pre.grid->primID));
+            pre.intersector.intersectK(valid,ray,p00,p01,p10,MapUV0<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogMU<1,K,true>(valid,ray,context,pre.grid->geomID(),pre.grid->primID()));
             if (none(valid)) break;
-            pre.intersector.intersectK(valid,ray,p10,p01,p11,MapUV1<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogMU<1,K,true>(valid,ray,context,pre.grid->geomID,pre.grid->primID));
+            pre.intersector.intersectK(valid,ray,p10,p01,p11,MapUV1<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogMU<1,K,true>(valid,ray,context,pre.grid->geomID(),pre.grid->primID()));
             if (none(valid)) break;
           }
         }
@@ -383,7 +383,7 @@ namespace embree
         Vec3<vfloat> v1 = lerp(a1,b1,vfloat(ftime));
         Vec3<vfloat> v2 = lerp(a2,b2,vfloat(ftime));
 
-        pre.intersector.intersect(ray,k,v0,v1,v2,GridSOA::MapUV<Loader>(grid_uv,line_offset,lines),Intersect1KEpilogMU<Loader::M,K,true>(ray,k,context,pre.grid->geomID,pre.grid->primID));
+        pre.intersector.intersect(ray,k,v0,v1,v2,GridSOA::MapUV<Loader>(grid_uv,line_offset,lines),Intersect1KEpilogMU<Loader::M,K,true>(ray,k,context,pre.grid->geomID(),pre.grid->primID()));
       };
 
       template<typename Loader>
@@ -412,11 +412,11 @@ namespace embree
         Vec3<vfloat> v1 = lerp(a1,b1,vfloat(ftime));
         Vec3<vfloat> v2 = lerp(a2,b2,vfloat(ftime));
 
-        return pre.intersector.intersect(ray,k,v0,v1,v2,GridSOA::MapUV<Loader>(grid_uv,line_offset,lines),Occluded1KEpilogMU<Loader::M,K,true>(ray,k,context,pre.grid->geomID,pre.grid->primID));
+        return pre.intersector.intersect(ray,k,v0,v1,v2,GridSOA::MapUV<Loader>(grid_uv,line_offset,lines),Occluded1KEpilogMU<Loader::M,K,true>(ray,k,context,pre.grid->geomID(),pre.grid->primID()));
       }
 
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       { 
         float ftime;
         int itime = getTimeSegment(ray.time[k], float(pre.grid->time_steps-1), ftime);
@@ -435,7 +435,7 @@ namespace embree
       }
 
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         float ftime;
         int itime = getTimeSegment(ray.time[k], float(pre.grid->time_steps-1), ftime);

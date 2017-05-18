@@ -17,7 +17,6 @@
 #pragma once
 
 #include "default.h"
-#include "scene.h"
 
 namespace embree
 {
@@ -74,37 +73,19 @@ namespace embree
       center_o = embree::center2(bounds_o);
     }
 
-    /*! returns center for binning */
-    __forceinline Vec3fa binCenter(const AffineSpace3fa& space, void* user) const // only called by hair builder
-    {
-      Scene* scene = (Scene*) user;
-      NativeCurves* mesh = (NativeCurves*) scene->get(geomID());
-      BBox3fa bounds = mesh->bounds(space,primID());
-      return embree::center2(bounds);
-    }
-
-    /*! returns bounds and centroid used for binning */
-    __forceinline void binBoundsAndCenter(BBox3fa& bounds_o, Vec3fa& center_o, const AffineSpace3fa& space, void* user) const // only called by hair builder
-    {
-      Scene* scene = (Scene*) user;
-      NativeCurves* mesh = (NativeCurves*) scene->get(geomID());
-      BBox3fa bounds = mesh->bounds(space,primID());
-      bounds_o = bounds;
-      center_o = embree::center2(bounds);
-    }
-
-    /*! returns the geometry ID */
-    __forceinline unsigned& geomID() { 
+    __forceinline unsigned& geomIDref() {  // FIXME: remove !!!!!!!
       return lower.u;
     }
+    __forceinline unsigned& primIDref() {  // FIXME: remove !!!!!!!
+      return upper.u;
+    }
+    
+    /*! returns the geometry ID */
     __forceinline unsigned geomID() const { 
       return lower.a;
     }
 
     /*! returns the primitive ID */
-    __forceinline unsigned& primID() { 
-      return upper.u;
-    }
     __forceinline unsigned primID() const { 
       return upper.a;
     }

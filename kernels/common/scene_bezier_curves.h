@@ -50,13 +50,9 @@ namespace embree
     void unmap(RTCBufferType type);
     void immutable ();
     bool verify ();
-    void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
-    template<typename Curve>
-      void interpolate_helper(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
     void setTessellationRate(float N);
     // FIXME: implement interpolateN
     void preCommit();
-    template<typename InputCurve3fa> void commit_helper();
 
   public:
     
@@ -296,17 +292,37 @@ namespace embree
     vector<APIBuffer<Vec3fa>> native_vertices;               //!< vertex array for each timestep
   };
 
-  struct CurvesBezier : public NativeCurves
+  namespace isa
   {
-    CurvesBezier (Scene* scene, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
-    void preCommit();
-    void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
-  };
+    struct NativeCurvesISA : public NativeCurves
+    {
+      NativeCurvesISA (Scene* scene, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps)
+        : NativeCurves(scene,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps) {}
 
-  struct CurvesBSpline : public NativeCurves
-  {
-    CurvesBSpline (Scene* scene, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
-    void preCommit();
-    void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
-  };
+      template<typename Curve> void interpolate_helper(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+      
+      template<typename InputCurve3fa, typename OutputCurve3fa> void commit_helper();
+    };
+    
+    struct CurvesBezier : public NativeCurvesISA
+    {
+      CurvesBezier (Scene* scene, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps)
+         : NativeCurvesISA(scene,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps) {}
+
+      void preCommit();
+      void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+    };
+    
+    struct CurvesBSpline : public NativeCurvesISA
+    {
+      CurvesBSpline (Scene* scene, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps)
+         : NativeCurvesISA(scene,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps) {}
+
+      void preCommit();
+      void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+    };
+  }
+
+  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBezier, Scene* COMMA NativeCurves::SubType COMMA NativeCurves::Basis COMMA RTCGeometryFlags COMMA size_t COMMA size_t COMMA size_t);
+  DECLARE_ISA_FUNCTION(NativeCurves*, createCurvesBSpline, Scene* COMMA NativeCurves::SubType COMMA NativeCurves::Basis COMMA RTCGeometryFlags COMMA size_t COMMA size_t COMMA size_t);
 }

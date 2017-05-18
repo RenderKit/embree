@@ -28,111 +28,9 @@ namespace embree
     template<int N, int Nx, int types>
     class BVHNNodeTraverser1Hit;
 
-    /* Specialization for BVH4. */
-    template<int Nx, int types>
-      class BVHNNodeTraverser1Hit<4,Nx,types>
-    {
-      typedef BVH4 BVH;
-      typedef BVH4::NodeRef NodeRef;
-      typedef BVH4::BaseNode BaseNode;
-
-    public:
-      /* Traverses a node with at least one hit child. Optimized for finding the closest hit (intersection). */
-      static __forceinline void traverseClosestHit(NodeRef& cur,
-                                                   size_t mask,
-                                                   const vfloat<Nx>& tNear,
-                                                   StackItemT<NodeRef>*& stackPtr,
-                                                   StackItemT<NodeRef>* stackEnd)
-      {
-        assert(mask != 0);
-        const BaseNode* node = cur.baseNode(types);
-
-        /*! one child is hit, continue with that child */
-        size_t r = __bscf(mask);
-        cur = node->child(r);
-        cur.prefetch(types);
-        if (likely(mask == 0)) {
-          assert(cur != BVH::emptyNode);
-          return;
-        }
-
-        /*! two children are hit, push far child, and continue with closer child */
-        NodeRef c0 = cur;
-        const unsigned int d0 = ((unsigned int*)&tNear)[r];
-        r = __bscf(mask);
-        NodeRef c1 = node->child(r);
-        c1.prefetch(types);
-        const unsigned int d1 = ((unsigned int*)&tNear)[r];
-        assert(c0 != BVH::emptyNode);
-        assert(c1 != BVH::emptyNode);
-        if (likely(mask == 0)) {
-          assert(stackPtr < stackEnd);
-          if (d0 < d1) { stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; cur = c0; return; }
-          else         { stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++; cur = c1; return; }
-        }
-
-        /*! Here starts the slow path for 3 or 4 hit children. We push
-         *  all nodes onto the stack to sort them there. */
-        assert(stackPtr < stackEnd);
-        stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++;
-        assert(stackPtr < stackEnd);
-        stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++;
-
-        /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
-        assert(stackPtr < stackEnd);
-        r = __bscf(mask);
-        NodeRef c = node->child(r); c.prefetch(types); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
-        assert(c != BVH::emptyNode);
-        if (likely(mask == 0)) {
-          sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
-          cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
-          return;
-        }
-
-        /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
-        assert(stackPtr < stackEnd);
-        r = __bscf(mask);
-        c = node->child(r); c.prefetch(types); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
-        assert(c != BVH::emptyNode);
-        sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
-        cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
-      }
-
-      /* Traverses a node with at least one hit child. Optimized for finding any hit (occlusion). */
-      static __forceinline void traverseAnyHit(NodeRef& cur,
-                                               size_t mask,
-                                               const vfloat<Nx>& tNear,
-                                               NodeRef*& stackPtr,
-                                               NodeRef* stackEnd)
-      {
-        const BaseNode* node = cur.baseNode(types);
-
-        /*! one child is hit, continue with that child */
-        size_t r = __bscf(mask);
-        cur = node->child(r); 
-        cur.prefetch(types);
-
-        /* simpler in sequence traversal order */
-        assert(cur != BVH::emptyNode);
-        if (likely(mask == 0)) return;
-        assert(stackPtr < stackEnd);
-        *stackPtr = cur; stackPtr++;
-
-        for (; ;)
-        {
-          r = __bscf(mask);
-          cur = node->child(r); cur.prefetch(types);
-          assert(cur != BVH::emptyNode);
-          if (likely(mask == 0)) return;
-          assert(stackPtr < stackEnd);
-          *stackPtr = cur; stackPtr++;
-        }
-      }
-    };
-
-
-#if defined(__AVX512ER__)
-      __forceinline static void isort_update(vfloat16 &dist, vllong8 &ptr, const vfloat16 &d, const vllong8 &p)
+    /*! Helper functions for fast sorting using AVX512 instructions. */
+#if defined(__AVX512F__)   
+    __forceinline static void isort_update(vfloat16 &dist, vllong8 &ptr, const vfloat16 &d, const vllong8 &p)
       {
         const vfloat16 dist_shift = align_shift_right<15>(dist,dist);
         const vllong8  ptr_shift  = align_shift_right<7>(ptr,ptr);
@@ -149,34 +47,24 @@ namespace embree
         dist = align_shift_right<15>(dist,d);
         ptr  = align_shift_right<7>(ptr,p);
       }
-#endif
 
-    /* Specialization for BVH8. */
-    template<int Nx, int types>
-      class BVHNNodeTraverser1Hit<8,Nx,types>
-    {
-      typedef BVH8 BVH;
-      typedef BVH8::NodeRef NodeRef;
-      typedef BVH8::BaseNode BaseNode;
-
-    public:
-      static __forceinline void traverseClosestHit(NodeRef& cur,
-                                                   size_t mask,
-                                                   const vfloat<Nx>& tNear,
-                                                   StackItemT<NodeRef>*& stackPtr,
-                                                   StackItemT<NodeRef>* stackEnd)
+      template<int N, int Nx, int types, class NodeRef, class BaseNode>
+        static __forceinline void traverseClosestHitAVX512(NodeRef& cur,
+                                                           size_t mask,
+                                                           const vfloat<Nx>& tNear,
+                                                           StackItemT<NodeRef>*& stackPtr,
+                                                           StackItemT<NodeRef>* stackEnd)
       {
         assert(mask != 0);
         const BaseNode* node = cur.baseNode(types);
 
-#if defined(__AVX512ER__)
         STAT3(normal.trav_hit_boxes[__popcnt(mask)],1,1,1);
 
         size_t r = __bscf(mask);
         cur = node->child(r);
         cur.prefetch(types);
         if (likely(mask == 0)) {
-          assert(cur != BVH::emptyNode);
+          //assert(cur != BVH::emptyNode);
           return;
         }
         
@@ -236,7 +124,6 @@ namespace embree
         /* 4 hits: order A2 B2 C2 D2 */
 
         const vfloat16 dist_A1  = select(m_dist1, dist_A0, d2);
-#if 1
         r = __bscf(mask);
         cur = node->child(r);
         cur.prefetch(types);
@@ -276,22 +163,14 @@ namespace embree
         /* >=5 hits: reverse to descending order for writing to stack */
 
         const size_t hits = 4 + __popcnt(mask);
-
         const vfloat16 dist_A2  = select(m_dist3, dist_A1, d3);
-#endif
         vfloat16 dist(neg_inf);
         vllong8 ptr(zero);
 
-#if 1
         isort_quick_update(dist,ptr,dist_A2,ptr_A2);
         isort_quick_update(dist,ptr,dist_B2,ptr_B2);
         isort_quick_update(dist,ptr,dist_C2,ptr_C2);
         isort_quick_update(dist,ptr,dist_D2,ptr_D2);
-#else
-        isort_quick_update(dist,ptr,dist_A1,ptr_A1);
-        isort_quick_update(dist,ptr,dist_B1,ptr_B1);
-        isort_quick_update(dist,ptr,dist_C1,ptr_C1);
-#endif
 
         do {
           const size_t r = __bscf(mask);
@@ -338,8 +217,139 @@ namespace embree
         }
         cur = toScalar(ptr);
 #endif        
+      }
 
+#endif
+
+
+    /* Specialization for BVH4. */
+    template<int Nx, int types>
+      class BVHNNodeTraverser1Hit<4,Nx,types>
+    {
+      typedef BVH4 BVH;
+      typedef BVH4::NodeRef NodeRef;
+      typedef BVH4::BaseNode BaseNode;
+
+    public:
+      /* Traverses a node with at least one hit child. Optimized for finding the closest hit (intersection). */
+      static __forceinline void traverseClosestHit(NodeRef& cur,
+                                                   size_t mask,
+                                                   const vfloat<Nx>& tNear,
+                                                   StackItemT<NodeRef>*& stackPtr,
+                                                   StackItemT<NodeRef>* stackEnd)
+      {
+        assert(mask != 0);
+#if defined(__AVX512ER__)
+        traverseClosestHitAVX512<4,Nx,types,NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
 #else
+        const BaseNode* node = cur.baseNode(types);
+
+        /*! one child is hit, continue with that child */
+        size_t r = __bscf(mask);
+        cur = node->child(r);
+        cur.prefetch(types);
+        if (likely(mask == 0)) {
+          assert(cur != BVH::emptyNode);
+          return;
+        }
+
+        /*! two children are hit, push far child, and continue with closer child */
+        NodeRef c0 = cur;
+        const unsigned int d0 = ((unsigned int*)&tNear)[r];
+        r = __bscf(mask);
+        NodeRef c1 = node->child(r);
+        c1.prefetch(types);
+        const unsigned int d1 = ((unsigned int*)&tNear)[r];
+        assert(c0 != BVH::emptyNode);
+        assert(c1 != BVH::emptyNode);
+        if (likely(mask == 0)) {
+          assert(stackPtr < stackEnd);
+          if (d0 < d1) { stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; cur = c0; return; }
+          else         { stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++; cur = c1; return; }
+        }
+
+        /*! Here starts the slow path for 3 or 4 hit children. We push
+         *  all nodes onto the stack to sort them there. */
+        assert(stackPtr < stackEnd);
+        stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++;
+        assert(stackPtr < stackEnd);
+        stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++;
+
+        /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
+        assert(stackPtr < stackEnd);
+        r = __bscf(mask);
+        NodeRef c = node->child(r); c.prefetch(types); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+        assert(c != BVH::emptyNode);
+        if (likely(mask == 0)) {
+          sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
+          cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+          return;
+        }
+
+        /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
+        assert(stackPtr < stackEnd);
+        r = __bscf(mask);
+        c = node->child(r); c.prefetch(types); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+        assert(c != BVH::emptyNode);
+        sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
+        cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+#endif
+      }
+
+      /* Traverses a node with at least one hit child. Optimized for finding any hit (occlusion). */
+      static __forceinline void traverseAnyHit(NodeRef& cur,
+                                               size_t mask,
+                                               const vfloat<Nx>& tNear,
+                                               NodeRef*& stackPtr,
+                                               NodeRef* stackEnd)
+      {
+        const BaseNode* node = cur.baseNode(types);
+
+        /*! one child is hit, continue with that child */
+        size_t r = __bscf(mask);
+        cur = node->child(r); 
+        cur.prefetch(types);
+
+        /* simpler in sequence traversal order */
+        assert(cur != BVH::emptyNode);
+        if (likely(mask == 0)) return;
+        assert(stackPtr < stackEnd);
+        *stackPtr = cur; stackPtr++;
+
+        for (; ;)
+        {
+          r = __bscf(mask);
+          cur = node->child(r); cur.prefetch(types);
+          assert(cur != BVH::emptyNode);
+          if (likely(mask == 0)) return;
+          assert(stackPtr < stackEnd);
+          *stackPtr = cur; stackPtr++;
+        }
+      }
+    };
+
+    /* Specialization for BVH8. */
+    template<int Nx, int types>
+      class BVHNNodeTraverser1Hit<8,Nx,types>
+    {
+      typedef BVH8 BVH;
+      typedef BVH8::NodeRef NodeRef;
+      typedef BVH8::BaseNode BaseNode;
+
+    public:
+      static __forceinline void traverseClosestHit(NodeRef& cur,
+                                                   size_t mask,
+                                                   const vfloat<Nx>& tNear,
+                                                   StackItemT<NodeRef>*& stackPtr,
+                                                   StackItemT<NodeRef>* stackEnd)
+      {
+        assert(mask != 0);
+
+#if defined(__AVX512ER__)
+        traverseClosestHitAVX512<8,Nx,types,NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
+#else
+        const BaseNode* node = cur.baseNode(types);
+
         /*! one child is hit, continue with that child */
         size_t r = __bscf(mask);
         cur = node->child(r);
@@ -467,7 +477,6 @@ namespace embree
       __forceinline bool traverseTransform(NodeRef& cur,
                                            Ray& ray,
                                            TravRay<N,Nx>& vray,
-                                           size_t& leafType,
                                            IntersectContext* context,
                                            StackItemT<NodeRef>*& stackPtr,
                                            StackItemT<NodeRef>* stackEnd)
@@ -480,7 +489,6 @@ namespace embree
 #if defined(EMBREE_RAY_MASK)
           if (unlikely((ray.mask & node->mask) == 0)) return true;
 #endif          
-          leafType = node->type;
           //context->geomID_to_instID = &node->instID;
           context->instID = ray.instID;
           context->geomID = ray.geomID;
@@ -518,7 +526,6 @@ namespace embree
         /*! restore toplevel ray */
         if (cur == BVH::popRay)
         {
-          leafType = 0;
           //context->geomID_to_instID = nullptr;
           vray = (TravRay<N,Nx>&) tlray;
           ray.org = ((TravRay<N,Nx>&)tlray).org_xyz;
@@ -537,7 +544,6 @@ namespace embree
       __forceinline bool traverseTransform(NodeRef& cur,
                                            Ray& ray,
                                            TravRay<N,Nx>& vray,
-                                           size_t& leafType,
                                            IntersectContext* context,
                                            NodeRef*& stackPtr,
                                            NodeRef* stackEnd)
@@ -550,7 +556,6 @@ namespace embree
 #if defined(EMBREE_RAY_MASK)
           if (unlikely((ray.mask & node->mask) == 0)) return true;
 #endif
-          leafType = node->type;
           //context->geomID_to_instID = &node->instID;
           context->instID = ray.instID;
           context->geomID = ray.geomID;
@@ -588,7 +593,6 @@ namespace embree
         /*! restore toplevel ray */
         if (cur == BVH::popRay)
         {
-          leafType = 0;
           //context->geomID_to_instID = nullptr;
           vray = (TravRay<N,Nx>&) tlray;
           ray.org = ((TravRay<N,Nx>&)tlray).org_xyz;
@@ -626,7 +630,6 @@ namespace embree
       __forceinline bool traverseTransform(NodeRef& cur,
                                            Ray& ray,
                                            TravRay<N,Nx>& vray,
-                                           size_t& leafType,
                                            IntersectContext* context,
                                            StackItemT<NodeRef>*& stackPtr,
                                            StackItemT<NodeRef>* stackEnd)
@@ -637,7 +640,6 @@ namespace embree
       __forceinline bool traverseTransform(NodeRef& cur,
                                            Ray& ray,
                                            TravRay<N,Nx>& vray,
-                                           size_t& leafType,
                                            IntersectContext* context,
                                            NodeRef*& stackPtr,
                                            NodeRef* stackEnd)

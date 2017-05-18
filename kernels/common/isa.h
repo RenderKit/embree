@@ -32,20 +32,21 @@ namespace embree
   void name##_error2() { throw_RTCError(RTC_UNKNOWN_ERROR,"internal error in ISA selection for " TOSTRING(name)); } \
   type name##_error() { return type(name##_error2); }                 \
   type name##_zero() { return type(nullptr); }
+
+#define DECLARE_ISA_FUNCTION(type,symbol,args)                            \
+  namespace sse2      { extern type symbol(args); }                       \
+  namespace sse42     { extern type symbol(args); }                       \
+  namespace avx       { extern type symbol(args); }                       \
+  namespace avx2      { extern type symbol(args); }                       \
+  namespace avx512knl { extern type symbol(args); }                       \
+  namespace avx512skx { extern type symbol(args); }                     \
+  inline void symbol##_error() { throw_RTCError(RTC_UNSUPPORTED_CPU,"function " TOSTRING(symbol) " not supported by your CPU"); } \
+  typedef type (*symbol##Ty)(args);                                       \
   
-#define DEFINE_BUILDER2(Accel,Mesh,Args,symbol)                         \
-  typedef Builder* (*symbol##Func)(Accel* accel, Mesh* mesh, Args args); \
+#define DEFINE_ISA_FUNCTION(type,symbol,args)   \
+  typedef type (*symbol##Func)(args);           \
   symbol##Func symbol;
-
-#define DECLARE_BUILDER2(Accel,Mesh,Args,symbol)                         \
-  namespace sse2      { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace sse42     { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace avx       { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace avx2      { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace avx512knl { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace avx512skx { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  void symbol##_error() { throw_RTCError(RTC_UNSUPPORTED_CPU,"builder " TOSTRING(symbol) " not supported by your CPU"); } \
-
+  
 #define ZERO_SYMBOL(features,intersector)                      \
   intersector = intersector##_zero;
 
@@ -56,21 +57,21 @@ namespace embree
   intersector = isa::intersector;
 
 #if defined(__SSE__)
-#if !defined(__TARGET_SIMD4__)
-#define __TARGET_SIMD4__
+#if !defined(EMBREE_TARGET_SIMD4)
+#define EMBREE_TARGET_SIMD4
 #endif
 #endif
 
-#if defined(__TARGET_SSE42__)
+#if defined(EMBREE_TARGET_SSE42)
 #define SELECT_SYMBOL_SSE42(features,intersector) \
   if ((features & SSE42) == SSE42) intersector = sse42::intersector;
 #else
 #define SELECT_SYMBOL_SSE42(features,intersector)
 #endif
 
-#if defined(__TARGET_AVX__)
-#if !defined(__TARGET_SIMD8__)
-#define __TARGET_SIMD8__
+#if defined(EMBREE_TARGET_AVX)
+#if !defined(EMBREE_TARGET_SIMD8)
+#define EMBREE_TARGET_SIMD8
 #endif
 #define SELECT_SYMBOL_AVX(features,intersector) \
   if ((features & AVX) == AVX) intersector = avx::intersector;
@@ -78,9 +79,9 @@ namespace embree
 #define SELECT_SYMBOL_AVX(features,intersector)
 #endif
 
-#if defined(__TARGET_AVX2__)
-#if !defined(__TARGET_SIMD8__)
-#define __TARGET_SIMD8__
+#if defined(EMBREE_TARGET_AVX2)
+#if !defined(EMBREE_TARGET_SIMD8)
+#define EMBREE_TARGET_SIMD8
 #endif
 #define SELECT_SYMBOL_AVX2(features,intersector) \
   if ((features & AVX2) == AVX2) intersector = avx2::intersector;
@@ -88,9 +89,9 @@ namespace embree
 #define SELECT_SYMBOL_AVX2(features,intersector)
 #endif
 
-#if defined(__TARGET_AVX512KNL__)
-#if !defined(__TARGET_SIMD16__)
-#define __TARGET_SIMD16__
+#if defined(EMBREE_TARGET_AVX512KNL)
+#if !defined(EMBREE_TARGET_SIMD16)
+#define EMBREE_TARGET_SIMD16
 #endif
 #define SELECT_SYMBOL_AVX512KNL(features,intersector) \
   if ((features & AVX512KNL) == AVX512KNL) intersector = avx512knl::intersector;
@@ -98,9 +99,9 @@ namespace embree
 #define SELECT_SYMBOL_AVX512KNL(features,intersector)
 #endif
 
-#if defined(__TARGET_AVX512SKX__)
-#if !defined(__TARGET_SIMD16__)
-#define __TARGET_SIMD16__
+#if defined(EMBREE_TARGET_AVX512SKX)
+#if !defined(EMBREE_TARGET_SIMD16)
+#define EMBREE_TARGET_SIMD16
 #endif
 #define SELECT_SYMBOL_AVX512SKX(features,intersector) \
   if ((features & AVX512SKX) == AVX512SKX) intersector = avx512skx::intersector;

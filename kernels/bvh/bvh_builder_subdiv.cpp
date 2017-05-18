@@ -168,9 +168,9 @@ namespace embree
 
         PrimInfo pinfo(pinfo3.end,pinfo3.geomBounds,pinfo3.centBounds);
         
-        auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator alloc) -> NodeRef {
-          assert(current.prims.size() == 1);
-          size_t leaf = (size_t) prims[current.prims.begin()].ID();
+        auto createLeaf = [&] (const range<size_t>& range, Allocator alloc) -> NodeRef {
+          assert(range.size() == 1);
+          size_t leaf = (size_t) prims[range.begin()].ID();
           return NodeRef(leaf);
         };
 
@@ -366,9 +366,9 @@ namespace embree
           });
         
         /* build normal BVH over patches */
-        auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, const Allocator& alloc) -> NodeRef {
-          assert(current.prims.size() == 1);
-          const size_t patchIndex = prims[current.prims.begin()].ID();
+        auto createLeaf = [&] (const range<size_t>& range, const Allocator& alloc) -> NodeRef {
+          assert(range.size() == 1);
+          const size_t patchIndex = prims[range.begin()].ID();
           return bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
         };
         
@@ -657,7 +657,7 @@ namespace embree
           const size_t patchIndexMB = prims[current.prims.object_range.begin()].ID();
           SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+0];
           NodeRef node = bvh->encodeLeaf((char*)&patch,1);
-          size_t patchNumTimeSteps = scene->get<SubdivMesh>(patch.geom)->numTimeSteps;
+          size_t patchNumTimeSteps = scene->get<SubdivMesh>(patch.geomID())->numTimeSteps;
           const LBBox3fa lbounds = LBBox3fa([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, current.prims.time_range, patchNumTimeSteps-1);
           return NodeRecordMB4D(node,lbounds,current.prims.time_range);
         };

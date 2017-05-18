@@ -44,8 +44,8 @@ namespace embree
       public:
         __forceinline BuildRef () {}
 
-        __forceinline BuildRef (const AffineSpace3fa& local2world, const BBox3fa& localBounds_in, NodeRef node, unsigned mask, int instID, int xfmID, int type, int depth = 0)
-          : local2world(local2world), localBounds(localBounds_in), node(node), mask(mask), instID(instID), xfmID(xfmID), type(type), depth(depth)
+        __forceinline BuildRef (const AffineSpace3fa& local2world, const BBox3fa& localBounds_in, NodeRef node, unsigned mask, int instID, int xfmID, int type, int depth = 0, unsigned int numPrims = 1)
+          : local2world(local2world), localBounds(localBounds_in), node(node), mask(mask), instID(instID), xfmID(xfmID), type(type), depth(depth), numPrims(numPrims)
         {
           if (node.isAlignedNode()) {
           //if (node.isAlignedNode() || node.isAlignedNodeMB()) {
@@ -64,6 +64,28 @@ namespace embree
           return xfmBounds(local2world,localBounds);
         }
 
+        __forceinline BBox3fa bounds() const {
+          return worldBounds();
+        }
+
+        __forceinline unsigned geomID() const { 
+          return instID;
+        }
+
+        __forceinline unsigned int primID() const { return numPrims; }
+
+        __forceinline unsigned int size() const { return 1; } 
+
+        __forceinline unsigned int numPrimitives() const { return numPrims; } 
+
+
+        __forceinline void binBoundsAndCenter(BBox3fa& bounds_o, Vec3fa& center_o) const 
+        {
+          bounds_o = bounds();
+          center_o = embree::center2(bounds_o);
+          bounds_o.upper.a = numPrims;
+        }
+
         friend bool operator< (const BuildRef& a, const BuildRef& b) {
           return a.localBounds.lower.w < b.localBounds.lower.w;
         }
@@ -77,6 +99,7 @@ namespace embree
         int xfmID;
         int type;
         int depth;
+        unsigned int numPrims;
       };
       
       /*! Constructor. */
@@ -94,6 +117,26 @@ namespace embree
 
       size_t numCollapsedTransformNodes;
       NodeRef collapse(NodeRef& node);
+
+      __forceinline size_t openBuildRef(BuildRef &bref, BuildRef *const refs) {
+        if (bref.node.isLeaf())
+        {
+          refs[0] = bref;
+          return 1;
+        }
+        assert(bref.node.isAlignedNode());
+        NodeRef ref = bref.node;
+        unsigned int numPrims = max((unsigned int)bref.numPrimitives() / N,(unsigned int)1);
+        AlignedNode* node = ref.alignedNode();
+        size_t n = 0;
+        for (size_t i=0; i<N; i++) {
+          if (node->child(i) == BVH::emptyNode) continue;
+          refs[i] = BuildRef(bref.local2world,node->bounds(i),node->child(i),bref.mask,bref.instID,bref.xfmID,bref.type,bref.depth+1,numPrims);
+          n++;
+        }
+        assert(n > 1);
+        return n;        
+      }
       
     public:
       BVH* bvh;

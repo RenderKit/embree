@@ -100,56 +100,44 @@ namespace embree
   }
 
   template<typename Ty>
-    struct extended_range 
+    struct extended_range : public range<Ty>
     {
       __forceinline extended_range () {}
 
       __forceinline extended_range (const Ty& begin)
-        : _begin(begin), _end(begin+1), _ext_end(begin+1) {}
+        : range<Ty>(begin), _ext_end(begin+1) {}
       
       __forceinline extended_range (const Ty& begin, const Ty& end)
-        : _begin(begin), _end(end), _ext_end(end) {}
+        : range<Ty>(begin,end), _ext_end(end) {}
 
       __forceinline extended_range (const Ty& begin, const Ty& end, const Ty& ext_end)
-        : _begin(begin), _end(end), _ext_end(ext_end) {}
+        : range<Ty>(begin,end), _ext_end(ext_end) {}
       
-      __forceinline Ty begin() const {
-        return _begin;
-      }
-      
-      __forceinline Ty end() const {
-	return _end;
-      }
-
       __forceinline Ty ext_end() const {
 	return _ext_end;
       }
 
-      __forceinline Ty size() const {
-        return _end - _begin;
-      }
-
       __forceinline Ty ext_size() const {
-        return _ext_end - _begin;
+        return _ext_end - range<Ty>::_begin;
       }
 
       __forceinline Ty ext_range_size() const {
-        return _ext_end - _end;
+        return _ext_end - range<Ty>::_end;
       }
 
       __forceinline bool has_ext_range() const {
-        assert(_ext_end >= _end);
-        return (_ext_end - _end) > 0;
+        assert(_ext_end >= range<Ty>::_end);
+        return (_ext_end - range<Ty>::_end) > 0;
       }
 
       __forceinline void set_ext_range(const size_t ext_end){
-        assert(ext_end >= _end);
+        assert(ext_end >= range<Ty>::_end);
         _ext_end = ext_end;
       }
 
       __forceinline void move_right(const size_t plus){
-        _begin   += plus;
-        _end     += plus;
+        range<Ty>::_begin   += plus;
+        range<Ty>::_end     += plus;
         _ext_end += plus;
       }
 
@@ -157,6 +145,6 @@ namespace embree
         return cout << "extended_range [" << r.begin() << ", " << r.end() <<  " (" << r.ext_end() << ")]";
       }
       
-      Ty _begin, _end, _ext_end;
+      Ty _ext_end;
     };
 }

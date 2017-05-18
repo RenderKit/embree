@@ -25,6 +25,8 @@
 
 namespace embree
 {
+#if defined(EMBREE_LOWEST_ISA)
+
   SubdivMesh::SubdivMesh (Scene* scene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
 			  size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps)
     : Geometry(scene,SUBDIV_MESH,numFaces,numTimeSteps,flags), 
@@ -700,19 +702,10 @@ namespace embree
     /* create interpolation cache mapping for interpolatable meshes */
     if (scene->isInterpolatable()) 
     {
-#if defined (__TARGET_AVX__)
-      auto numInterpolationSlots = [&] (size_t stride) {
-        if (scene->device->hasISA(AVX)) return numInterpolationSlots8(stride); else return numInterpolationSlots4(stride);
-      };
-#else
-      auto numInterpolationSlots = [] (size_t stride) {
-        return numInterpolationSlots4(stride);
-      };
-#endif
       for (size_t i=0; i<vertex_buffer_tags.size(); i++)
-        vertex_buffer_tags[i].resize(numFaces()*numInterpolationSlots(vertices[i].getStride()));
+        vertex_buffer_tags[i].resize(numFaces()*numInterpolationSlots4(vertices[i].getStride()));
       for (size_t i=0; i<userbuffers.size(); i++)
-        if (userbuffers[i]) user_buffer_tags[i].resize(numFaces()*numInterpolationSlots(userbuffers[i].getStride()));
+        if (userbuffers[i]) user_buffer_tags[i].resize(numFaces()*numInterpolationSlots4(userbuffers[i].getStride()));
     }
 
     /* cleanup some state for static scenes */
@@ -765,136 +758,146 @@ namespace embree
 
     return true;
   }
-
-  void SubdivMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
-  {
-    /* test if interpolation is enabled */
-#if defined(DEBUG) 
-    if ((scene->aflags & RTC_INTERPOLATE) == 0) 
-      throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
 #endif
 
-    /* calculate base pointer and stride */
-    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS)) ||
-           (buffer >= RTC_USER_VERTEX_BUFFER0 && RTCBufferType(RTC_USER_VERTEX_BUFFER0 + RTC_MAX_USER_VERTEX_BUFFERS)));
-    const char* src = nullptr; 
-    size_t stride = 0;
-    size_t bufID = buffer&0xFFFF;
-    std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
-    Topology* topo = nullptr;
-    if (buffer >= RTC_USER_VERTEX_BUFFER0) {
-      assert(bufID < userbuffers.size());
-      src    = userbuffers[bufID].getPtr();
-      stride = userbuffers[bufID].getStride();
-      baseEntry = &user_buffer_tags[bufID];
-      int topologyID = userbuffers[bufID].userdata;
-      topo = &topology[topologyID];
-    } else {
-      assert(bufID < numTimeSteps);
-      src    = vertices[bufID].getPtr();
-      stride = vertices[bufID].getStride();
-      baseEntry = &vertex_buffer_tags[bufID];
-      topo = &topology[0];
-    }
-
-    bool has_P = P;
-    bool has_dP = dPdu;     assert(!has_dP  || dPdv);
-    bool has_ddP = ddPdudu; assert(!has_ddP || (ddPdvdv && ddPdudu));
-
-    for (size_t i=0; i<numFloats; i+=4)
+  namespace isa
+  {
+    SubdivMesh* createSubdivMesh(Scene* scene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
+                                 size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps) 
     {
-      vfloat4 Pt, dPdut, dPdvt, ddPdudut, ddPdvdvt, ddPdudvt;
-      isa::PatchEval<vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,i/4,stride)),scene->commitCounterSubdiv,
-                                      topo->getHalfEdge(primID),src+i*sizeof(float),stride,u,v,
-                                      has_P ? &Pt : nullptr, 
-                                      has_dP ? &dPdut : nullptr, 
-                                      has_dP ? &dPdvt : nullptr,
-                                      has_ddP ? &ddPdudut : nullptr, 
-                                      has_ddP ? &ddPdvdvt : nullptr, 
-                                      has_ddP ? &ddPdudvt : nullptr);
-
-      if (has_P) {
-        for (size_t j=i; j<min(i+4,numFloats); j++) 
-          P[j] = Pt[j-i];
-      }
-      if (has_dP) 
-      {
-        for (size_t j=i; j<min(i+4,numFloats); j++) {
-          dPdu[j] = dPdut[j-i];
-          dPdv[j] = dPdvt[j-i];
-        }
-      }
-      if (has_ddP) 
-      {
-        for (size_t j=i; j<min(i+4,numFloats); j++) {
-          ddPdudu[j] = ddPdudut[j-i];
-          ddPdvdv[j] = ddPdvdvt[j-i];
-          ddPdudv[j] = ddPdudvt[j-i];
-        }
-      }
+      return new SubdivMeshISA(scene,flags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
     }
-  }
-
-  void SubdivMesh::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
-                                RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats)
-  {
-    /* test if interpolation is enabled */
-#if defined(DEBUG)
-    if ((scene->aflags & RTC_INTERPOLATE) == 0) 
-      throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
-#endif
-
-    /* calculate base pointer and stride */
-    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS)) ||
-           (buffer >= RTC_USER_VERTEX_BUFFER0 && RTCBufferType(RTC_USER_VERTEX_BUFFER0 + RTC_MAX_USER_VERTEX_BUFFERS)));
-    const char* src = nullptr; 
-    size_t stride = 0;
-    size_t bufID = buffer&0xFFFF;
-    std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
-    Topology* topo = nullptr;
-    if (buffer >= RTC_USER_VERTEX_BUFFER0) {
-      assert(bufID < userbuffers.size());
-      src    = userbuffers[bufID].getPtr();
-      stride = userbuffers[bufID].getStride();
-      baseEntry = &user_buffer_tags[bufID];
-      int topologyID = userbuffers[bufID].userdata;
-      topo = &topology[topologyID];
-    } else {
-      assert(bufID < numTimeSteps);
-      src    = vertices[bufID].getPtr();
-      stride = vertices[bufID].getStride();
-      baseEntry = &vertex_buffer_tags[bufID];
-      topo = &topology[0];
-    }
-
-    const int* valid = (const int*) valid_i;
     
-    for (size_t i=0; i<numUVs; i+=4) 
+    void SubdivMeshISA::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
     {
-      vbool4 valid1 = vint4(i)+vint4(step) < vint4(numUVs);
-      if (valid) valid1 &= vint4::loadu(&valid[i]) == vint4(-1);
-      if (none(valid1)) continue;
+      /* test if interpolation is enabled */
+#if defined(DEBUG) 
+      if ((scene->aflags & RTC_INTERPOLATE) == 0) 
+        throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
+#endif
       
-      const vint4 primID = vint4::loadu(&primIDs[i]);
-      const vfloat4 uu = vfloat4::loadu(&u[i]);
-      const vfloat4 vv = vfloat4::loadu(&v[i]);
-
-      foreach_unique(valid1,primID,[&](const vbool4& valid1, const int primID)
+      /* calculate base pointer and stride */
+      assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS)) ||
+             (buffer >= RTC_USER_VERTEX_BUFFER0 && RTCBufferType(RTC_USER_VERTEX_BUFFER0 + RTC_MAX_USER_VERTEX_BUFFERS)));
+      const char* src = nullptr; 
+      size_t stride = 0;
+      size_t bufID = buffer&0xFFFF;
+      std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
+      Topology* topo = nullptr;
+      if (buffer >= RTC_USER_VERTEX_BUFFER0) {
+        assert(bufID < userbuffers.size());
+        src    = userbuffers[bufID].getPtr();
+        stride = userbuffers[bufID].getStride();
+        baseEntry = &user_buffer_tags[bufID];
+        int topologyID = userbuffers[bufID].userdata;
+        topo = &topology[topologyID];
+      } else {
+        assert(bufID < numTimeSteps);
+        src    = vertices[bufID].getPtr();
+        stride = vertices[bufID].getStride();
+        baseEntry = &vertex_buffer_tags[bufID];
+        topo = &topology[0];
+      }
+      
+      bool has_P = P;
+      bool has_dP = dPdu;     assert(!has_dP  || dPdv);
+      bool has_ddP = ddPdudu; assert(!has_ddP || (ddPdvdv && ddPdudu));
+      
+      for (size_t i=0; i<numFloats; i+=4)
       {
-        for (size_t j=0; j<numFloats; j+=4) 
-        {
-          const size_t M = min(size_t(4),numFloats-j);
-          isa::PatchEvalSimd<vbool4,vint4,vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,j/4,stride)),scene->commitCounterSubdiv,
-                                                           topo->getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
-                                                           P ? P+j*numUVs+i : nullptr,
-                                                           dPdu ? dPdu+j*numUVs+i : nullptr,
-                                                           dPdv ? dPdv+j*numUVs+i : nullptr,
-                                                           ddPdudu ? ddPdudu+j*numUVs+i : nullptr,
-                                                           ddPdvdv ? ddPdvdv+j*numUVs+i : nullptr,
-                                                           ddPdudv ? ddPdudv+j*numUVs+i : nullptr,
-                                                           numUVs,M);
+        vfloat4 Pt, dPdut, dPdvt, ddPdudut, ddPdvdvt, ddPdudvt;
+        isa::PatchEval<vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,i/4,stride)),scene->commitCounterSubdiv,
+                                        topo->getHalfEdge(primID),src+i*sizeof(float),stride,u,v,
+                                        has_P ? &Pt : nullptr, 
+                                        has_dP ? &dPdut : nullptr, 
+                                        has_dP ? &dPdvt : nullptr,
+                                        has_ddP ? &ddPdudut : nullptr, 
+                                        has_ddP ? &ddPdvdvt : nullptr, 
+                                        has_ddP ? &ddPdudvt : nullptr);
+        
+        if (has_P) {
+          for (size_t j=i; j<min(i+4,numFloats); j++) 
+            P[j] = Pt[j-i];
         }
-      });
+        if (has_dP) 
+        {
+          for (size_t j=i; j<min(i+4,numFloats); j++) {
+            dPdu[j] = dPdut[j-i];
+            dPdv[j] = dPdvt[j-i];
+          }
+        }
+        if (has_ddP) 
+        {
+          for (size_t j=i; j<min(i+4,numFloats); j++) {
+            ddPdudu[j] = ddPdudut[j-i];
+            ddPdvdv[j] = ddPdvdvt[j-i];
+            ddPdudv[j] = ddPdudvt[j-i];
+          }
+        }
+      }
+    }
+    
+    void SubdivMeshISA::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
+                                     RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats)
+    {
+      /* test if interpolation is enabled */
+#if defined(DEBUG)
+      if ((scene->aflags & RTC_INTERPOLATE) == 0) 
+        throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
+#endif
+      
+      /* calculate base pointer and stride */
+      assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS)) ||
+             (buffer >= RTC_USER_VERTEX_BUFFER0 && RTCBufferType(RTC_USER_VERTEX_BUFFER0 + RTC_MAX_USER_VERTEX_BUFFERS)));
+      const char* src = nullptr; 
+      size_t stride = 0;
+      size_t bufID = buffer&0xFFFF;
+      std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
+      Topology* topo = nullptr;
+      if (buffer >= RTC_USER_VERTEX_BUFFER0) {
+        assert(bufID < userbuffers.size());
+        src    = userbuffers[bufID].getPtr();
+        stride = userbuffers[bufID].getStride();
+        baseEntry = &user_buffer_tags[bufID];
+        int topologyID = userbuffers[bufID].userdata;
+        topo = &topology[topologyID];
+      } else {
+        assert(bufID < numTimeSteps);
+        src    = vertices[bufID].getPtr();
+        stride = vertices[bufID].getStride();
+        baseEntry = &vertex_buffer_tags[bufID];
+        topo = &topology[0];
+      }
+      
+      const int* valid = (const int*) valid_i;
+      
+      for (size_t i=0; i<numUVs; i+=4) 
+      {
+        vbool4 valid1 = vint4(i)+vint4(step) < vint4(numUVs);
+        if (valid) valid1 &= vint4::loadu(&valid[i]) == vint4(-1);
+        if (none(valid1)) continue;
+        
+        const vint4 primID = vint4::loadu(&primIDs[i]);
+        const vfloat4 uu = vfloat4::loadu(&u[i]);
+        const vfloat4 vv = vfloat4::loadu(&v[i]);
+        
+        foreach_unique(valid1,primID,[&](const vbool4& valid1, const int primID)
+                       {
+                         for (size_t j=0; j<numFloats; j+=4) 
+                         {
+                           const size_t M = min(size_t(4),numFloats-j);
+                           isa::PatchEvalSimd<vbool4,vint4,vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,j/4,stride)),scene->commitCounterSubdiv,
+                                                                            topo->getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
+                                                                            P ? P+j*numUVs+i : nullptr,
+                                                                            dPdu ? dPdu+j*numUVs+i : nullptr,
+                                                                            dPdv ? dPdv+j*numUVs+i : nullptr,
+                                                                            ddPdudu ? ddPdudu+j*numUVs+i : nullptr,
+                                                                            ddPdvdv ? ddPdvdv+j*numUVs+i : nullptr,
+                                                                            ddPdudv ? ddPdudv+j*numUVs+i : nullptr,
+                                                                            numUVs,M);
+                         }
+                       });
+      }
     }
   }
 }

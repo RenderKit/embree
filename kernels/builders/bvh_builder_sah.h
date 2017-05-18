@@ -18,6 +18,7 @@
 
 #include "heuristic_binning_array_aligned.h"
 #include "heuristic_spatial_array.h"
+#include "heuristic_openmerge_array.h"
 
 #if defined(__AVX512F__)
 #  define NUM_OBJECT_BINS 16
@@ -140,7 +141,7 @@ namespace embree
 
             /* create leaf for few primitives */
             if (current.prims.size() <= maxLeafSize)
-              return createLeaf(current,alloc);
+              return createLeaf(current.prims,alloc);
 
             /* fill all children by always splitting the largest one */
             ReductionTy values[MAX_BRANCHING_FACTOR];
@@ -408,12 +409,12 @@ namespace embree
 
         // __noinline is workaround for ICC2016 compiler bug
         template<typename Allocator>
-        __noinline ReductionTy operator() (const BuildRecord& current, Allocator alloc) const
+        __noinline ReductionTy operator() (const range<size_t>& range, Allocator alloc) const
         {
-          for (size_t i=current.prims.begin(); i<current.prims.end(); i++)
+          for (size_t i=range.begin(); i<range.end(); i++)
             prims[i].lower.a &= GEOMID_MASK;
 
-          return userCreateLeaf(current,alloc);
+          return userCreateLeaf(range,alloc);
         }
 
         const UserCreateLeaf userCreateLeaf;
@@ -482,6 +483,52 @@ namespace embree
             progressMonitor,
             settings);
         }
+    };
+
+    /* Open/Merge SAH builder that operates on an array of BuildRecords */
+    struct BVHBuilderBinnedOpenMergeSAH
+    {
+      static const size_t NUM_OBJECT_BINS_HQ = 32;
+      typedef PrimInfoExtRange Set;
+      typedef BinSplit<NUM_OBJECT_BINS_HQ> Split;
+      typedef GeneralBVHBuilder::BuildRecordT<Set,Split> BuildRecord;
+      typedef GeneralBVHBuilder::Settings Settings;
+      
+      /*! special builder that propagates reduction over the tree */
+      template<
+        typename ReductionTy, 
+        typename BuildRef,
+        typename CreateAllocFunc, 
+        typename CreateNodeFunc, 
+        typename UpdateNodeFunc, 
+        typename CreateLeafFunc, 
+        typename NodeOpenerFunc, 
+        typename ProgressMonitor>
+        
+        static ReductionTy build(CreateAllocFunc createAlloc, 
+                                 CreateNodeFunc createNode, 
+                                 UpdateNodeFunc updateNode, 
+                                 const CreateLeafFunc& createLeaf, 
+                                 NodeOpenerFunc nodeOpenerFunc,
+                                 ProgressMonitor progressMonitor,
+                                 BuildRef* prims, 
+                                 const size_t extSize,
+                                 const PrimInfo& pinfo, 
+                                 const Settings& settings)
+      {
+        typedef HeuristicArrayOpenMergeSAH<NodeOpenerFunc,BuildRef,NUM_OBJECT_BINS_HQ> Heuristic;
+        Heuristic heuristic(nodeOpenerFunc,prims,settings.branchingFactor);
+
+        return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set>(
+          heuristic,
+          PrimInfoExtRange(0,pinfo.size(),extSize,pinfo.geomBounds,pinfo.centBounds),
+          createAlloc,
+          createNode,
+          updateNode,
+          createLeaf,
+          progressMonitor,
+          settings);
+      }
     };
   }
 }

@@ -366,7 +366,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcIntersect4);
 
-#if defined(__TARGET_SIMD4__) && defined (EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD4) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -374,7 +374,7 @@ namespace embree
     if (((size_t)&ray ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(normal.travs,1,cnt,4);
+    STAT3(normal.travs,cnt,cnt,cnt);
     IntersectContext context(scene,nullptr);
     scene->intersect4(valid,ray,&context);
 #else
@@ -389,7 +389,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcIntersect4Ex);
 
-#if defined(__TARGET_SIMD4__) && defined (EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD4) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -397,7 +397,7 @@ namespace embree
     if (((size_t)&ray ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(normal.travs,1,cnt,4);
+    STAT3(normal.travs,cnt,cnt,cnt);
     IntersectContext context(scene,user_context);
     scene->intersect4(valid,ray,&context);
 #else
@@ -412,7 +412,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcIntersect8);
 
-#if defined(__TARGET_SIMD8__) && defined (EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD8) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -420,7 +420,7 @@ namespace embree
     if (((size_t)&ray ) & 0x1F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 32 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(normal.travs,1,cnt,8);
+    STAT3(normal.travs,cnt,cnt,cnt);
     IntersectContext context(scene,nullptr);
     scene->intersect8(valid,ray,&context);
 #else
@@ -435,7 +435,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcIntersect8Ex);
 
-#if defined(__TARGET_SIMD8__) && defined (EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD8) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -443,7 +443,8 @@ namespace embree
     if (((size_t)&ray ) & 0x1F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 32 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(normal.travs,1,cnt,8);
+    STAT3(normal.travs,cnt,cnt,cnt);
+
     IntersectContext context(scene,user_context);
     scene->intersect8(valid,ray,&context);
 #else
@@ -458,7 +459,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcIntersect16);
 
-#if defined(__TARGET_SIMD16__) && defined (EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD16) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -466,7 +467,8 @@ namespace embree
     if (((size_t)&ray ) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(normal.travs,1,cnt,16);
+    STAT3(normal.travs,cnt,cnt,cnt);
+
     IntersectContext context(scene,nullptr);
     scene->intersect16(valid,ray,&context);
 #else
@@ -481,7 +483,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcIntersect16Ex);
 
-#if defined(__TARGET_SIMD16__) && defined (EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD16) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -489,7 +491,8 @@ namespace embree
     if (((size_t)&ray ) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(normal.travs,1,cnt,16);
+    STAT3(normal.travs,cnt,cnt,cnt);
+
     IntersectContext context(scene,user_context);
     scene->intersect16(valid,ray,&context);
 #else
@@ -674,7 +677,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcOccluded4);
 
-#if defined(__TARGET_SIMD4__) && defined (EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD4) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -682,7 +685,7 @@ namespace embree
     if (((size_t)&ray ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(shadow.travs,1,cnt,4);
+    STAT3(shadow.travs,cnt,cnt,cnt);
     IntersectContext context(scene,nullptr);
     scene->occluded4(valid,ray,&context);
 #else
@@ -697,7 +700,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcOccluded4Ex);
 
-#if defined(__TARGET_SIMD4__) && defined (EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD4) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -705,7 +708,7 @@ namespace embree
     if (((size_t)&ray ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(shadow.travs,1,cnt,4);
+    STAT3(shadow.travs,cnt,cnt,cnt);
     IntersectContext context(scene,user_context);
     scene->occluded4(valid,ray,&context);
 #else
@@ -720,7 +723,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcOccluded8);
 
-#if defined(__TARGET_SIMD8__) && defined (EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD8) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -728,7 +731,7 @@ namespace embree
     if (((size_t)&ray ) & 0x1F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 32 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(shadow.travs,1,cnt,8);
+    STAT3(shadow.travs,cnt,cnt,cnt);
     IntersectContext context(scene,nullptr);
     scene->occluded8(valid,ray,&context);
 #else
@@ -743,7 +746,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcOccluded8Ex);
 
-#if defined(__TARGET_SIMD8__) && defined (EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD8) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -751,7 +754,8 @@ namespace embree
     if (((size_t)&ray ) & 0x1F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 32 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(shadow.travs,1,cnt,8);
+    STAT3(shadow.travs,cnt,cnt,cnt);
+
     IntersectContext context(scene,user_context);
     scene->occluded8(valid,ray,&context);
 #else
@@ -766,7 +770,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcOccluded16);
 
-#if defined(__TARGET_SIMD16__) && defined (EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD16) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -774,7 +778,8 @@ namespace embree
     if (((size_t)&ray ) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(shadow.travs,1,cnt,16);
+    STAT3(shadow.travs,cnt,cnt,cnt);
+
     IntersectContext context(scene,nullptr);
     scene->occluded16(valid,ray,&context);
 #else
@@ -789,7 +794,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcOccluded16Ex);
 
-#if defined(__TARGET_SIMD16__) && defined (EMBREE_RAY_PACKETS)
+#if defined(EMBREE_TARGET_SIMD16) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -797,7 +802,8 @@ namespace embree
     if (((size_t)&ray ) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(shadow.travs,1,cnt,16);
+    STAT3(shadow.travs,cnt,cnt,cnt);
+
     IntersectContext context(scene,user_context);
     scene->occluded16(valid,ray,&context);
 #else

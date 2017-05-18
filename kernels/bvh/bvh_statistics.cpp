@@ -130,6 +130,10 @@ namespace embree
     }
     else if (node.isTransformNode())
     {
+#if 0
+      TransformNode* n = node.transformNode();
+      s = s + statistics(n->child,0.0f,t0t1); 
+#endif
       s.statTransformNodes.numNodes++;
       s.statTransformNodes.nodeSAH += dt*A;
       s.depth++;
@@ -174,7 +178,7 @@ namespace embree
   template class BVHNStatistics<8>;
 #endif
 
-#if !defined(__AVX__) || !defined(__TARGET_SSE2__) && !defined(__TARGET_SSE42__)
+#if !defined(__AVX__) || !defined(EMBREE_TARGET_SSE2) && !defined(EMBREE_TARGET_SSE42)
   template class BVHNStatistics<4>;
 #endif
 }

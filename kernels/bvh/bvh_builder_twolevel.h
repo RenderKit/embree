@@ -18,6 +18,7 @@
 
 #include "bvh.h"
 #include "../common/primref.h"
+#include "../builders/priminfo.h"
 
 namespace embree
 {
@@ -36,33 +37,70 @@ namespace embree
 
       typedef void (*createMeshAccelTy)(Mesh* mesh, AccelData*& accel, Builder*& builder);
 
-      struct __aligned(16) BuildRef
+      struct BuildRef : public PrimRef
       {
       public:
         __forceinline BuildRef () {}
 
         __forceinline BuildRef (const BBox3fa& bounds, NodeRef node)
-          : lower(bounds.lower), upper(bounds.upper), node(node)
+          : PrimRef(bounds,(size_t)node), node(node)
         {
           if (node.isLeaf())
-            lower.w = 0.0f;
+            bounds_area = 0.0f;
           else
-            lower.w = area(this->bounds());
+            bounds_area = area(this->bounds());
         }
 
-        __forceinline BBox3fa bounds () const {
-          return BBox3fa(lower,upper);
+        /* used by the open/merge bvh builder */
+        __forceinline BuildRef (const BBox3fa& bounds, NodeRef node, const unsigned int geomID, const unsigned int numPrimitives)
+          : PrimRef(bounds,geomID,numPrimitives), node(node)
+        {
+          /* important for relative buildref ordering */
+          if (node.isLeaf())
+            bounds_area = 0.0f;
+          else
+            bounds_area = area(this->bounds());
+        }
+
+        __forceinline size_t size() const {
+          return primID();
         }
 
         friend bool operator< (const BuildRef& a, const BuildRef& b) {
-          return a.lower.w < b.lower.w;
+          return a.bounds_area < b.bounds_area;
         }
 
+        friend __forceinline std::ostream& operator<<(std::ostream& cout, const BuildRef& ref) {
+          return cout << "{ lower = " << ref.lower << ", upper = " << ref.upper << ", center2 = " << ref.center2() << ", geomID = " << ref.geomID() << ", numPrimitives = " << ref.numPrimitives() << ", bounds_area = " << ref.bounds_area << " }";
+        }
+
+        __forceinline unsigned int numPrimitives() const { return primID(); }
+
       public:
-        Vec3fa lower;
-        Vec3fa upper;
         NodeRef node;
+        float bounds_area;
       };
+
+
+      __forceinline size_t openBuildRef(BuildRef &bref, BuildRef *const refs) {
+        if (bref.node.isLeaf())
+        {
+          refs[0] = bref;
+          return 1;
+        }
+        NodeRef ref = bref.node;
+        unsigned int geomID   = bref.geomID();
+        unsigned int numPrims = max((unsigned int)bref.numPrimitives() / N,(unsigned int)1);
+        AlignedNode* node = ref.alignedNode();
+        size_t n = 0;
+        for (size_t i=0; i<N; i++) {
+          if (node->child(i) == BVH::emptyNode) continue;
+          refs[i] = BuildRef(node->bounds(i),node->child(i),geomID,numPrims);
+          n++;
+        }
+        assert(n > 1);
+        return n;        
+      }
       
       /*! Constructor. */
       BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, const createMeshAccelTy createMeshAcce, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD);
@@ -75,9 +113,8 @@ namespace embree
       void deleteGeometry(size_t geomID);
       void clear();
 
-      void open_sequential(size_t numPrimitives);
-      void open_overlap(size_t numPrimitives);
-      
+      void open_sequential(const size_t extSize);
+
     public:
       BVH* bvh;
       std::vector<BVH*>& objects;
@@ -91,6 +128,9 @@ namespace embree
       mvector<PrimRef> prims;
       std::atomic<int> nextRef;
       const size_t singleThreadThreshold;
+
+      typedef mvector<BuildRef> bvector;
+
     };
   }
 }

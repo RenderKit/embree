@@ -61,20 +61,6 @@ namespace embree
         else
           return pre.intersectorCurve.intersect(ray,a0,a1,a2,a3,Occluded1Epilog1<true>(ray,context,prim.geomID(),prim.primID()));
       }
-
-      /*! Intersect an array of rays with an array of M primitives. */
-      static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context,  size_t ty, const Primitive* prim, size_t num)
-      {
-        size_t valid_isec = 0;
-        do {
-          const size_t i = __bscf(valid);
-          const float old_far = rays[i]->tfar;
-          for (size_t n=0; n<num; n++)
-            intersect(pre[i],*rays[i],context,prim[n]);
-          valid_isec |= (rays[i]->tfar < old_far) ? ((size_t)1 << i) : 0;            
-        } while(unlikely(valid));
-        return valid_isec;
-      }
     };
 
     template<int K>

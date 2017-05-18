@@ -45,20 +45,6 @@ namespace embree
         const vbool<Mx> valid = line.template valid<Mx>();
         return LineIntersector1<Mx>::intersect(valid,ray,pre,v0,v1,Occluded1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
       }
-
-      /*! Intersect an array of rays with an array of M primitives. */
-      static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context,  size_t ty, const Primitive* prim, size_t num)
-      {
-        size_t valid_isec = 0;
-        do {
-          const size_t i = __bscf(valid);
-          const float old_far = rays[i]->tfar;
-          for (size_t n=0; n<num; n++)
-            intersect(pre[i],*rays[i],context,prim[n]);
-          valid_isec |= (rays[i]->tfar < old_far) ? ((size_t)1 << i) : 0;            
-        } while(unlikely(valid));
-        return valid_isec;
-      }
     };
 
     template<int M, int Mx, bool filter>
@@ -81,20 +67,6 @@ namespace embree
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene,ray.time);
         const vbool<Mx> valid = line.template valid<Mx>();
         return LineIntersector1<Mx>::intersect(valid,ray,pre,v0,v1,Occluded1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
-      }
-
-      /*! Intersect an array of rays with an array of M primitives. */
-      static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context,  size_t ty, const Primitive* prim, size_t num)
-      {
-        size_t valid_isec = 0;
-        do {
-          const size_t i = __bscf(valid);
-          const float old_far = rays[i]->tfar;
-          for (size_t n=0; n<num; n++)
-            intersect(pre[i],*rays[i],context,prim[n]);
-          valid_isec |= (rays[i]->tfar < old_far) ? ((size_t)1 << i) : 0;            
-        } while(unlikely(valid));
-        return valid_isec;
       }
     };
 

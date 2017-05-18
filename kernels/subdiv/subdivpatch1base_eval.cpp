@@ -102,7 +102,7 @@ namespace embree
         if (geom->patch_eval_trees.size())
         {
           feature_adaptive_eval_grid<PatchEvalGrid> 
-            (geom->patch_eval_trees[geom->numTimeSteps*patch.prim+patch.time()], patch.subPatch(), patch.needsStitching() ? patch.level : nullptr,
+            (geom->patch_eval_trees[geom->numTimeSteps*patch.primID()+patch.time()], patch.subPatch(), patch.needsStitching() ? patch.level : nullptr,
              x0,x1,y0,y1,swidth,sheight,
              grid_x,grid_y,grid_z,grid_u,grid_v,
              displ ? (float*)grid_Ng_x : nullptr, displ ? (float*)grid_Ng_y : nullptr, displ ? (float*)grid_Ng_z : nullptr,
@@ -137,9 +137,9 @@ namespace embree
 
         /* call displacement shader */
         if (unlikely(geom->displFunc))
-          geom->displFunc(geom->userPtr,patch.geom,patch.prim,grid_u,grid_v,grid_Ng_x,grid_Ng_y,grid_Ng_z,grid_x,grid_y,grid_z,dwidth*dheight);
+          geom->displFunc(geom->userPtr,patch.geomID(),patch.primID(),grid_u,grid_v,grid_Ng_x,grid_Ng_y,grid_Ng_z,grid_x,grid_y,grid_z,dwidth*dheight);
         else if (unlikely(geom->displFunc2))
-          geom->displFunc2(geom->userPtr,patch.geom,patch.prim,patch.time(),grid_u,grid_v,grid_Ng_x,grid_Ng_y,grid_Ng_z,grid_x,grid_y,grid_z,dwidth*dheight);
+          geom->displFunc2(geom->userPtr,patch.geomID(),patch.primID(),patch.time(),grid_u,grid_v,grid_Ng_x,grid_Ng_y,grid_Ng_z,grid_x,grid_y,grid_z,dwidth*dheight);
 
         /* set last elements in u,v array to 1.0f */
         const float last_u = grid_u[dwidth*dheight-1];
@@ -184,7 +184,7 @@ namespace embree
           if (unlikely(geom->displFunc != nullptr))
           {
             const Vec3vfx normal = normalize_safe(patchNormal(patch, u, v));
-            geom->displFunc(geom->userPtr,patch.geom,patch.prim,
+            geom->displFunc(geom->userPtr,patch.geomID(),patch.primID(),
                             &u[0],&v[0],&normal.x[0],&normal.y[0],&normal.z[0],
                             &vtx.x[0],&vtx.y[0],&vtx.z[0],VSIZEX);
           
@@ -192,7 +192,7 @@ namespace embree
           else if (unlikely(geom->displFunc2 != nullptr))
           {
             const Vec3vfx normal = normalize_safe(patchNormal(patch, u, v));
-            geom->displFunc2(geom->userPtr,patch.geom,patch.prim,patch.time(),
+            geom->displFunc2(geom->userPtr,patch.geomID(),patch.primID(),patch.time(),
                              &u[0],&v[0],&normal.x[0],&normal.y[0],&normal.z[0],
                              &vtx.x[0],&vtx.y[0],&vtx.z[0],VSIZEX);
           }
@@ -233,7 +233,7 @@ namespace embree
         if (geom->patch_eval_trees.size())
         {
           feature_adaptive_eval_grid<PatchEvalGrid> 
-            (geom->patch_eval_trees[geom->numTimeSteps*patch.prim+patch.time()], patch.subPatch(), patch.needsStitching() ? patch.level : nullptr,
+            (geom->patch_eval_trees[geom->numTimeSteps*patch.primID()+patch.time()], patch.subPatch(), patch.needsStitching() ? patch.level : nullptr,
              x0,x1,y0,y1,swidth,sheight,
              grid_x,grid_y,grid_z,grid_u,grid_v,
              displ ? (float*)grid_Ng_x : nullptr, displ ? (float*)grid_Ng_y : nullptr, displ ? (float*)grid_Ng_z : nullptr,
@@ -253,9 +253,9 @@ namespace embree
 
         /* call displacement shader */
         if (unlikely(geom->displFunc))
-          geom->displFunc(geom->userPtr,patch.geom,patch.prim,grid_u,grid_v,grid_Ng_x,grid_Ng_y,grid_Ng_z,grid_x,grid_y,grid_z,dwidth*dheight);
+          geom->displFunc(geom->userPtr,patch.geomID(),patch.primID(),grid_u,grid_v,grid_Ng_x,grid_Ng_y,grid_Ng_z,grid_x,grid_y,grid_z,dwidth*dheight);
         else if (unlikely(geom->displFunc2))
-          geom->displFunc2(geom->userPtr,patch.geom,patch.prim,patch.time(),grid_u,grid_v,grid_Ng_x,grid_Ng_y,grid_Ng_z,grid_x,grid_y,grid_z,dwidth*dheight);
+          geom->displFunc2(geom->userPtr,patch.geomID(),patch.primID(),patch.time(),grid_u,grid_v,grid_Ng_x,grid_Ng_y,grid_Ng_z,grid_x,grid_y,grid_z,dwidth*dheight);
 
         /* set last elements in u,v array to 1.0f */
         const float last_u = grid_u[dwidth*dheight-1];
@@ -340,7 +340,7 @@ namespace embree
           if (unlikely(geom->displFunc != nullptr))
           {
             const Vec3vfx normal = normalize_safe(patchNormal(patch,u,v));
-            geom->displFunc(geom->userPtr,patch.geom,patch.prim,
+            geom->displFunc(geom->userPtr,patch.geomID(),patch.primID(),
                             &u[0],&v[0],&normal.x[0],&normal.y[0],&normal.z[0],
                             &vtx.x[0],&vtx.y[0],&vtx.z[0],VSIZEX);
           
@@ -348,7 +348,7 @@ namespace embree
           else if (unlikely(geom->displFunc2 != nullptr))
           {
             const Vec3vfx normal = normalize_safe(patchNormal(patch,u,v));
-            geom->displFunc2(geom->userPtr,patch.geom,patch.prim,patch.time(),
+            geom->displFunc2(geom->userPtr,patch.geomID(),patch.primID(),patch.time(),
                             &u[0],&v[0],&normal.x[0],&normal.y[0],&normal.z[0],
                             &vtx.x[0],&vtx.y[0],&vtx.z[0],VSIZEX);
           }

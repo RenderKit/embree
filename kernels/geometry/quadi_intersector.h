@@ -46,20 +46,6 @@ namespace embree
         Vec3vf<M> v0,v1,v2,v3; quad.gather(v0,v1,v2,v3,context->scene);
         return pre.occluded(ray,context,v0,v1,v2,v3,quad.geomID(),quad.primID());
       }
-
-      /*! Intersect an array of rays with an array of M primitives. */
-      static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context,  size_t ty, const Primitive* prim, size_t num)
-      {
-        size_t valid_isec = 0;
-        do {
-          const size_t i = __bscf(valid);
-          const float old_far = rays[i]->tfar;
-          for (size_t n=0; n<num; n++)
-            intersect(pre[i],*rays[i],context,prim[n]);
-          valid_isec |= (rays[i]->tfar < old_far) ? ((size_t)1 << i) : 0;
-        } while(unlikely(valid));
-        return valid_isec;
-      }
     };
 
     /*! Intersects M triangles with K rays. */
@@ -142,20 +128,6 @@ namespace embree
         STAT3(shadow.trav_prims,1,1,1);
         Vec3vf<M> v0,v1,v2,v3; quad.gather(v0,v1,v2,v3,context->scene);
         return pre.occluded(ray,context,v0,v1,v2,v3,quad.geomID(),quad.primID());
-      }
-
-      /*! Intersect an array of rays with an array of M primitives. */
-      static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context,  size_t ty, const Primitive* prim, size_t num)
-      {
-        size_t valid_isec = 0;
-        do {
-          const size_t i = __bscf(valid);
-          const float old_far = rays[i]->tfar;
-          for (size_t n=0; n<num; n++)
-            intersect(pre[i],*rays[i],context,prim[n]);
-          valid_isec |= (rays[i]->tfar < old_far) ? ((size_t)1 << i) : 0;
-        } while(unlikely(valid));
-        return valid_isec;
       }
     };
 

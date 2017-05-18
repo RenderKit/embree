@@ -43,20 +43,6 @@ namespace embree
           STAT3(shadow.trav_prims,1,1,1);
           return pre.intersectEdge(ray,tri.v0,tri.e1,tri.e2,Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomID(),tri.primID()));
         }
-
-        /*! Intersect an array of rays with an array of M primitives. */
-        static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context,  size_t ty, const Primitive* prim, size_t num)
-        {
-          size_t valid_isec = 0;
-          do {
-            const size_t i = __bscf(valid);
-            const float old_far = rays[i]->tfar;
-            for (size_t n=0; n<num; n++)
-              intersect(pre[i],*rays[i],context,prim[n]);
-            valid_isec |= (rays[i]->tfar < old_far) ? ((size_t)1 << i) : 0;            
-          } while(unlikely(valid));
-          return valid_isec;
-        }       
       };
 
 #if defined(__AVX__)
@@ -81,21 +67,6 @@ namespace embree
           STAT3(shadow.trav_prims,1,1,1);
           return pre.intersect(ray,tri.v0,tri.e1,tri.e2,Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomID(),tri.primID()));
         }
-
-
-        /*! Intersect an array of rays with an array of M primitives. */
-        static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context,  size_t ty, const Primitive* prim, size_t num)
-        {
-          size_t valid_isec = 0;
-          do {
-            const size_t i = __bscf(valid);
-            for (size_t n=0; n<num; n++)
-              intersect(pre[i],*rays[i],context,prim[n]);
-            valid_isec |=  ((size_t)1 << i);
-          } while(unlikely(valid));
-          return valid_isec;
-        }
-
       };
 #endif
 

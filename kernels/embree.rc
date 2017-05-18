@@ -1,8 +1,8 @@
-#include "version.h"
+#include "embree2/rtcore_version.h"
 
 1 VERSIONINFO
- FILEVERSION __EMBREE_VERSION_MAJOR__,__EMBREE_VERSION_MINOR__,__EMBREE_VERSION_PATCH__,0
- PRODUCTVERSION __EMBREE_VERSION_MAJOR__,__EMBREE_VERSION_MINOR__,__EMBREE_VERSION_PATCH__,0
+ FILEVERSION RTCORE_VERSION_MAJOR,RTCORE_VERSION_MINOR,RTCORE_VERSION_PATCH,0
+ PRODUCTVERSION RTCORE_VERSION_MAJOR,RTCORE_VERSION_MINOR,RTCORE_VERSION_PATCH,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -19,8 +19,8 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Intel"
             VALUE "FileDescription", "Embree Ray Tracing Kernels"
-            VALUE "FileVersion", __EMBREE_VERSION__
-            VALUE "ProductVersion", __EMBREE_VERSION__
+            VALUE "FileVersion", RTCORE_VERSION_STRING
+            VALUE "ProductVersion", RTCORE_VERSION_STRING
             VALUE "LegalCopyright", "www.apache.org/licenses/LICENSE-2.0"
             VALUE "OriginalFilename", "embree.dll"
             VALUE "InternalName", "Embree"

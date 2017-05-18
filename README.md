@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 2.15.0
+% Embree: High Performance Ray Tracing Kernels 2.16.0
 % Intel Corporation
 
 Embree Overview
@@ -94,14 +94,14 @@ Windows Installer
 
 You can install the 64 bit version of the Embree library using the
 Windows installer application
-[embree-2.15.0-x64.exe](https://github.com/embree/embree/releases/download/v2.15.0/embree-2.15.0.x64.exe). This
+[embree-2.16.0-x64.exe](https://github.com/embree/embree/releases/download/v2.16.0/embree-2.16.0.x64.exe). This
 will install the 64 bit Embree version by default in `Program
-Files\Intel\Embree v2.15.0 x64`. To install the 32 bit
+Files\Intel\Embree v2.16.0 x64`. To install the 32 bit
 Embree library use the
-[embree-2.15.0-win32.exe](https://github.com/embree/embree/releases/download/v2.15.0/embree-2.15.0.win32.exe)
+[embree-2.16.0-win32.exe](https://github.com/embree/embree/releases/download/v2.16.0/embree-2.16.0.win32.exe)
 installer. This will install the 32 bit Embree version by default in
-`Program Files\Intel\Embree v2.15.0 win32` on 32 bit
-systems and `Program Files (x86)\Intel\Embree v2.15.0 win32`
+`Program Files\Intel\Embree v2.16.0 win32` on 32 bit
+systems and `Program Files (x86)\Intel\Embree v2.16.0 win32`
 on 64 bit systems.
 
 You have to set the path to the `lib` folder manually to your `PATH`
@@ -113,15 +113,15 @@ Embree installation.
 To uninstall Embree again open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-2.15.0` and uninstall it.
+2.16.0` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree is also delivered as a ZIP file for 64 bit
-[embree-2.15.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.15.0/embree-2.15.0.x64.windows.zip)
+[embree-2.16.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.16.0/embree-2.16.0.x64.windows.zip)
 and 32 bit
-[embree-2.15.0.win32.windows.zip](https://github.com/embree/embree/releases/download/v2.15.0/embree-2.15.0.win32.windows.zip). After
+[embree-2.16.0.win32.windows.zip](https://github.com/embree/embree/releases/download/v2.16.0/embree-2.16.0.win32.windows.zip). After
 unpacking this ZIP file you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree. To compile applications with Embree you also have to set the
@@ -135,18 +135,18 @@ Linux RPMs
 ----------
 
 Uncompress the 'tar.gz' file
-[embree-2.15.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.15.0/embree-2.15.0.x86_64.rpm.tar.gz)
+[embree-2.16.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.16.0/embree-2.16.0.x86_64.rpm.tar.gz)
 to
 obtain the individual RPM files:
 
-    tar xzf embree-2.15.0.x86_64.rpm.tar.gz
+    tar xzf embree-2.16.0.x86_64.rpm.tar.gz
 
 To install the Embree using the RPM packages on your Linux system type
 the following:
 
-    sudo rpm --install embree-lib-2.15.0-1.x86_64.rpm
-    sudo rpm --install embree-devel-2.15.0-1.x86_64.rpm
-    sudo rpm --install embree-examples-2.15.0-1.x86_64.rpm
+    sudo rpm --install embree-lib-2.16.0-1.x86_64.rpm
+    sudo rpm --install embree-devel-2.16.0-1.x86_64.rpm
+    sudo rpm --install embree-examples-2.16.0-1.x86_64.rpm
 
 You also have to install the Intel® Threading Building Blocks (TBB)
 using `yum`:
@@ -176,21 +176,21 @@ the tutorials to start them.
 
 To uninstall Embree again just execute the following:
 
-    sudo rpm --erase embree-lib-2.15.0-1.x86_64
-    sudo rpm --erase embree-devel-2.15.0-1.x86_64
-    sudo rpm --erase embree-examples-2.15.0-1.x86_64
+    sudo rpm --erase embree-lib-2.16.0-1.x86_64
+    sudo rpm --erase embree-devel-2.16.0-1.x86_64
+    sudo rpm --erase embree-examples-2.16.0-1.x86_64
 
 Linux tar.gz files
 ------------------
 
 The Linux version of Embree is also delivered as a tar.gz file
-[embree-2.15.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.15.0/embree-2.15.0.x86_64.linux.tar.gz). Unpack
+[embree-2.16.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.16.0/embree-2.16.0.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.15.0.x64.linux.tar.gz
-    source embree-2.15.0.x64.linux/embree-vars.sh
+    tar xzf embree-2.16.0.x64.linux.tar.gz
+    source embree-2.16.0.x64.linux/embree-vars.sh
 
 If you want to ship Embree with your application best use the Embree
 version provided through the tar.gz file.
@@ -203,7 +203,7 @@ Mac OS X PKG Installer
 
 To install the Embree library on your Mac OS X system use the
 provided package installer inside
-[embree-2.15.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.15.0/embree-2.15.0.x86_64.dmg). This
+[embree-2.16.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.16.0/embree-2.16.0.x86_64.dmg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree2` folder.
@@ -225,13 +225,13 @@ Mac OS X tar.gz file
 ---------------------
 
 The Mac OS X version of Embree is also delivered as a tar.gz file
-[embree-2.15.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.15.0/embree-2.15.0.x86_64.macosx.tar.gz). Unpack
+[embree-2.16.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.16.0/embree-2.16.0.x86_64.macosx.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.15.0.x64.macosx.tar.gz
-    source embree-2.15.0.x64.macosx/embree-vars.sh
+    tar xzf embree-2.16.0.x64.macosx.tar.gz
+    source embree-2.16.0.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application please use the Embree
 library of the provided tar.gz file. The library name of that Embree
@@ -276,7 +276,7 @@ in Embree through the `EMBREE_TASKING_SYSTEM` CMake variable.
 
 Embree supports the Intel® SPMD Program Compiler (ISPC), which allows
 straight forward parallelization of an entire renderer. If you do not
-want to use ISPC then you can disable `ENABLE_ISPC_SUPPORT` in
+want to use ISPC then you can disable `EMBREE_ISPC_SUPPORT` in
 CMake. Otherwise, download and install the ISPC binaries (we have
 tested ISPC version 1.9.1) from
 [ispc.github.io](https://ispc.github.io/downloads.html). After
@@ -365,13 +365,12 @@ Windows
 
 Embree is tested under Windows using the Visual Studio 2017, Visual
 Studio 2015 (Update 1) compiler (Win32 and x64), Visual Studio 2013
-(Update 5) compiler (Win32 and x64), Visual Studio 2012 (Update 4)
-compiler (x64 only), Intel® Compiler 17.0 (Update 1) (Win32 and x64),
-Intel® Compiler 16.0 (Update 1) (Win32 and x64), and Clang 3.9 (Win32
-and x64). Using the Visual Studio 2015 compiler, Visual Studio 2013
-compiler, Intel® Compiler, and Clang you can compile Embree for AVX2,
-while Visual Studio 2012 supports at most AVX. To compile Embree for
-AVX-512 you have to use the Intel® Compiler.
+(Update 5) compiler (Win32 and x64), Intel® Compiler 17.0 (Update 1)
+(Win32 and x64), Intel® Compiler 16.0 (Update 1) (Win32 and x64), and
+Clang 3.9 (Win32 and x64). Using the Visual Studio 2015 compiler,
+Visual Studio 2013 compiler, Intel® Compiler, and Clang you can
+compile Embree for AVX2. To compile Embree for AVX-512 you have to use
+the Intel® Compiler.
 
 Embree supports to use the Intel® Threading Building Blocks (TBB) as
 tasking system. For performance and flexibility reasons we recommend
@@ -390,7 +389,7 @@ libraries into your `PATH` environment variable.
 
 Embree supports the Intel® SPMD Program Compiler (ISPC), which allows
 straight forward parallelization of an entire renderer. If you do not
-want to use ISPC then you can disable `ENABLE_ISPC_SUPPORT` in
+want to use ISPC then you can disable `EMBREE_ISPC_SUPPORT` in
 CMake. Otherwise, download and install the ISPC binaries (we have
 tested ISPC version 1.9.1) from
 [ispc.github.io](https://ispc.github.io/downloads.html). After
@@ -408,11 +407,23 @@ for Visual Studio.
 Run `cmake-gui`, browse to the Embree sources, set the build directory
 and click Configure. Now you can select the Generator, e.g. "Visual
 Studio 12 2013" for a 32 bit build or "Visual Studio 12 2013 Win64"
-for a 64 bit build. If you want to use Clang for compilation, you
-have to specify LLVM-vs2013 as "Optional toolset to use (-T
-parameter)". Most configuration parameters described in the
-[CMake Configuration] can be set under Windows as well. Finally, click
-"Generate" to create the Visual Studio solution files.
+for a 64 bit build.
+
+To use a different compile than the Microsoft Visual C++ compiler, you
+additionally need to specify the proper compiler toolset through the
+option "Optional toolset to use (-T parameter)". E.g. to use Clang for
+compilation set the toolset to "LLVM-vs2013", to use the Intel®
+Compiler 2017 for compilation set the toolset to "Intel C++
+Compiler 17.0".
+
+Do not change the toolset manually in a solution file (neither through
+the project properties dialog, nor through the "Use Intel Compiler"
+project context menu), as then some compiler specific command line
+options cannot get set by CMake.
+
+Most configuration parameters described in the [CMake Configuration]
+can be set under Windows as well. Finally, click "Generate" to create
+the Visual Studio solution files. 
 
   ------------------------- ------------------ ----------------------------
   Option                    Description        Default
@@ -427,23 +438,10 @@ parameter)". Most configuration parameters described in the
   ------------------------- ------------------ ----------------------------
   : Windows-specific CMake build options for Embree.
 
-For compilation of Embree under Windows use the generated Visual Studio
-solution file `embree2.sln`. The solution is by default setup to use the
-Microsoft Compiler. You can switch to the Intel® Compiler by right
-clicking onto the solution in the Solution Explorer and then selecting
-the Intel® Compiler. We recommend using 64 bit mode and the Intel®
-Compiler for best performance.
 
-To build Embree with support for the AVX2 instruction set you need at
-least Visual Studio 2013 (Update 4). When switching to the Intel® Compiler
-to build with AVX2 you currently need to manually *remove* the switch
-`/arch:AVX2` from the `embree_avx2` project, which can be found under
-Properties ⇒ C/C++ ⇒ All Options ⇒ Additional Options.
-
-To build all projects of the solution it is recommend to build the CMake
-utility project `ALL_BUILD`, which depends on all projects. Using "Build
-Solution" would also build all other CMake utility projects (such as
-`INSTALL`), which is usually not wanted.
+Use the generated Visual Studio solution file `embree2.sln` to compile
+the project. To build Embree with support for the AVX2 instruction set
+you need at least Visual Studio 2013 (Update 4).
 
 We recommend enabling syntax highlighting for the `.ispc` source and
 `.isph` header files. To do so open Visual Studio, go to Tools ⇒
@@ -539,6 +537,9 @@ parameters that can be configured in CMake:
                                  variables can be used to enable
                                  ISAs individually.
 
+  EMBREE_ISA_SSE2                Enables SSE2 when                 OFF
+                                 EMBREE_MAX_ISA is set to NONE.
+
   EMBREE_ISA_SSE42               Enables SSE4.2 when               OFF
                                  EMBREE_MAX_ISA is set to NONE.
 
@@ -581,6 +582,17 @@ parameters that can be configured in CMake:
   ---------------------------- -------------------------------- --------
   : CMake build options for Embree.
 
+When using the statically compiled Embree library, you have to define
+ENABLE_STATIC_LIB before including rtcore.h in your
+application. Further multiple static libraries are generated for the
+different ISAs selected (e.g. embree2.a, embree2_sse42.a,
+embree2_avx.a, embree2_avx2.a, embree2_avx512knl.a,
+embree2_avx512skx.a). You have to link these libraries in increasing
+ISA order (the order shown in the example).
+
+When selecting ISAs individually, the AVX ISA always has to get
+enabled when a larger ISA than AVX is enabled, otherwise the code will
+not compile.
 Embree API
 ==========
 
@@ -873,26 +885,39 @@ Geometries
 Geometries are always contained in the scene they are created in. Each
 geometry is assigned an integer ID at creation time, which is unique
 for that scene. The current version of the API supports triangle
-meshes (`rtcNewTriangleMesh`), quad meshes (`rtcNewQuadMesh`),
-Catmull-Clark subdivision surfaces (`rtcNewSubdivisionMesh`), curve
-geometries (`rtcNewCurveGeometry`), hair geometries
-(`rtcNewHairGeometry`), single level instances of other scenes
-(`rtcNewInstance2`), and user defined geometries
-(`rtcNewUserGeometry`). The API is designed in a way that easily
+meshes (`rtcNewTriangleMesh2`), quad meshes (`rtcNewQuadMesh2`),
+Catmull-Clark subdivision surfaces (`rtcNewSubdivisionMesh2`), curve
+geometries (`rtcNewBezierCurveGeometry2`), hair geometries
+(`rtcNewBezierHairGeometry2`), single level instances of other scenes
+(`rtcNewInstance3`), and user defined geometries
+(`rtcNewUserGeometry3`). The API is designed in a way that easily
 allows adding new geometry types in later releases.
 
-For dynamic scenes, the assigned geometry IDs fulfill the following
-properties. As long as no geometry got deleted, all IDs are assigned
-sequentially, starting from 0. If geometries got deleted, the
+The application can manage geometry IDs itself, or let Embree allocate
+geometry IDs. Therefore all geometry creation functions have a
+`geomID` parameter. This parameter can be set to
+`RTC_INVALID_GEOMETRY_ID` to let Embree allocate a geometry ID
+(default) or to some geometry ID allocated by the application.
+
+If the application allocates a geometry ID, then this geometry ID has
+to be unused in the scene, otherwise the creation of the geometry will
+fail. Further, the geometry IDs allocated by the application should be
+compact, as Embree internally created a vector which size is equal to
+the largest geometry ID used. Creating very large geometry IDs for
+small scenes would thus cause a memory consumption and performance
+overhead.
+
+If Embree allocates a geometry ID then the following properties hold.
+For dynamic scenes, all IDs are assigned sequentially, starting from
+0, as long as no geometry got deleted. If geometries got deleted, the
 implementation will reuse IDs later on in an implementation dependent
 way. Consequently sequential assignment is no longer guaranteed, but a
 compact range of IDs. These rules allow the application to manage a
 dynamic array to efficiently map from geometry IDs to its own geometry
+representation. For static scenes, geometry IDs are assigned
+sequentially starting at 0. This allows the application to use a fixed
+size array to map from geometry IDs to its own geometry
 representation.
-
-For static scenes, geometry IDs are assigned sequentially starting at 0.
-This allows the application to use a fixed size array to map from
-geometry IDs to its own geometry representation.
 
 Alternatively the application can also use the `void rtcSetUserData
 (RTCScene scene, unsigned geomID, void* ptr)` function to set a user
@@ -929,7 +954,7 @@ geometries:
 
 ### Triangle Meshes
 
-Triangle meshes are created using the `rtcNewTriangleMesh` function
+Triangle meshes are created using the `rtcNewTriangleMesh2` function
 call, and potentially deleted using the `rtcDeleteGeometry` function
 call.
 
@@ -940,16 +965,19 @@ choose the strategy to handle that mesh in dynamic scenes. The
 following example demonstrates how to create a triangle mesh without
 motion blur:
 
-    unsigned geomID = rtcNewTriangleMesh(scene, geomFlags,
-                                         numTriangles, numVertices, 1);
+    unsigned geomID = rtcNewTriangleMesh2(scene, geomFlags,
+                                          numTriangles, numVertices, 1);
 
 The triangle indices can be set by mapping and writing to the index
 buffer (`RTC_INDEX_BUFFER`) and the triangle vertices can be set by
 mapping and writing into the vertex buffer (`RTC_VERTEX_BUFFER`). The
 index buffer contains an array of three 32 bit indices, while the
-vertex buffer contains an array of three float values aligned to 16
-bytes. The 4th component of the aligned vertices can be arbitrary. All
-buffers have to get unmapped before an `rtcCommit` call to the scene.
+vertex buffer contains an array of three float values. The vertex
+buffer can be at most 16GB large. When the vertex buffer is managed
+internally the stride between vertices is 16 bytes. For multi segment
+motion blur, for each time step a vertex buffer has to be specified,
+and all these buffers have to have the same stride. All buffers have
+to get unmapped before an `rtcCommit` call to the scene.
 
     struct Vertex   { float x, y, z, a; };
     struct Triangle { int v0, v1, v2; };
@@ -979,7 +1007,7 @@ the triangle the following way:
 
 ### Quad Meshes
 
-Quad meshes are created using the `rtcNewQuadMesh` function
+Quad meshes are created using the `rtcNewQuadMesh2` function
 call, and potentially deleted using the `rtcDeleteGeometry` function
 call.
 
@@ -990,16 +1018,19 @@ flags that choose the strategy to handle that mesh in dynamic
 scenes. The following example demonstrates how to create a quad mesh
 without motion blur:
 
-    unsigned geomID = rtcNewQuadMesh(scene, geomFlags,
-                                     numQuads, numVertices, 1);
+    unsigned geomID = rtcNewQuadMesh2(scene, geomFlags,
+                                      numQuads, numVertices, 1);
 
-The quad indices can be set by mapping and writing to the index
-buffer (`RTC_INDEX_BUFFER`) and the quad vertices can be set by
-mapping and writing into the vertex buffer (`RTC_VERTEX_BUFFER`). The
-index buffer contains an array of four 32 bit indices, while the
-vertex buffer contains an array of three float values aligned to 16
-bytes. The 4th component of the aligned vertices can be arbitrary. All
-buffers have to get unmapped before an `rtcCommit` call to the scene.
+The quad indices can be set by mapping and writing to the index buffer
+(`RTC_INDEX_BUFFER`) and the quad vertices can be set by mapping and
+writing into the vertex buffer (`RTC_VERTEX_BUFFER`). The index buffer
+contains an array of four 32 bit indices, while the vertex buffer
+contains an array of three float values. The vertex buffer can be at
+most 16GB large. When the vertex buffer is managed internally the
+stride between vertices is 16 bytes. For multi segment motion blur,
+for each time step a vertex buffer has to be specified, and all these
+buffers have to have the same stride. All buffers have to get unmapped
+before an `rtcCommit` call to the scene.
 
     struct Vertex { float x, y, z, a; };
     struct Quad   { int v0, v1, v2, v3; };
@@ -1028,20 +1059,21 @@ up to 15 vertices (e.g. triangles, quadrilateral, pentagons, etc.) are
 supported, including support for edge creases, vertex creases, holes,
 non-manifold geometry, and face-varying interpolation.
 
-A subdivision surface is created using the `rtcNewSubdivisionMesh`
+A subdivision surface is created using the `rtcNewSubdivisionMesh2`
 function call, and deleted again using the `rtcDeleteGeometry`
 function call.
 
-     unsigned rtcNewSubdivisionMesh(RTCScene scene,
-                                    RTCGeometryFlags flags,
-                                    size_t numFaces,
-                                    size_t numEdges,
-                                    size_t numVertices,
-                                    size_t numEdgeCreases,
-                                    size_t numVertexCreases,
-                                    size_t numCorners,
-                                    size_t numHoles,
-                                    size_t numTimeSteps);
+     unsigned rtcNewSubdivisionMesh2(RTCScene scene,
+                                     RTCGeometryFlags flags,
+                                     size_t numFaces,
+                                     size_t numEdges,
+                                     size_t numVertices,
+                                     size_t numEdgeCreases,
+                                     size_t numVertexCreases,
+                                     size_t numCorners,
+                                     size_t numHoles,
+                                     size_t numTimeSteps,
+                                     unsigned int geomID);
 
 The number of faces (`numFaces`), edges/indices (`numEdges`), vertices
 (`numVertices`), edge creases (`numEdgeCreases`), vertex creases
@@ -1233,7 +1265,7 @@ implementation to approximate the intersection calculation. This in
 particular means that zooming onto one line segment might show geometric
 artifacts.
 
-Line segments are created using the `rtcNewLineSegments` function
+Line segments are created using the `rtcNewLineSegments2` function
 call, and potentially deleted using the `rtcDeleteGeometry` function
 call.
 
@@ -1265,8 +1297,8 @@ scenes.
 
 The following example demonstrates how to create some line segment geometry:
 
-    unsigned geomID = rtcNewLineSegments(scene, geomFlags, numCurves,
-                                         numVertices, 1);
+    unsigned geomID = rtcNewLineSegments2(scene, geomFlags, numCurves,
+                                          numVertices, 1);
 
     struct Vertex { float x, y, z, r; };
 
@@ -1288,8 +1320,8 @@ the implementation to approximate the intersection calculation. This in
 particular means that zooming onto one hair might show geometric
 artifacts.
 
-Hair geometries are created using the `rtcNewBezierHairGeometry` or
-`rtcNewBSplineHairGeometry` function call, and potentially deleted
+Hair geometries are created using the `rtcNewBezierHairGeometry2` or
+`rtcNewBSplineHairGeometry2` function call, and potentially deleted
 using the `rtcDeleteGeometry` function call.
 
 The number of hair curves, the number of vertices, and optionally the
@@ -1327,7 +1359,7 @@ scenes.
 
 The following example demonstrates how to create some hair geometry:
 
-    unsigned geomID = rtcNewBezierHairGeometry(scene, geomFlags, numCurves, numVertices);
+    unsigned geomID = rtcNewBezierHairGeometry2(scene, geomFlags, numCurves, numVertices);
 
     struct Vertex { float x, y, z, r; };
 
@@ -1353,8 +1385,8 @@ smaller than the curvature radius of the Bézier curve at each location
 on the curve. In contrast to hair geometry, the curve geometry is
 rendered properly even in closeups.
 
-Curve geometries are created using the `rtcNewBezierCurveGeometry` or
-`rtcNewBSplineCurveGeometry` function call, and potentially deleted
+Curve geometries are created using the `rtcNewBezierCurveGeometry2` or
+`rtcNewBSplineCurveGeometry2` function call, and potentially deleted
 using the `rtcDeleteGeometry` function call.
 
 The number of Bézier curves, the number of vertices, and optionally
@@ -1388,11 +1420,9 @@ arbitrary types of user defined primitives. This is achieved by
 introducing arrays of user primitives as a special geometry
 type.
 
-User geometries are created using the `rtcNewUserGeometry` function
+User geometries are created using the `rtcNewUserGeometry3` function
 call, and potentially deleted using the `rtcDeleteGeometry` function
-call. The the `rtcNewUserGeometry2` function additionally gets a
-`numTimeSteps` parameter, which specifies the number of timesteps for
-multi-segment motion blur.
+call.
 
 When creating a user defined geometry, the user has to set a data
 pointer, a bounding function closure (function and user pointer) as
@@ -1497,7 +1527,7 @@ geometries:
     UserObject* userGeomPtr = new UserObject[2];
     userGeomPtr[0] = ...
     userGeomPtr[1] = ...
-    unsigned geomID = rtcNewUserGeometry2(scene, 2, numTimeSteps);
+    unsigned geomID = rtcNewUserGeometry3(scene, 2, numTimeSteps);
     rtcSetUserData(scene, geomID, userGeomPtr);
     rtcSetBoundsFunction3(scene, geomID, userBoundsFunction, userPtr);
     rtcSetIntersectFunction(scene, geomID, userIntersectFunction);
@@ -1515,20 +1545,20 @@ create very large scenes. Only single level instancing is supported by
 Embree natively, however, multi-level instancing can be implemented
 through user geometries.
 
-Instances are created using the `rtcNewInstance2
+Instances are created using the `rtcNewInstance3
 (RTCScene target, RTCScene source, size_t numTimeSteps)` function call, and
 potentially deleted using the `rtcDeleteGeometry` function call. To
 instantiate a scene, one first has to generate the scene `B` to
 instantiate. Now one can add an instance of this scene inside a scene `A`
 the following way:
 
-    unsigned instID = rtcNewInstance2(sceneA, sceneB, 1);
+    unsigned instID = rtcNewInstance3(sceneA, sceneB, 1);
     rtcSetTransform2(sceneA, instID, RTC_MATRIX_COLUMN_MAJOR, &column_matrix_3x4, 0);
 
 To create some motion blurred instance just pass the number of time
 steps and specify one matrix for each time step:
 
-    unsigned instID = rtcNewInstance2(sceneA, sceneB, 3);
+    unsigned instID = rtcNewInstance3(sceneA, sceneB, 3);
     rtcSetTransform2(sceneA, instID, RTC_MATRIX_COLUMN_MAJOR, &column_matrix_t0_3x4, 0);
     rtcSetTransform2(sceneA, instID, RTC_MATRIX_COLUMN_MAJOR, &column_matrix_t1_3x4, 1);
     rtcSetTransform2(sceneA, instID, RTC_MATRIX_COLUMN_MAJOR, &column_matrix_t2_3x4, 2);
@@ -1539,7 +1569,7 @@ modifying scene `B` one has to call `rtcUpdate` for all instances of
 that scene. If a ray hits the instance, then the `geomID` and `primID`
 members of the ray are set to the geometry ID and primitive ID of the
 primitive hit in scene `B`, and the `instID` member of the ray is set to
-the instance ID returned from the `rtcNewInstance2` function.
+the instance ID returned from the `rtcNewInstance3` function.
 
 Some special care has to be taken when using user geometries and
 instances in the same scene. Instantiated user geometries should not
@@ -1600,7 +1630,7 @@ change. The ray contains the following data members:
   tfar    in/out  end of ray segment, set to hit distance after intersection
   time    in      time used for multi-segment motion blur [0,1]
   mask    in      ray mask to mask out geometries
-  Ng      out     unnormalized geometry normal
+  Ng      out     unnormalized geometry normal in object space
   u       out     barycentric u-coordinate of hit
   v       out     barycentric v-coordinate of hit
   geomID  out     geometry ID of hit geometry
@@ -1675,7 +1705,7 @@ data members:
   u       in      barycentric u-coordinate of hit
   v       in      barycentric v-coordinate of hit
   t       in      hit distance
-  Ng      in      unnormalized geometry normal
+  Ng      in      unnormalized geometry normal in object space
   ------- ------- ----------------------------------------------------------
   : Data fields of a hit.
 
@@ -1745,21 +1775,28 @@ layout of the ray structure is described in Section [Ray Layout]. The
 user has to initialize the ray origin (`org`), ray direction (`dir`),
 and ray segment (`tnear`, `tfar`). The ray segment has to be in the
 range $[0, ∞]$, thus ranges that start behind the ray origin are not
-valid, but ranges can reach to infinity. The geometry ID (`geomID`
-member) has to get initialized to `RTC_INVALID_GEOMETRY_ID` (-1). If
-the scene contains instances, also the instance ID (`instID`) has to
-get initialized to `RTC_INVALID_GEOMETRY_ID` (-1). If the scene
-contains motion blur geometries, also the ray time (`time`) has to get
-initialized to a value in the range $[0, 1]$.  If ray masks are
-enabled at compile time, also the ray mask (`mask`) has to get
-initialized. After tracing the ray, the hit distance (`tfar`),
-geometry normal (`Ng`), local hit coordinates (`u`, `v`), geometry ID
-(`geomID`), and primitive ID (`primID`) are set. If the scene contains
-instances, also the instance ID (`instID`) is set, if an instance is
-hit. The geometry ID corresponds to the ID returned at creation time
-of the hit geometry, and the primitive ID corresponds to the $n$th
-primitive of that geometry, e.g.  $n$th triangle. The instance ID
-corresponds to the ID returned at creation time of the instance.
+valid, but ranges can reach to infinity. The implementation makes no
+guarantees if primitives whose hit distance is exactly at (or very
+close to) `tnear` or `tfar` are hit or missed. If you want to exclude
+intersections at `tnear` just pass a slighly enlarged `tnear` and if
+you want to include intersections at `tfar` pass a slighly enlarged
+`tfar` to Embree. The geometry ID (`geomID` member) has to get
+initialized to `RTC_INVALID_GEOMETRY_ID` (-1). If the scene contains
+instances, also the instance ID (`instID`) has to get initialized to
+`RTC_INVALID_GEOMETRY_ID` (-1). If the scene contains motion blur
+geometries, also the ray time (`time`) has to get initialized to a
+value in the range $[0, 1]$.  If ray masks are enabled at compile
+time, also the ray mask (`mask`) has to get initialized. After tracing
+the ray, the hit distance (`tfar`), geometry normal (`Ng`)^[Note that
+`Ng` is in object space and needs to be transformed to world space for
+instanced scenes.], local hit
+coordinates (`u`, `v`), geometry ID (`geomID`), and primitive ID
+(`primID`) are set. If the scene contains instances, also the instance
+ID (`instID`) is set, if an instance is hit. The geometry ID
+corresponds to the ID returned at creation time of the hit geometry,
+and the primitive ID corresponds to the $n$th primitive of that
+geometry, e.g.  $n$th triangle. The instance ID corresponds to the ID
+returned at creation time of the instance.
 
 Testing if any geometry intersects with the ray segment is done through
 the `rtcOccluded` functions. Initialization has to be done as for
@@ -2585,11 +2622,46 @@ by passing `start_threads=1,set_affinity=1` to `rtcNewDevice`.
 Huge Page Support
 --------------------------------
 
-We recommend using 2MB huge pages with Embree as this improves ray
-tracing performance by about 10%. Huge pages are currently only
-working under Linux with Embree.
+Embree supports 2MB huge pages under Windows, Linux, and MacOSX. Under
+Linux huge page support is enabled by default and under Windows and
+MacOSX disabled by default. Huge page support can get enabled in
+Embree by passing `hugepages=1` to `rtcNewDevice` or disabled by
+passing `hugepages=0` to `rtcNewDevice`.
 
-To enable transparent huge page support under Linux execute the
+We recommend using 2MB huge pages with Embree under Linux as this
+improves ray tracing performance by about 5 - 10%. Under Windows using
+huge pages requires the application to run in elavated mode which
+is a security issue. Under MacOSX huge pages are rarely available as
+memory tends to get quickly fragmented.
+
+
+### Huge Pages under Windows
+
+To use huge pages under Windows, the current user must have the "Lock
+pages in memory" (SeLockMemoryPrivilege) assigned. This can be
+configured through the "Local Security Policy" application, by adding
+a user to "Local Policies" -> "User Rights Assignment" -> "Lock pages
+in memory". You have to log out and in again for this change to take
+effect.
+
+Further, your application has to be executed as an elevated process
+("Run as administrator") and the "SeLockMemoryPrivilege" must
+explicitely be enabled by your application. Example code on how to
+enable this privilege can be found in the "common/sys/alloc.cpp" file
+of Embree. Alternatively, Embree will try to enable this privilege
+when passing `enable_selockmemoryprivilege=1` to
+`rtcNewDevice`. Further, huge pages have to get enabled in Embree by
+passing `hugepages=1` to `rtcNewDevice`.
+
+When the system was running for a while, physical memory gets
+fragmented, which can slow down the allocation of huge pages
+significantly.
+
+
+### Huge Pages under Linux
+
+Linux supports transparent huge pages and explicit huge
+pages. To enable transparent huge page support under Linux execute the
 following as root:
 
     echo always > /sys/kernel/mm/transparent_hugepage/enabled
@@ -2597,21 +2669,35 @@ following as root:
 When transparent huge pages are enabled, the kernel tries to merge 4k
 pages to 2MB pages when possible as a background job. See the
 following webpage for more information on transparent huge pages under Linux
-[https://www.kernel.org/doc/Documentation/vm/transhuge.txt](https://www.kernel.org/doc/Documentation/vm/transhuge.txt).
+[https://www.kernel.org/doc/Documentation/vm/transhuge.txt](https://www.kernel.org/doc/Documentation/vm/transhuge.txt). In
+this mode each application, including your rendering application
+building on Embree, will automatically tend to use huge pages.
 
-Using that first approach the transitioning from 4k to 2MB pages might
-take some time. For that reason Embree also supports allocating 2MB
-pages directly when a huge page pool is configured. To configure 2GB
-of adress space for huge page allocation, execute the following as root:
+Using transparent huge pages the transitioning from 4k to 2MB pages
+might take some time. For that reason Embree also supports allocating
+2MB pages directly when a huge page pool is configured. Such a pool
+can get configured by writing some number of huge pages to alloacte to
+`/proc/sys/vm/nr_overcommit_hugepages` as root user. E.g. to configure
+2GB of adress space for huge page allocation, execute the following as
+root:
 
     echo 1000 > /proc/sys/vm/nr_overcommit_hugepages
 
 See the following webpage for more information on huge pages under
 Linux [https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt](https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt).
 
+### Huge Pages under MacOSX
+
+To use huge pages under MacOSX you have to pass `hugepages=1` to
+`rtcNewDevice` to enable that feature in Embree.
+
+When the system was running for a while, physical memory gets quickly
+fragmented, and causes huge page allocations to fail. For this reason
+huge pages not very usefull under MacOSX in practise.
+
 
 BVH Builder API
---------------------------------
+---------------
 
 The Embree API exposes internal BVH builders to build BVHs with any
 desired node and leaf layout. To invoke the BVH builder you have to
@@ -2896,7 +2982,7 @@ Viewer
 This tutorial demonstrates a simple OBJ viewer that traces primary
 visibility rays only. A scene consisting of multiple meshes is created,
 each mesh sharing the index and vertex buffer with the application.
-Demonstrated is also how to support additional per vertex data, such as
+Demonstrated is also how to support additional per-vertex data, such as
 shading normals.
 
 You need to specify an OBJ file at the command line for this tutorial to
@@ -3024,17 +3110,17 @@ curves, instantiated triangle mesh where the instance moves,
 instantiated quad mesh where the instance and the quads move, and user
 geometry.
 
-The number of time steps used can be configured using the --time-steps
-<int> and --time-steps2 <int> command line parameters, and the geometry
-can be rendered at a specific time using the the --time <float> command
-line parameter.
+The number of time steps used can be configured using the `--time-steps
+<int>` and `--time-steps2 <int>` command line parameters, and the
+geometry can be rendered at a specific time using the the `--time
+<float>` command line parameter.
 
 Interpolation
 -------------
 
 ![][imgInterpolation]
 
-This tutorial demonstrates interpolation of user defined per vertex data.
+This tutorial demonstrates interpolation of user defined per-vertex data.
 
 BVH Builder
 -----------
