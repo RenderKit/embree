@@ -307,7 +307,18 @@ namespace embree
   template <int M>
     struct QuadMiMB : public QuadMi<M>
   {
-    
+    template<typename BVH>
+      __forceinline static const typename BVH::NodeRecordMB4D createLeafMB (const SetMB& set, const FastAllocator::CachedAllocator& alloc, BVH* bvh)
+    {
+      size_t items = QuadMi<M>::blocks(set.object_range.size());
+      size_t start = set.object_range.begin();
+      QuadMi<M>* accel = (QuadMi<M>*) alloc.malloc1(items*sizeof(QuadMi<M>),BVH::byteAlignment);
+      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+      LBBox3fa allBounds = empty;
+      for (size_t i=0; i<items; i++)
+        allBounds.extend(accel[i].fillMB(set.prims->data(), start, set.object_range.end(), bvh->scene, set.time_range));
+      return typename BVH::NodeRecordMB4D(node,allBounds,set.time_range);
+    }
   };
 
   template<>

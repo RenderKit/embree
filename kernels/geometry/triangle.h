@@ -106,11 +106,13 @@ namespace embree
     }
 
     /* Fill triangle from triangle list */
-    __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene)
+    template<typename PrimRef>
+    __forceinline BBox3fa fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene)
     {
       vint<M> vgeomID = -1, vprimID = -1;
       Vec3vf<M> v0 = zero, v1 = zero, v2 = zero;
       
+      BBox3fa bounds = empty;
       for (size_t i=0; i<M && begin<end; i++, begin++)
       {
 	const PrimRef& prim = prims[begin];
@@ -121,6 +123,9 @@ namespace embree
         const Vec3fa& p0 = mesh->vertex(tri.v[0]);
         const Vec3fa& p1 = mesh->vertex(tri.v[1]);
         const Vec3fa& p2 = mesh->vertex(tri.v[2]);
+        bounds.extend(p0);
+        bounds.extend(p1);
+        bounds.extend(p2);
         vgeomID [i] = geomID;
         vprimID [i] = primID;
         v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
@@ -128,6 +133,7 @@ namespace embree
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
       TriangleM::store_nt(this,TriangleM(v0,v1,v2,vgeomID,vprimID));
+      return bounds;
     }
 
     template<typename BVH>
@@ -140,6 +146,21 @@ namespace embree
         accel[i].fill(prims,cur,range.end(),bvh->scene);
       }
       return BVH::encodeLeaf((char*)accel,items);
+    }
+
+    template<typename BVH>
+    __forceinline static const typename BVH::NodeRecordMB4D createLeafMB (const SetMB& set, const FastAllocator::CachedAllocator& alloc, BVH* bvh)
+    {
+      size_t items = blocks(set.object_range.size());
+      size_t start = set.object_range.begin();
+      TriangleM* accel = (TriangleM*) alloc.malloc1(items*sizeof(TriangleM),BVH::byteAlignment);
+      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+      LBBox3fa allBounds = empty;
+      for (size_t i=0; i<items; i++) {
+        const BBox3fa b = accel[i].fill(set.prims->data(),start,set.object_range.end(),bvh->scene);
+        allBounds.extend(LBBox3fa(b));
+      }
+      return typename BVH::NodeRecordMB4D(node,allBounds,set.time_range);
     }
       
     /* Updates the primitive */

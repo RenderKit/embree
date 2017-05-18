@@ -194,6 +194,19 @@ namespace embree
       return allBounds;
     }
 
+    template<typename BVH>
+    __forceinline static const typename BVH::NodeRecordMB4D createLeafMB (const SetMB& set, const FastAllocator::CachedAllocator& alloc, BVH* bvh)
+    {
+      size_t items = blocks(set.object_range.size());
+      size_t start = set.object_range.begin();
+      TriangleMvMB* accel = (TriangleMvMB*) alloc.malloc1(items*sizeof(TriangleMvMB),BVH::byteAlignment);
+      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+      LBBox3fa allBounds = empty;
+      for (size_t i=0; i<items; i++)
+        allBounds.extend(accel[i].fillMB(set.prims->data(), start, set.object_range.end(), bvh->scene, set.time_range));
+      return typename BVH::NodeRecordMB4D(node,allBounds,set.time_range);
+    }
+
   public:
     vint<M> geomIDs; // geometry ID
     Vec3vf<M> v0;      // 1st vertex of the triangles

@@ -540,7 +540,7 @@ namespace embree
       {
         size_t items = Primitive::blocks(current.prims.object_range.size());
         size_t start = current.prims.object_range.begin();
-        Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteNodeAlignment);
+        Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteNodeAlignment); // FIXME: should be BVH::byteAlignment
         NodeRef node = bvh->encodeLeaf((char*)accel,items);
         LBBox3fa allBounds = empty;
         for (size_t i=0; i<items; i++)
@@ -697,10 +697,10 @@ namespace embree
         assert(set.object_range.size() > 0);
         const Leaf::Type ty = (*set.prims)[set.object_range.begin()].type();
         switch (ty) {
-          //case 0: return Primitive0::createLeafMB(bvh,set,alloc);
-          //case 1: return Primitive1::createLeafMB(bvh,set,alloc);
-          //case 2: return Primitive2::createLeafMB(bvh,set,alloc);
-          //case 3: return Primitive3::createLeafMB(bvh,set,alloc);
+        case 0: return Primitive0::createLeafMB(set,alloc,bvh);
+        case 1: return Primitive1::createLeafMB(set,alloc,bvh);
+        case 2: return Primitive2::createLeafMB(set,alloc,bvh);
+        case 3: return Primitive3::createLeafMB(set,alloc,bvh);
         default: assert(false); return NodeRecordMB4D(BVH::emptyNode,empty,empty);
         }
       }
