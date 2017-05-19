@@ -152,7 +152,7 @@ enum RTCParameter {
   RTC_CONFIG_INTERSECTION_FILTER = 8,         //!< checks if intersection filters are enabled (read only)
   RTC_CONFIG_INTERSECTION_FILTER_RESTORE = 9, //!< checks if intersection filters restores previous hit (read only)
   RTC_CONFIG_IGNORE_INVALID_RAYS = 11,        //!< checks if invalid rays are ignored (read only)
-  RTC_CONFIG_TASKING_SYSTEM = 12,             //!< return used tasking system (0 = INTERNAL, 1 = TBB) (read only)
+  RTC_CONFIG_TASKING_SYSTEM = 12,             //!< return used tasking system (0 = INTERNAL, 1 = TBB, 2 = PPL) (read only)
 
   RTC_CONFIG_VERSION_MAJOR = 13,             //!< returns Embree major version (read only)
   RTC_CONFIG_VERSION_MINOR = 14,             //!< returns Embree minor version (read only)
