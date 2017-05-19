@@ -35,9 +35,9 @@ namespace embree
         {
           const vfloat4 lower = (vfloat4) pinfo.geomBounds.lower;
           const vfloat4 upper = (vfloat4) pinfo.geomBounds.upper;
-          const vbool4 ulpsized = upper - lower <= max(vfloat4(1E-19f),128.0f*vfloat4(ulp)*max(abs(lower),abs(upper)));
-          const vfloat4 diag = (vfloat4) pinfo.geomBounds.size();
-          scale = select(ulpsized,vfloat4(0.0f),vfloat4(BINS)/diag);
+          const vfloat4 eps = 128.0f*vfloat4(ulp)*max(abs(lower),abs(upper));
+          const vfloat4 diag = max(eps,(vfloat4) pinfo.geomBounds.size());
+          scale = select(upper-lower <= eps,vfloat4(0.0f),vfloat4(BINS)/diag);
           ofs  = (vfloat4) pinfo.geomBounds.lower;
           inv_scale = 1.0f / scale; 
         }
