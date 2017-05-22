@@ -252,7 +252,7 @@ namespace embree
         BBox3fa bounds = empty;
         if (!buildBounds(j,&bounds)) continue;
         const PrimRef prim(bounds,ty,geomID,unsigned(j));
-        pinfo.add(bounds,bounds.center2());
+        pinfo.add(bounds);
         prims[dst++] = prim;
       }
       return pinfo;
