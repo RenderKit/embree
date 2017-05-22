@@ -305,7 +305,7 @@ namespace embree
           }
 
           /*! finds the best fallback split */
-          __forceinline Split findFallback(const SetMB& set)
+          __noinline Split findFallback(const SetMB& set)
           {
             /* if a leaf can only hold a single time-segment, we might have to do additional temporal splits */
             if (singleLeafTimeSegment)
