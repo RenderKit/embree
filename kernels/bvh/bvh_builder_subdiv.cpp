@@ -502,7 +502,7 @@ namespace embree
       __forceinline PrimRefMB operator() (const size_t patchIndexMB, const unsigned num_time_segments, const BBox1f time_range) const
       {
         const LBBox3fa lbounds = LBBox3fa([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, time_range, (float)num_time_segments);
-        const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
+        const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
         return PrimRefMB (lbounds, tbounds.size(), num_time_segments, patchIndexMB);
       }
 
@@ -511,7 +511,7 @@ namespace embree
       }
 
       __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range) const {
-        return LBBox3fa([&] (size_t itime) { return bounds[prim.ID()+itime]; }, time_range, prim.totalTimeSegments());
+        return LBBox3fa([&] (size_t itime) { return bounds[prim.ID()+itime]; }, time_range, (float)prim.totalTimeSegments());
       }
     };
 
@@ -661,7 +661,7 @@ namespace embree
           SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+0];
           NodeRef node = bvh->encodeLeaf((char*)&patch,1);
           size_t patchNumTimeSteps = scene->get<SubdivMesh>(patch.geomID())->numTimeSteps;
-          const LBBox3fa lbounds = LBBox3fa([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, current.prims.time_range, patchNumTimeSteps-1);
+          const LBBox3fa lbounds = LBBox3fa([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, current.prims.time_range, (float)(patchNumTimeSteps-1));
           return NodeRecordMB4D(node,lbounds,current.prims.time_range);
         };
 

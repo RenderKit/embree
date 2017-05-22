@@ -226,7 +226,7 @@ namespace embree
             const NativeCurves* mesh = scene->get<NativeCurves>(geomID);
 
             const unsigned num_time_segments = mesh->numTimeSegments();
-            const range<int> tbounds = getTimeSegmentRange(set.time_range, num_time_segments);
+            const range<int> tbounds = getTimeSegmentRange(set.time_range, (float)num_time_segments);
             if (tbounds.size() == 0) continue;
 
             const size_t t = (tbounds.begin()+tbounds.end())/2;

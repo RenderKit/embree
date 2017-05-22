@@ -153,10 +153,10 @@ namespace embree
         const Split find(const SetMB& set, const size_t logBlockSize)
         {
           assert(set.object_range.size() > 0);
-          unsigned numTimeSegments = set.max_num_time_segments;
+          unsigned numTimeSegments = unsigned(set.max_num_time_segments);
           TemporalBinInfo binner(empty);
           binner.bin_parallel(set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,set.time_range,numTimeSegments,recalculatePrimRef);
-          Split tsplit = binner.best(logBlockSize,set.time_range,numTimeSegments);
+          Split tsplit = binner.best((int)logBlockSize,set.time_range,numTimeSegments);
           if (!tsplit.valid()) tsplit.data = Split::SPLIT_FALLBACK; // use fallback split
           return tsplit;
         }

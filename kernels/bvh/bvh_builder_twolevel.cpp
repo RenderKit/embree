@@ -128,7 +128,7 @@ namespace embree
           if (!object->getBounds().empty())
           {
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER
-            refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root,objectID,mesh->size());
+            refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root,(unsigned int)objectID,(unsigned int)mesh->size());
 #else
             refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root);
 #endif
