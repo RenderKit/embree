@@ -118,19 +118,9 @@ namespace embree
 	end+=i;
       }
 
-      __forceinline void add(const size_t i=1) {
-	end+=i;
-      }
-       
-      __forceinline void add(const BBox& geomBounds_, const BBox3fa& centBounds_, size_t num_ = 1) {
-	CentGeom<BBox>::extend(geomBounds_,centBounds_);
-	end += num_;
-      }
-
       __forceinline void merge(const PrimInfoT& other) 
       {
 	CentGeom<BBox>::merge(other);
-	//assert(begin == 0);
         begin += other.begin;
 	end += other.end;
       }
