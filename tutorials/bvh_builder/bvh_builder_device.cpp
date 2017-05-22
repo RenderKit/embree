@@ -119,7 +119,7 @@ namespace embree
     settings.maxLeafSize = 1;
     settings.travCost = 1.0f;
     settings.intCost = 1.0f;
-    settings.extraSpace = extraSpace;
+    settings.extraSpace = (unsigned int)extraSpace;
 
     avector<RTCBuildPrimitive> prims;
     prims.reserve(prims_i.size()+extraSpace);

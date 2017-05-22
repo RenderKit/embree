@@ -175,7 +175,7 @@ namespace embree
       {
         const size_t valid_index = __bsf(valid_bits);
         const vbool<K> octant_valid = octant[valid_index] == octant;
-        valid_bits &= ~movemask(octant_valid);
+        valid_bits &= ~(size_t)movemask(octant_valid);
 
         /* allocate stack and push root node */
         vfloat<K> stack_near[stackSizeChunk];

@@ -480,6 +480,10 @@ namespace embree
     case RTC_CONFIG_TASKING_SYSTEM: return 1;
 #endif
 
+#if defined(TASKING_PPL)
+    case RTC_CONFIG_TASKING_SYSTEM: return 2;
+#endif
+
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
     case RTC_CONFIG_TRIANGLE_GEOMETRY: return 1;
 #else

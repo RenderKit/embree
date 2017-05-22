@@ -227,7 +227,7 @@ namespace embree
             typename HeuristicTemporal::Split temporal_split;
             if (bestSAH > 0.5f*leafSAH) {
               if (current.prims.time_range.size() > 1.01f/float(current.prims.max_num_time_segments)) {
-                temporal_split = temporalSplitHeuristic.find(current.prims, 0);
+                temporal_split = temporalSplitHeuristic.find(current.prims, size_t(0));
                 temporal_split_sah = temporal_split.splitSAH();
                 bestSAH = min(temporal_split_sah,bestSAH);
               }

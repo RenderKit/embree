@@ -128,7 +128,7 @@ namespace embree
           if (!object->getBounds().empty())
           {
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER
-            refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root,objectID,mesh->size());
+            refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root,(unsigned int)objectID,(unsigned int)mesh->size());
 #else
             refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root);
 #endif
@@ -179,7 +179,7 @@ namespace embree
 
               PrimInfo pinfo(empty);
               for (size_t i=r.begin(); i<r.end(); i++) {
-                pinfo.add(refs[i].bounds(),refs[i].bounds().center2());
+                pinfo.add(refs[i].bounds());
               }
               return pinfo;
             }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });

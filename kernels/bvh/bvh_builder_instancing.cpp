@@ -185,7 +185,7 @@ namespace embree
             if (object == nullptr) continue;
             if (object->getBounds().empty()) continue;
             int s = instance->geom->geomID; //slot(geom->getType() & ~Geometry::INSTANCE, geom->numTimeSteps);
-            refs[nextRef++] = BVHNBuilderInstancing::BuildRef(instance->local2world,object->getBounds(),object->root,instance->mask,unsigned(objectID),hash(instance->local2world),s,0,object->numPrimitives);
+            refs[nextRef++] = BVHNBuilderInstancing::BuildRef(instance->local2world,object->getBounds(),object->root,instance->mask,unsigned(objectID),hash(instance->local2world),s,0,(unsigned int)object->numPrimitives);
           }
         });
       refs.resize(nextRef);

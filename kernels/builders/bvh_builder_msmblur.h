@@ -127,7 +127,7 @@ namespace embree
           const Mesh* mesh = scene->get<Mesh>(geomID);
           const LBBox3fa lbounds = mesh->linearBounds(primID, time_range);
           const unsigned num_time_segments = mesh->numTimeSegments();
-          const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
+          const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
           return PrimRefMB (lbounds, tbounds.size(), num_time_segments, geomID, primID);
         }
 
@@ -139,7 +139,7 @@ namespace embree
           const Mesh* mesh = scene->get<Mesh>(geomID);
           const LBBox3fa lbounds = mesh->linearBounds(space, primID, time_range);
           const unsigned num_time_segments = mesh->numTimeSegments();
-          const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
+          const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
           return PrimRefMB (lbounds, tbounds.size(), num_time_segments, geomID, primID);
         }
 
@@ -184,8 +184,8 @@ namespace embree
         __forceinline BuildRecord (size_t depth)
           : depth(depth) {}
 
-        __forceinline BuildRecord (const SetMB& prims, const BinSplit<MBLUR_NUM_OBJECT_BINS>& split, size_t depth)
-          : depth(depth), prims(prims), split(split) {}
+        __forceinline BuildRecord (const SetMB& prims, size_t depth)
+          : depth(depth), prims(prims) {}
 
         __forceinline friend bool operator< (const BuildRecord& a, const BuildRecord& b) {
           return a.prims.size() < b.prims.size();
@@ -198,7 +198,19 @@ namespace embree
       public:
 	size_t depth;                     //!< Depth of the root of this subtree.
 	SetMB prims;                      //!< The list of primitives.
-        BinSplit<MBLUR_NUM_OBJECT_BINS> split;  //!< The best split for the primitives.
+      };
+
+      struct BuildRecordSplit : public BuildRecord
+      {
+        __forceinline BuildRecordSplit () {}
+
+        __forceinline BuildRecordSplit (size_t depth) 
+          : BuildRecord(depth) {}
+
+        __forceinline BuildRecordSplit (const BuildRecord& record, const BinSplit<MBLUR_NUM_OBJECT_BINS>& split)
+          : BuildRecord(record), split(split) {}
+        
+        BinSplit<MBLUR_NUM_OBJECT_BINS> split;
       };
 
       template<
@@ -218,11 +230,11 @@ namespace embree
           static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree if we are that many levels before the maximal tree depth
 
           typedef BVHNodeRecordMB4D<NodeRef> NodeRecordMB4D;
-
           typedef BinSplit<MBLUR_NUM_OBJECT_BINS> Split;
           typedef mvector<PrimRefMB>* PrimRefVector;
           typedef SharedVector<mvector<PrimRefMB>> SharedPrimRefVector;
           typedef LocalChildListT<BuildRecord,MAX_BRANCHING_FACTOR> LocalChildList;
+          typedef LocalChildListT<BuildRecordSplit,MAX_BRANCHING_FACTOR> LocalChildListSplit;
 
         public:
 
@@ -271,20 +283,20 @@ namespace embree
           }
 
           /*! array partitioning */
-          __forceinline std::unique_ptr<mvector<PrimRefMB>> split(const BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord)
+          __forceinline std::unique_ptr<mvector<PrimRefMB>> split(const Split& split, const SetMB& set, SetMB& lset, SetMB& rset)
           {
             /* perform object split */
-            if (likely(brecord.split.data == Split::SPLIT_OBJECT)) {
-              heuristicObjectSplit.split(brecord.split,brecord.prims,lrecord.prims,rrecord.prims);
+            if (likely(split.data == Split::SPLIT_OBJECT)) {
+              heuristicObjectSplit.split(split,set,lset,rset);
             }
             /* perform temporal split */
-            else if (likely(brecord.split.data == Split::SPLIT_TEMPORAL)) {
-              return heuristicTemporalSplit.split(brecord.split,brecord.prims,lrecord.prims,rrecord.prims);
+            else if (likely(split.data == Split::SPLIT_TEMPORAL)) {
+              return heuristicTemporalSplit.split(split,set,lset,rset);
             }
             /* perform fallback split */
-            else if (unlikely(brecord.split.data == Split::SPLIT_FALLBACK)) {
-              brecord.prims.deterministic_order();
-              splitFallback(brecord.prims,lrecord.prims,rrecord.prims);
+            else if (unlikely(split.data == Split::SPLIT_FALLBACK)) {
+              set.deterministic_order();
+              splitFallback(set,lset,rset);
             }
             else
               assert(false);
@@ -293,7 +305,7 @@ namespace embree
           }
 
           /*! finds the best fallback split */
-          __forceinline Split findFallback(const SetMB& set)
+          __noinline Split findFallback(const SetMB& set)
           {
             /* if a leaf can only hold a single time-segment, we might have to do additional temporal splits */
             if (singleLeafTimeSegment)
@@ -302,7 +314,7 @@ namespace embree
               for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++)
               {
                 const PrimRefMB& prim = (*set.prims)[i];
-                const range<int> itime_range = getTimeSegmentRange(set.time_range,prim.totalTimeSegments());
+                const range<int> itime_range = getTimeSegmentRange(set.time_range,(float)prim.totalTimeSegments());
                 const int localTimeSegments = itime_range.size();
                 assert(localTimeSegments > 0);
                 if (localTimeSegments > 1) {
@@ -345,7 +357,7 @@ namespace embree
               throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
 
             /* replace already found split by fallback split */
-            const BuildRecord current(in.prims,findFallback(in.prims),in.depth);
+            const BuildRecordSplit current(BuildRecord(in.prims,in.depth),findFallback(in.prims));
 
             /* create leaf for few primitives */
             if (current.size() <= maxLeafSize && current.split.data != Split::SPLIT_TEMPORAL)
@@ -354,7 +366,7 @@ namespace embree
             /* fill all children by always splitting the largest one */
             bool hasTimeSplits = false;
             NodeRecordMB4D values[MAX_BRANCHING_FACTOR];
-            LocalChildList children(current);
+            LocalChildListSplit children(current);
 
             do {
               /* find best child with largest bounding box area */
@@ -375,10 +387,10 @@ namespace embree
               if (bestChild == -1) break;
 
               /* perform best found split */
-              BuildRecord& brecord = children[bestChild];
-              BuildRecord lrecord(current.depth+1);
-              BuildRecord rrecord(current.depth+1);
-              std::unique_ptr<mvector<PrimRefMB>> new_vector = split(brecord,lrecord,rrecord);
+              BuildRecordSplit& brecord = children[bestChild];
+              BuildRecordSplit lrecord(current.depth+1);
+              BuildRecordSplit rrecord(current.depth+1);
+              std::unique_ptr<mvector<PrimRefMB>> new_vector = split(brecord.split,brecord.prims,lrecord.prims,rrecord.prims);
               hasTimeSplits |= new_vector != nullptr;
 
               /* find new splits */
@@ -416,9 +428,12 @@ namespace embree
             if (toplevel && current.size() <= singleThreadThreshold)
               progressMonitor(current.size());
 
+            /*! find best split */
+            const Split csplit = find(current.prims);
+
             /*! compute leaf and split cost */
             const float leafSAH  = intCost*current.prims.leafSAH(logBlockSize);
-            const float splitSAH = travCost*current.prims.halfArea()+intCost*current.split.splitSAH();
+            const float splitSAH = travCost*current.prims.halfArea()+intCost*csplit.splitSAH();
             assert((current.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
 
             /*! create a leaf node when threshold reached or SAH tells us to stop */
@@ -427,13 +442,21 @@ namespace embree
               return createLargeLeaf(current,alloc);
             }
 
-            /*! initialize child list */
-            bool hasTimeSplits = false;
+            /*! perform initial split */
+            SetMB lprims,rprims;
+            std::unique_ptr<mvector<PrimRefMB>> new_vector = split(csplit,current.prims,lprims,rprims);
+            bool hasTimeSplits = new_vector != nullptr;
             NodeRecordMB4D values[MAX_BRANCHING_FACTOR];
             LocalChildList children(current);
+            {
+              BuildRecord lrecord(lprims,current.depth+1);
+              BuildRecord rrecord(rprims,current.depth+1);
+              children.split(0,lrecord,rrecord,std::move(new_vector));
+            }
 
             /*! split until node is full or SAH tells us to stop */
-            do {
+            while (children.size() < branchingFactor) 
+            {
               /*! find best child to split */
               float bestArea = neg_inf;
               ssize_t bestChild = -1;
@@ -446,19 +469,15 @@ namespace embree
               }
               if (bestChild == -1) break;
 
-              /* perform best found split */
+              /* perform split */
               BuildRecord& brecord = children[bestChild];
               BuildRecord lrecord(current.depth+1);
               BuildRecord rrecord(current.depth+1);
-              std::unique_ptr<mvector<PrimRefMB>> new_vector = split(brecord,lrecord,rrecord);
+              Split csplit = find(brecord.prims);
+              std::unique_ptr<mvector<PrimRefMB>> new_vector = split(csplit,brecord.prims,lrecord.prims,rrecord.prims);
               hasTimeSplits |= new_vector != nullptr;
-
-              /* find new splits */
-              lrecord.split = find(lrecord.prims);
-              rrecord.split = find(rrecord.prims);
               children.split(bestChild,lrecord,rrecord,std::move(new_vector));
-
-            } while (children.size() < branchingFactor);
+            }
 
             /* sort buildrecords for simpler shadow ray traversal */
             //std::sort(&children[0],&children[children.size()],std::greater<BuildRecord>()); // FIXME: reduces traversal performance of bvh8.triangle4 (need to verified) !!
@@ -505,7 +524,7 @@ namespace embree
           __forceinline const NodeRecordMB4D operator() (mvector<PrimRefMB>& prims, const PrimInfoMB& pinfo)
           {
             const SetMB set(pinfo,&prims);
-            auto ret = recurse(BuildRecord(set,find(set),1),nullptr,true);
+            auto ret = recurse(BuildRecord(set,1),nullptr,true);
             _mm_mfence(); // to allow non-temporal stores during build
             return ret;
           }
