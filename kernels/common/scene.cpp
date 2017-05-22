@@ -516,11 +516,11 @@ namespace embree
       else
 #endif
       {
-        if (isStatic()) {
+        //if (isStatic()) {
           accels.add(device->bvh4_factory->BVH4UserGeometry(this,BVHFactory::BuildVariant::STATIC));
-        } else {
-          accels.add(device->bvh4_factory->BVH4UserGeometry(this,BVHFactory::BuildVariant::DYNAMIC));
-        }
+          //} else {
+          //accels.add(device->bvh4_factory->BVH4UserGeometry(this,BVHFactory::BuildVariant::DYNAMIC)); // FIXME: only enable when memory consumption issue with instancing is solved
+          //}
       }
     }
     else if (device->object_accel == "bvh4.object") accels.add(device->bvh4_factory->BVH4UserGeometry(this));

@@ -589,6 +589,10 @@ different ISAs selected (e.g. embree2.a, embree2_sse42.a,
 embree2_avx.a, embree2_avx2.a, embree2_avx512knl.a,
 embree2_avx512skx.a). You have to link these libraries in increasing
 ISA order (the order shown in the example).
+
+When selecting ISAs individually, the AVX ISA always has to get
+enabled when a larger ISA than AVX is enabled, otherwise the code will
+not compile.
 Embree API
 ==========
 

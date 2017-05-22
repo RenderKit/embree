@@ -38,64 +38,6 @@ namespace embree
       }
     };
 
-    /*! triangle edge based on two indices */
-    struct Edge 
-    {
-      uint64_t e;
-
-      __forceinline Edge() {}
-
-      __forceinline Edge(const uint32_t& v0, const uint32_t& v1) {
-        e = v0 < v1 ? (((uint64_t)v1 << 32) | (uint64_t)v0) : (((uint64_t)v0 << 32) | (uint64_t)v1);
-      }
-
-      __forceinline friend bool operator==( const Edge& a, const Edge& b ) { 
-        return a.e == b.e; 
-      }
-    };
-
-    /* last edge of triangle 0 is shared */
-    static __forceinline unsigned int pair_order(const unsigned int tri0_vtx_index0,
-                                                 const unsigned int tri0_vtx_index1,
-                                                 const unsigned int tri0_vtx_index2,
-                                                 const unsigned int tri1_vtx_index)
-    {
-      return \
-        (tri0_vtx_index0  <<  0) |
-        (tri0_vtx_index1  <<  8) |
-        (tri0_vtx_index2  << 16) |
-        (tri1_vtx_index   << 24);
-    }
-
-    /*! tests if a shared exists between two triangles, returns -1 if no shared edge exists and the opposite vertex index of the second triangle if a shared edge exists */
-    static __forceinline int sharedEdge(const Triangle &tri0,
-                                        const Triangle &tri1)
-    {
-      const Edge tri0_edge0(tri0.v[0],tri0.v[1]);
-      const Edge tri0_edge1(tri0.v[1],tri0.v[2]);
-      const Edge tri0_edge2(tri0.v[2],tri0.v[0]);
-
-      const Edge tri1_edge0(tri1.v[0],tri1.v[1]);
-      const Edge tri1_edge1(tri1.v[1],tri1.v[2]);
-      const Edge tri1_edge2(tri1.v[2],tri1.v[0]);
-
-      /* rotate triangle 0 to force shared edge between the first and last vertex */
-
-      if (unlikely(tri0_edge0 == tri1_edge0)) return pair_order(1,2,0, 2); 
-      if (unlikely(tri0_edge1 == tri1_edge0)) return pair_order(2,0,1, 2); 
-      if (unlikely(tri0_edge2 == tri1_edge0)) return pair_order(0,1,2, 2);
-
-      if (unlikely(tri0_edge0 == tri1_edge1)) return pair_order(1,2,0, 0); 
-      if (unlikely(tri0_edge1 == tri1_edge1)) return pair_order(2,0,1, 0); 
-      if (unlikely(tri0_edge2 == tri1_edge1)) return pair_order(0,1,2, 0); 
-
-      if (unlikely(tri0_edge0 == tri1_edge2)) return pair_order(1,2,0, 1); 
-      if (unlikely(tri0_edge1 == tri1_edge2)) return pair_order(2,0,1, 1); 
-      if (unlikely(tri0_edge2 == tri1_edge2)) return pair_order(0,1,2, 1); 
-
-      return -1;
-    }
-
   public:
 
     /*! triangle mesh construction */

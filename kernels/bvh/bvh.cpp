@@ -174,7 +174,8 @@ namespace embree
       {
         alloc.print_blocks();
         for (size_t i=0; i<objects.size(); i++)
-          objects[i]->alloc.print_blocks();
+          if (objects[i]) 
+            objects[i]->alloc.print_blocks();
       }
 
       std::cout << std::flush;

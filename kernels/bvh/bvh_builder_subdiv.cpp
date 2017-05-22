@@ -58,9 +58,12 @@ namespace embree
 
 #define SUBGRID 9
 
-      static unsigned getNumEagerLeaves(unsigned width, unsigned height) {
-        const unsigned w = (width+SUBGRID-1)/SUBGRID;
-        const unsigned h = (height+SUBGRID-1)/SUBGRID;
+      static unsigned getNumEagerLeaves(unsigned pwidth, unsigned pheight) {
+        const unsigned swidth = pwidth-1;
+        const unsigned sheight = pheight-1;
+        const unsigned sblock = SUBGRID-1;
+        const unsigned w = (swidth+sblock-1)/sblock;
+        const unsigned h = (sheight+sblock-1)/sblock;
         return w*h;
       }
 

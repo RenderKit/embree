@@ -423,7 +423,7 @@ namespace embree
           return true;
         }
       
-        void splitFallback(const PrimInfoExtRange& set, PrimInfoExtRange& lset, PrimInfoExtRange& rset)
+        __forceinline void splitFallback(const PrimInfoExtRange& set, PrimInfoExtRange& lset, PrimInfoExtRange& rset)
         {
           const size_t begin = set.begin();
           const size_t end   = set.end();
@@ -440,7 +440,6 @@ namespace embree
             right.add(prims0[i].bounds());	
 
           const size_t rweight = right.end;
-
           new (&lset) PrimInfoExtRange(begin,center,center,left.geomBounds,left.centBounds);
           new (&rset) PrimInfoExtRange(center,end,end,right.geomBounds,right.centBounds);
 
