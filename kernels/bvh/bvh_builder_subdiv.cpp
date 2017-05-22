@@ -501,7 +501,7 @@ namespace embree
 
       __forceinline PrimRefMB operator() (const size_t patchIndexMB, const unsigned num_time_segments, const BBox1f time_range) const
       {
-        const LBBox3fa lbounds = LBBox3fa([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, time_range, num_time_segments);
+        const LBBox3fa lbounds = LBBox3fa([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, time_range, (float)num_time_segments);
         const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
         return PrimRefMB (lbounds, tbounds.size(), num_time_segments, patchIndexMB);
       }

@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 2.16.0
+% Embree: High Performance Ray Tracing Kernels 2.16.1
 % Intel Corporation
 
 Embree Overview
@@ -92,17 +92,11 @@ Installation of Embree
 Windows Installer
 -----------------
 
-You can install the 64 bit version of the Embree library using the
-Windows installer application
-[embree-2.16.0-x64.exe](https://github.com/embree/embree/releases/download/v2.16.0/embree-2.16.0.x64.exe). This
+You can install the Embree library using the Windows installer
+application
+[embree-2.16.1-x64.exe](https://github.com/embree/embree/releases/download/v2.16.1/embree-2.16.1.x64.exe). This
 will install the 64 bit Embree version by default in `Program
-Files\Intel\Embree v2.16.0 x64`. To install the 32 bit
-Embree library use the
-[embree-2.16.0-win32.exe](https://github.com/embree/embree/releases/download/v2.16.0/embree-2.16.0.win32.exe)
-installer. This will install the 32 bit Embree version by default in
-`Program Files\Intel\Embree v2.16.0 win32` on 32 bit
-systems and `Program Files (x86)\Intel\Embree v2.16.0 win32`
-on 64 bit systems.
+Files\Intel\Embree v2.16.1 x64`.
 
 You have to set the path to the `lib` folder manually to your `PATH`
 environment variable for applications to find Embree. To compile
@@ -113,15 +107,13 @@ Embree installation.
 To uninstall Embree again open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-2.16.0` and uninstall it.
+2.16.1` and uninstall it.
 
 Windows ZIP File
 -----------------
 
-Embree is also delivered as a ZIP file for 64 bit
-[embree-2.16.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.16.0/embree-2.16.0.x64.windows.zip)
-and 32 bit
-[embree-2.16.0.win32.windows.zip](https://github.com/embree/embree/releases/download/v2.16.0/embree-2.16.0.win32.windows.zip). After
+Embree is also delivered as a ZIP file
+[embree-2.16.1.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.16.1/embree-2.16.1.x64.windows.zip). After
 unpacking this ZIP file you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree. To compile applications with Embree you also have to set the
@@ -135,18 +127,18 @@ Linux RPMs
 ----------
 
 Uncompress the 'tar.gz' file
-[embree-2.16.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.16.0/embree-2.16.0.x86_64.rpm.tar.gz)
+[embree-2.16.1.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.16.1/embree-2.16.1.x86_64.rpm.tar.gz)
 to
 obtain the individual RPM files:
 
-    tar xzf embree-2.16.0.x86_64.rpm.tar.gz
+    tar xzf embree-2.16.1.x86_64.rpm.tar.gz
 
 To install the Embree using the RPM packages on your Linux system type
 the following:
 
-    sudo rpm --install embree-lib-2.16.0-1.x86_64.rpm
-    sudo rpm --install embree-devel-2.16.0-1.x86_64.rpm
-    sudo rpm --install embree-examples-2.16.0-1.x86_64.rpm
+    sudo rpm --install embree-lib-2.16.1-1.x86_64.rpm
+    sudo rpm --install embree-devel-2.16.1-1.x86_64.rpm
+    sudo rpm --install embree-examples-2.16.1-1.x86_64.rpm
 
 You also have to install the Intel® Threading Building Blocks (TBB)
 using `yum`:
@@ -176,21 +168,21 @@ the tutorials to start them.
 
 To uninstall Embree again just execute the following:
 
-    sudo rpm --erase embree-lib-2.16.0-1.x86_64
-    sudo rpm --erase embree-devel-2.16.0-1.x86_64
-    sudo rpm --erase embree-examples-2.16.0-1.x86_64
+    sudo rpm --erase embree-lib-2.16.1-1.x86_64
+    sudo rpm --erase embree-devel-2.16.1-1.x86_64
+    sudo rpm --erase embree-examples-2.16.1-1.x86_64
 
 Linux tar.gz files
 ------------------
 
 The Linux version of Embree is also delivered as a tar.gz file
-[embree-2.16.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.16.0/embree-2.16.0.x86_64.linux.tar.gz). Unpack
+[embree-2.16.1.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.16.1/embree-2.16.1.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.16.0.x64.linux.tar.gz
-    source embree-2.16.0.x64.linux/embree-vars.sh
+    tar xzf embree-2.16.1.x64.linux.tar.gz
+    source embree-2.16.1.x64.linux/embree-vars.sh
 
 If you want to ship Embree with your application best use the Embree
 version provided through the tar.gz file.
@@ -203,7 +195,7 @@ Mac OS X PKG Installer
 
 To install the Embree library on your Mac OS X system use the
 provided package installer inside
-[embree-2.16.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.16.0/embree-2.16.0.x86_64.dmg). This
+[embree-2.16.1.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.16.1/embree-2.16.1.x86_64.dmg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree2` folder.
@@ -225,13 +217,13 @@ Mac OS X tar.gz file
 ---------------------
 
 The Mac OS X version of Embree is also delivered as a tar.gz file
-[embree-2.16.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.16.0/embree-2.16.0.x86_64.macosx.tar.gz). Unpack
+[embree-2.16.1.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.16.1/embree-2.16.1.x86_64.macosx.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.16.0.x64.macosx.tar.gz
-    source embree-2.16.0.x64.macosx/embree-vars.sh
+    tar xzf embree-2.16.1.x64.macosx.tar.gz
+    source embree-2.16.1.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application please use the Embree
 library of the provided tar.gz file. The library name of that Embree
@@ -2553,7 +2545,7 @@ parameters from the following table are available to set/query:
   RTC_CONFIG_IGNORE_INVALID_RAYS         checks if invalid rays are ignored    Read only
 
   RTC_CONFIG_TASKING_SYSTEM              return used tasking system            Read only
-                                         (0 = INTERNAL, 1 = TBB)
+                                         (0 = INTERNAL, 1 = TBB, 2 = PPL)
 
   RTC_SOFTWARE_CACHE_SIZE                Configures the software cache size    Write only
                                          (used to cache subdivision surfaces
