@@ -93,7 +93,7 @@ namespace embree
 
 
       __forceinline void resize(size_t new_size) {
-        internal_resize(new_size,size_alloced < new_size ? new_size : size_alloced);
+        internal_resize(new_size,internal_grow_size(new_size));
       }
 
       __forceinline void reserve(size_t new_alloced) 
@@ -130,7 +130,7 @@ namespace embree
       __forceinline void push_back(const T& nt) 
       {
         const T v = nt; // need local copy as input reference could point to this vector
-        internal_grow(size_active+1);
+        internal_resize(size_active,internal_grow_size(size_active+1));
         ::new (&items[size_active++]) T(v);
       }
 
@@ -216,11 +216,11 @@ namespace embree
         size_alloced = new_alloced;
       }
 
-      __forceinline void internal_grow(size_t new_alloced)
+      __forceinline size_t internal_grow_size(size_t new_alloced)
       {
         /* do nothing if container already large enough */
         if (new_alloced <= size_alloced) 
-          return;
+          return size_alloced;
 
         /* resize to next power of 2 otherwise */
         size_t new_size_alloced = size_alloced;
@@ -228,8 +228,7 @@ namespace embree
           new_size_alloced = 2*new_size_alloced;
           if (new_size_alloced == 0) new_size_alloced = 1;
         }
-
-        internal_resize(size_active,new_size_alloced);
+        return new_size_alloced;
       }
 
     private:
