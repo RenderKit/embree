@@ -79,6 +79,11 @@ namespace embree
         permX = select(vfloat<16>(dir.x) >= 0.0f, id, id2);
         permY = select(vfloat<16>(dir.y) >= 0.0f, id, id2);
         permZ = select(vfloat<16>(dir.z) >= 0.0f, id, id2);
+
+        octantIndex = \
+          (any(vfloat<16>(dir.x) < 0.0f) ? (size_t)1 : 0) |
+          (any(vfloat<16>(dir.y) < 0.0f) ? (size_t)2 : 0) |
+          (any(vfloat<16>(dir.z) < 0.0f) ? (size_t)4 : 0);
 #endif
       }
 
@@ -116,6 +121,7 @@ namespace embree
 #endif
 #if defined(__AVX512ER__) // KNL+
       vint16 permX, permY, permZ;
+      size_t octantIndex;
 #endif
 
       size_t nearX, nearY, nearZ;

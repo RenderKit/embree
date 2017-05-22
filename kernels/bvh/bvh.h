@@ -1135,7 +1135,7 @@ namespace embree
     struct __aligned(32) QuantizedNode : public BaseNode
     {
       using BaseNode::children;
-#if 0
+#if 1
       typedef unsigned char T;
       static const T MIN_QUAN = 0;
       static const T MAX_QUAN = 255;
@@ -1264,6 +1264,45 @@ namespace embree
         init_dim(node.lower_x,node.upper_x,lower_x,upper_x,start.x,scale.x);
         init_dim(node.lower_y,node.upper_y,lower_y,upper_y,start.y,scale.y);
         init_dim(node.lower_z,node.upper_z,lower_z,upper_z,start.z,scale.z);
+
+        BBox3fa parent = node.bounds();
+        
+        for (size_t i=0;i<8;i++)
+        {
+          const float sx = (i & 1) ? parent.lower.x : parent.upper.x;
+          const float sy = (i & 2) ? parent.lower.y : parent.upper.y;
+          const float sz = (i & 4) ? parent.lower.z : parent.upper.z;
+          const Vec3fa corner(sx,sy,sz);
+
+          vfloat<N> dist;
+          for (size_t j=0;j<N;j++)
+            dist[j] = (node.lower_x[j] != (float)pos_inf) ? length(center(node.bounds(j)) - corner) : 0.0f; // use corner of child
+
+          size_t disti[N];
+          for (size_t j=0;j<N;j++)
+            disti[j] = ((size_t)(*(unsigned int*)&dist[j]) << 32) | j;
+
+          insertionsort_decending<size_t>(disti,N);
+#if 1
+          lookupTable[i] = 0;
+          for (size_t j=0;j<N;j++)
+          {
+            PRINT(disti[j] & 7);
+            lookupTable[i] |= ((unsigned int)(disti[j] & 7) << 3*i);
+          }
+          PING;
+#else
+          lookupTable[i] = \
+            ((unsigned int)5 << 3*0) | 
+            ((unsigned int)2 << 3*1) |
+            ((unsigned int)1 << 3*2) |
+            ((unsigned int)0 << 3*3) |
+            ((unsigned int)4 << 3*4) |
+            ((unsigned int)3 << 3*5) |
+            ((unsigned int)7 << 3*6) |
+            ((unsigned int)6 << 3*7);
+#endif
+        }
       }
 
       __forceinline vfloat<N> dequantizeLowerX() const { return madd(vfloat<N>(vint<N>::load(lower_x)),scale.x,vfloat<N>(start.x)); }
@@ -1306,6 +1345,7 @@ namespace embree
 
       Vec3f start;
       Vec3f scale;
+      unsigned int lookupTable[8]; // 8 octants
     };
 
     /*! swap the children of two nodes */

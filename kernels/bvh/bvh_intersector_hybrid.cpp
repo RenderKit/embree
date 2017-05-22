@@ -100,7 +100,11 @@ namespace embree
             goto pop;
 
           /* select next child and push other children */
-          BVHNNodeTraverser1<N,Nx,types>::traverseClosestHit(cur,mask,tNear,stackPtr,stackEnd);
+          //BVHNNodeTraverser1<N,Nx,types>::traverseClosestHit(cur,mask,tNear,stackPtr,stackEnd);
+#if defined(__AVX512ER__)
+          BVHNNodeTraverser1Permute<N,Nx,types>::traverseClosestHit(cur,mask,tNear,stackPtr,stackEnd,vray.octantIndex);
+#endif
+
         }
 
         /*! this is a leaf node */
@@ -119,6 +123,8 @@ namespace embree
           stackPtr++;
         }
       }
+      PRINT(ray);
+      exit(0);
     }
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>

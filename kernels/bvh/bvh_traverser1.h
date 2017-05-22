@@ -28,6 +28,87 @@ namespace embree
     template<int N, int Nx, int types>
     class BVHNNodeTraverser1Hit;
 
+    /*! BVH regular node traversal for single rays. */
+    template<int N, int Nx, int types>
+    class BVHNNodeTraverser1Permute;
+
+    template<int Nx, int types>
+      class BVHNNodeTraverser1Permute<4,Nx,types>
+    {
+      typedef BVH4 BVH;
+      typedef BVH4::NodeRef NodeRef;
+      typedef BVH4::BaseNode BaseNode;
+
+    public:
+      static __forceinline void traverseClosestHit(NodeRef& cur,
+                                                   size_t mask,
+                                                   const vfloat<Nx>& tNear,
+                                                   StackItemT<NodeRef>*& stackPtr,
+                                                   StackItemT<NodeRef>* stackEnd,
+                                                   const unsigned int octantIndex)
+      {
+      }
+    };
+
+    template<int Nx, int types>
+      class BVHNNodeTraverser1Permute<8,Nx,types>
+    {
+      typedef BVH8 BVH;
+      typedef BVH8::NodeRef NodeRef;
+      typedef BVH8::BaseNode BaseNode;
+
+    public:
+      static __forceinline void traverseClosestHit(NodeRef& cur,
+                                                   size_t mask,
+                                                   const vfloat<Nx>& tNear,
+                                                   StackItemT<NodeRef>*& stackPtr,
+                                                   StackItemT<NodeRef>* stackEnd,
+                                                   const unsigned int octantIndex)
+      {
+#if defined(__AVX512ER__)   
+        assert(mask);
+        STAT3(normal.trav_hit_boxes[__popcnt(mask)],1,1,1);
+        const BVH::QuantizedNode* node = cur.quantizedNode();
+        const unsigned int gatherIDs = node->lookupTable[octantIndex];
+        PRINT(gatherIDs);
+        vuint16 gatherIDs_dist(gatherIDs);
+        gatherIDs_dist = gatherIDs_dist >> (vuint16( step ) + vuint16( step ) + vuint16( step ));
+        gatherIDs_dist &= 0x7;
+        vllong8 gatherIDs_nodes(zeroExtend32Bit(gatherIDs_dist));
+        vfloat16 dist = select(vbool16((int)mask),tNear,vfloat16(pos_inf));
+        dist = permute(dist,gatherIDs_dist);
+        vbool16 m_compact = dist != vfloat16(pos_inf);
+        vllong8 nodes = permute(vllong8::loadu(node->children),gatherIDs_nodes);
+        
+        dist  = vfloat16::compact(m_compact,dist);
+        nodes = vllong8::compact(vboold8(m_compact),nodes);
+
+        while (1)
+        {
+          assert(stackPtr < stackEnd);
+          size_t r = __bscf(mask);
+          cur = toScalar(nodes);
+          //cur = node->child(r);
+          //assert(cur == node->child(r));
+          nodes = align_shift_right<1>(nodes,nodes);
+          cur.prefetch(types); 
+          //unsigned int d = *(unsigned int*)&tNear[r]; 
+          float dd = toScalar(dist);
+          //assert(dd == tNear[r]);
+          dist = align_shift_right<1>(dist,dist);
+
+          stackPtr->ptr = cur; 
+          *(float*)&stackPtr->dist = dd; 
+          stackPtr++;
+          assert(cur != BVH::emptyNode);
+          if (unlikely(mask == 0)) break;
+        }
+        stackPtr--;
+#endif
+      }
+    };
+
+
     /*! Helper functions for fast sorting using AVX512 instructions. */
 #if defined(__AVX512F__)   
     __forceinline static void isort_update(vfloat16 &dist, vllong8 &ptr, const vfloat16 &d, const vllong8 &p)
@@ -56,9 +137,10 @@ namespace embree
                                                            StackItemT<NodeRef>* stackEnd)
       {
         assert(mask != 0);
-        const BaseNode* node = cur.baseNode(types);
 
         STAT3(normal.trav_hit_boxes[__popcnt(mask)],1,1,1);
+
+        const BaseNode* node = cur.baseNode(types);
 
         size_t r = __bscf(mask);
         cur = node->child(r);
@@ -217,6 +299,7 @@ namespace embree
         }
         cur = toScalar(ptr);
 #endif        
+
       }
 
 #endif
