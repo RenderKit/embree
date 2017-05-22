@@ -1143,11 +1143,11 @@ namespace embree
   }
 
   RTCORE_API unsigned rtcNewHairGeometry (RTCScene hscene, RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) {
-    return rtcNewBezierHairGeometry2(hscene,gflags,numCurves,numVertices,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+    return rtcNewBezierHairGeometry2(hscene,gflags,(unsigned int)numCurves,(unsigned int)numVertices,(unsigned int)numTimeSteps,RTC_INVALID_GEOMETRY_ID);
   }
 
   RTCORE_API unsigned rtcNewBezierHairGeometry (RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps) {
-    return rtcNewBezierHairGeometry2(hscene,gflags,numCurves,numVertices,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+    return rtcNewBezierHairGeometry2(hscene,gflags,(unsigned int)numCurves,(unsigned int)numVertices,(unsigned int)numTimeSteps,RTC_INVALID_GEOMETRY_ID);
   }
 
   RTCORE_API unsigned rtcNewBezierHairGeometry2 (RTCScene hscene, RTCGeometryFlags flags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps, unsigned int geomID) 
@@ -1185,11 +1185,11 @@ namespace embree
   }
 
   RTCORE_API unsigned rtcNewCurveGeometry (RTCScene hscene, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) {
-    return rtcNewBezierCurveGeometry2(hscene,flags,numCurves,numVertices,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+    return rtcNewBezierCurveGeometry2(hscene,flags,(unsigned int)numCurves,(unsigned int)numVertices,(unsigned int)numTimeSteps,RTC_INVALID_GEOMETRY_ID);
   }
 
   RTCORE_API unsigned rtcNewBezierCurveGeometry (RTCScene hscene, RTCGeometryFlags flags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps) {
-    return rtcNewBezierCurveGeometry2(hscene,flags,numCurves,numVertices,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+    return rtcNewBezierCurveGeometry2(hscene,flags,(unsigned int)numCurves,(unsigned int)numVertices,(unsigned int)numTimeSteps,RTC_INVALID_GEOMETRY_ID);
   }
 
   RTCORE_API unsigned rtcNewBezierCurveGeometry2(RTCScene hscene, RTCGeometryFlags flags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps, unsigned int geomID) 
