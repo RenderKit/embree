@@ -26,7 +26,7 @@ namespace embree
       : troot(BVH4::emptyNode),
         time_steps(time_steps), width(x1-x0+1), height(y1-y0+1), dim_offset(width*height),
         _geomID(patches->geomID()), _primID(patches->primID()), 
-        gridOffset(gridOffset), gridBytes(unsigned(gridBytes)), rootOffset(unsigned(gridOffset+time_steps*gridBytes))
+        gridOffset(unsigned(gridOffset)), gridBytes(unsigned(gridBytes)), rootOffset(unsigned(gridOffset+time_steps*gridBytes))
     {
       /* the generate loops need padded arrays, thus first store into these temporary arrays */
       unsigned temp_size = width*height+VSIZEX;

@@ -235,11 +235,11 @@ namespace embree
       static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         vfloat<K> vftime;
-        vint<K> vitime = getTimeSegment(ray.time, vfloat<K>(pre.grid->time_steps-1), vftime);
+        vint<K> vitime = getTimeSegment(ray.time, vfloat<K>((float)(pre.grid->time_steps-1)), vftime);
 
         vbool<K> valid1 = valid_i;
         while (any(valid1)) {
-          const int j = int(__bsf(movemask(valid1)));
+          const size_t j = __bsf(movemask(valid1));
           const int itime = vitime[j];
           const vbool<K> valid2 = valid1 & (itime == vitime);
           valid1 = valid1 & !valid2;
@@ -295,7 +295,7 @@ namespace embree
       static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t& lazy_node)
       {
         vfloat<K> vftime;
-        vint<K> vitime = getTimeSegment(ray.time, vfloat<K>(pre.grid->time_steps-1), vftime);
+        vint<K> vitime = getTimeSegment(ray.time, vfloat<K>((float)(pre.grid->time_steps-1)), vftime);
 
         vbool<K> valid_o = valid_i;
         vbool<K> valid1 = valid_i;
