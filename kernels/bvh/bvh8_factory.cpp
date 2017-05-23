@@ -923,7 +923,7 @@ namespace embree
 
   Accel* BVH8Factory::BVH8MultiFast(Scene* scene)
   {
-    Geometry::Type ty = (Geometry::Type) (Geometry::TRIANGLE_MESH | Geometry::QUAD_MESH);
+    Geometry::Type ty = (Geometry::Type) (Geometry::TRIANGLE_MESH | Geometry::QUAD_MESH | Geometry::BEZIER_CURVES);
 
     BVH8* accel = new BVH8(Triangle4::type,scene); // FIXME: wrong type !!!!!!!
     //Accel::Intersectors intersectors = BVH8MultiFastIntersectors(accel);
