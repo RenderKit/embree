@@ -40,6 +40,10 @@ namespace embree
         return ((types-1)&types) == 0;
       }
 
+      __forceinline bool isType( const Leaf::Type ty ) const {
+        return types == Leaf::typeMask(ty);
+      }
+
       template<typename PrimRef> 
         __forceinline void extend_primref(const PrimRef& prim) 
       {

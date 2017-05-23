@@ -102,7 +102,7 @@ namespace embree
               throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
 
             /* create leaf for few primitives */
-            if (pinfo.size() <= maxLeafSize)
+            if (pinfo.size() <= maxLeafSize && pinfo.oneType())
               return createLeaf(depth,pinfo,alloc);
 
             /* fill all children by always splitting the largest one */
@@ -118,7 +118,7 @@ namespace embree
               for (unsigned i=0; i<numChildren; i++)
               {
                 /* ignore leaves as they cannot get split */
-                if (children[i].size() <= maxLeafSize)
+                if (children[i].size() <= maxLeafSize && pinfo.oneType())
                   continue;
 
                 /* remember child with largest size */
@@ -172,7 +172,7 @@ namespace embree
             UnalignedHeuristicBinningSAH::Split unalignedObjectSplit;
             LinearSpace3fa uspace;
             float unalignedObjectSAH = inf;
-            if (bestSAH > 0.7f*leafSAH) {
+            if (pinfo.isType(Leaf::TY_HAIR) && bestSAH > 0.7f*leafSAH) {
               uspace = unalignedHeuristic.computeAlignedSpace(pinfo);
               const PrimInfoRange sinfo = unalignedHeuristic.computePrimInfo(pinfo,uspace);
               unalignedObjectSplit = unalignedHeuristic.find(sinfo,0,uspace);
@@ -183,7 +183,7 @@ namespace embree
             /* try splitting into two strands */
             HeuristicStrandSplitSAH::Split strandSplit;
             float strandSAH = inf;
-            if (bestSAH > 0.7f*leafSAH) {
+            if (pinfo.isType(Leaf::TY_HAIR) && bestSAH > 0.7f*leafSAH) {
               strandSplit = strandHeuristic.find(pinfo);
               strandSAH = travCostUnaligned*halfArea(pinfo.geomBounds) + intCost*strandSplit.splitSAH();
               bestSAH = min(strandSAH,bestSAH);
