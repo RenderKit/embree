@@ -260,8 +260,8 @@ namespace embree
         
         size_t center = serial_partitioning(prims,begin,end,local_left,local_right,primOnLeftSide,mergePrimBounds);
         
-        new (&lset) PrimInfoRange(begin,center,local_left.geomBounds,local_left.centBounds);
-        new (&rset) PrimInfoRange(center,end,local_right.geomBounds,local_right.centBounds);
+        new (&lset) PrimInfoRange(begin,center,local_left);
+        new (&rset) PrimInfoRange(center,end,local_right);
         assert(area(lset.geomBounds) >= 0.0f);
         assert(area(rset.geomBounds) >= 0.0f);
       }
@@ -284,16 +284,16 @@ namespace embree
           return cos0 > cos1;
         };
 
-        PrimInfo linfo; linfo.reset(); // FIXME: use CentGeomBBox3fa
-        PrimInfo rinfo; rinfo.reset();
+        CentGeomBBox3fa linfo(empty); // FIXME: use CentGeomBBox3fa
+        CentGeomBBox3fa rinfo(empty);
         const size_t center = parallel_partitioning(
           prims,begin,end,EmptyTy(),linfo,rinfo,primOnLeftSide,
-          [this] (PrimInfo &pinfo, const PrimRef& ref) { pinfo.add(bounds(ref)); },
-          [] (PrimInfo &pinfo0,const PrimInfo& pinfo1) { pinfo0.merge(pinfo1); },
+          [this] (CentGeomBBox3fa& pinfo, const PrimRef& ref) { pinfo.extend(bounds(ref)); },
+          [] (CentGeomBBox3fa& pinfo0, const CentGeomBBox3fa& pinfo1) { pinfo0.merge(pinfo1); },
           PARALLEL_PARTITION_BLOCK_SIZE);
         
-        new (&lset) PrimInfoRange(begin,center,linfo.geomBounds,linfo.centBounds);
-        new (&rset) PrimInfoRange(center,end,rinfo.geomBounds,rinfo.centBounds);
+        new (&lset) PrimInfoRange(begin,center,linfo);
+        new (&rset) PrimInfoRange(center,end,rinfo);
       }
       
       void deterministic_order(const Set& set) 
@@ -308,15 +308,15 @@ namespace embree
         const size_t end   = set.end();
         const size_t center = (begin + end)/2;
         
-        CentGeomBBox3fa left; left.reset();
+        CentGeomBBox3fa left(empty);
         for (size_t i=begin; i<center; i++)
           left.extend(bounds(prims[i]));
-        new (&lset) PrimInfoRange(begin,center,left.geomBounds,left.centBounds);
+        new (&lset) PrimInfoRange(begin,center,left);
         
-        CentGeomBBox3fa right; right.reset();
+        CentGeomBBox3fa right(empty);
         for (size_t i=center; i<end; i++)
           right.extend(bounds(prims[i]));	
-        new (&rset) PrimInfoRange(center,end,right.geomBounds,right.centBounds);
+        new (&rset) PrimInfoRange(center,end,right);
       }
       
     private:
