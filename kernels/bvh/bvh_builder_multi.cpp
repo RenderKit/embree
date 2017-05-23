@@ -429,6 +429,17 @@ namespace embree
 
       virtual void build() 
       {
+        static CreateMultiLeaf4<8,
+                                Triangle4,
+                                Triangle4vMB,
+                                Quad4v,
+                                Quad4iMB> createLeaf;
+        static CreateMSMBlurMultiLeaf4<8,
+                                       Triangle4,
+                                       Triangle4vMB,
+                                       Quad4v,
+                                       Quad4iMB> createLeafMB;
+        
         if (!builder) 
         {
           const size_t num1 = scene->getNumPrimitives(type,false);
@@ -436,41 +447,17 @@ namespace embree
           
           if ((type & Geometry::BEZIER_CURVES) && scene->getNumPrimitives(Geometry::BEZIER_CURVES,true))
           {
-            if (num1 < num2) 
-            {
+            if (num1 < num2) {
               assert(false);
-            }
-            else
-            {
-              static CreateMultiLeaf4<8,
-                                      Triangle4,
-                                      Triangle4vMB,
-                                      Quad4v,
-                                      Quad4iMB> createLeaf;
-              
+            } else {
               builder = new BVHNOBBBuilderMultiSAH<8>((BVH8*)bvh,scene,type,createLeaf); //,4,1.0f,4,inf); 
             }
           }
           else
           {
-            if (num1 < num2) 
-            {
-              static CreateMSMBlurMultiLeaf4<8,
-                                             Triangle4,
-                                             Triangle4vMB,
-                                             Quad4v,
-                                             Quad4iMB> createLeaf;
-              
-              builder = new BVHNMultiBuilderMBlurSAH<8>((BVH8*)bvh,scene,type,createLeaf,4,1.0f,4,inf); 
-            }
-            else
-            {
-              static CreateMultiLeaf4<8,
-                                      Triangle4,
-                                      Triangle4vMB,
-                                      Quad4v,
-                                      Quad4iMB> createLeaf;
-              
+            if (num1 < num2) {
+              builder = new BVHNMultiBuilderMBlurSAH<8>((BVH8*)bvh,scene,type,createLeafMB,4,1.0f,4,inf); 
+            } else {
               builder = new BVHNBuilderMultiSAH<8>((BVH8*)bvh,scene,type,createLeaf,4,1.0f,4,inf); 
             }
           }
