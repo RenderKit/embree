@@ -26,12 +26,12 @@ namespace embree
   namespace isa
   {
     template<
+      typename Intersector0,
       typename Intersector1,
       typename Intersector2,
       typename Intersector3,
       typename Intersector4,
-      typename Intersector5,
-      typename Intersector6>
+      typename Intersector5>
 
       struct Virtual6LeafIntersector1
       {
@@ -52,12 +52,12 @@ namespace embree
         
         public:
           const LeafIntersector* leaf_intersector;
-          typename Intersector1::Precalculations pre0;
+          typename Intersector0::Precalculations pre0;
           typename Intersector1::Precalculations pre1;
-          typename Intersector1::Precalculations pre2;
-          typename Intersector1::Precalculations pre3;
-          typename Intersector1::Precalculations pre4;
-          typename Intersector1::Precalculations pre5;
+          typename Intersector2::Precalculations pre2;
+          typename Intersector3::Precalculations pre3;
+          typename Intersector4::Precalculations pre4;
+          typename Intersector5::Precalculations pre5;
           void* table[6];
         };
 
@@ -91,7 +91,7 @@ namespace embree
         }
 
         static __forceinline void vintersect(void* pre, Ray& ray, IntersectContext* context, const void* prim, size_t num, size_t& lazy_node) {
-          intersect((Precalculations&)pre,ray,context,(const Primitive*)prim,num,lazy_node);
+          intersect(*(Precalculations*)pre,ray,context,(const Primitive*)prim,num,lazy_node);
         }
         
         static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node) 
@@ -104,7 +104,7 @@ namespace embree
         }
 
         static __forceinline bool voccluded(void* pre, Ray& ray, IntersectContext* context, const void* prim, size_t num, size_t& lazy_node) {
-          return occluded((Precalculations&)pre,ray,context,(const Primitive*)prim,num,lazy_node);
+          return occluded(*(Precalculations*)pre,ray,context,(const Primitive*)prim,num,lazy_node);
         }
 
         static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context,  const Primitive* prim, size_t num, size_t& lazy_node)
