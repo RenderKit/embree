@@ -36,11 +36,6 @@ namespace embree
       __forceinline CentGeom (const BBox& geomBounds, const BBox3fa& centBounds) 
 	: geomBounds(geomBounds), centBounds(centBounds) {}
       
-      __forceinline void extend(const BBox& geomBounds_, const BBox3fa& centBounds_) {
-	geomBounds.extend(geomBounds_);
-	centBounds.extend(centBounds_);
-      }
-
       __forceinline void reset() {
 	geomBounds = empty;
 	centBounds = empty;
@@ -54,6 +49,13 @@ namespace embree
         geomBounds.extend(bounds);
         centBounds.extend(center);
       }
+
+      /*__forceinline void extend_center2(const PrimRef& prim) 
+      {
+        BBox3fa bounds = prim.bounds();
+        geomBounds.extend(bounds);
+        centBounds.extend(bounds.center2());
+        }*/
 
       __forceinline void extend(const BBox& geomBounds_) {
 	geomBounds.extend(geomBounds_);
@@ -114,7 +116,7 @@ namespace embree
       }
 
       __forceinline void add(const BBox& geomBounds_, const size_t i) {
-	CentGeom<BBox>::extend(geomBounds_,center2(geomBounds_));
+	CentGeom<BBox>::extend(geomBounds_);
 	end+=i;
       }
 
