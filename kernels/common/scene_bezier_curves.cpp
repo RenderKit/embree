@@ -265,6 +265,21 @@ namespace embree
         });
       native_vertices0 = native_vertices[0];
     }
+
+    PrimInfo NativeCurvesISA::createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& src, size_t dst)
+    {
+      PrimInfo pinfo(empty);
+      Leaf::Type ty = numTimeSteps == 1 ? Leaf::TY_HAIR : Leaf::TY_HAIR_MB; // FIXME: move to function
+      for (size_t j=src.begin(); j<src.end(); j++)
+      {
+        BBox3fa bounds = empty;
+        if (!buildBounds(j,&bounds)) continue;
+        const PrimRef prim(bounds,ty,geomID,unsigned(j));
+        pinfo.add_center2(prim);
+        prims[dst++] = prim;
+      }
+      return pinfo;
+    }
     
     NativeCurves* createCurvesBezier(Scene* scene, NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps) {
       return new CurvesBezier(scene,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps);

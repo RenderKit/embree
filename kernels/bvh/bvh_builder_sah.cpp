@@ -18,6 +18,11 @@
 #include "bvh_builder.h"
 #include "../builders/bvh_builder_msmblur.h"
 
+#include "../builders/bvh_builder_hair.h"
+#include "../builders/bvh_builder_msmblur_hair.h"
+#include "../geometry/bezier1v.h"
+#include "../geometry/bezier1i.h"
+
 #include "../builders/primrefgen.h"
 #include "../builders/splitter.h"
 
@@ -902,6 +907,87 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 
+    template<int N>
+    struct BVHNOBBBuilderMultiSAH : public Builder
+    {
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+
+      BVH* bvh;
+      Scene* scene;
+      Geometry::Type type;
+      const VirtualCreateLeaf<N>& createLeaf;
+      mvector<PrimRef> prims;
+
+      BVHNOBBBuilderMultiSAH (BVH* bvh, Scene* scene, Geometry::Type type, const VirtualCreateLeaf<N>& createLeaf)
+        : bvh(bvh), scene(scene), type(type), createLeaf(createLeaf), prims(scene->device,0) {}
+      
+      void build() 
+      {
+        /* fast path for empty BVH */
+        const size_t numPrimitives = scene->getNumPrimitives(type,false);
+        if (numPrimitives == 0) {
+          prims.clear();
+          bvh->clear();
+          return;
+        }
+
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "MultiOBBBuilderSAH");
+
+        //profile(1,5,numPrimitives,[&] (ProfileTimer& timer) {
+        
+        /* create primref array */
+        prims.resize(numPrimitives);
+        const PrimInfo pinfo = createMultiPrimRefArray(scene,type,false,prims,scene->progressInterface);
+
+        /* estimate acceleration structure size */
+        const size_t node_bytes = pinfo.size()*sizeof(typename BVH::UnalignedNode)/(4*N);
+        const size_t leaf_bytes = pinfo.size()*44; //sizeof(Primitive); FIXME wrong size
+        bvh->alloc.init_estimate(node_bytes+leaf_bytes);
+        
+        /* builder settings */
+        BVHBuilderHair::Settings settings;
+        settings.branchingFactor = N;
+        settings.maxDepth = BVH::maxBuildDepthLeaf;
+        settings.logBlockSize = 0;
+        settings.minLeafSize = 1;
+        settings.maxLeafSize = BVH::maxLeafBlocks;
+
+        /* build hierarchy */
+        typename BVH::NodeRef root = BVHBuilderHair::build<NodeRef>
+          (typename BVH::CreateAlloc(bvh),
+           typename BVH::AlignedNode::Create(),
+           typename BVH::AlignedNode::Set(),
+           typename BVH::UnalignedNode::Create(),
+           typename BVH::UnalignedNode::Set(),
+           [&] (size_t depth, const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) -> NodeRef {
+            return createLeaf(bvh,prims.data(),range,alloc);
+           },
+           scene->progressInterface,scene,prims.data(),pinfo,settings);
+        
+        bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
+        
+        //});
+        
+        /* clear temporary data for static geometry */
+        if (scene->isStatic()) {
+          prims.clear();
+          bvh->shrink();
+        }
+        bvh->cleanup();
+        bvh->postBuild(t0);
+      }
+
+      void clear() {
+        prims.clear();
+      }
+    };
+
+    /************************************************************************************/
+    /************************************************************************************/
+    /************************************************************************************/
+    /************************************************************************************/
+
 
 #if defined(EMBREE_GEOMETRY_LINES)
     Builder* BVH4Line4iMeshBuilderSAH     (void* bvh, LineSegments* mesh, size_t mode) { return new BVHNBuilderSAH<4,LineSegments,Line4i>((BVH4*)bvh,mesh,4,1.0f,4,inf,mode); }
@@ -997,25 +1083,45 @@ namespace embree
           const size_t num1 = scene->getNumPrimitives(type,false);
           const size_t num2 = scene->getNumPrimitives(type,true);
           
-          if (num1 < num2) 
+          if ((type & Geometry::BEZIER_CURVES) && scene->getNumPrimitives(Geometry::BEZIER_CURVES,true))
           {
-            static CreateMSMBlurMultiLeaf4<8,
-                                           Triangle4,
-                                           Triangle4vMB,
-                                           Quad4v,
-                                           Quad4iMB> createLeaf;
-      
-            builder = new BVHNMultiBuilderMBlurSAH<8>((BVH8*)bvh,scene,type,createLeaf,4,1.0f,4,inf); 
+            if (num1 < num2) 
+            {
+              assert(false);
+            }
+            else
+            {
+              static CreateMultiLeaf4<8,
+                                      Triangle4,
+                                      Triangle4,
+                                      Quad4v,
+                                      Quad4v> createLeaf;
+              
+              builder = new BVHNOBBBuilderMultiSAH<8>((BVH8*)bvh,scene,type,createLeaf); //,4,1.0f,4,inf); 
+            }
           }
           else
           {
-            static CreateMultiLeaf4<8,
-                                    Triangle4,
-                                    Triangle4,
-                                    Quad4v,
-                                    Quad4v> createLeaf;
-
-            builder = new BVHNBuilderMultiSAH<8>((BVH8*)bvh,scene,type,createLeaf,4,1.0f,4,inf); 
+            if (num1 < num2) 
+            {
+              static CreateMSMBlurMultiLeaf4<8,
+                                             Triangle4,
+                                             Triangle4vMB,
+                                             Quad4v,
+                                             Quad4iMB> createLeaf;
+              
+              builder = new BVHNMultiBuilderMBlurSAH<8>((BVH8*)bvh,scene,type,createLeaf,4,1.0f,4,inf); 
+            }
+            else
+            {
+              static CreateMultiLeaf4<8,
+                                      Triangle4,
+                                      Triangle4,
+                                      Quad4v,
+                                      Quad4v> createLeaf;
+              
+              builder = new BVHNBuilderMultiSAH<8>((BVH8*)bvh,scene,type,createLeaf,4,1.0f,4,inf); 
+            }
           }
         }
         builder->build();

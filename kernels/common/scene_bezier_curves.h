@@ -302,6 +302,8 @@ namespace embree
       template<typename Curve> void interpolate_helper(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
       
       template<typename InputCurve3fa, typename OutputCurve3fa> void commit_helper();
+
+      virtual PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& src, size_t dst);
     };
     
     struct CurvesBezier : public NativeCurvesISA

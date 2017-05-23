@@ -70,6 +70,18 @@ namespace embree
       new (this) Bezier1v(p0,p1,p2,p3,geomID,primID,Leaf::TY_HAIR);
     }
 
+    template<typename BVH>
+    __forceinline static typename BVH::NodeRef createLeaf(const FastAllocator::CachedAllocator& alloc, PrimRef* prims, const range<size_t>& range, BVH* bvh)
+    {
+      size_t cur = range.begin();
+      size_t items = blocks(range.size());
+      Bezier1v* accel = (Bezier1v*) alloc.malloc1(items*sizeof(Bezier1v),BVH::byteAlignment);
+      for (size_t i=0; i<items; i++) {
+        accel[i].fill(prims,cur,range.end(),bvh->scene);
+      }
+      return BVH::encodeLeaf((char*)accel,items);
+    }
+
     friend std::ostream& operator<<(std::ostream& cout, const Bezier1v& b) 
     {
       return std::cout << "Bezier1v { " << std::endl << 
