@@ -31,10 +31,10 @@ namespace embree
       __forceinline CentGeom () {}
 
       __forceinline CentGeom (EmptyTy) 
-	: geomBounds(empty), centBounds(empty) {}
+	: geomBounds(empty), centBounds(empty), types(0) {}
       
-      __forceinline CentGeom (const BBox& geomBounds, const BBox3fa& centBounds) 
-	: geomBounds(geomBounds), centBounds(centBounds) {}
+      __forceinline CentGeom (const BBox& geomBounds, const BBox3fa& centBounds, unsigned types) 
+	: geomBounds(geomBounds), centBounds(centBounds), types(types) {}
       
       template<typename PrimRef> 
         __forceinline void extend_primref(const PrimRef& prim) 
@@ -43,6 +43,7 @@ namespace embree
         prim.binBoundsAndCenter(bounds,center);
         geomBounds.extend(bounds);
         centBounds.extend(center);
+        types |= Leaf::typeMask(prim.type());
       }
 
        template<typename PrimRef> 
@@ -58,10 +59,17 @@ namespace embree
 	centBounds.extend(center2(geomBounds_));
       }
 
+      __forceinline void extend(const BBox& geomBounds_, Leaf::Type ty) {
+	geomBounds.extend(geomBounds_);
+	centBounds.extend(center2(geomBounds_));
+        types |= Leaf::typeMask(ty);
+      }
+
       __forceinline void merge(const CentGeom& other) 
       {
 	geomBounds.extend(other.geomBounds);
 	centBounds.extend(other.centBounds);
+        types |= other.types;
       }
 
       static __forceinline const CentGeom extend( CentGeom& a, const CentGeom& b ) {
@@ -74,6 +82,7 @@ namespace embree
     public:
       BBox geomBounds;   //!< geometry bounds of primitives
       BBox3fa centBounds;   //!< centroid bounds of primitives
+      unsigned types;          //!< types of primitives
     };
 
     typedef CentGeom<BBox3fa> CentGeomBBox3fa;
@@ -100,7 +109,7 @@ namespace embree
         CentGeom<BBox>::extend_primref(prim);
         end++;
       }
-
+      
        template<typename PrimRef> 
          __forceinline void add_center2(const PrimRef& prim) {
          CentGeom<BBox>::extend_center2(prim);
@@ -112,17 +121,12 @@ namespace embree
           CentGeom<BBox>::extend_center2(prim);
           end+=i;
         }
-
-      /*__forceinline void add(const BBox& geomBounds_) {
-	CentGeom<BBox>::extend(geomBounds_);
-	end++;
+        
+      __forceinline void add(const BBox& geomBounds_, Leaf::Type type) {
+        CentGeom<BBox>::extend(geomBounds_,type);
+        end++;
       }
-
-      __forceinline void add(const BBox& geomBounds_, const size_t i) {
-	CentGeom<BBox>::extend(geomBounds_);
-	end+=i;
-        }*/
-
+      
       __forceinline void merge(const PrimInfoT& other) 
       {
 	CentGeom<BBox>::merge(other);
@@ -133,7 +137,10 @@ namespace embree
       static __forceinline const PrimInfoT merge(const PrimInfoT& a, const PrimInfoT& b) {
         PrimInfoT r = a; r.merge(b); return r;
       }
-      
+      static __forceinline const PrimInfoT merge2(const PrimInfoT& a, const PrimInfoT& b) {
+        PrimInfoT r = a; r.merge(b); return r;
+      }
+
       /*! returns the number of primitives */
       __forceinline size_t size() const { 
 	return end-begin; 
@@ -156,7 +163,7 @@ namespace embree
       
       /*! stream output */
       friend std::ostream& operator<<(std::ostream& cout, const PrimInfoT& pinfo) {
-	return cout << "PrimInfo { begin = " << pinfo.begin << ", end = " << pinfo.end << ", geomBounds = " << pinfo.geomBounds << ", centBounds = " << pinfo.centBounds << "}";
+	return cout << "PrimInfo { begin = " << pinfo.begin << ", end = " << pinfo.end << ", types = " << pinfo.types << ", geomBounds = " << pinfo.geomBounds << ", centBounds = " << pinfo.centBounds << "}";
       }
       
     public:

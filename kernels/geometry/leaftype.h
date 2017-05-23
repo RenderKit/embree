@@ -41,6 +41,10 @@ namespace embree
       TY_GRID = 11,
       TY_GRID_MB = 12
     };
+    
+    static __forceinline unsigned typeMask(Type ty) {
+      return 1 << ty;
+    }
 
     template<typename T>
     static __forceinline T encode(Type ty, const T& ID) {
