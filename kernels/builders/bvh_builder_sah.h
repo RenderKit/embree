@@ -383,7 +383,7 @@ namespace embree
         Heuristic heuristic(prims);
         return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set>(
           heuristic,
-          PrimInfoRange(0,pinfo.size(),pinfo.geomBounds,pinfo.centBounds),
+          PrimInfoRange(0,pinfo.size(),pinfo),
           createAlloc,
           createNode,
           updateNode,
@@ -478,7 +478,7 @@ namespace embree
 
           return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set>(
             heuristic,
-            PrimInfoExtRange(0,pinfo.size(),extSize,pinfo.geomBounds,pinfo.centBounds),
+            PrimInfoExtRange(0,pinfo.size(),extSize,pinfo),
             createAlloc,
             createNode,
             updateNode,
@@ -524,7 +524,7 @@ namespace embree
 
         return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set>(
           heuristic,
-          PrimInfoExtRange(0,pinfo.size(),extSize,pinfo.geomBounds,pinfo.centBounds),
+          PrimInfoExtRange(0,pinfo.size(),extSize,pinfo),
           createAlloc,
           createNode,
           updateNode,

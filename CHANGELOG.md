@@ -1,6 +1,15 @@
 Version History
 ---------------
 
+### New Features in Embree 2.16.1
+-   Workaround for compile issues with Visual Studio 2017
+-   Fixed bug in subdiv code for static scenes when using tessellation
+    levels larger than 50.
+-   Fixed low performance when adding many geometries to a scene.
+-   Fixed high memory consumption issue when using instances in
+    dynamic scene (by disabling two level builder for user geometries
+    and instances).
+
 ### New Features in Embree 2.16.0
 -   Improved multi-segment motion blur support for scenes with
     different number of time steps per mesh.

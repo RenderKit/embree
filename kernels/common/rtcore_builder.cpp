@@ -169,7 +169,7 @@ namespace embree
       const CentGeomBBox3fa bounds = 
         parallel_reduce(size_t(0),numPrimitives,size_t(1024),size_t(1024),CentGeomBBox3fa(empty), computeBounds, CentGeomBBox3fa::merge2);
 
-      const PrimInfo pinfo(0,numPrimitives,bounds.geomBounds,bounds.centBounds);
+      const PrimInfo pinfo(0,numPrimitives,bounds);
       
       /* build BVH */
       void* root = BVHBuilderBinnedSAH::build<void*>(
@@ -234,7 +234,7 @@ namespace embree
       const CentGeomBBox3fa bounds = 
         parallel_reduce(size_t(0),numPrimitives,size_t(1024),size_t(1024),CentGeomBBox3fa(empty), computeBounds, CentGeomBBox3fa::merge2);
 
-      const PrimInfo pinfo(0,numPrimitives,bounds.geomBounds,bounds.centBounds);
+      const PrimInfo pinfo(0,numPrimitives,bounds);
 
       /* function that splits a build primitive */
       struct Splitter

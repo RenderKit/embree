@@ -166,7 +166,7 @@ namespace embree
         const unsigned primID = prim.primID();
         const TriangleMesh* const mesh = scene->get<TriangleMesh>(geomID);
         const unsigned numTimeSegments = mesh->numTimeSegments();
-        const range<int> itime_range = getTimeSegmentRange(time_range, numTimeSegments);
+        const range<int> itime_range = getTimeSegmentRange(time_range, (float)numTimeSegments);
         assert(itime_range.size() == 1);
         const int ilower = itime_range.begin();
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);

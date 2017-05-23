@@ -108,7 +108,7 @@ namespace embree
 
       static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim)
       {
-        int mask = movemask(valid_i);
+        size_t mask = movemask(valid_i);
         while (mask) intersect(pre,ray,__bscf(mask),context,prim);
       }
  
@@ -125,7 +125,7 @@ namespace embree
       static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim)
       {
         vbool<K> valid_o = false;
-        int mask = movemask(valid_i);
+        size_t mask = movemask(valid_i);
         while (mask) {
           size_t k = __bscf(mask);
           if (occluded(pre,ray,k,context,prim))

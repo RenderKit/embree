@@ -41,8 +41,8 @@ namespace embree
       __forceinline PrimInfoExtRange(EmptyTy)
         : CentGeomBBox3fa(EmptyTy()), extended_range<size_t>(0,0,0) {}
 
-      __forceinline PrimInfoExtRange(size_t begin, size_t end, size_t ext_end, const BBox3fa& geomBounds, const BBox3fa& centBounds) 
-        : CentGeomBBox3fa(geomBounds,centBounds), extended_range<size_t>(begin,end,ext_end) {}
+      __forceinline PrimInfoExtRange(size_t begin, size_t end, size_t ext_end, const CentGeomBBox3fa& centGeomBounds) 
+        : CentGeomBBox3fa(centGeomBounds), extended_range<size_t>(begin,end,ext_end) {}
       
       __forceinline float leafSAH() const { 
 	return expectedApproxHalfArea(geomBounds)*float(size()); 
@@ -404,13 +404,12 @@ namespace embree
                                               [&] (const PrimRef& ref) { 
                                                 return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask);
                                               },
-                                              [] (PrimInfo& pinfo,const PrimRef& ref) { pinfo.add(ref.bounds(),ref.lower.a >> 24); });          
-          
+                                              [] (PrimInfo& pinfo,const PrimRef& ref) { pinfo.add_center2(ref,ref.lower.a >> 24); });          
           const size_t left_weight  = local_left.end;
           const size_t right_weight = local_right.end;
 
-          new (&lset) PrimInfoExtRange(begin,center,center,local_left.geomBounds,local_left.centBounds);
-          new (&rset) PrimInfoExtRange(center,end,end,local_right.geomBounds,local_right.centBounds);
+          new (&lset) PrimInfoExtRange(begin,center,center,local_left);
+          new (&rset) PrimInfoExtRange(center,end,end,local_right);
 
           assert(area(lset.geomBounds) >= 0.0f);
           assert(area(rset.geomBounds) >= 0.0f);
@@ -440,13 +439,13 @@ namespace embree
                                                 const Vec3fa c = ref.bounds().center();
                                                 return any(((vint4)mapping.bin(c) < vSplitPos) & vSplitMask); 
                                               },
-                                              [] (PrimInfo& pinfo,const PrimRef& ref) { pinfo.add(ref.bounds(),ref.lower.a >> 24); });          
+                                              [] (PrimInfo& pinfo,const PrimRef& ref) { pinfo.add_center2(ref,ref.lower.a >> 24); });
 
           const size_t left_weight  = local_left.end;
           const size_t right_weight = local_right.end;
           
-          new (&lset) PrimInfoExtRange(begin,center,center,local_left.geomBounds,local_left.centBounds);
-          new (&rset) PrimInfoExtRange(center,end,end,local_right.geomBounds,local_right.centBounds);
+          new (&lset) PrimInfoExtRange(begin,center,center,local_left);
+          new (&rset) PrimInfoExtRange(center,end,end,local_right);
           assert(area(lset.geomBounds) >= 0.0f);
           assert(area(rset.geomBounds) >= 0.0f);
           return std::pair<size_t,size_t>(left_weight,right_weight);
@@ -459,8 +458,8 @@ namespace embree
         {
           const size_t begin = set.begin();
           const size_t end   = set.end();
-          PrimInfo left; left.reset(); 
-          PrimInfo right; right.reset();
+          PrimInfo left(empty);
+          PrimInfo right(empty);
           const unsigned int splitPos = split.pos;
           const unsigned int splitDim = split.dim;
           const unsigned int splitDimMask = (unsigned int)1 << splitDim;
@@ -476,7 +475,7 @@ namespace embree
 
           const size_t center = parallel_partitioning(
             prims0,begin,end,EmptyTy(),left,right,isLeft,
-            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds(),ref.lower.a >> 24); },
+            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add_center2(ref,ref.lower.a >> 24); },
             [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); },
             PARALLEL_PARTITION_BLOCK_SIZE);
 
@@ -486,8 +485,8 @@ namespace embree
           left.begin  = begin;  left.end  = center; 
           right.begin = center; right.end = end;
           
-          new (&lset) PrimInfoExtRange(begin,center,center,left.geomBounds,left.centBounds);
-          new (&rset) PrimInfoExtRange(center,end,end,right.geomBounds,right.centBounds);
+          new (&lset) PrimInfoExtRange(begin,center,center,left);
+          new (&rset) PrimInfoExtRange(center,end,end,right);
 
           assert(area(left.geomBounds) >= 0.0f);
           assert(area(right.geomBounds) >= 0.0f);
@@ -499,8 +498,8 @@ namespace embree
         {
           const size_t begin = set.begin();
           const size_t end   = set.end();
-          PrimInfo left; left.reset(); 
-          PrimInfo right; right.reset();
+          PrimInfo left(empty);
+          PrimInfo right(empty);
           const unsigned int splitPos = split.pos;
           const unsigned int splitDim = split.dim;
           const unsigned int splitDimMask = (unsigned int)1 << splitDim;
@@ -516,7 +515,7 @@ namespace embree
 
           const size_t center = parallel_partitioning(
             prims0,begin,end,EmptyTy(),left,right,isLeft,
-            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds(),ref.lower.a >> 24); },
+            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add_center2(ref,ref.lower.a >> 24); },
             [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); },
             PARALLEL_PARTITION_BLOCK_SIZE);
 
@@ -526,8 +525,8 @@ namespace embree
           left.begin  = begin;  left.end  = center; 
           right.begin = center; right.end = end;
           
-          new (&lset) PrimInfoExtRange(begin,center,center,left.geomBounds,left.centBounds);
-          new (&rset) PrimInfoExtRange(center,end,end,right.geomBounds,right.centBounds);
+          new (&lset) PrimInfoExtRange(begin,center,center,left);
+          new (&rset) PrimInfoExtRange(center,end,end,right);
 
           assert(area(left.geomBounds) >= 0.0f);
           assert(area(right.geomBounds) >= 0.0f);
@@ -554,18 +553,18 @@ namespace embree
 
           PrimInfo left(empty);
           for (size_t i=begin; i<center; i++) {
-            left.add(prims0[i].bounds(),prims0[i].lower.a >> 24);
+            left.add_center2(prims0[i],prims0[i].lower.a >> 24);
           }
           const size_t lweight = left.end;
           
           PrimInfo right(empty);
           for (size_t i=center; i<end; i++) {
-            right.add(prims0[i].bounds(),prims0[i].lower.a >> 24);	
+            right.add_center2(prims0[i],prims0[i].lower.a >> 24);	
           }
           const size_t rweight = right.end;
 
-          new (&lset) PrimInfoExtRange(begin,center,center,left.geomBounds,left.centBounds);
-          new (&rset) PrimInfoExtRange(center,end,end,right.geomBounds,right.centBounds);
+          new (&lset) PrimInfoExtRange(begin,center,center,left);
+          new (&rset) PrimInfoExtRange(center,end,end,right);
 
           /* if we have an extended range */
           if (set.has_ext_range()) {

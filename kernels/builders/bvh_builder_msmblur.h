@@ -127,7 +127,7 @@ namespace embree
           const Mesh* mesh = scene->get<Mesh>(geomID);
           const LBBox3fa lbounds = mesh->linearBounds(primID, time_range);
           const unsigned num_time_segments = mesh->numTimeSegments();
-          const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
+          const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
           return PrimRefMB (lbounds, tbounds.size(), num_time_segments, geomID, primID);
         }
 
@@ -139,7 +139,7 @@ namespace embree
           const Mesh* mesh = scene->get<Mesh>(geomID);
           const LBBox3fa lbounds = mesh->linearBounds(space, primID, time_range);
           const unsigned num_time_segments = mesh->numTimeSegments();
-          const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
+          const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
           return PrimRefMB (lbounds, tbounds.size(), num_time_segments, geomID, primID);
         }
 
@@ -356,7 +356,7 @@ namespace embree
               for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++)
               {
                 const PrimRefMB& prim = (*set.prims)[i];
-                const range<int> itime_range = getTimeSegmentRange(set.time_range,prim.totalTimeSegments());
+                const range<int> itime_range = getTimeSegmentRange(set.time_range,(float)prim.totalTimeSegments());
                 if (itime_range.size() > 1) {
                   const int icenter = (itime_range.begin() + itime_range.end())/2;
                   const float splitTime = float(icenter)/float(prim.totalTimeSegments());

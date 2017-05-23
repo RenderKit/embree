@@ -33,8 +33,8 @@ namespace embree
       __forceinline PrimInfoRange(EmptyTy)
         : CentGeomBBox3fa(EmptyTy()), range<size_t>(0,0) {}
 
-      __forceinline PrimInfoRange (size_t begin, size_t end, const BBox3fa& geomBounds, const BBox3fa& centBounds)
-        : CentGeomBBox3fa(geomBounds,centBounds), range<size_t>(begin,end) {}
+      __forceinline PrimInfoRange (size_t begin, size_t end, const CentGeomBBox3fa& centGeomBounds)
+        : CentGeomBBox3fa(centGeomBounds), range<size_t>(begin,end) {}
       
       __forceinline float leafSAH() const { 
 	return expectedApproxHalfArea(geomBounds)*float(size()); 
@@ -119,16 +119,16 @@ namespace embree
           size_t center = 0;
           if (!parallel)
             center = serial_partitioning(prims,begin,end,local_left,local_right,isLeft,
-                                         [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });          
+                                         [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend_center2(ref); });
           else
             center = parallel_partitioning(
               prims,begin,end,EmptyTy(),local_left,local_right,isLeft,
-              [] (CentGeomBBox3fa& pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
-              [] (CentGeomBBox3fa& pinfo0,const CentGeomBBox3fa &pinfo1) { pinfo0.merge(pinfo1); },
+              [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend_center2(ref); },
+              [] (CentGeomBBox3fa& pinfo0,const CentGeomBBox3fa& pinfo1) { pinfo0.merge(pinfo1); },
               PARALLEL_PARTITION_BLOCK_SIZE);
           
-          new (&lset) PrimInfoRange(begin,center,local_left.geomBounds,local_left.centBounds);
-          new (&rset) PrimInfoRange(center,end,local_right.geomBounds,local_right.centBounds);
+          new (&lset) PrimInfoRange(begin,center,local_left);
+          new (&rset) PrimInfoRange(center,end,local_right);
           assert(area(lset.geomBounds) >= 0.0f);
           assert(area(rset.geomBounds) >= 0.0f);
         }
@@ -156,27 +156,27 @@ namespace embree
           const size_t end   = range.end();
           const size_t center = (begin + end)/2;
           
-          CentGeomBBox3fa left; left.reset();
+          CentGeomBBox3fa left(empty);
           for (size_t i=begin; i<center; i++)
-            left.extend(prims[i].bounds());
-          new (&linfo) PrimInfoRange(begin,center,left.geomBounds,left.centBounds);
+            left.extend_center2(prims[i]);
+          new (&linfo) PrimInfoRange(begin,center,left);
           
-          CentGeomBBox3fa right; right.reset();
+          CentGeomBBox3fa right(empty);
           for (size_t i=center; i<end; i++)
-            right.extend(prims[i].bounds());
-          new (&rinfo) PrimInfoRange(center,end,right.geomBounds,right.centBounds);
+            right.extend_center2(prims[i]);
+          new (&rinfo) PrimInfoRange(center,end,right);
         }
 
         void splitByType(const range<size_t>& range, Leaf::Type type, PrimInfoRange& linfo, PrimInfoRange& rinfo)
         {
-          CentGeomBBox3fa left; left.reset();
-          CentGeomBBox3fa right; right.reset();
+          CentGeomBBox3fa left(empty);
+          CentGeomBBox3fa right(empty);
           size_t center = serial_partitioning(prims,range.begin(),range.end(),left,right,
                                               [&] ( const PrimRef& prim ) { return prim.type() == type; },
-                                              [ ] ( CentGeomBBox3fa& a, const PrimRef& b ) { a.extend(b.bounds()); });
+                                              [ ] ( CentGeomBBox3fa& a, const PrimRef& ref ) { a.extend_center2(ref); });
 
-          new (&linfo) PrimInfoRange(range.begin(),center,left.geomBounds,left.centBounds);
-          new (&rinfo) PrimInfoRange(center,range.end(),right.geomBounds,right.centBounds);
+          new (&linfo) PrimInfoRange(range.begin(),center,left);
+          new (&rinfo) PrimInfoRange(center,range.end(),right);
         }
 
         void splitFallback(const range<size_t>& range, PrimInfoRange& linfo, PrimInfoRange& rinfo)

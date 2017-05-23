@@ -38,7 +38,7 @@ namespace embree
           BBox3fa bounds = empty;
           if (!mesh->buildBounds(j,&bounds)) continue;
           const PrimRef prim(bounds,mesh->geomID,unsigned(j));          
-          pinfo.add(bounds);
+          pinfo.add_center2(prim);
           prims[k++] = prim;
         }
         return pinfo;
@@ -57,7 +57,7 @@ namespace embree
             BBox3fa bounds = empty;
             if (!mesh->buildBounds(j,&bounds)) continue;
             const PrimRef prim(bounds,mesh->geomID,unsigned(j));
-            pinfo.add(bounds);
+            pinfo.add_center2(prim);
             prims[k++] = prim;
           }
           return pinfo;
@@ -83,7 +83,7 @@ namespace embree
           BBox3fa bounds = empty;
           if (!mesh->buildBounds(j,&bounds)) continue;
           const PrimRef prim(bounds,mesh->geomID,unsigned(j));
-          pinfo.add(bounds);
+          pinfo.add_center2(prim);
           prims[k++] = prim;
         }
         return pinfo;
@@ -103,7 +103,7 @@ namespace embree
             BBox3fa bounds = empty;
             if (!mesh->buildBounds(j,&bounds)) continue;
             const PrimRef prim(bounds,mesh->geomID,unsigned(j));
-            pinfo.add(bounds);
+            pinfo.add_center2(prim);
             prims[k++] = prim;
           }
           return pinfo;
@@ -129,7 +129,7 @@ namespace embree
           BBox3fa bounds = empty;
           if (!mesh->buildBounds(j,&bounds)) continue;
           const PrimRef prim(bounds,mesh->geomID,unsigned(j));
-          pinfo.add(bounds);
+          pinfo.add_center2(prim);
           prims[k++] = prim;
         }
         return pinfo;
@@ -148,7 +148,7 @@ namespace embree
             BBox3fa bounds = empty;
             if (!mesh->buildBounds(j,&bounds)) continue;
             const PrimRef prim(bounds,mesh->geomID,unsigned(j));
-            pinfo.add(bounds);
+            pinfo.add_center2(prim);
             prims[k++] = prim;
           }
           return pinfo;
@@ -197,7 +197,7 @@ namespace embree
           BBox3fa bounds = empty;
           if (!mesh->buildBounds(j,timeSegment,bounds)) continue;
           const PrimRef prim(bounds,mesh->geomID,unsigned(j));
-          pinfo.add(bounds);
+          pinfo.add_center2(prim);
           prims[k++] = prim;
         }
         return pinfo;
@@ -216,7 +216,7 @@ namespace embree
             BBox3fa bounds = empty;
             if (!mesh->buildBounds(j,timeSegment,bounds)) continue;
             const PrimRef prim(bounds,mesh->geomID,unsigned(j));
-            pinfo.add(bounds);
+            pinfo.add_center2(prim);
             prims[k++] = prim;
           }
           return pinfo;
