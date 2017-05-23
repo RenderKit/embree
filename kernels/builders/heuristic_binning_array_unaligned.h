@@ -76,7 +76,7 @@ namespace embree
           const CentGeomBBox3fa bounds = parallel_reduce(set.begin(), set.end(), size_t(1024), size_t(4096), 
                                                          CentGeomBBox3fa(empty), computeBounds, CentGeomBBox3fa::merge2);
 
-          return PrimInfo(set.begin(),set.end(),bounds.geomBounds,bounds.centBounds);
+          return PrimInfo(set.begin(),set.end(),bounds);
         }
 
         struct BinBoundsAndCenter

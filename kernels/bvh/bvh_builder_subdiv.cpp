@@ -134,8 +134,8 @@ namespace embree
               p++;
             });
           }
-          return PrimInfo(p,g,empty,empty);
-        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty,empty); });
+          return PrimInfo(p,g,empty);
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty); });
         size_t numSubPatches = pinfo1.begin;
         if (numSubPatches == 0) {
           bvh->set(BVH::emptyNode,empty,0);
@@ -169,7 +169,7 @@ namespace embree
           return s;
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
 
-        PrimInfo pinfo(pinfo3.end,pinfo3.geomBounds,pinfo3.centBounds);
+        PrimInfo pinfo(0,pinfo3.end,pinfo3);
         
         auto createLeaf = [&] (const range<size_t>& range, Allocator alloc) -> NodeRef {
           assert(range.size() == 1);
@@ -289,8 +289,8 @@ namespace embree
             s += count;
             sMB += count * mesh->numTimeSteps;
           }
-          return PrimInfo(s,sMB,empty,empty);
-        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty,empty); });
+          return PrimInfo(s,sMB,empty);
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty); });
 
         numSubPatches = pinfo.begin;
         numSubPatchesMB = pinfo.end;
@@ -361,8 +361,8 @@ namespace embree
               sMB += mesh->numTimeSteps;
             });
           }
-          return PrimInfo(s,sMB,empty,empty);
-        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty,empty); });
+          return PrimInfo(s,sMB,empty);
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty); });
 
         auto virtualprogress = BuildProgressMonitorFromClosure([&] (size_t dn) { 
             //bvh->scene->progressMonitor(double(dn)); // FIXME: triggers GCC compiler bug
@@ -426,8 +426,8 @@ namespace embree
               s++;
             });
           }
-          return PrimInfo(s,s,empty,empty);
-        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty,empty); });
+          return PrimInfo(s,s,empty);
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty); });
 
         /* refit BVH over patches */
         if (!refitter)
