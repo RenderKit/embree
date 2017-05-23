@@ -284,8 +284,8 @@ namespace embree
           return cos0 > cos1;
         };
 
-        PrimInfo linfo; linfo.reset(); // FIXME: use CentGeomBBox3fa
-        PrimInfo rinfo; rinfo.reset();
+        PrimInfo linfo(empty); // FIXME: use CentGeomBBox3fa
+        PrimInfo rinfo(empty);
         const size_t center = parallel_partitioning(
           prims,begin,end,EmptyTy(),linfo,rinfo,primOnLeftSide,
           [this] (PrimInfo &pinfo, const PrimRef& ref) { pinfo.add(bounds(ref)); },
@@ -308,12 +308,12 @@ namespace embree
         const size_t end   = set.end();
         const size_t center = (begin + end)/2;
         
-        CentGeomBBox3fa left; left.reset();
+        CentGeomBBox3fa left(empty);
         for (size_t i=begin; i<center; i++)
           left.extend(bounds(prims[i]));
         new (&lset) PrimInfoRange(begin,center,left);
         
-        CentGeomBBox3fa right; right.reset();
+        CentGeomBBox3fa right(empty);
         for (size_t i=center; i<end; i++)
           right.extend(bounds(prims[i]));	
         new (&rset) PrimInfoRange(center,end,right);

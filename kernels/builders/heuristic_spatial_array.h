@@ -459,8 +459,8 @@ namespace embree
         {
           const size_t begin = set.begin();
           const size_t end   = set.end();
-          PrimInfo left; left.reset(); 
-          PrimInfo right; right.reset();
+          PrimInfo left(empty);
+          PrimInfo right(empty);
           const unsigned int splitPos = split.pos;
           const unsigned int splitDim = split.dim;
           const unsigned int splitDimMask = (unsigned int)1 << splitDim;
@@ -499,8 +499,8 @@ namespace embree
         {
           const size_t begin = set.begin();
           const size_t end   = set.end();
-          PrimInfo left; left.reset(); 
-          PrimInfo right; right.reset();
+          PrimInfo left(empty);
+          PrimInfo right(empty);
           const unsigned int splitPos = split.pos;
           const unsigned int splitDim = split.dim;
           const unsigned int splitDimMask = (unsigned int)1 << splitDim;

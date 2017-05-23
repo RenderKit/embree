@@ -145,12 +145,12 @@ namespace embree
           const size_t end   = pinfo.end();
           const size_t center = (begin + end)/2;
 
-          CentGeomBBox3fa left; left.reset();
+          CentGeomBBox3fa left(empty);
           for (size_t i=begin; i<center; i++)
             left.extend(prims[i].bounds());
           new (&linfo) PrimInfoRange(begin,center,left);
 
-          CentGeomBBox3fa right; right.reset();
+          CentGeomBBox3fa right(empty);
           for (size_t i=center; i<end; i++)
             right.extend(prims[i].bounds());
           new (&rinfo) PrimInfoRange(center,end,right);

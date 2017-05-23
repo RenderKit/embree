@@ -36,10 +36,10 @@ namespace embree
       __forceinline CentGeom (const BBox& geomBounds, const BBox3fa& centBounds) 
 	: geomBounds(geomBounds), centBounds(centBounds) {}
       
-      __forceinline void reset() {
+      /*__forceinline void reset() {
 	geomBounds = empty;
 	centBounds = empty;
-      }
+        }*/
 
       template<typename PrimRef> 
         __forceinline void extend_primref(const PrimRef& prim) 
@@ -92,11 +92,6 @@ namespace embree
       __forceinline PrimInfoT (EmptyTy) 
 	: CentGeom<BBox>(empty), begin(0), end(0) {}
 
-      __forceinline void reset() {
-	CentGeom<BBox>::reset();
-	begin = end = 0;
-      }
-      
       __forceinline PrimInfoT (size_t num, const BBox& geomBounds, const BBox3fa& centBounds) 
 	: CentGeom<BBox>(geomBounds,centBounds), begin(0), end(num) {}
       
