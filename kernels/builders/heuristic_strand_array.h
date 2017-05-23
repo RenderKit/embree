@@ -284,12 +284,12 @@ namespace embree
           return cos0 > cos1;
         };
 
-        PrimInfo linfo(empty); // FIXME: use CentGeomBBox3fa
-        PrimInfo rinfo(empty);
+        CentGeomBBox3fa linfo(empty); // FIXME: use CentGeomBBox3fa
+        CentGeomBBox3fa rinfo(empty);
         const size_t center = parallel_partitioning(
           prims,begin,end,EmptyTy(),linfo,rinfo,primOnLeftSide,
-          [this] (PrimInfo &pinfo, const PrimRef& ref) { pinfo.add(bounds(ref)); },
-          [] (PrimInfo &pinfo0,const PrimInfo& pinfo1) { pinfo0.merge(pinfo1); },
+          [this] (CentGeomBBox3fa& pinfo, const PrimRef& ref) { pinfo.extend(bounds(ref)); },
+          [] (CentGeomBBox3fa& pinfo0, const CentGeomBBox3fa& pinfo1) { pinfo0.merge(pinfo1); },
           PARALLEL_PARTITION_BLOCK_SIZE);
         
         new (&lset) PrimInfoRange(begin,center,linfo);

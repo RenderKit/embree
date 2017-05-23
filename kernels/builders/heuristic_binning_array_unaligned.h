@@ -156,11 +156,11 @@ namespace embree
           if (likely(set.size() < 10000))
             center = serial_partitioning(prims,begin,end,local_left,local_right,
                                          [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(ref,binBoundsAndCenter)[splitDim] < splitPos; },
-                                         [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });
+                                         [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend_center2(ref); });
           else
             center = parallel_partitioning(prims,begin,end,EmptyTy(),local_left,local_right,
                                            [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(ref,binBoundsAndCenter)[splitDim] < splitPos; },
-                                           [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); },
+                                           [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend_center2(ref); },
                                            [] (CentGeomBBox3fa& pinfo0,const CentGeomBBox3fa& pinfo1) { pinfo0.merge(pinfo1); },
                                            128);
           
@@ -184,12 +184,12 @@ namespace embree
           
           CentGeomBBox3fa left(empty);
           for (size_t i=begin; i<center; i++)
-            left.extend(prims[i].bounds());
+            left.extend_center2(prims[i]);
           new (&lset) PrimInfoRange(begin,center,left);
           
           CentGeomBBox3fa right(empty);
           for (size_t i=center; i<end; i++)
-            right.extend(prims[i].bounds());	
+            right.extend_center2(prims[i]);
           new (&rset) PrimInfoRange(center,end,right);
         }
         

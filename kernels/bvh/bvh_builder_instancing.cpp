@@ -226,8 +226,8 @@ namespace embree
           for (size_t i=r.begin(); i<r.end(); i++)
           {
             const BBox3fa bounds = refs[i].worldBounds();
-            pinfo.add(bounds);
             prims[i] = PrimRef(bounds,(size_t)&refs[i]);
+            pinfo.add_center2(prims[i]);
           }
           return pinfo;
         }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
@@ -235,7 +235,7 @@ namespace embree
       const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(),  PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {          
           PrimInfo pinfo(empty);
           for (size_t i=r.begin(); i<r.end(); i++) {
-            pinfo.add(refs[i].bounds());
+            pinfo.add_center2(refs[i]);
           }
           return pinfo;
         }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });

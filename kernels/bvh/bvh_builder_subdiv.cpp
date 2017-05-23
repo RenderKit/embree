@@ -162,7 +162,7 @@ namespace embree
               size_t num = createEager(patch,scene,mesh,unsigned(f),alloc,&prims[base.end+s.end]);
               assert(num == getNumEagerLeaves(patch.grid_u_res,patch.grid_v_res));
               for (size_t i=0; i<num; i++)
-                s.add(prims[base.end+s.end].bounds());
+                s.add_center2(prims[base.end+s.end]);
               s.begin++;
             });
           }
@@ -305,7 +305,7 @@ namespace embree
             size_t patchIndexMB = prims[i].ID();
             BBox3fa bound = bounds[patchIndexMB];
             prims[i] = PrimRef(bound,patchIndexMB);
-            pinfo.add(bound);
+            pinfo.add_center2(prims[i]);
           }
           return pinfo;
         }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });

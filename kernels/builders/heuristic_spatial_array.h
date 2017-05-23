@@ -404,8 +404,7 @@ namespace embree
                                               [&] (const PrimRef& ref) { 
                                                 return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask);
                                               },
-                                              [] (PrimInfo& pinfo,const PrimRef& ref) { pinfo.add(ref.bounds(),ref.lower.a >> 24); });          
-          
+                                              [] (PrimInfo& pinfo,const PrimRef& ref) { pinfo.add_center2(ref,ref.lower.a >> 24); });          
           const size_t left_weight  = local_left.end;
           const size_t right_weight = local_right.end;
 
@@ -440,7 +439,7 @@ namespace embree
                                                 const Vec3fa c = ref.bounds().center();
                                                 return any(((vint4)mapping.bin(c) < vSplitPos) & vSplitMask); 
                                               },
-                                              [] (PrimInfo& pinfo,const PrimRef& ref) { pinfo.add(ref.bounds(),ref.lower.a >> 24); });          
+                                              [] (PrimInfo& pinfo,const PrimRef& ref) { pinfo.add_center2(ref,ref.lower.a >> 24); });
 
           const size_t left_weight  = local_left.end;
           const size_t right_weight = local_right.end;
@@ -476,7 +475,7 @@ namespace embree
 
           const size_t center = parallel_partitioning(
             prims0,begin,end,EmptyTy(),left,right,isLeft,
-            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds(),ref.lower.a >> 24); },
+            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add_center2(ref,ref.lower.a >> 24); },
             [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); },
             PARALLEL_PARTITION_BLOCK_SIZE);
 
@@ -516,7 +515,7 @@ namespace embree
 
           const size_t center = parallel_partitioning(
             prims0,begin,end,EmptyTy(),left,right,isLeft,
-            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds(),ref.lower.a >> 24); },
+            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add_center2(ref,ref.lower.a >> 24); },
             [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); },
             PARALLEL_PARTITION_BLOCK_SIZE);
 
@@ -550,13 +549,13 @@ namespace embree
 
           PrimInfo left(empty);
           for (size_t i=begin; i<center; i++) {
-            left.add(prims0[i].bounds(),prims0[i].lower.a >> 24);
+            left.add_center2(prims0[i],prims0[i].lower.a >> 24);
           }
           const size_t lweight = left.end;
           
           PrimInfo right(empty);
           for (size_t i=center; i<end; i++) {
-            right.add(prims0[i].bounds(),prims0[i].lower.a >> 24);	
+            right.add_center2(prims0[i],prims0[i].lower.a >> 24);	
           }
           const size_t rweight = right.end;
 

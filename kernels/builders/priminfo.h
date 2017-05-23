@@ -45,13 +45,14 @@ namespace embree
         centBounds.extend(center);
       }
 
-      /*__forceinline void extend_center2(const PrimRef& prim) 
-      {
-        BBox3fa bounds = prim.bounds();
-        geomBounds.extend(bounds);
-        centBounds.extend(bounds.center2());
-        }*/
-
+       template<typename PrimRef> 
+         __forceinline void extend_center2(const PrimRef& prim) 
+       {
+         BBox3fa bounds = prim.bounds();
+         geomBounds.extend(bounds);
+         centBounds.extend(bounds.center2());
+       }
+       
       __forceinline void extend(const BBox& geomBounds_) {
 	geomBounds.extend(geomBounds_);
 	centBounds.extend(center2(geomBounds_));
@@ -97,7 +98,19 @@ namespace embree
         end++;
       }
 
-      __forceinline void add(const BBox& geomBounds_) {
+       template<typename PrimRef> 
+         __forceinline void add_center2(const PrimRef& prim) {
+         CentGeom<BBox>::extend_center2(prim);
+         end++;
+       }
+
+        template<typename PrimRef> 
+          __forceinline void add_center2(const PrimRef& prim, const size_t i) {
+          CentGeom<BBox>::extend_center2(prim);
+          end+=i;
+        }
+
+      /*__forceinline void add(const BBox& geomBounds_) {
 	CentGeom<BBox>::extend(geomBounds_);
 	end++;
       }
@@ -105,7 +118,7 @@ namespace embree
       __forceinline void add(const BBox& geomBounds_, const size_t i) {
 	CentGeom<BBox>::extend(geomBounds_);
 	end+=i;
-      }
+        }*/
 
       __forceinline void merge(const PrimInfoT& other) 
       {
