@@ -303,7 +303,7 @@ namespace embree
     vint<M> primIDs;    // primitive ID of primitive inside mesh
   };
 
-    /* Stores M quads from an indexed face set */
+  /* Stores M quads from an indexed face set */
   template <int M>
     struct QuadMiMB : public QuadMi<M>
   {

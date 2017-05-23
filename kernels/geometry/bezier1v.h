@@ -55,7 +55,8 @@ namespace embree
     __forceinline unsigned primID() const { return prim; }
 
     /*! fill triangle from triangle list */
-    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene)
+    template<typename PrimRef>
+    __forceinline BBox3fa fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene)
     {
       const PrimRef& prim = prims[i];
       i++;
@@ -68,6 +69,7 @@ namespace embree
       const Vec3fa& p2 = curves->vertex(id+2);
       const Vec3fa& p3 = curves->vertex(id+3);
       new (this) Bezier1v(p0,p1,p2,p3,geomID,primID,Leaf::TY_HAIR);
+      return curves->bounds(primID);
     }
 
     template<typename BVH>
@@ -80,6 +82,21 @@ namespace embree
         accel[i].fill(prims,cur,range.end(),bvh->scene);
       }
       return BVH::encodeLeaf((char*)accel,items);
+    }
+
+    template<typename BVH>
+    __forceinline static const typename BVH::NodeRecordMB4D createLeafMB (const SetMB& set, const FastAllocator::CachedAllocator& alloc, BVH* bvh)
+    {
+      size_t items = blocks(set.object_range.size());
+      size_t start = set.object_range.begin();
+      Bezier1v* accel = (Bezier1v*) alloc.malloc1(items*sizeof(Bezier1v),BVH::byteAlignment);
+      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+      LBBox3fa allBounds = empty;
+      for (size_t i=0; i<items; i++) {
+        const BBox3fa b = accel[i].fill(set.prims->data(),start,set.object_range.end(),bvh->scene);
+        allBounds.extend(LBBox3fa(b));
+      }
+      return typename BVH::NodeRecordMB4D(node,allBounds,set.time_range);
     }
 
     friend std::ostream& operator<<(std::ostream& cout, const Bezier1v& b) 

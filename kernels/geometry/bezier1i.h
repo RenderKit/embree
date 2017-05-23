@@ -83,4 +83,27 @@ namespace embree
   public:
     unsigned vertexID; //!< index of start vertex
   };
+
+  struct Bezier1iMB : public Bezier1i
+  {
+    template<typename BVH>
+    __forceinline static typename BVH::NodeRef createLeaf(const FastAllocator::CachedAllocator& alloc, PrimRef* prims, const range<size_t>& range, BVH* bvh)
+    {
+      assert(false);
+      return BVH::emptyNode;
+    }
+
+    template<typename BVH>
+      __forceinline static const typename BVH::NodeRecordMB4D createLeafMB (const SetMB& set, const FastAllocator::CachedAllocator& alloc, BVH* bvh)
+    {
+      size_t items = Bezier1i::blocks(set.object_range.size());
+      size_t start = set.object_range.begin();
+      Bezier1i* accel = (Bezier1i*) alloc.malloc1(items*sizeof(Bezier1i),BVH::byteAlignment);
+      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+      LBBox3fa allBounds = empty;
+      for (size_t i=0; i<items; i++)
+        allBounds.extend(accel[i].fillMB(set.prims->data(), start, set.object_range.end(), bvh->scene, set.time_range));
+      return typename BVH::NodeRecordMB4D(node,allBounds,set.time_range);
+    }
+  };
 }

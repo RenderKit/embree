@@ -61,8 +61,8 @@ namespace embree
       virtual size_t operator() (BVH* bvh, PrimRef* prims, const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) const = 0;
     };
 
-    template<int N, typename Primitive0, typename Primitive1, typename Primitive2, typename Primitive3>
-    struct CreateMultiLeaf4 : public VirtualCreateLeaf<N>
+    template<int N, typename Primitive0, typename Primitive1, typename Primitive2, typename Primitive3, typename Primitive4, typename Primitive5>
+    struct CreateMultiLeaf6 : public VirtualCreateLeaf<N>
     {
       typedef BVHN<N> BVH;
       
@@ -75,6 +75,8 @@ namespace embree
         case 1: return Primitive1::createLeaf(alloc,prims,range,bvh);
         case 2: return Primitive2::createLeaf(alloc,prims,range,bvh);
         case 3: return Primitive3::createLeaf(alloc,prims,range,bvh);
+        case 4: return Primitive4::createLeaf(alloc,prims,range,bvh);
+        case 5: return Primitive5::createLeaf(alloc,prims,range,bvh);
         default: assert(false); return BVH::emptyNode;
         }
       }
@@ -213,8 +215,8 @@ namespace embree
       virtual const NodeRecordMB4D operator() (BVH* bvh, const SetMB& set, const FastAllocator::CachedAllocator& alloc) const = 0;
     };
 
-    template<int N, typename Primitive0, typename Primitive1, typename Primitive2, typename Primitive3>
-    struct CreateMSMBlurMultiLeaf4 : public VirtualCreateMSMBlurLeaf<N>
+    template<int N, typename Primitive0, typename Primitive1, typename Primitive2, typename Primitive3, typename Primitive4, typename Primitive5>
+    struct CreateMSMBlurMultiLeaf6 : public VirtualCreateMSMBlurLeaf<N>
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRecordMB4D NodeRecordMB4D;
@@ -228,6 +230,8 @@ namespace embree
         case 1: return Primitive1::createLeafMB(set,alloc,bvh);
         case 2: return Primitive2::createLeafMB(set,alloc,bvh);
         case 3: return Primitive3::createLeafMB(set,alloc,bvh);
+        case 4: return Primitive4::createLeafMB(set,alloc,bvh);
+        case 5: return Primitive5::createLeafMB(set,alloc,bvh);
         default: assert(false); return NodeRecordMB4D(BVH::emptyNode,empty,empty);
         }
       }
@@ -429,16 +433,21 @@ namespace embree
 
       virtual void build() 
       {
-        static CreateMultiLeaf4<8,
+        static CreateMultiLeaf6<8,
                                 Triangle4,
                                 Triangle4vMB,
                                 Quad4v,
-                                Quad4iMB> createLeaf;
-        static CreateMSMBlurMultiLeaf4<8,
+                                Quad4iMB,
+                                Bezier1v,
+                                Bezier1iMB> createLeaf;
+
+        static CreateMSMBlurMultiLeaf6<8,
                                        Triangle4,
                                        Triangle4vMB,
                                        Quad4v,
-                                       Quad4iMB> createLeafMB;
+                                       Quad4iMB,
+                                       Bezier1v,
+                                       Bezier1iMB> createLeafMB;
         
         if (!builder) 
         {
