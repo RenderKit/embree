@@ -36,6 +36,10 @@ namespace embree
       __forceinline CentGeom (const BBox& geomBounds, const BBox3fa& centBounds, unsigned types) 
 	: geomBounds(geomBounds), centBounds(centBounds), types(types) {}
       
+      __forceinline bool oneType() const {
+        return ((types-1)&types) == 0;
+      }
+
       template<typename PrimRef> 
         __forceinline void extend_primref(const PrimRef& prim) 
       {

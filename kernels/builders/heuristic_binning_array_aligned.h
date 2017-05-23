@@ -138,8 +138,8 @@ namespace embree
           /* required as parallel partition destroys original primitive order */
           std::sort(&prims[pinfo.begin()],&prims[pinfo.end()]);
         }
-
-        __forceinline bool sameType(const range<size_t>& range)
+        
+         __forceinline bool sameType(const range<size_t>& range)
         {
           //assert(range.size());
           if (range.size() == 0) return true;
@@ -148,6 +148,14 @@ namespace embree
             if (ty0 != prims[i].type()) 
               return false;
           return true;
+        }
+
+         __forceinline unsigned types(const range<size_t>& range)
+        {
+          unsigned types = 0;
+          for (size_t i=range.begin(); i<range.end(); i++)
+            types |= Leaf::typeMask(prims[i].type());
+          return types;
         }
 
         void splitAtCenter(const range<size_t>& range, PrimInfoRange& linfo, PrimInfoRange& rinfo)
@@ -179,9 +187,9 @@ namespace embree
           new (&rinfo) PrimInfoRange(center,range.end(),right);
         }
 
-        void splitFallback(const range<size_t>& range, PrimInfoRange& linfo, PrimInfoRange& rinfo)
+        void splitFallback(const PrimInfoRange& range, PrimInfoRange& linfo, PrimInfoRange& rinfo)
         {
-          if (sameType(range))
+          if (range.oneType())
             splitAtCenter(range,linfo,rinfo);
           else {
             const Leaf::Type ty = prims[range.begin()].type();

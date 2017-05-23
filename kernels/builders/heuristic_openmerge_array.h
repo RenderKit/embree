@@ -419,8 +419,12 @@ namespace embree
           std::sort(&prims0[set.begin()],&prims0[set.end()]);
         }
 
-        __forceinline bool sameType(const range<size_t>& range) {
+        __forceinline bool sameType(const range<size_t>& range) const {
           return true;
+        }
+
+        __forceinline unsigned types(const range<size_t>& range) const {
+          return 0;
         }
       
         __forceinline void splitFallback(const PrimInfoExtRange& set, PrimInfoExtRange& lset, PrimInfoExtRange& rset)
