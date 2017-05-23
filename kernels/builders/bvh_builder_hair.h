@@ -306,10 +306,15 @@ namespace embree
               {
                 parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) {
                     for (size_t i=r.begin(); i<r.end(); i++) {
-                      const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpace(children[i]);
-                      const PrimInfoRange sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
-                      const OBBox3fa obounds(space,sinfo.geomBounds);
-                      setUnalignedNode(node,i,recurse(depth+1,children[i],nullptr,true),obounds);
+                      NodeRef child = recurse(depth+1,children[i],nullptr,true);
+                      if (children[i].isType(Leaf::TY_HAIR)) {
+                        const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpace(children[i]);
+                        const PrimInfoRange sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
+                        const OBBox3fa obounds(space,sinfo.geomBounds);
+                        setUnalignedNode(node,i,child,obounds);
+                      } else {
+                        setUnalignedNode(node,i,child,OBBox3fa(one,children[i].geomBounds));
+                      }
                       _mm_mfence(); // to allow non-temporal stores during build
                     }
                   });
@@ -318,10 +323,15 @@ namespace embree
               else
               {
                 for (size_t i=0; i<numChildren; i++) {
-                  const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpace(children[i]);
-                  const PrimInfoRange sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
-                  const OBBox3fa obounds(space,sinfo.geomBounds);
-                  setUnalignedNode(node,i,recurse(depth+1,children[i],alloc,false),obounds);
+                  NodeRef child = recurse(depth+1,children[i],alloc,false);
+                  if (children[i].isType(Leaf::TY_HAIR)) {
+                    const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpace(children[i]);
+                    const PrimInfoRange sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
+                    const OBBox3fa obounds(space,sinfo.geomBounds);
+                    setUnalignedNode(node,i,child,obounds);
+                  } else {
+                    setUnalignedNode(node,i,child,OBBox3fa(one,children[i].geomBounds));
+                  }
                 }
               }
               return node;
