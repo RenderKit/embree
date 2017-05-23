@@ -44,8 +44,8 @@ namespace embree
       public:
         __forceinline BuildRef () {}
 
-        __forceinline BuildRef (const AffineSpace3fa& local2world, const BBox3fa& localBounds_in, NodeRef node, unsigned mask, int instID, int xfmID, int type, int depth = 0, unsigned int numPrims = 1)
-          : local2world(local2world), localBounds(localBounds_in), node(node), mask(mask), instID(instID), xfmID(xfmID), type(type), depth(depth), numPrims(numPrims)
+        __forceinline BuildRef (const AffineSpace3fa& local2world, const BBox3fa& localBounds_in, NodeRef node, unsigned mask, int instID, int xfmID, int oldtype, int depth = 0, unsigned int numPrims = 1)
+          : local2world(local2world), localBounds(localBounds_in), node(node), mask(mask), instID(instID), xfmID(xfmID), oldtype(oldtype), depth(depth), numPrims(numPrims)
         {
           if (node.isAlignedNode()) {
           //if (node.isAlignedNode() || node.isAlignedNodeMB()) {
@@ -97,7 +97,7 @@ namespace embree
         unsigned mask;
         int instID;
         int xfmID;
-        int type;
+        int oldtype;
         int depth;
         unsigned int numPrims;
       };
@@ -131,7 +131,7 @@ namespace embree
         size_t n = 0;
         for (size_t i=0; i<N; i++) {
           if (node->child(i) == BVH::emptyNode) continue;
-          refs[i] = BuildRef(bref.local2world,node->bounds(i),node->child(i),bref.mask,bref.instID,bref.xfmID,bref.type,bref.depth+1,numPrims);
+          refs[i] = BuildRef(bref.local2world,node->bounds(i),node->child(i),bref.mask,bref.instID,bref.xfmID,bref.oldtype,bref.depth+1,numPrims);
           n++;
         }
         assert(n > 1);

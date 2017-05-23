@@ -282,7 +282,7 @@ namespace embree
             assert(range.size() == 1);
             BuildRef* ref = (BuildRef*)&refs[range.begin()];
             TransformNode* node = (TransformNode*) alloc.malloc0(sizeof(TransformNode),BVH::byteAlignment);
-            new (node) TransformNode(ref->local2world,ref->localBounds,ref->node,ref->mask,ref->instID,ref->xfmID,ref->type); // FIXME: rcp should be precalculated somewhere
+            new (node) TransformNode(ref->local2world,ref->localBounds,ref->node,ref->mask,ref->instID,ref->xfmID,ref->oldtype); // FIXME: rcp should be precalculated somewhere
             NodeRef noderef = BVH::encodeNode(node);
             noderef.setBarrier();
             return noderef;
@@ -305,7 +305,7 @@ namespace embree
             assert(range.size() == 1);
             BuildRef* ref = (BuildRef*) prims[range.begin()].ID();
             TransformNode* node = (TransformNode*) alloc.malloc0(sizeof(TransformNode),BVH::byteAlignment);
-            new (node) TransformNode(ref->local2world,ref->localBounds,ref->node,ref->mask,ref->instID,ref->xfmID,ref->type); // FIXME: rcp should be precalculated somewhere
+            new (node) TransformNode(ref->local2world,ref->localBounds,ref->node,ref->mask,ref->instID,ref->xfmID,ref->oldtype); // FIXME: rcp should be precalculated somewhere
             NodeRef noderef = BVH::encodeNode(node);
             noderef.setBarrier();
             return noderef;
@@ -384,7 +384,7 @@ namespace embree
           AlignedNode* node = ref.node.alignedNode();
           for (size_t i=0; i<N; i++) {
             if (node->child(i) == BVH::emptyNode) continue;
-            refs.push_back(BuildRef(ref.local2world,node->bounds(i),node->child(i),ref.mask,ref.instID,ref.xfmID,ref.type,ref.depth+1));
+            refs.push_back(BuildRef(ref.local2world,node->bounds(i),node->child(i),ref.mask,ref.instID,ref.xfmID,ref.oldtype,ref.depth+1));
             std::push_heap (refs.begin(),refs.end());
           }
         }
@@ -393,7 +393,7 @@ namespace embree
           AlignedNodeMB* node = ref.node.alignedNodeMB();
           for (size_t i=0; i<N; i++) {
             if (node->child(i) == BVH::emptyNode) continue;
-            refs.push_back(BuildRef(ref.local2world,node->bounds(i),node->child(i),ref.mask,ref.instID,ref.xfmID,ref.type,ref.depth+1));
+            refs.push_back(BuildRef(ref.local2world,node->bounds(i),node->child(i),ref.mask,ref.instID,ref.xfmID,ref.oldtype,ref.depth+1));
             std::push_heap (refs.begin(),refs.end());
           }
         }*/
