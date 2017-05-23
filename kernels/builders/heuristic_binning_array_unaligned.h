@@ -68,7 +68,7 @@ namespace embree
               CentGeomBBox3fa bounds(empty);
               for (size_t i=r.begin(); i<r.end(); i++) {
                 NativeCurves* mesh = (NativeCurves*) scene->get(prims[i].geomID());
-                bounds.extend(mesh->bounds(space,prims[i].primID()));
+                bounds.extend(mesh->bounds(space,prims[i].primID()),prims[i].type());
               }
               return bounds;
             };

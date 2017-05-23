@@ -68,6 +68,10 @@ namespace embree
           return worldBounds();
         }
 
+        __forceinline Leaf::Type type() const {
+          return Leaf::TY_TRIANGLE;
+        }
+        
         __forceinline unsigned geomID() const { 
           return instID;
         }

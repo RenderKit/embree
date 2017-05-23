@@ -255,7 +255,7 @@ namespace embree
         };
 
         auto mergePrimBounds = [this] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { 
-          pinfo.extend(bounds(ref)); 
+          pinfo.extend(bounds(ref),ref.type()); 
         };
         
         size_t center = serial_partitioning(prims,begin,end,local_left,local_right,primOnLeftSide,mergePrimBounds);
@@ -288,7 +288,7 @@ namespace embree
         CentGeomBBox3fa rinfo(empty);
         const size_t center = parallel_partitioning(
           prims,begin,end,EmptyTy(),linfo,rinfo,primOnLeftSide,
-          [this] (CentGeomBBox3fa& pinfo, const PrimRef& ref) { pinfo.extend(bounds(ref)); },
+          [this] (CentGeomBBox3fa& pinfo, const PrimRef& ref) { pinfo.extend(bounds(ref),ref.type()); },
           [] (CentGeomBBox3fa& pinfo0, const CentGeomBBox3fa& pinfo1) { pinfo0.merge(pinfo1); },
           PARALLEL_PARTITION_BLOCK_SIZE);
         
@@ -310,12 +310,12 @@ namespace embree
         
         CentGeomBBox3fa left(empty);
         for (size_t i=begin; i<center; i++)
-          left.extend(bounds(prims[i]));
+          left.extend(bounds(prims[i]),prims[i].type());
         new (&lset) PrimInfoRange(begin,center,left);
         
         CentGeomBBox3fa right(empty);
         for (size_t i=center; i<end; i++)
-          right.extend(bounds(prims[i]));	
+          right.extend(bounds(prims[i]),prims[i].type());	
         new (&rset) PrimInfoRange(center,end,right);
       }
       

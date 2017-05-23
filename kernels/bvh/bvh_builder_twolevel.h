@@ -62,6 +62,10 @@ namespace embree
             bounds_area = area(this->bounds());
         }
 
+        __forceinline Leaf::Type type() const {
+          return Leaf::TY_TRIANGLE;
+        }
+
         __forceinline size_t size() const {
           return primID();
         }

@@ -163,7 +163,7 @@ namespace embree
         {
           CentGeomBBox3fa bounds(empty);
           for (size_t j=r.begin(); j<r.end(); j++)
-            bounds.extend((BBox3fa&)prims[j]);
+            bounds.extend((BBox3fa&)prims[j],Leaf::TY_TRIANGLE);
           return bounds;
         };
       const CentGeomBBox3fa bounds = 
@@ -228,7 +228,7 @@ namespace embree
         {
           CentGeomBBox3fa bounds(empty);
           for (size_t j=r.begin(); j<r.end(); j++)
-            bounds.extend((BBox3fa&)prims[j]);
+            bounds.extend((BBox3fa&)prims[j],Leaf::TY_TRIANGLE);
           return bounds;
         };
       const CentGeomBBox3fa bounds = 

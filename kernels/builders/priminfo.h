@@ -46,20 +46,16 @@ namespace embree
         types |= Leaf::typeMask(prim.type());
       }
 
-       template<typename PrimRef> 
-         __forceinline void extend_center2(const PrimRef& prim) 
-       {
-         BBox3fa bounds = prim.bounds();
-         geomBounds.extend(bounds);
-         centBounds.extend(bounds.center2());
-       }
-       
-      __forceinline void extend(const BBox& geomBounds_) {
-	geomBounds.extend(geomBounds_);
-	centBounds.extend(center2(geomBounds_));
+      template<typename PrimRef> 
+        __forceinline void extend_center2(const PrimRef& prim) 
+      {
+        BBox3fa bounds = prim.bounds();
+        geomBounds.extend(bounds);
+        centBounds.extend(bounds.center2());
+        types |= Leaf::typeMask(prim.type());
       }
-
-      __forceinline void extend(const BBox& geomBounds_, Leaf::Type ty) {
+      
+      __forceinline void extend(const BBox& geomBounds_, const Leaf::Type ty) {
 	geomBounds.extend(geomBounds_);
 	centBounds.extend(center2(geomBounds_));
         types |= Leaf::typeMask(ty);
