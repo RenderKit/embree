@@ -308,6 +308,13 @@ namespace embree
     struct QuadMiMB : public QuadMi<M>
   {
     template<typename BVH>
+    __forceinline static typename BVH::NodeRef createLeaf(const FastAllocator::CachedAllocator& alloc, PrimRef* prims, const range<size_t>& range, BVH* bvh)
+    {
+      assert(false);
+      return BVH::emptyNode;
+    }
+
+    template<typename BVH>
       __forceinline static const typename BVH::NodeRecordMB4D createLeafMB (const SetMB& set, const FastAllocator::CachedAllocator& alloc, BVH* bvh)
     {
       size_t items = QuadMi<M>::blocks(set.object_range.size());

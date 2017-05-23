@@ -444,9 +444,9 @@ namespace embree
             {
               static CreateMultiLeaf4<8,
                                       Triangle4,
-                                      Triangle4,
+                                      Triangle4vMB,
                                       Quad4v,
-                                      Quad4v> createLeaf;
+                                      Quad4iMB> createLeaf;
               
               builder = new BVHNOBBBuilderMultiSAH<8>((BVH8*)bvh,scene,type,createLeaf); //,4,1.0f,4,inf); 
             }
@@ -467,9 +467,9 @@ namespace embree
             {
               static CreateMultiLeaf4<8,
                                       Triangle4,
-                                      Triangle4,
+                                      Triangle4vMB,
                                       Quad4v,
-                                      Quad4v> createLeaf;
+                                      Quad4iMB> createLeaf;
               
               builder = new BVHNBuilderMultiSAH<8>((BVH8*)bvh,scene,type,createLeaf,4,1.0f,4,inf); 
             }
