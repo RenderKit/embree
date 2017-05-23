@@ -41,8 +41,8 @@ namespace embree
       __forceinline PrimInfoExtRange(EmptyTy)
         : CentGeomBBox3fa(EmptyTy()), extended_range<size_t>(0,0,0) {}
 
-      __forceinline PrimInfoExtRange(size_t begin, size_t end, size_t ext_end, const BBox3fa& geomBounds, const BBox3fa& centBounds) 
-        : CentGeomBBox3fa(geomBounds,centBounds), extended_range<size_t>(begin,end,ext_end) {}
+      __forceinline PrimInfoExtRange(size_t begin, size_t end, size_t ext_end, const CentGeomBBox3fa& centGeomBounds) 
+        : CentGeomBBox3fa(centGeomBounds), extended_range<size_t>(begin,end,ext_end) {}
       
       __forceinline float leafSAH() const { 
 	return expectedApproxHalfArea(geomBounds)*float(size()); 
@@ -409,8 +409,8 @@ namespace embree
           const size_t left_weight  = local_left.end;
           const size_t right_weight = local_right.end;
 
-          new (&lset) PrimInfoExtRange(begin,center,center,local_left.geomBounds,local_left.centBounds);
-          new (&rset) PrimInfoExtRange(center,end,end,local_right.geomBounds,local_right.centBounds);
+          new (&lset) PrimInfoExtRange(begin,center,center,local_left);
+          new (&rset) PrimInfoExtRange(center,end,end,local_right);
 
           assert(area(lset.geomBounds) >= 0.0f);
           assert(area(rset.geomBounds) >= 0.0f);
@@ -445,8 +445,8 @@ namespace embree
           const size_t left_weight  = local_left.end;
           const size_t right_weight = local_right.end;
           
-          new (&lset) PrimInfoExtRange(begin,center,center,local_left.geomBounds,local_left.centBounds);
-          new (&rset) PrimInfoExtRange(center,end,end,local_right.geomBounds,local_right.centBounds);
+          new (&lset) PrimInfoExtRange(begin,center,center,local_left);
+          new (&rset) PrimInfoExtRange(center,end,end,local_right);
           assert(area(lset.geomBounds) >= 0.0f);
           assert(area(rset.geomBounds) >= 0.0f);
           return std::pair<size_t,size_t>(left_weight,right_weight);
@@ -486,8 +486,8 @@ namespace embree
           left.begin  = begin;  left.end  = center; 
           right.begin = center; right.end = end;
           
-          new (&lset) PrimInfoExtRange(begin,center,center,left.geomBounds,left.centBounds);
-          new (&rset) PrimInfoExtRange(center,end,end,right.geomBounds,right.centBounds);
+          new (&lset) PrimInfoExtRange(begin,center,center,left);
+          new (&rset) PrimInfoExtRange(center,end,end,right);
 
           assert(area(left.geomBounds) >= 0.0f);
           assert(area(right.geomBounds) >= 0.0f);
@@ -526,8 +526,8 @@ namespace embree
           left.begin  = begin;  left.end  = center; 
           right.begin = center; right.end = end;
           
-          new (&lset) PrimInfoExtRange(begin,center,center,left.geomBounds,left.centBounds);
-          new (&rset) PrimInfoExtRange(center,end,end,right.geomBounds,right.centBounds);
+          new (&lset) PrimInfoExtRange(begin,center,center,left);
+          new (&rset) PrimInfoExtRange(center,end,end,right);
 
           assert(area(left.geomBounds) >= 0.0f);
           assert(area(right.geomBounds) >= 0.0f);
@@ -560,8 +560,8 @@ namespace embree
           }
           const size_t rweight = right.end;
 
-          new (&lset) PrimInfoExtRange(begin,center,center,left.geomBounds,left.centBounds);
-          new (&rset) PrimInfoExtRange(center,end,end,right.geomBounds,right.centBounds);
+          new (&lset) PrimInfoExtRange(begin,center,center,left);
+          new (&rset) PrimInfoExtRange(center,end,end,right);
 
           /* if we have an extended range */
           if (set.has_ext_range()) {

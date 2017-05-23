@@ -164,8 +164,8 @@ namespace embree
                                            [] (CentGeomBBox3fa& pinfo0,const CentGeomBBox3fa& pinfo1) { pinfo0.merge(pinfo1); },
                                            128);
           
-          new (&lset) PrimInfoRange(begin,center,local_left.geomBounds,local_left.centBounds);
-          new (&rset) PrimInfoRange(center,end,local_right.geomBounds,local_right.centBounds);
+          new (&lset) PrimInfoRange(begin,center,local_left);
+          new (&rset) PrimInfoRange(center,end,local_right);
           assert(area(lset.geomBounds) >= 0.0f);
           assert(area(rset.geomBounds) >= 0.0f);
         }
@@ -185,12 +185,12 @@ namespace embree
           CentGeomBBox3fa left; left.reset();
           for (size_t i=begin; i<center; i++)
             left.extend(prims[i].bounds());
-          new (&lset) PrimInfoRange(begin,center,left.geomBounds,left.centBounds);
+          new (&lset) PrimInfoRange(begin,center,left);
           
           CentGeomBBox3fa right; right.reset();
           for (size_t i=center; i<end; i++)
             right.extend(prims[i].bounds());	
-          new (&rset) PrimInfoRange(center,end,right.geomBounds,right.centBounds);
+          new (&rset) PrimInfoRange(center,end,right);
         }
         
       private:

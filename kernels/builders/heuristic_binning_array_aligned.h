@@ -33,8 +33,8 @@ namespace embree
       __forceinline PrimInfoRange(EmptyTy)
         : CentGeomBBox3fa(EmptyTy()), range<size_t>(0,0) {}
 
-      __forceinline PrimInfoRange (size_t begin, size_t end, const BBox3fa& geomBounds, const BBox3fa& centBounds)
-        : CentGeomBBox3fa(geomBounds,centBounds), range<size_t>(begin,end) {}
+      __forceinline PrimInfoRange (size_t begin, size_t end, const CentGeomBBox3fa& centGeomBounds)
+        : CentGeomBBox3fa(centGeomBounds), range<size_t>(begin,end) {}
       
       __forceinline float leafSAH() const { 
 	return expectedApproxHalfArea(geomBounds)*float(size()); 
@@ -127,8 +127,8 @@ namespace embree
               [] (CentGeomBBox3fa& pinfo0,const CentGeomBBox3fa &pinfo1) { pinfo0.merge(pinfo1); },
               PARALLEL_PARTITION_BLOCK_SIZE);
           
-          new (&lset) PrimInfoRange(begin,center,local_left.geomBounds,local_left.centBounds);
-          new (&rset) PrimInfoRange(center,end,local_right.geomBounds,local_right.centBounds);
+          new (&lset) PrimInfoRange(begin,center,local_left);
+          new (&rset) PrimInfoRange(center,end,local_right);
           assert(area(lset.geomBounds) >= 0.0f);
           assert(area(rset.geomBounds) >= 0.0f);
         }
@@ -148,12 +148,12 @@ namespace embree
           CentGeomBBox3fa left; left.reset();
           for (size_t i=begin; i<center; i++)
             left.extend(prims[i].bounds());
-          new (&linfo) PrimInfoRange(begin,center,left.geomBounds,left.centBounds);
+          new (&linfo) PrimInfoRange(begin,center,left);
 
           CentGeomBBox3fa right; right.reset();
           for (size_t i=center; i<end; i++)
             right.extend(prims[i].bounds());
-          new (&rinfo) PrimInfoRange(center,end,right.geomBounds,right.centBounds);
+          new (&rinfo) PrimInfoRange(center,end,right);
         }
 
       private:

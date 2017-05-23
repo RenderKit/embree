@@ -260,8 +260,8 @@ namespace embree
         
         size_t center = serial_partitioning(prims,begin,end,local_left,local_right,primOnLeftSide,mergePrimBounds);
         
-        new (&lset) PrimInfoRange(begin,center,local_left.geomBounds,local_left.centBounds);
-        new (&rset) PrimInfoRange(center,end,local_right.geomBounds,local_right.centBounds);
+        new (&lset) PrimInfoRange(begin,center,local_left);
+        new (&rset) PrimInfoRange(center,end,local_right);
         assert(area(lset.geomBounds) >= 0.0f);
         assert(area(rset.geomBounds) >= 0.0f);
       }
@@ -292,8 +292,8 @@ namespace embree
           [] (PrimInfo &pinfo0,const PrimInfo& pinfo1) { pinfo0.merge(pinfo1); },
           PARALLEL_PARTITION_BLOCK_SIZE);
         
-        new (&lset) PrimInfoRange(begin,center,linfo.geomBounds,linfo.centBounds);
-        new (&rset) PrimInfoRange(center,end,rinfo.geomBounds,rinfo.centBounds);
+        new (&lset) PrimInfoRange(begin,center,linfo);
+        new (&rset) PrimInfoRange(center,end,rinfo);
       }
       
       void deterministic_order(const Set& set) 
@@ -311,12 +311,12 @@ namespace embree
         CentGeomBBox3fa left; left.reset();
         for (size_t i=begin; i<center; i++)
           left.extend(bounds(prims[i]));
-        new (&lset) PrimInfoRange(begin,center,left.geomBounds,left.centBounds);
+        new (&lset) PrimInfoRange(begin,center,left);
         
         CentGeomBBox3fa right; right.reset();
         for (size_t i=center; i<end; i++)
           right.extend(bounds(prims[i]));	
-        new (&rset) PrimInfoRange(center,end,right.geomBounds,right.centBounds);
+        new (&rset) PrimInfoRange(center,end,right);
       }
       
     private:

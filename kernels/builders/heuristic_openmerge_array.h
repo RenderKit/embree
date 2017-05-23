@@ -377,8 +377,8 @@ namespace embree
                                               [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask); },
                                               [] (PrimInfo& pinfo,const PrimRef& ref) { pinfo.add(ref.bounds()); });          
           
-          new (&lset) PrimInfoExtRange(begin,center,center,local_left.geomBounds,local_left.centBounds);
-          new (&rset) PrimInfoExtRange(center,end,end,local_right.geomBounds,local_right.centBounds);
+          new (&lset) PrimInfoExtRange(begin,center,center,local_left);
+          new (&rset) PrimInfoExtRange(center,end,end,local_right);
           assert(area(lset.geomBounds) >= 0.0f);
           assert(area(rset.geomBounds) >= 0.0f);
           return std::pair<size_t,size_t>(local_left.size(),local_right.size());
@@ -405,8 +405,8 @@ namespace embree
             [] (PrimInfo& pinfo0,const PrimInfo& pinfo1) { pinfo0.merge(pinfo1); },
             PARALLEL_PARTITION_BLOCK_SIZE);
 
-          new (&lset) PrimInfoExtRange(begin,center,center,left.geomBounds,left.centBounds);
-          new (&rset) PrimInfoExtRange(center,end,end,right.geomBounds,right.centBounds);
+          new (&lset) PrimInfoExtRange(begin,center,center,left);
+          new (&rset) PrimInfoExtRange(center,end,end,right);
           assert(area(lset.geomBounds) >= 0.0f);
           assert(area(rset.geomBounds) >= 0.0f);
 
@@ -436,8 +436,8 @@ namespace embree
             right.add(prims0[i].bounds());	
 
           const size_t rweight = right.end;
-          new (&lset) PrimInfoExtRange(begin,center,center,left.geomBounds,left.centBounds);
-          new (&rset) PrimInfoExtRange(center,end,end,right.geomBounds,right.centBounds);
+          new (&lset) PrimInfoExtRange(begin,center,center,left);
+          new (&rset) PrimInfoExtRange(center,end,end,right);
 
           /* if we have an extended range */
           if (set.has_ext_range()) 
