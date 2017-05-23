@@ -44,8 +44,10 @@ namespace embree
 
       __forceinline static void isort_quick_update(vfloat16 &dist, vllong8 &ptr, const vfloat16 &d, const vllong8 &p)
       {
-        dist = align_shift_right<15>(dist,d);
-        ptr  = align_shift_right<7>(ptr,p);
+        //dist = align_shift_right<15>(dist,d);
+        //ptr  = align_shift_right<7>(ptr,p);
+        dist = align_shift_right<15>(dist,permute(d,vint16(zero)));
+        ptr  = align_shift_right<7>(ptr,permute(p,vllong8(zero)));
       }
 
       template<int N, int Nx, int types, class NodeRef, class BaseNode>
@@ -57,25 +59,30 @@ namespace embree
       {
         assert(mask != 0);
         const BaseNode* node = cur.baseNode(types);
+        vllong8 children = vllong8::load((vllong8*)node->children);
 
-        STAT3(normal.trav_hit_boxes[__popcnt(mask)],1,1,1);
+        children = vllong8::compact((int)mask,children);
+        vfloat16 distance = tNear;
+        distance = vfloat16::compact((int)mask,distance,tNear);
 
-        size_t r = __bscf(mask);
-        cur = node->child(r);
+        cur = toScalar(children);
         cur.prefetch(types);
-        if (likely(mask == 0)) {
-          //assert(cur != BVH::emptyNode);
-          return;
-        }
-        
-        /* 2 hits: order A0 B0 */
-        const vllong8 c0(cur);
-        const vfloat16 d0(tNear[r]);
-        r = __bscf(mask);
-        cur = node->child(r);
-        const vllong8 c1(cur);
-        const vfloat16 d1(tNear[r]);
 
+        
+        mask &= mask-1;
+        if (likely(mask == 0)) return;
+
+
+
+        /* 2 hits: order A0 B0 */
+        const vllong8 c0(children);
+        const vfloat16 d0(distance);
+        children = align_shift_right<1>(children,children);
+        distance = align_shift_right<1>(distance,distance);        
+        const vllong8 c1(children);
+        const vfloat16 d1(distance);
+        
+        cur = toScalar(children);
         cur.prefetch(types);
 
         const vboolf16 m_dist  = d0 <= d1;
@@ -84,6 +91,7 @@ namespace embree
         const vllong8 ptr_A0   = select(vboold8(m_dist), c0, c1);
         const vllong8 ptr_B0   = select(vboold8(m_dist), c1, c0);
 
+        mask &= mask-1;
         if (likely(mask == 0)) {
           cur = toScalar(ptr_A0);
           stackPtr[0].ptr            = toScalar(ptr_B0);
@@ -94,11 +102,14 @@ namespace embree
 
         /* 3 hits: order A1 B1 C1 */
 
-        r = __bscf(mask);
-        cur = node->child(r);
+        children = align_shift_right<1>(children,children);
+        distance = align_shift_right<1>(distance,distance);        
+
+        const vllong8 c2(children);
+        const vfloat16 d2(distance);
+
+        cur = toScalar(children);
         cur.prefetch(types);
-        const vllong8 c2(cur);
-        const vfloat16 d2(tNear[r]);
 
         const vboolf16 m_dist1     = dist_A0 <= d2;
         const vfloat16 dist_tmp_B1 = select(m_dist1, d2, dist_A0);
@@ -111,6 +122,7 @@ namespace embree
         const vllong8  ptr_B1      = select(vboold8(m_dist2), ptr_B0, ptr_tmp_B1);
         const vllong8  ptr_C1      = select(vboold8(m_dist2), ptr_tmp_B1, ptr_B0);
 
+        mask &= mask-1;
         if (likely(mask == 0)) {
           cur = toScalar(ptr_A1);
           stackPtr[0].ptr  = toScalar(ptr_C1);
@@ -124,11 +136,15 @@ namespace embree
         /* 4 hits: order A2 B2 C2 D2 */
 
         const vfloat16 dist_A1  = select(m_dist1, dist_A0, d2);
-        r = __bscf(mask);
-        cur = node->child(r);
+
+        children = align_shift_right<1>(children,children);
+        distance = align_shift_right<1>(distance,distance);        
+
+        const vllong8 c3(children);
+        const vfloat16 d3(distance);
+
+        cur = toScalar(children);
         cur.prefetch(types);
-        const vllong8 c3(cur);
-        const vfloat16 d3(tNear[r]);
 
         const vboolf16 m_dist3     = dist_A1 <= d3;
         const vfloat16 dist_tmp_B2 = select(m_dist3, d3, dist_A1);
@@ -147,6 +163,7 @@ namespace embree
         const vllong8  ptr_C2      = select(vboold8(m_dist5), ptr_C1, ptr_tmp_C2);
         const vllong8  ptr_D2      = select(vboold8(m_dist5), ptr_tmp_C2, ptr_C1);
 
+        mask &= mask-1;
         if (likely(mask == 0)) {
           cur = toScalar(ptr_A2);
           stackPtr[0].ptr  = toScalar(ptr_D2);
@@ -159,7 +176,6 @@ namespace embree
           return;
         }
 
-
         /* >=5 hits: reverse to descending order for writing to stack */
 
         const size_t hits = 4 + __popcnt(mask);
@@ -167,21 +183,28 @@ namespace embree
         vfloat16 dist(neg_inf);
         vllong8 ptr(zero);
 
+
         isort_quick_update(dist,ptr,dist_A2,ptr_A2);
         isort_quick_update(dist,ptr,dist_B2,ptr_B2);
         isort_quick_update(dist,ptr,dist_C2,ptr_C2);
         isort_quick_update(dist,ptr,dist_D2,ptr_D2);
 
         do {
-          const size_t r = __bscf(mask);
-          cur = node->child(r);
-          const vfloat16 new_dist(tNear[r]);
-          const vllong8 new_ptr(cur);
+
+          children = align_shift_right<1>(children,children);
+          distance = align_shift_right<1>(distance,distance);        
+
+          cur = toScalar(children);
           cur.prefetch(types);
+
+          const vfloat16 new_dist(permute(distance,vint16(zero)));
+          const vllong8 new_ptr(permute(children,vllong8(zero)));
+
+          mask &= mask-1;
           isort_update(dist,ptr,new_dist,new_ptr);
+
         } while(mask);
 
-#if 1
         const vboold8 m_stack_ptr(0x55);  // 10101010 (lsb -> msb)
         const vboolf16 m_stack_dist(0x4444); // 0010001000100010 (lsb -> msb)
 
@@ -206,7 +229,8 @@ namespace embree
         vuint16::storeu(stackPtr + 4,stackElementB1);
         /* increase stack pointer */
         stackPtr += hits-1;
-#else
+
+#if 0        
         for (size_t i=0;i<hits-1;i++)
         {
           stackPtr->ptr  = toScalar(ptr);
@@ -220,7 +244,6 @@ namespace embree
       }
 
 #endif
-
 
     /* Specialization for BVH4. */
     template<int Nx, int types>

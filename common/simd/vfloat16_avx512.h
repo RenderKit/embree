@@ -116,7 +116,7 @@ namespace embree
     static __forceinline vfloat16 compact(const vboolf16& mask, vfloat16 &v) {
       return _mm512_mask_compress_ps(v,mask,v);
     }
-    static __forceinline vfloat16 compact(const vboolf16& mask, const vfloat16 &a, vfloat16 &b) {
+    static __forceinline vfloat16 compact(const vboolf16& mask, vfloat16 &a, const vfloat16 &b) {
       return _mm512_mask_compress_ps(a,mask,b);
     }
 
