@@ -207,7 +207,7 @@ namespace embree
     /************************************************************************************/
 
     template<int N>
-    struct VirtualCreateMSMBlurLeaf
+    struct VirtualCreateLeafMB
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRecordMB4D NodeRecordMB4D;
@@ -216,7 +216,7 @@ namespace embree
     };
 
     template<int N, typename Primitive0, typename Primitive1, typename Primitive2, typename Primitive3, typename Primitive4, typename Primitive5>
-    struct CreateMSMBlurMultiLeaf6 : public VirtualCreateMSMBlurLeaf<N>
+    struct CreateMSMBlurMultiLeaf6 : public VirtualCreateLeafMB<N>
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRecordMB4D NodeRecordMB4D;
@@ -251,13 +251,13 @@ namespace embree
       BVH* bvh;
       Scene* scene;
       Geometry::Type type;
-      const VirtualCreateMSMBlurLeaf<N>& createLeaf;
+      const VirtualCreateLeafMB<N>& createLeaf;
       const size_t sahBlockSize;
       const float intCost;
       const size_t minLeafSize;
       const size_t maxLeafSize;
 
-      BVHNMultiBuilderMBlurSAH (BVH* bvh, Scene* scene, Geometry::Type type, const VirtualCreateMSMBlurLeaf<N>& createLeaf, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
+      BVHNMultiBuilderMBlurSAH (BVH* bvh, Scene* scene, Geometry::Type type, const VirtualCreateLeafMB<N>& createLeaf, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
         : bvh(bvh), scene(scene), type(type), createLeaf(createLeaf), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,/*Primitive::max_size()*/BVH::maxLeafBlocks)) {} // FIXME: Primitive::max_size() assumed to be 4
 
       void build()
@@ -419,6 +419,88 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 
+    /* FIXME: add fast path for single-segment motion blur */
+    template<int N>
+    struct BVHNOBBMBlurBuilderSAH : public Builder
+    {
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::NodeRecordMB NodeRecordMB;
+
+      BVH* bvh;
+      Scene* scene;
+      Geometry::Type type;
+      const VirtualCreateLeafMB<N>& createLeaf;
+
+      BVHNOBBMBlurBuilderSAH (BVH* bvh, Scene* scene, Geometry::Type type, const VirtualCreateLeafMB<N>& createLeaf)
+        : bvh(bvh), scene(scene), type(type), createLeaf(createLeaf) {}
+      
+      void build() 
+      {
+        /* fast path for empty BVH */
+        const size_t numPrimitives = scene->getNumPrimitives(type,true);
+        if (numPrimitives == 0) {
+          bvh->set(BVH::emptyNode,empty,0);
+          return;
+        }
+
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "MultiOBBMBlurBuilderSAH");
+
+        //profile(1,5,numPrimitives,[&] (ProfileTimer& timer) {
+
+        /* create primref array */
+        mvector<PrimRefMB> prims0(scene->device,numPrimitives);
+        const PrimInfoMB pinfo = createMultiPrimRefArrayMSMBlur(scene,type,prims0,bvh->scene->progressInterface);
+
+        /* estimate acceleration structure size */
+        const size_t node_bytes = pinfo.num_time_segments*sizeof(typename BVH::AlignedNodeMB)/(4*N);
+        const size_t leaf_bytes = size_t(1.2*numPrimitives*44); //Primitive::blocks(pinfo.num_time_segments)*sizeof(Primitive)); // FIXME: wrong size estimate
+        bvh->alloc.init_estimate(node_bytes+leaf_bytes);
+    
+        /* settings for BVH build */
+        BVHBuilderHairMSMBlur::Settings settings;
+        settings.branchingFactor = N;
+        settings.maxDepth = BVH::maxBuildDepthLeaf;
+        settings.logBlockSize = 1;
+        settings.minLeafSize = 1;
+        settings.maxLeafSize = BVH::maxLeafBlocks;
+
+        /* build the hierarchy */
+        auto root = BVHBuilderHairMSMBlur::build<NodeRef>
+          (scene, prims0, pinfo,
+           RecalculatePrimRef<NativeCurves>(scene),
+           typename BVH::CreateAlloc(bvh),
+           typename BVH::AlignedNodeMB::Create(),
+           typename BVH::AlignedNodeMB::Set(),
+           typename BVH::UnalignedNodeMB::Create(),
+           typename BVH::UnalignedNodeMB::Set(),
+           typename BVH::AlignedNodeMB4D::Create(),
+           typename BVH::AlignedNodeMB4D::Set(),
+           [&] (const SetMB& prims, const FastAllocator::CachedAllocator& alloc) { 
+            return createLeaf(bvh,prims,alloc);
+           },
+           bvh->scene->progressInterface,
+           settings);
+        
+        bvh->set(root.ref,root.lbounds,pinfo.num_time_segments);
+        
+        //});
+        
+        /* clear temporary data for static geometry */
+        if (scene->isStatic()) bvh->shrink();
+        bvh->cleanup();
+        bvh->postBuild(t0);
+      }
+
+      void clear() {
+      }
+    };
+
+    /************************************************************************************/
+    /************************************************************************************/
+    /************************************************************************************/
+    /************************************************************************************/
+
 #if defined(__AVX__)
   
     struct BVH8MultiFastSceneBuilderSelect : public Builder 
@@ -457,7 +539,7 @@ namespace embree
           if ((type & Geometry::BEZIER_CURVES) && scene->getNumPrimitives(Geometry::BEZIER_CURVES,true))
           {
             if (num1 < num2) {
-              assert(false);
+              builder = new BVHNOBBMBlurBuilderSAH<8>((BVH8*)bvh,scene,type,createLeafMB); 
             } else {
               builder = new BVHNOBBBuilderMultiSAH<8>((BVH8*)bvh,scene,type,createLeaf); //,4,1.0f,4,inf); 
             }
