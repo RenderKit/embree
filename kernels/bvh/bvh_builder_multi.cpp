@@ -464,6 +464,7 @@ namespace embree
         settings.logBlockSize = 1;
         settings.minLeafSize = 1;
         settings.maxLeafSize = BVH::maxLeafBlocks;
+        settings.singleLeafTimeSegment = true;
 
         /* build the hierarchy */
         auto root = BVHBuilderHairMSMBlur::build<NodeRef>

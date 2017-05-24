@@ -34,7 +34,7 @@ namespace embree
       {
         /*! default settings */
         Settings ()
-        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8) {}
+        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8), singleLeafTimeSegment(false) {}
 
       public:
         size_t branchingFactor;  //!< branching factor of BVH to build
@@ -42,6 +42,7 @@ namespace embree
         size_t logBlockSize;     //!< log2 of blocksize for SAH heuristic
         size_t minLeafSize;      //!< minimal size of a leaf
         size_t maxLeafSize;      //!< maximal size of a leaf
+        bool singleLeafTimeSegment; //!< split time to single time range
       };
 
       struct BuildRecord
@@ -64,6 +65,19 @@ namespace embree
 	SetMB prims;        //!< the list of primitives
       };
 
+      struct BuildRecordSplit : public BuildRecord
+      {
+        __forceinline BuildRecordSplit () {}
+
+        __forceinline BuildRecordSplit (size_t depth) 
+          : BuildRecord(depth) {}
+
+        __forceinline BuildRecordSplit (const BuildRecord& record, const BinSplit<MBLUR_NUM_OBJECT_BINS>& split)
+          : BuildRecord(record), split(split) {}
+        
+        BinSplit<MBLUR_NUM_OBJECT_BINS> split;
+      };
+
       template<typename NodeRef,
         typename RecalculatePrimRef,
         typename CreateAllocFunc,
@@ -84,9 +98,11 @@ namespace embree
 
           typedef BVHNodeRecordMB<NodeRef> NodeRecordMB;
           typedef BVHNodeRecordMB4D<NodeRef> NodeRecordMB4D;
+          typedef BinSplit<MBLUR_NUM_OBJECT_BINS> Split;
 
           typedef FastAllocator::CachedAllocator Allocator;
           typedef LocalChildListT<BuildRecord,MAX_BRANCHING_FACTOR> LocalChildList;
+          typedef LocalChildListT<BuildRecordSplit,MAX_BRANCHING_FACTOR> LocalChildListSplit;
 
           typedef HeuristicMBlurTemporalSplit<PrimRefMB,RecalculatePrimRef,MBLUR_NUM_TEMPORAL_BINS> HeuristicTemporal;
           typedef HeuristicArrayBinningMB<PrimRefMB,MBLUR_NUM_OBJECT_BINS> HeuristicBinning;
@@ -118,8 +134,68 @@ namespace embree
 
         private:
 
-          /*! performs some split if SAH approaches fail */
-          void splitFallback(const SetMB& set, SetMB& lset, SetMB& rset)
+          /*! array partitioning */
+          __forceinline std::unique_ptr<mvector<PrimRefMB>> split(const Split& split, const SetMB& set, SetMB& lset, SetMB& rset)
+          {
+            /* perform object split */
+            if (likely(split.data == Split::SPLIT_OBJECT)) {
+              alignedHeuristic.split(split,set,lset,rset);
+            }
+            /* perform temporal split */
+            else if (likely(split.data == Split::SPLIT_TEMPORAL)) {
+              return temporalSplitHeuristic.split(split,set,lset,rset);
+            }
+            /* perform fallback split */
+            else if (unlikely(split.data == Split::SPLIT_FALLBACK)) {
+              set.deterministic_order();
+              splitAtCenter(set,lset,rset);
+            }
+            /* perform type split */
+            else if (unlikely(split.data == Split::SPLIT_TYPE)) {
+              splitByType(set,lset,rset);
+            }
+            else
+              assert(false);
+
+            return std::unique_ptr<mvector<PrimRefMB>>();
+          }
+
+          /*! finds the best fallback split */
+          __noinline Split findFallback(const SetMB& set)
+          {
+            if (set.size() == 0)
+              return Split(0.0f,Split::SPLIT_NONE);
+
+            /* if a leaf can only hold a single time-segment, we might have to do additional temporal splits */
+            if (singleLeafTimeSegment)
+            {
+              /* test if one primitive has more than one time segment in time range, if so split time */
+              for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++)
+              {
+                const PrimRefMB& prim = (*set.prims)[i];
+                const range<int> itime_range = getTimeSegmentRange(set.time_range,(float)prim.totalTimeSegments());
+                if (itime_range.size() > 1) {
+                  const int icenter = (itime_range.begin() + itime_range.end())/2;
+                  const float splitTime = float(icenter)/float(prim.totalTimeSegments());
+                  return Split(0.0f,(unsigned)Split::SPLIT_TEMPORAL,0,splitTime);
+                }
+              }
+            }
+
+            /* if primitives are of different type perform type splits */
+            if (!set.oneType())
+              return Split(0.0f,Split::SPLIT_TYPE);
+
+            /* if the leaf is too large we also have to perform additional splits */
+            if (set.size() > maxLeafSize)
+              return Split(0.0f,Split::SPLIT_FALLBACK);
+
+            /* otherwise perform no splits anymore */
+            return Split(0.0f,Split::SPLIT_NONE);
+          }
+
+          /*! performs fallback split */
+          void splitAtCenter(const SetMB& set, SetMB& lset, SetMB& rset)
           {
             mvector<PrimRefMB>& prims = *set.prims;
 
@@ -139,29 +215,51 @@ namespace embree
             new (&rset) SetMB(rinfo,set.prims,range<size_t>(center,end  ),set.time_range);
           }
 
-          /*! creates a large leaf that could be larger than supported by the BVH */
-          NodeRecordMB4D createLargeLeaf(BuildRecord& current, Allocator alloc)
+          /*! split by primitive type */
+          void splitByType(const SetMB& set, SetMB& lset, SetMB& rset)
+          {
+            assert(set.size());
+            mvector<PrimRefMB>& prims = *set.prims;
+            const size_t begin = set.object_range.begin();
+            const size_t end   = set.object_range.end();
+          
+            Leaf::Type type = prims[begin].type();
+            PrimInfoMB linfo = empty;
+            PrimInfoMB rinfo = empty;
+            size_t center = serial_partitioning(prims.data(),begin,end,linfo,rinfo,
+                                                [&] ( const PrimRefMB& prim ) { return prim.type() == type; },
+                                                [ ] ( PrimInfoMB& a, const PrimRefMB& b ) { a.add_primref(b); });
+            
+            new (&lset) SetMB(linfo,set.prims,range<size_t>(begin,center),set.time_range);
+            new (&rset) SetMB(rinfo,set.prims,range<size_t>(center,end  ),set.time_range);
+          }
+
+          const NodeRecordMB4D createLargeLeaf(const BuildRecord& in, Allocator alloc)
           {
             /* this should never occur but is a fatal error */
-            if (current.depth > maxDepth)
+            if (in.depth > maxDepth)
               throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
 
+            /* replace already found split by fallback split */
+            const BuildRecordSplit current(BuildRecord(in.prims,in.depth),findFallback(in.prims)); // FIXME: findFallback invoked too often!
+
             /* create leaf for few primitives */
-            if (current.size() <= maxLeafSize)
+            if (current.split.data == Split::SPLIT_NONE)
               return createLeaf(current.prims,alloc);
 
             /* fill all children by always splitting the largest one */
-            LocalChildList children(current);
+            bool hasTimeSplits = false;
+            NodeRecordMB4D values[MAX_BRANCHING_FACTOR];
+            LocalChildListSplit children(current);
 
             do {
-
               /* find best child with largest bounding box area */
-              int bestChild = -1;
+              size_t bestChild = -1;
               size_t bestSize = 0;
-              for (unsigned i=0; i<children.size(); i++)
+              for (size_t i=0; i<children.size(); i++)
               {
                 /* ignore leaves as they cannot get split */
-                if (children[i].size() <= maxLeafSize)
+                if (children[i].split.data == Split::SPLIT_NONE)
                   continue;
 
                 /* remember child with largest size */
@@ -172,25 +270,36 @@ namespace embree
               }
               if (bestChild == -1) break;
 
-              /*! split best child into left and right child */
-              BuildRecord left(current.depth+1);
-              BuildRecord right(current.depth+1);
-              splitFallback(children[bestChild].prims,left.prims,right.prims);
-              children.split(bestChild,left,right,std::unique_ptr<mvector<PrimRefMB>>());
+              /* perform best found split */
+              BuildRecordSplit& brecord = children[bestChild];
+              BuildRecordSplit lrecord(current.depth+1);
+              BuildRecordSplit rrecord(current.depth+1);
+              std::unique_ptr<mvector<PrimRefMB>> new_vector = split(brecord.split,brecord.prims,lrecord.prims,rrecord.prims);
+              hasTimeSplits |= new_vector != nullptr;
+
+              /* find new splits */
+              lrecord.split = findFallback(lrecord.prims);
+              rrecord.split = findFallback(rrecord.prims);
+              children.split(bestChild,lrecord,rrecord,std::move(new_vector));
 
             } while (children.size() < branchingFactor);
 
             /* create node */
-            NodeRef node = createAlignedNode(alloc,false);
+            auto node = createAlignedNode(alloc, hasTimeSplits);
 
-            LBBox3fa bounds = empty;
+            /* recurse into each child and perform reduction */
+            LBBox3fa gbounds = empty;
             for (size_t i=0; i<children.size(); i++) {
-              const auto child = createLargeLeaf(children[i],alloc);
-              setAlignedNode(node,i,child);
-              bounds.extend(child.lbounds);
+              values[i] = createLargeLeaf(children[i],alloc);
+              gbounds.extend(values[i].lbounds);
+              setAlignedNode(node,i,values[i]);
             }
 
-            return NodeRecordMB4D(node,bounds,current.prims.time_range);
+            /* calculate geometry bounds of this node */
+            if (hasTimeSplits)
+              return NodeRecordMB4D(node,current.prims.linearBounds(recalculatePrimRef),current.prims.time_range);
+            else
+              return NodeRecordMB4D(node,gbounds,current.prims.time_range);
           }
 
           /*! performs split */
@@ -231,7 +340,7 @@ namespace embree
             /* perform fallback split if SAH heuristics failed */
             if (unlikely(!std::isfinite(bestSAH))) {
               current.prims.deterministic_order();
-              splitFallback(current.prims,lrecord.prims,rrecord.prims);
+              splitAtCenter(current.prims,lrecord.prims,rrecord.prims);
             }
             /* perform aligned split if this is best */
             else if (likely(bestSAH == alignedObjectSAH)) {

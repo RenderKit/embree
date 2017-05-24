@@ -366,7 +366,7 @@ namespace embree
             }
 
             /* if primitives are of different type perform type splits */
-            if (!sameType(set))
+            if (!set.oneType())
               return Split(0.0f,Split::SPLIT_TYPE);
 
             /* if the leaf is too large we also have to perform additional splits */
