@@ -391,7 +391,7 @@ namespace embree
            typename BVH::AlignedNode::Set(),
            typename BVH::UnalignedNode::Create(),
            typename BVH::UnalignedNode::Set(),
-           [&] (size_t depth, const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) -> NodeRef {
+           [&] (const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) -> NodeRef {
             return createLeaf(bvh,prims.data(),range,alloc);
            },
            scene->progressInterface,scene,prims.data(),pinfo,settings);
@@ -470,12 +470,10 @@ namespace embree
           (scene, prims0, pinfo,
            RecalculatePrimRef<NativeCurves>(scene),
            typename BVH::CreateAlloc(bvh),
-           typename BVH::AlignedNodeMB::Create(),
-           typename BVH::AlignedNodeMB::Set(),
-           typename BVH::UnalignedNodeMB::Create(),
-           typename BVH::UnalignedNodeMB::Set(),
            typename BVH::AlignedNodeMB4D::Create(),
            typename BVH::AlignedNodeMB4D::Set(),
+           typename BVH::UnalignedNodeMB::Create(),
+           typename BVH::UnalignedNodeMB::Set(),
            [&] (const SetMB& prims, const FastAllocator::CachedAllocator& alloc) { 
             return createLeaf(bvh,prims,alloc);
            },

@@ -72,7 +72,7 @@ namespace embree
         settings.maxLeafSize = BVH::maxLeafBlocks;
 
         /* creates a leaf node */
-        auto createLeaf = [&] (size_t depth, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) -> NodeRef
+        auto createLeaf = [&] (const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) -> NodeRef
           {
             size_t start = set.begin();
             size_t items = set.size();
@@ -175,12 +175,10 @@ namespace embree
           (scene, prims0, pinfo,
            RecalculatePrimRef<NativeCurves>(scene),
            typename BVH::CreateAlloc(bvh),
-           typename BVH::AlignedNodeMB::Create(),
-           typename BVH::AlignedNodeMB::Set(),
-           typename BVH::UnalignedNodeMB::Create(),
-           typename BVH::UnalignedNodeMB::Set(),
            typename BVH::AlignedNodeMB4D::Create(),
            typename BVH::AlignedNodeMB4D::Set(),
+           typename BVH::UnalignedNodeMB::Create(),
+           typename BVH::UnalignedNodeMB::Set(),
            createLeaf,
            bvh->scene->progressInterface,
            settings);
