@@ -169,7 +169,7 @@ namespace embree
     }
 
     /*! check if the i'th primitive is valid at the itime'th timestep */
-    __forceinline bool valid(size_t i, size_t itime) const {
+    __forceinline bool valid(size_t i, size_t itime = 0) const {
       return valid(i, make_range(itime, itime));
     }
 
@@ -279,6 +279,23 @@ namespace embree
       return true;
     }
 
+    /*! calculates the linear bounds of the i'th primitive for the specified time range */
+    __forceinline bool linearBoundsSafe(size_t i, const BBox1f& time_range, LBBox3fa& bbox) const  
+    {
+      if (numTimeSteps == 1)
+      {
+        if (!valid(i)) return false;
+        bbox = LBBox3fa(bounds(i));
+        return true;
+      } 
+      else
+      {
+        if (!valid(i, getTimeSegmentRange(time_range, fnumTimeSegments))) return false;
+        bbox = linearBounds(i, time_range);
+        return true;
+      }
+    }
+
   public:
     APIBuffer<unsigned int> curves;                   //!< array of curve indices
     vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
@@ -304,6 +321,8 @@ namespace embree
       template<typename InputCurve3fa, typename OutputCurve3fa> void commit_helper();
 
       virtual PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& src, size_t dst);
+      virtual PrimInfoMB createPrimRefArrayMB(mvector<PrimRefMB>& prims, const BBox1f t0t1, const range<size_t>& src, size_t dst);
+   
     };
     
     struct CurvesBezier : public NativeCurvesISA
