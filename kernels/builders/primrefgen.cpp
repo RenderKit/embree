@@ -33,11 +33,12 @@ namespace embree
       {
         size_t k = r.begin();
         PrimInfo pinfo(empty);
+        Leaf::Type ty = mesh->leafType();
         for (size_t j=r.begin(); j<r.end(); j++)
         {
           BBox3fa bounds = empty;
           if (!mesh->buildBounds(j,&bounds)) continue;
-          const PrimRef prim(bounds,mesh->geomID,unsigned(j));          
+          const PrimRef prim(bounds,ty,mesh->geomID,unsigned(j));          
           pinfo.add_center2(prim);
           prims[k++] = prim;
         }
@@ -52,11 +53,12 @@ namespace embree
         {
           size_t k = base.size();
           PrimInfo pinfo(empty);
+          Leaf::Type ty = mesh->leafType();
           for (size_t j=r.begin(); j<r.end(); j++)
           {
             BBox3fa bounds = empty;
             if (!mesh->buildBounds(j,&bounds)) continue;
-            const PrimRef prim(bounds,mesh->geomID,unsigned(j));
+            const PrimRef prim(bounds,ty,mesh->geomID,unsigned(j));
             pinfo.add_center2(prim);
             prims[k++] = prim;
           }
@@ -77,12 +79,13 @@ namespace embree
       PrimInfo pinfo = parallel_for_for_prefix_sum0( pstate, *group, PrimInfo(empty), [&](Geometry* geom, const range<size_t>& r, size_t k) -> PrimInfo
       {
         Mesh* mesh = dynamic_cast<Mesh*>(geom);
+        Leaf::Type ty = mesh->leafType();
         PrimInfo pinfo(empty);
         for (size_t j=r.begin(); j<r.end(); j++)
         {
           BBox3fa bounds = empty;
           if (!mesh->buildBounds(j,&bounds)) continue;
-          const PrimRef prim(bounds,mesh->geomID,unsigned(j));
+          const PrimRef prim(bounds,ty,mesh->geomID,unsigned(j));
           pinfo.add_center2(prim);
           prims[k++] = prim;
         }
@@ -96,13 +99,14 @@ namespace embree
         pinfo = parallel_for_for_prefix_sum1( pstate, *group, PrimInfo(empty), [&](Geometry* geom, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
           Mesh* mesh = dynamic_cast<Mesh*>(geom);
+          Leaf::Type ty = mesh->leafType();
           k = base.size();
           PrimInfo pinfo(empty);
           for (size_t j=r.begin(); j<r.end(); j++)
           {
             BBox3fa bounds = empty;
             if (!mesh->buildBounds(j,&bounds)) continue;
-            const PrimRef prim(bounds,mesh->geomID,unsigned(j));
+            const PrimRef prim(bounds,ty,mesh->geomID,unsigned(j));
             pinfo.add_center2(prim);
             prims[k++] = prim;
           }
@@ -124,11 +128,12 @@ namespace embree
       PrimInfo pinfo = parallel_for_for_prefix_sum0( pstate, iter, PrimInfo(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k) -> PrimInfo
       {
         PrimInfo pinfo(empty);
+        Leaf::Type ty = mesh->leafType();
         for (size_t j=r.begin(); j<r.end(); j++)
         {
           BBox3fa bounds = empty;
           if (!mesh->buildBounds(j,&bounds)) continue;
-          const PrimRef prim(bounds,mesh->geomID,unsigned(j));
+          const PrimRef prim(bounds,ty,mesh->geomID,unsigned(j));
           pinfo.add_center2(prim);
           prims[k++] = prim;
         }
@@ -143,11 +148,12 @@ namespace embree
         {
           k = base.size();
           PrimInfo pinfo(empty);
+          Leaf::Type ty = mesh->leafType();
           for (size_t j=r.begin(); j<r.end(); j++)
           {
             BBox3fa bounds = empty;
             if (!mesh->buildBounds(j,&bounds)) continue;
-            const PrimRef prim(bounds,mesh->geomID,unsigned(j));
+            const PrimRef prim(bounds,ty,mesh->geomID,unsigned(j));
             pinfo.add_center2(prim);
             prims[k++] = prim;
           }
@@ -192,11 +198,12 @@ namespace embree
       PrimInfo pinfo = parallel_for_for_prefix_sum0( pstate, iter, PrimInfo(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k) -> PrimInfo
       {
         PrimInfo pinfo(empty);
+        Leaf::Type ty = mesh->leafType();
         for (size_t j=r.begin(); j<r.end(); j++)
         {
           BBox3fa bounds = empty;
           if (!mesh->buildBounds(j,timeSegment,bounds)) continue;
-          const PrimRef prim(bounds,mesh->geomID,unsigned(j));
+          const PrimRef prim(bounds,ty,mesh->geomID,unsigned(j));
           pinfo.add_center2(prim);
           prims[k++] = prim;
         }
@@ -211,11 +218,12 @@ namespace embree
         {
           k = base.size();
           PrimInfo pinfo(empty);
+          Leaf::Type ty = mesh->leafType();
           for (size_t j=r.begin(); j<r.end(); j++)
           {
             BBox3fa bounds = empty;
             if (!mesh->buildBounds(j,timeSegment,bounds)) continue;
-            const PrimRef prim(bounds,mesh->geomID,unsigned(j));
+            const PrimRef prim(bounds,ty,mesh->geomID,unsigned(j));
             pinfo.add_center2(prim);
             prims[k++] = prim;
           }
@@ -229,11 +237,12 @@ namespace embree
     __noinline PrimInfoMB calculatePrimRefMB(mvector<PrimRefMB>& prims, const BBox1f& t0t1, Mesh* mesh, const range<size_t>& r, size_t k)
     {
       PrimInfoMB pinfo(empty);
+      Leaf::Type ty = mesh->leafType();
       for (size_t j=r.begin(); j<r.end(); j++)
       {
         LBBox3fa bounds = empty;
         if (!mesh->linearBounds(j,t0t1,bounds)) continue;
-        const PrimRefMB prim(bounds,mesh->numTimeSegments(),mesh->numTimeSegments(),mesh->geomID,unsigned(j));
+        const PrimRefMB prim(bounds,mesh->numTimeSegments(),mesh->numTimeSegments(),ty,mesh->geomID,unsigned(j));
         pinfo.add_primref(prim);
         prims[k++] = prim;
       }

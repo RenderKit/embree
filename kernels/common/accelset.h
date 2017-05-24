@@ -226,6 +226,10 @@ namespace embree
         return true;
       }
 
+      __forceinline Leaf::Type leafType() {
+        return Leaf::TY_OBJECT;
+      }
+      
       void enabling ();
       void disabling();
 
