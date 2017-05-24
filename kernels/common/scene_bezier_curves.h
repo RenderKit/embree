@@ -320,6 +320,8 @@ namespace embree
       
       template<typename InputCurve3fa, typename OutputCurve3fa> void commit_helper();
 
+      virtual LBBox3fa virtualLinearBounds(size_t primID, const BBox1f& time_range) const;
+      virtual LBBox3fa virtualLinearBounds(const AffineSpace3fa& space, size_t primID, const BBox1f& time_range) const;
       virtual PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& src, size_t dst);
       virtual PrimInfoMB createPrimRefArrayMB(mvector<PrimRefMB>& prims, const BBox1f t0t1, const range<size_t>& src, size_t dst);
    

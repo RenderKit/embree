@@ -266,6 +266,22 @@ namespace embree
       native_vertices0 = native_vertices[0];
     }
 
+    LBBox3fa NativeCurvesISA::virtualLinearBounds(size_t primID, const BBox1f& time_range) const 
+    {
+      if (numTimeSteps == 1)
+        return LBBox3fa(bounds(primID));
+      else
+        return linearBounds(primID,time_range);
+    }
+
+    LBBox3fa NativeCurvesISA::virtualLinearBounds(const AffineSpace3fa& space, size_t primID, const BBox1f& time_range) const
+    {
+      if (numTimeSteps == 1)
+        return LBBox3fa(bounds(space,primID));
+      else
+        return linearBounds(space,primID,time_range);
+    }
+    
     PrimInfo NativeCurvesISA::createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& src, size_t dst)
     {
       PrimInfo pinfo(empty);

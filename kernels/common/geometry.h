@@ -72,6 +72,10 @@ namespace embree
     virtual LBBox3fa virtualLinearBounds(size_t primID, const BBox1f& time_range) const {
       throw std::runtime_error("virtualLinearBounds not implemented for this geometry type");
     }
+
+    virtual LBBox3fa virtualLinearBounds(const AffineSpace3fa& space, size_t primID, const BBox1f& time_range) const {
+      throw std::runtime_error("virtualLinearBounds(space) not implemented for this geometry type");
+    }
    
     virtual PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& src, size_t dst) {
       throw std::runtime_error("createPrimRefArray not implemented for this geometry type");

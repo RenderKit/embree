@@ -469,7 +469,7 @@ namespace embree
         /* build the hierarchy */
         auto root = BVHBuilderHairMSMBlur::build<NodeRef>
           (scene, prims0, pinfo,
-           RecalculatePrimRef<NativeCurves>(scene),
+           VirtualRecalculatePrimRef(scene),
            typename BVH::CreateAlloc(bvh),
            typename BVH::AlignedNodeMB4D::Create(),
            typename BVH::AlignedNodeMB4D::Set(),
