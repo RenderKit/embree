@@ -116,7 +116,7 @@ namespace embree
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
-      typedef typename BVH::NodeRecordMB NodeRecordMB;
+      typedef typename BVH::NodeRecordMB4D NodeRecordMB4D;
 
       BVH* bvh;
       Scene* scene;
@@ -155,7 +155,7 @@ namespace embree
         settings.maxLeafSize = BVH::maxLeafBlocks;
 
         /* creates a leaf node */
-        auto createLeaf = [&] (const SetMB& prims, const FastAllocator::CachedAllocator& alloc) -> NodeRecordMB
+        auto createLeaf = [&] (const SetMB& prims, const FastAllocator::CachedAllocator& alloc) -> NodeRecordMB4D
           {
             size_t start = prims.object_range.begin();
             size_t end   = prims.object_range.end();
@@ -167,7 +167,7 @@ namespace embree
             for (size_t i=0; i<items; i++)
               bounds.extend(accel[i].fillMB(prims.prims->data(),start,end,bvh->scene,prims.time_range));
             
-            return NodeRecordMB(node,bounds);
+            return NodeRecordMB4D(node,bounds,prims.time_range);
           };
 
         /* build the hierarchy */

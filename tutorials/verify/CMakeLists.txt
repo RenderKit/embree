@@ -15,7 +15,7 @@
 ## ======================================================================== ##
 
 ADD_EXECUTABLE(verify verify.cpp ../common/tutorial/application.cpp)
-TARGET_LINK_LIBRARIES(verify sys scenegraph embree)
+TARGET_LINK_LIBRARIES(verify sys math scenegraph embree)
 SET_PROPERTY(TARGET verify PROPERTY FOLDER tutorials)
 INSTALL(TARGETS verify DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
 

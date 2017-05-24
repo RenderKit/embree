@@ -14,18 +14,5 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-IF (TASKING_INTERNAL)
-  ADD_LIBRARY(tasking STATIC taskschedulerinternal.cpp)
-ENDIF()
-
-IF (TASKING_TBB)
-  ADD_LIBRARY(tasking STATIC taskschedulertbb.cpp)
-  TARGET_LINK_LIBRARIES(tasking sys math ${TBB_LIBRARIES})
-ENDIF()
-
-IF (TASKING_PPL)
-  ADD_LIBRARY(tasking STATIC taskschedulerppl.cpp)
-  TARGET_LINK_LIBRARIES(tasking sys math ${PPL_LIBRARIES})
-ENDIF()
-
-SET_PROPERTY(TARGET tasking PROPERTY FOLDER common)
+ADD_LIBRARY(math STATIC constants.cpp)
+SET_PROPERTY(TARGET math PROPERTY FOLDER common)
