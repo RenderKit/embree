@@ -133,11 +133,11 @@ namespace embree
       {
         enum
         {
-          SPLIT_OBJECT   =  0,
-          SPLIT_TEMPORAL = -1,
-          SPLIT_FALLBACK = -2,
-          SPLIT_NONE     = -3,
-          SPLIT_TYPE     = -4
+          SPLIT_OBJECT   = 0,
+          SPLIT_TEMPORAL = 1,
+          SPLIT_FALLBACK = 2,
+          SPLIT_NONE     = 3,
+          SPLIT_TYPE     = 4
         };
 
         /*! construct an invalid split by default */
