@@ -38,6 +38,7 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8MultiFastIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8MultiFastMBIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8MultiFastOBBIntersector1);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH8MultiFastOBBMBIntersector1);
 
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Line4iIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Line4iMBIntersector1);
@@ -296,6 +297,7 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8MultiFastIntersector1);
     SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8MultiFastMBIntersector1);
     SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8MultiFastOBBIntersector1);
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8MultiFastOBBMBIntersector1);
 
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Line4iIntersector1));
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Line4iMBIntersector1));
@@ -560,6 +562,17 @@ namespace embree
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1 = BVH8MultiFastOBBIntersector1();
+    return intersectors;
+  }
+
+  Accel::Intersectors BVH8Factory::BVH8MultiFastOBBMBIntersectors(BVH8* bvh)
+  {
+    CreateLeafIntersectorFast(bvh->device->enabled_cpu_features);
+    bvh->leaf_intersector = LeafIntersectorFast();
+
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1 = BVH8MultiFastOBBMBIntersector1();
     return intersectors;
   }
 
@@ -928,7 +941,8 @@ namespace embree
     BVH8* accel = new BVH8(Triangle4::type,scene); // FIXME: wrong type !!!!!!!
     //Accel::Intersectors intersectors = BVH8MultiFastIntersectors(accel);
     //Accel::Intersectors intersectors = BVH8MultiFastMBIntersectors(accel);
-    Accel::Intersectors intersectors = BVH8MultiFastOBBIntersectors(accel);
+    //Accel::Intersectors intersectors = BVH8MultiFastOBBIntersectors(accel);
+    Accel::Intersectors intersectors = BVH8MultiFastOBBMBIntersectors(accel);
     
     Builder* builder = nullptr;
     if (scene->device->tri_builder == "default") builder = BVH8MultiFastSceneBuilder  (accel,scene,ty);
