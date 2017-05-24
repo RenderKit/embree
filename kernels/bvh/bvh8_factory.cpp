@@ -939,10 +939,37 @@ namespace embree
     Geometry::Type ty = (Geometry::Type) (Geometry::TRIANGLE_MESH | Geometry::QUAD_MESH | Geometry::BEZIER_CURVES);
 
     BVH8* accel = new BVH8(Triangle4::type,scene); // FIXME: wrong type !!!!!!!
+
+    Accel::Intersectors intersectors;
+    const size_t tri1 = scene->getNumPrimitives(Geometry::TRIANGLE_MESH,false);
+    const size_t tri2 = scene->getNumPrimitives(Geometry::TRIANGLE_MESH,true)-tri1;
+    const size_t quad1 = scene->getNumPrimitives(Geometry::QUAD_MESH,false);
+    const size_t quad2 = scene->getNumPrimitives(Geometry::QUAD_MESH,true)-quad1;
+    const size_t curves1 = scene->getNumPrimitives(Geometry::BEZIER_CURVES,false);
+    const size_t curves2 = scene->getNumPrimitives(Geometry::BEZIER_CURVES,true)-curves1;
+
+    if (tri2+quad2+curves2)
+    {
+      const size_t tri = tri1+tri2;
+      const size_t quad = quad1+quad2;
+      const size_t curves = curves1+curves2;
+      if ((tri+quad) && !curves)
+        intersectors = BVH8MultiFastMBIntersectors(accel);
+      else
+        intersectors = BVH8MultiFastOBBMBIntersectors(accel);
+    }
+    else 
+    {
+      if ((tri1+quad1) && !curves1)
+        intersectors = BVH8MultiFastIntersectors(accel);
+      else 
+        intersectors = BVH8MultiFastOBBIntersectors(accel);
+    }
+    
     //Accel::Intersectors intersectors = BVH8MultiFastIntersectors(accel);
     //Accel::Intersectors intersectors = BVH8MultiFastMBIntersectors(accel);
     //Accel::Intersectors intersectors = BVH8MultiFastOBBIntersectors(accel);
-    Accel::Intersectors intersectors = BVH8MultiFastOBBMBIntersectors(accel);
+    //Accel::Intersectors intersectors = BVH8MultiFastOBBMBIntersectors(accel);
     
     Builder* builder = nullptr;
     if (scene->device->tri_builder == "default") builder = BVH8MultiFastSceneBuilder  (accel,scene,ty);

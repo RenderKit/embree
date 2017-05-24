@@ -71,9 +71,9 @@ namespace embree
     }
 
 #if defined (EMBREE_TARGET_AVX)    
-    if (device->tri_accel == "bvh8.multi.fast")
-      accels.add(device->bvh8_factory->BVH8MultiFast(this));
-    else
+    if (device->tri_accel == "bvh8.multi.fast") {
+      //accels.add(device->bvh8_factory->BVH8MultiFast(this));
+    } else
 #endif
     {
     createTriangleAccel();
@@ -761,6 +761,11 @@ namespace embree
 
   void Scene::commit_task ()
   {
+#if defined (EMBREE_TARGET_AVX) // FIXME: this hack only works for static scenes
+    if (device->tri_accel == "bvh8.multi.fast")
+      accels.add(device->bvh8_factory->BVH8MultiFast(this));
+#endif
+
     progress_monitor_counter = 0;
 
     /* call preCommit function of each geometry */
