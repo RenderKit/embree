@@ -329,7 +329,7 @@ namespace embree
             /* do temporal splits only if previous approaches failed to produce good SAH and the the time range is large enough */
             float temporal_split_sah = inf;
             typename HeuristicTemporal::Split temporal_split;
-            if (current.prims.isType(Leaf::TY_HAIR_MB) && bestSAH > 0.5f*leafSAH) {
+            if (bestSAH > 0.5f*leafSAH) {
               if (current.prims.time_range.size() > 1.01f/float(current.prims.max_num_time_segments)) {
                 temporal_split = temporalSplitHeuristic.find(current.prims, size_t(0));
                 temporal_split_sah = temporal_split.splitSAH();
