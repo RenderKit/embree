@@ -103,7 +103,7 @@ namespace embree
 
             /* create leaf for few primitives */
             if (pinfo.size() <= maxLeafSize)
-              return createLeaf(depth,pinfo,alloc);
+              return createLeaf(pinfo,alloc);
 
             /* fill all children by always splitting the largest one */
             PrimInfoRange children[MAX_BRANCHING_FACTOR];

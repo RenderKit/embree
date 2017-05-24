@@ -72,7 +72,7 @@ namespace embree
         settings.maxLeafSize = BVH::maxLeafBlocks;
 
         /* creates a leaf node */
-        auto createLeaf = [&] (size_t depth, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) -> NodeRef
+        auto createLeaf = [&] (const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) -> NodeRef
           {
             size_t start = set.begin();
             size_t items = set.size();
