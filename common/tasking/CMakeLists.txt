@@ -20,12 +20,12 @@ ENDIF()
 
 IF (TASKING_TBB)
   ADD_LIBRARY(tasking STATIC taskschedulertbb.cpp)
-  TARGET_LINK_LIBRARIES(tasking sys ${TBB_LIBRARIES})
+  TARGET_LINK_LIBRARIES(tasking sys math ${TBB_LIBRARIES})
 ENDIF()
 
 IF (TASKING_PPL)
   ADD_LIBRARY(tasking STATIC taskschedulerppl.cpp)
-  TARGET_LINK_LIBRARIES(tasking sys ${PPL_LIBRARIES})
+  TARGET_LINK_LIBRARIES(tasking sys math ${PPL_LIBRARIES})
 ENDIF()
 
 SET_PROPERTY(TARGET tasking PROPERTY FOLDER common)

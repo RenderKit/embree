@@ -323,7 +323,7 @@ IF (EMBREE_ISA_AVX512SKX AND EMBREE_LIBRARY_FILES_AVX512SKX)
   ADD_CUSTOM_TARGET(embree_avx512skx_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree_avx512skx> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS embree_avx512skx)
 ENDIF()
 
-TARGET_LINK_LIBRARIES(embree ${EMBREE_LIBRARIES} sys simd lexers tasking)
+TARGET_LINK_LIBRARIES(embree ${EMBREE_LIBRARIES} sys math simd lexers tasking)
 SET_TARGET_PROPERTIES(embree PROPERTIES INSTALL_RPATH "") # no RPATH for installed libembree
 
 IF (WIN32)
