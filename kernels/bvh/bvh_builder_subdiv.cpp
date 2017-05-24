@@ -58,9 +58,12 @@ namespace embree
 
 #define SUBGRID 9
 
-      static unsigned getNumEagerLeaves(unsigned width, unsigned height) {
-        const unsigned w = (width+SUBGRID-1)/SUBGRID;
-        const unsigned h = (height+SUBGRID-1)/SUBGRID;
+      static unsigned getNumEagerLeaves(unsigned pwidth, unsigned pheight) {
+        const unsigned swidth = pwidth-1;
+        const unsigned sheight = pheight-1;
+        const unsigned sblock = SUBGRID-1;
+        const unsigned w = (swidth+sblock-1)/sblock;
+        const unsigned h = (sheight+sblock-1)/sblock;
         return w*h;
       }
 
@@ -131,8 +134,8 @@ namespace embree
               p++;
             });
           }
-          return PrimInfo(p,g,empty,empty);
-        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty,empty); });
+          return PrimInfo(p,g,empty);
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty); });
         size_t numSubPatches = pinfo1.begin;
         if (numSubPatches == 0) {
           bvh->set(BVH::emptyNode,empty,0);
@@ -159,14 +162,14 @@ namespace embree
               size_t num = createEager(patch,scene,mesh,unsigned(f),alloc,&prims[base.end+s.end]);
               assert(num == getNumEagerLeaves(patch.grid_u_res,patch.grid_v_res));
               for (size_t i=0; i<num; i++)
-                s.add(prims[base.end+s.end].bounds());
+                s.add_center2(prims[base.end+s.end]);
               s.begin++;
             });
           }
           return s;
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
 
-        PrimInfo pinfo(pinfo3.end,pinfo3.geomBounds,pinfo3.centBounds);
+        PrimInfo pinfo(0,pinfo3.end,pinfo3);
         
         auto createLeaf = [&] (const range<size_t>& range, Allocator alloc) -> NodeRef {
           assert(range.size() == 1);
@@ -286,8 +289,8 @@ namespace embree
             s += count;
             sMB += count * mesh->numTimeSteps;
           }
-          return PrimInfo(s,sMB,empty,empty);
-        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty,empty); });
+          return PrimInfo(s,sMB,empty);
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty); });
 
         numSubPatches = pinfo.begin;
         numSubPatchesMB = pinfo.end;
@@ -302,7 +305,7 @@ namespace embree
             size_t patchIndexMB = prims[i].ID();
             BBox3fa bound = bounds[patchIndexMB];
             prims[i] = PrimRef(bound,patchIndexMB);
-            pinfo.add(bound);
+            pinfo.add_center2(prims[i]);
           }
           return pinfo;
         }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
@@ -358,8 +361,8 @@ namespace embree
               sMB += mesh->numTimeSteps;
             });
           }
-          return PrimInfo(s,sMB,empty,empty);
-        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty,empty); });
+          return PrimInfo(s,sMB,empty);
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty); });
 
         auto virtualprogress = BuildProgressMonitorFromClosure([&] (size_t dn) { 
             //bvh->scene->progressMonitor(double(dn)); // FIXME: triggers GCC compiler bug
@@ -423,8 +426,8 @@ namespace embree
               s++;
             });
           }
-          return PrimInfo(s,s,empty,empty);
-        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty,empty); });
+          return PrimInfo(s,s,empty);
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty); });
 
         /* refit BVH over patches */
         if (!refitter)
@@ -498,8 +501,8 @@ namespace embree
 
       __forceinline PrimRefMB operator() (const size_t patchIndexMB, const unsigned num_time_segments, const BBox1f time_range) const
       {
-        const LBBox3fa lbounds = LBBox3fa([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, time_range, num_time_segments);
-        const range<int> tbounds = getTimeSegmentRange(time_range, num_time_segments);
+        const LBBox3fa lbounds = LBBox3fa([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, time_range, (float)num_time_segments);
+        const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
         return PrimRefMB (lbounds, tbounds.size(), num_time_segments, patchIndexMB);
       }
 
@@ -508,7 +511,7 @@ namespace embree
       }
 
       __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range) const {
-        return LBBox3fa([&] (size_t itime) { return bounds[prim.ID()+itime]; }, time_range, prim.totalTimeSegments());
+        return LBBox3fa([&] (size_t itime) { return bounds[prim.ID()+itime]; }, time_range, (float)prim.totalTimeSegments());
       }
     };
 
@@ -658,7 +661,7 @@ namespace embree
           SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+0];
           NodeRef node = bvh->encodeLeaf((char*)&patch,1);
           size_t patchNumTimeSteps = scene->get<SubdivMesh>(patch.geomID())->numTimeSteps;
-          const LBBox3fa lbounds = LBBox3fa([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, current.prims.time_range, patchNumTimeSteps-1);
+          const LBBox3fa lbounds = LBBox3fa([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, current.prims.time_range, (float)(patchNumTimeSteps-1));
           return NodeRecordMB4D(node,lbounds,current.prims.time_range);
         };
 

@@ -62,15 +62,15 @@ namespace embree
     const __m128 a = _mm_set_ss(x);
 
 #if defined(__AVX512VL__)
-    const __m128 r = _mm_rcp14_ps(a);
+    const __m128 r = _mm_rcp14_ss(_mm_set_ss(0.0f),a);
 #else
-    const __m128 r = _mm_rcp_ps(a);
+    const __m128 r = _mm_rcp_ss(a);
 #endif
 
 #if defined(__AVX2__)
-    return _mm_cvtss_f32(_mm_mul_ps(r,_mm_fnmadd_ps(r, a, _mm_set_ss(2.0f))));
+    return _mm_cvtss_f32(_mm_mul_ss(r,_mm_fnmadd_ss(r, a, _mm_set_ss(2.0f))));
 #else
-    return _mm_cvtss_f32(_mm_mul_ps(r,_mm_sub_ps(_mm_set_ss(2.0f), _mm_mul_ps(r, a))));
+    return _mm_cvtss_f32(_mm_mul_ss(r,_mm_sub_ss(_mm_set_ss(2.0f), _mm_mul_ss(r, a))));
 #endif
   }
 
@@ -87,12 +87,12 @@ namespace embree
   {
     const __m128 a = _mm_set_ss(x);
 #if defined(__AVX512VL__)
-    const __m128 r = _mm_rsqrt14_ps(a);
+    const __m128 r = _mm_rsqrt14_ss(_mm_set_ss(0.0f),a);
 #else
-    const __m128 r = _mm_rsqrt_ps(a);
+    const __m128 r = _mm_rsqrt_ss(a);
 #endif
-    const __m128 c = _mm_add_ps(_mm_mul_ps(_mm_set_ps(1.5f, 1.5f, 1.5f, 1.5f), r),
-                                _mm_mul_ps(_mm_mul_ps(_mm_mul_ps(a, _mm_set_ps(-0.5f, -0.5f, -0.5f, -0.5f)), r), _mm_mul_ps(r, r)));
+    const __m128 c = _mm_add_ss(_mm_mul_ss(_mm_set_ss(1.5f), r),
+                                _mm_mul_ss(_mm_mul_ss(_mm_mul_ss(a, _mm_set_ss(-0.5f)), r), _mm_mul_ss(r, r)));
     return _mm_cvtss_f32(c);
   }
 

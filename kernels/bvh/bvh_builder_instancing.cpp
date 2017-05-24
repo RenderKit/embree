@@ -185,7 +185,7 @@ namespace embree
             if (object == nullptr) continue;
             if (object->getBounds().empty()) continue;
             int s = instance->geom->geomID; //slot(geom->getType() & ~Geometry::INSTANCE, geom->numTimeSteps);
-            refs[nextRef++] = BVHNBuilderInstancing::BuildRef(instance->local2world,object->getBounds(),object->root,instance->mask,unsigned(objectID),hash(instance->local2world),s,0,object->numPrimitives);
+            refs[nextRef++] = BVHNBuilderInstancing::BuildRef(instance->local2world,object->getBounds(),object->root,instance->mask,unsigned(objectID),hash(instance->local2world),s,0,(unsigned int)object->numPrimitives);
           }
         });
       refs.resize(nextRef);
@@ -226,8 +226,8 @@ namespace embree
           for (size_t i=r.begin(); i<r.end(); i++)
           {
             const BBox3fa bounds = refs[i].worldBounds();
-            pinfo.add(bounds);
             prims[i] = PrimRef(bounds,(size_t)&refs[i]);
+            pinfo.add_center2(prims[i]);
           }
           return pinfo;
         }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
@@ -235,7 +235,7 @@ namespace embree
       const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(),  PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {          
           PrimInfo pinfo(empty);
           for (size_t i=r.begin(); i<r.end(); i++) {
-            pinfo.add(refs[i].bounds());
+            pinfo.add_center2(refs[i]);
           }
           return pinfo;
         }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
@@ -282,7 +282,7 @@ namespace embree
             assert(range.size() == 1);
             BuildRef* ref = (BuildRef*)&refs[range.begin()];
             TransformNode* node = (TransformNode*) alloc.malloc0(sizeof(TransformNode),BVH::byteAlignment);
-            new (node) TransformNode(ref->local2world,ref->localBounds,ref->node,ref->mask,ref->instID,ref->xfmID,ref->type); // FIXME: rcp should be precalculated somewhere
+            new (node) TransformNode(ref->local2world,ref->localBounds,ref->node,ref->mask,ref->instID,ref->xfmID,ref->oldtype); // FIXME: rcp should be precalculated somewhere
             NodeRef noderef = BVH::encodeNode(node);
             noderef.setBarrier();
             return noderef;
@@ -305,7 +305,7 @@ namespace embree
             assert(range.size() == 1);
             BuildRef* ref = (BuildRef*) prims[range.begin()].ID();
             TransformNode* node = (TransformNode*) alloc.malloc0(sizeof(TransformNode),BVH::byteAlignment);
-            new (node) TransformNode(ref->local2world,ref->localBounds,ref->node,ref->mask,ref->instID,ref->xfmID,ref->type); // FIXME: rcp should be precalculated somewhere
+            new (node) TransformNode(ref->local2world,ref->localBounds,ref->node,ref->mask,ref->instID,ref->xfmID,ref->oldtype); // FIXME: rcp should be precalculated somewhere
             NodeRef noderef = BVH::encodeNode(node);
             noderef.setBarrier();
             return noderef;
@@ -384,7 +384,7 @@ namespace embree
           AlignedNode* node = ref.node.alignedNode();
           for (size_t i=0; i<N; i++) {
             if (node->child(i) == BVH::emptyNode) continue;
-            refs.push_back(BuildRef(ref.local2world,node->bounds(i),node->child(i),ref.mask,ref.instID,ref.xfmID,ref.type,ref.depth+1));
+            refs.push_back(BuildRef(ref.local2world,node->bounds(i),node->child(i),ref.mask,ref.instID,ref.xfmID,ref.oldtype,ref.depth+1));
             std::push_heap (refs.begin(),refs.end());
           }
         }
@@ -393,7 +393,7 @@ namespace embree
           AlignedNodeMB* node = ref.node.alignedNodeMB();
           for (size_t i=0; i<N; i++) {
             if (node->child(i) == BVH::emptyNode) continue;
-            refs.push_back(BuildRef(ref.local2world,node->bounds(i),node->child(i),ref.mask,ref.instID,ref.xfmID,ref.type,ref.depth+1));
+            refs.push_back(BuildRef(ref.local2world,node->bounds(i),node->child(i),ref.mask,ref.instID,ref.xfmID,ref.oldtype,ref.depth+1));
             std::push_heap (refs.begin(),refs.end());
           }
         }*/

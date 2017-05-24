@@ -100,9 +100,9 @@ namespace embree
             goto pop;
 
           /* select next child and push other children */
-          //BVHNNodeTraverser1<N,Nx,types>::traverseClosestHit(cur,mask,tNear,stackPtr,stackEnd);
+          BVHNNodeTraverser1<N,Nx,types>::traverseClosestHit(cur,mask,tNear,stackPtr,stackEnd);
 #if defined(__AVX512ER__)
-          BVHNNodeTraverser1Permute<N,Nx,types>::traverseClosestHit(cur,mask,tNear,stackPtr,stackEnd,vray.octantIndex);
+          //BVHNNodeTraverser1Permute<N,Nx,types>::traverseClosestHit(cur,mask,tNear,stackPtr,stackEnd,vray.octantIndex);
 #endif
 
         }
@@ -123,8 +123,6 @@ namespace embree
           stackPtr++;
         }
       }
-      PRINT(ray);
-      exit(0);
     }
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
@@ -181,7 +179,7 @@ namespace embree
       {
         const size_t valid_index = __bsf(valid_bits);
         const vbool<K> octant_valid = octant[valid_index] == octant;
-        valid_bits &= ~movemask(octant_valid);
+        valid_bits &= ~(size_t)movemask(octant_valid);
 
         /* allocate stack and push root node */
         vfloat<K> stack_near[stackSizeChunk];

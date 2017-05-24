@@ -26,7 +26,7 @@ namespace embree
       : troot(BVH4::emptyNode),
         time_steps(time_steps), width(x1-x0+1), height(y1-y0+1), dim_offset(width*height),
         _geomID(patches->geomID()), _primID(patches->primID()), 
-        gridOffset(gridOffset), gridBytes(unsigned(gridBytes)), rootOffset(unsigned(gridOffset+time_steps*gridBytes))
+        gridOffset(unsigned(gridOffset)), gridBytes(unsigned(gridBytes)), rootOffset(unsigned(gridOffset+time_steps*gridBytes))
     {
       /* the generate loops need padded arrays, thus first store into these temporary arrays */
       unsigned temp_size = width*height+VSIZEX;
@@ -97,7 +97,7 @@ namespace embree
         return 0;
 
       size_t bytes = nodeBytes;
-      for (size_t i=0; i<4; i++) {
+      for (int i=0; i<4; i++) {
         const int begin = time_range.begin() + (i+0)*time_range.size()/4;
         const int end   = time_range.begin() + (i+1)*time_range.size()/4;
         bytes += getTemporalBVHBytes(make_range(begin,end),nodeBytes);
@@ -215,7 +215,7 @@ namespace embree
       allocator += sizeof(BVH4::AlignedNodeMB4D);
       node->clear();
 
-      for (size_t i=0, j=0; i<4; i++) 
+      for (int i=0, j=0; i<4; i++) 
       {
         const int begin = time_range.begin() + (i+0)*time_range.size()/4;
         const int end   = time_range.begin() + (i+1)*time_range.size()/4;

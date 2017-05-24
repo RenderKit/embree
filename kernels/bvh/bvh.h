@@ -1265,8 +1265,9 @@ namespace embree
         init_dim(node.lower_y,node.upper_y,lower_y,upper_y,start.y,scale.y);
         init_dim(node.lower_z,node.upper_z,lower_z,upper_z,start.z,scale.z);
 
+#if 0        
         BBox3fa parent = node.bounds();
-        
+
         for (size_t i=0;i<8;i++)
         {
           const float sx = (i & 1) ? parent.lower.x : parent.upper.x;
@@ -1290,7 +1291,6 @@ namespace embree
             PRINT(disti[j] & 7);
             lookupTable[i] |= ((unsigned int)(disti[j] & 7) << 3*i);
           }
-          PING;
 #else
           lookupTable[i] = \
             ((unsigned int)5 << 3*0) | 
@@ -1303,6 +1303,7 @@ namespace embree
             ((unsigned int)6 << 3*7);
 #endif
         }
+#endif
       }
 
       __forceinline vfloat<N> dequantizeLowerX() const { return madd(vfloat<N>(vint<N>::load(lower_x)),scale.x,vfloat<N>(start.x)); }
@@ -1345,7 +1346,7 @@ namespace embree
 
       Vec3f start;
       Vec3f scale;
-      unsigned int lookupTable[8]; // 8 octants
+      //unsigned int lookupTable[8]; // 8 octants
     };
 
     /*! swap the children of two nodes */

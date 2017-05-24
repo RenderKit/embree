@@ -36,16 +36,6 @@ namespace embree
       __forceinline CentGeom (const BBox& geomBounds, const BBox3fa& centBounds) 
 	: geomBounds(geomBounds), centBounds(centBounds) {}
       
-      __forceinline void extend(const BBox& geomBounds_, const BBox3fa& centBounds_) {
-	geomBounds.extend(geomBounds_);
-	centBounds.extend(centBounds_);
-      }
-
-      __forceinline void reset() {
-	geomBounds = empty;
-	centBounds = empty;
-      }
-
       template<typename PrimRef> 
         __forceinline void extend_primref(const PrimRef& prim) 
       {
@@ -55,6 +45,14 @@ namespace embree
         centBounds.extend(center);
       }
 
+       template<typename PrimRef> 
+         __forceinline void extend_center2(const PrimRef& prim) 
+       {
+         BBox3fa bounds = prim.bounds();
+         geomBounds.extend(bounds);
+         centBounds.extend(bounds.center2());
+       }
+       
       __forceinline void extend(const BBox& geomBounds_) {
 	geomBounds.extend(geomBounds_);
 	centBounds.extend(center2(geomBounds_));
@@ -90,16 +88,8 @@ namespace embree
       __forceinline PrimInfoT (EmptyTy) 
 	: CentGeom<BBox>(empty), begin(0), end(0) {}
 
-      __forceinline void reset() {
-	CentGeom<BBox>::reset();
-	begin = end = 0;
-      }
-      
-      __forceinline PrimInfoT (size_t num, const BBox& geomBounds, const BBox3fa& centBounds) 
-	: CentGeom<BBox>(geomBounds,centBounds), begin(0), end(num) {}
-      
-      __forceinline PrimInfoT (size_t begin, size_t end, const BBox& geomBounds, const BBox3fa& centBounds) 
-	: CentGeom<BBox>(geomBounds,centBounds), begin(begin), end(end) {}
+      __forceinline PrimInfoT (size_t begin, size_t end, const CentGeomBBox3fa& centGeomBounds) 
+        : CentGeom<BBox>(centGeomBounds), begin(begin), end(end) {}
 
       template<typename PrimRef> 
         __forceinline void add_primref(const PrimRef& prim) 
@@ -108,29 +98,31 @@ namespace embree
         end++;
       }
 
-      __forceinline void add(const BBox& geomBounds_) {
+       template<typename PrimRef> 
+         __forceinline void add_center2(const PrimRef& prim) {
+         CentGeom<BBox>::extend_center2(prim);
+         end++;
+       }
+
+        template<typename PrimRef> 
+          __forceinline void add_center2(const PrimRef& prim, const size_t i) {
+          CentGeom<BBox>::extend_center2(prim);
+          end+=i;
+        }
+
+      /*__forceinline void add(const BBox& geomBounds_) {
 	CentGeom<BBox>::extend(geomBounds_);
 	end++;
       }
 
       __forceinline void add(const BBox& geomBounds_, const size_t i) {
-	CentGeom<BBox>::extend(geomBounds_,center2(geomBounds_));
+	CentGeom<BBox>::extend(geomBounds_);
 	end+=i;
-      }
-
-      __forceinline void add(const size_t i=1) {
-	end+=i;
-      }
-       
-      __forceinline void add(const BBox& geomBounds_, const BBox3fa& centBounds_, size_t num_ = 1) {
-	CentGeom<BBox>::extend(geomBounds_,centBounds_);
-	end += num_;
-      }
+        }*/
 
       __forceinline void merge(const PrimInfoT& other) 
       {
 	CentGeom<BBox>::merge(other);
-	//assert(begin == 0);
         begin += other.begin;
 	end += other.end;
       }

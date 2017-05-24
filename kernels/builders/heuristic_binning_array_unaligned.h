@@ -76,7 +76,7 @@ namespace embree
           const CentGeomBBox3fa bounds = parallel_reduce(set.begin(), set.end(), size_t(1024), size_t(4096), 
                                                          CentGeomBBox3fa(empty), computeBounds, CentGeomBBox3fa::merge2);
 
-          return PrimInfo(set.begin(),set.end(),bounds.geomBounds,bounds.centBounds);
+          return PrimInfo(set.begin(),set.end(),bounds);
         }
 
         struct BinBoundsAndCenter
@@ -156,16 +156,16 @@ namespace embree
           if (likely(set.size() < 10000))
             center = serial_partitioning(prims,begin,end,local_left,local_right,
                                          [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(ref,binBoundsAndCenter)[splitDim] < splitPos; },
-                                         [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });
+                                         [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend_center2(ref); });
           else
             center = parallel_partitioning(prims,begin,end,EmptyTy(),local_left,local_right,
                                            [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(ref,binBoundsAndCenter)[splitDim] < splitPos; },
-                                           [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); },
+                                           [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend_center2(ref); },
                                            [] (CentGeomBBox3fa& pinfo0,const CentGeomBBox3fa& pinfo1) { pinfo0.merge(pinfo1); },
                                            128);
           
-          new (&lset) PrimInfoRange(begin,center,local_left.geomBounds,local_left.centBounds);
-          new (&rset) PrimInfoRange(center,end,local_right.geomBounds,local_right.centBounds);
+          new (&lset) PrimInfoRange(begin,center,local_left);
+          new (&rset) PrimInfoRange(center,end,local_right);
           assert(area(lset.geomBounds) >= 0.0f);
           assert(area(rset.geomBounds) >= 0.0f);
         }
@@ -182,15 +182,15 @@ namespace embree
           const size_t end   = set.end();
           const size_t center = (begin + end)/2;
           
-          CentGeomBBox3fa left; left.reset();
+          CentGeomBBox3fa left(empty);
           for (size_t i=begin; i<center; i++)
-            left.extend(prims[i].bounds());
-          new (&lset) PrimInfoRange(begin,center,left.geomBounds,left.centBounds);
+            left.extend_center2(prims[i]);
+          new (&lset) PrimInfoRange(begin,center,left);
           
-          CentGeomBBox3fa right; right.reset();
+          CentGeomBBox3fa right(empty);
           for (size_t i=center; i<end; i++)
-            right.extend(prims[i].bounds());	
-          new (&rset) PrimInfoRange(center,end,right.geomBounds,right.centBounds);
+            right.extend_center2(prims[i]);
+          new (&rset) PrimInfoRange(center,end,right);
         }
         
       private:
@@ -226,7 +226,7 @@ namespace embree
             const NativeCurves* mesh = scene->get<NativeCurves>(geomID);
 
             const unsigned num_time_segments = mesh->numTimeSegments();
-            const range<int> tbounds = getTimeSegmentRange(set.time_range, num_time_segments);
+            const range<int> tbounds = getTimeSegmentRange(set.time_range, (float)num_time_segments);
             if (tbounds.size() == 0) continue;
 
             const size_t t = (tbounds.begin()+tbounds.end())/2;

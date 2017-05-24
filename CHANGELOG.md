@@ -1,14 +1,24 @@
 Version History
 ---------------
 
+### New Features in Embree 2.16.1
+-   Workaround for compile issues with Visual Studio 2017
+-   Fixed bug in subdiv code for static scenes when using tessellation
+    levels larger than 50.
+-   Fixed low performance when adding many geometries to a scene.
+-   Fixed high memory consumption issue when using instances in
+    dynamic scene (by disabling two level builder for user geometries
+    and instances).
+
 ### New Features in Embree 2.16.0
 -   Improved multi-segment motion blur support for scenes with
     different number of time steps per mesh.
--   New top level BVH builder that improves build times and bvh quality of two-level BVHs.
+-   New top level BVH builder that improves build times and BVH quality of two-level BVHs.
 -   Added support to enable only a single ISA. Previously code was
     always compiled for SSE2.
 -   Improved single ray tracing performance for incoherent rays on AVX512 architectures by 5-10%.
 -   Improved packet/hybrid ray tracing performance for incoherent rays on AVX512 architectures by 10-30%.
+-   Improved stream ray tracing performance for coherent rays in structure-of-pointers layout by 40-70%.
 -   BVH builder for compact scenes of triangles and quads needs
     essentially no temporary memory anymore. This doubles the
     maximal scene size that can be rendered in compact mode.
@@ -26,7 +36,7 @@ Version History
 -   Fixed a bug that would have caused a failure of the BVH builder
     for dynamic scenes when run on a machine with more then 1000 threads.
 -   Fixed a bug that could have been triggered when reaching the maximal number of
-    mappings under Linux (`vm.max_map_count`). This could have happend when creating a
+    mappings under Linux (`vm.max_map_count`). This could have happened when creating a
     large number of small static scenes.
 -   Added huge page support for Windows and MacOSX (experimental).
 -   Added support for Visual Studio 2017.
