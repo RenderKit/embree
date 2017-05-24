@@ -170,6 +170,10 @@ namespace embree
       return true;
     }
 
+    __forceinline Leaf::Type leafType() {
+      return numTimeSteps == 1 ? Leaf::TY_LINE : Leaf::TY_LINE_MB;
+    }
+
   public:
     APIBuffer<unsigned int> segments;                 //!< array of line segment indices
     BufferRefT<Vec3fa> vertices0;                     //!< fast access to first vertex buffer

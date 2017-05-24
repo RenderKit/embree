@@ -227,6 +227,10 @@ namespace embree
       }
     }
 
+    __forceinline Leaf::Type leafType() {
+      return numTimeSteps == 1 ? Leaf::TY_QUAD : Leaf::TY_QUAD_MB;
+    }
+
   public:
     APIBuffer<Quad> quads;                            //!< array of quads
     BufferRefT<Vec3fa> vertices0;                     //!< fast access to first vertex buffer

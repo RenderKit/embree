@@ -296,6 +296,10 @@ namespace embree
       }
     }
 
+    __forceinline Leaf::Type leafType() {
+      return numTimeSteps == 1 ? Leaf::TY_HAIR : Leaf::TY_HAIR_MB;
+    }
+
   public:
     APIBuffer<unsigned int> curves;                   //!< array of curve indices
     vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep

@@ -225,6 +225,10 @@ namespace embree
       }
     }
 
+    __forceinline Leaf::Type leafType() {
+      return numTimeSteps == 1 ? Leaf::TY_TRIANGLE : Leaf::TY_TRIANGLE_MB;
+    }
+
   public:
     APIBuffer<Triangle> triangles;                    //!< array of triangles
     BufferRefT<Vec3fa> vertices0;                     //!< fast access to first vertex buffer

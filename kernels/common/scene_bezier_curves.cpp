@@ -285,7 +285,7 @@ namespace embree
     PrimInfo NativeCurvesISA::createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& src, size_t dst)
     {
       PrimInfo pinfo(empty);
-      Leaf::Type ty = numTimeSteps == 1 ? Leaf::TY_HAIR : Leaf::TY_HAIR_MB; // FIXME: move to function
+      Leaf::Type ty = leafType();
       for (size_t j=src.begin(); j<src.end(); j++)
       {
         BBox3fa bounds = empty;
@@ -300,7 +300,7 @@ namespace embree
     PrimInfoMB NativeCurvesISA::createPrimRefArrayMB(mvector<PrimRefMB>& prims, const BBox1f t0t1, const range<size_t>& src, size_t dst) 
     {
       PrimInfoMB pinfo(empty);
-      Leaf::Type ty = numTimeSteps == 1 ? Leaf::TY_HAIR : Leaf::TY_HAIR_MB; // FIXME: move to function
+      Leaf::Type ty = leafType();
       for (size_t j=src.begin(); j<src.end(); j++)
       {
         LBBox3fa bounds = empty;
