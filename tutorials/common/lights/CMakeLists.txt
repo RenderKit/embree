@@ -22,7 +22,7 @@ ADD_LIBRARY(lights STATIC
   quad_light.cpp
   spot_light.cpp
 )
-TARGET_LINK_LIBRARIES(lights sys)
+TARGET_LINK_LIBRARIES(lights sys math)
 SET_PROPERTY(TARGET lights PROPERTY FOLDER tutorials/common)
 
 IF (EMBREE_ISPC_SUPPORT)
@@ -34,7 +34,7 @@ IF (EMBREE_ISPC_SUPPORT)
     quad_light.ispc
     spot_light.ispc
   )
-  TARGET_LINK_LIBRARIES(lights_ispc sys)
+  TARGET_LINK_LIBRARIES(lights_ispc sys math)
   SET_TARGET_PROPERTIES(lights_ispc PROPERTIES LINKER_LANGUAGE C)
   SET_PROPERTY(TARGET lights_ispc PROPERTY FOLDER tutorials/common)
 ENDIF()
