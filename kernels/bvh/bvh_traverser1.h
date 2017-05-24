@@ -59,8 +59,7 @@ namespace embree
       {
         assert(mask != 0);
         const BaseNode* node = cur.baseNode(types);
-        vllong8 children = vllong8::load((vllong8*)node->children);
-
+        vllong8 children( vllong<N>::loadu((void*)node->children) );
         children = vllong8::compact((int)mask,children);
         vfloat16 distance = tNear;
         distance = vfloat16::compact((int)mask,distance,tNear);
