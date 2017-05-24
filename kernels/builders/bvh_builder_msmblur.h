@@ -128,7 +128,7 @@ namespace embree
           const LBBox3fa lbounds = mesh->linearBounds(primID, time_range);
           const unsigned num_time_segments = mesh->numTimeSegments();
           const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
-          return PrimRefMB (lbounds, tbounds.size(), num_time_segments, geomID, primID);
+          return PrimRefMB (lbounds, tbounds.size(), num_time_segments, prim.type(), geomID, primID);
         }
 
         // __noinline is workaround for ICC16 bug under MacOSX
@@ -140,7 +140,7 @@ namespace embree
           const LBBox3fa lbounds = mesh->linearBounds(space, primID, time_range);
           const unsigned num_time_segments = mesh->numTimeSegments();
           const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
-          return PrimRefMB (lbounds, tbounds.size(), num_time_segments, geomID, primID);
+          return PrimRefMB (lbounds, tbounds.size(), num_time_segments, prim.type(), geomID, primID);
         }
 
         __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range) const {
@@ -179,7 +179,7 @@ namespace embree
         const LBBox3fa lbounds = geom->virtualLinearBounds(space, primID, time_range);
         const unsigned num_time_segments = geom->numTimeSegments();
         const range<int> tbounds = getTimeSegmentRange(time_range, (float)num_time_segments);
-        return PrimRefMB (lbounds, tbounds.size(), num_time_segments, geomID, primID);
+        return PrimRefMB (lbounds, tbounds.size(), num_time_segments, prim.type(), geomID, primID);
       }
 
       __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range) const {
