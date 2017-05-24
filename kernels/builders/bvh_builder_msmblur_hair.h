@@ -487,11 +487,15 @@ namespace embree
               {
                 parallel_for(size_t(0), children.size(), [&] (const range<size_t>& r) {
                     for (size_t i=r.begin(); i<r.end(); i++) {
-                      const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpaceMB(scene,children[i].prims);
-                      const LBBox3fa lbounds = children[i].prims.linearBounds(recalculatePrimRef,space);
                       const auto child = recurse(children[i],nullptr,true);
-                      setUnalignedNode(node,i,child.ref,space,lbounds,children[i].prims.time_range);
-                      _mm_mfence(); // to allow non-temporal stores during build
+                      if (children[i].prims.isType(Leaf::TY_HAIR_MB)) {
+                        const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpaceMB(scene,children[i].prims);
+                        const LBBox3fa lbounds = children[i].prims.linearBounds(recalculatePrimRef,space);
+                        setUnalignedNode(node,i,child.ref,space,lbounds,children[i].prims.time_range);
+                      } else {
+                        setUnalignedNode(node,i,child.ref,one,child.lbounds,children[i].prims.time_range);
+                      }
+                        _mm_mfence(); // to allow non-temporal stores during build
                     }
                   });
               }
@@ -499,10 +503,14 @@ namespace embree
               else
               {
                 for (size_t i=0; i<children.size(); i++) {
-                  const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpaceMB(scene,children[i].prims);
-                  const LBBox3fa lbounds = children[i].prims.linearBounds(recalculatePrimRef,space);
                   const auto child = recurse(children[i],alloc,false);
-                  setUnalignedNode(node,i,child.ref,space,lbounds,children[i].prims.time_range);
+                  if (children[i].prims.isType(Leaf::TY_HAIR_MB)) {
+                    const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpaceMB(scene,children[i].prims);
+                    const LBBox3fa lbounds = children[i].prims.linearBounds(recalculatePrimRef,space);
+                    setUnalignedNode(node,i,child.ref,space,lbounds,children[i].prims.time_range);
+                  } else {
+                    setUnalignedNode(node,i,child.ref,one,child.lbounds,children[i].prims.time_range);
+                  }
                 }
               }
 
