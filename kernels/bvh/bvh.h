@@ -1135,7 +1135,13 @@ namespace embree
     struct __aligned(32) QuantizedNode : public BaseNode
     {
       using BaseNode::children;
-#if 0
+
+/* slower than explicit 8 or 16 bit quantization */
+//#define COMPACT10BIT
+
+#ifndef COMPACT10BIT
+
+#if 1
       typedef unsigned char T;
       static const T MIN_QUAN = 0;
       static const T MAX_QUAN = 255;
@@ -1143,6 +1149,12 @@ namespace embree
       typedef unsigned short T;
       static const T MIN_QUAN = 0;
       static const T MAX_QUAN = 65535;
+#endif
+
+#else
+      typedef int T;
+      static const T MIN_QUAN = 0;
+      static const T MAX_QUAN = 1023;
 #endif
 
       struct Create2
@@ -1207,7 +1219,8 @@ namespace embree
                                          T lower_quant[N],
                                          T upper_quant[N],
                                          float &start,
-                                         float &scale)
+                                         float &scale,
+                                         const size_t dim)
       {
         const vbool<N> m_valid = lower != vfloat<N>(pos_inf);
         const float minF = reduce_min(lower);
@@ -1239,16 +1252,20 @@ namespace embree
         i_ceil_upper   = select(m_upper_correction,i_ceil_upper +1,i_ceil_upper);
 
         /* disable invalid lanes */
-        i_floor_lower = select(m_valid,i_floor_lower,MAX_QUAN);
+        i_floor_lower = select(m_valid,i_floor_lower,(int)MAX_QUAN);
         i_ceil_upper  = select(m_valid,i_ceil_upper ,0);
 
         /* store as uchar to memory */
+#ifdef COMPACT10BIT
+        i_floor_lower = vint<N>::loadu(lower_quant) | (i_floor_lower << (dim*10));
+        i_ceil_upper  = vint<N>::loadu(upper_quant) | (i_ceil_upper  << (dim*10));
+#endif
         vint<N>::store(lower_quant,i_floor_lower);
         vint<N>::store(upper_quant,i_ceil_upper);
         start = minF;
         scale = scale_diff;
 
-#if defined(DEBUG)
+#if defined(DEBUG) && !defined(COMPACT10BIT)
         vfloat<N> extract_lower( vint<N>::load(lower_quant) );
         vfloat<N> extract_upper( vint<N>::load(upper_quant) );
         vfloat<N> final_extract_lower = madd(extract_lower,scale_diff,minF);
@@ -1261,27 +1278,52 @@ namespace embree
       __forceinline void init(AlignedNode& node)
       {
         for (size_t i=0;i<N;i++) children[i] = emptyNode;
-        init_dim(node.lower_x,node.upper_x,lower_x,upper_x,start.x,scale.x);
-        init_dim(node.lower_y,node.upper_y,lower_y,upper_y,start.y,scale.y);
-        init_dim(node.lower_z,node.upper_z,lower_z,upper_z,start.z,scale.z);
+#ifdef COMPACT10BIT
+        lower_xyz = vint<N>(zero);
+        upper_xyz = vint<N>(zero);
+        init_dim(node.lower_x,node.upper_x,(T*)&lower_xyz,(T*)&upper_xyz,start.x,scale.x,0);
+        init_dim(node.lower_y,node.upper_y,(T*)&lower_xyz,(T*)&upper_xyz,start.y,scale.y,1);
+        init_dim(node.lower_z,node.upper_z,(T*)&lower_xyz,(T*)&upper_xyz,start.z,scale.z,2);
+#else
+        init_dim(node.lower_x,node.upper_x,lower_x,upper_x,start.x,scale.x,0);
+        init_dim(node.lower_y,node.upper_y,lower_y,upper_y,start.y,scale.y,1);
+        init_dim(node.lower_z,node.upper_z,lower_z,upper_z,start.z,scale.z,2);
+#endif
+
       }
 
+#ifdef COMPACT10BIT
+      __forceinline vfloat<N> dequantizeLowerX() const { return madd(vfloat<N>((lower_xyz >>  0) & 1023),scale.x,vfloat<N>(start.x)); }
+      __forceinline vfloat<N> dequantizeLowerY() const { return madd(vfloat<N>((lower_xyz >> 10) & 1023),scale.y,vfloat<N>(start.y)); }
+      __forceinline vfloat<N> dequantizeLowerZ() const { return madd(vfloat<N>((lower_xyz >> 20) & 1023),scale.z,vfloat<N>(start.z)); }
+      __forceinline vfloat<N> dequantizeUpperX() const { return madd(vfloat<N>((upper_xyz >>  0) & 1023),scale.x,vfloat<N>(start.x)); }
+      __forceinline vfloat<N> dequantizeUpperY() const { return madd(vfloat<N>((upper_xyz >> 10) & 1023),scale.y,vfloat<N>(start.y)); }
+      __forceinline vfloat<N> dequantizeUpperZ() const { return madd(vfloat<N>((upper_xyz >> 20) & 1023),scale.z,vfloat<N>(start.z)); }
+#else
       __forceinline vfloat<N> dequantizeLowerX() const { return madd(vfloat<N>(vint<N>::load(lower_x)),scale.x,vfloat<N>(start.x)); }
-
-      __forceinline vfloat<N> dequantizeUpperX() const { return madd(vfloat<N>(vint<N>::load(upper_x)),scale.x,vfloat<N>(start.x)); }
-
       __forceinline vfloat<N> dequantizeLowerY() const { return madd(vfloat<N>(vint<N>::load(lower_y)),scale.y,vfloat<N>(start.y)); }
-
-      __forceinline vfloat<N> dequantizeUpperY() const { return madd(vfloat<N>(vint<N>::load(upper_y)),scale.y,vfloat<N>(start.y)); }
-
       __forceinline vfloat<N> dequantizeLowerZ() const { return madd(vfloat<N>(vint<N>::load(lower_z)),scale.z,vfloat<N>(start.z)); }
-
+      __forceinline vfloat<N> dequantizeUpperX() const { return madd(vfloat<N>(vint<N>::load(upper_x)),scale.x,vfloat<N>(start.x)); }
+      __forceinline vfloat<N> dequantizeUpperY() const { return madd(vfloat<N>(vint<N>::load(upper_y)),scale.y,vfloat<N>(start.y)); }
       __forceinline vfloat<N> dequantizeUpperZ() const { return madd(vfloat<N>(vint<N>::load(upper_z)),scale.z,vfloat<N>(start.z)); }
+#endif
 
       template <int M>
       __forceinline vfloat<M> dequantize(const size_t offset) const { return vfloat<M>(vint<M>::loadu(all_planes+offset)); }
 
 #if defined(__AVX512F__)
+
+#ifdef COMPACT10BIT
+      template <int M>
+        __forceinline vfloat<M> dequantizeLowerUpperX(const vint<M> &p) const { return madd(vfloat<M>(permute(vint<M>::loadu(&lower_xyz) & 1023        ,p)),scale.x,vfloat<M>(start.x)); }
+
+      template <int M>
+        __forceinline vfloat<M> dequantizeLowerUpperY(const vint<M> &p) const { return madd(vfloat<M>(permute((vint<M>::loadu(&lower_xyz) >> 10) & 1023,p)),scale.y,vfloat<M>(start.y)); }
+
+      template <int M>
+        __forceinline vfloat<M> dequantizeLowerUpperZ(const vint<M> &p) const { return madd(vfloat<M>(permute((vint<M>::loadu(&lower_xyz) >> 20)       ,p)),scale.z,vfloat<M>(start.z)); }      
+
+#else
       template <int M>
       __forceinline vfloat<M> dequantizeLowerUpperX(const vint<M> &p) const { return madd(vfloat<M>(permute(vint<M>::load(lower_x),p)),scale.x,vfloat<M>(start.x)); }
 
@@ -1290,6 +1332,8 @@ namespace embree
 
       template <int M>
       __forceinline vfloat<M> dequantizeLowerUpperZ(const vint<M> &p) const { return madd(vfloat<M>(permute(vint<M>::load(lower_z),p)),scale.z,vfloat<M>(start.z)); }      
+#endif
+
 #endif
 
       union {
@@ -1302,11 +1346,16 @@ namespace embree
           T upper_z[N]; //!< 8bit discretized Z dimension of upper bounds of all N children
         };
         T all_planes[6*N];
+#ifdef COMPACT10BIT
+        struct {
+          vint<N> lower_xyz;
+          vint<N> upper_xyz;
+        };
+#endif
       };
 
       Vec3f start;
       Vec3f scale;
-      //unsigned int lookupTable[8]; // 8 octants
     };
 
     /*! swap the children of two nodes */
