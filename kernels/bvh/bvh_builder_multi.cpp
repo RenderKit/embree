@@ -605,8 +605,9 @@ namespace embree
                                 Bezier1iMB> createLeaf;
 
         if (!builder) 
+#if 1
           builder = new BVHNBuilderMulti<8>((BVH8*)bvh,scene,type,createLeaf,4,1.0f,4,inf); 
-#if 0
+#else
         {
           const size_t num1 = scene->getNumPrimitives(type,false);
           const size_t num2 = scene->getNumPrimitives(type,true);
