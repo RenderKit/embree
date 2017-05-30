@@ -332,11 +332,11 @@ namespace embree
               values[i] = createLargeLeaf(children[i],alloc);
             }
 
-            if (hasTimeSplits || useNodeMB(values,current.size())) 
+            if (hasTimeSplits || useNodeMB(values,children.size())) 
             {
               auto node = createNodeMB(alloc, hasTimeSplits);
               LBBox3fa gbounds = empty;
-              for (size_t i=0; i<current.size(); i++) {
+              for (size_t i=0; i<children.size(); i++) {
                 setNodeMB(node,i,values[i]);
                 gbounds.extend(values[i].lbounds);
               }
@@ -350,7 +350,7 @@ namespace embree
             {
               auto node = createNode(alloc);
               LBBox3fa gbounds = empty;
-              for (size_t i=0; i<current.size(); i++) {
+              for (size_t i=0; i<children.size(); i++) {
                 setNode(node,i,values[i].ref,values[i].lbounds.bounds());
                 gbounds.extend(values[i].lbounds);
               }
@@ -452,11 +452,11 @@ namespace embree
               }
             }
             
-            if (hasTimeSplits || useNodeMB(values,current.size())) 
+            if (hasTimeSplits || useNodeMB(values,children.size())) 
             {
               auto node = createNodeMB(alloc, hasTimeSplits);
               LBBox3fa gbounds = empty;
-              for (size_t i=0; i<current.size(); i++) {
+              for (size_t i=0; i<children.size(); i++) {
                 setNodeMB(node,i,values[i]);
                 gbounds.extend(values[i].lbounds);
               }
@@ -470,7 +470,7 @@ namespace embree
             {
               auto node = createNode(alloc);
               LBBox3fa gbounds = empty;
-              for (size_t i=0; i<current.size(); i++) {
+              for (size_t i=0; i<children.size(); i++) {
                 setNode(node,i,values[i].ref,values[i].lbounds.bounds());
                 gbounds.extend(values[i].lbounds);
               }
