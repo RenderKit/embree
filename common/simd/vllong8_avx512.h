@@ -56,6 +56,9 @@ namespace embree
       v = _mm512_set_epi64(a7,a6,a5,a4,a3,a2,a1,a0);
     }
    
+    __forceinline vllong(const vllong<4> &i) {
+      v = _mm512_broadcast_i64x4(i.v);
+    }
     
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
