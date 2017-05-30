@@ -554,6 +554,10 @@ namespace embree
                                             typename BVH::AlignedNode::Set(),
                                             typename BVH::AlignedNodeMB4D::Create(),
                                             typename BVH::AlignedNodeMB4D::Set(),
+                                            typename BVH::UnalignedNode::Create(),
+                                            typename BVH::UnalignedNode::Set(),
+                                            typename BVH::UnalignedNodeMB::Create(),
+                                            typename BVH::UnalignedNodeMB::Set(),
                                             [&] (const BVHBuilderMulti::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) { 
                                               return createLeaf(bvh,current.prims,alloc);
                                             },

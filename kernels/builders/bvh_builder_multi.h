@@ -81,6 +81,10 @@ namespace embree
         typename SetAlignedNodeFunc,
         typename CreateAlignedNodeMBFunc,
         typename SetAlignedNodeMBFunc,
+        typename CreateUnalignedNodeFunc,
+        typename SetUnalignedNodeFunc,
+        typename CreateUnalignedNodeMBFunc,
+        typename SetUnalignedNodeMBFunc,
         typename CreateLeafFunc,
         typename ProgressMonitor>
 
@@ -102,17 +106,24 @@ namespace embree
           BuilderT (MemoryMonitorInterface* device,
                     const RecalculatePrimRef recalculatePrimRef,
                     const CreateAllocFunc createAlloc,
-                     const CreateAlignedNodeFunc createAlignedNode,
+                    const CreateAlignedNodeFunc createAlignedNode,
                     const SetAlignedNodeFunc setAlignedNode,
                     const CreateAlignedNodeMBFunc createAlignedNodeMB,
                     const SetAlignedNodeMBFunc setAlignedNodeMB,
+                    const CreateUnalignedNodeFunc createUnalignedNode,
+                    const SetUnalignedNodeFunc setUnalignedNode,
+                    const CreateUnalignedNodeMBFunc createUnalignedNodeMB,
+                    const SetUnalignedNodeMBFunc setUnalignedNodeMB,
                     const CreateLeafFunc createLeaf,
                     const ProgressMonitor progressMonitor,
                     const Settings& settings)
             : Settings(settings),
             heuristicObjectSplit(),
             heuristicTemporalSplit(device, recalculatePrimRef),
-            recalculatePrimRef(recalculatePrimRef), createAlloc(createAlloc), createAlignedNode(createAlignedNode), setAlignedNode(setAlignedNode), createAlignedNodeMB(createAlignedNodeMB), setAlignedNodeMB(setAlignedNodeMB), createLeaf(createLeaf),
+            recalculatePrimRef(recalculatePrimRef), createAlloc(createAlloc), 
+            createAlignedNode(createAlignedNode), setAlignedNode(setAlignedNode), createAlignedNodeMB(createAlignedNodeMB), setAlignedNodeMB(setAlignedNodeMB), 
+            createUnalignedNode(createUnalignedNode), setUnalignedNode(setUnalignedNode), createUnalignedNodeMB(createUnalignedNodeMB), setUnalignedNodeMB(setUnalignedNodeMB), 
+            createLeaf(createLeaf),
             progressMonitor(progressMonitor)
           {
             if (branchingFactor > MAX_BRANCHING_FACTOR)
@@ -496,8 +507,12 @@ namespace embree
           const CreateAllocFunc createAlloc;
           const CreateAlignedNodeFunc createAlignedNode;
           const SetAlignedNodeFunc setAlignedNode;
-           const CreateAlignedNodeMBFunc createAlignedNodeMB;
+          const CreateAlignedNodeMBFunc createAlignedNodeMB;
           const SetAlignedNodeMBFunc setAlignedNodeMB;
+          const CreateUnalignedNodeFunc createUnalignedNode;
+          const SetUnalignedNodeFunc setUnalignedNode;
+          const CreateUnalignedNodeMBFunc createUnalignedNodeMB;
+          const SetUnalignedNodeMBFunc setUnalignedNodeMB;
           const CreateLeafFunc createLeaf;
           const ProgressMonitor progressMonitor;
         };
@@ -509,6 +524,10 @@ namespace embree
         typename SetAlignedNodeFunc,
         typename CreateAlignedNodeMBFunc,
         typename SetAlignedNodeMBFunc,
+        typename CreateUnalignedNodeFunc,
+        typename SetUnalignedNodeFunc,
+        typename CreateUnalignedNodeMBFunc,
+        typename SetUnalignedNodeMBFunc,
         typename CreateLeafFunc,
         typename ProgressMonitorFunc>
 
@@ -521,6 +540,10 @@ namespace embree
                                                       const SetAlignedNodeFunc setAlignedNode,
                                                       const CreateAlignedNodeMBFunc createAlignedNodeMB,
                                                       const SetAlignedNodeMBFunc setAlignedNodeMB,
+                                                      const CreateUnalignedNodeFunc createUnalignedNode,
+                                                      const SetUnalignedNodeFunc setUnalignedNode,
+                                                      const CreateUnalignedNodeMBFunc createUnalignedNodeMB,
+                                                      const SetUnalignedNodeMBFunc setUnalignedNodeMB,
                                                       const CreateLeafFunc createLeaf,
                                                       const ProgressMonitorFunc progressMonitor,
                                                       const Settings& settings)
@@ -534,6 +557,10 @@ namespace embree
             SetAlignedNodeFunc,
             CreateAlignedNodeMBFunc,
             SetAlignedNodeMBFunc,
+            CreateUnalignedNodeFunc,
+            SetUnalignedNodeFunc,
+            CreateUnalignedNodeMBFunc,
+            SetUnalignedNodeMBFunc,
             CreateLeafFunc,
             ProgressMonitorFunc> Builder;
 
@@ -544,6 +571,10 @@ namespace embree
                           setAlignedNode,
                           createAlignedNodeMB,
                           setAlignedNodeMB,
+                          createUnalignedNode,
+                          setUnalignedNode,
+                          createUnalignedNodeMB,
+                          setUnalignedNodeMB,
                           createLeaf,
                           progressMonitor,
                           settings);
