@@ -111,7 +111,7 @@ namespace embree
         }
 
         size_t bytes(BVH* bvh) const {
-          return numPrimBlocks*bvh->primTy.bytes;
+          return numPrimBlocks*bvh->primTy->bytes;
         }
 
         size_t size() const {
@@ -119,7 +119,7 @@ namespace embree
         }
 
         double fillRateNom (BVH* bvh) const { return double(numPrims);  }
-        double fillRateDen (BVH* bvh) const { return double(bvh->primTy.blockSize*numPrimBlocks);  }
+        double fillRateDen (BVH* bvh) const { return double(bvh->primTy->blockSize*numPrimBlocks);  }
         double fillRate    (BVH* bvh) const { return fillRateNom(bvh)/fillRateDen(bvh); }
 
         __forceinline friend LeafStat operator+ ( const LeafStat& a, const LeafStat& b)
