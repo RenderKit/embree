@@ -547,7 +547,7 @@ namespace embree
         
         /* build hierarchy */
         auto root =
-          BVHBuilderMulti::build<NodeRef>(prims,pinfo,scene->device,
+          BVHBuilderMulti::build<NodeRef>(prims,pinfo,scene,
                                             VirtualRecalculatePrimRef(scene),
                                             typename BVH::CreateAlloc(bvh),
                                             typename BVH::AlignedNode::Create(),
@@ -558,8 +558,8 @@ namespace embree
                                             typename BVH::UnalignedNode::Set(),
                                             typename BVH::UnalignedNodeMB::Create(),
                                             typename BVH::UnalignedNodeMB::Set(),
-                                            [&] (const BVHBuilderMulti::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) { 
-                                              return createLeaf(bvh,current.prims,alloc);
+                                            [&] (const SetMB& prims, const FastAllocator::CachedAllocator& alloc) { 
+                                              return createLeaf(bvh,prims,alloc);
                                             },
                                             bvh->scene->progressInterface,
                                             settings);

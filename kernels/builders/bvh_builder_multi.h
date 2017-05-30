@@ -103,7 +103,7 @@ namespace embree
 
         public:
 
-          BuilderT (MemoryMonitorInterface* device,
+          BuilderT (Scene* scene,
                     const RecalculatePrimRef recalculatePrimRef,
                     const CreateAllocFunc createAlloc,
                     const CreateAlignedNodeFunc createAlignedNode,
@@ -118,8 +118,9 @@ namespace embree
                     const ProgressMonitor progressMonitor,
                     const Settings& settings)
             : Settings(settings),
+            scene(scene),
             heuristicObjectSplit(),
-            heuristicTemporalSplit(device, recalculatePrimRef),
+            heuristicTemporalSplit(scene->device, recalculatePrimRef),
             recalculatePrimRef(recalculatePrimRef), createAlloc(createAlloc), 
             createAlignedNode(createAlignedNode), setAlignedNode(setAlignedNode), createAlignedNodeMB(createAlignedNodeMB), setAlignedNodeMB(setAlignedNodeMB), 
             createUnalignedNode(createUnalignedNode), setUnalignedNode(setUnalignedNode), createUnalignedNodeMB(createUnalignedNodeMB), setUnalignedNodeMB(setUnalignedNodeMB), 
@@ -283,7 +284,7 @@ namespace embree
 
             /* create leaf for few primitives */
             if (current.split.data == Split::SPLIT_NONE)
-              return createLeaf(current,alloc);
+              return createLeaf(current.prims,alloc);
 
             /* fill all children by always splitting the largest one */
             bool hasTimeSplits = false;
@@ -369,9 +370,9 @@ namespace embree
             //if (current.isType(Leaf::TY_HAIR)) {
             //}
 
-            /*if (current.isType(Leaf::TY_HAIR,Leaf::TY_HAIR_MB)) 
+            if (current.prims.isType(Leaf::TY_HAIR,Leaf::TY_HAIR_MB)) 
             {
-              auto root = BVHBuilderHairMSMBlur::build<NodeRef>
+              return BVHBuilderHairMSMBlur::build<NodeRef>
                 (scene, *current.prims.prims, current.prims,
                  recalculatePrimRef,
                  createAlloc,
@@ -381,8 +382,8 @@ namespace embree
                  setUnalignedNodeMB,
                  createLeaf,
                  progressMonitor,
-                 settings);
-                 }*/
+                 *this);
+            }
 
             /* get thread local allocator */
             if (!alloc)
@@ -501,6 +502,7 @@ namespace embree
           }
 
         private:
+          Scene* scene;
           HeuristicArrayBinningMB<PrimRefMB,MBLUR_NUM_OBJECT_BINS> heuristicObjectSplit;
           HeuristicMBlurTemporalSplit<PrimRefMB,RecalculatePrimRef,MBLUR_NUM_TEMPORAL_BINS> heuristicTemporalSplit;
           const RecalculatePrimRef recalculatePrimRef;
@@ -533,7 +535,7 @@ namespace embree
 
         static const BVHNodeRecordMB4D<NodeRef> build(mvector<PrimRefMB>& prims,
                                                       const PrimInfoMB& pinfo,
-                                                      MemoryMonitorInterface* device,
+                                                      Scene* scene,
                                                       const RecalculatePrimRef recalculatePrimRef,
                                                       const CreateAllocFunc createAlloc,
                                                       const CreateAlignedNodeFunc createAlignedNode,
@@ -564,7 +566,7 @@ namespace embree
             CreateLeafFunc,
             ProgressMonitorFunc> Builder;
 
-          Builder builder(device,
+          Builder builder(scene,
                           recalculatePrimRef,
                           createAlloc,
                           createAlignedNode,
