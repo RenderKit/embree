@@ -208,7 +208,7 @@ namespace embree
       for (size_t i=0; i<accelN->accels.size(); i++) {
         if (accelN->accels[i]->intersectors.ptr->type == AccelData::TY_BVH4) {
           bvh4 = (BVH4*)accelN->accels[i]->intersectors.ptr;
-          if (bvh4->primTy.name == "triangle4v") break;
+          if (bvh4->primTy->name == "triangle4v") break;
           bvh4 = nullptr;
         }
       }

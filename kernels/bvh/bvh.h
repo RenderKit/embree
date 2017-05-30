@@ -1468,7 +1468,7 @@ namespace embree
 
     /*! bvh type information */
   public:
-    const PrimitiveType& primTy;       //!< primitive type stored in the BVH
+    const PrimitiveType* primTy;       //!< primitive type stored in the BVH
 
     /*! bvh data */
   public:
