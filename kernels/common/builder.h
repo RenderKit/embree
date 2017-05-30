@@ -23,6 +23,27 @@ namespace embree
 {
 #define MODE_HIGH_QUALITY (1<<8)
 
+  /*! settings for msmblur builder */
+  struct CommonBuildSettings
+  {
+    /*! default settings */
+    CommonBuildSettings ()
+    : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8),
+      travCost(1.0f), intCost(1.0f), singleLeafTimeSegment(false),
+      singleThreadThreshold(1024) {}
+    
+  public:
+    size_t branchingFactor;  //!< branching factor of BVH to build
+    size_t maxDepth;         //!< maximal depth of BVH to build
+    size_t logBlockSize;     //!< log2 of blocksize for SAH heuristic
+    size_t minLeafSize;      //!< minimal size of a leaf
+    size_t maxLeafSize;      //!< maximal size of a leaf
+    float travCost;          //!< estimated cost of one traversal step
+    float intCost;           //!< estimated cost of one primitive intersection
+    bool singleLeafTimeSegment; //!< split time to single time range
+    size_t singleThreadThreshold; //!< threshold when we switch to single threaded build
+  };
+
   /*! virtual interface for all hierarchy builders */
   class Builder : public RefCount {
   public:
