@@ -77,10 +77,10 @@ namespace embree
         typename RecalculatePrimRef,
         typename Allocator,
         typename CreateAllocFunc,
-        typename CreateNodeFunc,
-        typename SetNodeFunc,
-        typename CreateNodeMBFunc,
-        typename SetNodeMBFunc,
+        typename CreateAlignedNodeFunc,
+        typename SetAlignedNodeFunc,
+        typename CreateAlignedNodeMBFunc,
+        typename SetAlignedNodeMBFunc,
         typename CreateLeafFunc,
         typename ProgressMonitor>
 
@@ -102,17 +102,17 @@ namespace embree
           BuilderT (MemoryMonitorInterface* device,
                     const RecalculatePrimRef recalculatePrimRef,
                     const CreateAllocFunc createAlloc,
-                     const CreateNodeFunc createNode,
-                    const SetNodeFunc setNode,
-                    const CreateNodeMBFunc createNodeMB,
-                    const SetNodeMBFunc setNodeMB,
+                     const CreateAlignedNodeFunc createAlignedNode,
+                    const SetAlignedNodeFunc setAlignedNode,
+                    const CreateAlignedNodeMBFunc createAlignedNodeMB,
+                    const SetAlignedNodeMBFunc setAlignedNodeMB,
                     const CreateLeafFunc createLeaf,
                     const ProgressMonitor progressMonitor,
                     const Settings& settings)
             : Settings(settings),
             heuristicObjectSplit(),
             heuristicTemporalSplit(device, recalculatePrimRef),
-            recalculatePrimRef(recalculatePrimRef), createAlloc(createAlloc), createNode(createNode), setNode(setNode), createNodeMB(createNodeMB), setNodeMB(setNodeMB), createLeaf(createLeaf),
+            recalculatePrimRef(recalculatePrimRef), createAlloc(createAlloc), createAlignedNode(createAlignedNode), setAlignedNode(setAlignedNode), createAlignedNodeMB(createAlignedNodeMB), setAlignedNodeMB(setAlignedNodeMB), createLeaf(createLeaf),
             progressMonitor(progressMonitor)
           {
             if (branchingFactor > MAX_BRANCHING_FACTOR)
@@ -318,10 +318,10 @@ namespace embree
 
             if (hasTimeSplits || useNodeMB(values,children.size())) 
             {
-              auto node = createNodeMB(alloc, hasTimeSplits);
+              auto node = createAlignedNodeMB(alloc, hasTimeSplits);
               LBBox3fa gbounds = empty;
               for (size_t i=0; i<children.size(); i++) {
-                setNodeMB(node,i,values[i]);
+                setAlignedNodeMB(node,i,values[i]);
                 gbounds.extend(values[i].lbounds);
               }
               
@@ -332,10 +332,10 @@ namespace embree
             }
             else
             {
-              auto node = createNode(alloc);
+              auto node = createAlignedNode(alloc);
               LBBox3fa gbounds = empty;
               for (size_t i=0; i<children.size(); i++) {
-                setNode(node,i,values[i].ref,values[i].lbounds.bounds());
+                setAlignedNode(node,i,values[i].ref,values[i].lbounds.bounds());
                 gbounds.extend(values[i].lbounds);
               }
               return NodeRecordMB4D(node,gbounds,current.prims.time_range);   
@@ -364,8 +364,8 @@ namespace embree
                 (scene, *current.prims.prims, current.prims,
                  recalculatePrimRef,
                  createAlloc,
-                 createNodeMB,
-                 setNodeMB,
+                 createAlignedNodeMB,
+                 setAlignedNodeMB,
                  createUnalignedNodeMB,
                  setUnalignedNodeMB,
                  createLeaf,
@@ -456,10 +456,10 @@ namespace embree
             
             if (hasTimeSplits || useNodeMB(values,children.size())) 
             {
-              auto node = createNodeMB(alloc, hasTimeSplits);
+              auto node = createAlignedNodeMB(alloc, hasTimeSplits);
               LBBox3fa gbounds = empty;
               for (size_t i=0; i<children.size(); i++) {
-                setNodeMB(node,i,values[i]);
+                setAlignedNodeMB(node,i,values[i]);
                 gbounds.extend(values[i].lbounds);
               }
               
@@ -470,10 +470,10 @@ namespace embree
             }
             else
             {
-              auto node = createNode(alloc);
+              auto node = createAlignedNode(alloc);
               LBBox3fa gbounds = empty;
               for (size_t i=0; i<children.size(); i++) {
-                setNode(node,i,values[i].ref,values[i].lbounds.bounds());
+                setAlignedNode(node,i,values[i].ref,values[i].lbounds.bounds());
                 gbounds.extend(values[i].lbounds);
               }
               return NodeRecordMB4D(node,gbounds,current.prims.time_range);   
@@ -494,10 +494,10 @@ namespace embree
           HeuristicMBlurTemporalSplit<PrimRefMB,RecalculatePrimRef,MBLUR_NUM_TEMPORAL_BINS> heuristicTemporalSplit;
           const RecalculatePrimRef recalculatePrimRef;
           const CreateAllocFunc createAlloc;
-          const CreateNodeFunc createNode;
-          const SetNodeFunc setNode;
-           const CreateNodeMBFunc createNodeMB;
-          const SetNodeMBFunc setNodeMB;
+          const CreateAlignedNodeFunc createAlignedNode;
+          const SetAlignedNodeFunc setAlignedNode;
+           const CreateAlignedNodeMBFunc createAlignedNodeMB;
+          const SetAlignedNodeMBFunc setAlignedNodeMB;
           const CreateLeafFunc createLeaf;
           const ProgressMonitor progressMonitor;
         };
@@ -505,10 +505,10 @@ namespace embree
       template<typename NodeRef,
         typename RecalculatePrimRef,
         typename CreateAllocFunc,
-        typename CreateNodeFunc,
-        typename SetNodeFunc,
-        typename CreateNodeMBFunc,
-        typename SetNodeMBFunc,
+        typename CreateAlignedNodeFunc,
+        typename SetAlignedNodeFunc,
+        typename CreateAlignedNodeMBFunc,
+        typename SetAlignedNodeMBFunc,
         typename CreateLeafFunc,
         typename ProgressMonitorFunc>
 
@@ -517,10 +517,10 @@ namespace embree
                                                       MemoryMonitorInterface* device,
                                                       const RecalculatePrimRef recalculatePrimRef,
                                                       const CreateAllocFunc createAlloc,
-                                                      const CreateNodeFunc createNode,
-                                                      const SetNodeFunc setNode,
-                                                      const CreateNodeMBFunc createNodeMB,
-                                                      const SetNodeMBFunc setNodeMB,
+                                                      const CreateAlignedNodeFunc createAlignedNode,
+                                                      const SetAlignedNodeFunc setAlignedNode,
+                                                      const CreateAlignedNodeMBFunc createAlignedNodeMB,
+                                                      const SetAlignedNodeMBFunc setAlignedNodeMB,
                                                       const CreateLeafFunc createLeaf,
                                                       const ProgressMonitorFunc progressMonitor,
                                                       const Settings& settings)
@@ -530,20 +530,20 @@ namespace embree
             RecalculatePrimRef,
             decltype(createAlloc()),
             CreateAllocFunc,
-            CreateNodeFunc,
-            SetNodeFunc,
-            CreateNodeMBFunc,
-            SetNodeMBFunc,
+            CreateAlignedNodeFunc,
+            SetAlignedNodeFunc,
+            CreateAlignedNodeMBFunc,
+            SetAlignedNodeMBFunc,
             CreateLeafFunc,
             ProgressMonitorFunc> Builder;
 
           Builder builder(device,
                           recalculatePrimRef,
                           createAlloc,
-                          createNode,
-                          setNode,
-                          createNodeMB,
-                          setNodeMB,
+                          createAlignedNode,
+                          setAlignedNode,
+                          createAlignedNodeMB,
+                          setAlignedNodeMB,
                           createLeaf,
                           progressMonitor,
                           settings);
