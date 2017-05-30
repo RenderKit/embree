@@ -58,14 +58,18 @@ namespace embree
     struct VirtualCreateLeaf
     {
       typedef BVHN<N> BVH;
-      virtual size_t operator() (BVH* bvh, PrimRef* prims, const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) const = 0;
+      typedef typename BVH::NodeRecordMB4D NodeRecordMB4D;
+      
+      virtual size_t               operator() (BVH* bvh, PrimRef* prims, const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) const = 0;
+      virtual const NodeRecordMB4D operator() (BVH* bvh, const SetMB& set,                           const FastAllocator::CachedAllocator& alloc) const = 0;
     };
 
     template<int N, typename Primitive0, typename Primitive1, typename Primitive2, typename Primitive3, typename Primitive4, typename Primitive5>
     struct CreateMultiLeaf6 : public VirtualCreateLeaf<N>
     {
       typedef BVHN<N> BVH;
-      
+      typedef typename BVH::NodeRecordMB4D NodeRecordMB4D;
+            
       size_t operator() (BVH* bvh, PrimRef* prims, const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) const
       {
         assert(range.size() > 0);
@@ -80,7 +84,28 @@ namespace embree
         default: assert(false); return BVH::emptyNode;
         }
       }
+
+      __forceinline const NodeRecordMB4D operator() (BVH* bvh, const SetMB& set, const FastAllocator::CachedAllocator& alloc) const
+      {
+        assert(set.object_range.size() > 0);
+        const Leaf::Type ty = (*set.prims)[set.object_range.begin()].type();
+        switch (ty) {
+        case 0: return Primitive0::createLeafMB(set,alloc,bvh);
+        case 1: return Primitive1::createLeafMB(set,alloc,bvh);
+        case 2: return Primitive2::createLeafMB(set,alloc,bvh);
+        case 3: return Primitive3::createLeafMB(set,alloc,bvh);
+        case 4: return Primitive4::createLeafMB(set,alloc,bvh);
+        case 5: return Primitive5::createLeafMB(set,alloc,bvh);
+        default: assert(false); return NodeRecordMB4D(BVH::emptyNode,empty,empty);
+        }
+      }
     };
+
+    
+    /************************************************************************************/
+    /************************************************************************************/
+    /************************************************************************************/
+    /************************************************************************************/
 
     template<int N>
     struct BVHNBuilderMultiSAH : public Builder
@@ -206,39 +231,6 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 
-    template<int N>
-    struct VirtualCreateLeafMB
-    {
-      typedef BVHN<N> BVH;
-      typedef typename BVH::NodeRecordMB4D NodeRecordMB4D;
-
-      virtual const NodeRecordMB4D operator() (BVH* bvh, const SetMB& set, const FastAllocator::CachedAllocator& alloc) const = 0;
-    };
-
-    template<int N, typename Primitive0, typename Primitive1, typename Primitive2, typename Primitive3, typename Primitive4, typename Primitive5>
-    struct CreateMSMBlurMultiLeaf6 : public VirtualCreateLeafMB<N>
-    {
-      typedef BVHN<N> BVH;
-      typedef typename BVH::NodeRecordMB4D NodeRecordMB4D;
-
-      __forceinline const NodeRecordMB4D operator() (BVH* bvh, const SetMB& set, const FastAllocator::CachedAllocator& alloc) const
-      {
-        assert(set.object_range.size() > 0);
-        const Leaf::Type ty = (*set.prims)[set.object_range.begin()].type();
-        switch (ty) {
-        case 0: return Primitive0::createLeafMB(set,alloc,bvh);
-        case 1: return Primitive1::createLeafMB(set,alloc,bvh);
-        case 2: return Primitive2::createLeafMB(set,alloc,bvh);
-        case 3: return Primitive3::createLeafMB(set,alloc,bvh);
-        case 4: return Primitive4::createLeafMB(set,alloc,bvh);
-        case 5: return Primitive5::createLeafMB(set,alloc,bvh);
-        default: assert(false); return NodeRecordMB4D(BVH::emptyNode,empty,empty);
-        }
-      }
-
-      BVH* bvh;
-    };
-
     /* Motion blur BVH with 4D nodes and internal time splits */
     template<int N>
     struct BVHNMultiBuilderMBlurSAH : public Builder
@@ -251,13 +243,13 @@ namespace embree
       BVH* bvh;
       Scene* scene;
       Geometry::Type type;
-      const VirtualCreateLeafMB<N>& createLeaf;
+      const VirtualCreateLeaf<N>& createLeaf;
       const size_t sahBlockSize;
       const float intCost;
       const size_t minLeafSize;
       const size_t maxLeafSize;
 
-      BVHNMultiBuilderMBlurSAH (BVH* bvh, Scene* scene, Geometry::Type type, const VirtualCreateLeafMB<N>& createLeaf, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
+      BVHNMultiBuilderMBlurSAH (BVH* bvh, Scene* scene, Geometry::Type type, const VirtualCreateLeaf<N>& createLeaf, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
         : bvh(bvh), scene(scene), type(type), createLeaf(createLeaf), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,/*Primitive::max_size()*/BVH::maxLeafBlocks)) {} // FIXME: Primitive::max_size() assumed to be 4
 
       void build()
@@ -430,9 +422,9 @@ namespace embree
       BVH* bvh;
       Scene* scene;
       Geometry::Type type;
-      const VirtualCreateLeafMB<N>& createLeaf;
+      const VirtualCreateLeaf<N>& createLeaf;
 
-      BVHNOBBMBlurBuilderSAH (BVH* bvh, Scene* scene, Geometry::Type type, const VirtualCreateLeafMB<N>& createLeaf)
+      BVHNOBBMBlurBuilderSAH (BVH* bvh, Scene* scene, Geometry::Type type, const VirtualCreateLeaf<N>& createLeaf)
         : bvh(bvh), scene(scene), type(type), createLeaf(createLeaf) {}
       
       void build() 
@@ -522,14 +514,6 @@ namespace embree
                                 Bezier1v,
                                 Bezier1iMB> createLeaf;
 
-        static CreateMSMBlurMultiLeaf6<8,
-                                       Triangle4,
-                                       Triangle4vMB,
-                                       Quad4v,
-                                       Quad4iMB,
-                                       Bezier1v,
-                                       Bezier1iMB> createLeafMB;
-        
         if (!builder) 
         {
           const size_t num1 = scene->getNumPrimitives(type,false);
@@ -538,7 +522,7 @@ namespace embree
           if ((type & Geometry::BEZIER_CURVES) && scene->getNumPrimitives(Geometry::BEZIER_CURVES,true))
           {
             if (num1 < num2) {
-              builder = new BVHNOBBMBlurBuilderSAH<8>((BVH8*)bvh,scene,type,createLeafMB); 
+              builder = new BVHNOBBMBlurBuilderSAH<8>((BVH8*)bvh,scene,type,createLeaf); 
             } else {
               builder = new BVHNOBBBuilderMultiSAH<8>((BVH8*)bvh,scene,type,createLeaf); //,4,1.0f,4,inf); 
             }
@@ -546,7 +530,7 @@ namespace embree
           else
           {
             if (num1 < num2) {
-              builder = new BVHNMultiBuilderMBlurSAH<8>((BVH8*)bvh,scene,type,createLeafMB,4,1.0f,4,inf); 
+              builder = new BVHNMultiBuilderMBlurSAH<8>((BVH8*)bvh,scene,type,createLeaf,4,1.0f,4,inf); 
             } else {
               builder = new BVHNBuilderMultiSAH<8>((BVH8*)bvh,scene,type,createLeaf,4,1.0f,4,inf); 
             }
