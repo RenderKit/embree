@@ -17,7 +17,7 @@
 #include "bvh.h"
 #include "bvh_builder.h"
 #include "../builders/bvh_builder_msmblur.h"
-
+#include "../builders/bvh_builder_multi.h"
 #include "../builders/bvh_builder_hair.h"
 #include "../builders/bvh_builder_msmblur_hair.h"
 
@@ -491,6 +491,96 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
     /************************************************************************************/
+  
+    template<int N>
+    struct BVHNBuilderMulti : public Builder
+    {
+      typedef BVHN<N> BVH;
+      typedef typename BVHN<N>::NodeRef NodeRef;
+      typedef typename BVHN<N>::NodeRecordMB NodeRecordMB;
+      typedef typename BVHN<N>::AlignedNodeMB AlignedNodeMB;
+
+      BVH* bvh;
+      Scene* scene;
+      Geometry::Type type;
+      const VirtualCreateLeaf<N>& createLeaf;
+      const size_t sahBlockSize;
+      const float intCost;
+      const size_t minLeafSize;
+      const size_t maxLeafSize;
+
+      BVHNBuilderMulti (BVH* bvh, Scene* scene, Geometry::Type type, const VirtualCreateLeaf<N>& createLeaf, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
+        : bvh(bvh), scene(scene), type(type), createLeaf(createLeaf), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,/*Primitive::max_size()*/BVH::maxLeafBlocks)) {} // FIXME: Primitive::max_size() assumed to be 4
+
+      void build()
+      {
+	/* skip build for empty scene */
+        const size_t numPrimitives = scene->getNumPrimitives(type,true);
+        if (numPrimitives == 0) { bvh->clear(); return; }
+        
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderMultiMBlurSAH");
+        
+#if PROFILE
+        profile(2,PROFILE_RUNS,numPrimitives,[&] (ProfileTimer& timer) {
+#endif
+            
+        /* create primref array */
+        mvector<PrimRefMB> prims(scene->device,numPrimitives);
+        PrimInfoMB pinfo = createMultiPrimRefArrayMSMBlur(scene,type,prims,bvh->scene->progressInterface);
+
+        /* estimate acceleration structure size */
+        const size_t node_bytes = pinfo.num_time_segments*sizeof(AlignedNodeMB)/(4*N);
+        const size_t leaf_bytes = size_t(1.2*pinfo.num_time_segments*44);//sizeof(Primitive)); // FIXME: assumes 44 bytes for primitive
+        bvh->alloc.init_estimate(node_bytes+leaf_bytes);
+
+        /* settings for BVH build */
+        BVHBuilderMulti::Settings settings;
+        settings.branchingFactor = N;
+        settings.maxDepth = BVH::maxDepth;
+        settings.logBlockSize = __bsr(sahBlockSize);
+        settings.minLeafSize = minLeafSize;
+        settings.maxLeafSize = maxLeafSize;
+        settings.travCost = travCost;
+        settings.intCost = intCost;
+        settings.singleLeafTimeSegment = true; //Primitive::singleTimeSegment; // FIXME: this is very conservative
+        settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,pinfo.size(),node_bytes+leaf_bytes);
+        
+        /* build hierarchy */
+        auto root =
+          BVHBuilderMulti::build<NodeRef>(prims,pinfo,scene->device,
+                                            VirtualRecalculatePrimRef(scene),
+                                            typename BVH::CreateAlloc(bvh),
+                                            typename BVH::AlignedNode::Create(),
+                                            typename BVH::AlignedNode::Set(),
+                                            typename BVH::AlignedNodeMB4D::Create(),
+                                            typename BVH::AlignedNodeMB4D::Set(),
+                                            [&] (const BVHBuilderMulti::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) { 
+                                              return createLeaf(bvh,current.prims,alloc);
+                                            },
+                                            bvh->scene->progressInterface,
+                                            settings);
+
+        bvh->set(root.ref,root.lbounds,pinfo.num_time_segments);
+
+#if PROFILE
+          });
+#endif
+
+	/* clear temporary data for static geometry */
+        if (scene->isStatic()) bvh->shrink();
+	bvh->cleanup();
+        bvh->postBuild(t0);
+      }
+
+      void clear() {
+      }
+    };
+
+      
+   /************************************************************************************/
+   /************************************************************************************/
+   /************************************************************************************/
+   /************************************************************************************/
 
 #if defined(__AVX__)
   
@@ -515,6 +605,8 @@ namespace embree
                                 Bezier1iMB> createLeaf;
 
         if (!builder) 
+          builder = new BVHNBuilderMulti<8>((BVH8*)bvh,scene,type,createLeaf,4,1.0f,4,inf); 
+#if 0
         {
           const size_t num1 = scene->getNumPrimitives(type,false);
           const size_t num2 = scene->getNumPrimitives(type,true);
@@ -536,6 +628,7 @@ namespace embree
             }
           }
         }
+#endif
         builder->build();
       }
 

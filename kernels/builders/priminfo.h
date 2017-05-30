@@ -44,6 +44,10 @@ namespace embree
         return types == Leaf::typeMask(ty);
       }
 
+      __forceinline bool hasMBlur() const {
+        return types & Leaf::typeMaskMBlur();
+      }
+
       template<typename PrimRef> 
         __forceinline void extend_primref(const PrimRef& prim) 
       {

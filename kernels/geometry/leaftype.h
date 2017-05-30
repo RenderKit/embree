@@ -34,13 +34,27 @@ namespace embree
       TY_HAIR = 4,
       TY_HAIR_MB = 5,
       TY_OBJECT = 6,
-      TY_LINE = 7,
-      TY_LINE_MB = 8,
-      TY_SUBDIV = 9,
-      TY_SUBDIV_MB = 10,
-      TY_GRID = 11,
-      TY_GRID_MB = 12
+      TY_OBJECT_MB = 7,
+      TY_LINE = 8,
+      TY_LINE_MB = 9,
+      TY_SUBDIV = 10,
+      TY_SUBDIV_MB = 11,
+      TY_GRID = 12,
+      TY_GRID_MB = 13
     };
+
+    static __forceinline unsigned typeMaskMBlur() 
+    {
+      unsigned mask = 0;
+      mask |= typeMask(TY_TRIANGLE_MB);
+      mask |= typeMask(TY_QUAD_MB);
+      mask |= typeMask(TY_HAIR_MB);
+      mask |= typeMask(TY_OBJECT_MB);
+      mask |= typeMask(TY_LINE_MB);
+      mask |= typeMask(TY_SUBDIV_MB);
+      mask |= typeMask(TY_GRID_MB);
+      return mask;
+    }
     
     static __forceinline unsigned typeMask(Type ty) {
       return 1 << ty;
