@@ -44,6 +44,12 @@ namespace embree
         return types == Leaf::typeMask(ty);
       }
 
+      __forceinline bool isType( const Leaf::Type ty0, const Leaf::Type ty1) const 
+      {
+        const unsigned mask = Leaf::typeMask(ty0) | Leaf::typeMask(ty1);
+        return (types & mask) && !(types & ~mask);
+      }
+
       __forceinline bool hasMBlur() const {
         return types & Leaf::typeMaskMBlur();
       }

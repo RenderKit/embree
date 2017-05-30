@@ -24,6 +24,9 @@
 #include "heuristic_binning_array_aligned.h"
 #include "heuristic_timesplit_array.h"
 
+#include "bvh_builder_hair.h"
+#include "bvh_builder_msmblur_hair.h"
+
 namespace embree
 {
   namespace isa
@@ -371,6 +374,24 @@ namespace embree
 
           const NodeRecordMB4D recurse(const BuildRecord& current, Allocator alloc, bool toplevel)
           {
+            //if (current.isType(Leaf::TY_HAIR)) {
+            //}
+
+            /*if (current.isType(Leaf::TY_HAIR,Leaf::TY_HAIR_MB)) 
+            {
+              auto root = BVHBuilderHairMSMBlur::build<NodeRef>
+                (scene, *current.prims.prims, current.prims,
+                 recalculatePrimRef,
+                 createAlloc,
+                 createNodeMB,
+                 setNodeMB,
+                 createUnalignedNodeMB,
+                 setUnalignedNodeMB,
+                 createLeaf,
+                 progressMonitor,
+                 settings);
+                 }*/
+
             /* get thread local allocator */
             if (!alloc)
               alloc = createAlloc();
