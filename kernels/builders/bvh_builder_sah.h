@@ -104,6 +104,7 @@ namespace embree
       template<typename BuildRecord,
         typename Heuristic,
         typename Set,
+        typename PrimRef,
         typename ReductionTy,
         typename Allocator,
         typename CreateAllocFunc,
@@ -116,7 +117,8 @@ namespace embree
         {
           friend struct GeneralBVHBuilder;
 
-          BuilderT (Heuristic& heuristic,
+          BuilderT (PrimRef* prims,
+                    Heuristic& heuristic,
                     const CreateAllocFunc& createAlloc,
                     const CreateNodeFunc& createNode,
                     const UpdateNodeFunc& updateNode,
@@ -125,6 +127,7 @@ namespace embree
                     const Settings& settings)
 
             : Settings(settings),
+            prims(prims),
             heuristic(heuristic),
             createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf),
             progressMonitor(progressMonitor)
@@ -296,6 +299,7 @@ namespace embree
           }
 
         private:
+          PrimRef* prims;
           Heuristic& heuristic;
           const CreateAllocFunc& createAlloc;
           const CreateNodeFunc& createNode;
@@ -308,6 +312,7 @@ namespace embree
       typename ReductionTy,
         typename Heuristic,
         typename Set,
+        typename PrimRef,
         typename CreateAllocFunc,
         typename CreateNodeFunc,
         typename UpdateNodeFunc,
@@ -315,6 +320,7 @@ namespace embree
         typename ProgressMonitor>
 
         __noinline static ReductionTy build(Heuristic& heuristic,
+                                            PrimRef* prims,
                                  const Set& set,
                                  CreateAllocFunc createAlloc,
                                  CreateNodeFunc createNode, UpdateNodeFunc updateNode,
@@ -328,6 +334,7 @@ namespace embree
           BuildRecord,
           Heuristic,
           Set,
+          PrimRef,
           ReductionTy,
           decltype(createAlloc()),
           CreateAllocFunc,
@@ -337,7 +344,8 @@ namespace embree
           ProgressMonitor> Builder;
 
         /* instantiate builder */
-        Builder builder(heuristic,
+        Builder builder(prims,
+                        heuristic,
                         createAlloc,
                         createNode,
                         updateNode,
@@ -378,8 +386,9 @@ namespace embree
                                  const Settings& settings)
       {
         Heuristic heuristic(prims);
-        return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set>(
+        return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set,PrimRef>(
           heuristic,
+          prims,
           PrimInfoRange(0,pinfo.size(),pinfo),
           createAlloc,
           createNode,
@@ -473,8 +482,9 @@ namespace embree
               }
             });
 
-          return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set>(
+          return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set,PrimRef>(
             heuristic,
+            prims,
             PrimInfoExtRange(0,pinfo.size(),extSize,pinfo),
             createAlloc,
             createNode,
@@ -519,8 +529,9 @@ namespace embree
         typedef HeuristicArrayOpenMergeSAH<NodeOpenerFunc,BuildRef,NUM_OBJECT_BINS_HQ> Heuristic;
         Heuristic heuristic(nodeOpenerFunc,prims,settings.branchingFactor);
 
-        return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set>(
+        return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set,BuildRef>(
           heuristic,
+          prims,
           PrimInfoExtRange(0,pinfo.size(),extSize,pinfo),
           createAlloc,
           createNode,
