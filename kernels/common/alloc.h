@@ -576,10 +576,10 @@ namespace embree
       {
         std::stringstream str;
         str.setf(std::ios::fixed, std::ios::floatfield);
-        str << "used = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesUsed << " MB, "
+        str << "used = " << std::setw(9) << std::setprecision(3) << 1E-6f*bytesUsed << " MB, "
             << "free = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesFree << " MB, "
             << "wasted = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesWasted << " MB, "            
-            << "total = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesAllocatedTotal() << " MB, "
+            << "total = " << std::setw(9) << std::setprecision(3) << 1E-6f*bytesAllocatedTotal() << " MB, "
             << "#bytes/prim = " << std::setw(6) << std::setprecision(2) << double(bytesAllocatedTotal())/double(numPrimitives);
         return str.str();
       }
@@ -661,18 +661,18 @@ namespace embree
         std::stringstream str0;
         str0.setf(std::ios::fixed, std::ios::floatfield);
         str0 << "  alloc : " 
-             << "used = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesUsed << " MB, "
-             << "                                                            " 
+             << "used = " << std::setw(9) << std::setprecision(3) << 1E-6f*bytesUsed << " MB, "
+             << "                                                              " 
              << "#bytes/prim = " << std::setw(6) << std::setprecision(2) << double(bytesUsed)/double(numPrimitives);
         std::cout << str0.str() << std::endl;
       
         std::stringstream str1;
         str1.setf(std::ios::fixed, std::ios::floatfield);
         str1 << "  alloc : " 
-             << "used = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesUsed << " MB, "
+             << "used = " << std::setw(9) << std::setprecision(3) << 1E-6f*bytesUsed << " MB, "
              << "free = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesFree << " MB, "            
              << "wasted = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesWasted << " MB, "            
-             << "total = " << std::setw(7) << std::setprecision(3) << 1E-6f*(bytesUsed+bytesFree+bytesWasted) << " MB, "
+             << "total = " << std::setw(9) << std::setprecision(3) << 1E-6f*(bytesUsed+bytesFree+bytesWasted) << " MB, "
              << "#bytes/prim = " << std::setw(6) << std::setprecision(2) << double(bytesUsed+bytesFree+bytesWasted)/double(numPrimitives);
         std::cout << str1.str() << std::endl;
      

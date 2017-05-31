@@ -48,9 +48,10 @@ namespace embree
     for (size_t i=0; i<min(bvh->numTypes,Statistics::MultiLeafStat::M); i++) {
       stream << "  " << std::setw(16) << std::left << bvh->getPrimType(i).name << " : " << stat.statLeaf.stat[i].toString(bvh,totalSAH,totalBytes) << std::endl;
     }
-    //if (true)                               stream << "  leaves           : "  << 
-    //stream << stat.statLeaf.toString(bvh,totalSAH,totalBytes) << std::endl;
-    //if (true)                               stream << "    histogram      : "  << stat.statLeaf.histToString() << std::endl;
+    for (size_t i=0; i<min(bvh->numTypes,Statistics::MultiLeafStat::M); i++) {
+      stream << "  " << std::setw(16) << std::left << bvh->getPrimType(i).name << " : "  << stat.statLeaf.stat[i].histToString() << std::endl;
+    }
+    //if (true)                              
     return stream.str();
   }
   
