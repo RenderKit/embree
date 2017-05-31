@@ -59,9 +59,9 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
 
-      __forceinline CreateLeaf (BVH* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
+      __forceinline CreateLeaf (BVH* bvh) : bvh(bvh) {}
 
-      __forceinline NodeRef operator() (const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) const
+      __forceinline NodeRef operator() (const PrimRef* prims, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) const
       {
         size_t n = set.size();
         size_t items = Primitive::blocks(n);
@@ -75,7 +75,6 @@ namespace embree
       }
 
       BVH* bvh;
-      PrimRef* prims;
     };
 
 
@@ -85,9 +84,9 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
 
-      __forceinline CreateLeafQuantized (BVH* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
+      __forceinline CreateLeafQuantized (BVH* bvh) : bvh(bvh) {}
 
-      __forceinline NodeRef operator() (const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) const
+      __forceinline NodeRef operator() (const PrimRef* prims, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) const
       {
         size_t n = set.size();
         size_t items = Primitive::blocks(n);
@@ -101,7 +100,6 @@ namespace embree
       }
 
       BVH* bvh;
-      PrimRef* prims;
     };
 
     /************************************************************************************/
@@ -162,7 +160,7 @@ namespace embree
 
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-        NodeRef root = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,settings);
+        NodeRef root = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);
         bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
         bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
 
@@ -236,7 +234,7 @@ namespace embree
             }
 
             /* call BVH builder */
-            NodeRef root = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,settings);
+            NodeRef root = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);
             bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
             bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
 
@@ -326,7 +324,7 @@ namespace embree
             const size_t leaf_bytes = size_t(1.2*Primitive::blocks(numPrimitives)*sizeof(Primitive));
             bvh->alloc.init_estimate(node_bytes+leaf_bytes);
             settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,numPrimitives,node_bytes+leaf_bytes);
-            NodeRef root = BVHNBuilderQuantizedVirtual<N>::build(&bvh->alloc,CreateLeafQuantized<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,settings);
+            NodeRef root = BVHNBuilderQuantizedVirtual<N>::build(&bvh->alloc,CreateLeafQuantized<N,Primitive>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);
             bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
             //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: COPY LAYOUT FOR LARGE NODES !!!
 #if PROFILE
@@ -362,7 +360,7 @@ namespace embree
 
       __forceinline CreateMBlurLeaf (BVH* bvh, PrimRef* prims, size_t time) : bvh(bvh), prims(prims), time(time) {}
 
-      __forceinline NodeRecordMB operator() (const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) const
+      __forceinline NodeRecordMB operator() (const PrimRef* prims, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) const
       {
         size_t items = Primitive::blocks(set.size());
         size_t start = set.begin();
@@ -597,7 +595,7 @@ namespace embree
           typename BVH::CreateAlloc(bvh),
           typename BVH::AlignedNode::Create2(),
           typename BVH::AlignedNode::Set2(),
-          CreateLeaf<N,Primitive>(bvh,prims0.data()),
+          CreateLeaf<N,Primitive>(bvh),
           splitter,
           bvh->scene->progressInterface,
           prims0.data(),

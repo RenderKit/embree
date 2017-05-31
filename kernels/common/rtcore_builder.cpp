@@ -196,8 +196,8 @@ namespace embree
         },
         
         /* lambda function that creates BVH leaves */
-        [&](const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) -> void* {
-          return createLeaf((RTCThreadLocalAllocator)&alloc,prims+range.begin(),range.size(),userPtr);
+        [&](const PrimRef* prims, const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) -> void* {
+          return createLeaf((RTCThreadLocalAllocator)&alloc,(RTCBuildPrimitive*)(prims+range.begin()),range.size(),userPtr);
         },
         
         /* progress monitor function */
@@ -287,8 +287,8 @@ namespace embree
         },
         
         /* lambda function that creates BVH leaves */
-        [&] (const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) -> void* {
-          return createLeaf((RTCThreadLocalAllocator)&alloc,prims+range.begin(),range.size(),userPtr);
+        [&] (const PrimRef* prims, const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) -> void* {
+          return createLeaf((RTCThreadLocalAllocator)&alloc,(RTCBuildPrimitive*)(prims+range.begin()),range.size(),userPtr);
         },
         
         /* returns the splitter */

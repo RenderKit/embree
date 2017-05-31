@@ -72,13 +72,13 @@ namespace embree
         settings.maxLeafSize = BVH::maxLeafBlocks;
 
         /* creates a leaf node */
-        auto createLeaf = [&] (const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) -> NodeRef
+        auto createLeaf = [&] (const PrimRef* prims, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) -> NodeRef
           {
             size_t start = set.begin();
             size_t items = set.size();
             Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
             for (size_t i=0; i<items; i++) {
-              accel[i].fill(prims.data(),start,set.end(),bvh->scene);
+              accel[i].fill(prims,start,set.end(),bvh->scene);
             }
             return bvh->encodeLeaf((char*)accel,items);
           };

@@ -72,6 +72,7 @@ namespace embree
                     const Settings settings)
 
             : Settings(settings),
+            prims(prims),
             createAlloc(createAlloc),
             createAlignedNode(createAlignedNode),
             setAlignedNode(setAlignedNode),
@@ -90,7 +91,7 @@ namespace embree
 
             /* create leaf for few primitives */
             if (pinfo.size() <= maxLeafSize && pinfo.oneType())
-              return createLeaf(pinfo,alloc);
+              return createLeaf(prims,pinfo,alloc);
 
             /* fill all children by always splitting the largest one */
             PrimInfoRange children[MAX_BRANCHING_FACTOR];
@@ -326,6 +327,7 @@ namespace embree
           }
 
         private:
+          PrimRef* prims;
           const CreateAllocFunc& createAlloc;
           const CreateAlignedNodeFunc& createAlignedNode;
           const SetAlignedNodeFunc& setAlignedNode;
