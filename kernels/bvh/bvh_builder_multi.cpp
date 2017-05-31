@@ -60,8 +60,11 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRecordMB4D NodeRecordMB4D;
       
-      virtual size_t               operator() (BVH* bvh, PrimRef* prims, const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) const = 0;
-      virtual const NodeRecordMB4D operator() (BVH* bvh, const SetMB& set,                           const FastAllocator::CachedAllocator& alloc) const = 0;
+      VirtualCreateLeaf (BVH* bvh) : bvh(bvh) {}
+      virtual size_t               operator() (PrimRef* prims, const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) const = 0;
+      virtual const NodeRecordMB4D operator() (const SetMB& set,                           const FastAllocator::CachedAllocator& alloc) const = 0;
+
+      BVH* bvh;
     };
 
     template<int N, typename Primitive0, typename Primitive1, typename Primitive2, typename Primitive3, typename Primitive4, typename Primitive5>
@@ -69,38 +72,40 @@ namespace embree
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRecordMB4D NodeRecordMB4D;
-            
-      size_t operator() (BVH* bvh, PrimRef* prims, const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) const
+      
+      CreateMultiLeaf6 (BVH* bvh) 
+        : VirtualCreateLeaf<N>(bvh) {}
+
+      size_t operator() (PrimRef* prims, const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) const
       {
         assert(range.size() > 0);
         const Leaf::Type ty = prims[range.begin()].type();
         switch (ty) {
-        case 0: return Primitive0::createLeaf(alloc,prims,range,bvh);
-        case 1: return Primitive1::createLeaf(alloc,prims,range,bvh);
-        case 2: return Primitive2::createLeaf(alloc,prims,range,bvh);
-        case 3: return Primitive3::createLeaf(alloc,prims,range,bvh);
-        case 4: return Primitive4::createLeaf(alloc,prims,range,bvh);
-        case 5: return Primitive5::createLeaf(alloc,prims,range,bvh);
+        case 0: return Primitive0::createLeaf(alloc,prims,range,this->bvh);
+        case 1: return Primitive1::createLeaf(alloc,prims,range,this->bvh);
+        case 2: return Primitive2::createLeaf(alloc,prims,range,this->bvh);
+        case 3: return Primitive3::createLeaf(alloc,prims,range,this->bvh);
+        case 4: return Primitive4::createLeaf(alloc,prims,range,this->bvh);
+        case 5: return Primitive5::createLeaf(alloc,prims,range,this->bvh);
         default: assert(false); return BVH::emptyNode;
         }
       }
 
-      __forceinline const NodeRecordMB4D operator() (BVH* bvh, const SetMB& set, const FastAllocator::CachedAllocator& alloc) const
+      __forceinline const NodeRecordMB4D operator() (const SetMB& set, const FastAllocator::CachedAllocator& alloc) const
       {
         assert(set.object_range.size() > 0);
         const Leaf::Type ty = (*set.prims)[set.object_range.begin()].type();
         switch (ty) {
-        case 0: return Primitive0::createLeafMB(set,alloc,bvh);
-        case 1: return Primitive1::createLeafMB(set,alloc,bvh);
-        case 2: return Primitive2::createLeafMB(set,alloc,bvh);
-        case 3: return Primitive3::createLeafMB(set,alloc,bvh);
-        case 4: return Primitive4::createLeafMB(set,alloc,bvh);
-        case 5: return Primitive5::createLeafMB(set,alloc,bvh);
+        case 0: return Primitive0::createLeafMB(set,alloc,this->bvh);
+        case 1: return Primitive1::createLeafMB(set,alloc,this->bvh);
+        case 2: return Primitive2::createLeafMB(set,alloc,this->bvh);
+        case 3: return Primitive3::createLeafMB(set,alloc,this->bvh);
+        case 4: return Primitive4::createLeafMB(set,alloc,this->bvh);
+        case 5: return Primitive5::createLeafMB(set,alloc,this->bvh);
         default: assert(false); return NodeRecordMB4D(BVH::emptyNode,empty,empty);
         }
       }
     };
-
     
     /************************************************************************************/
     /************************************************************************************/
@@ -194,7 +199,7 @@ namespace embree
                typename BVH::AlignedNode::Create2(),
                typename BVH::AlignedNode::Set3(&bvh->alloc,prims.data()),
                [&] (const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) -> NodeRef { 
-                  return createLeaf(bvh,prims.data(),range,alloc);
+                  return createLeaf(prims.data(),range,alloc);
                },
                bvh->scene->progressInterface,prims.data(),pinfo,settings);
   
@@ -313,7 +318,7 @@ namespace embree
                                             typename BVH::AlignedNodeMB4D::Create(),
                                             typename BVH::AlignedNodeMB4D::Set(),
                                             [&] (const BVHBuilderMSMBlur::BuildRecord& current, const FastAllocator::CachedAllocator& alloc) { 
-                                              return createLeaf(bvh,current.prims,alloc);
+                                              return createLeaf(current.prims,alloc);
                                             },
                                             bvh->scene->progressInterface,
                                             settings);
@@ -384,7 +389,7 @@ namespace embree
            typename BVH::UnalignedNode::Create(),
            typename BVH::UnalignedNode::Set(),
            [&] (const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) -> NodeRef {
-            return createLeaf(bvh,prims.data(),range,alloc);
+            return createLeaf(prims.data(),range,alloc);
            },
            scene->progressInterface,scene,prims.data(),pinfo,settings);
         
@@ -472,7 +477,7 @@ namespace embree
            typename BVH::UnalignedNodeMB::Create(),
            typename BVH::UnalignedNodeMB::Set(),
            [&] (const SetMB& prims, const FastAllocator::CachedAllocator& alloc) { 
-            return createLeaf(bvh,prims,alloc);
+            return createLeaf(prims,alloc);
            },
            bvh->scene->progressInterface,
            settings);
@@ -563,7 +568,7 @@ namespace embree
                                             typename BVH::UnalignedNodeMB::Create(),
                                             typename BVH::UnalignedNodeMB::Set(),
                                             [&] (const SetMB& prims, const FastAllocator::CachedAllocator& alloc) { 
-                                              return createLeaf(bvh,prims,alloc);
+                                              return createLeaf(prims,alloc);
                                             },
                                             bvh->scene->progressInterface,
                                             settings);
@@ -598,20 +603,19 @@ namespace embree
       Scene* scene;
       Geometry::Type type;
       Ref<Builder> builder;
+      CreateMultiLeaf6<8,
+                       Triangle4,
+                       Triangle4vMB,
+                       Quad4v,
+                       Quad4iMB,
+                       Bezier1v,
+                       Bezier1iMB> createLeaf;
 
       BVH8MultiFastSceneBuilderSelect ( BVH8* bvh, Scene* scene, Geometry::Type type )
-        : bvh(bvh), scene(scene), type(type) {}
+        : bvh(bvh), scene(scene), type(type), createLeaf(bvh) {}
 
       virtual void build() 
       {
-        static CreateMultiLeaf6<8,
-                                Triangle4,
-                                Triangle4vMB,
-                                Quad4v,
-                                Quad4iMB,
-                                Bezier1v,
-                                Bezier1iMB> createLeaf;
-
         if (!builder) 
 #if 1
         //builder = new BVHNBuilderMulti<8>((BVH8*)bvh,scene,type,createLeaf,4,1.0f,4,inf); 
