@@ -31,20 +31,7 @@ namespace embree
   {
     struct BVHBuilderHair
     {
-      /*! settings for builder */
-      struct Settings
-      {
-        /*! default settings */
-        Settings ()
-        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8) {}
-
-      public:
-        size_t branchingFactor;  //!< branching factor of BVH to build
-        size_t maxDepth;         //!< maximal depth of BVH to build
-        size_t logBlockSize;     //!< log2 of blocksize for SAH heuristic
-        size_t minLeafSize;      //!< minimal size of a leaf
-        size_t maxLeafSize;      //!< maximal size of a leaf
-      };
+      typedef CommonBuildSettings Settings;
 
       template<typename NodeRef,
         typename CreateAllocFunc,
