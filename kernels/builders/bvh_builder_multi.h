@@ -114,7 +114,7 @@ namespace embree
                     const SetUnalignedNodeFunc setUnalignedNode,
                     const CreateUnalignedNodeMBFunc createUnalignedNodeMB,
                     const SetUnalignedNodeMBFunc setUnalignedNodeMB,
-                    const CreateLeafFunc createLeaf,
+                    const CreateLeafFunc& createLeaf,
                     const ProgressMonitor progressMonitor,
                     const Settings& settings)
             : Settings(settings),
@@ -367,8 +367,24 @@ namespace embree
 
           const NodeRecordMB4D recurse(const BuildRecord& current, Allocator alloc, bool toplevel)
           {
-            //if (current.isType(Leaf::TY_HAIR)) {
-            //}
+            if (current.prims.isType(Leaf::TY_HAIR)) 
+            {
+              PrimRefMB* primsMB = current.prims.prims->data()+current.prims.object_range.begin();
+              PrimRef* prims = (PrimRef*) primsMB;
+              convert_PrimRefMBArray_To_PrimRefArray(primsMB,prims,current.prims.object_range.size());
+              NodeRef ref = BVHBuilderHair::build<NodeRef>
+                (createAlloc,
+                 createAlignedNode,
+                 setAlignedNode,
+                 createUnalignedNode,
+                 setUnalignedNode,
+                 createLeaf,
+                 progressMonitor,
+                 scene, prims, PrimInfo(0,current.prims.object_range.size(),current.prims),
+                 *this);
+              convert_PrimRefArray_To_PrimRefMBArray(prims,primsMB,current.prims.object_range.size());
+              return NodeRecordMB4D(ref,LBBox3fa(current.prims.geomBounds),current.prims.time_range);
+            }
 
             if (current.prims.isType(Leaf::TY_HAIR,Leaf::TY_HAIR_MB)) 
             {
@@ -376,10 +392,15 @@ namespace embree
                 (scene, *current.prims.prims, current.prims,
                  recalculatePrimRef,
                  createAlloc,
+                 createAlignedNode,
+                 setAlignedNode,
                  createAlignedNodeMB,
                  setAlignedNodeMB,
+                 createUnalignedNode,
+                 setUnalignedNode,
                  createUnalignedNodeMB,
                  setUnalignedNodeMB,
+                 createLeaf,
                  createLeaf,
                  progressMonitor,
                  *this);
@@ -515,7 +536,7 @@ namespace embree
           const SetUnalignedNodeFunc setUnalignedNode;
           const CreateUnalignedNodeMBFunc createUnalignedNodeMB;
           const SetUnalignedNodeMBFunc setUnalignedNodeMB;
-          const CreateLeafFunc createLeaf;
+          const CreateLeafFunc& createLeaf;
           const ProgressMonitor progressMonitor;
         };
 
@@ -546,7 +567,7 @@ namespace embree
                                                       const SetUnalignedNodeFunc setUnalignedNode,
                                                       const CreateUnalignedNodeMBFunc createUnalignedNodeMB,
                                                       const SetUnalignedNodeMBFunc setUnalignedNodeMB,
-                                                      const CreateLeafFunc createLeaf,
+                                                      const CreateLeafFunc& createLeaf,
                                                       const ProgressMonitorFunc progressMonitor,
                                                       const Settings& settings)
       {

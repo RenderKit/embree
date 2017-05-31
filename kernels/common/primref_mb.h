@@ -17,6 +17,7 @@
 #pragma once
 
 #include "default.h"
+#include "primref.h"
 
 #define MBLUR_BIN_LBBOX 0
 
@@ -255,4 +256,19 @@ namespace embree
   };
 
 #endif
+
+  namespace isa
+  {
+    inline void convert_PrimRefMBArray_To_PrimRefArray(PrimRefMB* in, PrimRef* out, size_t N) // FIXME: parallelize
+    {
+      for (size_t i=0; i<N; i++)
+        out[i] = PrimRef(in[i].bounds(),in[i].type(),in[i].geomID(),in[i].primID());
+    }      
+
+    inline void convert_PrimRefArray_To_PrimRefMBArray(PrimRef* in, PrimRefMB* out, size_t N) // FIXME: parallelize
+    {
+      for (ssize_t i=N-1; i>=0; i--)
+        out[i] = PrimRefMB(LBBox3fa(in[i].bounds()),0,0,in[i].type(),in[i].geomID(),in[i].primID());
+    }      
+  }     
 }

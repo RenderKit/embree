@@ -183,6 +183,9 @@ namespace embree
            typename BVH::UnalignedNode::Set(),
            typename BVH::UnalignedNode::Create(),
            typename BVH::UnalignedNodeMB::Set(),
+           [&] (const PrimRef* prims, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) -> NodeRef { 
+             assert(false); return BVH::emptyNode; 
+          },
            createLeaf,
            bvh->scene->progressInterface,
            settings);

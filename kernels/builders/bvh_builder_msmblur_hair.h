@@ -22,6 +22,7 @@
 #include "../builders/heuristic_binning_array_aligned.h"
 #include "../builders/heuristic_binning_array_unaligned.h"
 #include "../builders/heuristic_timesplit_array.h"
+#include "bvh_builder_hair.h"
 
 namespace embree
 {
@@ -76,6 +77,7 @@ namespace embree
         typename CreateUnalignedNodeMBFunc,
         typename SetUnalignedNodeMBFunc,
         typename CreateLeafFunc,
+        typename CreateLeafMBFunc,
         typename ProgressMonitor>
 
         class BuilderT : private Settings
@@ -112,6 +114,7 @@ namespace embree
                     const CreateUnalignedNodeMBFunc& createUnalignedNodeMB,
                     const SetUnalignedNodeMBFunc& setUnalignedNodeMB,
                     const CreateLeafFunc& createLeaf,
+                    const CreateLeafMBFunc& createLeafMB,
                     const ProgressMonitor& progressMonitor,
                     const Settings settings)
 
@@ -124,6 +127,7 @@ namespace embree
             createUnalignedNode(createUnalignedNode), setUnalignedNode(setUnalignedNode),
             createUnalignedNodeMB(createUnalignedNodeMB), setUnalignedNodeMB(setUnalignedNodeMB),
             createLeaf(createLeaf),
+            createLeafMB(createLeafMB),
             progressMonitor(progressMonitor),
             unalignedHeuristic(scene),
             temporalSplitHeuristic(scene->device,recalculatePrimRef) {}
@@ -241,7 +245,7 @@ namespace embree
 
             /* create leaf for few primitives */
             if (current.split.data == Split::SPLIT_NONE)
-              return createLeaf(current.prims,alloc);
+              return createLeafMB(current.prims,alloc);
 
             /* fill all children by always splitting the largest one */
             bool hasTimeSplits = false;
@@ -361,6 +365,25 @@ namespace embree
           /*! recursive build */
           NodeRecordMB4D recurse(BuildRecord& current, Allocator alloc, bool toplevel)
           {
+            if (current.prims.isType(Leaf::TY_HAIR))
+            {
+              PrimRefMB* primsMB = current.prims.prims->data()+current.prims.object_range.begin();
+              PrimRef* prims = (PrimRef*) primsMB;
+              convert_PrimRefMBArray_To_PrimRefArray(primsMB,prims,current.prims.object_range.size());
+              NodeRef ref = BVHBuilderHair::build<NodeRef>
+                (createAlloc,
+                 createAlignedNode,
+                 setAlignedNode,
+                 createUnalignedNode,
+                 setUnalignedNode,
+                 createLeaf,
+                 progressMonitor,
+                 scene, prims, PrimInfo(0,current.prims.object_range.size(),current.prims),
+                 *this);
+              convert_PrimRefArray_To_PrimRefMBArray(prims,primsMB,current.prims.object_range.size());
+              return NodeRecordMB4D(ref,LBBox3fa(current.prims.geomBounds),current.prims.time_range);
+            }
+
             /* get thread local allocator */
             if (!alloc)
               alloc = createAlloc();
@@ -539,6 +562,7 @@ namespace embree
           const CreateUnalignedNodeMBFunc& createUnalignedNodeMB;
           const SetUnalignedNodeMBFunc& setUnalignedNodeMB;
           const CreateLeafFunc& createLeaf;
+          const CreateLeafMBFunc& createLeafMB;
           const ProgressMonitor& progressMonitor;
 
         private:
@@ -559,6 +583,7 @@ namespace embree
         typename CreateUnalignedNodeMBFunc,
         typename SetUnalignedNodeMBFunc,
         typename CreateLeafFunc,
+        typename CreateLeafMBFunc,
         typename ProgressMonitor>
 
         static BVHNodeRecordMB4D<NodeRef> build (Scene* scene, mvector<PrimRefMB>& prims, const PrimInfoMB& pinfo,
@@ -573,6 +598,7 @@ namespace embree
                                                const CreateUnalignedNodeMBFunc& createUnalignedNodeMB,
                                                const SetUnalignedNodeMBFunc& setUnalignedNodeMB,
                                                const CreateLeafFunc& createLeaf,
+                                               const CreateLeafMBFunc& createLeafMB,
                                                const ProgressMonitor& progressMonitor,
                                                const Settings settings)
         {
@@ -581,14 +607,14 @@ namespace embree
             CreateAlignedNodeMBFunc,SetAlignedNodeMBFunc,
             CreateUnalignedNodeFunc,SetUnalignedNodeFunc,
             CreateUnalignedNodeMBFunc,SetUnalignedNodeMBFunc,
-            CreateLeafFunc,ProgressMonitor> Builder;
+            CreateLeafFunc,CreateLeafMBFunc,ProgressMonitor> Builder;
 
           Builder builder(scene,recalculatePrimRef,createAlloc,
                           createAlignedNode,setAlignedNode,
                           createAlignedNodeMB,setAlignedNodeMB,
                           createUnalignedNode,setUnalignedNode,
                           createUnalignedNodeMB,setUnalignedNodeMB,
-                          createLeaf,progressMonitor,settings);
+                          createLeaf,createLeafMB,progressMonitor,settings);
 
           return builder(prims,pinfo);
         }

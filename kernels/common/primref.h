@@ -22,16 +22,16 @@
 namespace embree
 {
   /*! A primitive reference stores the bounds of the primitive and its ID. */
-  struct __aligned(32) PrimRef 
+  struct __aligned(16) PrimRef 
   {
     __forceinline PrimRef () {}
 
 #if defined(__AVX__)
     __forceinline PrimRef(const PrimRef& v) { 
-      vfloat8::store((float*)this,vfloat8::load((float*)&v));
+      vfloat8::storeu((float*)this,vfloat8::loadu((float*)&v));
     }
     __forceinline void operator=(const PrimRef& v) { 
-      vfloat8::store((float*)this,vfloat8::load((float*)&v));
+      vfloat8::storeu((float*)this,vfloat8::loadu((float*)&v));
     }
 #endif
 
@@ -135,10 +135,10 @@ namespace embree
   __forceinline void xchg(PrimRef& a, PrimRef& b)
   {
 #if defined(__AVX__)
-    const vfloat8 aa = vfloat8::load((float*)&a);
-    const vfloat8 bb = vfloat8::load((float*)&b);
-    vfloat8::store((float*)&a,bb);
-    vfloat8::store((float*)&b,aa);
+    const vfloat8 aa = vfloat8::loadu((float*)&a);
+    const vfloat8 bb = vfloat8::loadu((float*)&b);
+    vfloat8::storeu((float*)&a,bb);
+    vfloat8::storeu((float*)&b,aa);
 #else
     std::swap(a,b);
 #endif
