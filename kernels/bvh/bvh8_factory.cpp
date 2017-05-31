@@ -948,13 +948,15 @@ namespace embree
     BVH8* accel = new BVH8(type,6,scene);
 
     Accel::Intersectors intersectors;
+   intersectors = BVH8MultiFastOBBMBIntersectors(accel);
+#if 0 // FIXME: enable
     const size_t tri1 = scene->getNumPrimitives(Geometry::TRIANGLE_MESH,false);
     const size_t tri2 = scene->getNumPrimitives(Geometry::TRIANGLE_MESH,true)-tri1;
     const size_t quad1 = scene->getNumPrimitives(Geometry::QUAD_MESH,false);
     const size_t quad2 = scene->getNumPrimitives(Geometry::QUAD_MESH,true)-quad1;
     const size_t curves1 = scene->getNumPrimitives(Geometry::BEZIER_CURVES,false);
     const size_t curves2 = scene->getNumPrimitives(Geometry::BEZIER_CURVES,true)-curves1;
-
+    
     if (tri2+quad2+curves2)
     {
       const size_t tri = tri1+tri2;
@@ -972,7 +974,7 @@ namespace embree
       else 
         intersectors = BVH8MultiFastOBBIntersectors(accel);
     }
-    
+#endif
     //Accel::Intersectors intersectors = BVH8MultiFastIntersectors(accel);
     //Accel::Intersectors intersectors = BVH8MultiFastMBIntersectors(accel);
     //Accel::Intersectors intersectors = BVH8MultiFastOBBIntersectors(accel);
