@@ -463,8 +463,12 @@ namespace embree
           (scene, prims0, pinfo,
            VirtualRecalculatePrimRef(scene),
            typename BVH::CreateAlloc(bvh),
+           typename BVH::AlignedNode::Create(),
+           typename BVH::AlignedNode::Set(),
            typename BVH::AlignedNodeMB4D::Create(),
            typename BVH::AlignedNodeMB4D::Set(),
+           typename BVH::UnalignedNode::Create(),
+           typename BVH::UnalignedNode::Set(),
            typename BVH::UnalignedNodeMB::Create(),
            typename BVH::UnalignedNodeMB::Set(),
            [&] (const SetMB& prims, const FastAllocator::CachedAllocator& alloc) { 

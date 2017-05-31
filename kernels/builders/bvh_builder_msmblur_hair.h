@@ -67,8 +67,12 @@ namespace embree
       template<typename NodeRef,
         typename RecalculatePrimRef,
         typename CreateAllocFunc,
+        typename CreateAlignedNodeFunc,
+        typename SetAlignedNodeFunc,
         typename CreateAlignedNodeMBFunc,
         typename SetAlignedNodeMBFunc,
+        typename CreateUnalignedNodeFunc,
+        typename SetUnalignedNodeFunc,
         typename CreateUnalignedNodeMBFunc,
         typename SetUnalignedNodeMBFunc,
         typename CreateLeafFunc,
@@ -99,8 +103,12 @@ namespace embree
           BuilderT (Scene* scene,
                     const RecalculatePrimRef& recalculatePrimRef,
                     const CreateAllocFunc& createAlloc,
+                    const CreateAlignedNodeFunc& createAlignedNode,
+                    const SetAlignedNodeFunc& setAlignedNode,
                     const CreateAlignedNodeMBFunc& createAlignedNodeMB,
                     const SetAlignedNodeMBFunc& setAlignedNodeMB,
+                    const CreateUnalignedNodeFunc& createUnalignedNode,
+                    const SetUnalignedNodeFunc& setUnalignedNode,
                     const CreateUnalignedNodeMBFunc& createUnalignedNodeMB,
                     const SetUnalignedNodeMBFunc& setUnalignedNodeMB,
                     const CreateLeafFunc& createLeaf,
@@ -111,7 +119,9 @@ namespace embree
             scene(scene),
             recalculatePrimRef(recalculatePrimRef),
             createAlloc(createAlloc),
+            createAlignedNode(createAlignedNode), setAlignedNode(setAlignedNode),
             createAlignedNodeMB(createAlignedNodeMB), setAlignedNodeMB(setAlignedNodeMB),
+            createUnalignedNode(createUnalignedNode), setUnalignedNode(setUnalignedNode),
             createUnalignedNodeMB(createUnalignedNodeMB), setUnalignedNodeMB(setUnalignedNodeMB),
             createLeaf(createLeaf),
             progressMonitor(progressMonitor),
@@ -520,8 +530,12 @@ namespace embree
           Scene* scene;
           const RecalculatePrimRef& recalculatePrimRef;
           const CreateAllocFunc& createAlloc;
+          const CreateAlignedNodeFunc& createAlignedNode;
+          const SetAlignedNodeFunc& setAlignedNode;
           const CreateAlignedNodeMBFunc& createAlignedNodeMB;
           const SetAlignedNodeMBFunc& setAlignedNodeMB;
+          const CreateUnalignedNodeFunc& createUnalignedNode;
+          const SetUnalignedNodeFunc& setUnalignedNode;
           const CreateUnalignedNodeMBFunc& createUnalignedNodeMB;
           const SetUnalignedNodeMBFunc& setUnalignedNodeMB;
           const CreateLeafFunc& createLeaf;
@@ -536,8 +550,12 @@ namespace embree
       template<typename NodeRef,
         typename RecalculatePrimRef,
         typename CreateAllocFunc,
+        typename CreateAlignedNodeFunc,
+        typename SetAlignedNodeFunc,
         typename CreateAlignedNodeMBFunc,
         typename SetAlignedNodeMBFunc,
+        typename CreateUnalignedNodeFunc,
+        typename SetUnalignedNodeFunc,
         typename CreateUnalignedNodeMBFunc,
         typename SetUnalignedNodeMBFunc,
         typename CreateLeafFunc,
@@ -546,8 +564,12 @@ namespace embree
         static BVHNodeRecordMB4D<NodeRef> build (Scene* scene, mvector<PrimRefMB>& prims, const PrimInfoMB& pinfo,
                                                const RecalculatePrimRef& recalculatePrimRef,
                                                const CreateAllocFunc& createAlloc,
+                                               const CreateAlignedNodeFunc& createAlignedNode,
+                                               const SetAlignedNodeFunc& setAlignedNode,
                                                const CreateAlignedNodeMBFunc& createAlignedNodeMB,
                                                const SetAlignedNodeMBFunc& setAlignedNodeMB,
+                                               const CreateUnalignedNodeFunc& createUnalignedNode,
+                                               const SetUnalignedNodeFunc& setUnalignedNode,
                                                const CreateUnalignedNodeMBFunc& createUnalignedNodeMB,
                                                const SetUnalignedNodeMBFunc& setUnalignedNodeMB,
                                                const CreateLeafFunc& createLeaf,
@@ -555,12 +577,16 @@ namespace embree
                                                const Settings settings)
         {
           typedef BuilderT<NodeRef,RecalculatePrimRef,CreateAllocFunc,
+            CreateAlignedNodeFunc,SetAlignedNodeFunc,
             CreateAlignedNodeMBFunc,SetAlignedNodeMBFunc,
+            CreateUnalignedNodeFunc,SetUnalignedNodeFunc,
             CreateUnalignedNodeMBFunc,SetUnalignedNodeMBFunc,
             CreateLeafFunc,ProgressMonitor> Builder;
 
           Builder builder(scene,recalculatePrimRef,createAlloc,
+                          createAlignedNode,setAlignedNode,
                           createAlignedNodeMB,setAlignedNodeMB,
+                          createUnalignedNode,setUnalignedNode,
                           createUnalignedNodeMB,setUnalignedNodeMB,
                           createLeaf,progressMonitor,settings);
 
