@@ -113,7 +113,7 @@ namespace embree
         typename CreateLeafFunc,
         typename ProgressMonitor>
 
-        class BuilderT : private Settings
+        class BuilderT
         {
           friend struct GeneralBVHBuilder;
 
@@ -126,24 +126,24 @@ namespace embree
                     const ProgressMonitor& progressMonitor,
                     const Settings& settings)
 
-            : Settings(settings),
+            : cfg(settings),
             prims(prims),
             heuristic(heuristic),
             createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf),
             progressMonitor(progressMonitor)
           {
-            if (branchingFactor > MAX_BRANCHING_FACTOR)
+            if (cfg.branchingFactor > MAX_BRANCHING_FACTOR)
               throw_RTCError(RTC_UNKNOWN_ERROR,"bvh_builder: branching factor too large");
           }
 
           const ReductionTy createLargeLeaf(const BuildRecord& current, Allocator alloc)
           {
             /* this should never occur but is a fatal error */
-            if (current.depth > maxDepth)
+            if (current.depth > cfg.maxDepth)
               throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
 
             /* create leaf for few primitives */
-            if (current.prims.size() <= maxLeafSize)
+            if (current.prims.size() <= cfg.maxLeafSize)
               return createLeaf(prims,current.prims,alloc);
 
             /* fill all children by always splitting the largest one */
@@ -159,7 +159,7 @@ namespace embree
               for (size_t i=0; i<numChildren; i++)
               {
                 /* ignore leaves as they cannot get split */
-                if (children[i].prims.size() <= maxLeafSize)
+                if (children[i].prims.size() <= cfg.maxLeafSize)
                   continue;
 
                 /* remember child with largest size */
@@ -181,12 +181,12 @@ namespace embree
               children[numChildren+0] = right;
               numChildren++;
 
-            } while (numChildren < branchingFactor);
+            } while (numChildren < cfg.branchingFactor);
 
             /* set barrier for primrefarrayalloc */
-            if (unlikely(current.size() > primrefarrayalloc))
+            if (unlikely(current.size() > cfg.primrefarrayalloc))
               for (size_t i=0; i<numChildren; i++)
-                children[i].alloc_barrier = children[i].size() <= primrefarrayalloc;
+                children[i].alloc_barrier = children[i].size() <= cfg.primrefarrayalloc;
 
             /* create node */
             auto node = createNode(children,numChildren,alloc);
@@ -206,19 +206,19 @@ namespace embree
               alloc = createAlloc();
 
             /* call memory monitor function to signal progress */
-            if (toplevel && current.size() <= singleThreadThreshold)
+            if (toplevel && current.size() <= cfg.singleThreadThreshold)
               progressMonitor(current.size());
 
             /*! find best split */
-            auto split = heuristic.find(current.prims,logBlockSize);
+            auto split = heuristic.find(current.prims,cfg.logBlockSize);
 
             /*! compute leaf and split cost */
-            const float leafSAH  = intCost*current.prims.leafSAH(logBlockSize);
-            const float splitSAH = travCost*halfArea(current.prims.geomBounds)+intCost*split.splitSAH();
+            const float leafSAH  = cfg.intCost*current.prims.leafSAH(cfg.logBlockSize);
+            const float splitSAH = cfg.travCost*halfArea(current.prims.geomBounds)+cfg.intCost*split.splitSAH();
             assert((current.prims.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
 
             /*! create a leaf node when threshold reached or SAH tells us to stop */
-            if (current.prims.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.prims.size() <= maxLeafSize && leafSAH <= splitSAH)) {
+            if (current.prims.size() <= cfg.minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= cfg.maxDepth || (current.prims.size() <= cfg.maxLeafSize && leafSAH <= splitSAH)) {
               heuristic.deterministic_order(current.prims);
               return createLargeLeaf(current,alloc);
             }
@@ -235,7 +235,7 @@ namespace embree
             size_t numChildren = 2;
 
             /*! split until node is full or SAH tells us to stop */
-            while (numChildren < branchingFactor)
+            while (numChildren < cfg.branchingFactor)
             {
               /*! find best child to split */
               float bestArea = neg_inf;
@@ -243,7 +243,7 @@ namespace embree
               for (size_t i=0; i<numChildren; i++)
               {
                 /* ignore leaves as they cannot get split */
-                if (children[i].prims.size() <= minLeafSize) continue;
+                if (children[i].prims.size() <= cfg.minLeafSize) continue;
 
                 /* find child with largest surface area */
                 if (halfArea(children[i].prims.geomBounds) > bestArea) {
@@ -257,7 +257,7 @@ namespace embree
               BuildRecord& brecord = children[bestChild];
               BuildRecord lrecord(current.depth+1);
               BuildRecord rrecord(current.depth+1);
-              auto split = heuristic.find(brecord.prims,logBlockSize);
+              auto split = heuristic.find(brecord.prims,cfg.logBlockSize);
               heuristic.split(split,brecord.prims,lrecord.prims,rrecord.prims);
               children[bestChild  ] = lrecord;
               children[numChildren] = rrecord;
@@ -265,9 +265,9 @@ namespace embree
             }
 
             /* set barrier for primrefarrayalloc */
-            if (unlikely(current.size() > primrefarrayalloc))
+            if (unlikely(current.size() > cfg.primrefarrayalloc))
               for (size_t i=0; i<numChildren; i++)
-                children[i].alloc_barrier = children[i].size() <= primrefarrayalloc;
+                children[i].alloc_barrier = children[i].size() <= cfg.primrefarrayalloc;
 
             /* sort buildrecords for faster shadow ray traversal */
             std::sort(&children[0],&children[numChildren],std::greater<BuildRecord>());
@@ -276,7 +276,7 @@ namespace embree
             auto node = createNode(children,numChildren,alloc);
 
             /* spawn tasks */
-            if (current.size() > singleThreadThreshold)
+            if (current.size() > cfg.singleThreadThreshold)
             {
               /*! parallel_for is faster than spawing sub-tasks */
               parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) { // FIXME: no range here
@@ -299,6 +299,7 @@ namespace embree
           }
 
         private:
+          Settings cfg;
           PrimRef* prims;
           Heuristic& heuristic;
           const CreateAllocFunc& createAlloc;
