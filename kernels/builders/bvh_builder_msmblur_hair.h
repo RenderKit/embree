@@ -304,7 +304,7 @@ namespace embree
             UnalignedHeuristicBinning::Split unalignedObjectSplit;
             LinearSpace3fa uspace;
             float unalignedObjectSAH = inf;
-            if (current.prims.isType(Leaf::TY_HAIR_MB) && alignedObjectSAH > 0.7f*leafSAH) {
+            if (current.prims.isType(Leaf::TY_HAIR,Leaf::TY_HAIR_MB) && alignedObjectSAH > 0.7f*leafSAH) {
               uspace = unalignedHeuristic.computeAlignedSpaceMB(scene,current.prims);
               const SetMB sset = current.prims.primInfo(recalculatePrimRef,uspace);
               unalignedObjectSplit = unalignedHeuristic.find(sset,0,uspace);
