@@ -117,7 +117,7 @@ namespace embree
                     const CreateLeafFunc& createLeaf,
                     const ProgressMonitor progressMonitor,
                     const Settings& settings)
-            : Settings(settings),
+            : cfg(settings),
             scene(scene),
             heuristicObjectSplit(),
             heuristicTemporalSplit(scene->device, recalculatePrimRef),
@@ -226,7 +226,7 @@ namespace embree
               return Split(0.0f,Split::SPLIT_TYPE);
 
             /* if the leaf is too large we also have to perform additional splits */
-            if (set.size() > maxLeafSize)
+            if (set.size() > cfg.maxLeafSize)
               return Split(0.0f,Split::SPLIT_FALLBACK);
 
             /* otherwise perform no splits anymore */
@@ -276,7 +276,7 @@ namespace embree
           const NodeRecordMB4D createLargeLeaf(const BuildRecord& in, Allocator alloc)
           {
             /* this should never occur but is a fatal error */
-            if (in.depth > maxDepth)
+            if (in.depth > cfg.maxDepth)
               throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
 
             /* replace already found split by fallback split */
@@ -381,7 +381,7 @@ namespace embree
                  createLeaf,
                  progressMonitor,
                  scene, prims, PrimInfo(0,current.prims.object_range.size(),current.prims),
-                 *this);
+                 cfg);
               convert_PrimRefArray_To_PrimRefMBArray(prims,primsMB,current.prims.object_range.size());
               return NodeRecordMB4D(ref,LBBox3fa(current.prims.geomBounds),current.prims.time_range);
             }
@@ -403,7 +403,7 @@ namespace embree
                  createLeaf,
                  createLeaf,
                  progressMonitor,
-                 *this);
+                 cfg);
             }
 
             /* get thread local allocator */
@@ -418,12 +418,12 @@ namespace embree
             const Split csplit = find(current.prims);
 
             /*! compute leaf and split cost */
-            const float leafSAH  = intCost*current.prims.leafSAH(logBlockSize);
-            const float splitSAH = travCost*current.prims.halfArea()+intCost*csplit.splitSAH();
+            const float leafSAH  = cfg.intCost*current.prims.leafSAH(logBlockSize);
+            const float splitSAH = cfg.travCost*current.prims.halfArea()+cfg.intCost*csplit.splitSAH();
             assert((current.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
 
             /*! create a leaf node when threshold reached or SAH tells us to stop */
-            if (current.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.size() <= maxLeafSize && leafSAH <= splitSAH)) {
+            if (current.size() <= cfg.minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= cfg.maxDepth || (current.size() <= cfg.maxLeafSize && leafSAH <= splitSAH)) {
               current.prims.deterministic_order();
               return createLargeLeaf(current,alloc);
             }
@@ -448,7 +448,7 @@ namespace embree
               ssize_t bestChild = -1;
               for (size_t i=0; i<children.size(); i++)
               {
-                if (children[i].size() <= minLeafSize) continue;
+                if (children[i].size() <= cfg.minLeafSize) continue;
                 if (expectedApproxHalfArea(children[i].prims.geomBounds) > bestArea) {
                   bestChild = i; bestArea = expectedApproxHalfArea(children[i].prims.geomBounds);
                 }
@@ -523,6 +523,7 @@ namespace embree
           }
 
         private:
+          Settings cfg;
           Scene* scene;
           HeuristicArrayBinningMB<PrimRefMB,MBLUR_NUM_OBJECT_BINS> heuristicObjectSplit;
           HeuristicMBlurTemporalSplit<PrimRefMB,RecalculatePrimRef,MBLUR_NUM_TEMPORAL_BINS> heuristicTemporalSplit;

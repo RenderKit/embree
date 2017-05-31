@@ -261,7 +261,7 @@ namespace embree
         typename CreateLeafFunc,
         typename ProgressMonitor>
 
-        class BuilderT : private Settings
+        class BuilderT
         {
           ALIGNED_CLASS;
           static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximal supported BVH branching factor
@@ -284,13 +284,13 @@ namespace embree
                     const CreateLeafFunc createLeaf,
                     const ProgressMonitor progressMonitor,
                     const Settings& settings)
-            : Settings(settings),
+            : cfg(settings),
             heuristicObjectSplit(),
             heuristicTemporalSplit(device, recalculatePrimRef),
             recalculatePrimRef(recalculatePrimRef), createAlloc(createAlloc), createNode(createNode), setNode(setNode), createLeaf(createLeaf),
             progressMonitor(progressMonitor)
           {
-            if (branchingFactor > MAX_BRANCHING_FACTOR)
+            if (cfg.branchingFactor > MAX_BRANCHING_FACTOR)
               throw_RTCError(RTC_UNKNOWN_ERROR,"bvh_builder: branching factor too large");
           }
 
@@ -298,18 +298,18 @@ namespace embree
           const Split find(const SetMB& set)
           {
             /* first try standard object split */
-            const Split object_split = heuristicObjectSplit.find(set,logBlockSize);
+            const Split object_split = heuristicObjectSplit.find(set,cfg.logBlockSize);
             const float object_split_sah = object_split.splitSAH();
 
             /* test temporal splits only when object split was bad */
-            const float leaf_sah = set.leafSAH(logBlockSize);
+            const float leaf_sah = set.leafSAH(cfg.logBlockSize);
             if (object_split_sah < 0.50f*leaf_sah)
               return object_split;
 
             /* do temporal splits only if the the time range is big enough */
             if (set.time_range.size() > 1.01f/float(set.max_num_time_segments))
             {
-              const Split temporal_split = heuristicTemporalSplit.find(set,logBlockSize);
+              const Split temporal_split = heuristicTemporalSplit.find(set,cfg.logBlockSize);
               const float temporal_split_sah = temporal_split.splitSAH();
 
               /* take temporal split if it improved SAH */
@@ -365,7 +365,7 @@ namespace embree
               return Split(0.0f,Split::SPLIT_NONE);
 
             /* if a leaf can only hold a single time-segment, we might have to do additional temporal splits */
-            if (singleLeafTimeSegment)
+            if (cfg.singleLeafTimeSegment)
             {
               /* test if one primitive has more than one time segment in time range, if so split time */
               for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++)
@@ -385,7 +385,7 @@ namespace embree
               return Split(0.0f,Split::SPLIT_TYPE);
 
             /* if the leaf is too large we also have to perform additional splits */
-            if (set.size() > maxLeafSize)
+            if (set.size() > cfg.maxLeafSize)
               return Split(0.0f,Split::SPLIT_FALLBACK);
 
             /* otherwise perform no splits anymore */
@@ -435,7 +435,7 @@ namespace embree
           const NodeRecordMB4D createLargeLeaf(const BuildRecord& in, Allocator alloc)
           {
             /* this should never occur but is a fatal error */
-            if (in.depth > maxDepth)
+            if (in.depth > cfg.maxDepth)
               throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
 
             /* replace already found split by fallback split */
@@ -480,7 +480,7 @@ namespace embree
               rrecord.split = findFallback(rrecord.prims);
               children.split(bestChild,lrecord,rrecord,std::move(new_vector));
 
-            } while (children.size() < branchingFactor);
+            } while (children.size() < cfg.branchingFactor);
 
             /* create node */
             auto node = createNode(alloc, hasTimeSplits);
@@ -507,19 +507,19 @@ namespace embree
               alloc = createAlloc();
 
             /* call memory monitor function to signal progress */
-            if (toplevel && current.size() <= singleThreadThreshold)
+            if (toplevel && current.size() <= cfg.singleThreadThreshold)
               progressMonitor(current.size());
 
             /*! find best split */
             const Split csplit = find(current.prims);
 
             /*! compute leaf and split cost */
-            const float leafSAH  = intCost*current.prims.leafSAH(logBlockSize);
-            const float splitSAH = travCost*current.prims.halfArea()+intCost*csplit.splitSAH();
+            const float leafSAH  = cfg.intCost*current.prims.leafSAH(cfg.logBlockSize);
+            const float splitSAH = cfg.travCost*current.prims.halfArea()+cfg.intCost*csplit.splitSAH();
             assert((current.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
 
             /*! create a leaf node when threshold reached or SAH tells us to stop */
-            if (current.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.size() <= maxLeafSize && leafSAH <= splitSAH)) {
+            if (current.size() <= cfg.minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= cfg.maxDepth || (current.size() <= cfg.maxLeafSize && leafSAH <= splitSAH)) {
               current.prims.deterministic_order();
               return createLargeLeaf(current,alloc);
             }
@@ -537,14 +537,14 @@ namespace embree
             }
 
             /*! split until node is full or SAH tells us to stop */
-            while (children.size() < branchingFactor) 
+            while (children.size() < cfg.branchingFactor) 
             {
               /*! find best child to split */
               float bestArea = neg_inf;
               ssize_t bestChild = -1;
               for (size_t i=0; i<children.size(); i++)
               {
-                if (children[i].size() <= minLeafSize) continue;
+                if (children[i].size() <= cfg.minLeafSize) continue;
                 if (expectedApproxHalfArea(children[i].prims.geomBounds) > bestArea) {
                   bestChild = i; bestArea = expectedApproxHalfArea(children[i].prims.geomBounds);
                 }
@@ -569,7 +569,7 @@ namespace embree
             LBBox3fa gbounds = empty;
 
             /* spawn tasks */
-            if (unlikely(current.size() > singleThreadThreshold))
+            if (unlikely(current.size() > cfg.singleThreadThreshold))
             {
               /*! parallel_for is faster than spawing sub-tasks */
               parallel_for(size_t(0), children.size(), [&] (const range<size_t>& r) {
@@ -612,6 +612,7 @@ namespace embree
           }
 
         private:
+          Settings cfg;
           HeuristicArrayBinningMB<PrimRefMB,MBLUR_NUM_OBJECT_BINS> heuristicObjectSplit;
           HeuristicMBlurTemporalSplit<PrimRefMB,RecalculatePrimRef,MBLUR_NUM_TEMPORAL_BINS> heuristicTemporalSplit;
           const RecalculatePrimRef recalculatePrimRef;

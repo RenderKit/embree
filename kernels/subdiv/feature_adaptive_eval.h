@@ -135,7 +135,7 @@ namespace embree
 //#if PATCH_MIN_RESOLUTION
 //          return patch.isFinalResolution(PATCH_MIN_RESOLUTION) || depth>=(size_t)max_eval_depth;
 //#else
-          return depth>=max_eval_depth;
+          return depth>=(size_t)max_eval_depth;
 //#endif
         }
         

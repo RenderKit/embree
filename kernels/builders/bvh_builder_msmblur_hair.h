@@ -80,7 +80,7 @@ namespace embree
         typename CreateLeafMBFunc,
         typename ProgressMonitor>
 
-        class BuilderT : private Settings
+        class BuilderT
         {
           ALIGNED_CLASS;
 
@@ -118,7 +118,7 @@ namespace embree
                     const ProgressMonitor& progressMonitor,
                     const Settings settings)
 
-            : Settings(settings),
+            : cfg(settings),
             scene(scene),
             recalculatePrimRef(recalculatePrimRef),
             createAlloc(createAlloc),
@@ -167,7 +167,7 @@ namespace embree
               return Split(0.0f,Split::SPLIT_NONE);
 
             /* if a leaf can only hold a single time-segment, we might have to do additional temporal splits */
-            if (singleLeafTimeSegment)
+            if (cfg.singleLeafTimeSegment)
             {
               /* test if one primitive has more than one time segment in time range, if so split time */
               for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++)
@@ -187,7 +187,7 @@ namespace embree
               return Split(0.0f,Split::SPLIT_TYPE);
 
             /* if the leaf is too large we also have to perform additional splits */
-            if (set.size() > maxLeafSize)
+            if (set.size() > cfg.maxLeafSize)
               return Split(0.0f,Split::SPLIT_FALLBACK);
 
             /* otherwise perform no splits anymore */
@@ -237,7 +237,7 @@ namespace embree
           const NodeRecordMB4D createLargeLeaf(const BuildRecord& in, Allocator alloc)
           {
             /* this should never occur but is a fatal error */
-            if (in.depth > maxDepth)
+            if (in.depth > cfg.maxDepth)
               throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
 
             /* replace already found split by fallback split */
@@ -282,7 +282,7 @@ namespace embree
               rrecord.split = findFallback(rrecord.prims);
               children.split(bestChild,lrecord,rrecord,std::move(new_vector));
 
-            } while (children.size() < branchingFactor);
+            } while (children.size() < cfg.branchingFactor);
 
             /* create node */
             NodeRef node = createAlignedNodeMB(alloc, hasTimeSplits);
@@ -379,7 +379,7 @@ namespace embree
                  createLeaf,
                  progressMonitor,
                  scene, prims, PrimInfo(0,current.prims.object_range.size(),current.prims),
-                 *this);
+                 cfg);
               convert_PrimRefArray_To_PrimRefMBArray(prims,primsMB,current.prims.object_range.size());
               return NodeRecordMB4D(ref,LBBox3fa(current.prims.geomBounds),current.prims.time_range);
             }
@@ -393,7 +393,7 @@ namespace embree
               progressMonitor(current.size());
 
             /* create leaf node */
-            if (current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize) {
+            if (current.depth+MIN_LARGE_LEAF_LEVELS >= cfg.maxDepth || current.size() <= cfg.minLeafSize) {
               current.prims.deterministic_order();
               return createLargeLeaf(current,alloc);
             }
@@ -411,7 +411,7 @@ namespace embree
               for (size_t i=0; i<children.size(); i++)
               {
                 /* ignore leaves as they cannot get split */
-                if (children[i].size() <= minLeafSize)
+                if (children[i].size() <= cfg.minLeafSize)
                   continue;
 
                 /* remember child with largest area */
@@ -429,7 +429,7 @@ namespace embree
               std::unique_ptr<mvector<PrimRefMB>> new_vector = split(children[bestChild],left,right,aligned,timesplit);
               children.split(bestChild,left,right,std::move(new_vector));
 
-            } while (children.size() < branchingFactor);
+            } while (children.size() < cfg.branchingFactor);
 
             /* create time split node */
             if (timesplit)
@@ -550,6 +550,7 @@ namespace embree
           }
 
         private:
+          Settings cfg;
           Scene* scene;
           const RecalculatePrimRef& recalculatePrimRef;
           const CreateAllocFunc& createAlloc;
