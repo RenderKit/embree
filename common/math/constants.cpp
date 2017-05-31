@@ -14,8 +14,26 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#define RTCORE_VERSION_MAJOR 2
-#define RTCORE_VERSION_MINOR 17
-#define RTCORE_VERSION_PATCH 0
-#define RTCORE_VERSION 21700
-#define RTCORE_VERSION_STRING "2.17.0-alpha.0"
+#include "constants.h"
+
+namespace embree
+{
+  TrueTy True;
+  FalseTy False;
+  ZeroTy zero;
+  OneTy one;
+  NegInfTy neg_inf;
+  PosInfTy inf;
+  PosInfTy pos_inf;
+  NaNTy nan;
+  UlpTy ulp;
+  PiTy pi;
+  OneOverPiTy one_over_pi;
+  TwoPiTy two_pi;
+  OneOverTwoPiTy one_over_two_pi;
+  FourPiTy four_pi;
+  OneOverFourPiTy one_over_four_pi;
+  StepTy step;
+  ReverseStepTy reverse_step;
+  EmptyTy empty;
+}

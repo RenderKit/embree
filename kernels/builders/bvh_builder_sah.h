@@ -104,6 +104,7 @@ namespace embree
       template<typename BuildRecord,
         typename Heuristic,
         typename Set,
+        typename PrimRef,
         typename ReductionTy,
         typename Allocator,
         typename CreateAllocFunc,
@@ -116,7 +117,8 @@ namespace embree
         {
           friend struct GeneralBVHBuilder;
 
-          BuilderT (Heuristic& heuristic,
+          BuilderT (PrimRef* prims,
+                    Heuristic& heuristic,
                     const CreateAllocFunc& createAlloc,
                     const CreateNodeFunc& createNode,
                     const UpdateNodeFunc& updateNode,
@@ -125,6 +127,7 @@ namespace embree
                     const Settings& settings)
 
             : Settings(settings),
+            prims(prims),
             heuristic(heuristic),
             createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf),
             progressMonitor(progressMonitor)
@@ -141,7 +144,7 @@ namespace embree
 
             /* create leaf for few primitives */
             if (current.prims.size() <= maxLeafSize)
-              return createLeaf(current.prims,alloc);
+              return createLeaf(prims,current.prims,alloc);
 
             /* fill all children by always splitting the largest one */
             ReductionTy values[MAX_BRANCHING_FACTOR];
@@ -296,6 +299,7 @@ namespace embree
           }
 
         private:
+          PrimRef* prims;
           Heuristic& heuristic;
           const CreateAllocFunc& createAlloc;
           const CreateNodeFunc& createNode;
@@ -308,6 +312,7 @@ namespace embree
       typename ReductionTy,
         typename Heuristic,
         typename Set,
+        typename PrimRef,
         typename CreateAllocFunc,
         typename CreateNodeFunc,
         typename UpdateNodeFunc,
@@ -315,6 +320,7 @@ namespace embree
         typename ProgressMonitor>
 
         __noinline static ReductionTy build(Heuristic& heuristic,
+                                            PrimRef* prims,
                                  const Set& set,
                                  CreateAllocFunc createAlloc,
                                  CreateNodeFunc createNode, UpdateNodeFunc updateNode,
@@ -328,6 +334,7 @@ namespace embree
           BuildRecord,
           Heuristic,
           Set,
+          PrimRef,
           ReductionTy,
           decltype(createAlloc()),
           CreateAllocFunc,
@@ -337,7 +344,8 @@ namespace embree
           ProgressMonitor> Builder;
 
         /* instantiate builder */
-        Builder builder(heuristic,
+        Builder builder(prims,
+                        heuristic,
                         createAlloc,
                         createNode,
                         updateNode,
@@ -378,9 +386,10 @@ namespace embree
                                  const Settings& settings)
       {
         Heuristic heuristic(prims);
-        return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set>(
+        return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set,PrimRef>(
           heuristic,
-          PrimInfoRange(0,pinfo.size(),pinfo.geomBounds,pinfo.centBounds),
+          prims,
+          PrimInfoRange(0,pinfo.size(),pinfo),
           createAlloc,
           createNode,
           updateNode,
@@ -404,21 +413,20 @@ namespace embree
       template<typename ReductionTy, typename UserCreateLeaf>
       struct CreateLeafExt
       {
-        __forceinline CreateLeafExt (const UserCreateLeaf userCreateLeaf, PrimRef* prims)
-          : userCreateLeaf(userCreateLeaf), prims(prims) {}
+        __forceinline CreateLeafExt (const UserCreateLeaf userCreateLeaf)
+          : userCreateLeaf(userCreateLeaf) {}
 
         // __noinline is workaround for ICC2016 compiler bug
         template<typename Allocator>
-        __noinline ReductionTy operator() (const range<size_t>& range, Allocator alloc) const
+        __noinline ReductionTy operator() (PrimRef* prims, const range<size_t>& range, Allocator alloc) const
         {
           for (size_t i=range.begin(); i<range.end(); i++)
             prims[i].lower.a &= GEOMID_MASK;
 
-          return userCreateLeaf(range,alloc);
+          return userCreateLeaf(prims,range,alloc);
         }
 
         const UserCreateLeaf userCreateLeaf;
-        PrimRef* prims;
       };
 
       /*! special builder that propagates reduction over the tree */
@@ -473,13 +481,14 @@ namespace embree
               }
             });
 
-          return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set>(
+          return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set,PrimRef>(
             heuristic,
-            PrimInfoExtRange(0,pinfo.size(),extSize,pinfo.geomBounds,pinfo.centBounds),
+            prims,
+            PrimInfoExtRange(0,pinfo.size(),extSize,pinfo),
             createAlloc,
             createNode,
             updateNode,
-            CreateLeafExt<ReductionTy,CreateLeafFunc>(createLeaf,prims),
+            CreateLeafExt<ReductionTy,CreateLeafFunc>(createLeaf),
             progressMonitor,
             settings);
         }
@@ -519,9 +528,10 @@ namespace embree
         typedef HeuristicArrayOpenMergeSAH<NodeOpenerFunc,BuildRef,NUM_OBJECT_BINS_HQ> Heuristic;
         Heuristic heuristic(nodeOpenerFunc,prims,settings.branchingFactor);
 
-        return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set>(
+        return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set,BuildRef>(
           heuristic,
-          PrimInfoExtRange(0,pinfo.size(),extSize,pinfo.geomBounds,pinfo.centBounds),
+          prims,
+          PrimInfoExtRange(0,pinfo.size(),extSize,pinfo),
           createAlloc,
           createNode,
           updateNode,

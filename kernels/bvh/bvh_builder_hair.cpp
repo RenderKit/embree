@@ -72,13 +72,13 @@ namespace embree
         settings.maxLeafSize = BVH::maxLeafBlocks;
 
         /* creates a leaf node */
-        auto createLeaf = [&] (size_t depth, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) -> NodeRef
+        auto createLeaf = [&] (const PrimRef* prims, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) -> NodeRef
           {
             size_t start = set.begin();
             size_t items = set.size();
             Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
             for (size_t i=0; i<items; i++) {
-              accel[i].fill(prims.data(),start,set.end(),bvh->scene);
+              accel[i].fill(prims,start,set.end(),bvh->scene);
             }
             return bvh->encodeLeaf((char*)accel,items);
           };
@@ -116,7 +116,7 @@ namespace embree
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
-      typedef typename BVH::NodeRecordMB NodeRecordMB;
+      typedef typename BVH::NodeRecordMB4D NodeRecordMB4D;
 
       BVH* bvh;
       Scene* scene;
@@ -155,7 +155,7 @@ namespace embree
         settings.maxLeafSize = BVH::maxLeafBlocks;
 
         /* creates a leaf node */
-        auto createLeaf = [&] (const SetMB& prims, const FastAllocator::CachedAllocator& alloc) -> NodeRecordMB
+        auto createLeaf = [&] (const SetMB& prims, const FastAllocator::CachedAllocator& alloc) -> NodeRecordMB4D
           {
             size_t start = prims.object_range.begin();
             size_t end   = prims.object_range.end();
@@ -167,7 +167,7 @@ namespace embree
             for (size_t i=0; i<items; i++)
               bounds.extend(accel[i].fillMB(prims.prims->data(),start,end,bvh->scene,prims.time_range));
             
-            return NodeRecordMB(node,bounds);
+            return NodeRecordMB4D(node,bounds,prims.time_range);
           };
 
         /* build the hierarchy */
@@ -175,12 +175,10 @@ namespace embree
           (scene, prims0, pinfo,
            RecalculatePrimRef<NativeCurves>(scene),
            typename BVH::CreateAlloc(bvh),
-           typename BVH::AlignedNodeMB::Create(),
-           typename BVH::AlignedNodeMB::Set(),
-           typename BVH::UnalignedNodeMB::Create(),
-           typename BVH::UnalignedNodeMB::Set(),
            typename BVH::AlignedNodeMB4D::Create(),
            typename BVH::AlignedNodeMB4D::Set(),
+           typename BVH::UnalignedNodeMB::Create(),
+           typename BVH::UnalignedNodeMB::Set(),
            createLeaf,
            bvh->scene->progressInterface,
            settings);

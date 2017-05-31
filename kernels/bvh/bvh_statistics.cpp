@@ -158,7 +158,7 @@ namespace embree
       if (num)
       {
         for (size_t i=0; i<num; i++) {
-          s.statLeaf.numPrims += bvh->primTy.size(tri+i*bvh->primTy.bytes);
+          s.statLeaf.numPrims += bvh->primTy->size(tri+i*bvh->primTy->bytes);
         }
         s.statLeaf.numLeaves++;
         s.statLeaf.numPrimBlocks += num;

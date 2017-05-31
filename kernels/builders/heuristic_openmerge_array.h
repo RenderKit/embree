@@ -165,7 +165,7 @@ namespace embree
                 const size_t n = nodeOpenerFunc(prims0[i],tmp);
                 assert(extra_elements + n-1 <= set.ext_range_size());
                 for (size_t j=0; j<n; j++)
-                  set.extend(tmp[j].bounds());
+                  set.extend_center2(tmp[j]);
 
                 prims0[i] = tmp[0];
                 for (size_t j=1; j<n; j++)
@@ -190,7 +190,7 @@ namespace embree
                     assert(ID + n-1 <= set.ext_range_size());
 
                     for (size_t j=0; j<n; j++)
-                      info.extend(tmp[j].bounds());
+                      info.extend_center2(tmp[j]);
 
                     prims0[i] = tmp[0];
                     for (size_t j=1; j<n; j++)
@@ -223,7 +223,7 @@ namespace embree
                 const size_t n = nodeOpenerFunc(prims0[i],tmp);
                 assert(extra_elements + n-1 <= set.ext_range_size());
                 for (size_t j=0;j<n;j++)
-                  set.extend(tmp[j].bounds());
+                  set.extend_center2(tmp[j]);
                   
                 prims0[i] = tmp[0];
                 for (size_t j=1;j<n;j++)
@@ -375,10 +375,10 @@ namespace embree
           size_t center = serial_partitioning(prims0,
                                               begin,end,local_left,local_right,
                                               [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask); },
-                                              [] (PrimInfo& pinfo,const PrimRef& ref) { pinfo.add(ref.bounds()); });          
+                                              [] (PrimInfo& pinfo,const PrimRef& ref) { pinfo.add_center2(ref); });          
           
-          new (&lset) PrimInfoExtRange(begin,center,center,local_left.geomBounds,local_left.centBounds);
-          new (&rset) PrimInfoExtRange(center,end,end,local_right.geomBounds,local_right.centBounds);
+          new (&lset) PrimInfoExtRange(begin,center,center,local_left);
+          new (&rset) PrimInfoExtRange(center,end,end,local_right);
           assert(area(lset.geomBounds) >= 0.0f);
           assert(area(rset.geomBounds) >= 0.0f);
           return std::pair<size_t,size_t>(local_left.size(),local_right.size());
@@ -389,8 +389,8 @@ namespace embree
         {
           const size_t begin = set.begin();
           const size_t end   = set.end();
-          PrimInfo left; left.reset();
-          PrimInfo right; right.reset();
+          PrimInfo left(empty);
+          PrimInfo right(empty);
           const unsigned int splitPos = split.pos;
           const unsigned int splitDim = split.dim;
           const unsigned int splitDimMask = (unsigned int)1 << splitDim;
@@ -401,12 +401,12 @@ namespace embree
 
           const size_t center = parallel_partitioning(
             prims0,begin,end,EmptyTy(),left,right,isLeft,
-            [] (PrimInfo& pinfo,const PrimRef& ref) { pinfo.add(ref.bounds()); },
+            [] (PrimInfo& pinfo,const PrimRef& ref) { pinfo.add_center2(ref); },
             [] (PrimInfo& pinfo0,const PrimInfo& pinfo1) { pinfo0.merge(pinfo1); },
             PARALLEL_PARTITION_BLOCK_SIZE);
 
-          new (&lset) PrimInfoExtRange(begin,center,center,left.geomBounds,left.centBounds);
-          new (&rset) PrimInfoExtRange(center,end,end,right.geomBounds,right.centBounds);
+          new (&lset) PrimInfoExtRange(begin,center,center,left);
+          new (&rset) PrimInfoExtRange(center,end,end,right);
           assert(area(lset.geomBounds) >= 0.0f);
           assert(area(rset.geomBounds) >= 0.0f);
 
@@ -427,17 +427,17 @@ namespace embree
 
           PrimInfo left(empty);
           for (size_t i=begin; i<center; i++)
-            left.add(prims0[i].bounds());
+            left.add_center2(prims0[i]);
 
           const size_t lweight = left.end;
           
           PrimInfo right(empty);
           for (size_t i=center; i<end; i++)
-            right.add(prims0[i].bounds());	
+            right.add_center2(prims0[i]);	
 
           const size_t rweight = right.end;
-          new (&lset) PrimInfoExtRange(begin,center,center,left.geomBounds,left.centBounds);
-          new (&rset) PrimInfoExtRange(center,end,end,right.geomBounds,right.centBounds);
+          new (&lset) PrimInfoExtRange(begin,center,center,left);
+          new (&rset) PrimInfoExtRange(center,end,end,right);
 
           /* if we have an extended range */
           if (set.has_ext_range()) 
