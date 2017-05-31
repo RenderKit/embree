@@ -144,7 +144,7 @@ namespace embree
 
             /* create leaf for few primitives */
             if (current.prims.size() <= maxLeafSize)
-              return createLeaf(current.prims,alloc);
+              return createLeaf(prims,current.prims,alloc);
 
             /* fill all children by always splitting the largest one */
             ReductionTy values[MAX_BRANCHING_FACTOR];
@@ -413,21 +413,20 @@ namespace embree
       template<typename ReductionTy, typename UserCreateLeaf>
       struct CreateLeafExt
       {
-        __forceinline CreateLeafExt (const UserCreateLeaf userCreateLeaf, PrimRef* prims)
-          : userCreateLeaf(userCreateLeaf), prims(prims) {}
+        __forceinline CreateLeafExt (const UserCreateLeaf userCreateLeaf)
+          : userCreateLeaf(userCreateLeaf) {}
 
         // __noinline is workaround for ICC2016 compiler bug
         template<typename Allocator>
-        __noinline ReductionTy operator() (const range<size_t>& range, Allocator alloc) const
+        __noinline ReductionTy operator() (PrimRef* prims, const range<size_t>& range, Allocator alloc) const
         {
           for (size_t i=range.begin(); i<range.end(); i++)
             prims[i].lower.a &= GEOMID_MASK;
 
-          return userCreateLeaf(range,alloc);
+          return userCreateLeaf(prims,range,alloc);
         }
 
         const UserCreateLeaf userCreateLeaf;
-        PrimRef* prims;
       };
 
       /*! special builder that propagates reduction over the tree */
@@ -489,7 +488,7 @@ namespace embree
             createAlloc,
             createNode,
             updateNode,
-            CreateLeafExt<ReductionTy,CreateLeafFunc>(createLeaf,prims),
+            CreateLeafExt<ReductionTy,CreateLeafFunc>(createLeaf),
             progressMonitor,
             settings);
         }

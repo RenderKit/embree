@@ -23,8 +23,8 @@ namespace embree
     template<int N>
     typename BVHN<N>::NodeRef BVHNBuilderVirtual<N>::BVHNBuilderV::build(FastAllocator* allocator, BuildProgressMonitor& progressFunc, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings)
     {
-      auto createLeafFunc = [&] (const range<size_t>& set, const Allocator& alloc) -> NodeRef {
-        return createLeaf(set,alloc);
+      auto createLeafFunc = [&] (const PrimRef* prims, const range<size_t>& set, const Allocator& alloc) -> NodeRef {
+        return createLeaf(prims,set,alloc);
       };
       
       settings.branchingFactor = N;
@@ -37,8 +37,8 @@ namespace embree
     template<int N>
     typename BVHN<N>::NodeRef BVHNBuilderQuantizedVirtual<N>::BVHNBuilderV::build(FastAllocator* allocator, BuildProgressMonitor& progressFunc, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings)
     {
-      auto createLeafFunc = [&] (const range<size_t>& set, const Allocator& alloc) -> NodeRef {
-        return createLeaf(set,alloc);
+      auto createLeafFunc = [&] (const PrimRef* prims, const range<size_t>& set, const Allocator& alloc) -> NodeRef {
+        return createLeaf(prims,set,alloc);
       };
             
       settings.branchingFactor = N;
@@ -50,8 +50,8 @@ namespace embree
     template<int N>
     typename BVHN<N>::NodeRecordMB BVHNBuilderMblurVirtual<N>::BVHNBuilderV::build(FastAllocator* allocator, BuildProgressMonitor& progressFunc, PrimRef* prims, const PrimInfo& pinfo, GeneralBVHBuilder::Settings settings, const BBox1f& timeRange)
     {
-      auto createLeafFunc = [&] (const range<size_t>& set, const Allocator& alloc) -> NodeRecordMB {
-        return createLeaf(set,alloc);
+      auto createLeafFunc = [&] (const PrimRef* prims, const range<size_t>& set, const Allocator& alloc) -> NodeRecordMB {
+        return createLeaf(prims,set,alloc);
       };
 
       settings.branchingFactor = N;
