@@ -938,7 +938,14 @@ namespace embree
   {
     Geometry::Type ty = (Geometry::Type) (Geometry::TRIANGLE_MESH | Geometry::QUAD_MESH | Geometry::BEZIER_CURVES);
 
-    BVH8* accel = new BVH8(Triangle4::type,scene); // FIXME: wrong type !!!!!!!
+    static const PrimitiveType* type[6];
+    type[0] = &Triangle4::type;
+    type[1] = &Triangle4vMB::type;
+    type[2] = &Quad4v::type;
+    type[3] = &Quad4iMB::type;
+    type[4] = &Bezier1v::type;
+    type[5] = &Bezier1iMB::type;
+    BVH8* accel = new BVH8(type,6,scene);
 
     Accel::Intersectors intersectors;
     const size_t tri1 = scene->getNumPrimitives(Geometry::TRIANGLE_MESH,false);

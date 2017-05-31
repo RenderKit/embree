@@ -78,7 +78,7 @@ namespace embree
           stream << " (" << std::setw(6) << std::setprecision(2) << 100.0*sah(bvh)/sahTotal << "%), ";          
           stream << "#bytes = " << std::setw(7) << std::setprecision(2) << bytes()/1E6  << " MB ";
           stream << "(" << std::setw(6) << std::setprecision(2) << 100.0*double(bytes())/double(bytesTotal) << "%), ";
-          stream << "#nodes = " << std::setw(7) << numNodes << " (" << std::setw(6) << std::setprecision(2) << 100.0*fillRate() << "% filled), ";
+          stream << "#nodes = " << std::setw(9) << numNodes << " (" << std::setw(6) << std::setprecision(2) << 100.0*fillRate() << "% filled), ";
           stream << "#bytes/prim = " << std::setw(6) << std::setprecision(2) << double(bytes())/double(bvh->numPrimitives);
           return stream.str();
         }
@@ -96,11 +96,13 @@ namespace embree
         LeafStat ( double leafSAH = 0.0f, 
                    size_t numLeaves = 0,
                    size_t numPrims = 0,
-                   size_t numPrimBlocks = 0 )
+                   size_t numPrimBlocks = 0,
+                   int ty = 0)
         : leafSAH(leafSAH),
           numLeaves(numLeaves),
           numPrims(numPrims),
-          numPrimBlocks(numPrimBlocks) 
+          numPrimBlocks(numPrimBlocks),
+          ty(ty)
         {
           for (size_t i=0; i<NHIST; i++)
             numPrimBlocksHistogram[i] = 0;
@@ -111,7 +113,7 @@ namespace embree
         }
 
         size_t bytes(BVH* bvh) const {
-          return numPrimBlocks*bvh->primTy->bytes;
+          return numPrimBlocks*bvh->getPrimType(ty).bytes;
         }
 
         size_t size() const {
@@ -119,15 +121,17 @@ namespace embree
         }
 
         double fillRateNom (BVH* bvh) const { return double(numPrims);  }
-        double fillRateDen (BVH* bvh) const { return double(bvh->primTy->blockSize*numPrimBlocks);  }
+        double fillRateDen (BVH* bvh) const { return double(bvh->getPrimType(ty).blockSize*numPrimBlocks);  }
         double fillRate    (BVH* bvh) const { return fillRateNom(bvh)/fillRateDen(bvh); }
 
         __forceinline friend LeafStat operator+ ( const LeafStat& a, const LeafStat& b)
         {
+          assert(a.ty == b.ty);
           LeafStat stat(a.leafSAH + b.leafSAH,
                         a.numLeaves+b.numLeaves,
                         a.numPrims+b.numPrims,
-                        a.numPrimBlocks+b.numPrimBlocks);
+                        a.numPrimBlocks+b.numPrimBlocks,
+                        a.ty);
           for (size_t i=0; i<NHIST; i++) {
             stat.numPrimBlocksHistogram[i] += a.numPrimBlocksHistogram[i];
             stat.numPrimBlocksHistogram[i] += b.numPrimBlocksHistogram[i];
@@ -143,7 +147,7 @@ namespace embree
           stream << " (" << std::setw(6) << std::setprecision(2) << 100.0*sah(bvh)/sahTotal << "%), ";
           stream << "#bytes = " << std::setw(7) << std::setprecision(2) << double(bytes(bvh))/1E6  << " MB ";
           stream << "(" << std::setw(6) << std::setprecision(2) << 100.0*double(bytes(bvh))/double(bytesTotal) << "%), ";
-          stream << "#nodes = " << std::setw(7) << numLeaves << " (" << std::setw(6) << std::setprecision(2) << 100.0*fillRate(bvh) << "% filled), ";
+          stream << "#nodes = " << std::setw(9) << numLeaves << " (" << std::setw(6) << std::setprecision(2) << 100.0*fillRate(bvh) << "% filled), ";
           stream << "#bytes/prim = " << std::setw(6) << std::setprecision(2) << double(bytes(bvh))/double(bvh->numPrimitives);
           return stream.str();
         }
@@ -163,11 +167,77 @@ namespace embree
         size_t numPrims;                   //!< Number of primitives.
         size_t numPrimBlocks;              //!< Number of primitive blocks.
         size_t numPrimBlocksHistogram[8];
+        int ty;
+      };
+
+      struct MultiLeafStat
+      {
+        static const unsigned M = 6;
+
+        MultiLeafStat() 
+        {
+          for (size_t i=0; i<M; i++)
+            stat[i].ty = i;
+        }
+
+        double sah(BVH* bvh) const 
+        {
+          double f = 0.0;
+          for (size_t i=0; i<M; i++)
+            f += stat[i].leafSAH/bvh->getLinearBounds().expectedHalfArea();
+          return f;
+        }
+
+        size_t bytes(BVH* bvh) const 
+        {
+          size_t b = 0;
+          for (size_t i=0; i<M; i++)
+            b += stat[i].numPrimBlocks*bvh->getPrimType(i).bytes;
+          return b;
+        }
+
+        size_t size() const 
+        {
+          size_t n = 0;
+          for (size_t i=0; i<M; i++)
+            n += stat[i].numLeaves;
+          return n;
+        }
+        
+        double fillRateNom (BVH* bvh) const 
+        { 
+          double n = 0.0;
+          for (size_t i=0; i<M; i++)
+            n += stat[i].fillRateNom(bvh);
+          return n;
+        }
+
+        double fillRateDen (BVH* bvh) const 
+        { 
+          double n = 0.0;
+          for (size_t i=0; i<M; i++)
+            n += stat[i].fillRateDen(bvh);
+          return n;
+        }
+
+        double fillRate(BVH* bvh) const { 
+          return fillRateNom(bvh)/fillRateDen(bvh); 
+        }
+
+        __forceinline friend MultiLeafStat operator+ ( const MultiLeafStat& a, const MultiLeafStat& b)
+        {
+          MultiLeafStat c;
+          for (size_t i=0; i<M; i++)
+            c.stat[i] = a.stat[i]+b.stat[i];
+          return c;
+        }
+
+        LeafStat stat[6];
       };
 
     public:
       Statistics (size_t depth = 0,
-                  LeafStat statLeaf = LeafStat(),
+                  MultiLeafStat statLeaf = MultiLeafStat(),
                   NodeStat<AlignedNode> statAlignedNodes = NodeStat<AlignedNode>(),
                   NodeStat<UnalignedNode> statUnalignedNodes = NodeStat<UnalignedNode>(),
                   NodeStat<AlignedNodeMB> statAlignedNodesMB = NodeStat<AlignedNodeMB>(),
@@ -261,7 +331,7 @@ namespace embree
 
     public:
       size_t depth;
-      LeafStat statLeaf;
+      MultiLeafStat statLeaf;
       NodeStat<AlignedNode> statAlignedNodes;
       NodeStat<UnalignedNode> statUnalignedNodes;
       NodeStat<AlignedNodeMB> statAlignedNodesMB;

@@ -36,7 +36,7 @@ namespace embree
     double totalSAH = stat.sah(bvh);
     stream << "  total            : sah = "  << std::setw(7) << std::setprecision(3) << totalSAH << " (100.00%), ";
     stream << "#bytes = " << std::setw(7) << std::setprecision(2) << totalBytes/1E6 << " MB (100.00%), ";
-    stream << "#nodes = " << std::setw(7) << stat.size() << " (" << std::setw(6) << std::setprecision(2) << 100.0*stat.fillRate(bvh) << "% filled), ";
+    stream << "#nodes = " << std::setw(9) << stat.size() << " (" << std::setw(6) << std::setprecision(2) << 100.0*stat.fillRate(bvh) << "% filled), ";
     stream << "#bytes/prim = " << std::setw(6) << std::setprecision(2) << double(totalBytes)/double(bvh->numPrimitives) << std::endl;
     if (stat.statAlignedNodes.numNodes    ) stream << "  alignedNodes     : "  << stat.statAlignedNodes.toString(bvh,totalSAH,totalBytes) << std::endl;
     if (stat.statUnalignedNodes.numNodes  ) stream << "  unalignedNodes   : "  << stat.statUnalignedNodes.toString(bvh,totalSAH,totalBytes) << std::endl;
@@ -45,8 +45,12 @@ namespace embree
     if (stat.statUnalignedNodesMB.numNodes) stream << "  unalignedNodesMB : "  << stat.statUnalignedNodesMB.toString(bvh,totalSAH,totalBytes) << std::endl;
     if (stat.statTransformNodes.numNodes  ) stream << "  transformNodes   : "  << stat.statTransformNodes.toString(bvh,totalSAH,totalBytes) << std::endl;
     if (stat.statQuantizedNodes.numNodes  ) stream << "  quantizedNodes   : "  << stat.statQuantizedNodes.toString(bvh,totalSAH,totalBytes) << std::endl;
-    if (true)                               stream << "  leaves           : "  << stat.statLeaf.toString(bvh,totalSAH,totalBytes) << std::endl;
-    if (true)                               stream << "    histogram      : "  << stat.statLeaf.histToString() << std::endl;
+    for (size_t i=0; i<min(bvh->numTypes,Statistics::MultiLeafStat::M); i++) {
+      stream << "  " << std::setw(16) << std::left << bvh->getPrimType(i).name << " : " << stat.statLeaf.stat[i].toString(bvh,totalSAH,totalBytes) << std::endl;
+    }
+    //if (true)                               stream << "  leaves           : "  << 
+    //stream << stat.statLeaf.toString(bvh,totalSAH,totalBytes) << std::endl;
+    //if (true)                               stream << "    histogram      : "  << stat.statLeaf.histToString() << std::endl;
     return stream.str();
   }
   
@@ -157,14 +161,17 @@ namespace embree
       size_t num; const char* tri = node.leaf(num);
       if (num)
       {
+        Leaf::Type ty = Leaf::loadTy(tri);
+        if (bvh->primTy) ty = (Leaf::Type) 0; // for non multi leaves always use slot 0
+        typename Statistics::LeafStat& stat = s.statLeaf.stat[ty];
         for (size_t i=0; i<num; i++) {
-          s.statLeaf.numPrims += bvh->primTy->size(tri+i*bvh->primTy->bytes);
+          stat.numPrims += bvh->getPrimType(ty).size(tri+i*bvh->getPrimType(ty).bytes);
         }
-        s.statLeaf.numLeaves++;
-        s.statLeaf.numPrimBlocks += num;
-        s.statLeaf.leafSAH += dt*A*num;
+        stat.numLeaves++;
+        stat.numPrimBlocks += num;
+        stat.leafSAH += dt*A*num;
         if (num-1 < Statistics::LeafStat::NHIST) {
-          s.statLeaf.numPrimBlocksHistogram[num-1]++;
+          stat.numPrimBlocksHistogram[num-1]++;
         }
       }
     }

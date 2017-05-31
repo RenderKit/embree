@@ -1367,9 +1367,23 @@ namespace embree
 
     /*! BVHN default constructor. */
     BVHN (const PrimitiveType& primTy, Scene* scene);
+    BVHN (const PrimitiveType** primTy, unsigned numTypes, Scene* scene);
 
     /*! BVHN destruction */
     ~BVHN ();
+
+    std::string name() const 
+    {
+      std::stringstream str;
+      str << "BVH" << N << "<";
+      if (primTys == nullptr) str << primTy->name;
+      else for (size_t i=0; i<numTypes; i++) {
+          str << getPrimType(i).name;
+          if (i != numTypes-1) str << ",";
+      }
+      str << ">";
+      return str.str();
+    };
 
     /*! clears the acceleration structure */
     void clear();
@@ -1471,6 +1485,15 @@ namespace embree
     /*! bvh type information */
   public:
     const PrimitiveType* primTy;       //!< primitive type stored in the BVH
+    const PrimitiveType** primTys;     //!< primitive types stored in the BVH
+    const unsigned numTypes;           //!< number of primitive types
+
+    const PrimitiveType& getPrimType(unsigned i) const 
+    {
+      if (primTys == nullptr) return *primTy;
+      assert(i < numTypes);
+      return *primTys[i];
+    }
 
     /*! bvh data */
   public:

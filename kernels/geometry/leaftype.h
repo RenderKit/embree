@@ -65,6 +65,10 @@ namespace embree
       return (((T)ty) << SHIFT) | ID;
     }
 
+    static __forceinline Type loadTy(const void* leaf) {
+      return decodeTy(*(unsigned*)leaf);
+    }
+
     static __forceinline Type decodeTy(unsigned ID) {
       return (Type) (ID >> SHIFT);
     }

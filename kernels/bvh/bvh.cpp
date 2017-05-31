@@ -22,10 +22,14 @@ namespace embree
   template<int N>
   BVHN<N>::BVHN (const PrimitiveType& primTy, Scene* scene)
     : AccelData((N==4) ? AccelData::TY_BVH4 : (N==8) ? AccelData::TY_BVH8 : AccelData::TY_UNKNOWN),
-      primTy(&primTy), device(scene->device), scene(scene),
-      root(emptyNode), alloc(scene->device,scene->isStatic()), numPrimitives(0), numVertices(0)
-  {
-  }
+      primTy(&primTy), primTys(nullptr),  numTypes(1), device(scene->device), scene(scene),
+      root(emptyNode), alloc(scene->device,scene->isStatic()), numPrimitives(0), numVertices(0) {}
+
+  template<int N>
+  BVHN<N>::BVHN (const PrimitiveType** primTys, unsigned numTypes, Scene* scene)
+    : AccelData((N==4) ? AccelData::TY_BVH4 : (N==8) ? AccelData::TY_BVH8 : AccelData::TY_UNKNOWN),
+      primTy(nullptr), primTys(primTys), numTypes(numTypes), device(scene->device), scene(scene),
+      root(emptyNode), alloc(scene->device,scene->isStatic()), numPrimitives(0), numVertices(0) {}
 
   template<int N>
   BVHN<N>::~BVHN ()
@@ -129,7 +133,7 @@ namespace embree
     if (device->verbosity(1))
     {
       Lock<MutexSys> lock(g_printMutex);
-      std::cout << "building BVH" << N << (builderName.find("MBlur") != std::string::npos ? "MB" : "") << "<" << primTy->name << "> using " << builderName << " ..." << std::endl << std::flush;
+      std::cout << "building " << name() << " using " << builderName << " ..." << std::endl << std::flush;
     }
 
     double t0 = 0.0;
@@ -155,7 +159,7 @@ namespace embree
       if (!stat) stat.reset(new BVHNStatistics<N>(this));
       const size_t usedBytes = alloc.getUsedBytes();
       Lock<MutexSys> lock(g_printMutex);
-      std::cout << "finished BVH" << N << "<" << primTy->name << "> : " << 1000.0f*dt << "ms, " << 1E-6*double(numPrimitives)/dt << " Mprim/s, " << 1E-9*double(usedBytes)/dt << " GB/s" << std::endl;
+      std::cout << "finished " << name() << ": " << 1000.0f*dt << "ms, " << 1E-6*double(numPrimitives)/dt << " Mprim/s, " << 1E-9*double(usedBytes)/dt << " GB/s" << std::endl;
     
       if (device->verbosity(2))
         std::cout << stat->str();
@@ -186,7 +190,7 @@ namespace embree
     {
       if (!stat) stat.reset(new BVHNStatistics<N>(this));
       Lock<MutexSys> lock(g_printMutex);
-      std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat->sah() << " " << stat->bytesUsed() << " BVH" << N << "<" << primTy->name << ">" << std::endl << std::flush;
+      std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat->sah() << " " << stat->bytesUsed() << name() << std::endl << std::flush;
     }
   }
 

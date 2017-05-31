@@ -28,12 +28,14 @@ namespace embree
 {
   struct PrimitiveType
   {
+    PrimitiveType() {}
+
     /*! constructs the primitive type */
     PrimitiveType (const std::string& name, size_t bytes, size_t blockSize) 
     : name(name), bytes(bytes), blockSize(blockSize) {} 
 
     /*! Returns the number of stored primitives in a block. */
-    virtual size_t size(const char* This) const = 0;
+    virtual size_t size(const char* This) const { assert(false); return 0; };
 
   public:
     std::string name;       //!< name of this primitive type
