@@ -225,11 +225,14 @@ namespace embree
             const size_t primID = prim.primID();
             const NativeCurves* mesh = scene->get<NativeCurves>(geomID);
 
+            size_t t = 0;
             const unsigned num_time_segments = mesh->numTimeSegments();
-            const range<int> tbounds = getTimeSegmentRange(set.time_range, (float)num_time_segments);
-            if (tbounds.size() == 0) continue;
-
-            const size_t t = (tbounds.begin()+tbounds.end())/2;
+           
+            if (num_time_segments) {
+              const range<int> tbounds = getTimeSegmentRange(set.time_range, (float)num_time_segments);
+              if (tbounds.size() == 0) continue;
+              t = (tbounds.begin()+tbounds.end())/2;
+            }
             const int curve = mesh->curve(primID);
             const Vec3fa a0 = mesh->vertex(curve+0,t);
             const Vec3fa a3 = mesh->vertex(curve+3,t);
