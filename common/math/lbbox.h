@@ -118,6 +118,11 @@ namespace embree
     template<typename BoundsFunc>
     __forceinline LBBox(const BoundsFunc& bounds, const range<int>& time_range, int numTimeSegments)
     {
+      if (numTimeSegments == 0) {
+        bounds0 = bounds1 = bounds(0);
+        return;
+      }
+
       const int ilower = time_range.begin();
       const int iupper = time_range.end();
 
