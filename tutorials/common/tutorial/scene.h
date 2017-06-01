@@ -24,6 +24,7 @@ namespace embree
   enum Shader { 
     SHADER_DEFAULT, 
     SHADER_EYELIGHT,
+    SHADER_OCCLUSION,
     SHADER_UV,
     SHADER_TEXCOORDS,
     SHADER_TEXCOORDS_GRID,

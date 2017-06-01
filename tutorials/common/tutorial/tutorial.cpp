@@ -211,6 +211,7 @@ namespace embree
         std::string mode = cin->getString();
         if      (mode == "default" ) shader = SHADER_DEFAULT;
         else if (mode == "eyelight") shader = SHADER_EYELIGHT;
+        else if (mode == "occlusion") shader = SHADER_OCCLUSION;
         else if (mode == "uv"      ) shader = SHADER_UV;
         else if (mode == "texcoords") shader = SHADER_TEXCOORDS;
         else if (mode == "texcoords-grid") shader = SHADER_TEXCOORDS_GRID;
@@ -223,6 +224,7 @@ namespace embree
       "--shader <string>: sets shader to use at startup\n"
       "  default: default tutorial shader\n"
       "  eyelight: eyelight shading\n"
+      "  occlusion: occlusion shading\n"
       "  uv: uv debug shader\n"
       "  texcoords: texture coordinate debug shader\n"
       "  texcoords-grid: grid texture debug shader\n"
@@ -872,6 +874,7 @@ namespace embree
     switch (shader) {
     case SHADER_DEFAULT  : break;
     case SHADER_EYELIGHT : device_key_pressed(GLUT_KEY_F2); break;
+    case SHADER_OCCLUSION: device_key_pressed(GLUT_KEY_F3); break;
     case SHADER_UV       : device_key_pressed(GLUT_KEY_F4); break;
     case SHADER_TEXCOORDS: device_key_pressed(GLUT_KEY_F8); break;
     case SHADER_TEXCOORDS_GRID: device_key_pressed(GLUT_KEY_F8); device_key_pressed(GLUT_KEY_F8); break;
