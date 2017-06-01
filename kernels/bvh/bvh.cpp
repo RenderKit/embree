@@ -190,7 +190,7 @@ namespace embree
     {
       if (!stat) stat.reset(new BVHNStatistics<N>(this));
       Lock<MutexSys> lock(g_printMutex);
-      std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat->sah() << " " << stat->bytesUsed() << name() << std::endl << std::flush;
+      std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat->sah() << " " << stat->bytesUsed() << " " << name() << std::endl << std::flush;
     }
   }
 
