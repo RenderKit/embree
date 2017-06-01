@@ -111,8 +111,8 @@ void renderTileEyeLight(int taskIndex,
   }
 }
 
-/* renders a single pixel with wireframe shading */
-Vec3fa renderPixelWireframe(float x, float y, const ISPCCamera& camera, RayStats& stats)
+/* renders a single pixel with occlusion shading */
+Vec3fa renderPixelOcclusion(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   /* initialize ray */
   RTCRay ray;
@@ -126,24 +126,17 @@ Vec3fa renderPixelWireframe(float x, float y, const ISPCCamera& camera, RayStats
   ray.time = g_debug;
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  rtcOccluded(g_scene,ray);
   RayStats_addRay(stats);
 
   /* return black if nothing hit */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(1.0f,1.0f,1.0f);
-
-  /* calculate wireframe around triangles */
-  const float border = 0.05f;
-  Vec3fa color = Vec3fa(1.0f);
-  if (ray.u < border) color = Vec3fa(0.0f);
-  if (ray.v < border) color = Vec3fa(0.0f);
-  if (1.0f-ray.u-ray.v < border) color = Vec3fa(0.0f);
-
-  /* perform eyelight shading */
-  return color*Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
+    return Vec3fa(0.0f,0.0f,0.0f);
+  else 
+    return Vec3fa(1.0f,1.0f,1.0f);
 }
 
-void renderTileWireframe(int taskIndex,
+void renderTileOcclusion(int taskIndex,
                          int threadIndex,
                          int* pixels,
                          const unsigned int width,
@@ -163,7 +156,7 @@ void renderTileWireframe(int taskIndex,
 
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
-    Vec3fa color = renderPixelWireframe((float)x,(float)y,camera,g_stats[threadIndex]);
+    Vec3fa color = renderPixelOcclusion((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -739,7 +732,7 @@ extern "C" bool device_pick(const float x,
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
-  std::cout << "pick: x = " << x << ", y = " << y << ", geomID = " << ray.geomID << ", primID = " << ray.primID << std::endl;
+
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
     hitPos = Vec3fa(0.0f,0.0f,0.0f);
@@ -763,7 +756,7 @@ extern "C" void device_key_pressed_default(int key)
     g_changed = true;
   }
   else if (key == GLUT_KEY_F3) {
-    renderTile = renderTileWireframe;
+    renderTile = renderTileOcclusion;
     g_changed = true;
   }
   else if (key == GLUT_KEY_F4) {

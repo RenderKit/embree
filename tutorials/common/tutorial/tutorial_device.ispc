@@ -109,8 +109,8 @@ void renderTileEyeLight(uniform int taskIndex,
   }
 }
 
-/* renders a single pixel with wireframe shading */
-Vec3f renderPixelWireframe(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
+/* renders a single pixel with occlusion shading */
+Vec3f renderPixelOcclusion(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   /* initialize ray */
   RTCRay ray;
@@ -124,24 +124,17 @@ Vec3f renderPixelWireframe(float x, float y, const uniform ISPCCamera& camera, u
   ray.time = g_debug;
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  rtcOccluded(g_scene,ray);
   RayStats_addRay(stats);
 
   /* return black if nothing hit */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(1.0f,1.0f,1.0f);
-
-  /* calculate wireframe around triangles */
-  const float border = 0.05f;
-  Vec3f color = make_Vec3f(1.0f);
-  if (ray.u < border) color = make_Vec3f(0.0f);
-  if (ray.v < border) color = make_Vec3f(0.0f);
-  if (1.0f-ray.u-ray.v < border) color = make_Vec3f(0.0f);
-
-  /* perform eyelight shading */
-  return color*make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
+    return make_Vec3f(0.0f,0.0f,0.0f);
+  else 
+    return make_Vec3f(1.0f,1.0f,1.0f);
 }
 
-void renderTileWireframe(uniform int taskIndex,
+void renderTileOcclusion(uniform int taskIndex,
                          uniform int threadIndex,
                          uniform int* uniform pixels,
                          const uniform unsigned int width,
@@ -161,7 +154,7 @@ void renderTileWireframe(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    Vec3f color = renderPixelWireframe((float)x,(float)y,camera,g_stats[threadIndex]);
+    Vec3f color = renderPixelOcclusion((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -761,7 +754,7 @@ extern void device_key_pressed_default(uniform int key)
     g_changed = true;
   }
   else if (key == GLUT_KEY_F3) {
-    renderTile = renderTileWireframe;
+    renderTile = renderTileOcclusion;
     g_changed = true;
   }
   else if (key == GLUT_KEY_F4) {
