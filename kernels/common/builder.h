@@ -23,14 +23,31 @@ namespace embree
 {
 #define MODE_HIGH_QUALITY (1<<8)
 
-  /*! settings for msmblur builder */
+  /*! settings for SAH builder */
   struct CommonBuildSettings
   {
     /*! default settings */
     CommonBuildSettings ()
     : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8),
-      travCost(1.0f), intCost(1.0f), singleLeafTimeSegment(false),
-      singleThreadThreshold(1024) {}
+      travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024), singleLeafTimeSegment(false), primrefarrayalloc(inf) {}
+    
+    /*! initialize settings from API settings */
+    CommonBuildSettings (const RTCBuildSettings& settings)
+    : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8),
+      travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024), primrefarrayalloc(inf)
+    {
+      if (RTC_BUILD_SETTINGS_HAS(settings,maxBranchingFactor)) branchingFactor = settings.maxBranchingFactor;
+      if (RTC_BUILD_SETTINGS_HAS(settings,maxDepth          )) maxDepth        = settings.maxDepth;
+      if (RTC_BUILD_SETTINGS_HAS(settings,sahBlockSize      )) logBlockSize    = __bsr(settings.sahBlockSize);
+      if (RTC_BUILD_SETTINGS_HAS(settings,minLeafSize       )) minLeafSize     = settings.minLeafSize;
+      if (RTC_BUILD_SETTINGS_HAS(settings,maxLeafSize       )) maxLeafSize     = settings.maxLeafSize;
+      if (RTC_BUILD_SETTINGS_HAS(settings,travCost          )) travCost        = settings.travCost;
+      if (RTC_BUILD_SETTINGS_HAS(settings,intCost           )) intCost         = settings.intCost;
+    }
+    
+    CommonBuildSettings (size_t sahBlockSize, size_t minLeafSize, size_t maxLeafSize, float travCost, float intCost, size_t singleThreadThreshold, size_t primrefarrayalloc = inf)
+    : branchingFactor(2), maxDepth(32), logBlockSize(__bsr(sahBlockSize)), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
+      travCost(travCost), intCost(intCost), singleThreadThreshold(singleThreadThreshold), primrefarrayalloc(primrefarrayalloc) {}
     
   public:
     size_t branchingFactor;  //!< branching factor of BVH to build
@@ -40,8 +57,9 @@ namespace embree
     size_t maxLeafSize;      //!< maximal size of a leaf
     float travCost;          //!< estimated cost of one traversal step
     float intCost;           //!< estimated cost of one primitive intersection
-    bool singleLeafTimeSegment; //!< split time to single time range
     size_t singleThreadThreshold; //!< threshold when we switch to single threaded build
+    bool singleLeafTimeSegment; //!< split time to single time range
+    size_t primrefarrayalloc;  //!< builder uses prim ref array to allocate nodes and leaves when a subtree of that size is finished
   };
 
   /*! virtual interface for all hierarchy builders */

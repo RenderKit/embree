@@ -37,43 +37,7 @@ namespace embree
       static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree of we are that many levels before the maximal tree depth
 
-      /*! settings for SAH builder */
-      struct Settings
-      {
-        /*! default settings */
-        Settings ()
-        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8),
-          travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024), primrefarrayalloc(inf) {}
-
-        /*! initialize settings from API settings */
-        Settings (const RTCBuildSettings& settings)
-        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8),
-          travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024), primrefarrayalloc(inf)
-        {
-          if (RTC_BUILD_SETTINGS_HAS(settings,maxBranchingFactor)) branchingFactor = settings.maxBranchingFactor;
-          if (RTC_BUILD_SETTINGS_HAS(settings,maxDepth          )) maxDepth        = settings.maxDepth;
-          if (RTC_BUILD_SETTINGS_HAS(settings,sahBlockSize      )) logBlockSize    = __bsr(settings.sahBlockSize);
-          if (RTC_BUILD_SETTINGS_HAS(settings,minLeafSize       )) minLeafSize     = settings.minLeafSize;
-          if (RTC_BUILD_SETTINGS_HAS(settings,maxLeafSize       )) maxLeafSize     = settings.maxLeafSize;
-          if (RTC_BUILD_SETTINGS_HAS(settings,travCost          )) travCost        = settings.travCost;
-          if (RTC_BUILD_SETTINGS_HAS(settings,intCost           )) intCost         = settings.intCost;
-        }
-
-        Settings (size_t sahBlockSize, size_t minLeafSize, size_t maxLeafSize, float travCost, float intCost, size_t singleThreadThreshold, size_t primrefarrayalloc = inf)
-        : branchingFactor(2), maxDepth(32), logBlockSize(__bsr(sahBlockSize)), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
-          travCost(travCost), intCost(intCost), singleThreadThreshold(singleThreadThreshold), primrefarrayalloc(primrefarrayalloc) {}
-
-      public:
-        size_t branchingFactor;  //!< branching factor of BVH to build
-        size_t maxDepth;         //!< maximal depth of BVH to build
-        size_t logBlockSize;     //!< log2 of blocksize for SAH heuristic
-        size_t minLeafSize;      //!< minimal size of a leaf
-        size_t maxLeafSize;      //!< maximal size of a leaf
-        float travCost;          //!< estimated cost of one traversal step
-        float intCost;           //!< estimated cost of one primitive intersection
-        size_t singleThreadThreshold; //!< threshold when we switch to single threaded build
-        size_t primrefarrayalloc;  //!< builder uses prim ref array to allocate nodes and leaves when a subtree of that size is finished
-      };
+      typedef CommonBuildSettings Settings;
 
       /*! recursive state of builder */
       template<typename Set, typename Split>
