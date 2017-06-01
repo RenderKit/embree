@@ -164,6 +164,7 @@ namespace embree
       {
         Leaf::Type ty = Leaf::loadTy(tri);
         if (bvh->primTy) ty = (Leaf::Type) 0; // for non multi leaves always use slot 0
+        assert(ty < Statistics::MultiLeafStat::M);
         typename Statistics::LeafStat& stat = s.statLeaf.stat[ty];
         for (size_t i=0; i<num; i++) {
           stat.numPrims += bvh->getPrimType(ty).size(tri+i*bvh->getPrimType(ty).bytes);

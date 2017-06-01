@@ -172,7 +172,7 @@ namespace embree
 
       struct MultiLeafStat
       {
-        static const unsigned M = 6;
+        static const unsigned M = 8;
 
         MultiLeafStat() 
         {
@@ -232,7 +232,7 @@ namespace embree
           return c;
         }
 
-        LeafStat stat[6];
+        LeafStat stat[M];
       };
 
     public:
