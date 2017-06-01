@@ -195,7 +195,7 @@ namespace embree
       int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
       
 #if defined (EMBREE_TARGET_AVX)
-      if (device->hasISA(AVX2)) // BVH8 reduces performance on AVX only-machines
+      if (device->hasISA(AVX)) // BVH8 reduces performance on AVX only-machines
       {
         switch (mode) {
         case /*0b00*/ 0: accels.add(device->bvh8_factory->BVH8Triangle4iMB(this,BVHFactory::BuildVariant::STATIC,BVHFactory::IntersectVariant::FAST  )); break;
@@ -352,7 +352,7 @@ namespace embree
       if (isStatic())
       {
 #if defined (EMBREE_TARGET_AVX)
-        if (device->hasISA(AVX2)) // only enable on HSW machines, for SNB this codepath is slower
+        if (device->hasISA(AVX)) // only enable on HSW machines, for SNB this codepath is slower
         {
           switch (mode) {
           case /*0b00*/ 0: accels.add(device->bvh8_factory->BVH8OBBBezier1v(this)); break;
@@ -400,7 +400,7 @@ namespace embree
     if (device->hair_accel_mb == "default")
     {
 #if defined (EMBREE_TARGET_AVX)
-      if (device->hasISA(AVX2) && !isCompact()) // only enable on HSW machines, on SNB this codepath is slower
+      if (device->hasISA(AVX) && !isCompact()) // only enable on HSW machines, on SNB this codepath is slower
       {
         accels.add(device->bvh8_factory->BVH8OBBBezier1iMB(this));
       }
