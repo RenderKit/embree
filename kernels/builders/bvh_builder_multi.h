@@ -88,7 +88,7 @@ namespace embree
         typename CreateLeafFunc,
         typename ProgressMonitor>
 
-        class BuilderT : private Settings
+        class BuilderT
         {
           ALIGNED_CLASS;
           static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximal supported BVH branching factor
@@ -116,8 +116,10 @@ namespace embree
                     const SetUnalignedNodeMBFunc setUnalignedNodeMB,
                     const CreateLeafFunc& createLeaf,
                     const ProgressMonitor progressMonitor,
-                    const Settings& settings)
-            : cfg(settings),
+                    const Settings& default_settings,
+                    const Settings* type_settings)
+            : default_settings(default_settings),
+            type_settings(type_settings),
             scene(scene),
             heuristicObjectSplit(),
             heuristicTemporalSplit(scene->device, recalculatePrimRef),
@@ -127,15 +129,27 @@ namespace embree
             createLeaf(createLeaf),
             progressMonitor(progressMonitor)
           {
-            if (branchingFactor > MAX_BRANCHING_FACTOR)
+            if (default_settings.branchingFactor > MAX_BRANCHING_FACTOR)
               throw_RTCError(RTC_UNKNOWN_ERROR,"bvh_builder: branching factor too large");
+          }
+
+          const Settings& getSettings(unsigned type_mask) const 
+          {
+            /* if only one bit is set use that types settings */
+            if (((type_mask-1) & type_mask) == 0) 
+              return type_settings[__bsf(type_mask)];
+            
+            /* otherwise use the default settings */
+            else return default_settings;
           }
 
           /*! finds the best split */
           const Split find(const SetMB& set)
           {
+            const Settings& cfg = getSettings(set.types);
+               
             /* first try standard object split */
-            const Split object_split = heuristicObjectSplit.find(set,logBlockSize);
+            const Split object_split = heuristicObjectSplit.find(set,cfg.logBlockSize);
             const float object_split_sah = object_split.splitSAH();
 
             /* if there is no motion blur geometry return object split */
@@ -143,14 +157,14 @@ namespace embree
               return object_split;
 
             /* test temporal splits only when object split was bad */
-            const float leaf_sah = set.leafSAH(logBlockSize);
+            const float leaf_sah = set.leafSAH(cfg.logBlockSize);
             if (object_split_sah < 0.50f*leaf_sah)
               return object_split;
 
             /* do temporal splits only if the the time range is big enough */
             if (set.time_range.size() > 1.01f/float(set.max_num_time_segments))
             {
-              const Split temporal_split = heuristicTemporalSplit.find(set,logBlockSize);
+              const Split temporal_split = heuristicTemporalSplit.find(set,cfg.logBlockSize);
               const float temporal_split_sah = temporal_split.splitSAH();
 
               /* take temporal split if it improved SAH */
@@ -202,11 +216,13 @@ namespace embree
           /*! finds the best fallback split */
           __noinline Split findFallback(const SetMB& set)
           {
+            const Settings& cfg = getSettings(set.types);
+
             if (set.size() == 0)
               return Split(0.0f,Split::SPLIT_NONE);
 
             /* if a leaf can only hold a single time-segment, we might have to do additional temporal splits */
-            if (singleLeafTimeSegment)
+            if (cfg.singleLeafTimeSegment)
             {
               /* test if one primitive has more than one time segment in time range, if so split time */
               for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++)
@@ -275,6 +291,8 @@ namespace embree
 
           const NodeRecordMB4D createLargeLeaf(const BuildRecord& in, Allocator alloc)
           {
+            const Settings& cfg = getSettings(in.prims.types);
+         
             /* this should never occur but is a fatal error */
             if (in.depth > cfg.maxDepth)
               throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
@@ -321,7 +339,7 @@ namespace embree
               rrecord.split = findFallback(rrecord.prims);
               children.split(bestChild,lrecord,rrecord,std::move(new_vector));
 
-            } while (children.size() < branchingFactor);
+            } while (children.size() < cfg.branchingFactor);
 
             /* recurse into each child and perform reduction */
             for (size_t i=0; i<children.size(); i++) {
@@ -381,12 +399,12 @@ namespace embree
                  createLeaf,
                  progressMonitor,
                  scene, prims, PrimInfo(0,current.prims.object_range.size(),current.prims),
-                 cfg);
+                 type_settings[Leaf::TY_HAIR]);
               convert_PrimRefArray_To_PrimRefMBArray(prims,primsMB,current.prims.object_range.size());
               return NodeRecordMB4D(ref,LBBox3fa(current.prims.geomBounds),current.prims.time_range);
             }
 
-            if (current.prims.isType(Leaf::TY_HAIR,Leaf::TY_HAIR_MB)) 
+            if (current.prims.isType(Leaf::TY_HAIR_MB)) 
             {
               return BVHBuilderHairMSMBlur::build<NodeRef>
                 (scene, *current.prims.prims, current.prims,
@@ -403,22 +421,24 @@ namespace embree
                  createLeaf,
                  createLeaf,
                  progressMonitor,
-                 cfg);
+                 type_settings[Leaf::TY_HAIR_MB]);
             }
+
+            const Settings& cfg = getSettings(current.prims.types);
 
             /* get thread local allocator */
             if (!alloc)
               alloc = createAlloc();
 
             /* call memory monitor function to signal progress */
-            if (toplevel && current.size() <= singleThreadThreshold)
+            if (toplevel && current.size() <= cfg.singleThreadThreshold)
               progressMonitor(current.size());
 
             /*! find best split */
             const Split csplit = find(current.prims);
 
             /*! compute leaf and split cost */
-            const float leafSAH  = cfg.intCost*current.prims.leafSAH(logBlockSize);
+            const float leafSAH  = cfg.intCost*current.prims.leafSAH(cfg.logBlockSize);
             const float splitSAH = cfg.travCost*current.prims.halfArea()+cfg.intCost*csplit.splitSAH();
             assert((current.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
 
@@ -441,7 +461,7 @@ namespace embree
             }
 
             /*! split until node is full or SAH tells us to stop */
-            while (children.size() < branchingFactor) 
+            while (children.size() < cfg.branchingFactor) 
             {
               /*! find best child to split */
               float bestArea = neg_inf;
@@ -469,7 +489,7 @@ namespace embree
             //std::sort(&children[0],&children[children.size()],std::greater<BuildRecord>()); // FIXME: reduces traversal performance of bvh8.triangle4 (need to verified) !!
 
             /* spawn tasks */
-            if (unlikely(current.size() > singleThreadThreshold))
+            if (unlikely(current.size() > cfg.singleThreadThreshold))
             {
               /*! parallel_for is faster than spawing sub-tasks */
               parallel_for(size_t(0), children.size(), [&] (const range<size_t>& r) {
@@ -523,7 +543,8 @@ namespace embree
           }
 
         private:
-          Settings cfg;
+          const Settings& default_settings;
+          const Settings* type_settings;
           Scene* scene;
           HeuristicArrayBinningMB<PrimRefMB,MBLUR_NUM_OBJECT_BINS> heuristicObjectSplit;
           HeuristicMBlurTemporalSplit<PrimRefMB,RecalculatePrimRef,MBLUR_NUM_TEMPORAL_BINS> heuristicTemporalSplit;
@@ -570,7 +591,8 @@ namespace embree
                                                       const SetUnalignedNodeMBFunc setUnalignedNodeMB,
                                                       const CreateLeafFunc& createLeaf,
                                                       const ProgressMonitorFunc progressMonitor,
-                                                      const Settings& settings)
+                                                      const Settings& default_settings,
+                                                      const Settings* type_settings)
       {
           typedef BuilderT<
             NodeRef,
@@ -601,7 +623,8 @@ namespace embree
                           setUnalignedNodeMB,
                           createLeaf,
                           progressMonitor,
-                          settings);
+                          default_settings,
+                          type_settings);
 
 
           return builder(prims,pinfo);

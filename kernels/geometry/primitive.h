@@ -31,8 +31,8 @@ namespace embree
     PrimitiveType() {}
 
     /*! constructs the primitive type */
-    PrimitiveType (const std::string& name, size_t bytes, size_t blockSize) 
-    : name(name), bytes(bytes), blockSize(blockSize) {} 
+    PrimitiveType (const std::string& name, size_t bytes, size_t blockSize, size_t sahBlockSize, bool singleLeafTimeSegment) 
+    : name(name), bytes(bytes), blockSize(blockSize), sahBlockSize(sahBlockSize), singleLeafTimeSegment(singleLeafTimeSegment) {} 
 
     /*! Returns the number of stored primitives in a block. */
     virtual size_t size(const char* This) const { assert(false); return 0; };
@@ -41,6 +41,8 @@ namespace embree
     std::string name;       //!< name of this primitive type
     size_t bytes;           //!< number of bytes of the triangle data
     size_t blockSize;       //!< block size
+    size_t sahBlockSize;    //!< block size for SAH heuristic
+    bool singleLeafTimeSegment; //!< true when builder has to split time to one segment for this primitive
   };
 
   struct PrimitiveNone

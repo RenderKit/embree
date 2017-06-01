@@ -32,7 +32,7 @@ namespace embree
   /********************** Bezier1v **************************/
 
   Bezier1v::Type::Type ()
-    : PrimitiveType("bezier1v",sizeof(Bezier1v),1) {}
+    : PrimitiveType("bezier1v",sizeof(Bezier1v),1,2,false) {}
 
   size_t Bezier1v::Type::size(const char* This) const {
     return 1;
@@ -43,7 +43,7 @@ namespace embree
   /********************** Bezier1i **************************/
 
   Bezier1i::Type::Type ()
-    : PrimitiveType("bezier1i",sizeof(Bezier1i),1) {}
+    : PrimitiveType("bezier1i",sizeof(Bezier1i),1,2,false) {}
 
   size_t Bezier1i::Type::size(const char* This) const {
     return 1;
@@ -55,7 +55,7 @@ namespace embree
 
   template<>
   Line4i::Type::Type ()
-    : PrimitiveType("line4i",sizeof(Line4i),4) {}
+    : PrimitiveType("line4i",sizeof(Line4i),4,4,false) {}
 
   template<>
   size_t Line4i::Type::size(const char* This) const {
@@ -66,7 +66,7 @@ namespace embree
 
   template<>
   Triangle4::Type::Type ()
-    : PrimitiveType("triangle4",sizeof(Triangle4),4) {}
+    : PrimitiveType("triangle4",sizeof(Triangle4),4,4,false) {}
 
   template<>
   size_t Triangle4::Type::size(const char* This) const {
@@ -77,7 +77,7 @@ namespace embree
 
   template<>
   Triangle4v::Type::Type ()
-  : PrimitiveType("triangle4v",sizeof(Triangle4v),4) {}
+    : PrimitiveType("triangle4v",sizeof(Triangle4v),4,4,false) {}
 
   template<>
   size_t Triangle4v::Type::size(const char* This) const {
@@ -88,7 +88,7 @@ namespace embree
 
   template<>
   Triangle4i::Type::Type ()
-    : PrimitiveType("triangle4i",sizeof(Triangle4i),4) {}
+    : PrimitiveType("triangle4i",sizeof(Triangle4i),4,4,false) {}
 
   template<>
   size_t Triangle4i::Type::size(const char* This) const {
@@ -99,7 +99,7 @@ namespace embree
 
   template<>
   Triangle4vMB::Type::Type ()
-  : PrimitiveType("triangle4vmb",sizeof(Triangle4vMB),4) {}
+    : PrimitiveType("triangle4vmb",sizeof(Triangle4vMB),4,4,true) {}
 
   template<>
   size_t Triangle4vMB::Type::size(const char* This) const {
@@ -110,7 +110,7 @@ namespace embree
 
   template<>
   Quad4v::Type::Type ()
-    : PrimitiveType("quad4v",sizeof(Quad4v),4) {}
+    : PrimitiveType("quad4v",sizeof(Quad4v),4,4,false) {}
 
   template<>
   size_t Quad4v::Type::size(const char* This) const {
@@ -121,7 +121,7 @@ namespace embree
 
   template<>
   Quad4i::Type::Type ()
-    : PrimitiveType("quad4i",sizeof(Quad4i),4) {}
+    : PrimitiveType("quad4i",sizeof(Quad4i),4,4,false) {}
 
   template<>
   size_t Quad4i::Type::size(const char* This) const {
@@ -131,7 +131,7 @@ namespace embree
   /********************** SubdivPatch1 **************************/
 
   SubdivPatch1Cached::Type::Type ()
-    : PrimitiveType("subdivpatch1",sizeof(SubdivPatch1Cached),1) {}
+    : PrimitiveType("subdivpatch1",sizeof(SubdivPatch1Cached),1,1,false) {}
 
   size_t SubdivPatch1Cached::Type::size(const char* This) const {
     return 1;
@@ -142,7 +142,7 @@ namespace embree
   /********************** SubdivPatch1Cached **************************/
 
   SubdivPatch1Cached::TypeCached::TypeCached ()
-    : PrimitiveType("subdivpatch1cached",sizeof(SubdivPatch1Cached),1) {}
+    : PrimitiveType("subdivpatch1cached",sizeof(SubdivPatch1Cached),1,1,false) {}
 
   size_t SubdivPatch1Cached::TypeCached::size(const char* This) const {
     return 1;
@@ -153,7 +153,7 @@ namespace embree
   /********************** Virtual Object **************************/
 
   Object::Type::Type ()
-    : PrimitiveType("object",sizeof(Object),1) {}
+    : PrimitiveType("object",sizeof(Object),1,1,false) {}
 
   size_t Object::Type::size(const char* This) const {
     return 1;

@@ -34,7 +34,7 @@ namespace embree
     /*! initialize settings from API settings */
     CommonBuildSettings (const RTCBuildSettings& settings)
     : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8),
-      travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024), primrefarrayalloc(inf)
+      travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024), singleLeafTimeSegment(false), primrefarrayalloc(inf)
     {
       if (RTC_BUILD_SETTINGS_HAS(settings,maxBranchingFactor)) branchingFactor = settings.maxBranchingFactor;
       if (RTC_BUILD_SETTINGS_HAS(settings,maxDepth          )) maxDepth        = settings.maxDepth;
@@ -47,8 +47,44 @@ namespace embree
     
     CommonBuildSettings (size_t sahBlockSize, size_t minLeafSize, size_t maxLeafSize, float travCost, float intCost, size_t singleThreadThreshold, size_t primrefarrayalloc = inf)
     : branchingFactor(2), maxDepth(32), logBlockSize(__bsr(sahBlockSize)), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
-      travCost(travCost), intCost(intCost), singleThreadThreshold(singleThreadThreshold), primrefarrayalloc(primrefarrayalloc) {}
-    
+      travCost(travCost), intCost(intCost), singleThreadThreshold(singleThreadThreshold), singleLeafTimeSegment(false), primrefarrayalloc(primrefarrayalloc) {}
+ 
+    CommonBuildSettings (size_t branchingFactor, size_t maxDepth, size_t sahBlockSize, size_t minLeafSize, size_t maxLeafSize, float travCost, float intCost, size_t singleThreadThreshold, bool singleLeafTimeSegment, size_t primrefarrayalloc)
+    : branchingFactor(branchingFactor), maxDepth(maxDepth), logBlockSize(__bsr(sahBlockSize)), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
+      travCost(travCost), intCost(intCost), singleThreadThreshold(singleThreadThreshold), singleLeafTimeSegment(singleLeafTimeSegment), primrefarrayalloc(primrefarrayalloc) {}
+
+    friend CommonBuildSettings operator+( const CommonBuildSettings& a, const CommonBuildSettings& b) 
+    {
+      assert(a.branchingFactor == b.branchingFactor);
+      return CommonBuildSettings(a.branchingFactor,
+                                 min(a.maxDepth,b.maxDepth),
+                                 max(1 << a.logBlockSize,1 << b.logBlockSize),
+                                 min(a.minLeafSize,b.minLeafSize),
+                                 min(a.maxLeafSize,b.maxLeafSize),
+                                 1.0f,
+                                 1.0f,
+                                 max(a.singleThreadThreshold,b.singleThreadThreshold),
+                                 a.singleLeafTimeSegment || b.singleLeafTimeSegment,
+                                 max(a.primrefarrayalloc,b.primrefarrayalloc));
+    }
+ 
+    friend std::ostream& operator<<(std::ostream& cout, const CommonBuildSettings& settings) 
+    {
+      cout << "CommonBuildSettings {" << std::endl;
+      cout << "  branchingFactor = " << settings.branchingFactor << std::endl;
+      cout << "  maxDepth = " << settings.maxDepth << std::endl;
+      cout << "  logBlockSize = " << settings.logBlockSize << std::endl;
+      cout << "  minLeafSize = " << settings.minLeafSize << std::endl;
+      cout << "  maxLeafSize = " << settings.maxLeafSize << std::endl;
+      cout << "  travCost = " << settings.travCost << std::endl;
+      cout << "  intCost = " << settings.intCost << std::endl;
+      cout << "  singleThreadThreshold = " << settings.singleThreadThreshold << std::endl;
+      cout << "  singleLeafTimeSegment = " << settings.singleLeafTimeSegment << std::endl;
+      cout << "  primrefarrayalloc = " << settings.primrefarrayalloc << std::endl;
+      cout << "}";
+      return cout;
+    }
+
   public:
     size_t branchingFactor;  //!< branching factor of BVH to build
     size_t maxDepth;         //!< maximal depth of BVH to build

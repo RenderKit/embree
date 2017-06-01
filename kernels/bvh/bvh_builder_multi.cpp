@@ -512,13 +512,20 @@ namespace embree
       Scene* scene;
       Geometry::Type type;
       const VirtualCreateLeaf<N>& createLeaf;
-      const size_t sahBlockSize;
-      const float intCost;
-      const size_t minLeafSize;
-      const size_t maxLeafSize;
+      CommonBuildSettings default_settings;
+      CommonBuildSettings type_settings[6];
 
-      BVHNBuilderMulti (BVH* bvh, Scene* scene, Geometry::Type type, const VirtualCreateLeaf<N>& createLeaf, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
-        : bvh(bvh), scene(scene), type(type), createLeaf(createLeaf), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,/*Primitive::max_size()*/BVH::maxLeafBlocks)) {} // FIXME: Primitive::max_size() assumed to be 4
+      const CommonBuildSettings createBuildSettings(const PrimitiveType* type) {
+        return CommonBuildSettings(N,BVH::maxBuildDepthLeaf,type->sahBlockSize,type->blockSize,type->blockSize*BVH::maxLeafBlocks,1.0f,1.0f,1024,type->singleLeafTimeSegment,inf);
+      }
+      
+      BVHNBuilderMulti (BVH* bvh, Scene* scene, Geometry::Type type, const VirtualCreateLeaf<N>& createLeaf, const PrimitiveType* prim_types[6])
+        : bvh(bvh), scene(scene), type(type), createLeaf(createLeaf)
+      {
+        for (size_t i=0; i<6; i++) type_settings[i] = createBuildSettings(prim_types[i]);
+        default_settings = type_settings[0];
+        for (size_t i=1; i<6; i++) default_settings = default_settings + type_settings[i];
+      }
 
       void build()
       {
@@ -541,18 +548,6 @@ namespace embree
         const size_t leaf_bytes = size_t(1.2*pinfo.num_time_segments*44);//sizeof(Primitive)); // FIXME: assumes 44 bytes for primitive
         bvh->alloc.init_estimate(node_bytes+leaf_bytes);
 
-        /* settings for BVH build */
-        BVHBuilderMulti::Settings settings;
-        settings.branchingFactor = N;
-        settings.maxDepth = BVH::maxDepth;
-        settings.logBlockSize = __bsr(sahBlockSize);
-        settings.minLeafSize = minLeafSize;
-        settings.maxLeafSize = maxLeafSize;
-        settings.travCost = travCost;
-        settings.intCost = intCost;
-        settings.singleLeafTimeSegment = true; //Primitive::singleTimeSegment; // FIXME: this is very conservative
-        settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,pinfo.size(),node_bytes+leaf_bytes);
-        
         /* build hierarchy */
         auto root =
           BVHBuilderMulti::build<NodeRef>(prims,pinfo,scene,
@@ -568,7 +563,7 @@ namespace embree
                                             typename BVH::UnalignedNodeMB::Set(),
                                             createLeaf,
                                             bvh->scene->progressInterface,
-                                            settings);
+                                            default_settings,type_settings);
 
         bvh->set(root.ref,root.lbounds,pinfo.num_time_segments);
 
@@ -600,6 +595,8 @@ namespace embree
       Scene* scene;
       Geometry::Type type;
       Ref<Builder> builder;
+      const PrimitiveType* prim_types[6];
+    
       CreateMultiLeaf6<8,
                        Triangle4,
                        Triangle4vMB,
@@ -609,13 +606,21 @@ namespace embree
                        Bezier1iMB> createLeaf;
 
       BVH8MultiFastSceneBuilderSelect ( BVH8* bvh, Scene* scene, Geometry::Type type )
-        : bvh(bvh), scene(scene), type(type), createLeaf(bvh) {}
+        : bvh(bvh), scene(scene), type(type), createLeaf(bvh) 
+      {
+        prim_types[0] = &Triangle4::type;
+        prim_types[1] = &Triangle4vMB::type;
+        prim_types[2] = &Quad4v::type;
+        prim_types[3] = &Quad4iMB::type;
+        prim_types[4] = &Bezier1v::type;
+        prim_types[5] = &Bezier1iMB::type;
+      }
 
       virtual void build() 
       {
         if (!builder) 
 #if 1
-        builder = new BVHNBuilderMulti<8>((BVH8*)bvh,scene,type,createLeaf,4,1.0f,4,inf); 
+        builder = new BVHNBuilderMulti<8>((BVH8*)bvh,scene,type,createLeaf,prim_types); 
         //builder = new BVHNOBBBuilderMultiSAH<8>((BVH8*)bvh,scene,type,createLeaf); //,4,1.0f,4,inf); 
         //builder = new BVHNOBBMBlurBuilderSAH<8>((BVH8*)bvh,scene,type,createLeaf); 
 #else
