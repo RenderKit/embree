@@ -162,19 +162,27 @@ namespace embree
     template<typename NativeCurve3fa>
       struct Ribbon1Intersector1
     {
-      float depth_scale;
-      LinearSpace3fa ray_space;
+      mutable bool initialized;
+      mutable float depth_scale;
+      mutable LinearSpace3fa ray_space;
 
       __forceinline Ribbon1Intersector1() {}
 
       __forceinline Ribbon1Intersector1(const Ray& ray, const void* ptr) 
-         : depth_scale(rsqrt(dot(ray.dir,ray.dir))), ray_space(frame(depth_scale*ray.dir).transposed()) {}
+        : initialized(false) {}
+      //: depth_scale(rsqrt(dot(ray.dir,ray.dir))), ray_space(frame(depth_scale*ray.dir).transposed()) {}
 
       template<typename Epilog>
       __forceinline bool intersect(Ray& ray,
                                    const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
                                    const Epilog& epilog) const
       {
+        if (unlikely(!initialized)) 
+        {
+          initialized = true;
+          depth_scale = rsqrt(dot(ray.dir,ray.dir));
+          ray_space = frame(depth_scale*ray.dir).transposed();
+        }
         return intersect_ribbon<NativeCurve3fa>(ray.org,ray.dir,ray.tnear,ray.tfar,
                                                 depth_scale,ray_space,
                                                 v0,v1,v2,v3,N,

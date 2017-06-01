@@ -52,14 +52,21 @@ namespace embree
           __forceinline Precalculations() {}
 
           __forceinline Precalculations(const Ray& ray, const void* ptr)
+            : initialized(false) {}
+
+          __forceinline void initialize(const Ray& ray) const
           {
-            const float s = rsqrt(dot(ray.dir,ray.dir));
-            depth_scale = s;
-            ray_space = frame(s*ray.dir).transposed();
+            if (unlikely(!initialized)) {
+              initialized = true;
+              const float s = rsqrt(dot(ray.dir,ray.dir));
+              depth_scale = s;
+              ray_space = frame(s*ray.dir).transposed();
+            }
           }
           
-          vfloat<M> depth_scale;
-          LinearSpace3<Vec3vf<M>> ray_space;
+          mutable bool initialized;
+          mutable vfloat<M> depth_scale;
+          mutable LinearSpace3<Vec3vf<M>> ray_space;
         };
         
         template<typename Epilog>
@@ -68,6 +75,8 @@ namespace embree
                                             const Vec4vf<M>& v0, const Vec4vf<M>& v1,
                                             const Epilog& epilog)
         {
+          pre.initialize(ray);
+
           /* transform end points into ray space */
           vbool<M> valid = valid_i;
           Vec4vf<M> p0(xfmVector(pre.ray_space,v0.xyz()-Vec3vf<M>(ray.org)), v0.w);
