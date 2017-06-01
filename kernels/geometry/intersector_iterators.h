@@ -31,16 +31,18 @@ namespace embree
       typename Intersector2,
       typename Intersector3,
       typename Intersector4,
-      typename Intersector5>
+      typename Intersector5,
+      typename Intersector6,
+      typename Intersector7>
 
-      struct Virtual6LeafIntersector1
+      struct Virtual8LeafIntersector1
       {
         typedef void* Primitive;
 
         struct Precalculations
         {
           __forceinline Precalculations (const Ray& ray, const AccelData* accel)
-            : leaf_intersector(accel->leaf_intersector), pre0(ray,accel), pre1(ray,accel), pre2(ray,accel), pre3(ray,accel), pre4(ray,accel), pre5(ray,accel) 
+            : leaf_intersector(accel->leaf_intersector), pre0(ray,accel), pre1(ray,accel), pre2(ray,accel), pre3(ray,accel), pre4(ray,accel), pre5(ray,accel), pre6(ray,accel), pre7(ray,accel) 
           {
             table[0] = &pre0;
             table[1] = &pre1;
@@ -48,6 +50,8 @@ namespace embree
             table[3] = &pre3;
             table[4] = &pre4;
             table[5] = &pre5;
+            table[6] = &pre6;
+            table[7] = &pre7;
           }
         
         public:
@@ -58,20 +62,22 @@ namespace embree
           typename Intersector3::Precalculations pre3;
           typename Intersector4::Precalculations pre4;
           typename Intersector5::Precalculations pre5;
-          void* table[6];
+          typename Intersector6::Precalculations pre6;
+          typename Intersector7::Precalculations pre7;
+          void* table[8];
         };
 
         static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
         {
           const unsigned int ty = (unsigned int) Leaf::decodeTy(*(unsigned int*)prim);
-          assert(ty < 6);
+          assert(ty < 8);
           pre.leaf_intersector->vtable1[ty].intersect(pre.table[ty],ray,context,prim,num,lazy_node);
         }
         
         static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node) 
         {
           const unsigned int ty = (unsigned int) Leaf::decodeTy(*(unsigned int*)prim);
-          assert(ty < 6);
+          assert(ty < 8);
           return pre.leaf_intersector->vtable1[ty].occluded(pre.table[ty],ray,context,prim,num,lazy_node);
         }
       };

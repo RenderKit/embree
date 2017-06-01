@@ -41,6 +41,8 @@ namespace embree
       typedef ArrayIntersector1<QuadMiMBIntersector1Moeller <4 COMMA true> > Slot3;
       typedef ArrayIntersector1<Bezier1vIntersector1> Slot4;
       typedef ArrayIntersector1<Bezier1iIntersector1MB> Slot5;
+      typedef ArrayIntersector1<LineMiIntersector1<SIMD_MODE(4) COMMA true> > Slot6;
+      typedef ArrayIntersector1<LineMiMBIntersector1<SIMD_MODE(4) COMMA true> > Slot7;
 
       static LeafIntersector intersector;
       intersector.vtable1[0].intersect = Slot0::vintersect;
@@ -55,6 +57,10 @@ namespace embree
       intersector.vtable1[4].occluded  = Slot4::voccluded;
       intersector.vtable1[5].intersect = Slot5::vintersect;
       intersector.vtable1[5].occluded  = Slot5::voccluded;
+      intersector.vtable1[6].intersect = Slot6::vintersect;
+      intersector.vtable1[6].occluded  = Slot6::voccluded;
+      intersector.vtable1[7].intersect = Slot7::vintersect;
+      intersector.vtable1[7].occluded  = Slot7::voccluded;
       return &intersector;
     }
   }

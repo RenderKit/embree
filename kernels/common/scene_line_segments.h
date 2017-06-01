@@ -117,7 +117,7 @@ namespace embree
     }
 
     /*! check if the i'th primitive is valid at the itime'th timestep */
-    __forceinline bool valid(size_t i, size_t itime) const {
+    __forceinline bool valid(size_t i, size_t itime = 0) const {
       return valid(i, make_range(itime, itime));
     }
 
@@ -170,6 +170,23 @@ namespace embree
       return true;
     }
 
+    /*! calculates the linear bounds of the i'th primitive for the specified time range */
+    __forceinline bool linearBoundsSafe(size_t i, const BBox1f& time_range, LBBox3fa& bbox) const  
+    {
+      if (numTimeSteps == 1)
+      {
+        if (!valid(i)) return false;
+        bbox = LBBox3fa(bounds(i));
+        return true;
+      } 
+      else
+      {
+        if (!valid(i, getTimeSegmentRange(time_range, fnumTimeSegments))) return false;
+        bbox = linearBounds(i, time_range);
+        return true;
+      }
+    }
+
     __forceinline Leaf::Type leafType() {
       return numTimeSteps == 1 ? Leaf::TY_LINE : Leaf::TY_LINE_MB;
     }
@@ -187,6 +204,10 @@ namespace embree
     {
       LineSegmentsISA (Scene* scene, RTCGeometryFlags flags, size_t numLineSegments, size_t numVertices, size_t numTimeSteps)
         : LineSegments(scene,flags,numLineSegments,numVertices,numTimeSteps) {}
+
+      virtual LBBox3fa virtualLinearBounds(size_t primID, const BBox1f& time_range) const;
+      virtual PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& src, size_t dst);
+      virtual PrimInfoMB createPrimRefArrayMB(mvector<PrimRefMB>& prims, const BBox1f t0t1, const range<size_t>& src, size_t dst);
     };
   }
 

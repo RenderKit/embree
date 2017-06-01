@@ -936,16 +936,18 @@ namespace embree
 
   Accel* BVH8Factory::BVH8MultiFast(Scene* scene)
   {
-    Geometry::Type ty = (Geometry::Type) (Geometry::TRIANGLE_MESH | Geometry::QUAD_MESH | Geometry::BEZIER_CURVES);
+    Geometry::Type ty = (Geometry::Type) (Geometry::TRIANGLE_MESH | Geometry::QUAD_MESH | Geometry::BEZIER_CURVES | Geometry::LINE_SEGMENTS);
 
-    static const PrimitiveType* type[6];
+    static const PrimitiveType* type[8];
     type[0] = &Triangle4::type;
     type[1] = &Triangle4vMB::type;
     type[2] = &Quad4v::type;
     type[3] = &Quad4iMB::type;
     type[4] = &Bezier1v::type;
     type[5] = &Bezier1iMB::type;
-    BVH8* accel = new BVH8(type,6,scene);
+    type[6] = &Line4i::type;
+    type[7] = &Line4iMB::type;
+    BVH8* accel = new BVH8(type,8,scene);
 
     Accel::Intersectors intersectors;
 
@@ -955,8 +957,10 @@ namespace embree
     const size_t quad2 = scene->getNumPrimitives(Geometry::QUAD_MESH,true)-quad1;
     const size_t curves1 = scene->getNumPrimitives(Geometry::BEZIER_CURVES,false);
     const size_t curves2 = scene->getNumPrimitives(Geometry::BEZIER_CURVES,true)-curves1;
+    const size_t lines1 = scene->getNumPrimitives(Geometry::LINE_SEGMENTS,false);
+    const size_t lines2 = scene->getNumPrimitives(Geometry::LINE_SEGMENTS,true)-lines1;
     
-    if (tri2+quad2+curves2)
+    if (tri2+quad2+curves2+lines2)
     {
       if (!curves1 && !curves2)
         intersectors = BVH8MultiFastMBIntersectors(accel);
@@ -973,7 +977,7 @@ namespace embree
     
     Builder* builder = nullptr;
     if (scene->device->tri_builder == "default") builder = BVH8MultiFastSceneBuilder  (accel,scene,ty);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder_mb+" for BVH8MBOBB<Bezier1iMB>");
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH8<multi>");
 
     return new AccelInstance(accel,builder,intersectors);
   }

@@ -63,6 +63,8 @@ namespace embree
     typedef ArrayIntersector1<QuadMiMBIntersector1Moeller <4 COMMA true> > ArrayQuadMiMBIntersector1Moeller;
     typedef ArrayIntersector1<Bezier1vIntersector1> ArrayBezier1vIntersector1;
     typedef ArrayIntersector1<Bezier1iIntersector1MB> ArrayBezier1iIntersector1MB;
+    typedef ArrayIntersector1<LineMiIntersector1<SIMD_MODE(4) COMMA true> > ArrayLineMiIntersector1;
+    typedef ArrayIntersector1<LineMiMBIntersector1<SIMD_MODE(4) COMMA true> > ArrayLineMiMBIntersector1;
 
 #define LEAF_INTERSECTORS_FAST                                          \
     ArrayTriangleMIntersector1Moeller,                                  \
@@ -70,12 +72,14 @@ namespace embree
       ArrayQuadMvIntersector1Moeller,                                   \
       ArrayQuadMiMBIntersector1Moeller,                                 \
       ArrayBezier1vIntersector1,                                        \
-      ArrayBezier1iIntersector1MB
+      ArrayBezier1iIntersector1MB,                                      \
+      ArrayLineMiIntersector1,                                          \
+      ArrayLineMiMBIntersector1
     
-    DEFINE_INTERSECTOR1(BVH8MultiFastIntersector1     ,BVHNIntersector1<8 COMMA BVH_AN1                  COMMA false COMMA Virtual6LeafIntersector1<LEAF_INTERSECTORS_FAST> >);
-    DEFINE_INTERSECTOR1(BVH8MultiFastMBIntersector1   ,BVHNIntersector1<8 COMMA BVH_AN1_AN2_AN4D         COMMA false COMMA Virtual6LeafIntersector1<LEAF_INTERSECTORS_FAST> >);
-    DEFINE_INTERSECTOR1(BVH8MultiFastOBBIntersector1  ,BVHNIntersector1<8 COMMA BVH_AN1_UN1              COMMA false COMMA Virtual6LeafIntersector1<LEAF_INTERSECTORS_FAST> >);
-    DEFINE_INTERSECTOR1(BVH8MultiFastOBBMBIntersector1,BVHNIntersector1<8 COMMA BVH_AN1_AN2_AN4D_UN1_UN2 COMMA false COMMA Virtual6LeafIntersector1<LEAF_INTERSECTORS_FAST> >);
-    //DEFINE_INTERSECTOR1(BVH8MultiFastOBBMBIntersector1,BVHNIntersector1<8 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA Virtual6LeafIntersector1<LEAF_INTERSECTORS_FAST> >);
+    DEFINE_INTERSECTOR1(BVH8MultiFastIntersector1     ,BVHNIntersector1<8 COMMA BVH_AN1                  COMMA false COMMA Virtual8LeafIntersector1<LEAF_INTERSECTORS_FAST> >);
+    DEFINE_INTERSECTOR1(BVH8MultiFastMBIntersector1   ,BVHNIntersector1<8 COMMA BVH_AN1_AN2_AN4D         COMMA false COMMA Virtual8LeafIntersector1<LEAF_INTERSECTORS_FAST> >);
+    DEFINE_INTERSECTOR1(BVH8MultiFastOBBIntersector1  ,BVHNIntersector1<8 COMMA BVH_AN1_UN1              COMMA false COMMA Virtual8LeafIntersector1<LEAF_INTERSECTORS_FAST> >);
+    DEFINE_INTERSECTOR1(BVH8MultiFastOBBMBIntersector1,BVHNIntersector1<8 COMMA BVH_AN1_AN2_AN4D_UN1_UN2 COMMA false COMMA Virtual8LeafIntersector1<LEAF_INTERSECTORS_FAST> >);
+    //DEFINE_INTERSECTOR1(BVH8MultiFastOBBMBIntersector1,BVHNIntersector1<8 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA Virtual8LeafIntersector1<LEAF_INTERSECTORS_FAST> >);
   }
 }

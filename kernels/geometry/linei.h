@@ -136,16 +136,18 @@ namespace embree
 
     /* Fill line segment from line segment list */
     template<typename PrimRefT>
-    __forceinline void fill(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene, const Leaf::Type ty = Leaf::TY_LINE)
+    __forceinline BBox3fa fill(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene, const Leaf::Type ty = Leaf::TY_LINE)
     {
       vint<M> geomID, primID;
       vint<M> v0;
       const PrimRefT* prim = &prims[begin];
 
+      BBox3fa bounds = empty;
       for (size_t i=0; i<M; i++)
       {
         const LineSegments* geom = scene->get<LineSegments>(prim->geomID());
         if (begin<end) {
+          bounds.extend(geom->bounds(prim->primID()));
           geomID[i] = prim->geomID();
           primID[i] = prim->primID();
           v0[i] = geom->segment(prim->primID());
@@ -162,6 +164,7 @@ namespace embree
       }
 
       new (this) LineMi(v0,geomID,primID,ty); // FIXME: use non temporal store
+      return bounds;
     }
 
     __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime)
@@ -192,6 +195,33 @@ namespace embree
       return bounds;
     }
 
+    template<typename BVH>
+    __forceinline static typename BVH::NodeRef createLeaf(const FastAllocator::CachedAllocator& alloc, PrimRef* prims, const range<size_t>& range, BVH* bvh)
+    {
+      size_t cur = range.begin();
+      size_t items = blocks(range.size());
+      LineMi* accel = (LineMi*) alloc.malloc1(items*sizeof(LineMi),BVH::byteAlignment);
+      for (size_t i=0; i<items; i++) {
+        accel[i].fill(prims,cur,range.end(),bvh->scene);
+      }
+      return BVH::encodeLeaf((char*)accel,items);
+    }
+
+    template<typename BVH>
+    __forceinline static const typename BVH::NodeRecordMB4D createLeafMB (const SetMB& set, const FastAllocator::CachedAllocator& alloc, BVH* bvh)
+    {
+      size_t items = blocks(set.object_range.size());
+      size_t start = set.object_range.begin();
+      LineMi* accel = (LineMi*) alloc.malloc1(items*sizeof(LineMi),BVH::byteAlignment);
+      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+      LBBox3fa allBounds = empty;
+      for (size_t i=0; i<items; i++) {
+        const BBox3fa b = accel[i].fill(set.prims->data(), start, set.object_range.end(), bvh->scene); 
+        allBounds.extend(LBBox3fa(b));
+      }
+      return typename BVH::NodeRecordMB4D(node,allBounds,set.time_range);
+    }
+
     /*! output operator */
     friend __forceinline std::ostream& operator<<(std::ostream& cout, const LineMi& line) {
       return cout << "Line" << M << "i {" << line.v0 << ", " << line.geomIDs << ", " << line.primIDs << "}";
@@ -203,6 +233,30 @@ namespace embree
   public:
     vint<M> v0;      // index of start vertex
    };
+  
+  template <int M>
+    struct LineMiMB : public LineMi<M>
+  {
+    template<typename BVH>
+    __forceinline static typename BVH::NodeRef createLeaf(const FastAllocator::CachedAllocator& alloc, PrimRef* prims, const range<size_t>& range, BVH* bvh)
+    {
+      assert(false);
+      return BVH::emptyNode;
+    }
+
+    template<typename BVH>
+      __forceinline static const typename BVH::NodeRecordMB4D createLeafMB (const SetMB& set, const FastAllocator::CachedAllocator& alloc, BVH* bvh)
+    {
+      size_t items = LineMi<M>::blocks(set.object_range.size());
+      size_t start = set.object_range.begin();
+      LineMi<M>* accel = (LineMi<M>*) alloc.malloc1(items*sizeof(LineMi<M>),BVH::byteAlignment);
+      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+      LBBox3fa allBounds = empty;
+      for (size_t i=0; i<items; i++)
+        allBounds.extend(accel[i].fillMB(set.prims->data(), start, set.object_range.end(), bvh->scene, set.time_range));
+      return typename BVH::NodeRecordMB4D(node,allBounds,set.time_range);
+    }
+  };
 
   template<>
     __forceinline void LineMi<4>::gather(Vec4vf4& p0,
@@ -280,4 +334,5 @@ namespace embree
   typename LineMi<M>::Type LineMi<M>::type;
 
   typedef LineMi<4> Line4i;
+  typedef LineMiMB<4> Line4iMB;
 }

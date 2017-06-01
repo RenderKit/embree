@@ -67,13 +67,13 @@ namespace embree
       BVH* bvh;
     };
 
-    template<int N, typename Primitive0, typename Primitive1, typename Primitive2, typename Primitive3, typename Primitive4, typename Primitive5>
-    struct CreateMultiLeaf6 : public VirtualCreateLeaf<N>
+    template<int N, typename Primitive0, typename Primitive1, typename Primitive2, typename Primitive3, typename Primitive4, typename Primitive5, typename Primitive6, typename Primitive7>
+    struct CreateMultiLeaf8 : public VirtualCreateLeaf<N>
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRecordMB4D NodeRecordMB4D;
       
-      CreateMultiLeaf6 (BVH* bvh) 
+      CreateMultiLeaf8 (BVH* bvh) 
         : VirtualCreateLeaf<N>(bvh) {}
 
       size_t operator() (PrimRef* prims, const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) const
@@ -87,6 +87,8 @@ namespace embree
         case 3: return Primitive3::createLeaf(alloc,prims,range,this->bvh);
         case 4: return Primitive4::createLeaf(alloc,prims,range,this->bvh);
         case 5: return Primitive5::createLeaf(alloc,prims,range,this->bvh);
+        case 6: return Primitive6::createLeaf(alloc,prims,range,this->bvh);
+        case 7: return Primitive7::createLeaf(alloc,prims,range,this->bvh);
         default: assert(false); return BVH::emptyNode;
         }
       }
@@ -102,6 +104,8 @@ namespace embree
         case 3: return Primitive3::createLeafMB(set,alloc,this->bvh);
         case 4: return Primitive4::createLeafMB(set,alloc,this->bvh);
         case 5: return Primitive5::createLeafMB(set,alloc,this->bvh);
+        case 6: return Primitive6::createLeafMB(set,alloc,this->bvh);
+        case 7: return Primitive7::createLeafMB(set,alloc,this->bvh);
         default: assert(false); return NodeRecordMB4D(BVH::emptyNode,empty,empty);
         }
       }
@@ -513,18 +517,18 @@ namespace embree
       Geometry::Type type;
       const VirtualCreateLeaf<N>& createLeaf;
       CommonBuildSettings default_settings;
-      CommonBuildSettings type_settings[6];
+      CommonBuildSettings type_settings[8];
 
       const CommonBuildSettings createBuildSettings(const PrimitiveType* type) {
         return CommonBuildSettings(N,BVH::maxBuildDepthLeaf,type->sahBlockSize,type->blockSize,type->blockSize*BVH::maxLeafBlocks,1.0f,1.0f,1024,type->singleLeafTimeSegment,inf);
       }
       
-      BVHNBuilderMulti (BVH* bvh, Scene* scene, Geometry::Type type, const VirtualCreateLeaf<N>& createLeaf, const PrimitiveType* prim_types[6])
+      BVHNBuilderMulti (BVH* bvh, Scene* scene, Geometry::Type type, const VirtualCreateLeaf<N>& createLeaf, const PrimitiveType* prim_types[8])
         : bvh(bvh), scene(scene), type(type), createLeaf(createLeaf)
       {
-        for (size_t i=0; i<6; i++) type_settings[i] = createBuildSettings(prim_types[i]);
+        for (size_t i=0; i<8; i++) type_settings[i] = createBuildSettings(prim_types[i]);
         default_settings = type_settings[0];
-        for (size_t i=1; i<6; i++) default_settings = default_settings + type_settings[i];
+        for (size_t i=1; i<8; i++) default_settings = default_settings + type_settings[i];
       }
 
       void build()
@@ -595,15 +599,17 @@ namespace embree
       Scene* scene;
       Geometry::Type type;
       Ref<Builder> builder;
-      const PrimitiveType* prim_types[6];
+      const PrimitiveType* prim_types[8];
     
-      CreateMultiLeaf6<8,
+      CreateMultiLeaf8<8,
                        Triangle4,
                        Triangle4vMB,
                        Quad4v,
                        Quad4iMB,
                        Bezier1v,
-                       Bezier1iMB> createLeaf;
+                       Bezier1iMB,
+                       Line4i,
+                       Line4iMB> createLeaf;
 
       BVH8MultiFastSceneBuilderSelect ( BVH8* bvh, Scene* scene, Geometry::Type type )
         : bvh(bvh), scene(scene), type(type), createLeaf(bvh) 
@@ -614,6 +620,8 @@ namespace embree
         prim_types[3] = &Quad4iMB::type;
         prim_types[4] = &Bezier1v::type;
         prim_types[5] = &Bezier1iMB::type;
+        prim_types[6] = &Line4i::type;
+        prim_types[7] = &Line4iMB::type;
       }
 
       virtual void build() 

@@ -200,5 +200,43 @@ namespace embree
     LineSegments* createLineSegments(Scene* scene, RTCGeometryFlags flags, size_t numSegments, size_t numVertices, size_t numTimeSteps) {
       return new LineSegmentsISA(scene,flags,numSegments,numVertices,numTimeSteps);
     }
+
+    LBBox3fa LineSegmentsISA::virtualLinearBounds(size_t primID, const BBox1f& time_range) const 
+    {
+      if (numTimeSteps == 1)
+        return LBBox3fa(bounds(primID));
+      else
+        return linearBounds(primID,time_range);
+    }
+
+    PrimInfo LineSegmentsISA::createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& src, size_t dst)
+    {
+      PrimInfo pinfo(empty);
+      Leaf::Type ty = leafType();
+      for (size_t j=src.begin(); j<src.end(); j++)
+      {
+        BBox3fa bounds = empty;
+        if (!buildBounds(j,&bounds)) continue;
+        const PrimRef prim(bounds,ty,geomID,unsigned(j));
+        pinfo.add_center2(prim);
+        prims[dst++] = prim;
+      }
+      return pinfo;
+    }
+
+    PrimInfoMB LineSegmentsISA::createPrimRefArrayMB(mvector<PrimRefMB>& prims, const BBox1f t0t1, const range<size_t>& src, size_t dst) 
+    {
+      PrimInfoMB pinfo(empty);
+      Leaf::Type ty = leafType();
+      for (size_t j=src.begin(); j<src.end(); j++)
+      {
+        LBBox3fa bounds = empty;
+        if (!linearBoundsSafe(j,t0t1,bounds)) continue;
+        const PrimRefMB prim(bounds,numTimeSegments(),numTimeSegments(),ty,geomID,unsigned(j));
+        pinfo.add_primref(prim);
+        prims[dst++] = prim;
+      }
+      return pinfo;
+    }
   }
 }
