@@ -179,9 +179,9 @@ namespace embree
            typename BVH::AlignedNode::Set(),
            typename BVH::AlignedNodeMB4D::Create(),
            typename BVH::AlignedNodeMB4D::Set(),
-           typename BVH::UnalignedNodeMB::Create(),
-           typename BVH::UnalignedNode::Set(),
            typename BVH::UnalignedNode::Create(),
+           typename BVH::UnalignedNode::Set(),
+           typename BVH::UnalignedNodeMB::Create(),
            typename BVH::UnalignedNodeMB::Set(),
            [&] (const PrimRef* prims, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) -> NodeRef { 
              assert(false); return BVH::emptyNode; 
