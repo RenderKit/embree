@@ -948,8 +948,7 @@ namespace embree
     BVH8* accel = new BVH8(type,6,scene);
 
     Accel::Intersectors intersectors;
-   intersectors = BVH8MultiFastOBBMBIntersectors(accel);
-#if 0 // FIXME: enable
+
     const size_t tri1 = scene->getNumPrimitives(Geometry::TRIANGLE_MESH,false);
     const size_t tri2 = scene->getNumPrimitives(Geometry::TRIANGLE_MESH,true)-tri1;
     const size_t quad1 = scene->getNumPrimitives(Geometry::QUAD_MESH,false);
@@ -959,26 +958,18 @@ namespace embree
     
     if (tri2+quad2+curves2)
     {
-      const size_t tri = tri1+tri2;
-      const size_t quad = quad1+quad2;
-      const size_t curves = curves1+curves2;
-      if ((tri+quad) && !curves)
+      if (!curves1 && !curves2)
         intersectors = BVH8MultiFastMBIntersectors(accel);
       else
         intersectors = BVH8MultiFastOBBMBIntersectors(accel);
     }
     else 
     {
-      if ((tri1+quad1) && !curves1)
+      if (!curves1)
         intersectors = BVH8MultiFastIntersectors(accel);
       else 
         intersectors = BVH8MultiFastOBBIntersectors(accel);
     }
-#endif
-    //Accel::Intersectors intersectors = BVH8MultiFastIntersectors(accel);
-    //Accel::Intersectors intersectors = BVH8MultiFastMBIntersectors(accel);
-    //Accel::Intersectors intersectors = BVH8MultiFastOBBIntersectors(accel);
-    //Accel::Intersectors intersectors = BVH8MultiFastOBBMBIntersectors(accel);
     
     Builder* builder = nullptr;
     if (scene->device->tri_builder == "default") builder = BVH8MultiFastSceneBuilder  (accel,scene,ty);
