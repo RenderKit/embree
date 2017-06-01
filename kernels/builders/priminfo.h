@@ -40,6 +40,10 @@ namespace embree
         return ((types-1)&types) == 0;
       }
 
+      __forceinline bool hasType( const Leaf::Type ty ) const {
+        return types & Leaf::typeMask(ty);
+      }
+
       __forceinline bool isType( const Leaf::Type ty ) const {
         return types == Leaf::typeMask(ty);
       }

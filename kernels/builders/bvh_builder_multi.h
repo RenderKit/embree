@@ -46,8 +46,8 @@ namespace embree
         __forceinline BuildRecord (const SetMB& prims, size_t depth)
           : depth(depth), prims(prims) {}
 
-        __forceinline friend bool operator< (const BuildRecord& a, const BuildRecord& b) {
-          return a.prims.size() < b.prims.size();
+        __forceinline friend bool operator> (const BuildRecord& a, const BuildRecord& b) {
+          return a.prims.size() > b.prims.size();
         }
 
         __forceinline size_t size() const {
@@ -137,7 +137,7 @@ namespace embree
           {
             /* if only one bit is set use that types settings */
             if (((type_mask-1) & type_mask) == 0) 
-              return type_settings[__bsf(type_mask)];
+              return type_settings[Leaf::selectTy(type_mask)];
             
             /* otherwise use the default settings */
             else return default_settings;
@@ -147,6 +147,16 @@ namespace embree
           const Split find(const SetMB& set)
           {
             const Settings& cfg = getSettings(set.types);
+
+            /* split out hair when approaching leaf level */
+            if (set.hasType(Leaf::TY_HAIR) && !set.oneType() && set.size() < 200) {
+              return Split(0.0f,Split::SPLIT_TYPE,Leaf::TY_HAIR);
+            }
+
+            /* split out hair when approaching leaf level */
+            if (set.hasType(Leaf::TY_HAIR_MB) && !set.oneType() && set.size() < 200) {
+              return Split(0.0f,Split::SPLIT_TYPE,Leaf::TY_HAIR_MB);
+            }
                
             /* first try standard object split */
             const Split object_split = heuristicObjectSplit.find(set,cfg.logBlockSize);
@@ -193,7 +203,7 @@ namespace embree
             }
             /* perform type split */
             else if (unlikely(split.data == Split::SPLIT_TYPE)) {
-              splitByType(set,lset,rset);
+              splitByType(set,lset,rset,(Leaf::Type)split.pos);
             }
             else
               assert(false);
@@ -239,7 +249,7 @@ namespace embree
 
             /* if primitives are of different type perform type splits */
             if (!set.oneType())
-              return Split(0.0f,Split::SPLIT_TYPE);
+              return Split(0.0f,Split::SPLIT_TYPE,__bsf(set.types));
 
             /* if the leaf is too large we also have to perform additional splits */
             if (set.size() > cfg.maxLeafSize)
@@ -271,14 +281,12 @@ namespace embree
           }
 
           /*! split by primitive type */
-          void splitByType(const SetMB& set, SetMB& lset, SetMB& rset)
+          void splitByType(const SetMB& set, SetMB& lset, SetMB& rset, const Leaf::Type type)
           {
-            assert(set.size());
             mvector<PrimRefMB>& prims = *set.prims;
             const size_t begin = set.object_range.begin();
             const size_t end   = set.object_range.end();
           
-            Leaf::Type type = prims[begin].type();
             PrimInfoMB linfo = empty;
             PrimInfoMB rinfo = empty;
             size_t center = serial_partitioning(prims.data(),begin,end,linfo,rinfo,
@@ -487,6 +495,7 @@ namespace embree
 
             /* sort buildrecords for simpler shadow ray traversal */
             //std::sort(&children[0],&children[children.size()],std::greater<BuildRecord>()); // FIXME: reduces traversal performance of bvh8.triangle4 (need to verified) !!
+            children.sort();
 
             /* spawn tasks */
             if (unlikely(current.size() > cfg.singleThreadThreshold))

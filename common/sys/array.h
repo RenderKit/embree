@@ -29,8 +29,8 @@ namespace embree
 
       /********************** Iterators  ****************************/
 
-      __forceinline T* begin() const { return items; };
-      __forceinline T* end  () const { return items+N; };
+      __forceinline T* begin() { return items; };
+      __forceinline T* end  () { return items+N; };
 
 
       /********************** Capacity ****************************/
@@ -72,8 +72,8 @@ namespace embree
 
       /********************** Iterators  ****************************/
 
-      __forceinline T* begin() const { return items; };
-      __forceinline T* end  () const { return items+M; };
+      __forceinline T* begin() { return items; };
+      __forceinline T* end  () { return items+M; };
 
 
       /********************** Capacity ****************************/

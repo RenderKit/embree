@@ -76,5 +76,10 @@ namespace embree
     static __forceinline unsigned decodeID(unsigned ID) {
       return ID & MASK;
     }
+
+    static __forceinline Type selectTy(unsigned mask) {
+      assert(mask);
+      return (Type) __bsf(mask);
+    }
   };
 }

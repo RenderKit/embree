@@ -103,6 +103,10 @@ namespace embree
           numChildren++;
         }
 
+        __forceinline void sort() {
+          std::sort(children.begin(),children.begin()+numChildren,std::greater<BuildRecord>());
+        }
+
       public:
         array_t<BuildRecord,MAX_BRANCHING_FACTOR> children;
         array_t<SharedPrimRefVector*,MAX_BRANCHING_FACTOR> primvecs;
