@@ -203,7 +203,7 @@ namespace embree
             }
             /* perform type split */
             else if (unlikely(split.data == Split::SPLIT_TYPE)) {
-              splitByType(set,lset,rset,(Leaf::Type)split.pos);
+              splitByType(set,lset,rset,(Leaf::Type)split.dim);
             }
             else
               assert(false);
@@ -248,8 +248,9 @@ namespace embree
             }
 
             /* if primitives are of different type perform type splits */
-            if (!set.oneType())
-              return Split(0.0f,Split::SPLIT_TYPE,__bsf(set.types));
+            if (!set.oneType()) {
+              return Split(0.0f,Split::SPLIT_TYPE,Leaf::selectTy(set.types));
+            }
 
             /* if the leaf is too large we also have to perform additional splits */
             if (set.size() > cfg.maxLeafSize)
@@ -286,7 +287,7 @@ namespace embree
             mvector<PrimRefMB>& prims = *set.prims;
             const size_t begin = set.object_range.begin();
             const size_t end   = set.object_range.end();
-          
+            
             PrimInfoMB linfo = empty;
             PrimInfoMB rinfo = empty;
             size_t center = serial_partitioning(prims.data(),begin,end,linfo,rinfo,
