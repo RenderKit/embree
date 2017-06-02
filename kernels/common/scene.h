@@ -124,7 +124,10 @@ namespace embree
 
     /*! Scene destruction */
     ~Scene ();
-    
+
+    /*! prints statistics about the scene */
+    void printStatistics();
+
     /*! clears the scene */
     void clear();
 

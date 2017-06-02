@@ -90,6 +90,59 @@ namespace embree
     createUserGeometryMBAccel();
   }
 
+  void Scene::printStatistics()
+  {
+    /* calculate maximal number of time segments */
+    unsigned max_time_steps = 0;
+    for (size_t i=0; i<size(); i++)
+      max_time_steps = max(max_time_steps,get(i)->numTimeSteps);
+
+    /* initialize vectors*/
+    std::vector<size_t> statistics[Geometry::NUM_TYPES];
+    for (size_t i=0; i<Geometry::NUM_TYPES; i++)
+      statistics[i].resize(max_time_steps);
+
+    /* gather statistics */
+    for (size_t i=0; i<size(); i++) 
+    {
+      int ty = __bsf(get(i)->type); 
+      assert(ty<Geometry::NUM_TYPES);
+      int timesegments = get(i)->numTimeSegments(); 
+      assert(timesegments < max_time_steps);
+      statistics[ty][timesegments] += get(i)->size();
+    }
+
+    /* print statistics */
+    const char* names[Geometry::NUM_TYPES] = {
+      "triangles",
+      "quads",
+      "curves",
+      "segments",
+      "subdivs",
+      "usergeom",
+      "instance",
+      "group"
+    };
+
+    std::cout << "  segments: ";
+    for (size_t t=0; t<max_time_steps; t++)
+      std::cout << std::setw(10) << t;
+    std::cout << std::endl;
+
+    std::cout << "------------";
+    for (size_t t=0; t<max_time_steps; t++)
+      std::cout << "----------";
+    std::cout << std::endl;
+    
+    for (size_t p=0; p<Geometry::NUM_TYPES; p++)
+    {
+      std::cout << std::setw(10) << names[p] << ": ";
+      for (size_t t=0; t<max_time_steps; t++)
+        std::cout << std::setw(10) << statistics[p][t];
+      std::cout << std::endl;
+    }
+  }
+
   void Scene::createTriangleAccel()
   {
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
@@ -746,6 +799,10 @@ namespace embree
 
   void Scene::commit_task ()
   {
+    /* print scene statistics */
+    if (device->verbosity(2))
+      printStatistics();
+
     progress_monitor_counter = 0;
 
     /* call preCommit function of each geometry */
