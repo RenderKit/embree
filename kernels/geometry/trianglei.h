@@ -211,12 +211,13 @@ namespace embree
 
     /* Fill triangle from triangle list */
     template<typename PrimRefT>
-    __forceinline void fill(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene, const Leaf::Type ty = Leaf::TY_TRIANGLE)
+    __forceinline const BBox3fa fill(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene, const Leaf::Type ty = Leaf::TY_TRIANGLE)
     {
       vint<M> geomID = -1, primID = -1;
       vint<M> v0 = zero, v1 = zero, v2 = zero;
       const PrimRefT* prim = &prims[begin];
 
+      BBox3fa bounds = empty;
       for (size_t i=0; i<M; i++)
       {
         const TriangleMesh* mesh = scene->get<TriangleMesh>(prim->geomID());
@@ -224,6 +225,7 @@ namespace embree
         if (begin<end) {
           geomID[i] = prim->geomID();
           primID[i] = prim->primID();
+          bounds.extend(mesh->bounds(prim->primID()));
           unsigned int_stride = mesh->vertices0.getStride()/4;
           v0[i] = tri.v[0] * int_stride;
           v1[i] = tri.v[1] * int_stride;
@@ -243,6 +245,7 @@ namespace embree
       }
 
       new (this) TriangleMi(v0,v1,v2,geomID,primID,ty); // FIXME: use non temporal store
+      return bounds;
     }
 
     __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime)
@@ -255,6 +258,33 @@ namespace embree
     {
       fill(prims, begin, end, scene, Leaf::TY_TRIANGLE_MB);
       return linearBounds(scene, time_range);
+    }
+
+    template<typename BVH>
+    __forceinline static typename BVH::NodeRef createLeaf(const FastAllocator::CachedAllocator& alloc, PrimRef* prims, const range<size_t>& range, BVH* bvh)
+    {
+      size_t cur = range.begin();
+      size_t items = blocks(range.size());
+      TriangleMi* accel = (TriangleMi*) alloc.malloc1(items*sizeof(TriangleMi),BVH::byteAlignment);
+      for (size_t i=0; i<items; i++) {
+        accel[i].fill(prims,cur,range.end(),bvh->scene);
+      }
+      return BVH::encodeLeaf((char*)accel,items);
+    }
+
+    template<typename BVH>
+    __forceinline static const typename BVH::NodeRecordMB4D createLeafMB (const SetMB& set, const FastAllocator::CachedAllocator& alloc, BVH* bvh)
+    {
+      size_t items = blocks(set.object_range.size());
+      size_t start = set.object_range.begin();
+      TriangleMi* accel = (TriangleMi*) alloc.malloc1(items*sizeof(TriangleMi),BVH::byteAlignment);
+      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+      LBBox3fa allBounds = empty;
+      for (size_t i=0; i<items; i++) {
+        const BBox3fa b = accel[i].fill(set.prims->data(),start,set.object_range.end(),bvh->scene);
+        allBounds.extend(LBBox3fa(b));
+      }
+      return typename BVH::NodeRecordMB4D(node,allBounds,set.time_range);
     }
 
     /* Updates the primitive */
@@ -280,6 +310,30 @@ namespace embree
     vint<M> v1;         // 4 byte offset of 2nd vertex
     vint<M> v2;         // 4 byte offset of 3rd vertex
     vint<M> primIDs;    // primitive ID of primitive inside mesh
+  };
+
+  template <int M>
+    struct TriangleMiMB : public TriangleMi<M>
+  {
+    template<typename BVH>
+    __forceinline static typename BVH::NodeRef createLeaf(const FastAllocator::CachedAllocator& alloc, PrimRef* prims, const range<size_t>& range, BVH* bvh)
+    {
+      assert(false);
+      return BVH::emptyNode;
+    }
+
+    template<typename BVH>
+      __forceinline static const typename BVH::NodeRecordMB4D createLeafMB (const SetMB& set, const FastAllocator::CachedAllocator& alloc, BVH* bvh)
+    {
+      size_t items = TriangleMi<M>::blocks(set.object_range.size());
+      size_t start = set.object_range.begin();
+      TriangleMi<M>* accel = (TriangleMi<M>*) alloc.malloc1(items*sizeof(TriangleMi<M>),BVH::byteAlignment);
+      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+      LBBox3fa allBounds = empty;
+      for (size_t i=0; i<items; i++)
+        allBounds.extend(accel[i].fillMB(set.prims->data(), start, set.object_range.end(), bvh->scene, set.time_range));
+      return typename BVH::NodeRecordMB4D(node,allBounds,set.time_range);
+    }
   };
 
   template<>
@@ -367,4 +421,5 @@ namespace embree
   typename TriangleMi<M>::Type TriangleMi<M>::type;
 
   typedef TriangleMi<4> Triangle4i;
+  typedef TriangleMiMB<4> Triangle4iMB;
 }

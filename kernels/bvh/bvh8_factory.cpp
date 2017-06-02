@@ -940,7 +940,7 @@ namespace embree
 
     static const PrimitiveType* type[8];
     type[0] = &Triangle4::type;
-    type[1] = &Triangle4vMB::type;
+    type[1] = &Triangle4iMB::type;
     type[2] = &Quad4v::type;
     type[3] = &Quad4iMB::type;
     type[4] = &Bezier1v::type;

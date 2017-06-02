@@ -36,7 +36,7 @@ namespace embree
     LeafIntersector* LeafIntersectorFast()
     {
       typedef ArrayIntersector1<TriangleMIntersector1Moeller  <SIMD_MODE(4) COMMA true> > Slot0;
-      typedef ArrayIntersector1<TriangleMvMBIntersector1Moeller <SIMD_MODE(4) COMMA true> > Slot1;
+      typedef ArrayIntersector1<TriangleMiMBIntersector1Moeller <SIMD_MODE(4) COMMA true> > Slot1;
       typedef ArrayIntersector1<QuadMvIntersector1Moeller <4 COMMA true> > Slot2;
       typedef ArrayIntersector1<QuadMiMBIntersector1Moeller <4 COMMA true> > Slot3;
       typedef ArrayIntersector1<Bezier1vIntersector1> Slot4;

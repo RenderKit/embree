@@ -603,7 +603,7 @@ namespace embree
     
       CreateMultiLeaf8<8,
                        Triangle4,
-                       Triangle4vMB,
+                       Triangle4iMB,
                        Quad4v,
                        Quad4iMB,
                        Bezier1v,
@@ -615,7 +615,7 @@ namespace embree
         : bvh(bvh), scene(scene), type(type), createLeaf(bvh) 
       {
         prim_types[0] = &Triangle4::type;
-        prim_types[1] = &Triangle4vMB::type;
+        prim_types[1] = &Triangle4iMB::type;
         prim_types[2] = &Quad4v::type;
         prim_types[3] = &Quad4iMB::type;
         prim_types[4] = &Bezier1v::type;

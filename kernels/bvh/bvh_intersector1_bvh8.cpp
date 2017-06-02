@@ -58,7 +58,7 @@ namespace embree
     IF_ENABLED_USER(DEFINE_INTERSECTOR1(BVH8VirtualMBIntersector1,BVHNIntersector1<8 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersector1<ObjectIntersector1<true>> >));
     
     typedef ArrayIntersector1<TriangleMIntersector1Moeller  <SIMD_MODE(4) COMMA true> > ArrayTriangleMIntersector1Moeller;
-    typedef ArrayIntersector1<TriangleMvMBIntersector1Moeller <SIMD_MODE(4) COMMA true> > ArrayTriangleMvMBIntersector1Moeller;
+    typedef ArrayIntersector1<TriangleMiMBIntersector1Moeller <SIMD_MODE(4) COMMA true> > ArrayTriangleMiMBIntersector1Moeller;
     typedef ArrayIntersector1<QuadMvIntersector1Moeller <4 COMMA true> > ArrayQuadMvIntersector1Moeller;
     typedef ArrayIntersector1<QuadMiMBIntersector1Moeller <4 COMMA true> > ArrayQuadMiMBIntersector1Moeller;
     typedef ArrayIntersector1<Bezier1vIntersector1> ArrayBezier1vIntersector1;
@@ -67,8 +67,8 @@ namespace embree
     typedef ArrayIntersector1<LineMiMBIntersector1<SIMD_MODE(4) COMMA true> > ArrayLineMiMBIntersector1;
 
 #define LEAF_INTERSECTORS_FAST                                          \
-    ArrayTriangleMIntersector1Moeller,                                  \
-      ArrayTriangleMvMBIntersector1Moeller,                             \
+      ArrayTriangleMIntersector1Moeller,                                \
+      ArrayTriangleMiMBIntersector1Moeller,                             \
       ArrayQuadMvIntersector1Moeller,                                   \
       ArrayQuadMiMBIntersector1Moeller,                                 \
       ArrayBezier1vIntersector1,                                        \
