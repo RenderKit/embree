@@ -459,6 +459,128 @@ namespace embree
       
       /* otherwise use stream intersector */
       RayPN& rayN = *(RayPN*)&_rayN;
+
+#if 1
+
+      /* fallback to packets */
+      for (size_t i = 0; i < N; i += VSIZEX)
+      {
+        const vintx vi = vintx(int(i)) + vintx(step);
+        vboolx valid = vi < vintx(int(N));
+        const size_t offset = sizeof(float) * i;
+
+        RayK<VSIZEX> ray = rayN.gatherByOffset<VSIZEX>(valid, offset);
+        valid &= ray.tnear <= ray.tfar;
+        if (intersect)
+          scene->intersect(valid, ray, context);
+        else
+          scene->occluded (valid, ray, context);
+        rayN.scatterByOffset<VSIZEX>(valid, offset, ray, intersect);
+      }
+
+#elif 1
+
+      /* sort rays into octants and fallback to packets */
+      size_t octants[8][VSIZEX];
+      unsigned int rays_in_octant[8];
+
+      for (size_t i=0;i<8;i++) rays_in_octant[i] = 0;
+      size_t inputRayID = 0;
+
+      while(1)
+      {
+        int cur_octant = -1;
+        /* sort rays into octants */
+        for (;inputRayID<N;)
+        {
+          //Ray &ray = *(Ray*)((char*)rayN + inputRayID * stride);
+          const float tnear = rayN.tnear? rayN.tnear[inputRayID] : 0.0f;
+          const float tfar = rayN.tfar[inputRayID];
+
+          const Vec3fa dir(rayN.dirx[inputRayID], rayN.diry[inputRayID], rayN.dirz[inputRayID]);
+
+          /* skip invalid rays */
+          if (unlikely(tnear > tfar)) { inputRayID++; continue; }
+          //if (unlikely(!intersect && ray.geomID == 0)) { inputRayID++; continue; } // ignore already occluded rays
+
+//#if defined(EMBREE_IGNORE_INVALID_RAYS)
+//          if (unlikely(!ray.valid())) {  inputRayID++; continue; }
+//#endif
+
+          const unsigned int octantID = movemask(vfloat4(dir) < 0.0f) & 0x7;
+
+          assert(octantID < 8);
+          octants[octantID][rays_in_octant[octantID]++] = inputRayID;
+          inputRayID++;
+          if (unlikely(rays_in_octant[octantID] == VSIZEX))
+          {
+            cur_octant = octantID;
+            break;
+          }
+        }
+        /* need to flush rays in octant ? */
+        if (unlikely(cur_octant == -1))
+          for (int i=0;i<8;i++)
+            if (rays_in_octant[i])
+            {
+              cur_octant = i;
+              break;
+            }
+
+        /* all rays traced ? */
+        if (unlikely(cur_octant == -1))
+          break;
+
+        const size_t numOctantRays = rays_in_octant[cur_octant];
+
+        RayK<VSIZEX> ray;
+        for (size_t i = 0; i < numOctantRays; i++)
+        {
+          size_t ID = octants[cur_octant][i];
+
+          ray.org.x[i] = rayN.orgx[ID];
+          ray.org.y[i] = rayN.orgy[ID];
+          ray.org.z[i] = rayN.orgz[ID];
+          ray.dir.x[i] = rayN.dirx[ID];
+          ray.dir.y[i] = rayN.diry[ID];
+          ray.dir.z[i] = rayN.dirz[ID];
+          ray.tnear[i] = rayN.tnear ? rayN.tnear[ID] : 0.0f;
+          ray.tfar[i]  = rayN.tfar[ID];
+          ray.time[i]  = rayN.time ? rayN.time[ID] : 0.0f;
+          ray.mask[i]  = rayN.mask ? rayN.mask[ID] : -1;
+          ray.instID[i] = rayN.instID ? rayN.instID[ID] : -1;
+          ray.geomID[i] = RTC_INVALID_GEOMETRY_ID;
+        }
+
+        vboolx valid = vintx(step) < vintx(int(numOctantRays));
+        if (intersect)
+          scene->intersect(valid, ray, context);
+        else
+          scene->occluded (valid, ray, context);
+
+        for (size_t i = 0; i < numOctantRays; i++)
+        {
+          size_t ID = octants[cur_octant][i];
+
+          rayN.geomID[ID] = ray.geomID[i];
+          if (intersect && ray.geomID[i]!= RTC_INVALID_GEOMETRY_ID)
+          {
+            rayN.tfar[ID] = ray.tfar[i];
+            rayN.u[ID] = ray.u[i];
+            rayN.v[ID] = ray.v[i];
+            rayN.primID[ID] = ray.primID[i];
+            if (rayN.Ngx) rayN.Ngx[ID] = ray.Ng.x[i];
+            if (rayN.Ngy) rayN.Ngy[ID] = ray.Ng.y[i];
+            if (rayN.Ngz) rayN.Ngz[ID] = ray.Ng.z[i];
+            if (rayN.instID) rayN.instID[ID] = ray.instID[i];
+          }
+        }
+
+        rays_in_octant[cur_octant] = 0;
+      }
+
+#else
+
       size_t rayStartIndex = 0;
 
       __aligned(64) Ray rays[MAX_RAYS_PER_OCTANT];
@@ -527,6 +649,9 @@ namespace embree
           for (size_t j=0;j<rays_in_octant[i];j++)
             rayN.scatterByOffset(octants[i][j],rays[j],intersect);
         }
+
+#endif
+
     }
 
     RayStreamFilterFuncs rayStreamFilterFuncs() {
