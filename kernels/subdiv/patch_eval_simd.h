@@ -78,8 +78,8 @@ namespace embree
         vbool eval_general(const vbool& valid, const typename Patch::SubdividedGeneralPatch* patch, const vfloat& U, const vfloat& V, const size_t depth)
         {
           vbool ret = false;
-          const vint l = (vint)floor(4.0f*U); const vfloat u = 2.0f*frac(4.0f*U); 
-          const vint h = (vint)floor(4.0f*V); const vfloat v = 2.0f*frac(4.0f*V); 
+          const vint l = (vint)floor(4.0f*U); const vfloat u = 2.0f*frac(4.0f*U)-0.5f; 
+          const vint h = (vint)floor(4.0f*V); const vfloat v = 2.0f*frac(4.0f*V)-0.5f; 
           const vint i = (h<<2)+l; assert(all(valid,i<patch->N));
           foreach_unique(valid,i,[&](const vbool& valid, const int i) {
               ret |= eval(valid,patch->child[i],u,v,8.0f,depth+1);

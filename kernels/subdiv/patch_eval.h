@@ -70,8 +70,8 @@ namespace embree
         
         bool eval_general(const typename Patch::SubdividedGeneralPatch* This, const float U, const float V, const size_t depth)
         {
-          const unsigned l = (unsigned) floor(4.0f*U); const float u = 2.0f*frac(4.0f*U); 
-          const unsigned h = (unsigned) floor(4.0f*V); const float v = 2.0f*frac(4.0f*V); 
+          const unsigned l = (unsigned) floor(4.0f*U); const float u = 2.0f*frac(4.0f*U)-0.5f; 
+          const unsigned h = (unsigned) floor(4.0f*V); const float v = 2.0f*frac(4.0f*V)-0.5f; 
           const unsigned i = 4*h+l; assert(i<This->N);
           return eval(This->child[i],u,v,8.0f,depth+1);
         }
