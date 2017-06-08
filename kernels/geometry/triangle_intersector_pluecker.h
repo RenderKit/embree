@@ -35,15 +35,16 @@ namespace embree
     template<int M, typename UVMapper>
       struct PlueckerHitM
     {
-      __forceinline PlueckerHitM(const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& T, const vfloat<M>& den, const Vec3vf<M>& Ng, const UVMapper& mapUV)
-        : U(U), V(V), T(T), den(den), mapUV(mapUV), vNg(Ng) {}
+      __forceinline PlueckerHitM(const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& W, const vfloat<M>& T, const vfloat<M>& den, const Vec3vf<M>& Ng, const UVMapper& mapUV)
+        : U(U), V(V), W(W), T(T), den(den), mapUV(mapUV), vNg(Ng) {}
       
       __forceinline void finalize() 
       {
         const vfloat<M> rcpDen = rcp(den);
         vt = T * rcpDen;
-        vu = U * rcpDen;
-        vv = V * rcpDen;
+        const vfloat<M> rcpUVW = rcp(U+V+W);
+        vu = U * rcpUVW;
+        vv = V * rcpUVW;
         mapUV(vu,vv);
       }
       
@@ -54,6 +55,7 @@ namespace embree
     private:
       const vfloat<M> U;
       const vfloat<M> V;
+      const vfloat<M> W;
       const vfloat<M> T;
       const vfloat<M> den;
       const UVMapper& mapUV;
@@ -123,7 +125,7 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* update hit information */
-          PlueckerHitM<M,UVMapper> hit(U,V,T,den,Ng,mapUV);
+          PlueckerHitM<M,UVMapper> hit(U,V,W,T,den,Ng,mapUV);
           return epilog(valid,hit);
         }
       };
@@ -131,15 +133,16 @@ namespace embree
     template<int K, typename UVMapper>
       struct PlueckerHitK
     {
-      __forceinline PlueckerHitK(const vfloat<K>& U, const vfloat<K>& V, const vfloat<K>& T, const vfloat<K>& den, const Vec3vf<K>& Ng, const UVMapper& mapUV)
-        : U(U), V(V), T(T), den(den), Ng(Ng), mapUV(mapUV) {}
+      __forceinline PlueckerHitK(const vfloat<K>& U, const vfloat<K>& V, const vfloat<K>& W, const vfloat<K>& T, const vfloat<K>& den, const Vec3vf<K>& Ng, const UVMapper& mapUV)
+        : U(U), V(V), W(W), T(T), den(den), Ng(Ng), mapUV(mapUV) {}
       
       __forceinline std::tuple<vfloat<K>,vfloat<K>,vfloat<K>,Vec3vf<K>> operator() () const
       {
         const vfloat<K> rcpDen = rcp(den);
         const vfloat<K> t = T * rcpDen;
-        vfloat<K> u = U * rcpDen;
-        vfloat<K> v = V * rcpDen;
+        const vfloat<K> rcpUVW = rcp(U+V+W);
+        vfloat<K> u = U * rcpUVW;
+        vfloat<K> v = V * rcpUVW;
         mapUV(u,v);
         return std::make_tuple(u,v,t,Ng);
       }
@@ -147,6 +150,7 @@ namespace embree
     private:
       const vfloat<K> U;
       const vfloat<K> V;
+      const vfloat<K> W;
       const vfloat<K> T;
       const vfloat<K> den;
       const Vec3vf<K> Ng;
@@ -212,7 +216,7 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* calculate hit information */
-          PlueckerHitK<K,UVMapper> hit(U,V,T,den,Ng,mapUV);
+          PlueckerHitK<K,UVMapper> hit(U,V,W,T,den,Ng,mapUV);
           return epilog(valid,hit);
         }
         
@@ -268,7 +272,7 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* calculate hit information */
-          PlueckerHitM<M,UVMapper> hit(U,V,T,den,Ng,mapUV);
+          PlueckerHitM<M,UVMapper> hit(U,V,W,T,den,Ng,mapUV);
           return epilog(valid,hit);
         }
       };
