@@ -1,6 +1,18 @@
 Version History
 ---------------
 
+### New Features in Embree 2.16.2
+-   Fixed bug that caused NULL intersection context in intersection
+    filter when instancing was used.
+-   Fixed an issue where uv's where outside the triangle (or quad) for
+    very small triangles (or quads). In robust mode we improved the uv
+    calculation to avoid that issue, in fast mode we accept that
+    inconsistency for better performance.
+-   Changed UV encoding for non-quad subdivision patches to
+    allow a subpatch UV range of `[-0.5,1.5[`. Using this new encoding
+    one can use finite differences to calculate derivatives if required.
+    Please adjust your code in case you rely on the old encoding.
+
 ### New Features in Embree 2.16.1
 -   Workaround for compile issues with Visual Studio 2017
 -   Fixed bug in subdiv code for static scenes when using tessellation
