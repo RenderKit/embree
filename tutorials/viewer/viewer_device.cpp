@@ -293,11 +293,22 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   if (g_use_smooth_normals)
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
   {
+#if 1
     Vec3fa dPdu,dPdv;
     unsigned int geomID = ray.geomID; {
       rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu.x,&dPdv.x,3);
-    }
+      }
     dg.Ns = cross(dPdv,dPdu);
+#else
+    Vec3fa P0,Pu,Pv;
+    float d = -0.25f;
+    rtcInterpolate(g_scene,ray.geomID,ray.primID,ray.u+0.0f,ray.v+0.0f,RTC_VERTEX_BUFFER0,&P0.x,nullptr,nullptr,3);
+    rtcInterpolate(g_scene,ray.geomID,ray.primID,ray.u+d   ,ray.v+0.0f,RTC_VERTEX_BUFFER0,&Pu.x,nullptr,nullptr,3);
+    rtcInterpolate(g_scene,ray.geomID,ray.primID,ray.u+0.0f,ray.v+d   ,RTC_VERTEX_BUFFER0,&Pv.x,nullptr,nullptr,3);
+    Vec3fa dPdu1 = (Pu-P0)/d;
+    Vec3fa dPdv1 = (Pv-P0)/d;
+    dg.Ns = cross(dPdv1,dPdu1);
+#endif
   }
 
   int materialID = postIntersect(ray,dg);
