@@ -42,10 +42,12 @@ namespace embree
   }
 
   /*! Fill space at the end of the token with 0s. */
-  static inline const char* trimEnd(const char* token) {
-    size_t len = strlen(token);
-    if (len == 0) return token;
-    char* pe = (char*)(token + len - 1);
+  static inline const char* trimEnd(const char* token) 
+  {
+    if (*token == 0) return token;
+    char* pe = (char*) token;
+    while (*pe) pe++;
+    pe--;
     while ((*pe == ' ' || *pe == '\t' || *pe == '\r') && pe >= token) *pe-- = 0;
     return token;
   }
@@ -160,19 +162,10 @@ namespace embree
     curMaterial = defaultMaterial;
 
     char line[10000];
-    memset(line, 0, sizeof(line));
-
     while (cin.peek() != -1)
     {
-      /* load next multiline */
-      char* pline = line;
-      while (true) {
-        cin.getline(pline, sizeof(line) - (pline - line) - 16, '\n');
-        ssize_t last = strlen(pline) - 1;
-        if (last < 0 || pline[last] != '\\') break;
-        pline += last;
-        *pline++ = ' ';
-      }
+      /* load next line */
+      cin.getline(line, sizeof(line), '\n');
 
       const char* token = trimEnd(line + strspn(line, " \t"));
       if (token[0] == 0) continue;
