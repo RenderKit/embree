@@ -25,4 +25,13 @@ namespace embree
   char to_upper(char c) { return char(toupper(int(c))); }
   std::string toLowerCase(const std::string& s) { std::string dst(s); std::transform(dst.begin(), dst.end(), dst.begin(), to_lower); return dst; }
   std::string toUpperCase(const std::string& s) { std::string dst(s); std::transform(dst.begin(), dst.end(), dst.begin(), to_upper); return dst; }
+
+  Vec3f string_to_Vec3f ( std::string str )
+  {
+    size_t next = 0;
+    const float x = std::stof(str,&next); str = str.substr(next+1);
+    const float y = std::stof(str,&next); str = str.substr(next+1);
+    const float z = std::stof(str,&next); 
+    return Vec3f(x,y,z);
+  }
 }
