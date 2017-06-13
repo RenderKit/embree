@@ -63,8 +63,8 @@ namespace embree
     }
 
     for (size_t i=0; i<4; i++) {
-      u[i] = (unsigned short)clamp(uv[i].x * (0xFFFF/8.0f), 0.0f, float(0xFFFF));
-      v[i] = (unsigned short)clamp(uv[i].y * (0xFFFF/8.0f), 0.0f, float(0xFFFF));
+      u[i] = (unsigned short)clamp(uv[i].x * (0x10000/8.0f), 0.0f, float(0xFFFF));
+      v[i] = (unsigned short)clamp(uv[i].y * (0x10000/8.0f), 0.0f, float(0xFFFF));
     }
 
     updateEdgeLevels(edge_level,subdiv,mesh,simd_width);
