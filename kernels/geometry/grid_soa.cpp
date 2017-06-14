@@ -56,10 +56,14 @@ namespace embree
         float* const grid_y  = (float*)(gridData(t) + 1*dim_offset);
         float* const grid_z  = (float*)(gridData(t) + 2*dim_offset);
         int  * const grid_uv = (int*  )(gridData(t) + 3*dim_offset);
-        memcpy(grid_x, local_grid_x, dim_offset*sizeof(float));
-        memcpy(grid_y, local_grid_y, dim_offset*sizeof(float));
-        memcpy(grid_z, local_grid_z, dim_offset*sizeof(float));
-        memcpy(grid_uv,local_grid_uv,dim_offset*sizeof(int));       
+	
+	for (size_t i=0; i<width*height; i++)
+	{
+	  grid_x[i]  = local_grid_x[i];
+	  grid_y[i]  = local_grid_y[i];
+	  grid_z[i]  = local_grid_z[i];
+	  grid_uv[i] = local_grid_uv[i];
+	}
       }
 
       /* create normal BVH when no motion blur is active */
