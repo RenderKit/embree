@@ -51,8 +51,13 @@ namespace embree
     height_mask = isPowerOf2(height) ? height-1 : 0;
 
     data = alignedMalloc(bytesPerTexel*width*height,64);
-    if (in) memcpy(data,in,bytesPerTexel*width*height);
-    else    memset(data,0 ,bytesPerTexel*width*height);
+    if (in) {
+      for (size_t i=0; i<bytesPerTexel*width*height; i++)
+	((char*)data)[i] = in[i];
+    }
+    else {
+      memset(data,0 ,bytesPerTexel*width*height);
+    }   
   }
 
   Texture::~Texture () {
