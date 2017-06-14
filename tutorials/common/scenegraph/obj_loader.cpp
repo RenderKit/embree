@@ -161,13 +161,17 @@ namespace embree
     curMaterialName = "default";
     curMaterial = defaultMaterial;
 
-    char line[10000];
     while (cin.peek() != -1)
     {
-      /* load next line */
-      cin.getline(line, sizeof(line), '\n');
-
-      const char* token = trimEnd(line + strspn(line, " \t"));
+      /* load next multiline */
+      std::string line; std::getline(cin,line);
+      while (!line.empty() && line.back() == '\\') {
+	line.back() = ' ';
+	std::string next_line; std::getline(cin,next_line);
+	if (next_line.empty()) break;
+	line += next_line;
+      }
+      const char* token = trimEnd(line.c_str() + strspn(line.c_str(), " \t"));
       if (token[0] == 0) continue;
 
       /*! parse position */
@@ -321,24 +325,20 @@ namespace embree
       return;
     }
 
-    char line[10000];
-    memset(line, 0, sizeof(line));
-
     std::string name;
     ExtObjMaterial cur;
 
     while (cin.peek() != -1)
     {
       /* load next multiline */
-      char* pline = line;
-      while (true) {
-        cin.getline(pline, sizeof(line) - (pline - line) - 16, '\n');
-        ssize_t last = strlen(pline) - 1;
-        if (last < 0 || pline[last] != '\\') break;
-        pline += last;
-        *pline++ = ' ';
+      std::string line; std::getline(cin,line);
+      while (!line.empty() && line.back() == '\\') {
+	line.back() = ' ';
+	std::string next_line; std::getline(cin,next_line);
+	if (next_line.empty()) break;
+	line += next_line;
       }
-      const char* token = trimEnd(line + strspn(line, " \t"));
+      const char* token = trimEnd(line.c_str() + strspn(line.c_str(), " \t"));
 
       if (token[0] == 0  ) continue; // ignore empty lines
       if (token[0] == '#') continue; // ignore comments
