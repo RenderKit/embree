@@ -203,7 +203,10 @@ namespace embree
     CommandLineStream (int argc, char** argv, const std::string& name = "command line")
       : i(0), j(0), charNumber(0), name(name)
     {
-      if (argc > 0) charNumber = strlen(argv[0])+1;
+      if (argc > 0) {
+	for (size_t i=0; argv[0][i] && i<1024; i++) charNumber++;
+	charNumber++;
+      }
       for (ssize_t k=1; k<argc; k++) args.push_back(argv[k]);
     }
     ~CommandLineStream() {}
