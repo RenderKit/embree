@@ -254,6 +254,7 @@ namespace embree
             {
               if (!iter[i]) continue;
               fastUpdate &= !iter[i]->faceVertices.isModified();
+              for (auto& b : iter[i]->vertices) fastUpdate &= !b.isModified();
               fastUpdate &= !iter[i]->holes.isModified();
               fastUpdate &= iter[i]->levels.isModified();
               fastUpdate &= !iter[i]->topology[0].vertexIndices.isModified(); 
@@ -270,6 +271,7 @@ namespace embree
         /* only enable fast mode if no subdiv mesh got enabled or disabled since last run */
         fastUpdateMode &= numSubdivEnableDisableEvents == scene->numSubdivEnableDisableEvents;
         numSubdivEnableDisableEvents = scene->numSubdivEnableDisableEvents;
+
         return fastUpdateMode;
       }
 
@@ -555,6 +557,7 @@ namespace embree
             {
               if (!iter[i]) continue;
               fastUpdate &= !iter[i]->faceVertices.isModified();
+              for (auto& b : iter[i]->vertices) fastUpdate &= !b.isModified();
               fastUpdate &= !iter[i]->holes.isModified();
               fastUpdate &= !iter[i]->topology[0].vertexIndices.isModified(); 
               fastUpdate &= !iter[i]->edge_creases.isModified();
