@@ -165,8 +165,8 @@ namespace embree
     {
       /* load next multiline */
       std::string line; std::getline(cin,line);
-      while (!line.empty() && line.back() == '\\') {
-	line.back() = ' ';
+      while (!line.empty() && line[line.size()-1] == '\\') {
+	line[line.size()-1] = ' ';
 	std::string next_line; std::getline(cin,next_line);
 	if (next_line.empty()) break;
 	line += next_line;
@@ -332,8 +332,8 @@ namespace embree
     {
       /* load next multiline */
       std::string line; std::getline(cin,line);
-      while (!line.empty() && line.back() == '\\') {
-	line.back() = ' ';
+      while (!line.empty() && line[line.size()-1] == '\\') {
+	line[line.size()-1] = ' ';
 	std::string next_line; std::getline(cin,next_line);
 	if (next_line.empty()) break;
 	line += next_line;
