@@ -966,15 +966,7 @@ namespace embree
     RTCORE_CATCH_END(device);
   }
 
-  RTCORE_API unsigned rtcNewInstance (RTCScene htarget, RTCScene hsource) {
-    return rtcNewInstance3(htarget,hsource,1,RTC_INVALID_GEOMETRY_ID);
-  }
-
-  RTCORE_API unsigned rtcNewInstance2 (RTCScene htarget, RTCScene hsource, size_t numTimeSteps) {
-    return rtcNewInstance3(htarget,hsource,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
-  }
-
-  RTCORE_API unsigned rtcNewInstance3 (RTCScene htarget, RTCScene hsource, size_t numTimeSteps, unsigned int geomID) 
+  unsigned rtcNewInstanceImpl (RTCScene htarget, RTCScene hsource, size_t numTimeSteps, unsigned int geomID) 
   {
     Scene* target = (Scene*) htarget;
     Scene* source = (Scene*) hsource;
@@ -990,6 +982,18 @@ namespace embree
 #endif
     RTCORE_CATCH_END(target->device);
     return -1;
+  }
+  
+  RTCORE_API unsigned rtcNewInstance (RTCScene htarget, RTCScene hsource) {
+    return rtcNewInstanceImpl(htarget,hsource,1,RTC_INVALID_GEOMETRY_ID);
+  }
+
+  RTCORE_API unsigned rtcNewInstance2 (RTCScene htarget, RTCScene hsource, size_t numTimeSteps) {
+    return rtcNewInstanceImpl(htarget,hsource,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+  }
+
+  RTCORE_API unsigned rtcNewInstance3 (RTCScene htarget, RTCScene hsource, size_t numTimeSteps, unsigned int geomID) {
+    return rtcNewInstanceImpl(htarget,hsource,numTimeSteps,geomID);
   }
 
   RTCORE_API unsigned rtcNewGeometryInstance (RTCScene hscene, unsigned geomID) 
@@ -1086,19 +1090,7 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
 
-  RTCORE_API unsigned rtcNewUserGeometry (RTCScene hscene, size_t numItems) {
-    return rtcNewUserGeometry4(hscene,RTC_GEOMETRY_STATIC,numItems,1,RTC_INVALID_GEOMETRY_ID);
-  }
-
-  RTCORE_API unsigned rtcNewUserGeometry2 (RTCScene hscene, size_t numItems, size_t numTimeSteps) {
-    return rtcNewUserGeometry4(hscene,RTC_GEOMETRY_STATIC,numItems,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
-  }
-
-  RTCORE_API unsigned rtcNewUserGeometry3 (RTCScene hscene, RTCGeometryFlags gflags, size_t numItems, size_t numTimeSteps) {
-    return rtcNewUserGeometry4(hscene,gflags,numItems,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
-  }
-
-  RTCORE_API unsigned rtcNewUserGeometry4 (RTCScene hscene, RTCGeometryFlags gflags, size_t numItems, size_t numTimeSteps, unsigned int geomID) 
+  unsigned rtcNewUserGeometryImpl (RTCScene hscene, RTCGeometryFlags gflags, size_t numItems, size_t numTimeSteps, unsigned int geomID) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -1114,12 +1106,24 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
     return -1;
   }
-
-  RTCORE_API unsigned rtcNewTriangleMesh (RTCScene hscene, RTCGeometryFlags gflags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) {
-    return rtcNewTriangleMesh2(hscene,gflags,numTriangles,numVertices,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+  
+  RTCORE_API unsigned rtcNewUserGeometry (RTCScene hscene, size_t numItems) {
+    return rtcNewUserGeometryImpl(hscene,RTC_GEOMETRY_STATIC,numItems,1,RTC_INVALID_GEOMETRY_ID);
   }
 
-  RTCORE_API unsigned rtcNewTriangleMesh2 (RTCScene hscene, RTCGeometryFlags gflags, size_t numTriangles, size_t numVertices, size_t numTimeSteps, unsigned int geomID) 
+  RTCORE_API unsigned rtcNewUserGeometry2 (RTCScene hscene, size_t numItems, size_t numTimeSteps) {
+    return rtcNewUserGeometryImpl(hscene,RTC_GEOMETRY_STATIC,numItems,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+  }
+
+  RTCORE_API unsigned rtcNewUserGeometry3 (RTCScene hscene, RTCGeometryFlags gflags, size_t numItems, size_t numTimeSteps) {
+    return rtcNewUserGeometryImpl(hscene,gflags,numItems,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+  }
+
+  RTCORE_API unsigned rtcNewUserGeometry4 (RTCScene hscene, RTCGeometryFlags gflags, size_t numItems, size_t numTimeSteps, unsigned int geomID) {
+    return rtcNewUserGeometryImpl(hscene,gflags,numItems,numTimeSteps,geomID);
+  }
+
+  unsigned rtcNewTriangleMeshImpl (RTCScene hscene, RTCGeometryFlags gflags, size_t numTriangles, size_t numVertices, size_t numTimeSteps, unsigned int geomID) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -1136,12 +1140,16 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
     return -1;
   }
-
-  RTCORE_API unsigned rtcNewQuadMesh (RTCScene hscene, RTCGeometryFlags gflags, size_t numQuads, size_t numVertices, size_t numTimeSteps) {
-    return rtcNewQuadMesh2(hscene,gflags,numQuads,numVertices,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+  
+  RTCORE_API unsigned rtcNewTriangleMesh (RTCScene hscene, RTCGeometryFlags gflags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) {
+    return rtcNewTriangleMeshImpl(hscene,gflags,numTriangles,numVertices,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
   }
 
-  RTCORE_API unsigned rtcNewQuadMesh2(RTCScene hscene, RTCGeometryFlags gflags, size_t numQuads, size_t numVertices, size_t numTimeSteps, unsigned int geomID) 
+  RTCORE_API unsigned rtcNewTriangleMesh2 (RTCScene hscene, RTCGeometryFlags gflags, size_t numTriangles, size_t numVertices, size_t numTimeSteps, unsigned int geomID) {
+    return rtcNewTriangleMeshImpl(hscene,gflags,numTriangles,numVertices,numTimeSteps,geomID);
+  }
+
+  unsigned rtcNewQuadMeshImpl(RTCScene hscene, RTCGeometryFlags gflags, size_t numQuads, size_t numVertices, size_t numTimeSteps, unsigned int geomID) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -1158,16 +1166,16 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
     return -1;
   }
-
-  RTCORE_API unsigned rtcNewHairGeometry (RTCScene hscene, RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) {
-    return rtcNewBezierHairGeometry2(hscene,gflags,(unsigned int)numCurves,(unsigned int)numVertices,(unsigned int)numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+  
+  RTCORE_API unsigned rtcNewQuadMesh (RTCScene hscene, RTCGeometryFlags gflags, size_t numQuads, size_t numVertices, size_t numTimeSteps) {
+    return rtcNewQuadMeshImpl(hscene,gflags,numQuads,numVertices,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
   }
 
-  RTCORE_API unsigned rtcNewBezierHairGeometry (RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps) {
-    return rtcNewBezierHairGeometry2(hscene,gflags,(unsigned int)numCurves,(unsigned int)numVertices,(unsigned int)numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+  RTCORE_API unsigned rtcNewQuadMesh2(RTCScene hscene, RTCGeometryFlags gflags, size_t numQuads, size_t numVertices, size_t numTimeSteps, unsigned int geomID) {
+    return rtcNewQuadMeshImpl(hscene,gflags,numQuads,numVertices,numTimeSteps,geomID);
   }
 
-  RTCORE_API unsigned rtcNewBezierHairGeometry2 (RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps, unsigned int geomID) 
+  unsigned rtcNewBezierHairGeometryImpl (RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps, unsigned int geomID) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -1185,11 +1193,19 @@ namespace embree
     return -1;
   }
   
-  RTCORE_API unsigned rtcNewBSplineHairGeometry (RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps) {
-    return rtcNewBSplineHairGeometry2(hscene,gflags,numCurves,numVertices,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+  RTCORE_API unsigned rtcNewHairGeometry (RTCScene hscene, RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) {
+    return rtcNewBezierHairGeometryImpl(hscene,gflags,(unsigned int)numCurves,(unsigned int)numVertices,(unsigned int)numTimeSteps,RTC_INVALID_GEOMETRY_ID);
   }
 
-  RTCORE_API unsigned rtcNewBSplineHairGeometry2(RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps, unsigned int geomID) 
+  RTCORE_API unsigned rtcNewBezierHairGeometry (RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps) {
+    return rtcNewBezierHairGeometryImpl(hscene,gflags,(unsigned int)numCurves,(unsigned int)numVertices,(unsigned int)numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+  }
+
+  RTCORE_API unsigned rtcNewBezierHairGeometry2 (RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps, unsigned int geomID) {
+    return rtcNewBezierHairGeometryImpl(hscene,gflags,numCurves,numVertices,numTimeSteps,geomID);
+  }
+
+  unsigned rtcNewBSplineHairGeometryImpl(RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps, unsigned int geomID) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -1207,15 +1223,15 @@ namespace embree
     return -1;
   }
 
-  RTCORE_API unsigned rtcNewCurveGeometry (RTCScene hscene, RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) {
-    return rtcNewBezierCurveGeometry2(hscene,gflags,(unsigned int)numCurves,(unsigned int)numVertices,(unsigned int)numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+  RTCORE_API unsigned rtcNewBSplineHairGeometry (RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps) {
+    return rtcNewBSplineHairGeometryImpl(hscene,gflags,numCurves,numVertices,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
   }
 
-  RTCORE_API unsigned rtcNewBezierCurveGeometry (RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps) {
-    return rtcNewBezierCurveGeometry2(hscene,gflags,(unsigned int)numCurves,(unsigned int)numVertices,(unsigned int)numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+  RTCORE_API unsigned rtcNewBSplineHairGeometry2(RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps, unsigned int geomID) {
+    return rtcNewBSplineHairGeometryImpl(hscene,gflags,numCurves,numVertices,numTimeSteps,geomID);
   }
 
-  RTCORE_API unsigned rtcNewBezierCurveGeometry2(RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps, unsigned int geomID) 
+  unsigned rtcNewBezierCurveGeometryImpl(RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps, unsigned int geomID) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -1232,12 +1248,20 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
     return -1;
   }
-
-  RTCORE_API unsigned rtcNewBSplineCurveGeometry (RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps) {
-    return rtcNewBSplineCurveGeometry2(hscene,gflags,numCurves,numVertices,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+  
+  RTCORE_API unsigned rtcNewCurveGeometry (RTCScene hscene, RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) {
+    return rtcNewBezierCurveGeometryImpl(hscene,gflags,(unsigned int)numCurves,(unsigned int)numVertices,(unsigned int)numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+  }
+  
+  RTCORE_API unsigned rtcNewBezierCurveGeometry (RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps) {
+    return rtcNewBezierCurveGeometryImpl(hscene,gflags,(unsigned int)numCurves,(unsigned int)numVertices,(unsigned int)numTimeSteps,RTC_INVALID_GEOMETRY_ID);
   }
 
-  RTCORE_API unsigned rtcNewBSplineCurveGeometry2(RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps, unsigned int geomID) 
+  RTCORE_API unsigned rtcNewBezierCurveGeometry2(RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps, unsigned int geomID) {
+    return rtcNewBezierCurveGeometryImpl(hscene,gflags,numCurves,numVertices,numTimeSteps,geomID);
+  }
+
+  unsigned rtcNewBSplineCurveGeometryImpl(RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps, unsigned int geomID) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -1254,12 +1278,16 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
     return -1;
   }
-
-  RTCORE_API unsigned rtcNewLineSegments (RTCScene hscene, RTCGeometryFlags gflags, size_t numSegments, size_t numVertices, size_t numTimeSteps) {
-    return rtcNewLineSegments2(hscene,gflags,numSegments,numVertices,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+  
+  RTCORE_API unsigned rtcNewBSplineCurveGeometry (RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps) {
+    return rtcNewBSplineCurveGeometryImpl(hscene,gflags,numCurves,numVertices,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
   }
 
-  RTCORE_API unsigned rtcNewLineSegments2(RTCScene hscene, RTCGeometryFlags gflags, size_t numSegments, size_t numVertices, size_t numTimeSteps, unsigned int geomID)
+  RTCORE_API unsigned rtcNewBSplineCurveGeometry2(RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps, unsigned int geomID) {
+    return rtcNewBSplineCurveGeometryImpl(hscene,gflags,numCurves,numVertices,numTimeSteps,geomID);
+  }
+
+  unsigned rtcNewLineSegmentsImpl(RTCScene hscene, RTCGeometryFlags gflags, size_t numSegments, size_t numVertices, size_t numTimeSteps, unsigned int geomID)
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -1277,14 +1305,16 @@ namespace embree
     return -1;
   }
 
-  RTCORE_API unsigned rtcNewSubdivisionMesh (RTCScene hscene, RTCGeometryFlags gflags, size_t numFaces, size_t numEdges, size_t numVertices, 
-                                             size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps) 
-  {
-    return rtcNewSubdivisionMesh2(hscene,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+  RTCORE_API unsigned rtcNewLineSegments (RTCScene hscene, RTCGeometryFlags gflags, size_t numSegments, size_t numVertices, size_t numTimeSteps) {
+    return rtcNewLineSegmentsImpl(hscene,gflags,numSegments,numVertices,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
   }
 
-  RTCORE_API unsigned rtcNewSubdivisionMesh2(RTCScene hscene, RTCGeometryFlags gflags, size_t numFaces, size_t numEdges, size_t numVertices, 
-                                             size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps, unsigned int geomID) 
+  RTCORE_API unsigned rtcNewLineSegments2(RTCScene hscene, RTCGeometryFlags gflags, size_t numSegments, size_t numVertices, size_t numTimeSteps, unsigned int geomID) {
+    return rtcNewLineSegmentsImpl(hscene,gflags,numSegments,numVertices,numTimeSteps,geomID);
+  }
+
+  unsigned rtcNewSubdivisionMeshImpl(RTCScene hscene, RTCGeometryFlags gflags, size_t numFaces, size_t numEdges, size_t numVertices, 
+                                         size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps, unsigned int geomID) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -1301,7 +1331,19 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
     return -1;
   }
+  
+  RTCORE_API unsigned rtcNewSubdivisionMesh (RTCScene hscene, RTCGeometryFlags gflags, size_t numFaces, size_t numEdges, size_t numVertices, 
+                                             size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps) 
+  {
+    return rtcNewSubdivisionMeshImpl(hscene,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+  }
 
+  RTCORE_API unsigned rtcNewSubdivisionMesh2(RTCScene hscene, RTCGeometryFlags gflags, size_t numFaces, size_t numEdges, size_t numVertices, 
+                                             size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps, unsigned int geomID) 
+  {
+    return rtcNewSubdivisionMeshImpl(hscene,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps,geomID);
+  }
+  
   RTCORE_API void rtcSetMask (RTCScene hscene, unsigned geomID, int mask) 
   {
     Scene* scene = (Scene*) hscene;
