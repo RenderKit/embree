@@ -32,7 +32,7 @@ namespace embree
   class ParseLocation
   {
   public:
-    ParseLocation () : fileName(nullptr), lineNumber(-1), colNumber(-1), charNumber(-1) {}
+    ParseLocation () : lineNumber(-1), colNumber(-1), charNumber(-1) {}
     ParseLocation (std::shared_ptr<std::string> fileName, ssize_t lineNumber, ssize_t colNumber, ssize_t charNumber)
       : fileName(fileName), lineNumber(lineNumber), colNumber(colNumber), charNumber(charNumber) {}
 
