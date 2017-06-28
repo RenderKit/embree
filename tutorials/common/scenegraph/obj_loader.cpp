@@ -102,6 +102,16 @@ namespace embree
     return Vec3f(x,y,z);
   }
 
+  /*! Read Vec3fa from a string. */
+  static inline Vec3f getVec3fa(const char*& token) {
+    float x = getFloat(token);
+    token += strspn(token, " \t");
+    if (*token == 0) return Vec3f(x);
+    float y = getFloat(token);
+    float z = getFloat(token);
+    return Vec3fa(x,y,z);
+  }
+
   class OBJLoader
   {
   public:
@@ -127,6 +137,7 @@ namespace embree
     std::vector<Crease> ec;
 
     std::vector<std::vector<Vertex> > curGroup;
+    std::vector<avector<Vec3fa> > curGroupHair;
 
     /*! Material handling. */
     std::string curMaterialName;
@@ -140,6 +151,8 @@ namespace embree
     int fix_vt(int index);
     int fix_vn(int index);
     void flushFaceGroup();
+    void flushTriGroup();
+    void flushHairGroup();
     Vertex getInt3(const char*& token);
     uint32_t getVertex(std::map<Vertex,uint32_t>& vertexMap, Ref<SceneGraph::TriangleMeshNode> mesh, const Vertex& i);
     std::shared_ptr<Texture> loadTexture(const FileName& fname);
@@ -203,6 +216,36 @@ namespace embree
         continue;
       }
 
+      /*! parse corona hair */
+      if (!strncmp(token,"hair",4) && isSep(token[4]))
+      {
+        parseSep(token += 4);
+        bool plane = !strncmp(token,"plane",5) && isSep(token[5]);
+        if (plane) {
+          parseSep(token += 5);
+        }
+        else if (!strncmp(token,"cylinder",8) && isSep(token[8])) {
+          parseSep(token += 8);
+        }
+        else continue;
+
+        int N = getInt(token);
+        avector<Vec3fa> hair;
+        for (int i=0; i<3*N+1; i++) {
+          hair.push_back(getVec3fa(token));
+        }
+        
+        for (int i=0; i<N+1; i++)
+        {
+          float r = getFloat(token);
+          float t = getInt(token);
+          if (i != 0) hair[3*i-1].w = r;
+          hair[3*i+0].w = r;
+          if (i != N) hair[3*i+1].w = r;
+        }
+        curGroupHair.push_back(hair);
+      }
+      
       /*! parse edge crease */
       if (token[0] == 'e' && token[1] == 'c' && isSep(token[2]))
       {
@@ -471,8 +514,14 @@ namespace embree
     return(vertexMap[i] = int(mesh->positions[0].size()) - 1);
   }
 
-  /*! end current facegroup and append to mesh */
   void OBJLoader::flushFaceGroup()
+  {
+    flushTriGroup();
+    flushHairGroup();
+  }
+
+  /*! end current facegroup and append to mesh */
+  void OBJLoader::flushTriGroup()
   {
     if (curGroup.empty()) return;
 
@@ -534,7 +583,27 @@ namespace embree
     curGroup.clear();
     ec.clear();
   }
-  
+
+   void OBJLoader::flushHairGroup()
+   {
+     if (curGroupHair.empty()) return;
+
+     avector<Vec3fa> vertices;
+     std::vector<SceneGraph::HairSetNode::Hair> curves;
+     
+     for (size_t i=0; i<curGroupHair.size(); i++) {
+       for (size_t j=0; j<curGroupHair[i].size(); j++) {
+         if (j%3 == 0) curves.push_back(SceneGraph::HairSetNode::Hair(vertices.size(),i));
+         vertices.push_back(curGroupHair[i][j]);
+       }
+     }
+       
+     Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(vertices,curves,curMaterial,SceneGraph::HairSetNode::HAIR,SceneGraph::HairSetNode::BEZIER);
+     group->add(mesh.cast<SceneGraph::Node>());
+     mesh->verify();
+     curGroupHair.clear();
+   }
+   
   Ref<SceneGraph::Node> loadOBJ(const FileName& fileName, const bool subdivMode, const bool combineIntoSingleObject) {
     OBJLoader loader(fileName,subdivMode,combineIntoSingleObject); 
     return loader.group.cast<SceneGraph::Node>();

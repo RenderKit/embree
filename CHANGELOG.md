@@ -1,6 +1,10 @@
 Version History
 ---------------
 
+### New Features in Embree 2.16.4
+-   Bugfix in the ribbon intersector for hair primitives. Non-normalized
+    rays caused wrong intersection distance to be reported.
+
 ### New Features in Embree 2.16.3
 -   Increased accuracy for handling subdivision surfaces. This fixes
     cracks when using displacement mapping but reduces performance
