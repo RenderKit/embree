@@ -82,10 +82,10 @@ namespace embree
 
     template<typename NativeCurve3fa, typename Epilog>
       __forceinline bool intersect_ribbon(const Vec3fa& ray_org, const Vec3fa& ray_dir, const float ray_tnear, const float ray_tfar,
-                                          const float depth_scale, const LinearSpace3fa& ray_space,
+                                          const LinearSpace3fa& ray_space,
                                           const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
                                           const Epilog& epilog)
-    {  
+    {
       /* transform control points into ray space */
       Vec3fa w0 = xfmVector(ray_space,v0-ray_org); w0.w = v0.w;
       Vec3fa w1 = xfmVector(ray_space,v1-ray_org); w1.w = v1.w;
@@ -114,11 +114,11 @@ namespace embree
         const Vec3vfx up1 = nmadd(p1.w,nn1,Vec3vfx(p1));
         
         vfloatx vu,vv,vt;
-        vboolx valid0 = intersect_quad_backface_culling(valid,zero,Vec3fa(0,0,1),ray_tnear*depth_scale,ray_tfar*depth_scale,lp0,lp1,up1,up0,vu,vv,vt);
+        vboolx valid0 = intersect_quad_backface_culling(valid,zero,Vec3fa(0,0,1),ray_tnear,ray_tfar,lp0,lp1,up1,up0,vu,vv,vt);
         if (any(valid0))
         {
           vv = madd(2.0f,vv,vfloatx(-1.0f));
-          RibbonHit<NativeCurve3fa,VSIZEX> bhit(valid0,vu,vv,depth_scale*vt,0,N,v0,v1,v2,v3);
+          RibbonHit<NativeCurve3fa,VSIZEX> bhit(valid0,vu,vv,vt,0,N,v0,v1,v2,v3);
           ishit |= epilog(bhit.valid,bhit);
         }
       }
@@ -131,7 +131,7 @@ namespace embree
           /* evaluate the bezier curve */
           vboolx valid = vintx(i)+vintx(step) < vintx(N);
           const Vec4vfx p0 = curve2D.template eval0<VSIZEX>(i,N);
-          const Vec4vfx p1 = curve2D.template eval1<VSIZEX>(i,N);
+           const Vec4vfx p1 = curve2D.template eval1<VSIZEX>(i,N);
           valid &= cylinder_culling_test(zero,Vec2vfx(p0.x,p0.y),Vec2vfx(p1.x,p1.y),max(p0.w,p1.w));
           if (none(valid)) continue;
           
@@ -147,11 +147,11 @@ namespace embree
           const Vec3vfx up1 = nmadd(p1.w,nn1,Vec3vfx(p1));
           
           vfloatx vu,vv,vt;
-          vboolx valid0 = intersect_quad_backface_culling(valid,zero,Vec3fa(0,0,1),ray_tnear*depth_scale,ray_tfar*depth_scale,lp0,lp1,up1,up0,vu,vv,vt);
+          vboolx valid0 = intersect_quad_backface_culling(valid,zero,Vec3fa(0,0,1),ray_tnear,ray_tfar,lp0,lp1,up1,up0,vu,vv,vt);
           if (any(valid0))
           {
             vv = madd(2.0f,vv,vfloatx(-1.0f));
-            RibbonHit<NativeCurve3fa,VSIZEX> bhit(valid0,vu,vv,depth_scale*vt,i,N,v0,v1,v2,v3);
+            RibbonHit<NativeCurve3fa,VSIZEX> bhit(valid0,vu,vv,vt,i,N,v0,v1,v2,v3);
             ishit |= epilog(bhit.valid,bhit);
           }
         }
@@ -162,13 +162,17 @@ namespace embree
     template<typename NativeCurve3fa>
       struct Ribbon1Intersector1
     {
-      float depth_scale;
       LinearSpace3fa ray_space;
 
       __forceinline Ribbon1Intersector1() {}
 
       __forceinline Ribbon1Intersector1(const Ray& ray, const void* ptr) 
-         : depth_scale(rsqrt(dot(ray.dir,ray.dir))), ray_space(frame(depth_scale*ray.dir).transposed()) {}
+      {
+        float depth_scale = rsqrt(dot(ray.dir,ray.dir));
+        ray_space = frame(depth_scale*ray.dir);
+        ray_space.vz *= depth_scale;
+        ray_space = ray_space.transposed();
+      }
 
       template<typename Epilog>
       __forceinline bool intersect(Ray& ray,
@@ -176,7 +180,7 @@ namespace embree
                                    const Epilog& epilog) const
       {
         return intersect_ribbon<NativeCurve3fa>(ray.org,ray.dir,ray.tnear,ray.tfar,
-                                                depth_scale,ray_space,
+                                                ray_space,
                                                 v0,v1,v2,v3,N,
                                                 epilog);
       }
@@ -185,16 +189,18 @@ namespace embree
     template<typename NativeCurve3fa, int K>
     struct Ribbon1IntersectorK
     {
-      vfloat<K> depth_scale;
       LinearSpace3fa ray_space[K];
 
       __forceinline Ribbon1IntersectorK(const vbool<K>& valid, const RayK<K>& ray)
       {
         size_t mask = movemask(valid);
-        depth_scale = rsqrt(dot(ray.dir,ray.dir));
+        const vfloat<K> depth_scale = rsqrt(dot(ray.dir,ray.dir));
         while (mask) {
           size_t k = __bscf(mask);
-          ray_space[k] = frame(depth_scale[k]*Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k])).transposed();
+          LinearSpace3fa ray_space_k = frame(depth_scale[k]*Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]));
+          ray_space_k.vz *= depth_scale[k];
+          ray_space_k = ray_space_k.transposed();
+          ray_space[k] = ray_space_k;
         }
       }
 
@@ -208,7 +214,7 @@ namespace embree
         const float ray_tnear = ray.tnear[k];
         const float ray_tfar  = ray.tfar [k];
         return intersect_ribbon<NativeCurve3fa>(ray_org,ray_dir,ray_tnear,ray_tfar,
-                                                depth_scale[k],ray_space[k],
+                                                ray_space[k],
                                                 v0,v1,v2,v3,N,
                                                 epilog);
       }
