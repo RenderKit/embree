@@ -59,6 +59,7 @@ namespace embree
       {
         assert(mask != 0);
         const BaseNode* node = cur.baseNode(types);
+
         vllong8 children( vllong<N>::loadu((void*)node->children) );
         children = vllong8::compact((int)mask,children);
         vfloat16 distance = tNear;
@@ -84,7 +85,8 @@ namespace embree
         cur = toScalar(children);
         cur.prefetch(types);
 
-        const vboolf16 m_dist  = d0 <= d1;
+        /* a '<' keeps the order for equal distances, scenes like powerplant largely benefit from it */
+        const vboolf16 m_dist  = d0 < d1;
         const vfloat16 dist_A0 = select(m_dist, d0, d1);
         const vfloat16 dist_B0 = select(m_dist, d1, d0);
         const vllong8 ptr_A0   = select(vboold8(m_dist), c0, c1);

@@ -73,7 +73,7 @@ namespace embree
 #if defined(__AVX512F__)
         /*! one child is hit, continue with that child */
         const size_t hits = __popcnt(mask);
-
+        
         size_t r = __bscf(mask);
         cur = node->child(r);
         cur.prefetch(types);
@@ -290,15 +290,8 @@ namespace embree
             size_t mask = 0;
             vfloat<Nx> tNear;
             BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,pre.ftime(k),tNear,mask);
-
             AlignedNode *node = cur.alignedNode(); 
 
-#if 0 // defined(__AVX512F__)
-            vllong8 c = vllong8::loadu(node->children);            
-            c = vllong8::compact((__mmask16)mask,c);
-            cur = vllong8::extract64bit(c);
-            STAT3(normal.trav_hit_boxes[__popcnt(mask)],1,1,1);
-#endif
             /*! if no child is hit, pop next node */
             if (unlikely(mask == 0))
               goto pop;
@@ -321,20 +314,6 @@ namespace embree
           PrimitiveIntersectorK::intersect(pre, ray, k, context, prim, num, lazy_node);
 
           ray_far = ray.tfar[k];
-
-#if 0
-          if (unlikely(old_primID != ray.primID[k]))
-          {
-            const unsigned int ui_tfar = *(unsigned int*)&ray.tfar[k];
-            /* stack compaction */
-            StackItemT<NodeRef>* const end_stackPtr = stackPtr;
-            stackPtr = stack;
-            for (StackItemT<NodeRef>* s = stack; s != end_stackPtr; s++)
-              if (unlikely((unsigned int)s->dist <= ui_tfar))
-                *stackPtr++=*s;
-          }
-
-#endif
 
           /* if (unlikely(lazy_node)) { */
           /*   stackPtr->ptr = lazy_node; */
