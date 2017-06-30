@@ -206,6 +206,36 @@ namespace embree
         continue;
       }
 
+      /*! parse corona hair */
+      if (!strncmp(token,"hair",4) && isSep(token[4]))
+      {
+        parseSep(token += 4);
+        bool plane = !strncmp(token,"plane",5) && isSep(token[5]);
+        if (plane) {
+          parseSep(token += 5);
+        }
+        else if (!strncmp(token,"cylinder",8) && isSep(token[8])) {
+          parseSep(token += 8);
+        }
+        else continue;
+
+        int N = getInt(token);
+        avector<Vec3fa> hair;
+        for (int i=0; i<3*N+1; i++) {
+          hair.push_back(getVec3fa(token));
+        }
+        
+        for (int i=0; i<N+1; i++)
+        {
+          float r = getFloat(token);
+          MAYBE_UNUSED float t = getInt(token);
+          if (i != 0) hair[3*i-1].w = r;
+          hair[3*i+0].w = r;
+          if (i != N) hair[3*i+1].w = r;
+        }
+        curGroupHair.push_back(hair);
+      }
+      
       /*! parse edge crease */
       if (token[0] == 'e' && token[1] == 'c' && isSep(token[2]))
       {
@@ -468,8 +498,8 @@ namespace embree
     if (entry != vertexMap.end()) return(entry->second);
     mesh->positions[0].push_back(Vec3fa(v[i.v].x,v[i.v].y,v[i.v].z));
     if (i.vn >= 0) {
-      while (mesh->normals.size() < mesh->positions[0].size()) mesh->normals.push_back(zero); // some vertices might not had a normal
-      mesh->normals[mesh->positions[0].size()-1] = vn[i.vn];
+      while (mesh->normals[0].size() < mesh->positions[0].size()) mesh->normals[0].push_back(zero); // some vertices might not had a normal
+      mesh->normals[0][mesh->positions[0].size()-1] = vn[i.vn];
     }
     if (i.vt >= 0) {
       while (mesh->texcoords.size() < mesh->positions[0].size()) mesh->texcoords.push_back(zero); // some vertices might not had a texture coordinate
@@ -489,7 +519,7 @@ namespace embree
       group->add(mesh.cast<SceneGraph::Node>());
 
       for (size_t i=0; i<v.size();  i++) mesh->positions[0].push_back(v[i]);
-      for (size_t i=0; i<vn.size(); i++) mesh->normals  .push_back(vn[i]);
+      for (size_t i=0; i<vn.size(); i++) mesh->normals[0].push_back(vn[i]);
       for (size_t i=0; i<vt.size(); i++) mesh->texcoords.push_back(vt[i]);
       
       for (size_t i=0; i<ec.size(); ++i) {
@@ -505,6 +535,8 @@ namespace embree
         for (size_t i=0; i<face.size(); i++)
           mesh->position_indices.push_back(face[i].v);
       }
+      if (mesh->normals[0].size() == 0)
+        mesh->normals.clear();
       mesh->verify();
     }
     else
@@ -534,10 +566,14 @@ namespace embree
         }
       }
       /* there may be vertices without normals or texture coordinates, thus we have to make these arrays the same size here */
-      if (mesh->normals  .size()) while (mesh->normals  .size() < mesh->numVertices()) mesh->normals  .push_back(zero);
+      if (mesh->normals[0].size()) while (mesh->normals[0].size() < mesh->numVertices()) mesh->normals[0].push_back(zero);
       if (mesh->texcoords.size()) while (mesh->texcoords.size() < mesh->numVertices()) mesh->texcoords.push_back(zero);
+
+      if (mesh->normals[0].size() == 0)
+        mesh->normals.clear();
       mesh->verify();
     }
+    
     curGroup.clear();
     ec.clear();
   }

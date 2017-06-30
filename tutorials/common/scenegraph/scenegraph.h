@@ -244,6 +244,45 @@ namespace embree
       return positions_out;
     }
 
+    template<typename Vertex>
+       std::vector<avector<Vertex>> transformMSMBlurNormalBuffer(const std::vector<avector<Vertex>>& normals_in, const Transformations& spaces)
+    {
+      if (normals_in.size() == 0)
+        return normals_in;
+      
+      std::vector<avector<Vertex>> normals_out;
+      const size_t num_time_steps = normals_in.size();
+      const size_t num_vertices = normals_in[0].size();
+
+      /* if we have only one set of vertices, use transformation to generate more vertex sets */
+      if (num_time_steps == 1)
+      {
+        for (size_t i=0; i<spaces.size(); i++) 
+        {
+          avector<Vertex> norms(num_vertices);
+          for (size_t j=0; j<num_vertices; j++) {
+            norms[j] = xfmNormal(spaces[i],normals_in[0][j]);
+          }
+          normals_out.push_back(std::move(norms));
+        }
+      } 
+      /* otherwise transform all vertex sets with interpolated transformation */
+      else
+      {
+        for (size_t t=0; t<num_time_steps; t++) 
+        {
+          float time = num_time_steps > 1 ? float(t)/float(num_time_steps-1) : 0.0f;
+          const AffineSpace3fa space = spaces.interpolate(time);
+          avector<Vertex> norms(num_vertices);
+          for (size_t i=0; i<num_vertices; i++) {
+            norms[i] = xfmNormal (space,normals_in[t][i]);
+          }
+          normals_out.push_back(std::move(norms));
+        }
+      }
+      return normals_out;
+    }
+
     struct PerspectiveCameraNode : public Node
     {
       ALIGNED_STRUCT;
@@ -434,13 +473,14 @@ namespace embree
       
     public:
       TriangleMeshNode (const avector<Vertex>& positions_in, 
-                        const avector<Vertex>& normals, 
+                        const avector<Vertex>& normals_in, 
                         const std::vector<Vec2f>& texcoords,
                         const std::vector<Triangle>& triangles,
                         Ref<MaterialNode> material) 
-        : Node(true), normals(normals), texcoords(texcoords), triangles(triangles), material(material) 
+        : Node(true), texcoords(texcoords), triangles(triangles), material(material) 
       {
         positions.push_back(positions_in);
+        normals.push_back(normals_in);
       }
 
       TriangleMeshNode (Ref<MaterialNode> material, size_t numTimeSteps = 0) 
@@ -448,15 +488,15 @@ namespace embree
       {
         for (size_t i=0; i<numTimeSteps; i++)
           positions.push_back(avector<Vertex>());
+        for (size_t i=0; i<numTimeSteps; i++)
+          normals.push_back(avector<Vertex>());
       }
 
       TriangleMeshNode (Ref<SceneGraph::TriangleMeshNode> imesh, const Transformations& spaces)
-        : Node(true), positions(transformMSMBlurBuffer(imesh->positions,spaces)),
-        normals(imesh->normals), texcoords(imesh->texcoords), triangles(imesh->triangles), material(imesh->material)
-      {
-        const LinearSpace3fa nspace0 = rcp(spaces[0].l).transposed();
-        for (auto& n : normals) n = xfmVector(nspace0,n);
-      }
+        : Node(true),
+          positions(transformMSMBlurBuffer(imesh->positions,spaces)),
+          normals(transformMSMBlurNormalBuffer(imesh->normals,spaces)),
+          texcoords(imesh->texcoords), triangles(imesh->triangles), material(imesh->material) {}
       
       virtual void setMaterial(Ref<MaterialNode> material) {
         this->material = material;
@@ -499,7 +539,7 @@ namespace embree
 
     public:
       std::vector<avector<Vertex>> positions;
-      avector<Vertex> normals;
+      std::vector<avector<Vertex>> normals;
       std::vector<Vec2f> texcoords;
       std::vector<Triangle> triangles;
       Ref<MaterialNode> material;
@@ -526,16 +566,16 @@ namespace embree
       {
         for (size_t i=0; i<numTimeSteps; i++)
           positions.push_back(avector<Vertex>());
+        for (size_t i=0; i<numTimeSteps; i++)
+          normals.push_back(avector<Vertex>());
       }
 
       QuadMeshNode (Ref<SceneGraph::QuadMeshNode> imesh, const Transformations& spaces)
-        : Node(true), positions(transformMSMBlurBuffer(imesh->positions,spaces)),
-        normals(imesh->normals), texcoords(imesh->texcoords), quads(imesh->quads), material(imesh->material)
-      {
-        const LinearSpace3fa nspace0 = rcp(spaces[0].l).transposed();
-        for (auto& n : normals) n = xfmVector(nspace0,n);
-      }
-      
+        : Node(true),
+          positions(transformMSMBlurBuffer(imesh->positions,spaces)),
+          normals(transformMSMBlurNormalBuffer(imesh->normals,spaces)),
+          texcoords(imesh->texcoords), quads(imesh->quads), material(imesh->material) {}
+   
       virtual void setMaterial(Ref<MaterialNode> material) {
         this->material = material;
       }
@@ -577,7 +617,7 @@ namespace embree
 
     public:
       std::vector<avector<Vertex>> positions;
-      avector<Vertex> normals;
+      std::vector<avector<Vertex>> normals;
       std::vector<Vec2f> texcoords;
       std::vector<Quad> quads;
       Ref<MaterialNode> material;
@@ -597,13 +637,15 @@ namespace embree
       {
         for (size_t i=0; i<numTimeSteps; i++)
           positions.push_back(avector<Vertex>());
+        for (size_t i=0; i<numTimeSteps; i++)
+          normals.push_back(avector<Vertex>());
         zero_pad_arrays();
       }
 
       SubdivMeshNode (Ref<SceneGraph::SubdivMeshNode> imesh, const Transformations& spaces)
         : Node(true), 
         positions(transformMSMBlurBuffer(imesh->positions,spaces)),
-        normals(imesh->normals),
+        normals(transformMSMBlurNormalBuffer(imesh->normals,spaces)),
         texcoords(imesh->texcoords),
         position_indices(imesh->position_indices),
         normal_indices(imesh->normal_indices),
@@ -620,9 +662,6 @@ namespace embree
         material(imesh->material), 
         tessellationRate(imesh->tessellationRate)
       {
-        const LinearSpace3fa nspace0 = rcp(spaces[0].l).transposed();
-        for (auto& n : normals) n = xfmVector(nspace0,n);
-
         zero_pad_arrays();
       }
 
@@ -675,7 +714,7 @@ namespace embree
 
     public:
       std::vector<avector<Vertex>> positions; //!< vertex positions for multiple timesteps
-      avector<Vertex> normals;              //!< face vertex normals
+      std::vector<avector<Vertex>> normals;    //!< vertex normals
       std::vector<Vec2f> texcoords;             //!< face texture coordinates
       std::vector<unsigned> position_indices;        //!< position indices for all faces
       std::vector<unsigned> normal_indices;          //!< normal indices for all faces
