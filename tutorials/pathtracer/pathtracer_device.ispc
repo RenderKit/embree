@@ -1064,8 +1064,8 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform 
       {
         ISPCTriangle* tri = &mesh->triangles[ray.primID];
         float f = mesh->numTimeSteps*ray.time;
-        int itime = (int) clamp(floor(f),0.0f,mesh->numTimeSteps-1.0f);
-        float t1 = frac(f);
+        int itime = clamp((int)floor(f),0,(int)mesh->numTimeSteps-2);
+        float t1 = f-itime;
         float t0 = 1.0f-t1;
         const Vec3f a0 = make_Vec3f(mesh->normals[itime+0][tri->v0]);
         const Vec3f a1 = make_Vec3f(mesh->normals[itime+0][tri->v1]);
@@ -1125,8 +1125,8 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform 
       {
         ISPCQuad* quad = &mesh->quads[ray.primID];
         float f = mesh->numTimeSteps*ray.time;
-        int itime = (int) clamp(floor(f),0.0f,mesh->numTimeSteps-1.0f);
-        float t1 = frac(f);
+        int itime = clamp((int)floor(f),0,(int)mesh->numTimeSteps-2);
+        float t1 = f-itime;
         float t0 = 1.0f-t1;
         const Vec3f a0 = make_Vec3f(mesh->normals[itime+0][quad->v0]);
         const Vec3f a1 = make_Vec3f(mesh->normals[itime+0][quad->v1]);
