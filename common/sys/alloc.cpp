@@ -28,6 +28,9 @@ namespace embree
 {
   void* alignedMalloc(size_t size, size_t align) 
   {
+    if (size == 0)
+      return nullptr;
+    
     assert((align & (align-1)) == 0);
     void* ptr = _mm_malloc(size,align);
 
@@ -37,8 +40,10 @@ namespace embree
     return ptr;
   }
   
-  void alignedFree(void* ptr) {
-    _mm_free(ptr);
+  void alignedFree(void* ptr)
+  {
+    if (ptr)
+      _mm_free(ptr);
   }
 
   static bool huge_pages_enabled = false;
