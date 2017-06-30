@@ -1040,7 +1040,8 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
   {
     ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
     materialID = mesh->materialID;
-    if (mesh->texcoords) {
+    if (mesh->texcoords)
+    {
       ISPCTriangle* tri = &mesh->triangles[ray.primID];
       const Vec2f st0 = mesh->texcoords[tri->v0];
       const Vec2f st1 = mesh->texcoords[tri->v1];
@@ -1049,12 +1050,15 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
       const Vec2f st = w*st0 + u*st1 + v*st2;
       dg.u = st.x;
       dg.v = st.y;
-      /*
+    }
+    if (mesh->normals)
+    {
+      ISPCTriangle* tri = &mesh->triangles[ray.primID];
       const Vec3fa n0 = mesh->normals[tri->v0];
       const Vec3fa n1 = mesh->normals[tri->v1];
       const Vec3fa n2 = mesh->normals[tri->v2];
+      const float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
       dg.Ns = w*n0 + u*n1 + v*n2;
-      */
     }
   }
   else if (geometry->type == QUAD_MESH)
