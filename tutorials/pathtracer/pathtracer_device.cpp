@@ -1282,7 +1282,8 @@ void intersectionFilterOBJ(void* ptr, RTCRay& ray)
   dg.Ns = ray.Ng;
   int materialID = postIntersect(ray,dg);
   dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
-  dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
+  if (length(dg.Ns) < 1E-6f) dg.Ns = dg.Ng;
+  else dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
   const Vec3fa wo = neg(ray.dir);
 
   /* calculate BRDF */
