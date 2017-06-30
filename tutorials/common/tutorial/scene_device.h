@@ -92,8 +92,8 @@ namespace embree
 #endif
 
     ISPCGeometry geom;
-    Vec3fa** positions;     //!< vertex position array with all timesteps
-    Vec3fa* normals;       //!< vertex normal array
+    Vec3fa** positions;     //!< vertex position array
+    Vec3fa** normals;       //!< vertex normal array
     Vec2f* texcoords;      //!< vertex texcoord array
     ISPCTriangle* triangles;  //!< list of triangles
     
@@ -113,7 +113,7 @@ namespace embree
 
     ISPCGeometry geom;
     Vec3fa** positions;    //!< vertex position array
-    Vec3fa* normals;       //!< vertex normal array
+    Vec3fa** normals;       //!< vertex normal array
     Vec2f* texcoords;     //!< vertex texcoord array
     ISPCQuad* quads;      //!< list of quads
     
@@ -138,7 +138,7 @@ namespace embree
 
     ISPCGeometry geom;
     Vec3fa** positions;       //!< vertex positions
-    Vec3fa* normals;         //!< face vertex normals
+    Vec3fa** normals;         //!< face vertex normals
     Vec2f* texcoords;        //!< face texture coordinates
     unsigned int* position_indices;   //!< position indices for all faces
     unsigned int* normal_indices;     //!< normal indices for all faces

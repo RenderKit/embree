@@ -1051,12 +1051,34 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform 
     }
     if (mesh->normals)
     {
-      ISPCTriangle* tri = &mesh->triangles[ray.primID];
-      const Vec3f n0 = make_Vec3f(mesh->normals[tri->v0]);
-      const Vec3f n1 = make_Vec3f(mesh->normals[tri->v1]);
-      const Vec3f n2 = make_Vec3f(mesh->normals[tri->v2]);
-      const float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-      dg.Ns = w*n0 + u*n1 + v*n2;
+      if (mesh->numTimeSteps == 1)
+      {
+        ISPCTriangle* tri = &mesh->triangles[ray.primID];
+        const Vec3f n0 = make_Vec3f(mesh->normals[0][tri->v0]);
+        const Vec3f n1 = make_Vec3f(mesh->normals[0][tri->v1]);
+        const Vec3f n2 = make_Vec3f(mesh->normals[0][tri->v2]);
+        const float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
+        dg.Ns = w*n0 + u*n1 + v*n2;
+      }
+      else
+      {
+        ISPCTriangle* tri = &mesh->triangles[ray.primID];
+        float f = mesh->numTimeSteps*ray.time;
+        int itime = (int) clamp(floor(f),0.0f,mesh->numTimeSteps-1.0f);
+        float t1 = frac(f);
+        float t0 = 1.0f-t1;
+        const Vec3f a0 = make_Vec3f(mesh->normals[itime+0][tri->v0]);
+        const Vec3f a1 = make_Vec3f(mesh->normals[itime+0][tri->v1]);
+        const Vec3f a2 = make_Vec3f(mesh->normals[itime+0][tri->v2]);
+        const Vec3f b0 = make_Vec3f(mesh->normals[itime+1][tri->v0]);
+        const Vec3f b1 = make_Vec3f(mesh->normals[itime+1][tri->v1]);
+        const Vec3f b2 = make_Vec3f(mesh->normals[itime+1][tri->v2]);
+        const Vec3f n0 = t0*a0 + t1*b0;
+        const Vec3f n1 = t0*a1 + t1*b1;
+        const Vec3f n2 = t0*a2 + t1*b2;
+        const float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
+        dg.Ns = w*n0 + u*n1 + v*n2;
+      }
     }
   }
   else if (geometry->type == QUAD_MESH)
@@ -1084,17 +1106,47 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform 
     }
     if (mesh->normals)
     {
-      ISPCQuad* quad = &mesh->quads[ray.primID];
-      const Vec3f n0 = make_Vec3f(mesh->normals[quad->v0]);
-      const Vec3f n1 = make_Vec3f(mesh->normals[quad->v1]);
-      const Vec3f n2 = make_Vec3f(mesh->normals[quad->v2]);
-      const Vec3f n3 = make_Vec3f(mesh->normals[quad->v3]);
-      if (ray.u+ray.v < 1.0f) {
-        const float u = ray.u, v = ray.v; const float w = 1.0f-u-v;
-        dg.Ns = w*n0 + u*n1 + v*n3;
-      } else {
-        const float u = 1.0f-ray.u, v = 1.0f-ray.v; const float w = 1.0f-u-v;
-        dg.Ns = w*n2 + u*n3 + v*n1;
+      if (mesh->numTimeSteps == 1)
+      {
+        ISPCQuad* quad = &mesh->quads[ray.primID];
+        const Vec3f n0 = make_Vec3f(mesh->normals[0][quad->v0]);
+        const Vec3f n1 = make_Vec3f(mesh->normals[0][quad->v1]);
+        const Vec3f n2 = make_Vec3f(mesh->normals[0][quad->v2]);
+        const Vec3f n3 = make_Vec3f(mesh->normals[0][quad->v3]);
+        if (ray.u+ray.v < 1.0f) {
+          const float u = ray.u, v = ray.v; const float w = 1.0f-u-v;
+          dg.Ns = w*n0 + u*n1 + v*n3;
+        } else {
+          const float u = 1.0f-ray.u, v = 1.0f-ray.v; const float w = 1.0f-u-v;
+          dg.Ns = w*n2 + u*n3 + v*n1;
+        }
+      }
+      else
+      {
+        ISPCQuad* quad = &mesh->quads[ray.primID];
+        float f = mesh->numTimeSteps*ray.time;
+        int itime = (int) clamp(floor(f),0.0f,mesh->numTimeSteps-1.0f);
+        float t1 = frac(f);
+        float t0 = 1.0f-t1;
+        const Vec3f a0 = make_Vec3f(mesh->normals[itime+0][quad->v0]);
+        const Vec3f a1 = make_Vec3f(mesh->normals[itime+0][quad->v1]);
+        const Vec3f a2 = make_Vec3f(mesh->normals[itime+0][quad->v2]);
+        const Vec3f a3 = make_Vec3f(mesh->normals[itime+0][quad->v3]);
+        const Vec3f b0 = make_Vec3f(mesh->normals[itime+1][quad->v0]);
+        const Vec3f b1 = make_Vec3f(mesh->normals[itime+1][quad->v1]);
+        const Vec3f b2 = make_Vec3f(mesh->normals[itime+1][quad->v2]);
+        const Vec3f b3 = make_Vec3f(mesh->normals[itime+1][quad->v3]);
+        const Vec3f n0 = t0*a0 + t1*b0;
+        const Vec3f n1 = t0*a1 + t1*b1;
+        const Vec3f n2 = t0*a2 + t1*b2;
+        const Vec3f n3 = t0*a3 + t1*b3;
+        if (ray.u+ray.v < 1.0f) {
+          const float u = ray.u, v = ray.v; const float w = 1.0f-u-v;
+          dg.Ns = w*n0 + u*n1 + v*n3;
+        } else {
+          const float u = 1.0f-ray.u, v = 1.0f-ray.v; const float w = 1.0f-u-v;
+          dg.Ns = w*n2 + u*n3 + v*n1;
+        }
       }
     }
   }

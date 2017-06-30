@@ -879,8 +879,18 @@ namespace embree
       if (xml->hasChild("positions2")) 
         mesh->positions.push_back(loadVec3faArray(xml->childOpt("positions2")));
     }
+
+    if (Ref<XML> animation = xml->childOpt("animated_normals")) {
+      for (size_t i=0; i<animation->size(); i++)
+        mesh->normals.push_back(loadVec3faArray(animation->child(i)));
+    }
+    else if (Ref<XML> normalbuf = xml->childOpt("normals")) {
+      auto vec = loadVec3faArray(normalbuf);
+      if (vec.size())
+        for (size_t i=0; i<mesh->numTimeSteps(); i++)
+          mesh->normals.push_back(vec);
+    }
     
-    mesh->normals = loadVec3faArray(xml->childOpt("normals"));
     mesh->texcoords = loadVec2fArray(xml->childOpt("texcoords"));
 
     std::vector<Vec3i> triangles = loadVec3iArray(xml->childOpt("triangles"));
@@ -900,12 +910,22 @@ namespace embree
       for (size_t i=0; i<animation->size(); i++)
         mesh->positions.push_back(loadVec3faArray(animation->child(i)));
     } else {
-      mesh->positions.push_back(loadVec3faArray(xml->childOpt("positions")));
-      if (xml->hasChild("positions2")) 
-        mesh->positions.push_back(loadVec3faArray(xml->childOpt("positions2")));
+      auto vec = loadVec3faArray(xml->childOpt("normals"));
+      for (size_t i=0; i<mesh->numTimeSteps(); i++)
+        mesh->normals.push_back(vec);
     }
-    
-    mesh->normals = loadVec3faArray(xml->childOpt("normals"));
+
+    if (Ref<XML> animation = xml->childOpt("animated_normals")) {
+      for (size_t i=0; i<animation->size(); i++)
+        mesh->normals.push_back(loadVec3faArray(animation->child(i)));
+    }
+    else if (Ref<XML> normalbuf = xml->childOpt("normals")) {
+      auto vec = loadVec3faArray(normalbuf);
+      if (vec.size())
+        for (size_t i=0; i<mesh->numTimeSteps(); i++)
+          mesh->normals.push_back(vec);
+    }
+  
     mesh->texcoords = loadVec2fArray(xml->childOpt("texcoords"));
 
     std::vector<Vec4i> indices = loadVec4iArray(xml->childOpt("indices"));
@@ -939,8 +959,19 @@ namespace embree
       mesh->positions.push_back(loadVec3faArray(xml->childOpt("positions")));
       if (xml->hasChild("positions2")) 
         mesh->positions.push_back(loadVec3faArray(xml->childOpt("positions2")));
-    }    
-    mesh->normals = loadVec3faArray(xml->childOpt("normals"));
+    }
+
+    if (Ref<XML> animation = xml->childOpt("animated_normals")) {
+      for (size_t i=0; i<animation->size(); i++)
+        mesh->normals.push_back(loadVec3faArray(animation->child(i)));
+    }
+    else if (Ref<XML> normalbuf = xml->childOpt("normals")) {
+      auto vec = loadVec3faArray(normalbuf);
+      if (vec.size())
+        for (size_t i=0; i<mesh->numTimeSteps(); i++)
+          mesh->normals.push_back(vec);
+    }
+    
     mesh->texcoords = loadVec2fArray(xml->childOpt("texcoords"));
 
     if (Ref<XML> child = xml->childOpt("position_indices")) {
@@ -1245,7 +1276,7 @@ namespace embree
     Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(material);
 
     mesh->positions.push_back(loadVec3faArray(xml->childOpt("vertex")));
-    mesh->normals = loadVec3faArray(xml->childOpt("normal"));
+    mesh->normals.push_back(loadVec3faArray(xml->childOpt("normal")));
     mesh->texcoords = loadVec2fArray(xml->childOpt("texcoord"));
 
     std::vector<Vec4i> triangles = loadVec4iArray(xml->childOpt("prim"));
