@@ -1054,9 +1054,9 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
     if (mesh->normals)
     {
       ISPCTriangle* tri = &mesh->triangles[ray.primID];
-      const Vec3fa n0 = mesh->normals[tri->v0];
-      const Vec3fa n1 = mesh->normals[tri->v1];
-      const Vec3fa n2 = mesh->normals[tri->v2];
+      const Vec3fa n0 = Vec3fa(mesh->normals[tri->v0]);
+      const Vec3fa n1 = Vec3fa(mesh->normals[tri->v1]);
+      const Vec3fa n2 = Vec3fa(mesh->normals[tri->v2]);
       const float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
       dg.Ns = w*n0 + u*n1 + v*n2;
     }
@@ -1065,7 +1065,8 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
   {
     ISPCQuadMesh* mesh = (ISPCQuadMesh*) geometry;
     materialID = mesh->materialID;
-    if (mesh->texcoords) {
+    if (mesh->texcoords)
+    {
       ISPCQuad* quad = &mesh->quads[ray.primID];
       const Vec2f st0 = mesh->texcoords[quad->v0];
       const Vec2f st1 = mesh->texcoords[quad->v1];
@@ -1081,6 +1082,21 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
         const Vec2f st = w*st2 + u*st3 + v*st1;
         dg.u = st.x;
         dg.v = st.y;
+      }
+    }
+    if (mesh->normals)
+    {
+      ISPCQuad* quad = &mesh->quads[ray.primID];
+      const Vec3fa n0 = Vec3fa(mesh->normals[quad->v0]);
+      const Vec3fa n1 = Vec3fa(mesh->normals[quad->v1]);
+      const Vec3fa n2 = Vec3fa(mesh->normals[quad->v2]);
+      const Vec3fa n3 = Vec3fa(mesh->normals[quad->v3]);
+      if (ray.u+ray.v < 1.0f) {
+        const float u = ray.u, v = ray.v; const float w = 1.0f-u-v;
+        dg.Ns = w*n0 + u*n1 + v*n3;
+      } else {
+        const float u = 1.0f-ray.u, v = 1.0f-ray.v; const float w = 1.0f-u-v;
+        dg.Ns = w*n2 + u*n3 + v*n1;
       }
     }
   }
