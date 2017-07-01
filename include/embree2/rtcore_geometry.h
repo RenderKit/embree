@@ -226,7 +226,7 @@ RTCORE_API void rtcSetTransform2 (RTCScene scene,                         //!< s
   (numTriangles), number of vertices (numVertices), and number of time
   steps (1 for normal meshes, and up to RTC_MAX_TIME_STEPS for multi
   segment motion blur), have to get specified. The triangle indices
-  can be set be mapping and writing to the index buffer
+  can be set by mapping and writing to the index buffer
   (RTC_INDEX_BUFFER) and the triangle vertices can be set by mapping
   and writing into the vertex buffer (RTC_VERTEX_BUFFER). In case of
   multi-segment motion blur, multiple vertex buffers have to get filled
@@ -255,7 +255,7 @@ RTCORE_API unsigned rtcNewTriangleMesh2 (RTCScene scene,                    //!<
 /*! \brief Creates a new quad mesh. The number of quads (numQuads),
   number of vertices (numVertices), and number of time steps (1 for
   normal meshes, and up to RTC_MAX_TIME_STEPS for multi-segment motion
-  blur), have to get specified. The quad indices can be set be mapping
+  blur), have to get specified. The quad indices can be set by mapping
   and writing to the index buffer (RTC_INDEX_BUFFER) and the quad
   vertices can be set by mapping and writing into the vertex buffer
   (RTC_VERTEX_BUFFER). In case of multi-segment motion blur, multiple
