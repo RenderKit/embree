@@ -113,8 +113,8 @@ namespace embree
         if (converged_u && converged_t) 
         {
           t+=dt;
-          if (t <= ray.tnear || t > ray.tfar) return false;
-          if (u < 0.0f || u > 1.0f) return false;
+          if (!(t > ray.tnear && t < ray.tfar)) return false; // rejects NaNs
+          if (!(u >= 0.0f && u <= 1.0f)) return false; // rejects NaNs
           const Vec3fa R = normalize(Q-P);
           const Vec3fa U = madd(Vec3fa(dPdu.w),R,dPdu);
           const Vec3fa V = cross(dPdu,R);
