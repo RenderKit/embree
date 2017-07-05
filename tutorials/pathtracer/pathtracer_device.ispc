@@ -28,7 +28,6 @@
 #define TILE_SIZE_Y 4
 
 #define FIXED_SAMPLING 0
-#define SAMPLES_PER_PIXEL 1
 
 #define FIXED_EDGE_TESSELLATION_VALUE 4
 
@@ -862,6 +861,8 @@ inline Vec3f Material__sample(ISPCMaterial** uniform uniform materials, unsigned
 extern uniform ISPCScene* uniform g_ispc_scene;
 RTCDevice g_device = NULL;
 RTCScene g_scene = NULL;
+extern uniform int g_spp;
+extern uniform bool g_accumulate;
 
 /* occlusion filter function */
 void intersectionFilterReject(void* uniform ptr, RTCRay& ray);
@@ -1489,16 +1490,16 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
 
   Vec3f L = make_Vec3f(0.0f);
 
-  for (uniform int i=0; i<SAMPLES_PER_PIXEL; i++)
+  for (uniform int i=0; i<g_spp; i++)
   {
-    RandomSampler_init(sampler, (int)x, (int)y, g_accu_count*SAMPLES_PER_PIXEL+i);
+    RandomSampler_init(sampler, (int)x, (int)y, g_accu_count*g_spp+i);
 
     /* calculate pixel color */
     float fx = x + RandomSampler_get1D(sampler);
     float fy = y + RandomSampler_get1D(sampler);
     L = L + renderPixelFunction(fx,fy,sampler,camera,stats);
   }
-  L = L*(1.0f/SAMPLES_PER_PIXEL);
+  L = L/g_spp;
   return L;
 }
 
@@ -1656,15 +1657,11 @@ export void device_render (uniform int* uniform pixels,
   }
 
   /* reset accumulator */
-  uniform bool camera_changed = g_changed; g_changed = false;
+  uniform bool camera_changed = g_changed || !g_accumulate; g_changed = false;
   camera_changed |= ne(g_accu_vx,camera.xfm.l.vx); g_accu_vx = camera.xfm.l.vx;
   camera_changed |= ne(g_accu_vy,camera.xfm.l.vy); g_accu_vy = camera.xfm.l.vy;
   camera_changed |= ne(g_accu_vz,camera.xfm.l.vz); g_accu_vz = camera.xfm.l.vz;
   camera_changed |= ne(g_accu_p, camera.xfm.p);    g_accu_p  = camera.xfm.p;
-
-#if  FIXED_SAMPLING == 0
-  g_accu_count++;
-#endif
 
   if (camera_changed)
   {
@@ -1677,6 +1674,8 @@ export void device_render (uniform int* uniform pixels,
       rtcCommit (g_scene);
     }
   }
+  else
+    g_accu_count++;
 
   /* render image */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
