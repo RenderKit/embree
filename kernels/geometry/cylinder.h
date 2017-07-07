@@ -219,7 +219,7 @@ namespace embree
           vbool<N> inside = C <= 0.0f;
           t_o.lower = select(validt,select(inside,vfloat<N>(neg_inf),vfloat<N>(pos_inf)),t_o.lower);
           t_o.upper = select(validt,select(inside,vfloat<N>(pos_inf),vfloat<N>(neg_inf)),t_o.upper);
-          valid &= inside;
+          valid &= !validt | inside;
         }
         return valid;
       }
