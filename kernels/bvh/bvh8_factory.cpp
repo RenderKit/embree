@@ -1039,6 +1039,7 @@ namespace embree
   {
     BVH8* accel = new BVH8(Triangle4::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle4Intersectors(accel,ivariant);
+    //Accel::Intersectors intersectors = BVH8MultiFastIntersectors(accel);
     Builder* builder = nullptr;
     if (scene->device->tri_builder == "default")  {
       switch (bvariant) {
@@ -1153,6 +1154,7 @@ namespace embree
   {
     BVH8* accel = new BVH8(Quad4v::type,scene);
     Accel::Intersectors intersectors = BVH8Quad4vIntersectors(accel,ivariant);
+    //Accel::Intersectors intersectors = BVH8MultiFastIntersectors(accel);
 
     Builder* builder = nullptr;
     if (scene->device->quad_builder == "default") {

@@ -71,14 +71,26 @@ namespace embree
         {
           const unsigned int ty = (unsigned int) Leaf::decodeTy(*(unsigned int*)prim);
           assert(ty < 8);
-          pre.leaf_intersector->vtable1[ty].intersect(pre.table[ty],ray,context,prim,num,lazy_node);
+          if (likely(ty == 0)) {
+            Intersector0::intersect(pre.pre0,ray,context,(typename Intersector0::Primitive*)prim,num,lazy_node);
+          } else if (ty == 2) {
+            Intersector2::intersect(pre.pre2,ray,context,(typename Intersector2::Primitive*)prim,num,lazy_node);
+          } else {
+            pre.leaf_intersector->vtable1[ty].intersect(pre.table[ty],ray,context,prim,num,lazy_node);
+          }
         }
         
         static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node) 
         {
           const unsigned int ty = (unsigned int) Leaf::decodeTy(*(unsigned int*)prim);
           assert(ty < 8);
-          return pre.leaf_intersector->vtable1[ty].occluded(pre.table[ty],ray,context,prim,num,lazy_node);
+          if (likely(ty == 0)) {
+            return Intersector0::occluded(pre.pre0,ray,context,(typename Intersector0::Primitive*)prim,num,lazy_node);
+          } else if (ty == 2) {
+            return Intersector2::occluded(pre.pre2,ray,context,(typename Intersector2::Primitive*)prim,num,lazy_node);
+          } else {
+            return pre.leaf_intersector->vtable1[ty].occluded(pre.table[ty],ray,context,prim,num,lazy_node);
+          }
         }
       };
 
