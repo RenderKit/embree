@@ -18,10 +18,24 @@
 
 namespace embree
 {
+  extern "C" {
+    int g_spp = 1;
+    bool g_accumulate = 1;
+  }
+  
   struct Tutorial : public SceneLoadingTutorialApplication
   {
     Tutorial()
-      : SceneLoadingTutorialApplication("pathtracer",FEATURE_RTCORE) {}
+      : SceneLoadingTutorialApplication("pathtracer",FEATURE_RTCORE)
+    {
+      registerOption("spp", [this] (Ref<ParseStream> cin, const FileName& path) {
+          g_spp = cin->getInt();
+        }, "--spp: sets number of samples per pixel");
+
+      registerOption("accumulate", [this] (Ref<ParseStream> cin, const FileName& path) {
+          g_accumulate = cin->getInt();
+        }, "--accumulate <bool>: accumulate samples (on by default)");
+    }
     
     void postParseCommandLine() 
     {

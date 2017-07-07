@@ -211,17 +211,17 @@ namespace embree
           /* parametrization for arbitrary polygons */
           else 
           {
-            const unsigned l = (unsigned) floor(4.0f*uv.x); const float u = 2.0f*frac(4.0f*uv.x); 
-            const unsigned h = (unsigned) floor(4.0f*uv.y); const float v = 2.0f*frac(4.0f*uv.y); 
+            const unsigned l = (unsigned) floor(0.5f*uv.x); const float u = 2.0f*frac(0.5f*uv.x)-0.5f; 
+            const unsigned h = (unsigned) floor(0.5f*uv.y); const float v = 2.0f*frac(0.5f*uv.y)-0.5f; 
             const unsigned i = 4*h+l; assert(i<N);
 
 #if PATCH_USE_GREGORY == 2
             BezierCurve borders[2]; patch.getLimitBorder(borders,i);
             BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
             BezierCurve border2l,border2r; borders[1].subdivide(border2l,border2r);
-            eval(patches[i],Vec2f(u,v),8.0f,depth+1, &border0l, nullptr, nullptr, &border2r);
+            eval(patches[i],Vec2f(u,v),1.0f,depth+1, &border0l, nullptr, nullptr, &border2r);
 #else
-            eval(patches[i],Vec2f(u,v),8.0f,depth+1);
+            eval(patches[i],Vec2f(u,v),1.0f,depth+1);
 #endif
           }
         }

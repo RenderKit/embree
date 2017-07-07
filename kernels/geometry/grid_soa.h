@@ -252,8 +252,8 @@ namespace embree
         typedef typename vfloat::Int vint;
         const vint iu  = asInt(uv) & 0xffff;
         const vint iv  = srl(asInt(uv),16);
-	const vfloat u = (vfloat)iu * vfloat(1.0f/0xFFFF);
-	const vfloat v = (vfloat)iv * vfloat(1.0f/0xFFFF);
+	const vfloat u = (vfloat)iu * vfloat(8.0f/0x10000);
+	const vfloat v = (vfloat)iv * vfloat(8.0f/0x10000);
 	return Vec2<vfloat>(u,v);
       }
       

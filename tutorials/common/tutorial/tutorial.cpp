@@ -216,6 +216,7 @@ namespace embree
         else if (mode == "texcoords") shader = SHADER_TEXCOORDS;
         else if (mode == "texcoords-grid") shader = SHADER_TEXCOORDS_GRID;
         else if (mode == "Ng"      ) shader = SHADER_NG;
+        else if (mode == "cycles"  ) { shader = SHADER_CYCLES; scale = cin->getFloat(); }
         else if (mode == "geomID"  ) shader = SHADER_GEOMID;
         else if (mode == "primID"  ) shader = SHADER_GEOMID_PRIMID;
         else if (mode == "ao"      ) shader = SHADER_AMBIENT_OCCLUSION;
@@ -229,6 +230,7 @@ namespace embree
       "  texcoords: texture coordinate debug shader\n"
       "  texcoords-grid: grid texture debug shader\n"
       "  Ng: visualization of shading normal\n"
+      "  cycles <float>: CPU cycle visualization\n"
       "  geomID: visualization of geometry ID\n"
       "  primID: visualization of geometry and primitive ID\n"
       "  ao: ambient occlusion shader");
@@ -879,6 +881,7 @@ namespace embree
     case SHADER_TEXCOORDS: device_key_pressed(GLUT_KEY_F8); break;
     case SHADER_TEXCOORDS_GRID: device_key_pressed(GLUT_KEY_F8); device_key_pressed(GLUT_KEY_F8); break;
     case SHADER_NG       : device_key_pressed(GLUT_KEY_F5); break;
+    case SHADER_CYCLES   : device_key_pressed(GLUT_KEY_F9); break;
     case SHADER_GEOMID   : device_key_pressed(GLUT_KEY_F6); break;
     case SHADER_GEOMID_PRIMID: device_key_pressed(GLUT_KEY_F7); break;
     case SHADER_AMBIENT_OCCLUSION: device_key_pressed(GLUT_KEY_F11); break;

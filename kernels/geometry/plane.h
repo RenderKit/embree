@@ -36,9 +36,10 @@ namespace embree
         Vec3fa D = Vec3fa(ray_dir);
         float ON = dot(O,N);
         float DN = dot(D,N);
-        float t = -ON*rcp(abs(DN) < min_rcp_input ? min_rcp_input : DN );
-        float lower = select(DN < 0.0f, float(neg_inf), t);
-        float upper = select(DN < 0.0f, t, float(pos_inf));
+        bool eps = abs(DN) < min_rcp_input;
+        float t = -ON*rcp(DN);
+        float lower = select(eps || DN < 0.0f, float(neg_inf), t);
+        float upper = select(eps || DN > 0.0f, float(pos_inf), t);
         return BBox1f(lower,upper);
       }
     };
@@ -58,9 +59,10 @@ namespace embree
           Vec3vf<M> D = Vec3vf<M>(ray_dir);
           vfloat<M> ON = dot(O,N);
           vfloat<M> DN = dot(D,N);
-          vfloat<M> t = -ON*rcp(select(abs(DN) < min_rcp_input, min_rcp_input, DN) );
-          vfloat<M> lower = select(DN < 0.0f, vfloat<M>(neg_inf), t);
-          vfloat<M> upper = select(DN < 0.0f, t, vfloat<M>(pos_inf));
+          vboolx eps = abs(DN) < min_rcp_input;
+          vfloat<M> t = -ON*rcp(DN);
+          vfloat<M> lower = select(eps | DN < 0.0f, vfloat<M>(neg_inf), t);
+          vfloat<M> upper = select(eps | DN > 0.0f, vfloat<M>(pos_inf), t);
           return BBox<vfloat<M>>(lower,upper);
         }
       };

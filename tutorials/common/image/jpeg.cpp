@@ -31,7 +31,10 @@ namespace embree
         JSAMPROW scanline[1];  size_t bytes = cinfo->image_width * cinfo->input_components;
 
         /*! Here we use the library state variable 'next_scanline' as the loop index. */
-        while (cinfo->next_scanline < cinfo->image_height) scanline[0] = &image[cinfo->next_scanline * bytes], jpeg_write_scanlines(cinfo, scanline, 1);
+        while (cinfo->next_scanline < cinfo->image_height) {
+	  scanline[0] = &image[cinfo->next_scanline * bytes];
+	  jpeg_write_scanlines(cinfo, scanline, 1);
+	}
 
         /*! Finish compression. */
         jpeg_finish_compress(cinfo);
@@ -40,7 +43,6 @@ namespace embree
 
     unsigned char *decompress(struct jpeg_decompress_struct *cinfo)
     {
-
         /*! Start decompression. */
         jpeg_start_decompress(cinfo);
 
@@ -54,8 +56,11 @@ namespace embree
         unsigned char* image = new unsigned char[cinfo->output_height * bytes];  
 
         /*! Here we use the library state variable 'output_scanline' as the loop index. */
-        while (cinfo->output_scanline < cinfo->output_height) 
-          jpeg_read_scanlines(cinfo, scanline, 1), memcpy(&image[(cinfo->output_scanline - 1) * bytes], scanline[0], bytes);
+        while (cinfo->output_scanline < cinfo->output_height) {
+          jpeg_read_scanlines(cinfo, scanline, 1);
+	  for (size_t i=0; i<bytes; i++)
+	    image[(cinfo->output_scanline - 1) * bytes + i] = scanline[0][i];
+	}
 
         /*! Finish decompression. */
         jpeg_finish_decompress(cinfo);  

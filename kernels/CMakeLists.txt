@@ -52,7 +52,6 @@ SET(EMBREE_LIBRARY_FILES
   geometry/leaf_intersector.cpp
   geometry/primitive.cpp
   geometry/instance_intersector1.cpp
-  geometry/instance_intersector.cpp
   builders/primrefgen.cpp
 
   bvh/bvh.cpp
@@ -147,8 +146,6 @@ ENDIF()
 IF (EMBREE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES_AVX ${EMBREE_LIBRARY_FILES_AVX}
 
-    geometry/instance_intersector.cpp
-
     bvh/bvh_intersector_hybrid4_bvh4.cpp
     bvh/bvh_intersector_hybrid8_bvh4.cpp
     bvh/bvh_intersector_hybrid4_bvh8.cpp
@@ -175,8 +172,6 @@ ENDIF()
 
 IF (EMBREE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES_AVX2 ${EMBREE_LIBRARY_FILES_AVX2}
-    geometry/instance_intersector.cpp
-
     bvh/bvh_intersector_hybrid4_bvh4.cpp
     bvh/bvh_intersector_hybrid8_bvh4.cpp
     bvh/bvh_intersector_hybrid4_bvh8.cpp
@@ -212,9 +207,6 @@ ENDIF()
 
 IF (EMBREE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES_AVX512KNL ${EMBREE_LIBRARY_FILES_AVX512KNL}
-
-    geometry/instance_intersector.cpp
-
     bvh/bvh_intersector_hybrid4_bvh4.cpp
     bvh/bvh_intersector_hybrid8_bvh4.cpp
     bvh/bvh_intersector_hybrid16_bvh4.cpp
@@ -241,9 +233,6 @@ ENDIF()
 
 IF (EMBREE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES_AVX512SKX ${EMBREE_LIBRARY_FILES_AVX512SKX}
-
-    geometry/instance_intersector.cpp
-
     bvh/bvh_intersector_hybrid4_bvh4.cpp
     bvh/bvh_intersector_hybrid8_bvh4.cpp
     bvh/bvh_intersector_hybrid16_bvh4.cpp

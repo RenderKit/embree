@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 2.16.1
+% Embree: High Performance Ray Tracing Kernels 2.16.4
 % Intel Corporation
 
 Embree Overview
@@ -94,9 +94,9 @@ Windows Installer
 
 You can install the Embree library using the Windows installer
 application
-[embree-2.16.1-x64.exe](https://github.com/embree/embree/releases/download/v2.16.1/embree-2.16.1.x64.exe). This
+[embree-2.16.4-x64.exe](https://github.com/embree/embree/releases/download/v2.16.4/embree-2.16.4.x64.exe). This
 will install the 64 bit Embree version by default in `Program
-Files\Intel\Embree v2.16.1 x64`.
+Files\Intel\Embree v2.16.4 x64`.
 
 You have to set the path to the `lib` folder manually to your `PATH`
 environment variable for applications to find Embree. To compile
@@ -107,13 +107,13 @@ Embree installation.
 To uninstall Embree again open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-2.16.1` and uninstall it.
+2.16.4` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree is also delivered as a ZIP file
-[embree-2.16.1.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.16.1/embree-2.16.1.x64.windows.zip). After
+[embree-2.16.4.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.16.4/embree-2.16.4.x64.windows.zip). After
 unpacking this ZIP file you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree. To compile applications with Embree you also have to set the
@@ -127,18 +127,18 @@ Linux RPMs
 ----------
 
 Uncompress the 'tar.gz' file
-[embree-2.16.1.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.16.1/embree-2.16.1.x86_64.rpm.tar.gz)
+[embree-2.16.4.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.16.4/embree-2.16.4.x86_64.rpm.tar.gz)
 to
 obtain the individual RPM files:
 
-    tar xzf embree-2.16.1.x86_64.rpm.tar.gz
+    tar xzf embree-2.16.4.x86_64.rpm.tar.gz
 
 To install the Embree using the RPM packages on your Linux system type
 the following:
 
-    sudo rpm --install embree-lib-2.16.1-1.x86_64.rpm
-    sudo rpm --install embree-devel-2.16.1-1.x86_64.rpm
-    sudo rpm --install embree-examples-2.16.1-1.x86_64.rpm
+    sudo rpm --install embree-lib-2.16.4-1.x86_64.rpm
+    sudo rpm --install embree-devel-2.16.4-1.x86_64.rpm
+    sudo rpm --install embree-examples-2.16.4-1.x86_64.rpm
 
 You also have to install the Intel® Threading Building Blocks (TBB)
 using `yum`:
@@ -168,21 +168,21 @@ the tutorials to start them.
 
 To uninstall Embree again just execute the following:
 
-    sudo rpm --erase embree-lib-2.16.1-1.x86_64
-    sudo rpm --erase embree-devel-2.16.1-1.x86_64
-    sudo rpm --erase embree-examples-2.16.1-1.x86_64
+    sudo rpm --erase embree-lib-2.16.4-1.x86_64
+    sudo rpm --erase embree-devel-2.16.4-1.x86_64
+    sudo rpm --erase embree-examples-2.16.4-1.x86_64
 
 Linux tar.gz files
 ------------------
 
 The Linux version of Embree is also delivered as a tar.gz file
-[embree-2.16.1.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.16.1/embree-2.16.1.x86_64.linux.tar.gz). Unpack
+[embree-2.16.4.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.16.4/embree-2.16.4.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.16.1.x64.linux.tar.gz
-    source embree-2.16.1.x64.linux/embree-vars.sh
+    tar xzf embree-2.16.4.x64.linux.tar.gz
+    source embree-2.16.4.x64.linux/embree-vars.sh
 
 If you want to ship Embree with your application best use the Embree
 version provided through the tar.gz file.
@@ -195,7 +195,7 @@ Mac OS X PKG Installer
 
 To install the Embree library on your Mac OS X system use the
 provided package installer inside
-[embree-2.16.1.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.16.1/embree-2.16.1.x86_64.dmg). This
+[embree-2.16.4.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.16.4/embree-2.16.4.x86_64.dmg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree2` folder.
@@ -217,13 +217,13 @@ Mac OS X tar.gz file
 ---------------------
 
 The Mac OS X version of Embree is also delivered as a tar.gz file
-[embree-2.16.1.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.16.1/embree-2.16.1.x86_64.macosx.tar.gz). Unpack
+[embree-2.16.4.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.16.4/embree-2.16.4.x86_64.macosx.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.16.1.x64.macosx.tar.gz
-    source embree-2.16.1.x64.macosx/embree-vars.sh
+    tar xzf embree-2.16.4.x64.macosx.tar.gz
+    source embree-2.16.4.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application please use the Embree
 library of the provided tar.gz file. The library name of that Embree
@@ -1163,19 +1163,32 @@ interpolated over the quadrilateral the following way:
 The parametrization for all other face types where the number of
 vertices is not equal to 4, have a special parametrization where the
 n'th quadrilateral (that would be obtained by a single subdivision
-step) is encoded in the higher order bits of the UV coordinates and
-the local hit location inside this quadrilateral in the lower order
-bits. The following piece of code extracts the sub-patch ID i and UVs
-of this subpatch:
+step) and the local hit location inside this quadrilateral are encoded
+in the UV coordinates. The following piece of code extracts the
+sub-patch ID i and UVs of this subpatch:
 
-    const unsigned l = floorf(4.0f*U);
-    const unsigned h = floorf(4.0f*V);
+    const unsigned l = floorf(0.5f*U);
+    const unsigned h = floorf(0.5f*V);
     const unsigned i = 4*h+l;
-    const float u = 2.0f*fracf(4.0f*U);
-    const float v = 2.0f*fracf(4.0f*V);
+    const float u = 2.0f*fracf(0.5f*U)-0.5f;
+    const float v = 2.0f*fracf(0.5f*V)-0.5f;
+
+This encoding allows local subpatch UVs to be in the range
+`[-0.5,1.5[` thus negative subpatch UVs can get passed to
+`rtcInterpolate` to sample subpatches slightly out of bounds.
+This can be useful to calculate derivatives using finite
+differences if required. The encoding further has the property
+that you can just move some value du (or dv) on a subpatch by
+adding du (or dv) to the special UV encoding as long as you
+are not falling out of the `[-0.5,1.5[` range. Further, derivatives
+calculated using finite differences are compatible
+with derivatives calculated using `rtcInterpolate` when using the
+standard formula:
+
+    dF(u)/du = (F(u+du)-F(u))/du
 
 To smoothly interpolate texture coordinates over the subdivision
-surface we recommend using the `rtcInterpolate2` function, which will
+surface we recommend using the `rtcInterpolate` function, which will
 apply the standard subdivision rules for interpolation and
 automatically take care of the special UV encoding for
 non-quadrilaterals.
@@ -1994,7 +2007,9 @@ many u/v coordinates and a valid mask (`valid` parameter) that
 specifies which of these coordinates are valid. The valid mask points
 to `numUVs` integers and a value of -1 denotes valid and 0 invalid. If
 the valid pointer is NULL all elements are considers valid. The
-destination arrays are filled in structure of array (SoA) layout.
+destination arrays are filled in structure of array (SoA) layout. The
+value `numUVs` has to be divisible by 4 and the destination buffer has
+to be at least `numFloats*numUVs` elements large.
 
 See tutorial [Interpolation] for an example of using the
 `rtcInterpolate2` function.
@@ -2605,7 +2620,9 @@ On machines with a high thread count (e.g. dual-socket Xeon or Xeon
 Phi machines), affinitizing TBB worker threads increases build and
 rendering performance. You can let Embree affinitize TBB worker
 threads by passing `set_affinity=1` to the init parameter of
-`rtcNewDevice`.
+`rtcNewDevice`. By default threads are not affinitized by Embree with
+the exception of Xeon Phi Processors where they are affinitized by
+default.
 
 All Embree tutorials automatically start and affinitize TBB worker threads
 by passing `start_threads=1,set_affinity=1` to `rtcNewDevice`.
@@ -2892,7 +2909,7 @@ F2
 :   Gray EyeLight shading
 
 F3
-:   Wireframe shading
+:   Traces occlusion rays only.
 
 F4
 :   UV Coordinate visualization

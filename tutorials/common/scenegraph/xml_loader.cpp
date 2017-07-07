@@ -374,29 +374,29 @@ namespace embree
   template<> AffineSpace3fa XMLLoader::load<AffineSpace3fa>(const Ref<XML>& xml) 
   {
     if (xml->parm("translate") != "") {
-      float x,y,z; sscanf(xml->parm("translate").c_str(),"%f %f %f",&x,&y,&z);
-      return AffineSpace3fa::translate(Vec3f(x,y,z));
+      const Vec3f v = string_to_Vec3f(xml->parm("translate"));
+      return AffineSpace3fa::translate(v);
     } else if (xml->parm("scale") != "") {
-      float x,y,z; sscanf(xml->parm("scale").c_str(),"%f %f %f",&x,&y,&z);
-      return AffineSpace3fa::scale(Vec3f(x,y,z));
+      const Vec3f v = string_to_Vec3f(xml->parm("scale"));
+      return AffineSpace3fa::scale(v);
     } else if (xml->parm("rotate_x") != "") {
-      float degrees; sscanf(xml->parm("rotate_x").c_str(),"%f",&degrees);
+      const float degrees = std::stof(xml->parm("rotate_x"));
       return AffineSpace3fa::rotate(Vec3f(1,0,0),deg2rad(degrees));
     } else if (xml->parm("rotate_y") != "") {
-      float degrees; sscanf(xml->parm("rotate_y").c_str(),"%f",&degrees);
+      const float degrees = std::stof(xml->parm("rotate_y"));
       return AffineSpace3fa::rotate(Vec3f(0,1,0),deg2rad(degrees));
     } else if (xml->parm("rotate_z") != "") {
-      float degrees; sscanf(xml->parm("rotate_z").c_str(),"%f",&degrees);
+      const float degrees = std::stof(xml->parm("rotate_z"));
       return AffineSpace3fa::rotate(Vec3f(0,0,1),deg2rad(degrees));
     } else if (xml->parm("angle") != "" && xml->parm("axis") != "" && xml->parm("point") != "") {
-      float degrees; sscanf(xml->parm("angle").c_str(),"%f",&degrees);
-      float vx,vy,vz; sscanf(xml->parm("axis" ).c_str(),"%f %f %f",&vx,&vy,&vz);
-      float px,py,pz; sscanf(xml->parm("point").c_str(),"%f %f %f",&px,&py,&pz);
-      return AffineSpace3fa::rotate(Vec3f(px,py,pz),Vec3f(vx,vy,vz),deg2rad(degrees));
+      const float degrees = std::stof(xml->parm("angle"));
+      const Vec3f v = string_to_Vec3f(xml->parm("axis"));
+      const Vec3f p = string_to_Vec3f(xml->parm("point"));
+      return AffineSpace3fa::rotate(p,v,deg2rad(degrees));
     } else if (xml->parm("angle") != "" && xml->parm("axis") != "") {
-      float degrees; sscanf(xml->parm("angle").c_str(),"%f",&degrees);
-      float x,y,z; sscanf(xml->parm("axis").c_str(),"%f %f %f",&x,&y,&z);
-      return AffineSpace3fa::rotate(Vec3f(x,y,z),deg2rad(degrees));
+      const float degrees = std::stof(xml->parm("angle"));
+      const Vec3f v = string_to_Vec3f(xml->parm("axis"));
+      return AffineSpace3fa::rotate(v,deg2rad(degrees));
     } else {
       if (xml->body.size() != 12) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong AffineSpace body");
       return AffineSpace3fa(LinearSpace3fa(xml->body[0].Float(),xml->body[1].Float(),xml->body[ 2].Float(),
@@ -879,8 +879,18 @@ namespace embree
       if (xml->hasChild("positions2")) 
         mesh->positions.push_back(loadVec3faArray(xml->childOpt("positions2")));
     }
+
+    if (Ref<XML> animation = xml->childOpt("animated_normals")) {
+      for (size_t i=0; i<animation->size(); i++)
+        mesh->normals.push_back(loadVec3faArray(animation->child(i)));
+    }
+    else if (Ref<XML> normalbuf = xml->childOpt("normals")) {
+      auto vec = loadVec3faArray(normalbuf);
+      if (vec.size())
+        for (size_t i=0; i<mesh->numTimeSteps(); i++)
+          mesh->normals.push_back(vec);
+    }
     
-    mesh->normals = loadVec3faArray(xml->childOpt("normals"));
     mesh->texcoords = loadVec2fArray(xml->childOpt("texcoords"));
 
     std::vector<Vec3i> triangles = loadVec3iArray(xml->childOpt("triangles"));
@@ -900,12 +910,22 @@ namespace embree
       for (size_t i=0; i<animation->size(); i++)
         mesh->positions.push_back(loadVec3faArray(animation->child(i)));
     } else {
-      mesh->positions.push_back(loadVec3faArray(xml->childOpt("positions")));
-      if (xml->hasChild("positions2")) 
-        mesh->positions.push_back(loadVec3faArray(xml->childOpt("positions2")));
+      auto vec = loadVec3faArray(xml->childOpt("normals"));
+      for (size_t i=0; i<mesh->numTimeSteps(); i++)
+        mesh->normals.push_back(vec);
     }
-    
-    mesh->normals = loadVec3faArray(xml->childOpt("normals"));
+
+    if (Ref<XML> animation = xml->childOpt("animated_normals")) {
+      for (size_t i=0; i<animation->size(); i++)
+        mesh->normals.push_back(loadVec3faArray(animation->child(i)));
+    }
+    else if (Ref<XML> normalbuf = xml->childOpt("normals")) {
+      auto vec = loadVec3faArray(normalbuf);
+      if (vec.size())
+        for (size_t i=0; i<mesh->numTimeSteps(); i++)
+          mesh->normals.push_back(vec);
+    }
+  
     mesh->texcoords = loadVec2fArray(xml->childOpt("texcoords"));
 
     std::vector<Vec4i> indices = loadVec4iArray(xml->childOpt("indices"));
@@ -939,8 +959,19 @@ namespace embree
       mesh->positions.push_back(loadVec3faArray(xml->childOpt("positions")));
       if (xml->hasChild("positions2")) 
         mesh->positions.push_back(loadVec3faArray(xml->childOpt("positions2")));
-    }    
-    mesh->normals = loadVec3faArray(xml->childOpt("normals"));
+    }
+
+    if (Ref<XML> animation = xml->childOpt("animated_normals")) {
+      for (size_t i=0; i<animation->size(); i++)
+        mesh->normals.push_back(loadVec3faArray(animation->child(i)));
+    }
+    else if (Ref<XML> normalbuf = xml->childOpt("normals")) {
+      auto vec = loadVec3faArray(normalbuf);
+      if (vec.size())
+        for (size_t i=0; i<mesh->numTimeSteps(); i++)
+          mesh->normals.push_back(vec);
+    }
+    
     mesh->texcoords = loadVec2fArray(xml->childOpt("texcoords"));
 
     if (Ref<XML> child = xml->childOpt("position_indices")) {
@@ -1245,7 +1276,7 @@ namespace embree
     Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(material);
 
     mesh->positions.push_back(loadVec3faArray(xml->childOpt("vertex")));
-    mesh->normals = loadVec3faArray(xml->childOpt("normal"));
+    mesh->normals.push_back(loadVec3faArray(xml->childOpt("normal")));
     mesh->texcoords = loadVec2fArray(xml->childOpt("texcoord"));
 
     std::vector<Vec4i> triangles = loadVec4iArray(xml->childOpt("prim"));

@@ -241,10 +241,8 @@ namespace embree
         assert(item < size());
         if (likely(intersectors.intersector1.intersect)) { // old code for compatibility
           intersectors.intersector1.intersect(intersectors.ptr,(RTCRay&)ray,item);
-        } else if (likely(intersectors.intersector1M.intersect)) {
-          RTCRay* pray = (RTCRay*)&ray;
-          intersectors.intersector1M.intersect(intersectors.ptr,context->user,&pray,1,item);
-        } else {
+        } 
+        else {
           int mask = -1;
           assert(intersectors.intersectorN.intersect);
           intersectors.intersectorN.intersect((int*)&mask,intersectors.ptr,context->user,(RTCRayN*)&ray,1,item);
@@ -339,10 +337,8 @@ namespace embree
       {
         if (likely(intersectors.intersector1.occluded)) { // old code for compatibility
           intersectors.intersector1.occluded(intersectors.ptr,(RTCRay&)ray,item);
-        } else if (likely(intersectors.intersector1M.occluded)) {
-          RTCRay* pray = (RTCRay*)&ray;
-          intersectors.intersector1M.occluded(intersectors.ptr,context->user,&pray,1,item);
-        } else {
+        } 
+        else {
           int mask = -1;
           assert(intersectors.intersectorN.occluded);          
           intersectors.intersectorN.occluded((int*)&mask,intersectors.ptr,context->user,(RTCRayN*)&ray,1,item);

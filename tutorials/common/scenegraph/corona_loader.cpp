@@ -275,6 +275,7 @@ namespace embree
     else if (xml->name == "camera"       ) return nullptr;
     else if (xml->name == "environment"  ) return nullptr;
     else if (xml->name == "geometryGroup") return loadGroupNode(xml);
+    else if (xml->name == "renderElement") return nullptr;
     else THROW_RUNTIME_ERROR(xml->loc.str()+": unknown tag: "+xml->name);
     return nullptr;
   }
