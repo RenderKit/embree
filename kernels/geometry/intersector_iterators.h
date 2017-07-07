@@ -73,8 +73,12 @@ namespace embree
           assert(ty < 8);
           if (likely(ty == 0)) {
             Intersector0::intersect(pre.pre0,ray,context,(typename Intersector0::Primitive*)prim,num,lazy_node);
+            //} else if (ty == 1) {
+            //Intersector1::intersect(pre.pre1,ray,context,(typename Intersector1::Primitive*)prim,num,lazy_node);
           } else if (ty == 2) {
             Intersector2::intersect(pre.pre2,ray,context,(typename Intersector2::Primitive*)prim,num,lazy_node);
+            //} else if (ty == 3) {
+            //Intersector3::intersect(pre.pre3,ray,context,(typename Intersector3::Primitive*)prim,num,lazy_node);
           } else {
             pre.leaf_intersector->vtable1[ty].intersect(pre.table[ty],ray,context,prim,num,lazy_node);
           }
@@ -86,8 +90,12 @@ namespace embree
           assert(ty < 8);
           if (likely(ty == 0)) {
             return Intersector0::occluded(pre.pre0,ray,context,(typename Intersector0::Primitive*)prim,num,lazy_node);
+            //} else if (ty == 1) {
+            //return Intersector1::occluded(pre.pre1,ray,context,(typename Intersector1::Primitive*)prim,num,lazy_node);
           } else if (ty == 2) {
             return Intersector2::occluded(pre.pre2,ray,context,(typename Intersector2::Primitive*)prim,num,lazy_node);
+            //} else if (ty == 3) {
+            //return Intersector3::occluded(pre.pre3,ray,context,(typename Intersector3::Primitive*)prim,num,lazy_node);
           } else {
             return pre.leaf_intersector->vtable1[ty].occluded(pre.table[ty],ray,context,prim,num,lazy_node);
           }
