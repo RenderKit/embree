@@ -79,11 +79,14 @@ namespace embree
   struct BVHNodeRecordMB4D
   {
     __forceinline BVHNodeRecordMB4D() {}
-    __forceinline BVHNodeRecordMB4D(NodeRef ref, const LBBox3fa& lbounds, const BBox1f& dt) : ref(ref), lbounds(lbounds), dt(dt) {}
+    __forceinline BVHNodeRecordMB4D(NodeRef ref, const LBBox3fa& lbounds, const BBox1f& dt) : ref(ref), lbounds(lbounds), dt(dt), area(0.0f), cost(1.0f) {}
+    __forceinline BVHNodeRecordMB4D(NodeRef ref, const LBBox3fa& lbounds, const BBox1f& dt, float area, float cost) : ref(ref), lbounds(lbounds), dt(dt), area(area), cost(cost) {}
 
     NodeRef ref;
     LBBox3fa lbounds;
     BBox1f dt;
+    float area;
+    float cost;
   };
 
   /*! Multi BVH with N children. Each node stores the bounding box of

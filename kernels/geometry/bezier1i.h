@@ -103,7 +103,7 @@ namespace embree
       LBBox3fa allBounds = empty;
       for (size_t i=0; i<items; i++)
         allBounds.extend(accel[i].fillMB(set.prims->data(), start, set.object_range.end(), bvh->scene, set.time_range));
-      return typename BVH::NodeRecordMB4D(node,allBounds,set.time_range);
+      return typename BVH::NodeRecordMB4D(node,allBounds,set.time_range,0.0f,items);
     }
   };
 }

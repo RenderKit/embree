@@ -158,6 +158,21 @@ namespace embree
                               const Scene *const scene,
                               const float time) const;
 
+     /* returns area of quads */
+    __forceinline float area(const Scene* scene, const size_t itime=0)
+    {
+      float A = 0.0f;
+      for (size_t i=0; i<M && valid(i); i++)
+      {
+        const int* vertices = (const int*) scene->get<TriangleMesh>(geomID(i))->vertexPtr(0,itime);
+        const Vec3fa p0 = Vec3fa::loadu(vertices+v0[i]);
+        const Vec3fa p1 = Vec3fa::loadu(vertices+v1[i]);
+        const Vec3fa p2 = Vec3fa::loadu(vertices+v2[i]);
+        A += 0.5f*length(cross(p1-p0,p2-p0));
+      }
+      return A;
+    }
+    
     /* Calculate the bounds of the triangles */
     __forceinline const BBox3fa bounds(const Scene *const scene, const size_t itime=0) const
     {
@@ -329,10 +344,13 @@ namespace embree
       size_t start = set.object_range.begin();
       TriangleMi<M>* accel = (TriangleMi<M>*) alloc.malloc1(items*sizeof(TriangleMi<M>),BVH::byteAlignment);
       typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+      float A = 0.0f;
       LBBox3fa allBounds = empty;
-      for (size_t i=0; i<items; i++)
+      for (size_t i=0; i<items; i++) {
         allBounds.extend(accel[i].fillMB(set.prims->data(), start, set.object_range.end(), bvh->scene, set.time_range));
-      return typename BVH::NodeRecordMB4D(node,allBounds,set.time_range);
+        A += accel[i].area(bvh->scene);
+      }
+      return typename BVH::NodeRecordMB4D(node,allBounds,set.time_range,A,2.0f*items);
     }
   };
 

@@ -355,6 +355,12 @@ namespace embree
               values[i] = createLargeLeaf(children[i],alloc);
             }
 
+            float area = 0.0f, cost = 0.0f;
+            for (size_t i=0; i<children.size(); i++) {
+              area += values[i].area;
+              cost += values[i].cost;
+            }
+
             if (hasTimeSplits || useNodeMB(values,children.size())) 
             {
               auto node = createAlignedNodeMB(alloc, hasTimeSplits);
@@ -367,7 +373,7 @@ namespace embree
               if (unlikely(hasTimeSplits))
                 gbounds = current.prims.linearBounds(recalculatePrimRef);
 
-              return NodeRecordMB4D(node,gbounds,current.prims.time_range);
+              return NodeRecordMB4D(node,gbounds,current.prims.time_range,area,cost);
             }
             else
             {
@@ -377,7 +383,7 @@ namespace embree
                 setAlignedNode(node,i,values[i].ref,values[i].lbounds.bounds());
                 gbounds.extend(values[i].lbounds);
               }
-              return NodeRecordMB4D(node,gbounds,current.prims.time_range);   
+              return NodeRecordMB4D(node,gbounds,current.prims.time_range,area,cost);   
             }          
           }
 
@@ -410,12 +416,12 @@ namespace embree
                  scene, prims, PrimInfo(0,current.prims.object_range.size(),current.prims),
                  type_settings[Leaf::TY_HAIR]);
               convert_PrimRefArray_To_PrimRefMBArray(prims,primsMB,current.prims.object_range.size());
-              return NodeRecordMB4D(ref,LBBox3fa(current.prims.geomBounds),current.prims.time_range);
+              return NodeRecordMB4D(ref,LBBox3fa(current.prims.geomBounds),current.prims.time_range,0.0f,4.0f*current.size());
             }
 
             if (current.prims.isType(Leaf::TY_HAIR_MB)) 
             {
-              return BVHBuilderHairMSMBlur::build<NodeRef>
+              NodeRecordMB4D r = BVHBuilderHairMSMBlur::build<NodeRef>
                 (scene, *current.prims.prims, current.prims,
                  recalculatePrimRef,
                  createAlloc,
@@ -431,6 +437,9 @@ namespace embree
                  createLeaf,
                  progressMonitor,
                  type_settings[Leaf::TY_HAIR_MB]);
+              r.area = 0.0f;
+              r.cost = 4.0f*current.size();
+              return r;
             }
 
             const Settings& cfg = getSettings(current.prims.types);
@@ -495,9 +504,8 @@ namespace embree
             }
 
             /* sort buildrecords for simpler shadow ray traversal */
-            //std::sort(&children[0],&children[children.size()],std::greater<BuildRecord>()); // FIXME: reduces traversal performance of bvh8.triangle4 (need to verified) !!
-            children.sort();
-
+            //children.sort();
+            
             /* spawn tasks */
             if (unlikely(current.size() > cfg.singleThreadThreshold))
             {
@@ -517,29 +525,48 @@ namespace embree
               }
             }
             
+            int order[MAX_BRANCHING_FACTOR];
+            for (size_t i=0; i<children.size(); i++) order[i] = i;
+#if 1
+            std::sort(order,order+children.size(),[&] ( const int a, const int b ) {
+                return values[a].area/values[a].cost < values[b].area/values[b].cost;
+                //return values[a].cost > values[b].cost;
+              });
+#else
+            std::sort(order,order+children.size(),[&] ( const int a, const int b ) {
+                return children[a].size() > children[b].size();
+              });
+#endif
+            
+            float area = 0.0f, cost = 0.0f;
+            for (size_t i=0; i<children.size(); i++) {
+              area += values[i].area;
+              cost += values[i].cost;
+            }
+
             if (hasTimeSplits || useNodeMB(values,children.size())) 
             {
               auto node = createAlignedNodeMB(alloc, hasTimeSplits);
               LBBox3fa gbounds = empty;
               for (size_t i=0; i<children.size(); i++) {
-                setAlignedNodeMB(node,i,values[i]);
+                setAlignedNodeMB(node,i,values[order[i]]);
                 gbounds.extend(values[i].lbounds);
               }
               
               if (unlikely(hasTimeSplits))
                 gbounds = current.prims.linearBounds(recalculatePrimRef);
 
-              return NodeRecordMB4D(node,gbounds,current.prims.time_range);
+              return NodeRecordMB4D(node,gbounds,current.prims.time_range,area,cost);
             }
             else
             {
               auto node = createAlignedNode(alloc);
               LBBox3fa gbounds = empty;
               for (size_t i=0; i<children.size(); i++) {
-                setAlignedNode(node,i,values[i].ref,values[i].lbounds.bounds());
+                setAlignedNode(node,i,values[order[i]].ref,values[order[i]].lbounds.bounds());
                 gbounds.extend(values[i].lbounds);
               }
-              return NodeRecordMB4D(node,gbounds,current.prims.time_range);   
+              return NodeRecordMB4D(node,gbounds,current.prims.time_range,area,cost);   
             }     
           }
 

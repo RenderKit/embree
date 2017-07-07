@@ -68,6 +68,13 @@ namespace embree
     __forceinline const vint<M> primID() const { return primIDs; }
     __forceinline unsigned primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
+    /* returns area of quads */
+    __forceinline float area() {
+      const float A0 = reduce_add(0.5f*length(cross(v1-v0,v3-v0)));
+      const float A1 = reduce_add(0.5f*length(cross(v1-v2,v3-v2)));
+      return A0+A1;
+    }
+    
     /* Calculate the bounds of the quads */
     __forceinline BBox3fa bounds() const 
     {
@@ -156,12 +163,14 @@ namespace embree
       size_t start = set.object_range.begin();
       QuadMv* accel = (QuadMv*) alloc.malloc1(items*sizeof(QuadMv),BVH::byteAlignment);
       typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+      float A = 0.0f;
       LBBox3fa allBounds = empty;
       for (size_t i=0; i<items; i++) {
         const BBox3fa b = accel[i].fill(set.prims->data(), start, set.object_range.end(), bvh->scene); 
         allBounds.extend(LBBox3fa(b));
+        A += accel[i].area();
       }
-      return typename BVH::NodeRecordMB4D(node,allBounds,set.time_range);
+      return typename BVH::NodeRecordMB4D(node,allBounds,set.time_range,A,1.5f*items);
     }
 
     /* Updates the primitive */

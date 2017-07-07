@@ -70,6 +70,11 @@ namespace embree
     __forceinline const vint<M>& primID() const { return primIDs; }
     __forceinline unsigned primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
+    /* returns area of triangles */
+    __forceinline float area() {
+      return reduce_add(0.5f*length(cross(e2,e1)));
+    }
+
     /* Calculate the bounds of the triangle */
     __forceinline BBox3fa bounds() const 
     {
@@ -156,11 +161,13 @@ namespace embree
       TriangleM* accel = (TriangleM*) alloc.malloc1(items*sizeof(TriangleM),BVH::byteAlignment);
       typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
       LBBox3fa allBounds = empty;
+      float A = 0.0f;
       for (size_t i=0; i<items; i++) {
         const BBox3fa b = accel[i].fill(set.prims->data(),start,set.object_range.end(),bvh->scene);
         allBounds.extend(LBBox3fa(b));
+        A += accel[i].area();
       }
-      return typename BVH::NodeRecordMB4D(node,allBounds,set.time_range);
+      return typename BVH::NodeRecordMB4D(node,allBounds,set.time_range,A,1.0f*items);
     }
       
     /* Updates the primitive */

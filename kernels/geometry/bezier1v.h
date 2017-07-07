@@ -96,7 +96,7 @@ namespace embree
         const BBox3fa b = accel[i].fill(set.prims->data(),start,set.object_range.end(),bvh->scene);
         allBounds.extend(LBBox3fa(b));
       }
-      return typename BVH::NodeRecordMB4D(node,allBounds,set.time_range);
+      return typename BVH::NodeRecordMB4D(node,allBounds,set.time_range,0.0f,items);
     }
 
     friend std::ostream& operator<<(std::ostream& cout, const Bezier1v& b) 
