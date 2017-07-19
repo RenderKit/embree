@@ -83,11 +83,6 @@ make -j 16 package
 
 tar czf embree-${EMBREE_VERSION}.x86_64.rpm.tar.gz embree-*-${EMBREE_VERSION}-*.rpm
 
-# create Appliance RPM files
-cmake -D CPACK_PACKAGING_INSTALL_PREFIX=/work/software/embree-${EMBREE_VERSION} ..
-make -j 16 package
-tar czf embree-${EMBREE_VERSION}.Appliance.rpm.tar.gz embree-*-${EMBREE_VERSION}-*.rpm
-
 # create tar.gz files
 cmake \
 -D EMBREE_ZIP_MODE=ON \
