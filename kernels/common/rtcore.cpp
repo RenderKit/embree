@@ -383,9 +383,6 @@ namespace embree
     STAT3(normal.travs,cnt,cnt,cnt);
     IntersectContext context(scene,nullptr);
     scene->intersect4(valid,ray,&context);
-#if defined(DEBUG)
-    ((Ray4&)ray).verifyHit(*((vint4*)valid) != vint4(0));
-#endif
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect4 not supported");  
 #endif
@@ -409,9 +406,6 @@ namespace embree
     STAT3(normal.travs,cnt,cnt,cnt);
     IntersectContext context(scene,user_context);
     scene->intersect4(valid,ray,&context);
-#if defined(DEBUG)
-    ((Ray4&)ray).verifyHit(*((vint4*)valid) != vint4(0));
-#endif
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect4Ex not supported");  
 #endif
@@ -435,9 +429,6 @@ namespace embree
     STAT3(normal.travs,cnt,cnt,cnt);
     IntersectContext context(scene,nullptr);
     scene->intersect8(valid,ray,&context);
-#if defined(DEBUG)
-    ((Ray8&)ray).verifyHit(*((vint8*)valid) != vint8(0));
-#endif
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect8 not supported");      
 #endif
@@ -462,9 +453,6 @@ namespace embree
 
     IntersectContext context(scene,user_context);
     scene->intersect8(valid,ray,&context);
-#if defined(DEBUG)
-    ((Ray8&)ray).verifyHit(*((vint8*)valid) != vint8(0));
-#endif
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect8Ex not supported");
 #endif
@@ -489,9 +477,6 @@ namespace embree
 
     IntersectContext context(scene,nullptr);
     scene->intersect16(valid,ray,&context);
-#if defined(DEBUG)
-    ((Ray16&)ray).verifyHit(*((vint16*)valid) != vint16(0));
-#endif
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect16 not supported");
 #endif
@@ -516,9 +501,6 @@ namespace embree
 
     IntersectContext context(scene,user_context);
     scene->intersect16(valid,ray,&context);
-#if defined(DEBUG)
-    ((Ray16&)ray).verifyHit(*((vint16*)valid) != vint16(0));
-#endif
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect16Ex not supported");
 #endif
