@@ -1,6 +1,21 @@
 Version History
 ---------------
 
+### New Features in Embree 2.16.5
+-   Bugfix in the robust triangle intersector that rarely caused NaNs to
+    be reported.
+-   Fixed bug in hybrid traversal kernel which entered leaf with no
+    active rays. This rarely caused crashes when used with instancing.
+-   Fixed bug introduced in Embree 2.16.2 which caused instancing not to
+    work properly when a smaller than the native SIMD width was
+    used in ray packet mode.
+-   Fixed bug in the curve geometry intersector that caused rendering
+    artefacts for Bézier curves with p0=p1 and/or p2=p3.
+-   Fixed bug in the curve geometry intersector that caused hit results
+    with NaNs to be reported.
+-   Fixed masking bug that caused rare cracks in curve geometry.
+-   Enabled support for SSE2 in precompiled binaries again.
+
 ### New Features in Embree 2.16.4
 -   Bugfix in the ribbon intersector for hair primitives. Non-normalized
     rays caused wrong intersection distance to be reported.
@@ -188,8 +203,8 @@ Version History
 
 -   Improved performance for streams of coherent (single) rays flagged
     with `RTC_INTERSECT_COHERENT`. For such coherent ray streams, e.g.
-    primary rays, the performance typically improves by 1.3-2x.
--   New spatial split BVH builder for triangles, which is 2-6x faster
+    primary rays, the performance typically improves by 1.3-2×.
+-   New spatial split BVH builder for triangles, which is 2-6× faster
     than the previous version and more memory conservative.
 -   Improved performance and scalability of all standard BVH builders on
     systems with large core counts.
