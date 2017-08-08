@@ -94,44 +94,46 @@ namespace embree
     template<> __forceinline void occludedObject <16>(vint16* valid, Scene* object, IntersectContext* context, Ray16& ray) { object->occluded16 (valid,(RTCRay16&)ray,context); }
 #endif
 
-    __noinline void FastInstanceIntersectorN::intersectN(vintx* validi, const Instance* instance, const RTCIntersectContext* user_context, RayK<VSIZEX>& ray, size_t item)
+    template<int N>
+    __noinline void FastInstanceIntersectorN::intersectN(vint<N>* validi, const Instance* instance, const RTCIntersectContext* user_context, RayK<N>& ray, size_t item)
     {
-      AffineSpace3vf<VSIZEX> world2local;
-      const vbool<VSIZEX> valid = *validi == vint<VSIZEX>(-1);
+      AffineSpace3vf<N> world2local;
+      const vbool<N> valid = *validi == vint<N>(-1);
       if (likely(instance->numTimeSteps == 1)) world2local = instance->getWorld2Local();
-      else                                     world2local = instance->getWorld2Local<VSIZEX>(valid,ray.time);
+      else                                     world2local = instance->getWorld2Local<N>(valid,ray.time);
 
-      const Vec3vf<VSIZEX> ray_org = ray.org;
-      const Vec3vf<VSIZEX> ray_dir = ray.dir;
-      const vint<VSIZEX> ray_geomID = ray.geomID;
-      const vint<VSIZEX> ray_instID = ray.instID;
+      const Vec3vf<N> ray_org = ray.org;
+      const Vec3vf<N> ray_dir = ray.dir;
+      const vint<N> ray_geomID = ray.geomID;
+      const vint<N> ray_instID = ray.instID;
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
       ray.geomID = RTC_INVALID_GEOMETRY_ID;
       ray.instID = instance->geomID;
       IntersectContext context(instance->object,user_context); 
-      intersectObject((vint<VSIZEX>*)validi,instance->object,&context,ray);
+      intersectObject((vint<N>*)validi,instance->object,&context,ray);
       ray.org = ray_org;
       ray.dir = ray_dir;
-      vbool<VSIZEX> nohit = ray.geomID == vint<VSIZEX>(RTC_INVALID_GEOMETRY_ID);
+      vbool<N> nohit = ray.geomID == vint<N>(RTC_INVALID_GEOMETRY_ID);
       ray.geomID = select(nohit,ray_geomID,ray.geomID);
       ray.instID = select(nohit,ray_instID,ray.instID);
     }
-   
-    __noinline void FastInstanceIntersectorN::occludedN(vintx* validi, const Instance* instance, const RTCIntersectContext* user_context, RayK<VSIZEX>& ray, size_t item)
-    {
-      AffineSpace3vf<VSIZEX> world2local;
-      const vbool<VSIZEX> valid = *validi == vint<VSIZEX>(-1);
-      if (likely(instance->numTimeSteps == 1)) world2local = instance->getWorld2Local();
-      else                                     world2local = instance->getWorld2Local<VSIZEX>(valid,ray.time);
 
-      const Vec3vf<VSIZEX> ray_org = ray.org;
-      const Vec3vf<VSIZEX> ray_dir = ray.dir;
+    template<int N>
+    __noinline void FastInstanceIntersectorN::occludedN(vint<N>* validi, const Instance* instance, const RTCIntersectContext* user_context, RayK<N>& ray, size_t item)
+    {
+      AffineSpace3vf<N> world2local;
+      const vbool<N> valid = *validi == vint<N>(-1);
+      if (likely(instance->numTimeSteps == 1)) world2local = instance->getWorld2Local();
+      else                                     world2local = instance->getWorld2Local<N>(valid,ray.time);
+
+      const Vec3vf<N> ray_org = ray.org;
+      const Vec3vf<N> ray_dir = ray.dir;
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
       ray.instID = instance->geomID;
       IntersectContext context(instance->object,user_context);
-      occludedObject((vint<VSIZEX>*)validi,instance->object,&context,ray);
+      occludedObject((vint<N>*)validi,instance->object,&context,ray);
       ray.org = ray_org;
       ray.dir = ray_dir;
     }
@@ -142,10 +144,20 @@ namespace embree
         assert(*validi == -1);
         return intersect1((const Instance*)ptr,user_context,*(Ray*)rays,item);
       }
-      else {
-        assert(N == VSIZEX);
-        intersectN((vintx*)validi,(const Instance*)ptr,user_context,*(RayK<VSIZEX>*)rays,item);
+      else if (likely(N == 4)) {
+        return intersectN((vint4*)validi,(const Instance*)ptr,user_context,*(Ray4*)rays,item);
       }
+#if defined(__AVX__)
+      else if (likely(N == 8)) {
+        return intersectN((vint8*)validi,(const Instance*)ptr,user_context,*(Ray8*)rays,item);
+      }
+#endif
+#if defined(__AVX512F__)
+      else if (likely(N == 16)) {
+        return intersectN((vint16*)validi,(const Instance*)ptr,user_context,*(Ray16*)rays,item);
+      }
+#endif
+      assert(false);
     }
     
     void FastInstanceIntersectorN::occluded(int* validi, void* ptr, const RTCIntersectContext* user_context, RTCRayN* rays, size_t N, size_t item)
@@ -153,11 +165,21 @@ namespace embree
       if (likely(N == 1)) {
         assert(*validi == -1);
         return occluded1((const Instance*)ptr,user_context,*(Ray*)rays,item);
-      } 
-      else {
-        assert(N == VSIZEX);
-        occludedN((vintx*)validi,(const Instance*)ptr,user_context,*(RayK<VSIZEX>*)rays,item);
       }
+      else if (likely(N == 4)) {
+        return occludedN((vint4*)validi,(const Instance*)ptr,user_context,*(Ray4*)rays,item);
+      }
+#if defined(__AVX__)
+      else if (likely(N == 8)) {
+        return occludedN((vint8*)validi,(const Instance*)ptr,user_context,*(Ray8*)rays,item);
+      }
+#endif
+#if defined(__AVX512F__)
+      else if (likely(N == 16)) {
+        return occludedN((vint16*)validi,(const Instance*)ptr,user_context,*(Ray16*)rays,item);
+      }
+#endif
+      assert(false);
     }
     
     DEFINE_SET_INTERSECTORN(InstanceIntersectorN,FastInstanceIntersectorN);
