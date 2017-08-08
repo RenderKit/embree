@@ -58,7 +58,7 @@ cmake \
 # set release settings
 cmake \
 -D EMBREE_MAX_ISA=NONE \
--D EMBREE_ISA_SSE2=OFF \
+-D EMBREE_ISA_SSE2=ON \
 -D EMBREE_ISA_SSE42=ON \
 -D EMBREE_ISA_AVX=ON \
 -D EMBREE_ISA_AVX2=ON \
