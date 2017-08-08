@@ -42,7 +42,9 @@ namespace embree
       {
         const vfloat<M> rcpDen = rcp(den);
         vt = T * rcpDen;
-        const vfloat<M> rcpUVW = rcp(U+V+W);
+        const vfloat<M> UVW = U+V+W;
+        const vbool<M> invalid = abs(UVW) < min_rcp_input;
+        const vfloat<M> rcpUVW = select(invalid,vfloat<M>(0.0f),rcp(UVW));
         vu = U * rcpUVW;
         vv = V * rcpUVW;
         mapUV(vu,vv);
@@ -140,7 +142,9 @@ namespace embree
       {
         const vfloat<K> rcpDen = rcp(den);
         const vfloat<K> t = T * rcpDen;
-        const vfloat<K> rcpUVW = rcp(U+V+W);
+        const vfloat<K> UVW = U+V+W;
+        const vbool<K> invalid = abs(UVW) < min_rcp_input;
+        const vfloat<K> rcpUVW = select(invalid,vfloat<K>(0.0f),rcp(UVW));
         vfloat<K> u = U * rcpUVW;
         vfloat<K> v = V * rcpUVW;
         mapUV(u,v);
