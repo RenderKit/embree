@@ -347,6 +347,9 @@ namespace embree
     STAT3(normal.travs,1,1,1);
     IntersectContext context(scene,nullptr);
     scene->intersect(ray,&context);
+#if defined(DEBUG)
+    ((Ray&)ray).verifyHit();
+#endif
     RTCORE_CATCH_END2(scene);
   }
 
@@ -363,6 +366,9 @@ namespace embree
     STAT3(normal.travs,1,1,1);
     IntersectContext context(scene,user_context);
     scene->intersect(ray,&context);
+#if defined(DEBUG)
+    ((Ray&)ray).verifyHit();
+#endif
     RTCORE_CATCH_END2(scene);
   }
 
