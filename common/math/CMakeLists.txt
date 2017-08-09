@@ -14,5 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-ADD_LIBRARY(math STATIC constants.cpp)
+ADD_LIBRARY(math_obj OBJECT constants.cpp)
+ADD_LIBRARY(math STATIC $<TARGET_OBJECTS:math_obj>)
 SET_PROPERTY(TARGET math PROPERTY FOLDER common)

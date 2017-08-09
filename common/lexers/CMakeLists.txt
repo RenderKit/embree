@@ -14,10 +14,11 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-ADD_LIBRARY(lexers STATIC
+ADD_LIBRARY(lexers_obj OBJECT
  stringstream.cpp
  tokenstream.cpp
 )
 
+ADD_LIBRARY(lexers STATIC $<TARGET_OBJECTS:lexers_obj>)
 TARGET_LINK_LIBRARIES(lexers sys math)
 SET_PROPERTY(TARGET lexers PROPERTY FOLDER common)
