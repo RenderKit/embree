@@ -237,7 +237,7 @@ namespace embree
     RTCORE_TRACE(rtcSetProgressMonitorFunction);
     RTCORE_VERIFY_HANDLE(hscene);
     scene->setProgressMonitorFunction(func,ptr);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
   
   RTCORE_API void rtcCommit (RTCScene hscene) 
@@ -247,7 +247,7 @@ namespace embree
     RTCORE_TRACE(rtcCommit);
     RTCORE_VERIFY_HANDLE(hscene);
     scene->commit(0,0,true);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcCommitJoin (RTCScene hscene) 
@@ -257,7 +257,7 @@ namespace embree
     RTCORE_TRACE(rtcCommitJoin);
     RTCORE_VERIFY_HANDLE(hscene);
     scene->commit(0,0,false);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcCommitThread(RTCScene hscene, unsigned int threadID, unsigned int numThreads) 
@@ -282,7 +282,7 @@ namespace embree
     /* reset MXCSR register again */
     _mm_setcsr(mxcsr);
     
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcGetBounds(RTCScene hscene, RTCBounds& bounds_o)
@@ -301,7 +301,7 @@ namespace embree
     bounds_o.upper_y = bounds.upper.y;
     bounds_o.upper_z = bounds.upper.z;
     bounds_o.align1  = 0;
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcGetLinearBounds(RTCScene hscene, RTCBounds* bounds_o)
@@ -331,7 +331,7 @@ namespace embree
     bounds_o[1].upper_y = scene->bounds.bounds1.upper.y;
     bounds_o[1].upper_z = scene->bounds.bounds1.upper.z;
     bounds_o[1].align1  = 0;
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
   
   RTCORE_API void rtcIntersect (RTCScene hscene, RTCRay& ray) 
@@ -347,7 +347,10 @@ namespace embree
     STAT3(normal.travs,1,1,1);
     IntersectContext context(scene,nullptr);
     scene->intersect(ray,&context);
-    RTCORE_CATCH_END(scene->device);
+#if defined(DEBUG)
+    ((Ray&)ray).verifyHit();
+#endif
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcIntersect1Ex (RTCScene hscene, const RTCIntersectContext* user_context, RTCRay& ray) 
@@ -363,7 +366,10 @@ namespace embree
     STAT3(normal.travs,1,1,1);
     IntersectContext context(scene,user_context);
     scene->intersect(ray,&context);
-    RTCORE_CATCH_END(scene->device);
+#if defined(DEBUG)
+    ((Ray&)ray).verifyHit();
+#endif
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcIntersect4 (const void* valid, RTCScene hscene, RTCRay4& ray) 
@@ -386,7 +392,7 @@ namespace embree
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect4 not supported");  
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcIntersect4Ex (const void* valid, RTCScene hscene, const RTCIntersectContext* user_context, RTCRay4& ray) 
@@ -409,7 +415,7 @@ namespace embree
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect4Ex not supported");  
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
   
   RTCORE_API void rtcIntersect8 (const void* valid, RTCScene hscene, RTCRay8& ray) 
@@ -432,7 +438,7 @@ namespace embree
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect8 not supported");      
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcIntersect8Ex (const void* valid, RTCScene hscene, const RTCIntersectContext* user_context, RTCRay8& ray) 
@@ -456,7 +462,7 @@ namespace embree
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect8Ex not supported");
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
   
   RTCORE_API void rtcIntersect16 (const void* valid, RTCScene hscene, RTCRay16& ray) 
@@ -480,7 +486,7 @@ namespace embree
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect16 not supported");
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcIntersect16Ex (const void* valid, RTCScene hscene, const RTCIntersectContext* user_context, RTCRay16& ray) 
@@ -504,7 +510,7 @@ namespace embree
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect16Ex not supported");
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcIntersect1M (RTCScene hscene, const RTCIntersectContext* user_context, RTCRay* rays, const size_t M, const size_t stride) 
@@ -535,7 +541,7 @@ namespace embree
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect1M not supported");
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcIntersect1Mp (RTCScene hscene, const RTCIntersectContext* user_context, RTCRay** rays, const size_t M) 
@@ -566,7 +572,7 @@ namespace embree
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect1Mp not supported");
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcIntersectNM (RTCScene hscene, const RTCIntersectContext* user_context, struct RTCRayN* rays, const size_t N, const size_t M, const size_t stride) 
@@ -604,7 +610,7 @@ namespace embree
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersectNM not supported");
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcIntersectNp (RTCScene hscene, const RTCIntersectContext* user_context, const RTCRayNp& rays, const size_t N) 
@@ -642,7 +648,7 @@ namespace embree
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersectNp not supported");
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
   
   RTCORE_API void rtcOccluded (RTCScene hscene, RTCRay& ray) 
@@ -658,7 +664,7 @@ namespace embree
 #endif
     IntersectContext context(scene,nullptr);
     scene->occluded(ray,&context);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcOccluded1Ex (RTCScene hscene, const RTCIntersectContext* user_context, RTCRay& ray) 
@@ -674,7 +680,7 @@ namespace embree
 #endif
     IntersectContext context(scene,user_context);
     scene->occluded(ray,&context);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
   
   RTCORE_API void rtcOccluded4 (const void* valid, RTCScene hscene, RTCRay4& ray) 
@@ -697,7 +703,7 @@ namespace embree
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded4 not supported");
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcOccluded4Ex (const void* valid, RTCScene hscene, const RTCIntersectContext* user_context, RTCRay4& ray) 
@@ -720,7 +726,7 @@ namespace embree
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded4Ex not supported");
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
  
   RTCORE_API void rtcOccluded8 (const void* valid, RTCScene hscene, RTCRay8& ray) 
@@ -743,7 +749,7 @@ namespace embree
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded8 not supported");
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcOccluded8Ex (const void* valid, RTCScene hscene, const RTCIntersectContext* user_context, RTCRay8& ray) 
@@ -767,7 +773,7 @@ namespace embree
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded8Ex not supported");
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
   
   RTCORE_API void rtcOccluded16 (const void* valid, RTCScene hscene, RTCRay16& ray) 
@@ -791,7 +797,7 @@ namespace embree
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded16 not supported");
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcOccluded16Ex (const void* valid, RTCScene hscene, const RTCIntersectContext* user_context, RTCRay16& ray) 
@@ -815,7 +821,7 @@ namespace embree
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded16Ex not supported");
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
   
   RTCORE_API void rtcOccluded1M(RTCScene hscene, const RTCIntersectContext* user_context, RTCRay* rays, const size_t M, const size_t stride) 
@@ -845,7 +851,7 @@ namespace embree
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded1M not supported");
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcOccluded1Mp(RTCScene hscene, const RTCIntersectContext* user_context, RTCRay** rays, const size_t M) 
@@ -875,7 +881,7 @@ namespace embree
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded1Mp not supported");
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcOccludedNM(RTCScene hscene, const RTCIntersectContext* user_context, RTCRayN* rays, const size_t N, const size_t M, const size_t stride) 
@@ -914,7 +920,7 @@ namespace embree
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcOccludedNM not supported");
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcOccludedNp(RTCScene hscene, const RTCIntersectContext* user_context, const RTCRayNp& rays, const size_t N) 
@@ -952,18 +958,17 @@ namespace embree
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcOccludedNp not supported");
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
   
   RTCORE_API void rtcDeleteScene (RTCScene hscene) 
   {
     Scene* scene = (Scene*) hscene;
-    Device* device = scene ? scene->device : nullptr;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcDeleteScene);
     RTCORE_VERIFY_HANDLE(hscene);
     delete scene;
-    RTCORE_CATCH_END(device);
+    RTCORE_CATCH_END2(scene);
   }
 
   unsigned rtcNewInstanceImpl (RTCScene htarget, RTCScene hsource, size_t numTimeSteps, unsigned int geomID) 
@@ -980,7 +985,7 @@ namespace embree
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewInstance is not supported");
 #endif
-    RTCORE_CATCH_END(target->device);
+    RTCORE_CATCH_END2(target);
     return -1;
   }
   
@@ -1004,7 +1009,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     return scene->newGeometryInstance(RTC_INVALID_GEOMETRY_ID,scene->get_locked(geomID));
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
     return -1;
   }
 
@@ -1027,7 +1032,7 @@ namespace embree
         throw_RTCError(RTC_INVALID_ARGUMENT,"geometries inside group have to be of same type");
     }
     return scene->newGeometryGroup(RTC_INVALID_GEOMETRY_ID,gflags,geometries);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
     return -1;
   }
 
@@ -1074,7 +1079,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(xfm);
     const AffineSpace3fa transform = convertTransform(layout,xfm);
     ((Scene*) scene)->get_locked(geomID)->setTransform(transform,0);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetTransform2 (RTCScene hscene, unsigned geomID, RTCMatrixType layout, const float* xfm, size_t timeStep) 
@@ -1087,7 +1092,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(xfm);
     const AffineSpace3fa transform = convertTransform(layout,xfm);
     ((Scene*) scene)->get_locked(geomID)->setTransform(transform,timeStep);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   unsigned rtcNewUserGeometryImpl (RTCScene hscene, RTCGeometryFlags gflags, size_t numItems, size_t numTimeSteps, unsigned int geomID) 
@@ -1103,7 +1108,7 @@ namespace embree
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewUserGeometry is not supported");
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
     return -1;
   }
   
@@ -1137,7 +1142,7 @@ namespace embree
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewTriangleMesh is not supported");
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
     return -1;
   }
   
@@ -1163,7 +1168,7 @@ namespace embree
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewQuadMesh is not supported");
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
     return -1;
   }
   
@@ -1189,7 +1194,7 @@ namespace embree
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewBezierHairGeometry is not supported");
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
     return -1;
   }
   
@@ -1219,7 +1224,7 @@ namespace embree
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewBSplineHairGeometry is not supported");
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
     return -1;
   }
 
@@ -1245,7 +1250,7 @@ namespace embree
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewBezierCurveGeometry is not supported");
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
     return -1;
   }
   
@@ -1275,7 +1280,7 @@ namespace embree
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewBSplineCurveGeometry is not supported");
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
     return -1;
   }
   
@@ -1301,7 +1306,7 @@ namespace embree
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewLineSegments is not supported");
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
     return -1;
   }
 
@@ -1328,7 +1333,7 @@ namespace embree
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewSubdivisionMesh is not supported");
 #endif
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
     return -1;
   }
   
@@ -1352,7 +1357,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setMask(mask);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetBoundaryMode (RTCScene hscene, unsigned geomID, RTCBoundaryMode mode) 
@@ -1363,7 +1368,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setSubdivisionMode(0,(RTCSubdivisionMode)mode);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetSubdivisionMode (RTCScene hscene, unsigned geomID, unsigned topologyID, RTCSubdivisionMode mode) 
@@ -1374,7 +1379,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setSubdivisionMode(topologyID,mode);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetIndexBuffer (RTCScene hscene, unsigned geomID, RTCBufferType vertexBuffer, RTCBufferType indexBuffer) 
@@ -1385,7 +1390,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setIndexBuffer(vertexBuffer,indexBuffer);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void* rtcMapBuffer(RTCScene hscene, unsigned geomID, RTCBufferType type) 
@@ -1396,7 +1401,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     return scene->get_locked(geomID)->map(type);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
     return nullptr;
   }
 
@@ -1408,7 +1413,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->unmap(type);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetBuffer(RTCScene hscene, unsigned geomID, RTCBufferType type, const void* ptr, size_t offset, size_t stride)
@@ -1420,7 +1425,7 @@ namespace embree
     RTCORE_VERIFY_GEOMID(geomID);
     RTCORE_VERIFY_UPPER(stride,unsigned(inf));
     scene->get_locked(geomID)->setBuffer(type,(void*)ptr,offset,stride,-1);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetBuffer2(RTCScene hscene, unsigned geomID, RTCBufferType type, const void* ptr, size_t offset, size_t stride, size_t size)
@@ -1432,7 +1437,7 @@ namespace embree
     RTCORE_VERIFY_GEOMID(geomID);
     RTCORE_VERIFY_UPPER(stride,unsigned(inf));
     scene->get_locked(geomID)->setBuffer(type,(void*)ptr,offset,stride,size);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcEnable (RTCScene hscene, unsigned geomID) 
@@ -1443,7 +1448,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->enable();
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcUpdate (RTCScene hscene, unsigned geomID) 
@@ -1454,7 +1459,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->update();
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcUpdateBuffer (RTCScene hscene, unsigned geomID, RTCBufferType type) 
@@ -1465,7 +1470,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->updateBuffer(type);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcDisable (RTCScene hscene, unsigned geomID) 
@@ -1476,7 +1481,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->disable();
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcDeleteGeometry (RTCScene hscene, unsigned geomID) 
@@ -1487,7 +1492,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->deleteGeometry(geomID);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetTessellationRate (RTCScene hscene, unsigned geomID, float tessellationRate)
@@ -1498,7 +1503,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setTessellationRate(tessellationRate);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetUserData (RTCScene hscene, unsigned geomID, void* ptr) 
@@ -1509,7 +1514,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setUserData(ptr);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void* rtcGetUserData (RTCScene hscene, unsigned geomID)
@@ -1520,7 +1525,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     return scene->get(geomID)->getUserData(); // this call is on purpose not thread safe
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
     return nullptr;
   }
 
@@ -1532,7 +1537,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setBoundsFunction(bounds);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetBoundsFunction2 (RTCScene hscene, unsigned geomID, RTCBoundsFunc2 bounds, void* userPtr)
@@ -1543,7 +1548,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setBoundsFunction2(bounds,userPtr);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetBoundsFunction3 (RTCScene hscene, unsigned geomID, RTCBoundsFunc3 bounds, void* userPtr)
@@ -1554,7 +1559,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setBoundsFunction3(bounds,userPtr);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetDisplacementFunction (RTCScene hscene, unsigned geomID, RTCDisplacementFunc func, RTCBounds* bounds)
@@ -1565,7 +1570,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setDisplacementFunction(func,bounds);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetDisplacementFunction2 (RTCScene hscene, unsigned geomID, RTCDisplacementFunc2 func, RTCBounds* bounds)
@@ -1576,7 +1581,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setDisplacementFunction2(func,bounds);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetIntersectFunction (RTCScene hscene, unsigned geomID, RTCIntersectFunc intersect) 
@@ -1587,7 +1592,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setIntersectFunction(intersect);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetIntersectFunction4 (RTCScene hscene, unsigned geomID, RTCIntersectFunc4 intersect4) 
@@ -1598,7 +1603,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setIntersectFunction4(intersect4);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetIntersectFunction8 (RTCScene hscene, unsigned geomID, RTCIntersectFunc8 intersect8) 
@@ -1609,7 +1614,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setIntersectFunction8(intersect8);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
   
   RTCORE_API void rtcSetIntersectFunction16 (RTCScene hscene, unsigned geomID, RTCIntersectFunc16 intersect16) 
@@ -1620,7 +1625,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setIntersectFunction16(intersect16);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetIntersectFunction1Mp (RTCScene hscene, unsigned geomID, RTCIntersectFunc1Mp intersect) 
@@ -1631,7 +1636,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setIntersectFunction1Mp(intersect);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetIntersectFunctionN (RTCScene hscene, unsigned geomID, RTCIntersectFuncN intersect) 
@@ -1642,7 +1647,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setIntersectFunctionN(intersect);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetOccludedFunction (RTCScene hscene, unsigned geomID, RTCOccludedFunc occluded) 
@@ -1653,7 +1658,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setOccludedFunction(occluded);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetOccludedFunction4 (RTCScene hscene, unsigned geomID, RTCOccludedFunc4 occluded4) 
@@ -1664,7 +1669,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setOccludedFunction4(occluded4);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetOccludedFunction8 (RTCScene hscene, unsigned geomID, RTCOccludedFunc8 occluded8) 
@@ -1675,7 +1680,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setOccludedFunction8(occluded8);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetOccludedFunction16 (RTCScene hscene, unsigned geomID, RTCOccludedFunc16 occluded16) 
@@ -1686,7 +1691,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setOccludedFunction16(occluded16);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetOccludedFunction1Mp (RTCScene hscene, unsigned geomID, RTCOccludedFunc1Mp occluded) 
@@ -1697,7 +1702,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setOccludedFunction1Mp(occluded);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetOccludedFunctionN (RTCScene hscene, unsigned geomID, RTCOccludedFuncN occluded) 
@@ -1708,7 +1713,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setOccludedFunctionN(occluded);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetIntersectionFilterFunction (RTCScene hscene, unsigned geomID, RTCFilterFunc intersect) 
@@ -1719,7 +1724,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setIntersectionFilterFunction(intersect);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetIntersectionFilterFunction4 (RTCScene hscene, unsigned geomID, RTCFilterFunc4 filter4) 
@@ -1730,7 +1735,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setIntersectionFilterFunction4(filter4);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetIntersectionFilterFunction8 (RTCScene hscene, unsigned geomID, RTCFilterFunc8 filter8) 
@@ -1741,7 +1746,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setIntersectionFilterFunction8(filter8);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
   
   RTCORE_API void rtcSetIntersectionFilterFunction16 (RTCScene hscene, unsigned geomID, RTCFilterFunc16 filter16) 
@@ -1752,7 +1757,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setIntersectionFilterFunction16(filter16);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetIntersectionFilterFunctionN (RTCScene hscene, unsigned geomID, RTCFilterFuncN filterN) 
@@ -1763,7 +1768,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setIntersectionFilterFunctionN(filterN);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetOcclusionFilterFunction (RTCScene hscene, unsigned geomID, RTCFilterFunc intersect) 
@@ -1774,7 +1779,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setOcclusionFilterFunction(intersect);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetOcclusionFilterFunction4 (RTCScene hscene, unsigned geomID, RTCFilterFunc4 filter4) 
@@ -1785,7 +1790,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setOcclusionFilterFunction4(filter4);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetOcclusionFilterFunction8 (RTCScene hscene, unsigned geomID, RTCFilterFunc8 filter8) 
@@ -1796,7 +1801,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setOcclusionFilterFunction8(filter8);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
   
   RTCORE_API void rtcSetOcclusionFilterFunction16 (RTCScene hscene, unsigned geomID, RTCFilterFunc16 filter16) 
@@ -1807,7 +1812,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setOcclusionFilterFunction16(filter16);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcSetOcclusionFilterFunctionN (RTCScene hscene, unsigned geomID, RTCFilterFuncN filterN) 
@@ -1818,7 +1823,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setOcclusionFilterFunctionN(filterN);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcInterpolate(RTCScene hscene, unsigned geomID, unsigned primID, float u, float v, 
@@ -1831,7 +1836,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get(geomID)->interpolate(primID,u,v,buffer,P,dPdu,dPdv,nullptr,nullptr,nullptr,numFloats); // this call is on purpose not thread safe
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
   RTCORE_API void rtcInterpolate2(RTCScene hscene, unsigned geomID, unsigned primID, float u, float v, 
@@ -1846,7 +1851,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get(geomID)->interpolate(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats); // this call is on purpose not thread safe
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 
 
@@ -1862,7 +1867,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get(geomID)->interpolateN(valid_i,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,nullptr,nullptr,nullptr,numFloats); // this call is on purpose not thread safe
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 #endif
 
@@ -1880,7 +1885,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get(geomID)->interpolateN(valid_i,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats); // this call is on purpose not thread safe
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_CATCH_END2(scene);
   }
 #endif
 }

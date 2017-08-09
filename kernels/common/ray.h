@@ -53,6 +53,24 @@ namespace embree
       return vx & vy & vz & vn & vf;
     }
 
+    /* Calculates if the hit is valid */
+    __forceinline void verifyHit(const vbool<K>& valid0) const
+    {
+      vbool<K> valid = valid0 & geomID != vint<K>(RTC_INVALID_GEOMETRY_ID);
+      const vbool<K> vt = (abs(tfar) <= vfloat<K>(FLT_LARGE));
+      const vbool<K> vu = (abs(u) <= vfloat<K>(FLT_LARGE));
+      const vbool<K> vv = (abs(u) <= vfloat<K>(FLT_LARGE));
+      const vbool<K> vnx = abs(Ng.x) <= vfloat<K>(FLT_LARGE);
+      const vbool<K> vny = abs(Ng.y) <= vfloat<K>(FLT_LARGE);
+      const vbool<K> vnz = abs(Ng.z) <= vfloat<K>(FLT_LARGE);
+      if (any(valid & !vt)) throw_RTCError(RTC_UNKNOWN_ERROR,"invalid t");
+      if (any(valid & !vu)) throw_RTCError(RTC_UNKNOWN_ERROR,"invalid u");
+      if (any(valid & !vv)) throw_RTCError(RTC_UNKNOWN_ERROR,"invalid v");
+      if (any(valid & !vnx)) throw_RTCError(RTC_UNKNOWN_ERROR,"invalid Ng.x");
+      if (any(valid & !vny)) throw_RTCError(RTC_UNKNOWN_ERROR,"invalid Ng.y");
+      if (any(valid & !vnz)) throw_RTCError(RTC_UNKNOWN_ERROR,"invalid Ng.z");
+    }
+
     __forceinline void get(RayK<1>* ray) const;
     __forceinline void get(const size_t i, RayK<1>& ray) const;
     __forceinline void set(const RayK<1>* ray);
@@ -164,6 +182,24 @@ namespace embree
     /* Calculates if this is a valid ray that does not cause issues during traversal */
     __forceinline bool valid() const {
       return all(le_mask(abs(org),Vec3fa(FLT_LARGE)) & le_mask(abs(dir),Vec3fa(FLT_LARGE))) && fabs(tnear) <= float(inf) && fabs(tfar) <= float(inf);
+    }
+
+    /* Calculates if the hit is valid */
+    __forceinline void verifyHit() const
+    {
+      if (geomID == RTC_INVALID_GEOMETRY_ID) return;
+      const bool vt = (abs(tfar) <= FLT_LARGE);
+      const bool vu = (abs(u) <= FLT_LARGE);
+      const bool vv = (abs(u) <= FLT_LARGE);
+      const bool vnx = abs(Ng.x) <= FLT_LARGE;
+      const bool vny = abs(Ng.y) <= FLT_LARGE;
+      const bool vnz = abs(Ng.z) <= FLT_LARGE;
+      if (!vt) throw_RTCError(RTC_UNKNOWN_ERROR,"invalid t");
+      if (!vu) throw_RTCError(RTC_UNKNOWN_ERROR,"invalid u");
+      if (!vv) throw_RTCError(RTC_UNKNOWN_ERROR,"invalid v");
+      if (!vnx) throw_RTCError(RTC_UNKNOWN_ERROR,"invalid Ng.x");
+      if (!vny) throw_RTCError(RTC_UNKNOWN_ERROR,"invalid Ng.y");
+      if (!vnz) throw_RTCError(RTC_UNKNOWN_ERROR,"invalid Ng.z");
     }
 
     /* filter out all occluded rays from a stream of rays */

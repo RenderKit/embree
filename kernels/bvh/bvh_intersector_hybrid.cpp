@@ -330,6 +330,7 @@ namespace embree
           assert(cur != BVH::emptyNode);
           const vbool<K> valid_leaf = ray_tfar > curDist;
           STAT3(normal.trav_leaves,1,popcnt(valid_leaf),K);
+          if (unlikely(none(valid_leaf))) continue;
           size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
 
           size_t lazy_node = 0;
@@ -573,8 +574,9 @@ namespace embree
 
         /* intersect leaf */
         assert(cur != BVH::emptyNode);
-        STAT(const vbool<K> valid_leaf = ray_tfar > curDist);
+        const vbool<K> valid_leaf = ray_tfar > curDist;
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),K);
+        if (unlikely(none(valid_leaf))) continue;
         size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
 
         size_t lazy_node = 0;

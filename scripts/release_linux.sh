@@ -58,7 +58,7 @@ cmake \
 # set release settings
 cmake \
 -D EMBREE_MAX_ISA=NONE \
--D EMBREE_ISA_SSE2=OFF \
+-D EMBREE_ISA_SSE2=ON \
 -D EMBREE_ISA_SSE42=ON \
 -D EMBREE_ISA_AVX=ON \
 -D EMBREE_ISA_AVX2=ON \
@@ -72,7 +72,7 @@ cmake \
 # create RPM files
 cmake \
 -D EMBREE_ZIP_MODE=OFF \
--D CMAKE_INSTALL_PREFIX=/usr \
+-D CPACK_PACKAGING_INSTALL_PREFIX=/usr \
 -D EMBREE_TBB_ROOT=/usr ..
 make -j 16 preinstall
 
@@ -81,17 +81,12 @@ check_symbols libembree.so GLIBCXX 3 4 11
 check_symbols libembree.so CXXABI 1 3 0
 make -j 16 package
 
-# rename RPMs to have component name before version
-for i in embree-${EMBREE_VERSION}-1.*.rpm ; do
-  newname=`echo $i | sed -e "s/embree-\(.\+\)-\([a-z_]\+\)\.rpm/embree-\2-\1.rpm/"`
-  mv $i $newname
-done
-
-tar czf embree-${EMBREE_VERSION}.x86_64.rpm.tar.gz embree-*-${EMBREE_VERSION}-1.x86_64.rpm
+tar czf embree-${EMBREE_VERSION}.x86_64.rpm.tar.gz embree-*-${EMBREE_VERSION}-*.rpm
 
 # create tar.gz files
 cmake \
 -D EMBREE_ZIP_MODE=ON \
+-D CPACK_PACKAGING_INSTALL_PREFIX=/ \
 -D CMAKE_INSTALL_INCLUDEDIR=include \
 -D CMAKE_INSTALL_LIBDIR=lib \
 -D CMAKE_INSTALL_DOCDIR=doc \
