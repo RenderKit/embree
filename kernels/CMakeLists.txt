@@ -259,11 +259,10 @@ CreateISADummyFiles(EMBREE_LIBRARY_FILES_AVX512KNL avx512knl ${EMBREE_LIBRARY_FI
 CreateISADummyFiles(EMBREE_LIBRARY_FILES_AVX512SKX avx512skx ${EMBREE_LIBRARY_FILES_AVX512SKX})
 
 MACRO (CheckGlobals library)
-  IF (WIN32 OR APPLE)
-   return()
+  IF (NOT WIN32 AND NOT APPLE)
+    ADD_LIBRARY(${library}_helper $<TARGET_OBJECTS:${library}>)
+    ADD_CUSTOM_TARGET(${library}_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:${library}_helper> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS ${library})
   ENDIF()
-  ADD_LIBRARY(${library}_helper $<TARGET_OBJECTS:${library}>)
-  ADD_CUSTOM_TARGET(${library}_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:${library}_helper> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS ${library})
 ENDMACRO()
 
 IF (EMBREE_ISA_SSE42 AND EMBREE_LIBRARY_FILES_SSE42)
