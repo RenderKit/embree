@@ -227,7 +227,7 @@ namespace embree
     }
   }
   
-#endif
+#else
   
   namespace isa
   {
@@ -235,4 +235,6 @@ namespace embree
       return new TriangleMeshISA(scene,flags,numTriangles,numVertices,numTimeSteps);
     }
   }
+
+#endif
 }

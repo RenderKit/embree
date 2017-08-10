@@ -50,14 +50,38 @@ SET(EMBREE_LIBRARY_FILES
   subdiv/bspline_curve.cpp
 
   geometry/primitive.cpp
-  geometry/instance_intersector1.cpp
   builders/primrefgen.cpp
 
   bvh/bvh.cpp
   bvh/bvh_statistics.cpp
   bvh/bvh4_factory.cpp
   bvh/bvh8_factory.cpp
+  )
 
+IF (EMBREE_GEOMETRY_SUBDIV)
+  SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
+  common/scene_subdiv_mesh.cpp
+  subdiv/tessellation_cache.cpp
+  subdiv/subdivpatch1base.cpp
+  subdiv/catmullclark_coefficients.cpp
+)
+ENDIF()
+
+IF (EMBREE_RAY_PACKETS)
+  SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
+
+  common/rtcore_ispc.cpp
+  common/rtcore_ispc.ispc
+)
+ENDIF()
+
+SET(EMBREE_LIBRARY_FILES_SSE2
+
+  common/scene_triangle_mesh.cpp
+  common/scene_quad_mesh.cpp 
+  common/scene_bezier_curves.cpp
+  common/scene_line_segments.cpp
+ 
   bvh/bvh_rotate.cpp
   bvh/bvh_refit.cpp
   bvh/bvh_builder.cpp
@@ -68,28 +92,25 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh_builder_instancing.cpp
 
   bvh/bvh_intersector1_bvh4.cpp
-  )
+  geometry/instance_intersector1.cpp
+)
 
 IF (EMBREE_GEOMETRY_SUBDIV)
-  SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
+  SET(EMBREE_LIBRARY_FILES_SSE2 ${EMBREE_LIBRARY_FILES_SSE2}
   common/scene_subdiv_mesh.cpp
-  subdiv/tessellation_cache.cpp
-  subdiv/subdivpatch1base.cpp
-  subdiv/catmullclark_coefficients.cpp
   geometry/grid_soa.cpp	
   subdiv/subdivpatch1base_eval.cpp
-  bvh/bvh_builder_subdiv.cpp)
+  bvh/bvh_builder_subdiv.cpp
+)
 ENDIF()
 
 IF (EMBREE_RAY_PACKETS)
-  SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
-
-  common/rtcore_ispc.cpp
-  common/rtcore_ispc.ispc
+  SET(EMBREE_LIBRARY_FILES_SSE2 ${EMBREE_LIBRARY_FILES_SSE2}
 
   bvh/bvh_intersector_hybrid4_bvh4.cpp
   bvh/bvh_intersector_stream_bvh4.cpp
-  bvh/bvh_intersector_stream_filters.cpp)
+  bvh/bvh_intersector_stream_filters.cpp
+)
 ENDIF()
 
 SET(EMBREE_LIBRARY_FILES_SSE42
@@ -252,6 +273,7 @@ MACRO (CreateISADummyFiles list isa)
       DEPENDS ${src_file})
   ENDFOREACH()
 ENDMACRO()
+CreateISADummyFiles(EMBREE_LIBRARY_FILES_SSE2      sse2      ${EMBREE_LIBRARY_FILES_SSE2})
 CreateISADummyFiles(EMBREE_LIBRARY_FILES_SSE42     sse42     ${EMBREE_LIBRARY_FILES_SSE42})
 CreateISADummyFiles(EMBREE_LIBRARY_FILES_AVX       avx       ${EMBREE_LIBRARY_FILES_AVX})
 CreateISADummyFiles(EMBREE_LIBRARY_FILES_AVX2      avx2      ${EMBREE_LIBRARY_FILES_AVX2})
@@ -264,6 +286,14 @@ MACRO (CheckGlobals library)
     ADD_CUSTOM_TARGET(${library}_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:${library}_helper> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS ${library})
   ENDIF()
 ENDMACRO()
+
+IF (EMBREE_ISA_SSE2 AND EMBREE_LIBRARY_FILES_SSE2)
+  ADD_LIBRARY(embree_sse2 OBJECT ${EMBREE_LIBRARY_FILES_SSE2})
+  SET_TARGET_PROPERTIES(embree_sse2 PROPERTIES COMPILE_FLAGS "${FLAGS_SSE2}")
+  SET_PROPERTY(TARGET embree_sse2 PROPERTY FOLDER kernels)
+  SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES} $<TARGET_OBJECTS:embree_sse2>)
+  CheckGlobals(embree_sse2)
+ENDIF ()
 
 IF (EMBREE_ISA_SSE42 AND EMBREE_LIBRARY_FILES_SSE42)
   ADD_LIBRARY(embree_sse42 OBJECT ${EMBREE_LIBRARY_FILES_SSE42})

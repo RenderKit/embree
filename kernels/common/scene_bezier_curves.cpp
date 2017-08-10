@@ -178,7 +178,7 @@ namespace embree
       native_vertices[i] = (BufferRefT<Vec3fa>) vertices[i];
   }
 
-#endif
+#else
 
   namespace isa
   {
@@ -302,4 +302,5 @@ namespace embree
       interpolate_helper<BSplineCurveT<vfloatx>>(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats);
     }
   }
+#endif
 }

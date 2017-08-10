@@ -758,7 +758,7 @@ namespace embree
 
     return true;
   }
-#endif
+#else
 
   namespace isa
   {
@@ -900,4 +900,5 @@ namespace embree
       }
     }
   }
+#endif
 }

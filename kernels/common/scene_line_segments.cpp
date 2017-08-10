@@ -193,7 +193,7 @@ namespace embree
       if (ddPdudu) vfloatx::storeu(valid,dPdu+i,vfloatx(zero));
     }
   }
-#endif
+#else
 
   namespace isa
   {
@@ -201,4 +201,5 @@ namespace embree
       return new LineSegmentsISA(scene,flags,numSegments,numVertices,numTimeSteps);
     }
   }
+#endif
 }
