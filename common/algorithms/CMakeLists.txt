@@ -25,7 +25,8 @@ ADD_LIBRARY(algorithms_obj OBJECT
  parallel_set.cpp
  parallel_map.cpp
  parallel_filter.cpp
- )
+)
+SET_PROPERTY(TARGET algorithms_obj PROPERTY FOLDER common)
 
 ADD_LIBRARY(algorithms STATIC $<TARGET_OBJECTS:algorithms_obj>)
 SET_PROPERTY(TARGET algorithms PROPERTY FOLDER common)

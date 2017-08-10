@@ -15,5 +15,7 @@
 ## ======================================================================== ##
 
 ADD_LIBRARY(math_obj OBJECT constants.cpp)
+SET_PROPERTY(TARGET math_obj PROPERTY FOLDER common)
+
 ADD_LIBRARY(math STATIC $<TARGET_OBJECTS:math_obj>)
 SET_PROPERTY(TARGET math PROPERTY FOLDER common)

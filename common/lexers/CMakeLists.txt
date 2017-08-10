@@ -18,6 +18,7 @@ ADD_LIBRARY(lexers_obj OBJECT
  stringstream.cpp
  tokenstream.cpp
 )
+SET_PROPERTY(TARGET lexers_obj PROPERTY FOLDER common)
 
 ADD_LIBRARY(lexers STATIC $<TARGET_OBJECTS:lexers_obj>)
 TARGET_LINK_LIBRARIES(lexers sys math)
