@@ -229,7 +229,7 @@ namespace embree
     }
   }
   
-#else
+#endif
 
   namespace isa
   {
@@ -237,5 +237,4 @@ namespace embree
       return new QuadMeshISA(scene,flags,numQuads,numVertices,numTimeSteps);
     }
   }
-#endif
 }

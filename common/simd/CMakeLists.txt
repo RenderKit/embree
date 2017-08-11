@@ -14,9 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-ADD_LIBRARY(simd_obj OBJECT sse.cpp)
-SET_PROPERTY(TARGET simd_obj PROPERTY FOLDER common)
-
-ADD_LIBRARY(simd STATIC $<TARGET_OBJECTS:simd_obj>)
+ADD_LIBRARY(simd STATIC sse.cpp)
 SET_PROPERTY(TARGET simd PROPERTY FOLDER common)
 

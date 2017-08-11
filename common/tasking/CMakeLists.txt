@@ -14,27 +14,18 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-UNSET(TASKING_LIBRARIES CACHE)
-
 IF (TASKING_INTERNAL)
-  ADD_LIBRARY(tasking_obj OBJECT taskschedulerinternal.cpp)
-  SET(TASKING_LIBRARIES CACHE INTERNAL "")
-  ADD_LIBRARY(tasking STATIC $<TARGET_OBJECTS:tasking_obj>)
+  ADD_LIBRARY(tasking STATIC taskschedulerinternal.cpp)
 ENDIF()
 
 IF (TASKING_TBB)
-  ADD_LIBRARY(tasking_obj OBJECT taskschedulertbb.cpp)
-  ADD_LIBRARY(tasking STATIC $<TARGET_OBJECTS:tasking_obj>)  
-  SET(TASKING_LIBRARIES ${TBB_LIBRARIES} CACHE INTERNAL "")
+  ADD_LIBRARY(tasking STATIC taskschedulertbb.cpp)
   TARGET_LINK_LIBRARIES(tasking sys math ${TBB_LIBRARIES})
 ENDIF()
 
 IF (TASKING_PPL)
-  ADD_LIBRARY(tasking_obj OBJECT taskschedulerppl.cpp)
-  ADD_LIBRARY(tasking STATIC $<TARGET_OBJECTS:tasking_obj>)
-  SET(TASKING_LIBRARIES ${PPL_LIBRARIES} CACHE INTERNAL "")
+  ADD_LIBRARY(tasking STATIC taskschedulerppl.cpp)
   TARGET_LINK_LIBRARIES(tasking sys math ${PPL_LIBRARIES})
 ENDIF()
 
 SET_PROPERTY(TARGET tasking PROPERTY FOLDER common)
-SET_PROPERTY(TARGET tasking_obj PROPERTY FOLDER common)
