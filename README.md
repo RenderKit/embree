@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 2.16.0
+% Embree: High Performance Ray Tracing Kernels 2.16.5
 % Intel Corporation
 
 Embree Overview
@@ -92,17 +92,11 @@ Installation of Embree
 Windows Installer
 -----------------
 
-You can install the 64 bit version of the Embree library using the
-Windows installer application
-[embree-2.16.0-x64.exe](https://github.com/embree/embree/releases/download/v2.16.0/embree-2.16.0.x64.exe). This
+You can install the Embree library using the Windows installer
+application
+[embree-2.16.5-x64.exe](https://github.com/embree/embree/releases/download/v2.16.5/embree-2.16.5.x64.exe). This
 will install the 64 bit Embree version by default in `Program
-Files\Intel\Embree v2.16.0 x64`. To install the 32 bit
-Embree library use the
-[embree-2.16.0-win32.exe](https://github.com/embree/embree/releases/download/v2.16.0/embree-2.16.0.win32.exe)
-installer. This will install the 32 bit Embree version by default in
-`Program Files\Intel\Embree v2.16.0 win32` on 32 bit
-systems and `Program Files (x86)\Intel\Embree v2.16.0 win32`
-on 64 bit systems.
+Files\Intel\Embree v2.16.5 x64`.
 
 You have to set the path to the `lib` folder manually to your `PATH`
 environment variable for applications to find Embree. To compile
@@ -113,15 +107,13 @@ Embree installation.
 To uninstall Embree again open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-2.16.0` and uninstall it.
+2.16.5` and uninstall it.
 
 Windows ZIP File
 -----------------
 
-Embree is also delivered as a ZIP file for 64 bit
-[embree-2.16.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.16.0/embree-2.16.0.x64.windows.zip)
-and 32 bit
-[embree-2.16.0.win32.windows.zip](https://github.com/embree/embree/releases/download/v2.16.0/embree-2.16.0.win32.windows.zip). After
+Embree is also delivered as a ZIP file
+[embree-2.16.5.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.16.5/embree-2.16.5.x64.windows.zip). After
 unpacking this ZIP file you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree. To compile applications with Embree you also have to set the
@@ -135,18 +127,18 @@ Linux RPMs
 ----------
 
 Uncompress the 'tar.gz' file
-[embree-2.16.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.16.0/embree-2.16.0.x86_64.rpm.tar.gz)
+[embree-2.16.5.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.16.5/embree-2.16.5.x86_64.rpm.tar.gz)
 to
 obtain the individual RPM files:
 
-    tar xzf embree-2.16.0.x86_64.rpm.tar.gz
+    tar xzf embree-2.16.5.x86_64.rpm.tar.gz
 
 To install the Embree using the RPM packages on your Linux system type
 the following:
 
-    sudo rpm --install embree-lib-2.16.0-1.x86_64.rpm
-    sudo rpm --install embree-devel-2.16.0-1.x86_64.rpm
-    sudo rpm --install embree-examples-2.16.0-1.x86_64.rpm
+    sudo rpm --install embree-lib-2.16.5-1.x86_64.rpm
+    sudo rpm --install embree-devel-2.16.5-1.noarch.rpm
+    sudo rpm --install embree-examples-2.16.5-1.x86_64.rpm
 
 You also have to install the Intel® Threading Building Blocks (TBB)
 using `yum`:
@@ -176,21 +168,21 @@ the tutorials to start them.
 
 To uninstall Embree again just execute the following:
 
-    sudo rpm --erase embree-lib-2.16.0-1.x86_64
-    sudo rpm --erase embree-devel-2.16.0-1.x86_64
-    sudo rpm --erase embree-examples-2.16.0-1.x86_64
+    sudo rpm --erase embree-lib-2.16.5-1.x86_64
+    sudo rpm --erase embree-devel-2.16.5-1.noarch
+    sudo rpm --erase embree-examples-2.16.5-1.x86_64
 
 Linux tar.gz files
 ------------------
 
 The Linux version of Embree is also delivered as a tar.gz file
-[embree-2.16.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.16.0/embree-2.16.0.x86_64.linux.tar.gz). Unpack
+[embree-2.16.5.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.16.5/embree-2.16.5.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.16.0.x64.linux.tar.gz
-    source embree-2.16.0.x64.linux/embree-vars.sh
+    tar xzf embree-2.16.5.x64.linux.tar.gz
+    source embree-2.16.5.x64.linux/embree-vars.sh
 
 If you want to ship Embree with your application best use the Embree
 version provided through the tar.gz file.
@@ -203,7 +195,7 @@ Mac OS X PKG Installer
 
 To install the Embree library on your Mac OS X system use the
 provided package installer inside
-[embree-2.16.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.16.0/embree-2.16.0.x86_64.dmg). This
+[embree-2.16.5.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.16.5/embree-2.16.5.x86_64.dmg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree2` folder.
@@ -225,13 +217,13 @@ Mac OS X tar.gz file
 ---------------------
 
 The Mac OS X version of Embree is also delivered as a tar.gz file
-[embree-2.16.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.16.0/embree-2.16.0.x86_64.macosx.tar.gz). Unpack
+[embree-2.16.5.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.16.5/embree-2.16.5.x86_64.macosx.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.16.0.x64.macosx.tar.gz
-    source embree-2.16.0.x64.macosx/embree-vars.sh
+    tar xzf embree-2.16.5.x64.macosx.tar.gz
+    source embree-2.16.5.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application please use the Embree
 library of the provided tar.gz file. The library name of that Embree
@@ -722,8 +714,8 @@ Using the `rtcDeviceSetErrorFunction2` call, it is also possible to
 set a callback function that is called whenever an error occurs for a
 device.
 
-    typedef void (*RTCErrorFunc2)(void* userPtr, const RTCError code, const char* str);
-    void rtcDeviceSetErrorFunction2(RTCDevice device, RTCErrorFunc2 func, void* userPtr);
+    typedef void (*RTCErrorFunc2)(void* userPtr, const RTCError, const char* str);
+    void rtcDeviceSetErrorFunction2(RTCDevice, RTCErrorFunc2, void* userPtr);
 
 When invoked, the registred callback function gets passed a user
 defined pointer `userPtr`, the error code `code`, as well as some
@@ -1171,19 +1163,32 @@ interpolated over the quadrilateral the following way:
 The parametrization for all other face types where the number of
 vertices is not equal to 4, have a special parametrization where the
 n'th quadrilateral (that would be obtained by a single subdivision
-step) is encoded in the higher order bits of the UV coordinates and
-the local hit location inside this quadrilateral in the lower order
-bits. The following piece of code extracts the sub-patch ID i and UVs
-of this subpatch:
+step) and the local hit location inside this quadrilateral are encoded
+in the UV coordinates. The following piece of code extracts the
+sub-patch ID i and UVs of this subpatch:
 
-    const unsigned l = floorf(4.0f*U);
-    const unsigned h = floorf(4.0f*V);
+    const unsigned l = floorf(0.5f*U);
+    const unsigned h = floorf(0.5f*V);
     const unsigned i = 4*h+l;
-    const float u = 2.0f*fracf(4.0f*U);
-    const float v = 2.0f*fracf(4.0f*V);
+    const float u = 2.0f*fracf(0.5f*U)-0.5f;
+    const float v = 2.0f*fracf(0.5f*V)-0.5f;
+
+This encoding allows local subpatch UVs to be in the range
+`[-0.5,1.5[` thus negative subpatch UVs can get passed to
+`rtcInterpolate` to sample subpatches slightly out of bounds.
+This can be useful to calculate derivatives using finite
+differences if required. The encoding further has the property
+that you can just move some value du (or dv) on a subpatch by
+adding du (or dv) to the special UV encoding as long as you
+are not falling out of the `[-0.5,1.5[` range. Further, derivatives
+calculated using finite differences are compatible
+with derivatives calculated using `rtcInterpolate` when using the
+standard formula:
+
+    dF(u)/du = (F(u+du)-F(u))/du
 
 To smoothly interpolate texture coordinates over the subdivision
-surface we recommend using the `rtcInterpolate2` function, which will
+surface we recommend using the `rtcInterpolate` function, which will
 apply the standard subdivision rules for interpolation and
 automatically take care of the special UV encoding for
 non-quadrilaterals.
@@ -1435,7 +1440,7 @@ The bounding function to register has the following signature
 
     typedef void (*RTCBoundsFunc3)(void* userPtr, void* geomUserPtr, size_t id, size_t timeStep, RTCBounds& bounds_o);
 
-and can be registered using the `rtcSetBoundsFunction2` API function:
+and can be registered using the `rtcSetBoundsFunction3` API function:
 
     rtcSetBoundsFunction3(scene, geomID, userBoundsFunction, userPtr);
 
@@ -1885,8 +1890,8 @@ to each stream user callback function invoked.
 
     struct RTCIntersectContext
     {
-      RTCIntersectFlags flags;   //!< intersection flags
-      void* userRayExt;          //!< can be used to pass extended ray data to callbacks
+      RTCIntersectFlags flags; // intersection flags
+      void* userRayExt;        // can be used to pass extended ray data to callbacks
     };
 
 As intersection flag the user can currently specify if Embree should
@@ -1894,8 +1899,8 @@ optimize traversal for coherent or incoherent ray distributions.
 
     enum RTCIntersectFlags
     {
-      RTC_INTERSECT_COHERENT   = 0,  //!< optimize for coherent rays
-      RTC_INTERSECT_INCOHERENT = 1   //!< optimize for incoherent rays
+      RTC_INTERSECT_COHERENT   = 0, // optimize for coherent rays
+      RTC_INTERSECT_INCOHERENT = 1  // optimize for incoherent rays
     };
 
 The following code shows an example of setting up a stream of single
@@ -2002,7 +2007,9 @@ many u/v coordinates and a valid mask (`valid` parameter) that
 specifies which of these coordinates are valid. The valid mask points
 to `numUVs` integers and a value of -1 denotes valid and 0 invalid. If
 the valid pointer is NULL all elements are considers valid. The
-destination arrays are filled in structure of array (SoA) layout.
+destination arrays are filled in structure of array (SoA) layout. The
+value `numUVs` has to be divisible by 4 and the destination buffer has
+to be at least `numFloats*numUVs` elements large.
 
 See tutorial [Interpolation] for an example of using the
 `rtcInterpolate2` function.
@@ -2427,7 +2434,7 @@ following signature:
 
 A single such callback function per device can be registered by calling
 
-    rtcDeviceSetMemoryMonitorFunction2(RTCDevice device, RTCMemoryMonitorFunc2 func, void* userPtr);
+    rtcDeviceSetMemoryMonitorFunction2(RTCDevice, RTCMemoryMonitorFunc2, void* userPtr);
 
 and deregistered again by calling it with `NULL` as function
 pointer. Once registered the Embree device will invoke the callback
@@ -2553,7 +2560,7 @@ parameters from the following table are available to set/query:
   RTC_CONFIG_IGNORE_INVALID_RAYS         checks if invalid rays are ignored    Read only
 
   RTC_CONFIG_TASKING_SYSTEM              return used tasking system            Read only
-                                         (0 = INTERNAL, 1 = TBB)
+                                         (0 = INTERNAL, 1 = TBB, 2 = PPL)
 
   RTC_SOFTWARE_CACHE_SIZE                Configures the software cache size    Write only
                                          (used to cache subdivision surfaces
@@ -2613,7 +2620,9 @@ On machines with a high thread count (e.g. dual-socket Xeon or Xeon
 Phi machines), affinitizing TBB worker threads increases build and
 rendering performance. You can let Embree affinitize TBB worker
 threads by passing `set_affinity=1` to the init parameter of
-`rtcNewDevice`.
+`rtcNewDevice`. By default threads are not affinitized by Embree with
+the exception of Xeon Phi Processors where they are affinitized by
+default.
 
 All Embree tutorials automatically start and affinitize TBB worker threads
 by passing `start_threads=1,set_affinity=1` to `rtcNewDevice`.
@@ -2668,8 +2677,8 @@ following as root:
 
 When transparent huge pages are enabled, the kernel tries to merge 4k
 pages to 2MB pages when possible as a background job. See the
-following webpage for more information on transparent huge pages under Linux
-[https://www.kernel.org/doc/Documentation/vm/transhuge.txt](https://www.kernel.org/doc/Documentation/vm/transhuge.txt). In
+following webpage for more information on [transparent huge pages under
+Linux](https://www.kernel.org/doc/Documentation/vm/transhuge.txt). In
 this mode each application, including your rendering application
 building on Embree, will automatically tend to use huge pages.
 
@@ -2683,8 +2692,8 @@ root:
 
     echo 1000 > /proc/sys/vm/nr_overcommit_hugepages
 
-See the following webpage for more information on huge pages under
-Linux [https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt](https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt).
+See the following webpage for more information on [huge pages under
+Linux](https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt).
 
 ### Huge Pages under MacOSX
 
@@ -2704,31 +2713,31 @@ desired node and leaf layout. To invoke the BVH builder you have to
 create a BVH object using the `rtcNewBVH` function and deleted again
 using the `rtcDeleteBVH` function.
 
-    RTCBVH rtcNewBVH(RTCDevice device);
-    void rtcDeleteBVH(RTCBVH bvh);
+    RTCBVH rtcNewBVH(RTCDevice);
+    void rtcDeleteBVH(RTCBVH);
 
 This BVH contains some builder state and fast node allocator. Some
 settings have to be passed to be BVH build function:
 
     enum RTCBuildQuality
     {
-      RTC_BUILD_QUALITY_LOW = 0,     //!< build low quality BVH (good for dynamic scenes)
-      RTC_BUILD_QUALITY_NORMAL = 1,  //!< build standard quality BVH
-      RTC_BUILD_QUALITY_HIGH = 2,    //!< build high quality BVH
+      RTC_BUILD_QUALITY_LOW = 0,    // build low quality BVH (good for dynamic scenes)
+      RTC_BUILD_QUALITY_NORMAL = 1, // build standard quality BVH
+      RTC_BUILD_QUALITY_HIGH = 2,   // build high quality BVH
     };
       
     struct RTCBuildSettings
     {
-      unsigned size;               //!< size of this structure in bytes
-      RTCBuildQuality quality;     //!< quality of BVH build
-      unsigned maxBranchingFactor; //!< branching factor of BVH to build
-      unsigned maxDepth;           //!< maximal depth of BVH to build
-      unsigned sahBlockSize;       //!< blocksize for SAH heuristic
-      unsigned minLeafSize;        //!< minimal size of a leaf
-      unsigned maxLeafSize;        //!< maximal size of a leaf
-      float travCost;              //!< estimated cost of one traversal step
-      float intCost;               //!< estimated cost of one primitive intersection
-      unsigned extraSpace;         //!< for spatial splitting we need extra space at end of primitive array
+      unsigned size;               // size of this structure in bytes
+      RTCBuildQuality quality;     // quality of BVH build
+      unsigned maxBranchingFactor; // branching factor of BVH to build
+      unsigned maxDepth;           // maximal depth of BVH to build
+      unsigned sahBlockSize;       // blocksize for SAH heuristic
+      unsigned minLeafSize;        // minimal size of a leaf
+      unsigned maxLeafSize;        // maximal size of a leaf
+      float travCost;              // estimated cost of one traversal step
+      float intCost;               // estimated cost of one primitive intersection
+      unsigned extraSpace;         // for spatial splitting we need extra space at end of primitive array
     };
 
 Some default values for the settings can be obtained using the
@@ -2754,30 +2763,28 @@ pointers to all children (`RTCSetNodeChildrenFunc`), set the bounding
 boxes of all children (`RTCSetNodeBoundsFunc`), and to create a leaf
 node (`RTCCreateLeafFunc`).
 
-    typedef void* (*RTCCreateNodeFunc) (RTCThreadLocalAllocator allocator,
-                                        size_t numChildren, void* userPtr);
+    typedef void* (*RTCCreateNodeFunc) (RTCThreadLocalAllocator, size_t numChildren, void* userPtr);
 
     typedef void  (*RTCSetNodeChildFunc) (void* nodePtr, void** childPtrs, size_t numChildren,
                                           void* userPtr);
 
-    typedef void  (*RTCSetNodeBoundsFunc) (void* nodePtr, const RTCBounds** bounds, size_t numChildren,
+    typedef void  (*RTCSetNodeBoundsFunc) (void* nodePtr, const RTCBounds**, size_t numChildren,
                                            void* userPtr);
 
-    typedef void* (*RTCCreateLeafFunc) (RTCThreadLocalAllocator allocator,
-                                        const RTCBuildPrimitive* primitives, size_t numPrimitives,
-                                        void* userPtr);
+    typedef void* (*RTCCreateLeafFunc) (RTCThreadLocalAllocator, const RTCBuildPrimitive* prims,
+                                        size_t numPrimitives, void* userPtr);
 
-    typedef void  (*RTCSplitPrimitiveFunc) (const RTCBuildPrimitive& prim,
-        unsigned dim, float pos, RTCBounds& lbounds, RTCBounds& rbounds, void* userPtr);
+    typedef void  (*RTCSplitPrimitiveFunc) (const RTCBuildPrimitive&, unsigned dim, float pos,
+                                            RTCBounds& lbounds, RTCBounds& rbounds, void* userPtr);
 
 The `RTCCreateNodeFunc` and `RTCCreateLeafFunc` type callbacks are
 passed a thread local allocator object that should be used for fast
 allocation of nodes using the `rtcThreadLocalAlloc` function. 
 
-    void* rtcThreadLocalAlloc(RTCThreadLocalAllocator allocator, size_t bytes, size_t align);
+    void* rtcThreadLocalAlloc(RTCThreadLocalAllocator, size_t bytes, size_t align);
 
 We strongly recommend using this allocation mechanism, as alternative
-approaches like standard `malloc` can be over 10x slower. The
+approaches like standard `malloc` can be over 10× slower. The
 allocator object passed to the create callbacks has to be used only
 inside the current thread.
 
@@ -2826,17 +2833,17 @@ functions.
 
 The BVH build is invoked using the `rtcBuildBVH` function:
 
-    void* rtcBuildBVH(RTCBVH bvh,                             //!< BVH to build
-                      const RTCBuildSettings& settings,       //!< settings for BVH builder
-                      RTCBuildPrimitive* primitives,          //!< list of input primitives
-                      size_t numPrimitives,                   //!< number of input primitives
-                      RTCCreateNodeFunc createNode,           //!< creates a node
-                      RTCSetNodeChildrenFunc setNodeChildren, //!< sets pointer to a child
-                      RTCSetNodeBoundsFunc setNodeBounds,     //!< sets bound of a child
-                      RTCCreateLeafFunc createLeaf,           //!< creates a leaf
-                      RTCSplitPrimitiveFunc splitPrimitive,   //!< splits a primitive into two halves
-                      RTCBuildProgressFunc buildProgress      //!< used to report build progress
-                      void* userPtr);                         //!< user pointer passed to callback functions
+    void* rtcBuildBVH(RTCBVH bvh,                             // BVH to build
+                      const RTCBuildSettings& settings,       // settings for BVH builder
+                      RTCBuildPrimitive* primitives,          // list of input primitives
+                      size_t numPrimitives,                   // number of input primitives
+                      RTCCreateNodeFunc createNode,           // creates a node
+                      RTCSetNodeChildrenFunc setNodeChildren, // sets pointer to a child
+                      RTCSetNodeBoundsFunc setNodeBounds,     // sets bound of a child
+                      RTCCreateLeafFunc createLeaf,           // creates a leaf
+                      RTCSplitPrimitiveFunc splitPrimitive,   // splits a primitive into two halves
+                      RTCBuildProgressFunc buildProgress      // used to report build progress
+                      void* userPtr);                         // user pointer passed to callback functions
 
 The function gets passed the BVH objects (`bvh` argument), the build
 settings to use (`settings` argument), the array of primitives
@@ -2853,7 +2860,7 @@ For static scenes that do not require a further `rtcBuildBVH` call one
 should use the `rtcMakeStatic` function after the build which clears
 some internal data.
 
-    void rtcMakeStaticBVH(RTCBVH bvh);
+    void rtcMakeStaticBVH(RTCBVH);
 Embree Tutorials
 ================
 
@@ -2900,7 +2907,7 @@ F2
 :   Gray EyeLight shading
 
 F3
-:   Wireframe shading
+:   Traces occlusion rays only.
 
 F4
 :   UV Coordinate visualization

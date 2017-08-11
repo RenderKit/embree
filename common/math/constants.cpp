@@ -14,24 +14,26 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "../common/scene_instance.h"
-#include "../common/ray.h"
+#include "constants.h"
 
 namespace embree
 {
-  namespace isa
-  {
-    template<int K>
-    struct FastInstanceIntersectorK
-    {
-      static void intersect(vint<K>* valid, const Instance* instance, RayK<K>& ray, size_t item);
-      static void occluded (vint<K>* valid, const Instance* instance, RayK<K>& ray, size_t item);
-    };
-
-    typedef FastInstanceIntersectorK<4>  FastInstanceIntersector4;
-    typedef FastInstanceIntersectorK<8>  FastInstanceIntersector8;
-    typedef FastInstanceIntersectorK<16> FastInstanceIntersector16;
-  }
+  TrueTy True;
+  FalseTy False;
+  ZeroTy zero;
+  OneTy one;
+  NegInfTy neg_inf;
+  PosInfTy inf;
+  PosInfTy pos_inf;
+  NaNTy nan;
+  UlpTy ulp;
+  PiTy pi;
+  OneOverPiTy one_over_pi;
+  TwoPiTy two_pi;
+  OneOverTwoPiTy one_over_two_pi;
+  FourPiTy four_pi;
+  OneOverFourPiTy one_over_four_pi;
+  StepTy step;
+  ReverseStepTy reverse_step;
+  EmptyTy empty;
 }

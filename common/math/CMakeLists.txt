@@ -14,8 +14,5 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-ADD_EXECUTABLE(bvh_access bvh_access.cpp)
-TARGET_LINK_LIBRARIES(bvh_access embree math sys)
-SET_PROPERTY(TARGET bvh_access PROPERTY FOLDER tutorials/single)
-INSTALL(TARGETS bvh_access DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
-ADD_TEST(NAME bvh_access COMMAND bvh_access)
+ADD_LIBRARY(math STATIC constants.cpp)
+SET_PROPERTY(TARGET math PROPERTY FOLDER common)

@@ -55,7 +55,7 @@ namespace embree
         typename CreateLeafFunc,
         typename ProgressMonitor>
 
-        class BuilderT : private Settings
+        class BuilderT
         {
           ALIGNED_CLASS;
           friend struct BVHBuilderHair;
@@ -84,7 +84,8 @@ namespace embree
                     const ProgressMonitor& progressMonitor,
                     const Settings settings)
 
-            : Settings(settings),
+            : cfg(settings),
+            prims(prims),
             createAlloc(createAlloc),
             createAlignedNode(createAlignedNode),
             setAlignedNode(setAlignedNode),
@@ -98,12 +99,12 @@ namespace embree
           NodeRef createLargeLeaf(size_t depth, const PrimInfoRange& pinfo, Allocator alloc)
           {
             /* this should never occur but is a fatal error */
-            if (depth > maxDepth)
+            if (depth > cfg.maxDepth)
               throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
 
             /* create leaf for few primitives */
-            if (pinfo.size() <= maxLeafSize)
-              return createLeaf(depth,pinfo,alloc);
+            if (pinfo.size() <= cfg.maxLeafSize)
+              return createLeaf(prims,pinfo,alloc);
 
             /* fill all children by always splitting the largest one */
             PrimInfoRange children[MAX_BRANCHING_FACTOR];
@@ -118,7 +119,7 @@ namespace embree
               for (unsigned i=0; i<numChildren; i++)
               {
                 /* ignore leaves as they cannot get split */
-                if (children[i].size() <= maxLeafSize)
+                if (children[i].size() <= cfg.maxLeafSize)
                   continue;
 
                 /* remember child with largest size */
@@ -139,7 +140,7 @@ namespace embree
               children[numChildren+0] = right;
               numChildren++;
 
-            } while (numChildren < branchingFactor);
+            } while (numChildren < cfg.branchingFactor);
 
             /* create node */
             auto node = createAlignedNode(alloc);
@@ -232,7 +233,7 @@ namespace embree
             PrimInfoRange children[MAX_BRANCHING_FACTOR];
 
             /* create leaf node */
-            if (depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || pinfo.size() <= minLeafSize) {
+            if (depth+MIN_LARGE_LEAF_LEVELS >= cfg.maxDepth || pinfo.size() <= cfg.minLeafSize) {
               alignedHeuristic.deterministic_order(pinfo);
               return createLargeLeaf(depth,pinfo,alloc);
             }
@@ -250,7 +251,7 @@ namespace embree
               for (size_t i=0; i<numChildren; i++)
               {
                 /* ignore leaves as they cannot get split */
-                if (children[i].size() <= minLeafSize)
+                if (children[i].size() <= cfg.minLeafSize)
                   continue;
 
                 /* remember child with largest area */
@@ -271,7 +272,7 @@ namespace embree
               children[numChildren+0] = right;
               numChildren++;
 
-            } while (numChildren < branchingFactor);
+            } while (numChildren < cfg.branchingFactor);
 
             /* create aligned node */
             if (aligned)
@@ -329,6 +330,8 @@ namespace embree
           }
 
         private:
+          Settings cfg;
+          PrimRef* prims;
           const CreateAllocFunc& createAlloc;
           const CreateAlignedNodeFunc& createAlignedNode;
           const SetAlignedNodeFunc& setAlignedNode;

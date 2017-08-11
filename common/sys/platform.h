@@ -18,8 +18,6 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 
-//__asm__(".symver memcpy,memcpy@GLIBC_2.2.5");
-
 #include <cstddef>
 #include <cassert>
 #include <cstdlib>
@@ -251,6 +249,7 @@ __forceinline std::string toString(long long value) {
 #pragma warning(disable:4503) // decorated name length exceeded, name was truncated
 #pragma warning(disable:4180) // qualifier applied to function type has no meaning; ignored
 #pragma warning(disable:4258) // definition from the for loop is ignored; the definition from the enclosing scope is used
+#pragma warning(disable:4789) // buffer '' of size 8 bytes will be overrun; 32 bytes will be written starting at offset 0
 #endif
 
 #if defined(__clang__) && !defined(__INTEL_COMPILER)

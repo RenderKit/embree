@@ -188,14 +188,14 @@ namespace embree
   __forceinline const vllong4 operator ^( const vllong4&  a, const long long b ) { return a ^ vllong4(b); }
   __forceinline const vllong4 operator ^( const long long a, const vllong4&  b ) { return vllong4(a) ^ b; }
 
-  __forceinline const vllong4 operator <<( const vllong4& a, const long long n ) { return _mm256_slli_epi64(a, n); }
+  __forceinline const vllong4 operator <<( const vllong4& a, const long long n ) { return _mm256_slli_epi64(a, (int)n); }
   //__forceinline const vllong4 operator >>( const vllong4& a, const long long n ) { return _mm256_srai_epi64(a, n); }
 
   __forceinline const vllong4 operator <<( const vllong4& a, const vllong4& n ) { return _mm256_sllv_epi64(a, n); }
   //__forceinline const vllong4 operator >>( const vllong4& a, const vllong4& n ) { return _mm256_srav_epi64(a, n); }
   //__forceinline const vllong4 sra ( const vllong4& a, const long long b ) { return _mm256_srai_epi64(a, b); }
 
-  __forceinline const vllong4 srl ( const vllong4& a, const long long b ) { return _mm256_srli_epi64(a, b); }
+  __forceinline const vllong4 srl ( const vllong4& a, const long long b ) { return _mm256_srli_epi64(a, (int)b); }
   
   //__forceinline const vllong4 min( const vllong4&  a, const vllong4&  b ) { return _mm256_min_epi64(a, b); }
   //__forceinline const vllong4 min( const vllong4&  a, const long long b ) { return min(a,vllong4(b)); }

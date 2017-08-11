@@ -18,6 +18,5 @@ ADD_LIBRARY(lexers STATIC
  stringstream.cpp
  tokenstream.cpp
 )
-
-TARGET_LINK_LIBRARIES(lexers sys)
+TARGET_LINK_LIBRARIES(lexers sys math)
 SET_PROPERTY(TARGET lexers PROPERTY FOLDER common)

@@ -1,20 +1,71 @@
 Version History
 ---------------
 
+### New Features in Embree 2.16.5
+-   Bugfix in the robust triangle intersector that rarely caused NaNs to
+    be reported.
+-   Fixed bug in hybrid traversal kernel which entered leaf with no
+    active rays. This rarely caused crashes when used with instancing.
+-   Fixed bug introduced in Embree 2.16.2 which caused instancing not to
+    work properly when a smaller than the native SIMD width was
+    used in ray packet mode.
+-   Fixed bug in the curve geometry intersector that caused rendering
+    artefacts for Bézier curves with p0=p1 and/or p2=p3.
+-   Fixed bug in the curve geometry intersector that caused hit results
+    with NaNs to be reported.
+-   Fixed masking bug that caused rare cracks in curve geometry.
+-   Enabled support for SSE2 in precompiled binaries again.
+
+### New Features in Embree 2.16.4
+-   Bugfix in the ribbon intersector for hair primitives. Non-normalized
+    rays caused wrong intersection distance to be reported.
+
+### New Features in Embree 2.16.3
+-   Increased accuracy for handling subdivision surfaces. This fixes
+    cracks when using displacement mapping but reduces performance
+    at irregular vertices.
+-   Fixed a bug where subdivision geometry was not properly updated
+    when modifying only the tesselation rate and vertex array.
+
+### New Features in Embree 2.16.2
+-   Fixed bug that caused NULL intersection context in intersection
+    filter when instancing was used.
+-   Fixed an issue where uv's where outside the triangle (or quad) for
+    very small triangles (or quads). In robust mode we improved the uv
+    calculation to avoid that issue, in fast mode we accept that
+    inconsistency for better performance.
+-   Changed UV encoding for non-quad subdivision patches to
+    allow a subpatch UV range of `[-0.5,1.5[`. Using this new encoding
+    one can use finite differences to calculate derivatives if required.
+    Please adjust your code in case you rely on the old encoding.
+
+### New Features in Embree 2.16.1
+-   Workaround for compile issues with Visual Studio 2017
+-   Fixed bug in subdiv code for static scenes when using tessellation
+    levels larger than 50.
+-   Fixed low performance when adding many geometries to a scene.
+-   Fixed high memory consumption issue when using instances in
+    dynamic scene (by disabling two level builder for user geometries
+    and instances).
+
 ### New Features in Embree 2.16.0
 -   Improved multi-segment motion blur support for scenes with
     different number of time steps per mesh.
--   New top level BVH builder that improves build times and BVH quality of two-level BVHs.
+-   New top level BVH builder that improves build times and BVH quality
+    of two-level BVHs.
 -   Added support to enable only a single ISA. Previously code was
     always compiled for SSE2.
--   Improved single ray tracing performance for incoherent rays on AVX512 architectures by 5-10%.
--   Improved packet/hybrid ray tracing performance for incoherent rays on AVX512 architectures by 10-30%.
--   Improved stream ray tracing performance for coherent rays in structure-of-pointers layout by 40-70%.
+-   Improved single ray tracing performance for incoherent rays on
+    AVX-512 architectures by 5-10%.
+-   Improved packet/hybrid ray tracing performance for incoherent rays
+    on AVX-512 architectures by 10-30%.
+-   Improved stream ray tracing performance for coherent rays in
+    structure-of-pointers layout by 40-70%.
 -   BVH builder for compact scenes of triangles and quads needs
     essentially no temporary memory anymore. This doubles the
     maximal scene size that can be rendered in compact mode.
--   Triangles no longer store the geometry normal in fast/default mode which reduces
-    memory consumption by up to 20%.
+-   Triangles no longer store the geometry normal in fast/default mode
+    which reduces memory consumption by up to 20%.
 -   Compact mode uses BVH4 now consistently which reduces memory
     consumption by up to 10%.
 -   Reduced memory consumption for small scenes (of 10k-100k primitives)
@@ -26,17 +77,19 @@ Version History
     Embree and the application is simplified.
 -   Fixed a bug that would have caused a failure of the BVH builder
     for dynamic scenes when run on a machine with more then 1000 threads.
--   Fixed a bug that could have been triggered when reaching the maximal number of
-    mappings under Linux (`vm.max_map_count`). This could have happened when creating a
-    large number of small static scenes.
+-   Fixed a bug that could have been triggered when reaching the maximal
+    number of mappings under Linux (`vm.max_map_count`). This could have
+    happened when creating a large number of small static scenes.
 -   Added huge page support for Windows and MacOSX (experimental).
 -   Added support for Visual Studio 2017.
 -   Removed support for Visual Studio 2012.
--   Precompiled binaries now require a CPU supporting at least the SSE4.2 ISA.
+-   Precompiled binaries now require a CPU supporting at least the
+    SSE4.2 ISA.
 -   We no longer provide precompiled binaries for 32 bit on Windows.
--   Under Windows one now has to use the platform toolset option in CMake to switch
-    to Clang or the Intel® Compiler.
--   Fixed a bug for subdivision meshes when using the incoherent scene flag.
+-   Under Windows one now has to use the platform toolset option in
+    CMake to switch to Clang or the Intel® Compiler.
+-   Fixed a bug for subdivision meshes when using the incoherent scene
+    flag.
 -   Fixed a bug in the line geometry intersection, that caused reporting
     an invalid line segment intersection with primID -1.
 -   Buffer stride for vertex buffers of different time steps of triangle
@@ -93,14 +146,14 @@ Version History
 -   Reduced memory consumption when using lots of small dynamic objects.
 -   Fixed bug for subdivision surfaces using low tessellation rates.
 -   Hair geometry now uses a new ribbon intersector that intersects with
-    ray-facing quads. The new intersector also returns the
-    v-coordinate of the hair intersection, and fixes artefacts at junction
-    points between segments, at the cost of a small performance hit.
+    ray-facing quads. The new intersector also returns the v-coordinate
+    of the hair intersection, and fixes artefacts at junction points
+    between segments, at the cost of a small performance hit.
 -   Added `rtcSetBuffer2` function, that additionally gets the number of
     elements of a buffer. In dynamic scenes, this function allows to
-    quickly change buffer sizes, making it possible to change the number of
-    primitives of a mesh or the number of crease features for subdivision
-    surfaces.
+    quickly change buffer sizes, making it possible to change the number
+    of primitives of a mesh or the number of crease features for
+    subdivision surfaces.
 -   Added simple 'viewer_anim' tutorial for rendering key
     frame animations and 'buildbench' for measuring BVH (re-)build
     performance for static and dynamic scenes.
@@ -114,8 +167,8 @@ Version History
 -   Up to 20% faster BVH build performance on the second generation
     Intel® Xeon Phi™ processor codenamed Knights Landing.
 -   Improved quality of the spatial split builder.
--   Improved performance for coherent streams of ray packets (SOA layout),
-    e.g. for fast primary visibility.
+-   Improved performance for coherent streams of ray packets (SOA
+    layout), e.g. for fast primary visibility.
 -   Various bug fixes in tessellation cache, quad-based spatial
     split builder, etc.
 
@@ -150,8 +203,8 @@ Version History
 
 -   Improved performance for streams of coherent (single) rays flagged
     with `RTC_INTERSECT_COHERENT`. For such coherent ray streams, e.g.
-    primary rays, the performance typically improves by 1.3–2×.
--   New spatial split BVH builder for triangles, which is 2–6× faster
+    primary rays, the performance typically improves by 1.3-2×.
+-   New spatial split BVH builder for triangles, which is 2-6× faster
     than the previous version and more memory conservative.
 -   Improved performance and scalability of all standard BVH builders on
     systems with large core counts.
@@ -168,12 +221,12 @@ Version History
 -   Geometry types can get disabled at compile time.
 -   Modified and extended the ray stream API.
 -   Added new callback mechanism for the ray stream API.
--   Improved ray stream performance (up to 5–10%).
+-   Improved ray stream performance (up to 5-10%).
 -   Up to 20% faster morton builder on machines with large core counts.
 -   Lots of optimizations for the second generation Intel® Xeon Phi™
     processor codenamed Knights Landing.
 -   Added experimental support for compressed BVH nodes (reduces node
-    size to 56–62% of uncompressed size). Compression introduces a
+    size to 56-62% of uncompressed size). Compression introduces a
     typical performance overhead of ~10%.
 -   Bugfix in backface culling mode. We do now properly cull the
     backfaces and not the frontfaces.
@@ -184,8 +237,8 @@ Version History
 
 ### New Features in Embree 2.9.0
 
--   Improved shadow ray performance (10–100% depending on the scene).
--   Added initial support for ray streams (10–30% higher performance
+-   Improved shadow ray performance (10-100% depending on the scene).
+-   Added initial support for ray streams (10-30% higher performance
     depending on ray coherence in the stream).
 -   Added support to calculate second order derivatives using the
     `rtcInterpolate2` function.
@@ -206,26 +259,29 @@ Version History
 -   Added support for quad geometry (replaces triangle-pairs feature).
 -   Added support for linear motion blur of user geometries.
 -   Improved performance through AVX-512 optimizations.
--   Improved performance of lazy scene build (when using TBB 4.4 update 2).
+-   Improved performance of lazy scene build (when using TBB 4.4 update
+    2).
 -   Improved performance through huge page support under linux.
 
 ### New Features in Embree 2.7.1
 
 -   Internal tasking system supports cancellation of build operations.
 -   ISPC mode for robust and compact scenes got significantly faster
-    (implemented hybrid traversal for bvh4.triangle4v and bvh4.triangle4i).
+    (implemented hybrid traversal for bvh4.triangle4v and
+    bvh4.triangle4i).
 -   Hair rendering got faster as we fixed some issues with the SAH
     heuristic cost factors.
 -   BVH8 got slight faster for single ray traversal (improved sorting
     when hitting more than 4 boxes).
 -   BVH build performance got up to 30% faster on CPUs with high core
     counts (improved parallel partition code).
--   High quality build mode again working properly (spatial splits had been
-    deactivated in v2.7.0 due to some bug).
+-   High quality build mode again working properly (spatial splits had
+    been deactivated in v2.7.0 due to some bug).
 -   Support for merging two adjacent triangles sharing a common edge
     into a triangle-pair primitive (can reduce memory consumption and
     BVH build times by up to 50% for mostly quad-based input meshes).
--   Internal cleanups (reduced number of traversal kernels by more templating)
+-   Internal cleanups (reduced number of traversal kernels by more
+    templating).
 -   Reduced stack size requirements of BVH builders.
 -   Fixed crash for dynamic scenes, triggered by deleting all
     geometries from the scene.
@@ -394,29 +450,6 @@ Version History
         Phi)
     -   New variant of the SAH-based builder using triangle pre-splits
         (Xeon Phi)
-
-### Example Performance Numbers for Embree 2.1
-
-BVH rebuild performance (including triangle accel generation, excluding
-memory allocation) for scenes with 2–12 million triangles:
-
--   Intel® Core™ i7 (Haswell-based CPU, 4 cores @ 3.0 GHz)
-    -   7–8 million triangles/s for the SAH-based BVH builder
-    -   30–36 million triangles/s for the Morton code-based BVH builder
--   Intel® Xeon Phi™ 7120
-    -   37–40 million triangles/s for the SAH-based BVH builder
-    -   140–160 million triangles/s for the Morton code-based BVH
-        builder
-
-Rendering of the Crown model (`crown.ecs`) with 4 samples per pixel
-(`-spp 4`):
-
--   Intel® Core™ i7 (Haswell-based CPU, 4 cores CPU @ 3.0 GHz)
-    -   1024×1024 resolution: 7.8 million rays per sec
-    -   1920×1080 resolution: 9.9 million rays per sec
--   Intel® Xeon Phi™ 7120
-    -   1024×1024 resolution: 47.1 million rays per sec
-    -   1920×1080 resolution: 61.1 million rays per sec
 
 ### New Features in Embree 2.0
 

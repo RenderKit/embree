@@ -46,15 +46,14 @@ namespace embree
     Vec3fa parm_Vec3fa(const std::string& parmID) const {
       std::map<std::string,std::string>::const_iterator i = parms.find(parmID);
       if (i == parms.end()) THROW_RUNTIME_ERROR (loc.str()+": XML node has no parameter \"" + parmID + "\"");
-      float x,y,z; sscanf(i->second.c_str(),"%f %f %f",&x,&y,&z);
-      return Vec3fa(x,y,z);
+      const Vec3f p = string_to_Vec3f(i->second);
+      return Vec3fa(p);
     }
 
     float parm_float(const std::string& parmID) const {
       std::map<std::string,std::string>::const_iterator i = parms.find(parmID);
       if (i == parms.end()) THROW_RUNTIME_ERROR (loc.str()+": XML node has no parameter \"" + parmID + "\"");
-      float x; sscanf(i->second.c_str(),"%f",&x);
-      return x;
+      return std::stof(i->second);
     }
 
     /*! returns the nth child */

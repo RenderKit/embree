@@ -128,7 +128,7 @@ namespace embree
           if (!object->getBounds().empty())
           {
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER
-            refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root,objectID,mesh->size());
+            refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root,(unsigned int)objectID,(unsigned int)mesh->size());
 #else
             refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root);
 #endif
@@ -179,7 +179,7 @@ namespace embree
 
               PrimInfo pinfo(empty);
               for (size_t i=r.begin(); i<r.end(); i++) {
-                pinfo.add(refs[i].bounds(),refs[i].bounds().center2());
+                pinfo.add_center2(refs[i]);
               }
               return pinfo;
             }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
@@ -222,7 +222,7 @@ namespace embree
               typename BVH::AlignedNode::Create2(),
               typename BVH::AlignedNode::Set2(),
               
-              [&] (const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) -> NodeRef  {
+              [&] (const BuildRef* refs, const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) -> NodeRef  {
                 assert(range.size() == 1);
                 return (NodeRef) refs[range.begin()].node;
               },
@@ -237,7 +237,7 @@ namespace embree
               typename BVH::AlignedNode::Create2(),
               typename BVH::AlignedNode::Set2(),
               
-              [&] (const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) -> NodeRef {
+              [&] (const PrimRef* pims, const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) -> NodeRef {
                 assert(range.size() == 1);
                 return (NodeRef) prims[range.begin()].ID();
               },

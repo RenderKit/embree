@@ -49,15 +49,9 @@ make -j 16 package
 
 if [ "$1" == "OFF" ]; then
 
-  # rename RPMs to have component name before version
-  for i in embree-${EMBREE_VERSION}-1.*.rpm ; do 
-    newname=`echo $i | sed -e "s/embree-\(.\+\)-\([a-z_]\+\)\.rpm/embree-\2-\1.rpm/"`
-    mv $i $newname
-  done
-
   # create TGZ of RPMs
   embree_tgz=embree-${EMBREE_VERSION}.x86_64.rpm.tar.gz
-  tar czf ${embree_tgz} embree-*-${EMBREE_VERSION}-1.x86_64.rpm
+  tar czf ${embree_tgz} embree-*-${EMBREE_VERSION}-*.rpm
 
   # send RPMs to CDash
   echo "<DartMeasurement name=\"${embree_tgz}\" type=\"text/string\">${embree_tgz}</DartMeasurement>"

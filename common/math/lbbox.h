@@ -94,7 +94,7 @@ namespace embree
       BBox<T> b0 = lerp(blower0, blower1, lower-ilowerf);
       BBox<T> b1 = lerp(bupper1, bupper0, iupperf-upper);
 
-      for (size_t i = ilower+1; i < iupper; i++)
+      for (int i = ilower+1; i < iupper; i++)
       {
         const float f = (float(i)/numTimeSegments - time_range.lower) / time_range.size();
         const BBox<T> bt = lerp(b0, b1, f);
@@ -125,7 +125,7 @@ namespace embree
         return;
       }
   
-      for (size_t i = ilower+1; i<iupper; i++)
+      for (int i = ilower+1; i<iupper; i++)
       {
         const float f = float(i - time_range.begin()) / float(time_range.size());
         const BBox<T> bt = lerp(b0, b1, f);

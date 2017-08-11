@@ -23,7 +23,6 @@ ADD_LIBRARY(sys STATIC
   filename.cpp
   library.cpp
   thread.cpp
-  network.cpp
   string.cpp
   regression.cpp
   mutex.cpp

@@ -17,14 +17,14 @@
 ADD_LIBRARY(texture STATIC
   texture2d.cpp
 )
-TARGET_LINK_LIBRARIES(texture sys)
+TARGET_LINK_LIBRARIES(texture sys math)
 SET_PROPERTY(TARGET texture PROPERTY FOLDER tutorials/common)
 
 IF (EMBREE_ISPC_SUPPORT)
   ADD_ISPC_LIBRARY(texture_ispc STATIC
     texture2d.ispc
   )
-  TARGET_LINK_LIBRARIES(texture_ispc sys)
+  TARGET_LINK_LIBRARIES(texture_ispc sys math)
   SET_TARGET_PROPERTIES(texture_ispc PROPERTIES LINKER_LANGUAGE C)
   SET_PROPERTY(TARGET texture_ispc PROPERTY FOLDER tutorials/common)
 ENDIF()

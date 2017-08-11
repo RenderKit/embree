@@ -28,6 +28,9 @@ namespace embree
 {
   void* alignedMalloc(size_t size, size_t align) 
   {
+    if (size == 0)
+      return nullptr;
+    
     assert((align & (align-1)) == 0);
     void* ptr = _mm_malloc(size,align);
 
@@ -37,8 +40,10 @@ namespace embree
     return ptr;
   }
   
-  void alignedFree(void* ptr) {
-    _mm_free(ptr);
+  void alignedFree(void* ptr)
+  {
+    if (ptr)
+      _mm_free(ptr);
   }
 
   static bool huge_pages_enabled = false;
@@ -185,6 +190,7 @@ namespace embree
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sstream>
 
 #if defined(__MACOSX__)
 #include <mach/vm_statistics.h>
@@ -214,13 +220,18 @@ namespace embree
     }
     
     std::string line;
-    int val; char tag[41], unit[6];
-    while (getline(file,line)) {
-      if (sscanf(line.c_str(),"%40s %i %5s",tag,&val,unit) == 3) {
-        if (std::string(tag) == "Hugepagesize:" && std::string(unit) == "kB") {
-          hugepagesize = val*1024;
-          break;
-        }
+    while (getline(file,line))
+    {
+      std::stringstream sline(line);
+      while (!sline.eof() && sline.peek() == ' ') sline.ignore();
+      std::string tag; getline(sline,tag,' ');
+      while (!sline.eof() && sline.peek() == ' ') sline.ignore();
+      std::string val; getline(sline,val,' ');
+      while (!sline.eof() && sline.peek() == ' ') sline.ignore();
+      std::string unit; getline(sline,unit,' ');
+      if (tag == "Hugepagesize:" && unit == "kB") {
+	hugepagesize = std::stoi(val)*1024;
+	break;
       }
     }
     

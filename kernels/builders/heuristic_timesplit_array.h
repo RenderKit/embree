@@ -77,8 +77,8 @@ namespace embree
                 bounds0[b].extend(bn0.interpolate(0.5f));
                 bounds1[b].extend(bn1.interpolate(0.5f));
 #endif
-                count0[b] += getTimeSegmentRange(dt0,prims[i].totalTimeSegments()).size();
-                count1[b] += getTimeSegmentRange(dt1,prims[i].totalTimeSegments()).size();
+                count0[b] += getTimeSegmentRange(dt0,(float)prims[i].totalTimeSegments()).size();
+                count1[b] += getTimeSegmentRange(dt1,(float)prims[i].totalTimeSegments()).size();
               }
             }
           }
@@ -128,8 +128,8 @@ namespace embree
               const BBox1f dt1(center_time,time_range.upper);
               
               /* calculate sah */
-              const size_t lCount = (count0[b]+(1 << logBlockSize)-1) >> int(logBlockSize);
-              const size_t rCount = (count1[b]+(1 << logBlockSize)-1) >> int(logBlockSize);
+              const size_t lCount = (count0[b]+(size_t(1) << logBlockSize)-1) >> int(logBlockSize);
+              const size_t rCount = (count1[b]+(size_t(1) << logBlockSize)-1) >> int(logBlockSize);
               const float sah0 = expectedApproxHalfArea(bounds0[b])*float(lCount)*dt0.size();
               const float sah1 = expectedApproxHalfArea(bounds1[b])*float(rCount)*dt1.size();
               const float sah = sah0+sah1;
@@ -153,10 +153,10 @@ namespace embree
         const Split find(const SetMB& set, const size_t logBlockSize)
         {
           assert(set.object_range.size() > 0);
-          unsigned numTimeSegments = set.max_num_time_segments;
+          unsigned numTimeSegments = unsigned(set.max_num_time_segments);
           TemporalBinInfo binner(empty);
           binner.bin_parallel(set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,set.time_range,numTimeSegments,recalculatePrimRef);
-          Split tsplit = binner.best(logBlockSize,set.time_range,numTimeSegments);
+          Split tsplit = binner.best((int)logBlockSize,set.time_range,numTimeSegments);
           if (!tsplit.valid()) tsplit.data = Split::SPLIT_FALLBACK; // use fallback split
           return tsplit;
         }

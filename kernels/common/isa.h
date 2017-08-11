@@ -30,7 +30,7 @@ namespace embree
   namespace avx512knl { extern type name(); }                           \
   namespace avx512skx { extern type name(); }                           \
   void name##_error2() { throw_RTCError(RTC_UNKNOWN_ERROR,"internal error in ISA selection for " TOSTRING(name)); } \
-  type name##_error() { return type(name##_error2); }                 \
+  type name##_error() { return type(name##_error2); }                   \
   type name##_zero() { return type(nullptr); }
 
 #define DECLARE_ISA_FUNCTION(type,symbol,args)                            \
@@ -40,7 +40,7 @@ namespace embree
   namespace avx2      { extern type symbol(args); }                       \
   namespace avx512knl { extern type symbol(args); }                       \
   namespace avx512skx { extern type symbol(args); }                     \
-  inline void symbol##_error() { throw_RTCError(RTC_UNSUPPORTED_CPU,"function " TOSTRING(symbol) " not supported by your CPU"); } \
+  inline type symbol##_error(args) { throw_RTCError(RTC_UNSUPPORTED_CPU,"function " TOSTRING(symbol) " not supported by your CPU"); } \
   typedef type (*symbol##Ty)(args);                                       \
   
 #define DEFINE_ISA_FUNCTION(type,symbol,args)   \

@@ -228,6 +228,7 @@ namespace embree
       }
     }
   }
+  
 #endif
 
   namespace isa

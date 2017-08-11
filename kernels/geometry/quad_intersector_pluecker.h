@@ -29,6 +29,106 @@ namespace embree
 {
   namespace isa
   {
+    template<int M>
+      struct QuadHitPlueckerM 
+      {
+        __forceinline QuadHitPlueckerM(const vbool<M>& valid,
+                                       const vfloat<M>& U, 
+                                       const vfloat<M>& V, 
+                                       const vfloat<M>& W, 
+                                       const vfloat<M>& T, 
+                                       const vfloat<M>& absDen, 
+                                       const Vec3vf<M>& Ng,
+                                       const vbool<M>& flags)
+          : U(U), V(V), W(W), T(T), absDen(absDen), tri_Ng(Ng), valid(valid), flags(flags) {}
+      
+        __forceinline void finalize() 
+        {
+          const vfloat<M> rcpAbsDen = rcp(absDen);
+          vt = T * rcpAbsDen;
+          const vfloat<M> rcpUVW = rcp(U+V+W);
+          const vfloat<M> u = U * rcpUVW;
+          const vfloat<M> v = V * rcpUVW;
+          const vfloat<M> u1 = vfloat<M>(1.0f) - u;
+          const vfloat<M> v1 = vfloat<M>(1.0f) - v;
+#if !defined(__AVX__) || defined(EMBREE_BACKFACE_CULLING)
+          vu = select(flags,u1,u); 
+          vv = select(flags,v1,v);
+          vNg = Vec3vf<M>(tri_Ng.x,tri_Ng.y,tri_Ng.z);
+#else
+          const vfloat<M> flip = select(flags,vfloat<M>(-1.0f),vfloat<M>(1.0f));
+          vv = select(flags,u1,v);
+          vu = select(flags,v1,u);
+          vNg = Vec3vf<M>(flip*tri_Ng.x,flip*tri_Ng.y,flip*tri_Ng.z);
+#endif
+        }
+
+        __forceinline Vec2f uv(const size_t i) 
+        { 
+          const float u = vu[i];
+          const float v = vv[i];
+          return Vec2f(u,v);
+        }
+
+        __forceinline float   t(const size_t i) { return vt[i]; }
+        __forceinline Vec3fa Ng(const size_t i) { return Vec3fa(vNg.x[i],vNg.y[i],vNg.z[i]); }
+      
+      private:
+        vfloat<M> U;
+        vfloat<M> V;
+        vfloat<M> W;
+        vfloat<M> T;
+        vfloat<M> absDen;
+        Vec3vf<M> tri_Ng;
+      
+      public:
+        vbool<M> valid;
+        vfloat<M> vu;
+        vfloat<M> vv;
+        vfloat<M> vt;
+        Vec3vf<M> vNg;
+
+      public:
+        const vbool<M> flags;
+      };
+
+    template<int K>
+      struct QuadHitPlueckerK
+      {
+        __forceinline QuadHitPlueckerK(const vfloat<K>& U, 
+                                       const vfloat<K>& V, 
+                                       const vfloat<K>& W, 
+                                       const vfloat<K>& T, 
+                                       const vfloat<K>& absDen, 
+                                       const Vec3vf<K>& Ng,
+                                       const vbool<K>& flags)
+          : U(U), V(V), W(W), T(T), absDen(absDen), flags(flags), tri_Ng(Ng) {}
+      
+        __forceinline std::tuple<vfloat<K>,vfloat<K>,vfloat<K>,Vec3vf<K>> operator() () const
+        {
+          const vfloat<K> rcpAbsDen = rcp(absDen);
+          const vfloat<K> t = T * rcpAbsDen;
+          const vfloat<K> rcpUVW = rcp(U+V+W);
+          const vfloat<K> u0 = U * rcpUVW;
+          const vfloat<K> v0 = V * rcpUVW;
+          const vfloat<K> u1 = vfloat<K>(1.0f) - u0;
+          const vfloat<K> v1 = vfloat<K>(1.0f) - v0;
+          const vfloat<K> u = select(flags,u1,u0); 
+          const vfloat<K> v = select(flags,v1,v0);
+          const Vec3vf<K> Ng(tri_Ng.x,tri_Ng.y,tri_Ng.z);
+          return std::make_tuple(u,v,t,Ng);
+        }
+
+      private:
+        const vfloat<K> U;
+        const vfloat<K> V;
+        const vfloat<K> W;
+        const vfloat<K> T;
+        const vfloat<K> absDen;
+        const vbool<K> flags;
+        const Vec3vf<K> tri_Ng;
+      };
+
     struct PlueckerIntersectorTriangle1
     {
         template<int M, typename Epilog>
@@ -82,7 +182,7 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* update hit information */
-          QuadHitM<M> hit(valid,U,V,T,den,Ng,flags);
+          QuadHitPlueckerM<M> hit(valid,U,V,W,T,den,Ng,flags);
           return epilog(valid,hit);
         }  
       };
@@ -261,7 +361,7 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* calculate hit information */
-          QuadHitM<M> hit(valid,U,V,T,den,Ng,flags);
+          QuadHitPlueckerM<M> hit(valid,U,V,W,T,den,Ng,flags);
           return epilog(valid,hit);
       }
     };
@@ -325,7 +425,7 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* calculate hit information */
-          QuadHitK<K> hit(U,V,T,den,Ng,flags);
+          QuadHitPlueckerK<K> hit(U,V,W,T,den,Ng,flags);
           return epilog(valid,hit);
       }
       

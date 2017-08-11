@@ -156,8 +156,8 @@ namespace embree
         assert(endID < BINS);
         assert(binID < BINS);
 
-        numBegin[beginID][dim]+=n;
-        numEnd  [endID][dim]+=n;
+        numBegin[beginID][dim]+=(unsigned int)n;
+        numEnd  [endID][dim]+=(unsigned int)n;
         bounds  [binID][dim].extend(b);        
       }
 

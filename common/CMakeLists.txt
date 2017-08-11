@@ -15,6 +15,7 @@
 ## ======================================================================== ##
 
 ADD_SUBDIRECTORY(sys)
+ADD_SUBDIRECTORY(math)
 ADD_SUBDIRECTORY(simd)
 ADD_SUBDIRECTORY(lexers)
 ADD_SUBDIRECTORY(tasking)

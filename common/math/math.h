@@ -62,7 +62,7 @@ namespace embree
     const __m128 a = _mm_set_ss(x);
 
 #if defined(__AVX512VL__)
-    const __m128 r = _mm_rcp14_ss(a);
+    const __m128 r = _mm_rcp14_ss(_mm_set_ss(0.0f),a);
 #else
     const __m128 r = _mm_rcp_ss(a);
 #endif
@@ -87,7 +87,7 @@ namespace embree
   {
     const __m128 a = _mm_set_ss(x);
 #if defined(__AVX512VL__)
-    const __m128 r = _mm_rsqrt14_ss(a);
+    const __m128 r = _mm_rsqrt14_ss(_mm_set_ss(0.0f),a);
 #else
     const __m128 r = _mm_rsqrt_ss(a);
 #endif

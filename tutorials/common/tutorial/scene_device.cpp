@@ -27,12 +27,18 @@ namespace embree
   std::map<Ref<SceneGraph::Node>,ISPCGeometry*> node2geom;
 
   ISPCTriangleMesh::ISPCTriangleMesh (TutorialScene* scene_in, Ref<SceneGraph::TriangleMeshNode> in) 
-    : geom(TRIANGLE_MESH)
+    : geom(TRIANGLE_MESH), positions(nullptr), normals(nullptr)
   {
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
       positions[i] = in->positions[i].data();
-    normals = in->normals.data();
+    
+    if (in->normals.size()) {
+      normals = new Vec3fa*[in->numTimeSteps()];
+      for (size_t i=0; i<in->numTimeSteps(); i++)
+        normals[i] = in->normals[i].data();
+    }
+    
     texcoords = in->texcoords.data();
     triangles = (ISPCTriangle*) in->triangles.data();
     numTimeSteps = (unsigned) in->numTimeSteps();
@@ -42,16 +48,23 @@ namespace embree
   }
 
   ISPCTriangleMesh::~ISPCTriangleMesh () {
-    delete[] positions;
+    if (positions) delete[] positions;
+    if (normals) delete[] normals;
   }
   
   ISPCQuadMesh::ISPCQuadMesh (TutorialScene* scene_in, Ref<SceneGraph::QuadMeshNode> in) 
-    : geom(QUAD_MESH)
+    : geom(QUAD_MESH), positions(nullptr), normals(nullptr)
   {
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
       positions[i] = in->positions[i].data();
-    normals = in->normals.data();
+
+    if (in->normals.size()) {
+      normals = new Vec3fa*[in->numTimeSteps()];
+      for (size_t i=0; i<in->numTimeSteps(); i++)
+        normals[i] = in->normals[i].data();
+    }
+    
     texcoords = in->texcoords.data();
     quads = (ISPCQuad*) in->quads.data();
     numTimeSteps = (unsigned) in->numTimeSteps();
@@ -61,16 +74,22 @@ namespace embree
   }
 
   ISPCQuadMesh::~ISPCQuadMesh () {
-    delete[] positions;
-  }
+    if (positions) delete[] positions;
+    if (normals) delete[] normals;  }
 
   ISPCSubdivMesh::ISPCSubdivMesh (TutorialScene* scene_in, Ref<SceneGraph::SubdivMeshNode> in) 
-    : geom(SUBDIV_MESH)
+    : geom(SUBDIV_MESH), positions(nullptr), normals(nullptr)
   {
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
       positions[i] = in->positions[i].data();
-    normals = in->normals.data();
+
+    if (in->normals.size()) {
+      normals = new Vec3fa*[in->numTimeSteps()];
+      for (size_t i=0; i<in->numTimeSteps(); i++)
+        normals[i] = in->normals[i].data();
+    }
+    
     texcoords = in->texcoords.data();
     position_indices = in->position_indices.data();
     normal_indices = in->normal_indices.data();
@@ -110,9 +129,10 @@ namespace embree
   
   ISPCSubdivMesh::~ISPCSubdivMesh ()
   {
-    delete[] positions;
-    delete[] subdivlevel;
-    delete[] face_offsets;
+    if (positions) delete[] positions;
+    if (normals) delete[] normals;
+    if (subdivlevel) delete[] subdivlevel;
+    if (face_offsets) delete[] face_offsets;
   }
   
   ISPCLineSegments::ISPCLineSegments (TutorialScene* scene_in, Ref<SceneGraph::LineSegmentsNode> in) 
