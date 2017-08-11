@@ -75,187 +75,92 @@ IF (EMBREE_RAY_PACKETS)
 )
 ENDIF()
 
-SET(EMBREE_LIBRARY_FILES_SSE2
-
-  common/scene_triangle_mesh.cpp
-  common/scene_quad_mesh.cpp 
-  common/scene_bezier_curves.cpp
-  common/scene_line_segments.cpp
- 
-  bvh/bvh_rotate.cpp
-  bvh/bvh_refit.cpp
-  bvh/bvh_builder.cpp
-  bvh/bvh_builder_hair.cpp
-  bvh/bvh_builder_morton.cpp
-  bvh/bvh_builder_sah.cpp
-  bvh/bvh_builder_twolevel.cpp
-  bvh/bvh_builder_instancing.cpp
-
-  bvh/bvh_intersector1_bvh4.cpp
-  geometry/instance_intersector1.cpp
-)
-
-IF (EMBREE_GEOMETRY_SUBDIV)
-  SET(EMBREE_LIBRARY_FILES_SSE2 ${EMBREE_LIBRARY_FILES_SSE2}
-  common/scene_subdiv_mesh.cpp
-  geometry/grid_soa.cpp	
-  subdiv/subdivpatch1base_eval.cpp
-  bvh/bvh_builder_subdiv.cpp
-)
-ENDIF()
-
-IF (EMBREE_RAY_PACKETS)
-  SET(EMBREE_LIBRARY_FILES_SSE2 ${EMBREE_LIBRARY_FILES_SSE2}
-
-  bvh/bvh_intersector_hybrid4_bvh4.cpp
-  bvh/bvh_intersector_stream_bvh4.cpp
-  bvh/bvh_intersector_stream_filters.cpp
-)
-ENDIF()
-
-SET(EMBREE_LIBRARY_FILES_SSE42
+MACRO(embree_files TARGET ISA)
+      
+  SET(${TARGET}
+    geometry/instance_intersector1.cpp
     bvh/bvh_intersector1_bvh4.cpp)
 
-IF (EMBREE_GEOMETRY_SUBDIV)
-  SET(EMBREE_LIBRARY_FILES_SSE42 ${EMBREE_LIBRARY_FILES_SSE42}
-    geometry/grid_soa.cpp
-    subdiv/subdivpatch1base_eval.cpp)
-ENDIF()
-
-IF (EMBREE_RAY_PACKETS)
-    SET(EMBREE_LIBRARY_FILES_SSE42 ${EMBREE_LIBRARY_FILES_SSE42}
-    bvh/bvh_intersector_hybrid4_bvh4.cpp
-    bvh/bvh_intersector_stream_bvh4.cpp
-    bvh/bvh_intersector_stream_filters.cpp)
-ENDIF()
-
-SET(EMBREE_LIBRARY_FILES_AVX
-    common/scene_triangle_mesh.cpp
-    common/scene_quad_mesh.cpp 
-    common/scene_bezier_curves.cpp
-    common/scene_line_segments.cpp
-
-    geometry/instance_intersector1.cpp
-    builders/primrefgen.cpp
-
-    bvh/bvh_rotate.cpp
-    bvh/bvh_refit.cpp
-    bvh/bvh_builder.cpp
-    bvh/bvh_builder_hair.cpp
-    bvh/bvh_builder_morton.cpp
-    bvh/bvh_builder_sah.cpp
-    bvh/bvh_builder_twolevel.cpp
-    bvh/bvh_builder_instancing.cpp
-    bvh/bvh_intersector1_bvh4.cpp
-    bvh/bvh_intersector1_bvh8.cpp
+  IF (${ISA} EQUAL ${SSE2} OR ${ISA} EQUAL ${AVX} OR ${ISA} EQUAL ${AVX512KNL} OR ${ISA_LOWEST} EQUAL ${ISA})
     
-    bvh/bvh.cpp
-    bvh/bvh_statistics.cpp)
+    LIST(APPEND ${TARGET}
+      common/scene_triangle_mesh.cpp
+      common/scene_quad_mesh.cpp 
+      common/scene_bezier_curves.cpp
+      common/scene_line_segments.cpp
+      
+      bvh/bvh_refit.cpp
+      bvh/bvh_builder.cpp
+      bvh/bvh_builder_hair.cpp
+      bvh/bvh_builder_sah.cpp
+      bvh/bvh_builder_twolevel.cpp
+      bvh/bvh_builder_instancing.cpp)
 
-IF (EMBREE_GEOMETRY_SUBDIV)
-  SET(EMBREE_LIBRARY_FILES_AVX ${EMBREE_LIBRARY_FILES_AVX}
-  common/scene_subdiv_mesh.cpp
-  geometry/grid_soa.cpp
-  subdiv/subdivpatch1base_eval.cpp
-  bvh/bvh_builder_subdiv.cpp)
-ENDIF()
+    IF (EMBREE_GEOMETRY_SUBDIV)
+      LIST(APPEND ${TARGET} bvh/bvh_builder_subdiv.cpp)
+    ENDIF()
+  ENDIF()
 
-IF (EMBREE_RAY_PACKETS)
-  SET(EMBREE_LIBRARY_FILES_AVX ${EMBREE_LIBRARY_FILES_AVX}
+  IF (${ISA} EQUAL ${SSE2} OR ${ISA} EQUAL ${AVX} OR ${ISA} EQUAL ${AVX2} OR ${ISA} EQUAL ${AVX512KNL} OR ${ISA_LOWEST} EQUAL ${ISA})
+    LIST(APPEND ${TARGET}
+      bvh/bvh_builder_morton.cpp
+      bvh/bvh_rotate.cpp
+      builders/primrefgen.cpp)
+  ENDIF()
+    
+  IF (${ISA} GREATER ${SSE42})
+    LIST(APPEND ${TARGET} bvh/bvh_intersector1_bvh8.cpp)
+  ENDIF()
 
-    bvh/bvh_intersector_hybrid4_bvh4.cpp
-    bvh/bvh_intersector_hybrid8_bvh4.cpp
-    bvh/bvh_intersector_hybrid4_bvh8.cpp
-    bvh/bvh_intersector_hybrid8_bvh8.cpp
-    bvh/bvh_intersector_stream_bvh4.cpp
-    bvh/bvh_intersector_stream_bvh8.cpp
-    bvh/bvh_intersector_stream_filters.cpp)
-ENDIF()
+  IF (${ISA} EQUAL ${AVX})
+    LIST(APPEND ${TARGET}
+      bvh/bvh.cpp
+      bvh/bvh_statistics.cpp)
+  ENDIF()
 
-SET(EMBREE_LIBRARY_FILES_AVX2
-    geometry/instance_intersector1.cpp
-    builders/primrefgen.cpp
-    bvh/bvh_builder_morton.cpp
-    bvh/bvh_rotate.cpp
-    bvh/bvh_intersector1_bvh4.cpp
-    bvh/bvh_intersector1_bvh8.cpp)
+  IF (EMBREE_GEOMETRY_SUBDIV)
+    LIST(APPEND ${TARGET}
+        common/scene_subdiv_mesh.cpp
+        geometry/grid_soa.cpp
+        subdiv/subdivpatch1base_eval.cpp)
+  ENDIF()
+    
+  IF (EMBREE_RAY_PACKETS)
+    LIST(APPEND ${TARGET}
+      bvh/bvh_intersector_hybrid4_bvh4.cpp
+      bvh/bvh_intersector_stream_bvh4.cpp
+      bvh/bvh_intersector_stream_filters.cpp)
 
-IF (EMBREE_GEOMETRY_SUBDIV)
-  SET(EMBREE_LIBRARY_FILES_AVX2 ${EMBREE_LIBRARY_FILES_AVX2}
-  geometry/grid_soa.cpp
-  subdiv/subdivpatch1base_eval.cpp)
-ENDIF()
+    IF (${ISA} GREATER ${SSE42})
+      LIST(APPEND ${TARGET}
+        bvh/bvh_intersector_hybrid8_bvh4.cpp
+        bvh/bvh_intersector_hybrid4_bvh8.cpp
+        bvh/bvh_intersector_hybrid8_bvh8.cpp
+        bvh/bvh_intersector_stream_bvh8.cpp)
+    ENDIF()
 
-IF (EMBREE_RAY_PACKETS)
-  SET(EMBREE_LIBRARY_FILES_AVX2 ${EMBREE_LIBRARY_FILES_AVX2}
-    bvh/bvh_intersector_hybrid4_bvh4.cpp
-    bvh/bvh_intersector_hybrid8_bvh4.cpp
-    bvh/bvh_intersector_hybrid4_bvh8.cpp
-    bvh/bvh_intersector_hybrid8_bvh8.cpp
-    bvh/bvh_intersector_stream_bvh4.cpp
-    bvh/bvh_intersector_stream_bvh8.cpp
-    bvh/bvh_intersector_stream_filters.cpp)
-ENDIF()
+    IF (${ISA} GREATER ${AVX2})
+      LIST(APPEND ${TARGET}
+        bvh/bvh_intersector_hybrid16_bvh8.cpp
+        bvh/bvh_intersector_hybrid16_bvh4.cpp)
+    ENDIF()
+  ENDIF()
+  
+ENDMACRO()
 
-SET(EMBREE_LIBRARY_FILES_AVX512KNL
-    geometry/instance_intersector1.cpp
+embree_files(EMBREE_LIBRARY_FILES_SSE2 ${SSE2})
+embree_files(EMBREE_LIBRARY_FILES_SSE42 ${SSE42})
+embree_files(EMBREE_LIBRARY_FILES_AVX ${AVX})
+embree_files(EMBREE_LIBRARY_FILES_AVX2 ${AVX2})
+embree_files(EMBREE_LIBRARY_FILES_AVX512KNL ${AVX512KNL})
+embree_files(EMBREE_LIBRARY_FILES_AVX512SKX ${AVX512SKX})
 
-    bvh/bvh_refit.cpp
-    bvh/bvh_rotate.cpp
-    bvh/bvh_intersector1_bvh4.cpp
-    bvh/bvh_intersector1_bvh8.cpp
-
-    builders/primrefgen.cpp
-    bvh/bvh_builder.cpp
-    bvh/bvh_builder_sah.cpp
-    bvh/bvh_builder_twolevel.cpp
-    bvh/bvh_builder_instancing.cpp
-    bvh/bvh_builder_morton.cpp)
-
-IF (EMBREE_GEOMETRY_SUBDIV)
-  SET(EMBREE_LIBRARY_FILES_AVX512KNL ${EMBREE_LIBRARY_FILES_AVX512KNL}
-  geometry/grid_soa.cpp    
-  subdiv/subdivpatch1base_eval.cpp
-  bvh/bvh_builder_subdiv.cpp)
-ENDIF()
-
-IF (EMBREE_RAY_PACKETS)
-  SET(EMBREE_LIBRARY_FILES_AVX512KNL ${EMBREE_LIBRARY_FILES_AVX512KNL}
-    bvh/bvh_intersector_hybrid4_bvh4.cpp
-    bvh/bvh_intersector_hybrid8_bvh4.cpp
-    bvh/bvh_intersector_hybrid16_bvh4.cpp
-    bvh/bvh_intersector_hybrid4_bvh8.cpp
-    bvh/bvh_intersector_hybrid8_bvh8.cpp
-    bvh/bvh_intersector_hybrid16_bvh8.cpp
-    bvh/bvh_intersector_stream_bvh4.cpp
-    bvh/bvh_intersector_stream_bvh8.cpp
-    bvh/bvh_intersector_stream_filters.cpp)
-ENDIF()
-
-SET(EMBREE_LIBRARY_FILES_AVX512SKX
-    geometry/instance_intersector1.cpp
-
-    bvh/bvh_intersector1_bvh4.cpp
-    bvh/bvh_intersector1_bvh8.cpp)
-
-IF (EMBREE_GEOMETRY_SUBDIV)
-  SET(EMBREE_LIBRARY_FILES_AVX512SKX ${EMBREE_LIBRARY_FILES_AVX512SKX}
-  geometry/grid_soa.cpp
-  subdiv/subdivpatch1base_eval.cpp)
-ENDIF()
-
-IF (EMBREE_RAY_PACKETS)
-  SET(EMBREE_LIBRARY_FILES_AVX512SKX ${EMBREE_LIBRARY_FILES_AVX512SKX}
-    bvh/bvh_intersector_hybrid4_bvh4.cpp
-    bvh/bvh_intersector_hybrid8_bvh4.cpp
-    bvh/bvh_intersector_hybrid16_bvh4.cpp
-    bvh/bvh_intersector_hybrid4_bvh8.cpp
-    bvh/bvh_intersector_hybrid8_bvh8.cpp
-    bvh/bvh_intersector_hybrid16_bvh8.cpp
-    bvh/bvh_intersector_stream_bvh4.cpp
-    bvh/bvh_intersector_stream_bvh8.cpp
-    bvh/bvh_intersector_stream_filters.cpp)
-ENDIF()
+#message("SSE2: ${EMBREE_LIBRARY_FILES_SSE2}")
+#message("SSE42: ${EMBREE_LIBRARY_FILES_SSE42}")
+#message("AVX: ${EMBREE_LIBRARY_FILES_AVX}")
+#message("AVX2: ${EMBREE_LIBRARY_FILES_AVX2}")
+#message("AVX512KNL: ${EMBREE_LIBRARY_FILES_AVX512KNL}")
+#message("AVX512SKX: ${EMBREE_LIBRARY_FILES_AVX512SKX}")
 
 # replaces all .cpp files with a dummy file that includes that .cpp file
 # this is to work around an ICC name mangling issue related to lambda functions under windows
