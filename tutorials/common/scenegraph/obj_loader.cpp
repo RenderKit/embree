@@ -103,7 +103,7 @@ namespace embree
   }
 
   /*! Read Vec3fa from a string. */
-  static inline Vec3f getVec3fa(const char*& token) {
+  static inline Vec3fa getVec3fa(const char*& token) {
     float x = getFloat(token);
     token += strspn(token, " \t");
     if (*token == 0) return Vec3f(x);
