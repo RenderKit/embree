@@ -48,7 +48,8 @@ namespace embree
   }
 
   ISPCTriangleMesh::~ISPCTriangleMesh () {
-    delete[] positions;
+    if (positions) delete[] positions;
+    if (normals) delete[] normals;
   }
   
   ISPCQuadMesh::ISPCQuadMesh (TutorialScene* scene_in, Ref<SceneGraph::QuadMeshNode> in) 
@@ -73,8 +74,8 @@ namespace embree
   }
 
   ISPCQuadMesh::~ISPCQuadMesh () {
-    delete[] positions;
-  }
+    if (positions) delete[] positions;
+    if (normals) delete[] normals;  }
 
   ISPCSubdivMesh::ISPCSubdivMesh (TutorialScene* scene_in, Ref<SceneGraph::SubdivMeshNode> in) 
     : geom(SUBDIV_MESH), positions(nullptr), normals(nullptr)
@@ -128,9 +129,10 @@ namespace embree
   
   ISPCSubdivMesh::~ISPCSubdivMesh ()
   {
-    delete[] positions;
-    delete[] subdivlevel;
-    delete[] face_offsets;
+    if (positions) delete[] positions;
+    if (normals) delete[] normals;
+    if (subdivlevel) delete[] subdivlevel;
+    if (face_offsets) delete[] face_offsets;
   }
   
   ISPCLineSegments::ISPCLineSegments (TutorialScene* scene_in, Ref<SceneGraph::LineSegmentsNode> in) 
