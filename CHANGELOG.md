@@ -2,9 +2,8 @@ Version History
 ---------------
 
 ### New Features in Embree 2.16.5
--   Bugfix in the robust triangle intersector that rarely caused NaNs to
-    be reported.
--   Fixed bug in hybrid traversal kernel which entered leaf with no
+-   Bugfix in the robust triangle intersector that rarely caused NaNs.
+-   Fixed bug in hybrid traversal kernel when BVH leaf was entered with no
     active rays. This rarely caused crashes when used with instancing.
 -   Fixed bug introduced in Embree 2.16.2 which caused instancing not to
     work properly when a smaller than the native SIMD width was
