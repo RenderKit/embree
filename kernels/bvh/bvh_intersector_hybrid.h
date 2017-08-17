@@ -49,6 +49,23 @@ namespace embree
       (K==16) ? 14 : // 14 seems to work best for KNL due to better ordered chunk traversal
       0;
 
+
+      struct NearFarPreCompute
+      {
+        size_t nearX, nearY, nearZ;
+        size_t farX, farY, farZ;
+
+        __forceinline NearFarPreCompute(const Vec3fa& dir)
+        {
+          nearX = (dir.x < 0.0f) ? 1*sizeof(vfloat<N>) : 0*sizeof(vfloat<N>);
+          nearY = (dir.y < 0.0f) ? 3*sizeof(vfloat<N>) : 2*sizeof(vfloat<N>);
+          nearZ = (dir.z < 0.0f) ? 5*sizeof(vfloat<N>) : 4*sizeof(vfloat<N>);
+          farX  = nearX ^ sizeof(vfloat<N>);
+          farY  = nearY ^ sizeof(vfloat<N>);
+          farZ  = nearZ ^ sizeof(vfloat<N>);
+        }
+      };
+
     private:
       static void intersect1(const BVH* bvh, NodeRef root, const size_t k, Precalculations& pre, 
                              RayK<K>& ray, const Vec3vf<K> &ray_org, const Vec3vf<K> &ray_dir, const Vec3vf<K> &ray_rdir, const vfloat<K> &ray_tnear, const vfloat<K> &ray_tfar, const Vec3vi<K>& nearXYZ, IntersectContext* context);
@@ -58,6 +75,8 @@ namespace embree
     public:
       static void intersect(vint<K>* valid, BVH* bvh, RayK<K>& ray, IntersectContext* context);
       static void occluded (vint<K>* valid, BVH* bvh, RayK<K>& ray, IntersectContext* context);
+
+      static void intersect_coherent(vint<K>* valid, BVH* bvh, RayK<K>& ray, IntersectContext* context);
     };
 
     /*! BVH packet intersector. */
