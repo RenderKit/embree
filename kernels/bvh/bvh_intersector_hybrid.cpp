@@ -426,6 +426,107 @@ namespace embree
 
         const NearFarPreCompute pc(frusta_min_rdir);
 
+#if 1
+
+        StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes
+        StackItemT<NodeRef>* stackPtr = stack + 2;        //!< current stack pointer
+        StackItemT<NodeRef>* stackEnd = stack + stackSizeSingle;
+        stack[0].ptr  = BVH::invalidNode;
+        stack[0].dist = inf;
+        stack[1].ptr  = bvh->root;
+        stack[1].dist = neg_inf;
+
+        while (1) pop:
+        {
+          /* pop next node from stack */
+          assert(stackPtr > stack);
+          stackPtr--;
+          NodeRef cur = NodeRef(stackPtr->ptr);
+
+          if (unlikely(cur == BVH::invalidNode)) {
+            assert(stackPtr == stack);
+            break;
+          }
+
+          /* cull node if behind closest hit point */
+          const vfloat<K> curDist = *(float*)&stackPtr->dist;
+          const vbool<K> active = curDist < ray_tfar;
+          if (unlikely(none(active)))
+            continue;
+
+          while (likely(!cur.isLeaf()))
+          {
+            /* process nodes */
+            //const vbool<K> valid_node = ray_tfar > curDist;
+            //STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
+            const NodeRef nodeRef = cur;
+            //const BaseNode* __restrict__ const node = nodeRef.baseNode(types);
+            const AlignedNode* __restrict__ const node = nodeRef.alignedNode();
+
+            const vfloat<N> bminX = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearX));
+            const vfloat<N> bminY = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearY));
+            const vfloat<N> bminZ = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearZ));
+            const vfloat<N> bmaxX = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farX));
+            const vfloat<N> bmaxY = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farY));
+            const vfloat<N> bmaxZ = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farZ));
+
+            const vfloat<N> fminX = msub(bminX, vfloat<N>(frusta_min_rdir.x), vfloat<N>(frusta_min_org_rdir.x));
+            const vfloat<N> fminY = msub(bminY, vfloat<N>(frusta_min_rdir.y), vfloat<N>(frusta_min_org_rdir.y));
+            const vfloat<N> fminZ = msub(bminZ, vfloat<N>(frusta_min_rdir.z), vfloat<N>(frusta_min_org_rdir.z));
+            const vfloat<N> fmaxX = msub(bmaxX, vfloat<N>(frusta_max_rdir.x), vfloat<N>(frusta_max_org_rdir.x));
+            const vfloat<N> fmaxY = msub(bmaxY, vfloat<N>(frusta_max_rdir.y), vfloat<N>(frusta_max_org_rdir.y));
+            const vfloat<N> fmaxZ = msub(bmaxZ, vfloat<N>(frusta_max_rdir.z), vfloat<N>(frusta_max_org_rdir.z));
+            const vfloat<N> fmin  = maxi(fminX, fminY, fminZ, vfloat<N>(frusta_min_dist)); 
+            const vfloat<N> fmax  = mini(fmaxX, fmaxY, fmaxZ, vfloat<N>(frusta_max_dist));
+            const vbool<N> vmask_node_hit = fmin <= fmax;
+            size_t m_frusta_node = movemask(vmask_node_hit);
+            if (unlikely(!m_frusta_node)) goto pop;
+
+            
+#if defined(__AVX__)
+            STAT3(normal.trav_hit_boxes[__popcnt(m_frusta_node)],1,1,1);
+#endif
+            size_t bits = m_frusta_node;
+            do {
+              const size_t i = __bscf(bits);
+              vfloat<K> lnearP;
+              vbool<K> lhit;
+              STAT3(normal.trav_nodes,1,1,1);
+              BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP,lhit);
+              m_frusta_node ^= any(lhit) ? 0 : ((size_t)1 << i);
+          } while(bits);
+
+
+            if (unlikely(!m_frusta_node)) goto pop;
+            BVHNNodeTraverser1<N,Nx,types>::traverseClosestHit(cur,m_frusta_node,fmin,stackPtr,stackEnd);
+          }
+
+          /* return if stack is empty */
+          if (unlikely(cur == BVH::invalidNode)) {
+            break;
+          }
+
+          /* intersect leaf */
+          assert(cur != BVH::emptyNode);
+          const vbool<K> valid_leaf = ray_tfar > curDist;
+          STAT3(normal.trav_leaves,1,popcnt(valid_leaf),K);
+          if (unlikely(none(valid_leaf))) continue;
+          size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
+
+          size_t lazy_node = 0;
+          PrimitiveIntersectorK::intersect(valid_leaf,pre,ray,context,prim,items,lazy_node);
+          ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
+
+          if (unlikely(lazy_node)) {
+            stackPtr->ptr = lazy_node;
+            stackPtr->dist = neg_inf;
+            stackPtr++;
+          }
+        }
+        
+      } while(valid_bits);
+
+#else
         /* allocate stack and push root node */
         vfloat<K> stack_near[stackSizeChunk];
         NodeRef stack_node[stackSizeChunk];
@@ -459,7 +560,7 @@ namespace embree
           {
             /* process nodes */
             const vbool<K> valid_node = ray_tfar > curDist;
-            STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
+            //STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
             const NodeRef nodeRef = cur;
             //const BaseNode* __restrict__ const node = nodeRef.baseNode(types);
             const AlignedNode* __restrict__ const node = nodeRef.alignedNode();
@@ -488,12 +589,16 @@ namespace embree
 
             size_t num_child_hits = 0;
 
+#if defined(__AVX__)
+              STAT3(normal.trav_hit_boxes[__popcnt(m_frusta_node)],1,1,1);
+#endif
+
             while(m_frusta_node)
             {
               const size_t i = __bscf(m_frusta_node);
               const NodeRef child = node->children[i];
-              if (unlikely(child == BVH::emptyNode)) break;
 
+              STAT3(normal.trav_nodes,1,1,1);
               vfloat<K> lnearP;
               vbool<K> lhit(valid_node);
               BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP,lhit);
@@ -502,7 +607,9 @@ namespace embree
               {                                
                 assert(sptr_node < stackEnd);
                 assert(child != BVH::emptyNode);
-                const vfloat<K> childDist = select(lhit,lnearP,inf);
+                //const vfloat<K> childDist = select(lhit,lnearP,inf);
+                const vfloat<K> childDist = fmin[i];
+
                 /* push cur node onto stack and continue with hit child */
                 if (any(childDist < curDist))
                 {
@@ -524,9 +631,6 @@ namespace embree
               }              
             }
 
-#if defined(__AVX__)
-            STAT3(normal.trav_hit_boxes[num_child_hits],1,1,1);
-#endif
 
             if (unlikely(cur == BVH::emptyNode))
               goto pop;
@@ -580,7 +684,7 @@ namespace embree
         }
         
       } while(valid_bits);
-
+#endif
       AVX_ZERO_UPPER();
     }
 
