@@ -408,31 +408,7 @@ namespace embree
         const vfloat<K> ray_tnear = select(octant_valid,org_ray_tnear,vfloat<K>(pos_inf));
               vfloat<K> ray_tfar  = select(octant_valid,org_ray_tfar ,vfloat<K>(neg_inf));
 
-        const float frusta_min_dist = reduce_min(ray_tnear);
-              float frusta_max_dist = reduce_max(ray_tfar);
-
-        const Vec3fa reduced_min_rdir( reduce_min(select(octant_valid,rdir.x,pos_inf)),
-                                       reduce_min(select(octant_valid,rdir.y,pos_inf)),
-                                       reduce_min(select(octant_valid,rdir.z,pos_inf)) );
-        const Vec3fa reduced_max_rdir( reduce_max(select(octant_valid,rdir.x,neg_inf)),
-                                       reduce_max(select(octant_valid,rdir.y,neg_inf)),
-                                       reduce_max(select(octant_valid,rdir.z,neg_inf)) );
-        const Vec3fa reduced_min_org( reduce_min(select(octant_valid,org.x,pos_inf)),
-                                      reduce_min(select(octant_valid,org.y,pos_inf)),
-                                      reduce_min(select(octant_valid,org.z,pos_inf)) );
-        const Vec3fa reduced_max_org( reduce_max(select(octant_valid,org.x,neg_inf)),
-                                      reduce_max(select(octant_valid,org.y,neg_inf)),
-                                      reduce_max(select(octant_valid,org.z,neg_inf)) );
-        
-        const Vec3fa frusta_min_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_rdir, reduced_max_rdir);
-        const Vec3fa frusta_max_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_rdir, reduced_min_rdir);
-
-        const Vec3fa frusta_min_org_rdir = frusta_min_rdir * select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_org, reduced_min_org);
-        const Vec3fa frusta_max_org_rdir = frusta_max_rdir * select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_org, reduced_max_org);
-
-        const NearFarPreCompute pc(frusta_min_rdir);
-
-#if 1
+        Frustum frustum(octant_valid,rdir,org,ray_tnear,ray_tfar);
 
         StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes
         StackItemT<NodeRef>* stackPtr = stack + 1;        //!< current stack pointer
@@ -458,28 +434,11 @@ namespace embree
             //const vbool<K> valid_node = ray_tfar > curDist;
             //STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
             const NodeRef nodeRef = cur;
-            //const BaseNode* __restrict__ const node = nodeRef.baseNode(types);
             const AlignedNode* __restrict__ const node = nodeRef.alignedNode();
 
-            const vfloat<N> bminX = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearX));
-            const vfloat<N> bminY = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearY));
-            const vfloat<N> bminZ = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearZ));
-            const vfloat<N> bmaxX = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farX));
-            const vfloat<N> bmaxY = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farY));
-            const vfloat<N> bmaxZ = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farZ));
-
-            const vfloat<N> fminX = msub(bminX, vfloat<N>(frusta_min_rdir.x), vfloat<N>(frusta_min_org_rdir.x));
-            const vfloat<N> fminY = msub(bminY, vfloat<N>(frusta_min_rdir.y), vfloat<N>(frusta_min_org_rdir.y));
-            const vfloat<N> fminZ = msub(bminZ, vfloat<N>(frusta_min_rdir.z), vfloat<N>(frusta_min_org_rdir.z));
-            const vfloat<N> fmaxX = msub(bmaxX, vfloat<N>(frusta_max_rdir.x), vfloat<N>(frusta_max_org_rdir.x));
-            const vfloat<N> fmaxY = msub(bmaxY, vfloat<N>(frusta_max_rdir.y), vfloat<N>(frusta_max_org_rdir.y));
-            const vfloat<N> fmaxZ = msub(bmaxZ, vfloat<N>(frusta_max_rdir.z), vfloat<N>(frusta_max_org_rdir.z));
-            const vfloat<N> fmin  = maxi(fminX, fminY, fminZ, vfloat<N>(frusta_min_dist)); 
-            const vfloat<N> fmax  = mini(fmaxX, fmaxY, fmaxZ, vfloat<N>(frusta_max_dist));
-            const vbool<N> vmask_node_hit = fmin <= fmax;
-            size_t m_frusta_node = movemask(vmask_node_hit) & (((size_t)1 << N)-1);
+            __aligned(64) float fmin[16]; 
+            size_t m_frusta_node = frustum.intersect(nodeRef,fmin);
             if (unlikely(!m_frusta_node)) goto pop;
-
             cur = BVH::emptyNode;
             curDist = pos_inf;
             
@@ -553,7 +512,8 @@ namespace embree
           if (likely(any((ray.tfar < ray_tfar) & valid_leaf)))
           {
             ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
-            frusta_max_dist = reduce_max(ray_tfar);
+            //frusta_max_dist = reduce_max(ray_tfar);
+            frustum.updateMaxDist(ray_tfar);
           }
 #else            
           ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
@@ -568,171 +528,6 @@ namespace embree
         
       } while(valid_bits);
 
-#else
-        /* allocate stack and push root node */
-        vfloat<K> stack_near[stackSizeChunk];
-        NodeRef stack_node[stackSizeChunk];
-        stack_node[0] = BVH::invalidNode;
-        stack_near[0] = inf;
-        stack_node[1] = bvh->root;
-        stack_near[1] = select(octant_valid,ray_tnear,inf);
-        NodeRef* stackEnd MAYBE_UNUSED = stack_node+stackSizeChunk;
-        NodeRef* __restrict__ sptr_node = stack_node + 2;
-        vfloat<K>* __restrict__ sptr_near = stack_near + 2;
-
-        while (1) pop:
-        {
-          /* pop next node from stack */
-          assert(sptr_node > stack_node);
-          sptr_node--;
-          sptr_near--;
-          NodeRef cur = *sptr_node;
-          if (unlikely(cur == BVH::invalidNode)) {
-            assert(sptr_node == stack_node);
-            break;
-          }
-
-          /* cull node if behind closest hit point */
-          vfloat<K> curDist = *sptr_near;
-          const vbool<K> active = curDist < ray_tfar;
-          if (unlikely(none(active)))
-            continue;
-
-          while (likely(!cur.isLeaf()))
-          {
-            /* process nodes */
-            const vbool<K> valid_node = ray_tfar > curDist;
-            //STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
-            const NodeRef nodeRef = cur;
-            //const BaseNode* __restrict__ const node = nodeRef.baseNode(types);
-            const AlignedNode* __restrict__ const node = nodeRef.alignedNode();
-
-            const vfloat<N> bminX = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearX));
-            const vfloat<N> bminY = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearY));
-            const vfloat<N> bminZ = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearZ));
-            const vfloat<N> bmaxX = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farX));
-            const vfloat<N> bmaxY = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farY));
-            const vfloat<N> bmaxZ = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farZ));
-
-            const vfloat<N> fminX = msub(bminX, vfloat<N>(frusta_min_rdir.x), vfloat<N>(frusta_min_org_rdir.x));
-            const vfloat<N> fminY = msub(bminY, vfloat<N>(frusta_min_rdir.y), vfloat<N>(frusta_min_org_rdir.y));
-            const vfloat<N> fminZ = msub(bminZ, vfloat<N>(frusta_min_rdir.z), vfloat<N>(frusta_min_org_rdir.z));
-            const vfloat<N> fmaxX = msub(bmaxX, vfloat<N>(frusta_max_rdir.x), vfloat<N>(frusta_max_org_rdir.x));
-            const vfloat<N> fmaxY = msub(bmaxY, vfloat<N>(frusta_max_rdir.y), vfloat<N>(frusta_max_org_rdir.y));
-            const vfloat<N> fmaxZ = msub(bmaxZ, vfloat<N>(frusta_max_rdir.z), vfloat<N>(frusta_max_org_rdir.z));
-            const vfloat<N> fmin  = maxi(fminX, fminY, fminZ, vfloat<N>(frusta_min_dist)); 
-            const vfloat<N> fmax  = mini(fmaxX, fmaxY, fmaxZ, vfloat<N>(frusta_max_dist));
-            const vbool<N> vmask_node_hit = fmin <= fmax;
-            size_t m_frusta_node = movemask(vmask_node_hit);
-            //if (unlikely(!m_frusta_node)) goto pop;
-
-            /* set cur to invalid */
-            cur = BVH::emptyNode;
-            curDist = pos_inf;
-
-            size_t num_child_hits = 0;
-
-#if defined(__AVX__)
-            STAT3(normal.trav_hit_boxes[__popcnt(m_frusta_node)],1,1,1);
-#endif
-
-            while(m_frusta_node)
-            {
-              const size_t i = __bscf(m_frusta_node);
-              const NodeRef child = node->children[i];
-
-              STAT3(normal.trav_nodes,1,1,1);
-              vfloat<K> lnearP;
-              vbool<K> lhit(valid_node);
-              BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP,lhit);
-
-              if (likely(any(lhit)))
-              {                                
-                assert(sptr_node < stackEnd);
-                assert(child != BVH::emptyNode);
-                //const vfloat<K> childDist = select(lhit,lnearP,inf);
-                const vfloat<K> childDist = fmin[i];
-
-                /* push cur node onto stack and continue with hit child */
-                if (any(childDist < curDist))
-                {
-                  if (likely(cur != BVH::emptyNode)) {
-                    num_child_hits++;
-                    *sptr_node = cur; sptr_node++;
-                    *sptr_near = curDist; sptr_near++;
-                  }
-                  curDist = childDist;
-                  cur = child;
-                }
-
-                /* push hit child onto stack */
-                else {
-                  num_child_hits++;                  
-                  *sptr_node = child; sptr_node++;
-                  *sptr_near = childDist; sptr_near++;
-                }
-              }              
-            } 
-
-
-            if (unlikely(cur == BVH::emptyNode))
-              goto pop;
-            
-            /* improved distance sorting for 3 or more hits */
-            if (unlikely(num_child_hits >= 2))
-            {
-              if (any(sptr_near[-2] < sptr_near[-1]))
-              {
-                std::swap(sptr_near[-2],sptr_near[-1]);
-                std::swap(sptr_node[-2],sptr_node[-1]);
-              }
-              if (unlikely(num_child_hits >= 3))
-              {
-                if (any(sptr_near[-3] < sptr_near[-1]))
-                {
-                  std::swap(sptr_near[-3],sptr_near[-1]);
-                  std::swap(sptr_node[-3],sptr_node[-1]);
-                }
-                if (any(sptr_near[-3] < sptr_near[-2]))
-                {
-                  std::swap(sptr_near[-3],sptr_near[-2]);
-                  std::swap(sptr_node[-3],sptr_node[-2]);
-                }
-              }
-            }
-
-          }
-
-          /* intersect leaf */
-          assert(cur != BVH::invalidNode);
-
-          assert(cur != BVH::emptyNode);
-          const vbool<K> valid_leaf = ray_tfar > curDist;
-          STAT3(normal.trav_leaves,1,popcnt(valid_leaf),K);
-          if (unlikely(none(valid_leaf))) continue;
-          size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
-
-          size_t lazy_node = 0;
-          PrimitiveIntersectorK::intersect(valid_leaf,pre,ray,context,prim,items,lazy_node);
-
-#if 1
-          if (any((ray.tfar < ray_tfar) & valid_leaf))
-          {
-            ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
-            frusta_max_dist = reduce_max(ray_tfar);
-          }
-#else            
-          ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
-#endif
-
-          if (unlikely(lazy_node)) {
-            *sptr_node = lazy_node; sptr_node++;
-            *sptr_near = neg_inf;   sptr_near++;
-          }
-        }
-        
-      } while(valid_bits);
-#endif
       AVX_ZERO_UPPER();
     }
 

@@ -50,21 +50,85 @@ namespace embree
       0;
 
 
-      struct NearFarPreCompute
+      struct Frustum
       {
-        size_t nearX, nearY, nearZ;
-        size_t farX, farY, farZ;
-
-        __forceinline NearFarPreCompute(const Vec3fa& dir)
+        __forceinline Frustum(const vbool<K>  &octant_valid,
+                              const Vec3vf<K> &rdir,
+                              const Vec3vf<K> &org,
+                              const vfloat<K> &ray_tnear,
+                              const vfloat<K> &ray_tfar)
         {
-          nearX = (dir.x < 0.0f) ? 1*sizeof(vfloat<N>) : 0*sizeof(vfloat<N>);
-          nearY = (dir.y < 0.0f) ? 3*sizeof(vfloat<N>) : 2*sizeof(vfloat<N>);
-          nearZ = (dir.z < 0.0f) ? 5*sizeof(vfloat<N>) : 4*sizeof(vfloat<N>);
+          const Vec3fa reduced_min_rdir( reduce_min(select(octant_valid,rdir.x,pos_inf)),
+                                         reduce_min(select(octant_valid,rdir.y,pos_inf)),
+                                         reduce_min(select(octant_valid,rdir.z,pos_inf)) );
+          const Vec3fa reduced_max_rdir( reduce_max(select(octant_valid,rdir.x,neg_inf)),
+                                         reduce_max(select(octant_valid,rdir.y,neg_inf)),
+                                         reduce_max(select(octant_valid,rdir.z,neg_inf)) );
+          const Vec3fa reduced_min_org( reduce_min(select(octant_valid,org.x,pos_inf)),
+                                        reduce_min(select(octant_valid,org.y,pos_inf)),
+                                        reduce_min(select(octant_valid,org.z,pos_inf)) );
+          const Vec3fa reduced_max_org( reduce_max(select(octant_valid,org.x,neg_inf)),
+                                        reduce_max(select(octant_valid,org.y,neg_inf)),
+                                        reduce_max(select(octant_valid,org.z,neg_inf)) );
+
+          min_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_rdir, reduced_max_rdir);
+          max_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_rdir, reduced_min_rdir);
+
+          min_org_rdir = min_rdir * select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_org, reduced_min_org);
+          max_org_rdir = max_rdir * select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_org, reduced_max_org);
+
+          min_dist = reduce_min(select(octant_valid,ray_tnear,vfloat<K>(pos_inf)));
+          max_dist = reduce_max(select(octant_valid,ray_tfar ,vfloat<K>(neg_inf)));
+
+          nearX = (min_rdir.x < 0.0f) ? 1*sizeof(vfloat<N>) : 0*sizeof(vfloat<N>);
+          nearY = (min_rdir.y < 0.0f) ? 3*sizeof(vfloat<N>) : 2*sizeof(vfloat<N>);
+          nearZ = (min_rdir.z < 0.0f) ? 5*sizeof(vfloat<N>) : 4*sizeof(vfloat<N>);
           farX  = nearX ^ sizeof(vfloat<N>);
           farY  = nearY ^ sizeof(vfloat<N>);
           farZ  = nearZ ^ sizeof(vfloat<N>);
         }
+
+        __forceinline unsigned int intersect(const NodeRef &nodeRef, float *dist)
+        {
+          const AlignedNode* __restrict__ const node = nodeRef.alignedNode();
+          
+          const vfloat<N> bminX = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + nearX));
+          const vfloat<N> bminY = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + nearY));
+          const vfloat<N> bminZ = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + nearZ));
+          const vfloat<N> bmaxX = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + farX));
+          const vfloat<N> bmaxY = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + farY));
+          const vfloat<N> bmaxZ = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + farZ));
+          
+          const vfloat<N> fminX = msub(bminX, vfloat<N>(min_rdir.x), vfloat<N>(min_org_rdir.x));
+          const vfloat<N> fminY = msub(bminY, vfloat<N>(min_rdir.y), vfloat<N>(min_org_rdir.y));
+          const vfloat<N> fminZ = msub(bminZ, vfloat<N>(min_rdir.z), vfloat<N>(min_org_rdir.z));
+          const vfloat<N> fmaxX = msub(bmaxX, vfloat<N>(max_rdir.x), vfloat<N>(max_org_rdir.x));
+          const vfloat<N> fmaxY = msub(bmaxY, vfloat<N>(max_rdir.y), vfloat<N>(max_org_rdir.y));
+          const vfloat<N> fmaxZ = msub(bmaxZ, vfloat<N>(max_rdir.z), vfloat<N>(max_org_rdir.z));
+          const vfloat<N> fmin  = maxi(fminX, fminY, fminZ, vfloat<N>(min_dist)); 
+          vfloat<N>::store(dist,fmin);
+          const vfloat<N> fmax  = mini(fmaxX, fmaxY, fmaxZ, vfloat<N>(max_dist));
+          const vbool<N> vmask_node_hit = fmin <= fmax;
+          size_t m_node = movemask(vmask_node_hit) & (((size_t)1 << N)-1);
+          return m_node;          
+        }
+
+        __forceinline void updateMaxDist(const vfloat<K> &ray_tfar)
+        {
+          max_dist = reduce_max(ray_tfar);
+        }
+
+        size_t nearX, nearY, nearZ;
+        size_t farX, farY, farZ;
+
+        Vec3fa min_rdir; 
+        Vec3fa max_rdir; 
+        Vec3fa min_org_rdir; 
+        Vec3fa max_org_rdir; 
+        float min_dist;
+        float max_dist;
       };
+
 
     private:
       static void intersect1(const BVH* bvh, NodeRef root, const size_t k, Precalculations& pre, 
