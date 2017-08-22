@@ -126,7 +126,7 @@ namespace embree
     {
 #if 1
       assert(context);
-      if (unlikely(!robust && context->user && isCoherent(context->user->flags)))
+      if (unlikely(types == BVH_AN1 && context->user && isCoherent(context->user->flags)))
       {
         intersect_coherent(valid_i,bvh,ray,context);
         return;
@@ -431,7 +431,6 @@ namespace embree
           while (likely(!cur.isLeaf()))
           {
             /* process nodes */
-            //const vbool<K> valid_node = ray_tfar > curDist;
             //STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
             const NodeRef nodeRef = cur;
             const AlignedNode* __restrict__ const node = nodeRef.alignedNode();

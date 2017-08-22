@@ -74,8 +74,16 @@ namespace embree
           min_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_rdir, reduced_max_rdir);
           max_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_rdir, reduced_min_rdir);
 
-          min_org_rdir = min_rdir * select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_org, reduced_min_org);
-          max_org_rdir = max_rdir * select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_org, reduced_max_org);
+          if (!robust)
+          {
+            min_org_rdir = min_rdir * select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_org, reduced_min_org);
+            max_org_rdir = max_rdir * select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_org, reduced_max_org);
+          }
+          else
+          {
+            min_org_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_org, reduced_min_org);
+            max_org_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_org, reduced_max_org);
+          }
 
           min_dist = reduce_min(select(octant_valid,ray_tnear,vfloat<K>(pos_inf)));
           max_dist = reduce_max(select(octant_valid,ray_tfar ,vfloat<K>(neg_inf)));
@@ -88,7 +96,7 @@ namespace embree
           farZ  = nearZ ^ sizeof(vfloat<N>);
         }
 
-        __forceinline unsigned int intersect(const NodeRef &nodeRef, float *dist)
+        __forceinline unsigned int intersect(const NodeRef &nodeRef, float * const __restrict__ dist)
         {
           const AlignedNode* __restrict__ const node = nodeRef.alignedNode();
           
@@ -98,19 +106,41 @@ namespace embree
           const vfloat<N> bmaxX = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + farX));
           const vfloat<N> bmaxY = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + farY));
           const vfloat<N> bmaxZ = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + farZ));
-          
-          const vfloat<N> fminX = msub(bminX, vfloat<N>(min_rdir.x), vfloat<N>(min_org_rdir.x));
-          const vfloat<N> fminY = msub(bminY, vfloat<N>(min_rdir.y), vfloat<N>(min_org_rdir.y));
-          const vfloat<N> fminZ = msub(bminZ, vfloat<N>(min_rdir.z), vfloat<N>(min_org_rdir.z));
-          const vfloat<N> fmaxX = msub(bmaxX, vfloat<N>(max_rdir.x), vfloat<N>(max_org_rdir.x));
-          const vfloat<N> fmaxY = msub(bmaxY, vfloat<N>(max_rdir.y), vfloat<N>(max_org_rdir.y));
-          const vfloat<N> fmaxZ = msub(bmaxZ, vfloat<N>(max_rdir.z), vfloat<N>(max_org_rdir.z));
-          const vfloat<N> fmin  = maxi(fminX, fminY, fminZ, vfloat<N>(min_dist)); 
-          vfloat<N>::store(dist,fmin);
-          const vfloat<N> fmax  = mini(fmaxX, fmaxY, fmaxZ, vfloat<N>(max_dist));
-          const vbool<N> vmask_node_hit = fmin <= fmax;
-          size_t m_node = movemask(vmask_node_hit) & (((size_t)1 << N)-1);
-          return m_node;          
+                    
+          if (robust)
+          {
+            const vfloat<N> fminX = (bminX - vfloat<N>(min_org_rdir.x)) * vfloat<N>(min_rdir.x);
+            const vfloat<N> fminY = (bminY - vfloat<N>(min_org_rdir.y)) * vfloat<N>(min_rdir.y);
+            const vfloat<N> fminZ = (bminZ - vfloat<N>(min_org_rdir.z)) * vfloat<N>(min_rdir.z);
+            const vfloat<N> fmaxX = (bmaxX - vfloat<N>(max_org_rdir.x)) * vfloat<N>(max_rdir.x);
+            const vfloat<N> fmaxY = (bmaxY - vfloat<N>(max_org_rdir.y)) * vfloat<N>(max_rdir.y);
+            const vfloat<N> fmaxZ = (bmaxZ - vfloat<N>(max_org_rdir.z)) * vfloat<N>(max_rdir.z);
+
+            const float round_down = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512
+            const float round_up   = 1.0f+2.0f*float(ulp);
+            const vfloat<N> fmin  = max(fminX, fminY, fminZ, vfloat<N>(min_dist)); 
+            vfloat<N>::store(dist,fmin);
+            const vfloat<N> fmax  = min(fmaxX, fmaxY, fmaxZ, vfloat<N>(max_dist));
+            const vbool<N> vmask_node_hit = (round_down*fmin <= round_up*fmax);
+            size_t m_node = movemask(vmask_node_hit) & (((size_t)1 << N)-1);
+            return m_node;          
+          }
+          else
+          {
+            const vfloat<N> fminX = msub(bminX, vfloat<N>(min_rdir.x), vfloat<N>(min_org_rdir.x));
+            const vfloat<N> fminY = msub(bminY, vfloat<N>(min_rdir.y), vfloat<N>(min_org_rdir.y));
+            const vfloat<N> fminZ = msub(bminZ, vfloat<N>(min_rdir.z), vfloat<N>(min_org_rdir.z));
+            const vfloat<N> fmaxX = msub(bmaxX, vfloat<N>(max_rdir.x), vfloat<N>(max_org_rdir.x));
+            const vfloat<N> fmaxY = msub(bmaxY, vfloat<N>(max_rdir.y), vfloat<N>(max_org_rdir.y));
+            const vfloat<N> fmaxZ = msub(bmaxZ, vfloat<N>(max_rdir.z), vfloat<N>(max_org_rdir.z));
+
+            const vfloat<N> fmin  = maxi(fminX, fminY, fminZ, vfloat<N>(min_dist)); 
+            vfloat<N>::store(dist,fmin);
+            const vfloat<N> fmax  = mini(fmaxX, fmaxY, fmaxZ, vfloat<N>(max_dist));
+            const vbool<N> vmask_node_hit = fmin <= fmax;
+            size_t m_node = movemask(vmask_node_hit) & (((size_t)1 << N)-1);
+            return m_node;          
+          }
         }
 
         __forceinline void updateMaxDist(const vfloat<K> &ray_tfar)
