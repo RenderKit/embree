@@ -437,6 +437,7 @@ namespace embree
 
             __aligned(64) float fmin[16]; 
             size_t m_frusta_node = frustum.intersect(nodeRef,fmin);
+
             if (unlikely(!m_frusta_node)) goto pop;
             cur = BVH::emptyNode;
             curDist = pos_inf;

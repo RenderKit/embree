@@ -1059,7 +1059,7 @@ namespace embree
       
       for (size_t i = 0; i < 1024*1024; ++i)
       {
-        if (i%100 == 0) PRINT(i);
+        //if (i%100 == 0) PRINT(i);
         rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000000, i);
         
         RTCScene scene = rtcDeviceNewScene(device, sflags, RTC_INTERSECT1);
