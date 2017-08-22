@@ -190,6 +190,7 @@ void renderTileStandard(uniform int taskIndex,
     unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
+
 }
 
 /* task that renders a single screen tile */
