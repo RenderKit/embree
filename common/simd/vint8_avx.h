@@ -67,6 +67,8 @@ namespace embree
     __forceinline vint( NegInfTy ) : v(_mm256_set_epi32(neg_inf,neg_inf,neg_inf,neg_inf,neg_inf,neg_inf,neg_inf,neg_inf)) {}
     __forceinline vint( StepTy   ) : v(_mm256_set_epi32(7, 6, 5, 4, 3, 2, 1, 0)) {}
 
+    __forceinline static vint8 undefined() { return _mm256_undefined_si256(); }
+
     ////////////////////////////////////////////////////////////////////////////////
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
@@ -121,6 +123,20 @@ namespace embree
     static __forceinline void store( unsigned short* const ptr, const vint8& v ) {
       for (size_t i=0;i<8;i++)
         ptr[i] = (unsigned short)v[i];
+    }
+
+    template<int scale = 4>
+    static __forceinline vint8 gather(const vboolf8& mask, const int *const ptr, const vint8& index) {
+      vint8 r = vint8::undefined();
+      if (likely(mask[0])) r[0] = *(int*)(((char*)ptr)+scale*index[0]);
+      if (likely(mask[1])) r[1] = *(int*)(((char*)ptr)+scale*index[1]);
+      if (likely(mask[2])) r[2] = *(int*)(((char*)ptr)+scale*index[2]);
+      if (likely(mask[3])) r[3] = *(int*)(((char*)ptr)+scale*index[3]);
+      if (likely(mask[4])) r[4] = *(int*)(((char*)ptr)+scale*index[4]);
+      if (likely(mask[5])) r[5] = *(int*)(((char*)ptr)+scale*index[5]);
+      if (likely(mask[6])) r[6] = *(int*)(((char*)ptr)+scale*index[6]);
+      if (likely(mask[7])) r[7] = *(int*)(((char*)ptr)+scale*index[7]);
+      return r;
     }
 
 

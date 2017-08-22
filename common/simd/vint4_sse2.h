@@ -69,6 +69,8 @@ namespace embree
     __forceinline vint( StepTy   ) : v(_mm_set_epi32(3, 2, 1, 0)) {}
     __forceinline vint( TrueTy   ) { v = _mm_cmpeq_epi32(v,v); }
 
+    __forceinline static vint4 undefined() { return _mm_undefined_si128(); }
+
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Loads and Stores
@@ -150,6 +152,20 @@ namespace embree
 #else
       _mm_store_si128((__m128i*)ptr,v);
 #endif
+    }
+
+    template<int scale = 4>
+    static __forceinline vint4 gather(const vboolf4& mask, const int *const ptr, const vint4& index) {
+      vint4 r = vint4::undefined();
+    #if defined(__AVX2__)
+      return _mm_mask_i32gather_epi32(r,mask,index,ptr,scale);
+    #else
+      if (likely(mask[0])) r[0] = *(int*)(((char*)ptr)+scale*index[0]);
+      if (likely(mask[1])) r[1] = *(int*)(((char*)ptr)+scale*index[1]);
+      if (likely(mask[2])) r[2] = *(int*)(((char*)ptr)+scale*index[2]);
+      if (likely(mask[3])) r[3] = *(int*)(((char*)ptr)+scale*index[3]);
+      return r;
+    #endif
     }
 
 #if defined(__x86_64__)

@@ -117,8 +117,8 @@ namespace embree
       _mm512_mask_store_epi32(addr,mask,v2);
     }
 
-  /* pass by value to avoid compiler generating inefficient code */
-    static __forceinline void storeu_compact(const vboolf16 mask,void * addr, const vuint16 reg) {
+    /* pass by value to avoid compiler generating inefficient code */
+    static __forceinline void storeu_compact(const vboolf16 mask, void * addr, const vuint16 reg) {
       _mm512_mask_compressstoreu_epi32(addr,mask,reg);
     }
 
@@ -138,6 +138,20 @@ namespace embree
       return _mm512_mask_expand_epi32(b,mask,a);
     }
 
+    template<int scale = 4>
+    static __forceinline vuint16 gather(const vboolf16& mask, const unsigned int *const ptr, const vint16& index) {
+      return _mm512_mask_i32gather_epi32(_mm512_undefined_epi32(),mask,index,ptr,scale);
+    }
+
+    template<int scale = 4>
+    static __forceinline vuint16 gather(const vboolf16& mask, vuint16& dest, const unsigned int *const ptr, const vint16& index) {
+      return _mm512_mask_i32gather_epi32(dest,mask,index,ptr,scale);
+    }
+
+    template<int scale = 4>
+    static __forceinline void scatter(const vboolf16& mask, unsigned int *const ptr, const vint16& index, const vuint16& v) {
+      _mm512_mask_i32scatter_epi32((int*)ptr,mask,index,v,scale);
+    }
 
     static __forceinline vuint16 broadcast64bit(size_t v) {
       return _mm512_set1_epi64(v);
@@ -147,7 +161,6 @@ namespace embree
     {
       return _mm_cvtsi128_si64(_mm512_castsi512_si128(v));
     }
-
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
@@ -375,25 +388,6 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
   /// Memory load and store operations
   ////////////////////////////////////////////////////////////////////////////////
-
-  template<int scale = 4>
-  __forceinline vuint16 gather16i(const vboolf16& mask, const unsigned int *const ptr, const vuint16& index) {
-    return _mm512_mask_i32gather_epi32(_mm512_undefined_epi32(),mask,index,ptr,scale);
-  }
-  
-  template<int scale = 4>
-    __forceinline vuint16 gather16i(const vboolf16& mask, vuint16& dest, const unsigned int *const ptr, const vuint16& index) {
-    return _mm512_mask_i32gather_epi32(dest,mask,index,ptr,scale);
-  }
-  
-  template<int scale = 4>
-    __forceinline void scatter16i(const vboolf16& mask,unsigned int *const ptr, const vuint16& index,const vuint16& v) {
-    _mm512_mask_i32scatter_epi32((int*)ptr,mask,index,v,scale);
-  }
-
-  __forceinline void compactustore16i_low(const vboolf16 mask, void *addr, const vuint16& reg) {
-    _mm512_mask_compressstoreu_epi32(addr,mask,reg);
-  }
   
   __forceinline vuint16 permute(vuint16 v,vuint16 index) {
     return _mm512_permutexvar_epi32(index,v);  

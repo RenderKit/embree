@@ -137,6 +137,17 @@ namespace embree
       *addr = mm512_cvtss_f32(_mm512_mask_compress_ps(reg,mask,reg));
     }
 
+    template<int scale = 4>
+    static __forceinline vfloat16 gather(const vboolf16& mask, const float *const ptr, const vint16& index) {
+      vfloat16 r = vfloat16::undefined();
+      return _mm512_mask_i32gather_ps(r,mask,index,ptr,scale);
+    }
+
+    template<int scale = 4>
+    static __forceinline void scatter(const vboolf16& mask, const float *const ptr, const vint16& index, const vfloat16& v) {
+      _mm512_mask_i32scatter_ps(ptr,mask,index,v,scale);
+    }
+
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
@@ -597,21 +608,6 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
   /// Memory load and store operations
   ////////////////////////////////////////////////////////////////////////////////
-
-  __forceinline void compactustore16f_low(const vboolf16& mask, float * addr, const vfloat16 &reg) {
-    _mm512_mask_compressstoreu_ps(addr,mask,reg);
-  }
-
-  template<int scale = 4>
-    __forceinline vfloat16 gather16f(const vboolf16& mask, const float *const ptr, __m512i index) {
-    vfloat16 r = vfloat16::undefined();
-    return _mm512_mask_i32gather_ps(r,mask,index,ptr,scale);
-  }
-  
-  template<int scale = 4>
-    __forceinline void scatter16f(const vboolf16& mask,const float *const ptr, const __m512i index,const vfloat16 v) {
-    _mm512_mask_i32scatter_ps(ptr,mask,index,v,scale);
-  }
 
   __forceinline vfloat16 loadAOS4to16f(const float& x,const float& y, const float& z)
   {

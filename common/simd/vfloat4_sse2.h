@@ -57,6 +57,8 @@ namespace embree
     __forceinline vfloat( StepTy   ) : v(_mm_set_ps(3.0f, 2.0f, 1.0f, 0.0f)) {}
     __forceinline vfloat( NaNTy    ) : v(_mm_set1_ps(nan)) {}
 
+    __forceinline static vfloat4 undefined() { return _mm_undefined_ps(); }
+
     ////////////////////////////////////////////////////////////////////////////////
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
@@ -125,16 +127,30 @@ namespace embree
 #endif
     }
 
-    template<int scale>
-      static __forceinline void scatter(const vboolf4& mask, void* ptr, const vint4& ofs, const vfloat4& v)
+    template<int scale = 4>
+    static __forceinline vfloat4 gather(const vboolf4& mask, const float *const ptr, const vint4& index) {
+      vfloat4 r = vfloat4::undefined();
+    #if defined(__AVX2__)
+      return _mm_mask_i32gather_ps(r,mask,index,ptr,scale);
+    #else
+      if (likely(mask[0])) r[0] = *(float*)(((char*)ptr)+scale*index[0]);
+      if (likely(mask[1])) r[1] = *(float*)(((char*)ptr)+scale*index[1]);
+      if (likely(mask[2])) r[2] = *(float*)(((char*)ptr)+scale*index[2]);
+      if (likely(mask[3])) r[3] = *(float*)(((char*)ptr)+scale*index[3]);
+      return r;
+    #endif
+    }
+
+    template<int scale = 4>
+    static __forceinline void scatter(const vboolf4& mask, void* ptr, const vint4& index, const vfloat4& v)
     {
 #if defined(__AVX512VL__)
-      _mm_mask_i32scatter_ps((float*)ptr,mask,ofs,v,scale);
+      _mm_mask_i32scatter_ps((float*)ptr,mask,index,v,scale);
 #else
-      if (likely(mask[0])) *(float*)(((char*)ptr)+scale*ofs[0]) = v[0];
-      if (likely(mask[1])) *(float*)(((char*)ptr)+scale*ofs[1]) = v[1];
-      if (likely(mask[2])) *(float*)(((char*)ptr)+scale*ofs[2]) = v[2];
-      if (likely(mask[3])) *(float*)(((char*)ptr)+scale*ofs[3]) = v[3];
+      if (likely(mask[0])) *(float*)(((char*)ptr)+scale*index[0]) = v[0];
+      if (likely(mask[1])) *(float*)(((char*)ptr)+scale*index[1]) = v[1];
+      if (likely(mask[2])) *(float*)(((char*)ptr)+scale*index[2]) = v[2];
+      if (likely(mask[3])) *(float*)(((char*)ptr)+scale*index[3]) = v[3];
 #endif
     }
 

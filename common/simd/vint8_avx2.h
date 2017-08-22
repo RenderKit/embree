@@ -72,6 +72,8 @@ namespace embree
     __forceinline vint( NegInfTy ) : v(_mm256_set1_epi32(neg_inf)) {}
     __forceinline vint( StepTy   ) : v(_mm256_set_epi32(7, 6, 5, 4, 3, 2, 1, 0)) {}
 
+    __forceinline static vint8 undefined() { return _mm256_undefined_si256(); }
+
     ////////////////////////////////////////////////////////////////////////////////
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
@@ -101,11 +103,9 @@ namespace embree
     static __forceinline void storeu( const vboolf8& mask, void* ptr, const vint8& v ) { _mm256_maskstore_epi32((int*)ptr,mask,v); }
 #endif
     
-#if defined (__AVX2__)
     static __forceinline vint8 load_nt(void* ptr) {
       return _mm256_stream_load_si256((__m256i*)ptr);
     }
-#endif
 
     static __forceinline void store_nt(void* ptr, const vint8& v) {
       _mm256_stream_ps((float*)ptr,_mm256_castsi256_ps(v));
@@ -126,6 +126,12 @@ namespace embree
     static __forceinline void store( unsigned short* const ptr, const vint8& v ) {
       for (size_t i=0;i<8;i++)
         ptr[i] = (unsigned short)v[i];
+    }
+
+    template<int scale = 4>
+    static __forceinline vint8 gather(const vboolf8& mask, const int *const ptr, const vint8& index) {
+      vint8 r = vint8::undefined();
+      return _mm256_mask_i32gather_epi32(r,ptr,index,mask,scale);
     }
 
     static __forceinline vint8 broadcast64(const long long &a) { return _mm256_set1_epi64x(a); }
