@@ -93,12 +93,12 @@ namespace embree
           ray_k->geomID = ray.geomID[k];
           if (intersect && ray.geomID[k] != RTC_INVALID_GEOMETRY_ID)
           {
-            ray_k->tfar = ray.tfar[k];
-            ray_k->Ng.x = ray.Ng.x[k];
-            ray_k->Ng.y = ray.Ng.y[k];
-            ray_k->Ng.z = ray.Ng.z[k];
-            ray_k->u = ray.u[k];
-            ray_k->v = ray.v[k];
+            ray_k->tfar   = ray.tfar[k];
+            ray_k->Ng.x   = ray.Ng.x[k];
+            ray_k->Ng.y   = ray.Ng.y[k];
+            ray_k->Ng.z   = ray.Ng.z[k];
+            ray_k->u      = ray.u[k];
+            ray_k->v      = ray.v[k];
             ray_k->primID = ray.primID[k];
             ray_k->instID = ray.instID[k];
           }
@@ -132,16 +132,16 @@ namespace embree
         {
           Ray* __restrict__ ray_k = (Ray*)((char*)ray_i + ofs[k]);
 
-          ray.org.x[k] = ray_k->org.x;
-          ray.org.y[k] = ray_k->org.y;
-          ray.org.z[k] = ray_k->org.z;
-          ray.dir.x[k] = ray_k->dir.x;
-          ray.dir.y[k] = ray_k->dir.y;
-          ray.dir.z[k] = ray_k->dir.z;
-          ray.tnear[k] = ray_k->tnear;
-          ray.tfar[k]  = ray_k->tfar;
-          ray.time[k]  = ray_k->time;
-          ray.mask[k]  = ray_k->mask;
+          ray.org.x[k]  = ray_k->org.x;
+          ray.org.y[k]  = ray_k->org.y;
+          ray.org.z[k]  = ray_k->org.z;
+          ray.dir.x[k]  = ray_k->dir.x;
+          ray.dir.y[k]  = ray_k->dir.y;
+          ray.dir.z[k]  = ray_k->dir.z;
+          ray.tnear[k]  = ray_k->tnear;
+          ray.tfar[k]   = ray_k->tfar;
+          ray.time[k]   = ray_k->time;
+          ray.mask[k]   = ray_k->mask;
           ray.instID[k] = ray_k->instID;
         }
 #endif
@@ -162,12 +162,12 @@ namespace embree
           ray_k->geomID = ray.geomID[k];
           if (intersect && ray.geomID[k] != RTC_INVALID_GEOMETRY_ID)
           {
-            ray_k->tfar = ray.tfar[k];
-            ray_k->Ng.x = ray.Ng.x[k];
-            ray_k->Ng.y = ray.Ng.y[k];
-            ray_k->Ng.z = ray.Ng.z[k];
-            ray_k->u = ray.u[k];
-            ray_k->v = ray.v[k];
+            ray_k->tfar   = ray.tfar[k];
+            ray_k->Ng.x   = ray.Ng.x[k];
+            ray_k->Ng.y   = ray.Ng.y[k];
+            ray_k->Ng.z   = ray.Ng.z[k];
+            ray_k->u      = ray.u[k];
+            ray_k->v      = ray.v[k];
             ray_k->primID = ray.primID[k];
             ray_k->instID = ray.instID[k];
           }
