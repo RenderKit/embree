@@ -551,6 +551,7 @@ namespace embree
   __forceinline vint8 floori (const vfloat8& a) {
     return vint8(floor(a));
   }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Transpose
   ////////////////////////////////////////////////////////////////////////////////
@@ -591,6 +592,12 @@ namespace embree
     c5 = shuffle4<1,3>(h1,h5);
     c6 = shuffle4<1,3>(h2,h6);
     c7 = shuffle4<1,3>(h3,h7);
+  }
+
+  __forceinline void transpose(const vfloat4& r0, const vfloat4& r1, const vfloat4& r2, const vfloat4& r3, const vfloat4& r4, const vfloat4& r5, const vfloat4& r6, const vfloat4& r7,
+                               vfloat8& c0, vfloat8& c1, vfloat8& c2, vfloat8& c3)
+  {
+    transpose(vfloat8(r0,r4), vfloat8(r1,r5), vfloat8(r2,r6), vfloat8(r3,r7), c0, c1, c2, c3);
   }
 
   __forceinline void transpose(const vfloat4& r0, const vfloat4& r1, const vfloat4& r2, const vfloat4& r3, const vfloat4& r4, const vfloat4& r5, const vfloat4& r6, const vfloat4& r7,
