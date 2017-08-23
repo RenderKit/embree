@@ -29,55 +29,145 @@ namespace embree
     {
       Ray* __restrict__ rayN = (Ray*)_rayN;
 
-//#if defined(__AVX2__)
-#if 0
-      /* fallback to packets (with gathers) */
-      for (size_t i = 0; i < N; i += VSIZEX)
+#if 1
+      /* fallback to packets */
+      const vintx ofs = vintx(step) * int(stride);
+
+      const size_t Nfull = N & (-size_t(VSIZEX));
+      size_t i = 0;
+
+      /* full packet loop */
+      for (; i < Nfull; i += VSIZEX)
       {
-        vintx vi = vintx(i) + vintx(step);
-        vboolx valid = vi < vintx(int(N));
-        vintx ofs = vi * int(sizeof(Ray));
-
-        vfloat8 a0, a1, a2, a3, a4, a5, a6, a7;
-        vfloat4 b0, b1, b2, b3, b4, b5, b6, b7;
-        { a0 = vfloat8::load(&rayN[i+0].org); b0 = vfloat4::load(&rayN[i+0].tnear); }
-        { a1 = vfloat8::load(&rayN[i+1].org); b1 = vfloat4::load(&rayN[i+1].tnear); }
-        { a2 = vfloat8::load(&rayN[i+2].org); b2 = vfloat4::load(&rayN[i+2].tnear); }
-        { a3 = vfloat8::load(&rayN[i+3].org); b3 = vfloat4::load(&rayN[i+3].tnear); }
-        { a4 = vfloat8::load(&rayN[i+4].org); b4 = vfloat4::load(&rayN[i+4].tnear); }
-        { a5 = vfloat8::load(&rayN[i+5].org); b5 = vfloat4::load(&rayN[i+5].tnear); }
-        { a6 = vfloat8::load(&rayN[i+6].org); b6 = vfloat4::load(&rayN[i+6].tnear); }
-        { a7 = vfloat8::load(&rayN[i+7].org); b7 = vfloat4::load(&rayN[i+7].tnear); }
-
+        Ray* __restrict__ ray_i = (Ray*)((char*)rayN + stride * i);
         RayK<VSIZEX> ray;
-        vfloat8 align0, align1;
-        transpose(a0,a1,a2,a3,a4,a5,a6,a7, ray.org.x, ray.org.y, ray.org.z, align0, ray.dir.x, ray.dir.y, ray.dir.z, align1);
-        transpose(b0, b1, b2, b3, b4, b5, b6, b7, ray.tnear, ray.tfar, ray.time);
+
+#if defined(__AVX512F__)
+#elif defined(__AVX__)
+        /* gather: instID */
+        ray.instID = vintx::gather<1>((int*)&ray_i->instID, ofs);
+
+        /* load and transpose: org.x, org.y, org.z, align0, dir.x, dir.y, dir.z, align1 */
+        const vfloat8 ab0 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[0]))->org);
+        const vfloat8 ab1 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[1]))->org);
+        const vfloat8 ab2 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[2]))->org);
+        const vfloat8 ab3 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[3]))->org);
+        const vfloat8 ab4 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[4]))->org);
+        const vfloat8 ab5 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[5]))->org);
+        const vfloat8 ab6 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[6]))->org);
+        const vfloat8 ab7 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[7]))->org);
+        vfloat8 unused0, unused1;
+        transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7, ray.org.x, ray.org.y, ray.org.z, unused0, ray.dir.x, ray.dir.y, ray.dir.z, unused1);
+
+        /* load and transpose: tnear, tfar, time, mask */
+        const vfloat4 c0 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[0]))->tnear);
+        const vfloat4 c1 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[1]))->tnear);
+        const vfloat4 c2 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[2]))->tnear);
+        const vfloat4 c3 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[3]))->tnear);
+        const vfloat4 c4 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[4]))->tnear);
+        const vfloat4 c5 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[5]))->tnear);
+        const vfloat4 c6 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[6]))->tnear);
+        const vfloat4 c7 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[7]))->tnear);
+        vfloat8 maskf;
+        transpose(c0,c1,c2,c3,c4,c5,c6,c7, ray.tnear, ray.tfar, ray.time, maskf);
+        ray.mask = asInt(maskf);
+#else
+#endif
+
+        /* init: geomID */
+        ray.geomID = RTC_INVALID_GEOMETRY_ID;
+
+        /* intersect packet */
+        if (intersect)
+          scene->intersect(True, ray, context);
+        else
+          scene->occluded (True, ray, context);
+
+        /* scatter hits */
+        for (size_t k = 0; k < VSIZEX; k++)
+        {
+          Ray* __restrict__ ray_k = (Ray*)((char*)ray_i + ofs[k]);
+
+          ray_k->geomID = ray.geomID[k];
+          if (intersect && ray.geomID[k] != RTC_INVALID_GEOMETRY_ID)
+          {
+            ray_k->tfar = ray.tfar[k];
+            ray_k->Ng.x = ray.Ng.x[k];
+            ray_k->Ng.y = ray.Ng.y[k];
+            ray_k->Ng.z = ray.Ng.z[k];
+            ray_k->u = ray.u[k];
+            ray_k->v = ray.v[k];
+            ray_k->primID = ray.primID[k];
+            ray_k->instID = ray.instID[k];
+          }
+        }
+      }
+
+      /* tail packet */
+      if (i < N)
+      {
+        const size_t Ntail = N - i;
+        const vboolx valid = vintx(step) < vintx(int(Ntail));
+
+        Ray* __restrict__ ray_i = (Ray*)((char*)rayN + stride * i);
+        RayK<VSIZEX> ray;
+
+        /* gather rays */
+#if defined(__AVX2__)
+        ray.org.x  = vfloatx::gather<1>(valid, &ray_i->org.x, ofs);
+        ray.org.y  = vfloatx::gather<1>(valid, &ray_i->org.y, ofs);
+        ray.org.z  = vfloatx::gather<1>(valid, &ray_i->org.z, ofs);
+        ray.dir.x  = vfloatx::gather<1>(valid, &ray_i->dir.x, ofs);
+        ray.dir.y  = vfloatx::gather<1>(valid, &ray_i->dir.y, ofs);
+        ray.dir.z  = vfloatx::gather<1>(valid, &ray_i->dir.z, ofs);
+        ray.tnear  = vfloatx::gather<1>(valid, &ray_i->tnear, ofs);
+        ray.tfar   = vfloatx::gather<1>(valid, &ray_i->tfar, ofs);
+        ray.time   = vfloatx::gather<1>(valid, &ray_i->time, ofs);
+        ray.mask   = vintx::gather<1>(valid, &ray_i->mask, ofs);
+        ray.instID = vintx::gather<1>(valid, (int*)&ray_i->instID, ofs);
+#else
+        for (size_t k = 0; k < Ntail; k++)
+        {
+          Ray* __restrict__ ray_k = (Ray*)((char*)ray_i + ofs[k]);
+
+          ray.org.x[k] = ray_k->org.x;
+          ray.org.y[k] = ray_k->org.y;
+          ray.org.z[k] = ray_k->org.z;
+          ray.dir.x[k] = ray_k->dir.x;
+          ray.dir.y[k] = ray_k->dir.y;
+          ray.dir.z[k] = ray_k->dir.z;
+          ray.tnear[k] = ray_k->tnear;
+          ray.tfar[k]  = ray_k->tfar;
+          ray.time[k]  = ray_k->time;
+          ray.mask[k]  = ray_k->mask;
+          ray.instID[k] = ray_k->instID;
+        }
+#endif
 
         ray.geomID = RTC_INVALID_GEOMETRY_ID;
-        ray.instID = RTC_INVALID_GEOMETRY_ID;
 
+        /* instersect packet */
         if (intersect)
           scene->intersect(valid, ray, context);
         else
           scene->occluded (valid, ray, context);
 
-        const size_t n = min(N - i, size_t(VSIZEX));
-        for (size_t j = 0; j < n; j++)
+        /* scatter hits */
+        for (size_t k = 0; k < Ntail; k++)
         {
-          rayN[i+j].geomID = ray.geomID[j];
-          if (intersect && ray.geomID[j] != RTC_INVALID_GEOMETRY_ID)
+          Ray* __restrict__ ray_k = (Ray*)((char*)ray_i + ofs[k]);
+
+          ray_k->geomID = ray.geomID[k];
+          if (intersect && ray.geomID[k] != RTC_INVALID_GEOMETRY_ID)
           {
-            rayN[i+j].tfar = ray.tfar[j];
-            /*
-            rayN[i+j].Ng.x = ray.Ng.x[j];
-            rayN[i+j].Ng.y = ray.Ng.y[j];
-            rayN[i+j].Ng.z = ray.Ng.z[j];
-            */
-            rayN[i+j].u = ray.u[j];
-            rayN[i+j].v = ray.v[j];
-            rayN[i+j].primID = ray.primID[j];
-            //rayN[i+j].instID = ray.instID[j];
+            ray_k->tfar = ray.tfar[k];
+            ray_k->Ng.x = ray.Ng.x[k];
+            ray_k->Ng.y = ray.Ng.y[k];
+            ray_k->Ng.z = ray.Ng.z[k];
+            ray_k->u = ray.u[k];
+            ray_k->v = ray.v[k];
+            ray_k->primID = ray.primID[k];
+            ray_k->instID = ray.instID[k];
           }
         }
       }
@@ -187,28 +277,28 @@ namespace embree
       unsigned int rays_in_octant[8];
 
       for (size_t i=0;i<8;i++) rays_in_octant[i] = 0;
-      size_t inputRayID = 0;
+      size_t inputray_iD = 0;
 
       while(1)
       {
         int cur_octant = -1;
         /* sort rays into octants */
-        for (;inputRayID<N;)
+        for (;inputray_iD<N;)
         {
-          Ray &ray = *(Ray*)((char*)rayN + inputRayID * stride);
+          Ray &ray = *(Ray*)((char*)rayN + inputray_iD * stride);
           /* skip invalid rays */
-          if (unlikely(ray.tnear > ray.tfar)) { inputRayID++; continue; }
-          if (unlikely(!intersect && ray.geomID == 0)) { inputRayID++; continue; } // ignore already occluded rays
+          if (unlikely(ray.tnear > ray.tfar)) { inputray_iD++; continue; }
+          if (unlikely(!intersect && ray.geomID == 0)) { inputray_iD++; continue; } // ignore already occluded rays
 
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
-          if (unlikely(!ray.valid())) {  inputRayID++; continue; }
+          if (unlikely(!ray.valid())) {  inputray_iD++; continue; }
 #endif
 
           const unsigned int octantID = movemask(vfloat4(ray.dir) < 0.0f) & 0x7;
 
           assert(octantID < 8);
           octants[octantID][rays_in_octant[octantID]++] = &ray;
-          inputRayID++;
+          inputray_iD++;
           if (unlikely(rays_in_octant[octantID] == MAX_RAYS_PER_OCTANT))
           {
             cur_octant = octantID;
@@ -257,28 +347,28 @@ namespace embree
       unsigned int rays_in_octant[8];
 
       for (size_t i=0;i<8;i++) rays_in_octant[i] = 0;
-      size_t inputRayID = 0;
+      size_t inputray_iD = 0;
 
       while(1)
       {
         int cur_octant = -1;
         /* sort rays into octants */
-        for (;inputRayID<N;)
+        for (;inputray_iD<N;)
         {
-          Ray &ray = *rayN[inputRayID];
+          Ray &ray = *rayN[inputray_iD];
           /* skip invalid rays */
-          if (unlikely(ray.tnear > ray.tfar)) { inputRayID++; continue; }
-          if (unlikely(!intersect && ray.geomID == 0)) { inputRayID++; continue; } // ignore already occluded rays
+          if (unlikely(ray.tnear > ray.tfar)) { inputray_iD++; continue; }
+          if (unlikely(!intersect && ray.geomID == 0)) { inputray_iD++; continue; } // ignore already occluded rays
 
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
-          if (unlikely(!ray.valid())) {  inputRayID++; continue; }
+          if (unlikely(!ray.valid())) {  inputray_iD++; continue; }
 #endif
 
           const unsigned int octantID = movemask(vfloat4(ray.dir) < 0.0f) & 0x7;
 
           assert(octantID < 8);
           octants[octantID][rays_in_octant[octantID]++] = &ray;
-          inputRayID++;
+          inputray_iD++;
           if (unlikely(rays_in_octant[octantID] == MAX_RAYS_PER_OCTANT))
           {
             cur_octant = octantID;
