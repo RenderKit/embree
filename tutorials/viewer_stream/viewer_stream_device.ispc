@@ -161,12 +161,13 @@ void renderTileStandard(uniform int taskIndex,
   rtcIntersectVM(g_scene,&context,rays,N,sizeof(RTCRay));
 #elif USE_INTERFACE == 1
   for (uniform size_t i=0; i<N; i++)
-    rtcIntersect(g_scene,rays[i]);
+    rtcIntersectEx(g_scene,&context,rays[i]);
 #else
   for (uniform size_t i=0; i<N; i++)
     rtcIntersectVM(g_scene,&context,&rays[i],1,sizeof(RTCRay));
 #endif
 
+#if 1
   /* shade stream of rays */
   N = 0;
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
@@ -190,7 +191,7 @@ void renderTileStandard(uniform int taskIndex,
     unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
-
+#endif
 }
 
 /* task that renders a single screen tile */

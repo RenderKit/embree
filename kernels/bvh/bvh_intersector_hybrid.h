@@ -110,7 +110,7 @@ namespace embree
 #endif
         }
 
-        __forceinline unsigned int intersect(const NodeRef &nodeRef, float * const __restrict__ dist)
+        __forceinline unsigned int intersect(const NodeRef &nodeRef, float * const __restrict__ dist) const
         {
           /* only default alignedNodes are currently supported */
           const AlignedNode* __restrict__ const node = nodeRef.alignedNode();
@@ -232,6 +232,8 @@ namespace embree
       static void occluded (vint<K>* valid, BVH* bvh, RayK<K>& ray, IntersectContext* context);
 
       static void intersect_coherent(vint<K>* valid, BVH* bvh, RayK<K>& ray, IntersectContext* context);
+      static void occluded_coherent(vint<K>* valid, BVH* bvh, RayK<K>& ray, IntersectContext* context);
+
     };
 
     /*! BVH packet intersector. */
