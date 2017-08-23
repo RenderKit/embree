@@ -29,7 +29,109 @@ namespace embree
     {
       Ray* __restrict__ rayN = (Ray*)_rayN;
 
-#if 1
+//#if defined(__AVX2__)
+#if 0
+      /* fallback to packets (with gathers) */
+      for (size_t i = 0; i < N; i += VSIZEX)
+      {
+        vintx vi = vintx(i) + vintx(step);
+        vboolx valid = vi < vintx(int(N));
+        vintx ofs = vi * int(sizeof(Ray));
+
+        vfloat8 a0, a1, a2, a3, a4, a5, a6, a7;
+        vfloat4 b0, b1, b2, b3, b4, b5, b6, b7;
+        { a0 = vfloat8::load(&rayN[i+0].org); b0 = vfloat4::load(&rayN[i+0].tnear); }
+        { a1 = vfloat8::load(&rayN[i+1].org); b1 = vfloat4::load(&rayN[i+1].tnear); }
+        { a2 = vfloat8::load(&rayN[i+2].org); b2 = vfloat4::load(&rayN[i+2].tnear); }
+        { a3 = vfloat8::load(&rayN[i+3].org); b3 = vfloat4::load(&rayN[i+3].tnear); }
+        { a4 = vfloat8::load(&rayN[i+4].org); b4 = vfloat4::load(&rayN[i+4].tnear); }
+        { a5 = vfloat8::load(&rayN[i+5].org); b5 = vfloat4::load(&rayN[i+5].tnear); }
+        { a6 = vfloat8::load(&rayN[i+6].org); b6 = vfloat4::load(&rayN[i+6].tnear); }
+        { a7 = vfloat8::load(&rayN[i+7].org); b7 = vfloat4::load(&rayN[i+7].tnear); }
+
+        RayK<VSIZEX> ray;
+        vfloat8 align0, align1;
+        transpose(a0,a1,a2,a3,a4,a5,a6,a7, ray.org.x, ray.org.y, ray.org.z, align0, ray.dir.x, ray.dir.y, ray.dir.z, align1);
+        transpose(b0, b1, b2, b3, b4, b5, b6, b7, ray.tnear, ray.tfar, ray.time);
+
+        ray.geomID = RTC_INVALID_GEOMETRY_ID;
+        ray.instID = RTC_INVALID_GEOMETRY_ID;
+
+        if (intersect)
+          scene->intersect(valid, ray, context);
+        else
+          scene->occluded (valid, ray, context);
+
+        const size_t n = min(N - i, size_t(VSIZEX));
+        for (size_t j = 0; j < n; j++)
+        {
+          rayN[i+j].geomID = ray.geomID[j];
+          if (intersect && ray.geomID[j] != RTC_INVALID_GEOMETRY_ID)
+          {
+            rayN[i+j].tfar = ray.tfar[j];
+            /*
+            rayN[i+j].Ng.x = ray.Ng.x[j];
+            rayN[i+j].Ng.y = ray.Ng.y[j];
+            rayN[i+j].Ng.z = ray.Ng.z[j];
+            */
+            rayN[i+j].u = ray.u[j];
+            rayN[i+j].v = ray.v[j];
+            rayN[i+j].primID = ray.primID[j];
+            //rayN[i+j].instID = ray.instID[j];
+          }
+        }
+      }
+
+#elif 0
+      /* fallback to packets (with gathers) */
+      const vintx ofs = vintx(step) * int(sizeof(Ray));
+      for (size_t i = 0; i < N; i += VSIZEX)
+      {
+        vintx vi = vintx(i) + vintx(step);
+        vboolx valid = vi < vintx(int(N));
+
+        RayK<VSIZEX> ray;
+        ray.org.x  = vfloatx::gather<1>(valid, &rayN[i].org.x, ofs);
+        ray.org.y  = vfloatx::gather<1>(valid, &rayN[i].org.y, ofs);
+        ray.org.z  = vfloatx::gather<1>(valid, &rayN[i].org.z, ofs);
+        ray.dir.x  = vfloatx::gather<1>(valid, &rayN[i].dir.x, ofs);
+        ray.dir.y  = vfloatx::gather<1>(valid, &rayN[i].dir.y, ofs);
+        ray.dir.z  = vfloatx::gather<1>(valid, &rayN[i].dir.z, ofs);
+        ray.tnear  = vfloatx::gather<1>(valid, &rayN[i].tnear, ofs);
+        ray.tfar   = vfloatx::gather<1>(valid, &rayN[i].tfar, ofs);
+        ray.time   = vfloatx::gather<1>(valid, &rayN[i].time, ofs);
+        ray.mask   = vintx::gather<1>(valid, &rayN[i].mask, ofs);
+        /*
+        ray.geomID = vintx::gather<1>(valid, (int*)&rayN[i].geomID, ofs);
+        ray.instID = vintx::gather<1>(valid, (int*)&rayN[i].instID, ofs);
+        */
+        ray.geomID = RTC_INVALID_GEOMETRY_ID;
+        ray.instID = RTC_INVALID_GEOMETRY_ID;
+
+        if (intersect)
+          scene->intersect(valid, ray, context);
+        else
+          scene->occluded (valid, ray, context);
+
+        const size_t n = min(N - i, size_t(VSIZEX));
+        for (size_t j = 0; j < n; j++)
+        {
+          rayN[i+j].geomID = ray.geomID[j];
+          if (intersect && ray.geomID[j] != RTC_INVALID_GEOMETRY_ID)
+          {
+            rayN[i+j].tfar = ray.tfar[j];
+            rayN[i+j].Ng.x = ray.Ng.x[j];
+            rayN[i+j].Ng.y = ray.Ng.y[j];
+            rayN[i+j].Ng.z = ray.Ng.z[j];
+            rayN[i+j].u = ray.u[j];
+            rayN[i+j].v = ray.v[j];
+            rayN[i+j].primID = ray.primID[j];
+            rayN[i+j].instID = ray.instID[j];
+          }
+        }
+      }
+
+#elif 1
       /* fallback to packets */
       for (size_t i = 0; i < N; i += VSIZEX)
       {
@@ -48,8 +150,12 @@ namespace embree
           ray.tfar[j]  = rayN[i+j].tfar;
           ray.time[j]  = rayN[i+j].time;
           ray.mask[j]  = rayN[i+j].mask;
+          /*
           ray.geomID[j] = rayN[i+j].geomID;
           ray.instID[j] = rayN[i+j].instID;
+          */
+          ray.geomID[j] = RTC_INVALID_GEOMETRY_ID;
+          ray.instID[j] = RTC_INVALID_GEOMETRY_ID;
         }
 
         vboolx valid = vintx(step) < vintx(int(n));
