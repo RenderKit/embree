@@ -33,10 +33,10 @@ namespace embree
       /* fallback to packets */
       const vintx ofs = vintx(step) * int(stride);
 
-      const size_t Nfull = N & (-size_t(VSIZEX));
       size_t i = 0;
 
       /* full packet loop */
+      const size_t Nfull = N & (-size_t(VSIZEX));
       for (; i < Nfull; i += VSIZEX)
       {
         Ray* __restrict__ ray_i = (Ray*)((char*)rayN + stride * i);
@@ -56,6 +56,7 @@ namespace embree
         const vfloat8 ab5 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[5]))->org);
         const vfloat8 ab6 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[6]))->org);
         const vfloat8 ab7 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[7]))->org);
+
         vfloat8 unused0, unused1;
         transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7, ray.org.x, ray.org.y, ray.org.z, unused0, ray.dir.x, ray.dir.y, ray.dir.z, unused1);
 
@@ -68,6 +69,7 @@ namespace embree
         const vfloat4 c5 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[5]))->tnear);
         const vfloat4 c6 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[6]))->tnear);
         const vfloat4 c7 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[7]))->tnear);
+
         vfloat8 maskf;
         transpose(c0,c1,c2,c3,c4,c5,c6,c7, ray.tnear, ray.tfar, ray.time, maskf);
         ray.mask = asInt(maskf);
