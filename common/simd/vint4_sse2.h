@@ -155,6 +155,19 @@ namespace embree
     }
 
     template<int scale = 4>
+    static __forceinline vint4 gather(const int *const ptr, const vint4& index) {
+    #if defined(__AVX2__)
+      return _mm_i32gather_epi32(index,ptr,scale);
+    #else
+      return vint4(
+          *(int*)(((char*)ptr)+scale*index[0]),
+          *(int*)(((char*)ptr)+scale*index[1]),
+          *(int*)(((char*)ptr)+scale*index[2]),
+          *(int*)(((char*)ptr)+scale*index[3]));
+    #endif
+    }
+
+    template<int scale = 4>
     static __forceinline vint4 gather(const vboolf4& mask, const int *const ptr, const vint4& index) {
       vint4 r = vint4::undefined();
     #if defined(__AVX2__)

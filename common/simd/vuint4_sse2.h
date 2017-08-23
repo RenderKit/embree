@@ -153,6 +153,19 @@ namespace embree
     }
 
     template<int scale = 4>
+    static __forceinline vuint4 gather(const unsigned int *const ptr, const vint4& index) {
+    #if defined(__AVX2__)
+      return _mm_i32gather_epi32(index,ptr,scale);
+    #else
+      return vuint4(
+          *(unsigned int*)(((char*)ptr)+scale*index[0]),
+          *(unsigned int*)(((char*)ptr)+scale*index[1]),
+          *(unsigned int*)(((char*)ptr)+scale*index[2]),
+          *(unsigned int*)(((char*)ptr)+scale*index[3]));
+    #endif
+    }
+
+    template<int scale = 4>
     static __forceinline vuint4 gather(const vboolf4& mask, const unsigned int *const ptr, const vint4& index) {
       vuint4 r = vuint4::undefined();
     #if defined(__AVX2__)

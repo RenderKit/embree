@@ -128,6 +128,19 @@ namespace embree
     }
 
     template<int scale = 4>
+    static __forceinline vfloat4 gather(const float *const ptr, const vint4& index) {
+    #if defined(__AVX2__)
+      return _mm_i32gather_ps(index,ptr,scale);
+    #else
+      return vfloat4(
+        *(float*)(((char*)ptr)+scale*index[0]),
+        *(float*)(((char*)ptr)+scale*index[1]),
+        *(float*)(((char*)ptr)+scale*index[2]),
+        *(float*)(((char*)ptr)+scale*index[3]));
+    #endif
+    }
+
+    template<int scale = 4>
     static __forceinline vfloat4 gather(const vboolf4& mask, const float *const ptr, const vint4& index) {
       vfloat4 r = vfloat4::undefined();
     #if defined(__AVX2__)
@@ -139,6 +152,19 @@ namespace embree
       if (likely(mask[3])) r[3] = *(float*)(((char*)ptr)+scale*index[3]);
       return r;
     #endif
+    }
+
+    template<int scale = 4>
+    static __forceinline void scatter(void* ptr, const vint4& index, const vfloat4& v)
+    {
+#if defined(__AVX512VL__)
+      _mm_i32scatter_ps((float*)ptr,index,v,scale);
+#else
+      *(float*)(((char*)ptr)+scale*index[0]) = v[0];
+      *(float*)(((char*)ptr)+scale*index[1]) = v[1];
+      *(float*)(((char*)ptr)+scale*index[2]) = v[2];
+      *(float*)(((char*)ptr)+scale*index[3]) = v[3];
+#endif
     }
 
     template<int scale = 4>

@@ -137,6 +137,11 @@ namespace embree
     }
 
     template<int scale = 4>
+    static __forceinline vint16 gather(const int *const ptr, const vint16& index) {
+      return _mm512_i32gather_epi32(index,ptr,scale);
+    }
+
+    template<int scale = 4>
     static __forceinline vint16 gather(const vboolf16& mask, const int *const ptr, const vint16& index) {
       return _mm512_mask_i32gather_epi32(_mm512_undefined_epi32(),mask,index,ptr,scale);
     }
@@ -144,6 +149,11 @@ namespace embree
     template<int scale = 4>
     static __forceinline vint16 gather(const vboolf16& mask, vint16& dest, const int *const ptr, const vint16& index) {
       return _mm512_mask_i32gather_epi32(dest,mask,index,ptr,scale);
+    }
+
+    template<int scale = 4>
+    static __forceinline void scatter(int *const ptr, const vint16& index, const vint16& v) {
+      _mm512_i32scatter_epi32((int*)ptr,index,v,scale);
     }
 
     template<int scale = 4>

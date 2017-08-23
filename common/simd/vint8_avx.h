@@ -126,6 +126,19 @@ namespace embree
     }
 
     template<int scale = 4>
+    static __forceinline vint8 gather(const int *const ptr, const vint8& index) {
+      return vint8(
+          *(int*)(((char*)ptr)+scale*index[0]),
+          *(int*)(((char*)ptr)+scale*index[1]),
+          *(int*)(((char*)ptr)+scale*index[2]),
+          *(int*)(((char*)ptr)+scale*index[3]),
+          *(int*)(((char*)ptr)+scale*index[4]),
+          *(int*)(((char*)ptr)+scale*index[5]),
+          *(int*)(((char*)ptr)+scale*index[6]),
+          *(int*)(((char*)ptr)+scale*index[7]));
+    }
+
+    template<int scale = 4>
     static __forceinline vint8 gather(const vboolf8& mask, const int *const ptr, const vint8& index) {
       vint8 r = vint8::undefined();
       if (likely(mask[0])) r[0] = *(int*)(((char*)ptr)+scale*index[0]);
