@@ -296,7 +296,7 @@ namespace embree
             }
 
 #if defined(__AVX__)
-            STAT3(normal.trav_hit_boxes[num_child_hits],1,1,1);
+            //STAT3(normal.trav_hit_boxes[num_child_hits],1,1,1);
 #endif
 
             if (unlikely(cur == BVH::emptyNode))
@@ -445,7 +445,7 @@ namespace embree
             curDist = pos_inf;
             
 #if defined(__AVX__)
-            STAT3(normal.trav_hit_boxes[__popcnt(m_frusta_node)],1,1,1);
+            //STAT3(normal.trav_hit_boxes[__popcnt(m_frusta_node)],1,1,1);
 #endif
             size_t num_child_hits = 0;
             do {
@@ -868,7 +868,7 @@ namespace embree
             m_active = 0;
 
 #if defined(__AVX__)
-            STAT3(normal.trav_hit_boxes[__popcnt(m_frusta_node)],1,1,1);
+            //STAT3(normal.trav_hit_boxes[__popcnt(m_frusta_node)],1,1,1);
 #endif
             size_t num_child_hits = 0;
             do {
@@ -900,7 +900,9 @@ namespace embree
           /* intersect leaf */
           assert(cur != BVH::invalidNode);
           assert(cur != BVH::emptyNode);
-          STAT3(normal.trav_leaves,1,popcnt(m_active),K);
+#if defined(__AVX__)
+          STAT3(normal.trav_leaves,1,__popcnt(m_active),K);
+#endif
           if (unlikely(!m_active)) continue;
           size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
 
