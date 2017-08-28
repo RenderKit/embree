@@ -73,5 +73,7 @@ namespace embree
       return tbb::task_scheduler_init::default_num_threads();
 #endif
     }
+
   };
+
 };
