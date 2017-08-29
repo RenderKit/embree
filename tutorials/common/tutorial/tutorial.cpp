@@ -740,7 +740,7 @@ namespace embree
     }
   }
 
-  void TutorialApplication::displayFunc(void)
+  void TutorialApplication::displayFunc()
   {
     /* update camera */
     camera.move(moveDelta.x*speed, moveDelta.y*speed, moveDelta.z*speed);

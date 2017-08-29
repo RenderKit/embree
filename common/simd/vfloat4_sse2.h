@@ -38,8 +38,8 @@ namespace embree
     __forceinline vfloat4& operator=( const vfloat4& other ) { v = other.v; return *this; }
 
     __forceinline vfloat( const __m128 a ) : v(a) {}
-    __forceinline operator const __m128&( void ) const { return v; }
-    __forceinline operator       __m128&( void )       { return v; }
+    __forceinline operator const __m128&() const { return v; }
+    __forceinline operator       __m128&()       { return v; }
 
     __forceinline vfloat( float  a ) : v(_mm_set1_ps(a)) {}
     __forceinline vfloat( float  a, float  b, float  c, float  d) : v(_mm_set_ps(d, c, b, a)) {}

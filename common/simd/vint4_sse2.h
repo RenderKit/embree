@@ -40,8 +40,8 @@ namespace embree
     __forceinline vint4& operator=( const vint4& a ) { v = a.v; return *this; }
 
     __forceinline vint( const __m128i a ) : v(a) {}
-    __forceinline operator const __m128i&( void ) const { return v; }
-    __forceinline operator       __m128i&( void )       { return v; }
+    __forceinline operator const __m128i&() const { return v; }
+    __forceinline operator       __m128i&()       { return v; }
 
 
     __forceinline vint( const int&  a ) : v(_mm_shuffle_epi32(_mm_castps_si128(_mm_load_ss((float*)&a)), _MM_SHUFFLE(0, 0, 0, 0))) {}

@@ -51,8 +51,8 @@ namespace embree
     __forceinline          Vec3ia( const int x, const int y, const int z) : m128(_mm_set_epi32(z, z, y, x)) {}
     __forceinline explicit Vec3ia( const __m128 a ) : m128(_mm_cvtps_epi32(a)) {}
 
-    __forceinline operator const __m128i&( void ) const { return m128; }
-    __forceinline operator       __m128i&( void )       { return m128; }
+    __forceinline operator const __m128i&() const { return m128; }
+    __forceinline operator       __m128i&()       { return m128; }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants

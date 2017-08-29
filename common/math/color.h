@@ -53,8 +53,8 @@ namespace embree
     __forceinline Color4           ( const Color4& other ) : m128(other.m128) {}
     __forceinline Color4& operator=( const Color4& other ) { m128 = other.m128; return *this; }
 
-    __forceinline operator const __m128&( void ) const { return m128; }
-    __forceinline operator       __m128&( void )       { return m128; }
+    __forceinline operator const __m128&() const { return m128; }
+    __forceinline operator       __m128&()       { return m128; }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Set
@@ -115,8 +115,8 @@ namespace embree
     __forceinline Color           ( const Color4& other ) : m128(other.m128) {}
     __forceinline Color& operator=( const Color4& other ) { m128 = other.m128; return *this; }
 
-    __forceinline operator const __m128&( void ) const { return m128; }
-    __forceinline operator       __m128&( void )       { return m128; }
+    __forceinline operator const __m128&() const { return m128; }
+    __forceinline operator       __m128&()       { return m128; }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Set

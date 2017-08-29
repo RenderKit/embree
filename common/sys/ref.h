@@ -48,7 +48,7 @@ namespace embree
     /// Constructors, Assignment & Cast Operators
     ////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline Ref( void ) : ptr(nullptr) {}
+    __forceinline Ref() : ptr(nullptr) {}
     __forceinline Ref(NullTy) : ptr(nullptr) {}
     __forceinline Ref( const Ref& input ) : ptr(input.ptr) { if ( ptr ) ptr->refInc(); }
 
@@ -57,7 +57,7 @@ namespace embree
         ptr->refInc();
     }
 
-    __forceinline ~Ref( void ) {
+    __forceinline ~Ref() {
       if (ptr) ptr->refDec();
     }
 
@@ -83,12 +83,12 @@ namespace embree
       return *this;
     }
 
-    __forceinline operator bool( void ) const { return ptr != nullptr; }
+    __forceinline operator bool() const { return ptr != nullptr; }
 
-    __forceinline const Type& operator  *( void ) const { return *ptr; }
-    __forceinline       Type& operator  *( void )       { return *ptr; }
-    __forceinline const Type* operator ->( void ) const { return  ptr; }
-    __forceinline       Type* operator ->( void )       { return  ptr; }
+    __forceinline const Type& operator  *() const { return *ptr; }
+    __forceinline       Type& operator  *()       { return *ptr; }
+    __forceinline const Type* operator ->() const { return  ptr; }
+    __forceinline       Type* operator ->()       { return  ptr; }
 
     template<typename TypeOut>
     __forceinline       Ref<TypeOut> cast()       { return Ref<TypeOut>(static_cast<TypeOut*>(ptr)); }

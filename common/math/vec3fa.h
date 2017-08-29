@@ -63,8 +63,8 @@ namespace embree
 
     __forceinline explicit Vec3fa( const __m128i a ) : m128(_mm_cvtepi32_ps(a)) {}
 
-    __forceinline operator const __m128&( void ) const { return m128; }
-    __forceinline operator       __m128&( void )       { return m128; }
+    __forceinline operator const __m128&() const { return m128; }
+    __forceinline operator       __m128&()       { return m128; }
 
 #if defined (__SSE4_1__)
     friend __forceinline const Vec3fa copy_a( const Vec3fa& a, const Vec3fa& b ) { return _mm_insert_ps(a, b, (3 << 4) | (3 << 6)); }

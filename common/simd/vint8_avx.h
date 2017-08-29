@@ -42,8 +42,8 @@ namespace embree
     __forceinline vint8& operator=( const vint8& a ) { v = a.v; return *this; }
 
     __forceinline vint( const __m256i a ) : v(a) {}
-    __forceinline operator const __m256i&( void ) const { return v; }
-    __forceinline operator       __m256i&( void )       { return v; }
+    __forceinline operator const __m256i&() const { return v; }
+    __forceinline operator       __m256i&()       { return v; }
 
     __forceinline explicit vint( const vint4& a ) : v(_mm256_insertf128_si256(_mm256_castsi128_si256(a),a,1)) {}
     __forceinline vint( const vint4& a, const vint4& b ) : v(_mm256_insertf128_si256(_mm256_castsi128_si256(a),b,1)) {}

@@ -26,17 +26,17 @@ namespace embree
   class MutexSys {
     friend struct ConditionImplementation;
   public:
-    MutexSys( void );
-    ~MutexSys( void );
+    MutexSys();
+    ~MutexSys();
 
   private:
     MutexSys (const MutexSys& other) DELETED; // do not implement
     MutexSys& operator= (const MutexSys& other) DELETED; // do not implement
 
   public:
-    void lock( void );
-    bool try_lock( void );
-    void unlock( void );
+    void lock();
+    bool try_lock();
+    void unlock();
 
   protected:
     void* mutex;
