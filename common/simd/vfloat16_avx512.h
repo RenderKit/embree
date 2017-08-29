@@ -152,12 +152,12 @@ namespace embree
     }
 
     template<int scale = 4>
-    static __forceinline void scatter(const float *const ptr, const vint16& index, const vfloat16& v) {
+    static __forceinline void scatter(float* ptr, const vint16& index, const vfloat16& v) {
       _mm512_i32scatter_ps(ptr,index,v,scale);
     }
 
     template<int scale = 4>
-    static __forceinline void scatter(const vboolf16& mask, const float *const ptr, const vint16& index, const vfloat16& v) {
+    static __forceinline void scatter(const vboolf16& mask, float* ptr, const vint16& index, const vfloat16& v) {
       _mm512_mask_i32scatter_ps(ptr,mask,index,v,scale);
     }
 
@@ -453,25 +453,47 @@ namespace embree
     return _mm512_shuffle_f32x4(v, v, _MM_SHUFFLE(i3, i2, i1, i0));
   }
 
-  __forceinline vfloat16 permute(vfloat16 v, __m512i index)
-  {
+  __forceinline vfloat16 interleave_even(const vfloat16& a, const vfloat16& b) {
+    return _mm512_castsi512_ps(_mm512_mask_shuffle_epi32(_mm512_castps_si512(a), _mm512_int2mask(0xaaaa), _mm512_castps_si512(b), 0xb1));
+  }
+
+  __forceinline vfloat16 interleave_odd(const vfloat16& a, const vfloat16& b) {
+    return _mm512_castsi512_ps(_mm512_mask_shuffle_epi32(_mm512_castps_si512(b), _mm512_int2mask(0x5555), _mm512_castps_si512(a), 0xb1));
+  }
+
+  __forceinline vfloat16 interleave2_even(const vfloat16& a, const vfloat16& b) {
+    /* mask should be 8-bit but is 16-bit to reuse for interleave_even */
+    return _mm512_castsi512_ps(_mm512_mask_permutex_epi64(_mm512_castps_si512(a), _mm512_int2mask(0xaaaa), _mm512_castps_si512(b), 0xb1));
+  }
+
+  __forceinline vfloat16 interleave2_odd(const vfloat16& a, const vfloat16& b) {
+    /* mask should be 8-bit but is 16-bit to reuse for interleave_odd */
+    return _mm512_castsi512_ps(_mm512_mask_permutex_epi64(_mm512_castps_si512(b), _mm512_int2mask(0x5555), _mm512_castps_si512(a), 0xb1));
+  }
+
+  __forceinline vfloat16 interleave4_even(const vfloat16& a, const vfloat16& b) {
+    return _mm512_castsi512_ps(_mm512_mask_permutex_epi64(_mm512_castps_si512(a), _mm512_int2mask(0xcc), _mm512_castps_si512(b), 0x4e));
+  }
+
+  __forceinline vfloat16 interleave4_odd(const vfloat16& a, const vfloat16& b) {
+    return _mm512_castsi512_ps(_mm512_mask_permutex_epi64(_mm512_castps_si512(b), _mm512_int2mask(0x33), _mm512_castps_si512(a), 0x4e));
+  }
+
+  __forceinline vfloat16 permute(vfloat16 v, __m512i index) {
     return _mm512_castsi512_ps(_mm512_permutexvar_epi32(index, _mm512_castps_si512(v)));
   }
 
-  __forceinline vfloat16 reverse(const vfloat16& v)
-  {
+  __forceinline vfloat16 reverse(const vfloat16& v) {
     return permute(v,_mm512_setr_epi32(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0));
   }
 
   template<int i>
-  __forceinline vfloat16 align_shift_right(const vfloat16& a, const vfloat16& b)
-  {
+  __forceinline vfloat16 align_shift_right(const vfloat16& a, const vfloat16& b) {
     return _mm512_castsi512_ps(_mm512_alignr_epi32(_mm512_castps_si512(a),_mm512_castps_si512(b),i)); 
   };
 
   template<int i>
-  __forceinline vfloat16 mask_align_shift_right(const vboolf16& mask, vfloat16& c, const vfloat16& a, const vfloat16& b)
-  {
+  __forceinline vfloat16 mask_align_shift_right(const vboolf16& mask, vfloat16& c, const vfloat16& a, const vfloat16& b) {
     return _mm512_castsi512_ps(_mm512_mask_alignr_epi32(_mm512_castps_si512(c),mask,_mm512_castps_si512(a),_mm512_castps_si512(b),i)); 
   };
  
@@ -505,6 +527,67 @@ namespace embree
 
   template<int i> __forceinline vfloat8 extract8   (const vfloat16& v) { return _mm512_extractf32x8_ps(v, i); }
   template<>      __forceinline vfloat8 extract8<0>(const vfloat16& v) { return _mm512_castps512_ps256(v);    }
+
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Transpose
+  ////////////////////////////////////////////////////////////////////////////////
+
+  __forceinline void transpose(const vfloat16& r0, const vfloat16& r1, const vfloat16& r2, const vfloat16& r3,
+                               vfloat16& c0, vfloat16& c1, vfloat16& c2, vfloat16& c3)
+  {
+    vfloat16 a0a1_c0c1 = interleave_even(r0, r1);
+    vfloat16 a2a3_c2c3 = interleave_even(r2, r3);
+    vfloat16 b0b1_d0d1 = interleave_odd (r0, r1);
+    vfloat16 b2b3_d2d3 = interleave_odd (r2, r3);
+
+    c0 = interleave2_even(a0a1_c0c1, a2a3_c2c3);
+    c1 = interleave2_even(b0b1_d0d1, b2b3_d2d3);
+    c2 = interleave2_odd (a0a1_c0c1, a2a3_c2c3);
+    c3 = interleave2_odd (b0b1_d0d1, b2b3_d2d3);
+  }
+
+  __forceinline void transpose(const vfloat4& r0,  const vfloat4& r1,  const vfloat4& r2,  const vfloat4& r3,
+                               const vfloat4& r4,  const vfloat4& r5,  const vfloat4& r6,  const vfloat4& r7,
+                               const vfloat4& r8,  const vfloat4& r9,  const vfloat4& r10, const vfloat4& r11,
+                               const vfloat4& r12, const vfloat4& r13, const vfloat4& r14, const vfloat4& r15,
+                               vfloat16& c0, vfloat16& c1, vfloat16& c2, vfloat16& c3)
+  {
+    return transpose(vfloat16(r0, r4, r8, r12), vfloat16(r1, r5, r9, r13), vfloat16(r2, r6, r10, r14), vfloat16(r3, r7, r11, r15),
+                     c0, c1, c2, c3);
+  }
+
+  __forceinline void transpose(const vfloat16& r0, const vfloat16& r1, const vfloat16& r2, const vfloat16& r3,
+                               const vfloat16& r4, const vfloat16& r5, const vfloat16& r6, const vfloat16& r7,
+                               vfloat16& c0, vfloat16& c1, vfloat16& c2, vfloat16& c3,
+                               vfloat16& c4, vfloat16& c5, vfloat16& c6, vfloat16& c7)
+  {
+    vfloat16 a0a1a2a3_e0e1e2e3, b0b1b2b3_f0f1f2f3, c0c1c2c3_g0g1g2g3, d0d1d2d3_h0h1h2h3;
+    transpose(r0, r1, r2, r3, a0a1a2a3_e0e1e2e3, b0b1b2b3_f0f1f2f3, c0c1c2c3_g0g1g2g3, d0d1d2d3_h0h1h2h3);
+
+    vfloat16 a4a5a6a7_e4e5e6e7, b4b5b6b7_f4f5f6f7, c4c5c6c7_g4g5g6g7, d4d5d6d7_h4h5h6h7;
+    transpose(r4, r5, r6, r7, a4a5a6a7_e4e5e6e7, b4b5b6b7_f4f5f6f7, c4c5c6c7_g4g5g6g7, d4d5d6d7_h4h5h6h7);
+
+    c0 = interleave4_even(a0a1a2a3_e0e1e2e3, a4a5a6a7_e4e5e6e7);
+    c1 = interleave4_even(b0b1b2b3_f0f1f2f3, b4b5b6b7_f4f5f6f7);
+    c2 = interleave4_even(c0c1c2c3_g0g1g2g3, c4c5c6c7_g4g5g6g7);
+    c3 = interleave4_even(d0d1d2d3_h0h1h2h3, d4d5d6d7_h4h5h6h7);
+    c4 = interleave4_odd (a0a1a2a3_e0e1e2e3, a4a5a6a7_e4e5e6e7);
+    c5 = interleave4_odd (b0b1b2b3_f0f1f2f3, b4b5b6b7_f4f5f6f7);
+    c6 = interleave4_odd (c0c1c2c3_g0g1g2g3, c4c5c6c7_g4g5g6g7);
+    c7 = interleave4_odd (d0d1d2d3_h0h1h2h3, d4d5d6d7_h4h5h6h7);
+  }
+
+  __forceinline void transpose(const vfloat8& r0,  const vfloat8& r1,  const vfloat8& r2,  const vfloat8& r3,
+                               const vfloat8& r4,  const vfloat8& r5,  const vfloat8& r6,  const vfloat8& r7,
+                               const vfloat8& r8,  const vfloat8& r9,  const vfloat8& r10, const vfloat8& r11,
+                               const vfloat8& r12, const vfloat8& r13, const vfloat8& r14, const vfloat8& r15,
+                               vfloat16& c0, vfloat16& c1, vfloat16& c2, vfloat16& c3,
+                               vfloat16& c4, vfloat16& c5, vfloat16& c6, vfloat16& c7)
+  {
+    return transpose(vfloat16(r0, r8),  vfloat16(r1, r9),  vfloat16(r2, r10), vfloat16(r3, r11),
+                     vfloat16(r4, r12), vfloat16(r5, r13), vfloat16(r6, r14), vfloat16(r7, r15),
+                     c0, c1, c2, c3, c4, c5, c6, c7);
+  }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
