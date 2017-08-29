@@ -133,7 +133,7 @@ namespace embree
   /// Select
   ////////////////////////////////////////////////////////////////////////////////
   
-  __forceinline const vllong4 select( const vboold4& m, const vllong4& t, const vllong4& f ) {
+  __forceinline vllong4 select( const vboold4& m, const vllong4& t, const vllong4& f ) {
   #if defined(__AVX512VL__)
     return _mm256_mask_blend_epi64(m, f, t);
   #else
@@ -145,62 +145,62 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vllong4 asLong    ( const __m256& a ) { return _mm256_castps_si256(a); }
-  __forceinline const vllong4 operator +( const vllong4& a ) { return a; }
-  __forceinline const vllong4 operator -( const vllong4& a ) { return _mm256_sub_epi64(_mm256_setzero_si256(), a); }
+  __forceinline vllong4 asLong    ( const __m256& a ) { return _mm256_castps_si256(a); }
+  __forceinline vllong4 operator +( const vllong4& a ) { return a; }
+  __forceinline vllong4 operator -( const vllong4& a ) { return _mm256_sub_epi64(_mm256_setzero_si256(), a); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vllong4 operator +( const vllong4&  a, const vllong4&  b ) { return _mm256_add_epi64(a, b); }
-  __forceinline const vllong4 operator +( const vllong4&  a, const long long b ) { return a + vllong4(b); }
-  __forceinline const vllong4 operator +( const long long a, const vllong4&  b ) { return vllong4(a) + b; }
+  __forceinline vllong4 operator +( const vllong4&  a, const vllong4&  b ) { return _mm256_add_epi64(a, b); }
+  __forceinline vllong4 operator +( const vllong4&  a, const long long b ) { return a + vllong4(b); }
+  __forceinline vllong4 operator +( const long long a, const vllong4&  b ) { return vllong4(a) + b; }
 
-  __forceinline const vllong4 operator -( const vllong4&  a, const vllong4&  b ) { return _mm256_sub_epi64(a, b); }
-  __forceinline const vllong4 operator -( const vllong4&  a, const long long b ) { return a - vllong4(b); }
-  __forceinline const vllong4 operator -( const long long a, const vllong4&  b ) { return vllong4(a) - b; }
+  __forceinline vllong4 operator -( const vllong4&  a, const vllong4&  b ) { return _mm256_sub_epi64(a, b); }
+  __forceinline vllong4 operator -( const vllong4&  a, const long long b ) { return a - vllong4(b); }
+  __forceinline vllong4 operator -( const long long a, const vllong4&  b ) { return vllong4(a) - b; }
 
   /* only low 32bit part */
-  __forceinline const vllong4 operator *( const vllong4&  a, const vllong4&  b ) { return _mm256_mul_epi32(a, b); }
-  __forceinline const vllong4 operator *( const vllong4&  a, const long long b ) { return a * vllong4(b); }
-  __forceinline const vllong4 operator *( const long long a, const vllong4&  b ) { return vllong4(a) * b; }
+  __forceinline vllong4 operator *( const vllong4&  a, const vllong4&  b ) { return _mm256_mul_epi32(a, b); }
+  __forceinline vllong4 operator *( const vllong4&  a, const long long b ) { return a * vllong4(b); }
+  __forceinline vllong4 operator *( const long long a, const vllong4&  b ) { return vllong4(a) * b; }
 
-  __forceinline const vllong4 operator &( const vllong4&  a, const vllong4&  b ) { return _mm256_and_si256(a, b); }
-  __forceinline const vllong4 operator &( const vllong4&  a, const long long b ) { return a & vllong4(b); }
-  __forceinline const vllong4 operator &( const long long a, const vllong4&  b ) { return vllong4(a) & b; }
+  __forceinline vllong4 operator &( const vllong4&  a, const vllong4&  b ) { return _mm256_and_si256(a, b); }
+  __forceinline vllong4 operator &( const vllong4&  a, const long long b ) { return a & vllong4(b); }
+  __forceinline vllong4 operator &( const long long a, const vllong4&  b ) { return vllong4(a) & b; }
 
-  __forceinline const vllong4 operator |( const vllong4&  a, const vllong4&  b ) { return _mm256_or_si256(a, b); }
-  __forceinline const vllong4 operator |( const vllong4&  a, const long long b ) { return a | vllong4(b); }
-  __forceinline const vllong4 operator |( const long long a, const vllong4&  b ) { return vllong4(a) | b; }
+  __forceinline vllong4 operator |( const vllong4&  a, const vllong4&  b ) { return _mm256_or_si256(a, b); }
+  __forceinline vllong4 operator |( const vllong4&  a, const long long b ) { return a | vllong4(b); }
+  __forceinline vllong4 operator |( const long long a, const vllong4&  b ) { return vllong4(a) | b; }
 
-  __forceinline const vllong4 operator ^( const vllong4&  a, const vllong4&  b ) { return _mm256_xor_si256(a, b); }
-  __forceinline const vllong4 operator ^( const vllong4&  a, const long long b ) { return a ^ vllong4(b); }
-  __forceinline const vllong4 operator ^( const long long a, const vllong4&  b ) { return vllong4(a) ^ b; }
+  __forceinline vllong4 operator ^( const vllong4&  a, const vllong4&  b ) { return _mm256_xor_si256(a, b); }
+  __forceinline vllong4 operator ^( const vllong4&  a, const long long b ) { return a ^ vllong4(b); }
+  __forceinline vllong4 operator ^( const long long a, const vllong4&  b ) { return vllong4(a) ^ b; }
 
-  __forceinline const vllong4 operator <<( const vllong4& a, const long long n ) { return _mm256_slli_epi64(a, (int)n); }
-  //__forceinline const vllong4 operator >>( const vllong4& a, const long long n ) { return _mm256_srai_epi64(a, n); }
+  __forceinline vllong4 operator <<( const vllong4& a, const long long n ) { return _mm256_slli_epi64(a, (int)n); }
+  //__forceinline vllong4 operator >>( const vllong4& a, const long long n ) { return _mm256_srai_epi64(a, n); }
 
-  __forceinline const vllong4 operator <<( const vllong4& a, const vllong4& n ) { return _mm256_sllv_epi64(a, n); }
-  //__forceinline const vllong4 operator >>( const vllong4& a, const vllong4& n ) { return _mm256_srav_epi64(a, n); }
-  //__forceinline const vllong4 sra ( const vllong4& a, const long long b ) { return _mm256_srai_epi64(a, b); }
+  __forceinline vllong4 operator <<( const vllong4& a, const vllong4& n ) { return _mm256_sllv_epi64(a, n); }
+  //__forceinline vllong4 operator >>( const vllong4& a, const vllong4& n ) { return _mm256_srav_epi64(a, n); }
+  //__forceinline vllong4 sra ( const vllong4& a, const long long b ) { return _mm256_srai_epi64(a, b); }
 
-  __forceinline const vllong4 srl ( const vllong4& a, const long long b ) { return _mm256_srli_epi64(a, (int)b); }
+  __forceinline vllong4 srl ( const vllong4& a, const long long b ) { return _mm256_srli_epi64(a, (int)b); }
   
-  //__forceinline const vllong4 min( const vllong4&  a, const vllong4&  b ) { return _mm256_min_epi64(a, b); }
-  //__forceinline const vllong4 min( const vllong4&  a, const long long b ) { return min(a,vllong4(b)); }
-  //__forceinline const vllong4 min( const long long a, const vllong4&  b ) { return min(vllong4(a),b); }
+  //__forceinline vllong4 min( const vllong4&  a, const vllong4&  b ) { return _mm256_min_epi64(a, b); }
+  //__forceinline vllong4 min( const vllong4&  a, const long long b ) { return min(a,vllong4(b)); }
+  //__forceinline vllong4 min( const long long a, const vllong4&  b ) { return min(vllong4(a),b); }
 
-  //__forceinline const vllong4 max( const vllong4&  a, const vllong4&  b ) { return _mm256_max_epi64(a, b); }
-  //__forceinline const vllong4 max( const vllong4&  a, const long long b ) { return max(a,vllong4(b)); }
-  //__forceinline const vllong4 max( const long long a, const vllong4&  b ) { return max(vllong4(a),b); }
+  //__forceinline vllong4 max( const vllong4&  a, const vllong4&  b ) { return _mm256_max_epi64(a, b); }
+  //__forceinline vllong4 max( const vllong4&  a, const long long b ) { return max(a,vllong4(b)); }
+  //__forceinline vllong4 max( const long long a, const vllong4&  b ) { return max(vllong4(a),b); }
 
 #if defined(__AVX512VL__)
-  __forceinline const vllong4 mask_and(const vboold4& m, const vllong4& c, const vllong4& a, const vllong4& b) { return _mm256_mask_and_epi64(c,m,a,b); }
-  __forceinline const vllong4 mask_or (const vboold4& m, const vllong4& c, const vllong4& a, const vllong4& b) { return _mm256_mask_or_epi64(c,m,a,b); }
+  __forceinline vllong4 mask_and(const vboold4& m, const vllong4& c, const vllong4& a, const vllong4& b) { return _mm256_mask_and_epi64(c,m,a,b); }
+  __forceinline vllong4 mask_or (const vboold4& m, const vllong4& c, const vllong4& a, const vllong4& b) { return _mm256_mask_or_epi64(c,m,a,b); }
 #else
-  __forceinline const vllong4 mask_and(const vboold4& m, const vllong4& c, const vllong4& a, const vllong4& b) { return select(m, a & b, c); }
-  __forceinline const vllong4 mask_or (const vboold4& m, const vllong4& c, const vllong4& a, const vllong4& b) { return select(m, a | b, c); }
+  __forceinline vllong4 mask_and(const vboold4& m, const vllong4& c, const vllong4& a, const vllong4& b) { return select(m, a & b, c); }
+  __forceinline vllong4 mask_or (const vboold4& m, const vllong4& c, const vllong4& a, const vllong4& b) { return select(m, a | b, c); }
 #endif
   
   ////////////////////////////////////////////////////////////////////////////////
@@ -230,38 +230,38 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX512VL__)
-  __forceinline const vboold4 operator ==( const vllong4& a, const vllong4& b ) { return _mm256_cmp_epi64_mask(a,b,_MM_CMPINT_EQ); }
-  __forceinline const vboold4 operator !=( const vllong4& a, const vllong4& b ) { return _mm256_cmp_epi64_mask(a,b,_MM_CMPINT_NE); }
-  __forceinline const vboold4 operator < ( const vllong4& a, const vllong4& b ) { return _mm256_cmp_epi64_mask(a,b,_MM_CMPINT_LT); }
-  __forceinline const vboold4 operator >=( const vllong4& a, const vllong4& b ) { return _mm256_cmp_epi64_mask(a,b,_MM_CMPINT_GE); }
-  __forceinline const vboold4 operator > ( const vllong4& a, const vllong4& b ) { return _mm256_cmp_epi64_mask(a,b,_MM_CMPINT_GT); }
-  __forceinline const vboold4 operator <=( const vllong4& a, const vllong4& b ) { return _mm256_cmp_epi64_mask(a,b,_MM_CMPINT_LE); }
+  __forceinline vboold4 operator ==( const vllong4& a, const vllong4& b ) { return _mm256_cmp_epi64_mask(a,b,_MM_CMPINT_EQ); }
+  __forceinline vboold4 operator !=( const vllong4& a, const vllong4& b ) { return _mm256_cmp_epi64_mask(a,b,_MM_CMPINT_NE); }
+  __forceinline vboold4 operator < ( const vllong4& a, const vllong4& b ) { return _mm256_cmp_epi64_mask(a,b,_MM_CMPINT_LT); }
+  __forceinline vboold4 operator >=( const vllong4& a, const vllong4& b ) { return _mm256_cmp_epi64_mask(a,b,_MM_CMPINT_GE); }
+  __forceinline vboold4 operator > ( const vllong4& a, const vllong4& b ) { return _mm256_cmp_epi64_mask(a,b,_MM_CMPINT_GT); }
+  __forceinline vboold4 operator <=( const vllong4& a, const vllong4& b ) { return _mm256_cmp_epi64_mask(a,b,_MM_CMPINT_LE); }
 #else
-  __forceinline const vboold4 operator ==( const vllong4& a, const vllong4& b ) { return _mm256_cmpeq_epi64(a,b); }
-  __forceinline const vboold4 operator !=( const vllong4& a, const vllong4& b ) { return !(a == b); }
-  __forceinline const vboold4 operator > ( const vllong4& a, const vllong4& b ) { return _mm256_cmpgt_epi64(a,b); }
-  __forceinline const vboold4 operator < ( const vllong4& a, const vllong4& b ) { return _mm256_cmpgt_epi64(b,a); }
-  __forceinline const vboold4 operator >=( const vllong4& a, const vllong4& b ) { return !(a < b); }
-  __forceinline const vboold4 operator <=( const vllong4& a, const vllong4& b ) { return !(a > b); }
+  __forceinline vboold4 operator ==( const vllong4& a, const vllong4& b ) { return _mm256_cmpeq_epi64(a,b); }
+  __forceinline vboold4 operator !=( const vllong4& a, const vllong4& b ) { return !(a == b); }
+  __forceinline vboold4 operator > ( const vllong4& a, const vllong4& b ) { return _mm256_cmpgt_epi64(a,b); }
+  __forceinline vboold4 operator < ( const vllong4& a, const vllong4& b ) { return _mm256_cmpgt_epi64(b,a); }
+  __forceinline vboold4 operator >=( const vllong4& a, const vllong4& b ) { return !(a < b); }
+  __forceinline vboold4 operator <=( const vllong4& a, const vllong4& b ) { return !(a > b); }
 #endif
 
-  __forceinline const vboold4 operator ==( const vllong4&  a, const long long b ) { return a == vllong4(b); }
-  __forceinline const vboold4 operator ==( const long long a, const vllong4&  b ) { return vllong4(a) == b; }
+  __forceinline vboold4 operator ==( const vllong4&  a, const long long b ) { return a == vllong4(b); }
+  __forceinline vboold4 operator ==( const long long a, const vllong4&  b ) { return vllong4(a) == b; }
 
-  __forceinline const vboold4 operator !=( const vllong4&  a, const long long b ) { return a != vllong4(b); }
-  __forceinline const vboold4 operator !=( const long long a, const vllong4&  b ) { return vllong4(a) != b; }
+  __forceinline vboold4 operator !=( const vllong4&  a, const long long b ) { return a != vllong4(b); }
+  __forceinline vboold4 operator !=( const long long a, const vllong4&  b ) { return vllong4(a) != b; }
 
-  __forceinline const vboold4 operator > ( const vllong4&  a, const long long b ) { return a >  vllong4(b); }
-  __forceinline const vboold4 operator > ( const long long a, const vllong4&  b ) { return vllong4(a) >  b; }
+  __forceinline vboold4 operator > ( const vllong4&  a, const long long b ) { return a >  vllong4(b); }
+  __forceinline vboold4 operator > ( const long long a, const vllong4&  b ) { return vllong4(a) >  b; }
 
-  __forceinline const vboold4 operator < ( const vllong4&  a, const long long b ) { return a <  vllong4(b); }
-  __forceinline const vboold4 operator < ( const long long a, const vllong4&  b ) { return vllong4(a) <  b; }
+  __forceinline vboold4 operator < ( const vllong4&  a, const long long b ) { return a <  vllong4(b); }
+  __forceinline vboold4 operator < ( const long long a, const vllong4&  b ) { return vllong4(a) <  b; }
 
-  __forceinline const vboold4 operator >=( const vllong4&  a, const long long b ) { return a >= vllong4(b); }
-  __forceinline const vboold4 operator >=( const long long a, const vllong4&  b ) { return vllong4(a) >= b; }
+  __forceinline vboold4 operator >=( const vllong4&  a, const long long b ) { return a >= vllong4(b); }
+  __forceinline vboold4 operator >=( const long long a, const vllong4&  b ) { return vllong4(a) >= b; }
 
-  __forceinline const vboold4 operator <=( const vllong4&  a, const long long b ) { return a <= vllong4(b); }
-  __forceinline const vboold4 operator <=( const long long a, const vllong4&  b ) { return vllong4(a) <= b; }
+  __forceinline vboold4 operator <=( const vllong4&  a, const long long b ) { return a <= vllong4(b); }
+  __forceinline vboold4 operator <=( const long long a, const vllong4&  b ) { return vllong4(a) <= b; }
 
   __forceinline vboold4 eq(const vllong4& a, const vllong4& b) { return a == b; }
   __forceinline vboold4 ne(const vllong4& a, const vllong4& b) { return a != b; }

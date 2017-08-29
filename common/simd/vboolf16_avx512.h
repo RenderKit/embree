@@ -103,16 +103,16 @@ namespace embree
   /// Assignment Operators
   ////////////////////////////////////////////////////////////////////////////////
   
-  __forceinline const vboolf16 operator &=( vboolf16& a, const vboolf16& b ) { return a = a & b; }
-  __forceinline const vboolf16 operator |=( vboolf16& a, const vboolf16& b ) { return a = a | b; }
-  __forceinline const vboolf16 operator ^=( vboolf16& a, const vboolf16& b ) { return a = a ^ b; }
+  __forceinline vboolf16 operator &=( vboolf16& a, const vboolf16& b ) { return a = a & b; }
+  __forceinline vboolf16 operator |=( vboolf16& a, const vboolf16& b ) { return a = a | b; }
+  __forceinline vboolf16 operator ^=( vboolf16& a, const vboolf16& b ) { return a = a ^ b; }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Comparison Operators + Select
   ////////////////////////////////////////////////////////////////////////////////
   
-  __forceinline const vboolf16 operator !=( const vboolf16& a, const vboolf16& b ) { return _mm512_kxor(a, b); }
-  __forceinline const vboolf16 operator ==( const vboolf16& a, const vboolf16& b ) { return _mm512_kxnor(a, b); }
+  __forceinline vboolf16 operator !=( const vboolf16& a, const vboolf16& b ) { return _mm512_kxor(a, b); }
+  __forceinline vboolf16 operator ==( const vboolf16& a, const vboolf16& b ) { return _mm512_kxnor(a, b); }
   
   __forceinline vboolf16 select (const vboolf16 &s, const vboolf16 &a, const vboolf16 &b) {
     return _mm512_kor(_mm512_kand(s,a),_mm512_kandn(s,b));

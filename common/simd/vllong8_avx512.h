@@ -93,7 +93,7 @@ namespace embree
       return _mm512_load_si512(addr);
     }
 
-    static __forceinline const vllong8 load( const unsigned char* const ptr ) { 
+    static __forceinline vllong8 load( const unsigned char* const ptr ) {
       return _mm512_cvtepu8_epi64(*(__m128i*)ptr); 
     }
 
@@ -161,61 +161,61 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vllong8 asLong    ( const __m512& a ) { return _mm512_castps_si512(a); }
-  __forceinline const vllong8 operator +( const vllong8& a ) { return a; }
-  __forceinline const vllong8 operator -( const vllong8& a ) { return _mm512_sub_epi64(_mm512_setzero_epi32(), a); }
+  __forceinline vllong8 asLong    ( const __m512& a ) { return _mm512_castps_si512(a); }
+  __forceinline vllong8 operator +( const vllong8& a ) { return a; }
+  __forceinline vllong8 operator -( const vllong8& a ) { return _mm512_sub_epi64(_mm512_setzero_epi32(), a); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vllong8 operator +( const vllong8&  a, const vllong8&  b ) { return _mm512_add_epi64(a, b); }
-  __forceinline const vllong8 operator +( const vllong8&  a, const long long b ) { return a + vllong8(b); }
-  __forceinline const vllong8 operator +( const long long a, const vllong8&  b ) { return vllong8(a) + b; }
+  __forceinline vllong8 operator +( const vllong8&  a, const vllong8&  b ) { return _mm512_add_epi64(a, b); }
+  __forceinline vllong8 operator +( const vllong8&  a, const long long b ) { return a + vllong8(b); }
+  __forceinline vllong8 operator +( const long long a, const vllong8&  b ) { return vllong8(a) + b; }
 
-  __forceinline const vllong8 operator -( const vllong8&  a, const vllong8&  b ) { return _mm512_sub_epi64(a, b); }
-  __forceinline const vllong8 operator -( const vllong8&  a, const long long b ) { return a - vllong8(b); }
-  __forceinline const vllong8 operator -( const long long a, const vllong8&  b ) { return vllong8(a) - b; }
+  __forceinline vllong8 operator -( const vllong8&  a, const vllong8&  b ) { return _mm512_sub_epi64(a, b); }
+  __forceinline vllong8 operator -( const vllong8&  a, const long long b ) { return a - vllong8(b); }
+  __forceinline vllong8 operator -( const long long a, const vllong8&  b ) { return vllong8(a) - b; }
 
-  __forceinline const vllong8 operator *( const vllong8&  a, const vllong8&  b ) { return _mm512_mullo_epi64(a, b); }
-  __forceinline const vllong8 operator *( const vllong8&  a, const long long b ) { return a * vllong8(b); }
-  __forceinline const vllong8 operator *( const long long a, const vllong8&  b ) { return vllong8(a) * b; }
+  __forceinline vllong8 operator *( const vllong8&  a, const vllong8&  b ) { return _mm512_mullo_epi64(a, b); }
+  __forceinline vllong8 operator *( const vllong8&  a, const long long b ) { return a * vllong8(b); }
+  __forceinline vllong8 operator *( const long long a, const vllong8&  b ) { return vllong8(a) * b; }
 
-  __forceinline const vllong8 operator &( const vllong8&  a, const vllong8&  b ) { return _mm512_and_epi64(a, b); }
-  __forceinline const vllong8 operator &( const vllong8&  a, const long long b ) { return a & vllong8(b); }
-  __forceinline const vllong8 operator &( const long long a, const vllong8&  b ) { return vllong8(a) & b; }
+  __forceinline vllong8 operator &( const vllong8&  a, const vllong8&  b ) { return _mm512_and_epi64(a, b); }
+  __forceinline vllong8 operator &( const vllong8&  a, const long long b ) { return a & vllong8(b); }
+  __forceinline vllong8 operator &( const long long a, const vllong8&  b ) { return vllong8(a) & b; }
 
-  __forceinline const vllong8 operator |( const vllong8&  a, const vllong8&  b ) { return _mm512_or_epi64(a, b); }
-  __forceinline const vllong8 operator |( const vllong8&  a, const long long b ) { return a | vllong8(b); }
-  __forceinline const vllong8 operator |( const long long a, const vllong8&  b ) { return vllong8(a) | b; }
+  __forceinline vllong8 operator |( const vllong8&  a, const vllong8&  b ) { return _mm512_or_epi64(a, b); }
+  __forceinline vllong8 operator |( const vllong8&  a, const long long b ) { return a | vllong8(b); }
+  __forceinline vllong8 operator |( const long long a, const vllong8&  b ) { return vllong8(a) | b; }
 
-  __forceinline const vllong8 operator ^( const vllong8&  a, const vllong8&  b ) { return _mm512_xor_epi64(a, b); }
-  __forceinline const vllong8 operator ^( const vllong8&  a, const long long b ) { return a ^ vllong8(b); }
-  __forceinline const vllong8 operator ^( const long long a, const vllong8&  b ) { return vllong8(a) ^ b; }
+  __forceinline vllong8 operator ^( const vllong8&  a, const vllong8&  b ) { return _mm512_xor_epi64(a, b); }
+  __forceinline vllong8 operator ^( const vllong8&  a, const long long b ) { return a ^ vllong8(b); }
+  __forceinline vllong8 operator ^( const long long a, const vllong8&  b ) { return vllong8(a) ^ b; }
 
-  __forceinline const vllong8 operator <<( const vllong8& a, const long long n ) { return _mm512_slli_epi64(a, n); }
-  __forceinline const vllong8 operator >>( const vllong8& a, const long long n ) { return _mm512_srai_epi64(a, n); }
+  __forceinline vllong8 operator <<( const vllong8& a, const long long n ) { return _mm512_slli_epi64(a, n); }
+  __forceinline vllong8 operator >>( const vllong8& a, const long long n ) { return _mm512_srai_epi64(a, n); }
 
-  __forceinline const vllong8 operator <<( const vllong8& a, const vllong8& n ) { return _mm512_sllv_epi64(a, n); }
-  __forceinline const vllong8 operator >>( const vllong8& a, const vllong8& n ) { return _mm512_srav_epi64(a, n); }
+  __forceinline vllong8 operator <<( const vllong8& a, const vllong8& n ) { return _mm512_sllv_epi64(a, n); }
+  __forceinline vllong8 operator >>( const vllong8& a, const vllong8& n ) { return _mm512_srav_epi64(a, n); }
 
-  __forceinline const vllong8 sll ( const vllong8& a, const long long b ) { return _mm512_slli_epi64(a, b); }
-  __forceinline const vllong8 sra ( const vllong8& a, const long long b ) { return _mm512_srai_epi64(a, b); }
-  __forceinline const vllong8 srl ( const vllong8& a, const long long b ) { return _mm512_srli_epi64(a, b); }
+  __forceinline vllong8 sll ( const vllong8& a, const long long b ) { return _mm512_slli_epi64(a, b); }
+  __forceinline vllong8 sra ( const vllong8& a, const long long b ) { return _mm512_srai_epi64(a, b); }
+  __forceinline vllong8 srl ( const vllong8& a, const long long b ) { return _mm512_srli_epi64(a, b); }
 
-  __forceinline const vllong8 min( const vllong8&  a, const vllong8&  b ) { return _mm512_min_epi64(a, b); }
-  __forceinline const vllong8 min( const vllong8&  a, const long long b ) { return min(a,vllong8(b)); }
-  __forceinline const vllong8 min( const long long a, const vllong8&  b ) { return min(vllong8(a),b); }
+  __forceinline vllong8 min( const vllong8&  a, const vllong8&  b ) { return _mm512_min_epi64(a, b); }
+  __forceinline vllong8 min( const vllong8&  a, const long long b ) { return min(a,vllong8(b)); }
+  __forceinline vllong8 min( const long long a, const vllong8&  b ) { return min(vllong8(a),b); }
 
-  __forceinline const vllong8 max( const vllong8&  a, const vllong8&  b ) { return _mm512_max_epi64(a, b); }
-  __forceinline const vllong8 max( const vllong8&  a, const long long b ) { return max(a,vllong8(b)); }
-  __forceinline const vllong8 max( const long long a, const vllong8&  b ) { return max(vllong8(a),b); }
+  __forceinline vllong8 max( const vllong8&  a, const vllong8&  b ) { return _mm512_max_epi64(a, b); }
+  __forceinline vllong8 max( const vllong8&  a, const long long b ) { return max(a,vllong8(b)); }
+  __forceinline vllong8 max( const long long a, const vllong8&  b ) { return max(vllong8(a),b); }
   
-  __forceinline const vllong8 mask_add(const vboold8& m, const vllong8& c, const vllong8& a, const vllong8& b) { return _mm512_mask_add_epi64(c,m,a,b); }
-  __forceinline const vllong8 mask_sub(const vboold8& m, const vllong8& c, const vllong8& a, const vllong8& b) { return _mm512_mask_sub_epi64(c,m,a,b); }
+  __forceinline vllong8 mask_add(const vboold8& m, const vllong8& c, const vllong8& a, const vllong8& b) { return _mm512_mask_add_epi64(c,m,a,b); }
+  __forceinline vllong8 mask_sub(const vboold8& m, const vllong8& c, const vllong8& a, const vllong8& b) { return _mm512_mask_sub_epi64(c,m,a,b); }
 
-  __forceinline const vllong8 mask_and(const vboold8& m, const vllong8& c, const vllong8& a, const vllong8& b) { return _mm512_mask_and_epi64(c,m,a,b); }
-  __forceinline const vllong8 mask_or (const vboold8& m, const vllong8& c, const vllong8& a, const vllong8& b) { return _mm512_mask_or_epi64(c,m,a,b); }
+  __forceinline vllong8 mask_and(const vboold8& m, const vllong8& c, const vllong8& a, const vllong8& b) { return _mm512_mask_and_epi64(c,m,a,b); }
+  __forceinline vllong8 mask_or (const vboold8& m, const vllong8& c, const vllong8& a, const vllong8& b) { return _mm512_mask_or_epi64(c,m,a,b); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
@@ -243,29 +243,29 @@ namespace embree
   /// Comparison Operators + Select
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vboold8 operator ==( const vllong8&  a, const vllong8&  b ) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_EQ); }
-  __forceinline const vboold8 operator ==( const vllong8&  a, const long long b ) { return a == vllong8(b); }
-  __forceinline const vboold8 operator ==( const long long a, const vllong8&  b ) { return vllong8(a) == b; }
+  __forceinline vboold8 operator ==( const vllong8&  a, const vllong8&  b ) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_EQ); }
+  __forceinline vboold8 operator ==( const vllong8&  a, const long long b ) { return a == vllong8(b); }
+  __forceinline vboold8 operator ==( const long long a, const vllong8&  b ) { return vllong8(a) == b; }
   
-  __forceinline const vboold8 operator !=( const vllong8&  a, const vllong8&  b ) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_NE); }
-  __forceinline const vboold8 operator !=( const vllong8&  a, const long long b ) { return a != vllong8(b); }
-  __forceinline const vboold8 operator !=( const long long a, const vllong8&  b ) { return vllong8(a) != b; }
+  __forceinline vboold8 operator !=( const vllong8&  a, const vllong8&  b ) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_NE); }
+  __forceinline vboold8 operator !=( const vllong8&  a, const long long b ) { return a != vllong8(b); }
+  __forceinline vboold8 operator !=( const long long a, const vllong8&  b ) { return vllong8(a) != b; }
   
-  __forceinline const vboold8 operator < ( const vllong8&  a, const vllong8&  b ) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_LT); }
-  __forceinline const vboold8 operator < ( const vllong8&  a, const long long b ) { return a <  vllong8(b); }
-  __forceinline const vboold8 operator < ( const long long a, const vllong8&  b ) { return vllong8(a) <  b; }
+  __forceinline vboold8 operator < ( const vllong8&  a, const vllong8&  b ) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_LT); }
+  __forceinline vboold8 operator < ( const vllong8&  a, const long long b ) { return a <  vllong8(b); }
+  __forceinline vboold8 operator < ( const long long a, const vllong8&  b ) { return vllong8(a) <  b; }
   
-  __forceinline const vboold8 operator >=( const vllong8&  a, const vllong8&  b ) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_GE); }
-  __forceinline const vboold8 operator >=( const vllong8&  a, const long long b ) { return a >= vllong8(b); }
-  __forceinline const vboold8 operator >=( const long long a, const vllong8&  b ) { return vllong8(a) >= b; }
+  __forceinline vboold8 operator >=( const vllong8&  a, const vllong8&  b ) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_GE); }
+  __forceinline vboold8 operator >=( const vllong8&  a, const long long b ) { return a >= vllong8(b); }
+  __forceinline vboold8 operator >=( const long long a, const vllong8&  b ) { return vllong8(a) >= b; }
 
-  __forceinline const vboold8 operator > ( const vllong8&  a, const vllong8&  b ) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_GT); }
-  __forceinline const vboold8 operator > ( const vllong8&  a, const long long b ) { return a >  vllong8(b); }
-  __forceinline const vboold8 operator > ( const long long a, const vllong8&  b ) { return vllong8(a) >  b; }
+  __forceinline vboold8 operator > ( const vllong8&  a, const vllong8&  b ) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_GT); }
+  __forceinline vboold8 operator > ( const vllong8&  a, const long long b ) { return a >  vllong8(b); }
+  __forceinline vboold8 operator > ( const long long a, const vllong8&  b ) { return vllong8(a) >  b; }
 
-  __forceinline const vboold8 operator <=( const vllong8&  a, const vllong8&  b ) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_LE); }
-  __forceinline const vboold8 operator <=( const vllong8&  a, const long long b ) { return a <= vllong8(b); }
-  __forceinline const vboold8 operator <=( const long long a, const vllong8&  b ) { return vllong8(a) <= b; }
+  __forceinline vboold8 operator <=( const vllong8&  a, const vllong8&  b ) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_LE); }
+  __forceinline vboold8 operator <=( const vllong8&  a, const long long b ) { return a <= vllong8(b); }
+  __forceinline vboold8 operator <=( const long long a, const vllong8&  b ) { return vllong8(a) <= b; }
 
   __forceinline vboold8 eq(const vllong8& a, const vllong8& b) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_EQ); }
   __forceinline vboold8 ne(const vllong8& a, const vllong8& b) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_NE); }
@@ -281,7 +281,7 @@ namespace embree
   __forceinline vboold8 gt(const vboold8 mask, const vllong8& a, const vllong8& b) { return _mm512_mask_cmp_epi64_mask(mask,a,b,_MM_CMPINT_GT); }
   __forceinline vboold8 le(const vboold8 mask, const vllong8& a, const vllong8& b) { return _mm512_mask_cmp_epi64_mask(mask,a,b,_MM_CMPINT_LE); }
 
-  __forceinline const vllong8 select( const vboold8& m, const vllong8& t, const vllong8& f ) {
+  __forceinline vllong8 select( const vboold8& m, const vllong8& t, const vllong8& f ) {
     return _mm512_mask_or_epi64(f,m,t,t); 
   }
 

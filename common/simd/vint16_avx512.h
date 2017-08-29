@@ -106,8 +106,8 @@ namespace embree
 
     static __forceinline vint16 load (const void* addr) { return _mm512_load_si512((int*)addr); }
 
-    static __forceinline const vint16 load( const unsigned char*  const ptr ) { return _mm512_cvtepu8_epi32(_mm_load_si128((__m128i*)ptr)); }
-    static __forceinline const vint16 load( const unsigned short* const ptr ) { return _mm512_cvtepu16_epi32(*(__m256i*)ptr); }
+    static __forceinline vint16 load( const unsigned char*  const ptr ) { return _mm512_cvtepu8_epi32(_mm_load_si128((__m128i*)ptr)); }
+    static __forceinline vint16 load( const unsigned short* const ptr ) { return _mm512_cvtepu16_epi32(*(__m256i*)ptr); }
 
     static __forceinline vint16 loadu(const void* addr) { return _mm512_loadu_si512(addr); }
 
@@ -192,64 +192,64 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vint16 asInt     ( const __m512& a ) { return _mm512_castps_si512(a); }
-  __forceinline const vint16 operator +( const vint16& a ) { return a; }
-  __forceinline const vint16 operator -( const vint16& a ) { return _mm512_sub_epi32(_mm512_setzero_epi32(), a); }
+  __forceinline vint16 asInt     ( const __m512& a ) { return _mm512_castps_si512(a); }
+  __forceinline vint16 operator +( const vint16& a ) { return a; }
+  __forceinline vint16 operator -( const vint16& a ) { return _mm512_sub_epi32(_mm512_setzero_epi32(), a); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vint16 operator +( const vint16& a, const vint16& b ) { return _mm512_add_epi32(a, b); }
-  __forceinline const vint16 operator +( const vint16& a, const int     b ) { return a + vint16(b); }
-  __forceinline const vint16 operator +( const int     a, const vint16& b ) { return vint16(a) + b; }
+  __forceinline vint16 operator +( const vint16& a, const vint16& b ) { return _mm512_add_epi32(a, b); }
+  __forceinline vint16 operator +( const vint16& a, const int     b ) { return a + vint16(b); }
+  __forceinline vint16 operator +( const int     a, const vint16& b ) { return vint16(a) + b; }
 
-  __forceinline const vint16 operator -( const vint16& a, const vint16& b ) { return _mm512_sub_epi32(a, b); }
-  __forceinline const vint16 operator -( const vint16& a, const int     b ) { return a - vint16(b); }
-  __forceinline const vint16 operator -( const int     a, const vint16& b ) { return vint16(a) - b; }
+  __forceinline vint16 operator -( const vint16& a, const vint16& b ) { return _mm512_sub_epi32(a, b); }
+  __forceinline vint16 operator -( const vint16& a, const int     b ) { return a - vint16(b); }
+  __forceinline vint16 operator -( const int     a, const vint16& b ) { return vint16(a) - b; }
 
-  __forceinline const vint16 operator *( const vint16& a, const vint16& b ) { return _mm512_mullo_epi32(a, b); }
-  __forceinline const vint16 operator *( const vint16& a, const int     b ) { return a * vint16(b); }
-  __forceinline const vint16 operator *( const int     a, const vint16& b ) { return vint16(a) * b; }
+  __forceinline vint16 operator *( const vint16& a, const vint16& b ) { return _mm512_mullo_epi32(a, b); }
+  __forceinline vint16 operator *( const vint16& a, const int     b ) { return a * vint16(b); }
+  __forceinline vint16 operator *( const int     a, const vint16& b ) { return vint16(a) * b; }
 
-  __forceinline const vint16 operator &( const vint16& a, const vint16& b ) { return _mm512_and_epi32(a, b); }
-  __forceinline const vint16 operator &( const vint16& a, const int     b ) { return a & vint16(b); }
-  __forceinline const vint16 operator &( const int     a, const vint16& b ) { return vint16(a) & b; }
+  __forceinline vint16 operator &( const vint16& a, const vint16& b ) { return _mm512_and_epi32(a, b); }
+  __forceinline vint16 operator &( const vint16& a, const int     b ) { return a & vint16(b); }
+  __forceinline vint16 operator &( const int     a, const vint16& b ) { return vint16(a) & b; }
 
-  __forceinline const vint16 operator |( const vint16& a, const vint16& b ) { return _mm512_or_epi32(a, b); }
-  __forceinline const vint16 operator |( const vint16& a, const int     b ) { return a | vint16(b); }
-  __forceinline const vint16 operator |( const int     a, const vint16& b ) { return vint16(a) | b; }
+  __forceinline vint16 operator |( const vint16& a, const vint16& b ) { return _mm512_or_epi32(a, b); }
+  __forceinline vint16 operator |( const vint16& a, const int     b ) { return a | vint16(b); }
+  __forceinline vint16 operator |( const int     a, const vint16& b ) { return vint16(a) | b; }
 
-  __forceinline const vint16 operator ^( const vint16& a, const vint16& b ) { return _mm512_xor_epi32(a, b); }
-  __forceinline const vint16 operator ^( const vint16& a, const int     b ) { return a ^ vint16(b); }
-  __forceinline const vint16 operator ^( const int     a, const vint16& b ) { return vint16(a) ^ b; }
+  __forceinline vint16 operator ^( const vint16& a, const vint16& b ) { return _mm512_xor_epi32(a, b); }
+  __forceinline vint16 operator ^( const vint16& a, const int     b ) { return a ^ vint16(b); }
+  __forceinline vint16 operator ^( const int     a, const vint16& b ) { return vint16(a) ^ b; }
 
-  __forceinline const vint16 operator <<( const vint16& a, const int n ) { return _mm512_slli_epi32(a, n); }
-  __forceinline const vint16 operator >>( const vint16& a, const int n ) { return _mm512_srai_epi32(a, n); }
+  __forceinline vint16 operator <<( const vint16& a, const int n ) { return _mm512_slli_epi32(a, n); }
+  __forceinline vint16 operator >>( const vint16& a, const int n ) { return _mm512_srai_epi32(a, n); }
 
-  __forceinline const vint16 operator <<( const vint16& a, const vint16& n ) { return _mm512_sllv_epi32(a, n); }
-  __forceinline const vint16 operator >>( const vint16& a, const vint16& n ) { return _mm512_srav_epi32(a, n); }
+  __forceinline vint16 operator <<( const vint16& a, const vint16& n ) { return _mm512_sllv_epi32(a, n); }
+  __forceinline vint16 operator >>( const vint16& a, const vint16& n ) { return _mm512_srav_epi32(a, n); }
 
-  __forceinline const vint16 sll ( const vint16& a, const int b ) { return _mm512_slli_epi32(a, b); }
-  __forceinline const vint16 sra ( const vint16& a, const int b ) { return _mm512_srai_epi32(a, b); }
-  __forceinline const vint16 srl ( const vint16& a, const int b ) { return _mm512_srli_epi32(a, b); }
+  __forceinline vint16 sll ( const vint16& a, const int b ) { return _mm512_slli_epi32(a, b); }
+  __forceinline vint16 sra ( const vint16& a, const int b ) { return _mm512_srai_epi32(a, b); }
+  __forceinline vint16 srl ( const vint16& a, const int b ) { return _mm512_srli_epi32(a, b); }
   
-  __forceinline const vint16 min( const vint16& a, const vint16& b ) { return _mm512_min_epi32(a, b); }
-  __forceinline const vint16 min( const vint16& a, const int     b ) { return min(a,vint16(b)); }
-  __forceinline const vint16 min( const int     a, const vint16& b ) { return min(vint16(a),b); }
+  __forceinline vint16 min( const vint16& a, const vint16& b ) { return _mm512_min_epi32(a, b); }
+  __forceinline vint16 min( const vint16& a, const int     b ) { return min(a,vint16(b)); }
+  __forceinline vint16 min( const int     a, const vint16& b ) { return min(vint16(a),b); }
 
-  __forceinline const vint16 max( const vint16& a, const vint16& b ) { return _mm512_max_epi32(a, b); }
-  __forceinline const vint16 max( const vint16& a, const int     b ) { return max(a,vint16(b)); }
-  __forceinline const vint16 max( const int     a, const vint16& b ) { return max(vint16(a),b); }
+  __forceinline vint16 max( const vint16& a, const vint16& b ) { return _mm512_max_epi32(a, b); }
+  __forceinline vint16 max( const vint16& a, const int     b ) { return max(a,vint16(b)); }
+  __forceinline vint16 max( const int     a, const vint16& b ) { return max(vint16(a),b); }
   
-  __forceinline const vint16 umin( const vint16& a, const vint16& b ) { return _mm512_min_epu32(a.v, b.v); }
-  __forceinline const vint16 umax( const vint16& a, const vint16& b ) { return _mm512_max_epu32(a.v, b.v); }
+  __forceinline vint16 umin( const vint16& a, const vint16& b ) { return _mm512_min_epu32(a.v, b.v); }
+  __forceinline vint16 umax( const vint16& a, const vint16& b ) { return _mm512_max_epu32(a.v, b.v); }
 
-  __forceinline const vint16 mask_add(const vboolf16& mask, vint16& c, const vint16& a, const vint16& b) { return _mm512_mask_add_epi32(c,mask,a,b); }
-  __forceinline const vint16 mask_sub(const vboolf16& mask, vint16& c, const vint16& a, const vint16& b) { return _mm512_mask_sub_epi32(c,mask,a,b); }
+  __forceinline vint16 mask_add(const vboolf16& mask, vint16& c, const vint16& a, const vint16& b) { return _mm512_mask_add_epi32(c,mask,a,b); }
+  __forceinline vint16 mask_sub(const vboolf16& mask, vint16& c, const vint16& a, const vint16& b) { return _mm512_mask_sub_epi32(c,mask,a,b); }
 
-  __forceinline const vint16 mask_and(const vboolf16& m,vint16& c, const vint16& a, const vint16& b) { return _mm512_mask_and_epi32(c,m,a,b); }
-  __forceinline const vint16 mask_or (const vboolf16& m,vint16& c, const vint16& a, const vint16& b) { return _mm512_mask_or_epi32(c,m,a,b); }
+  __forceinline vint16 mask_and(const vboolf16& m,vint16& c, const vint16& a, const vint16& b) { return _mm512_mask_and_epi32(c,m,a,b); }
+  __forceinline vint16 mask_or (const vboolf16& m,vint16& c, const vint16& a, const vint16& b) { return _mm512_mask_or_epi32(c,m,a,b); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
@@ -278,29 +278,29 @@ namespace embree
   /// Comparison Operators + Select
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vboolf16 operator ==( const vint16& a, const vint16& b ) { return _mm512_cmp_epi32_mask(a,b,_MM_CMPINT_EQ); }
-  __forceinline const vboolf16 operator ==( const vint16& a, const int     b ) { return a == vint16(b); }
-  __forceinline const vboolf16 operator ==( const int     a, const vint16& b ) { return vint16(a) == b; }
+  __forceinline vboolf16 operator ==( const vint16& a, const vint16& b ) { return _mm512_cmp_epi32_mask(a,b,_MM_CMPINT_EQ); }
+  __forceinline vboolf16 operator ==( const vint16& a, const int     b ) { return a == vint16(b); }
+  __forceinline vboolf16 operator ==( const int     a, const vint16& b ) { return vint16(a) == b; }
   
-  __forceinline const vboolf16 operator !=( const vint16& a, const vint16& b ) { return _mm512_cmp_epi32_mask(a,b,_MM_CMPINT_NE); }
-  __forceinline const vboolf16 operator !=( const vint16& a, const int     b ) { return a != vint16(b); }
-  __forceinline const vboolf16 operator !=( const int     a, const vint16& b ) { return vint16(a) != b; }
+  __forceinline vboolf16 operator !=( const vint16& a, const vint16& b ) { return _mm512_cmp_epi32_mask(a,b,_MM_CMPINT_NE); }
+  __forceinline vboolf16 operator !=( const vint16& a, const int     b ) { return a != vint16(b); }
+  __forceinline vboolf16 operator !=( const int     a, const vint16& b ) { return vint16(a) != b; }
   
-  __forceinline const vboolf16 operator < ( const vint16& a, const vint16& b ) { return _mm512_cmp_epi32_mask(a,b,_MM_CMPINT_LT); }
-  __forceinline const vboolf16 operator < ( const vint16& a, const int     b ) { return a <  vint16(b); }
-  __forceinline const vboolf16 operator < ( const int     a, const vint16& b ) { return vint16(a) <  b; }
+  __forceinline vboolf16 operator < ( const vint16& a, const vint16& b ) { return _mm512_cmp_epi32_mask(a,b,_MM_CMPINT_LT); }
+  __forceinline vboolf16 operator < ( const vint16& a, const int     b ) { return a <  vint16(b); }
+  __forceinline vboolf16 operator < ( const int     a, const vint16& b ) { return vint16(a) <  b; }
   
-  __forceinline const vboolf16 operator >=( const vint16& a, const vint16& b ) { return _mm512_cmp_epi32_mask(a,b,_MM_CMPINT_GE); }
-  __forceinline const vboolf16 operator >=( const vint16& a, const int     b ) { return a >= vint16(b); }
-  __forceinline const vboolf16 operator >=( const int     a, const vint16& b ) { return vint16(a) >= b; }
+  __forceinline vboolf16 operator >=( const vint16& a, const vint16& b ) { return _mm512_cmp_epi32_mask(a,b,_MM_CMPINT_GE); }
+  __forceinline vboolf16 operator >=( const vint16& a, const int     b ) { return a >= vint16(b); }
+  __forceinline vboolf16 operator >=( const int     a, const vint16& b ) { return vint16(a) >= b; }
 
-  __forceinline const vboolf16 operator > ( const vint16& a, const vint16& b ) { return _mm512_cmp_epi32_mask(a,b,_MM_CMPINT_GT); }
-  __forceinline const vboolf16 operator > ( const vint16& a, const int     b ) { return a >  vint16(b); }
-  __forceinline const vboolf16 operator > ( const int     a, const vint16& b ) { return vint16(a) >  b; }
+  __forceinline vboolf16 operator > ( const vint16& a, const vint16& b ) { return _mm512_cmp_epi32_mask(a,b,_MM_CMPINT_GT); }
+  __forceinline vboolf16 operator > ( const vint16& a, const int     b ) { return a >  vint16(b); }
+  __forceinline vboolf16 operator > ( const int     a, const vint16& b ) { return vint16(a) >  b; }
 
-  __forceinline const vboolf16 operator <=( const vint16& a, const vint16& b ) { return _mm512_cmp_epi32_mask(a,b,_MM_CMPINT_LE); }
-  __forceinline const vboolf16 operator <=( const vint16& a, const int     b ) { return a <= vint16(b); }
-  __forceinline const vboolf16 operator <=( const int     a, const vint16& b ) { return vint16(a) <= b; }
+  __forceinline vboolf16 operator <=( const vint16& a, const vint16& b ) { return _mm512_cmp_epi32_mask(a,b,_MM_CMPINT_LE); }
+  __forceinline vboolf16 operator <=( const vint16& a, const int     b ) { return a <= vint16(b); }
+  __forceinline vboolf16 operator <=( const int     a, const vint16& b ) { return vint16(a) <= b; }
 
   __forceinline vboolf16 eq(const vint16& a, const vint16& b) { return _mm512_cmp_epi32_mask(a,b,_MM_CMPINT_EQ); }
   __forceinline vboolf16 ne(const vint16& a, const vint16& b) { return _mm512_cmp_epi32_mask(a,b,_MM_CMPINT_NE); }
@@ -321,7 +321,7 @@ namespace embree
   __forceinline vboolf16 uint_gt(const vboolf16 mask, const vint16& a, const vint16& b) { return _mm512_mask_cmp_epu32_mask(mask,a,b,_MM_CMPINT_GT); }
     
  
-  __forceinline const vint16 select( const vboolf16& m, const vint16& t, const vint16& f ) {
+  __forceinline vint16 select( const vboolf16& m, const vint16& t, const vint16& f ) {
     return _mm512_mask_or_epi32(f,m,t,t); 
   }
 
@@ -341,8 +341,8 @@ namespace embree
   // Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vint16 unpacklo(const vint16& a, const vint16& b) { return _mm512_unpacklo_epi32(a.v, b.v); }
-  __forceinline vint16 unpackhi(const vint16& a, const vint16& b) { return _mm512_unpackhi_epi32(a.v, b.v); }
+  __forceinline vint16 unpacklo(const vint16& a, const vint16& b) { return _mm512_unpacklo_epi32(a, b); }
+  __forceinline vint16 unpackhi(const vint16& a, const vint16& b) { return _mm512_unpackhi_epi32(a, b); }
 
   template<int i>
     __forceinline vint16 shuffle(const vint16& v) {
@@ -373,7 +373,7 @@ namespace embree
     return _mm_cvtsi128_si32(_mm512_castsi512_si128(v));
   }
 
-  template<int i> __forceinline const vint16 insert4(const vint16& a, const vint4& b) { return _mm512_inserti32x4(a, b, i); }
+  template<int i> __forceinline vint16 insert4(const vint16& a, const vint4& b) { return _mm512_inserti32x4(a, b, i); }
 
   __forceinline size_t extract64bit(const vint16& v) {
     return _mm_cvtsi128_si64(_mm512_castsi512_si128(v));

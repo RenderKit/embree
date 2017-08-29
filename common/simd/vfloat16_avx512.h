@@ -192,13 +192,13 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vfloat16 asFloat   ( const __m512i&  a ) { return _mm512_castsi512_ps(a); }
-  __forceinline const vfloat16 operator +( const vfloat16& a ) { return a; }
-  __forceinline const vfloat16 operator -( const vfloat16& a ) { return _mm512_mul_ps(a,vfloat16(-1)); }
-  __forceinline const vfloat16 abs       ( const vfloat16& a ) { return _mm512_castsi512_ps(_mm512_and_epi32(_mm512_castps_si512(a),_mm512_set1_epi32(0x7FFFFFFF))); }
-  __forceinline const vfloat16 signmsk   ( const vfloat16& a ) { return _mm512_castsi512_ps(_mm512_and_epi32(_mm512_castps_si512(a),_mm512_set1_epi32(0x80000000))); }
+  __forceinline vfloat16 asFloat   ( const __m512i&  a ) { return _mm512_castsi512_ps(a); }
+  __forceinline vfloat16 operator +( const vfloat16& a ) { return a; }
+  __forceinline vfloat16 operator -( const vfloat16& a ) { return _mm512_mul_ps(a,vfloat16(-1)); }
+  __forceinline vfloat16 abs       ( const vfloat16& a ) { return _mm512_castsi512_ps(_mm512_and_epi32(_mm512_castps_si512(a),_mm512_set1_epi32(0x7FFFFFFF))); }
+  __forceinline vfloat16 signmsk   ( const vfloat16& a ) { return _mm512_castsi512_ps(_mm512_and_epi32(_mm512_castps_si512(a),_mm512_set1_epi32(0x80000000))); }
 
-  __forceinline const vfloat16 rcp(const vfloat16& a) {
+  __forceinline vfloat16 rcp(const vfloat16& a) {
 #if defined(__AVX512ER__)
     return _mm512_rcp28_ps(a);
 #else
@@ -207,10 +207,10 @@ namespace embree
 #endif
   }
 
-  __forceinline const vfloat16 sqr  ( const vfloat16& a ) { return _mm512_mul_ps(a,a); }
-  __forceinline const vfloat16 sqrt ( const vfloat16& a ) { return _mm512_sqrt_ps(a); }
+  __forceinline vfloat16 sqr  ( const vfloat16& a ) { return _mm512_mul_ps(a,a); }
+  __forceinline vfloat16 sqrt ( const vfloat16& a ) { return _mm512_sqrt_ps(a); }
 
-  __forceinline const vfloat16 rsqrt( const vfloat16& a )
+  __forceinline vfloat16 rsqrt( const vfloat16& a )
   {
 #if defined(__AVX512VL__)
     const vfloat16 r = _mm512_rsqrt14_ps(a.v);
@@ -225,43 +225,43 @@ namespace embree
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vfloat16 operator +( const vfloat16& a, const vfloat16& b ) { return _mm512_add_ps(a, b); }
-  __forceinline const vfloat16 operator +( const vfloat16& a, const float&    b ) { return a + vfloat16(b); }
-  __forceinline const vfloat16 operator +( const float&    a, const vfloat16& b ) { return vfloat16(a) + b; }
+  __forceinline vfloat16 operator +( const vfloat16& a, const vfloat16& b ) { return _mm512_add_ps(a, b); }
+  __forceinline vfloat16 operator +( const vfloat16& a, const float&    b ) { return a + vfloat16(b); }
+  __forceinline vfloat16 operator +( const float&    a, const vfloat16& b ) { return vfloat16(a) + b; }
 
-  __forceinline const vfloat16 operator -( const vfloat16& a, const vfloat16& b ) { return _mm512_sub_ps(a, b); }
-  __forceinline const vfloat16 operator -( const vfloat16& a, const float&    b ) { return a - vfloat16(b); }
-  __forceinline const vfloat16 operator -( const float&    a, const vfloat16& b ) { return vfloat16(a) - b; }
+  __forceinline vfloat16 operator -( const vfloat16& a, const vfloat16& b ) { return _mm512_sub_ps(a, b); }
+  __forceinline vfloat16 operator -( const vfloat16& a, const float&    b ) { return a - vfloat16(b); }
+  __forceinline vfloat16 operator -( const float&    a, const vfloat16& b ) { return vfloat16(a) - b; }
 
-  __forceinline const vfloat16 operator *( const vfloat16& a, const vfloat16& b ) { return _mm512_mul_ps(a, b); }
-  __forceinline const vfloat16 operator *( const vfloat16& a, const float&    b ) { return a * vfloat16(b); }
-  __forceinline const vfloat16 operator *( const float&    a, const vfloat16& b ) { return vfloat16(a) * b; }
+  __forceinline vfloat16 operator *( const vfloat16& a, const vfloat16& b ) { return _mm512_mul_ps(a, b); }
+  __forceinline vfloat16 operator *( const vfloat16& a, const float&    b ) { return a * vfloat16(b); }
+  __forceinline vfloat16 operator *( const float&    a, const vfloat16& b ) { return vfloat16(a) * b; }
 
-  __forceinline const vfloat16 operator /( const vfloat16& a, const vfloat16& b ) { return _mm512_div_ps(a,b); }
-  __forceinline const vfloat16 operator /( const vfloat16& a, const float&    b ) { return a/vfloat16(b); }
-  __forceinline const vfloat16 operator /( const float&    a, const vfloat16& b ) { return vfloat16(a)/b; }
+  __forceinline vfloat16 operator /( const vfloat16& a, const vfloat16& b ) { return _mm512_div_ps(a,b); }
+  __forceinline vfloat16 operator /( const vfloat16& a, const float&    b ) { return a/vfloat16(b); }
+  __forceinline vfloat16 operator /( const float&    a, const vfloat16& b ) { return vfloat16(a)/b; }
   
-  __forceinline const vfloat16 operator^(const vfloat16& a, const vfloat16& b) {
+  __forceinline vfloat16 operator^(const vfloat16& a, const vfloat16& b) {
     return  _mm512_castsi512_ps(_mm512_xor_epi32(_mm512_castps_si512(a),_mm512_castps_si512(b))); 
   }
   
-  __forceinline const vfloat16 min( const vfloat16& a, const vfloat16& b ) {
+  __forceinline vfloat16 min( const vfloat16& a, const vfloat16& b ) {
     return _mm512_min_ps(a,b); 
   }
-  __forceinline const vfloat16 min( const vfloat16& a, const float& b ) {
+  __forceinline vfloat16 min( const vfloat16& a, const float& b ) {
     return _mm512_min_ps(a,vfloat16(b));
   }
-  __forceinline const vfloat16 min( const float& a, const vfloat16& b ) {
+  __forceinline vfloat16 min( const float& a, const vfloat16& b ) {
     return _mm512_min_ps(vfloat16(a),b);
   }
 
-  __forceinline const vfloat16 max( const vfloat16& a, const vfloat16& b ) {
+  __forceinline vfloat16 max( const vfloat16& a, const vfloat16& b ) {
     return _mm512_max_ps(a,b); 
   }
-  __forceinline const vfloat16 max( const vfloat16& a, const float& b ) {
+  __forceinline vfloat16 max( const vfloat16& a, const float& b ) {
     return _mm512_max_ps(a,vfloat16(b));
   }
-  __forceinline const vfloat16 max( const float& a, const vfloat16& b ) {
+  __forceinline vfloat16 max( const float& a, const vfloat16& b ) {
     return _mm512_max_ps(vfloat16(a),b);
   }
 
@@ -362,29 +362,29 @@ namespace embree
   /// Comparison Operators + Select
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vboolf16 operator ==( const vfloat16& a, const vfloat16& b ) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_EQ); }
-  __forceinline const vboolf16 operator ==( const vfloat16& a, const float&    b ) { return a == vfloat16(b); }
-  __forceinline const vboolf16 operator ==( const float&    a, const vfloat16& b ) { return vfloat16(a) == b; }
+  __forceinline vboolf16 operator ==( const vfloat16& a, const vfloat16& b ) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_EQ); }
+  __forceinline vboolf16 operator ==( const vfloat16& a, const float&    b ) { return a == vfloat16(b); }
+  __forceinline vboolf16 operator ==( const float&    a, const vfloat16& b ) { return vfloat16(a) == b; }
 
-  __forceinline const vboolf16 operator !=( const vfloat16& a, const vfloat16& b ) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_NE); }
-  __forceinline const vboolf16 operator !=( const vfloat16& a, const float&    b ) { return a != vfloat16(b); }
-  __forceinline const vboolf16 operator !=( const float&    a, const vfloat16& b ) { return vfloat16(a) != b; }
+  __forceinline vboolf16 operator !=( const vfloat16& a, const vfloat16& b ) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_NE); }
+  __forceinline vboolf16 operator !=( const vfloat16& a, const float&    b ) { return a != vfloat16(b); }
+  __forceinline vboolf16 operator !=( const float&    a, const vfloat16& b ) { return vfloat16(a) != b; }
 
-  __forceinline const vboolf16 operator < ( const vfloat16& a, const vfloat16& b ) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_LT); }
-  __forceinline const vboolf16 operator < ( const vfloat16& a, const float&    b ) { return a <  vfloat16(b); }
-  __forceinline const vboolf16 operator < ( const float&    a, const vfloat16& b ) { return vfloat16(a) <  b; }
+  __forceinline vboolf16 operator < ( const vfloat16& a, const vfloat16& b ) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_LT); }
+  __forceinline vboolf16 operator < ( const vfloat16& a, const float&    b ) { return a <  vfloat16(b); }
+  __forceinline vboolf16 operator < ( const float&    a, const vfloat16& b ) { return vfloat16(a) <  b; }
 
-  __forceinline const vboolf16 operator >=( const vfloat16& a, const vfloat16& b ) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_GE); }
-  __forceinline const vboolf16 operator >=( const vfloat16& a, const float&    b ) { return a >= vfloat16(b); }
-  __forceinline const vboolf16 operator >=( const float&    a, const vfloat16& b ) { return vfloat16(a) >= b; }
+  __forceinline vboolf16 operator >=( const vfloat16& a, const vfloat16& b ) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_GE); }
+  __forceinline vboolf16 operator >=( const vfloat16& a, const float&    b ) { return a >= vfloat16(b); }
+  __forceinline vboolf16 operator >=( const float&    a, const vfloat16& b ) { return vfloat16(a) >= b; }
 
-  __forceinline const vboolf16 operator > ( const vfloat16& a, const vfloat16& b ) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_GT); }
-  __forceinline const vboolf16 operator > ( const vfloat16& a, const float&    b ) { return a >  vfloat16(b); }
-  __forceinline const vboolf16 operator > ( const float&    a, const vfloat16& b ) { return vfloat16(a) >  b; }
+  __forceinline vboolf16 operator > ( const vfloat16& a, const vfloat16& b ) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_GT); }
+  __forceinline vboolf16 operator > ( const vfloat16& a, const float&    b ) { return a >  vfloat16(b); }
+  __forceinline vboolf16 operator > ( const float&    a, const vfloat16& b ) { return vfloat16(a) >  b; }
 
-  __forceinline const vboolf16 operator <=( const vfloat16& a, const vfloat16& b ) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_LE); }
-  __forceinline const vboolf16 operator <=( const vfloat16& a, const float&    b ) { return a <= vfloat16(b); }
-  __forceinline const vboolf16 operator <=( const float&    a, const vfloat16& b ) { return vfloat16(a) <= b; }
+  __forceinline vboolf16 operator <=( const vfloat16& a, const vfloat16& b ) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_LE); }
+  __forceinline vboolf16 operator <=( const vfloat16& a, const float&    b ) { return a <= vfloat16(b); }
+  __forceinline vboolf16 operator <=( const float&    a, const vfloat16& b ) { return vfloat16(a) <= b; }
 
   __forceinline vboolf16 eq(const vfloat16& a, const vfloat16& b) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_EQ); }
   __forceinline vboolf16 ne(const vfloat16& a, const vfloat16& b) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_NE); }
@@ -400,7 +400,7 @@ namespace embree
   __forceinline vboolf16 gt(const vboolf16& mask, const vfloat16& a, const vfloat16& b) { return _mm512_mask_cmp_ps_mask(mask,a,b,_MM_CMPINT_GT); }
   __forceinline vboolf16 le(const vboolf16& mask, const vfloat16& a, const vfloat16& b) { return _mm512_mask_cmp_ps_mask(mask,a,b,_MM_CMPINT_LE); }
   
-  __forceinline const vfloat16 select( const vboolf16& s, const vfloat16& t, const vfloat16& f ) {
+  __forceinline vfloat16 select( const vboolf16& s, const vfloat16& t, const vfloat16& f ) {
     return _mm512_mask_blend_ps(s, f, t);
   }
 
@@ -509,7 +509,7 @@ namespace embree
   __forceinline float toScalar(const vfloat16& v) { return mm512_cvtss_f32(v); }
 
 
-  template<int i> __forceinline const vfloat16 insert4(const vfloat16& a, const vfloat4& b) { return _mm512_insertf32x4(a, b, i); }
+  template<int i> __forceinline vfloat16 insert4(const vfloat16& a, const vfloat4& b) { return _mm512_insertf32x4(a, b, i); }
 
   template<int N, int i>
   vfloat<N> extractN(const vfloat16& v);

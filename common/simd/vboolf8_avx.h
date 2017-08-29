@@ -93,15 +93,15 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vboolf8 operator !( const vboolf8& a ) { return _mm256_xor_ps(a, vboolf8(embree::True)); }
+  __forceinline vboolf8 operator !( const vboolf8& a ) { return _mm256_xor_ps(a, vboolf8(embree::True)); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vboolf8 operator &( const vboolf8& a, const vboolf8& b ) { return _mm256_and_ps(a, b); }
-  __forceinline const vboolf8 operator |( const vboolf8& a, const vboolf8& b ) { return _mm256_or_ps (a, b); }
-  __forceinline const vboolf8 operator ^( const vboolf8& a, const vboolf8& b ) { return _mm256_xor_ps(a, b); }
+  __forceinline vboolf8 operator &( const vboolf8& a, const vboolf8& b ) { return _mm256_and_ps(a, b); }
+  __forceinline vboolf8 operator |( const vboolf8& a, const vboolf8& b ) { return _mm256_or_ps (a, b); }
+  __forceinline vboolf8 operator ^( const vboolf8& a, const vboolf8& b ) { return _mm256_xor_ps(a, b); }
 
   __forceinline vboolf8 operator &=( vboolf8& a, const vboolf8& b ) { return a = a & b; }
   __forceinline vboolf8 operator |=( vboolf8& a, const vboolf8& b ) { return a = a | b; }
@@ -111,10 +111,10 @@ namespace embree
   /// Comparison Operators + Select
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vboolf8 operator !=( const vboolf8& a, const vboolf8& b ) { return _mm256_xor_ps(a, b); }
-  __forceinline const vboolf8 operator ==( const vboolf8& a, const vboolf8& b ) { return _mm256_xor_ps(_mm256_xor_ps(a,b),vboolf8(embree::True)); }
+  __forceinline vboolf8 operator !=( const vboolf8& a, const vboolf8& b ) { return _mm256_xor_ps(a, b); }
+  __forceinline vboolf8 operator ==( const vboolf8& a, const vboolf8& b ) { return _mm256_xor_ps(_mm256_xor_ps(a,b),vboolf8(embree::True)); }
 
-  __forceinline const vboolf8 select( const vboolf8& mask, const vboolf8& t, const vboolf8& f ) {
+  __forceinline vboolf8 select( const vboolf8& mask, const vboolf8& t, const vboolf8& f ) {
     return _mm256_blendv_ps(f, t, mask); 
   }
 
@@ -122,41 +122,41 @@ namespace embree
   /// Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vboolf8 unpacklo(const vboolf8& a, const vboolf8& b) { return _mm256_unpacklo_ps(a.v, b.v); }
-  __forceinline vboolf8 unpackhi(const vboolf8& a, const vboolf8& b) { return _mm256_unpackhi_ps(a.v, b.v); }
+  __forceinline vboolf8 unpacklo(const vboolf8& a, const vboolf8& b) { return _mm256_unpacklo_ps(a, b); }
+  __forceinline vboolf8 unpackhi(const vboolf8& a, const vboolf8& b) { return _mm256_unpackhi_ps(a, b); }
 
   template<int i>
-  __forceinline const vboolf8 shuffle(const vboolf8& v) {
+  __forceinline vboolf8 shuffle(const vboolf8& v) {
     return _mm256_permute_ps(v, _MM_SHUFFLE(i, i, i, i));
   }
 
   template<int i0, int i1>
-  __forceinline const vboolf8 shuffle4(const vboolf8& v) {
+  __forceinline vboolf8 shuffle4(const vboolf8& v) {
     return _mm256_permute2f128_ps(v, v, (i1 << 4) | (i0 << 0));
   }
 
   template<int i0, int i1>
-  __forceinline const vboolf8 shuffle4(const vboolf8& a, const vboolf8& b) {
+  __forceinline vboolf8 shuffle4(const vboolf8& a, const vboolf8& b) {
     return _mm256_permute2f128_ps(a, b, (i1 << 4) | (i0 << 0));
   }
 
   template<int i0, int i1, int i2, int i3>
-  __forceinline const vboolf8 shuffle(const vboolf8& v) {
+  __forceinline vboolf8 shuffle(const vboolf8& v) {
     return _mm256_permute_ps(v, _MM_SHUFFLE(i3, i2, i1, i0));
   }
 
   template<int i0, int i1, int i2, int i3>
-  __forceinline const vboolf8 shuffle(const vboolf8& a, const vboolf8& b) {
+  __forceinline vboolf8 shuffle(const vboolf8& a, const vboolf8& b) {
     return _mm256_shuffle_ps(a, b, _MM_SHUFFLE(i3, i2, i1, i0));
   }
 
-  template<> __forceinline const vboolf8 shuffle<0, 0, 2, 2>(const vboolf8& v) { return _mm256_moveldup_ps(v); }
-  template<> __forceinline const vboolf8 shuffle<1, 1, 3, 3>(const vboolf8& v) { return _mm256_movehdup_ps(v); }
-  template<> __forceinline const vboolf8 shuffle<0, 1, 0, 1>(const vboolf8& v) { return _mm256_castpd_ps(_mm256_movedup_pd(_mm256_castps_pd(v))); }
+  template<> __forceinline vboolf8 shuffle<0, 0, 2, 2>(const vboolf8& v) { return _mm256_moveldup_ps(v); }
+  template<> __forceinline vboolf8 shuffle<1, 1, 3, 3>(const vboolf8& v) { return _mm256_movehdup_ps(v); }
+  template<> __forceinline vboolf8 shuffle<0, 1, 0, 1>(const vboolf8& v) { return _mm256_castpd_ps(_mm256_movedup_pd(_mm256_castps_pd(v))); }
 
-  template<int i> __forceinline const vboolf8 insert4(const vboolf8& a, const vboolf4& b) { return _mm256_insertf128_ps(a, b, i); }
-  template<int i> __forceinline const vboolf4 extract4   (const vboolf8& a) { return _mm256_extractf128_ps(a, i); }
-  template<>      __forceinline const vboolf4 extract4<0>(const vboolf8& a) { return _mm256_castps256_ps128(a);   }
+  template<int i> __forceinline vboolf8 insert4(const vboolf8& a, const vboolf4& b) { return _mm256_insertf128_ps(a, b, i); }
+  template<int i> __forceinline vboolf4 extract4   (const vboolf8& a) { return _mm256_extractf128_ps(a, i); }
+  template<>      __forceinline vboolf4 extract4<0>(const vboolf8& a) { return _mm256_castps256_ps128(a);   }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reduction Operations

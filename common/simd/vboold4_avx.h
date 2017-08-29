@@ -81,15 +81,15 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vboold4 operator !( const vboold4& a ) { return _mm256_xor_pd(a, vboold4(embree::True)); }
+  __forceinline vboold4 operator !( const vboold4& a ) { return _mm256_xor_pd(a, vboold4(embree::True)); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vboold4 operator &( const vboold4& a, const vboold4& b ) { return _mm256_and_pd(a, b); }
-  __forceinline const vboold4 operator |( const vboold4& a, const vboold4& b ) { return _mm256_or_pd (a, b); }
-  __forceinline const vboold4 operator ^( const vboold4& a, const vboold4& b ) { return _mm256_xor_pd(a, b); }
+  __forceinline vboold4 operator &( const vboold4& a, const vboold4& b ) { return _mm256_and_pd(a, b); }
+  __forceinline vboold4 operator |( const vboold4& a, const vboold4& b ) { return _mm256_or_pd (a, b); }
+  __forceinline vboold4 operator ^( const vboold4& a, const vboold4& b ) { return _mm256_xor_pd(a, b); }
 
   __forceinline vboold4 operator &=( vboold4& a, const vboold4& b ) { return a = a & b; }
   __forceinline vboold4 operator |=( vboold4& a, const vboold4& b ) { return a = a | b; }
@@ -99,10 +99,10 @@ namespace embree
   /// Comparison Operators + Select
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vboold4 operator !=( const vboold4& a, const vboold4& b ) { return _mm256_xor_pd(a, b); }
-  __forceinline const vboold4 operator ==( const vboold4& a, const vboold4& b ) { return _mm256_xor_pd(_mm256_xor_pd(a,b),vboold4(embree::True)); }
+  __forceinline vboold4 operator !=( const vboold4& a, const vboold4& b ) { return _mm256_xor_pd(a, b); }
+  __forceinline vboold4 operator ==( const vboold4& a, const vboold4& b ) { return _mm256_xor_pd(_mm256_xor_pd(a,b),vboold4(embree::True)); }
 
-  __forceinline const vboold4 select( const vboold4& mask, const vboold4& t, const vboold4& f ) {
+  __forceinline vboold4 select( const vboold4& mask, const vboold4& t, const vboold4& f ) {
     return _mm256_blendv_pd(f, t, mask); 
   }
 
@@ -110,18 +110,18 @@ namespace embree
   /// Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vboold4 unpacklo(const vboold4& a, const vboold4& b) { return _mm256_unpacklo_pd(a.v, b.v); }
-  __forceinline vboold4 unpackhi(const vboold4& a, const vboold4& b) { return _mm256_unpackhi_pd(a.v, b.v); }
+  __forceinline vboold4 unpacklo(const vboold4& a, const vboold4& b) { return _mm256_unpacklo_pd(a, b); }
+  __forceinline vboold4 unpackhi(const vboold4& a, const vboold4& b) { return _mm256_unpackhi_pd(a, b); }
 
 
 #if defined(__AVX2__)
   template<int i0, int i1, int i2, int i3>
-  __forceinline const vboold4 shuffle(const vboold4& v) {
+  __forceinline vboold4 shuffle(const vboold4& v) {
     return _mm256_permute4x64_pd(v, _MM_SHUFFLE(i3, i2, i1, i0));
   }
 
   template<int i>
-  __forceinline const vboold4 shuffle(const vboold4& v) {
+  __forceinline vboold4 shuffle(const vboold4& v) {
     return _mm256_permute4x64_pd(v, _MM_SHUFFLE(i, i, i, i));
   }
 #endif
