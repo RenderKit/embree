@@ -40,6 +40,7 @@ namespace embree
         Ray* __restrict__ ray_i = (Ray*)((char*)rayN + stride * i);
         RayK<VSIZEX> ray;
 
+        /* gather rays */
 #if defined(__AVX2__)
         ray.org.x  = vfloatx::gather<1>(valid, &ray_i->org.x, ofs);
         ray.org.y  = vfloatx::gather<1>(valid, &ray_i->org.y, ofs);
