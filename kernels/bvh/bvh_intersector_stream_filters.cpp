@@ -369,28 +369,28 @@ namespace embree
       unsigned int rays_in_octant[8];
 
       for (size_t i=0;i<8;i++) rays_in_octant[i] = 0;
-      size_t inputray_iD = 0;
+      size_t inputRayID = 0;
 
       while(1)
       {
         int cur_octant = -1;
         /* sort rays into octants */
-        for (;inputray_iD<N;)
+        for (;inputRayID<N;)
         {
-          Ray &ray = *(Ray*)((char*)rayN + inputray_iD * stride);
+          Ray &ray = *(Ray*)((char*)rayN + inputRayID * stride);
           /* skip invalid rays */
-          if (unlikely(ray.tnear > ray.tfar)) { inputray_iD++; continue; }
-          if (unlikely(!intersect && ray.geomID == 0)) { inputray_iD++; continue; } // ignore already occluded rays
+          if (unlikely(ray.tnear > ray.tfar)) { inputRayID++; continue; }
+          if (unlikely(!intersect && ray.geomID == 0)) { inputRayID++; continue; } // ignore already occluded rays
 
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
-          if (unlikely(!ray.valid())) {  inputray_iD++; continue; }
+          if (unlikely(!ray.valid())) {  inputRayID++; continue; }
 #endif
 
           const unsigned int octantID = movemask(vfloat4(ray.dir) < 0.0f) & 0x7;
 
           assert(octantID < 8);
           octants[octantID][rays_in_octant[octantID]++] = &ray;
-          inputray_iD++;
+          inputRayID++;
           if (unlikely(rays_in_octant[octantID] == MAX_RAYS_PER_OCTANT))
           {
             cur_octant = octantID;
@@ -439,28 +439,28 @@ namespace embree
       unsigned int rays_in_octant[8];
 
       for (size_t i=0;i<8;i++) rays_in_octant[i] = 0;
-      size_t inputray_iD = 0;
+      size_t inputRayID = 0;
 
       while(1)
       {
         int cur_octant = -1;
         /* sort rays into octants */
-        for (;inputray_iD<N;)
+        for (;inputRayID<N;)
         {
-          Ray &ray = *rayN[inputray_iD];
+          Ray &ray = *rayN[inputRayID];
           /* skip invalid rays */
-          if (unlikely(ray.tnear > ray.tfar)) { inputray_iD++; continue; }
-          if (unlikely(!intersect && ray.geomID == 0)) { inputray_iD++; continue; } // ignore already occluded rays
+          if (unlikely(ray.tnear > ray.tfar)) { inputRayID++; continue; }
+          if (unlikely(!intersect && ray.geomID == 0)) { inputRayID++; continue; } // ignore already occluded rays
 
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
-          if (unlikely(!ray.valid())) {  inputray_iD++; continue; }
+          if (unlikely(!ray.valid())) {  inputRayID++; continue; }
 #endif
 
           const unsigned int octantID = movemask(vfloat4(ray.dir) < 0.0f) & 0x7;
 
           assert(octantID < 8);
           octants[octantID][rays_in_octant[octantID]++] = &ray;
-          inputray_iD++;
+          inputRayID++;
           if (unlikely(rays_in_octant[octantID] == MAX_RAYS_PER_OCTANT))
           {
             cur_octant = octantID;
