@@ -92,15 +92,15 @@ namespace embree
   /// Ternary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  template<typename T> __forceinline const Vec2<T> madd  ( const Vec2<T>& a, const Vec2<T>& b, const Vec2<T>& c) { return Vec2<T>( madd(a.x,b.x,c.x), madd(a.y,b.y,c.y) ); }
-  template<typename T> __forceinline const Vec2<T> msub  ( const Vec2<T>& a, const Vec2<T>& b, const Vec2<T>& c) { return Vec2<T>( msub(a.x,b.x,c.x), msub(a.y,b.y,c.y) ); }
-  template<typename T> __forceinline const Vec2<T> nmadd ( const Vec2<T>& a, const Vec2<T>& b, const Vec2<T>& c) { return Vec2<T>(nmadd(a.x,b.x,c.x),nmadd(a.y,b.y,c.y) ); }
-  template<typename T> __forceinline const Vec2<T> nmsub ( const Vec2<T>& a, const Vec2<T>& b, const Vec2<T>& c) { return Vec2<T>(nmsub(a.x,b.x,c.x),nmsub(a.y,b.y,c.y) ); }
+  template<typename T> __forceinline Vec2<T> madd  ( const Vec2<T>& a, const Vec2<T>& b, const Vec2<T>& c) { return Vec2<T>( madd(a.x,b.x,c.x), madd(a.y,b.y,c.y) ); }
+  template<typename T> __forceinline Vec2<T> msub  ( const Vec2<T>& a, const Vec2<T>& b, const Vec2<T>& c) { return Vec2<T>( msub(a.x,b.x,c.x), msub(a.y,b.y,c.y) ); }
+  template<typename T> __forceinline Vec2<T> nmadd ( const Vec2<T>& a, const Vec2<T>& b, const Vec2<T>& c) { return Vec2<T>(nmadd(a.x,b.x,c.x),nmadd(a.y,b.y,c.y) ); }
+  template<typename T> __forceinline Vec2<T> nmsub ( const Vec2<T>& a, const Vec2<T>& b, const Vec2<T>& c) { return Vec2<T>(nmsub(a.x,b.x,c.x),nmsub(a.y,b.y,c.y) ); }
 
-  template<typename T> __forceinline const Vec2<T> madd  ( const T& a, const Vec2<T>& b, const Vec2<T>& c) { return Vec2<T>( madd(a,b.x,c.x), madd(a,b.y,c.y) ); }
-  template<typename T> __forceinline const Vec2<T> msub  ( const T& a, const Vec2<T>& b, const Vec2<T>& c) { return Vec2<T>( msub(a,b.x,c.x), msub(a,b.y,c.y) ); }
-  template<typename T> __forceinline const Vec2<T> nmadd ( const T& a, const Vec2<T>& b, const Vec2<T>& c) { return Vec2<T>(nmadd(a,b.x,c.x),nmadd(a,b.y,c.y) ); }
-  template<typename T> __forceinline const Vec2<T> nmsub ( const T& a, const Vec2<T>& b, const Vec2<T>& c) { return Vec2<T>(nmsub(a,b.x,c.x),nmsub(a,b.y,c.y) ); }
+  template<typename T> __forceinline Vec2<T> madd  ( const T& a, const Vec2<T>& b, const Vec2<T>& c) { return Vec2<T>( madd(a,b.x,c.x), madd(a,b.y,c.y) ); }
+  template<typename T> __forceinline Vec2<T> msub  ( const T& a, const Vec2<T>& b, const Vec2<T>& c) { return Vec2<T>( msub(a,b.x,c.x), msub(a,b.y,c.y) ); }
+  template<typename T> __forceinline Vec2<T> nmadd ( const T& a, const Vec2<T>& b, const Vec2<T>& c) { return Vec2<T>(nmadd(a,b.x,c.x),nmadd(a,b.y,c.y) ); }
+  template<typename T> __forceinline Vec2<T> nmsub ( const T& a, const Vec2<T>& b, const Vec2<T>& c) { return Vec2<T>(nmsub(a,b.x,c.x),nmsub(a,b.y,c.y) ); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators

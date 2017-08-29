@@ -58,10 +58,10 @@ namespace embree
     __forceinline const LinearSpace2 transposed() const { return LinearSpace2(vx.x,vx.y,vy.x,vy.y); }
 
     /*! returns first row of matrix */
-    __forceinline const Vector row0() const { return Vector(vx.x,vy.x); }
+    __forceinline Vector row0() const { return Vector(vx.x,vy.x); }
 
     /*! returns second row of matrix */
-    __forceinline const Vector row1() const { return Vector(vx.y,vy.y); }
+    __forceinline Vector row1() const { return Vector(vx.y,vy.y); }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants

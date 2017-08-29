@@ -58,7 +58,7 @@ namespace embree
     }
 
     /*! returns the rotation axis of the quaternion as a vector */
-    __forceinline const Vec3<T> v( ) const { return Vec3<T>(i, j, k); }
+    __forceinline Vec3<T> v( ) const { return Vec3<T>(i, j, k); }
 
   public:
     T r, i, j, k;
