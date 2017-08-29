@@ -33,8 +33,8 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
     __forceinline vboolf() {}
-    __forceinline vboolf(const vboolf4 &t) { v = t.v; }
-    __forceinline vboolf4& operator=(const vboolf4 &f) { v = f.v; return *this; }
+    __forceinline vboolf(const vboolf4& t) { v = t.v; }
+    __forceinline vboolf4& operator =(const vboolf4& f) { v = f.v; return *this; }
 
     __forceinline vboolf(const __mmask8 &t) { v = t; }
     __forceinline operator __mmask8() const { return v; }
@@ -62,42 +62,42 @@ namespace embree
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline vboolf( FalseTy ) : v(0x0) {}
-    __forceinline vboolf( TrueTy  ) : v(0xf) {}
+    __forceinline vboolf(FalseTy) : v(0x0) {}
+    __forceinline vboolf(TrueTy)  : v(0xf) {}
   };
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vboolf4 operator!(const vboolf4 &a) { return _mm512_kandn(a, 0xf); }
+  __forceinline vboolf4 operator !(const vboolf4& a) { return _mm512_kandn(a, 0xf); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vboolf4 operator&(const vboolf4 &a, const vboolf4 &b) { return _mm512_kand(a, b); }
-  __forceinline vboolf4 operator|(const vboolf4 &a, const vboolf4 &b) { return _mm512_kor(a, b); }
-  __forceinline vboolf4 operator^(const vboolf4 &a, const vboolf4 &b) { return _mm512_kxor(a, b); }
+  __forceinline vboolf4 operator &(const vboolf4& a, const vboolf4& b) { return _mm512_kand(a, b); }
+  __forceinline vboolf4 operator |(const vboolf4& a, const vboolf4& b) { return _mm512_kor(a, b); }
+  __forceinline vboolf4 operator ^(const vboolf4& a, const vboolf4& b) { return _mm512_kxor(a, b); }
 
-  __forceinline vboolf4 andn(const vboolf4 &a, const vboolf4 &b) { return _mm512_kandn(b, a); }
+  __forceinline vboolf4 andn(const vboolf4& a, const vboolf4& b) { return _mm512_kandn(b, a); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vboolf4& operator &=( vboolf4& a, const vboolf4& b ) { return a = a & b; }
-  __forceinline vboolf4& operator |=( vboolf4& a, const vboolf4& b ) { return a = a | b; }
-  __forceinline vboolf4& operator ^=( vboolf4& a, const vboolf4& b ) { return a = a ^ b; }
+  __forceinline vboolf4& operator &=(vboolf4& a, const vboolf4& b) { return a = a & b; }
+  __forceinline vboolf4& operator |=(vboolf4& a, const vboolf4& b) { return a = a | b; }
+  __forceinline vboolf4& operator ^=(vboolf4& a, const vboolf4& b) { return a = a ^ b; }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Comparison Operators + Select
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vboolf4 operator !=( const vboolf4& a, const vboolf4& b ) { return _mm512_kxor(a, b); }
-  __forceinline vboolf4 operator ==( const vboolf4& a, const vboolf4& b ) { return _mm512_kand(_mm512_kxnor(a, b), 0xf); }
+  __forceinline vboolf4 operator !=(const vboolf4& a, const vboolf4& b) { return _mm512_kxor(a, b); }
+  __forceinline vboolf4 operator ==(const vboolf4& a, const vboolf4& b) { return _mm512_kand(_mm512_kxnor(a, b), 0xf); }
 
-  __forceinline vboolf4 select (const vboolf4 &s, const vboolf4 &a, const vboolf4 &b) {
+  __forceinline vboolf4 select(const vboolf4& s, const vboolf4& a, const vboolf4& b) {
     return _mm512_kor(_mm512_kand(s, a), _mm512_kandn(s, b));
   }
 
@@ -105,22 +105,22 @@ namespace embree
   /// Reduction Operations
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline int all (const vboolf4 &a) { return a.v == 0xf; }
-  __forceinline int any (const vboolf4 &a) { return _mm512_kortestz(a, a) == 0; }
-  __forceinline int none(const vboolf4 &a) { return _mm512_kortestz(a, a) != 0; }
+  __forceinline int all (const vboolf4& a) { return a.v == 0xf; }
+  __forceinline int any (const vboolf4& a) { return _mm512_kortestz(a, a) == 0; }
+  __forceinline int none(const vboolf4& a) { return _mm512_kortestz(a, a) != 0; }
 
-  __forceinline int all ( const vboolf4& valid, const vboolf4& b ) { return all((!valid) | b); }
-  __forceinline int any ( const vboolf4& valid, const vboolf4& b ) { return any( valid & b); }
-  __forceinline int none( const vboolf4& valid, const vboolf4& b ) { return none(valid & b); }
+  __forceinline int all (const vboolf4& valid, const vboolf4& b) { return all((!valid) | b); }
+  __forceinline int any (const vboolf4& valid, const vboolf4& b) { return any(valid & b); }
+  __forceinline int none(const vboolf4& valid, const vboolf4& b) { return none(valid & b); }
 
-  __forceinline size_t movemask( const vboolf4& a ) { return _mm512_kmov(a); }
-  __forceinline size_t popcnt  ( const vboolf4& a ) { return __popcnt(a.v); }
+  __forceinline size_t movemask(const vboolf4& a) { return _mm512_kmov(a); }
+  __forceinline size_t popcnt  (const vboolf4& a) { return __popcnt(a.v); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Conversion Operations
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline unsigned int toInt(const vboolf4 &a) { return mm512_mask2int(a); }
+  __forceinline unsigned int toInt(const vboolf4& a) { return _mm512_mask2int(a); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Get/Set Functions
@@ -134,7 +134,7 @@ namespace embree
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  inline std::ostream& operator<<(std::ostream& cout, const vboolf4& a)
+  inline std::ostream& operator <<(std::ostream& cout, const vboolf4& a)
   {
     cout << "<";
     for (size_t i=0; i<4; i++) {

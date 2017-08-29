@@ -33,23 +33,23 @@ namespace embree
     /// Constructors, Assignment & Cast Operators
     ////////////////////////////////////////////////////////////////////////////////
     
-    __forceinline vboolf            ( ) {}
-    __forceinline vboolf            ( const vboolf4& other ) { v = other.v; }
-    __forceinline vboolf4& operator=( const vboolf4& other ) { v = other.v; return *this; }
+    __forceinline vboolf() {}
+    __forceinline vboolf(const vboolf4& other) { v = other.v; }
+    __forceinline vboolf4& operator =(const vboolf4& other) { v = other.v; return *this; }
 
-    __forceinline vboolf( const __m128  input ) : v(input) {}
+    __forceinline vboolf(__m128 input) : v(input) {}
     __forceinline operator const __m128&() const { return v; }
     __forceinline operator const __m128i() const { return _mm_castps_si128(v); }
     __forceinline operator const __m128d() const { return _mm_castps_pd(v); }
     
-    __forceinline vboolf( bool a )
+    __forceinline vboolf(bool a)
       : v(_mm_lookupmask_ps[(size_t(a) << 3) | (size_t(a) << 2) | (size_t(a) << 1) | size_t(a)]) {}
-    __forceinline vboolf( bool a, bool b )
+    __forceinline vboolf(bool a, bool b)
       : v(_mm_lookupmask_ps[(size_t(b) << 3) | (size_t(a) << 2) | (size_t(b) << 1) | size_t(a)]) {}
-    __forceinline vboolf( bool a, bool b, bool c, bool d )
+    __forceinline vboolf(bool a, bool b, bool c, bool d)
       : v(_mm_lookupmask_ps[(size_t(d) << 3) | (size_t(c) << 2) | (size_t(b) << 1) | size_t(a)]) {}
-    __forceinline vboolf( int mask ) { assert(mask >= 0 && mask < 16); v = _mm_lookupmask_ps[mask]; }
-    __forceinline vboolf( unsigned mask ) { assert(mask >= 0 && mask < 16); v = _mm_lookupmask_ps[mask]; }
+    __forceinline vboolf(int mask) { assert(mask >= 0 && mask < 16); v = _mm_lookupmask_ps[mask]; }
+    __forceinline vboolf(unsigned int mask) { assert(mask >= 0 && mask < 16); v = _mm_lookupmask_ps[mask]; }
 
     /* return int32 mask */
     __forceinline __m128i mask32() const { 
@@ -60,47 +60,47 @@ namespace embree
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline vboolf( FalseTy ) : v(_mm_setzero_ps()) {}
-    __forceinline vboolf( TrueTy  ) : v(_mm_castsi128_ps(_mm_cmpeq_epi32(_mm_setzero_si128(), _mm_setzero_si128()))) {}
+    __forceinline vboolf(FalseTy) : v(_mm_setzero_ps()) {}
+    __forceinline vboolf(TrueTy)  : v(_mm_castsi128_ps(_mm_cmpeq_epi32(_mm_setzero_si128(), _mm_setzero_si128()))) {}
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline bool operator []( const size_t index ) const { assert(index < 4); return (_mm_movemask_ps(v) >> index) & 1; }
-    __forceinline int& operator []( const size_t index )       { assert(index < 4); return i[index]; }
+    __forceinline bool operator [](size_t index) const { assert(index < 4); return (_mm_movemask_ps(v) >> index) & 1; }
+    __forceinline int& operator [](size_t index)       { assert(index < 4); return i[index]; }
   };
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
   
-  __forceinline vboolf4 operator !( const vboolf4& a ) { return _mm_xor_ps(a, vboolf4(embree::True)); }
+  __forceinline vboolf4 operator !(const vboolf4& a) { return _mm_xor_ps(a, vboolf4(embree::True)); }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
   
-  __forceinline vboolf4 operator &( const vboolf4& a, const vboolf4& b ) { return _mm_and_ps(a, b); }
-  __forceinline vboolf4 operator |( const vboolf4& a, const vboolf4& b ) { return _mm_or_ps (a, b); }
-  __forceinline vboolf4 operator ^( const vboolf4& a, const vboolf4& b ) { return _mm_xor_ps(a, b); }
+  __forceinline vboolf4 operator &(const vboolf4& a, const vboolf4& b) { return _mm_and_ps(a, b); }
+  __forceinline vboolf4 operator |(const vboolf4& a, const vboolf4& b) { return _mm_or_ps (a, b); }
+  __forceinline vboolf4 operator ^(const vboolf4& a, const vboolf4& b) { return _mm_xor_ps(a, b); }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
   ////////////////////////////////////////////////////////////////////////////////
   
-  __forceinline vboolf4& operator &=( vboolf4& a, const vboolf4& b ) { return a = a & b; }
-  __forceinline vboolf4& operator |=( vboolf4& a, const vboolf4& b ) { return a = a | b; }
-  __forceinline vboolf4& operator ^=( vboolf4& a, const vboolf4& b ) { return a = a ^ b; }
+  __forceinline vboolf4& operator &=(vboolf4& a, const vboolf4& b) { return a = a & b; }
+  __forceinline vboolf4& operator |=(vboolf4& a, const vboolf4& b) { return a = a | b; }
+  __forceinline vboolf4& operator ^=(vboolf4& a, const vboolf4& b) { return a = a ^ b; }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Comparison Operators + Select
   ////////////////////////////////////////////////////////////////////////////////
   
-  __forceinline vboolf4 operator !=( const vboolf4& a, const vboolf4& b ) { return _mm_xor_ps(a, b); }
-  __forceinline vboolf4 operator ==( const vboolf4& a, const vboolf4& b ) { return _mm_castsi128_ps(_mm_cmpeq_epi32(a, b)); }
+  __forceinline vboolf4 operator !=(const vboolf4& a, const vboolf4& b) { return _mm_xor_ps(a, b); }
+  __forceinline vboolf4 operator ==(const vboolf4& a, const vboolf4& b) { return _mm_castsi128_ps(_mm_cmpeq_epi32(a, b)); }
   
-  __forceinline vboolf4 select( const vboolf4& m, const vboolf4& t, const vboolf4& f ) {
+  __forceinline vboolf4 select(const vboolf4& m, const vboolf4& t, const vboolf4& f) {
 #if defined(__SSE4_1__)
     return _mm_blendv_ps(f, t, m); 
 #else
@@ -146,22 +146,22 @@ namespace embree
   /// Reduction Operations
   ////////////////////////////////////////////////////////////////////////////////
     
-  __forceinline bool reduce_and( const vboolf4& a ) { return _mm_movemask_ps(a) == 0xf; }
-  __forceinline bool reduce_or ( const vboolf4& a ) { return _mm_movemask_ps(a) != 0x0; }
+  __forceinline bool reduce_and(const vboolf4& a) { return _mm_movemask_ps(a) == 0xf; }
+  __forceinline bool reduce_or (const vboolf4& a) { return _mm_movemask_ps(a) != 0x0; }
 
-  __forceinline bool all       ( const vboolf4& b ) { return _mm_movemask_ps(b) == 0xf; }
-  __forceinline bool any       ( const vboolf4& b ) { return _mm_movemask_ps(b) != 0x0; }
-  __forceinline bool none      ( const vboolf4& b ) { return _mm_movemask_ps(b) == 0x0; }
+  __forceinline bool all (const vboolf4& b) { return _mm_movemask_ps(b) == 0xf; }
+  __forceinline bool any (const vboolf4& b) { return _mm_movemask_ps(b) != 0x0; }
+  __forceinline bool none(const vboolf4& b) { return _mm_movemask_ps(b) == 0x0; }
 
-  __forceinline bool all       ( const vboolf4& valid, const vboolf4& b ) { return all((!valid) | b); }
-  __forceinline bool any       ( const vboolf4& valid, const vboolf4& b ) { return any( valid & b); }
-  __forceinline bool none      ( const vboolf4& valid, const vboolf4& b ) { return none(valid & b); }
+  __forceinline bool all (const vboolf4& valid, const vboolf4& b) { return all((!valid) | b); }
+  __forceinline bool any (const vboolf4& valid, const vboolf4& b) { return any(valid & b); }
+  __forceinline bool none(const vboolf4& valid, const vboolf4& b) { return none(valid & b); }
   
-  __forceinline size_t movemask( const vboolf4& a ) { return _mm_movemask_ps(a); }
+  __forceinline size_t movemask(const vboolf4& a) { return _mm_movemask_ps(a); }
 #if defined(__SSE4_2__)
-  __forceinline size_t popcnt( const vboolf4& a ) { return __popcnt((size_t)_mm_movemask_ps(a)); }
+  __forceinline size_t popcnt(const vboolf4& a) { return __popcnt((size_t)_mm_movemask_ps(a)); }
 #else
-  __forceinline size_t popcnt( const vboolf4& a ) { return bool(a[0])+bool(a[1])+bool(a[2])+bool(a[3]); }
+  __forceinline size_t popcnt(const vboolf4& a) { return bool(a[0])+bool(a[1])+bool(a[2])+bool(a[3]); }
 #endif
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -176,7 +176,7 @@ namespace embree
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////
   
-  inline std::ostream& operator<<(std::ostream& cout, const vboolf4& a) {
+  inline std::ostream& operator <<(std::ostream& cout, const vboolf4& a) {
     return cout << "<" << a[0] << ", " << a[1] << ", " << a[2] << ", " << a[3] << ">";
   }
 }
