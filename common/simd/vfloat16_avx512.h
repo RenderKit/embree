@@ -453,29 +453,29 @@ namespace embree
   }
 
   __forceinline vfloat16 interleave_even(const vfloat16& a, const vfloat16& b) {
-    return _mm512_castsi512_ps(_mm512_mask_shuffle_epi32(_mm512_castps_si512(a), _mm512_int2mask(0xaaaa), _mm512_castps_si512(b), 0xb1));
+    return _mm512_castsi512_ps(_mm512_mask_shuffle_epi32(_mm512_castps_si512(a), mm512_int2mask(0xaaaa), _mm512_castps_si512(b), 0xb1));
   }
 
   __forceinline vfloat16 interleave_odd(const vfloat16& a, const vfloat16& b) {
-    return _mm512_castsi512_ps(_mm512_mask_shuffle_epi32(_mm512_castps_si512(b), _mm512_int2mask(0x5555), _mm512_castps_si512(a), 0xb1));
+    return _mm512_castsi512_ps(_mm512_mask_shuffle_epi32(_mm512_castps_si512(b), mm512_int2mask(0x5555), _mm512_castps_si512(a), 0xb1));
   }
 
   __forceinline vfloat16 interleave2_even(const vfloat16& a, const vfloat16& b) {
     /* mask should be 8-bit but is 16-bit to reuse for interleave_even */
-    return _mm512_castsi512_ps(_mm512_mask_permutex_epi64(_mm512_castps_si512(a), _mm512_int2mask(0xaaaa), _mm512_castps_si512(b), 0xb1));
+    return _mm512_castsi512_ps(_mm512_mask_permutex_epi64(_mm512_castps_si512(a), mm512_int2mask(0xaaaa), _mm512_castps_si512(b), 0xb1));
   }
 
   __forceinline vfloat16 interleave2_odd(const vfloat16& a, const vfloat16& b) {
     /* mask should be 8-bit but is 16-bit to reuse for interleave_odd */
-    return _mm512_castsi512_ps(_mm512_mask_permutex_epi64(_mm512_castps_si512(b), _mm512_int2mask(0x5555), _mm512_castps_si512(a), 0xb1));
+    return _mm512_castsi512_ps(_mm512_mask_permutex_epi64(_mm512_castps_si512(b), mm512_int2mask(0x5555), _mm512_castps_si512(a), 0xb1));
   }
 
   __forceinline vfloat16 interleave4_even(const vfloat16& a, const vfloat16& b) {
-    return _mm512_castsi512_ps(_mm512_mask_permutex_epi64(_mm512_castps_si512(a), _mm512_int2mask(0xcc), _mm512_castps_si512(b), 0x4e));
+    return _mm512_castsi512_ps(_mm512_mask_permutex_epi64(_mm512_castps_si512(a), mm512_int2mask(0xcc), _mm512_castps_si512(b), 0x4e));
   }
 
   __forceinline vfloat16 interleave4_odd(const vfloat16& a, const vfloat16& b) {
-    return _mm512_castsi512_ps(_mm512_mask_permutex_epi64(_mm512_castps_si512(b), _mm512_int2mask(0x33), _mm512_castps_si512(a), 0x4e));
+    return _mm512_castsi512_ps(_mm512_mask_permutex_epi64(_mm512_castps_si512(b), mm512_int2mask(0x33), _mm512_castps_si512(a), 0x4e));
   }
 
   __forceinline vfloat16 permute(vfloat16 v, __m512i index) {
