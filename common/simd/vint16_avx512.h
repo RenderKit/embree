@@ -64,8 +64,20 @@ namespace embree
       v = _mm512_broadcast_i32x4(i);
     }
 
+    __forceinline vint(const vint4& a, const vint4& b, const vint4& c, const vint4& d) {
+      v = _mm512_castsi128_si512(a);
+      v = _mm512_inserti32x4(v, b, 1);
+      v = _mm512_inserti32x4(v, c, 2);
+      v = _mm512_inserti32x4(v, d, 3);
+    }
+
     __forceinline vint(const vint8& i) {
       v = _mm512_castps_si512(_mm512_castpd_ps(_mm512_broadcast_f64x4(_mm256_castsi256_pd(i))));
+    }
+
+    __forceinline vint(const vint8& a, const vint8& b) {
+      v = _mm512_castsi256_si512(a);
+      v = _mm512_inserti64x4(v, b, 1);
     }
    
     __forceinline explicit vint(const __m512& f) {
@@ -329,38 +341,36 @@ namespace embree
   // Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vint16 unpacklo( const vint16& a, const vint16& b ) { return _mm512_unpacklo_epi32(a.v, b.v); }
-  __forceinline vint16 unpackhi( const vint16& a, const vint16& b ) { return _mm512_unpackhi_epi32(a.v, b.v); }
+  __forceinline vint16 unpacklo(const vint16& a, const vint16& b) { return _mm512_unpacklo_epi32(a.v, b.v); }
+  __forceinline vint16 unpackhi(const vint16& a, const vint16& b) { return _mm512_unpackhi_epi32(a.v, b.v); }
 
-  template<size_t i> 
-    __forceinline const vint16 shuffle( const vint16& a ) {
-    return _mm512_castps_si512(_mm512_permute_ps(_mm512_castsi512_ps(a), _MM_SHUFFLE(i, i, i, i)));
+  template<int i>
+    __forceinline vint16 shuffle(const vint16& v) {
+    return _mm512_castps_si512(_mm512_permute_ps(_mm512_castsi512_ps(v), _MM_SHUFFLE(i, i, i, i)));
   }
 
-  template<int A, int B, int C, int D> 
-    __forceinline vint16 shuffle (const vint16& v) {
-    return _mm512_castps_si512(_mm512_permute_ps(_mm512_castsi512_ps(v),_MM_SHUFFLE(D,C,B,A))); 
+  template<int i0, int i1, int i2, int i3>
+  __forceinline vint16 shuffle(const vint16& v) {
+    return _mm512_castps_si512(_mm512_permute_ps(_mm512_castsi512_ps(v), _MM_SHUFFLE(i3, i2, i1, i0)));
   }
 
   template<int i>
-    __forceinline vint16 shuffle4(const vint16& x) { 
-    return _mm512_castps_si512(_mm512_shuffle_f32x4(_mm512_castsi512_ps(x),_mm512_castsi512_ps(x),_MM_SHUFFLE(i,i,i,i)));
+  __forceinline vint16 shuffle4(const vint16& v) {
+    return _mm512_castps_si512(_mm512_shuffle_f32x4(_mm512_castsi512_ps(v), _mm512_castsi512_ps(v), _MM_SHUFFLE(i, i, i, i)));
   }
 
-  template<int A, int B, int C, int D>
-    __forceinline vint16 shuffle4(const vint16& x) { 
-    return _mm512_castps_si512(_mm512_shuffle_f32x4(_mm512_castsi512_ps(x),_mm512_castsi512_ps(x),_MM_SHUFFLE(D,C,B,A)));
+  template<int i0, int i1, int i2, int i3>
+  __forceinline vint16 shuffle4(const vint16& v) {
+    return _mm512_castps_si512(_mm512_shuffle_f32x4(_mm512_castsi512_ps(v), _mm512_castsi512_ps(v), _MM_SHUFFLE(i3, i2, i1, i0)));
   }
 
   template<int i>
-    __forceinline vint16 align_shift_right(const vint16& a, const vint16& b)
-  {
-    return _mm512_alignr_epi32(a,b,i); 
+  __forceinline vint16 align_shift_right(const vint16& a, const vint16& b) {
+    return _mm512_alignr_epi32(a, b, i);
   };
 
-  __forceinline int toScalar(const vint16& a)
-  {
-    return _mm_cvtsi128_si32(_mm512_castsi512_si128(a));
+  __forceinline int toScalar(const vint16& v) {
+    return _mm_cvtsi128_si32(_mm512_castsi512_si128(v));
   }
 
   template<int i> __forceinline const vint16 insert4(const vint16& a, const vint4& b) { return _mm512_inserti32x4(a, b, i); }

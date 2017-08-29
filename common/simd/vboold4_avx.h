@@ -110,17 +110,19 @@ namespace embree
   /// Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vboold4 unpacklo( const vboold4& a, const vboold4& b ) { return _mm256_unpacklo_pd(a.v, b.v); }
-  __forceinline vboold4 unpackhi( const vboold4& a, const vboold4& b ) { return _mm256_unpackhi_pd(a.v, b.v); }
+  __forceinline vboold4 unpacklo(const vboold4& a, const vboold4& b) { return _mm256_unpacklo_pd(a.v, b.v); }
+  __forceinline vboold4 unpackhi(const vboold4& a, const vboold4& b) { return _mm256_unpackhi_pd(a.v, b.v); }
 
 
 #if defined(__AVX2__)
-  template<size_t i0, size_t i1, size_t i2, size_t i3> __forceinline const vboold4 shuffle( const vboold4& a ) {
-    return _mm256_permute4x64_pd(a, _MM_SHUFFLE(i3, i2, i1, i0));
+  template<int i0, int i1, int i2, int i3>
+  __forceinline const vboold4 shuffle(const vboold4& v) {
+    return _mm256_permute4x64_pd(v, _MM_SHUFFLE(i3, i2, i1, i0));
   }
 
-  template<size_t i> __forceinline const vboold4 shuffle( const vboold4& a ) {
-    return _mm256_permute4x64_pd(a, _MM_SHUFFLE(i, i, i, i));
+  template<int i>
+  __forceinline const vboold4 shuffle(const vboold4& v) {
+    return _mm256_permute4x64_pd(v, _MM_SHUFFLE(i, i, i, i));
   }
 #endif
 

@@ -368,39 +368,42 @@ namespace embree
   // Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vint4 unpacklo( const vint4& a, const vint4& b ) { return _mm_castps_si128(_mm_unpacklo_ps(_mm_castsi128_ps(a.v), _mm_castsi128_ps(b.v))); }
-  __forceinline vint4 unpackhi( const vint4& a, const vint4& b ) { return _mm_castps_si128(_mm_unpackhi_ps(_mm_castsi128_ps(a.v), _mm_castsi128_ps(b.v))); }
+  __forceinline vint4 unpacklo(const vint4& a, const vint4& b) { return _mm_castps_si128(_mm_unpacklo_ps(_mm_castsi128_ps(a.v), _mm_castsi128_ps(b.v))); }
+  __forceinline vint4 unpackhi(const vint4& a, const vint4& b) { return _mm_castps_si128(_mm_unpackhi_ps(_mm_castsi128_ps(a.v), _mm_castsi128_ps(b.v))); }
 
-  template<size_t i0, size_t i1, size_t i2, size_t i3> __forceinline const vint4 shuffle( const vint4& a ) {
-    return _mm_shuffle_epi32(a, _MM_SHUFFLE(i3, i2, i1, i0));
+  template<int i0, int i1, int i2, int i3>
+  __forceinline const vint4 shuffle(const vint4& v) {
+    return _mm_shuffle_epi32(v, _MM_SHUFFLE(i3, i2, i1, i0));
   }
 
-  template<size_t i0, size_t i1, size_t i2, size_t i3> __forceinline const vint4 shuffle( const vint4& a, const vint4& b ) {
+  template<int i0, int i1, int i2, int i3>
+  __forceinline const vint4 shuffle(const vint4& a, const vint4& b) {
     return _mm_castps_si128(_mm_shuffle_ps(_mm_castsi128_ps(a), _mm_castsi128_ps(b), _MM_SHUFFLE(i3, i2, i1, i0)));
   }
 
 #if defined(__SSE3__)
-  template<> __forceinline const vint4 shuffle<0, 0, 2, 2>( const vint4& a ) { return _mm_castps_si128(_mm_moveldup_ps(_mm_castsi128_ps(a))); }
-  template<> __forceinline const vint4 shuffle<1, 1, 3, 3>( const vint4& a ) { return _mm_castps_si128(_mm_movehdup_ps(_mm_castsi128_ps(a))); }
-  template<> __forceinline const vint4 shuffle<0, 1, 0, 1>( const vint4& a ) { return _mm_castpd_si128(_mm_movedup_pd (_mm_castsi128_pd(a))); }
+  template<> __forceinline const vint4 shuffle<0, 0, 2, 2>(const vint4& v) { return _mm_castps_si128(_mm_moveldup_ps(_mm_castsi128_ps(v))); }
+  template<> __forceinline const vint4 shuffle<1, 1, 3, 3>(const vint4& v) { return _mm_castps_si128(_mm_movehdup_ps(_mm_castsi128_ps(v))); }
+  template<> __forceinline const vint4 shuffle<0, 1, 0, 1>(const vint4& v) { return _mm_castpd_si128(_mm_movedup_pd (_mm_castsi128_pd(v))); }
 #endif
 
-  template<size_t i0> __forceinline const vint4 shuffle( const vint4& b ) {
-    return shuffle<i0,i0,i0,i0>(b);
+  template<int i>
+  __forceinline const vint4 shuffle(const vint4& v) {
+    return shuffle<i,i,i,i>(v);
   }
 
 #if defined(__SSE4_1__)
-  template<size_t src> __forceinline int extract( const vint4& b ) { return _mm_extract_epi32(b, src); }
-  template<size_t dst> __forceinline const vint4 insert( const vint4& a, const int b ) { return _mm_insert_epi32(a, b, dst); }
+  template<int src> __forceinline int extract(const vint4& b) { return _mm_extract_epi32(b, src); }
+  template<int dst> __forceinline const vint4 insert(const vint4& a, const int b) { return _mm_insert_epi32(a, b, dst); }
 #else
-  template<size_t src> __forceinline int extract( const vint4& b ) { return b[src]; }
-  template<size_t dst> __forceinline const vint4 insert( const vint4& a, const int b ) { vint4 c = a; c[dst] = b; return c; }
+  template<int src> __forceinline int extract(const vint4& b) { return b[src]; }
+  template<int dst> __forceinline const vint4 insert(const vint4& a, const int b) { vint4 c = a; c[dst] = b; return c; }
 #endif
 
 
-  template<> __forceinline int extract<0>( const vint4& b ) { return _mm_cvtsi128_si32(b); }
+  template<> __forceinline int extract<0>(const vint4& b) { return _mm_cvtsi128_si32(b); }
 
-  __forceinline int toScalar(const vint4& a) { return _mm_cvtsi128_si32(a); }
+  __forceinline int toScalar(const vint4& v) { return _mm_cvtsi128_si32(v); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions

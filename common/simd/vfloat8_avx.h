@@ -468,62 +468,67 @@ namespace embree
   /// Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vfloat8 unpacklo( const vfloat8& a, const vfloat8& b ) { return _mm256_unpacklo_ps(a.v, b.v); }
-  __forceinline vfloat8 unpackhi( const vfloat8& a, const vfloat8& b ) { return _mm256_unpackhi_ps(a.v, b.v); }
+  __forceinline vfloat8 unpacklo(const vfloat8& a, const vfloat8& b) { return _mm256_unpacklo_ps(a.v, b.v); }
+  __forceinline vfloat8 unpackhi(const vfloat8& a, const vfloat8& b) { return _mm256_unpackhi_ps(a.v, b.v); }
 
-  template<size_t i> __forceinline const vfloat8 shuffle( const vfloat8& a ) {
-    return _mm256_permute_ps(a, _MM_SHUFFLE(i, i, i, i));
+  template<int i>
+  __forceinline const vfloat8 shuffle(const vfloat8& v) {
+    return _mm256_permute_ps(v, _MM_SHUFFLE(i, i, i, i));
   }
 
-  template<size_t i0, size_t i1> __forceinline const vfloat8 shuffle4( const vfloat8& a ) {
-    return _mm256_permute2f128_ps(a, a, (i1 << 4) | (i0 << 0));
+  template<int i0, int i1>
+  __forceinline const vfloat8 shuffle4(const vfloat8& v) {
+    return _mm256_permute2f128_ps(v, v, (i1 << 4) | (i0 << 0));
   }
 
-  template<size_t i0, size_t i1> __forceinline const vfloat8 shuffle4( const vfloat8& a,  const vfloat8& b) {
+  template<int i0, int i1>
+  __forceinline const vfloat8 shuffle4(const vfloat8& a, const vfloat8& b) {
     return _mm256_permute2f128_ps(a, b, (i1 << 4) | (i0 << 0));
   }
 
-  template<size_t i0, size_t i1, size_t i2, size_t i3> __forceinline const vfloat8 shuffle( const vfloat8& a ) {
-    return _mm256_permute_ps(a, _MM_SHUFFLE(i3, i2, i1, i0));
+  template<int i0, int i1, int i2, int i3>
+  __forceinline const vfloat8 shuffle(const vfloat8& v) {
+    return _mm256_permute_ps(v, _MM_SHUFFLE(i3, i2, i1, i0));
   }
 
-  template<size_t i0, size_t i1, size_t i2, size_t i3> __forceinline const vfloat8 shuffle( const vfloat8& a, const vfloat8& b ) {
+  template<int i0, int i1, int i2, int i3>
+  __forceinline const vfloat8 shuffle(const vfloat8& a, const vfloat8& b) {
     return _mm256_shuffle_ps(a, b, _MM_SHUFFLE(i3, i2, i1, i0));
   }
 
-  template<> __forceinline const vfloat8 shuffle<0, 0, 2, 2>( const vfloat8& b ) { return _mm256_moveldup_ps(b); }
-  template<> __forceinline const vfloat8 shuffle<1, 1, 3, 3>( const vfloat8& b ) { return _mm256_movehdup_ps(b); }
-  template<> __forceinline const vfloat8 shuffle<0, 1, 0, 1>( const vfloat8& b ) { return _mm256_castpd_ps(_mm256_movedup_pd(_mm256_castps_pd(b))); }
+  template<> __forceinline const vfloat8 shuffle<0, 0, 2, 2>(const vfloat8& v) { return _mm256_moveldup_ps(v); }
+  template<> __forceinline const vfloat8 shuffle<1, 1, 3, 3>(const vfloat8& v) { return _mm256_movehdup_ps(v); }
+  template<> __forceinline const vfloat8 shuffle<0, 1, 0, 1>(const vfloat8& v) { return _mm256_castpd_ps(_mm256_movedup_pd(_mm256_castps_pd(v))); }
 
   __forceinline const vfloat8 broadcast(const float* ptr) { return _mm256_broadcast_ss(ptr); }
   template<size_t i> __forceinline const vfloat8 insert4(const vfloat8& a, const vfloat4& b) { return _mm256_insertf128_ps(a, b, i); }
   template<size_t i> __forceinline const vfloat4 extract4   (const vfloat8& a) { return _mm256_extractf128_ps(a, i); }
   template<>         __forceinline const vfloat4 extract4<0>(const vfloat8& a) { return _mm256_castps256_ps128(a);   }
 
-  __forceinline float toScalar(const vfloat8& a) { return _mm_cvtss_f32(_mm256_castps256_ps128(a)); }
+  __forceinline float toScalar(const vfloat8& v) { return _mm_cvtss_f32(_mm256_castps256_ps128(v)); }
 
-  __forceinline vfloat8 assign( const vfloat4& a ) { return _mm256_castps128_ps256(a); }
+  __forceinline vfloat8 assign(const vfloat4& a) { return _mm256_castps128_ps256(a); }
 
 #if defined (__AVX2__)
-  __forceinline vfloat8 permute(const vfloat8 &a, const __m256i &index) {
-    return _mm256_permutevar8x32_ps(a,index);
+  __forceinline vfloat8 permute(const vfloat8& a, const __m256i& index) {
+    return _mm256_permutevar8x32_ps(a, index);
   }
 #endif
 
 #if defined(__AVX512VL__)
   template<int i>
-  __forceinline vfloat8 align_shift_right(const vfloat8 &a, const vfloat8 &b) {
+  __forceinline vfloat8 align_shift_right(const vfloat8& a, const vfloat8& b) {
     return _mm256_castsi256_ps(_mm256_alignr_epi32(_mm256_castps_si256(a), _mm256_castps_si256(b), i));
   }  
 #endif
 
 #if defined (__AVX_I__)
   template<const int mode>
-  __forceinline vint4 convert_to_hf16(const vfloat8 &a) {
-    return _mm256_cvtps_ph(a,mode);
+  __forceinline vint4 convert_to_hf16(const vfloat8& a) {
+    return _mm256_cvtps_ph(a, mode);
   }
 
-  __forceinline vfloat8 convert_from_hf16(const vint4 &a) {
+  __forceinline vfloat8 convert_from_hf16(const vint4& a) {
     return _mm256_cvtph_ps(a);
   }
 #endif

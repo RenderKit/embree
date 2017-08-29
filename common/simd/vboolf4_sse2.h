@@ -112,31 +112,34 @@ namespace embree
   /// Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
   
-  __forceinline const vboolf4 unpacklo( const vboolf4& a, const vboolf4& b ) { return _mm_unpacklo_ps(a, b); }
-  __forceinline const vboolf4 unpackhi( const vboolf4& a, const vboolf4& b ) { return _mm_unpackhi_ps(a, b); }
+  __forceinline const vboolf4 unpacklo(const vboolf4& a, const vboolf4& b) { return _mm_unpacklo_ps(a, b); }
+  __forceinline const vboolf4 unpackhi(const vboolf4& a, const vboolf4& b) { return _mm_unpackhi_ps(a, b); }
 
-  template<size_t i0, size_t i1, size_t i2, size_t i3> __forceinline const vboolf4 shuffle( const vboolf4& a ) {
-    return _mm_shuffle_epi32(a, _MM_SHUFFLE(i3, i2, i1, i0));
+  template<int i0, int i1, int i2, int i3>
+  __forceinline const vboolf4 shuffle(const vboolf4& v) {
+    return _mm_shuffle_epi32(v, _MM_SHUFFLE(i3, i2, i1, i0));
   }
 
-  template<size_t i0, size_t i1, size_t i2, size_t i3> __forceinline const vboolf4 shuffle( const vboolf4& a, const vboolf4& b ) {
+  template<int i0, int i1, int i2, int i3>
+  __forceinline const vboolf4 shuffle(const vboolf4& a, const vboolf4& b) {
     return _mm_shuffle_ps(a, b, _MM_SHUFFLE(i3, i2, i1, i0));
   }
 
-  template<size_t i0> __forceinline const vboolf4 shuffle( const vboolf4& b ) {
-    return shuffle<i0,i0,i0,i0>(b);
+  template<int i0>
+  __forceinline const vboolf4 shuffle(const vboolf4& v) {
+    return shuffle<i0,i0,i0,i0>(v);
   }
 
 #if defined(__SSE3__)
-  template<> __forceinline const vboolf4 shuffle<0, 0, 2, 2>( const vboolf4& a ) { return _mm_moveldup_ps(a); }
-  template<> __forceinline const vboolf4 shuffle<1, 1, 3, 3>( const vboolf4& a ) { return _mm_movehdup_ps(a); }
-  template<> __forceinline const vboolf4 shuffle<0, 1, 0, 1>( const vboolf4& a ) { return _mm_castpd_ps(_mm_movedup_pd (a)); }
+  template<> __forceinline const vboolf4 shuffle<0, 0, 2, 2>(const vboolf4& v) { return _mm_moveldup_ps(v); }
+  template<> __forceinline const vboolf4 shuffle<1, 1, 3, 3>(const vboolf4& v) { return _mm_movehdup_ps(v); }
+  template<> __forceinline const vboolf4 shuffle<0, 1, 0, 1>(const vboolf4& v) { return _mm_castpd_ps(_mm_movedup_pd(v)); }
 #endif
 
 #if defined(__SSE4_1__)
-  template<size_t dst, size_t src, size_t clr> __forceinline const vboolf4 insert( const vboolf4& a, const vboolf4& b ) { return _mm_insert_ps(a, b, (dst << 4) | (src << 6) | clr); }
-  template<size_t dst, size_t src> __forceinline const vboolf4 insert( const vboolf4& a, const vboolf4& b ) { return insert<dst, src, 0>(a, b); }
-  template<size_t dst>             __forceinline const vboolf4 insert( const vboolf4& a, const bool b ) { return insert<dst,0>(a, vboolf4(b)); }
+  template<int dst, int src, int clr> __forceinline const vboolf4 insert(const vboolf4& a, const vboolf4& b) { return _mm_insert_ps(a, b, (dst << 4) | (src << 6) | clr); }
+  template<int dst, int src> __forceinline const vboolf4 insert(const vboolf4& a, const vboolf4& b) { return insert<dst, src, 0>(a, b); }
+  template<int dst> __forceinline const vboolf4 insert(const vboolf4& a, const bool b) { return insert<dst, 0>(a, vboolf4(b)); }
 #endif
   
   ////////////////////////////////////////////////////////////////////////////////

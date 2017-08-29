@@ -329,50 +329,48 @@ namespace embree
   // Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  template<size_t i> 
-    __forceinline const vuint16 shuffle( const vuint16& a ) {
-    return _mm512_castps_si512(_mm512_permute_ps(_mm512_castsi512_ps(a), _MM_SHUFFLE(i, i, i, i)));
+  template<int i>
+  __forceinline vuint16 shuffle(const vuint16& v) {
+    return _mm512_castps_si512(_mm512_permute_ps(_mm512_castsi512_ps(v), _MM_SHUFFLE(i, i, i, i)));
   }
 
-  template<int A, int B, int C, int D> 
-    __forceinline vuint16 shuffle (const vuint16& v) {
-    return _mm512_castps_si512(_mm512_permute_ps(_mm512_castsi512_ps(v),_MM_SHUFFLE(D,C,B,A))); 
+  template<int i0, int i1, int i2, int i3>
+  __forceinline vuint16 shuffle(const vuint16& v) {
+    return _mm512_castps_si512(_mm512_permute_ps(_mm512_castsi512_ps(v), _MM_SHUFFLE(i3, i2, i1, i0)));
   }
 
   template<int i>
-    __forceinline vuint16 shuffle4(const vuint16& x) { 
-    return _mm512_castps_si512(_mm512_shuffle_f32x4(_mm512_castsi512_ps(x),_mm512_castsi512_ps(x),_MM_SHUFFLE(i,i,i,i)));
+  __forceinline vuint16 shuffle4(const vuint16& v) {
+    return _mm512_castps_si512(_mm512_shuffle_f32x4(_mm512_castsi512_ps(v), _mm512_castsi512_ps(v) ,_MM_SHUFFLE(i, i, i, i)));
   }
 
-  template<int A, int B, int C, int D>
-    __forceinline vuint16 shuffle4(const vuint16& x) { 
-    return _mm512_castps_si512(_mm512_shuffle_f32x4(_mm512_castsi512_ps(x),_mm512_castsi512_ps(x),_MM_SHUFFLE(D,C,B,A)));
+  template<int i0, int i1, int i2, int i3>
+  __forceinline vuint16 shuffle4(const vuint16& v) {
+    return _mm512_castps_si512(_mm512_shuffle_f32x4(_mm512_castsi512_ps(v), _mm512_castsi512_ps(v), _MM_SHUFFLE(i3, i2, i1, i0)));
   }
 
   template<int i>
-    __forceinline vuint16 align_shift_right(const vuint16& a, const vuint16& b)
-  {
-    return _mm512_alignr_epi32(a,b,i); 
+  __forceinline vuint16 align_shift_right(const vuint16& a, const vuint16& b) {
+    return _mm512_alignr_epi32(a, b, i);
   };
 
-  __forceinline unsigned int toScalar(const vuint16& a)
-  {
-    return _mm_cvtsi128_si32(_mm512_castsi512_si128(a));
+  __forceinline unsigned int toScalar(const vuint16& v) {
+    return _mm_cvtsi128_si32(_mm512_castsi512_si128(v));
   }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vuint16 vreduce_min2(vuint16 x) {                      return min(x,shuffle<1,0,3,2>(x)); }
-  __forceinline vuint16 vreduce_min4(vuint16 x) { x = vreduce_min2(x); return min(x,shuffle<2,3,0,1>(x)); }
-  __forceinline vuint16 vreduce_min8(vuint16 x) { x = vreduce_min4(x); return min(x,shuffle4<1,0,3,2>(x)); }
-  __forceinline vuint16 vreduce_min (vuint16 x) { x = vreduce_min8(x); return min(x,shuffle4<2,3,0,1>(x)); }
+  __forceinline vuint16 vreduce_min2(vuint16 x) {                      return min(x, shuffle<1,0,3,2>(x)); }
+  __forceinline vuint16 vreduce_min4(vuint16 x) { x = vreduce_min2(x); return min(x, shuffle<2,3,0,1>(x)); }
+  __forceinline vuint16 vreduce_min8(vuint16 x) { x = vreduce_min4(x); return min(x, shuffle4<1,0,3,2>(x)); }
+  __forceinline vuint16 vreduce_min (vuint16 x) { x = vreduce_min8(x); return min(x, shuffle4<2,3,0,1>(x)); }
 
-  __forceinline vuint16 vreduce_max2(vuint16 x) {                      return max(x,shuffle<1,0,3,2>(x)); }
-  __forceinline vuint16 vreduce_max4(vuint16 x) { x = vreduce_max2(x); return max(x,shuffle<2,3,0,1>(x)); }
-  __forceinline vuint16 vreduce_max8(vuint16 x) { x = vreduce_max4(x); return max(x,shuffle4<1,0,3,2>(x)); }
-  __forceinline vuint16 vreduce_max (vuint16 x) { x = vreduce_max8(x); return max(x,shuffle4<2,3,0,1>(x)); }
+  __forceinline vuint16 vreduce_max2(vuint16 x) {                      return max(x, shuffle<1,0,3,2>(x)); }
+  __forceinline vuint16 vreduce_max4(vuint16 x) { x = vreduce_max2(x); return max(x, shuffle<2,3,0,1>(x)); }
+  __forceinline vuint16 vreduce_max8(vuint16 x) { x = vreduce_max4(x); return max(x, shuffle4<1,0,3,2>(x)); }
+  __forceinline vuint16 vreduce_max (vuint16 x) { x = vreduce_max8(x); return max(x, shuffle4<2,3,0,1>(x)); }
 
   __forceinline vuint16 vreduce_and2(vuint16 x) {                      return x & shuffle<1,0,3,2>(x); }
   __forceinline vuint16 vreduce_and4(vuint16 x) { x = vreduce_and2(x); return x & shuffle<2,3,0,1>(x); }

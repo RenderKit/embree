@@ -310,54 +310,58 @@ namespace embree
   /// Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vint8 unpacklo( const vint8& a, const vint8& b ) { return _mm256_unpacklo_epi32(a.v, b.v); }
-  __forceinline vint8 unpackhi( const vint8& a, const vint8& b ) { return _mm256_unpackhi_epi32(a.v, b.v); }
+  __forceinline vint8 unpacklo(const vint8& a, const vint8& b) { return _mm256_unpacklo_epi32(a.v, b.v); }
+  __forceinline vint8 unpackhi(const vint8& a, const vint8& b) { return _mm256_unpackhi_epi32(a.v, b.v); }
 
-  template<size_t i> __forceinline const vint8 shuffle( const vint8& a ) {
-    return _mm256_castps_si256(_mm256_permute_ps(_mm256_castsi256_ps(a), _MM_SHUFFLE(i, i, i, i)));
+  template<int i>
+  __forceinline const vint8 shuffle(const vint8& v) {
+    return _mm256_castps_si256(_mm256_permute_ps(_mm256_castsi256_ps(v), _MM_SHUFFLE(i, i, i, i)));
   }
 
-  template<size_t i0, size_t i1> __forceinline const vint8 shuffle4( const vint8& a ) {
-    return _mm256_permute2f128_si256(a, a, (i1 << 4) | (i0 << 0));
+  template<int i0, int i1>
+  __forceinline const vint8 shuffle4(const vint8& v) {
+    return _mm256_permute2f128_si256(v, v, (i1 << 4) | (i0 << 0));
   }
 
-  template<size_t i0, size_t i1> __forceinline const vint8 shuffle4( const vint8& a,  const vint8& b) {
+  template<int i0, int i1>
+  __forceinline const vint8 shuffle4(const vint8& a, const vint8& b) {
     return _mm256_permute2f128_si256(a, b, (i1 << 4) | (i0 << 0));
   }
 
-  template<size_t i0, size_t i1, size_t i2, size_t i3> __forceinline const vint8 shuffle( const vint8& a ) {
-    return _mm256_castps_si256(_mm256_permute_ps(_mm256_castsi256_ps(a), _MM_SHUFFLE(i3, i2, i1, i0)));
+  template<int i0, int i1, int i2, int i3>
+  __forceinline const vint8 shuffle(const vint8& v) {
+    return _mm256_castps_si256(_mm256_permute_ps(_mm256_castsi256_ps(v), _MM_SHUFFLE(i3, i2, i1, i0)));
   }
 
-  template<size_t i0, size_t i1, size_t i2, size_t i3> __forceinline const vint8 shuffle( const vint8& a, const vint8& b ) {
+  template<int i0, int i1, int i2, int i3>
+  __forceinline const vint8 shuffle(const vint8& a, const vint8& b) {
     return _mm256_castps_si256(_mm256_shuffle_ps(_mm256_castsi256_ps(a), _mm256_castsi256_ps(b), _MM_SHUFFLE(i3, i2, i1, i0)));
   }
 
-  template<> __forceinline const vint8 shuffle<0, 0, 2, 2>( const vint8& b ) { return _mm256_castps_si256(_mm256_moveldup_ps(_mm256_castsi256_ps(b))); }
-  template<> __forceinline const vint8 shuffle<1, 1, 3, 3>( const vint8& b ) { return _mm256_castps_si256(_mm256_movehdup_ps(_mm256_castsi256_ps(b))); }
-  template<> __forceinline const vint8 shuffle<0, 1, 0, 1>( const vint8& b ) { return _mm256_castps_si256(_mm256_castpd_ps(_mm256_movedup_pd(_mm256_castps_pd(_mm256_castsi256_ps(b))))); }
+  template<> __forceinline const vint8 shuffle<0, 0, 2, 2>(const vint8& v) { return _mm256_castps_si256(_mm256_moveldup_ps(_mm256_castsi256_ps(v))); }
+  template<> __forceinline const vint8 shuffle<1, 1, 3, 3>(const vint8& v) { return _mm256_castps_si256(_mm256_movehdup_ps(_mm256_castsi256_ps(v))); }
+  template<> __forceinline const vint8 shuffle<0, 1, 0, 1>(const vint8& v) { return _mm256_castps_si256(_mm256_castpd_ps(_mm256_movedup_pd(_mm256_castps_pd(_mm256_castsi256_ps(v))))); }
 
   __forceinline const vint8 broadcast(const int* ptr) { return _mm256_castps_si256(_mm256_broadcast_ss((const float*)ptr)); }
 
-  template<size_t i> __forceinline const vint8 insert4(const vint8& a, const vint4& b) { return _mm256_insertf128_si256(a, b, i); }
-  template<size_t i> __forceinline const vint4 extract4   (const vint8& a) { return _mm256_extractf128_si256(a, i); }
-  template<>         __forceinline const vint4 extract4<0>(const vint8& a) { return _mm256_castsi256_si128(a);      }
+  template<int i> __forceinline const vint8 insert4(const vint8& a, const vint4& b) { return _mm256_insertf128_si256(a, b, i); }
+  template<int i> __forceinline const vint4 extract4(const vint8& a) { return _mm256_extractf128_si256(a, i); }
+  template<> __forceinline const vint4 extract4<0>(const vint8& a) { return _mm256_castsi256_si128(a); }
 
-  __forceinline int toScalar(const vint8& a) { return _mm_cvtsi128_si32(_mm256_castsi256_si128(a)); }
+  __forceinline int toScalar(const vint8& v) { return _mm_cvtsi128_si32(_mm256_castsi256_si128(v)); }
 
-  __forceinline vint8 permute(const vint8& a, const __m256i& index) {
-    return _mm256_permutevar8x32_epi32(a,index);
+  __forceinline vint8 permute(const vint8& v, const __m256i& index) {
+    return _mm256_permutevar8x32_epi32(v, index);
   }
 
-  __forceinline vint8 shuffle(const vint8& a, const __m256i& index) {
-    return _mm256_castps_si256(_mm256_permutevar_ps(_mm256_castsi256_ps(a),index));
+  __forceinline vint8 shuffle(const vint8& v, const __m256i& index) {
+    return _mm256_castps_si256(_mm256_permutevar_ps(_mm256_castsi256_ps(v), index));
   }
 
   template<int i>
-  __forceinline vint8 align_shift_right(const vint8 &a, const vint8 &b) {
+  __forceinline vint8 align_shift_right(const vint8& a, const vint8& b) {
     return _mm256_alignr_epi8(a, b, i);
   }  
-
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
