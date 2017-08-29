@@ -33,6 +33,94 @@ namespace embree
       /* fallback to packets */
       const vintx ofs = vintx(step) * int(stride);
 
+      for (size_t i = 0; i < N; i += VSIZEX)
+      {
+        const size_t n = min(N - i, size_t(VSIZEX));
+        vboolx valid = vintx(step) < vintx(int(n));
+        Ray* __restrict__ ray_i = (Ray*)((char*)rayN + stride * i);
+        RayK<VSIZEX> ray;
+
+#if defined(__AVX2__)
+        ray.org.x  = vfloatx::gather<1>(valid, &ray_i->org.x, ofs);
+        ray.org.y  = vfloatx::gather<1>(valid, &ray_i->org.y, ofs);
+        ray.org.z  = vfloatx::gather<1>(valid, &ray_i->org.z, ofs);
+        ray.dir.x  = vfloatx::gather<1>(valid, &ray_i->dir.x, ofs);
+        ray.dir.y  = vfloatx::gather<1>(valid, &ray_i->dir.y, ofs);
+        ray.dir.z  = vfloatx::gather<1>(valid, &ray_i->dir.z, ofs);
+        ray.tnear  = vfloatx::gather<1>(valid, &ray_i->tnear, ofs);
+        ray.tfar   = vfloatx::gather<1>(valid, &ray_i->tfar, ofs);
+        ray.time   = vfloatx::gather<1>(valid, &ray_i->time, ofs);
+        ray.mask   = vintx::gather<1>(valid, &ray_i->mask, ofs);
+        ray.instID = vintx::gather<1>(valid, (int*)&ray_i->instID, ofs);
+#else
+        for (size_t k = 0; k < n; k++)
+        {
+          Ray* __restrict__ ray_k = (Ray*)((char*)ray_i + ofs[k]);
+
+          ray.org.x[k] = ray_k->org.x;
+          ray.org.y[k] = ray_k->org.y;
+          ray.org.z[k] = ray_k->org.z;
+          ray.dir.x[k] = ray_k->dir.x;
+          ray.dir.y[k] = ray_k->dir.y;
+          ray.dir.z[k] = ray_k->dir.z;
+          ray.tnear[k] = ray_k->tnear;
+          ray.tfar[k]  = ray_k->tfar;
+          ray.time[k]  = ray_k->time;
+          ray.mask[k]  = ray_k->mask;
+          ray.instID[k] = ray_k->instID;
+        }
+#endif
+
+        ray.geomID = RTC_INVALID_GEOMETRY_ID;
+
+        /* intersect packet */
+        if (intersect)
+          scene->intersect(valid, ray, context);
+        else
+          scene->occluded (valid, ray, context);
+
+        /* scatter hits */
+#if defined(__AVX512F__)
+        vintx::scatter<1>(valid, (int*)&ray_i->geomID, ofs, ray.geomID);
+        if (intersect)
+        {
+          valid &= ray.geomID != RTC_INVALID_GEOMETRY_ID;
+
+          vfloatx::scatter<1>(valid, &ray_i->tfar, ofs, ray.tfar);
+          vfloatx::scatter<1>(valid, &ray_i->Ng.x, ofs, ray.Ng.x);
+          vfloatx::scatter<1>(valid, &ray_i->Ng.y, ofs, ray.Ng.y);
+          vfloatx::scatter<1>(valid, &ray_i->Ng.z, ofs, ray.Ng.z);
+          vfloatx::scatter<1>(valid, &ray_i->u, ofs, ray.u);
+          vfloatx::scatter<1>(valid, &ray_i->v, ofs, ray.v);
+          vintx::scatter<1>(valid, (int*)&ray_i->primID, ofs, ray.primID);
+          vintx::scatter<1>(valid, (int*)&ray_i->instID, ofs, ray.instID);
+        }
+#else
+        for (size_t k = 0; k < n; k++)
+        {
+          Ray* __restrict__ ray_k = (Ray*)((char*)ray_i + ofs[k]);
+
+          ray_k->geomID = ray.geomID[k];
+          if (intersect && ray.geomID[k] != RTC_INVALID_GEOMETRY_ID)
+          {
+            ray_k->tfar   = ray.tfar[k];
+            ray_k->Ng.x   = ray.Ng.x[k];
+            ray_k->Ng.y   = ray.Ng.y[k];
+            ray_k->Ng.z   = ray.Ng.z[k];
+            ray_k->u      = ray.u[k];
+            ray_k->v      = ray.v[k];
+            ray_k->primID = ray.primID[k];
+            ray_k->instID = ray.instID[k];
+          }
+        }
+#endif
+      }
+
+#elif 1
+
+      /* fallback to packets - much more complex, but not faster, so should be removed... */
+      const vintx ofs = vintx(step) * int(stride);
+
       size_t i = 0;
 
       /* full packet loop */
@@ -273,105 +361,6 @@ namespace embree
           }
         }
 #endif
-      }
-
-#elif 0
-      /* fallback to packets (with gathers) */
-      const vintx ofs = vintx(step) * int(sizeof(Ray));
-      for (size_t i = 0; i < N; i += VSIZEX)
-      {
-        vintx vi = vintx(i) + vintx(step);
-        vboolx valid = vi < vintx(int(N));
-
-        RayK<VSIZEX> ray;
-        ray.org.x  = vfloatx::gather<1>(valid, &rayN[i].org.x, ofs);
-        ray.org.y  = vfloatx::gather<1>(valid, &rayN[i].org.y, ofs);
-        ray.org.z  = vfloatx::gather<1>(valid, &rayN[i].org.z, ofs);
-        ray.dir.x  = vfloatx::gather<1>(valid, &rayN[i].dir.x, ofs);
-        ray.dir.y  = vfloatx::gather<1>(valid, &rayN[i].dir.y, ofs);
-        ray.dir.z  = vfloatx::gather<1>(valid, &rayN[i].dir.z, ofs);
-        ray.tnear  = vfloatx::gather<1>(valid, &rayN[i].tnear, ofs);
-        ray.tfar   = vfloatx::gather<1>(valid, &rayN[i].tfar, ofs);
-        ray.time   = vfloatx::gather<1>(valid, &rayN[i].time, ofs);
-        ray.mask   = vintx::gather<1>(valid, &rayN[i].mask, ofs);
-        /*
-        ray.geomID = vintx::gather<1>(valid, (int*)&rayN[i].geomID, ofs);
-        ray.instID = vintx::gather<1>(valid, (int*)&rayN[i].instID, ofs);
-        */
-        ray.geomID = RTC_INVALID_GEOMETRY_ID;
-        ray.instID = RTC_INVALID_GEOMETRY_ID;
-
-        if (intersect)
-          scene->intersect(valid, ray, context);
-        else
-          scene->occluded (valid, ray, context);
-
-        const size_t n = min(N - i, size_t(VSIZEX));
-        for (size_t j = 0; j < n; j++)
-        {
-          rayN[i+j].geomID = ray.geomID[j];
-          if (intersect && ray.geomID[j] != RTC_INVALID_GEOMETRY_ID)
-          {
-            rayN[i+j].tfar = ray.tfar[j];
-            rayN[i+j].Ng.x = ray.Ng.x[j];
-            rayN[i+j].Ng.y = ray.Ng.y[j];
-            rayN[i+j].Ng.z = ray.Ng.z[j];
-            rayN[i+j].u = ray.u[j];
-            rayN[i+j].v = ray.v[j];
-            rayN[i+j].primID = ray.primID[j];
-            rayN[i+j].instID = ray.instID[j];
-          }
-        }
-      }
-
-#elif 1
-      /* fallback to packets */
-      for (size_t i = 0; i < N; i += VSIZEX)
-      {
-        const size_t n = min(N - i, size_t(VSIZEX));
-
-        RayK<VSIZEX> ray;
-        for (size_t j = 0; j < n; j++)
-        {
-          ray.org.x[j] = rayN[i+j].org.x;
-          ray.org.y[j] = rayN[i+j].org.y;
-          ray.org.z[j] = rayN[i+j].org.z;
-          ray.dir.x[j] = rayN[i+j].dir.x;
-          ray.dir.y[j] = rayN[i+j].dir.y;
-          ray.dir.z[j] = rayN[i+j].dir.z;
-          ray.tnear[j] = rayN[i+j].tnear;
-          ray.tfar[j]  = rayN[i+j].tfar;
-          ray.time[j]  = rayN[i+j].time;
-          ray.mask[j]  = rayN[i+j].mask;
-          /*
-          ray.geomID[j] = rayN[i+j].geomID;
-          ray.instID[j] = rayN[i+j].instID;
-          */
-          ray.geomID[j] = RTC_INVALID_GEOMETRY_ID;
-          ray.instID[j] = RTC_INVALID_GEOMETRY_ID;
-        }
-
-        vboolx valid = vintx(step) < vintx(int(n));
-        if (intersect)
-          scene->intersect(valid, ray, context);
-        else
-          scene->occluded (valid, ray, context);
-
-        for (size_t j = 0; j < n; j++)
-        {
-          rayN[i+j].geomID = ray.geomID[j];
-          if (intersect && ray.geomID[j] != RTC_INVALID_GEOMETRY_ID)
-          {
-            rayN[i+j].tfar = ray.tfar[j];
-            rayN[i+j].Ng.x = ray.Ng.x[j];
-            rayN[i+j].Ng.y = ray.Ng.y[j];
-            rayN[i+j].Ng.z = ray.Ng.z[j];
-            rayN[i+j].u = ray.u[j];
-            rayN[i+j].v = ray.v[j];
-            rayN[i+j].primID = ray.primID[j];
-            rayN[i+j].instID = ray.instID[j];
-          }
-        }
       }
 
 #else
