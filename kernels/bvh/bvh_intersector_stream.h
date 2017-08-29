@@ -857,8 +857,6 @@ namespace embree
 
       static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
 
-      static void intersect1(const BVH* bvh, NodeRef root, Precalculations& pre, Ray& ray, RayCtx& ray_ctx, const NearFarPreCompute& pc, IntersectContext* context);
-
       static void intersectCoherentSOA(BVH* bvh, RayK<K>** inputRays, size_t numValidStreams, IntersectContext* context);
       static void occludedCoherentSOA(BVH* bvh, RayK<K>** inputRays, size_t numValidStreams, IntersectContext* context);
 
