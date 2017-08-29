@@ -42,11 +42,11 @@ namespace embree
         Ray* __restrict__ ray_i = (Ray*)((char*)rayN + stride * i);
         RayK<VSIZEX> ray;
 
-#if defined(__AVX512F__)
-#elif defined(__AVX__)
         /* gather: instID */
         ray.instID = vintx::gather<1>((int*)&ray_i->instID, ofs);
 
+#if defined(__AVX512F__)
+#elif defined(__AVX__)
         /* load and transpose: org.x, org.y, org.z, align0, dir.x, dir.y, dir.z, align1 */
         const vfloat8 ab0 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[0]))->org);
         const vfloat8 ab1 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[1]))->org);
@@ -74,6 +74,31 @@ namespace embree
         transpose(c0,c1,c2,c3,c4,c5,c6,c7, ray.tnear, ray.tfar, ray.time, maskf);
         ray.mask = asInt(maskf);
 #else
+        /* load and transpose: org.x, org.y, org.z */
+        const vfloat4 a0 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[0]))->org);
+        const vfloat4 a1 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[1]))->org);
+        const vfloat4 a2 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[2]))->org);
+        const vfloat4 a3 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[3]))->org);
+
+        transpose(a0,a1,a2,a3, ray.org.x, ray.org.y, ray.org.z);
+
+        /* load and transpose: dir.x, dir.y, dir.z */
+        const vfloat4 b0 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[0]))->dir);
+        const vfloat4 b1 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[1]))->dir);
+        const vfloat4 b2 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[2]))->dir);
+        const vfloat4 b3 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[3]))->dir);
+
+        transpose(b0,b1,b2,b3, ray.dir.x, ray.dir.y, ray.dir.z);
+
+        /* load and transpose: tnear, tfar, time, mask */
+        const vfloat4 c0 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[0]))->tnear);
+        const vfloat4 c1 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[1]))->tnear);
+        const vfloat4 c2 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[2]))->tnear);
+        const vfloat4 c3 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[3]))->tnear);
+
+        vfloat4 maskf;
+        transpose(c0,c1,c2,c3, ray.tnear, ray.tfar, ray.time, maskf);
+        ray.mask = asInt(maskf);
 #endif
 
         /* init: geomID */
