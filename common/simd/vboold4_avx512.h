@@ -86,9 +86,9 @@ namespace embree
   /// Assignment Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vboold4 operator &=( vboold4& a, const vboold4& b ) { return a = a & b; }
-  __forceinline vboold4 operator |=( vboold4& a, const vboold4& b ) { return a = a | b; }
-  __forceinline vboold4 operator ^=( vboold4& a, const vboold4& b ) { return a = a ^ b; }
+  __forceinline vboold4& operator &=( vboold4& a, const vboold4& b ) { return a = a & b; }
+  __forceinline vboold4& operator |=( vboold4& a, const vboold4& b ) { return a = a | b; }
+  __forceinline vboold4& operator ^=( vboold4& a, const vboold4& b ) { return a = a ^ b; }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Comparison Operators + Select

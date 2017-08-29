@@ -103,9 +103,9 @@ namespace embree
   __forceinline vboolf8 operator |( const vboolf8& a, const vboolf8& b ) { return _mm256_or_ps (a, b); }
   __forceinline vboolf8 operator ^( const vboolf8& a, const vboolf8& b ) { return _mm256_xor_ps(a, b); }
 
-  __forceinline vboolf8 operator &=( vboolf8& a, const vboolf8& b ) { return a = a & b; }
-  __forceinline vboolf8 operator |=( vboolf8& a, const vboolf8& b ) { return a = a | b; }
-  __forceinline vboolf8 operator ^=( vboolf8& a, const vboolf8& b ) { return a = a ^ b; }
+  __forceinline vboolf8& operator &=( vboolf8& a, const vboolf8& b ) { return a = a & b; }
+  __forceinline vboolf8& operator |=( vboolf8& a, const vboolf8& b ) { return a = a | b; }
+  __forceinline vboolf8& operator ^=( vboolf8& a, const vboolf8& b ) { return a = a ^ b; }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Comparison Operators + Select

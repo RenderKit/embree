@@ -103,9 +103,9 @@ namespace embree
   /// Assignment Operators
   ////////////////////////////////////////////////////////////////////////////////
   
-  __forceinline vboolf16 operator &=( vboolf16& a, const vboolf16& b ) { return a = a & b; }
-  __forceinline vboolf16 operator |=( vboolf16& a, const vboolf16& b ) { return a = a | b; }
-  __forceinline vboolf16 operator ^=( vboolf16& a, const vboolf16& b ) { return a = a ^ b; }
+  __forceinline vboolf16& operator &=( vboolf16& a, const vboolf16& b ) { return a = a & b; }
+  __forceinline vboolf16& operator |=( vboolf16& a, const vboolf16& b ) { return a = a | b; }
+  __forceinline vboolf16& operator ^=( vboolf16& a, const vboolf16& b ) { return a = a ^ b; }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Comparison Operators + Select

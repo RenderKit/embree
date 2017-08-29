@@ -76,9 +76,9 @@ namespace embree
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vboolf8 operator&(const vboolf8 &a, const vboolf8 &b) { return _mm512_kand(a, b); }
-  __forceinline vboolf8 operator|(const vboolf8 &a, const vboolf8 &b) { return _mm512_kor(a, b); }
-  __forceinline vboolf8 operator^(const vboolf8 &a, const vboolf8 &b) { return _mm512_kxor(a, b); }
+  __forceinline vboolf8 operator &(const vboolf8 &a, const vboolf8 &b) { return _mm512_kand(a, b); }
+  __forceinline vboolf8 operator |(const vboolf8 &a, const vboolf8 &b) { return _mm512_kor(a, b); }
+  __forceinline vboolf8 operator ^(const vboolf8 &a, const vboolf8 &b) { return _mm512_kxor(a, b); }
 
   __forceinline vboolf8 andn(const vboolf8 &a, const vboolf8 &b) { return _mm512_kandn(b, a); }
 
@@ -86,9 +86,9 @@ namespace embree
   /// Assignment Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vboolf8 operator &=( vboolf8& a, const vboolf8& b ) { return a = a & b; }
-  __forceinline vboolf8 operator |=( vboolf8& a, const vboolf8& b ) { return a = a | b; }
-  __forceinline vboolf8 operator ^=( vboolf8& a, const vboolf8& b ) { return a = a ^ b; }
+  __forceinline vboolf8& operator &=( vboolf8& a, const vboolf8& b ) { return a = a & b; }
+  __forceinline vboolf8& operator |=( vboolf8& a, const vboolf8& b ) { return a = a | b; }
+  __forceinline vboolf8& operator ^=( vboolf8& a, const vboolf8& b ) { return a = a ^ b; }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Comparison Operators + Select
@@ -105,16 +105,16 @@ namespace embree
   /// Reduction Operations
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline int all (const vboolf8 &a) { return a.v == 0xff; }
-  __forceinline int any (const vboolf8 &a) { return _mm512_kortestz(a, a) == 0; }
-  __forceinline int none(const vboolf8 &a) { return _mm512_kortestz(a, a) != 0; }
+  __forceinline int all (const vboolf8& a) { return a.v == 0xff; }
+  __forceinline int any (const vboolf8& a) { return _mm512_kortestz(a, a) == 0; }
+  __forceinline int none(const vboolf8& a) { return _mm512_kortestz(a, a) != 0; }
 
-  __forceinline int all ( const vboolf8& valid, const vboolf8& b ) { return all((!valid) | b); }
-  __forceinline int any ( const vboolf8& valid, const vboolf8& b ) { return any( valid & b); }
-  __forceinline int none( const vboolf8& valid, const vboolf8& b ) { return none(valid & b); }
+  __forceinline int all (const vboolf8& valid, const vboolf8& b) { return all((!valid) | b); }
+  __forceinline int any (const vboolf8& valid, const vboolf8& b) { return any( valid & b); }
+  __forceinline int none(const vboolf8& valid, const vboolf8& b) { return none(valid & b); }
 
-  __forceinline size_t movemask( const vboolf8& a ) { return _mm512_kmov(a); }
-  __forceinline size_t popcnt  ( const vboolf8& a ) { return __popcnt(a.v); }
+  __forceinline size_t movemask(const vboolf8& a) { return _mm512_kmov(a); }
+  __forceinline size_t popcnt  (const vboolf8& a) { return __popcnt(a.v); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Conversion Operations
