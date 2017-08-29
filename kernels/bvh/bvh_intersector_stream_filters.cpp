@@ -46,6 +46,50 @@ namespace embree
         ray.instID = vintx::gather<1>((int*)&ray_i->instID, ofs);
 
 #if defined(__AVX512F__)
+        /* load and transpose: org.x, org.y, org.z, align0, dir.x, dir.y, dir.z, align1 */
+        const vfloat8 ab0  = vfloat8::load(&((Ray*)((char*)ray_i + ofs[ 0]))->org);
+        const vfloat8 ab1  = vfloat8::load(&((Ray*)((char*)ray_i + ofs[ 1]))->org);
+        const vfloat8 ab2  = vfloat8::load(&((Ray*)((char*)ray_i + ofs[ 2]))->org);
+        const vfloat8 ab3  = vfloat8::load(&((Ray*)((char*)ray_i + ofs[ 3]))->org);
+        const vfloat8 ab4  = vfloat8::load(&((Ray*)((char*)ray_i + ofs[ 4]))->org);
+        const vfloat8 ab5  = vfloat8::load(&((Ray*)((char*)ray_i + ofs[ 5]))->org);
+        const vfloat8 ab6  = vfloat8::load(&((Ray*)((char*)ray_i + ofs[ 6]))->org);
+        const vfloat8 ab7  = vfloat8::load(&((Ray*)((char*)ray_i + ofs[ 7]))->org);
+        const vfloat8 ab8  = vfloat8::load(&((Ray*)((char*)ray_i + ofs[ 8]))->org);
+        const vfloat8 ab9  = vfloat8::load(&((Ray*)((char*)ray_i + ofs[ 9]))->org);
+        const vfloat8 ab10 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[10]))->org);
+        const vfloat8 ab11 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[11]))->org);
+        const vfloat8 ab12 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[12]))->org);
+        const vfloat8 ab13 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[13]))->org);
+        const vfloat8 ab14 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[14]))->org);
+        const vfloat8 ab15 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[15]))->org);
+
+        vfloat16 unused0, unused1;
+        transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7,ab8,ab9,ab10,ab11,ab12,ab13,ab14,ab15,
+                  ray.org.x, ray.org.y, ray.org.z, unused0, ray.dir.x, ray.dir.y, ray.dir.z, unused1);
+
+        /* load and transpose: tnear, tfar, time, mask */
+        const vfloat4 c0  = vfloat4::load(&((Ray*)((char*)ray_i + ofs[ 0]))->tnear);
+        const vfloat4 c1  = vfloat4::load(&((Ray*)((char*)ray_i + ofs[ 1]))->tnear);
+        const vfloat4 c2  = vfloat4::load(&((Ray*)((char*)ray_i + ofs[ 2]))->tnear);
+        const vfloat4 c3  = vfloat4::load(&((Ray*)((char*)ray_i + ofs[ 3]))->tnear);
+        const vfloat4 c4  = vfloat4::load(&((Ray*)((char*)ray_i + ofs[ 4]))->tnear);
+        const vfloat4 c5  = vfloat4::load(&((Ray*)((char*)ray_i + ofs[ 5]))->tnear);
+        const vfloat4 c6  = vfloat4::load(&((Ray*)((char*)ray_i + ofs[ 6]))->tnear);
+        const vfloat4 c7  = vfloat4::load(&((Ray*)((char*)ray_i + ofs[ 7]))->tnear);
+        const vfloat4 c8  = vfloat4::load(&((Ray*)((char*)ray_i + ofs[ 8]))->tnear);
+        const vfloat4 c9  = vfloat4::load(&((Ray*)((char*)ray_i + ofs[ 9]))->tnear);
+        const vfloat4 c10 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[10]))->tnear);
+        const vfloat4 c11 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[11]))->tnear);
+        const vfloat4 c12 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[12]))->tnear);
+        const vfloat4 c13 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[13]))->tnear);
+        const vfloat4 c14 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[14]))->tnear);
+        const vfloat4 c15 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[15]))->tnear);
+
+        vfloat16 maskf;
+        transpose(c0,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14,c15,
+                  ray.tnear, ray.tfar, ray.time, maskf);
+        ray.mask = asInt(maskf);
 #elif defined(__AVX__)
         /* load and transpose: org.x, org.y, org.z, align0, dir.x, dir.y, dir.z, align1 */
         const vfloat8 ab0 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[0]))->org);
@@ -111,6 +155,21 @@ namespace embree
           scene->occluded (True, ray, context);
 
         /* scatter hits */
+#if defined(__AVX512F__)
+        vintx::scatter<1>((int*)&ray_i->geomID, ofs, ray.geomID);
+        if (intersect)
+        {
+          const vboolx valid = ray.geomID != RTC_INVALID_GEOMETRY_ID;
+          vfloatx::scatter<1>(valid, &ray_i->tfar, ofs, ray.tfar);
+          vfloatx::scatter<1>(valid, &ray_i->Ng.x, ofs, ray.Ng.x);
+          vfloatx::scatter<1>(valid, &ray_i->Ng.y, ofs, ray.Ng.y);
+          vfloatx::scatter<1>(valid, &ray_i->Ng.z, ofs, ray.Ng.z);
+          vfloatx::scatter<1>(valid, &ray_i->u, ofs, ray.u);
+          vfloatx::scatter<1>(valid, &ray_i->v, ofs, ray.v);
+          vintx::scatter<1>(valid, (int*)&ray_i->primID, ofs, ray.primID);
+          vintx::scatter<1>(valid, (int*)&ray_i->instID, ofs, ray.instID);
+        }
+#else
         for (size_t k = 0; k < VSIZEX; k++)
         {
           Ray* __restrict__ ray_k = (Ray*)((char*)ray_i + ofs[k]);
@@ -128,13 +187,14 @@ namespace embree
             ray_k->instID = ray.instID[k];
           }
         }
+#endif
       }
 
       /* tail packet */
       if (i < N)
       {
         const size_t Ntail = N - i;
-        const vboolx valid = vintx(step) < vintx(int(Ntail));
+        vboolx valid = vintx(step) < vintx(int(Ntail));
 
         Ray* __restrict__ ray_i = (Ray*)((char*)rayN + stride * i);
         RayK<VSIZEX> ray;
@@ -180,6 +240,21 @@ namespace embree
           scene->occluded (valid, ray, context);
 
         /* scatter hits */
+#if defined(__AVX512F__)
+        vintx::scatter<1>(valid, (int*)&ray_i->geomID, ofs, ray.geomID);
+        if (intersect)
+        {
+          valid &= ray.geomID != RTC_INVALID_GEOMETRY_ID;
+          vfloatx::scatter<1>(valid, &ray_i->tfar, ofs, ray.tfar);
+          vfloatx::scatter<1>(valid, &ray_i->Ng.x, ofs, ray.Ng.x);
+          vfloatx::scatter<1>(valid, &ray_i->Ng.y, ofs, ray.Ng.y);
+          vfloatx::scatter<1>(valid, &ray_i->Ng.z, ofs, ray.Ng.z);
+          vfloatx::scatter<1>(valid, &ray_i->u, ofs, ray.u);
+          vfloatx::scatter<1>(valid, &ray_i->v, ofs, ray.v);
+          vintx::scatter<1>(valid, (int*)&ray_i->primID, ofs, ray.primID);
+          vintx::scatter<1>(valid, (int*)&ray_i->instID, ofs, ray.instID);
+        }
+#else
         for (size_t k = 0; k < Ntail; k++)
         {
           Ray* __restrict__ ray_k = (Ray*)((char*)ray_i + ofs[k]);
@@ -197,6 +272,7 @@ namespace embree
             ray_k->instID = ray.instID[k];
           }
         }
+#endif
       }
 
 #elif 0
