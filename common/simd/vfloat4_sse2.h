@@ -57,6 +57,8 @@ namespace embree
     __forceinline vfloat( StepTy   ) : v(_mm_set_ps(3.0f, 2.0f, 1.0f, 0.0f)) {}
     __forceinline vfloat( NaNTy    ) : v(_mm_set1_ps(nan)) {}
 
+    __forceinline static vfloat4 undefined() { return _mm_undefined_ps(); }
+
     ////////////////////////////////////////////////////////////////////////////////
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
@@ -125,16 +127,56 @@ namespace embree
 #endif
     }
 
-    template<int scale>
-      static __forceinline void scatter(const vboolf4& mask, void* ptr, const vint4& ofs, const vfloat4& v)
+    template<int scale = 4>
+    static __forceinline vfloat4 gather(const float *const ptr, const vint4& index) {
+    #if defined(__AVX2__)
+      return _mm_i32gather_ps(index,ptr,scale);
+    #else
+      return vfloat4(
+        *(float*)(((char*)ptr)+scale*index[0]),
+        *(float*)(((char*)ptr)+scale*index[1]),
+        *(float*)(((char*)ptr)+scale*index[2]),
+        *(float*)(((char*)ptr)+scale*index[3]));
+    #endif
+    }
+
+    template<int scale = 4>
+    static __forceinline vfloat4 gather(const vboolf4& mask, const float *const ptr, const vint4& index) {
+      vfloat4 r = vfloat4::undefined();
+    #if defined(__AVX2__)
+      return _mm_mask_i32gather_ps(r,mask,index,ptr,scale);
+    #else
+      if (likely(mask[0])) r[0] = *(float*)(((char*)ptr)+scale*index[0]);
+      if (likely(mask[1])) r[1] = *(float*)(((char*)ptr)+scale*index[1]);
+      if (likely(mask[2])) r[2] = *(float*)(((char*)ptr)+scale*index[2]);
+      if (likely(mask[3])) r[3] = *(float*)(((char*)ptr)+scale*index[3]);
+      return r;
+    #endif
+    }
+
+    template<int scale = 4>
+    static __forceinline void scatter(void* ptr, const vint4& index, const vfloat4& v)
     {
 #if defined(__AVX512VL__)
-      _mm_mask_i32scatter_ps((float*)ptr,mask,ofs,v,scale);
+      _mm_i32scatter_ps((float*)ptr,index,v,scale);
 #else
-      if (likely(mask[0])) *(float*)(((char*)ptr)+scale*ofs[0]) = v[0];
-      if (likely(mask[1])) *(float*)(((char*)ptr)+scale*ofs[1]) = v[1];
-      if (likely(mask[2])) *(float*)(((char*)ptr)+scale*ofs[2]) = v[2];
-      if (likely(mask[3])) *(float*)(((char*)ptr)+scale*ofs[3]) = v[3];
+      *(float*)(((char*)ptr)+scale*index[0]) = v[0];
+      *(float*)(((char*)ptr)+scale*index[1]) = v[1];
+      *(float*)(((char*)ptr)+scale*index[2]) = v[2];
+      *(float*)(((char*)ptr)+scale*index[3]) = v[3];
+#endif
+    }
+
+    template<int scale = 4>
+    static __forceinline void scatter(const vboolf4& mask, void* ptr, const vint4& index, const vfloat4& v)
+    {
+#if defined(__AVX512VL__)
+      _mm_mask_i32scatter_ps((float*)ptr,mask,index,v,scale);
+#else
+      if (likely(mask[0])) *(float*)(((char*)ptr)+scale*index[0]) = v[0];
+      if (likely(mask[1])) *(float*)(((char*)ptr)+scale*index[1]) = v[1];
+      if (likely(mask[2])) *(float*)(((char*)ptr)+scale*index[2]) = v[2];
+      if (likely(mask[3])) *(float*)(((char*)ptr)+scale*index[3]) = v[3];
 #endif
     }
 
@@ -435,14 +477,16 @@ namespace embree
   /// Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vfloat4 unpacklo( const vfloat4& a, const vfloat4& b ) { return _mm_unpacklo_ps(a.v, b.v); }
-  __forceinline vfloat4 unpackhi( const vfloat4& a, const vfloat4& b ) { return _mm_unpackhi_ps(a.v, b.v); }
+  __forceinline vfloat4 unpacklo(const vfloat4& a, const vfloat4& b) { return _mm_unpacklo_ps(a.v, b.v); }
+  __forceinline vfloat4 unpackhi(const vfloat4& a, const vfloat4& b) { return _mm_unpackhi_ps(a.v, b.v); }
 
-  template<size_t i0, size_t i1, size_t i2, size_t i3> __forceinline const vfloat4 shuffle( const vfloat4& b ) {
-    return _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(b), _MM_SHUFFLE(i3, i2, i1, i0)));
+  template<int i0, int i1, int i2, int i3>
+  __forceinline const vfloat4 shuffle(const vfloat4& v) {
+    return _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(v), _MM_SHUFFLE(i3, i2, i1, i0)));
   }
 
-  template<size_t i0, size_t i1, size_t i2, size_t i3> __forceinline const vfloat4 shuffle( const vfloat4& a, const vfloat4& b ) {
+  template<int i0, int i1, int i2, int i3>
+  __forceinline const vfloat4 shuffle(const vfloat4& a, const vfloat4& b) {
     return _mm_shuffle_ps(a, b, _MM_SHUFFLE(i3, i2, i1, i0));
   }
 
@@ -453,32 +497,33 @@ namespace embree
 #endif
 
 #if defined(__SSE3__)
-  template<> __forceinline const vfloat4 shuffle<0, 0, 2, 2>( const vfloat4& b ) { return _mm_moveldup_ps(b); }
-  template<> __forceinline const vfloat4 shuffle<1, 1, 3, 3>( const vfloat4& b ) { return _mm_movehdup_ps(b); }
-  template<> __forceinline const vfloat4 shuffle<0, 1, 0, 1>( const vfloat4& b ) { return _mm_castpd_ps(_mm_movedup_pd(_mm_castps_pd(b))); }
+  template<> __forceinline const vfloat4 shuffle<0, 0, 2, 2>(const vfloat4& v) { return _mm_moveldup_ps(v); }
+  template<> __forceinline const vfloat4 shuffle<1, 1, 3, 3>(const vfloat4& v) { return _mm_movehdup_ps(v); }
+  template<> __forceinline const vfloat4 shuffle<0, 1, 0, 1>(const vfloat4& v) { return _mm_castpd_ps(_mm_movedup_pd(_mm_castps_pd(v))); }
 #endif
 
-  template<size_t i0> __forceinline const vfloat4 shuffle( const vfloat4& b ) {
-    return shuffle<i0,i0,i0,i0>(b);
+  template<int i>
+  __forceinline const vfloat4 shuffle(const vfloat4& v) {
+    return shuffle<i,i,i,i>(v);
   }
 
 #if defined (__SSE4_1__) && !defined(__GNUC__)
-  template<size_t i> __forceinline float extract   ( const vfloat4& a ) { return _mm_cvtss_f32(_mm_extract_ps(a,i)); }
+  template<int i> __forceinline float extract(const vfloat4& a) { return _mm_cvtss_f32(_mm_extract_ps(a,i)); }
 #else
-  template<size_t i> __forceinline float extract   ( const vfloat4& a ) { return _mm_cvtss_f32(shuffle<i,i,i,i>(a)); }
+  template<int i> __forceinline float extract(const vfloat4& a) { return _mm_cvtss_f32(shuffle<i,i,i,i>(a)); }
 #endif
-  template<>         __forceinline float extract<0>( const vfloat4& a ) { return _mm_cvtss_f32(a); }
+  template<> __forceinline float extract<0>(const vfloat4& a) { return _mm_cvtss_f32(a); }
 
 #if defined (__SSE4_1__)
-  template<size_t dst, size_t src, size_t clr> __forceinline const vfloat4 insert( const vfloat4& a, const vfloat4& b ) { return _mm_insert_ps(a, b, (dst << 4) | (src << 6) | clr); }
-  template<size_t dst, size_t src> __forceinline const vfloat4 insert( const vfloat4& a, const vfloat4& b ) { return insert<dst, src, 0>(a, b); }
-  template<size_t dst>             __forceinline const vfloat4 insert( const vfloat4& a, const float b ) { return insert<dst,      0>(a, _mm_set_ss(b)); }
+  template<int dst, int src, int clr> __forceinline const vfloat4 insert(const vfloat4& a, const vfloat4& b) { return _mm_insert_ps(a, b, (dst << 4) | (src << 6) | clr); }
+  template<int dst, int src> __forceinline const vfloat4 insert(const vfloat4& a, const vfloat4& b) { return insert<dst, src, 0>(a, b); }
+  template<int dst> __forceinline const vfloat4 insert(const vfloat4& a, const float b) { return insert<dst, 0>(a, _mm_set_ss(b)); }
 #else
-  template<size_t dst, size_t src> __forceinline const vfloat4 insert( const vfloat4& a, const vfloat4& b ) { vfloat4 c = a; c[dst] = b[src]; return c; }
-  template<size_t dst>             __forceinline const vfloat4 insert( const vfloat4& a, const float b ) { vfloat4 c = a; c[dst] = b; return c; }
+  template<int dst, int src> __forceinline const vfloat4 insert( const vfloat4& a, const vfloat4& b ) { vfloat4 c = a; c[dst] = b[src]; return c; }
+  template<int dst>  __forceinline const vfloat4 insert( const vfloat4& a, const float b ) { vfloat4 c = a; c[dst] = b; return c; }
 #endif
 
-  __forceinline float toScalar(const vfloat4& a) { return _mm_cvtss_f32(a); }
+  __forceinline float toScalar(const vfloat4& v) { return _mm_cvtss_f32(v); }
 
   __forceinline vfloat4 broadcast4f( const vfloat4& a, const size_t k ) {
     return vfloat4::broadcast(&a[k]);
@@ -593,11 +638,11 @@ namespace embree
   /// Euclidian Space Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline float dot ( const vfloat4& a, const vfloat4& b ) {
+  __forceinline float dot(const vfloat4& a, const vfloat4& b) {
     return reduce_add(a*b);
   }
 
-  __forceinline vfloat4 cross ( const vfloat4& a, const vfloat4& b )
+  __forceinline vfloat4 cross(const vfloat4& a, const vfloat4& b)
   {
     const vfloat4 a0 = a;
     const vfloat4 b0 = shuffle<1,2,0,3>(b);

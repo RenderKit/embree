@@ -18,7 +18,7 @@
 
 namespace embree
 {
-  /* 8-wide AVX-512 64bit double type */
+  /* 8-wide AVX-512 64-bit double type */
   template<>
     struct vdouble<8>
   {
@@ -278,34 +278,38 @@ namespace embree
   // Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  template<size_t i> 
-    __forceinline const vdouble8 shuffle( const vdouble8& a ) {
-    return _mm512_permute_pd(a, _MM_SHUFFLE(i, i, i, i));
-  }
-
-  template<int A, int B, int C, int D> 
-    __forceinline vdouble8 shuffle (const vdouble8& v) {
-    return _mm512_permute_pd(v,_MM_SHUFFLE(D,C,B,A)); 
+  template<int i0, int i1>
+  __forceinline vdouble8 shuffle(const vdouble8& v) {
+    return _mm512_permute_pd(v, (i1 << 7) | (i0 << 6) | (i1 << 5) | (i0 << 4) | (i1 << 3) | (i0 << 2) | (i1 << 1) | i0);
   }
 
   template<int i>
-    __forceinline vdouble8 shuffle4(const vdouble8& x) { 
-    return _mm512_shuffle_f64x2(x,x,_MM_SHUFFLE(i,i,i,i));
+  __forceinline vdouble8 shuffle(const vdouble8& v) {
+    return shuffle<i, i>(v);
   }
 
-  template<int A, int B>
-    __forceinline vdouble8 shuffle4(const vdouble8& x) { 
-    return _mm512_shuffle_f64x2(x,x,_MM_SHUFFLE(0,0,B,A));
+  template<int i0, int i1, int i2, int i3>
+  __forceinline vdouble8 shuffle(const vdouble8& v) {
+    return _mm512_permutex_pd(v, _MM_SHUFFLE(i3, i2, i1, i0));
+  }
+
+  template<int i0, int i1>
+  __forceinline vdouble8 shuffle4(const vdouble8& v) {
+    return _mm512_shuffle_f64x2(v, v, _MM_SHUFFLE(i1*2+1, i1*2, i0*2+1, i0*2));
+  }
+
+  template<int i>
+  __forceinline vdouble8 shuffle4(const vdouble8& v) {
+    return shuffle4<i, i>(v);
   }
   
   template<int i>
-    __forceinline vdouble8 align_shift_right(const vdouble8& a, const vdouble8& b)
-  {
-    return _mm512_castsi512_pd(_mm512_alignr_epi64(_mm512_castpd_si512(a),_mm512_castpd_si512(b),i));
+  __forceinline vdouble8 align_shift_right(const vdouble8& a, const vdouble8& b) {
+    return _mm512_castsi512_pd(_mm512_alignr_epi64(_mm512_castpd_si512(a), _mm512_castpd_si512(b), i));
   }
 
-  __forceinline double toScalar(const vdouble8& a) {
-    return _mm_cvtsd_f64(_mm512_castpd512_pd128(a));
+  __forceinline double toScalar(const vdouble8& v) {
+    return _mm_cvtsd_f64(_mm512_castpd512_pd128(v));
   }
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -316,13 +320,13 @@ namespace embree
   __forceinline vdouble8 vreduce_add4(vdouble8 x) { x = vreduce_add2(x); return x + shuffle<2,3,0,1>(x); }
   __forceinline vdouble8 vreduce_add (vdouble8 x) { x = vreduce_add4(x); return x + shuffle4<1,0>(x); }
 
-  __forceinline vdouble8 vreduce_min2(vdouble8 x) {                      return min(x,shuffle<1,0,3,2>(x)); }
-  __forceinline vdouble8 vreduce_min4(vdouble8 x) { x = vreduce_min2(x); return min(x,shuffle<2,3,0,1>(x)); }
-  __forceinline vdouble8 vreduce_min (vdouble8 x) { x = vreduce_min4(x); return min(x,shuffle4<1,0>(x)); }
+  __forceinline vdouble8 vreduce_min2(vdouble8 x) {                      return min(x, shuffle<1,0,3,2>(x)); }
+  __forceinline vdouble8 vreduce_min4(vdouble8 x) { x = vreduce_min2(x); return min(x, shuffle<2,3,0,1>(x)); }
+  __forceinline vdouble8 vreduce_min (vdouble8 x) { x = vreduce_min4(x); return min(x, shuffle4<1,0>(x)); }
 
-  __forceinline vdouble8 vreduce_max2(vdouble8 x) {                      return max(x,shuffle<1,0,3,2>(x)); }
-  __forceinline vdouble8 vreduce_max4(vdouble8 x) { x = vreduce_max2(x); return max(x,shuffle<2,3,0,1>(x)); }
-  __forceinline vdouble8 vreduce_max (vdouble8 x) { x = vreduce_max4(x); return max(x,shuffle4<1,0>(x)); }
+  __forceinline vdouble8 vreduce_max2(vdouble8 x) {                      return max(x, shuffle<1,0,3,2>(x)); }
+  __forceinline vdouble8 vreduce_max4(vdouble8 x) { x = vreduce_max2(x); return max(x, shuffle<2,3,0,1>(x)); }
+  __forceinline vdouble8 vreduce_max (vdouble8 x) { x = vreduce_max4(x); return max(x, shuffle4<1,0>(x)); }
 
   __forceinline double reduce_add(const vdouble8& v) { return toScalar(vreduce_add(v)); }
   __forceinline double reduce_min(const vdouble8& v) { return toScalar(vreduce_min(v)); }
@@ -333,11 +337,11 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline vdouble8 permute(const vdouble8& v, const vllong8& index) {
-    return _mm512_permutexvar_pd(index,v);
+    return _mm512_permutexvar_pd(index, v);
   }
 
   __forceinline vdouble8 reverse(const vdouble8& a) {
-    return permute(a,vllong8(reverse_step));
+    return permute(a, vllong8(reverse_step));
   }
 
   ////////////////////////////////////////////////////////////////////////////////

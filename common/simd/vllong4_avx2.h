@@ -18,17 +18,7 @@
 
 namespace embree
 { 
-#ifndef _MM_SHUF_PERM2
-#define _MM_SHUF_PERM2(e3, e2, e1, e0) \
-  ((int)(((e3)<<3) | ((e2)<<2) | ((e1)<<1) | (e0)))
-#endif
-
-#ifndef _MM_SHUF_PERM3
-#define _MM_SHUF_PERM3(e1, e0) \
-  ((int)(((e1)<<4) | (e0)))
-#endif
-
-  /* 4-wide AVX2 64bit long long type */
+  /* 4-wide AVX2 64-bit long long type */
   template<>
     struct vllong<4>
   {
@@ -312,15 +302,23 @@ namespace embree
   // Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  template<int B, int A> __forceinline vllong4 shuffle   (const vllong4& v) { return _mm256_castpd_si256(_mm256_permute_pd(_mm256_castsi256_pd(v),(int)_MM_SHUF_PERM2(B,A,B,A))); }
-  template<int A>        __forceinline vllong4 shuffle   (const vllong4& x) { return shuffle<A,A>(x); }
+  template<int i0, int i1>
+  __forceinline vllong4 shuffle(const vllong4& v) {
+    return _mm256_castpd_si256(_mm256_permute_pd(_mm256_castsi256_pd(v), (i1 << 3) | (i0 << 2) | (i1 << 1) | i0));
+  }
 
-  template<int B, int A> __forceinline vllong4 shuffle2  (const vllong4& v) { return _mm256_castpd_si256(_mm256_permute2f128_pd(_mm256_castsi256_pd(v),v,(int)_MM_SHUF_PERM3(B,A))); }
+  template<int i>
+  __forceinline vllong4 shuffle(const vllong4& v) {
+    return shuffle<i, i>(v);
+  }
 
+  template<int i0, int i1>
+  __forceinline vllong4 shuffle2(const vllong4& v) {
+    return _mm256_castpd_si256(_mm256_permute2f128_pd(_mm256_castsi256_pd(v), _mm256_castsi256_pd(v), (i1 << 4) | i0));
+  }
 
-  __forceinline long long toScalar(const vllong4& a)
-  {
-    return _mm_cvtsi128_si64(_mm256_castsi256_si128(a));
+  __forceinline long long toScalar(const vllong4& v) {
+    return _mm_cvtsi128_si64(_mm256_castsi256_si128(v));
   }
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -328,14 +326,14 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
   
 
-  __forceinline vllong4 vreduce_and2(const vllong4& x) { return x & shuffle<0,1>(x); }
-  __forceinline vllong4 vreduce_and (const vllong4& y) { const vllong4 x = vreduce_and2(y); return x & shuffle2<0,1>(x); }
+  __forceinline vllong4 vreduce_and2(const vllong4& x) { return x & shuffle<1,0>(x); }
+  __forceinline vllong4 vreduce_and (const vllong4& y) { const vllong4 x = vreduce_and2(y); return x & shuffle2<1,0>(x); }
 
-  __forceinline vllong4 vreduce_or2(const vllong4& x) { return x | shuffle<0,1>(x); }
-  __forceinline vllong4 vreduce_or (const vllong4& y) { const vllong4 x = vreduce_or2(y); return x | shuffle2<0,1>(x); }
+  __forceinline vllong4 vreduce_or2(const vllong4& x) { return x | shuffle<1,0>(x); }
+  __forceinline vllong4 vreduce_or (const vllong4& y) { const vllong4 x = vreduce_or2(y); return x | shuffle2<1,0>(x); }
 
-  __forceinline vllong4 vreduce_add2(const vllong4& x) { return x + shuffle<0,1>(x); }
-  __forceinline vllong4 vreduce_add (const vllong4& y) { const vllong4 x = vreduce_add2(y); return x + shuffle2<0,1>(x); }
+  __forceinline vllong4 vreduce_add2(const vllong4& x) { return x + shuffle<1,0>(x); }
+  __forceinline vllong4 vreduce_add (const vllong4& y) { const vllong4 x = vreduce_add2(y); return x + shuffle2<1,0>(x); }
 
   __forceinline long long reduce_add(const vllong4& a) { return toScalar(vreduce_add(a)); }
   __forceinline long long reduce_or (const vllong4& a) { return toScalar(vreduce_or(a)); }

@@ -416,16 +416,18 @@ namespace embree
           new (&pre[i]) Precalculations(*rays[i], bvh);
         }
 
+        const NearFarPreCompute pc(ray_ctx[0].rdir);
+
         stack[0].ptr  = BVH::invalidNode;
         stack[0].mask = (size_t)-1;
+        stack[0].dist = neg_inf;
         stack[1].ptr  = bvh->root;
         stack[1].mask = m_active;
+        stack[1].dist = neg_inf;
 
         ///////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////
-
-        const NearFarPreCompute pc(ray_ctx[0].rdir);
 
         StackItemMask* stackPtr = stack + 2;
 
@@ -434,8 +436,28 @@ namespace embree
           /*! pop next node */
           STAT3(normal.trav_stack_pop,1,1,1);
           stackPtr--;
+
           NodeRef cur = NodeRef(stackPtr->ptr);
+          if (unlikely(cur == BVH::invalidNode)) {
+            break;
+          }
+
           size_t m_trav_active = stackPtr->mask;
+
+#if 1
+          /* culling */
+          size_t active_bits = m_trav_active;
+          do
+          {
+            const size_t i = __bscf(active_bits);
+            if (likely(*(float*)&stackPtr->dist <= ray_ctx[i].tfar()))
+              goto trav;
+            m_trav_active = active_bits;
+          } while (active_bits);
+          continue;
+        trav:
+#endif
+
           assert(m_trav_active);
 
           const vfloat<Nx> inf(pos_inf);

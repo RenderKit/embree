@@ -63,6 +63,8 @@ namespace embree
     __forceinline vfloat( StepTy   ) : v(_mm256_set_ps(7.0f, 6.0f, 5.0f, 4.0f, 3.0f, 2.0f, 1.0f, 0.0f)) {}
     __forceinline vfloat( NaNTy    ) : v(_mm256_set1_ps(nan)) {}
 
+    __forceinline static vfloat8 undefined() { return _mm256_undefined_ps(); }
+
     ////////////////////////////////////////////////////////////////////////////////
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
@@ -123,8 +125,60 @@ namespace embree
       _mm256_stream_ps((float*)ptr,v);
     }
 
-    template<int scale>
-      static __forceinline void scatter(const vboolf8& mask, void* ptr, const vint8& ofs, const vfloat8& v)
+    template<int scale = 4>
+    static __forceinline vfloat8 gather(const float *const ptr, const vint8& index) {
+    #if defined(__AVX2__)
+      return _mm256_i32gather_ps(ptr,index,scale);
+    #else
+      return vfloat8(
+          *(float*)(((char*)ptr)+scale*index[0]),
+          *(float*)(((char*)ptr)+scale*index[1]),
+          *(float*)(((char*)ptr)+scale*index[2]),
+          *(float*)(((char*)ptr)+scale*index[3]),
+          *(float*)(((char*)ptr)+scale*index[4]),
+          *(float*)(((char*)ptr)+scale*index[5]),
+          *(float*)(((char*)ptr)+scale*index[6]),
+          *(float*)(((char*)ptr)+scale*index[7]));
+    #endif
+    }
+
+    template<int scale = 4>
+    static __forceinline vfloat8 gather(const vboolf8& mask, const float *const ptr, const vint8& index) {
+      vfloat8 r = vfloat8::undefined();
+    #if defined(__AVX2__)
+      return _mm256_mask_i32gather_ps(r,ptr,index,mask,scale);
+    #else
+      if (likely(mask[0])) r[0] = *(float*)(((char*)ptr)+scale*index[0]);
+      if (likely(mask[1])) r[1] = *(float*)(((char*)ptr)+scale*index[1]);
+      if (likely(mask[2])) r[2] = *(float*)(((char*)ptr)+scale*index[2]);
+      if (likely(mask[3])) r[3] = *(float*)(((char*)ptr)+scale*index[3]);
+      if (likely(mask[4])) r[4] = *(float*)(((char*)ptr)+scale*index[4]);
+      if (likely(mask[5])) r[5] = *(float*)(((char*)ptr)+scale*index[5]);
+      if (likely(mask[6])) r[6] = *(float*)(((char*)ptr)+scale*index[6]);
+      if (likely(mask[7])) r[7] = *(float*)(((char*)ptr)+scale*index[7]);
+      return r;
+    #endif
+    }
+
+    template<int scale = 4>
+    static __forceinline void scatter(void* ptr, const vint8& ofs, const vfloat8& v)
+    {
+#if defined(__AVX512VL__)
+      _mm256_i32scatter_ps((float*)ptr,ofs,v,scale);
+#else
+      *(float*)(((char*)ptr)+scale*ofs[0]) = v[0];
+      *(float*)(((char*)ptr)+scale*ofs[1]) = v[1];
+      *(float*)(((char*)ptr)+scale*ofs[2]) = v[2];
+      *(float*)(((char*)ptr)+scale*ofs[3]) = v[3];
+      *(float*)(((char*)ptr)+scale*ofs[4]) = v[4];
+      *(float*)(((char*)ptr)+scale*ofs[5]) = v[5];
+      *(float*)(((char*)ptr)+scale*ofs[6]) = v[6];
+      *(float*)(((char*)ptr)+scale*ofs[7]) = v[7];
+#endif
+    }
+
+    template<int scale = 4>
+    static __forceinline void scatter(const vboolf8& mask, void* ptr, const vint8& ofs, const vfloat8& v)
     {
 #if defined(__AVX512VL__)
       _mm256_mask_i32scatter_ps((float*)ptr,mask,ofs,v,scale);
@@ -414,62 +468,67 @@ namespace embree
   /// Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vfloat8 unpacklo( const vfloat8& a, const vfloat8& b ) { return _mm256_unpacklo_ps(a.v, b.v); }
-  __forceinline vfloat8 unpackhi( const vfloat8& a, const vfloat8& b ) { return _mm256_unpackhi_ps(a.v, b.v); }
+  __forceinline vfloat8 unpacklo(const vfloat8& a, const vfloat8& b) { return _mm256_unpacklo_ps(a.v, b.v); }
+  __forceinline vfloat8 unpackhi(const vfloat8& a, const vfloat8& b) { return _mm256_unpackhi_ps(a.v, b.v); }
 
-  template<size_t i> __forceinline const vfloat8 shuffle( const vfloat8& a ) {
-    return _mm256_permute_ps(a, _MM_SHUFFLE(i, i, i, i));
+  template<int i>
+  __forceinline const vfloat8 shuffle(const vfloat8& v) {
+    return _mm256_permute_ps(v, _MM_SHUFFLE(i, i, i, i));
   }
 
-  template<size_t i0, size_t i1> __forceinline const vfloat8 shuffle4( const vfloat8& a ) {
-    return _mm256_permute2f128_ps(a, a, (i1 << 4) | (i0 << 0));
+  template<int i0, int i1>
+  __forceinline const vfloat8 shuffle4(const vfloat8& v) {
+    return _mm256_permute2f128_ps(v, v, (i1 << 4) | (i0 << 0));
   }
 
-  template<size_t i0, size_t i1> __forceinline const vfloat8 shuffle4( const vfloat8& a,  const vfloat8& b) {
+  template<int i0, int i1>
+  __forceinline const vfloat8 shuffle4(const vfloat8& a, const vfloat8& b) {
     return _mm256_permute2f128_ps(a, b, (i1 << 4) | (i0 << 0));
   }
 
-  template<size_t i0, size_t i1, size_t i2, size_t i3> __forceinline const vfloat8 shuffle( const vfloat8& a ) {
-    return _mm256_permute_ps(a, _MM_SHUFFLE(i3, i2, i1, i0));
+  template<int i0, int i1, int i2, int i3>
+  __forceinline const vfloat8 shuffle(const vfloat8& v) {
+    return _mm256_permute_ps(v, _MM_SHUFFLE(i3, i2, i1, i0));
   }
 
-  template<size_t i0, size_t i1, size_t i2, size_t i3> __forceinline const vfloat8 shuffle( const vfloat8& a, const vfloat8& b ) {
+  template<int i0, int i1, int i2, int i3>
+  __forceinline const vfloat8 shuffle(const vfloat8& a, const vfloat8& b) {
     return _mm256_shuffle_ps(a, b, _MM_SHUFFLE(i3, i2, i1, i0));
   }
 
-  template<> __forceinline const vfloat8 shuffle<0, 0, 2, 2>( const vfloat8& b ) { return _mm256_moveldup_ps(b); }
-  template<> __forceinline const vfloat8 shuffle<1, 1, 3, 3>( const vfloat8& b ) { return _mm256_movehdup_ps(b); }
-  template<> __forceinline const vfloat8 shuffle<0, 1, 0, 1>( const vfloat8& b ) { return _mm256_castpd_ps(_mm256_movedup_pd(_mm256_castps_pd(b))); }
+  template<> __forceinline const vfloat8 shuffle<0, 0, 2, 2>(const vfloat8& v) { return _mm256_moveldup_ps(v); }
+  template<> __forceinline const vfloat8 shuffle<1, 1, 3, 3>(const vfloat8& v) { return _mm256_movehdup_ps(v); }
+  template<> __forceinline const vfloat8 shuffle<0, 1, 0, 1>(const vfloat8& v) { return _mm256_castpd_ps(_mm256_movedup_pd(_mm256_castps_pd(v))); }
 
   __forceinline const vfloat8 broadcast(const float* ptr) { return _mm256_broadcast_ss(ptr); }
   template<size_t i> __forceinline const vfloat8 insert4(const vfloat8& a, const vfloat4& b) { return _mm256_insertf128_ps(a, b, i); }
   template<size_t i> __forceinline const vfloat4 extract4   (const vfloat8& a) { return _mm256_extractf128_ps(a, i); }
   template<>         __forceinline const vfloat4 extract4<0>(const vfloat8& a) { return _mm256_castps256_ps128(a);   }
 
-  __forceinline float toScalar(const vfloat8& a) { return _mm_cvtss_f32(_mm256_castps256_ps128(a)); }
+  __forceinline float toScalar(const vfloat8& v) { return _mm_cvtss_f32(_mm256_castps256_ps128(v)); }
 
-  __forceinline vfloat8 assign( const vfloat4& a ) { return _mm256_castps128_ps256(a); }
+  __forceinline vfloat8 assign(const vfloat4& a) { return _mm256_castps128_ps256(a); }
 
 #if defined (__AVX2__)
-  __forceinline vfloat8 permute(const vfloat8 &a, const __m256i &index) {
-    return _mm256_permutevar8x32_ps(a,index);
+  __forceinline vfloat8 permute(const vfloat8& a, const __m256i& index) {
+    return _mm256_permutevar8x32_ps(a, index);
   }
 #endif
 
 #if defined(__AVX512VL__)
   template<int i>
-  __forceinline vfloat8 align_shift_right(const vfloat8 &a, const vfloat8 &b) {
+  __forceinline vfloat8 align_shift_right(const vfloat8& a, const vfloat8& b) {
     return _mm256_castsi256_ps(_mm256_alignr_epi32(_mm256_castps_si256(a), _mm256_castps_si256(b), i));
   }  
 #endif
 
 #if defined (__AVX_I__)
   template<const int mode>
-  __forceinline vint4 convert_to_hf16(const vfloat8 &a) {
-    return _mm256_cvtps_ph(a,mode);
+  __forceinline vint4 convert_to_hf16(const vfloat8& a) {
+    return _mm256_cvtps_ph(a, mode);
   }
 
-  __forceinline vfloat8 convert_from_hf16(const vint4 &a) {
+  __forceinline vfloat8 convert_from_hf16(const vint4& a) {
     return _mm256_cvtph_ps(a);
   }
 #endif
@@ -497,6 +556,7 @@ namespace embree
   __forceinline vint8 floori (const vfloat8& a) {
     return vint8(floor(a));
   }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Transpose
   ////////////////////////////////////////////////////////////////////////////////
@@ -537,6 +597,12 @@ namespace embree
     c5 = shuffle4<1,3>(h1,h5);
     c6 = shuffle4<1,3>(h2,h6);
     c7 = shuffle4<1,3>(h3,h7);
+  }
+
+  __forceinline void transpose(const vfloat4& r0, const vfloat4& r1, const vfloat4& r2, const vfloat4& r3, const vfloat4& r4, const vfloat4& r5, const vfloat4& r6, const vfloat4& r7,
+                               vfloat8& c0, vfloat8& c1, vfloat8& c2, vfloat8& c3)
+  {
+    transpose(vfloat8(r0,r4), vfloat8(r1,r5), vfloat8(r2,r6), vfloat8(r3,r7), c0, c1, c2, c3);
   }
 
   __forceinline void transpose(const vfloat4& r0, const vfloat4& r1, const vfloat4& r2, const vfloat4& r3, const vfloat4& r4, const vfloat4& r5, const vfloat4& r6, const vfloat4& r7,

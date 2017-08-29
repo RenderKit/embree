@@ -64,8 +64,20 @@ namespace embree
       v = _mm512_broadcast_i32x4(i);
     }
 
+    __forceinline vint(const vint4& a, const vint4& b, const vint4& c, const vint4& d) {
+      v = _mm512_castsi128_si512(a);
+      v = _mm512_inserti32x4(v, b, 1);
+      v = _mm512_inserti32x4(v, c, 2);
+      v = _mm512_inserti32x4(v, d, 3);
+    }
+
     __forceinline vint(const vint8& i) {
       v = _mm512_castps_si512(_mm512_castpd_ps(_mm512_broadcast_f64x4(_mm256_castsi256_pd(i))));
+    }
+
+    __forceinline vint(const vint8& a, const vint8& b) {
+      v = _mm512_castsi256_si512(a);
+      v = _mm512_inserti64x4(v, b, 1);
     }
    
     __forceinline explicit vint(const __m512& f) {
@@ -136,10 +148,34 @@ namespace embree
       return _mm512_mask_expand_epi32(b,mask,a);
     }
 
+    template<int scale = 4>
+    static __forceinline vint16 gather(const int *const ptr, const vint16& index) {
+      return _mm512_i32gather_epi32(index,ptr,scale);
+    }
+
+    template<int scale = 4>
+    static __forceinline vint16 gather(const vboolf16& mask, const int *const ptr, const vint16& index) {
+      return _mm512_mask_i32gather_epi32(_mm512_undefined_epi32(),mask,index,ptr,scale);
+    }
+
+    template<int scale = 4>
+    static __forceinline vint16 gather(const vboolf16& mask, vint16& dest, const int *const ptr, const vint16& index) {
+      return _mm512_mask_i32gather_epi32(dest,mask,index,ptr,scale);
+    }
+
+    template<int scale = 4>
+    static __forceinline void scatter(int *const ptr, const vint16& index, const vint16& v) {
+      _mm512_i32scatter_epi32((int*)ptr,index,v,scale);
+    }
+
+    template<int scale = 4>
+    static __forceinline void scatter(const vboolf16& mask,int *const ptr, const vint16& index, const vint16& v) {
+      _mm512_mask_i32scatter_epi32((int*)ptr,mask,index,v,scale);
+    }
+
     static __forceinline vint16 broadcast64bit(size_t v) {
       return _mm512_set1_epi64(v);
     }
-
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
@@ -305,38 +341,36 @@ namespace embree
   // Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vint16 unpacklo( const vint16& a, const vint16& b ) { return _mm512_unpacklo_epi32(a.v, b.v); }
-  __forceinline vint16 unpackhi( const vint16& a, const vint16& b ) { return _mm512_unpackhi_epi32(a.v, b.v); }
+  __forceinline vint16 unpacklo(const vint16& a, const vint16& b) { return _mm512_unpacklo_epi32(a.v, b.v); }
+  __forceinline vint16 unpackhi(const vint16& a, const vint16& b) { return _mm512_unpackhi_epi32(a.v, b.v); }
 
-  template<size_t i> 
-    __forceinline const vint16 shuffle( const vint16& a ) {
-    return _mm512_castps_si512(_mm512_permute_ps(_mm512_castsi512_ps(a), _MM_SHUFFLE(i, i, i, i)));
+  template<int i>
+    __forceinline vint16 shuffle(const vint16& v) {
+    return _mm512_castps_si512(_mm512_permute_ps(_mm512_castsi512_ps(v), _MM_SHUFFLE(i, i, i, i)));
   }
 
-  template<int A, int B, int C, int D> 
-    __forceinline vint16 shuffle (const vint16& v) {
-    return _mm512_castps_si512(_mm512_permute_ps(_mm512_castsi512_ps(v),_MM_SHUFFLE(D,C,B,A))); 
+  template<int i0, int i1, int i2, int i3>
+  __forceinline vint16 shuffle(const vint16& v) {
+    return _mm512_castps_si512(_mm512_permute_ps(_mm512_castsi512_ps(v), _MM_SHUFFLE(i3, i2, i1, i0)));
   }
 
   template<int i>
-    __forceinline vint16 shuffle4(const vint16& x) { 
-    return _mm512_castps_si512(_mm512_shuffle_f32x4(_mm512_castsi512_ps(x),_mm512_castsi512_ps(x),_MM_SHUFFLE(i,i,i,i)));
+  __forceinline vint16 shuffle4(const vint16& v) {
+    return _mm512_castps_si512(_mm512_shuffle_f32x4(_mm512_castsi512_ps(v), _mm512_castsi512_ps(v), _MM_SHUFFLE(i, i, i, i)));
   }
 
-  template<int A, int B, int C, int D>
-    __forceinline vint16 shuffle4(const vint16& x) { 
-    return _mm512_castps_si512(_mm512_shuffle_f32x4(_mm512_castsi512_ps(x),_mm512_castsi512_ps(x),_MM_SHUFFLE(D,C,B,A)));
+  template<int i0, int i1, int i2, int i3>
+  __forceinline vint16 shuffle4(const vint16& v) {
+    return _mm512_castps_si512(_mm512_shuffle_f32x4(_mm512_castsi512_ps(v), _mm512_castsi512_ps(v), _MM_SHUFFLE(i3, i2, i1, i0)));
   }
 
   template<int i>
-    __forceinline vint16 align_shift_right(const vint16& a, const vint16& b)
-  {
-    return _mm512_alignr_epi32(a,b,i); 
+  __forceinline vint16 align_shift_right(const vint16& a, const vint16& b) {
+    return _mm512_alignr_epi32(a, b, i);
   };
 
-  __forceinline int toScalar(const vint16& a)
-  {
-    return _mm_cvtsi128_si32(_mm512_castsi512_si128(a));
+  __forceinline int toScalar(const vint16& v) {
+    return _mm_cvtsi128_si32(_mm512_castsi512_si128(v));
   }
 
   template<int i> __forceinline const vint16 insert4(const vint16& a, const vint4& b) { return _mm512_inserti32x4(a, b, i); }
@@ -401,35 +435,15 @@ namespace embree
   /// Memory load and store operations
   ////////////////////////////////////////////////////////////////////////////////
 
-  template<int scale = 4>
-  __forceinline vint16 gather16i(const vboolf16& mask, const int *const ptr, const vint16& index) {
-    return _mm512_mask_i32gather_epi32(_mm512_undefined_epi32(),mask,index,ptr,scale);
-  }
-  
-  template<int scale = 4>
-  __forceinline vint16 gather16i(const vboolf16& mask, vint16& dest, const int *const ptr, const vint16& index) {
-    return _mm512_mask_i32gather_epi32(dest,mask,index,ptr,scale);
-  }
-  
-  template<int scale = 4>
-  __forceinline void scatter16i(const vboolf16& mask,int *const ptr, const vint16& index,const vint16& v) {
-    _mm512_mask_i32scatter_epi32((int*)ptr,mask,index,v,scale);
-  }
-
-  __forceinline vint16 conflict16i(const vint16& index)
+  __forceinline vint16 conflict(const vint16& index)
   {
     return _mm512_conflict_epi32(index);
   }
 
-  __forceinline vint16 conflict16i(const vboolf16& mask, vint16& dest, const vint16& index)
+  __forceinline vint16 conflict(const vboolf16& mask, vint16& dest, const vint16& index)
   {
     return _mm512_mask_conflict_epi32(dest,mask,index);
   }    
-
-  __forceinline void compactustore16i_low(const vboolf16 mask, void *addr, const vint16& reg) {
-    _mm512_mask_compressstoreu_epi32(addr,mask,reg);
-  }
-  
 
   __forceinline vint16 convert_uint32_t(const __m512& f) {
     return _mm512_cvtps_epu32(f);
