@@ -40,8 +40,27 @@ namespace embree {
 #define LEVEL_FACTOR    64.0f
 #define MAX_PATH_LENGTH  8
 
+#define FILTER_TEST 1
+
 bool g_subdiv_mode = false;
 unsigned int keyframeID = 0;
+
+struct GBufferEntry {
+  GBufferEntry() {}
+
+  Vec3fa diffuse_brdf;
+  Vec3fa direct_illum;
+  Vec3fa indirect_illum;
+  float distance;
+
+  __forceinline void clear() {
+    diffuse_brdf = Vec3fa(0.0f);
+    direct_illum = Vec3fa(0.0f);
+    indirect_illum = Vec3fa(0.0f);
+    distance = inf;
+  };
+
+};
 
 struct BRDF
 {
@@ -885,6 +904,10 @@ Vec3fa g_accu_p;
 extern "C" bool g_changed;
 extern "C" int g_instancing_mode;
 
+/* g-buffer */
+GBufferEntry *gbuffer = nullptr;
+unsigned int gbuffer_width = 0;
+unsigned int gbuffer_height = 0;
 
 bool g_animation = true;
 bool g_use_smooth_normals = false;
@@ -1485,6 +1508,151 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
   return L;
 }
 
+
+
+  GBufferEntry renderGBufferFunction(float x, float y, RandomSampler& sampler, const ISPCCamera& camera, RayStats& stats)
+{
+  GBufferEntry gb;
+  gb.clear();
+
+  /* radiance accumulator and weight */
+  Vec3fa L = Vec3fa(0.0f);
+  Vec3fa Lw = Vec3fa(1.0f);
+  Medium medium = make_Medium_Vacuum();
+  float time = RandomSampler_get1D(sampler);
+
+  /* initialize ray */
+  RTCRay ray = RTCRay(Vec3fa(camera.xfm.p),
+                      Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)),0.0f,inf,time);
+
+  DifferentialGeometry dg;
+
+  /* iterative path tracer loop */
+  for (int i=0; i<MAX_PATH_LENGTH; i++)
+  {
+    /* terminate if contribution too low */
+    if (max(Lw.x,max(Lw.y,Lw.z)) < 0.01f)
+      break;
+
+    /* intersect ray with scene */
+    RTCIntersectContext context;
+    context.flags = (i == 0) ? g_iflags_coherent : g_iflags_incoherent;
+    rtcIntersect1Ex(g_scene,&context,ray);
+    RayStats_addRay(stats);
+    const Vec3fa wo = neg(ray.dir);
+
+    /* invoke environment lights if nothing hit */
+    if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
+    {
+      //L = L + Lw*Vec3fa(1.0f);
+
+      /* iterate over all lights */
+      for (size_t i=0; i<g_ispc_scene->numLights; i++)
+      {
+        const Light* l = g_ispc_scene->lights[i];
+        Light_EvalRes le = l->eval(l,dg,ray.dir);
+        L = L + Lw*le.value;
+      }
+
+      break;
+    }
+    Vec3fa Ns = normalize(ray.Ng);
+
+    if (g_use_smooth_normals)
+      if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
+    {
+      Vec3fa dPdu,dPdv;
+      unsigned int geomID = ray.geomID; {
+        rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu.x,&dPdv.x,3);
+      }
+      Ns = normalize(cross(dPdv,dPdu));
+    }
+
+    /* compute differential geometry */
+    dg.geomID = ray.geomID;
+    dg.primID = ray.primID;
+    dg.u = ray.u;
+    dg.v = ray.v;
+    dg.P  = ray.org+ray.tfar*ray.dir;
+    dg.Ng = ray.Ng;
+    dg.Ns = Ns;
+    int materialID = postIntersect(ray,dg);
+    dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
+    dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
+
+    /*! Compute  simple volumetric effect. */
+    Vec3fa c = Vec3fa(1.0f);
+    const Vec3fa transmission = medium.transmission;
+    if (ne(transmission,Vec3fa(1.0f)))
+      c = c * pow(transmission,ray.tfar);
+
+    /* calculate BRDF */
+    BRDF brdf;
+    int numMaterials = g_ispc_scene->numMaterials;
+    ISPCMaterial** material_array = &g_ispc_scene->materials[0];
+    Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
+
+    /* sample BRDF at hit point */
+    Sample3f wi1;
+    c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, RandomSampler_get2D(sampler));
+
+    /* fill gbuffer */
+    if (i == 0)
+    {
+      gb.distance = ray.tfar;      
+    }
+
+    /* iterate over lights */
+    for (size_t i=0; i<g_ispc_scene->numLights; i++)
+    {
+      const Light* l = g_ispc_scene->lights[i];
+      Light_SampleRes ls = l->sample(l,dg,RandomSampler_get2D(sampler));
+      if (ls.pdf <= 0.0f) continue;
+      RTCRay shadow = RTCRay(dg.P,ls.dir,dg.tnear_eps,ls.dist,time); shadow.transparency = Vec3fa(1.0f);
+      rtcOccluded1Ex(g_scene,&context,shadow);
+      RayStats_addShadowRay(stats);
+      //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
+      const Vec3fa mat_eval = Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,ls.dir);
+
+      /* fill gbuffer */
+      if (i == 0)
+      {
+        gb.diffuse_brdf += mat_eval;
+      }
+
+      if (max(max(shadow.transparency.x,shadow.transparency.y),shadow.transparency.z) > 0.0f)
+      {
+        const Vec3fa illum = Lw*ls.weight*shadow.transparency;
+        L = L + illum*mat_eval;
+
+        /* fill gbuffer */
+        if (i == 0)
+        {
+          gb.direct_illum += illum;
+        }          
+        else
+        {
+          gb.indirect_illum += illum*mat_eval;          
+        }
+      }
+    }
+    if (i == 0)
+    {
+      gb.diffuse_brdf *= 1.0f / (float)g_ispc_scene->numLights;
+    }
+
+    if (wi1.pdf <= 1E-4f /* 0.0f */) break;
+    Lw = Lw*c/wi1.pdf;
+
+    /* setup secondary ray */
+    float sign = dot(wi1.v,dg.Ng) < 0.0f ? -1.0f : 1.0f;
+    dg.P = dg.P + sign*dg.tnear_eps*dg.Ng;
+    ray = RTCRay(dg.P,normalize(wi1.v),dg.tnear_eps,inf,time);
+  }
+  return gb;
+}
+
+
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
@@ -1526,8 +1694,15 @@ void renderTileStandard(int taskIndex,
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* calculate pixel color */
+#if FILTER_TEST == 1
+    RandomSampler sampler;
+    RandomSampler_init(sampler, (int)x, (int)y, 0);
+    /* calculate pixel color */
+    float fx = x + RandomSampler_get1D(sampler);
+    float fy = y + RandomSampler_get1D(sampler);
+    gbuffer[y*width+x] = renderGBufferFunction(fx,fy,sampler,camera,g_stats[threadIndex]);
+#else
     Vec3fa color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
-
     /* write color to framebuffer */
     Vec3fa accu_color = g_accu[y*width+x] + Vec3fa(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
     float f = rcp(max(0.001f,accu_color.w));
@@ -1535,6 +1710,7 @@ void renderTileStandard(int taskIndex,
     unsigned int g = (unsigned int) (255.0f * clamp(accu_color.y*f,0.0f,1.0f));
     unsigned int b = (unsigned int) (255.0f * clamp(accu_color.z*f,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
+#endif
   }
 }
 
@@ -1638,12 +1814,61 @@ extern "C" void device_init (char* cfg)
 
 } // device_init
 
+  __forceinline float distance(int x, int y, int i, int j) {
+    const float dx = (float)(x-i);
+    const float dy = (float)(y-j);
+    return sqrtf(dx*dx + dy*dy);
+  }
+
+  template<class T>
+  __forceinline T gaussian(T x, float sigma) {
+    return exp(-(x*x)/(2.0f * sigma * sigma)) / (2.0f * M_PI * sigma * sigma);    
+  }
+
+  __forceinline Vec3fa getColor(int x, int y) {
+    return gbuffer[y*g_accu_width+x].direct_illum;
+  }
+Vec3fa applyBilateralFilter(int x, int y, int diameter, float sigmaI, float sigmaS) {
+  Vec3fa color(zero);
+  const int half = diameter / 2;
+
+#if 1
+  float wP = 0;
+  for(int i = 0; i < diameter; i++) {
+    for(int j = 0; j < diameter; j++) {
+      const int neighbor_x = x - (half - i);
+      const int neighbor_y = y - (half - j);
+      const float gi = gaussian(length(getColor(neighbor_x, neighbor_y) - getColor(x, y)), sigmaI);
+      const float gs = gaussian(distance(x, y, neighbor_x, neighbor_y), sigmaS);
+      const float w = gi * gs;
+      color += getColor(neighbor_x, neighbor_y) * w;
+      wP += w;
+    }
+  }
+  color *= 1.0f / wP;
+#else
+  int num = 0;
+  for(int i = 0; i < diameter; i++) {
+    for(int j = 0; j < diameter; j++) {
+      const int neighbor_x = x - (half - i);
+      const int neighbor_y = y - (half - j);
+      color += getColor(neighbor_x, neighbor_y);
+      num++;
+    }
+  }
+  color *= 1.0f / (float)num;
+
+#endif
+  return color;
+}
+
+
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
-                           const unsigned int width,
-                           const unsigned int height,
-                           const float time,
-                           const ISPCCamera& camera)
+                               const unsigned int width,
+                               const unsigned int height,
+                               const float time,
+                               const ISPCCamera& camera)
 {
   /* create scene */
   if (g_scene == nullptr) {
@@ -1660,6 +1885,14 @@ extern "C" void device_render (int* pixels,
     g_accu_height = height;
     for (size_t i=0; i<width*height; i++)
       g_accu[i] = Vec3fa(0.0f);
+  }
+
+  /* create gbuffer */
+  if (gbuffer_width != width || gbuffer_height != height) {
+    if (gbuffer) alignedFree(gbuffer);
+    gbuffer = (GBufferEntry*) alignedMalloc(width*height*sizeof(GBufferEntry));
+    gbuffer_width = width;
+    gbuffer_height = height;
   }
 
   /* reset accumulator */
@@ -1680,8 +1913,10 @@ extern "C" void device_render (int* pixels,
       rtcCommit (g_scene);
     }
   }
+#if FILTER_TEST == 0
   else
     g_accu_count++;
+#endif
 
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
@@ -1691,6 +1926,35 @@ extern "C" void device_render (int* pixels,
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
+
+#if FILTER_TEST == 1
+  // filter accumulation buffer
+  const int diameter = 4;
+  const float sigmaI = 12.0f;
+  const float sigmaS = 12.0f;
+
+  for(int y = diameter; y < gbuffer_height - diameter; y++) 
+    for(int x = diameter; x < gbuffer_width - diameter; x++) 
+    {
+#if 1
+      GBufferEntry &gb = gbuffer[y*gbuffer_width+x];
+      Vec3fa direct_illum = applyBilateralFilter(x, y, diameter, sigmaI, sigmaS);
+      Vec3fa color = gb.diffuse_brdf * direct_illum; // + gb.indirect_illum;
+      unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+      unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+      unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+      pixels[y*gbuffer_width+x] = (b << 16) + (g << 8) + r;
+
+#else
+      Vec3fa color = applyBilateralFilter(x, y, diameter, sigmaI, sigmaS);
+      unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+      unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+      unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+      pixels[y*g_accu_width+x] = (b << 16) + (g << 8) + r;
+#endif
+    }
+#endif
+  
   //rtcDebug();
 } // device_render
 
