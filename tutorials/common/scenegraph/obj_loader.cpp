@@ -42,10 +42,12 @@ namespace embree
   }
 
   /*! Fill space at the end of the token with 0s. */
-  static inline const char* trimEnd(const char* token) {
-    size_t len = strlen(token);
-    if (len == 0) return token;
-    char* pe = (char*)(token + len - 1);
+  static inline const char* trimEnd(const char* token) 
+  {
+    if (*token == 0) return token;
+    char* pe = (char*) token;
+    while (*pe) pe++;
+    pe--;
     while ((*pe == ' ' || *pe == '\t' || *pe == '\r') && pe >= token) *pe-- = 0;
     return token;
   }
@@ -100,6 +102,16 @@ namespace embree
     return Vec3f(x,y,z);
   }
 
+  /*! Read Vec3fa from a string. */
+  static inline Vec3fa getVec3fa(const char*& token) {
+    float x = getFloat(token);
+    token += strspn(token, " \t");
+    if (*token == 0) return Vec3f(x);
+    float y = getFloat(token);
+    float z = getFloat(token);
+    return Vec3fa(x,y,z);
+  }
+
   class OBJLoader
   {
   public:
@@ -125,6 +137,7 @@ namespace embree
     std::vector<Crease> ec;
 
     std::vector<std::vector<Vertex> > curGroup;
+    std::vector<avector<Vec3fa> > curGroupHair;
 
     /*! Material handling. */
     std::string curMaterialName;
@@ -138,6 +151,8 @@ namespace embree
     int fix_vt(int index);
     int fix_vn(int index);
     void flushFaceGroup();
+    void flushTriGroup();
+    void flushHairGroup();
     Vertex getInt3(const char*& token);
     uint32_t getVertex(std::map<Vertex,uint32_t>& vertexMap, Ref<SceneGraph::TriangleMeshNode> mesh, const Vertex& i);
     std::shared_ptr<Texture> loadTexture(const FileName& fname);
@@ -159,22 +174,17 @@ namespace embree
     curMaterialName = "default";
     curMaterial = defaultMaterial;
 
-    char line[10000];
-    memset(line, 0, sizeof(line));
-
     while (cin.peek() != -1)
     {
       /* load next multiline */
-      char* pline = line;
-      while (true) {
-        cin.getline(pline, sizeof(line) - (pline - line) - 16, '\n');
-        ssize_t last = strlen(pline) - 1;
-        if (last < 0 || pline[last] != '\\') break;
-        pline += last;
-        *pline++ = ' ';
+      std::string line; std::getline(cin,line);
+      while (!line.empty() && line[line.size()-1] == '\\') {
+	line[line.size()-1] = ' ';
+	std::string next_line; std::getline(cin,next_line);
+	if (next_line.empty()) break;
+	line += next_line;
       }
-
-      const char* token = trimEnd(line + strspn(line, " \t"));
+      const char* token = trimEnd(line.c_str() + strspn(line.c_str(), " \t"));
       if (token[0] == 0) continue;
 
       /*! parse position */
@@ -206,6 +216,36 @@ namespace embree
         continue;
       }
 
+      /*! parse corona hair */
+      if (!strncmp(token,"hair",4) && isSep(token[4]))
+      {
+        parseSep(token += 4);
+        bool plane = !strncmp(token,"plane",5) && isSep(token[5]);
+        if (plane) {
+          parseSep(token += 5);
+        }
+        else if (!strncmp(token,"cylinder",8) && isSep(token[8])) {
+          parseSep(token += 8);
+        }
+        else continue;
+
+        int N = getInt(token);
+        avector<Vec3fa> hair;
+        for (int i=0; i<3*N+1; i++) {
+          hair.push_back(getVec3fa(token));
+        }
+        
+        for (int i=0; i<N+1; i++)
+        {
+          float r = getFloat(token);
+          MAYBE_UNUSED float t = getInt(token);
+          if (i != 0) hair[3*i-1].w = r;
+          hair[3*i+0].w = r;
+          if (i != N) hair[3*i+1].w = r;
+        }
+        curGroupHair.push_back(hair);
+      }
+      
       /*! parse edge crease */
       if (token[0] == 'e' && token[1] == 'c' && isSep(token[2]))
       {
@@ -328,24 +368,20 @@ namespace embree
       return;
     }
 
-    char line[10000];
-    memset(line, 0, sizeof(line));
-
     std::string name;
     ExtObjMaterial cur;
 
     while (cin.peek() != -1)
     {
       /* load next multiline */
-      char* pline = line;
-      while (true) {
-        cin.getline(pline, sizeof(line) - (pline - line) - 16, '\n');
-        ssize_t last = strlen(pline) - 1;
-        if (last < 0 || pline[last] != '\\') break;
-        pline += last;
-        *pline++ = ' ';
+      std::string line; std::getline(cin,line);
+      while (!line.empty() && line[line.size()-1] == '\\') {
+	line[line.size()-1] = ' ';
+	std::string next_line; std::getline(cin,next_line);
+	if (next_line.empty()) break;
+	line += next_line;
       }
-      const char* token = trimEnd(line + strspn(line, " \t"));
+      const char* token = trimEnd(line.c_str() + strspn(line.c_str(), " \t"));
 
       if (token[0] == 0  ) continue; // ignore empty lines
       if (token[0] == '#') continue; // ignore comments
@@ -468,8 +504,8 @@ namespace embree
     if (entry != vertexMap.end()) return(entry->second);
     mesh->positions[0].push_back(Vec3fa(v[i.v].x,v[i.v].y,v[i.v].z));
     if (i.vn >= 0) {
-      while (mesh->normals.size() < mesh->positions[0].size()) mesh->normals.push_back(zero); // some vertices might not had a normal
-      mesh->normals[mesh->positions[0].size()-1] = vn[i.vn];
+      while (mesh->normals[0].size() < mesh->positions[0].size()) mesh->normals[0].push_back(zero); // some vertices might not had a normal
+      mesh->normals[0][mesh->positions[0].size()-1] = vn[i.vn];
     }
     if (i.vt >= 0) {
       while (mesh->texcoords.size() < mesh->positions[0].size()) mesh->texcoords.push_back(zero); // some vertices might not had a texture coordinate
@@ -478,8 +514,14 @@ namespace embree
     return(vertexMap[i] = int(mesh->positions[0].size()) - 1);
   }
 
-  /*! end current facegroup and append to mesh */
   void OBJLoader::flushFaceGroup()
+  {
+    flushTriGroup();
+    flushHairGroup();
+  }
+
+  /*! end current facegroup and append to mesh */
+  void OBJLoader::flushTriGroup()
   {
     if (curGroup.empty()) return;
 
@@ -489,7 +531,7 @@ namespace embree
       group->add(mesh.cast<SceneGraph::Node>());
 
       for (size_t i=0; i<v.size();  i++) mesh->positions[0].push_back(v[i]);
-      for (size_t i=0; i<vn.size(); i++) mesh->normals  .push_back(vn[i]);
+      for (size_t i=0; i<vn.size(); i++) mesh->normals[0].push_back(vn[i]);
       for (size_t i=0; i<vt.size(); i++) mesh->texcoords.push_back(vt[i]);
       
       for (size_t i=0; i<ec.size(); ++i) {
@@ -505,6 +547,8 @@ namespace embree
         for (size_t i=0; i<face.size(); i++)
           mesh->position_indices.push_back(face[i].v);
       }
+      if (mesh->normals[0].size() == 0)
+        mesh->normals.clear();
       mesh->verify();
     }
     else
@@ -534,14 +578,38 @@ namespace embree
         }
       }
       /* there may be vertices without normals or texture coordinates, thus we have to make these arrays the same size here */
-      if (mesh->normals  .size()) while (mesh->normals  .size() < mesh->numVertices()) mesh->normals  .push_back(zero);
+      if (mesh->normals[0].size()) while (mesh->normals[0].size() < mesh->numVertices()) mesh->normals[0].push_back(zero);
       if (mesh->texcoords.size()) while (mesh->texcoords.size() < mesh->numVertices()) mesh->texcoords.push_back(zero);
+
+      if (mesh->normals[0].size() == 0)
+        mesh->normals.clear();
       mesh->verify();
     }
+    
     curGroup.clear();
     ec.clear();
   }
-  
+
+   void OBJLoader::flushHairGroup()
+   {
+     if (curGroupHair.empty()) return;
+
+     avector<Vec3fa> vertices;
+     std::vector<SceneGraph::HairSetNode::Hair> curves;
+     
+     for (size_t i=0; i<curGroupHair.size(); i++) {
+       for (size_t j=0; j<curGroupHair[i].size(); j++) {
+         if (j%3 == 0) curves.push_back(SceneGraph::HairSetNode::Hair(vertices.size(),i));
+         vertices.push_back(curGroupHair[i][j]);
+       }
+     }
+       
+     Ref<SceneGraph::HairSetNode> mesh = new SceneGraph::HairSetNode(vertices,curves,curMaterial,SceneGraph::HairSetNode::HAIR,SceneGraph::HairSetNode::BEZIER);
+     group->add(mesh.cast<SceneGraph::Node>());
+     mesh->verify();
+     curGroupHair.clear();
+   }
+   
   Ref<SceneGraph::Node> loadOBJ(const FileName& fileName, const bool subdivMode, const bool combineIntoSingleObject) {
     OBJLoader loader(fileName,subdivMode,combineIntoSingleObject); 
     return loader.group.cast<SceneGraph::Node>();

@@ -15,8 +15,8 @@
 ## ======================================================================== ##
 
 SET(FLAGS_SSE2      "-target-cpu=xeon")
-SET(FLAGS_SSE42     "ERROR_ISA_NOT_SUPPORTED")
+SET(FLAGS_SSE42     "-target-cpu=interlagos")
 SET(FLAGS_AVX       "-target-cpu=sandybridge")
 SET(FLAGS_AVX2      "-target-cpu=haswell")
 SET(FLAGS_AVX512KNL "-target-cpu=mic-knl")
-SET(FLAGS_AVX512SKX "ERROR_ISA_NOT_SUPPORTED")
+SET(FLAGS_AVX512SKX "-target-cpu=x86-skylake")

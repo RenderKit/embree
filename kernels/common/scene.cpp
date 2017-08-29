@@ -90,6 +90,59 @@ namespace embree
     createUserGeometryMBAccel();
   }
 
+  void Scene::printStatistics()
+  {
+    /* calculate maximal number of time segments */
+    unsigned max_time_steps = 0;
+    for (size_t i=0; i<size(); i++)
+      max_time_steps = max(max_time_steps,get(i)->numTimeSteps);
+
+    /* initialize vectors*/
+    std::vector<size_t> statistics[Geometry::NUM_TYPES];
+    for (size_t i=0; i<Geometry::NUM_TYPES; i++)
+      statistics[i].resize(max_time_steps);
+
+    /* gather statistics */
+    for (size_t i=0; i<size(); i++) 
+    {
+      int ty = __bsf(get(i)->type); 
+      assert(ty<Geometry::NUM_TYPES);
+      int timesegments = get(i)->numTimeSegments(); 
+      assert(timesegments < max_time_steps);
+      statistics[ty][timesegments] += get(i)->size();
+    }
+
+    /* print statistics */
+    const char* names[Geometry::NUM_TYPES] = {
+      "triangles",
+      "quads",
+      "curves",
+      "segments",
+      "subdivs",
+      "usergeom",
+      "instance",
+      "group"
+    };
+
+    std::cout << "  segments: ";
+    for (size_t t=0; t<max_time_steps; t++)
+      std::cout << std::setw(10) << t;
+    std::cout << std::endl;
+
+    std::cout << "------------";
+    for (size_t t=0; t<max_time_steps; t++)
+      std::cout << "----------";
+    std::cout << std::endl;
+    
+    for (size_t p=0; p<Geometry::NUM_TYPES; p++)
+    {
+      std::cout << std::setw(10) << names[p] << ": ";
+      for (size_t t=0; t<max_time_steps; t++)
+        std::cout << std::setw(10) << statistics[p][t];
+      std::cout << std::endl;
+    }
+  }
+
   void Scene::createTriangleAccel()
   {
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
@@ -549,34 +602,16 @@ namespace embree
   }
 
 #if defined(EMBREE_GEOMETRY_USER)
-  unsigned Scene::newUserGeometry (unsigned geomID, RTCGeometryFlags gflags, size_t items, size_t numTimeSteps) 
-  {
-    if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
-      return -1;
-    }
-
-    if (numTimeSteps == 0 || numTimeSteps > RTC_MAX_TIME_STEPS) {
-      throw_RTCError(RTC_INVALID_OPERATION,"maximal number of timesteps exceeded");
-      return -1;
-    }
-
+  unsigned Scene::newUserGeometry (unsigned geomID, RTCGeometryFlags gflags, size_t items, size_t numTimeSteps) {
     return bind(geomID, new UserGeometry(this,gflags,items,numTimeSteps));
   }
 
-  unsigned Scene::newInstance (unsigned geomID, Scene* scene, size_t numTimeSteps) 
-  {
-    if (numTimeSteps == 0 || numTimeSteps > RTC_MAX_TIME_STEPS) {
-      throw_RTCError(RTC_INVALID_OPERATION,"maximal number of timesteps exceeded");
-      return -1;
-    }
-
+  unsigned Scene::newInstance (unsigned geomID, Scene* scene, size_t numTimeSteps) {
     return bind(geomID,Instance::create(this,scene,numTimeSteps));
   }
 #endif
 
-  unsigned Scene::newGeometryInstance (unsigned geomID, Geometry* geom_in) 
-  {
+  unsigned Scene::newGeometryInstance (unsigned geomID, Geometry* geom_in) {
     return bind(geomID,new GeometryInstance(this,geom_in));
   }
 
@@ -587,16 +622,6 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
   unsigned Scene::newTriangleMesh (unsigned geomID, RTCGeometryFlags gflags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) 
   {
-    if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
-      return -1;
-    }
-
-    if (numTimeSteps == 0 || numTimeSteps > RTC_MAX_TIME_STEPS) {
-      throw_RTCError(RTC_INVALID_OPERATION,"maximal number of timesteps exceeded");
-      return -1;
-    }
-    
     createTriangleMeshTy createTriangleMesh = nullptr;
     SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createTriangleMesh);
     return bind(geomID,createTriangleMesh(this,gflags,numTriangles,numVertices,numTimeSteps));
@@ -606,16 +631,6 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_QUADS)
   unsigned Scene::newQuadMesh (unsigned geomID, RTCGeometryFlags gflags, size_t numQuads, size_t numVertices, size_t numTimeSteps) 
   {
-    if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
-      return -1;
-    }
-
-    if (numTimeSteps == 0 || numTimeSteps > RTC_MAX_TIME_STEPS) {
-      throw_RTCError(RTC_INVALID_OPERATION,"maximal number of timesteps exceeded");
-      return -1;
-    }
-    
     createQuadMeshTy createQuadMesh = nullptr;
     SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createQuadMesh);
     return bind(geomID,createQuadMesh(this,gflags,numQuads,numVertices,numTimeSteps));
@@ -625,16 +640,6 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_SUBDIV)
   unsigned Scene::newSubdivisionMesh (unsigned geomID, RTCGeometryFlags gflags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps) 
   {
-    if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
-      return -1;
-    }
-
-    if (numTimeSteps == 0 || numTimeSteps > RTC_MAX_TIME_STEPS) {
-      throw_RTCError(RTC_INVALID_OPERATION,"maximal number of timesteps exceeded");
-      return -1;
-    }
-
     createSubdivMeshTy createSubdivMesh = nullptr;
     SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createSubdivMesh);
     return bind(geomID,createSubdivMesh(this,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps));
@@ -644,16 +649,6 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_HAIR)
   unsigned Scene::newCurves (unsigned geomID, NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
   {
-    if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
-      return -1;
-    }
-
-    if (numTimeSteps == 0 || numTimeSteps > RTC_MAX_TIME_STEPS) {
-      throw_RTCError(RTC_INVALID_OPERATION,"maximal number of timesteps exceeded");
-      return -1;
-    }
-    
     createCurvesBezierTy createCurvesBezier = nullptr;
     SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createCurvesBezier);
     createCurvesBSplineTy createCurvesBSpline = nullptr;
@@ -671,16 +666,6 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_LINES)
   unsigned Scene::newLineSegments (unsigned geomID, RTCGeometryFlags gflags, size_t numSegments, size_t numVertices, size_t numTimeSteps)
   {
-    if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
-      return -1;
-    }
-
-    if (numTimeSteps == 0 || numTimeSteps > RTC_MAX_TIME_STEPS) {
-      throw_RTCError(RTC_INVALID_OPERATION,"maximal number of timesteps exceeded");
-      return -1;
-    }
-
     createLineSegmentsTy createLineSegments = nullptr;
     SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createLineSegments);
     return bind(geomID,createLineSegments(this,gflags,numSegments,numVertices,numTimeSteps));
@@ -746,6 +731,10 @@ namespace embree
 
   void Scene::commit_task ()
   {
+    /* print scene statistics */
+    if (device->verbosity(2))
+      printStatistics();
+
     progress_monitor_counter = 0;
 
     /* call preCommit function of each geometry */

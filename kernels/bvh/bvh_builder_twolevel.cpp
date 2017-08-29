@@ -222,7 +222,7 @@ namespace embree
               typename BVH::AlignedNode::Create2(),
               typename BVH::AlignedNode::Set2(),
               
-              [&] (const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) -> NodeRef  {
+              [&] (const BuildRef* refs, const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) -> NodeRef  {
                 assert(range.size() == 1);
                 return (NodeRef) refs[range.begin()].node;
               },
@@ -237,7 +237,7 @@ namespace embree
               typename BVH::AlignedNode::Create2(),
               typename BVH::AlignedNode::Set2(),
               
-              [&] (const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) -> NodeRef {
+              [&] (const PrimRef* pims, const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) -> NodeRef {
                 assert(range.size() == 1);
                 return (NodeRef) prims[range.begin()].ID();
               },

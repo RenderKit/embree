@@ -18,8 +18,6 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 
-//__asm__(".symver memcpy,memcpy@GLIBC_2.2.5");
-
 #include <cstddef>
 #include <cassert>
 #include <cstdlib>
@@ -354,7 +352,7 @@ namespace embree
   template <typename Closure>
     OnScopeExitHelper<Closure> OnScopeExit(const Closure f) {
     return OnScopeExitHelper<Closure>(f);
-  };
+  }
 
 #define STRING_JOIN2(arg1, arg2) DO_STRING_JOIN2(arg1, arg2)
 #define DO_STRING_JOIN2(arg1, arg2) arg1 ## arg2
@@ -365,4 +363,5 @@ namespace embree
     std::unique_ptr<Ty> make_unique(Ty* ptr) {
     return std::unique_ptr<Ty>(ptr);
   }
+
 }

@@ -114,10 +114,14 @@ namespace embree
   void SceneGraph::TriangleMeshNode::verify() const
   {
     const size_t N = numVertices();
+    if (normals.size() && normals.size() != positions.size())
+       THROW_RUNTIME_ERROR("incompatible number of time steps");
     for (const auto& p : positions) 
       if (p.size() != N) 
         THROW_RUNTIME_ERROR("incompatible vertex array sizes");
-    if (normals.size() && normals.size() != N) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
+    for (const auto& n : normals) 
+      if (n.size() && n.size() != N)
+        THROW_RUNTIME_ERROR("incompatible vertex array sizes");
     if (texcoords.size() && texcoords.size() != N) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
     for (auto tri : triangles) {
       if (size_t(tri.v0) >= N || size_t(tri.v1) >= N || size_t(tri.v2) >= N)
@@ -128,10 +132,14 @@ namespace embree
   void SceneGraph::QuadMeshNode::verify() const
   {
     const size_t N = numVertices();
+    if (normals.size() && normals.size() != positions.size())
+       THROW_RUNTIME_ERROR("incompatible number of time steps");
     for (const auto& p : positions) 
       if (p.size() != N) 
         THROW_RUNTIME_ERROR("incompatible vertex array sizes");
-    if (normals.size() && normals.size() != N) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
+    for (const auto& n : normals) 
+      if (n.size() && n.size() != N)
+        THROW_RUNTIME_ERROR("incompatible vertex array sizes");
     if (texcoords.size() && texcoords.size() != N) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
     for (auto quad : quads) {
       if (size_t(quad.v0) >= N || size_t(quad.v1) >= N || size_t(quad.v2) >= N || size_t(quad.v3) >= N)
@@ -142,13 +150,16 @@ namespace embree
   void SceneGraph::SubdivMeshNode::verify() const
   {
     const size_t N = numPositions();
+    if (normals.size() && normals.size() != positions.size())
+       THROW_RUNTIME_ERROR("incompatible number of time steps");
     for (const auto& p : positions) 
       if (p.size() != N) 
         THROW_RUNTIME_ERROR("incompatible position array sizes");
     for (auto i : position_indices) 
       if (size_t(i) >= N) THROW_RUNTIME_ERROR("invalid position index array");
-    for (auto i : normal_indices) 
-      if (size_t(i) >= normals.size()) THROW_RUNTIME_ERROR("invalid normal index array");
+    if (normal_indices.size())
+      for (auto i : normal_indices) 
+        if (size_t(i) >= normals[0].size()) THROW_RUNTIME_ERROR("invalid normal index array");
     for (auto i : texcoord_indices) 
       if (size_t(i) >= texcoords.size()) THROW_RUNTIME_ERROR("invalid texcoord index array");
     for (auto i : holes) 

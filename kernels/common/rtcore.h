@@ -50,14 +50,30 @@ namespace embree
 
 /*! Makros used in the rtcore API implementation */
 #define RTCORE_CATCH_BEGIN try {
+  
 #define RTCORE_CATCH_END(device)                                        \
-  } catch (std::bad_alloc&) {                                            \
+  } catch (std::bad_alloc&) {                                           \
     Device::process_error(device,RTC_OUT_OF_MEMORY,"out of memory");    \
   } catch (rtcore_error& e) {                                           \
     Device::process_error(device,e.error,e.what());                     \
   } catch (std::exception& e) {                                         \
-    Device::process_error(device,RTC_UNKNOWN_ERROR,e.what()); \
+    Device::process_error(device,RTC_UNKNOWN_ERROR,e.what());           \
   } catch (...) {                                                       \
+    Device::process_error(device,RTC_UNKNOWN_ERROR,"unknown exception caught"); \
+  }
+  
+#define RTCORE_CATCH_END2(scene)                                        \
+  } catch (std::bad_alloc&) {                                           \
+    Device* device = scene ? scene->device : nullptr;                   \
+    Device::process_error(device,RTC_OUT_OF_MEMORY,"out of memory");    \
+  } catch (rtcore_error& e) {                                           \
+    Device* device = scene ? scene->device : nullptr;                   \
+    Device::process_error(device,e.error,e.what());                     \
+  } catch (std::exception& e) {                                         \
+    Device* device = scene ? scene->device : nullptr;                   \
+    Device::process_error(device,RTC_UNKNOWN_ERROR,e.what());           \
+  } catch (...) {                                                       \
+    Device* device = scene ? scene->device : nullptr;                   \
     Device::process_error(device,RTC_UNKNOWN_ERROR,"unknown exception caught"); \
   }
 
@@ -76,6 +92,10 @@ namespace embree
     throw_RTCError(RTC_INVALID_ARGUMENT,"invalid argument");       \
   }
 
+#define RTCORE_VERIFY_RANGE(id,lower,upper)				\
+  if (id < lower || id > upper)						\
+    throw_RTCError(RTC_INVALID_OPERATION,"argument out of bounds");
+  
 #if 0 // enable to debug print all API calls
 #define RTCORE_TRACE(x) std::cout << #x << std::endl;
 #else

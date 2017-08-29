@@ -133,9 +133,9 @@ namespace embree
       {
         enum
         {
-          SPLIT_OBJECT   =  0,
-          SPLIT_TEMPORAL = -1,
-          SPLIT_FALLBACK = -2,
+          SPLIT_OBJECT   = 0,
+          SPLIT_TEMPORAL = 1,
+          SPLIT_FALLBACK = 2,
         };
 
         /*! construct an invalid split by default */

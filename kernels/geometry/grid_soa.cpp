@@ -35,7 +35,7 @@ namespace embree
       dynamic_large_stack_array(float,local_grid_x,temp_size,64*64*sizeof(float));
       dynamic_large_stack_array(float,local_grid_y,temp_size,64*64*sizeof(float));
       dynamic_large_stack_array(float,local_grid_z,temp_size,64*64*sizeof(float));
-      dynamic_large_stack_array(float,local_grid_uv,temp_size,64*64*sizeof(float));
+      dynamic_large_stack_array(int,local_grid_uv,temp_size,64*64*sizeof(int));
 
       /* first create the grids for each time step */
       for (size_t t=0; t<time_steps; t++)
@@ -46,8 +46,8 @@ namespace embree
         
         /* encode UVs */
         for (unsigned i=0; i<dim_offset; i+=VSIZEX) {
-          const vintx iu = (vintx) clamp(vfloatx::load(&local_grid_u[i])*0xFFFF, vfloatx(0.0f), vfloatx(0xFFFF));
-          const vintx iv = (vintx) clamp(vfloatx::load(&local_grid_v[i])*0xFFFF, vfloatx(0.0f), vfloatx(0xFFFF));
+          const vintx iu = (vintx) clamp(vfloatx::load(&local_grid_u[i])*(0x10000/8.0f), vfloatx(0.0f), vfloatx(0xFFFF));
+          const vintx iv = (vintx) clamp(vfloatx::load(&local_grid_v[i])*(0x10000/8.0f), vfloatx(0.0f), vfloatx(0xFFFF));
           vintx::storeu(&local_grid_uv[i], (iv << 16) | iu);
         }
 
@@ -56,10 +56,14 @@ namespace embree
         float* const grid_y  = (float*)(gridData(t) + 1*dim_offset);
         float* const grid_z  = (float*)(gridData(t) + 2*dim_offset);
         int  * const grid_uv = (int*  )(gridData(t) + 3*dim_offset);
-        memcpy(grid_x, local_grid_x, dim_offset*sizeof(float));
-        memcpy(grid_y, local_grid_y, dim_offset*sizeof(float));
-        memcpy(grid_z, local_grid_z, dim_offset*sizeof(float));
-        memcpy(grid_uv,local_grid_uv,dim_offset*sizeof(int));       
+	
+	for (size_t i=0; i<width*height; i++)
+	{
+	  grid_x[i]  = local_grid_x[i];
+	  grid_y[i]  = local_grid_y[i];
+	  grid_z[i]  = local_grid_z[i];
+	  grid_uv[i] = local_grid_uv[i];
+	}
       }
 
       /* create normal BVH when no motion blur is active */

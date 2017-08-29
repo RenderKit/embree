@@ -26,9 +26,7 @@ namespace embree
     InstanceFactory(int features);
     DEFINE_SYMBOL2(RTCBoundsFunc3,InstanceBoundsFunc);
     DEFINE_SYMBOL2(AccelSet::Intersector1,InstanceIntersector1);
-    DEFINE_SYMBOL2(AccelSet::Intersector4,InstanceIntersector4);
-    DEFINE_SYMBOL2(AccelSet::Intersector8,InstanceIntersector8);
-    DEFINE_SYMBOL2(AccelSet::Intersector16,InstanceIntersector16);
+    DEFINE_SYMBOL2(AccelSet::IntersectorN,InstanceIntersectorN);
     DEFINE_SYMBOL2(AccelSet::Intersector1M,InstanceIntersector1M);
   };
 

@@ -28,7 +28,6 @@
 #define TILE_SIZE_Y 4
 
 #define FIXED_SAMPLING 0
-#define SAMPLES_PER_PIXEL 1
 
 #define FIXED_EDGE_TESSELLATION_VALUE 4
 
@@ -862,6 +861,8 @@ inline Vec3f Material__sample(ISPCMaterial** uniform uniform materials, unsigned
 extern uniform ISPCScene* uniform g_ispc_scene;
 RTCDevice g_device = NULL;
 RTCScene g_scene = NULL;
+extern uniform int g_spp;
+extern uniform bool g_accumulate;
 
 /* occlusion filter function */
 void intersectionFilterReject(void* uniform ptr, RTCRay& ray);
@@ -1038,7 +1039,8 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform 
   {
     uniform ISPCTriangleMesh* uniform mesh = (uniform ISPCTriangleMesh* uniform) geometry;
     materialID = mesh->materialID;
-    if (mesh->texcoords) {
+    if (mesh->texcoords)
+    {
       ISPCTriangle* tri = &mesh->triangles[ray.primID];
       const Vec2f st0 = mesh->texcoords[tri->v0];
       const Vec2f st1 = mesh->texcoords[tri->v1];
@@ -1047,19 +1049,45 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform 
       const Vec2f st = w*st0 + u*st1 + v*st2;
       dg.u = st.x;
       dg.v = st.y;
-      /*
-      const Vec3f n0 = mesh->normals[tri->v0];
-      const Vec3f n1 = mesh->normals[tri->v1];
-      const Vec3f n2 = mesh->normals[tri->v2];
-      dg.Ns = w*n0 + u*n1 + v*n2;
-      */
+    }
+    if (mesh->normals)
+    {
+      if (mesh->numTimeSteps == 1)
+      {
+        ISPCTriangle* tri = &mesh->triangles[ray.primID];
+        const Vec3f n0 = make_Vec3f(mesh->normals[0][tri->v0]);
+        const Vec3f n1 = make_Vec3f(mesh->normals[0][tri->v1]);
+        const Vec3f n2 = make_Vec3f(mesh->normals[0][tri->v2]);
+        const float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
+        dg.Ns = w*n0 + u*n1 + v*n2;
+      }
+      else
+      {
+        ISPCTriangle* tri = &mesh->triangles[ray.primID];
+        float f = mesh->numTimeSteps*ray.time;
+        int itime = clamp((int)floor(f),0,(int)mesh->numTimeSteps-2);
+        float t1 = f-itime;
+        float t0 = 1.0f-t1;
+        const Vec3f a0 = make_Vec3f(mesh->normals[itime+0][tri->v0]);
+        const Vec3f a1 = make_Vec3f(mesh->normals[itime+0][tri->v1]);
+        const Vec3f a2 = make_Vec3f(mesh->normals[itime+0][tri->v2]);
+        const Vec3f b0 = make_Vec3f(mesh->normals[itime+1][tri->v0]);
+        const Vec3f b1 = make_Vec3f(mesh->normals[itime+1][tri->v1]);
+        const Vec3f b2 = make_Vec3f(mesh->normals[itime+1][tri->v2]);
+        const Vec3f n0 = t0*a0 + t1*b0;
+        const Vec3f n1 = t0*a1 + t1*b1;
+        const Vec3f n2 = t0*a2 + t1*b2;
+        const float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
+        dg.Ns = w*n0 + u*n1 + v*n2;
+      }
     }
   }
   else if (geometry->type == QUAD_MESH)
   {
     uniform ISPCQuadMesh* uniform mesh = (uniform ISPCQuadMesh* uniform) geometry;
     materialID = mesh->materialID;
-    if (mesh->texcoords) {
+    if (mesh->texcoords)
+    {
       ISPCQuad* quad = &mesh->quads[ray.primID];
       const Vec2f st0 = mesh->texcoords[quad->v0];
       const Vec2f st1 = mesh->texcoords[quad->v1];
@@ -1075,6 +1103,51 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform 
         const Vec2f st = w*st2 + u*st3 + v*st1;
         dg.u = st.x;
         dg.v = st.y;
+      }
+    }
+    if (mesh->normals)
+    {
+      if (mesh->numTimeSteps == 1)
+      {
+        ISPCQuad* quad = &mesh->quads[ray.primID];
+        const Vec3f n0 = make_Vec3f(mesh->normals[0][quad->v0]);
+        const Vec3f n1 = make_Vec3f(mesh->normals[0][quad->v1]);
+        const Vec3f n2 = make_Vec3f(mesh->normals[0][quad->v2]);
+        const Vec3f n3 = make_Vec3f(mesh->normals[0][quad->v3]);
+        if (ray.u+ray.v < 1.0f) {
+          const float u = ray.u, v = ray.v; const float w = 1.0f-u-v;
+          dg.Ns = w*n0 + u*n1 + v*n3;
+        } else {
+          const float u = 1.0f-ray.u, v = 1.0f-ray.v; const float w = 1.0f-u-v;
+          dg.Ns = w*n2 + u*n3 + v*n1;
+        }
+      }
+      else
+      {
+        ISPCQuad* quad = &mesh->quads[ray.primID];
+        float f = mesh->numTimeSteps*ray.time;
+        int itime = clamp((int)floor(f),0,(int)mesh->numTimeSteps-2);
+        float t1 = f-itime;
+        float t0 = 1.0f-t1;
+        const Vec3f a0 = make_Vec3f(mesh->normals[itime+0][quad->v0]);
+        const Vec3f a1 = make_Vec3f(mesh->normals[itime+0][quad->v1]);
+        const Vec3f a2 = make_Vec3f(mesh->normals[itime+0][quad->v2]);
+        const Vec3f a3 = make_Vec3f(mesh->normals[itime+0][quad->v3]);
+        const Vec3f b0 = make_Vec3f(mesh->normals[itime+1][quad->v0]);
+        const Vec3f b1 = make_Vec3f(mesh->normals[itime+1][quad->v1]);
+        const Vec3f b2 = make_Vec3f(mesh->normals[itime+1][quad->v2]);
+        const Vec3f b3 = make_Vec3f(mesh->normals[itime+1][quad->v3]);
+        const Vec3f n0 = t0*a0 + t1*b0;
+        const Vec3f n1 = t0*a1 + t1*b1;
+        const Vec3f n2 = t0*a2 + t1*b2;
+        const Vec3f n3 = t0*a3 + t1*b3;
+        if (ray.u+ray.v < 1.0f) {
+          const float u = ray.u, v = ray.v; const float w = 1.0f-u-v;
+          dg.Ns = w*n0 + u*n1 + v*n3;
+        } else {
+          const float u = 1.0f-ray.u, v = 1.0f-ray.v; const float w = 1.0f-u-v;
+          dg.Ns = w*n2 + u*n3 + v*n1;
+        }
       }
     }
   }
@@ -1208,7 +1281,8 @@ void intersectionFilterOBJ(void* uniform ptr, RTCRay& ray)
   dg.Ns = ray.Ng;
   int materialID = postIntersect(ray,dg);
   dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
-  dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
+  if (length(dg.Ns) < 1E-6f) dg.Ns = dg.Ng;
+  else dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
   const Vec3f wo = neg(ray.dir);
 
   /* calculate BRDF */
@@ -1416,16 +1490,16 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
 
   Vec3f L = make_Vec3f(0.0f);
 
-  for (uniform int i=0; i<SAMPLES_PER_PIXEL; i++)
+  for (uniform int i=0; i<g_spp; i++)
   {
-    RandomSampler_init(sampler, (int)x, (int)y, g_accu_count*SAMPLES_PER_PIXEL+i);
+    RandomSampler_init(sampler, (int)x, (int)y, g_accu_count*g_spp+i);
 
     /* calculate pixel color */
     float fx = x + RandomSampler_get1D(sampler);
     float fy = y + RandomSampler_get1D(sampler);
     L = L + renderPixelFunction(fx,fy,sampler,camera,stats);
   }
-  L = L*(1.0f/SAMPLES_PER_PIXEL);
+  L = L/g_spp;
   return L;
 }
 
@@ -1583,15 +1657,11 @@ export void device_render (uniform int* uniform pixels,
   }
 
   /* reset accumulator */
-  uniform bool camera_changed = g_changed; g_changed = false;
+  uniform bool camera_changed = g_changed || !g_accumulate; g_changed = false;
   camera_changed |= ne(g_accu_vx,camera.xfm.l.vx); g_accu_vx = camera.xfm.l.vx;
   camera_changed |= ne(g_accu_vy,camera.xfm.l.vy); g_accu_vy = camera.xfm.l.vy;
   camera_changed |= ne(g_accu_vz,camera.xfm.l.vz); g_accu_vz = camera.xfm.l.vz;
   camera_changed |= ne(g_accu_p, camera.xfm.p);    g_accu_p  = camera.xfm.p;
-
-#if  FIXED_SAMPLING == 0
-  g_accu_count++;
-#endif
 
   if (camera_changed)
   {
@@ -1604,6 +1674,8 @@ export void device_render (uniform int* uniform pixels,
       rtcCommit (g_scene);
     }
   }
+  else
+    g_accu_count++;
 
   /* render image */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;

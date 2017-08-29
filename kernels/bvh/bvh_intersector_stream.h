@@ -707,6 +707,7 @@ namespace embree
         const vfloat<Nx> fmin  = maxi(fminX, fminY, fminZ, vfloat<Nx>(frusta.min_dist));
         const vfloat<Nx> fmax  = mini(fmaxX, fmaxY, fmaxZ, vfloat<Nx>(frusta.max_dist));
         const vbool<Nx> vmask_node_hit = fmin <= fmax;
+
         //STAT3(normal.trav_nodes,1,1,1);                          
 
         size_t m_node_hit = movemask(vmask_node_hit) & (((size_t)1 << N)-1);

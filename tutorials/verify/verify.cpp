@@ -584,6 +584,11 @@ namespace embree
     
     std::atomic<int> passed(true);
 
+#if defined(__WIN32__) && !defined(__X86_64__)
+	/* deactivating parallel test execution on win32 platforms due to out-of-memory exceptions */
+	parallel = false;
+#endif
+
     if (state->parallel && parallel && leaftest) 
     {
       parallel_for(tests.size(),[&] (size_t i) {
@@ -1054,7 +1059,7 @@ namespace embree
       
       for (size_t i = 0; i < 1024*1024; ++i)
       {
-        if (i%100 == 0) PRINT(i);
+        //if (i%100 == 0) PRINT(i);
         rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000000, i);
         
         RTCScene scene = rtcDeviceNewScene(device, sflags, RTC_INTERSECT1);

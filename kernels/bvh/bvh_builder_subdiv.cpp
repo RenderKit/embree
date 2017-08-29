@@ -171,7 +171,7 @@ namespace embree
 
         PrimInfo pinfo(0,pinfo3.end,pinfo3);
         
-        auto createLeaf = [&] (const range<size_t>& range, Allocator alloc) -> NodeRef {
+        auto createLeaf = [&] (const PrimRef* prims, const range<size_t>& range, Allocator alloc) -> NodeRef {
           assert(range.size() == 1);
           size_t leaf = (size_t) prims[range.begin()].ID();
           return NodeRef(leaf);
@@ -254,6 +254,7 @@ namespace embree
             {
               if (!iter[i]) continue;
               fastUpdate &= !iter[i]->faceVertices.isModified();
+              for (auto& b : iter[i]->vertices) fastUpdate &= !b.isModified();
               fastUpdate &= !iter[i]->holes.isModified();
               fastUpdate &= iter[i]->levels.isModified();
               fastUpdate &= !iter[i]->topology[0].vertexIndices.isModified(); 
@@ -270,6 +271,7 @@ namespace embree
         /* only enable fast mode if no subdiv mesh got enabled or disabled since last run */
         fastUpdateMode &= numSubdivEnableDisableEvents == scene->numSubdivEnableDisableEvents;
         numSubdivEnableDisableEvents = scene->numSubdivEnableDisableEvents;
+
         return fastUpdateMode;
       }
 
@@ -369,7 +371,7 @@ namespace embree
           });
         
         /* build normal BVH over patches */
-        auto createLeaf = [&] (const range<size_t>& range, const Allocator& alloc) -> NodeRef {
+        auto createLeaf = [&] (const PrimRef* prims, const range<size_t>& range, const Allocator& alloc) -> NodeRef {
           assert(range.size() == 1);
           const size_t patchIndex = prims[range.begin()].ID();
           return bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
@@ -555,6 +557,7 @@ namespace embree
             {
               if (!iter[i]) continue;
               fastUpdate &= !iter[i]->faceVertices.isModified();
+              for (auto& b : iter[i]->vertices) fastUpdate &= !b.isModified();
               fastUpdate &= !iter[i]->holes.isModified();
               fastUpdate &= !iter[i]->topology[0].vertexIndices.isModified(); 
               fastUpdate &= !iter[i]->edge_creases.isModified();
