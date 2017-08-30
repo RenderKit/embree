@@ -105,7 +105,6 @@ namespace embree
     static __forceinline vint4 loadu(const unsigned char* ptr) {
       return  _mm_cvtepu8_epi32(_mm_loadu_si128((__m128i*)ptr));
     }
-
 #endif
 
     static __forceinline vint4 load(const unsigned short* ptr) {
@@ -179,7 +178,7 @@ namespace embree
     }
 
 #if defined(__x86_64__)
-    static __forceinline vint4 broadcast64(const long long& a) { return _mm_set1_epi64x(a); }
+    static __forceinline vint4 broadcast64(long long a) { return _mm_set1_epi64x(a); }
 #endif
 
     ////////////////////////////////////////////////////////////////////////////////
