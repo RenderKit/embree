@@ -657,15 +657,15 @@ namespace embree
   /// Euclidian Space Operators (pairs of Vec3fa's)
   ////////////////////////////////////////////////////////////////////////////////
 
-  //__forceinline vfloat8 dot (const vfloat8& a, const vfloat8& b) {
+  //__forceinline vfloat8 dot(const vfloat8& a, const vfloat8& b) {
   //  return vreduce_add4(a*b);
   //}
 
-  __forceinline vfloat8 dot (const vfloat8& a, const vfloat8& b) {
+  __forceinline vfloat8 dot(const vfloat8& a, const vfloat8& b) {
     return _mm256_dp_ps(a,b,0x7F);
   }
 
-  __forceinline vfloat8 cross (const vfloat8& a, const vfloat8& b)
+  __forceinline vfloat8 cross(const vfloat8& a, const vfloat8& b)
   {
     const vfloat8 a0 = a;
     const vfloat8 b0 = shuffle<1,2,0,3>(b);
