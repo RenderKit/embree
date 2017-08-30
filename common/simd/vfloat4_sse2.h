@@ -129,29 +129,31 @@ namespace embree
 
     template<int scale = 4>
     static __forceinline vfloat4 gather(const float* ptr, const vint4& index) {
-    #if defined(__AVX2__)
-      return _mm_i32gather_ps(index,ptr,scale);
-    #else
+#if defined(__AVX2__)
+      return _mm_i32gather_ps(ptr, index, scale);
+#else
       return vfloat4(
         *(float*)(((char*)ptr)+scale*index[0]),
         *(float*)(((char*)ptr)+scale*index[1]),
         *(float*)(((char*)ptr)+scale*index[2]),
         *(float*)(((char*)ptr)+scale*index[3]));
-    #endif
+#endif
     }
 
     template<int scale = 4>
     static __forceinline vfloat4 gather(const vboolf4& mask, const float* ptr, const vint4& index) {
       vfloat4 r = vfloat4::undefined();
-    #if defined(__AVX2__)
-      return _mm_mask_i32gather_ps(r,mask,index,ptr,scale);
-    #else
+#if defined(__AVX512VL__)
+      return _mm_mmask_i32gather_ps(r, mask, index, ptr, scale);
+#elif defined(__AVX2__)
+      return _mm_mask_i32gather_ps(r, ptr, index, mask, scale);
+#else
       if (likely(mask[0])) r[0] = *(float*)(((char*)ptr)+scale*index[0]);
       if (likely(mask[1])) r[1] = *(float*)(((char*)ptr)+scale*index[1]);
       if (likely(mask[2])) r[2] = *(float*)(((char*)ptr)+scale*index[2]);
       if (likely(mask[3])) r[3] = *(float*)(((char*)ptr)+scale*index[3]);
       return r;
-    #endif
+#endif
     }
 
     template<int scale = 4>

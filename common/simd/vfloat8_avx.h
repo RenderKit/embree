@@ -127,9 +127,9 @@ namespace embree
 
     template<int scale = 4>
     static __forceinline vfloat8 gather(const float* ptr, const vint8& index) {
-    #if defined(__AVX2__)
-      return _mm256_i32gather_ps(ptr,index,scale);
-    #else
+#if defined(__AVX2__)
+      return _mm256_i32gather_ps(ptr, index ,scale);
+#else
       return vfloat8(
           *(float*)(((char*)ptr)+scale*index[0]),
           *(float*)(((char*)ptr)+scale*index[1]),
@@ -139,15 +139,17 @@ namespace embree
           *(float*)(((char*)ptr)+scale*index[5]),
           *(float*)(((char*)ptr)+scale*index[6]),
           *(float*)(((char*)ptr)+scale*index[7]));
-    #endif
+#endif
     }
 
     template<int scale = 4>
     static __forceinline vfloat8 gather(const vboolf8& mask, const float* ptr, const vint8& index) {
       vfloat8 r = vfloat8::undefined();
-    #if defined(__AVX2__)
-      return _mm256_mask_i32gather_ps(r,ptr,index,mask,scale);
-    #else
+#if defined(__AVX512VL__)
+      return _mm256_mmask_i32gather_ps(r, mask, index, ptr, scale);
+#elif defined(__AVX2__)
+      return _mm256_mask_i32gather_ps(r, ptr, index, mask, scale);
+#else
       if (likely(mask[0])) r[0] = *(float*)(((char*)ptr)+scale*index[0]);
       if (likely(mask[1])) r[1] = *(float*)(((char*)ptr)+scale*index[1]);
       if (likely(mask[2])) r[2] = *(float*)(((char*)ptr)+scale*index[2]);
