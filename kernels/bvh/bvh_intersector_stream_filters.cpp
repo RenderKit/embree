@@ -30,8 +30,9 @@ namespace embree
       Ray* __restrict__ rayN = (Ray*)_rayN;
 
 #if 1
+
       /* fallback to packets */
-      const vintx ofs = vintx(step) * int(stride);
+      const vintx offset = vintx(step) * int(stride);
 
       for (size_t i = 0; i < N; i += VSIZEX)
       {
@@ -42,39 +43,39 @@ namespace embree
 
         /* gather rays */
 #if defined(__AVX2__)
-        ray.org.x  = vfloatx::gather<1>(valid, &ray_i->org.x, ofs);
-        ray.org.y  = vfloatx::gather<1>(valid, &ray_i->org.y, ofs);
-        ray.org.z  = vfloatx::gather<1>(valid, &ray_i->org.z, ofs);
-        ray.dir.x  = vfloatx::gather<1>(valid, &ray_i->dir.x, ofs);
-        ray.dir.y  = vfloatx::gather<1>(valid, &ray_i->dir.y, ofs);
-        ray.dir.z  = vfloatx::gather<1>(valid, &ray_i->dir.z, ofs);
-        ray.tnear  = vfloatx::gather<1>(valid, &ray_i->tnear, ofs);
-        ray.tfar   = vfloatx::gather<1>(valid, &ray_i->tfar, ofs);
-        ray.time   = vfloatx::gather<1>(valid, &ray_i->time, ofs);
-        ray.mask   = vintx::gather<1>(valid, &ray_i->mask, ofs);
-        ray.instID = vintx::gather<1>(valid, (int*)&ray_i->instID, ofs);
+        ray.org.x  = vfloatx::gather<1>(valid, &ray_i->org.x, offset);
+        ray.org.y  = vfloatx::gather<1>(valid, &ray_i->org.y, offset);
+        ray.org.z  = vfloatx::gather<1>(valid, &ray_i->org.z, offset);
+        ray.dir.x  = vfloatx::gather<1>(valid, &ray_i->dir.x, offset);
+        ray.dir.y  = vfloatx::gather<1>(valid, &ray_i->dir.y, offset);
+        ray.dir.z  = vfloatx::gather<1>(valid, &ray_i->dir.z, offset);
+        ray.tnear  = vfloatx::gather<1>(valid, &ray_i->tnear, offset);
+        ray.tfar   = vfloatx::gather<1>(valid, &ray_i->tfar, offset);
+        ray.time   = vfloatx::gather<1>(valid, &ray_i->time, offset);
+        ray.mask   = vintx::gather<1>(valid, &ray_i->mask, offset);
+        ray.instID = vintx::gather<1>(valid, (int*)&ray_i->instID, offset);
 #else
         for (size_t k = 0; k < n; k++)
         {
-          Ray* __restrict__ ray_k = (Ray*)((char*)ray_i + ofs[k]);
+          Ray* __restrict__ ray_k = (Ray*)((char*)ray_i + offset[k]);
 
-          ray.org.x[k] = ray_k->org.x;
-          ray.org.y[k] = ray_k->org.y;
-          ray.org.z[k] = ray_k->org.z;
-          ray.dir.x[k] = ray_k->dir.x;
-          ray.dir.y[k] = ray_k->dir.y;
-          ray.dir.z[k] = ray_k->dir.z;
-          ray.tnear[k] = ray_k->tnear;
-          ray.tfar[k]  = ray_k->tfar;
-          ray.time[k]  = ray_k->time;
-          ray.mask[k]  = ray_k->mask;
+          ray.org.x[k]  = ray_k->org.x;
+          ray.org.y[k]  = ray_k->org.y;
+          ray.org.z[k]  = ray_k->org.z;
+          ray.dir.x[k]  = ray_k->dir.x;
+          ray.dir.y[k]  = ray_k->dir.y;
+          ray.dir.z[k]  = ray_k->dir.z;
+          ray.tnear[k]  = ray_k->tnear;
+          ray.tfar[k]   = ray_k->tfar;
+          ray.time[k]   = ray_k->time;
+          ray.mask[k]   = ray_k->mask;
           ray.instID[k] = ray_k->instID;
         }
 #endif
 
         ray.geomID = RTC_INVALID_GEOMETRY_ID;
 
-        /* skip invalid rays */
+        /* filter out invalid rays */
         valid &= ray.tnear <= ray.tfar;
 
         /* intersect packet */
@@ -85,24 +86,24 @@ namespace embree
 
         /* scatter hits */
 #if defined(__AVX512F__)
-        vintx::scatter<1>(valid, (int*)&ray_i->geomID, ofs, ray.geomID);
+        vintx::scatter<1>(valid, (int*)&ray_i->geomID, offset, ray.geomID);
         if (intersect)
         {
           valid &= ray.geomID != RTC_INVALID_GEOMETRY_ID;
 
-          vfloatx::scatter<1>(valid, &ray_i->tfar, ofs, ray.tfar);
-          vfloatx::scatter<1>(valid, &ray_i->Ng.x, ofs, ray.Ng.x);
-          vfloatx::scatter<1>(valid, &ray_i->Ng.y, ofs, ray.Ng.y);
-          vfloatx::scatter<1>(valid, &ray_i->Ng.z, ofs, ray.Ng.z);
-          vfloatx::scatter<1>(valid, &ray_i->u, ofs, ray.u);
-          vfloatx::scatter<1>(valid, &ray_i->v, ofs, ray.v);
-          vintx::scatter<1>(valid, (int*)&ray_i->primID, ofs, ray.primID);
-          vintx::scatter<1>(valid, (int*)&ray_i->instID, ofs, ray.instID);
+          vfloatx::scatter<1>(valid, &ray_i->tfar, offset, ray.tfar);
+          vfloatx::scatter<1>(valid, &ray_i->Ng.x, offset, ray.Ng.x);
+          vfloatx::scatter<1>(valid, &ray_i->Ng.y, offset, ray.Ng.y);
+          vfloatx::scatter<1>(valid, &ray_i->Ng.z, offset, ray.Ng.z);
+          vfloatx::scatter<1>(valid, &ray_i->u, offset, ray.u);
+          vfloatx::scatter<1>(valid, &ray_i->v, offset, ray.v);
+          vintx::scatter<1>(valid, (int*)&ray_i->primID, offset, ray.primID);
+          vintx::scatter<1>(valid, (int*)&ray_i->instID, offset, ray.instID);
         }
 #else
         for (size_t k = 0; k < n; k++)
         {
-          Ray* __restrict__ ray_k = (Ray*)((char*)ray_i + ofs[k]);
+          Ray* __restrict__ ray_k = (Ray*)((char*)ray_i + offset[k]);
 
           ray_k->geomID = ray.geomID[k];
           if (intersect && ray.geomID[k] != RTC_INVALID_GEOMETRY_ID)
@@ -123,7 +124,7 @@ namespace embree
 #elif 1
 
       /* fallback to packets - much more complex, but not faster, so should be removed... */
-      const vintx ofs = vintx(step) * int(stride);
+      const vintx offset = vintx(step) * int(stride);
 
       size_t i = 0;
 
@@ -135,48 +136,48 @@ namespace embree
         RayK<VSIZEX> ray;
 
         /* gather: instID */
-        ray.instID = vintx::gather<1>((int*)&ray_i->instID, ofs);
+        ray.instID = vintx::gather<1>((int*)&ray_i->instID, offset);
 
 #if defined(__AVX512F__)
         /* load and transpose: org.x, org.y, org.z, align0, dir.x, dir.y, dir.z, align1 */
-        const vfloat8 ab0  = vfloat8::load(&((Ray*)((char*)ray_i + ofs[ 0]))->org);
-        const vfloat8 ab1  = vfloat8::load(&((Ray*)((char*)ray_i + ofs[ 1]))->org);
-        const vfloat8 ab2  = vfloat8::load(&((Ray*)((char*)ray_i + ofs[ 2]))->org);
-        const vfloat8 ab3  = vfloat8::load(&((Ray*)((char*)ray_i + ofs[ 3]))->org);
-        const vfloat8 ab4  = vfloat8::load(&((Ray*)((char*)ray_i + ofs[ 4]))->org);
-        const vfloat8 ab5  = vfloat8::load(&((Ray*)((char*)ray_i + ofs[ 5]))->org);
-        const vfloat8 ab6  = vfloat8::load(&((Ray*)((char*)ray_i + ofs[ 6]))->org);
-        const vfloat8 ab7  = vfloat8::load(&((Ray*)((char*)ray_i + ofs[ 7]))->org);
-        const vfloat8 ab8  = vfloat8::load(&((Ray*)((char*)ray_i + ofs[ 8]))->org);
-        const vfloat8 ab9  = vfloat8::load(&((Ray*)((char*)ray_i + ofs[ 9]))->org);
-        const vfloat8 ab10 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[10]))->org);
-        const vfloat8 ab11 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[11]))->org);
-        const vfloat8 ab12 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[12]))->org);
-        const vfloat8 ab13 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[13]))->org);
-        const vfloat8 ab14 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[14]))->org);
-        const vfloat8 ab15 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[15]))->org);
+        const vfloat8 ab0  = vfloat8::load(&((Ray*)((char*)ray_i + offset[ 0]))->org);
+        const vfloat8 ab1  = vfloat8::load(&((Ray*)((char*)ray_i + offset[ 1]))->org);
+        const vfloat8 ab2  = vfloat8::load(&((Ray*)((char*)ray_i + offset[ 2]))->org);
+        const vfloat8 ab3  = vfloat8::load(&((Ray*)((char*)ray_i + offset[ 3]))->org);
+        const vfloat8 ab4  = vfloat8::load(&((Ray*)((char*)ray_i + offset[ 4]))->org);
+        const vfloat8 ab5  = vfloat8::load(&((Ray*)((char*)ray_i + offset[ 5]))->org);
+        const vfloat8 ab6  = vfloat8::load(&((Ray*)((char*)ray_i + offset[ 6]))->org);
+        const vfloat8 ab7  = vfloat8::load(&((Ray*)((char*)ray_i + offset[ 7]))->org);
+        const vfloat8 ab8  = vfloat8::load(&((Ray*)((char*)ray_i + offset[ 8]))->org);
+        const vfloat8 ab9  = vfloat8::load(&((Ray*)((char*)ray_i + offset[ 9]))->org);
+        const vfloat8 ab10 = vfloat8::load(&((Ray*)((char*)ray_i + offset[10]))->org);
+        const vfloat8 ab11 = vfloat8::load(&((Ray*)((char*)ray_i + offset[11]))->org);
+        const vfloat8 ab12 = vfloat8::load(&((Ray*)((char*)ray_i + offset[12]))->org);
+        const vfloat8 ab13 = vfloat8::load(&((Ray*)((char*)ray_i + offset[13]))->org);
+        const vfloat8 ab14 = vfloat8::load(&((Ray*)((char*)ray_i + offset[14]))->org);
+        const vfloat8 ab15 = vfloat8::load(&((Ray*)((char*)ray_i + offset[15]))->org);
 
         vfloat16 unused0, unused1;
         transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7,ab8,ab9,ab10,ab11,ab12,ab13,ab14,ab15,
                   ray.org.x, ray.org.y, ray.org.z, unused0, ray.dir.x, ray.dir.y, ray.dir.z, unused1);
 
         /* load and transpose: tnear, tfar, time, mask */
-        const vfloat4 c0  = vfloat4::load(&((Ray*)((char*)ray_i + ofs[ 0]))->tnear);
-        const vfloat4 c1  = vfloat4::load(&((Ray*)((char*)ray_i + ofs[ 1]))->tnear);
-        const vfloat4 c2  = vfloat4::load(&((Ray*)((char*)ray_i + ofs[ 2]))->tnear);
-        const vfloat4 c3  = vfloat4::load(&((Ray*)((char*)ray_i + ofs[ 3]))->tnear);
-        const vfloat4 c4  = vfloat4::load(&((Ray*)((char*)ray_i + ofs[ 4]))->tnear);
-        const vfloat4 c5  = vfloat4::load(&((Ray*)((char*)ray_i + ofs[ 5]))->tnear);
-        const vfloat4 c6  = vfloat4::load(&((Ray*)((char*)ray_i + ofs[ 6]))->tnear);
-        const vfloat4 c7  = vfloat4::load(&((Ray*)((char*)ray_i + ofs[ 7]))->tnear);
-        const vfloat4 c8  = vfloat4::load(&((Ray*)((char*)ray_i + ofs[ 8]))->tnear);
-        const vfloat4 c9  = vfloat4::load(&((Ray*)((char*)ray_i + ofs[ 9]))->tnear);
-        const vfloat4 c10 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[10]))->tnear);
-        const vfloat4 c11 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[11]))->tnear);
-        const vfloat4 c12 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[12]))->tnear);
-        const vfloat4 c13 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[13]))->tnear);
-        const vfloat4 c14 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[14]))->tnear);
-        const vfloat4 c15 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[15]))->tnear);
+        const vfloat4 c0  = vfloat4::load(&((Ray*)((char*)ray_i + offset[ 0]))->tnear);
+        const vfloat4 c1  = vfloat4::load(&((Ray*)((char*)ray_i + offset[ 1]))->tnear);
+        const vfloat4 c2  = vfloat4::load(&((Ray*)((char*)ray_i + offset[ 2]))->tnear);
+        const vfloat4 c3  = vfloat4::load(&((Ray*)((char*)ray_i + offset[ 3]))->tnear);
+        const vfloat4 c4  = vfloat4::load(&((Ray*)((char*)ray_i + offset[ 4]))->tnear);
+        const vfloat4 c5  = vfloat4::load(&((Ray*)((char*)ray_i + offset[ 5]))->tnear);
+        const vfloat4 c6  = vfloat4::load(&((Ray*)((char*)ray_i + offset[ 6]))->tnear);
+        const vfloat4 c7  = vfloat4::load(&((Ray*)((char*)ray_i + offset[ 7]))->tnear);
+        const vfloat4 c8  = vfloat4::load(&((Ray*)((char*)ray_i + offset[ 8]))->tnear);
+        const vfloat4 c9  = vfloat4::load(&((Ray*)((char*)ray_i + offset[ 9]))->tnear);
+        const vfloat4 c10 = vfloat4::load(&((Ray*)((char*)ray_i + offset[10]))->tnear);
+        const vfloat4 c11 = vfloat4::load(&((Ray*)((char*)ray_i + offset[11]))->tnear);
+        const vfloat4 c12 = vfloat4::load(&((Ray*)((char*)ray_i + offset[12]))->tnear);
+        const vfloat4 c13 = vfloat4::load(&((Ray*)((char*)ray_i + offset[13]))->tnear);
+        const vfloat4 c14 = vfloat4::load(&((Ray*)((char*)ray_i + offset[14]))->tnear);
+        const vfloat4 c15 = vfloat4::load(&((Ray*)((char*)ray_i + offset[15]))->tnear);
 
         vfloat16 maskf;
         transpose(c0,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14,c15,
@@ -184,53 +185,53 @@ namespace embree
         ray.mask = asInt(maskf);
 #elif defined(__AVX__)
         /* load and transpose: org.x, org.y, org.z, align0, dir.x, dir.y, dir.z, align1 */
-        const vfloat8 ab0 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[0]))->org);
-        const vfloat8 ab1 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[1]))->org);
-        const vfloat8 ab2 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[2]))->org);
-        const vfloat8 ab3 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[3]))->org);
-        const vfloat8 ab4 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[4]))->org);
-        const vfloat8 ab5 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[5]))->org);
-        const vfloat8 ab6 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[6]))->org);
-        const vfloat8 ab7 = vfloat8::load(&((Ray*)((char*)ray_i + ofs[7]))->org);
+        const vfloat8 ab0 = vfloat8::load(&((Ray*)((char*)ray_i + offset[0]))->org);
+        const vfloat8 ab1 = vfloat8::load(&((Ray*)((char*)ray_i + offset[1]))->org);
+        const vfloat8 ab2 = vfloat8::load(&((Ray*)((char*)ray_i + offset[2]))->org);
+        const vfloat8 ab3 = vfloat8::load(&((Ray*)((char*)ray_i + offset[3]))->org);
+        const vfloat8 ab4 = vfloat8::load(&((Ray*)((char*)ray_i + offset[4]))->org);
+        const vfloat8 ab5 = vfloat8::load(&((Ray*)((char*)ray_i + offset[5]))->org);
+        const vfloat8 ab6 = vfloat8::load(&((Ray*)((char*)ray_i + offset[6]))->org);
+        const vfloat8 ab7 = vfloat8::load(&((Ray*)((char*)ray_i + offset[7]))->org);
 
         vfloat8 unused0, unused1;
         transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7, ray.org.x, ray.org.y, ray.org.z, unused0, ray.dir.x, ray.dir.y, ray.dir.z, unused1);
 
         /* load and transpose: tnear, tfar, time, mask */
-        const vfloat4 c0 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[0]))->tnear);
-        const vfloat4 c1 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[1]))->tnear);
-        const vfloat4 c2 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[2]))->tnear);
-        const vfloat4 c3 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[3]))->tnear);
-        const vfloat4 c4 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[4]))->tnear);
-        const vfloat4 c5 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[5]))->tnear);
-        const vfloat4 c6 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[6]))->tnear);
-        const vfloat4 c7 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[7]))->tnear);
+        const vfloat4 c0 = vfloat4::load(&((Ray*)((char*)ray_i + offset[0]))->tnear);
+        const vfloat4 c1 = vfloat4::load(&((Ray*)((char*)ray_i + offset[1]))->tnear);
+        const vfloat4 c2 = vfloat4::load(&((Ray*)((char*)ray_i + offset[2]))->tnear);
+        const vfloat4 c3 = vfloat4::load(&((Ray*)((char*)ray_i + offset[3]))->tnear);
+        const vfloat4 c4 = vfloat4::load(&((Ray*)((char*)ray_i + offset[4]))->tnear);
+        const vfloat4 c5 = vfloat4::load(&((Ray*)((char*)ray_i + offset[5]))->tnear);
+        const vfloat4 c6 = vfloat4::load(&((Ray*)((char*)ray_i + offset[6]))->tnear);
+        const vfloat4 c7 = vfloat4::load(&((Ray*)((char*)ray_i + offset[7]))->tnear);
 
         vfloat8 maskf;
         transpose(c0,c1,c2,c3,c4,c5,c6,c7, ray.tnear, ray.tfar, ray.time, maskf);
         ray.mask = asInt(maskf);
 #else
         /* load and transpose: org.x, org.y, org.z */
-        const vfloat4 a0 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[0]))->org);
-        const vfloat4 a1 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[1]))->org);
-        const vfloat4 a2 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[2]))->org);
-        const vfloat4 a3 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[3]))->org);
+        const vfloat4 a0 = vfloat4::load(&((Ray*)((char*)ray_i + offset[0]))->org);
+        const vfloat4 a1 = vfloat4::load(&((Ray*)((char*)ray_i + offset[1]))->org);
+        const vfloat4 a2 = vfloat4::load(&((Ray*)((char*)ray_i + offset[2]))->org);
+        const vfloat4 a3 = vfloat4::load(&((Ray*)((char*)ray_i + offset[3]))->org);
 
         transpose(a0,a1,a2,a3, ray.org.x, ray.org.y, ray.org.z);
 
         /* load and transpose: dir.x, dir.y, dir.z */
-        const vfloat4 b0 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[0]))->dir);
-        const vfloat4 b1 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[1]))->dir);
-        const vfloat4 b2 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[2]))->dir);
-        const vfloat4 b3 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[3]))->dir);
+        const vfloat4 b0 = vfloat4::load(&((Ray*)((char*)ray_i + offset[0]))->dir);
+        const vfloat4 b1 = vfloat4::load(&((Ray*)((char*)ray_i + offset[1]))->dir);
+        const vfloat4 b2 = vfloat4::load(&((Ray*)((char*)ray_i + offset[2]))->dir);
+        const vfloat4 b3 = vfloat4::load(&((Ray*)((char*)ray_i + offset[3]))->dir);
 
         transpose(b0,b1,b2,b3, ray.dir.x, ray.dir.y, ray.dir.z);
 
         /* load and transpose: tnear, tfar, time, mask */
-        const vfloat4 c0 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[0]))->tnear);
-        const vfloat4 c1 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[1]))->tnear);
-        const vfloat4 c2 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[2]))->tnear);
-        const vfloat4 c3 = vfloat4::load(&((Ray*)((char*)ray_i + ofs[3]))->tnear);
+        const vfloat4 c0 = vfloat4::load(&((Ray*)((char*)ray_i + offset[0]))->tnear);
+        const vfloat4 c1 = vfloat4::load(&((Ray*)((char*)ray_i + offset[1]))->tnear);
+        const vfloat4 c2 = vfloat4::load(&((Ray*)((char*)ray_i + offset[2]))->tnear);
+        const vfloat4 c3 = vfloat4::load(&((Ray*)((char*)ray_i + offset[3]))->tnear);
 
         vfloat4 maskf;
         transpose(c0,c1,c2,c3, ray.tnear, ray.tfar, ray.time, maskf);
@@ -240,7 +241,7 @@ namespace embree
         /* init: geomID */
         ray.geomID = RTC_INVALID_GEOMETRY_ID;
 
-        /* skip invalid rays */
+        /* filter out invalid rays */
         const vboolx valid = ray.tnear <= ray.tfar;
 
         /* intersect packet */
@@ -251,23 +252,23 @@ namespace embree
 
         /* scatter hits */
 #if defined(__AVX512F__)
-        vintx::scatter<1>((int*)&ray_i->geomID, ofs, ray.geomID);
+        vintx::scatter<1>((int*)&ray_i->geomID, offset, ray.geomID);
         if (intersect)
         {
           const vboolx valid = ray.geomID != RTC_INVALID_GEOMETRY_ID;
-          vfloatx::scatter<1>(valid, &ray_i->tfar, ofs, ray.tfar);
-          vfloatx::scatter<1>(valid, &ray_i->Ng.x, ofs, ray.Ng.x);
-          vfloatx::scatter<1>(valid, &ray_i->Ng.y, ofs, ray.Ng.y);
-          vfloatx::scatter<1>(valid, &ray_i->Ng.z, ofs, ray.Ng.z);
-          vfloatx::scatter<1>(valid, &ray_i->u, ofs, ray.u);
-          vfloatx::scatter<1>(valid, &ray_i->v, ofs, ray.v);
-          vintx::scatter<1>(valid, (int*)&ray_i->primID, ofs, ray.primID);
-          vintx::scatter<1>(valid, (int*)&ray_i->instID, ofs, ray.instID);
+          vfloatx::scatter<1>(valid, &ray_i->tfar, offset, ray.tfar);
+          vfloatx::scatter<1>(valid, &ray_i->Ng.x, offset, ray.Ng.x);
+          vfloatx::scatter<1>(valid, &ray_i->Ng.y, offset, ray.Ng.y);
+          vfloatx::scatter<1>(valid, &ray_i->Ng.z, offset, ray.Ng.z);
+          vfloatx::scatter<1>(valid, &ray_i->u, offset, ray.u);
+          vfloatx::scatter<1>(valid, &ray_i->v, offset, ray.v);
+          vintx::scatter<1>(valid, (int*)&ray_i->primID, offset, ray.primID);
+          vintx::scatter<1>(valid, (int*)&ray_i->instID, offset, ray.instID);
         }
 #else
         for (size_t k = 0; k < VSIZEX; k++)
         {
-          Ray* __restrict__ ray_k = (Ray*)((char*)ray_i + ofs[k]);
+          Ray* __restrict__ ray_k = (Ray*)((char*)ray_i + offset[k]);
 
           ray_k->geomID = ray.geomID[k];
           if (intersect && ray.geomID[k] != RTC_INVALID_GEOMETRY_ID)
@@ -296,21 +297,21 @@ namespace embree
 
         /* gather rays */
 #if defined(__AVX2__)
-        ray.org.x  = vfloatx::gather<1>(valid, &ray_i->org.x, ofs);
-        ray.org.y  = vfloatx::gather<1>(valid, &ray_i->org.y, ofs);
-        ray.org.z  = vfloatx::gather<1>(valid, &ray_i->org.z, ofs);
-        ray.dir.x  = vfloatx::gather<1>(valid, &ray_i->dir.x, ofs);
-        ray.dir.y  = vfloatx::gather<1>(valid, &ray_i->dir.y, ofs);
-        ray.dir.z  = vfloatx::gather<1>(valid, &ray_i->dir.z, ofs);
-        ray.tnear  = vfloatx::gather<1>(valid, &ray_i->tnear, ofs);
-        ray.tfar   = vfloatx::gather<1>(valid, &ray_i->tfar, ofs);
-        ray.time   = vfloatx::gather<1>(valid, &ray_i->time, ofs);
-        ray.mask   = vintx::gather<1>(valid, &ray_i->mask, ofs);
-        ray.instID = vintx::gather<1>(valid, (int*)&ray_i->instID, ofs);
+        ray.org.x  = vfloatx::gather<1>(valid, &ray_i->org.x, offset);
+        ray.org.y  = vfloatx::gather<1>(valid, &ray_i->org.y, offset);
+        ray.org.z  = vfloatx::gather<1>(valid, &ray_i->org.z, offset);
+        ray.dir.x  = vfloatx::gather<1>(valid, &ray_i->dir.x, offset);
+        ray.dir.y  = vfloatx::gather<1>(valid, &ray_i->dir.y, offset);
+        ray.dir.z  = vfloatx::gather<1>(valid, &ray_i->dir.z, offset);
+        ray.tnear  = vfloatx::gather<1>(valid, &ray_i->tnear, offset);
+        ray.tfar   = vfloatx::gather<1>(valid, &ray_i->tfar, offset);
+        ray.time   = vfloatx::gather<1>(valid, &ray_i->time, offset);
+        ray.mask   = vintx::gather<1>(valid, &ray_i->mask, offset);
+        ray.instID = vintx::gather<1>(valid, (int*)&ray_i->instID, offset);
 #else
         for (size_t k = 0; k < Ntail; k++)
         {
-          Ray* __restrict__ ray_k = (Ray*)((char*)ray_i + ofs[k]);
+          Ray* __restrict__ ray_k = (Ray*)((char*)ray_i + offset[k]);
 
           ray.org.x[k]  = ray_k->org.x;
           ray.org.y[k]  = ray_k->org.y;
@@ -328,7 +329,7 @@ namespace embree
 
         ray.geomID = RTC_INVALID_GEOMETRY_ID;
 
-        /* skip invalid rays */
+        /* filter out invalid rays */
         valid &= ray.tnear <= ray.tfar;
 
         /* instersect packet */
@@ -339,23 +340,23 @@ namespace embree
 
         /* scatter hits */
 #if defined(__AVX512F__)
-        vintx::scatter<1>(valid, (int*)&ray_i->geomID, ofs, ray.geomID);
+        vintx::scatter<1>(valid, (int*)&ray_i->geomID, offset, ray.geomID);
         if (intersect)
         {
           valid &= ray.geomID != RTC_INVALID_GEOMETRY_ID;
-          vfloatx::scatter<1>(valid, &ray_i->tfar, ofs, ray.tfar);
-          vfloatx::scatter<1>(valid, &ray_i->Ng.x, ofs, ray.Ng.x);
-          vfloatx::scatter<1>(valid, &ray_i->Ng.y, ofs, ray.Ng.y);
-          vfloatx::scatter<1>(valid, &ray_i->Ng.z, ofs, ray.Ng.z);
-          vfloatx::scatter<1>(valid, &ray_i->u, ofs, ray.u);
-          vfloatx::scatter<1>(valid, &ray_i->v, ofs, ray.v);
-          vintx::scatter<1>(valid, (int*)&ray_i->primID, ofs, ray.primID);
-          vintx::scatter<1>(valid, (int*)&ray_i->instID, ofs, ray.instID);
+          vfloatx::scatter<1>(valid, &ray_i->tfar, offset, ray.tfar);
+          vfloatx::scatter<1>(valid, &ray_i->Ng.x, offset, ray.Ng.x);
+          vfloatx::scatter<1>(valid, &ray_i->Ng.y, offset, ray.Ng.y);
+          vfloatx::scatter<1>(valid, &ray_i->Ng.z, offset, ray.Ng.z);
+          vfloatx::scatter<1>(valid, &ray_i->u, offset, ray.u);
+          vfloatx::scatter<1>(valid, &ray_i->v, offset, ray.v);
+          vintx::scatter<1>(valid, (int*)&ray_i->primID, offset, ray.primID);
+          vintx::scatter<1>(valid, (int*)&ray_i->instID, offset, ray.instID);
         }
 #else
         for (size_t k = 0; k < Ntail; k++)
         {
-          Ray* __restrict__ ray_k = (Ray*)((char*)ray_i + ofs[k]);
+          Ray* __restrict__ ray_k = (Ray*)((char*)ray_i + offset[k]);
 
           ray_k->geomID = ray.geomID[k];
           if (intersect && ray.geomID[k] != RTC_INVALID_GEOMETRY_ID)
@@ -388,7 +389,7 @@ namespace embree
         for (;inputRayID<N;)
         {
           Ray &ray = *(Ray*)((char*)rayN + inputRayID * stride);
-          /* skip invalid rays */
+          /* filter out invalid rays */
           if (unlikely(ray.tnear > ray.tfar)) { inputRayID++; continue; }
           if (unlikely(!intersect && ray.geomID == 0)) { inputRayID++; continue; } // ignore already occluded rays
 
@@ -439,12 +440,74 @@ namespace embree
         }
         rays_in_octant[cur_octant] = 0;
       }
+
 #endif
     }
 
-    __forceinline void RayStream::filterAOP(Scene *scene, RTCRay** _rayN, const size_t N,IntersectContext* context, const bool intersect)
+    __forceinline void RayStream::filterAOP(Scene* scene, RTCRay** _rayN, const size_t N, IntersectContext* context, const bool intersect)
     {
       Ray** __restrict__ rayN = (Ray**)_rayN;
+
+#if 1
+
+      /* fallback to packets */
+      for (size_t i = 0; i < N; i += VSIZEX)
+      {
+        const size_t n = min(N - i, size_t(VSIZEX));
+        vboolx valid = vintx(step) < vintx(int(n));
+        RayK<VSIZEX> ray;
+
+        /* gather rays */
+        for (size_t k = 0; k < n; k++)
+        {
+          Ray* __restrict__ ray_k = rayN[i + k];
+
+          ray.org.x[k]  = ray_k->org.x;
+          ray.org.y[k]  = ray_k->org.y;
+          ray.org.z[k]  = ray_k->org.z;
+          ray.dir.x[k]  = ray_k->dir.x;
+          ray.dir.y[k]  = ray_k->dir.y;
+          ray.dir.z[k]  = ray_k->dir.z;
+          ray.tnear[k]  = ray_k->tnear;
+          ray.tfar[k]   = ray_k->tfar;
+          ray.time[k]   = ray_k->time;
+          ray.mask[k]   = ray_k->mask;
+          ray.instID[k] = ray_k->instID;
+        }
+
+        ray.geomID = RTC_INVALID_GEOMETRY_ID;
+
+        /* filter out invalid rays */
+        valid &= ray.tnear <= ray.tfar;
+
+        /* intersect packet */
+        if (intersect)
+          scene->intersect(valid, ray, context);
+        else
+          scene->occluded (valid, ray, context);
+
+        /* scatter hits */
+        for (size_t k = 0; k < n; k++)
+        {
+          Ray* __restrict__ ray_k = rayN[i + k];;
+
+          ray_k->geomID = ray.geomID[k];
+          if (intersect && ray.geomID[k] != RTC_INVALID_GEOMETRY_ID)
+          {
+            ray_k->tfar   = ray.tfar[k];
+            ray_k->Ng.x   = ray.Ng.x[k];
+            ray_k->Ng.y   = ray.Ng.y[k];
+            ray_k->Ng.z   = ray.Ng.z[k];
+            ray_k->u      = ray.u[k];
+            ray_k->v      = ray.v[k];
+            ray_k->primID = ray.primID[k];
+            ray_k->instID = ray.instID[k];
+          }
+        }
+      }
+
+#else
+
       __aligned(64) Ray* octants[8][MAX_RAYS_PER_OCTANT];
       unsigned int rays_in_octant[8];
 
@@ -458,7 +521,7 @@ namespace embree
         for (;inputRayID<N;)
         {
           Ray &ray = *rayN[inputRayID];
-          /* skip invalid rays */
+          /* filter out invalid rays */
           if (unlikely(ray.tnear > ray.tfar)) { inputRayID++; continue; }
           if (unlikely(!intersect && ray.geomID == 0)) { inputRayID++; continue; } // ignore already occluded rays
 
@@ -509,6 +572,8 @@ namespace embree
         }
         rays_in_octant[cur_octant] = 0;
       }
+
+#endif
     }
 
     void RayStream::filterSOACoherent(Scene *scene, char* rayData, const size_t streams, const size_t stream_offset, IntersectContext* context, const bool intersect)
@@ -818,11 +883,15 @@ namespace embree
         const size_t offset = sizeof(float) * i;
 
         RayK<VSIZEX> ray = rayN.gatherByOffset<VSIZEX>(valid, offset);
+
+        /* filter out invalid rays */
         valid &= ray.tnear <= ray.tfar;
+
         if (intersect)
           scene->intersect(valid, ray, context);
         else
           scene->occluded (valid, ray, context);
+
         rayN.scatterByOffset<VSIZEX>(valid, offset, ray, intersect);
       }
 
