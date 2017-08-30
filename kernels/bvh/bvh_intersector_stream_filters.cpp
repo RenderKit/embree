@@ -74,6 +74,9 @@ namespace embree
 
         ray.geomID = RTC_INVALID_GEOMETRY_ID;
 
+        /* skip invalid rays */
+        valid &= ray.tnear <= ray.tfar;
+
         /* intersect packet */
         if (intersect)
           scene->intersect(valid, ray, context);
@@ -237,11 +240,14 @@ namespace embree
         /* init: geomID */
         ray.geomID = RTC_INVALID_GEOMETRY_ID;
 
+        /* skip invalid rays */
+        const vboolx valid = ray.tnear <= ray.tfar;
+
         /* intersect packet */
         if (intersect)
-          scene->intersect(True, ray, context);
+          scene->intersect(valid, ray, context);
         else
-          scene->occluded (True, ray, context);
+          scene->occluded (valid, ray, context);
 
         /* scatter hits */
 #if defined(__AVX512F__)
@@ -321,6 +327,9 @@ namespace embree
 #endif
 
         ray.geomID = RTC_INVALID_GEOMETRY_ID;
+
+        /* skip invalid rays */
+        valid &= ray.tnear <= ray.tfar;
 
         /* instersect packet */
         if (intersect)
