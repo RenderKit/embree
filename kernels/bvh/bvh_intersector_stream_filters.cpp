@@ -30,6 +30,7 @@ namespace embree
       Ray* __restrict__ rayN = (Ray*)_rayN;
 
 #if 1
+
       /* fallback to packets */
       const vintx ofs = vintx(step) * int(stride);
 
@@ -439,12 +440,74 @@ namespace embree
         }
         rays_in_octant[cur_octant] = 0;
       }
+
 #endif
     }
 
-    __forceinline void RayStream::filterAOP(Scene *scene, RTCRay** _rayN, const size_t N,IntersectContext* context, const bool intersect)
+    __forceinline void RayStream::filterAOP(Scene* scene, RTCRay** _rayN, const size_t N, IntersectContext* context, const bool intersect)
     {
       Ray** __restrict__ rayN = (Ray**)_rayN;
+
+#if 1
+
+      /* fallback to packets */
+      for (size_t i = 0; i < N; i += VSIZEX)
+      {
+        const size_t n = min(N - i, size_t(VSIZEX));
+        vboolx valid = vintx(step) < vintx(int(n));
+        RayK<VSIZEX> ray;
+
+        /* gather rays */
+        for (size_t k = 0; k < n; k++)
+        {
+          Ray* __restrict__ ray_k = rayN[i + k];
+
+          ray.org.x[k] = ray_k->org.x;
+          ray.org.y[k] = ray_k->org.y;
+          ray.org.z[k] = ray_k->org.z;
+          ray.dir.x[k] = ray_k->dir.x;
+          ray.dir.y[k] = ray_k->dir.y;
+          ray.dir.z[k] = ray_k->dir.z;
+          ray.tnear[k] = ray_k->tnear;
+          ray.tfar[k]  = ray_k->tfar;
+          ray.time[k]  = ray_k->time;
+          ray.mask[k]  = ray_k->mask;
+          ray.instID[k] = ray_k->instID;
+        }
+
+        ray.geomID = RTC_INVALID_GEOMETRY_ID;
+
+        /* skip invalid rays */
+        valid &= ray.tnear <= ray.tfar;
+
+        /* intersect packet */
+        if (intersect)
+          scene->intersect(valid, ray, context);
+        else
+          scene->occluded (valid, ray, context);
+
+        /* scatter hits */
+        for (size_t k = 0; k < n; k++)
+        {
+          Ray* __restrict__ ray_k = rayN[i + k];;
+
+          ray_k->geomID = ray.geomID[k];
+          if (intersect && ray.geomID[k] != RTC_INVALID_GEOMETRY_ID)
+          {
+            ray_k->tfar   = ray.tfar[k];
+            ray_k->Ng.x   = ray.Ng.x[k];
+            ray_k->Ng.y   = ray.Ng.y[k];
+            ray_k->Ng.z   = ray.Ng.z[k];
+            ray_k->u      = ray.u[k];
+            ray_k->v      = ray.v[k];
+            ray_k->primID = ray.primID[k];
+            ray_k->instID = ray.instID[k];
+          }
+        }
+      }
+
+#else
+
       __aligned(64) Ray* octants[8][MAX_RAYS_PER_OCTANT];
       unsigned int rays_in_octant[8];
 
@@ -509,6 +572,8 @@ namespace embree
         }
         rays_in_octant[cur_octant] = 0;
       }
+
+#endif
     }
 
     void RayStream::filterSOACoherent(Scene *scene, char* rayData, const size_t streams, const size_t stream_offset, IntersectContext* context, const bool intersect)
