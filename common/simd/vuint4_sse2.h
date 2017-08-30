@@ -205,46 +205,46 @@ namespace embree
 
   __forceinline vuint4 asUint(const __m128& a) { return _mm_castps_si128(a); }
   __forceinline vuint4 operator +(const vuint4& a) { return a; }
-  __forceinline vuint4 operator -(const vuint4& a) { return _mm_sub_epi32(_mm_setzero_si128(), a.v); }
+  __forceinline vuint4 operator -(const vuint4& a) { return _mm_sub_epi32(_mm_setzero_si128(), a); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vuint4 operator +(const vuint4& a, const vuint4& b) { return _mm_add_epi32(a.v, b.v); }
+  __forceinline vuint4 operator +(const vuint4& a, const vuint4& b) { return _mm_add_epi32(a, b); }
   __forceinline vuint4 operator +(const vuint4& a, unsigned int  b) { return a + vuint4(b); }
   __forceinline vuint4 operator +(unsigned int  a, const vuint4& b) { return vuint4(a) + b; }
 
-  __forceinline vuint4 operator -(const vuint4& a, const vuint4& b) { return _mm_sub_epi32(a.v, b.v); }
+  __forceinline vuint4 operator -(const vuint4& a, const vuint4& b) { return _mm_sub_epi32(a, b); }
   __forceinline vuint4 operator -(const vuint4& a, unsigned int  b) { return a - vuint4(b); }
   __forceinline vuint4 operator -(unsigned int  a, const vuint4& b) { return vuint4(a) - b; }
 
 //#if defined(__SSE4_1__)
-//  __forceinline vuint4 operator *(const vuint4& a, const vuint4& b) { return _mm_mullo_epu32(a.v, b.v); }
+//  __forceinline vuint4 operator *(const vuint4& a, const vuint4& b) { return _mm_mullo_epu32(a, b); }
 //#else
 //  __forceinline vuint4 operator *(const vuint4& a, const vuint4& b) { return vuint4(a[0]*b[0],a[1]*b[1],a[2]*b[2],a[3]*b[3]); }
 //#endif
 //  __forceinline vuint4 operator *(const vuint4& a, unsigned int  b) { return a * vuint4(b); }
 //  __forceinline vuint4 operator *(unsigned int  a, const vuint4& b) { return vuint4(a) * b; }
 
-  __forceinline vuint4 operator &(const vuint4& a, const vuint4& b) { return _mm_and_si128(a.v, b.v); }
+  __forceinline vuint4 operator &(const vuint4& a, const vuint4& b) { return _mm_and_si128(a, b); }
   __forceinline vuint4 operator &(const vuint4& a, unsigned int  b) { return a & vuint4(b); }
   __forceinline vuint4 operator &(unsigned int  a, const vuint4& b) { return vuint4(a) & b; }
 
-  __forceinline vuint4 operator |(const vuint4& a, const vuint4& b) { return _mm_or_si128(a.v, b.v); }
+  __forceinline vuint4 operator |(const vuint4& a, const vuint4& b) { return _mm_or_si128(a, b); }
   __forceinline vuint4 operator |(const vuint4& a, unsigned int  b) { return a | vuint4(b); }
   __forceinline vuint4 operator |(unsigned int  a, const vuint4& b) { return vuint4(a) | b; }
 
-  __forceinline vuint4 operator ^(const vuint4& a, const vuint4& b) { return _mm_xor_si128(a.v, b.v); }
+  __forceinline vuint4 operator ^(const vuint4& a, const vuint4& b) { return _mm_xor_si128(a, b); }
   __forceinline vuint4 operator ^(const vuint4& a, unsigned int  b) { return a ^ vuint4(b); }
   __forceinline vuint4 operator ^(unsigned int  a, const vuint4& b) { return vuint4(a) ^ b; }
 
-  __forceinline vuint4 operator <<(const vuint4& a, unsigned int n) { return _mm_slli_epi32(a.v, n); }
-  __forceinline vuint4 operator >>(const vuint4& a, unsigned int n) { return _mm_srli_epi32(a.v, n); }
+  __forceinline vuint4 operator <<(const vuint4& a, unsigned int n) { return _mm_slli_epi32(a, n); }
+  __forceinline vuint4 operator >>(const vuint4& a, unsigned int n) { return _mm_srli_epi32(a, n); }
 
-  __forceinline vuint4 sll (const vuint4& a, unsigned int b) { return _mm_slli_epi32(a.v, b); }
-  __forceinline vuint4 sra (const vuint4& a, unsigned int b) { return _mm_srai_epi32(a.v, b); }
-  __forceinline vuint4 srl (const vuint4& a, unsigned int b) { return _mm_srli_epi32(a.v, b); }
+  __forceinline vuint4 sll (const vuint4& a, unsigned int b) { return _mm_slli_epi32(a, b); }
+  __forceinline vuint4 sra (const vuint4& a, unsigned int b) { return _mm_srai_epi32(a, b); }
+  __forceinline vuint4 srl (const vuint4& a, unsigned int b) { return _mm_srli_epi32(a, b); }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
@@ -341,8 +341,8 @@ namespace embree
   }
 
 /*#if defined(__SSE4_1__)
-  __forceinline vuint4 min(const vuint4& a, const vuint4& b) { return _mm_min_epu32(a.v, b.v); }
-  __forceinline vuint4 max(const vuint4& a, const vuint4& b) { return _mm_max_epu32(a.v, b.v); }
+  __forceinline vuint4 min(const vuint4& a, const vuint4& b) { return _mm_min_epu32(a, b); }
+  __forceinline vuint4 max(const vuint4& a, const vuint4& b) { return _mm_max_epu32(a, b); }
 
 #else
   __forceinline vuint4 min(const vuint4& a, const vuint4& b) { return select(a < b,a,b); }

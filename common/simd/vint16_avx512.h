@@ -242,8 +242,8 @@ namespace embree
   __forceinline vint16 max(const vint16& a, int           b) { return max(a,vint16(b)); }
   __forceinline vint16 max(int           a, const vint16& b) { return max(vint16(a),b); }
   
-  __forceinline vint16 umin(const vint16& a, const vint16& b) { return _mm512_min_epu32(a.v, b.v); }
-  __forceinline vint16 umax(const vint16& a, const vint16& b) { return _mm512_max_epu32(a.v, b.v); }
+  __forceinline vint16 umin(const vint16& a, const vint16& b) { return _mm512_min_epu32(a, b); }
+  __forceinline vint16 umax(const vint16& a, const vint16& b) { return _mm512_max_epu32(a, b); }
 
   __forceinline vint16 mask_add(const vboolf16& mask, vint16& c, const vint16& a, const vint16& b) { return _mm512_mask_add_epi32(c,mask,a,b); }
   __forceinline vint16 mask_sub(const vboolf16& mask, vint16& c, const vint16& a, const vint16& b) { return _mm512_mask_sub_epi32(c,mask,a,b); }

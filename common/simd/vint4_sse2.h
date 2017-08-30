@@ -211,49 +211,49 @@ namespace embree
 
   __forceinline vint4 asInt(const __m128& a) { return _mm_castps_si128(a); }
   __forceinline vint4 operator +(const vint4& a) { return a; }
-  __forceinline vint4 operator -(const vint4& a) { return _mm_sub_epi32(_mm_setzero_si128(), a.v); }
+  __forceinline vint4 operator -(const vint4& a) { return _mm_sub_epi32(_mm_setzero_si128(), a); }
 #if defined(__SSSE3__)
-  __forceinline vint4 abs(const vint4& a) { return _mm_abs_epi32(a.v); }
+  __forceinline vint4 abs(const vint4& a) { return _mm_abs_epi32(a); }
 #endif
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vint4 operator +(const vint4& a, const vint4& b) { return _mm_add_epi32(a.v, b.v); }
+  __forceinline vint4 operator +(const vint4& a, const vint4& b) { return _mm_add_epi32(a, b); }
   __forceinline vint4 operator +(const vint4& a, const int&   b) { return a + vint4(b); }
   __forceinline vint4 operator +(const int&   a, const vint4& b) { return vint4(a) + b; }
 
-  __forceinline vint4 operator -(const vint4& a, const vint4& b) { return _mm_sub_epi32(a.v, b.v); }
+  __forceinline vint4 operator -(const vint4& a, const vint4& b) { return _mm_sub_epi32(a, b); }
   __forceinline vint4 operator -(const vint4& a, const int&   b) { return a - vint4(b); }
   __forceinline vint4 operator -(const int&   a, const vint4& b) { return vint4(a) - b; }
 
 #if defined(__SSE4_1__)
-  __forceinline vint4 operator *(const vint4& a, const vint4& b) { return _mm_mullo_epi32(a.v, b.v); }
+  __forceinline vint4 operator *(const vint4& a, const vint4& b) { return _mm_mullo_epi32(a, b); }
 #else
   __forceinline vint4 operator *(const vint4& a, const vint4& b) { return vint4(a[0]*b[0],a[1]*b[1],a[2]*b[2],a[3]*b[3]); }
 #endif
   __forceinline vint4 operator *(const vint4& a, const int&   b) { return a * vint4(b); }
   __forceinline vint4 operator *(const int&   a, const vint4& b) { return vint4(a) * b; }
 
-  __forceinline vint4 operator &(const vint4& a, const vint4& b) { return _mm_and_si128(a.v, b.v); }
+  __forceinline vint4 operator &(const vint4& a, const vint4& b) { return _mm_and_si128(a, b); }
   __forceinline vint4 operator &(const vint4& a, const int&   b) { return a & vint4(b); }
   __forceinline vint4 operator &(const int&   a, const vint4& b) { return vint4(a) & b; }
 
-  __forceinline vint4 operator |(const vint4& a, const vint4& b) { return _mm_or_si128(a.v, b.v); }
+  __forceinline vint4 operator |(const vint4& a, const vint4& b) { return _mm_or_si128(a, b); }
   __forceinline vint4 operator |(const vint4& a, const int&   b) { return a | vint4(b); }
   __forceinline vint4 operator |(const int&   a, const vint4& b) { return vint4(a) | b; }
 
-  __forceinline vint4 operator ^(const vint4& a, const vint4& b) { return _mm_xor_si128(a.v, b.v); }
+  __forceinline vint4 operator ^(const vint4& a, const vint4& b) { return _mm_xor_si128(a, b); }
   __forceinline vint4 operator ^(const vint4& a, const int&   b) { return a ^ vint4(b); }
   __forceinline vint4 operator ^(const int&   a, const vint4& b) { return vint4(a) ^ b; }
 
-  __forceinline vint4 operator <<(const vint4& a, const int& n) { return _mm_slli_epi32(a.v, n); }
-  __forceinline vint4 operator >>(const vint4& a, const int& n) { return _mm_srai_epi32(a.v, n); }
+  __forceinline vint4 operator <<(const vint4& a, const int& n) { return _mm_slli_epi32(a, n); }
+  __forceinline vint4 operator >>(const vint4& a, const int& n) { return _mm_srai_epi32(a, n); }
 
-  __forceinline vint4 sll (const vint4& a, const int& b) { return _mm_slli_epi32(a.v, b); }
-  __forceinline vint4 sra (const vint4& a, const int& b) { return _mm_srai_epi32(a.v, b); }
-  __forceinline vint4 srl (const vint4& a, const int& b) { return _mm_srli_epi32(a.v, b); }
+  __forceinline vint4 sll (const vint4& a, const int& b) { return _mm_slli_epi32(a, b); }
+  __forceinline vint4 sra (const vint4& a, const int& b) { return _mm_srai_epi32(a, b); }
+  __forceinline vint4 srl (const vint4& a, const int& b) { return _mm_srli_epi32(a, b); }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
@@ -350,11 +350,11 @@ namespace embree
   }
 
 #if defined(__SSE4_1__)
-  __forceinline vint4 min(const vint4& a, const vint4& b) { return _mm_min_epi32(a.v, b.v); }
-  __forceinline vint4 max(const vint4& a, const vint4& b) { return _mm_max_epi32(a.v, b.v); }
+  __forceinline vint4 min(const vint4& a, const vint4& b) { return _mm_min_epi32(a, b); }
+  __forceinline vint4 max(const vint4& a, const vint4& b) { return _mm_max_epi32(a, b); }
 
-  __forceinline vint4 umin(const vint4& a, const vint4& b) { return _mm_min_epu32(a.v, b.v); }
-  __forceinline vint4 umax(const vint4& a, const vint4& b) { return _mm_max_epu32(a.v, b.v); }
+  __forceinline vint4 umin(const vint4& a, const vint4& b) { return _mm_min_epu32(a, b); }
+  __forceinline vint4 umax(const vint4& a, const vint4& b) { return _mm_max_epu32(a, b); }
 
 #else
   __forceinline vint4 min(const vint4& a, const vint4& b) { return select(a < b,a,b); }

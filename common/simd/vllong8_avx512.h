@@ -57,7 +57,7 @@ namespace embree
     }
    
     __forceinline vllong(const vllong<4>& i) {
-      v = _mm512_broadcast_i64x4(i.v);
+      v = _mm512_broadcast_i64x4(i);
     }
     
     ////////////////////////////////////////////////////////////////////////////////

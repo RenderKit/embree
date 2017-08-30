@@ -158,61 +158,61 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline vint8 operator +(const vint8& a) { return a; }
-  __forceinline vint8 operator -(const vint8& a) { return _mm256_sub_epi32(_mm256_setzero_si256(), a.v); }
-  __forceinline vint8 abs       (const vint8& a) { return _mm256_abs_epi32(a.v); }
+  __forceinline vint8 operator -(const vint8& a) { return _mm256_sub_epi32(_mm256_setzero_si256(), a); }
+  __forceinline vint8 abs       (const vint8& a) { return _mm256_abs_epi32(a); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vint8 operator +(const vint8& a, const vint8& b) { return _mm256_add_epi32(a.v, b.v); }
+  __forceinline vint8 operator +(const vint8& a, const vint8& b) { return _mm256_add_epi32(a, b); }
   __forceinline vint8 operator +(const vint8& a, int          b) { return a + vint8(b); }
   __forceinline vint8 operator +(int          a, const vint8& b) { return vint8(a) + b; }
 
-  __forceinline vint8 operator -(const vint8& a, const vint8& b) { return _mm256_sub_epi32(a.v, b.v); }
+  __forceinline vint8 operator -(const vint8& a, const vint8& b) { return _mm256_sub_epi32(a, b); }
   __forceinline vint8 operator -(const vint8& a, int          b) { return a - vint8(b); }
   __forceinline vint8 operator -(int          a, const vint8& b) { return vint8(a) - b; }
 
-  __forceinline vint8 operator *(const vint8& a, const vint8& b) { return _mm256_mullo_epi32(a.v, b.v); }
+  __forceinline vint8 operator *(const vint8& a, const vint8& b) { return _mm256_mullo_epi32(a, b); }
   __forceinline vint8 operator *(const vint8& a, int          b) { return a * vint8(b); }
   __forceinline vint8 operator *(int          a, const vint8& b) { return vint8(a) * b; }
 
-  __forceinline vint8 operator &(const vint8& a, const vint8& b) { return _mm256_and_si256(a.v, b.v); }
+  __forceinline vint8 operator &(const vint8& a, const vint8& b) { return _mm256_and_si256(a, b); }
   __forceinline vint8 operator &(const vint8& a, int          b) { return a & vint8(b); }
   __forceinline vint8 operator &(int          a, const vint8& b) { return vint8(a) & b; }
 
-  __forceinline vint8 operator |(const vint8& a, const vint8& b) { return _mm256_or_si256(a.v, b.v); }
+  __forceinline vint8 operator |(const vint8& a, const vint8& b) { return _mm256_or_si256(a, b); }
   __forceinline vint8 operator |(const vint8& a, int          b) { return a | vint8(b); }
   __forceinline vint8 operator |(int          a, const vint8& b) { return vint8(a) | b; }
 
-  __forceinline vint8 operator ^(const vint8& a, const vint8& b) { return _mm256_xor_si256(a.v, b.v); }
+  __forceinline vint8 operator ^(const vint8& a, const vint8& b) { return _mm256_xor_si256(a, b); }
   __forceinline vint8 operator ^(const vint8& a, int          b) { return a ^ vint8(b); }
   __forceinline vint8 operator ^(int          a, const vint8& b) { return vint8(a) ^ b; }
 
-  __forceinline vint8 operator <<(const vint8& a, int n) { return _mm256_slli_epi32(a.v, n); }
-  __forceinline vint8 operator >>(const vint8& a, int n) { return _mm256_srai_epi32(a.v, n); }
+  __forceinline vint8 operator <<(const vint8& a, int n) { return _mm256_slli_epi32(a, n); }
+  __forceinline vint8 operator >>(const vint8& a, int n) { return _mm256_srai_epi32(a, n); }
 
-  __forceinline vint8 operator <<(const vint8& a, const vint8& n) { return _mm256_sllv_epi32(a.v, n); }
-  __forceinline vint8 operator >>(const vint8& a, const vint8& n) { return _mm256_srav_epi32(a.v, n); }
+  __forceinline vint8 operator <<(const vint8& a, const vint8& n) { return _mm256_sllv_epi32(a, n); }
+  __forceinline vint8 operator >>(const vint8& a, const vint8& n) { return _mm256_srav_epi32(a, n); }
 
-  __forceinline vint8 sll(const vint8& a, int b) { return _mm256_slli_epi32(a.v, b); }
-  __forceinline vint8 sra(const vint8& a, int b) { return _mm256_srai_epi32(a.v, b); }
-  __forceinline vint8 srl(const vint8& a, int b) { return _mm256_srli_epi32(a.v, b); }
+  __forceinline vint8 sll(const vint8& a, int b) { return _mm256_slli_epi32(a, b); }
+  __forceinline vint8 sra(const vint8& a, int b) { return _mm256_srai_epi32(a, b); }
+  __forceinline vint8 srl(const vint8& a, int b) { return _mm256_srli_epi32(a, b); }
 
-  __forceinline vint8 sll(const vint8& a, const vint8& b) { return _mm256_sllv_epi32(a.v, b.v); }
-  __forceinline vint8 sra(const vint8& a, const vint8& b) { return _mm256_srav_epi32(a.v, b.v); }
-  __forceinline vint8 srl(const vint8& a, const vint8& b) { return _mm256_srlv_epi32(a.v, b.v); }
+  __forceinline vint8 sll(const vint8& a, const vint8& b) { return _mm256_sllv_epi32(a, b); }
+  __forceinline vint8 sra(const vint8& a, const vint8& b) { return _mm256_srav_epi32(a, b); }
+  __forceinline vint8 srl(const vint8& a, const vint8& b) { return _mm256_srlv_epi32(a, b); }
   
-  __forceinline vint8 min(const vint8& a, const vint8& b) { return _mm256_min_epi32(a.v, b.v); }
+  __forceinline vint8 min(const vint8& a, const vint8& b) { return _mm256_min_epi32(a, b); }
   __forceinline vint8 min(const vint8& a, int          b) { return min(a,vint8(b)); }
   __forceinline vint8 min(int          a, const vint8& b) { return min(vint8(a),b); }
 
-  __forceinline vint8 max(const vint8& a, const vint8& b) { return _mm256_max_epi32(a.v, b.v); }
+  __forceinline vint8 max(const vint8& a, const vint8& b) { return _mm256_max_epi32(a, b); }
   __forceinline vint8 max(const vint8& a, int          b) { return max(a,vint8(b)); }
   __forceinline vint8 max(int          a, const vint8& b) { return max(vint8(a),b); }
 
-  __forceinline vint8 umin(const vint8& a, const vint8& b) { return _mm256_min_epu32(a.v, b.v); }
-  __forceinline vint8 umax(const vint8& a, const vint8& b) { return _mm256_max_epu32(a.v, b.v); }
+  __forceinline vint8 umin(const vint8& a, const vint8& b) { return _mm256_min_epu32(a, b); }
+  __forceinline vint8 umax(const vint8& a, const vint8& b) { return _mm256_max_epu32(a, b); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators

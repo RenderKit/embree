@@ -202,7 +202,7 @@ namespace embree
 #if defined(__AVX512ER__)
     return _mm512_rcp28_ps(a);
 #else
-    const vfloat16 r = _mm512_rcp14_ps(a.v);
+    const vfloat16 r = _mm512_rcp14_ps(a);
     return _mm512_mul_ps(r, _mm512_fnmadd_ps(r, a, vfloat16(2.0f)));
 #endif
   }
@@ -213,11 +213,11 @@ namespace embree
   __forceinline vfloat16 rsqrt(const vfloat16& a)
   {
 #if defined(__AVX512VL__)
-    const vfloat16 r = _mm512_rsqrt14_ps(a.v);
+    const vfloat16 r = _mm512_rsqrt14_ps(a);
     return _mm512_fmadd_ps(_mm512_set1_ps(1.5f), r,
                            _mm512_mul_ps(_mm512_mul_ps(_mm512_mul_ps(a, _mm512_set1_ps(-0.5f)), r), _mm512_mul_ps(r, r))); 
 #else
-    return _mm512_rsqrt28_ps(a.v);
+    return _mm512_rsqrt28_ps(a);
 #endif
   }
 
