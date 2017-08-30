@@ -44,10 +44,7 @@ namespace embree
     __forceinline operator       __m128i&()       { return v; }
 
 
-    __forceinline vuint(const unsigned int& a) : v(_mm_shuffle_epi32(_mm_castps_si128(_mm_load_ss((float*)&a)), _MM_SHUFFLE(0, 0, 0, 0))) {}
-#if defined(__X86_64__)
-    __forceinline vuint(size_t a) : v(_mm_set1_epi32((int)a)) {}
-#endif
+    __forceinline vuint(unsigned int a) : v(_mm_set1_epi32(a)) {}
     __forceinline vuint(unsigned int a, unsigned int b, unsigned int c, unsigned int d) : v(_mm_set_epi32(d, c, b, a)) {}
 
     //__forceinline explicit vuint(__m128 a) : v(_mm_cvtps_epu32(a)) {}

@@ -37,7 +37,7 @@ namespace embree
     __forceinline vfloat(const vfloat8& other) { v = other.v; }
     __forceinline vfloat8& operator =(const vfloat8& other) { v = other.v; return *this; }
 
-    __forceinline vfloat(const __m256 a) : v(a) {}
+    __forceinline vfloat(__m256 a) : v(a) {}
     __forceinline operator const __m256&() const { return v; }
     __forceinline operator       __m256&()       { return v; }
 
@@ -45,12 +45,12 @@ namespace embree
     __forceinline vfloat(const vfloat4& a, const vfloat4& b) : v(_mm256_insertf128_ps(_mm256_castps128_ps256(a),b,1)) {}
 
     __forceinline explicit vfloat(const char* a) : v(_mm256_loadu_ps((const float*)a)) {}
-    __forceinline vfloat(const float& a) : v(_mm256_broadcast_ss(&a)) {}
+    __forceinline vfloat(float a) : v(_mm256_set1_ps(a)) {}
     __forceinline vfloat(float a, float b) : v(_mm256_set_ps(b, a, b, a, b, a, b, a)) {}
     __forceinline vfloat(float a, float b, float c, float d) : v(_mm256_set_ps(d, c, b, a, d, c, b, a)) {}
     __forceinline vfloat(float a, float b, float c, float d, float e, float f, float g, float h) : v(_mm256_set_ps(h, g, f, e, d, c, b, a)) {}
 
-    __forceinline explicit vfloat(const __m256i a) : v(_mm256_cvtepi32_ps(a)) {}
+    __forceinline explicit vfloat(__m256i a) : v(_mm256_cvtepi32_ps(a)) {}
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
@@ -560,7 +560,7 @@ namespace embree
   }
 #endif
 
-  __forceinline vint8 floori (const vfloat8& a) {
+  __forceinline vint8 floori(const vfloat8& a) {
     return vint8(floor(a));
   }
 

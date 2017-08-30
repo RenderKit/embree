@@ -37,14 +37,14 @@ namespace embree
     __forceinline vfloat(const vfloat4& other) { v = other.v; }
     __forceinline vfloat4& operator =(const vfloat4& other) { v = other.v; return *this; }
 
-    __forceinline vfloat(const __m128 a) : v(a) {}
+    __forceinline vfloat(__m128 a) : v(a) {}
     __forceinline operator const __m128&() const { return v; }
     __forceinline operator       __m128&()       { return v; }
 
     __forceinline vfloat(float a) : v(_mm_set1_ps(a)) {}
     __forceinline vfloat(float a, float b, float c, float d) : v(_mm_set_ps(d, c, b, a)) {}
 
-    __forceinline explicit vfloat(const __m128i a) : v(_mm_cvtepi32_ps(a)) {}
+    __forceinline explicit vfloat(__m128i a) : v(_mm_cvtepi32_ps(a)) {}
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
@@ -271,31 +271,31 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline vfloat4 operator +(const vfloat4& a, const vfloat4& b) { return _mm_add_ps(a, b); }
-  __forceinline vfloat4 operator +(const vfloat4& a, const float&   b) { return a + vfloat4(b); }
-  __forceinline vfloat4 operator +(const float&   a, const vfloat4& b) { return vfloat4(a) + b; }
+  __forceinline vfloat4 operator +(const vfloat4& a, float          b) { return a + vfloat4(b); }
+  __forceinline vfloat4 operator +(float          a, const vfloat4& b) { return vfloat4(a) + b; }
 
   __forceinline vfloat4 operator -(const vfloat4& a, const vfloat4& b) { return _mm_sub_ps(a, b); }
-  __forceinline vfloat4 operator -(const vfloat4& a, const float&   b) { return a - vfloat4(b); }
-  __forceinline vfloat4 operator -(const float&   a, const vfloat4& b) { return vfloat4(a) - b; }
+  __forceinline vfloat4 operator -(const vfloat4& a, float          b) { return a - vfloat4(b); }
+  __forceinline vfloat4 operator -(float          a, const vfloat4& b) { return vfloat4(a) - b; }
 
   __forceinline vfloat4 operator *(const vfloat4& a, const vfloat4& b) { return _mm_mul_ps(a, b); }
-  __forceinline vfloat4 operator *(const vfloat4& a, const float&   b) { return a * vfloat4(b); }
-  __forceinline vfloat4 operator *(const float&   a, const vfloat4& b) { return vfloat4(a) * b; }
+  __forceinline vfloat4 operator *(const vfloat4& a, float          b) { return a * vfloat4(b); }
+  __forceinline vfloat4 operator *(float          a, const vfloat4& b) { return vfloat4(a) * b; }
 
   __forceinline vfloat4 operator /(const vfloat4& a, const vfloat4& b) { return _mm_div_ps(a,b); }
-  __forceinline vfloat4 operator /(const vfloat4& a, const float&   b) { return a/vfloat4(b); }
-  __forceinline vfloat4 operator /(const float&   a, const vfloat4& b) { return vfloat4(a)/b; }
+  __forceinline vfloat4 operator /(const vfloat4& a, float          b) { return a/vfloat4(b); }
+  __forceinline vfloat4 operator /(float          a, const vfloat4& b) { return vfloat4(a)/b; }
 
   __forceinline vfloat4 operator ^(const vfloat4& a, const vfloat4& b) { return _mm_xor_ps(a,b); }
   __forceinline vfloat4 operator ^(const vfloat4& a, const vint4&   b) { return _mm_xor_ps(a,_mm_castsi128_ps(b)); }
 
   __forceinline vfloat4 min(const vfloat4& a, const vfloat4& b) { return _mm_min_ps(a,b); }
-  __forceinline vfloat4 min(const vfloat4& a, const float&   b) { return _mm_min_ps(a,vfloat4(b)); }
-  __forceinline vfloat4 min(const float&   a, const vfloat4& b) { return _mm_min_ps(vfloat4(a),b); }
+  __forceinline vfloat4 min(const vfloat4& a, float          b) { return _mm_min_ps(a,vfloat4(b)); }
+  __forceinline vfloat4 min(float          a, const vfloat4& b) { return _mm_min_ps(vfloat4(a),b); }
 
   __forceinline vfloat4 max(const vfloat4& a, const vfloat4& b) { return _mm_max_ps(a,b); }
-  __forceinline vfloat4 max(const vfloat4& a, const float&   b) { return _mm_max_ps(a,vfloat4(b)); }
-  __forceinline vfloat4 max(const float&   a, const vfloat4& b) { return _mm_max_ps(vfloat4(a),b); }
+  __forceinline vfloat4 max(const vfloat4& a, float          b) { return _mm_max_ps(a,vfloat4(b)); }
+  __forceinline vfloat4 max(float          a, const vfloat4& b) { return _mm_max_ps(vfloat4(a),b); }
 
 #if defined(__SSE4_1__)
     __forceinline vfloat4 mini(const vfloat4& a, const vfloat4& b) {
@@ -356,16 +356,16 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline vfloat4& operator +=(vfloat4& a, const vfloat4& b) { return a = a + b; }
-  __forceinline vfloat4& operator +=(vfloat4& a, const float&   b) { return a = a + b; }
+  __forceinline vfloat4& operator +=(vfloat4& a, float          b) { return a = a + b; }
 
   __forceinline vfloat4& operator -=(vfloat4& a, const vfloat4& b) { return a = a - b; }
-  __forceinline vfloat4& operator -=(vfloat4& a, const float&   b) { return a = a - b; }
+  __forceinline vfloat4& operator -=(vfloat4& a, float          b) { return a = a - b; }
 
   __forceinline vfloat4& operator *=(vfloat4& a, const vfloat4& b) { return a = a * b; }
-  __forceinline vfloat4& operator *=(vfloat4& a, const float&   b) { return a = a * b; }
+  __forceinline vfloat4& operator *=(vfloat4& a, float          b) { return a = a * b; }
 
   __forceinline vfloat4& operator /=(vfloat4& a, const vfloat4& b) { return a = a / b; }
-  __forceinline vfloat4& operator /=(vfloat4& a, const float&   b) { return a = a / b; }
+  __forceinline vfloat4& operator /=(vfloat4& a, float          b) { return a = a / b; }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Comparison Operators + Select
@@ -387,23 +387,23 @@ namespace embree
   __forceinline vboolf4 operator <=(const vfloat4& a, const vfloat4& b) { return _mm_cmple_ps (a, b); }
 #endif
 
-  __forceinline vboolf4 operator ==(const vfloat4& a, const float&   b) { return a == vfloat4(b); }
-  __forceinline vboolf4 operator ==(const float&   a, const vfloat4& b) { return vfloat4(a) == b; }
+  __forceinline vboolf4 operator ==(const vfloat4& a, float          b) { return a == vfloat4(b); }
+  __forceinline vboolf4 operator ==(float          a, const vfloat4& b) { return vfloat4(a) == b; }
 
-  __forceinline vboolf4 operator !=(const vfloat4& a, const float&   b) { return a != vfloat4(b); }
-  __forceinline vboolf4 operator !=(const float&   a, const vfloat4& b) { return vfloat4(a) != b; }
+  __forceinline vboolf4 operator !=(const vfloat4& a, float          b) { return a != vfloat4(b); }
+  __forceinline vboolf4 operator !=(float          a, const vfloat4& b) { return vfloat4(a) != b; }
 
-  __forceinline vboolf4 operator < (const vfloat4& a, const float&   b) { return a <  vfloat4(b); }
-  __forceinline vboolf4 operator < (const float&   a, const vfloat4& b) { return vfloat4(a) <  b; }
+  __forceinline vboolf4 operator < (const vfloat4& a, float          b) { return a <  vfloat4(b); }
+  __forceinline vboolf4 operator < (float          a, const vfloat4& b) { return vfloat4(a) <  b; }
   
-  __forceinline vboolf4 operator >=(const vfloat4& a, const float&   b) { return a >= vfloat4(b); }
-  __forceinline vboolf4 operator >=(const float&   a, const vfloat4& b) { return vfloat4(a) >= b; }
+  __forceinline vboolf4 operator >=(const vfloat4& a, float          b) { return a >= vfloat4(b); }
+  __forceinline vboolf4 operator >=(float          a, const vfloat4& b) { return vfloat4(a) >= b; }
 
-  __forceinline vboolf4 operator > (const vfloat4& a, const float&   b) { return a >  vfloat4(b); }
-  __forceinline vboolf4 operator > (const float&   a, const vfloat4& b) { return vfloat4(a) >  b; }
+  __forceinline vboolf4 operator > (const vfloat4& a, float          b) { return a >  vfloat4(b); }
+  __forceinline vboolf4 operator > (float          a, const vfloat4& b) { return vfloat4(a) >  b; }
 
-  __forceinline vboolf4 operator <=(const vfloat4& a, const float&   b) { return a <= vfloat4(b); }
-  __forceinline vboolf4 operator <=(const float&   a, const vfloat4& b) { return vfloat4(a) <= b; }
+  __forceinline vboolf4 operator <=(const vfloat4& a, float          b) { return a <= vfloat4(b); }
+  __forceinline vboolf4 operator <=(float          a, const vfloat4& b) { return vfloat4(a) <= b; }
 
   __forceinline vboolf4 eq(const vfloat4& a, const vfloat4& b) { return a == b; }
   __forceinline vboolf4 ne(const vfloat4& a, const vfloat4& b) { return a != b; }
@@ -524,12 +524,12 @@ namespace embree
   template<int dst> __forceinline vfloat4 insert(const vfloat4& a, const float b) { return insert<dst, 0>(a, _mm_set_ss(b)); }
 #else
   template<int dst, int src> __forceinline vfloat4 insert(const vfloat4& a, const vfloat4& b) { vfloat4 c = a; c[dst] = b[src]; return c; }
-  template<int dst>  __forceinline vfloat4 insert(const vfloat4& a, const float b) { vfloat4 c = a; c[dst] = b; return c; }
+  template<int dst>  __forceinline vfloat4 insert(const vfloat4& a, float b) { vfloat4 c = a; c[dst] = b; return c; }
 #endif
 
   __forceinline float toScalar(const vfloat4& v) { return _mm_cvtss_f32(v); }
 
-  __forceinline vfloat4 broadcast4f(const vfloat4& a, const size_t k) {
+  __forceinline vfloat4 broadcast4f(const vfloat4& a, size_t k) {
     return vfloat4::broadcast(&a[k]);
   }
 

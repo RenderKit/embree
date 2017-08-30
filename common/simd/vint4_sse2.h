@@ -43,12 +43,7 @@ namespace embree
     __forceinline operator const __m128i&() const { return v; }
     __forceinline operator       __m128i&()       { return v; }
 
-
-    __forceinline vint(const int& a) : v(_mm_shuffle_epi32(_mm_castps_si128(_mm_load_ss((float*)&a)), _MM_SHUFFLE(0, 0, 0, 0))) {}
-    __forceinline vint(const uint32_t& a) : v(_mm_shuffle_epi32(_mm_castps_si128(_mm_load_ss((float*)&a)), _MM_SHUFFLE(0, 0, 0, 0))) {}
-#if defined(__X86_64__)
-    __forceinline vint(size_t a) : v(_mm_set1_epi32((int)a)) {}
-#endif
+    __forceinline vint(int a) : v(_mm_set1_epi32(a)) {}
     __forceinline vint(int a, int b, int c, int d) : v(_mm_set_epi32(d, c, b, a)) {}
 
     __forceinline explicit vint(__m128 a) : v(_mm_cvtps_epi32(a)) {}
@@ -221,63 +216,63 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline vint4 operator +(const vint4& a, const vint4& b) { return _mm_add_epi32(a, b); }
-  __forceinline vint4 operator +(const vint4& a, const int&   b) { return a + vint4(b); }
-  __forceinline vint4 operator +(const int&   a, const vint4& b) { return vint4(a) + b; }
+  __forceinline vint4 operator +(const vint4& a, int          b) { return a + vint4(b); }
+  __forceinline vint4 operator +(int          a, const vint4& b) { return vint4(a) + b; }
 
   __forceinline vint4 operator -(const vint4& a, const vint4& b) { return _mm_sub_epi32(a, b); }
-  __forceinline vint4 operator -(const vint4& a, const int&   b) { return a - vint4(b); }
-  __forceinline vint4 operator -(const int&   a, const vint4& b) { return vint4(a) - b; }
+  __forceinline vint4 operator -(const vint4& a, int          b) { return a - vint4(b); }
+  __forceinline vint4 operator -(int          a, const vint4& b) { return vint4(a) - b; }
 
 #if defined(__SSE4_1__)
   __forceinline vint4 operator *(const vint4& a, const vint4& b) { return _mm_mullo_epi32(a, b); }
 #else
   __forceinline vint4 operator *(const vint4& a, const vint4& b) { return vint4(a[0]*b[0],a[1]*b[1],a[2]*b[2],a[3]*b[3]); }
 #endif
-  __forceinline vint4 operator *(const vint4& a, const int&   b) { return a * vint4(b); }
-  __forceinline vint4 operator *(const int&   a, const vint4& b) { return vint4(a) * b; }
+  __forceinline vint4 operator *(const vint4& a, int          b) { return a * vint4(b); }
+  __forceinline vint4 operator *(int          a, const vint4& b) { return vint4(a) * b; }
 
   __forceinline vint4 operator &(const vint4& a, const vint4& b) { return _mm_and_si128(a, b); }
-  __forceinline vint4 operator &(const vint4& a, const int&   b) { return a & vint4(b); }
-  __forceinline vint4 operator &(const int&   a, const vint4& b) { return vint4(a) & b; }
+  __forceinline vint4 operator &(const vint4& a, int          b) { return a & vint4(b); }
+  __forceinline vint4 operator &(int          a, const vint4& b) { return vint4(a) & b; }
 
   __forceinline vint4 operator |(const vint4& a, const vint4& b) { return _mm_or_si128(a, b); }
-  __forceinline vint4 operator |(const vint4& a, const int&   b) { return a | vint4(b); }
-  __forceinline vint4 operator |(const int&   a, const vint4& b) { return vint4(a) | b; }
+  __forceinline vint4 operator |(const vint4& a, int          b) { return a | vint4(b); }
+  __forceinline vint4 operator |(int          a, const vint4& b) { return vint4(a) | b; }
 
   __forceinline vint4 operator ^(const vint4& a, const vint4& b) { return _mm_xor_si128(a, b); }
-  __forceinline vint4 operator ^(const vint4& a, const int&   b) { return a ^ vint4(b); }
-  __forceinline vint4 operator ^(const int&   a, const vint4& b) { return vint4(a) ^ b; }
+  __forceinline vint4 operator ^(const vint4& a, int          b) { return a ^ vint4(b); }
+  __forceinline vint4 operator ^(int          a, const vint4& b) { return vint4(a) ^ b; }
 
-  __forceinline vint4 operator <<(const vint4& a, const int& n) { return _mm_slli_epi32(a, n); }
-  __forceinline vint4 operator >>(const vint4& a, const int& n) { return _mm_srai_epi32(a, n); }
+  __forceinline vint4 operator <<(const vint4& a, int n) { return _mm_slli_epi32(a, n); }
+  __forceinline vint4 operator >>(const vint4& a, int n) { return _mm_srai_epi32(a, n); }
 
-  __forceinline vint4 sll (const vint4& a, const int& b) { return _mm_slli_epi32(a, b); }
-  __forceinline vint4 sra (const vint4& a, const int& b) { return _mm_srai_epi32(a, b); }
-  __forceinline vint4 srl (const vint4& a, const int& b) { return _mm_srli_epi32(a, b); }
+  __forceinline vint4 sll (const vint4& a, int b) { return _mm_slli_epi32(a, b); }
+  __forceinline vint4 sra (const vint4& a, int b) { return _mm_srai_epi32(a, b); }
+  __forceinline vint4 srl (const vint4& a, int b) { return _mm_srli_epi32(a, b); }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline vint4& operator +=(vint4& a, const vint4& b) { return a = a + b; }
-  __forceinline vint4& operator +=(vint4& a, const int&   b) { return a = a + b; }
+  __forceinline vint4& operator +=(vint4& a, int          b) { return a = a + b; }
   
   __forceinline vint4& operator -=(vint4& a, const vint4& b) { return a = a - b; }
-  __forceinline vint4& operator -=(vint4& a, const int&   b) { return a = a - b; }
+  __forceinline vint4& operator -=(vint4& a, int          b) { return a = a - b; }
 
 #if defined(__SSE4_1__)
   __forceinline vint4& operator *=(vint4& a, const vint4& b) { return a = a * b; }
-  __forceinline vint4& operator *=(vint4& a, const int&   b) { return a = a * b; }
+  __forceinline vint4& operator *=(vint4& a, int          b) { return a = a * b; }
 #endif
   
   __forceinline vint4& operator &=(vint4& a, const vint4& b) { return a = a & b; }
-  __forceinline vint4& operator &=(vint4& a, const int&   b) { return a = a & b; }
+  __forceinline vint4& operator &=(vint4& a, int          b) { return a = a & b; }
   
   __forceinline vint4& operator |=(vint4& a, const vint4& b) { return a = a | b; }
-  __forceinline vint4& operator |=(vint4& a, const int&   b) { return a = a | b; }
+  __forceinline vint4& operator |=(vint4& a, int          b) { return a = a | b; }
   
-  __forceinline vint4& operator <<=(vint4& a, const int&  b) { return a = a << b; }
-  __forceinline vint4& operator >>=(vint4& a, const int&  b) { return a = a >> b; }
+  __forceinline vint4& operator <<=(vint4& a, int b) { return a = a << b; }
+  __forceinline vint4& operator >>=(vint4& a, int b) { return a = a >> b; }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Comparison Operators + Select
@@ -299,23 +294,23 @@ namespace embree
   __forceinline vboolf4 operator <=(const vint4& a, const vint4& b) { return !(a >  b); }
 #endif
 
-  __forceinline vboolf4 operator ==(const vint4& a, const int&   b) { return a == vint4(b); }
-  __forceinline vboolf4 operator ==(const int&   a, const vint4& b) { return vint4(a) == b; }
+  __forceinline vboolf4 operator ==(const vint4& a, int          b) { return a == vint4(b); }
+  __forceinline vboolf4 operator ==(int          a, const vint4& b) { return vint4(a) == b; }
 
-  __forceinline vboolf4 operator !=(const vint4& a, const int&   b) { return a != vint4(b); }
-  __forceinline vboolf4 operator !=(const int&   a, const vint4& b) { return vint4(a) != b; }
+  __forceinline vboolf4 operator !=(const vint4& a, int          b) { return a != vint4(b); }
+  __forceinline vboolf4 operator !=(int          a, const vint4& b) { return vint4(a) != b; }
 
-  __forceinline vboolf4 operator < (const vint4& a, const int&   b) { return a <  vint4(b); }
-  __forceinline vboolf4 operator < (const int&   a, const vint4& b) { return vint4(a) <  b; }
+  __forceinline vboolf4 operator < (const vint4& a, int          b) { return a <  vint4(b); }
+  __forceinline vboolf4 operator < (int          a, const vint4& b) { return vint4(a) <  b; }
 
-  __forceinline vboolf4 operator >=(const vint4& a, const int&   b) { return a >= vint4(b); }
-  __forceinline vboolf4 operator >=(const int&   a, const vint4& b) { return vint4(a) >= b; }
+  __forceinline vboolf4 operator >=(const vint4& a, int          b) { return a >= vint4(b); }
+  __forceinline vboolf4 operator >=(int          a, const vint4& b) { return vint4(a) >= b; }
 
-  __forceinline vboolf4 operator > (const vint4& a, const int&   b) { return a >  vint4(b); }
-  __forceinline vboolf4 operator > (const int&   a, const vint4& b) { return vint4(a) >  b; }
+  __forceinline vboolf4 operator > (const vint4& a, int          b) { return a >  vint4(b); }
+  __forceinline vboolf4 operator > (int          a, const vint4& b) { return vint4(a) >  b; }
 
-  __forceinline vboolf4 operator <=(const vint4& a, const int&   b) { return a <= vint4(b); }
-  __forceinline vboolf4 operator <=(const int&   a, const vint4& b) { return vint4(a) <= b; }
+  __forceinline vboolf4 operator <=(const vint4& a, int          b) { return a <= vint4(b); }
+  __forceinline vboolf4 operator <=(int          a, const vint4& b) { return vint4(a) <= b; }
 
   __forceinline vboolf4 eq(const vint4& a, const vint4& b) { return a == b; }
   __forceinline vboolf4 ne(const vint4& a, const vint4& b) { return a != b; }
@@ -361,10 +356,10 @@ namespace embree
   __forceinline vint4 max(const vint4& a, const vint4& b) { return select(a < b,b,a); }
 #endif
 
-  __forceinline vint4 min(const vint4& a, const int&   b) { return min(a,vint4(b)); }
-  __forceinline vint4 min(const int&   a, const vint4& b) { return min(vint4(a),b); }
-  __forceinline vint4 max(const vint4& a, const int&   b) { return max(a,vint4(b)); }
-  __forceinline vint4 max(const int&   a, const vint4& b) { return max(vint4(a),b); }
+  __forceinline vint4 min(const vint4& a, int          b) { return min(a,vint4(b)); }
+  __forceinline vint4 min(int          a, const vint4& b) { return min(vint4(a),b); }
+  __forceinline vint4 max(const vint4& a, int          b) { return max(a,vint4(b)); }
+  __forceinline vint4 max(int          a, const vint4& b) { return max(vint4(a),b); }
 
   ////////////////////////////////////////////////////////////////////////////////
   // Movement/Shifting/Shuffling Functions
@@ -399,7 +394,7 @@ namespace embree
   template<int dst> __forceinline vint4 insert(const vint4& a, const int b) { return _mm_insert_epi32(a, b, dst); }
 #else
   template<int src> __forceinline int extract(const vint4& b) { return b[src]; }
-  template<int dst> __forceinline vint4 insert(const vint4& a, const int b) { vint4 c = a; c[dst] = b; return c; }
+  template<int dst> __forceinline vint4 insert(const vint4& a, int b) { vint4 c = a; c[dst] = b; return c; }
 #endif
 
 
