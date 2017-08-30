@@ -69,7 +69,7 @@ namespace embree
     __forceinline vint(StepTy)   : v(_mm_set_epi32(3, 2, 1, 0)) {}
     __forceinline vint(TrueTy)   { v = _mm_cmpeq_epi32(v,v); }
 
-    __forceinline static vint4 undefined() { return _mm_undefined_si128(); }
+    __forceinline static vint4 undefined() { return _mm_castps_si128(_mm_undefined_ps()); }
 
 
     ////////////////////////////////////////////////////////////////////////////////
