@@ -44,14 +44,14 @@ namespace embree
     __forceinline operator       __m128i&()       { return v; }
 
 
-    __forceinline vint(const int&  a) : v(_mm_shuffle_epi32(_mm_castps_si128(_mm_load_ss((float*)&a)), _MM_SHUFFLE(0, 0, 0, 0))) {}
+    __forceinline vint(const int& a) : v(_mm_shuffle_epi32(_mm_castps_si128(_mm_load_ss((float*)&a)), _MM_SHUFFLE(0, 0, 0, 0))) {}
     __forceinline vint(const uint32_t& a) : v(_mm_shuffle_epi32(_mm_castps_si128(_mm_load_ss((float*)&a)), _MM_SHUFFLE(0, 0, 0, 0))) {}
 #if defined(__X86_64__)
     __forceinline vint(size_t a) : v(_mm_set1_epi32((int)a)) {}
 #endif
     __forceinline vint(int a, int b, int c, int d) : v(_mm_set_epi32(d, c, b, a)) {}
 
-    __forceinline explicit vint(const __m128 a) : v(_mm_cvtps_epi32(a)) {}
+    __forceinline explicit vint(__m128 a) : v(_mm_cvtps_epi32(a)) {}
 #if defined(__AVX512VL__)
     __forceinline explicit vint(const vboolf4& a) : v(_mm_movm_epi32(a)) {}
 #else
@@ -156,29 +156,31 @@ namespace embree
 
     template<int scale = 4>
     static __forceinline vint4 gather(const int* ptr, const vint4& index) {
-    #if defined(__AVX2__)
+#if defined(__AVX2__)
       return _mm_i32gather_epi32(ptr, index, scale);
-    #else
+#else
       return vint4(
           *(int*)(((char*)ptr)+scale*index[0]),
           *(int*)(((char*)ptr)+scale*index[1]),
           *(int*)(((char*)ptr)+scale*index[2]),
           *(int*)(((char*)ptr)+scale*index[3]));
-    #endif
+#endif
     }
 
     template<int scale = 4>
     static __forceinline vint4 gather(const vboolf4& mask, const int* ptr, const vint4& index) {
       vint4 r = vint4::undefined();
-    #if defined(__AVX2__)
+#if defined(__AVX512VL__)
+      return _mm_mmask_i32gather_epi32(r, mask, index, ptr, scale);
+#elif defined(__AVX2__)
       return _mm_mask_i32gather_epi32(r, ptr, index, mask, scale);
-    #else
+#else
       if (likely(mask[0])) r[0] = *(int*)(((char*)ptr)+scale*index[0]);
       if (likely(mask[1])) r[1] = *(int*)(((char*)ptr)+scale*index[1]);
       if (likely(mask[2])) r[2] = *(int*)(((char*)ptr)+scale*index[2]);
       if (likely(mask[3])) r[3] = *(int*)(((char*)ptr)+scale*index[3]);
       return r;
-    #endif
+#endif
     }
 
 #if defined(__x86_64__)
