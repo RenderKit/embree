@@ -104,7 +104,7 @@ namespace embree
   }
 
 #if defined(__SSE4_1__)
-    static __forceinline vfloat4 load(const unsigned char* const ptr) {
+    static __forceinline vfloat4 load(const unsigned char* ptr) {
       return _mm_cvtepi32_ps(_mm_cvtepu8_epi32(_mm_loadu_si128((__m128i*)ptr)));
     }
 #else
