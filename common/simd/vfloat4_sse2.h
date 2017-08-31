@@ -213,8 +213,10 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline vfloat4 asFloat(const __m128i& a) { return _mm_castsi128_ps(a); }
+
   __forceinline vfloat4 operator +(const vfloat4& a) { return a; }
   __forceinline vfloat4 operator -(const vfloat4& a) { return _mm_xor_ps(a, _mm_castsi128_ps(_mm_set1_epi32(0x80000000))); }
+
   __forceinline vfloat4 abs(const vfloat4& a) { return _mm_and_ps(a, _mm_castsi128_ps(_mm_set1_epi32(0x7fffffff))); }
 #if defined(__AVX512VL__)
   __forceinline vfloat4 sign(const vfloat4& a) { return _mm_mask_blend_ps(_mm_cmp_ps_mask(a, vfloat4(zero), _CMP_LT_OQ), vfloat4(one), -vfloat4(one)); }

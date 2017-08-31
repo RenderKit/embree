@@ -216,14 +216,15 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vfloat8 asFloat   (const vint8&   a) { return _mm256_castsi256_ps(a); }
-  __forceinline vint8   asInt     (const vfloat8& a) { return _mm256_castps_si256(a); }
+  __forceinline vfloat8 asFloat(const vint8&   a) { return _mm256_castsi256_ps(a); }
+  __forceinline vint8   asInt  (const vfloat8& a) { return _mm256_castps_si256(a); }
+
   __forceinline vfloat8 operator +(const vfloat8& a) { return a; }
   __forceinline vfloat8 operator -(const vfloat8& a) {
     const __m256 mask = _mm256_castsi256_ps(_mm256_set1_epi32(0x80000000)); 
     return _mm256_xor_ps(a, mask);
   }
-  __forceinline vfloat8 abs  (const vfloat8& a) {
+  __forceinline vfloat8 abs(const vfloat8& a) {
     const __m256 mask = _mm256_castsi256_ps(_mm256_set1_epi32(0x7fffffff));
     return _mm256_and_ps(a, mask);
   }

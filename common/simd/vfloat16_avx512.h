@@ -193,11 +193,13 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vfloat16 asFloat   (const __m512i&  a) { return _mm512_castsi512_ps(a); }
+  __forceinline vfloat16 asFloat(const __m512i&  a) { return _mm512_castsi512_ps(a); }
+
   __forceinline vfloat16 operator +(const vfloat16& a) { return a; }
   __forceinline vfloat16 operator -(const vfloat16& a) { return _mm512_mul_ps(a,vfloat16(-1)); }
-  __forceinline vfloat16 abs       (const vfloat16& a) { return _mm512_castsi512_ps(_mm512_and_epi32(_mm512_castps_si512(a),_mm512_set1_epi32(0x7FFFFFFF))); }
-  __forceinline vfloat16 signmsk   (const vfloat16& a) { return _mm512_castsi512_ps(_mm512_and_epi32(_mm512_castps_si512(a),_mm512_set1_epi32(0x80000000))); }
+
+  __forceinline vfloat16 abs    (const vfloat16& a) { return _mm512_castsi512_ps(_mm512_and_epi32(_mm512_castps_si512(a),_mm512_set1_epi32(0x7FFFFFFF))); }
+  __forceinline vfloat16 signmsk(const vfloat16& a) { return _mm512_castsi512_ps(_mm512_and_epi32(_mm512_castps_si512(a),_mm512_set1_epi32(0x80000000))); }
 
   __forceinline vfloat16 rcp(const vfloat16& a) {
 #if defined(__AVX512ER__)
@@ -208,8 +210,8 @@ namespace embree
 #endif
   }
 
-  __forceinline vfloat16 sqr  (const vfloat16& a) { return _mm512_mul_ps(a,a); }
-  __forceinline vfloat16 sqrt (const vfloat16& a) { return _mm512_sqrt_ps(a); }
+  __forceinline vfloat16 sqr (const vfloat16& a) { return _mm512_mul_ps(a,a); }
+  __forceinline vfloat16 sqrt(const vfloat16& a) { return _mm512_sqrt_ps(a); }
 
   __forceinline vfloat16 rsqrt(const vfloat16& a)
   {
