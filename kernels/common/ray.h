@@ -72,11 +72,11 @@ namespace embree
     }
 
     __forceinline void get(RayK<1>* ray) const;
-    __forceinline void get(const size_t i, RayK<1>& ray) const;
+    __forceinline void get(size_t i, RayK<1>& ray) const;
     __forceinline void set(const RayK<1>* ray);
-    __forceinline void set(const size_t i, const RayK<1>& ray);
+    __forceinline void set(size_t i, const RayK<1>& ray);
 
-    __forceinline void copy(const size_t dest, const size_t source);
+    __forceinline void copy(size_t dest, size_t source);
 
     __forceinline void update(const vbool<K>& m_mask,
                               const vfloat<K>& new_t,
@@ -88,26 +88,26 @@ namespace embree
                               const vint<K>& new_geomID,
                               const vint<K>& new_primID)
     {
-      vfloat<K>::store(m_mask,(float*)&tfar,new_t);
-      vfloat<K>::store(m_mask,(float*)&u,new_u);
-      vfloat<K>::store(m_mask,(float*)&v,new_v);
-      vfloat<K>::store(m_mask,(float*)&Ng.x,new_gnormalx);
-      vfloat<K>::store(m_mask,(float*)&Ng.y,new_gnormaly);
-      vfloat<K>::store(m_mask,(float*)&Ng.z,new_gnormalz);
-      vint<K>::store(m_mask,(int*)&geomID,new_geomID);
-      vint<K>::store(m_mask,(int*)&primID,new_primID);
+      vfloat<K>::store(m_mask, (float*)&tfar, new_t);
+      vfloat<K>::store(m_mask, (float*)&u, new_u);
+      vfloat<K>::store(m_mask, (float*)&v, new_v);
+      vfloat<K>::store(m_mask, (float*)&Ng.x, new_gnormalx);
+      vfloat<K>::store(m_mask, (float*)&Ng.y, new_gnormaly);
+      vfloat<K>::store(m_mask, (float*)&Ng.z, new_gnormalz);
+      vint<K>::store(m_mask, (int*)&geomID, new_geomID);
+      vint<K>::store(m_mask, (int*)&primID, new_primID);
     }
 
     template<int M>
-    __forceinline void updateK(const size_t i,
-                               const size_t rayIndex,
+    __forceinline void updateK(size_t i,
+                               size_t rayIndex,
                                const vfloat<M>& new_t,
                                const vfloat<M>& new_u,
                                const vfloat<M>& new_v,
                                const vfloat<M>& new_gnormalx,
                                const vfloat<M>& new_gnormaly,
                                const vfloat<M>& new_gnormalz,
-                               const int new_geomID,
+                               int new_geomID,
                                const vint<M> &new_primID)
     {
       u[rayIndex] = new_u[i];
@@ -140,27 +140,27 @@ namespace embree
 
 #if defined(__AVX512F__)
   template<> template<>
-    __forceinline void RayK<16>::updateK<16>(const size_t i,
-                                             const size_t rayIndex,
-                                             const vfloat16& new_t,
-                                             const vfloat16& new_u,
-                                             const vfloat16& new_v,
-                                             const vfloat16& new_gnormalx,
-                                             const vfloat16& new_gnormaly,
-                                             const vfloat16& new_gnormalz,
-                                             const int new_geomID,
-                                             const vint16 &new_primID)
-    {
-      const vbool16 m_mask((unsigned int)1 << i);
-      vfloat16::storeu_compact_single(m_mask,&tfar[rayIndex],new_t);
-      vfloat16::storeu_compact_single(m_mask,&Ng.x[rayIndex],new_gnormalx);
-      vfloat16::storeu_compact_single(m_mask,&Ng.y[rayIndex],new_gnormaly);
-      vfloat16::storeu_compact_single(m_mask,&Ng.z[rayIndex],new_gnormalz);
-      vfloat16::storeu_compact_single(m_mask,&u[rayIndex],new_u);
-      vfloat16::storeu_compact_single(m_mask,&v[rayIndex],new_v);
-      vint16::storeu_compact_single(m_mask,&primID[rayIndex],new_primID);
-      geomID[rayIndex] = new_geomID;
-    }
+  __forceinline void RayK<16>::updateK<16>(size_t i,
+                                           size_t rayIndex,
+                                           const vfloat16& new_t,
+                                           const vfloat16& new_u,
+                                           const vfloat16& new_v,
+                                           const vfloat16& new_gnormalx,
+                                           const vfloat16& new_gnormaly,
+                                           const vfloat16& new_gnormalz,
+                                           int new_geomID,
+                                           const vint16& new_primID)
+  {
+    const vbool16 m_mask((unsigned int)1 << i);
+    vfloat16::storeu_compact_single(m_mask, &tfar[rayIndex], new_t);
+    vfloat16::storeu_compact_single(m_mask, &Ng.x[rayIndex], new_gnormalx);
+    vfloat16::storeu_compact_single(m_mask, &Ng.y[rayIndex], new_gnormaly);
+    vfloat16::storeu_compact_single(m_mask, &Ng.z[rayIndex], new_gnormalz);
+    vfloat16::storeu_compact_single(m_mask, &u[rayIndex], new_u);
+    vfloat16::storeu_compact_single(m_mask, &v[rayIndex], new_v);
+    vint16::storeu_compact_single(m_mask, &primID[rayIndex], new_primID);
+    geomID[rayIndex] = new_geomID;
+  }
 #endif
 
 
@@ -181,7 +181,7 @@ namespace embree
 
     /* Calculates if this is a valid ray that does not cause issues during traversal */
     __forceinline bool valid() const {
-      return all(le_mask(abs(org),Vec3fa(FLT_LARGE)) & le_mask(abs(dir),Vec3fa(FLT_LARGE))) && fabs(tnear) <= float(inf) && fabs(tfar) <= float(inf);
+      return all(le_mask(abs(org), Vec3fa(FLT_LARGE)) & le_mask(abs(dir), Vec3fa(FLT_LARGE))) && fabs(tnear) <= float(inf) && fabs(tfar) <= float(inf);
     }
 
     /* Calculates if the hit is valid */
@@ -194,21 +194,21 @@ namespace embree
       const bool vnx = abs(Ng.x) <= FLT_LARGE;
       const bool vny = abs(Ng.y) <= FLT_LARGE;
       const bool vnz = abs(Ng.z) <= FLT_LARGE;
-      if (!vt) throw_RTCError(RTC_UNKNOWN_ERROR,"invalid t");
-      if (!vu) throw_RTCError(RTC_UNKNOWN_ERROR,"invalid u");
-      if (!vv) throw_RTCError(RTC_UNKNOWN_ERROR,"invalid v");
-      if (!vnx) throw_RTCError(RTC_UNKNOWN_ERROR,"invalid Ng.x");
-      if (!vny) throw_RTCError(RTC_UNKNOWN_ERROR,"invalid Ng.y");
-      if (!vnz) throw_RTCError(RTC_UNKNOWN_ERROR,"invalid Ng.z");
+      if (!vt) throw_RTCError(RTC_UNKNOWN_ERROR, "invalid t");
+      if (!vu) throw_RTCError(RTC_UNKNOWN_ERROR, "invalid u");
+      if (!vv) throw_RTCError(RTC_UNKNOWN_ERROR, "invalid v");
+      if (!vnx) throw_RTCError(RTC_UNKNOWN_ERROR, "invalid Ng.x");
+      if (!vny) throw_RTCError(RTC_UNKNOWN_ERROR, "invalid Ng.y");
+      if (!vnz) throw_RTCError(RTC_UNKNOWN_ERROR, "invalid Ng.z");
     }
 
     /* filter out all occluded rays from a stream of rays */
     __forceinline static void filterOutOccluded(RayK<1>** ray, size_t& N)
     {
-      size_t l=0, r=N;
-      while (l<r) {
+      size_t l = 0, r = N;
+      while (l < r) {
         if (ray[l]->geomID != 0) l++;
-        else std::swap(ray[l],ray[--r]); 
+        else std::swap(ray[l], ray[--r]);
       }
       N = l;
     }
@@ -237,18 +237,18 @@ namespace embree
                               const vfloat16& new_gnormalx,
                               const vfloat16& new_gnormaly,
                               const vfloat16& new_gnormalz,
-			      const int new_geomID,
-			      const int new_primID)
+                              const int new_geomID,
+                              const int new_primID)
     {
       geomID = new_geomID;
       primID = new_primID;
 
-      vfloat16::storeu_compact_single(m_mask,&tfar,new_t);
-      vfloat16::storeu_compact_single(m_mask,&u,new_u); 
-      vfloat16::storeu_compact_single(m_mask,&v,new_v); 
-      vfloat16::storeu_compact_single(m_mask,&Ng.x,new_gnormalx); 
-      vfloat16::storeu_compact_single(m_mask,&Ng.y,new_gnormaly); 
-      vfloat16::storeu_compact_single(m_mask,&Ng.z,new_gnormalz);       
+      vfloat16::storeu_compact_single(m_mask, &tfar, new_t);
+      vfloat16::storeu_compact_single(m_mask, &u, new_u);
+      vfloat16::storeu_compact_single(m_mask, &v, new_v);
+      vfloat16::storeu_compact_single(m_mask, &Ng.x, new_gnormalx);
+      vfloat16::storeu_compact_single(m_mask, &Ng.y, new_gnormaly);
+      vfloat16::storeu_compact_single(m_mask, &Ng.z, new_gnormalz);
     }
 
     __forceinline void update(const vbool16& m_mask,
@@ -258,17 +258,17 @@ namespace embree
                               const vfloat16& new_gnormalx,
                               const vfloat16& new_gnormaly,
                               const vfloat16& new_gnormalz,
-			      const vint16 &new_geomID,
-			      const vint16 &new_primID)
+                              const vint16& new_geomID,
+                              const vint16& new_primID)
     {
-      vint16::storeu_compact_single(m_mask,&geomID,new_geomID);
-      vint16::storeu_compact_single(m_mask,&primID,new_primID);
-      vfloat16::storeu_compact_single(m_mask,&tfar,new_t);
-      vfloat16::storeu_compact_single(m_mask,&u,new_u); 
-      vfloat16::storeu_compact_single(m_mask,&v,new_v); 
-      vfloat16::storeu_compact_single(m_mask,&Ng.x,new_gnormalx); 
-      vfloat16::storeu_compact_single(m_mask,&Ng.y,new_gnormaly); 
-      vfloat16::storeu_compact_single(m_mask,&Ng.z,new_gnormalz);       
+      vint16::storeu_compact_single(m_mask, &geomID, new_geomID);
+      vint16::storeu_compact_single(m_mask, &primID, new_primID);
+      vfloat16::storeu_compact_single(m_mask, &tfar, new_t);
+      vfloat16::storeu_compact_single(m_mask, &u, new_u);
+      vfloat16::storeu_compact_single(m_mask, &v, new_v);
+      vfloat16::storeu_compact_single(m_mask, &Ng.x, new_gnormalx);
+      vfloat16::storeu_compact_single(m_mask, &Ng.y, new_gnormaly);
+      vfloat16::storeu_compact_single(m_mask, &Ng.z, new_gnormalz);
     }
 
 #endif
@@ -278,7 +278,7 @@ namespace embree
   template<int K>
   __forceinline void RayK<K>::get(RayK<1>* ray) const
   {
-    for (size_t i=0; i<K; i++) // FIXME: use SIMD transpose
+    for (size_t i = 0; i < K; i++) // FIXME: use SIMD transpose
     {
       ray[i].org.x = org.x[i]; ray[i].org.y = org.y[i]; ray[i].org.z = org.z[i];
       ray[i].dir.x = dir.x[i]; ray[i].dir.y = dir.y[i]; ray[i].dir.z = dir.z[i];
@@ -291,7 +291,7 @@ namespace embree
 
   /* Extracts a single ray out of a ray packet*/
   template<int K>
-    __forceinline void RayK<K>::get(const size_t i, RayK<1>& ray) const
+  __forceinline void RayK<K>::get(size_t i, RayK<1>& ray) const
   {
     ray.org.x = org.x[i]; ray.org.y = org.y[i]; ray.org.z = org.z[i];
     ray.dir.x = dir.x[i]; ray.dir.y = dir.y[i]; ray.dir.z = dir.z[i];
@@ -305,7 +305,7 @@ namespace embree
   template<int K>
   __forceinline void RayK<K>::set(const RayK<1>* ray)
   {
-    for (size_t i=0; i<K; i++)
+    for (size_t i = 0; i < K; i++)
     {
       org.x[i] = ray[i].org.x; org.y[i] = ray[i].org.y; org.z[i] = ray[i].org.z;
       dir.x[i] = ray[i].dir.x; dir.y[i] = ray[i].dir.y; dir.z[i] = ray[i].dir.z;
@@ -318,7 +318,7 @@ namespace embree
 
   /* inserts a single ray into a ray packet element */
   template<int K>
-    __forceinline void RayK<K>::set(const size_t i, const RayK<1>& ray)
+  __forceinline void RayK<K>::set(size_t i, const RayK<1>& ray)
   {
     org.x[i] = ray.org.x; org.y[i] = ray.org.y; org.z[i] = ray.org.z;
     dir.x[i] = ray.dir.x; dir.y[i] = ray.dir.y; dir.z[i] = ray.dir.z;
@@ -330,7 +330,7 @@ namespace embree
 
   /* copies a ray packet element into another element*/
   template<int K>
-    __forceinline void RayK<K>::copy(const size_t dest, const size_t source)
+  __forceinline void RayK<K>::copy(size_t dest, size_t source)
   {
     org.x[dest] = org.x[source]; org.y[dest] = org.y[source]; org.z[dest] = org.z[source];
     dir.x[dest] = dir.x[source]; dir.y[dest] = dir.y[source]; dir.z[dest] = dir.z[source];
@@ -402,7 +402,7 @@ namespace embree
 
   public:
 
-    __forceinline void writeRay(const size_t i, int* valid, Ray& ray)
+    __forceinline void writeRay(size_t i, int* valid, Ray& ray)
     {
       const size_t offset = 4*i;
       valid[i] = -1;
@@ -420,7 +420,7 @@ namespace embree
       geomID(offset)[0] = RTC_INVALID_GEOMETRY_ID;
     }
 
-    __forceinline void readHit(const size_t i, Ray& ray)
+    __forceinline void readHit(size_t i, Ray& ray)
     {
       const size_t offset = 4*i;
       const unsigned int geometryID = geomID(offset)[0];
@@ -438,11 +438,11 @@ namespace embree
       }
     }
 
-    __forceinline void readOcclusion(const size_t i, Ray& ray) {
+    __forceinline void readOcclusion(size_t i, Ray& ray) {
       ray.geomID = geomID(4*i)[0];
     }
 
-    __forceinline Ray gatherByOffset(const size_t offset)
+    __forceinline Ray gatherByOffset(size_t offset)
     {
       Ray ray;
       ray.org.x = orgx(offset)[0];
@@ -461,7 +461,7 @@ namespace embree
     }
 
     template<int K>
-    __forceinline RayK<K> gatherByOffset(const size_t offset)
+    __forceinline RayK<K> gatherByOffset(size_t offset)
     {
       RayK<K> ray;
       ray.org.x = vfloat<K>::loadu(orgx(offset));
@@ -479,7 +479,7 @@ namespace embree
       return ray;
     }
 
-    __forceinline void scatterByOffset(const size_t offset, const Ray& ray, const bool all)
+    __forceinline void scatterByOffset(size_t offset, const Ray& ray, bool all)
     {
       geomID(offset)[0] = ray.geomID;
       if (all && ray.geomID !=  RTC_INVALID_GEOMETRY_ID)
@@ -496,26 +496,26 @@ namespace embree
     }
 
     template<int K>
-    __forceinline void scatterByOffset(const vbool<K>& valid_i, const size_t offset, const RayK<K>& ray, const bool all)
+    __forceinline void scatterByOffset(const vbool<K>& valid_i, size_t offset, const RayK<K>& ray, bool all)
     {
       vbool<K> valid = valid_i;
-      vint<K>::storeu(valid,geomID(offset),ray.geomID);
+      vint<K>::storeu(valid, geomID(offset), ray.geomID);
       if (!all) return;
 
       valid &= ray.geomID !=  RTC_INVALID_GEOMETRY_ID;
       if (none(valid)) return;
 
-      vfloat<K>::storeu(valid,tfar(offset),ray.tfar);
-      vfloat<K>::storeu(valid,u(offset),ray.u);
-      vfloat<K>::storeu(valid,v(offset),ray.v);
-      vint<K>  ::storeu(valid,primID(offset),ray.primID);
-      vfloat<K>::storeu(valid,Ngx(offset),ray.Ng.x);
-      vfloat<K>::storeu(valid,Ngy(offset),ray.Ng.y);
-      vfloat<K>::storeu(valid,Ngz(offset),ray.Ng.z);
-      vint<K>  ::storeu(valid,instID(offset),ray.instID);
+      vfloat<K>::storeu(valid, tfar(offset), ray.tfar);
+      vfloat<K>::storeu(valid, u(offset), ray.u);
+      vfloat<K>::storeu(valid, v(offset), ray.v);
+      vint<K>  ::storeu(valid, primID(offset), ray.primID);
+      vfloat<K>::storeu(valid, Ngx(offset), ray.Ng.x);
+      vfloat<K>::storeu(valid, Ngy(offset), ray.Ng.y);
+      vfloat<K>::storeu(valid, Ngz(offset), ray.Ng.z);
+      vint<K>  ::storeu(valid, instID(offset), ray.instID);
     }
 
-    __forceinline size_t getOctantByOffset(const size_t offset)
+    __forceinline size_t getOctantByOffset(size_t offset)
     {
       const float dx = dirx(offset)[0];
       const float dy = diry(offset)[0];
@@ -524,7 +524,7 @@ namespace embree
       return octantID;
     }
 
-    __forceinline bool isValidByOffset(const size_t offset)
+    __forceinline bool isValidByOffset(size_t offset)
     {
       const float nnear = tnear(offset)[0];
       const float ffar  = tfar(offset)[0];
@@ -541,16 +541,14 @@ namespace embree
   {
   public:
     __forceinline StackRayPacket(size_t K)
-      : RayPacket(data,K) { assert(K<=MAX_K); }
+      : RayPacket(data, K) { assert(K <= MAX_K); }
   public:
-    char data[MAX_K/4*sizeof(Ray4)];
+    char data[MAX_K / 4 * sizeof(Ray4)];
   };
   
   struct RayPN
   {
     /* ray data */
-  public:
-
     float* __restrict__ orgx;  //!< x coordinate of ray origin
     float* __restrict__ orgy;  //!< y coordinate of ray origin
     float* __restrict__ orgz;  //!< z coordinate of ray origin
@@ -562,28 +560,23 @@ namespace embree
     float* __restrict__ tnear; //!< Start of ray segment (optional)
     float* __restrict__ tfar;  //!< End of ray segment (set to hit distance)
 
- 
     float* __restrict__ time;     //!< Time of this ray for motion blur (optional)
     unsigned* __restrict__ mask;  //!< Used to mask out objects during traversal (optional)
 
     /* hit data */
-
     float* __restrict__ Ngx;   //!< x coordinate of geometry normal (optional)
     float* __restrict__ Ngy;   //!<y coordinate of geometry normal (optional)
     float* __restrict__ Ngz;   //!< z coordinate of geometry normal (optional)
 
- 
-
     float* __restrict__ u;     //!< Barycentric u coordinate of hit
     float* __restrict__ v;     //!< Barycentric v coordinate of hit
-
  
     unsigned* __restrict__ geomID;  //!< geometry ID
     unsigned* __restrict__ primID;  //!< primitive ID
     unsigned* __restrict__ instID;  //!< instance ID (optional)
 
     template<class T>
-    __forceinline void init(T &t)
+    __forceinline void init(T& t)
     {
       orgx   = (float*)&t.org.x;
       orgy   = (float*)&t.org.y;
@@ -594,18 +587,18 @@ namespace embree
       tnear  = (float*)&t.tnear;
       tfar   = (float*)&t.tfar;
       time   = (float*)&t.time;
-      mask   = (unsigned *)&t.mask;
+      mask   = (unsigned*)&t.mask;
       Ngx    = (float*)&t.Ng.x;
       Ngy    = (float*)&t.Ng.y;
       Ngz    = (float*)&t.Ng.z;
       u      = (float*)&t.u;
       v      = (float*)&t.v;
-      geomID = (unsigned *)&t.geomID;
-      primID = (unsigned *)&t.primID;
-      instID = (unsigned *)&t.instID;
+      geomID = (unsigned*)&t.geomID;
+      primID = (unsigned*)&t.primID;
+      instID = (unsigned*)&t.instID;
     }
 
-    __forceinline Ray gatherByOffset(const size_t offset)
+    __forceinline Ray gatherByOffset(size_t offset)
     {
       Ray ray;
       ray.org.x = *(float* __restrict__ )((char*)orgx + offset);
@@ -616,80 +609,82 @@ namespace embree
       ray.dir.z = *(float* __restrict__ )((char*)dirz + offset);
       ray.tfar  = *(float* __restrict__ )((char*)tfar + offset);
       ray.tnear = tnear ? *(float* __restrict__ )((char*)tnear + offset) : 0.0f;
-      ray.time  = time  ? *(float* __restrict__ )((char*)time  + offset) : 0.0f;
-      ray.mask  = mask  ? *(unsigned * __restrict__ )((char*)mask  + offset) : -1;
-      ray.instID  = instID  ? *(unsigned * __restrict__ )((char*)instID  + offset) : -1;
+      ray.time  = time ? *(float* __restrict__ )((char*)time + offset) : 0.0f;
+      ray.mask  = mask ? *(unsigned* __restrict__ )((char*)mask + offset) : -1;
+      ray.instID  = instID ? *(unsigned* __restrict__ )((char*)instID + offset) : -1;
       ray.geomID = RTC_INVALID_GEOMETRY_ID;
       return ray;
     }
 
     template<int K>
-    __forceinline RayK<K> gatherByOffset(const vbool<K>& valid, const size_t offset)
+    __forceinline RayK<K> gatherByOffset(const vbool<K>& valid, size_t offset)
     {
       RayK<K> ray;
-      ray.org.x = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)orgx + offset));
-      ray.org.y = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)orgy + offset));
-      ray.org.z = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)orgz + offset));
-      ray.dir.x = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)dirx + offset));
-      ray.dir.y = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)diry + offset));
-      ray.dir.z = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)dirz + offset));
-      ray.tfar  = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)tfar + offset));
-      ray.tnear = tnear ? vfloat<K>::loadu(valid,(float* __restrict__ )((char*)tnear + offset)) : 0.0f;
-      ray.time  = time  ? vfloat<K>::loadu(valid,(float* __restrict__ )((char*)time  + offset)) : 0.0f;
-      ray.mask  = mask  ? vint<K>::loadu(valid,(const void * __restrict__ )((char*)mask  + offset)) : -1;
-      ray.instID = instID  ? vint<K>::loadu(valid,(const void * __restrict__ )((char*)instID  + offset)) : -1;
+      ray.org.x = vfloat<K>::loadu(valid, (float* __restrict__ )((char*)orgx + offset));
+      ray.org.y = vfloat<K>::loadu(valid, (float* __restrict__ )((char*)orgy + offset));
+      ray.org.z = vfloat<K>::loadu(valid, (float* __restrict__ )((char*)orgz + offset));
+      ray.dir.x = vfloat<K>::loadu(valid, (float* __restrict__ )((char*)dirx + offset));
+      ray.dir.y = vfloat<K>::loadu(valid, (float* __restrict__ )((char*)diry + offset));
+      ray.dir.z = vfloat<K>::loadu(valid, (float* __restrict__ )((char*)dirz + offset));
+      ray.tfar  = vfloat<K>::loadu(valid, (float* __restrict__ )((char*)tfar + offset));
+      ray.tnear = tnear ? vfloat<K>::loadu(valid, (float* __restrict__ )((char*)tnear + offset)) : 0.0f;
+      ray.time  = time ? vfloat<K>::loadu(valid, (float* __restrict__ )((char*)time + offset)) : 0.0f;
+      ray.mask  = mask ? vint<K>::loadu(valid, (const void * __restrict__ )((char*)mask + offset)) : -1;
+      ray.instID = instID ? vint<K>::loadu(valid, (const void * __restrict__ )((char*)instID + offset)) : -1;
       ray.geomID = RTC_INVALID_GEOMETRY_ID;
       return ray;
     }
 
     template<int K>
-    __forceinline Vec3vf<K> gatherDirByOffset(const vbool<K>& valid, const size_t offset)
+    __forceinline Vec3vf<K> gatherDirByOffset(const vbool<K>& valid, size_t offset)
     {
       Vec3vf<K> dir;
-      dir.x = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)dirx + offset));
-      dir.y = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)diry + offset));
-      dir.z = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)dirz + offset));
+      dir.x = vfloat<K>::loadu(valid, (float* __restrict__ )((char*)dirx + offset));
+      dir.y = vfloat<K>::loadu(valid, (float* __restrict__ )((char*)diry + offset));
+      dir.z = vfloat<K>::loadu(valid, (float* __restrict__ )((char*)dirz + offset));
       return dir;
     }
 
-    __forceinline void scatterByOffset(const size_t offset, const Ray& ray, const bool all=true)
+    __forceinline void scatterByOffset(size_t offset, const Ray& ray, bool all = true)
     {
-      *(unsigned * __restrict__ )((char*)geomID + offset) = ray.geomID;
+      *(unsigned* __restrict__ )((char*)geomID + offset) = ray.geomID;
       if (all)
-        if (ray.geomID !=  RTC_INVALID_GEOMETRY_ID)
+      {
+        if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
         {
           *(float* __restrict__ )((char*)tfar + offset) = ray.tfar;
           *(float* __restrict__ )((char*)u + offset) = ray.u;
           *(float* __restrict__ )((char*)v + offset) = ray.v;
-          *(unsigned * __restrict__ )((char*)primID + offset) = ray.primID;
+          *(unsigned* __restrict__ )((char*)primID + offset) = ray.primID;
           if (likely(Ngx)) *(float* __restrict__ )((char*)Ngx + offset) = ray.Ng.x;
           if (likely(Ngy)) *(float* __restrict__ )((char*)Ngy + offset) = ray.Ng.y;
           if (likely(Ngz)) *(float* __restrict__ )((char*)Ngz + offset) = ray.Ng.z;
-          if (likely(instID)) *(unsigned * __restrict__ )((char*)instID + offset) = ray.instID;
+          if (likely(instID)) *(unsigned* __restrict__ )((char*)instID + offset) = ray.instID;
         }
+      }
     }
 
     template<int K>
-    __forceinline void scatterByOffset(const vbool<K>& valid_i, const size_t offset, const RayK<K>& ray, const bool all=true)
+    __forceinline void scatterByOffset(const vbool<K>& valid_i, size_t offset, const RayK<K>& ray, bool all = true)
     {
       vbool<K> valid = valid_i;
-      vint<K>::storeu(valid,(int * __restrict__ )((char*)geomID + offset), ray.geomID);
+      vint<K>::storeu(valid,(int* __restrict__ )((char*)geomID + offset), ray.geomID);
       if (!all) return;
 
-      valid &= ray.geomID !=  RTC_INVALID_GEOMETRY_ID;
+      valid &= ray.geomID != RTC_INVALID_GEOMETRY_ID;
       if (none(valid)) return;
       
-      vfloat<K>::storeu(valid,(float* __restrict__ )((char*)tfar + offset), ray.tfar);
-      vfloat<K>::storeu(valid,(float* __restrict__ )((char*)u + offset), ray.u);
-      vfloat<K>::storeu(valid,(float* __restrict__ )((char*)v + offset), ray.v);
-      vint<K>::storeu(valid,(int * __restrict__ )((char*)primID + offset), ray.primID);
-      if (likely(Ngx)) vfloat<K>::storeu(valid,(float* __restrict__ )((char*)Ngx + offset), ray.Ng.x);
-      if (likely(Ngy)) vfloat<K>::storeu(valid,(float* __restrict__ )((char*)Ngy + offset), ray.Ng.y);
-      if (likely(Ngz)) vfloat<K>::storeu(valid,(float* __restrict__ )((char*)Ngz + offset), ray.Ng.z);
-      if (likely(instID)) vint<K>::storeu(valid,(int * __restrict__ )((char*)instID + offset), ray.instID);
+      vfloat<K>::storeu(valid, (float* __restrict__ )((char*)tfar + offset), ray.tfar);
+      vfloat<K>::storeu(valid, (float* __restrict__ )((char*)u + offset), ray.u);
+      vfloat<K>::storeu(valid, (float* __restrict__ )((char*)v + offset), ray.v);
+      vint<K>::storeu(valid, (int* __restrict__ )((char*)primID + offset), ray.primID);
+      if (likely(Ngx)) vfloat<K>::storeu(valid, (float* __restrict__ )((char*)Ngx + offset), ray.Ng.x);
+      if (likely(Ngy)) vfloat<K>::storeu(valid, (float* __restrict__ )((char*)Ngy + offset), ray.Ng.y);
+      if (likely(Ngz)) vfloat<K>::storeu(valid, (float* __restrict__ )((char*)Ngz + offset), ray.Ng.z);
+      if (likely(instID)) vint<K>::storeu(valid, (int * __restrict__ )((char*)instID + offset), ray.instID);
     }
 
-    __forceinline size_t getOctantByOffset(const size_t offset)
+    __forceinline size_t getOctantByOffset(size_t offset)
     {
       const float dx = *(float* __restrict__ )((char*)dirx + offset);
       const float dy = *(float* __restrict__ )((char*)diry + offset);
@@ -698,7 +693,7 @@ namespace embree
       return octantID;
     }
 
-    __forceinline bool isValidByOffset(const size_t offset)
+    __forceinline bool isValidByOffset(size_t offset)
     {
       const float nnear = tnear ? *(float* __restrict__ )((char*)tnear + offset) : 0.0f;
       const float ffar  = *(float* __restrict__ )((char*)tfar  + offset);
@@ -706,10 +701,10 @@ namespace embree
     }
 
     template<int K>
-    __forceinline vbool<K> isValidByOffset(const vbool<K>& valid, const size_t offset)
+    __forceinline vbool<K> isValidByOffset(const vbool<K>& valid, size_t offset)
     {
-      const vfloat<K> nnear = tnear ? vfloat<K>::loadu(valid,(float* __restrict__ )((char*)tnear + offset)) : 0.0f;
-      const vfloat<K> ffar  = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)tfar + offset));
+      const vfloat<K> nnear = tnear ? vfloat<K>::loadu(valid, (float* __restrict__ )((char*)tnear + offset)) : 0.0f;
+      const vfloat<K> ffar  = vfloat<K>::loadu(valid, (float* __restrict__ )((char*)tfar + offset));
       return nnear <= ffar;
     }
   };
