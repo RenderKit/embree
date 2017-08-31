@@ -737,9 +737,12 @@ namespace embree
         size_t m_first_hit = movemask(vmask_first_hit) & (((size_t)1 << N)-1);
 
         // ==================
-          
-        dist = select(vmask_first_hit, rmin, fmin);
-        //dist = fmin;            
+
+        /* this causes a traversal order dependence with respect to the order of rays within the stream */
+        //dist = select(vmask_first_hit, rmin, fmin);
+        /* this is independent of the ordering of rays */
+        dist = fmin;            
+            
 
         size_t m_node = m_node_hit ^ (m_first_hit /*  & m_leaf */);
         while(unlikely(m_node)) 
