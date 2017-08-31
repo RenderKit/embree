@@ -679,7 +679,7 @@ namespace embree
 #endif
 
       /* otherwise use stream intersector */
-      RayPacket rayN(rayData,N);
+      RayPacketAOS rayN(rayData,N);
 
       __aligned(64) Ray rays[MAX_RAYS_PER_OCTANT];
       __aligned(64) Ray *rays_ptr[MAX_RAYS_PER_OCTANT];
@@ -702,7 +702,7 @@ namespace embree
           if (unlikely(!rayN.isValidByOffset(offset))) continue;
 
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
-          __aligned(64) Ray ray = rayN.gatherByOffset(offset);
+          __aligned(64) Ray ray = rayN.getRayByOffset(offset);
           if (unlikely(!ray.valid())) continue; 
 #endif
 
@@ -716,7 +716,7 @@ namespace embree
             for (size_t j=0;j<MAX_RAYS_PER_OCTANT;j++)
             {
               rays_ptr[j] = &rays[j]; // rays_ptr might get reordered for occludedN
-              rays[j] = rayN.gatherByOffset(octants[octantID][j]);
+              rays[j] = rayN.getRayByOffset(octants[octantID][j]);
             }
 
             if (intersect)
@@ -725,7 +725,7 @@ namespace embree
               scene->occludedN((RTCRay**)rays_ptr,MAX_RAYS_PER_OCTANT,context);
 
             for (size_t j=0;j<MAX_RAYS_PER_OCTANT;j++)
-              rayN.scatterByOffset(octants[octantID][j],rays[j],intersect);
+              rayN.setHitByOffset(octants[octantID][j],rays[j],intersect);
             
             rays_in_octant[octantID] = 0;
           }
@@ -739,7 +739,7 @@ namespace embree
           for (size_t j=0;j<rays_in_octant[i];j++)
           {
             rays_ptr[j] = &rays[j]; // rays_ptr might get reordered for occludedN
-            rays[j] = rayN.gatherByOffset(octants[i][j]);
+            rays[j] = rayN.getRayByOffset(octants[i][j]);
           }
 
           if (intersect)
@@ -748,13 +748,13 @@ namespace embree
             scene->occludedN((RTCRay**)rays_ptr,rays_in_octant[i],context);        
 
           for (size_t j=0;j<rays_in_octant[i];j++)
-            rayN.scatterByOffset(octants[i][j],rays[j],intersect);
+            rayN.setHitByOffset(octants[i][j],rays[j],intersect);
         }
     }
 
     void RayStream::filterSOPCoherent(Scene *scene, const RTCRayNp& _rayN, const size_t N, IntersectContext* context, const bool intersect)
     {
-      RayPN& rayN = *(RayPN*)&_rayN;
+      RayStreamSOP& rayN = *(RayStreamSOP*)&_rayN;
 
       /* all valid accels need to have a intersectN/occludedN */
       bool chunkFallback = scene->isRobust() || !scene->accels.validIsecN();
@@ -772,7 +772,7 @@ namespace embree
           const vboolx valid = vi < vintx(int(N));
           const size_t offset = sizeof(float) * i;
 
-          const Vec3vfx dir = rayN.gatherDirByOffset(valid, offset);
+          const Vec3vfx dir = rayN.getDirByOffset(valid, offset);
 
           min_x = min(min_x, dir.x);
           min_y = min(min_y, dir.y);
@@ -783,7 +783,7 @@ namespace embree
 
           vboolx active = rayN.isValidByOffset(valid, offset);
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
-          __aligned(64) Ray ray = rayN.gatherByOffset(offset);
+          __aligned(64) Ray ray = rayN.getRayByOffset(offset);
           active &= ray.valid();
 #endif
           all_active = select(valid, all_active & active, all_active);
@@ -806,13 +806,13 @@ namespace embree
           vboolx valid = vi < vintx(int(N));
           const size_t offset = sizeof(float) * i;
 
-          RayK<VSIZEX> ray = rayN.gatherByOffset<VSIZEX>(valid, offset);
+          RayK<VSIZEX> ray = rayN.getRayByOffset<VSIZEX>(valid, offset);
           valid &= ray.tnear <= ray.tfar;
           if (intersect)
             scene->intersect(valid, ray, context);
           else
             scene->occluded (valid, ray, context);
-          rayN.scatterByOffset<VSIZEX>(valid, offset, ray, intersect);
+          rayN.setHitByOffset<VSIZEX>(valid, offset, ray, intersect);
         }
         return;
       }
@@ -836,7 +836,7 @@ namespace embree
           const size_t offset = sizeof(float) * (i+j);
           const size_t packetID = j / VSIZEX;
 
-          rays[packetID] = rayN.gatherByOffset(valid, offset);
+          rays[packetID] = rayN.getRayByOffset(valid, offset);
           rays_ptr[packetID] = &rays[packetID]; // rays_ptr might get reordered for occludedN
         }
 
@@ -854,7 +854,7 @@ namespace embree
           const size_t offset = sizeof(float) * (i+j);
           const size_t packetID = j / VSIZEX;
 
-          rayN.scatterByOffset(valid, offset, rays[packetID], intersect);
+          rayN.setHitByOffset(valid, offset, rays[packetID], intersect);
         }
       }
     }
@@ -871,7 +871,7 @@ namespace embree
 #endif
       
       /* otherwise use stream intersector */
-      RayPN& rayN = *(RayPN*)&_rayN;
+      RayStreamSOP& rayN = *(RayStreamSOP*)&_rayN;
 
 #if 1
 
@@ -882,7 +882,7 @@ namespace embree
         vboolx valid = vi < vintx(int(N));
         const size_t offset = sizeof(float) * i;
 
-        RayK<VSIZEX> ray = rayN.gatherByOffset<VSIZEX>(valid, offset);
+        RayK<VSIZEX> ray = rayN.getRayByOffset<VSIZEX>(valid, offset);
 
         /* filter out invalid rays */
         valid &= ray.tnear <= ray.tfar;
@@ -892,7 +892,7 @@ namespace embree
         else
           scene->occluded (valid, ray, context);
 
-        rayN.scatterByOffset<VSIZEX>(valid, offset, ray, intersect);
+        rayN.setHitByOffset<VSIZEX>(valid, offset, ray, intersect);
       }
 
 #else
@@ -917,7 +917,7 @@ namespace embree
           if (unlikely(!rayN.isValidByOffset(offset))) continue;
 
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
-          __aligned(64) Ray ray = rayN.gatherByOffset(offset);
+          __aligned(64) Ray ray = rayN.getRayByOffset(offset);
           if (unlikely(!ray.valid())) continue; 
 #endif
 
@@ -931,7 +931,7 @@ namespace embree
             for (size_t j=0;j<MAX_RAYS_PER_OCTANT;j++)
             {
               rays_ptr[j] = &rays[j]; // rays_ptr might get reordered for occludedN
-              rays[j] = rayN.gatherByOffset(octants[octantID][j]);
+              rays[j] = rayN.getRayByOffset(octants[octantID][j]);
             }
 
             if (intersect)
@@ -940,7 +940,7 @@ namespace embree
               scene->occludedN((RTCRay**)rays_ptr,MAX_RAYS_PER_OCTANT,context);
 
             for (size_t j=0;j<MAX_RAYS_PER_OCTANT;j++)
-              rayN.scatterByOffset(octants[octantID][j],rays[j],intersect);
+              rayN.setHitByOffset(octants[octantID][j],rays[j],intersect);
             
             rays_in_octant[octantID] = 0;
           }
@@ -954,7 +954,7 @@ namespace embree
           for (size_t j=0;j<rays_in_octant[i];j++)
           {
             rays_ptr[j] = &rays[j]; // rays_ptr might get reordered for occludedN
-            rays[j] = rayN.gatherByOffset(octants[i][j]);
+            rays[j] = rayN.getRayByOffset(octants[i][j]);
           }
 
           if (intersect)
@@ -963,7 +963,7 @@ namespace embree
             scene->occludedN((RTCRay**)rays_ptr,rays_in_octant[i],context);        
 
           for (size_t j=0;j<rays_in_octant[i];j++)
-            rayN.scatterByOffset(octants[i][j],rays[j],intersect);
+            rayN.setHitByOffset(octants[i][j],rays[j],intersect);
         }
 
 #endif
