@@ -34,7 +34,7 @@
 #include "../common/scene.h"
 #include <bitset>
 
-// todo: parent ptr also for single stream, should improve culling.
+// TODO: bvh->scene->intersect/occluded correct vs. global scene->intersect/occluded
 
 #define MAX_RAYS 64
 
@@ -488,8 +488,7 @@ namespace embree
         ray.geomID = RTC_INVALID_GEOMETRY_ID;
         /* filter out invalid rays */
         valid &= ray.tnear <= ray.tfar;
-        //scene->intersect(valid, ray, context);
-        bvh->scene->intersect(valid, ray, context);
+        bvh->scene->occluded(valid, ray, context);
 
         for (size_t k = 0; k < n; k++)
         {
