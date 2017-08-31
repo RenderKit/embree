@@ -46,34 +46,6 @@ namespace embree
           return false;
         }
 
-        static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context,  const Primitive* prim, size_t num, size_t& lazy_node)
-        {
-          size_t valid_isec = 0;
-          do {
-            const size_t i = __bscf(valid);
-            const float old_far = rays[i]->tfar;
-            intersect(pre[i],*rays[i],context,prim,num,lazy_node);
-            valid_isec |= (rays[i]->tfar < old_far) ? ((size_t)1 << i) : 0;            
-          } while(unlikely(valid));
-          return valid_isec;
-        }
-
-        static __forceinline size_t occluded(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node) 
-        {
-          size_t hit = 0;
-          do {
-            const size_t i = __bscf(valid);            
-            if (occluded(pre[i],*rays[i],context,prim,num,lazy_node))
-            {
-              hit |= (size_t)1 << i;
-              rays[i]->geomID = 0;
-            }
-          } while(valid);
-
-          return hit;
-        }
-
-
         template<int K>
         static __forceinline void intersectK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
         {
@@ -173,32 +145,6 @@ namespace embree
           return false;
         }
 
-        static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context,  const Primitive* prim, size_t num, size_t& lazy_node)
-        {
-          size_t valid_isec = 0;
-          do {
-            const size_t i = __bscf(valid);
-            const float old_far = rays[i]->tfar;
-            intersect(pre[i],*rays[i],context,prim,num,lazy_node);
-            valid_isec |= (rays[i]->tfar < old_far) ? ((size_t)1 << i) : 0;            
-          } while(unlikely(valid));
-          return valid_isec;
-        }
-
-        static __forceinline size_t occluded(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node) 
-        {
-          size_t hit = 0;
-          do {
-            const size_t i = __bscf(valid);            
-            if (occluded(pre[i],*rays[i],context,prim,num,lazy_node))
-            {
-              hit |= (size_t)1 << i;
-              rays[i]->geomID = 0;
-            }
-          } while(valid);
-
-          return hit;
-        }
       };
   }
 }

@@ -34,7 +34,7 @@
 #include "../common/scene.h"
 #include <bitset>
 
-// todo: parent ptr also for single stream, should improve culling.
+// TODO: bvh->scene->intersect/occluded correct vs. global scene->intersect/occluded
 
 #define MAX_RAYS 64
 
@@ -395,120 +395,56 @@ namespace embree
       }
 #endif
       assert(context->flags == IntersectContext::INPUT_RAY_DATA_AOS);
+      /* fallback to packet interface */
 
-      __aligned(64) RayCtx ray_ctx[MAX_RAYS_PER_OCTANT];
-      __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT];
-      __aligned(64) StackItemMask stack[stackSizeSingle];  //!< stack of nodes
-
-      for (size_t r = 0; r < numTotalRays; r += MAX_RAYS_PER_OCTANT)
+      /* replace this with Attila's AOS to SOA conversion code */
+      for (size_t i = 0; i < numTotalRays; i += K)
       {
-        Ray** __restrict__ rays = inputRays + r;
-        const size_t numOctantRays = (r + MAX_RAYS_PER_OCTANT >= numTotalRays) ? numTotalRays-r : MAX_RAYS_PER_OCTANT;
-
-        /* inactive rays should have been filtered out before */
-        size_t m_active = numOctantRays == 8*sizeof(size_t) ? (size_t)-1 : (((size_t)1 << numOctantRays))-1;
-
-        if (m_active == 0) return;
-
-        /* do per ray precalculations */
-        for (size_t i = 0; i < numOctantRays; i++) {
-          new (&ray_ctx[i]) RayCtx(rays[i]);
-          new (&pre[i]) Precalculations(*rays[i], bvh);
-        }
-
-        const NearFarPreCompute pc(ray_ctx[0].rdir);
-
-        stack[0].ptr  = BVH::invalidNode;
-        stack[0].mask = (size_t)-1;
-        stack[0].dist = neg_inf;
-        stack[1].ptr  = bvh->root;
-        stack[1].mask = m_active;
-        stack[1].dist = neg_inf;
-
-        ///////////////////////////////////////////////////////////////////////////////////
-        ///////////////////////////////////////////////////////////////////////////////////
-        ///////////////////////////////////////////////////////////////////////////////////
-
-        StackItemMask* stackPtr = stack + 2;
-
-        while (1) pop:
+        const size_t n = min(numTotalRays - i, size_t(K));
+        vbool<K> valid = vint<K>(step) < vint<K>(int(n));
+        RayK<K> ray;
+        
+        for (size_t k = 0; k < n; k++)
         {
-          /*! pop next node */
-          STAT3(normal.trav_stack_pop,1,1,1);
-          stackPtr--;
+          Ray* __restrict__ ray_k = inputRays[i+k];
+          assert(k < K);
+          assert(i+k < numTotalRays);
 
-          NodeRef cur = NodeRef(stackPtr->ptr);
-          if (unlikely(cur == BVH::invalidNode)) {
-            break;
-          }
+          ray.org.x[k]  = ray_k->org.x;
+          ray.org.y[k]  = ray_k->org.y;
+          ray.org.z[k]  = ray_k->org.z;
+          ray.dir.x[k]  = ray_k->dir.x;
+          ray.dir.y[k]  = ray_k->dir.y;
+          ray.dir.z[k]  = ray_k->dir.z;
+          ray.tnear[k]  = ray_k->tnear;
+          ray.tfar[k]   = ray_k->tfar;
+          ray.time[k]   = ray_k->time;
+          ray.mask[k]   = ray_k->mask;
+          ray.instID[k] = ray_k->instID;
+        }
+        ray.geomID = RTC_INVALID_GEOMETRY_ID;
+        /* filter out invalid rays */
+        valid &= ray.tnear <= ray.tfar;
+        //scene->intersect(valid, ray, context);
+        bvh->scene->intersect(valid, ray, context);
 
-          size_t m_trav_active = stackPtr->mask;
+        for (size_t k = 0; k < n; k++)
+        {
+          Ray* __restrict__ ray_k = inputRays[i+k];
 
-#if 1
-          /* culling */
-          size_t active_bits = m_trav_active;
-          do
+          if (ray.geomID[k] != RTC_INVALID_GEOMETRY_ID)
           {
-            const size_t i = __bscf(active_bits);
-            if (likely(*(float*)&stackPtr->dist <= ray_ctx[i].tfar()))
-              goto trav;
-            m_trav_active = active_bits;
-          } while (active_bits);
-          continue;
-        trav:
-#endif
-
-          assert(m_trav_active);
-
-          const vfloat<Nx> inf(pos_inf);
-
-          while (1)
-          {
-            if (unlikely(cur.isLeaf())) break;
-            const AlignedNode* __restrict__ const node = cur.alignedNode();
-            assert(m_trav_active);
-
-#if defined(__AVX512F__)
-            /* AVX512 path for up to 64 rays */
-            vllong<Nxd> maskK(zero);
-            vfloat<Nx> dist(inf);
-            const vbool<Nx> vmask = traversalLoop<true>(m_trav_active,node,pc,ray_ctx,dist,maskK);
-            if (unlikely(none(vmask))) goto pop;
-            BVHNNodeTraverserStreamHit<N, Nx, types>::traverseClosestHit(cur, m_trav_active, vmask, dist, (size_t*)&maskK, stackPtr);
-#else
-            /* AVX path for up to 32 rays */
-            vint<Nx> maskK(zero);
-            vfloat<Nx> dist(inf);
-            const vbool<Nx> vmask = traversalLoop<true>(m_trav_active,node,pc,ray_ctx,dist,maskK);
-            if (unlikely(none(vmask))) goto pop;
-            BVHNNodeTraverserStreamHit<N, Nx, types>::traverseClosestHit(cur, m_trav_active, vmask, dist, (unsigned int*)&maskK, stackPtr);
-            assert(m_trav_active);
-#endif
+            ray_k->tfar   = ray.tfar[k];
+            ray_k->Ng.x   = ray.Ng.x[k];
+            ray_k->Ng.y   = ray.Ng.y[k];
+            ray_k->Ng.z   = ray.Ng.z[k];
+            ray_k->u      = ray.u[k];
+            ray_k->v      = ray.v[k];
+            ray_k->primID = ray.primID[k];
+            ray_k->geomID = ray.geomID[k];
+            ray_k->instID = ray.instID[k];
           }
-
-          /* current ray stream is done? */
-          if (unlikely(cur == BVH::invalidNode))
-            break;
-
-          /*! this is a leaf node */
-          assert(cur != BVH::emptyNode);
-          STAT3(normal.trav_leaves, 1, 1, 1);
-          size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
-
-          size_t bits = m_trav_active;
-
-          /*! intersect stream of rays with all primitives */
-          size_t lazy_node = 0;
-          size_t valid_isec MAYBE_UNUSED = PrimitiveIntersector::intersect(pre, bits, rays, context, prim, num, lazy_node);
-
-          /* update tfar in ray context on successful hit */
-          size_t isec_bits = valid_isec;
-          while(isec_bits)
-          {
-            const size_t i = __bscf(isec_bits);
-            ray_ctx[i].update(rays[i]);
-          }
-        } // traversal + intersection
+        }
       }
     }
 
@@ -523,86 +459,46 @@ namespace embree
         return;
       }
 #endif
-      assert(context->flags == IntersectContext::INPUT_RAY_DATA_AOS);
 
-      __aligned(64) RayCtx ray_ctx[MAX_RAYS_PER_OCTANT];
-      __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT];
-      __aligned(64) StackItemMask stack[stackSizeSingle];  //!< stack of nodes
-
-      for (size_t r = 0; r < numTotalRays; r += MAX_RAYS_PER_OCTANT)
+      /* replace this with Attila's AOS to SOA conversion code */
+      for (size_t i = 0; i < numTotalRays; i += K)
       {
-        Ray** rays = inputRays + r;
-        const size_t numOctantRays = (r + MAX_RAYS_PER_OCTANT >= numTotalRays) ? numTotalRays-r : MAX_RAYS_PER_OCTANT;
-        size_t m_active = numOctantRays == 8*sizeof(size_t) ? (size_t)-1 : (((size_t)1 << numOctantRays))-1;
-        if (unlikely(m_active == 0)) continue;
-
-        /* do per ray precalculations */
-        for (size_t i = 0; i < numOctantRays; i++) {
-          new (&ray_ctx[i]) RayCtx(rays[i]);
-          new (&pre[i]) Precalculations(*rays[i], bvh);
-        }
-
-        stack[0].ptr  = BVH::invalidNode;
-        stack[0].mask = (size_t)-1;
-        stack[1].ptr  = bvh->root;
-        stack[1].mask = m_active;
-
-        StackItemMask* stackPtr = stack + 2;
-
-        const NearFarPreCompute pc(ray_ctx[0].rdir);
-
-        while (1) pop:
+        const size_t n = min(numTotalRays - i, size_t(K));
+        vbool<K> valid = vint<K>(step) < vint<K>(int(n));
+        RayK<K> ray;
+        
+        for (size_t k = 0; k < n; k++)
         {
-          /*! pop next node */
-          STAT3(shadow.trav_stack_pop,1,1,1);
-          stackPtr--;
-          NodeRef cur = NodeRef(stackPtr->ptr);
-          assert(stackPtr->mask);
-          size_t m_trav_active = stackPtr->mask & m_active;
-          if (unlikely(m_trav_active == 0 && cur != BVH::invalidNode)) continue;
+          Ray* __restrict__ ray_k = inputRays[i+k];
+          assert(k < K);
+          assert(i+k < numTotalRays);
 
-          const vfloat<Nx> inf(pos_inf);
+          ray.org.x[k]  = ray_k->org.x;
+          ray.org.y[k]  = ray_k->org.y;
+          ray.org.z[k]  = ray_k->org.z;
+          ray.dir.x[k]  = ray_k->dir.x;
+          ray.dir.y[k]  = ray_k->dir.y;
+          ray.dir.z[k]  = ray_k->dir.z;
+          ray.tnear[k]  = ray_k->tnear;
+          ray.tfar[k]   = ray_k->tfar;
+          ray.time[k]   = ray_k->time;
+          ray.mask[k]   = ray_k->mask;
+          ray.instID[k] = ray_k->instID;
+        }
+        ray.geomID = RTC_INVALID_GEOMETRY_ID;
+        /* filter out invalid rays */
+        valid &= ray.tnear <= ray.tfar;
+        bvh->scene->occluded(valid, ray, context);
 
-          while (1)
+        for (size_t k = 0; k < n; k++)
+        {
+          Ray* __restrict__ ray_k = inputRays[i+k];
+
+          if (ray.geomID[k] != RTC_INVALID_GEOMETRY_ID)
           {
-            if (likely(cur.isLeaf())) break;
-            assert(m_trav_active);
-
-            const AlignedNode* __restrict__ const node = cur.alignedNode();
-
-#if defined(__AVX512F__)
-            /* AVX512 path for up to 64 rays */
-            vllong<Nxd> maskK(zero);
-            vfloat<Nx> dist(inf);
-            const vbool<Nx> vmask = traversalLoop<false>(m_trav_active,node,pc,ray_ctx,dist,maskK);
-            if (unlikely(none(vmask))) goto pop;
-            BVHNNodeTraverserStreamHit<N, Nx, types>::traverseAnyHit(cur, m_trav_active, vmask, (size_t*)&maskK, stackPtr);
-#else
-            /* AVX path for up to 32 rays */
-            vint<Nx> maskK(zero);
-            vfloat<Nx> dist(inf);
-            const vbool<Nx> vmask = traversalLoop<false>(m_trav_active,node,pc,ray_ctx,dist,maskK);
-            if (unlikely(none(vmask))) goto pop;
-            BVHNNodeTraverserStreamHit<N, Nx, types>::traverseAnyHit(cur, m_trav_active, vmask, (unsigned int*)&maskK, stackPtr);
-#endif
+            ray_k->geomID = ray.geomID[k];
           }
-
-          /* current ray stream is done? */
-          if (unlikely(cur == BVH::invalidNode))
-            break;
-
-          /*! this is a leaf node */
-          assert(cur != BVH::emptyNode);
-          STAT3(shadow.trav_leaves, 1, 1, 1);
-          size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
-
-          size_t lazy_node = 0;
-          size_t bits = m_trav_active & m_active;
-
-          assert(bits);
-          m_active = m_active & ~PrimitiveIntersector::occluded(pre, bits, rays, context, prim, num, lazy_node);
-          if (unlikely(m_active == 0)) break;
-        } // traversal + intersection
+        }
       }
     }
 
