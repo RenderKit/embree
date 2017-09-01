@@ -27,7 +27,6 @@ namespace embree
     DEFINE_SYMBOL2(RTCBoundsFunc3,InstanceBoundsFunc);
     DEFINE_SYMBOL2(AccelSet::Intersector1,InstanceIntersector1);
     DEFINE_SYMBOL2(AccelSet::IntersectorN,InstanceIntersectorN);
-    DEFINE_SYMBOL2(AccelSet::Intersector1M,InstanceIntersector1M);
   };
 
   /*! Instanced acceleration structure */
