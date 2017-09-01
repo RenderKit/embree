@@ -212,7 +212,7 @@ namespace embree
       }
       N = l;
     }
-    
+
     /* Ray data */
     Vec3fa org;  // ray origin
     Vec3fa dir;  // ray direction
@@ -393,7 +393,7 @@ namespace embree
 
     __forceinline float* u(size_t offset) { return (float*)&ptr[13*4*K+offset]; };     //!< Barycentric u coordinate of hit
     __forceinline float* v(size_t offset) { return (float*)&ptr[14*4*K+offset]; };     //!< Barycentric v coordinate of hit
- 
+
     __forceinline int* geomID(size_t offset) { return (int*)&ptr[15*4*K+offset]; };  //!< geometry ID
     __forceinline int* primID(size_t offset) { return (int*)&ptr[16*4*K+offset]; };  //!< primitive ID
     __forceinline int* instID(size_t offset) { return (int*)&ptr[17*4*K+offset]; };  //!< instance ID
@@ -540,36 +540,9 @@ namespace embree
 
     char data[MAX_K / 4 * sizeof(Ray4)];
   };
-  
+
   struct RayStreamSOP
   {
-    /* ray data */
-    float* __restrict__ orgx;  //!< x coordinate of ray origin
-    float* __restrict__ orgy;  //!< y coordinate of ray origin
-    float* __restrict__ orgz;  //!< z coordinate of ray origin
-
-    float* __restrict__ dirx;  //!< x coordinate of ray direction
-    float* __restrict__ diry;  //!< y coordinate of ray direction
-    float* __restrict__ dirz;  //!< z coordinate of ray direction
-
-    float* __restrict__ tnear; //!< Start of ray segment (optional)
-    float* __restrict__ tfar;  //!< End of ray segment (set to hit distance)
-
-    float* __restrict__ time;     //!< Time of this ray for motion blur (optional)
-    unsigned* __restrict__ mask;  //!< Used to mask out objects during traversal (optional)
-
-    /* hit data */
-    float* __restrict__ Ngx;   //!< x coordinate of geometry normal (optional)
-    float* __restrict__ Ngy;   //!<y coordinate of geometry normal (optional)
-    float* __restrict__ Ngz;   //!< z coordinate of geometry normal (optional)
-
-    float* __restrict__ u;     //!< Barycentric u coordinate of hit
-    float* __restrict__ v;     //!< Barycentric v coordinate of hit
- 
-    unsigned* __restrict__ geomID;  //!< geometry ID
-    unsigned* __restrict__ primID;  //!< primitive ID
-    unsigned* __restrict__ instID;  //!< instance ID (optional)
-
     template<class T>
     __forceinline void init(T& t)
     {
@@ -660,12 +633,12 @@ namespace embree
     __forceinline void setHitByOffset(const vbool<K>& valid_i, size_t offset, const RayK<K>& ray, bool intersect = true)
     {
       vbool<K> valid = valid_i;
-      vint<K>::storeu(valid,(int* __restrict__)((char*)geomID + offset), ray.geomID);
+      vint<K>::storeu(valid, (int* __restrict__)((char*)geomID + offset), ray.geomID);
       if (!intersect) return;
 
       valid &= ray.geomID != RTC_INVALID_GEOMETRY_ID;
       if (none(valid)) return;
-      
+
       vfloat<K>::storeu(valid, (float* __restrict__)((char*)tfar + offset), ray.tfar);
       vfloat<K>::storeu(valid, (float* __restrict__)((char*)u + offset), ray.u);
       vfloat<K>::storeu(valid, (float* __restrict__)((char*)v + offset), ray.v);
@@ -673,7 +646,7 @@ namespace embree
       if (likely(Ngx)) vfloat<K>::storeu(valid, (float* __restrict__)((char*)Ngx + offset), ray.Ng.x);
       if (likely(Ngy)) vfloat<K>::storeu(valid, (float* __restrict__)((char*)Ngy + offset), ray.Ng.y);
       if (likely(Ngz)) vfloat<K>::storeu(valid, (float* __restrict__)((char*)Ngz + offset), ray.Ng.z);
-      if (likely(instID)) vint<K>::storeu(valid, (int * __restrict__)((char*)instID + offset), ray.instID);
+      if (likely(instID)) vint<K>::storeu(valid, (int* __restrict__)((char*)instID + offset), ray.instID);
     }
 
     __forceinline size_t getOctantByOffset(size_t offset)
@@ -699,5 +672,275 @@ namespace embree
       const vfloat<K> ffar  = vfloat<K>::loadu(valid, (float* __restrict__)((char*)tfar + offset));
       return nnear <= ffar;
     }
+
+    /* ray data */
+    float* __restrict__ orgx;  //!< x coordinate of ray origin
+    float* __restrict__ orgy;  //!< y coordinate of ray origin
+    float* __restrict__ orgz;  //!< z coordinate of ray origin
+
+    float* __restrict__ dirx;  //!< x coordinate of ray direction
+    float* __restrict__ diry;  //!< y coordinate of ray direction
+    float* __restrict__ dirz;  //!< z coordinate of ray direction
+
+    float* __restrict__ tnear; //!< Start of ray segment (optional)
+    float* __restrict__ tfar;  //!< End of ray segment (set to hit distance)
+
+    float* __restrict__ time;     //!< Time of this ray for motion blur (optional)
+    unsigned* __restrict__ mask;  //!< Used to mask out objects during traversal (optional)
+
+    /* hit data */
+    float* __restrict__ Ngx;   //!< x coordinate of geometry normal (optional)
+    float* __restrict__ Ngy;   //!<y coordinate of geometry normal (optional)
+    float* __restrict__ Ngz;   //!< z coordinate of geometry normal (optional)
+
+    float* __restrict__ u;     //!< Barycentric u coordinate of hit
+    float* __restrict__ v;     //!< Barycentric v coordinate of hit
+
+    unsigned* __restrict__ geomID;  //!< geometry ID
+    unsigned* __restrict__ primID;  //!< primitive ID
+    unsigned* __restrict__ instID;  //!< instance ID (optional)
   };
+
+  struct RayStreamAOS
+  {
+    __forceinline RayStreamAOS(void* rays)
+      : ptr((Ray*)rays) {}
+
+    template<int K>
+    RayK<K> getRayByOffset(const vint<K>& offset);
+
+    template<int K>
+    __forceinline RayK<K> getRayByOffset(const vbool<K>& valid, const vint<K>& offset)
+    {
+      /* check whether we can use the fast path */
+      if (likely(all(valid)))
+        return getRayByOffset(offset);
+
+      RayK<K> ray;
+
+  #if defined(__AVX2__)
+      ray.org.x  = vfloat<K>::template gather<1>(valid, &ptr->org.x, offset);
+      ray.org.y  = vfloat<K>::template gather<1>(valid, &ptr->org.y, offset);
+      ray.org.z  = vfloat<K>::template gather<1>(valid, &ptr->org.z, offset);
+      ray.dir.x  = vfloat<K>::template gather<1>(valid, &ptr->dir.x, offset);
+      ray.dir.y  = vfloat<K>::template gather<1>(valid, &ptr->dir.y, offset);
+      ray.dir.z  = vfloat<K>::template gather<1>(valid, &ptr->dir.z, offset);
+      ray.tnear  = vfloat<K>::template gather<1>(valid, &ptr->tnear, offset);
+      ray.tfar   = vfloat<K>::template gather<1>(valid, &ptr->tfar, offset);
+      ray.time   = vfloat<K>::template gather<1>(valid, &ptr->time, offset);
+      ray.mask   = vint<K>::template gather<1>(valid, &ptr->mask, offset);
+      ray.instID = vint<K>::template gather<1>(valid, (int*)&ptr->instID, offset);
+  #else
+      for (size_t k = 0; k < K; k++)
+      {
+        if (unlikely(!valid[k])) continue;
+
+        Ray* __restrict__ ray_k = (Ray*)((char*)ptr + offset[k]);
+
+        ray.org.x[k]  = ray_k->org.x;
+        ray.org.y[k]  = ray_k->org.y;
+        ray.org.z[k]  = ray_k->org.z;
+        ray.dir.x[k]  = ray_k->dir.x;
+        ray.dir.y[k]  = ray_k->dir.y;
+        ray.dir.z[k]  = ray_k->dir.z;
+        ray.tnear[k]  = ray_k->tnear;
+        ray.tfar[k]   = ray_k->tfar;
+        ray.time[k]   = ray_k->time;
+        ray.mask[k]   = ray_k->mask;
+        ray.instID[k] = ray_k->instID;
+      }
+  #endif
+
+      return ray;
+    }
+
+    template<int K>
+    __forceinline void setHitByOffset(const vbool<K>& valid_i, const vint<K>& offset, const RayK<K>& ray, bool intersect = true)
+    {
+      vbool<K> valid = valid_i;
+
+#if defined(__AVX512F__)
+      vint<K>::template scatter<1>(valid, (int*)&ptr->geomID, offset, ray.geomID);
+
+      if (intersect)
+      {
+        valid &= ray.geomID != RTC_INVALID_GEOMETRY_ID;
+        if (none(valid)) return;
+
+        vfloat<K>::template scatter<1>(valid, &ptr->tfar, offset, ray.tfar);
+        vfloat<K>::template scatter<1>(valid, &ptr->Ng.x, offset, ray.Ng.x);
+        vfloat<K>::template scatter<1>(valid, &ptr->Ng.y, offset, ray.Ng.y);
+        vfloat<K>::template scatter<1>(valid, &ptr->Ng.z, offset, ray.Ng.z);
+        vfloat<K>::template scatter<1>(valid, &ptr->u, offset, ray.u);
+        vfloat<K>::template scatter<1>(valid, &ptr->v, offset, ray.v);
+        vint<K>::template scatter<1>(valid, (int*)&ptr->primID, offset, ray.primID);
+        vint<K>::template scatter<1>(valid, (int*)&ptr->instID, offset, ray.instID);
+      }
+#else
+      for (size_t k = 0; k < K; k++)
+      {
+        if (unlikely(!valid[k])) continue;
+
+        Ray* __restrict__ ray_k = (Ray*)((char*)ptr + offset[k]);
+        ray_k->geomID = ray.geomID[k];
+
+        if (intersect && ray.geomID[k] != RTC_INVALID_GEOMETRY_ID)
+        {
+          ray_k->tfar   = ray.tfar[k];
+          ray_k->Ng.x   = ray.Ng.x[k];
+          ray_k->Ng.y   = ray.Ng.y[k];
+          ray_k->Ng.z   = ray.Ng.z[k];
+          ray_k->u      = ray.u[k];
+          ray_k->v      = ray.v[k];
+          ray_k->primID = ray.primID[k];
+          ray_k->instID = ray.instID[k];
+        }
+      }
+#endif
+    }
+
+    Ray* __restrict__ ptr;
+  };
+
+  template<>
+  __forceinline Ray4 RayStreamAOS::getRayByOffset(const vint4& offset)
+  {
+    Ray4 ray;
+
+    /* gather: instID */
+    ray.instID = vint4::gather<1>((int*)&ptr->instID, offset);
+
+    /* load and transpose: org.x, org.y, org.z */
+    const vfloat4 a0 = vfloat4::load(&((Ray*)((char*)ptr + offset[0]))->org);
+    const vfloat4 a1 = vfloat4::load(&((Ray*)((char*)ptr + offset[1]))->org);
+    const vfloat4 a2 = vfloat4::load(&((Ray*)((char*)ptr + offset[2]))->org);
+    const vfloat4 a3 = vfloat4::load(&((Ray*)((char*)ptr + offset[3]))->org);
+
+    transpose(a0,a1,a2,a3, ray.org.x, ray.org.y, ray.org.z);
+
+    /* load and transpose: dir.x, dir.y, dir.z */
+    const vfloat4 b0 = vfloat4::load(&((Ray*)((char*)ptr + offset[0]))->dir);
+    const vfloat4 b1 = vfloat4::load(&((Ray*)((char*)ptr + offset[1]))->dir);
+    const vfloat4 b2 = vfloat4::load(&((Ray*)((char*)ptr + offset[2]))->dir);
+    const vfloat4 b3 = vfloat4::load(&((Ray*)((char*)ptr + offset[3]))->dir);
+
+    transpose(b0,b1,b2,b3, ray.dir.x, ray.dir.y, ray.dir.z);
+
+    /* load and transpose: tnear, tfar, time, mask */
+    const vfloat4 c0 = vfloat4::load(&((Ray*)((char*)ptr + offset[0]))->tnear);
+    const vfloat4 c1 = vfloat4::load(&((Ray*)((char*)ptr + offset[1]))->tnear);
+    const vfloat4 c2 = vfloat4::load(&((Ray*)((char*)ptr + offset[2]))->tnear);
+    const vfloat4 c3 = vfloat4::load(&((Ray*)((char*)ptr + offset[3]))->tnear);
+
+    vfloat4 maskf;
+    transpose(c0,c1,c2,c3, ray.tnear, ray.tfar, ray.time, maskf);
+    ray.mask = asInt(maskf);
+
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+
+    return ray;
+  }
+
+#if defined(__AVX__)
+  template<>
+  __forceinline Ray8 RayStreamAOS::getRayByOffset(const vint8& offset)
+  {
+    Ray8 ray;
+
+    /* gather: instID */
+    ray.instID = vint8::gather<1>((int*)&ptr->instID, offset);
+
+    /* load and transpose: org.x, org.y, org.z, align0, dir.x, dir.y, dir.z, align1 */
+    const vfloat8 ab0 = vfloat8::load(&((Ray*)((char*)ptr + offset[0]))->org);
+    const vfloat8 ab1 = vfloat8::load(&((Ray*)((char*)ptr + offset[1]))->org);
+    const vfloat8 ab2 = vfloat8::load(&((Ray*)((char*)ptr + offset[2]))->org);
+    const vfloat8 ab3 = vfloat8::load(&((Ray*)((char*)ptr + offset[3]))->org);
+    const vfloat8 ab4 = vfloat8::load(&((Ray*)((char*)ptr + offset[4]))->org);
+    const vfloat8 ab5 = vfloat8::load(&((Ray*)((char*)ptr + offset[5]))->org);
+    const vfloat8 ab6 = vfloat8::load(&((Ray*)((char*)ptr + offset[6]))->org);
+    const vfloat8 ab7 = vfloat8::load(&((Ray*)((char*)ptr + offset[7]))->org);
+
+    vfloat8 unused0, unused1;
+    transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7, ray.org.x, ray.org.y, ray.org.z, unused0, ray.dir.x, ray.dir.y, ray.dir.z, unused1);
+
+    /* load and transpose: tnear, tfar, time, mask */
+    const vfloat4 c0 = vfloat4::load(&((Ray*)((char*)ptr + offset[0]))->tnear);
+    const vfloat4 c1 = vfloat4::load(&((Ray*)((char*)ptr + offset[1]))->tnear);
+    const vfloat4 c2 = vfloat4::load(&((Ray*)((char*)ptr + offset[2]))->tnear);
+    const vfloat4 c3 = vfloat4::load(&((Ray*)((char*)ptr + offset[3]))->tnear);
+    const vfloat4 c4 = vfloat4::load(&((Ray*)((char*)ptr + offset[4]))->tnear);
+    const vfloat4 c5 = vfloat4::load(&((Ray*)((char*)ptr + offset[5]))->tnear);
+    const vfloat4 c6 = vfloat4::load(&((Ray*)((char*)ptr + offset[6]))->tnear);
+    const vfloat4 c7 = vfloat4::load(&((Ray*)((char*)ptr + offset[7]))->tnear);
+
+    vfloat8 maskf;
+    transpose(c0,c1,c2,c3,c4,c5,c6,c7, ray.tnear, ray.tfar, ray.time, maskf);
+    ray.mask = asInt(maskf);
+
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+
+    return ray;
+  }
+#endif
+
+#if defined(__AVX512F__)
+  template<>
+  __forceinline Ray16 RayStreamAOS::getRayByOffset(const vint16& offset)
+  {
+    Ray16 ray;
+
+    /* gather: instID */
+    ray.instID = vint16::gather<1>((int*)&ptr->instID, offset);
+
+    /* load and transpose: org.x, org.y, org.z, align0, dir.x, dir.y, dir.z, align1 */
+    const vfloat8 ab0  = vfloat8::load(&((Ray*)((char*)ptr + offset[ 0]))->org);
+    const vfloat8 ab1  = vfloat8::load(&((Ray*)((char*)ptr + offset[ 1]))->org);
+    const vfloat8 ab2  = vfloat8::load(&((Ray*)((char*)ptr + offset[ 2]))->org);
+    const vfloat8 ab3  = vfloat8::load(&((Ray*)((char*)ptr + offset[ 3]))->org);
+    const vfloat8 ab4  = vfloat8::load(&((Ray*)((char*)ptr + offset[ 4]))->org);
+    const vfloat8 ab5  = vfloat8::load(&((Ray*)((char*)ptr + offset[ 5]))->org);
+    const vfloat8 ab6  = vfloat8::load(&((Ray*)((char*)ptr + offset[ 6]))->org);
+    const vfloat8 ab7  = vfloat8::load(&((Ray*)((char*)ptr + offset[ 7]))->org);
+    const vfloat8 ab8  = vfloat8::load(&((Ray*)((char*)ptr + offset[ 8]))->org);
+    const vfloat8 ab9  = vfloat8::load(&((Ray*)((char*)ptr + offset[ 9]))->org);
+    const vfloat8 ab10 = vfloat8::load(&((Ray*)((char*)ptr + offset[10]))->org);
+    const vfloat8 ab11 = vfloat8::load(&((Ray*)((char*)ptr + offset[11]))->org);
+    const vfloat8 ab12 = vfloat8::load(&((Ray*)((char*)ptr + offset[12]))->org);
+    const vfloat8 ab13 = vfloat8::load(&((Ray*)((char*)ptr + offset[13]))->org);
+    const vfloat8 ab14 = vfloat8::load(&((Ray*)((char*)ptr + offset[14]))->org);
+    const vfloat8 ab15 = vfloat8::load(&((Ray*)((char*)ptr + offset[15]))->org);
+
+    vfloat16 unused0, unused1;
+    transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7,ab8,ab9,ab10,ab11,ab12,ab13,ab14,ab15,
+              ray.org.x, ray.org.y, ray.org.z, unused0, ray.dir.x, ray.dir.y, ray.dir.z, unused1);
+
+    /* load and transpose: tnear, tfar, time, mask */
+    const vfloat4 c0  = vfloat4::load(&((Ray*)((char*)ptr + offset[ 0]))->tnear);
+    const vfloat4 c1  = vfloat4::load(&((Ray*)((char*)ptr + offset[ 1]))->tnear);
+    const vfloat4 c2  = vfloat4::load(&((Ray*)((char*)ptr + offset[ 2]))->tnear);
+    const vfloat4 c3  = vfloat4::load(&((Ray*)((char*)ptr + offset[ 3]))->tnear);
+    const vfloat4 c4  = vfloat4::load(&((Ray*)((char*)ptr + offset[ 4]))->tnear);
+    const vfloat4 c5  = vfloat4::load(&((Ray*)((char*)ptr + offset[ 5]))->tnear);
+    const vfloat4 c6  = vfloat4::load(&((Ray*)((char*)ptr + offset[ 6]))->tnear);
+    const vfloat4 c7  = vfloat4::load(&((Ray*)((char*)ptr + offset[ 7]))->tnear);
+    const vfloat4 c8  = vfloat4::load(&((Ray*)((char*)ptr + offset[ 8]))->tnear);
+    const vfloat4 c9  = vfloat4::load(&((Ray*)((char*)ptr + offset[ 9]))->tnear);
+    const vfloat4 c10 = vfloat4::load(&((Ray*)((char*)ptr + offset[10]))->tnear);
+    const vfloat4 c11 = vfloat4::load(&((Ray*)((char*)ptr + offset[11]))->tnear);
+    const vfloat4 c12 = vfloat4::load(&((Ray*)((char*)ptr + offset[12]))->tnear);
+    const vfloat4 c13 = vfloat4::load(&((Ray*)((char*)ptr + offset[13]))->tnear);
+    const vfloat4 c14 = vfloat4::load(&((Ray*)((char*)ptr + offset[14]))->tnear);
+    const vfloat4 c15 = vfloat4::load(&((Ray*)((char*)ptr + offset[15]))->tnear);
+
+    vfloat16 maskf;
+    transpose(c0,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14,c15,
+              ray.tnear, ray.tfar, ray.time, maskf);
+    ray.mask = asInt(maskf);
+
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+
+    return ray;
+  }
+#endif
+
 }
