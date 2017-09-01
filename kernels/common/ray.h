@@ -497,9 +497,9 @@ namespace embree
     template<int K>
     __forceinline void setHitByIndex(const size_t index_dest, const RayK<K> &ray, const size_t index_source, bool intersect = true)
     {
-      const size_t offset = index_dest * sizeof(float);
       if (ray.geomID[index_source] != RTC_INVALID_GEOMETRY_ID)
       {
+        const size_t offset = index_dest * sizeof(float);
         geomID(offset)[0] = ray.geomID[index_source];
         if (intersect)
         {
@@ -514,7 +514,6 @@ namespace embree
         }
       }
     }
-
 
     __forceinline void setHitByOffset(size_t offset, const Ray& ray, bool intersect = true)
     {
@@ -541,19 +540,21 @@ namespace embree
       vbool<K> valid = valid_i;
       valid &= ray.geomID != RTC_INVALID_GEOMETRY_ID;
 
-      vint<K>::storeu(valid, geomID(offset), ray.geomID);
-      if (!intersect) return;
-
-      if (none(valid)) return;
-
-      vfloat<K>::storeu(valid, tfar(offset), ray.tfar);
-      vfloat<K>::storeu(valid, u(offset), ray.u);
-      vfloat<K>::storeu(valid, v(offset), ray.v);
-      vint<K>  ::storeu(valid, primID(offset), ray.primID);
-      vfloat<K>::storeu(valid, Ngx(offset), ray.Ng.x);
-      vfloat<K>::storeu(valid, Ngy(offset), ray.Ng.y);
-      vfloat<K>::storeu(valid, Ngz(offset), ray.Ng.z);
-      vint<K>  ::storeu(valid, instID(offset), ray.instID);
+      if (likely(any(valid)))
+      {
+        vint<K>::storeu(valid, geomID(offset), ray.geomID);
+        if (intersect)
+        {
+          vfloat<K>::storeu(valid, tfar(offset), ray.tfar);
+          vfloat<K>::storeu(valid, u(offset), ray.u);
+          vfloat<K>::storeu(valid, v(offset), ray.v);
+          vint<K>  ::storeu(valid, primID(offset), ray.primID);
+          vfloat<K>::storeu(valid, Ngx(offset), ray.Ng.x);
+          vfloat<K>::storeu(valid, Ngy(offset), ray.Ng.y);
+          vfloat<K>::storeu(valid, Ngz(offset), ray.Ng.z);
+          vint<K>  ::storeu(valid, instID(offset), ray.instID);
+        }
+      }
     }
 
     __forceinline size_t getOctantByOffset(size_t offset)
@@ -682,19 +683,21 @@ namespace embree
       vbool<K> valid = valid_i;
       valid &= ray.geomID != RTC_INVALID_GEOMETRY_ID;
 
-      vint<K>::storeu(valid, (int* __restrict__)((char*)geomID + offset), ray.geomID);
-      if (!intersect) return;
-
-      if (none(valid)) return;
-
-      vfloat<K>::storeu(valid, (float* __restrict__)((char*)tfar + offset), ray.tfar);
-      vfloat<K>::storeu(valid, (float* __restrict__)((char*)u + offset), ray.u);
-      vfloat<K>::storeu(valid, (float* __restrict__)((char*)v + offset), ray.v);
-      vint<K>::storeu(valid, (int* __restrict__)((char*)primID + offset), ray.primID);
-      if (likely(Ngx)) vfloat<K>::storeu(valid, (float* __restrict__)((char*)Ngx + offset), ray.Ng.x);
-      if (likely(Ngy)) vfloat<K>::storeu(valid, (float* __restrict__)((char*)Ngy + offset), ray.Ng.y);
-      if (likely(Ngz)) vfloat<K>::storeu(valid, (float* __restrict__)((char*)Ngz + offset), ray.Ng.z);
-      if (likely(instID)) vint<K>::storeu(valid, (int* __restrict__)((char*)instID + offset), ray.instID);
+      if (likely(any(valid)))
+      {
+        vint<K>::storeu(valid, (int* __restrict__)((char*)geomID + offset), ray.geomID);
+        if (intersect)
+        {
+          vfloat<K>::storeu(valid, (float* __restrict__)((char*)tfar + offset), ray.tfar);
+          vfloat<K>::storeu(valid, (float* __restrict__)((char*)u + offset), ray.u);
+          vfloat<K>::storeu(valid, (float* __restrict__)((char*)v + offset), ray.v);
+          vint<K>::storeu(valid, (int* __restrict__)((char*)primID + offset), ray.primID);
+          if (likely(Ngx)) vfloat<K>::storeu(valid, (float* __restrict__)((char*)Ngx + offset), ray.Ng.x);
+          if (likely(Ngy)) vfloat<K>::storeu(valid, (float* __restrict__)((char*)Ngy + offset), ray.Ng.y);
+          if (likely(Ngz)) vfloat<K>::storeu(valid, (float* __restrict__)((char*)Ngz + offset), ray.Ng.z);
+          if (likely(instID)) vint<K>::storeu(valid, (int* __restrict__)((char*)instID + offset), ray.instID);
+        }
+      }
     }
 
     __forceinline size_t getOctantByOffset(size_t offset)
@@ -782,22 +785,23 @@ namespace embree
   #else
       for (size_t k = 0; k < K; k++)
       {
-        if (unlikely(!valid[k])) continue;
+        if (likely(valid[k]))
+        {
+          Ray* __restrict__ ray_k = (Ray*)((char*)ptr + offset[k]);
 
-        Ray* __restrict__ ray_k = (Ray*)((char*)ptr + offset[k]);
-
-        ray.org.x[k]  = ray_k->org.x;
-        ray.org.y[k]  = ray_k->org.y;
-        ray.org.z[k]  = ray_k->org.z;
-        ray.dir.x[k]  = ray_k->dir.x;
-        ray.dir.y[k]  = ray_k->dir.y;
-        ray.dir.z[k]  = ray_k->dir.z;
-        ray.tnear[k]  = ray_k->tnear;
-        ray.tfar[k]   = ray_k->tfar;
-        ray.time[k]   = ray_k->time;
-        ray.mask[k]   = ray_k->mask;
-        ray.instID[k] = ray_k->instID;
-        ray.geomID[k] =  RTC_INVALID_GEOMETRY_ID;
+          ray.org.x[k]  = ray_k->org.x;
+          ray.org.y[k]  = ray_k->org.y;
+          ray.org.z[k]  = ray_k->org.z;
+          ray.dir.x[k]  = ray_k->dir.x;
+          ray.dir.y[k]  = ray_k->dir.y;
+          ray.dir.z[k]  = ray_k->dir.z;
+          ray.tnear[k]  = ray_k->tnear;
+          ray.tfar[k]   = ray_k->tfar;
+          ray.time[k]   = ray_k->time;
+          ray.mask[k]   = ray_k->mask;
+          ray.instID[k] = ray_k->instID;
+          ray.geomID[k] =  RTC_INVALID_GEOMETRY_ID;
+        }
       }
   #endif
 
@@ -810,44 +814,43 @@ namespace embree
       vbool<K> valid = valid_i;
       valid &= ray.geomID != RTC_INVALID_GEOMETRY_ID;
 
+      if (likely(any(valid)))
+      {
 #if defined(__AVX512F__)
-      vint<K>::template scatter<1>(valid, (int*)&ptr->geomID, offset, ray.geomID);
-
-      if (intersect)
-      {
-        if (none(valid)) return;
-
-        vfloat<K>::template scatter<1>(valid, &ptr->tfar, offset, ray.tfar);
-        vfloat<K>::template scatter<1>(valid, &ptr->Ng.x, offset, ray.Ng.x);
-        vfloat<K>::template scatter<1>(valid, &ptr->Ng.y, offset, ray.Ng.y);
-        vfloat<K>::template scatter<1>(valid, &ptr->Ng.z, offset, ray.Ng.z);
-        vfloat<K>::template scatter<1>(valid, &ptr->u, offset, ray.u);
-        vfloat<K>::template scatter<1>(valid, &ptr->v, offset, ray.v);
-        vint<K>::template scatter<1>(valid, (int*)&ptr->primID, offset, ray.primID);
-        vint<K>::template scatter<1>(valid, (int*)&ptr->instID, offset, ray.instID);
-      }
-#else
-      size_t validBits = movemask(valid);
-      while (validBits != 0)
-      {
-        const size_t k = __bscf(validBits);
-        Ray* __restrict__ ray_k = (Ray*)((char*)ptr + offset[k]);
-
-        ray_k->geomID = ray.geomID[k];
-
-        if (intersect && ray.geomID[k] != RTC_INVALID_GEOMETRY_ID)
+        vint<K>::template scatter<1>(valid, (int*)&ptr->geomID, offset, ray.geomID);
+        if (intersect)
         {
-          ray_k->tfar   = ray.tfar[k];
-          ray_k->Ng.x   = ray.Ng.x[k];
-          ray_k->Ng.y   = ray.Ng.y[k];
-          ray_k->Ng.z   = ray.Ng.z[k];
-          ray_k->u      = ray.u[k];
-          ray_k->v      = ray.v[k];
-          ray_k->primID = ray.primID[k];
-          ray_k->instID = ray.instID[k];
+          vfloat<K>::template scatter<1>(valid, &ptr->tfar, offset, ray.tfar);
+          vfloat<K>::template scatter<1>(valid, &ptr->Ng.x, offset, ray.Ng.x);
+          vfloat<K>::template scatter<1>(valid, &ptr->Ng.y, offset, ray.Ng.y);
+          vfloat<K>::template scatter<1>(valid, &ptr->Ng.z, offset, ray.Ng.z);
+          vfloat<K>::template scatter<1>(valid, &ptr->u, offset, ray.u);
+          vfloat<K>::template scatter<1>(valid, &ptr->v, offset, ray.v);
+          vint<K>::template scatter<1>(valid, (int*)&ptr->primID, offset, ray.primID);
+          vint<K>::template scatter<1>(valid, (int*)&ptr->instID, offset, ray.instID);
         }
-      }
+#else
+        size_t validBits = movemask(valid);
+        while (validBits != 0)
+        {
+          const size_t k = __bscf(validBits);
+          Ray* __restrict__ ray_k = (Ray*)((char*)ptr + offset[k]);
+
+          ray_k->geomID = ray.geomID[k];
+          if (intersect)
+          {
+            ray_k->tfar   = ray.tfar[k];
+            ray_k->Ng.x   = ray.Ng.x[k];
+            ray_k->Ng.y   = ray.Ng.y[k];
+            ray_k->Ng.z   = ray.Ng.z[k];
+            ray_k->u      = ray.u[k];
+            ray_k->v      = ray.v[k];
+            ray_k->primID = ray.primID[k];
+            ray_k->instID = ray.instID[k];
+          }
+        }
 #endif
+      }
     }
 
     Ray* __restrict__ ptr;
