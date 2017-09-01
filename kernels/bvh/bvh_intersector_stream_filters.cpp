@@ -339,9 +339,6 @@ namespace embree
       const size_t rayDataAlignment = (size_t)rayData       % (VSIZEX*sizeof(float));
       const size_t offsetAlignment  = (size_t)stream_offset % (VSIZEX*sizeof(float));
 
-      // PRINT(N);
-      // PRINT(rayDataAlignment);
-      // PRINT(offsetAlignment);
 #if 1
 
       /* fast path for packets with the correct width and data alignment */
