@@ -27,11 +27,8 @@ namespace embree
 
     __forceinline void RayStream::filterAOS(Scene* scene, RTCRay* _rayN, size_t N, size_t stride, IntersectContext* context, bool intersect)
     {
-
 #if 1
-
       RayStreamAOS rayN(_rayN);
-
       for (size_t i = 0; i < N; i += VSIZEX)
       {
         const vintx vi = vintx(int(i)) + vintx(step);
@@ -338,35 +335,62 @@ namespace embree
 
     __forceinline void RayStream::filterSOA(Scene* scene, char* rayData, size_t N, size_t streams, size_t stream_offset, IntersectContext* context, bool intersect)
     {
-      /* can we use the fast path ? */
-#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
-      /* fast path for packet width == SIMD width && correct RayK alignment*/
       const size_t rayDataAlignment = (size_t)rayData       % (VSIZEX*sizeof(float));
       const size_t offsetAlignment  = (size_t)stream_offset % (VSIZEX*sizeof(float));
-
-      if (unlikely(isCoherent(context->user->flags) &&
-                   N == VSIZEX &&
-                   !rayDataAlignment &&
-                   !offsetAlignment))
-      {
-        filterSOACoherent(scene, rayData, streams, stream_offset, context, intersect);
-        return;
-      }
-#endif
-
 #if 1
 
-      /* otherwise fallback to packets */
-      for (size_t s = 0; s < streams; s++)
+      /* fast path for packets with the correct width and data alignment */
+      if (likely(N == VSIZEX  &&
+                 !rayDataAlignment &&
+                 !offsetAlignment))
       {
-        const size_t offset = s * stream_offset;
-        RayK<VSIZEX>& ray = *(RayK<VSIZEX>*)(rayData + offset);
-        const vboolx valid = ray.tnear <= ray.tfar;
+#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
+        if (unlikely(isCoherent(context->user->flags)))
+          {
+            filterSOACoherent(scene, rayData, streams, stream_offset, context, intersect);
+            return;
+          }
+#endif
 
-        if (intersect)
-          scene->intersect(valid, ray, context);
-        else
-          scene->occluded(valid, ray, context);
+        for (size_t s = 0; s < streams; s++)
+        {
+          const size_t offset = s * stream_offset;
+          RayK<VSIZEX>& ray = *(RayK<VSIZEX>*)(rayData + offset);
+          const vboolx valid = (ray.tnear <= ray.tfar);          
+          if (intersect)
+            scene->intersect(valid, ray, context);
+          else
+            scene->occluded(valid, ray, context);
+        }
+      }
+      else
+      {
+        /* this is a very slow fallback path but it's extremely unlikely to be hit */
+        for (size_t s = 0; s < streams; s++)
+        {          
+          const size_t offset = s * stream_offset;
+          RayPacketAOS rayN(rayData + offset, N);
+          RayK<VSIZEX> ray;
+          for (size_t i = 0; i < N; i++)
+          {
+            /* invalidate all lanes */
+            ray.tnear = 0.0f;
+            ray.tfar  = neg_inf;
+            /* extract single ray and copy data to first packet lane */
+            rayN.getRayByIndex(ray,0,i);
+            const vboolx valid = (ray.tnear <= ray.tfar);          
+            if (intersect)
+            {
+              scene->intersect(valid, ray, context);
+              rayN.setHitByIndex(i,ray,0,true);
+            }
+            else
+            {
+              scene->occluded(valid, ray, context);
+              rayN.setHitByIndex(i,ray,0,false);
+            }
+          }
+        }
       }
 
 #else
