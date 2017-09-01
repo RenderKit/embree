@@ -777,11 +777,12 @@ namespace embree
         vint<K>::template scatter<1>(valid, (int*)&ptr->instID, offset, ray.instID);
       }
 #else
-      for (size_t k = 0; k < K; k++)
+      size_t validBits = movemask(valid);
+      while (validBits != 0)
       {
-        if (unlikely(!valid[k])) continue;
-
+        const size_t k = __bscf(validBits);
         Ray* __restrict__ ray_k = (Ray*)((char*)ptr + offset[k]);
+
         ray_k->geomID = ray.geomID[k];
 
         if (intersect && ray.geomID[k] != RTC_INVALID_GEOMETRY_ID)
