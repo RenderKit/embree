@@ -30,8 +30,6 @@ namespace embree
 #if 1
 
       RayStreamAOS rayN(_rayN);
-      PRINT(N);
-      PRINT(VSIZEX);
       for (size_t i = 0; i < N; i += VSIZEX)
       {
         const vintx vi = vintx(int(i)) + vintx(step);
