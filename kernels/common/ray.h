@@ -399,10 +399,10 @@ namespace embree
     __forceinline int* instID(size_t offset) { return (int*)&ptr[17*4*K+offset]; };  //!< instance ID
 
 
-    __forceinline void setRay(size_t i, const Ray& ray, int* valid)
+    __forceinline void setRayByIndex(size_t index, const Ray& ray, int* valid)
     {
-      const size_t offset = 4*i;
-      valid[i] = -1;
+      const size_t offset = 4*index;
+      valid[index] = -1;
       orgx(offset)[0] = ray.org.x;
       orgy(offset)[0] = ray.org.y;
       orgz(offset)[0] = ray.org.z;
@@ -417,9 +417,9 @@ namespace embree
       geomID(offset)[0] = RTC_INVALID_GEOMETRY_ID;
     }
 
-    __forceinline void getHit(size_t i, Ray& ray)
+    __forceinline void getHitByIndex(size_t index, Ray& ray)
     {
-      const size_t offset = 4*i;
+      const size_t offset = 4*index;
       const unsigned int geometryID = geomID(offset)[0];
       if (geometryID != RTC_INVALID_GEOMETRY_ID)
       {
@@ -435,8 +435,9 @@ namespace embree
       }
     }
 
-    __forceinline void getOcclusion(size_t i, Ray& ray) {
-      ray.geomID = geomID(4*i)[0];
+    __forceinline void getOcclusionByIndex(size_t index, Ray& ray)
+    {
+      ray.geomID = geomID(4*index)[0];
     }
 
     __forceinline Ray getRayByOffset(size_t offset)
@@ -477,9 +478,9 @@ namespace embree
     }
 
     template<int K>
-    __forceinline void getRayByIndex(RayK<K> &ray, const size_t index_dest, const size_t index_source)
+    __forceinline void getRayByIndex(size_t index, RayK<K>& ray, size_t index_dest)
     {
-      const size_t offset = index_source * sizeof(float);
+      const size_t offset = index * sizeof(float);
       ray.org.x[index_dest] = orgx(offset)[0];
       ray.org.y[index_dest] = orgy(offset)[0];
       ray.org.z[index_dest] = orgz(offset)[0];
@@ -495,11 +496,11 @@ namespace embree
     }
 
     template<int K>
-    __forceinline void setHitByIndex(const size_t index_dest, const RayK<K> &ray, const size_t index_source, bool intersect = true)
+    __forceinline void setHitByIndex(size_t index, const RayK<K>& ray, size_t index_source, bool intersect = true)
     {
       if (ray.geomID[index_source] != RTC_INVALID_GEOMETRY_ID)
       {
-        const size_t offset = index_dest * sizeof(float);
+        const size_t offset = index * sizeof(float);
         geomID(offset)[0] = ray.geomID[index_source];
         if (intersect)
         {

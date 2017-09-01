@@ -344,23 +344,24 @@ namespace embree
 #if 1
 
       /* fast path for packets with the correct width and data alignment */
-      if (likely(N == VSIZEX  &&
+      if (likely(N == VSIZEX &&
                  !rayDataAlignment &&
                  !offsetAlignment))
       {
 #if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
         if (unlikely(isCoherent(context->user->flags)))
-          {
-            filterSOACoherent(scene, rayData, streams, stream_offset, context, intersect);
-            return;
-          }
+        {
+          filterSOACoherent(scene, rayData, streams, stream_offset, context, intersect);
+          return;
+        }
 #endif
 
         for (size_t s = 0; s < streams; s++)
         {
           const size_t offset = s * stream_offset;
           RayK<VSIZEX>& ray = *(RayK<VSIZEX>*)(rayData + offset);
-          const vboolx valid = (ray.tnear <= ray.tfar);          
+          const vboolx valid = ray.tnear <= ray.tfar;
+
           if (intersect)
             scene->intersect(valid, ray, context);
           else
@@ -375,24 +376,23 @@ namespace embree
           const size_t offset = s * stream_offset;
           RayPacketAOS rayN(rayData + offset, N);
           RayK<VSIZEX> ray;
+
           for (size_t i = 0; i < N; i++)
           {
             /* invalidate all lanes */
             ray.tnear = 0.0f;
             ray.tfar  = neg_inf;
+
             /* extract single ray and copy data to first packet lane */
-            rayN.getRayByIndex(ray,0,i);
-            const vboolx valid = (ray.tnear <= ray.tfar);          
+            rayN.getRayByIndex(i, ray, 0);
+            const vboolx valid = ray.tnear <= ray.tfar;
+
             if (intersect)
-            {
               scene->intersect(valid, ray, context);
-              rayN.setHitByIndex(i,ray,0,true);
-            }
             else
-            {
               scene->occluded(valid, ray, context);
-              rayN.setHitByIndex(i,ray,0,false);
-            }
+
+            rayN.setHitByIndex(i, ray, 0, intersect);
           }
         }
       }
