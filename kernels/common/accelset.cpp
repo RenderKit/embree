@@ -59,12 +59,6 @@ namespace embree
   
   AccelSet::Intersector16::Intersector16 (void* intersect, void* occluded, const char* name, bool ispc)
     : intersect(intersect), occluded(occluded), name(name), ispc(ispc) {}
-
-  AccelSet::Intersector1M::Intersector1M (ErrorFunc error) 
-    : intersect((IntersectFunc1M)error), occluded((OccludedFunc1M)error), name(nullptr) {}
-  
-  AccelSet::Intersector1M::Intersector1M (IntersectFunc1M intersect, OccludedFunc1M occluded, const char* name)
-    : intersect(intersect), occluded(occluded), name(name) {}
   
   AccelSet::IntersectorN::IntersectorN (ErrorFunc error) 
     : intersect((IntersectFuncN)error), occluded((OccludedFuncN)error), name(nullptr) {}

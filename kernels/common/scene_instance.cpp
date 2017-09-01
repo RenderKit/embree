@@ -21,15 +21,11 @@ namespace embree
 {
   DECLARE_SYMBOL2(RTCBoundsFunc3,InstanceBoundsFunc);
   DECLARE_SYMBOL2(AccelSet::IntersectorN,InstanceIntersectorN);
-  DECLARE_SYMBOL2(AccelSet::Intersector1M,InstanceIntersector1M);
 
   InstanceFactory::InstanceFactory(int features)
   {
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceBoundsFunc);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,InstanceIntersectorN);
-#if defined (EMBREE_RAY_PACKETS)
-    SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,InstanceIntersector1M);
-#endif
   }
 
   Instance::Instance (Scene* scene, Scene* object, size_t numTimeSteps) 
@@ -41,9 +37,6 @@ namespace embree
     boundsFunc3 = scene->device->instance_factory->InstanceBoundsFunc();
     boundsFuncUserPtr = nullptr;
     intersectors.intersectorN = scene->device->instance_factory->InstanceIntersectorN();
-#if defined (EMBREE_RAY_PACKETS)
-    intersectors.intersector1M = scene->device->instance_factory->InstanceIntersector1M();
-#endif
   }
   
   void Instance::setTransform(const AffineSpace3fa& xfm, size_t timeStep)

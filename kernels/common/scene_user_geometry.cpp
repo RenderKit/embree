@@ -109,17 +109,6 @@ namespace embree
     intersectors.intersector16.ispc = ispc;
   }
 
-  void UserGeometry::setIntersectFunction1Mp (RTCIntersectFunc1Mp intersect) 
-  {
-    if (!scene->isStreamMode())
-      throw_RTCError(RTC_INVALID_OPERATION,"you can use rtcSetIntersectFunction1Mp only in stream mode");
-
-    if (scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
-    intersectors.intersector1M.intersect = intersect;
-  }
-
   void UserGeometry::setIntersectFunctionN (RTCIntersectFuncN intersect) 
   {
     if (!scene->isStreamMode())
@@ -176,17 +165,6 @@ namespace embree
 
     intersectors.intersector16.occluded = (void*)occluded16;
     intersectors.intersector16.ispc = ispc;
-  }
-
-  void UserGeometry::setOccludedFunction1Mp (RTCOccludedFunc1Mp occluded) 
-  {
-    if (!scene->isStreamMode())
-      throw_RTCError(RTC_INVALID_OPERATION,"you can use rtcSetOccludedFunction1Mp only in stream mode");
-
-    if (scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-    
-    intersectors.intersector1M.occluded = occluded;
   }
 
   void UserGeometry::setOccludedFunctionN (RTCOccludedFuncN occluded) 
