@@ -336,25 +336,27 @@ namespace embree
 
     __forceinline void RayStream::filterSOA(Scene* scene, char* rayData, size_t N, size_t streams, size_t stream_offset, IntersectContext* context, bool intersect)
     {
-      /* can we use the fast path ? */
-#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
-      /* fast path for packet width == SIMD width && correct RayK alignment*/
       const size_t rayDataAlignment = (size_t)rayData       % (VSIZEX*sizeof(float));
       const size_t offsetAlignment  = (size_t)stream_offset % (VSIZEX*sizeof(float));
 
-      if (unlikely(isCoherent(context->user->flags) &&
-                   N == VSIZEX &&
-                   !rayDataAlignment &&
-                   !offsetAlignment))
+      // PRINT(N);
+      // PRINT(rayDataAlignment);
+      // PRINT(offsetAlignment);
+#if 1
+
+      /* fast path for packets with the correct width and data alignment */
+      if (likely(N == VSIZEX  &&
+                 !rayDataAlignment &&
+                 !offsetAlignment))
       {
-        filterSOACoherent(scene, rayData, streams, stream_offset, context, intersect);
-        return;
-      }
+#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
+        if (unlikely(isCoherent(context->user->flags)))
+          {
+            filterSOACoherent(scene, rayData, streams, stream_offset, context, intersect);
+            return;
+          }
 #endif
 
-#if 1
-      /* otherwise fallback to packets */
-      if (likely(N == VSIZEX))
         for (size_t s = 0; s < streams; s++)
         {
           const size_t offset = s * stream_offset;
@@ -365,6 +367,7 @@ namespace embree
           else
             scene->occluded(valid, ray, context);
         }
+      }
       else
       {
         /* this is a very slow fallback path but it's extremely unlikely to be hit */
