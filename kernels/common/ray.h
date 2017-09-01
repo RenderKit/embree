@@ -707,7 +707,7 @@ namespace embree
       : ptr((Ray*)rays) {}
 
     template<int K>
-    RayK<K> getRayByOffset(const vint<K>& offset);
+    __forceinline RayK<K> getRayByOffset(const vint<K>& offset);
 
     template<int K>
     __forceinline RayK<K> getRayByOffset(const vbool<K>& valid, const vint<K>& offset)
