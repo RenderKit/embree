@@ -376,7 +376,7 @@ namespace embree
 /// All Platforms
 ////////////////////////////////////////////////////////////////////////////////
   
-#if defined(__clang__)
+#if defined(__clang__) || defined(__GNUC__)
 #if !defined(_mm_undefined_ps)
   __forceinline __m128 _mm_undefined_ps() { return _mm_setzero_ps(); }
 #endif

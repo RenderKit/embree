@@ -375,7 +375,7 @@ namespace embree
     /* do ignore failures for some specific tests */
     if (ignoreFailure) 
       passed = true;
-
+    //assert(passed);
     return passed ? PASSED : FAILED;
   }
 

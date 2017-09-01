@@ -28,7 +28,6 @@ namespace embree
     __forceinline void RayStream::filterAOS(Scene* scene, RTCRay* _rayN, size_t N, size_t stride, IntersectContext* context, bool intersect)
     {
 #if 1
-
       RayStreamAOS rayN(_rayN);
       for (size_t i = 0; i < N; i += VSIZEX)
       {
@@ -338,7 +337,6 @@ namespace embree
     {
       const size_t rayDataAlignment = (size_t)rayData       % (VSIZEX*sizeof(float));
       const size_t offsetAlignment  = (size_t)stream_offset % (VSIZEX*sizeof(float));
-
 #if 1
 
       /* fast path for packets with the correct width and data alignment */
