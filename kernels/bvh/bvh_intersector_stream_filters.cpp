@@ -28,6 +28,7 @@ namespace embree
     __forceinline void RayStream::filterAOS(Scene* scene, RTCRay* _rayN, size_t N, size_t stride, IntersectContext* context, bool intersect)
     {
 #if 1
+
       RayStreamAOS rayN(_rayN);
       for (size_t i = 0; i < N; i += VSIZEX)
       {
@@ -162,10 +163,13 @@ namespace embree
         /* scatter hits */
         for (size_t k = 0; k < n; k++)
         {
+          if (ray.geomID[k] == RTC_INVALID_GEOMETRY_ID)
+            continue;
+
           Ray* __restrict__ ray_k = rayN[i + k];;
 
           ray_k->geomID = ray.geomID[k];
-          if (intersect && ray.geomID[k] != RTC_INVALID_GEOMETRY_ID)
+          if (intersect)
           {
             ray_k->tfar   = ray.tfar[k];
             ray_k->Ng.x   = ray.Ng.x[k];
