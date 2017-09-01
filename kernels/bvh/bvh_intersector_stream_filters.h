@@ -24,7 +24,7 @@ namespace embree
 {
   namespace isa
   {
-    class RayStream
+    class RayStreamFilter
     {
     public:
       static void filterAOS(Scene* scene, RTCRay*    rays, size_t N, size_t stride, IntersectContext* context, bool intersect);

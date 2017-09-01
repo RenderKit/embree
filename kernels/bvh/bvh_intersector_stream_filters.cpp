@@ -25,7 +25,7 @@ namespace embree
 
     static_assert(MAX_RAYS_PER_OCTANT <= MAX_INTERNAL_STREAM_SIZE, "maximal internal stream size exceeded");
 
-    __forceinline void RayStream::filterAOS(Scene* scene, RTCRay* _rayN, size_t N, size_t stride, IntersectContext* context, bool intersect)
+    __forceinline void RayStreamFilter::filterAOS(Scene* scene, RTCRay* _rayN, size_t N, size_t stride, IntersectContext* context, bool intersect)
     {
 #if 1
 
@@ -118,7 +118,7 @@ namespace embree
 #endif
     }
 
-    __forceinline void RayStream::filterAOP(Scene* scene, RTCRay** _rayN, size_t N, IntersectContext* context, bool intersect)
+    __forceinline void RayStreamFilter::filterAOP(Scene* scene, RTCRay** _rayN, size_t N, IntersectContext* context, bool intersect)
     {
       Ray** __restrict__ rayN = (Ray**)_rayN;
 
@@ -253,7 +253,7 @@ namespace embree
 #endif
     }
 
-    void RayStream::filterSOACoherent(Scene* scene, char* rayData, size_t streams, size_t stream_offset, IntersectContext* context, bool intersect)
+    void RayStreamFilter::filterSOACoherent(Scene* scene, char* rayData, size_t streams, size_t stream_offset, IntersectContext* context, bool intersect)
     {
       /* all valid accels need to have a intersectN/occludedN */
       bool chunkFallback = scene->isRobust() || !scene->accels.validIsecN();
@@ -337,7 +337,7 @@ namespace embree
       }
     }
 
-    __forceinline void RayStream::filterSOA(Scene* scene, char* rayData, size_t N, size_t streams, size_t stream_offset, IntersectContext* context, bool intersect)
+    __forceinline void RayStreamFilter::filterSOA(Scene* scene, char* rayData, size_t N, size_t streams, size_t stream_offset, IntersectContext* context, bool intersect)
     {
       const size_t rayDataAlignment = (size_t)rayData       % (VSIZEX*sizeof(float));
       const size_t offsetAlignment  = (size_t)stream_offset % (VSIZEX*sizeof(float));
@@ -474,7 +474,7 @@ namespace embree
 #endif
     }
 
-    void RayStream::filterSOPCoherent(Scene* scene, const RTCRayNp& _rayN, size_t N, IntersectContext* context, bool intersect)
+    void RayStreamFilter::filterSOPCoherent(Scene* scene, const RTCRayNp& _rayN, size_t N, IntersectContext* context, bool intersect)
     {
       RayStreamSOP& rayN = *(RayStreamSOP*)&_rayN;
 
@@ -581,7 +581,7 @@ namespace embree
       }
     }
 
-    void RayStream::filterSOP(Scene* scene, const RTCRayNp& _rayN, size_t N, IntersectContext* context, bool intersect)
+    void RayStreamFilter::filterSOP(Scene* scene, const RTCRayNp& _rayN, size_t N, IntersectContext* context, bool intersect)
     {
       /* use fast path for coherent ray mode */
 #if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
@@ -693,7 +693,7 @@ namespace embree
     }
 
     RayStreamFilterFuncs rayStreamFilterFuncs() {
-      return RayStreamFilterFuncs(RayStream::filterAOS, RayStream::filterAOP, RayStream::filterSOA, RayStream::filterSOP);
+      return RayStreamFilterFuncs(RayStreamFilter::filterAOS, RayStreamFilter::filterAOP, RayStreamFilter::filterSOA, RayStreamFilter::filterSOP);
     }
   };
 };
