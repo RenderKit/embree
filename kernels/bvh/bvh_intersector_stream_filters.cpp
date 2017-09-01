@@ -27,11 +27,11 @@ namespace embree
 
     __forceinline void RayStream::filterAOS(Scene* scene, RTCRay* _rayN, size_t N, size_t stride, IntersectContext* context, bool intersect)
     {
-
 #if 1
 
       RayStreamAOS rayN(_rayN);
-
+      PRINT(N);
+      PRINT(VSIZEX);
       for (size_t i = 0; i < N; i += VSIZEX)
       {
         const vintx vi = vintx(int(i)) + vintx(step);
@@ -355,18 +355,46 @@ namespace embree
 #endif
 
 #if 1
-
       /* otherwise fallback to packets */
-      for (size_t s = 0; s < streams; s++)
+      if (likely(N == VSIZEX))
+        for (size_t s = 0; s < streams; s++)
+        {
+          const size_t offset = s * stream_offset;
+          RayK<VSIZEX>& ray = *(RayK<VSIZEX>*)(rayData + offset);
+          const vboolx valid = (ray.tnear <= ray.tfar);          
+          if (intersect)
+            scene->intersect(valid, ray, context);
+          else
+            scene->occluded(valid, ray, context);
+        }
+      else
       {
-        const size_t offset = s * stream_offset;
-        RayK<VSIZEX>& ray = *(RayK<VSIZEX>*)(rayData + offset);
-        const vboolx valid = ray.tnear <= ray.tfar;
-
-        if (intersect)
-          scene->intersect(valid, ray, context);
-        else
-          scene->occluded(valid, ray, context);
+        /* this is a very slow fallback path but it's extremely unlikely to be hit */
+        for (size_t s = 0; s < streams; s++)
+        {          
+          const size_t offset = s * stream_offset;
+          RayPacketAOS rayN(rayData + offset, N);
+          RayK<VSIZEX> ray;
+          for (size_t i = 0; i < N; i++)
+          {
+            /* invalidate all lanes */
+            ray.tnear = 0.0f;
+            ray.tfar  = neg_inf;
+            /* extract single ray and copy data to first packet lane */
+            rayN.getRayByIndex(ray,0,i);
+            const vboolx valid = (ray.tnear <= ray.tfar);          
+            if (intersect)
+            {
+              scene->intersect(valid, ray, context);
+              rayN.setHitByIndex(i,ray,0,true);
+            }
+            else
+            {
+              scene->occluded(valid, ray, context);
+              rayN.setHitByIndex(i,ray,0,false);
+            }
+          }
+        }
       }
 
 #else

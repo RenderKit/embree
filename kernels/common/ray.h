@@ -476,6 +476,43 @@ namespace embree
       return ray;
     }
 
+    template<int K>
+    __forceinline void getRayByIndex(RayK<K> &ray, const size_t index_dest, const size_t index_source)
+    {
+      const size_t offset = index_source * sizeof(float);
+      ray.org.x[index_dest] = orgx(offset)[0];
+      ray.org.y[index_dest] = orgy(offset)[0];
+      ray.org.z[index_dest] = orgz(offset)[0];
+      ray.dir.x[index_dest] = dirx(offset)[0];
+      ray.dir.y[index_dest] = diry(offset)[0];
+      ray.dir.z[index_dest] = dirz(offset)[0];
+      ray.tnear[index_dest] = tnear(offset)[0];
+      ray.tfar[index_dest]  = tfar(offset)[0];
+      ray.time[index_dest]  = time(offset)[0];
+      ray.mask[index_dest]  = mask(offset)[0];
+      ray.instID[index_dest] = instID(offset)[0];
+      ray.geomID[index_dest] = RTC_INVALID_GEOMETRY_ID;
+    }
+
+    template<int K>
+    __forceinline void setHitByIndex(const size_t index_dest, const RayK<K> &ray, const size_t index_source, bool intersect = true)
+    {
+      const size_t offset = index_dest * sizeof(float);
+      geomID(offset)[0] = ray.geomID[index_source];
+      if (intersect && ray.geomID[index_source] != RTC_INVALID_GEOMETRY_ID)
+      {
+        tfar(offset)[0] = ray.tfar[index_source];
+        u(offset)[0] = ray.u[index_source];
+        v(offset)[0] = ray.v[index_source];
+        primID(offset)[0] = ray.primID[index_source];
+        Ngx(offset)[0] = ray.Ng.x[index_source];
+        Ngy(offset)[0] = ray.Ng.y[index_source];
+        Ngz(offset)[0] = ray.Ng.z[index_source];
+        instID(offset)[0] = ray.instID[index_source];
+      }
+    }
+
+
     __forceinline void setHitByOffset(size_t offset, const Ray& ray, bool intersect = true)
     {
       geomID(offset)[0] = ray.geomID;
@@ -811,26 +848,26 @@ namespace embree
     ray.instID = vint4::gather<1>((int*)&ptr->instID, offset);
 
     /* load and transpose: org.x, org.y, org.z */
-    const vfloat4 a0 = vfloat4::load(&((Ray*)((char*)ptr + offset[0]))->org);
-    const vfloat4 a1 = vfloat4::load(&((Ray*)((char*)ptr + offset[1]))->org);
-    const vfloat4 a2 = vfloat4::load(&((Ray*)((char*)ptr + offset[2]))->org);
-    const vfloat4 a3 = vfloat4::load(&((Ray*)((char*)ptr + offset[3]))->org);
+    const vfloat4 a0 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[0]))->org);
+    const vfloat4 a1 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[1]))->org);
+    const vfloat4 a2 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[2]))->org);
+    const vfloat4 a3 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[3]))->org);
 
     transpose(a0,a1,a2,a3, ray.org.x, ray.org.y, ray.org.z);
 
     /* load and transpose: dir.x, dir.y, dir.z */
-    const vfloat4 b0 = vfloat4::load(&((Ray*)((char*)ptr + offset[0]))->dir);
-    const vfloat4 b1 = vfloat4::load(&((Ray*)((char*)ptr + offset[1]))->dir);
-    const vfloat4 b2 = vfloat4::load(&((Ray*)((char*)ptr + offset[2]))->dir);
-    const vfloat4 b3 = vfloat4::load(&((Ray*)((char*)ptr + offset[3]))->dir);
+    const vfloat4 b0 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[0]))->dir);
+    const vfloat4 b1 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[1]))->dir);
+    const vfloat4 b2 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[2]))->dir);
+    const vfloat4 b3 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[3]))->dir);
 
     transpose(b0,b1,b2,b3, ray.dir.x, ray.dir.y, ray.dir.z);
 
     /* load and transpose: tnear, tfar, time, mask */
-    const vfloat4 c0 = vfloat4::load(&((Ray*)((char*)ptr + offset[0]))->tnear);
-    const vfloat4 c1 = vfloat4::load(&((Ray*)((char*)ptr + offset[1]))->tnear);
-    const vfloat4 c2 = vfloat4::load(&((Ray*)((char*)ptr + offset[2]))->tnear);
-    const vfloat4 c3 = vfloat4::load(&((Ray*)((char*)ptr + offset[3]))->tnear);
+    const vfloat4 c0 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[0]))->tnear);
+    const vfloat4 c1 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[1]))->tnear);
+    const vfloat4 c2 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[2]))->tnear);
+    const vfloat4 c3 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[3]))->tnear);
 
     vfloat4 maskf;
     transpose(c0,c1,c2,c3, ray.tnear, ray.tfar, ray.time, maskf);
@@ -851,27 +888,27 @@ namespace embree
     ray.instID = vint8::gather<1>((int*)&ptr->instID, offset);
 
     /* load and transpose: org.x, org.y, org.z, align0, dir.x, dir.y, dir.z, align1 */
-    const vfloat8 ab0 = vfloat8::load(&((Ray*)((char*)ptr + offset[0]))->org);
-    const vfloat8 ab1 = vfloat8::load(&((Ray*)((char*)ptr + offset[1]))->org);
-    const vfloat8 ab2 = vfloat8::load(&((Ray*)((char*)ptr + offset[2]))->org);
-    const vfloat8 ab3 = vfloat8::load(&((Ray*)((char*)ptr + offset[3]))->org);
-    const vfloat8 ab4 = vfloat8::load(&((Ray*)((char*)ptr + offset[4]))->org);
-    const vfloat8 ab5 = vfloat8::load(&((Ray*)((char*)ptr + offset[5]))->org);
-    const vfloat8 ab6 = vfloat8::load(&((Ray*)((char*)ptr + offset[6]))->org);
-    const vfloat8 ab7 = vfloat8::load(&((Ray*)((char*)ptr + offset[7]))->org);
+    const vfloat8 ab0 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[0]))->org);
+    const vfloat8 ab1 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[1]))->org);
+    const vfloat8 ab2 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[2]))->org);
+    const vfloat8 ab3 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[3]))->org);
+    const vfloat8 ab4 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[4]))->org);
+    const vfloat8 ab5 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[5]))->org);
+    const vfloat8 ab6 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[6]))->org);
+    const vfloat8 ab7 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[7]))->org);
 
     vfloat8 unused0, unused1;
     transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7, ray.org.x, ray.org.y, ray.org.z, unused0, ray.dir.x, ray.dir.y, ray.dir.z, unused1);
 
     /* load and transpose: tnear, tfar, time, mask */
-    const vfloat4 c0 = vfloat4::load(&((Ray*)((char*)ptr + offset[0]))->tnear);
-    const vfloat4 c1 = vfloat4::load(&((Ray*)((char*)ptr + offset[1]))->tnear);
-    const vfloat4 c2 = vfloat4::load(&((Ray*)((char*)ptr + offset[2]))->tnear);
-    const vfloat4 c3 = vfloat4::load(&((Ray*)((char*)ptr + offset[3]))->tnear);
-    const vfloat4 c4 = vfloat4::load(&((Ray*)((char*)ptr + offset[4]))->tnear);
-    const vfloat4 c5 = vfloat4::load(&((Ray*)((char*)ptr + offset[5]))->tnear);
-    const vfloat4 c6 = vfloat4::load(&((Ray*)((char*)ptr + offset[6]))->tnear);
-    const vfloat4 c7 = vfloat4::load(&((Ray*)((char*)ptr + offset[7]))->tnear);
+    const vfloat4 c0 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[0]))->tnear);
+    const vfloat4 c1 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[1]))->tnear);
+    const vfloat4 c2 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[2]))->tnear);
+    const vfloat4 c3 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[3]))->tnear);
+    const vfloat4 c4 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[4]))->tnear);
+    const vfloat4 c5 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[5]))->tnear);
+    const vfloat4 c6 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[6]))->tnear);
+    const vfloat4 c7 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[7]))->tnear);
 
     vfloat8 maskf;
     transpose(c0,c1,c2,c3,c4,c5,c6,c7, ray.tnear, ray.tfar, ray.time, maskf);
@@ -893,44 +930,44 @@ namespace embree
     ray.instID = vint16::gather<1>((int*)&ptr->instID, offset);
 
     /* load and transpose: org.x, org.y, org.z, align0, dir.x, dir.y, dir.z, align1 */
-    const vfloat8 ab0  = vfloat8::load(&((Ray*)((char*)ptr + offset[ 0]))->org);
-    const vfloat8 ab1  = vfloat8::load(&((Ray*)((char*)ptr + offset[ 1]))->org);
-    const vfloat8 ab2  = vfloat8::load(&((Ray*)((char*)ptr + offset[ 2]))->org);
-    const vfloat8 ab3  = vfloat8::load(&((Ray*)((char*)ptr + offset[ 3]))->org);
-    const vfloat8 ab4  = vfloat8::load(&((Ray*)((char*)ptr + offset[ 4]))->org);
-    const vfloat8 ab5  = vfloat8::load(&((Ray*)((char*)ptr + offset[ 5]))->org);
-    const vfloat8 ab6  = vfloat8::load(&((Ray*)((char*)ptr + offset[ 6]))->org);
-    const vfloat8 ab7  = vfloat8::load(&((Ray*)((char*)ptr + offset[ 7]))->org);
-    const vfloat8 ab8  = vfloat8::load(&((Ray*)((char*)ptr + offset[ 8]))->org);
-    const vfloat8 ab9  = vfloat8::load(&((Ray*)((char*)ptr + offset[ 9]))->org);
-    const vfloat8 ab10 = vfloat8::load(&((Ray*)((char*)ptr + offset[10]))->org);
-    const vfloat8 ab11 = vfloat8::load(&((Ray*)((char*)ptr + offset[11]))->org);
-    const vfloat8 ab12 = vfloat8::load(&((Ray*)((char*)ptr + offset[12]))->org);
-    const vfloat8 ab13 = vfloat8::load(&((Ray*)((char*)ptr + offset[13]))->org);
-    const vfloat8 ab14 = vfloat8::load(&((Ray*)((char*)ptr + offset[14]))->org);
-    const vfloat8 ab15 = vfloat8::load(&((Ray*)((char*)ptr + offset[15]))->org);
+    const vfloat8 ab0  = vfloat8::loadu(&((Ray*)((char*)ptr + offset[ 0]))->org);
+    const vfloat8 ab1  = vfloat8::loadu(&((Ray*)((char*)ptr + offset[ 1]))->org);
+    const vfloat8 ab2  = vfloat8::loadu(&((Ray*)((char*)ptr + offset[ 2]))->org);
+    const vfloat8 ab3  = vfloat8::loadu(&((Ray*)((char*)ptr + offset[ 3]))->org);
+    const vfloat8 ab4  = vfloat8::loadu(&((Ray*)((char*)ptr + offset[ 4]))->org);
+    const vfloat8 ab5  = vfloat8::loadu(&((Ray*)((char*)ptr + offset[ 5]))->org);
+    const vfloat8 ab6  = vfloat8::loadu(&((Ray*)((char*)ptr + offset[ 6]))->org);
+    const vfloat8 ab7  = vfloat8::loadu(&((Ray*)((char*)ptr + offset[ 7]))->org);
+    const vfloat8 ab8  = vfloat8::loadu(&((Ray*)((char*)ptr + offset[ 8]))->org);
+    const vfloat8 ab9  = vfloat8::loadu(&((Ray*)((char*)ptr + offset[ 9]))->org);
+    const vfloat8 ab10 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[10]))->org);
+    const vfloat8 ab11 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[11]))->org);
+    const vfloat8 ab12 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[12]))->org);
+    const vfloat8 ab13 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[13]))->org);
+    const vfloat8 ab14 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[14]))->org);
+    const vfloat8 ab15 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[15]))->org);
 
     vfloat16 unused0, unused1;
     transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7,ab8,ab9,ab10,ab11,ab12,ab13,ab14,ab15,
               ray.org.x, ray.org.y, ray.org.z, unused0, ray.dir.x, ray.dir.y, ray.dir.z, unused1);
 
     /* load and transpose: tnear, tfar, time, mask */
-    const vfloat4 c0  = vfloat4::load(&((Ray*)((char*)ptr + offset[ 0]))->tnear);
-    const vfloat4 c1  = vfloat4::load(&((Ray*)((char*)ptr + offset[ 1]))->tnear);
-    const vfloat4 c2  = vfloat4::load(&((Ray*)((char*)ptr + offset[ 2]))->tnear);
-    const vfloat4 c3  = vfloat4::load(&((Ray*)((char*)ptr + offset[ 3]))->tnear);
-    const vfloat4 c4  = vfloat4::load(&((Ray*)((char*)ptr + offset[ 4]))->tnear);
-    const vfloat4 c5  = vfloat4::load(&((Ray*)((char*)ptr + offset[ 5]))->tnear);
-    const vfloat4 c6  = vfloat4::load(&((Ray*)((char*)ptr + offset[ 6]))->tnear);
-    const vfloat4 c7  = vfloat4::load(&((Ray*)((char*)ptr + offset[ 7]))->tnear);
-    const vfloat4 c8  = vfloat4::load(&((Ray*)((char*)ptr + offset[ 8]))->tnear);
-    const vfloat4 c9  = vfloat4::load(&((Ray*)((char*)ptr + offset[ 9]))->tnear);
-    const vfloat4 c10 = vfloat4::load(&((Ray*)((char*)ptr + offset[10]))->tnear);
-    const vfloat4 c11 = vfloat4::load(&((Ray*)((char*)ptr + offset[11]))->tnear);
-    const vfloat4 c12 = vfloat4::load(&((Ray*)((char*)ptr + offset[12]))->tnear);
-    const vfloat4 c13 = vfloat4::load(&((Ray*)((char*)ptr + offset[13]))->tnear);
-    const vfloat4 c14 = vfloat4::load(&((Ray*)((char*)ptr + offset[14]))->tnear);
-    const vfloat4 c15 = vfloat4::load(&((Ray*)((char*)ptr + offset[15]))->tnear);
+    const vfloat4 c0  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 0]))->tnear);
+    const vfloat4 c1  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 1]))->tnear);
+    const vfloat4 c2  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 2]))->tnear);
+    const vfloat4 c3  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 3]))->tnear);
+    const vfloat4 c4  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 4]))->tnear);
+    const vfloat4 c5  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 5]))->tnear);
+    const vfloat4 c6  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 6]))->tnear);
+    const vfloat4 c7  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 7]))->tnear);
+    const vfloat4 c8  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 8]))->tnear);
+    const vfloat4 c9  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 9]))->tnear);
+    const vfloat4 c10 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[10]))->tnear);
+    const vfloat4 c11 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[11]))->tnear);
+    const vfloat4 c12 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[12]))->tnear);
+    const vfloat4 c13 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[13]))->tnear);
+    const vfloat4 c14 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[14]))->tnear);
+    const vfloat4 c15 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[15]))->tnear);
 
     vfloat16 maskf;
     transpose(c0,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14,c15,
