@@ -120,71 +120,29 @@ namespace embree
 
     __forceinline void RayStreamFilter::filterAOP(Scene* scene, RTCRay** _rayN, size_t N, IntersectContext* context, bool intersect)
     {
-      Ray** __restrict__ rayN = (Ray**)_rayN;
-
 #if 1
 
       /* fallback to packets */
+      RayStreamAOP rayN(_rayN);
       for (size_t i = 0; i < N; i += VSIZEX)
       {
         const size_t n = min(N - i, size_t(VSIZEX));
         vboolx valid = vintx(step) < vintx(int(n));
-        RayK<VSIZEX> ray;
 
-        /* gather rays */
-        for (size_t k = 0; k < n; k++)
-        {
-          Ray* __restrict__ ray_k = rayN[i + k];
-
-          ray.org.x[k]  = ray_k->org.x;
-          ray.org.y[k]  = ray_k->org.y;
-          ray.org.z[k]  = ray_k->org.z;
-          ray.dir.x[k]  = ray_k->dir.x;
-          ray.dir.y[k]  = ray_k->dir.y;
-          ray.dir.z[k]  = ray_k->dir.z;
-          ray.tnear[k]  = ray_k->tnear;
-          ray.tfar[k]   = ray_k->tfar;
-          ray.time[k]   = ray_k->time;
-          ray.mask[k]   = ray_k->mask;
-          ray.instID[k] = ray_k->instID;
-        }
-
-        ray.geomID = RTC_INVALID_GEOMETRY_ID;
-
-        /* filter out invalid rays */
+        RayK<VSIZEX> ray = rayN.getRayByIndex<VSIZEX>(valid, i);
         valid &= ray.tnear <= ray.tfar;
 
-        /* intersect packet */
         if (intersect)
           scene->intersect(valid, ray, context);
         else
-          scene->occluded (valid, ray, context);
+          scene->occluded(valid, ray, context);
 
-        /* scatter hits */
-        for (size_t k = 0; k < n; k++)
-        {
-          if (ray.geomID[k] == RTC_INVALID_GEOMETRY_ID)
-            continue;
-
-          Ray* __restrict__ ray_k = rayN[i + k];;
-
-          ray_k->geomID = ray.geomID[k];
-          if (intersect)
-          {
-            ray_k->tfar   = ray.tfar[k];
-            ray_k->Ng.x   = ray.Ng.x[k];
-            ray_k->Ng.y   = ray.Ng.y[k];
-            ray_k->Ng.z   = ray.Ng.z[k];
-            ray_k->u      = ray.u[k];
-            ray_k->v      = ray.v[k];
-            ray_k->primID = ray.primID[k];
-            ray_k->instID = ray.instID[k];
-          }
-        }
+        rayN.setHitByIndex<VSIZEX>(valid, i, ray, intersect);
       }
 
 #else
 
+      Ray** __restrict__ rayN = (Ray**)_rayN;
       __aligned(64) Ray* octants[8][MAX_RAYS_PER_OCTANT];
       unsigned int rays_in_octant[8];
 
@@ -374,7 +332,7 @@ namespace embree
         for (size_t s = 0; s < streams; s++)
         {          
           const size_t offset = s * stream_offset;
-          RayPacketAOS rayN(rayData + offset, N);
+          RayPacketSOA rayN(rayData + offset, N);
           RayK<VSIZEX> ray;
 
           for (size_t i = 0; i < N; i++)
@@ -400,7 +358,7 @@ namespace embree
 #else
 
       /* otherwise use stream intersector */
-      RayPacketAOS rayN(rayData, N);
+      RayPacketSOA rayN(rayData, N);
       __aligned(64) Ray rays[MAX_RAYS_PER_OCTANT];
       __aligned(64) Ray *rays_ptr[MAX_RAYS_PER_OCTANT];
       

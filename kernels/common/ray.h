@@ -366,10 +366,10 @@ namespace embree
                 << "}";
   }
 
-  struct RayPacketAOS
+  struct RayPacketSOA
   {
-    __forceinline RayPacketAOS(void* ptr, size_t K)
-      : ptr((char*)ptr), K(K) {}
+    __forceinline RayPacketSOA(void* rays, size_t K)
+      : ptr((char*)rays), K(K) {}
 
     /* ray data access functions */
     __forceinline float* orgx(size_t offset) { return (float*)&ptr[0*4*K+offset]; }  //!< x coordinate of ray origin
@@ -579,10 +579,10 @@ namespace embree
   };
 
   template<size_t MAX_K>
-  struct StackRayPacketAOS : public RayPacketAOS
+  struct StackRayPacketSOA : public RayPacketSOA
   {
-    __forceinline StackRayPacketAOS(size_t K)
-      : RayPacketAOS(data, K) { assert(K <= MAX_K); }
+    __forceinline StackRayPacketSOA(size_t K)
+      : RayPacketSOA(data, K) { assert(K <= MAX_K); }
 
     char data[MAX_K / 4 * sizeof(Ray4)];
   };
@@ -998,4 +998,70 @@ namespace embree
   }
 #endif
 
+  struct RayStreamAOP
+  {
+    __forceinline RayStreamAOP(void* rays)
+      : ptr((Ray**)rays) {}
+
+    template<int K>
+    __forceinline RayK<K> getRayByIndex(const vbool<K>& valid, size_t index)
+    {
+      RayK<K> ray;
+
+      for (size_t k = 0; k < K; k++)
+      {
+        if (likely(valid[k]))
+        {
+          Ray* __restrict__ ray_k = ptr[index + k];
+
+          ray.org.x[k]  = ray_k->org.x;
+          ray.org.y[k]  = ray_k->org.y;
+          ray.org.z[k]  = ray_k->org.z;
+          ray.dir.x[k]  = ray_k->dir.x;
+          ray.dir.y[k]  = ray_k->dir.y;
+          ray.dir.z[k]  = ray_k->dir.z;
+          ray.tnear[k]  = ray_k->tnear;
+          ray.tfar[k]   = ray_k->tfar;
+          ray.time[k]   = ray_k->time;
+          ray.mask[k]   = ray_k->mask;
+          ray.instID[k] = ray_k->instID;
+          ray.geomID[k] =  RTC_INVALID_GEOMETRY_ID;
+        }
+      }
+
+      return ray;
+    }
+
+    template<int K>
+    __forceinline void setHitByIndex(const vbool<K>& valid_i, size_t index, const RayK<K>& ray, bool intersect = true)
+    {
+      vbool<K> valid = valid_i;
+      valid &= ray.geomID != RTC_INVALID_GEOMETRY_ID;
+
+      if (likely(any(valid)))
+      {
+        size_t validBits = movemask(valid);
+        while (validBits != 0)
+        {
+          const size_t k = __bscf(validBits);
+          Ray* __restrict__ ray_k = ptr[index + k];
+
+          ray_k->geomID = ray.geomID[k];
+          if (intersect)
+          {
+            ray_k->tfar   = ray.tfar[k];
+            ray_k->Ng.x   = ray.Ng.x[k];
+            ray_k->Ng.y   = ray.Ng.y[k];
+            ray_k->Ng.z   = ray.Ng.z[k];
+            ray_k->u      = ray.u[k];
+            ray_k->v      = ray.v[k];
+            ray_k->primID = ray.primID[k];
+            ray_k->instID = ray.instID[k];
+          }
+        }
+      }
+    }
+
+    Ray** __restrict__ ptr;
+  };
 }
