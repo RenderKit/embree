@@ -27,13 +27,13 @@ namespace embree
     class RayStreamFilter
     {
     public:
-      static void filterAOS(Scene* scene, RTCRay*    rays, size_t N, size_t stride, IntersectContext* context, bool intersect);
-      static void filterAOP(Scene* scene, RTCRay**   rays, size_t N, IntersectContext* context, bool intersect);
-      static void filterSOA(Scene* scene, char*      rays, size_t N, size_t streams, size_t stream_offset, IntersectContext* context, bool intersect);
+      static void filterAOS(Scene* scene, RTCRay* rays, size_t N, size_t stride, IntersectContext* context, bool intersect);
+      static void filterAOP(Scene* scene, RTCRay** rays, size_t N, IntersectContext* context, bool intersect);
+      static void filterSOA(Scene* scene, char* rays, size_t N, size_t numPackets, size_t stride, IntersectContext* context, bool intersect);
       static void filterSOP(Scene* scene, const RTCRayNp& rays, size_t N, IntersectContext* context, bool intersect);
 
     private:
-      static void filterSOACoherent(Scene* scene, char* rays, size_t streams, size_t stream_offset, IntersectContext* context, bool intersect);
+      static void filterSOACoherent(Scene* scene, char* rays, size_t numPackets, size_t stride, IntersectContext* context, bool intersect);
       static void filterSOPCoherent(Scene* scene, const RTCRayNp& rays, size_t N, IntersectContext* context, bool intersect);
     };
   }
