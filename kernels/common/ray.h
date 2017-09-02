@@ -834,10 +834,10 @@ namespace embree
           vint<K>::template scatter<1>(valid, (int*)&ptr->instID, offset, ray.instID);
         }
 #else
-        size_t validBits = movemask(valid);
-        while (validBits != 0)
+        size_t valid_bits = movemask(valid);
+        while (valid_bits != 0)
         {
-          const size_t k = __bscf(validBits);
+          const size_t k = __bscf(valid_bits);
           Ray* __restrict__ ray_k = (Ray*)((char*)ptr + offset[k]);
 
           ray_k->geomID = ray.geomID[k];
@@ -1051,10 +1051,10 @@ namespace embree
 
       if (likely(any(valid)))
       {
-        size_t validBits = movemask(valid);
-        while (validBits != 0)
+        size_t valid_bits = movemask(valid);
+        while (valid_bits != 0)
         {
-          const size_t k = __bscf(validBits);
+          const size_t k = __bscf(valid_bits);
           Ray* __restrict__ ray_k = ptr[index+k];
 
           ray_k->geomID = ray.geomID[k];
