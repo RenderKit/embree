@@ -501,7 +501,7 @@ namespace embree
           if (intersect)
             scene->intersect(valid, ray, context);
           else
-            scene->occluded (valid, ray, context);
+            scene->occluded(valid, ray, context);
 
           rayN.setHitByOffset<VSIZEX>(valid, offset, ray, intersect);
         }
