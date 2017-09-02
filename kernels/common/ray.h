@@ -366,6 +366,7 @@ namespace embree
                 << "}";
   }
 
+
   struct RayPacketSOA
   {
     __forceinline RayPacketSOA(void* rays, size_t K)
@@ -587,6 +588,7 @@ namespace embree
     char data[MAX_K / 4 * sizeof(Ray4)];
   };
 
+
   struct RayStreamSOP
   {
     template<class T>
@@ -752,6 +754,7 @@ namespace embree
     unsigned* __restrict__ primID;  //!< primitive ID
     unsigned* __restrict__ instID;  //!< instance ID (optional)
   };
+
 
   struct RayStreamAOS
   {
@@ -998,21 +1001,29 @@ namespace embree
   }
 #endif
 
+
   struct RayStreamAOP
   {
     __forceinline RayStreamAOP(void* rays)
       : ptr((Ray**)rays) {}
 
     template<int K>
+    __forceinline RayK<K> getRayByIndex(size_t index);
+
+    template<int K>
     __forceinline RayK<K> getRayByIndex(const vbool<K>& valid, size_t index)
     {
+      /* check whether we can use the fast path */
+      if (likely(all(valid)))
+        return getRayByIndex<K>(index);
+
       RayK<K> ray;
 
       for (size_t k = 0; k < K; k++)
       {
         if (likely(valid[k]))
         {
-          Ray* __restrict__ ray_k = ptr[index + k];
+          Ray* __restrict__ ray_k = ptr[index+k];
 
           ray.org.x[k]  = ray_k->org.x;
           ray.org.y[k]  = ray_k->org.y;
@@ -1044,7 +1055,7 @@ namespace embree
         while (validBits != 0)
         {
           const size_t k = __bscf(validBits);
-          Ray* __restrict__ ray_k = ptr[index + k];
+          Ray* __restrict__ ray_k = ptr[index+k];
 
           ray_k->geomID = ray.geomID[k];
           if (intersect)
@@ -1064,4 +1075,148 @@ namespace embree
 
     Ray** __restrict__ ptr;
   };
+
+  template<>
+  __forceinline Ray4 RayStreamAOP::getRayByIndex(size_t index)
+  {
+    Ray4 ray;
+
+    /* gather: instID */
+    for (size_t k = 0; k < 4; k++)
+      ray.instID[k] = ptr[index+k]->instID;
+
+    /* load and transpose: org.x, org.y, org.z */
+    const vfloat4 a0 = vfloat4::loadu(&ptr[index+0]->org);
+    const vfloat4 a1 = vfloat4::loadu(&ptr[index+1]->org);
+    const vfloat4 a2 = vfloat4::loadu(&ptr[index+2]->org);
+    const vfloat4 a3 = vfloat4::loadu(&ptr[index+3]->org);
+
+    transpose(a0,a1,a2,a3, ray.org.x, ray.org.y, ray.org.z);
+
+    /* load and transpose: dir.x, dir.y, dir.z */
+    const vfloat4 b0 = vfloat4::loadu(&ptr[index+0]->dir);
+    const vfloat4 b1 = vfloat4::loadu(&ptr[index+1]->dir);
+    const vfloat4 b2 = vfloat4::loadu(&ptr[index+2]->dir);
+    const vfloat4 b3 = vfloat4::loadu(&ptr[index+3]->dir);
+
+    transpose(b0,b1,b2,b3, ray.dir.x, ray.dir.y, ray.dir.z);
+
+    /* load and transpose: tnear, tfar, time, mask */
+    const vfloat4 c0 = vfloat4::loadu(&ptr[index+0]->tnear);
+    const vfloat4 c1 = vfloat4::loadu(&ptr[index+1]->tnear);
+    const vfloat4 c2 = vfloat4::loadu(&ptr[index+2]->tnear);
+    const vfloat4 c3 = vfloat4::loadu(&ptr[index+3]->tnear);
+
+    vfloat4 maskf;
+    transpose(c0,c1,c2,c3, ray.tnear, ray.tfar, ray.time, maskf);
+    ray.mask = asInt(maskf);
+
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+
+    return ray;
+  }
+
+#if defined(__AVX__)
+  template<>
+  __forceinline Ray8 RayStreamAOP::getRayByIndex(size_t index)
+  {
+    Ray8 ray;
+
+    /* gather: instID */
+    for (size_t k = 0; k < 8; k++)
+      ray.instID[k] = ptr[index+k]->instID;
+
+    /* load and transpose: org.x, org.y, org.z, align0, dir.x, dir.y, dir.z, align1 */
+    const vfloat8 ab0 = vfloat8::loadu(&ptr[index+0]->org);
+    const vfloat8 ab1 = vfloat8::loadu(&ptr[index+1]->org);
+    const vfloat8 ab2 = vfloat8::loadu(&ptr[index+2]->org);
+    const vfloat8 ab3 = vfloat8::loadu(&ptr[index+3]->org);
+    const vfloat8 ab4 = vfloat8::loadu(&ptr[index+4]->org);
+    const vfloat8 ab5 = vfloat8::loadu(&ptr[index+5]->org);
+    const vfloat8 ab6 = vfloat8::loadu(&ptr[index+6]->org);
+    const vfloat8 ab7 = vfloat8::loadu(&ptr[index+7]->org);
+
+    vfloat8 unused0, unused1;
+    transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7, ray.org.x, ray.org.y, ray.org.z, unused0, ray.dir.x, ray.dir.y, ray.dir.z, unused1);
+
+    /* load and transpose: tnear, tfar, time, mask */
+    const vfloat4 c0 = vfloat4::loadu(&ptr[index+0]->tnear);
+    const vfloat4 c1 = vfloat4::loadu(&ptr[index+1]->tnear);
+    const vfloat4 c2 = vfloat4::loadu(&ptr[index+2]->tnear);
+    const vfloat4 c3 = vfloat4::loadu(&ptr[index+3]->tnear);
+    const vfloat4 c4 = vfloat4::loadu(&ptr[index+4]->tnear);
+    const vfloat4 c5 = vfloat4::loadu(&ptr[index+5]->tnear);
+    const vfloat4 c6 = vfloat4::loadu(&ptr[index+6]->tnear);
+    const vfloat4 c7 = vfloat4::loadu(&ptr[index+7]->tnear);
+
+    vfloat8 maskf;
+    transpose(c0,c1,c2,c3,c4,c5,c6,c7, ray.tnear, ray.tfar, ray.time, maskf);
+    ray.mask = asInt(maskf);
+
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+
+    return ray;
+  }
+#endif
+
+#if defined(__AVX512F__)
+  template<>
+  __forceinline Ray16 RayStreamAOP::getRayByIndex(size_t index)
+  {
+    Ray16 ray;
+
+    /* gather: instID */
+    for (size_t k = 0; k < 16; k++)
+      ray.instID[k] = ptr[index+k]->instID;
+
+    /* load and transpose: org.x, org.y, org.z, align0, dir.x, dir.y, dir.z, align1 */
+    const vfloat8 ab0  = vfloat8::loadu(&ptr[index+ 0]->org);
+    const vfloat8 ab1  = vfloat8::loadu(&ptr[index+ 1]->org);
+    const vfloat8 ab2  = vfloat8::loadu(&ptr[index+ 2]->org);
+    const vfloat8 ab3  = vfloat8::loadu(&ptr[index+ 3]->org);
+    const vfloat8 ab4  = vfloat8::loadu(&ptr[index+ 4]->org);
+    const vfloat8 ab5  = vfloat8::loadu(&ptr[index+ 5]->org);
+    const vfloat8 ab6  = vfloat8::loadu(&ptr[index+ 6]->org);
+    const vfloat8 ab7  = vfloat8::loadu(&ptr[index+ 7]->org);
+    const vfloat8 ab8  = vfloat8::loadu(&ptr[index+ 8]->org);
+    const vfloat8 ab9  = vfloat8::loadu(&ptr[index+ 9]->org);
+    const vfloat8 ab10 = vfloat8::loadu(&ptr[index+10]->org);
+    const vfloat8 ab11 = vfloat8::loadu(&ptr[index+11]->org);
+    const vfloat8 ab12 = vfloat8::loadu(&ptr[index+12]->org);
+    const vfloat8 ab13 = vfloat8::loadu(&ptr[index+13]->org);
+    const vfloat8 ab14 = vfloat8::loadu(&ptr[index+14]->org);
+    const vfloat8 ab15 = vfloat8::loadu(&ptr[index+15]->org);
+
+    vfloat16 unused0, unused1;
+    transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7,ab8,ab9,ab10,ab11,ab12,ab13,ab14,ab15,
+              ray.org.x, ray.org.y, ray.org.z, unused0, ray.dir.x, ray.dir.y, ray.dir.z, unused1);
+
+    /* load and transpose: tnear, tfar, time, mask */
+    const vfloat4 c0  = vfloat4::loadu(&ptr[index+ 0]->tnear);
+    const vfloat4 c1  = vfloat4::loadu(&ptr[index+ 1]->tnear);
+    const vfloat4 c2  = vfloat4::loadu(&ptr[index+ 2]->tnear);
+    const vfloat4 c3  = vfloat4::loadu(&ptr[index+ 3]->tnear);
+    const vfloat4 c4  = vfloat4::loadu(&ptr[index+ 4]->tnear);
+    const vfloat4 c5  = vfloat4::loadu(&ptr[index+ 5]->tnear);
+    const vfloat4 c6  = vfloat4::loadu(&ptr[index+ 6]->tnear);
+    const vfloat4 c7  = vfloat4::loadu(&ptr[index+ 7]->tnear);
+    const vfloat4 c8  = vfloat4::loadu(&ptr[index+ 8]->tnear);
+    const vfloat4 c9  = vfloat4::loadu(&ptr[index+ 9]->tnear);
+    const vfloat4 c10 = vfloat4::loadu(&ptr[index+10]->tnear);
+    const vfloat4 c11 = vfloat4::loadu(&ptr[index+11]->tnear);
+    const vfloat4 c12 = vfloat4::loadu(&ptr[index+12]->tnear);
+    const vfloat4 c13 = vfloat4::loadu(&ptr[index+13]->tnear);
+    const vfloat4 c14 = vfloat4::loadu(&ptr[index+14]->tnear);
+    const vfloat4 c15 = vfloat4::loadu(&ptr[index+15]->tnear);
+
+    vfloat16 maskf;
+    transpose(c0,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14,c15,
+              ray.tnear, ray.tfar, ray.time, maskf);
+    ray.mask = asInt(maskf);
+
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+
+    return ray;
+  }
+#endif
 }
