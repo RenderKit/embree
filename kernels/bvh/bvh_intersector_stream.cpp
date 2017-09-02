@@ -159,13 +159,36 @@ namespace embree
         NodeRef cur = NodeRef(stackPtr->child);
         size_t m_trav_active = stackPtr->mask;
         assert(m_trav_active);
+        NodeRef parent = stackPtr->parent;
+
+        while (1)
+        {
+          if (unlikely(cur.isLeaf())) break;
+          const AlignedNode* __restrict__ const node = cur.alignedNode();
+          parent = cur;
+
+          __aligned(64) size_t maskK[N];
+          for (size_t i = 0; i < N; i++) maskK[i] = m_trav_active;
+          vfloat<Nx> dist;
+          const size_t m_node_hit = traverseCoherentStream(m_trav_active, packet, node, pc, frusta, maskK, dist);
+          if (unlikely(m_node_hit == 0)) goto pop;
+
+          BVHNNodeTraverserStreamHitCoherent<N, Nx, types>::traverseClosestHit(cur, m_trav_active, vbool<Nx>((int)m_node_hit), dist, (size_t*)maskK, stackPtr);
+          assert(m_trav_active);
+        }
 
         /* non-root and leaf => full culling test for all rays */
-        if (unlikely(stackPtr->parent != 0 && cur.isLeaf()))
+        if (unlikely(parent != 0 && cur.isLeaf()))
         {
-          NodeRef parent = NodeRef(stackPtr->parent);
           const AlignedNode* __restrict__ const node = parent.alignedNode();
-          const size_t b = stackPtr->childID;
+          size_t b = 0xff;
+          for (size_t i=0;i<N;i++)
+            if (node->child(i) == cur) 
+            {
+              b = i;
+              break;
+            }
+          assert(b < N);
           char *ptr = (char*)&node->lower_x + b*sizeof(float);
           assert(cur == node->child(b));
 
@@ -177,22 +200,7 @@ namespace embree
           const vfloat<K> maxZ = vfloat<K>(*(const float*)((const char*)ptr + pc.farZ));
 
           m_trav_active = intersectAlignedNodePacket(packet, minX, minY, minZ, maxX, maxY, maxZ, m_trav_active);
-          if (m_trav_active == 0) goto pop;
-        }
-
-        while (1)
-        {
-          if (unlikely(cur.isLeaf())) break;
-          const AlignedNode* __restrict__ const node = cur.alignedNode();
-
-          __aligned(64) size_t maskK[N];
-          for (size_t i = 0; i < N; i++) maskK[i] = m_trav_active;
-          vfloat<Nx> dist;
-          const size_t m_node_hit = traverseCoherentStream(m_trav_active, packet, node, pc, frusta, maskK, dist);
-          if (unlikely(m_node_hit == 0)) goto pop;
-
-          BVHNNodeTraverserStreamHitCoherent<N, Nx, types>::traverseClosestHit(cur, m_trav_active, vbool<Nx>((int)m_node_hit), dist, (size_t*)maskK, stackPtr);
-          assert(m_trav_active);
+          //if (m_trav_active == 0) goto pop;
         }
 
         /*! this is a leaf node */
@@ -207,7 +215,7 @@ namespace embree
 #if defined(__SSE4_2__)
         STAT_USER(1,(__popcnt(bits)+K-1)/K*4);
 #endif
-        do
+        while(bits)
         {
           size_t i = __bsf(bits) / K;
           const size_t m_isec = ((((size_t)1 << K)-1) << (i*K));
@@ -218,7 +226,7 @@ namespace embree
           PrimitiveIntersector::intersectK(m_valid, *inputPackets[i], context, prim, num, lazy_node);
           Packet &p = packet[i];
           p.max_dist = min(p.max_dist, inputPackets[i]->tfar);
-        } while(bits);
+        };
 
       } // traversal + intersection
     }
@@ -264,15 +272,38 @@ namespace embree
         NodeRef cur = NodeRef(stackPtr->child);
         size_t m_trav_active = stackPtr->mask & m_active;
         if (unlikely(!m_trav_active)) continue;
-
         assert(m_trav_active);
+        NodeRef parent = stackPtr->parent;
+
+        while (1)
+        {
+          if (unlikely(cur.isLeaf())) break;
+          const AlignedNode* __restrict__ const node = cur.alignedNode();
+          parent = cur;
+
+          __aligned(64) size_t maskK[N];
+          for (size_t i = 0; i < N; i++) maskK[i] = m_trav_active;
+
+          vfloat<Nx> dist;
+          const size_t m_node_hit = traverseCoherentStream(m_trav_active, packet, node, pc, frusta, maskK, dist);
+          if (unlikely(m_node_hit == 0)) goto pop;
+
+          BVHNNodeTraverserStreamHitCoherent<N, Nx, types>::traverseAnyHit(cur, m_trav_active, vbool<Nx>((int)m_node_hit), (size_t*)maskK, stackPtr);
+          assert(m_trav_active);
+        }
 
         /* non-root and leaf => full culling test for all rays */
-        if (unlikely(stackPtr->parent != 0 && cur.isLeaf()))
+        if (unlikely(parent != 0 && cur.isLeaf()))
         {
-          NodeRef parent = NodeRef(stackPtr->parent);
           const AlignedNode* __restrict__ const node = parent.alignedNode();
-          const size_t b   = stackPtr->childID;
+          size_t b = 0xff;
+          for (size_t i=0;i<N;i++)
+            if (node->child(i) == cur) 
+            {
+              b = i;
+              break;
+            }
+          assert(b < N);
           char *ptr = (char*)&node->lower_x + b*sizeof(float);
           assert(cur == node->child(b));
 
@@ -286,22 +317,6 @@ namespace embree
           m_trav_active = intersectAlignedNodePacket(packet, minX, minY, minZ, maxX, maxY, maxZ, m_trav_active);
 
           if (m_trav_active == 0) goto pop;
-        }
-
-        while (1)
-        {
-          if (unlikely(cur.isLeaf())) break;
-          const AlignedNode* __restrict__ const node = cur.alignedNode();
-
-          __aligned(64) size_t maskK[N];
-          for (size_t i = 0; i < N; i++) maskK[i] = m_trav_active;
-
-          vfloat<Nx> dist;
-          const size_t m_node_hit = traverseCoherentStream(m_trav_active, packet, node, pc, frusta, maskK, dist);
-          if (unlikely(m_node_hit == 0)) goto pop;
-
-          BVHNNodeTraverserStreamHitCoherent<N, Nx, types>::traverseAnyHit(cur, m_trav_active, vbool<Nx>((int)m_node_hit), (size_t*)maskK, stackPtr);
-          assert(m_trav_active);
         }
 
         /*! this is a leaf node */
