@@ -120,6 +120,12 @@ namespace embree
       primID[rayIndex] = new_primID[i];
     }
 
+    __forceinline vint<K> octant() const
+    {
+      return select(dir.x < 0.0f, vint<K>(1), vint<K>(zero)) |
+             select(dir.y < 0.0f, vint<K>(2), vint<K>(zero)) |
+             select(dir.z < 0.0f, vint<K>(4), vint<K>(zero));
+    }
 
     /* Ray data */
     Vec3vf<K> org;   // ray origin
