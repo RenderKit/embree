@@ -142,7 +142,7 @@ namespace embree
 
     template<int scale = 4>
     static __forceinline vfloat4 gather(const vboolf4& mask, const float* ptr, const vint4& index) {
-      vfloat4 r = vfloat4::undefined();
+      vfloat4 r = zero;
 #if defined(__AVX512VL__)
       return _mm_mmask_i32gather_ps(r, mask, index, ptr, scale);
 #elif defined(__AVX2__)

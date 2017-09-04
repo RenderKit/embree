@@ -128,8 +128,8 @@ namespace embree
       return _mm512_mask_expand_ps(b, mask, a);
     }
 
-    static __forceinline vfloat16 loadu_compact(const vboolf16& mask, const void *const ptr) {
-      return _mm512_mask_expandloadu_ps(vfloat16::undefined(), mask, (float*)ptr);
+    static __forceinline vfloat16 loadu_compact(const vboolf16& mask, const void* ptr) {
+      return _mm512_mask_expandloadu_ps(_mm512_setzero_ps(), mask, (float*)ptr);
     }
 
     static __forceinline void storeu_compact(const vboolf16& mask, float *addr, const vfloat16 reg) {
@@ -148,7 +148,7 @@ namespace embree
 
     template<int scale = 4>
     static __forceinline vfloat16 gather(const vboolf16& mask, const float* ptr, const vint16& index) {
-      vfloat16 r = vfloat16::undefined();
+      vfloat16 r = zero;
       return _mm512_mask_i32gather_ps(r, mask, index, ptr, scale);
     }
 
