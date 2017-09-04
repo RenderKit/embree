@@ -451,7 +451,7 @@ namespace embree
             do {
               const size_t i = __bscf(m_frusta_node);
               vfloat<K> lnearP;
-              vbool<K> lhit;
+              vbool<K> lhit( false );
               STAT3(normal.trav_nodes,1,1,1);
               BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP,lhit);
 
@@ -874,7 +874,7 @@ namespace embree
             do {
               const size_t i = __bscf(m_frusta_node);
               vfloat<K> lnearP;
-              vbool<K> lhit;
+              vbool<K> lhit( false );
               STAT3(normal.trav_nodes,1,1,1);
               BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP,lhit);
 
