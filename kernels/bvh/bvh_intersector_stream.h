@@ -203,8 +203,7 @@ namespace embree
       static const int Nxd = (Nx == N) ? N : Nx/2;
 
       /* shortcuts for frequently used types */
-      typedef typename PrimitiveIntersector::Precalculations Precalculations;
-      typedef typename PrimitiveIntersector::Primitive Primitive;
+      typedef typename PrimitiveIntersector::PrimitiveK Primitive;
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::BaseNode BaseNode;
