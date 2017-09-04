@@ -521,48 +521,16 @@ namespace embree
     /// ArrayIntersectorKStream Definitions
     ////////////////////////////////////////////////////////////////////////////////
 
-    typedef ArrayIntersectorKStream<VSIZEX,
-                                    TriangleMIntersector1Moeller<SIMD_MODE(4) COMMA true >,
-                                    TriangleMIntersectorKMoeller<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4IntersectorStreamMoeller;
-
-    typedef ArrayIntersectorKStream<VSIZEX,
-                                    TriangleMIntersector1Moeller<SIMD_MODE(4) COMMA false >,
-                                    TriangleMIntersectorKMoeller<4 COMMA VSIZEX COMMA VSIZEX COMMA false > > Triangle4IntersectorStreamMoellerNoFilter;
-
-    typedef ArrayIntersectorKStream<VSIZEX,
-                                    TriangleMvIntersector1Pluecker<SIMD_MODE(4) COMMA true >,
-                                    TriangleMvIntersectorKPluecker<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4vIntersectorStreamPluecker;
-
-    typedef ArrayIntersectorKStream<VSIZEX,
-                                    TriangleMiIntersector1Moeller<SIMD_MODE(4) COMMA true >,
-                                    TriangleMiIntersectorKMoeller<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4iIntersectorStreamMoeller;
-
-    typedef ArrayIntersectorKStream<VSIZEX,
-                                    TriangleMiIntersector1Pluecker<SIMD_MODE(4) COMMA true >,
-                                    TriangleMiIntersectorKPluecker<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4iIntersectorStreamPluecker;
-
-    typedef ArrayIntersectorKStream<VSIZEX,
-                                    QuadMvIntersector1Moeller<4 COMMA true >,
-                                    QuadMvIntersectorKMoeller<4 COMMA VSIZEX COMMA true > > Quad4vIntersectorStreamMoeller;
-
-    typedef ArrayIntersectorKStream<VSIZEX,
-                                    QuadMvIntersector1Moeller<4 COMMA false >,
-                                    QuadMvIntersectorKMoeller<4 COMMA VSIZEX COMMA false > > Quad4vIntersectorStreamMoellerNoFilter;
-
-    typedef ArrayIntersectorKStream<VSIZEX,
-                                    QuadMiIntersector1Moeller<4 COMMA true >,
-                                    QuadMiIntersectorKMoeller<4 COMMA VSIZEX COMMA true > > Quad4iIntersectorStreamMoeller;
-
-    typedef ArrayIntersectorKStream<VSIZEX,
-                                    QuadMvIntersector1Pluecker<4 COMMA true >,
-                                    QuadMvIntersectorKPluecker<4 COMMA VSIZEX COMMA true > > Quad4vIntersectorStreamPluecker;
-
-    typedef ArrayIntersectorKStream<VSIZEX,
-                                    QuadMiIntersector1Pluecker<4 COMMA true >,
-                                    QuadMiIntersectorKPluecker<4 COMMA VSIZEX COMMA true > > Quad4iIntersectorStreamPluecker;
-
-    typedef ArrayIntersectorKStream<VSIZEX,
-                                    ObjectIntersector1<false>,
-                                    ObjectIntersectorK<VSIZEX COMMA false > > ObjectIntersectorStream;
+    typedef ArrayIntersectorKStream<VSIZEX,TriangleMIntersectorKMoeller<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4IntersectorStreamMoeller;
+    typedef ArrayIntersectorKStream<VSIZEX,TriangleMIntersectorKMoeller<4 COMMA VSIZEX COMMA VSIZEX COMMA false > > Triangle4IntersectorStreamMoellerNoFilter;
+    typedef ArrayIntersectorKStream<VSIZEX,TriangleMvIntersectorKPluecker<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4vIntersectorStreamPluecker;
+    typedef ArrayIntersectorKStream<VSIZEX,TriangleMiIntersectorKMoeller<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4iIntersectorStreamMoeller;
+    typedef ArrayIntersectorKStream<VSIZEX,TriangleMiIntersectorKPluecker<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4iIntersectorStreamPluecker;
+    typedef ArrayIntersectorKStream<VSIZEX,QuadMvIntersectorKMoeller<4 COMMA VSIZEX COMMA true > > Quad4vIntersectorStreamMoeller;
+    typedef ArrayIntersectorKStream<VSIZEX,QuadMvIntersectorKMoeller<4 COMMA VSIZEX COMMA false > > Quad4vIntersectorStreamMoellerNoFilter;
+    typedef ArrayIntersectorKStream<VSIZEX,QuadMiIntersectorKMoeller<4 COMMA VSIZEX COMMA true > > Quad4iIntersectorStreamMoeller;
+    typedef ArrayIntersectorKStream<VSIZEX,QuadMvIntersectorKPluecker<4 COMMA VSIZEX COMMA true > > Quad4vIntersectorStreamPluecker;
+    typedef ArrayIntersectorKStream<VSIZEX,QuadMiIntersectorKPluecker<4 COMMA VSIZEX COMMA true > > Quad4iIntersectorStreamPluecker;
+    typedef ArrayIntersectorKStream<VSIZEX,ObjectIntersectorK<VSIZEX COMMA false > > ObjectIntersectorStream;
   }
 }

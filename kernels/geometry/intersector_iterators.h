@@ -100,11 +100,9 @@ namespace embree
 
     // =============================================================================================
 
-    template<int K, typename Intersector1, typename IntersectorK>
+    template<int K, typename IntersectorK>
       struct ArrayIntersectorKStream 
       {
-        typedef typename Intersector1::Primitive Primitive;
-        typedef typename Intersector1::Precalculations Precalculations;
         typedef typename IntersectorK::Primitive PrimitiveK;
         typedef typename IntersectorK::Precalculations PrecalculationsK;
 
@@ -128,21 +126,6 @@ namespace embree
             if (none(valid0)) break;
           }
           return !valid0;
-        }
-
-        static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
-        {
-          for (size_t i=0; i<num; i++)
-            Intersector1::intersect(pre,ray,context,prim[i]);
-        }
-        
-        static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node) 
-        {
-          for (size_t i=0; i<num; i++) {
-            if (Intersector1::occluded(pre,ray,context,prim[i]))
-              return true;
-          }
-          return false;
         }
 
       };

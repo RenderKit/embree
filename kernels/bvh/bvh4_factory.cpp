@@ -491,9 +491,9 @@ namespace embree
     IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4VirtualMBIntersector16Chunk));
 
     /* select stream intersectors */
-    IF_ENABLED_LINES(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX    (features,BVH4Line4iIntersectorStream));
-    IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX      (features,BVH4Bezier1vIntersectorStream));
-    IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX      (features,BVH4Bezier1iIntersectorStream));
+    //IF_ENABLED_LINES(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX    (features,BVH4Line4iIntersectorStream));
+    //IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX      (features,BVH4Bezier1vIntersectorStream));
+    //IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX      (features,BVH4Bezier1iIntersectorStream));
     //IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2      (features,BVH4Bezier1vIntersectorStream_OBB));
     //IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2      (features,BVH4Bezier1iIntersectorStream_OBB));
 
@@ -524,7 +524,7 @@ namespace embree
     intersectors.intersector4  = BVH4Bezier1vIntersector4Hybrid();
     intersectors.intersector8  = BVH4Bezier1vIntersector8Hybrid();
     intersectors.intersector16 = BVH4Bezier1vIntersector16Hybrid();
-    intersectors.intersectorN  = BVH4Bezier1vIntersectorStream();
+    //intersectors.intersectorN  = BVH4Bezier1vIntersectorStream();
 #endif
     return intersectors;
   }
@@ -538,7 +538,7 @@ namespace embree
     intersectors.intersector4  = BVH4Bezier1iIntersector4Hybrid();
     intersectors.intersector8  = BVH4Bezier1iIntersector8Hybrid();
     intersectors.intersector16 = BVH4Bezier1iIntersector16Hybrid();
-    intersectors.intersectorN  = BVH4Bezier1iIntersectorStream();
+    //intersectors.intersectorN  = BVH4Bezier1iIntersectorStream();
 #endif
     return intersectors;
   }
@@ -552,7 +552,7 @@ namespace embree
     intersectors.intersector4  = BVH4Line4iIntersector4();
     intersectors.intersector8  = BVH4Line4iIntersector8();
     intersectors.intersector16 = BVH4Line4iIntersector16();
-    intersectors.intersectorN  = BVH4Line4iIntersectorStream();
+    //intersectors.intersectorN  = BVH4Line4iIntersectorStream();
 #endif
     return intersectors;
   }
