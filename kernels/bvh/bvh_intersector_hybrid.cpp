@@ -395,12 +395,9 @@ namespace embree
       const Vec3vf<K> org(ray_org);
       const Vec3vf<K> org_rdir = org * rdir;
 
-      vint<K> octant =                                                \
-        select(vfloat<K>(rdir.x) < 0.0f,vint<K>(1),vint<K>(zero)) |
-        select(vfloat<K>(rdir.y) < 0.0f,vint<K>(2),vint<K>(zero)) |
-        select(vfloat<K>(rdir.z) < 0.0f,vint<K>(4),vint<K>(zero));
-      
+      vint<K> octant = ray.octant();
       octant = select(valid,octant,vint<K>(0xffffffff));
+
       do
       {
         const size_t valid_index = __bsf(valid_bits);
