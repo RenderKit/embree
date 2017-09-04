@@ -810,7 +810,7 @@ namespace embree
           ray.time[k]   = ray_k->time;
           ray.mask[k]   = ray_k->mask;
           ray.instID[k] = ray_k->instID;
-          ray.geomID[k] =  RTC_INVALID_GEOMETRY_ID;
+          ray.geomID[k] = RTC_INVALID_GEOMETRY_ID;
         }
       }
   #endif

@@ -126,8 +126,8 @@ namespace embree
       RayStreamAOP rayN(_rayN);
       for (size_t i = 0; i < N; i += VSIZEX)
       {
-        const size_t n = min(N - i, size_t(VSIZEX));
-        vboolx valid = vintx(step) < vintx(int(n));
+        const vintx vi = vintx(int(i)) + vintx(step);
+        vboolx valid = vi < vintx(int(N));
 
         RayK<VSIZEX> ray = rayN.getRayByIndex<VSIZEX>(valid, i);
         valid &= ray.tnear <= ray.tfar;
