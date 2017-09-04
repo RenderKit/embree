@@ -326,20 +326,15 @@ namespace embree
         intersectors.intersectorN.intersect(intersectors.ptr,rayN,N,context);
       else
       {
-        if (likely(context->flags == IntersectContext::INPUT_RAY_DATA_AOS))
-          for (size_t i=0; i<N; i++)
-            intersect(*rayN[i],context);
-        else
+        assert(context->flags != IntersectContext::INPUT_RAY_DATA_AOS);
+        assert(context->getInputSOAWidth() == VSIZEX);
+        const size_t numPackets = (N+VSIZEX-1)/VSIZEX;
+        for (size_t i=0; i<numPackets; i++)
         {
-          assert(context->getInputSOAWidth() == VSIZEX);
-          const size_t numPackets = (N+VSIZEX-1)/VSIZEX;
-          for (size_t i=0; i<numPackets; i++)
-          {
-            RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)rayN[i];
-            vbool<VSIZEX> valid = ray.tnear < ray.tfar;
-            intersect(valid,ray,context);
-          }      
-        }
+          RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)rayN[i];
+          vbool<VSIZEX> valid = ray.tnear < ray.tfar;
+          intersect(valid,ray,context);
+        }      
       }
     }
 
