@@ -148,7 +148,7 @@ namespace embree
 
     template<int scale = 4>
     static __forceinline vfloat16 gather(const vboolf16& mask, const float* ptr, const vint16& index) {
-      vfloat16 r = zero;
+      vfloat16 r = _mm512_setzero_ps();
       return _mm512_mask_i32gather_ps(r, mask, index, ptr, scale);
     }
 
