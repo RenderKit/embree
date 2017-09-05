@@ -210,66 +210,10 @@ namespace embree
 #endif
     }
 
-    void RayStreamFilter::filterSOACoherent(Scene* scene, char* rayData, size_t numPackets, size_t stride, IntersectContext* context, bool intersect)
-    {
-      /* all valid accels need to have a intersectN/occludedN */
-      bool chunkFallback = scene->isRobust() || !scene->accels.validIsecN();
-      /* fallback to chunk if necessary */
-      if (unlikely(chunkFallback))
-      {
-        for (size_t i = 0; i < numPackets; i++)
-        {
-          const size_t offset = i * stride;
-          RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)(rayData + offset);
-          vboolx valid = ray.tnear <= ray.tfar;
-
-          if (intersect)
-            scene->intersect(valid, ray, context);
-          else
-            scene->occluded(valid, ray, context);
-        }
-        return;
-      }
-
-      static const size_t MAX_COHERENT_RAY_PACKETS = MAX_RAYS_PER_OCTANT / VSIZEX;
-      __aligned(64) RayK<VSIZEX>* rays_ptr[MAX_RAYS_PER_OCTANT / VSIZEX];
-
-      size_t numPacketsInOctant = 0;
-
-      for (size_t i = 0; i < numPackets; i++)
-      {
-        const size_t offset = i * stride;
-        RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)(rayData + offset);
-        rays_ptr[numPacketsInOctant++] = &ray;
-
-        /* trace as stream */
-        if (unlikely(numPacketsInOctant == MAX_COHERENT_RAY_PACKETS))
-        {
-          const size_t size = numPacketsInOctant*VSIZEX;
-          if (intersect)
-            scene->intersectN((void**)rays_ptr, size, context);
-          else
-            scene->occludedN((void**)rays_ptr, size, context);
-          numPacketsInOctant = 0;
-        }
-      }
-
-      /* flush remaining packets */
-      if (unlikely(numPacketsInOctant))
-      {
-        const size_t size = numPacketsInOctant*VSIZEX;
-        if (intersect)
-          scene->intersectN((void**)rays_ptr, size, context);
-        else
-          scene->occludedN((void**)rays_ptr, size, context);
-      }
-    }
-
     __forceinline void RayStreamFilter::filterSOA(Scene* scene, char* rayData, size_t N, size_t numPackets, size_t stride, IntersectContext* context, bool intersect)
     {
       const size_t rayDataAlignment = (size_t)rayData % (VSIZEX*sizeof(float));
       const size_t offsetAlignment  = (size_t)stride  % (VSIZEX*sizeof(float));
-#if 1
 
       /* fast path for packets with the correct width and data alignment */
       if (likely(N == VSIZEX &&
@@ -277,23 +221,57 @@ namespace embree
                  !offsetAlignment))
       {
 #if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
-        if (unlikely(isCoherent(context->user->flags)))
+        /* all valid accels need to have a intersectN/occludedN */
+        if (unlikely(isCoherent(context->user->flags) && !scene->isRobust() && scene->accels.validIsecN()))
         {
-          filterSOACoherent(scene, rayData, numPackets, stride, context, intersect);
-          return;
+          static const size_t MAX_COHERENT_RAY_PACKETS = MAX_RAYS_PER_OCTANT / VSIZEX;
+          __aligned(64) RayK<VSIZEX>* rays_ptr[MAX_RAYS_PER_OCTANT / VSIZEX];
+
+          size_t numPacketsInOctant = 0;
+
+          for (size_t i = 0; i < numPackets; i++)
+          {
+            const size_t offset = i * stride;
+            RayK<VSIZEX>& ray = *(RayK<VSIZEX>*)(rayData + offset);
+            rays_ptr[numPacketsInOctant++] = &ray;
+
+            /* trace as stream */
+            if (unlikely(numPacketsInOctant == MAX_COHERENT_RAY_PACKETS))
+            {
+              const size_t size = numPacketsInOctant*VSIZEX;
+              if (intersect)
+                scene->intersectN((void**)rays_ptr, size, context);
+              else
+                scene->occludedN((void**)rays_ptr, size, context);
+              numPacketsInOctant = 0;
+            }
+          }
+
+          /* flush remaining packets */
+          if (unlikely(numPacketsInOctant))
+          {
+            const size_t size = numPacketsInOctant*VSIZEX;
+            if (intersect)
+              scene->intersectN((void**)rays_ptr, size, context);
+            else
+              scene->occludedN((void**)rays_ptr, size, context);
+          }
         }
+        else
 #endif
-
-        for (size_t i = 0; i < numPackets; i++)
         {
-          const size_t offset = i * stride;
-          RayK<VSIZEX>& ray = *(RayK<VSIZEX>*)(rayData + offset);
-          const vboolx valid = ray.tnear <= ray.tfar;
+          /* fallback to packets */
+          for (size_t i = 0; i < numPackets; i++)
+          {
+            const size_t offset = i * stride;
+            RayK<VSIZEX>& ray = *(RayK<VSIZEX>*)(rayData + offset);
+            const vboolx valid = ray.tnear <= ray.tfar;
 
-          if (intersect)
-            scene->intersect(valid, ray, context);
-          else
-            scene->occluded(valid, ray, context);
+            if (intersect)
+              scene->intersect(valid, ray, context);
+            else
+              scene->occluded(valid, ray, context);
+          }
         }
       }
       else
@@ -324,82 +302,6 @@ namespace embree
           }
         }
       }
-
-#else
-
-      /* otherwise use stream intersector */
-      RayPacketSOA rayN(rayData, N);
-      __aligned(64) Ray rays[MAX_RAYS_PER_OCTANT];
-      __aligned(64) Ray *rays_ptr[MAX_RAYS_PER_OCTANT];
-      
-      size_t octants[8][MAX_RAYS_PER_OCTANT];
-      unsigned int rays_in_octant[8];
-
-      for (size_t i=0;i<8;i++) rays_in_octant[i] = 0;
-
-      size_t soffset = 0;
-
-      for (size_t s=0;s<numPackets;s++,soffset+=stride)
-      {
-        // todo: use SIMD width to compute octants
-        for (size_t i=0;i<N;i++)
-        {
-          /* global + local offset */
-          const size_t offset = soffset + sizeof(float) * i;
-
-          if (unlikely(!rayN.isValidByOffset(offset))) continue;
-
-#if defined(EMBREE_IGNORE_INVALID_RAYS)
-          __aligned(64) Ray ray = rayN.getRayByOffset(offset);
-          if (unlikely(!ray.valid())) continue; 
-#endif
-
-          const size_t octantID = rayN.getOctantByOffset(offset);
-
-          assert(octantID < 8);
-          octants[octantID][rays_in_octant[octantID]++] = offset;
-        
-          if (unlikely(rays_in_octant[octantID] == MAX_RAYS_PER_OCTANT))
-          {
-            for (size_t j=0;j<MAX_RAYS_PER_OCTANT;j++)
-            {
-              rays_ptr[j] = &rays[j]; // rays_ptr might get reordered for occludedN
-              rays[j] = rayN.getRayByOffset(octants[octantID][j]);
-            }
-
-            if (intersect)
-              scene->intersectN((void**)rays_ptr,MAX_RAYS_PER_OCTANT,context);
-            else
-              scene->occludedN((void**)rays_ptr,MAX_RAYS_PER_OCTANT,context);
-
-            for (size_t j=0;j<MAX_RAYS_PER_OCTANT;j++)
-              rayN.setHitByOffset(octants[octantID][j],rays[j],intersect);
-            
-            rays_in_octant[octantID] = 0;
-          }
-        }        
-      }
-
-      /* flush remaining rays per octant */
-      for (size_t i=0;i<8;i++)
-        if (rays_in_octant[i])
-        {
-          for (size_t j=0;j<rays_in_octant[i];j++)
-          {
-            rays_ptr[j] = &rays[j]; // rays_ptr might get reordered for occludedN
-            rays[j] = rayN.getRayByOffset(octants[i][j]);
-          }
-
-          if (intersect)
-            scene->intersectN((RTCRay**)rays_ptr,rays_in_octant[i],context);
-          else
-            scene->occludedN((RTCRay**)rays_ptr,rays_in_octant[i],context);        
-
-          for (size_t j=0;j<rays_in_octant[i];j++)
-            rayN.setHitByOffset(octants[i][j],rays[j],intersect);
-        }
-
-#endif
     }
 
     void RayStreamFilter::filterSOP(Scene* scene, const RTCRayNp& _rayN, size_t N, IntersectContext* context, bool intersect)
@@ -416,9 +318,9 @@ namespace embree
         __aligned(64) RayK<VSIZEX> rays[MAX_COHERENT_RAY_PACKETS];
         __aligned(64) RayK<VSIZEX>* rays_ptr[MAX_COHERENT_RAY_PACKETS];
 
-        for (size_t i = 0; i < N; i += MAX_COHERENT_RAY_PACKETS * VSIZEX)
+        for (size_t i = 0; i < N; i += MAX_RAYS_PER_OCTANT)
         {
-          const size_t size = min(N-i, MAX_COHERENT_RAY_PACKETS * VSIZEX);
+          const size_t size = min(N-i, MAX_RAYS_PER_OCTANT);
 
           /* convert from SOP to SOA */
           for (size_t j = 0; j < size; j += VSIZEX)
