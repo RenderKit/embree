@@ -41,7 +41,7 @@ namespace embree
     };
 
     template<int N, int Nx, int types>
-      class BVHNNodeTraverserStreamHitCoherent
+    class BVHNNodeTraverserStreamHitCoherent
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
@@ -188,7 +188,7 @@ namespace embree
 
     /*! BVH ray stream intersector. */
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-      class BVHNIntersectorStream
+    class BVHNIntersectorStream
     {
       static const int Nxd = (Nx == N) ? N : Nx/2;
 
@@ -314,10 +314,10 @@ namespace embree
         const float frusta_min_dist = reduce_min(tmp_min_dist);
         const float frusta_max_dist = reduce_max(tmp_max_dist);
 
-      commonOctant = 
-        (reduced_max_rdir.x < 0.0f || reduced_min_rdir.x >= 0.0f) &&
-        (reduced_max_rdir.y < 0.0f || reduced_min_rdir.y >= 0.0f) &&
-        (reduced_max_rdir.z < 0.0f || reduced_min_rdir.z >= 0.0f);
+        commonOctant =
+          (reduced_max_rdir.x < 0.0f || reduced_min_rdir.x >= 0.0f) &&
+          (reduced_max_rdir.y < 0.0f || reduced_min_rdir.y >= 0.0f) &&
+          (reduced_max_rdir.z < 0.0f || reduced_min_rdir.z >= 0.0f);
 
         
         const Vec3fa frusta_min_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_rdir, reduced_max_rdir);
@@ -450,15 +450,12 @@ namespace embree
       // =============================================================================================
 
 
-      static void intersectCoherentSOA(BVH* bvh, RayK<K>** inputRays, size_t numValidStreams, IntersectContext* context);
-      static void occludedCoherentSOA(BVH* bvh, RayK<K>** inputRays, size_t numValidStreams, IntersectContext* context);
-
-      static void intersectCoherent(BVH* bvh, Ray** ray, size_t numRays, IntersectContext* context);
-      static void occludedCoherent (BVH* bvh, Ray** ray, size_t numRays, IntersectContext* context);
+      static void intersectCoherent(BVH* bvh, RayK<K>** inputRays, size_t numValidStreams, IntersectContext* context);
+      static void occludedCoherent(BVH* bvh, RayK<K>** inputRays, size_t numValidStreams, IntersectContext* context);
       
     public:
-      static void intersect(BVH* bvh, Ray** ray, size_t numRays, IntersectContext* context);
-      static void occluded (BVH* bvh, Ray** ray, size_t numRays, IntersectContext* context);
+      static void intersect(BVH* bvh, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
+      static void occluded (BVH* bvh, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
     };
   }
 }

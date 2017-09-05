@@ -326,8 +326,6 @@ namespace embree
         intersectors.intersectorN.intersect(intersectors.ptr,rayN,N,context);
       else
       {
-        assert(context->flags != IntersectContext::INPUT_RAY_DATA_AOS);
-        assert(context->getInputSOAWidth() == VSIZEX);
         const size_t numPackets = (N+VSIZEX-1)/VSIZEX;
         for (size_t i=0; i<numPackets; i++)
         {
@@ -391,7 +389,6 @@ namespace embree
         intersectors.intersectorN.occluded(intersectors.ptr,rayN,N,context);
       else
       {
-        assert(context->getInputSOAWidth() == VSIZEX);
         const size_t numPackets = (N+VSIZEX-1)/VSIZEX;
         for (size_t i=0; i<numPackets; i++)
         {

@@ -234,8 +234,6 @@ namespace embree
       static const size_t MAX_COHERENT_RAY_PACKETS = MAX_RAYS_PER_OCTANT / VSIZEX;
       __aligned(64) RayK<VSIZEX>* rays_ptr[MAX_RAYS_PER_OCTANT / VSIZEX];
 
-      /* set input layout to SOA */
-      context->setInputSOA(VSIZEX);
       size_t numPacketsInOctant = 0;
 
       for (size_t i = 0; i < numPackets; i++)
@@ -417,9 +415,6 @@ namespace embree
 
         __aligned(64) RayK<VSIZEX> rays[MAX_COHERENT_RAY_PACKETS];
         __aligned(64) RayK<VSIZEX>* rays_ptr[MAX_COHERENT_RAY_PACKETS];
-
-        /* set input layout to SOA */
-        context->setInputSOA(VSIZEX);
 
         for (size_t i = 0; i < N; i += MAX_COHERENT_RAY_PACKETS * VSIZEX)
         {
