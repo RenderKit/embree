@@ -28,7 +28,6 @@ namespace embree
     __forceinline void RayStreamFilter::filterAOS(Scene* scene, RTCRay* _rayN, size_t N, size_t stride, IntersectContext* context, bool intersect)
     {
 #if 1
-
       RayStreamAOS rayN(_rayN);
       for (size_t i = 0; i < N; i += VSIZEX)
       {
@@ -215,7 +214,6 @@ namespace embree
     {
       /* all valid accels need to have a intersectN/occludedN */
       bool chunkFallback = scene->isRobust() || !scene->accels.validIsecN();
-
       /* fallback to chunk if necessary */
       if (unlikely(chunkFallback))
       {
