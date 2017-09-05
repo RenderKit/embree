@@ -267,7 +267,7 @@ namespace embree
           const vfloat<K> tnear  = inputPackets[i]->tnear;
           const vfloat<K> tfar   = inputPackets[i]->tfar;
           vbool<K> m_valid = (tnear <= tfar) & (tnear >= 0.0f);
-          if (occluded) m_valid &= inputPackets[i]->geomID == RTC_INVALID_GEOMETRY_ID;
+          if (occluded) m_valid &= inputPackets[i]->geomID != 0;
 
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
           m_valid &= inputPackets[i]->valid();
