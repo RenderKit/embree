@@ -34,7 +34,6 @@ namespace embree
 
     private:
       static void filterSOACoherent(Scene* scene, char* rays, size_t numPackets, size_t stride, IntersectContext* context, bool intersect);
-      static void filterSOPCoherent(Scene* scene, const RTCRayNp& rays, size_t N, IntersectContext* context, bool intersect);
     };
   }
 };
