@@ -36,4 +36,5 @@ namespace embree
   StepTy step;
   ReverseStepTy reverse_step;
   EmptyTy empty;
+  UndefinedTy undefined;
 }

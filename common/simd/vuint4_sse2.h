@@ -63,9 +63,7 @@ namespace embree
     __forceinline vuint(PosInfTy) : v(_mm_set1_epi32(unsigned(pos_inf))) {}
     __forceinline vuint(StepTy)   : v(_mm_set_epi32(3, 2, 1, 0)) {}
     __forceinline vuint(TrueTy)   { v = _mm_cmpeq_epi32(v,v); }
-
-    __forceinline static vuint4 undefined() { return _mm_castps_si128(_mm_undefined_ps()); }
-
+    __forceinline vuint(UndefinedTy) : v(_mm_castps_si128(_mm_undefined_ps())) {}
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Loads and Stores
