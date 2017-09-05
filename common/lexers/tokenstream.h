@@ -160,13 +160,13 @@ namespace embree
     std::vector<std::string> symbols;
 
     /*! checks if a character is a separator */
-    __forceinline bool isSeparator(int c) const { return isSepMap[c]; }
+    __forceinline bool isSeparator(int c) const { return c<256 && isSepMap[c]; }
 
     /*! checks if a character is a number */
     __forceinline bool isDigit(int c) const {  return c >= '0' && c <= '9';}
 
     /*! checks if a character is legal for an identifier */
-    __forceinline bool isAlpha(int c) const {  return isAlphaMap[c];  }
+    __forceinline bool isAlpha(int c) const {  return c<256 && isAlphaMap[c];  }
     __forceinline bool isAlphaNum(int c) const { return isAlpha(c) || isDigit(c); }
   };
 }
