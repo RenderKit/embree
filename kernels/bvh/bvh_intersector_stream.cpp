@@ -54,75 +54,8 @@ namespace embree
     // =====================================================================================================
     // =====================================================================================================
 
-    template<int K>
-    __forceinline size_t AOStoSOA(RayK<K>* rayK, Ray** inputRays, const size_t numTotalRays)
-    {
-      const size_t numPackets = (numTotalRays+K-1)/K; //todo : OPTIMIZE
-      for (size_t i = 0; i < numPackets; i++)
-        new (&rayK[i]) RayK<K>(zero,zero,zero,neg_inf);
-
-      Vec3fa min_dir = pos_inf;
-      Vec3fa max_dir = neg_inf;
-
-      for (size_t i = 0; i < numTotalRays; i++) {
-        const Vec3fa& org = inputRays[i]->org;
-        const Vec3fa& dir = inputRays[i]->dir;
-        min_dir = min(min_dir, dir);
-        max_dir = max(max_dir, dir);
-        const float tnear = max(0.0f, inputRays[i]->tnear);
-        const float tfar  = inputRays[i]->tfar;
-        const size_t packetID = i / K;
-        const size_t slotID   = i % K;
-        rayK[packetID].dir.x[slotID]  = dir.x;
-        rayK[packetID].dir.y[slotID]  = dir.y;
-        rayK[packetID].dir.z[slotID]  = dir.z;
-        rayK[packetID].org.x[slotID]  = org.x;
-        rayK[packetID].org.y[slotID]  = org.y;
-        rayK[packetID].org.z[slotID]  = org.z;
-        rayK[packetID].tnear[slotID]  = tnear;
-        rayK[packetID].tfar[slotID]   = tfar;
-        rayK[packetID].mask[slotID]   = inputRays[i]->mask;
-        rayK[packetID].instID[slotID] = inputRays[i]->instID;
-      }
-      const size_t sign_min_dir = movemask(vfloat4(min_dir) < 0.0f);
-      const size_t sign_max_dir = movemask(vfloat4(max_dir) < 0.0f);
-      return ((sign_min_dir^sign_max_dir) & 0x7);
-    }
-
-    template<int K, bool occlusion>
-    __forceinline void SOAtoAOS(Ray** inputRays, RayK<K>* rayK, const size_t numTotalRays)
-    {
-      for (size_t i = 0; i < numTotalRays; i++)
-      {
-        const size_t packetID = i / K;
-        const size_t slotID   = i % K;
-        const RayK<K>& ray = rayK[packetID];
-        if (likely((unsigned)ray.geomID[slotID] != RTC_INVALID_GEOMETRY_ID))
-        {
-          if (occlusion)
-            inputRays[i]->geomID = ray.geomID[slotID];
-          else
-          {
-            inputRays[i]->tfar   = ray.tfar[slotID];
-            inputRays[i]->Ng.x   = ray.Ng.x[slotID];
-            inputRays[i]->Ng.y   = ray.Ng.y[slotID];
-            inputRays[i]->Ng.z   = ray.Ng.z[slotID];
-            inputRays[i]->u      = ray.u[slotID];
-            inputRays[i]->v      = ray.v[slotID];
-            inputRays[i]->geomID = ray.geomID[slotID];
-            inputRays[i]->primID = ray.primID[slotID];
-            inputRays[i]->instID = ray.instID[slotID];
-          }
-        }
-      }
-    }
-
-    // =====================================================================================================
-    // =====================================================================================================
-    // =====================================================================================================
-
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherentSOA(BVH* __restrict__ bvh, RayK<K>** inputRays, size_t numOctantRays, IntersectContext* context)
+    __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherent(BVH* __restrict__ bvh, RayK<K>** inputRays, size_t numOctantRays, IntersectContext* context)
     {
       __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  //!< stack of nodes
 
@@ -239,7 +172,7 @@ namespace embree
     }
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherentSOA(BVH* __restrict__ bvh, RayK<K>** inputRays, size_t numOctantRays, IntersectContext* context)
+    __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherent(BVH* __restrict__ bvh, RayK<K>** inputRays, size_t numOctantRays, IntersectContext* context)
     {
       __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  //!< stack of nodes
 
@@ -360,56 +293,7 @@ namespace embree
     // =====================================================================================================
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherent(BVH* __restrict__ bvh, Ray** inputRays, size_t numTotalRays, IntersectContext* context)
-    {
-      if (likely(context->flags == IntersectContext::INPUT_RAY_DATA_AOS))
-      {
-        /* AOS to SOA conversion */
-        RayK<K> rayK[MAX_RAYS / K];
-        RayK<K>* rayK_ptr[MAX_RAYS / K];
-        for (size_t i = 0; i < MAX_RAYS / K; i++) rayK_ptr[i] = &rayK[i];
-        AOStoSOA(rayK, inputRays, numTotalRays);
-        /* stream tracer as fast path */
-        BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherentSOA(bvh, (RayK<K>**)rayK_ptr, numTotalRays, context);
-        /* SOA to AOS conversion */
-        SOAtoAOS<K, false>(inputRays, rayK, numTotalRays);
-      }
-      else
-      {
-        assert(context->getInputSOAWidth() == K);
-        /* stream tracer as fast path */
-        BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherentSOA(bvh, (RayK<K>**)inputRays, numTotalRays, context);
-      }
-    }
-
-    template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherent(BVH* __restrict__ bvh, Ray **inputRays, size_t numTotalRays, IntersectContext* context)
-    {
-      if (likely(context->flags == IntersectContext::INPUT_RAY_DATA_AOS))
-      {
-        /* AOS to SOA conversion */
-        RayK<K> rayK[MAX_RAYS / K];
-        RayK<K>* rayK_ptr[MAX_RAYS / K];
-        for (size_t i = 0; i < MAX_RAYS / K; i++) rayK_ptr[i] = &rayK[i];
-        AOStoSOA(rayK, inputRays, numTotalRays);
-        /* stream tracer as fast path */
-        BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherentSOA(bvh, (RayK<K>**)rayK_ptr, numTotalRays, context);
-        /* SOA to AOS conversion */
-        SOAtoAOS<K, true>(inputRays, rayK, numTotalRays);
-      }
-      else
-      {
-        assert(context->getInputSOAWidth() == K);
-        BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherentSOA(bvh, (RayK<K>**)inputRays, numTotalRays, context);
-      }
-    }
-
-    // =====================================================================================================
-    // =====================================================================================================
-    // =====================================================================================================
-
-    template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray** inputRays, size_t numTotalRays, IntersectContext* context)
+    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, RayK<K>** inputRays, size_t numTotalRays, IntersectContext* context)
     {
 #if ENABLE_COHERENT_STREAM_PATH == 1
       if (unlikely(PrimitiveIntersector::validIntersectorK && !robust && isCoherent(context->user->flags)))
@@ -418,63 +302,20 @@ namespace embree
         return;
       }
 #endif
-      assert(context->flags == IntersectContext::INPUT_RAY_DATA_AOS);
-      /* fallback to packet interface */
 
-      /* replace this with Attila's AOS to SOA conversion code */
+      /* fallback to packets */
       for (size_t i = 0; i < numTotalRays; i += K)
       {
-        const size_t n = min(numTotalRays - i, size_t(K));
-        vbool<K> valid = vint<K>(step) < vint<K>(int(n));
-        RayK<K> ray;
-        
-        for (size_t k = 0; k < n; k++)
-        {
-          Ray* __restrict__ ray_k = inputRays[i+k];
-          assert(k < K);
-          assert(i+k < numTotalRays);
-
-          ray.org.x[k]  = ray_k->org.x;
-          ray.org.y[k]  = ray_k->org.y;
-          ray.org.z[k]  = ray_k->org.z;
-          ray.dir.x[k]  = ray_k->dir.x;
-          ray.dir.y[k]  = ray_k->dir.y;
-          ray.dir.z[k]  = ray_k->dir.z;
-          ray.tnear[k]  = ray_k->tnear;
-          ray.tfar[k]   = ray_k->tfar;
-          ray.time[k]   = ray_k->time;
-          ray.mask[k]   = ray_k->mask;
-          ray.instID[k] = ray_k->instID;
-        }
-        ray.geomID = RTC_INVALID_GEOMETRY_ID;
-        /* filter out invalid rays */
+        const vint<K> vi = vint<K>(int(i)) + vint<K>(step);
+        vbool<K> valid = vi < vint<K>(int(numTotalRays));
+        RayK<K>& ray = *(inputRays[i / K]);
         valid &= ray.tnear <= ray.tfar;
-        //scene->intersect(valid, ray, context);
         bvh->scene->intersect(valid, ray, context);
-
-        for (size_t k = 0; k < n; k++)
-        {
-          Ray* __restrict__ ray_k = inputRays[i+k];
-
-          if (ray.geomID[k] != RTC_INVALID_GEOMETRY_ID)
-          {
-            ray_k->tfar   = ray.tfar[k];
-            ray_k->Ng.x   = ray.Ng.x[k];
-            ray_k->Ng.y   = ray.Ng.y[k];
-            ray_k->Ng.z   = ray.Ng.z[k];
-            ray_k->u      = ray.u[k];
-            ray_k->v      = ray.v[k];
-            ray_k->primID = ray.primID[k];
-            ray_k->geomID = ray.geomID[k];
-            ray_k->instID = ray.instID[k];
-          }
-        }
       }
     }
 
-
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, Ray **inputRays, size_t numTotalRays, IntersectContext* context)
+    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, RayK<K>** inputRays, size_t numTotalRays, IntersectContext* context)
     {
 #if ENABLE_COHERENT_STREAM_PATH == 1
       if (unlikely(PrimitiveIntersector::validIntersectorK && !robust && isCoherent(context->user->flags)))
@@ -484,45 +325,14 @@ namespace embree
       }
 #endif
 
-      /* replace this with Attila's AOS to SOA conversion code */
+      /* fallback to packets */
       for (size_t i = 0; i < numTotalRays; i += K)
       {
-        const size_t n = min(numTotalRays - i, size_t(K));
-        vbool<K> valid = vint<K>(step) < vint<K>(int(n));
-        RayK<K> ray;
-        
-        for (size_t k = 0; k < n; k++)
-        {
-          Ray* __restrict__ ray_k = inputRays[i+k];
-          assert(k < K);
-          assert(i+k < numTotalRays);
-
-          ray.org.x[k]  = ray_k->org.x;
-          ray.org.y[k]  = ray_k->org.y;
-          ray.org.z[k]  = ray_k->org.z;
-          ray.dir.x[k]  = ray_k->dir.x;
-          ray.dir.y[k]  = ray_k->dir.y;
-          ray.dir.z[k]  = ray_k->dir.z;
-          ray.tnear[k]  = ray_k->tnear;
-          ray.tfar[k]   = ray_k->tfar;
-          ray.time[k]   = ray_k->time;
-          ray.mask[k]   = ray_k->mask;
-          ray.instID[k] = ray_k->instID;
-        }
-        ray.geomID = RTC_INVALID_GEOMETRY_ID;
-        /* filter out invalid rays */
+        const vint<K> vi = vint<K>(int(i)) + vint<K>(step);
+        vbool<K> valid = vi < vint<K>(int(numTotalRays));
+        RayK<K>& ray = *(inputRays[i / K]);
         valid &= ray.tnear <= ray.tfar;
         bvh->scene->occluded(valid, ray, context);
-
-        for (size_t k = 0; k < n; k++)
-        {
-          Ray* __restrict__ ray_k = inputRays[i+k];
-
-          if (ray.geomID[k] != RTC_INVALID_GEOMETRY_ID)
-          {
-            ray_k->geomID = ray.geomID[k];
-          }
-        }
       }
     }
 
