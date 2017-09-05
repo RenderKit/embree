@@ -106,7 +106,7 @@ namespace embree
       vbool4 hit0   = ((vint4*)ray.geomID)[0] == vint4(RTC_INVALID_GEOMETRY_ID);
       vbool4 valid1 = ((vbool4*)valid)[1];
       vbool4 hit1   = ((vint4*)ray.geomID)[1] == vint4(RTC_INVALID_GEOMETRY_ID);
-      if (unlikely((none((valid0,hit0) | (valid1,hit1))))) break;
+      if (unlikely((none((valid0 & hit0) | (valid1 & hit1))))) break;
 #endif
     }
   }
@@ -125,7 +125,7 @@ namespace embree
       vbool4 hit2   = ((vint4*)ray.geomID)[2] == vint4(RTC_INVALID_GEOMETRY_ID);
       vbool4 valid3 = ((vbool4*)valid)[3];
       vbool4 hit3   = ((vint4*)ray.geomID)[3] == vint4(RTC_INVALID_GEOMETRY_ID);
-      if (unlikely((none((valid0,hit0) | (valid1,hit1) | (valid2,hit2) | (valid3,hit3))))) break;
+      if (unlikely((none((valid0 & hit0) | (valid1 & hit1) | (valid2 & hit2) | (valid3 & hit3))))) break;
 #endif
     }
   }
