@@ -38,8 +38,6 @@ namespace embree
       size_t mask;
       size_t parent;
       size_t child;
-      unsigned int childID;
-      //unsigned int dist;
     };
 
     template<int N, int Nx, int types>
@@ -91,8 +89,6 @@ namespace embree
             stackPtr->mask    = tMask[r1]; 
             stackPtr->parent  = parent;
             stackPtr->child   = c1;
-            stackPtr->childID = (unsigned int)r1;
-            //stackPtr->dist    = d1;
             stackPtr++; 
             cur = c0; 
             m_trav_active = tMask[r0]; 
@@ -103,8 +99,6 @@ namespace embree
             stackPtr->mask    = tMask[r0]; 
             stackPtr->parent  = parent;
             stackPtr->child   = c0;
-            stackPtr->childID = (unsigned int)r0;
-            //stackPtr->dist    = d0;
             stackPtr++; 
             cur = c1; 
             m_trav_active = tMask[r1]; 
@@ -140,8 +134,6 @@ namespace embree
           stackPtr->mask    = m_trav_active;
           stackPtr->parent  = parent;
           stackPtr->child   = cur;
-          stackPtr->childID = index;
-          //stackPtr->dist = tNear_i[index];
           stackPtr++;
         }
       }
@@ -170,7 +162,6 @@ namespace embree
         stackPtr->mask    = m_trav_active;
         stackPtr->parent  = parent;
         stackPtr->child   = cur;
-        stackPtr->childID = (unsigned int)r;
         stackPtr++;
 
         for (; ;)
@@ -184,7 +175,6 @@ namespace embree
           stackPtr->mask    = m_trav_active;
           stackPtr->parent  = parent;
           stackPtr->child   = cur;
-          stackPtr->childID = (unsigned int)r;
           stackPtr++;
         }
       }

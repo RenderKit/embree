@@ -284,9 +284,9 @@ namespace embree
         {
           const size_t size = numPacketsInOctant*VSIZEX;
           if (intersect)
-            scene->intersectN((RTCRay**)rays_ptr, size, context);
+            scene->intersectN((void**)rays_ptr, size, context);
           else
-            scene->occludedN((RTCRay**)rays_ptr, size, context);
+            scene->occludedN((void**)rays_ptr, size, context);
           numPacketsInOctant = 0;
         }
       }
@@ -296,9 +296,9 @@ namespace embree
       {
         const size_t size = numPacketsInOctant*VSIZEX;
         if (intersect)
-          scene->intersectN((RTCRay**)rays_ptr, size, context);
+          scene->intersectN((void**)rays_ptr, size, context);
         else
-          scene->occludedN((RTCRay**)rays_ptr, size, context);
+          scene->occludedN((void**)rays_ptr, size, context);
       }
     }
 
@@ -405,9 +405,9 @@ namespace embree
             }
 
             if (intersect)
-              scene->intersectN((RTCRay**)rays_ptr,MAX_RAYS_PER_OCTANT,context);
+              scene->intersectN((void**)rays_ptr,MAX_RAYS_PER_OCTANT,context);
             else
-              scene->occludedN((RTCRay**)rays_ptr,MAX_RAYS_PER_OCTANT,context);
+              scene->occludedN((void**)rays_ptr,MAX_RAYS_PER_OCTANT,context);
 
             for (size_t j=0;j<MAX_RAYS_PER_OCTANT;j++)
               rayN.setHitByOffset(octants[octantID][j],rays[j],intersect);
@@ -533,9 +533,9 @@ namespace embree
 
         /* trace as stream */
         if (intersect)
-          scene->intersectN((RTCRay**)rays_ptr, size, context);
+          scene->intersectN((void**)rays_ptr, size, context);
         else
-          scene->occludedN((RTCRay**)rays_ptr, size, context);
+          scene->occludedN((void**)rays_ptr, size, context);
 
         /* convert from SOA to SOP */
         for (size_t j = 0; j < size; j += VSIZEX)
