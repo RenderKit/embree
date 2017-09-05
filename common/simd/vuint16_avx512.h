@@ -73,10 +73,6 @@ namespace embree
     __forceinline vuint(StepTy) : v(_mm512_set_epi32(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0)) {}
     __forceinline vuint(ReverseStepTy) : v(_mm512_setr_epi32(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0)) {}
 
-    __forceinline static vuint16 zero() { return _mm512_setzero_epi32(); }
-    __forceinline static vuint16 one() { return _mm512_set1_epi32(1); }
-    __forceinline static vuint16 neg_one() { return _mm512_set1_epi32(-1); }
-
     ////////////////////////////////////////////////////////////////////////////////
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////

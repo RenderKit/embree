@@ -94,6 +94,19 @@ namespace embree
     }
 
     ////////////////////////////////////////////////////////////////////////////////
+    /// Constants
+    ////////////////////////////////////////////////////////////////////////////////
+
+    __forceinline vfloat(ZeroTy)   : v(_mm512_setzero_ps()) {}
+    __forceinline vfloat(OneTy)    : v(_mm512_set1_ps(1.0f)) {}
+    __forceinline vfloat(PosInfTy) : v(_mm512_set1_ps(pos_inf)) {}
+    __forceinline vfloat(NegInfTy) : v(_mm512_set1_ps(neg_inf)) {}
+    __forceinline vfloat(StepTy)   : v(_mm512_set_ps(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0)) {}
+    __forceinline vfloat(NaNTy)    : v(_mm512_set1_ps(nan)) {}
+
+    __forceinline static vfloat16 undefined() { return _mm512_undefined_ps(); }
+
+    ////////////////////////////////////////////////////////////////////////////////
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
 
@@ -148,7 +161,7 @@ namespace embree
 
     template<int scale = 4>
     static __forceinline vfloat16 gather(const vboolf16& mask, const float* ptr, const vint16& index) {
-      vfloat16 r = _mm512_setzero_ps();
+      vfloat16 r = zero;
       return _mm512_mask_i32gather_ps(r, mask, index, ptr, scale);
     }
 
@@ -161,25 +174,6 @@ namespace embree
     static __forceinline void scatter(const vboolf16& mask, float* ptr, const vint16& index, const vfloat16& v) {
       _mm512_mask_i32scatter_ps(ptr, mask, index, v, scale);
     }
-
-
-    ////////////////////////////////////////////////////////////////////////////////
-    /// Constants
-    ////////////////////////////////////////////////////////////////////////////////
-    
-    __forceinline vfloat(ZeroTy)   : v(_mm512_setzero_ps()) {}
-    __forceinline vfloat(OneTy)    : v(_mm512_set1_ps(1.0f)) {}
-    __forceinline vfloat(PosInfTy) : v(_mm512_set1_ps(pos_inf)) {}
-    __forceinline vfloat(NegInfTy) : v(_mm512_set1_ps(neg_inf)) {}
-    __forceinline vfloat(StepTy)   : v(_mm512_set_ps(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0)) {}
-    __forceinline vfloat(NaNTy)    : v(_mm512_set1_ps(nan)) {}
-
-    __forceinline static vfloat16 undefined() { return _mm512_undefined_ps(); }
-    __forceinline static vfloat16 zero() { return _mm512_setzero_ps(); }
-    __forceinline static vfloat16 one()  { return _mm512_set1_ps(1.0f); }
-    __forceinline static vfloat16 ulp()  { return _mm512_set1_ps(embree::ulp); }
-    __forceinline static vfloat16 inf()  { return _mm512_set1_ps((float)pos_inf); }
-    __forceinline static vfloat16 minus_inf() { return _mm512_set1_ps((float)neg_inf); }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
@@ -500,7 +494,7 @@ namespace embree
   };
  
   __forceinline vfloat16 shift_left_1(const vfloat16& a) {
-    vfloat16 z = vfloat16::zero();
+    vfloat16 z = zero;
     return mask_align_shift_right<15>(0xfffe,z,a,a);
   }
 
@@ -709,7 +703,7 @@ namespace embree
 
   __forceinline vfloat16 loadAOS4to16f(const float& x, const float& y, const float& z)
   {
-    vfloat16 f = vfloat16::zero();
+    vfloat16 f = zero;
     f = select(0x1111,vfloat16::broadcast(&x),f);
     f = select(0x2222,vfloat16::broadcast(&y),f);
     f = select(0x4444,vfloat16::broadcast(&z),f);
@@ -721,7 +715,7 @@ namespace embree
                                        const vfloat16& y,
                                        const vfloat16& z)
   {
-    vfloat16 f = vfloat16::zero();
+    vfloat16 f = zero;
     f = select(0x1111,vfloat16::broadcast((float*)&x + index),f);
     f = select(0x2222,vfloat16::broadcast((float*)&y + index),f);
     f = select(0x4444,vfloat16::broadcast((float*)&z + index),f);
@@ -742,7 +736,7 @@ namespace embree
   }
 
   __forceinline vfloat16 rcp_safe(const vfloat16& a) {
-    return rcp(select(a != vfloat16::zero(), a, vfloat16(min_rcp_input)));
+    return rcp(select(a != vfloat16(zero), a, vfloat16(min_rcp_input)));
   }
 
   ////////////////////////////////////////////////////////////////////////////////

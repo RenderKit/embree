@@ -59,10 +59,6 @@ namespace embree
     __forceinline vdouble(StepTy) : v(_mm256_set_pd(3.0,2.0,1.0,0.0)) {}
     __forceinline vdouble(ReverseStepTy) : v(_mm256_setr_pd(3.0,2.0,1.0,0.0)) {}
 
-    __forceinline static vdouble4 zero() { return _mm256_setzero_pd(); }
-    __forceinline static vdouble4 one() { return _mm256_set1_pd(1.0); }
-    __forceinline static vdouble4 neg_one() { return _mm256_set1_pd(-1.0); }
-
     ////////////////////////////////////////////////////////////////////////////////
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
