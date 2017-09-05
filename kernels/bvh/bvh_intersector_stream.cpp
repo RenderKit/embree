@@ -132,8 +132,18 @@ namespace embree
       __aligned(64) Packet packet[MAX_RAYS/K];
       __aligned(64) Frusta frusta;
 
-      const size_t m_active = initPacketsAndFrusta(inputPackets, numOctantRays, packet, frusta);
+      bool commonOctant = true;
+      const size_t m_active = initPacketsAndFrusta(inputPackets, numOctantRays, packet, frusta, commonOctant);
       if (unlikely(m_active == 0)) return;
+
+      /* case of non-common origin */
+      if (unlikely(!commonOctant))
+      {
+        const size_t numPackets = (numOctantRays+K-1)/K; 
+        for (size_t i = 0; i < numPackets; i++)
+          bvh->scene->intersect(inputPackets[i]->tnear <= inputPackets[i]->tfar,*inputPackets[i],context);
+        return;
+      }
 
       stack[0].mask    = m_active;
       stack[0].parent  = 0;
@@ -241,10 +251,20 @@ namespace embree
       __aligned(64) Packet packet[MAX_RAYS/K];
       __aligned(64) Frusta frusta;
 
-      size_t m_active = initPacketsAndFrusta(inputPackets, numOctantRays, packet, frusta);
+      bool commonOctant = true;
+      size_t m_active = initPacketsAndFrusta(inputPackets, numOctantRays, packet, frusta, commonOctant);
 
       /* valid rays */
       if (unlikely(m_active == 0)) return;
+
+      /* case of non-common origin */
+      if (unlikely(!commonOctant))
+      {
+        const size_t numPackets = (numOctantRays+K-1)/K; 
+        for (size_t i = 0; i < numPackets; i++)
+          bvh->scene->occluded(inputPackets[i]->tnear <= inputPackets[i]->tfar,*inputPackets[i],context);
+        return;
+      }
 
       stack[0].mask    = m_active;
       stack[0].parent  = 0;

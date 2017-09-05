@@ -250,7 +250,7 @@ namespace embree
       };
 
 
-      __forceinline static size_t initPacketsAndFrusta(RayK<K>** inputPackets, const size_t numOctantRays, Packet* const packet, Frusta& frusta)
+      __forceinline static size_t initPacketsAndFrusta(RayK<K>** inputPackets, const size_t numOctantRays, Packet* const packet, Frusta& frusta, bool &commonOctant)
       {
         const size_t numPackets = (numOctantRays+K-1)/K;
 
@@ -267,6 +267,10 @@ namespace embree
           const vfloat<K> tnear  = inputPackets[i]->tnear;
           const vfloat<K> tfar   = inputPackets[i]->tfar;
           const vbool<K> m_valid = (tnear <= tfar) & (tnear >= 0.0f);
+
+#if defined(EMBREE_IGNORE_INVALID_RAYS)
+          m_valid &= inputPackets[i]->valid();
+#endif
 
           m_active |= (size_t)movemask(m_valid) << (i*K);
 
@@ -309,6 +313,12 @@ namespace embree
         const float frusta_min_dist = reduce_min(tmp_min_dist);
         const float frusta_max_dist = reduce_max(tmp_max_dist);
 
+      commonOctant = 
+        (reduced_max_rdir.x < 0.0f || reduced_min_rdir.x >= 0.0f) &&
+        (reduced_max_rdir.y < 0.0f || reduced_min_rdir.y >= 0.0f) &&
+        (reduced_max_rdir.z < 0.0f || reduced_min_rdir.z >= 0.0f);
+
+        
         const Vec3fa frusta_min_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_rdir, reduced_max_rdir);
         const Vec3fa frusta_max_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_rdir, reduced_min_rdir);
 
@@ -415,7 +425,7 @@ namespace embree
         dist = fmin;            
             
 
-        size_t m_node = m_node_hit ^ (m_first_hit /*  & m_leaf */);
+        size_t m_node = m_node_hit ^ m_first_hit;
         while(unlikely(m_node)) 
         {
           const size_t b = __bscf(m_node);

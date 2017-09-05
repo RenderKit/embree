@@ -216,39 +216,6 @@ namespace embree
       /* all valid accels need to have a intersectN/occludedN */
       bool chunkFallback = scene->isRobust() || !scene->accels.validIsecN();
 
-      /* check for common octant */
-      if (unlikely(!chunkFallback))
-      {
-        vfloatx min_x(pos_inf), max_x(neg_inf);
-        vfloatx min_y(pos_inf), max_y(neg_inf);
-        vfloatx min_z(pos_inf), max_z(neg_inf);
-        vboolx all_active(true);
-
-        for (size_t i = 0; i < numPackets; i++)
-        {
-          const size_t offset = i * stride;
-          RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)(rayData + offset);
-          min_x = min(min_x,ray.dir.x);
-          min_y = min(min_y,ray.dir.y);
-          min_z = min(min_z,ray.dir.z);
-          max_x = max(max_x,ray.dir.x);
-          max_y = max(max_y,ray.dir.y);
-          max_z = max(max_z,ray.dir.z);
-          all_active &= ray.tnear <= ray.tfar;
-#if defined(EMBREE_IGNORE_INVALID_RAYS)
-          all_active &= ray.valid();
-#endif
-        }
-
-        const bool commonOctant =
-          (all(max_x < vfloatx(zero)) || all(min_x >= vfloatx(zero))) &&
-          (all(max_y < vfloatx(zero)) || all(min_y >= vfloatx(zero))) &&
-          (all(max_z < vfloatx(zero)) || all(min_z >= vfloatx(zero)));
-
-        /* fallback to chunk in case of non-common octants */
-        chunkFallback |= !commonOctant || !all(all_active);
-      }
-
       /* fallback to chunk if necessary */
       if (unlikely(chunkFallback))
       {
