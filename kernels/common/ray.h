@@ -208,17 +208,6 @@ namespace embree
       if (!vnz) throw_RTCError(RTC_UNKNOWN_ERROR, "invalid Ng.z");
     }
 
-    /* filter out all occluded rays from a stream of rays */
-    __forceinline static void filterOutOccluded(RayK<1>** ray, size_t& N)
-    {
-      size_t l = 0, r = N;
-      while (l < r) {
-        if (ray[l]->geomID != 0) l++;
-        else std::swap(ray[l], ray[--r]);
-      }
-      N = l;
-    }
-
     /* Ray data */
     Vec3fa org;  // ray origin
     Vec3fa dir;  // ray direction
