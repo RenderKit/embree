@@ -341,7 +341,8 @@ namespace embree
 {
   std::string getExecutableFileName() {
     char filename[1024];
-    if (!GetModuleFileName(nullptr, filename, sizeof(filename))) return std::string();
+    if (!GetModuleFileName(nullptr, filename, sizeof(filename)))
+      return std::string();
     return std::string(filename);
   }
 
@@ -413,8 +414,9 @@ namespace embree
   {
     std::string pid = "/proc/" + toString(getpid()) + "/exe";
     char buf[4096];
-    int bytes = readlink(pid.c_str(), buf, sizeof(buf)-1);
-    if (bytes != -1) buf[bytes] = '\0';
+    memset(buf,0,sizeof(buf));
+    if (readlink(pid.c_str(), buf, sizeof(buf)-1) == -1)
+      return std::string();
     return std::string(buf);
   }
 }
@@ -435,8 +437,10 @@ namespace embree
   {
     const int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1 };
     char buf[4096];
-    size_t len = sizeof(buf);
-    if (sysctl(mib, 4, buf, &len, 0x0, 0) == -1) *buf = '\0';
+    memset(buf,0,sizeof(buf));
+    size_t len = sizeof(buf)-1;
+    if (sysctl(mib, 4, buf, &len, 0x0, 0) == -1)
+      return std::string();
     return std::string(buf);
   }
 }
@@ -457,7 +461,8 @@ namespace embree
   {
     char buf[4096];
     uint32_t size = sizeof(buf);
-    if (_NSGetExecutablePath(buf, &size) != 0) return std::string();
+    if (_NSGetExecutablePath(buf, &size) != 0)
+      return std::string();
     return std::string(buf);
   }
 }
