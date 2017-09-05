@@ -383,8 +383,8 @@ namespace embree
   template<int src> __forceinline unsigned int extract(const vuint4& b) { return _mm_extract_epi32(b, src); }
   template<int dst> __forceinline vuint4 insert(const vuint4& a, const unsigned b) { return _mm_insert_epi32(a, b, dst); }
 #else
-  template<int src> __forceinline unsigned int extract(const vuint4& b) { return b[src]; }
-  template<int dst> __forceinline vuint4 insert(const vuint4& a, const unsigned b) { vuint4 c = a; c[dst] = b; return c; }
+  template<int src> __forceinline unsigned int extract(const vuint4& b) { return b[src&3]; }
+  template<int dst> __forceinline vuint4 insert(const vuint4& a, const unsigned b) { vuint4 c = a; c[dst&3] = b; return c; }
 #endif
 
 

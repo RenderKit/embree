@@ -67,7 +67,7 @@ namespace embree
       This->validAccels[i]->intersect16(valid,ray,context);
   }
 
-  void AccelN::intersectN (void* ptr, RTCRay** ray, const size_t N, IntersectContext* context)
+  void AccelN::intersectN (void* ptr, void** ray, const size_t N, IntersectContext* context)
   {
     AccelN* This = (AccelN*)ptr;
     for (size_t i=0; i<This->validAccels.size(); i++)
@@ -124,18 +124,12 @@ namespace embree
     }
   }
 
-  void AccelN::occludedN (void* ptr, RTCRay** ray, const size_t N, IntersectContext* context)
+  void AccelN::occludedN (void* ptr, void** ray, const size_t N, IntersectContext* context)
   {
     AccelN* This = (AccelN*)ptr;
     size_t M = N;
     for (size_t i=0; i<This->validAccels.size(); i++)
-    {
       This->validAccels[i]->occludedN(ray,M,context);
-      /* only do this optimization if input rays are given in AOS format */
-      if (context->flags == IntersectContext::INPUT_RAY_DATA_AOS)
-        Ray::filterOutOccluded((Ray**)ray,M);
-      if (M == 0) break;
-    }
   }
 
   void AccelN::print(size_t ident)

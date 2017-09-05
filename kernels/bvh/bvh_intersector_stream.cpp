@@ -138,8 +138,6 @@ namespace embree
       stack[0].mask    = m_active;
       stack[0].parent  = 0;
       stack[0].child   = bvh->root;
-      stack[0].childID = (unsigned int)-1;
-      //stack[0].dist    = (unsigned int)-1;
 
       ///////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////////////////////////////////////////////////////
@@ -251,8 +249,6 @@ namespace embree
       stack[0].mask    = m_active;
       stack[0].parent  = 0;
       stack[0].child   = bvh->root;
-      stack[0].childID = (unsigned int)-1;
-      //stack[0].dist    = (unsigned int)-1;
 
       ///////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////////////////////////////////////////////////////
@@ -298,11 +294,7 @@ namespace embree
           const AlignedNode* __restrict__ const node = parent.alignedNode();
           size_t b = 0xff;
           for (size_t i=0;i<N;i++)
-            if (node->child(i) == cur) 
-            {
-              b = i;
-              break;
-            }
+            if (node->child(i) == cur) { b = i; break; }
           assert(b < N);
           char *ptr = (char*)&node->lower_x + b*sizeof(float);
           assert(cur == node->child(b));

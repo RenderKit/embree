@@ -92,8 +92,8 @@ namespace embree
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
     
-    __forceinline       double& operator [](size_t index)       { assert(index < 8); return i[index]; }
-    __forceinline const double& operator [](size_t index) const { assert(index < 8); return i[index]; }
+    __forceinline       double& operator [](size_t index)       { assert(index < 4); return i[index]; }
+    __forceinline const double& operator [](size_t index) const { assert(index < 4); return i[index]; }
   };
   
   ////////////////////////////////////////////////////////////////////////////////

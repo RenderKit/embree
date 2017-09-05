@@ -124,16 +124,20 @@ namespace embree
       TaskQueue ()
       : left(0), right(0), stackPtr(0) {}
 
-      __forceinline void* alloc(size_t bytes, size_t align = 64) {
-        stackPtr += bytes + ((align - stackPtr) & (align-1));
-        assert(stackPtr <= CLOSURE_STACK_SIZE);
+      __forceinline void* alloc(size_t bytes, size_t align = 64)
+      {
+        size_t ofs = bytes + ((align - stackPtr) & (align-1));
+        if (stackPtr + ofs > CLOSURE_STACK_SIZE)
+          throw std::runtime_error("closure stack overflow");
+        stackPtr += ofs;
         return &stack[stackPtr-bytes];
       }
 
       template<typename Closure>
       __forceinline void push_right(Thread& thread, const size_t size, const Closure& closure)
       {
-        assert(right < TASK_STACK_SIZE);
+        if (right >= TASK_STACK_SIZE)
+          throw std::runtime_error("task stack overflow");
 
 	/* allocate new task on right side of stack */
         size_t oldStackPtr = stackPtr;
