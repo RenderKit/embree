@@ -90,8 +90,8 @@ namespace embree
       This->validAccels[i]->occluded4(valid,ray,context);
 #if defined(__SSE2__)
       vbool4 valid0 = ((vbool4*)valid)[0];
-      vbool4 hit0   = ((vint4*)ray.geomID)[0] == vint4(0);
-      if (all(valid0,hit0)) break;
+      vbool4 hit0   = ((vint4*)ray.geomID)[0] == vint4(RTC_INVALID_GEOMETRY_ID));
+      if (unlikely(none(valid0 & hit0))) break;
 #endif
     }
   }
@@ -101,12 +101,12 @@ namespace embree
     AccelN* This = (AccelN*)ptr;
     for (size_t i=0; i<This->validAccels.size(); i++) {
       This->validAccels[i]->occluded8(valid,ray,context);
-#if defined(__SSE2__) // FIXME: use AVX code
+#if defined(__SSE2__) // FIXME: use higher ISA
       vbool4 valid0 = ((vbool4*)valid)[0];
-      vbool4 hit0   = ((vint4*)ray.geomID)[0] == vint4(0);
+      vbool4 hit0   = ((vint4*)ray.geomID)[0] == vint4(RTC_INVALID_GEOMETRY_ID);
       vbool4 valid1 = ((vbool4*)valid)[1];
-      vbool4 hit1   = ((vint4*)ray.geomID)[1] == vint4(0);
-      if (all(valid0,hit0) && all(valid1,hit1)) break;
+      vbool4 hit1   = ((vint4*)ray.geomID)[1] == vint4(RTC_INVALID_GEOMETRY_ID);
+      if (unlikely((none((valid0,hit0) | (valid1,hit1))))) break;
 #endif
     }
   }
@@ -116,10 +116,16 @@ namespace embree
     AccelN* This = (AccelN*)ptr;
     for (size_t i=0; i<This->validAccels.size(); i++) {
       This->validAccels[i]->occluded16(valid,ray,context);
-#if defined(__AVX512F__) // FIXME: this code gets never compiler with __AVX512F__ enabled
-      vbool16 valid0 = ((vbool16*)valid)[0];
-      vbool16 hit0   = ((vint16*)ray.geomID)[0] == vint16(0);
-      if (all(valid0,hit0)) break;
+#if defined(__SSE2__) // FIXME: use higher ISA
+      vbool4 valid0 = ((vbool4*)valid)[0];
+      vbool4 hit0   = ((vint4*)ray.geomID)[0] == vint4(RTC_INVALID_GEOMETRY_ID);
+      vbool4 valid1 = ((vbool4*)valid)[1];
+      vbool4 hit1   = ((vint4*)ray.geomID)[1] == vint4(RTC_INVALID_GEOMETRY_ID);
+      vbool4 valid2 = ((vbool4*)valid)[2];
+      vbool4 hit2   = ((vint4*)ray.geomID)[2] == vint4(RTC_INVALID_GEOMETRY_ID);
+      vbool4 valid3 = ((vbool4*)valid)[3];
+      vbool4 hit3   = ((vint4*)ray.geomID)[3] == vint4(RTC_INVALID_GEOMETRY_ID);
+      if (unlikely((none((valid0,hit0) | (valid1,hit1) | (valid2,hit2) | (valid3,hit3))))) break;
 #endif
     }
   }
