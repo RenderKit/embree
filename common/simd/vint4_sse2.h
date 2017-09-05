@@ -392,8 +392,8 @@ namespace embree
   template<int src> __forceinline int extract(const vint4& b) { return _mm_extract_epi32(b, src); }
   template<int dst> __forceinline vint4 insert(const vint4& a, const int b) { return _mm_insert_epi32(a, b, dst); }
 #else
-  template<int src> __forceinline int extract(const vint4& b) { return b[src]; }
-  template<int dst> __forceinline vint4 insert(const vint4& a, int b) { vint4 c = a; c[dst] = b; return c; }
+  template<int src> __forceinline int extract(const vint4& b) { return b[src&3]; }
+  template<int dst> __forceinline vint4 insert(const vint4& a, int b) { vint4 c = a; c[dst&3] = b; return c; }
 #endif
 
 
