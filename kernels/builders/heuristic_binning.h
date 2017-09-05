@@ -614,9 +614,9 @@ namespace embree
         max_z1 = init_max;
         max_z2 = init_max;
 
-        count0 = vint16::zero();
-        count1 = vint16::zero();
-        count2 = vint16::zero();
+        count0 = zero;
+        count1 = zero;
+        count2 = zero;
 
         const vint16 step16(step);
         size_t i;

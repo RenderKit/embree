@@ -71,8 +71,7 @@ namespace embree
     __forceinline vint(PosInfTy) : v(_mm256_set1_epi32(pos_inf)) {}
     __forceinline vint(NegInfTy) : v(_mm256_set1_epi32(neg_inf)) {}
     __forceinline vint(StepTy)   : v(_mm256_set_epi32(7, 6, 5, 4, 3, 2, 1, 0)) {}
-
-    __forceinline static vint8 undefined() { return _mm256_undefined_si256(); }
+    __forceinline vint(UndefinedTy) : v(_mm256_undefined_si256()) {}
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Loads and Stores

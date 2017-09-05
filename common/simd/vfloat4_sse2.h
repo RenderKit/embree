@@ -56,8 +56,7 @@ namespace embree
     __forceinline vfloat(NegInfTy) : v(_mm_set1_ps(neg_inf)) {}
     __forceinline vfloat(StepTy)   : v(_mm_set_ps(3.0f, 2.0f, 1.0f, 0.0f)) {}
     __forceinline vfloat(NaNTy)    : v(_mm_set1_ps(nan)) {}
-
-    __forceinline static vfloat4 undefined() { return _mm_undefined_ps(); }
+    __forceinline vfloat(UndefinedTy) : v(_mm_undefined_ps()) {}
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Loads and Stores

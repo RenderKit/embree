@@ -93,12 +93,7 @@ namespace embree
     __forceinline vint(PosInfTy) : v(_mm512_set1_epi32(pos_inf)) {}
     __forceinline vint(NegInfTy) : v(_mm512_set1_epi32(neg_inf)) {}
     __forceinline vint(StepTy)   : v(_mm512_set_epi32(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0)) {}
-
     __forceinline vint(ReverseStepTy) : v(_mm512_setr_epi32(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0)) {}
-
-    __forceinline static vint16 zero() { return _mm512_setzero_epi32(); }
-    __forceinline static vint16 one() { return _mm512_set1_epi32(1); }
-    __forceinline static vint16 neg_one() { return _mm512_set1_epi32(-1); }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Loads and Stores

@@ -61,10 +61,6 @@ namespace embree
     __forceinline vllong(StepTy) : v(_mm256_set_epi64x(3,2,1,0)) {}
     __forceinline vllong(ReverseStepTy) : v(_mm256_set_epi64x(0,1,2,3)) {}
 
-    __forceinline static vllong4 zero()    { return _mm256_setzero_si256(); }
-    __forceinline static vllong4 one()     { return _mm256_set1_epi64x(1);  }
-    __forceinline static vllong4 neg_one() { return _mm256_set1_epi64x(-1); }
-
     ////////////////////////////////////////////////////////////////////////////////
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
