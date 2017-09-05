@@ -320,7 +320,7 @@ namespace embree
 
         for (size_t i = 0; i < N; i += MAX_RAYS_PER_OCTANT)
         {
-          const size_t size = min(N-i, MAX_RAYS_PER_OCTANT);
+          const size_t size = min(N - i, MAX_RAYS_PER_OCTANT);
 
           /* convert from SOP to SOA */
           for (size_t j = 0; j < size; j += VSIZEX)
@@ -330,7 +330,11 @@ namespace embree
             const size_t offset = sizeof(float) * (i+j);
             const size_t packet_index = j / VSIZEX;
 
-            rays[packet_index] = rayN.getRayByOffset(valid, offset);
+            RayK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
+            ray.tnear = select(valid, ray.tnear, zero);
+            ray.tfar  = select(valid, ray.tfar,  neg_inf);
+
+            rays[packet_index] = ray;
             rays_ptr[packet_index] = &rays[packet_index]; // rays_ptr might get reordered for occludedN
           }
 
