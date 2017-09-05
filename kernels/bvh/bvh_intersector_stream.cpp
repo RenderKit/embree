@@ -133,7 +133,7 @@ namespace embree
       __aligned(64) Frusta frusta;
 
       bool commonOctant = true;
-      const size_t m_active = initPacketsAndFrusta(inputPackets, numOctantRays, packet, frusta, commonOctant);
+      const size_t m_active = initPacketsAndFrusta<false>(inputPackets, numOctantRays, packet, frusta, commonOctant);
       if (unlikely(m_active == 0)) return;
 
       /* case of non-common origin */
@@ -230,9 +230,9 @@ namespace embree
           assert(m_isec & bits);
           bits &= ~m_isec;
 
-          vbool<K> m_valid = (inputPackets[i]->tnear <= inputPackets[i]->tfar);
-          PrimitiveIntersector::intersectK(m_valid, *inputPackets[i], context, prim, num, lazy_node);
           Packet &p = packet[i];
+          vbool<K> m_valid = p.min_dist <= p.max_dist;
+          PrimitiveIntersector::intersectK(m_valid, *inputPackets[i], context, prim, num, lazy_node);
           p.max_dist = min(p.max_dist, inputPackets[i]->tfar);
         };
 
@@ -252,7 +252,7 @@ namespace embree
       __aligned(64) Frusta frusta;
 
       bool commonOctant = true;
-      size_t m_active = initPacketsAndFrusta(inputPackets, numOctantRays, packet, frusta, commonOctant);
+      size_t m_active = initPacketsAndFrusta<true>(inputPackets, numOctantRays, packet, frusta, commonOctant);
 
       /* valid rays */
       if (unlikely(m_active == 0)) return;
@@ -348,10 +348,10 @@ namespace embree
           const size_t m_isec = ((((size_t)1 << K)-1) << (i*K));
           assert(m_isec & bits);
           bits &= ~m_isec;
-
-          vbool<K> m_valid = (inputPackets[i]->tnear <= inputPackets[i]->tfar);
+          Packet &p = packet[i];
+          vbool<K> m_valid = p.min_dist <= p.max_dist;
           vbool<K> m_hit = PrimitiveIntersector::occludedK(m_valid, *inputPackets[i], context, prim, num, lazy_node);
-          inputPackets[i]->geomID = select(m_hit, vint<K>(zero), inputPackets[i]->geomID);
+          inputPackets[i]->geomID = select(m_hit & m_valid, vint<K>(zero), inputPackets[i]->geomID);
           m_active &= ~((size_t)movemask(m_hit) << (i*K));
         }
 

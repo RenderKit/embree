@@ -249,7 +249,7 @@ namespace embree
         }
       };
 
-
+      template<bool occluded>
       __forceinline static size_t initPacketsAndFrusta(RayK<K>** inputPackets, const size_t numOctantRays, Packet* const packet, Frusta& frusta, bool &commonOctant)
       {
         const size_t numPackets = (numOctantRays+K-1)/K;
@@ -266,7 +266,8 @@ namespace embree
         {
           const vfloat<K> tnear  = inputPackets[i]->tnear;
           const vfloat<K> tfar   = inputPackets[i]->tfar;
-          const vbool<K> m_valid = (tnear <= tfar) & (tnear >= 0.0f);
+          vbool<K> m_valid = (tnear <= tfar) & (tnear >= 0.0f);
+          //if (occluded) m_valid &= inputPackets[i]->geomID == RTC_INVALID_GEOMETRY_ID;
 
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
           m_valid &= inputPackets[i]->valid();
