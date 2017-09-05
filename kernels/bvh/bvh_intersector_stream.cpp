@@ -141,7 +141,6 @@ namespace embree
           const vfloat<K> maxZ = vfloat<K>(*(const float*)((const char*)ptr + pc.farZ));
 
           m_trav_active = intersectAlignedNodePacket(packet, minX, minY, minZ, maxX, maxY, maxZ, m_trav_active);
-          //if (m_trav_active == 0) goto pop;
         }
 
         /*! this is a leaf node */
@@ -260,8 +259,6 @@ namespace embree
           const vfloat<K> maxZ = vfloat<K>(*(const float*)((const char*)ptr + pc.farZ));
 
           m_trav_active = intersectAlignedNodePacket(packet, minX, minY, minZ, maxX, maxY, maxZ, m_trav_active);
-
-          if (m_trav_active == 0) goto pop;
         }
 
         /*! this is a leaf node */
