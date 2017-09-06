@@ -24,11 +24,11 @@
 namespace embree 
 {
 #if defined(__SSE4_1__)
-  __forceinline __m128 blendv_ps( __m128 f, __m128 t, __m128 mask ) { 
+  __forceinline __m128 blendv_ps(__m128 f, __m128 t, __m128 mask) { 
     return _mm_blendv_ps(f,t,mask);
   }
 #else
-  __forceinline __m128 blendv_ps( __m128 f, __m128 t, __m128 mask ) { 
+  __forceinline __m128 blendv_ps(__m128 f, __m128 t, __m128 mask) { 
     return _mm_or_ps(_mm_and_ps(mask, t), _mm_andnot_ps(mask, f)); 
   }
 #endif

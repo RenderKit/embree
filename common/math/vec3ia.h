@@ -51,8 +51,8 @@ namespace embree
     __forceinline          Vec3ia( const int x, const int y, const int z) : m128(_mm_set_epi32(z, z, y, x)) {}
     __forceinline explicit Vec3ia( const __m128 a ) : m128(_mm_cvtps_epi32(a)) {}
 
-    __forceinline operator const __m128i&( void ) const { return m128; }
-    __forceinline operator       __m128i&( void )       { return m128; }
+    __forceinline operator const __m128i&() const { return m128; }
+    __forceinline operator       __m128i&()       { return m128; }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
@@ -76,48 +76,48 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const Vec3ia operator +( const Vec3ia& a ) { return a; }
-  __forceinline const Vec3ia operator -( const Vec3ia& a ) { return _mm_sub_epi32(_mm_setzero_si128(), a.m128); }
+  __forceinline Vec3ia operator +( const Vec3ia& a ) { return a; }
+  __forceinline Vec3ia operator -( const Vec3ia& a ) { return _mm_sub_epi32(_mm_setzero_si128(), a.m128); }
 #if defined(__SSSE3__)
-  __forceinline const Vec3ia abs       ( const Vec3ia& a ) { return _mm_abs_epi32(a.m128); }
+  __forceinline Vec3ia abs       ( const Vec3ia& a ) { return _mm_abs_epi32(a.m128); }
 #endif
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const Vec3ia operator +( const Vec3ia& a, const Vec3ia& b ) { return _mm_add_epi32(a.m128, b.m128); }
-  __forceinline const Vec3ia operator +( const Vec3ia& a, const int     b ) { return a+Vec3ia(b); }
-  __forceinline const Vec3ia operator +( const int     a, const Vec3ia& b ) { return Vec3ia(a)+b; }
+  __forceinline Vec3ia operator +( const Vec3ia& a, const Vec3ia& b ) { return _mm_add_epi32(a.m128, b.m128); }
+  __forceinline Vec3ia operator +( const Vec3ia& a, const int     b ) { return a+Vec3ia(b); }
+  __forceinline Vec3ia operator +( const int     a, const Vec3ia& b ) { return Vec3ia(a)+b; }
 
-  __forceinline const Vec3ia operator -( const Vec3ia& a, const Vec3ia& b ) { return _mm_sub_epi32(a.m128, b.m128); }
-  __forceinline const Vec3ia operator -( const Vec3ia& a, const int     b ) { return a-Vec3ia(b); }
-  __forceinline const Vec3ia operator -( const int     a, const Vec3ia& b ) { return Vec3ia(a)-b; }
+  __forceinline Vec3ia operator -( const Vec3ia& a, const Vec3ia& b ) { return _mm_sub_epi32(a.m128, b.m128); }
+  __forceinline Vec3ia operator -( const Vec3ia& a, const int     b ) { return a-Vec3ia(b); }
+  __forceinline Vec3ia operator -( const int     a, const Vec3ia& b ) { return Vec3ia(a)-b; }
 
 #if defined(__SSE4_1__)
-  __forceinline const Vec3ia operator *( const Vec3ia& a, const Vec3ia& b ) { return _mm_mullo_epi32(a.m128, b.m128); }
-  __forceinline const Vec3ia operator *( const Vec3ia& a, const int     b ) { return a * Vec3ia(b); }
-  __forceinline const Vec3ia operator *( const int     a, const Vec3ia& b ) { return Vec3ia(a) * b; }
+  __forceinline Vec3ia operator *( const Vec3ia& a, const Vec3ia& b ) { return _mm_mullo_epi32(a.m128, b.m128); }
+  __forceinline Vec3ia operator *( const Vec3ia& a, const int     b ) { return a * Vec3ia(b); }
+  __forceinline Vec3ia operator *( const int     a, const Vec3ia& b ) { return Vec3ia(a) * b; }
 #endif
 
-  __forceinline const Vec3ia operator &( const Vec3ia& a, const Vec3ia& b ) { return _mm_and_si128(a.m128, b.m128); }
-  __forceinline const Vec3ia operator &( const Vec3ia& a, const int     b ) { return a & Vec3ia(b); }
-  __forceinline const Vec3ia operator &( const int     a, const Vec3ia& b ) { return Vec3ia(a) & b; }
+  __forceinline Vec3ia operator &( const Vec3ia& a, const Vec3ia& b ) { return _mm_and_si128(a.m128, b.m128); }
+  __forceinline Vec3ia operator &( const Vec3ia& a, const int     b ) { return a & Vec3ia(b); }
+  __forceinline Vec3ia operator &( const int     a, const Vec3ia& b ) { return Vec3ia(a) & b; }
 
-  __forceinline const Vec3ia operator |( const Vec3ia& a, const Vec3ia& b ) { return _mm_or_si128(a.m128, b.m128); }
-  __forceinline const Vec3ia operator |( const Vec3ia& a, const int     b ) { return a | Vec3ia(b); }
-  __forceinline const Vec3ia operator |( const int     a, const Vec3ia& b ) { return Vec3ia(a) | b; }
+  __forceinline Vec3ia operator |( const Vec3ia& a, const Vec3ia& b ) { return _mm_or_si128(a.m128, b.m128); }
+  __forceinline Vec3ia operator |( const Vec3ia& a, const int     b ) { return a | Vec3ia(b); }
+  __forceinline Vec3ia operator |( const int     a, const Vec3ia& b ) { return Vec3ia(a) | b; }
 
-  __forceinline const Vec3ia operator ^( const Vec3ia& a, const Vec3ia& b ) { return _mm_xor_si128(a.m128, b.m128); }
-  __forceinline const Vec3ia operator ^( const Vec3ia& a, const int     b ) { return a ^ Vec3ia(b); }
-  __forceinline const Vec3ia operator ^( const int     a, const Vec3ia& b ) { return Vec3ia(a) ^ b; }
+  __forceinline Vec3ia operator ^( const Vec3ia& a, const Vec3ia& b ) { return _mm_xor_si128(a.m128, b.m128); }
+  __forceinline Vec3ia operator ^( const Vec3ia& a, const int     b ) { return a ^ Vec3ia(b); }
+  __forceinline Vec3ia operator ^( const int     a, const Vec3ia& b ) { return Vec3ia(a) ^ b; }
 
-  __forceinline const Vec3ia operator <<( const Vec3ia& a, const int n ) { return _mm_slli_epi32(a.m128, n); }
-  __forceinline const Vec3ia operator >>( const Vec3ia& a, const int n ) { return _mm_srai_epi32(a.m128, n); }
+  __forceinline Vec3ia operator <<( const Vec3ia& a, const int n ) { return _mm_slli_epi32(a.m128, n); }
+  __forceinline Vec3ia operator >>( const Vec3ia& a, const int n ) { return _mm_srai_epi32(a.m128, n); }
 
-  __forceinline const Vec3ia sll ( const Vec3ia& a, const int b ) { return _mm_slli_epi32(a.m128, b); }
-  __forceinline const Vec3ia sra ( const Vec3ia& a, const int b ) { return _mm_srai_epi32(a.m128, b); }
-  __forceinline const Vec3ia srl ( const Vec3ia& a, const int b ) { return _mm_srli_epi32(a.m128, b); }
+  __forceinline Vec3ia sll ( const Vec3ia& a, const int b ) { return _mm_slli_epi32(a.m128, b); }
+  __forceinline Vec3ia sra ( const Vec3ia& a, const int b ) { return _mm_srai_epi32(a.m128, b); }
+  __forceinline Vec3ia srl ( const Vec3ia& a, const int b ) { return _mm_srli_epi32(a.m128, b); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
@@ -173,7 +173,7 @@ namespace embree
   /// Select
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const Vec3ia select( const Vec3ba& m, const Vec3ia& t, const Vec3ia& f ) {
+  __forceinline Vec3ia select( const Vec3ba& m, const Vec3ia& t, const Vec3ia& f ) {
 #if defined(__SSE4_1__)
     return _mm_castps_si128(_mm_blendv_ps(_mm_castsi128_ps(f), _mm_castsi128_ps(t), m));
 #else
@@ -182,11 +182,11 @@ namespace embree
   }
 
 #if defined(__SSE4_1__)
-  __forceinline const Vec3ia min( const Vec3ia& a, const Vec3ia& b ) { return _mm_min_epi32(a.m128,b.m128); }
-  __forceinline const Vec3ia max( const Vec3ia& a, const Vec3ia& b ) { return _mm_max_epi32(a.m128,b.m128); }
+  __forceinline Vec3ia min( const Vec3ia& a, const Vec3ia& b ) { return _mm_min_epi32(a.m128,b.m128); }
+  __forceinline Vec3ia max( const Vec3ia& a, const Vec3ia& b ) { return _mm_max_epi32(a.m128,b.m128); }
 #else
-  __forceinline const Vec3ia min( const Vec3ia& a, const Vec3ia& b ) { return select(lt_mask(a,b),a,b); }
-  __forceinline const Vec3ia max( const Vec3ia& a, const Vec3ia& b ) { return select(gt_mask(a,b),a,b); }
+  __forceinline Vec3ia min( const Vec3ia& a, const Vec3ia& b ) { return select(lt_mask(a,b),a,b); }
+  __forceinline Vec3ia max( const Vec3ia& a, const Vec3ia& b ) { return select(gt_mask(a,b),a,b); }
 #endif
 
   ////////////////////////////////////////////////////////////////////////////////

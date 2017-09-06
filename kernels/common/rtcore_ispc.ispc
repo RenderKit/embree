@@ -323,7 +323,7 @@ void rtcIntersect (RTCScene scene, varying RTCRay& ray)
 
 void rtcIntersectEx (RTCScene scene, const uniform RTCIntersectContext* uniform context, varying RTCRay& ray) 
 {
-  varying bool mask = __mask;
+  varying bool mask = __mask & (ray.tnear <= ray.tfar);
   unmasked {
     varying int imask = mask ? -1 : 0;
   }
@@ -381,7 +381,7 @@ void rtcOccluded (RTCScene scene, varying RTCRay& ray)
 
 void rtcOccludedEx (RTCScene scene, const uniform RTCIntersectContext* uniform context, varying RTCRay& ray) 
 {
-  varying bool mask = __mask;
+  varying bool mask = __mask & (ray.tnear <= ray.tfar);
   unmasked {
     varying int imask = mask ? -1 : 0;
   }

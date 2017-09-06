@@ -122,20 +122,6 @@ namespace embree
 	bool ispc;
       };
 
-      struct Intersector1M
-      {
-        Intersector1M (ErrorFunc error = nullptr);
-        Intersector1M (IntersectFunc1M intersect, OccludedFunc1M occluded, const char* name);
-        
-        operator bool() const { return name; }
-        
-      public:
-        static const char* type;
-        IntersectFunc1M intersect;
-        OccludedFunc1M occluded;
-        const char* name;
-      };
-
       struct IntersectorN
       {
         IntersectorN (ErrorFunc error = nullptr) ;
@@ -308,29 +294,6 @@ namespace embree
         }
       }
 #endif
-
-      /*! Intersects a stream of rays with the scene. */
-      __forceinline void intersect1M (Ray** rays, size_t N, size_t item, IntersectContext* context) 
-      {
-        assert(item < size());
-        if (intersectors.intersector1M.intersect) { // Intersect1N callback is optional
-          intersectors.intersector1M.intersect(intersectors.ptr,context->user,(RTCRay**)rays,N,item);
-        }
-        else if (N == 1) {
-          int mask = -1;
-          assert(intersectors.intersectorN.intersect);
-          intersectors.intersectorN.intersect((int*)&mask,intersectors.ptr,context->user,(RTCRayN*)rays[0],1,item);
-        } 
-        else 
-        {
-          int mask[MAX_INTERNAL_STREAM_SIZE];
-          StackRayPacket<MAX_INTERNAL_STREAM_SIZE> packet(N);
-          for (size_t i=0; i<N; i++) packet.writeRay(i,mask,*rays[i]);
-          assert(intersectors.intersectorN.intersect);
-          intersectors.intersectorN.intersect(mask,intersectors.ptr,context->user,(RTCRayN*)packet.data,N,item);
-          for (size_t i=0; i<N; i++) packet.readHit(i,*rays[i]);
-        }
-      }
       
       /*! Tests if single ray is occluded by the scene. */
       __forceinline void occluded (Ray& ray, size_t item, IntersectContext* context) 
@@ -406,27 +369,6 @@ namespace embree
       }
 #endif
 
-      /*! Tests if a stream of rays is occluded by the scene. */
-      __forceinline void occluded1M (Ray** rays, size_t N, size_t item, IntersectContext* context) 
-      {
-        if (likely(intersectors.intersector1M.occluded)) { // Occluded1N callback is optional
-          intersectors.intersector1M.occluded(intersectors.ptr,context->user,(RTCRay**)rays,N,item);
-        }
-        else if (N == 1) {
-          int mask = -1;
-          assert(intersectors.intersectorN.occluded);
-          intersectors.intersectorN.occluded((int*)&mask,intersectors.ptr,context->user,(RTCRayN*)rays[0],1,item);
-        } 
-        else 
-        {
-          int mask[MAX_INTERNAL_STREAM_SIZE];
-          StackRayPacket<MAX_INTERNAL_STREAM_SIZE> packet(N);
-          for (size_t i=0; i<N; i++) packet.writeRay(i,mask,*rays[i]);
-          assert(intersectors.intersectorN.occluded);
-          intersectors.intersectorN.occluded(mask,intersectors.ptr,context->user,(RTCRayN*)packet.data,N,item);
-          for (size_t i=0; i<N; i++) packet.readOcclusion(i,*rays[i]);
-        }
-      }
 
     public:
       RTCBoundsFunc  boundsFunc;
@@ -443,7 +385,6 @@ namespace embree
         Intersector4 intersector4;
         Intersector8 intersector8;
         Intersector16 intersector16;
-        Intersector1M intersector1M;
         IntersectorN intersectorN;
       } intersectors;
   };
@@ -477,13 +418,6 @@ namespace embree
                                    (void*)intersector::occluded,        \
                                    TOSTRING(isa) "::" TOSTRING(symbol), \
                                    false);                              \
-  }
-  
-#define DEFINE_SET_INTERSECTOR1M(symbol,intersector)                    \
-  AccelSet::Intersector1M symbol() {                                    \
-    return AccelSet::Intersector1M((AccelSet::IntersectFunc1M)intersector::intersect, \
-                                   (AccelSet::OccludedFunc1M )intersector::occluded, \
-                                   TOSTRING(isa) "::" TOSTRING(symbol)); \
   }
   
 #define DEFINE_SET_INTERSECTORN(symbol,intersector)                     \

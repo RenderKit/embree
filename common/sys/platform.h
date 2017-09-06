@@ -352,7 +352,7 @@ namespace embree
   template <typename Closure>
     OnScopeExitHelper<Closure> OnScopeExit(const Closure f) {
     return OnScopeExitHelper<Closure>(f);
-  };
+  }
 
 #define STRING_JOIN2(arg1, arg2) DO_STRING_JOIN2(arg1, arg2)
 #define DO_STRING_JOIN2(arg1, arg2) arg1 ## arg2
@@ -363,4 +363,5 @@ namespace embree
     std::unique_ptr<Ty> make_unique(Ty* ptr) {
     return std::unique_ptr<Ty>(ptr);
   }
+
 }

@@ -33,7 +33,7 @@ namespace embree
     /// Construction
     ////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline QuaternionT           ( void )                     { }
+    __forceinline QuaternionT           ()                     { }
     __forceinline QuaternionT           ( const QuaternionT& other ) { r = other.r; i = other.i; j = other.j; k = other.k; }
     __forceinline QuaternionT& operator=( const QuaternionT& other ) { r = other.r; i = other.i; j = other.j; k = other.k; return *this; }
 
@@ -58,7 +58,7 @@ namespace embree
     }
 
     /*! returns the rotation axis of the quaternion as a vector */
-    __forceinline const Vec3<T> v( ) const { return Vec3<T>(i, j, k); }
+    __forceinline Vec3<T> v( ) const { return Vec3<T>(i, j, k); }
 
   public:
     T r, i, j, k;

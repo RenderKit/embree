@@ -66,13 +66,13 @@ namespace embree
     __forceinline const LinearSpace3 transposed() const { return LinearSpace3(vx.x,vx.y,vx.z,vy.x,vy.y,vy.z,vz.x,vz.y,vz.z); }
 
     /*! returns first row of matrix */
-    __forceinline const Vector row0() const { return Vector(vx.x,vy.x,vz.x); }
+    __forceinline Vector row0() const { return Vector(vx.x,vy.x,vz.x); }
 
     /*! returns second row of matrix */
-    __forceinline const Vector row1() const { return Vector(vx.y,vy.y,vz.y); }
+    __forceinline Vector row1() const { return Vector(vx.y,vy.y,vz.y); }
 
     /*! returns third row of matrix */
-    __forceinline const Vector row2() const { return Vector(vx.z,vy.z,vz.z); }
+    __forceinline Vector row2() const { return Vector(vx.z,vy.z,vz.z); }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants

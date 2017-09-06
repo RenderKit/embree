@@ -262,9 +262,9 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4VirtualIntersector16Chunk);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4VirtualMBIntersector16Chunk);
 
-    DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Line4iIntersectorStream);
-    DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Bezier1vIntersectorStream);
-    DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Bezier1iIntersectorStream);
+    //DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Line4iIntersectorStream);
+    //DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Bezier1vIntersectorStream);
+    //DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Bezier1iIntersectorStream);
     //DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Bezier1vIntersectorStream_OBB);
     //DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Bezier1iIntersectorStream_OBB);
 

@@ -74,8 +74,8 @@ namespace embree
   template<typename Closure>
     __forceinline void foreach2(int x0, int x1, int y0, int y1, const Closure& closure) 
   {
-    __aligned(64) int U[128];
-    __aligned(64) int V[128];
+    __aligned(64) int U[2*VSIZEX];
+    __aligned(64) int V[2*VSIZEX];
     int index = 0;
     for (int y=y0; y<y1; y++) {
       const bool lasty = y+1>=y1;

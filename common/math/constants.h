@@ -201,4 +201,9 @@ namespace embree
   };
 
   extern MAYBE_UNUSED FullTy full;
+
+  struct UndefinedTy {
+  };
+
+  extern MAYBE_UNUSED UndefinedTy undefined;
 }

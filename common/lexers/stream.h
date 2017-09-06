@@ -67,7 +67,7 @@ namespace embree
     }
     __forceinline void push_back(const std::pair<T,ParseLocation>& v) {
       if (past+future == BUF_SIZE) pop_front();
-      int end = (start+past+future++)%BUF_SIZE;
+      size_t end = (start+past+future++)%BUF_SIZE;
       buffer[end] = v;
     }
     __forceinline void pop_front() {

@@ -375,7 +375,7 @@ namespace embree
     /* do ignore failures for some specific tests */
     if (ignoreFailure) 
       passed = true;
-
+    //assert(passed);
     return passed ? PASSED : FAILED;
   }
 
@@ -1059,7 +1059,7 @@ namespace embree
       
       for (size_t i = 0; i < 1024*1024; ++i)
       {
-        if (i%100 == 0) PRINT(i);
+        //if (i%100 == 0) PRINT(i);
         rtcDeviceSetParameter1i(nullptr,(RTCParameter) 1000000, i);
         
         RTCScene scene = rtcDeviceNewScene(device, sflags, RTC_INTERSECT1);
@@ -1767,6 +1767,7 @@ namespace embree
 
     bool checkInterpolation2D(const RTCSceneRef& scene, int geomID, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, size_t N, size_t N_total)
     {
+      assert(N < 256);
       bool passed = true;
       float P[256], dPdu[256], dPdv[256];
       rtcInterpolate(scene,geomID,primID,u,v,buffer,P,dPdu,dPdv,N);
@@ -1783,6 +1784,7 @@ namespace embree
     
     bool checkInterpolation1D(const RTCSceneRef& scene, int geomID, int primID, float u, float v, int v0, int v1, int v2, RTCBufferType buffer, float* data, size_t N, size_t N_total)
     {
+      assert(N < 256);
       bool passed = true;
       float P[256], dPdu[256], dPdv[256];
       rtcInterpolate(scene,geomID,primID,u,v,buffer,P,dPdu,dPdv,N);
@@ -1796,6 +1798,7 @@ namespace embree
     
     bool checkInterpolationSharpVertex(const RTCSceneRef& scene, int geomID, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, size_t N, size_t N_total)
     {
+      assert(N < 256);
       bool passed = true;
       float P[256], dPdu[256], dPdv[256];
       rtcInterpolate(scene,geomID,primID,u,v,buffer,P,dPdu,dPdv,N);
@@ -1904,6 +1907,7 @@ namespace embree
     
     bool checkTriangleInterpolation(const RTCSceneRef& scene, int geomID, int primID, float u, float v, int v0, int v1, int v2, RTCBufferType buffer, float* data, size_t N, size_t N_total)
     {
+      assert(N<256);
       bool passed = true;
       float P[256], dPdu[256], dPdv[256];
       rtcInterpolate(scene,geomID,primID,u,v,buffer,P,dPdu,dPdv,N);
@@ -2002,6 +2006,7 @@ namespace embree
     
     bool checkHairInterpolation(const RTCSceneRef& scene, int geomID, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, size_t N, size_t N_total)
     {
+      assert(N<256);
       bool passed = true;
       float P[256], dPdu[256], dPdv[256];
       rtcInterpolate(scene,geomID,primID,u,v,buffer,P,dPdu,dPdv,N);

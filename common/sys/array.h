@@ -130,7 +130,8 @@ namespace embree
   template<typename Ty, size_t max_stack_bytes>
     struct __aligned(64) StackArray
   {
-    __forceinline StackArray (const size_t N) 
+    __forceinline StackArray (const size_t N)
+      : N(N)
     {
       if (N*sizeof(Ty) <= max_stack_bytes) 
         data = &arr[0];
@@ -145,19 +146,20 @@ namespace embree
     __forceinline operator       Ty* ()       { return data; }
     __forceinline operator const Ty* () const { return data; }
 
-    __forceinline       Ty& operator[](const int i)       { return data[i]; }
-    __forceinline const Ty& operator[](const int i) const { return data[i]; }
+    __forceinline       Ty& operator[](const int i)       { assert(i>=0 && i<N); return data[i]; }
+    __forceinline const Ty& operator[](const int i) const { assert(i>=0 && i<N); return data[i]; }
 
-    __forceinline       Ty& operator[](const unsigned i)       { return data[i]; }
-    __forceinline const Ty& operator[](const unsigned i) const { return data[i]; }
+    __forceinline       Ty& operator[](const unsigned i)       { assert(i<N); return data[i]; }
+    __forceinline const Ty& operator[](const unsigned i) const { assert(i<N); return data[i]; }
 
 #if defined(__X86_64__)
-    __forceinline       Ty& operator[](const size_t i)       { return data[i]; }
-    __forceinline const Ty& operator[](const size_t i) const { return data[i]; }
+    __forceinline       Ty& operator[](const size_t i)       { assert(i<N); return data[i]; }
+    __forceinline const Ty& operator[](const size_t i) const { assert(i<N); return data[i]; }
 #endif
 
   private:
     Ty arr[max_stack_bytes/sizeof(Ty)];
     Ty* data;
+    size_t N;
   };
 }

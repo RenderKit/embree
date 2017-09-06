@@ -38,24 +38,24 @@ namespace embree
        
     __forceinline vuint() {}
     __forceinline vuint(const vuint16& t) { v = t.v; }
-    __forceinline vuint16& operator=(const vuint16& f) { v = f.v; return *this; }
+    __forceinline vuint16& operator =(const vuint16& f) { v = f.v; return *this; }
 
     __forceinline vuint(const __m512i& t) { v = t; }
-    __forceinline operator __m512i () const { return v; }
-    __forceinline operator __m256i () const { return _mm512_castsi512_si256(v); }
+    __forceinline operator __m512i() const { return v; }
+    __forceinline operator __m256i() const { return _mm512_castsi512_si256(v); }
 
-    __forceinline vuint(const unsigned int i) {
+    __forceinline vuint(unsigned int i) {
       v = _mm512_set1_epi32(i);
     }
     
-    __forceinline vuint(const unsigned int a, const unsigned int b, const unsigned int c, const unsigned int d) {
+    __forceinline vuint(unsigned int a, unsigned int b, unsigned int c, unsigned int d) {
       v = _mm512_set4_epi32(d,c,b,a);      
     }
 
-    __forceinline vuint(const unsigned int a0 , const unsigned int a1 , const unsigned int a2 , const unsigned int a3, 
-                        const unsigned int a4 , const unsigned int a5 , const unsigned int a6 , const unsigned int a7, 
-                        const unsigned int a8 , const unsigned int a9 , const unsigned int a10, const unsigned int a11, 
-                        const unsigned int a12, const unsigned int a13, const unsigned int a14, const unsigned int a15)
+    __forceinline vuint(unsigned int a0 , unsigned int a1 , unsigned int a2 , unsigned int a3,
+                        unsigned int a4 , unsigned int a5 , unsigned int a6 , unsigned int a7,
+                        unsigned int a8 , unsigned int a9 , unsigned int a10, unsigned int a11,
+                        unsigned int a12, unsigned int a13, unsigned int a14, unsigned int a15)
     {
       v = _mm512_set_epi32(a15,a14,a13,a12,a11,a10,a9,a8,a7,a6,a5,a4,a3,a2,a1,a0);
     }
@@ -68,20 +68,16 @@ namespace embree
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////
     
-    __forceinline vuint( ZeroTy   ) : v(_mm512_setzero_epi32()) {}
-    __forceinline vuint( OneTy    ) : v(_mm512_set1_epi32(1)) {}
-    __forceinline vuint( StepTy   ) : v(_mm512_set_epi32(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0)) {}
-    __forceinline vuint( ReverseStepTy )   : v(_mm512_setr_epi32(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0)) {}
-
-    __forceinline static vuint16 zero() { return _mm512_setzero_epi32(); }
-    __forceinline static vuint16 one () { return _mm512_set1_epi32(1); }
-    __forceinline static vuint16 neg_one () { return _mm512_set1_epi32(-1); }
+    __forceinline vuint(ZeroTy) : v(_mm512_setzero_epi32()) {}
+    __forceinline vuint(OneTy)  : v(_mm512_set1_epi32(1)) {}
+    __forceinline vuint(StepTy) : v(_mm512_set_epi32(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0)) {}
+    __forceinline vuint(ReverseStepTy) : v(_mm512_setr_epi32(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0)) {}
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
 
-    static __forceinline void store_nt(void *__restrict__ ptr, const vuint16& a) {
+    static __forceinline void store_nt(void* __restrict__ ptr, const vuint16& a) {
       _mm512_stream_si512((__m512i*)ptr,a);
     }
 
@@ -98,18 +94,18 @@ namespace embree
       return _mm512_load_si512(addr);
     }
 
-    static __forceinline vuint16 load( const unsigned short* const ptr ) { return _mm512_cvtepu16_epi32(*(__m256i*)ptr); }
+    static __forceinline vuint16 load(unsigned short* ptr) { return _mm512_cvtepu16_epi32(*(__m256i*)ptr); }
 
 
     static __forceinline void store(void* ptr, const vuint16& v) {
       _mm512_store_si512(ptr,v);
     }
 
-    static __forceinline void storeu(void* ptr, const vuint16& v ) {
+    static __forceinline void storeu(void* ptr, const vuint16& v) {
       _mm512_storeu_si512(ptr,v);
     }
 
-    static __forceinline void storeu(const vboolf16& mask, int* ptr, const vuint16& f ) {
+    static __forceinline void storeu(const vboolf16& mask, int* ptr, const vuint16& f) {
       _mm512_mask_storeu_epi32(ptr,mask,f);
     }
 
@@ -117,20 +113,20 @@ namespace embree
       _mm512_mask_store_epi32(addr,mask,v2);
     }
 
-  /* pass by value to avoid compiler generating inefficient code */
-    static __forceinline void storeu_compact(const vboolf16 mask,void * addr, const vuint16 reg) {
+    /* pass by value to avoid compiler generating inefficient code */
+    static __forceinline void storeu_compact(const vboolf16 mask, void* addr, const vuint16 reg) {
       _mm512_mask_compressstoreu_epi32(addr,mask,reg);
     }
 
-    static __forceinline vuint16 compact64bit(const vboolf16& mask, vuint16 &v) {
+    static __forceinline vuint16 compact64bit(const vboolf16& mask, vuint16& v) {
       return _mm512_mask_compress_epi64(v,mask,v);
     }
 
-    static __forceinline vuint16 compact(const vboolf16& mask, vuint16 &v) {
+    static __forceinline vuint16 compact(const vboolf16& mask, vuint16& v) {
       return _mm512_mask_compress_epi32(v,mask,v);
     }
 
-    static __forceinline vuint16 compact(const vboolf16& mask, const vuint16 &a, vuint16 &b) {
+    static __forceinline vuint16 compact(const vboolf16& mask, const vuint16& a, vuint16& b) {
       return _mm512_mask_compress_epi32(a,mask,b);
     }
 
@@ -138,6 +134,30 @@ namespace embree
       return _mm512_mask_expand_epi32(b,mask,a);
     }
 
+    template<int scale = 4>
+    static __forceinline vuint16 gather(const unsigned int* ptr, const vint16& index) {
+      return _mm512_i32gather_epi32(index,ptr,scale);
+    }
+
+    template<int scale = 4>
+    static __forceinline vuint16 gather(const vboolf16& mask, const unsigned int* ptr, const vint16& index) {
+      return _mm512_mask_i32gather_epi32(_mm512_undefined_epi32(),mask,index,ptr,scale);
+    }
+
+    template<int scale = 4>
+    static __forceinline vuint16 gather(const vboolf16& mask, vuint16& dest, const unsigned int* ptr, const vint16& index) {
+      return _mm512_mask_i32gather_epi32(dest,mask,index,ptr,scale);
+    }
+
+    template<int scale = 4>
+    static __forceinline void scatter(unsigned int* ptr, const vint16& index, const vuint16& v) {
+      _mm512_i32scatter_epi32((int*)ptr,index,v,scale);
+    }
+
+    template<int scale = 4>
+    static __forceinline void scatter(const vboolf16& mask, unsigned int* ptr, const vint16& index, const vuint16& v) {
+      _mm512_mask_i32scatter_epi32((int*)ptr,mask,index,v,scale);
+    }
 
     static __forceinline vuint16 broadcast64bit(size_t v) {
       return _mm512_set1_epi64(v);
@@ -148,128 +168,127 @@ namespace embree
       return _mm_cvtsi128_si64(_mm512_castsi512_si128(v));
     }
 
-
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
     
-    __forceinline       unsigned int& operator[](const size_t index)       { assert(index < 16); return i[index]; }
-    __forceinline const unsigned int& operator[](const size_t index) const { assert(index < 16); return i[index]; }
+    __forceinline       unsigned int& operator [](size_t index)       { assert(index < 16); return i[index]; }
+    __forceinline const unsigned int& operator [](size_t index) const { assert(index < 16); return i[index]; }
 
-    __forceinline unsigned int uint    (const size_t index) const { assert(index < 16); return ((unsigned int*)i)[index]; }
-    __forceinline size_t&      uint64_t(const size_t index) const { assert(index < 8);  return ((size_t*)i)[index]; }
+    __forceinline unsigned int uint    (size_t index) const { assert(index < 16); return ((unsigned int*)i)[index]; }
+    __forceinline size_t&      uint64_t(size_t index) const { assert(index < 8);  return ((size_t*)i)[index]; }
   };
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vuint16 asUInt    ( const __m512& a ) { return _mm512_castps_si512(a); }
-  __forceinline const vuint16 operator +( const vuint16& a ) { return a; }
-  __forceinline const vuint16 operator -( const vuint16& a ) { return _mm512_sub_epi32(_mm512_setzero_epi32(), a); }
+  __forceinline vuint16 asUInt(const __m512& a) { return _mm512_castps_si512(a); }
+  __forceinline vuint16 operator +(const vuint16& a) { return a; }
+  __forceinline vuint16 operator -(const vuint16& a) { return _mm512_sub_epi32(_mm512_setzero_epi32(), a); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vuint16 operator +( const vuint16& a, const vuint16& b )     { return _mm512_add_epi32(a, b); }
-  __forceinline const vuint16 operator +( const vuint16& a, const unsigned int b ) { return a + vuint16(b); }
-  __forceinline const vuint16 operator +( const unsigned int a, const vuint16& b ) { return vuint16(a) + b; }
+  __forceinline vuint16 operator +(const vuint16& a, const vuint16& b) { return _mm512_add_epi32(a, b); }
+  __forceinline vuint16 operator +(const vuint16& a, unsigned int   b) { return a + vuint16(b); }
+  __forceinline vuint16 operator +(unsigned int   a, const vuint16& b) { return vuint16(a) + b; }
 
-  __forceinline const vuint16 operator -( const vuint16& a, const vuint16& b     ) { return _mm512_sub_epi32(a, b); }
-  __forceinline const vuint16 operator -( const vuint16& a, const unsigned int b ) { return a - vuint16(b); }
-  __forceinline const vuint16 operator -( const unsigned int a, const vuint16& b ) { return vuint16(a) - b; }
+  __forceinline vuint16 operator -(const vuint16& a, const vuint16& b) { return _mm512_sub_epi32(a, b); }
+  __forceinline vuint16 operator -(const vuint16& a, unsigned int   b) { return a - vuint16(b); }
+  __forceinline vuint16 operator -(unsigned int   a, const vuint16& b) { return vuint16(a) - b; }
 
-  __forceinline const vuint16 operator *( const vuint16& a, const vuint16& b )     { return _mm512_mul_epu32(a, b); }
-  __forceinline const vuint16 operator *( const vuint16& a, const unsigned int b ) { return a * vuint16(b); }
-  __forceinline const vuint16 operator *( const unsigned int a, const vuint16& b ) { return vuint16(a) * b; }
+  __forceinline vuint16 operator *(const vuint16& a, const vuint16& b) { return _mm512_mul_epu32(a, b); }
+  __forceinline vuint16 operator *(const vuint16& a, unsigned int   b) { return a * vuint16(b); }
+  __forceinline vuint16 operator *(unsigned int   a, const vuint16& b) { return vuint16(a) * b; }
 
-  __forceinline const vuint16 operator &( const vuint16& a, const vuint16& b )     { return _mm512_and_epi32(a, b); }
-  __forceinline const vuint16 operator &( const vuint16& a, const unsigned int b ) { return a & vuint16(b); }
-  __forceinline const vuint16 operator &( const unsigned int a, const vuint16& b ) { return vuint16(a) & b; }
+  __forceinline vuint16 operator &(const vuint16& a, const vuint16& b) { return _mm512_and_epi32(a, b); }
+  __forceinline vuint16 operator &(const vuint16& a, unsigned int   b) { return a & vuint16(b); }
+  __forceinline vuint16 operator &(unsigned int   a, const vuint16& b) { return vuint16(a) & b; }
 
-  __forceinline const vuint16 operator |( const vuint16& a, const vuint16& b )     { return _mm512_or_epi32(a, b); }
-  __forceinline const vuint16 operator |( const vuint16& a, const unsigned int b ) { return a | vuint16(b); }
-  __forceinline const vuint16 operator |( const unsigned int a, const vuint16& b ) { return vuint16(a) | b; }
+  __forceinline vuint16 operator |(const vuint16& a, const vuint16& b) { return _mm512_or_epi32(a, b); }
+  __forceinline vuint16 operator |(const vuint16& a, unsigned int   b) { return a | vuint16(b); }
+  __forceinline vuint16 operator |(unsigned int   a, const vuint16& b) { return vuint16(a) | b; }
 
-  __forceinline const vuint16 operator ^( const vuint16& a, const vuint16& b )     { return _mm512_xor_epi32(a, b); }
-  __forceinline const vuint16 operator ^( const vuint16& a, const unsigned int b ) { return a ^ vuint16(b); }
-  __forceinline const vuint16 operator ^( const unsigned int a, const vuint16& b ) { return vuint16(a) ^ b; }
+  __forceinline vuint16 operator ^(const vuint16& a, const vuint16& b) { return _mm512_xor_epi32(a, b); }
+  __forceinline vuint16 operator ^(const vuint16& a, unsigned int   b) { return a ^ vuint16(b); }
+  __forceinline vuint16 operator ^(unsigned int   a, const vuint16& b) { return vuint16(a) ^ b; }
 
-  __forceinline const vuint16 operator <<( const vuint16& a, const unsigned int n ) { return _mm512_slli_epi32(a, n); }
-  __forceinline const vuint16 operator >>( const vuint16& a, const unsigned int n ) { return _mm512_srli_epi32(a, n); }
+  __forceinline vuint16 operator <<(const vuint16& a, unsigned int n) { return _mm512_slli_epi32(a, n); }
+  __forceinline vuint16 operator >>(const vuint16& a, unsigned int n) { return _mm512_srli_epi32(a, n); }
 
-  __forceinline const vuint16 operator <<( const vuint16& a, const vuint16& n ) { return _mm512_sllv_epi32(a, n); }
-  __forceinline const vuint16 operator >>( const vuint16& a, const vuint16& n ) { return _mm512_srlv_epi32(a, n); }
+  __forceinline vuint16 operator <<(const vuint16& a, const vuint16& n) { return _mm512_sllv_epi32(a, n); }
+  __forceinline vuint16 operator >>(const vuint16& a, const vuint16& n) { return _mm512_srlv_epi32(a, n); }
 
-  __forceinline const vuint16 sll ( const vuint16& a, const unsigned int b ) { return _mm512_slli_epi32(a, b); }
-  __forceinline const vuint16 sra ( const vuint16& a, const unsigned int b ) { return _mm512_srai_epi32(a, b); }
-  __forceinline const vuint16 srl ( const vuint16& a, const unsigned int b ) { return _mm512_srli_epi32(a, b); }
+  __forceinline vuint16 sll (const vuint16& a, unsigned int b) { return _mm512_slli_epi32(a, b); }
+  __forceinline vuint16 sra (const vuint16& a, unsigned int b) { return _mm512_srai_epi32(a, b); }
+  __forceinline vuint16 srl (const vuint16& a, unsigned int b) { return _mm512_srli_epi32(a, b); }
   
-  __forceinline const vuint16 min( const vuint16& a, const vuint16& b )     { return _mm512_min_epu32(a, b); }
-  __forceinline const vuint16 min( const vuint16& a, const unsigned int b ) { return min(a,vuint16(b)); }
-  __forceinline const vuint16 min( const unsigned int a, const vuint16& b ) { return min(vuint16(a),b); }
+  __forceinline vuint16 min(const vuint16& a, const vuint16& b) { return _mm512_min_epu32(a, b); }
+  __forceinline vuint16 min(const vuint16& a, unsigned int   b) { return min(a,vuint16(b)); }
+  __forceinline vuint16 min(unsigned int   a, const vuint16& b) { return min(vuint16(a),b); }
 
-  __forceinline const vuint16 max( const vuint16& a, const vuint16& b )     { return _mm512_max_epu32(a, b); }
-  __forceinline const vuint16 max( const vuint16& a, const unsigned int b ) { return max(a,vuint16(b)); }
-  __forceinline const vuint16 max( const unsigned int a, const vuint16& b ) { return max(vuint16(a),b); }
+  __forceinline vuint16 max(const vuint16& a, const vuint16& b) { return _mm512_max_epu32(a, b); }
+  __forceinline vuint16 max(const vuint16& a, unsigned int   b) { return max(a,vuint16(b)); }
+  __forceinline vuint16 max(unsigned int   a, const vuint16& b) { return max(vuint16(a),b); }
   
-  __forceinline const vuint16 mask_add(const vboolf16& mask, vuint16& c, const vuint16& a, const vuint16& b) { return _mm512_mask_add_epi32(c,mask,a,b); }
-  __forceinline const vuint16 mask_sub(const vboolf16& mask, vuint16& c, const vuint16& a, const vuint16& b) { return _mm512_mask_sub_epi32(c,mask,a,b); }
+  __forceinline vuint16 mask_add(const vboolf16& mask, vuint16& c, const vuint16& a, const vuint16& b) { return _mm512_mask_add_epi32(c,mask,a,b); }
+  __forceinline vuint16 mask_sub(const vboolf16& mask, vuint16& c, const vuint16& a, const vuint16& b) { return _mm512_mask_sub_epi32(c,mask,a,b); }
 
-  __forceinline const vuint16 mask_and(const vboolf16& m,vuint16& c, const vuint16& a, const vuint16& b) { return _mm512_mask_and_epi32(c,m,a,b); }
-  __forceinline const vuint16 mask_or (const vboolf16& m,vuint16& c, const vuint16& a, const vuint16& b) { return _mm512_mask_or_epi32(c,m,a,b); }
+  __forceinline vuint16 mask_and(const vboolf16& m, vuint16& c, const vuint16& a, const vuint16& b) { return _mm512_mask_and_epi32(c,m,a,b); }
+  __forceinline vuint16 mask_or (const vboolf16& m, vuint16& c, const vuint16& a, const vuint16& b) { return _mm512_mask_or_epi32(c,m,a,b); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vuint16& operator +=( vuint16& a, const vuint16& b ) { return a = a + b; }
-  __forceinline vuint16& operator +=( vuint16& a, const unsigned int     b ) { return a = a + b; }
+  __forceinline vuint16& operator +=(vuint16& a, const vuint16& b) { return a = a + b; }
+  __forceinline vuint16& operator +=(vuint16& a, unsigned int   b) { return a = a + b; }
   
-  __forceinline vuint16& operator -=( vuint16& a, const vuint16& b ) { return a = a - b; }
-  __forceinline vuint16& operator -=( vuint16& a, const unsigned int     b ) { return a = a - b; }
+  __forceinline vuint16& operator -=(vuint16& a, const vuint16& b) { return a = a - b; }
+  __forceinline vuint16& operator -=(vuint16& a, unsigned int   b) { return a = a - b; }
 
-  __forceinline vuint16& operator *=( vuint16& a, const vuint16& b ) { return a = a * b; }
-  __forceinline vuint16& operator *=( vuint16& a, const unsigned int     b ) { return a = a * b; }
+  __forceinline vuint16& operator *=(vuint16& a, const vuint16& b) { return a = a * b; }
+  __forceinline vuint16& operator *=(vuint16& a, unsigned int   b) { return a = a * b; }
   
-  __forceinline vuint16& operator &=( vuint16& a, const vuint16& b ) { return a = a & b; }
-  __forceinline vuint16& operator &=( vuint16& a, const unsigned int     b ) { return a = a & b; }
+  __forceinline vuint16& operator &=(vuint16& a, const vuint16& b) { return a = a & b; }
+  __forceinline vuint16& operator &=(vuint16& a, unsigned int   b) { return a = a & b; }
   
-  __forceinline vuint16& operator |=( vuint16& a, const vuint16& b ) { return a = a | b; }
-  __forceinline vuint16& operator |=( vuint16& a, const unsigned int     b ) { return a = a | b; }
+  __forceinline vuint16& operator |=(vuint16& a, const vuint16& b) { return a = a | b; }
+  __forceinline vuint16& operator |=(vuint16& a, unsigned int   b) { return a = a | b; }
   
-  __forceinline vuint16& operator <<=( vuint16& a, const unsigned int b ) { return a = a << b; }
-  __forceinline vuint16& operator >>=( vuint16& a, const unsigned int b ) { return a = a >> b; }
+  __forceinline vuint16& operator <<=(vuint16& a, unsigned int b) { return a = a << b; }
+  __forceinline vuint16& operator >>=(vuint16& a, unsigned int b) { return a = a >> b; }
 
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Comparison Operators + Select
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vboolf16 operator ==( const vuint16& a, const vuint16& b ) { return _mm512_cmp_epu32_mask(a,b,_MM_CMPINT_EQ); }
-  __forceinline const vboolf16 operator ==( const vuint16& a, const unsigned int b ) { return a == vuint16(b); }
-  __forceinline const vboolf16 operator ==( const unsigned int a, const vuint16& b ) { return vuint16(a) == b; }
+  __forceinline vboolf16 operator ==(const vuint16& a, const vuint16& b) { return _mm512_cmp_epu32_mask(a,b,_MM_CMPINT_EQ); }
+  __forceinline vboolf16 operator ==(const vuint16& a, unsigned int   b) { return a == vuint16(b); }
+  __forceinline vboolf16 operator ==(unsigned int   a, const vuint16& b) { return vuint16(a) == b; }
   
-  __forceinline const vboolf16 operator !=( const vuint16& a, const vuint16& b ) { return _mm512_cmp_epu32_mask(a,b,_MM_CMPINT_NE); }
-  __forceinline const vboolf16 operator !=( const vuint16& a, const unsigned int b ) { return a != vuint16(b); }
-  __forceinline const vboolf16 operator !=( const unsigned int a, const vuint16& b ) { return vuint16(a) != b; }
+  __forceinline vboolf16 operator !=(const vuint16& a, const vuint16& b) { return _mm512_cmp_epu32_mask(a,b,_MM_CMPINT_NE); }
+  __forceinline vboolf16 operator !=(const vuint16& a, unsigned int   b) { return a != vuint16(b); }
+  __forceinline vboolf16 operator !=(unsigned int   a, const vuint16& b) { return vuint16(a) != b; }
   
-  __forceinline const vboolf16 operator < ( const vuint16& a, const vuint16& b ) { return _mm512_cmp_epu32_mask(a,b,_MM_CMPINT_LT); }
-  __forceinline const vboolf16 operator < ( const vuint16& a, const unsigned int b ) { return a <  vuint16(b); }
-  __forceinline const vboolf16 operator < ( const unsigned int a, const vuint16& b ) { return vuint16(a) <  b; }
+  __forceinline vboolf16 operator < (const vuint16& a, const vuint16& b) { return _mm512_cmp_epu32_mask(a,b,_MM_CMPINT_LT); }
+  __forceinline vboolf16 operator < (const vuint16& a, unsigned int   b) { return a <  vuint16(b); }
+  __forceinline vboolf16 operator < (unsigned int   a, const vuint16& b) { return vuint16(a) <  b; }
   
-  __forceinline const vboolf16 operator >=( const vuint16& a, const vuint16& b ) { return _mm512_cmp_epu32_mask(a,b,_MM_CMPINT_GE); }
-  __forceinline const vboolf16 operator >=( const vuint16& a, const unsigned int b ) { return a >= vuint16(b); }
-  __forceinline const vboolf16 operator >=( const unsigned int a, const vuint16& b ) { return vuint16(a) >= b; }
+  __forceinline vboolf16 operator >=(const vuint16& a, const vuint16& b) { return _mm512_cmp_epu32_mask(a,b,_MM_CMPINT_GE); }
+  __forceinline vboolf16 operator >=(const vuint16& a, unsigned int   b) { return a >= vuint16(b); }
+  __forceinline vboolf16 operator >=(unsigned int   a, const vuint16& b) { return vuint16(a) >= b; }
 
-  __forceinline const vboolf16 operator > ( const vuint16& a, const vuint16& b ) { return _mm512_cmp_epu32_mask(a,b,_MM_CMPINT_GT); }
-  __forceinline const vboolf16 operator > ( const vuint16& a, const unsigned int b ) { return a >  vuint16(b); }
-  __forceinline const vboolf16 operator > ( const unsigned int a, const vuint16& b ) { return vuint16(a) >  b; }
+  __forceinline vboolf16 operator > (const vuint16& a, const vuint16& b) { return _mm512_cmp_epu32_mask(a,b,_MM_CMPINT_GT); }
+  __forceinline vboolf16 operator > (const vuint16& a, unsigned int   b) { return a >  vuint16(b); }
+  __forceinline vboolf16 operator > (unsigned int   a, const vuint16& b) { return vuint16(a) >  b; }
 
-  __forceinline const vboolf16 operator <=( const vuint16& a, const vuint16& b ) { return _mm512_cmp_epu32_mask(a,b,_MM_CMPINT_LE); }
-  __forceinline const vboolf16 operator <=( const vuint16& a, const unsigned int b ) { return a <= vuint16(b); }
-  __forceinline const vboolf16 operator <=( const unsigned int a, const vuint16& b ) { return vuint16(a) <= b; }
+  __forceinline vboolf16 operator <=(const vuint16& a, const vuint16& b) { return _mm512_cmp_epu32_mask(a,b,_MM_CMPINT_LE); }
+  __forceinline vboolf16 operator <=(const vuint16& a, unsigned int   b) { return a <= vuint16(b); }
+  __forceinline vboolf16 operator <=(unsigned int   a, const vuint16& b) { return vuint16(a) <= b; }
 
   __forceinline vboolf16 eq(const vuint16& a, const vuint16& b) { return _mm512_cmp_epu32_mask(a,b,_MM_CMPINT_EQ); }
   __forceinline vboolf16 ne(const vuint16& a, const vuint16& b) { return _mm512_cmp_epu32_mask(a,b,_MM_CMPINT_NE); }
@@ -286,7 +305,7 @@ namespace embree
   __forceinline vboolf16 le(const vboolf16 mask, const vuint16& a, const vuint16& b) { return _mm512_mask_cmp_epu32_mask(mask,a,b,_MM_CMPINT_LE); }
     
  
-  __forceinline const vuint16 select( const vboolf16& m, const vuint16& t, const vuint16& f ) {
+  __forceinline vuint16 select(const vboolf16& m, const vuint16& t, const vuint16& f) {
     return _mm512_mask_or_epi32(f,m,t,t); 
   }
 
@@ -306,50 +325,48 @@ namespace embree
   // Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  template<size_t i> 
-    __forceinline const vuint16 shuffle( const vuint16& a ) {
-    return _mm512_castps_si512(_mm512_permute_ps(_mm512_castsi512_ps(a), _MM_SHUFFLE(i, i, i, i)));
+  template<int i>
+  __forceinline vuint16 shuffle(const vuint16& v) {
+    return _mm512_castps_si512(_mm512_permute_ps(_mm512_castsi512_ps(v), _MM_SHUFFLE(i, i, i, i)));
   }
 
-  template<int A, int B, int C, int D> 
-    __forceinline vuint16 shuffle (const vuint16& v) {
-    return _mm512_castps_si512(_mm512_permute_ps(_mm512_castsi512_ps(v),_MM_SHUFFLE(D,C,B,A))); 
+  template<int i0, int i1, int i2, int i3>
+  __forceinline vuint16 shuffle(const vuint16& v) {
+    return _mm512_castps_si512(_mm512_permute_ps(_mm512_castsi512_ps(v), _MM_SHUFFLE(i3, i2, i1, i0)));
   }
 
   template<int i>
-    __forceinline vuint16 shuffle4(const vuint16& x) { 
-    return _mm512_castps_si512(_mm512_shuffle_f32x4(_mm512_castsi512_ps(x),_mm512_castsi512_ps(x),_MM_SHUFFLE(i,i,i,i)));
+  __forceinline vuint16 shuffle4(const vuint16& v) {
+    return _mm512_castps_si512(_mm512_shuffle_f32x4(_mm512_castsi512_ps(v), _mm512_castsi512_ps(v) ,_MM_SHUFFLE(i, i, i, i)));
   }
 
-  template<int A, int B, int C, int D>
-    __forceinline vuint16 shuffle4(const vuint16& x) { 
-    return _mm512_castps_si512(_mm512_shuffle_f32x4(_mm512_castsi512_ps(x),_mm512_castsi512_ps(x),_MM_SHUFFLE(D,C,B,A)));
+  template<int i0, int i1, int i2, int i3>
+  __forceinline vuint16 shuffle4(const vuint16& v) {
+    return _mm512_castps_si512(_mm512_shuffle_f32x4(_mm512_castsi512_ps(v), _mm512_castsi512_ps(v), _MM_SHUFFLE(i3, i2, i1, i0)));
   }
 
   template<int i>
-    __forceinline vuint16 align_shift_right(const vuint16& a, const vuint16& b)
-  {
-    return _mm512_alignr_epi32(a,b,i); 
+  __forceinline vuint16 align_shift_right(const vuint16& a, const vuint16& b) {
+    return _mm512_alignr_epi32(a, b, i);
   };
 
-  __forceinline unsigned int toScalar(const vuint16& a)
-  {
-    return _mm_cvtsi128_si32(_mm512_castsi512_si128(a));
+  __forceinline unsigned int toScalar(const vuint16& v) {
+    return _mm_cvtsi128_si32(_mm512_castsi512_si128(v));
   }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vuint16 vreduce_min2(vuint16 x) {                      return min(x,shuffle<1,0,3,2>(x)); }
-  __forceinline vuint16 vreduce_min4(vuint16 x) { x = vreduce_min2(x); return min(x,shuffle<2,3,0,1>(x)); }
-  __forceinline vuint16 vreduce_min8(vuint16 x) { x = vreduce_min4(x); return min(x,shuffle4<1,0,3,2>(x)); }
-  __forceinline vuint16 vreduce_min (vuint16 x) { x = vreduce_min8(x); return min(x,shuffle4<2,3,0,1>(x)); }
+  __forceinline vuint16 vreduce_min2(vuint16 x) {                      return min(x, shuffle<1,0,3,2>(x)); }
+  __forceinline vuint16 vreduce_min4(vuint16 x) { x = vreduce_min2(x); return min(x, shuffle<2,3,0,1>(x)); }
+  __forceinline vuint16 vreduce_min8(vuint16 x) { x = vreduce_min4(x); return min(x, shuffle4<1,0,3,2>(x)); }
+  __forceinline vuint16 vreduce_min (vuint16 x) { x = vreduce_min8(x); return min(x, shuffle4<2,3,0,1>(x)); }
 
-  __forceinline vuint16 vreduce_max2(vuint16 x) {                      return max(x,shuffle<1,0,3,2>(x)); }
-  __forceinline vuint16 vreduce_max4(vuint16 x) { x = vreduce_max2(x); return max(x,shuffle<2,3,0,1>(x)); }
-  __forceinline vuint16 vreduce_max8(vuint16 x) { x = vreduce_max4(x); return max(x,shuffle4<1,0,3,2>(x)); }
-  __forceinline vuint16 vreduce_max (vuint16 x) { x = vreduce_max8(x); return max(x,shuffle4<2,3,0,1>(x)); }
+  __forceinline vuint16 vreduce_max2(vuint16 x) {                      return max(x, shuffle<1,0,3,2>(x)); }
+  __forceinline vuint16 vreduce_max4(vuint16 x) { x = vreduce_max2(x); return max(x, shuffle<2,3,0,1>(x)); }
+  __forceinline vuint16 vreduce_max8(vuint16 x) { x = vreduce_max4(x); return max(x, shuffle4<1,0,3,2>(x)); }
+  __forceinline vuint16 vreduce_max (vuint16 x) { x = vreduce_max8(x); return max(x, shuffle4<2,3,0,1>(x)); }
 
   __forceinline vuint16 vreduce_and2(vuint16 x) {                      return x & shuffle<1,0,3,2>(x); }
   __forceinline vuint16 vreduce_and4(vuint16 x) { x = vreduce_and2(x); return x & shuffle<2,3,0,1>(x); }
@@ -375,31 +392,12 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
   /// Memory load and store operations
   ////////////////////////////////////////////////////////////////////////////////
-
-  template<int scale = 4>
-  __forceinline vuint16 gather16i(const vboolf16& mask, const unsigned int *const ptr, const vuint16& index) {
-    return _mm512_mask_i32gather_epi32(_mm512_undefined_epi32(),mask,index,ptr,scale);
-  }
   
-  template<int scale = 4>
-    __forceinline vuint16 gather16i(const vboolf16& mask, vuint16& dest, const unsigned int *const ptr, const vuint16& index) {
-    return _mm512_mask_i32gather_epi32(dest,mask,index,ptr,scale);
-  }
-  
-  template<int scale = 4>
-    __forceinline void scatter16i(const vboolf16& mask,unsigned int *const ptr, const vuint16& index,const vuint16& v) {
-    _mm512_mask_i32scatter_epi32((int*)ptr,mask,index,v,scale);
-  }
-
-  __forceinline void compactustore16i_low(const vboolf16 mask, void *addr, const vuint16& reg) {
-    _mm512_mask_compressstoreu_epi32(addr,mask,reg);
-  }
-  
-  __forceinline vuint16 permute(vuint16 v,vuint16 index) {
+  __forceinline vuint16 permute(vuint16 v, vuint16 index) {
     return _mm512_permutexvar_epi32(index,v);  
   }
 
-  __forceinline vuint16 reverse(const vuint16 &a) {
+  __forceinline vuint16 reverse(const vuint16& a) {
     return permute(a,vuint16(reverse_step));
   }
 
@@ -429,7 +427,7 @@ namespace embree
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////
   
-  __forceinline std::ostream& operator<<(std::ostream& cout, const vuint16& v)
+  __forceinline std::ostream& operator <<(std::ostream& cout, const vuint16& v)
   {
     cout << "<" << v[0];
     for (int i=1; i<16; i++) cout << ", " << v[i];

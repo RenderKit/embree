@@ -103,7 +103,7 @@ namespace embree
     virtual void specialFunc(int key, int, int);
     virtual void clickFunc(int button, int state, int x, int y);
     virtual void motionFunc(int x, int y);
-    virtual void displayFunc(void);
+    virtual void displayFunc();
     virtual void reshapeFunc(int width, int height);
     virtual void idleFunc();
 

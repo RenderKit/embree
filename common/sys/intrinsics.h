@@ -366,7 +366,7 @@ namespace embree
     size_t r = 0; asm ("btr %1,%0" : "=r"(r) : "r"(i), "0"(v) : "flags"); return r;
   }
 
-  __forceinline int32_t atomic_cmpxchg( int32_t volatile* value, int32_t comparand, const int32_t input ) {
+  __forceinline int32_t atomic_cmpxchg(int32_t volatile* value, int32_t comparand, const int32_t input) {
     return __sync_val_compare_and_swap(value, comparand, input);
   }
   
@@ -376,6 +376,21 @@ namespace embree
 /// All Platforms
 ////////////////////////////////////////////////////////////////////////////////
   
+#if defined(__clang__) || defined(__GNUC__)
+#if !defined(_mm_undefined_ps)
+  __forceinline __m128 _mm_undefined_ps() { return _mm_setzero_ps(); }
+#endif
+#if !defined(_mm_undefined_si128)
+  __forceinline __m128i _mm_undefined_si128() { return _mm_setzero_si128(); }
+#endif
+#if !defined(_mm256_undefined_ps) && (__AVX__)
+  __forceinline __m256 _mm256_undefined_ps() { return _mm256_setzero_ps(); }
+#endif
+#if !defined(_mm_undefined_si128) && (__AVX__)
+  __forceinline __m256i _mm256_undefined_si256() { return _mm256_setzero_si256(); }
+#endif
+#endif
+
 #if defined(__SSE4_2__)
   
   __forceinline int __popcnt(int in) {
@@ -403,7 +418,7 @@ namespace embree
     return clock;
   }
   
-  __forceinline void __pause_cpu (const size_t N = 8) 
+  __forceinline void __pause_cpu(const size_t N = 8)
   {
     for (size_t i=0; i<N; i++)
       _mm_pause();    
@@ -430,23 +445,35 @@ namespace embree
     prefetchEX(ptr); 
   }
 #if defined(__AVX2__)
-   __forceinline unsigned int pext(const unsigned int a, const unsigned int b) { return _pext_u32(a,b); }
-   __forceinline unsigned int pdep(const unsigned int a, const unsigned int b) { return _pdep_u32(a,b); }
+   __forceinline unsigned int pext(unsigned int a, unsigned int b) { return _pext_u32(a, b); }
+   __forceinline unsigned int pdep(unsigned int a, unsigned int b) { return _pdep_u32(a, b); }
 #if defined(__X86_64__)
-   __forceinline size_t pext(const size_t a, const size_t b) { return _pext_u64(a,b); }
-   __forceinline size_t pdep(const size_t a, const size_t b) { return _pdep_u64(a,b); }
+   __forceinline size_t pext(size_t a, size_t b) { return _pext_u64(a, b); }
+   __forceinline size_t pdep(size_t a, size_t b) { return _pdep_u64(a, b); }
 #endif
 #endif
 
-#if defined (__AVX512F__)
-   __forceinline float mm512_cvtss_f32 (__m512 v) { // FIXME: _mm512_cvtss_f32 neither supported by clang v4.0.0 nor GCC 6.3
+#if defined(__AVX512F__)
+#if defined(__INTEL_COMPILER)
+   __forceinline float mm512_cvtss_f32(__m512 v) {
+     return _mm512_cvtss_f32(v);
+   }
+   __forceinline int mm512_mask2int(__mmask16 k1) {
+     return _mm512_mask2int(k1);
+   }
+   __forceinline __mmask16 mm512_int2mask(int mask) {
+     return _mm512_int2mask(mask);
+   }
+#else
+   __forceinline float mm512_cvtss_f32(__m512 v) { // FIXME: _mm512_cvtss_f32 neither supported by clang v4.0.0 nor GCC 6.3
      return _mm_cvtss_f32(_mm512_castps512_ps128(v));
    }
-   __forceinline int mm512_mask2int (__mmask16 k1) { // FIXME: _mm512_mask2int not yet supported by GCC 6.3
+   __forceinline int mm512_mask2int(__mmask16 k1) { // FIXME: _mm512_mask2int not yet supported by GCC 6.3
      return (int)k1;
    }
-   __forceinline __mmask16 mm512_int2mask (int mask) { // FIXME: _mm512_int2mask not yet supported by GCC 6.3
+   __forceinline __mmask16 mm512_int2mask(int mask) { // FIXME: _mm512_int2mask not yet supported by GCC 6.3
      return (__mmask16)mask;
    }
+#endif
 #endif
 }

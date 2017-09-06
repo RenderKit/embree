@@ -416,8 +416,12 @@ void renderTileStandard(uniform int taskIndex,
           RayStats_addShadowRay(stats);
         }
         /* trace shadow rays */
+#if 0
+        for (uniform size_t n=0;n<N;n++)
+          rtcOccludedEx(g_scene,&context,rays[n]);
+#else
         rtcOccludedVM(g_scene,&context,rays,N,sizeof(RTCRay));
-
+#endif
         /* modify pixel color based on occlusion */
         for (uniform size_t n=0;n<N;n++)
           if (rays[n].geomID != RTC_INVALID_GEOMETRY_ID)
