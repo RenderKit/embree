@@ -28,6 +28,7 @@ namespace embree
     {
       Type ();
       size_t size(const char* This) const;
+      bool last(const char* This) const;
     };
     static Type type;
 
@@ -45,8 +46,13 @@ namespace embree
     __forceinline Bezier1v () {}
 
     /*! Construction from vertices and IDs. */
-    __forceinline Bezier1v (const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const Vec3fa& p3, const unsigned int geomID, const unsigned int primID)
-      : p0(p0), p1(p1), p2(p2), p3(p3), geom(geomID), prim(primID) {}
+    __forceinline Bezier1v (const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const Vec3fa& p3, const unsigned int geomID, const unsigned int primID, const bool last)
+      : p0(p0), p1(p1), p2(p2), p3(p3), geom(geomID | (unsigned(last) << 31)), prim(primID) {}
+
+    /*! checks if this is the last primitive */
+    __forceinline unsigned last() const {
+      return geom & 0x80000000;
+    }
 
     /*! return primitive ID */
     __forceinline unsigned int primID() const { 
@@ -55,11 +61,11 @@ namespace embree
 
     /*! return geometry ID */
     __forceinline unsigned int geomID() const { 
-      return geom; 
+      return geom & 0x7FFFFFFF; 
     }
 
     /*! fill triangle from triangle list */
-    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene)
+    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene, bool last)
     {
       const PrimRef& prim = prims[i];
       i++;
@@ -71,7 +77,7 @@ namespace embree
       const Vec3fa& p1 = curves->vertex(id+1);
       const Vec3fa& p2 = curves->vertex(id+2);
       const Vec3fa& p3 = curves->vertex(id+3);
-      new (this) Bezier1v(p0,p1,p2,p3,geomID,primID);
+      new (this) Bezier1v(p0,p1,p2,p3,geomID,primID,last);
     }
 
     friend std::ostream& operator<<(std::ostream& cout, const Bezier1v& b) 

@@ -362,9 +362,9 @@ namespace embree
       __forceinline const QuantizedNode* quantizedNode() const { assert(isQuantizedNode()); return (const QuantizedNode*)(ptr  & ~(size_t)align_mask ); }
 
       /*! returns leaf pointer */
-      __forceinline char* leaf(size_t& num) const {
+      __forceinline char* leaf(size_t& ty) const {
         assert(isLeaf());
-        num = (ptr & (size_t)items_mask)-tyLeaf;
+        ty = (ptr & (size_t)items_mask)-tyLeaf;
         return (char*)(ptr & ~(size_t)align_mask);
       }
 
@@ -1454,10 +1454,10 @@ namespace embree
     }
 
     /*! Encodes a leaf */
-    static __forceinline NodeRef encodeLeaf(void* tri, size_t num) {
+    static __forceinline NodeRef encodeLeaf(void* tri, size_t ty) {
       assert(!((size_t)tri & align_mask));
-      assert(num <= maxLeafBlocks);
-      return NodeRef((size_t)tri | (tyLeaf+min(num,(size_t)maxLeafBlocks)));
+      assert(ty <= maxLeafBlocks);
+      return NodeRef((size_t)tri | (tyLeaf+min(ty,(size_t)maxLeafBlocks)));
     }
 
     /*! Encodes a leaf */

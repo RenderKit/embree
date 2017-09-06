@@ -29,6 +29,7 @@ namespace embree
     {
       Type();
       size_t size(const char* This) const;
+      bool last(const char* This) const;
     };
 
     static Type type;
@@ -53,8 +54,12 @@ namespace embree
     __forceinline TriangleMvMB(const Vec3vf<M>& a0, const Vec3vf<M>& a1,
                                const Vec3vf<M>& b0, const Vec3vf<M>& b1,
                                const Vec3vf<M>& c0, const Vec3vf<M>& c1,
-                               const vint<M>& geomIDs, const vint<M>& primIDs)
-      : v0(a0), v1(b0), v2(c0), dv0(a1-a0), dv1(b1-b0), dv2(c1-c0), geomIDs(geomIDs), primIDs(primIDs) {}
+                               const vint<M>& geomIDs, const vint<M>& primIDs,
+                               const bool last)
+      : v0(a0), v1(b0), v2(c0), dv0(a1-a0), dv1(b1-b0), dv2(c1-c0), geomIDs(geomIDs), primIDs(primIDs)
+    {
+      this->geomIDs[0] |= unsigned(last) << 31;
+    }
 
     /* Returns a mask that tells which triangles are valid */
     __forceinline vbool<M> valid() const { return geomIDs != vint<M>(-1); }
@@ -65,10 +70,13 @@ namespace embree
     /* Returns the number of stored triangles */
     __forceinline size_t size() const { return __bsf(~movemask(valid())); }
 
+    /*! checks if this is the last primitive */
+    __forceinline unsigned last() const { return geomIDs[0] & 0x80000000; }
+
     /* Returns the geometry IDs */
     __forceinline       vint<M>& geomID()       { return geomIDs; }
     __forceinline const vint<M>& geomID() const { return geomIDs; }
-    __forceinline int geomID(const size_t i) const { assert(i<M); return geomIDs[i]; }
+    __forceinline int geomID(const size_t i) const { assert(i<M); return geomIDs[i] & 0x7FFFFFFF; }
 
     /* Returns the primitive IDs */
     __forceinline       vint<M>& primID()       { return primIDs; }
@@ -116,7 +124,7 @@ namespace embree
     }
 
     /* Fill triangle from triangle list */
-    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime)
+    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime, bool last)
     {
       vint<M> vgeomID = -1, vprimID = -1;
       Vec3vf<M> va0 = zero, vb0 = zero, vc0 = zero;
@@ -147,12 +155,12 @@ namespace embree
 	vc0.x[i] = c0.x; vc0.y[i] = c0.y; vc0.z[i] = c0.z;
 	vc1.x[i] = c1.x; vc1.y[i] = c1.y; vc1.z[i] = c1.z;
       }
-      new (this) TriangleMvMB(va0,va1,vb0,vb1,vc0,vc1,vgeomID,vprimID);
+      new (this) TriangleMvMB(va0,va1,vb0,vb1,vc0,vc1,vgeomID,vprimID,last);
       return LBBox3fa(bounds0,bounds1);
     }
 
     /* Fill triangle from triangle list */
-    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range)
+    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range, bool last)
     {
       vint<M> vgeomID = -1, vprimID = -1;
       Vec3vf<M> va0 = zero, vb0 = zero, vc0 = zero;
@@ -190,7 +198,7 @@ namespace embree
 	vc0.x[i] = c01.first .x; vc0.y[i] = c01.first .y; vc0.z[i] = c01.first .z;
 	vc1.x[i] = c01.second.x; vc1.y[i] = c01.second.y; vc1.z[i] = c01.second.z;
       }
-      new (this) TriangleMvMB(va0,va1,vb0,vb1,vc0,vc1,vgeomID,vprimID);
+      new (this) TriangleMvMB(va0,va1,vb0,vb1,vc0,vc1,vgeomID,vprimID,last);
       return allBounds;
     }
 

@@ -105,8 +105,12 @@ namespace embree
         if (unlikely(nodeTraverser.traverseTransform(cur,ray,vray,context,stackPtr,stackEnd)))
           goto pop;
 
-        /*! this is a leaf node */
+        /*! check for empty leaf in case we accidentally hit one */
         assert(cur != BVH::emptyNode);
+        if (cur == BVH::emptyNode)
+          goto pop;
+        
+        /*! this is a leaf node */
         STAT3(normal.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
         size_t lazy_node = 0;
@@ -187,8 +191,12 @@ namespace embree
         if (unlikely(nodeTraverser.traverseTransform(cur,ray,vray,context,stackPtr,stackEnd)))
           goto pop;
 
-        /*! this is a leaf node */
+        /*! check for empty leaf in case we accidentally hit one */
         assert(cur != BVH::emptyNode);
+        if (cur == BVH::emptyNode)
+          goto pop;
+        
+        /*! this is a leaf node */
         STAT3(shadow.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
         size_t lazy_node = 0;

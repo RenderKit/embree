@@ -29,6 +29,7 @@ namespace embree
     {
       Type();
       size_t size(const char* This) const;
+      bool last(const char* This) const;
     };
     static Type type;
 
@@ -46,8 +47,11 @@ namespace embree
     __forceinline TriangleMv() {}
 
     /* Construction from vertices and IDs */
-    __forceinline TriangleMv(const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const vint<M>& geomIDs, const vint<M>& primIDs)
-      : v0(v0), v1(v1), v2(v2), geomIDs(geomIDs), primIDs(primIDs) {}
+    __forceinline TriangleMv(const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const vint<M>& geomIDs, const vint<M>& primIDs, const bool last)
+      : v0(v0), v1(v1), v2(v2), geomIDs(geomIDs), primIDs(primIDs)
+    {
+      this->geomIDs[0] |= unsigned(last) << 31;
+    }
     
     /* Returns a mask that tells which triangles are valid */
     __forceinline vbool<M> valid() const { return geomIDs != vint<M>(-1); }
@@ -58,10 +62,13 @@ namespace embree
     /* Returns the number of stored triangles */
     __forceinline size_t size() const { return __bsf(~movemask(valid())); }
 
+    /*! checks if this is the last primitive */
+    __forceinline unsigned last() const { return geomIDs[0] & 0x80000000; }
+
     /* Returns the geometry IDs */
     __forceinline       vint<M>& geomID()       { return geomIDs; }
     __forceinline const vint<M>& geomID() const { return geomIDs; }
-    __forceinline int geomID(const size_t i) const { assert(i<M); return geomIDs[i]; }
+    __forceinline int geomID(const size_t i) const { assert(i<M); return geomIDs[i] & 0x7FFFFFFF; }
 
     /* Returns the primitive IDs */
     __forceinline       vint<M>& primID()       { return primIDs; }
@@ -101,7 +108,7 @@ namespace embree
     }
 
     /* Fill triangle from triangle list */
-    __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene)
+    __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, bool last)
     {
       vint<M> vgeomID = -1, vprimID = -1;
       Vec3vf<M> v0 = zero, v1 = zero, v2 = zero;
@@ -122,7 +129,7 @@ namespace embree
         v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
-      TriangleMv::store_nt(this,TriangleMv(v0,v1,v2,vgeomID,vprimID));
+      TriangleMv::store_nt(this,TriangleMv(v0,v1,v2,vgeomID,vprimID,last));
     }
 
     /* Updates the primitive */
@@ -135,7 +142,7 @@ namespace embree
       for (size_t i=0; i<M; i++)
       {
         if (primID(i) == -1) break;
-        const unsigned geomId = geomID(i);
+        const unsigned geomId = geomIDs[i]; // copies last bit
         const unsigned primId = primID(i);
         const TriangleMesh::Triangle& tri = mesh->triangle(primId);
         const Vec3fa p0 = mesh->vertex(tri.v[0]);
@@ -148,7 +155,7 @@ namespace embree
         v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
-      new (this) TriangleMv(v0,v1,v2,vgeomID,vprimID);
+      new (this) TriangleMv(v0,v1,v2,vgeomID,vprimID,false);
       return bounds;
     }
    

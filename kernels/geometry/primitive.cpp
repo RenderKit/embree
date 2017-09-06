@@ -38,6 +38,10 @@ namespace embree
     return 1;
   }
 
+  bool Bezier1v::Type::last(const char* This) const {
+    return ((Bezier1v*)This)->last();
+  }
+
   Bezier1v::Type Bezier1v::type;
 
   /********************** Bezier1i **************************/
@@ -47,6 +51,10 @@ namespace embree
 
   size_t Bezier1i::Type::size(const char* This) const {
     return 1;
+  }
+
+  bool Bezier1i::Type::last(const char* This) const {
+    return ((Bezier1i*)This)->last();
   }
 
   Bezier1i::Type Bezier1i::type;
@@ -62,6 +70,11 @@ namespace embree
     return ((Line4i*)This)->size();
   }
 
+  template<>
+  bool Line4i::Type::last(const char* This) const {
+    return ((Line4i*)This)->last();
+  }
+
   /********************** Triangle4 **************************/
 
   template<>
@@ -71,6 +84,11 @@ namespace embree
   template<>
   size_t Triangle4::Type::size(const char* This) const {
     return ((Triangle4*)This)->size();
+  }
+
+  template<>
+  bool Triangle4::Type::last(const char* This) const {
+    return ((Triangle4*)This)->last();
   }
 
   /********************** Triangle4v **************************/
@@ -84,6 +102,11 @@ namespace embree
     return ((Triangle4v*)This)->size();
   }
 
+  template<>
+  bool Triangle4v::Type::last(const char* This) const {
+    return ((Triangle4v*)This)->last();
+  }
+  
   /********************** Triangle4i **************************/
 
   template<>
@@ -95,6 +118,11 @@ namespace embree
     return ((Triangle4i*)This)->size();
   }
 
+  template<>
+  bool Triangle4i::Type::last(const char* This) const {
+    return ((Triangle4i*)This)->last();
+  }
+  
   /********************** Triangle4vMB **************************/
 
   template<>
@@ -104,6 +132,11 @@ namespace embree
   template<>
   size_t Triangle4vMB::Type::size(const char* This) const {
     return ((Triangle4vMB*)This)->size();
+  }
+
+  template<>
+  bool Triangle4vMB::Type::last(const char* This) const {
+    return ((Triangle4vMB*)This)->last();
   }
 
   /********************** Quad4v **************************/
@@ -117,6 +150,11 @@ namespace embree
     return ((Quad4v*)This)->size();
   }
 
+  template<>
+  bool Quad4v::Type::last(const char* This) const {
+    return ((Quad4v*)This)->last();
+  }
+  
   /********************** Quad4i **************************/
 
   template<>
@@ -128,6 +166,11 @@ namespace embree
     return ((Quad4i*)This)->size();
   }
 
+  template<>
+  bool Quad4i::Type::last(const char* This) const {
+    return ((Quad4i*)This)->last();
+  }
+
   /********************** SubdivPatch1 **************************/
 
   SubdivPatch1Cached::Type::Type ()
@@ -137,6 +180,10 @@ namespace embree
     return 1;
   }
 
+  bool SubdivPatch1Cached::Type::last(const char* This) const {
+    return true;
+  }
+  
   SubdivPatch1Cached::Type SubdivPatch1Cached::type;
 
   /********************** SubdivPatch1Cached **************************/
@@ -148,6 +195,10 @@ namespace embree
     return 1;
   }
 
+  bool SubdivPatch1Cached::TypeCached::last(const char* This) const {
+    return true;
+  }
+  
   SubdivPatch1Cached::TypeCached SubdivPatch1Cached::type_cached;
 
   /********************** Virtual Object **************************/
@@ -157,6 +208,10 @@ namespace embree
 
   size_t Object::Type::size(const char* This) const {
     return 1;
+  }
+
+  bool Object::Type::last(const char* This) const {
+    return ((Object*)This)->last();
   }
 
   Object::Type Object::type;

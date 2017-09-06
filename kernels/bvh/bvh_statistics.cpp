@@ -154,11 +154,15 @@ namespace embree
     }
     else if (node.isLeaf())
     {
-      size_t num; const char* tri = node.leaf(num);
-      if (num)
+      size_t ty; const char* tri = node.leaf(ty);
+      if (node != BVH::emptyNode)
       {
-        for (size_t i=0; i<num; i++) {
-          s.statLeaf.numPrims += bvh->primTy->size(tri+i*bvh->primTy->bytes);
+        size_t num = 0;
+        while (true) {
+          const char* cur = tri+num*bvh->primTy->bytes;
+          s.statLeaf.numPrims += bvh->primTy->size(cur);
+          num++;
+          if (bvh->primTy->last(cur)) break;
         }
         s.statLeaf.numLeaves++;
         s.statLeaf.numPrimBlocks += num;

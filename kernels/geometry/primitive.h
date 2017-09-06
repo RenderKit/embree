@@ -33,6 +33,9 @@ namespace embree
     /*! Returns the number of stored primitives in a block. */
     virtual size_t size(const char* This) const = 0;
 
+    /*! Returns if this is the last block in the leaf list. */
+    virtual bool last(const char* This) const = 0;
+
   public:
     std::string name;       //!< name of this primitive type
     size_t bytes;           //!< number of bytes of the triangle data

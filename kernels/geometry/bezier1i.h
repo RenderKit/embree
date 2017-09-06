@@ -26,6 +26,7 @@ namespace embree
     struct Type : public PrimitiveType {
       Type ();
       size_t size(const char* This) const;
+      bool last(const char* This) const;
     };
     static Type type;
 
@@ -43,17 +44,20 @@ namespace embree
     __forceinline Bezier1i () {}
 
     /*! Construction from vertices and IDs. */
-    __forceinline Bezier1i (const unsigned vertexID, const unsigned geomID, const unsigned primID)
-      : vertexID(vertexID), geom(geomID), prim(primID) {}
+    __forceinline Bezier1i (const unsigned vertexID, const unsigned geomID, const unsigned primID, const bool last)
+      : vertexID(vertexID), geom(geomID | (unsigned(last) << 31)), prim(primID) {}
+
+    /*! checks if this is the last primitive */
+    __forceinline unsigned last() const { return geom & 0x80000000; }
 
     /*! returns geometry ID */
-    __forceinline unsigned geomID() const { return geom; }
+    __forceinline unsigned geomID() const { return geom & 0x7FFFFFFF; }
 
     /*! returns primitive ID */
     __forceinline unsigned primID() const { return prim; }
 
     /*! fill curve from curve list */
-    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene)
+    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene, bool last)
     {
       const PrimRef& prim = prims[i];
       i++;
@@ -61,11 +65,11 @@ namespace embree
       const unsigned primID = prim.primID();
       const NativeCurves* curves = scene->get<NativeCurves>(geomID);
       const unsigned vertexID = curves->curve(primID);
-      new (this) Bezier1i(vertexID,geomID,primID);
+      new (this) Bezier1i(vertexID,geomID,primID,last);
     }
 
     /*! fill curve from curve list */
-    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& i, size_t end, Scene* scene, const BBox1f time_range)
+    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& i, size_t end, Scene* scene, const BBox1f time_range, bool last)
     {
       const PrimRefMB& prim = prims[i];
       i++;
@@ -73,7 +77,7 @@ namespace embree
       const unsigned primID = prim.primID();
       const NativeCurves* curves = scene->get<NativeCurves>(geomID);
       const unsigned vertexID = curves->curve(primID);
-      new (this) Bezier1i(vertexID,geomID,primID);
+      new (this) Bezier1i(vertexID,geomID,primID,last);
       return curves->linearBounds(primID,time_range);
     }
 

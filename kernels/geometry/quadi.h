@@ -30,6 +30,7 @@ namespace embree
     {
       Type();
       size_t size(const char* This) const;
+      bool last(const char* This) const;
     };
     static Type type;
 
@@ -55,8 +56,12 @@ namespace embree
                          const vint<M>& v2,
                          const vint<M>& v3,
                          const vint<M>& geomIDs,
-                         const vint<M>& primIDs)
-      : v0(v0),v1(v1), v2(v2), v3(v3), geomIDs(geomIDs), primIDs(primIDs) {}
+                         const vint<M>& primIDs,
+                         const bool last)
+      : v0(v0),v1(v1), v2(v2), v3(v3), geomIDs(geomIDs), primIDs(primIDs)
+    {
+      this->geomIDs[0] |= unsigned(last) << 31;
+    }
 
     /* Returns a mask that tells which quads are valid */
     __forceinline vbool<M> valid() const { return primIDs != vint<M>(-1); }
@@ -67,10 +72,16 @@ namespace embree
     /* Returns the number of stored quads */
     __forceinline size_t size() const { return __bsf(~movemask(valid())); }
 
+    /*! checks if this is the last primitive */
+    __forceinline unsigned last() const { return geomIDs[0] & 0x80000000; }
+
     /* Returns the geometry IDs */
     __forceinline       vint<M>& geomID()       { return geomIDs; }
     __forceinline const vint<M>& geomID() const { return geomIDs; }
-    __forceinline int geomID(const size_t i) const { assert(i<M); assert(geomIDs[i] != -1); return geomIDs[i]; }
+    __forceinline int geomID(const size_t i) const {
+      assert(i<M);
+      return geomIDs[i] & 0x7FFFFFFF;
+    }
 
     /* Returns the primitive IDs */
     __forceinline       vint<M>& primID()       { return primIDs; }
@@ -223,7 +234,7 @@ namespace embree
 
     /* Fill quad from quad list */
     template<typename PrimRefT>
-    __forceinline void fill(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene)
+    __forceinline void fill(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene, bool last)
     {
       vint<M> geomID = -1, primID = -1;
       vint<M> v0 = zero, v1 = zero, v2 = zero, v3 = zero;
@@ -256,23 +267,23 @@ namespace embree
         if (begin<end) prim = &prims[begin];
       }
 
-      new (this) QuadMi(v0,v1,v2,v3,geomID,primID); // FIXME: use non temporal store
+      new (this) QuadMi(v0,v1,v2,v3,geomID,primID,last); // FIXME: use non temporal store
     }
 
-    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime)
+    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime, bool last)
     {
-      fill(prims, begin, end, scene);
+      fill(prims, begin, end, scene, last);
       return linearBounds(scene, itime);
     }
 
-    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range)
+    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range, bool last)
     {
-      fill(prims, begin, end, scene);
+      fill(prims, begin, end, scene, last);
       return linearBounds(scene, time_range);
     }
 
     friend std::ostream& operator<<(std::ostream& cout, const QuadMi& quad) {
-      return cout << "QuadMi<" << M << ">( v0 = " << quad.v0 << ", v1 = " << quad.v1 << ", v2 = " << quad.v2 << ", v3 = " << quad.v3 << ", geomID = " << quad.geomIDs << ", primID = " << quad.primIDs << " )";
+      return cout << "QuadMi<" << M << ">( v0 = " << quad.v0 << ", v1 = " << quad.v1 << ", v2 = " << quad.v2 << ", v3 = " << quad.v3 << ", geomID = " << (quad.geomIDs & 0x7FFFFFFF) << ", primID = " << quad.primIDs << " )";
     }
 
     /* Updates the primitive */
@@ -313,10 +324,10 @@ namespace embree
   {
     prefetchL1(((char*)this)+0*64);
     prefetchL1(((char*)this)+1*64);
-    const int* vertices0 = scene->vertices[geomID(0)];
-    const int* vertices1 = scene->vertices[geomID(1)];
-    const int* vertices2 = scene->vertices[geomID(2)];
-    const int* vertices3 = scene->vertices[geomID(3)];
+    const int* vertices0 = scene->vertices[geomIDs[0] & 0x7FFFFFFF];
+    const int* vertices1 = scene->vertices[geomIDs[1]];
+    const int* vertices2 = scene->vertices[geomIDs[2]];
+    const int* vertices3 = scene->vertices[geomIDs[3]];
     const vfloat4 a0 = vfloat4::loadu(vertices0 + v0[0]);
     const vfloat4 a1 = vfloat4::loadu(vertices1 + v0[1]);
     const vfloat4 a2 = vfloat4::loadu(vertices2 + v0[2]);
@@ -348,10 +359,10 @@ namespace embree
                                        const Scene *const scene) const // FIXME: why do we have this special path here and not for triangles?
   {
     const vint16 perm(0,4,8,12,1,5,9,13,2,6,10,14,3,7,11,15);
-    const int* vertices0 = scene->vertices[geomID(0)];
-    const int* vertices1 = scene->vertices[geomID(1)];
-    const int* vertices2 = scene->vertices[geomID(2)];
-    const int* vertices3 = scene->vertices[geomID(3)];
+    const int* vertices0 = scene->vertices[geomIDs[0] & 0x7FFFFFFF];
+    const int* vertices1 = scene->vertices[geomIDs[1]];
+    const int* vertices2 = scene->vertices[geomIDs[2]];
+    const int* vertices3 = scene->vertices[geomIDs[3]];
 
     const vfloat4 a0 = vfloat4::loadu(vertices0 + v0[0]);
     const vfloat4 a1 = vfloat4::loadu(vertices1 + v0[1]);
@@ -440,10 +451,10 @@ namespace embree
                                        const Scene *const scene,
                                        const float time) const
   {
-    const QuadMesh* mesh0 = scene->get<QuadMesh>(geomID(0));
-    const QuadMesh* mesh1 = scene->get<QuadMesh>(geomID(1));
-    const QuadMesh* mesh2 = scene->get<QuadMesh>(geomID(2));
-    const QuadMesh* mesh3 = scene->get<QuadMesh>(geomID(3));
+    const QuadMesh* mesh0 = scene->get<QuadMesh>(geomIDs[0] & 0x7FFFFFFF);
+    const QuadMesh* mesh1 = scene->get<QuadMesh>(geomIDs[1]);
+    const QuadMesh* mesh2 = scene->get<QuadMesh>(geomIDs[2]);
+    const QuadMesh* mesh3 = scene->get<QuadMesh>(geomIDs[3]);
 
     const vfloat4 numTimeSegments(mesh0->fnumTimeSegments, mesh1->fnumTimeSegments, mesh2->fnumTimeSegments, mesh3->fnumTimeSegments);
     vfloat4 ftime;

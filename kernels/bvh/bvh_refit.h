@@ -89,12 +89,14 @@ namespace embree
 
       virtual const BBox3fa leafBounds (NodeRef& ref) const
       {
-        size_t num; char* prim = ref.leaf(num);
+        size_t ty; Primitive* prim = (Primitive*) ref.leaf(ty);
         if (unlikely(ref == BVH::emptyNode)) return empty;
 
         BBox3fa bounds = empty;
-        for (size_t i=0; i<num; i++)
-            bounds.extend(((Primitive*)prim)[i].update(mesh));
+        for (size_t i=0;; i++) {
+          bounds.extend(prim[i].update(mesh));
+          if (prim[i].last()) break;
+        }
         return bounds;
       }
       

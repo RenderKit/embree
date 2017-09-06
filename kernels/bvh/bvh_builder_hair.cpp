@@ -78,7 +78,7 @@ namespace embree
             size_t items = set.size();
             Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
             for (size_t i=0; i<items; i++) {
-              accel[i].fill(prims,start,set.end(),bvh->scene);
+              accel[i].fill(prims,start,set.end(),bvh->scene,i==(items-1));
             }
             return bvh->encodeLeaf((char*)accel,items);
           };
@@ -165,7 +165,7 @@ namespace embree
 
             LBBox3fa bounds = empty;
             for (size_t i=0; i<items; i++)
-              bounds.extend(accel[i].fillMB(prims.prims->data(),start,end,bvh->scene,prims.time_range));
+              bounds.extend(accel[i].fillMB(prims.prims->data(),start,end,bvh->scene,prims.time_range,i==(items-1)));
             
             return NodeRecordMB4D(node,bounds,prims.time_range);
           };
