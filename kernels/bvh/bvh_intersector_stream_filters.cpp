@@ -36,7 +36,7 @@ namespace embree
       if (unlikely(isCoherent(context->user->flags) && !scene->isRobust() && scene->accels.validIsecN()))
       {
         __aligned(64) RayK<VSIZEX> rays[MAX_COHERENT_RAY_PACKETS];
-        __aligned(64) RayK<VSIZEX>* rays_ptr[MAX_COHERENT_RAY_PACKETS];
+        __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_COHERENT_RAY_PACKETS];
 
         for (size_t i = 0; i < N; i += MAX_RAYS_PER_OCTANT)
         {
@@ -48,21 +48,21 @@ namespace embree
             const vintx vij = vintx(int(i+j)) + vintx(step);
             const vboolx valid = vij < vintx(int(N));
             const vintx offset = vij * int(stride);
-            const size_t packet_index = j / VSIZEX;
+            const size_t packetIndex = j / VSIZEX;
 
             RayK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
             ray.tnear = select(valid, ray.tnear, zero);
             ray.tfar  = select(valid, ray.tfar,  neg_inf);
 
-            rays[packet_index] = ray;
-            rays_ptr[packet_index] = &rays[packet_index]; // rays_ptr might get reordered for occludedN
+            rays[packetIndex] = ray;
+            rayPtrs[packetIndex] = &rays[packetIndex]; // rayPtrs might get reordered for occludedN
           }
 
           /* trace stream */
           if (intersect)
-            scene->intersectN((void**)rays_ptr, size, context);
+            scene->intersectN((void**)rayPtrs, size, context);
           else
-            scene->occludedN((void**)rays_ptr, size, context);
+            scene->occludedN((void**)rayPtrs, size, context);
 
           /* convert from SOA to AOS */
           for (size_t j = 0; j < size; j += VSIZEX)
@@ -70,9 +70,9 @@ namespace embree
             const vintx vij = vintx(int(i+j)) + vintx(step);
             const vboolx valid = vij < vintx(int(N));
             const vintx offset = vij * int(stride);
-            const size_t packet_index = j / VSIZEX;
+            const size_t packetIndex = j / VSIZEX;
 
-            rayN.setHitByOffset(valid, offset, rays[packet_index], intersect);
+            rayN.setHitByOffset(valid, offset, rays[packetIndex], intersect);
           }
         }
       }
@@ -109,7 +109,7 @@ namespace embree
       if (unlikely(isCoherent(context->user->flags) && !scene->isRobust() && scene->accels.validIsecN()))
       {
         __aligned(64) RayK<VSIZEX> rays[MAX_COHERENT_RAY_PACKETS];
-        __aligned(64) RayK<VSIZEX>* rays_ptr[MAX_COHERENT_RAY_PACKETS];
+        __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_COHERENT_RAY_PACKETS];
 
         for (size_t i = 0; i < N; i += MAX_RAYS_PER_OCTANT)
         {
@@ -120,30 +120,30 @@ namespace embree
           {
             const vintx vij = vintx(int(i+j)) + vintx(step);
             const vboolx valid = vij < vintx(int(N));
-            const size_t packet_index = j / VSIZEX;
+            const size_t packetIndex = j / VSIZEX;
 
             RayK<VSIZEX> ray = rayN.getRayByIndex(valid, i+j);
             ray.tnear = select(valid, ray.tnear, zero);
             ray.tfar  = select(valid, ray.tfar,  neg_inf);
 
-            rays[packet_index] = ray;
-            rays_ptr[packet_index] = &rays[packet_index]; // rays_ptr might get reordered for occludedN
+            rays[packetIndex] = ray;
+            rayPtrs[packetIndex] = &rays[packetIndex]; // rayPtrs might get reordered for occludedN
           }
 
           /* trace stream */
           if (intersect)
-            scene->intersectN((void**)rays_ptr, size, context);
+            scene->intersectN((void**)rayPtrs, size, context);
           else
-            scene->occludedN((void**)rays_ptr, size, context);
+            scene->occludedN((void**)rayPtrs, size, context);
 
           /* convert from SOA to AOP */
           for (size_t j = 0; j < size; j += VSIZEX)
           {
             const vintx vij = vintx(int(i+j)) + vintx(step);
             const vboolx valid = vij < vintx(int(N));
-            const size_t packet_index = j / VSIZEX;
+            const size_t packetIndex = j / VSIZEX;
 
-            rayN.setHitByIndex(valid, i+j, rays[packet_index], intersect);
+            rayN.setHitByIndex(valid, i+j, rays[packetIndex], intersect);
           }
         }
       }
@@ -183,36 +183,35 @@ namespace embree
         /* all valid accels need to have a intersectN/occludedN */
         if (unlikely(isCoherent(context->user->flags) && !scene->isRobust() && scene->accels.validIsecN()))
         {
-          __aligned(64) RayK<VSIZEX>* rays_ptr[MAX_RAYS_PER_OCTANT / VSIZEX];
+          __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_RAYS_PER_OCTANT / VSIZEX];
 
-          size_t numPacketsInOctant = 0;
-
+          size_t packetIndex = 0;
           for (size_t i = 0; i < numPackets; i++)
           {
             const size_t offset = i * stride;
             RayK<VSIZEX>& ray = *(RayK<VSIZEX>*)(rayData + offset);
-            rays_ptr[numPacketsInOctant++] = &ray;
+            rayPtrs[packetIndex++] = &ray;
 
             /* trace as stream */
-            if (unlikely(numPacketsInOctant == MAX_COHERENT_RAY_PACKETS))
+            if (unlikely(packetIndex == MAX_COHERENT_RAY_PACKETS))
             {
-              const size_t size = numPacketsInOctant*VSIZEX;
+              const size_t size = packetIndex*VSIZEX;
               if (intersect)
-                scene->intersectN((void**)rays_ptr, size, context);
+                scene->intersectN((void**)rayPtrs, size, context);
               else
-                scene->occludedN((void**)rays_ptr, size, context);
-              numPacketsInOctant = 0;
+                scene->occludedN((void**)rayPtrs, size, context);
+              packetIndex = 0;
             }
           }
 
           /* flush remaining packets */
-          if (unlikely(numPacketsInOctant))
+          if (unlikely(packetIndex > 0))
           {
-            const size_t size = numPacketsInOctant*VSIZEX;
+            const size_t size = packetIndex*VSIZEX;
             if (intersect)
-              scene->intersectN((void**)rays_ptr, size, context);
+              scene->intersectN((void**)rayPtrs, size, context);
             else
-              scene->occludedN((void**)rays_ptr, size, context);
+              scene->occludedN((void**)rayPtrs, size, context);
           }
         }
         else
@@ -272,7 +271,7 @@ namespace embree
       if (unlikely(isCoherent(context->user->flags) && !scene->isRobust() && scene->accels.validIsecN()))
       {
         __aligned(64) RayK<VSIZEX> rays[MAX_COHERENT_RAY_PACKETS];
-        __aligned(64) RayK<VSIZEX>* rays_ptr[MAX_COHERENT_RAY_PACKETS];
+        __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_COHERENT_RAY_PACKETS];
 
         for (size_t i = 0; i < N; i += MAX_RAYS_PER_OCTANT)
         {
@@ -284,21 +283,21 @@ namespace embree
             const vintx vij = vintx(int(i+j)) + vintx(step);
             const vboolx valid = vij < vintx(int(N));
             const size_t offset = sizeof(float) * (i+j);
-            const size_t packet_index = j / VSIZEX;
+            const size_t packetIndex = j / VSIZEX;
 
             RayK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
             ray.tnear = select(valid, ray.tnear, zero);
             ray.tfar  = select(valid, ray.tfar,  neg_inf);
 
-            rays[packet_index] = ray;
-            rays_ptr[packet_index] = &rays[packet_index]; // rays_ptr might get reordered for occludedN
+            rays[packetIndex] = ray;
+            rayPtrs[packetIndex] = &rays[packetIndex]; // rayPtrs might get reordered for occludedN
           }
 
           /* trace stream */
           if (intersect)
-            scene->intersectN((void**)rays_ptr, size, context);
+            scene->intersectN((void**)rayPtrs, size, context);
           else
-            scene->occludedN((void**)rays_ptr, size, context);
+            scene->occludedN((void**)rayPtrs, size, context);
 
           /* convert from SOA to SOP */
           for (size_t j = 0; j < size; j += VSIZEX)
@@ -306,9 +305,9 @@ namespace embree
             const vintx vij = vintx(int(i+j)) + vintx(step);
             const vboolx valid = vij < vintx(int(N));
             const size_t offset = sizeof(float) * (i+j);
-            const size_t packet_index = j / VSIZEX;
+            const size_t packetIndex = j / VSIZEX;
 
-            rayN.setHitByOffset(valid, offset, rays[packet_index], intersect);
+            rayN.setHitByOffset(valid, offset, rays[packetIndex], intersect);
           }
         }
       }
