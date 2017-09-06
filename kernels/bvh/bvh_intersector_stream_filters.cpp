@@ -22,7 +22,7 @@ namespace embree
   namespace isa
   {
     static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(size_t);
-    static const size_t MAX_COHERENT_RAY_PACKETS = MAX_RAYS_PER_OCTANT / VSIZEX;
+    MAYBE_UNUSED static const size_t MAX_COHERENT_RAY_PACKETS = MAX_RAYS_PER_OCTANT / VSIZEX;
 
     static_assert(MAX_RAYS_PER_OCTANT <= MAX_INTERNAL_STREAM_SIZE, "maximal internal stream size exceeded");
 
@@ -233,29 +233,26 @@ namespace embree
       }
       else
       {
-        /* this is a very slow fallback path but it's extremely unlikely to be hit */
+        /* fallback to packets for arbitrary packet size and alignment */
         for (size_t i = 0; i < numPackets; i++)
-        {          
-          const size_t offset = i * stride;
-          RayPacketSOA rayN(rayData + offset, N);
-          RayK<VSIZEX> ray;
+        {
+          const size_t offsetN = i * stride;
+          RayPacketSOA rayN(rayData + offsetN, N);
 
-          for (size_t j = 0; j < N; j++)
+          for (size_t j = 0; j < N; j += VSIZEX)
           {
-            /* invalidate all lanes */
-            ray.tnear = 0.0f;
-            ray.tfar  = neg_inf;
+            const size_t offset = j * sizeof(float);
+            vboolx valid = (vintx(int(j)) + vintx(step)) < vintx(N);
 
-            /* extract single ray and copy data to first packet lane */
-            rayN.getRayByIndex(j, ray, 0);
-            const vboolx valid = ray.tnear <= ray.tfar;
+            RayK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
+            valid &= ray.tnear <= ray.tfar;
 
             if (intersect)
               scene->intersect(valid, ray, context);
             else
               scene->occluded(valid, ray, context);
 
-            rayN.setHitByIndex(j, ray, 0, intersect);
+            rayN.setHitByOffset(valid, offset, ray, intersect);
           }
         }
       }
