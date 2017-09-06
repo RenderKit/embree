@@ -364,35 +364,35 @@ namespace embree
 
   struct RayPacketSOA
   {
-    __forceinline RayPacketSOA(void* rays, size_t K)
-      : ptr((char*)rays), K(K) {}
+    __forceinline RayPacketSOA(void* rays, size_t N)
+      : ptr((char*)rays), N(N) {}
 
     /* ray data access functions */
-    __forceinline float* orgx(size_t offset) { return (float*)&ptr[0*4*K+offset]; }  //!< x coordinate of ray origin
-    __forceinline float* orgy(size_t offset) { return (float*)&ptr[1*4*K+offset]; }  //!< y coordinate of ray origin
-    __forceinline float* orgz(size_t offset) { return (float*)&ptr[2*4*K+offset]; };  //!< z coordinate of ray origin
+    __forceinline float* orgx(size_t offset) { return (float*)&ptr[0*4*N+offset]; }  //!< x coordinate of ray origin
+    __forceinline float* orgy(size_t offset) { return (float*)&ptr[1*4*N+offset]; }  //!< y coordinate of ray origin
+    __forceinline float* orgz(size_t offset) { return (float*)&ptr[2*4*N+offset]; };  //!< z coordinate of ray origin
 
-    __forceinline float* dirx(size_t offset) { return (float*)&ptr[3*4*K+offset]; };  //!< x coordinate of ray direction
-    __forceinline float* diry(size_t offset) { return (float*)&ptr[4*4*K+offset]; };  //!< y coordinate of ray direction
-    __forceinline float* dirz(size_t offset) { return (float*)&ptr[5*4*K+offset]; };  //!< z coordinate of ray direction
+    __forceinline float* dirx(size_t offset) { return (float*)&ptr[3*4*N+offset]; };  //!< x coordinate of ray direction
+    __forceinline float* diry(size_t offset) { return (float*)&ptr[4*4*N+offset]; };  //!< y coordinate of ray direction
+    __forceinline float* dirz(size_t offset) { return (float*)&ptr[5*4*N+offset]; };  //!< z coordinate of ray direction
 
-    __forceinline float* tnear(size_t offset) { return (float*)&ptr[6*4*K+offset]; }; //!< Start of ray segment
-    __forceinline float* tfar (size_t offset) { return (float*)&ptr[7*4*K+offset]; }; //!< End of ray segment (set to hit distance)
+    __forceinline float* tnear(size_t offset) { return (float*)&ptr[6*4*N+offset]; }; //!< Start of ray segment
+    __forceinline float* tfar (size_t offset) { return (float*)&ptr[7*4*N+offset]; }; //!< End of ray segment (set to hit distance)
 
-    __forceinline float* time(size_t offset) { return (float*)&ptr[8*4*K+offset]; };  //!< Time of this ray for motion blur
-    __forceinline int*   mask(size_t offset) { return (int*)  &ptr[9*4*K+offset]; };  //!< Used to mask out objects during traversal (optional)
+    __forceinline float* time(size_t offset) { return (float*)&ptr[8*4*N+offset]; };  //!< Time of this ray for motion blur
+    __forceinline int*   mask(size_t offset) { return (int*)  &ptr[9*4*N+offset]; };  //!< Used to mask out objects during traversal (optional)
 
     /* hit data access functions */
-    __forceinline float* Ngx(size_t offset) { return (float*)&ptr[10*4*K+offset]; };   //!< x coordinate of geometry normal
-    __forceinline float* Ngy(size_t offset) { return (float*)&ptr[11*4*K+offset]; };   //!< y coordinate of geometry normal
-    __forceinline float* Ngz(size_t offset) { return (float*)&ptr[12*4*K+offset]; };   //!< z coordinate of geometry normal
+    __forceinline float* Ngx(size_t offset) { return (float*)&ptr[10*4*N+offset]; };   //!< x coordinate of geometry normal
+    __forceinline float* Ngy(size_t offset) { return (float*)&ptr[11*4*N+offset]; };   //!< y coordinate of geometry normal
+    __forceinline float* Ngz(size_t offset) { return (float*)&ptr[12*4*N+offset]; };   //!< z coordinate of geometry normal
 
-    __forceinline float* u(size_t offset) { return (float*)&ptr[13*4*K+offset]; };     //!< Barycentric u coordinate of hit
-    __forceinline float* v(size_t offset) { return (float*)&ptr[14*4*K+offset]; };     //!< Barycentric v coordinate of hit
+    __forceinline float* u(size_t offset) { return (float*)&ptr[13*4*N+offset]; };     //!< Barycentric u coordinate of hit
+    __forceinline float* v(size_t offset) { return (float*)&ptr[14*4*N+offset]; };     //!< Barycentric v coordinate of hit
 
-    __forceinline int* geomID(size_t offset) { return (int*)&ptr[15*4*K+offset]; };  //!< geometry ID
-    __forceinline int* primID(size_t offset) { return (int*)&ptr[16*4*K+offset]; };  //!< primitive ID
-    __forceinline int* instID(size_t offset) { return (int*)&ptr[17*4*K+offset]; };  //!< instance ID
+    __forceinline int* geomID(size_t offset) { return (int*)&ptr[15*4*N+offset]; };  //!< geometry ID
+    __forceinline int* primID(size_t offset) { return (int*)&ptr[16*4*N+offset]; };  //!< primitive ID
+    __forceinline int* instID(size_t offset) { return (int*)&ptr[17*4*N+offset]; };  //!< instance ID
 
 
     __forceinline void setRayByIndex(size_t index, const Ray& ray, int* valid)
@@ -467,8 +467,45 @@ namespace embree
       ray.tnear = vfloat<K>::loadu(tnear(offset));
       ray.tfar  = vfloat<K>::loadu(tfar(offset));
       ray.time  = vfloat<K>::loadu(time(offset));
-      ray.mask  = vint<K>  ::loadu(mask(offset));
-      ray.instID= vint<K>  ::loadu(instID(offset));
+      ray.mask  = vint<K>::loadu(mask(offset));
+      ray.instID = vint<K>::loadu(instID(offset));
+      ray.geomID = RTC_INVALID_GEOMETRY_ID;
+      return ray;
+    }
+
+    template<int K>
+    __forceinline RayK<K> getRayByOffset(const vbool<K>& valid, size_t offset)
+    {
+      RayK<K> ray;
+      ray.org.x = vfloat<K>::loadu(valid, orgx(offset));
+      ray.org.y = vfloat<K>::loadu(valid, orgy(offset));
+      ray.org.z = vfloat<K>::loadu(valid, orgz(offset));
+      ray.dir.x = vfloat<K>::loadu(valid, dirx(offset));
+      ray.dir.y = vfloat<K>::loadu(valid, diry(offset));
+      ray.dir.z = vfloat<K>::loadu(valid, dirz(offset));
+      ray.tnear = vfloat<K>::loadu(valid, tnear(offset));
+      ray.tfar  = vfloat<K>::loadu(valid, tfar(offset));
+      ray.time  = vfloat<K>::loadu(valid, time(offset));
+      ray.mask  = vint<K>::loadu(valid, mask(offset));
+
+#if !defined(__AVX__)
+      /* SSE: some ray members must be loaded with scalar instructions to ensure that we don't cause memory faults,
+         because the SSE masked loads always access the entire vector */
+      if (unlikely(!all(valid)))
+      {
+        ray.instID = zero;
+        for (size_t k = 0; k < K; k++)
+        {
+          if (likely(valid[k]))
+            ray.instID[k] = instID(offset)[k];
+        }
+      }
+      else
+#endif
+      {
+        ray.instID = vint<K>::loadu(valid, instID(offset));
+      }
+
       ray.geomID = RTC_INVALID_GEOMETRY_ID;
       return ray;
     }
@@ -539,17 +576,43 @@ namespace embree
 
       if (likely(any(valid)))
       {
-        vint<K>::storeu(valid, geomID(offset), ray.geomID);
+#if !defined(__AVX__)
+        /* SSE: some ray members must be stored with scalar instructions to ensure that we don't cause memory faults,
+           because the SSE masked stores always access the entire vector */
+        if (unlikely(!all(valid_i)))
+        {
+          for (size_t k = 0; k < K; k++)
+          {
+            if (likely(valid[k]))
+            {
+              geomID(offset)[k] = ray.geomID[k];
+              if (intersect)
+              {
+                primID(offset)[k] = ray.primID[k];
+                instID(offset)[k] = ray.instID[k];
+              }
+            }
+          }
+        }
+        else
+#endif
+        {
+          vint<K>::storeu(valid, geomID(offset), ray.geomID);
+          if (intersect)
+          {
+            vint<K>::storeu(valid, primID(offset), ray.primID);
+            vint<K>::storeu(valid, instID(offset), ray.instID);
+          }
+        }
+        
         if (intersect)
         {
           vfloat<K>::storeu(valid, tfar(offset), ray.tfar);
-          vfloat<K>::storeu(valid, u(offset), ray.u);
-          vfloat<K>::storeu(valid, v(offset), ray.v);
-          vint<K>  ::storeu(valid, primID(offset), ray.primID);
           vfloat<K>::storeu(valid, Ngx(offset), ray.Ng.x);
           vfloat<K>::storeu(valid, Ngy(offset), ray.Ng.y);
           vfloat<K>::storeu(valid, Ngz(offset), ray.Ng.z);
-          vint<K>  ::storeu(valid, instID(offset), ray.instID);
+          vfloat<K>::storeu(valid, u(offset), ray.u);
+          vfloat<K>::storeu(valid, v(offset), ray.v);
         }
       }
     }
@@ -571,7 +634,7 @@ namespace embree
     }
 
     char* __restrict__ ptr;
-    size_t K;
+    size_t N;
   };
 
   template<size_t MAX_K>
@@ -780,8 +843,15 @@ namespace embree
       ray.time   = vfloat<K>::template gather<1>(valid, &ptr->time, offset);
       ray.mask   = vint<K>::template gather<1>(valid, &ptr->mask, offset);
       ray.instID = vint<K>::template gather<1>(valid, (int*)&ptr->instID, offset);
-      ray.geomID = RTC_INVALID_GEOMETRY_ID;
   #else
+      ray.org = zero;
+      ray.dir = zero;
+      ray.tnear = zero;
+      ray.tfar = zero;
+      ray.time = zero;
+      ray.mask = zero;
+      ray.instID = zero;
+
       for (size_t k = 0; k < K; k++)
       {
         if (likely(valid[k]))
@@ -799,10 +869,11 @@ namespace embree
           ray.time[k]   = ray_k->time;
           ray.mask[k]   = ray_k->mask;
           ray.instID[k] = ray_k->instID;
-          ray.geomID[k] = RTC_INVALID_GEOMETRY_ID;
         }
       }
   #endif
+
+      ray.geomID = RTC_INVALID_GEOMETRY_ID;
 
       return ray;
     }
@@ -1014,6 +1085,14 @@ namespace embree
 
       RayK<K> ray;
 
+      ray.org = zero;
+      ray.dir = zero;
+      ray.tnear = zero;
+      ray.tfar = zero;
+      ray.time = zero;
+      ray.mask = zero;
+      ray.instID = zero;
+
       for (size_t k = 0; k < K; k++)
       {
         if (likely(valid[k]))
@@ -1031,9 +1110,10 @@ namespace embree
           ray.time[k]   = ray_k->time;
           ray.mask[k]   = ray_k->mask;
           ray.instID[k] = ray_k->instID;
-          ray.geomID[k] =  RTC_INVALID_GEOMETRY_ID;
         }
       }
+
+      ray.geomID = RTC_INVALID_GEOMETRY_ID;
 
       return ray;
     }
