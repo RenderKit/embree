@@ -279,7 +279,7 @@ namespace embree
           {
             const vintx vij = vintx(int(i+j)) + vintx(step);
             const vboolx valid = vij < vintx(int(N));
-            const size_t offset = sizeof(float) * (i+j);
+            const size_t offset = (i+j) * sizeof(float);
             const size_t packetIndex = j / VSIZEX;
 
             RayK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
@@ -301,7 +301,7 @@ namespace embree
           {
             const vintx vij = vintx(int(i+j)) + vintx(step);
             const vboolx valid = vij < vintx(int(N));
-            const size_t offset = sizeof(float) * (i+j);
+            const size_t offset = (i+j) * sizeof(float);
             const size_t packetIndex = j / VSIZEX;
 
             rayN.setHitByOffset(valid, offset, rays[packetIndex], intersect);
@@ -316,7 +316,7 @@ namespace embree
         {
           const vintx vi = vintx(int(i)) + vintx(step);
           vboolx valid = vi < vintx(int(N));
-          const size_t offset = sizeof(float) * i;
+          const size_t offset = i * sizeof(float);
 
           RayK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
           valid &= ray.tnear <= ray.tfar;
