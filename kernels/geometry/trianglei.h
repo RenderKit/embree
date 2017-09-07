@@ -30,6 +30,7 @@ namespace embree
     {
       Type();
       size_t size(const char* This) const;
+      bool last(const char* This) const;
     };
     static Type type;
 
@@ -55,8 +56,9 @@ namespace embree
                              const vint<M>& v2,
                              const vint<M>& geomIDs,
                              const vint<M>& primIDs,
-                             const Leaf::Type ty)
-      : geomIDs(Leaf::encode(ty,geomIDs)), v0(v0), v1(v1), v2(v2), primIDs(primIDs) {}
+                             const Leaf::Type ty,
+                             const bool last)
+      : geomIDs(Leaf::vencode(ty,geomIDs,last)), v0(v0), v1(v1), v2(v2), primIDs(primIDs) {}
 
     /* Returns a mask that tells which triangles are valid */
     __forceinline vbool<M> valid() const { return primIDs != vint<M>(-1); }
@@ -66,6 +68,9 @@ namespace embree
 
     /* Returns the number of stored triangles */
     __forceinline size_t size() const { return __bsf(~movemask(valid())); }
+
+    /*! checks if this is the last primitive */
+    __forceinline unsigned last() const { return Leaf::decodeLast(geomIDs[0]); }
 
     /* Returns the geometry IDs */
     __forceinline vint<M> geomID() const { return geomIDs; }
@@ -226,7 +231,7 @@ namespace embree
 
     /* Fill triangle from triangle list */
     template<typename PrimRefT>
-    __forceinline const BBox3fa fill(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene, const Leaf::Type ty = Leaf::TY_TRIANGLE)
+    __forceinline const BBox3fa fill(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene, bool last, const Leaf::Type ty = Leaf::TY_TRIANGLE)
     {
       vint<M> geomID = -1, primID = -1;
       vint<M> v0 = zero, v1 = zero, v2 = zero;
@@ -259,19 +264,19 @@ namespace embree
         if (begin<end) prim = &prims[begin];
       }
 
-      new (this) TriangleMi(v0,v1,v2,geomID,primID,ty); // FIXME: use non temporal store
+      new (this) TriangleMi(v0,v1,v2,geomID,primID,ty,last); // FIXME: use non temporal store
       return bounds;
     }
 
-    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime)
+    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime, bool last)
     {
-      fill(prims, begin, end, scene, Leaf::TY_TRIANGLE_MB);
+      fill(prims, begin, end, scene, last, Leaf::TY_TRIANGLE_MB);
       return linearBounds(scene, itime);
     }
 
-    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range)
+    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range, bool last)
     {
-      fill(prims, begin, end, scene, Leaf::TY_TRIANGLE_MB);
+      fill(prims, begin, end, scene, last, Leaf::TY_TRIANGLE_MB);
       return linearBounds(scene, time_range);
     }
 
@@ -282,7 +287,7 @@ namespace embree
       size_t items = blocks(range.size());
       TriangleMi* accel = (TriangleMi*) alloc.malloc1(items*sizeof(TriangleMi),BVH::byteAlignment);
       for (size_t i=0; i<items; i++) {
-        accel[i].fill(prims,cur,range.end(),bvh->scene);
+        accel[i].fill(prims,cur,range.end(),bvh->scene,i==(items-1));
       }
       return BVH::encodeLeaf((char*)accel,items);
     }
@@ -296,7 +301,7 @@ namespace embree
       typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
       LBBox3fa allBounds = empty;
       for (size_t i=0; i<items; i++) {
-        const BBox3fa b = accel[i].fill(set.prims->data(),start,set.object_range.end(),bvh->scene);
+        const BBox3fa b = accel[i].fill(set.prims->data(),start,set.object_range.end(),bvh->scene,i==(items-1));
         allBounds.extend(LBBox3fa(b));
       }
       return typename BVH::NodeRecordMB4D(node,allBounds,set.time_range);
@@ -347,7 +352,7 @@ namespace embree
       float A = 0.0f;
       LBBox3fa allBounds = empty;
       for (size_t i=0; i<items; i++) {
-        allBounds.extend(accel[i].fillMB(set.prims->data(), start, set.object_range.end(), bvh->scene, set.time_range));
+        allBounds.extend(accel[i].fillMB(set.prims->data(), start, set.object_range.end(), bvh->scene, set.time_range, i==(items-1)));
         A += accel[i].area(bvh->scene);
       }
       return typename BVH::NodeRecordMB4D(node,allBounds,set.time_range,A,2.0f*items);
@@ -360,10 +365,10 @@ namespace embree
                                            Vec3vf4& p2,
                                            const Scene* const scene) const
   {
-    const int* vertices0 = scene->vertices[geomID(0)];
-    const int* vertices1 = scene->vertices[geomID(1)];
-    const int* vertices2 = scene->vertices[geomID(2)];
-    const int* vertices3 = scene->vertices[geomID(3)];
+    const int* vertices0 = scene->vertices[Leaf::decodeID(geomIDs[0])];
+    const int* vertices1 = scene->vertices[geomIDs[1]];
+    const int* vertices2 = scene->vertices[geomIDs[2]];
+    const int* vertices3 = scene->vertices[geomIDs[3]];
     const vfloat4 a0 = vfloat4::loadu(vertices0 + v0[0]);
     const vfloat4 a1 = vfloat4::loadu(vertices1 + v0[1]);
     const vfloat4 a2 = vfloat4::loadu(vertices2 + v0[2]);
@@ -419,10 +424,10 @@ namespace embree
                                            const Scene *const scene,
                                            const float time) const
   {
-    const TriangleMesh* mesh0 = scene->get<TriangleMesh>(geomID(0));
-    const TriangleMesh* mesh1 = scene->get<TriangleMesh>(geomID(1));
-    const TriangleMesh* mesh2 = scene->get<TriangleMesh>(geomID(2));
-    const TriangleMesh* mesh3 = scene->get<TriangleMesh>(geomID(3));
+    const TriangleMesh* mesh0 = scene->get<TriangleMesh>(Leaf::decodeID(geomIDs[0]));
+    const TriangleMesh* mesh1 = scene->get<TriangleMesh>(geomIDs[1]);
+    const TriangleMesh* mesh2 = scene->get<TriangleMesh>(geomIDs[2]);
+    const TriangleMesh* mesh3 = scene->get<TriangleMesh>(geomIDs[3]);
 
     const vfloat4 numTimeSegments(mesh0->fnumTimeSegments, mesh1->fnumTimeSegments, mesh2->fnumTimeSegments, mesh3->fnumTimeSegments);
     vfloat4 ftime;

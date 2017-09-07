@@ -28,6 +28,7 @@ namespace embree
     {
       Type ();
       size_t size(const char* This) const;
+      bool last(const char* This) const;
     };
     
     static Type type;
@@ -36,6 +37,7 @@ namespace embree
     {
       TypeCached ();
       size_t size(const char* This) const;
+      bool last(const char* This) const;
     };
     
     static TypeCached type_cached;

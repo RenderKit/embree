@@ -69,7 +69,7 @@ namespace embree
         Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
-          accel[i].fill(prims,start,set.end(),bvh->scene);
+          accel[i].fill(prims,start,set.end(),bvh->scene,i==(items-1));
         }
         return node;
       }
@@ -94,7 +94,7 @@ namespace embree
         Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
-          accel[i].fill(prims,start,set.end(),bvh->scene);
+          accel[i].fill(prims,start,set.end(),bvh->scene,i==(items-1));
         }
         return node;
       }
@@ -369,7 +369,7 @@ namespace embree
 
         LBBox3fa allBounds = empty;
         for (size_t i=0; i<items; i++)
-          allBounds.extend(accel[i].fillMB(prims, start, set.end(), bvh->scene, time));
+          allBounds.extend(accel[i].fillMB(prims, start, set.end(), bvh->scene, time, i==(items-1)));
 
         return NodeRecordMB(node,allBounds);
       }
@@ -397,7 +397,7 @@ namespace embree
         NodeRef node = bvh->encodeLeaf((char*)accel,items);
         LBBox3fa allBounds = empty;
         for (size_t i=0; i<items; i++)
-          allBounds.extend(accel[i].fillMB(current.prims.prims->data(), start, current.prims.object_range.end(), bvh->scene, current.prims.time_range));
+          allBounds.extend(accel[i].fillMB(current.prims.prims->data(), start, current.prims.object_range.end(), bvh->scene, current.prims.time_range, i==(items-1)));
         return NodeRecordMB4D(node,allBounds,current.prims.time_range);
       }
 

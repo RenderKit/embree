@@ -26,6 +26,7 @@ namespace embree
     struct Type : public PrimitiveType {
       Type ();
       size_t size(const char* This) const;
+      bool last(const char* This) const;
     };
     static Type type;
 
@@ -43,8 +44,11 @@ namespace embree
     __forceinline Bezier1i () {}
 
     /*! Construction from vertices and IDs. */
-    __forceinline Bezier1i (const unsigned vertexID, const unsigned geomID, const unsigned primID, const Leaf::Type ty)
-      : geom(Leaf::encode(ty,geomID)), prim(primID), vertexID(vertexID) {}
+    __forceinline Bezier1i (const unsigned vertexID, const unsigned geomID, const unsigned primID, const Leaf::Type ty, const bool last)
+      : geom(Leaf::encode(ty,geomID,last)), prim(primID), vertexID(vertexID) {}
+
+     /*! checks if this is the last primitive */
+    __forceinline unsigned last() const { return Leaf::decodeLast(geom); }
 
     /*! returns geometry ID */
     __forceinline unsigned geomID() const { return Leaf::decodeID(geom); }
@@ -53,7 +57,7 @@ namespace embree
     __forceinline unsigned primID() const { return prim; }
 
     /*! fill curve from curve list */
-    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene)
+    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene, bool last)
     {
       const PrimRef& prim = prims[i];
       i++;
@@ -61,11 +65,11 @@ namespace embree
       const unsigned primID = prim.primID();
       const NativeCurves* curves = scene->get<NativeCurves>(geomID);
       const unsigned vertexID = curves->curve(primID);
-      new (this) Bezier1i(vertexID,geomID,primID,Leaf::TY_HAIR);
+      new (this) Bezier1i(vertexID,geomID,primID,Leaf::TY_HAIR,last);
     }
 
     /*! fill curve from curve list */
-    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& i, size_t end, Scene* scene, const BBox1f time_range)
+    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& i, size_t end, Scene* scene, const BBox1f time_range, bool last)
     {
       const PrimRefMB& prim = prims[i];
       i++;
@@ -73,7 +77,7 @@ namespace embree
       const unsigned primID = prim.primID();
       const NativeCurves* curves = scene->get<NativeCurves>(geomID);
       const unsigned vertexID = curves->curve(primID);
-      new (this) Bezier1i(vertexID,geomID,primID,Leaf::TY_HAIR_MB);
+      new (this) Bezier1i(vertexID,geomID,primID,Leaf::TY_HAIR_MB,last);
       return curves->linearBounds(primID,time_range);
     }
 
@@ -102,7 +106,7 @@ namespace embree
       typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
       LBBox3fa allBounds = empty;
       for (size_t i=0; i<items; i++)
-        allBounds.extend(accel[i].fillMB(set.prims->data(), start, set.object_range.end(), bvh->scene, set.time_range));
+        allBounds.extend(accel[i].fillMB(set.prims->data(), start, set.object_range.end(), bvh->scene, set.time_range, i==(items-1)));
       return typename BVH::NodeRecordMB4D(node,allBounds,set.time_range,0.0f,items);
     }
   };

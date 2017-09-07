@@ -761,6 +761,7 @@ namespace embree
             i = select_min(valid,hit.vt);
             assert(i<M);            
             geomID = Leaf::decodeID(geomIDs[i]);
+
           entry:
             Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
             

@@ -29,6 +29,7 @@ namespace embree
     {
       Type();
       size_t size(const char* This) const;
+      bool last(const char* This) const;
     };
     static Type type;
 
@@ -46,8 +47,8 @@ namespace embree
     __forceinline QuadMv() {}
 
     /* Construction from vertices and IDs */
-    __forceinline QuadMv(const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const Vec3vf<M>& v3, const vint<M>& geomIDs, const vint<M>& primIDs)
-      : geomIDs(Leaf::encode(Leaf::TY_QUAD,geomIDs)), v0(v0), v1(v1), v2(v2), v3(v3), primIDs(primIDs) {}
+    __forceinline QuadMv(const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const Vec3vf<M>& v3, const vint<M>& geomIDs, const vint<M>& primIDs, const bool last)
+      : geomIDs(Leaf::vencode(Leaf::TY_QUAD,geomIDs,last)), v0(v0), v1(v1), v2(v2), v3(v3), primIDs(primIDs) {}
     
     /* Returns a mask that tells which quads are valid */
     __forceinline vbool<M> valid() const { return geomIDs != vint<M>(-1); }
@@ -57,6 +58,9 @@ namespace embree
 
     /* Returns the number of stored quads */
     __forceinline size_t size() const { return __bsf(~movemask(valid())); }
+
+    /*! checks if this is the last primitive */
+    __forceinline unsigned last() const { return Leaf::decodeLast(geomIDs[0]); }
 
     /* Returns the geometry IDs */
     __forceinline       vint<M>& geomID()       { return geomIDs; }
@@ -112,7 +116,7 @@ namespace embree
 
     /* Fill quad from quad list */
     template<typename PrimRef>
-    __forceinline BBox3fa fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene)
+    __forceinline BBox3fa fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, bool last)
     {
       vint<M> vgeomID = -1, vprimID = -1;
       Vec3vf<M> v0 = zero, v1 = zero, v2 = zero, v3 = zero;
@@ -140,7 +144,7 @@ namespace embree
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
         v3.x[i] = p3.x; v3.y[i] = p3.y; v3.z[i] = p3.z;
       }
-      QuadMv::store_nt(this,QuadMv(v0,v1,v2,v3,vgeomID,vprimID));
+      QuadMv::store_nt(this,QuadMv(v0,v1,v2,v3,vgeomID,vprimID,last));
       return bounds;
     }
 
@@ -151,7 +155,7 @@ namespace embree
       size_t items = blocks(range.size());
       QuadMv* accel = (QuadMv*) alloc.malloc1(items*sizeof(QuadMv),BVH::byteAlignment);
       for (size_t i=0; i<items; i++) {
-        accel[i].fill(prims,cur,range.end(),bvh->scene);
+        accel[i].fill(prims,cur,range.end(),bvh->scene,i==(items-1));
       }
       return BVH::encodeLeaf((char*)accel,items);
     }
@@ -166,7 +170,7 @@ namespace embree
       float A = 0.0f;
       LBBox3fa allBounds = empty;
       for (size_t i=0; i<items; i++) {
-        const BBox3fa b = accel[i].fill(set.prims->data(), start, set.object_range.end(), bvh->scene); 
+        const BBox3fa b = accel[i].fill(set.prims->data(), start, set.object_range.end(), bvh->scene, i==(items-1)); 
         allBounds.extend(LBBox3fa(b));
         A += accel[i].area();
       }
@@ -183,7 +187,7 @@ namespace embree
       for (size_t i=0; i<M; i++)
       {
         if (!valid(i)) break;
-        const unsigned geomId = geomID(i);
+        const unsigned geomId = geomIDs[i]; // copies last bit
         const unsigned primId = primID(i);
         const QuadMesh::Quad& quad = mesh->quad(primId);
         const Vec3fa p0 = mesh->vertex(quad.v[0]);
@@ -198,7 +202,7 @@ namespace embree
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
         v3.x[i] = p3.x; v3.y[i] = p3.y; v3.z[i] = p3.z;
       }
-      new (this) QuadMv(v0,v1,v2,v3,vgeomID,vprimID);
+      QuadMv::store_nt(this,QuadMv(v0,v1,v2,v3,vgeomID,vprimID,false));
       return bounds;
     }
    

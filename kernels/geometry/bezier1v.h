@@ -28,6 +28,7 @@ namespace embree
     {
       Type ();
       size_t size(const char* This) const;
+      bool last(const char* This) const;
     };
     static Type type;
 
@@ -45,8 +46,11 @@ namespace embree
     __forceinline Bezier1v () {}
 
     /*! Construction from vertices and IDs. */
-    __forceinline Bezier1v (const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const Vec3fa& p3, const unsigned int geomID, const unsigned int primID, const Leaf::Type ty)
-      : geom(Leaf::encode(ty,geomID)), prim(primID), p0(p0), p1(p1), p2(p2), p3(p3) {}
+    __forceinline Bezier1v (const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const Vec3fa& p3, const unsigned int geomID, const unsigned int primID, const Leaf::Type ty, bool last)
+      : geom(Leaf::encode(ty,geomID,last)), prim(primID), p0(p0), p1(p1), p2(p2), p3(p3) {}
+
+    /*! checks if this is the last primitive */
+    __forceinline unsigned last() const { return Leaf::decodeLast(geom); }
 
     /*! returns geometry ID */
     __forceinline unsigned geomID() const { return Leaf::decodeID(geom); }
@@ -56,7 +60,7 @@ namespace embree
 
     /*! fill triangle from triangle list */
     template<typename PrimRef>
-    __forceinline BBox3fa fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene)
+    __forceinline BBox3fa fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene, bool last)
     {
       const PrimRef& prim = prims[i];
       i++;
@@ -68,7 +72,7 @@ namespace embree
       const Vec3fa& p1 = curves->vertex(id+1);
       const Vec3fa& p2 = curves->vertex(id+2);
       const Vec3fa& p3 = curves->vertex(id+3);
-      new (this) Bezier1v(p0,p1,p2,p3,geomID,primID,Leaf::TY_HAIR);
+      new (this) Bezier1v(p0,p1,p2,p3,geomID,primID,Leaf::TY_HAIR,last);
       return curves->bounds(primID);
     }
 
@@ -79,7 +83,7 @@ namespace embree
       size_t items = blocks(range.size());
       Bezier1v* accel = (Bezier1v*) alloc.malloc1(items*sizeof(Bezier1v),BVH::byteAlignment);
       for (size_t i=0; i<items; i++) {
-        accel[i].fill(prims,cur,range.end(),bvh->scene);
+        accel[i].fill(prims,cur,range.end(),bvh->scene,i==(items-1));
       }
       return BVH::encodeLeaf((char*)accel,items);
     }
@@ -93,12 +97,12 @@ namespace embree
       typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
       LBBox3fa allBounds = empty;
       for (size_t i=0; i<items; i++) {
-        const BBox3fa b = accel[i].fill(set.prims->data(),start,set.object_range.end(),bvh->scene);
+        const BBox3fa b = accel[i].fill(set.prims->data(),start,set.object_range.end(),bvh->scene,i==(items-1));
         allBounds.extend(LBBox3fa(b));
       }
       return typename BVH::NodeRecordMB4D(node,allBounds,set.time_range,0.0f,items);
     }
-
+    
     friend std::ostream& operator<<(std::ostream& cout, const Bezier1v& b) 
     {
       return std::cout << "Bezier1v { " << std::endl << 

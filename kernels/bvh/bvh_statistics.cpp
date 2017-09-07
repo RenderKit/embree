@@ -159,15 +159,19 @@ namespace embree
     }
     else if (node.isLeaf())
     {
-      size_t num; const char* tri = node.leaf(num);
-      if (num)
+      size_t ty; const char* tri = node.leaf(ty);
+      if (node != BVH::emptyNode)
       {
         Leaf::Type ty = Leaf::loadTy(tri);
         if (bvh->primTy) ty = (Leaf::Type) 0; // for non multi leaves always use slot 0
         assert(ty < Statistics::MultiLeafStat::M);
         typename Statistics::LeafStat& stat = s.statLeaf.stat[ty];
-        for (size_t i=0; i<num; i++) {
-          stat.numPrims += bvh->getPrimType(ty).size(tri+i*bvh->getPrimType(ty).bytes);
+        size_t num = 0;
+        while (true) {
+          const char* cur = tri+num*bvh->getPrimType(ty).bytes;
+          stat.numPrims += bvh->getPrimType(ty).size(cur);
+          num++;
+          if (bvh->getPrimType(ty).last(cur)) break;
         }
         stat.numLeaves++;
         stat.numPrimBlocks += num;

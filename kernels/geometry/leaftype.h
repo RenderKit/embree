@@ -22,8 +22,8 @@ namespace embree
 {
   struct Leaf
   {
-    static const unsigned SHIFT = (32-4);
-    static const unsigned MASK = 0x0FFFFFFF;
+    static const unsigned SHIFT = (32-5);
+    static const unsigned MASK = 0x07FFFFFF;
 
     enum Type
     {
@@ -60,17 +60,29 @@ namespace embree
       return 1 << ty;
     }
 
+    static __forceinline unsigned encode(Type ty, const unsigned& ID, bool last = false) {
+      return (((unsigned)ty) << SHIFT) | (((unsigned)last) << 31) | ID;
+    }
+
     template<typename T>
-    static __forceinline T encode(Type ty, const T& ID) {
-      return (((T)ty) << SHIFT) | ID;
+    static __forceinline T vencode(Type ty, const T& ID, bool last = false)
+    {
+      T r =  ID;
+      r[0] |= unsigned(ty) << SHIFT;
+      r[0] |= unsigned(last) << 31;
+      return r;
     }
 
     static __forceinline Type loadTy(const void* leaf) {
       return decodeTy(*(unsigned*)leaf);
     }
 
+    static __forceinline unsigned decodeLast(unsigned ID) {
+      return ID & 0x80000000;
+    }
+    
     static __forceinline Type decodeTy(unsigned ID) {
-      return (Type) (ID >> SHIFT);
+      return (Type) ((ID >> SHIFT) & 0xF);
     }
 
     static __forceinline unsigned decodeID(unsigned ID) {
