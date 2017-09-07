@@ -54,7 +54,7 @@ namespace embree
                                const Vec3vf<M>& b0, const Vec3vf<M>& b1,
                                const Vec3vf<M>& c0, const Vec3vf<M>& c1,
                                const vint<M>& geomIDs, const vint<M>& primIDs)
-      : geomIDs(Leaf::encode(Leaf::TY_TRIANGLE_MB,geomIDs)), v0(a0), v1(b0), v2(c0), dv0(a1-a0), dv1(b1-b0), dv2(c1-c0), primIDs(primIDs) {}
+      : geomIDs(Leaf::vencode(Leaf::TY_TRIANGLE_MB,geomIDs)), v0(a0), v1(b0), v2(c0), dv0(a1-a0), dv1(b1-b0), dv2(c1-c0), primIDs(primIDs) {}
 
     /* Returns a mask that tells which triangles are valid */
     __forceinline vbool<M> valid() const { return geomIDs != vint<M>(-1); }

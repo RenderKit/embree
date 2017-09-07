@@ -60,9 +60,15 @@ namespace embree
       return 1 << ty;
     }
 
+    static __forceinline unsigned encode(Type ty, const unsigned& ID) {
+      return (((unsigned)ty) << SHIFT) | ID;
+    }
+
     template<typename T>
-    static __forceinline T encode(Type ty, const T& ID) {
-      return (((T)ty) << SHIFT) | ID;
+    static __forceinline T vencode(Type ty, const T& ID) {
+      T r = ID;
+      r[0] |= (((unsigned)ty) << SHIFT);
+      return r;
     }
 
     static __forceinline Type loadTy(const void* leaf) {
