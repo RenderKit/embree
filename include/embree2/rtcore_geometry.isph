@@ -165,15 +165,15 @@ RTCORE_DEPRECATED uniform unsigned int rtcNewInstance (RTCScene target,         
   the provided scene. If any geometry is hit, the instance ID (instID)
   member of the ray will get set to the geometry ID of the
   instance. */
-uniform unsigned rtcNewInstance2 (RTCScene target,                  //!< the scene the instance belongs to
-                                  RTCScene source,                  //!< the scene to instantiate
-                                  uniform size_t numTimeSteps = 1   //!< number of timesteps, one matrix per timestep
+uniform unsigned int rtcNewInstance2 (RTCScene target,                  //!< the scene the instance belongs to
+                                      RTCScene source,                  //!< the scene to instantiate
+                                      uniform size_t numTimeSteps = 1   //!< number of timesteps, one matrix per timestep
   );
 
-uniform unsigned rtcNewInstance3 (RTCScene target,                  //!< the scene the instance belongs to
-                                  RTCScene source,                  //!< the scene to instantiate
-                                  uniform size_t numTimeSteps = 1,  //!< number of timesteps, one matrix per timestep
-                                  uniform unsigned int geomID = -1  //!< optional geometry ID to assign
+uniform unsigned int rtcNewInstance3 (RTCScene target,                  //!< the scene the instance belongs to
+                                      RTCScene source,                  //!< the scene to instantiate
+                                      uniform size_t numTimeSteps = 1,  //!< number of timesteps, one matrix per timestep
+                                      uniform unsigned int geomID = -1  //!< optional geometry ID to assign
   );
 
 /*! \brief Creates a new geometry instance. 
@@ -564,7 +564,7 @@ uniform unsigned int rtcNewLineSegments2(RTCScene scene,                    //!<
 /*! Sets a uniform tessellation rate for subdiv meshes and hair
  *  geometry. For subdivision meshes the RTC_LEVEL_BUFFER can also be used
  *  optionally to set a different tessellation rate per edge.*/
-void rtcSetTessellationRate (RTCScene scene, uniform unsigned geomID, uniform float tessellationRate);
+void rtcSetTessellationRate (RTCScene scene, uniform unsigned int geomID, uniform float tessellationRate);
 
 /*! \brief Sets 32 bit ray mask. */
 void rtcSetMask (RTCScene scene, uniform unsigned int geomID, uniform int mask);
@@ -578,7 +578,7 @@ RTCORE_DEPRECATED void rtcSetBoundaryMode(RTCScene scene, uniform unsigned int g
 void rtcSetSubdivisionMode(RTCScene scene, uniform unsigned int geomID, uniform unsigned int topologyID, uniform RTCSubdivisionMode mode);
 
 /*! \brief Binds a user vertex buffer to some index buffer topology. */
-void rtcSetIndexBuffer(RTCScene scene, uniform unsigned geomID, uniform RTCBufferType vertexBuffer, uniform RTCBufferType indexBuffer);
+void rtcSetIndexBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType vertexBuffer, uniform RTCBufferType indexBuffer);
 
 /*! \brief Maps specified buffer. This function can be used to set index and
  *  vertex buffers of geometries. */

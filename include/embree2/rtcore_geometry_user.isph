@@ -153,12 +153,12 @@ void rtcSetIntersectFunction (RTCScene scene, uniform unsigned int geomID, unifo
 /*! Set intersect function for stream of rays. The rtcIntersectN function
  *  will call the passed function for intersecting the user
  *  geometry. */
-void rtcSetIntersectFunction1Mp (RTCScene scene, uniform unsigned geomID, uniform RTCIntersectFunc1Mp intersect);
+void rtcSetIntersectFunction1Mp (RTCScene scene, uniform unsigned int geomID, uniform RTCIntersectFunc1Mp intersect);
 
 /*! Set intersect function for ray packets of size N. The rtcIntersectN function
  *  will call the passed function for intersecting the user
  *  geometry. */
-void rtcSetIntersectFunctionN (RTCScene scene, uniform unsigned geomID, uniform RTCIntersectFuncN intersect);
+void rtcSetIntersectFunctionN (RTCScene scene, uniform unsigned int geomID, uniform RTCIntersectFuncN intersect);
 
 /*! Set occlusion function for uniform rays. The rtcOccluded1 function
  *  will call the passed function for intersecting the user
@@ -173,12 +173,12 @@ void rtcSetOccludedFunction (RTCScene scene, uniform unsigned int geomID, unifor
 /*! Set occlusion function for a stream of single rays. The rtcOccludedN function
  *  will call the passed function for intersecting the user
  *  geometry. */
-void rtcSetOccludedFunction1Mp (RTCScene scene, uniform unsigned geomID, uniform RTCOccludedFunc1Mp occluded);
+void rtcSetOccludedFunction1Mp (RTCScene scene, uniform unsigned int geomID, uniform RTCOccludedFunc1Mp occluded);
 
 /*! Set occlusion function for a ray packets of size N. The rtcOccludedN function
  *  will call the passed function for intersecting the user
  *  geometry. */
-void rtcSetOccludedFunctionN (RTCScene scene, uniform unsigned geomID, uniform RTCOccludedFuncN occluded);
+void rtcSetOccludedFunctionN (RTCScene scene, uniform unsigned int geomID, uniform RTCOccludedFuncN occluded);
 
 /*! @} */
 
