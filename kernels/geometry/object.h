@@ -29,6 +29,7 @@ namespace embree
       bool last(const char* This) const;
     };
     static Type type;
+    static const Leaf::Type leaf_type = Leaf::TY_NULL; 
 
   public:
 

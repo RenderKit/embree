@@ -67,7 +67,7 @@ namespace embree
         size_t items = Primitive::blocks(n);
         size_t start = set.begin();
         Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
-        typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
+        typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,Primitive::leaf_type);
         for (size_t i=0; i<items; i++) {
           accel[i].fill(prims,start,set.end(),bvh->scene,i==(items-1));
         }
@@ -92,7 +92,7 @@ namespace embree
         size_t items = Primitive::blocks(n);
         size_t start = set.begin();
         Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
-        typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
+        typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,Primitive::leaf_type);
         for (size_t i=0; i<items; i++) {
           accel[i].fill(prims,start,set.end(),bvh->scene,i==(items-1));
         }
@@ -365,7 +365,7 @@ namespace embree
         size_t items = Primitive::blocks(set.size());
         size_t start = set.begin();
         Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteAlignment);
-        NodeRef node = bvh->encodeLeaf((char*)accel,items);
+        NodeRef node = bvh->encodeLeaf((char*)accel,Primitive::leaf_type);
 
         LBBox3fa allBounds = empty;
         for (size_t i=0; i<items; i++)
@@ -394,7 +394,7 @@ namespace embree
         size_t items = Primitive::blocks(current.prims.object_range.size());
         size_t start = current.prims.object_range.begin();
         Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive),BVH::byteNodeAlignment); // FIXME: should be BVH::byteAlignment
-        NodeRef node = bvh->encodeLeaf((char*)accel,items);
+        NodeRef node = bvh->encodeLeaf((char*)accel,Primitive::leaf_type);
         LBBox3fa allBounds = empty;
         for (size_t i=0; i<items; i++)
           allBounds.extend(accel[i].fillMB(current.prims.prims->data(), start, current.prims.object_range.end(), bvh->scene, current.prims.time_range, i==(items-1)));

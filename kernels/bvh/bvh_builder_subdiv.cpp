@@ -374,7 +374,7 @@ namespace embree
         auto createLeaf = [&] (const PrimRef* prims, const range<size_t>& range, const Allocator& alloc) -> NodeRef {
           assert(range.size() == 1);
           const size_t patchIndex = prims[range.begin()].ID();
-          return bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
+          return bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],Leaf::TY_ONE);
         };
         
         /* create primrefs */
@@ -662,7 +662,7 @@ namespace embree
           assert(items == 1);
           const size_t patchIndexMB = prims[current.prims.object_range.begin()].ID();
           SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+0];
-          NodeRef node = bvh->encodeLeaf((char*)&patch,1);
+          NodeRef node = bvh->encodeLeaf((char*)&patch,Leaf::TY_ONE);
           size_t patchNumTimeSteps = scene->get<SubdivMesh>(patch.geomID())->numTimeSteps;
           const LBBox3fa lbounds = LBBox3fa([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, current.prims.time_range, (float)(patchNumTimeSteps-1));
           return NodeRecordMB4D(node,lbounds,current.prims.time_range);

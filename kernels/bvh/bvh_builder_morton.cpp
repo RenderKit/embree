@@ -106,7 +106,7 @@ namespace embree
         
         /* allocate leaf node */
         Triangle4* accel = (Triangle4*) alloc.malloc1(sizeof(Triangle4),BVH::byteAlignment);
-        NodeRef ref = BVH::encodeLeaf((char*)accel,1);
+        NodeRef ref = BVH::encodeLeaf((char*)accel,Triangle4::leaf_type);
         vint4 vgeomID = -1, vprimID = -1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
         const unsigned geomID = this->mesh->geomID;
@@ -162,7 +162,7 @@ namespace embree
         
         /* allocate leaf node */
         Triangle4v* accel = (Triangle4v*) alloc.malloc1(sizeof(Triangle4v),BVH::byteAlignment);
-        NodeRef ref = BVH::encodeLeaf((char*)accel,1);       
+        NodeRef ref = BVH::encodeLeaf((char*)accel,Triangle4v::leaf_type);
         vint4 vgeomID = -1, vprimID = -1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
         const unsigned geomID = this->mesh->geomID;
@@ -216,7 +216,7 @@ namespace embree
         
         /* allocate leaf node */
         Triangle4i* accel = (Triangle4i*) alloc.malloc1(sizeof(Triangle4i),BVH::byteAlignment);
-        NodeRef ref = BVH::encodeLeaf((char*)accel,1);
+        NodeRef ref = BVH::encodeLeaf((char*)accel,Triangle4i::leaf_type);
         
         vint4 vgeomID = -1, vprimID = -1;
         vint4 v0 = zero, v1 = zero, v2 = zero;
@@ -282,7 +282,7 @@ namespace embree
         
         /* allocate leaf node */
         Quad4v* accel = (Quad4v*) alloc.malloc1(sizeof(Quad4v),BVH::byteAlignment);
-        NodeRef ref = BVH::encodeLeaf((char*)accel,1);
+        NodeRef ref = BVH::encodeLeaf((char*)accel,Quad4v::leaf_type);
         
         vint4 vgeomID = -1, vprimID = -1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero, v3 = zero;
@@ -338,7 +338,7 @@ namespace embree
         
         /* allocate leaf node */
         Object* accel = (Object*) alloc.malloc1(items*sizeof(Object),BVH::byteAlignment);
-        NodeRef ref = BVH::encodeLeaf((char*)accel,items);
+        NodeRef ref = BVH::encodeLeaf((char*)accel);
 
         const unsigned geomID = this->mesh->geomID;
         const AccelSet* mesh = this->mesh;

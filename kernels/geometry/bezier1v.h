@@ -31,6 +31,7 @@ namespace embree
       bool last(const char* This) const;
     };
     static Type type;
+    static const Leaf::Type leaf_type = Leaf::TY_HAIR;
 
   public:
 
@@ -47,7 +48,7 @@ namespace embree
 
     /*! Construction from vertices and IDs. */
     __forceinline Bezier1v (const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const Vec3fa& p3, const unsigned int geomID, const unsigned int primID, const Leaf::Type ty, bool last)
-      : geom(Leaf::encode(ty,geomID,last)), prim(primID), p0(p0), p1(p1), p2(p2), p3(p3) {}
+      : p0(p0), p1(p1), p2(p2), p3(p3), geom(Leaf::encode(ty,geomID,last)), prim(primID) {}
 
     /*! checks if this is the last primitive */
     __forceinline unsigned last() const { return Leaf::decodeLast(geom); }
@@ -85,7 +86,7 @@ namespace embree
       for (size_t i=0; i<items; i++) {
         accel[i].fill(prims,cur,range.end(),bvh->scene,i==(items-1));
       }
-      return BVH::encodeLeaf((char*)accel,items);
+      return BVH::encodeLeaf((char*)accel,Leaf::TY_HAIR);
     }
 
     template<typename BVH>
@@ -94,7 +95,7 @@ namespace embree
       size_t items = blocks(set.object_range.size());
       size_t start = set.object_range.begin();
       Bezier1v* accel = (Bezier1v*) alloc.malloc1(items*sizeof(Bezier1v),BVH::byteAlignment);
-      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,Leaf::TY_HAIR);
       LBBox3fa allBounds = empty;
       for (size_t i=0; i<items; i++) {
         const BBox3fa b = accel[i].fill(set.prims->data(),start,set.object_range.end(),bvh->scene,i==(items-1));
@@ -114,13 +115,13 @@ namespace embree
       "}";
     }
     
-  private:
-    unsigned geom;      //!< geometry ID
-    unsigned prim;      //!< primitive ID
   public:
     Vec3fa p0;            //!< 1st control point (x,y,z,r)
     Vec3fa p1;            //!< 2nd control point (x,y,z,r)
     Vec3fa p2;            //!< 3rd control point (x,y,z,r)
     Vec3fa p3;            //!< 4th control point (x,y,z,r)
+  private:
+    unsigned geom;      //!< geometry ID
+    unsigned prim;      //!< primitive ID
   };
 }

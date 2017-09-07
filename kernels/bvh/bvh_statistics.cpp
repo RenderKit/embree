@@ -159,10 +159,11 @@ namespace embree
     }
     else if (node.isLeaf())
     {
-      size_t ty; const char* tri = node.leaf(ty);
+      size_t lty; const char* tri = node.leaf(lty);
       if (node != BVH::emptyNode)
       {
-        Leaf::Type ty = Leaf::loadTy(tri);
+        //Leaf::Type ty = Leaf::loadTy(tri);
+        Leaf::Type ty = (Leaf::Type) lty;
         if (bvh->primTy) ty = (Leaf::Type) 0; // for non multi leaves always use slot 0
         assert(ty < Statistics::MultiLeafStat::M);
         typename Statistics::LeafStat& stat = s.statLeaf.stat[ty];

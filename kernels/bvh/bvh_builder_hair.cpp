@@ -80,7 +80,7 @@ namespace embree
             for (size_t i=0; i<items; i++) {
               accel[i].fill(prims,start,set.end(),bvh->scene,i==(items-1));
             }
-            return bvh->encodeLeaf((char*)accel,items);
+            return bvh->encodeLeaf((char*)accel,Primitive::leaf_type);
           };
           
         /* build hierarchy */
@@ -161,7 +161,7 @@ namespace embree
             size_t end   = prims.object_range.end();
             size_t items = prims.object_range.size();
             Primitive* accel = (Primitive*) alloc.malloc1(items*sizeof(Primitive));
-            const NodeRef node = bvh->encodeLeaf((char*)accel,items);
+            const NodeRef node = bvh->encodeLeaf((char*)accel,Primitive::leaf_type);
 
             LBBox3fa bounds = empty;
             for (size_t i=0; i<items; i++)

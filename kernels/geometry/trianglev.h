@@ -32,6 +32,7 @@ namespace embree
       bool last(const char* This) const;
     };
     static Type type;
+    static const Leaf::Type leaf_type = Leaf::TY_TRIANGLE;
 
   public:
 
@@ -48,7 +49,7 @@ namespace embree
 
     /* Construction from vertices and IDs */
     __forceinline TriangleMv(const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const vint<M>& geomIDs, const vint<M>& primIDs, const bool last)
-      : geomIDs(Leaf::vencode(Leaf::TY_TRIANGLE,geomIDs,last)), v0(v0), v1(v1), v2(v2), primIDs(primIDs) {}
+      : v0(v0), v1(v1), v2(v2), geomIDs(Leaf::vencode(Leaf::TY_TRIANGLE,geomIDs,last)), primIDs(primIDs) {}
     
     /* Returns a mask that tells which triangles are valid */
     __forceinline vbool<M> valid() const { return geomIDs != vint<M>(-1); }
@@ -157,10 +158,10 @@ namespace embree
     }
    
   public:
-    vint<M> geomIDs; // geometry ID
     Vec3vf<M> v0;      // 1st vertex of the triangles
     Vec3vf<M> v1;      // 2nd vertex of the triangles
     Vec3vf<M> v2;      // 3rd vertex of the triangles
+    vint<M> geomIDs; // geometry ID
     vint<M> primIDs; // primitive ID
   };
 

@@ -31,6 +31,7 @@ namespace embree
       bool last(const char* This) const;
     };
     static Type type;
+    static const Leaf::Type leaf_type = Leaf::TY_LINE;
 
   public:
 
@@ -50,7 +51,7 @@ namespace embree
 
     /* Construction from vertices and IDs */
     __forceinline LineMi(const vint<M>& v0, const vint<M>& geomIDs, const vint<M>& primIDs, const Leaf::Type ty, const bool last)
-      : geomIDs(Leaf::vencode(ty,geomIDs,last)), primIDs(primIDs), v0(v0) {}
+      : v0(v0), geomIDs(Leaf::vencode(ty,geomIDs,last)), primIDs(primIDs) {}
 
     /* Returns a mask that tells which line segments are valid */
     __forceinline vbool<M> valid() const { return primIDs != vint<M>(-1); }
@@ -208,7 +209,7 @@ namespace embree
       for (size_t i=0; i<items; i++) {
         accel[i].fill(prims,cur,range.end(),bvh->scene,i==(items-1));
       }
-      return BVH::encodeLeaf((char*)accel,items);
+      return BVH::encodeLeaf((char*)accel,Leaf::TY_LINE);
     }
 
     template<typename BVH>
@@ -217,7 +218,7 @@ namespace embree
       size_t items = blocks(set.object_range.size());
       size_t start = set.object_range.begin();
       LineMi* accel = (LineMi*) alloc.malloc1(items*sizeof(LineMi),BVH::byteAlignment);
-      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,Leaf::TY_LINE);
       LBBox3fa allBounds = empty;
       for (size_t i=0; i<items; i++) {
         const BBox3fa b = accel[i].fill(set.prims->data(), start, set.object_range.end(), bvh->scene, i==(items-1)); 
@@ -231,16 +232,18 @@ namespace embree
       return cout << "Line" << M << "i {" << line.v0 << ", " << Leaf::decodeID(line.geomIDs) << ", " << line.primIDs << "}";
     }
     
+  public:
+    vint<M> v0;      // index of start vertex
   private:
     vint<M> geomIDs; // geometry ID
     vint<M> primIDs; // primitive ID
-  public:
-    vint<M> v0;      // index of start vertex
    };
   
   template <int M>
     struct LineMiMB : public LineMi<M>
   {
+    static const Leaf::Type leaf_type = Leaf::TY_LINE_MB;
+    
     template<typename BVH>
     __forceinline static typename BVH::NodeRef createLeaf(const FastAllocator::CachedAllocator& alloc, PrimRef* prims, const range<size_t>& range, BVH* bvh)
     {
@@ -254,7 +257,7 @@ namespace embree
       size_t items = LineMi<M>::blocks(set.object_range.size());
       size_t start = set.object_range.begin();
       LineMi<M>* accel = (LineMi<M>*) alloc.malloc1(items*sizeof(LineMi<M>),BVH::byteAlignment);
-      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,Leaf::TY_LINE_MB);
       LBBox3fa allBounds = empty;
       for (size_t i=0; i<items; i++)
         allBounds.extend(accel[i].fillMB(set.prims->data(), start, set.object_range.end(), bvh->scene, set.time_range, i==(items-1)));

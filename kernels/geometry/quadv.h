@@ -32,6 +32,7 @@ namespace embree
       bool last(const char* This) const;
     };
     static Type type;
+    static const Leaf::Type leaf_type = Leaf::TY_QUAD;
 
   public:
 
@@ -48,7 +49,7 @@ namespace embree
 
     /* Construction from vertices and IDs */
     __forceinline QuadMv(const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const Vec3vf<M>& v3, const vint<M>& geomIDs, const vint<M>& primIDs, const bool last)
-      : geomIDs(Leaf::vencode(Leaf::TY_QUAD,geomIDs,last)), v0(v0), v1(v1), v2(v2), v3(v3), primIDs(primIDs) {}
+      : v0(v0), v1(v1), v2(v2), v3(v3), geomIDs(Leaf::vencode(Leaf::TY_QUAD,geomIDs,last)), primIDs(primIDs) {}
     
     /* Returns a mask that tells which quads are valid */
     __forceinline vbool<M> valid() const { return geomIDs != vint<M>(-1); }
@@ -157,7 +158,7 @@ namespace embree
       for (size_t i=0; i<items; i++) {
         accel[i].fill(prims,cur,range.end(),bvh->scene,i==(items-1));
       }
-      return BVH::encodeLeaf((char*)accel,items);
+      return BVH::encodeLeaf((char*)accel,Leaf::TY_QUAD);
     }
 
     template<typename BVH>
@@ -166,7 +167,7 @@ namespace embree
       size_t items = blocks(set.object_range.size());
       size_t start = set.object_range.begin();
       QuadMv* accel = (QuadMv*) alloc.malloc1(items*sizeof(QuadMv),BVH::byteAlignment);
-      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,Leaf::TY_QUAD);
       float A = 0.0f;
       LBBox3fa allBounds = empty;
       for (size_t i=0; i<items; i++) {
@@ -207,11 +208,11 @@ namespace embree
     }
    
   public:
-    vint<M> geomIDs; // geometry ID
     Vec3vf<M> v0;      // 1st vertex of the quads
     Vec3vf<M> v1;      // 2nd vertex of the quads
     Vec3vf<M> v2;      // 3rd vertex of the quads
     Vec3vf<M> v3;      // 4rd vertex of the quads
+    vint<M> geomIDs; // geometry ID
     vint<M> primIDs; // primitive ID
   };
 

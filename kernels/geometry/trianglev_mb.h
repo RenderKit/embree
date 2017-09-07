@@ -33,6 +33,7 @@ namespace embree
     };
 
     static Type type;
+    static const Leaf::Type leaf_type = Leaf::TY_TRIANGLE_MB;
 
   public:
 
@@ -56,7 +57,7 @@ namespace embree
                                const Vec3vf<M>& c0, const Vec3vf<M>& c1,
                                const vint<M>& geomIDs, const vint<M>& primIDs,
                                const bool last)
-      : geomIDs(Leaf::vencode(Leaf::TY_TRIANGLE_MB,geomIDs,last)), v0(a0), v1(b0), v2(c0), dv0(a1-a0), dv1(b1-b0), dv2(c1-c0), primIDs(primIDs) {}
+      : v0(a0), v1(b0), v2(c0), dv0(a1-a0), dv1(b1-b0), dv2(c1-c0), geomIDs(Leaf::vencode(Leaf::TY_TRIANGLE_MB,geomIDs,last)), primIDs(primIDs) {}
 
     /* Returns a mask that tells which triangles are valid */
     __forceinline vbool<M> valid() const { return geomIDs != vint<M>(-1); }
@@ -212,7 +213,7 @@ namespace embree
       size_t items = blocks(set.object_range.size());
       size_t start = set.object_range.begin();
       TriangleMvMB* accel = (TriangleMvMB*) alloc.malloc1(items*sizeof(TriangleMvMB),BVH::byteAlignment);
-      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,Leaf::TY_TRIANGLE_MB);
       LBBox3fa allBounds = empty;
       for (size_t i=0; i<items; i++)
         allBounds.extend(accel[i].fillMB(set.prims->data(), start, set.object_range.end(), bvh->scene, set.time_range, i==(items-1)));
@@ -220,13 +221,13 @@ namespace embree
     }
 
   public:
-    vint<M> geomIDs; // geometry ID
     Vec3vf<M> v0;      // 1st vertex of the triangles
     Vec3vf<M> v1;      // 2nd vertex of the triangles
     Vec3vf<M> v2;      // 3rd vertex of the triangles
     Vec3vf<M> dv0;     // difference vector between time steps t0 and t1 for first vertex
     Vec3vf<M> dv1;     // difference vector between time steps t0 and t1 for second vertex
     Vec3vf<M> dv2;     // difference vector between time steps t0 and t1 for third vertex
+    vint<M> geomIDs; // geometry ID
     vint<M> primIDs; // primitive ID
   };
 

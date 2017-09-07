@@ -29,6 +29,7 @@ namespace embree
       bool last(const char* This) const;
     };
     static Type type;
+    static const Leaf::Type leaf_type = Leaf::TY_HAIR;
 
   public:
 
@@ -45,7 +46,7 @@ namespace embree
 
     /*! Construction from vertices and IDs. */
     __forceinline Bezier1i (const unsigned vertexID, const unsigned geomID, const unsigned primID, const Leaf::Type ty, const bool last)
-      : geom(Leaf::encode(ty,geomID,last)), prim(primID), vertexID(vertexID) {}
+      : vertexID(vertexID), geom(Leaf::encode(ty,geomID,last)), prim(primID) {}
 
      /*! checks if this is the last primitive */
     __forceinline unsigned last() const { return Leaf::decodeLast(geom); }
@@ -81,15 +82,18 @@ namespace embree
       return curves->linearBounds(primID,time_range);
     }
 
+  public:
+    unsigned vertexID; //!< index of start vertex
   private:
     unsigned geom;     //!< geometry ID
     unsigned prim;     //!< primitive ID
-  public:
-    unsigned vertexID; //!< index of start vertex
+
   };
 
   struct Bezier1iMB : public Bezier1i
   {
+    static const Leaf::Type leaf_type = Leaf::TY_HAIR_MB;
+    
     template<typename BVH>
     __forceinline static typename BVH::NodeRef createLeaf(const FastAllocator::CachedAllocator& alloc, PrimRef* prims, const range<size_t>& range, BVH* bvh)
     {
@@ -103,7 +107,7 @@ namespace embree
       size_t items = Bezier1i::blocks(set.object_range.size());
       size_t start = set.object_range.begin();
       Bezier1i* accel = (Bezier1i*) alloc.malloc1(items*sizeof(Bezier1i),BVH::byteAlignment);
-      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,Leaf::TY_HAIR_MB);
       LBBox3fa allBounds = empty;
       for (size_t i=0; i<items; i++)
         allBounds.extend(accel[i].fillMB(set.prims->data(), start, set.object_range.end(), bvh->scene, set.time_range, i==(items-1)));

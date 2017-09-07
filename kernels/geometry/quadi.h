@@ -33,6 +33,7 @@ namespace embree
       bool last(const char* This) const;
     };
     static Type type;
+    static const Leaf::Type leaf_type = Leaf::TY_QUAD;
 
   public:
 
@@ -59,7 +60,7 @@ namespace embree
                          const vint<M>& primIDs,
                          const Leaf::Type ty,
                          const bool last)
-      : geomIDs(Leaf::vencode(ty,geomIDs,last)), v0(v0),v1(v1), v2(v2), v3(v3), primIDs(primIDs) {}
+      : v0(v0),v1(v1), v2(v2), v3(v3), geomIDs(Leaf::vencode(ty,geomIDs,last)), primIDs(primIDs) {}
 
     /* Returns a mask that tells which quads are valid */
     __forceinline vbool<M> valid() const { return primIDs != vint<M>(-1); }
@@ -317,11 +318,11 @@ namespace embree
     }
 
   public:
-    vint<M> geomIDs;    // geometry ID of mesh
     vint<M> v0;         // 4 byte offset of 1st vertex
     vint<M> v1;         // 4 byte offset of 2nd vertex
     vint<M> v2;         // 4 byte offset of 3rd vertex
     vint<M> v3;         // 4 byte offset of 4th vertex
+    vint<M> geomIDs;    // geometry ID of mesh
     vint<M> primIDs;    // primitive ID of primitive inside mesh
   };
 
@@ -329,6 +330,8 @@ namespace embree
   template <int M>
     struct QuadMiMB : public QuadMi<M>
   {
+    static const Leaf::Type leaf_type = Leaf::TY_QUAD_MB;
+    
     template<typename BVH>
     __forceinline static typename BVH::NodeRef createLeaf(const FastAllocator::CachedAllocator& alloc, PrimRef* prims, const range<size_t>& range, BVH* bvh)
     {
@@ -342,7 +345,7 @@ namespace embree
       size_t items = QuadMi<M>::blocks(set.object_range.size());
       size_t start = set.object_range.begin();
       QuadMi<M>* accel = (QuadMi<M>*) alloc.malloc1(items*sizeof(QuadMi<M>),BVH::byteAlignment);
-      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,Leaf::TY_QUAD_MB);
       float A = 0.0f;
       LBBox3fa allBounds = empty;
       for (size_t i=0; i<items; i++) {

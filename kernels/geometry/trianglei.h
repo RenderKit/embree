@@ -33,6 +33,7 @@ namespace embree
       bool last(const char* This) const;
     };
     static Type type;
+    static const Leaf::Type leaf_type = Leaf::TY_TRIANGLE;
 
   public:
 
@@ -58,7 +59,7 @@ namespace embree
                              const vint<M>& primIDs,
                              const Leaf::Type ty,
                              const bool last)
-      : geomIDs(Leaf::vencode(ty,geomIDs,last)), v0(v0), v1(v1), v2(v2), primIDs(primIDs) {}
+      : v0(v0), v1(v1), v2(v2), geomIDs(Leaf::vencode(ty,geomIDs,last)), primIDs(primIDs) {}
 
     /* Returns a mask that tells which triangles are valid */
     __forceinline vbool<M> valid() const { return primIDs != vint<M>(-1); }
@@ -289,7 +290,7 @@ namespace embree
       for (size_t i=0; i<items; i++) {
         accel[i].fill(prims,cur,range.end(),bvh->scene,i==(items-1));
       }
-      return BVH::encodeLeaf((char*)accel,items);
+      return BVH::encodeLeaf((char*)accel,Leaf::TY_TRIANGLE);
     }
 
     template<typename BVH>
@@ -298,7 +299,7 @@ namespace embree
       size_t items = blocks(set.object_range.size());
       size_t start = set.object_range.begin();
       TriangleMi* accel = (TriangleMi*) alloc.malloc1(items*sizeof(TriangleMi),BVH::byteAlignment);
-      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,Leaf::TY_TRIANGLE);
       LBBox3fa allBounds = empty;
       for (size_t i=0; i<items; i++) {
         const BBox3fa b = accel[i].fill(set.prims->data(),start,set.object_range.end(),bvh->scene,i==(items-1));
@@ -325,16 +326,18 @@ namespace embree
     }
 
   public:
-    vint<M> geomIDs;    // geometry ID of mesh
     vint<M> v0;         // 4 byte offset of 1st vertex
     vint<M> v1;         // 4 byte offset of 2nd vertex
     vint<M> v2;         // 4 byte offset of 3rd vertex
+    vint<M> geomIDs;    // geometry ID of mesh
     vint<M> primIDs;    // primitive ID of primitive inside mesh
   };
 
   template <int M>
     struct TriangleMiMB : public TriangleMi<M>
   {
+    static const Leaf::Type leaf_type = Leaf::TY_TRIANGLE_MB;
+    
     template<typename BVH>
     __forceinline static typename BVH::NodeRef createLeaf(const FastAllocator::CachedAllocator& alloc, PrimRef* prims, const range<size_t>& range, BVH* bvh)
     {
@@ -348,7 +351,7 @@ namespace embree
       size_t items = TriangleMi<M>::blocks(set.object_range.size());
       size_t start = set.object_range.begin();
       TriangleMi<M>* accel = (TriangleMi<M>*) alloc.malloc1(items*sizeof(TriangleMi<M>),BVH::byteAlignment);
-      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+      typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,Leaf::TY_TRIANGLE_MB);
       float A = 0.0f;
       LBBox3fa allBounds = empty;
       for (size_t i=0; i<items; i++) {

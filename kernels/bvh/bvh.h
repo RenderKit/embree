@@ -1473,10 +1473,10 @@ namespace embree
     }
 
     /*! Encodes a leaf */
-    static __forceinline NodeRef encodeLeaf(void* tri, size_t ty) {
+    static __forceinline NodeRef encodeLeaf(void* tri, Leaf::Type ty = Leaf::TY_NULL) {
       assert(!((size_t)tri & align_mask));
-      assert(ty <= maxLeafBlocks);
-      return NodeRef((size_t)tri | (tyLeaf+min(ty,(size_t)maxLeafBlocks)));
+      assert(((size_t)ty) <= maxLeafBlocks);
+      return NodeRef((size_t)tri | (tyLeaf+min((size_t)ty,(size_t)maxLeafBlocks)));
     }
 
     /*! Encodes a leaf */

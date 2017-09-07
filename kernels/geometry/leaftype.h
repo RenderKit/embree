@@ -27,6 +27,8 @@ namespace embree
 
     enum Type
     {
+      TY_NULL = 0,
+      TY_ONE = 1,
       TY_TRIANGLE = 0,
       TY_TRIANGLE_MB = 1,
       TY_QUAD = 2,

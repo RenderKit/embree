@@ -67,37 +67,37 @@ namespace embree
           void* table[8];
         };
 
-        static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
+        static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node)
         {
-          const unsigned int ty = (unsigned int) Leaf::decodeTy(*(unsigned int*)prim);
+          //const unsigned int ty = (unsigned int) Leaf::decodeTy(*(unsigned int*)prim);
           assert(ty < 8);
           if (likely(ty == 0)) {
-            Intersector0::intersect(pre.pre0,ray,context,(typename Intersector0::Primitive*)prim,num,lazy_node);
+            Intersector0::intersect(pre.pre0,ray,context,(typename Intersector0::Primitive*)prim,ty,lazy_node);
             //} else if (ty == 1) {
-            //Intersector1::intersect(pre.pre1,ray,context,(typename Intersector1::Primitive*)prim,num,lazy_node);
+            //Intersector1::intersect(pre.pre1,ray,context,(typename Intersector1::Primitive*)prim,ty,lazy_node);
           } else if (ty == 2) {
-            Intersector2::intersect(pre.pre2,ray,context,(typename Intersector2::Primitive*)prim,num,lazy_node);
+            Intersector2::intersect(pre.pre2,ray,context,(typename Intersector2::Primitive*)prim,ty,lazy_node);
             //} else if (ty == 3) {
-            //Intersector3::intersect(pre.pre3,ray,context,(typename Intersector3::Primitive*)prim,num,lazy_node);
+            //Intersector3::intersect(pre.pre3,ray,context,(typename Intersector3::Primitive*)prim,ty,lazy_node);
           } else {
-            pre.leaf_intersector->vtable1[ty].intersect(pre.table[ty],ray,context,prim,num,lazy_node);
+            pre.leaf_intersector->vtable1[ty].intersect(pre.table[ty],ray,context,prim,ty,lazy_node);
           }
         }
         
-        static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node) 
+        static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node) 
         {
-          const unsigned int ty = (unsigned int) Leaf::decodeTy(*(unsigned int*)prim);
+          //const unsigned int ty = (unsigned int) Leaf::decodeTy(*(unsigned int*)prim);
           assert(ty < 8);
           if (likely(ty == 0)) {
-            return Intersector0::occluded(pre.pre0,ray,context,(typename Intersector0::Primitive*)prim,num,lazy_node);
+            return Intersector0::occluded(pre.pre0,ray,context,(typename Intersector0::Primitive*)prim,ty,lazy_node);
             //} else if (ty == 1) {
-            //return Intersector1::occluded(pre.pre1,ray,context,(typename Intersector1::Primitive*)prim,num,lazy_node);
+            //return Intersector1::occluded(pre.pre1,ray,context,(typename Intersector1::Primitive*)prim,ty,lazy_node);
           } else if (ty == 2) {
-            return Intersector2::occluded(pre.pre2,ray,context,(typename Intersector2::Primitive*)prim,num,lazy_node);
+            return Intersector2::occluded(pre.pre2,ray,context,(typename Intersector2::Primitive*)prim,ty,lazy_node);
             //} else if (ty == 3) {
-            //return Intersector3::occluded(pre.pre3,ray,context,(typename Intersector3::Primitive*)prim,num,lazy_node);
+            //return Intersector3::occluded(pre.pre3,ray,context,(typename Intersector3::Primitive*)prim,ty,lazy_node);
           } else {
-            return pre.leaf_intersector->vtable1[ty].occluded(pre.table[ty],ray,context,prim,num,lazy_node);
+            return pre.leaf_intersector->vtable1[ty].occluded(pre.table[ty],ray,context,prim,ty,lazy_node);
           }
         }
       };
@@ -118,8 +118,8 @@ namespace embree
           }
         }
 
-        static __forceinline void vintersect(void* pre, Ray& ray, IntersectContext* context, const void* prim, size_t num, size_t& lazy_node) {
-          intersect(*(Precalculations*)pre,ray,context,(const Primitive*)prim,num,lazy_node);
+        static __forceinline void vintersect(void* pre, Ray& ray, IntersectContext* context, const void* prim, size_t ty, size_t& lazy_node) {
+          intersect(*(Precalculations*)pre,ray,context,(const Primitive*)prim,ty,lazy_node);
         }
         
         static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node) 
@@ -132,8 +132,8 @@ namespace embree
           return false;
         }
 
-        static __forceinline bool voccluded(void* pre, Ray& ray, IntersectContext* context, const void* prim, size_t num, size_t& lazy_node) {
-          return occluded(*(Precalculations*)pre,ray,context,(const Primitive*)prim,num,lazy_node);
+        static __forceinline bool voccluded(void* pre, Ray& ray, IntersectContext* context, const void* prim, size_t ty, size_t& lazy_node) {
+          return occluded(*(Precalculations*)pre,ray,context,(const Primitive*)prim,ty,lazy_node);
         }
 
         template<int K>
