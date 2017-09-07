@@ -428,6 +428,9 @@ namespace embree
   /// Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
+  __forceinline vfloat16 unpacklo(const vfloat16& a, const vfloat16& b) { return _mm512_unpacklo_ps(a, b); }
+  __forceinline vfloat16 unpackhi(const vfloat16& a, const vfloat16& b) { return _mm512_unpackhi_ps(a, b); }
+
   template<int i>
   __forceinline vfloat16 shuffle(const vfloat16& v) {
     return _mm512_permute_ps(v, _MM_SHUFFLE(i, i, i, i));
@@ -530,6 +533,7 @@ namespace embree
   __forceinline void transpose(const vfloat16& r0, const vfloat16& r1, const vfloat16& r2, const vfloat16& r3,
                                vfloat16& c0, vfloat16& c1, vfloat16& c2, vfloat16& c3)
   {
+#if defined(__AVX512F__) && !defined(__AVX512VL__) // KNL
     vfloat16 a0a1_c0c1 = interleave_even(r0, r1);
     vfloat16 a2a3_c2c3 = interleave_even(r2, r3);
     vfloat16 b0b1_d0d1 = interleave_odd (r0, r1);
@@ -539,6 +543,17 @@ namespace embree
     c1 = interleave2_even(b0b1_d0d1, b2b3_d2d3);
     c2 = interleave2_odd (a0a1_c0c1, a2a3_c2c3);
     c3 = interleave2_odd (b0b1_d0d1, b2b3_d2d3);
+#else
+    vfloat16 a0a2_b0b2 = unpacklo(r0, r2);
+    vfloat16 c0c2_d0d2 = unpackhi(r0, r2);
+    vfloat16 a1a3_b1b3 = unpacklo(r1, r3);
+    vfloat16 c1c3_d1d3 = unpackhi(r1, r3);
+
+    c0 = unpacklo(a0a2_b0b2, a1a3_b1b3);
+    c1 = unpackhi(a0a2_b0b2, a1a3_b1b3);
+    c2 = unpacklo(c0c2_d0d2, c1c3_d1d3);
+    c3 = unpackhi(c0c2_d0d2, c1c3_d1d3);
+#endif
   }
 
   __forceinline void transpose(const vfloat4& r0,  const vfloat4& r1,  const vfloat4& r2,  const vfloat4& r3,
