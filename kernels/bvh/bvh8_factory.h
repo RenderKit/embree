@@ -27,7 +27,9 @@ namespace embree
     BVH8Factory(int bfeatures, int ifeatures);
 
   public:
-    Accel* BVH8MultiFast(Scene* scene);
+    void BVH8MultiFast(Scene* scene);
+    void BVH8Set0MultiFast(Scene* scene);
+    void BVH8Set1MultiFast(Scene* scene);
 
     Accel* BVH8OBBBezier1v(Scene* scene);
     Accel* BVH8OBBBezier1i(Scene* scene);
@@ -70,10 +72,10 @@ namespace embree
     void selectIntersectors(int features);
 
   private:
-    Accel::Intersectors BVH8MultiFastIntersectors(BVH8* bvh);
-    Accel::Intersectors BVH8MultiFastMBIntersectors(BVH8* bvh);
-    Accel::Intersectors BVH8MultiFastOBBIntersectors(BVH8* bvh);
-    Accel::Intersectors BVH8MultiFastOBBMBIntersectors(BVH8* bvh);
+    Accel::Intersectors BVH8Set0MultiFastIntersectors(BVH8* bvh);
+    Accel::Intersectors BVH8Set0MultiFastMBIntersectors(BVH8* bvh);
+    Accel::Intersectors BVH8Set1MultiFastOBBIntersectors(BVH8* bvh);
+    Accel::Intersectors BVH8Set1MultiFastOBBMBIntersectors(BVH8* bvh);
 
     Accel::Intersectors BVH8Line4iIntersectors(BVH8* bvh);
     Accel::Intersectors BVH8Line4iMBIntersectors(BVH8* bvh);
@@ -99,10 +101,10 @@ namespace embree
     Accel::Intersectors BVH8UserGeometryMBIntersectors(BVH8* bvh);
 
   private:
-    DEFINE_SYMBOL2(Accel::Intersector1,BVH8MultiFastIntersector1);
-    DEFINE_SYMBOL2(Accel::Intersector1,BVH8MultiFastMBIntersector1);
-    DEFINE_SYMBOL2(Accel::Intersector1,BVH8MultiFastOBBIntersector1);
-    DEFINE_SYMBOL2(Accel::Intersector1,BVH8MultiFastOBBMBIntersector1);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH8Set0MultiFastIntersector1);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH8Set0MultiFastMBIntersector1);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH8Set1MultiFastOBBIntersector1);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH8Set1MultiFastOBBMBIntersector1);
 
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Line4iIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Line4iMBIntersector1);

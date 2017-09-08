@@ -748,7 +748,7 @@ namespace embree
   {
 #if defined (EMBREE_TARGET_AVX) // FIXME: this hack only works for static scenes
     if (device->tri_accel == "bvh8.multi.fast")
-      accels.add(device->bvh8_factory->BVH8MultiFast(this));
+      device->bvh8_factory->BVH8MultiFast(this);
 #endif
 
     /* print scene statistics */

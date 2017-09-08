@@ -35,10 +35,10 @@
 
 namespace embree
 {
-  DECLARE_SYMBOL2(Accel::Intersector1,BVH8MultiFastIntersector1);
-  DECLARE_SYMBOL2(Accel::Intersector1,BVH8MultiFastMBIntersector1);
-  DECLARE_SYMBOL2(Accel::Intersector1,BVH8MultiFastOBBIntersector1);
-  DECLARE_SYMBOL2(Accel::Intersector1,BVH8MultiFastOBBMBIntersector1);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH8Set0MultiFastIntersector1);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH8Set0MultiFastMBIntersector1);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH8Set1MultiFastOBBIntersector1);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH8Set1MultiFastOBBMBIntersector1);
 
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Line4iIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Line4iMBIntersector1);
@@ -294,10 +294,10 @@ namespace embree
   void BVH8Factory::selectIntersectors(int features)
   {
     /* select intersectors1 */
-    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8MultiFastIntersector1);
-    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8MultiFastMBIntersector1);
-    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8MultiFastOBBIntersector1);
-    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8MultiFastOBBMBIntersector1);
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Set0MultiFastIntersector1);
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Set0MultiFastMBIntersector1);
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Set1MultiFastOBBIntersector1);
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Set1MultiFastOBBMBIntersector1);
 
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Line4iIntersector1));
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Line4iMBIntersector1));
@@ -532,47 +532,47 @@ namespace embree
     }
   }
 
-  Accel::Intersectors BVH8Factory::BVH8MultiFastIntersectors(BVH8* bvh)
+  Accel::Intersectors BVH8Factory::BVH8Set0MultiFastIntersectors(BVH8* bvh)
   {
     CreateLeafIntersectorFast(bvh->device->enabled_cpu_features);
     bvh->leaf_intersector = LeafIntersectorFast();
 
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1 = BVH8MultiFastIntersector1();
+    intersectors.intersector1 = BVH8Set0MultiFastIntersector1();
     return intersectors;
   }
 
-  Accel::Intersectors BVH8Factory::BVH8MultiFastMBIntersectors(BVH8* bvh)
+  Accel::Intersectors BVH8Factory::BVH8Set0MultiFastMBIntersectors(BVH8* bvh)
   {
     CreateLeafIntersectorFast(bvh->device->enabled_cpu_features);
     bvh->leaf_intersector = LeafIntersectorFast();
 
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1 = BVH8MultiFastMBIntersector1();
+    intersectors.intersector1 = BVH8Set0MultiFastMBIntersector1();
     return intersectors;
   }
 
-  Accel::Intersectors BVH8Factory::BVH8MultiFastOBBIntersectors(BVH8* bvh)
+  Accel::Intersectors BVH8Factory::BVH8Set1MultiFastOBBIntersectors(BVH8* bvh)
   {
     CreateLeafIntersectorFast(bvh->device->enabled_cpu_features);
     bvh->leaf_intersector = LeafIntersectorFast();
 
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1 = BVH8MultiFastOBBIntersector1();
+    intersectors.intersector1 = BVH8Set1MultiFastOBBIntersector1();
     return intersectors;
   }
 
-  Accel::Intersectors BVH8Factory::BVH8MultiFastOBBMBIntersectors(BVH8* bvh)
+  Accel::Intersectors BVH8Factory::BVH8Set1MultiFastOBBMBIntersectors(BVH8* bvh)
   {
     CreateLeafIntersectorFast(bvh->device->enabled_cpu_features);
     bvh->leaf_intersector = LeafIntersectorFast();
 
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1 = BVH8MultiFastOBBMBIntersector1();
+    intersectors.intersector1 = BVH8Set1MultiFastOBBMBIntersector1();
     return intersectors;
   }
 
@@ -934,9 +934,40 @@ namespace embree
     return intersectors;
   }
 
-  Accel* BVH8Factory::BVH8MultiFast(Scene* scene)
+  void BVH8Factory::BVH8Set0MultiFast(Scene* scene)
   {
-    Geometry::Type ty = (Geometry::Type) (Geometry::TRIANGLE_MESH | Geometry::QUAD_MESH | Geometry::BEZIER_CURVES | Geometry::LINE_SEGMENTS);
+    Geometry::Type ty = (Geometry::Type) (Geometry::TRIANGLE_MESH | Geometry::QUAD_MESH);
+
+    static const PrimitiveType* type[8];
+    type[0] = &Triangle4::type;
+    type[1] = &Triangle4iMB::type;
+    type[2] = &Quad4v::type;
+    type[3] = &Quad4iMB::type;
+    type[4] = &Bezier1v::type;
+    type[5] = &Bezier1iMB::type;
+    type[6] = &Line4i::type;
+    type[7] = &Line4iMB::type;
+    BVH8* accel = new BVH8(type,8,scene);
+    
+    const size_t tri1 = scene->getNumPrimitives(Geometry::TRIANGLE_MESH,false);
+    const size_t tri2 = scene->getNumPrimitives(Geometry::TRIANGLE_MESH,true)-tri1;
+    const size_t quad1 = scene->getNumPrimitives(Geometry::QUAD_MESH,false);
+    const size_t quad2 = scene->getNumPrimitives(Geometry::QUAD_MESH,true)-quad1;
+
+    Accel::Intersectors intersectors;
+    if (tri2+quad2) intersectors = BVH8Set0MultiFastMBIntersectors(accel);
+    else            intersectors = BVH8Set0MultiFastIntersectors(accel);
+    
+    Builder* builder = nullptr;
+    if (scene->device->tri_builder == "default") builder = BVH8MultiFastSceneBuilder(accel,scene,ty);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH8<multi>");
+
+    scene->accels.add(new AccelInstance(accel,builder,intersectors));
+  }
+
+  void BVH8Factory::BVH8Set1MultiFast(Scene* scene)
+  {
+    Geometry::Type ty = (Geometry::Type) (Geometry::BEZIER_CURVES | Geometry::LINE_SEGMENTS);
 
     static const PrimitiveType* type[8];
     type[0] = &Triangle4::type;
@@ -949,37 +980,26 @@ namespace embree
     type[7] = &Line4iMB::type;
     BVH8* accel = new BVH8(type,8,scene);
 
-    Accel::Intersectors intersectors;
-
-    const size_t tri1 = scene->getNumPrimitives(Geometry::TRIANGLE_MESH,false);
-    const size_t tri2 = scene->getNumPrimitives(Geometry::TRIANGLE_MESH,true)-tri1;
-    const size_t quad1 = scene->getNumPrimitives(Geometry::QUAD_MESH,false);
-    const size_t quad2 = scene->getNumPrimitives(Geometry::QUAD_MESH,true)-quad1;
     const size_t curves1 = scene->getNumPrimitives(Geometry::BEZIER_CURVES,false);
     const size_t curves2 = scene->getNumPrimitives(Geometry::BEZIER_CURVES,true)-curves1;
     const size_t lines1 = scene->getNumPrimitives(Geometry::LINE_SEGMENTS,false);
     const size_t lines2 = scene->getNumPrimitives(Geometry::LINE_SEGMENTS,true)-lines1;
-    
-    if (tri2+quad2+curves2+lines2)
-    {
-      if (!curves1 && !curves2)
-        intersectors = BVH8MultiFastMBIntersectors(accel);
-      else
-        intersectors = BVH8MultiFastOBBMBIntersectors(accel);
-    }
-    else 
-    {
-      if (!curves1)
-        intersectors = BVH8MultiFastIntersectors(accel);
-      else 
-        intersectors = BVH8MultiFastOBBIntersectors(accel);
-    }
+
+    Accel::Intersectors intersectors;
+    if (curves2+lines2) intersectors = BVH8Set1MultiFastOBBMBIntersectors(accel);
+    else                intersectors = BVH8Set1MultiFastOBBIntersectors(accel);
     
     Builder* builder = nullptr;
-    if (scene->device->tri_builder == "default") builder = BVH8MultiFastSceneBuilder  (accel,scene,ty);
+    if (scene->device->tri_builder == "default") builder = BVH8MultiFastSceneBuilder(accel,scene,ty);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH8<multi>");
 
-    return new AccelInstance(accel,builder,intersectors);
+    scene->accels.add(new AccelInstance(accel,builder,intersectors));
+  }
+
+  void BVH8Factory::BVH8MultiFast(Scene* scene)
+  {
+    BVH8Set0MultiFast(scene);
+    BVH8Set1MultiFast(scene);
   }
 
   Accel* BVH8Factory::BVH8OBBBezier1v(Scene* scene)
