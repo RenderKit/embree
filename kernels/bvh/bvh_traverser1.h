@@ -30,6 +30,8 @@ namespace embree
 
     /*! Helper functions for fast sorting using AVX512 instructions. */
 #if defined(__AVX512F__)   
+
+    /* KNL code path */
     __forceinline static void isort_update(vfloat16 &dist, vllong8 &ptr, const vfloat16 &d, const vllong8 &p)
       {
         const vfloat16 dist_shift = align_shift_right<15>(dist,dist);
@@ -244,6 +246,192 @@ namespace embree
 #endif        
       }
 
+
+    /* SKX code path */
+#if defined(__AVX512VL__)
+    __forceinline static void isort_update(vfloat8 &dist, vint8 &ptr, const vfloat8 &d, const vint8 &p)
+      {
+        const vfloat8 dist_shift = align_shift_right<7>(dist,dist);
+        const vint8  ptr_shift  = align_shift_right<7>(ptr,ptr);
+        const vboolf8 m_geq = d >= dist;
+        const vboolf8 m_geq_shift = m_geq << 1;
+        dist = select(m_geq,d,dist);
+        ptr  = select(m_geq,p,ptr);
+        dist = select(m_geq_shift,dist_shift,dist);
+        ptr  = select(m_geq_shift,ptr_shift,ptr);
+      }
+
+      __forceinline static void isort_quick_update(vfloat8 &dist, vint8 &ptr, const vfloat8 &d, const vint8 &p)
+      {
+        dist = align_shift_right<7>(dist,permute(d,vint8(zero)));
+        ptr  = align_shift_right<7>(ptr,permute(p,vint8(zero)));
+      }
+
+      template<int N, int Nx, int types, class NodeRef, class BaseNode>
+        static __forceinline void traverseClosestHitAVX512VL(NodeRef& cur,
+                                                             size_t mask,
+                                                             const vfloat<Nx>& tNear,
+                                                             StackItemT<NodeRef>*& stackPtr,
+                                                             StackItemT<NodeRef>* stackEnd)
+      {
+        assert(mask != 0);
+        const BaseNode* node = cur.baseNode(types);
+        vint8 children( step );
+        children = vint8::compact((int)mask,children);
+        vfloat8 distance = tNear;
+        distance = vfloat8::compact((int)mask,distance,tNear);
+
+        cur = node->child(toScalar(children));
+        cur.prefetch(types);
+
+        
+        mask &= mask-1;
+        if (likely(mask == 0)) return;
+        
+        /* 2 hits: order A0 B0 */
+        const vint8 c0(children);
+        const vfloat8 d0(distance);
+        children = align_shift_right<1>(children,children);
+        distance = align_shift_right<1>(distance,distance);        
+        const vint8 c1(children);
+        const vfloat8 d1(distance);
+        
+        cur = node->child(toScalar(children));
+        cur.prefetch(types);
+
+        /* a '<' keeps the order for equal distances, scenes like powerplant largely benefit from it */
+        const vboolf8 m_dist  = d0 < d1;
+        const vfloat8 dist_A0 = select(m_dist, d0, d1);
+        const vfloat8 dist_B0 = select(m_dist, d1, d0);
+        const vint8 ptr_A0   = select(vboolf8(m_dist), c0, c1);
+        const vint8 ptr_B0   = select(vboolf8(m_dist), c1, c0);
+
+        mask &= mask-1;
+        if (likely(mask == 0)) {
+          cur = node->child(toScalar(ptr_A0));
+          stackPtr[0].ptr            = node->child(toScalar(ptr_B0));
+          *(float*)&stackPtr[0].dist = toScalar(dist_B0);
+          stackPtr++;
+          return;
+        }
+
+        /* 3 hits: order A1 B1 C1 */
+
+        children = align_shift_right<1>(children,children);
+        distance = align_shift_right<1>(distance,distance);        
+
+        const vint8 c2(children);
+        const vfloat8 d2(distance);
+
+        cur = node->child(toScalar(children));
+        cur.prefetch(types);
+
+        const vboolf8 m_dist1     = dist_A0 <= d2;
+        const vfloat8 dist_tmp_B1 = select(m_dist1, d2, dist_A0);
+        const vint8  ptr_A1      = select(vboolf8(m_dist1), ptr_A0, c2);
+        const vint8  ptr_tmp_B1  = select(vboolf8(m_dist1), c2, ptr_A0);
+
+        const vboolf8 m_dist2     = dist_B0 <= dist_tmp_B1;
+        const vfloat8 dist_B1     = select(m_dist2, dist_B0 , dist_tmp_B1);
+        const vfloat8 dist_C1     = select(m_dist2, dist_tmp_B1, dist_B0);
+        const vint8  ptr_B1      = select(vboolf8(m_dist2), ptr_B0, ptr_tmp_B1);
+        const vint8  ptr_C1      = select(vboolf8(m_dist2), ptr_tmp_B1, ptr_B0);
+
+        mask &= mask-1;
+        if (likely(mask == 0)) {
+          cur = node->child(toScalar(ptr_A1));
+          stackPtr[0].ptr  = node->child(toScalar(ptr_C1));
+          *(float*)&stackPtr[0].dist = toScalar(dist_C1);
+          stackPtr[1].ptr  = node->child(toScalar(ptr_B1));
+          *(float*)&stackPtr[1].dist = toScalar(dist_B1);
+          stackPtr+=2;
+          return;
+        }
+
+        /* 4 hits: order A2 B2 C2 D2 */
+        
+        const vfloat8 dist_A1  = select(m_dist1, dist_A0, d2);
+
+        children = align_shift_right<1>(children,children);
+        distance = align_shift_right<1>(distance,distance);        
+
+        const vint8 c3(children);
+        const vfloat8 d3(distance);
+
+        cur = node->child(toScalar(children));
+        cur.prefetch(types);
+
+        const vboolf8 m_dist3     = dist_A1 <= d3;
+        const vfloat8 dist_tmp_B2 = select(m_dist3, d3, dist_A1);
+        const vint8  ptr_A2      = select(vboolf8(m_dist3), ptr_A1, c3);
+        const vint8  ptr_tmp_B2  = select(vboolf8(m_dist3), c3, ptr_A1);
+
+        const vboolf8 m_dist4     = dist_B1 <= dist_tmp_B2;
+        const vfloat8 dist_B2     = select(m_dist4, dist_B1 , dist_tmp_B2);
+        const vfloat8 dist_tmp_C2 = select(m_dist4, dist_tmp_B2, dist_B1);
+        const vint8  ptr_B2      = select(vboolf8(m_dist4), ptr_B1, ptr_tmp_B2);
+        const vint8  ptr_tmp_C2  = select(vboolf8(m_dist4), ptr_tmp_B2, ptr_B1);
+
+        const vboolf8 m_dist5     = dist_C1 <= dist_tmp_C2;
+        const vfloat8 dist_C2     = select(m_dist5, dist_C1 , dist_tmp_C2);
+        const vfloat8 dist_D2     = select(m_dist5, dist_tmp_C2, dist_C1);
+        const vint8  ptr_C2      = select(vboolf8(m_dist5), ptr_C1, ptr_tmp_C2);
+        const vint8  ptr_D2      = select(vboolf8(m_dist5), ptr_tmp_C2, ptr_C1);
+
+        mask &= mask-1;
+        if (likely(mask == 0)) {
+          cur = node->child(toScalar(ptr_A2));
+          stackPtr[0].ptr  = node->child(toScalar(ptr_D2));
+          *(float*)&stackPtr[0].dist = toScalar(dist_D2);
+          stackPtr[1].ptr  = node->child(toScalar(ptr_C2));
+          *(float*)&stackPtr[1].dist = toScalar(dist_C2);
+          stackPtr[2].ptr  = node->child(toScalar(ptr_B2));
+          *(float*)&stackPtr[2].dist = toScalar(dist_B2);
+          stackPtr+=3;
+          return;
+        }
+
+        /* >=5 hits: reverse to descending order for writing to stack */
+
+        const size_t hits = 4 + __popcnt(mask);
+        const vfloat8 dist_A2  = select(m_dist3, dist_A1, d3);
+        vfloat8 dist(neg_inf);
+        vint8 ptr(zero);
+
+        
+        isort_quick_update(dist,ptr,dist_A2,ptr_A2);
+        isort_quick_update(dist,ptr,dist_B2,ptr_B2);
+        isort_quick_update(dist,ptr,dist_C2,ptr_C2);
+        isort_quick_update(dist,ptr,dist_D2,ptr_D2);
+
+        do {
+
+          children = align_shift_right<1>(children,children);
+          distance = align_shift_right<1>(distance,distance);        
+
+          cur = node->child(toScalar(children));
+          cur.prefetch(types);
+
+          const vfloat8 new_dist(permute(distance,vint8(zero)));
+          const vint8 new_ptr(permute(children,vint8(zero)));
+
+          mask &= mask-1;
+          isort_update(dist,ptr,new_dist,new_ptr);
+
+        } while(mask);
+
+        for (size_t i=0;i<hits-1;i++)
+        {
+          stackPtr->ptr  = node->child(toScalar(ptr));
+          *(float*)&stackPtr->dist = toScalar(dist);
+          dist = align_shift_right<1>(dist,dist);
+          ptr  = align_shift_right<1>(ptr,ptr);
+          stackPtr++;
+        }
+        cur = node->child(toScalar(ptr));
+      }
+#endif
+
 #endif
 
     /* Specialization for BVH4. */
@@ -368,9 +556,16 @@ namespace embree
                                                    StackItemT<NodeRef>* stackEnd)
       {
         assert(mask != 0);
+#if defined(__AVX512F__)
 
 #if defined(__AVX512ER__)
         traverseClosestHitAVX512<8,Nx,types,NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
+#elif defined(__AVX512VL__)
+        traverseClosestHitAVX512VL<8,Nx,types,NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
+#else
+        assert(false);
+#endif
+
 #else
         const BaseNode* node = cur.baseNode(types);
 

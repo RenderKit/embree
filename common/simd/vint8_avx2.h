@@ -89,6 +89,14 @@ namespace embree
     static __forceinline void storeu(void* ptr, const vint8& v) { _mm256_storeu_ps((float*)ptr,_mm256_castsi256_ps(v)); }
 
 #if defined(__AVX512VL__)
+
+    static __forceinline vint8 compact(const vboolf8& mask, vint8 &v) {
+      return _mm256_mask_compress_epi32(v, mask, v);
+    }
+    static __forceinline vint8 compact(const vboolf8& mask, vint8 &a, const vint8& b) {
+      return _mm256_mask_compress_epi32(a, mask, b);
+    }
+
     static __forceinline vint8 load (const vboolf8& mask, const void* ptr) { return _mm256_mask_load_epi32 (_mm256_setzero_si256(),mask,ptr); }
     static __forceinline vint8 loadu(const vboolf8& mask, const void* ptr) { return _mm256_mask_loadu_epi32(_mm256_setzero_si256(),mask,ptr); }
 
@@ -363,7 +371,11 @@ namespace embree
 
   template<int i>
   __forceinline vint8 align_shift_right(const vint8& a, const vint8& b) {
-    return _mm256_alignr_epi8(a, b, i);
+#if defined(__AVX512VL__)
+    return _mm256_alignr_epi32(a, b, i);    
+#else
+    return _mm256_alignr_epi8(a, b, 4*i);
+#endif
   }  
 
   ////////////////////////////////////////////////////////////////////////////////
