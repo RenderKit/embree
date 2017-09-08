@@ -955,12 +955,33 @@ namespace embree
     const size_t quad2 = scene->getNumPrimitives(Geometry::QUAD_MESH,true)-quad1;
 
     Accel::Intersectors intersectors;
-    if (tri2+quad2) intersectors = BVH8Set0MultiFastMBIntersectors(accel);
-    else            intersectors = BVH8Set0MultiFastIntersectors(accel);
-    
     Builder* builder = nullptr;
-    if (scene->device->tri_builder == "default") builder = BVH8MultiFastSceneBuilder(accel,scene,ty);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH8<multi>");
+    
+    if      (!tri1 && !tri2 && !quad1 && !quad2) return;
+    else if ( tri1 && !tri2 && !quad1 && !quad2) {
+      intersectors = BVH8Triangle4Intersectors(accel,IntersectVariant::FAST);
+      builder = BVH8MultiFastSceneBuilder(accel,scene,ty);
+    }
+    else if (!tri1 &&  tri2 && !quad1 && !quad2) {
+      intersectors = BVH8Triangle4iMBIntersectors(accel,IntersectVariant::FAST);
+      builder = BVH8Triangle4iMBSceneBuilderSAH(accel,scene,0);
+    }
+    else if (!tri1 && !tri2 &&  quad1 && !quad2) {
+      intersectors = BVH8Quad4vIntersectors(accel,IntersectVariant::FAST);
+      builder = BVH8MultiFastSceneBuilder(accel,scene,ty);
+    }
+    else if (!tri1 && !tri2 && !quad1 &&  quad2) {
+      intersectors = BVH8Quad4iMBIntersectors(accel,IntersectVariant::FAST);
+      builder = BVH8Quad4iMBSceneBuilderSAH(accel,scene,0);
+    }
+    else if (tri2+quad2) {
+      intersectors = BVH8Set0MultiFastMBIntersectors(accel);
+      builder = BVH8MultiFastSceneBuilder(accel,scene,ty);
+    }
+    else {
+      intersectors = BVH8Set0MultiFastIntersectors(accel);
+      builder = BVH8MultiFastSceneBuilder(accel,scene,ty);
+    }
 
     scene->accels.add(new AccelInstance(accel,builder,intersectors));
   }
@@ -986,12 +1007,32 @@ namespace embree
     const size_t lines2 = scene->getNumPrimitives(Geometry::LINE_SEGMENTS,true)-lines1;
 
     Accel::Intersectors intersectors;
-    if (curves2+lines2) intersectors = BVH8Set1MultiFastOBBMBIntersectors(accel);
-    else                intersectors = BVH8Set1MultiFastOBBIntersectors(accel);
-    
     Builder* builder = nullptr;
-    if (scene->device->tri_builder == "default") builder = BVH8MultiFastSceneBuilder(accel,scene,ty);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH8<multi>");
+    if      (!curves1 && !curves2 && !lines1 && !lines2) return;
+    else if ( curves1 && !curves2 && !lines1 && !lines2) {
+      intersectors = BVH8Bezier1vIntersectors_OBB(accel);
+      builder = BVH8MultiFastSceneBuilder(accel,scene,ty);
+    }
+    else if (!curves1 &&  curves2 && !lines1 && !lines2) {
+      intersectors = BVH8OBBBezier1iMBIntersectors_OBB(accel);
+      builder = BVH8OBBBezier1iMBBuilder_OBB(accel,scene,0);
+    }
+    else if (!curves1 && !curves2 &&  lines1 && !lines2) {
+      intersectors = BVH8Line4iIntersectors(accel);
+      builder = BVH8MultiFastSceneBuilder(accel,scene,ty);
+    }
+    else if (!curves1 && !curves2 && !lines1 &&  lines2) {
+      intersectors = BVH8Line4iMBIntersectors(accel);
+      builder = BVH8Line4iMBSceneBuilderSAH(accel,scene,0);
+    }
+    else if (curves2+lines2) {
+      intersectors = BVH8Set1MultiFastOBBMBIntersectors(accel);
+      builder = BVH8MultiFastSceneBuilder(accel,scene,ty);
+    }
+    else {
+      intersectors = BVH8Set1MultiFastOBBIntersectors(accel);
+      builder = BVH8MultiFastSceneBuilder(accel,scene,ty);
+    }
 
     scene->accels.add(new AccelInstance(accel,builder,intersectors));
   }
