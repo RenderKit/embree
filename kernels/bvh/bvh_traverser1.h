@@ -248,7 +248,7 @@ namespace embree
 
 
     /* SKX code path */
-#if defined(__AVX512VL__)
+#if defined(__AVX512VL__) 
     __forceinline static void isort_update(vfloat8 &dist, vint8 &ptr, const vfloat8 &d, const vint8 &p)
       {
         const vfloat8 dist_shift = align_shift_right<7>(dist,dist);
@@ -281,7 +281,7 @@ namespace embree
         vfloat8 distance = tNear;
         distance = vfloat8::compact((int)mask,distance,tNear);
 
-        cur = node->child(toScalar(children));
+        cur = node->child((unsigned int)toScalar(children));
         cur.prefetch(types);
 
         
@@ -296,7 +296,7 @@ namespace embree
         const vint8 c1(children);
         const vfloat8 d1(distance);
         
-        cur = node->child(toScalar(children));
+        cur = node->child((unsigned int)toScalar(children));
         cur.prefetch(types);
 
         /* a '<' keeps the order for equal distances, scenes like powerplant largely benefit from it */
@@ -308,8 +308,8 @@ namespace embree
 
         mask &= mask-1;
         if (likely(mask == 0)) {
-          cur = node->child(toScalar(ptr_A0));
-          stackPtr[0].ptr            = node->child(toScalar(ptr_B0));
+          cur = node->child((unsigned int)toScalar(ptr_A0));
+          stackPtr[0].ptr            = node->child((unsigned int)toScalar(ptr_B0));
           *(float*)&stackPtr[0].dist = toScalar(dist_B0);
           stackPtr++;
           return;
@@ -323,7 +323,7 @@ namespace embree
         const vint8 c2(children);
         const vfloat8 d2(distance);
 
-        cur = node->child(toScalar(children));
+        cur = node->child((unsigned int)toScalar(children));
         cur.prefetch(types);
 
         const vboolf8 m_dist1     = dist_A0 <= d2;
@@ -339,10 +339,10 @@ namespace embree
 
         mask &= mask-1;
         if (likely(mask == 0)) {
-          cur = node->child(toScalar(ptr_A1));
-          stackPtr[0].ptr  = node->child(toScalar(ptr_C1));
+          cur = node->child((unsigned int)toScalar(ptr_A1));
+          stackPtr[0].ptr  = node->child((unsigned int)toScalar(ptr_C1));
           *(float*)&stackPtr[0].dist = toScalar(dist_C1);
-          stackPtr[1].ptr  = node->child(toScalar(ptr_B1));
+          stackPtr[1].ptr  = node->child((unsigned int)toScalar(ptr_B1));
           *(float*)&stackPtr[1].dist = toScalar(dist_B1);
           stackPtr+=2;
           return;
@@ -358,7 +358,7 @@ namespace embree
         const vint8 c3(children);
         const vfloat8 d3(distance);
 
-        cur = node->child(toScalar(children));
+        cur = node->child((unsigned int)toScalar(children));
         cur.prefetch(types);
 
         const vboolf8 m_dist3     = dist_A1 <= d3;
@@ -380,12 +380,12 @@ namespace embree
 
         mask &= mask-1;
         if (likely(mask == 0)) {
-          cur = node->child(toScalar(ptr_A2));
-          stackPtr[0].ptr  = node->child(toScalar(ptr_D2));
+          cur = node->child((unsigned int)toScalar(ptr_A2));
+          stackPtr[0].ptr  = node->child((unsigned int)toScalar(ptr_D2));
           *(float*)&stackPtr[0].dist = toScalar(dist_D2);
-          stackPtr[1].ptr  = node->child(toScalar(ptr_C2));
+          stackPtr[1].ptr  = node->child((unsigned int)toScalar(ptr_C2));
           *(float*)&stackPtr[1].dist = toScalar(dist_C2);
-          stackPtr[2].ptr  = node->child(toScalar(ptr_B2));
+          stackPtr[2].ptr  = node->child((unsigned int)toScalar(ptr_B2));
           *(float*)&stackPtr[2].dist = toScalar(dist_B2);
           stackPtr+=3;
           return;
@@ -409,7 +409,7 @@ namespace embree
           children = align_shift_right<1>(children,children);
           distance = align_shift_right<1>(distance,distance);        
 
-          cur = node->child(toScalar(children));
+          cur = node->child((unsigned int)toScalar(children));
           cur.prefetch(types);
 
           const vfloat8 new_dist(permute(distance,vint8(zero)));
@@ -422,13 +422,13 @@ namespace embree
 
         for (size_t i=0;i<hits-1;i++)
         {
-          stackPtr->ptr  = node->child(toScalar(ptr));
+          stackPtr->ptr  = node->child((unsigned int)toScalar(ptr));
           *(float*)&stackPtr->dist = toScalar(dist);
           dist = align_shift_right<1>(dist,dist);
           ptr  = align_shift_right<1>(ptr,ptr);
           stackPtr++;
         }
-        cur = node->child(toScalar(ptr));
+        cur = node->child((unsigned int)toScalar(ptr));
       }
 #endif
 
@@ -556,7 +556,7 @@ namespace embree
                                                    StackItemT<NodeRef>* stackEnd)
       {
         assert(mask != 0);
-#if defined(__AVX512F__)
+#if defined(__AVX512F__) && 1
 
 #if defined(__AVX512ER__)
         traverseClosestHitAVX512<8,Nx,types,NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
