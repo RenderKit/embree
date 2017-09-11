@@ -101,6 +101,14 @@ namespace embree
     static __forceinline void storeu(void* ptr, const vfloat8& v) { return _mm256_storeu_ps((float*)ptr,v); }
 
 #if defined(__AVX512VL__)
+
+    static __forceinline vfloat8 compact(const vboolf8& mask, vfloat8 &v) {
+      return _mm256_mask_compress_ps(v, mask, v);
+    }
+    static __forceinline vfloat8 compact(const vboolf8& mask, vfloat8 &a, const vfloat8& b) {
+      return _mm256_mask_compress_ps(a, mask, b);
+    }
+
     static __forceinline vfloat8 load (const vboolf8& mask, const void* ptr) { return _mm256_mask_load_ps (_mm256_setzero_ps(),mask,(float*)ptr); }
     static __forceinline vfloat8 loadu(const vboolf8& mask, const void* ptr) { return _mm256_mask_loadu_ps(_mm256_setzero_ps(),mask,(float*)ptr); }
 

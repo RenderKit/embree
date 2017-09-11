@@ -69,6 +69,14 @@ namespace embree
     static __forceinline void storeu(void* ptr, const vfloat4& v) { _mm_storeu_ps((float*)ptr,v); }
 
 #if defined(__AVX512VL__)
+
+    static __forceinline vfloat4 compact(const vboolf4& mask, vfloat4 &v) {
+      return _mm_mask_compress_ps(v, mask, v);
+    }
+    static __forceinline vfloat4 compact(const vboolf4& mask, vfloat4 &a, const vfloat4& b) {
+      return _mm_mask_compress_ps(a, mask, b);
+    }
+
     static __forceinline vfloat4 load (const vboolf4& mask, const void* ptr) { return _mm_mask_load_ps (_mm_setzero_ps(),mask,(float*)ptr); }
     static __forceinline vfloat4 loadu(const vboolf4& mask, const void* ptr) { return _mm_mask_loadu_ps(_mm_setzero_ps(),mask,(float*)ptr); }
 
@@ -546,6 +554,14 @@ namespace embree
   __forceinline vfloat4 broadcast1f(const void* a) { return _mm_broadcast_ss((float*)a); }
 
 #endif
+
+#if defined(__AVX512VL__)
+  template<int i>
+  __forceinline vfloat4 align_shift_right(const vfloat4& a, const vfloat4& b) {
+    return _mm_castsi128_ps(_mm_alignr_epi32(_mm_castps_si128(a), _mm_castps_si128(b), i));
+  }  
+#endif
+
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Sorting Network

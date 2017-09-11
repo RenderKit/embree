@@ -77,6 +77,14 @@ namespace embree
     static __forceinline void storeu(void* ptr, const vint4& v) { _mm_storeu_si128((__m128i*)ptr,v); }
     
 #if defined(__AVX512VL__)
+
+    static __forceinline vint4 compact(const vboolf4& mask, vint4 &v) {
+      return _mm_mask_compress_epi32(v, mask, v);
+    }
+    static __forceinline vint4 compact(const vboolf4& mask, vint4 &a, const vint4& b) {
+      return _mm_mask_compress_epi32(a, mask, b);
+    }
+
     static __forceinline vint4 load (const vboolf4& mask, const void* ptr) { return _mm_mask_load_epi32 (_mm_setzero_si128(),mask,ptr); }
     static __forceinline vint4 loadu(const vboolf4& mask, const void* ptr) { return _mm_mask_loadu_epi32(_mm_setzero_si128(),mask,ptr); }
 
@@ -399,6 +407,18 @@ namespace embree
   template<> __forceinline int extract<0>(const vint4& b) { return _mm_cvtsi128_si32(b); }
 
   __forceinline int toScalar(const vint4& v) { return _mm_cvtsi128_si32(v); }
+
+#if defined(__AVX512VL__)
+
+  __forceinline vint4 permute(const vint4 &a, const vint4 &index) {
+    return  _mm_castps_si128(_mm_permutevar_ps(_mm_castsi128_ps(a),index));
+  }
+
+  template<int i>
+  __forceinline vint4 align_shift_right(const vint4& a, const vint4& b) {
+    return _mm_alignr_epi32(a, b, i);    
+  }  
+#endif
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
