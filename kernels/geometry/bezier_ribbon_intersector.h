@@ -170,10 +170,7 @@ namespace embree
       __forceinline Ribbon1Intersector1(const Ray& ray, const void* ptr) 
         : initialized(false) {}
 
-      template<typename Epilog>
-      __forceinline bool intersect(Ray& ray,
-                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
-                                   const Epilog& epilog) const
+      __forceinline void initialize(const Ray& ray) const
       {
         if (unlikely(!initialized)) 
         {
@@ -183,6 +180,14 @@ namespace embree
           ray_space.vz *= depth_scale;
           ray_space = ray_space.transposed();
         }
+      }
+
+      template<typename Epilog>
+      __forceinline bool intersect(Ray& ray,
+                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
+                                   const Epilog& epilog) const
+      {
+        initialize(ray);
         return intersect_ribbon<NativeCurve3fa>(ray.org,ray.dir,ray.tnear,ray.tfar,
                                                 ray_space,
                                                 v0,v1,v2,v3,N,
