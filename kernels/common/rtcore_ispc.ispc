@@ -130,7 +130,7 @@ extern "C" void ispcDeleteGeometry (RTCScene scene, uniform unsigned int geomID)
 extern "C" void ispcSetBoundsFunction (RTCScene scene, uniform unsigned int geomID, void* uniform bounds);
 extern "C" void ispcSetBoundsFunction2 (RTCScene scene, uniform unsigned int geomID, void* uniform bounds, void* uniform userPtr);
 extern "C" void ispcSetBoundsFunction3 (RTCScene scene, uniform unsigned int geomID, void* uniform bounds, void* uniform userPtr);
-extern "C" void ispcSetTessellationRate (RTCScene hscene, uniform unsigned geomID, uniform float tessellationRate);
+extern "C" void ispcSetTessellationRate (RTCScene hscene, uniform unsigned int geomID, uniform float tessellationRate);
 extern "C" void ispcSetUserData (RTCScene scene, uniform unsigned int geomID, void* uniform ptr);
 extern "C" void* uniform ispcGetUserData (RTCScene scene, uniform unsigned int geomID);
 
@@ -540,7 +540,7 @@ void rtcSetSubdivisionMode(RTCScene scene, uniform unsigned int geomID, uniform 
   ispcSetSubdivisionMode(scene,geomID,topologyID,mode);
 }
 
-void rtcSetIndexBuffer(RTCScene scene, uniform unsigned geomID, uniform RTCBufferType vertexBuffer, uniform RTCBufferType indexBuffer) {
+void rtcSetIndexBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType vertexBuffer, uniform RTCBufferType indexBuffer) {
   ispcSetIndexBuffer(scene,geomID,vertexBuffer,indexBuffer);
 }
 
@@ -580,7 +580,7 @@ void rtcDeleteGeometry (RTCScene scene, uniform unsigned int geomID) {
   ispcDeleteGeometry(scene,geomID);
 }
 
-void rtcSetTessellationRate (RTCScene hscene, uniform unsigned geomID, uniform float tessellationRate) {
+void rtcSetTessellationRate (RTCScene hscene, uniform unsigned int geomID, uniform float tessellationRate) {
   ispcSetTessellationRate(hscene,geomID,tessellationRate);
 }
 

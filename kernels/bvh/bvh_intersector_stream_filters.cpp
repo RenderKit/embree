@@ -22,192 +22,151 @@ namespace embree
   namespace isa
   {
     static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(size_t);
+    MAYBE_UNUSED static const size_t MAX_COHERENT_RAY_PACKETS = MAX_RAYS_PER_OCTANT / VSIZEX;
 
     static_assert(MAX_RAYS_PER_OCTANT <= MAX_INTERNAL_STREAM_SIZE, "maximal internal stream size exceeded");
 
     __forceinline void RayStreamFilter::filterAOS(Scene* scene, RTCRay* _rayN, size_t N, size_t stride, IntersectContext* context, bool intersect)
     {
-#if 1
       RayStreamAOS rayN(_rayN);
-      for (size_t i = 0; i < N; i += VSIZEX)
+
+      /* use fast path for coherent ray mode */
+#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
+      /* all valid accels need to have a intersectN/occludedN */
+      if (unlikely(isCoherent(context->user->flags) && !scene->isRobust() && scene->accels.validIsecN()))
       {
-        const vintx vi = vintx(int(i)) + vintx(step);
-        vboolx valid = vi < vintx(int(N));
-        const vintx offset = vi * int(stride);
+        __aligned(64) RayK<VSIZEX> rays[MAX_COHERENT_RAY_PACKETS];
+        __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_COHERENT_RAY_PACKETS];
 
-        RayK<VSIZEX> ray = rayN.getRayByOffset<VSIZEX>(valid, offset);
-        valid &= ray.tnear <= ray.tfar;
-
-        if (intersect)
-          scene->intersect(valid, ray, context);
-        else
-          scene->occluded(valid, ray, context);
-
-        rayN.setHitByOffset<VSIZEX>(valid, offset, ray, intersect);
-      }
-
-#else
-
-      Ray* __restrict__ rayN = (Ray*)_rayN;
-      __aligned(64) Ray* octants[8][MAX_RAYS_PER_OCTANT];
-      unsigned int rays_in_octant[8];
-
-      for (size_t i=0;i<8;i++) rays_in_octant[i] = 0;
-      size_t inputRayID = 0;
-
-      while(1)
-      {
-        int cur_octant = -1;
-        /* sort rays into octants */
-        for (;inputRayID<N;)
+        for (size_t i = 0; i < N; i += MAX_RAYS_PER_OCTANT)
         {
-          Ray &ray = *(Ray*)((char*)rayN + inputRayID * stride);
-          /* filter out invalid rays */
-          if (unlikely(ray.tnear > ray.tfar)) { inputRayID++; continue; }
-          if (unlikely(!intersect && ray.geomID == 0)) { inputRayID++; continue; } // ignore already occluded rays
+          const size_t size = min(N - i, MAX_RAYS_PER_OCTANT);
 
-#if defined(EMBREE_IGNORE_INVALID_RAYS)
-          if (unlikely(!ray.valid())) {  inputRayID++; continue; }
-#endif
-
-          const unsigned int octantID = movemask(vfloat4(ray.dir) < 0.0f) & 0x7;
-
-          assert(octantID < 8);
-          octants[octantID][rays_in_octant[octantID]++] = &ray;
-          inputRayID++;
-          if (unlikely(rays_in_octant[octantID] == MAX_RAYS_PER_OCTANT))
+          /* convert from AOS to SOA */
+          for (size_t j = 0; j < size; j += VSIZEX)
           {
-            cur_octant = octantID;
-            break;
+            const vintx vij = vintx(int(i+j)) + vintx(step);
+            const vboolx valid = vij < vintx(int(N));
+            const vintx offset = vij * int(stride);
+            const size_t packetIndex = j / VSIZEX;
+
+            RayK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
+            ray.tnear = select(valid, ray.tnear, zero);
+            ray.tfar  = select(valid, ray.tfar,  neg_inf);
+
+            rays[packetIndex] = ray;
+            rayPtrs[packetIndex] = &rays[packetIndex]; // rayPtrs might get reordered for occludedN
+          }
+
+          /* trace stream */
+          if (intersect)
+            scene->intersectN((void**)rayPtrs, size, context);
+          else
+            scene->occludedN((void**)rayPtrs, size, context);
+
+          /* convert from SOA to AOS */
+          for (size_t j = 0; j < size; j += VSIZEX)
+          {
+            const vintx vij = vintx(int(i+j)) + vintx(step);
+            const vboolx valid = vij < vintx(int(N));
+            const vintx offset = vij * int(stride);
+            const size_t packetIndex = j / VSIZEX;
+
+            rayN.setHitByOffset(valid, offset, rays[packetIndex], intersect);
           }
         }
-        /* need to flush rays in octant ? */
-        if (unlikely(cur_octant == -1))
-          for (int i=0;i<8;i++)
-            if (rays_in_octant[i])
-            {
-              cur_octant = i;
-              break;
-            }
-
-        /* all rays traced ? */
-        if (unlikely(cur_octant == -1))
-          break;
-
-        
-        Ray** rays = &octants[cur_octant][0];
-        const size_t numOctantRays = rays_in_octant[cur_octant];
-
-        /* special codepath for very small number of rays per octant */
-        if (numOctantRays == 1)
-        {
-          if (intersect) scene->intersect((RTCRay&)*rays[0],context);
-          else           scene->occluded ((RTCRay&)*rays[0],context);
-        }        
-        /* codepath for large number of rays per octant */
-        else
-        {
-          /* incoherent ray stream code path */
-          if (intersect) scene->intersectN((RTCRay**)rays,numOctantRays,context);
-          else           scene->occludedN ((RTCRay**)rays,numOctantRays,context);
-        }
-        rays_in_octant[cur_octant] = 0;
       }
-
+      else
 #endif
+      {
+        /* fallback to packets */
+        for (size_t i = 0; i < N; i += VSIZEX)
+        {
+          const vintx vi = vintx(int(i)) + vintx(step);
+          vboolx valid = vi < vintx(int(N));
+          const vintx offset = vi * int(stride);
+
+          RayK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
+          valid &= ray.tnear <= ray.tfar;
+
+          if (intersect)
+            scene->intersect(valid, ray, context);
+          else
+            scene->occluded(valid, ray, context);
+
+          rayN.setHitByOffset(valid, offset, ray, intersect);
+        }
+      }
     }
 
     __forceinline void RayStreamFilter::filterAOP(Scene* scene, RTCRay** _rayN, size_t N, IntersectContext* context, bool intersect)
     {
-#if 1
-
-      /* fallback to packets */
       RayStreamAOP rayN(_rayN);
-      for (size_t i = 0; i < N; i += VSIZEX)
+
+      /* use fast path for coherent ray mode */
+#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
+      /* all valid accels need to have a intersectN/occludedN */
+      if (unlikely(isCoherent(context->user->flags) && !scene->isRobust() && scene->accels.validIsecN()))
       {
-        const vintx vi = vintx(int(i)) + vintx(step);
-        vboolx valid = vi < vintx(int(N));
+        __aligned(64) RayK<VSIZEX> rays[MAX_COHERENT_RAY_PACKETS];
+        __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_COHERENT_RAY_PACKETS];
 
-        RayK<VSIZEX> ray = rayN.getRayByIndex<VSIZEX>(valid, i);
-        valid &= ray.tnear <= ray.tfar;
-
-        if (intersect)
-          scene->intersect(valid, ray, context);
-        else
-          scene->occluded(valid, ray, context);
-
-        rayN.setHitByIndex<VSIZEX>(valid, i, ray, intersect);
-      }
-
-#else
-
-      Ray** __restrict__ rayN = (Ray**)_rayN;
-      __aligned(64) Ray* octants[8][MAX_RAYS_PER_OCTANT];
-      unsigned int rays_in_octant[8];
-
-      for (size_t i=0;i<8;i++) rays_in_octant[i] = 0;
-      size_t inputRayID = 0;
-
-      while(1)
-      {
-        int cur_octant = -1;
-        /* sort rays into octants */
-        for (;inputRayID<N;)
+        for (size_t i = 0; i < N; i += MAX_RAYS_PER_OCTANT)
         {
-          Ray &ray = *rayN[inputRayID];
-          /* filter out invalid rays */
-          if (unlikely(ray.tnear > ray.tfar)) { inputRayID++; continue; }
-          if (unlikely(!intersect && ray.geomID == 0)) { inputRayID++; continue; } // ignore already occluded rays
+          const size_t size = min(N - i, MAX_RAYS_PER_OCTANT);
 
-#if defined(EMBREE_IGNORE_INVALID_RAYS)
-          if (unlikely(!ray.valid())) {  inputRayID++; continue; }
-#endif
-
-          const unsigned int octantID = movemask(vfloat4(ray.dir) < 0.0f) & 0x7;
-
-          assert(octantID < 8);
-          octants[octantID][rays_in_octant[octantID]++] = &ray;
-          inputRayID++;
-          if (unlikely(rays_in_octant[octantID] == MAX_RAYS_PER_OCTANT))
+          /* convert from AOP to SOA */
+          for (size_t j = 0; j < size; j += VSIZEX)
           {
-            cur_octant = octantID;
-            break;
+            const vintx vij = vintx(int(i+j)) + vintx(step);
+            const vboolx valid = vij < vintx(int(N));
+            const size_t packetIndex = j / VSIZEX;
+
+            RayK<VSIZEX> ray = rayN.getRayByIndex(valid, i+j);
+            ray.tnear = select(valid, ray.tnear, zero);
+            ray.tfar  = select(valid, ray.tfar,  neg_inf);
+
+            rays[packetIndex] = ray;
+            rayPtrs[packetIndex] = &rays[packetIndex]; // rayPtrs might get reordered for occludedN
+          }
+
+          /* trace stream */
+          if (intersect)
+            scene->intersectN((void**)rayPtrs, size, context);
+          else
+            scene->occludedN((void**)rayPtrs, size, context);
+
+          /* convert from SOA to AOP */
+          for (size_t j = 0; j < size; j += VSIZEX)
+          {
+            const vintx vij = vintx(int(i+j)) + vintx(step);
+            const vboolx valid = vij < vintx(int(N));
+            const size_t packetIndex = j / VSIZEX;
+
+            rayN.setHitByIndex(valid, i+j, rays[packetIndex], intersect);
           }
         }
-        /* need to flush rays in octant ? */
-        if (unlikely(cur_octant == -1))
-          for (int i=0;i<8;i++)
-            if (rays_in_octant[i])
-            {
-              cur_octant = i;
-              break;
-            }
-
-        /* all rays traced ? */
-        if (unlikely(cur_octant == -1))
-          break;
-
-        
-        Ray** rays = &octants[cur_octant][0];
-        const size_t numOctantRays = rays_in_octant[cur_octant];
-
-        /* special codepath for very small number of rays per octant */
-        if (numOctantRays == 1)
-        {
-          if (intersect) scene->intersect((RTCRay&)*rays[0],context);
-          else           scene->occluded ((RTCRay&)*rays[0],context);
-        }        
-        /* codepath for large number of rays per octant */
-        else
-        {
-          /* incoherent ray stream code path */
-          if (intersect) scene->intersectN((RTCRay**)rays,numOctantRays,context);
-          else           scene->occludedN ((RTCRay**)rays,numOctantRays,context);
-        }
-        rays_in_octant[cur_octant] = 0;
       }
-
+      else
 #endif
+      {
+        /* fallback to packets */
+        for (size_t i = 0; i < N; i += VSIZEX)
+        {
+          const vintx vi = vintx(int(i)) + vintx(step);
+          vboolx valid = vi < vintx(int(N));
+
+          RayK<VSIZEX> ray = rayN.getRayByIndex(valid, i);
+          valid &= ray.tnear <= ray.tfar;
+
+          if (intersect)
+            scene->intersect(valid, ray, context);
+          else
+            scene->occluded(valid, ray, context);
+
+          rayN.setHitByIndex(valid, i, ray, intersect);
+        }
+      }
     }
 
     __forceinline void RayStreamFilter::filterSOA(Scene* scene, char* rayData, size_t N, size_t numPackets, size_t stride, IntersectContext* context, bool intersect)
@@ -224,37 +183,35 @@ namespace embree
         /* all valid accels need to have a intersectN/occludedN */
         if (unlikely(isCoherent(context->user->flags) && !scene->isRobust() && scene->accels.validIsecN()))
         {
-          static const size_t MAX_COHERENT_RAY_PACKETS = MAX_RAYS_PER_OCTANT / VSIZEX;
-          __aligned(64) RayK<VSIZEX>* rays_ptr[MAX_RAYS_PER_OCTANT / VSIZEX];
+          __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_RAYS_PER_OCTANT / VSIZEX];
 
-          size_t numPacketsInOctant = 0;
-
+          size_t packetIndex = 0;
           for (size_t i = 0; i < numPackets; i++)
           {
             const size_t offset = i * stride;
             RayK<VSIZEX>& ray = *(RayK<VSIZEX>*)(rayData + offset);
-            rays_ptr[numPacketsInOctant++] = &ray;
+            rayPtrs[packetIndex++] = &ray;
 
             /* trace as stream */
-            if (unlikely(numPacketsInOctant == MAX_COHERENT_RAY_PACKETS))
+            if (unlikely(packetIndex == MAX_COHERENT_RAY_PACKETS))
             {
-              const size_t size = numPacketsInOctant*VSIZEX;
+              const size_t size = packetIndex*VSIZEX;
               if (intersect)
-                scene->intersectN((void**)rays_ptr, size, context);
+                scene->intersectN((void**)rayPtrs, size, context);
               else
-                scene->occludedN((void**)rays_ptr, size, context);
-              numPacketsInOctant = 0;
+                scene->occludedN((void**)rayPtrs, size, context);
+              packetIndex = 0;
             }
           }
 
           /* flush remaining packets */
-          if (unlikely(numPacketsInOctant))
+          if (unlikely(packetIndex > 0))
           {
-            const size_t size = numPacketsInOctant*VSIZEX;
+            const size_t size = packetIndex*VSIZEX;
             if (intersect)
-              scene->intersectN((void**)rays_ptr, size, context);
+              scene->intersectN((void**)rayPtrs, size, context);
             else
-              scene->occludedN((void**)rays_ptr, size, context);
+              scene->occludedN((void**)rayPtrs, size, context);
           }
         }
         else
@@ -276,29 +233,26 @@ namespace embree
       }
       else
       {
-        /* this is a very slow fallback path but it's extremely unlikely to be hit */
+        /* fallback to packets for arbitrary packet size and alignment */
         for (size_t i = 0; i < numPackets; i++)
-        {          
-          const size_t offset = i * stride;
-          RayPacketSOA rayN(rayData + offset, N);
-          RayK<VSIZEX> ray;
+        {
+          const size_t offsetN = i * stride;
+          RayPacketSOA rayN(rayData + offsetN, N);
 
-          for (size_t j = 0; j < N; j++)
+          for (size_t j = 0; j < N; j += VSIZEX)
           {
-            /* invalidate all lanes */
-            ray.tnear = 0.0f;
-            ray.tfar  = neg_inf;
+            const size_t offset = j * sizeof(float);
+            vboolx valid = (vintx(int(j)) + vintx(step)) < vintx(N);
 
-            /* extract single ray and copy data to first packet lane */
-            rayN.getRayByIndex(j, ray, 0);
-            const vboolx valid = ray.tnear <= ray.tfar;
+            RayK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
+            valid &= ray.tnear <= ray.tfar;
 
             if (intersect)
               scene->intersect(valid, ray, context);
             else
               scene->occluded(valid, ray, context);
 
-            rayN.setHitByIndex(j, ray, 0, intersect);
+            rayN.setHitByOffset(valid, offset, ray, intersect);
           }
         }
       }
@@ -313,10 +267,8 @@ namespace embree
       /* all valid accels need to have a intersectN/occludedN */
       if (unlikely(isCoherent(context->user->flags) && !scene->isRobust() && scene->accels.validIsecN()))
       {
-        static const size_t MAX_COHERENT_RAY_PACKETS = MAX_RAYS_PER_OCTANT / VSIZEX;
-
         __aligned(64) RayK<VSIZEX> rays[MAX_COHERENT_RAY_PACKETS];
-        __aligned(64) RayK<VSIZEX>* rays_ptr[MAX_COHERENT_RAY_PACKETS];
+        __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_COHERENT_RAY_PACKETS];
 
         for (size_t i = 0; i < N; i += MAX_RAYS_PER_OCTANT)
         {
@@ -327,32 +279,32 @@ namespace embree
           {
             const vintx vij = vintx(int(i+j)) + vintx(step);
             const vboolx valid = vij < vintx(int(N));
-            const size_t offset = sizeof(float) * (i+j);
-            const size_t packet_index = j / VSIZEX;
+            const size_t offset = (i+j) * sizeof(float);
+            const size_t packetIndex = j / VSIZEX;
 
             RayK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
             ray.tnear = select(valid, ray.tnear, zero);
             ray.tfar  = select(valid, ray.tfar,  neg_inf);
 
-            rays[packet_index] = ray;
-            rays_ptr[packet_index] = &rays[packet_index]; // rays_ptr might get reordered for occludedN
+            rays[packetIndex] = ray;
+            rayPtrs[packetIndex] = &rays[packetIndex]; // rayPtrs might get reordered for occludedN
           }
 
           /* trace stream */
           if (intersect)
-            scene->intersectN((void**)rays_ptr, size, context);
+            scene->intersectN((void**)rayPtrs, size, context);
           else
-            scene->occludedN((void**)rays_ptr, size, context);
+            scene->occludedN((void**)rayPtrs, size, context);
 
           /* convert from SOA to SOP */
           for (size_t j = 0; j < size; j += VSIZEX)
           {
             const vintx vij = vintx(int(i+j)) + vintx(step);
             const vboolx valid = vij < vintx(int(N));
-            const size_t offset = sizeof(float) * (i+j);
-            const size_t packet_index = j / VSIZEX;
+            const size_t offset = (i+j) * sizeof(float);
+            const size_t packetIndex = j / VSIZEX;
 
-            rayN.setHitByOffset(valid, offset, rays[packet_index], intersect);
+            rayN.setHitByOffset(valid, offset, rays[packetIndex], intersect);
           }
         }
       }
@@ -364,7 +316,7 @@ namespace embree
         {
           const vintx vi = vintx(int(i)) + vintx(step);
           vboolx valid = vi < vintx(int(N));
-          const size_t offset = sizeof(float) * i;
+          const size_t offset = i * sizeof(float);
 
           RayK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
           valid &= ray.tnear <= ray.tfar;
