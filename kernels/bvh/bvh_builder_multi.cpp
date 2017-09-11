@@ -328,6 +328,7 @@ namespace embree
                                             settings);
 
         bvh->set(root.ref,root.lbounds,pinfo.num_time_segments);
+        bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
       }
 
       void clear() {
@@ -570,6 +571,7 @@ namespace embree
                                             default_settings,type_settings);
 
         bvh->set(root.ref,root.lbounds,pinfo.num_time_segments);
+        bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
 
 #if PROFILE
           });
