@@ -169,6 +169,7 @@ namespace embree
               prefetchL2(((char*)ptr)+3*64);
             }
             if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
+              /* KNL still needs L2 prefetches for large nodes */
               prefetchL2(((char*)ptr)+4*64);
               prefetchL2(((char*)ptr)+5*64);
               prefetchL2(((char*)ptr)+6*64);
@@ -191,10 +192,11 @@ namespace embree
               prefetchL1(((char*)ptr)+3*64);
             }
             if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
-              prefetchL1(((char*)ptr)+4*64);
-              prefetchL1(((char*)ptr)+5*64);
-              prefetchL1(((char*)ptr)+6*64);
-              prefetchL1(((char*)ptr)+7*64);
+              /* deactivate for large nodes on Xeon, as it introduces regressions */
+              //prefetchL1(((char*)ptr)+4*64);
+              //prefetchL1(((char*)ptr)+5*64);
+              //prefetchL1(((char*)ptr)+6*64);
+              //prefetchL1(((char*)ptr)+7*64);
             }
           }
           else
