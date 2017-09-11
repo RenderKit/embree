@@ -960,7 +960,7 @@ namespace embree
     if      (!tri1 && !tri2 && !quad1 && !quad2) return;
     else if ( tri1 && !tri2 && !quad1 && !quad2) {
       intersectors = BVH8Triangle4Intersectors(accel,IntersectVariant::FAST);
-      builder = BVH8MultiFastSceneBuilder(accel,scene,ty);
+      builder = BVH8Triangle4SceneBuilderSAH(accel,scene,ty);
     }
     else if (!tri1 &&  tri2 && !quad1 && !quad2) {
       intersectors = BVH8Triangle4iMBIntersectors(accel,IntersectVariant::FAST);
@@ -968,7 +968,7 @@ namespace embree
     }
     else if (!tri1 && !tri2 &&  quad1 && !quad2) {
       intersectors = BVH8Quad4vIntersectors(accel,IntersectVariant::FAST);
-      builder = BVH8MultiFastSceneBuilder(accel,scene,ty);
+      builder = BVH8Quad4vSceneBuilderSAH(accel,scene,ty);
     }
     else if (!tri1 && !tri2 && !quad1 &&  quad2) {
       intersectors = BVH8Quad4iMBIntersectors(accel,IntersectVariant::FAST);
@@ -1011,7 +1011,7 @@ namespace embree
     if      (!curves1 && !curves2 && !lines1 && !lines2) return;
     else if ( curves1 && !curves2 && !lines1 && !lines2) {
       intersectors = BVH8Bezier1vIntersectors_OBB(accel);
-      builder = BVH8MultiFastSceneBuilder(accel,scene,ty);
+      builder = BVH8Bezier1vBuilder_OBB_New(accel,scene,ty);
     }
     else if (!curves1 &&  curves2 && !lines1 && !lines2) {
       intersectors = BVH8OBBBezier1iMBIntersectors_OBB(accel);
@@ -1019,7 +1019,7 @@ namespace embree
     }
     else if (!curves1 && !curves2 &&  lines1 && !lines2) {
       intersectors = BVH8Line4iIntersectors(accel);
-      builder = BVH8MultiFastSceneBuilder(accel,scene,ty);
+      builder = BVH8Line4iSceneBuilderSAH(accel,scene,ty);
     }
     else if (!curves1 && !curves2 && !lines1 &&  lines2) {
       intersectors = BVH8Line4iMBIntersectors(accel);
