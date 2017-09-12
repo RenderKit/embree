@@ -36,8 +36,6 @@
 
 // TODO: bvh->scene->intersect/occluded correct vs. global scene->intersect/occluded
 
-#define MAX_RAYS 64
-
 namespace embree
 {
   namespace isa
@@ -52,9 +50,9 @@ namespace embree
       __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  //!< stack of nodes
 
       RayK<K>** __restrict__ inputPackets = (RayK<K>**)inputRays;
-      assert(numOctantRays <= MAX_RAYS);
+      assert(numOctantRays <= MAX_INTERNAL_STREAM_SIZE);
 
-      __aligned(64) Packet packet[MAX_RAYS/K];
+      __aligned(64) Packet packet[MAX_INTERNAL_STREAM_SIZE/K];
       __aligned(64) Frusta frusta;
 
       bool commonOctant = true;
@@ -169,10 +167,10 @@ namespace embree
       __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  //!< stack of nodes
 
       RayK<K>** __restrict__ inputPackets = (RayK<K>**)inputRays;
-      assert(numOctantRays <= MAX_RAYS);
+      assert(numOctantRays <= MAX_INTERNAL_STREAM_SIZE);
 
       /* inactive rays should have been filtered out before */
-      __aligned(64) Packet packet[MAX_RAYS/K];
+      __aligned(64) Packet packet[MAX_INTERNAL_STREAM_SIZE/K];
       __aligned(64) Frusta frusta;
 
       bool commonOctant = true;
