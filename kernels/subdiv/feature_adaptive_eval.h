@@ -214,6 +214,7 @@ namespace embree
             const unsigned l = (unsigned) floor(0.5f*uv.x); const float u = 2.0f*frac(0.5f*uv.x)-0.5f; 
             const unsigned h = (unsigned) floor(0.5f*uv.y); const float v = 2.0f*frac(0.5f*uv.y)-0.5f; 
             const unsigned i = 4*h+l; assert(i<N);
+            if (i >= N) return;
 
 #if PATCH_USE_GREGORY == 2
             BezierCurve borders[2]; patch.getLimitBorder(borders,i);
