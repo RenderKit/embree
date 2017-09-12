@@ -86,7 +86,7 @@ namespace embree
 
     /*! Type of intersect function pointer for ray packets of size N. */
     typedef void (*IntersectFuncN)(void* ptr,           /*!< pointer to user data */
-                                   void** ray,        /*!< ray stream to intersect */
+                                   RayK<VSIZEX>** ray,  /*!< ray stream to intersect */
                                    const size_t N,      /*!< number of rays in stream */
                                    IntersectContext* context   /*!< layout flags */);
     
@@ -116,7 +116,7 @@ namespace embree
 
     /*! Type of intersect function pointer for ray packets of size N. */
     typedef void (*OccludedFuncN)(void* ptr,           /*!< pointer to user data */
-                                  void** ray,        /*!< ray stream to intersect */
+                                  RayK<VSIZEX>** ray,  /*!< ray stream to intersect */
                                   const size_t N,      /*!< number of rays in stream */
                                   IntersectContext* context   /*!< layout flags */);
     typedef void (*ErrorFunc) ();
@@ -319,7 +319,7 @@ namespace embree
     }
 
     /*! Intersects a packet of N rays in SOA layout with the scene. */
-    __forceinline void intersectN (void **rayN, const size_t N, IntersectContext* context) 
+    __forceinline void intersectN (RayK<VSIZEX>** rayN, const size_t N, IntersectContext* context) 
     {
       //assert(intersectors.intersectorN.intersect);      
       if (intersectors.intersectorN.intersect)
@@ -329,7 +329,7 @@ namespace embree
         const size_t numPackets = (N+VSIZEX-1)/VSIZEX;
         for (size_t i=0; i<numPackets; i++)
         {
-          RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)rayN[i];
+          RayK<VSIZEX>& ray = *rayN[i];
           vbool<VSIZEX> valid = ray.tnear <= ray.tfar;
           intersect(valid,ray,context);
         }      
@@ -382,7 +382,7 @@ namespace embree
 
 
     /*! Tests if a packet of N rays in SOA layout is occluded by the scene. */
-    __forceinline void occludedN (void **rayN, const size_t N, IntersectContext* context) 
+    __forceinline void occludedN (RayK<VSIZEX>** rayN, const size_t N, IntersectContext* context) 
     {
       //assert(intersectors.intersectorN.occluded);
       if (intersectors.intersectorN.occluded)
@@ -392,7 +392,7 @@ namespace embree
         const size_t numPackets = (N+VSIZEX-1)/VSIZEX;
         for (size_t i=0; i<numPackets; i++)
         {
-          RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)rayN[i];
+          RayK<VSIZEX> &ray = *rayN[i];
           vbool<VSIZEX> valid = ray.tnear <= ray.tfar;
           occluded(valid,ray,context);
         }      

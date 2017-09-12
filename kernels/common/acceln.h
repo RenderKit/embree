@@ -35,14 +35,14 @@ namespace embree
     static void intersect4 (const void* valid, void* ptr, RTCRay4& ray, IntersectContext* context);
     static void intersect8 (const void* valid, void* ptr, RTCRay8& ray, IntersectContext* context);
     static void intersect16 (const void* valid, void* ptr, RTCRay16& ray, IntersectContext* context);
-    static void intersectN (void* ptr, void** ray, const size_t N, IntersectContext* context);
+    static void intersectN (void* ptr, RayK<VSIZEX>** ray, const size_t N, IntersectContext* context);
 
   public:
     static void occluded (void* ptr, RTCRay& ray, IntersectContext* context);
     static void occluded4 (const void* valid, void* ptr, RTCRay4& ray, IntersectContext* context);
     static void occluded8 (const void* valid, void* ptr, RTCRay8& ray, IntersectContext* context);
     static void occluded16 (const void* valid, void* ptr, RTCRay16& ray, IntersectContext* context);
-    static void occludedN (void* ptr, void** ray, const size_t N, IntersectContext* context);
+    static void occludedN (void* ptr, RayK<VSIZEX>** ray, const size_t N, IntersectContext* context);
 
   public:
     void print(size_t ident);

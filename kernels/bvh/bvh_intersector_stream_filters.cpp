@@ -60,9 +60,9 @@ namespace embree
 
           /* trace stream */
           if (intersect)
-            scene->intersectN((void**)rayPtrs, size, context);
+            scene->intersectN(rayPtrs, size, context);
           else
-            scene->occludedN((void**)rayPtrs, size, context);
+            scene->occludedN(rayPtrs, size, context);
 
           /* convert from SOA to AOS */
           for (size_t j = 0; j < size; j += VSIZEX)
@@ -71,7 +71,6 @@ namespace embree
             const vboolx valid = vij < vintx(int(N));
             const vintx offset = vij * int(stride);
             const size_t packetIndex = j / VSIZEX;
-
             rayN.setHitByOffset(valid, offset, rays[packetIndex], intersect);
           }
         }
@@ -80,7 +79,7 @@ namespace embree
 #endif
       {
         /* fallback to packets */
-        for (size_t i = 0; i < N; i += VSIZEX)
+        for (size_t i=0; i<N; i+=VSIZEX)
         {
           const vintx vi = vintx(int(i)) + vintx(step);
           vboolx valid = vi < vintx(int(N));
@@ -132,9 +131,9 @@ namespace embree
 
           /* trace stream */
           if (intersect)
-            scene->intersectN((void**)rayPtrs, size, context);
+            scene->intersectN(rayPtrs, size, context);
           else
-            scene->occludedN((void**)rayPtrs, size, context);
+            scene->occludedN(rayPtrs, size, context);
 
           /* convert from SOA to AOP */
           for (size_t j = 0; j < size; j += VSIZEX)
@@ -197,9 +196,9 @@ namespace embree
             {
               const size_t size = packetIndex*VSIZEX;
               if (intersect)
-                scene->intersectN((void**)rayPtrs, size, context);
+                scene->intersectN(rayPtrs, size, context);
               else
-                scene->occludedN((void**)rayPtrs, size, context);
+                scene->occludedN(rayPtrs, size, context);
               packetIndex = 0;
             }
           }
@@ -209,9 +208,9 @@ namespace embree
           {
             const size_t size = packetIndex*VSIZEX;
             if (intersect)
-              scene->intersectN((void**)rayPtrs, size, context);
+              scene->intersectN(rayPtrs, size, context);
             else
-              scene->occludedN((void**)rayPtrs, size, context);
+              scene->occludedN(rayPtrs, size, context);
           }
         }
         else
@@ -292,9 +291,9 @@ namespace embree
 
           /* trace stream */
           if (intersect)
-            scene->intersectN((void**)rayPtrs, size, context);
+            scene->intersectN(rayPtrs, size, context);
           else
-            scene->occludedN((void**)rayPtrs, size, context);
+            scene->occludedN(rayPtrs, size, context);
 
           /* convert from SOA to SOP */
           for (size_t j = 0; j < size; j += VSIZEX)
