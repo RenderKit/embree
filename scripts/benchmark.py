@@ -42,7 +42,7 @@ def render(name,modelname,model):
     command += ' -c ' + model
     for arg in args:
       command += ' ' + arg
-    command += ' -rtcore verbose=2 -benchmark 4 16 > ' + logFile
+    command += ' -rtcore verbose=2 -benchmark 8 32 > ' + logFile
     os.system(command)
 
 def renderLoop():
