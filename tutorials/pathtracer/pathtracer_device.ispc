@@ -1459,6 +1459,7 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
     c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, RandomSampler_get2D(sampler));
 
     /* iterate over lights */
+    context.flags = g_iflags_incoherent;
     for (uniform size_t i=0; i<g_ispc_scene->numLights; i++)
     {
       const uniform Light* uniform l = g_ispc_scene->lights[i];

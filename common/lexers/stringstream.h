@@ -30,7 +30,7 @@ namespace embree
     ParseLocation location() { return cin->loc(); }
     std::string next();
   private:
-    __forceinline bool isSeparator(int c) const { return c <= 256 && isSepMap[c]; }
+    __forceinline bool isSeparator(int c) const { return c<256 && isSepMap[c]; }
   private:
     Ref<Stream<int> > cin; /*! source character stream */
     bool isSepMap[256];    /*! map for fast classification of separators */

@@ -36,20 +36,10 @@
 
 // TODO: bvh->scene->intersect/occluded correct vs. global scene->intersect/occluded
 
-#define MAX_RAYS 64
-
 namespace embree
 {
   namespace isa
   {
-    /* enable traversal of either two small streams or one large stream */
-#if !defined(__AVX512F__)
-    static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(unsigned int);
-#else
-    static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(size_t);
-#endif
-    static_assert(MAX_RAYS_PER_OCTANT <= MAX_INTERNAL_STREAM_SIZE, "maximal internal stream size exceeded");
-
     // =====================================================================================================
     // =====================================================================================================
     // =====================================================================================================
@@ -60,9 +50,9 @@ namespace embree
       __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  //!< stack of nodes
 
       RayK<K>** __restrict__ inputPackets = (RayK<K>**)inputRays;
-      assert(numOctantRays <= MAX_RAYS);
+      assert(numOctantRays <= MAX_INTERNAL_STREAM_SIZE);
 
-      __aligned(64) Packet packet[MAX_RAYS/K];
+      __aligned(64) Packet packet[MAX_INTERNAL_STREAM_SIZE/K];
       __aligned(64) Frusta frusta;
 
       bool commonOctant = true;
@@ -177,10 +167,10 @@ namespace embree
       __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  //!< stack of nodes
 
       RayK<K>** __restrict__ inputPackets = (RayK<K>**)inputRays;
-      assert(numOctantRays <= MAX_RAYS);
+      assert(numOctantRays <= MAX_INTERNAL_STREAM_SIZE);
 
       /* inactive rays should have been filtered out before */
-      __aligned(64) Packet packet[MAX_RAYS/K];
+      __aligned(64) Packet packet[MAX_INTERNAL_STREAM_SIZE/K];
       __aligned(64) Frusta frusta;
 
       bool commonOctant = true;
