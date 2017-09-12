@@ -45,11 +45,9 @@ namespace embree
     // =====================================================================================================
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherent(BVH* __restrict__ bvh, RayK<K>** inputRays, size_t numOctantRays, IntersectContext* context)
+    __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherent(BVH* __restrict__ bvh, RayK<K>** inputPackets, size_t numOctantRays, IntersectContext* context)
     {
       __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  //!< stack of nodes
-
-      RayK<K>** __restrict__ inputPackets = (RayK<K>**)inputRays;
       assert(numOctantRays <= MAX_INTERNAL_STREAM_SIZE);
 
       __aligned(64) Packet packet[MAX_INTERNAL_STREAM_SIZE/K];
@@ -162,11 +160,9 @@ namespace embree
     }
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherent(BVH* __restrict__ bvh, RayK<K>** inputRays, size_t numOctantRays, IntersectContext* context)
+    __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherent(BVH* __restrict__ bvh, RayK<K>** inputPackets, size_t numOctantRays, IntersectContext* context)
     {
       __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  //!< stack of nodes
-
-      RayK<K>** __restrict__ inputPackets = (RayK<K>**)inputRays;
       assert(numOctantRays <= MAX_INTERNAL_STREAM_SIZE);
 
       /* inactive rays should have been filtered out before */
