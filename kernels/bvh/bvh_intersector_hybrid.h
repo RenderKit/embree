@@ -50,6 +50,20 @@ namespace embree
       0;
 
 
+      /* Optimized frustum test. We calculate t=(p-org)/dir in ray/box
+       * intersection. We assume the rays are split by octant, thus
+       * dir intervals are either positive or negative in each
+       * dimension.
+
+         Case 1: dir.min >= 0 && dir.max >= 0:
+           t_min = (p_min - org_max) / dir_max = (p_min - org_max)*rdir_min = p_min*rdir_min - org_max*rdir_min
+           t_max = (p_max - org_min) / dir_min = (p_max - org_min)*rdir_max = p_max*rdir_max - org_min*rdir_max
+
+         Case 2: dir.min < 0 && dir.max < 0:
+           t_min = (p_max - org_min) / dir_min = (p_max - org_min)*rdir_max = p_max*rdir_max - org_min*rdir_max
+           t_max = (p_min - org_max) / dir_max = (p_min - org_max)*rdir_min = p_min*rdir_min - org_max*rdir_min
+      */
+      
       struct Frustum
       {
         __forceinline Frustum(const vbool<K>  &valid,
@@ -58,18 +72,19 @@ namespace embree
                               const vfloat<K> &ray_tnear,
                               const vfloat<K> &ray_tfar)
         {
-          const Vec3fa reduced_min_rdir( reduce_min(select(valid,rdir.x,pos_inf)),
-                                         reduce_min(select(valid,rdir.y,pos_inf)),
-                                         reduce_min(select(valid,rdir.z,pos_inf)) );
-          const Vec3fa reduced_max_rdir( reduce_max(select(valid,rdir.x,neg_inf)),
-                                         reduce_max(select(valid,rdir.y,neg_inf)),
-                                         reduce_max(select(valid,rdir.z,neg_inf)) );
           const Vec3fa reduced_min_org( reduce_min(select(valid,org.x,pos_inf)),
                                         reduce_min(select(valid,org.y,pos_inf)),
                                         reduce_min(select(valid,org.z,pos_inf)) );
           const Vec3fa reduced_max_org( reduce_max(select(valid,org.x,neg_inf)),
                                         reduce_max(select(valid,org.y,neg_inf)),
                                         reduce_max(select(valid,org.z,neg_inf)) );
+          
+          const Vec3fa reduced_min_rdir( reduce_min(select(valid,rdir.x,pos_inf)),
+                                         reduce_min(select(valid,rdir.y,pos_inf)),
+                                         reduce_min(select(valid,rdir.z,pos_inf)) );
+          const Vec3fa reduced_max_rdir( reduce_max(select(valid,rdir.x,neg_inf)),
+                                         reduce_max(select(valid,rdir.y,neg_inf)),
+                                         reduce_max(select(valid,rdir.z,neg_inf)) );
 
           min_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_rdir, reduced_max_rdir);
           max_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_rdir, reduced_min_rdir);
@@ -154,12 +169,12 @@ namespace embree
             return movemask(vmask_node_hit);
           }
 #else
-          const vfloat<N> bminX = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + nearX));
-          const vfloat<N> bminY = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + nearY));
-          const vfloat<N> bminZ = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + nearZ));
-          const vfloat<N> bmaxX = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + farX));
-          const vfloat<N> bmaxY = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + farY));
-          const vfloat<N> bmaxZ = vfloat<N>(*(const vfloat<N>*)((const char*)&node->lower_x + farZ));
+          const vfloat<N> bminX = *(const vfloat<N>*)((const char*)&node->lower_x + nearX);
+          const vfloat<N> bminY = *(const vfloat<N>*)((const char*)&node->lower_x + nearY);
+          const vfloat<N> bminZ = *(const vfloat<N>*)((const char*)&node->lower_x + nearZ);
+          const vfloat<N> bmaxX = *(const vfloat<N>*)((const char*)&node->lower_x + farX);
+          const vfloat<N> bmaxY = *(const vfloat<N>*)((const char*)&node->lower_x + farY);
+          const vfloat<N> bmaxZ = *(const vfloat<N>*)((const char*)&node->lower_x + farZ);
                     
           if (robust)
           {
