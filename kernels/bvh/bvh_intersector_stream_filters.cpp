@@ -21,10 +21,7 @@ namespace embree
 {
   namespace isa
   {
-    static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(size_t);
-    MAYBE_UNUSED static const size_t MAX_COHERENT_RAY_PACKETS = MAX_RAYS_PER_OCTANT / VSIZEX;
-
-    static_assert(MAX_RAYS_PER_OCTANT <= MAX_INTERNAL_STREAM_SIZE, "maximal internal stream size exceeded");
+    MAYBE_UNUSED static const size_t MAX_PACKET_STREAM_SIZE = MAX_INTERNAL_STREAM_SIZE / VSIZEX;
 
     __forceinline void RayStreamFilter::filterAOS(Scene* scene, RTCRay* _rayN, size_t N, size_t stride, IntersectContext* context, bool intersect)
     {
@@ -35,12 +32,12 @@ namespace embree
       /* all valid accels need to have a intersectN/occludedN */
       if (unlikely(isCoherent(context->user->flags) && !scene->isRobust() && scene->accels.validIsecN()))
       {
-        __aligned(64) RayK<VSIZEX> rays[MAX_COHERENT_RAY_PACKETS];
-        __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_COHERENT_RAY_PACKETS];
+        __aligned(64) RayK<VSIZEX> rays[MAX_PACKET_STREAM_SIZE];
+        __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_PACKET_STREAM_SIZE];
 
-        for (size_t i = 0; i < N; i += MAX_RAYS_PER_OCTANT)
+        for (size_t i = 0; i < N; i += MAX_INTERNAL_STREAM_SIZE)
         {
-          const size_t size = min(N - i, MAX_RAYS_PER_OCTANT);
+          const size_t size = min(N - i, MAX_INTERNAL_STREAM_SIZE);
 
           /* convert from AOS to SOA */
           for (size_t j = 0; j < size; j += VSIZEX)
@@ -107,12 +104,12 @@ namespace embree
       /* all valid accels need to have a intersectN/occludedN */
       if (unlikely(isCoherent(context->user->flags) && !scene->isRobust() && scene->accels.validIsecN()))
       {
-        __aligned(64) RayK<VSIZEX> rays[MAX_COHERENT_RAY_PACKETS];
-        __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_COHERENT_RAY_PACKETS];
+        __aligned(64) RayK<VSIZEX> rays[MAX_PACKET_STREAM_SIZE];
+        __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_PACKET_STREAM_SIZE];
 
-        for (size_t i = 0; i < N; i += MAX_RAYS_PER_OCTANT)
+        for (size_t i = 0; i < N; i += MAX_INTERNAL_STREAM_SIZE)
         {
-          const size_t size = min(N - i, MAX_RAYS_PER_OCTANT);
+          const size_t size = min(N - i, MAX_INTERNAL_STREAM_SIZE);
 
           /* convert from AOP to SOA */
           for (size_t j = 0; j < size; j += VSIZEX)
@@ -182,7 +179,7 @@ namespace embree
         /* all valid accels need to have a intersectN/occludedN */
         if (unlikely(isCoherent(context->user->flags) && !scene->isRobust() && scene->accels.validIsecN()))
         {
-          __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_RAYS_PER_OCTANT / VSIZEX];
+          __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_INTERNAL_STREAM_SIZE / VSIZEX];
 
           size_t packetIndex = 0;
           for (size_t i = 0; i < numPackets; i++)
@@ -192,7 +189,7 @@ namespace embree
             rayPtrs[packetIndex++] = &ray;
 
             /* trace as stream */
-            if (unlikely(packetIndex == MAX_COHERENT_RAY_PACKETS))
+            if (unlikely(packetIndex == MAX_PACKET_STREAM_SIZE))
             {
               const size_t size = packetIndex*VSIZEX;
               if (intersect)
@@ -266,12 +263,12 @@ namespace embree
       /* all valid accels need to have a intersectN/occludedN */
       if (unlikely(isCoherent(context->user->flags) && !scene->isRobust() && scene->accels.validIsecN()))
       {
-        __aligned(64) RayK<VSIZEX> rays[MAX_COHERENT_RAY_PACKETS];
-        __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_COHERENT_RAY_PACKETS];
+        __aligned(64) RayK<VSIZEX> rays[MAX_PACKET_STREAM_SIZE];
+        __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_PACKET_STREAM_SIZE];
 
-        for (size_t i = 0; i < N; i += MAX_RAYS_PER_OCTANT)
+        for (size_t i = 0; i < N; i += MAX_INTERNAL_STREAM_SIZE)
         {
-          const size_t size = min(N - i, MAX_RAYS_PER_OCTANT);
+          const size_t size = min(N - i, MAX_INTERNAL_STREAM_SIZE);
 
           /* convert from SOP to SOA */
           for (size_t j = 0; j < size; j += VSIZEX)
