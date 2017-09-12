@@ -177,7 +177,7 @@ namespace embree
       /* determine switch threshold based on flags */
       const size_t switchThreshold = (context->user && isCoherent(context->user->flags)) ? 2 : switchThresholdIncoherent;
 
-      vint<K> octant =                                                \
+      vint<K> octant =
         select(vfloat<K>(rdir.x) < 0.0f,vint<K>(1),vint<K>(zero)) |
         select(vfloat<K>(rdir.y) < 0.0f,vint<K>(2),vint<K>(zero)) |
         select(vfloat<K>(rdir.z) < 0.0f,vint<K>(4),vint<K>(zero));
