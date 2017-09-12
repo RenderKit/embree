@@ -52,24 +52,24 @@ namespace embree
 
       struct Frustum
       {
-        __forceinline Frustum(const vbool<K>  &octant_valid,
-                              const Vec3vf<K> &rdir,
+        __forceinline Frustum(const vbool<K>  &valid,
                               const Vec3vf<K> &org,
+                              const Vec3vf<K> &rdir,
                               const vfloat<K> &ray_tnear,
                               const vfloat<K> &ray_tfar)
         {
-          const Vec3fa reduced_min_rdir( reduce_min(select(octant_valid,rdir.x,pos_inf)),
-                                         reduce_min(select(octant_valid,rdir.y,pos_inf)),
-                                         reduce_min(select(octant_valid,rdir.z,pos_inf)) );
-          const Vec3fa reduced_max_rdir( reduce_max(select(octant_valid,rdir.x,neg_inf)),
-                                         reduce_max(select(octant_valid,rdir.y,neg_inf)),
-                                         reduce_max(select(octant_valid,rdir.z,neg_inf)) );
-          const Vec3fa reduced_min_org( reduce_min(select(octant_valid,org.x,pos_inf)),
-                                        reduce_min(select(octant_valid,org.y,pos_inf)),
-                                        reduce_min(select(octant_valid,org.z,pos_inf)) );
-          const Vec3fa reduced_max_org( reduce_max(select(octant_valid,org.x,neg_inf)),
-                                        reduce_max(select(octant_valid,org.y,neg_inf)),
-                                        reduce_max(select(octant_valid,org.z,neg_inf)) );
+          const Vec3fa reduced_min_rdir( reduce_min(select(valid,rdir.x,pos_inf)),
+                                         reduce_min(select(valid,rdir.y,pos_inf)),
+                                         reduce_min(select(valid,rdir.z,pos_inf)) );
+          const Vec3fa reduced_max_rdir( reduce_max(select(valid,rdir.x,neg_inf)),
+                                         reduce_max(select(valid,rdir.y,neg_inf)),
+                                         reduce_max(select(valid,rdir.z,neg_inf)) );
+          const Vec3fa reduced_min_org( reduce_min(select(valid,org.x,pos_inf)),
+                                        reduce_min(select(valid,org.y,pos_inf)),
+                                        reduce_min(select(valid,org.z,pos_inf)) );
+          const Vec3fa reduced_max_org( reduce_max(select(valid,org.x,neg_inf)),
+                                        reduce_max(select(valid,org.y,neg_inf)),
+                                        reduce_max(select(valid,org.z,neg_inf)) );
 
           min_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_rdir, reduced_max_rdir);
           max_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_rdir, reduced_min_rdir);
@@ -85,8 +85,8 @@ namespace embree
             max_org_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_org, reduced_max_org);
           }
 
-          min_dist = reduce_min(select(octant_valid,ray_tnear,vfloat<K>(pos_inf)));
-          max_dist = reduce_max(select(octant_valid,ray_tfar ,vfloat<K>(neg_inf)));
+          min_dist = reduce_min(select(valid,ray_tnear,vfloat<K>(pos_inf)));
+          max_dist = reduce_max(select(valid,ray_tfar ,vfloat<K>(neg_inf)));
 
 #if defined(__AVX512ER__) // KNL+
           min_max_rdirX = align_shift_right<16/2>(vfloat16(max_rdir.x),vfloat16(min_rdir.x));
