@@ -30,7 +30,7 @@ namespace embree
       /* use fast path for coherent ray mode */
 #if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
       /* all valid accels need to have a intersectN/occludedN */
-      if (unlikely(isCoherent(context->user->flags) && !scene->isRobust() && scene->accels.validIsecN()))
+      if (unlikely(isCoherent(context->user->flags)))
       {
         __aligned(64) RayK<VSIZEX> rays[MAX_PACKET_STREAM_SIZE];
         __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_PACKET_STREAM_SIZE];
@@ -102,7 +102,7 @@ namespace embree
       /* use fast path for coherent ray mode */
 #if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
       /* all valid accels need to have a intersectN/occludedN */
-      if (unlikely(isCoherent(context->user->flags) && !scene->isRobust() && scene->accels.validIsecN()))
+      if (unlikely(isCoherent(context->user->flags)))
       {
         __aligned(64) RayK<VSIZEX> rays[MAX_PACKET_STREAM_SIZE];
         __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_PACKET_STREAM_SIZE];
@@ -177,7 +177,7 @@ namespace embree
       {
 #if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
         /* all valid accels need to have a intersectN/occludedN */
-        if (unlikely(isCoherent(context->user->flags) && !scene->isRobust() && scene->accels.validIsecN()))
+        if (unlikely(isCoherent(context->user->flags)))
         {
           __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_INTERNAL_STREAM_SIZE / VSIZEX];
 
@@ -261,7 +261,7 @@ namespace embree
       /* use fast path for coherent ray mode */
 #if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
       /* all valid accels need to have a intersectN/occludedN */
-      if (unlikely(isCoherent(context->user->flags) && !scene->isRobust() && scene->accels.validIsecN()))
+      if (unlikely(isCoherent(context->user->flags)))
       {
         __aligned(64) RayK<VSIZEX> rays[MAX_PACKET_STREAM_SIZE];
         __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_PACKET_STREAM_SIZE];
