@@ -744,8 +744,9 @@ namespace embree
   {
     /* update camera */
     camera.move(moveDelta.x*speed, moveDelta.y*speed, moveDelta.z*speed);
-
     ISPCCamera ispccamera = camera.getISPCCamera(width,height,true);
+     if (print_camera)
+      std::cout << camera.str() << std::endl;
 
     /* render image using ISPC */
     initRayStats();
@@ -819,10 +820,7 @@ namespace embree
       stream << dt1*1000.0f << " ms, ";
       stream << width << "x" << height << " pixels";
       std::cout << stream.str() << std::endl;
-    }
-
-    if (print_camera)
-      std::cout << camera.str() << std::endl;
+    } 
   }
 
   void TutorialApplication::reshapeFunc(int width, int height)
