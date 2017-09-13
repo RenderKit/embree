@@ -103,8 +103,6 @@ namespace embree
       {
         typedef typename IntersectorK::Primitive PrimitiveK;
         typedef typename IntersectorK::Precalculations PrecalculationsK;
-
-        static const bool validIntersectorK = true;
         
         static __forceinline void intersectK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayK<K>& ray, IntersectContext* context, const PrimitiveK* prim, size_t num, size_t& lazy_node)
         {
