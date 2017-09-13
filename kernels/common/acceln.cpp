@@ -39,55 +39,55 @@ namespace embree
     accels.push_back(accel);
   }
   
-  void AccelN::intersect (void* ptr, RTCRay& ray, IntersectContext* context) 
+  void AccelN::intersect (Accel::Intersectors* This_in, RTCRay& ray, IntersectContext* context) 
   {
-    AccelN* This = (AccelN*)ptr;
+    AccelN* This = (AccelN*)This_in->ptr;
     for (size_t i=0; i<This->validAccels.size(); i++)
-      This->validAccels[i]->intersect(ray,context);
+      This->validAccels[i]->intersectors.intersect(ray,context);
   }
 
-  void AccelN::intersect4 (const void* valid, void* ptr, RTCRay4& ray, IntersectContext* context) 
+  void AccelN::intersect4 (const void* valid, Accel::Intersectors* This_in, RTCRay4& ray, IntersectContext* context) 
   {
-    AccelN* This = (AccelN*)ptr;
+    AccelN* This = (AccelN*)This_in->ptr;
     for (size_t i=0; i<This->validAccels.size(); i++)
-      This->validAccels[i]->intersect4(valid,ray,context);
+      This->validAccels[i]->intersectors.intersect4(valid,ray,context);
   }
 
-  void AccelN::intersect8 (const void* valid, void* ptr, RTCRay8& ray, IntersectContext* context) 
+  void AccelN::intersect8 (const void* valid, Accel::Intersectors* This_in, RTCRay8& ray, IntersectContext* context) 
   {
-    AccelN* This = (AccelN*)ptr;
+    AccelN* This = (AccelN*)This_in->ptr;
     for (size_t i=0; i<This->validAccels.size(); i++)
-      This->validAccels[i]->intersect8(valid,ray,context);
+      This->validAccels[i]->intersectors.intersect8(valid,ray,context);
   }
 
-  void AccelN::intersect16 (const void* valid, void* ptr, RTCRay16& ray, IntersectContext* context) 
+  void AccelN::intersect16 (const void* valid, Accel::Intersectors* This_in, RTCRay16& ray, IntersectContext* context) 
   {
-    AccelN* This = (AccelN*)ptr;
+    AccelN* This = (AccelN*)This_in->ptr;
     for (size_t i=0; i<This->validAccels.size(); i++)
-      This->validAccels[i]->intersect16(valid,ray,context);
+      This->validAccels[i]->intersectors.intersect16(valid,ray,context);
   }
 
-  void AccelN::intersectN (void* ptr, RayK<VSIZEX>** ray, const size_t N, IntersectContext* context)
+  void AccelN::intersectN (Accel::Intersectors* This_in, RayK<VSIZEX>** ray, const size_t N, IntersectContext* context)
   {
-    AccelN* This = (AccelN*)ptr;
+    AccelN* This = (AccelN*)This_in->ptr;
     for (size_t i=0; i<This->validAccels.size(); i++)
-      This->validAccels[i]->intersectN(ray,N,context);
+      This->validAccels[i]->intersectors.intersectN(ray,N,context);
   }
 
-  void AccelN::occluded (void* ptr, RTCRay& ray, IntersectContext* context) 
+  void AccelN::occluded (Accel::Intersectors* This_in, RTCRay& ray, IntersectContext* context) 
   {
-    AccelN* This = (AccelN*)ptr;
+    AccelN* This = (AccelN*)This_in->ptr;
     for (size_t i=0; i<This->validAccels.size(); i++) {
-      This->validAccels[i]->occluded(ray,context); 
+      This->validAccels[i]->intersectors.occluded(ray,context); 
       if (ray.geomID == 0) break; 
     }
   }
 
-  void AccelN::occluded4 (const void* valid, void* ptr, RTCRay4& ray, IntersectContext* context) 
+  void AccelN::occluded4 (const void* valid, Accel::Intersectors* This_in, RTCRay4& ray, IntersectContext* context) 
   {
-    AccelN* This = (AccelN*)ptr;
+    AccelN* This = (AccelN*)This_in->ptr;
     for (size_t i=0; i<This->validAccels.size(); i++) {
-      This->validAccels[i]->occluded4(valid,ray,context);
+      This->validAccels[i]->intersectors.occluded4(valid,ray,context);
 #if defined(__SSE2__)
       vbool4 valid0 = ((vbool4*)valid)[0];
       vbool4 hit0   = ((vint4*)ray.geomID)[0] != vint4(0);
@@ -96,11 +96,11 @@ namespace embree
     }
   }
 
-  void AccelN::occluded8 (const void* valid, void* ptr, RTCRay8& ray, IntersectContext* context) 
+  void AccelN::occluded8 (const void* valid, Accel::Intersectors* This_in, RTCRay8& ray, IntersectContext* context) 
   {
-    AccelN* This = (AccelN*)ptr;
+    AccelN* This = (AccelN*)This_in->ptr;
     for (size_t i=0; i<This->validAccels.size(); i++) {
-      This->validAccels[i]->occluded8(valid,ray,context);
+      This->validAccels[i]->intersectors.occluded8(valid,ray,context);
 #if defined(__SSE2__) // FIXME: use higher ISA
       vbool4 valid0 = ((vbool4*)valid)[0];
       vbool4 hit0   = ((vint4*)ray.geomID)[0] != vint4(0);
@@ -111,11 +111,11 @@ namespace embree
     }
   }
 
-  void AccelN::occluded16 (const void* valid, void* ptr, RTCRay16& ray, IntersectContext* context) 
+  void AccelN::occluded16 (const void* valid, Accel::Intersectors* This_in, RTCRay16& ray, IntersectContext* context) 
   {
-    AccelN* This = (AccelN*)ptr;
+    AccelN* This = (AccelN*)This_in->ptr;
     for (size_t i=0; i<This->validAccels.size(); i++) {
-      This->validAccels[i]->occluded16(valid,ray,context);
+      This->validAccels[i]->intersectors.occluded16(valid,ray,context);
 #if defined(__SSE2__) // FIXME: use higher ISA
       vbool4 valid0 = ((vbool4*)valid)[0];
       vbool4 hit0   = ((vint4*)ray.geomID)[0] != vint4(0);
@@ -130,12 +130,12 @@ namespace embree
     }
   }
 
-  void AccelN::occludedN (void* ptr, RayK<VSIZEX>** ray, const size_t N, IntersectContext* context)
+  void AccelN::occludedN (Accel::Intersectors* This_in, RayK<VSIZEX>** ray, const size_t N, IntersectContext* context)
   {
-    AccelN* This = (AccelN*)ptr;
+    AccelN* This = (AccelN*)This_in->ptr;
     size_t M = N;
     for (size_t i=0; i<This->validAccels.size(); i++)
-      This->validAccels[i]->occludedN(ray,M,context);
+      This->validAccels[i]->intersectors.occludedN(ray,M,context);
   }
 
   void AccelN::print(size_t ident)

@@ -57,9 +57,9 @@ namespace embree
 
           /* trace stream */
           if (intersect)
-            scene->intersectN(rayPtrs, size, context);
+            scene->intersectors.intersectN(rayPtrs, size, context);
           else
-            scene->occludedN(rayPtrs, size, context);
+            scene->intersectors.occludedN(rayPtrs, size, context);
 
           /* convert from SOA to AOS */
           for (size_t j = 0; j < size; j += VSIZEX)
@@ -86,9 +86,9 @@ namespace embree
           valid &= ray.tnear <= ray.tfar;
 
           if (intersect)
-            scene->intersect(valid, ray, context);
+            scene->intersectors.intersect(valid, ray, context);
           else
-            scene->occluded(valid, ray, context);
+            scene->intersectors.occluded(valid, ray, context);
 
           rayN.setHitByOffset(valid, offset, ray, intersect);
         }
@@ -128,9 +128,9 @@ namespace embree
 
           /* trace stream */
           if (intersect)
-            scene->intersectN(rayPtrs, size, context);
+            scene->intersectors.intersectN(rayPtrs, size, context);
           else
-            scene->occludedN(rayPtrs, size, context);
+            scene->intersectors.occludedN(rayPtrs, size, context);
 
           /* convert from SOA to AOP */
           for (size_t j = 0; j < size; j += VSIZEX)
@@ -156,9 +156,9 @@ namespace embree
           valid &= ray.tnear <= ray.tfar;
 
           if (intersect)
-            scene->intersect(valid, ray, context);
+            scene->intersectors.intersect(valid, ray, context);
           else
-            scene->occluded(valid, ray, context);
+            scene->intersectors.occluded(valid, ray, context);
 
           rayN.setHitByIndex(valid, i, ray, intersect);
         }
@@ -193,9 +193,9 @@ namespace embree
             {
               const size_t size = packetIndex*VSIZEX;
               if (intersect)
-                scene->intersectN(rayPtrs, size, context);
+                scene->intersectors.intersectN(rayPtrs, size, context);
               else
-                scene->occludedN(rayPtrs, size, context);
+                scene->intersectors.occludedN(rayPtrs, size, context);
               packetIndex = 0;
             }
           }
@@ -205,9 +205,9 @@ namespace embree
           {
             const size_t size = packetIndex*VSIZEX;
             if (intersect)
-              scene->intersectN(rayPtrs, size, context);
+              scene->intersectors.intersectN(rayPtrs, size, context);
             else
-              scene->occludedN(rayPtrs, size, context);
+              scene->intersectors.occludedN(rayPtrs, size, context);
           }
         }
         else
@@ -221,9 +221,9 @@ namespace embree
             const vboolx valid = ray.tnear <= ray.tfar;
 
             if (intersect)
-              scene->intersect(valid, ray, context);
+              scene->intersectors.intersect(valid, ray, context);
             else
-              scene->occluded(valid, ray, context);
+              scene->intersectors.occluded(valid, ray, context);
           }
         }
       }
@@ -244,9 +244,9 @@ namespace embree
             valid &= ray.tnear <= ray.tfar;
 
             if (intersect)
-              scene->intersect(valid, ray, context);
+              scene->intersectors.intersect(valid, ray, context);
             else
-              scene->occluded(valid, ray, context);
+              scene->intersectors.occluded(valid, ray, context);
 
             rayN.setHitByOffset(valid, offset, ray, intersect);
           }
@@ -288,9 +288,9 @@ namespace embree
 
           /* trace stream */
           if (intersect)
-            scene->intersectN(rayPtrs, size, context);
+            scene->intersectors.intersectN(rayPtrs, size, context);
           else
-            scene->occludedN(rayPtrs, size, context);
+            scene->intersectors.occludedN(rayPtrs, size, context);
 
           /* convert from SOA to SOP */
           for (size_t j = 0; j < size; j += VSIZEX)
@@ -318,9 +318,9 @@ namespace embree
           valid &= ray.tnear <= ray.tfar;
 
           if (intersect)
-            scene->intersect(valid, ray, context);
+            scene->intersectors.intersect(valid, ray, context);
           else
-            scene->occluded(valid, ray, context);
+            scene->intersectors.occluded(valid, ray, context);
 
           rayN.setHitByOffset(valid, offset, ray, intersect);
         }

@@ -244,11 +244,11 @@ namespace embree
                             RayK<K>& ray, const Vec3vf<K> &ray_org, const Vec3vf<K> &ray_dir, const Vec3vf<K> &ray_rdir, const vfloat<K> &ray_tnear, const vfloat<K> &ray_tfar, const Vec3vi<K>& nearXYZ, IntersectContext* context);
 
     public:
-      static void intersect(vint<K>* valid, BVH* bvh, RayK<K>& ray, IntersectContext* context);
-      static void occluded (vint<K>* valid, BVH* bvh, RayK<K>& ray, IntersectContext* context);
+      static void intersect(vint<K>* valid, Accel::Intersectors* This, RayK<K>& ray, IntersectContext* context);
+      static void occluded (vint<K>* valid, Accel::Intersectors* This, RayK<K>& ray, IntersectContext* context);
 
-      static void intersect_coherent(vint<K>* valid, BVH* bvh, RayK<K>& ray, IntersectContext* context);
-      static void occluded_coherent(vint<K>* valid, BVH* bvh, RayK<K>& ray, IntersectContext* context);
+      static void intersect_coherent(vint<K>* valid, Accel::Intersectors* This, RayK<K>& ray, IntersectContext* context);
+      static void occluded_coherent (vint<K>* valid, Accel::Intersectors* This, RayK<K>& ray, IntersectContext* context);
 
     };
 
