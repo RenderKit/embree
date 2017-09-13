@@ -34,8 +34,6 @@
 #include "../common/scene.h"
 #include <bitset>
 
-// TODO: bvh->scene->intersect/occluded correct vs. global scene->intersect/occluded
-
 namespace embree
 {
   namespace isa
@@ -45,11 +43,11 @@ namespace embree
     // =====================================================================================================
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherent(BVH* __restrict__ bvh, RayK<K>** inputRays, size_t numOctantRays, IntersectContext* context)
+    __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersect(Accel::Intersectors* __restrict__ This,
+                                                                                                       RayK<K>** inputPackets, size_t numOctantRays, IntersectContext* context)
     {
+      BVH* __restrict__ bvh = (BVH*) This->ptr;
       __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  //!< stack of nodes
-
-      RayK<K>** __restrict__ inputPackets = (RayK<K>**)inputRays;
       assert(numOctantRays <= MAX_INTERNAL_STREAM_SIZE);
 
       __aligned(64) Packet packet[MAX_INTERNAL_STREAM_SIZE/K];
@@ -64,7 +62,7 @@ namespace embree
       {
         const size_t numPackets = (numOctantRays+K-1)/K; 
         for (size_t i = 0; i < numPackets; i++)
-          bvh->scene->intersect(inputPackets[i]->tnear <= inputPackets[i]->tfar,*inputPackets[i],context);
+          This->intersect(inputPackets[i]->tnear <= inputPackets[i]->tfar,*inputPackets[i],context);
         return;
       }
 
@@ -162,11 +160,11 @@ namespace embree
     }
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherent(BVH* __restrict__ bvh, RayK<K>** inputRays, size_t numOctantRays, IntersectContext* context)
+    __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occluded(Accel::Intersectors* __restrict__ This,
+                                                                                                      RayK<K>** inputPackets, size_t numOctantRays, IntersectContext* context)
     {
+      BVH* __restrict__ bvh = (BVH*) This->ptr;
       __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  //!< stack of nodes
-
-      RayK<K>** __restrict__ inputPackets = (RayK<K>**)inputRays;
       assert(numOctantRays <= MAX_INTERNAL_STREAM_SIZE);
 
       /* inactive rays should have been filtered out before */
@@ -184,7 +182,7 @@ namespace embree
       {
         const size_t numPackets = (numOctantRays+K-1)/K; 
         for (size_t i = 0; i < numPackets; i++)
-          bvh->scene->occluded(inputPackets[i]->tnear <= inputPackets[i]->tfar,*inputPackets[i],context);
+          This->occluded(inputPackets[i]->tnear <= inputPackets[i]->tfar,*inputPackets[i],context);
         return;
       }
 
@@ -278,54 +276,6 @@ namespace embree
       } // traversal + intersection
     }
 
-    // =====================================================================================================
-    // =====================================================================================================
-    // =====================================================================================================
-
-    template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, RayK<K>** inputRays, size_t numTotalRays, IntersectContext* context)
-    {
-#if ENABLE_COHERENT_STREAM_PATH == 1
-      if (unlikely(PrimitiveIntersector::validIntersectorK && !robust && isCoherent(context->user->flags)))
-      {
-        intersectCoherent(bvh, inputRays, numTotalRays, context);
-        return;
-      }
-#endif
-
-      /* fallback to packets */
-      for (size_t i = 0; i < numTotalRays; i += K)
-      {
-        const vint<K> vi = vint<K>(int(i)) + vint<K>(step);
-        vbool<K> valid = vi < vint<K>(int(numTotalRays));
-        RayK<K>& ray = *(inputRays[i / K]);
-        valid &= ray.tnear <= ray.tfar;
-        bvh->scene->intersect(valid, ray, context);
-      }
-    }
-
-    template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, RayK<K>** inputRays, size_t numTotalRays, IntersectContext* context)
-    {
-#if ENABLE_COHERENT_STREAM_PATH == 1
-      if (unlikely(PrimitiveIntersector::validIntersectorK && !robust && isCoherent(context->user->flags)))
-      {
-        occludedCoherent(bvh, inputRays, numTotalRays, context);
-        return;
-      }
-#endif
-
-      /* fallback to packets */
-      for (size_t i = 0; i < numTotalRays; i += K)
-      {
-        const vint<K> vi = vint<K>(int(i)) + vint<K>(step);
-        vbool<K> valid = vi < vint<K>(int(numTotalRays));
-        RayK<K>& ray = *(inputRays[i / K]);
-        valid &= ray.tnear <= ray.tfar;
-        bvh->scene->occluded(valid, ray, context);
-      }
-    }
-
     ////////////////////////////////////////////////////////////////////////////////
     /// ArrayIntersectorKStream Definitions
     ////////////////////////////////////////////////////////////////////////////////
@@ -341,5 +291,39 @@ namespace embree
     typedef ArrayIntersectorKStream<VSIZEX,QuadMvIntersectorKPluecker<4 COMMA VSIZEX COMMA true > > Quad4vIntersectorStreamPluecker;
     typedef ArrayIntersectorKStream<VSIZEX,QuadMiIntersectorKPluecker<4 COMMA VSIZEX COMMA true > > Quad4iIntersectorStreamPluecker;
     typedef ArrayIntersectorKStream<VSIZEX,ObjectIntersectorK<VSIZEX COMMA false > > ObjectIntersectorStream;
+
+
+    // =====================================================================================================
+    // =====================================================================================================
+    // =====================================================================================================
+
+    template<int N, int Nx, int K>
+    void BVHNIntersectorStreamPacketFallback<N, Nx, K>::intersect(Accel::Intersectors* __restrict__ This, RayK<K>** inputRays, size_t numTotalRays, IntersectContext* context)
+    {
+      /* fallback to packets */
+      for (size_t i = 0; i < numTotalRays; i += K)
+      {
+        const vint<K> vi = vint<K>(int(i)) + vint<K>(step);
+        vbool<K> valid = vi < vint<K>(int(numTotalRays));
+        RayK<K>& ray = *(inputRays[i / K]);
+        valid &= ray.tnear <= ray.tfar;
+        This->intersect(valid, ray, context);
+      }
+    }
+
+    template<int N, int Nx, int K>
+    void BVHNIntersectorStreamPacketFallback<N, Nx, K>::occluded(Accel::Intersectors* __restrict__ This, RayK<K>** inputRays, size_t numTotalRays, IntersectContext* context)
+    {
+      /* fallback to packets */
+      for (size_t i = 0; i < numTotalRays; i += K)
+      {
+        const vint<K> vi = vint<K>(int(i)) + vint<K>(step);
+        vbool<K> valid = vi < vint<K>(int(numTotalRays));
+        RayK<K>& ray = *(inputRays[i / K]);
+        valid &= ray.tnear <= ray.tfar;
+        This->occluded(valid, ray, context);
+      }
+    }
+
   }
 }

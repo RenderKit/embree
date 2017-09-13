@@ -28,9 +28,7 @@ namespace embree
       RayStreamAOS rayN(_rayN);
 
       /* use fast path for coherent ray mode */
-#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
-      /* all valid accels need to have a intersectN/occludedN */
-      if (unlikely(isCoherent(context->user->flags) && !scene->isRobust() && scene->accels.validIsecN()))
+      if (unlikely(isCoherent(context->user->flags)))
       {
         __aligned(64) RayK<VSIZEX> rays[MAX_PACKET_STREAM_SIZE];
         __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_PACKET_STREAM_SIZE];
@@ -57,9 +55,9 @@ namespace embree
 
           /* trace stream */
           if (intersect)
-            scene->intersectN(rayPtrs, size, context);
+            scene->intersectors.intersectN(rayPtrs, size, context);
           else
-            scene->occludedN(rayPtrs, size, context);
+            scene->intersectors.occludedN(rayPtrs, size, context);
 
           /* convert from SOA to AOS */
           for (size_t j = 0; j < size; j += VSIZEX)
@@ -73,7 +71,6 @@ namespace embree
         }
       }
       else
-#endif
       {
         /* fallback to packets */
         for (size_t i=0; i<N; i+=VSIZEX)
@@ -86,9 +83,9 @@ namespace embree
           valid &= ray.tnear <= ray.tfar;
 
           if (intersect)
-            scene->intersect(valid, ray, context);
+            scene->intersectors.intersect(valid, ray, context);
           else
-            scene->occluded(valid, ray, context);
+            scene->intersectors.occluded(valid, ray, context);
 
           rayN.setHitByOffset(valid, offset, ray, intersect);
         }
@@ -100,9 +97,7 @@ namespace embree
       RayStreamAOP rayN(_rayN);
 
       /* use fast path for coherent ray mode */
-#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
-      /* all valid accels need to have a intersectN/occludedN */
-      if (unlikely(isCoherent(context->user->flags) && !scene->isRobust() && scene->accels.validIsecN()))
+      if (unlikely(isCoherent(context->user->flags)))
       {
         __aligned(64) RayK<VSIZEX> rays[MAX_PACKET_STREAM_SIZE];
         __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_PACKET_STREAM_SIZE];
@@ -128,9 +123,9 @@ namespace embree
 
           /* trace stream */
           if (intersect)
-            scene->intersectN(rayPtrs, size, context);
+            scene->intersectors.intersectN(rayPtrs, size, context);
           else
-            scene->occludedN(rayPtrs, size, context);
+            scene->intersectors.occludedN(rayPtrs, size, context);
 
           /* convert from SOA to AOP */
           for (size_t j = 0; j < size; j += VSIZEX)
@@ -144,7 +139,6 @@ namespace embree
         }
       }
       else
-#endif
       {
         /* fallback to packets */
         for (size_t i = 0; i < N; i += VSIZEX)
@@ -156,9 +150,9 @@ namespace embree
           valid &= ray.tnear <= ray.tfar;
 
           if (intersect)
-            scene->intersect(valid, ray, context);
+            scene->intersectors.intersect(valid, ray, context);
           else
-            scene->occluded(valid, ray, context);
+            scene->intersectors.occluded(valid, ray, context);
 
           rayN.setHitByIndex(valid, i, ray, intersect);
         }
@@ -175,9 +169,7 @@ namespace embree
                  !rayDataAlignment &&
                  !offsetAlignment))
       {
-#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
-        /* all valid accels need to have a intersectN/occludedN */
-        if (unlikely(isCoherent(context->user->flags) && !scene->isRobust() && scene->accels.validIsecN()))
+        if (unlikely(isCoherent(context->user->flags)))
         {
           __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_INTERNAL_STREAM_SIZE / VSIZEX];
 
@@ -193,9 +185,9 @@ namespace embree
             {
               const size_t size = packetIndex*VSIZEX;
               if (intersect)
-                scene->intersectN(rayPtrs, size, context);
+                scene->intersectors.intersectN(rayPtrs, size, context);
               else
-                scene->occludedN(rayPtrs, size, context);
+                scene->intersectors.occludedN(rayPtrs, size, context);
               packetIndex = 0;
             }
           }
@@ -205,13 +197,12 @@ namespace embree
           {
             const size_t size = packetIndex*VSIZEX;
             if (intersect)
-              scene->intersectN(rayPtrs, size, context);
+              scene->intersectors.intersectN(rayPtrs, size, context);
             else
-              scene->occludedN(rayPtrs, size, context);
+              scene->intersectors.occludedN(rayPtrs, size, context);
           }
         }
         else
-#endif
         {
           /* fallback to packets */
           for (size_t i = 0; i < numPackets; i++)
@@ -221,9 +212,9 @@ namespace embree
             const vboolx valid = ray.tnear <= ray.tfar;
 
             if (intersect)
-              scene->intersect(valid, ray, context);
+              scene->intersectors.intersect(valid, ray, context);
             else
-              scene->occluded(valid, ray, context);
+              scene->intersectors.occluded(valid, ray, context);
           }
         }
       }
@@ -244,9 +235,9 @@ namespace embree
             valid &= ray.tnear <= ray.tfar;
 
             if (intersect)
-              scene->intersect(valid, ray, context);
+              scene->intersectors.intersect(valid, ray, context);
             else
-              scene->occluded(valid, ray, context);
+              scene->intersectors.occluded(valid, ray, context);
 
             rayN.setHitByOffset(valid, offset, ray, intersect);
           }
@@ -259,9 +250,7 @@ namespace embree
       RayStreamSOP& rayN = *(RayStreamSOP*)&_rayN;
 
       /* use fast path for coherent ray mode */
-#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
-      /* all valid accels need to have a intersectN/occludedN */
-      if (unlikely(isCoherent(context->user->flags) && !scene->isRobust() && scene->accels.validIsecN()))
+      if (unlikely(isCoherent(context->user->flags)))
       {
         __aligned(64) RayK<VSIZEX> rays[MAX_PACKET_STREAM_SIZE];
         __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_PACKET_STREAM_SIZE];
@@ -288,9 +277,9 @@ namespace embree
 
           /* trace stream */
           if (intersect)
-            scene->intersectN(rayPtrs, size, context);
+            scene->intersectors.intersectN(rayPtrs, size, context);
           else
-            scene->occludedN(rayPtrs, size, context);
+            scene->intersectors.occludedN(rayPtrs, size, context);
 
           /* convert from SOA to SOP */
           for (size_t j = 0; j < size; j += VSIZEX)
@@ -305,7 +294,6 @@ namespace embree
         }
       }
       else
-#endif
       {
         /* fallback to packets */
         for (size_t i = 0; i < N; i += VSIZEX)
@@ -318,9 +306,9 @@ namespace embree
           valid &= ray.tnear <= ray.tfar;
 
           if (intersect)
-            scene->intersect(valid, ray, context);
+            scene->intersectors.intersect(valid, ray, context);
           else
-            scene->occluded(valid, ray, context);
+            scene->intersectors.occluded(valid, ray, context);
 
           rayN.setHitByOffset(valid, offset, ray, intersect);
         }

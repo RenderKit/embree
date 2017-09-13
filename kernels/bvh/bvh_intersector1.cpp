@@ -37,9 +37,10 @@ namespace embree
   namespace isa
   {
     template<int N, int types, bool robust, typename PrimitiveIntersector1>
-    void BVHNIntersector1<N,types,robust,PrimitiveIntersector1>::intersect(const BVH* __restrict__ bvh, Ray& __restrict__ ray, IntersectContext* context)
+    void BVHNIntersector1<N,types,robust,PrimitiveIntersector1>::intersect(const Accel::Intersectors* __restrict__ This, Ray& __restrict__ ray, IntersectContext* __restrict__ context)
     {
       /*! perform per ray precalculations required by the primitive intersector */
+      const BVH* __restrict__ bvh = (const BVH*) This->ptr;
       Precalculations pre(ray,bvh);
 
       /*! stack state */
@@ -124,13 +125,14 @@ namespace embree
     }
 
     template<int N, int types, bool robust, typename PrimitiveIntersector1>
-    void BVHNIntersector1<N,types,robust,PrimitiveIntersector1>::occluded(const BVH* __restrict__ bvh, Ray& __restrict__ ray, IntersectContext* context)
+    void BVHNIntersector1<N,types,robust,PrimitiveIntersector1>::occluded(const Accel::Intersectors* __restrict__ This, Ray& __restrict__ ray, IntersectContext* __restrict__ context)
     {
       /*! early out for already occluded rays */
       if (unlikely(ray.geomID == 0))
         return;
 
       /*! perform per ray precalculations required by the primitive intersector */
+      const BVH* __restrict__ bvh = (const BVH*) This->ptr;
       Precalculations pre(ray,bvh);
 
       /*! stack state */

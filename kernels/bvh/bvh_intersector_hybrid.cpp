@@ -124,13 +124,15 @@ namespace embree
     }
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
-    void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::intersect(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray, IntersectContext* context)
+    void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::intersect(vint<K>* __restrict__ valid_i, Accel::Intersectors* __restrict__ This, RayK<K>& __restrict__ ray, IntersectContext* __restrict__ context)
     {
+      BVH* __restrict__ bvh = (BVH*) This->ptr;
+      
 #if ENABLE_FAST_COHERENT_CODEPATHS == 1
       assert(context);
       if (unlikely(types == BVH_AN1 && context->user && isCoherent(context->user->flags)))
       {
-        intersect_coherent(valid_i,bvh,ray,context);
+        intersect_coherent(valid_i,This,ray,context);
         return;
       }
 #endif
@@ -368,8 +370,13 @@ namespace embree
 
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
-    void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::intersect_coherent(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray, IntersectContext* context)
+    void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::intersect_coherent(vint<K>* __restrict__ valid_i,
+                                                                                                   Accel::Intersectors* __restrict__ This,
+                                                                                                   RayK<K>& __restrict__ ray,
+                                                                                                   IntersectContext* context)
     {
+      BVH* __restrict__ bvh = (BVH*) This->ptr;
+      
       /* filter out invalid rays */
       vbool<K> valid = *valid_i == -1;
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
@@ -593,13 +600,15 @@ namespace embree
       }
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
-    void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::occluded(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray, IntersectContext* context)
+    void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::occluded(vint<K>* __restrict__ valid_i, Accel::Intersectors* __restrict__ This, RayK<K>& __restrict__ ray, IntersectContext* context)
     {
+      BVH* __restrict__ bvh = (BVH*) This->ptr;
+      
 #if ENABLE_FAST_COHERENT_CODEPATHS == 1
       assert(context);
       if (unlikely(types == BVH_AN1 && context->user && isCoherent(context->user->flags)))
       {
-        occluded_coherent(valid_i,bvh,ray,context);
+        occluded_coherent(valid_i,This,ray,context);
         return;
       }
 #endif
@@ -783,8 +792,11 @@ namespace embree
 
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
-    void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::occluded_coherent(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray, IntersectContext* context)
+    void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::occluded_coherent(vint<K>* __restrict__ valid_i, Accel::Intersectors* __restrict__ This,
+                                                                                                  RayK<K>& __restrict__ ray, IntersectContext* context)
     {
+      BVH* __restrict__ bvh = (BVH*) This->ptr;
+      
       /* filter out invalid rays */
       vbool<K> valid = *valid_i == -1;
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
