@@ -28,8 +28,6 @@ namespace embree
       RayStreamAOS rayN(_rayN);
 
       /* use fast path for coherent ray mode */
-#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
-      /* all valid accels need to have a intersectN/occludedN */
       if (unlikely(isCoherent(context->user->flags)))
       {
         __aligned(64) RayK<VSIZEX> rays[MAX_PACKET_STREAM_SIZE];
@@ -73,7 +71,6 @@ namespace embree
         }
       }
       else
-#endif
       {
         /* fallback to packets */
         for (size_t i=0; i<N; i+=VSIZEX)
@@ -100,8 +97,6 @@ namespace embree
       RayStreamAOP rayN(_rayN);
 
       /* use fast path for coherent ray mode */
-#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
-      /* all valid accels need to have a intersectN/occludedN */
       if (unlikely(isCoherent(context->user->flags)))
       {
         __aligned(64) RayK<VSIZEX> rays[MAX_PACKET_STREAM_SIZE];
@@ -144,7 +139,6 @@ namespace embree
         }
       }
       else
-#endif
       {
         /* fallback to packets */
         for (size_t i = 0; i < N; i += VSIZEX)
@@ -175,8 +169,6 @@ namespace embree
                  !rayDataAlignment &&
                  !offsetAlignment))
       {
-#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
-        /* all valid accels need to have a intersectN/occludedN */
         if (unlikely(isCoherent(context->user->flags)))
         {
           __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_INTERNAL_STREAM_SIZE / VSIZEX];
@@ -211,7 +203,6 @@ namespace embree
           }
         }
         else
-#endif
         {
           /* fallback to packets */
           for (size_t i = 0; i < numPackets; i++)
@@ -259,8 +250,6 @@ namespace embree
       RayStreamSOP& rayN = *(RayStreamSOP*)&_rayN;
 
       /* use fast path for coherent ray mode */
-#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
-      /* all valid accels need to have a intersectN/occludedN */
       if (unlikely(isCoherent(context->user->flags)))
       {
         __aligned(64) RayK<VSIZEX> rays[MAX_PACKET_STREAM_SIZE];
@@ -305,7 +294,6 @@ namespace embree
         }
       }
       else
-#endif
       {
         /* fallback to packets */
         for (size_t i = 0; i < N; i += VSIZEX)

@@ -21,8 +21,6 @@
 #include "../common/stack_item.h"
 #include "bvh_traverser1.h"
 
-#define ENABLE_COHERENT_STREAM_PATH 1
-
 namespace embree
 {
   namespace isa 

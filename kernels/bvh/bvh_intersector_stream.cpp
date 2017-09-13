@@ -283,14 +283,12 @@ namespace embree
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersect(Accel::Intersectors* __restrict__ This, RayK<K>** inputRays, size_t numTotalRays, IntersectContext* context)
     {
-#if ENABLE_COHERENT_STREAM_PATH == 1
       if (unlikely(PrimitiveIntersector::validIntersectorK && isCoherent(context->user->flags)))
       {
         intersectCoherent(This, inputRays, numTotalRays, context);
         return;
       }
-#endif
-
+      
       /* fallback to packets */
       for (size_t i = 0; i < numTotalRays; i += K)
       {
@@ -305,13 +303,11 @@ namespace embree
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occluded(Accel::Intersectors* __restrict__ This, RayK<K>** inputRays, size_t numTotalRays, IntersectContext* context)
     {
-#if ENABLE_COHERENT_STREAM_PATH == 1
       if (unlikely(PrimitiveIntersector::validIntersectorK && isCoherent(context->user->flags)))
       {
         occludedCoherent(This, inputRays, numTotalRays, context);
         return;
       }
-#endif
 
       /* fallback to packets */
       for (size_t i = 0; i < numTotalRays; i += K)
