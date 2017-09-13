@@ -339,5 +339,39 @@ namespace embree
     typedef ArrayIntersectorKStream<VSIZEX,QuadMvIntersectorKPluecker<4 COMMA VSIZEX COMMA true > > Quad4vIntersectorStreamPluecker;
     typedef ArrayIntersectorKStream<VSIZEX,QuadMiIntersectorKPluecker<4 COMMA VSIZEX COMMA true > > Quad4iIntersectorStreamPluecker;
     typedef ArrayIntersectorKStream<VSIZEX,ObjectIntersectorK<VSIZEX COMMA false > > ObjectIntersectorStream;
+
+
+    // =====================================================================================================
+    // =====================================================================================================
+    // =====================================================================================================
+
+    template<int N, int Nx, int K>
+    void BVHNIntersectorStreamPacketFallback<N, Nx, K>::intersect(Accel::Intersectors* __restrict__ This, RayK<K>** inputRays, size_t numTotalRays, IntersectContext* context)
+    {
+      /* fallback to packets */
+      for (size_t i = 0; i < numTotalRays; i += K)
+      {
+        const vint<K> vi = vint<K>(int(i)) + vint<K>(step);
+        vbool<K> valid = vi < vint<K>(int(numTotalRays));
+        RayK<K>& ray = *(inputRays[i / K]);
+        valid &= ray.tnear <= ray.tfar;
+        This->intersect(valid, ray, context);
+      }
+    }
+
+    template<int N, int Nx, int K>
+    void BVHNIntersectorStreamPacketFallback<N, Nx, K>::occluded(Accel::Intersectors* __restrict__ This, RayK<K>** inputRays, size_t numTotalRays, IntersectContext* context)
+    {
+      /* fallback to packets */
+      for (size_t i = 0; i < numTotalRays; i += K)
+      {
+        const vint<K> vi = vint<K>(int(i)) + vint<K>(step);
+        vbool<K> valid = vi < vint<K>(int(numTotalRays));
+        RayK<K>& ray = *(inputRays[i / K]);
+        valid &= ray.tnear <= ray.tfar;
+        This->occluded(valid, ray, context);
+      }
+    }
+
   }
 }

@@ -457,5 +457,16 @@ namespace embree
       static void intersect(Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
       static void occluded (Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
     };
+
+
+    /*! BVH ray stream intersector with direct fallback to packets. */
+    template<int N, int Nx, int K>
+    class BVHNIntersectorStreamPacketFallback
+    {
+    public:
+      static void intersect(Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
+      static void occluded (Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
+    };
+
   }
 }

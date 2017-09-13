@@ -155,6 +155,8 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8VirtualIntersector16Chunk);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8VirtualMBIntersector16Chunk);
 
+  DECLARE_SYMBOL2(Accel::IntersectorN,BVH8IntersectorStreamPacketFallback);
+
   //DECLARE_SYMBOL2(Accel::IntersectorN,BVH8Line4iIntersectorStream);
   //DECLARE_SYMBOL2(Accel::IntersectorN,BVH8Bezier1vIntersectorStream_OBB);
   //DECLARE_SYMBOL2(Accel::IntersectorN,BVH8Bezier1iIntersectorStream_OBB);
@@ -412,6 +414,9 @@ namespace embree
     IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH8VirtualMBIntersector16Chunk));
 
     /* select stream intersectors */
+
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8IntersectorStreamPacketFallback);
+
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Triangle4IntersectorStreamMoeller));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Triangle4IntersectorStreamMoellerNoFilter));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Triangle4iIntersectorStreamMoeller));
@@ -526,7 +531,7 @@ namespace embree
     intersectors.intersector4  = BVH8Bezier1vIntersector4Hybrid_OBB();
     intersectors.intersector8  = BVH8Bezier1vIntersector8Hybrid_OBB();
     intersectors.intersector16 = BVH8Bezier1vIntersector16Hybrid_OBB();
-    //intersectors.intersectorN  = BVH8Bezier1vIntersectorStream_OBB();
+    intersectors.intersectorN  = BVH8IntersectorStreamPacketFallback();
 #endif
     return intersectors;
   }
@@ -540,7 +545,7 @@ namespace embree
     intersectors.intersector4  = BVH8Bezier1iIntersector4Hybrid_OBB();
     intersectors.intersector8  = BVH8Bezier1iIntersector8Hybrid_OBB();
     intersectors.intersector16 = BVH8Bezier1iIntersector16Hybrid_OBB();
-    //intersectors.intersectorN  = BVH8Bezier1iIntersectorStream_OBB();
+    intersectors.intersectorN  = BVH8IntersectorStreamPacketFallback();
 #endif
     return intersectors;
   }
@@ -554,7 +559,7 @@ namespace embree
     intersectors.intersector4  = BVH8OBBBezier1iMBIntersector4Hybrid_OBB();
     intersectors.intersector8  = BVH8OBBBezier1iMBIntersector8Hybrid_OBB();
     intersectors.intersector16 = BVH8OBBBezier1iMBIntersector16Hybrid_OBB();
-    //intersectors.intersectorN  = BVH8OBBBezier1iMBIntersectorStream_OBB();
+    intersectors.intersectorN  = BVH8IntersectorStreamPacketFallback();
 #endif
     return intersectors;
   }
@@ -568,7 +573,7 @@ namespace embree
     intersectors.intersector4  = BVH8Line4iIntersector4();
     intersectors.intersector8  = BVH8Line4iIntersector8();
     intersectors.intersector16 = BVH8Line4iIntersector16();
-    //intersectors.intersectorN  = BVH8Line4iIntersectorStream();
+    intersectors.intersectorN  = BVH8IntersectorStreamPacketFallback();
 #endif
     return intersectors;
   }
@@ -582,7 +587,7 @@ namespace embree
     intersectors.intersector4  = BVH8Line4iMBIntersector4();
     intersectors.intersector8  = BVH8Line4iMBIntersector8();
     intersectors.intersector16 = BVH8Line4iMBIntersector16();
-    //intersectors.intersectorN  = BVH8Line4iMBIntersectorStream();
+    intersectors.intersectorN  = BVH8IntersectorStreamPacketFallback();
 #endif
     return intersectors;
   }
@@ -666,7 +671,7 @@ namespace embree
       intersectors.intersector4  = BVH8Triangle4vMBIntersector4HybridMoeller();
       intersectors.intersector8  = BVH8Triangle4vMBIntersector8HybridMoeller();
       intersectors.intersector16 = BVH8Triangle4vMBIntersector16HybridMoeller();
-      //intersectors.intersectorN  = BVH8Triangle4vMBIntersectorStreamMoeller();
+      intersectors.intersectorN  = BVH8IntersectorStreamPacketFallback();
 #endif
       return intersectors;
     }
@@ -679,7 +684,7 @@ namespace embree
       intersectors.intersector4  = BVH8Triangle4vMBIntersector4HybridPluecker();
       intersectors.intersector8  = BVH8Triangle4vMBIntersector8HybridPluecker();
       intersectors.intersector16 = BVH8Triangle4vMBIntersector16HybridPluecker();
-      //intersectors.intersectorN  = BVH8Triangle4vMBIntersectorStreamPluecker();
+      intersectors.intersectorN  = BVH8IntersectorStreamPacketFallback();
 #endif
       return intersectors;
     }
@@ -699,7 +704,7 @@ namespace embree
       intersectors.intersector4  = BVH8Triangle4iMBIntersector4HybridMoeller();
       intersectors.intersector8  = BVH8Triangle4iMBIntersector8HybridMoeller();
       intersectors.intersector16 = BVH8Triangle4iMBIntersector16HybridMoeller();
-      //intersectors.intersectorN  = BVH8Triangle4iMBIntersectorStreamMoeller();
+      intersectors.intersectorN  = BVH8IntersectorStreamPacketFallback();
 #endif
       return intersectors;
     }
@@ -712,7 +717,7 @@ namespace embree
       intersectors.intersector4  = BVH8Triangle4iMBIntersector4HybridPluecker();
       intersectors.intersector8  = BVH8Triangle4iMBIntersector8HybridPluecker();
       intersectors.intersector16 = BVH8Triangle4iMBIntersector16HybridPluecker();
-      //intersectors.intersectorN  = BVH8Triangle4iMBIntersectorStreamPluecker();
+      intersectors.intersectorN  = BVH8IntersectorStreamPacketFallback();
 #endif
       return intersectors;
     }
@@ -802,7 +807,7 @@ namespace embree
       intersectors.intersector4  = BVH8Quad4iMBIntersector4HybridMoeller();
       intersectors.intersector8  = BVH8Quad4iMBIntersector8HybridMoeller();
       intersectors.intersector16 = BVH8Quad4iMBIntersector16HybridMoeller();
-      //intersectors.intersectorN  = BVH8Quad4iMBIntersectorStreamMoeller();
+      intersectors.intersectorN  = BVH8IntersectorStreamPacketFallback();
 #endif
       return intersectors;
     }
@@ -815,7 +820,7 @@ namespace embree
       intersectors.intersector4  = BVH8Quad4iMBIntersector4HybridPluecker();
       intersectors.intersector8  = BVH8Quad4iMBIntersector8HybridPluecker();
       intersectors.intersector16 = BVH8Quad4iMBIntersector16HybridPluecker();
-      //intersectors.intersectorN  = BVH8Quad4iMBIntersectorStreamPluecker();
+      intersectors.intersectorN  = BVH8IntersectorStreamPacketFallback();
 #endif
       return intersectors;
     }
@@ -870,7 +875,7 @@ namespace embree
     intersectors.intersector4  = BVH8VirtualMBIntersector4Chunk();
     intersectors.intersector8  = BVH8VirtualMBIntersector8Chunk();
     intersectors.intersector16 = BVH8VirtualMBIntersector16Chunk();
-    //intersectors.intersectorN  = BVH8VirtualMBIntersectorStream();
+    intersectors.intersectorN  = BVH8IntersectorStreamPacketFallback();
 #endif
     return intersectors;
   }

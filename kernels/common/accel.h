@@ -287,19 +287,8 @@ namespace embree
       /*! Intersects a packet of N rays in SOA layout with the scene. */
       __forceinline void intersectN (RayK<VSIZEX>** rayN, const size_t N, IntersectContext* context) 
       {
-        //assert(intersectorN.intersect);      
-        if (intersectorN.intersect)
-          intersectorN.intersect(this,rayN,N,context);
-        else
-        {
-          const size_t numPackets = (N+VSIZEX-1)/VSIZEX;
-          for (size_t i=0; i<numPackets; i++)
-          {
-            RayK<VSIZEX>& ray = *rayN[i];
-            vbool<VSIZEX> valid = ray.tnear <= ray.tfar;
-            intersect(valid,ray,context);
-          }      
-        }
+        assert(intersectorN.intersect);      
+        intersectorN.intersect(this,rayN,N,context);
       }
       
 #if defined(__SSE__)
