@@ -284,7 +284,7 @@ namespace embree
     void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersect(Accel::Intersectors* __restrict__ This, RayK<K>** inputRays, size_t numTotalRays, IntersectContext* context)
     {
 #if ENABLE_COHERENT_STREAM_PATH == 1
-      if (unlikely(PrimitiveIntersector::validIntersectorK && !robust && isCoherent(context->user->flags)))
+      if (unlikely(PrimitiveIntersector::validIntersectorK && isCoherent(context->user->flags)))
       {
         intersectCoherent(This, inputRays, numTotalRays, context);
         return;
@@ -306,7 +306,7 @@ namespace embree
     void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occluded(Accel::Intersectors* __restrict__ This, RayK<K>** inputRays, size_t numTotalRays, IntersectContext* context)
     {
 #if ENABLE_COHERENT_STREAM_PATH == 1
-      if (unlikely(PrimitiveIntersector::validIntersectorK && !robust && isCoherent(context->user->flags)))
+      if (unlikely(PrimitiveIntersector::validIntersectorK && isCoherent(context->user->flags)))
       {
         occludedCoherent(This, inputRays, numTotalRays, context);
         return;

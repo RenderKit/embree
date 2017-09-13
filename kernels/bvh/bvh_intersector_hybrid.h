@@ -91,13 +91,13 @@ namespace embree
 
           if (!robust)
           {
-            max_org_min_rdir = min_rdir * select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_org, reduced_min_org);
-            min_org_max_rdir = max_rdir * select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_org, reduced_max_org);
+            min_org_rdir = min_rdir * select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_org, reduced_min_org);
+            max_org_rdir = max_rdir * select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_org, reduced_max_org);
           }
           else
           {
-            max_org_min_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_org, reduced_min_org);
-            min_org_max_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_org, reduced_max_org);
+            min_org_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_org, reduced_min_org);
+            max_org_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_org, reduced_max_org);
           }
 
           min_dist = reduce_min(select(valid,ray_tnear,vfloat<K>(pos_inf)));
@@ -108,9 +108,9 @@ namespace embree
           minmax_rdirY = align_shift_right<16/2>(vfloat16(max_rdir.y),vfloat16(min_rdir.y));
           minmax_rdirZ = align_shift_right<16/2>(vfloat16(max_rdir.z),vfloat16(min_rdir.z));
 
-          minmax_org_maxmin_rdirX = align_shift_right<16/2>(vfloat16(min_org_max_rdir.x),vfloat16(max_org_min_rdir.x));
-          minmax_org_maxmin_rdirY = align_shift_right<16/2>(vfloat16(min_org_max_rdir.y),vfloat16(max_org_min_rdir.y));
-          minmax_org_maxmin_rdirZ = align_shift_right<16/2>(vfloat16(min_org_max_rdir.z),vfloat16(max_org_min_rdir.z));
+          minmax_org_rdirX = align_shift_right<16/2>(vfloat16(max_org_rdir.x),vfloat16(min_org_rdir.x));
+          minmax_org_rdirY = align_shift_right<16/2>(vfloat16(max_org_rdir.y),vfloat16(min_org_rdir.y));
+          minmax_org_rdirZ = align_shift_right<16/2>(vfloat16(max_org_rdir.z),vfloat16(min_org_rdir.z));
 
           maskX = (vfloat<16>(min_rdir.x) >= 0.0f) ^ vbool16(0xff00);
           maskY = (vfloat<16>(min_rdir.y) >= 0.0f) ^ vbool16(0xff00);
@@ -145,9 +145,9 @@ namespace embree
 
           if (robust)
           {
-             const vfloat16 fminmaxX = (bminmaxX - minmax_org_maxmin_rdirX) * minmax_rdirX; 
-             const vfloat16 fminmaxY = (bminmaxY - minmax_org_maxmin_rdirY) * minmax_rdirY; 
-             const vfloat16 fminmaxZ = (bminmaxZ - minmax_org_maxmin_rdirZ) * minmax_rdirZ; 
+             const vfloat16 fminmaxX = (bminmaxX - minmax_org_rdirX) * minmax_rdirX; 
+             const vfloat16 fminmaxY = (bminmaxY - minmax_org_rdirY) * minmax_rdirY; 
+             const vfloat16 fminmaxZ = (bminmaxZ - minmax_org_rdirZ) * minmax_rdirZ; 
              const float round_down = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512 
              const float round_up   = 1.0f+2.0f*float(ulp); 
              const vfloat16 fmin  = round_down*max(fminmaxX, fminmaxY, fminmaxZ, vfloat16(min_dist));  
@@ -158,9 +158,9 @@ namespace embree
           }
           else
           {
-            const vfloat16 fminmaxX = msub(bminmaxX, minmax_rdirX, minmax_org_maxmin_rdirX);
-            const vfloat16 fminmaxY = msub(bminmaxY, minmax_rdirY, minmax_org_maxmin_rdirY);
-            const vfloat16 fminmaxZ = msub(bminmaxZ, minmax_rdirZ, minmax_org_maxmin_rdirZ);
+            const vfloat16 fminmaxX = msub(bminmaxX, minmax_rdirX, minmax_org_rdirX);
+            const vfloat16 fminmaxY = msub(bminmaxY, minmax_rdirY, minmax_org_rdirY);
+            const vfloat16 fminmaxZ = msub(bminmaxZ, minmax_rdirZ, minmax_org_rdirZ);
             
             const vfloat16 fmin  = max(fminmaxX, fminmaxY, fminmaxZ, vfloat16(min_dist)); 
             vfloat16::store(dist,fmin);
@@ -178,12 +178,12 @@ namespace embree
                     
           if (robust)
           {
-            const vfloat<N> fminX = (bminX - vfloat<N>(max_org_min_rdir.x)) * vfloat<N>(min_rdir.x);
-            const vfloat<N> fminY = (bminY - vfloat<N>(max_org_min_rdir.y)) * vfloat<N>(min_rdir.y);
-            const vfloat<N> fminZ = (bminZ - vfloat<N>(max_org_min_rdir.z)) * vfloat<N>(min_rdir.z);
-            const vfloat<N> fmaxX = (bmaxX - vfloat<N>(min_org_max_rdir.x)) * vfloat<N>(max_rdir.x);
-            const vfloat<N> fmaxY = (bmaxY - vfloat<N>(min_org_max_rdir.y)) * vfloat<N>(max_rdir.y);
-            const vfloat<N> fmaxZ = (bmaxZ - vfloat<N>(min_org_max_rdir.z)) * vfloat<N>(max_rdir.z);
+            const vfloat<N> fminX = (bminX - vfloat<N>(min_org_rdir.x)) * vfloat<N>(min_rdir.x);
+            const vfloat<N> fminY = (bminY - vfloat<N>(min_org_rdir.y)) * vfloat<N>(min_rdir.y);
+            const vfloat<N> fminZ = (bminZ - vfloat<N>(min_org_rdir.z)) * vfloat<N>(min_rdir.z);
+            const vfloat<N> fmaxX = (bmaxX - vfloat<N>(max_org_rdir.x)) * vfloat<N>(max_rdir.x);
+            const vfloat<N> fmaxY = (bmaxY - vfloat<N>(max_org_rdir.y)) * vfloat<N>(max_rdir.y);
+            const vfloat<N> fmaxZ = (bmaxZ - vfloat<N>(max_org_rdir.z)) * vfloat<N>(max_rdir.z);
 
             const float round_down = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512
             const float round_up   = 1.0f+2.0f*float(ulp);
@@ -196,12 +196,12 @@ namespace embree
           }
           else
           {
-            const vfloat<N> fminX = msub(bminX, vfloat<N>(min_rdir.x), vfloat<N>(max_org_min_rdir.x));
-            const vfloat<N> fminY = msub(bminY, vfloat<N>(min_rdir.y), vfloat<N>(max_org_min_rdir.y));
-            const vfloat<N> fminZ = msub(bminZ, vfloat<N>(min_rdir.z), vfloat<N>(max_org_min_rdir.z));
-            const vfloat<N> fmaxX = msub(bmaxX, vfloat<N>(max_rdir.x), vfloat<N>(min_org_max_rdir.x));
-            const vfloat<N> fmaxY = msub(bmaxY, vfloat<N>(max_rdir.y), vfloat<N>(min_org_max_rdir.y));
-            const vfloat<N> fmaxZ = msub(bmaxZ, vfloat<N>(max_rdir.z), vfloat<N>(min_org_max_rdir.z));
+            const vfloat<N> fminX = msub(bminX, vfloat<N>(min_rdir.x), vfloat<N>(min_org_rdir.x));
+            const vfloat<N> fminY = msub(bminY, vfloat<N>(min_rdir.y), vfloat<N>(min_org_rdir.y));
+            const vfloat<N> fminZ = msub(bminZ, vfloat<N>(min_rdir.z), vfloat<N>(min_org_rdir.z));
+            const vfloat<N> fmaxX = msub(bmaxX, vfloat<N>(max_rdir.x), vfloat<N>(max_org_rdir.x));
+            const vfloat<N> fmaxY = msub(bmaxY, vfloat<N>(max_rdir.y), vfloat<N>(max_org_rdir.y));
+            const vfloat<N> fmaxZ = msub(bmaxZ, vfloat<N>(max_rdir.z), vfloat<N>(max_org_rdir.z));
 
             const vfloat<N> fmin  = maxi(fminX, fminY, fminZ, vfloat<N>(min_dist)); 
             vfloat<N>::store(dist,fmin);
@@ -221,7 +221,7 @@ namespace embree
 #if defined(__AVX512ER__) // KNL+
         vbool16 maskX, maskY, maskZ;
         vfloat16 minmax_rdirX, minmax_rdirY, minmax_rdirZ;
-        vfloat16 minmax_org_maxmin_rdirX, minmax_org_maxmin_rdirY, minmax_org_maxmin_rdirZ;
+        vfloat16 minmax_org_rdirX, minmax_org_rdirY, minmax_org_rdirZ;
 #else
         size_t nearX, nearY, nearZ;
         size_t farX, farY, farZ;
@@ -229,8 +229,8 @@ namespace embree
         Vec3fa min_rdir; 
         Vec3fa max_rdir;
         
-        Vec3fa max_org_min_rdir; 
-        Vec3fa min_org_max_rdir; 
+        Vec3fa min_org_rdir; 
+        Vec3fa max_org_rdir; 
 
         float min_dist;
         float max_dist;
