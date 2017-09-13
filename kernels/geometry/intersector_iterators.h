@@ -29,8 +29,6 @@ namespace embree
         typedef typename Intersector::Primitive Primitive;
         typedef typename Intersector::Precalculations Precalculations;
 
-        static const bool validIntersectorK = false; // FIXME: why do we need this
-
         static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
         {
           for (size_t i=0; i<num; i++)
