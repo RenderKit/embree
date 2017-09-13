@@ -360,14 +360,14 @@ namespace embree
       }
 
       
-      __forceinline static size_t intersectAlignedNodePacket(const Packet* const packet,
-                                                             const vfloat<K>& minX,
-                                                             const vfloat<K>& minY,
-                                                             const vfloat<K>& minZ,
-                                                             const vfloat<K>& maxX,
-                                                             const vfloat<K>& maxY,
-                                                             const vfloat<K>& maxZ,
-                                                             const size_t m_active)
+      __forceinline static size_t intersectAlignedNodePacketFast(const Packet* const packet,
+                                                                 const vfloat<K>& minX,
+                                                                 const vfloat<K>& minY,
+                                                                 const vfloat<K>& minZ,
+                                                                 const vfloat<K>& maxX,
+                                                                 const vfloat<K>& maxY,
+                                                                 const vfloat<K>& maxZ,
+                                                                 const size_t m_active)
       {
         assert(m_active);
         const size_t startPacketID = __bsf(m_active) / K;
@@ -392,13 +392,60 @@ namespace embree
         return m_trav_active;
       }
 
-      __forceinline static size_t traverseCoherentStream(const size_t m_trav_active,
-                                                         Packet* const packet,
-                                                         const AlignedNode* __restrict__ const node,
-                                                         const NearFarPreCompute& pc,
-                                                         const Frusta& frusta,
-                                                         size_t* const maskK,
-                                                         vfloat<Nx>& dist)
+      __forceinline static size_t intersectAlignedNodePacketRobust(const Packet* const packet,
+                                                                   const vfloat<K>& minX,
+                                                                   const vfloat<K>& minY,
+                                                                   const vfloat<K>& minZ,
+                                                                   const vfloat<K>& maxX,
+                                                                   const vfloat<K>& maxY,
+                                                                   const vfloat<K>& maxZ,
+                                                                   const size_t m_active)
+      {
+        assert(m_active);
+        const size_t startPacketID = __bsf(m_active) / K;
+        const size_t endPacketID   = __bsr(m_active) / K;
+        size_t m_trav_active = 0;
+        for (size_t i = startPacketID; i <= endPacketID; i++)
+        {
+          //STAT3(normal.trav_nodes,1,1,1);                          
+          const Packet& p = packet[i];
+          const vfloat<K> tminX = (minX - p.org_rdir.x) * p.rdir.x;
+          const vfloat<K> tminY = (minY - p.org_rdir.y) * p.rdir.y;
+          const vfloat<K> tminZ = (minZ - p.org_rdir.z) * p.rdir.z;
+          const vfloat<K> tmaxX = (maxX - p.org_rdir.x) * p.rdir.x;
+          const vfloat<K> tmaxY = (maxY - p.org_rdir.y) * p.rdir.y;
+          const vfloat<K> tmaxZ = (maxZ - p.org_rdir.z) * p.rdir.z;
+          const float round_down = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512 
+          const float round_up   = 1.0f+2.0f*float(ulp); 
+          const vfloat<K> tmin  = round_down*max(tminX, tminY, tminZ, p.min_dist);
+          const vfloat<K> tmax  = round_up  *min(tmaxX, tmaxY, tmaxZ, p.max_dist);
+          const vbool<K> vmask  = tmin <= tmax;
+          const size_t m_hit = movemask(vmask);
+          m_trav_active |= m_hit << (i*K);
+        } 
+        return m_trav_active;
+      }
+
+      __forceinline static size_t intersectAlignedNodePacket(const Packet* const packet,
+                                                            const vfloat<K>& minX,
+                                                            const vfloat<K>& minY,
+                                                            const vfloat<K>& minZ,
+                                                            const vfloat<K>& maxX,
+                                                            const vfloat<K>& maxY,
+                                                            const vfloat<K>& maxZ,
+                                                            const size_t m_active)
+      {
+        if (robust) return intersectAlignedNodePacketRobust(packet,minX,minY,minZ,maxX,maxY,maxZ,m_active);
+        else        return intersectAlignedNodePacketFast  (packet,minX,minY,minZ,maxX,maxY,maxZ,m_active);
+      }
+      
+      __forceinline static size_t traverseCoherentStreamFast(const size_t m_trav_active,
+                                                             Packet* const packet,
+                                                             const AlignedNode* __restrict__ const node,
+                                                             const NearFarPreCompute& pc,
+                                                             const Frusta& frusta,
+                                                             size_t* const maskK,
+                                                             vfloat<Nx>& dist)
       {
         /* interval-based culling test */
         const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearX));
@@ -460,65 +507,14 @@ namespace embree
           const vfloat<K> maxX = vfloat<K>(bmaxX[b]);
           const vfloat<K> maxY = vfloat<K>(bmaxY[b]);
           const vfloat<K> maxZ = vfloat<K>(bmaxZ[b]);
-          const size_t m_current = m_trav_active & intersectAlignedNodePacket(packet, minX, minY, minZ, maxX, maxY, maxZ, m_trav_active);
+          const size_t m_current = m_trav_active & intersectAlignedNodePacketFast(packet, minX, minY, minZ, maxX, maxY, maxZ, m_trav_active);
           m_node_hit ^= m_current ? (size_t)0 : ((size_t)1 << b);
           maskK[b] = m_current;
         }
         return m_node_hit;
       }
 
-      static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
-
-      // =============================================================================================
-      // =============================================================================================
-      // =============================================================================================
-
-
-      static void intersectCoherent(Accel::Intersectors* This, RayK<K>** inputRays, size_t numValidStreams, IntersectContext* context);
-      static void occludedCoherent(Accel::Intersectors* This, RayK<K>** inputRays, size_t numValidStreams, IntersectContext* context);
-      
-    public:
-      static void intersect(Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
-      static void occluded (Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
-    };
-
-#if 0
-
-     __forceinline static size_t intersectAlignedNodePacketRobust(const Packet* const packet,
-                                                                   const vfloat<K>& minX,
-                                                                   const vfloat<K>& minY,
-                                                                   const vfloat<K>& minZ,
-                                                                   const vfloat<K>& maxX,
-                                                                   const vfloat<K>& maxY,
-                                                                   const vfloat<K>& maxZ,
-                                                                   const size_t m_active)
-      {
-        assert(m_active);
-        const size_t startPacketID = __bsf(m_active) / K;
-        const size_t endPacketID   = __bsr(m_active) / K;
-        size_t m_trav_active = 0;
-        for (size_t i = startPacketID; i <= endPacketID; i++)
-        {
-          //STAT3(normal.trav_nodes,1,1,1);                          
-          const Packet& p = packet[i];
-          const vfloat<K> tminX = (minX - p.org.x) * p.rdir.x;
-          const vfloat<K> tminY = (minY - p.org.y) * p.rdir.y;
-          const vfloat<K> tminZ = (minZ - p.org.z) * p.rdir.z;
-          const vfloat<K> tmaxX = (maxX - p.org.x) * p.rdir.x;
-          const vfloat<K> tmaxY = (maxY - p.org.y) * p.rdir.y;
-          const vfloat<K> tmaxZ = (maxZ - p.org.z) * p.rdir.z;
-          const float round_down = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512 
-          const float round_up   = 1.0f+2.0f*float(ulp); 
-          const vfloat<K> tmin  = round_down*max(tminX, tminY, tminZ, p.min_dist);
-          const vfloat<K> tmax  = round_up*min(tmaxX, tmaxY, tmaxZ, p.max_dist);
-          const vbool<K> vmask  = tmin <= tmax;
-          const size_t m_hit = movemask(vmask);
-          m_trav_active |= m_hit << (i*K);
-        } 
-        return m_trav_active;
-      }
-
-     __forceinline static size_t traverseCoherentStreamRobust(const size_t m_trav_active,
+      __forceinline static size_t traverseCoherentStreamRobust(const size_t m_trav_active,
                                                                Packet* const packet,
                                                                const AlignedNode* __restrict__ const node,
                                                                const NearFarPreCompute& pc,
@@ -540,8 +536,10 @@ namespace embree
         const vfloat<Nx> fmaxX = (bmaxX - vfloat<Nx>(frusta.max_org_rdir.x)) * vfloat<Nx>(frusta.max_rdir.x);
         const vfloat<Nx> fmaxY = (bmaxY - vfloat<Nx>(frusta.max_org_rdir.y)) * vfloat<Nx>(frusta.max_rdir.y);
         const vfloat<Nx> fmaxZ = (bmaxZ - vfloat<Nx>(frusta.max_org_rdir.z)) * vfloat<Nx>(frusta.max_rdir.z);
-        const vfloat<Nx> fmin  = max(fminX, fminY, fminZ, vfloat<Nx>(frusta.min_dist));
-        const vfloat<Nx> fmax  = min(fmaxX, fmaxY, fmaxZ, vfloat<Nx>(frusta.max_dist));
+        const float round_down = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512 
+        const float round_up   = 1.0f+2.0f*float(ulp); 
+        const vfloat<Nx> fmin  = round_down*max(fminX, fminY, fminZ, vfloat<Nx>(frusta.min_dist));
+        const vfloat<Nx> fmax  = round_up*  min(fmaxX, fmaxY, fmaxZ, vfloat<Nx>(frusta.max_dist));
         const vbool<Nx> vmask_node_hit = fmin <= fmax;
 
         //STAT3(normal.trav_nodes,1,1,1);                          
@@ -561,8 +559,8 @@ namespace embree
         const vfloat<Nx> rmaxX = (bmaxX - vfloat<Nx>(p.org_rdir.x[first_rayID])) * vfloat<Nx>(p.rdir.x[first_rayID]);
         const vfloat<Nx> rmaxY = (bmaxY - vfloat<Nx>(p.org_rdir.y[first_rayID])) * vfloat<Nx>(p.rdir.y[first_rayID]);
         const vfloat<Nx> rmaxZ = (bmaxZ - vfloat<Nx>(p.org_rdir.z[first_rayID])) * vfloat<Nx>(p.rdir.z[first_rayID]);
-        const vfloat<Nx> rmin  = max(rminX, rminY, rminZ, vfloat<Nx>(p.min_dist[first_rayID]));
-        const vfloat<Nx> rmax  = min(rmaxX, rmaxY, rmaxZ, vfloat<Nx>(p.max_dist[first_rayID]));
+        const vfloat<Nx> rmin  = round_down*max(rminX, rminY, rminZ, vfloat<Nx>(p.min_dist[first_rayID]));
+        const vfloat<Nx> rmax  = round_up  *min(rmaxX, rmaxY, rmaxZ, vfloat<Nx>(p.max_dist[first_rayID]));
 
         const vbool<Nx> vmask_first_hit = rmin <= rmax;
 
@@ -593,7 +591,32 @@ namespace embree
         return m_node_hit;
       }
 
-     
-#endif
+      __forceinline static size_t traverseCoherentStream(const size_t m_trav_active,
+                                                         Packet* const packet,
+                                                         const AlignedNode* __restrict__ const node,
+                                                         const NearFarPreCompute& pc,
+                                                         const Frusta& frusta,
+                                                         size_t* const maskK,
+                                                         vfloat<Nx>& dist)
+      {
+        if (robust) return traverseCoherentStreamRobust(m_trav_active,packet,node,pc,frusta,maskK,dist);
+        else        return traverseCoherentStreamFast  (m_trav_active,packet,node,pc,frusta,maskK,dist);
+      }
+   
+
+      static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
+
+      // =============================================================================================
+      // =============================================================================================
+      // =============================================================================================
+
+
+      static void intersectCoherent(Accel::Intersectors* This, RayK<K>** inputRays, size_t numValidStreams, IntersectContext* context);
+      static void occludedCoherent(Accel::Intersectors* This, RayK<K>** inputRays, size_t numValidStreams, IntersectContext* context);
+      
+    public:
+      static void intersect(Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
+      static void occluded (Accel::Intersectors* This, RayK<K>** inputRays, size_t numRays, IntersectContext* context);
+    };
   }
 }
