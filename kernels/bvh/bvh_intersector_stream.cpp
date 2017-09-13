@@ -43,8 +43,8 @@ namespace embree
     // =====================================================================================================
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherent(Accel::Intersectors* __restrict__ This,
-                                                                                                               RayK<K>** inputPackets, size_t numOctantRays, IntersectContext* context)
+    __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersect(Accel::Intersectors* __restrict__ This,
+                                                                                                       RayK<K>** inputPackets, size_t numOctantRays, IntersectContext* context)
     {
       BVH* __restrict__ bvh = (BVH*) This->ptr;
       __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  //!< stack of nodes
@@ -160,8 +160,8 @@ namespace embree
     }
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherent(Accel::Intersectors* __restrict__ This,
-                                                                                                              RayK<K>** inputPackets, size_t numOctantRays, IntersectContext* context)
+    __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occluded(Accel::Intersectors* __restrict__ This,
+                                                                                                      RayK<K>** inputPackets, size_t numOctantRays, IntersectContext* context)
     {
       BVH* __restrict__ bvh = (BVH*) This->ptr;
       __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  //!< stack of nodes
@@ -274,50 +274,6 @@ namespace embree
         }
 
       } // traversal + intersection
-    }
-
-    // =====================================================================================================
-    // =====================================================================================================
-    // =====================================================================================================
-
-    template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersect(Accel::Intersectors* __restrict__ This, RayK<K>** inputRays, size_t numTotalRays, IntersectContext* context)
-    {
-      if (unlikely(PrimitiveIntersector::validIntersectorK && isCoherent(context->user->flags)))
-      {
-        intersectCoherent(This, inputRays, numTotalRays, context);
-        return;
-      }
-      
-      /* fallback to packets */
-      for (size_t i = 0; i < numTotalRays; i += K)
-      {
-        const vint<K> vi = vint<K>(int(i)) + vint<K>(step);
-        vbool<K> valid = vi < vint<K>(int(numTotalRays));
-        RayK<K>& ray = *(inputRays[i / K]);
-        valid &= ray.tnear <= ray.tfar;
-        This->intersect(valid, ray, context);
-      }
-    }
-
-    template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occluded(Accel::Intersectors* __restrict__ This, RayK<K>** inputRays, size_t numTotalRays, IntersectContext* context)
-    {
-      if (unlikely(PrimitiveIntersector::validIntersectorK && isCoherent(context->user->flags)))
-      {
-        occludedCoherent(This, inputRays, numTotalRays, context);
-        return;
-      }
-
-      /* fallback to packets */
-      for (size_t i = 0; i < numTotalRays; i += K)
-      {
-        const vint<K> vi = vint<K>(int(i)) + vint<K>(step);
-        vbool<K> valid = vi < vint<K>(int(numTotalRays));
-        RayK<K>& ray = *(inputRays[i / K]);
-        valid &= ray.tnear <= ray.tfar;
-        This->occluded(valid, ray, context);
-      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////
