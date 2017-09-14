@@ -333,7 +333,7 @@ namespace embree
                                                              size_t* const maskK,
                                                              vfloat<Nx>& dist)
       {
-        size_t m_node_hit = frusta.intersectFast(node,dist);
+        size_t m_node_hit = frusta.intersect(node,dist);
         const size_t first_index    = __bsf(m_trav_active);
         const size_t first_packetID = first_index / K;
         const size_t first_rayID    = first_index % K;
@@ -364,7 +364,7 @@ namespace embree
                                                                size_t* const maskK,
                                                                vfloat<Nx>& dist)
       {
-        size_t m_node_hit = frusta.intersectRobust(node,dist);
+        size_t m_node_hit = frusta.intersect(node,dist);
         const size_t first_index    = __bsf(m_trav_active);
         const size_t first_packetID = first_index / K;
         const size_t first_rayID    = first_index % K;

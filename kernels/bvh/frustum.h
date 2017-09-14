@@ -193,7 +193,10 @@ namespace embree
       */
 
     template<int N, int Nx, int K, bool robust>
-      struct Frustum
+      struct Frustum;
+    
+    template<int N, int Nx, int K>
+      struct Frustum<N,Nx,K,false>
       {
         __forceinline Frustum() {}
 
@@ -242,24 +245,16 @@ namespace embree
           min_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_rdir, reduced_max_rdir);
           max_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_rdir, reduced_min_rdir);
 
-          if (!robust)
-          {
-            min_org_rdir = min_rdir * select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_org, reduced_min_org);
-            max_org_rdir = max_rdir * select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_org, reduced_max_org);
-          }
-          else
-          {
-            min_org_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_org, reduced_min_org);
-            max_org_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_org, reduced_max_org);
-          }
-
+          min_org_rdir = min_rdir * select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_org, reduced_min_org);
+          max_org_rdir = max_rdir * select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_org, reduced_max_org);
+          
           min_dist = reduced_min_dist;
           max_dist = reduced_max_dist;
           
           nf = NearFarPreCompute(min_rdir,N);
         }
 
-        __forceinline unsigned int intersectFast(const typename BVHN<N>::AlignedNode* __restrict__ node, vfloat<Nx>& dist) const
+        __forceinline unsigned int intersect(const typename BVHN<N>::AlignedNode* __restrict__ node, vfloat<Nx>& dist) const
         {
           const vfloat<Nx> bminX = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearX);
           const vfloat<Nx> bminY = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearY);
@@ -283,38 +278,6 @@ namespace embree
           return m_node;          
         }
 
-        __forceinline unsigned int intersectRobust(const typename BVHN<N>::AlignedNode* __restrict__ node, vfloat<Nx>& dist) const
-        {
-          const vfloat<Nx> bminX = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearX);
-          const vfloat<Nx> bminY = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearY);
-          const vfloat<Nx> bminZ = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearZ);
-          const vfloat<Nx> bmaxX = *(const vfloat<N>*)((const char*)&node->lower_x + nf.farX);
-          const vfloat<Nx> bmaxY = *(const vfloat<N>*)((const char*)&node->lower_x + nf.farY);
-          const vfloat<Nx> bmaxZ = *(const vfloat<N>*)((const char*)&node->lower_x + nf.farZ);
-                    
-          const vfloat<Nx> fminX = (bminX - vfloat<Nx>(min_org_rdir.x)) * vfloat<Nx>(min_rdir.x);
-          const vfloat<Nx> fminY = (bminY - vfloat<Nx>(min_org_rdir.y)) * vfloat<Nx>(min_rdir.y);
-          const vfloat<Nx> fminZ = (bminZ - vfloat<Nx>(min_org_rdir.z)) * vfloat<Nx>(min_rdir.z);
-          const vfloat<Nx> fmaxX = (bmaxX - vfloat<Nx>(max_org_rdir.x)) * vfloat<Nx>(max_rdir.x);
-          const vfloat<Nx> fmaxY = (bmaxY - vfloat<Nx>(max_org_rdir.y)) * vfloat<Nx>(max_rdir.y);
-          const vfloat<Nx> fmaxZ = (bmaxZ - vfloat<Nx>(max_org_rdir.z)) * vfloat<Nx>(max_rdir.z);
-          
-          const float round_down = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512
-          const float round_up   = 1.0f+2.0f*float(ulp);
-          const vfloat<Nx> fmin  = max(fminX, fminY, fminZ, vfloat<Nx>(min_dist)); 
-          dist = fmin;
-          const vfloat<Nx> fmax  = min(fmaxX, fmaxY, fmaxZ, vfloat<Nx>(max_dist));
-          const vbool<Nx> vmask_node_hit = (round_down*fmin <= round_up*fmax);
-          size_t m_node = movemask(vmask_node_hit) & (((size_t)1 << N)-1);
-          return m_node;          
-        }
-
-        __forceinline unsigned int intersect(const typename BVHN<N>::AlignedNode* __restrict__ node, vfloat<Nx>& dist) const
-        {
-          if (robust) return intersectRobust(node,dist);
-          else        return intersectFast(node,dist);
-        }
-
         __forceinline void updateMaxDist(const vfloat<K>& ray_tfar) {
           max_dist = reduce_max(ray_tfar);
         }
@@ -326,6 +289,108 @@ namespace embree
         
         Vec3fa min_org_rdir; 
         Vec3fa max_org_rdir; 
+
+        float min_dist;
+        float max_dist;
+      };
+
+
+    template<int N, int Nx, int K>
+      struct Frustum<N,Nx,K,true >
+      {
+        __forceinline Frustum() {}
+
+        __forceinline Frustum(const vbool<K>& valid,
+                              const Vec3vf<K>& org,
+                              const Vec3vf<K>& rdir,
+                              const vfloat<K>& ray_tnear,
+                              const vfloat<K>& ray_tfar)
+        {
+          init(valid,org,rdir,ray_tnear,ray_tfar);
+        }
+
+        __forceinline void init(const vbool<K>& valid,
+                                const Vec3vf<K>& org,
+                                const Vec3vf<K>& rdir,
+                                const vfloat<K>& ray_tnear,
+                                const vfloat<K>& ray_tfar)
+        {
+          const Vec3fa reduced_min_org( reduce_min(select(valid,org.x,pos_inf)),
+                                        reduce_min(select(valid,org.y,pos_inf)),
+                                        reduce_min(select(valid,org.z,pos_inf)) );
+          const Vec3fa reduced_max_org( reduce_max(select(valid,org.x,neg_inf)),
+                                        reduce_max(select(valid,org.y,neg_inf)),
+                                        reduce_max(select(valid,org.z,neg_inf)) );
+          
+          const Vec3fa reduced_min_rdir( reduce_min(select(valid,rdir.x,pos_inf)),
+                                         reduce_min(select(valid,rdir.y,pos_inf)),
+                                         reduce_min(select(valid,rdir.z,pos_inf)) );
+          const Vec3fa reduced_max_rdir( reduce_max(select(valid,rdir.x,neg_inf)),
+                                         reduce_max(select(valid,rdir.y,neg_inf)),
+                                         reduce_max(select(valid,rdir.z,neg_inf)) );
+
+          const float reduced_min_dist = reduce_min(select(valid,ray_tnear,vfloat<K>(pos_inf)));
+          const float reduced_max_dist = reduce_max(select(valid,ray_tfar ,vfloat<K>(neg_inf)));
+
+          init(reduced_min_org, reduced_max_org, reduced_min_rdir, reduced_max_rdir, reduced_min_dist, reduced_max_dist);
+        }
+
+        __forceinline void init(const Vec3fa& reduced_min_org,
+                                const Vec3fa& reduced_max_org,
+                                const Vec3fa& reduced_min_rdir,
+                                const Vec3fa& reduced_max_rdir,
+                                const float reduced_min_dist,
+                                const float reduced_max_dist)
+        {
+          min_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_rdir, reduced_max_rdir);
+          max_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_rdir, reduced_min_rdir);
+
+          min_org = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_org, reduced_min_org);
+          max_org = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_org, reduced_max_org);
+
+          min_dist = reduced_min_dist;
+          max_dist = reduced_max_dist;
+          
+          nf = NearFarPreCompute(min_rdir,N);
+        }
+
+        __forceinline unsigned int intersect(const typename BVHN<N>::AlignedNode* __restrict__ node, vfloat<Nx>& dist) const
+        {
+          const vfloat<Nx> bminX = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearX);
+          const vfloat<Nx> bminY = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearY);
+          const vfloat<Nx> bminZ = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearZ);
+          const vfloat<Nx> bmaxX = *(const vfloat<N>*)((const char*)&node->lower_x + nf.farX);
+          const vfloat<Nx> bmaxY = *(const vfloat<N>*)((const char*)&node->lower_x + nf.farY);
+          const vfloat<Nx> bmaxZ = *(const vfloat<N>*)((const char*)&node->lower_x + nf.farZ);
+                    
+          const vfloat<Nx> fminX = (bminX - vfloat<Nx>(min_org.x)) * vfloat<Nx>(min_rdir.x);
+          const vfloat<Nx> fminY = (bminY - vfloat<Nx>(min_org.y)) * vfloat<Nx>(min_rdir.y);
+          const vfloat<Nx> fminZ = (bminZ - vfloat<Nx>(min_org.z)) * vfloat<Nx>(min_rdir.z);
+          const vfloat<Nx> fmaxX = (bmaxX - vfloat<Nx>(max_org.x)) * vfloat<Nx>(max_rdir.x);
+          const vfloat<Nx> fmaxY = (bmaxY - vfloat<Nx>(max_org.y)) * vfloat<Nx>(max_rdir.y);
+          const vfloat<Nx> fmaxZ = (bmaxZ - vfloat<Nx>(max_org.z)) * vfloat<Nx>(max_rdir.z);
+          
+          const float round_down = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512
+          const float round_up   = 1.0f+2.0f*float(ulp);
+          const vfloat<Nx> fmin  = max(fminX, fminY, fminZ, vfloat<Nx>(min_dist)); 
+          dist = fmin;
+          const vfloat<Nx> fmax  = min(fmaxX, fmaxY, fmaxZ, vfloat<Nx>(max_dist));
+          const vbool<Nx> vmask_node_hit = (round_down*fmin <= round_up*fmax);
+          size_t m_node = movemask(vmask_node_hit) & (((size_t)1 << N)-1);
+          return m_node;          
+        }
+
+        __forceinline void updateMaxDist(const vfloat<K>& ray_tfar) {
+          max_dist = reduce_max(ray_tfar);
+        }
+
+        NearFarPreCompute nf;
+
+        Vec3fa min_rdir; 
+        Vec3fa max_rdir;
+        
+        Vec3fa min_org; 
+        Vec3fa max_org; 
 
         float min_dist;
         float max_dist;
