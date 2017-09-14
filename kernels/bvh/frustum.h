@@ -93,7 +93,7 @@ namespace embree
       }
 
       template<int N, int Nx>
-        __forceinline size_t intersectFast(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t rid, const NearFarPreCompute<N>& nf)
+        __forceinline size_t intersectFast(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t rid, const NearFarPreCompute<N>& nf) const
       {
         const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearX));
         const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearY));
@@ -117,7 +117,7 @@ namespace embree
       }
 
       template<int N, int Nx>
-      __forceinline size_t intersectRobust(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t rid, const NearFarPreCompute<N>& nf)
+      __forceinline size_t intersectRobust(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t rid, const NearFarPreCompute<N>& nf) const
       {
         const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearX));
         const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearY));
@@ -140,6 +140,60 @@ namespace embree
         const vbool<Nx> vmask_first_hit = rmin <= rmax;
 
         return movemask(vmask_first_hit) & (((size_t)1 << N)-1);
+      }
+
+      template<int N>
+        __forceinline size_t intersectFast(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t bid, const NearFarPreCompute<N>& nf) const
+      {
+        char *ptr = (char*)&node->lower_x + bid*sizeof(float);
+        const vfloat<K> bminX = *(const float*)(ptr + nf.nearX);
+        const vfloat<K> bminY = *(const float*)(ptr + nf.nearY);
+        const vfloat<K> bminZ = *(const float*)(ptr + nf.nearZ);
+        const vfloat<K> bmaxX = *(const float*)(ptr + nf.farX);
+        const vfloat<K> bmaxY = *(const float*)(ptr + nf.farY);
+        const vfloat<K> bmaxZ = *(const float*)(ptr + nf.farZ);
+
+        const vfloat<K> rminX = msub(bminX, rdir.x, org_rdir.x);
+        const vfloat<K> rminY = msub(bminY, rdir.y, org_rdir.y);
+        const vfloat<K> rminZ = msub(bminZ, rdir.z, org_rdir.z);
+        const vfloat<K> rmaxX = msub(bmaxX, rdir.x, org_rdir.x);
+        const vfloat<K> rmaxY = msub(bmaxY, rdir.y, org_rdir.y);
+        const vfloat<K> rmaxZ = msub(bmaxZ, rdir.z, org_rdir.z);
+        
+        const vfloat<K> rmin  = maxi(rminX, rminY, rminZ, min_dist);
+        const vfloat<K> rmax  = mini(rmaxX, rmaxY, rmaxZ, max_dist);
+
+        const vbool<K> vmask_first_hit = rmin <= rmax;
+
+        return movemask(vmask_first_hit);
+      }
+
+      template<int N>
+      __forceinline size_t intersectRobust(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t bid, const NearFarPreCompute<N>& nf) const
+      {
+        char *ptr = (char*)&node->lower_x + bid*sizeof(float);
+        const vfloat<K> bminX = *(const float*)(ptr + nf.nearX);
+        const vfloat<K> bminY = *(const float*)(ptr + nf.nearY);
+        const vfloat<K> bminZ = *(const float*)(ptr + nf.nearZ);
+        const vfloat<K> bmaxX = *(const float*)(ptr + nf.farX);
+        const vfloat<K> bmaxY = *(const float*)(ptr + nf.farY);
+        const vfloat<K> bmaxZ = *(const float*)(ptr + nf.farZ);
+        
+        const vfloat<K> rminX = (bminX - org_rdir.x) * rdir.x;
+        const vfloat<K> rminY = (bminY - org_rdir.y) * rdir.y;
+        const vfloat<K> rminZ = (bminZ - org_rdir.z) * rdir.z;
+        const vfloat<K> rmaxX = (bmaxX - org_rdir.x) * rdir.x;
+        const vfloat<K> rmaxY = (bmaxY - org_rdir.y) * rdir.y;
+        const vfloat<K> rmaxZ = (bmaxZ - org_rdir.z) * rdir.z;
+        
+        const float round_down = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512
+        const float round_up   = 1.0f+2.0f*float(ulp);
+        const vfloat<K> rmin  = round_down*max(rminX, rminY, rminZ, vfloat<K>(min_dist));
+        const vfloat<K> rmax  = round_up  *min(rmaxX, rmaxY, rmaxZ, vfloat<K>(max_dist));
+
+        const vbool<K> vmask_first_hit = rmin <= rmax;
+
+        return movemask(vmask_first_hit);
       }
 
     };

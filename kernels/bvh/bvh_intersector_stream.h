@@ -287,12 +287,9 @@ namespace embree
 
       
       __forceinline static size_t intersectAlignedNodePacketFast(const Packet<K>* const packet,
-                                                                 const vfloat<K>& minX,
-                                                                 const vfloat<K>& minY,
-                                                                 const vfloat<K>& minZ,
-                                                                 const vfloat<K>& maxX,
-                                                                 const vfloat<K>& maxY,
-                                                                 const vfloat<K>& maxZ,
+                                                                 const AlignedNode* __restrict__ const node,
+                                                                 const size_t bid,
+                                                                 const NearFarPreCompute<N>& nf,
                                                                  const size_t m_active)
       {
         assert(m_active);
@@ -301,19 +298,16 @@ namespace embree
         size_t m_trav_active = 0;
         for (size_t i = startPacketID; i <= endPacketID; i++)
         {
-          const size_t m_hit = packet[i].intersectFast(minX,minY,minZ,maxX,maxY,maxZ);
+          const size_t m_hit = packet[i].intersectFast(node,bid,nf);
           m_trav_active |= m_hit << (i*K);
         } 
         return m_trav_active;
       }
 
       __forceinline static size_t intersectAlignedNodePacketRobust(const Packet<K>* const packet,
-                                                                   const vfloat<K>& minX,
-                                                                   const vfloat<K>& minY,
-                                                                   const vfloat<K>& minZ,
-                                                                   const vfloat<K>& maxX,
-                                                                   const vfloat<K>& maxY,
-                                                                   const vfloat<K>& maxZ,
+                                                                   const AlignedNode* __restrict__ const node,
+                                                                   const size_t bid,
+                                                                   const NearFarPreCompute<N>& nf,
                                                                    const size_t m_active)
       {
         assert(m_active);
@@ -322,23 +316,20 @@ namespace embree
         size_t m_trav_active = 0;
         for (size_t i = startPacketID; i <= endPacketID; i++)
         {
-          const size_t m_hit = packet[i].template intersectRobust(minX,minY,minZ,maxX,maxY,maxZ);
+          const size_t m_hit = packet[i].intersectRobust(node,bid,nf);
           m_trav_active |= m_hit << (i*K);
         } 
         return m_trav_active;
       }
 
       __forceinline static size_t intersectAlignedNodePacket(const Packet<K>* const packet,
-                                                            const vfloat<K>& minX,
-                                                            const vfloat<K>& minY,
-                                                            const vfloat<K>& minZ,
-                                                            const vfloat<K>& maxX,
-                                                            const vfloat<K>& maxY,
-                                                            const vfloat<K>& maxZ,
-                                                            const size_t m_active)
+                                                             const AlignedNode* __restrict__ const node,
+                                                             const size_t bid,
+                                                             const NearFarPreCompute<N>& nf,
+                                                             const size_t m_active)
       {
-        if (robust) return intersectAlignedNodePacketRobust(packet,minX,minY,minZ,maxX,maxY,maxZ,m_active);
-        else        return intersectAlignedNodePacketFast  (packet,minX,minY,minZ,maxX,maxY,maxZ,m_active);
+        if (robust) return intersectAlignedNodePacketRobust(packet,node,bid,nf,m_active);
+        else        return intersectAlignedNodePacketFast  (packet,node,bid,nf,m_active);
       }
       
       __forceinline static size_t traverseCoherentStreamFast(const size_t m_trav_active,
@@ -363,25 +354,11 @@ namespace embree
         /* this is independent of the ordering of rays */
         //dist = fmin;            
             
-
-        const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.nearX));
-        const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.nearY));
-        const vfloat<Nx> bminZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.nearZ));
-        const vfloat<Nx> bmaxX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.farX));
-        const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.farY));
-        const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.farZ));
-        
         size_t m_node = m_node_hit ^ m_first_hit;
         while(unlikely(m_node)) 
         {
           const size_t b = __bscf(m_node);
-          const vfloat<K> minX = vfloat<K>(bminX[b]);
-          const vfloat<K> minY = vfloat<K>(bminY[b]);
-          const vfloat<K> minZ = vfloat<K>(bminZ[b]);
-          const vfloat<K> maxX = vfloat<K>(bmaxX[b]);
-          const vfloat<K> maxY = vfloat<K>(bmaxY[b]);
-          const vfloat<K> maxZ = vfloat<K>(bmaxZ[b]);
-          const size_t m_current = m_trav_active & intersectAlignedNodePacketFast(packet, minX, minY, minZ, maxX, maxY, maxZ, m_trav_active);
+          const size_t m_current = m_trav_active & intersectAlignedNodePacketFast(packet, node, b, frusta.nf, m_trav_active);
           m_node_hit ^= m_current ? (size_t)0 : ((size_t)1 << b);
           maskK[b] = m_current;
         }
@@ -408,24 +385,11 @@ namespace embree
         /* this is independent of the ordering of rays */
         //dist = fmin;            
 
-        const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.nearX));
-        const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.nearY));
-        const vfloat<Nx> bminZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.nearZ));
-        const vfloat<Nx> bmaxX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.farX));
-        const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.farY));
-        const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.farZ));
-        
         size_t m_node = m_node_hit ^ m_first_hit;
         while(unlikely(m_node)) 
         {
           const size_t b = __bscf(m_node);
-          const vfloat<K> minX = vfloat<K>(bminX[b]);
-          const vfloat<K> minY = vfloat<K>(bminY[b]);
-          const vfloat<K> minZ = vfloat<K>(bminZ[b]);
-          const vfloat<K> maxX = vfloat<K>(bmaxX[b]);
-          const vfloat<K> maxY = vfloat<K>(bmaxY[b]);
-          const vfloat<K> maxZ = vfloat<K>(bmaxZ[b]);
-          const size_t m_current = m_trav_active & intersectAlignedNodePacketRobust(packet, minX, minY, minZ, maxX, maxY, maxZ, m_trav_active);
+          const size_t m_current = m_trav_active & intersectAlignedNodePacketRobust(packet, node, b, frusta.nf, m_trav_active);
           m_node_hit ^= m_current ? (size_t)0 : ((size_t)1 << b);
           maskK[b] = m_current;
         }

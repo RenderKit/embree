@@ -118,17 +118,8 @@ namespace embree
               break;
             }
           assert(b < N);
-          char *ptr = (char*)&node->lower_x + b*sizeof(float);
           assert(cur == node->child(b));
-
-          const vfloat<K> minX = vfloat<K>(*(const float*)((const char*)ptr + frusta.nf.nearX));
-          const vfloat<K> minY = vfloat<K>(*(const float*)((const char*)ptr + frusta.nf.nearY));
-          const vfloat<K> minZ = vfloat<K>(*(const float*)((const char*)ptr + frusta.nf.nearZ));
-          const vfloat<K> maxX = vfloat<K>(*(const float*)((const char*)ptr + frusta.nf.farX));
-          const vfloat<K> maxY = vfloat<K>(*(const float*)((const char*)ptr + frusta.nf.farY));
-          const vfloat<K> maxZ = vfloat<K>(*(const float*)((const char*)ptr + frusta.nf.farZ));
-
-          m_trav_active = intersectAlignedNodePacket(packet, minX, minY, minZ, maxX, maxY, maxZ, m_trav_active);
+          m_trav_active = intersectAlignedNodePacket(packet, node, b, frusta.nf, m_trav_active);
         }
 
         /*! this is a leaf node */
@@ -236,17 +227,8 @@ namespace embree
           for (size_t i=0;i<N;i++)
             if (node->child(i) == cur) { b = i; break; }
           assert(b < N);
-          char *ptr = (char*)&node->lower_x + b*sizeof(float);
           assert(cur == node->child(b));
-
-          const vfloat<K> minX = vfloat<K>(*(const float*)((const char*)ptr + frusta.nf.nearX));
-          const vfloat<K> minY = vfloat<K>(*(const float*)((const char*)ptr + frusta.nf.nearY));
-          const vfloat<K> minZ = vfloat<K>(*(const float*)((const char*)ptr + frusta.nf.nearZ));
-          const vfloat<K> maxX = vfloat<K>(*(const float*)((const char*)ptr + frusta.nf.farX));
-          const vfloat<K> maxY = vfloat<K>(*(const float*)((const char*)ptr + frusta.nf.farY));
-          const vfloat<K> maxZ = vfloat<K>(*(const float*)((const char*)ptr + frusta.nf.farZ));
-
-          m_trav_active = intersectAlignedNodePacket(packet, minX, minY, minZ, maxX, maxY, maxZ, m_trav_active);
+          m_trav_active = intersectAlignedNodePacket(packet, node, b, frusta.nf, m_trav_active);
         }
 
         /*! this is a leaf node */
