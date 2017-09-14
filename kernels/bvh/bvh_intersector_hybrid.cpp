@@ -442,7 +442,7 @@ namespace embree
             const AlignedNode* __restrict__ const node = nodeRef.alignedNode();
 
             __aligned(64) float fmin[16]; 
-            size_t m_frusta_node = frustum.intersect(nodeRef,fmin);
+            size_t m_frusta_node = frustum.intersect(node,fmin);
 
             if (unlikely(!m_frusta_node)) goto pop;
             cur = BVH::emptyNode;
@@ -866,7 +866,7 @@ namespace embree
             const AlignedNode* __restrict__ const node = nodeRef.alignedNode();
 
             __aligned(64) float fmin[16]; 
-            size_t m_frusta_node = frustum.intersect(nodeRef,fmin);
+            size_t m_frusta_node = frustum.intersect(node,fmin);
 
             if (unlikely(!m_frusta_node)) goto pop;
             cur = BVH::emptyNode;

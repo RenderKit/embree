@@ -100,11 +100,8 @@ namespace embree
           nf = NearFarPreCompute<N>(min_rdir);
         }
 
-        __forceinline unsigned int intersectFast(const typename BVHN<N>::NodeRef& nodeRef, float* const __restrict__ dist) const
+        __forceinline unsigned int intersectFast(const typename BVHN<N>::AlignedNode* __restrict__ node, float* const __restrict__ dist) const
         {
-          /* only default alignedNodes are currently supported */
-          const typename BVHN<N>::AlignedNode* __restrict__ const node = nodeRef.alignedNode();
-          
           const vfloat<Nx> bminX = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearX);
           const vfloat<Nx> bminY = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearY);
           const vfloat<Nx> bminZ = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearZ);
@@ -127,11 +124,8 @@ namespace embree
           return m_node;          
         }
 
-        __forceinline unsigned int intersectRobust(const typename BVHN<N>::NodeRef& nodeRef, float* const __restrict__ dist) const
+        __forceinline unsigned int intersectRobust(const typename BVHN<N>::AlignedNode* __restrict__ node, float* const __restrict__ dist) const
         {
-          /* only default alignedNodes are currently supported */
-          const typename BVHN<N>::AlignedNode* __restrict__ const node = nodeRef.alignedNode();
-          
           const vfloat<Nx> bminX = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearX);
           const vfloat<Nx> bminY = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearY);
           const vfloat<Nx> bminZ = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearZ);
@@ -156,10 +150,10 @@ namespace embree
           return m_node;          
         }
 
-        __forceinline unsigned int intersect(const typename BVHN<N>::NodeRef& nodeRef, float* const __restrict__ dist) const
+        __forceinline unsigned int intersect(const typename BVHN<N>::AlignedNode* __restrict__ node, float* const __restrict__ dist) const
         {
-          if (robust) return intersectRobust(nodeRef,dist);
-          else        return intersectFast(nodeRef,dist);
+          if (robust) return intersectRobust(node,dist);
+          else        return intersectFast(node,dist);
         }
 
         __forceinline void updateMaxDist(const vfloat<K>& ray_tfar) {
