@@ -301,18 +301,7 @@ namespace embree
         size_t m_trav_active = 0;
         for (size_t i = startPacketID; i <= endPacketID; i++)
         {
-          //STAT3(normal.trav_nodes,1,1,1);                          
-          const Packet<K>& p = packet[i];
-          const vfloat<K> tminX = msub(minX, p.rdir.x, p.org_rdir.x);
-          const vfloat<K> tminY = msub(minY, p.rdir.y, p.org_rdir.y);
-          const vfloat<K> tminZ = msub(minZ, p.rdir.z, p.org_rdir.z);
-          const vfloat<K> tmaxX = msub(maxX, p.rdir.x, p.org_rdir.x);
-          const vfloat<K> tmaxY = msub(maxY, p.rdir.y, p.org_rdir.y);
-          const vfloat<K> tmaxZ = msub(maxZ, p.rdir.z, p.org_rdir.z);
-          const vfloat<K> tmin  = maxi(tminX, tminY, tminZ, p.min_dist);
-          const vfloat<K> tmax  = mini(tmaxX, tmaxY, tmaxZ, p.max_dist);
-          const vbool<K> vmask  = tmin <= tmax;
-          const size_t m_hit = movemask(vmask);
+          const size_t m_hit = packet[i].intersectFast(minX,minY,minZ,maxX,maxY,maxZ);
           m_trav_active |= m_hit << (i*K);
         } 
         return m_trav_active;
@@ -333,20 +322,7 @@ namespace embree
         size_t m_trav_active = 0;
         for (size_t i = startPacketID; i <= endPacketID; i++)
         {
-          //STAT3(normal.trav_nodes,1,1,1);                          
-          const Packet<K>& p = packet[i];
-          const vfloat<K> tminX = (minX - p.org_rdir.x) * p.rdir.x;
-          const vfloat<K> tminY = (minY - p.org_rdir.y) * p.rdir.y;
-          const vfloat<K> tminZ = (minZ - p.org_rdir.z) * p.rdir.z;
-          const vfloat<K> tmaxX = (maxX - p.org_rdir.x) * p.rdir.x;
-          const vfloat<K> tmaxY = (maxY - p.org_rdir.y) * p.rdir.y;
-          const vfloat<K> tmaxZ = (maxZ - p.org_rdir.z) * p.rdir.z;
-          const float round_down = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512 
-          const float round_up   = 1.0f+2.0f*float(ulp); 
-          const vfloat<K> tmin  = round_down*max(tminX, tminY, tminZ, p.min_dist);
-          const vfloat<K> tmax  = round_up  *min(tmaxX, tmaxY, tmaxZ, p.max_dist);
-          const vbool<K> vmask  = tmin <= tmax;
-          const size_t m_hit = movemask(vmask);
+          const size_t m_hit = packet[i].intersectRobust(minX,minY,minZ,maxX,maxY,maxZ);
           m_trav_active |= m_hit << (i*K);
         } 
         return m_trav_active;
