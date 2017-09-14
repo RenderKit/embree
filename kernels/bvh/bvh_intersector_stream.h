@@ -229,24 +229,18 @@ namespace embree
 
           m_active |= (size_t)movemask(m_valid) << (i*K);
 
-          packet[i].min_dist = max(tnear, 0.0f);
-          packet[i].max_dist = select(m_valid, tfar, neg_inf);
-          tmp_min_dist = min(tmp_min_dist, packet[i].min_dist);
-          tmp_max_dist = max(tmp_max_dist, packet[i].max_dist);
+          vfloat<K> packet_min_dist = max(tnear, 0.0f);
+          vfloat<K> packet_max_dist = select(m_valid, tfar, neg_inf);
+          tmp_min_dist = min(tmp_min_dist, packet_min_dist);
+          tmp_max_dist = max(tmp_max_dist, packet_max_dist);
 
           const Vec3vf<K>& org     = inputPackets[i]->org;
           const Vec3vf<K>& dir     = inputPackets[i]->dir;
-          const Vec3vf<K> rdir     = rcp_safe(dir);
-          const Vec3vf<K> org_rdir = org * rdir;
-        
-          packet[i].rdir     = rdir;
-          if (robust)
-            packet[i].org_rdir = org;
-          else
-            packet[i].org_rdir = org_rdir;
 
-          tmp_min_rdir = min(tmp_min_rdir, select(m_valid,rdir, Vec3vf<K>(pos_inf)));
-          tmp_max_rdir = max(tmp_max_rdir, select(m_valid,rdir, Vec3vf<K>(neg_inf)));
+          new (&packet[i]) Packet<K>(org,dir,packet_min_dist,packet_max_dist,robust);
+
+          tmp_min_rdir = min(tmp_min_rdir, select(m_valid,packet[i].rdir, Vec3vf<K>(pos_inf)));
+          tmp_max_rdir = max(tmp_max_rdir, select(m_valid,packet[i].rdir, Vec3vf<K>(neg_inf)));
           tmp_min_org  = min(tmp_min_org , select(m_valid,org , Vec3vf<K>(pos_inf)));
           tmp_max_org  = max(tmp_max_org , select(m_valid,org , Vec3vf<K>(neg_inf)));
         }

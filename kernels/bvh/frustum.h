@@ -51,6 +51,21 @@ namespace embree
       vfloat<K> min_dist;
       vfloat<K> max_dist;
 
+      __forceinline Packet () {}
+      
+      __forceinline Packet (const Vec3vf<K>& org,
+                            const Vec3vf<K>& dir,
+                            const vfloat<K>& tnear,
+                            const vfloat<K>& tfar,
+                            bool robust)
+      {
+        rdir = rcp_safe(dir);
+        if (robust) org_rdir = org;
+        else        org_rdir = org * rdir;
+        min_dist = tnear;
+        max_dist = tfar;
+      }
+
       __forceinline size_t intersectFast(const vfloat<K>& minX,
                                          const vfloat<K>& minY,
                                          const vfloat<K>& minZ,
