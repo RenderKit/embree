@@ -414,7 +414,7 @@ namespace embree
         const vfloat<K> ray_tnear = select(octant_valid,org_ray_tnear,vfloat<K>(pos_inf));
               vfloat<K> ray_tfar  = select(octant_valid,org_ray_tfar ,vfloat<K>(neg_inf));
 
-        Frustum frustum(octant_valid,org,rdir,ray_tnear,ray_tfar);
+        Frustum<N,Nx,K,robust> frustum(octant_valid,org,rdir,ray_tnear,ray_tfar);
 
         StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes
         StackItemT<NodeRef>* stackPtr = stack + 1;        //!< current stack pointer
@@ -838,7 +838,7 @@ namespace embree
         const vfloat<K> ray_tnear = select(octant_valid,org_ray_tnear,vfloat<K>(pos_inf));
         const vfloat<K> ray_tfar  = select(octant_valid,org_ray_tfar ,vfloat<K>(neg_inf));
 
-        const Frustum frustum(octant_valid,org,rdir,ray_tnear,ray_tfar);
+        const Frustum<N,Nx,K,robust> frustum(octant_valid,org,rdir,ray_tnear,ray_tfar);
 
         StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes
         StackItemT<NodeRef>* stackPtr = stack + 1;        //!< current stack pointer
