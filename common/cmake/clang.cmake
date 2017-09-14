@@ -36,6 +36,11 @@ IF (WIN32)
   ELSE()
     SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /GS-")          # do not protect against return address overrides
   ENDIF()
+  MACRO(DISABLE_STACK_PROTECTOR_FOR_FILE file)
+    IF (EMBREE_STACK_PROTECTOR)
+      SET_SOURCE_FILES_PROPERTIES(${file} PROPERTIES COMPILE_FLAGS "/GS-")
+    ENDIF()
+  ENDMACRO()
   
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${COMMON_CXX_FLAGS}")
   SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /DEBUG")        # generate debug information
@@ -88,6 +93,11 @@ ELSE()
   IF (EMBREE_STACK_PROTECTOR)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector")           # protects against return address overrides
   ENDIF()
+  MACRO(DISABLE_STACK_PROTECTOR_FOR_FILE file)
+    IF (EMBREE_STACK_PROTECTOR)
+      SET_SOURCE_FILES_PROPERTIES(${file} PROPERTIES COMPILE_FLAGS "-fno-stack-protector")
+    ENDIF()
+  ENDMACRO()
 
   SET(CMAKE_CXX_FLAGS_DEBUG "")
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")          # enable assertions

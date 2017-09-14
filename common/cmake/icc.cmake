@@ -33,6 +33,11 @@ IF (WIN32)
   ELSE()
     SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /GS-")          # do not protect against return address overrides
   ENDIF()
+  MACRO(DISABLE_STACK_PROTECTOR_FOR_FILE file)
+    IF (EMBREE_STACK_PROTECTOR)
+      SET_SOURCE_FILES_PROPERTIES(${file} PROPERTIES COMPILE_FLAGS "/GS-")
+    ENDIF()
+  ENDMACRO()
 
   SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /Qdiag-disable:11074 ")  # remark #11074: Inlining inhibited by limit max-size
   SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /Qdiag-disable:11075 ")  # remark #11075: To get full report use -Qopt-report:4 -Qopt-report-phase ipo
@@ -105,6 +110,12 @@ ELSE()
   IF (EMBREE_STACK_PROTECTOR)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector")           # protects against return address overrides
   ENDIF()
+  MACRO(DISABLE_STACK_PROTECTOR_FOR_FILE file)
+    IF (EMBREE_STACK_PROTECTOR)
+      SET_SOURCE_FILES_PROPERTIES(${file} PROPERTIES COMPILE_FLAGS "-fno-stack-protector")
+    ENDIF()
+  ENDMACRO()
+  
   IF(NOT CMAKE_CXX_COMPILER_WRAPPER STREQUAL "CrayPrgEnv")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-intel")             # links intel runtime statically
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -no-intel-extensions")      # disables some intel extensions which cause symbols to be exported

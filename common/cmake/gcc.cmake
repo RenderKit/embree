@@ -41,6 +41,11 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-tree-vectorize")         # disable 
 IF (EMBREE_STACK_PROTECTOR)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector")           # protects against return address overrides
 ENDIF()
+MACRO(DISABLE_STACK_PROTECTOR_FOR_FILE file)
+  IF (EMBREE_STACK_PROTECTOR)
+    SET_SOURCE_FILES_PROPERTIES(${file} PROPERTIES COMPILE_FLAGS "-fno-stack-protector")
+  ENDIF()
+ENDMACRO()
 
 SET(CMAKE_CXX_FLAGS_DEBUG "")
 SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")          # enable assertions
