@@ -211,20 +211,6 @@ namespace embree
         vfloat<K> max_dist;
       };
 
-       /* Optimized frustum test. We calculate t=(p-org)/dir in ray/box
-       * intersection. We assume the rays are split by octant, thus
-       * dir intervals are either positive or negative in each
-       * dimension.
-
-         Case 1: dir.min >= 0 && dir.max >= 0:
-           t_min = (p_min - org_max) / dir_max = (p_min - org_max)*rdir_min = p_min*rdir_min - org_max*rdir_min
-           t_max = (p_max - org_min) / dir_min = (p_max - org_min)*rdir_max = p_max*rdir_max - org_min*rdir_max
-
-         Case 2: dir.min < 0 && dir.max < 0:
-           t_min = (p_max - org_min) / dir_min = (p_max - org_min)*rdir_max = p_max*rdir_max - org_min*rdir_max
-           t_max = (p_min - org_max) / dir_max = (p_min - org_max)*rdir_min = p_min*rdir_min - org_max*rdir_min
-      */
-      
       template<bool occluded>
         __forceinline static size_t initPacketsAndFrusta(RayK<K>** inputPackets, const size_t numOctantRays, Packet* const packet, Frustum<N,Nx,K,robust>& frusta, bool &commonOctant)
       {
