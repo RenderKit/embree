@@ -24,25 +24,24 @@ namespace embree
 {
   namespace isa
   {
-    template<int N>
-      struct NearFarPreCompute
+    struct NearFarPreCompute
     {
       size_t nearX, nearY, nearZ;
       size_t farX, farY, farZ;
 
       __forceinline NearFarPreCompute() {}
       
-      __forceinline NearFarPreCompute(const Vec3fa& dir)
+      __forceinline NearFarPreCompute(const Vec3fa& dir, size_t N)
       {
-        nearX = (dir.x < 0.0f) ? 1*sizeof(vfloat<N>) : 0*sizeof(vfloat<N>);
-        nearY = (dir.y < 0.0f) ? 3*sizeof(vfloat<N>) : 2*sizeof(vfloat<N>);
-        nearZ = (dir.z < 0.0f) ? 5*sizeof(vfloat<N>) : 4*sizeof(vfloat<N>);
-        farX  = nearX ^ sizeof(vfloat<N>);
-        farY  = nearY ^ sizeof(vfloat<N>);
-        farZ  = nearZ ^ sizeof(vfloat<N>);
+        const size_t M = sizeof(float)*N;
+        nearX = (dir.x < 0.0f) ? 1*M : 0*M;
+        nearY = (dir.y < 0.0f) ? 3*M : 2*M;
+        nearZ = (dir.z < 0.0f) ? 5*M : 4*M;
+        farX  = nearX ^ M;
+        farY  = nearY ^ M;
+        farZ  = nearZ ^ M;
       }
     };
-
 
     template<int K>
     struct Packet
@@ -93,7 +92,7 @@ namespace embree
       }
 
       template<int N, int Nx>
-        __forceinline size_t intersectFast(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t rid, const NearFarPreCompute<N>& nf) const
+        __forceinline size_t intersectRayFast(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t rid, const NearFarPreCompute& nf) const
       {
         const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearX));
         const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearY));
@@ -117,7 +116,7 @@ namespace embree
       }
 
       template<int N, int Nx>
-      __forceinline size_t intersectRobust(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t rid, const NearFarPreCompute<N>& nf) const
+      __forceinline size_t intersectRayRobust(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t rid, const NearFarPreCompute& nf) const
       {
         const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearX));
         const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearY));
@@ -143,7 +142,7 @@ namespace embree
       }
 
       template<int N>
-        __forceinline size_t intersectFast(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t bid, const NearFarPreCompute<N>& nf) const
+        __forceinline size_t intersectFast(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t bid, const NearFarPreCompute& nf) const
       {
         char *ptr = (char*)&node->lower_x + bid*sizeof(float);
         const vfloat<K> bminX = *(const float*)(ptr + nf.nearX);
@@ -169,7 +168,7 @@ namespace embree
       }
 
       template<int N>
-      __forceinline size_t intersectRobust(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t bid, const NearFarPreCompute<N>& nf) const
+      __forceinline size_t intersectRobust(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t bid, const NearFarPreCompute& nf) const
       {
         char *ptr = (char*)&node->lower_x + bid*sizeof(float);
         const vfloat<K> bminX = *(const float*)(ptr + nf.nearX);
@@ -276,7 +275,7 @@ namespace embree
           min_dist = reduced_min_dist;
           max_dist = reduced_max_dist;
           
-          nf = NearFarPreCompute<N>(min_rdir);
+          nf = NearFarPreCompute(min_rdir,N);
         }
 
         __forceinline unsigned int intersectFast(const typename BVHN<N>::AlignedNode* __restrict__ node, vfloat<Nx>& dist) const
@@ -339,7 +338,7 @@ namespace embree
           max_dist = reduce_max(ray_tfar);
         }
 
-        NearFarPreCompute<N> nf;
+        NearFarPreCompute nf;
 
         Vec3fa min_rdir; 
         Vec3fa max_rdir;

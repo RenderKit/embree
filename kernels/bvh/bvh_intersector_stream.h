@@ -289,7 +289,7 @@ namespace embree
       __forceinline static size_t intersectAlignedNodePacketFast(const Packet<K>* const packet,
                                                                  const AlignedNode* __restrict__ const node,
                                                                  const size_t bid,
-                                                                 const NearFarPreCompute<N>& nf,
+                                                                 const NearFarPreCompute& nf,
                                                                  const size_t m_active)
       {
         assert(m_active);
@@ -298,7 +298,7 @@ namespace embree
         size_t m_trav_active = 0;
         for (size_t i = startPacketID; i <= endPacketID; i++)
         {
-          const size_t m_hit = packet[i].intersectFast(node,bid,nf);
+          const size_t m_hit = packet[i].template intersectFast<N>(node,bid,nf);
           m_trav_active |= m_hit << (i*K);
         } 
         return m_trav_active;
@@ -307,7 +307,7 @@ namespace embree
       __forceinline static size_t intersectAlignedNodePacketRobust(const Packet<K>* const packet,
                                                                    const AlignedNode* __restrict__ const node,
                                                                    const size_t bid,
-                                                                   const NearFarPreCompute<N>& nf,
+                                                                   const NearFarPreCompute& nf,
                                                                    const size_t m_active)
       {
         assert(m_active);
@@ -316,7 +316,7 @@ namespace embree
         size_t m_trav_active = 0;
         for (size_t i = startPacketID; i <= endPacketID; i++)
         {
-          const size_t m_hit = packet[i].intersectRobust(node,bid,nf);
+          const size_t m_hit = packet[i].template intersectRobust<N>(node,bid,nf);
           m_trav_active |= m_hit << (i*K);
         } 
         return m_trav_active;
@@ -325,7 +325,7 @@ namespace embree
       __forceinline static size_t intersectAlignedNodePacket(const Packet<K>* const packet,
                                                              const AlignedNode* __restrict__ const node,
                                                              const size_t bid,
-                                                             const NearFarPreCompute<N>& nf,
+                                                             const NearFarPreCompute& nf,
                                                              const size_t m_active)
       {
         if (robust) return intersectAlignedNodePacketRobust(packet,node,bid,nf,m_active);
@@ -340,12 +340,10 @@ namespace embree
                                                              vfloat<Nx>& dist)
       {
         size_t m_node_hit = frusta.intersectFast(node,dist);
-        // ==================
         const size_t first_index    = __bsf(m_trav_active);
         const size_t first_packetID = first_index / K;
         const size_t first_rayID    = first_index % K;
-
-        size_t m_first_hit = packet[first_packetID].template intersectFast<N,Nx>(node,first_rayID,frusta.nf);
+        size_t m_first_hit = packet[first_packetID].template intersectRayFast<N,Nx>(node,first_rayID,frusta.nf);
 
         // ==================
 
@@ -376,7 +374,7 @@ namespace embree
         const size_t first_index    = __bsf(m_trav_active);
         const size_t first_packetID = first_index / K;
         const size_t first_rayID    = first_index % K;
-        size_t m_first_hit = packet[first_packetID].template intersectRobust<N,Nx>(node,first_rayID,frusta.nf);
+        size_t m_first_hit = packet[first_packetID].template intersectRayRobust<N,Nx>(node,first_rayID,frusta.nf);
 
         // ==================
 
