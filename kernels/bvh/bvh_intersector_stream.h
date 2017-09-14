@@ -20,6 +20,7 @@
 #include "../common/ray.h"
 #include "../common/stack_item.h"
 #include "bvh_traverser1.h"
+#include "frustum.h"
 
 namespace embree
 {
@@ -234,22 +235,6 @@ namespace embree
         float max_dist;
       };
 
-      struct NearFarPreCompute
-      {
-        size_t nearX, nearY, nearZ;
-        size_t farX, farY, farZ;
-
-        __forceinline NearFarPreCompute(const Vec3fa& dir)
-        {
-          nearX = (dir.x < 0.0f) ? 1*sizeof(vfloat<N>) : 0*sizeof(vfloat<N>);
-          nearY = (dir.y < 0.0f) ? 3*sizeof(vfloat<N>) : 2*sizeof(vfloat<N>);
-          nearZ = (dir.z < 0.0f) ? 5*sizeof(vfloat<N>) : 4*sizeof(vfloat<N>);
-          farX  = nearX ^ sizeof(vfloat<N>);
-          farY  = nearY ^ sizeof(vfloat<N>);
-          farZ  = nearZ ^ sizeof(vfloat<N>);
-        }
-      };
-
       template<bool occluded>
       __forceinline static size_t initPacketsAndFrusta(RayK<K>** inputPackets, const size_t numOctantRays, Packet* const packet, Frusta& frusta, bool &commonOctant)
       {
@@ -429,7 +414,7 @@ namespace embree
       __forceinline static size_t traverseCoherentStreamFast(const size_t m_trav_active,
                                                              Packet* const packet,
                                                              const AlignedNode* __restrict__ const node,
-                                                             const NearFarPreCompute& pc,
+                                                             const NearFarPreCompute<N>& pc,
                                                              const Frusta& frusta,
                                                              size_t* const maskK,
                                                              vfloat<Nx>& dist)
@@ -504,7 +489,7 @@ namespace embree
       __forceinline static size_t traverseCoherentStreamRobust(const size_t m_trav_active,
                                                                Packet* const packet,
                                                                const AlignedNode* __restrict__ const node,
-                                                               const NearFarPreCompute& pc,
+                                                               const NearFarPreCompute<N>& pc,
                                                                const Frusta& frusta,
                                                                size_t* const maskK,
                                                                vfloat<Nx>& dist)
@@ -581,7 +566,7 @@ namespace embree
       __forceinline static size_t traverseCoherentStream(const size_t m_trav_active,
                                                          Packet* const packet,
                                                          const AlignedNode* __restrict__ const node,
-                                                         const NearFarPreCompute& pc,
+                                                         const NearFarPreCompute<N>& pc,
                                                          const Frusta& frusta,
                                                          size_t* const maskK,
                                                          vfloat<Nx>& dist)

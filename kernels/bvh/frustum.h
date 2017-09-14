@@ -24,6 +24,26 @@ namespace embree
 {
   namespace isa
   {
+    template<int N>
+      struct NearFarPreCompute
+    {
+      size_t nearX, nearY, nearZ;
+      size_t farX, farY, farZ;
+
+      __forceinline NearFarPreCompute() {}
+      
+      __forceinline NearFarPreCompute(const Vec3fa& dir)
+      {
+        nearX = (dir.x < 0.0f) ? 1*sizeof(vfloat<N>) : 0*sizeof(vfloat<N>);
+        nearY = (dir.y < 0.0f) ? 3*sizeof(vfloat<N>) : 2*sizeof(vfloat<N>);
+        nearZ = (dir.z < 0.0f) ? 5*sizeof(vfloat<N>) : 4*sizeof(vfloat<N>);
+        farX  = nearX ^ sizeof(vfloat<N>);
+        farY  = nearY ^ sizeof(vfloat<N>);
+        farZ  = nearZ ^ sizeof(vfloat<N>);
+      }
+    };
+    
+    
     /* Optimized frustum test. We calculate t=(p-org)/dir in ray/box
        * intersection. We assume the rays are split by octant, thus
        * dir intervals are either positive or negative in each
@@ -77,26 +97,20 @@ namespace embree
 
           min_dist = reduce_min(select(valid,ray_tnear,vfloat<K>(pos_inf)));
           max_dist = reduce_max(select(valid,ray_tfar ,vfloat<K>(neg_inf)));
-
-          nearX = (min_rdir.x < 0.0f) ? 1*sizeof(vfloat<N>) : 0*sizeof(vfloat<N>);
-          nearY = (min_rdir.y < 0.0f) ? 3*sizeof(vfloat<N>) : 2*sizeof(vfloat<N>);
-          nearZ = (min_rdir.z < 0.0f) ? 5*sizeof(vfloat<N>) : 4*sizeof(vfloat<N>);
-          farX  = nearX ^ sizeof(vfloat<N>);
-          farY  = nearY ^ sizeof(vfloat<N>);
-          farZ  = nearZ ^ sizeof(vfloat<N>);
+          nf = NearFarPreCompute<N>(min_rdir);
         }
 
-        __forceinline unsigned int intersect(const typename BVHN<N>::NodeRef& nodeRef, float * const __restrict__ dist) const
+        __forceinline unsigned int intersect(const typename BVHN<N>::NodeRef& nodeRef, float* const __restrict__ dist) const
         {
           /* only default alignedNodes are currently supported */
           const typename BVHN<N>::AlignedNode* __restrict__ const node = nodeRef.alignedNode();
           
-          const vfloat<Nx> bminX = *(const vfloat<N>*)((const char*)&node->lower_x + nearX);
-          const vfloat<Nx> bminY = *(const vfloat<N>*)((const char*)&node->lower_x + nearY);
-          const vfloat<Nx> bminZ = *(const vfloat<N>*)((const char*)&node->lower_x + nearZ);
-          const vfloat<Nx> bmaxX = *(const vfloat<N>*)((const char*)&node->lower_x + farX);
-          const vfloat<Nx> bmaxY = *(const vfloat<N>*)((const char*)&node->lower_x + farY);
-          const vfloat<Nx> bmaxZ = *(const vfloat<N>*)((const char*)&node->lower_x + farZ);
+          const vfloat<Nx> bminX = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearX);
+          const vfloat<Nx> bminY = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearY);
+          const vfloat<Nx> bminZ = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearZ);
+          const vfloat<Nx> bmaxX = *(const vfloat<N>*)((const char*)&node->lower_x + nf.farX);
+          const vfloat<Nx> bmaxY = *(const vfloat<N>*)((const char*)&node->lower_x + nf.farY);
+          const vfloat<Nx> bmaxZ = *(const vfloat<N>*)((const char*)&node->lower_x + nf.farZ);
                     
           if (robust)
           {
@@ -138,8 +152,7 @@ namespace embree
           max_dist = reduce_max(ray_tfar);
         }
 
-        size_t nearX, nearY, nearZ;
-        size_t farX, farY, farZ;
+        NearFarPreCompute<N> nf;
 
         Vec3fa min_rdir; 
         Vec3fa max_rdir;
