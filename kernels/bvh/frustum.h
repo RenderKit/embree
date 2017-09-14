@@ -100,7 +100,7 @@ namespace embree
           nf = NearFarPreCompute<N>(min_rdir);
         }
 
-        __forceinline unsigned int intersect(const typename BVHN<N>::NodeRef& nodeRef, float* const __restrict__ dist) const
+        __forceinline unsigned int intersectFast(const typename BVHN<N>::NodeRef& nodeRef, float* const __restrict__ dist) const
         {
           /* only default alignedNodes are currently supported */
           const typename BVHN<N>::AlignedNode* __restrict__ const node = nodeRef.alignedNode();
@@ -112,40 +112,54 @@ namespace embree
           const vfloat<Nx> bmaxY = *(const vfloat<N>*)((const char*)&node->lower_x + nf.farY);
           const vfloat<Nx> bmaxZ = *(const vfloat<N>*)((const char*)&node->lower_x + nf.farZ);
                     
-          if (robust)
-          {
-            const vfloat<Nx> fminX = (bminX - vfloat<Nx>(min_org_rdir.x)) * vfloat<Nx>(min_rdir.x);
-            const vfloat<Nx> fminY = (bminY - vfloat<Nx>(min_org_rdir.y)) * vfloat<Nx>(min_rdir.y);
-            const vfloat<Nx> fminZ = (bminZ - vfloat<Nx>(min_org_rdir.z)) * vfloat<Nx>(min_rdir.z);
-            const vfloat<Nx> fmaxX = (bmaxX - vfloat<Nx>(max_org_rdir.x)) * vfloat<Nx>(max_rdir.x);
-            const vfloat<Nx> fmaxY = (bmaxY - vfloat<Nx>(max_org_rdir.y)) * vfloat<Nx>(max_rdir.y);
-            const vfloat<Nx> fmaxZ = (bmaxZ - vfloat<Nx>(max_org_rdir.z)) * vfloat<Nx>(max_rdir.z);
+          const vfloat<Nx> fminX = msub(bminX, vfloat<Nx>(min_rdir.x), vfloat<Nx>(min_org_rdir.x));
+          const vfloat<Nx> fminY = msub(bminY, vfloat<Nx>(min_rdir.y), vfloat<Nx>(min_org_rdir.y));
+          const vfloat<Nx> fminZ = msub(bminZ, vfloat<Nx>(min_rdir.z), vfloat<Nx>(min_org_rdir.z));
+          const vfloat<Nx> fmaxX = msub(bmaxX, vfloat<Nx>(max_rdir.x), vfloat<Nx>(max_org_rdir.x));
+          const vfloat<Nx> fmaxY = msub(bmaxY, vfloat<Nx>(max_rdir.y), vfloat<Nx>(max_org_rdir.y));
+          const vfloat<Nx> fmaxZ = msub(bmaxZ, vfloat<Nx>(max_rdir.z), vfloat<Nx>(max_org_rdir.z));
+          
+          const vfloat<Nx> fmin  = maxi(fminX, fminY, fminZ, vfloat<Nx>(min_dist)); 
+          vfloat<Nx>::store(dist,fmin);
+          const vfloat<Nx> fmax  = mini(fmaxX, fmaxY, fmaxZ, vfloat<Nx>(max_dist));
+          const vbool<Nx> vmask_node_hit = fmin <= fmax;
+          size_t m_node = movemask(vmask_node_hit) & (((size_t)1 << N)-1);
+          return m_node;          
+        }
 
-            const float round_down = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512
-            const float round_up   = 1.0f+2.0f*float(ulp);
-            const vfloat<Nx> fmin  = max(fminX, fminY, fminZ, vfloat<Nx>(min_dist)); 
-            vfloat<Nx>::store(dist,fmin);
-            const vfloat<Nx> fmax  = min(fmaxX, fmaxY, fmaxZ, vfloat<Nx>(max_dist));
-            const vbool<Nx> vmask_node_hit = (round_down*fmin <= round_up*fmax);
-            size_t m_node = movemask(vmask_node_hit) & (((size_t)1 << N)-1);
-            return m_node;          
-          }
-          else
-          {
-            const vfloat<Nx> fminX = msub(bminX, vfloat<Nx>(min_rdir.x), vfloat<Nx>(min_org_rdir.x));
-            const vfloat<Nx> fminY = msub(bminY, vfloat<Nx>(min_rdir.y), vfloat<Nx>(min_org_rdir.y));
-            const vfloat<Nx> fminZ = msub(bminZ, vfloat<Nx>(min_rdir.z), vfloat<Nx>(min_org_rdir.z));
-            const vfloat<Nx> fmaxX = msub(bmaxX, vfloat<Nx>(max_rdir.x), vfloat<Nx>(max_org_rdir.x));
-            const vfloat<Nx> fmaxY = msub(bmaxY, vfloat<Nx>(max_rdir.y), vfloat<Nx>(max_org_rdir.y));
-            const vfloat<Nx> fmaxZ = msub(bmaxZ, vfloat<Nx>(max_rdir.z), vfloat<Nx>(max_org_rdir.z));
+        __forceinline unsigned int intersectRobust(const typename BVHN<N>::NodeRef& nodeRef, float* const __restrict__ dist) const
+        {
+          /* only default alignedNodes are currently supported */
+          const typename BVHN<N>::AlignedNode* __restrict__ const node = nodeRef.alignedNode();
+          
+          const vfloat<Nx> bminX = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearX);
+          const vfloat<Nx> bminY = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearY);
+          const vfloat<Nx> bminZ = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearZ);
+          const vfloat<Nx> bmaxX = *(const vfloat<N>*)((const char*)&node->lower_x + nf.farX);
+          const vfloat<Nx> bmaxY = *(const vfloat<N>*)((const char*)&node->lower_x + nf.farY);
+          const vfloat<Nx> bmaxZ = *(const vfloat<N>*)((const char*)&node->lower_x + nf.farZ);
+                    
+          const vfloat<Nx> fminX = (bminX - vfloat<Nx>(min_org_rdir.x)) * vfloat<Nx>(min_rdir.x);
+          const vfloat<Nx> fminY = (bminY - vfloat<Nx>(min_org_rdir.y)) * vfloat<Nx>(min_rdir.y);
+          const vfloat<Nx> fminZ = (bminZ - vfloat<Nx>(min_org_rdir.z)) * vfloat<Nx>(min_rdir.z);
+          const vfloat<Nx> fmaxX = (bmaxX - vfloat<Nx>(max_org_rdir.x)) * vfloat<Nx>(max_rdir.x);
+          const vfloat<Nx> fmaxY = (bmaxY - vfloat<Nx>(max_org_rdir.y)) * vfloat<Nx>(max_rdir.y);
+          const vfloat<Nx> fmaxZ = (bmaxZ - vfloat<Nx>(max_org_rdir.z)) * vfloat<Nx>(max_rdir.z);
+          
+          const float round_down = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512
+          const float round_up   = 1.0f+2.0f*float(ulp);
+          const vfloat<Nx> fmin  = max(fminX, fminY, fminZ, vfloat<Nx>(min_dist)); 
+          vfloat<Nx>::store(dist,fmin);
+          const vfloat<Nx> fmax  = min(fmaxX, fmaxY, fmaxZ, vfloat<Nx>(max_dist));
+          const vbool<Nx> vmask_node_hit = (round_down*fmin <= round_up*fmax);
+          size_t m_node = movemask(vmask_node_hit) & (((size_t)1 << N)-1);
+          return m_node;          
+        }
 
-            const vfloat<Nx> fmin  = maxi(fminX, fminY, fminZ, vfloat<Nx>(min_dist)); 
-            vfloat<Nx>::store(dist,fmin);
-            const vfloat<Nx> fmax  = mini(fmaxX, fmaxY, fmaxZ, vfloat<Nx>(max_dist));
-            const vbool<Nx> vmask_node_hit = fmin <= fmax;
-            size_t m_node = movemask(vmask_node_hit) & (((size_t)1 << N)-1);
-            return m_node;          
-          }
+        __forceinline unsigned int intersect(const typename BVHN<N>::NodeRef& nodeRef, float* const __restrict__ dist) const
+        {
+          if (robust) return intersectRobust(nodeRef,dist);
+          else        return intersectFast(nodeRef,dist);
         }
 
         __forceinline void updateMaxDist(const vfloat<K>& ray_tfar) {
