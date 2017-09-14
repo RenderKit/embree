@@ -225,18 +225,8 @@ namespace embree
            t_max = (p_min - org_max) / dir_max = (p_min - org_max)*rdir_min = p_min*rdir_min - org_max*rdir_min
       */
       
-      struct Frusta
-      {
-        Vec3fa min_rdir; 
-        Vec3fa max_rdir; 
-        Vec3fa min_org_rdir; 
-        Vec3fa max_org_rdir; 
-        float min_dist;
-        float max_dist;
-      };
-
       template<bool occluded>
-      __forceinline static size_t initPacketsAndFrusta(RayK<K>** inputPackets, const size_t numOctantRays, Packet* const packet, Frusta& frusta, bool &commonOctant)
+        __forceinline static size_t initPacketsAndFrusta(RayK<K>** inputPackets, const size_t numOctantRays, Packet* const packet, Frustum<N,Nx,K,robust>& frusta, bool &commonOctant)
       {
         const size_t numPackets = (numOctantRays+K-1)/K;
 
@@ -284,6 +274,8 @@ namespace embree
         }
 
         m_active &= (numOctantRays == (8 * sizeof(size_t))) ? (size_t)-1 : (((size_t)1 << numOctantRays)-1);
+
+        
         const Vec3fa reduced_min_rdir( reduce_min(tmp_min_rdir.x), 
                                        reduce_min(tmp_min_rdir.y),
                                        reduce_min(tmp_min_rdir.z) );
@@ -300,34 +292,18 @@ namespace embree
                                          reduce_max(tmp_max_org.y),
                                          reduce_max(tmp_max_org.z) );
 
-        const float frusta_min_dist = reduce_min(tmp_min_dist);
-        const float frusta_max_dist = reduce_max(tmp_max_dist);
-
         commonOctant =
           (reduced_max_rdir.x < 0.0f || reduced_min_rdir.x >= 0.0f) &&
           (reduced_max_rdir.y < 0.0f || reduced_min_rdir.y >= 0.0f) &&
           (reduced_max_rdir.z < 0.0f || reduced_min_rdir.z >= 0.0f);
-
         
-        const Vec3fa frusta_min_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_rdir, reduced_max_rdir);
-        const Vec3fa frusta_max_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_rdir, reduced_min_rdir);
+        const float frusta_min_dist = reduce_min(tmp_min_dist);
+        const float frusta_max_dist = reduce_max(tmp_max_dist);
 
-        if (!robust)
-        {
-          frusta.min_org_rdir = frusta_min_rdir * select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_origin, reduced_min_origin);
-          frusta.max_org_rdir = frusta_max_rdir * select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_origin, reduced_max_origin);
-        }
-        else
-        {
-          frusta.min_org_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_origin, reduced_min_origin);
-          frusta.max_org_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_origin, reduced_max_origin);
-        }
-
-        frusta.min_rdir     = frusta_min_rdir;
-        frusta.max_rdir     = frusta_max_rdir;
-        frusta.min_dist     = frusta_min_dist;
-        frusta.max_dist     = frusta_max_dist;
-
+        frusta.init(reduced_min_origin,reduced_max_origin,
+                    reduced_min_rdir,reduced_max_rdir,
+                    frusta_min_dist,frusta_max_dist);
+        
         return m_active;
       }
 
@@ -414,18 +390,17 @@ namespace embree
       __forceinline static size_t traverseCoherentStreamFast(const size_t m_trav_active,
                                                              Packet* const packet,
                                                              const AlignedNode* __restrict__ const node,
-                                                             const NearFarPreCompute<N>& pc,
-                                                             const Frusta& frusta,
+                                                             const Frustum<N,Nx,K,robust>& frusta,
                                                              size_t* const maskK,
                                                              vfloat<Nx>& dist)
       {
         /* interval-based culling test */
-        const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearX));
-        const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearY));
-        const vfloat<Nx> bminZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearZ));
-        const vfloat<Nx> bmaxX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farX));
-        const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farY));
-        const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farZ));
+        const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.nearX));
+        const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.nearY));
+        const vfloat<Nx> bminZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.nearZ));
+        const vfloat<Nx> bmaxX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.farX));
+        const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.farY));
+        const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.farZ));
 
         const vfloat<Nx> fminX = msub(bminX, vfloat<Nx>(frusta.min_rdir.x), vfloat<Nx>(frusta.min_org_rdir.x));
         const vfloat<Nx> fminY = msub(bminY, vfloat<Nx>(frusta.min_rdir.y), vfloat<Nx>(frusta.min_org_rdir.y));
@@ -489,18 +464,17 @@ namespace embree
       __forceinline static size_t traverseCoherentStreamRobust(const size_t m_trav_active,
                                                                Packet* const packet,
                                                                const AlignedNode* __restrict__ const node,
-                                                               const NearFarPreCompute<N>& pc,
-                                                               const Frusta& frusta,
+                                                               const Frustum<N,Nx,K,robust>& frusta,
                                                                size_t* const maskK,
                                                                vfloat<Nx>& dist)
       {
         /* interval-based culling test */
-        const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearX));
-        const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearY));
-        const vfloat<Nx> bminZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearZ));
-        const vfloat<Nx> bmaxX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farX));
-        const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farY));
-        const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farZ));
+        const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.nearX));
+        const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.nearY));
+        const vfloat<Nx> bminZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.nearZ));
+        const vfloat<Nx> bmaxX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.farX));
+        const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.farY));
+        const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.farZ));
 
         const vfloat<Nx> fminX = (bminX - vfloat<Nx>(frusta.min_org_rdir.x)) * vfloat<Nx>(frusta.min_rdir.x);
         const vfloat<Nx> fminY = (bminY - vfloat<Nx>(frusta.min_org_rdir.y)) * vfloat<Nx>(frusta.min_rdir.y);
@@ -566,13 +540,12 @@ namespace embree
       __forceinline static size_t traverseCoherentStream(const size_t m_trav_active,
                                                          Packet* const packet,
                                                          const AlignedNode* __restrict__ const node,
-                                                         const NearFarPreCompute<N>& pc,
-                                                         const Frusta& frusta,
+                                                         const Frustum<N,Nx,K,robust>& frusta,
                                                          size_t* const maskK,
                                                          vfloat<Nx>& dist)
       {
-        if (robust) return traverseCoherentStreamRobust(m_trav_active,packet,node,pc,frusta,maskK,dist);
-        else        return traverseCoherentStreamFast  (m_trav_active,packet,node,pc,frusta,maskK,dist);
+        if (robust) return traverseCoherentStreamRobust(m_trav_active,packet,node,frusta,maskK,dist);
+        else        return traverseCoherentStreamFast  (m_trav_active,packet,node,frusta,maskK,dist);
       }
    
 

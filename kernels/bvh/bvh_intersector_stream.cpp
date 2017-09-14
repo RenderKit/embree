@@ -51,7 +51,7 @@ namespace embree
       assert(numOctantRays <= MAX_INTERNAL_STREAM_SIZE);
 
       __aligned(64) Packet packet[MAX_INTERNAL_STREAM_SIZE/K];
-      __aligned(64) Frusta frusta;
+      __aligned(64) Frustum<N,Nx,K,robust> frusta;
 
       bool commonOctant = true;
       const size_t m_active = initPacketsAndFrusta<false>(inputPackets, numOctantRays, packet, frusta, commonOctant);
@@ -74,7 +74,7 @@ namespace embree
       ///////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////////////////////////////////////////////////////
 
-      const NearFarPreCompute<N> pc(frusta.min_rdir);
+      //const NearFarPreCompute<N> pc(frusta.min_rdir);
 
       StackItemMaskCoherent* stackPtr = stack + 1;
 
@@ -99,7 +99,7 @@ namespace embree
           __aligned(64) size_t maskK[N];
           for (size_t i = 0; i < N; i++) maskK[i] = m_trav_active;
           vfloat<Nx> dist;
-          const size_t m_node_hit = traverseCoherentStream(m_trav_active, packet, node, pc, frusta, maskK, dist);
+          const size_t m_node_hit = traverseCoherentStream(m_trav_active, packet, node, frusta, maskK, dist);
           if (unlikely(m_node_hit == 0)) goto pop;
 
           BVHNNodeTraverserStreamHitCoherent<N, Nx, types>::traverseClosestHit(cur, m_trav_active, vbool<Nx>((int)m_node_hit), dist, (size_t*)maskK, stackPtr);
@@ -121,12 +121,12 @@ namespace embree
           char *ptr = (char*)&node->lower_x + b*sizeof(float);
           assert(cur == node->child(b));
 
-          const vfloat<K> minX = vfloat<K>(*(const float*)((const char*)ptr + pc.nearX));
-          const vfloat<K> minY = vfloat<K>(*(const float*)((const char*)ptr + pc.nearY));
-          const vfloat<K> minZ = vfloat<K>(*(const float*)((const char*)ptr + pc.nearZ));
-          const vfloat<K> maxX = vfloat<K>(*(const float*)((const char*)ptr + pc.farX));
-          const vfloat<K> maxY = vfloat<K>(*(const float*)((const char*)ptr + pc.farY));
-          const vfloat<K> maxZ = vfloat<K>(*(const float*)((const char*)ptr + pc.farZ));
+          const vfloat<K> minX = vfloat<K>(*(const float*)((const char*)ptr + frusta.nf.nearX));
+          const vfloat<K> minY = vfloat<K>(*(const float*)((const char*)ptr + frusta.nf.nearY));
+          const vfloat<K> minZ = vfloat<K>(*(const float*)((const char*)ptr + frusta.nf.nearZ));
+          const vfloat<K> maxX = vfloat<K>(*(const float*)((const char*)ptr + frusta.nf.farX));
+          const vfloat<K> maxY = vfloat<K>(*(const float*)((const char*)ptr + frusta.nf.farY));
+          const vfloat<K> maxZ = vfloat<K>(*(const float*)((const char*)ptr + frusta.nf.farZ));
 
           m_trav_active = intersectAlignedNodePacket(packet, minX, minY, minZ, maxX, maxY, maxZ, m_trav_active);
         }
@@ -169,7 +169,7 @@ namespace embree
 
       /* inactive rays should have been filtered out before */
       __aligned(64) Packet packet[MAX_INTERNAL_STREAM_SIZE/K];
-      __aligned(64) Frusta frusta;
+      __aligned(64) Frustum<N,Nx,K,robust> frusta;
 
       bool commonOctant = true;
       size_t m_active = initPacketsAndFrusta<true>(inputPackets, numOctantRays, packet, frusta, commonOctant);
@@ -221,7 +221,7 @@ namespace embree
           for (size_t i = 0; i < N; i++) maskK[i] = m_trav_active;
 
           vfloat<Nx> dist;
-          const size_t m_node_hit = traverseCoherentStream(m_trav_active, packet, node, pc, frusta, maskK, dist);
+          const size_t m_node_hit = traverseCoherentStream(m_trav_active, packet, node, frusta, maskK, dist);
           if (unlikely(m_node_hit == 0)) goto pop;
 
           BVHNNodeTraverserStreamHitCoherent<N, Nx, types>::traverseAnyHit(cur, m_trav_active, vbool<Nx>((int)m_node_hit), (size_t*)maskK, stackPtr);
@@ -239,12 +239,12 @@ namespace embree
           char *ptr = (char*)&node->lower_x + b*sizeof(float);
           assert(cur == node->child(b));
 
-          const vfloat<K> minX = vfloat<K>(*(const float*)((const char*)ptr + pc.nearX));
-          const vfloat<K> minY = vfloat<K>(*(const float*)((const char*)ptr + pc.nearY));
-          const vfloat<K> minZ = vfloat<K>(*(const float*)((const char*)ptr + pc.nearZ));
-          const vfloat<K> maxX = vfloat<K>(*(const float*)((const char*)ptr + pc.farX));
-          const vfloat<K> maxY = vfloat<K>(*(const float*)((const char*)ptr + pc.farY));
-          const vfloat<K> maxZ = vfloat<K>(*(const float*)((const char*)ptr + pc.farZ));
+          const vfloat<K> minX = vfloat<K>(*(const float*)((const char*)ptr + frusta.nf.nearX));
+          const vfloat<K> minY = vfloat<K>(*(const float*)((const char*)ptr + frusta.nf.nearY));
+          const vfloat<K> minZ = vfloat<K>(*(const float*)((const char*)ptr + frusta.nf.nearZ));
+          const vfloat<K> maxX = vfloat<K>(*(const float*)((const char*)ptr + frusta.nf.farX));
+          const vfloat<K> maxY = vfloat<K>(*(const float*)((const char*)ptr + frusta.nf.farY));
+          const vfloat<K> maxZ = vfloat<K>(*(const float*)((const char*)ptr + frusta.nf.farZ));
 
           m_trav_active = intersectAlignedNodePacket(packet, minX, minY, minZ, maxX, maxY, maxZ, m_trav_active);
         }
