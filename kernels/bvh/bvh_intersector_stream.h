@@ -280,58 +280,30 @@ namespace embree
       }
 
       
-      __forceinline static size_t intersectAlignedNodePacketFast(const Packet<K,robust>* const packet,
-                                                                 const AlignedNode* __restrict__ const node,
-                                                                 const size_t bid,
-                                                                 const NearFarPreCompute& nf,
-                                                                 const size_t m_active)
-      {
-        assert(m_active);
-        const size_t startPacketID = __bsf(m_active) / K;
-        const size_t endPacketID   = __bsr(m_active) / K;
-        size_t m_trav_active = 0;
-        for (size_t i = startPacketID; i <= endPacketID; i++)
-        {
-          const size_t m_hit = packet[i].template intersect<N>(node,bid,nf);
-          m_trav_active |= m_hit << (i*K);
-        } 
-        return m_trav_active;
-      }
-
-      __forceinline static size_t intersectAlignedNodePacketRobust(const Packet<K,robust>* const packet,
-                                                                   const AlignedNode* __restrict__ const node,
-                                                                   const size_t bid,
-                                                                   const NearFarPreCompute& nf,
-                                                                   const size_t m_active)
-      {
-        assert(m_active);
-        const size_t startPacketID = __bsf(m_active) / K;
-        const size_t endPacketID   = __bsr(m_active) / K;
-        size_t m_trav_active = 0;
-        for (size_t i = startPacketID; i <= endPacketID; i++)
-        {
-          const size_t m_hit = packet[i].template intersect<N>(node,bid,nf);
-          m_trav_active |= m_hit << (i*K);
-        } 
-        return m_trav_active;
-      }
-
       __forceinline static size_t intersectAlignedNodePacket(const Packet<K,robust>* const packet,
                                                              const AlignedNode* __restrict__ const node,
                                                              const size_t bid,
                                                              const NearFarPreCompute& nf,
                                                              const size_t m_active)
       {
-        if (robust) return intersectAlignedNodePacketRobust(packet,node,bid,nf,m_active);
-        else        return intersectAlignedNodePacketFast  (packet,node,bid,nf,m_active);
+        assert(m_active);
+        const size_t startPacketID = __bsf(m_active) / K;
+        const size_t endPacketID   = __bsr(m_active) / K;
+        size_t m_trav_active = 0;
+        for (size_t i = startPacketID; i <= endPacketID; i++)
+        {
+          const size_t m_hit = packet[i].template intersect<N>(node,bid,nf);
+          m_trav_active |= m_hit << (i*K);
+        } 
+        return m_trav_active;
       }
       
-      __forceinline static size_t traverseCoherentStreamFast(const size_t m_trav_active,
-                                                             Packet<K,robust>* const packet,
-                                                             const AlignedNode* __restrict__ const node,
-                                                             const Frustum<N,Nx,K,robust>& frusta,
-                                                             size_t* const maskK,
-                                                             vfloat<Nx>& dist)
+      __forceinline static size_t traverseCoherentStream(const size_t m_trav_active,
+                                                         Packet<K,robust>* const packet,
+                                                         const AlignedNode* __restrict__ const node,
+                                                         const Frustum<N,Nx,K,robust>& frusta,
+                                                         size_t* const maskK,
+                                                         vfloat<Nx>& dist)
       {
         size_t m_node_hit = frusta.intersect(node,dist);
         const size_t first_index    = __bsf(m_trav_active);
@@ -350,55 +322,12 @@ namespace embree
         while(unlikely(m_node)) 
         {
           const size_t b = __bscf(m_node);
-          const size_t m_current = m_trav_active & intersectAlignedNodePacketFast(packet, node, b, frusta.nf, m_trav_active);
+          const size_t m_current = m_trav_active & intersectAlignedNodePacket(packet, node, b, frusta.nf, m_trav_active);
           m_node_hit ^= m_current ? (size_t)0 : ((size_t)1 << b);
           maskK[b] = m_current;
         }
         return m_node_hit;
       }
-
-      __forceinline static size_t traverseCoherentStreamRobust(const size_t m_trav_active,
-                                                               Packet<K,robust>* const packet,
-                                                               const AlignedNode* __restrict__ const node,
-                                                               const Frustum<N,Nx,K,robust>& frusta,
-                                                               size_t* const maskK,
-                                                               vfloat<Nx>& dist)
-      {
-        size_t m_node_hit = frusta.intersect(node,dist);
-        const size_t first_index    = __bsf(m_trav_active);
-        const size_t first_packetID = first_index / K;
-        const size_t first_rayID    = first_index % K;
-        size_t m_first_hit = packet[first_packetID].template intersectRay<N,Nx>(node,first_rayID,frusta.nf);
-
-        // ==================
-
-        /* this causes a traversal order dependence with respect to the order of rays within the stream */
-        //dist = select(vmask_first_hit, rmin, fmin);
-        /* this is independent of the ordering of rays */
-        //dist = fmin;            
-
-        size_t m_node = m_node_hit ^ m_first_hit;
-        while(unlikely(m_node)) 
-        {
-          const size_t b = __bscf(m_node);
-          const size_t m_current = m_trav_active & intersectAlignedNodePacketRobust(packet, node, b, frusta.nf, m_trav_active);
-          m_node_hit ^= m_current ? (size_t)0 : ((size_t)1 << b);
-          maskK[b] = m_current;
-        }
-        return m_node_hit;
-      }
-
-      __forceinline static size_t traverseCoherentStream(const size_t m_trav_active,
-                                                         Packet<K,robust>* const packet,
-                                                         const AlignedNode* __restrict__ const node,
-                                                         const Frustum<N,Nx,K,robust>& frusta,
-                                                         size_t* const maskK,
-                                                         vfloat<Nx>& dist)
-      {
-        if (robust) return traverseCoherentStreamRobust(m_trav_active,packet,node,frusta,maskK,dist);
-        else        return traverseCoherentStreamFast  (m_trav_active,packet,node,frusta,maskK,dist);
-      }
-   
 
       static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
 
