@@ -311,13 +311,7 @@ namespace embree
         const size_t first_rayID    = first_index % K;
         size_t m_first_hit = packet[first_packetID].template intersectRay<N,Nx>(node,first_rayID,frusta.nf);
 
-        // ==================
-
-        /* this causes a traversal order dependence with respect to the order of rays within the stream */
-        //dist = select(vmask_first_hit, rmin, fmin);
-        /* this is independent of the ordering of rays */
-        //dist = fmin;            
-            
+        /* this make traversal independent of the ordering of rays */
         size_t m_node = m_node_hit ^ m_first_hit;
         while(unlikely(m_node)) 
         {
