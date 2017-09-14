@@ -61,11 +61,22 @@ namespace embree
     template<int N, int Nx, int K, bool robust>
       struct Frustum
       {
-        __forceinline Frustum(const vbool<K>  &valid,
-                              const Vec3vf<K> &org,
-                              const Vec3vf<K> &rdir,
-                              const vfloat<K> &ray_tnear,
-                              const vfloat<K> &ray_tfar)
+        __forceinline Frustum() {}
+
+        __forceinline Frustum(const vbool<K>& valid,
+                              const Vec3vf<K>& org,
+                              const Vec3vf<K>& rdir,
+                              const vfloat<K>& ray_tnear,
+                              const vfloat<K>& ray_tfar)
+        {
+          init(valid,org,rdir,ray_tnear,ray_tfar);
+        }
+
+        __forceinline void init(const vbool<K>& valid,
+                                const Vec3vf<K>& org,
+                                const Vec3vf<K>& rdir,
+                                const vfloat<K>& ray_tnear,
+                                const vfloat<K>& ray_tfar)
         {
           const Vec3fa reduced_min_org( reduce_min(select(valid,org.x,pos_inf)),
                                         reduce_min(select(valid,org.y,pos_inf)),
@@ -81,6 +92,19 @@ namespace embree
                                          reduce_max(select(valid,rdir.y,neg_inf)),
                                          reduce_max(select(valid,rdir.z,neg_inf)) );
 
+          const float reduced_min_dist = reduce_min(select(valid,ray_tnear,vfloat<K>(pos_inf)));
+          const float reduced_max_dist = reduce_max(select(valid,ray_tfar ,vfloat<K>(neg_inf)));
+
+          init(reduced_min_org, reduced_max_org, reduced_min_rdir, reduced_max_rdir, reduced_min_dist, reduced_max_dist);
+        }
+
+        __forceinline void init(const Vec3fa& reduced_min_org,
+                                const Vec3fa& reduced_max_org,
+                                const Vec3fa& reduced_min_rdir,
+                                const Vec3fa& reduced_max_rdir,
+                                const float reduced_min_dist,
+                                const float reduced_max_dist)
+        {
           min_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_rdir, reduced_max_rdir);
           max_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_rdir, reduced_min_rdir);
 
@@ -95,8 +119,9 @@ namespace embree
             max_org_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_org, reduced_max_org);
           }
 
-          min_dist = reduce_min(select(valid,ray_tnear,vfloat<K>(pos_inf)));
-          max_dist = reduce_max(select(valid,ray_tfar ,vfloat<K>(neg_inf)));
+          min_dist = reduced_min_dist;
+          max_dist = reduced_max_dist;
+          
           nf = NearFarPreCompute<N>(min_rdir);
         }
 
