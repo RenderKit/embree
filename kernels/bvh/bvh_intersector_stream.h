@@ -203,16 +203,8 @@ namespace embree
       // =============================================================================================
       // =============================================================================================
 
-      struct Packet
-      {
-        Vec3vf<K> rdir;
-        Vec3vf<K> org_rdir;
-        vfloat<K> min_dist;
-        vfloat<K> max_dist;
-      };
-
       template<bool occluded>
-        __forceinline static size_t initPacketsAndFrusta(RayK<K>** inputPackets, const size_t numOctantRays, Packet* const packet, Frustum<N,Nx,K,robust>& frusta, bool &commonOctant)
+        __forceinline static size_t initPacketsAndFrusta(RayK<K>** inputPackets, const size_t numOctantRays, Packet<K>* const packet, Frustum<N,Nx,K,robust>& frusta, bool &commonOctant)
       {
         const size_t numPackets = (numOctantRays+K-1)/K;
 
@@ -294,7 +286,7 @@ namespace embree
       }
 
       
-      __forceinline static size_t intersectAlignedNodePacketFast(const Packet* const packet,
+      __forceinline static size_t intersectAlignedNodePacketFast(const Packet<K>* const packet,
                                                                  const vfloat<K>& minX,
                                                                  const vfloat<K>& minY,
                                                                  const vfloat<K>& minZ,
@@ -310,7 +302,7 @@ namespace embree
         for (size_t i = startPacketID; i <= endPacketID; i++)
         {
           //STAT3(normal.trav_nodes,1,1,1);                          
-          const Packet& p = packet[i];
+          const Packet<K>& p = packet[i];
           const vfloat<K> tminX = msub(minX, p.rdir.x, p.org_rdir.x);
           const vfloat<K> tminY = msub(minY, p.rdir.y, p.org_rdir.y);
           const vfloat<K> tminZ = msub(minZ, p.rdir.z, p.org_rdir.z);
@@ -326,7 +318,7 @@ namespace embree
         return m_trav_active;
       }
 
-      __forceinline static size_t intersectAlignedNodePacketRobust(const Packet* const packet,
+      __forceinline static size_t intersectAlignedNodePacketRobust(const Packet<K>* const packet,
                                                                    const vfloat<K>& minX,
                                                                    const vfloat<K>& minY,
                                                                    const vfloat<K>& minZ,
@@ -342,7 +334,7 @@ namespace embree
         for (size_t i = startPacketID; i <= endPacketID; i++)
         {
           //STAT3(normal.trav_nodes,1,1,1);                          
-          const Packet& p = packet[i];
+          const Packet<K>& p = packet[i];
           const vfloat<K> tminX = (minX - p.org_rdir.x) * p.rdir.x;
           const vfloat<K> tminY = (minY - p.org_rdir.y) * p.rdir.y;
           const vfloat<K> tminZ = (minZ - p.org_rdir.z) * p.rdir.z;
@@ -360,7 +352,7 @@ namespace embree
         return m_trav_active;
       }
 
-      __forceinline static size_t intersectAlignedNodePacket(const Packet* const packet,
+      __forceinline static size_t intersectAlignedNodePacket(const Packet<K>* const packet,
                                                             const vfloat<K>& minX,
                                                             const vfloat<K>& minY,
                                                             const vfloat<K>& minZ,
@@ -374,7 +366,7 @@ namespace embree
       }
       
       __forceinline static size_t traverseCoherentStreamFast(const size_t m_trav_active,
-                                                             Packet* const packet,
+                                                             Packet<K>* const packet,
                                                              const AlignedNode* __restrict__ const node,
                                                              const Frustum<N,Nx,K,robust>& frusta,
                                                              size_t* const maskK,
@@ -386,7 +378,7 @@ namespace embree
         const size_t first_packetID = first_index / K;
         const size_t first_rayID    = first_index % K;
 
-        Packet &p = packet[first_packetID]; 
+        Packet<K> &p = packet[first_packetID]; 
         //STAT3(normal.trav_nodes,1,1,1);                          
         const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.nearX));
         const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.nearY));
@@ -434,7 +426,7 @@ namespace embree
       }
 
       __forceinline static size_t traverseCoherentStreamRobust(const size_t m_trav_active,
-                                                               Packet* const packet,
+                                                               Packet<K>* const packet,
                                                                const AlignedNode* __restrict__ const node,
                                                                const Frustum<N,Nx,K,robust>& frusta,
                                                                size_t* const maskK,
@@ -447,7 +439,7 @@ namespace embree
         const size_t first_packetID = first_index / K;
         const size_t first_rayID    = first_index % K;
 
-        Packet &p = packet[first_packetID]; 
+        Packet<K> &p = packet[first_packetID]; 
         //STAT3(normal.trav_nodes,1,1,1);                          
 
         const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.nearX));
@@ -498,7 +490,7 @@ namespace embree
       }
 
       __forceinline static size_t traverseCoherentStream(const size_t m_trav_active,
-                                                         Packet* const packet,
+                                                         Packet<K>* const packet,
                                                          const AlignedNode* __restrict__ const node,
                                                          const Frustum<N,Nx,K,robust>& frusta,
                                                          size_t* const maskK,

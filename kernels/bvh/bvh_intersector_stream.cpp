@@ -50,7 +50,7 @@ namespace embree
       __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  //!< stack of nodes
       assert(numOctantRays <= MAX_INTERNAL_STREAM_SIZE);
 
-      __aligned(64) Packet packet[MAX_INTERNAL_STREAM_SIZE/K];
+      __aligned(64) Packet<K> packet[MAX_INTERNAL_STREAM_SIZE/K];
       __aligned(64) Frustum<N,Nx,K,robust> frusta;
 
       bool commonOctant = true;
@@ -150,7 +150,7 @@ namespace embree
           assert(m_isec & bits);
           bits &= ~m_isec;
 
-          Packet &p = packet[i];
+          Packet<K> &p = packet[i];
           vbool<K> m_valid = p.min_dist <= p.max_dist;
           PrimitiveIntersector::intersectK(m_valid, *inputPackets[i], context, prim, num, lazy_node);
           p.max_dist = min(p.max_dist, inputPackets[i]->tfar);
@@ -168,7 +168,7 @@ namespace embree
       assert(numOctantRays <= MAX_INTERNAL_STREAM_SIZE);
 
       /* inactive rays should have been filtered out before */
-      __aligned(64) Packet packet[MAX_INTERNAL_STREAM_SIZE/K];
+      __aligned(64) Packet<K> packet[MAX_INTERNAL_STREAM_SIZE/K];
       __aligned(64) Frustum<N,Nx,K,robust> frusta;
 
       bool commonOctant = true;
@@ -266,7 +266,7 @@ namespace embree
           const size_t m_isec = ((((size_t)1 << K)-1) << (i*K));
           assert(m_isec & bits);
           bits &= ~m_isec;
-          Packet &p = packet[i];
+          Packet<K> &p = packet[i];
           vbool<K> m_valid = p.min_dist <= p.max_dist;
           vbool<K> m_hit = PrimitiveIntersector::occludedK(m_valid, *inputPackets[i], context, prim, num, lazy_node);
           inputPackets[i]->geomID = select(m_hit & m_valid, vint<K>(zero), inputPackets[i]->geomID);

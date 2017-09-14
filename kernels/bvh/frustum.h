@@ -42,7 +42,16 @@ namespace embree
         farZ  = nearZ ^ sizeof(vfloat<N>);
       }
     };
-    
+
+
+    template<int K>
+    struct Packet
+    {
+      Vec3vf<K> rdir;
+      Vec3vf<K> org_rdir;
+      vfloat<K> min_dist;
+      vfloat<K> max_dist;
+    };
     
     /* Optimized frustum test. We calculate t=(p-org)/dir in ray/box
        * intersection. We assume the rays are split by octant, thus
