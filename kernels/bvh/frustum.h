@@ -125,7 +125,7 @@ namespace embree
           nf = NearFarPreCompute<N>(min_rdir);
         }
 
-        __forceinline unsigned int intersectFast(const typename BVHN<N>::AlignedNode* __restrict__ node, float* const __restrict__ dist) const
+        __forceinline unsigned int intersectFast(const typename BVHN<N>::AlignedNode* __restrict__ node, vfloat<Nx>& dist) const
         {
           const vfloat<Nx> bminX = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearX);
           const vfloat<Nx> bminY = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearY);
@@ -142,14 +142,14 @@ namespace embree
           const vfloat<Nx> fmaxZ = msub(bmaxZ, vfloat<Nx>(max_rdir.z), vfloat<Nx>(max_org_rdir.z));
           
           const vfloat<Nx> fmin  = maxi(fminX, fminY, fminZ, vfloat<Nx>(min_dist)); 
-          vfloat<Nx>::store(dist,fmin);
+          dist = fmin;
           const vfloat<Nx> fmax  = mini(fmaxX, fmaxY, fmaxZ, vfloat<Nx>(max_dist));
           const vbool<Nx> vmask_node_hit = fmin <= fmax;
           size_t m_node = movemask(vmask_node_hit) & (((size_t)1 << N)-1);
           return m_node;          
         }
 
-        __forceinline unsigned int intersectRobust(const typename BVHN<N>::AlignedNode* __restrict__ node, float* const __restrict__ dist) const
+        __forceinline unsigned int intersectRobust(const typename BVHN<N>::AlignedNode* __restrict__ node, vfloat<Nx>& dist) const
         {
           const vfloat<Nx> bminX = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearX);
           const vfloat<Nx> bminY = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearY);
@@ -168,14 +168,14 @@ namespace embree
           const float round_down = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512
           const float round_up   = 1.0f+2.0f*float(ulp);
           const vfloat<Nx> fmin  = max(fminX, fminY, fminZ, vfloat<Nx>(min_dist)); 
-          vfloat<Nx>::store(dist,fmin);
+          dist = fmin;
           const vfloat<Nx> fmax  = min(fmaxX, fmaxY, fmaxZ, vfloat<Nx>(max_dist));
           const vbool<Nx> vmask_node_hit = (round_down*fmin <= round_up*fmax);
           size_t m_node = movemask(vmask_node_hit) & (((size_t)1 << N)-1);
           return m_node;          
         }
 
-        __forceinline unsigned int intersect(const typename BVHN<N>::AlignedNode* __restrict__ node, float* const __restrict__ dist) const
+        __forceinline unsigned int intersect(const typename BVHN<N>::AlignedNode* __restrict__ node, vfloat<Nx>& dist) const
         {
           if (robust) return intersectRobust(node,dist);
           else        return intersectFast(node,dist);
