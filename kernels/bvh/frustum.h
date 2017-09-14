@@ -43,8 +43,11 @@ namespace embree
       }
     };
 
+    template<int K, bool robust>
+      struct Packet;
+      
     template<int K>
-    struct Packet
+      struct Packet<K,false>
     {
       Vec3vf<K> rdir;
       Vec3vf<K> org_rdir;
@@ -60,14 +63,13 @@ namespace embree
                             bool robust)
       {
         rdir = rcp_safe(dir);
-        if (robust) org_rdir = org;
-        else        org_rdir = org * rdir;
+        org_rdir = org * rdir;
         min_dist = tnear;
         max_dist = tfar;
       }
 
       template<int N, int Nx>
-        __forceinline size_t intersectRayFast(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t rid, const NearFarPreCompute& nf) const
+        __forceinline size_t intersectRay(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t rid, const NearFarPreCompute& nf) const
       {
         const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearX));
         const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearY));
@@ -90,8 +92,57 @@ namespace embree
         return movemask(vmask_first_hit) & (((size_t)1 << N)-1);
       }
 
+      template<int N>
+        __forceinline size_t intersect(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t bid, const NearFarPreCompute& nf) const
+      {
+        char *ptr = (char*)&node->lower_x + bid*sizeof(float);
+        const vfloat<K> bminX = *(const float*)(ptr + nf.nearX);
+        const vfloat<K> bminY = *(const float*)(ptr + nf.nearY);
+        const vfloat<K> bminZ = *(const float*)(ptr + nf.nearZ);
+        const vfloat<K> bmaxX = *(const float*)(ptr + nf.farX);
+        const vfloat<K> bmaxY = *(const float*)(ptr + nf.farY);
+        const vfloat<K> bmaxZ = *(const float*)(ptr + nf.farZ);
+
+        const vfloat<K> rminX = msub(bminX, rdir.x, org_rdir.x);
+        const vfloat<K> rminY = msub(bminY, rdir.y, org_rdir.y);
+        const vfloat<K> rminZ = msub(bminZ, rdir.z, org_rdir.z);
+        const vfloat<K> rmaxX = msub(bmaxX, rdir.x, org_rdir.x);
+        const vfloat<K> rmaxY = msub(bmaxY, rdir.y, org_rdir.y);
+        const vfloat<K> rmaxZ = msub(bmaxZ, rdir.z, org_rdir.z);
+        
+        const vfloat<K> rmin  = maxi(rminX, rminY, rminZ, min_dist);
+        const vfloat<K> rmax  = mini(rmaxX, rmaxY, rmaxZ, max_dist);
+
+        const vbool<K> vmask_first_hit = rmin <= rmax;
+
+        return movemask(vmask_first_hit);
+      }
+    };
+
+    template<int K>
+      struct Packet<K,true>
+    {
+      Vec3vf<K> rdir;
+      Vec3vf<K> org_rdir;
+      vfloat<K> min_dist;
+      vfloat<K> max_dist;
+
+      __forceinline Packet () {}
+      
+      __forceinline Packet (const Vec3vf<K>& org,
+                            const Vec3vf<K>& dir,
+                            const vfloat<K>& tnear,
+                            const vfloat<K>& tfar,
+                            bool robust)
+      {
+        rdir = rcp_safe(dir);
+        org_rdir = org;
+        min_dist = tnear;
+        max_dist = tfar;
+      }
+
       template<int N, int Nx>
-      __forceinline size_t intersectRayRobust(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t rid, const NearFarPreCompute& nf) const
+      __forceinline size_t intersectRay(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t rid, const NearFarPreCompute& nf) const
       {
         const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearX));
         const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearY));
@@ -117,33 +168,7 @@ namespace embree
       }
 
       template<int N>
-        __forceinline size_t intersectFast(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t bid, const NearFarPreCompute& nf) const
-      {
-        char *ptr = (char*)&node->lower_x + bid*sizeof(float);
-        const vfloat<K> bminX = *(const float*)(ptr + nf.nearX);
-        const vfloat<K> bminY = *(const float*)(ptr + nf.nearY);
-        const vfloat<K> bminZ = *(const float*)(ptr + nf.nearZ);
-        const vfloat<K> bmaxX = *(const float*)(ptr + nf.farX);
-        const vfloat<K> bmaxY = *(const float*)(ptr + nf.farY);
-        const vfloat<K> bmaxZ = *(const float*)(ptr + nf.farZ);
-
-        const vfloat<K> rminX = msub(bminX, rdir.x, org_rdir.x);
-        const vfloat<K> rminY = msub(bminY, rdir.y, org_rdir.y);
-        const vfloat<K> rminZ = msub(bminZ, rdir.z, org_rdir.z);
-        const vfloat<K> rmaxX = msub(bmaxX, rdir.x, org_rdir.x);
-        const vfloat<K> rmaxY = msub(bmaxY, rdir.y, org_rdir.y);
-        const vfloat<K> rmaxZ = msub(bmaxZ, rdir.z, org_rdir.z);
-        
-        const vfloat<K> rmin  = maxi(rminX, rminY, rminZ, min_dist);
-        const vfloat<K> rmax  = mini(rmaxX, rmaxY, rmaxZ, max_dist);
-
-        const vbool<K> vmask_first_hit = rmin <= rmax;
-
-        return movemask(vmask_first_hit);
-      }
-
-      template<int N>
-      __forceinline size_t intersectRobust(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t bid, const NearFarPreCompute& nf) const
+      __forceinline size_t intersect(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t bid, const NearFarPreCompute& nf) const
       {
         char *ptr = (char*)&node->lower_x + bid*sizeof(float);
         const vfloat<K> bminX = *(const float*)(ptr + nf.nearX);
@@ -169,7 +194,6 @@ namespace embree
 
         return movemask(vmask_first_hit);
       }
-
     };
     
     /* Optimized frustum test. We calculate t=(p-org)/dir in ray/box

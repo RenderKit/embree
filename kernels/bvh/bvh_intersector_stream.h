@@ -204,7 +204,7 @@ namespace embree
       // =============================================================================================
 
       template<bool occluded>
-        __forceinline static size_t initPacketsAndFrusta(RayK<K>** inputPackets, const size_t numOctantRays, Packet<K>* const packet, Frustum<N,Nx,K,robust>& frusta, bool &commonOctant)
+        __forceinline static size_t initPacketsAndFrusta(RayK<K>** inputPackets, const size_t numOctantRays, Packet<K,robust>* const packet, Frustum<N,Nx,K,robust>& frusta, bool &commonOctant)
       {
         const size_t numPackets = (numOctantRays+K-1)/K;
 
@@ -237,7 +237,7 @@ namespace embree
           const Vec3vf<K>& org     = inputPackets[i]->org;
           const Vec3vf<K>& dir     = inputPackets[i]->dir;
 
-          new (&packet[i]) Packet<K>(org,dir,packet_min_dist,packet_max_dist,robust);
+          new (&packet[i]) Packet<K,robust>(org,dir,packet_min_dist,packet_max_dist,robust);
 
           tmp_min_rdir = min(tmp_min_rdir, select(m_valid,packet[i].rdir, Vec3vf<K>(pos_inf)));
           tmp_max_rdir = max(tmp_max_rdir, select(m_valid,packet[i].rdir, Vec3vf<K>(neg_inf)));
@@ -280,7 +280,7 @@ namespace embree
       }
 
       
-      __forceinline static size_t intersectAlignedNodePacketFast(const Packet<K>* const packet,
+      __forceinline static size_t intersectAlignedNodePacketFast(const Packet<K,robust>* const packet,
                                                                  const AlignedNode* __restrict__ const node,
                                                                  const size_t bid,
                                                                  const NearFarPreCompute& nf,
@@ -292,13 +292,13 @@ namespace embree
         size_t m_trav_active = 0;
         for (size_t i = startPacketID; i <= endPacketID; i++)
         {
-          const size_t m_hit = packet[i].template intersectFast<N>(node,bid,nf);
+          const size_t m_hit = packet[i].template intersect<N>(node,bid,nf);
           m_trav_active |= m_hit << (i*K);
         } 
         return m_trav_active;
       }
 
-      __forceinline static size_t intersectAlignedNodePacketRobust(const Packet<K>* const packet,
+      __forceinline static size_t intersectAlignedNodePacketRobust(const Packet<K,robust>* const packet,
                                                                    const AlignedNode* __restrict__ const node,
                                                                    const size_t bid,
                                                                    const NearFarPreCompute& nf,
@@ -310,13 +310,13 @@ namespace embree
         size_t m_trav_active = 0;
         for (size_t i = startPacketID; i <= endPacketID; i++)
         {
-          const size_t m_hit = packet[i].template intersectRobust<N>(node,bid,nf);
+          const size_t m_hit = packet[i].template intersect<N>(node,bid,nf);
           m_trav_active |= m_hit << (i*K);
         } 
         return m_trav_active;
       }
 
-      __forceinline static size_t intersectAlignedNodePacket(const Packet<K>* const packet,
+      __forceinline static size_t intersectAlignedNodePacket(const Packet<K,robust>* const packet,
                                                              const AlignedNode* __restrict__ const node,
                                                              const size_t bid,
                                                              const NearFarPreCompute& nf,
@@ -327,7 +327,7 @@ namespace embree
       }
       
       __forceinline static size_t traverseCoherentStreamFast(const size_t m_trav_active,
-                                                             Packet<K>* const packet,
+                                                             Packet<K,robust>* const packet,
                                                              const AlignedNode* __restrict__ const node,
                                                              const Frustum<N,Nx,K,robust>& frusta,
                                                              size_t* const maskK,
@@ -337,7 +337,7 @@ namespace embree
         const size_t first_index    = __bsf(m_trav_active);
         const size_t first_packetID = first_index / K;
         const size_t first_rayID    = first_index % K;
-        size_t m_first_hit = packet[first_packetID].template intersectRayFast<N,Nx>(node,first_rayID,frusta.nf);
+        size_t m_first_hit = packet[first_packetID].template intersectRay<N,Nx>(node,first_rayID,frusta.nf);
 
         // ==================
 
@@ -358,7 +358,7 @@ namespace embree
       }
 
       __forceinline static size_t traverseCoherentStreamRobust(const size_t m_trav_active,
-                                                               Packet<K>* const packet,
+                                                               Packet<K,robust>* const packet,
                                                                const AlignedNode* __restrict__ const node,
                                                                const Frustum<N,Nx,K,robust>& frusta,
                                                                size_t* const maskK,
@@ -368,7 +368,7 @@ namespace embree
         const size_t first_index    = __bsf(m_trav_active);
         const size_t first_packetID = first_index / K;
         const size_t first_rayID    = first_index % K;
-        size_t m_first_hit = packet[first_packetID].template intersectRayRobust<N,Nx>(node,first_rayID,frusta.nf);
+        size_t m_first_hit = packet[first_packetID].template intersectRay<N,Nx>(node,first_rayID,frusta.nf);
 
         // ==================
 
@@ -389,7 +389,7 @@ namespace embree
       }
 
       __forceinline static size_t traverseCoherentStream(const size_t m_trav_active,
-                                                         Packet<K>* const packet,
+                                                         Packet<K,robust>* const packet,
                                                          const AlignedNode* __restrict__ const node,
                                                          const Frustum<N,Nx,K,robust>& frusta,
                                                          size_t* const maskK,
