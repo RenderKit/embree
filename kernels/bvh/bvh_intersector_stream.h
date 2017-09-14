@@ -322,7 +322,7 @@ namespace embree
         size_t m_trav_active = 0;
         for (size_t i = startPacketID; i <= endPacketID; i++)
         {
-          const size_t m_hit = packet[i].intersectRobust(minX,minY,minZ,maxX,maxY,maxZ);
+          const size_t m_hit = packet[i].template intersectRobust(minX,minY,minZ,maxX,maxY,maxZ);
           m_trav_active |= m_hit << (i*K);
         } 
         return m_trav_active;
@@ -354,27 +354,7 @@ namespace embree
         const size_t first_packetID = first_index / K;
         const size_t first_rayID    = first_index % K;
 
-        Packet<K> &p = packet[first_packetID]; 
-        //STAT3(normal.trav_nodes,1,1,1);                          
-        const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.nearX));
-        const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.nearY));
-        const vfloat<Nx> bminZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.nearZ));
-        const vfloat<Nx> bmaxX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.farX));
-        const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.farY));
-        const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.farZ));
-        
-        const vfloat<Nx> rminX = msub(bminX, vfloat<Nx>(p.rdir.x[first_rayID]), vfloat<Nx>(p.org_rdir.x[first_rayID]));
-        const vfloat<Nx> rminY = msub(bminY, vfloat<Nx>(p.rdir.y[first_rayID]), vfloat<Nx>(p.org_rdir.y[first_rayID]));
-        const vfloat<Nx> rminZ = msub(bminZ, vfloat<Nx>(p.rdir.z[first_rayID]), vfloat<Nx>(p.org_rdir.z[first_rayID]));
-        const vfloat<Nx> rmaxX = msub(bmaxX, vfloat<Nx>(p.rdir.x[first_rayID]), vfloat<Nx>(p.org_rdir.x[first_rayID]));
-        const vfloat<Nx> rmaxY = msub(bmaxY, vfloat<Nx>(p.rdir.y[first_rayID]), vfloat<Nx>(p.org_rdir.y[first_rayID]));
-        const vfloat<Nx> rmaxZ = msub(bmaxZ, vfloat<Nx>(p.rdir.z[first_rayID]), vfloat<Nx>(p.org_rdir.z[first_rayID]));
-        const vfloat<Nx> rmin  = maxi(rminX, rminY, rminZ, vfloat<Nx>(p.min_dist[first_rayID]));
-        const vfloat<Nx> rmax  = mini(rmaxX, rmaxY, rmaxZ, vfloat<Nx>(p.max_dist[first_rayID]));
-
-        const vbool<Nx> vmask_first_hit = rmin <= rmax;
-
-        size_t m_first_hit = movemask(vmask_first_hit) & (((size_t)1 << N)-1);
+        size_t m_first_hit = packet[first_packetID].template intersectFast<N,Nx>(node,first_rayID,frusta.nf);
 
         // ==================
 
@@ -384,6 +364,13 @@ namespace embree
         //dist = fmin;            
             
 
+        const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.nearX));
+        const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.nearY));
+        const vfloat<Nx> bminZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.nearZ));
+        const vfloat<Nx> bmaxX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.farX));
+        const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.farY));
+        const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.farZ));
+        
         size_t m_node = m_node_hit ^ m_first_hit;
         while(unlikely(m_node)) 
         {
@@ -409,14 +396,17 @@ namespace embree
                                                                vfloat<Nx>& dist)
       {
         size_t m_node_hit = frusta.intersectRobust(node,dist);
-
-        // ==================
         const size_t first_index    = __bsf(m_trav_active);
         const size_t first_packetID = first_index / K;
         const size_t first_rayID    = first_index % K;
+        size_t m_first_hit = packet[first_packetID].template intersectRobust<N,Nx>(node,first_rayID,frusta.nf);
 
-        Packet<K> &p = packet[first_packetID]; 
-        //STAT3(normal.trav_nodes,1,1,1);                          
+        // ==================
+
+        /* this causes a traversal order dependence with respect to the order of rays within the stream */
+        //dist = select(vmask_first_hit, rmin, fmin);
+        /* this is independent of the ordering of rays */
+        //dist = fmin;            
 
         const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.nearX));
         const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.nearY));
@@ -425,29 +415,6 @@ namespace embree
         const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.farY));
         const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + frusta.nf.farZ));
         
-        const vfloat<Nx> rminX = (bminX - vfloat<Nx>(p.org_rdir.x[first_rayID])) * vfloat<Nx>(p.rdir.x[first_rayID]);
-        const vfloat<Nx> rminY = (bminY - vfloat<Nx>(p.org_rdir.y[first_rayID])) * vfloat<Nx>(p.rdir.y[first_rayID]);
-        const vfloat<Nx> rminZ = (bminZ - vfloat<Nx>(p.org_rdir.z[first_rayID])) * vfloat<Nx>(p.rdir.z[first_rayID]);
-        const vfloat<Nx> rmaxX = (bmaxX - vfloat<Nx>(p.org_rdir.x[first_rayID])) * vfloat<Nx>(p.rdir.x[first_rayID]);
-        const vfloat<Nx> rmaxY = (bmaxY - vfloat<Nx>(p.org_rdir.y[first_rayID])) * vfloat<Nx>(p.rdir.y[first_rayID]);
-        const vfloat<Nx> rmaxZ = (bmaxZ - vfloat<Nx>(p.org_rdir.z[first_rayID])) * vfloat<Nx>(p.rdir.z[first_rayID]);
-        const float round_down = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512
-        const float round_up   = 1.0f+2.0f*float(ulp);
-        const vfloat<Nx> rmin  = round_down*max(rminX, rminY, rminZ, vfloat<Nx>(p.min_dist[first_rayID]));
-        const vfloat<Nx> rmax  = round_up  *min(rmaxX, rmaxY, rmaxZ, vfloat<Nx>(p.max_dist[first_rayID]));
-
-        const vbool<Nx> vmask_first_hit = rmin <= rmax;
-
-        size_t m_first_hit = movemask(vmask_first_hit) & (((size_t)1 << N)-1);
-
-        // ==================
-
-        /* this causes a traversal order dependence with respect to the order of rays within the stream */
-        //dist = select(vmask_first_hit, rmin, fmin);
-        /* this is independent of the ordering of rays */
-        //dist = fmin;            
-            
-
         size_t m_node = m_node_hit ^ m_first_hit;
         while(unlikely(m_node)) 
         {

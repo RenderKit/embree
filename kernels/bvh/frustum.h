@@ -92,6 +92,56 @@ namespace embree
         return movemask(vmask);
       }
 
+      template<int N, int Nx>
+        __forceinline size_t intersectFast(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t rid, const NearFarPreCompute<N>& nf)
+      {
+        const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearX));
+        const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearY));
+        const vfloat<Nx> bminZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearZ));
+        const vfloat<Nx> bmaxX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.farX));
+        const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.farY));
+        const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.farZ));
+        
+        const vfloat<Nx> rminX = msub(bminX, vfloat<Nx>(rdir.x[rid]), vfloat<Nx>(org_rdir.x[rid]));
+        const vfloat<Nx> rminY = msub(bminY, vfloat<Nx>(rdir.y[rid]), vfloat<Nx>(org_rdir.y[rid]));
+        const vfloat<Nx> rminZ = msub(bminZ, vfloat<Nx>(rdir.z[rid]), vfloat<Nx>(org_rdir.z[rid]));
+        const vfloat<Nx> rmaxX = msub(bmaxX, vfloat<Nx>(rdir.x[rid]), vfloat<Nx>(org_rdir.x[rid]));
+        const vfloat<Nx> rmaxY = msub(bmaxY, vfloat<Nx>(rdir.y[rid]), vfloat<Nx>(org_rdir.y[rid]));
+        const vfloat<Nx> rmaxZ = msub(bmaxZ, vfloat<Nx>(rdir.z[rid]), vfloat<Nx>(org_rdir.z[rid]));
+        const vfloat<Nx> rmin  = maxi(rminX, rminY, rminZ, vfloat<Nx>(min_dist[rid]));
+        const vfloat<Nx> rmax  = mini(rmaxX, rmaxY, rmaxZ, vfloat<Nx>(max_dist[rid]));
+
+        const vbool<Nx> vmask_first_hit = rmin <= rmax;
+
+        return movemask(vmask_first_hit) & (((size_t)1 << N)-1);
+      }
+
+      template<int N, int Nx>
+      __forceinline size_t intersectRobust(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t rid, const NearFarPreCompute<N>& nf)
+      {
+        const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearX));
+        const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearY));
+        const vfloat<Nx> bminZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearZ));
+        const vfloat<Nx> bmaxX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.farX));
+        const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.farY));
+        const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.farZ));
+        
+        const vfloat<Nx> rminX = (bminX - vfloat<Nx>(org_rdir.x[rid])) * vfloat<Nx>(rdir.x[rid]);
+        const vfloat<Nx> rminY = (bminY - vfloat<Nx>(org_rdir.y[rid])) * vfloat<Nx>(rdir.y[rid]);
+        const vfloat<Nx> rminZ = (bminZ - vfloat<Nx>(org_rdir.z[rid])) * vfloat<Nx>(rdir.z[rid]);
+        const vfloat<Nx> rmaxX = (bmaxX - vfloat<Nx>(org_rdir.x[rid])) * vfloat<Nx>(rdir.x[rid]);
+        const vfloat<Nx> rmaxY = (bmaxY - vfloat<Nx>(org_rdir.y[rid])) * vfloat<Nx>(rdir.y[rid]);
+        const vfloat<Nx> rmaxZ = (bmaxZ - vfloat<Nx>(org_rdir.z[rid])) * vfloat<Nx>(rdir.z[rid]);
+        const float round_down = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512
+        const float round_up   = 1.0f+2.0f*float(ulp);
+        const vfloat<Nx> rmin  = round_down*max(rminX, rminY, rminZ, vfloat<Nx>(min_dist[rid]));
+        const vfloat<Nx> rmax  = round_up  *min(rmaxX, rmaxY, rmaxZ, vfloat<Nx>(max_dist[rid]));
+
+        const vbool<Nx> vmask_first_hit = rmin <= rmax;
+
+        return movemask(vmask_first_hit) & (((size_t)1 << N)-1);
+      }
+
     };
     
     /* Optimized frustum test. We calculate t=(p-org)/dir in ray/box
