@@ -237,7 +237,7 @@ namespace embree
           const Vec3vf<K>& org     = inputPackets[i]->org;
           const Vec3vf<K>& dir     = inputPackets[i]->dir;
 
-          new (&packet[i]) Packet<K,robust>(org,dir,packet_min_dist,packet_max_dist,robust);
+          new (&packet[i]) Packet<K,robust>(org,dir,packet_min_dist,packet_max_dist);
 
           tmp_min_rdir = min(tmp_min_rdir, select(m_valid,packet[i].rdir, Vec3vf<K>(pos_inf)));
           tmp_max_rdir = max(tmp_max_rdir, select(m_valid,packet[i].rdir, Vec3vf<K>(neg_inf)));

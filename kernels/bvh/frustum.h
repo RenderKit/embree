@@ -56,17 +56,8 @@ namespace embree
 
       __forceinline Packet () {}
       
-      __forceinline Packet (const Vec3vf<K>& org,
-                            const Vec3vf<K>& dir,
-                            const vfloat<K>& tnear,
-                            const vfloat<K>& tfar,
-                            bool robust)
-      {
-        rdir = rcp_safe(dir);
-        org_rdir = org * rdir;
-        min_dist = tnear;
-        max_dist = tfar;
-      }
+      __forceinline Packet (const Vec3vf<K>& org, const Vec3vf<K>& dir, const vfloat<K>& tnear, const vfloat<K>& tfar)
+        : rdir(rcp_safe(dir)), org_rdir(org*rdir), min_dist(tnear), max_dist(tfar) {}
 
       template<int N, int Nx>
         __forceinline size_t intersectRay(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t rid, const NearFarPreCompute& nf) const
@@ -123,23 +114,14 @@ namespace embree
       struct Packet<K,true>
     {
       Vec3vf<K> rdir;
-      Vec3vf<K> org_rdir;
+      Vec3vf<K> org;
       vfloat<K> min_dist;
       vfloat<K> max_dist;
 
       __forceinline Packet () {}
       
-      __forceinline Packet (const Vec3vf<K>& org,
-                            const Vec3vf<K>& dir,
-                            const vfloat<K>& tnear,
-                            const vfloat<K>& tfar,
-                            bool robust)
-      {
-        rdir = rcp_safe(dir);
-        org_rdir = org;
-        min_dist = tnear;
-        max_dist = tfar;
-      }
+      __forceinline Packet (const Vec3vf<K>& org, const Vec3vf<K>& dir, const vfloat<K>& tnear, const vfloat<K>& tfar)
+        : rdir(rcp_safe(dir)), org(org), min_dist(tnear), max_dist(tfar) {}
 
       template<int N, int Nx>
       __forceinline size_t intersectRay(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t rid, const NearFarPreCompute& nf) const
@@ -151,12 +133,12 @@ namespace embree
         const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.farY));
         const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.farZ));
         
-        const vfloat<Nx> rminX = (bminX - vfloat<Nx>(org_rdir.x[rid])) * vfloat<Nx>(rdir.x[rid]);
-        const vfloat<Nx> rminY = (bminY - vfloat<Nx>(org_rdir.y[rid])) * vfloat<Nx>(rdir.y[rid]);
-        const vfloat<Nx> rminZ = (bminZ - vfloat<Nx>(org_rdir.z[rid])) * vfloat<Nx>(rdir.z[rid]);
-        const vfloat<Nx> rmaxX = (bmaxX - vfloat<Nx>(org_rdir.x[rid])) * vfloat<Nx>(rdir.x[rid]);
-        const vfloat<Nx> rmaxY = (bmaxY - vfloat<Nx>(org_rdir.y[rid])) * vfloat<Nx>(rdir.y[rid]);
-        const vfloat<Nx> rmaxZ = (bmaxZ - vfloat<Nx>(org_rdir.z[rid])) * vfloat<Nx>(rdir.z[rid]);
+        const vfloat<Nx> rminX = (bminX - vfloat<Nx>(org.x[rid])) * vfloat<Nx>(rdir.x[rid]);
+        const vfloat<Nx> rminY = (bminY - vfloat<Nx>(org.y[rid])) * vfloat<Nx>(rdir.y[rid]);
+        const vfloat<Nx> rminZ = (bminZ - vfloat<Nx>(org.z[rid])) * vfloat<Nx>(rdir.z[rid]);
+        const vfloat<Nx> rmaxX = (bmaxX - vfloat<Nx>(org.x[rid])) * vfloat<Nx>(rdir.x[rid]);
+        const vfloat<Nx> rmaxY = (bmaxY - vfloat<Nx>(org.y[rid])) * vfloat<Nx>(rdir.y[rid]);
+        const vfloat<Nx> rmaxZ = (bmaxZ - vfloat<Nx>(org.z[rid])) * vfloat<Nx>(rdir.z[rid]);
         const float round_down = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512
         const float round_up   = 1.0f+2.0f*float(ulp);
         const vfloat<Nx> rmin  = round_down*max(rminX, rminY, rminZ, vfloat<Nx>(min_dist[rid]));
@@ -178,12 +160,12 @@ namespace embree
         const vfloat<K> bmaxY = *(const float*)(ptr + nf.farY);
         const vfloat<K> bmaxZ = *(const float*)(ptr + nf.farZ);
         
-        const vfloat<K> rminX = (bminX - org_rdir.x) * rdir.x;
-        const vfloat<K> rminY = (bminY - org_rdir.y) * rdir.y;
-        const vfloat<K> rminZ = (bminZ - org_rdir.z) * rdir.z;
-        const vfloat<K> rmaxX = (bmaxX - org_rdir.x) * rdir.x;
-        const vfloat<K> rmaxY = (bmaxY - org_rdir.y) * rdir.y;
-        const vfloat<K> rmaxZ = (bmaxZ - org_rdir.z) * rdir.z;
+        const vfloat<K> rminX = (bminX - org.x) * rdir.x;
+        const vfloat<K> rminY = (bminY - org.y) * rdir.y;
+        const vfloat<K> rminZ = (bminZ - org.z) * rdir.z;
+        const vfloat<K> rmaxX = (bmaxX - org.x) * rdir.x;
+        const vfloat<K> rmaxY = (bmaxY - org.y) * rdir.y;
+        const vfloat<K> rmaxZ = (bmaxZ - org.z) * rdir.z;
         
         const float round_down = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512
         const float round_up   = 1.0f+2.0f*float(ulp);
