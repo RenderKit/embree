@@ -66,46 +66,6 @@ namespace embree
         max_dist = tfar;
       }
 
-      __forceinline size_t intersectFast(const vfloat<K>& minX,
-                                         const vfloat<K>& minY,
-                                         const vfloat<K>& minZ,
-                                         const vfloat<K>& maxX,
-                                         const vfloat<K>& maxY,
-                                         const vfloat<K>& maxZ) const
-      {
-        const vfloat<K> tminX = msub(minX, rdir.x, org_rdir.x);
-        const vfloat<K> tminY = msub(minY, rdir.y, org_rdir.y);
-        const vfloat<K> tminZ = msub(minZ, rdir.z, org_rdir.z);
-        const vfloat<K> tmaxX = msub(maxX, rdir.x, org_rdir.x);
-        const vfloat<K> tmaxY = msub(maxY, rdir.y, org_rdir.y);
-        const vfloat<K> tmaxZ = msub(maxZ, rdir.z, org_rdir.z);
-        const vfloat<K> tmin  = maxi(tminX, tminY, tminZ, min_dist);
-        const vfloat<K> tmax  = mini(tmaxX, tmaxY, tmaxZ, max_dist);
-        const vbool<K> vmask  = tmin <= tmax;
-        return movemask(vmask);
-      }
-
-      __forceinline size_t intersectRobust(const vfloat<K>& minX,
-                                           const vfloat<K>& minY,
-                                           const vfloat<K>& minZ,
-                                           const vfloat<K>& maxX,
-                                           const vfloat<K>& maxY,
-                                           const vfloat<K>& maxZ) const
-      {
-        const vfloat<K> tminX = (minX - org_rdir.x) * rdir.x;
-        const vfloat<K> tminY = (minY - org_rdir.y) * rdir.y;
-        const vfloat<K> tminZ = (minZ - org_rdir.z) * rdir.z;
-        const vfloat<K> tmaxX = (maxX - org_rdir.x) * rdir.x;
-        const vfloat<K> tmaxY = (maxY - org_rdir.y) * rdir.y;
-        const vfloat<K> tmaxZ = (maxZ - org_rdir.z) * rdir.z;
-        const float round_down = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512 
-        const float round_up   = 1.0f+2.0f*float(ulp); 
-        const vfloat<K> tmin  = round_down*max(tminX, tminY, tminZ, min_dist);
-        const vfloat<K> tmax  = round_up  *min(tmaxX, tmaxY, tmaxZ, max_dist);
-        const vbool<K> vmask  = tmin <= tmax;
-        return movemask(vmask);
-      }
-
       template<int N, int Nx>
         __forceinline size_t intersectRayFast(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t rid, const NearFarPreCompute& nf) const
       {
