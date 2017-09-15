@@ -1,4 +1,8 @@
 
+before_script:
+  - export http_proxy=
+  - export https_proxy=
+
 build-centos6-gcc:
   type: build
   script:
