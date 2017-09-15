@@ -44,7 +44,6 @@ MACRO(update_test_models)
   )
 ENDMACRO()
 
-
 # increase default output sizes for test outputs
 IF (NOT DEFINED CTEST_CUSTOM_MAXIMUM_PASSED_TEST_OUTPUT_SIZE)
   SET(CTEST_CUSTOM_MAXIMUM_PASSED_TEST_OUTPUT_SIZE 100000)
