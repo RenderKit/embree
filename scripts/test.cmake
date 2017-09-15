@@ -24,8 +24,8 @@ MACRO(update_test_models)
   IF(NOT EXISTS "${TEST_MODELS_DIRECTORY}")
     MESSAGE("cloning test models ...")
     EXECUTE_PROCESS(
-      COMMAND ${CTEST_GIT_COMMAND} "clone" "git@git.sdvis.org:embree-models.git" dependencies/embree-models
-      WORKING_DIRECTORY ${TEST_ROOT_DIRECTORY}
+      COMMAND ${CTEST_GIT_COMMAND} "clone" "git@git.sdvis.org:embree-models.git" embree-models
+      WORKING_DIRECTORY $ENV{HOME}
     )
   ELSE()
     MESSAGE("updating test models ...")
