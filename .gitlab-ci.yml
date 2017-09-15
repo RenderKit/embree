@@ -6,4 +6,4 @@ before_script:
 build-centos6-gcc:
   type: build
   script:
-    - "./scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:SSE2 tasking:TBB"
+    - "./scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC isa:SSE2 tasking:TBB"

@@ -216,7 +216,7 @@ def createTest(config,OS):
   else               : skip_testing = False
   if tasking == "INT": tasking = "INTERNAL"
   if tasking == "PPL": tasking = "PPL"
-  name = platform+"-"+build+"-"+compiler+"-"+string_of_isa(isa)+"-"+tasking
+  name = "gitlab-"+platform+"-"+build+"-"+compiler+"-"+string_of_isa(isa)+"-"+tasking
   if "package" in config: 
     if config["package"] == "ZIP": name = name + "-package-zip"
     else                         : name = name + "-package-installer"
