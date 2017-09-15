@@ -367,11 +367,10 @@ def createTest(config,OS):
   if "USERGEOM" in config:
     c.append("-D EMBREE_GEOMETRY_USER="+config["USERGEOM"])
     if config["USERGEOM"] == "ON": name += "-usergeom"
- 
+
   if OS == "linux":
-    {}
-    #if ispc_enabled:     c.append("-D EMBREE_ISPC_EXECUTABLE="+os.getcwd()+"/dependencies/ispc-v1.9.1-linux/ispc")
-    #if tasking == "TBB": c.append("-D EMBREE_TBB_ROOT="+os.getcwd()+dash+"dependencies"+dash+"tbb-2017-linux")
+    if ispc_enabled:     c.append("-D EMBREE_ISPC_EXECUTABLE=/NAS/packages/apps/ispc/1.9.1/ispc")
+    if tasking == "TBB": c.append("-D EMBREE_TBB_ROOT=/NAS/packages/apps/tbb/tbb-2017-linux")
   elif OS == "macosx":
     {}
     #if ispc_enabled:     c.append("-D EMBREE_ISPC_EXECUTABLE="+os.getcwd()+"/dependencies/ispc-v1.9.1-osx/ispc")
