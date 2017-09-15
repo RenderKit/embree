@@ -2,4 +2,4 @@
 build-centos6-gcc:
   type: build
   script:
-    - scripts/build/linux.sh -DEMBREE_MAX_ISA=SSE2
+    - "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX2 tasking:TBB intensive:OFF"

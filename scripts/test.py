@@ -199,7 +199,6 @@ def string_of_isa(isa):
   else: return "ISAS-" + ("-".join(isa))
 
 def createTest(config,OS):
-  branch   = config["branch"]
   platform = config["platform"]
   build    = config["build"]
   compiler = config["compiler"]
@@ -217,7 +216,7 @@ def createTest(config,OS):
   else               : skip_testing = False
   if tasking == "INT": tasking = "INTERNAL"
   if tasking == "PPL": tasking = "PPL"
-  name = branch+"-"+platform+"-"+build+"-"+compiler+"-"+string_of_isa(isa)+"-"+tasking
+  name = platform+"-"+build+"-"+compiler+"-"+string_of_isa(isa)+"-"+tasking
   if "package" in config: 
     if config["package"] == "ZIP": name = name + "-package-zip"
     else                         : name = name + "-package-installer"
@@ -370,18 +369,20 @@ def createTest(config,OS):
     if config["USERGEOM"] == "ON": name += "-usergeom"
  
   if OS == "linux":
-    if ispc_enabled:     c.append("-D EMBREE_ISPC_EXECUTABLE="+os.getcwd()+"/dependencies/ispc-v1.9.1-linux/ispc")
-    if tasking == "TBB": c.append("-D EMBREE_TBB_ROOT="+os.getcwd()+dash+"dependencies"+dash+"tbb-2017-linux")
+    {}
+    #if ispc_enabled:     c.append("-D EMBREE_ISPC_EXECUTABLE="+os.getcwd()+"/dependencies/ispc-v1.9.1-linux/ispc")
+    #if tasking == "TBB": c.append("-D EMBREE_TBB_ROOT="+os.getcwd()+dash+"dependencies"+dash+"tbb-2017-linux")
   elif OS == "macosx":
-    if ispc_enabled:     c.append("-D EMBREE_ISPC_EXECUTABLE="+os.getcwd()+"/dependencies/ispc-v1.9.1-osx/ispc")
-    if tasking == "TBB": c.append("-D EMBREE_TBB_ROOT="+os.getcwd()+dash+"dependencies"+dash+"tbb-2017-osx")
+    {}
+    #if ispc_enabled:     c.append("-D EMBREE_ISPC_EXECUTABLE="+os.getcwd()+"/dependencies/ispc-v1.9.1-osx/ispc")
+    #if tasking == "TBB": c.append("-D EMBREE_TBB_ROOT="+os.getcwd()+dash+"dependencies"+dash+"tbb-2017-osx")
   elif OS == "windows":
-    if ispc_enabled:
-      c.append("-D EMBREE_ISPC_EXECUTABLE="+os.getcwd()+dash+"dependencies"+dash+"ispc-v1.9.1-windows"+ispc_ext+dash+"ispc.exe")
+    #if ispc_enabled:
+      #c.append("-D EMBREE_ISPC_EXECUTABLE="+os.getcwd()+dash+"dependencies"+dash+"ispc-v1.9.1-windows"+ispc_ext+dash+"ispc.exe")
 
     if tasking == "TBB": 
-      tbb_path = os.getcwd()+dash+"dependencies"+dash+"tbb-2017-windows"
-      c.append("-D EMBREE_TBB_ROOT="+tbb_path)
+      #tbb_path = os.getcwd()+dash+"dependencies"+dash+"tbb-2017-windows"
+      #c.append("-D EMBREE_TBB_ROOT="+tbb_path)
       if platform == "x64":
         e.append("set PATH="+tbb_path+"\\bin\\intel64\\vc12;%PATH%")
       else:
@@ -446,187 +447,49 @@ def createTest(config,OS):
       sys.stderr.write("unknown package mode: "+OS+":"+config["package"])
       sys.exit(1)
 
-  return [name,branch,build,skip_testing,benchmark,c,e]
+  return [name,build,skip_testing,benchmark,c,e]
 
 # runs all tests for specified host machine
-def runConfigs(branch,build,host,mode,track,createCfg):
-  for config in createCfg(branch,build,host):
-    [name,branch,build,skip_testing,benchmark,conf,env] = createTest(config,OS)
-    if g_singleConfig != "" and g_singleConfig != name: continue
-    ctest = ""
-    ctest +=  "ctest -V -S embree-common.cmake"
-    if g_cdash != "": ctest += " -D CTEST_DROP_SITE="+g_cdash
-    ctest += " -D TEST_NAME=\""+name+"\""
-    ctest += " -D TEST_TYPE=\""+mode+"\""
-    ctest += " -D TEST_TRACK=\""+track+"\""
-    ctest += " -D TEST_BRANCH=\""+branch+"\"" 
-    ctest += " -D TEST_BENCHMARK="+benchmark
-    if skip_testing: ctest += " -D CTEST_SKIP_TESTING=ON"
-    else           : ctest += " -D CTEST_SKIP_TESTING=OFF"
-    ctest += " -D CTEST_CONFIGURATION_TYPE=\""+build+"\""
-    ctest += " -D CTEST_BUILD_OPTIONS=\"" + escape(" ".join(conf))+"\""
-    if g_debugMode:
-      print(name)
-      for e in env: print('    '+e)
-      print('    '+ctest+'\n')
-    else:
-      cmd = ""
-      for e in env: cmd += e + " && "
-      cmd += ctest+"\n"
-      
-      if OS == "windows":
-        subprocess.Popen(cmd, shell=True).communicate()
-      else: # we have to use a login shell to make "module load xxx" work
-        cmd = "export http_proxy= && export https_proxy= && " + cmd # cdash submission fails when proxy servers set
-        subprocess.Popen(['bash', '-l'], stdin=subprocess.PIPE).communicate(input=cmd.encode("utf-8"))
-      
-    if g_singleConfig != "" and g_singleConfig == name:
-      sys.exit(1)
-
-# invoke all nightly tests
-def runNightlyMode(config):
-  runConfigs("release","Release"       ,config,"Continuous","Nightly",createConfigsPackage)
-  runConfigs("release","RelWithDebInfo",config,"Continuous","Nightly",createConfigsIntensive)
-  runConfigs("devel"  ,"RelWithDebInfo",config,"Nightly"   ,"Nightly",createConfigsIntensive)
-
-# invoke all continuous tests
-def runContinuousMode(config):
-  runConfigs("release", "Release"       ,config,"Continuous","Continuous",createConfigsPackage)
-  runConfigs("release" ,"RelWithDebInfo",config,"Continuous","Continuous",createConfigsLight)
-  runConfigs("devel"   ,"RelWithDebInfo",config,"Continuous","Continuous",createConfigsLight)
-  runConfigs("swoop"   ,"RelWithDebInfo",config,"Continuous","Continuous",createConfigsLight)
-  runConfigs("cbenthin","RelWithDebInfo",config,"Continuous","Continuous",createConfigsLight)
-  runConfigs("atafra"  ,"RelWithDebInfo",config,"Continuous","Continuous",createConfigsLight)
-
-# automatically detects if we should run continuous mode of nightly builds
-def runAutoMode(config):
-
-  # read last nightly run date and time
-  date_file = ".embree_last_nightly"
-  now = datetime.datetime.utcnow()
-  try:
-    f = open(date_file,"r")
-    last = datetime.datetime.strptime(f.readline(), '%Y-%m-%d %H:%M:%S')
-    f.close()
-  except IOError:
-    last = datetime.datetime.utcnow()
-    f = open(date_file,"w")
-    f.write(now.strftime('%Y-%m-%d %H:%M:%S'))
-    f.close()
-
-  # nightly test at night, at least 12 hours after last run
-  if (now.hour>=19 or now.hour <2) and last+datetime.timedelta(hours=12) < now:
-
-    # update last nightly data and time
-    f = open(date_file,"w")
-    f.write(now.strftime('%Y-%m-%d %H:%M:%S'))
-    f.close()
-
-    # run all nightly tests
-    runNightlyMode(config)
-
-  # invoke continuous tests
+def runConfig(cfg):
+  [name,build,skip_testing,benchmark,conf,env] = createTest(cfg,OS)
+  ctest = ""
+  ctest +=  "ctest -V -S test.cmake"
+  if g_cdash != "": ctest += " -D CTEST_DROP_SITE="+g_cdash
+  ctest += " -D TEST_NAME=\""+name+"\""
+  if skip_testing: ctest += " -D CTEST_SKIP_TESTING=ON"
+  else           : ctest += " -D CTEST_SKIP_TESTING=OFF"
+  ctest += " -D CTEST_CONFIGURATION_TYPE=\""+build+"\""
+  ctest += " -D CTEST_BUILD_OPTIONS=\"" + escape(" ".join(conf))+"\""
+  if g_debugMode:
+    print(name)
+    for e in env: print('    '+e)
+    print('    '+ctest+'\n')
   else:
-    runContinuousMode(config)
-
-# guarantees that we run only a single instance of the auto mode
-def runAutoModeLocked(config):
-
-  # do not run if tests are still in progress...
-  lock_file= "IN_PROGRESS"
-  if os.path.isfile(lock_file):
-    print("TERMINATING! ANOTHER TEST IS RUNNING ALREADY!")
-    sys.exit(0)
-
-  try:
-    # indicate tests are in progress
-    open(lock_file,"w").close()
-
-    # run tests
-    runAutoMode(config)
-    
-  # indicate tests are complete
-  finally:
-    os.remove(lock_file)
-
-# runs the auto mode in an infinite loop
-def runAutoModeLoop(config):
-
-  while True:
-    runAutoMode(config)
-    for i in range(5*60,1,-1):
-      sys.stdout.write("Waiting "+str(i)+" seconds ...    \r")
-      sys.stdout.flush()
-      time.sleep(1)
-
-########################## command line parsing ##########################
-
-def printUsage():
-  sys.stderr.write('Usage: ' + sys.argv[0] + ' \n')
-  sys.stderr.write('       --cdash ip          # selects cdash server to use \n')
-  sys.stderr.write('       --config config     # selects tests to run (tcg-vis-ubuntu1404, tcg-vis-mac-mini, tcg-vis-vm-win7) \n')
-  sys.stderr.write('       --intensive         # enables intensive testing \n')
-  sys.stderr.write('       --mode Continuous   # run all continuous tests \n')
-  sys.stderr.write('       --mode Nightly      # run all nightly tests \n')
-  sys.stderr.write('       --mode Auto         # run auto mode that automatically selects between continuous and nightly tests \n')
-  sys.stderr.write('       --mode AutoLoop     # run the auto mode in an infinite loop \n')
-  sys.stderr.write('       --mode AutoLocked   # run auto mode and create a lock to avoid being invoked multiple times \n')
-  sys.stderr.write('       --mode Experimental # run one experimental test \n')
-  sys.stderr.write('       --debug             # enable debug mode \n')
-  sys.exit(0)
-
+    cmd = ""
+    for e in env: cmd += e + " && "
+    cmd += ctest+"\n"
+      
+    if OS == "windows":
+      subprocess.Popen(cmd, shell=True).communicate()
+    else: # we have to use a login shell to make "module load xxx" work
+      cmd = "export http_proxy= && export https_proxy= && " + cmd # cdash submission fails when proxy servers set
+      subprocess.Popen(['bash', '-l'], stdin=subprocess.PIPE).communicate(input=cmd.encode("utf-8"))
+      
 def parseCommandLine(argv):
   global g_cdash
-  global g_config
-  global g_mode
-  global g_intensive
   global g_debugMode
-  if len(argv) == 0:
-    return;
-  elif len(argv)>=2 and argv[0] == "--cdash":
-    g_cdash = argv[1]
-    parseCommandLine(argv[2:len(argv)])
-  elif len(argv)>=2 and argv[0] == "--config":
-    g_config = argv[1]
-    parseCommandLine(argv[2:len(argv)])
-  elif len(argv)>=2 and argv[0] == "--mode":
-    g_mode = argv[1]
-    parseCommandLine(argv[2:len(argv)])
-  elif len(argv)>=1 and argv[0] == "--intensive":
-    g_intensive = True
-    parseCommandLine(argv[1:len(argv)])
-  elif len(argv)>=1 and argv[0] == "--debug":
-    g_debugMode = True
-    parseCommandLine(argv[1:len(argv)])
-  elif len(argv)>=1 and argv[0] == "--help":
-    printUsage()
-    return;
-  else:
-    sys.stderr.write("unknown command line option: "+argv[0])
-    sys.exit(1)
+  cfg = {}
+  for x in argv:
+    if x == "--debug":
+      g_debugMode = True
+    else:
+      p = x.split(":")
+      cfg[p[0]] = p[1]
+  return cfg
 
-if len(sys.argv) == 1: printUsage()
-parseCommandLine(sys.argv[1:len(sys.argv)])
+cfg = parseCommandLine(sys.argv[1:len(sys.argv)])
+runConfig(cfg)
 
-if g_mode == "Auto":
-  runAutoMode(g_config)
-elif g_mode == "AutoLocked":
-  runAutoModeLocked(g_config)
-elif g_mode == "AutoLoop":
-  runAutoModeLoop(g_config)
-elif g_mode == "Continuous":
-  runContinuousMode(g_config)
-elif g_mode == "Nightly":
-  runNightlyMode(g_config)
-elif g_mode == "Experimental" and g_config != "":
-  g_singleConfig = g_config
-  if OS == "windows": configs = ["tcg-vis-vm-win7", "tcg-vis-ci-win1", "tcg-vis-ci-win2", "tcg-vis-ci-win3"]
-  else              : configs = ["tcg-vis-mac-mini", "tcg-vis-ubuntu1404", "swr-ivb-lnx-01", "skylake-b0"]
-  for branch in ["devel", "release", "swoop", "atafra", "cbenthin" ]:
-    for build in ["Debug", "Release", "RelWithDebInfo" ]:
-      for config in configs:
-        runConfigs(branch,build,config,g_mode,g_mode,createConfigsLight)
-        runConfigs(branch,build,config,g_mode,g_mode,createConfigsIntensive)
-        runConfigs(branch,build,config,g_mode,g_mode,createConfigsPackage)
-else:
-  printUsage()
+
+
+
