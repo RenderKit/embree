@@ -10,7 +10,7 @@ import socket
 import subprocess
 
 g_cdash = ""
-g_config = ""
+g_config = {}
 g_mode = "Experimental"
 g_intensive = False
 g_debugMode = False
@@ -474,21 +474,40 @@ def runConfig(cfg):
     else: # we have to use a login shell to make "module load xxx" work
       cmd = "export http_proxy= && export https_proxy= && " + cmd # cdash submission fails when proxy servers set
       subprocess.Popen(['bash', '-l'], stdin=subprocess.PIPE).communicate(input=cmd.encode("utf-8"))
-      
+
 def parseCommandLine(argv):
   global g_cdash
+  global g_config
+  global g_mode
+  global g_intensive
   global g_debugMode
-  cfg = {}
-  for x in argv:
-    if x == "--debug":
-      g_debugMode = True
-    else:
-      p = x.split(":")
-      cfg[p[0]] = p[1]
-  return cfg
-
-cfg = parseCommandLine(sys.argv[1:len(sys.argv)])
-runConfig(cfg)
+  if len(argv) == 0:
+    return;
+  elif len(argv)>=2 and argv[0] == "--cdash":
+    g_cdash = argv[1]
+    parseCommandLine(argv[2:len(argv)])
+  elif len(argv)>=2 and argv[0] == "--mode":
+    g_mode = argv[1]
+    parseCommandLine(argv[2:len(argv)])
+  elif len(argv)>=1 and argv[0] == "--intensive":
+    g_intensive = True
+    parseCommandLine(argv[1:len(argv)])
+  elif len(argv)>=1 and argv[0] == "--debug":
+    g_debugMode = True
+    parseCommandLine(argv[1:len(argv)])
+  elif len(argv)>=1 and argv[0] == "--help":
+    printUsage()
+    return;
+  elif ':' in argv[0]:
+    p = argv[0].split(":")
+    g_config[p[0]] = p[1]
+    parseCommandLine(argv[1:len(argv)])
+  else:
+    sys.stderr.write("unknown command line option: "+argv[0])
+    sys.exit(1)
+      
+parseCommandLine(sys.argv[1:len(sys.argv)])
+runConfig(g_config)
 
 
 
