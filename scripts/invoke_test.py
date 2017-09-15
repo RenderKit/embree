@@ -94,7 +94,7 @@ outImageFileJpg = name + ".jpg"
 diffImageFileTga= name + ".diff.tga"
 diffImageFileJpg= name + ".diff.jpg"
 
-executable = executable + " -rtcore verbose=2"
+executable = executable + " -rtcore verbose=0"
 
 if (model != "" and model != "default"):
   executable = executable + " -c " + modeldir + dash + model
