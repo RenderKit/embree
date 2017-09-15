@@ -2,4 +2,4 @@
 build-centos6-gcc:
   type: build
   script:
-    - "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX2 tasking:TBB intensive:OFF"
+    - "./scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:SSE2 tasking:TBB"
