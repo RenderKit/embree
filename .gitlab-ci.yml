@@ -1,9 +1,81 @@
 
+# have to disable proxy servers as otherwise CDash commits fail
 before_script:
   - export http_proxy=
   - export https_proxy=
 
 build-centos6-gcc:
-  type: build
   script:
     - "./scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC isa:SSE2 tasking:TBB"
+
+#####################################################################
+# WINDOWS
+####################################################################
+
+.windows-x64-RelWithDebInfo-V140-AVX2-TBB:
+  script: "./sripts/test.py platform:x64 build:RelWithDebInfo compiler:V140 isa:AVX2 tasking:TBB intensive:OFF"
+  tags:   [win, v140]
+
+.windows-x64-RelWithDebInfo-V120-AVX2-TBB:
+  script: "./scripts/test.py platform:x64 build:RelWithDebInfo compiler:V120 isa:AVX2 tasking:TBB intensive:OFF"
+  tags:   [win, v120]
+
+.windows-x64-RelWithDebInfo-ICC17-AVX2-TBB:
+  script: "./scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 isa:AVX2 tasking:TBB intensive:OFF"
+  tags:   [win, icc17]
+ 
+.windows-x64-RelWithDebInfo-CLANG-AVX2-TBB:
+  script: "./scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX2 tasking:TBB intensive:OFF"
+  tags:   [win, clang]
+
+
+#####################################################################
+# MACOSX
+####################################################################
+
+.macosx-x64-RelWithDebInfo-CLANG-AVX2:
+  script: "./scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX2 tasking:TBB intensive:OFF"
+  tags:   [macosx, clang]
+
+.macosx-x64-RelWithDebInfo-ICC16-AVX2:
+  script: "./scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC16 isa:AVX2 tasking:TBB intensive:OFF"
+  tags:   [macosx, icc16]
+
+
+#####################################################################
+# LINUX
+####################################################################
+
+.linux-x64-RelWithDebInfo-CLANG-AVX2-TBB:
+  script: "./scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX2 tasking:TBB intensive:OFF"
+  tags:   [linux, clang]
+
+.linux-x64-RelWithDebInfo-GCC-AVX2-TBB:
+  script: "./scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC isa:AVX2 tasking:TBB intensive:OFF"
+  tags:   [linux, gcc]
+
+.linux-x64-RelWithDebInfo-ICC17-AVX512KNL-TBB:
+  script: "./scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 isa:AVX512KNL tasking:TBB intensive:OFF"
+  tags:   [linux, icc17]
+
+.linux-x64-RelWithDebInfo-ICC17-AVX2-TBB-KLOCKWORK:
+  script: "./scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 isa:AVX2 tasking:TBB klocwork:ON"
+  tags:   [linux, icc17, klocwork]
+
+.linux-knl-x64-RelWithDebInfo-ICC17-AVX512KNL-TBB:
+  script: "./scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 isa:AVX512KNL tasking:TBB intensive:OFF"
+  tags:   [linux, knl, icc17]
+
+.linux-knl-x64-RelWithDebInfo-CLANG4-AVX512KNL-TBB:
+  script: "./scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX512KNL tasking:TBB intensive:OFF"
+  tags:   [linux, knl, clang4]
+
+.linux-skx-x64-RelWithDebInfo-ICC17-AVX512SKX-TBB:
+  script: "./scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 isa:AVX512SKX tasking:TBB intensive:OFF"
+  tags:   [linux, skx, icc17]
+
+.linux-skx-x64-RelWithDebInfo-CLANG4-AVX512SKX-TBB:
+  script: "./scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX512SKX tasking:TBB intensive:OFF"
+  tags:   [linux, skx, clang4]
+
+    
