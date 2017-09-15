@@ -14,7 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#if defined (EMBREE_TARGET_AVX)
+#include "../common/isa.h" // to define EMBREE_TARGET_SIMD8
+
+#if defined (EMBREE_TARGET_SIMD8)
 
 #include "bvh8_factory.h"
 #include "../bvh/bvh.h"

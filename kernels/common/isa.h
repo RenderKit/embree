@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include "../../common/sys/platform.h"
+#include "../../common/sys/sysinfo.h"
+
 namespace embree
 {
 #define DEFINE_SYMBOL2(type,name)               \
@@ -69,12 +72,17 @@ namespace embree
 #define SELECT_SYMBOL_SSE42(features,intersector)
 #endif
 
-#if defined(EMBREE_TARGET_AVX)
+#if defined(EMBREE_TARGET_AVX) || defined(__AVX__)
 #if !defined(EMBREE_TARGET_SIMD8)
 #define EMBREE_TARGET_SIMD8
 #endif
-#define SELECT_SYMBOL_AVX(features,intersector) \
+#if defined(__AVX__) // if default ISA is >= AVX we treat AVX target as default target
+#define SELECT_SYMBOL_AVX(features,intersector)                 \
+  if ((features & ISA) == ISA) intersector = isa::intersector;
+#else
+#define SELECT_SYMBOL_AVX(features,intersector)                 \
   if ((features & AVX) == AVX) intersector = avx::intersector;
+#endif
 #else
 #define SELECT_SYMBOL_AVX(features,intersector)
 #endif
