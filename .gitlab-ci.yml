@@ -1,5 +1,3 @@
-stages:
-  - build
 
 build-centos6-gcc:
   type: build
