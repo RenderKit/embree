@@ -24,7 +24,7 @@ MACRO(update_test_models)
   IF(NOT EXISTS "${TEST_MODELS_DIRECTORY}")
     MESSAGE("cloning test models ...")
     EXECUTE_PROCESS(
-      COMMAND "ssh "git@git.sdvis.org"
+      COMMAND "ssh" "git@git.sdvis.org"
       WORKING_DIRECTORY $ENV{HOME}
     )
     EXECUTE_PROCESS(
