@@ -8,7 +8,8 @@ SET(TEST_REPOSITORY "https://github.com/embree/embree.git")
 SET(TEST_ROOT_DIRECTORY "${CTEST_SCRIPT_DIRECTORY}/..")
 STRING(REPLACE ":/" ":\\" TEST_ROOT_DIRECTORY1 "${TEST_ROOT_DIRECTORY}") # cygwin git has issues with c:/dir paths 
 #SET(TEST_MODELS_DIRECTORY ${TEST_ROOT_DIRECTORY}/dependencies/embree-models)
-SET(TEST_MODELS_DIRECTORY ~/embree-models)
+SET(TEST_MODELS_DIRECTORY $ENV{HOME}/embree-models)
+MESSAGE("TEST_MODELS_DIRECTORY = ${TEST_MODELS_DIRECTORY}")
 
 # set source and build directory
 set(CTEST_SOURCE_DIRECTORY "${TEST_ROOT_DIRECTORY1}")
@@ -104,6 +105,7 @@ set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} ${CTEST_BUILD_OPTIONS}")
 set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} ..")
 
 # start the test
+ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
 ctest_start("Continuous")
 #ctest_update (RETURN_VALUE count)
 update_test_models()

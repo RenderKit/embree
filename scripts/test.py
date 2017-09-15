@@ -467,12 +467,12 @@ def runConfig(cfg):
     cmd = ""
     for e in env: cmd += e + " && "
     cmd += ctest+"\n"
-      
-    if OS == "windows":
-      subprocess.Popen(cmd, shell=True).communicate()
-    else: # we have to use a login shell to make "module load xxx" work
-      cmd = "export http_proxy= && export https_proxy= && " + cmd # cdash submission fails when proxy servers set
-      subprocess.Popen(['bash', '-l'], stdin=subprocess.PIPE).communicate(input=cmd.encode("utf-8"))
+    subprocess.check_call(cmd, shell=True) 
+    #if OS == "windows":
+    #  subprocess.Popen(cmd, shell=True).communicate()
+    #else: # we have to use a login shell to make "module load xxx" work
+    #  cmd = "export http_proxy= && export https_proxy= && " + cmd # cdash submission fails when proxy servers set
+    #  subprocess.Popen(['bash', '-l'], stdin=subprocess.PIPE).communicate(input=cmd.encode("utf-8"))
 
 def parseCommandLine(argv):
   global g_cdash
