@@ -5,7 +5,3 @@ build-centos6-gcc:
   type: build
   script:
     - scripts/build/linux.sh -DEMBREE_MAX_ISA=SSE2
-  tags:
-    - centos6
-    - gcc
-    - build
