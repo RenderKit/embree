@@ -1080,10 +1080,6 @@ namespace embree
     return -1;
   }
   
-  RTCORE_API unsigned rtcNewHairGeometry (RTCScene hscene, RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) {
-    return rtcNewBezierHairGeometryImpl(hscene,gflags,(unsigned int)numCurves,(unsigned int)numVertices,(unsigned int)numTimeSteps,RTC_INVALID_GEOMETRY_ID);
-  }
-
   RTCORE_API unsigned rtcNewBezierHairGeometry (RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps) {
     return rtcNewBezierHairGeometryImpl(hscene,gflags,(unsigned int)numCurves,(unsigned int)numVertices,(unsigned int)numTimeSteps,RTC_INVALID_GEOMETRY_ID);
   }
@@ -1134,10 +1130,6 @@ namespace embree
 #endif
     RTCORE_CATCH_END2(scene);
     return -1;
-  }
-  
-  RTCORE_API unsigned rtcNewCurveGeometry (RTCScene hscene, RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) {
-    return rtcNewBezierCurveGeometryImpl(hscene,gflags,(unsigned int)numCurves,(unsigned int)numVertices,(unsigned int)numTimeSteps,RTC_INVALID_GEOMETRY_ID);
   }
   
   RTCORE_API unsigned rtcNewBezierCurveGeometry (RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps) {

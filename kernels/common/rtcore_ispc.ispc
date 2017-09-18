@@ -81,18 +81,6 @@ extern "C" uniform unsigned int ispcNewLineSegments (RTCScene scene,
                                                      uniform size_t numTimeSteps, 
                                                      uniform unsigned int geomID);
 
-extern "C" uniform unsigned int ispcNewHairGeometry (RTCScene scene,
-                                                     uniform RTCGeometryFlags flags,
-                                                     uniform size_t numCurves,
-                                                     uniform size_t numVertices,
-                                                     uniform size_t numTimeSteps);
-
-extern "C" uniform unsigned int ispcNewCurveGeometry (RTCScene scene,
-                                                     uniform RTCGeometryFlags flags,
-                                                     uniform size_t numCurves,
-                                                     uniform size_t numVertices,
-                                                     uniform size_t numTimeSteps);
-
 extern "C" uniform unsigned int ispcNewSubdivisionMesh (RTCScene scene,
                                                         uniform RTCGeometryFlags flags,
                                                         uniform size_t numFaces,
@@ -407,24 +395,6 @@ uniform unsigned int rtcNewLineSegments (RTCScene scene, uniform RTCGeometryFlag
 
 uniform unsigned int rtcNewLineSegments (RTCScene scene, uniform RTCGeometryFlags flags, uniform size_t numSegments, uniform size_t numVertices, uniform size_t numTimeSteps, uniform unsigned int geomID) {
   return ispcNewLineSegments (scene,flags,numSegments,numVertices,numTimeSteps,geomID);
-}
-
-uniform unsigned int rtcNewHairGeometry (RTCScene scene,
-                                         uniform RTCGeometryFlags flags,
-                                         uniform size_t numCurves,
-                                         uniform size_t numVertices,
-                                         uniform size_t numTimeSteps)
-{
-  return ispcNewHairGeometry (scene,flags,numCurves,numVertices,numTimeSteps);
-}
-
-uniform unsigned int rtcNewCurveGeometry (RTCScene scene,
-                                         uniform RTCGeometryFlags flags,
-                                         uniform size_t numCurves,
-                                         uniform size_t numVertices,
-                                         uniform size_t numTimeSteps)
-{
-  return ispcNewCurveGeometry (scene,flags,numCurves,numVertices,numTimeSteps);
 }
 
 uniform unsigned int rtcNewSubdivisionMesh (RTCScene scene,

@@ -305,35 +305,6 @@ RTCORE_API unsigned rtcNewSubdivisionMesh2(RTCScene scene,                //!< t
                                            unsigned int geomID = -1       //!< optional geometry ID to assign
   );
 
-/*! \brief Creates a new hair geometry consisting of multiple hairs
-  represented as cubic bezier curves with varying radii.
-
-  WARNING: This function is deprecated, use rtcNewBezierHairGeometry instead.
-
-  The number of curves (numCurves), number of vertices (numVertices),
-  and number of time steps (1 for normal meshes, and up to
-  RTC_MAX_TIME_STEPS for multi-segment motion blur), have to get
-  specified at construction time. Further, the curve index buffer
-  (RTC_INDEX_BUFFER) and the curve vertex buffer (RTC_VERTEX_BUFFER)
-  have to get set by mapping and writing to the appropiate buffers. In
-  case of multi-segment motion blur, multiple vertex buffers have to
-  get filled (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1, etc.), one for
-  each time step. The index buffer has the default layout of a single
-  32 bit integer index for each curve, that references the start
-  vertex of the curve. The vertex buffer stores 4 control points per
-  curve, each such control point consists of a single precision
-  (x,y,z) position and radius, stored in that order in
-  memory. Individual hairs are considered to be subpixel sized which
-  allows the implementation to approximate the intersection
-  calculation. This in particular means that zooming onto one hair
-  might show geometric artefacts. */
-RTCORE_API RTCORE_DEPRECATED unsigned rtcNewHairGeometry (RTCScene scene,                    //!< the scene the curves belong to
-                                                          RTCGeometryFlags flags,            //!< geometry flags
-                                                          size_t numCurves,                  //!< number of curves
-                                                          size_t numVertices,                //!< number of vertices
-                                                          size_t numTimeSteps = 1            //!< number of motion blur time steps
-  );
-
 /*! \brief Creates a new hair geometry, consisting of multiple hairs
   represented as cubic bezier curves with varying radii. The number of
   curves (numCurves), number of vertices (numVertices), and number of
@@ -398,33 +369,6 @@ RTCORE_API unsigned rtcNewBSplineHairGeometry2(RTCScene scene,                  
                                                unsigned int numVertices,          //!< number of vertices
                                                unsigned int numTimeSteps = 1,     //!< number of motion blur time steps
                                                unsigned int geomID = -1           //!< optional geometry ID to assign
-  );
-
-/*! \brief Creates a new curve geometry, consisting of multiple curves
-  represented as cubic bezier curves with varying radii. 
-
-  WARNING: This function is deprecated, use rtcNewBezierCurveGeometry instead.
-
-  The intersected surface is defined as the sweep of a varying radius
-  circle perpendicular along the curve. The number of curves
-  (numCurves), number of vertices (numVertices), and number of time
-  steps have to get specified at construction time (1 for normal
-  meshes, and up to RTC_MAX_TIME_STEPS for multi-segment motion
-  blur). Further, the curve index buffer (RTC_INDEX_BUFFER) and the
-  curve vertex buffer (RTC_VERTEX_BUFFER) have to get set by mapping
-  and writing to the appropiate buffers. In case of multi-segment
-  motion blur, multiple vertex buffers have to get filled
-  (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1, etc.), one for each time
-  step. The index buffer has the default layout of a single 32 bit
-  integer index for each curve, that references the start vertex of
-  the curve. The vertex buffer stores 4 control points per curve, each
-  such control point consists of a single precision (x,y,z) position
-  and radius, stored in that order in memory. */
-RTCORE_API RTCORE_DEPRECATED unsigned rtcNewCurveGeometry (RTCScene scene,                    //!< the scene the curves belong to
-                                                           RTCGeometryFlags flags,            //!< geometry flags
-                                                           size_t numCurves,                  //!< number of curves
-                                                           size_t numVertices,                //!< number of vertices
-                                                           size_t numTimeSteps = 1            //!< number of motion blur time steps
   );
 
 /*! \brief Creates a new curve geometry, consisting of multiple curves
