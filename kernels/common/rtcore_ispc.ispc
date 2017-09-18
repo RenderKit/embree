@@ -17,10 +17,6 @@
 #include "../../include/embree2/rtcore.isph" 
 #include "../../include/embree2/rtcore_ray.isph" 
 
-/* This is necessary as the size_t type under ISPC may be 32 or 64 bits wide depending on the ISPC addressing mode used. */
-#define size_t uintptr_t
-#define ssize_t intptr_t
-
 extern "C" RTCDevice ispcNewDevice(const uniform int8* uniform cfg);
 extern "C" void ispcDeleteDevice(RTCDevice device);
 extern "C" void ispcDeviceSetParameter1i(RTCDevice device, const uniform RTCParameter parm, uniform ssize_t val);
@@ -150,10 +146,6 @@ extern "C" void ispcInterpolateN2(RTCScene scene, uniform unsigned int geomID,
                                  uniform float* uniform ddPdudu, uniform float* uniform ddPdvdv, uniform float* uniform ddPdudv, 
                                  uniform size_t numFloats);
 
-
-/* put all extern declarations before this line */
-#undef size_t
-#undef ssize_t
 
 RTCDevice rtcNewDevice(const uniform int8* uniform cfg) {
   return ispcNewDevice(cfg);
