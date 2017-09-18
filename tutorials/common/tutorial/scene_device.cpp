@@ -382,7 +382,7 @@ namespace embree
         DISABLE_DEPRECATED_WARNING;
         unsigned int geomID = rtcNewGeometryInstance(scene_out, geom_inst);
         ENABLE_DEPRECATED_WARNING;
-        rtcSetTransform2(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->spaces[0].l.vx.x,0);
+        rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->spaces[0].l.vx.x,0);
         return geomID;
       } 
       else
@@ -393,13 +393,13 @@ namespace embree
       RTCScene scene_inst = scene_in->geomID_to_scene[instance->geom.geomID];
       if (instance->numTimeSteps == 1) {
         unsigned int geomID = rtcNewInstance2(scene_out, scene_inst, 1);
-        rtcSetTransform2(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->spaces[0].l.vx.x,0);
+        rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->spaces[0].l.vx.x,0);
         return geomID;
       }
       else {
         unsigned int geomID = rtcNewInstance2(scene_out, scene_inst, instance->numTimeSteps);
         for (size_t t=0; t<instance->numTimeSteps; t++)
-          rtcSetTransform2(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->spaces[t].l.vx.x,t);
+          rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->spaces[t].l.vx.x,t);
         return geomID;
       }
     }

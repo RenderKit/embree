@@ -159,8 +159,8 @@ namespace embree
     return rtcNewGeometryInstance(scene,geomID);
   }
   
-  extern "C" void ispcSetTransform2 (RTCScene scene, unsigned geomID, RTCMatrixType layout, const float* xfm, size_t timeStep) {
-    return rtcSetTransform2(scene,geomID,layout,xfm,timeStep);
+  extern "C" void ispcSetTransform (RTCScene scene, unsigned geomID, RTCMatrixType layout, const float* xfm, size_t timeStep) {
+    return rtcSetTransform(scene,geomID,layout,xfm,timeStep);
   }
   
   extern "C" unsigned ispcNewUserGeometry (RTCScene scene, RTCGeometryFlags gflags, size_t numItems, size_t numTimeSteps, unsigned int geomID) {

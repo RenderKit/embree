@@ -964,7 +964,7 @@ namespace embree
     return transform;
   }
 
-  RTCORE_API void rtcSetTransform2 (RTCScene hscene, unsigned geomID, RTCMatrixType layout, const float* xfm, size_t timeStep) 
+  RTCORE_API void rtcSetTransform (RTCScene hscene, unsigned geomID, RTCMatrixType layout, const float* xfm, size_t timeStep) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;

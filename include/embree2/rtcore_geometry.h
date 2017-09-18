@@ -161,7 +161,7 @@ RTCORE_API RTCORE_DEPRECATED unsigned rtcNewGeometryInstance(RTCScene scene, uns
 RTCORE_API RTCORE_DEPRECATED unsigned rtcNewGeometryGroup   (RTCScene scene, RTCGeometryFlags flags, unsigned* geomIDs, size_t N);
 
 /*! \brief Sets transformation of the instance for specified timestep */
-RTCORE_API void rtcSetTransform2 (RTCScene scene,                         //!< scene handle
+RTCORE_API void rtcSetTransform (RTCScene scene,                         //!< scene handle
                                   unsigned int geomID,                    //!< ID of geometry 
                                   RTCMatrixType layout,                   //!< layout of transformation matrix
                                   const float* xfm,                       //!< pointer to transformation matrix
