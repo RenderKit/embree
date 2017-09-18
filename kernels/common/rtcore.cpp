@@ -964,19 +964,6 @@ namespace embree
     return transform;
   }
 
-  RTCORE_API void rtcSetTransform (RTCScene hscene, unsigned geomID, RTCMatrixType layout, const float* xfm) 
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetTransform);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    RTCORE_VERIFY_HANDLE(xfm);
-    const AffineSpace3fa transform = convertTransform(layout,xfm);
-    ((Scene*) scene)->get_locked(geomID)->setTransform(transform,0);
-    RTCORE_CATCH_END2(scene);
-  }
-
   RTCORE_API void rtcSetTransform2 (RTCScene hscene, unsigned geomID, RTCMatrixType layout, const float* xfm, size_t timeStep) 
   {
     Scene* scene = (Scene*) hscene;

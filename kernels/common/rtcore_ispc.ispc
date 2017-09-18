@@ -59,7 +59,6 @@ extern "C" void ispcOccludedNp (RTCScene scene, const uniform RTCIntersectContex
 extern "C" void ispcDeleteScene (RTCScene scene);
 extern "C" uniform unsigned int ispcNewInstance (RTCScene target, RTCScene source, uniform size_t numTimeSteps, uniform unsigned int geomID);
 extern "C" uniform unsigned int ispcNewGeometryInstance (RTCScene scene, uniform unsigned int geomID);
-extern "C" void ispcSetTransform (RTCScene scene, uniform unsigned int geomID, uniform RTCMatrixType layout, const uniform float* uniform xfm);
 extern "C" void ispcSetTransform2 (RTCScene scene, uniform unsigned int geomID, uniform RTCMatrixType layout, const uniform float* uniform xfm, uniform size_t timeStep);
 extern "C" uniform unsigned int ispcNewUserGeometry (RTCScene scene, uniform RTCGeometryFlags gflags, uniform size_t numItems, uniform size_t numTimeSteps, uniform unsigned int geomID);
 extern "C" uniform unsigned int ispcNewTriangleMesh (RTCScene scene,
@@ -364,10 +363,6 @@ uniform unsigned int rtcNewInstance3 (RTCScene target, RTCScene source, uniform 
 
 uniform unsigned int rtcNewGeometryInstance(RTCScene scene, uniform unsigned int geomID) {
   return ispcNewGeometryInstance(scene,geomID);
-}
-
-void rtcSetTransform (RTCScene scene, uniform unsigned int geomID, uniform RTCMatrixType layout, const uniform float* uniform xfm) {
-  ispcSetTransform(scene,geomID,layout,xfm);
 }
 
 void rtcSetTransform2 (RTCScene scene, uniform unsigned int geomID, uniform RTCMatrixType layout, const uniform float* uniform xfm, uniform size_t timeStep) {

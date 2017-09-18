@@ -150,13 +150,6 @@ uniform unsigned int rtcNewInstance3 (RTCScene target,                  //!< the
   instance. */
 RTCORE_DEPRECATED uniform unsigned int rtcNewGeometryInstance(RTCScene scene, uniform unsigned int geomID);
 
-/*! \brief Sets transformation of the instance */
-RTCORE_DEPRECATED void rtcSetTransform (RTCScene scene,                                  //!< scene handle
-                                        uniform unsigned int geomID,                     //!< ID of geometry
-                                        uniform RTCMatrixType layout,                    //!< layout of transformation matrix
-                                        const uniform float* uniform xfm                 //!< pointer to transformation matrix
-  );
-
 /*! \brief Sets transformation of the instance for specified timestep */
 void rtcSetTransform2 (RTCScene scene,                                 //!< scene handle
                        uniform unsigned int geomID,                    //!< ID of geometry 
