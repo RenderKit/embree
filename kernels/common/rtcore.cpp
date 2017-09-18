@@ -51,49 +51,6 @@ namespace embree
     RTCORE_CATCH_END(nullptr);
   }
 
-  /* global device for compatibility with old rtcInit / rtcExit scheme */
-  static Device* g_device = nullptr;
-
-  RTCORE_API void rtcInit(const char* cfg) 
-  {
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcInit);
-    Lock<MutexSys> lock(g_mutex);
-    if (g_device) throw_RTCError(RTC_INVALID_OPERATION,"already initialized");
-    g_device = new Device(cfg,true);
-    RTCORE_CATCH_END(g_device);
-  }
-  
-  RTCORE_API void rtcExit() 
-  {
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcExit);
-    Lock<MutexSys> lock(g_mutex);
-    if (!g_device) throw_RTCError(RTC_INVALID_OPERATION,"rtcInit has to get called before rtcExit");
-    delete g_device; g_device = nullptr;
-    RTCORE_CATCH_END(g_device);
-  }
-
-  RTCORE_API void rtcSetParameter1i(const RTCParameter parm, ssize_t val)
-  {
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetParameter1i);
-    Lock<MutexSys> lock(g_mutex);
-    if (g_device) g_device->setParameter1i(parm,val);
-    RTCORE_CATCH_END(g_device);
-  }
-
-  RTCORE_API ssize_t rtcGetParameter1i(const RTCParameter parm)
-  {
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcGetParameter1i);
-    assert(g_device);
-    Lock<MutexSys> lock(g_mutex);
-    return g_device->getParameter1i(parm);
-    RTCORE_CATCH_END(g_device);
-    return 0;
-  }
-
   RTCORE_API void rtcDeviceSetParameter1i(RTCDevice hdevice, const RTCParameter parm, ssize_t val)
   {
     Device* device = (Device*) hdevice;
@@ -118,16 +75,6 @@ namespace embree
     return 0;
   }
 
-  RTCORE_API RTCError rtcGetError()
-  {
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcGetError);
-    if (g_device == nullptr) return Device::getThreadErrorCode();
-    else                     return g_device->getDeviceErrorCode();
-    RTCORE_CATCH_END(g_device);
-    return RTC_UNKNOWN_ERROR;
-  }
-
   RTCORE_API RTCError rtcDeviceGetError(RTCDevice hdevice)
   {
     Device* device = (Device*) hdevice;
@@ -137,15 +84,6 @@ namespace embree
     else                   return device->getDeviceErrorCode();
     RTCORE_CATCH_END(device);
     return RTC_UNKNOWN_ERROR;
-  }
-
-  RTCORE_API void rtcSetErrorFunction(RTCErrorFunc func) 
-  {
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetErrorFunction);
-    assert(g_device);
-    if (g_device) g_device->setErrorFunction(func);
-    RTCORE_CATCH_END(g_device);
   }
 
   RTCORE_API void rtcDeviceSetErrorFunction(RTCDevice hdevice, RTCErrorFunc func) 
@@ -166,15 +104,6 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hdevice);
     device->setErrorFunction(func,userPtr);
     RTCORE_CATCH_END(device);
-  }
-
-  RTCORE_API void rtcSetMemoryMonitorFunction(RTCMemoryMonitorFunc func) 
-  {
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetMemoryMonitorFunction);
-    assert(g_device);
-    if (g_device) g_device->setMemoryMonitorFunction(func);
-    RTCORE_CATCH_END(g_device);
   }
 
   RTCORE_API void rtcDeviceSetMemoryMonitorFunction(RTCDevice hdevice, RTCMemoryMonitorFunc func) 
@@ -205,18 +134,7 @@ namespace embree
     Stat::clear();
 #endif
 
-    RTCORE_CATCH_END(g_device);
-  }
-
-  RTCORE_API RTCScene rtcNewScene (RTCSceneFlags flags, RTCAlgorithmFlags aflags) 
-  {
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcNewScene);
-    assert(g_device);
-    if (!isCoherent(flags) && !isIncoherent(flags)) flags = RTCSceneFlags(flags | RTC_SCENE_INCOHERENT);
-    return (RTCScene) new Scene(g_device,flags,aflags);
-    RTCORE_CATCH_END(g_device);
-    return nullptr;
+    RTCORE_CATCH_END(nullptr);
   }
 
   RTCORE_API RTCScene rtcDeviceNewScene (RTCDevice device, RTCSceneFlags flags, RTCAlgorithmFlags aflags) 

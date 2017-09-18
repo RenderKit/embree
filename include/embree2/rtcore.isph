@@ -76,35 +76,6 @@ RTCDevice rtcNewDevice(const uniform int8* uniform cfg = NULL);
   are invalid. */
 void rtcDeleteDevice(RTCDevice device);
 
-/*! \brief Initializes the Embree ray tracing core
-
-  WARNING: This function is deprecated, use rtcNewDevice instead.
-
-  Initializes the ray tracing core and passes some configuration
-  string. The configuration string allows to configure implementation
-  specific parameters. If this string is NULL, a default configuration
-  is used. The following configuration flags are supported by the
-  Embree implementation of the API:
-  
-  verbose = num,       // sets verbosity level (default is 0)
-
-  If Embree is started on an unsupported CPU, rtcInit will fail and
-  set the RTC_UNSUPPORTED_CPU error code.
-  
-*/
-RTCORE_DEPRECATED void rtcInit(const uniform int8* uniform cfg = NULL);
-
-/*! \brief Shuts down Embree. 
-
-  WARNING: This function is deprecated, use rtcDeleteDevice instead.
-
-  Shuts down the ray tracing core. After shutdown, all scene handles
-  are invalid, and invoking any API call except rtcInit is not
-  allowed. The application should invoke this call before
-  terminating. It is safe to call rtcInit again after an rtcExit
-  call. */
-RTCORE_DEPRECATED void rtcExit();
-
 /*! \brief Parameters that can get configured using the rtcSetParameter functions. */
 enum RTCParameter {
   RTC_SOFTWARE_CACHE_SIZE = 0,                /*! Configures the software cache size (used
@@ -143,16 +114,6 @@ enum RTCParameter {
   RTC_CONFIG_COMMIT_THREAD = 24,             //!< checks if rtcCommitThread is available (not supported when compiled with some older TBB versions)
 };
 
-/*! \brief Configures some parameters. 
-   WARNING: This function is deprecated, use rtcDeviceSetParameter1i instead.
-*/
-RTCORE_DEPRECATED void rtcSetParameter1i(const uniform RTCParameter parm, uniform size_t val); // FIXME: should be ssize_t
-
-/*! \brief Reads some parameters.
-   WARNING: This function is deprecated, use rtcDeviceGetParameter1i instead.
-*/
-uniform size_t rtcGetParameter1i(const uniform RTCParameter parm); // FIXME: should return ssize_t
-
 /*! \brief Configures some device parameters.*/
 void rtcDeviceSetParameter1i(RTCDevice device, const uniform RTCParameter parm, uniform size_t val); // FIXME: should be ssize_t
 
@@ -172,15 +133,6 @@ enum RTCError {
 
 /*! \brief Returns the value of the per-thread error flag. 
 
-  WARNING: This function is deprecated, use rtcDeviceGetError instead.
-
-  If an error occurs this flag is set to an error code if it stores no
-  previous error. The rtcGetError function reads and returns the
-  currently stored error and clears the error flag again. */
-RTCORE_DEPRECATED uniform RTCError rtcGetError();
-
-/*! \brief Returns the value of the per-thread error flag. 
-
   If an error occurs this flag is set to an error code if it stores no
   previous error. The rtcGetError function reads and returns the
   currently stored error and clears the error flag again. */
@@ -194,11 +146,6 @@ RTCORE_DEPRECATED typedef RTCErrorFunc RTC_ERROR_FUNCTION;
 
 /*! \brief Type of error callback function. */
 typedef unmasked void (*uniform RTCErrorFunc2)(void* uniform userPtr, const uniform RTCError code, const uniform int8* uniform str);
-
-/*! \brief Sets a callback function that is called whenever an error occurs. 
-    WARNING: This function is deprecated, use rtcDeviceSetErrorFunction2 instead.
-*/
-RTCORE_DEPRECATED void rtcSetErrorFunction(uniform RTCErrorFunc func);
 
 /*! \brief Sets a callback function that is called whenever an error occurs. 
     WARNING: This function is deprecated, use rtcDeviceSetErrorFunction2 instead.
@@ -220,13 +167,6 @@ typedef uniform bool (*uniform RTCMemoryMonitorFunc2)(const uniform uintptr_t by
 /*! \brief Sets the memory consumption callback function which is
  *  called before the library allocates or after the library frees
  *  memory. 
- *  WARNING: This function is deprecated, use rtcDeviceSetMemoryMonitorFunction2 instead.
-*/
-RTCORE_DEPRECATED void rtcSetMemoryMonitorFunction(RTCMemoryMonitorFunc func);
-
-/*! \brief Sets the memory consumption callback function which is
- *  called before the library allocates or after the library frees
- *  memory. 
    WARNING: This function is deprecated, use rtcDeviceSetMemoryMonitorFunction2 instead.
 */
 void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunc func);
@@ -236,16 +176,6 @@ void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunc fu
  *  userPtr pointer is passed to each invokation of the callback
  *  function. */
 void rtcDeviceSetMemoryMonitorFunction2(RTCDevice device, RTCMemoryMonitorFunc2 func, void* uniform userPtr);
-
-/*! \brief Implementation specific.
-
-  This function is implementation specific and only for debugging
-  purposes.
-
-  WARNING: This function is deprecated do not use it.
-
-*/
-RTCORE_DEPRECATED void rtcDebug();  // FIXME: remove
 
 #include "rtcore_scene.isph"
 #include "rtcore_geometry.isph"

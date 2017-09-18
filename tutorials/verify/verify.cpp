@@ -616,18 +616,16 @@ namespace embree
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
 
-  struct InitExitTest : public VerifyApplication::Test
+  struct DeviceCreationTest : public VerifyApplication::Test
   {
-    InitExitTest (std::string name)
+    DeviceCreationTest (std::string name)
       : VerifyApplication::Test(name,0,VerifyApplication::TEST_SHOULD_PASS) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
     {
-      DISABLE_DEPRECATED_WARNING;
-      rtcInit("verbose=1");
-      errorHandler(nullptr,rtcGetError());
-      rtcExit();
-      ENABLE_DEPRECATED_WARNING;
+      RTCDevice device = rtcNewDevice("verbose=1");
+      errorHandler(nullptr,rtcDeviceGetError(device));
+      rtcDeleteDevice(device);
       return VerifyApplication::PASSED;
     }
   };
@@ -4127,7 +4125,7 @@ namespace embree
       groups.push(group);
     };
 
-    groups.top()->add(new InitExitTest("init_exit"));
+    groups.top()->add(new DeviceCreationTest("create_device"));
     
     /* add Embree internal tests */
     for (size_t i=2000000; i<3000000; i++) {

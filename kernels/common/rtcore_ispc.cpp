@@ -33,22 +33,6 @@ namespace embree
     rtcDeleteDevice(device);
   }
 
-  extern "C" void ispcInit(const char* cfg) {
-    rtcInit(cfg);
-  }
-  
-  extern "C" void ispcExit() {
-    rtcExit();
-  }
-
-  extern "C" void ispcSetParameter1i(const RTCParameter parm, ssize_t val) {
-    rtcSetParameter1i(parm,val);
-  }
-
-  extern "C" ssize_t ispcGetParameter1i(const RTCParameter parm) {
-    return ssize_t(rtcGetParameter1i(parm));
-  }
-
   extern "C" void ispcDeviceSetParameter1i(RTCDevice device, const RTCParameter parm, ssize_t val) {
     rtcDeviceSetParameter1i(device,parm,val);
   }
@@ -57,16 +41,8 @@ namespace embree
     return ssize_t(rtcDeviceGetParameter1i(device,parm));
   }
 
-  extern "C" RTCError ispcGetError() {
-    return rtcGetError();
-  }
-
   extern "C" RTCError ispcDeviceGetError(RTCDevice device) {
     return rtcDeviceGetError(device);
-  }
-
-  extern "C" void ispcSetErrorFunction(void* f) {
-    return rtcSetErrorFunction((RTCErrorFunc)f);
   }
 
   extern "C" void ispcDeviceSetErrorFunction(RTCDevice device, void* f) {
@@ -77,10 +53,6 @@ namespace embree
     return rtcDeviceSetErrorFunction2(device,(RTCErrorFunc2)fptr,uptr);
   }
 
-  extern "C" void ispcSetMemoryMonitorFunction(void* f) {
-    return rtcSetMemoryMonitorFunction((RTCMemoryMonitorFunc)f);
-  }
-
   extern "C" void ispcDeviceSetMemoryMonitorFunction(RTCDevice device, void* f) {
     return rtcDeviceSetMemoryMonitorFunction(device,(RTCMemoryMonitorFunc)f);
   }
@@ -89,16 +61,6 @@ namespace embree
     return rtcDeviceSetMemoryMonitorFunction2(device,(RTCMemoryMonitorFunc2)fptr,uptr);
   }
 
-  extern "C" void ispcDebug() {
-    rtcDebug();
-  }
-  
-  extern "C" RTCScene ispcNewScene (RTCSceneFlags flags, RTCAlgorithmFlags aflags) 
-  {
-    if (!isCoherent(flags) && !isIncoherent(flags)) flags = RTCSceneFlags(flags | RTC_SCENE_COHERENT);
-    return rtcNewScene(flags,aflags);
-  }
- 
   extern "C" RTCScene ispcNewScene2 (RTCDevice device, RTCSceneFlags flags, RTCAlgorithmFlags aflags) 
   {
     if (!isCoherent(flags) && !isIncoherent(flags)) flags = RTCSceneFlags(flags | RTC_SCENE_COHERENT);

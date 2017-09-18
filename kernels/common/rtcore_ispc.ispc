@@ -23,18 +23,11 @@
 
 extern "C" RTCDevice ispcNewDevice(const uniform int8* uniform cfg);
 extern "C" void ispcDeleteDevice(RTCDevice device);
-extern "C" void ispcInit(const uniform int8* uniform cfg);
-extern "C" void ispcExit();
-extern "C" void ispcSetParameter1i(const uniform RTCParameter parm, uniform ssize_t val);
-extern "C" uniform ssize_t ispcGetParameter1i(const uniform RTCParameter parm);
 extern "C" void ispcDeviceSetParameter1i(RTCDevice device, const uniform RTCParameter parm, uniform ssize_t val);
 extern "C" uniform ssize_t ispcDeviceGetParameter1i(RTCDevice device, const uniform RTCParameter parm);
-extern "C" uniform RTCError ispcGetError ();
 extern "C" uniform RTCError ispcDeviceGetError (RTCDevice device);
-extern "C" void ispcSetErrorFunction (void* uniform ptr);
 extern "C" void ispcDeviceSetErrorFunction (RTCDevice device, void* uniform ptr);
 extern "C" void ispcDeviceSetErrorFunction2(RTCDevice device, void* uniform fptr, void* uniform uptr);
-extern "C" void ispcSetMemoryMonitorFunction (void* uniform ptr);
 extern "C" void ispcDeviceSetMemoryMonitorFunction (RTCDevice device, void* uniform ptr);
 extern "C" void ispcDeviceSetMemoryMonitorFunction2 (RTCDevice device, void* uniform fptr, void* uniform uptr);
 extern "C" void ispcDebug();
@@ -188,22 +181,6 @@ void rtcDeleteDevice(RTCDevice device) {
   ispcDeleteDevice(device);
 }
 
-void rtcInit(const uniform int8* uniform cfg) {
-  ispcInit(cfg);
-}
-
-void rtcExit() {
-  ispcExit();
-}
-
-void rtcSetParameter1i(const uniform RTCParameter parm, uniform size_t val) {
-  ispcSetParameter1i(parm,val);
-}
-
-uniform size_t rtcGetParameter1i(const uniform RTCParameter parm) {
-  return ispcGetParameter1i(parm);
-}
-
 void rtcDeviceSetParameter1i(RTCDevice device, const uniform RTCParameter parm, uniform size_t val) {
   ispcDeviceSetParameter1i(device,parm,val);
 }
@@ -212,16 +189,8 @@ uniform size_t rtcDeviceGetParameter1i(RTCDevice device, const uniform RTCParame
   return ispcDeviceGetParameter1i(device,parm);
 }
 
-uniform RTCError rtcGetError() {
-  return ispcGetError();
-}
-
 uniform RTCError rtcDeviceGetError(RTCDevice device) {
   return ispcDeviceGetError(device);
-}
-
-void rtcSetErrorFunction(uniform RTCErrorFunc func) {
-  ispcSetErrorFunction(func);
 }
 
 void rtcDeviceSetErrorFunction(RTCDevice device, uniform RTCErrorFunc func) {
@@ -232,33 +201,12 @@ void rtcDeviceSetErrorFunction2(RTCDevice device, uniform RTCErrorFunc2 fptr, vo
   ispcDeviceSetErrorFunction2(device,fptr,uptr);
 }
 
-void rtcSetMemoryMonitorFunction(uniform RTCMemoryMonitorFunc func) {
-  ispcSetMemoryMonitorFunction(func);
-}
-
 void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, uniform RTCMemoryMonitorFunc func) {
   ispcDeviceSetMemoryMonitorFunction(device,func);
 }
 
 void rtcDeviceSetMemoryMonitorFunction2(RTCDevice device, uniform RTCMemoryMonitorFunc2 func, void* uniform userPtr) {
   ispcDeviceSetMemoryMonitorFunction2(device,func,userPtr);
-}
-
-void rtcDebug() {
-  ispcDebug();
-}
-
-RTCScene rtcNewScene (uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags) 
-{  
-  if (aflags & RTC_INTERSECT_VARYING) {
-    if (sizeof(varying float) == 16)
-      aflags = (uniform RTCAlgorithmFlags) ((aflags & ~RTC_INTERSECT_VARYING) | (1 << 1));
-    else if (sizeof(varying float) == 32)
-      aflags = (uniform RTCAlgorithmFlags) ((aflags & ~RTC_INTERSECT_VARYING) | (1 << 2));
-    else if (sizeof(varying float) == 64)
-      aflags = (uniform RTCAlgorithmFlags) ((aflags & ~RTC_INTERSECT_VARYING) | (1 << 3));
-  }
-  return ispcNewScene(flags,aflags);
 }
 
 RTCScene rtcDeviceNewScene (RTCDevice device, uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags) 
