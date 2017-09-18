@@ -26,8 +26,8 @@ extern "C" void ispcDeleteDevice(RTCDevice device);
 extern "C" void ispcDeviceSetParameter1i(RTCDevice device, const uniform RTCParameter parm, uniform ssize_t val);
 extern "C" uniform ssize_t ispcDeviceGetParameter1i(RTCDevice device, const uniform RTCParameter parm);
 extern "C" uniform RTCError ispcDeviceGetError (RTCDevice device);
-extern "C" void ispcDeviceSetErrorFunction2(RTCDevice device, void* uniform fptr, void* uniform uptr);
-extern "C" void ispcDeviceSetMemoryMonitorFunction2 (RTCDevice device, void* uniform fptr, void* uniform uptr);
+extern "C" void ispcDeviceSetErrorFunction(RTCDevice device, void* uniform fptr, void* uniform uptr);
+extern "C" void ispcDeviceSetMemoryMonitorFunction (RTCDevice device, void* uniform fptr, void* uniform uptr);
 extern "C" void ispcDebug();
 extern "C" RTCScene ispcNewScene (uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags);
 extern "C" RTCScene ispcNewScene2 (RTCDevice device, uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags);
@@ -191,12 +191,12 @@ uniform RTCError rtcDeviceGetError(RTCDevice device) {
   return ispcDeviceGetError(device);
 }
 
-void rtcDeviceSetErrorFunction2(RTCDevice device, uniform RTCErrorFunc2 fptr, void* uniform uptr) {
-  ispcDeviceSetErrorFunction2(device,fptr,uptr);
+void rtcDeviceSetErrorFunction(RTCDevice device, uniform RTCErrorFunc fptr, void* uniform uptr) {
+  ispcDeviceSetErrorFunction(device,fptr,uptr);
 }
 
-void rtcDeviceSetMemoryMonitorFunction2(RTCDevice device, uniform RTCMemoryMonitorFunc2 func, void* uniform userPtr) {
-  ispcDeviceSetMemoryMonitorFunction2(device,func,userPtr);
+void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, uniform RTCMemoryMonitorFunc func, void* uniform userPtr) {
+  ispcDeviceSetMemoryMonitorFunction(device,func,userPtr);
 }
 
 RTCScene rtcDeviceNewScene (RTCDevice device, uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags) 

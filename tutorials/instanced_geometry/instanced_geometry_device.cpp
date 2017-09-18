@@ -130,7 +130,7 @@ extern "C" void device_init (char* cfg)
   error_handler(nullptr,rtcDeviceGetError(g_device));
 
   /* set error handler */
-  rtcDeviceSetErrorFunction2(g_device,error_handler,nullptr);
+  rtcDeviceSetErrorFunction(g_device,error_handler,nullptr);
 
   RTCAlgorithmFlags aflags;
   if (g_mode == MODE_NORMAL) aflags = RTC_INTERSECT1;

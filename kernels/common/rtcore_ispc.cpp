@@ -45,12 +45,12 @@ namespace embree
     return rtcDeviceGetError(device);
   }
 
-  extern "C" void ispcDeviceSetErrorFunction2(RTCDevice device, void* fptr, void* uptr) {
-    return rtcDeviceSetErrorFunction2(device,(RTCErrorFunc2)fptr,uptr);
+  extern "C" void ispcDeviceSetErrorFunction(RTCDevice device, void* fptr, void* uptr) {
+    return rtcDeviceSetErrorFunction(device,(RTCErrorFunc)fptr,uptr);
   }
 
-  extern "C" void ispcDeviceSetMemoryMonitorFunction2(RTCDevice device, void* fptr, void* uptr) {
-    return rtcDeviceSetMemoryMonitorFunction2(device,(RTCMemoryMonitorFunc2)fptr,uptr);
+  extern "C" void ispcDeviceSetMemoryMonitorFunction(RTCDevice device, void* fptr, void* uptr) {
+    return rtcDeviceSetMemoryMonitorFunction(device,(RTCMemoryMonitorFunc)fptr,uptr);
   }
 
   extern "C" RTCScene ispcNewScene2 (RTCDevice device, RTCSceneFlags flags, RTCAlgorithmFlags aflags) 

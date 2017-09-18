@@ -399,7 +399,7 @@ namespace embree {
     error_handler(nullptr,rtcDeviceGetError(g_device));
 
     /* set error handler */
-    rtcDeviceSetErrorFunction2(g_device,error_handler,nullptr);
+    rtcDeviceSetErrorFunction(g_device,error_handler,nullptr);
     Benchmark_Dynamic_Update(g_ispc_scene,iterations_dynamic_dynamic,RTC_GEOMETRY_DEFORMABLE);
     Pause();
     Benchmark_Dynamic_Update(g_ispc_scene,iterations_dynamic_dynamic,RTC_GEOMETRY_DYNAMIC);

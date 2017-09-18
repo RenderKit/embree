@@ -232,7 +232,7 @@ namespace embree
     error_handler(nullptr,rtcDeviceGetError(device));
     
     /* set error handler */
-    rtcDeviceSetErrorFunction2(device,error_handler,nullptr);
+    rtcDeviceSetErrorFunction(device,error_handler,nullptr);
     
     /* create scene */
     RTCScene scene = rtcDeviceNewScene(device,RTC_SCENE_STATIC,RTC_INTERSECT1);

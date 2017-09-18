@@ -475,7 +475,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
     error_handler(nullptr,rtcDeviceGetError(g_device));
 
     /* set error handler */
-    rtcDeviceSetErrorFunction2(g_device,error_handler,nullptr);
+    rtcDeviceSetErrorFunction(g_device,error_handler,nullptr);
 
     /* create scene */
     g_scene = createScene(g_ispc_scene);

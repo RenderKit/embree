@@ -139,19 +139,19 @@ enum RTCError {
 uniform RTCError rtcDeviceGetError(RTCDevice device);
 
 /*! \brief Type of error callback function. */
-typedef unmasked void (*uniform RTCErrorFunc2)(void* uniform userPtr, const uniform RTCError code, const uniform int8* uniform str);
+typedef unmasked void (*uniform RTCErrorFunc)(void* uniform userPtr, const uniform RTCError code, const uniform int8* uniform str);
 
 /*! \brief Sets a callback function that is called whenever an error occurs. */
-void rtcDeviceSetErrorFunction2(RTCDevice device, uniform RTCErrorFunc2 func, void* uniform userPtr);
+void rtcDeviceSetErrorFunction(RTCDevice device, uniform RTCErrorFunc func, void* uniform userPtr);
 
 /*! \brief Type of memory consumption callback function. */
-typedef uniform bool (*uniform RTCMemoryMonitorFunc2)(const uniform uintptr_t bytes, const uniform bool post); // FIXME: should be ssize_t
+typedef uniform bool (*uniform RTCMemoryMonitorFunc)(const uniform uintptr_t bytes, const uniform bool post); // FIXME: should be ssize_t
 
 /*! \brief Sets the memory consumption callback function which is
  *  called before or after the library allocates or frees memory. The
  *  userPtr pointer is passed to each invokation of the callback
  *  function. */
-void rtcDeviceSetMemoryMonitorFunction2(RTCDevice device, RTCMemoryMonitorFunc2 func, void* uniform userPtr);
+void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunc func, void* uniform userPtr);
 
 #include "rtcore_scene.isph"
 #include "rtcore_geometry.isph"

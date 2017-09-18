@@ -160,23 +160,23 @@ namespace embree
     static ErrorHandler g_errorHandler;
 
   public:
-    void setErrorFunction(RTCErrorFunc2 fptr, void* uptr) 
+    void setErrorFunction(RTCErrorFunc fptr, void* uptr) 
     {
-      error_function2 = fptr;
+      error_function = fptr;
       error_function_userptr = uptr;
     }
 
-    RTCErrorFunc2 error_function2;
+    RTCErrorFunc error_function;
     void* error_function_userptr;
 
   public:
-    void setMemoryMonitorFunction(RTCMemoryMonitorFunc2 fptr, void* uptr) 
+    void setMemoryMonitorFunction(RTCMemoryMonitorFunc fptr, void* uptr) 
     {
-      memory_monitor_function2 = fptr;
+      memory_monitor_function = fptr;
       memory_monitor_userptr = uptr;
     }
       
-    RTCMemoryMonitorFunc2 memory_monitor_function2;
+    RTCMemoryMonitorFunc memory_monitor_function;
     void* memory_monitor_userptr;
   };
 }

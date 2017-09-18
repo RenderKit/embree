@@ -1039,7 +1039,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       errorHandler(nullptr,rtcDeviceGetError(device));
-      rtcDeviceSetErrorFunction2(device,errorHandler,nullptr);
+      rtcDeviceSetErrorFunction(device,errorHandler,nullptr);
       
       std::vector<Vec3f> p;
       p.reserve(4);
@@ -1308,7 +1308,7 @@ namespace embree
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       errorHandler(nullptr,rtcDeviceGetError(device));
       memory_consumption_bytes_used = 0;
-      rtcDeviceSetMemoryMonitorFunction2(device,memoryMonitor,nullptr);
+      rtcDeviceSetMemoryMonitorFunction(device,memoryMonitor,nullptr);
       VerifyScene scene(device,sflags,aflags);
       AssertNoError(device);
       
@@ -3480,7 +3480,7 @@ namespace embree
         intersectModes.push_back(MODE_INTERSECTNp);
       }
       
-      rtcDeviceSetMemoryMonitorFunction2(device,monitorMemoryFunction,nullptr);
+      rtcDeviceSetMemoryMonitorFunction(device,monitorMemoryFunction,nullptr);
       
       unsigned int sceneIndex = 0;
       while (sceneIndex < size_t(intensity*state->intensity)) 
@@ -3516,7 +3516,7 @@ namespace embree
           return VerifyApplication::FAILED;
         sceneIndex++;
       }
-      rtcDeviceSetMemoryMonitorFunction2(device,nullptr,nullptr);
+      rtcDeviceSetMemoryMonitorFunction(device,nullptr,nullptr);
       AssertNoError(device);
       return VerifyApplication::PASSED;
     }
@@ -3604,7 +3604,7 @@ namespace embree
       std::string cfg = state->rtcore + ",start_threads=1,set_affinity=1,isa="+stringOfISA(isa);
       device = rtcNewDevice(cfg.c_str());
       errorHandler(nullptr,rtcDeviceGetError(device));
-      rtcDeviceSetErrorFunction2(device,errorHandler,nullptr);
+      rtcDeviceSetErrorFunction(device,errorHandler,nullptr);
       if (!supportsIntersectMode(device,imode))
         return false;
 
@@ -3776,7 +3776,7 @@ namespace embree
       std::string cfg = state->rtcore + ",start_threads=1,set_affinity=1,isa="+stringOfISA(isa);
       device = rtcNewDevice(cfg.c_str());
       errorHandler(nullptr,rtcDeviceGetError(device));
-      rtcDeviceSetErrorFunction2(device,errorHandler,nullptr);
+      rtcDeviceSetErrorFunction(device,errorHandler,nullptr);
       if (!supportsIntersectMode(device,imode))
         return false;
 
@@ -3955,8 +3955,8 @@ namespace embree
       std::string cfg = "start_threads=1,set_affinity=1,isa="+stringOfISA(isa) + ",threads=" + std::to_string((long long)numThreads)+","+state->rtcore;
       device = rtcNewDevice(cfg.c_str());
       errorHandler(nullptr,rtcDeviceGetError(device));
-      rtcDeviceSetErrorFunction2(device,errorHandler,nullptr);
-      if (!dobenchmark) rtcDeviceSetMemoryMonitorFunction2(device,memoryMonitor,nullptr);
+      rtcDeviceSetErrorFunction(device,errorHandler,nullptr);
+      if (!dobenchmark) rtcDeviceSetMemoryMonitorFunction(device,memoryMonitor,nullptr);
 
       for (unsigned int i=0; i<numMeshes; i++)
       {

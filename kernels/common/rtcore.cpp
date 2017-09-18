@@ -86,21 +86,21 @@ namespace embree
     return RTC_UNKNOWN_ERROR;
   }
 
-  RTCORE_API void rtcDeviceSetErrorFunction2(RTCDevice hdevice, RTCErrorFunc2 func, void* userPtr) 
+  RTCORE_API void rtcDeviceSetErrorFunction(RTCDevice hdevice, RTCErrorFunc func, void* userPtr) 
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcDeviceSetErrorFunction2);
+    RTCORE_TRACE(rtcDeviceSetErrorFunction);
     RTCORE_VERIFY_HANDLE(hdevice);
     device->setErrorFunction(func,userPtr);
     RTCORE_CATCH_END(device);
   }
 
-  RTCORE_API void rtcDeviceSetMemoryMonitorFunction2(RTCDevice hdevice, RTCMemoryMonitorFunc2 func, void* userPtr) 
+  RTCORE_API void rtcDeviceSetMemoryMonitorFunction(RTCDevice hdevice, RTCMemoryMonitorFunc func, void* userPtr) 
   {
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcDeviceSetMemoryMonitorFunction2);
+    RTCORE_TRACE(rtcDeviceSetMemoryMonitorFunction);
     device->setMemoryMonitorFunction(func,userPtr);
     RTCORE_CATCH_END(device);
   }
