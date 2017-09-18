@@ -144,21 +144,8 @@ typedef unmasked void (*uniform RTCErrorFunc2)(void* uniform userPtr, const unif
 /*! \brief Sets a callback function that is called whenever an error occurs. */
 void rtcDeviceSetErrorFunction2(RTCDevice device, uniform RTCErrorFunc2 func, void* uniform userPtr);
 
-/*! \brief Type of memory consumption callback function. 
-  WARNING: This callback function is deprecated, use RTCMemoryMonitorFunc2 instead.
-*/
-RTCORE_DEPRECATED typedef uniform bool (*uniform RTCMemoryMonitorFunc)(const uniform uintptr_t bytes, const uniform bool post); // FIXME: should be ssize_t
-RTCORE_DEPRECATED typedef RTCMemoryMonitorFunc RTC_MEMORY_MONITOR_FUNCTION;
-
 /*! \brief Type of memory consumption callback function. */
 typedef uniform bool (*uniform RTCMemoryMonitorFunc2)(const uniform uintptr_t bytes, const uniform bool post); // FIXME: should be ssize_t
-
-/*! \brief Sets the memory consumption callback function which is
- *  called before the library allocates or after the library frees
- *  memory. 
-   WARNING: This function is deprecated, use rtcDeviceSetMemoryMonitorFunction2 instead.
-*/
-void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunc func);
 
 /*! \brief Sets the memory consumption callback function which is
  *  called before or after the library allocates or frees memory. The

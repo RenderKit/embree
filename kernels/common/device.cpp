@@ -287,14 +287,6 @@ namespace embree
 
   void Device::memoryMonitor(ssize_t bytes, bool post)
   {
-    if (State::memory_monitor_function && bytes != 0) {
-      if (!State::memory_monitor_function(bytes,post)) {
-        if (bytes > 0) { // only throw exception when we allocate memory to never throw inside a destructor
-          throw_RTCError(RTC_OUT_OF_MEMORY,"memory monitor forced termination");
-        }
-      }
-    }
-
     if (State::memory_monitor_function2 && bytes != 0) {
       if (!State::memory_monitor_function2(State::memory_monitor_userptr,bytes,post)) {
         if (bytes > 0) { // only throw exception when we allocate memory to never throw inside a destructor

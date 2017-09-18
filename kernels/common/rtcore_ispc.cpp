@@ -49,10 +49,6 @@ namespace embree
     return rtcDeviceSetErrorFunction2(device,(RTCErrorFunc2)fptr,uptr);
   }
 
-  extern "C" void ispcDeviceSetMemoryMonitorFunction(RTCDevice device, void* f) {
-    return rtcDeviceSetMemoryMonitorFunction(device,(RTCMemoryMonitorFunc)f);
-  }
-
   extern "C" void ispcDeviceSetMemoryMonitorFunction2(RTCDevice device, void* fptr, void* uptr) {
     return rtcDeviceSetMemoryMonitorFunction2(device,(RTCMemoryMonitorFunc2)fptr,uptr);
   }

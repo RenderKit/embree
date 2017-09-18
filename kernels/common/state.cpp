@@ -145,7 +145,6 @@ namespace embree
     error_function2 = nullptr;
     error_function_userptr = nullptr;
 
-    memory_monitor_function = nullptr;
     memory_monitor_function2 = nullptr;
     memory_monitor_userptr = nullptr;
   }

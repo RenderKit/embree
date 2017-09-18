@@ -170,21 +170,12 @@ namespace embree
     void* error_function_userptr;
 
   public:
-    void setMemoryMonitorFunction(RTCMemoryMonitorFunc fptr) 
-    {
-      memory_monitor_function = fptr;
-      memory_monitor_function2 = nullptr;
-      memory_monitor_userptr = nullptr;
-    }
-    
     void setMemoryMonitorFunction(RTCMemoryMonitorFunc2 fptr, void* uptr) 
     {
-      memory_monitor_function = nullptr;
       memory_monitor_function2 = fptr;
       memory_monitor_userptr = uptr;
     }
       
-    RTCMemoryMonitorFunc memory_monitor_function;
     RTCMemoryMonitorFunc2 memory_monitor_function2;
     void* memory_monitor_userptr;
   };

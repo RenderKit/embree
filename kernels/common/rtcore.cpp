@@ -96,15 +96,6 @@ namespace embree
     RTCORE_CATCH_END(device);
   }
 
-  RTCORE_API void rtcDeviceSetMemoryMonitorFunction(RTCDevice hdevice, RTCMemoryMonitorFunc func) 
-  {
-    Device* device = (Device*) hdevice;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcDeviceSetMemoryMonitorFunction);
-    device->setMemoryMonitorFunction(func);
-    RTCORE_CATCH_END(device);
-  }
-
   RTCORE_API void rtcDeviceSetMemoryMonitorFunction2(RTCDevice hdevice, RTCMemoryMonitorFunc2 func, void* userPtr) 
   {
     Device* device = (Device*) hdevice;

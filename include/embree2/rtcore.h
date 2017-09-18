@@ -170,20 +170,8 @@ typedef void (*RTCErrorFunc2)(void* userPtr, const RTCError code, const char* st
 /*! \brief Sets a callback function that is called whenever an error occurs. */
 RTCORE_API void rtcDeviceSetErrorFunction2(RTCDevice device, RTCErrorFunc2 func, void* userPtr);
 
-/*! \brief Type of memory consumption callback function.
-   WARNING: This callback function is deprecated, use RTCMemoryMonitorFunc2 instead.
- */
-/*RTCORE_DEPRECATED*/ typedef bool (*RTCMemoryMonitorFunc)(const ssize_t bytes, const bool post);
-RTCORE_DEPRECATED typedef RTCMemoryMonitorFunc RTC_MEMORY_MONITOR_FUNCTION;
-
 /*! \brief Type of memory consumption callback function. */
 typedef bool (*RTCMemoryMonitorFunc2)(void* ptr, const ssize_t bytes, const bool post);
-
-/*! \brief Sets the memory consumption callback function which is
- *  called before or after the library allocates or frees memory. 
-   WARNING: This function is deprecated, use rtcDeviceSetMemoryMonitorFunction2 instead.
-*/
-RTCORE_API RTCORE_DEPRECATED void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunc func);
 
 /*! \brief Sets the memory consumption callback function which is
  *  called before or after the library allocates or frees memory. The
