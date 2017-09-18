@@ -106,7 +106,7 @@ namespace embree
 	int pos[4] = { pos0,pos1,pos2,pos3 };
 	const size_t mbd = BVH4::maxBuildDepth;
 	vbool4 valid = vint4(int(depth+1))+cdepth <= vint4(mbd); // only select swaps that fulfill depth constraints
-	valid &= vint4(c2) != vint4(step);
+	valid &= vint4(int(c2)) != vint4(step);
 	if (none(valid)) continue;
 	size_t c1 = select_min(valid,area0123);
 	float area = area0123[c1]; 
