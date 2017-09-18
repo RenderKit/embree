@@ -139,8 +139,10 @@ namespace embree
     float r;
   };
 
-  void BoundsFunc(Sphere* sphere, size_t index, BBox3fa* bounds_o)
+  void BoundsFunc(void* This, size_t index, RTCBounds& bounds)
   {
+    Sphere* sphere = (Sphere*) This;
+    BBox3fa* bounds_o = (BBox3fa*)&bounds;
     bounds_o->lower.x = sphere->pos.x-sphere->r;
     bounds_o->lower.y = sphere->pos.y-sphere->r;
     bounds_o->lower.z = sphere->pos.z-sphere->r;
@@ -296,7 +298,7 @@ namespace embree
     std::pair<unsigned,Ref<SceneGraph::Node>> addUserGeometryEmpty (RandomSampler& sampler, RTCGeometryFlags gflag, Sphere* sphere)
     {
       unsigned geom = rtcNewUserGeometry3 (scene,gflag,1,1);
-      rtcSetBoundsFunction(scene,geom,(RTCBoundsFunc)BoundsFunc);
+      rtcSetBoundsFunction(scene,geom,BoundsFunc);
       rtcSetUserData(scene,geom,sphere);
       rtcSetIntersectFunctionN(scene,geom,IntersectFuncN);
       rtcSetOccludedFunctionN(scene,geom,IntersectFuncN);
