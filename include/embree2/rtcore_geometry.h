@@ -112,7 +112,7 @@ typedef void (*RTCFilterFuncN)(int* valid,                            /*!< point
                                const size_t N                         /*!< size of ray packet */);
 
 /*! Displacement mapping function. */
-typedef void (*RTCDisplacementFunc2)(void* ptr,           /*!< pointer to user data of geometry */
+typedef void (*RTCDisplacementFunc)(void* ptr,           /*!< pointer to user data of geometry */
                                      unsigned geomID,     /*!< ID of geometry to displace */
                                      unsigned primID,     /*!< ID of primitive of geometry to displace */
                                      unsigned time,       /*!< time step to calculate displacement for */
@@ -634,7 +634,7 @@ RTCORE_API void rtcUpdateBuffer (RTCScene scene, unsigned geomID, RTCBufferType 
 RTCORE_API void rtcDisable (RTCScene scene, unsigned geomID);
 
 /*! \brief Sets the displacement function. */
-RTCORE_API void rtcSetDisplacementFunction2 (RTCScene scene, unsigned geomID, RTCDisplacementFunc2 func, RTCBounds* bounds);
+RTCORE_API void rtcSetDisplacementFunction (RTCScene scene, unsigned geomID, RTCDisplacementFunc func, RTCBounds* bounds);
 
 /*! \brief Sets the intersection filter function for single rays. */
 RTCORE_API void rtcSetIntersectionFilterFunction (RTCScene scene, unsigned geomID, RTCFilterFunc func);

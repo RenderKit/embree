@@ -102,7 +102,7 @@ typedef unmasked void (*uniform RTCFilterFuncN)(uniform int* uniform valid,     
                                                 uniform const uintptr_t N              /*!< number of rays in ray packet */);
 
 /*! Type of displacement callback functions */
-typedef unmasked void (*RTCDisplacementFunc2)(void* uniform ptr,               /*!< pointer to user data of geometry */
+typedef unmasked void (*RTCDisplacementFunc)(void* uniform ptr,               /*!< pointer to user data of geometry */
                                               uniform unsigned int geomID,     /*!< ID of geometry to displace */
                                               uniform unsigned int primID,     /*!< ID of primitive of geometry to displace */
                                               uniform unsigned int time,       /*!< time step to calculate displacement for */
@@ -621,7 +621,7 @@ void rtcUpdateBuffer (RTCScene scene, uniform unsigned int geomID, uniform RTCBu
 void rtcDisable (RTCScene scene, uniform unsigned int geomID);
 
 /*! \brief Sets the displacement function. */
-void rtcSetDisplacementFunction2 (RTCScene scene, uniform unsigned int geomID, uniform RTCDisplacementFunc2 func, uniform RTCBounds *uniform bounds);
+void rtcSetDisplacementFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCDisplacementFunc func, uniform RTCBounds *uniform bounds);
 
 /*! \brief Sets the intersection filter function for uniform rays. */
 void rtcSetIntersectionFilterFunction1 (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncUniform func);

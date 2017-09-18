@@ -522,14 +522,14 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
 
-  extern "C" void ispcSetDisplacementFunction2 (RTCScene hscene, unsigned int geomID, void* func, RTCBounds* bounds)
+  extern "C" void ispcSetDisplacementFunction (RTCScene hscene, unsigned int geomID, void* func, RTCBounds* bounds)
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetDisplacementFunction2);
+    RTCORE_TRACE(rtcSetDisplacementFunction);
     RTCORE_VERIFY_HANDLE(scene);
     RTCORE_VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get_locked(geomID)->setDisplacementFunction2((RTCDisplacementFunc2)func,bounds);
+    ((Scene*)scene)->get_locked(geomID)->setDisplacementFunction((RTCDisplacementFunc)func,bounds);
     RTCORE_CATCH_END(scene->device);
   }
   

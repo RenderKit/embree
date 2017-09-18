@@ -1450,14 +1450,14 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API void rtcSetDisplacementFunction2 (RTCScene hscene, unsigned geomID, RTCDisplacementFunc2 func, RTCBounds* bounds)
+  RTCORE_API void rtcSetDisplacementFunction (RTCScene hscene, unsigned geomID, RTCDisplacementFunc func, RTCBounds* bounds)
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetDisplacementFunction2);
+    RTCORE_TRACE(rtcSetDisplacementFunction);
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setDisplacementFunction2(func,bounds);
+    scene->get_locked(geomID)->setDisplacementFunction(func,bounds);
     RTCORE_CATCH_END2(scene);
   }
 

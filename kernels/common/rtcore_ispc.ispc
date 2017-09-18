@@ -150,7 +150,7 @@ extern "C" void ispcSetOcclusionFilterFunction8 (RTCScene scene, uniform unsigne
 extern "C" void ispcSetOcclusionFilterFunction16 (RTCScene scene, uniform unsigned int geomID, void* uniform filter);
 extern "C" void ispcSetOcclusionFilterFunctionN (RTCScene scene, uniform unsigned int geomID, void* uniform filter);
 
-extern "C" void ispcSetDisplacementFunction2 (RTCScene scene, uniform unsigned int geomID, void *uniform func, uniform RTCBounds* uniform bounds);
+extern "C" void ispcSetDisplacementFunction (RTCScene scene, uniform unsigned int geomID, void *uniform func, uniform RTCBounds* uniform bounds);
 
 extern "C" void ispcInterpolateN(RTCScene scene, uniform unsigned int geomID, 
                                  const void* uniform valid, const uniform unsigned int* uniform primIDs, const uniform float* uniform u, const uniform float* uniform v, uniform size_t numUVs, 
@@ -616,8 +616,8 @@ void rtcSetOcclusionFilterFunctionN (RTCScene scene, uniform unsigned int geomID
   ispcSetOcclusionFilterFunctionN(scene,geomID,filter);
 }
 
-void rtcSetDisplacementFunction2 (RTCScene scene, uniform unsigned int geomID, uniform RTCDisplacementFunc2 func, uniform RTCBounds* uniform bounds) {
-  ispcSetDisplacementFunction2(scene,geomID,func,bounds);
+void rtcSetDisplacementFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCDisplacementFunc func, uniform RTCBounds* uniform bounds) {
+  ispcSetDisplacementFunction(scene,geomID,func,bounds);
 }
 
 void rtcInterpolate(RTCScene scene, uniform unsigned int geomID, varying unsigned int primID, varying float u, varying float v, 

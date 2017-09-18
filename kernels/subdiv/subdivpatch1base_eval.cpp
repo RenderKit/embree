@@ -93,7 +93,7 @@ namespace embree
 
       if (unlikely(patch.type == SubdivPatch1Base::EVAL_PATCH))
       {
-        const bool displ = geom->displFunc2;
+        const bool displ = geom->displFunc;
         const unsigned N = displ ? M : 0;
         dynamic_large_stack_array(float,grid_Ng_x,N,64*64*sizeof(float));
         dynamic_large_stack_array(float,grid_Ng_y,N,64*64*sizeof(float));
@@ -136,8 +136,8 @@ namespace embree
         }
 
         /* call displacement shader */
-        if (unlikely(geom->displFunc2))
-          geom->displFunc2(geom->userPtr,patch.geomID(),patch.primID(),patch.time(),grid_u,grid_v,grid_Ng_x,grid_Ng_y,grid_Ng_z,grid_x,grid_y,grid_z,dwidth*dheight);
+        if (unlikely(geom->displFunc))
+          geom->displFunc(geom->userPtr,patch.geomID(),patch.primID(),patch.time(),grid_u,grid_v,grid_Ng_x,grid_Ng_y,grid_Ng_z,grid_x,grid_y,grid_z,dwidth*dheight);
 
         /* set last elements in u,v array to 1.0f */
         const float last_u = grid_u[dwidth*dheight-1];
@@ -179,10 +179,10 @@ namespace embree
           Vec3vfx vtx = patchEval(patch,u,v);
         
           /* evaluate displacement function */
-          if (unlikely(geom->displFunc2 != nullptr))
+          if (unlikely(geom->displFunc != nullptr))
           {
             const Vec3vfx normal = normalize_safe(patchNormal(patch, u, v));
-            geom->displFunc2(geom->userPtr,patch.geomID(),patch.primID(),patch.time(),
+            geom->displFunc(geom->userPtr,patch.geomID(),patch.primID(),patch.time(),
                              &u[0],&v[0],&normal.x[0],&normal.y[0],&normal.z[0],
                              &vtx.x[0],&vtx.y[0],&vtx.z[0],VSIZEX);
           }
@@ -212,7 +212,7 @@ namespace embree
 
       if (unlikely(patch.type == SubdivPatch1Base::EVAL_PATCH))
       {
-        const bool displ = geom->displFunc2;
+        const bool displ = geom->displFunc;
         dynamic_large_stack_array(float,grid_x,M,64*64*sizeof(float));
         dynamic_large_stack_array(float,grid_y,M,64*64*sizeof(float));
         dynamic_large_stack_array(float,grid_z,M,64*64*sizeof(float));
@@ -242,8 +242,8 @@ namespace embree
         }
 
         /* call displacement shader */
-        if (unlikely(geom->displFunc2))
-          geom->displFunc2(geom->userPtr,patch.geomID(),patch.primID(),patch.time(),grid_u,grid_v,grid_Ng_x,grid_Ng_y,grid_Ng_z,grid_x,grid_y,grid_z,dwidth*dheight);
+        if (unlikely(geom->displFunc))
+          geom->displFunc(geom->userPtr,patch.geomID(),patch.primID(),patch.time(),grid_u,grid_v,grid_Ng_x,grid_Ng_y,grid_Ng_z,grid_x,grid_y,grid_z,dwidth*dheight);
 
         /* set last elements in u,v array to 1.0f */
         const float last_u = grid_u[dwidth*dheight-1];
@@ -325,10 +325,10 @@ namespace embree
           Vec3vfx vtx = patchEval(patch,u,v);
         
           /* evaluate displacement function */
-          if (unlikely(geom->displFunc2 != nullptr))
+          if (unlikely(geom->displFunc != nullptr))
           {
             const Vec3vfx normal = normalize_safe(patchNormal(patch,u,v));
-            geom->displFunc2(geom->userPtr,patch.geomID(),patch.primID(),patch.time(),
+            geom->displFunc(geom->userPtr,patch.geomID(),patch.primID(),patch.time(),
                             &u[0],&v[0],&normal.x[0],&normal.y[0],&normal.z[0],
                             &vtx.x[0],&vtx.y[0],&vtx.z[0],VSIZEX);
           }

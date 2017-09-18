@@ -139,7 +139,7 @@ unsigned int addCube (RTCScene scene_i)
   for (size_t i=0; i<NUM_INDICES; i++) level[i] = EDGE_LEVEL;
   rtcUnmapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
 
-  rtcSetDisplacementFunction2(scene_i,geomID,displacementFunction,nullptr);
+  rtcSetDisplacementFunction(scene_i,geomID,displacementFunction,nullptr);
 
   return geomID;
 }
