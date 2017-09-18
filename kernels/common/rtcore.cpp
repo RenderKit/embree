@@ -1259,17 +1259,6 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API void rtcSetBoundaryMode (RTCScene hscene, unsigned geomID, RTCBoundaryMode mode) 
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetBoundaryMode);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setSubdivisionMode(0,(RTCSubdivisionMode)mode);
-    RTCORE_CATCH_END2(scene);
-  }
-
   RTCORE_API void rtcSetSubdivisionMode (RTCScene hscene, unsigned geomID, unsigned topologyID, RTCSubdivisionMode mode) 
   {
     Scene* scene = (Scene*) hscene;

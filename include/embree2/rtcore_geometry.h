@@ -73,17 +73,6 @@ enum RTCGeometryFlags
   RTC_GEOMETRY_DYNAMIC    = 2,    //!< specifies dynamic geometry with arbitrary motion (BVH refit not possible)
 };
 
-/*! \brief Boundary interpolation mode for subdivision surfaces.
-  WARNING: This enum is deprecated, use RTCSubdivisionMode instead.
- */
-enum RTCBoundaryMode
-{
-  RTC_BOUNDARY_NONE = 0,               //!< ignores border patches
-  RTC_BOUNDARY_SMOOTH = 1,             //!< smooth border (default)
-  RTC_BOUNDARY_EDGE_ONLY = 1,          //!< soft boundary (default)
-  RTC_BOUNDARY_EDGE_AND_CORNER = 2     //!< boundary corner vertices are sharp vertices
-};
-
 /*! \brief Interpolation mode for subdivision surfaces. The modes are
  *  ordered to interpolate successively more linear. */
 enum RTCSubdivisionMode
@@ -585,11 +574,6 @@ RTCORE_API void rtcSetTessellationRate (RTCScene scene, unsigned geomID, float t
 
 /*! \brief Sets 32 bit ray mask. */
 RTCORE_API void rtcSetMask (RTCScene scene, unsigned geomID, int mask);
-
-/*! \brief Sets boundary interpolation mode for default subdivision surface topology.
-  WARNING: This function is deprecated, use rtcSetSubdivisionMode instead.
- */
-RTCORE_API RTCORE_DEPRECATED void rtcSetBoundaryMode(RTCScene scene, unsigned geomID, RTCBoundaryMode mode);
 
 /*! \brief Sets subdivision interpolation mode for specified subdivision surface topology */
 RTCORE_API void rtcSetSubdivisionMode(RTCScene scene, unsigned geomID, unsigned topologyID, RTCSubdivisionMode mode);

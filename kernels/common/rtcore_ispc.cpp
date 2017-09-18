@@ -201,10 +201,6 @@ namespace embree
     rtcSetMask(scene,geomID,mask);
   }
 
-  extern "C" void ispcSetBoundaryMode (RTCScene scene, unsigned geomID, RTCBoundaryMode mode) {
-    rtcSetBoundaryMode(scene,geomID,mode);
-  }
-
   extern "C" void ispcSetSubdivisionMode (RTCScene scene, unsigned geomID, unsigned topologyID, RTCSubdivisionMode mode) {
     rtcSetSubdivisionMode(scene,geomID,topologyID,mode);
   }
