@@ -45,10 +45,6 @@ namespace embree
     return rtcDeviceGetError(device);
   }
 
-  extern "C" void ispcDeviceSetErrorFunction(RTCDevice device, void* f) {
-    return rtcDeviceSetErrorFunction(device,(RTCErrorFunc)f);
-  }
-
   extern "C" void ispcDeviceSetErrorFunction2(RTCDevice device, void* fptr, void* uptr) {
     return rtcDeviceSetErrorFunction2(device,(RTCErrorFunc2)fptr,uptr);
   }

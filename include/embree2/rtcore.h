@@ -164,19 +164,8 @@ enum RTCError {
   currently stored error and clears the error flag again. */
 RTCORE_API RTCError rtcDeviceGetError(RTCDevice device);
 
-/*! \brief Type of error callback function. 
-  WARNING: This callback function is deprecated, use RTCErrorFunc2 instead.
-*/
-/*RTCORE_DEPRECATED*/ typedef void (*RTCErrorFunc)(const RTCError code, const char* str);
-RTCORE_DEPRECATED typedef RTCErrorFunc RTC_ERROR_FUNCTION;
-
 /*! \brief Type of error callback function. */
 typedef void (*RTCErrorFunc2)(void* userPtr, const RTCError code, const char* str);
-
-/*! \brief Sets a callback function that is called whenever an error occurs.
-  WARNING: This function is deprecated, use rtcDeviceSetErrorFunction2 instead.
- */
-RTCORE_API RTCORE_DEPRECATED void rtcDeviceSetErrorFunction(RTCDevice device, RTCErrorFunc func);
 
 /*! \brief Sets a callback function that is called whenever an error occurs. */
 RTCORE_API void rtcDeviceSetErrorFunction2(RTCDevice device, RTCErrorFunc2 func, void* userPtr);

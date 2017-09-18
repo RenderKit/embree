@@ -86,16 +86,6 @@ namespace embree
     return RTC_UNKNOWN_ERROR;
   }
 
-  RTCORE_API void rtcDeviceSetErrorFunction(RTCDevice hdevice, RTCErrorFunc func) 
-  {
-    Device* device = (Device*) hdevice;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcDeviceSetErrorFunction);
-    RTCORE_VERIFY_HANDLE(hdevice);
-    device->setErrorFunction(func);
-    RTCORE_CATCH_END(device);
-  }
-
   RTCORE_API void rtcDeviceSetErrorFunction2(RTCDevice hdevice, RTCErrorFunc2 func, void* userPtr) 
   {
     Device* device = (Device*) hdevice;

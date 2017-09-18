@@ -26,7 +26,6 @@ extern "C" void ispcDeleteDevice(RTCDevice device);
 extern "C" void ispcDeviceSetParameter1i(RTCDevice device, const uniform RTCParameter parm, uniform ssize_t val);
 extern "C" uniform ssize_t ispcDeviceGetParameter1i(RTCDevice device, const uniform RTCParameter parm);
 extern "C" uniform RTCError ispcDeviceGetError (RTCDevice device);
-extern "C" void ispcDeviceSetErrorFunction (RTCDevice device, void* uniform ptr);
 extern "C" void ispcDeviceSetErrorFunction2(RTCDevice device, void* uniform fptr, void* uniform uptr);
 extern "C" void ispcDeviceSetMemoryMonitorFunction (RTCDevice device, void* uniform ptr);
 extern "C" void ispcDeviceSetMemoryMonitorFunction2 (RTCDevice device, void* uniform fptr, void* uniform uptr);
@@ -191,10 +190,6 @@ uniform size_t rtcDeviceGetParameter1i(RTCDevice device, const uniform RTCParame
 
 uniform RTCError rtcDeviceGetError(RTCDevice device) {
   return ispcDeviceGetError(device);
-}
-
-void rtcDeviceSetErrorFunction(RTCDevice device, uniform RTCErrorFunc func) {
-  ispcDeviceSetErrorFunction(device,func);
 }
 
 void rtcDeviceSetErrorFunction2(RTCDevice device, uniform RTCErrorFunc2 fptr, void* uniform uptr) {

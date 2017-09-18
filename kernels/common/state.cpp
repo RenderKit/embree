@@ -142,7 +142,6 @@ namespace embree
     alloc_thread_block_size = 0;
     alloc_single_thread_alloc = -1;
 
-    error_function = nullptr;
     error_function2 = nullptr;
     error_function_userptr = nullptr;
 
