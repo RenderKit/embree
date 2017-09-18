@@ -30,7 +30,6 @@ namespace embree
   SubdivMesh::SubdivMesh (Scene* scene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
 			  size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps)
     : Geometry(scene,SUBDIV_MESH,numFaces,numTimeSteps,flags), 
-      displFunc(nullptr),
       displFunc2(nullptr),
       displBounds(empty),
       tessellationRate(2.0f),
@@ -305,16 +304,6 @@ namespace embree
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
 
     Geometry::update();
-  }
-
-  void SubdivMesh::setDisplacementFunction (RTCDisplacementFunc func, RTCBounds* bounds) 
-  {
-    if (scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
-    this->displFunc   = func;
-    if (bounds) this->displBounds = *(BBox3fa*)bounds; 
-    else        this->displBounds = empty;
   }
 
   void SubdivMesh::setDisplacementFunction2 (RTCDisplacementFunc2 func, RTCBounds* bounds) 
