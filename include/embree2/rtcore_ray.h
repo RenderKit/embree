@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __RTCORE_RAY_H__
-#define __RTCORE_RAY_H__
+#pragma once
 
 #include "rtcore.h"
 
@@ -306,5 +305,3 @@ struct RTCHitNt : public RTCHitN
 #endif
 
 /*! @} */
-
-#endif

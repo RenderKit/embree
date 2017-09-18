@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __RTCORE_BUILDER_H__
-#define __RTCORE_BUILDER_H__
+#pragma once
 
 #include "rtcore.h"
 
@@ -117,5 +116,3 @@ RTCORE_API void rtcMakeStaticBVH(RTCBVH bvh);
 
 /*! Deletes the BVH including all allocated nodes. */
 RTCORE_API void rtcDeleteBVH(RTCBVH bvh);
-
-#endif

@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __RTCORE_SCENE_H__
-#define __RTCORE_SCENE_H__
+#pragma once
 
 /*! \ingroup embree_kernel_api */
 /*! \{ */
@@ -272,5 +271,3 @@ RTCORE_API void rtcOccludedNp (RTCScene scene, const RTCIntersectContext* contex
 RTCORE_API void rtcDeleteScene (RTCScene scene);
 
 /*! @} */
-
-#endif

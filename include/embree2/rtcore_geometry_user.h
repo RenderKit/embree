@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __RTCORE_USER_GEOMETRY_H__
-#define __RTCORE_USER_GEOMETRY_H__
+#pragma once
 
 /*! \ingroup embree_kernel_api */
 /*! \{ */
@@ -227,5 +226,3 @@ RTCORE_API void rtcSetOccludedFunctionN (RTCScene scene, unsigned geomID, RTCOcc
 
 
 /*! @} */
-
-#endif

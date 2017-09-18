@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __RTCORE_H__
-#define __RTCORE_H__
+#pragma once
 
 #include <stddef.h>
 #include <sys/types.h>
@@ -292,5 +291,3 @@ inline RTCGeometryFlags operator|(const RTCGeometryFlags a, const RTCGeometryFla
 }
 
 /*! \} */
-
-#endif

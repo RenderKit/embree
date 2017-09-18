@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_GEOMETRY_H__
-#define __EMBREE_GEOMETRY_H__
+#pragma once
 
 /*! \ingroup embree_kernel_api */
 /*! \{ */
@@ -794,5 +793,3 @@ RTCORE_API void rtcDeleteGeometry (RTCScene scene, unsigned geomID);
 
 
 /*! @} */
-
-#endif
