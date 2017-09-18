@@ -71,17 +71,11 @@ struct RTCIntersectContext
 /*! \brief Defines an opaque scene type */
 typedef struct __RTCScene {}* RTCScene;
 
-/*! Creates a new scene. 
-   WARNING: This function is deprecated, use rtcDeviceNewScene instead.
-*/
-RTCORE_API RTCORE_DEPRECATED RTCScene rtcNewScene (RTCSceneFlags flags, RTCAlgorithmFlags aflags);
-
 /*! Creates a new scene. */
 RTCORE_API RTCScene rtcDeviceNewScene (RTCDevice device, RTCSceneFlags flags, RTCAlgorithmFlags aflags);
 
 /*! \brief Type of progress callback function. */
 typedef bool (*RTCProgressMonitorFunc)(void* ptr, const double n);
-RTCORE_DEPRECATED typedef RTCProgressMonitorFunc RTC_PROGRESS_MONITOR_FUNCTION;
 
 /*! \brief Sets the progress callback function which is called during hierarchy build of this scene. */
 RTCORE_API void rtcSetProgressMonitorFunction(RTCScene scene, RTCProgressMonitorFunc func, void* ptr);

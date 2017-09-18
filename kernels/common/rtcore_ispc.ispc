@@ -29,7 +29,6 @@ extern "C" uniform RTCError ispcDeviceGetError (RTCDevice device);
 extern "C" void ispcDeviceSetErrorFunction(RTCDevice device, void* uniform fptr, void* uniform uptr);
 extern "C" void ispcDeviceSetMemoryMonitorFunction (RTCDevice device, void* uniform fptr, void* uniform uptr);
 extern "C" void ispcDebug();
-extern "C" RTCScene ispcNewScene (uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags);
 extern "C" RTCScene ispcNewScene2 (RTCDevice device, uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags);
 extern "C" void ispcSetProgressMonitorFunction (RTCScene scene, void* uniform func, void* uniform ptr);
 extern "C" void ispcCommit (RTCScene scene);
@@ -197,7 +196,7 @@ RTCScene rtcDeviceNewScene (RTCDevice device, uniform RTCSceneFlags flags, unifo
   return ispcNewScene2(device,flags,aflags);
 }
 
-void rtcSetProgressMonitorFunction(RTCScene scene, uniform RTC_PROGRESS_MONITOR_FUNCTION func, void* uniform ptr) {
+void rtcSetProgressMonitorFunction(RTCScene scene, uniform RTCProgressMonitorFunc func, void* uniform ptr) {
   ispcSetProgressMonitorFunction(scene,func,ptr);
 }
 
