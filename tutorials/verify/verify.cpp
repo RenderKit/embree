@@ -175,9 +175,9 @@ namespace embree
       {
         unsigned geomID = rtcNewTriangleMesh (scene, gflag, mesh->triangles.size(), mesh->numVertices(), mesh->numTimeSteps());
         AssertNoError(device);
-        rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->triangles.data(),0,sizeof(SceneGraph::TriangleMeshNode::Triangle));
+        rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->triangles.data(),0,sizeof(SceneGraph::TriangleMeshNode::Triangle),mesh->triangles.size());
         for (size_t t=0; t<mesh->numTimeSteps(); t++)
-          rtcSetBuffer(scene,geomID,RTCBufferType(RTC_VERTEX_BUFFER0+t),mesh->positions[t].data(),0,sizeof(SceneGraph::TriangleMeshNode::Vertex));
+          rtcSetBuffer(scene,geomID,RTCBufferType(RTC_VERTEX_BUFFER0+t),mesh->positions[t].data(),0,sizeof(SceneGraph::TriangleMeshNode::Vertex),mesh->positions[t].size());
         AssertNoError(device);
         return geomID;
       }
@@ -185,9 +185,9 @@ namespace embree
       {
         unsigned geomID = rtcNewQuadMesh (scene, gflag, mesh->quads.size(), mesh->numVertices(), mesh->numTimeSteps());
         AssertNoError(device);
-        rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->quads.data(),0,sizeof(SceneGraph::QuadMeshNode::Quad  ));
+        rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->quads.data(),0,sizeof(SceneGraph::QuadMeshNode::Quad),mesh->quads.size());
         for (size_t t=0; t<mesh->numTimeSteps(); t++)
-          rtcSetBuffer(scene,geomID,RTCBufferType(RTC_VERTEX_BUFFER0+t),mesh->positions[t].data(),0,sizeof(SceneGraph::QuadMeshNode::Vertex));
+          rtcSetBuffer(scene,geomID,RTCBufferType(RTC_VERTEX_BUFFER0+t),mesh->positions[t].data(),0,sizeof(SceneGraph::QuadMeshNode::Vertex),mesh->positions[t].size());
         AssertNoError(device);
         return geomID;
       } 
@@ -197,15 +197,15 @@ namespace embree
                                                  mesh->verticesPerFace.size(), mesh->position_indices.size(), mesh->numPositions(), 
                                                  mesh->edge_creases.size(), mesh->vertex_creases.size(), mesh->holes.size(), mesh->numTimeSteps());
         AssertNoError(device);
-        rtcSetBuffer(scene,geomID,RTC_FACE_BUFFER  ,mesh->verticesPerFace.data(), 0,sizeof(int));
-        rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->position_indices.data(),0,sizeof(int));
+        rtcSetBuffer(scene,geomID,RTC_FACE_BUFFER  ,mesh->verticesPerFace.data(), 0,sizeof(int),mesh->verticesPerFace.size());
+        rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->position_indices.data(),0,sizeof(int),mesh->position_indices.size());
         for (size_t t=0; t<mesh->numTimeSteps(); t++)
-          rtcSetBuffer(scene,geomID,RTCBufferType(RTC_VERTEX_BUFFER0+t),mesh->positions[t].data(),0,sizeof(SceneGraph::SubdivMeshNode::Vertex));
-        if (mesh->edge_creases.size()) rtcSetBuffer(scene,geomID,RTC_EDGE_CREASE_INDEX_BUFFER,mesh->edge_creases.data(),0,2*sizeof(int));
-        if (mesh->edge_crease_weights.size()) rtcSetBuffer(scene,geomID,RTC_EDGE_CREASE_WEIGHT_BUFFER,mesh->edge_crease_weights.data(),0,sizeof(float));
-        if (mesh->vertex_creases.size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_CREASE_INDEX_BUFFER,mesh->vertex_creases.data(),0,sizeof(int));
-        if (mesh->vertex_crease_weights.size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_CREASE_WEIGHT_BUFFER,mesh->vertex_crease_weights.data(),0,sizeof(float));
-        if (mesh->holes.size()) rtcSetBuffer(scene,geomID,RTC_HOLE_BUFFER,mesh->holes.data(),0,sizeof(int));
+          rtcSetBuffer(scene,geomID,RTCBufferType(RTC_VERTEX_BUFFER0+t),mesh->positions[t].data(),0,sizeof(SceneGraph::SubdivMeshNode::Vertex),mesh->positions[t].size());
+        if (mesh->edge_creases.size()) rtcSetBuffer(scene,geomID,RTC_EDGE_CREASE_INDEX_BUFFER,mesh->edge_creases.data(),0,2*sizeof(int),mesh->edge_creases.size());
+        if (mesh->edge_crease_weights.size()) rtcSetBuffer(scene,geomID,RTC_EDGE_CREASE_WEIGHT_BUFFER,mesh->edge_crease_weights.data(),0,sizeof(float),mesh->edge_crease_weights.size());
+        if (mesh->vertex_creases.size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_CREASE_INDEX_BUFFER,mesh->vertex_creases.data(),0,sizeof(int),mesh->vertex_creases.size());
+        if (mesh->vertex_crease_weights.size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_CREASE_WEIGHT_BUFFER,mesh->vertex_crease_weights.data(),0,sizeof(float),mesh->vertex_crease_weights.size());
+        if (mesh->holes.size()) rtcSetBuffer(scene,geomID,RTC_HOLE_BUFFER,mesh->holes.data(),0,sizeof(int),mesh->holes.size());
         rtcSetTessellationRate(scene,geomID,mesh->tessellationRate);
         rtcSetSubdivisionMode(scene,geomID,0,mesh->position_subdiv_mode);
         AssertNoError(device);
@@ -221,8 +221,8 @@ namespace embree
         }
         AssertNoError(device);
         for (size_t t=0; t<mesh->numTimeSteps(); t++)
-          rtcSetBuffer(scene,geomID,RTCBufferType(RTC_VERTEX_BUFFER0+t),mesh->positions[t].data(),0,sizeof(SceneGraph::HairSetNode::Vertex));
-        rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,mesh->hairs.data(),0,sizeof(SceneGraph::HairSetNode::Hair));
+          rtcSetBuffer(scene,geomID,RTCBufferType(RTC_VERTEX_BUFFER0+t),mesh->positions[t].data(),0,sizeof(SceneGraph::HairSetNode::Vertex),mesh->positions[t].size());
+        rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,mesh->hairs.data(),0,sizeof(SceneGraph::HairSetNode::Hair),mesh->hairs.size());
         AssertNoError(device);
         return geomID;
       } 
@@ -231,8 +231,8 @@ namespace embree
         unsigned int geomID = rtcNewLineSegments (scene, gflag, mesh->indices.size(), mesh->numVertices(), mesh->numTimeSteps());
         AssertNoError(device);
         for (size_t t=0; t<mesh->numTimeSteps(); t++)
-          rtcSetBuffer(scene,geomID,RTCBufferType(RTC_VERTEX_BUFFER0+t),mesh->positions[t].data(),0,sizeof(SceneGraph::LineSegmentsNode::Vertex));
-        rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,mesh->indices.data(),0,sizeof(int));
+          rtcSetBuffer(scene,geomID,RTCBufferType(RTC_VERTEX_BUFFER0+t),mesh->positions[t].data(),0,sizeof(SceneGraph::LineSegmentsNode::Vertex),mesh->positions[t].size());
+        rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,mesh->indices.data(),0,sizeof(int),mesh->indices.size());
         AssertNoError(device);
         return geomID;
       }
@@ -307,23 +307,23 @@ namespace embree
     {
       if (Ref<SceneGraph::TriangleMeshNode> mesh = geom.second.dynamicCast<SceneGraph::TriangleMeshNode>())
       {
-        rtcSetBuffer2(scene,geom.first,RTC_INDEX_BUFFER ,mesh->triangles.data(),0,sizeof(SceneGraph::TriangleMeshNode::Triangle), RandomSampler_getInt(sampler) % (mesh->triangles.size()+1));
+        rtcSetBuffer(scene,geom.first,RTC_INDEX_BUFFER ,mesh->triangles.data(),0,sizeof(SceneGraph::TriangleMeshNode::Triangle), RandomSampler_getInt(sampler) % (mesh->triangles.size()+1));
       }
       else if (Ref<SceneGraph::QuadMeshNode> mesh = geom.second.dynamicCast<SceneGraph::QuadMeshNode>())
       {
-        rtcSetBuffer2(scene,geom.first,RTC_INDEX_BUFFER ,mesh->quads.data(),0,sizeof(SceneGraph::QuadMeshNode::Quad), RandomSampler_getInt(sampler) % (mesh->quads.size()+1));
+        rtcSetBuffer(scene,geom.first,RTC_INDEX_BUFFER ,mesh->quads.data(),0,sizeof(SceneGraph::QuadMeshNode::Quad), RandomSampler_getInt(sampler) % (mesh->quads.size()+1));
       } 
       else if (Ref<SceneGraph::SubdivMeshNode> mesh = geom.second.dynamicCast<SceneGraph::SubdivMeshNode>())
       {
-        rtcSetBuffer2(scene,geom.first,RTC_FACE_BUFFER  ,mesh->verticesPerFace.data(), 0,sizeof(int), RandomSampler_getInt(sampler) % (mesh->verticesPerFace.size()+1));
+        rtcSetBuffer(scene,geom.first,RTC_FACE_BUFFER  ,mesh->verticesPerFace.data(), 0,sizeof(int), RandomSampler_getInt(sampler) % (mesh->verticesPerFace.size()+1));
       }
       else if (Ref<SceneGraph::HairSetNode> mesh = geom.second.dynamicCast<SceneGraph::HairSetNode>())
       {
-        rtcSetBuffer2(scene,geom.first,RTC_INDEX_BUFFER,mesh->hairs.data(),0,sizeof(SceneGraph::HairSetNode::Hair), RandomSampler_getInt(sampler) % (mesh->hairs.size()+1));
+        rtcSetBuffer(scene,geom.first,RTC_INDEX_BUFFER,mesh->hairs.data(),0,sizeof(SceneGraph::HairSetNode::Hair), RandomSampler_getInt(sampler) % (mesh->hairs.size()+1));
       } 
       else if (Ref<SceneGraph::LineSegmentsNode> mesh = geom.second.dynamicCast<SceneGraph::LineSegmentsNode>())
       {
-        rtcSetBuffer2(scene,geom.first,RTC_INDEX_BUFFER,mesh->indices.data(),0,sizeof(int), RandomSampler_getInt(sampler) % (mesh->indices.size()+1));
+        rtcSetBuffer(scene,geom.first,RTC_INDEX_BUFFER,mesh->indices.data(),0,sizeof(int), RandomSampler_getInt(sampler) % (mesh->indices.size()+1));
       }
     }
 
@@ -938,30 +938,30 @@ namespace embree
       avector<char> indexBuffer(8+16*6*sizeof(int));
       avector<char> vertexBuffer(12+16*9*sizeof(float)+4);
       
-      rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,indexBuffer.data(),1,3*sizeof(int));
+      rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,indexBuffer.data(),1,3*sizeof(int),16);
       AssertError(device,RTC_INVALID_OPERATION);
-      rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,vertexBuffer.data(),1,3*sizeof(float));
+      rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,vertexBuffer.data(),1,3*sizeof(float),16);
       AssertError(device,RTC_INVALID_OPERATION);
 
-      rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,indexBuffer.data(),0,3*sizeof(int)+3);
+      rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,indexBuffer.data(),0,3*sizeof(int)+3,16);
       AssertError(device,RTC_INVALID_OPERATION);
-      rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,3*sizeof(float)+3);
+      rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,3*sizeof(float)+3,16);
       AssertError(device,RTC_INVALID_OPERATION);
       
-      rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,indexBuffer.data(),0,3*sizeof(int));
+      rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,indexBuffer.data(),0,3*sizeof(int),16);
       AssertNoError(device);
-      rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,3*sizeof(float));
-      AssertNoError(device);
-      
-      rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,indexBuffer.data(),8,6*sizeof(int));
-      AssertNoError(device);
-      rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,vertexBuffer.data(),12,9*sizeof(float));
+      rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,3*sizeof(float),16);
       AssertNoError(device);
       
-      rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,indexBuffer.data(),0,3*sizeof(int));
+      rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,indexBuffer.data(),8,6*sizeof(int),16);
+      AssertNoError(device);
+      rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,vertexBuffer.data(),12,9*sizeof(float),16);
       AssertNoError(device);
       
-      rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,4*sizeof(float));
+      rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,indexBuffer.data(),0,3*sizeof(int),16);
+      AssertNoError(device);
+      
+      rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,4*sizeof(float),16);
       AssertNoError(device);
       
       return VerifyApplication::PASSED;
@@ -1063,8 +1063,8 @@ namespace embree
         RTCScene scene = rtcDeviceNewScene(device, sflags, RTC_INTERSECT1);
         
         unsigned geomID = rtcNewTriangleMesh(scene, gflags, numTriangles, numVertices, 1);
-        rtcSetBuffer2(scene, geomID, RTC_VERTEX_BUFFER, p.data(), 0, 3 * sizeof(float), numVertices);
-        rtcSetBuffer2(scene, geomID, RTC_INDEX_BUFFER, indices.data(), 0, 3 * sizeof(uint32_t), numTriangles);
+        rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, p.data(), 0, 3 * sizeof(float), numVertices);
+        rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER, indices.data(), 0, 3 * sizeof(uint32_t), numTriangles);
         
         rtcCommit(scene);
       }
@@ -1851,32 +1851,32 @@ namespace embree
       unsigned int geomID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, num_interpolation_quad_faces, num_interpolation_quad_faces*4, num_interpolation_vertices, 3, 2, 0, 1);
       AssertNoError(device);
       
-      rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  interpolation_quad_indices , 0, sizeof(unsigned int));
-      rtcSetBuffer(scene, geomID, RTC_FACE_BUFFER,   interpolation_quad_faces,    0, sizeof(unsigned int));
-      rtcSetBuffer(scene, geomID, RTC_EDGE_CREASE_INDEX_BUFFER,   interpolation_edge_crease_indices,  0, 2*sizeof(unsigned int));
-      rtcSetBuffer(scene, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,  interpolation_edge_crease_weights,  0, sizeof(float));
-      rtcSetBuffer(scene, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER, interpolation_vertex_crease_indices,0, sizeof(unsigned int));
-      rtcSetBuffer(scene, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER,interpolation_vertex_crease_weights,0, sizeof(float));
+      rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  interpolation_quad_indices , 0, sizeof(unsigned int), num_interpolation_quad_faces*4);
+      rtcSetBuffer(scene, geomID, RTC_FACE_BUFFER,   interpolation_quad_faces,    0, sizeof(unsigned int), num_interpolation_quad_faces);
+      rtcSetBuffer(scene, geomID, RTC_EDGE_CREASE_INDEX_BUFFER,   interpolation_edge_crease_indices,  0, 2*sizeof(unsigned int), 3);
+      rtcSetBuffer(scene, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,  interpolation_edge_crease_weights,  0, sizeof(float), 3);
+      rtcSetBuffer(scene, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER, interpolation_vertex_crease_indices,0, sizeof(unsigned int), 2);
+      rtcSetBuffer(scene, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER,interpolation_vertex_crease_weights,0, sizeof(float), 2);
       AssertNoError(device);
       
       std::vector<float> vertices0(M);
       for (size_t i=0; i<M; i++) vertices0[i] = random_float();
-      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0.data(), 0, N*sizeof(float));
+      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0.data(), 0, N*sizeof(float), vertices0.size());
       AssertNoError(device);
       
       /*std::vector<float> vertices1(M);
         for (size_t i=0; i<M; i++) vertices1[i] = random_float();
-        rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1.data(), 0, N*sizeof(float));
+        rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1.data(), 0, N*sizeof(float), vertices1.size());
         AssertNoError(device);*/
       
       std::vector<float> user_vertices0(M);
       for (size_t i=0; i<M; i++) user_vertices0[i] = random_float();
-      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0.data(), 0, N*sizeof(float));
+      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0.data(), 0, N*sizeof(float), user_vertices0.size());
       AssertNoError(device);
       
       std::vector<float> user_vertices1(M);
       for (size_t i=0; i<M; i++) user_vertices1[i] = random_float();
-      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1.data(), 0, N*sizeof(float));
+      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1.data(), 0, N*sizeof(float), user_vertices1.size());
       AssertNoError(device);
       
       bool passed = true;
@@ -1943,27 +1943,27 @@ namespace embree
       unsigned int geomID = rtcNewTriangleMesh(scene, RTC_GEOMETRY_STATIC, num_interpolation_triangle_faces, num_interpolation_vertices, 1);
       AssertNoError(device);
       
-      rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  interpolation_triangle_indices , 0, 3*sizeof(unsigned int));
+      rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  interpolation_triangle_indices , 0, 3*sizeof(unsigned int), num_interpolation_triangle_faces*3);
       AssertNoError(device);
       
       std::vector<float> vertices0(M);
       for (size_t i=0; i<M; i++) vertices0[i] = random_float();
-      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0.data(), 0, N*sizeof(float));
+      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0.data(), 0, N*sizeof(float), vertices0.size());
       AssertNoError(device);
       
       /*std::vector<float> vertices1(M);
         for (size_t i=0; i<M; i++) vertices1[i] = random_float();
-        rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1.data(), 0, N*sizeof(float));
+        rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1.data(), 0, N*sizeof(float), vertices1.size());
         AssertNoError(device);*/
       
       std::vector<float> user_vertices0(M);
       for (size_t i=0; i<M; i++) user_vertices0[i] = random_float();
-      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0.data(), 0, N*sizeof(float));
+      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0.data(), 0, N*sizeof(float), user_vertices0.size());
       AssertNoError(device);
       
       std::vector<float> user_vertices1(M);
       for (size_t i=0; i<M; i++) user_vertices1[i] = random_float();
-      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1.data(), 0, N*sizeof(float));
+      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1.data(), 0, N*sizeof(float), user_vertices1.size());
       AssertNoError(device);
       
       rtcDisable(scene,geomID);
@@ -2049,27 +2049,27 @@ namespace embree
       unsigned int geomID = rtcNewBezierHairGeometry(scene, RTC_GEOMETRY_STATIC, num_interpolation_hairs, num_interpolation_hair_vertices, 1);
       AssertNoError(device);
       
-      rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  interpolation_hair_indices , 0, sizeof(unsigned int));
+      rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  interpolation_hair_indices , 0, sizeof(unsigned int), num_interpolation_hairs);
       AssertNoError(device);
       
       std::vector<float> vertices0(M);
       for (size_t i=0; i<M; i++) vertices0[i] = random_float();
-      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0.data(), 0, N*sizeof(float));
+      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0.data(), 0, N*sizeof(float), vertices0.size());
       AssertNoError(device);
       
       /*std::vector<float> vertices1(M);
         for (size_t i=0; i<M; i++) vertices1[i] = random_float();
-        rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1.data(), 0, N*sizeof(float));
+        rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1.data(), 0, N*sizeof(float), vertices1.size());
         AssertNoError(device);*/
       
       std::vector<float> user_vertices0(M);
       for (size_t i=0; i<M; i++) user_vertices0[i] = random_float();
-      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0.data(), 0, N*sizeof(float));
+      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0.data(), 0, N*sizeof(float), user_vertices0.size());
       AssertNoError(device);
       
       std::vector<float> user_vertices1(M);
       for (size_t i=0; i<M; i++) user_vertices1[i] = random_float();
-      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1.data(), 0, N*sizeof(float));
+      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1.data(), 0, N*sizeof(float), user_vertices1.size());
       AssertNoError(device);
       
       rtcDisable(scene,geomID);
@@ -2134,8 +2134,8 @@ namespace embree
       };
       RTCSceneRef scene = rtcDeviceNewScene(device,sflags,to_aflags(imode));
       int geomID = rtcNewTriangleMesh (scene, gflags, 1, 3);
-      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, vertices , 0, sizeof(Vec3f));
-      rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER , triangles, 0, sizeof(Triangle));
+      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, vertices , 0, sizeof(Vec3f), 3);
+      rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER , triangles, 0, sizeof(Triangle), 1);
       rtcCommit (scene);
       AssertNoError(device);
 
@@ -2202,8 +2202,8 @@ namespace embree
       };
       RTCSceneRef scene = rtcDeviceNewScene(device,sflags,to_aflags(imode));
       int geomID = rtcNewQuadMesh (scene, gflags, 1, 4);
-      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, vertices , 0, sizeof(Vec3f));
-      rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER , quads, 0, 4*sizeof(int));
+      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, vertices , 0, sizeof(Vec3f), 4);
+      rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER , quads, 0, 4*sizeof(int), 1);
       rtcCommit (scene);
       AssertNoError(device);
 

@@ -85,7 +85,7 @@ namespace embree {
     for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
-    rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
+    rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle), mesh->numTriangles);
     mesh->geom.geomID = geomID;
     return geomID;
   }
@@ -102,7 +102,7 @@ namespace embree {
     for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
-    rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(ISPCQuad));
+    rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(ISPCQuad), mesh->numQuads);
     mesh->geom.geomID = geomID;
     return geomID;
   }
@@ -121,14 +121,14 @@ namespace embree {
     for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set all other buffers */
-    rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float));
-    rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(unsigned int));
-    rtcSetBuffer(scene_out, geomID, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(unsigned int));
-    rtcSetBuffer(scene_out, geomID, RTC_HOLE_BUFFER,   mesh->holes, 0, sizeof(unsigned int));
-    rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_INDEX_BUFFER,    mesh->edge_creases,          0, 2*sizeof(unsigned int));
-    rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(float));
-    rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(unsigned int));
-    rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float));
+    rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float), mesh->numEdges);
+    rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(unsigned int), mesh->numEdges);
+    rtcSetBuffer(scene_out, geomID, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(unsigned int), mesh->numFaces);
+    rtcSetBuffer(scene_out, geomID, RTC_HOLE_BUFFER,   mesh->holes, 0, sizeof(unsigned int), mesh->numHoles);
+    rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_INDEX_BUFFER,    mesh->edge_creases,          0, 2*sizeof(unsigned int), mesh->numEdgeCreases);
+    rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(float), mesh->numEdgeCreases);
+    rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(unsigned int), mesh->numVertexCreases);
+    rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float), mesh->numVertexCreases);
     rtcSetSubdivisionMode(scene_out, geomID, 0, mesh->position_subdiv_mode);
     return geomID;
   }
@@ -144,7 +144,7 @@ namespace embree {
     for (size_t i=0;i<mesh->numVertices;i++) vertices[i] = mesh->positions[0][i];
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
-    rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->indices,0,sizeof(int));
+    rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->indices,0,sizeof(int),mesh->numSegments);
     return geomID;
   }
 
@@ -164,7 +164,7 @@ namespace embree {
     for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
-    rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
+    rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
     rtcSetTessellationRate(scene_out,geomID,(float)hair->tessellation_rate);
     return geomID;
   }
@@ -185,7 +185,7 @@ namespace embree {
     for (size_t i=0;i<hair->numVertices;i++) vertices[i] = hair->positions[0][i];
     rtcUnmapBuffer(scene_out, geomID, RTC_VERTEX_BUFFER);
     /* set index buffer */
-    rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
+    rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
     return geomID;
   }
 

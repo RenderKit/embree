@@ -74,7 +74,7 @@ uniform unsigned int addCube (RTCScene scene_i)
 
   rtcUnmapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
 
-  rtcSetBuffer(scene_i,mesh,RTC_USER_VERTEX_BUFFER0,vertex_colors,0,sizeof(uniform Vec3fa));
+  rtcSetBuffer(scene_i,mesh,RTC_USER_VERTEX_BUFFER0,vertex_colors,0,sizeof(uniform Vec3fa), 8);
 
   return mesh;
 }

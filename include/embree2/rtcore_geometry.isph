@@ -540,25 +540,6 @@ void* uniform rtcMapBuffer(RTCScene scene, uniform unsigned int geomID, uniform 
 void rtcUnmapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
 
 /*! \brief Shares a data buffer between the application and
- *  Embree. 
-
-  WARNING: This function is deprecated, use rtcSetBuffer2 instead.
-
- *  The passed buffer is used by Embree to store index and vertex
- *  data. It has to remain valid as long as the mesh exists, and the
- *  user is responsible to free the data when the mesh gets
- *  deleted. One can optionally speficy a byte offset and byte stride
- *  of the elements stored inside the buffer. The addresses
- *  ptr+offset+i*stride have to be aligned to 4 bytes on Xeon CPUs and
- *  16 bytes on Xeon Phi accelerators. For vertex buffers, the 4 bytes
- *  after the z-coordinate of the last vertex have to be readable
- *  memory, thus padding is required for some layouts. If this
- *  function is not called, Embree will allocate and manage buffers of
- *  the default layout. */
-void rtcSetBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type, 
-                  const void* uniform ptr, uniform size_t byteOffset, uniform size_t byteStride);
-
-/*! \brief Shares a data buffer between the application and
  *  Embree. The data has to remain valid as long as the mesh exists,
  *  and the user is responsible to free the data when the mesh gets
  *  deleted. For sharing the buffer, one has to specify the number of
@@ -570,8 +551,8 @@ void rtcSetBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBuffer
  *  vertex buffers and user vertex buffers using SSE instructions. If
  *  this function is not called, Embree will allocate and manage
  *  buffers of the default layout. */
-void rtcSetBuffer2(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type, 
-                   const void* uniform ptr, uniform size_t byteOffset, uniform size_t byteStride, uniform size_t size = -1);
+void rtcSetBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type, 
+                   const void* uniform ptr, uniform size_t byteOffset, uniform size_t byteStride, uniform size_t size);
 
 /*! \brief Enable geometry. Enabled geometry can be hit by a ray. */
 void rtcEnable (RTCScene scene, uniform unsigned int geomID);

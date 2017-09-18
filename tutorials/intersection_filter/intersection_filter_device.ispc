@@ -598,7 +598,7 @@ uniform unsigned int addCube (RTCScene scene_i, const uniform Vec3f& offset, con
 {
   /* create a triangulated cube with 12 triangles and 8 vertices */
   uniform unsigned int geomID = rtcNewTriangleMesh (scene_i, RTC_GEOMETRY_STATIC, NUM_TRI_FACES, NUM_VERTICES);
-  //rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER, cube_vertices,     0, sizeof(uniform Vec3fa  ));
+  //rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER, cube_vertices,     0, sizeof(uniform Vec3fa  ), NUM_VERTICES);
   Vec3fa* uniform ptr = (Vec3fa* uniform) rtcMapBuffer(scene_i, geomID, RTC_VERTEX_BUFFER);
   for (uniform size_t i=0; i<NUM_VERTICES; i++) {
     uniform float x = cube_vertices[i][0];
@@ -608,7 +608,7 @@ uniform unsigned int addCube (RTCScene scene_i, const uniform Vec3f& offset, con
     ptr[i] = make_Vec3fa(offset+make_LinearSpace3f_rotate(make_Vec3f(0,1,0),rotation)*make_LinearSpace3f_scale(scale)*vtx);
   }
   rtcUnmapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER);
-  rtcSetBuffer(scene_i, geomID, RTC_INDEX_BUFFER,  cube_tri_indices , 0, 3*sizeof(uniform unsigned int));
+  rtcSetBuffer(scene_i, geomID, RTC_INDEX_BUFFER,  cube_tri_indices , 0, 3*sizeof(uniform unsigned int), NUM_TRI_FACES);
 
   /* create per-triangle color array */
   colors = uniform new uniform Vec3f[12];
@@ -642,9 +642,9 @@ uniform unsigned int addCube (RTCScene scene_i, const uniform Vec3f& offset, con
 uniform unsigned int addSubdivCube (RTCScene scene_i)
 {
   uniform unsigned int geomID = rtcNewSubdivisionMesh(scene_i, RTC_GEOMETRY_STATIC, NUM_QUAD_FACES, NUM_QUAD_INDICES, NUM_VERTICES, 0, 0, 0);
-  rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER, cube_vertices,      0, sizeof(uniform Vec3fa  ));
-  rtcSetBuffer(scene_i, geomID, RTC_INDEX_BUFFER,  cube_quad_indices , 0, sizeof(uniform unsigned int));
-  rtcSetBuffer(scene_i, geomID, RTC_FACE_BUFFER,   cube_quad_faces,    0, sizeof(uniform unsigned int));
+  rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER, cube_vertices,      0, sizeof(uniform Vec3fa  ), NUM_VERTICES);
+  rtcSetBuffer(scene_i, geomID, RTC_INDEX_BUFFER,  cube_quad_indices , 0, sizeof(uniform unsigned int), NUM_QUAD_INDICES);
+  rtcSetBuffer(scene_i, geomID, RTC_FACE_BUFFER,   cube_quad_faces,    0, sizeof(uniform unsigned int), NUM_QUAD_FACES);
 
   uniform float* level = (uniform float*) rtcMapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
   for (size_t i=0; i<NUM_QUAD_INDICES; i++) level[i] = 4;

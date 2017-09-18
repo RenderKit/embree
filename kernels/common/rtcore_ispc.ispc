@@ -475,11 +475,7 @@ void rtcUnmapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBuff
   ispcUnmapBuffer(scene,geomID,type);
 }
 
-void rtcSetBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type, const void* uniform ptr, uniform size_t offset, uniform size_t stride) {
-  ispcSetBuffer(scene,geomID,type,ptr,offset,stride,-1);
-}
-
-void rtcSetBuffer2(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type, const void* uniform ptr, uniform size_t offset, uniform size_t stride, uniform size_t size) {
+void rtcSetBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type, const void* uniform ptr, uniform size_t offset, uniform size_t stride, uniform size_t size) {
   ispcSetBuffer(scene,geomID,type,ptr,offset,stride,size);
 }
 

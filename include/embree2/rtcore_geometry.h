@@ -550,25 +550,6 @@ RTCORE_API void* rtcMapBuffer(RTCScene scene, unsigned geomID, RTCBufferType typ
 RTCORE_API void rtcUnmapBuffer(RTCScene scene, unsigned geomID, RTCBufferType type);
 
 /*! \brief Shares a data buffer between the application and
- *  Embree. 
-
-  WARNING: This function is deprecated, use rtcSetBuffer2 instead.
-
- *  The passed buffer is used by Embree to store index and vertex
- *  data. It has to remain valid as long as the mesh exists, and the
- *  user is responsible to free the data when the mesh gets
- *  deleted. One can optionally speficy a byte offset and byte stride
- *  of the elements stored inside the buffer. The addresses
- *  ptr+offset+i*stride have to be aligned to 4 bytes on Xeon CPUs and
- *  16 bytes on Xeon Phi accelerators. For vertex buffers, the 4 bytes
- *  after the z-coordinate of the last vertex have to be readable
- *  memory, thus padding is required for some layouts. If this
- *  function is not called, Embree will allocate and manage buffers of
- *  the default layout. */
-RTCORE_API void rtcSetBuffer(RTCScene scene, unsigned geomID, RTCBufferType type, 
-                             const void* ptr, size_t byteOffset, size_t byteStride);
-
-/*! \brief Shares a data buffer between the application and
  *  Embree. The data has to remain valid as long as the mesh exists,
  *  and the user is responsible to free the data when the mesh gets
  *  deleted. For sharing the buffer, one has to specify the number of
@@ -580,8 +561,8 @@ RTCORE_API void rtcSetBuffer(RTCScene scene, unsigned geomID, RTCBufferType type
  *  vertex buffers and user vertex buffers using SSE instructions. If
  *  this function is not called, Embree will allocate and manage
  *  buffers of the default layout. */
-RTCORE_API void rtcSetBuffer2(RTCScene scene, unsigned geomID, RTCBufferType type, 
-                              const void* ptr, size_t byteOffset, size_t byteStride, size_t size = -1);
+RTCORE_API void rtcSetBuffer(RTCScene scene, unsigned geomID, RTCBufferType type, 
+                              const void* ptr, size_t byteOffset, size_t byteStride, size_t size);
 
 /*! \brief Enable geometry. Enabled geometry can be hit by a ray. */
 RTCORE_API void rtcEnable (RTCScene scene, unsigned geomID);
