@@ -888,10 +888,6 @@ namespace embree
     return -1;
   }
   
-  RTCORE_API unsigned rtcNewInstance (RTCScene htarget, RTCScene hsource) {
-    return rtcNewInstanceImpl(htarget,hsource,1,RTC_INVALID_GEOMETRY_ID);
-  }
-
   RTCORE_API unsigned rtcNewInstance2 (RTCScene htarget, RTCScene hsource, size_t numTimeSteps) {
     return rtcNewInstanceImpl(htarget,hsource,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
   }

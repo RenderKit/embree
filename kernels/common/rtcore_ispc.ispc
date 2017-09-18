@@ -354,10 +354,6 @@ void rtcDeleteScene (RTCScene scene) {
   ispcDeleteScene(scene);
 }
 
-uniform unsigned int rtcNewInstance (RTCScene target, RTCScene source) {
-  return ispcNewInstance(target,source,1,RTC_INVALID_GEOMETRY_ID);
-}
-
 uniform unsigned int rtcNewInstance2 (RTCScene target, RTCScene source, uniform size_t numTimeSteps) {
   return ispcNewInstance(target,source,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
 }
