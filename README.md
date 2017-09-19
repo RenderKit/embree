@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 2.16.5
+% Embree: High Performance Ray Tracing Kernels 2.17.0
 % Intel Corporation
 
 Embree Overview
@@ -46,8 +46,8 @@ Renderer]).
 Supported Platforms
 -------------------
 
-Embree supports Windows (32 bit and 64 bit), Linux (64 bit) and Mac
-OS X (64 bit). The code compiles with the Intel Compiler, GCC, Clang
+Embree supports Windows (32-bit and 64-bit), Linux (64-bit) and Mac
+OS X (64-bit). The code compiles with the Intel Compiler, GCC, Clang
 and the Microsoft Compiler.
 
 Using the Intel Compiler improves performance by approximately
@@ -94,9 +94,9 @@ Windows Installer
 
 You can install the Embree library using the Windows installer
 application
-[embree-2.16.5-x64.exe](https://github.com/embree/embree/releases/download/v2.16.5/embree-2.16.5.x64.exe). This
-will install the 64 bit Embree version by default in `Program
-Files\Intel\Embree v2.16.5 x64`.
+[embree-2.17.0-x64.exe](https://github.com/embree/embree/releases/download/v2.17.0/embree-2.17.0.x64.exe). This
+will install the 64-bit Embree version by default in `Program
+Files\Intel\Embree v2.17.0 x64`.
 
 You have to set the path to the `lib` folder manually to your `PATH`
 environment variable for applications to find Embree. To compile
@@ -107,13 +107,13 @@ Embree installation.
 To uninstall Embree again open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-2.16.5` and uninstall it.
+2.17.0` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree is also delivered as a ZIP file
-[embree-2.16.5.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.16.5/embree-2.16.5.x64.windows.zip). After
+[embree-2.17.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.17.0/embree-2.17.0.x64.windows.zip). After
 unpacking this ZIP file you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree. To compile applications with Embree you also have to set the
@@ -127,18 +127,18 @@ Linux RPMs
 ----------
 
 Uncompress the 'tar.gz' file
-[embree-2.16.5.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.16.5/embree-2.16.5.x86_64.rpm.tar.gz)
+[embree-2.17.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.17.0/embree-2.17.0.x86_64.rpm.tar.gz)
 to
 obtain the individual RPM files:
 
-    tar xzf embree-2.16.5.x86_64.rpm.tar.gz
+    tar xzf embree-2.17.0.x86_64.rpm.tar.gz
 
 To install the Embree using the RPM packages on your Linux system type
 the following:
 
-    sudo rpm --install embree-lib-2.16.5-1.x86_64.rpm
-    sudo rpm --install embree-devel-2.16.5-1.noarch.rpm
-    sudo rpm --install embree-examples-2.16.5-1.x86_64.rpm
+    sudo rpm --install embree-lib-2.17.0-1.x86_64.rpm
+    sudo rpm --install embree-devel-2.17.0-1.noarch.rpm
+    sudo rpm --install embree-examples-2.17.0-1.x86_64.rpm
 
 You also have to install the Intel® Threading Building Blocks (TBB)
 using `yum`:
@@ -168,21 +168,21 @@ the tutorials to start them.
 
 To uninstall Embree again just execute the following:
 
-    sudo rpm --erase embree-lib-2.16.5-1.x86_64
-    sudo rpm --erase embree-devel-2.16.5-1.noarch
-    sudo rpm --erase embree-examples-2.16.5-1.x86_64
+    sudo rpm --erase embree-lib-2.17.0-1.x86_64
+    sudo rpm --erase embree-devel-2.17.0-1.noarch
+    sudo rpm --erase embree-examples-2.17.0-1.x86_64
 
 Linux tar.gz files
 ------------------
 
 The Linux version of Embree is also delivered as a tar.gz file
-[embree-2.16.5.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.16.5/embree-2.16.5.x86_64.linux.tar.gz). Unpack
+[embree-2.17.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.17.0/embree-2.17.0.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.16.5.x64.linux.tar.gz
-    source embree-2.16.5.x64.linux/embree-vars.sh
+    tar xzf embree-2.17.0.x64.linux.tar.gz
+    source embree-2.17.0.x64.linux/embree-vars.sh
 
 If you want to ship Embree with your application best use the Embree
 version provided through the tar.gz file.
@@ -195,7 +195,7 @@ Mac OS X PKG Installer
 
 To install the Embree library on your Mac OS X system use the
 provided package installer inside
-[embree-2.16.5.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.16.5/embree-2.16.5.x86_64.dmg). This
+[embree-2.17.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.17.0/embree-2.17.0.x86_64.dmg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree2` folder.
@@ -217,13 +217,13 @@ Mac OS X tar.gz file
 ---------------------
 
 The Mac OS X version of Embree is also delivered as a tar.gz file
-[embree-2.16.5.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.16.5/embree-2.16.5.x86_64.macosx.tar.gz). Unpack
+[embree-2.17.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.17.0/embree-2.17.0.x86_64.macosx.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.16.5.x64.macosx.tar.gz
-    source embree-2.16.5.x64.macosx/embree-vars.sh
+    tar xzf embree-2.17.0.x64.macosx.tar.gz
+    source embree-2.17.0.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application please use the Embree
 library of the provided tar.gz file. The library name of that Embree
@@ -398,8 +398,8 @@ for Visual Studio.
 
 Run `cmake-gui`, browse to the Embree sources, set the build directory
 and click Configure. Now you can select the Generator, e.g. "Visual
-Studio 12 2013" for a 32 bit build or "Visual Studio 12 2013 Win64"
-for a 64 bit build.
+Studio 12 2013" for a 32-bit build or "Visual Studio 12 2013 Win64"
+for a 64-bit build.
 
 To use a different compile than the Microsoft Visual C++ compiler, you
 additionally need to specify the proper compiler toolset through the
@@ -480,6 +480,9 @@ parameters that can be configured in CMake:
                                  mode with enabled assertions
                                  and debug symbols
                                  (RelWithDebInfo).
+
+  EMBREE_STACK_PROTECTOR         Enables protection of return     OFF
+                                 address from buffer overwrites.
 
   EMBREE_ISPC_SUPPORT            Enables ISPC support of Embree.  ON
 
@@ -581,10 +584,6 @@ different ISAs selected (e.g. embree2.a, embree2_sse42.a,
 embree2_avx.a, embree2_avx2.a, embree2_avx512knl.a,
 embree2_avx512skx.a). You have to link these libraries in increasing
 ISA order (the order shown in the example).
-
-When selecting ISAs individually, the AVX ISA always has to get
-enabled when a larger ISA than AVX is enabled, otherwise the code will
-not compile.
 Embree API
 ==========
 
@@ -717,12 +716,17 @@ device.
     typedef void (*RTCErrorFunc2)(void* userPtr, const RTCError, const char* str);
     void rtcDeviceSetErrorFunction2(RTCDevice, RTCErrorFunc2, void* userPtr);
 
-When invoked, the registred callback function gets passed a user
+When invoked, the registered callback function gets passed a user
 defined pointer `userPtr`, the error code `code`, as well as some
 string `str` that describes the error further. Passing `NULL` as
 function pointer to `rtcDeviceSetErrorFunction2` disables the set
 callback function again. The previously described error flags are also
 set if an error callback function is present.
+
+Arrays and buffers passed to Embree in most cases have strict alignment and
+padding requirements to facilitate efficient SIMD processing. The required
+alignment and padding vary between 16 and 64 bytes, depending on the actual
+function and data type.
 
 Scene
 -----
@@ -963,7 +967,7 @@ motion blur:
 The triangle indices can be set by mapping and writing to the index
 buffer (`RTC_INDEX_BUFFER`) and the triangle vertices can be set by
 mapping and writing into the vertex buffer (`RTC_VERTEX_BUFFER`). The
-index buffer contains an array of three 32 bit indices, while the
+index buffer contains an array of three 32-bit indices, while the
 vertex buffer contains an array of three float values. The vertex
 buffer can be at most 16GB large. When the vertex buffer is managed
 internally the stride between vertices is 16 bytes. For multi segment
@@ -1016,7 +1020,7 @@ without motion blur:
 The quad indices can be set by mapping and writing to the index buffer
 (`RTC_INDEX_BUFFER`) and the quad vertices can be set by mapping and
 writing into the vertex buffer (`RTC_VERTEX_BUFFER`). The index buffer
-contains an array of four 32 bit indices, while the vertex buffer
+contains an array of four 32-bit indices, while the vertex buffer
 contains an array of three float values. The vertex buffer can be at
 most 16GB large. When the vertex buffer is managed internally the
 stride between vertices is 16 bytes. For multi segment motion blur,
@@ -1075,7 +1079,7 @@ The number of faces (`numFaces`), edges/indices (`numEdges`), vertices
 The following buffers have to get setup by the application: the face
 buffer (`RTC_FACE_BUFFER`) contains the number edges/indices (3 to 15) of
 each of the `numFaces` faces, the index buffer (`RTC_INDEX_BUFFER`)
-contains multiple (3 to 15) 32 bit vertex indices for each face and
+contains multiple (3 to 15) 32-bit vertex indices for each face and
 `numEdges` indices in total, the vertex buffer (`RTC_VERTEX_BUFFER`)
 stores `numVertices` vertices as single precision `x`, `y`, `z` floating
 point coordinates aligned to 16 bytes. The value of the 4th float used
@@ -1088,7 +1092,7 @@ geometry topology (topology 0) thus use `RTC_INDEX_BUFFER0`. Data
 interpolation may use different topologies as described later.
 
 Optionally, the application can setup the hole buffer (`RTC_HOLE_BUFFER`)
-with `numHoles` many 32 bit indices of faces that should be considered
+with `numHoles` many 32-bit indices of faces that should be considered
 non-existing in all topologies.
 
 Optionally, the application can fill the level buffer
@@ -1109,7 +1113,7 @@ uniform tessellation rate.
 Optionally, the application can fill the sparse edge crease buffers to
 make some edges appear sharper. The edge crease index buffer
 (`RTC_EDGE_CREASE_INDEX_BUFFER`) contains `numEdgeCreases` many pairs
-of 32 bit vertex indices that specify unoriented edges in the
+of 32-bit vertex indices that specify unoriented edges in the
 geometry topology. The edge crease weight buffer
 (`RTC_EDGE_CREASE_WEIGHT_BUFFER`) stores for each of theses crease
 edges a positive floating point weight. The larger this weight, the
@@ -1125,7 +1129,7 @@ topology, but copied to all other topologies automatically.
 Optionally, the application can fill the sparse vertex crease buffers
 to make some vertices appear sharper. The vertex crease index buffer
 (`RTC_VERTEX_CREASE_INDEX_BUFFER`), contains `numVertexCreases` many
-32 bit vertex indices to specify a set of vertices from the geometry
+32-bit vertex indices to specify a set of vertices from the geometry
 topology. The vertex crease weight buffer
 (`RTC_VERTEX_CREASE_WEIGHT_BUFFER`) specifies for each of these
 vertices a positive floating point weight. The larger this weight, the
@@ -1284,7 +1288,7 @@ writing into the vertex buffer (`RTC_VERTEX_BUFFER`). In case of
 motion blur, the vertex buffers (`RTC_VERTEX_BUFFER0+t`) have to get
 filled for each time step `t`.
 
-The index buffer contains an array of 32 bit indices pointing to the
+The index buffer contains an array of 32-bit indices pointing to the
 ID of the first of two vertices, while the vertex buffer
 stores all control points in the form of a single precision position
 and radius stored in `x`, `y`, `z`, `r` order in memory. The
@@ -1339,7 +1343,7 @@ mapping and writing into the vertex buffer (`RTC_VERTEX_BUFFER`). In
 case of motion blur, the vertex buffers `RTC_VERTEX_BUFFER0+t` have to
 get filled for each time step.
 
-The index buffer contains an array of 32 bit indices pointing to the
+The index buffer contains an array of 32-bit indices pointing to the
 ID of the first of four control vertices, while the vertex buffer
 stores all control points in the form of a single precision position
 and radius stored in `x`, `y`, `z`, `r` order in memory. The hair
@@ -1404,7 +1408,7 @@ mapping and writing into the vertex buffer (`RTC_VERTEX_BUFFER`). In
 case of motion blur, the vertex buffers `RTC_VERTEX_BUFFER0+t` have to
 get filled for each time step.
 
-The index buffer contains an array of 32 bit indices pointing to the
+The index buffer contains an array of 32-bit indices pointing to the
 ID of the first of four control vertices, while the vertex buffer
 stores all control points in the form of a single precision position
 and radius stored in `x`, `y`, `z`, `r` order in memory. The curve
@@ -1767,7 +1771,7 @@ operate on ray packets of size 8, and the `rtcIntersect16` and
 `rtcOccluded16` functions operate on ray packets of size 16.
 
 For the ray packet mode with packet size of 4, 8, or 16, the user has
-to provide a pointer to 4, 8, or 16 of 32 bit integers that act as a
+to provide a pointer to 4, 8, or 16 of 32-bit integers that act as a
 ray activity mask (`valid` argument). If one of these integers is set
 to `0x00000000` the corresponding ray is considered inactive and if
 the integer is set to `0xFFFFFFFF`, the ray is considered active. Rays
@@ -1863,10 +1867,11 @@ streams of rays:
 The `rtcIntersectNM` and `rtcOccludedNM` ray stream functions operate
 on an array of `M` ray packets of packet size `N`. The offset in bytes
 between consecutive ray packets can be specified by the `stride`
-parameter. Data alignment requirements for ray streams is 16
-bytes. The packet size `N` has to be larger than 0 and the stream size
-`M` can be an arbitrary positive integer including 0. Tracing for
-example a ray stream consisting of four 8-wide SOA ray packets just
+parameter. The required data alignment and padding for ray streams is 16
+bytes, but for maximum performance, streams should be aligned to the native
+SIMD size (e.g. 64 bytes for AVX-512). The packet size `N` has to be larger than
+0 and the stream size `M` can be an arbitrary positive integer including 0.
+Tracing for example a ray stream consisting of four 8-wide SOA ray packets just
 requires to set the parameters `N` to 8, `M` to 4 and the `stride` to
 `sizeof(RTCRay8)`. A ray in a ray stream is considered inactive during
 traversal/intersection if its `tnear` value is larger than its `tfar`
@@ -1878,7 +1883,7 @@ just a shortcut for single ray streams with a packet size of
 `rtcIntersect1M` and `rtcOccluded1M` while taking a stream of pointers
 to single rays as input. The `rtcIntersectNp` and `rtcOccludedNp`
 functions do not require the individual components of the SOA ray
-packets to be stored sequentially in memory, but at different adresses
+packets to be stored sequentially in memory, but at different addresses
 as specified in the `RTCRayNp` structure.
 
 The intersection context passed to the stream version of the ray query
@@ -1977,8 +1982,8 @@ The second order derivatives are stored at the `ddPdudu`, `ddPdvdv`,
 and `ddPdudv` memory locations. One can avoid storing second order
 derivatives by setting these three pointers to NULL.
 
-The `RTC_INTERPOLATE` algorithm flag of a scene has to be enabled to
-perform interpolations.
+All output arrays must be padded to 16 bytes. The `RTC_INTERPOLATE`
+algorithm flag of a scene has to be enabled to perform interpolations.
 
 It is explicitly allowed to call this function on disabled
 geometries. This makes it possible to use a separate subdivision mesh
@@ -2042,7 +2047,7 @@ the different elements of the shared buffer and the `size` parameter
 specified the number of elements stored inside the buffer. This
 support for offset and stride allows the application quite some
 freedom in the data layout of these buffers, however, some
-restrictions apply. Index buffers always store 32 bit indices and
+restrictions apply. Index buffers always store 32-bit indices and
 vertex buffers always store single precision floating point data. The
 start address `ptr+offset` and `stride` always have to be aligned to 4
 bytes, otherwise the `rtcSetBuffer2` function will fail. The `size`
@@ -2112,7 +2117,7 @@ while modifying the scene with other threads.
 Geometry Mask
 -------------
 
-A 32 bit geometry mask can be assigned to triangle meshes and hair
+A 32-bit geometry mask can be assigned to triangle meshes and hair
 geometries using the `rtcSetMask` call.
 
     rtcSetMask(scene, geomID, mask);
