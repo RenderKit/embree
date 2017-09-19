@@ -297,7 +297,7 @@ namespace embree
 
     std::pair<unsigned,Ref<SceneGraph::Node>> addUserGeometryEmpty (RandomSampler& sampler, RTCGeometryFlags gflag, Sphere* sphere)
     {
-      unsigned geom = rtcNewUserGeometry3 (scene,gflag,1,1);
+      unsigned geom = rtcNewUserGeometry (scene,gflag,1,1);
       rtcSetBoundsFunction(scene,geom,BoundsFunc);
       rtcSetUserData(scene,geom,sphere);
       rtcSetIntersectFunctionN(scene,geom,IntersectFuncN);
@@ -879,9 +879,9 @@ namespace embree
       rtcSetUserData(scene,geom10,(void*)11);
       unsigned geom11 = rtcNewLineSegments (scene, RTC_GEOMETRY_STATIC, 0, 0, 2);
       rtcSetUserData(scene,geom11,(void*)12);
-      unsigned geom12 = rtcNewUserGeometry2(scene,0,1);
+      unsigned geom12 = rtcNewUserGeometry(scene,RTC_GEOMETRY_STATIC,0,1);
       rtcSetUserData(scene,geom12,(void*)13);
-      unsigned geom13 = rtcNewUserGeometry2(scene,0,2);
+      unsigned geom13 = rtcNewUserGeometry(scene,RTC_GEOMETRY_STATIC,0,2);
       rtcSetUserData(scene,geom13,(void*)14);
       rtcCommit (scene);
       AssertNoError(device);
@@ -1020,8 +1020,8 @@ namespace embree
       rtcNewBezierHairGeometry (scene,gflags,0,0,2);
       rtcNewBezierCurveGeometry (scene,gflags,0,0,1);
       rtcNewBezierCurveGeometry (scene,gflags,0,0,2);
-      rtcNewUserGeometry2 (scene,0,1);
-      rtcNewUserGeometry2 (scene,0,2);
+      rtcNewUserGeometry (scene,gflags,0,1);
+      rtcNewUserGeometry (scene,gflags,0,2);
       rtcCommit (scene);
       AssertNoError(device);
       return VerifyApplication::PASSED;

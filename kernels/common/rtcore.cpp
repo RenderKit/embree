@@ -994,15 +994,7 @@ namespace embree
     return -1;
   }
   
-  RTCORE_API unsigned rtcNewUserGeometry (RTCScene hscene, size_t numItems) {
-    return rtcNewUserGeometryImpl(hscene,RTC_GEOMETRY_STATIC,numItems,1,RTC_INVALID_GEOMETRY_ID);
-  }
-
-  RTCORE_API unsigned rtcNewUserGeometry2 (RTCScene hscene, size_t numItems, size_t numTimeSteps) {
-    return rtcNewUserGeometryImpl(hscene,RTC_GEOMETRY_STATIC,numItems,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
-  }
-
-  RTCORE_API unsigned rtcNewUserGeometry3 (RTCScene hscene, RTCGeometryFlags gflags, size_t numItems, size_t numTimeSteps) {
+  RTCORE_API unsigned rtcNewUserGeometry (RTCScene hscene, RTCGeometryFlags gflags, size_t numItems, size_t numTimeSteps) {
     return rtcNewUserGeometryImpl(hscene,gflags,numItems,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
   }
 

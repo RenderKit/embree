@@ -212,7 +212,7 @@ uniform Instance* uniform createInstance (RTCScene scene, RTCScene object, unifo
   instance->local2world.l.vy = make_Vec3f(0,1,0);
   instance->local2world.l.vz = make_Vec3f(0,0,1);
   instance->local2world.p    = make_Vec3f(0,0,0);
-  instance->geometry = rtcNewUserGeometry(scene,1);
+  instance->geometry = rtcNewUserGeometry(scene,RTC_GEOMETRY_STATIC,1);
   rtcSetUserData(scene,instance->geometry,instance);
   rtcSetBoundsFunction(scene,instance->geometry,instanceBoundsFunc);
   if (g_mode == MODE_NORMAL) {
@@ -419,7 +419,7 @@ unmasked void sphereOccludedFuncN(const uniform int* uniform valid,
 
 uniform Sphere* uniform createAnalyticalSphere (RTCScene scene, const uniform Vec3f& p, uniform float r)
 {
-  uniform unsigned int geomID = rtcNewUserGeometry(scene,1);
+  uniform unsigned int geomID = rtcNewUserGeometry(scene,RTC_GEOMETRY_STATIC,1);
   uniform Sphere* uniform sphere = uniform new uniform Sphere;
   sphere->p = p;
   sphere->r = r;
@@ -438,7 +438,7 @@ uniform Sphere* uniform createAnalyticalSphere (RTCScene scene, const uniform Ve
 
 uniform Sphere* uniform createAnalyticalSpheres (RTCScene scene, uniform size_t N)
 {
-  uniform unsigned int geomID = rtcNewUserGeometry(scene,N);
+  uniform unsigned int geomID = rtcNewUserGeometry(scene,RTC_GEOMETRY_STATIC,N);
   uniform Sphere* uniform spheres = uniform new uniform Sphere[N];
   for (uniform size_t i=0; i<N; i++) spheres[i].geomID = geomID;
   rtcSetUserData(scene,geomID,spheres);

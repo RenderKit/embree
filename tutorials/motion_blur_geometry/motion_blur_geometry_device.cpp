@@ -432,7 +432,7 @@ void sphereOccludedFunc(void* spheres_i, RTCRay& ray, size_t item)
 
 Sphere* addUserGeometrySphere (RTCScene scene, const Vec3fa& p, float r, unsigned int num_time_steps)
 {
-  unsigned int geomID = rtcNewUserGeometry2(scene,1,num_time_steps);
+  unsigned int geomID = rtcNewUserGeometry(scene,RTC_GEOMETRY_STATIC,1,num_time_steps);
   Sphere* sphere = (Sphere*) alignedMalloc(sizeof(Sphere));
   sphere->p = p;
   sphere->r = r;

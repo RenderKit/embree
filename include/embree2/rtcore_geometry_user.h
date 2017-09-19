@@ -126,14 +126,7 @@ typedef void (*RTCOccludedFuncN) (const int* valid,                      /*! poi
  *  representation of the geometry, is passed to each intersect and
  *  occluded function invokation, as well as the index of the geometry
  *  of the set to intersect. */
-RTCORE_API unsigned rtcNewUserGeometry (RTCScene scene,           /*!< the scene the user geometry set is created in */
-                                        size_t numGeometries      /*!< the number of geometries contained in the set */);
-
-RTCORE_API unsigned rtcNewUserGeometry2 (RTCScene scene,          /*!< the scene the user geometry set is created in */
-                                         size_t numGeometries,    /*!< the number of geometries contained in the set */
-                                         size_t numTimeSteps = 1  /*!< number of motion blur time steps */);
-
-RTCORE_API unsigned rtcNewUserGeometry3 (RTCScene scene,          /*!< the scene the user geometry set is created in */
+RTCORE_API unsigned rtcNewUserGeometry (RTCScene scene,          /*!< the scene the user geometry set is created in */
                                          RTCGeometryFlags gflags, //!< geometry flags
                                          size_t numGeometries,    /*!< the number of geometries contained in the set */
                                          size_t numTimeSteps = 1  /*!< number of motion blur time steps */);

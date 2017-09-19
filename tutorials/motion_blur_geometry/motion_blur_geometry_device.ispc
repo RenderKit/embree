@@ -430,7 +430,7 @@ void sphereOccludedFunc(void* uniform spheres_i, varying RTCRay& ray, uniform ui
 
 uniform Sphere* uniform addUserGeometrySphere (RTCScene scene, const uniform Vec3f& p, uniform float r, uniform unsigned int num_time_steps)
 {
-  uniform unsigned int geomID = rtcNewUserGeometry2(scene,1,num_time_steps);
+  uniform unsigned int geomID = rtcNewUserGeometry(scene,RTC_GEOMETRY_STATIC,1,num_time_steps);
   uniform Sphere* uniform sphere = uniform new uniform Sphere;
   sphere->p = p;
   sphere->r = r;
