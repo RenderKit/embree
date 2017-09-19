@@ -102,7 +102,7 @@ uniform unsigned int addTriangleCube (RTCScene scene, const uniform Vec3f& pos, 
 
   for (uniform size_t t=0; t<num_time_steps; t++)
   {
-    uniform RTCBufferType bufID = (uniform RTCBufferType)(RTC_VERTEX_BUFFER0+t);
+    uniform RTCBufferType bufID = RTC_VERTEX_BUFFER_(t);
     uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(scene,geomID,bufID);
 
     uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,0,0),make_Vec3f(0,1,0),2.0f*M_PI*(float)t/(float)(num_time_steps-1));
@@ -141,7 +141,7 @@ uniform unsigned int addQuadCube (RTCScene scene, const uniform Vec3f& pos, unif
 
   for (uniform size_t t=0; t<num_time_steps; t++)
   {
-    uniform RTCBufferType bufID = (uniform RTCBufferType)(RTC_VERTEX_BUFFER0+t);
+    uniform RTCBufferType bufID = RTC_VERTEX_BUFFER_(t);
     uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(scene,geomID,bufID);
 
     uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,0,0),make_Vec3f(0,1,0),2.0f*M_PI*(float)t/(float)(num_time_steps-1));
@@ -179,7 +179,7 @@ uniform unsigned int addSubdivCube (RTCScene scene, const uniform Vec3f& pos, un
 
   for (uniform size_t t=0; t<num_time_steps; t++)
   {
-    uniform RTCBufferType bufID = (uniform RTCBufferType)(RTC_VERTEX_BUFFER0+t);
+    uniform RTCBufferType bufID = RTC_VERTEX_BUFFER_(t);
     uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(scene,geomID,bufID);
 
     uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,0,0),make_Vec3f(0,1,0),2.0f*M_PI*(float)t/(float)(num_time_steps-1));
@@ -215,7 +215,7 @@ uniform unsigned int addCurveOrHair (RTCScene scene, const uniform Vec3f& pos, b
 
   for (uniform size_t t=0; t<num_time_steps; t++)
   {
-    uniform RTCBufferType bufID = (uniform RTCBufferType)(RTC_VERTEX_BUFFER0+t);
+    uniform RTCBufferType bufID = RTC_VERTEX_BUFFER_(t);
     uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(scene,geomID,bufID);
 
     uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,0,0),make_Vec3f(0,1,0),2.0f*M_PI*(float)t/(float)(num_time_steps-1));
@@ -248,7 +248,7 @@ uniform unsigned int addLines (RTCScene scene, const uniform Vec3f& pos, uniform
 
   for (uniform size_t t=0; t<num_time_steps; t++)
   {
-    uniform RTCBufferType bufID = (uniform RTCBufferType)(RTC_VERTEX_BUFFER0+t);
+    uniform RTCBufferType bufID = RTC_VERTEX_BUFFER_(t);
     uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(scene,geomID,bufID);
 
     uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,0,0),make_Vec3f(0,1,0),2.0f*M_PI*(float)t/(float)(num_time_steps-1));
@@ -299,7 +299,7 @@ uniform unsigned int addInstancedQuadCube (RTCScene global_scene, const uniform 
 
   for (uniform size_t t=0; t<num_time_steps; t++)
   {
-    uniform RTCBufferType bufID = (uniform RTCBufferType)(RTC_VERTEX_BUFFER0+t);
+    uniform RTCBufferType bufID = RTC_VERTEX_BUFFER_(t);
     uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(scene,geomID,bufID);
 
     uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,0,0),make_Vec3f(0,1,0),0.5f*2.0f*M_PI*(float)t/(float)(num_time_steps-1));

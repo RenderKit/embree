@@ -245,7 +245,7 @@ Vec3f renderPixelTexCoords(float x, float y, const uniform ISPCCamera& camera, u
   {
     Vec2f st = make_Vec2f(0,0);
     foreach_unique (geomID in ray.geomID) {
-      rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,(RTCBufferType)(RTC_USER_VERTEX_BUFFER+2),&st.x,NULL,NULL,2);
+      rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER_(2),&st.x,NULL,NULL,2);
     }
     if (render_texcoords_mode%2 == 0)
       return make_Vec3f(st.x,st.y,0.0f);

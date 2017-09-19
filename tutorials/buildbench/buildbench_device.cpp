@@ -35,7 +35,7 @@ namespace embree {
   {
     unsigned int geomID = rtcNewTriangleMesh (scene_out, flags, mesh->numTriangles, mesh->numVertices, mesh->numTimeSteps);
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
-      rtcSetBuffer(scene_out, geomID, (RTCBufferType)(RTC_VERTEX_BUFFER+t),mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
+      rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER_(t),mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle), mesh->numTriangles);
     mesh->geom.geomID = geomID;
@@ -46,7 +46,7 @@ namespace embree {
   {
     unsigned int geomID = rtcNewQuadMesh (scene_out, flags, mesh->numQuads, mesh->numVertices, mesh->numTimeSteps);
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
-      rtcSetBuffer(scene_out, geomID, (RTCBufferType)(RTC_VERTEX_BUFFER+t),mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
+      rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER_(t),mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(ISPCQuad), mesh->numQuads);
     mesh->geom.geomID = geomID;
@@ -60,7 +60,7 @@ namespace embree {
     mesh->geom.geomID = geomID;
     for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 16.0f;
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
-      rtcSetBuffer(scene_out, geomID, (RTCBufferType)(RTC_VERTEX_BUFFER+t),mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
+      rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER_(t),mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
     rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float), mesh->numEdges);
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(unsigned int), mesh->numEdges);
@@ -78,7 +78,7 @@ namespace embree {
   {
     unsigned int geomID = rtcNewLineSegments (scene_out, flags, mesh->numSegments, mesh->numVertices, mesh->numTimeSteps);
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
-      rtcSetBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t),mesh->positions[t],0,sizeof(Vertex), mesh->numVertices);
+      rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER_(t),mesh->positions[t],0,sizeof(Vertex), mesh->numVertices);
     }
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->indices,0,sizeof(int),mesh->numSegments);
     return geomID;
@@ -93,7 +93,7 @@ namespace embree {
     default: assert(false);
     }
     for (size_t t=0; t<hair->numTimeSteps; t++) {
-      rtcSetBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t),hair->positions[t],0,sizeof(Vertex),hair->numVertices);
+      rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER_(t),hair->positions[t],0,sizeof(Vertex),hair->numVertices);
     }
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
     rtcSetTessellationRate(scene_out,geomID,(float)hair->tessellation_rate);
@@ -109,7 +109,7 @@ namespace embree {
     default: assert(false);
     }
     for (size_t t=0; t<hair->numTimeSteps; t++) {
-      rtcSetBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t),hair->positions[t],0,sizeof(Vertex),hair->numVertices);
+      rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER_(t),hair->positions[t],0,sizeof(Vertex),hair->numVertices);
     }
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
     return geomID;

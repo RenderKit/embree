@@ -179,7 +179,7 @@ namespace embree
         AssertNoError(device);
         rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->triangles.data(),0,sizeof(SceneGraph::TriangleMeshNode::Triangle),mesh->triangles.size());
         for (size_t t=0; t<mesh->numTimeSteps(); t++)
-          rtcSetBuffer(scene,geomID,RTCBufferType(RTC_VERTEX_BUFFER0+t),mesh->positions[t].data(),0,sizeof(SceneGraph::TriangleMeshNode::Vertex),mesh->positions[t].size());
+          rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER_(t),mesh->positions[t].data(),0,sizeof(SceneGraph::TriangleMeshNode::Vertex),mesh->positions[t].size());
         AssertNoError(device);
         return geomID;
       }
@@ -189,7 +189,7 @@ namespace embree
         AssertNoError(device);
         rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->quads.data(),0,sizeof(SceneGraph::QuadMeshNode::Quad),mesh->quads.size());
         for (size_t t=0; t<mesh->numTimeSteps(); t++)
-          rtcSetBuffer(scene,geomID,RTCBufferType(RTC_VERTEX_BUFFER0+t),mesh->positions[t].data(),0,sizeof(SceneGraph::QuadMeshNode::Vertex),mesh->positions[t].size());
+          rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER_(t),mesh->positions[t].data(),0,sizeof(SceneGraph::QuadMeshNode::Vertex),mesh->positions[t].size());
         AssertNoError(device);
         return geomID;
       } 
@@ -202,7 +202,7 @@ namespace embree
         rtcSetBuffer(scene,geomID,RTC_FACE_BUFFER  ,mesh->verticesPerFace.data(), 0,sizeof(int),mesh->verticesPerFace.size());
         rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->position_indices.data(),0,sizeof(int),mesh->position_indices.size());
         for (size_t t=0; t<mesh->numTimeSteps(); t++)
-          rtcSetBuffer(scene,geomID,RTCBufferType(RTC_VERTEX_BUFFER0+t),mesh->positions[t].data(),0,sizeof(SceneGraph::SubdivMeshNode::Vertex),mesh->positions[t].size());
+          rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER_(t),mesh->positions[t].data(),0,sizeof(SceneGraph::SubdivMeshNode::Vertex),mesh->positions[t].size());
         if (mesh->edge_creases.size()) rtcSetBuffer(scene,geomID,RTC_EDGE_CREASE_INDEX_BUFFER,mesh->edge_creases.data(),0,2*sizeof(int),mesh->edge_creases.size());
         if (mesh->edge_crease_weights.size()) rtcSetBuffer(scene,geomID,RTC_EDGE_CREASE_WEIGHT_BUFFER,mesh->edge_crease_weights.data(),0,sizeof(float),mesh->edge_crease_weights.size());
         if (mesh->vertex_creases.size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_CREASE_INDEX_BUFFER,mesh->vertex_creases.data(),0,sizeof(int),mesh->vertex_creases.size());
@@ -223,7 +223,7 @@ namespace embree
         }
         AssertNoError(device);
         for (size_t t=0; t<mesh->numTimeSteps(); t++)
-          rtcSetBuffer(scene,geomID,RTCBufferType(RTC_VERTEX_BUFFER0+t),mesh->positions[t].data(),0,sizeof(SceneGraph::HairSetNode::Vertex),mesh->positions[t].size());
+          rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER_(t),mesh->positions[t].data(),0,sizeof(SceneGraph::HairSetNode::Vertex),mesh->positions[t].size());
         rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,mesh->hairs.data(),0,sizeof(SceneGraph::HairSetNode::Hair),mesh->hairs.size());
         AssertNoError(device);
         return geomID;
@@ -233,7 +233,7 @@ namespace embree
         unsigned int geomID = rtcNewLineSegments (scene, gflag, mesh->indices.size(), mesh->numVertices(), mesh->numTimeSteps());
         AssertNoError(device);
         for (size_t t=0; t<mesh->numTimeSteps(); t++)
-          rtcSetBuffer(scene,geomID,RTCBufferType(RTC_VERTEX_BUFFER0+t),mesh->positions[t].data(),0,sizeof(SceneGraph::LineSegmentsNode::Vertex),mesh->positions[t].size());
+          rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER_(t),mesh->positions[t].data(),0,sizeof(SceneGraph::LineSegmentsNode::Vertex),mesh->positions[t].size());
         rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,mesh->indices.data(),0,sizeof(int),mesh->indices.size());
         AssertNoError(device);
         return geomID;
