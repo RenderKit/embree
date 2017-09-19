@@ -664,7 +664,7 @@ namespace embree
   }
 
   template<int N>
-    inline void IntersectWithNMMode(IntersectVariant ivariant, RTCScene scene, RTCIntersectContext* context, RTCRay* rays, size_t Nrays)
+    __noinline void IntersectWithNMMode(IntersectVariant ivariant, RTCScene scene, RTCIntersectContext* context, RTCRay* rays, size_t Nrays)
   {
     assert(Nrays<1024);
     const size_t alignment = size_t(rays) % 64;
@@ -693,8 +693,45 @@ namespace embree
       for (size_t j=0; j<L; j++) rays[i+j] = getRay(ray,N,j);
     }
   }
+	
+	__noinline void IntersectWithNpMode(IntersectVariant ivariant, RTCScene scene, RTCIntersectContext* context, RTCRay* rays, size_t N)
+	{
+		assert(N < 1024);
+		const size_t alignment = size_t(rays) % 64;
+		__aligned(64) char data[1024 * sizeof(RTCRay) + 64];
+		RTCRayN* ray = (RTCRayN*)&data[alignment];
+		for (size_t j = 0; j < N; j++) setRay(ray, N, j, rays[j]);
 
-  inline void IntersectWithModeInternal(IntersectMode mode, IntersectVariant ivariant, RTCScene scene, RTCRay* rays, size_t N)
+		RTCRayNp rayp;
+		rayp.orgx = &RTCRayN_org_x(ray, N, 0);
+		rayp.orgy = &RTCRayN_org_y(ray, N, 0);
+		rayp.orgz = &RTCRayN_org_z(ray, N, 0);
+		rayp.dirx = &RTCRayN_dir_x(ray, N, 0);
+		rayp.diry = &RTCRayN_dir_y(ray, N, 0);
+		rayp.dirz = &RTCRayN_dir_z(ray, N, 0);
+		rayp.tnear = &RTCRayN_tnear(ray, N, 0);
+		rayp.tfar = &RTCRayN_tfar(ray, N, 0);
+		rayp.time = &RTCRayN_time(ray, N, 0);
+		rayp.mask = &RTCRayN_mask(ray, N, 0);
+		rayp.instID = &RTCRayN_instID(ray, N, 0);
+		rayp.geomID = &RTCRayN_geomID(ray, N, 0);
+		rayp.primID = &RTCRayN_primID(ray, N, 0);
+		rayp.u = &RTCRayN_u(ray, N, 0);
+		rayp.v = &RTCRayN_v(ray, N, 0);
+		rayp.Ngx = &RTCRayN_Ng_x(ray, N, 0);
+		rayp.Ngy = &RTCRayN_Ng_y(ray, N, 0);
+		rayp.Ngz = &RTCRayN_Ng_z(ray, N, 0);
+
+		switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
+		case VARIANT_INTERSECT: rtcIntersectNp(scene, context, rayp, N); break;
+		case VARIANT_OCCLUDED: rtcOccludedNp(scene, context, rayp, N); break;
+		default: assert(false);
+		}
+
+		for (size_t j = 0; j < N; j++) rays[j] = getRay(ray, N, j);
+	}
+	
+  __noinline void IntersectWithModeInternal(IntersectMode mode, IntersectVariant ivariant, RTCScene scene, RTCRay* rays, size_t N)
   {
     RTCIntersectContext context;
     context.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_COHERENT :  RTC_INTERSECT_INCOHERENT;
@@ -812,48 +849,14 @@ namespace embree
       IntersectWithNMMode<16>(ivariant,scene,&context,rays,N);
       break;
     }
-    case MODE_INTERSECTNp: 
-    {
-      assert(N<1024);
-      const size_t alignment = size_t(rays) % 64;
-      __aligned(64) char data[1024*sizeof(RTCRay)+64];
-      RTCRayN* ray = (RTCRayN*) &data[alignment];
-      for (size_t j=0; j<N; j++) setRay(ray,N,j,rays[j]);
-
-      RTCRayNp rayp;
-      rayp.orgx = &RTCRayN_org_x(ray,N,0);
-      rayp.orgy = &RTCRayN_org_y(ray,N,0);
-      rayp.orgz = &RTCRayN_org_z(ray,N,0);
-      rayp.dirx = &RTCRayN_dir_x(ray,N,0); 
-      rayp.diry = &RTCRayN_dir_y(ray,N,0); 
-      rayp.dirz = &RTCRayN_dir_z(ray,N,0); 
-      rayp.tnear = &RTCRayN_tnear(ray,N,0); 
-      rayp.tfar = &RTCRayN_tfar(ray,N,0); 
-      rayp.time = &RTCRayN_time(ray,N,0); 
-      rayp.mask = &RTCRayN_mask(ray,N,0); 
-      rayp.instID = &RTCRayN_instID(ray,N,0); 
-      rayp.geomID = &RTCRayN_geomID(ray,N,0); 
-      rayp.primID = &RTCRayN_primID(ray,N,0); 
-      rayp.u = &RTCRayN_u(ray,N,0); 
-      rayp.v = &RTCRayN_v(ray,N,0); 
-      rayp.Ngx = &RTCRayN_Ng_x(ray,N,0); 
-      rayp.Ngy = &RTCRayN_Ng_y(ray,N,0); 
-      rayp.Ngz = &RTCRayN_Ng_z(ray,N,0); 
-         
-      switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-      case VARIANT_INTERSECT: rtcIntersectNp(scene,&context,rayp,N); break;
-      case VARIANT_OCCLUDED : rtcOccludedNp(scene,&context,rayp,N); break;
-      default: assert(false);
-      }
-     
-      for (size_t j=0; j<N; j++) rays[j] = getRay(ray,N,j);
-
+    case MODE_INTERSECTNp: {
+	  IntersectWithNpMode(ivariant, scene, &context, rays, N);
       break;
     }
     }
   }
 
-  inline void IntersectWithMode(IntersectMode mode, IntersectVariant ivariant, RTCScene scene, RTCRay* rays, size_t N)
+  void IntersectWithMode(IntersectMode mode, IntersectVariant ivariant, RTCScene scene, RTCRay* rays, size_t N)
   {
     /* verify occluded result against intersect */
     if ((ivariant & VARIANT_INTERSECT_OCCLUDED) == VARIANT_INTERSECT_OCCLUDED)
