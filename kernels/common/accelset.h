@@ -159,27 +159,19 @@ namespace embree
       /*! Calculates the bounds of an item */
       __forceinline BBox3fa bounds(size_t i, size_t itime = 0) const
       {
-        BBox3fa box[2]; // have to always use 2 boxes as the geometry might have motion blur
+        BBox3fa box;
         assert(i < size());
-        if      (likely(boundsFunc3)) boundsFunc3(boundsFuncUserPtr,intersectors.ptr,i,itime,(RTCBounds&)box[0]);
-        else if (likely(boundsFunc2)) boundsFunc2(boundsFuncUserPtr,intersectors.ptr,i,(RTCBounds*)box);
-        else                          boundsFunc (intersectors.ptr,i,(RTCBounds&)box[0]);
-        return box[0];
+        boundsFunc3(boundsFuncUserPtr,intersectors.ptr,i,itime,(RTCBounds&)box);
+        return box;
       }
 
       /*! calculates the linear bounds of the i'th item at the itime'th time segment */
       __forceinline LBBox3fa linearBounds(size_t i, size_t itime) const
       {
-        BBox3fa box[2]; 
+        BBox3fa box[2];
         assert(i < size());
-        if (likely(boundsFunc3)) {
-          boundsFunc3(boundsFuncUserPtr,intersectors.ptr,i,itime+0,(RTCBounds&)box[0]);
-          boundsFunc3(boundsFuncUserPtr,intersectors.ptr,i,itime+1,(RTCBounds&)box[1]);
-        }
-        else if (likely(boundsFunc2))
-          boundsFunc2(boundsFuncUserPtr,intersectors.ptr,i,(RTCBounds*)box);
-        else                  
-          boundsFunc(intersectors.ptr,i,(RTCBounds&)box[0]);
+        boundsFunc3(boundsFuncUserPtr,intersectors.ptr,i,itime+0,(RTCBounds&)box[0]);
+        boundsFunc3(boundsFuncUserPtr,intersectors.ptr,i,itime+1,(RTCBounds&)box[1]);
         return LBBox3fa(box[0],box[1]);
       }
 
@@ -367,8 +359,6 @@ namespace embree
 
 
     public:
-      RTCBoundsFunc  boundsFunc;
-      RTCBoundsFunc2 boundsFunc2;
       RTCBoundsFunc3 boundsFunc3;
       void* boundsFuncUserPtr;
 

@@ -48,7 +48,7 @@ struct Instance
   Vec3fa upper;
 };
 
-void instanceBoundsFunc(void* instance_i, size_t item, RTCBounds& bounds_o)
+void instanceBoundsFunc(void* uniform, void* instance_i, size_t item, size_t time, RTCBounds& bounds_o)
 {
   const Instance* instance = (const Instance*) instance_i;
   Vec3fa l = instance->lower;
@@ -216,7 +216,7 @@ Instance* createInstance (RTCScene scene, RTCScene object, int userID, const Vec
   instance->local2world.p    = Vec3fa(0,0,0);
   instance->geometry = rtcNewUserGeometry(scene,RTC_GEOMETRY_STATIC,1);
   rtcSetUserData(scene,instance->geometry,instance);
-  rtcSetBoundsFunction(scene,instance->geometry,instanceBoundsFunc);
+  rtcSetBoundsFunction3(scene,instance->geometry,instanceBoundsFunc,nullptr);
   if (g_mode == MODE_NORMAL) {
     rtcSetIntersectFunction(scene,instance->geometry,instanceIntersectFunc);
     rtcSetOccludedFunction (scene,instance->geometry,instanceOccludedFunc);
@@ -246,7 +246,7 @@ struct Sphere
   unsigned int geomID;
 };
 
-void sphereBoundsFunc(void* spheres_i, size_t item, RTCBounds& bounds_o)
+void sphereBoundsFunc(void* uniform, void* spheres_i, size_t item, size_t time, RTCBounds& bounds_o)
 {
   const Sphere* spheres = (const Sphere*) spheres_i;
   const Sphere& sphere = spheres[item];
@@ -427,7 +427,7 @@ Sphere* createAnalyticalSphere (RTCScene scene, const Vec3fa& p, float r)
   sphere->r = r;
   sphere->geomID = geomID;
   rtcSetUserData(scene,geomID,sphere);
-  rtcSetBoundsFunction(scene,geomID,sphereBoundsFunc);
+  rtcSetBoundsFunction3(scene,geomID,sphereBoundsFunc,nullptr);
   if (g_mode == MODE_NORMAL) {
     rtcSetIntersectFunction(scene,geomID,sphereIntersectFunc);
     rtcSetOccludedFunction (scene,geomID,sphereOccludedFunc);
@@ -444,7 +444,7 @@ Sphere* createAnalyticalSpheres (RTCScene scene, size_t N)
   Sphere* spheres = (Sphere*) alignedMalloc(N*sizeof(Sphere));
   for (size_t i=0; i<N; i++) spheres[i].geomID = geomID;
   rtcSetUserData(scene,geomID,spheres);
-  rtcSetBoundsFunction(scene,geomID,sphereBoundsFunc);
+  rtcSetBoundsFunction3(scene,geomID,sphereBoundsFunc,nullptr);
   if (g_mode == MODE_NORMAL) {
     rtcSetIntersectFunction(scene,geomID,sphereIntersectFunc);
     rtcSetOccludedFunction (scene,geomID,sphereOccludedFunc);

@@ -46,7 +46,7 @@ struct Instance
   Vec3f upper;
 };
 
-unmasked void instanceBoundsFunc(void* uniform instance_i, uniform uintptr_t item, uniform RTCBounds& bounds_o)
+unmasked void instanceBoundsFunc(void* uniform, void* uniform instance_i, uniform uintptr_t item, uniform uintptr_t time, uniform RTCBounds& bounds_o)
 {
   const uniform Instance* uniform instance = (const uniform Instance* uniform) instance_i;
   uniform Vec3f l = instance->lower;
@@ -214,7 +214,7 @@ uniform Instance* uniform createInstance (RTCScene scene, RTCScene object, unifo
   instance->local2world.p    = make_Vec3f(0,0,0);
   instance->geometry = rtcNewUserGeometry(scene,RTC_GEOMETRY_STATIC,1);
   rtcSetUserData(scene,instance->geometry,instance);
-  rtcSetBoundsFunction(scene,instance->geometry,instanceBoundsFunc);
+  rtcSetBoundsFunction3(scene,instance->geometry,instanceBoundsFunc,NULL);
   if (g_mode == MODE_NORMAL) {
     rtcSetIntersectFunction(scene,instance->geometry,instanceIntersectFunc);
     rtcSetOccludedFunction (scene,instance->geometry,instanceOccludedFunc);
@@ -244,7 +244,7 @@ struct Sphere
   unsigned int geomID;
 };
 
-unmasked void sphereBoundsFunc(void* uniform spheres_i, uniform uintptr_t item, uniform RTCBounds& bounds_o)
+unmasked void sphereBoundsFunc(void* uniform, void* uniform spheres_i, uniform uintptr_t item, uniform uintptr_t time, uniform RTCBounds& bounds_o)
 {
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) spheres_i;
   const uniform Sphere& sphere = spheres[item];
@@ -425,7 +425,7 @@ uniform Sphere* uniform createAnalyticalSphere (RTCScene scene, const uniform Ve
   sphere->r = r;
   sphere->geomID = geomID;
   rtcSetUserData(scene,geomID,sphere);
-  rtcSetBoundsFunction(scene,geomID,sphereBoundsFunc);
+  rtcSetBoundsFunction3(scene,geomID,sphereBoundsFunc,NULL);
   if (g_mode == MODE_NORMAL) {
     rtcSetIntersectFunction(scene,geomID,sphereIntersectFunc);
     rtcSetOccludedFunction (scene,geomID,sphereOccludedFunc);
@@ -442,7 +442,7 @@ uniform Sphere* uniform createAnalyticalSpheres (RTCScene scene, uniform size_t 
   uniform Sphere* uniform spheres = uniform new uniform Sphere[N];
   for (uniform size_t i=0; i<N; i++) spheres[i].geomID = geomID;
   rtcSetUserData(scene,geomID,spheres);
-  rtcSetBoundsFunction(scene,geomID,sphereBoundsFunc);
+  rtcSetBoundsFunction3(scene,geomID,sphereBoundsFunc,NULL);
   if (g_mode == MODE_NORMAL) {
     rtcSetIntersectFunction(scene,geomID,sphereIntersectFunc);
     rtcSetOccludedFunction (scene,geomID,sphereOccludedFunc);

@@ -251,16 +251,6 @@ namespace embree
   public:
 
     /*! Set bounds function. */
-    virtual void setBoundsFunction (RTCBoundsFunc bounds) { 
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
-    }
-
-    /*! Set bounds function. */
-    virtual void setBoundsFunction2 (RTCBoundsFunc2 bounds, void* userPtr) { 
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
-    }
-
-    /*! Set bounds function. */
     virtual void setBoundsFunction3 (RTCBoundsFunc3 bounds, void* userPtr) { 
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }

@@ -43,7 +43,7 @@ struct LazyGeometry
   float radius;
 };
 
-unmasked void instanceBoundsFunc(void* uniform instance_i, uniform uintptr_t item, uniform RTCBounds& bounds_o)
+unmasked void instanceBoundsFunc(void* uniform, void* uniform instance_i, uniform uintptr_t item, uniform uintptr_t time, uniform RTCBounds& bounds_o)
 {
   const uniform LazyGeometry* uniform instance = (const uniform LazyGeometry* uniform) instance_i;
   uniform Vec3f lower = instance->center-make_Vec3f(instance->radius);
@@ -192,7 +192,7 @@ uniform LazyGeometry* uniform createLazyObject (RTCScene scene, uniform int user
   instance->radius = radius;
   instance->geometry = rtcNewUserGeometry(scene,RTC_GEOMETRY_STATIC,1);
   rtcSetUserData(scene,instance->geometry,instance);
-  rtcSetBoundsFunction(scene,instance->geometry,instanceBoundsFunc);
+  rtcSetBoundsFunction3(scene,instance->geometry,instanceBoundsFunc,NULL);
   rtcSetIntersectFunction(scene,instance->geometry,instanceIntersectFunc);
   rtcSetOccludedFunction (scene,instance->geometry,instanceOccludedFunc);
 
