@@ -217,7 +217,8 @@ def createTest(config,OS):
   if tasking == "INT": tasking = "INTERNAL"
   if tasking == "PPL": tasking = "PPL"
   name = "gitlab-"+platform+"-"+build+"-"+compiler+"-"+string_of_isa(isa)+"-"+tasking
-  if "package" in config: 
+  if "package" in config:
+    c.append("-D EMBREE_STACK_PROTECTOR=ON")
     if config["package"] == "ZIP": name = name + "-package-zip"
     else                         : name = name + "-package-installer"
 
