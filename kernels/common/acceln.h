@@ -51,11 +51,9 @@ namespace embree
     void select(bool filter4, bool filter8, bool filter16, bool filterN);
     void deleteGeometry(size_t geomID);
     void clear ();
-    __forceinline bool validIsecN() { return validIntersectorN; }
 
   public:
     darray_t<Accel*,16> accels;
     darray_t<Accel*,16> validAccels;
-    bool validIntersectorN;
   };
 }
