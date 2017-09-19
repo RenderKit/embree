@@ -21,68 +21,12 @@ DISABLE_DEPRECATED_WARNING;
 
 namespace embree
 {
-/* This is necessary as the size_t type under ISPC may be 32 or 64 bits wide depending on the ISPC addressing mode used. */
-#define size_t int
-#define ssize_t int
-
-  extern "C" RTCDevice ispcNewDevice(const char* cfg) {
-    return rtcNewDevice(cfg);
-  }
-
-  extern "C" void ispcDeleteDevice(RTCDevice device) {
-    rtcDeleteDevice(device);
-  }
-
-  extern "C" void ispcDeviceSetParameter1i(RTCDevice device, const RTCParameter parm, ssize_t val) {
-    rtcDeviceSetParameter1i(device,parm,val);
-  }
-
-  extern "C" ssize_t ispcDeviceGetParameter1i(RTCDevice device, const RTCParameter parm) {
-    return ssize_t(rtcDeviceGetParameter1i(device,parm));
-  }
-
-  extern "C" RTCError ispcDeviceGetError(RTCDevice device) {
-    return rtcDeviceGetError(device);
-  }
-
-  extern "C" void ispcDeviceSetErrorFunction(RTCDevice device, void* fptr, void* uptr) {
-    return rtcDeviceSetErrorFunction(device,(RTCErrorFunc)fptr,uptr);
-  }
-
-  extern "C" void ispcDeviceSetMemoryMonitorFunction(RTCDevice device, void* fptr, void* uptr) {
-    return rtcDeviceSetMemoryMonitorFunction(device,(RTCMemoryMonitorFunc)fptr,uptr);
-  }
-
   extern "C" RTCScene ispcNewScene2 (RTCDevice device, RTCSceneFlags flags, RTCAlgorithmFlags aflags) 
   {
     if (!isCoherent(flags) && !isIncoherent(flags)) flags = RTCSceneFlags(flags | RTC_SCENE_COHERENT);
     return rtcDeviceNewScene(device,flags,aflags);
   }
 
-  extern "C" void ispcSetProgressMonitorFunction(RTCScene scene, void* func, void* ptr) {
-    return rtcSetProgressMonitorFunction(scene,(RTCProgressMonitorFunc)func,ptr);
-  }
-
-  extern "C" void ispcCommit (RTCScene scene) {
-    return rtcCommit(scene);
-  }
-
-  extern "C" void ispcCommitJoin (RTCScene scene) {
-    return rtcCommitJoin(scene);
-  }
-
-  extern "C" void ispcCommitThread (RTCScene scene, unsigned int threadID, unsigned int numThreads) {
-    return rtcCommitThread(scene,threadID,numThreads);
-  }
-
-  extern "C" void ispcGetBounds(RTCScene scene, RTCBounds& bounds_o) {
-    rtcGetBounds(scene,bounds_o);
-  }
-
-  extern "C" void ispcGetLinearBounds(RTCScene scene, RTCBounds* bounds_o) {
-    rtcGetLinearBounds(scene,bounds_o);
-  }
-  
   extern "C" void ispcIntersect1 (RTCScene scene, const RTCIntersectContext* context, RTCRay& ray) {
     rtcIntersect1Ex(scene,context,ray);
   }
@@ -147,119 +91,6 @@ namespace embree
     rtcOccludedNp(scene,context,rays,N);
   }
   
-  extern "C" void ispcDeleteScene (RTCScene scene) {
-    rtcDeleteScene(scene);
-  }
-  
-  extern "C" unsigned ispcNewInstance (RTCScene target, RTCScene source, size_t numTimeSteps) {
-    return rtcNewInstance2(target,source,numTimeSteps);
-  }
-
-  extern "C" unsigned ispcNewGeometryInstance (RTCScene scene, unsigned geomID) {
-    return rtcNewGeometryInstance(scene,geomID);
-  }
-  
-  extern "C" void ispcSetTransform (RTCScene scene, unsigned geomID, RTCMatrixType layout, const float* xfm, size_t timeStep) {
-    return rtcSetTransform(scene,geomID,layout,xfm,timeStep);
-  }
-  
-  extern "C" unsigned ispcNewUserGeometry (RTCScene scene, RTCGeometryFlags gflags, size_t numItems, size_t numTimeSteps, unsigned int geomID) {
-    return rtcNewUserGeometry4(scene,gflags,numItems,numTimeSteps,geomID);
-  }
-
-  extern "C" unsigned ispcNewTriangleMesh (RTCScene scene, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps, unsigned int geomID) {
-    return rtcNewTriangleMesh2(scene,flags,numTriangles,numVertices,numTimeSteps,geomID);
-  }
-
-  extern "C" unsigned ispcNewQuadMesh (RTCScene scene, RTCGeometryFlags flags, size_t numQuads, size_t numVertices, size_t numTimeSteps, unsigned int geomID) {
-    return rtcNewQuadMesh2(scene,flags,numQuads,numVertices,numTimeSteps,geomID);
-  }
-
-  extern "C" unsigned ispcNewLineSegments (RTCScene scene, RTCGeometryFlags flags, size_t numSegments, size_t numVertices, size_t numTimeSteps, unsigned int geomID) {
-    return rtcNewLineSegments2(scene,flags,numSegments,numVertices,numTimeSteps,geomID);
-  }
-
-  extern "C" unsigned ispcNewSubdivisionMesh (RTCScene scene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, 
-                                              size_t numVertices, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps, unsigned int geomID) 
-  {
-    return rtcNewSubdivisionMesh2(scene,flags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps,geomID);
-  }
-
-  extern "C" void ispcSetRayMask (RTCScene scene, unsigned geomID, int mask) {
-    rtcSetMask(scene,geomID,mask);
-  }
-
-  extern "C" void ispcSetSubdivisionMode (RTCScene scene, unsigned geomID, unsigned topologyID, RTCSubdivisionMode mode) {
-    rtcSetSubdivisionMode(scene,geomID,topologyID,mode);
-  }
-
-  extern "C" void ispcSetIndexBuffer(RTCScene scene, unsigned geomID, RTCBufferType vertexBuffer, RTCBufferType indexBuffer) {
-    rtcSetIndexBuffer(scene,geomID,vertexBuffer,indexBuffer);
-  }
-  
-  extern "C" void* ispcMapBuffer(RTCScene scene, unsigned geomID, RTCBufferType type) {
-    return rtcMapBuffer(scene,geomID,type);
-  }
-  
-  extern "C" void ispcUnmapBuffer(RTCScene scene, unsigned geomID, RTCBufferType type) {
-    rtcUnmapBuffer(scene,geomID,type);
-  }
-
-  extern "C" void ispcSetBuffer(RTCScene scene, unsigned geomID, RTCBufferType type, const void* ptr, size_t offset, size_t stride, size_t size) {
-    rtcSetBuffer(scene,geomID,type,ptr,offset,stride,size);
-  }
-
-  extern "C" void ispcEnable (RTCScene scene, unsigned geomID) {
-    rtcEnable(scene,geomID);
-  }
-  
-  extern "C" void ispcUpdate (RTCScene scene, unsigned geomID) {
-    rtcUpdate(scene,geomID);
-  }
-
-  extern "C" void ispcUpdateBuffer (RTCScene scene, unsigned geomID, RTCBufferType type) {
-    rtcUpdateBuffer(scene,geomID,type);
-  }
-  
-  extern "C" void ispcDisable (RTCScene scene, unsigned geomID) {
-    rtcDisable(scene,geomID);
-  }
-  
-  extern "C" void ispcDeleteGeometry (RTCScene scene, unsigned geomID) {
-    rtcDeleteGeometry(scene,geomID);
-  }
-
-  extern "C" void ispcSetTessellationRate (RTCScene hscene, unsigned geomID, float tessellationRate) {
-    rtcSetTessellationRate(hscene,geomID,tessellationRate);
-  }
-    
-  extern "C" void ispcSetUserData (RTCScene hscene, unsigned geomID, void* ptr) 
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetUserData);
-    RTCORE_VERIFY_HANDLE(scene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setUserData(ptr);
-    RTCORE_CATCH_END(scene->device);
-  }
-
-  extern "C" void* ispcGetUserData (RTCScene hscene, unsigned geomID)
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetUserData);
-    RTCORE_VERIFY_HANDLE(scene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    return scene->get(geomID)->getUserData(); // this call is on purpose not thread safe
-    RTCORE_CATCH_END(scene->device);
-    return nullptr;
-  }
-
-  extern "C" void ispcSetBoundsFunction3 (RTCScene scene, unsigned geomID, RTCBoundsFunc bounds, void* userPtr) {
-    rtcSetBoundsFunction(scene,geomID,bounds,userPtr);
-  }
-
   extern "C" void ispcSetIntersectFunction1 (RTCScene hscene, unsigned geomID, RTCIntersectFunc intersect) 
   {
     Scene* scene = (Scene*) hscene;
@@ -304,28 +135,6 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
   
-  extern "C" void ispcSetIntersectFunction1Mp (RTCScene hscene, unsigned geomID, RTCIntersectFunc1Mp intersect) 
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetIntersectFunction1Mp);
-    RTCORE_VERIFY_HANDLE(scene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setIntersectFunction1Mp(intersect);
-    RTCORE_CATCH_END(scene->device);
-  }
-
-  extern "C" void ispcSetIntersectFunctionN (RTCScene hscene, unsigned geomID, RTCIntersectFuncN intersect) 
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetIntersectFunctionN);
-    RTCORE_VERIFY_HANDLE(scene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get_locked(geomID)->setIntersectFunctionN(intersect);
-    RTCORE_CATCH_END(scene->device);
-  }
-
   extern "C" void ispcSetOccludedFunction1 (RTCScene hscene, unsigned geomID, RTCOccludedFunc occluded) 
   {
     Scene* scene = (Scene*) hscene;
@@ -370,28 +179,6 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
   
-  extern "C" void ispcSetOccludedFunction1Mp (RTCScene hscene, unsigned geomID, RTCOccludedFunc1Mp occluded) 
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetOccludedFunction1Mp);
-    RTCORE_VERIFY_HANDLE(scene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get_locked(geomID)->setOccludedFunction1Mp(occluded);
-    RTCORE_CATCH_END(scene->device);
-  }
-
-  extern "C" void ispcSetOccludedFunctionN (RTCScene hscene, unsigned geomID, RTCOccludedFuncN occluded) 
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetOccludedFunctionN);
-    RTCORE_VERIFY_HANDLE(scene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get_locked(geomID)->setOccludedFunctionN(occluded);
-    RTCORE_CATCH_END(scene->device);
-  }
-
   extern "C" void ispcSetIntersectionFilterFunction1 (RTCScene hscene, unsigned geomID, RTCFilterFunc filter) 
   {
     Scene* scene = (Scene*) hscene;
@@ -433,17 +220,6 @@ namespace embree
     RTCORE_VERIFY_HANDLE(scene);
     RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setIntersectionFilterFunction16(filter,true);
-    RTCORE_CATCH_END(scene->device);
-  }
-
-  extern "C" void ispcSetIntersectionFilterFunctionN (RTCScene hscene, unsigned geomID, RTCFilterFuncN filter) 
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetIntersectionFilterFunctionN);
-    RTCORE_VERIFY_HANDLE(scene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get_locked(geomID)->setIntersectionFilterFunctionN(filter);
     RTCORE_CATCH_END(scene->device);
   }
 
@@ -491,28 +267,6 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
 
-  extern "C" void ispcSetOcclusionFilterFunctionN (RTCScene hscene, unsigned geomID, RTCFilterFuncN filter) 
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetOcclusionFilterFunctionN);
-    RTCORE_VERIFY_HANDLE(scene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get_locked(geomID)->setOcclusionFilterFunctionN(filter);
-    RTCORE_CATCH_END(scene->device);
-  }
-
-  extern "C" void ispcSetDisplacementFunction (RTCScene hscene, unsigned int geomID, void* func, RTCBounds* bounds)
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetDisplacementFunction);
-    RTCORE_VERIFY_HANDLE(scene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get_locked(geomID)->setDisplacementFunction((RTCDisplacementFunc)func,bounds);
-    RTCORE_CATCH_END(scene->device);
-  }
-  
   extern "C" void ispcInterpolateN(RTCScene scene, unsigned int geomID, 
                                    const void* valid, const unsigned int* primIDs, const float* u, const float* v, size_t numUVs, 
                                    RTCBufferType buffer, 
