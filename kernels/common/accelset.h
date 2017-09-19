@@ -161,7 +161,7 @@ namespace embree
       {
         BBox3fa box;
         assert(i < size());
-        boundsFunc3(boundsFuncUserPtr,intersectors.ptr,i,itime,(RTCBounds&)box);
+        boundsFunc(boundsFuncUserPtr,intersectors.ptr,i,itime,(RTCBounds&)box);
         return box;
       }
 
@@ -170,8 +170,8 @@ namespace embree
       {
         BBox3fa box[2];
         assert(i < size());
-        boundsFunc3(boundsFuncUserPtr,intersectors.ptr,i,itime+0,(RTCBounds&)box[0]);
-        boundsFunc3(boundsFuncUserPtr,intersectors.ptr,i,itime+1,(RTCBounds&)box[1]);
+        boundsFunc(boundsFuncUserPtr,intersectors.ptr,i,itime+0,(RTCBounds&)box[0]);
+        boundsFunc(boundsFuncUserPtr,intersectors.ptr,i,itime+1,(RTCBounds&)box[1]);
         return LBBox3fa(box[0],box[1]);
       }
 
@@ -359,7 +359,7 @@ namespace embree
 
 
     public:
-      RTCBoundsFunc3 boundsFunc3;
+      RTCBoundsFunc boundsFunc;
       void* boundsFuncUserPtr;
 
       struct Intersectors 

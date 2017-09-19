@@ -24,7 +24,7 @@ namespace embree
   {
   public:
     InstanceFactory(int features);
-    DEFINE_SYMBOL2(RTCBoundsFunc3,InstanceBoundsFunc);
+    DEFINE_SYMBOL2(RTCBoundsFunc,InstanceBoundsFunc);
     DEFINE_SYMBOL2(AccelSet::Intersector1,InstanceIntersector1);
     DEFINE_SYMBOL2(AccelSet::IntersectorN,InstanceIntersectorN);
   };

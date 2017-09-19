@@ -19,7 +19,7 @@
 
 namespace embree
 {
-  DECLARE_SYMBOL2(RTCBoundsFunc3,InstanceBoundsFunc);
+  DECLARE_SYMBOL2(RTCBoundsFunc,InstanceBoundsFunc);
   DECLARE_SYMBOL2(AccelSet::IntersectorN,InstanceIntersectorN);
 
   InstanceFactory::InstanceFactory(int features)
@@ -34,7 +34,7 @@ namespace embree
     world2local0 = one;
     for (size_t i=0; i<numTimeSteps; i++) local2world[i] = one;
     intersectors.ptr = this;
-    boundsFunc3 = scene->device->instance_factory->InstanceBoundsFunc();
+    boundsFunc = scene->device->instance_factory->InstanceBoundsFunc();
     boundsFuncUserPtr = nullptr;
     intersectors.intersectorN = scene->device->instance_factory->InstanceIntersectorN();
   }

@@ -35,8 +35,8 @@ namespace embree
       }
     }
 
-    RTCBoundsFunc3 InstanceBoundsFunc() {
-      return (RTCBoundsFunc3) InstanceBoundsFunction;
+    RTCBoundsFunc InstanceBoundsFunc() {
+      return (RTCBoundsFunc) InstanceBoundsFunction;
     }
 
     __forceinline void FastInstanceIntersectorN::intersect1(const Instance* instance, const RTCIntersectContext* user_context, Ray& ray, size_t item)

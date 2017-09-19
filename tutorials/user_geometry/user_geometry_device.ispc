@@ -214,7 +214,7 @@ uniform Instance* uniform createInstance (RTCScene scene, RTCScene object, unifo
   instance->local2world.p    = make_Vec3f(0,0,0);
   instance->geometry = rtcNewUserGeometry(scene,RTC_GEOMETRY_STATIC,1);
   rtcSetUserData(scene,instance->geometry,instance);
-  rtcSetBoundsFunction3(scene,instance->geometry,instanceBoundsFunc,NULL);
+  rtcSetBoundsFunction(scene,instance->geometry,instanceBoundsFunc,NULL);
   if (g_mode == MODE_NORMAL) {
     rtcSetIntersectFunction(scene,instance->geometry,instanceIntersectFunc);
     rtcSetOccludedFunction (scene,instance->geometry,instanceOccludedFunc);
@@ -425,7 +425,7 @@ uniform Sphere* uniform createAnalyticalSphere (RTCScene scene, const uniform Ve
   sphere->r = r;
   sphere->geomID = geomID;
   rtcSetUserData(scene,geomID,sphere);
-  rtcSetBoundsFunction3(scene,geomID,sphereBoundsFunc,NULL);
+  rtcSetBoundsFunction(scene,geomID,sphereBoundsFunc,NULL);
   if (g_mode == MODE_NORMAL) {
     rtcSetIntersectFunction(scene,geomID,sphereIntersectFunc);
     rtcSetOccludedFunction (scene,geomID,sphereOccludedFunc);
@@ -442,7 +442,7 @@ uniform Sphere* uniform createAnalyticalSpheres (RTCScene scene, uniform size_t 
   uniform Sphere* uniform spheres = uniform new uniform Sphere[N];
   for (uniform size_t i=0; i<N; i++) spheres[i].geomID = geomID;
   rtcSetUserData(scene,geomID,spheres);
-  rtcSetBoundsFunction3(scene,geomID,sphereBoundsFunc,NULL);
+  rtcSetBoundsFunction(scene,geomID,sphereBoundsFunc,NULL);
   if (g_mode == MODE_NORMAL) {
     rtcSetIntersectFunction(scene,geomID,sphereIntersectFunc);
     rtcSetOccludedFunction (scene,geomID,sphereOccludedFunc);

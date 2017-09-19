@@ -437,7 +437,7 @@ uniform Sphere* uniform addUserGeometrySphere (RTCScene scene, const uniform Vec
   sphere->geomID = geomID;
   sphere->num_time_steps = num_time_steps;
   rtcSetUserData(scene,geomID,sphere);
-  rtcSetBoundsFunction3(scene,geomID,sphereBoundsFunc,NULL);
+  rtcSetBoundsFunction(scene,geomID,sphereBoundsFunc,NULL);
   rtcSetIntersectFunction(scene,geomID,sphereIntersectFunc);
   rtcSetOccludedFunction (scene,geomID,sphereOccludedFunc);
   return sphere;

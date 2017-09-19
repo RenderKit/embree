@@ -439,7 +439,7 @@ Sphere* addUserGeometrySphere (RTCScene scene, const Vec3fa& p, float r, unsigne
   sphere->geomID = geomID;
   sphere->num_time_steps = num_time_steps;
   rtcSetUserData(scene,geomID,sphere);
-  rtcSetBoundsFunction3(scene,geomID,sphereBoundsFunc,nullptr);
+  rtcSetBoundsFunction(scene,geomID,sphereBoundsFunc,nullptr);
   rtcSetIntersectFunction(scene,geomID,sphereIntersectFunc);
   rtcSetOccludedFunction (scene,geomID,sphereOccludedFunc);
   return sphere;

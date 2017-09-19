@@ -36,12 +36,12 @@ namespace embree
     Geometry::update();
   }
 
-  void UserGeometry::setBoundsFunction3 (RTCBoundsFunc3 bounds, void* userPtr) 
+  void UserGeometry::setBoundsFunction (RTCBoundsFunc bounds, void* userPtr) 
   {
     if (scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    this->boundsFunc3 = bounds;
+    this->boundsFunc = bounds;
     this->boundsFuncUserPtr = userPtr;
   }
 

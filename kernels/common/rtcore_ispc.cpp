@@ -256,8 +256,8 @@ namespace embree
     return nullptr;
   }
 
-  extern "C" void ispcSetBoundsFunction3 (RTCScene scene, unsigned geomID, RTCBoundsFunc3 bounds, void* userPtr) {
-    rtcSetBoundsFunction3(scene,geomID,bounds,userPtr);
+  extern "C" void ispcSetBoundsFunction3 (RTCScene scene, unsigned geomID, RTCBoundsFunc bounds, void* userPtr) {
+    rtcSetBoundsFunction(scene,geomID,bounds,userPtr);
   }
 
   extern "C" void ispcSetIntersectFunction1 (RTCScene hscene, unsigned geomID, RTCIntersectFunc intersect) 

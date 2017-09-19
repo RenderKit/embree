@@ -1372,14 +1372,14 @@ namespace embree
     return nullptr;
   }
 
-  RTCORE_API void rtcSetBoundsFunction3 (RTCScene hscene, unsigned geomID, RTCBoundsFunc3 bounds, void* userPtr)
+  RTCORE_API void rtcSetBoundsFunction (RTCScene hscene, unsigned geomID, RTCBoundsFunc bounds, void* userPtr)
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetBoundsFunction3);
+    RTCORE_TRACE(rtcSetBoundsFunction);
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setBoundsFunction3(bounds,userPtr);
+    scene->get_locked(geomID)->setBoundsFunction(bounds,userPtr);
     RTCORE_CATCH_END2(scene);
   }
 

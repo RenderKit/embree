@@ -20,7 +20,7 @@
 /*! \{ */
 
 /*! Type of bounding function. */
-typedef void (*RTCBoundsFunc3)(void* userPtr,         /*!< pointer to user data */
+typedef void (*RTCBoundsFunc)(void* userPtr,         /*!< pointer to user data */
                                void* geomUserPtr,     /*!< pointer to geometry user data */
                                size_t item,           /*!< item to calculate bounds for */
                                size_t time,           /*!< time to calculate bounds for */
@@ -132,7 +132,7 @@ RTCORE_API unsigned rtcNewUserGeometry4 (RTCScene scene,          /*!< the scene
  *  geometry items when building spatial index structures. The
  *  calculated bounding box have to be conservative and should be
  *  tight. */
-RTCORE_API void rtcSetBoundsFunction3 (RTCScene scene, unsigned geomID, RTCBoundsFunc3 bounds, void* userPtr);
+RTCORE_API void rtcSetBoundsFunction (RTCScene scene, unsigned geomID, RTCBoundsFunc bounds, void* userPtr);
 
 /*! Set intersect function for single rays. The rtcIntersect function
  *  will call the passed function for intersecting the user

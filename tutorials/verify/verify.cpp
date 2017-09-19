@@ -298,7 +298,7 @@ namespace embree
     std::pair<unsigned,Ref<SceneGraph::Node>> addUserGeometryEmpty (RandomSampler& sampler, RTCGeometryFlags gflag, Sphere* sphere)
     {
       unsigned geom = rtcNewUserGeometry (scene,gflag,1,1);
-      rtcSetBoundsFunction3(scene,geom,BoundsFunc,nullptr);
+      rtcSetBoundsFunction(scene,geom,BoundsFunc,nullptr);
       rtcSetUserData(scene,geom,sphere);
       rtcSetIntersectFunctionN(scene,geom,IntersectFuncN);
       rtcSetOccludedFunctionN(scene,geom,IntersectFuncN);
