@@ -29,16 +29,16 @@ namespace embree
     Tutorial()
       : TutorialApplication("motion_blur_geometry",FEATURE_RTCORE) 
     {
-      registerOption("time", [this] (Ref<ParseStream> cin, const FileName& path) {
+      registerOption("time", [] (Ref<ParseStream> cin, const FileName& path) {
         g_time = cin->getFloat();
       }, "--time <float>: time to render image at");
 
-      registerOption("time-steps", [this] (Ref<ParseStream> cin, const FileName& path) {
+      registerOption("time-steps", [] (Ref<ParseStream> cin, const FileName& path) {
         g_num_time_steps = cin->getInt();
         if (g_num_time_steps < 2) throw std::runtime_error("at least 2 time steps have to be used");
       }, "--time-steps <int>: number of time steps to use");
 
-      registerOption("time-steps2", [this] (Ref<ParseStream> cin, const FileName& path) {
+      registerOption("time-steps2", [] (Ref<ParseStream> cin, const FileName& path) {
         g_num_time_steps2 = cin->getInt();
         if (g_num_time_steps2 < 2) throw std::runtime_error("at least 2 time steps have to be used");
       }, "--time-steps2 <int>: number of time steps to use");

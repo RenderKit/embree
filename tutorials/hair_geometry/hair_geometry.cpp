@@ -287,12 +287,12 @@ float Noise(float x, float y, float z)
     Tutorial()
       : TutorialApplication("hair_geometry",FEATURE_RTCORE) 
     {
-      registerOption("ambientlight", [this] (Ref<ParseStream> cin, const FileName& path) {
+      registerOption("ambientlight", [] (Ref<ParseStream> cin, const FileName& path) {
           g_ambient_intensity = cin->getVec3fa();
         }, "--ambientlight r g b: adds an ambient light with intensity rgb");
       registerOptionAlias("ambientlight","ambient");
 
-      registerOption("directionallight", [this] (Ref<ParseStream> cin, const FileName& path) {
+      registerOption("directionallight", [] (Ref<ParseStream> cin, const FileName& path) {
           g_dirlight_direction = normalize(cin->getVec3fa());
           g_dirlight_intensity = cin->getVec3fa();
         }, "--directionallight x y z r g b: adds a directional light with direction xyz and intensity rgb");
