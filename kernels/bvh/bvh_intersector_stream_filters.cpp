@@ -229,7 +229,7 @@ namespace embree
           for (size_t j = 0; j < N; j += VSIZEX)
           {
             const size_t offset = j * sizeof(float);
-            vboolx valid = (vintx(int(j)) + vintx(step)) < vintx(N);
+            vboolx valid = (vintx(int(j)) + vintx(step)) < vintx(int(N));
 
             RayK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
             valid &= ray.tnear <= ray.tfar;

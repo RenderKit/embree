@@ -247,7 +247,7 @@ namespace embree
           nf = NearFarPreCompute(min_rdir,N);
         }
 
-        __forceinline unsigned int intersect(const typename BVHN<N>::AlignedNode* __restrict__ node, vfloat<Nx>& dist) const
+        __forceinline size_t intersect(const typename BVHN<N>::AlignedNode* __restrict__ node, vfloat<Nx>& dist) const
         {
           const vfloat<Nx> bminX = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearX);
           const vfloat<Nx> bminY = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearY);
@@ -339,7 +339,7 @@ namespace embree
           nf = NearFarPreCompute(min_rdir,N);
         }
 
-        __forceinline unsigned int intersect(const typename BVHN<N>::AlignedNode* __restrict__ node, vfloat<Nx>& dist) const
+        __forceinline size_t intersect(const typename BVHN<N>::AlignedNode* __restrict__ node, vfloat<Nx>& dist) const
         {
           const vfloat<Nx> bminX = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearX);
           const vfloat<Nx> bminY = *(const vfloat<N>*)((const char*)&node->lower_x + nf.nearY);
