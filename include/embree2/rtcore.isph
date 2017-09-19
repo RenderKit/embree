@@ -74,13 +74,13 @@ typedef uniform struct __RTCDevice {}* uniform RTCDevice;
   set the RTC_UNSUPPORTED_CPU error code.
   
 */
-RTCDevice rtcNewDevice(const uniform int8* uniform cfg = NULL);
+RTCORE_API RTCDevice rtcNewDevice(const uniform int8* uniform cfg = NULL);
 
 /*! \brief Deletes an Embree device.
 
   Deletes the Embree device again. After deletion, all scene handles
   are invalid. */
-void rtcDeleteDevice(RTCDevice device);
+RTCORE_API void rtcDeleteDevice(RTCDevice device);
 
 /*! \brief Parameters that can get configured using the rtcSetParameter functions. */
 enum RTCParameter {
@@ -121,10 +121,10 @@ enum RTCParameter {
 };
 
 /*! \brief Configures some device parameters.*/
-void rtcDeviceSetParameter1i(RTCDevice device, const uniform RTCParameter parm, uniform size_t val); // FIXME: should be ssize_t
+RTCORE_API void rtcDeviceSetParameter1i(RTCDevice device, const uniform RTCParameter parm, uniform size_t val); // FIXME: should be ssize_t
 
 /*! \brief Reads some device parameters. */
-uniform size_t rtcDeviceGetParameter1i(RTCDevice device, const uniform RTCParameter parm); // FIXME: should return ssize_t
+RTCORE_API uniform size_t rtcDeviceGetParameter1i(RTCDevice device, const uniform RTCParameter parm); // FIXME: should return ssize_t
 
 /*! \brief Error codes returned by the rtcGetError function. */
 enum RTCError {
@@ -142,13 +142,13 @@ enum RTCError {
   If an error occurs this flag is set to an error code if it stores no
   previous error. The rtcGetError function reads and returns the
   currently stored error and clears the error flag again. */
-uniform RTCError rtcDeviceGetError(RTCDevice device);
+RTCORE_API uniform RTCError rtcDeviceGetError(RTCDevice device);
 
 /*! \brief Type of error callback function. */
 typedef unmasked void (*uniform RTCErrorFunc)(void* uniform userPtr, const uniform RTCError code, const uniform int8* uniform str);
 
 /*! \brief Sets a callback function that is called whenever an error occurs. */
-void rtcDeviceSetErrorFunction(RTCDevice device, uniform RTCErrorFunc func, void* uniform userPtr);
+RTCORE_API void rtcDeviceSetErrorFunction(RTCDevice device, uniform RTCErrorFunc func, void* uniform userPtr);
 
 /*! \brief Type of memory consumption callback function. */
 typedef uniform bool (*uniform RTCMemoryMonitorFunc)(const uniform uintptr_t bytes, const uniform bool post); // FIXME: should be ssize_t
@@ -157,7 +157,7 @@ typedef uniform bool (*uniform RTCMemoryMonitorFunc)(const uniform uintptr_t byt
  *  called before or after the library allocates or frees memory. The
  *  userPtr pointer is passed to each invokation of the callback
  *  function. */
-void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunc func, void* uniform userPtr);
+RTCORE_API void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunc func, void* uniform userPtr);
 
 #include "rtcore_scene.isph"
 #include "rtcore_geometry.isph"

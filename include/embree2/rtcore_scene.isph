@@ -75,12 +75,12 @@ RTCScene rtcDeviceNewScene (RTCDevice device, uniform RTCSceneFlags flags, unifo
 typedef unmasked uniform bool (*uniform RTCProgressMonitorFunc)(void* uniform ptr, const uniform double n);
 
 /*! \brief Sets the progress callback function which is called during hierarchy build. */
-void rtcSetProgressMonitorFunction(RTCScene scene, RTCProgressMonitorFunc func, void* uniform ptr);
+RTCORE_API void rtcSetProgressMonitorFunction(RTCScene scene, RTCProgressMonitorFunc func, void* uniform ptr);
 
 /*! Commits the geometry of the scene. After initializing or modifying
  *  geometries, commit has to get called before tracing
  *  rays. */
-void rtcCommit (RTCScene scene); 
+RTCORE_API void rtcCommit (RTCScene scene); 
 
 /*! Commits the geometry of the scene in join mode. When Embree is
  *  using TBB (default), threads that call `rtcCommitJoin` will
@@ -88,7 +88,7 @@ void rtcCommit (RTCScene scene);
  *  the internal tasking system, exclusively threads that call
  *  `rtcCommitJoin` will execute the build procedure. Do not
  *  mix `rtcCommitJoin` with other commit calls. */
-void rtcCommitJoin (RTCScene scene);
+RTCORE_API void rtcCommitJoin (RTCScene scene);
 
 /*! Commits the geometry of the scene. The calling threads will be
  *  used internally as a worker threads on some implementations. The
@@ -100,16 +100,16 @@ void rtcCommitJoin (RTCScene scene);
  *  application to share threads. We recommend using the
  *  rtcCommitThread feature to share threads on the Xeon Phi
  *  coprocessor. */
-void rtcCommitThread(RTCScene scene, uniform unsigned int threadID, uniform unsigned int numThreads);
+RTCORE_API void rtcCommitThread(RTCScene scene, uniform unsigned int threadID, uniform unsigned int numThreads);
 
 /*! Returns to AABB of the scene. rtcCommit has to get called
  *  previously to this function. */
-void rtcGetBounds(RTCScene scene, uniform RTCBounds& bounds_o);
+RTCORE_API void rtcGetBounds(RTCScene scene, uniform RTCBounds& bounds_o);
 
 /*! Returns linear AABBs of the scene. The result bounds_o gets filled
  *  with AABBs for time 0 and time 1. rtcCommit has to get called
  *  previously to this function. */
-void rtcGetLinearBounds(RTCScene scene, uniform RTCBounds* uniform bounds_o);
+RTCORE_API void rtcGetLinearBounds(RTCScene scene, uniform RTCBounds* uniform bounds_o);
 
 /*! Intersects a uniform ray with the scene. This function can only be
  *  called for scenes with the RTC_INTERSECT_UNIFORM flag set. The ray
@@ -218,7 +218,7 @@ void rtcOccludedNM (RTCScene scene, const uniform RTCIntersectContext* uniform c
 void rtcOccludedNp (RTCScene scene, const uniform RTCIntersectContext* uniform context, const uniform RTCRayNp& rays, const uniform size_t N);
 
 /*! Deletes the geometry again. */
-void rtcDeleteScene (RTCScene scene);
+RTCORE_API void rtcDeleteScene (RTCScene scene);
 
 /*! @} */
 

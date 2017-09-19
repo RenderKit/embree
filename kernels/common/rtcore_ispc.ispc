@@ -17,94 +17,7 @@
 #include "../../include/embree2/rtcore.isph" 
 #include "../../include/embree2/rtcore_ray.isph" 
 
-extern "C" RTCDevice ispcNewDevice(const uniform int8* uniform cfg);
-extern "C" void ispcDeleteDevice(RTCDevice device);
-extern "C" void ispcDeviceSetParameter1i(RTCDevice device, const uniform RTCParameter parm, uniform ssize_t val);
-extern "C" uniform ssize_t ispcDeviceGetParameter1i(RTCDevice device, const uniform RTCParameter parm);
-extern "C" uniform RTCError ispcDeviceGetError (RTCDevice device);
-extern "C" void ispcDeviceSetErrorFunction(RTCDevice device, void* uniform fptr, void* uniform uptr);
-extern "C" void ispcDeviceSetMemoryMonitorFunction (RTCDevice device, void* uniform fptr, void* uniform uptr);
-extern "C" void ispcDebug();
 extern "C" RTCScene ispcNewScene2 (RTCDevice device, uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags);
-extern "C" void ispcSetProgressMonitorFunction (RTCScene scene, void* uniform func, void* uniform ptr);
-extern "C" void ispcCommit (RTCScene scene);
-extern "C" void ispcCommitJoin (RTCScene scene);
-extern "C" void ispcCommitThread (RTCScene scene, uniform unsigned int threadID, uniform unsigned int numThreads);
-extern "C" void ispcGetBounds(RTCScene scene, uniform RTCBounds& bounds_o);
-extern "C" void ispcGetLinearBounds(RTCScene scene, uniform RTCBounds* uniform bounds_o);
-extern "C" void ispcIntersect1 (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1& ray);
-extern "C" void ispcIntersect4 (void* uniform valid, RTCScene scene, const uniform RTCIntersectContext* uniform context, void* uniform ray);
-extern "C" void ispcIntersect8 (void* uniform valid, RTCScene scene, const uniform RTCIntersectContext* uniform context, void* uniform ray);
-extern "C" void ispcIntersect16 (void* uniform valid, RTCScene scene, const uniform RTCIntersectContext* uniform context, void* uniform ray);
-extern "C" void ispcIntersect1M  (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1* uniform rays, const uniform size_t M, const uniform size_t stride);
-extern "C" void ispcIntersect1Mp (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1** uniform rays, const uniform size_t M);
-extern "C" void ispcIntersectNM  (RTCScene scene, const uniform RTCIntersectContext* uniform context, struct RTCRayN* uniform rays, const uniform size_t M, const uniform size_t N, const uniform size_t stride);
-extern "C" void ispcIntersectNp  (RTCScene scene, const uniform RTCIntersectContext* uniform context, const uniform RTCRayNp& rays, const uniform size_t N);
-
-
-extern "C" void ispcOccluded1 (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1& ray);
-extern "C" void ispcOccluded4 (void* uniform valid, RTCScene scene, const uniform RTCIntersectContext* uniform context, void* uniform ray);
-extern "C" void ispcOccluded8 (void* uniform valid, RTCScene scene, const uniform RTCIntersectContext* uniform context, void* uniform ray);
-extern "C" void ispcOccluded16 (void* uniform valid, RTCScene scene, const uniform RTCIntersectContext* uniform context, void* uniform ray);
-extern "C" void ispcOccluded1M  (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1* uniform rays, const uniform size_t M, const uniform size_t stride);
-extern "C" void ispcOccluded1Mp (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1** uniform rays, const uniform size_t M);
-extern "C" void ispcOccludedNM (RTCScene scene, const uniform RTCIntersectContext* uniform context, struct RTCRayN* uniform rays, const uniform size_t M, const uniform size_t N, const uniform size_t stride);
-extern "C" void ispcOccludedNp (RTCScene scene, const uniform RTCIntersectContext* uniform context, const uniform RTCRayNp& rays, const uniform size_t N);
-
-extern "C" void ispcDeleteScene (RTCScene scene);
-extern "C" uniform unsigned int ispcNewInstance (RTCScene target, RTCScene source, uniform size_t numTimeSteps, uniform unsigned int geomID);
-extern "C" uniform unsigned int ispcNewGeometryInstance (RTCScene scene, uniform unsigned int geomID);
-extern "C" void ispcSetTransform (RTCScene scene, uniform unsigned int geomID, uniform RTCMatrixType layout, const uniform float* uniform xfm, uniform size_t timeStep);
-extern "C" uniform unsigned int ispcNewUserGeometry (RTCScene scene, uniform RTCGeometryFlags gflags, uniform size_t numItems, uniform size_t numTimeSteps, uniform unsigned int geomID);
-extern "C" uniform unsigned int ispcNewTriangleMesh (RTCScene scene,
-                                                     uniform RTCGeometryFlags flags,
-                                                     uniform size_t numTriangles,
-                                                     uniform size_t numVertices,
-                                                     uniform size_t numTimeSteps,
-                                                     uniform unsigned int geomID);
-extern "C" uniform unsigned int ispcNewQuadMesh (RTCScene scene,
-                                                 uniform RTCGeometryFlags flags,
-                                                 uniform size_t numQuads,
-                                                 uniform size_t numVertices,
-                                                 uniform size_t numTimeSteps,
-                                                 uniform unsigned int geomID);
-
-extern "C" uniform unsigned int ispcNewLineSegments (RTCScene scene,
-                                                     uniform RTCGeometryFlags flags,
-                                                     uniform size_t numSegments,
-                                                     uniform size_t numVertices,
-                                                     uniform size_t numTimeSteps, 
-                                                     uniform unsigned int geomID);
-
-extern "C" uniform unsigned int ispcNewSubdivisionMesh (RTCScene scene,
-                                                        uniform RTCGeometryFlags flags,
-                                                        uniform size_t numFaces,
-                                                        uniform size_t numEdges,
-                                                        uniform size_t numVertices,
-                                                        uniform size_t numCreases,
-                                                        uniform size_t numCorners,
-                                                        uniform size_t numHoles,
-                                                        uniform size_t numTimeSteps, 
-                                                        uniform unsigned int geomID);
-
-extern "C" void ispcSetRayMask (RTCScene scene, uniform unsigned int geomID, uniform int mask);
-extern "C" void ispcSetSubdivisionMode(RTCScene scene, uniform unsigned int geomID, uniform size_t topologyID, uniform size_t mode);
-extern "C" void ispcSetIndexBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType vertexBuffer, uniform RTCBufferType indexBuffer);
-extern "C" void* uniform ispcMapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
-extern "C" void ispcUnmapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
-extern "C" void ispcSetBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type, const void* uniform ptr, uniform size_t offset, uniform size_t stride, uniform size_t size);
-extern "C" void ispcEnable (RTCScene scene, uniform unsigned int geomID);
-extern "C" void ispcUpdate (RTCScene scene, uniform unsigned int geomID);
-extern "C" void ispcUpdateBuffer (RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
-extern "C" void ispcDisable (RTCScene scene, uniform unsigned int geomID);
-extern "C" void ispcDeleteGeometry (RTCScene scene, uniform unsigned int geomID);
-
-extern "C" void ispcSetBoundsFunction (RTCScene scene, uniform unsigned int geomID, void* uniform bounds);
-extern "C" void ispcSetBoundsFunction2 (RTCScene scene, uniform unsigned int geomID, void* uniform bounds, void* uniform userPtr);
-extern "C" void ispcSetBoundsFunction3 (RTCScene scene, uniform unsigned int geomID, void* uniform bounds, void* uniform userPtr);
-extern "C" void ispcSetTessellationRate (RTCScene hscene, uniform unsigned int geomID, uniform float tessellationRate);
-extern "C" void ispcSetUserData (RTCScene scene, uniform unsigned int geomID, void* uniform ptr);
-extern "C" void* uniform ispcGetUserData (RTCScene scene, uniform unsigned int geomID);
 
 extern "C" void ispcSetIntersectFunction1 (RTCScene scene, uniform unsigned int geomID, void* uniform intersect);
 extern "C" void ispcSetIntersectFunction4 (RTCScene scene, uniform unsigned int geomID, void* uniform intersect); 
@@ -132,7 +45,23 @@ extern "C" void ispcSetOcclusionFilterFunction8 (RTCScene scene, uniform unsigne
 extern "C" void ispcSetOcclusionFilterFunction16 (RTCScene scene, uniform unsigned int geomID, void* uniform filter);
 extern "C" void ispcSetOcclusionFilterFunctionN (RTCScene scene, uniform unsigned int geomID, void* uniform filter);
 
-extern "C" void ispcSetDisplacementFunction (RTCScene scene, uniform unsigned int geomID, void *uniform func, uniform RTCBounds* uniform bounds);
+extern "C" void ispcIntersect1 (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1& ray);
+extern "C" void ispcIntersect4 (void* uniform valid, RTCScene scene, const uniform RTCIntersectContext* uniform context, void* uniform ray);
+extern "C" void ispcIntersect8 (void* uniform valid, RTCScene scene, const uniform RTCIntersectContext* uniform context, void* uniform ray);
+extern "C" void ispcIntersect16 (void* uniform valid, RTCScene scene, const uniform RTCIntersectContext* uniform context, void* uniform ray);
+extern "C" void ispcIntersect1M  (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1* uniform rays, const uniform size_t M, const uniform size_t stride);
+extern "C" void ispcIntersect1Mp (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1** uniform rays, const uniform size_t M);
+extern "C" void ispcIntersectNM  (RTCScene scene, const uniform RTCIntersectContext* uniform context, struct RTCRayN* uniform rays, const uniform size_t M, const uniform size_t N, const uniform size_t stride);
+extern "C" void ispcIntersectNp  (RTCScene scene, const uniform RTCIntersectContext* uniform context, const uniform RTCRayNp& rays, const uniform size_t N);
+
+extern "C" void ispcOccluded1 (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1& ray);
+extern "C" void ispcOccluded4 (void* uniform valid, RTCScene scene, const uniform RTCIntersectContext* uniform context, void* uniform ray);
+extern "C" void ispcOccluded8 (void* uniform valid, RTCScene scene, const uniform RTCIntersectContext* uniform context, void* uniform ray);
+extern "C" void ispcOccluded16 (void* uniform valid, RTCScene scene, const uniform RTCIntersectContext* uniform context, void* uniform ray);
+extern "C" void ispcOccluded1M  (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1* uniform rays, const uniform size_t M, const uniform size_t stride);
+extern "C" void ispcOccluded1Mp (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1** uniform rays, const uniform size_t M);
+extern "C" void ispcOccludedNM (RTCScene scene, const uniform RTCIntersectContext* uniform context, struct RTCRayN* uniform rays, const uniform size_t M, const uniform size_t N, const uniform size_t stride);
+extern "C" void ispcOccludedNp (RTCScene scene, const uniform RTCIntersectContext* uniform context, const uniform RTCRayNp& rays, const uniform size_t N);
 
 extern "C" void ispcInterpolateN(RTCScene scene, uniform unsigned int geomID, 
                                  const void* uniform valid, const uniform unsigned int* uniform primIDs, const uniform float* uniform u, const uniform float* uniform v, uniform size_t numUVs, 
@@ -147,34 +76,6 @@ extern "C" void ispcInterpolateN2(RTCScene scene, uniform unsigned int geomID,
                                  uniform size_t numFloats);
 
 
-RTCDevice rtcNewDevice(const uniform int8* uniform cfg) {
-  return ispcNewDevice(cfg);
-}
-
-void rtcDeleteDevice(RTCDevice device) {
-  ispcDeleteDevice(device);
-}
-
-void rtcDeviceSetParameter1i(RTCDevice device, const uniform RTCParameter parm, uniform size_t val) {
-  ispcDeviceSetParameter1i(device,parm,val);
-}
-
-uniform size_t rtcDeviceGetParameter1i(RTCDevice device, const uniform RTCParameter parm) {
-  return ispcDeviceGetParameter1i(device,parm);
-}
-
-uniform RTCError rtcDeviceGetError(RTCDevice device) {
-  return ispcDeviceGetError(device);
-}
-
-void rtcDeviceSetErrorFunction(RTCDevice device, uniform RTCErrorFunc fptr, void* uniform uptr) {
-  ispcDeviceSetErrorFunction(device,fptr,uptr);
-}
-
-void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, uniform RTCMemoryMonitorFunc func, void* uniform userPtr) {
-  ispcDeviceSetMemoryMonitorFunction(device,func,userPtr);
-}
-
 RTCScene rtcDeviceNewScene (RTCDevice device, uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags) 
 {  
   if (aflags & RTC_INTERSECT_VARYING) {
@@ -186,30 +87,6 @@ RTCScene rtcDeviceNewScene (RTCDevice device, uniform RTCSceneFlags flags, unifo
       aflags = (uniform RTCAlgorithmFlags) ((aflags & ~RTC_INTERSECT_VARYING) | (1 << 3));
   }
   return ispcNewScene2(device,flags,aflags);
-}
-
-void rtcSetProgressMonitorFunction(RTCScene scene, uniform RTCProgressMonitorFunc func, void* uniform ptr) {
-  ispcSetProgressMonitorFunction(scene,func,ptr);
-}
-
-void rtcCommit (RTCScene scene) {
-  ispcCommit(scene);
-}
-
-void rtcCommitJoin (RTCScene scene) {
-  ispcCommitJoin(scene);
-}
-
-void rtcCommitThread (RTCScene scene, uniform unsigned int threadID, uniform unsigned int numThreads) {
-  ispcCommitThread(scene,threadID,numThreads);
-}
-
-void rtcGetBounds(RTCScene scene, uniform RTCBounds& bounds_o) {
-  ispcGetBounds(scene,bounds_o);
-}
-
-void rtcGetLinearBounds(RTCScene scene, uniform RTCBounds* uniform bounds_o) {
-  ispcGetLinearBounds(scene,bounds_o);
 }
 
 void rtcIntersect1 (RTCScene scene, uniform RTCRay1& ray) {
@@ -328,166 +205,6 @@ void rtcOccludedNp (RTCScene scene, const uniform RTCIntersectContext* uniform c
   ispcOccludedNp(scene,context,rays,N);
 }
 
-void rtcDeleteScene (RTCScene scene) {
-  ispcDeleteScene(scene);
-}
-
-uniform unsigned int rtcNewInstance2 (RTCScene target, RTCScene source, uniform size_t numTimeSteps) {
-  return ispcNewInstance(target,source,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
-}
-
-uniform unsigned int rtcNewInstance3 (RTCScene target, RTCScene source, uniform size_t numTimeSteps, uniform unsigned int geomID) {
-  return ispcNewInstance(target,source,numTimeSteps,geomID);
-}
-
-uniform unsigned int rtcNewGeometryInstance(RTCScene scene, uniform unsigned int geomID) {
-  return ispcNewGeometryInstance(scene,geomID);
-}
-
-void rtcSetTransform (RTCScene scene, uniform unsigned int geomID, uniform RTCMatrixType layout, const uniform float* uniform xfm, uniform size_t timeStep) {
-  ispcSetTransform(scene,geomID,layout,xfm,timeStep);
-}
-
-uniform unsigned int rtcNewUserGeometry (RTCScene scene, uniform size_t numItems) {
-  return ispcNewUserGeometry(scene,RTC_GEOMETRY_STATIC,numItems,1,RTC_INVALID_GEOMETRY_ID);
-}
-
-uniform unsigned int rtcNewUserGeometry2 (RTCScene scene, uniform size_t numItems, uniform size_t numTimeSteps) {
-  return ispcNewUserGeometry(scene,RTC_GEOMETRY_STATIC,numItems,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
-}
-
-uniform unsigned int rtcNewUserGeometry3 (RTCScene scene, uniform RTCGeometryFlags gflags, uniform size_t numItems, uniform size_t numTimeSteps) {
-  return ispcNewUserGeometry(scene,gflags,numItems,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
-}
-
-uniform unsigned int rtcNewUserGeometry4 (RTCScene scene, uniform RTCGeometryFlags gflags, uniform size_t numItems, uniform size_t numTimeSteps, uniform unsigned int geomID) {
-  return ispcNewUserGeometry(scene,gflags,numItems,numTimeSteps,geomID);
-}
-
-uniform unsigned int rtcNewTriangleMesh (RTCScene scene, uniform RTCGeometryFlags flags, uniform size_t numTriangles, uniform size_t numVertices, uniform size_t numTimeSteps) {
-  return ispcNewTriangleMesh(scene,flags,numTriangles,numVertices,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
-}
-
-uniform unsigned int rtcNewTriangleMesh2(RTCScene scene, uniform RTCGeometryFlags flags, uniform size_t numTriangles, uniform size_t numVertices, uniform size_t numTimeSteps, uniform unsigned int geomID) {
-  return ispcNewTriangleMesh(scene,flags,numTriangles,numVertices,numTimeSteps,geomID);
-}
-
-uniform unsigned int rtcNewQuadMesh (RTCScene scene, uniform RTCGeometryFlags flags, uniform size_t numQuads, uniform size_t numVertices, uniform size_t numTimeSteps) {
-  return ispcNewQuadMesh(scene,flags,numQuads,numVertices,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
-}
-
-uniform unsigned int rtcNewQuadMesh2(RTCScene scene, uniform RTCGeometryFlags flags, uniform size_t numQuads, uniform size_t numVertices, uniform size_t numTimeSteps, uniform unsigned int geomID) {
-  return ispcNewQuadMesh(scene,flags,numQuads,numVertices,numTimeSteps,geomID);
-}
-
-uniform unsigned int rtcNewLineSegments (RTCScene scene, uniform RTCGeometryFlags flags, uniform size_t numSegments, uniform size_t numVertices, uniform size_t numTimeSteps) {
-  return ispcNewLineSegments (scene,flags,numSegments,numVertices,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
-}
-
-uniform unsigned int rtcNewLineSegments (RTCScene scene, uniform RTCGeometryFlags flags, uniform size_t numSegments, uniform size_t numVertices, uniform size_t numTimeSteps, uniform unsigned int geomID) {
-  return ispcNewLineSegments (scene,flags,numSegments,numVertices,numTimeSteps,geomID);
-}
-
-uniform unsigned int rtcNewSubdivisionMesh (RTCScene scene,
-                                            uniform RTCGeometryFlags flags,
-                                            uniform size_t numFaces,
-                                            uniform size_t numEdges,
-                                            uniform size_t numVertices,
-                                            uniform size_t numEdgeCreases, 
-                                            uniform size_t numVertexCreases, 
-                                            uniform size_t numHoles,
-                                            uniform size_t numTimeSteps)
-{
-  return ispcNewSubdivisionMesh(scene,flags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
-}
-
-uniform unsigned int rtcNewSubdivisionMesh (RTCScene scene,
-                                            uniform RTCGeometryFlags flags,
-                                            uniform size_t numFaces,
-                                            uniform size_t numEdges,
-                                            uniform size_t numVertices,
-                                            uniform size_t numEdgeCreases, 
-                                            uniform size_t numVertexCreases, 
-                                            uniform size_t numHoles,
-                                            uniform size_t numTimeSteps,
-                                            uniform unsigned int geomID)
-{
-  return ispcNewSubdivisionMesh(scene,flags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps,geomID);
-}
-
-
-void rtcSetMask (RTCScene scene, uniform unsigned int geomID, uniform int mask) {
-  ispcSetRayMask(scene,geomID,mask);
-}
-
-void rtcSetSubdivisionMode(RTCScene scene, uniform unsigned int geomID, uniform unsigned int topologyID, uniform RTCSubdivisionMode mode) {
-  ispcSetSubdivisionMode(scene,geomID,topologyID,mode);
-}
-
-void rtcSetIndexBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType vertexBuffer, uniform RTCBufferType indexBuffer) {
-  ispcSetIndexBuffer(scene,geomID,vertexBuffer,indexBuffer);
-}
-
-void* uniform rtcMapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type) {
-  return ispcMapBuffer(scene,geomID,type);
-}
-
-void rtcUnmapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type) {
-  ispcUnmapBuffer(scene,geomID,type);
-}
-
-void rtcSetBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type, const void* uniform ptr, uniform size_t offset, uniform size_t stride, uniform size_t size) {
-  ispcSetBuffer(scene,geomID,type,ptr,offset,stride,size);
-}
-
-void rtcEnable (RTCScene scene, uniform unsigned int geomID) {
-  ispcEnable(scene,geomID);
-}
-
-void rtcUpdate (RTCScene scene, uniform unsigned int geomID) {
-  ispcUpdate(scene,geomID);
-}
-
-void rtcUpdateBuffer (RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type) {
-  ispcUpdateBuffer(scene,geomID,type);
-}
-
-void rtcDisable (RTCScene scene, uniform unsigned int geomID) {
-  ispcDisable(scene,geomID);
-}
-
-void rtcDeleteGeometry (RTCScene scene, uniform unsigned int geomID) {
-  ispcDeleteGeometry(scene,geomID);
-}
-
-void rtcSetTessellationRate (RTCScene hscene, uniform unsigned int geomID, uniform float tessellationRate) {
-  ispcSetTessellationRate(hscene,geomID,tessellationRate);
-}
-
-void rtcSetUserData (RTCScene scene, uniform unsigned int geomID, void* uniform ptr) {
-  ispcSetUserData(scene,geomID,ptr);
-}
-
-void* uniform rtcGetUserData (RTCScene scene, uniform unsigned int geomID) {
-  return ispcGetUserData(scene,geomID);
-}
-
-void rtcSetBoundsFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCBoundsFunc bounds) {
-  ispcSetBoundsFunction(scene,geomID,bounds);
-}
-
-void rtcSetBoundsFunction2 (RTCScene scene, uniform unsigned int geomID, uniform RTCBoundsFunc2 bounds, void* uniform userPtr) {
-  ispcSetBoundsFunction2(scene,geomID,bounds,userPtr);
-}
-
-void rtcSetBoundsFunction3 (RTCScene scene, uniform unsigned int geomID, uniform RTCBoundsFunc3 bounds, void* uniform userPtr) {
-  ispcSetBoundsFunction3(scene,geomID,bounds,userPtr);
-}
-
-void rtcSetIntersectFunction1 (RTCScene scene, uniform unsigned int geomID, uniform RTCIntersectFuncUniform intersect) {
-  ispcSetIntersectFunction1(scene,geomID,intersect);
-}
-
 void rtcSetIntersectFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCIntersectFuncVarying intersect)
 {
   if (sizeof(varying float) == 16) 
@@ -496,18 +213,6 @@ void rtcSetIntersectFunction (RTCScene scene, uniform unsigned int geomID, unifo
     ispcSetIntersectFunction8(scene,geomID,intersect);
   else if (sizeof(varying float) == 64) 
     ispcSetIntersectFunction16(scene,geomID,intersect);
-}
-
-void rtcSetIntersectFunction1Mp (RTCScene scene, uniform unsigned int geomID, uniform RTCIntersectFunc1Mp intersect) {
-  ispcSetIntersectFunction1Mp(scene,geomID,intersect);
-}
-
-void rtcSetIntersectFunctionN (RTCScene scene, uniform unsigned int geomID, uniform RTCIntersectFuncN intersect) {
-  ispcSetIntersectFunctionN(scene,geomID,intersect);
-}
-
-void rtcSetOccludedFunction1 (RTCScene scene, uniform unsigned int geomID, uniform RTCOccludedFuncUniform occluded) {
-  ispcSetOccludedFunction1(scene,geomID,occluded);
 }
 
 void rtcSetOccludedFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCOccludedFuncVarying occluded)
@@ -520,18 +225,6 @@ void rtcSetOccludedFunction (RTCScene scene, uniform unsigned int geomID, unifor
     ispcSetOccludedFunction16(scene,geomID,occluded);
 }
 
-void rtcSetOccludedFunction1Mp (RTCScene scene, uniform unsigned int geomID, uniform RTCOccludedFunc1Mp occluded) {
-  ispcSetOccludedFunction1Mp(scene,geomID,occluded);
-}
-
-void rtcSetOccludedFunctionN (RTCScene scene, uniform unsigned int geomID, uniform RTCOccludedFuncN occluded) {
-  ispcSetOccludedFunctionN(scene,geomID,occluded);
-}
-
-void rtcSetIntersectionFilterFunction1 (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncUniform filter) {
-  ispcSetIntersectionFilterFunction1(scene,geomID,filter);
-}
-
 void rtcSetIntersectionFilterFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncVarying filter)
 {
   if (sizeof(varying float) == 16)
@@ -542,14 +235,6 @@ void rtcSetIntersectionFilterFunction (RTCScene scene, uniform unsigned int geom
     ispcSetIntersectionFilterFunction16(scene,geomID,filter);
 }
 
-void rtcSetIntersectionFilterFunctionN (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncN filter) {
-  ispcSetIntersectionFilterFunctionN(scene,geomID,filter);
-}
-
-void rtcSetOcclusionFilterFunction1 (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncUniform filter) {
-  ispcSetOcclusionFilterFunction1(scene,geomID,filter);
-}
-
 void rtcSetOcclusionFilterFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncVarying filter)
 {
   if (sizeof(varying float) == 16)
@@ -558,14 +243,6 @@ void rtcSetOcclusionFilterFunction (RTCScene scene, uniform unsigned int geomID,
     ispcSetOcclusionFilterFunction8(scene,geomID,filter);
   else if (sizeof(varying float) == 64)
     ispcSetOcclusionFilterFunction16(scene,geomID,filter);
-}
-
-void rtcSetOcclusionFilterFunctionN (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncN filter) {
-  ispcSetOcclusionFilterFunctionN(scene,geomID,filter);
-}
-
-void rtcSetDisplacementFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCDisplacementFunc func, uniform RTCBounds* uniform bounds) {
-  ispcSetDisplacementFunction(scene,geomID,func,bounds);
 }
 
 void rtcInterpolate(RTCScene scene, uniform unsigned int geomID, varying unsigned int primID, varying float u, varying float v, 
