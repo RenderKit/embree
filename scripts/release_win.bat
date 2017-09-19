@@ -12,6 +12,7 @@ REM set release settings
 cmake -L ^
 -G "Visual Studio 12 2013" ^
 -T "Intel C++ Compiler 16.0" ^
+-D EMBREE_STACK_PROTECTOR=ON ^
 -D EMBREE_MAX_ISA=AVX512SKX ^
 -D EMBREE_TUTORIALS_IMAGE_MAGICK=OFF ^
 -D EMBREE_TUTORIALS_LIBJPEG=OFF  ^
