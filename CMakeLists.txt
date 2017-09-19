@@ -101,7 +101,7 @@ OPTION(EMBREE_TUTORIALS    "Enable to build Embree tutorials" ON)
 # Configurations (add configurations also to common/cmake/embree-config-default.cmake)
 
 OPTION(EMBREE_STAT_COUNTERS "Enables statistic counters.")
-OPTION(EMBREE_STACK_PROTECTOR "When enabled Embree compiles with stack protection against return address overrides." ON)
+OPTION(EMBREE_STACK_PROTECTOR "When enabled Embree compiles with stack protection against return address overrides." OFF)
 
 OPTION(EMBREE_RAY_MASK "Enables ray mask support.")
 OPTION(EMBREE_BACKFACE_CULLING "Enables backface culling.")
