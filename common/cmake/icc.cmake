@@ -133,8 +133,12 @@ ELSE()
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -restrict")                   # enable restrict keyword
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -no-inline-max-total-size")   # no size limit when performing inlining
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -no-inline-max-per-compile")  # no maximal number of inlinings per compilation unit
-  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -inline-factor=200")          # increase default inline factors limits by 2x
-  
+  IF (NOT APPLE)
+    SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -inline-factor=200")          # increase default inline factors limits by 2x
+  ELSE(NOT APPLE)
+    SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -inline-factor=150")
+  ENDIF()
+
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "")
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -DDEBUG")                     # enables assertions
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -DTBB_USE_DEBUG")             # configures TBB in debug mode
