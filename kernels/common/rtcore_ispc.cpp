@@ -91,197 +91,181 @@ namespace embree
     rtcOccludedNp(scene,context,rays,N);
   }
   
-  extern "C" void ispcSetIntersectFunction1 (RTCScene hscene, unsigned geomID, RTCIntersectFunc intersect) 
+  extern "C" void ispcSetIntersectFunction1 (RTCGeometry hgeometry, RTCIntersectFunc intersect) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetIntersectFunction1);
-    RTCORE_VERIFY_HANDLE(scene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setIntersectFunction(intersect,true);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setIntersectFunction(intersect,true);
+    RTCORE_CATCH_END2(geometry);
   }
   
-  extern "C" void ispcSetIntersectFunction4 (RTCScene hscene, unsigned geomID, RTCIntersectFunc4 intersect) 
+  extern "C" void ispcSetIntersectFunction4 (RTCGeometry hgeometry, RTCIntersectFunc4 intersect) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetIntersectFunction4);
-    RTCORE_VERIFY_HANDLE(scene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setIntersectFunction4(intersect,true);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setIntersectFunction4(intersect,true);
+    RTCORE_CATCH_END2(geometry);
   }
   
-  extern "C" void ispcSetIntersectFunction8 (RTCScene hscene, unsigned geomID, RTCIntersectFunc8 intersect) 
+  extern "C" void ispcSetIntersectFunction8 (RTCGeometry hgeometry, RTCIntersectFunc8 intersect) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetIntersectFunction8);
-    RTCORE_VERIFY_HANDLE(scene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setIntersectFunction8(intersect,true);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setIntersectFunction8(intersect,true);
+    RTCORE_CATCH_END2(geometry);
   }
   
-  extern "C" void ispcSetIntersectFunction16 (RTCScene hscene, unsigned geomID, RTCIntersectFunc16 intersect) 
+  extern "C" void ispcSetIntersectFunction16 (RTCGeometry hgeometry, RTCIntersectFunc16 intersect) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetIntersectFunction16);
-    RTCORE_VERIFY_HANDLE(scene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get_locked(geomID)->setIntersectFunction16(intersect,true);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setIntersectFunction16(intersect,true);
+    RTCORE_CATCH_END2(geometry);
   }
   
-  extern "C" void ispcSetOccludedFunction1 (RTCScene hscene, unsigned geomID, RTCOccludedFunc occluded) 
+  extern "C" void ispcSetOccludedFunction1 (RTCGeometry hgeometry, RTCOccludedFunc occluded) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetOccludedFunction1);
-    RTCORE_VERIFY_HANDLE(scene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get_locked(geomID)->setOccludedFunction(occluded,true);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setOccludedFunction(occluded,true);
+    RTCORE_CATCH_END2(geometry);
   }
   
-  extern "C" void ispcSetOccludedFunction4 (RTCScene hscene, unsigned geomID, RTCOccludedFunc4 occluded) 
+  extern "C" void ispcSetOccludedFunction4 (RTCGeometry hgeometry, RTCOccludedFunc4 occluded) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetOccludedFunction4);
-    RTCORE_VERIFY_HANDLE(scene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get_locked(geomID)->setOccludedFunction4(occluded,true);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setOccludedFunction4(occluded,true);
+    RTCORE_CATCH_END2(geometry);
   }
   
-  extern "C" void ispcSetOccludedFunction8 (RTCScene hscene, unsigned geomID, RTCOccludedFunc8 occluded) 
+  extern "C" void ispcSetOccludedFunction8 (RTCGeometry hgeometry, RTCOccludedFunc8 occluded) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetOccludedFunction8);
-    RTCORE_VERIFY_HANDLE(scene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get_locked(geomID)->setOccludedFunction8(occluded,true);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setOccludedFunction8(occluded,true);
+    RTCORE_CATCH_END2(geometry);
   }
   
-  extern "C" void ispcSetOccludedFunction16 (RTCScene hscene, unsigned geomID, RTCOccludedFunc16 occluded) 
+  extern "C" void ispcSetOccludedFunction16 (RTCGeometry hgeometry, RTCOccludedFunc16 occluded) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetOccludedFunction16);
-    RTCORE_VERIFY_HANDLE(scene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get_locked(geomID)->setOccludedFunction16(occluded,true);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setOccludedFunction16(occluded,true);
+    RTCORE_CATCH_END2(geometry);
   }
   
-  extern "C" void ispcSetIntersectionFilterFunction1 (RTCScene hscene, unsigned geomID, RTCFilterFunc filter) 
+  extern "C" void ispcSetIntersectionFilterFunction1 (RTCGeometry hgeometry, RTCFilterFunc filter) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetIntersectionFilterFunction1);
-    RTCORE_VERIFY_HANDLE(scene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get_locked(geomID)->setIntersectionFilterFunction(filter,true);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setIntersectionFilterFunction(filter,true);
+    RTCORE_CATCH_END2(geometry);
   }
   
-  extern "C" void ispcSetIntersectionFilterFunction4 (RTCScene hscene, unsigned geomID, RTCFilterFunc4 filter) 
+  extern "C" void ispcSetIntersectionFilterFunction4 (RTCGeometry hgeometry, RTCFilterFunc4 filter) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetIntersectionFilterFunction4);
-    RTCORE_VERIFY_HANDLE(scene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get_locked(geomID)->setIntersectionFilterFunction4(filter,true);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setIntersectionFilterFunction4(filter,true);
+    RTCORE_CATCH_END2(geometry);
   }
   
-  extern "C" void ispcSetIntersectionFilterFunction8 (RTCScene hscene, unsigned geomID, RTCFilterFunc8 filter) 
+  extern "C" void ispcSetIntersectionFilterFunction8 (RTCGeometry hgeometry, RTCFilterFunc8 filter) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetIntersectionFilterFunction8);
-    RTCORE_VERIFY_HANDLE(scene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get_locked(geomID)->setIntersectionFilterFunction8(filter,true);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setIntersectionFilterFunction8(filter,true);
+    RTCORE_CATCH_END2(geometry);
   }
   
-  extern "C" void ispcSetIntersectionFilterFunction16 (RTCScene hscene, unsigned geomID, RTCFilterFunc16 filter) 
+  extern "C" void ispcSetIntersectionFilterFunction16 (RTCGeometry hgeometry, RTCFilterFunc16 filter) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetIntersectionFilterFunction16);
-    RTCORE_VERIFY_HANDLE(scene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get_locked(geomID)->setIntersectionFilterFunction16(filter,true);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setIntersectionFilterFunction16(filter,true);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  extern "C" void ispcSetOcclusionFilterFunction1 (RTCScene hscene, unsigned geomID, RTCFilterFunc filter) 
+  extern "C" void ispcSetOcclusionFilterFunction1 (RTCGeometry hgeometry, RTCFilterFunc filter) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetOcclusionFilterFunction1);
-    RTCORE_VERIFY_HANDLE(scene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get_locked(geomID)->setOcclusionFilterFunction(filter,true);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setOcclusionFilterFunction(filter,true);
+    RTCORE_CATCH_END2(geometry);
   }
   
-  extern "C" void ispcSetOcclusionFilterFunction4 (RTCScene hscene, unsigned geomID, RTCFilterFunc4 filter) 
+  extern "C" void ispcSetOcclusionFilterFunction4 (RTCGeometry hgeometry, RTCFilterFunc4 filter) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetOcclusionFilterFunction4);
-    RTCORE_VERIFY_HANDLE(scene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get_locked(geomID)->setOcclusionFilterFunction4(filter,true);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setOcclusionFilterFunction4(filter,true);
+    RTCORE_CATCH_END2(geometry);
   }
   
-  extern "C" void ispcSetOcclusionFilterFunction8 (RTCScene hscene, unsigned geomID, RTCFilterFunc8 filter) 
+  extern "C" void ispcSetOcclusionFilterFunction8 (RTCGeometry hgeometry, RTCFilterFunc8 filter) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetOcclusionFilterFunction8);
-    RTCORE_VERIFY_HANDLE(scene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get_locked(geomID)->setOcclusionFilterFunction8(filter,true);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setOcclusionFilterFunction8(filter,true);
+    RTCORE_CATCH_END2(geometry);
   }
   
-  extern "C" void ispcSetOcclusionFilterFunction16 (RTCScene hscene, unsigned geomID, RTCFilterFunc16 filter) 
+  extern "C" void ispcSetOcclusionFilterFunction16 (RTCGeometry hgeometry, RTCFilterFunc16 filter) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetOcclusionFilterFunction16);
-    RTCORE_VERIFY_HANDLE(scene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get_locked(geomID)->setOcclusionFilterFunction16(filter,true);
-    RTCORE_CATCH_END(scene->device);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setOcclusionFilterFunction16(filter,true);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  extern "C" void ispcInterpolateN(RTCScene scene, unsigned int geomID, 
+  extern "C" void ispcInterpolateN(RTCGeometry hgeometry,
                                    const void* valid, const unsigned int* primIDs, const float* u, const float* v, size_t numUVs, 
                                    RTCBufferType buffer, 
                                    float* P, float* dPdu, float* dPdv, size_t numFloats)
   {
-    rtcInterpolateN(scene,geomID,valid,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,numFloats);
+    rtcInterpolateN(hgeometry,valid,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,numFloats);
   }
 
-  extern "C" void ispcInterpolateN2(RTCScene scene, unsigned int geomID, 
+  extern "C" void ispcInterpolateN2(RTCGeometry hgeometry,
                                     const void* valid, const unsigned int* primIDs, const float* u, const float* v, size_t numUVs, 
                                     RTCBufferType buffer, 
                                     float* P, float* dPdu, float* dPdv,
                                     float* ddPdudu, float* ddPdvdv, float* ddPdudv,
                                     size_t numFloats)
   {
-    rtcInterpolateN2(scene,geomID,valid,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats);
+    rtcInterpolateN2(hgeometry,valid,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats);
   }
 }

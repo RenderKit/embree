@@ -21,13 +21,13 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  NativeCurves::NativeCurves (Scene* scene, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps) 
-    : Geometry(scene,BEZIER_CURVES,numPrimitives,numTimeSteps,flags), subtype(subtype), basis(basis), tessellationRate(4)
+  NativeCurves::NativeCurves (Device* device, SubType subtype, Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps) 
+    : Geometry(device,BEZIER_CURVES,numPrimitives,numTimeSteps,flags), subtype(subtype), basis(basis), tessellationRate(4)
   {
-    curves.init(scene->device,numPrimitives,sizeof(int));
+    curves.init(device,numPrimitives,sizeof(int));
     vertices.resize(numTimeSteps);
     for (size_t i=0; i<numTimeSteps; i++) {
-      vertices[i].init(scene->device,numVertices,sizeof(Vec3fa));
+      vertices[i].init(device,numVertices,sizeof(Vec3fa));
     }
     enabling();
   }
@@ -72,7 +72,7 @@ namespace embree
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
     {
       if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
-      userbuffers[bid] = APIBuffer<char>(scene->device,numVertices(),stride);
+      userbuffers[bid] = APIBuffer<char>(device,numVertices(),stride);
       userbuffers[bid].set(ptr,offset,stride,size);  
       userbuffers[bid].checkPadding16();
     }
@@ -227,7 +227,7 @@ namespace embree
     {
       if (native_curves.size() != curves.size()) 
       {
-        native_curves = APIBuffer<unsigned>(scene->device,curves.size(),sizeof(unsigned int),true);
+        native_curves = APIBuffer<unsigned>(device,curves.size(),sizeof(unsigned int),true);
         parallel_for(size_t(0), curves.size(), size_t(1024), [&] ( const range<size_t> r) {
             for (size_t i=r.begin(); i<r.end(); i++) {
               if (curves[i]+3 >= numVertices()) native_curves[i] = 0xFFFFFFF0; // invalid curves stay invalid this way
@@ -242,7 +242,7 @@ namespace embree
       parallel_for(vertices.size(), [&] ( const size_t i ) {
           
           if (native_vertices[i].size() != 4*curves.size())
-            native_vertices[i] = APIBuffer<Vec3fa>(scene->device,4*curves.size(),sizeof(Vec3fa),true);
+            native_vertices[i] = APIBuffer<Vec3fa>(device,4*curves.size(),sizeof(Vec3fa),true);
           
           parallel_for(size_t(0), curves.size(), size_t(1024), [&] ( const range<size_t> rj ) {
               
@@ -266,8 +266,8 @@ namespace embree
       native_vertices0 = native_vertices[0];
     }
     
-    NativeCurves* createCurvesBezier(Scene* scene, NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps) {
-      return new CurvesBezier(scene,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps);
+    NativeCurves* createCurvesBezier(Device* device, NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps) {
+      return new CurvesBezier(device,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps);
     }
     
     void CurvesBezier::preCommit() {
@@ -284,8 +284,8 @@ namespace embree
       interpolate_helper<BezierCurveT<vfloatx>>(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats);
     }
     
-    NativeCurves* createCurvesBSpline(Scene* scene, NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps) {
-      return new CurvesBSpline(scene,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps);
+    NativeCurves* createCurvesBSpline(Device* device, NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps) {
+      return new CurvesBSpline(device,subtype,basis,flags,numPrimitives,numVertices,numTimeSteps);
     }
     
     void CurvesBSpline::preCommit() {

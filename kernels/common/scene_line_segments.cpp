@@ -21,13 +21,13 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  LineSegments::LineSegments (Scene* scene, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps)
-    : Geometry(scene,LINE_SEGMENTS,numPrimitives,numTimeSteps,flags)
+  LineSegments::LineSegments (Device* device, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps)
+    : Geometry(device,LINE_SEGMENTS,numPrimitives,numTimeSteps,flags)
   {
-    segments.init(scene->device,numPrimitives,sizeof(int));
+    segments.init(device,numPrimitives,sizeof(int));
     vertices.resize(numTimeSteps);
     for (size_t i=0; i<numTimeSteps; i++) {
-      vertices[i].init(scene->device,numVertices,sizeof(Vec3fa));
+      vertices[i].init(device,numVertices,sizeof(Vec3fa));
     }
     enabling();
   }
@@ -73,7 +73,7 @@ namespace embree
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
     {
       if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
-      userbuffers[bid] = APIBuffer<char>(scene->device,numVertices(),stride);
+      userbuffers[bid] = APIBuffer<char>(device,numVertices(),stride);
       userbuffers[bid].set(ptr,offset,stride,size);
       userbuffers[bid].checkPadding16();
     }
@@ -167,7 +167,6 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
 #endif
 
-
     /* calculate base pointer and stride */
     assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
@@ -197,8 +196,8 @@ namespace embree
 
   namespace isa
   {
-    LineSegments* createLineSegments(Scene* scene, RTCGeometryFlags flags, size_t numSegments, size_t numVertices, size_t numTimeSteps) {
-      return new LineSegmentsISA(scene,flags,numSegments,numVertices,numTimeSteps);
+    LineSegments* createLineSegments(Device* device, RTCGeometryFlags flags, size_t numSegments, size_t numVertices, size_t numTimeSteps) {
+      return new LineSegmentsISA(device,flags,numSegments,numVertices,numTimeSteps);
     }
   }
 }

@@ -123,6 +123,9 @@ typedef unmasked void (*RTCDisplacementFunc)(void* uniform ptr,               /*
                                               uniform float* uniform pz,       /*!< z coordinates of points to displace (source and target) */
                                               uniform uintptr_t N                 /*!< number of points to displace */ );
 
+/*! \brief Defines an opaque geometry type */
+typedef uniform struct __RTCGeometry {}* uniform RTCGeometry;
+
 /*! \brief Creates a new scene instance. 
 
   A scene instance contains a reference to a scene to instantiate and
@@ -133,15 +136,9 @@ typedef unmasked void (*RTCDisplacementFunc)(void* uniform ptr,               /*
   the provided scene. If any geometry is hit, the instance ID (instID)
   member of the ray will get set to the geometry ID of the
   instance. */
-RTCORE_API uniform unsigned int rtcNewInstance2 (RTCScene target,                  //!< the scene the instance belongs to
-                                                 RTCScene source,                  //!< the scene to instantiate
-                                                 uniform size_t numTimeSteps = 1   //!< number of timesteps, one matrix per timestep
-  );
-
-RTCORE_API uniform unsigned int rtcNewInstance3 (RTCScene target,                  //!< the scene the instance belongs to
-                                                 RTCScene source,                  //!< the scene to instantiate
-                                                 uniform size_t numTimeSteps = 1,  //!< number of timesteps, one matrix per timestep
-                                                 uniform unsigned int geomID = -1  //!< optional geometry ID to assign
+RTCORE_API RTCGeometry rtcNewInstance2 (RTCDevice device,
+                                        RTCScene source,                  //!< the scene to instantiate
+                                        uniform size_t numTimeSteps = 1   //!< number of timesteps, one matrix per timestep
   );
 
 /*! \brief Creates a new geometry instance. 
@@ -155,11 +152,10 @@ RTCORE_API uniform unsigned int rtcNewInstance3 (RTCScene target,               
   ray through the provided scene. If any geometry is hit, the geometry
   ID (geomID) member of the ray will get set to the geometry ID of the
   instance. */
-RTCORE_API RTCORE_DEPRECATED uniform unsigned int rtcNewGeometryInstance(RTCScene scene, uniform unsigned int geomID);
+RTCORE_API RTCORE_DEPRECATED uniform unsigned int rtcNewGeometryInstance(RTCDevice device, uniform unsigned int geomID);
 
 /*! \brief Sets transformation of the instance for specified timestep */
-RTCORE_API void rtcSetTransform (RTCScene scene,                                 //!< scene handle
-                                 uniform unsigned int geomID,                    //!< ID of geometry 
+RTCORE_API void rtcSetTransform (RTCGeometry geometry,                    //!< ID of geometry 
                                  uniform RTCMatrixType layout,                   //!< layout of transformation matrix
                                  const uniform float* uniform xfm,               //!< pointer to transformation matrix
                                  uniform size_t timeStep = 0                     //!< timestep to set the matrix for 
@@ -179,19 +175,11 @@ RTCORE_API void rtcSetTransform (RTCScene scene,                                
   vertex. The vertex buffer stores single precision x,y,z floating
   point coordinates aligned to 16 bytes. The value of the 4th float
   used for alignment can be arbitrary. */
-RTCORE_API uniform unsigned int rtcNewTriangleMesh (RTCScene scene,                  //!< the scene the mesh belongs to
-                                                    uniform RTCGeometryFlags flags,  //!< geometry flags
-                                                    uniform size_t numTriangles,     //!< number of triangles
-                                                    uniform size_t numVertices,      //!< number of vertices
-                                                    uniform size_t numTimeSteps = 1  //!< number of motion blur time steps
-  );
-
-RTCORE_API uniform unsigned int rtcNewTriangleMesh2(RTCScene scene,                   //!< the scene the mesh belongs to
-                                                    uniform RTCGeometryFlags flags,   //!< geometry flags
-                                                    uniform size_t numTriangles,      //!< number of triangles
-                                                    uniform size_t numVertices,       //!< number of vertices
-                                                    uniform size_t numTimeSteps = 1,  //!< number of motion blur time steps
-                                                    uniform unsigned int geomID = -1  //!< optional geometry ID to assign
+RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice device,
+                                           uniform RTCGeometryFlags flags,  //!< geometry flags
+                                           uniform size_t numTriangles,     //!< number of triangles
+                                           uniform size_t numVertices,      //!< number of vertices
+                                           uniform size_t numTimeSteps = 1  //!< number of motion blur time steps
   );
 
 /*! \brief Creates a new quad mesh. The number of quads (numQuads),
@@ -207,19 +195,11 @@ RTCORE_API uniform unsigned int rtcNewTriangleMesh2(RTCScene scene,             
   index points to the ith vertex. The vertex buffer stores single
   precision x,y,z floating point coordinates aligned to 16 bytes. The
   value of the 4th float used for alignment can be arbitrary. */
-RTCORE_API uniform unsigned int rtcNewQuadMesh (RTCScene scene,                  //!< the scene the mesh belongs to
-                                                uniform RTCGeometryFlags flags,  //!< geometry flags
-                                                uniform size_t numQuads,         //!< number of quads
-                                                uniform size_t numVertices,      //!< number of vertices
-                                                uniform size_t numTimeSteps = 1  //!< number of motion blur time steps
-  );
-
-RTCORE_API uniform unsigned int rtcNewQuadMesh2(RTCScene scene,                   //!< the scene the mesh belongs to
-                                                uniform RTCGeometryFlags flags,   //!< geometry flags
-                                                uniform size_t numQuads,          //!< number of quads
-                                                uniform size_t numVertices,       //!< number of vertices
-                                                uniform size_t numTimeSteps = 1,  //!< number of motion blur time steps
-                                                uniform unsigned int geomID = -1  //!< optional geometry ID to assign
+RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice device,
+                                       uniform RTCGeometryFlags flags,  //!< geometry flags
+                                       uniform size_t numQuads,         //!< number of quads
+                                       uniform size_t numVertices,      //!< number of vertices
+                                       uniform size_t numTimeSteps = 1  //!< number of motion blur time steps
   );
 
 /*! \brief Creates a new subdivision mesh. The number of faces
@@ -279,27 +259,15 @@ RTCORE_API uniform unsigned int rtcNewQuadMesh2(RTCScene scene,                 
 
 */
 
-RTCORE_API uniform unsigned int rtcNewSubdivisionMesh (RTCScene scene,                //!< the scene the mesh belongs to
-                                                       uniform RTCGeometryFlags flags,        //!< geometry flags
-                                                       uniform size_t numFaces,               //!< number of faces
-                                                       uniform size_t numEdges,               //!< number of edges
-                                                       uniform size_t numVertices,            //!< number of vertices
-                                                       uniform size_t numEdgeCreases,         //!< number of edge creases
-                                                       uniform size_t numVertexCreases,       //!< number of vertex creases
-                                                       uniform size_t numHoles,               //!< number of holes
-                                                       uniform size_t numTimeSteps = 1        //!< number of motion blur time steps
-  );
-
-RTCORE_API uniform unsigned int rtcNewSubdivisionMesh2(RTCScene scene,                //!< the scene the mesh belongs to
-                                                       uniform RTCGeometryFlags flags,        //!< geometry flags
-                                                       uniform size_t numFaces,               //!< number of faces
-                                                       uniform size_t numEdges,               //!< number of edges
-                                                       uniform size_t numVertices,            //!< number of vertices
-                                                       uniform size_t numEdgeCreases,         //!< number of edge creases
-                                                       uniform size_t numVertexCreases,       //!< number of vertex creases
-                                                       uniform size_t numHoles,               //!< number of holes
-                                                       uniform size_t numTimeSteps = 1,       //!< number of motion blur time steps
-                                                       uniform unsigned int geomID = -1       //!< optional geometry ID to assign
+RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice device,
+                                              uniform RTCGeometryFlags flags,        //!< geometry flags
+                                              uniform size_t numFaces,               //!< number of faces
+                                              uniform size_t numEdges,               //!< number of edges
+                                              uniform size_t numVertices,            //!< number of vertices
+                                              uniform size_t numEdgeCreases,         //!< number of edge creases
+                                              uniform size_t numVertexCreases,       //!< number of vertex creases
+                                              uniform size_t numHoles,               //!< number of holes
+                                              uniform size_t numTimeSteps = 1        //!< number of motion blur time steps
   );
 
 /*! \brief Creates a new hair geometry, consisting of multiple hairs
@@ -320,19 +288,11 @@ RTCORE_API uniform unsigned int rtcNewSubdivisionMesh2(RTCScene scene,          
   considered to be subpixel sized which allows the implementation to
   approximate the intersection calculation. This in particular means
   that zooming onto one hair might show geometric artefacts. */
-RTCORE_API uniform unsigned int rtcNewBezierHairGeometry (RTCScene scene,                    //!< the scene the curves belong to
-                                                          uniform RTCGeometryFlags flags,    //!< geometry flags
-                                                          uniform unsigned int numCurves,          //!< number of curves
-                                                          uniform unsigned int numVertices,        //!< number of vertices
-                                                          uniform unsigned int numTimeSteps = 1    //!< number of motion blur time steps
-  );
-
-RTCORE_API uniform unsigned int rtcNewBezierHairGeometry2(RTCScene scene,                    //!< the scene the curves belong to
-                                                          uniform RTCGeometryFlags flags,    //!< geometry flags
-                                                          uniform unsigned int numCurves,          //!< number of curves
-                                                          uniform unsigned int numVertices,        //!< number of vertices
-                                                          uniform unsigned int numTimeSteps = 1,   //!< number of motion blur time steps
-                                                          uniform unsigned int geomID = -1         //!< optional geometry ID to assign
+RTCORE_API RTCGeometry rtcNewBezierHairGeometry (RTCDevice device,
+                                                 uniform RTCGeometryFlags flags,    //!< geometry flags
+                                                 uniform unsigned int numCurves,          //!< number of curves
+                                                 uniform unsigned int numVertices,        //!< number of vertices
+                                                 uniform unsigned int numTimeSteps = 1    //!< number of motion blur time steps
   );
 
 /*! \brief Creates a new hair geometry, consisting of multiple hairs
@@ -353,19 +313,11 @@ RTCORE_API uniform unsigned int rtcNewBezierHairGeometry2(RTCScene scene,       
   considered to be subpixel sized which allows the implementation to
   approximate the intersection calculation. This in particular means
   that zooming onto one hair might show geometric artefacts. */
-RTCORE_API uniform unsigned int rtcNewBSplineHairGeometry (RTCScene scene,                    //!< the scene the curves belong to
-                                                           uniform RTCGeometryFlags flags,    //!< geometry flags
-                                                           uniform unsigned int numCurves,          //!< number of curves
-                                                           uniform unsigned int numVertices,        //!< number of vertices
-                                                           uniform unsigned int numTimeSteps = 1    //!< number of motion blur time steps
-  );
-
-RTCORE_API uniform unsigned int rtcNewBSplineHairGeometry2(RTCScene scene,                    //!< the scene the curves belong to
-                                                           uniform RTCGeometryFlags flags,    //!< geometry flags
-                                                           uniform unsigned int numCurves,          //!< number of curves
-                                                           uniform unsigned int numVertices,        //!< number of vertices
-                                                           uniform unsigned int numTimeSteps = 1,   //!< number of motion blur time steps
-                                                           uniform unsigned int geomID = -1         //!< optional geometry ID to assign
+RTCORE_API RTCGeometry rtcNewBSplineHairGeometry (RTCDevice device,
+                                                  uniform RTCGeometryFlags flags,    //!< geometry flags
+                                                  uniform unsigned int numCurves,          //!< number of curves
+                                                  uniform unsigned int numVertices,        //!< number of vertices
+                                                  uniform unsigned int numTimeSteps = 1    //!< number of motion blur time steps
   );
 
 /*! \brief Creates a new curve geometry, consisting of multiple curves
@@ -385,19 +337,11 @@ RTCORE_API uniform unsigned int rtcNewBSplineHairGeometry2(RTCScene scene,      
   the curve. The vertex buffer stores 4 control points per curve, each
   such control point consists of a single precision (x,y,z) position
   and radius, stored in that order in memory. */
-RTCORE_API uniform unsigned int rtcNewBezierCurveGeometry (RTCScene scene,                    //!< the scene the curves belong to
-                                                           uniform RTCGeometryFlags flags,    //!< geometry flags
-                                                           uniform unsigned int numCurves,          //!< number of curves
-                                                           uniform unsigned int numVertices,        //!< number of vertices
-                                                           uniform unsigned int numTimeSteps = 1    //!< number of motion blur time steps
-  );
-
-RTCORE_API uniform unsigned int rtcNewBezierCurveGeometry2(RTCScene scene,                    //!< the scene the curves belong to
-                                                           uniform RTCGeometryFlags flags,    //!< geometry flags
-                                                           uniform unsigned int numCurves,          //!< number of curves
-                                                           uniform unsigned int numVertices,        //!< number of vertices
-                                                           uniform unsigned int numTimeSteps = 1,   //!< number of motion blur time steps
-                                                           uniform unsigned int geomID = -1         //!< optional geometry ID to assign
+RTCORE_API RTCGeometry rtcNewBezierCurveGeometry (RTCDevice device,
+                                                  uniform RTCGeometryFlags flags,    //!< geometry flags
+                                                  uniform unsigned int numCurves,          //!< number of curves
+                                                  uniform unsigned int numVertices,        //!< number of vertices
+                                                  uniform unsigned int numTimeSteps = 1    //!< number of motion blur time steps
   );
 
 /*! \brief Creates a new curve geometry, consisting of multiple curves
@@ -417,19 +361,11 @@ RTCORE_API uniform unsigned int rtcNewBezierCurveGeometry2(RTCScene scene,      
   the curve. The vertex buffer stores 4 control points per curve, each
   such control point consists of a single precision (x,y,z) position
   and radius, stored in that order in memory. */
-RTCORE_API uniform unsigned int rtcNewBSplineCurveGeometry (RTCScene scene,                    //!< the scene the curves belong to
-                                                            uniform RTCGeometryFlags flags,    //!< geometry flags
-                                                            uniform unsigned int numCurves,          //!< number of curves
-                                                            uniform unsigned int numVertices,        //!< number of vertices
-                                                            uniform unsigned int numTimeSteps = 1    //!< number of motion blur time steps
-  );
-
-RTCORE_API uniform unsigned int rtcNewBSplineCurveGeometry2(RTCScene scene,                    //!< the scene the curves belong to
-                                                            uniform RTCGeometryFlags flags,    //!< geometry flags
-                                                            uniform unsigned int numCurves,          //!< number of curves
-                                                            uniform unsigned int numVertices,        //!< number of vertices
-                                                            uniform unsigned int numTimeSteps = 1,   //!< number of motion blur time steps
-                                                            uniform unsigned int geomID = -1         //!< optional geometry ID to assign
+RTCORE_API RTCGeometry rtcNewBSplineCurveGeometry (RTCDevice device,
+                                                   uniform RTCGeometryFlags flags,    //!< geometry flags
+                                                   uniform unsigned int numCurves,          //!< number of curves
+                                                   uniform unsigned int numVertices,        //!< number of vertices
+                                                   uniform unsigned int numTimeSteps = 1    //!< number of motion blur time steps
   );
 
 /*! \brief Creates a new line segment geometry, consisting of multiple
@@ -451,44 +387,36 @@ RTCORE_API uniform unsigned int rtcNewBSplineCurveGeometry2(RTCScene scene,     
   implementation to approximate the intersection calculation. This in
   particular means that zooming onto one line segment might show
   geometric artefacts. */
-RTCORE_API uniform unsigned int rtcNewLineSegments (RTCScene scene,                    //!< the scene the line segments belong to
-                                                    uniform RTCGeometryFlags flags,    //!< geometry flags
-                                                    uniform size_t numSegments,        //!< number of line segments
-                                                    uniform size_t numVertices,        //!< number of vertices
-                                                    uniform size_t numTimeSteps = 1    //!< number of motion blur time steps
-  );
-
-RTCORE_API uniform unsigned int rtcNewLineSegments2(RTCScene scene,                    //!< the scene the line segments belong to
-                                                    uniform RTCGeometryFlags flags,    //!< geometry flags
-                                                    uniform size_t numSegments,        //!< number of line segments
-                                                    uniform size_t numVertices,        //!< number of vertices
-                                                    uniform size_t numTimeSteps = 1,   //!< number of motion blur time steps
-                                                    uniform unsigned int geomID = -1         //!< optional geometry ID to assign
+RTCORE_API RTCGeometry rtcNewLineSegments (RTCDevice device,
+                                           uniform RTCGeometryFlags flags,    //!< geometry flags
+                                           uniform size_t numSegments,        //!< number of line segments
+                                           uniform size_t numVertices,        //!< number of vertices
+                                           uniform size_t numTimeSteps = 1    //!< number of motion blur time steps
   );
 
 /*! Sets a uniform tessellation rate for subdiv meshes and hair
  *  geometry. For subdivision meshes the RTC_LEVEL_BUFFER can also be used
  *  optionally to set a different tessellation rate per edge.*/
-RTCORE_API void rtcSetTessellationRate (RTCScene scene, uniform unsigned int geomID, uniform float tessellationRate);
+RTCORE_API void rtcSetTessellationRate (RTCGeometry geometry, uniform float tessellationRate);
 
 /*! \brief Sets 32 bit ray mask. */
-RTCORE_API void rtcSetMask (RTCScene scene, uniform unsigned int geomID, uniform int mask);
+RTCORE_API void rtcSetMask (RTCGeometry geometry, uniform int mask);
 
 /*! \brief Sets boundary interpolation mode for specified subdivision surface topology */
-RTCORE_API void rtcSetSubdivisionMode(RTCScene scene, uniform unsigned int geomID, uniform unsigned int topologyID, uniform RTCSubdivisionMode mode);
+RTCORE_API void rtcSetSubdivisionMode(RTCGeometry geometry, uniform unsigned int topologyID, uniform RTCSubdivisionMode mode);
 
 /*! \brief Binds a user vertex buffer to some index buffer topology. */
-RTCORE_API void rtcSetIndexBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType vertexBuffer, uniform RTCBufferType indexBuffer);
+RTCORE_API void rtcSetIndexBuffer(RTCGeometry geometry, uniform RTCBufferType vertexBuffer, uniform RTCBufferType indexBuffer);
 
 /*! \brief Maps specified buffer. This function can be used to set index and
  *  vertex buffers of geometries. */
-RTCORE_API void* uniform rtcMapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
+RTCORE_API void* uniform rtcMapBuffer(RTCGeometry geometry, uniform RTCBufferType type);
 
 /*! \brief Unmaps specified buffer. 
 
   A buffer has to be unmapped before the rtcEnable, rtcDisable,
   rtcUpdate, or rtcDeleteGeometry calls are executed. */
-RTCORE_API void rtcUnmapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
+RTCORE_API void rtcUnmapBuffer(RTCGeometry geometry, uniform RTCBufferType type);
 
 /*! \brief Shares a data buffer between the application and
  *  Embree. The data has to remain valid as long as the mesh exists,
@@ -502,11 +430,11 @@ RTCORE_API void rtcUnmapBuffer(RTCScene scene, uniform unsigned int geomID, unif
  *  vertex buffers and user vertex buffers using SSE instructions. If
  *  this function is not called, Embree will allocate and manage
  *  buffers of the default layout. */
-RTCORE_API void rtcSetBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type, 
+RTCORE_API void rtcSetBuffer(RTCGeometry geometry, uniform RTCBufferType type, 
                              const void* uniform ptr, uniform size_t byteOffset, uniform size_t byteStride, uniform size_t size);
 
 /*! \brief Enable geometry. Enabled geometry can be hit by a ray. */
-RTCORE_API void rtcEnable (RTCScene scene, uniform unsigned int geomID);
+RTCORE_API void rtcEnable (RTCGeometry geometry);
 
 /*! \brief Update spefific geometry buffer. 
 
@@ -514,7 +442,7 @@ RTCORE_API void rtcEnable (RTCScene scene, uniform unsigned int geomID);
   update function to tell the ray tracing engine which buffers got
   modified. The rtcUpdateBuffer function taggs a specific buffer of
   some geometry as modified. */
-RTCORE_API void rtcUpdate (RTCScene scene, uniform unsigned int geomID);
+RTCORE_API void rtcUpdate (RTCGeometry geometry);
 
 /*! \brief Update spefific geometry buffer. 
 
@@ -522,43 +450,43 @@ RTCORE_API void rtcUpdate (RTCScene scene, uniform unsigned int geomID);
   update function to tell the ray tracing engine which buffers got
   modified. The rtcUpdateBuffer function taggs a specific buffer of
   some geometry as modified. */
-RTCORE_API void rtcUpdateBuffer (RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
+RTCORE_API void rtcUpdateBuffer (RTCGeometry geometry, uniform RTCBufferType type);
 
 /*! \brief Disable geometry. 
 
   Disabled geometry is not hit by any ray. Disabling and enabling
   geometry gives higher performance than deleting and recreating
   geometry. */
-RTCORE_API void rtcDisable (RTCScene scene, uniform unsigned int geomID);
+RTCORE_API void rtcDisable (RTCGeometry geometry);
 
 /*! \brief Sets the displacement function. */
-RTCORE_API void rtcSetDisplacementFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCDisplacementFunc func, uniform RTCBounds *uniform bounds);
+RTCORE_API void rtcSetDisplacementFunction (RTCGeometry geometry, uniform RTCDisplacementFunc func, uniform RTCBounds *uniform bounds);
 
 /*! \brief Sets the intersection filter function for uniform rays. */
-RTCORE_API void rtcSetIntersectionFilterFunction1 (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncUniform func);
+RTCORE_API void rtcSetIntersectionFilterFunction1 (RTCGeometry geometry, uniform RTCFilterFuncUniform func);
 
 /*! \brief Sets the intersection filter function for varying rays. */
-/*RTCORE_API*/ void rtcSetIntersectionFilterFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncVarying func);
+/*RTCORE_API*/ void rtcSetIntersectionFilterFunction (RTCGeometry geometry, uniform RTCFilterFuncVarying func);
 
 /*! \brief Sets the intersection filter function for ray packets of size N. */
-RTCORE_API void rtcSetIntersectionFilterFunctionN (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncN func);
+RTCORE_API void rtcSetIntersectionFilterFunctionN (RTCGeometry geometry, uniform RTCFilterFuncN func);
 
 /*! \brief Sets the occlusion filter function for uniform rays. */
-RTCORE_API void rtcSetOcclusionFilterFunction1 (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncUniform func);
+RTCORE_API void rtcSetOcclusionFilterFunction1 (RTCGeometry geometry, uniform RTCFilterFuncUniform func);
 
 /*! \brief Sets the occlusion filter function for varying rays. */
-/*RTCORE_API*/ void rtcSetOcclusionFilterFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncVarying func);
+/*RTCORE_API*/ void rtcSetOcclusionFilterFunction (RTCGeometry geometry, uniform RTCFilterFuncVarying func);
 
 /*! \brief Sets the occlusion filter function for ray packets of size N. */
-RTCORE_API void rtcSetOcclusionFilterFunctionN (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncN func);
+RTCORE_API void rtcSetOcclusionFilterFunctionN (RTCGeometry geometry, uniform RTCFilterFuncN func);
 
 /*! Set pointer for user defined data per geometry. Invokations
  *  of the various user intersect and occluded functions get passed
  *  this data pointer when called. */
-RTCORE_API void rtcSetUserData (RTCScene scene, uniform unsigned int geomID, void* uniform ptr);
+RTCORE_API void rtcSetUserData (RTCGeometry geometry, void* uniform ptr);
 
 /*! Get pointer for user defined data per geometry based on geomID. */
-RTCORE_API void* uniform rtcGetUserData (RTCScene scene, uniform unsigned int geomID);
+RTCORE_API void* uniform rtcGetUserData (RTCGeometry geometry);
 
 /*! Interpolates user data to some varying u/v location. The data
  *  buffer specifies per vertex data to interpolate and can be one of
@@ -573,7 +501,7 @@ RTCORE_API void* uniform rtcGetUserData (RTCScene scene, uniform unsigned int ge
  *  (SoA) layout. The buffer has to be padded at the end such
  *  that the last element can be read safely using SSE
  *  instructions. */
-void rtcInterpolate(RTCScene scene, uniform unsigned int geomID, varying unsigned int primIDs, varying float u, varying float v, 
+void rtcInterpolate(RTCGeometry geometry, varying unsigned int primIDs, varying float u, varying float v, 
                     uniform RTCBufferType buffer,
                     varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv, uniform size_t numFloats);
 
@@ -593,14 +521,24 @@ void rtcInterpolate(RTCScene scene, uniform unsigned int geomID, varying unsigne
  *  (SoA) layout. The buffer has to be padded at the end such that
  *  the last element can be read safely using SSE
  *  instructions. */
-void rtcInterpolate2(RTCScene scene, uniform unsigned int geomID, varying unsigned int primIDs, varying float u, varying float v, 
+void rtcInterpolate2(RTCGeometry geometry, varying unsigned int primIDs, varying float u, varying float v, 
                     uniform RTCBufferType buffer,
                     varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv,
                     varying float* uniform ddPdudu, varying float* uniform ddPdvdv, varying float* uniform ddPdudv,
                     uniform size_t numFloats);
 
-/*! \brief Deletes the geometry. */
-RTCORE_API void rtcDeleteGeometry (RTCScene scene, uniform unsigned int geomID);
+
+/*! \brief Attaches the geometry to some scene. */
+RTCORE_API uniform unsigned int rtcAttachGeometry (RTCScene scene, RTCGeometry geometry);
+
+/*! \brief Attaches the geometry to some scene using the specified geometry ID. */
+RTCORE_API uniform unsigned int rtcAttachGeometryByID (RTCScene scene, RTCGeometry geometry, uniform unsigned int geomID);
+
+/*! \brief Detaches the geometry from the scene. */
+RTCORE_API void rtcDetachGeometry (RTCScene scene, uniform unsigned int geomID);
+
+/*! Releases the geometry handle. */
+RTCORE_API void rtcReleaseGeometry (RTCGeometry geometry);
 
 /*! @} */
 

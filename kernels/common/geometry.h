@@ -17,6 +17,7 @@
 #pragma once
 
 #include "default.h"
+#include "device.h"
 
 namespace embree
 {
@@ -61,7 +62,7 @@ namespace embree
   public:
     
     /*! Geometry constructor */
-    Geometry (Scene* scene, Type type, size_t numPrimitives, size_t numTimeSteps, RTCGeometryFlags flags);
+    Geometry (Device* device, Type type, size_t numPrimitives, size_t numTimeSteps, RTCGeometryFlags flags);
 
     /*! Geometry destructor */
     virtual ~Geometry();
@@ -330,6 +331,7 @@ namespace embree
     template<typename simd> __forceinline bool hasISPCOcclusionFilter() const;
 
   public:
+    Device* device;            //!< device this geometry belongs to
     Scene* scene;              //!< pointer to scene this mesh belongs to
     unsigned geomID;           //!< internal geometry ID
     Type type;                 //!< geometry type 

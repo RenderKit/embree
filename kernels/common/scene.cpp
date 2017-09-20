@@ -598,78 +598,7 @@ namespace embree
   void Scene::clear() {
   }
 
-#if defined(EMBREE_GEOMETRY_USER)
-  unsigned Scene::newUserGeometry (unsigned geomID, RTCGeometryFlags gflags, size_t items, size_t numTimeSteps) {
-    return bind(geomID, new UserGeometry(this,gflags,items,numTimeSteps));
-  }
-
-  unsigned Scene::newInstance (unsigned geomID, Scene* scene, size_t numTimeSteps) {
-    return bind(geomID,Instance::create(this,scene,numTimeSteps));
-  }
-#endif
-
-  unsigned Scene::newGeometryInstance (unsigned geomID, Ref<Geometry> geom_in) {
-    return bind(geomID,new GeometryInstance(this,geom_in));
-  }
-
-  unsigned int Scene::newGeometryGroup (unsigned geomID, RTCGeometryFlags gflags, const std::vector<Ref<Geometry>>& geometries) {
-    return bind(geomID,new GeometryGroup(this,gflags,geometries));
-  }
-
-#if defined(EMBREE_GEOMETRY_TRIANGLES)
-  unsigned Scene::newTriangleMesh (unsigned geomID, RTCGeometryFlags gflags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) 
-  {
-    createTriangleMeshTy createTriangleMesh = nullptr;
-    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createTriangleMesh);
-    return bind(geomID,createTriangleMesh(this,gflags,numTriangles,numVertices,numTimeSteps));
-  }
-#endif
-
-#if defined(EMBREE_GEOMETRY_QUADS)
-  unsigned Scene::newQuadMesh (unsigned geomID, RTCGeometryFlags gflags, size_t numQuads, size_t numVertices, size_t numTimeSteps) 
-  {
-    createQuadMeshTy createQuadMesh = nullptr;
-    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createQuadMesh);
-    return bind(geomID,createQuadMesh(this,gflags,numQuads,numVertices,numTimeSteps));
-  }
-#endif
-
-#if defined(EMBREE_GEOMETRY_SUBDIV)
-  unsigned Scene::newSubdivisionMesh (unsigned geomID, RTCGeometryFlags gflags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps) 
-  {
-    createSubdivMeshTy createSubdivMesh = nullptr;
-    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createSubdivMesh);
-    return bind(geomID,createSubdivMesh(this,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps));
-  }
-#endif
-
-#if defined(EMBREE_GEOMETRY_HAIR)
-  unsigned Scene::newCurves (unsigned geomID, NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
-  {
-    createCurvesBezierTy createCurvesBezier = nullptr;
-    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createCurvesBezier);
-    createCurvesBSplineTy createCurvesBSpline = nullptr;
-    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createCurvesBSpline);
-
-    Geometry* geom = nullptr;
-    switch (basis) {
-    case NativeCurves::BEZIER : geom = createCurvesBezier (this,subtype,basis,gflags,numCurves,numVertices,numTimeSteps); break;
-    case NativeCurves::BSPLINE: geom = createCurvesBSpline(this,subtype,basis,gflags,numCurves,numVertices,numTimeSteps); break;
-    }
-    return bind(geomID,geom);
-  }
-#endif
-
-#if defined(EMBREE_GEOMETRY_LINES)
-  unsigned Scene::newLineSegments (unsigned geomID, RTCGeometryFlags gflags, size_t numSegments, size_t numVertices, size_t numTimeSteps)
-  {
-    createLineSegmentsTy createLineSegments = nullptr;
-    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createLineSegments);
-    return bind(geomID,createLineSegments(this,gflags,numSegments,numVertices,numTimeSteps));
-  }
-#endif
-
-  unsigned Scene::bind(unsigned geomID, Geometry* geometry) 
+  unsigned Scene::bind(unsigned geomID, Ref<Geometry> geometry) 
   {
     Lock<SpinLock> lock(geometriesMutex);
     if (geomID == RTC_INVALID_GEOMETRY_ID)
@@ -683,16 +612,17 @@ namespace embree
       vertices.resize(geomID+1);
     }
     geometries[geomID] = geometry;
+    geometry->scene = this;
     geometry->geomID = geomID;
     return geomID;
   }
 
-  void Scene::deleteGeometry(size_t geomID)
+  void Scene::detachGeometry(size_t geomID)
   {
     Lock<SpinLock> lock(geometriesMutex);
     
     if (isStatic())
-      throw_RTCError(RTC_INVALID_OPERATION,"rtcDeleteGeometry cannot get called in static scenes");
+      throw_RTCError(RTC_INVALID_OPERATION,"rtcDetachGeometry cannot get called in static scenes");
     if (geomID >= geometries.size())
       throw_RTCError(RTC_INVALID_OPERATION,"invalid geometry ID");
 
@@ -702,6 +632,7 @@ namespace embree
     
     geometry->disable();
     accels.deleteGeometry(unsigned(geomID));
+    geometry->scene = nullptr;
     id_pool.deallocate((unsigned)geomID);
     geometries[geomID] = null;
     vertices[geomID] = nullptr;

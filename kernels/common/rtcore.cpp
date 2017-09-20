@@ -695,53 +695,49 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
-  unsigned rtcNewInstanceImpl (RTCScene htarget, RTCScene hsource, size_t numTimeSteps, unsigned int geomID) 
+  RTCORE_API RTCGeometry rtcNewInstance2 (RTCDevice hdevice, RTCScene hsource, size_t numTimeSteps)
   {
-    Scene* target = (Scene*) htarget;
+    Device* device = (Device*) hdevice;
     Scene* source = (Scene*) hsource;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewInstance);
-    RTCORE_VERIFY_HANDLE(htarget);
+    RTCORE_VERIFY_HANDLE(hdevice);
     RTCORE_VERIFY_HANDLE(hsource);
 #if defined(EMBREE_GEOMETRY_USER)
-    if (target->device != source->device) throw_RTCError(RTC_INVALID_OPERATION,"scenes do not belong to the same device");
-    return target->newInstance(geomID,source,numTimeSteps);
+    Geometry* geom = Instance::create(device,source,numTimeSteps);
+    return (RTCGeometry) geom->refInc();
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewInstance is not supported");
 #endif
-    RTCORE_CATCH_END2(target);
-    return -1;
-  }
-  
-  RTCORE_API unsigned rtcNewInstance2 (RTCScene htarget, RTCScene hsource, size_t numTimeSteps) {
-    return rtcNewInstanceImpl(htarget,hsource,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+    RTCORE_CATCH_END(device);
+    return nullptr;
   }
 
-  RTCORE_API unsigned rtcNewInstance3 (RTCScene htarget, RTCScene hsource, size_t numTimeSteps, unsigned int geomID) {
-    return rtcNewInstanceImpl(htarget,hsource,numTimeSteps,geomID);
-  }
-
-  RTCORE_API unsigned rtcNewGeometryInstance (RTCScene hscene, unsigned geomID) 
+  RTCORE_API RTCGeometry rtcNewGeometryInstance (RTCDevice hdevice,  RTCScene hscene, unsigned geomID) 
   {
+    Device* device = (Device*) hdevice;
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewGeometryInstance);
+    RTCORE_VERIFY_HANDLE(hdevice);
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
-    return scene->newGeometryInstance(RTC_INVALID_GEOMETRY_ID,scene->get_locked(geomID));
-    RTCORE_CATCH_END2(scene);
-    return -1;
+    Geometry* geom = new GeometryInstance(device,scene->get_locked(geomID));
+    return (RTCGeometry) geom->refInc();
+    RTCORE_CATCH_END(device);
+    return nullptr;
   }
 
-  RTCORE_API unsigned rtcNewGeometryGroup (RTCScene hscene, RTCGeometryFlags gflags, unsigned* geomIDs, size_t N) 
+  RTCORE_API RTCGeometry rtcNewGeometryGroup (RTCDevice hdevice, RTCScene hscene, RTCGeometryFlags gflags, unsigned* geomIDs, size_t N) 
   {
+    Device* device = (Device*) hdevice;
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewGeometryGroup);
+    RTCORE_VERIFY_HANDLE(hdevice);
     RTCORE_VERIFY_HANDLE(hscene);
     if (N) RTCORE_VERIFY_HANDLE(geomIDs);
-    if (scene->isStatic() && (gflags != RTC_GEOMETRY_STATIC))
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
+
     std::vector<Ref<Geometry>> geometries(N);
     for (size_t i=0; i<N; i++) {
       RTCORE_VERIFY_GEOMID(geomIDs[i]);
@@ -751,9 +747,10 @@ namespace embree
       if (geometries[i]->getType() != geometries[0]->getType())
         throw_RTCError(RTC_INVALID_ARGUMENT,"geometries inside group have to be of same type");
     }
-    return scene->newGeometryGroup(RTC_INVALID_GEOMETRY_ID,gflags,geometries);
-    RTCORE_CATCH_END2(scene);
-    return -1;
+    Geometry* geom = new GeometryGroup(device,gflags,geometries);
+    return (RTCGeometry) geom->refInc();
+    RTCORE_CATCH_END(device);
+    return nullptr;
   }
 
   AffineSpace3fa convertTransform(RTCMatrixType layout, const float* xfm)
@@ -789,738 +786,675 @@ namespace embree
     return transform;
   }
 
-  RTCORE_API void rtcSetTransform (RTCScene hscene, unsigned geomID, RTCMatrixType layout, const float* xfm, size_t timeStep) 
+  RTCORE_API void rtcSetTransform (RTCGeometry hgeometry, RTCMatrixType layout, const float* xfm, size_t timeStep) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetTransform);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
+    RTCORE_VERIFY_HANDLE(hgeometry);
     RTCORE_VERIFY_HANDLE(xfm);
     const AffineSpace3fa transform = convertTransform(layout,xfm);
-    ((Scene*) scene)->get_locked(geomID)->setTransform(transform,timeStep);
-    RTCORE_CATCH_END2(scene);
+    geometry->setTransform(transform,timeStep);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  unsigned rtcNewUserGeometryImpl (RTCScene hscene, RTCGeometryFlags gflags, size_t numItems, size_t numTimeSteps, unsigned int geomID) 
+  RTCORE_API RTCGeometry rtcNewUserGeometry (RTCDevice hdevice, RTCGeometryFlags gflags, size_t numItems, size_t numTimeSteps)
   {
-    Scene* scene = (Scene*) hscene;
+    Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewUserGeometry2);
-    RTCORE_VERIFY_HANDLE(hscene);
-    if (scene->isStatic() && (gflags != RTC_GEOMETRY_STATIC))
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
+    RTCORE_VERIFY_HANDLE(hdevice);
 #if defined(EMBREE_GEOMETRY_USER)
-    return scene->newUserGeometry(geomID,gflags,numItems,numTimeSteps);
+    Geometry* geom = new UserGeometry(device,gflags,numItems,numTimeSteps);
+    return (RTCGeometry) geom->refInc();
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewUserGeometry is not supported");
 #endif
-    RTCORE_CATCH_END2(scene);
-    return -1;
-  }
-  
-  RTCORE_API unsigned rtcNewUserGeometry (RTCScene hscene, RTCGeometryFlags gflags, size_t numItems, size_t numTimeSteps) {
-    return rtcNewUserGeometryImpl(hscene,gflags,numItems,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+    RTCORE_CATCH_END(device);
+    return nullptr;
   }
 
-  RTCORE_API unsigned rtcNewUserGeometry4 (RTCScene hscene, RTCGeometryFlags gflags, size_t numItems, size_t numTimeSteps, unsigned int geomID) {
-    return rtcNewUserGeometryImpl(hscene,gflags,numItems,numTimeSteps,geomID);
-  }
-
-  unsigned rtcNewTriangleMeshImpl (RTCScene hscene, RTCGeometryFlags gflags, size_t numTriangles, size_t numVertices, size_t numTimeSteps, unsigned int geomID) 
+  RTCORE_API RTCGeometry rtcNewTriangleMesh (RTCDevice hdevice,  RTCGeometryFlags gflags, size_t numTriangles, size_t numVertices, size_t numTimeSteps)
   {
-    Scene* scene = (Scene*) hscene;
+    Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewTriangleMesh);
-    RTCORE_VERIFY_HANDLE(hscene);
+    RTCORE_VERIFY_HANDLE(hdevice);
     RTCORE_VERIFY_RANGE(numTimeSteps,1,RTC_MAX_TIME_STEPS);
-    if (scene->isStatic() && (gflags != RTC_GEOMETRY_STATIC))
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
-    return scene->newTriangleMesh(geomID,gflags,numTriangles,numVertices,numTimeSteps);
+    createTriangleMeshTy createTriangleMesh = nullptr;
+    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createTriangleMesh);
+    Geometry* geom = createTriangleMesh(device,gflags,numTriangles,numVertices,numTimeSteps);
+    return (RTCGeometry) geom->refInc();
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewTriangleMesh is not supported");
 #endif
-    RTCORE_CATCH_END2(scene);
-    return -1;
-  }
-  
-  RTCORE_API unsigned rtcNewTriangleMesh (RTCScene hscene, RTCGeometryFlags gflags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) {
-    return rtcNewTriangleMeshImpl(hscene,gflags,numTriangles,numVertices,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+    RTCORE_CATCH_END(device);
+    return nullptr;
   }
 
-  RTCORE_API unsigned rtcNewTriangleMesh2 (RTCScene hscene, RTCGeometryFlags gflags, size_t numTriangles, size_t numVertices, size_t numTimeSteps, unsigned int geomID) {
-    return rtcNewTriangleMeshImpl(hscene,gflags,numTriangles,numVertices,numTimeSteps,geomID);
-  }
-
-  unsigned rtcNewQuadMeshImpl(RTCScene hscene, RTCGeometryFlags gflags, size_t numQuads, size_t numVertices, size_t numTimeSteps, unsigned int geomID) 
+  RTCORE_API RTCGeometry rtcNewQuadMesh (RTCDevice hdevice, RTCGeometryFlags gflags, size_t numQuads, size_t numVertices, size_t numTimeSteps)
   {
-    Scene* scene = (Scene*) hscene;
+    Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewQuadMesh);
-    RTCORE_VERIFY_HANDLE(hscene);
+    RTCORE_VERIFY_HANDLE(hdevice);
     RTCORE_VERIFY_RANGE(numTimeSteps,1,RTC_MAX_TIME_STEPS);
-    if (scene->isStatic() && (gflags != RTC_GEOMETRY_STATIC))
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
 #if defined(EMBREE_GEOMETRY_QUADS)
-    return scene->newQuadMesh(geomID,gflags,numQuads,numVertices,numTimeSteps);
+    createQuadMeshTy createQuadMesh = nullptr;
+    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createQuadMesh);
+    Geometry* geom = createQuadMesh(device,gflags,numQuads,numVertices,numTimeSteps);
+    return (RTCGeometry) geom->refInc();
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewQuadMesh is not supported");
 #endif
-    RTCORE_CATCH_END2(scene);
-    return -1;
-  }
-  
-  RTCORE_API unsigned rtcNewQuadMesh (RTCScene hscene, RTCGeometryFlags gflags, size_t numQuads, size_t numVertices, size_t numTimeSteps) {
-    return rtcNewQuadMeshImpl(hscene,gflags,numQuads,numVertices,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+    RTCORE_CATCH_END(device);
+    return nullptr;
   }
 
-  RTCORE_API unsigned rtcNewQuadMesh2(RTCScene hscene, RTCGeometryFlags gflags, size_t numQuads, size_t numVertices, size_t numTimeSteps, unsigned int geomID) {
-    return rtcNewQuadMeshImpl(hscene,gflags,numQuads,numVertices,numTimeSteps,geomID);
-  }
-
-  unsigned rtcNewBezierHairGeometryImpl (RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps, unsigned int geomID) 
+  RTCGeometry rtcNewCurveGeometry ( Device* device, NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
   {
-    Scene* scene = (Scene*) hscene;
+    createCurvesBezierTy createCurvesBezier = nullptr;
+    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createCurvesBezier);
+    createCurvesBSplineTy createCurvesBSpline = nullptr;
+    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createCurvesBSpline);
+
+    Geometry* geom = nullptr;
+    switch (basis) {
+    case NativeCurves::BEZIER : geom = createCurvesBezier (device,subtype,basis,gflags,numCurves,numVertices,numTimeSteps); break;
+    case NativeCurves::BSPLINE: geom = createCurvesBSpline(device,subtype,basis,gflags,numCurves,numVertices,numTimeSteps); break;
+    }
+    return (RTCGeometry) geom->refInc();
+  }
+
+  RTCORE_API RTCGeometry rtcNewBezierHairGeometry (RTCDevice hdevice, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps)
+  {
+    Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewBezierHairGeometry);
-    RTCORE_VERIFY_HANDLE(hscene);
+    RTCORE_VERIFY_HANDLE(hdevice);
     RTCORE_VERIFY_RANGE(numTimeSteps,1,RTC_MAX_TIME_STEPS);
-    if (scene->isStatic() && (gflags != RTC_GEOMETRY_STATIC))
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
 #if defined(EMBREE_GEOMETRY_HAIR)
-    return scene->newCurves(geomID,NativeCurves::HAIR,NativeCurves::BEZIER,gflags,numCurves,numVertices,numTimeSteps);
+    return rtcNewCurveGeometry(device,NativeCurves::HAIR,NativeCurves::BEZIER,gflags,numCurves,numVertices,numTimeSteps);
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewBezierHairGeometry is not supported");
 #endif
-    RTCORE_CATCH_END2(scene);
-    return -1;
-  }
-  
-  RTCORE_API unsigned rtcNewBezierHairGeometry (RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps) {
-    return rtcNewBezierHairGeometryImpl(hscene,gflags,(unsigned int)numCurves,(unsigned int)numVertices,(unsigned int)numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+    RTCORE_CATCH_END(device);
+    return nullptr;
   }
 
-  RTCORE_API unsigned rtcNewBezierHairGeometry2 (RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps, unsigned int geomID) {
-    return rtcNewBezierHairGeometryImpl(hscene,gflags,numCurves,numVertices,numTimeSteps,geomID);
-  }
-
-  unsigned rtcNewBSplineHairGeometryImpl(RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps, unsigned int geomID) 
+  RTCORE_API RTCGeometry rtcNewBSplineHairGeometry (RTCDevice hdevice, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps)
   {
-    Scene* scene = (Scene*) hscene;
+    Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewBSplineHairGeometry);
-    RTCORE_VERIFY_HANDLE(hscene);
+    RTCORE_VERIFY_HANDLE(hdevice);
     RTCORE_VERIFY_RANGE(numTimeSteps,1,RTC_MAX_TIME_STEPS);
-    if (scene->isStatic() && (gflags != RTC_GEOMETRY_STATIC))
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
 #if defined(EMBREE_GEOMETRY_HAIR)
-    return scene->newCurves(geomID,NativeCurves::HAIR,NativeCurves::BSPLINE,gflags,numCurves,numVertices,numTimeSteps);
+    return rtcNewCurveGeometry(device,NativeCurves::HAIR,NativeCurves::BSPLINE,gflags,numCurves,numVertices,numTimeSteps);
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewBSplineHairGeometry is not supported");
 #endif
-    RTCORE_CATCH_END2(scene);
-    return -1;
+    RTCORE_CATCH_END(device);
+    return nullptr;
   }
 
-  RTCORE_API unsigned rtcNewBSplineHairGeometry (RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps) {
-    return rtcNewBSplineHairGeometryImpl(hscene,gflags,numCurves,numVertices,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
-  }
-
-  RTCORE_API unsigned rtcNewBSplineHairGeometry2(RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps, unsigned int geomID) {
-    return rtcNewBSplineHairGeometryImpl(hscene,gflags,numCurves,numVertices,numTimeSteps,geomID);
-  }
-
-  unsigned rtcNewBezierCurveGeometryImpl(RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps, unsigned int geomID) 
+  RTCORE_API RTCGeometry rtcNewBezierCurveGeometry (RTCDevice hdevice, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps)
   {
-    Scene* scene = (Scene*) hscene;
+    Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewBezierCurveGeometry);
-    RTCORE_VERIFY_HANDLE(hscene);
+    RTCORE_VERIFY_HANDLE(hdevice);
     RTCORE_VERIFY_RANGE(numTimeSteps,1,RTC_MAX_TIME_STEPS);
-    if (scene->isStatic() && (gflags != RTC_GEOMETRY_STATIC))
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
 #if defined(EMBREE_GEOMETRY_HAIR)
-    return scene->newCurves(geomID,NativeCurves::SURFACE,NativeCurves::BEZIER,gflags,numCurves,numVertices,numTimeSteps);
+    return rtcNewCurveGeometry(device,NativeCurves::SURFACE,NativeCurves::BEZIER,gflags,numCurves,numVertices,numTimeSteps);
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewBezierCurveGeometry is not supported");
 #endif
-    RTCORE_CATCH_END2(scene);
-    return -1;
-  }
-  
-  RTCORE_API unsigned rtcNewBezierCurveGeometry (RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps) {
-    return rtcNewBezierCurveGeometryImpl(hscene,gflags,(unsigned int)numCurves,(unsigned int)numVertices,(unsigned int)numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+    RTCORE_CATCH_END(device);
+    return nullptr;
   }
 
-  RTCORE_API unsigned rtcNewBezierCurveGeometry2(RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps, unsigned int geomID) {
-    return rtcNewBezierCurveGeometryImpl(hscene,gflags,numCurves,numVertices,numTimeSteps,geomID);
-  }
-
-  unsigned rtcNewBSplineCurveGeometryImpl(RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps, unsigned int geomID) 
+  RTCORE_API RTCGeometry rtcNewBSplineCurveGeometry (RTCDevice hdevice, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps)
   {
-    Scene* scene = (Scene*) hscene;
+    Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewBSplineCurveGeometry);
-    RTCORE_VERIFY_HANDLE(hscene);
+    RTCORE_VERIFY_HANDLE(hdevice);
     RTCORE_VERIFY_RANGE(numTimeSteps,1,RTC_MAX_TIME_STEPS);
-    if (scene->isStatic() && (gflags != RTC_GEOMETRY_STATIC))
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
 #if defined(EMBREE_GEOMETRY_HAIR)
-    return scene->newCurves(geomID,NativeCurves::SURFACE,NativeCurves::BSPLINE,gflags,numCurves,numVertices,numTimeSteps);
+    return rtcNewCurveGeometry(device,NativeCurves::SURFACE,NativeCurves::BSPLINE,gflags,numCurves,numVertices,numTimeSteps);
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewBSplineCurveGeometry is not supported");
 #endif
-    RTCORE_CATCH_END2(scene);
-    return -1;
-  }
-  
-  RTCORE_API unsigned rtcNewBSplineCurveGeometry (RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps) {
-    return rtcNewBSplineCurveGeometryImpl(hscene,gflags,numCurves,numVertices,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+    RTCORE_CATCH_END(device);
+    return nullptr;
   }
 
-  RTCORE_API unsigned rtcNewBSplineCurveGeometry2(RTCScene hscene, RTCGeometryFlags gflags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps, unsigned int geomID) {
-    return rtcNewBSplineCurveGeometryImpl(hscene,gflags,numCurves,numVertices,numTimeSteps,geomID);
-  }
-
-  unsigned rtcNewLineSegmentsImpl(RTCScene hscene, RTCGeometryFlags gflags, size_t numSegments, size_t numVertices, size_t numTimeSteps, unsigned int geomID)
+  RTCORE_API RTCGeometry rtcNewLineSegments (RTCDevice hdevice, RTCGeometryFlags gflags, size_t numSegments, size_t numVertices, size_t numTimeSteps)
   {
-    Scene* scene = (Scene*) hscene;
+    Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewLineSegments);
-    RTCORE_VERIFY_HANDLE(hscene);
+    RTCORE_VERIFY_HANDLE(hdevice);
     RTCORE_VERIFY_RANGE(numTimeSteps,1,RTC_MAX_TIME_STEPS);
-    if (scene->isStatic() && (gflags != RTC_GEOMETRY_STATIC))
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
 #if defined(EMBREE_GEOMETRY_LINES)
-    return scene->newLineSegments(geomID,gflags,numSegments,numVertices,numTimeSteps);
+    createLineSegmentsTy createLineSegments = nullptr;
+    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createLineSegments);
+    Geometry* geom = createLineSegments(device,gflags,numSegments,numVertices,numTimeSteps);
+    return (RTCGeometry) geom->refInc();
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewLineSegments is not supported");
 #endif
-    RTCORE_CATCH_END2(scene);
-    return -1;
+    RTCORE_CATCH_END(device);
+    return nullptr;
   }
 
-  RTCORE_API unsigned rtcNewLineSegments (RTCScene hscene, RTCGeometryFlags gflags, size_t numSegments, size_t numVertices, size_t numTimeSteps) {
-    return rtcNewLineSegmentsImpl(hscene,gflags,numSegments,numVertices,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
-  }
-
-  RTCORE_API unsigned rtcNewLineSegments2(RTCScene hscene, RTCGeometryFlags gflags, size_t numSegments, size_t numVertices, size_t numTimeSteps, unsigned int geomID) {
-    return rtcNewLineSegmentsImpl(hscene,gflags,numSegments,numVertices,numTimeSteps,geomID);
-  }
-
-  unsigned rtcNewSubdivisionMeshImpl(RTCScene hscene, RTCGeometryFlags gflags, size_t numFaces, size_t numEdges, size_t numVertices, 
-                                         size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps, unsigned int geomID) 
+  RTCORE_API RTCGeometry rtcNewSubdivisionMesh (RTCDevice hdevice, RTCGeometryFlags gflags, size_t numFaces, size_t numEdges, size_t numVertices, 
+                                             size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps) 
   {
-    Scene* scene = (Scene*) hscene;
+    Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewSubdivisionMesh);
-    RTCORE_VERIFY_HANDLE(hscene);
+    RTCORE_VERIFY_HANDLE(hdevice);
     RTCORE_VERIFY_RANGE(numTimeSteps,1,RTC_MAX_TIME_STEPS);
-    if (scene->isStatic() && (gflags != RTC_GEOMETRY_STATIC))
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
 #if defined(EMBREE_GEOMETRY_SUBDIV)
-    return scene->newSubdivisionMesh(geomID,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
+    createSubdivMeshTy createSubdivMesh = nullptr;
+    SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createSubdivMesh);
+    Geometry* geom = createSubdivMesh(device,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
+    return (RTCGeometry) geom->refInc();
 #else
     throw_RTCError(RTC_UNKNOWN_ERROR,"rtcNewSubdivisionMesh is not supported");
 #endif
-    RTCORE_CATCH_END2(scene);
-    return -1;
-  }
-  
-  RTCORE_API unsigned rtcNewSubdivisionMesh (RTCScene hscene, RTCGeometryFlags gflags, size_t numFaces, size_t numEdges, size_t numVertices, 
-                                             size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps) 
-  {
-    return rtcNewSubdivisionMeshImpl(hscene,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps,RTC_INVALID_GEOMETRY_ID);
+    RTCORE_CATCH_END(device);
+    return nullptr;
   }
 
-  RTCORE_API unsigned rtcNewSubdivisionMesh2(RTCScene hscene, RTCGeometryFlags gflags, size_t numFaces, size_t numEdges, size_t numVertices, 
-                                             size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps, unsigned int geomID) 
+  RTCORE_API void rtcSetMask (RTCGeometry hgeometry, int mask) 
   {
-    return rtcNewSubdivisionMeshImpl(hscene,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps,geomID);
-  }
-  
-  RTCORE_API void rtcSetMask (RTCScene hscene, unsigned geomID, int mask) 
-  {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetMask);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setMask(mask);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setMask(mask);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetSubdivisionMode (RTCScene hscene, unsigned geomID, unsigned topologyID, RTCSubdivisionMode mode) 
+  RTCORE_API void rtcSetSubdivisionMode (RTCGeometry hgeometry, unsigned topologyID, RTCSubdivisionMode mode) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetSubdivisionMode);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setSubdivisionMode(topologyID,mode);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setSubdivisionMode(topologyID,mode);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetIndexBuffer (RTCScene hscene, unsigned geomID, RTCBufferType vertexBuffer, RTCBufferType indexBuffer) 
+  RTCORE_API void rtcSetIndexBuffer (RTCGeometry hgeometry, RTCBufferType vertexBuffer, RTCBufferType indexBuffer) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetIndexBuffer);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setIndexBuffer(vertexBuffer,indexBuffer);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setIndexBuffer(vertexBuffer,indexBuffer);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void* rtcMapBuffer(RTCScene hscene, unsigned geomID, RTCBufferType type) 
+  RTCORE_API void* rtcMapBuffer(RTCGeometry hgeometry, RTCBufferType type) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcMapBuffer);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    return scene->get_locked(geomID)->map(type);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    return geometry->map(type);
+    RTCORE_CATCH_END2(geometry);
     return nullptr;
   }
 
-  RTCORE_API void rtcUnmapBuffer(RTCScene hscene, unsigned geomID, RTCBufferType type) 
+  RTCORE_API void rtcUnmapBuffer(RTCGeometry hgeometry, RTCBufferType type) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcUnmapBuffer);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->unmap(type);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->unmap(type);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetBuffer(RTCScene hscene, unsigned geomID, RTCBufferType type, const void* ptr, size_t offset, size_t stride, size_t size)
+  RTCORE_API void rtcSetBuffer(RTCGeometry hgeometry, RTCBufferType type, const void* ptr, size_t offset, size_t stride, size_t size)
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetBuffer);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
+    RTCORE_VERIFY_HANDLE(hgeometry);
     RTCORE_VERIFY_UPPER(stride,unsigned(inf));
-    scene->get_locked(geomID)->setBuffer(type,(void*)ptr,offset,stride,size);
-    RTCORE_CATCH_END2(scene);
+    geometry->setBuffer(type,(void*)ptr,offset,stride,size);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcEnable (RTCScene hscene, unsigned geomID) 
+  RTCORE_API void rtcEnable (RTCGeometry hgeometry) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcEnable);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->enable();
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->enable();
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcUpdate (RTCScene hscene, unsigned geomID) 
+  RTCORE_API void rtcUpdate (RTCGeometry hgeometry) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcUpdate);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->update();
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->update();
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcUpdateBuffer (RTCScene hscene, unsigned geomID, RTCBufferType type) 
+  RTCORE_API void rtcUpdateBuffer (RTCGeometry hgeometry, RTCBufferType type) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcUpdateBuffer);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->updateBuffer(type);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->updateBuffer(type);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcDisable (RTCScene hscene, unsigned geomID) 
+  RTCORE_API void rtcDisable (RTCGeometry hgeometry) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcDisable);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->disable();
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->disable();
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcDeleteGeometry (RTCScene hscene, unsigned geomID) 
+    RTCORE_API void rtcSetTessellationRate (RTCGeometry hgeometry, float tessellationRate)
   {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcDeleteGeometry);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->deleteGeometry(geomID);
-    RTCORE_CATCH_END2(scene);
-  }
-
-  RTCORE_API void rtcSetTessellationRate (RTCScene hscene, unsigned geomID, float tessellationRate)
-  {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetTessellationRate);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setTessellationRate(tessellationRate);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setTessellationRate(tessellationRate);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetUserData (RTCScene hscene, unsigned geomID, void* ptr) 
+  RTCORE_API void rtcSetUserData (RTCGeometry hgeometry, void* ptr) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetUserData);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setUserData(ptr);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setUserData(ptr);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void* rtcGetUserData (RTCScene hscene, unsigned geomID)
+  RTCORE_API void* rtcGetUserData (RTCGeometry hgeometry)
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcGetUserData);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    return scene->get(geomID)->getUserData(); // this call is on purpose not thread safe
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    return geometry->getUserData();
+    RTCORE_CATCH_END2(geometry);
     return nullptr;
   }
 
-  RTCORE_API void rtcSetBoundsFunction (RTCScene hscene, unsigned geomID, RTCBoundsFunc bounds, void* userPtr)
+  RTCORE_API void rtcSetBoundsFunction (RTCGeometry hgeometry, RTCBoundsFunc bounds, void* userPtr)
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetBoundsFunction);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setBoundsFunction(bounds,userPtr);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setBoundsFunction(bounds,userPtr);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetDisplacementFunction (RTCScene hscene, unsigned geomID, RTCDisplacementFunc func, RTCBounds* bounds)
+  RTCORE_API void rtcSetDisplacementFunction (RTCGeometry hgeometry, RTCDisplacementFunc func, RTCBounds* bounds)
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetDisplacementFunction);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setDisplacementFunction(func,bounds);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setDisplacementFunction(func,bounds);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetIntersectFunction (RTCScene hscene, unsigned geomID, RTCIntersectFunc intersect) 
+  RTCORE_API void rtcSetIntersectFunction (RTCGeometry hgeometry, RTCIntersectFunc intersect) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetIntersectFunction);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setIntersectFunction(intersect);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setIntersectFunction(intersect);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetIntersectFunction4 (RTCScene hscene, unsigned geomID, RTCIntersectFunc4 intersect4) 
+  RTCORE_API void rtcSetIntersectFunction4 (RTCGeometry hgeometry, RTCIntersectFunc4 intersect4) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetIntersectFunction4);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setIntersectFunction4(intersect4);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setIntersectFunction4(intersect4);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetIntersectFunction8 (RTCScene hscene, unsigned geomID, RTCIntersectFunc8 intersect8) 
+  RTCORE_API void rtcSetIntersectFunction8 (RTCGeometry hgeometry, RTCIntersectFunc8 intersect8) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetIntersectFunction8);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setIntersectFunction8(intersect8);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setIntersectFunction8(intersect8);
+    RTCORE_CATCH_END2(geometry);
   }
   
-  RTCORE_API void rtcSetIntersectFunction16 (RTCScene hscene, unsigned geomID, RTCIntersectFunc16 intersect16) 
+  RTCORE_API void rtcSetIntersectFunction16 (RTCGeometry hgeometry, RTCIntersectFunc16 intersect16) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetIntersectFunction16);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setIntersectFunction16(intersect16);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setIntersectFunction16(intersect16);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetIntersectFunction1Mp (RTCScene hscene, unsigned geomID, RTCIntersectFunc1Mp intersect) 
+  RTCORE_API void rtcSetIntersectFunction1Mp (RTCGeometry hgeometry, RTCIntersectFunc1Mp intersect) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetIntersectFunction1Mp);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setIntersectFunction1Mp(intersect);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setIntersectFunction1Mp(intersect);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetIntersectFunctionN (RTCScene hscene, unsigned geomID, RTCIntersectFuncN intersect) 
+  RTCORE_API void rtcSetIntersectFunctionN (RTCGeometry hgeometry, RTCIntersectFuncN intersect) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetIntersectFunctionN);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setIntersectFunctionN(intersect);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setIntersectFunctionN(intersect);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetOccludedFunction (RTCScene hscene, unsigned geomID, RTCOccludedFunc occluded) 
+  RTCORE_API void rtcSetOccludedFunction (RTCGeometry hgeometry, RTCOccludedFunc occluded) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetOccludedFunction);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setOccludedFunction(occluded);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setOccludedFunction(occluded);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetOccludedFunction4 (RTCScene hscene, unsigned geomID, RTCOccludedFunc4 occluded4) 
+  RTCORE_API void rtcSetOccludedFunction4 (RTCGeometry hgeometry, RTCOccludedFunc4 occluded4) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetOccludedFunction4);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setOccludedFunction4(occluded4);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setOccludedFunction4(occluded4);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetOccludedFunction8 (RTCScene hscene, unsigned geomID, RTCOccludedFunc8 occluded8) 
+  RTCORE_API void rtcSetOccludedFunction8 (RTCGeometry hgeometry, RTCOccludedFunc8 occluded8) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetOccludedFunction8);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setOccludedFunction8(occluded8);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setOccludedFunction8(occluded8);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetOccludedFunction16 (RTCScene hscene, unsigned geomID, RTCOccludedFunc16 occluded16) 
+  RTCORE_API void rtcSetOccludedFunction16 (RTCGeometry hgeometry, RTCOccludedFunc16 occluded16) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetOccludedFunction16);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setOccludedFunction16(occluded16);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setOccludedFunction16(occluded16);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetOccludedFunction1Mp (RTCScene hscene, unsigned geomID, RTCOccludedFunc1Mp occluded) 
+  RTCORE_API void rtcSetOccludedFunction1Mp (RTCGeometry hgeometry, RTCOccludedFunc1Mp occluded) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetOccludedFunction1Mp);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setOccludedFunction1Mp(occluded);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setOccludedFunction1Mp(occluded);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetOccludedFunctionN (RTCScene hscene, unsigned geomID, RTCOccludedFuncN occluded) 
+  RTCORE_API void rtcSetOccludedFunctionN (RTCGeometry hgeometry, RTCOccludedFuncN occluded) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetOccludedFunctionN);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setOccludedFunctionN(occluded);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setOccludedFunctionN(occluded);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetIntersectionFilterFunction (RTCScene hscene, unsigned geomID, RTCFilterFunc intersect) 
+  RTCORE_API void rtcSetIntersectionFilterFunction (RTCGeometry hgeometry, RTCFilterFunc intersect) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetIntersectionFilterFunction);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setIntersectionFilterFunction(intersect);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setIntersectionFilterFunction(intersect);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetIntersectionFilterFunction4 (RTCScene hscene, unsigned geomID, RTCFilterFunc4 filter4) 
+  RTCORE_API void rtcSetIntersectionFilterFunction4 (RTCGeometry hgeometry, RTCFilterFunc4 filter4) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetIntersectionFilterFunction4);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setIntersectionFilterFunction4(filter4);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setIntersectionFilterFunction4(filter4);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetIntersectionFilterFunction8 (RTCScene hscene, unsigned geomID, RTCFilterFunc8 filter8) 
+  RTCORE_API void rtcSetIntersectionFilterFunction8 (RTCGeometry hgeometry, RTCFilterFunc8 filter8) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetIntersectionFilterFunction8);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setIntersectionFilterFunction8(filter8);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setIntersectionFilterFunction8(filter8);
+    RTCORE_CATCH_END2(geometry);
   }
   
-  RTCORE_API void rtcSetIntersectionFilterFunction16 (RTCScene hscene, unsigned geomID, RTCFilterFunc16 filter16) 
+  RTCORE_API void rtcSetIntersectionFilterFunction16 (RTCGeometry hgeometry, RTCFilterFunc16 filter16) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetIntersectionFilterFunction16);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setIntersectionFilterFunction16(filter16);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setIntersectionFilterFunction16(filter16);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetIntersectionFilterFunctionN (RTCScene hscene, unsigned geomID, RTCFilterFuncN filterN) 
+  RTCORE_API void rtcSetIntersectionFilterFunctionN (RTCGeometry hgeometry, RTCFilterFuncN filterN) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetIntersectionFilterFunctionN);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setIntersectionFilterFunctionN(filterN);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setIntersectionFilterFunctionN(filterN);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetOcclusionFilterFunction (RTCScene hscene, unsigned geomID, RTCFilterFunc intersect) 
+  RTCORE_API void rtcSetOcclusionFilterFunction (RTCGeometry hgeometry, RTCFilterFunc intersect) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetOcclusionFilterFunction);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setOcclusionFilterFunction(intersect);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setOcclusionFilterFunction(intersect);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetOcclusionFilterFunction4 (RTCScene hscene, unsigned geomID, RTCFilterFunc4 filter4) 
+  RTCORE_API void rtcSetOcclusionFilterFunction4 (RTCGeometry hgeometry, RTCFilterFunc4 filter4) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetOcclusionFilterFunction4);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setOcclusionFilterFunction4(filter4);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setOcclusionFilterFunction4(filter4);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetOcclusionFilterFunction8 (RTCScene hscene, unsigned geomID, RTCFilterFunc8 filter8) 
+  RTCORE_API void rtcSetOcclusionFilterFunction8 (RTCGeometry hgeometry, RTCFilterFunc8 filter8) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetOcclusionFilterFunction8);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setOcclusionFilterFunction8(filter8);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setOcclusionFilterFunction8(filter8);
+    RTCORE_CATCH_END2(geometry);
   }
   
-  RTCORE_API void rtcSetOcclusionFilterFunction16 (RTCScene hscene, unsigned geomID, RTCFilterFunc16 filter16) 
+  RTCORE_API void rtcSetOcclusionFilterFunction16 (RTCGeometry hgeometry, RTCFilterFunc16 filter16) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetOcclusionFilterFunction16);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setOcclusionFilterFunction16(filter16);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setOcclusionFilterFunction16(filter16);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetOcclusionFilterFunctionN (RTCScene hscene, unsigned geomID, RTCFilterFuncN filterN) 
+  RTCORE_API void rtcSetOcclusionFilterFunctionN (RTCGeometry hgeometry, RTCFilterFuncN filterN) 
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetOcclusionFilterFunctionN);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setOcclusionFilterFunctionN(filterN);
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->setOcclusionFilterFunctionN(filterN);
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcInterpolate(RTCScene hscene, unsigned geomID, unsigned primID, float u, float v, 
+  RTCORE_API void rtcInterpolate(RTCGeometry hgeometry, unsigned primID, float u, float v, 
                                  RTCBufferType buffer,
                                  float* P, float* dPdu, float* dPdv, size_t numFloats)
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcInterpolate);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get(geomID)->interpolate(primID,u,v,buffer,P,dPdu,dPdv,nullptr,nullptr,nullptr,numFloats); // this call is on purpose not thread safe
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->interpolate(primID,u,v,buffer,P,dPdu,dPdv,nullptr,nullptr,nullptr,numFloats); // this call is on purpose not thread safe
+    RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcInterpolate2(RTCScene hscene, unsigned geomID, unsigned primID, float u, float v, 
+  RTCORE_API void rtcInterpolate2(RTCGeometry hgeometry, unsigned primID, float u, float v, 
                                   RTCBufferType buffer,
                                   float* P, float* dPdu, float* dPdv, 
                                   float* ddPdudu, float* ddPdvdv, float* ddPdudv, 
                                   size_t numFloats)
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcInterpolate);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get(geomID)->interpolate(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats); // this call is on purpose not thread safe
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->interpolate(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats); // this call is on purpose not thread safe
+    RTCORE_CATCH_END2(geometry);
   }
 
 
 #if defined (EMBREE_RAY_PACKETS)
-  RTCORE_API void rtcInterpolateN(RTCScene hscene, unsigned geomID, 
+  RTCORE_API void rtcInterpolateN(RTCGeometry hgeometry, 
                                   const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
                                   RTCBufferType buffer,
                                   float* P, float* dPdu, float* dPdv, size_t numFloats)
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcInterpolateN);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get(geomID)->interpolateN(valid_i,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,nullptr,nullptr,nullptr,numFloats); // this call is on purpose not thread safe
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->interpolateN(valid_i,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,nullptr,nullptr,nullptr,numFloats); // this call is on purpose not thread safe
+    RTCORE_CATCH_END2(geometry);
   }
 #endif
 
 #if defined (EMBREE_RAY_PACKETS)
-  RTCORE_API void rtcInterpolateN2(RTCScene hscene, unsigned geomID, 
+  RTCORE_API void rtcInterpolateN2(RTCGeometry hgeometry, 
                                    const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
                                    RTCBufferType buffer,
                                    float* P, float* dPdu, float* dPdv, 
                                    float* ddPdudu, float* ddPdvdv, float* ddPdudv, 
                                    size_t numFloats)
   {
-    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcInterpolateN);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    scene->get(geomID)->interpolateN(valid_i,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats); // this call is on purpose not thread safe
-    RTCORE_CATCH_END2(scene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->interpolateN(valid_i,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats); // this call is on purpose not thread safe
+    RTCORE_CATCH_END2(geometry);
   }
 #endif
+
+  RTCORE_API unsigned int rtcAttachGeometry (RTCScene hscene, RTCGeometry hgeometry)
+  {
+    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcAttachGeometry);
+    RTCORE_VERIFY_HANDLE(hscene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    if (scene->device != geometry->device)
+      throw_RTCError(RTC_INVALID_ARGUMENT,"inputs are from different devices");
+    if (scene->isStatic() && (geometry->flags != RTC_GEOMETRY_STATIC))
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
+    return scene->bind(RTC_INVALID_GEOMETRY_ID,geometry);
+    RTCORE_CATCH_END2(scene);
+    return -1;
+  }
+
+  RTCORE_API unsigned int rtcAttachGeometryByID (RTCScene hscene, RTCGeometry hgeometry, unsigned int geomID)
+  {
+    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcAttachGeometryByID);
+    RTCORE_VERIFY_HANDLE(hscene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    RTCORE_VERIFY_GEOMID(geomID);
+    if (scene->device != geometry->device)
+      throw_RTCError(RTC_INVALID_ARGUMENT,"inputs are from different devices");
+    if (scene->isStatic() && (geometry->flags != RTC_GEOMETRY_STATIC))
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
+    return scene->bind(geomID,geometry);
+    RTCORE_CATCH_END2(scene);
+    return -1;
+  }
+
+  RTCORE_API void rtcDetachGeometry (RTCScene hscene, unsigned int geomID)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcDetachGeometry);
+    RTCORE_VERIFY_HANDLE(hscene);
+    RTCORE_VERIFY_GEOMID(geomID);
+    scene->detachGeometry(geomID);
+    RTCORE_CATCH_END2(scene);
+  }
+
+  RTCORE_API void rtcReleaseGeometry (RTCGeometry hgeometry)
+  {
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcReleaseGeometry);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    geometry->refDec();
+    RTCORE_CATCH_END2(geometry);
+  }
 }

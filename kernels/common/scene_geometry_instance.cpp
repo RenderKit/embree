@@ -19,8 +19,8 @@
 
 namespace embree
 {
-  GeometryInstance::GeometryInstance (Scene* scene, Ref<Geometry> geom) 
-    : Geometry(scene,Type(geom->type | INSTANCE), 1, geom->numTimeSteps, geom->flags), local2world(one), world2local(one), geom(geom) 
+  GeometryInstance::GeometryInstance (Device* device, Ref<Geometry> geom) 
+    : Geometry(device,Type(geom->type | INSTANCE), 1, geom->numTimeSteps, geom->flags), local2world(one), world2local(one), geom(geom) 
   {
     enabling();
   }
@@ -97,8 +97,8 @@ namespace embree
     world2local = rcp(xfm);
   }
 
-  GeometryGroup::GeometryGroup (Scene* scene, RTCGeometryFlags gflags, const std::vector<Ref<Geometry>>& geometries) 
-    : Geometry(scene,GROUP, geometries.size(), 1, gflags), geometries(geometries)
+  GeometryGroup::GeometryGroup (Device* device, RTCGeometryFlags gflags, const std::vector<Ref<Geometry>>& geometries) 
+    : Geometry(device,GROUP, geometries.size(), 1, gflags), geometries(geometries)
   {
     enabling();
   }

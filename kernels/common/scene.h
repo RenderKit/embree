@@ -131,35 +131,8 @@ namespace embree
     /*! clears the scene */
     void clear();
 
-    /*! Creates new user geometry. */
-    unsigned int newUserGeometry (unsigned int geomID, RTCGeometryFlags gflags, size_t items, size_t numTimeSteps);
-
-    /*! Creates a new scene instance. */
-    unsigned int newInstance (unsigned int geomID, Scene* scene, size_t numTimeSteps);
-
-    /*! Creates a new geometry instance. */
-    unsigned int newGeometryInstance (unsigned int geomID, Ref<Geometry> geom);
-
-    /*! Creates a new geometry group. */
-    unsigned int newGeometryGroup (unsigned int geomID, RTCGeometryFlags gflags, const std::vector<Ref<Geometry>>& geometries);
-
-    /*! Creates a new triangle mesh. */
-    unsigned int newTriangleMesh (unsigned int geomID, RTCGeometryFlags flags, size_t maxTriangles, size_t maxVertices, size_t numTimeSteps);
-
-    /*! Creates a new quad mesh. */
-    unsigned int newQuadMesh (unsigned int geomID, RTCGeometryFlags flags, size_t maxQuads, size_t maxVertices, size_t numTimeSteps);
-
-    /*! Creates a new collection of quadratic bezier curves. */
-    unsigned int newCurves (unsigned int geomID, NativeCurves::SubType subtype, NativeCurves::Basis basis, RTCGeometryFlags flags, size_t maxCurves, size_t maxVertices, size_t numTimeSteps);
-
-    /*! Creates a new collection of line segments. */
-    unsigned int newLineSegments (unsigned int geomID, RTCGeometryFlags flags, size_t maxSegments, size_t maxVertices, size_t numTimeSteps);
-
-    /*! Creates a new subdivision mesh. */
-    unsigned int newSubdivisionMesh (unsigned int geomID, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps);
-
-    /*! deletes some geometry */
-    void deleteGeometry(size_t geomID);
+    /*! detaches some geometry */
+    void detachGeometry(size_t geomID);
 
     /*! Builds acceleration structure for the scene. */
     void commit (size_t threadIndex, size_t threadCount, bool useThreadPool);
@@ -172,7 +145,7 @@ namespace embree
     __forceinline size_t size() const { return geometries.size(); }
     
     /* bind geometry to the scene */
-    unsigned int bind (unsigned geomID, Geometry* geometry);
+    unsigned int bind (unsigned geomID, Ref<Geometry> geometry);
     
     /* determines of the scene is ready to get build */
     bool ready() { return numMappedBuffers == 0; }

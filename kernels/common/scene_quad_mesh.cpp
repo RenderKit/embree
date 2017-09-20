@@ -21,13 +21,13 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  QuadMesh::QuadMesh (Scene* scene, RTCGeometryFlags flags, size_t numQuads, size_t numVertices, size_t numTimeSteps)
-    : Geometry(scene,QUAD_MESH,numQuads,numTimeSteps,flags)
+  QuadMesh::QuadMesh (Device* device, RTCGeometryFlags flags, size_t numQuads, size_t numVertices, size_t numTimeSteps)
+    : Geometry(device,QUAD_MESH,numQuads,numTimeSteps,flags)
   {
-    quads.init(scene->device,numQuads,sizeof(Quad));
+    quads.init(device,numQuads,sizeof(Quad));
     vertices.resize(numTimeSteps);
     for (size_t i=0; i<numTimeSteps; i++) {
-      vertices[i].init(scene->device,numVertices,sizeof(Vec3fa));
+      vertices[i].init(device,numVertices,sizeof(Vec3fa));
     }
     enabling();
   }
@@ -79,7 +79,7 @@ namespace embree
     else if (type >= RTC_USER_VERTEX_BUFFER0 && type < RTC_USER_VERTEX_BUFFER0+RTC_MAX_USER_VERTEX_BUFFERS)
     {
       if (bid >= userbuffers.size()) userbuffers.resize(bid+1);
-      userbuffers[bid] = APIBuffer<char>(scene->device,numVertices(),stride);
+      userbuffers[bid] = APIBuffer<char>(device,numVertices(),stride);
       userbuffers[bid].set(ptr,offset,stride,size);  
       userbuffers[bid].checkPadding16();
     }
@@ -233,8 +233,8 @@ namespace embree
 
   namespace isa
   {
-    QuadMesh* createQuadMesh(Scene* scene, RTCGeometryFlags flags, size_t numQuads, size_t numVertices, size_t numTimeSteps) {
-      return new QuadMeshISA(scene,flags,numQuads,numVertices,numTimeSteps);
+    QuadMesh* createQuadMesh(Device* device, RTCGeometryFlags flags, size_t numQuads, size_t numVertices, size_t numTimeSteps) {
+      return new QuadMeshISA(device,flags,numQuads,numVertices,numTimeSteps);
     }
   }
 }

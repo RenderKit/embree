@@ -61,7 +61,7 @@ namespace embree
   public:
 
     /*! subdiv mesh construction */
-    SubdivMesh(Scene* scene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
+    SubdivMesh(Device* device, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
                size_t numCreases, size_t numCorners, size_t numHoles, size_t numTimeSteps);
 
   public:
@@ -324,8 +324,8 @@ namespace embree
   {
     struct SubdivMeshISA : public SubdivMesh
     {
-      SubdivMeshISA (Scene* scene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numCreases, size_t numCorners, size_t numHoles, size_t numTimeSteps)
-        : SubdivMesh(scene,flags,numFaces,numEdges,numVertices,numCreases,numCorners,numHoles,numTimeSteps) {}
+      SubdivMeshISA (Device* device, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numCreases, size_t numCorners, size_t numHoles, size_t numTimeSteps)
+        : SubdivMesh(device,flags,numFaces,numEdges,numVertices,numCreases,numCorners,numHoles,numTimeSteps) {}
 
       void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
       void interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
@@ -338,5 +338,5 @@ namespace embree
     };
   }
 
-  DECLARE_ISA_FUNCTION(SubdivMesh*, createSubdivMesh, Scene* COMMA RTCGeometryFlags COMMA size_t COMMA size_t COMMA size_t COMMA size_t COMMA size_t COMMA size_t COMMA size_t);
+  DECLARE_ISA_FUNCTION(SubdivMesh*, createSubdivMesh, Device* COMMA RTCGeometryFlags COMMA size_t COMMA size_t COMMA size_t COMMA size_t COMMA size_t COMMA size_t COMMA size_t);
 };

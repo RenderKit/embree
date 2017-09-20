@@ -28,15 +28,15 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,InstanceIntersectorN);
   }
 
-  Instance::Instance (Scene* scene, Scene* object, size_t numTimeSteps) 
-    : AccelSet(scene,RTC_GEOMETRY_STATIC,1,numTimeSteps), object(object)
+  Instance::Instance (Device* device, Scene* object, size_t numTimeSteps) 
+    : AccelSet(device,RTC_GEOMETRY_STATIC,1,numTimeSteps), object(object)
   {
     world2local0 = one;
     for (size_t i=0; i<numTimeSteps; i++) local2world[i] = one;
     intersectors.ptr = this;
-    boundsFunc = scene->device->instance_factory->InstanceBoundsFunc();
+    boundsFunc = device->instance_factory->InstanceBoundsFunc();
     boundsFuncUserPtr = nullptr;
-    intersectors.intersectorN = scene->device->instance_factory->InstanceIntersectorN();
+    intersectors.intersectorN = device->instance_factory->InstanceIntersectorN();
   }
   
   void Instance::setTransform(const AffineSpace3fa& xfm, size_t timeStep)

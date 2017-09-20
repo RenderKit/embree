@@ -19,8 +19,8 @@
 
 namespace embree
 {
-  UserGeometry::UserGeometry (Scene* scene, RTCGeometryFlags gflags, size_t items, size_t numTimeSteps) 
-    : AccelSet(scene,gflags,items,numTimeSteps) {}
+  UserGeometry::UserGeometry (Device* device, RTCGeometryFlags gflags, size_t items, size_t numTimeSteps) 
+    : AccelSet(device,gflags,items,numTimeSteps) {}
   
   void UserGeometry::setUserData (void* ptr) {
     intersectors.ptr = ptr;

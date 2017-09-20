@@ -19,8 +19,8 @@
 
 namespace embree
 {
-  Geometry::Geometry (Scene* scene, Type type, size_t numPrimitives, size_t numTimeSteps, RTCGeometryFlags flags) 
-    : scene(scene), geomID(0), type(type), 
+  Geometry::Geometry (Device* device, Type type, size_t numPrimitives, size_t numTimeSteps, RTCGeometryFlags flags) 
+    : device(device), scene(nullptr), geomID(0), type(type), 
       numPrimitives(numPrimitives), numPrimitivesChanged(false),
       numTimeSteps(unsigned(numTimeSteps)), fnumTimeSegments(float(numTimeSteps-1)), flags(flags),
       enabled(true), modified(true), userPtr(nullptr), mask(-1), used(1),

@@ -27,29 +27,29 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  SubdivMesh::SubdivMesh (Scene* scene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
+  SubdivMesh::SubdivMesh (Device* device, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
 			  size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps)
-    : Geometry(scene,SUBDIV_MESH,numFaces,numTimeSteps,flags), 
+    : Geometry(device,SUBDIV_MESH,numFaces,numTimeSteps,flags), 
       displFunc(nullptr),
       displBounds(empty),
       tessellationRate(2.0f),
       numHalfEdges(0),
-      faceStartEdge(scene->device,0),
-      invalid_face(scene->device,0)
+      faceStartEdge(device,0),
+      invalid_face(device,0)
   {
     vertices.resize(numTimeSteps);
     vertex_buffer_tags.resize(numTimeSteps);
     for (size_t i=0; i<numTimeSteps; i++)
-      vertices[i].init(scene->device,numVertices,sizeof(Vec3fa));
+      vertices[i].init(device,numVertices,sizeof(Vec3fa));
 
     faceVertices.init(scene->device,numFaces,sizeof(unsigned int));
-    holes.init(scene->device,numHoles,sizeof(int));
-    levels.init(scene->device,numEdges,sizeof(float));
+    holes.init(device,numHoles,sizeof(int));
+    levels.init(device,numEdges,sizeof(float));
 
-    edge_creases.init(scene->device,numEdgeCreases,2*sizeof(unsigned int));
-    edge_crease_weights.init(scene->device,numEdgeCreases,sizeof(float));
-    vertex_creases.init(scene->device,numVertexCreases,sizeof(unsigned int));
-    vertex_crease_weights.init(scene->device,numVertexCreases,sizeof(float));
+    edge_creases.init(device,numEdgeCreases,2*sizeof(unsigned int));
+    edge_crease_weights.init(device,numEdgeCreases,sizeof(float));
+    vertex_creases.init(device,numVertexCreases,sizeof(unsigned int));
+    vertex_crease_weights.init(device,numVertexCreases,sizeof(float));
 
     topology.resize(1);
     topology[0] = Topology(this,numEdges);
@@ -130,7 +130,7 @@ namespace embree
         userbuffers.resize(bid+1);
         user_buffer_tags.resize(bid+1);
       }
-      userbuffers[bid] = APIBuffer<char>(scene->device,numVertices(),stride); // FIXME: numVertices for compatibility
+      userbuffers[bid] = APIBuffer<char>(device,numVertices(),stride); // FIXME: numVertices for compatibility
       userbuffers[bid].set(ptr,offset,stride,size);  
       userbuffers[bid].checkPadding16();
     }
@@ -349,9 +349,9 @@ namespace embree
   }
 
   SubdivMesh::Topology::Topology(SubdivMesh* mesh, size_t numEdges)
-    : mesh(mesh), subdiv_mode(RTC_SUBDIV_SMOOTH_BOUNDARY), halfEdges(mesh->scene->device,0)
+    : mesh(mesh), subdiv_mode(RTC_SUBDIV_SMOOTH_BOUNDARY), halfEdges(mesh->device,0)
   {
-    vertexIndices.init(mesh->scene->device,numEdges,sizeof(unsigned int));
+    vertexIndices.init(mesh->device,numEdges,sizeof(unsigned int));
   }
   
   void SubdivMesh::Topology::setSubdivisionMode (RTCSubdivisionMode mode)
@@ -717,7 +717,7 @@ namespace embree
     double t1 = getSeconds();
 
     /* print statistics in verbose mode */
-    if (scene->device->verbosity(2)) {
+    if (device->verbosity(2)) {
       std::cout << "half edge generation = " << 1000.0*(t1-t0) << "ms, " << 1E-6*double(numHalfEdges)/(t1-t0) << "M/s" << std::endl;
       printStatistics();
     }
@@ -751,10 +751,10 @@ namespace embree
 
   namespace isa
   {
-    SubdivMesh* createSubdivMesh(Scene* scene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
+    SubdivMesh* createSubdivMesh(Device* device, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
                                  size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps) 
     {
-      return new SubdivMeshISA(scene,flags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
+      return new SubdivMeshISA(device,flags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
     }
     
     void SubdivMeshISA::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 

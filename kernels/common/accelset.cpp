@@ -19,8 +19,8 @@
 
 namespace embree
 {
-  AccelSet::AccelSet (Scene* scene, RTCGeometryFlags gflags, size_t numItems, size_t numTimeSteps) 
-    : Geometry(scene,Geometry::USER_GEOMETRY,numItems,numTimeSteps,gflags), boundsFunc(nullptr), boundsFuncUserPtr(nullptr)
+  AccelSet::AccelSet (Device* device, RTCGeometryFlags gflags, size_t numItems, size_t numTimeSteps) 
+    : Geometry(device,Geometry::USER_GEOMETRY,numItems,numTimeSteps,gflags), boundsFunc(nullptr), boundsFuncUserPtr(nullptr)
   {
     intersectors.ptr = nullptr; 
     enabling();

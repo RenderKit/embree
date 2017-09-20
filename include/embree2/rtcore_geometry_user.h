@@ -115,84 +115,77 @@ typedef void (*RTCOccludedFuncN) (const int* valid,                      /*! poi
  *  representation of the geometry, is passed to each intersect and
  *  occluded function invokation, as well as the index of the geometry
  *  of the set to intersect. */
-RTCORE_API unsigned rtcNewUserGeometry (RTCScene scene,          /*!< the scene the user geometry set is created in */
-                                         RTCGeometryFlags gflags, //!< geometry flags
-                                         size_t numGeometries,    /*!< the number of geometries contained in the set */
-                                         size_t numTimeSteps = 1  /*!< number of motion blur time steps */);
-
-RTCORE_API unsigned rtcNewUserGeometry4 (RTCScene scene,          /*!< the scene the user geometry set is created in */
-                                         RTCGeometryFlags gflags, //!< geometry flags
-                                         size_t numGeometries,    /*!< the number of geometries contained in the set */
-                                         size_t numTimeSteps = 1, /*!< number of motion blur time steps */
-                                         unsigned int geomID = -1 /*!< optional geometry ID to assign */
+RTCORE_API RTCGeometry rtcNewUserGeometry (RTCDevice device,
+                                           RTCGeometryFlags gflags, //!< geometry flags
+                                           size_t numGeometries,    /*!< the number of geometries contained in the set */
+                                           size_t numTimeSteps = 1  /*!< number of motion blur time steps */
   );
-
 
 /*! Sets the bounding function to calculate bounding boxes of the user
  *  geometry items when building spatial index structures. The
  *  calculated bounding box have to be conservative and should be
  *  tight. */
-RTCORE_API void rtcSetBoundsFunction (RTCScene scene, unsigned geomID, RTCBoundsFunc bounds, void* userPtr);
+RTCORE_API void rtcSetBoundsFunction (RTCGeometry hgeometry, RTCBoundsFunc bounds, void* userPtr);
 
 /*! Set intersect function for single rays. The rtcIntersect function
  *  will call the passed function for intersecting the user
  *  geometry. */
-RTCORE_API void rtcSetIntersectFunction (RTCScene scene, unsigned geomID, RTCIntersectFunc intersect);
+RTCORE_API void rtcSetIntersectFunction (RTCGeometry hgeometry, RTCIntersectFunc intersect);
 
 /*! Set intersect function for ray packets of size 4. The
  *  rtcIntersect4 function will call the passed function for
  *  intersecting the user geometry. */
-RTCORE_API void rtcSetIntersectFunction4 (RTCScene scene, unsigned geomID, RTCIntersectFunc4 intersect4);
+RTCORE_API void rtcSetIntersectFunction4 (RTCGeometry hgeometry, RTCIntersectFunc4 intersect4);
 
 /*! Set intersect function for ray packets of size 8. The
  *  rtcIntersect8 function will call the passed function for
  *  intersecting the user geometry.*/
-RTCORE_API void rtcSetIntersectFunction8 (RTCScene scene, unsigned geomID, RTCIntersectFunc8 intersect8);
+RTCORE_API void rtcSetIntersectFunction8 (RTCGeometry hgeometry, RTCIntersectFunc8 intersect8);
 
 /*! Set intersect function for ray packets of size 16. The
  *  rtcIntersect16 function will call the passed function for
  *  intersecting the user geometry. */
-RTCORE_API void rtcSetIntersectFunction16 (RTCScene scene, unsigned geomID, RTCIntersectFunc16 intersect16);
+RTCORE_API void rtcSetIntersectFunction16 (RTCGeometry hgeometry, RTCIntersectFunc16 intersect16);
 
 /*! Set intersect function for stream of rays. The rtcIntersectN function
  *  will call the passed function for intersecting the user
  *  geometry. */
-RTCORE_API void rtcSetIntersectFunction1Mp (RTCScene scene, unsigned geomID, RTCIntersectFunc1Mp intersect);
+RTCORE_API void rtcSetIntersectFunction1Mp (RTCGeometry hgeometry, RTCIntersectFunc1Mp intersect);
 
 /*! Set intersect function for ray packets of size N. The rtcIntersectN function
  *  will call the passed function for intersecting the user
  *  geometry. */
-RTCORE_API void rtcSetIntersectFunctionN (RTCScene scene, unsigned geomID, RTCIntersectFuncN intersect);
+RTCORE_API void rtcSetIntersectFunctionN (RTCGeometry hgeometry, RTCIntersectFuncN intersect);
 
 /*! Set occlusion function for single rays. The rtcOccluded function
  *  will call the passed function for intersecting the user
  *  geometry. */
-RTCORE_API void rtcSetOccludedFunction (RTCScene scene, unsigned geomID, RTCOccludedFunc occluded);
+RTCORE_API void rtcSetOccludedFunction (RTCGeometry hgeometry, RTCOccludedFunc occluded);
 
 /*! Set occlusion function for ray packets of size 4. The rtcOccluded4
  *  function will call the passed function for intersecting the user
  *  geometry. */
-RTCORE_API void rtcSetOccludedFunction4 (RTCScene scene, unsigned geomID, RTCOccludedFunc4 occluded4);
+RTCORE_API void rtcSetOccludedFunction4 (RTCGeometry hgeometry, RTCOccludedFunc4 occluded4);
 
 /*! Set occlusion function for ray packets of size 8. The rtcOccluded8
  *  function will call the passed function for intersecting the user
  *  geometry. */
-RTCORE_API void rtcSetOccludedFunction8 (RTCScene scene, unsigned geomID, RTCOccludedFunc8 occluded8);
+RTCORE_API void rtcSetOccludedFunction8 (RTCGeometry hgeometry, RTCOccludedFunc8 occluded8);
 
 /*! Set occlusion function for ray packets of size 16. The
  *  rtcOccluded16 function will call the passed function for
  *  intersecting the user geometry. */
-RTCORE_API void rtcSetOccludedFunction16 (RTCScene scene, unsigned geomID, RTCOccludedFunc16 occluded16);
+RTCORE_API void rtcSetOccludedFunction16 (RTCGeometry hgeometry, RTCOccludedFunc16 occluded16);
 
 /*! Set occlusion function for a stream of single rays. The rtcOccludedN function
  *  will call the passed function for intersecting the user
  *  geometry. */
-RTCORE_API void rtcSetOccludedFunction1Mp (RTCScene scene, unsigned geomID, RTCOccludedFunc1Mp occluded);
+RTCORE_API void rtcSetOccludedFunction1Mp (RTCGeometry hgeometry, RTCOccludedFunc1Mp occluded);
 
 /*! Set occlusion function for ray packets of size N. The rtcOccludedN function
  *  will call the passed function for intersecting the user
  *  geometry. */
-RTCORE_API void rtcSetOccludedFunctionN (RTCScene scene, unsigned geomID, RTCOccludedFuncN occluded);
+RTCORE_API void rtcSetOccludedFunctionN (RTCGeometry hgeometry, RTCOccludedFuncN occluded);
 
 
 /*! @} */

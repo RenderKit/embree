@@ -139,7 +139,7 @@ namespace embree
     public:
       
       /*! construction */
-      AccelSet (Scene* scene, RTCGeometryFlags gflags, size_t items, size_t numTimeSteps);
+      AccelSet (Device* device, RTCGeometryFlags gflags, size_t items, size_t numTimeSteps);
       
       /*! makes the acceleration structure immutable */
       virtual void immutable () {}
