@@ -198,6 +198,9 @@ export void device_init (uniform int8* uniform cfg)
 /* task that renders a single screen tile */
 Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
+  uniform RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  
   /* initialize ray */
   RTCRay ray;
   ray.org = make_Vec3f(camera.xfm.p);
@@ -210,7 +213,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   ray.time = 0;
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  rtcIntersectEx(g_scene,&context,ray);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -248,7 +251,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     shadow.time = 0;
 
     /* trace shadow ray */
-    rtcOccluded(g_scene,shadow);
+    rtcOccludedEx(g_scene,&context,shadow);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

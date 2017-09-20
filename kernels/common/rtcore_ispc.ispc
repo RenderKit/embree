@@ -89,27 +89,8 @@ RTCScene rtcDeviceNewScene (RTCDevice device, uniform RTCSceneFlags flags, unifo
   return ispcNewScene2(device,flags,aflags);
 }
 
-void rtcIntersect1 (RTCScene scene, uniform RTCRay1& ray) {
-  ispcIntersect1(scene,NULL,ray);
-}
-
 void rtcIntersect1Ex (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1& ray) {
   ispcIntersect1(scene,context,ray);
-}
-
-void rtcIntersect (RTCScene scene, varying RTCRay& ray) 
-{
-  varying bool mask = __mask;
-  unmasked {
-    varying int imask = mask ? -1 : 0;
-  }
-
-  if (sizeof(varying float) == 16)
-    ispcIntersect4(&imask,scene,NULL,&ray);
-  else if (sizeof(varying float) == 32)
-    ispcIntersect8(&imask,scene,NULL,&ray);
-  else if (sizeof(varying float) == 64)
-    ispcIntersect16(&imask,scene,NULL,&ray);
 }
 
 void rtcIntersectEx (RTCScene scene, const uniform RTCIntersectContext* uniform context, varying RTCRay& ray) 
@@ -147,27 +128,8 @@ void rtcIntersectNp (RTCScene scene, const uniform RTCIntersectContext* uniform 
   ispcIntersectNp(scene,context,rays,N);
 }
 
-void rtcOccluded1 (RTCScene scene, uniform RTCRay1& ray) {
-  ispcOccluded1(scene,NULL,ray);
-}
-
 void rtcOccluded1Ex (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1& ray) {
   ispcOccluded1(scene,context,ray);
-}
-
-void rtcOccluded (RTCScene scene, varying RTCRay& ray) 
-{
-  varying bool mask = __mask;
-  unmasked {
-    varying int imask = mask ? -1 : 0;
-  }
-
-  if (sizeof(varying float) == 16)
-    ispcOccluded4(&imask,scene,NULL,&ray);
-  else if (sizeof(varying float) == 32)
-    ispcOccluded8(&imask,scene,NULL,&ray);
-  else if (sizeof(varying float) == 64)
-    ispcOccluded16(&imask,scene,NULL,&ray);
 }
 
 void rtcOccludedEx (RTCScene scene, const uniform RTCIntersectContext* uniform context, varying RTCRay& ray) 

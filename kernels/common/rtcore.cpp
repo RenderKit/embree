@@ -233,25 +233,6 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
   
-  RTCORE_API void rtcIntersect (RTCScene hscene, RTCRay& ray) 
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcIntersect);
-#if defined(DEBUG)
-    RTCORE_VERIFY_HANDLE(hscene);
-    if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)&ray) & 0x0F        ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
-#endif
-    STAT3(normal.travs,1,1,1);
-    IntersectContext context(scene,nullptr);
-    scene->intersectors.intersect(ray,&context);
-#if defined(DEBUG)
-    ((Ray&)ray).verifyHit();
-#endif
-    RTCORE_CATCH_END2(scene);
-  }
-
   RTCORE_API void rtcIntersect1Ex (RTCScene hscene, const RTCIntersectContext* user_context, RTCRay& ray) 
   {
     Scene* scene = (Scene*) hscene;
@@ -267,29 +248,6 @@ namespace embree
     scene->intersectors.intersect(ray,&context);
 #if defined(DEBUG)
     ((Ray&)ray).verifyHit();
-#endif
-    RTCORE_CATCH_END2(scene);
-  }
-
-  RTCORE_API void rtcIntersect4 (const void* valid, RTCScene hscene, RTCRay4& ray) 
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcIntersect4);
-
-#if defined(EMBREE_TARGET_SIMD4) && defined (EMBREE_RAY_PACKETS)
-#if defined(DEBUG)
-    RTCORE_VERIFY_HANDLE(hscene);
-    if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)valid) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "mask not aligned to 16 bytes");   
-    if (((size_t)&ray ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
-#endif
-    STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(normal.travs,cnt,cnt,cnt);
-    IntersectContext context(scene,nullptr);
-    scene->intersectors.intersect4(valid,ray,&context);
-#else
-    throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect4 not supported");  
 #endif
     RTCORE_CATCH_END2(scene);
   }
@@ -317,29 +275,6 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
   
-  RTCORE_API void rtcIntersect8 (const void* valid, RTCScene hscene, RTCRay8& ray) 
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcIntersect8);
-
-#if defined(EMBREE_TARGET_SIMD8) && defined (EMBREE_RAY_PACKETS)
-#if defined(DEBUG)
-    RTCORE_VERIFY_HANDLE(hscene);
-    if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)valid) & 0x1F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "mask not aligned to 32 bytes");   
-    if (((size_t)&ray ) & 0x1F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 32 bytes");   
-#endif
-    STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(normal.travs,cnt,cnt,cnt);
-    IntersectContext context(scene,nullptr);
-    scene->intersectors.intersect8(valid,ray,&context);
-#else
-    throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect8 not supported");      
-#endif
-    RTCORE_CATCH_END2(scene);
-  }
-
   RTCORE_API void rtcIntersect8Ex (const void* valid, RTCScene hscene, const RTCIntersectContext* user_context, RTCRay8& ray) 
   {
     Scene* scene = (Scene*) hscene;
@@ -364,30 +299,6 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
   
-  RTCORE_API void rtcIntersect16 (const void* valid, RTCScene hscene, RTCRay16& ray) 
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcIntersect16);
-
-#if defined(EMBREE_TARGET_SIMD16) && defined (EMBREE_RAY_PACKETS)
-#if defined(DEBUG)
-    RTCORE_VERIFY_HANDLE(hscene);
-    if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)valid) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "mask not aligned to 64 bytes");   
-    if (((size_t)&ray ) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
-#endif
-    STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(normal.travs,cnt,cnt,cnt);
-
-    IntersectContext context(scene,nullptr);
-    scene->intersectors.intersect16(valid,ray,&context);
-#else
-    throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect16 not supported");
-#endif
-    RTCORE_CATCH_END2(scene);
-  }
-
   RTCORE_API void rtcIntersect16Ex (const void* valid, RTCScene hscene, const RTCIntersectContext* user_context, RTCRay16& ray) 
   {
     Scene* scene = (Scene*) hscene;
@@ -550,22 +461,6 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
   
-  RTCORE_API void rtcOccluded (RTCScene hscene, RTCRay& ray) 
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcOccluded);
-    STAT3(shadow.travs,1,1,1);
-#if defined(DEBUG)
-    RTCORE_VERIFY_HANDLE(hscene);
-    if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)&ray) & 0x0F        ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
-#endif
-    IntersectContext context(scene,nullptr);
-    scene->intersectors.occluded(ray,&context);
-    RTCORE_CATCH_END2(scene);
-  }
-
   RTCORE_API void rtcOccluded1Ex (RTCScene hscene, const RTCIntersectContext* user_context, RTCRay& ray) 
   {
     Scene* scene = (Scene*) hscene;
@@ -582,29 +477,6 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
   
-  RTCORE_API void rtcOccluded4 (const void* valid, RTCScene hscene, RTCRay4& ray) 
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcOccluded4);
-
-#if defined(EMBREE_TARGET_SIMD4) && defined (EMBREE_RAY_PACKETS)
-#if defined(DEBUG)
-    RTCORE_VERIFY_HANDLE(hscene);
-    if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)valid) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "mask not aligned to 16 bytes");   
-    if (((size_t)&ray ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
-#endif
-    STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(shadow.travs,cnt,cnt,cnt);
-    IntersectContext context(scene,nullptr);
-    scene->intersectors.occluded4(valid,ray,&context);
-#else
-    throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded4 not supported");
-#endif
-    RTCORE_CATCH_END2(scene);
-  }
-
   RTCORE_API void rtcOccluded4Ex (const void* valid, RTCScene hscene, const RTCIntersectContext* user_context, RTCRay4& ray) 
   {
     Scene* scene = (Scene*) hscene;
@@ -628,29 +500,6 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
  
-  RTCORE_API void rtcOccluded8 (const void* valid, RTCScene hscene, RTCRay8& ray) 
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcOccluded8);
-
-#if defined(EMBREE_TARGET_SIMD8) && defined (EMBREE_RAY_PACKETS)
-#if defined(DEBUG)
-    RTCORE_VERIFY_HANDLE(hscene);
-    if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)valid) & 0x1F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "mask not aligned to 32 bytes");   
-    if (((size_t)&ray ) & 0x1F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 32 bytes");   
-#endif
-    STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(shadow.travs,cnt,cnt,cnt);
-    IntersectContext context(scene,nullptr);
-    scene->intersectors.occluded8(valid,ray,&context);
-#else
-    throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded8 not supported");
-#endif
-    RTCORE_CATCH_END2(scene);
-  }
-
   RTCORE_API void rtcOccluded8Ex (const void* valid, RTCScene hscene, const RTCIntersectContext* user_context, RTCRay8& ray) 
   {
     Scene* scene = (Scene*) hscene;
@@ -675,30 +524,6 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
   
-  RTCORE_API void rtcOccluded16 (const void* valid, RTCScene hscene, RTCRay16& ray) 
-  {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcOccluded16);
-
-#if defined(EMBREE_TARGET_SIMD16) && defined (EMBREE_RAY_PACKETS)
-#if defined(DEBUG)
-    RTCORE_VERIFY_HANDLE(hscene);
-    if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)valid) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "mask not aligned to 64 bytes");   
-    if (((size_t)&ray ) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
-#endif
-    STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
-    STAT3(shadow.travs,cnt,cnt,cnt);
-
-    IntersectContext context(scene,nullptr);
-    scene->intersectors.occluded16(valid,ray,&context);
-#else
-    throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded16 not supported");
-#endif
-    RTCORE_CATCH_END2(scene);
-  }
-
   RTCORE_API void rtcOccluded16Ex (const void* valid, RTCScene hscene, const RTCIntersectContext* user_context, RTCRay16& ray) 
   {
     Scene* scene = (Scene*) hscene;

@@ -71,7 +71,9 @@ Vec3f renderPixelEyeLight(float x, float y, const uniform ISPCCamera& camera, un
   ray.time = g_debug;
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  uniform RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcIntersectEx(g_scene,&context,ray);
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -124,7 +126,9 @@ Vec3f renderPixelOcclusion(float x, float y, const uniform ISPCCamera& camera, u
   ray.time = g_debug;
 
   /* intersect ray with scene */
-  rtcOccluded(g_scene,ray);
+  uniform RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcOccludedEx(g_scene,&context,ray);
   RayStats_addRay(stats);
 
   /* return black if nothing hit */
@@ -179,7 +183,9 @@ Vec3f renderPixelUV(float x, float y, const uniform ISPCCamera& camera, uniform 
   ray.time = g_debug;
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  uniform RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcIntersectEx(g_scene,&context,ray);
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -234,7 +240,9 @@ Vec3f renderPixelTexCoords(float x, float y, const uniform ISPCCamera& camera, u
   ray.time = g_debug;
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  uniform RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcIntersectEx(g_scene,&context,ray);
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -301,7 +309,9 @@ Vec3f renderPixelNg(float x, float y, const uniform ISPCCamera& camera, uniform 
   ray.time = g_debug;
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  uniform RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcIntersectEx(g_scene,&context,ray);
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -364,7 +374,9 @@ Vec3f renderPixelGeomID(float x, float y, const uniform ISPCCamera& camera, unif
   ray.time = g_debug;
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  uniform RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcIntersectEx(g_scene,&context,ray);
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -417,7 +429,9 @@ Vec3f renderPixelGeomIDPrimID(float x, float y, const uniform ISPCCamera& camera
   ray.time = g_debug;
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  uniform RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcIntersectEx(g_scene,&context,ray);
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -471,7 +485,9 @@ Vec3f renderPixelCycles(float x, float y, const uniform ISPCCamera& camera, unif
 
   /* intersect ray with scene */
   uniform int64 c0 = get_tsc();
-  rtcIntersect(g_scene,ray);
+  uniform RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcIntersectEx(g_scene,&context,ray);
   uniform int64 c1 = get_tsc();
   RayStats_addRay(stats);
 
@@ -524,7 +540,9 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& ca
   ray.time = g_debug;
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  uniform RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcIntersectEx(g_scene,&context,ray);
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -557,8 +575,10 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& ca
     shadow.time = g_debug;
 
     /* trace shadow ray */
-    rtcOccluded(g_scene,shadow);
-    //rtcIntersect(g_scene,shadow);
+    uniform RTCIntersectContext context;
+    rtcInitIntersectionContext(&context);
+    rtcOccludedEx(g_scene,&context,shadow);
+    //rtcIntersectEx(g_scene,&context,shadow);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -617,7 +637,9 @@ Vec3f renderPixelDifferentials(float x, float y, const uniform ISPCCamera& camer
   ray.time = g_debug;
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  uniform RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcIntersectEx(g_scene,&context,ray);
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -729,7 +751,9 @@ export uniform bool device_pick(const uniform float x,
   ray.time = g_debug;
 
   /* intersect ray with scene */
-  rtcIntersect1(g_scene,ray);
+  uniform RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  rtcIntersect1Ex(g_scene,&context,ray);
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {

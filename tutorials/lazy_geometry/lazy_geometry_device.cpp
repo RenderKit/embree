@@ -158,6 +158,9 @@ void eagerCreate(LazyGeometry* instance)
 
 void instanceIntersectFunc(void* instance_i, RTCRay& ray, size_t item)
 {
+  RTCIntersectContext context; // FIXME: context should come in as argument
+  rtcInitIntersectionContext(&context);
+  
   LazyGeometry* instance = (LazyGeometry*) instance_i;
 
   /* create the object if it is not yet created */
@@ -167,13 +170,16 @@ void instanceIntersectFunc(void* instance_i, RTCRay& ray, size_t item)
   /* trace ray inside object */
   const int geomID = ray.geomID;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  rtcIntersect(instance->object,ray);
+  rtcIntersect1Ex(instance->object,&context,ray);
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) ray.geomID = geomID;
   else ray.instID = instance->userID;
 }
 
 void instanceOccludedFunc(void* instance_i, RTCRay& ray, size_t item)
 {
+  RTCIntersectContext context; // FIXME: context should come in as argument
+  rtcInitIntersectionContext(&context);
+  
   LazyGeometry* instance = (LazyGeometry*) instance_i;
 
   /* create the object if it is not yet created */
@@ -181,7 +187,7 @@ void instanceOccludedFunc(void* instance_i, RTCRay& ray, size_t item)
     lazyCreate(instance);
 
   /* trace ray inside object */
-  rtcOccluded(instance->object,ray);
+  rtcOccluded1Ex(instance->object,&context,ray);
 }
 
 LazyGeometry* createLazyObject (RTCScene scene, int userID, const Vec3fa& center, const float radius)
@@ -261,6 +267,9 @@ extern "C" void device_init (char* cfg)
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
+  RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  
   /* initialize ray */
   RTCRay ray;
   ray.org = Vec3fa(camera.xfm.p);
@@ -274,7 +283,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   ray.time = 0;
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  rtcIntersect1Ex(g_scene,&context,ray);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -297,7 +306,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     shadow.time = 0;
 
     /* trace shadow ray */
-    rtcOccluded(g_scene,shadow);
+    rtcOccluded1Ex(g_scene,&context,shadow);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

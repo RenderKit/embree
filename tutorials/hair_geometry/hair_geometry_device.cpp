@@ -280,14 +280,14 @@ void occlusionFilter(void* ptr, RTCRay& ray_i)
   if (ne(T,Vec3fa(0.0f))) ray.geomID = RTC_INVALID_GEOMETRY_ID;
 }
 
-Vec3fa occluded(RTCScene scene, RTCRay2& ray)
+Vec3fa occluded(RTCScene scene, RTCIntersectContext* context, RTCRay2& ray)
 {
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.filter = occlusionFilter;
   ray.transparency = Vec3fa(1.0f);
-  rtcOccluded(scene,*((RTCRay*)&ray));
+  rtcOccluded1Ex(scene,context,*((RTCRay*)&ray));
 
   return ray.transparency;
 }
@@ -301,6 +301,9 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   y += RandomSampler_get1D(sampler);
   float time = RandomSampler_get1D(sampler);
 
+  RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  
   /* initialize ray */
   RTCRay2 ray;
   ray.org = Vec3fa(camera.xfm.p);
@@ -324,7 +327,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
       return color;
 
     /* intersect ray with scene and gather all hits */
-    rtcIntersect(g_scene,*((RTCRay*)&ray));
+    rtcIntersect1Ex(g_scene,&context,*((RTCRay*)&ray));
     RayStats_addRay(stats);
 
     /* exit if we hit environment */
@@ -371,7 +374,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     shadow.tnear = tnear_eps;
     shadow.tfar = inf;
     shadow.time = time;
-    Vec3fa T = occluded(g_scene,shadow);
+    Vec3fa T = occluded(g_scene,&context,shadow);
     RayStats_addShadowRay(stats);
     Vec3fa c = AnisotropicBlinn__eval(&brdf,neg(ray.dir),neg(Vec3fa(g_dirlight_direction)));
     color = color + weight*c*T*Vec3fa(g_dirlight_intensity);

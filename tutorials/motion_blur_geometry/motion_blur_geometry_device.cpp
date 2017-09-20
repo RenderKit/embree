@@ -530,6 +530,9 @@ int frameID = 50;
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
+  RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  
   float time = abs((int)(0.01f*frameID) - 0.01f*frameID);
   if (g_time != -1) time = g_time;
 
@@ -546,7 +549,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   ray.time = time;
 
   /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
+  rtcIntersect1Ex(g_scene,&context,ray);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -586,7 +589,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     shadow.time = time;
 
     /* trace shadow ray */
-    rtcOccluded(g_scene,shadow);
+    rtcOccluded1Ex(g_scene,&context,shadow);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

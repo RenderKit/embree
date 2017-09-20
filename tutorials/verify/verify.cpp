@@ -1524,6 +1524,9 @@ namespace embree
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
     {
+      RTCIntersectContext context;
+      rtcInitIntersectionContext(&context);
+  
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       errorHandler(nullptr,rtcDeviceGetError(device));
@@ -1549,10 +1552,10 @@ namespace embree
           RTCRay ray1 = makeRay(Vec3fa(-1,10,+1),Vec3fa(0,-1,0)); 
           RTCRay ray2 = makeRay(Vec3fa(+1,10,-1),Vec3fa(0,-1,0)); 
           RTCRay ray3 = makeRay(Vec3fa(+1,10,+1),Vec3fa(0,-1,0)); 
-          rtcIntersect(scene,ray0);
-          rtcIntersect(scene,ray1);
-          rtcIntersect(scene,ray2);
-          rtcIntersect(scene,ray3);
+          rtcIntersect1Ex(scene,&context,ray0);
+          rtcIntersect1Ex(scene,&context,ray1);
+          rtcIntersect1Ex(scene,&context,ray2);
+          rtcIntersect1Ex(scene,&context,ray3);
           bool ok0 = enabled0 ? ray0.geomID == 0 : ray0.geomID == RTC_INVALID_GEOMETRY_ID;
           bool ok1 = enabled1 ? ray1.geomID == 1 : ray1.geomID == RTC_INVALID_GEOMETRY_ID;
           bool ok2 = enabled2 ? ray2.geomID == 2 : ray2.geomID == RTC_INVALID_GEOMETRY_ID;
@@ -3649,8 +3652,8 @@ namespace embree
           for (size_t x=x0; x<x1; x++) {
             RTCRay ray = fastMakeRay(zero,Vec3f(float(x)*rcpWidth,1,float(y)*rcpHeight));
             switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-            case VARIANT_INTERSECT: rtcIntersect(*scene,ray); break;
-            case VARIANT_OCCLUDED : rtcOccluded (*scene,ray); break;
+            case VARIANT_INTERSECT: rtcIntersect1Ex(*scene,&context,ray); break;
+            case VARIANT_OCCLUDED : rtcOccluded1Ex (*scene,&context,ray); break;
             }
           }
         }
@@ -3668,8 +3671,8 @@ namespace embree
             }
             __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
             switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-            case VARIANT_INTERSECT: rtcIntersect4(valid4,*scene,ray4); break;
-            case VARIANT_OCCLUDED : rtcOccluded4 (valid4,*scene,ray4); break;
+            case VARIANT_INTERSECT: rtcIntersect4Ex(valid4,*scene,&context,ray4); break;
+            case VARIANT_OCCLUDED : rtcOccluded4Ex (valid4,*scene,&context,ray4); break;
             }
           }
         }
@@ -3687,8 +3690,8 @@ namespace embree
             }
             __aligned(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
             switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-            case VARIANT_INTERSECT: rtcIntersect8(valid8,*scene,ray8); break;
-            case VARIANT_OCCLUDED : rtcOccluded8 (valid8,*scene,ray8); break;
+            case VARIANT_INTERSECT: rtcIntersect8Ex(valid8,*scene,&context,ray8); break;
+            case VARIANT_OCCLUDED : rtcOccluded8Ex (valid8,*scene,&context,ray8); break;
             }
           }
         }
@@ -3706,8 +3709,8 @@ namespace embree
             }
             __aligned(64) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
             switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-            case VARIANT_INTERSECT: rtcIntersect16(valid16,*scene,ray16); break;
-            case VARIANT_OCCLUDED : rtcOccluded16 (valid16,*scene,ray16); break;
+            case VARIANT_INTERSECT: rtcIntersect16Ex(valid16,*scene,&context,ray16); break;
+            case VARIANT_OCCLUDED : rtcOccluded16Ex (valid16,*scene,&context,ray16); break;
             }
           }
         }
@@ -3815,8 +3818,8 @@ namespace embree
           RTCRay ray; 
           fastMakeRay(ray,zero,sampler);
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-          case VARIANT_INTERSECT: rtcIntersect(*scene,ray); break;
-          case VARIANT_OCCLUDED : rtcOccluded (*scene,ray); break;
+          case VARIANT_INTERSECT: rtcIntersect1Ex(*scene,&context,ray); break;
+          case VARIANT_OCCLUDED : rtcOccluded1Ex (*scene,&context,ray); break;
           }
         }
         break;
@@ -3830,8 +3833,8 @@ namespace embree
           }
           __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-          case VARIANT_INTERSECT: rtcIntersect4(valid4,*scene,ray4); break;
-          case VARIANT_OCCLUDED : rtcOccluded4 (valid4,*scene,ray4); break;
+          case VARIANT_INTERSECT: rtcIntersect4Ex(valid4,*scene,&context,ray4); break;
+          case VARIANT_OCCLUDED : rtcOccluded4Ex (valid4,*scene,&context,ray4); break;
           }
         }
         break;
@@ -3845,8 +3848,8 @@ namespace embree
           }
           __aligned(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-          case VARIANT_INTERSECT: rtcIntersect8(valid8,*scene,ray8); break;
-          case VARIANT_OCCLUDED : rtcOccluded8 (valid8,*scene,ray8); break;
+          case VARIANT_INTERSECT: rtcIntersect8Ex(valid8,*scene,&context,ray8); break;
+          case VARIANT_OCCLUDED : rtcOccluded8Ex (valid8,*scene,&context,ray8); break;
           }
         }
         break;
@@ -3860,8 +3863,8 @@ namespace embree
           }
           __aligned(64) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-          case VARIANT_INTERSECT: rtcIntersect16(valid16,*scene,ray16); break;
-          case VARIANT_OCCLUDED : rtcOccluded16 (valid16,*scene,ray16); break;
+          case VARIANT_INTERSECT: rtcIntersect16Ex(valid16,*scene,&context,ray16); break;
+          case VARIANT_OCCLUDED : rtcOccluded16Ex (valid16,*scene,&context,ray16); break;
           }
         }
         break;

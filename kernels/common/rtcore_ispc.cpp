@@ -59,8 +59,8 @@ namespace embree
     rtcIntersectNp(scene,context,rays,N);
   }
   
-  extern "C" void ispcOccluded1 (RTCScene scene, RTCRay& ray) {
-    rtcOccluded(scene,ray);
+  extern "C" void ispcOccluded1 (RTCScene scene, const RTCIntersectContext* context, RTCRay& ray) {
+    rtcOccluded1Ex(scene,context,ray);
   }
   
   extern "C" void ispcOccluded4 (const void* valid, RTCScene scene, const RTCIntersectContext* context, RTCRay4& ray) {

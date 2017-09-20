@@ -109,6 +109,9 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   float weight = 1.0f;
   Vec3fa color = Vec3fa(0.0f);
 
+  RTCIntersectContext context;
+  rtcInitIntersectionContext(&context);
+  
   /* initialize ray */
   RTCRay2 primary;
   primary.org = Vec3fa(camera.xfm.p);
@@ -124,7 +127,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   while (true)
   {
     /* intersect ray with scene */
-    rtcIntersect(g_scene,*((RTCRay*)&primary));
+    rtcIntersect1Ex(g_scene,&context,*((RTCRay*)&primary));
     RayStats_addRay(stats);
 
     /* shade pixels */
@@ -152,7 +155,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     shadow.lastHit = 0;
 
     /* trace shadow ray */
-    rtcOccluded(g_scene,*((RTCRay*)&shadow));
+    rtcOccluded1Ex(g_scene,&context,*((RTCRay*)&shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

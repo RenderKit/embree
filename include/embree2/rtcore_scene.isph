@@ -65,6 +65,12 @@ struct RTCIntersectContext
   void* userRayExt;          //!< can be used to pass extended ray data to callbacks
 };
 
+RTCORE_FORCEINLINE void rtcInitIntersectionContext(uniform RTCIntersectContext* context)
+{
+  context->flags = RTC_INTERSECT_INCOHERENT;
+  context->userRayExt = NULL;
+}
+
 /*! \brief Defines an opaque scene type */
 typedef uniform struct __RTCScene {}* uniform RTCScene;
 
@@ -114,18 +120,7 @@ RTCORE_API void rtcGetLinearBounds(RTCScene scene, uniform RTCBounds* uniform bo
 /*! Intersects a uniform ray with the scene. This function can only be
  *  called for scenes with the RTC_INTERSECT_UNIFORM flag set. The ray
  *  has to be aligned to 16 bytes. */
-void rtcIntersect1 (RTCScene scene, uniform RTCRay1& ray);
-
-/*! Intersects a uniform ray with the scene. This function can only be
- *  called for scenes with the RTC_INTERSECT_UNIFORM flag set. The ray
- *  has to be aligned to 16 bytes. */
 void rtcIntersect1Ex (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1& ray);
-
-/*! Intersects a varying ray with the scene. This function can only be
- *  called for scenes with the RTC_INTERSECT_VARYING flag set. The
- *  valid mask and ray have both to be aligned to sizeof(varing float)
- *  bytes. */
-void rtcIntersect (RTCScene scene, varying RTCRay& ray);
 
 /*! Intersects a varying ray with the scene. This function can only be
  *  called for scenes with the RTC_INTERSECT_VARYING flag set. The
@@ -167,18 +162,7 @@ void rtcIntersectNp (RTCScene scene, const uniform RTCIntersectContext* uniform 
 /*! Tests if a uniform ray is occluded by the scene. This function can
  *  only be called for scenes with the RTC_INTERSECT_UNIFORM flag
  *  set. The ray has to be aligned to 16 bytes. */
-void rtcOccluded1 (RTCScene scene, uniform RTCRay1& ray);
-
-/*! Tests if a uniform ray is occluded by the scene. This function can
- *  only be called for scenes with the RTC_INTERSECT_UNIFORM flag
- *  set. The ray has to be aligned to 16 bytes. */
 void rtcOccluded1Ex (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1& ray);
-
-/*! Tests if a varying ray is occluded by the scene. This function can
- *  only be called for scenes with the RTC_INTERSECT_VARYING flag
- *  set. The valid mask and ray have both to be aligned to
- *  sizeof(varing float) bytes. */
-void rtcOccluded (RTCScene scene, varying RTCRay& ray);
 
 /*! Tests if a varying ray is occluded by the scene. This function can
  *  only be called for scenes with the RTC_INTERSECT_VARYING flag
