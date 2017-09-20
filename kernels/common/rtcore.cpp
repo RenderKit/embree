@@ -252,11 +252,11 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API void rtcIntersect4Ex (const void* valid, RTCScene hscene, const RTCIntersectContext* user_context, RTCRay4& ray) 
+  RTCORE_API void rtcIntersect4 (const void* valid, RTCScene hscene, const RTCIntersectContext* user_context, RTCRay4& ray) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcIntersect4Ex);
+    RTCORE_TRACE(rtcIntersect4);
 
 #if defined(EMBREE_TARGET_SIMD4) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
@@ -270,16 +270,16 @@ namespace embree
     IntersectContext context(scene,user_context);
     scene->intersectors.intersect4(valid,ray,&context);
 #else
-    throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect4Ex not supported");  
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect4 not supported");  
 #endif
     RTCORE_CATCH_END2(scene);
   }
   
-  RTCORE_API void rtcIntersect8Ex (const void* valid, RTCScene hscene, const RTCIntersectContext* user_context, RTCRay8& ray) 
+  RTCORE_API void rtcIntersect8 (const void* valid, RTCScene hscene, const RTCIntersectContext* user_context, RTCRay8& ray) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcIntersect8Ex);
+    RTCORE_TRACE(rtcIntersect8);
 
 #if defined(EMBREE_TARGET_SIMD8) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
@@ -294,16 +294,16 @@ namespace embree
     IntersectContext context(scene,user_context);
     scene->intersectors.intersect8(valid,ray,&context);
 #else
-    throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect8Ex not supported");
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect8 not supported");
 #endif
     RTCORE_CATCH_END2(scene);
   }
   
-  RTCORE_API void rtcIntersect16Ex (const void* valid, RTCScene hscene, const RTCIntersectContext* user_context, RTCRay16& ray) 
+  RTCORE_API void rtcIntersect16 (const void* valid, RTCScene hscene, const RTCIntersectContext* user_context, RTCRay16& ray) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcIntersect16Ex);
+    RTCORE_TRACE(rtcIntersect16);
 
 #if defined(EMBREE_TARGET_SIMD16) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
@@ -318,7 +318,7 @@ namespace embree
     IntersectContext context(scene,user_context);
     scene->intersectors.intersect16(valid,ray,&context);
 #else
-    throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect16Ex not supported");
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect16 not supported");
 #endif
     RTCORE_CATCH_END2(scene);
   }
@@ -477,11 +477,11 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
   
-  RTCORE_API void rtcOccluded4Ex (const void* valid, RTCScene hscene, const RTCIntersectContext* user_context, RTCRay4& ray) 
+  RTCORE_API void rtcOccluded4 (const void* valid, RTCScene hscene, const RTCIntersectContext* user_context, RTCRay4& ray) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcOccluded4Ex);
+    RTCORE_TRACE(rtcOccluded4);
 
 #if defined(EMBREE_TARGET_SIMD4) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
@@ -495,16 +495,16 @@ namespace embree
     IntersectContext context(scene,user_context);
     scene->intersectors.occluded4(valid,ray,&context);
 #else
-    throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded4Ex not supported");
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded4 not supported");
 #endif
     RTCORE_CATCH_END2(scene);
   }
  
-  RTCORE_API void rtcOccluded8Ex (const void* valid, RTCScene hscene, const RTCIntersectContext* user_context, RTCRay8& ray) 
+  RTCORE_API void rtcOccluded8 (const void* valid, RTCScene hscene, const RTCIntersectContext* user_context, RTCRay8& ray) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcOccluded8Ex);
+    RTCORE_TRACE(rtcOccluded8);
 
 #if defined(EMBREE_TARGET_SIMD8) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
@@ -519,16 +519,16 @@ namespace embree
     IntersectContext context(scene,user_context);
     scene->intersectors.occluded8(valid,ray,&context);
 #else
-    throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded8Ex not supported");
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded8 not supported");
 #endif
     RTCORE_CATCH_END2(scene);
   }
   
-  RTCORE_API void rtcOccluded16Ex (const void* valid, RTCScene hscene, const RTCIntersectContext* user_context, RTCRay16& ray) 
+  RTCORE_API void rtcOccluded16 (const void* valid, RTCScene hscene, const RTCIntersectContext* user_context, RTCRay16& ray) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcOccluded16Ex);
+    RTCORE_TRACE(rtcOccluded16);
 
 #if defined(EMBREE_TARGET_SIMD16) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
@@ -543,7 +543,7 @@ namespace embree
     IntersectContext context(scene,user_context);
     scene->intersectors.occluded16(valid,ray,&context);
 #else
-    throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded16Ex not supported");
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded16 not supported");
 #endif
     RTCORE_CATCH_END2(scene);
   }

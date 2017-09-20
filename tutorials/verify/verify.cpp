@@ -3671,8 +3671,8 @@ namespace embree
             }
             __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
             switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-            case VARIANT_INTERSECT: rtcIntersect4Ex(valid4,*scene,&context,ray4); break;
-            case VARIANT_OCCLUDED : rtcOccluded4Ex (valid4,*scene,&context,ray4); break;
+            case VARIANT_INTERSECT: rtcIntersect4(valid4,*scene,&context,ray4); break;
+            case VARIANT_OCCLUDED : rtcOccluded4 (valid4,*scene,&context,ray4); break;
             }
           }
         }
@@ -3690,8 +3690,8 @@ namespace embree
             }
             __aligned(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
             switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-            case VARIANT_INTERSECT: rtcIntersect8Ex(valid8,*scene,&context,ray8); break;
-            case VARIANT_OCCLUDED : rtcOccluded8Ex (valid8,*scene,&context,ray8); break;
+            case VARIANT_INTERSECT: rtcIntersect8(valid8,*scene,&context,ray8); break;
+            case VARIANT_OCCLUDED : rtcOccluded8 (valid8,*scene,&context,ray8); break;
             }
           }
         }
@@ -3709,8 +3709,8 @@ namespace embree
             }
             __aligned(64) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
             switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-            case VARIANT_INTERSECT: rtcIntersect16Ex(valid16,*scene,&context,ray16); break;
-            case VARIANT_OCCLUDED : rtcOccluded16Ex (valid16,*scene,&context,ray16); break;
+            case VARIANT_INTERSECT: rtcIntersect16(valid16,*scene,&context,ray16); break;
+            case VARIANT_OCCLUDED : rtcOccluded16 (valid16,*scene,&context,ray16); break;
             }
           }
         }
@@ -3833,8 +3833,8 @@ namespace embree
           }
           __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-          case VARIANT_INTERSECT: rtcIntersect4Ex(valid4,*scene,&context,ray4); break;
-          case VARIANT_OCCLUDED : rtcOccluded4Ex (valid4,*scene,&context,ray4); break;
+          case VARIANT_INTERSECT: rtcIntersect4(valid4,*scene,&context,ray4); break;
+          case VARIANT_OCCLUDED : rtcOccluded4 (valid4,*scene,&context,ray4); break;
           }
         }
         break;
@@ -3848,8 +3848,8 @@ namespace embree
           }
           __aligned(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-          case VARIANT_INTERSECT: rtcIntersect8Ex(valid8,*scene,&context,ray8); break;
-          case VARIANT_OCCLUDED : rtcOccluded8Ex (valid8,*scene,&context,ray8); break;
+          case VARIANT_INTERSECT: rtcIntersect8(valid8,*scene,&context,ray8); break;
+          case VARIANT_OCCLUDED : rtcOccluded8 (valid8,*scene,&context,ray8); break;
           }
         }
         break;
@@ -3863,8 +3863,8 @@ namespace embree
           }
           __aligned(64) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-          case VARIANT_INTERSECT: rtcIntersect16Ex(valid16,*scene,&context,ray16); break;
-          case VARIANT_OCCLUDED : rtcOccluded16Ex (valid16,*scene,&context,ray16); break;
+          case VARIANT_INTERSECT: rtcIntersect16(valid16,*scene,&context,ray16); break;
+          case VARIANT_OCCLUDED : rtcOccluded16 (valid16,*scene,&context,ray16); break;
           }
         }
         break;
