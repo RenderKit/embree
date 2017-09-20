@@ -70,6 +70,7 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh_refit.cpp
   bvh/bvh_builder.cpp
   bvh/bvh_builder_hair.cpp
+  bvh/bvh_builder_hair_mb.cpp
   bvh/bvh_builder_morton.cpp
   bvh/bvh_builder_sah.cpp
   bvh/bvh_builder_twolevel.cpp
@@ -117,6 +118,7 @@ MACRO(embree_files TARGET ISA)
       bvh/bvh_refit.cpp
       bvh/bvh_builder.cpp
       bvh/bvh_builder_hair.cpp
+      bvh/bvh_builder_hair_mb.cpp
       bvh/bvh_builder_sah.cpp
       bvh/bvh_builder_twolevel.cpp
       bvh/bvh_builder_instancing.cpp)
