@@ -40,11 +40,11 @@ int disabledID = -1;
 unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const float r)
 {
   /* create a triangulated sphere */
-  unsigned int mesh = rtcNewTriangleMesh (g_scene, flags, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, flags, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));
 
   /* map triangle and vertex buffer */
-  Vertex*   vertices  = (Vertex*  ) rtcMapBuffer(g_scene,mesh,RTC_VERTEX_BUFFER);
-  Triangle* triangles = (Triangle*) rtcMapBuffer(g_scene,mesh,RTC_INDEX_BUFFER);
+  Vertex*   vertices  = (Vertex*  ) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
+  Triangle* triangles = (Triangle*) rtcMapBuffer(geom,RTC_INDEX_BUFFER);
 
   /* create sphere geometry */
   int tri = 0;
@@ -85,33 +85,37 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
       }
     }
   }
-  rtcUnmapBuffer(g_scene,mesh,RTC_VERTEX_BUFFER);
-  rtcUnmapBuffer(g_scene,mesh,RTC_INDEX_BUFFER);
+  rtcUnmapBuffer(geom,RTC_VERTEX_BUFFER);
+  rtcUnmapBuffer(geom,RTC_INDEX_BUFFER);
 
-  return mesh;
+  unsigned int geomID = rtcAttachGeometry(g_scene,geom);
+  rtcReleaseGeometry(geom);
+  return geomID;
 }
 
 /* adds a ground plane to the scene */
 unsigned int addGroundPlane (RTCScene scene_i)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  unsigned int mesh = rtcNewTriangleMesh (scene_i, RTC_GEOMETRY_STATIC, 2, 4);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 2, 4);
 
   /* set vertices */
-  Vertex* vertices = (Vertex*) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER);
+  Vertex* vertices = (Vertex*) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
   vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
   vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
   vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-  rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER);
+  rtcUnmapBuffer(geom,RTC_VERTEX_BUFFER);
 
   /* set triangles */
-  Triangle* triangles = (Triangle*) rtcMapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
+  Triangle* triangles = (Triangle*) rtcMapBuffer(geom,RTC_INDEX_BUFFER);
   triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
-  rtcUnmapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
+  rtcUnmapBuffer(geom,RTC_INDEX_BUFFER);
 
-  return mesh;
+  unsigned int geomID = rtcAttachGeometry(scene_i,geom);
+  rtcReleaseGeometry(geom);
+  return geomID;
 }
 
 /* called by the C++ code for initialization */
@@ -273,7 +277,8 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
 void animateSphere (int id, float time)
 {
   /* animate vertices */
-  Vertex* vertices = (Vertex*) rtcMapBuffer(g_scene,id,RTC_VERTEX_BUFFER);
+  RTCGeometry geom = rtcGetGeometry(g_scene,id);
+  Vertex* vertices = (Vertex*) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
   const float rcpNumTheta = rcp((float)numTheta);
   const float rcpNumPhi   = rcp((float)numPhi);
   const Vec3fa pos = position[id];
@@ -299,10 +304,10 @@ void animateSphere (int id, float time)
   }
 #endif
 
-  rtcUnmapBuffer(g_scene,id,RTC_VERTEX_BUFFER);
+  rtcUnmapBuffer(geom,RTC_VERTEX_BUFFER);
 
   /* update mesh */
-  rtcUpdate (g_scene,id);
+  rtcUpdate (geom);
 }
 
 /* called by the C++ code to render */

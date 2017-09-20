@@ -59,23 +59,27 @@ Vec3fa sampleSphere(const float u, const float v)
 
 void convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh, RTCScene scene_out)
 {
-  uniform unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices, mesh->numTimeSteps);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices, mesh->numTimeSteps);
   for (uniform size_t t=0; t<mesh->numTimeSteps; t++) {
-    rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER_(t),mesh->positions[t],0,sizeof(uniform Vertex),mesh->numVertices);
+    rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),mesh->positions[t],0,sizeof(uniform Vertex),mesh->numVertices);
   }
-  rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->triangles,0,sizeof(uniform ISPCTriangle),mesh->numTriangles);
-  rtcSetOcclusionFilterFunction(scene_out,geomID,filterDispatch);
+  rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->triangles,0,sizeof(uniform ISPCTriangle),mesh->numTriangles);
+  rtcSetOcclusionFilterFunction(geom,filterDispatch);
+  rtcAttachGeometry(scene_out,geom);
+  rtcReleaseGeometry(geom);
 }
 
 void convertHairSet(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
 {
-  uniform unsigned int geomID = rtcNewBezierHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, hair->numTimeSteps);
+  RTCGeometry geom = rtcNewBezierHairGeometry (g_device, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, hair->numTimeSteps);
   for (uniform size_t t=0; t<hair->numTimeSteps; t++) {
-    rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER_(t),hair->positions[t],0,sizeof(uniform Vertex),hair->numVertices);
+    rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),hair->positions[t],0,sizeof(uniform Vertex),hair->numVertices);
   }
-  rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(uniform ISPCHair),hair->numHairs);
-  rtcSetOcclusionFilterFunction(scene_out,geomID,filterDispatch);
-  rtcSetTessellationRate(scene_out,geomID,hair->tessellation_rate);
+  rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(uniform ISPCHair),hair->numHairs);
+  rtcSetOcclusionFilterFunction(geom,filterDispatch);
+  rtcSetTessellationRate(geom,hair->tessellation_rate);
+  rtcAttachGeometry(scene_out,geom);
+  rtcReleaseGeometry(geom);
 }
 
 RTCScene convertScene(uniform ISPCScene* uniform scene_in)

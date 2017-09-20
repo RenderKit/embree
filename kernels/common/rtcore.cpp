@@ -1343,62 +1343,66 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcInterpolate(RTCGeometry hgeometry, unsigned primID, float u, float v, 
+  RTCORE_API void rtcInterpolate(RTCScene hscene, unsigned int geomID, unsigned primID, float u, float v, 
                                  RTCBufferType buffer,
                                  float* P, float* dPdu, float* dPdv, size_t numFloats)
   {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
+    Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcInterpolate);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->interpolate(primID,u,v,buffer,P,dPdu,dPdv,nullptr,nullptr,nullptr,numFloats); // this call is on purpose not thread safe
-    RTCORE_CATCH_END2(geometry);
+    RTCORE_VERIFY_HANDLE(hscene);
+    RTCORE_VERIFY_GEOMID(geomID);
+    scene->get(geomID)->interpolate(primID,u,v,buffer,P,dPdu,dPdv,nullptr,nullptr,nullptr,numFloats); // this call is on purpose not thread safe
+    RTCORE_CATCH_END2(scene);
   }
 
-  RTCORE_API void rtcInterpolate2(RTCGeometry hgeometry, unsigned primID, float u, float v, 
+  RTCORE_API void rtcInterpolate2(RTCScene hscene, unsigned int geomID, unsigned primID, float u, float v, 
                                   RTCBufferType buffer,
                                   float* P, float* dPdu, float* dPdv, 
                                   float* ddPdudu, float* ddPdvdv, float* ddPdudv, 
                                   size_t numFloats)
   {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
+    Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcInterpolate);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->interpolate(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats); // this call is on purpose not thread safe
-    RTCORE_CATCH_END2(geometry);
+    RTCORE_VERIFY_HANDLE(hscene);
+    RTCORE_VERIFY_GEOMID(geomID);
+    scene->get(geomID)->interpolate(primID,u,v,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats); // this call is on purpose not thread safe
+    RTCORE_CATCH_END2(scene);
   }
 
 
 #if defined (EMBREE_RAY_PACKETS)
-  RTCORE_API void rtcInterpolateN(RTCGeometry hgeometry, 
+  RTCORE_API void rtcInterpolateN(RTCScene hscene, unsigned int geomID,
                                   const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
                                   RTCBufferType buffer,
                                   float* P, float* dPdu, float* dPdv, size_t numFloats)
   {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
+    Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcInterpolateN);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->interpolateN(valid_i,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,nullptr,nullptr,nullptr,numFloats); // this call is on purpose not thread safe
-    RTCORE_CATCH_END2(geometry);
+    RTCORE_VERIFY_HANDLE(hscene);
+    RTCORE_VERIFY_GEOMID(geomID);
+    scene->get(geomID)->interpolateN(valid_i,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,nullptr,nullptr,nullptr,numFloats); // this call is on purpose not thread safe
+    RTCORE_CATCH_END2(scene);
   }
 #endif
 
 #if defined (EMBREE_RAY_PACKETS)
-  RTCORE_API void rtcInterpolateN2(RTCGeometry hgeometry, 
+  RTCORE_API void rtcInterpolateN2(RTCScene hscene, unsigned int geomID,
                                    const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
                                    RTCBufferType buffer,
                                    float* P, float* dPdu, float* dPdv, 
                                    float* ddPdudu, float* ddPdvdv, float* ddPdudv, 
                                    size_t numFloats)
   {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
+    Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcInterpolateN);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->interpolateN(valid_i,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats); // this call is on purpose not thread safe
-    RTCORE_CATCH_END2(geometry);
+    RTCORE_VERIFY_HANDLE(hscene);
+    RTCORE_VERIFY_GEOMID(geomID);
+    scene->get(geomID)->interpolateN(valid_i,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats); // this call is on purpose not thread safe
+    RTCORE_CATCH_END2(scene);
   }
 #endif
 
@@ -1456,5 +1460,17 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hgeometry);
     geometry->refDec();
     RTCORE_CATCH_END2(geometry);
+  }
+
+  RTCORE_API RTCGeometry rtcGetGeometry (RTCScene hscene, unsigned int geomID)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcGetGeometry);
+    RTCORE_VERIFY_HANDLE(hscene);
+    RTCORE_VERIFY_GEOMID(geomID);
+    return (RTCGeometry) scene->get_locked(geomID).ptr; // FIXME: incRef???
+    RTCORE_CATCH_END2(scene);
+    return nullptr;
   }
 }

@@ -332,7 +332,7 @@ void renderTileStandardStream(int taskIndex,
   RTCIntersectContext primary_context;
   primary_context.flags = g_iflags_coherent;
   primary_context.userRayExt = &primary_stream;
-  rtcIntersect1M(g_scene,&primary_context,(RTCRay*)&primary_stream,N,sizeof(RTCRay));
+  rtcIntersect1VM(g_scene,&primary_context,(RTCRay*)&primary_stream,N,sizeof(RTCRay));
 
   /* terminate rays and update color */
   N = -1;
@@ -390,7 +390,7 @@ void renderTileStandardStream(int taskIndex,
   RTCIntersectContext shadow_context;
   shadow_context.flags = g_iflags_coherent;
   shadow_context.userRayExt = &shadow_stream;
-  rtcOccluded1M(g_scene,&shadow_context,(RTCRay*)&shadow_stream,N,sizeof(RTCRay));
+  rtcOccluded1VM(g_scene,&shadow_context,(RTCRay*)&shadow_stream,N,sizeof(RTCRay));
 
   /* add light contribution */
   N = -1;

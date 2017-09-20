@@ -29,7 +29,6 @@ namespace embree
     for (size_t i=0; i<numTimeSteps; i++) {
       vertices[i].init(device,numVertices,sizeof(Vec3fa));
     }
-    enabling();
   }
 
   void NativeCurves::enabling() 
@@ -46,7 +45,7 @@ namespace embree
   
   void NativeCurves::setMask (unsigned mask) 
   {
-    if (scene->isStatic() && scene->isBuild())
+    if (scene && scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
 
     this->mask = mask; 
@@ -55,7 +54,7 @@ namespace embree
 
   void NativeCurves::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size) 
   { 
-    if (scene->isStatic() && scene->isBuild())
+    if (scene && scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
 
     /* verify that all accesses are 4 bytes aligned */
@@ -78,10 +77,10 @@ namespace embree
     }
     else if (type == RTC_INDEX_BUFFER) 
     {
-      if (size != (size_t)-1) disabling();
+      if (scene && size != (size_t)-1) disabling();
       curves.set(ptr,offset,stride,size); 
       setNumPrimitives(size);
-      if (size != (size_t)-1) enabling();
+      if (scene && size != (size_t)-1) enabling();
     }
     else 
         throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
@@ -89,16 +88,16 @@ namespace embree
 
   void* NativeCurves::map(RTCBufferType type) 
   {
-    if (scene->isStatic() && scene->isBuild()) {
+    if (scene && scene->isStatic() && scene->isBuild()) {
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
       return nullptr;
     }
 
     if (type == RTC_INDEX_BUFFER) {
-      return curves.map(scene->numMappedBuffers);
+      return curves.map();
     }
     else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
-      return vertices[type - RTC_VERTEX_BUFFER0].map(scene->numMappedBuffers);
+      return vertices[type - RTC_VERTEX_BUFFER0].map();
     }
     else {
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
@@ -108,14 +107,14 @@ namespace embree
 
   void NativeCurves::unmap(RTCBufferType type) 
   {
-    if (scene->isStatic() && scene->isBuild()) 
+    if (scene && scene->isStatic() && scene->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
 
     if (type == RTC_INDEX_BUFFER) {
-      curves.unmap(scene->numMappedBuffers);
+      curves.unmap();
     }
     else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
-      vertices[type - RTC_VERTEX_BUFFER0].unmap(scene->numMappedBuffers);
+      vertices[type - RTC_VERTEX_BUFFER0].unmap();
     }
     else {
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
@@ -124,7 +123,7 @@ namespace embree
   
   void NativeCurves::setTessellationRate(float N)
   {
-    if (scene->isStatic() && scene->isBuild()) 
+    if (scene && scene->isStatic() && scene->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
 
     tessellationRate = clamp((int)N,1,16);

@@ -214,7 +214,7 @@ namespace embree
     }
     
     /*! maps the buffer */
-    void* map(std::atomic<size_t>& cntr)
+    void* map()
     {
       /* report error if buffer is not existing */
       if (!device)
@@ -229,20 +229,18 @@ namespace embree
         alloc();
       
       /* return mapped buffer */
-      cntr++;
       mapped = true;
       return ptr;
     }
     
     /*! unmaps the buffer */
-    void unmap(std::atomic<size_t>& cntr)
+    void unmap()
     {
       /* report error if buffer not mapped */
       if (!mapped)
         throw_RTCError(RTC_INVALID_OPERATION,"buffer is not mapped");
       
       /* unmap buffer */
-      cntr--;
       mapped = false;
     }
     

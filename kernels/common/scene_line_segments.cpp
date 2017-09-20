@@ -29,7 +29,6 @@ namespace embree
     for (size_t i=0; i<numTimeSteps; i++) {
       vertices[i].init(device,numVertices,sizeof(Vec3fa));
     }
-    enabling();
   }
 
   void LineSegments::enabling()
@@ -46,7 +45,7 @@ namespace embree
 
   void LineSegments::setMask (unsigned mask)
   {
-    if (scene->isStatic() && scene->isBuild())
+    if (scene && scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
 
     this->mask = mask;
@@ -55,7 +54,7 @@ namespace embree
 
   void LineSegments::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size)
   {
-    if (scene->isStatic() && scene->isBuild())
+    if (scene && scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
 
     /* verify that all accesses are 4 bytes aligned */
@@ -79,10 +78,10 @@ namespace embree
     }
     else if (type == RTC_INDEX_BUFFER) 
     {
-      if (size != (size_t)-1) disabling();
+      if (scene && size != (size_t)-1) disabling();
       segments.set(ptr,offset,stride,size); 
       setNumPrimitives(size);
-      if (size != (size_t)-1) enabling();
+      if (scene && size != (size_t)-1) enabling();
     }
     else
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
@@ -90,16 +89,16 @@ namespace embree
 
   void* LineSegments::map(RTCBufferType type)
   {
-    if (scene->isStatic() && scene->isBuild()) {
+    if (scene && scene->isStatic() && scene->isBuild()) {
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
       return nullptr;
     }
 
     if (type == RTC_INDEX_BUFFER) {
-      return segments.map(scene->numMappedBuffers);
+      return segments.map();
     }
     else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
-      return vertices[type - RTC_VERTEX_BUFFER0].map(scene->numMappedBuffers);
+      return vertices[type - RTC_VERTEX_BUFFER0].map();
     }
     else {
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
@@ -109,14 +108,14 @@ namespace embree
 
   void LineSegments::unmap(RTCBufferType type)
   {
-    if (scene->isStatic() && scene->isBuild())
+    if (scene && scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
 
     if (type == RTC_INDEX_BUFFER) {
-      segments.unmap(scene->numMappedBuffers);
+      segments.unmap();
     }
     else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
-      vertices[type - RTC_VERTEX_BUFFER0].unmap(scene->numMappedBuffers);
+      vertices[type - RTC_VERTEX_BUFFER0].unmap();
       vertices0 = vertices[0];
     }
     else {
@@ -163,7 +162,7 @@ namespace embree
   {
     /* test if interpolation is enabled */
 #if defined(DEBUG)
-    if ((scene->aflags & RTC_INTERPOLATE) == 0)
+    if ((scene && scene->aflags & RTC_INTERPOLATE) == 0)
       throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
 #endif
 

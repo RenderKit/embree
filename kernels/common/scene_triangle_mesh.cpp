@@ -29,7 +29,6 @@ namespace embree
     for (size_t i=0; i<numTimeSteps; i++) {
       vertices[i].init(device,numVertices,sizeof(Vec3fa));
     }
-    enabling();
   }
 
   void TriangleMesh::enabling() 
@@ -46,7 +45,7 @@ namespace embree
 
   void TriangleMesh::setMask (unsigned mask) 
   {
-    if (scene->isStatic() && scene->isBuild())
+    if (scene && scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     this->mask = mask; 
@@ -55,7 +54,7 @@ namespace embree
 
   void TriangleMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride, size_t size) 
   { 
-    if (scene->isStatic() && scene->isBuild()) 
+    if (scene && scene->isStatic() && scene->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     /* verify that all accesses are 4 bytes aligned */
@@ -85,10 +84,10 @@ namespace embree
     }
     else if (type == RTC_INDEX_BUFFER) 
     {
-      if (size != (size_t)-1) disabling();
+      if (scene && size != (size_t)-1) disabling(); 
       triangles.set(ptr,offset,stride,size); 
       setNumPrimitives(size);
-      if (size != (size_t)-1) enabling();
+      if (scene && size != (size_t)-1) enabling(); // FIXME: this is wrong, as it does not work when geometry was disabled
     }
     else 
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
@@ -96,14 +95,14 @@ namespace embree
 
   void* TriangleMesh::map(RTCBufferType type) 
   {
-    if (scene->isStatic() && scene->isBuild())
+    if (scene && scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
     
     if (type == RTC_INDEX_BUFFER) {
-      return triangles.map(scene->numMappedBuffers);
+      return triangles.map();
     }
     else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
-      return vertices[type - RTC_VERTEX_BUFFER0].map(scene->numMappedBuffers);
+      return vertices[type - RTC_VERTEX_BUFFER0].map();
     }
     else {
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
@@ -113,14 +112,14 @@ namespace embree
 
   void TriangleMesh::unmap(RTCBufferType type) 
   {
-    if (scene->isStatic() && scene->isBuild())
+    if (scene && scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     if (type == RTC_INDEX_BUFFER) {
-      triangles.unmap(scene->numMappedBuffers);
+      triangles.unmap();
     }
     else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
-      vertices[type - RTC_VERTEX_BUFFER0].unmap(scene->numMappedBuffers);
+      vertices[type - RTC_VERTEX_BUFFER0].unmap();
       vertices0 = vertices[0];
     }
     else {

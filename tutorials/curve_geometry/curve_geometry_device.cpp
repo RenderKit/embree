@@ -65,10 +65,12 @@ unsigned int hair_indices[6] = {
 /* add hair geometry */
 unsigned int addCurve (RTCScene scene, const Vec3fa& pos)
 {
-  unsigned int geomID = rtcNewBSplineCurveGeometry (scene, RTC_GEOMETRY_STATIC, NUM_CURVES, 4*NUM_CURVES);
-  rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,hair_indices,0,sizeof(unsigned int),NUM_CURVES);
-  rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,hair_vertices,0,sizeof(Vec3fa),4*NUM_CURVES);
-  rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, hair_vertex_colors, 0, sizeof(Vec3fa),4*NUM_CURVES);
+  RTCGeometry geom = rtcNewBSplineCurveGeometry (g_device, RTC_GEOMETRY_STATIC, NUM_CURVES, 4*NUM_CURVES);
+  rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair_indices,0,sizeof(unsigned int),NUM_CURVES);
+  rtcSetBuffer(geom,RTC_VERTEX_BUFFER,hair_vertices,0,sizeof(Vec3fa),4*NUM_CURVES);
+  rtcSetBuffer(geom,RTC_USER_VERTEX_BUFFER0, hair_vertex_colors, 0, sizeof(Vec3fa),4*NUM_CURVES);
+  unsigned int geomID = rtcAttachGeometry(scene,geom);
+  rtcReleaseGeometry(geom);
   return geomID;
 }
 
@@ -76,23 +78,25 @@ unsigned int addCurve (RTCScene scene, const Vec3fa& pos)
 unsigned int addGroundPlane (RTCScene scene_i)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  unsigned int mesh = rtcNewTriangleMesh (scene_i, RTC_GEOMETRY_STATIC, 2, 4);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 2, 4);
 
   /* set vertices */
-  Vertex* vertices = (Vertex*) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER);
+  Vertex* vertices = (Vertex*) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
   vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
   vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
   vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-  rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER);
+  rtcUnmapBuffer(geom,RTC_VERTEX_BUFFER);
 
   /* set triangles */
-  Triangle* triangles = (Triangle*) rtcMapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
+  Triangle* triangles = (Triangle*) rtcMapBuffer(geom,RTC_INDEX_BUFFER);
   triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
-  rtcUnmapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
+  rtcUnmapBuffer(geom,RTC_INDEX_BUFFER);
 
-  return mesh;
+  unsigned int geomID = rtcAttachGeometry(scene_i,geom);
+  rtcReleaseGeometry(geom);
+  return geomID;
 }
 
 /* called by the C++ code for initialization */

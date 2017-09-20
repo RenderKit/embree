@@ -63,12 +63,12 @@ extern "C" void ispcOccluded1Mp (RTCScene scene, const uniform RTCIntersectConte
 extern "C" void ispcOccludedNM (RTCScene scene, const uniform RTCIntersectContext* uniform context, struct RTCRayN* uniform rays, const uniform size_t M, const uniform size_t N, const uniform size_t stride);
 extern "C" void ispcOccludedNp (RTCScene scene, const uniform RTCIntersectContext* uniform context, const uniform RTCRayNp& rays, const uniform size_t N);
 
-extern "C" void ispcInterpolateN(RTCGeometry hgeometry, 
+extern "C" void ispcInterpolateN(RTCScene scene, uniform unsigned int geomID, 
                                  const void* uniform valid, const uniform unsigned int* uniform primIDs, const uniform float* uniform u, const uniform float* uniform v, uniform size_t numUVs, 
                                  uniform RTCBufferType buffer, 
                                  uniform float* uniform P, uniform float* uniform dPdu, uniform float* uniform dPdv, uniform size_t numFloats);
 
-extern "C" void ispcInterpolateN2(RTCGeometry hgeometry, 
+extern "C" void ispcInterpolateN2(RTCScene scene, uniform unsigned int geomID, 
                                  const void* uniform valid, const uniform unsigned int* uniform primIDs, const uniform float* uniform u, const uniform float* uniform v, uniform size_t numUVs, 
                                  uniform RTCBufferType buffer, 
                                  uniform float* uniform P, uniform float* uniform dPdu, uniform float* uniform dPdv, 
@@ -207,7 +207,7 @@ void rtcSetOcclusionFilterFunction (RTCGeometry hgeometry, uniform RTCFilterFunc
     ispcSetOcclusionFilterFunction16(hgeometry,filter);
 }
 
-void rtcInterpolate(RTCGeometry hgeometry, varying unsigned int primID, varying float u, varying float v, 
+void rtcInterpolate(RTCScene scene, uniform unsigned int geomID, varying unsigned int primID, varying float u, varying float v, 
                     uniform RTCBufferType buffer,
                     varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv, uniform size_t numFloats)
 {
@@ -215,12 +215,12 @@ void rtcInterpolate(RTCGeometry hgeometry, varying unsigned int primID, varying 
   unmasked {
     varying int imask = mask ? -1 : 0;
   }
-  ispcInterpolateN(hgeometry,(const void* uniform)&imask,(const uniform unsigned int* uniform)&primID,
+  ispcInterpolateN(scene,geomID,(const void* uniform)&imask,(const uniform unsigned int* uniform)&primID,
                    (const uniform float* uniform)&u,(const uniform float* uniform)&v,sizeof(varying float)/4,buffer,
                    (uniform float* uniform)P,(uniform float* uniform)dPdu,(uniform float* uniform)dPdv,numFloats);
 }
 
-void rtcInterpolate2(RTCGeometry hgeometry, varying unsigned int primID, varying float u, varying float v, 
+void rtcInterpolate2(RTCScene scene, uniform unsigned int geomID, varying unsigned int primID, varying float u, varying float v, 
                     uniform RTCBufferType buffer,
                     varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv, 
                     varying float* uniform ddPdudu, varying float* uniform ddPdvdv, varying float* uniform ddPdudv,
@@ -230,7 +230,7 @@ void rtcInterpolate2(RTCGeometry hgeometry, varying unsigned int primID, varying
   unmasked {
     varying int imask = mask ? -1 : 0;
   }
-  ispcInterpolateN2(hgeometry,(const void* uniform)&imask,(const uniform unsigned int* uniform)&primID,
+  ispcInterpolateN2(scene,geomID,(const void* uniform)&imask,(const uniform unsigned int* uniform)&primID,
                     (const uniform float* uniform)&u,(const uniform float* uniform)&v,sizeof(varying float)/4,buffer,
                     (uniform float* uniform)P,(uniform float* uniform)dPdu,(uniform float* uniform)dPdv,
                     (uniform float* uniform)ddPdudu,(uniform float* uniform)ddPdvdv,(uniform float* uniform)ddPdudv,

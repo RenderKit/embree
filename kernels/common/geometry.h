@@ -117,6 +117,9 @@ namespace embree
     /*! for all geometries */
   public:
 
+    Geometry* attach(Scene* scene, unsigned int geomID);
+    void detach();
+    
     /*! Enable geometry. */
     virtual void enable ();
 

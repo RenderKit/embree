@@ -611,9 +611,7 @@ namespace embree
       geometries.resize(geomID+1);
       vertices.resize(geomID+1);
     }
-    geometries[geomID] = geometry;
-    geometry->scene = this;
-    geometry->geomID = geomID;
+    geometries[geomID] = geometry->attach(this,geomID);
     return geomID;
   }
 
@@ -630,9 +628,8 @@ namespace embree
     if (geometry == null)
       throw_RTCError(RTC_INVALID_OPERATION,"invalid geometry");
     
-    geometry->disable();
+    geometry->detach();
     accels.deleteGeometry(unsigned(geomID));
-    geometry->scene = nullptr;
     id_pool.deallocate((unsigned)geomID);
     geometries[geomID] = null;
     vertices[geomID] = nullptr;

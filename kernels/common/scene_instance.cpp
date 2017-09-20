@@ -41,7 +41,7 @@ namespace embree
   
   void Instance::setTransform(const AffineSpace3fa& xfm, size_t timeStep)
   {
-    if (scene->isStatic() && scene->isBuild())
+    if (scene && scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     if (timeStep >= numTimeSteps)
@@ -53,7 +53,7 @@ namespace embree
 
   void Instance::setMask (unsigned mask) 
   {
-    if (scene->isStatic() && scene->isBuild())
+    if (scene && scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     this->mask = mask; 

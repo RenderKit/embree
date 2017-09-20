@@ -23,7 +23,6 @@ namespace embree
     : Geometry(device,Geometry::USER_GEOMETRY,numItems,numTimeSteps,gflags), boundsFunc(nullptr), boundsFuncUserPtr(nullptr)
   {
     intersectors.ptr = nullptr; 
-    enabling();
   }
 
   void AccelSet::enabling () {

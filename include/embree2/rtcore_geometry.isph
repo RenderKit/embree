@@ -501,7 +501,7 @@ RTCORE_API void* uniform rtcGetUserData (RTCGeometry geometry);
  *  (SoA) layout. The buffer has to be padded at the end such
  *  that the last element can be read safely using SSE
  *  instructions. */
-void rtcInterpolate(RTCGeometry geometry, varying unsigned int primIDs, varying float u, varying float v, 
+void rtcInterpolate(RTCScene scene, uniform unsigned int geomID, varying unsigned int primIDs, varying float u, varying float v, 
                     uniform RTCBufferType buffer,
                     varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv, uniform size_t numFloats);
 
@@ -521,7 +521,7 @@ void rtcInterpolate(RTCGeometry geometry, varying unsigned int primIDs, varying 
  *  (SoA) layout. The buffer has to be padded at the end such that
  *  the last element can be read safely using SSE
  *  instructions. */
-void rtcInterpolate2(RTCGeometry geometry, varying unsigned int primIDs, varying float u, varying float v, 
+void rtcInterpolate2(RTCScene scene, uniform unsigned int geomID, varying unsigned int primIDs, varying float u, varying float v, 
                     uniform RTCBufferType buffer,
                     varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv,
                     varying float* uniform ddPdudu, varying float* uniform ddPdvdv, varying float* uniform ddPdudv,
@@ -539,6 +539,9 @@ RTCORE_API void rtcDetachGeometry (RTCScene scene, uniform unsigned int geomID);
 
 /*! Releases the geometry handle. */
 RTCORE_API void rtcReleaseGeometry (RTCGeometry geometry);
+
+/*! Returns RTCGeometry from scene and geomID. */
+RTCORE_API RTCGeometry rtcGetGeometry (RTCScene scene, uniform unsigned int geomID);
 
 /*! @} */
 
