@@ -1552,10 +1552,10 @@ namespace embree
           RTCRay ray1 = makeRay(Vec3fa(-1,10,+1),Vec3fa(0,-1,0)); 
           RTCRay ray2 = makeRay(Vec3fa(+1,10,-1),Vec3fa(0,-1,0)); 
           RTCRay ray3 = makeRay(Vec3fa(+1,10,+1),Vec3fa(0,-1,0)); 
-          rtcIntersect1Ex(scene,&context,ray0);
-          rtcIntersect1Ex(scene,&context,ray1);
-          rtcIntersect1Ex(scene,&context,ray2);
-          rtcIntersect1Ex(scene,&context,ray3);
+          rtcIntersect1(scene,&context,ray0);
+          rtcIntersect1(scene,&context,ray1);
+          rtcIntersect1(scene,&context,ray2);
+          rtcIntersect1(scene,&context,ray3);
           bool ok0 = enabled0 ? ray0.geomID == 0 : ray0.geomID == RTC_INVALID_GEOMETRY_ID;
           bool ok1 = enabled1 ? ray1.geomID == 1 : ray1.geomID == RTC_INVALID_GEOMETRY_ID;
           bool ok2 = enabled2 ? ray2.geomID == 2 : ray2.geomID == RTC_INVALID_GEOMETRY_ID;
@@ -3652,8 +3652,8 @@ namespace embree
           for (size_t x=x0; x<x1; x++) {
             RTCRay ray = fastMakeRay(zero,Vec3f(float(x)*rcpWidth,1,float(y)*rcpHeight));
             switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-            case VARIANT_INTERSECT: rtcIntersect1Ex(*scene,&context,ray); break;
-            case VARIANT_OCCLUDED : rtcOccluded1Ex (*scene,&context,ray); break;
+            case VARIANT_INTERSECT: rtcIntersect1(*scene,&context,ray); break;
+            case VARIANT_OCCLUDED : rtcOccluded1 (*scene,&context,ray); break;
             }
           }
         }
@@ -3818,8 +3818,8 @@ namespace embree
           RTCRay ray; 
           fastMakeRay(ray,zero,sampler);
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-          case VARIANT_INTERSECT: rtcIntersect1Ex(*scene,&context,ray); break;
-          case VARIANT_OCCLUDED : rtcOccluded1Ex (*scene,&context,ray); break;
+          case VARIANT_INTERSECT: rtcIntersect1(*scene,&context,ray); break;
+          case VARIANT_OCCLUDED : rtcOccluded1 (*scene,&context,ray); break;
           }
         }
         break;

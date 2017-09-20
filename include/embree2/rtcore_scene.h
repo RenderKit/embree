@@ -123,7 +123,7 @@ RTCORE_API void rtcGetLinearBounds(RTCScene scene, RTCBounds* bounds_o);
 /*! Intersects a single ray with the scene. The ray has to be aligned
  *  to 16 bytes. This function can only be called for scenes with the
  *  RTC_INTERSECT1 flag set. */
-RTCORE_API void rtcIntersect1Ex (RTCScene scene, const RTCIntersectContext* context, RTCRay& ray);
+RTCORE_API void rtcIntersect1 (RTCScene scene, const RTCIntersectContext* context, RTCRay& ray);
 
 /*! Intersects a packet of 4 rays with the scene. The valid mask and
  *  ray have both to be aligned to 16 bytes. This function can only be
@@ -170,7 +170,7 @@ RTCORE_API void rtcIntersectNp (RTCScene scene, const RTCIntersectContext* conte
 /*! Tests if a single ray is occluded by the scene. The ray has to be
  *  aligned to 16 bytes. This function can only be called for scenes
  *  with the RTC_INTERSECT1 flag set. */
-RTCORE_API void rtcOccluded1Ex (RTCScene scene, const RTCIntersectContext* context, RTCRay& ray);
+RTCORE_API void rtcOccluded1 (RTCScene scene, const RTCIntersectContext* context, RTCRay& ray);
 
 /*! Tests if a packet of 4 rays is occluded by the scene. This
  *  function can only be called for scenes with the RTC_INTERSECT4

@@ -1399,7 +1399,7 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
     /* intersect ray with scene */
     uniform RTCIntersectContext context;
     context.flags = (i == 0) ? g_iflags_coherent : g_iflags_incoherent;
-    rtcIntersectEx(g_scene,&context,ray);
+    rtcIntersect(g_scene,&context,ray);
     RayStats_addRay(stats);
     const Vec3f wo = neg(ray.dir);
 
@@ -1466,7 +1466,7 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
       Light_SampleRes ls = l->sample(l,dg,RandomSampler_get2D(sampler));
       if (ls.pdf <= 0.0f) continue;
       RTCRay shadow = make_Ray(dg.P,ls.dir,dg.tnear_eps,ls.dist,time); shadow.transparency = make_Vec3f(1.0f);
-      rtcOccludedEx(g_scene,&context,shadow);
+      rtcOccluded(g_scene,&context,shadow);
       RayStats_addShadowRay(stats);
       //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       if (max(max(shadow.transparency.x,shadow.transparency.y),shadow.transparency.z) > 0.0f)

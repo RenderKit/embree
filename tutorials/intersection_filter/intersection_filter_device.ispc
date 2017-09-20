@@ -125,7 +125,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   while (true)
   {
     /* intersect ray with scene */
-    rtcIntersectEx(g_scene,&context,*((varying RTCRay*)&primary));
+    rtcIntersect(g_scene,&context,*((varying RTCRay*)&primary));
     RayStats_addRay(stats);
 
     /* shade pixels */
@@ -153,7 +153,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     shadow.lastHit = 0;
 
     /* trace shadow ray */
-    rtcOccludedEx(g_scene,&context,*((varying RTCRay*)&shadow));
+    rtcOccluded(g_scene,&context,*((varying RTCRay*)&shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

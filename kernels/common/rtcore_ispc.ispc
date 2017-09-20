@@ -89,11 +89,11 @@ RTCScene rtcDeviceNewScene (RTCDevice device, uniform RTCSceneFlags flags, unifo
   return ispcNewScene2(device,flags,aflags);
 }
 
-void rtcIntersect1Ex (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1& ray) {
+void rtcIntersect1 (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1& ray) {
   ispcIntersect1(scene,context,ray);
 }
 
-void rtcIntersectEx (RTCScene scene, const uniform RTCIntersectContext* uniform context, varying RTCRay& ray) 
+void rtcIntersect (RTCScene scene, const uniform RTCIntersectContext* uniform context, varying RTCRay& ray) 
 {
   varying bool mask = __mask & (ray.tnear <= ray.tfar);
   unmasked {
@@ -128,11 +128,11 @@ void rtcIntersectNp (RTCScene scene, const uniform RTCIntersectContext* uniform 
   ispcIntersectNp(scene,context,rays,N);
 }
 
-void rtcOccluded1Ex (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1& ray) {
+void rtcOccluded1 (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1& ray) {
   ispcOccluded1(scene,context,ray);
 }
 
-void rtcOccludedEx (RTCScene scene, const uniform RTCIntersectContext* uniform context, varying RTCRay& ray) 
+void rtcOccluded (RTCScene scene, const uniform RTCIntersectContext* uniform context, varying RTCRay& ray) 
 {
   varying bool mask = __mask & (ray.tnear <= ray.tfar);
   unmasked {

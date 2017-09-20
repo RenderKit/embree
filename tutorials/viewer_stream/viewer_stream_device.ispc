@@ -161,7 +161,7 @@ void renderTileStandard(uniform int taskIndex,
   rtcIntersectVM(g_scene,&context,rays,N,sizeof(RTCRay));
 #elif USE_INTERFACE == 1
   for (uniform size_t i=0; i<N; i++)
-    rtcIntersectEx(g_scene,&context,rays[i]);
+    rtcIntersect(g_scene,&context,rays[i]);
 #else
   for (uniform size_t i=0; i<N; i++)
     rtcIntersectVM(g_scene,&context,&rays[i],1,sizeof(RTCRay));

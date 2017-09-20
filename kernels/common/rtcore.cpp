@@ -233,11 +233,11 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
   
-  RTCORE_API void rtcIntersect1Ex (RTCScene hscene, const RTCIntersectContext* user_context, RTCRay& ray) 
+  RTCORE_API void rtcIntersect1 (RTCScene hscene, const RTCIntersectContext* user_context, RTCRay& ray) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcIntersect1Ex);
+    RTCORE_TRACE(rtcIntersect1);
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -461,11 +461,11 @@ namespace embree
     RTCORE_CATCH_END2(scene);
   }
   
-  RTCORE_API void rtcOccluded1Ex (RTCScene hscene, const RTCIntersectContext* user_context, RTCRay& ray) 
+  RTCORE_API void rtcOccluded1 (RTCScene hscene, const RTCIntersectContext* user_context, RTCRay& ray) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcOccluded1Ex);
+    RTCORE_TRACE(rtcOccluded1);
     STAT3(shadow.travs,1,1,1);
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);

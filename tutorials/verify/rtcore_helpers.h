@@ -707,8 +707,8 @@ namespace embree
     case MODE_INTERSECT1:
     {
       switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-      case VARIANT_INTERSECT: for (size_t i=0; i<N; i++) rtcIntersect1Ex(scene,&context,rays[i]); break;
-      case VARIANT_OCCLUDED : for (size_t i=0; i<N; i++) rtcOccluded1Ex (scene,&context,rays[i]); break;
+      case VARIANT_INTERSECT: for (size_t i=0; i<N; i++) rtcIntersect1(scene,&context,rays[i]); break;
+      case VARIANT_OCCLUDED : for (size_t i=0; i<N; i++) rtcOccluded1 (scene,&context,rays[i]); break;
       default: assert(false);
       }
       break;

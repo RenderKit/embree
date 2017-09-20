@@ -83,7 +83,7 @@ void instanceIntersectFunc(void* instance_i, RTCRay& ray, size_t item)
   ray.org = xfmPoint (instance->world2local,ray_org);
   ray.dir = xfmVector(instance->world2local,ray_dir);
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  rtcIntersect1Ex(instance->object,&context,ray);
+  rtcIntersect1(instance->object,&context,ray);
   ray.org = ray_org;
   ray.dir = ray_dir;
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) ray.geomID = geomID;
@@ -103,7 +103,7 @@ void instanceOccludedFunc(void* instance_i, RTCRay& ray, size_t item)
   const Vec3fa ray_dir = ray.dir;
   ray.org = xfmPoint (instance->world2local,ray_org);
   ray.dir = xfmVector(instance->world2local,ray_dir);
-  rtcOccluded1Ex(instance->object,&context,ray);
+  rtcOccluded1(instance->object,&context,ray);
   ray.org = ray_org;
   ray.dir = ray_dir;
 }
@@ -654,7 +654,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   ray.time = 0;
 
   /* intersect ray with scene */
-  rtcIntersect1Ex(g_scene,&context,ray);
+  rtcIntersect1(g_scene,&context,ray);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -683,7 +683,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     shadow.time = 0;
 
     /* trace shadow ray */
-    rtcOccluded1Ex(g_scene,&context,shadow);
+    rtcOccluded1(g_scene,&context,shadow);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

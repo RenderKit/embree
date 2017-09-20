@@ -28,7 +28,7 @@ namespace embree
   }
 
   extern "C" void ispcIntersect1 (RTCScene scene, const RTCIntersectContext* context, RTCRay& ray) {
-    rtcIntersect1Ex(scene,context,ray);
+    rtcIntersect1(scene,context,ray);
   }
   
   extern "C" void ispcIntersect4 (const void* valid, RTCScene scene, const RTCIntersectContext* context, RTCRay4& ray) {
@@ -60,7 +60,7 @@ namespace embree
   }
   
   extern "C" void ispcOccluded1 (RTCScene scene, const RTCIntersectContext* context, RTCRay& ray) {
-    rtcOccluded1Ex(scene,context,ray);
+    rtcOccluded1(scene,context,ray);
   }
   
   extern "C" void ispcOccluded4 (const void* valid, RTCScene scene, const RTCIntersectContext* context, RTCRay4& ray) {

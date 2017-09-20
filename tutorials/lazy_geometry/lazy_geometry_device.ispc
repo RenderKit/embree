@@ -168,7 +168,7 @@ void instanceIntersectFunc(void* uniform instance_i, varying RTCRay& ray, unifor
   /* trace ray inside object */
   const int geomID = ray.geomID;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  rtcIntersectEx(instance->object,&context,ray);
+  rtcIntersect(instance->object,&context,ray);
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) ray.geomID = geomID;
   else ray.instID = instance->userID;
 }
@@ -185,7 +185,7 @@ void instanceOccludedFunc(void* uniform instance_i, varying RTCRay& ray, uniform
     lazyCreate(instance);
 
   /* trace ray inside object */
-  rtcOccludedEx(instance->object,&context,ray);
+  rtcOccluded(instance->object,&context,ray);
 }
 
 uniform LazyGeometry* uniform createLazyObject (RTCScene scene, uniform int userID, const uniform Vec3f& center, const uniform float radius)
@@ -281,7 +281,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   ray.time = 0;
 
   /* intersect ray with scene */
-  rtcIntersectEx(g_scene,&context,ray);
+  rtcIntersect(g_scene,&context,ray);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -304,7 +304,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     shadow.time = 0;
 
     /* trace shadow ray */
-    rtcOccludedEx(g_scene,&context,shadow);
+    rtcOccluded(g_scene,&context,shadow);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

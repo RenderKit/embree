@@ -418,7 +418,7 @@ void renderTileStandard(uniform int taskIndex,
         /* trace shadow rays */
 #if 0
         for (uniform size_t n=0;n<N;n++)
-          rtcOccludedEx(g_scene,&context,rays[n]);
+          rtcOccluded(g_scene,&context,rays[n]);
 #else
         rtcOccludedVM(g_scene,&context,rays,N,sizeof(RTCRay));
 #endif
