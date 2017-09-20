@@ -742,7 +742,7 @@ namespace embree
     if (N) RTCORE_VERIFY_HANDLE(geomIDs);
     if (scene->isStatic() && (gflags != RTC_GEOMETRY_STATIC))
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
-    std::vector<Geometry*> geometries(N);
+    std::vector<Ref<Geometry>> geometries(N);
     for (size_t i=0; i<N; i++) {
       RTCORE_VERIFY_GEOMID(geomIDs[i]);
       geometries[i] = scene->get_locked(geomIDs[i]);

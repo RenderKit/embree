@@ -51,7 +51,7 @@ namespace embree
       
       __forceinline Ty* at(const size_t i)
       {
-        Geometry* geom = scene->geometries[i];
+        Geometry* geom = scene->geometries[i].ptr;
         if (geom == nullptr) return nullptr;
         if (!all && !geom->isEnabled()) return nullptr;
         if (geom->getType() != Ty::geom_type) return nullptr;
@@ -138,10 +138,10 @@ namespace embree
     unsigned int newInstance (unsigned int geomID, Scene* scene, size_t numTimeSteps);
 
     /*! Creates a new geometry instance. */
-    unsigned int newGeometryInstance (unsigned int geomID, Geometry* geom);
+    unsigned int newGeometryInstance (unsigned int geomID, Ref<Geometry> geom);
 
     /*! Creates a new geometry group. */
-    unsigned int newGeometryGroup (unsigned int geomID, RTCGeometryFlags gflags, const std::vector<Geometry*> geometries);
+    unsigned int newGeometryGroup (unsigned int geomID, RTCGeometryFlags gflags, const std::vector<Ref<Geometry>>& geometries);
 
     /*! Creates a new triangle mesh. */
     unsigned int newTriangleMesh (unsigned int geomID, RTCGeometryFlags flags, size_t maxTriangles, size_t maxVertices, size_t numTimeSteps);
@@ -186,35 +186,34 @@ namespace embree
     }
 
     /* get mesh by ID */
-    __forceinline       Geometry* get(size_t i)       { assert(i < geometries.size()); return geometries[i]; }
-    __forceinline const Geometry* get(size_t i) const { assert(i < geometries.size()); return geometries[i]; }
+    __forceinline       Geometry* get(size_t i)       { assert(i < geometries.size()); return geometries[i].ptr; }
+    __forceinline const Geometry* get(size_t i) const { assert(i < geometries.size()); return geometries[i].ptr; }
 
     template<typename Mesh>
       __forceinline       Mesh* get(size_t i)       { 
       assert(i < geometries.size()); 
       assert(geometries[i]->getType() == Mesh::geom_type);
-      return (Mesh*)geometries[i]; 
+      return (Mesh*)geometries[i].ptr; 
     }
     template<typename Mesh>
       __forceinline const Mesh* get(size_t i) const { 
       assert(i < geometries.size()); 
       assert(geometries[i]->getType() == Mesh::geom_type);
-      return (Mesh*)geometries[i]; 
+      return (Mesh*)geometries[i].ptr; 
     }
 
     template<typename Mesh>
     __forceinline Mesh* getSafe(size_t i) {
       assert(i < geometries.size());
-      if (geometries[i] == nullptr) return nullptr;
+      if (geometries[i] == null) return nullptr;
       if (geometries[i]->getType() != Mesh::geom_type) return nullptr;
-      else return (Mesh*) geometries[i];
+      else return (Mesh*) geometries[i].ptr;
     }
 
-    __forceinline Geometry* get_locked(size_t i)  {
+    __forceinline Ref<Geometry> get_locked(size_t i)  {
       Lock<SpinLock> lock(geometriesMutex);
-      Geometry *g = geometries[i]; 
       assert(i < geometries.size()); 
-      return g; 
+      return geometries[i]; 
     }
 
     /* test if this is a static scene */
@@ -243,7 +242,7 @@ namespace embree
 
   public:
     IDPool<unsigned> id_pool;
-    std::vector<Geometry*> geometries; //!< list of all user geometries
+    std::vector<Ref<Geometry>> geometries; //!< list of all user geometries
     vector<int*> vertices;
     
   public:

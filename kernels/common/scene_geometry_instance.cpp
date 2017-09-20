@@ -19,13 +19,13 @@
 
 namespace embree
 {
-  GeometryInstance::GeometryInstance (Scene* scene, Geometry* geom) 
+  GeometryInstance::GeometryInstance (Scene* scene, Ref<Geometry> geom) 
     : Geometry(scene,Type(geom->type | INSTANCE), 1, geom->numTimeSteps, geom->flags), local2world(one), world2local(one), geom(geom) 
   {
     enabling();
   }
 
-  void GeometryInstance::count(Geometry* geom, ssize_t f)
+  void GeometryInstance::count(const Ref<Geometry>& geom, ssize_t f)
   {
     if (geom->numTimeSteps == 1)
     {
@@ -53,7 +53,7 @@ namespace embree
   {
     geom->used++;
     if (geom->getType() == Geometry::GROUP) {
-      GeometryGroup* group = (GeometryGroup*) geom;
+      Ref<GeometryGroup> group = geom.dynamicCast<GeometryGroup>();
       for (size_t i=0; i<group->size(); i++)
         count((*group)[i],+1);
     }
@@ -67,7 +67,7 @@ namespace embree
     geom->used--;
      geom->used++;
     if (geom->getType() == Geometry::GROUP) {
-      GeometryGroup* group = (GeometryGroup*) geom;
+      Ref<GeometryGroup> group = geom.dynamicCast<GeometryGroup>();
       for (size_t i=0; i<group->size(); i++)
         count((*group)[i],-1);
     }
@@ -97,7 +97,7 @@ namespace embree
     world2local = rcp(xfm);
   }
 
-  GeometryGroup::GeometryGroup (Scene* scene, RTCGeometryFlags gflags, const std::vector<Geometry*>& geometries) 
+  GeometryGroup::GeometryGroup (Scene* scene, RTCGeometryFlags gflags, const std::vector<Ref<Geometry>>& geometries) 
     : Geometry(scene,GROUP, geometries.size(), 1, gflags), geometries(geometries)
   {
     enabling();

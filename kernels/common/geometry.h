@@ -49,7 +49,7 @@ namespace embree
   }
 
   /*! Base class all geometries are derived from */
-  class Geometry
+  class Geometry : public RefCount
   {
     friend class Scene;
   public:

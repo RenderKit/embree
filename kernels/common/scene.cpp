@@ -590,9 +590,6 @@ namespace embree
   
   Scene::~Scene () 
   {
-    for (size_t i=0; i<geometries.size(); i++)
-      delete geometries[i];
-
 #if defined(TASKING_TBB) || defined(TASKING_PPL)
     delete group; group = nullptr;
 #endif
@@ -611,11 +608,11 @@ namespace embree
   }
 #endif
 
-  unsigned Scene::newGeometryInstance (unsigned geomID, Geometry* geom_in) {
+  unsigned Scene::newGeometryInstance (unsigned geomID, Ref<Geometry> geom_in) {
     return bind(geomID,new GeometryInstance(this,geom_in));
   }
 
-  unsigned int Scene::newGeometryGroup (unsigned geomID, RTCGeometryFlags gflags, const std::vector<Geometry*> geometries) {
+  unsigned int Scene::newGeometryGroup (unsigned geomID, RTCGeometryFlags gflags, const std::vector<Ref<Geometry>>& geometries) {
     return bind(geomID,new GeometryGroup(this,gflags,geometries));
   }
 
@@ -699,16 +696,15 @@ namespace embree
     if (geomID >= geometries.size())
       throw_RTCError(RTC_INVALID_OPERATION,"invalid geometry ID");
 
-    Geometry* geometry = geometries[geomID];
-    if (geometry == nullptr)
+    Ref<Geometry>& geometry = geometries[geomID];
+    if (geometry == null)
       throw_RTCError(RTC_INVALID_OPERATION,"invalid geometry");
     
     geometry->disable();
     accels.deleteGeometry(unsigned(geomID));
     id_pool.deallocate((unsigned)geomID);
-    geometries[geomID] = nullptr;
+    geometries[geomID] = null;
     vertices[geomID] = nullptr;
-    delete geometry;
   }
 
   void Scene::updateInterface()
