@@ -109,6 +109,8 @@ namespace embree
       /*! run this task */
       __dllexport void run(Thread& thread);
 
+      void run_internal(Thread& thread);
+
     public:
       std::atomic<int> state;            //!< state this task is in
       std::atomic<int> dependencies;     //!< dependencies to wait for
@@ -149,6 +151,7 @@ namespace embree
       }
 
       __dllexport bool execute_local(Thread& thread, Task* parent);
+      bool execute_local_internal(Thread& thread, Task* parent);
       bool steal(Thread& thread);
       size_t getTaskSizeAtLeft();
 

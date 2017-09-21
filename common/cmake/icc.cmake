@@ -134,7 +134,7 @@ ELSE()
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -no-inline-max-total-size")   # no size limit when performing inlining
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -no-inline-max-per-compile")  # no maximal number of inlinings per compilation unit
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -inline-factor=150")          # increase default inline factors limits by 2x
-  
+
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "")
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -DDEBUG")                     # enables assertions
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -DTBB_USE_DEBUG")             # configures TBB in debug mode
