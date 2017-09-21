@@ -82,7 +82,7 @@ void updateMeshEdgeLevelBufferTask (int taskIndex, int threadIndex,  ISPCScene* 
   unsigned int geomID = mesh->geom.geomID;
   if (mesh->numFaces < 10000) {
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
-    rtcUpdateBuffer(g_scene,mesh->geom.geomID,RTC_LEVEL_BUFFER);
+    rtcUpdateBuffer(rtcGetGeometry(g_scene,mesh->geom.geomID),RTC_LEVEL_BUFFER);
   }
 }
 #endif
@@ -114,7 +114,7 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 #else
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
-    rtcUpdateBuffer(g_scene,mesh->geom.geomID,RTC_LEVEL_BUFFER);
+    rtcUpdateBuffer(rtcGetGeometry(g_scene,mesh->geom.geomID),RTC_LEVEL_BUFFER);
   }
 }
 

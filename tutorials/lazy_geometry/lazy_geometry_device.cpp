@@ -37,7 +37,7 @@ enum LazyState
 struct LazyGeometry
 {
   ALIGNED_STRUCT
-  unsigned int geometry;
+  RTCGeometry geometry;
   LazyState state;
   RTCScene object;
   int userID;
@@ -61,11 +61,11 @@ void instanceBoundsFunc(void* uniform, void* instance_i, size_t item, size_t tim
 unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 {
   /* create triangle mesh */
-  unsigned int mesh = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));
 
   /* map triangle and vertex buffers */
-  Vertex* vertices = (Vertex*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
-  Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+  Vertex* vertices = (Vertex*) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
+  Triangle* triangles = (Triangle*) rtcMapBuffer(geom,RTC_INDEX_BUFFER);
 
   /* create sphere */
   int tri = 0;
@@ -107,9 +107,12 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
       }
     }
   }
-  rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
-  rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-  return mesh;
+  rtcUnmapBuffer(geom,RTC_VERTEX_BUFFER);
+  rtcUnmapBuffer(geom,RTC_INDEX_BUFFER);
+
+  unsigned int geomID = rtcAttachGeometry(scene,geom);
+  rtcReleaseGeometry(geom);
+  return geomID;
 }
 
 void lazyCreate(LazyGeometry* instance)
@@ -198,11 +201,13 @@ LazyGeometry* createLazyObject (RTCScene scene, int userID, const Vec3fa& center
   instance->userID = userID;
   instance->center = center;
   instance->radius = radius;
-  instance->geometry = rtcNewUserGeometry(scene,RTC_GEOMETRY_STATIC,1);
-  rtcSetUserData(scene,instance->geometry,instance);
-  rtcSetBoundsFunction(scene,instance->geometry,instanceBoundsFunc,nullptr);
-  rtcSetIntersectFunction(scene,instance->geometry,instanceIntersectFunc);
-  rtcSetOccludedFunction (scene,instance->geometry,instanceOccludedFunc);
+  instance->geometry = rtcNewUserGeometry(g_device,RTC_GEOMETRY_STATIC,1);
+  rtcSetUserData(instance->geometry,instance);
+  rtcSetBoundsFunction(instance->geometry,instanceBoundsFunc,nullptr);
+  rtcSetIntersectFunction(instance->geometry,instanceIntersectFunc);
+  rtcSetOccludedFunction (instance->geometry,instanceOccludedFunc);
+  rtcAttachGeometry(scene,instance->geometry);
+  rtcReleaseGeometry(instance->geometry);
 
   /* if we do not support the join mode then Embree also does not
    * support lazy build */
@@ -216,23 +221,25 @@ LazyGeometry* createLazyObject (RTCScene scene, int userID, const Vec3fa& center
 unsigned int createGroundPlane (RTCScene scene)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  unsigned int mesh = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 2, 4);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 2, 4);
 
   /* set vertices */
-  Vertex* vertices = (Vertex*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
+  Vertex* vertices = (Vertex*) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
   vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
   vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
   vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-  rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
+  rtcUnmapBuffer(geom,RTC_VERTEX_BUFFER);
 
   /* set triangles */
-  Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+  Triangle* triangles = (Triangle*) rtcMapBuffer(geom,RTC_INDEX_BUFFER);
   triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
-  rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+  rtcUnmapBuffer(geom,RTC_INDEX_BUFFER);
 
-  return mesh;
+  unsigned int geomID = rtcAttachGeometry(scene,geom);
+  rtcReleaseGeometry(geom);
+  return geomID;
 }
 
 /* scene data */

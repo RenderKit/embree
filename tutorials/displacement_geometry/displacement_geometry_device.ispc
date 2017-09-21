@@ -139,7 +139,7 @@ uniform unsigned int addCube (RTCScene scene_i)
 
   rtcSetDisplacementFunction(geom,displacementFunction,NULL);
 
-  uniform unsigned int geomID = rtcAttachGeometry(scene,geom);
+  uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);
   rtcReleaseGeometry(geom);
   return geomID;
 }
@@ -164,7 +164,7 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
   rtcUnmapBuffer(geom,RTC_INDEX_BUFFER);
 
-  uniform unsigned int geomID = rtcAttachGeometry(scene,geom);
+  uniform unsigned int geomID = rtcAttachGeometry(scene_i,geom);
   rtcReleaseGeometry(geom);
   return geomID;
 }

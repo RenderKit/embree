@@ -1423,6 +1423,25 @@ namespace embree
     return -1;
   }
 
+  RTCORE_API unsigned int rtcAttachAndReleaseGeometry (RTCScene hscene, RTCGeometry hgeometry)
+  {
+    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcAttachAndReleasGeometry);
+    RTCORE_VERIFY_HANDLE(hscene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    if (scene->device != geometry->device)
+      throw_RTCError(RTC_INVALID_ARGUMENT,"inputs are from different devices");
+    if (scene->isStatic() && (geometry->flags != RTC_GEOMETRY_STATIC))
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
+    unsigned int geomID = scene->bind(RTC_INVALID_GEOMETRY_ID,geometry);
+    geometry->refDec();
+    return geomID;
+    RTCORE_CATCH_END2(scene);
+    return -1;
+  }
+
   RTCORE_API unsigned int rtcAttachGeometryByID (RTCScene hscene, RTCGeometry hgeometry, unsigned int geomID)
   {
     Scene* scene = (Scene*) hscene;
@@ -1441,6 +1460,26 @@ namespace embree
     return -1;
   }
 
+  RTCORE_API unsigned int rtcAttachAndReleaseGeometryByID (RTCScene hscene, RTCGeometry hgeometry, unsigned int geomID_in)
+  {
+    Scene* scene = (Scene*) hscene;
+    Ref<Geometry> geometry = (Geometry*) hgeometry;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcAttachAndReleaseGeometryByID);
+    RTCORE_VERIFY_HANDLE(hscene);
+    RTCORE_VERIFY_HANDLE(hgeometry);
+    RTCORE_VERIFY_GEOMID(geomID_in);
+    if (scene->device != geometry->device)
+      throw_RTCError(RTC_INVALID_ARGUMENT,"inputs are from different devices");
+    if (scene->isStatic() && (geometry->flags != RTC_GEOMETRY_STATIC))
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
+    unsigned int geomID = scene->bind(geomID_in,geometry);
+    geometry->refDec();
+    return geomID;
+    RTCORE_CATCH_END2(scene);
+    return -1;
+  }
+  
   RTCORE_API void rtcDetachGeometry (RTCScene hscene, unsigned int geomID)
   {
     Scene* scene = (Scene*) hscene;

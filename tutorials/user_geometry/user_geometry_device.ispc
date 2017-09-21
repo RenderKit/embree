@@ -19,6 +19,8 @@
 const uniform int numPhi = 5;
 const uniform int numTheta = 2*numPhi;
 
+RTCDevice g_device = NULL;
+
 void renderTileStandardStream(uniform int taskIndex,
                               uniform int threadIndex,
                               uniform int* uniform pixels,
@@ -36,7 +38,7 @@ void renderTileStandardStream(uniform int taskIndex,
 struct Instance
 {
   ALIGNED_STRUCT
-  uniform unsigned int geometry;
+  RTCGeometry geometry;
   RTCScene object;
   uniform int userID;
   AffineSpace3f local2world;
@@ -218,16 +220,18 @@ uniform Instance* uniform createInstance (RTCScene scene, RTCScene object, unifo
   instance->local2world.l.vy = make_Vec3f(0,1,0);
   instance->local2world.l.vz = make_Vec3f(0,0,1);
   instance->local2world.p    = make_Vec3f(0,0,0);
-  instance->geometry = rtcNewUserGeometry(scene,RTC_GEOMETRY_STATIC,1);
-  rtcSetUserData(scene,instance->geometry,instance);
-  rtcSetBoundsFunction(scene,instance->geometry,instanceBoundsFunc,NULL);
+  instance->geometry = rtcNewUserGeometry(g_device,RTC_GEOMETRY_STATIC,1);
+  rtcSetUserData(instance->geometry,instance);
+  rtcSetBoundsFunction(instance->geometry,instanceBoundsFunc,NULL);
   if (g_mode == MODE_NORMAL) {
-    rtcSetIntersectFunction(scene,instance->geometry,instanceIntersectFunc);
-    rtcSetOccludedFunction (scene,instance->geometry,instanceOccludedFunc);
+    rtcSetIntersectFunction(instance->geometry,instanceIntersectFunc);
+    rtcSetOccludedFunction (instance->geometry,instanceOccludedFunc);
   } else {
-    rtcSetIntersectFunctionN(scene,instance->geometry,instanceIntersectFuncN);
-    rtcSetOccludedFunctionN (scene,instance->geometry,instanceOccludedFuncN);
+    rtcSetIntersectFunctionN(instance->geometry,instanceIntersectFuncN);
+    rtcSetOccludedFunctionN (instance->geometry,instanceOccludedFuncN);
   }
+  rtcAttachGeometry(scene,instance->geometry);
+  rtcReleaseGeometry(instance->geometry);
   return instance;
 }
 
@@ -235,7 +239,7 @@ void updateInstance (RTCScene scene, uniform Instance* uniform instance)
 {
   instance->world2local = rcp(instance->local2world);
   instance->normal2world = transposed(rcp(instance->local2world.l));
-  rtcUpdate(scene,instance->geometry);
+  rtcUpdate(instance->geometry);
 }
 
 // ======================================================================== //
@@ -247,7 +251,8 @@ struct Sphere
   ALIGNED_STRUCT
   Vec3f p;                      //!< position of the sphere
   float r;                      //!< radius of the sphere
-  unsigned int geomID;
+  RTCGeometry geometry;
+  uniform unsigned int geomID;
 };
 
 unmasked void sphereBoundsFunc(void* uniform, void* uniform spheres_i, uniform uintptr_t item, uniform uintptr_t time, uniform RTCBounds& bounds_o)
@@ -425,37 +430,44 @@ unmasked void sphereOccludedFuncN(const uniform int* uniform valid,
 
 uniform Sphere* uniform createAnalyticalSphere (RTCScene scene, const uniform Vec3f& p, uniform float r)
 {
-  uniform unsigned int geomID = rtcNewUserGeometry(scene,RTC_GEOMETRY_STATIC,1);
+  RTCGeometry geom = rtcNewUserGeometry(g_device,RTC_GEOMETRY_STATIC,1);
   uniform Sphere* uniform sphere = uniform new uniform Sphere;
   sphere->p = p;
   sphere->r = r;
-  sphere->geomID = geomID;
-  rtcSetUserData(scene,geomID,sphere);
-  rtcSetBoundsFunction(scene,geomID,sphereBoundsFunc,NULL);
+  sphere->geometry = geom;
+  sphere->geomID = rtcAttachGeometry(scene,geom);
+  rtcSetUserData(geom,sphere);
+  rtcSetBoundsFunction(geom,sphereBoundsFunc,NULL);
   if (g_mode == MODE_NORMAL) {
-    rtcSetIntersectFunction(scene,geomID,sphereIntersectFunc);
-    rtcSetOccludedFunction (scene,geomID,sphereOccludedFunc);
+    rtcSetIntersectFunction(geom,sphereIntersectFunc);
+    rtcSetOccludedFunction (geom,sphereOccludedFunc);
   } else {
-    rtcSetIntersectFunctionN(scene,geomID,sphereIntersectFuncN);
-    rtcSetOccludedFunctionN (scene,geomID,sphereOccludedFuncN);
+    rtcSetIntersectFunctionN(geom,sphereIntersectFuncN);
+    rtcSetOccludedFunctionN (geom,sphereOccludedFuncN);
   }
+  rtcReleaseGeometry(geom);
   return sphere;
 }
 
 uniform Sphere* uniform createAnalyticalSpheres (RTCScene scene, uniform size_t N)
 {
-  uniform unsigned int geomID = rtcNewUserGeometry(scene,RTC_GEOMETRY_STATIC,N);
+  RTCGeometry geom = rtcNewUserGeometry(g_device,RTC_GEOMETRY_STATIC,N);
   uniform Sphere* uniform spheres = uniform new uniform Sphere[N];
-  for (uniform size_t i=0; i<N; i++) spheres[i].geomID = geomID;
-  rtcSetUserData(scene,geomID,spheres);
-  rtcSetBoundsFunction(scene,geomID,sphereBoundsFunc,NULL);
-  if (g_mode == MODE_NORMAL) {
-    rtcSetIntersectFunction(scene,geomID,sphereIntersectFunc);
-    rtcSetOccludedFunction (scene,geomID,sphereOccludedFunc);
-  } else {
-    rtcSetIntersectFunctionN(scene,geomID,sphereIntersectFuncN);
-    rtcSetOccludedFunctionN (scene,geomID,sphereOccludedFuncN);
+  uniform unsigned int geomID = rtcAttachGeometry(scene,geom);
+  for (uniform size_t i=0; i<N; i++) {
+    spheres[i].geometry = geom;
+    spheres[i].geomID = geomID;
   }
+  rtcSetUserData(geom,spheres);
+  rtcSetBoundsFunction(geom,sphereBoundsFunc,NULL);
+  if (g_mode == MODE_NORMAL) {
+    rtcSetIntersectFunction(geom,sphereIntersectFunc);
+    rtcSetOccludedFunction (geom,sphereOccludedFunc);
+  } else {
+    rtcSetIntersectFunctionN(geom,sphereIntersectFuncN);
+    rtcSetOccludedFunctionN (geom,sphereOccludedFuncN);
+  }
+  rtcReleaseGeometry(geom);
   return spheres;
 }
 
@@ -466,11 +478,11 @@ uniform Sphere* uniform createAnalyticalSpheres (RTCScene scene, uniform size_t 
 uniform unsigned int createTriangulatedSphere (RTCScene scene, const uniform Vec3f& p, uniform float r)
 {
   /* create triangle mesh */
-  uniform unsigned int mesh = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));
 
   /* map triangle and vertex buffers */
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
-  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
+  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(geom,RTC_INDEX_BUFFER);
 
   /* create sphere */
   uniform int tri = 0;
@@ -512,36 +524,40 @@ uniform unsigned int createTriangulatedSphere (RTCScene scene, const uniform Vec
       }
     }
   }
-  rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
-  rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-  return mesh;
+  rtcUnmapBuffer(geom,RTC_VERTEX_BUFFER);
+  rtcUnmapBuffer(geom,RTC_INDEX_BUFFER);
+
+  uniform unsigned int geomID = rtcAttachGeometry(scene,geom);
+  rtcReleaseGeometry(geom);
+  return geomID;
 }
 
 /* creates a ground plane */
 uniform unsigned int createGroundPlane (RTCScene scene)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  uniform unsigned int mesh = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 2, 4);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 2, 4);
 
   /* set vertices */
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
+  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
   vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
   vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
   vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-  rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
+  rtcUnmapBuffer(geom,RTC_VERTEX_BUFFER);
 
   /* set triangles */
-  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(geom,RTC_INDEX_BUFFER);
   triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
-  rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+  rtcUnmapBuffer(geom,RTC_INDEX_BUFFER);
 
-  return mesh;
+  uniform unsigned int geomID = rtcAttachGeometry(scene,geom);
+  rtcReleaseGeometry(geom);
+  return geomID;
 }
 
 /* scene data */
-RTCDevice g_device = NULL;
 RTCScene g_scene  = NULL;
 RTCScene g_scene0 = NULL;
 RTCScene g_scene1 = NULL;

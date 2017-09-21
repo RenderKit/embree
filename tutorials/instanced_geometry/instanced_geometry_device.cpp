@@ -21,6 +21,8 @@ namespace embree {
 const int numPhi = 5;
 const int numTheta = 2*numPhi;
 
+RTCDevice g_device = nullptr;
+
 void renderTileStandardStream(int taskIndex,
                               int threadIndex,
                               int* pixels,
@@ -34,11 +36,11 @@ void renderTileStandardStream(int taskIndex,
 unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 {
   /* create triangle mesh */
-  unsigned int mesh = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));
 
   /* map triangle and vertex buffers */
-  Vertex* vertices = (Vertex*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
-  Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+  Vertex* vertices = (Vertex*) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
+  Triangle* triangles = (Triangle*) rtcMapBuffer(geom,RTC_INDEX_BUFFER);
 
   /* create sphere */
   int tri = 0;
@@ -80,43 +82,47 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
       }
     }
   }
-  rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
-  rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-  return mesh;
+  rtcUnmapBuffer(geom,RTC_VERTEX_BUFFER);
+  rtcUnmapBuffer(geom,RTC_INDEX_BUFFER);
+
+  unsigned int geomID = rtcAttachGeometry(scene,geom);
+  rtcReleaseGeometry(geom);
+  return geomID;
 }
 
 /* creates a ground plane */
 unsigned int createGroundPlane (RTCScene scene)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  unsigned int mesh = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 2, 4);
+  RTCGeometry geom = rtcNewTriangleMesh (g_device, RTC_GEOMETRY_STATIC, 2, 4);
 
   /* set vertices */
-  Vertex* vertices = (Vertex*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
+  Vertex* vertices = (Vertex*) rtcMapBuffer(geom,RTC_VERTEX_BUFFER);
   vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
   vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
   vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-  rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
+  rtcUnmapBuffer(geom,RTC_VERTEX_BUFFER);
 
   /* set triangles */
-  Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+  Triangle* triangles = (Triangle*) rtcMapBuffer(geom,RTC_INDEX_BUFFER);
   triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
-  rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+  rtcUnmapBuffer(geom,RTC_INDEX_BUFFER);
 
-  return mesh;
+  unsigned int geomID = rtcAttachGeometry(scene,geom);
+  rtcReleaseGeometry(geom);
+  return geomID;
 }
 
 /* scene data */
-RTCDevice g_device = nullptr;
 RTCScene g_scene  = nullptr;
 RTCScene g_scene1 = nullptr;
 
-unsigned int g_instance0 = -1;
-unsigned int g_instance1 = -1;
-unsigned int g_instance2 = -1;
-unsigned int g_instance3 = -1;
+RTCGeometry g_instance0 = nullptr;
+RTCGeometry g_instance1 = nullptr;
+RTCGeometry g_instance2 = nullptr;
+RTCGeometry g_instance3 = nullptr;
 AffineSpace3fa instance_xfm[4];
 LinearSpace3fa normal_xfm[4];
 
@@ -148,10 +154,18 @@ extern "C" void device_init (char* cfg)
   rtcCommit (g_scene1);
 
   /* instantiate geometry */
-  g_instance0 = rtcNewInstance2(g_scene,g_scene1,1);
-  g_instance1 = rtcNewInstance2(g_scene,g_scene1,1);
-  g_instance2 = rtcNewInstance2(g_scene,g_scene1,1);
-  g_instance3 = rtcNewInstance2(g_scene,g_scene1,1);
+  g_instance0 = rtcNewInstance2(g_device,g_scene1,1);
+  g_instance1 = rtcNewInstance2(g_device,g_scene1,1);
+  g_instance2 = rtcNewInstance2(g_device,g_scene1,1);
+  g_instance3 = rtcNewInstance2(g_device,g_scene1,1);
+  rtcAttachGeometry(g_scene,g_instance0);
+  rtcAttachGeometry(g_scene,g_instance1);
+  rtcAttachGeometry(g_scene,g_instance2);
+  rtcAttachGeometry(g_scene,g_instance3);
+  rtcReleaseGeometry(g_instance0);
+  rtcReleaseGeometry(g_instance1);
+  rtcReleaseGeometry(g_instance2);
+  rtcReleaseGeometry(g_instance3);
   createGroundPlane(g_scene);
 
   /* set all colors */
@@ -332,7 +346,7 @@ void renderTileStandardStream(int taskIndex,
   RTCIntersectContext primary_context;
   primary_context.flags = g_iflags_coherent;
   primary_context.userRayExt = &primary_stream;
-  rtcIntersect1VM(g_scene,&primary_context,(RTCRay*)&primary_stream,N,sizeof(RTCRay));
+  rtcIntersect1M(g_scene,&primary_context,(RTCRay*)&primary_stream,N,sizeof(RTCRay));
 
   /* terminate rays and update color */
   N = -1;
@@ -390,7 +404,7 @@ void renderTileStandardStream(int taskIndex,
   RTCIntersectContext shadow_context;
   shadow_context.flags = g_iflags_coherent;
   shadow_context.userRayExt = &shadow_stream;
-  rtcOccluded1VM(g_scene,&shadow_context,(RTCRay*)&shadow_stream,N,sizeof(RTCRay));
+  rtcOccluded1M(g_scene,&shadow_context,(RTCRay*)&shadow_stream,N,sizeof(RTCRay));
 
   /* add light contribution */
   N = -1;
@@ -478,16 +492,16 @@ extern "C" void device_render (int* pixels,
     normal_xfm[i] = transposed(rcp(instance_xfm[i].l));
 
   /* set instance transformations */
-  rtcSetTransform(g_scene,g_instance0,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[0],0);
-  rtcSetTransform(g_scene,g_instance1,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[1],0);
-  rtcSetTransform(g_scene,g_instance2,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[2],0);
-  rtcSetTransform(g_scene,g_instance3,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[3],0);
+  rtcSetTransform(g_instance0,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[0],0);
+  rtcSetTransform(g_instance1,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[1],0);
+  rtcSetTransform(g_instance2,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[2],0);
+  rtcSetTransform(g_instance3,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[3],0);
 
   /* update scene */
-  rtcUpdate(g_scene,g_instance0);
-  rtcUpdate(g_scene,g_instance1);
-  rtcUpdate(g_scene,g_instance2);
-  rtcUpdate(g_scene,g_instance3);
+  rtcUpdate(g_instance0);
+  rtcUpdate(g_instance1);
+  rtcUpdate(g_instance2);
+  rtcUpdate(g_instance3);
   rtcCommit (g_scene);
 
   /* render all pixels */

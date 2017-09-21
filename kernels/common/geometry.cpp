@@ -73,6 +73,7 @@ namespace embree
 
   Geometry* Geometry::attach(Scene* scene, unsigned int geomID)
   {
+    assert(scene);
     this->scene = scene;
     this->geomID = geomID;
     if (isEnabled()) {
@@ -85,13 +86,13 @@ namespace embree
 
   void Geometry::detach()
   {
-    this->scene = nullptr;
-    this->geomID = -1;
     if (isEnabled()) {
       scene->setModified();
       updateIntersectionFilters(false);
       disabling();
     }
+    this->scene = nullptr;
+    this->geomID = -1;
   }
   
   void Geometry::enable () 
@@ -114,10 +115,12 @@ namespace embree
 
   void Geometry::update() 
   {
-    if (scene->isStatic() && scene->isBuild()) 
+    if (scene && scene->isStatic() && scene->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    scene->setModified();
+    if (scene)
+      scene->setModified();
+    
     modified = true;
   }
 
@@ -141,7 +144,7 @@ namespace embree
 
   void Geometry::setUserData (void* ptr)
   {
-    if (scene->isStatic() && scene->isBuild())
+    if (scene && scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     userPtr = ptr;
@@ -326,7 +329,7 @@ namespace embree
 
   void Geometry::setOcclusionFilterFunctionN (RTCFilterFuncN filter) 
   { 
-    if (!scene->isStreamMode())
+    if (scene && !scene->isStreamMode())
       throw_RTCError(RTC_INVALID_OPERATION,"you can use rtcSetOcclusionFilterFunctionN only in stream mode");
 
     if (scene && scene->isStatic() && scene->isBuild())

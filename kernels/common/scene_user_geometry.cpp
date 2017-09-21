@@ -131,7 +131,7 @@ namespace embree
     if (scene && scene->isStreamMode())
       throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetOccludedFunctionN (and optionally rtcSetOccludedFunction1Mp) in stream mode");
 
-    if (scene->isStatic() && scene->isBuild())
+    if (scene && scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     intersectors.intersector8.occluded = (void*)occluded8;

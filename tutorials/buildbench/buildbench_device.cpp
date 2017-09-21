@@ -31,88 +31,85 @@ namespace embree {
   RTCDevice g_device = nullptr;
   RTCScene g_scene = nullptr;
 
-  unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, RTCGeometryFlags flags)
+  void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, RTCGeometryFlags flags)
   {
-    unsigned int geomID = rtcNewTriangleMesh (scene_out, flags, mesh->numTriangles, mesh->numVertices, mesh->numTimeSteps);
+    RTCGeometry geom = rtcNewTriangleMesh (g_device, flags, mesh->numTriangles, mesh->numVertices, mesh->numTimeSteps);
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
-      rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER_(t),mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
+      rtcSetBuffer(geom, RTC_VERTEX_BUFFER_(t),mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
-    rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle), mesh->numTriangles);
-    mesh->geom.geomID = geomID;
-    return geomID;
+    rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle), mesh->numTriangles);
+    mesh->geom.geomID = rtcAttachAndReleaseGeometry(scene_out,geom);
   }
 
-  unsigned int convertQuadMesh(ISPCQuadMesh* mesh, RTCScene scene_out, RTCGeometryFlags flags)
+  void convertQuadMesh(ISPCQuadMesh* mesh, RTCScene scene_out, RTCGeometryFlags flags)
   {
-    unsigned int geomID = rtcNewQuadMesh (scene_out, flags, mesh->numQuads, mesh->numVertices, mesh->numTimeSteps);
+    RTCGeometry geom = rtcNewQuadMesh (g_device, flags, mesh->numQuads, mesh->numVertices, mesh->numTimeSteps);
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
-      rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER_(t),mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
+      rtcSetBuffer(geom, RTC_VERTEX_BUFFER_(t),mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
-    rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(ISPCQuad), mesh->numQuads);
-    mesh->geom.geomID = geomID;
-    return geomID;
+    rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(ISPCQuad), mesh->numQuads);
+    mesh->geom.geomID = rtcAttachAndReleaseGeometry(scene_out,geom);
   }
 
-  unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out, RTCGeometryFlags flags)
+  void convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out, RTCGeometryFlags flags)
   {
-    unsigned int geomID = rtcNewSubdivisionMesh(scene_out,flags, mesh->numFaces, mesh->numEdges, mesh->numVertices,
+    RTCGeometry geom = rtcNewSubdivisionMesh(g_device,flags, mesh->numFaces, mesh->numEdges, mesh->numVertices,
                                                 mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles, mesh->numTimeSteps);
-    mesh->geom.geomID = geomID;
     for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 16.0f;
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
-      rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER_(t),mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
+      rtcSetBuffer(geom, RTC_VERTEX_BUFFER_(t),mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
     }
-    rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float), mesh->numEdges);
-    rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(unsigned int), mesh->numEdges);
-    rtcSetBuffer(scene_out, geomID, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(unsigned int), mesh->numFaces);
-    rtcSetBuffer(scene_out, geomID, RTC_HOLE_BUFFER,   mesh->holes, 0, sizeof(unsigned int), mesh->numHoles);
-    rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_INDEX_BUFFER,    mesh->edge_creases,          0, 2*sizeof(unsigned int), mesh->numEdgeCreases);
-    rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(float), mesh->numEdgeCreases);
-    rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(unsigned int), mesh->numVertexCreases);
-    rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float), mesh->numVertexCreases);
-    rtcSetSubdivisionMode(scene_out, geomID, 0, mesh->position_subdiv_mode);
-    return geomID;
+    rtcSetBuffer(geom, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float), mesh->numEdges);
+    rtcSetBuffer(geom, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(unsigned int), mesh->numEdges);
+    rtcSetBuffer(geom, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(unsigned int), mesh->numFaces);
+    rtcSetBuffer(geom, RTC_HOLE_BUFFER,   mesh->holes, 0, sizeof(unsigned int), mesh->numHoles);
+    rtcSetBuffer(geom, RTC_EDGE_CREASE_INDEX_BUFFER,    mesh->edge_creases,          0, 2*sizeof(unsigned int), mesh->numEdgeCreases);
+    rtcSetBuffer(geom, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(float), mesh->numEdgeCreases);
+    rtcSetBuffer(geom, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(unsigned int), mesh->numVertexCreases);
+    rtcSetBuffer(geom, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float), mesh->numVertexCreases);
+    rtcSetSubdivisionMode(geom, 0, mesh->position_subdiv_mode);
+    mesh->geom.geomID = rtcAttachAndReleaseGeometry(scene_out,geom);
   }
 
-  unsigned int convertLineSegments(ISPCLineSegments* mesh, RTCScene scene_out, RTCGeometryFlags flags)
+  void convertLineSegments(ISPCLineSegments* mesh, RTCScene scene_out, RTCGeometryFlags flags)
   {
-    unsigned int geomID = rtcNewLineSegments (scene_out, flags, mesh->numSegments, mesh->numVertices, mesh->numTimeSteps);
+    RTCGeometry geom = rtcNewLineSegments (g_device, flags, mesh->numSegments, mesh->numVertices, mesh->numTimeSteps);
     for (size_t t=0; t<mesh->numTimeSteps; t++) {
-      rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER_(t),mesh->positions[t],0,sizeof(Vertex), mesh->numVertices);
+      rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),mesh->positions[t],0,sizeof(Vertex), mesh->numVertices);
     }
-    rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->indices,0,sizeof(int),mesh->numSegments);
-    return geomID;
+    rtcSetBuffer(geom,RTC_INDEX_BUFFER,mesh->indices,0,sizeof(int),mesh->numSegments);
+    mesh->geom.geomID = rtcAttachAndReleaseGeometry(scene_out,geom);
   }
 
-  unsigned int convertHairSet(ISPCHairSet* hair, RTCScene scene_out, RTCGeometryFlags flags)
+  void convertHairSet(ISPCHairSet* hair, RTCScene scene_out, RTCGeometryFlags flags)
   {
-    unsigned int geomID = 0;
+    RTCGeometry geom = nullptr;
     switch (hair->basis) {
-    case BEZIER_BASIS : geomID = rtcNewBezierHairGeometry (scene_out, flags, hair->numHairs, hair->numVertices, hair->numTimeSteps); break;
-    case BSPLINE_BASIS: geomID = rtcNewBSplineHairGeometry(scene_out, flags, hair->numHairs, hair->numVertices, hair->numTimeSteps); break;
+    case BEZIER_BASIS : geom = rtcNewBezierHairGeometry (g_device, flags, hair->numHairs, hair->numVertices, hair->numTimeSteps); break;
+    case BSPLINE_BASIS: geom = rtcNewBSplineHairGeometry(g_device, flags, hair->numHairs, hair->numVertices, hair->numTimeSteps); break;
     default: assert(false);
     }
     for (size_t t=0; t<hair->numTimeSteps; t++) {
-      rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER_(t),hair->positions[t],0,sizeof(Vertex),hair->numVertices);
+      rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),hair->positions[t],0,sizeof(Vertex),hair->numVertices);
     }
-    rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
-    rtcSetTessellationRate(scene_out,geomID,(float)hair->tessellation_rate);
-    return geomID;
+    rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
+    rtcSetTessellationRate(geom,(float)hair->tessellation_rate);
+    hair->geom.geomID = rtcAttachAndReleaseGeometry(scene_out,geom);
   }
 
-  unsigned int convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out, RTCGeometryFlags flags)
+  void convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out, RTCGeometryFlags flags)
   {
-    unsigned int geomID = 0;
+    RTCGeometry geom = nullptr;
     switch (hair->basis) {
-    case BEZIER_BASIS : geomID = rtcNewBezierCurveGeometry (scene_out, flags, hair->numHairs, hair->numVertices, hair->numTimeSteps); break;
-    case BSPLINE_BASIS: geomID = rtcNewBSplineCurveGeometry(scene_out, flags, hair->numHairs, hair->numVertices, hair->numTimeSteps); break;
+    case BEZIER_BASIS : geom = rtcNewBezierCurveGeometry (g_device, flags, hair->numHairs, hair->numVertices, hair->numTimeSteps); break;
+    case BSPLINE_BASIS: geom = rtcNewBSplineCurveGeometry(g_device, flags, hair->numHairs, hair->numVertices, hair->numTimeSteps); break;
     default: assert(false);
     }
     for (size_t t=0; t<hair->numTimeSteps; t++) {
-      rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER_(t),hair->positions[t],0,sizeof(Vertex),hair->numVertices);
+      rtcSetBuffer(geom,RTC_VERTEX_BUFFER_(t),hair->positions[t],0,sizeof(Vertex),hair->numVertices);
     }
-    rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
-    return geomID;
+    rtcSetBuffer(geom,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
+    hair->geom.geomID = rtcAttachAndReleaseGeometry(scene_out,geom);
   }
 
   RTCScene createScene(RTCSceneFlags sflags)
@@ -126,34 +123,27 @@ namespace embree {
   void convertScene(RTCScene scene_out, ISPCScene* scene_in, RTCGeometryFlags gflags)
   {
     size_t numGeometries = scene_in->numGeometries;
-    //PRINT(numGeometries);
 
     for (size_t i=0; i<numGeometries; i++)
     {
       ISPCGeometry* geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
-        unsigned int geomID MAYBE_UNUSED = convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out, gflags);
-        ((ISPCSubdivMesh*)geometry)->geom.geomID = geomID;
+        convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out, gflags);
       }
       else if (geometry->type == TRIANGLE_MESH) {
-        unsigned int geomID MAYBE_UNUSED = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out, gflags);
-        ((ISPCTriangleMesh*)geometry)->geom.geomID = geomID;
+        convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out, gflags);
       }
       else if (geometry->type == QUAD_MESH) {
-        unsigned int geomID MAYBE_UNUSED = convertQuadMesh((ISPCQuadMesh*) geometry, scene_out, gflags);
-        ((ISPCQuadMesh*)geometry)->geom.geomID = geomID;
+        convertQuadMesh((ISPCQuadMesh*) geometry, scene_out, gflags);
       }
       else if (geometry->type == LINE_SEGMENTS) {
-        unsigned int geomID MAYBE_UNUSED = convertLineSegments((ISPCLineSegments*) geometry, scene_out, gflags);
-        ((ISPCLineSegments*)geometry)->geom.geomID = geomID;
+        convertLineSegments((ISPCLineSegments*) geometry, scene_out, gflags);
       }
       else if (geometry->type == HAIR_SET) {
-        unsigned int geomID MAYBE_UNUSED = convertHairSet((ISPCHairSet*) geometry, scene_out, gflags);
-        ((ISPCHairSet*)geometry)->geom.geomID = geomID;
+        convertHairSet((ISPCHairSet*) geometry, scene_out, gflags);
       }
       else if (geometry->type == CURVES) {
-        unsigned int geomID MAYBE_UNUSED = convertCurveGeometry((ISPCHairSet*) geometry, scene_out, gflags);
-        ((ISPCHairSet*)geometry)->geom.geomID = geomID;
+        convertCurveGeometry((ISPCHairSet*) geometry, scene_out, gflags);
       }
       else
         assert(false);
@@ -203,22 +193,22 @@ namespace embree {
     {
       ISPCGeometry* geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
-        rtcUpdate(scene_out,((ISPCSubdivMesh*)geometry)->geom.geomID);
+        rtcUpdate(rtcGetGeometry(scene_out,((ISPCSubdivMesh*)geometry)->geom.geomID));
       }
       else if (geometry->type == TRIANGLE_MESH) {
-        rtcUpdate(scene_out,((ISPCTriangleMesh*)geometry)->geom.geomID);
+        rtcUpdate(rtcGetGeometry(scene_out,((ISPCTriangleMesh*)geometry)->geom.geomID));
       }
       else if (geometry->type == QUAD_MESH) {
-        rtcUpdate(scene_out,((ISPCQuadMesh*)geometry)->geom.geomID);
+        rtcUpdate(rtcGetGeometry(scene_out,((ISPCQuadMesh*)geometry)->geom.geomID));
       }
       else if (geometry->type == LINE_SEGMENTS) {
-        rtcUpdate(scene_out,((ISPCLineSegments*)geometry)->geom.geomID);
+        rtcUpdate(rtcGetGeometry(scene_out,((ISPCLineSegments*)geometry)->geom.geomID));
       }
       else if (geometry->type == HAIR_SET) {
-        rtcUpdate(scene_out,((ISPCHairSet*)geometry)->geom.geomID);
+        rtcUpdate(rtcGetGeometry(scene_out,((ISPCHairSet*)geometry)->geom.geomID));
       }
       else if (geometry->type == CURVES) {
-        rtcUpdate(scene_out,((ISPCHairSet*)geometry)->geom.geomID);
+        rtcUpdate(rtcGetGeometry(scene_out,((ISPCHairSet*)geometry)->geom.geomID));
       }
       else
         assert(false);
@@ -232,22 +222,22 @@ namespace embree {
     {
       ISPCGeometry* geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
-        rtcDeleteGeometry(scene_out,((ISPCSubdivMesh*)geometry)->geom.geomID);
+        rtcDetachGeometry(scene_out,((ISPCSubdivMesh*)geometry)->geom.geomID);
       }
       else if (geometry->type == TRIANGLE_MESH) {
-        rtcDeleteGeometry(scene_out,((ISPCTriangleMesh*)geometry)->geom.geomID);
+        rtcDetachGeometry(scene_out,((ISPCTriangleMesh*)geometry)->geom.geomID);
       }
       else if (geometry->type == QUAD_MESH) {
-        rtcDeleteGeometry(scene_out,((ISPCQuadMesh*)geometry)->geom.geomID);
+        rtcDetachGeometry(scene_out,((ISPCQuadMesh*)geometry)->geom.geomID);
       }
       else if (geometry->type == LINE_SEGMENTS) {
-        rtcDeleteGeometry(scene_out,((ISPCLineSegments*)geometry)->geom.geomID);
+        rtcDetachGeometry(scene_out,((ISPCLineSegments*)geometry)->geom.geomID);
       }
       else if (geometry->type == HAIR_SET) {
-        rtcDeleteGeometry(scene_out,((ISPCHairSet*)geometry)->geom.geomID);
+        rtcDetachGeometry(scene_out,((ISPCHairSet*)geometry)->geom.geomID);
       }
       else if (geometry->type == CURVES) {
-        rtcDeleteGeometry(scene_out,((ISPCHairSet*)geometry)->geom.geomID);
+        rtcDetachGeometry(scene_out,((ISPCHairSet*)geometry)->geom.geomID);
       }
       else
         assert(false);

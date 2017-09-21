@@ -590,8 +590,14 @@ RTCORE_API void rtcInterpolateN2(RTCScene scene, unsigned int geomID,
 /*! \brief Attaches the geometry to some scene. */
 RTCORE_API unsigned int rtcAttachGeometry (RTCScene scene, RTCGeometry geometry);
 
+/*! \brief Attaches the geometry to some scene and releases geometry handle afterwards. */
+RTCORE_API unsigned int rtcAttachAndReleaseGeometry (RTCScene scene, RTCGeometry geometry);
+
 /*! \brief Attaches the geometry to some scene using the specified geometry ID. */
 RTCORE_API unsigned int rtcAttachGeometryByID (RTCScene scene, RTCGeometry geometry, unsigned int geomID);
+
+/*! \brief Attaches the geometry to some scene using the specified geometry ID and releases the geometry handle afterwards. */
+RTCORE_API unsigned int rtcAttachAndReleaseGeometryByID (RTCScene scene, RTCGeometry geometry, unsigned int geomID);
 
 /*! \brief Detaches the geometry from the scene. */
 RTCORE_API void rtcDetachGeometry (RTCScene scene, unsigned int geomID);
