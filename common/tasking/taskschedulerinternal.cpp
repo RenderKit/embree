@@ -83,7 +83,7 @@ namespace embree
     run_internal(thread);
   }
 
-  __dllexport bool TaskScheduler::TaskQueue::execute_local_internal(Thread& thread, Task* parent)
+  bool TaskScheduler::TaskQueue::execute_local_internal(Thread& thread, Task* parent)
   {
     /* stop if we run out of local tasks or reach the waiting task */
     if (right == 0 || &tasks[right-1] == parent)
