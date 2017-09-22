@@ -50,7 +50,7 @@ namespace embree
   }
 
   /*! run this task */
-  __dllexport void TaskScheduler::Task::run (Thread& thread) // FIXME: avoid as many __dllexports as possible
+  void TaskScheduler::Task::run_internal (Thread& thread) // FIXME: avoid as many __dllexports as possible
   {
     /* try to run if not already stolen */
     if (try_switch_state(INITIALIZED,DONE))
@@ -71,14 +71,19 @@ namespace embree
     /* steal until all dependencies have completed */
     steal_loop(thread,
                [&] () { return dependencies>0; },
-               [&] () { while (thread.tasks.execute_local(thread,this)); });
+               [&] () { while (thread.tasks.execute_local_internal(thread,this)); });
 
     /* now signal our parent task that we are finished */
     if (parent)
       parent->add_dependencies(-1);
   }
 
-  __dllexport bool TaskScheduler::TaskQueue::execute_local(Thread& thread, Task* parent)
+    /*! run this task */
+  __dllexport void TaskScheduler::Task::run (Thread& thread) {
+    run_internal(thread);
+  }
+
+  bool TaskScheduler::TaskQueue::execute_local_internal(Thread& thread, Task* parent)
   {
     /* stop if we run out of local tasks or reach the waiting task */
     if (right == 0 || &tasks[right-1] == parent)
@@ -86,7 +91,7 @@ namespace embree
 
     /* execute task */
     size_t oldRight = right;
-    tasks[right-1].run(thread);
+    tasks[right-1].run_internal(thread);
     if (right != oldRight) {
       THROW_RUNTIME_ERROR("you have to wait for spawned subtasks");
     }
@@ -100,6 +105,10 @@ namespace embree
     if (left >= right) left.store(right.load());
 
     return right != 0;
+  }
+
+  __dllexport bool TaskScheduler::TaskQueue::execute_local(Thread& thread, Task* parent) {
+    return execute_local_internal(thread,parent);
   }
 
   bool TaskScheduler::TaskQueue::steal(Thread& thread)
@@ -316,7 +325,7 @@ namespace embree
   {
     Thread* thread = TaskScheduler::thread();
     if (thread == nullptr) return true;
-    while (thread->tasks.execute_local(*thread,thread->task)) {};
+    while (thread->tasks.execute_local_internal(*thread,thread->task)) {};
     return thread->scheduler->cancellingException == nullptr;
   }
 
@@ -335,7 +344,7 @@ namespace embree
                  [&] () { return anyTasksRunning > 0; },
                  [&] () {
                    anyTasksRunning++;
-                   while (thread.tasks.execute_local(thread,nullptr));
+                   while (thread.tasks.execute_local_internal(thread,nullptr));
                    anyTasksRunning--;
                  });
     }

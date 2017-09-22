@@ -843,7 +843,7 @@ namespace embree
         StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes
         StackItemT<NodeRef>* stackPtr = stack + 1;        //!< current stack pointer
         stack[0].ptr   = bvh->root;
-        stack[0].dist  = movemask(octant_valid);
+        stack[0].dist  = (unsigned int)movemask(octant_valid);
 
         while (1) pop:
         {
@@ -895,7 +895,7 @@ namespace embree
                   stackPtr++;
                 }
                 cur = child;
-                m_active = movemask(lhit);
+                m_active = (unsigned int)movemask(lhit);
               }
             } while(m_frusta_node);
 
@@ -918,7 +918,7 @@ namespace embree
 
           if (unlikely(lazy_node)) {
             stackPtr->ptr  = lazy_node;
-            stackPtr->dist = movemask(octant_valid);
+            stackPtr->dist = (unsigned int)movemask(octant_valid);
             stackPtr++;
           }
         }

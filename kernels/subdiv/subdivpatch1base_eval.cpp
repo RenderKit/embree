@@ -95,9 +95,9 @@ namespace embree
       {
         const bool displ = geom->displFunc;
         const unsigned N = displ ? M : 0;
-        dynamic_large_stack_array(float,grid_Ng_x,N,64*64*sizeof(float));
-        dynamic_large_stack_array(float,grid_Ng_y,N,64*64*sizeof(float));
-        dynamic_large_stack_array(float,grid_Ng_z,N,64*64*sizeof(float));
+        dynamic_large_stack_array(float,grid_Ng_x,N,32*32*sizeof(float));
+        dynamic_large_stack_array(float,grid_Ng_y,N,32*32*sizeof(float));
+        dynamic_large_stack_array(float,grid_Ng_z,N,32*32*sizeof(float));
         
         if (geom->patch_eval_trees.size())
         {

@@ -861,7 +861,7 @@ namespace embree
       
       for (size_t i=0; i<numUVs; i+=4) 
       {
-        vbool4 valid1 = vint4(i)+vint4(step) < vint4(numUVs);
+        vbool4 valid1 = vint4(int(i))+vint4(step) < vint4(int(numUVs));
         if (valid) valid1 &= vint4::loadu(&valid[i]) == vint4(-1);
         if (none(valid1)) continue;
         

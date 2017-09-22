@@ -1,6 +1,28 @@
 Version History
 ---------------
 
+### New Features in Embree 2.17.0
+-   Improved packet ray tracing performance for coherent rays by 10-60%
+    (requires RTC_INTERSECT_COHERENT flag).
+-   Improved ray tracing performance for incoherent rays on
+    AVX-512 architectures by 5%.
+-   Improved ray tracing performance for streams of incoherent rays
+    by 5-15%.
+-   Fixed tbb_debug.lib linking error under Windows.
+-   Fast coherent ray stream and packet code paths now also work in robust mode.
+-   Using less agressive prefetching for large BVH nodes which
+    results in 1-2% higher ray tracing performance.
+-   Precompiled binaries have stack-protector enabled, except for
+    traversal kernels. BVH builders can be slightly slower due to this
+    change. If you want stack-protectors disabled please turn off
+    EMBREE_STACK_PROTECTOR in cmake and build the binaries yourself.
+-   When enabling ISAs individually, the 8-wide BVH was previously only
+    available when the AVX ISA was also selected. This issue is now
+    fixed, and one can enable only AVX2 and still get best
+    performance by using an 8-wide BVH.
+-   Fixed rtcOccluded1 and rtcOccluded1Ex API functions which were
+    broken in ISPC.
+
 ### New Features in Embree 2.16.5
 -   Bugfix in the robust triangle intersector that rarely caused NaNs.
 -   Fixed bug in hybrid traversal kernel when BVH leaf was entered with no
@@ -84,7 +106,7 @@ Version History
 -   Removed support for Visual Studio 2012.
 -   Precompiled binaries now require a CPU supporting at least the
     SSE4.2 ISA.
--   We no longer provide precompiled binaries for 32 bit on Windows.
+-   We no longer provide precompiled binaries for 32-bit on Windows.
 -   Under Windows one now has to use the platform toolset option in
     CMake to switch to Clang or the Intel® Compiler.
 -   Fixed a bug for subdivision meshes when using the incoherent scene
@@ -394,7 +416,7 @@ Version History
 
 -   Improved mixed AABB/OBB-BVH for hair geometry (Xeon Phi)
 -   Reduced amount of pre-allocated memory for BVH builders (Xeon Phi)
--   New 64 bit Morton code-based BVH builder (Xeon Phi)
+-   New 64-bit Morton code-based BVH builder (Xeon Phi)
 -   (Enhanced) Morton code-based BVH builders use now tree rotations to
     improve BVH quality (Xeon Phi)
 -   Bug fixes (Xeon and Xeon Phi)

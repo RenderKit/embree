@@ -16,14 +16,13 @@
 
 SET(EMBREE_VERSION_MAJOR 2)
 SET(EMBREE_VERSION_MINOR 17)
-SET(EMBREE_VERSION_PATCH 0)
+SET(EMBREE_VERSION_PATCH 1)
 SET(EMBREE_VERSION_NOTE "-alpha.0")
 SET(EMBREE_VERSION ${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERSION_PATCH})
 MATH(EXPR EMBREE_VERSION_NUMBER "10000*${EMBREE_VERSION_MAJOR} + 100*${EMBREE_VERSION_MINOR} + ${EMBREE_VERSION_PATCH}")
 SET(CPACK_RPM_PACKAGE_RELEASE 1)
 
 PROJECT(embree${EMBREE_VERSION_MAJOR})
-
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
 
@@ -101,7 +100,7 @@ OPTION(EMBREE_TUTORIALS    "Enable to build Embree tutorials" ON)
 # Configurations (add configurations also to common/cmake/embree-config-default.cmake)
 
 OPTION(EMBREE_STAT_COUNTERS "Enables statistic counters.")
-OPTION(EMBREE_STACK_PROTECTOR "When enabled Embree compiles with stack protection against return address overrides." ON)
+OPTION(EMBREE_STACK_PROTECTOR "When enabled Embree compiles with stack protection against return address overrides." OFF)
 
 OPTION(EMBREE_RAY_MASK "Enables ray mask support.")
 OPTION(EMBREE_BACKFACE_CULLING "Enables backface culling.")

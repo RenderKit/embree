@@ -199,6 +199,8 @@ def string_of_isa(isa):
   else: return "ISAS-" + ("-".join(isa))
 
 def createTest(config,OS):
+  c = []  # CMake configuration
+  e = []  # shell environment
   platform = config["platform"]
   build    = config["build"]
   compiler = config["compiler"]
@@ -217,14 +219,13 @@ def createTest(config,OS):
   if tasking == "INT": tasking = "INTERNAL"
   if tasking == "PPL": tasking = "PPL"
   name = "gitlab-"+platform+"-"+build+"-"+compiler+"-"+string_of_isa(isa)+"-"+tasking
-  if "package" in config: 
+  if "package" in config:
+    c.append("-D EMBREE_STACK_PROTECTOR=ON")
     if config["package"] == "ZIP": name = name + "-package-zip"
     else                         : name = name + "-package-installer"
 
   if "klocwork" in config: name = name + "-klocwork"
   ispc_ext = "-vs2013"
-  c = []  # CMake configuration
-  e = []  # shell environment
   if "package" in config and OS == 'linux': # we need up to date cmake for RPMs to work properly
     e.append("module load cmake")
   c.append("-D CMAKE_BUILD_TYPE="+build+"")

@@ -238,7 +238,7 @@ namespace embree
     if (features & FEATURE_STREAM)
     {
       /* register parsing of stream mode */
-      registerOption("mode", [this] (Ref<ParseStream> cin, const FileName& path) {
+      registerOption("mode", [] (Ref<ParseStream> cin, const FileName& path) {
           std::string mode = cin->getString();
           if      (mode == "normal") g_mode = MODE_NORMAL;
           else if (mode == "stream") g_mode = MODE_STREAM;

@@ -108,7 +108,7 @@ namespace embree
       int ty = __bsf(get(i)->type); 
       assert(ty<Geometry::NUM_TYPES);
       int timesegments = get(i)->numTimeSegments(); 
-      assert(timesegments < max_time_steps);
+      assert((unsigned int)timesegments < max_time_steps);
       statistics[ty][timesegments] += get(i)->size();
     }
 
