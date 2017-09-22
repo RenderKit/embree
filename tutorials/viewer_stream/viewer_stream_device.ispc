@@ -25,7 +25,7 @@
 //#define rtcOccludedVM rtcIntersectVM
 
 #define SIMPLE_SHADING 1
-#define SHADING 1
+#define SHADING 0
 
 extern uniform ISPCScene* uniform g_ispc_scene;
 
@@ -282,9 +282,9 @@ void renderTileMSAA(uniform int taskIndex,
          unsigned int b = (unsigned int) (255.0f * clamp(c.z,0.0f,1.0f));
          pixels[py[i]*width+px[i]] = (b << 16) + (g << 8) + r;
        }
+#endif
      N = 0;
    }
-#endif
  }
 }
 
