@@ -26,6 +26,7 @@
 
 #define SIMPLE_SHADING 1
 #define SHADING 0
+#define MSAA 1
 
 extern uniform ISPCScene* uniform g_ispc_scene;
 
@@ -317,8 +318,11 @@ export void device_init (uniform int8* uniform cfg)
   rtcCommit (g_scene);
 
   /* set render tile function to use */
-  //renderTile = renderTileStandard;
+  #if MSAA == 1
   renderTile = renderTileMSAA;
+  #else
+  renderTile = renderTileStandard;
+  #endif
 
   key_pressed_handler = device_key_pressed_default;
 }
