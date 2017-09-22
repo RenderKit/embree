@@ -25,6 +25,7 @@
 //#define rtcOccludedVM rtcIntersectVM
 
 #define SIMPLE_SHADING 1
+#define SHADING 1
 
 extern uniform ISPCScene* uniform g_ispc_scene;
 
@@ -34,7 +35,7 @@ RTCScene g_scene = NULL;
 
 RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 {
-  uniform int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
+  uniform int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT | RTC_SCENE_HIGH_QUALITY;
   uniform int scene_aflags = RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING | RTC_INTERSECT_STREAM | RTC_INTERPOLATE;
   RTCScene scene_out = ConvertScene(g_device, scene_in,(RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags, RTC_GEOMETRY_STATIC);
   return scene_out;
@@ -167,6 +168,7 @@ void renderTileStandard(uniform int taskIndex,
     rtcIntersectVM(g_scene,&context,&rays[i],1,sizeof(RTCRay));
 #endif
 
+#if SHADING == 1
   /* shade stream of rays */
   N = 0;
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
@@ -190,6 +192,100 @@ void renderTileStandard(uniform int taskIndex,
     unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
+#endif
+}
+
+
+
+void renderTileMSAA(uniform int taskIndex,
+                            uniform int threadIndex,
+                            uniform int* uniform pixels,
+                            const uniform unsigned int width,
+                            const uniform unsigned int height,
+                            const uniform float time,
+                            const uniform ISPCCamera& camera,
+                            const uniform int numTilesX,
+                            const uniform int numTilesY)
+{
+  const uniform unsigned int tileY = taskIndex / numTilesX;
+  const uniform unsigned int tileX = taskIndex - tileY * numTilesX;
+  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
+  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
+  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
+  const uniform float scale = 1.0f / (float)programCount;
+
+  uniform RayStats& stats = g_stats[threadIndex];
+
+  uniform RTCIntersectContext context;
+  context.flags = g_iflags_coherent;
+
+#define MAX_RAY_PACKETS TILE_SIZE_X*TILE_SIZE_Y
+
+  unsigned int px[MAX_RAY_PACKETS];
+  unsigned int py[MAX_RAY_PACKETS];
+  RTCRay rays[MAX_RAY_PACKETS];
+
+  /* generate stream of primary rays */
+  uniform int N = 0;
+  for (unsigned int y = y0; y < y1; y++)
+    for (unsigned int x = x0; x < x1; x++)
+    {
+     RandomSampler sampler;
+     RandomSampler_init(sampler, x, y, programIndex);
+     px[N] = x;
+     py[N] = y;
+
+     varying float sx = RandomSampler_get1D(sampler) + (float)x;
+     varying float sy = RandomSampler_get1D(sampler) + (float)y;
+
+     /* initialize ray */
+     RTCRay& ray = rays[N++];
+     ray.org = make_Vec3f(camera.xfm.p);
+     ray.dir = make_Vec3f(normalize(sx*camera.xfm.l.vx + sy*camera.xfm.l.vy + camera.xfm.l.vz));
+     ray.tnear = 0.0f;
+     ray.tfar  = (float)(inf);
+     ray.geomID = RTC_INVALID_GEOMETRY_ID;
+     ray.primID = RTC_INVALID_GEOMETRY_ID;
+     ray.mask = -1;
+     ray.time = 0.0f;
+     RayStats_addRay(stats);
+
+     if (N == MAX_RAY_PACKETS)
+     {
+  /* trace stream of rays */
+#if USE_INTERFACE == 0
+      rtcIntersectVM(g_scene,&context,rays,N,sizeof(RTCRay));
+#elif USE_INTERFACE == 1
+     for (uniform size_t i=0; i<N; i++)
+       rtcIntersectEx(g_scene,&context,rays[i]);
+#else
+     for (uniform size_t i=0; i<N; i++)
+       rtcIntersectVM(g_scene,&context,&rays[i],1,sizeof(RTCRay));
+#endif
+
+#if SHADING == 1
+     /* shade stream of rays */
+     for (uniform size_t i=0; i<N; i++)
+       {
+         RTCRay& ray = rays[i];
+         Vec3f color = make_Vec3f(0.0f);
+         if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
+          color = make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
+         uniform Vec3f c;
+         c.x = reduce_add(color.x) * scale;
+         c.y = reduce_add(color.y) * scale;
+         c.z = reduce_add(color.z) * scale;
+
+         unsigned int r = (unsigned int) (255.0f * clamp(c.x,0.0f,1.0f));
+         unsigned int g = (unsigned int) (255.0f * clamp(c.y,0.0f,1.0f));
+         unsigned int b = (unsigned int) (255.0f * clamp(c.z,0.0f,1.0f));
+         pixels[py[i]*width+px[i]] = (b << 16) + (g << 8) + r;
+       }
+     N = 0;
+   }
+#endif
+ }
 }
 
 /* task that renders a single screen tile */
@@ -219,7 +315,9 @@ export void device_init (uniform int8* uniform cfg)
   rtcCommit (g_scene);
 
   /* set render tile function to use */
-  renderTile = renderTileStandard;
+  //renderTile = renderTileStandard;
+  renderTile = renderTileMSAA;
+
   key_pressed_handler = device_key_pressed_default;
 }
 
