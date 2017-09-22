@@ -27,7 +27,7 @@ namespace embree {
 //#define rtcOccluded1M rtcIntersect1M
 
 #define SIMPLE_SHADING 1
-#define SHADING 0
+#define SHADING 1
 
 extern "C" ISPCScene* g_ispc_scene;
 
@@ -130,7 +130,7 @@ void renderTileStandard(int taskIndex,
   RayStats& stats = g_stats[threadIndex];
 
   RTCRay rays[TILE_SIZE_X*TILE_SIZE_Y];
-  PRINT(sizeof(RTCRay));
+
   /* generate stream of primary rays */
   int N = 0;
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)

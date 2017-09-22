@@ -195,7 +195,9 @@ void renderTileStandard(uniform int taskIndex,
 #endif
 }
 
+const uniform float sampleX[16] = { 0,0.5,0.25,0.75,0.125,0.625,0.375,0.875,0.0625,0.5625,0.3125,0.8125,0.1875,0.6875,0.4375,0.9375 };
 
+const uniform float sampleY[16] = { 0,0.333333,0.666667,0.111111,0.444444,0.777778,0.222222,0.555556,0.888889,0.037037,0.37037,0.703704,0.148148,0.481482,0.814815,0.259259 };
 
 void renderTileMSAA(uniform int taskIndex,
                             uniform int threadIndex,
@@ -231,13 +233,13 @@ void renderTileMSAA(uniform int taskIndex,
   for (unsigned int y = y0; y < y1; y++)
     for (unsigned int x = x0; x < x1; x++)
     {
-     RandomSampler sampler;
-     RandomSampler_init(sampler, x, y, programIndex);
+     // RandomSampler sampler;
+     // RandomSampler_init(sampler, x, y, programIndex);
      px[N] = x;
      py[N] = y;
 
-     varying float sx = RandomSampler_get1D(sampler) + (float)x;
-     varying float sy = RandomSampler_get1D(sampler) + (float)y;
+     varying float sx = sampleX[programIndex] + (float)x;
+     varying float sy = sampleY[programIndex] + (float)y;
 
      /* initialize ray */
      RTCRay& ray = rays[N++];
