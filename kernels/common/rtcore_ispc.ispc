@@ -33,17 +33,17 @@ extern "C" void ispcSetOccludedFunction16 (RTCGeometry hgeometry, void* uniform 
 extern "C" void ispcSetOccludedFunction1Mp (RTCGeometry hgeometry, void* uniform occluded);
 extern "C" void ispcSetOccludedFunctionN (RTCGeometry hgeometry, void* uniform occluded);
 
-extern "C" void ispcSetIntersectionFilterFunction1 (RTCGeometry hgeometry, void* uniform filter);
-extern "C" void ispcSetIntersectionFilterFunction4 (RTCGeometry hgeometry, void* uniform filter);
-extern "C" void ispcSetIntersectionFilterFunction8 (RTCGeometry hgeometry, void* uniform filter);
-extern "C" void ispcSetIntersectionFilterFunction16 (RTCGeometry hgeometry, void* uniform filter);
-extern "C" void ispcSetIntersectionFilterFunctionN (RTCGeometry hgeometry, void* uniform filter);
+extern "C" void ispcSetIntersectionFilterFunction (RTCGeometry hgeometry, void* uniform filter);
+// extern "C" void ispcSetIntersectionFilterFunction4 (RTCGeometry hgeometry, void* uniform filter);
+// extern "C" void ispcSetIntersectionFilterFunction8 (RTCGeometry hgeometry, void* uniform filter);
+// extern "C" void ispcSetIntersectionFilterFunction16 (RTCGeometry hgeometry, void* uniform filter);
+// extern "C" void ispcSetIntersectionFilterFunctionN (RTCGeometry hgeometry, void* uniform filter);
 
-extern "C" void ispcSetOcclusionFilterFunction1 (RTCGeometry hgeometry, void* uniform filter);
-extern "C" void ispcSetOcclusionFilterFunction4 (RTCGeometry hgeometry, void* uniform filter);
-extern "C" void ispcSetOcclusionFilterFunction8 (RTCGeometry hgeometry, void* uniform filter);
-extern "C" void ispcSetOcclusionFilterFunction16 (RTCGeometry hgeometry, void* uniform filter);
-extern "C" void ispcSetOcclusionFilterFunctionN (RTCGeometry hgeometry, void* uniform filter);
+extern "C" void ispcSetOcclusionFilterFunction (RTCGeometry hgeometry, void* uniform filter);
+// extern "C" void ispcSetOcclusionFilterFunction4 (RTCGeometry hgeometry, void* uniform filter);
+// extern "C" void ispcSetOcclusionFilterFunction8 (RTCGeometry hgeometry, void* uniform filter);
+// extern "C" void ispcSetOcclusionFilterFunction16 (RTCGeometry hgeometry, void* uniform filter);
+// extern "C" void ispcSetOcclusionFilterFunctionN (RTCGeometry hgeometry, void* uniform filter);
 
 extern "C" void ispcIntersect1 (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1& ray);
 extern "C" void ispcIntersect4 (void* uniform valid, RTCScene scene, const uniform RTCIntersectContext* uniform context, void* uniform ray);
@@ -187,24 +187,14 @@ void rtcSetOccludedFunction (RTCGeometry hgeometry, uniform RTCOccludedFuncVaryi
     ispcSetOccludedFunction16(hgeometry,occluded);
 }
 
-void rtcSetIntersectionFilterFunction (RTCGeometry hgeometry, uniform RTCFilterFuncVarying filter)
+void rtcSetIntersectionFilterFunction (RTCGeometry hgeometry, uniform RTCFilterFuncN filter)
 {
-  if (sizeof(varying float) == 16)
-    ispcSetIntersectionFilterFunction4(hgeometry,filter);
-  else if (sizeof(varying float) == 32)
-    ispcSetIntersectionFilterFunction8(hgeometry,filter);
-  else if (sizeof(varying float) == 64)
-    ispcSetIntersectionFilterFunction16(hgeometry,filter);
+  ispcSetIntersectionFilterFunction(hgeometry,filter);
 }
 
-void rtcSetOcclusionFilterFunction (RTCGeometry hgeometry, uniform RTCFilterFuncVarying filter)
+void rtcSetOcclusionFilterFunction (RTCGeometry hgeometry, uniform RTCFilterFuncN filter)
 {
-  if (sizeof(varying float) == 16)
-    ispcSetOcclusionFilterFunction4(hgeometry,filter);
-  else if (sizeof(varying float) == 32)
-    ispcSetOcclusionFilterFunction8(hgeometry,filter);
-  else if (sizeof(varying float) == 64)
-    ispcSetOcclusionFilterFunction16(hgeometry,filter);
+  ispcSetOcclusionFilterFunction(hgeometry,filter);
 }
 
 void rtcInterpolate(RTCScene scene, uniform unsigned int geomID, varying unsigned int primID, varying float u, varying float v, 

@@ -63,45 +63,45 @@ inline float transparencyFunction(Vec3fa& h)
   //return 0.5f;
 }
 
-/* intersection filter function */
-void intersectionFilter(void* ptr, RTCRay& ray_i)
-{
-  RTCRay2& ray = (RTCRay2&) ray_i;
-  Vec3fa h = ray.org + ray.dir*ray.tfar;
-  float T = transparencyFunction(h);
-  if (T >= 1.0f) ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  else ray.transparency = T;
-}
+// /* intersection filter function */
+// void intersectionFilter(void* ptr, RTCRay& ray_i)
+// {
+//   RTCRay2& ray = (RTCRay2&) ray_i;
+//   Vec3fa h = ray.org + ray.dir*ray.tfar;
+//   float T = transparencyFunction(h);
+//   if (T >= 1.0f) ray.geomID = RTC_INVALID_GEOMETRY_ID;
+//   else ray.transparency = T;
+// }
 
-/* occlusion filter function */
-void occlusionFilter(void* ptr, RTCRay& ray_i)
-{
-  RTCRay2& ray = (RTCRay2&) ray_i;
-  /* The occlusion filter function may be called multiple times with
-   * the same hit. We remember the last N hits, and skip duplicates. */
-  for (size_t i=ray.firstHit; i<ray.lastHit; i++) {
-    unsigned slot= i%HIT_LIST_LENGTH;
-    if (ray.hit_geomIDs[slot] == ray.geomID && ray.hit_primIDs[slot] == ray.primID) {
-      ray.geomID = RTC_INVALID_GEOMETRY_ID;
-      return;
-    }
-  }
+// /* occlusion filter function */
+// void occlusionFilter(void* ptr, RTCRay& ray_i)
+// {
+//   RTCRay2& ray = (RTCRay2&) ray_i;
+//   /* The occlusion filter function may be called multiple times with
+//    * the same hit. We remember the last N hits, and skip duplicates. */
+//   for (size_t i=ray.firstHit; i<ray.lastHit; i++) {
+//     unsigned slot= i%HIT_LIST_LENGTH;
+//     if (ray.hit_geomIDs[slot] == ray.geomID && ray.hit_primIDs[slot] == ray.primID) {
+//       ray.geomID = RTC_INVALID_GEOMETRY_ID;
+//       return;
+//     }
+//   }
 
-  /* store hit in hit list */
-  unsigned int slot = ray.lastHit%HIT_LIST_LENGTH;
-  ray.hit_geomIDs[slot] = ray.geomID;
-  ray.hit_primIDs[slot] = ray.primID;
-  ray.lastHit++;
-  if (ray.lastHit - ray.firstHit >= HIT_LIST_LENGTH)
-    ray.firstHit++;
+//   /* store hit in hit list */
+//   unsigned int slot = ray.lastHit%HIT_LIST_LENGTH;
+//   ray.hit_geomIDs[slot] = ray.geomID;
+//   ray.hit_primIDs[slot] = ray.primID;
+//   ray.lastHit++;
+//   if (ray.lastHit - ray.firstHit >= HIT_LIST_LENGTH)
+//     ray.firstHit++;
 
-  /* calculate and accumulate transparency */
-  Vec3fa h = ray.org + ray.dir*ray.tfar;
-  float T = transparencyFunction(h);
-  T *= ray.transparency;
-  ray.transparency = T;
-  if (T != 0.0f) ray.geomID = RTC_INVALID_GEOMETRY_ID;
-}
+//   /* calculate and accumulate transparency */
+//   Vec3fa h = ray.org + ray.dir*ray.tfar;
+//   float T = transparencyFunction(h);
+//   T *= ray.transparency;
+//   ray.transparency = T;
+//   if (T != 0.0f) ray.geomID = RTC_INVALID_GEOMETRY_ID;
+// }
 
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
@@ -232,11 +232,11 @@ inline void scatter(unsigned int& ptr, const unsigned int idx, const size_t stri
 
 /* intersection filter function */
 void intersectionFilterN(int* valid,
-                                  void* ptr,
-                                  const RTCIntersectContext* context,
-                                  struct RTCRayN* ray,
-                                  const struct RTCHitN* potentialHit,
-                                  const size_t N)
+                         void* ptr,
+                         const RTCIntersectContext* context,
+                         struct RTCRayN* ray,
+                         const struct RTCHitN* potentialHit,
+                         const size_t N)
 {
   /* avoid crashing when debug visualizations are used */
   if (context == nullptr)
@@ -294,11 +294,11 @@ void intersectionFilterN(int* valid,
 
 /* occlusion filter function */
 void occlusionFilterN(int* valid,
-                               void* ptr,
-                               const RTCIntersectContext* context,
-                               struct RTCRayN* ray,
-                               const struct RTCHitN* potentialHit,
-                               const size_t N)
+                      void* ptr,
+                      const RTCIntersectContext* context,
+                      struct RTCRayN* ray,
+                      const struct RTCHitN* potentialHit,
+                      const size_t N)
 {
   /* avoid crashing when debug visualizations are used */
   if (context == nullptr)
@@ -631,14 +631,8 @@ unsigned int addCube (RTCScene scene_i, const Vec3fa& offset, const Vec3fa& scal
   colors[11] = Vec3fa(1,1,0);
 
   /* set intersection filter for the cube */
-  if (g_mode != MODE_NORMAL) {
-    rtcSetIntersectionFilterFunctionN(geom,intersectionFilterN);
-    rtcSetOcclusionFilterFunctionN   (geom,occlusionFilterN);
-  }
-  else {
-    rtcSetIntersectionFilterFunction(geom,intersectionFilter);
-    rtcSetOcclusionFilterFunction   (geom,occlusionFilter);
-  }
+  rtcSetIntersectionFilterFunction(geom,intersectionFilterN);
+  rtcSetOcclusionFilterFunction   (geom,occlusionFilterN);
 
   unsigned int geomID = rtcAttachGeometry(scene_i,geom);
   rtcReleaseGeometry(geom);
@@ -667,14 +661,8 @@ unsigned int addSubdivCube (RTCScene scene_i)
   colors[5] = Vec3fa(1,1,0); // back side
 
   /* set intersection filter for the cube */
-  if (g_mode != MODE_NORMAL) {
-    rtcSetIntersectionFilterFunctionN(geom,intersectionFilterN);
-    rtcSetOcclusionFilterFunctionN   (geom,occlusionFilterN);
-  }
-  else {
-    rtcSetIntersectionFilterFunction(geom,intersectionFilter);
-    rtcSetOcclusionFilterFunction   (geom,occlusionFilter);
-  }
+  rtcSetIntersectionFilterFunction(geom,intersectionFilterN);
+  rtcSetOcclusionFilterFunction   (geom,occlusionFilterN);
 
   unsigned int geomID = rtcAttachGeometry(scene_i,geom);
   rtcReleaseGeometry(geom);

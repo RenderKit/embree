@@ -24,12 +24,9 @@ namespace embree
       numPrimitives(numPrimitives), numPrimitivesChanged(false),
       numTimeSteps(unsigned(numTimeSteps)), fnumTimeSegments(float(numTimeSteps-1)), flags(flags),
       enabled(true), modified(true), userPtr(nullptr), mask(-1), used(1),
-      intersectionFilter1(nullptr), occlusionFilter1(nullptr),
-      intersectionFilter4(nullptr), occlusionFilter4(nullptr),
-      intersectionFilter8(nullptr), occlusionFilter8(nullptr),
-      intersectionFilter16(nullptr), occlusionFilter16(nullptr),
-      intersectionFilterN(nullptr), occlusionFilterN(nullptr),
-      hasIntersectionFilterMask(0), hasOcclusionFilterMask(0), ispcIntersectionFilterMask(0), ispcOcclusionFilterMask(0) {}
+      intersectionFilterN(nullptr), occlusionFilterN(nullptr) {}
+      //hasIntersectionFilterMask(0), hasOcclusionFilterMask(0)
+    //, ispcIntersectionFilterMask(0), ispcOcclusionFilterMask(0) {}
 
   Geometry::~Geometry() {
   }
@@ -50,23 +47,23 @@ namespace embree
 
   void Geometry::updateIntersectionFilters(bool enable)
   {
-    const size_t num1  = (intersectionFilter1  != nullptr) + (occlusionFilter1  != nullptr);
-    const size_t num4  = (intersectionFilter4  != nullptr) + (occlusionFilter4  != nullptr);
-    const size_t num8  = (intersectionFilter8  != nullptr) + (occlusionFilter8  != nullptr);
-    const size_t num16 = (intersectionFilter16 != nullptr) + (occlusionFilter16 != nullptr);
+    // const size_t num1  = (intersectionFilter1  != nullptr) + (occlusionFilter1  != nullptr);
+    // const size_t num4  = (intersectionFilter4  != nullptr) + (occlusionFilter4  != nullptr);
+    // const size_t num8  = (intersectionFilter8  != nullptr) + (occlusionFilter8  != nullptr);
+    // const size_t num16 = (intersectionFilter16 != nullptr) + (occlusionFilter16 != nullptr);
     const size_t numN  = (intersectionFilterN  != nullptr) + (occlusionFilterN  != nullptr);
 
     if (enable) {
-      scene->numIntersectionFilters1 += num1;
-      scene->numIntersectionFilters4 += num4;
-      scene->numIntersectionFilters8 += num8;
-      scene->numIntersectionFilters16 += num16;
+      // scene->numIntersectionFilters1 += num1;
+      // scene->numIntersectionFilters4 += num4;
+      // scene->numIntersectionFilters8 += num8;
+      // scene->numIntersectionFilters16 += num16;
       scene->numIntersectionFiltersN += numN;
     } else {
-      scene->numIntersectionFilters1 -= num1;
-      scene->numIntersectionFilters4 -= num4;
-      scene->numIntersectionFilters8 -= num8;
-      scene->numIntersectionFilters16 -= num16;
+      // scene->numIntersectionFilters1 -= num1;
+      // scene->numIntersectionFilters4 -= num4;
+      // scene->numIntersectionFilters8 -= num8;
+      // scene->numIntersectionFilters16 -= num16;
       scene->numIntersectionFiltersN -= numN;
     }
   }
@@ -149,90 +146,91 @@ namespace embree
 
     userPtr = ptr;
   }
+
+  //FIXME
+  // void Geometry::setIntersectionFilterFunction (RTCFilterFunc filter, bool ispc) 
+  // {
+  //   if (scene && scene->isStreamMode())
+  //     throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetIntersectionFilterFunctionN in stream mode");
+
+  //   if (scene && scene->isStatic() && scene->isBuild())
+  //     throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+  //   if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
+  //     throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
+
+  //   if (scene && isEnabled()) {
+  //     scene->numIntersectionFilters1 -= intersectionFilter1 != nullptr;
+  //     scene->numIntersectionFilters1 += filter != nullptr;
+  //   }
+  //   intersectionFilter1 = filter;
+  //   if (filter) hasIntersectionFilterMask  |= HAS_FILTER1; else hasIntersectionFilterMask  &= ~HAS_FILTER1;
+  // }
+    
+  // void Geometry::setIntersectionFilterFunction4 (RTCFilterFunc4 filter, bool ispc) 
+  // { 
+  //   if (scene && scene->isStreamMode())
+  //     throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetIntersectionFilterFunctionN in stream mode");
+
+  //   if (scene && scene->isStatic() && scene->isBuild())
+  //     throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+  //   if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
+  //     throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
+
+  //   if (scene && isEnabled()) {
+  //     scene->numIntersectionFilters4 -= intersectionFilter4 != nullptr;
+  //     scene->numIntersectionFilters4 += filter != nullptr;
+  //   }
+  //   intersectionFilter4 = filter;
+  //   if (filter) hasIntersectionFilterMask  |= HAS_FILTER4; else hasIntersectionFilterMask  &= ~HAS_FILTER4;
+  //   if (ispc  ) ispcIntersectionFilterMask |= HAS_FILTER4; else ispcIntersectionFilterMask &= ~HAS_FILTER4;
+  // }
+    
+  // void Geometry::setIntersectionFilterFunction8 (RTCFilterFunc8 filter, bool ispc) 
+  // { 
+  //   if (scene && scene->isStreamMode())
+  //     throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetIntersectionFilterFunctionN in stream mode");
+
+  //   if (scene && scene->isStatic() && scene->isBuild())
+  //     throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+    
+  //   if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
+  //     throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
+
+  //   if (scene && isEnabled()) {
+  //     scene->numIntersectionFilters8 -= intersectionFilter8 != nullptr;
+  //     scene->numIntersectionFilters8 += filter != nullptr;
+  //   }
+  //   intersectionFilter8 = filter;
+  //   if (filter) hasIntersectionFilterMask  |= HAS_FILTER8; else hasIntersectionFilterMask  &= ~HAS_FILTER8;
+  //   if (ispc  ) ispcIntersectionFilterMask |= HAS_FILTER8; else ispcIntersectionFilterMask &= ~HAS_FILTER8;
+  // }
   
-  void Geometry::setIntersectionFilterFunction (RTCFilterFunc filter, bool ispc) 
-  {
-    if (scene && scene->isStreamMode())
-      throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetIntersectionFilterFunctionN in stream mode");
+  // void Geometry::setIntersectionFilterFunction16 (RTCFilterFunc16 filter, bool ispc) 
+  // { 
+  //   if (scene && scene->isStreamMode())
+  //     throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetIntersectionFilterFunctionN in stream mode");
 
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+  //   if (scene && scene->isStatic() && scene->isBuild())
+  //     throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
-      throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
+  //   if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
+  //     throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
-    if (scene && isEnabled()) {
-      scene->numIntersectionFilters1 -= intersectionFilter1 != nullptr;
-      scene->numIntersectionFilters1 += filter != nullptr;
-    }
-    intersectionFilter1 = filter;
-    if (filter) hasIntersectionFilterMask  |= HAS_FILTER1; else hasIntersectionFilterMask  &= ~HAS_FILTER1;
-  }
-    
-  void Geometry::setIntersectionFilterFunction4 (RTCFilterFunc4 filter, bool ispc) 
-  { 
-    if (scene && scene->isStreamMode())
-      throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetIntersectionFilterFunctionN in stream mode");
-
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
-    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
-      throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
-
-    if (scene && isEnabled()) {
-      scene->numIntersectionFilters4 -= intersectionFilter4 != nullptr;
-      scene->numIntersectionFilters4 += filter != nullptr;
-    }
-    intersectionFilter4 = filter;
-    if (filter) hasIntersectionFilterMask  |= HAS_FILTER4; else hasIntersectionFilterMask  &= ~HAS_FILTER4;
-    if (ispc  ) ispcIntersectionFilterMask |= HAS_FILTER4; else ispcIntersectionFilterMask &= ~HAS_FILTER4;
-  }
-    
-  void Geometry::setIntersectionFilterFunction8 (RTCFilterFunc8 filter, bool ispc) 
-  { 
-    if (scene && scene->isStreamMode())
-      throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetIntersectionFilterFunctionN in stream mode");
-
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-    
-    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
-      throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
-
-    if (scene && isEnabled()) {
-      scene->numIntersectionFilters8 -= intersectionFilter8 != nullptr;
-      scene->numIntersectionFilters8 += filter != nullptr;
-    }
-    intersectionFilter8 = filter;
-    if (filter) hasIntersectionFilterMask  |= HAS_FILTER8; else hasIntersectionFilterMask  &= ~HAS_FILTER8;
-    if (ispc  ) ispcIntersectionFilterMask |= HAS_FILTER8; else ispcIntersectionFilterMask &= ~HAS_FILTER8;
-  }
-  
-  void Geometry::setIntersectionFilterFunction16 (RTCFilterFunc16 filter, bool ispc) 
-  { 
-    if (scene && scene->isStreamMode())
-      throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetIntersectionFilterFunctionN in stream mode");
-
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
-    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
-      throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
-
-    if (scene && isEnabled()) {
-      scene->numIntersectionFilters16 -= intersectionFilter16 != nullptr;
-      scene->numIntersectionFilters16 += filter != nullptr;
-    }
-    intersectionFilter16 = filter;
-    if (filter) hasIntersectionFilterMask  |= HAS_FILTER16; else hasIntersectionFilterMask  &= ~HAS_FILTER16;
-    if (ispc  ) ispcIntersectionFilterMask |= HAS_FILTER16; else ispcIntersectionFilterMask &= ~HAS_FILTER16;
-  }
+  //   if (scene && isEnabled()) {
+  //     scene->numIntersectionFilters16 -= intersectionFilter16 != nullptr;
+  //     scene->numIntersectionFilters16 += filter != nullptr;
+  //   }
+  //   intersectionFilter16 = filter;
+  //   if (filter) hasIntersectionFilterMask  |= HAS_FILTER16; else hasIntersectionFilterMask  &= ~HAS_FILTER16;
+  //   if (ispc  ) ispcIntersectionFilterMask |= HAS_FILTER16; else ispcIntersectionFilterMask &= ~HAS_FILTER16;
+  // }
   
   void Geometry::setIntersectionFilterFunctionN (RTCFilterFuncN filter) 
   { 
-    if (scene && !scene->isStreamMode())
-      throw_RTCError(RTC_INVALID_OPERATION,"you can use rtcSetIntersectionFilterFunctionN only in stream mode");
+    // if (scene && !scene->isStreamMode())
+    //   throw_RTCError(RTC_INVALID_OPERATION,"you can use rtcSetIntersectionFilterFunctionN only in stream mode");
 
     if (scene && scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
@@ -245,92 +243,92 @@ namespace embree
       scene->numIntersectionFiltersN += filter != nullptr;
     }
     intersectionFilterN = filter;
-    if (filter) hasIntersectionFilterMask  |= HAS_FILTERN; else hasIntersectionFilterMask  &= ~HAS_FILTERN;
+    //if (filter) hasIntersectionFilterMask  |= HAS_FILTERN; else hasIntersectionFilterMask  &= ~HAS_FILTERN;
   }
 
-  void Geometry::setOcclusionFilterFunction (RTCFilterFunc filter, bool ispc) 
-  {
-    if (scene && scene->isStreamMode())
-      throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetOcclusionFilterFunctionN in stream mode");
+  // void Geometry::setOcclusionFilterFunction (RTCFilterFunc filter, bool ispc) 
+  // {
+  //   if (scene && scene->isStreamMode())
+  //     throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetOcclusionFilterFunctionN in stream mode");
 
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+  //   if (scene && scene->isStatic() && scene->isBuild())
+  //     throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
-      throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
+  //   if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
+  //     throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
-    if (scene && isEnabled()) {
-      scene->numIntersectionFilters1 -= occlusionFilter1 != nullptr;
-      scene->numIntersectionFilters1 += filter != nullptr;
-    }
-    occlusionFilter1 = filter;
-    if (filter) hasOcclusionFilterMask  |= HAS_FILTER1; else hasOcclusionFilterMask  &= ~HAS_FILTER1;
-  }
+  //   if (scene && isEnabled()) {
+  //     scene->numIntersectionFilters1 -= occlusionFilter1 != nullptr;
+  //     scene->numIntersectionFilters1 += filter != nullptr;
+  //   }
+  //   occlusionFilter1 = filter;
+  //   if (filter) hasOcclusionFilterMask  |= HAS_FILTER1; else hasOcclusionFilterMask  &= ~HAS_FILTER1;
+  // }
     
-  void Geometry::setOcclusionFilterFunction4 (RTCFilterFunc4 filter, bool ispc) 
-  { 
-    if (scene && scene->isStreamMode())
-      throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetOcclusionFilterFunctionN in stream mode");
+  // void Geometry::setOcclusionFilterFunction4 (RTCFilterFunc4 filter, bool ispc) 
+  // { 
+  //   if (scene && scene->isStreamMode())
+  //     throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetOcclusionFilterFunctionN in stream mode");
 
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+  //   if (scene && scene->isStatic() && scene->isBuild())
+  //     throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
-      throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
+  //   if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
+  //     throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
-    if (scene && isEnabled()) {
-      scene->numIntersectionFilters4 -= occlusionFilter4 != nullptr;
-      scene->numIntersectionFilters4 += filter != nullptr;
-    }
-    occlusionFilter4 = filter;
-    if (filter) hasOcclusionFilterMask  |= HAS_FILTER4; else hasOcclusionFilterMask  &= ~HAS_FILTER4;
-    if (ispc  ) ispcOcclusionFilterMask |= HAS_FILTER4; else ispcOcclusionFilterMask &= ~HAS_FILTER4;
-  }
+  //   if (scene && isEnabled()) {
+  //     scene->numIntersectionFilters4 -= occlusionFilter4 != nullptr;
+  //     scene->numIntersectionFilters4 += filter != nullptr;
+  //   }
+  //   occlusionFilter4 = filter;
+  //   if (filter) hasOcclusionFilterMask  |= HAS_FILTER4; else hasOcclusionFilterMask  &= ~HAS_FILTER4;
+  //   if (ispc  ) ispcOcclusionFilterMask |= HAS_FILTER4; else ispcOcclusionFilterMask &= ~HAS_FILTER4;
+  // }
     
-  void Geometry::setOcclusionFilterFunction8 (RTCFilterFunc8 filter, bool ispc) 
-  { 
-    if (scene && scene->isStreamMode())
-      throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetOcclusionFilterFunctionN in stream mode");
+  // void Geometry::setOcclusionFilterFunction8 (RTCFilterFunc8 filter, bool ispc) 
+  // { 
+  //   if (scene && scene->isStreamMode())
+  //     throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetOcclusionFilterFunctionN in stream mode");
 
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+  //   if (scene && scene->isStatic() && scene->isBuild())
+  //     throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
-      throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
+  //   if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
+  //     throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
-    if (scene && isEnabled()) {
-      scene->numIntersectionFilters8 -= occlusionFilter8 != nullptr;
-      scene->numIntersectionFilters8 += filter != nullptr;
-    }
-    occlusionFilter8 = filter;
-    if (filter) hasOcclusionFilterMask  |= HAS_FILTER8; else hasOcclusionFilterMask  &= ~HAS_FILTER8;
-    if (ispc  ) ispcOcclusionFilterMask |= HAS_FILTER8; else ispcOcclusionFilterMask &= ~HAS_FILTER8;
-  }
+  //   if (scene && isEnabled()) {
+  //     scene->numIntersectionFilters8 -= occlusionFilter8 != nullptr;
+  //     scene->numIntersectionFilters8 += filter != nullptr;
+  //   }
+  //   occlusionFilter8 = filter;
+  //   if (filter) hasOcclusionFilterMask  |= HAS_FILTER8; else hasOcclusionFilterMask  &= ~HAS_FILTER8;
+  //   if (ispc  ) ispcOcclusionFilterMask |= HAS_FILTER8; else ispcOcclusionFilterMask &= ~HAS_FILTER8;
+  // }
   
-  void Geometry::setOcclusionFilterFunction16 (RTCFilterFunc16 filter, bool ispc) 
-  { 
-    if (scene && scene->isStreamMode())
-      throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetOcclusionFilterFunctionN in stream mode");
+  // void Geometry::setOcclusionFilterFunction16 (RTCFilterFunc16 filter, bool ispc) 
+  // { 
+  //   if (scene && scene->isStreamMode())
+  //     throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetOcclusionFilterFunctionN in stream mode");
 
-    if (scene && scene->isStatic() && scene->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+  //   if (scene && scene->isStatic() && scene->isBuild())
+  //     throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH) 
-      throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
+  //   if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH) 
+  //     throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
-    if (scene && isEnabled()) {
-      scene->numIntersectionFilters16 -= occlusionFilter16 != nullptr;
-      scene->numIntersectionFilters16 += filter != nullptr;
-    }
-    occlusionFilter16 = filter;
-    if (filter) hasOcclusionFilterMask  |= HAS_FILTER16; else hasOcclusionFilterMask  &= ~HAS_FILTER16;
-    if (ispc  ) ispcOcclusionFilterMask |= HAS_FILTER16; else ispcOcclusionFilterMask &= ~HAS_FILTER16;
-  }
+  //   if (scene && isEnabled()) {
+  //     scene->numIntersectionFilters16 -= occlusionFilter16 != nullptr;
+  //     scene->numIntersectionFilters16 += filter != nullptr;
+  //   }
+  //   occlusionFilter16 = filter;
+  //   if (filter) hasOcclusionFilterMask  |= HAS_FILTER16; else hasOcclusionFilterMask  &= ~HAS_FILTER16;
+  //   if (ispc  ) ispcOcclusionFilterMask |= HAS_FILTER16; else ispcOcclusionFilterMask &= ~HAS_FILTER16;
+  // }
 
   void Geometry::setOcclusionFilterFunctionN (RTCFilterFuncN filter) 
   { 
-    if (scene && !scene->isStreamMode())
-      throw_RTCError(RTC_INVALID_OPERATION,"you can use rtcSetOcclusionFilterFunctionN only in stream mode");
+    //if (scene && !scene->isStreamMode())
+    //  throw_RTCError(RTC_INVALID_OPERATION,"you can use rtcSetOcclusionFilterFunctionN only in stream mode");
 
     if (scene && scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
@@ -343,7 +341,7 @@ namespace embree
       scene->numIntersectionFiltersN += filter != nullptr;
     }
     occlusionFilterN = filter;
-    if (filter) hasOcclusionFilterMask  |= HAS_FILTERN; else hasOcclusionFilterMask  &= ~HAS_FILTERN;
+    //if (filter) hasOcclusionFilterMask  |= HAS_FILTERN; else hasOcclusionFilterMask  &= ~HAS_FILTERN;
   }
 
   void Geometry::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 

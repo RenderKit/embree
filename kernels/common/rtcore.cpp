@@ -1243,103 +1243,23 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetIntersectionFilterFunction (RTCGeometry hgeometry, RTCFilterFunc intersect) 
+  RTCORE_API void rtcSetIntersectionFilterFunction (RTCGeometry hgeometry, RTCFilterFuncN intersect) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetIntersectionFilterFunction);
     RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setIntersectionFilterFunction(intersect);
+    geometry->setIntersectionFilterFunctionN(intersect);
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetIntersectionFilterFunction4 (RTCGeometry hgeometry, RTCFilterFunc4 filter4) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetIntersectionFilterFunction4);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setIntersectionFilterFunction4(filter4);
-    RTCORE_CATCH_END2(geometry);
-  }
-
-  RTCORE_API void rtcSetIntersectionFilterFunction8 (RTCGeometry hgeometry, RTCFilterFunc8 filter8) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetIntersectionFilterFunction8);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setIntersectionFilterFunction8(filter8);
-    RTCORE_CATCH_END2(geometry);
-  }
-  
-  RTCORE_API void rtcSetIntersectionFilterFunction16 (RTCGeometry hgeometry, RTCFilterFunc16 filter16) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetIntersectionFilterFunction16);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setIntersectionFilterFunction16(filter16);
-    RTCORE_CATCH_END2(geometry);
-  }
-
-  RTCORE_API void rtcSetIntersectionFilterFunctionN (RTCGeometry hgeometry, RTCFilterFuncN filterN) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetIntersectionFilterFunctionN);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setIntersectionFilterFunctionN(filterN);
-    RTCORE_CATCH_END2(geometry);
-  }
-
-  RTCORE_API void rtcSetOcclusionFilterFunction (RTCGeometry hgeometry, RTCFilterFunc intersect) 
+  RTCORE_API void rtcSetOcclusionFilterFunction (RTCGeometry hgeometry, RTCFilterFuncN intersect) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetOcclusionFilterFunction);
     RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setOcclusionFilterFunction(intersect);
-    RTCORE_CATCH_END2(geometry);
-  }
-
-  RTCORE_API void rtcSetOcclusionFilterFunction4 (RTCGeometry hgeometry, RTCFilterFunc4 filter4) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetOcclusionFilterFunction4);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setOcclusionFilterFunction4(filter4);
-    RTCORE_CATCH_END2(geometry);
-  }
-
-  RTCORE_API void rtcSetOcclusionFilterFunction8 (RTCGeometry hgeometry, RTCFilterFunc8 filter8) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetOcclusionFilterFunction8);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setOcclusionFilterFunction8(filter8);
-    RTCORE_CATCH_END2(geometry);
-  }
-  
-  RTCORE_API void rtcSetOcclusionFilterFunction16 (RTCGeometry hgeometry, RTCFilterFunc16 filter16) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetOcclusionFilterFunction16);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setOcclusionFilterFunction16(filter16);
-    RTCORE_CATCH_END2(geometry);
-  }
-
-  RTCORE_API void rtcSetOcclusionFilterFunctionN (RTCGeometry hgeometry, RTCFilterFuncN filterN) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetOcclusionFilterFunctionN);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setOcclusionFilterFunctionN(filterN);
+    geometry->setOcclusionFilterFunctionN(intersect);
     RTCORE_CATCH_END2(geometry);
   }
 

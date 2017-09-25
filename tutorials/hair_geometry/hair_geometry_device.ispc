@@ -42,7 +42,12 @@ uniform Vec3f hair_dK;
 uniform Vec3f hair_Kr;    //!< reflectivity of hair
 uniform Vec3f hair_Kt;    //!< transparency of hair
 
-void filterDispatch(void* uniform ptr, RTCRay& ray);
+unmasked void filterDispatch(uniform int* uniform valid,
+                             void* uniform ptr,
+                             const uniform RTCIntersectContext* uniform context,
+                             struct RTCRayN* uniform ray,
+                             const struct RTCHitN* uniform potentialHit,
+                             uniform const uintptr_t N);
 
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;
@@ -252,24 +257,37 @@ struct RTCRay2
   unsigned int instID;    //!< instance ID
 
   // ray extensions
-  RTCFilterFuncVarying filter;
+  RTCFilterFuncN filter;
   Vec3f transparency; //!< accumulated transparency value
 };
 
 uniform bool enableFilterDispatch = false;
 
 /* filter dispatch function */
-void filterDispatch(void* uniform ptr, RTCRay& ray_i) 
+unmasked void filterDispatch(uniform int* uniform valid,
+                             void* uniform ptr,
+                             const uniform RTCIntersectContext* uniform context,
+                             struct RTCRayN* uniform _ray,
+                             const struct RTCHitN* uniform potentialHit,
+                             uniform const uintptr_t N)
 {
-  RTCRay2& ray = (RTCRay2&) ray_i;
+#if 0
+  RTCRay2& ray = *(RTCRay2*uniform)_ray;
   if (!enableFilterDispatch) return;
-  if (ray.filter) ray.filter(ptr,*((varying RTCRay*)&ray));
+  if (ray.filter) ray.filter(valid,ptr,context,ray,potentialHit,N);
+#endif
 }
 
 /* occlusion filter function */
-void occlusionFilter(void* uniform ptr, RTCRay& ray_i)
+unmasked void occlusionFilter(uniform int* uniform valid,
+                              void* uniform ptr,
+                              const uniform RTCIntersectContext* uniform context,
+                              struct RTCRayN* uniform _ray,
+                              const struct RTCHitN* uniform potentialHit,
+                              uniform const uintptr_t N)
 {
-  RTCRay2& ray = (RTCRay2&) ray_i;
+#if 0
+  RTCRay2& ray = *(varying struct RTCRay2* uniform)_ray;
   /* make all surfaces opaque */
   uniform ISPCGeometry* geometry = g_ispc_scene->geometries[ray.geomID];
   if (geometry->type == TRIANGLE_MESH) {
@@ -280,6 +298,7 @@ void occlusionFilter(void* uniform ptr, RTCRay& ray_i)
   T = T * ray.transparency;
   ray.transparency = T;
   if (ne(T,make_Vec3f(0.0f))) ray.geomID = RTC_INVALID_GEOMETRY_ID;
+#endif
 }
 
 Vec3f occluded(RTCScene scene, uniform RTCIntersectContext* uniform context, RTCRay2& ray)

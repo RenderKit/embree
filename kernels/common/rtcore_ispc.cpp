@@ -21,6 +21,7 @@ DISABLE_DEPRECATED_WARNING;
 
 namespace embree
 {
+  /* FIXME: why do we need ispcNewScene2? */
   extern "C" RTCScene ispcNewScene2 (RTCDevice device, RTCSceneFlags flags, RTCAlgorithmFlags aflags) 
   {
     if (!isCoherent(flags) && !isIncoherent(flags)) flags = RTCSceneFlags(flags | RTC_SCENE_COHERENT);
@@ -171,85 +172,85 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
   
-  extern "C" void ispcSetIntersectionFilterFunction1 (RTCGeometry hgeometry, RTCFilterFunc filter) 
+  extern "C" void ispcSetIntersectionFilterFunction (RTCGeometry hgeometry, RTCFilterFuncN filter) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetIntersectionFilterFunction1);
+    RTCORE_TRACE(rtcSetIntersectionFilterFunction);
     RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setIntersectionFilterFunction(filter,true);
+    geometry->setIntersectionFilterFunctionN(filter);
     RTCORE_CATCH_END2(geometry);
   }
   
-  extern "C" void ispcSetIntersectionFilterFunction4 (RTCGeometry hgeometry, RTCFilterFunc4 filter) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetIntersectionFilterFunction4);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setIntersectionFilterFunction4(filter,true);
-    RTCORE_CATCH_END2(geometry);
-  }
+  // extern "C" void ispcSetIntersectionFilterFunction4 (RTCGeometry hgeometry, RTCFilterFunc4 filter) 
+  // {
+  //   Ref<Geometry> geometry = (Geometry*) hgeometry;
+  //   RTCORE_CATCH_BEGIN;
+  //   RTCORE_TRACE(rtcSetIntersectionFilterFunction4);
+  //   RTCORE_VERIFY_HANDLE(hgeometry);
+  //   geometry->setIntersectionFilterFunction4(filter,true);
+  //   RTCORE_CATCH_END2(geometry);
+  // }
   
-  extern "C" void ispcSetIntersectionFilterFunction8 (RTCGeometry hgeometry, RTCFilterFunc8 filter) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetIntersectionFilterFunction8);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setIntersectionFilterFunction8(filter,true);
-    RTCORE_CATCH_END2(geometry);
-  }
+  // extern "C" void ispcSetIntersectionFilterFunction8 (RTCGeometry hgeometry, RTCFilterFunc8 filter) 
+  // {
+  //   Ref<Geometry> geometry = (Geometry*) hgeometry;
+  //   RTCORE_CATCH_BEGIN;
+  //   RTCORE_TRACE(rtcSetIntersectionFilterFunction8);
+  //   RTCORE_VERIFY_HANDLE(hgeometry);
+  //   geometry->setIntersectionFilterFunction8(filter,true);
+  //   RTCORE_CATCH_END2(geometry);
+  // }
   
-  extern "C" void ispcSetIntersectionFilterFunction16 (RTCGeometry hgeometry, RTCFilterFunc16 filter) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetIntersectionFilterFunction16);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setIntersectionFilterFunction16(filter,true);
-    RTCORE_CATCH_END2(geometry);
-  }
+  // extern "C" void ispcSetIntersectionFilterFunction16 (RTCGeometry hgeometry, RTCFilterFunc16 filter) 
+  // {
+  //   Ref<Geometry> geometry = (Geometry*) hgeometry;
+  //   RTCORE_CATCH_BEGIN;
+  //   RTCORE_TRACE(rtcSetIntersectionFilterFunction16);
+  //   RTCORE_VERIFY_HANDLE(hgeometry);
+  //   geometry->setIntersectionFilterFunction16(filter,true);
+  //   RTCORE_CATCH_END2(geometry);
+  // }
 
-  extern "C" void ispcSetOcclusionFilterFunction1 (RTCGeometry hgeometry, RTCFilterFunc filter) 
+  extern "C" void ispcSetOcclusionFilterFunction (RTCGeometry hgeometry, RTCFilterFuncN filter) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetOcclusionFilterFunction1);
+    RTCORE_TRACE(rtcSetOcclusionFilterFunction);
     RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setOcclusionFilterFunction(filter,true);
+    geometry->setOcclusionFilterFunctionN(filter);
     RTCORE_CATCH_END2(geometry);
   }
   
-  extern "C" void ispcSetOcclusionFilterFunction4 (RTCGeometry hgeometry, RTCFilterFunc4 filter) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetOcclusionFilterFunction4);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setOcclusionFilterFunction4(filter,true);
-    RTCORE_CATCH_END2(geometry);
-  }
+  // extern "C" void ispcSetOcclusionFilterFunction4 (RTCGeometry hgeometry, RTCFilterFunc4 filter) 
+  // {
+  //   Ref<Geometry> geometry = (Geometry*) hgeometry;
+  //   RTCORE_CATCH_BEGIN;
+  //   RTCORE_TRACE(rtcSetOcclusionFilterFunction4);
+  //   RTCORE_VERIFY_HANDLE(hgeometry);
+  //   geometry->setOcclusionFilterFunction4(filter,true);
+  //   RTCORE_CATCH_END2(geometry);
+  // }
   
-  extern "C" void ispcSetOcclusionFilterFunction8 (RTCGeometry hgeometry, RTCFilterFunc8 filter) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetOcclusionFilterFunction8);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setOcclusionFilterFunction8(filter,true);
-    RTCORE_CATCH_END2(geometry);
-  }
+  // extern "C" void ispcSetOcclusionFilterFunction8 (RTCGeometry hgeometry, RTCFilterFunc8 filter) 
+  // {
+  //   Ref<Geometry> geometry = (Geometry*) hgeometry;
+  //   RTCORE_CATCH_BEGIN;
+  //   RTCORE_TRACE(rtcSetOcclusionFilterFunction8);
+  //   RTCORE_VERIFY_HANDLE(hgeometry);
+  //   geometry->setOcclusionFilterFunction8(filter,true);
+  //   RTCORE_CATCH_END2(geometry);
+  // }
   
-  extern "C" void ispcSetOcclusionFilterFunction16 (RTCGeometry hgeometry, RTCFilterFunc16 filter) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetOcclusionFilterFunction16);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setOcclusionFilterFunction16(filter,true);
-    RTCORE_CATCH_END2(geometry);
-  }
+  // extern "C" void ispcSetOcclusionFilterFunction16 (RTCGeometry hgeometry, RTCFilterFunc16 filter) 
+  // {
+  //   Ref<Geometry> geometry = (Geometry*) hgeometry;
+  //   RTCORE_CATCH_BEGIN;
+  //   RTCORE_TRACE(rtcSetOcclusionFilterFunction16);
+  //   RTCORE_VERIFY_HANDLE(hgeometry);
+  //   geometry->setOcclusionFilterFunction16(filter,true);
+  //   RTCORE_CATCH_END2(geometry);
+  // }
 
   extern "C" void ispcInterpolateN(RTCScene scene, unsigned int geomID, 
                                    const void* valid, const unsigned int* primIDs, const float* u, const float* v, size_t numUVs, 

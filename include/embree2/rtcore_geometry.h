@@ -91,25 +91,6 @@ enum RTCSubdivisionMode
   RTC_SUBDIV_PIN_ALL = 4,              //!< pin every vertex (interpolates every patch linearly)
 };
 
-/*! Intersection filter function for single rays. */
-typedef void (*RTCFilterFunc)(void* ptr,           /*!< pointer to user data */
-                              RTCRay& ray          /*!< intersection to filter */);
-
-/*! Intersection filter function for ray packets of size 4. */
-typedef void (*RTCFilterFunc4)(const void* valid,  /*!< pointer to valid mask */
-                               void* ptr,          /*!< pointer to user data */
-                               RTCRay4& ray        /*!< intersection to filter */);
-
-/*! Intersection filter function for ray packets of size 8. */
-typedef void (*RTCFilterFunc8)(const void* valid,  /*!< pointer to valid mask */
-                               void* ptr,          /*!< pointer to user data */
-                               RTCRay8& ray        /*!< intersection to filter */);
-
-/*! Intersection filter function for ray packets of size 16. */
-typedef void (*RTCFilterFunc16)(const void* valid, /*!< pointer to valid mask */
-                                void* ptr,         /*!< pointer to user data */
-                                RTCRay16& ray      /*!< intersection to filter */);
-
 /*! Intersection filter function for ray packets of size N. */
 typedef void (*RTCFilterFuncN)(int* valid,                            /*!< pointer to valid mask */
                                void* userPtr,                         /*!< pointer to geometry user data */
@@ -473,34 +454,10 @@ RTCORE_API void rtcDisable (RTCGeometry geometry);
 RTCORE_API void rtcSetDisplacementFunction (RTCGeometry geometry, RTCDisplacementFunc func, RTCBounds* bounds);
 
 /*! \brief Sets the intersection filter function for single rays. */
-RTCORE_API void rtcSetIntersectionFilterFunction (RTCGeometry geometry, RTCFilterFunc func);
-
-/*! \brief Sets the intersection filter function for ray packets of size 4. */
-RTCORE_API void rtcSetIntersectionFilterFunction4 (RTCGeometry geometry, RTCFilterFunc4 func);
-
-/*! \brief Sets the intersection filter function for ray packets of size 8. */
-RTCORE_API void rtcSetIntersectionFilterFunction8 (RTCGeometry geometry, RTCFilterFunc8 func);
-
-/*! \brief Sets the intersection filter function for ray packets of size 16. */
-RTCORE_API void rtcSetIntersectionFilterFunction16 (RTCGeometry geometry, RTCFilterFunc16 func);
-
-/*! \brief Sets the intersection filter function for ray packets of size N. */
-RTCORE_API void rtcSetIntersectionFilterFunctionN (RTCGeometry geometry, RTCFilterFuncN func);
+RTCORE_API void rtcSetIntersectionFilterFunction (RTCGeometry geometry, RTCFilterFuncN func);
 
 /*! \brief Sets the occlusion filter function for single rays. */
-RTCORE_API void rtcSetOcclusionFilterFunction (RTCGeometry geometry, RTCFilterFunc func);
-
-/*! \brief Sets the occlusion filter function for ray packets of size 4. */
-RTCORE_API void rtcSetOcclusionFilterFunction4 (RTCGeometry geometry, RTCFilterFunc4 func);
-
-/*! \brief Sets the occlusion filter function for ray packets of size 8. */
-RTCORE_API void rtcSetOcclusionFilterFunction8 (RTCGeometry geometry, RTCFilterFunc8 func);
-
-/*! \brief Sets the occlusion filter function for ray packets of size 16. */
-RTCORE_API void rtcSetOcclusionFilterFunction16 (RTCGeometry geometry, RTCFilterFunc16 func);
-
-/*! \brief Sets the occlusion filter function for ray packets of size N. */
-RTCORE_API void rtcSetOcclusionFilterFunctionN (RTCGeometry geometry, RTCFilterFuncN func);
+RTCORE_API void rtcSetOcclusionFilterFunction (RTCGeometry geometry, RTCFilterFuncN func);
 
 /*! Set pointer for user defined data per geometry. Invokations
  *  of the various user intersect and occluded functions get passed

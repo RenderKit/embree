@@ -2415,50 +2415,50 @@ namespace embree
     IntersectionFilterTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, bool subdiv, IntersectMode imode, IntersectVariant ivariant)
       : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), gflags(gflags), subdiv(subdiv) {}
     
-    static void intersectionFilter1(void* userGeomPtr, RTCRay& ray) 
-    {
-      if ((size_t)userGeomPtr != 123) 
-        return;
+    // static void intersectionFilter1(void* userGeomPtr, RTCRay& ray) 
+    // {
+    //   if ((size_t)userGeomPtr != 123) 
+    //     return;
       
-      if (ray.primID & 2)
-        ray.geomID = RTC_INVALID_GEOMETRY_ID;
-    }
+    //   if (ray.primID & 2)
+    //     ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    // }
     
-    static void intersectionFilter4(const void* valid_i, void* userGeomPtr, RTCRay4& ray) 
-    {
-      if ((size_t)userGeomPtr != 123) 
-        return;
+    // static void intersectionFilter4(const void* valid_i, void* userGeomPtr, RTCRay4& ray) 
+    // {
+    //   if ((size_t)userGeomPtr != 123) 
+    //     return;
       
-      int* valid = (int*)valid_i;
-      for (size_t i=0; i<4; i++)
-        if (valid[i] == -1)
-          if (ray.primID[i] & 2) 
-            ray.geomID[i] = RTC_INVALID_GEOMETRY_ID;
-    }
+    //   int* valid = (int*)valid_i;
+    //   for (size_t i=0; i<4; i++)
+    //     if (valid[i] == -1)
+    //       if (ray.primID[i] & 2) 
+    //         ray.geomID[i] = RTC_INVALID_GEOMETRY_ID;
+    // }
     
-    static void intersectionFilter8(const void* valid_i, void* userGeomPtr, RTCRay8& ray) 
-    {
-      if ((size_t)userGeomPtr != 123) 
-        return;
+    // static void intersectionFilter8(const void* valid_i, void* userGeomPtr, RTCRay8& ray) 
+    // {
+    //   if ((size_t)userGeomPtr != 123) 
+    //     return;
       
-      int* valid = (int*)valid_i;
-      for (size_t i=0; i<8; i++)
-        if (valid[i] == -1)
-          if (ray.primID[i] & 2) 
-            ray.geomID[i] = RTC_INVALID_GEOMETRY_ID;
-    }
+    //   int* valid = (int*)valid_i;
+    //   for (size_t i=0; i<8; i++)
+    //     if (valid[i] == -1)
+    //       if (ray.primID[i] & 2) 
+    //         ray.geomID[i] = RTC_INVALID_GEOMETRY_ID;
+    // }
     
-    static void intersectionFilter16(const void* valid_i, void* userGeomPtr, RTCRay16& ray) 
-    {
-      if ((size_t)userGeomPtr != 123) 
-        return;
+    // static void intersectionFilter16(const void* valid_i, void* userGeomPtr, RTCRay16& ray) 
+    // {
+    //   if ((size_t)userGeomPtr != 123) 
+    //     return;
       
-      int* valid = (int*)valid_i;
-      for (size_t i=0; i<16; i++)
-	if (valid[i] == -1)
-	  if (ray.primID[i] & 2) 
-	    ray.geomID[i] = RTC_INVALID_GEOMETRY_ID;
-    }
+    //   int* valid = (int*)valid_i;
+    //   for (size_t i=0; i<16; i++)
+    //     if (valid[i] == -1)
+    //       if (ray.primID[i] & 2) 
+    //         ray.geomID[i] = RTC_INVALID_GEOMETRY_ID;
+    // }
     
     static void intersectionFilterN(int* valid,
                                     void* userGeomPtr,
@@ -2512,26 +2512,26 @@ namespace embree
       RTCGeometry geom0 = rtcGetGeometry(scene,geomID0);
       rtcSetUserData(geom0,(void*)123);
       
-      if (imode == MODE_INTERSECT1 ) {
-        rtcSetIntersectionFilterFunction(geom0,intersectionFilter1);
-        rtcSetOcclusionFilterFunction   (geom0,intersectionFilter1);
-      }
-      else if (imode == MODE_INTERSECT4 ) {
-        rtcSetIntersectionFilterFunction4(geom0,intersectionFilter4);
-        rtcSetOcclusionFilterFunction4   (geom0,intersectionFilter4);
-      }
-      else if (imode == MODE_INTERSECT8 ) {
-        rtcSetIntersectionFilterFunction8(geom0,intersectionFilter8);
-        rtcSetOcclusionFilterFunction8   (geom0,intersectionFilter8);
-      }
-      else if (imode == MODE_INTERSECT16) {
-        rtcSetIntersectionFilterFunction16(geom0,intersectionFilter16);
-        rtcSetOcclusionFilterFunction16   (geom0,intersectionFilter16);
-      }
-      else {
-        rtcSetIntersectionFilterFunctionN (geom0,intersectionFilterN);
-        rtcSetOcclusionFilterFunctionN (geom0,intersectionFilterN);
-      }
+      // if (imode == MODE_INTERSECT1 ) {
+      //   rtcSetIntersectionFilterFunction(geom0,intersectionFilter1);
+      //   rtcSetOcclusionFilterFunction   (geom0,intersectionFilter1);
+      // }
+      // else if (imode == MODE_INTERSECT4 ) {
+      //   rtcSetIntersectionFilterFunction4(geom0,intersectionFilter4);
+      //   rtcSetOcclusionFilterFunction4   (geom0,intersectionFilter4);
+      // }
+      // else if (imode == MODE_INTERSECT8 ) {
+      //   rtcSetIntersectionFilterFunction8(geom0,intersectionFilter8);
+      //   rtcSetOcclusionFilterFunction8   (geom0,intersectionFilter8);
+      // }
+      // else if (imode == MODE_INTERSECT16) {
+      //   rtcSetIntersectionFilterFunction16(geom0,intersectionFilter16);
+      //   rtcSetOcclusionFilterFunction16   (geom0,intersectionFilter16);
+      // }
+      // else {
+        rtcSetIntersectionFilterFunction (geom0,intersectionFilterN);
+        rtcSetOcclusionFilterFunction (geom0,intersectionFilterN);
+        //}
       rtcCommit (scene);
       AssertNoError(device);
       

@@ -44,7 +44,12 @@ Vec3fa hair_dK;
 Vec3fa hair_Kr;    //!< reflectivity of hair
 Vec3fa hair_Kt;    //!< transparency of hair
 
-void filterDispatch(void* ptr, RTCRay& ray);
+void filterDispatch(int* valid,
+                    void* ptr,
+                    const RTCIntersectContext* context,
+                    struct RTCRayN* ray,
+                    const struct RTCHitN* potentialHit,
+                    const size_t N);
 
 /* scene data */
 extern "C" ISPCScene* g_ispc_scene;
@@ -254,24 +259,36 @@ struct RTCRay2
   unsigned int instID;    //!< instance ID
 
   // ray extensions
-  RTCFilterFunc filter;
+  RTCFilterFuncN filter;
   Vec3fa transparency; //!< accumulated transparency value
 };
 
 bool enableFilterDispatch = false;
 
 /* filter dispatch function */
-void filterDispatch(void* ptr, RTCRay& ray_i) 
+void filterDispatch(int* valid,
+                    void* ptr,
+                    const RTCIntersectContext* context,
+                    struct RTCRayN* _ray,
+                    const struct RTCHitN* potentialHit,
+                    const size_t N)
 {
-  RTCRay2& ray = (RTCRay2&) ray_i;
+  assert(N == 1);
+  RTCRay2& ray = *(RTCRay2*) _ray;
   if (!enableFilterDispatch) return;
-  if (ray.filter) ray.filter(ptr,*((RTCRay*)&ray));
+  if (ray.filter) ray.filter(valid,ptr,context,_ray,potentialHit,N);
 }
 
 /* occlusion filter function */
-void occlusionFilter(void* ptr, RTCRay& ray_i)
+  void occlusionFilter(int* valid,
+                       void* ptr,
+                       const RTCIntersectContext* context,
+                       struct RTCRayN* _ray,
+                       const struct RTCHitN* potentialHit,
+                       const size_t N)
 {
-  RTCRay2& ray = (RTCRay2&) ray_i;
+  assert(N == 1);
+  RTCRay2& ray = *(RTCRay2*)_ray;
   /* make all surfaces opaque */
   ISPCGeometry* geometry = g_ispc_scene->geometries[ray.geomID];
   if (geometry->type == TRIANGLE_MESH) {
