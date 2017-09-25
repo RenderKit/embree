@@ -33,7 +33,7 @@ done
 # now remove files
 echo Uninstalling Embree @EMBREE_VERSION@ ...
 for f in "${FILES[@]}"; do
-    sudo rm -vd "$f"
+    sudo /bin/rm -vd "$f"
 done
 
-sudo pkgutil --forget com.intel.embree-@EMBREE_VERSION@
+sudo /usr/sbin/pkgutil --forget com.intel.embree-@EMBREE_VERSION@
