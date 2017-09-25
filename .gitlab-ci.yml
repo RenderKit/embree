@@ -13,21 +13,21 @@ before_script:
 # WINDOWS
 ####################################################################
 
-.windows-x64-RelWithDebInfo-V140-AVX2-TBB:
+windows-x64-RelWithDebInfo-V140-AVX2-TBB:
   script: "./sripts/test.py platform:x64 build:RelWithDebInfo compiler:V140 isa:AVX2 tasking:TBB intensive:OFF"
-  tags:   [win, v140]
+  tags:   [win7, v140]
 
 .windows-x64-RelWithDebInfo-V120-AVX2-TBB:
   script: "./scripts/test.py platform:x64 build:RelWithDebInfo compiler:V120 isa:AVX2 tasking:TBB intensive:OFF"
-  tags:   [win, v120]
+  tags:   [win7, v120]
 
 .windows-x64-RelWithDebInfo-ICC17-AVX2-TBB:
   script: "./scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 isa:AVX2 tasking:TBB intensive:OFF"
-  tags:   [win, icc17]
+  tags:   [win7, icc17]
  
 .windows-x64-RelWithDebInfo-CLANG-AVX2-TBB:
   script: "./scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX2 tasking:TBB intensive:OFF"
-  tags:   [win, clang]
+  tags:   [win7, clang]
 
 
 #####################################################################
