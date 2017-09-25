@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# terminate if some error occurs
+set -e
+
 # read embree version
 #EMBREE_VERSION_MAJOR=`sed -n 's/#define __EMBREE_VERSION_MAJOR__ \(.*\)/\1/p' version.h`
 #EMBREE_VERSION_MINOR=`sed -n 's/#define __EMBREE_VERSION_MINOR__ \(.*\)/\1/p' version.h`
