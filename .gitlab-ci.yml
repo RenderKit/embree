@@ -4,7 +4,7 @@
 ####################################################################
 
 windows-x64-RelWithDebInfo-V140-AVX2-TBB:
-  script: "./sripts/test.py platform:x64 build:RelWithDebInfo compiler:V140 isa:AVX2 tasking:TBB intensive:OFF"
+  script: "./scripts/test.py platform:x64 build:RelWithDebInfo compiler:V140 isa:AVX2 tasking:TBB intensive:OFF"
   tags:   [win7, v140]
 
 .windows-x64-RelWithDebInfo-V120-AVX2-TBB:
