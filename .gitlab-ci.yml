@@ -1,9 +1,4 @@
 
-# have to disable proxy servers as otherwise CDash commits fail
-before_script:
-  - export http_proxy=
-  - export https_proxy=
-
 #####################################################################
 # WINDOWS
 ####################################################################
