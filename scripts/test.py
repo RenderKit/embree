@@ -466,6 +466,8 @@ def runConfig(cfg):
     print('    '+ctest+'\n')
   else:
     cmd = ""
+    if OS != "windows":
+      cmd += "export http_proxy= && export https_proxy= && "  # we have to disable proxy server as cdash commits fail otherwise
     for e in env: cmd += e + " && "
     cmd += ctest+"\n"
     subprocess.check_call(cmd, shell=True) 

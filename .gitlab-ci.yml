@@ -4,11 +4,6 @@ before_script:
   - export http_proxy=
   - export https_proxy=
 
-#build-centos6-gcc:
-#  script:
-#    - "./scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC isa:SSE2 tasking:TBB"
-
-
 #####################################################################
 # WINDOWS
 ####################################################################
