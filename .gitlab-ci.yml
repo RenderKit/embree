@@ -37,7 +37,7 @@ macosx-x64-RelWithDebInfo-CLANG-AVX2:
 # LINUX
 ####################################################################
 
-.linux-x64-RelWithDebInfo-CLANG-AVX2-TBB:
+linux-x64-RelWithDebInfo-CLANG-AVX2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX2 tasking:TBB intensive:OFF"
   tags:   [linux, clang]
 
