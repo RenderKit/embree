@@ -201,7 +201,7 @@ unmasked void intersectionFilterN(uniform int* uniform valid,
   /* avoid crashing when debug visualizations are used */
   if (context == NULL)
     return;
-
+  
   /* iterate over all rays in ray packet */
   for (uniform unsigned int ui=0; ui<N; ui+=programCount)
   {

@@ -30,21 +30,8 @@ Vec3fa* colors = nullptr;
 #define HIT_LIST_LENGTH 16
 
 /* extended ray structure that includes total transparency along the ray */
-struct RTCRay2
+  struct RTCRay2 : public RTCRay
 {
-  Vec3fa org;     //!< Ray origin
-  Vec3fa dir;     //!< Ray direction
-  float tnear;   //!< Start of ray segment
-  float tfar;    //!< End of ray segment
-  float time;    //!< Time of this ray for motion blur.
-  unsigned int mask; //!< used to mask out objects during traversal
-  Vec3fa Ng;      //!< Geometric normal.
-  float u;       //!< Barycentric u coordinate of hit
-  float v;       //!< Barycentric v coordinate of hit
-  unsigned int geomID; //!< geometry ID
-  unsigned int primID; //!< primitive ID
-  unsigned int instID; //!< instance ID
-
   // ray extensions
   float transparency; //!< accumulated transparency value
 
@@ -119,7 +106,6 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     /* trace shadow ray */
     rtcOccluded1(g_scene,&context,*((RTCRay*)&shadow));
     RayStats_addShadowRay(stats);
-
     /* add light contribution */
     if (shadow.geomID) {
       Vec3fa Ll = diffuse*shadow.transparency*clamp(-dot(lightDir,normalize(primary.Ng)),0.0f,1.0f);
@@ -207,6 +193,32 @@ void intersectionFilterN(int* valid,
   if (context == nullptr)
     return;
 
+  /* fast path for single rays */
+  if (N == 1)
+  {
+    const size_t rayID = 0;
+    const float tfar   = RTCHitN_t(potentialHit,N,rayID);
+    RTCRay2& ray2 = *(RTCRay2*)ray;
+    Vec3fa h = ray2.org + ray2.dir*tfar;
+    float T = transparencyFunction(h);
+    if (T < 1.0f) 
+    {
+      ray2.transparency = T;      
+      ray2.instID = RTCHitN_instID(potentialHit,N,rayID);
+      ray2.geomID = RTCHitN_geomID(potentialHit,N,rayID);
+      ray2.primID = RTCHitN_primID(potentialHit,N,rayID);
+      ray2.u      = RTCHitN_u(potentialHit,N,rayID);
+      ray2.v      = RTCHitN_v(potentialHit,N,rayID);
+      ray2.tfar   = tfar;
+      ray2.Ng.x   = RTCHitN_Ng_x(potentialHit,N,rayID);
+      ray2.Ng.y   = RTCHitN_Ng_y(potentialHit,N,rayID);
+      ray2.Ng.z   = RTCHitN_Ng_z(potentialHit,N,rayID);
+    }
+    return;
+  }
+
+  /* FIXME: do we need the general path? */
+
   /* iterate over all rays in ray packet */
   for (unsigned int ui=0; ui<N; ui+=1)
   {
@@ -269,6 +281,45 @@ void occlusionFilterN(int* valid,
   /* avoid crashing when debug visualizations are used */
   if (context == nullptr)
     return;
+
+  /* fast path for single rays */
+  if (N == 1)
+  {
+    RTCRay2& ray2 = *(RTCRay2*)ray;
+    const size_t rayID = 0;
+    const unsigned int geomID = RTCHitN_geomID(potentialHit,N,rayID);
+    const unsigned int primID = RTCHitN_primID(potentialHit,N,rayID);
+    const float tfar          = RTCHitN_t(potentialHit,N,rayID);
+
+    /* The occlusion filter function may be called multiple times with
+     * the same hit. We remember the last N hits, and skip duplicates. */
+    for (size_t i=ray2.firstHit; i<ray2.lastHit; i++) {
+      unsigned int slot= i%HIT_LIST_LENGTH;
+      if (ray2.hit_geomIDs[slot] == geomID && ray2.hit_primIDs[slot] == primID) 
+      { valid[rayID] = 0;  return; }
+    }
+    /* store hit in hit list */
+    unsigned int slot = ray2.lastHit%HIT_LIST_LENGTH;
+    ray2.hit_geomIDs[slot] = geomID;
+    ray2.hit_primIDs[slot] = primID;
+    ray2.lastHit++;
+    if (ray2.lastHit - ray2.firstHit >= HIT_LIST_LENGTH)
+      ray2.firstHit++;
+
+    /* calculate and accumulate transparency */
+    Vec3fa h = ray2.org + ray2.dir*tfar;
+    float T = transparencyFunction(h);
+    T *= ray2.transparency;
+    ray2.transparency = T;
+    if (T == 0.0f) 
+      ray2.geomID = 0;
+    else
+      valid[rayID] = 0;
+    return;
+  }
+
+
+  /* FIXME: do we need the general path? */
 
   /* iterate over all rays in ray packet */
   for (unsigned int ui=0; ui<N; ui+=1)

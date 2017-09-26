@@ -29,12 +29,9 @@ struct RTCORE_ALIGN(16)  RTCRay
   /* ray data */
 public:
   float org[3];      //!< Ray origin
-  float align0;
-  
-  float dir[3];      //!< Ray direction
-  float align1;
-  
   float tnear;       //!< Start of ray segment
+  
+  float dir[3];      //!< Ray direction  
   float tfar;        //!< End of ray segment (set to hit distance)
 
   float time;        //!< Time of this ray for motion blur
@@ -43,7 +40,6 @@ public:
   /* hit data */
 public:
   float Ng[3];       //!< Unnormalized geometry normal
-  float align2;
   
   float u;           //!< Barycentric u coordinate of hit
   float v;           //!< Barycentric v coordinate of hit
@@ -64,12 +60,13 @@ public:
   float orgx[4];  //!< x coordinate of ray origin
   float orgy[4];  //!< y coordinate of ray origin
   float orgz[4];  //!< z coordinate of ray origin
+
+  float tnear[4]; //!< Start of ray segment 
   
   float dirx[4];  //!< x coordinate of ray direction
   float diry[4];  //!< y coordinate of ray direction
   float dirz[4];  //!< z coordinate of ray direction
   
-  float tnear[4]; //!< Start of ray segment 
   float tfar[4];  //!< End of ray segment (set to hit distance)
 
   float time[4];  //!< Time of this ray for motion blur
@@ -100,12 +97,11 @@ public:
   float orgx[8];  //!< x coordinate of ray origin
   float orgy[8];  //!< y coordinate of ray origin
   float orgz[8];  //!< z coordinate of ray origin
+  float tnear[8]; //!< Start of ray segment 
   
   float dirx[8];  //!< x coordinate of ray direction
   float diry[8];  //!< y coordinate of ray direction
-  float dirz[8];  //!< z coordinate of ray direction
-  
-  float tnear[8]; //!< Start of ray segment 
+  float dirz[8];  //!< z coordinate of ray direction  
   float tfar[8];  //!< End of ray segment (set to hit distance)
 
   float time[8];  //!< Time of this ray for motion blur
@@ -136,12 +132,11 @@ public:
   float orgx[16];  //!< x coordinate of ray origin
   float orgy[16];  //!< y coordinate of ray origin
   float orgz[16];  //!< z coordinate of ray origin
+  float tnear[16]; //!< Start of ray segment 
   
   float dirx[16];  //!< x coordinate of ray direction
   float diry[16];  //!< y coordinate of ray direction
-  float dirz[16];  //!< z coordinate of ray direction
-  
-  float tnear[16]; //!< Start of ray segment 
+  float dirz[16];  //!< z coordinate of ray direction  
   float tfar[16];  //!< End of ray segment (set to hit distance)
 
   float time[16];  //!< Time of this ray for motion blur
@@ -166,30 +161,29 @@ public:
 #ifndef __RTCRayN__
 #define __RTCRayN__
 struct RTCRayN {};
-RTCORE_FORCEINLINE float& RTCRayN_org_x(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[0*N+0*N1+i]; }  //!< x coordinate of ray origin
-RTCORE_FORCEINLINE float& RTCRayN_org_y(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[1*N+0*N1+i]; }  //!< y coordinate of ray origin
-RTCORE_FORCEINLINE float& RTCRayN_org_z(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[2*N+0*N1+i]; }  //!< z coordinate of ray origin
+RTCORE_FORCEINLINE float& RTCRayN_org_x(RTCRayN* ptr, size_t N, size_t i) { return ((float*)ptr)[0*N+i]; }  //!< x coordinate of ray origin
+RTCORE_FORCEINLINE float& RTCRayN_org_y(RTCRayN* ptr, size_t N, size_t i) { return ((float*)ptr)[1*N+i]; }  //!< y coordinate of ray origin
+RTCORE_FORCEINLINE float& RTCRayN_org_z(RTCRayN* ptr, size_t N, size_t i) { return ((float*)ptr)[2*N+i]; }  //!< z coordinate of ray origin
+RTCORE_FORCEINLINE float& RTCRayN_tnear(RTCRayN* ptr, size_t N, size_t i) { return ((float*)ptr)[3*N+i]; }  //!< Start of ray segment 
 
-RTCORE_FORCEINLINE float& RTCRayN_dir_x(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[3*N+1*N1+i]; }  //!< x coordinate of ray direction
-RTCORE_FORCEINLINE float& RTCRayN_dir_y(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[4*N+1*N1+i]; }  //!< y coordinate of ray direction
-RTCORE_FORCEINLINE float& RTCRayN_dir_z(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[5*N+1*N1+i]; }  //!< z coordinate of ray direction
+RTCORE_FORCEINLINE float& RTCRayN_dir_x(RTCRayN* ptr, size_t N, size_t i) { return ((float*)ptr)[4*N+i]; }  //!< x coordinate of ray direction
+RTCORE_FORCEINLINE float& RTCRayN_dir_y(RTCRayN* ptr, size_t N, size_t i) { return ((float*)ptr)[5*N+i]; }  //!< y coordinate of ray direction
+RTCORE_FORCEINLINE float& RTCRayN_dir_z(RTCRayN* ptr, size_t N, size_t i) { return ((float*)ptr)[6*N+i]; }  //!< z coordinate of ray direction
+RTCORE_FORCEINLINE float& RTCRayN_tfar (RTCRayN* ptr, size_t N, size_t i) { return ((float*)ptr)[7*N+i]; }  //!< End of ray segment (set to hit distance)
 
-RTCORE_FORCEINLINE float& RTCRayN_tnear(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[6*N+2*N1+i]; }  //!< Start of ray segment 
-RTCORE_FORCEINLINE float& RTCRayN_tfar (RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[7*N+2*N1+i]; }  //!< End of ray segment (set to hit distance)
+RTCORE_FORCEINLINE float&    RTCRayN_time(RTCRayN* ptr, size_t N, size_t i) { return ((float*)   ptr)[8*N+i]; }   //!< Time of this ray for motion blur 
+RTCORE_FORCEINLINE unsigned& RTCRayN_mask(RTCRayN* ptr, size_t N, size_t i) { return ((unsigned*)ptr)[9*N+i]; }   //!< Used to mask out objects during traversal
 
-RTCORE_FORCEINLINE float&    RTCRayN_time(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)   ptr)[8*N+2*N1+i]; }   //!< Time of this ray for motion blur 
-RTCORE_FORCEINLINE unsigned& RTCRayN_mask(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((unsigned*)ptr)[9*N+2*N1+i]; }   //!< Used to mask out objects during traversal
+RTCORE_FORCEINLINE float& RTCRayN_Ng_x(RTCRayN* ptr, size_t N, size_t i) { return ((float*)ptr)[10*N+i]; }  //!< x coordinate of geometry normal
+RTCORE_FORCEINLINE float& RTCRayN_Ng_y(RTCRayN* ptr, size_t N, size_t i) { return ((float*)ptr)[11*N+i]; }  //!< y coordinate of geometry normal
+RTCORE_FORCEINLINE float& RTCRayN_Ng_z(RTCRayN* ptr, size_t N, size_t i) { return ((float*)ptr)[12*N+i]; }  //!< z coordinate of geometry normal
 
-RTCORE_FORCEINLINE float& RTCRayN_Ng_x(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[10*N+2*N1+i]; }  //!< x coordinate of geometry normal
-RTCORE_FORCEINLINE float& RTCRayN_Ng_y(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[11*N+2*N1+i]; }  //!< y coordinate of geometry normal
-RTCORE_FORCEINLINE float& RTCRayN_Ng_z(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[12*N+2*N1+i]; }  //!< z coordinate of geometry normal
+RTCORE_FORCEINLINE float& RTCRayN_u   (RTCRayN* ptr, size_t N, size_t i) { return ((float*)ptr)[13*N+i]; }  //!< Barycentric u coordinate of hit
+RTCORE_FORCEINLINE float& RTCRayN_v   (RTCRayN* ptr, size_t N, size_t i) { return ((float*)ptr)[14*N+i]; }  //!< Barycentric v coordinate of hit
 
-RTCORE_FORCEINLINE float& RTCRayN_u   (RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[13*N+3*N1+i]; }  //!< Barycentric u coordinate of hit
-RTCORE_FORCEINLINE float& RTCRayN_v   (RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[14*N+3*N1+i]; }  //!< Barycentric v coordinate of hit
-
-RTCORE_FORCEINLINE unsigned& RTCRayN_geomID(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((unsigned*)ptr)[15*N+3*N1+i]; }  //!< geometry ID
-RTCORE_FORCEINLINE unsigned& RTCRayN_primID(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((unsigned*)ptr)[16*N+3*N1+i]; }  //!< primitive ID
-RTCORE_FORCEINLINE unsigned& RTCRayN_instID(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((unsigned*)ptr)[17*N+3*N1+i]; }  //!< instance ID
+RTCORE_FORCEINLINE unsigned& RTCRayN_geomID(RTCRayN* ptr, size_t N, size_t i) { return ((unsigned*)ptr)[15*N+i]; }  //!< geometry ID
+RTCORE_FORCEINLINE unsigned& RTCRayN_primID(RTCRayN* ptr, size_t N, size_t i) { return ((unsigned*)ptr)[16*N+i]; }  //!< primitive ID
+RTCORE_FORCEINLINE unsigned& RTCRayN_instID(RTCRayN* ptr, size_t N, size_t i) { return ((unsigned*)ptr)[17*N+i]; }  //!< instance ID
 #endif
 
 /* Helper structure to create a ray packet of compile time size N */
@@ -203,12 +197,11 @@ public:
   float orgx[N];  //!< x coordinate of ray origin
   float orgy[N];  //!< y coordinate of ray origin
   float orgz[N];  //!< z coordinate of ray origin
+  float tnear[N]; //!< Start of ray segment 
   
   float dirx[N];  //!< x coordinate of ray direction
   float diry[N];  //!< y coordinate of ray direction
-  float dirz[N];  //!< z coordinate of ray direction
-  
-  float tnear[N]; //!< Start of ray segment 
+  float dirz[N];  //!< z coordinate of ray direction  
   float tfar[N];  //!< End of ray segment (set to hit distance)
 
   float time[N];  //!< Time of this ray for motion blur
@@ -240,12 +233,11 @@ public:
   float* orgx;  //!< x coordinate of ray origin
   float* orgy;  //!< y coordinate of ray origin
   float* orgz;  //!< z coordinate of ray origin
+  float* tnear; //!< Start of ray segment (optional)
 
   float* dirx;  //!< x coordinate of ray direction
   float* diry;  //!< y coordinate of ray direction
-  float* dirz;  //!< z coordinate of ray direction
-  
-  float* tnear; //!< Start of ray segment (optional)
+  float* dirz;  //!< z coordinate of ray direction  
   float* tfar;  //!< End of ray segment (set to hit distance)
  
   float* time;  //!< Time of this ray for motion blur (optional)

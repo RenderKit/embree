@@ -132,11 +132,9 @@ namespace embree
     ray.org[0] = zero;
     ray.org[1] = zero;
     ray.org[2] = zero;
-    ray.align0 = 0;
     ray.dir[0] = zero;
     ray.dir[1] = zero;
     ray.dir[2] = zero;
-    ray.align1 = 0;
     ray.tnear = pos_inf;
     ray.tfar = neg_inf;
     ray.time = 0;
@@ -144,7 +142,6 @@ namespace embree
     ray.Ng[0] = 0.0f;
     ray.Ng[1] = 0.0f;
     ray.Ng[2] = 0.0f;
-    ray.align2 = 0;
     ray.u = 0.0f;
     ray.v = 0.0f;
     ray.geomID = -1;
