@@ -453,7 +453,7 @@ def createTest(config,OS):
 def runConfig(cfg):
   [name,build,skip_testing,benchmark,conf,env] = createTest(cfg,OS)
   ctest = ""
-  ctest +=  "ctest -VV -S scripts/test.cmake"
+  ctest +=  "ctest -VVV -S scripts/test.cmake"
   if g_cdash != "": ctest += " -D CTEST_DROP_SITE="+g_cdash
   ctest += " -D TEST_NAME=\""+name+"\""
   if skip_testing: ctest += " -D CTEST_SKIP_TESTING=ON"
