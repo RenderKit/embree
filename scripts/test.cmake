@@ -29,7 +29,7 @@ MESSAGE("no_proxy = $ENV{no_proxy}")
 # update external model repository
 FIND_PROGRAM(CTEST_GIT_COMMAND NAMES git)
 
-MACRO(check_result)
+MACRO(check_return_code)
   IF (NOT "${retcode}" STREQUAL "0")
     MESSAGE(FATAL_ERROR "error executing process")
   ENDIF()
@@ -43,14 +43,14 @@ MACRO(update_test_models)
       COMMAND ${CTEST_GIT_COMMAND} "clone" "git@git.sdvis.org:embree-models" embree-models
       WORKING_DIRECTORY ${TEST_MODELS_PARENT_DIRECTORY}
       RESULT_VARIABLE retcode)
-    check_result()
+    check_return_code()
   ELSE()
     MESSAGE("updating test models ...")
     EXECUTE_PROCESS(
       COMMAND ${CTEST_GIT_COMMAND} "fetch"
       WORKING_DIRECTORY ${TEST_MODELS_DIRECTORY}
       RESULT_VARIABLE retcode)
-    check_result()
+    check_return_code()
   ENDIF()
   IF (NOT TEST_MODELS_HASH)
     MESSAGE(FATAL_ERROR "no TEST_MODELS_HASH set")
@@ -60,14 +60,14 @@ MACRO(update_test_models)
     COMMAND ${CTEST_GIT_COMMAND} "checkout" ${TEST_MODELS_HASH}
     WORKING_DIRECTORY ${TEST_MODELS_DIRECTORY}
     RESULT_VARIABLE retcode)
-  check_result()
+  check_return_code()
 ENDMACRO()
 
 #EXECUTE_PROCESS(
 #  COMMAND "wget" "http://10.123.110.90/CDash"
 #  WORKING_DIRECTORY ${TEST_MODELS_DIRECTORY}
 #  RESULT_VARIABLE retcode)
-#check_result()
+#check_return_code()
 
 
 # increase default output sizes for test outputs
@@ -137,8 +137,8 @@ ctest_start("Continuous")
 #ctest_update (RETURN_VALUE count)
 update_test_models()
 ctest_configure()
-ctest_build()
-IF (NOT CTEST_SKIP_TESTING)
-  ctest_test()
-ENDIF()
-#ctest_submit()
+#ctest_build()
+#IF (NOT CTEST_SKIP_TESTING)
+#  ctest_test()
+#ENDIF()
+ctest_submit()
