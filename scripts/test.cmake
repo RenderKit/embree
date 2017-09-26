@@ -25,6 +25,7 @@ MESSAGE("TEST_MODELS_DIRECTORY = ${TEST_MODELS_DIRECTORY}")
 MESSAGE("http_proxy = $ENV{http_proxy}")
 MESSAGE("https_proxy = $ENV{https_proxy}")
 MESSAGE("no_proxy = $ENV{no_proxy}")
+MESSAGE("PATH = $ENV{PATH}")
 
 # update external model repository
 FIND_PROGRAM(CTEST_GIT_COMMAND NAMES git)
