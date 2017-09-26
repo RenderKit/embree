@@ -3,12 +3,11 @@
 # - export http_proxy=
 # - export https_proxy=
 
-
 #####################################################################
 # WINDOWS
 ####################################################################
 
-.windows-x64-RelWithDebInfo-V140-SSE2-TBB:
+windows-x64-RelWithDebInfo-V140-SSE2-TBB:
   script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 isa:SSE2 tasking:TBB intensive:OFF"
   tags:   [win7, v140]
 
@@ -33,7 +32,7 @@
 # MACOSX
 ####################################################################
 
-.macosx-x64-RelWithDebInfo-CLANG-SSE2-TBB:
+macosx-x64-RelWithDebInfo-CLANG-SSE2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:SSE2 tasking:TBB intensive:OFF"
   tags:   [mac, clang]
   
@@ -51,13 +50,13 @@
 ####################################################################
 
 
-.linux-x64-RelWithDebInfo-CLANG-SSE2-TBB:
+linux-x64-RelWithDebInfo-CLANG-SSE2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:SSE2 tasking:TBB intensive:OFF"
   tags:   [linux, clang]
   
-linux-x64-RelWithDebInfo-CentOS6-SSE2-TBB:
+.linux-x64-RelWithDebInfo-CentOS6-SSE2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC isa:SSE2 tasking:TBB intensive:OFF"
-#  tags:   [linux]
+  tags:   [centos6]
 
 .linux-x64-RelWithDebInfo-CLANG-AVX2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX2 tasking:TBB intensive:OFF"
