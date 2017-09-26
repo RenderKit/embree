@@ -290,15 +290,25 @@ void filterDispatch(int* valid,
   assert(N == 1);
   RTCRay2& ray = *(RTCRay2*)_ray;
   /* make all surfaces opaque */
-  ISPCGeometry* geometry = g_ispc_scene->geometries[ray.geomID];
+  unsigned int geomID = RTCHitN_geomID(potentialHit,N,0);
+  ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
   if (geometry->type == TRIANGLE_MESH) {
     ray.transparency = Vec3fa(0.0f);
+    ray.geomID = geomID;
     return;
   }
   Vec3fa T = hair_Kt;
   T = T * ray.transparency;
   ray.transparency = T;
-  if (ne(T,Vec3fa(0.0f))) ray.geomID = RTC_INVALID_GEOMETRY_ID;
+#if 1
+  if (eq(T,Vec3fa(0.0f))) 
+    ray.geomID = geomID;
+#else
+  if (ne(T,Vec3fa(0.0f))) 
+    ; //ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  else
+    ray.geomID = geomID;
+#endif
 }
 
 Vec3fa occluded(RTCScene scene, RTCIntersectContext* context, RTCRay2& ray)
