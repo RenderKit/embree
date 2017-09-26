@@ -31,8 +31,8 @@ uniform Vec3f* uniform colors = NULL;
 struct RTCRay2
 {
   Vec3f org;     //!< Ray origin
-  Vec3f dir;     //!< Ray direction
   float tnear;   //!< Start of ray segment
+  Vec3f dir;     //!< Ray direction
   float tfar;    //!< End of ray segment
   float time;    //!< Time of this ray for motion blur.
   unsigned int mask; //!< used to mask out objects during traversal
@@ -201,7 +201,36 @@ unmasked void intersectionFilterN(uniform int* uniform valid,
   /* avoid crashing when debug visualizations are used */
   if (context == NULL)
     return;
+
+  if (valid[programIndex] != -1) return;
   
+  /* fast path for SIMD width == N */
+  if (programCount == N)
+  {
+    const uniform unsigned int rayID = 0;
+    const float tfar   = RTCHitN_t(potentialHit,N,rayID);
+    varying RTCRay2 *uniform ray2 = (varying RTCRay2* uniform)ray;
+    Vec3f h = ray2->org + ray2->dir*tfar;
+    float T = transparencyFunction(h);
+    if (T < 1.0f) 
+    {
+      ray2->transparency = T;      
+      ray2->instID = RTCHitN_instID(potentialHit,N,rayID);
+      ray2->geomID = RTCHitN_geomID(potentialHit,N,rayID);
+      ray2->primID = RTCHitN_primID(potentialHit,N,rayID);
+      ray2->u      = RTCHitN_u(potentialHit,N,rayID);
+      ray2->v      = RTCHitN_v(potentialHit,N,rayID);
+      ray2->tfar   = tfar;
+      ray2->Ng.x   = RTCHitN_Ng_x(potentialHit,N,rayID);
+      ray2->Ng.y   = RTCHitN_Ng_y(potentialHit,N,rayID);
+      ray2->Ng.z   = RTCHitN_Ng_z(potentialHit,N,rayID);
+    }
+    else
+      valid[programIndex] = 0;
+
+    return;    
+  }
+
   /* iterate over all rays in ray packet */
   for (uniform unsigned int ui=0; ui<N; ui+=programCount)
   {
