@@ -1,4 +1,8 @@
 
+before_script:
+ - export http_proxy=
+ - export https_proxy=
+    
 #####################################################################
 # WINDOWS
 ####################################################################
@@ -46,10 +50,7 @@
 ####################################################################
 
 linux-x64-RelWithDebInfo-CLANG-SSE2-TBB:
-  script:
-    - export http_proxy=
-    - export https_proxy=
-    - "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:SSE2 tasking:TBB intensive:OFF"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:SSE2 tasking:TBB intensive:OFF test:False"
   tags:   [linux, clang]
   
 .linux-x64-RelWithDebInfo-CLANG-AVX2-TBB:
