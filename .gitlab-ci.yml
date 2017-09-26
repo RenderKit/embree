@@ -56,7 +56,8 @@ linux-x64-RelWithDebInfo-CLANG-SSE2-TBB:
 linux-x64-RelWithDebInfo-CentOS6-SSE2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC isa:SSE2 tasking:TBB intensive:OFF"
   tags:   [linux, centos6]
-  
+
+
 .linux-x64-RelWithDebInfo-CLANG-AVX2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX2 tasking:TBB intensive:OFF"
   tags:   [linux, clang]
