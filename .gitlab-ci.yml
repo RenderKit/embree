@@ -7,7 +7,7 @@
 # WINDOWS
 ####################################################################
 
-windows-x64-RelWithDebInfo-V140-SSE2-TBB:
+windows1-x64-RelWithDebInfo-V140-SSE2-TBB:
   script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 isa:SSE2 tasking:TBB intensive:OFF"
   tags:   [win7, v140]
 
@@ -48,7 +48,6 @@ windows-x64-RelWithDebInfo-V140-SSE2-TBB:
 #####################################################################
 # LINUX
 ####################################################################
-
 
 .linux-x64-RelWithDebInfo-CLANG-SSE2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:SSE2 tasking:TBB intensive:OFF"
@@ -187,6 +186,15 @@ windows-x64-RelWithDebInfo-V140-SSE2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX2 tasking:TBB STATIC_LIB:ON intensive:ON"
   tags:   [linux, clang]
 
+.linux-x64-RelWithDebInfo-CLANG4-AVX512KNL-TBB:
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX512KNL tasking:TBB intensive:ON"
+  tags:   [avx512knl, linux, clang4]
+  
+.linux-x64-RelWithDebInfo-CLANG4-AVX512SKX-TBB:
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX512SKX tasking:TBB intensive:ON"
+  tags:   [avx512skx, linux, clang4]
+
+
 .linux-x64-RelWithDebInfo-GCC-SSE2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC isa:SSE2 tasking:TBB intensive:ON"
   tags:   [linux, gcc]
@@ -199,21 +207,31 @@ windows-x64-RelWithDebInfo-V140-SSE2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC isa:AVX2 tasking:TBB intensive:ON"
   tags:   [linux, gcc]
 
+
 .linux-x64-RelWithDebInfo-ICC15-SSE2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC15 isa:SSE2 tasking:TBB intensive:ON"
-  tags:   [linux, clang]
+  tags:   [linux, icc15]
 
 .linux-x64-RelWithDebInfo-ICC16-AVX-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC16 isa:AVX tasking:TBB intensive:ON"
-  tags:   [linux, clang]
+  tags:   [linux, icc16]
 
 .linux-x64-RelWithDebInfo-ICC17-AVX2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 isa:AVX2 tasking:TBB intensive:ON"
-  tags:   [linux, clang]
+  tags:   [linux, icc17]
 
 .linux-x64-RelWithDebInfo-ICC18-AVX2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC18 isa:AVX512SKX tasking:TBB intensive:ON"
-  tags:   [linux, clang]
+  tags:   [linux, icc18]
+
+.linux-x64-RelWithDebInfo-ICC17-AVX512KNL-TBB:
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 isa:AVX512KNL tasking:TBB intensive:ON"
+  tags:   [avx512skx, linux, icc16]
+
+.linux-x64-RelWithDebInfo-ICC17-AVX512SKX-TBB:
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 isa:AVX512SKX tasking:TBB intensive:ON"
+  tags:   [avx512skx, linux, icc17]
+
 
 .linux-x64-RelWithDebInfo-CLANG-AVX2-TBB-NO-ISPC:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX2 tasking:TBB ISPC_SUPPORT:OFF test:False"
@@ -296,6 +314,4 @@ windows-x64-RelWithDebInfo-V140-SSE2-TBB:
 .linux-x64-RelWithDebInfo-CLANG4-AVX2-TBB-USERGEOM:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX2 tasking:TBB TRIS:ON QUADS:OFF LINES:OFF HAIR:OFF SUBDIV:OFF USERGEOM:ON test:False"
   tags:   [linux, clang4]
-
-
 
