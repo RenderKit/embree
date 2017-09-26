@@ -63,46 +63,6 @@ inline float transparencyFunction(Vec3fa& h)
   //return 0.5f;
 }
 
-// /* intersection filter function */
-// void intersectionFilter(void* ptr, RTCRay& ray_i)
-// {
-//   RTCRay2& ray = (RTCRay2&) ray_i;
-//   Vec3fa h = ray.org + ray.dir*ray.tfar;
-//   float T = transparencyFunction(h);
-//   if (T >= 1.0f) ray.geomID = RTC_INVALID_GEOMETRY_ID;
-//   else ray.transparency = T;
-// }
-
-// /* occlusion filter function */
-// void occlusionFilter(void* ptr, RTCRay& ray_i)
-// {
-//   RTCRay2& ray = (RTCRay2&) ray_i;
-//   /* The occlusion filter function may be called multiple times with
-//    * the same hit. We remember the last N hits, and skip duplicates. */
-//   for (size_t i=ray.firstHit; i<ray.lastHit; i++) {
-//     unsigned slot= i%HIT_LIST_LENGTH;
-//     if (ray.hit_geomIDs[slot] == ray.geomID && ray.hit_primIDs[slot] == ray.primID) {
-//       ray.geomID = RTC_INVALID_GEOMETRY_ID;
-//       return;
-//     }
-//   }
-
-//   /* store hit in hit list */
-//   unsigned int slot = ray.lastHit%HIT_LIST_LENGTH;
-//   ray.hit_geomIDs[slot] = ray.geomID;
-//   ray.hit_primIDs[slot] = ray.primID;
-//   ray.lastHit++;
-//   if (ray.lastHit - ray.firstHit >= HIT_LIST_LENGTH)
-//     ray.firstHit++;
-
-//   /* calculate and accumulate transparency */
-//   Vec3fa h = ray.org + ray.dir*ray.tfar;
-//   float T = transparencyFunction(h);
-//   T *= ray.transparency;
-//   ray.transparency = T;
-//   if (T != 0.0f) ray.geomID = RTC_INVALID_GEOMETRY_ID;
-// }
-
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
@@ -120,12 +80,13 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   primary.tfar = (float)(inf);
   primary.geomID = RTC_INVALID_GEOMETRY_ID;
   primary.primID = RTC_INVALID_GEOMETRY_ID;
-  primary.mask = -1;
+  primary.mask = 0; // needs to encode rayID 0 for filter
   primary.time = 0;
   primary.transparency = 0.0f;
-
+  
   while (true)
   {
+    context.userRayExt = &primary;
     /* intersect ray with scene */
     rtcIntersect1(g_scene,&context,*((RTCRay*)&primary));
     RayStats_addRay(stats);
@@ -148,11 +109,12 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     shadow.tfar = (float)(inf);
     shadow.geomID = RTC_INVALID_GEOMETRY_ID;
     shadow.primID = RTC_INVALID_GEOMETRY_ID;
-    shadow.mask = -1;
+    shadow.mask = 0; // needs to encode rayID 0 for filter
     shadow.time = 0;
     shadow.transparency = 1.0f;
     shadow.firstHit = 0;
     shadow.lastHit = 0;
+    context.userRayExt = &shadow;
 
     /* trace shadow ray */
     rtcOccluded1(g_scene,&context,*((RTCRay*)&shadow));
@@ -166,6 +128,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 
     /* shoot transmission ray */
     weight *= primary.transparency;
+
     primary.tnear = 1.001f*primary.tfar;
     primary.tfar = (float)(inf);
     primary.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -238,6 +201,8 @@ void intersectionFilterN(int* valid,
                          const struct RTCHitN* potentialHit,
                          const size_t N)
 {
+  assert(N == 1);
+
   /* avoid crashing when debug visualizations are used */
   if (context == nullptr)
     return;
@@ -286,6 +251,7 @@ void intersectionFilterN(int* valid,
 
       if (context) {
         RTCRay2* eray = (RTCRay2*) context->userRayExt;
+        assert(eray);
         scatter(eray->transparency,sizeof(RTCRay2),pid,rid,T);
       }
     }
@@ -326,6 +292,7 @@ void occlusionFilterN(int* valid,
     int pid = (ray_mask & 0xFFFF) / 1;
     int rid = (ray_mask & 0xFFFF) % 1;
     RTCRay2* eray = (RTCRay2*) context->userRayExt;
+    assert(eray);
 
     /* The occlusion filter function may be called multiple times with
      * the same hit. We remember the last N hits, and skip duplicates. */
