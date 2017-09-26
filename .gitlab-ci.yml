@@ -3,7 +3,7 @@
 # WINDOWS
 ####################################################################
 
-windows-x64-RelWithDebInfo-V140-SSE2-TBB:
+.windows-x64-RelWithDebInfo-V140-SSE2-TBB:
   script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 isa:SSE2 tasking:TBB intensive:OFF"
   tags:   [win7, v140]
 
@@ -45,8 +45,11 @@ windows-x64-RelWithDebInfo-V140-SSE2-TBB:
 # LINUX
 ####################################################################
 
-.linux-x64-RelWithDebInfo-CLANG-SSE2-TBB:
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:SSE2 tasking:TBB intensive:OFF"
+linux-x64-RelWithDebInfo-CLANG-SSE2-TBB:
+  script:
+    - export http_proxy=
+    - export https_proxy=
+    - "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:SSE2 tasking:TBB intensive:OFF"
   tags:   [linux, clang]
   
 .linux-x64-RelWithDebInfo-CLANG-AVX2-TBB:
