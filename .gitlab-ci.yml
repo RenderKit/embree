@@ -50,7 +50,7 @@ before_script:
 ####################################################################
 
 linux-x64-RelWithDebInfo-CLANG-SSE2-TBB:
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:SSE2 tasking:TBB intensive:OFF test:False"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:SSE2 tasking:TBB intensive:OFF"
   tags:   [linux, clang]
   
 .linux-x64-RelWithDebInfo-CLANG-AVX2-TBB:
