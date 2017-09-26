@@ -89,3 +89,77 @@ linux-x64-RelWithDebInfo-CentOS6-SSE2-TBB:
 .linux-skx-x64-RelWithDebInfo-CLANG4-AVX512SKX-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX512SKX tasking:TBB intensive:OFF"
   tags:   [linux, skx, clang4]
+
+#####################################################################
+# WINDOWS
+####################################################################
+
+.windows-x64-RelWithDebInfo-V120-SSE2-TBB:
+  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 isa:SSE2 tasking:TBB intensive:ON"
+  tags:   [win7, v120]
+
+.windows-x64-RelWithDebInfo-V120-AVX-TBB:
+  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 isa:AVX tasking:INT intensive:ON"
+  tags:   [win7, v120]
+  
+.windows-x64-RelWithDebInfo-V140-AVX2-TBB:
+  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 isa:AVX2 tasking:TBB intensive:ON"
+  tags:   [win7, v140]
+
+.windows-x64-RelWithDebInfo-V140-AVX2-TBB:
+  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 isa:AVX2 tasking:INT intensive:ON"
+  tags:   [win7, v140]
+
+.windows-x64-RelWithDebInfo-V140-AVX2-TBB:
+  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 isa:AVX2 tasking:PPL intensive:ON"
+  tags:   [win7, v140]
+
+.windows-x64-RelWithDebInfo-V141-AVX2-TBB:
+  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 isa:AVX2 tasking:TBB intensive:ON"
+  tags:   [win7, v141]
+
+.windows-x64-RelWithDebInfo-V140-AVX2-TBB:
+  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX2 tasking:TBB intensive:ON"
+  tags:   [win7, clang4]
+
+.windows-x64-RelWithDebInfo-V140-AVX2-TBB:
+  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC16 isa:AVX2 tasking:TBB intensive:ON"
+  tags:   [win7, icc16]
+
+.windows-x64-RelWithDebInfo-ICC17-AVX2-TBB:
+  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC17 isa:AVX2 tasking:TBB intensive:ON"
+  tags:   [win7, icc17]
+  
+.windows-x64-RelWithDebInfo-ICC17-AVX512SKX-TBB:
+  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC17 isa:AVX512SKX tasking:TBB intensive:ON sde:skx"
+  tags:   [win7, icc17]
+
+#####################################################################
+# MACOSX
+####################################################################
+
+.macosx-x64-RelWithDebInfo-CLANG-SSE2-TBB:
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:SSE2 tasking:TBB intensive:ON"
+  tags:   [mac, clang]
+  
+.macosx-x64-RelWithDebInfo-CLANG-AVX-TBB:
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX tasking:TBB intensive:ON"
+  tags:   [mac, clang]
+
+.macosx-x64-RelWithDebInfo-CLANG-AVX2-TBB:
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX2 tasking:TBB intensive:ON"
+  tags:   [mac, clang]
+
+.macosx-x64-RelWithDebInfo-CLANG-AVX2-TBB-STATIC:
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX2 tasking:TBB STATIC_LIB:ON intensive:OFF"
+  tags:   [mac, clang]
+
+.macosx-x64-RelWithDebInfo-ICC15-AVX-INT:
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC15 isa:AVX tasking:INT intensive:ON"
+  tags:   [mac, icc15]
+
+.macosx-x64-RelWithDebInfo-ICC16-AVX-INT:
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC16 isa:SSE2 tasking:TBB intensive:ON"
+  tags:   [mac, icc16]
+
+
