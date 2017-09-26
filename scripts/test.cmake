@@ -63,6 +63,12 @@ MACRO(update_test_models)
   check_result()
 ENDMACRO()
 
+EXECUTE_PROCESS(
+  COMMAND "wget http://10.123.110.90/CDash"
+  WORKING_DIRECTORY ${TEST_MODELS_DIRECTORY}
+  RESULT_VARIABLE retcode)
+check_result()
+
 # increase default output sizes for test outputs
 IF (NOT DEFINED CTEST_CUSTOM_MAXIMUM_PASSED_TEST_OUTPUT_SIZE)
   SET(CTEST_CUSTOM_MAXIMUM_PASSED_TEST_OUTPUT_SIZE 100000)
