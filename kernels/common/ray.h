@@ -18,6 +18,8 @@
 
 #include "default.h"
 
+// FIXME: if ray gets seperated into ray* and hit, uload4 needs to be adjusted
+
 namespace embree
 {
 #if defined(__X86_64__)
@@ -952,13 +954,13 @@ namespace embree
     transpose(b0,b1,b2,b3, ray.dir.x, ray.dir.y, ray.dir.z, ray.tfar);
 
     /* load and transpose: tnear, tfar, time, mask */
-    const vfloat4 c0 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[0]))->time);
-    const vfloat4 c1 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[1]))->mask);
-    const vfloat4 c2 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[2]))->time);
-    const vfloat4 c3 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[3]))->mask);
+    const vfloat4 c0 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[0]))->tfar);
+    const vfloat4 c1 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[1]))->tfar);
+    const vfloat4 c2 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[2]))->tfar);
+    const vfloat4 c3 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[3]))->tfar);
 
-    vfloat4 maskf, dummy;
-    transpose(c0,c1,c2,c3, ray.time, maskf, dummy, dummy);
+    vfloat4 maskf;
+    transpose(c0,c1,c2,c3, ray.tfar, ray.time, maskf);
     ray.mask = asInt(maskf);
 
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -989,17 +991,17 @@ namespace embree
     transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7, ray.org.x, ray.org.y, ray.org.z, ray.tnear, ray.dir.x, ray.dir.y, ray.dir.z, ray.tfar);
 
     /* load and transpose: dir.z, tfar, time, mask */
-    const vfloat4 c0 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[0]))->dir.z);
-    const vfloat4 c1 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[1]))->dir.z);
-    const vfloat4 c2 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[2]))->dir.z);
-    const vfloat4 c3 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[3]))->dir.z);
-    const vfloat4 c4 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[4]))->dir.z);
-    const vfloat4 c5 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[5]))->dir.z);
-    const vfloat4 c6 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[6]))->dir.z);
-    const vfloat4 c7 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[7]))->dir.z);
+    const vfloat4 c0 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[0]))->tfar);
+    const vfloat4 c1 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[1]))->tfar);
+    const vfloat4 c2 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[2]))->tfar);
+    const vfloat4 c3 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[3]))->tfar);
+    const vfloat4 c4 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[4]))->tfar);
+    const vfloat4 c5 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[5]))->tfar);
+    const vfloat4 c6 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[6]))->tfar);
+    const vfloat4 c7 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[7]))->tfar);
 
     vfloat8 maskf;
-    transpose(c0,c1,c2,c3,c4,c5,c6,c7, ray.dir.z, ray.tfar, ray.time, maskf);
+    transpose(c0,c1,c2,c3,c4,c5,c6,c7, ray.tfar, ray.time, maskf);
     ray.mask = asInt(maskf);
 
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -1017,7 +1019,7 @@ namespace embree
     /* gather: instID */
     ray.instID = vint16::gather<1>((int*)&ptr->instID, offset);
 
-    /* load and transpose: org.x, org.y, org.z, align0, dir.x, dir.y, dir.z, align1 */
+    /* load and transpose: org.x, org.y, org.z, tnear, dir.x, dir.y, dir.z, tfar */
     const vfloat8 ab0  = vfloat8::loadu(&((Ray*)((char*)ptr + offset[ 0]))->org);
     const vfloat8 ab1  = vfloat8::loadu(&((Ray*)((char*)ptr + offset[ 1]))->org);
     const vfloat8 ab2  = vfloat8::loadu(&((Ray*)((char*)ptr + offset[ 2]))->org);
@@ -1037,29 +1039,29 @@ namespace embree
 
     vfloat16 unused0, unused1;
     transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7,ab8,ab9,ab10,ab11,ab12,ab13,ab14,ab15,
-              ray.org.x, ray.org.y, ray.org.z, unused0, ray.dir.x, ray.dir.y, ray.dir.z, unused1);
+              ray.org.x, ray.org.y, ray.org.z, ray.tnear, ray.dir.x, ray.dir.y, ray.dir.z, ray.tfar);
 
     /* load and transpose: tnear, tfar, time, mask */
-    const vfloat4 c0  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 0]))->tnear);
-    const vfloat4 c1  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 1]))->tnear);
-    const vfloat4 c2  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 2]))->tnear);
-    const vfloat4 c3  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 3]))->tnear);
-    const vfloat4 c4  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 4]))->tnear);
-    const vfloat4 c5  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 5]))->tnear);
-    const vfloat4 c6  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 6]))->tnear);
-    const vfloat4 c7  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 7]))->tnear);
-    const vfloat4 c8  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 8]))->tnear);
-    const vfloat4 c9  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 9]))->tnear);
-    const vfloat4 c10 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[10]))->tnear);
-    const vfloat4 c11 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[11]))->tnear);
-    const vfloat4 c12 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[12]))->tnear);
-    const vfloat4 c13 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[13]))->tnear);
-    const vfloat4 c14 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[14]))->tnear);
-    const vfloat4 c15 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[15]))->tnear);
+    const vfloat4 c0  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 0]))->tfar);
+    const vfloat4 c1  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 1]))->tfar);
+    const vfloat4 c2  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 2]))->tfar);
+    const vfloat4 c3  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 3]))->tfar);
+    const vfloat4 c4  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 4]))->tfar);
+    const vfloat4 c5  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 5]))->tfar);
+    const vfloat4 c6  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 6]))->tfar);
+    const vfloat4 c7  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 7]))->tfar);
+    const vfloat4 c8  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 8]))->tfar);
+    const vfloat4 c9  = vfloat4::loadu(&((Ray*)((char*)ptr + offset[ 9]))->tfar);
+    const vfloat4 c10 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[10]))->tfar);
+    const vfloat4 c11 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[11]))->tfar);
+    const vfloat4 c12 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[12]))->tfar);
+    const vfloat4 c13 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[13]))->tfar);
+    const vfloat4 c14 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[14]))->tfar);
+    const vfloat4 c15 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[15]))->tfar);
 
     vfloat16 maskf;
     transpose(c0,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14,c15,
-              ray.tnear, ray.tfar, ray.time, maskf);
+              ray.tfar, ray.time, maskf);
     ray.mask = asInt(maskf);
 
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -1167,7 +1169,7 @@ namespace embree
     const vfloat4 a2 = vfloat4::loadu(&ptr[index+2]->org);
     const vfloat4 a3 = vfloat4::loadu(&ptr[index+3]->org);
 
-    transpose(a0,a1,a2,a3, ray.org.x, ray.org.y, ray.org.z);
+    transpose(a0,a1,a2,a3, ray.org.x, ray.org.y, ray.org.z, ray.tnear);
 
     /* load and transpose: dir.x, dir.y, dir.z */
     const vfloat4 b0 = vfloat4::loadu(&ptr[index+0]->dir);
@@ -1175,16 +1177,16 @@ namespace embree
     const vfloat4 b2 = vfloat4::loadu(&ptr[index+2]->dir);
     const vfloat4 b3 = vfloat4::loadu(&ptr[index+3]->dir);
 
-    transpose(b0,b1,b2,b3, ray.dir.x, ray.dir.y, ray.dir.z);
+    transpose(b0,b1,b2,b3, ray.dir.x, ray.dir.y, ray.dir.z, ray.tfar);
 
     /* load and transpose: tnear, tfar, time, mask */
-    const vfloat4 c0 = vfloat4::loadu(&ptr[index+0]->tnear);
-    const vfloat4 c1 = vfloat4::loadu(&ptr[index+1]->tnear);
-    const vfloat4 c2 = vfloat4::loadu(&ptr[index+2]->tnear);
-    const vfloat4 c3 = vfloat4::loadu(&ptr[index+3]->tnear);
+    const vfloat4 c0 = vfloat4::loadu(&ptr[index+0]->tfar);
+    const vfloat4 c1 = vfloat4::loadu(&ptr[index+1]->tfar);
+    const vfloat4 c2 = vfloat4::loadu(&ptr[index+2]->tfar);
+    const vfloat4 c3 = vfloat4::loadu(&ptr[index+3]->tfar);
 
     vfloat4 maskf;
-    transpose(c0,c1,c2,c3, ray.tnear, ray.tfar, ray.time, maskf);
+    transpose(c0,c1,c2,c3, ray.tfar, ray.time, maskf);
     ray.mask = asInt(maskf);
 
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -1216,17 +1218,17 @@ namespace embree
     transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7, ray.org.x, ray.org.y, ray.org.z, unused0, ray.dir.x, ray.dir.y, ray.dir.z, unused1);
 
     /* load and transpose: tnear, tfar, time, mask */
-    const vfloat4 c0 = vfloat4::loadu(&ptr[index+0]->tnear);
-    const vfloat4 c1 = vfloat4::loadu(&ptr[index+1]->tnear);
-    const vfloat4 c2 = vfloat4::loadu(&ptr[index+2]->tnear);
-    const vfloat4 c3 = vfloat4::loadu(&ptr[index+3]->tnear);
-    const vfloat4 c4 = vfloat4::loadu(&ptr[index+4]->tnear);
-    const vfloat4 c5 = vfloat4::loadu(&ptr[index+5]->tnear);
-    const vfloat4 c6 = vfloat4::loadu(&ptr[index+6]->tnear);
-    const vfloat4 c7 = vfloat4::loadu(&ptr[index+7]->tnear);
+    const vfloat4 c0 = vfloat4::loadu(&ptr[index+0]->tfar);
+    const vfloat4 c1 = vfloat4::loadu(&ptr[index+1]->tfar);
+    const vfloat4 c2 = vfloat4::loadu(&ptr[index+2]->tfar);
+    const vfloat4 c3 = vfloat4::loadu(&ptr[index+3]->tfar);
+    const vfloat4 c4 = vfloat4::loadu(&ptr[index+4]->tfar);
+    const vfloat4 c5 = vfloat4::loadu(&ptr[index+5]->tfar);
+    const vfloat4 c6 = vfloat4::loadu(&ptr[index+6]->tfar);
+    const vfloat4 c7 = vfloat4::loadu(&ptr[index+7]->tfar);
 
     vfloat8 maskf;
-    transpose(c0,c1,c2,c3,c4,c5,c6,c7, ray.tnear, ray.tfar, ray.time, maskf);
+    transpose(c0,c1,c2,c3,c4,c5,c6,c7, ray.tfar, ray.time, maskf);
     ray.mask = asInt(maskf);
 
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -1268,26 +1270,26 @@ namespace embree
               ray.org.x, ray.org.y, ray.org.z, unused0, ray.dir.x, ray.dir.y, ray.dir.z, unused1);
 
     /* load and transpose: tnear, tfar, time, mask */
-    const vfloat4 c0  = vfloat4::loadu(&ptr[index+ 0]->tnear);
-    const vfloat4 c1  = vfloat4::loadu(&ptr[index+ 1]->tnear);
-    const vfloat4 c2  = vfloat4::loadu(&ptr[index+ 2]->tnear);
-    const vfloat4 c3  = vfloat4::loadu(&ptr[index+ 3]->tnear);
-    const vfloat4 c4  = vfloat4::loadu(&ptr[index+ 4]->tnear);
-    const vfloat4 c5  = vfloat4::loadu(&ptr[index+ 5]->tnear);
-    const vfloat4 c6  = vfloat4::loadu(&ptr[index+ 6]->tnear);
-    const vfloat4 c7  = vfloat4::loadu(&ptr[index+ 7]->tnear);
-    const vfloat4 c8  = vfloat4::loadu(&ptr[index+ 8]->tnear);
-    const vfloat4 c9  = vfloat4::loadu(&ptr[index+ 9]->tnear);
-    const vfloat4 c10 = vfloat4::loadu(&ptr[index+10]->tnear);
-    const vfloat4 c11 = vfloat4::loadu(&ptr[index+11]->tnear);
-    const vfloat4 c12 = vfloat4::loadu(&ptr[index+12]->tnear);
-    const vfloat4 c13 = vfloat4::loadu(&ptr[index+13]->tnear);
-    const vfloat4 c14 = vfloat4::loadu(&ptr[index+14]->tnear);
-    const vfloat4 c15 = vfloat4::loadu(&ptr[index+15]->tnear);
+    const vfloat4 c0  = vfloat4::loadu(&ptr[index+ 0]->tfar);
+    const vfloat4 c1  = vfloat4::loadu(&ptr[index+ 1]->tfar);
+    const vfloat4 c2  = vfloat4::loadu(&ptr[index+ 2]->tfar);
+    const vfloat4 c3  = vfloat4::loadu(&ptr[index+ 3]->tfar);
+    const vfloat4 c4  = vfloat4::loadu(&ptr[index+ 4]->tfar);
+    const vfloat4 c5  = vfloat4::loadu(&ptr[index+ 5]->tfar);
+    const vfloat4 c6  = vfloat4::loadu(&ptr[index+ 6]->tfar);
+    const vfloat4 c7  = vfloat4::loadu(&ptr[index+ 7]->tfar);
+    const vfloat4 c8  = vfloat4::loadu(&ptr[index+ 8]->tfar);
+    const vfloat4 c9  = vfloat4::loadu(&ptr[index+ 9]->tfar);
+    const vfloat4 c10 = vfloat4::loadu(&ptr[index+10]->tfar);
+    const vfloat4 c11 = vfloat4::loadu(&ptr[index+11]->tfar);
+    const vfloat4 c12 = vfloat4::loadu(&ptr[index+12]->tfar);
+    const vfloat4 c13 = vfloat4::loadu(&ptr[index+13]->tfar);
+    const vfloat4 c14 = vfloat4::loadu(&ptr[index+14]->tfar);
+    const vfloat4 c15 = vfloat4::loadu(&ptr[index+15]->tfar);
 
     vfloat16 maskf;
     transpose(c0,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14,c15,
-              ray.tnear, ray.tfar, ray.time, maskf);
+              ray.tfar, ray.time, maskf);
     ray.mask = asInt(maskf);
 
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
