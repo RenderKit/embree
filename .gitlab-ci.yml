@@ -28,7 +28,7 @@ windows-x64-RelWithDebInfo-V140-SSE2-TBB:
 # MACOSX
 ####################################################################
 
-.macosx-x64-RelWithDebInfo-CLANG-SSE2-TBB:
+macosx-x64-RelWithDebInfo-CLANG-SSE2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:SSE2 tasking:TBB intensive:OFF"
   tags:   [mac, clang]
   
@@ -45,7 +45,7 @@ windows-x64-RelWithDebInfo-V140-SSE2-TBB:
 # LINUX
 ####################################################################
 
-.linux-x64-RelWithDebInfo-CLANG-SSE2-TBB:
+linux-x64-RelWithDebInfo-CLANG-SSE2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:SSE2 tasking:TBB intensive:OFF"
   tags:   [linux, clang]
   
