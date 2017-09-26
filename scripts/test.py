@@ -373,8 +373,8 @@ def createTest(config,OS):
     if ispc_enabled:     c.append("-D EMBREE_ISPC_EXECUTABLE=/NAS/packages/apps/ispc/1.9.1/ispc")
     if tasking == "TBB": c.append("-D EMBREE_TBB_ROOT=/NAS/packages/apps/tbb/tbb-2017-linux")
   elif OS == "macosx":
-    if ispc_enabled:     c.append("-D EMBREE_ISPC_EXECUTABLE=/Users/cdash/ospray-testing.git/dependencies/ispc-v1.9.1-osx/ispc")
-    if tasking == "TBB": c.append("-D EMBREE_TBB_ROOT=/Users/cdash/ospray-testing.git/dependencies/tbb-2017-osx")
+    if ispc_enabled:     c.append("-D EMBREE_ISPC_EXECUTABLE=/Network/nfs/NAS/packages/apps/ispc/1.9.1-osx/ispc")
+    if tasking == "TBB": c.append("-D EMBREE_TBB_ROOT=/Network/nfs/NAS/packages/apps/tbb-2017-osx")
   elif OS == "windows":
     if ispc_enabled:
       c.append("-D EMBREE_ISPC_EXECUTABLE=N:\\packages\\apps\\ispc\\1.9.1-windows"+ispc_ext+"\\ispc.exe")
