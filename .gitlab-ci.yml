@@ -7,7 +7,7 @@
 # WINDOWS
 ####################################################################
 
-.windows-x64-RelWithDebInfo-V140-SSE2-TBB:
+windows-x64-RelWithDebInfo-V140-SSE2-TBB:
   script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 isa:SSE2 tasking:TBB intensive:OFF"
   tags:   [win7, v140]
 
@@ -54,7 +54,7 @@
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:SSE2 tasking:TBB intensive:OFF"
   tags:   [linux, clang]
   
-linux-x64-RelWithDebInfo-CentOS6-SSE2-TBB:
+.linux-x64-RelWithDebInfo-CentOS6-SSE2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC isa:SSE2 tasking:TBB intensive:OFF"
   tags:   [centos6]
 
