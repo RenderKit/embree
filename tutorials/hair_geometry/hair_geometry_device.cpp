@@ -243,21 +243,8 @@ inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
 }
 
 /* extended ray structure that includes total transparency along the ray */
-struct RTCRay2
+  struct RTCRay2 : public RTCRay
 {
-  Vec3fa org;     //!< Ray origin
-  Vec3fa dir;     //!< Ray direction
-  float tnear;   //!< Start of ray segment
-  float tfar;    //!< End of ray segment
-  float time;    //!< Time of this ray for motion blur.
-  int mask;      //!< used to mask out objects during traversal
-  Vec3fa Ng;      //!< Geometric normal.
-  float u;       //!< Barycentric u coordinate of hit
-  float v;       //!< Barycentric v coordinate of hit
-  unsigned int geomID;    //!< geometry ID
-  unsigned int primID;    //!< primitive ID
-  unsigned int instID;    //!< instance ID
-
   // ray extensions
   RTCFilterFuncN filter;
   Vec3fa transparency; //!< accumulated transparency value
@@ -300,15 +287,11 @@ void filterDispatch(int* valid,
   Vec3fa T = hair_Kt;
   T = T * ray.transparency;
   ray.transparency = T;
-#if 1
+
   if (eq(T,Vec3fa(0.0f))) 
     ray.geomID = geomID;
-#else
-  if (ne(T,Vec3fa(0.0f))) 
-    ; //ray.geomID = RTC_INVALID_GEOMETRY_ID;
   else
-    ray.geomID = geomID;
-#endif
+    valid[0] = 0;
 }
 
 Vec3fa occluded(RTCScene scene, RTCIntersectContext* context, RTCRay2& ray)

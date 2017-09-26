@@ -21,6 +21,8 @@ RTCDevice g_device = NULL;
 RTCScene g_scene = NULL;
 uniform Vec3f* uniform colors = NULL;
 
+// FIXME: fast path for occlusionFilter
+
 /******************************************************************************************/
 /*                             Standard Mode                                              */
 /******************************************************************************************/

@@ -244,8 +244,8 @@ inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
 struct RTCRay2
 {
   Vec3f org;     //!< Ray origin
-  Vec3f dir;     //!< Ray direction
   float tnear;   //!< Start of ray segment
+  Vec3f dir;     //!< Ray direction
   float tfar;    //!< End of ray segment
   float time;    //!< Time of this ray for motion blur.
   int mask;      //!< used to mask out objects during traversal
