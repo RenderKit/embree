@@ -26,6 +26,12 @@ MESSAGE("TEST_MODELS_DIRECTORY = ${TEST_MODELS_DIRECTORY}")
 # update external model repository
 FIND_PROGRAM(CTEST_GIT_COMMAND NAMES git)
 
+MACRO(check_result)
+  IF (NOT "${retcode}" STREQUAL "0")
+    MESSAGE(FATAL_ERROR "error executing process")
+  ENDIF()
+ENDMACRO()
+
 # macro that updates the test models
 MACRO(update_test_models)
   IF(NOT EXISTS "${TEST_MODELS_DIRECTORY}")
@@ -33,22 +39,25 @@ MACRO(update_test_models)
     EXECUTE_PROCESS(
       COMMAND ${CTEST_GIT_COMMAND} "clone" "git@git.sdvis.org:embree-models" embree-models
       WORKING_DIRECTORY ${TEST_MODELS_PARENT_DIRECTORY}
-    )
+      RESULT_VARIABLE retcode)
+    check_result()
   ELSE()
     MESSAGE("updating test models ...")
     EXECUTE_PROCESS(
       COMMAND ${CTEST_GIT_COMMAND} "fetch"
       WORKING_DIRECTORY ${TEST_MODELS_DIRECTORY}
-    )
+      RESULT_VARIABLE retcode)
+    check_result()
   ENDIF()
   IF (NOT TEST_MODELS_HASH)
     MESSAGE(FATAL_ERROR "no TEST_MODELS_HASH set")
   ENDIF()
   MESSAGE("checking out test models: ${TEST_MODELS_HASH}")
   EXECUTE_PROCESS(
-      COMMAND ${CTEST_GIT_COMMAND} "checkout" ${TEST_MODELS_HASH}
-      WORKING_DIRECTORY ${TEST_MODELS_DIRECTORY}
-  )
+    COMMAND ${CTEST_GIT_COMMAND} "checkout" ${TEST_MODELS_HASH}
+    WORKING_DIRECTORY ${TEST_MODELS_DIRECTORY}
+    RESULT_VARIABLE retcode)
+  check_result()
 ENDMACRO()
 
 # increase default output sizes for test outputs
