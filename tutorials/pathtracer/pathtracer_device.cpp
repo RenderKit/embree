@@ -33,7 +33,7 @@ namespace embree {
 
 #define FIXED_EDGE_TESSELLATION_VALUE 4
 
-#define ENABLE_FILTER_FUNCTION 0
+#define ENABLE_FILTER_FUNCTION 1
 
 #define MAX_EDGE_LEVEL 128.0f
 #define MIN_EDGE_LEVEL   4.0f
@@ -1268,22 +1268,23 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 }
 
 void intersectionFilterReject(int* valid, void* ptr, const RTCIntersectContext* context, struct RTCRayN* _ray, const struct RTCHitN* potentialHit, const size_t N) {
-  RTCRay &ray = *(RTCRay*)_ray;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
 }
 
 void intersectionFilterOBJ(int* valid, void* ptr, const RTCIntersectContext* context, struct RTCRayN* _ray, const struct RTCHitN* potentialHit, const size_t N)
 {
+  const size_t rayID = 0;
   RTCRay &ray = *(RTCRay*)_ray;
   /* compute differential geometry */
   DifferentialGeometry dg;
-  dg.geomID = ray.geomID;
-  dg.primID = ray.primID;
-  dg.u = ray.u;
-  dg.v = ray.v;
-  dg.P  = ray.org+ray.tfar*ray.dir;
-  dg.Ng = ray.Ng;
-  dg.Ns = ray.Ng;
+  const float tfar = RTCHitN_t(potentialHit,N,rayID);
+  Vec3fa Ng(RTCHitN_Ng_x(potentialHit,N,rayID),RTCHitN_Ng_y(potentialHit,N,rayID),RTCHitN_Ng_z(potentialHit,N,rayID));
+  dg.geomID = RTCHitN_geomID(potentialHit,N,rayID);
+  dg.primID = RTCHitN_primID(potentialHit,N,rayID);
+  dg.u = RTCHitN_u(potentialHit,N,rayID);
+  dg.v = RTCHitN_v(potentialHit,N,rayID);
+  dg.P  = ray.org+tfar*ray.dir;
+  dg.Ng = Ng;
+  dg.Ns = Ng;
   int materialID = postIntersect(ray,dg);
   dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
   if (length(dg.Ns) < 1E-6f) dg.Ns = dg.Ng;
@@ -1296,8 +1297,15 @@ void intersectionFilterOBJ(int* valid, void* ptr, const RTCIntersectContext* con
   ISPCMaterial** material_array = &g_ispc_scene->materials[0];
   Medium medium = make_Medium_Vacuum();
   Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
-  if (min(min(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) >= 1.0f)
-    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  if (min(min(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) < 1.0f)
+  {
+    ray.geomID = dg.geomID;
+    ray.primID = dg.primID;
+    ray.tfar = tfar;
+    ray.u = dg.u;
+    ray.v = dg.v;
+    ray.Ng = dg.Ng;
+  }
 }
 
 void occlusionFilterOpaque(int* valid, void* ptr, const RTCIntersectContext* context, struct RTCRayN* _ray, const struct RTCHitN* potentialHit, const size_t N) {
@@ -1307,17 +1315,20 @@ void occlusionFilterOpaque(int* valid, void* ptr, const RTCIntersectContext* con
 
 void occlusionFilterOBJ(int* valid, void* ptr, const RTCIntersectContext* context, struct RTCRayN* _ray, const struct RTCHitN* potentialHit, const size_t N)
 {
+  const size_t rayID = 0;
   RTCRay &ray = *(RTCRay*)_ray;
 
   /* compute differential geometry */
   DifferentialGeometry dg;
-  dg.geomID = ray.geomID;
-  dg.primID = ray.primID;
-  dg.u = ray.u;
-  dg.v = ray.v;
-  dg.P  = ray.org+ray.tfar*ray.dir;
-  dg.Ng = ray.Ng;
-  dg.Ns = ray.Ng;
+  const float tfar = RTCHitN_t(potentialHit,N,rayID);
+  Vec3fa Ng(RTCHitN_Ng_x(potentialHit,N,rayID),RTCHitN_Ng_y(potentialHit,N,rayID),RTCHitN_Ng_z(potentialHit,N,rayID));
+  dg.geomID = RTCHitN_geomID(potentialHit,N,rayID);
+  dg.primID = RTCHitN_primID(potentialHit,N,rayID);
+  dg.u = RTCHitN_u(potentialHit,N,rayID);
+  dg.v = RTCHitN_v(potentialHit,N,rayID);
+  dg.P  = ray.org+tfar*ray.dir;
+  dg.Ng = Ng;
+  dg.Ns = Ng;
   int materialID = postIntersect(ray,dg);
   dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
   dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
@@ -1331,8 +1342,10 @@ void occlusionFilterOBJ(int* valid, void* ptr, const RTCIntersectContext* contex
   Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
 
   ray.transparency = ray.transparency * brdf.Kt;
-  if (max(max(ray.transparency.x,ray.transparency.y),ray.transparency.z) > 0.0f)
-    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  if (max(max(ray.transparency.x,ray.transparency.y),ray.transparency.z) <= 0.0f)
+    ray.geomID = 0;
+  else
+    valid[rayID] = 0;
 }
 
 /* occlusion filter function */
