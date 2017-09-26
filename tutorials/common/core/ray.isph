@@ -26,15 +26,12 @@
 struct RTCRay1
 {
   uniform Vec3f org;     //!< Ray origin
-  uniform float align0;
-  uniform Vec3f dir;     //!< Ray direction
-  uniform float align1;
   uniform float tnear;   //!< Start of ray segment
+  uniform Vec3f dir;     //!< Ray direction
   uniform float tfar;    //!< End of ray segment
   uniform float time;    //!< Time of this ray for motion blur.
   uniform int mask;      //!< used to mask out objects during traversal
   uniform Vec3f Ng;      //!< Geometric normal.
-  uniform float align2;
   uniform float u;       //!< Barycentric u coordinate of hit
   uniform float v;       //!< Barycentric v coordinate of hit
   uniform int geomID;    //!< geometry ID
@@ -48,8 +45,8 @@ struct RTCRay1
 struct RTCRay
 {
   Vec3f org;     //!< Ray origin
-  Vec3f dir;     //!< Ray direction
   float tnear;   //!< Start of ray segment
+  Vec3f dir;     //!< Ray direction
   float tfar;    //!< End of ray segment
   float time;    //!< Time of this ray for motion blur.
   int mask;      //!< used to mask out objects during traversal

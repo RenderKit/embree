@@ -133,8 +133,8 @@ namespace embree
 
     /* Ray data */
     Vec3vf<K> org;   // ray origin
-    Vec3vf<K> dir;   // ray direction
     vfloat<K> tnear; // start of ray segment
+    Vec3vf<K> dir;   // ray direction
     vfloat<K> tfar;  // end of ray segment
     vfloat<K> time;  // time of this ray for motion blur.
     vint<K> mask;    // used to mask out objects during traversal
@@ -184,7 +184,7 @@ namespace embree
     /* Constructs a ray from origin, direction, and ray segment. Near
      *  has to be smaller than far */
     __forceinline RayK(const Vec3fa& org, const Vec3fa& dir, float tnear = zero, float tfar = inf, float time = zero, int mask = -1)
-      : org(org), dir(dir), tnear(tnear), tfar(tfar), time(time), mask(mask), geomID(-1), primID(-1), instID(-1) {}
+      : org(org), tnear(tnear), dir(dir), tfar(tfar), time(time), mask(mask), geomID(-1), primID(-1), instID(-1) {}
 
     /* Tests if we hit something */
     __forceinline operator bool() const { return geomID != RTC_INVALID_GEOMETRY_ID; }
@@ -213,15 +213,15 @@ namespace embree
     }
 
     /* Ray data */
-    Vec3fa org;  // ray origin
-    Vec3fa dir;  // ray direction
+    Vec3f org;  // ray origin
     float tnear; // start of ray segment
+    Vec3f dir;  // ray direction
     float tfar;  // end of ray segment
     float time;  // time of this ray for motion blur.
     int mask;    // used to mask out objects during traversal
 
     /* Hit data */
-    Vec3fa Ng;   // not normalized geometry normal
+    Vec3f Ng;   // not normalized geometry normal
     float u;     // barycentric u coordinate of hit
     float v;     // barycentric v coordinate of hit
     unsigned geomID;  // geometry ID
@@ -375,12 +375,11 @@ namespace embree
     __forceinline float* orgx(size_t offset) { return (float*)&ptr[0*4*N+offset]; }  //!< x coordinate of ray origin
     __forceinline float* orgy(size_t offset) { return (float*)&ptr[1*4*N+offset]; }  //!< y coordinate of ray origin
     __forceinline float* orgz(size_t offset) { return (float*)&ptr[2*4*N+offset]; };  //!< z coordinate of ray origin
+    __forceinline float* tnear(size_t offset) { return (float*)&ptr[3*4*N+offset]; }; //!< Start of ray segment
 
-    __forceinline float* dirx(size_t offset) { return (float*)&ptr[3*4*N+offset]; };  //!< x coordinate of ray direction
-    __forceinline float* diry(size_t offset) { return (float*)&ptr[4*4*N+offset]; };  //!< y coordinate of ray direction
-    __forceinline float* dirz(size_t offset) { return (float*)&ptr[5*4*N+offset]; };  //!< z coordinate of ray direction
-
-    __forceinline float* tnear(size_t offset) { return (float*)&ptr[6*4*N+offset]; }; //!< Start of ray segment
+    __forceinline float* dirx(size_t offset) { return (float*)&ptr[4*4*N+offset]; };  //!< x coordinate of ray direction
+    __forceinline float* diry(size_t offset) { return (float*)&ptr[5*4*N+offset]; };  //!< y coordinate of ray direction
+    __forceinline float* dirz(size_t offset) { return (float*)&ptr[6*4*N+offset]; };  //!< z coordinate of ray direction
     __forceinline float* tfar (size_t offset) { return (float*)&ptr[7*4*N+offset]; }; //!< End of ray segment (set to hit distance)
 
     __forceinline float* time(size_t offset) { return (float*)&ptr[8*4*N+offset]; };  //!< Time of this ray for motion blur
@@ -793,12 +792,11 @@ namespace embree
     float* __restrict__ orgx;  //!< x coordinate of ray origin
     float* __restrict__ orgy;  //!< y coordinate of ray origin
     float* __restrict__ orgz;  //!< z coordinate of ray origin
+    float* __restrict__ tnear; //!< Start of ray segment (optional)
 
     float* __restrict__ dirx;  //!< x coordinate of ray direction
     float* __restrict__ diry;  //!< y coordinate of ray direction
     float* __restrict__ dirz;  //!< z coordinate of ray direction
-
-    float* __restrict__ tnear; //!< Start of ray segment (optional)
     float* __restrict__ tfar;  //!< End of ray segment (set to hit distance)
 
     float* __restrict__ time;     //!< Time of this ray for motion blur (optional)
@@ -934,7 +932,6 @@ namespace embree
   __forceinline Ray4 RayStreamAOS::getRayByOffset(const vint4& offset)
   {
     Ray4 ray;
-
     /* gather: instID */
     ray.instID = vint4::gather<1>((int*)&ptr->instID, offset);
 
@@ -944,7 +941,7 @@ namespace embree
     const vfloat4 a2 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[2]))->org);
     const vfloat4 a3 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[3]))->org);
 
-    transpose(a0,a1,a2,a3, ray.org.x, ray.org.y, ray.org.z);
+    transpose(a0,a1,a2,a3, ray.org.x, ray.org.y, ray.org.z, ray.tnear);
 
     /* load and transpose: dir.x, dir.y, dir.z */
     const vfloat4 b0 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[0]))->dir);
@@ -952,16 +949,16 @@ namespace embree
     const vfloat4 b2 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[2]))->dir);
     const vfloat4 b3 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[3]))->dir);
 
-    transpose(b0,b1,b2,b3, ray.dir.x, ray.dir.y, ray.dir.z);
+    transpose(b0,b1,b2,b3, ray.dir.x, ray.dir.y, ray.dir.z, ray.tfar);
 
     /* load and transpose: tnear, tfar, time, mask */
-    const vfloat4 c0 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[0]))->tnear);
-    const vfloat4 c1 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[1]))->tnear);
-    const vfloat4 c2 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[2]))->tnear);
-    const vfloat4 c3 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[3]))->tnear);
+    const vfloat4 c0 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[0]))->time);
+    const vfloat4 c1 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[1]))->mask);
+    const vfloat4 c2 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[2]))->time);
+    const vfloat4 c3 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[3]))->mask);
 
-    vfloat4 maskf;
-    transpose(c0,c1,c2,c3, ray.tnear, ray.tfar, ray.time, maskf);
+    vfloat4 maskf, dummy;
+    transpose(c0,c1,c2,c3, ray.time, maskf, dummy, dummy);
     ray.mask = asInt(maskf);
 
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -978,7 +975,7 @@ namespace embree
     /* gather: instID */
     ray.instID = vint8::gather<1>((int*)&ptr->instID, offset);
 
-    /* load and transpose: org.x, org.y, org.z, align0, dir.x, dir.y, dir.z, align1 */
+    /* load and transpose: org.x, org.y, org.z, tnear, dir.x, dir.y, dir.z, tfar */
     const vfloat8 ab0 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[0]))->org);
     const vfloat8 ab1 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[1]))->org);
     const vfloat8 ab2 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[2]))->org);
@@ -989,20 +986,20 @@ namespace embree
     const vfloat8 ab7 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[7]))->org);
 
     vfloat8 unused0, unused1;
-    transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7, ray.org.x, ray.org.y, ray.org.z, unused0, ray.dir.x, ray.dir.y, ray.dir.z, unused1);
+    transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7, ray.org.x, ray.org.y, ray.org.z, ray.tnear, ray.dir.x, ray.dir.y, ray.dir.z, ray.tfar);
 
-    /* load and transpose: tnear, tfar, time, mask */
-    const vfloat4 c0 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[0]))->tnear);
-    const vfloat4 c1 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[1]))->tnear);
-    const vfloat4 c2 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[2]))->tnear);
-    const vfloat4 c3 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[3]))->tnear);
-    const vfloat4 c4 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[4]))->tnear);
-    const vfloat4 c5 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[5]))->tnear);
-    const vfloat4 c6 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[6]))->tnear);
-    const vfloat4 c7 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[7]))->tnear);
+    /* load and transpose: dir.z, tfar, time, mask */
+    const vfloat4 c0 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[0]))->dir.z);
+    const vfloat4 c1 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[1]))->dir.z);
+    const vfloat4 c2 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[2]))->dir.z);
+    const vfloat4 c3 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[3]))->dir.z);
+    const vfloat4 c4 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[4]))->dir.z);
+    const vfloat4 c5 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[5]))->dir.z);
+    const vfloat4 c6 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[6]))->dir.z);
+    const vfloat4 c7 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[7]))->dir.z);
 
     vfloat8 maskf;
-    transpose(c0,c1,c2,c3,c4,c5,c6,c7, ray.tnear, ray.tfar, ray.time, maskf);
+    transpose(c0,c1,c2,c3,c4,c5,c6,c7, ray.dir.z, ray.tfar, ray.time, maskf);
     ray.mask = asInt(maskf);
 
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -1248,7 +1245,7 @@ namespace embree
     for (size_t k = 0; k < 16; k++)
       ray.instID[k] = ptr[index+k]->instID;
 
-    /* load and transpose: org.x, org.y, org.z, align0, dir.x, dir.y, dir.z, align1 */
+    /* load and transpose: org.x, org.y, org.z, tnear, dir.x, dir.y, dir.z, tfar */
     const vfloat8 ab0  = vfloat8::loadu(&ptr[index+ 0]->org);
     const vfloat8 ab1  = vfloat8::loadu(&ptr[index+ 1]->org);
     const vfloat8 ab2  = vfloat8::loadu(&ptr[index+ 2]->org);

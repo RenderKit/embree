@@ -91,7 +91,7 @@ void instanceIntersectFunc(void* instance_i, RTCRay& ray, size_t item)
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) ray.geomID = geomID;
   else {
     ray.instID = instance->userID;
-    ray.Ng = xfmVector(instance->normal2world,ray.Ng);
+    ray.Ng = xfmVector(instance->normal2world,Vec3fa(ray.Ng));
   }
 }
 
@@ -158,7 +158,7 @@ void instanceIntersectFuncN(const int* valid,
     RTCRayN_instID(rays,N,ui) = instance->userID;
     RTCRayN_geomID(rays,N,ui) = ray.geomID;
     RTCRayN_primID(rays,N,ui) = ray.primID;
-    Vec3fa Ng = xfmVector(instance->normal2world,ray.Ng);
+    Vec3fa Ng = xfmVector(instance->normal2world,Vec3fa(ray.Ng));
     RTCRayN_Ng_x(rays,N,ui) = Ng.x;
     RTCRayN_Ng_y(rays,N,ui) = Ng.y;
     RTCRayN_Ng_z(rays,N,ui) = Ng.z;

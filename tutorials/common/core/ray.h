@@ -49,23 +49,23 @@
     __forceinline RTCRay(const embree::Vec3fa& org, const embree::Vec3fa& dir, 
 			 float tnear = embree::zero, float tfar = embree::inf, 
 			 float time = embree::zero, int mask = -1)
-      : org(org), dir(dir), tnear(tnear), tfar(tfar), time(time), mask(mask), geomID(-1), primID(-1), instID(-1)  {}
+      : org(org), tnear(tnear), dir(dir), tfar(tfar), time(time), mask(mask), geomID(-1), primID(-1), instID(-1)  {}
 
     /*! Tests if we hit something. */
     __forceinline operator bool() const { return geomID != RTC_INVALID_GEOMETRY_ID; }
 
   public:
-    embree::Vec3fa org;        //!< Ray origin
-    embree::Vec3fa dir;        //!< Ray direction
-    float tnear;       //!< Start of ray segment
-    float tfar;        //!< End of ray segment
-    float time;        //!< Time of this ray for motion blur.
-    unsigned int mask;          //!< used to mask out objects during traversal
+    embree::Vec3f org;        //!< Ray origin
+    float tnear;              //!< Start of ray segment
+    embree::Vec3f dir;        //!< Ray direction
+    float tfar;               //!< End of ray segment
+    float time;               //!< Time of this ray for motion blur.
+    unsigned int mask;        //!< used to mask out objects during traversal
 
   public:
-    embree::Vec3fa Ng;         //!< Not normalized geometry normal
-    float u;           //!< Barycentric u coordinate of hit
-    float v;           //!< Barycentric v coordinate of hit
+    embree::Vec3f Ng;         //!< Not normalized geometry normal
+    float u;                  //!< Barycentric u coordinate of hit
+    float v;                  //!< Barycentric v coordinate of hit
     unsigned int geomID;           //!< geometry ID
     unsigned int primID;           //!< primitive ID
     unsigned int instID;           //!< instance ID

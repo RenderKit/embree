@@ -151,7 +151,6 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = 0;
-
   /* intersect ray with scene */
   rtcIntersect1(g_scene,&context,ray);
   RayStats_addRay(stats);

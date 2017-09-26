@@ -60,13 +60,11 @@ public:
   float orgx[4];  //!< x coordinate of ray origin
   float orgy[4];  //!< y coordinate of ray origin
   float orgz[4];  //!< z coordinate of ray origin
-
   float tnear[4]; //!< Start of ray segment 
   
   float dirx[4];  //!< x coordinate of ray direction
   float diry[4];  //!< y coordinate of ray direction
   float dirz[4];  //!< z coordinate of ray direction
-  
   float tfar[4];  //!< End of ray segment (set to hit distance)
 
   float time[4];  //!< Time of this ray for motion blur
