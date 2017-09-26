@@ -987,7 +987,6 @@ namespace embree
     const vfloat8 ab6 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[6]))->org);
     const vfloat8 ab7 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[7]))->org);
 
-    vfloat8 unused0, unused1;
     transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7, ray.org.x, ray.org.y, ray.org.z, ray.tnear, ray.dir.x, ray.dir.y, ray.dir.z, ray.tfar);
 
     /* load and transpose: dir.z, tfar, time, mask */
@@ -1037,7 +1036,6 @@ namespace embree
     const vfloat8 ab14 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[14]))->org);
     const vfloat8 ab15 = vfloat8::loadu(&((Ray*)((char*)ptr + offset[15]))->org);
 
-    vfloat16 unused0, unused1;
     transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7,ab8,ab9,ab10,ab11,ab12,ab13,ab14,ab15,
               ray.org.x, ray.org.y, ray.org.z, ray.tnear, ray.dir.x, ray.dir.y, ray.dir.z, ray.tfar);
 
@@ -1214,8 +1212,7 @@ namespace embree
     const vfloat8 ab6 = vfloat8::loadu(&ptr[index+6]->org);
     const vfloat8 ab7 = vfloat8::loadu(&ptr[index+7]->org);
 
-    vfloat8 unused0, unused1;
-    transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7, ray.org.x, ray.org.y, ray.org.z, unused0, ray.dir.x, ray.dir.y, ray.dir.z, unused1);
+    transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7, ray.org.x, ray.org.y, ray.org.z, ray.tnear, ray.dir.x, ray.dir.y, ray.dir.z, ray.tfar);
 
     /* load and transpose: tnear, tfar, time, mask */
     const vfloat4 c0 = vfloat4::loadu(&ptr[index+0]->tfar);
@@ -1265,9 +1262,8 @@ namespace embree
     const vfloat8 ab14 = vfloat8::loadu(&ptr[index+14]->org);
     const vfloat8 ab15 = vfloat8::loadu(&ptr[index+15]->org);
 
-    vfloat16 unused0, unused1;
     transpose(ab0,ab1,ab2,ab3,ab4,ab5,ab6,ab7,ab8,ab9,ab10,ab11,ab12,ab13,ab14,ab15,
-              ray.org.x, ray.org.y, ray.org.z, unused0, ray.dir.x, ray.dir.y, ray.dir.z, unused1);
+              ray.org.x, ray.org.y, ray.org.z, ray.tnear, ray.dir.x, ray.dir.y, ray.dir.z, ray.tfar);
 
     /* load and transpose: tnear, tfar, time, mask */
     const vfloat4 c0  = vfloat4::loadu(&ptr[index+ 0]->tfar);
