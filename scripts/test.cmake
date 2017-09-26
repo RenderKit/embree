@@ -63,6 +63,7 @@ MACRO(update_test_models)
   check_result()
 ENDMACRO()
 
+
 EXECUTE_PROCESS(
   COMMAND "wget" "http://10.123.110.90/CDash"
   WORKING_DIRECTORY ${TEST_MODELS_DIRECTORY}
