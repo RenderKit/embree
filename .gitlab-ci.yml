@@ -1,7 +1,7 @@
 
-#before_script:
-# - export http_proxy=
-# - export https_proxy=
+before_script:
+ - export http_proxy=none_http
+ - export https_proxy=none_https
     
 #####################################################################
 # WINDOWS
