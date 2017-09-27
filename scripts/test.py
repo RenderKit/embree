@@ -377,16 +377,14 @@ def createTest(config,OS):
     if tasking == "TBB": c.append("-D EMBREE_TBB_ROOT=/Network/nfs/NAS/packages/apps/tbb/tbb-2017-osx")
   elif OS == "windows":
     if ispc_enabled:
-#      c.append("-D EMBREE_ISPC_EXECUTABLE=N:/packages/apps/ispc/1.9.1-windows"+ispc_ext+"/ispc.exe")
-      c.append("-D EMBREE_ISPC_EXECUTABLE=C:/ispc-v1.9.1-windows"+ispc_ext+"/ispc.exe")
-
+#      c.append("-D EMBREE_ISPC_EXECUTABLE=N:\\packages\\apps\\ispc\\1.9.1-windows"+ispc_ext+"\\ispc.exe")
+      c.append("-D EMBREE_ISPC_EXECUTABLE=C:\\ispc-v1.9.1-windows"+ispc_ext+"\\ispc.exe")
 
     if tasking == "TBB": 
-#      tbb_path = "N:/packages/apps/tbb/tbb-2017-windows"
-      tbb_path = "C:/embree-testing/dependencies/tbb-2017-windows"
+#      tbb_path = "N:\\packages\\apps\\tbb\\tbb-2017-windows"
+      tbb_path = "C:\\embree-testing\\dependencies\\tbb-2017-windows"
       c.append("-D EMBREE_TBB_ROOT="+tbb_path)
 
-      tbb_path = tbb_path.replace("/",r"\\")
       if platform == "x64":
         e.append("set PATH="+tbb_path+"\\bin\\intel64\\vc12;%PATH%")
       else:
