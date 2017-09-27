@@ -17,8 +17,8 @@ g_debugMode = False
 g_singleConfig = ""
 
 def escape(str):
-  str = str.replace("\\",r"\\")
-  str = str.replace("\"",r"\"")
+#  str = str.replace("\\",r"\\")
+#  str = str.replace("\"",r"\"")
 #  str = str.replace(":","\:")
   return str
 
