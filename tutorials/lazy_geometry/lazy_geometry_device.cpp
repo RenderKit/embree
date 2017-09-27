@@ -159,12 +159,19 @@ void eagerCreate(LazyGeometry* instance)
   instance->state = LAZY_VALID;
 }
 
-void instanceIntersectFunc(void* instance_i, RTCRay& ray, size_t item)
+void instanceIntersectFuncN(const int* valid,
+                            void* ptr,
+                            const RTCIntersectContext* context,
+                            RTCRayN* rays,
+                            size_t N,
+                            size_t item)
+//void* instance_i, RTCRay& ray, size_t item)
 {
+#if 0
   RTCIntersectContext context; // FIXME: context should come in as argument
   rtcInitIntersectionContext(&context);
   
-  LazyGeometry* instance = (LazyGeometry*) instance_i;
+  LazyGeometry* instance = (LazyGeometry*)ptr; // instance_i;
 
   /* create the object if it is not yet created */
   if (instance->state != LAZY_VALID)
@@ -176,10 +183,18 @@ void instanceIntersectFunc(void* instance_i, RTCRay& ray, size_t item)
   rtcIntersect1(instance->object,&context,ray);
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) ray.geomID = geomID;
   else ray.instID = instance->userID;
+#endif
 }
 
-void instanceOccludedFunc(void* instance_i, RTCRay& ray, size_t item)
+  void instanceOccludedFuncN(const int* valid,
+                             void* ptr,
+                             const RTCIntersectContext* context,
+                             RTCRayN* rays,
+                             size_t N,
+                             size_t item)
+//(void* instance_i, RTCRay& ray, size_t item)
 {
+#if 0
   RTCIntersectContext context; // FIXME: context should come in as argument
   rtcInitIntersectionContext(&context);
   
@@ -191,6 +206,7 @@ void instanceOccludedFunc(void* instance_i, RTCRay& ray, size_t item)
 
   /* trace ray inside object */
   rtcOccluded1(instance->object,&context,ray);
+#endif
 }
 
 LazyGeometry* createLazyObject (RTCScene scene, int userID, const Vec3fa& center, const float radius)
@@ -204,8 +220,8 @@ LazyGeometry* createLazyObject (RTCScene scene, int userID, const Vec3fa& center
   instance->geometry = rtcNewUserGeometry(g_device,RTC_GEOMETRY_STATIC,1);
   rtcSetUserData(instance->geometry,instance);
   rtcSetBoundsFunction(instance->geometry,instanceBoundsFunc,nullptr);
-  rtcSetIntersectFunction(instance->geometry,instanceIntersectFunc);
-  rtcSetOccludedFunction (instance->geometry,instanceOccludedFunc);
+  rtcSetIntersectFunction(instance->geometry,instanceIntersectFuncN);
+  rtcSetOccludedFunction (instance->geometry,instanceOccludedFuncN);
   rtcAttachGeometry(scene,instance->geometry);
   rtcReleaseGeometry(instance->geometry);
 

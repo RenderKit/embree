@@ -1123,117 +1123,17 @@ namespace embree
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetIntersectFunction (RTCGeometry hgeometry, RTCIntersectFunc intersect) 
+  RTCORE_API void rtcSetIntersectFunction (RTCGeometry hgeometry, RTCIntersectFuncN intersect) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetIntersectFunction);
     RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setIntersectFunction(intersect);
-    RTCORE_CATCH_END2(geometry);
-  }
-
-  RTCORE_API void rtcSetIntersectFunction4 (RTCGeometry hgeometry, RTCIntersectFunc4 intersect4) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetIntersectFunction4);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setIntersectFunction4(intersect4);
-    RTCORE_CATCH_END2(geometry);
-  }
-
-  RTCORE_API void rtcSetIntersectFunction8 (RTCGeometry hgeometry, RTCIntersectFunc8 intersect8) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetIntersectFunction8);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setIntersectFunction8(intersect8);
-    RTCORE_CATCH_END2(geometry);
-  }
-  
-  RTCORE_API void rtcSetIntersectFunction16 (RTCGeometry hgeometry, RTCIntersectFunc16 intersect16) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetIntersectFunction16);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setIntersectFunction16(intersect16);
-    RTCORE_CATCH_END2(geometry);
-  }
-
-  RTCORE_API void rtcSetIntersectFunction1Mp (RTCGeometry hgeometry, RTCIntersectFunc1Mp intersect) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetIntersectFunction1Mp);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setIntersectFunction1Mp(intersect);
-    RTCORE_CATCH_END2(geometry);
-  }
-
-  RTCORE_API void rtcSetIntersectFunctionN (RTCGeometry hgeometry, RTCIntersectFuncN intersect) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetIntersectFunctionN);
-    RTCORE_VERIFY_HANDLE(hgeometry);
     geometry->setIntersectFunctionN(intersect);
     RTCORE_CATCH_END2(geometry);
   }
 
-  RTCORE_API void rtcSetOccludedFunction (RTCGeometry hgeometry, RTCOccludedFunc occluded) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetOccludedFunction);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setOccludedFunction(occluded);
-    RTCORE_CATCH_END2(geometry);
-  }
-
-  RTCORE_API void rtcSetOccludedFunction4 (RTCGeometry hgeometry, RTCOccludedFunc4 occluded4) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetOccludedFunction4);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setOccludedFunction4(occluded4);
-    RTCORE_CATCH_END2(geometry);
-  }
-
-  RTCORE_API void rtcSetOccludedFunction8 (RTCGeometry hgeometry, RTCOccludedFunc8 occluded8) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetOccludedFunction8);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setOccludedFunction8(occluded8);
-    RTCORE_CATCH_END2(geometry);
-  }
-
-  RTCORE_API void rtcSetOccludedFunction16 (RTCGeometry hgeometry, RTCOccludedFunc16 occluded16) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetOccludedFunction16);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setOccludedFunction16(occluded16);
-    RTCORE_CATCH_END2(geometry);
-  }
-
-  RTCORE_API void rtcSetOccludedFunction1Mp (RTCGeometry hgeometry, RTCOccludedFunc1Mp occluded) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetOccludedFunction1Mp);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setOccludedFunction1Mp(occluded);
-    RTCORE_CATCH_END2(geometry);
-  }
-
-  RTCORE_API void rtcSetOccludedFunctionN (RTCGeometry hgeometry, RTCOccludedFuncN occluded) 
+  RTCORE_API void rtcSetOccludedFunction (RTCGeometry hgeometry, RTCOccludedFuncN occluded) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;

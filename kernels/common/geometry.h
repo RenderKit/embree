@@ -255,11 +255,6 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
-    /*! Set intersect function for streams of single rays. */
-    virtual void setIntersectFunction1Mp (RTCIntersectFunc1Mp intersect) { 
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
-    }
-
     /*! Set intersect function for ray packets of size N. */
     virtual void setIntersectFunctionN (RTCIntersectFuncN intersect) { 
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
@@ -282,11 +277,6 @@ namespace embree
     
     /*! Set occlusion function for ray packets of size 16. */
     virtual void setOccludedFunction16 (RTCOccludedFunc16 occluded16, bool ispc = false) { 
-      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
-    }
-
-    /*! Set occlusion function for streams of single rays. */
-    virtual void setOccludedFunction1Mp (RTCOccludedFunc1Mp occluded) { 
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 

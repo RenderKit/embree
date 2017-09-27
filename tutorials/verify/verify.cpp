@@ -310,8 +310,8 @@ namespace embree
       RTCGeometry geom = rtcNewUserGeometry (device,gflag,1,1);
       rtcSetBoundsFunction(geom,BoundsFunc,nullptr);
       rtcSetUserData(geom,sphere);
-      rtcSetIntersectFunctionN(geom,IntersectFuncN);
-      rtcSetOccludedFunctionN(geom,IntersectFuncN);
+      rtcSetIntersectFunction(geom,IntersectFuncN);
+      rtcSetOccludedFunction(geom,IntersectFuncN);
       unsigned int geomID = rtcAttachGeometry(scene,geom);
       rtcReleaseGeometry(geom);
       return std::make_pair(geomID,Ref<SceneGraph::Node>(nullptr));

@@ -157,8 +157,15 @@ void eagerCreate(uniform LazyGeometry* uniform instance)
   instance->state = LAZY_VALID;
 }
 
-void instanceIntersectFunc(void* uniform instance_i, varying RTCRay& ray, uniform uintptr_t item)
+unmasked void instanceIntersectFuncN(const uniform int* uniform valid, 
+                                     void* uniform ptr,
+                                     const uniform RTCIntersectContext* uniform context,
+                                     RTCRayN* uniform rays,
+                                     uniform uintptr_t N,
+                                     uniform uintptr_t item)
+//void* uniform instance_i, varying RTCRay& ray, uniform uintptr_t item)
 {
+#if 0
   uniform RTCIntersectContext context; // FIXME: context should come in as argument
   rtcInitIntersectionContext(&context);
   
@@ -174,10 +181,17 @@ void instanceIntersectFunc(void* uniform instance_i, varying RTCRay& ray, unifor
   rtcIntersect(instance->object,&context,ray);
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) ray.geomID = geomID;
   else ray.instID = instance->userID;
+#endif
 }
 
-void instanceOccludedFunc(void* uniform instance_i, varying RTCRay& ray, uniform uintptr_t item)
+unmasked void instanceOccludedFuncN(const uniform int* uniform valid, 
+                                    void* uniform ptr,
+                                    const uniform RTCIntersectContext* uniform context,
+                                    RTCRayN* uniform rays,
+                                    uniform uintptr_t N,
+                                    uniform uintptr_t item)
 {
+#if 0
   uniform RTCIntersectContext context; // FIXME: context should come in as argument
   rtcInitIntersectionContext(&context);
   
@@ -189,6 +203,7 @@ void instanceOccludedFunc(void* uniform instance_i, varying RTCRay& ray, uniform
 
   /* trace ray inside object */
   rtcOccluded(instance->object,&context,ray);
+#endif
 }
 
 uniform LazyGeometry* uniform createLazyObject (RTCScene scene, uniform int userID, const uniform Vec3f& center, const uniform float radius)
@@ -202,8 +217,8 @@ uniform LazyGeometry* uniform createLazyObject (RTCScene scene, uniform int user
   instance->geometry = rtcNewUserGeometry(g_device,RTC_GEOMETRY_STATIC,1);
   rtcSetUserData(instance->geometry,instance);
   rtcSetBoundsFunction(instance->geometry,instanceBoundsFunc,NULL);
-  rtcSetIntersectFunction(instance->geometry,instanceIntersectFunc);
-  rtcSetOccludedFunction (instance->geometry,instanceOccludedFunc);
+  rtcSetIntersectFunction(instance->geometry,instanceIntersectFuncN);
+  rtcSetOccludedFunction (instance->geometry,instanceOccludedFuncN);
   rtcAttachGeometry(scene,instance->geometry);
   rtcReleaseGeometry(instance->geometry);
 

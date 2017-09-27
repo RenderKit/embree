@@ -71,8 +71,15 @@ unmasked void instanceBoundsFunc(void* uniform, void* uniform instance_i, unifor
   bounds_o.upper_z = upper.z;
 }
 
-void instanceIntersectFunc(void* uniform instance_i, varying RTCRay& ray, uniform uintptr_t item)
+unmasked void instanceIntersectFunc(const uniform int* uniform valid, 
+                                    void* uniform ptr,
+                                    const uniform RTCIntersectContext* uniform context,
+                                    RTCRayN* uniform rays,
+                                    uniform uintptr_t N,
+                                    uniform uintptr_t item)
+  //void* uniform instance_i, varying RTCRay& ray, uniform uintptr_t item)
 {
+#if 0
   uniform RTCIntersectContext context; // FIXME: context should come as argument
   rtcInitIntersectionContext(&context);
   
@@ -91,10 +98,18 @@ void instanceIntersectFunc(void* uniform instance_i, varying RTCRay& ray, unifor
     ray.instID = instance->userID;
     ray.Ng = xfmVector(instance->normal2world,ray.Ng);
   }
+#endif
 }
 
-void instanceOccludedFunc(void* uniform instance_i, varying RTCRay& ray, uniform uintptr_t item)
+unmasked void instanceOccludedFunc(const uniform int* uniform valid, 
+                                   void* uniform ptr,
+                                   const uniform RTCIntersectContext* uniform context,
+                                   RTCRayN* uniform rays,
+                                   uniform uintptr_t N,
+                                   uniform uintptr_t item)
+  //void* uniform instance_i, varying RTCRay& ray, uniform uintptr_t item)
 {
+#if 0
   uniform RTCIntersectContext context; // FIXME: context should come as argument
   rtcInitIntersectionContext(&context);
   
@@ -106,6 +121,7 @@ void instanceOccludedFunc(void* uniform instance_i, varying RTCRay& ray, uniform
   rtcOccluded(instance->object,&context,ray);
   ray.org = ray_org;
   ray.dir = ray_dir;
+#endif
 }
 
 unmasked void instanceIntersectFuncN(const uniform int* uniform valid,
@@ -223,13 +239,8 @@ uniform Instance* uniform createInstance (RTCScene scene, RTCScene object, unifo
   instance->geometry = rtcNewUserGeometry(g_device,RTC_GEOMETRY_STATIC,1);
   rtcSetUserData(instance->geometry,instance);
   rtcSetBoundsFunction(instance->geometry,instanceBoundsFunc,NULL);
-  if (g_mode == MODE_NORMAL) {
-    rtcSetIntersectFunction(instance->geometry,instanceIntersectFunc);
-    rtcSetOccludedFunction (instance->geometry,instanceOccludedFunc);
-  } else {
-    rtcSetIntersectFunctionN(instance->geometry,instanceIntersectFuncN);
-    rtcSetOccludedFunctionN (instance->geometry,instanceOccludedFuncN);
-  }
+  rtcSetIntersectFunction(instance->geometry,instanceIntersectFuncN);
+  rtcSetOccludedFunction (instance->geometry,instanceOccludedFuncN);
   rtcAttachGeometry(scene,instance->geometry);
   rtcReleaseGeometry(instance->geometry);
   return instance;
@@ -438,13 +449,8 @@ uniform Sphere* uniform createAnalyticalSphere (RTCScene scene, const uniform Ve
   sphere->geomID = rtcAttachGeometry(scene,geom);
   rtcSetUserData(geom,sphere);
   rtcSetBoundsFunction(geom,sphereBoundsFunc,NULL);
-  if (g_mode == MODE_NORMAL) {
-    rtcSetIntersectFunction(geom,sphereIntersectFunc);
-    rtcSetOccludedFunction (geom,sphereOccludedFunc);
-  } else {
-    rtcSetIntersectFunctionN(geom,sphereIntersectFuncN);
-    rtcSetOccludedFunctionN (geom,sphereOccludedFuncN);
-  }
+  rtcSetIntersectFunction(geom,sphereIntersectFuncN);
+  rtcSetOccludedFunction (geom,sphereOccludedFuncN);
   rtcReleaseGeometry(geom);
   return sphere;
 }
@@ -460,13 +466,8 @@ uniform Sphere* uniform createAnalyticalSpheres (RTCScene scene, uniform size_t 
   }
   rtcSetUserData(geom,spheres);
   rtcSetBoundsFunction(geom,sphereBoundsFunc,NULL);
-  if (g_mode == MODE_NORMAL) {
-    rtcSetIntersectFunction(geom,sphereIntersectFunc);
-    rtcSetOccludedFunction (geom,sphereOccludedFunc);
-  } else {
-    rtcSetIntersectFunctionN(geom,sphereIntersectFuncN);
-    rtcSetOccludedFunctionN (geom,sphereOccludedFuncN);
-  }
+  rtcSetIntersectFunction(geom,sphereIntersectFuncN);
+  rtcSetOccludedFunction (geom,sphereOccludedFuncN);
   rtcReleaseGeometry(geom);
   return spheres;
 }

@@ -374,8 +374,15 @@ unmasked void sphereBoundsFunc(void* uniform userPtr, void* uniform spheres_i, u
   bounds_o.upper_z = p.z+sphere.r;
 }
 
-void sphereIntersectFunc(void* uniform spheres_i, varying RTCRay& ray, uniform uintptr_t item)
+unmasked void sphereIntersectFuncN(const uniform int* uniform valid, 
+                                   void* uniform ptr,
+                                   const uniform RTCIntersectContext* uniform context,
+                                   RTCRayN* uniform rays,
+                                   uniform uintptr_t N,
+                                   uniform uintptr_t item)
+//void* uniform spheres_i, varying RTCRay& ray, uniform uintptr_t item)
 {
+#if 0
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) spheres_i;
   const uniform Sphere& sphere = spheres[item];
 
@@ -415,10 +422,18 @@ void sphereIntersectFunc(void* uniform spheres_i, varying RTCRay& ray, uniform u
     ray.primID = (unsigned int) item;
     ray.Ng = ray.org+t1*ray.dir-sphere_p;
   }
+#endif
 }
 
-void sphereOccludedFunc(void* uniform spheres_i, varying RTCRay& ray, uniform uintptr_t item)
+unmasked void sphereOccludedFuncN(const uniform int* uniform valid, 
+                                  void* uniform ptr,
+                                  const uniform RTCIntersectContext* uniform context,
+                                  RTCRayN* uniform rays,
+                                  uniform uintptr_t N,
+                                  uniform uintptr_t item)
+  //void* uniform spheres_i, varying RTCRay& ray, uniform uintptr_t item)
 {
+#if 0
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) spheres_i;
   const uniform Sphere& sphere = spheres[item];
 
@@ -448,6 +463,7 @@ void sphereOccludedFunc(void* uniform spheres_i, varying RTCRay& ray, uniform ui
   if ((ray.tnear < t1) & (t1 < ray.tfar)) {
     ray.geomID = 0;
   }
+#endif
 }
 
 uniform Sphere* uniform addUserGeometrySphere (RTCScene scene, const uniform Vec3f& p, uniform float r, uniform unsigned int num_time_steps)
@@ -460,8 +476,8 @@ uniform Sphere* uniform addUserGeometrySphere (RTCScene scene, const uniform Vec
   sphere->num_time_steps = num_time_steps;
   rtcSetUserData(geom,sphere);
   rtcSetBoundsFunction(geom,sphereBoundsFunc,NULL);
-  rtcSetIntersectFunction(geom,sphereIntersectFunc);
-  rtcSetOccludedFunction (geom,sphereOccludedFunc);
+  rtcSetIntersectFunction(geom,sphereIntersectFuncN);
+  rtcSetOccludedFunction (geom,sphereOccludedFuncN);
   rtcReleaseGeometry(geom);
   return sphere;
 }

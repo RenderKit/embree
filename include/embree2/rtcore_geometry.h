@@ -101,18 +101,18 @@ typedef void (*RTCFilterFuncN)(int* valid,                            /*!< point
 
 /*! Displacement mapping function. */
 typedef void (*RTCDisplacementFunc)(void* ptr,           /*!< pointer to user data of geometry */
-                                     unsigned geomID,     /*!< ID of geometry to displace */
-                                     unsigned primID,     /*!< ID of primitive of geometry to displace */
-                                     unsigned time,       /*!< time step to calculate displacement for */
-                                     const float* u,      /*!< u coordinates (source) */
-                                     const float* v,      /*!< v coordinates (source) */
-                                     const float* nx,     /*!< x coordinates of normalized normal at point to displace (source) */
-                                     const float* ny,     /*!< y coordinates of normalized normal at point to displace (source) */
-                                     const float* nz,     /*!< z coordinates of normalized normal at point to displace (source) */
-                                     float* px,           /*!< x coordinates of points to displace (source and target) */
-                                     float* py,           /*!< y coordinates of points to displace (source and target) */
-                                     float* pz,           /*!< z coordinates of points to displace (source and target) */
-                                     size_t N             /*!< number of points to displace */ );
+                                    unsigned geomID,     /*!< ID of geometry to displace */
+                                    unsigned primID,     /*!< ID of primitive of geometry to displace */
+                                    unsigned time,       /*!< time step to calculate displacement for */
+                                    const float* u,      /*!< u coordinates (source) */
+                                    const float* v,      /*!< v coordinates (source) */
+                                    const float* nx,     /*!< x coordinates of normalized normal at point to displace (source) */
+                                    const float* ny,     /*!< y coordinates of normalized normal at point to displace (source) */
+                                    const float* nz,     /*!< z coordinates of normalized normal at point to displace (source) */
+                                    float* px,           /*!< x coordinates of points to displace (source and target) */
+                                    float* py,           /*!< y coordinates of points to displace (source and target) */
+                                    float* pz,           /*!< z coordinates of points to displace (source and target) */
+                                    size_t N             /*!< number of points to displace */ );
 
 /*! \brief Defines an opaque geometry type */
 typedef struct __RTCGeometry {}* RTCGeometry;

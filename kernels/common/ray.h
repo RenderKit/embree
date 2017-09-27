@@ -1057,9 +1057,9 @@ namespace embree
     const vfloat4 c14 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[14]))->tfar);
     const vfloat4 c15 = vfloat4::loadu(&((Ray*)((char*)ptr + offset[15]))->tfar);
 
-    vfloat16 maskf;
+    vfloat16 maskf,dummy;
     transpose(c0,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14,c15,
-              ray.tfar, ray.time, maskf);
+              ray.tfar, ray.time, maskf,dummy);
     ray.mask = asInt(maskf);
 
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -1283,9 +1283,9 @@ namespace embree
     const vfloat4 c14 = vfloat4::loadu(&ptr[index+14]->tfar);
     const vfloat4 c15 = vfloat4::loadu(&ptr[index+15]->tfar);
 
-    vfloat16 maskf;
+    vfloat16 maskf, dummy;
     transpose(c0,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14,c15,
-              ray.tfar, ray.time, maskf);
+              ray.tfar, ray.time, maskf, dummy);
     ray.mask = asInt(maskf);
 
     ray.geomID = RTC_INVALID_GEOMETRY_ID;

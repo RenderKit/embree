@@ -92,83 +92,24 @@ namespace embree
     rtcOccludedNp(scene,context,rays,N);
   }
   
-  extern "C" void ispcSetIntersectFunction1 (RTCGeometry hgeometry, RTCIntersectFunc intersect) 
+  
+  extern "C" void ispcSetIntersectFunction (RTCGeometry hgeometry, RTCIntersectFuncN intersect) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetIntersectFunction1);
+    RTCORE_TRACE(rtcSetIntersectFunction);
     RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setIntersectFunction(intersect,true);
+    geometry->setIntersectFunctionN(intersect);
     RTCORE_CATCH_END2(geometry);
   }
-  
-  extern "C" void ispcSetIntersectFunction4 (RTCGeometry hgeometry, RTCIntersectFunc4 intersect) 
+    
+  extern "C" void ispcSetOccludedFunction (RTCGeometry hgeometry, RTCOccludedFuncN occluded) 
   {
     Ref<Geometry> geometry = (Geometry*) hgeometry;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetIntersectFunction4);
+    RTCORE_TRACE(rtcSetOccludedFunction);
     RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setIntersectFunction4(intersect,true);
-    RTCORE_CATCH_END2(geometry);
-  }
-  
-  extern "C" void ispcSetIntersectFunction8 (RTCGeometry hgeometry, RTCIntersectFunc8 intersect) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetIntersectFunction8);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setIntersectFunction8(intersect,true);
-    RTCORE_CATCH_END2(geometry);
-  }
-  
-  extern "C" void ispcSetIntersectFunction16 (RTCGeometry hgeometry, RTCIntersectFunc16 intersect) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetIntersectFunction16);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setIntersectFunction16(intersect,true);
-    RTCORE_CATCH_END2(geometry);
-  }
-  
-  extern "C" void ispcSetOccludedFunction1 (RTCGeometry hgeometry, RTCOccludedFunc occluded) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetOccludedFunction1);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setOccludedFunction(occluded,true);
-    RTCORE_CATCH_END2(geometry);
-  }
-  
-  extern "C" void ispcSetOccludedFunction4 (RTCGeometry hgeometry, RTCOccludedFunc4 occluded) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetOccludedFunction4);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setOccludedFunction4(occluded,true);
-    RTCORE_CATCH_END2(geometry);
-  }
-  
-  extern "C" void ispcSetOccludedFunction8 (RTCGeometry hgeometry, RTCOccludedFunc8 occluded) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetOccludedFunction8);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setOccludedFunction8(occluded,true);
-    RTCORE_CATCH_END2(geometry);
-  }
-  
-  extern "C" void ispcSetOccludedFunction16 (RTCGeometry hgeometry, RTCOccludedFunc16 occluded) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetOccludedFunction16);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setOccludedFunction16(occluded,true);
+    geometry->setOccludedFunctionN(occluded);
     RTCORE_CATCH_END2(geometry);
   }
   

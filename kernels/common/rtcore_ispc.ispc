@@ -35,6 +35,8 @@ extern "C" void ispcSetOccludedFunctionN (RTCGeometry hgeometry, void* uniform o
 
 extern "C" void ispcSetIntersectionFilterFunction (RTCGeometry hgeometry, void* uniform filter);
 extern "C" void ispcSetOcclusionFilterFunction (RTCGeometry hgeometry, void* uniform filter);
+extern "C" void ispcSetIntersectFunction (RTCGeometry hgeometry, void* uniform filter);
+extern "C" void ispcSetOccludedFunction (RTCGeometry hgeometry, void* uniform filter);
 
 extern "C" void ispcIntersect1 (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1& ray);
 extern "C" void ispcIntersect4 (void* uniform valid, RTCScene scene, const uniform RTCIntersectContext* uniform context, void* uniform ray);
@@ -158,24 +160,14 @@ void rtcOccludedNp (RTCScene scene, const uniform RTCIntersectContext* uniform c
   ispcOccludedNp(scene,context,rays,N);
 }
 
-void rtcSetIntersectFunction (RTCGeometry hgeometry, uniform RTCIntersectFuncVarying intersect)
+void rtcSetIntersectFunction (RTCGeometry hgeometry, uniform RTCIntersectFuncN intersect)
 {
-  if (sizeof(varying float) == 16) 
-    ispcSetIntersectFunction4(hgeometry,intersect);
-  else if (sizeof(varying float) == 32) 
-    ispcSetIntersectFunction8(hgeometry,intersect);
-  else if (sizeof(varying float) == 64) 
-    ispcSetIntersectFunction16(hgeometry,intersect);
+  ispcSetIntersectFunction(hgeometry,intersect);
 }
 
-void rtcSetOccludedFunction (RTCGeometry hgeometry, uniform RTCOccludedFuncVarying occluded)
+void rtcSetOccludedFunction (RTCGeometry hgeometry, uniform RTCOccludedFuncN occluded)
 {
-  if (sizeof(varying float) == 16)
-    ispcSetOccludedFunction4(hgeometry,occluded);
-  else if (sizeof(varying float) == 32)
-    ispcSetOccludedFunction8(hgeometry,occluded);
-  else if (sizeof(varying float) == 64)
-    ispcSetOccludedFunction16(hgeometry,occluded);
+  ispcSetOccludedFunction(hgeometry,occluded);
 }
 
 void rtcSetIntersectionFilterFunction (RTCGeometry hgeometry, uniform RTCFilterFuncN filter)
