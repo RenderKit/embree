@@ -296,6 +296,46 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
   if (context == NULL)
     return;
 
+  if (valid[programIndex] != -1) return;
+
+  /* fast path for SIMD width == N */
+  if (programCount == N)
+  {
+    const uniform unsigned int rayID = 0;
+    const unsigned int geomID = RTCHitN_geomID(potentialHit,N,rayID);
+    const unsigned int primID = RTCHitN_primID(potentialHit,N,rayID);
+    const float tfar          = RTCHitN_t(potentialHit,N,rayID);
+    varying RTCRay2 *uniform ray2 = (varying RTCRay2* uniform)ray;
+
+    for (size_t i=ray2->firstHit; i<ray2->lastHit; i++) {
+      unsigned slot= i%HIT_LIST_LENGTH;
+      if (ray2->hit_geomIDs[slot] == geomID && ray2->hit_primIDs[slot] == primID) {
+        valid[programIndex] = 0;
+        return;
+      }
+    }
+
+    /* store hit in hit list */
+    unsigned int slot = ray2->lastHit%HIT_LIST_LENGTH;
+    ray2->hit_geomIDs[slot] = geomID;
+    ray2->hit_primIDs[slot] = primID;
+    ray2->lastHit++;
+    if (ray2->lastHit - ray2->firstHit >= HIT_LIST_LENGTH)
+      ray2->firstHit++;
+
+    Vec3f h = ray2->org + ray2->dir*tfar;
+
+    /* calculate and accumulate transparency */
+    float T = transparencyFunction(h);
+    T *= ray2->transparency;
+    ray2->transparency = T;
+    if (T == 0.0f) 
+      ray2->geomID = 0;
+    else
+      valid[programIndex] = 0;
+    return;    
+  }
+
   /* iterate over all rays in ray packet */
   for (uniform unsigned int ui=0; ui<N; ui+=programCount)
   {
