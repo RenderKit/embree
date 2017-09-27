@@ -382,9 +382,10 @@ def createTest(config,OS):
 
 
     if tasking == "TBB": 
-      tbb_path = "N:\\packages\\apps\\tbb\\tbb-2017-windows"
+      tbb_path = "N:/packages/apps/tbb/tbb-2017-windows"
       c.append("-D EMBREE_TBB_ROOT="+tbb_path)
 
+      STRING(REPLACE "/" "\\" tbb_path "${tbb_path}")
       if platform == "x64":
         e.append("set PATH="+tbb_path+"\\bin\\intel64\\vc12;%PATH%")
       else:
