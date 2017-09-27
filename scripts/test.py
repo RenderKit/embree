@@ -139,7 +139,7 @@ def createTest(config,OS):
       c.append("-D CMAKE_CXX_COMPILER=g++ -D CMAKE_C_COMPILER=gcc")
     elif (compiler == "CLANG4"):
       c.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
-      e.append("module load clang/4")
+      e.append("module avail && module load clang/4")
     elif (compiler == "CLANG3.9"):
       c.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
       e.append("module load clang/3.9")

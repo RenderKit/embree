@@ -276,9 +276,9 @@
 
 # Compilation test of individual ISAs
 
-linux-x64-RelWithDebInfo-CLANG-ISAS-SSE2-TBB:
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:[SSE2] tasking:TBB test:False"
-  tags:   [linux, clang]
+linux-x64-RelWithDebInfo-CLANG4-ISAS-SSE2-TBB:
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:[SSE2] tasking:TBB test:False"
+  tags:   [linux, clang4]
 #  only:   [schedules]
 
 .linux-x64-RelWithDebInfo-CLANG4-ISAS-SSE42-TBB:
