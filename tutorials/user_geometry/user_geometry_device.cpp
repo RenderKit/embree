@@ -73,6 +73,7 @@ void instanceBoundsFunc(void* uniform, void* instance_i, size_t item, size_t tim
   bounds_o.upper_z = upper.z;
 }
 
+#if 0
 void instanceIntersectFunc(void* instance_i, RTCRay& ray, size_t item)
 {
   RTCIntersectContext context; // FIXME: context should come as argument
@@ -109,6 +110,7 @@ void instanceOccludedFunc(void* instance_i, RTCRay& ray, size_t item)
   ray.org = ray_org;
   ray.dir = ray_dir;
 }
+#endif
 
 void instanceIntersectFuncN(const int* valid,
                                      void* ptr,
@@ -264,59 +266,6 @@ void sphereBoundsFunc(void* uniform, void* spheres_i, size_t item, size_t time, 
   bounds_o.upper_z = sphere.p.z+sphere.r;
 }
 
-void sphereIntersectFunc(void* spheres_i, RTCRay& ray, size_t item)
-{
-  const Sphere* spheres = (const Sphere*) spheres_i;
-  const Sphere& sphere = spheres[item];
-  const Vec3fa v = ray.org-sphere.p;
-  const float A = dot(ray.dir,ray.dir);
-  const float B = 2.0f*dot(v,ray.dir);
-  const float C = dot(v,v) - sqr(sphere.r);
-  const float D = B*B - 4.0f*A*C;
-  if (D < 0.0f) return;
-  const float Q = sqrt(D);
-  const float rcpA = rcp(A);
-  const float t0 = 0.5f*rcpA*(-B-Q);
-  const float t1 = 0.5f*rcpA*(-B+Q);
-  if ((ray.tnear < t0) & (t0 < ray.tfar)) {
-    ray.u = 0.0f;
-    ray.v = 0.0f;
-    ray.tfar = t0;
-    ray.geomID = sphere.geomID;
-    ray.primID = (unsigned int) item;
-    ray.Ng = ray.org+t0*ray.dir-sphere.p;
-  }
-  if ((ray.tnear < t1) & (t1 < ray.tfar)) {
-    ray.u = 0.0f;
-    ray.v = 0.0f;
-    ray.tfar = t1;
-    ray.geomID = sphere.geomID;
-    ray.primID = (unsigned int) item;
-    ray.Ng = ray.org+t1*ray.dir-sphere.p;
-  }
-}
-
-void sphereOccludedFunc(void* spheres_i, RTCRay& ray, size_t item)
-{
-  const Sphere* spheres = (const Sphere*) spheres_i;
-  const Sphere& sphere = spheres[item];
-  const Vec3fa v = ray.org-sphere.p;
-  const float A = dot(ray.dir,ray.dir);
-  const float B = 2.0f*dot(v,ray.dir);
-  const float C = dot(v,v) - sqr(sphere.r);
-  const float D = B*B - 4.0f*A*C;
-  if (D < 0.0f) return;
-  const float Q = sqrt(D);
-  const float rcpA = rcp(A);
-  const float t0 = 0.5f*rcpA*(-B-Q);
-  const float t1 = 0.5f*rcpA*(-B+Q);
-  if ((ray.tnear < t0) & (t0 < ray.tfar)) {
-    ray.geomID = 0;
-  }
-  if ((ray.tnear < t1) & (t1 < ray.tfar)) {
-    ray.geomID = 0;
-  }
-}
 
 void sphereIntersectFuncN(const int* valid,
                           void* ptr,
@@ -326,6 +275,41 @@ void sphereIntersectFuncN(const int* valid,
                           size_t item)
 {
   const Sphere* spheres = (const Sphere*) ptr;
+  const Sphere& sphere = spheres[item];
+
+  /* fast path for N == 1 */
+  if (N == 1)
+  {
+    assert(valid[0]);
+    RTCRay &ray = *(RTCRay*)rays;
+    const Vec3fa v = ray.org-sphere.p;
+    const float A = dot(ray.dir,ray.dir);
+    const float B = 2.0f*dot(v,ray.dir);
+    const float C = dot(v,v) - sqr(sphere.r);
+    const float D = B*B - 4.0f*A*C;
+    if (D < 0.0f) return;
+    const float Q = sqrt(D);
+    const float rcpA = rcp(A);
+    const float t0 = 0.5f*rcpA*(-B-Q);
+    const float t1 = 0.5f*rcpA*(-B+Q);
+    if ((ray.tnear < t0) & (t0 < ray.tfar)) {
+      ray.u = 0.0f;
+      ray.v = 0.0f;
+      ray.tfar = t0;
+      ray.geomID = sphere.geomID;
+      ray.primID = (unsigned int) item;
+      ray.Ng = ray.org+t0*ray.dir-sphere.p;
+    }
+    if ((ray.tnear < t1) & (t1 < ray.tfar)) {
+      ray.u = 0.0f;
+      ray.v = 0.0f;
+      ray.tfar = t1;
+      ray.geomID = sphere.geomID;
+      ray.primID = (unsigned int) item;
+      ray.Ng = ray.org+t1*ray.dir-sphere.p;
+    }
+    return;
+  }
 
   /* iterate over all rays in ray packet */
   for (unsigned int ui=0; ui<N; ui+=1)
@@ -389,6 +373,32 @@ void sphereOccludedFuncN(const int* valid,
                          size_t item)
 {
   const Sphere* spheres = (const Sphere*) ptr;
+  const Sphere& sphere = spheres[item];
+
+  /* fast path for N == 1 */
+  if (N == 1)
+  {
+    assert(valid[0]);
+    RTCRay &ray = *(RTCRay*)rays;
+
+    const Vec3fa v = ray.org-sphere.p;
+    const float A = dot(ray.dir,ray.dir);
+    const float B = 2.0f*dot(v,ray.dir);
+    const float C = dot(v,v) - sqr(sphere.r);
+    const float D = B*B - 4.0f*A*C;
+    if (D < 0.0f) return;
+    const float Q = sqrt(D);
+    const float rcpA = rcp(A);
+    const float t0 = 0.5f*rcpA*(-B-Q);
+    const float t1 = 0.5f*rcpA*(-B+Q);
+    if ((ray.tnear < t0) & (t0 < ray.tfar)) {
+      ray.geomID = 0;
+    }
+    if ((ray.tnear < t1) & (t1 < ray.tfar)) {
+      ray.geomID = 0;
+    }
+    return;
+  }
 
   /* iterate over all rays in ray packet */
   for (unsigned int ui=0; ui<N; ui+=1)

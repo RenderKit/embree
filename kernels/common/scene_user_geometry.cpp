@@ -94,8 +94,8 @@ namespace embree
 
   void UserGeometry::setIntersectFunctionN (RTCIntersectFuncN intersect) 
   {
-    if (scene && !scene->isStreamMode())
-      throw_RTCError(RTC_INVALID_OPERATION,"you can use rtcSetIntersectFunctionN only in stream mode");
+    // if (scene && !scene->isStreamMode())
+    //   throw_RTCError(RTC_INVALID_OPERATION,"you can use rtcSetIntersectFunctionN only in stream mode");
 
     if (scene && scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
@@ -152,8 +152,8 @@ namespace embree
 
   void UserGeometry::setOccludedFunctionN (RTCOccludedFuncN occluded) 
   {
-    if (scene && !scene->isStreamMode())
-      throw_RTCError(RTC_INVALID_OPERATION,"you can use rtcSetOccludedFunctionN only in stream mode");
+    // if (scene && !scene->isStreamMode())
+    //   throw_RTCError(RTC_INVALID_OPERATION,"you can use rtcSetOccludedFunctionN only in stream mode");
 
     if (scene && scene->isStatic() && scene->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
