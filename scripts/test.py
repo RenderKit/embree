@@ -19,7 +19,7 @@ g_singleConfig = ""
 def escape(str):
   str = str.replace("\\",r"\\")
   str = str.replace("\"",r"\"")
-  str = str.replace(":","\:")
+#  str = str.replace(":","\:")
   return str
 
 # detect platform
