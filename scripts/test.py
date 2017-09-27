@@ -382,7 +382,8 @@ def createTest(config,OS):
 
 
     if tasking == "TBB": 
-      tbb_path = "N:/packages/apps/tbb/tbb-2017-windows"
+#      tbb_path = "N:/packages/apps/tbb/tbb-2017-windows"
+      tbb_path = "C:/embree-testing/dependencies/tbb-2017-windows"
       c.append("-D EMBREE_TBB_ROOT="+tbb_path)
 
       tbb_path = tbb_path.replace("/",r"\\")
