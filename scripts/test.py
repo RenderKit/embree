@@ -420,7 +420,7 @@ def createTest(config,OS):
       c.append("-D CMAKE_INSTALL_LIBDIR=lib")
       c.append("-D CMAKE_INSTALL_DOCDIR=doc")
       c.append("-D CMAKE_INSTALL_BINDIR=bin")
-    elif OS == "macosx" and config["package"] == "RPM":
+    elif OS == "macosx" and config["package"] == "PKG":
       c.append("-D EMBREE_ZIP_MODE=OFF")
       c.append("-D CMAKE_SKIP_INSTALL_RPATH=OFF")
       c.append("-D CMAKE_INSTALL_PREFIX=/opt/local")
@@ -436,7 +436,7 @@ def createTest(config,OS):
       c.append("-D CMAKE_INSTALL_DATAROOTDIR=")
       c.append("-D CMAKE_INSTALL_DOCDIR=doc")
       c.append("-D CMAKE_INSTALL_BINDIR=bin")
-    elif OS == "windows" and config["package"] == "RPM":
+    elif OS == "windows" and config["package"] == "MSI":
       c.append("-D EMBREE_ZIP_MODE=OFF")
       c.append("-D CMAKE_INSTALL_INCLUDEDIR=include")
       c.append("-D CMAKE_INSTALL_LIBDIR=lib")
