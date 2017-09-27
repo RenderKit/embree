@@ -382,7 +382,6 @@ void sphereIntersectFuncN(const int* valid,
                           RTCRayN* rays,
                           size_t N,
                           size_t item)
-//void* spheres_i, RTCRay& ray, size_t item)
 {
   assert(N == 1);
   RTCRay& ray = *(RTCRay*)rays;
@@ -434,7 +433,6 @@ void sphereOccludedFuncN(const int* valid,
                          RTCRayN* rays,
                          size_t N,
                          size_t item)
-//void* spheres_i, RTCRay& ray, size_t item)
 {
   assert(N == 1);
   RTCRay& ray = *(RTCRay*)rays;

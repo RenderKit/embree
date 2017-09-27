@@ -380,49 +380,52 @@ unmasked void sphereIntersectFuncN(const uniform int* uniform valid,
                                    RTCRayN* uniform rays,
                                    uniform uintptr_t N,
                                    uniform uintptr_t item)
-//void* uniform spheres_i, varying RTCRay& ray, uniform uintptr_t item)
 {
-#if 0
-  const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) spheres_i;
+  assert(N == programCount);
+  const uniform Sphere* uniform spheres = (const uniform Sphere* uniform)ptr;
   const uniform Sphere& sphere = spheres[item];
 
-  const int time_segments = sphere.num_time_steps-1;
-  const float time = ray.time*(float)(time_segments);
-  const int itime = clamp((int)(floor(time)),(varying int)0,time_segments-1);
-  const float ftime = time - (float)(itime);
-  const float ft0 = 2.0f*M_PI * (float) (itime+0) / (float) (sphere.num_time_steps-1);
-  const float ft1 = 2.0f*M_PI * (float) (itime+1) / (float) (sphere.num_time_steps-1);
-  const Vec3f p0 = sphere.p + make_Vec3f(cos(ft0),0.0f,sin(ft0));
-  const Vec3f p1 = sphere.p + make_Vec3f(cos(ft1),0.0f,sin(ft1));
-  const Vec3f sphere_p = (1.0f-ftime)*p0 + ftime*p1;
+  if (valid[programIndex])
+  {
+    varying RTCRay *uniform ray = (varying RTCRay *uniform)rays;
 
-  const Vec3f v = ray.org-sphere_p;
-  const float A = dot(ray.dir,ray.dir);
-  const float B = 2.0f*dot(v,ray.dir);
-  const float C = dot(v,v) - sqr(sphere.r);
-  const float D = B*B - 4.0f*A*C;
-  if (D < 0.0f) return;
-  const float Q = sqrt(D);
-  const float rcpA = rcp(A);
-  const float t0 = 0.5f*rcpA*(-B-Q);
-  const float t1 = 0.5f*rcpA*(-B+Q);
-  if ((ray.tnear < t0) & (t0 < ray.tfar)) {
-    ray.u = 0.0f;
-    ray.v = 0.0f;
-    ray.tfar = t0;
-    ray.geomID = sphere.geomID;
-    ray.primID = (unsigned int) item;
-    ray.Ng = ray.org+t0*ray.dir-sphere_p;
+    const int time_segments = sphere.num_time_steps-1;
+    const float time = ray->time*(float)(time_segments);
+    const int itime = clamp((int)(floor(time)),(varying int)0,time_segments-1);
+    const float ftime = time - (float)(itime);
+    const float ft0 = 2.0f*M_PI * (float) (itime+0) / (float) (sphere.num_time_steps-1);
+    const float ft1 = 2.0f*M_PI * (float) (itime+1) / (float) (sphere.num_time_steps-1);
+    const Vec3f p0 = sphere.p + make_Vec3f(cos(ft0),0.0f,sin(ft0));
+    const Vec3f p1 = sphere.p + make_Vec3f(cos(ft1),0.0f,sin(ft1));
+    const Vec3f sphere_p = (1.0f-ftime)*p0 + ftime*p1;
+
+    const Vec3f v = ray->org-sphere_p;
+    const float A = dot(ray->dir,ray->dir);
+    const float B = 2.0f*dot(v,ray->dir);
+    const float C = dot(v,v) - sqr(sphere.r);
+    const float D = B*B - 4.0f*A*C;
+    if (D < 0.0f) return;
+    const float Q = sqrt(D);
+    const float rcpA = rcp(A);
+    const float t0 = 0.5f*rcpA*(-B-Q);
+    const float t1 = 0.5f*rcpA*(-B+Q);
+    if ((ray->tnear < t0) & (t0 < ray->tfar)) {
+      ray->u = 0.0f;
+      ray->v = 0.0f;
+      ray->tfar = t0;
+      ray->geomID = sphere.geomID;
+      ray->primID = (unsigned int) item;
+      ray->Ng = ray->org+t0*ray->dir-sphere_p;
+    }
+    if ((ray->tnear < t1) & (t1 < ray->tfar)) {
+      ray->u = 0.0f;
+      ray->v = 0.0f;
+      ray->tfar = t1;
+      ray->geomID = sphere.geomID;
+      ray->primID = (unsigned int) item;
+      ray->Ng = ray->org+t1*ray->dir-sphere_p;
+    }
   }
-  if ((ray.tnear < t1) & (t1 < ray.tfar)) {
-    ray.u = 0.0f;
-    ray.v = 0.0f;
-    ray.tfar = t1;
-    ray.geomID = sphere.geomID;
-    ray.primID = (unsigned int) item;
-    ray.Ng = ray.org+t1*ray.dir-sphere_p;
-  }
-#endif
 }
 
 unmasked void sphereOccludedFuncN(const uniform int* uniform valid, 
@@ -433,37 +436,40 @@ unmasked void sphereOccludedFuncN(const uniform int* uniform valid,
                                   uniform uintptr_t item)
   //void* uniform spheres_i, varying RTCRay& ray, uniform uintptr_t item)
 {
-#if 0
-  const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) spheres_i;
+  assert(N == programCount);
+  const uniform Sphere* uniform spheres = (const uniform Sphere* uniform)ptr;
   const uniform Sphere& sphere = spheres[item];
 
-  const int time_segments = sphere.num_time_steps-1;
-  const float time = ray.time*(float)(time_segments);
-  const int itime = clamp((int)(floor(time)),(varying int)0,time_segments-1);
-  const float ftime = time - (float)(itime);
-  const float ft0 = 2.0f*M_PI * (float) (itime+0) / (float) (sphere.num_time_steps-1);
-  const float ft1 = 2.0f*M_PI * (float) (itime+1) / (float) (sphere.num_time_steps-1);
-  const Vec3f p0 = sphere.p + make_Vec3f(cos(ft0),0.0f,sin(ft0));
-  const Vec3f p1 = sphere.p + make_Vec3f(cos(ft1),0.0f,sin(ft1));
-  const Vec3f sphere_p = (1.0f-ftime)*p0 + ftime*p1;
+  if (valid[programIndex])
+  {
+    varying RTCRay *uniform ray = (varying RTCRay *uniform)rays;
+    const int time_segments = sphere.num_time_steps-1;
+    const float time = ray->time*(float)(time_segments);
+    const int itime = clamp((int)(floor(time)),(varying int)0,time_segments-1);
+    const float ftime = time - (float)(itime);
+    const float ft0 = 2.0f*M_PI * (float) (itime+0) / (float) (sphere.num_time_steps-1);
+    const float ft1 = 2.0f*M_PI * (float) (itime+1) / (float) (sphere.num_time_steps-1);
+    const Vec3f p0 = sphere.p + make_Vec3f(cos(ft0),0.0f,sin(ft0));
+    const Vec3f p1 = sphere.p + make_Vec3f(cos(ft1),0.0f,sin(ft1));
+    const Vec3f sphere_p = (1.0f-ftime)*p0 + ftime*p1;
 
-  const Vec3f v = ray.org-sphere_p;
-  const float A = dot(ray.dir,ray.dir);
-  const float B = 2.0f*dot(v,ray.dir);
-  const float C = dot(v,v) - sqr(sphere.r);
-  const float D = B*B - 4.0f*A*C;
-  if (D < 0.0f) return;
-  const float Q = sqrt(D);
-  const float rcpA = rcp(A);
-  const float t0 = 0.5f*rcpA*(-B-Q);
-  const float t1 = 0.5f*rcpA*(-B+Q);
-  if ((ray.tnear < t0) & (t0 < ray.tfar)) {
-    ray.geomID = 0;
+    const Vec3f v = ray->org-sphere_p;
+    const float A = dot(ray->dir,ray->dir);
+    const float B = 2.0f*dot(v,ray->dir);
+    const float C = dot(v,v) - sqr(sphere.r);
+    const float D = B*B - 4.0f*A*C;
+    if (D < 0.0f) return;
+    const float Q = sqrt(D);
+    const float rcpA = rcp(A);
+    const float t0 = 0.5f*rcpA*(-B-Q);
+    const float t1 = 0.5f*rcpA*(-B+Q);
+    if ((ray->tnear < t0) & (t0 < ray->tfar)) {
+      ray->geomID = 0;
+    }
+    if ((ray->tnear < t1) & (t1 < ray->tfar)) {
+      ray->geomID = 0;
+    }
   }
-  if ((ray.tnear < t1) & (t1 < ray.tfar)) {
-    ray.geomID = 0;
-  }
-#endif
 }
 
 uniform Sphere* uniform addUserGeometrySphere (RTCScene scene, const uniform Vec3f& p, uniform float r, uniform unsigned int num_time_steps)
