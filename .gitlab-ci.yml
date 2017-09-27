@@ -1,9 +1,5 @@
 
-#before_script:
-# - export http_proxy=
-# - export https_proxy=
-
-.windows-x64-RelWithDebInfo-V120-SSE2-TBB:
+windows-x64-RelWithDebInfo-V120-SSE2-TBB:
   script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 isa:SSE2 tasking:TBB"
   tags:   [win7, v120]
 
@@ -11,7 +7,7 @@
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:SSE2 tasking:TBB"
   tags:   [mac, clang]
 
-linux-x64-RelWithDebInfo-GCC-SSE2-TBB:
+.linux-x64-RelWithDebInfo-GCC-SSE2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC isa:SSE2 tasking:TBB"
   tags:   [centos6]
 
