@@ -378,7 +378,7 @@ def createTest(config,OS):
   elif OS == "windows":
     if ispc_enabled:
 #      c.append("-D EMBREE_ISPC_EXECUTABLE=N:/packages/apps/ispc/1.9.1-windows"+ispc_ext+"/ispc.exe")
-      c.append("-D EMBREE_ISPC_EXECUTABLE=C:/ispc-1.9.1-windows"+ispc_ext+"/ispc.exe")
+      c.append("-D EMBREE_ISPC_EXECUTABLE=C:/ispc-v1.9.1-windows"+ispc_ext+"/ispc.exe")
 
 
     if tasking == "TBB": 
