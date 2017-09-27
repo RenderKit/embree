@@ -1301,10 +1301,7 @@ unmasked void intersectionFilterReject(uniform int* uniform valid,
                                        const struct RTCHitN* uniform potentialHit,
                                        uniform const uintptr_t N) 
 {
-#if 0
-  varying RTCRay &ray = *(RTCRay*)_ray;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-#endif
+  assert(N == programCount);
 }
 
 unmasked void intersectionFilterOBJ(uniform int* uniform valid,
@@ -1314,23 +1311,28 @@ unmasked void intersectionFilterOBJ(uniform int* uniform valid,
                                     const struct RTCHitN* uniform potentialHit,
                                     uniform const uintptr_t N) 
 {
-#if 0
-  RTCRay &ray = *(RTCRay*)_ray;
+  assert(N == programCount);
+  const uniform size_t rayID = 0;
+  varying RTCRay *uniform ray = (varying RTCRay* uniform)_ray;
 
   /* compute differential geometry */
+  const float tfar          = RTCHitN_t(potentialHit,N,rayID);
   DifferentialGeometry dg;
-  dg.geomID = ray.geomID;
-  dg.primID = ray.primID;
-  dg.u = ray.u;
-  dg.v = ray.v;
-  dg.P  = ray.org+ray.tfar*ray.dir;
-  dg.Ng = ray.Ng;
-  dg.Ns = ray.Ng;
-  int materialID = postIntersect(ray,dg);
-  dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
+  dg.geomID = RTCHitN_geomID(potentialHit,N,rayID);
+  dg.primID = RTCHitN_primID(potentialHit,N,rayID);
+  dg.u = RTCHitN_u(potentialHit,N,rayID);
+  dg.v = RTCHitN_v(potentialHit,N,rayID);
+  Vec3f Ng = make_Vec3f(RTCHitN_Ng_x(potentialHit,N,rayID),
+                        RTCHitN_Ng_y(potentialHit,N,rayID),
+                        RTCHitN_Ng_z(potentialHit,N,rayID));
+  dg.P  = ray->org+tfar*ray->dir;
+  dg.Ng = Ng;
+  dg.Ns = Ng;
+  int materialID = postIntersect(*ray,dg);
+  dg.Ng = face_forward(ray->dir,normalize(dg.Ng));
   if (length(dg.Ns) < 1E-6f) dg.Ns = dg.Ng;
-  else dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
-  const Vec3f wo = neg(ray.dir);
+  else dg.Ns = face_forward(ray->dir,normalize(dg.Ns));
+  const Vec3f wo = neg(ray->dir);
 
   /* calculate BRDF */
   BRDF brdf; brdf.Kt = make_Vec3f(0,0,0);
@@ -1338,9 +1340,15 @@ unmasked void intersectionFilterOBJ(uniform int* uniform valid,
   ISPCMaterial** uniform material_array = &g_ispc_scene->materials[0];
   Medium medium = make_Medium_Vacuum();
   Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
-  if (min(min(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) >= 1.0f)
-    ray.geomID = RTC_INVALID_GEOMETRY_ID;
-#endif
+  if (min(min(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) < 1.0f)
+  {
+    ray->tfar   = tfar;
+    ray->geomID = dg.geomID;
+    ray->primID = dg.primID;    
+    ray->u      = dg.u;
+    ray->v      = dg.v;
+    ray->Ng     = Ng;
+  }
 }
 
 unmasked void occlusionFilterOpaque(uniform int* uniform valid,
@@ -1350,9 +1358,9 @@ unmasked void occlusionFilterOpaque(uniform int* uniform valid,
                            const struct RTCHitN* uniform potentialHit,
                            uniform const uintptr_t N)  
 {
-#if 0
-  ray.transparency = make_Vec3f(0.0f);
-#endif
+  assert(N == programCount);
+  varying RTCRay *uniform ray = (varying RTCRay* uniform)_ray;
+  ray->transparency = make_Vec3f(0.0f);
 }
 
 unmasked void occlusionFilterOBJ(uniform int* uniform valid,
@@ -1362,22 +1370,28 @@ unmasked void occlusionFilterOBJ(uniform int* uniform valid,
                         const struct RTCHitN* uniform potentialHit,
                         uniform const uintptr_t N) 
 {
-#if 0
-  RTCRay &ray = *(RTCRay*)_ray;
+  assert(N == programCount);
+  const uniform size_t rayID = 0;
+  varying RTCRay *uniform ray = (varying RTCRay* uniform)_ray;
 
   /* compute differential geometry */
+  const float tfar          = RTCHitN_t(potentialHit,N,rayID);
   DifferentialGeometry dg;
-  dg.geomID = ray.geomID;
-  dg.primID = ray.primID;
-  dg.u = ray.u;
-  dg.v = ray.v;
-  dg.P  = ray.org+ray.tfar*ray.dir;
-  dg.Ng = ray.Ng;
-  dg.Ns = ray.Ng;
-  int materialID = postIntersect(ray,dg);
-  dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
-  dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
-  const Vec3f wo = neg(ray.dir);
+  dg.geomID = RTCHitN_geomID(potentialHit,N,rayID);
+  dg.primID = RTCHitN_primID(potentialHit,N,rayID);
+  dg.u = RTCHitN_u(potentialHit,N,rayID);
+  dg.v = RTCHitN_v(potentialHit,N,rayID);
+  Vec3f Ng = make_Vec3f(RTCHitN_Ng_x(potentialHit,N,rayID),
+                        RTCHitN_Ng_y(potentialHit,N,rayID),
+                        RTCHitN_Ng_z(potentialHit,N,rayID));
+  dg.P  = ray->org+tfar*ray->dir;
+  dg.Ng = Ng;
+  dg.Ns = Ng;
+
+  int materialID = postIntersect(*ray,dg);
+  dg.Ng = face_forward(ray->dir,normalize(dg.Ng));
+  dg.Ns = face_forward(ray->dir,normalize(dg.Ns));
+  const Vec3f wo = neg(ray->dir);
 
   /* calculate BRDF */
   BRDF brdf; brdf.Kt = make_Vec3f(0,0,0);
@@ -1386,25 +1400,28 @@ unmasked void occlusionFilterOBJ(uniform int* uniform valid,
   Medium medium = make_Medium_Vacuum();
   Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
 
-  ray.transparency = ray.transparency * brdf.Kt;
-  if (max(max(ray.transparency.x,ray.transparency.y),ray.transparency.z) > 0.0f)
-    ray.geomID = RTC_INVALID_GEOMETRY_ID;
-#endif
+  ray->transparency = ray->transparency * brdf.Kt;
+  if (max(max(ray->transparency.x,ray->transparency.y),ray->transparency.z) > 0.0f)
+    valid[programIndex] = 0;
+  else
+    ray->geomID = 0;
 }
 
 /* occlusion filter function */
 unmasked void occlusionFilterHair(uniform int* uniform valid,
-                         void* uniform ptr,
-                         const uniform RTCIntersectContext* uniform context,
-                         struct RTCRayN* uniform _ray,
-                         const struct RTCHitN* uniform potentialHit,
-                         uniform const uintptr_t N) 
+                                  void* uniform ptr,
+                                  const uniform RTCIntersectContext* uniform context,
+                                  struct RTCRayN* uniform _ray,
+                                  const struct RTCHitN* uniform potentialHit,
+                                  uniform const uintptr_t N) 
 {
-#if 0
-  RTCRay &ray = *(RTCRay*)_ray;
-
+  assert(N == programCount);
+  const uniform size_t rayID = 0;
+  varying RTCRay *uniform ray = (varying RTCRay* uniform)_ray;
+  
+  unsigned int hit_geomID = RTCHitN_geomID(potentialHit,N,rayID);
   Vec3f Kt = make_Vec3f(0.0f);
-  foreach_unique(geomID in ray.geomID)
+  foreach_unique(geomID in hit_geomID)
   {
     uniform ISPCGeometry* uniform geometry = g_ispc_scene->geometries[geomID];
     if (geometry->type == LINE_SEGMENTS)
@@ -1427,7 +1444,7 @@ unmasked void occlusionFilterHair(uniform int* uniform valid,
     }
     else if (geometry->type == CURVES)
     {
-      /*if (dot(ray.dir,ray.Ng) > 0.0f) {
+      /*if (dot(ray->dir,ray->Ng) > 0.0f) {
         Kt = make_Vec3f(1.0f);
       }
       else*/
@@ -1442,11 +1459,12 @@ unmasked void occlusionFilterHair(uniform int* uniform valid,
     }
   }
 
-  Kt = Kt * ray.transparency;
-  ray.transparency = Kt;
-  if (max(max(ray.transparency.x,ray.transparency.y),ray.transparency.z) > 0.0f)
-    ray.geomID = RTC_INVALID_GEOMETRY_ID;
-#endif
+  Kt = Kt * ray->transparency;
+  ray->transparency = Kt;
+  if (max(max(ray->transparency.x,ray->transparency.y),ray->transparency.z) > 0.0f)
+    valid[programIndex] = 0;
+  else
+    ray->geomID = 0;
 }
 
 Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const uniform ISPCCamera& camera, uniform RayStats& stats)
