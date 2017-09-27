@@ -501,7 +501,13 @@ def parseCommandLine(argv):
     return;
   elif ':' in argv[0]:
     p = argv[0].split(":")
-    g_config[p[0]] = p[1]
+    if p[1] == "False": g_config[p[0]] = False
+    elif p[1] == "True": g_config[p[0]] = True
+    elif p[1].startswith('[') and p[1].endswith(']'):
+      list = p[1][1:-1].replace(' ','')
+      g_config[p[0]] = list.split(',')
+    else:
+      g_config[p[0]] = p[1]
     parseCommandLine(argv[1:len(argv)])
   else:
     sys.stderr.write("unknown command line option: "+argv[0])
