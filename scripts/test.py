@@ -327,7 +327,7 @@ def runConfig(cfg):
     else:
       # need to use bash shell as we configured environment modules only for bash
       subprocess.Popen(['bash','-l'], stdin=subprocess.PIPE).communicate(input=cmd.encode("utf-8"))
-      if (Popen.returncode != Some 0)
+      if (Popen.returncode != 0)
         sys.stderr.write("test invokation failed")
         sys.exit(1)
     
