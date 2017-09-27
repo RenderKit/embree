@@ -322,7 +322,8 @@ def runConfig(cfg):
     cmd = ""
     for e in env: cmd += e + " && "
     cmd += ctest+"\n"
-    subprocess.check_call(cmd, shell=True) 
+    #subprocess.check_call(cmd, shell=True)
+    subprocess.Popen(['bash','-l'], stdin=subprocess.PIPE).communicate(input=cmd.encode("utf-8"))
 
 def parseCommandLine(argv):
   global g_cdash
