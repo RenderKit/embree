@@ -867,11 +867,11 @@ extern "C" int g_spp;
 extern "C" bool g_accumulate;
 
 /* occlusion filter function */
-  void intersectionFilterReject(int* valid, void* ptr, const RTCIntersectContext* context, struct RTCRayN* ray, const struct RTCHitN* potentialHit, const size_t N);
-  void intersectionFilterOBJ(int* valid, void* ptr, const RTCIntersectContext* context, struct RTCRayN* ray, const struct RTCHitN* potentialHit, const size_t N);
-  void occlusionFilterOpaque(int* valid, void* ptr, const RTCIntersectContext* context, struct RTCRayN* ray, const struct RTCHitN* potentialHit, const size_t N);
-  void occlusionFilterOBJ(int* valid, void* ptr, const RTCIntersectContext* context, struct RTCRayN* ray, const struct RTCHitN* potentialHit, const size_t N);
-  void occlusionFilterHair(int* valid, void* ptr, const RTCIntersectContext* context, struct RTCRayN* ray, const struct RTCHitN* potentialHit, const size_t N);
+void intersectionFilterReject(int* valid, void* ptr, const RTCIntersectContext* context, struct RTCRayN* ray, const struct RTCHitN* potentialHit, const size_t N);
+void intersectionFilterOBJ(int* valid, void* ptr, const RTCIntersectContext* context, struct RTCRayN* ray, const struct RTCHitN* potentialHit, const size_t N);
+void occlusionFilterOpaque(int* valid, void* ptr, const RTCIntersectContext* context, struct RTCRayN* ray, const struct RTCHitN* potentialHit, const size_t N);
+void occlusionFilterOBJ(int* valid, void* ptr, const RTCIntersectContext* context, struct RTCRayN* ray, const struct RTCHitN* potentialHit, const size_t N);
+void occlusionFilterHair(int* valid, void* ptr, const RTCIntersectContext* context, struct RTCRayN* ray, const struct RTCHitN* potentialHit, const size_t N);
 
 /* accumulation buffer */
 Vec3fa* g_accu = nullptr;
@@ -1268,10 +1268,12 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 }
 
 void intersectionFilterReject(int* valid, void* ptr, const RTCIntersectContext* context, struct RTCRayN* _ray, const struct RTCHitN* potentialHit, const size_t N) {
+  assert(N == 1);
 }
 
 void intersectionFilterOBJ(int* valid, void* ptr, const RTCIntersectContext* context, struct RTCRayN* _ray, const struct RTCHitN* potentialHit, const size_t N)
 {
+  assert(N == 1);
   const size_t rayID = 0;
   RTCRay &ray = *(RTCRay*)_ray;
   /* compute differential geometry */
@@ -1309,12 +1311,14 @@ void intersectionFilterOBJ(int* valid, void* ptr, const RTCIntersectContext* con
 }
 
 void occlusionFilterOpaque(int* valid, void* ptr, const RTCIntersectContext* context, struct RTCRayN* _ray, const struct RTCHitN* potentialHit, const size_t N) {
+  assert(N == 1);
   RTCRay &ray = *(RTCRay*)_ray;
   ray.transparency = Vec3fa(0.0f);
 }
 
 void occlusionFilterOBJ(int* valid, void* ptr, const RTCIntersectContext* context, struct RTCRayN* _ray, const struct RTCHitN* potentialHit, const size_t N)
 {
+  assert(N == 1);
   const size_t rayID = 0;
   RTCRay &ray = *(RTCRay*)_ray;
 
@@ -1351,10 +1355,12 @@ void occlusionFilterOBJ(int* valid, void* ptr, const RTCIntersectContext* contex
 /* occlusion filter function */
 void occlusionFilterHair(int* valid, void* ptr, const RTCIntersectContext* context, struct RTCRayN* _ray, const struct RTCHitN* potentialHit, const size_t N)
 {
+  assert(N == 1);
   RTCRay &ray = *(RTCRay*)_ray;
+  const unsigned int rayID = 0;
 
   Vec3fa Kt = Vec3fa(0.0f);
-  unsigned int geomID = ray.geomID;
+  unsigned int geomID = RTCHitN_geomID(potentialHit,N,rayID);
   {
     ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
     if (geometry->type == LINE_SEGMENTS)
@@ -1395,7 +1401,9 @@ void occlusionFilterHair(int* valid, void* ptr, const RTCIntersectContext* conte
   Kt = Kt * ray.transparency;
   ray.transparency = Kt;
   if (max(max(ray.transparency.x,ray.transparency.y),ray.transparency.z) > 0.0f)
-    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    valid[rayID] = 0;
+  else
+    ray.geomID = 0;
 }
 
 Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCCamera& camera, RayStats& stats)
