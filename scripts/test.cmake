@@ -142,5 +142,4 @@ ctest_configure()
 #IF (NOT CTEST_SKIP_TESTING)
 #  ctest_test()
 #ENDIF()
-
-ctest_submit()
+#ctest_submit()
