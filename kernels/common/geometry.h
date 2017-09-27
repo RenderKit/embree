@@ -213,33 +213,8 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
-    /*! Set intersection filter function for single rays. */
-    //FIXME
-    /* virtual void setIntersectionFilterFunction (RTCFilterFuncN filter, bool ispc = false); */
-    
-    /* /\*! Set intersection filter function for ray packets of size 4. *\/ */
-    /* virtual void setIntersectionFilterFunction4 (RTCFilterFunc4 filter4, bool ispc = false); */
-    
-    /* /\*! Set intersection filter function for ray packets of size 8. *\/ */
-    /* virtual void setIntersectionFilterFunction8 (RTCFilterFunc8 filter8, bool ispc = false); */
-    
-    /* /\*! Set intersection filter function for ray packets of size 16. *\/ */
-    /* virtual void setIntersectionFilterFunction16 (RTCFilterFunc16 filter16, bool ispc = false); */
-
     /*! Set intersection filter function for ray packets of size N. */
     virtual void setIntersectionFilterFunctionN (RTCFilterFuncN filterN);
-
-    /* /\*! Set occlusion filter function for single rays. *\/ */
-    /* virtual void setOcclusionFilterFunction (RTCFilterFuncN filter, bool ispc = false); */
-    
-    /* /\*! Set occlusion filter function for ray packets of size 4. *\/ */
-    /* virtual void setOcclusionFilterFunction4 (RTCFilterFunc4 filter4, bool ispc = false); */
-    
-    /* /\*! Set occlusion filter function for ray packets of size 8. *\/ */
-    /* virtual void setOcclusionFilterFunction8 (RTCFilterFunc8 filter8, bool ispc = false); */
-    
-    /* /\*! Set occlusion filter function for ray packets of size 16. *\/ */
-    /* virtual void setOcclusionFilterFunction16 (RTCFilterFunc16 filter16, bool ispc = false); */
 
     /*! Set occlusion filter function for ray packets of size N. */
     virtual void setOcclusionFilterFunctionN (RTCFilterFuncN filterN);
@@ -326,17 +301,8 @@ namespace embree
     }
 
   public:
-    /* __forceinline bool hasIntersectionFilter1() const { return (hasIntersectionFilterMask & (HAS_FILTER1 | HAS_FILTERN)) != 0;  } */
-    /* __forceinline bool hasOcclusionFilter1   () const { return (hasOcclusionFilterMask    & (HAS_FILTER1 | HAS_FILTERN)) != 0; } */
-
     __forceinline bool hasIntersectionFilter() { return intersectionFilterN != nullptr; }
     __forceinline bool hasOcclusionFilter() { return occlusionFilterN != nullptr; }
-
-    /* template<typename simd> __forceinline bool hasIntersectionFilter() const; */
-    /* template<typename simd> __forceinline bool hasOcclusionFilter() const; */
-
-    /* template<typename simd> __forceinline bool hasISPCIntersectionFilter() const; */
-    /* template<typename simd> __forceinline bool hasISPCOcclusionFilter() const; */
 
   public:
     Device* device;            //!< device this geometry belongs to
@@ -355,47 +321,9 @@ namespace embree
     std::atomic<size_t> used;  //!< counts by how many enabled instances this geometry is used
     
   public:
-    /* RTCFilterFuncN intersectionFilter1; */
-    /* RTCFilterFuncN occlusionFilter1; */
-
-    /* RTCFilterFunc4 intersectionFilter4; */
-    /* RTCFilterFunc4 occlusionFilter4; */
-
-    /* RTCFilterFunc8 intersectionFilter8; */
-    /* RTCFilterFunc8 occlusionFilter8; */
-
-    /* RTCFilterFunc16 intersectionFilter16; */
-    /* RTCFilterFunc16 occlusionFilter16; */
 
     RTCFilterFuncN intersectionFilterN;
     RTCFilterFuncN occlusionFilterN;
 
-  public: 
-    //enum { HAS_FILTER1 = 1, HAS_FILTER4 = 2, HAS_FILTER8 = 4, HAS_FILTER16 = 8, HAS_FILTERN = 16 };  
-    /* int hasIntersectionFilterMask; */
-    /* int hasOcclusionFilterMask; */
-    /* int ispcIntersectionFilterMask; */
-    /* int ispcOcclusionFilterMask; */
   };
-
-/* #if defined(__SSE__) */
-/*   template<> __forceinline bool Geometry::hasIntersectionFilter<vfloat4>() const { return (hasIntersectionFilterMask & (HAS_FILTER4 | HAS_FILTERN)) != 0; } */
-/*   template<> __forceinline bool Geometry::hasOcclusionFilter   <vfloat4>() const { return (hasOcclusionFilterMask    & (HAS_FILTER4 | HAS_FILTERN)) != 0; } */
-/*   template<> __forceinline bool Geometry::hasISPCIntersectionFilter<vfloat4>() const { return (ispcIntersectionFilterMask & HAS_FILTER4) != 0; } */
-/*   template<> __forceinline bool Geometry::hasISPCOcclusionFilter   <vfloat4>() const { return (ispcOcclusionFilterMask    & HAS_FILTER4) != 0; } */
-/* #endif */
-
-/* #if defined(__AVX__) */
-/*   template<> __forceinline bool Geometry::hasIntersectionFilter<vfloat8>() const { return (hasIntersectionFilterMask & (HAS_FILTER8 | HAS_FILTERN)) != 0; } */
-/*   template<> __forceinline bool Geometry::hasOcclusionFilter   <vfloat8>() const { return (hasOcclusionFilterMask    & (HAS_FILTER8 | HAS_FILTERN)) != 0; } */
-/*   template<> __forceinline bool Geometry::hasISPCIntersectionFilter<vfloat8>() const { return (ispcIntersectionFilterMask & HAS_FILTER8) != 0; } */
-/*   template<> __forceinline bool Geometry::hasISPCOcclusionFilter   <vfloat8>() const { return (ispcOcclusionFilterMask    & HAS_FILTER8) != 0; } */
-/* #endif */
-
-/* #if defined(__AVX512F__) */
-/*   template<> __forceinline bool Geometry::hasIntersectionFilter<vfloat16>() const { return (hasIntersectionFilterMask & (HAS_FILTER16 | HAS_FILTERN)) != 0; } */
-/*   template<> __forceinline bool Geometry::hasOcclusionFilter   <vfloat16>() const { return (hasOcclusionFilterMask    & (HAS_FILTER16 | HAS_FILTERN)) != 0; } */
-/*   template<> __forceinline bool Geometry::hasISPCIntersectionFilter<vfloat16>() const { return (ispcIntersectionFilterMask & HAS_FILTER16) != 0; } */
-/*   template<> __forceinline bool Geometry::hasISPCOcclusionFilter   <vfloat16>() const { return (ispcOcclusionFilterMask    & HAS_FILTER16) != 0; } */
-/* #endif */
 }
