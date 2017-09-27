@@ -325,6 +325,7 @@ def runConfig(cfg):
     #subprocess.check_call(cmd, shell=True)
     subprocess.Popen(['bash','-l'], stdin=subprocess.PIPE).communicate(input=cmd.encode("utf-8"))
 
+    
 def parseCommandLine(argv):
   global g_cdash
   global g_config
