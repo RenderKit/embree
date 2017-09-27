@@ -345,7 +345,7 @@
 ####################################################################
 
 .windows-x64-Release-ICC17-TBB-PACKAGE-ZIP:
-  script: "scripts\\test.py platform:x64 build:Release compiler:ICC17 isa:[SSE2, SSE42, AVX, AVX2, AVX512SKX] tasking:TBB intensive:ON package:ZIP"
+  script: "scripts\\test.py platform:x64 build:Release compiler:ICC17 isa:[SSE2 SSE42 AVX AVX2 AVX512SKX] tasking:TBB intensive:ON package:ZIP"
   tags:   [win7, icc17]
   only:   [web]
   artifacts:
@@ -353,7 +353,7 @@
       - build/*.zip
 
 .windows-x64-Release-ICC17-TBB-PACKAGE-MSI:
-  script: "scripts\\test.py platform:x64 build:Release compiler:ICC17 isa:[SSE2, SSE42, AVX, AVX2, AVX512SKX] tasking:TBB intensive:ON package:MSI"
+  script: "scripts\\test.py platform:x64 build:Release compiler:ICC17 isa:[SSE2 SSE42 AVX AVX2 AVX512SKX] tasking:TBB intensive:ON package:MSI"
   tags:   [win7, icc17]
   only:   [web]
   artifacts:
@@ -361,7 +361,7 @@
       - build/*.msi
 
 .macosx-x64-Release-ICC16-TBB-PACKAGE-ZIP:
-  script: "scripts/test.py platform:x64 build:Release compiler:ICC16 isa:[SSE2, SSE42, AVX, AVX2] tasking:TBB intensive:ON package:ZIP"
+  script: "scripts/test.py platform:x64 build:Release compiler:ICC16 isa:[SSE2 SSE42 AVX AVX2] tasking:TBB intensive:ON package:ZIP"
   tags:   [mac, icc17]
   only:   [web]
   artifacts:
@@ -369,7 +369,7 @@
       - build/*.tar.gz
 
 .macosx-x64-Release-ICC16-TBB-PACKAGE-PKG:
-  script: "scripts/test.py platform:x64 build:Release compiler:ICC16 isa:[SSE2, SSE42, AVX, AVX2] tasking:TBB intensive:ON package:PKG"
+  script: "scripts/test.py platform:x64 build:Release compiler:ICC16 isa:[SSE2 SSE42 AVX AVX2] tasking:TBB intensive:ON package:PKG"
   tags:   [mac, icc17]
   only:   [web]
   artifacts:
@@ -377,7 +377,7 @@
       - build/*.dmg
   
 linux-x64-Release-ICC17-TBB-PACKAGE-ZIP:
-  script: 'scripts/test.py platform:x64 build:Release compiler:ICC17 isa:[SSE2, SSE42, AVX, AVX2, AVX512KNL, AVX512SKX] tasking:TBB intensive:ON package:ZIP'
+  script: "scripts/test.py platform:x64 build:Release compiler:ICC17 isa:[SSE2 SSE42 AVX AVX2 AVX512KNL AVX512SKX] tasking:TBB intensive:ON package:ZIP"
   tags:   [centos6, icc17]
   only:   [web]
   artifacts:
@@ -385,7 +385,7 @@ linux-x64-Release-ICC17-TBB-PACKAGE-ZIP:
       - build/*.rpm.tar.gz
 
 .linux-x64-Release-ICC17-TBB-PACKAGE-RPM:
-  script: "scripts/test.py platform:x64 build:Release compiler:ICC17 isa:[SSE2, SSE42, AVX, AVX2, AVX512KNL, AVX512SKX] tasking:TBB intensive:ON package:RPM"
+  script: "scripts/test.py platform:x64 build:Release compiler:ICC17 isa:[SSE2 SSE42 AVX AVX2 AVX512KNL AVX512SKX] tasking:TBB intensive:ON package:RPM"
   tags:   [centos6, icc17]
   only:   [web]
   artifacts:

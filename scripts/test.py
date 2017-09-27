@@ -360,8 +360,7 @@ def parseCommandLine(argv):
     if p[1] == "False": g_config[p[0]] = False
     elif p[1] == "True": g_config[p[0]] = True
     elif p[1].startswith('[') and p[1].endswith(']'):
-      list = p[1][1:-1].replace(' ','')
-      g_config[p[0]] = list.split(',')
+      g_config[p[0]] = p[1][1:-1].split(' ')
     else:
       g_config[p[0]] = p[1]
     parseCommandLine(argv[1:len(argv)])
