@@ -253,7 +253,6 @@ def createTest(config,OS):
     c.append("-D EMBREE_TUTORIALS_IMAGE_MAGICK=OFF")
     c.append("-D EMBREE_TUTORIALS_LIBJPEG=OFF")
     c.append("-D EMBREE_TUTORIALS_LIBPNG=OFF")
-    c.append("-D EMBREE_TUTORIALS_OPENEXR=OFF")
     if OS == "linux" and config["package"] == "ZIP":
       c.append("-D EMBREE_ZIP_MODE=ON")
       c.append("-D CMAKE_SKIP_INSTALL_RPATH=ON")
