@@ -1,5 +1,5 @@
 
-.windows-x64-RelWithDebInfo-V120-SSE2-TBB:
+windows-x64-RelWithDebInfo-V120-SSE2-TBB:
   script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 isa:SSE2 tasking:TBB"
   tags:   [win7, v120]
 
@@ -376,7 +376,7 @@
     paths:
       - build/*.dmg
   
-linux-x64-Release-ICC17-TBB-PACKAGE-ZIP:
+.linux-x64-Release-ICC17-TBB-PACKAGE-ZIP:
   script: "scripts/test.py platform:x64 build:Release compiler:ICC17 isa:[SSE2,SSE42,AVX,AVX2,AVX512KNL,AVX512SKX] tasking:TBB intensive:ON package:ZIP"
   tags:   [centos6, icc17]
   only:   [web]

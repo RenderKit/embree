@@ -64,13 +64,6 @@ MACRO(update_test_models)
   check_return_code()
 ENDMACRO()
 
-#EXECUTE_PROCESS(
-#  COMMAND "wget" "http://10.123.110.90/CDash"
-#  WORKING_DIRECTORY ${TEST_MODELS_DIRECTORY}
-#  RESULT_VARIABLE retcode)
-#check_return_code()
-
-
 # increase default output sizes for test outputs
 IF (NOT DEFINED CTEST_CUSTOM_MAXIMUM_PASSED_TEST_OUTPUT_SIZE)
   SET(CTEST_CUSTOM_MAXIMUM_PASSED_TEST_OUTPUT_SIZE 100000)
@@ -80,7 +73,6 @@ IF(NOT DEFINED CTEST_CUSTOM_MAXIMUM_FAILED_TEST_OUTPUT_SIZE)
 ENDIF()
 
 # enable testing in Embree
-#STRING(REPLACE "\\" "\\\\" TEST_MODELS_DIRECTORY "${TEST_MODELS_DIRECTORY}")
 SET (CTEST_BUILD_OPTIONS "${CTEST_BUILD_OPTIONS} -D BUILD_TESTING:BOOL=ON -D EMBREE_TESTING_MODEL_DIR:PATH=${TEST_MODELS_DIRECTORY}")
 
 # set site based on this machine's hostname
@@ -138,7 +130,7 @@ ctest_start("Continuous")
 #ctest_update (RETURN_VALUE count)
 update_test_models()
 ctest_configure()
-ctest_build()
+#ctest_build()
 #IF (NOT CTEST_SKIP_TESTING)
 #  ctest_test()
 #ENDIF()
