@@ -16,4 +16,8 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(dynamic_scene)
-ADD_EMBREE_TEST(dynamic_scene)
+
+IF (EMBREE_TESTING_INTENSITY GREATER 1)
+  ADD_EMBREE_TEST(dynamic_scene)
+ENDIF()
+

@@ -16,6 +16,10 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(pathtracer)
-ADD_EMBREE_MODELS_TEST(pathtracer pathtracer pathtracer)
-ADD_EMBREE_MODELS_TEST(pathtracer_coherent pathtracer pathtracer --coherent)
-ADD_EMBREE_MODELS_TEST(pathtracer_incoherent pathtracer pathtracer --incoherent)
+
+IF (EMBREE_TESTING_INTENSITY GREATER 1)
+  ADD_EMBREE_MODELS_TEST(pathtracer pathtracer pathtracer)
+  ADD_EMBREE_MODELS_TEST(pathtracer_coherent pathtracer pathtracer --coherent)
+  ADD_EMBREE_MODELS_TEST(pathtracer_incoherent pathtracer pathtracer --incoherent)
+ENDIF()
+

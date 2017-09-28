@@ -16,4 +16,7 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(curve_geometry)
-ADD_EMBREE_TEST(curve_geometry)
+
+IF (EMBREE_TESTING_INTENSITY GREATER 1)
+  ADD_EMBREE_TEST(curve_geometry)
+ENDIF()

@@ -16,4 +16,8 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(motion_blur_geometry)
-ADD_EMBREE_TEST2(motion_blur_geometry motion_blur_geometry "--time 0.5")
+
+IF (EMBREE_TESTING_INTENSITY GREATER 1)
+  ADD_EMBREE_TEST2(motion_blur_geometry motion_blur_geometry "--time 0.5")
+ENDIF()
+

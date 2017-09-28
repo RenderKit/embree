@@ -68,6 +68,9 @@ def createTest(config,OS):
   else              : sde = "OFF"
   if "test" in config: skip_testing = not config["test"]
   else               : skip_testing = False
+  if "intensity" in config:
+    c.append("-D EMBREE_TESTING_INTENSITY="+config["intensity"])
+    skip_testing = config["intensity"] == "0"
   if tasking == "INT": tasking = "INTERNAL"
   if tasking == "PPL": tasking = "PPL"
   name = "gitlab-"+platform+"-"+build+"-"+compiler+"-"+string_of_isa(isa)+"-"+tasking

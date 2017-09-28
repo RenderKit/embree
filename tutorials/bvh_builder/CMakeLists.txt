@@ -22,4 +22,7 @@ ENDIF()
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(bvh_builder)
-ADD_TEST(NAME bvh_builder COMMAND bvh_builder)
+
+IF (EMBREE_TESTING_INTENSITY GREATER 0)
+  ADD_TEST(NAME bvh_builder COMMAND bvh_builder)
+ENDIF()
