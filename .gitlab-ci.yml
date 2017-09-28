@@ -1,5 +1,5 @@
 
-continuous-linux-x64-RelWithDebInfo-GCC-AVX2-TBB:
+.continuous-linux-x64-RelWithDebInfo-GCC-AVX2-TBB:
   image: ospray/docker-images:ubuntu16.04
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC isa:SSE2 tasking:TBB"
   tags:   [docker]
@@ -42,7 +42,7 @@ continuous-linux-x64-RelWithDebInfo-GCC-AVX2-TBB:
   tags:   [mac, icc16]
 
 
-.continuous-linux-x64-RelWithDebInfo-CLANG-AVX2-TBB:
+continuous-linux-x64-RelWithDebInfo-CLANG-AVX2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX2 tasking:TBB"
   tags:   [linux, clang]
 

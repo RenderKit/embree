@@ -32,10 +32,13 @@ sde = "OFF"
 
 def compareImages(image0,image1,dimage):
   if not os.path.isfile(image0) or not os.path.isfile(image1): return False
-  #try: line = subprocess.check_output("compare -metric MAE "+image0+" "+image1+" -compose Src "+dimage, stderr=subprocess.STDOUT, shell=True)
-  #except subprocess.CalledProcessError, e: line = e.output
-  line, unused_err = subprocess.Popen("compare -metric MAE "+image0+" "+image1+" -compose Src "+dimage, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).communicate()
-  error = float(line[line.index('(')+1:line.index(')')])
+  try: line = subprocess.check_output("compare -metric MAE "+image0+" "+image1+" -compose Src "+dimage, stderr=subprocess.STDOUT, shell=True)
+  except subprocess.CalledProcessError, e: line = e.output
+  #line, unused_err = subprocess.Popen("compare -metric MAE "+image0+" "+image1+" -compose Src "+dimage, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).communicate()
+  try: error = float(line[line.index('(')+1:line.index(')')])
+  except ValueError:
+    print("Error: "+line)
+    raise ValueError
   return error < 0.005
 
 def printUsage():
