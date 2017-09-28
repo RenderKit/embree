@@ -24,6 +24,7 @@
 #  include <GLUT/glut.h>
 #elif defined(__WIN32__)
 #  include <windows.h>
+#  define FREEGLUT_LIB_PRAGMAS 0
 #  include <GL/gl.h>
 #  include <GL/glut.h>
 #else
