@@ -60,8 +60,6 @@ def runConfig(config):
   compiler = config["compiler"]
   isa      = config["isa"]
   tasking  = config["tasking"]
-  if "intensive" in config: intensive = config["intensive"]
-  else                    : intensive = "OFF"
   if "memcheck" in config: memcheck = config["memcheck"]
   else                   : memcheck = "OFF"
   if "benchmark" in config: benchmark = config["benchmark"]
@@ -172,7 +170,6 @@ def runConfig(config):
     
   conf.append("-D EMBREE_TASKING_SYSTEM="+tasking+"")
   conf.append("-D EMBREE_TESTING_MEMCHECK="+memcheck+"")
-  conf.append("-D EMBREE_TESTING_INTENSIVE="+intensive+"")
   conf.append("-D EMBREE_TESTING_SDE="+sde+"")
 
   ispc_enabled = True
@@ -350,7 +347,7 @@ def parseCommandLine(argv):
     p = argv[0].split(":")
     if p[0] == "intensity":
       g_intensity = int(p[1])
-    elif p[1].startswith('[') and p[1].endswith(']'):
+    if p[1].startswith('[') and p[1].endswith(']'):
       g_config[p[0]] = p[1][1:-1].split(',')
     else:
       g_config[p[0]] = p[1]
