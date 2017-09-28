@@ -160,26 +160,6 @@ void rtcOccludedNp (RTCScene scene, const uniform RTCIntersectContext* uniform c
   ispcOccludedNp(scene,context,rays,N);
 }
 
-void rtcSetIntersectFunction (RTCGeometry hgeometry, uniform RTCIntersectFuncN intersect)
-{
-  ispcSetIntersectFunction(hgeometry,intersect);
-}
-
-void rtcSetOccludedFunction (RTCGeometry hgeometry, uniform RTCOccludedFuncN occluded)
-{
-  ispcSetOccludedFunction(hgeometry,occluded);
-}
-
-void rtcSetIntersectionFilterFunction (RTCGeometry hgeometry, uniform RTCFilterFuncN filter)
-{
-  ispcSetIntersectionFilterFunction(hgeometry,filter);
-}
-
-void rtcSetOcclusionFilterFunction (RTCGeometry hgeometry, uniform RTCFilterFuncN filter)
-{
-  ispcSetOcclusionFilterFunction(hgeometry,filter);
-}
-
 void rtcInterpolate(RTCScene scene, uniform unsigned int geomID, varying unsigned int primID, varying float u, varying float v, 
                     uniform RTCBufferType buffer,
                     varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv, uniform size_t numFloats)

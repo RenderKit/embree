@@ -91,48 +91,7 @@ namespace embree
   extern "C" void ispcOccludedNp (RTCScene scene, const RTCIntersectContext* context, const RTCRayNp& rays, const  size_t N) {
     rtcOccludedNp(scene,context,rays,N);
   }
-  
-  
-  extern "C" void ispcSetIntersectFunction (RTCGeometry hgeometry, RTCIntersectFuncN intersect) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetIntersectFunction);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setIntersectFunctionN(intersect);
-    RTCORE_CATCH_END2(geometry);
-  }
-    
-  extern "C" void ispcSetOccludedFunction (RTCGeometry hgeometry, RTCOccludedFuncN occluded) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetOccludedFunction);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setOccludedFunctionN(occluded);
-    RTCORE_CATCH_END2(geometry);
-  }
-  
-  extern "C" void ispcSetIntersectionFilterFunction (RTCGeometry hgeometry, RTCFilterFuncN filter) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetIntersectionFilterFunction);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setIntersectionFilterFunctionN(filter);
-    RTCORE_CATCH_END2(geometry);
-  }
-  
-  extern "C" void ispcSetOcclusionFilterFunction (RTCGeometry hgeometry, RTCFilterFuncN filter) 
-  {
-    Ref<Geometry> geometry = (Geometry*) hgeometry;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetOcclusionFilterFunction);
-    RTCORE_VERIFY_HANDLE(hgeometry);
-    geometry->setOcclusionFilterFunctionN(filter);
-    RTCORE_CATCH_END2(geometry);
-  }
-  
+        
   extern "C" void ispcInterpolateN(RTCScene scene, unsigned int geomID, 
                                    const void* valid, const unsigned int* primIDs, const float* u, const float* v, size_t numUVs, 
                                    RTCBufferType buffer, 
