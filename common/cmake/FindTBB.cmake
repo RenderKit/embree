@@ -20,7 +20,6 @@ IF (WIN32)
     PATHS ${PROJECT_SOURCE_DIR}/tbb "C:/Program Files (x86)/Intel/Composer XE/tbb"
     NO_DEFAULT_PATH
   )
-  FIND_PATH(EMBREE_TBB_ROOT include/tbb/tbb.h)
 
   IF (CMAKE_SIZEOF_VOID_P EQUAL 8)
     SET(TBB_ARCH intel64)
@@ -39,10 +38,13 @@ IF (WIN32)
   SET(TBB_LIBDIR ${EMBREE_TBB_ROOT}/lib/${TBB_ARCH}/${TBB_VCVER})
   SET(TBB_BINDIR ${EMBREE_TBB_ROOT}/bin/${TBB_ARCH}/${TBB_VCVER})
 
-  IF (EMBREE_TBB_ROOT STREQUAL "")
-    FIND_PATH(TBB_INCLUDE_DIR tbb/task_scheduler_init.h)
+  # if EMBREE_TBB_ROOT is not found nor set then use default search for TBB
+  IF (NOT EMBREE_TBB_ROOT)
+    FIND_PATH(TBB_INCLUDE_DIR tbb/tbb.h)
     FIND_LIBRARY(TBB_LIBRARY tbb)
     FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc)
+
+  # otherwise use TBB library at EMBREE_TBB_ROOT location
   ELSE()
     SET(TBB_INCLUDE_DIR TBB_INCLUDE_DIR-NOTFOUND)
     SET(TBB_LIBRARY TBB_LIBRARY-NOTFOUND)
@@ -59,13 +61,14 @@ ELSE ()
     PATHS ${PROJECT_SOURCE_DIR}/tbb /opt/intel/tbb
     NO_DEFAULT_PATH
   )
-  FIND_PATH(EMBREE_TBB_ROOT include/tbb/tbb.h)
 
-  IF (EMBREE_TBB_ROOT STREQUAL "")
-    FIND_PATH(TBB_INCLUDE_DIR tbb/task_scheduler_init.h)
+  # if EMBREE_TBB_ROOT is not found nor set then use default search for TBB
+  IF (NOT EMBREE_TBB_ROOT)
+    FIND_PATH(TBB_INCLUDE_DIR tbb/tbb.h)
     FIND_LIBRARY(TBB_LIBRARY tbb)
     FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc)
-    
+  
+  # check if EMBREE_TBB_ROOT points to TBB sources to compile 
   ELSEIF (EXISTS ${EMBREE_TBB_ROOT}/cmake/TBBBuild.cmake)
     OPTION(EMBREE_TBB_STATIC_LIB "Build TBB as a static library (building TBB as a static library is NOT recommended)")
     if (EMBREE_TBB_STATIC_LIB)
@@ -82,6 +85,7 @@ ELSE ()
       SET(TBB_LIBRARY_MALLOC ${PROJECT_BINARY_DIR}/tbb_cmake_build/tbb_cmake_build_subdir_release/libtbbmalloc.so.2)
     endif()
     
+  # otherwise use TBB library at EMBREE_TBB_ROOT location
   ELSE()
     SET(TBB_INCLUDE_DIR TBB_INCLUDE_DIR-NOTFOUND)
     SET(TBB_LIBRARY TBB_LIBRARY-NOTFOUND)
@@ -91,9 +95,15 @@ ELSE ()
       FIND_LIBRARY(TBB_LIBRARY tbb PATHS ${EMBREE_TBB_ROOT}/lib NO_DEFAULT_PATH)
       FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc PATHS ${EMBREE_TBB_ROOT}/lib NO_DEFAULT_PATH)
     ELSE()
-      FIND_PATH(TBB_INCLUDE_DIR tbb/task_scheduler_init.h PATHS ${EMBREE_TBB_ROOT}/include NO_DEFAULT_PATH)
-      FIND_LIBRARY(TBB_LIBRARY tbb PATHS ${EMBREE_TBB_ROOT}/lib/intel64/gcc4.4 ${EMBREE_TBB_ROOT}/lib ${EMBREE_TBB_ROOT}/lib64  /usr/libx86_64-linux-gnu/ NO_DEFAULT_PATH)
-      FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc PATHS ${EMBREE_TBB_ROOT}/lib/intel64/gcc4.4 ${EMBREE_TBB_ROOT}/lib ${EMBREE_TBB_ROOT}/lib64  /usr/libx86_64-linux-gnu/ NO_DEFAULT_PATH)
+      SET(LIBRARY_SEARCH_PATHS
+        ${EMBREE_TBB_ROOT}/lib/intel64/gcc4.4     # for downloaded TBB library
+	${EMBREE_TBB_ROOT}/lib64                  # default 64 bit library path
+	${EMBREE_TBB_ROOT}/lib                    # for compatibility reasons
+	${EMBREE_TBB_ROOT}/lib/x86_64-linux-gnu   # multi-arch path for 64 bit libraries
+      )
+      FIND_PATH(TBB_INCLUDE_DIR tbb/tbb.h PATHS ${EMBREE_TBB_ROOT}/include NO_DEFAULT_PATH)
+      FIND_LIBRARY(TBB_LIBRARY tbb PATHS ${LIBRARY_SEARCH_PATHS} NO_DEFAULT_PATH)
+      FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc PATHS ${LIBRARY_SEARCH_PATHS} NO_DEFAULT_PATH)
     ENDIF()
   ENDIF()
 
