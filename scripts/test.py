@@ -341,7 +341,7 @@ def parseCommandLine(argv):
     g_mode = argv[1]
   elif len(argv)>=2 and argv[0] == "--docker":
     g_docker = True
-    parseCommandLine(argv[2:len(argv)])
+    parseCommandLine(argv[1:len(argv)])
   elif len(argv)>=1 and argv[0] == "--debug":
     g_debugMode = True
     parseCommandLine(argv[1:len(argv)])
@@ -363,7 +363,3 @@ def parseCommandLine(argv):
       
 parseCommandLine(sys.argv[1:len(sys.argv)])
 runConfig(g_config)
-
-
-
-
