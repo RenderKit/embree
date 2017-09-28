@@ -28,13 +28,13 @@
   tags:   [win7, clang]
 
 
-macosx-x64-RelWithDebInfo-CLANG-AVX2-INT:
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX2 tasking:INT"
-  tags:   [mac, clang]
-
 macosx-x64-RelWithDebInfo-ICC16-AVX2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC16 isa:AVX2 tasking:TBB"
   tags:   [mac, icc16]
+
+macosx-x64-RelWithDebInfo-CLANG-AVX2-INT:
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX2 tasking:INT"
+  tags:   [mac, clang]
 
 
 .linux-x64-RelWithDebInfo-CLANG-AVX2-TBB:
