@@ -221,30 +221,30 @@ def runConfig(config):
     conf.append("-D EMBREE_GEOMETRY_USER="+config["USERGEOM"])
     if config["USERGEOM"] == "ON": name += "-usergeom"
 
-  if g_docker:
-  elif OS == "linux":
-    if ispc_enabled:     conf.append("-D EMBREE_ISPC_EXECUTABLE=/NAS/packages/apps/ispc/1.9.1/ispc")
-    if tasking == "TBB": conf.append("-D EMBREE_TBB_ROOT=/NAS/packages/apps/tbb/tbb-2017-linux")
-  elif OS == "macosx":
-    if ispc_enabled:     conf.append("-D EMBREE_ISPC_EXECUTABLE=/Network/nfs/NAS/packages/apps/ispc/1.9.1-osx/ispc")
-    if tasking == "TBB": conf.append("-D EMBREE_TBB_ROOT=/Network/nfs/NAS/packages/apps/tbb/tbb-2017-osx")
-  elif OS == "windows":
-    if ispc_enabled:
-#      conf.append("-D EMBREE_ISPC_EXECUTABLE=N:\\packages\\apps\\ispc\\1.9.1-windows"+ispc_ext+"\\ispc.exe")
-      conf.append("-D EMBREE_ISPC_EXECUTABLE=C:\\embree-testing\dependencies\ispc-v1.9.1-windows"+ispc_ext+"\\ispc.exe")
-
-    if tasking == "TBB": 
-#      tbb_path = "N:\\packages\\apps\\tbb\\tbb-2017-windows"
-      tbb_path = "C:\\embree-testing\\dependencies\\tbb-2017-windows"
-      conf.append("-D EMBREE_TBB_ROOT="+tbb_path)
-
-      if platform == "x64":
-        env.append("set PATH="+tbb_path+"\\bin\\intel64\\vc12;%PATH%")
-      else:
-        env.append("set PATH="+tbb_path+"\\bin\\ia32\\vc12;%PATH%")
-  else:
-    sys.stderr.write("unknown operating system "+OS)
-    sys.exit(1)
+  if not g_docker:
+    if OS == "linux":
+      if ispc_enabled:     conf.append("-D EMBREE_ISPC_EXECUTABLE=/NAS/packages/apps/ispc/1.9.1/ispc")
+      if tasking == "TBB": conf.append("-D EMBREE_TBB_ROOT=/NAS/packages/apps/tbb/tbb-2017-linux")
+    elif OS == "macosx":
+      if ispc_enabled:     conf.append("-D EMBREE_ISPC_EXECUTABLE=/Network/nfs/NAS/packages/apps/ispc/1.9.1-osx/ispc")
+      if tasking == "TBB": conf.append("-D EMBREE_TBB_ROOT=/Network/nfs/NAS/packages/apps/tbb/tbb-2017-osx")
+    elif OS == "windows":
+      if ispc_enabled:
+  #      conf.append("-D EMBREE_ISPC_EXECUTABLE=N:\\packages\\apps\\ispc\\1.9.1-windows"+ispc_ext+"\\ispc.exe")
+        conf.append("-D EMBREE_ISPC_EXECUTABLE=C:\\embree-testing\dependencies\ispc-v1.9.1-windows"+ispc_ext+"\\ispc.exe")
+  
+      if tasking == "TBB": 
+  #      tbb_path = "N:\\packages\\apps\\tbb\\tbb-2017-windows"
+        tbb_path = "C:\\embree-testing\\dependencies\\tbb-2017-windows"
+        conf.append("-D EMBREE_TBB_ROOT="+tbb_path)
+  
+        if platform == "x64":
+          env.append("set PATH="+tbb_path+"\\bin\\intel64\\vc12;%PATH%")
+        else:
+          env.append("set PATH="+tbb_path+"\\bin\\ia32\\vc12;%PATH%")
+    else:
+      sys.stderr.write("unknown operating system "+OS)
+      sys.exit(1)
 
   if "klocwork" in config:
     conf.append("-D EMBREE_TESTING_KLOCWORK="+config["klocwork"])
