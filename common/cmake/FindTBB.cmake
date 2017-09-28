@@ -14,13 +14,36 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
+IF (NOT TBB_ROOT)
+  SET(TBB_ROOT $ENV{TBB_ROOT})
+ENDIF()
+IF (NOT TBB_ROOT)
+  SET(TBB_ROOT $ENV{TBBROOT})
+ENDIF()
+
 IF (WIN32)
+  # workaround for parentheses in variable name / CMP0053
+  SET(PROGRAMFILESx86 "PROGRAMFILES(x86)")
+  SET(PROGRAMFILES32 "$ENV{${PROGRAMFILESx86}}")
+  IF (NOT PROGRAMFILES32)
+    SET(PROGRAMFILES32 "$ENV{PROGRAMFILES}")
+  ENDIF()
+  IF (NOT PROGRAMFILES32)
+    SET(PROGRAMFILES32 "C:/Program Files (x86)")
+  ENDIF()
   FIND_PATH(EMBREE_TBB_ROOT include/tbb/tbb.h
     DOC "Root of TBB installation"
-    PATHS ${PROJECT_SOURCE_DIR}/tbb "C:/Program Files (x86)/Intel/Composer XE/tbb"
+    PATHS ${PROJECT_SOURCE_DIR}/tbb
     NO_DEFAULT_PATH
   )
-  FIND_PATH(EMBREE_TBB_ROOT include/tbb/tbb.h)
+  FIND_PATH(EMBREE_TBB_ROOT include/tbb/tbb.h
+    HINTS ${TBB_ROOT}
+    PATHS
+      ${PROJECT_SOURCE_DIR}/../tbb
+      "${PROGRAMFILES32}/IntelSWTools/compilers_and_libraries/windows/tbb"
+      "${PROGRAMFILES32}/Intel/Composer XE/tbb"
+      "${PROGRAMFILES32}/Intel/compilers_and_libraries/windows/tbb"
+  )
 
   IF (CMAKE_SIZEOF_VOID_P EQUAL 8)
     SET(TBB_ARCH intel64)
@@ -32,8 +55,10 @@ IF (WIN32)
     SET(TBB_VCVER vc10)
   ELSEIF (MSVC11)
     SET(TBB_VCVER vc11)
-  ELSE()
+  ELSEIF (MSVC12)
     SET(TBB_VCVER vc12)
+  ELSE()
+    SET(TBB_VCVER vc14)
   ENDIF()
 
   SET(TBB_LIBDIR ${EMBREE_TBB_ROOT}/lib/${TBB_ARCH}/${TBB_VCVER})
@@ -56,10 +81,18 @@ ELSE ()
 
   FIND_PATH(EMBREE_TBB_ROOT include/tbb/tbb.h
     DOC "Root of TBB installation"
-    PATHS ${PROJECT_SOURCE_DIR}/tbb /opt/intel/tbb
+    PATHS ${PROJECT_SOURCE_DIR}/tbb
     NO_DEFAULT_PATH
   )
-  FIND_PATH(EMBREE_TBB_ROOT include/tbb/tbb.h)
+  FIND_PATH(EMBREE_TBB_ROOT include/tbb/tbb.h
+    DOC "Root of TBB installation"
+    HINTS ${TBB_ROOT}
+    PATHS
+      ${PROJECT_SOURCE_DIR}/tbb
+      /opt/intel/composerxe/tbb
+      /opt/intel/compilers_and_libraries/tbb
+      /opt/intel/tbb
+  )
 
   IF (EMBREE_TBB_ROOT STREQUAL "")
     FIND_PATH(TBB_INCLUDE_DIR tbb/task_scheduler_init.h)
@@ -92,8 +125,9 @@ ELSE ()
       FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc PATHS ${EMBREE_TBB_ROOT}/lib NO_DEFAULT_PATH)
     ELSE()
       FIND_PATH(TBB_INCLUDE_DIR tbb/task_scheduler_init.h PATHS ${EMBREE_TBB_ROOT}/include NO_DEFAULT_PATH)
-      FIND_LIBRARY(TBB_LIBRARY tbb PATHS ${EMBREE_TBB_ROOT}/lib/intel64/gcc4.4 ${EMBREE_TBB_ROOT}/lib ${EMBREE_TBB_ROOT}/lib64  /usr/libx86_64-linux-gnu/ NO_DEFAULT_PATH)
-      FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc PATHS ${EMBREE_TBB_ROOT}/lib/intel64/gcc4.4 ${EMBREE_TBB_ROOT}/lib ${EMBREE_TBB_ROOT}/lib64  /usr/libx86_64-linux-gnu/ NO_DEFAULT_PATH)
+      SET(TBB_HINTS HINTS ${EMBREE_TBB_ROOT}/lib/intel64/gcc4.4 ${EMBREE_TBB_ROOT}/lib ${EMBREE_TBB_ROOT}/lib64 PATHS /usr/libx86_64-linux-gnu/)
+      FIND_LIBRARY(TBB_LIBRARY tbb ${TBB_HINTS})
+      FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc ${TBB_HINTS})
     ENDIF()
   ENDIF()
 
