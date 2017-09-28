@@ -35,11 +35,10 @@ def compareImages(image0,image1,dimage):
   #try: line = subprocess.check_output("compare -metric MAE "+image0+" "+image1+" -compose Src "+dimage, stderr=subprocess.STDOUT, shell=True)
   #except subprocess.CalledProcessError, e: line = e.output
   line, unused_err = subprocess.Popen("compare -metric MAE "+image0+" "+image1+" -compose Src "+dimage, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).communicate()
-  #try:
-  error = float(line[line.index('(')+1:line.index(')')])
-  #except ValueError:
-  #  print("Error: "+line)
-  #  raise ValueError
+  try: error = float(line[line.index('(')+1:line.index(')')])
+  except ValueError:
+    print("Error: "+line)
+    raise ValueError
   return error < 0.005
 
 def printUsage():
