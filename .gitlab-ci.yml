@@ -1,7 +1,7 @@
 
 continuous-linux-x64-RelWithDebInfo-GCC-AVX2-TBB:
   image: ospray/docker-images:ubuntu16.04
-  script: "scripts/test.py --docker platform:x64 build:RelWithDebInfo compiler:GCC isa:SSE2 tasking:TBB intensity:1
+  script: "scripts/test.py --docker platform:x64 build:RelWithDebInfo compiler:GCC isa:SSE2 tasking:TBB intensity:1"
   tags:   [docker]
 
 #####################################################################
