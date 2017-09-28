@@ -26,6 +26,7 @@ IF (EMBREE_TESTING_MEMCHECK AND EMBREE_MEMORYCHECK_COMMAND)
   ADD_MEMCHECK_TEST(verify_memcheck verify 
      --no-colors --intensity 0.1 
      --skip .*memory_consumption.*
+     --skip .*SSE4.*              # to run faster
      --skip .*AVX.*               # valgrind does not support AVX
      --skip .*AVX2.*              # valgrind does not support AVX2
      --skip .*AVX512KNL.*         # valgrind does not support AVX512KNL

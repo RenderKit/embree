@@ -86,7 +86,7 @@ windows-x64-RelWithDebInfo-V140-AVX2-PPL:
   only:   [schedules]
 
 windows-x64-RelWithDebInfo-V141-AVX2-TBB-STATIC:
-  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 isa:AVX2 tasking:TBB intensive:ON STATIC_LIB=ON"
+  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 isa:AVX2 tasking:TBB intensive:ON STATIC_LIB:ON"
   tags:   [win7, v141]
   only:   [schedules]
 
@@ -106,7 +106,7 @@ windows-x64-RelWithDebInfo-ICC17-AVX2-TBB:
   only:   [schedules]
   
 windows-x64-RelWithDebInfo-ICC18-AVX512SKX-TBB:
-  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC18 isa:AVX512SKX tasking:TBB intensive:ON sde:skx"
+  script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC18 isa:AVX512SKX tasking:TBB intensive:OFF sde:skx"
   tags:   [win7, icc18]
   only:   [schedules]
 
