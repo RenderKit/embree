@@ -15,15 +15,23 @@
 ## ======================================================================== ##
 
 IF (WIN32)
-# FindGLUT.cmake is broken for Windows in CMake until 3.0: does not support PATH
-  FIND_PATH(GLUT_INCLUDE_DIR NAMES GL/glut.h PATHS ../freeglut/include)
+
   # detect and select Win32 or x64
   IF (CMAKE_SIZEOF_VOID_P EQUAL 8)
     SET(ARCH x64)
   ELSE()
     SET(ARCH Win32)
   ENDIF()
-  FIND_LIBRARY(GLUT_glut_LIBRARY freeglut ../freeglut/${ARCH})
+
+  # detect Visual Studio version
+  IF (MSVC12)
+    SET(VCVER vc12)
+  ELSE()
+    SET(VCVER vc14)
+  ENDIF()
+
+  FIND_PATH(GLUT_INCLUDE_DIR NAMES GL/glut.h PATHS ../freeglut/include)
+  FIND_LIBRARY(GLUT_glut_LIBRARY freeglut ../freeglut/${ARCH}/${VCVER})
   SET(GLUT_LIBRARIES ${GLUT_glut_LIBRARY})
   MARK_AS_ADVANCED(
     GLUT_INCLUDE_DIR

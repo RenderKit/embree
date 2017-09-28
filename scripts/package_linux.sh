@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# terminate if some error occurs
+set -e
+
 # check version of symbols
 function check_symbols
 {

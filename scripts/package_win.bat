@@ -7,5 +7,9 @@ if "%build_type%" == "" (
 
 cmake --build . --config %build_type% --target PACKAGE -- /m /nologo /verbosity:n
 
+IF %ERRORLEVEL% NEQ 0 (
+  exit /b
+)
+
 @echo "<DartMeasurement name="%1" type="text/string">%1</DartMeasurement>"
 
