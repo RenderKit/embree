@@ -1,67 +1,72 @@
 
+continuous-linux-x64-RelWithDebInfo-GCC-AVX2-TBB:
+  image: ospray/docker-images:ubuntu16.04
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC isa:SSE2 tasking:TBB"
+  tags:   [docker]
+
 #####################################################################
 # Continuous Test
 ####################################################################
 
-continuous-windows-x64-RelWithDebInfo-V120-AVX2-TBB:
+.continuous-windows-x64-RelWithDebInfo-V120-AVX2-TBB:
   script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 isa:AVX2 tasking:TBB"
   tags:   [win7, v120]
 
-continuous-windows-x64-RelWithDebInfo-V140-AVX2-INT:
+.continuous-windows-x64-RelWithDebInfo-V140-AVX2-INT:
   script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 isa:AVX2 tasking:INT"
   tags:   [win7, v140]
 
-continuous-windows-x64-RelWithDebInfo-V141-AVX2-TBB:
+.continuous-windows-x64-RelWithDebInfo-V141-AVX2-TBB:
   script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V141 isa:AVX2 tasking:TBB"
   tags:   [win7, v141]
  
-continuous-windows-Win32-RelWithDebInfo-V140-AVX2-TBB:
+.continuous-windows-Win32-RelWithDebInfo-V140-AVX2-TBB:
   script: "scripts\\test.py platform:Win32 build:RelWithDebInfo compiler:V140 isa:AVX2 tasking:TBB"
   tags:   [win7, v140]
 
-continuous-windows-x64-RelWithDebInfo-ICC17-AVX2-TBB:
+.continuous-windows-x64-RelWithDebInfo-ICC17-AVX2-TBB:
   script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC17 isa:AVX2 tasking:TBB"
   tags:   [win7, icc17]
  
-continuous-windows-x64-RelWithDebInfo-CLANG-AVX2-TBB:
+.continuous-windows-x64-RelWithDebInfo-CLANG-AVX2-TBB:
   script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX2 tasking:TBB"
   tags:   [win7, clang]
 
 
-continuous-macosx-x64-RelWithDebInfo-ICC16-AVX2-TBB:
+.continuous-macosx-x64-RelWithDebInfo-CLANG-AVX2-INT:
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX2 tasking:INT"
+  tags:   [mac, clang]
+  
+.continuous-macosx-x64-RelWithDebInfo-ICC16-AVX2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC16 isa:AVX2 tasking:TBB"
   tags:   [mac, icc16]
 
-continuous-macosx-x64-RelWithDebInfo-CLANG-AVX2-INT:
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX2 tasking:INT"
-  tags:   [mac, clang]
 
-
-continuous-linux-x64-RelWithDebInfo-CLANG-AVX2-TBB:
+.continuous-linux-x64-RelWithDebInfo-CLANG-AVX2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX2 tasking:TBB"
   tags:   [linux, clang]
 
-continuous-linux-x64-RelWithDebInfo-GCC-AVX2-INT:
+.continuous-linux-x64-RelWithDebInfo-GCC-AVX2-INT:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC isa:AVX2 tasking:INT"
   tags:   [linux, gcc]
 
-continuous-linux-x64-RelWithDebInfo-ICC17-AVX2-TBB-KLOCKWORK:
+.continuous-linux-x64-RelWithDebInfo-ICC17-AVX2-TBB-KLOCKWORK:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 isa:AVX2 tasking:TBB klocwork:ON"
   tags:   [linux, icc17, klocwork]
 
-continuous-linux-knl-x64-RelWithDebInfo-ICC17-AVX512KNL-TBB:
+.continuous-linux-knl-x64-RelWithDebInfo-ICC17-AVX512KNL-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 isa:AVX512KNL tasking:TBB"
   tags:   [linux, knl, icc17]
 
-continuous-linux-knl-x64-RelWithDebInfo-CLANG4-AVX512KNL-TBB:
+.continuous-linux-knl-x64-RelWithDebInfo-CLANG4-AVX512KNL-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX512KNL tasking:TBB"
   tags:   [linux, knl, clang4]
 
-continuous-linux-skx-x64-RelWithDebInfo-ICC17-AVX512SKX-TBB:
+.continuous-linux-skx-x64-RelWithDebInfo-ICC17-AVX512SKX-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 isa:AVX512SKX tasking:TBB"
   tags:   [linux, skx, icc17]
 
-continuous-linux-skx-x64-RelWithDebInfo-CLANG4-AVX512SKX-TBB:
+.continuous-linux-skx-x64-RelWithDebInfo-CLANG4-AVX512SKX-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX512SKX tasking:TBB"
   tags:   [linux, skx, clang4]
 
