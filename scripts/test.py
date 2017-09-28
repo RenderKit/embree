@@ -10,6 +10,7 @@ import socket
 import subprocess
 
 g_cdash = ""
+g_docker = False
 g_config = {}
 g_mode = "Experimental"
 g_intensity = 2
@@ -220,7 +221,8 @@ def runConfig(config):
     conf.append("-D EMBREE_GEOMETRY_USER="+config["USERGEOM"])
     if config["USERGEOM"] == "ON": name += "-usergeom"
 
-  if OS == "linux":
+  if g_docker:
+  elif OS == "linux":
     if ispc_enabled:     conf.append("-D EMBREE_ISPC_EXECUTABLE=/NAS/packages/apps/ispc/1.9.1/ispc")
     if tasking == "TBB": conf.append("-D EMBREE_TBB_ROOT=/NAS/packages/apps/tbb/tbb-2017-linux")
   elif OS == "macosx":
@@ -325,6 +327,7 @@ def runConfig(config):
     
 def parseCommandLine(argv):
   global g_cdash
+  global g_docker
   global g_config
   global g_mode
   global g_intensity
@@ -336,6 +339,8 @@ def parseCommandLine(argv):
     parseCommandLine(argv[2:len(argv)])
   elif len(argv)>=2 and argv[0] == "--mode":
     g_mode = argv[1]
+  elif len(argv)>=2 and argv[0] == "--docker":
+    g_docker = True
     parseCommandLine(argv[2:len(argv)])
   elif len(argv)>=1 and argv[0] == "--debug":
     g_debugMode = True
