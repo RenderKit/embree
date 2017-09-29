@@ -316,13 +316,17 @@ def runConfig(config):
     for e in env: cmd += e + " && "
     cmd += ctest+"\n"
     if OS == "windows":
-      subprocess.check_call(cmd, shell=True)
+      try:
+        subprocess.check_call(cmd, stderr=subprocess.STDOUT, shell=True)
+      except subprocess.CalledProcessError, e:
+        sys.stderr.write("windows test invokation failed with return code "+str(e.returncode))
+        sys.exit(1)
     else:
       # need to use bash shell as we configured environment modules only for bash
       process = subprocess.Popen(['bash','-l'], stdin=subprocess.PIPE)
       process.communicate(input=cmd.encode("utf-8"))
       if process.returncode != 0:
-        sys.stderr.write("test invokation failed")
+        sys.stderr.write("test invokation failed with return code "+str(process.returncode))
         sys.exit(1)
     
 def parseCommandLine(argv):

@@ -69,8 +69,8 @@ continuous-windows-x64-RelWithDebInfo-V141-AVX2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX512SKX tasking:TBB intensity:2"
   tags:   [linux, skx, clang4]
 
-.continuous-ubuntu16.04-x64-RelWithDebInfo-GCC-AVX2-TBB:
-  image: svenwoop/ubuntu:16.04
+continuous-ubuntu17.04-x64-RelWithDebInfo-GCC-AVX2-TBB:
+  image: svenwoop/ubuntu:17.04
   script: "scripts/test.py --docker platform:x64 build:RelWithDebInfo compiler:GCC isa:SSE2 tasking:TBB intensity:1"
   tags:   [docker]
 
