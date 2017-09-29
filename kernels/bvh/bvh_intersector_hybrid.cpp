@@ -719,30 +719,20 @@ namespace embree
             vbool<K> lhit(valid_node);
             BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP,lhit);
 
-            /* if we hit the child we choose to continue with that child if it
-               is closer than the current next child, or we push it onto the stack */
+            /* if we hit the child we push the previously hit node onto the stack, and continue with the currently hit child */
             if (likely(any(lhit)))
             {
               assert(sptr_node < stackEnd);
               assert(child != BVH::emptyNode);
               const vfloat<K> childDist = select(lhit,lnearP,inf);
 
-              /* push cur node onto stack and continue with hit child */
-              if (any(childDist < curDist))
-              {
-                if (likely(cur != BVH::emptyNode)) {
-                  *sptr_node = cur; sptr_node++;
-                  *sptr_near = curDist; sptr_near++;
-                }
-                curDist = childDist;
-                cur = child;
+              /* push 'cur' node onto stack and continue with hit child */
+              if (likely(cur != BVH::emptyNode)) {
+                *sptr_node = cur; sptr_node++;
+                *sptr_near = curDist; sptr_near++;
               }
-
-              /* push hit child onto stack */
-              else {
-                *sptr_node = child; sptr_node++;
-                *sptr_near = childDist; sptr_near++;
-              }
+              curDist = childDist;
+              cur = child;
             }
           }
           if (unlikely(cur == BVH::emptyNode))
