@@ -80,8 +80,13 @@
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX512SKX tasking:TBB intensity:2"
   tags:   [linux, skx, clang4]
 
-continuous-ubuntu17.04-x64-RelWithDebInfo-GCC-AVX2-TBB:
+.continuous-ubuntu17.04-x64-RelWithDebInfo-GCC-AVX2-TBB:
   image: embreedocker/ubuntu:17.04
+  script: "scripts/test.py --docker platform:x64 build:RelWithDebInfo compiler:GCC isa:SSE2 tasking:TBB intensity:1"
+  tags:   [docker]
+
+continuous-centos7.4-x64-RelWithDebInfo-GCC-AVX2-TBB:
+  image: embreedocker/centos:7.4
   script: "scripts/test.py --docker platform:x64 build:RelWithDebInfo compiler:GCC isa:SSE2 tasking:TBB intensity:1"
   tags:   [docker]
 
