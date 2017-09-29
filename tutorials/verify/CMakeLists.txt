@@ -19,36 +19,37 @@ TARGET_LINK_LIBRARIES(verify sys math scenegraph embree)
 SET_PROPERTY(TARGET verify PROPERTY FOLDER tutorials)
 INSTALL(TARGETS verify DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
 
-IF (EMBREE_TESTING_INTENSITY GREATER 0)
-  
-  ADD_TEST(NAME verify COMMAND verify --no-colors)
-  SET_TESTS_PROPERTIES(verify PROPERTIES TIMEOUT 7000)
-
-  IF (EMBREE_TESTING_MEMCHECK AND EMBREE_MEMORYCHECK_COMMAND)
-    ADD_MEMCHECK_TEST(verify_memcheck verify 
-       --no-colors --intensity 0.1 
-       --skip .*memory_consumption.*
-       --skip .*SSE4.*              # to run faster
-       --skip .*AVX.*               # valgrind does not support AVX
-       --skip .*AVX2.*              # valgrind does not support AVX2
-       --skip .*AVX512KNL.*         # valgrind does not support AVX512KNL
-       --skip .*AVX512SKX.*         # valgrind does not support AVX512SKX
-    )
-    set_tests_properties(verify_memcheck PROPERTIES TIMEOUT 10800)
-  ENDIF()
-
-  IF (EMBREE_TESTING_BENCHMARK)
-    ADD_TEST(NAME verify_benchmarks COMMAND verify
-      --no-colors --cdash
-      --benchmark-tolerance 0.05
-      --database "${EMBREE_TESTING_BENCHMARK_DATABASE}"
-      --run .*benchmarks.*
-      --skip .*_120.* --skip .*_1k.* --skip .*_10k.* --skip .*100k.*  # skip all smaller build benchmarks
-      --run .*embree_reported_memory.*
-    )
-    set_tests_properties(verify_benchmarks PROPERTIES TIMEOUT 10800)
-  ENDIF()
-ENDIF()
+#IF (EMBREE_TESTING_INTENSITY GREATER 0)
+#
+#  
+#  ADD_TEST(NAME verify COMMAND verify --no-colors)
+#  SET_TESTS_PROPERTIES(verify PROPERTIES TIMEOUT 7000)
+#
+#  IF (EMBREE_TESTING_MEMCHECK AND EMBREE_MEMORYCHECK_COMMAND)
+#    ADD_MEMCHECK_TEST(verify_memcheck verify 
+#       --no-colors --intensity 0.1 
+#       --skip .*memory_consumption.*
+#       --skip .*SSE4.*              # to run faster
+#       --skip .*AVX.*               # valgrind does not support AVX
+#       --skip .*AVX2.*              # valgrind does not support AVX2
+#       --skip .*AVX512KNL.*         # valgrind does not support AVX512KNL
+#       --skip .*AVX512SKX.*         # valgrind does not support AVX512SKX
+#    )
+#    set_tests_properties(verify_memcheck PROPERTIES TIMEOUT 10800)
+#  ENDIF()
+#
+#  IF (EMBREE_TESTING_BENCHMARK)
+#    ADD_TEST(NAME verify_benchmarks COMMAND verify
+#      --no-colors --cdash
+#      --benchmark-tolerance 0.05
+#      --database "${EMBREE_TESTING_BENCHMARK_DATABASE}"
+#      --run .*benchmarks.*
+#      --skip .*_120.* --skip .*_1k.* --skip .*_10k.* --skip .*100k.*  # skip all smaller build benchmarks
+#      --run .*embree_reported_memory.*
+#    )
+#    set_tests_properties(verify_benchmarks PROPERTIES TIMEOUT 10800)
+#  ENDIF()
+#ENDIF()
 
 SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} "${CMAKE_INSTALL_BINDIR}/verify" "verify")
 SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} PARENT_SCOPE)

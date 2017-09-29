@@ -1,6 +1,8 @@
 
-continuous-windows-compare:
-  script: "echo %PATH%"
+continuous-windows-x64-RelWithDebInfo-V120-SSE2-TBB:
+  script:
+    - echo %PATH%
+    - "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 isa:SSE2 tasking:TBB intensity:2"
   tags:   [win7, v120]
 
 #####################################################################
