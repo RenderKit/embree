@@ -18,7 +18,7 @@
 # Continuous Test
 ####################################################################
 
-continuous-windows-x64-RelWithDebInfo-V120-AVX2-TBB:
+.continuous-windows-x64-RelWithDebInfo-V120-AVX2-TBB:
   script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 isa:AVX2 tasking:TBB intensity:2"
   tags:   [win7, v120]
 
@@ -85,7 +85,7 @@ continuous-windows-x64-RelWithDebInfo-V120-AVX2-TBB:
   script: "scripts/test.py --docker platform:x64 build:RelWithDebInfo compiler:GCC isa:SSE2 tasking:TBB intensity:1"
   tags:   [docker]
 
-.continuous-centos7.4-x64-RelWithDebInfo-GCC-AVX2-TBB:
+continuous-centos7.4-x64-RelWithDebInfo-GCC-AVX2-TBB:
   image: embreedocker/centos:7.4
   script: "scripts/test.py --docker platform:x64 build:RelWithDebInfo compiler:GCC isa:SSE2 tasking:TBB intensity:1"
   tags:   [docker]
