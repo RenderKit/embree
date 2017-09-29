@@ -1,10 +1,18 @@
-
-
-continuous-windows-x64-RelWithDebInfo-V120-SSE2-TBB:
-  script:
-    - echo %PATH%
-    - "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 isa:SSE2 tasking:TBB intensity:2"
-  tags:   [win7, v120]
+## ======================================================================== ##
+## Copyright 2009-2017 Intel Corporation                                    ##
+##                                                                          ##
+## Licensed under the Apache License, Version 2.0 (the "License");          ##
+## you may not use this file except in compliance with the License.         ##
+## You may obtain a copy of the License at                                  ##
+##                                                                          ##
+##     http://www.apache.org/licenses/LICENSE-2.0                           ##
+##                                                                          ##
+## Unless required by applicable law or agreed to in writing, software      ##
+## distributed under the License is distributed on an "AS IS" BASIS,        ##
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. ##
+## See the License for the specific language governing permissions and      ##
+## limitations under the License.                                           ##
+## ======================================================================== ##
 
 #####################################################################
 # Continuous Test
@@ -72,8 +80,8 @@ continuous-windows-x64-RelWithDebInfo-V120-SSE2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX512SKX tasking:TBB intensity:2"
   tags:   [linux, skx, clang4]
 
-.continuous-ubuntu17.04-x64-RelWithDebInfo-GCC-AVX2-TBB:
-  image: svenwoop/ubuntu:17.04
+continuous-ubuntu17.04-x64-RelWithDebInfo-GCC-AVX2-TBB:
+  image: embreedocker/ubuntu:17.04
   script: "scripts/test.py --docker platform:x64 build:RelWithDebInfo compiler:GCC isa:SSE2 tasking:TBB intensity:1"
   tags:   [docker]
 
