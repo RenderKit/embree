@@ -1,6 +1,6 @@
 
 continuous-windows-compare:
-  script: "echo $PATH"
+  script: "echo %PATH%"
   tags:   [win7, v120]
 
 #####################################################################
