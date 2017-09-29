@@ -230,12 +230,12 @@ def runConfig(config):
       if tasking == "TBB": conf.append("-D EMBREE_TBB_ROOT=/Network/nfs/NAS/packages/apps/tbb/tbb-2017-osx")
     elif OS == "windows":
       if ispc_enabled:
-  #      conf.append("-D EMBREE_ISPC_EXECUTABLE=N:\\packages\\apps\\ispc\\1.9.1-windows"+ispc_ext+"\\ispc.exe")
-        conf.append("-D EMBREE_ISPC_EXECUTABLE=C:\\embree-testing\dependencies\ispc-v1.9.1-windows"+ispc_ext+"\\ispc.exe")
+        conf.append("-D EMBREE_ISPC_EXECUTABLE=\\\\sdvis-nas\\NAS\\packages\\apps\\ispc\\1.9.1-windows"+ispc_ext+"\\ispc.exe")
+        #conf.append("-D EMBREE_ISPC_EXECUTABLE=C:\\embree-testing\dependencies\ispc-v1.9.1-windows"+ispc_ext+"\\ispc.exe")
   
       if tasking == "TBB": 
-  #      tbb_path = "N:\\packages\\apps\\tbb\\tbb-2017-windows"
-        tbb_path = "C:\\embree-testing\\dependencies\\tbb-2017-windows"
+        tbb_path = "\\\\sdvis-nas\\NAS\\packages\\apps\\tbb\\tbb-2017-windows"
+        #tbb_path = "C:\\embree-testing\\dependencies\\tbb-2017-windows"
         conf.append("-D EMBREE_TBB_ROOT="+tbb_path)
   
         if platform == "x64":
