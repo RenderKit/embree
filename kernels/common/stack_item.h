@@ -22,7 +22,7 @@ namespace embree
 {
   /*! An item on the stack holds the node ID and distance of that node. */
   template<typename T>
-    struct __aligned(16) StackItemT
+  struct __aligned(16) StackItemT
   {
     /*! assert that the xchg function works */
     static_assert(sizeof(T) <= 12, "sizeof(T) <= 12 failed");
@@ -79,7 +79,15 @@ namespace embree
     }
     
   public:
-    T ptr; 
+    T ptr;
     unsigned dist;
+  };
+
+  /*! An item on the stack holds the node ID and active ray mask. */
+  template<typename T>
+  struct __aligned(16) StackItemMaskT
+  {
+    T ptr;
+    unsigned mask;
   };
 }

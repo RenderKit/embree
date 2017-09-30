@@ -147,7 +147,6 @@ namespace embree
       size_t valid_bits = movemask(valid);
       if (unlikely(valid_bits == 0)) return;
 
-
       /* verify correct input */
       assert(all(valid,ray.valid()));
       assert(all(valid,ray.tnear >= 0.0f));
@@ -800,7 +799,7 @@ namespace embree
       /* verify correct input */
       assert(all(valid,ray.valid()));
       assert(all(valid,ray.tnear >= 0.0f));
-      assert(!(types & BVH_MB) || all(valid,(ray.time >= 0.0f) & (ray.time <= 1.0f)));
+      assert(!(types & BVH_MB) || all(valid, (ray.time >= 0.0f) & (ray.time <= 1.0f)));
       Precalculations pre(valid,ray);
 
       /* load ray */
@@ -813,7 +812,7 @@ namespace embree
       const Vec3vf<K> org(ray_org);
       const Vec3vf<K> org_rdir = org * rdir;
 
-      vint<K> octant =                                                \
+      vint<K> octant =
         select(vfloat<K>(rdir.x) < 0.0f,vint<K>(1),vint<K>(zero)) |
         select(vfloat<K>(rdir.y) < 0.0f,vint<K>(2),vint<K>(zero)) |
         select(vfloat<K>(rdir.z) < 0.0f,vint<K>(4),vint<K>(zero));
@@ -830,10 +829,10 @@ namespace embree
 
         const Frustum<N,Nx,K,robust> frustum(octant_valid,org,rdir,ray_tnear,ray_tfar);
 
-        StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes
-        StackItemT<NodeRef>* stackPtr = stack + 1;        //!< current stack pointer
-        stack[0].ptr   = bvh->root;
-        stack[0].dist  = (unsigned int)movemask(octant_valid);
+        StackItemMaskT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes
+        StackItemMaskT<NodeRef>* stackPtr = stack + 1;   //!< current stack pointer
+        stack[0].ptr  = bvh->root;
+        stack[0].mask = (unsigned int)movemask(octant_valid);
 
         while (1) pop:
         {
@@ -844,7 +843,7 @@ namespace embree
           NodeRef cur = NodeRef(stackPtr->ptr);
 
           /* cull node of active rays have already been terminated */
-          unsigned int m_active = stackPtr->dist & (~movemask(terminated));
+          unsigned int m_active = stackPtr->mask & (~movemask(terminated));
 
           if (unlikely(m_active == 0)) continue;
 
@@ -881,7 +880,7 @@ namespace embree
                 if (likely(cur != BVH::emptyNode)) {
                   num_child_hits++;
                   stackPtr->ptr  = cur;
-                  stackPtr->dist = m_active;
+                  stackPtr->mask = m_active;
                   stackPtr++;
                 }
                 cur = child;
@@ -908,17 +907,15 @@ namespace embree
 
           if (unlikely(lazy_node)) {
             stackPtr->ptr  = lazy_node;
-            stackPtr->dist = (unsigned int)movemask(octant_valid);
+            stackPtr->mask = (unsigned int)movemask(octant_valid);
             stackPtr++;
           }
         }
         
       } while(valid_bits);
-      vint<K>::store(valid & terminated,&ray.geomID,0);
+      vint<K>::store(valid & terminated, &ray.geomID, 0);
 
       AVX_ZERO_UPPER();
     }
-
-
   }
 }
