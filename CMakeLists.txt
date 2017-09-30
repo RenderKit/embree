@@ -364,6 +364,14 @@ INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/include)
 INCLUDE_DIRECTORIES("${PROJECT_BINARY_DIR}")
 INCLUDE_DIRECTORIES_ISPC("${PROJECT_BINARY_DIR}")
 IF (TASKING_TBB)
+  ##############################################################
+  # Preview binary configuration
+  ##############################################################
+  OPTION(EMBREE_TBB_USE_PREVIEW_BINARY "Enable to use preview binary" ON)
+  IF(EMBREE_TBB_USE_PREVIEW_BINARY)
+    SET(TBB_USE_PREVIEW_BINARY ON)
+    ADD_DEFINITIONS(-DTBB_USE_PREVIEW_BINARY)
+  ENDIF()
   FIND_PACKAGE(TBB REQUIRED)
   INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIRS})
 ENDIF()
