@@ -499,7 +499,6 @@ namespace embree
                   std::swap(stackPtr[-3],stackPtr[-2]);
               }
             }
-
           }
 
           /* intersect leaf */

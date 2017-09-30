@@ -136,8 +136,8 @@ namespace embree
       Precalculations pre(ray,bvh);
 
       /*! stack state */
-      NodeRef stack[stackSize];  //!< stack of nodes that still need to get traversed
-      NodeRef* stackPtr = stack+1;        //!< current stack pointer
+      NodeRef stack[stackSize];    //!< stack of nodes that still need to get traversed
+      NodeRef* stackPtr = stack+1; //!< current stack pointer
       NodeRef* stackEnd = stack+stackSize;
       stack[0] = bvh->root;
 
