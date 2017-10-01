@@ -764,7 +764,7 @@ namespace embree
         size_t lazy_node = 0;
         terminated |= PrimitiveIntersectorK::occluded(!terminated,pre,ray,context,prim,items,lazy_node);
         if (all(terminated)) break;
-        ray_tfar = select(terminated,vfloat<K>(neg_inf),ray_tfar);
+        ray_tfar = select(terminated, vfloat<K>(neg_inf), ray_tfar); // ignore node intersections for terminated rays
 
         if (unlikely(lazy_node)) {
           *sptr_node = lazy_node; sptr_node++;
@@ -817,10 +817,10 @@ namespace embree
         vbool<K> octant_valid = octant[valid_index] == octant;
         valid_bits &= ~(size_t)movemask(octant_valid);
 
-        const vfloat<K> ray_tnear = select(octant_valid,org_ray_tnear,vfloat<K>(pos_inf));
-        const vfloat<K> ray_tfar  = select(octant_valid,org_ray_tfar ,vfloat<K>(neg_inf));
+        const vfloat<K> ray_tnear = select(octant_valid, org_ray_tnear, vfloat<K>(pos_inf));
+        vfloat<K> ray_tfar = select(octant_valid, org_ray_tfar, vfloat<K>(neg_inf));
 
-        const Frustum<N,Nx,K,robust> frustum(octant_valid,org,rdir,ray_tnear,ray_tfar);
+        const Frustum<N,Nx,K,robust> frustum(octant_valid, org, rdir, ray_tnear, ray_tfar);
 
         StackItemMaskT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes
         StackItemMaskT<NodeRef>* stackPtr = stack + 1;   //!< current stack pointer
@@ -897,6 +897,7 @@ namespace embree
           terminated |= PrimitiveIntersectorK::occluded(!terminated,pre,ray,context,prim,items,lazy_node);
           octant_valid &= !terminated;
           if (unlikely(none(octant_valid))) break;
+          ray_tfar = select(terminated, vfloat<K>(neg_inf), ray_tfar); // ignore node intersections for terminated rays
 
           if (unlikely(lazy_node)) {
             stackPtr->ptr  = lazy_node;
