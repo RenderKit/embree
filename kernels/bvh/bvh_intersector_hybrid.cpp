@@ -262,7 +262,7 @@ namespace embree
               const NodeRef child = node->children[i];
               if (unlikely(child == BVH::emptyNode)) break;
               vfloat<K> lnearP;
-              vbool<K> lhit(valid_node);
+              vbool<K> lhit = valid_node;
               BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP,lhit);
 
               /* if we hit the child we choose to continue with that child if it
@@ -451,7 +451,7 @@ namespace embree
             do {
               const size_t i = __bscf(m_frusta_node);
               vfloat<K> lnearP;
-              vbool<K> lhit( false );
+              vbool<K> lhit = false; // motion blur is not supported, so the initial value will be ignored
               STAT3(normal.trav_nodes,1,1,1);
               BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP,lhit);
 
@@ -711,7 +711,7 @@ namespace embree
             const NodeRef child = node->children[i];
             if (unlikely(child == BVH::emptyNode)) break;
             vfloat<K> lnearP;
-            vbool<K> lhit(valid_node);
+            vbool<K> lhit = valid_node;
             BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP,lhit);
 
             /* if we hit the child we push the previously hit node onto the stack, and continue with the currently hit child */
@@ -861,7 +861,7 @@ namespace embree
             do {
               const size_t i = __bscf(m_frusta_node);
               vfloat<K> lnearP;
-              vbool<K> lhit(false);
+              vbool<K> lhit = false; // motion blur is not supported, so the initial value will be ignored
               STAT3(normal.trav_nodes,1,1,1);
               BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,ray_dir,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP,lhit);
 
