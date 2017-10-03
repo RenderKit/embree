@@ -2475,16 +2475,17 @@ namespace embree
 	if (valid[i] != -1) continue;
 
         /* reject hit */
+        //PRINT( RTCHitN_primID(potentialHit,N,i) & 2 );
         if (RTCHitN_primID(potentialHit,N,i) & 2) {
-          valid[i] = 0;
+          //valid[i] = 0;
         }
 
         /* accept hit */
         else {
+          
           RTCRayN_instID(ray,N,i) = RTCHitN_instID(potentialHit,N,i);
           RTCRayN_geomID(ray,N,i) = RTCHitN_geomID(potentialHit,N,i);
           RTCRayN_primID(ray,N,i) = RTCHitN_primID(potentialHit,N,i);
-          
           RTCRayN_u(ray,N,i) = RTCHitN_u(potentialHit,N,i);
           RTCRayN_v(ray,N,i) = RTCHitN_v(potentialHit,N,i);
           RTCRayN_tfar(ray,N,i) = RTCHitN_t(potentialHit,N,i);
@@ -2556,7 +2557,7 @@ namespace embree
           if (!subdiv) primID *= 2;
           RTCRay& ray = rays[iy*4+ix];
           bool ok = (primID & 2) ? (ray.geomID == RTC_INVALID_GEOMETRY_ID) : (ray.geomID == 0);
-          if (!ok) passed = false;
+          if (!ok) { passed = false; }
         }
       }
       AssertNoError(device);
