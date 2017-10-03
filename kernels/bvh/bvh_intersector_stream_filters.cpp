@@ -72,23 +72,195 @@ namespace embree
       }
       else
       {
-        /* fallback to packets */
-        for (size_t i=0; i<N; i+=VSIZEX)
+        static const size_t MAX_RAYS_PER_OCTANT = VSIZEX;
+#if 1
+
+        __aligned(64) unsigned int octants[8][MAX_RAYS_PER_OCTANT];
+
+        unsigned int rays_in_octant[8];
+
+ 
+
+        for (size_t i = 0; i<8; i++) rays_in_octant[i] = 0;
+
+        size_t inputRayID = 0;
+
+ 
+
+        while (1)
+
         {
-          const vintx vi = vintx(int(i)) + vintx(step);
-          vboolx valid = vi < vintx(int(N));
+
+          int cur_octant = -1;
+
+          /* sort rays into octants */
+
+          for (; inputRayID<N;)
+
+          {
+
+            Ray &ray = *(Ray*)((char*)_rayN + inputRayID * stride);
+
+            /* skip invalid rays */
+
+            if (unlikely(ray.tnear > ray.tfar)) { inputRayID++; continue; }
+
+            if (unlikely(!intersect && ray.geomID == 0)) { inputRayID++; continue; } // ignore already occluded rays
+
+ 
+
+#if defined(EMBREE_IGNORE_INVALID_RAYS)
+
+            if (unlikely(!ray.valid())) { inputRayID++; continue; }
+
+#endif
+
+ 
+
+            const unsigned int octantID = movemask(vfloat4(ray.dir) < 0.0f) & 0x7;
+
+ 
+
+            assert(octantID < 8);
+
+            octants[octantID][rays_in_octant[octantID]++] = inputRayID;
+
+            inputRayID++;
+
+            if (unlikely(rays_in_octant[octantID] == MAX_RAYS_PER_OCTANT))
+
+            {
+
+              cur_octant = octantID;
+
+              break;
+
+            }
+
+          }
+
+          /* need to flush rays in octant ? */
+
+          if (unlikely(cur_octant == -1))
+
+            for (int i = 0; i<8; i++)
+
+              if (rays_in_octant[i])
+
+              {
+
+                cur_octant = i;
+
+                break;
+
+              }
+
+ 
+
+          /* all rays traced ? */
+
+          if (unlikely(cur_octant == -1))
+
+            break;
+
+ 
+
+ 
+
+          unsigned int* rayIDs = &octants[cur_octant][0];
+
+          const size_t numOctantRays = rays_in_octant[cur_octant];
+
+ 
+
+#if 0
+
+          for (size_t i = 0; i < numOctantRays; i++)
+
+          {
+
+            RTCRay &ray = *(RTCRay*)((char*)_rayN + rayIDs[i] * stride);
+
+            if (intersect) scene->intersectors.intersect(ray, context);
+
+            else           scene->intersectors.occluded(ray, context);
+
+          }
+
+#else
+
+ 
+
+          const vintx vi = vintx::loadu(rayIDs);//vintx(int(i)) + vintx(step);
+
+          vboolx valid = vintx(step) < vintx(int(numOctantRays));
+
           const vintx offset = vi * int(stride);
 
+ 
+
           RayK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
+
           valid &= ray.tnear <= ray.tfar;
 
+ 
+
           if (intersect)
+
             scene->intersectors.intersect(valid, ray, context);
+
           else
+
             scene->intersectors.occluded(valid, ray, context);
 
+ 
+
           rayN.setHitByOffset(valid, offset, ray, intersect);
+
+#endif
+
+          rays_in_octant[cur_octant] = 0;
+
         }
+
+#else
+
+/* fallback to packets */
+
+        for (size_t i=0; i<N; i+=VSIZEX)
+
+        {
+
+          const vintx vi = vintx(int(i)) + vintx(step);
+
+          vboolx valid = vi < vintx(int(N));
+
+          const vintx offset = vi * int(stride);
+
+ 
+
+          RayK<VSIZEX> ray = rayN.getRayByOffset(valid, offset);
+
+          valid &= ray.tnear <= ray.tfar;
+
+ 
+
+          if (intersect)
+
+            scene->intersectors.intersect(valid, ray, context);
+
+          else                      
+
+            scene->intersectors.occluded(valid, ray, context);
+
+                                 
+
+          rayN.setHitByOffset(valid, offset, ray, intersect);
+
+        }
+
+#endif
+
       }
     }
 

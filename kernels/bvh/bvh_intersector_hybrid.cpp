@@ -615,7 +615,7 @@ namespace embree
 #endif
 
       /* return if there are no valid rays */
-      const size_t valid_bits = movemask(valid);
+      size_t valid_bits = movemask(valid);
       if (unlikely(valid_bits == 0)) return;
 
       /* verify correct input */
@@ -633,6 +633,252 @@ namespace embree
       const Vec3vf<K> org(ray_org), org_rdir = org * rdir;
       ray_tnear = select(valid,ray_tnear,vfloat<K>(pos_inf));
       ray_tfar  = select(valid,ray_tfar ,vfloat<K>(neg_inf));
+
+#if 1
+      Vec3vi<K> nearXYZ;
+      nearXYZ.x = select(rdir.x >= 0.0f,vint<K>(0*(int)sizeof(vfloat<N>)),vint<K>(1*(int)sizeof(vfloat<N>)));
+      nearXYZ.y = select(rdir.y >= 0.0f,vint<K>(2*(int)sizeof(vfloat<N>)),vint<K>(3*(int)sizeof(vfloat<N>)));
+      nearXYZ.z = select(rdir.z >= 0.0f,vint<K>(4*(int)sizeof(vfloat<N>)),vint<K>(5*(int)sizeof(vfloat<N>)));
+
+      const int shiftTable[8] = { (int)1 << 0, (int)1 << 1, (int)1 << 2, (int)1 << 3, (int)1 << 4, (int)1 << 5, (int)1 << 6, (int)1 << 7 };
+
+      vint<K> octant = ray.octant();
+      octant = select(valid, octant, vint<K>(0xffffffff));
+
+      do
+      {
+        const size_t valid_index = __bsf(valid_bits);
+        const vbool<K> octant_valid = octant[valid_index] == octant;
+
+#if defined(__AVX__)
+        STAT3(shadow.trav_hit_boxes[popcnt(octant_valid)],1,1,1);
+#endif
+        valid_bits &= ~(size_t)movemask(octant_valid);
+
+        /*! stack state */
+        StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes
+        StackItemT<NodeRef>* stackPtr = stack + 1;        //!< current stack pointer
+        //StackItemT<NodeRef>* stackEnd = stack + stackSizeSingle;
+        stack[0].ptr = bvh->root;
+        stack[0].dist = movemask(octant_valid); //valid);
+
+        const size_t octant_index = __bsf(movemask(octant_valid));
+
+        const size_t nearX = nearXYZ.x[octant_index];
+        const size_t nearY = nearXYZ.y[octant_index];
+        const size_t nearZ = nearXYZ.z[octant_index];
+        const size_t farX  = nearX ^ sizeof(vfloat<N>);
+        const size_t farY  = nearY ^ sizeof(vfloat<N>);
+        const size_t farZ  = nearZ ^ sizeof(vfloat<N>);
+
+        while (1) pop:
+        {
+          if (unlikely(stackPtr == stack)) break;
+          STAT3(shadow.trav_stack_pop,1,1,1);
+          stackPtr--;
+          NodeRef cur = NodeRef(stackPtr->ptr);
+          unsigned int cur_mask = stackPtr->dist & movemask(!terminated);
+          if (unlikely(cur_mask == 0)) continue;
+
+#if defined(__AVX__) && 0
+          if (likely(__popcnt(cur_mask) == 1))
+#else
+            if (0)
+#endif
+            {
+              const size_t k = __bsf(cur_mask);
+              const Vec3vf<Nx> ray_rdir(vfloat<Nx>(rdir.x[k]),vfloat<Nx>(rdir.y[k]),vfloat<Nx>(rdir.z[k]));
+              const Vec3vf<Nx> ray_org_rdir(vfloat<Nx>(org_rdir.x[k]),vfloat<Nx>(org_rdir.y[k]),vfloat<Nx>(org_rdir.z[k]));
+              const vfloat<Nx> ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
+
+              while (true)
+              {
+                /*! stop if we found a leaf node */
+                if (unlikely(cur.isLeaf())) break;
+                STAT3(shadow.trav_nodes,1,1,1);
+                const AlignedNode* __restrict__ const node = cur.alignedNode();
+
+                const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nearX));
+                const vfloat<Nx> bmaxX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + farX));
+                const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nearY));
+                const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + farY));
+                const vfloat<Nx> bminZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nearZ));
+                const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + farZ));
+
+                const vfloat<Nx> tNearX = msub(bminX, ray_rdir.x, ray_org_rdir.x);
+                const vfloat<Nx> tNearY = msub(bminY, ray_rdir.y, ray_org_rdir.y);
+                const vfloat<Nx> tNearZ = msub(bminZ, ray_rdir.z, ray_org_rdir.z);
+                const vfloat<Nx> tFarX  = msub(bmaxX, ray_rdir.x, ray_org_rdir.x);
+                const vfloat<Nx> tFarY  = msub(bmaxY, ray_rdir.y, ray_org_rdir.y);
+                const vfloat<Nx> tFarZ  = msub(bmaxZ, ray_rdir.z, ray_org_rdir.z);
+
+                const vfloat<Nx> tNear  = maxi(tNearX,tNearY,tNearZ,ray_near);
+                const vfloat<Nx> tFar   = mini(tFarX ,tFarY ,tFarZ, ray_far);
+ 
+                const vbool<Nx> hit_mask   = tNear <= tFar;
+                size_t mask = movemask(hit_mask);
+                if (unlikely(mask == 0)) goto pop;
+
+                /* select next child and push other children */
+                size_t r = __bscf(mask);
+                assert(r < N);
+                cur = node->child(r);         
+                cur.prefetch(types);
+
+                /* simple in order sequence */
+                assert(cur != BVH::emptyNode);
+                if (likely(mask == 0)) continue;
+                stackPtr->ptr  = cur;
+                stackPtr->dist = cur_mask;
+                stackPtr++;
+
+                for (; ;)
+                {
+                  r = __bscf(mask);
+                  assert(r < N);
+
+                  cur = node->child(r);          
+                  cur.prefetch(types);
+                  assert(cur != BVH::emptyNode);
+                  if (likely(mask == 0)) break;
+                  stackPtr->ptr  = cur;
+                  stackPtr->dist = cur_mask;
+                  stackPtr++;
+                }
+              }
+
+            }
+            else
+            {
+              while (true)
+              {
+
+                /*! stop if we found a leaf node */
+                if (unlikely(cur.isLeaf())) break;
+          
+                const AlignedNode* __restrict__ const node = cur.alignedNode();
+
+                const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nearX));
+                const vfloat<Nx> bmaxX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + farX));
+                const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nearY));
+                const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + farY));
+                const vfloat<Nx> bminZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nearZ));
+                const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + farZ));
+
+
+                // const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nearX));
+                // const vfloat<Nx> bmaxX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->upper_x + farX));
+                // const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_y + nearY));
+                // const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->upper_y + farY));
+                // const vfloat<Nx> bminZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_z + nearZ));
+                // const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->upper_z + farZ));
+          
+                size_t bits = cur_mask;
+
+#if defined(__AVX__)
+                //STAT3(shadow.trav_hit_boxes[__popcnt(cur_mask)],1,1,1);
+#endif
+
+                assert(bits);
+
+                vint<Nx> vmask(zero);
+                do
+                {   
+                  STAT3(shadow.trav_nodes,1,1,1);
+
+                  const size_t i = __bscf(bits);
+                  assert(i < K);
+                  //const vint<Nx> bitmask = vint<Nx>((int)1 << i);
+
+                  const vint<Nx> bitmask(shiftTable[i]);
+
+                  const vfloat<Nx> tNearX = msub(bminX, rdir.x[i], org_rdir.x[i]);
+                  const vfloat<Nx> tNearY = msub(bminY, rdir.y[i], org_rdir.y[i]);
+                  const vfloat<Nx> tNearZ = msub(bminZ, rdir.z[i], org_rdir.z[i]);
+                  const vfloat<Nx> tFarX  = msub(bmaxX, rdir.x[i], org_rdir.x[i]);
+                  const vfloat<Nx> tFarY  = msub(bmaxY, rdir.y[i], org_rdir.y[i]);
+                  const vfloat<Nx> tFarZ  = msub(bmaxZ, rdir.z[i], org_rdir.z[i]);
+
+                  const vfloat<Nx> tNear  = maxi(tNearX,tNearY,tNearZ,vfloat<Nx>(ray_tnear[i]));
+                  const vfloat<Nx> tFar   = mini(tFarX ,tFarY ,tFarZ, vfloat<Nx>(ray_tfar[i]));
+ 
+                  //const vfloat<Nx> tNear  = maxi(min(tNearX,tFarX), min(tNearY,tFarY), min(tNearZ,tFarZ), vfloat<Nx>(ray_tnear[i]));
+                  //const vfloat<Nx> tFar   = mini(max(tNearX,tFarX), max(tNearY,tFarY), max(tNearZ,tFarZ), vfloat<Nx>(ray_tfar[i]));
+                  const vbool<Nx> hit_mask   = tNear <= tFar;
+#if defined(__AVX2__)
+                  vmask = vmask | (bitmask & vint<Nx>(hit_mask));
+#else
+                  vmask = select(hit_mask, vmask | bitmask, vmask);
+#endif
+                } while(bits);     
+                size_t mask = movemask((vmask != vint<Nx>(zero))); // & (bminX <= bmaxX));
+                if (unlikely(mask == 0)) goto pop;
+
+                /* select next child and push other children */
+                //const BaseNode* node = cur.baseNode(types);
+
+                /*! one child is hit, continue with that child */
+                size_t r = __bscf(mask);
+                assert(r < N);
+                cur = node->child(r);         
+                cur.prefetch(types);
+                cur_mask = vmask[r];
+
+                /* simple in order sequence */
+                assert(cur != BVH::emptyNode);
+                if (likely(mask == 0)) continue;
+                stackPtr->ptr  = cur;
+                stackPtr->dist = cur_mask;
+                stackPtr++;
+
+                for (; ;)
+                {
+                  r = __bscf(mask);
+                  assert(r < N);
+
+                  cur = node->child(r);          
+                  cur.prefetch(types);
+                  cur_mask = vmask[r];
+                  assert(cur != BVH::emptyNode);
+                  if (likely(mask == 0)) break;
+                  stackPtr->ptr  = cur;
+                  stackPtr->dist = cur_mask;
+                  stackPtr++;
+                }
+              }
+            }
+
+        
+          /*! this is a leaf node */
+          assert(cur != BVH::emptyNode);
+          STAT3(shadow.trav_leaves,1,1,1);
+          size_t num; Primitive* prim = (Primitive*) cur.leaf(num);        
+
+
+          size_t bits = cur_mask;
+          size_t lazy_node = 0;
+
+          for (; bits!=0; ) 
+          {
+            const size_t k = __bscf(bits);
+            if (PrimitiveIntersectorK::occluded(pre,ray,k,context,prim,num,lazy_node)) {
+              ray.geomID[k] = 0;
+              set(terminated, k);
+            }
+            /* lazy node */
+            if (unlikely(lazy_node)) {
+              stackPtr->ptr = lazy_node;
+              stackPtr->dist = cur_mask;
+              stackPtr++;
+            }
+          }
+
+          if (all(terminated)) break;
+        }
+
+      } while(valid_bits);
+
+#else
       const vfloat<K> inf = vfloat<K>(pos_inf);
 
       /* compute near/far per ray */
@@ -762,6 +1008,10 @@ namespace embree
         size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
 
         size_t lazy_node = 0;
+#if defined(__AVX__)
+        STAT3(shadow.trav_hit_boxes[popcnt(vbool<K>(!terminated))],1,1,1);
+#endif
+
         terminated |= PrimitiveIntersectorK::occluded(!terminated,pre,ray,context,prim,items,lazy_node);
         if (all(terminated)) break;
         ray_tfar = select(terminated, vfloat<K>(neg_inf), ray_tfar); // ignore node intersections for terminated rays
@@ -771,6 +1021,7 @@ namespace embree
           *sptr_near = neg_inf;   sptr_near++;
         }
       }
+#endif
       vint<K>::store(valid & terminated,&ray.geomID,0);
       AVX_ZERO_UPPER();
     }

@@ -24,7 +24,7 @@
 //#define rtcOccluded rtcIntersect
 //#define rtcOccludedVM rtcIntersectVM
 
-#define SIMPLE_SHADING 1
+#define SIMPLE_SHADING 0
 
 extern uniform ISPCScene* uniform g_ispc_scene;
 

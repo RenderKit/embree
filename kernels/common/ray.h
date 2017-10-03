@@ -974,7 +974,6 @@ namespace embree
   __forceinline Ray8 RayStreamAOS::getRayByOffset(const vint8& offset)
   {
     Ray8 ray;
-
     /* gather: instID */
     ray.instID = vint8::gather<1>((int*)&ptr->instID, offset);
 
