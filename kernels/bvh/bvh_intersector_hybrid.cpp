@@ -642,31 +642,31 @@ namespace embree
 
       const int shiftTable[8] = { (int)1 << 0, (int)1 << 1, (int)1 << 2, (int)1 << 3, (int)1 << 4, (int)1 << 5, (int)1 << 6, (int)1 << 7 };
 
-      vint<K> octant = ray.octant();
-      octant = select(valid, octant, vint<K>(0xffffffff));
+      // vint<K> octant = ray.octant();
+      // octant = select(valid, octant, vint<K>(0xffffffff));
 
-      do
+      // do
       {
-        const size_t valid_index = __bsf(valid_bits);
-        const vbool<K> octant_valid = octant[valid_index] == octant;
+//         const size_t valid_index = __bsf(valid_bits);
+//         const vbool<K> octant_valid = octant[valid_index] == octant;
 
-#if defined(__AVX__)
-        STAT3(shadow.trav_hit_boxes[popcnt(octant_valid)],1,1,1);
-#endif
-        valid_bits &= ~(size_t)movemask(octant_valid);
+// #if defined(__AVX__)
+//         STAT3(shadow.trav_hit_boxes[popcnt(octant_valid)],1,1,1);
+// #endif
+//         valid_bits &= ~(size_t)movemask(octant_valid);
 
         /*! stack state */
         StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes
         StackItemT<NodeRef>* stackPtr = stack + 1;        //!< current stack pointer
         //StackItemT<NodeRef>* stackEnd = stack + stackSizeSingle;
         stack[0].ptr = bvh->root;
-        stack[0].dist = movemask(octant_valid); //valid);
+        stack[0].dist = movemask(valid);
 
-        const size_t octant_index = __bsf(movemask(octant_valid));
+        //const size_t octant_index = __bsf(movemask(octant_valid));
 
-        const size_t nearX = nearXYZ.x[octant_index];
-        const size_t nearY = nearXYZ.y[octant_index];
-        const size_t nearZ = nearXYZ.z[octant_index];
+        const size_t nearX = nearXYZ.x[0];
+        const size_t nearY = nearXYZ.y[0];
+        const size_t nearZ = nearXYZ.z[0];
         const size_t farX  = nearX ^ sizeof(vfloat<N>);
         const size_t farY  = nearY ^ sizeof(vfloat<N>);
         const size_t farZ  = nearZ ^ sizeof(vfloat<N>);
@@ -758,28 +758,29 @@ namespace embree
           
                 const AlignedNode* __restrict__ const node = cur.alignedNode();
 
-                const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nearX));
-                const vfloat<Nx> bmaxX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + farX));
-                const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nearY));
-                const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + farY));
-                const vfloat<Nx> bminZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nearZ));
-                const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + farZ));
+                //const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nearX));
+                //const vfloat<Nx> bmaxX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + farX));
+                //const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nearY));
+                //const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + farY));
+                //const vfloat<Nx> bminZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nearZ));
+                //const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + farZ));
 
 
-                // const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nearX));
-                // const vfloat<Nx> bmaxX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->upper_x + farX));
-                // const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_y + nearY));
-                // const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->upper_y + farY));
-                // const vfloat<Nx> bminZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_z + nearZ));
-                // const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->upper_z + farZ));
+                const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x));
+                const vfloat<Nx> bmaxX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->upper_x));
+                const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_y));
+                const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->upper_y));
+                const vfloat<Nx> bminZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_z));
+                const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->upper_z));
           
                 size_t bits = cur_mask;
 
 #if defined(__AVX__)
-                //STAT3(shadow.trav_hit_boxes[__popcnt(cur_mask)],1,1,1);
+                STAT3(shadow.trav_hit_boxes[__popcnt(cur_mask)],1,1,1);
 #endif
 
                 assert(bits);
+                const vbool<Nx> valid_children = bminX <= bmaxX;
 
                 vint<Nx> vmask(zero);
                 do
@@ -799,11 +800,11 @@ namespace embree
                   const vfloat<Nx> tFarY  = msub(bmaxY, rdir.y[i], org_rdir.y[i]);
                   const vfloat<Nx> tFarZ  = msub(bmaxZ, rdir.z[i], org_rdir.z[i]);
 
-                  const vfloat<Nx> tNear  = maxi(tNearX,tNearY,tNearZ,vfloat<Nx>(ray_tnear[i]));
-                  const vfloat<Nx> tFar   = mini(tFarX ,tFarY ,tFarZ, vfloat<Nx>(ray_tfar[i]));
+                  //const vfloat<Nx> tNear  = maxi(tNearX,tNearY,tNearZ,vfloat<Nx>(ray_tnear[i]));
+                  //const vfloat<Nx> tFar   = mini(tFarX ,tFarY ,tFarZ, vfloat<Nx>(ray_tfar[i]));
  
-                  //const vfloat<Nx> tNear  = maxi(min(tNearX,tFarX), min(tNearY,tFarY), min(tNearZ,tFarZ), vfloat<Nx>(ray_tnear[i]));
-                  //const vfloat<Nx> tFar   = mini(max(tNearX,tFarX), max(tNearY,tFarY), max(tNearZ,tFarZ), vfloat<Nx>(ray_tfar[i]));
+                  const vfloat<Nx> tNear  = maxi(mini(tNearX,tFarX), mini(tNearY,tFarY), mini(tNearZ,tFarZ), vfloat<Nx>(ray_tnear[i]));
+                  const vfloat<Nx> tFar   = mini(maxi(tNearX,tFarX), maxi(tNearY,tFarY), maxi(tNearZ,tFarZ), vfloat<Nx>(ray_tfar[i]));
                   const vbool<Nx> hit_mask   = tNear <= tFar;
 #if defined(__AVX2__)
                   vmask = vmask | (bitmask & vint<Nx>(hit_mask));
@@ -811,7 +812,7 @@ namespace embree
                   vmask = select(hit_mask, vmask | bitmask, vmask);
 #endif
                 } while(bits);     
-                size_t mask = movemask((vmask != vint<Nx>(zero))); // & (bminX <= bmaxX));
+                size_t mask = movemask((vmask != vint<Nx>(zero)) & valid_children); // & );
                 if (unlikely(mask == 0)) goto pop;
 
                 /* select next child and push other children */
@@ -876,7 +877,8 @@ namespace embree
           if (all(terminated)) break;
         }
 
-      } while(valid_bits);
+      } 
+      // while(valid_bits);
 
 #else
       const vfloat<K> inf = vfloat<K>(pos_inf);

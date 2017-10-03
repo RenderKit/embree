@@ -73,7 +73,7 @@ namespace embree
       else
       {
         static const size_t MAX_RAYS_PER_OCTANT = VSIZEX;
-#if 1
+#if 0
 
         __aligned(64) unsigned int octants[8][MAX_RAYS_PER_OCTANT];
 
