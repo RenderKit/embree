@@ -47,7 +47,7 @@ namespace embree
         /*! calculates the mapping */
         __forceinline BinMapping(const BBox3fa& centBounds) 
         {
-          num = BINS; 
+          num = BINS;
           const vfloat4 eps = 1E-34f;
           const vfloat4 diag = max(eps, (vfloat4) centBounds.size());
           scale = select(diag > eps,vfloat4(0.99f*num)/diag,vfloat4(0.0f));
