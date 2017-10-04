@@ -28,7 +28,7 @@ namespace embree
       RayStreamAOS rayN(_rayN);
 
       /* use fast path for coherent ray mode */
-      if (unlikely(isCoherent(context->user->flags)))
+      if (unlikely(isCoherent(context->user->flags) || 1)) 
       {
         __aligned(64) RayK<VSIZEX> rays[MAX_PACKET_STREAM_SIZE];
         __aligned(64) RayK<VSIZEX>* rayPtrs[MAX_PACKET_STREAM_SIZE];

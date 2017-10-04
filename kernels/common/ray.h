@@ -20,7 +20,7 @@
 
 namespace embree
 {
-#if defined(__X86_64__)
+#if defined(__X86_64__) && 0
   static const size_t MAX_INTERNAL_STREAM_SIZE = 64;
 #else
   static const size_t MAX_INTERNAL_STREAM_SIZE = 32;

@@ -124,6 +124,16 @@ namespace embree
           return !valid0;
         }
 
+        static __forceinline bool occluded(RayK<K>& ray, size_t k, IntersectContext* context, const PrimitiveK* prim, size_t num, size_t& lazy_node) 
+        {
+          PrecalculationsK pre(vbool<K>(true),ray); // FIXME: might cause trouble
+          for (size_t i=0; i<num; i++) {
+            if (IntersectorK::occluded(pre,ray,k,context,prim[i]))
+              return true;
+          }
+          return false;
+        }
+
       };
   }
 }

@@ -634,7 +634,7 @@ namespace embree
       ray_tnear = select(valid,ray_tnear,vfloat<K>(pos_inf));
       ray_tfar  = select(valid,ray_tfar ,vfloat<K>(neg_inf));
 
-#if 1
+#if 0
       Vec3vi<K> nearXYZ;
       nearXYZ.x = select(rdir.x >= 0.0f,vint<K>(0*(int)sizeof(vfloat<N>)),vint<K>(1*(int)sizeof(vfloat<N>)));
       nearXYZ.y = select(rdir.y >= 0.0f,vint<K>(2*(int)sizeof(vfloat<N>)),vint<K>(3*(int)sizeof(vfloat<N>)));
@@ -664,12 +664,6 @@ namespace embree
 
         //const size_t octant_index = __bsf(movemask(octant_valid));
 
-        const size_t nearX = nearXYZ.x[0];
-        const size_t nearY = nearXYZ.y[0];
-        const size_t nearZ = nearXYZ.z[0];
-        const size_t farX  = nearX ^ sizeof(vfloat<N>);
-        const size_t farY  = nearY ^ sizeof(vfloat<N>);
-        const size_t farZ  = nearZ ^ sizeof(vfloat<N>);
 
         while (1) pop:
         {
@@ -677,11 +671,11 @@ namespace embree
           STAT3(shadow.trav_stack_pop,1,1,1);
           stackPtr--;
           NodeRef cur = NodeRef(stackPtr->ptr);
-          unsigned int cur_mask = stackPtr->dist & movemask(!terminated);
+          size_t cur_mask = stackPtr->dist & movemask(!terminated);
           if (unlikely(cur_mask == 0)) continue;
 
 #if defined(__AVX__) && 0
-          if (likely(__popcnt(cur_mask) == 1))
+          if (unlikely(__popcnt(cur_mask) == 1))
 #else
             if (0)
 #endif
@@ -690,6 +684,13 @@ namespace embree
               const Vec3vf<Nx> ray_rdir(vfloat<Nx>(rdir.x[k]),vfloat<Nx>(rdir.y[k]),vfloat<Nx>(rdir.z[k]));
               const Vec3vf<Nx> ray_org_rdir(vfloat<Nx>(org_rdir.x[k]),vfloat<Nx>(org_rdir.y[k]),vfloat<Nx>(org_rdir.z[k]));
               const vfloat<Nx> ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
+
+              const size_t nearX = nearXYZ.x[k];
+              const size_t nearY = nearXYZ.y[k];
+              const size_t nearZ = nearXYZ.z[k];
+              const size_t farX  = nearX ^ sizeof(vfloat<N>);
+              const size_t farY  = nearY ^ sizeof(vfloat<N>);
+              const size_t farZ  = nearZ ^ sizeof(vfloat<N>);
 
               while (true)
               {
@@ -755,6 +756,15 @@ namespace embree
 
                 /*! stop if we found a leaf node */
                 if (unlikely(cur.isLeaf())) break;
+#if defined(__AVX__) && 0
+                if (unlikely(__popcnt(cur_mask) == 1))
+                {
+                  stackPtr->ptr  = cur;
+                  stackPtr->dist = cur_mask;
+                  stackPtr++;
+                  goto pop;
+                }
+#endif
           
                 const AlignedNode* __restrict__ const node = cur.alignedNode();
 
@@ -812,7 +822,7 @@ namespace embree
                   vmask = select(hit_mask, vmask | bitmask, vmask);
 #endif
                 } while(bits);     
-                size_t mask = movemask((vmask != vint<Nx>(zero)) & valid_children); // & );
+                size_t mask = movemask( (vmask != vint<Nx>(zero)) & valid_children);
                 if (unlikely(mask == 0)) goto pop;
 
                 /* select next child and push other children */
