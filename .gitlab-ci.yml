@@ -14,8 +14,8 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-continuous-linux-x64-RelWithDebInfo-CLANG-SSE2-TBB-KLOCKWORK:
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:SSE2 tasking:TBB klocwork:ON intensity:0"
+continuous-linux-x64-RelWithDebInfo-ICC17-SSE2-TBB-KLOCKWORK:
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 isa:SSE2 tasking:TBB klocwork:ON intensity:0"
   tags:   [linux, klocwork]
   only:   [pushes]
 
