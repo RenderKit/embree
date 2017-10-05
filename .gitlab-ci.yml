@@ -24,7 +24,7 @@ continuous-centos7.4-x64-RelWithDebInfo-CLANG4-SSE-TBB:
    - ls -l /NAS/packages
    - ls -l /home/gitlab/.ssh
    - ls -l /home/gitlab/embree-models
-#   - ssh -tt -vvv git@git.sdvis.org
+   - ssh -tt -vvv git@git.sdvis.org
    - "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:SSE2 tasking:TBB intensity:1"
   tags:   [docker, nas]
   only:   [pushes]
