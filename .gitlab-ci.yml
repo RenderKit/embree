@@ -18,6 +18,7 @@ continuous-centos7.4-x64-RelWithDebInfo-CLANG4-SSE-TBB:
   image: embreedocker/centos:7.4
   script:
    - whoami
+   - echo $HOME  
    - chmod og-rwx /gitlab/.ssh
    - chmod og-rwx /gitlab/.ssh/config
    - ls -l /NAS/packages
