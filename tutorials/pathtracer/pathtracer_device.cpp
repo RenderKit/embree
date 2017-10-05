@@ -1215,6 +1215,9 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
   }
   else
     assert(false);
+
+  if (max(max(abs(dg.Ns.x), abs(dg.Ns.y)), abs(dg.Ns.z)) < 1E-4f)
+	dg.Ns = Vec3fa(1, 0, 0);
 }
 
 AffineSpace3fa calculate_interpolated_space (ISPCInstance* instance, float gtime)
