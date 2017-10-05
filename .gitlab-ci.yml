@@ -14,16 +14,22 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
+continuous-centos7.4-x64-RelWithDebInfo-CLANG4-SSE-TBB:
+  image: embreedocker/centos:7.4
+  script: "scripts/test.py --docker platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:SSE2 tasking:TBB intensity:2"
+  tags:   [docker]
+  only:   [pushes]
+  
 #####################################################################
 # Continuous Test
 ####################################################################
 
-continuous-windows-x64-RelWithDebInfo-V120-AVX2-TBB:
+.continuous-windows-x64-RelWithDebInfo-V120-AVX2-TBB:
   script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 isa:AVX2 tasking:TBB intensity:2"
   tags:   [win7, v120]
   only:   [pushes]
 
-continuous-windows-Win32-RelWithDebInfo-V140-AVX2-TBB:
+.continuous-windows-Win32-RelWithDebInfo-V140-AVX2-TBB:
   script: "scripts\\test.py platform:Win32 build:RelWithDebInfo compiler:V140 isa:AVX2 tasking:TBB intensity:2"
   tags:   [win7, v140]
   only:   [pushes]
@@ -33,7 +39,7 @@ continuous-windows-Win32-RelWithDebInfo-V140-AVX2-TBB:
 #  tags:   [win7, v140]
 #  only:   [pushes]
 
-continuous-windows-x64-RelWithDebInfo-V141-AVX2-TBB:
+.continuous-windows-x64-RelWithDebInfo-V141-AVX2-TBB:
   script: "scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V141 isa:AVX2 tasking:TBB intensity:2"
   tags:   [win7, v141]
   only:   [pushes]
@@ -49,7 +55,7 @@ continuous-windows-x64-RelWithDebInfo-V141-AVX2-TBB:
 #  only:   [pushes]
 
 
-continuous-macosx-x64-RelWithDebInfo-CLANG-AVX2-TBB:
+.continuous-macosx-x64-RelWithDebInfo-CLANG-AVX2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX2 tasking:TBB intensity:2"
   tags:   [mac, clang]
   only:   [pushes]
@@ -60,32 +66,32 @@ continuous-macosx-x64-RelWithDebInfo-CLANG-AVX2-TBB:
 #  only:   [pushes]
 
 
-continuous-linux-x64-RelWithDebInfo-CLANG-AVX2-TBB:
+.continuous-linux-x64-RelWithDebInfo-CLANG-AVX2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX2 tasking:TBB intensity:2"
   tags:   [linux, clang]
   only:   [pushes]
 
-continuous-linux-x64-RelWithDebInfo-GCC-AVX2-INT:
+.continuous-linux-x64-RelWithDebInfo-GCC-AVX2-INT:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC isa:AVX2 tasking:INT intensity:2"
   tags:   [linux, gcc]
   only:   [pushes]
 
-continuous-linux-x64-RelWithDebInfo-ICC17-AVX2-TBB-KLOCKWORK:
+.continuous-linux-x64-RelWithDebInfo-ICC17-AVX2-TBB-KLOCKWORK:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 isa:AVX2 tasking:TBB klocwork:ON intensity:2"
   tags:   [linux, icc17, klocwork]
   only:   [pushes]
 
-continuous-linux-knl-x64-RelWithDebInfo-CLANG4-AVX512KNL-TBB:
+.continuous-linux-knl-x64-RelWithDebInfo-CLANG4-AVX512KNL-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:[AVX512KNL] tasking:TBB intensity:2"
   tags:   [linux, knl, clang4]
   only:   [pushes]
 
-continuous-linux-skx-x64-RelWithDebInfo-ICC17-AVX512SKX-TBB:
+.continuous-linux-skx-x64-RelWithDebInfo-ICC17-AVX512SKX-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 isa:AVX512SKX tasking:TBB intensity:2"
   tags:   [linux, skx, icc17]
   only:   [pushes]
 
-continuous-linux-skx-x64-RelWithDebInfo-CLANG4-AVX512SKX-TBB:
+.continuous-linux-skx-x64-RelWithDebInfo-CLANG4-AVX512SKX-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX512SKX tasking:TBB intensity:2"
   tags:   [linux, skx, clang4]
   only:   [pushes]
