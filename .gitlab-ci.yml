@@ -17,8 +17,7 @@
 continuous-centos7.4-x64-RelWithDebInfo-CLANG4-SSE-TBB:
   image: embreedocker/centos:7.4
   script:
-   - cd $HOME
-   - ls -la
+   - whoami
    - ls -l /NAS/packages
    - ls -l /gitlab/.ssh
    - ls -l /gitlab/embree-models
