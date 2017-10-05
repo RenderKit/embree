@@ -76,7 +76,8 @@ def runConfig(config):
     conf.append("-D EMBREE_STACK_PROTECTOR=ON")
     if config["package"] == "ZIP": name = name + "-package-zip"
     else                         : name = name + "-package-installer"
-
+  nas = "/NAS/packages/apps"
+    
   if "klocwork" in config: name = name + "-klocwork"
   ispc_ext = "-vs2013"
   if "package" in config and OS == 'linux': # we need up to date cmake for RPMs to work properly
@@ -120,6 +121,33 @@ def runConfig(config):
       conf.append("-T \"LLVM-vs2013\"")
     else:
       raise ValueError('unknown compiler: ' + compiler + '')
+    
+  elif OS == "linux":
+    if (compiler == "ICC18"):
+      conf.append("-D CMAKE_CXX_COMPILER="+nas+"/intel/2018.0/bin/icpc -D CMAKE_C_COMPILER="+nas+"/intel/2018.0/bin/icc")
+      #env.append("module load intel/2018")
+    elif (compiler == "ICC17"):
+      conf.append("-D CMAKE_CXX_COMPILER="+nas+"/intel/2017.1/bin/icpc -D CMAKE_C_COMPILER="+nas+"/intel/2017.1/bin/icc")
+      #env.append("module load intel/2017")
+    elif (compiler == "ICC16"):
+      conf.append("-D CMAKE_CXX_COMPILER="+nas+"/intel/2016.3/bin/icpc -D CMAKE_C_COMPILER="+nas+"/intel/2016.3/bin/icc")
+      #env.append("module load intel/2016")
+    elif (compiler == "ICC15"):
+      conf.append("-D CMAKE_CXX_COMPILER="+nas+"/intel/2015.3/bin/icpc -D CMAKE_C_COMPILER="+nas+"/intel/2015.3/bin/icc")
+      #env.append("module load intel/2015")
+    elif (compiler == "ICC"):
+      conf.append("-D CMAKE_CXX_COMPILER=icpc -D CMAKE_C_COMPILER=icc")
+      env.append("module load intel")
+    elif (compiler == "GCC"):
+      conf.append("-D CMAKE_CXX_COMPILER=g++ -D CMAKE_C_COMPILER=gcc")
+    elif (compiler == "CLANG4"):
+      conf.append("-D CMAKE_CXX_COMPILER="+nas+"/clang/v4.0.0/bin/clang++" -D CMAKE_C_COMPILER=+nas+"/clang/v4.0.0/bin/clang")
+      #env.append("module load clang/4")
+    elif (compiler == "CLANG"):
+      conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
+    else:
+      raise ValueError('unknown compiler: ' + compiler + '')
+    
   else:
     if (compiler == "ICC18"):
       conf.append("-D CMAKE_CXX_COMPILER=icpc -D CMAKE_C_COMPILER=icc")
@@ -141,12 +169,6 @@ def runConfig(config):
     elif (compiler == "CLANG4"):
       conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
       env.append("module load clang/4")
-    elif (compiler == "CLANG3.9"):
-      conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
-      env.append("module load clang/3.9")
-    elif (compiler == "CLANG3.8"):
-      conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
-      env.append("module load clang/3.8")
     elif (compiler == "CLANG"):
       conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
     else:
