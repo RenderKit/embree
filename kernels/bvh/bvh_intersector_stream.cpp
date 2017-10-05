@@ -251,6 +251,9 @@ namespace embree
           size_t mask = movemask( (vmask != vint<Nx>(zero)) & valid_children);
           if (unlikely(mask == 0)) goto pop;
 
+          __aligned(64) unsigned int child_mask[Nx];
+          vint<Nx>::storeu(child_mask,vmask); // this explicit store here causes much better code generation
+
           /* select next child and push other children */
           //const BaseNode* node = cur.baseNode(types);
 
@@ -259,7 +262,7 @@ namespace embree
           assert(r < N);
           cur = node->child(r);         
           cur.prefetch(types);
-          cur_mask = ((unsigned int*)&vmask)[r];
+          cur_mask = child_mask[r];
 
           /* simple in order sequence */
           assert(cur != BVH::emptyNode);
@@ -275,7 +278,7 @@ namespace embree
 
             cur = node->child(r);          
             cur.prefetch(types);
-            cur_mask = ((unsigned int*)&vmask)[r];
+            cur_mask = child_mask[r];
             assert(cur != BVH::emptyNode);
             if (likely(mask == 0)) break;
             stackPtr->ptr  = cur;
