@@ -141,7 +141,7 @@ def runConfig(config):
     elif (compiler == "GCC"):
       conf.append("-D CMAKE_CXX_COMPILER=g++ -D CMAKE_C_COMPILER=gcc")
     elif (compiler == "CLANG4"):
-      conf.append("-D CMAKE_CXX_COMPILER="+nas+"/clang/v4.0.0/bin/clang++" -D CMAKE_C_COMPILER=+nas+"/clang/v4.0.0/bin/clang")
+      conf.append("-D CMAKE_CXX_COMPILER="+nas+"/clang/v4.0.0/bin/clang++ -D CMAKE_C_COMPILER="+nas+"/clang/v4.0.0/bin/clang")
       #env.append("module load clang/4")
     elif (compiler == "CLANG"):
       conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
