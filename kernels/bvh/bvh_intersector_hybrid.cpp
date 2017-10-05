@@ -825,7 +825,7 @@ namespace embree
         StackItemMaskT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes
         StackItemMaskT<NodeRef>* stackPtr = stack + 1;   //!< current stack pointer
         stack[0].ptr  = bvh->root;
-        stack[0].mask = (unsigned int)movemask(octant_valid);
+        stack[0].mask = movemask(octant_valid);
 
         while (1) pop:
         {
@@ -836,7 +836,7 @@ namespace embree
           NodeRef cur = NodeRef(stackPtr->ptr);
 
           /* cull node of active rays have already been terminated */
-          unsigned int m_active = stackPtr->mask & (~movemask(terminated));
+          size_t m_active = stackPtr->mask & (~movemask(terminated));
 
           if (unlikely(m_active == 0)) continue;
 
@@ -877,7 +877,7 @@ namespace embree
                   stackPtr++;
                 }
                 cur = child;
-                m_active = (unsigned int)movemask(lhit);
+                m_active = movemask(lhit);
               }
             } while(m_frusta_node);
 
@@ -901,7 +901,7 @@ namespace embree
 
           if (unlikely(lazy_node)) {
             stackPtr->ptr  = lazy_node;
-            stackPtr->mask = (unsigned int)movemask(octant_valid);
+            stackPtr->mask = movemask(octant_valid);
             stackPtr++;
           }
         }

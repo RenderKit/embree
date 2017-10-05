@@ -88,6 +88,6 @@ namespace embree
   struct __aligned(16) StackItemMaskT
   {
     T ptr;
-    unsigned mask;
+    size_t mask;
   };
 }
