@@ -85,9 +85,16 @@ namespace embree
 
   /*! An item on the stack holds the node ID and active ray mask. */
   template<typename T>
-  struct __aligned(16) StackItemMaskT
+  struct __aligned(8) StackItemMaskT
   {
     T ptr;
     size_t mask;
+  };
+
+  struct __aligned(8) StackItemMaskCoherent
+  {
+    size_t mask;
+    size_t parent;
+    size_t child;
   };
 }

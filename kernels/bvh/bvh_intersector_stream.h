@@ -26,19 +26,6 @@ namespace embree
 {
   namespace isa 
   {
-
-
-    // ==================================================================================================
-    // ==================================================================================================
-    // ==================================================================================================
-
-    struct __aligned(8) StackItemMaskCoherent
-    {
-      size_t mask;
-      size_t parent;
-      size_t child;
-    };
-
     template<int N, int Nx, int types>
     class BVHNNodeTraverserStreamHitCoherent
     {

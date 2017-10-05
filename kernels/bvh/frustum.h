@@ -18,7 +18,6 @@
 
 #include "bvh.h"
 #include "../common/ray.h"
-#include "../common/stack_item.h"
 
 namespace embree
 {
