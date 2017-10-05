@@ -15,7 +15,6 @@
 ## ======================================================================== ##
 
 ADD_SUBDIRECTORY(image)
-#ADD_SUBDIRECTORY(transport)
 ADD_SUBDIRECTORY(tutorial)
 ADD_SUBDIRECTORY(scenegraph)
 ADD_SUBDIRECTORY(lights)
