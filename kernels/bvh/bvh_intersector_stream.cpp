@@ -218,8 +218,6 @@ namespace embree
 #endif
 
           assert(bits);
-          const vbool<Nx> valid_children = bminX <= bmaxX;
-
           vint<Nx> vmask(zero);
           do
           {   
@@ -248,6 +246,8 @@ namespace embree
             vmask = select(hit_mask, vmask | bitmask, vmask);
 #endif
           } while(bits);     
+          const vbool<Nx> valid_children = bminX <= bmaxX;
+
           size_t mask = movemask( (vmask != vint<Nx>(zero)) & valid_children);
           if (unlikely(mask == 0)) goto pop;
 
@@ -312,7 +312,7 @@ namespace embree
             }
           }
 
-          if (unlikely(terminated == (size_t)-1)) { PING; break; }
+          if (unlikely(terminated == (size_t)-1)) { break; }
       }
     
 #else
