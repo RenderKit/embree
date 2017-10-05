@@ -16,4 +16,7 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(hair_geometry)
-ADD_EMBREE_TEST(hair_geometry)
+
+IF (EMBREE_TESTING_INTENSITY GREATER 1)
+  ADD_EMBREE_TEST(hair_geometry)
+ENDIF()

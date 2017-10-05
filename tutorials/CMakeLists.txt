@@ -41,6 +41,3 @@ ADD_SUBDIRECTORY(viewer_stream)
 ADD_SUBDIRECTORY(viewer_anim)
 ENDIF()
 
-# propagate menu links up
-SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} PARENT_SCOPE)
-

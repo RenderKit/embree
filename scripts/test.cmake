@@ -5,43 +5,63 @@ message("CTEST_BUILD_OPTIONS = ${CTEST_BUILD_OPTIONS}")
 SET(CTEST_PROJECT_NAME "Embree")
 SET(TEST_REPOSITORY "https://github.com/embree/embree.git")
 
-SET(TEST_ROOT_DIRECTORY "${CTEST_SCRIPT_DIRECTORY}/..")
-STRING(REPLACE ":/" ":\\" TEST_ROOT_DIRECTORY1 "${TEST_ROOT_DIRECTORY}") # cygwin git has issues with c:/dir paths 
-#SET(TEST_MODELS_DIRECTORY ${TEST_ROOT_DIRECTORY}/dependencies/embree-models)
-SET(TEST_MODELS_DIRECTORY $ENV{HOME}/embree-models)
-MESSAGE("TEST_MODELS_DIRECTORY = ${TEST_MODELS_DIRECTORY}")
+# set directories
+set(CTEST_SOURCE_DIRECTORY "${CTEST_SCRIPT_DIRECTORY}/..")
+set(CTEST_BINARY_DIRECTORY "${CTEST_SCRIPT_DIRECTORY}/../build")
+SET(TEST_MODELS_PARENT_DIRECTORY $ENV{HOME})
+SET(TEST_MODELS_DIRECTORY ${TEST_MODELS_PARENT_DIRECTORY}/embree-models)
 
-# set source and build directory
-set(CTEST_SOURCE_DIRECTORY "${TEST_ROOT_DIRECTORY1}")
-message("CTEST_SOURCE_DIRECTORY = ${CTEST_SOURCE_DIRECTORY}")
-set(CTEST_BINARY_DIRECTORY "${TEST_ROOT_DIRECTORY1}/build")
+# fix slashes under windows
+IF (WIN32)
+  STRING(REPLACE "\\" "/" CTEST_SOURCE_DIRECTORY "${CTEST_SOURCE_DIRECTORY}")
+  STRING(REPLACE "\\" "/" CTEST_BINARY_DIRECTORY "${CTEST_BINARY_DIRECTORY}")
+  STRING(REPLACE "\\" "/" TEST_MODELS_PARENT_DIRECTORY "${TEST_MODELS_PARENT_DIRECTORY}")
+  STRING(REPLACE "\\" "/" TEST_MODELS_DIRECTORY "${TEST_MODELS_DIRECTORY}")
+ENDIF()
+
+MESSAGE("CTEST_SOURCE_DIRECTORY = ${CTEST_SOURCE_DIRECTORY}")
+MESSAGE("CTEST_BINARY_DIRECTORY = ${CTEST_BINARY_DIRECTORY}")
+MESSAGE("TEST_MODELS_DIRECTORY = ${TEST_MODELS_DIRECTORY}")
+MESSAGE("http_proxy = $ENV{http_proxy}")
+MESSAGE("https_proxy = $ENV{https_proxy}")
+MESSAGE("no_proxy = $ENV{no_proxy}")
+MESSAGE("PATH = $ENV{PATH}")
 
 # update external model repository
 FIND_PROGRAM(CTEST_GIT_COMMAND NAMES git)
+
+MACRO(check_return_code)
+  IF (NOT "${retcode}" STREQUAL "0")
+    MESSAGE(FATAL_ERROR "error executing process")
+  ENDIF()
+ENDMACRO()
 
 # macro that updates the test models
 MACRO(update_test_models)
   IF(NOT EXISTS "${TEST_MODELS_DIRECTORY}")
     MESSAGE("cloning test models ...")
     EXECUTE_PROCESS(
-      COMMAND ${CTEST_GIT_COMMAND} "clone" "git@git.sdvis.org:embree-models.git" embree-models
-      WORKING_DIRECTORY $ENV{HOME}
-    )
+      COMMAND ${CTEST_GIT_COMMAND} "clone" "git@git.sdvis.org:embree-models" embree-models
+      WORKING_DIRECTORY ${TEST_MODELS_PARENT_DIRECTORY}
+      RESULT_VARIABLE retcode)
+    check_return_code()
   ELSE()
     MESSAGE("updating test models ...")
     EXECUTE_PROCESS(
       COMMAND ${CTEST_GIT_COMMAND} "fetch"
       WORKING_DIRECTORY ${TEST_MODELS_DIRECTORY}
-    )
+      RESULT_VARIABLE retcode)
+    check_return_code()
   ENDIF()
   IF (NOT TEST_MODELS_HASH)
     MESSAGE(FATAL_ERROR "no TEST_MODELS_HASH set")
   ENDIF()
   MESSAGE("checking out test models: ${TEST_MODELS_HASH}")
   EXECUTE_PROCESS(
-      COMMAND ${CTEST_GIT_COMMAND} "checkout" ${TEST_MODELS_HASH}
-      WORKING_DIRECTORY ${TEST_MODELS_DIRECTORY}
-  )
+    COMMAND ${CTEST_GIT_COMMAND} "checkout" ${TEST_MODELS_HASH}
+    WORKING_DIRECTORY ${TEST_MODELS_DIRECTORY}
+    RESULT_VARIABLE retcode)
+  check_return_code()
 ENDMACRO()
 
 # increase default output sizes for test outputs
@@ -108,10 +128,22 @@ set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} ..")
 ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
 ctest_start("Continuous")
 #ctest_update (RETURN_VALUE count)
-update_test_models()
-ctest_configure()
-ctest_build()
-IF (NOT CTEST_SKIP_TESTING)
-  ctest_test()
+IF (EMBREE_TESTING_INTENSITY GREATER 1)
+  update_test_models()
 ENDIF()
-ctest_submit()
+ctest_configure()
+
+ctest_build(RETURN_VALUE retval)
+message("test.cmake: ctest_build return value = ${retval}")
+IF (NOT retval EQUAL 0)
+  message(FATAL_ERROR "test.cmake: build failed")
+ENDIF()
+
+IF (EMBREE_TESTING_INTENSITY GREATER 0)
+  ctest_test(RETURN_VALUE retval)
+  message("test.cmake: ctest_test return value = ${retval}")
+  IF (NOT retval EQUAL 0)
+    message(FATAL_ERROR "test.cmake: some tests failed")
+  ENDIF()
+ENDIF()
+#ctest_submit()

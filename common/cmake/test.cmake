@@ -25,7 +25,7 @@ IF (BUILD_TESTING)
   CMAKE_HOST_SYSTEM_INFORMATION(RESULT memory QUERY TOTAL_PHYSICAL_MEMORY)
   
   SET(EMBREE_TESTING_MODEL_DIR "${PROJECT_SOURCE_DIR}/models" CACHE PATH "Path to the folder containing the Embree models for regression testing.")
-  SET(EMBREE_TESTING_INTENSIVE OFF CACHE BOOL "Turns intensive testing on.")
+  SET(EMBREE_TESTING_INTENSITY 2 CACHE INT "Intensity of testing (0 = no testing, 1 = verify only, 2 = light testing, 3 = intensive testing.")
   SET(EMBREE_TESTING_MEMCHECK OFF CACHE BOOL "Turns on memory checking for some tests.")
   SET(EMBREE_TESTING_BENCHMARK OFF CACHE BOOL "Turns benchmarking on.")
   SET(EMBREE_TESTING_BENCHMARK_DATABASE "${PROJECT_BINARY_DIR}" CACHE PATH "Path to database for benchmarking.")
@@ -35,34 +35,36 @@ IF (BUILD_TESTING)
   SET(EMBREE_TESTING_SDE OFF CACHE STRING "Uses SDE to run tests for specified CPU.")
   SET_PROPERTY(CACHE EMBREE_TESTING_SDE PROPERTY STRINGS OFF pnr nhm wsm snb ivb hsw bdw knl skl skx cnl)
 
-  IF(   NOT EXISTS "${EMBREE_TESTING_MODEL_DIR}/embree-models-subdiv.txt"
-     OR NOT EXISTS "${EMBREE_TESTING_MODEL_DIR}/embree-models-small-win32.txt"
-     OR NOT EXISTS "${EMBREE_TESTING_MODEL_DIR}/embree-models-small-x64.txt"
-     OR NOT EXISTS "${EMBREE_TESTING_MODEL_DIR}/embree-models-large.txt")
-    MESSAGE(FATAL_ERROR "Invalid Embree testing model repository. Either disable BUILD_TESTING or properly set EMBREE_TESTING_MODEL_DIR.")
-  ENDIF()
-  
-  FILE(READ "${EMBREE_TESTING_MODEL_DIR}/embree-models-subdiv.txt" models_subdiv)
-  STRING(REGEX REPLACE "\n" ";" models_subdiv "${models_subdiv}")
-  
-  FILE(READ "${EMBREE_TESTING_MODEL_DIR}/embree-models-small-win32.txt" models_small_win32)
-  STRING(REGEX REPLACE "\n" ";" models_small_win32 "${models_small_win32}")
-  
-  FILE(READ "${EMBREE_TESTING_MODEL_DIR}/embree-models-small-x64.txt" models_small_x64)
-  STRING(REGEX REPLACE "\n" ";" models_small_x64 "${models_small_x64}")
-  
-  FILE(READ "${EMBREE_TESTING_MODEL_DIR}/embree-models-large.txt" models_large)
-  STRING(REGEX REPLACE "\n" ";" models_large "${models_large}")
-
-  IF (EMBREE_TESTING_INTENSIVE)
-    SET(models ${models_small_x64})
-    IF (${memory} GREATER 10000) 
-      SET(models ${models} ${models_large})
+  IF (EMBREE_TESTING_INTENSITY GREATER 1)
+    IF(   NOT EXISTS "${EMBREE_TESTING_MODEL_DIR}/embree-models-subdiv.txt"
+       OR NOT EXISTS "${EMBREE_TESTING_MODEL_DIR}/embree-models-small-win32.txt"
+       OR NOT EXISTS "${EMBREE_TESTING_MODEL_DIR}/embree-models-small-x64.txt"
+       OR NOT EXISTS "${EMBREE_TESTING_MODEL_DIR}/embree-models-large.txt")
+      MESSAGE(FATAL_ERROR "Invalid Embree testing model repository. Either disable BUILD_TESTING or properly set EMBREE_TESTING_MODEL_DIR.")
     ENDIF()
-  ELSE()
-    SET(models ${models_small_win32})
-  ENDIF()
+  
+    FILE(READ "${EMBREE_TESTING_MODEL_DIR}/embree-models-subdiv.txt" models_subdiv)
+    STRING(REGEX REPLACE "\n" ";" models_subdiv "${models_subdiv}")
+  
+    FILE(READ "${EMBREE_TESTING_MODEL_DIR}/embree-models-small-win32.txt" models_small_win32)
+    STRING(REGEX REPLACE "\n" ";" models_small_win32 "${models_small_win32}")
+  
+    FILE(READ "${EMBREE_TESTING_MODEL_DIR}/embree-models-small-x64.txt" models_small_x64)
+    STRING(REGEX REPLACE "\n" ";" models_small_x64 "${models_small_x64}")
+  
+    FILE(READ "${EMBREE_TESTING_MODEL_DIR}/embree-models-large.txt" models_large)
+    STRING(REGEX REPLACE "\n" ";" models_large "${models_large}")
 
+    IF (EMBREE_TESTING_INTENSITY GREATER 2)
+      SET(models ${models_small_x64})
+      IF (${memory} GREATER 10000) 
+        SET(models ${models} ${models_large})
+      ENDIF()
+    ELSE()
+      SET(models ${models_small_win32})
+    ENDIF()
+  ENDIF()
+  
   IF (WIN32)
     SET(MY_PROJECT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}")
   ELSE()

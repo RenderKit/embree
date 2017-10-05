@@ -16,5 +16,9 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(displacement_geometry)
-ADD_EMBREE_TEST(displacement_geometry)
+
+IF (EMBREE_TESTING_INTENSITY GREATER 1)
+  ADD_EMBREE_TEST(displacement_geometry)
+ENDIF()
+
 

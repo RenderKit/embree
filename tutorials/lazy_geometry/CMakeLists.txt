@@ -16,4 +16,8 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(lazy_geometry)
-ADD_EMBREE_TEST(lazy_geometry)
+
+IF (EMBREE_TESTING_INTENSITY GREATER 1)
+  ADD_EMBREE_TEST(lazy_geometry)
+ENDIF()
+
