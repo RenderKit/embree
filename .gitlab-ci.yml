@@ -19,11 +19,11 @@ continuous-centos7.4-x64-RelWithDebInfo-CLANG4-SSE-TBB:
   script:
    - whoami
    - echo $HOME  
-   - chmod og-rwx /gitlab/.ssh
-   - chmod og-rwx /gitlab/.ssh/config
+   - chmod og-rwx /home/gitlab/.ssh
+   - chmod og-rwx /home/gitlab/.ssh/config
    - ls -l /NAS/packages
-   - ls -l /gitlab/.ssh
-   - ls -l /gitlab/embree-models
+   - ls -l /home/gitlab/.ssh
+   - ls -l /home/gitlab/embree-models
 #   - ssh -tt -vvv git@git.sdvis.org
    - "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:SSE2 tasking:TBB intensity:1"
   tags:   [docker, nas]
