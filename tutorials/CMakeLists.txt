@@ -41,18 +41,18 @@ IF (WIN32)
 ELSE (WIN32)
   
   FIND_PACKAGE(GLUT)
-  IF (NOT GLUT_FOUND)
-    MESSAGE(WARNING "GLUT not found! Tutorials will not get built!")
-    SET(EMBREE_TUTORIALS OFF)
-  ENDIF()
+#  IF (NOT GLUT_FOUND)
+#    MESSAGE(WARNING "GLUT not found! Tutorials will not get built!")
+#    SET(EMBREE_TUTORIALS OFF)
+#  ENDIF()
   
 ENDIF (WIN32)
 
 FIND_PACKAGE(OpenGL)
-IF (NOT OpenGL_FOUND)
-  MESSAGE(WARNING "OpenGL not found! Tutorials will not get built!")
-  SET(EMBREE_TUTORIALS OFF)
-ENDIF()
+#IF (NOT OpenGL_FOUND)
+#  MESSAGE(WARNING "OpenGL not found! Tutorials will not get built!")
+#  SET(EMBREE_TUTORIALS OFF)
+#ENDIF()
 
 IF (EMBREE_TUTORIALS)
 

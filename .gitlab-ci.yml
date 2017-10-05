@@ -14,21 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-continuous-centos7.4-x64-RelWithDebInfo-CLANG4-SSE-TBB:
-  image: embreedocker/centos:7.4
-  script:
-#   - whoami
-#   - echo $HOME  
-#   - chmod og-rwx /home/gitlab/.ssh
-#   - chmod og-rwx /home/gitlab/.ssh/config
-#   - ls -l /NAS/packages
-#   - ls -l /home/gitlab/.ssh
-#   - ls -l /home/gitlab/embree-models
-#   - ssh -vvv git@git.sdvis.org
-   - "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:SSE2 tasking:TBB intensity:2"
-  tags:   [docker, nas]
-  only:   [pushes]
-  
 #####################################################################
 # Continuous Test
 ####################################################################
@@ -105,6 +90,12 @@ continuous-centos7.4-x64-RelWithDebInfo-CLANG4-SSE-TBB:
   tags:   [linux, skx, clang4]
   only:   [pushes]
 
+continuous-centos7.4-x64-RelWithDebInfo-CLANG4-SSE-TBB:
+  image: embreedocker/centos:7.4
+  script:"scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:SSE2 tasking:TBB intensity:2"
+  tags:   [docker, nas]
+  only:   [pushes]
+  
 #####################################################################
 # Intensive Nightly Tests
 ####################################################################
