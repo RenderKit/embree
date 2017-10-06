@@ -1397,6 +1397,7 @@ namespace embree
             "expected = " << bytes_expected/num_primitives << " B, " << 
             "1 thread = " << bytes_one_thread.second/num_primitives << " B (" << 100.0f*expected_to_single << " %)" << (failed0 ? state->red(" [FAILED]") : "") << ", " << 
             "all_threads = " << bytes_all_threads.second/num_primitives << " B (" << 100.0f*single_to_threaded << " %)" << (failed1 ? state->red(" [FAILED]") : "") << std::endl;
+        }
       }
       return ret;
     }
