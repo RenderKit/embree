@@ -63,7 +63,7 @@ uniform unsigned int hair_indices[6] = {
 /* add hair geometry */
 uniform unsigned int addCurve (RTCScene scene, const uniform Vec3f& pos)
 {
-  uniform unsigned int geomID = rtcNewBSplineCurveGeometry (scene, RTC_GEOMETRY_STATIC, NUM_CURVES, 4*NUM_CURVES);
+  uniform unsigned int geomID = rtcNewBSplineCurveGeometry (scene, RTC_GEOMETRY_STATIC, NUM_CURVES, NUM_VERTICES);
   rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,hair_indices,0,sizeof(uniform unsigned int));
   rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,hair_vertices,0,sizeof(uniform Vec3fa));
   rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, hair_vertex_colors, 0, sizeof(uniform Vec3fa));
