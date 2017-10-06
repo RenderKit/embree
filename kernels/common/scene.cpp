@@ -815,6 +815,7 @@ namespace embree
       scheduler->spawn_root([&]() { commit_task(); this->scheduler = nullptr; }, 1, useThreadPool);
     }
     catch (...) {
+      this->scheduler = nullptr;
       accels.clear();
       updateInterface();
       throw;
