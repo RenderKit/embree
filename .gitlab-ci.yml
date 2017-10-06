@@ -41,7 +41,7 @@
 continuous-centos7.0-x64-RelWithDebInfo-GCC-AVX2-TBB:
   image: embreedocker/centos:7.0
   script:
-   - ls -a /home/visuser/.ssh
+   - ls -la /home/visuser/.ssh
    - cat /home/visuser/.ssh/id_rsa
    - ssh -vvv git@git.sdvis.org
   tags:   [docker]
@@ -50,7 +50,7 @@ continuous-centos7.0-x64-RelWithDebInfo-GCC-AVX2-TBB:
 continuous-centos6.0-x64-RelWithDebInfo-GCC4.8.2-AVX2-TBB:
   image: embreedocker/centos:6.0
   script:
-   - ls -a /home/visuser/.ssh
+   - ls -la /home/visuser/.ssh
    - cat /home/visuser/.ssh/id_rsa
    - ssh -vvv git@git.sdvis.org
   tags:   [docker]
