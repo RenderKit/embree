@@ -19,7 +19,7 @@
 /* scene data */
 RTCDevice g_device = NULL;
 RTCScene g_scene = NULL;
-uniform Vec3f* uniform face_colors = NULL;
+uniform Vec3f face_colors[12];
 
 /* accumulation buffer */
 uniform Vec3fa* uniform g_accu = NULL;
@@ -116,7 +116,6 @@ uniform unsigned int addTriangleCube (RTCScene scene, const uniform Vec3f& pos, 
   }
 
   /* create face color array */
-  face_colors = uniform new uniform Vec3f[12];
   face_colors[0] = make_Vec3f(1,0,0);
   face_colors[1] = make_Vec3f(1,0,0);
   face_colors[2] = make_Vec3f(0,1,0);
@@ -269,7 +268,7 @@ uniform unsigned int addLines (RTCScene scene, const uniform Vec3f& pos, uniform
 }
 
 /* adds an instanced triangle cube to the scene, rotate instance */
-uniform unsigned int addInstancedTriangleCube (RTCScene global_scene, const uniform Vec3f& pos, uniform unsigned int num_time_steps)
+RTCScene addInstancedTriangleCube (RTCScene global_scene, const uniform Vec3f& pos, uniform unsigned int num_time_steps)
 {
   RTCScene scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
   uniform unsigned int meshID = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 12, 8, 1);
@@ -287,11 +286,11 @@ uniform unsigned int addInstancedTriangleCube (RTCScene global_scene, const unif
     uniform AffineSpace3f xfm = translation*rotation*scale;
     rtcSetTransform2(global_scene,instID,RTC_MATRIX_COLUMN_MAJOR,(uniform float* uniform)&xfm,t);
   }
-  return instID;
+  return scene;
 }
 
 /* adds an instanced quad cube to the scene, rotate instance and geometry */
-uniform unsigned int addInstancedQuadCube (RTCScene global_scene, const uniform Vec3f& pos, uniform unsigned int num_time_steps)
+RTCScene addInstancedQuadCube (RTCScene global_scene, const uniform Vec3f& pos, uniform unsigned int num_time_steps)
 {
   RTCScene scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
   uniform unsigned int geomID = rtcNewQuadMesh (scene, RTC_GEOMETRY_STATIC, 6, 8, num_time_steps);
@@ -322,7 +321,7 @@ uniform unsigned int addInstancedQuadCube (RTCScene global_scene, const uniform 
     uniform AffineSpace3f xfm = translation*rotation;
     rtcSetTransform2(global_scene,instID,RTC_MATRIX_COLUMN_MAJOR,(uniform float* uniform)&xfm,t);
   }
-  return instID;
+  return scene;
 }
 
 // ======================================================================== //
@@ -466,6 +465,13 @@ uniform unsigned int addGroundPlane (RTCScene scene)
   return mesh;
 }
 
+RTCScene scene0 = NULL;
+RTCScene scene1 = NULL;
+RTCScene scene2 = NULL;
+RTCScene scene3 = NULL;
+uniform Sphere* uniform sphere0 = NULL;
+uniform Sphere* uniform sphere1 = NULL;
+
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
@@ -504,14 +510,14 @@ export void device_init (uniform int8* uniform cfg)
   addCurveOrHair (g_scene,make_Vec3f(+5,1, 0),true,g_num_time_steps);
   addCurveOrHair (g_scene,make_Vec3f(+5,5, 0),true,g_num_time_steps2);
 
-  addInstancedTriangleCube(g_scene,make_Vec3f(-5,1,+5),g_num_time_steps);
-  addInstancedTriangleCube(g_scene,make_Vec3f(-5,5,+5),g_num_time_steps2);
+  scene0 = addInstancedTriangleCube(g_scene,make_Vec3f(-5,1,+5),g_num_time_steps);
+  scene1 = addInstancedTriangleCube(g_scene,make_Vec3f(-5,5,+5),g_num_time_steps2);
 
-  addInstancedQuadCube    (g_scene,make_Vec3f( 0,1,+5),g_num_time_steps);
-  addInstancedQuadCube    (g_scene,make_Vec3f( 0,5,+5),g_num_time_steps2);
+  scene2 = addInstancedQuadCube    (g_scene,make_Vec3f( 0,1,+5),g_num_time_steps);
+  scene3 = addInstancedQuadCube    (g_scene,make_Vec3f( 0,5,+5),g_num_time_steps2);
 
-  addUserGeometrySphere   (g_scene,make_Vec3f(+5,1,+5),1.0f,g_num_time_steps);
-  addUserGeometrySphere   (g_scene,make_Vec3f(+5,5,+5),1.0f,g_num_time_steps2);
+  sphere0 = addUserGeometrySphere   (g_scene,make_Vec3f(+5,1,+5),1.0f,g_num_time_steps);
+  sphere1 = addUserGeometrySphere   (g_scene,make_Vec3f(+5,5,+5),1.0f,g_num_time_steps2);
 
   addGroundPlane(g_scene);
 
@@ -679,9 +685,14 @@ export void device_render (uniform int* uniform pixels,
 /* called by the C++ code for cleanup */
 export void device_cleanup ()
 {
+  delete sphere0; sphere0 = NULL;
+  delete sphere1; sphere1 = NULL;
+  rtcDeleteScene(scene0); scene0 = NULL;
+  rtcDeleteScene(scene1); scene1 = NULL;
+  rtcDeleteScene(scene2); scene2 = NULL;
+  rtcDeleteScene(scene3); scene3 = NULL;
   rtcDeleteScene (g_scene); g_scene = NULL;
   rtcDeleteDevice(g_device); g_device = NULL;
-  delete[] face_colors; face_colors = NULL;
   delete[] g_accu; g_accu = NULL;
   g_accu_width = 0;
   g_accu_height = 0;
