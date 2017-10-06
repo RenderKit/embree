@@ -61,8 +61,8 @@ continuous-macosx-x64-RelWithDebInfo-CLANG-AVX2-TBB:
 #  only:   [pushes]
 
 
-continuous-linux-x64-RelWithDebInfo-CLANG-AVX2-TBB:
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX2 tasking:TBB intensity:2"
+continuous-linux-x64-RelWithDebInfo-CLANG4-AVX2-TBB:
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX2 tasking:TBB intensity:2 addrsanitizer:ON"
   tags:   [linux, clang]
   only:   [pushes]
 
@@ -174,7 +174,7 @@ nightly-macosx-x64-RelWithDebInfo-ICC16-AVX2-TBB:
 # CLANG compilation and testing of different ISAs
 
 nightly-linux-x64-RelWithDebInfo-CLANG-SSE2-TBB:
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:SSE2 tasking:TBB intensity:3"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:SSE2 tasking:TBB intensity:3 addrsanitizer:ON"
   tags:   [linux, clang]
   only:   [schedules]
 

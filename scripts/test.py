@@ -66,6 +66,8 @@ def runConfig(config):
   else                    : benchmark = "OFF"
   if "sde" in config: sde = config["sde"]
   else              : sde = "OFF"
+  if "addrsanitizer" in config:
+    conf.append("-D EMBREE_ADDRESS_SANITIZER="+config["addrsanitizer"]+"")
   if "intensity" in config:
     conf.append("-D EMBREE_TESTING_INTENSITY="+config["intensity"])
   if tasking == "INT": tasking = "INTERNAL"
