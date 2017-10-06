@@ -40,7 +40,7 @@ continuous-macosx-x64-RelWithDebInfo-CLANG-AVX2-TBB:
   only:   [pushes]
   
 continuous-linux-x64-RelWithDebInfo-CLANG4-AVX2-TBB:
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX2 tasking:TBB intensity:2 addrsanitizer:ON"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX2 tasking:TBB intensity:2" # addrsanitizer:ON
   tags:   [linux, clang]
   only:   [pushes]
 
