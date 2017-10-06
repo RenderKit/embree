@@ -14,30 +14,73 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-ADD_SUBDIRECTORY(common)
+IF (WIN32)
 
-ADD_SUBDIRECTORY(verify)
-ADD_SUBDIRECTORY(triangle_geometry)
-ADD_SUBDIRECTORY(dynamic_scene)
-ADD_SUBDIRECTORY(user_geometry)
-ADD_SUBDIRECTORY(viewer)
-ADD_SUBDIRECTORY(instanced_geometry)
-ADD_SUBDIRECTORY(intersection_filter)
-ADD_SUBDIRECTORY(pathtracer)
-ADD_SUBDIRECTORY(hair_geometry)
-ADD_SUBDIRECTORY(subdivision_geometry)
-ADD_SUBDIRECTORY(displacement_geometry)
-ADD_SUBDIRECTORY(bvh_builder)
-ADD_SUBDIRECTORY(lazy_geometry)
-ADD_SUBDIRECTORY(bvh_access)
-ADD_SUBDIRECTORY(motion_blur_geometry)
-ADD_SUBDIRECTORY(interpolation)
-ADD_SUBDIRECTORY(convert)
-ADD_SUBDIRECTORY(curve_geometry)
-ADD_SUBDIRECTORY(buildbench)
+  # detect and select Win32 or x64
+  IF (CMAKE_SIZEOF_VOID_P EQUAL 8)
+    SET(ARCH x64)
+  ELSE()
+    SET(ARCH Win32)
+  ENDIF()
 
-IF (EMBREE_RAY_PACKETS)
-ADD_SUBDIRECTORY(viewer_stream)
-ADD_SUBDIRECTORY(viewer_anim)
+  # detect Visual Studio version
+  IF (MSVC12)
+    SET(VCVER vc12)
+  ELSE()
+    SET(VCVER vc14)
+  ENDIF()
+
+  FIND_PATH(GLUT_INCLUDE_DIR NAMES GL/glut.h PATHS common/freeglut/include)
+  FIND_LIBRARY(GLUT_glut_LIBRARY freeglut common/freeglut/${ARCH}/${VCVER})
+  SET(GLUT_LIBRARIES ${GLUT_glut_LIBRARY})
+  MARK_AS_ADVANCED(
+    GLUT_INCLUDE_DIR
+    GLUT_glut_LIBRARY
+  )
+
+ELSE (WIN32)
+  
+  FIND_PACKAGE(GLUT)
+#  IF (NOT GLUT_FOUND)
+#    MESSAGE(WARNING "GLUT not found! Tutorials will not get built!")
+#    SET(EMBREE_TUTORIALS OFF)
+#  ENDIF()
+  
+ENDIF (WIN32)
+
+FIND_PACKAGE(OpenGL)
+#IF (NOT OpenGL_FOUND)
+#  MESSAGE(WARNING "OpenGL not found! Tutorials will not get built!")
+#  SET(EMBREE_TUTORIALS OFF)
+#ENDIF()
+
+IF (EMBREE_TUTORIALS)
+
+  ADD_SUBDIRECTORY(common)
+
+  ADD_SUBDIRECTORY(verify)
+  ADD_SUBDIRECTORY(triangle_geometry)
+  ADD_SUBDIRECTORY(dynamic_scene)
+  ADD_SUBDIRECTORY(user_geometry)
+  ADD_SUBDIRECTORY(viewer)
+  ADD_SUBDIRECTORY(instanced_geometry)
+  ADD_SUBDIRECTORY(intersection_filter)
+  ADD_SUBDIRECTORY(pathtracer)
+  ADD_SUBDIRECTORY(hair_geometry)
+  ADD_SUBDIRECTORY(subdivision_geometry)
+  ADD_SUBDIRECTORY(displacement_geometry)
+  ADD_SUBDIRECTORY(bvh_builder)
+  ADD_SUBDIRECTORY(lazy_geometry)
+  ADD_SUBDIRECTORY(bvh_access)
+  ADD_SUBDIRECTORY(motion_blur_geometry)
+  ADD_SUBDIRECTORY(interpolation)
+  ADD_SUBDIRECTORY(convert)
+  ADD_SUBDIRECTORY(curve_geometry)
+  ADD_SUBDIRECTORY(buildbench)
+
+  IF (EMBREE_RAY_PACKETS)
+    ADD_SUBDIRECTORY(viewer_stream)
+    ADD_SUBDIRECTORY(viewer_anim)
+  ENDIF()
 ENDIF()
 

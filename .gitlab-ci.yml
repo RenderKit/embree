@@ -14,6 +14,7 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
+
 #####################################################################
 # Continuous Test
 ####################################################################
@@ -60,8 +61,8 @@ continuous-macosx-x64-RelWithDebInfo-CLANG-AVX2-TBB:
 #  only:   [pushes]
 
 
-continuous-linux-x64-RelWithDebInfo-CLANG-AVX2-TBB:
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:AVX2 tasking:TBB intensity:2"
+continuous-linux-x64-RelWithDebInfo-CLANG4-AVX2-TBB:
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX2 tasking:TBB intensity:2 addrsanitizer:ON"
   tags:   [linux, clang]
   only:   [pushes]
 
@@ -89,59 +90,6 @@ continuous-linux-skx-x64-RelWithDebInfo-CLANG4-AVX512SKX-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX512SKX tasking:TBB intensity:2"
   tags:   [linux, skx, clang4]
   only:   [pushes]
-
-
-# Testing on different Linux distributions
-
-continuous-ubuntu17.04-x64-RelWithDebInfo-GCC-AVX2-TBB:
-  image: embreedocker/ubuntu:17.04
-  script: "scripts/test.py --docker platform:x64 build:RelWithDebInfo compiler:GCC isa:SSE2 tasking:TBB intensity:1"
-  tags:   [docker]
-  only:   [pushes]
-
-continuous-ubuntu16.04-x64-RelWithDebInfo-GCC-AVX2-TBB:
-  image: embreedocker/ubuntu:16.04
-  script: "scripts/test.py --docker platform:x64 build:RelWithDebInfo compiler:GCC isa:SSE2 tasking:TBB intensity:1"
-  tags:   [docker]
-  only:   [pushes]
-
-continuous-ubuntu14.04-x64-RelWithDebInfo-GCC-AVX2-TBB:
-  image: embreedocker/ubuntu:14.04
-  script: "scripts/test.py --docker platform:x64 build:RelWithDebInfo compiler:GCC isa:SSE2 tasking:TBB intensity:1"
-  tags:   [docker]
-  only:   [pushes]
-
-continuous-centos7.4-x64-RelWithDebInfo-GCC-AVX2-TBB:
-  image: embreedocker/centos:7.4
-  script: "scripts/test.py --docker platform:x64 build:RelWithDebInfo compiler:GCC isa:SSE2 tasking:TBB intensity:1"
-  tags:   [docker]
-  only:   [pushes]
-
-continuous-centos7.0-x64-RelWithDebInfo-GCC-AVX2-TBB:
-  image: embreedocker/centos:7.0
-  script: "scripts/test.py --docker platform:x64 build:RelWithDebInfo compiler:GCC isa:SSE2 tasking:TBB intensity:1"
-  tags:   [docker]
-  only:   [pushes]
-
-
-continuous-centos6.0-x64-RelWithDebInfo-GCC4.8.2-AVX2-TBB:
-  image: embreedocker/centos:6.0
-  script: "scripts/test.py --docker platform:x64 build:RelWithDebInfo compiler:GCC isa:SSE2 tasking:TBB intensity:1"
-  tags:   [docker]
-  only:   [pushes]
-
-continuous-fedora26-x64-RelWithDebInfo-GCC-AVX2-TBB:
-  image: embreedocker/fedora:26
-  script: "scripts/test.py --docker platform:x64 build:RelWithDebInfo compiler:GCC isa:SSE2 tasking:TBB intensity:1"
-  tags:   [docker]
-  only:   [pushes]
-  
-continuous-fedora25-x64-RelWithDebInfo-GCC-AVX2-TBB:
-  image: embreedocker/fedora:25
-  script: "scripts/test.py --docker platform:x64 build:RelWithDebInfo compiler:GCC isa:SSE2 tasking:TBB intensity:1"
-  tags:   [docker]
-  only:   [pushes]
-
 
 #####################################################################
 # Intensive Nightly Tests
@@ -226,7 +174,7 @@ nightly-macosx-x64-RelWithDebInfo-ICC16-AVX2-TBB:
 # CLANG compilation and testing of different ISAs
 
 nightly-linux-x64-RelWithDebInfo-CLANG-SSE2-TBB:
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:SSE2 tasking:TBB intensity:3"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG isa:SSE2 tasking:TBB intensity:3 addrsanitizer:ON"
   tags:   [linux, clang]
   only:   [schedules]
 
@@ -300,6 +248,58 @@ nightly-linux-skx-x64-RelWithDebInfo-ICC18-AVX512SKX-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC18 isa:AVX512SKX tasking:TBB intensity:3"
   tags:   [skx, linux, icc18]
   only:   [schedules]
+
+
+# Testing on different Linux distributions
+
+nightly-ubuntu17.04-x64-RelWithDebInfo-GCC-AVX2-TBB:
+  image: embreedocker/ubuntu:17.04
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC isa:AVX2 tasking:TBB intensity:2"
+  tags:   [docker]
+  only:   [schedules]
+
+nightly-ubuntu16.04-x64-RelWithDebInfo-GCC-AVX2-TBB:
+  image: embreedocker/ubuntu:16.04
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC isaAVX2 tasking:TBB intensity:2"
+  tags:   [docker]
+  only:   [schedules]
+
+nightly-ubuntu14.04-x64-RelWithDebInfo-GCC-AVX2-TBB:
+  image: embreedocker/ubuntu:14.04
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC isaAVX2 tasking:TBB intensity:2"
+  tags:   [docker]
+  only:   [schedules]
+
+nightly-centos7.4-x64-RelWithDebInfo-GCC-AVX2-TBB:
+  image: embreedocker/centos:7.4
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC isaAVX2 tasking:TBB intensity:2"
+  tags:   [docker]
+  only:   [schedules]
+
+nightly-centos7.0-x64-RelWithDebInfo-GCC-AVX2-TBB:
+  image: embreedocker/centos:7.0
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC isaAVX2 tasking:TBB intensity:2"
+  tags:   [docker]
+  only:   [schedules]
+
+nightly-centos6.0-x64-RelWithDebInfo-GCC4.8.2-AVX2-TBB:
+  image: embreedocker/centos:6.0
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC isaAVX2 tasking:TBB intensity:2"
+  tags:   [docker]
+  only:   [schedules]
+
+nightly-fedora26-x64-RelWithDebInfo-GCC-AVX2-TBB:
+  image: embreedocker/fedora:26
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC isaAVX2 tasking:TBB intensity:2"
+  tags:   [docker]
+  only:   [schedules]
+  
+nightly-fedora25-x64-RelWithDebInfo-GCC-AVX2-TBB:
+  image: embreedocker/fedora:25
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC isaAVX2 tasking:TBB intensity:2"
+  tags:   [docker]
+  only:   [schedules]
+
 
 # Compilation test of disabled features
 

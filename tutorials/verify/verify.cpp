@@ -1244,7 +1244,7 @@ namespace embree
       case TRIANGLE_MESH_MB: switch (sflags) {
         case RTC_SCENE_STATIC : return avx2 ? 55.0f*NN : 45.0f*NN; // triangle4imb
         case RTC_SCENE_ROBUST : return avx2 ? 55.0f*NN : 45.0f*NN; // triangle4imb
-        case RTC_SCENE_COMPACT: return avx2 ? 45.0f*NN : 45.0f*NN; // triangle4imb
+        case RTC_SCENE_COMPACT: return avx2 ? 47.0f*NN : 45.0f*NN; // triangle4imb
         default: return inf;
         }
         
@@ -1381,7 +1381,7 @@ namespace embree
         double single_to_threaded = double(bytes_all_threads.second)/double(bytes_one_thread.second);
      
         const bool failed0 = expected_to_single > 1.0f;
-        const bool failed1 = sflags == RTC_SCENE_DYNAMIC ? single_to_threaded > 1.30f : single_to_threaded > 1.12f;
+        const bool failed1 = sflags == RTC_SCENE_DYNAMIC ? single_to_threaded > 1.30f : single_to_threaded > 1.14f;
 
         if (failed0 || failed1) {
           std::cout << state->red ("-") << std::flush;
@@ -1389,13 +1389,15 @@ namespace embree
         } else {
           std::cout << state->green ("+") << std::flush;
         }
-#if 0
-        double num_primitives = bytes_one_thread.first;
-        std::cout << "N = " << num_primitives << ", n = " << ceilf(sqrtf(N/4.0f)) << ", "
-          "expected = " << bytes_expected/num_primitives << " B, " << 
-          "1 thread = " << bytes_one_thread.second/num_primitives << " B (" << 100.0f*expected_to_single << " %)" << (failed0 ? state->red(" [FAILED]") : "") << ", " << 
-          "all_threads = " << bytes_all_threads.second/num_primitives << " B (" << 100.0f*single_to_threaded << " %)" << (failed1 ? state->red(" [FAILED]") : "") << std::endl;
-#endif
+
+        if (failed0 || failed1)
+        {
+          double num_primitives = bytes_one_thread.first;
+          std::cout << "N = " << num_primitives << ", n = " << ceilf(sqrtf(N/4.0f)) << ", "
+            "expected = " << bytes_expected/num_primitives << " B, " << 
+            "1 thread = " << bytes_one_thread.second/num_primitives << " B (" << 100.0f*expected_to_single << " %)" << (failed0 ? state->red(" [FAILED]") : "") << ", " << 
+            "all_threads = " << bytes_all_threads.second/num_primitives << " B (" << 100.0f*single_to_threaded << " %)" << (failed1 ? state->red(" [FAILED]") : "") << std::endl;
+        }
       }
       return ret;
     }
@@ -2126,10 +2128,11 @@ namespace embree
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
      
-      Vec3f vertices[3] = {
+      Vec3f vertices[4] = {
         Vec3f(0.0f,0.0f,0.0f),
         Vec3f(1.0f,0.0f,0.0f),
-        Vec3f(0.0f,1.0f,0.0f)
+        Vec3f(0.0f,1.0f,0.0f),
+        Vec3f(zero) // dummy vertex for 16 byte padding
       };
       Triangle triangles[1] = {
         Triangle(0,1,2)
@@ -2193,11 +2196,12 @@ namespace embree
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
      
-      Vec3f vertices[4] = {
+      Vec3f vertices[5] = {
         Vec3f(0.0f,0.0f,0.0f),
         Vec3f(1.0f,0.0f,0.0f),
         Vec3f(1.0f,1.0f,0.0f),
-        Vec3f(0.0f,1.0f,0.0f)
+        Vec3f(0.0f,1.0f,0.0f),
+        Vec3f(zero) // dummy vertex for 16 byte padding
       };
       int quads[4] = {
         0,1,2,3

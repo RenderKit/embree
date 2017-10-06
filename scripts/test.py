@@ -10,7 +10,6 @@ import socket
 import subprocess
 
 g_cdash = ""
-g_docker = False
 g_config = {}
 g_mode = "Experimental"
 g_intensity = 2
@@ -67,6 +66,8 @@ def runConfig(config):
   else                    : benchmark = "OFF"
   if "sde" in config: sde = config["sde"]
   else              : sde = "OFF"
+  if "addrsanitizer" in config:
+    conf.append("-D EMBREE_ADDRESS_SANITIZER="+config["addrsanitizer"]+"")
   if "intensity" in config:
     conf.append("-D EMBREE_TESTING_INTENSITY="+config["intensity"])
   if tasking == "INT": tasking = "INTERNAL"
@@ -76,11 +77,12 @@ def runConfig(config):
     conf.append("-D EMBREE_STACK_PROTECTOR=ON")
     if config["package"] == "ZIP": name = name + "-package-zip"
     else                         : name = name + "-package-installer"
-
+  nas = "/NAS/packages/apps"
+    
   if "klocwork" in config: name = name + "-klocwork"
   ispc_ext = "-vs2013"
-  if "package" in config and OS == 'linux': # we need up to date cmake for RPMs to work properly
-    env.append("module load cmake")
+  #if "package" in config and OS == 'linux': # we need up to date cmake for RPMs to work properly
+  #  env.append("module load cmake")
   conf.append("-D CMAKE_BUILD_TYPE="+build+"")
   if OS == "windows":
     ext = ""
@@ -120,6 +122,33 @@ def runConfig(config):
       conf.append("-T \"LLVM-vs2013\"")
     else:
       raise ValueError('unknown compiler: ' + compiler + '')
+    
+  elif OS == "linux":
+    if (compiler == "ICC18"):
+      conf.append("-D CMAKE_CXX_COMPILER="+nas+"/intel/2018.0/bin/icpc -D CMAKE_C_COMPILER="+nas+"/intel/2018.0/bin/icc")
+      #env.append("module load intel/2018")
+    elif (compiler == "ICC17"):
+      conf.append("-D CMAKE_CXX_COMPILER="+nas+"/intel/2017.1/bin/icpc -D CMAKE_C_COMPILER="+nas+"/intel/2017.1/bin/icc")
+      #env.append("module load intel/2017")
+    elif (compiler == "ICC16"):
+      conf.append("-D CMAKE_CXX_COMPILER="+nas+"/intel/2016.3/bin/icpc -D CMAKE_C_COMPILER="+nas+"/intel/2016.3/bin/icc")
+      #env.append("module load intel/2016")
+    elif (compiler == "ICC15"):
+      conf.append("-D CMAKE_CXX_COMPILER="+nas+"/intel/2015.3/bin/icpc -D CMAKE_C_COMPILER="+nas+"/intel/2015.3/bin/icc")
+      #env.append("module load intel/2015")
+    elif (compiler == "ICC"):
+      conf.append("-D CMAKE_CXX_COMPILER=icpc -D CMAKE_C_COMPILER=icc")
+      env.append("module load intel")
+    elif (compiler == "GCC"):
+      conf.append("-D CMAKE_CXX_COMPILER=g++ -D CMAKE_C_COMPILER=gcc")
+    elif (compiler == "CLANG4"):
+      conf.append("-D CMAKE_CXX_COMPILER="+nas+"/clang/v4.0.0/bin/clang++ -D CMAKE_C_COMPILER="+nas+"/clang/v4.0.0/bin/clang")
+      #env.append("module load clang/4")
+    elif (compiler == "CLANG"):
+      conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
+    else:
+      raise ValueError('unknown compiler: ' + compiler + '')
+    
   else:
     if (compiler == "ICC18"):
       conf.append("-D CMAKE_CXX_COMPILER=icpc -D CMAKE_C_COMPILER=icc")
@@ -141,12 +170,6 @@ def runConfig(config):
     elif (compiler == "CLANG4"):
       conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
       env.append("module load clang/4")
-    elif (compiler == "CLANG3.9"):
-      conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
-      env.append("module load clang/3.9")
-    elif (compiler == "CLANG3.8"):
-      conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
-      env.append("module load clang/3.8")
     elif (compiler == "CLANG"):
       conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
     else:
@@ -221,30 +244,29 @@ def runConfig(config):
     conf.append("-D EMBREE_GEOMETRY_USER="+config["USERGEOM"])
     if config["USERGEOM"] == "ON": name += "-usergeom"
 
-  if not g_docker:
-    if OS == "linux":
-      if ispc_enabled:     conf.append("-D EMBREE_ISPC_EXECUTABLE=/NAS/packages/apps/ispc/1.9.1/ispc")
-      if tasking == "TBB": conf.append("-D EMBREE_TBB_ROOT=/NAS/packages/apps/tbb/tbb-2017-linux")
-    elif OS == "macosx":
-      if ispc_enabled:     conf.append("-D EMBREE_ISPC_EXECUTABLE=/Network/nfs/NAS/packages/apps/ispc/1.9.1-osx/ispc")
-      if tasking == "TBB": conf.append("-D EMBREE_TBB_ROOT=/Network/nfs/NAS/packages/apps/tbb/tbb-2017-osx")
-    elif OS == "windows":
-      if ispc_enabled:
-        conf.append("-D EMBREE_ISPC_EXECUTABLE=\\\\sdvis-nas\\NAS\\packages\\apps\\ispc\\1.9.1-windows"+ispc_ext+"\\ispc.exe")
-        #conf.append("-D EMBREE_ISPC_EXECUTABLE=C:\\embree-testing\dependencies\ispc-v1.9.1-windows"+ispc_ext+"\\ispc.exe")
+  if OS == "linux":
+    if ispc_enabled:     conf.append("-D EMBREE_ISPC_EXECUTABLE=/NAS/packages/apps/ispc/1.9.1/ispc")
+    if tasking == "TBB": conf.append("-D EMBREE_TBB_ROOT=/NAS/packages/apps/tbb/tbb-2017-linux")
+  elif OS == "macosx":
+    if ispc_enabled:     conf.append("-D EMBREE_ISPC_EXECUTABLE=/Network/nfs/NAS/packages/apps/ispc/1.9.1-osx/ispc")
+    if tasking == "TBB": conf.append("-D EMBREE_TBB_ROOT=/Network/nfs/NAS/packages/apps/tbb/tbb-2017-osx")
+  elif OS == "windows":
+    if ispc_enabled:
+      conf.append("-D EMBREE_ISPC_EXECUTABLE=\\\\sdvis-nas\\NAS\\packages\\apps\\ispc\\1.9.1-windows"+ispc_ext+"\\ispc.exe")
+      #conf.append("-D EMBREE_ISPC_EXECUTABLE=C:\\embree-testing\dependencies\ispc-v1.9.1-windows"+ispc_ext+"\\ispc.exe")
   
-      if tasking == "TBB": 
-        tbb_path = "\\\\sdvis-nas\\NAS\\packages\\apps\\tbb\\tbb-2017-windows"
-        #tbb_path = "C:\\embree-testing\\dependencies\\tbb-2017-windows"
-        conf.append("-D EMBREE_TBB_ROOT="+tbb_path)
+    if tasking == "TBB": 
+      tbb_path = "\\\\sdvis-nas\\NAS\\packages\\apps\\tbb\\tbb-2017-windows"
+      #tbb_path = "C:\\embree-testing\\dependencies\\tbb-2017-windows"
+      conf.append("-D EMBREE_TBB_ROOT="+tbb_path)
   
-        if platform == "x64":
-          env.append("set PATH="+tbb_path+"\\bin\\intel64\\vc12;%PATH%")
-        else:
-          env.append("set PATH="+tbb_path+"\\bin\\ia32\\vc12;%PATH%")
-    else:
-      sys.stderr.write("unknown operating system "+OS)
-      sys.exit(1)
+      if platform == "x64":
+        env.append("set PATH="+tbb_path+"\\bin\\intel64\\vc12;%PATH%")
+      else:
+        env.append("set PATH="+tbb_path+"\\bin\\ia32\\vc12;%PATH%")
+  else:
+    sys.stderr.write("unknown operating system "+OS)
+    sys.exit(1)
 
   if "klocwork" in config:
     conf.append("-D EMBREE_TESTING_KLOCWORK="+config["klocwork"])
@@ -343,9 +365,6 @@ def parseCommandLine(argv):
     parseCommandLine(argv[2:len(argv)])
   elif len(argv)>=2 and argv[0] == "--mode":
     g_mode = argv[1]
-  elif len(argv)>=2 and argv[0] == "--docker":
-    g_docker = True
-    parseCommandLine(argv[1:len(argv)])
   elif len(argv)>=1 and argv[0] == "--debug":
     g_debugMode = True
     parseCommandLine(argv[1:len(argv)])
