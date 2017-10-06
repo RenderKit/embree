@@ -277,7 +277,8 @@ namespace embree
       }        
       delete[] geometries;
       delete[] materials;
-      // FIXME: currently lights cannot get deleted
+      for (size_t i=0; i<numLights; i++)
+        alignedFree(lights[i]); // FIXME: should call light destructor here
       delete[] lights;
     }
     
