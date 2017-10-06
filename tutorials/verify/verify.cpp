@@ -2128,10 +2128,11 @@ namespace embree
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
      
-      Vec3f vertices[3] = {
+      Vec3f vertices[4] = {
         Vec3f(0.0f,0.0f,0.0f),
         Vec3f(1.0f,0.0f,0.0f),
-        Vec3f(0.0f,1.0f,0.0f)
+        Vec3f(0.0f,1.0f,0.0f),
+        Vec3f(zero) // dummy vertex for 16 byte padding
       };
       Triangle triangles[1] = {
         Triangle(0,1,2)
@@ -2195,11 +2196,12 @@ namespace embree
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
      
-      Vec3f vertices[4] = {
+      Vec3f vertices[5] = {
         Vec3f(0.0f,0.0f,0.0f),
         Vec3f(1.0f,0.0f,0.0f),
         Vec3f(1.0f,1.0f,0.0f),
-        Vec3f(0.0f,1.0f,0.0f)
+        Vec3f(0.0f,1.0f,0.0f),
+        Vec3f(zero) // dummy vertex for 16 byte padding
       };
       int quads[4] = {
         0,1,2,3
