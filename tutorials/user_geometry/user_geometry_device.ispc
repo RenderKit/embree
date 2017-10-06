@@ -540,6 +540,9 @@ RTCScene g_scene  = NULL;
 RTCScene g_scene0 = NULL;
 RTCScene g_scene1 = NULL;
 RTCScene g_scene2 = NULL;
+uniform Sphere* uniform g_spheres = NULL;
+uniform Sphere* uniform g_sphere0 = NULL;
+uniform Sphere* uniform g_sphere1 = NULL;
 
 uniform Instance* uniform g_instance[4] = { NULL, NULL, NULL, NULL };
 
@@ -564,11 +567,11 @@ export void device_init (uniform int8* uniform cfg)
 
   /* create scene with 4 analytical spheres */
   g_scene0 = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,aflags);
-  uniform Sphere* uniform spheres = createAnalyticalSpheres(g_scene0,4);
-  spheres[0].p = make_Vec3f( 0, 0,+1); spheres[0].r = 0.5f;
-  spheres[1].p = make_Vec3f(+1, 0, 0); spheres[1].r = 0.5f;
-  spheres[2].p = make_Vec3f( 0, 0,-1); spheres[2].r = 0.5f;
-  spheres[3].p = make_Vec3f(-1, 0, 0); spheres[3].r = 0.5f;
+  g_spheres = createAnalyticalSpheres(g_scene0,4);
+  g_spheres[0].p = make_Vec3f( 0, 0,+1); g_spheres[0].r = 0.5f;
+  g_spheres[1].p = make_Vec3f(+1, 0, 0); g_spheres[1].r = 0.5f;
+  g_spheres[2].p = make_Vec3f( 0, 0,-1); g_spheres[2].r = 0.5f;
+  g_spheres[3].p = make_Vec3f(-1, 0, 0); g_spheres[3].r = 0.5f;
   rtcCommit(g_scene0);
 
   /* create scene with 4 triangulated spheres */
@@ -582,9 +585,9 @@ export void device_init (uniform int8* uniform cfg)
   /* create scene with 2 triangulated and 2 analytical spheres */
   g_scene2 = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,aflags);
   createTriangulatedSphere(g_scene2,make_Vec3f( 0, 0,+1),0.5f);
-  createAnalyticalSphere  (g_scene2,make_Vec3f(+1, 0, 0),0.5f);
+  g_sphere0 = createAnalyticalSphere  (g_scene2,make_Vec3f(+1, 0, 0),0.5f);
   createTriangulatedSphere(g_scene2,make_Vec3f( 0, 0,-1),0.5f);
-  createAnalyticalSphere  (g_scene2,make_Vec3f(-1, 0, 0),0.5f);
+  g_sphere1 = createAnalyticalSphere  (g_scene2,make_Vec3f(-1, 0, 0),0.5f);
   rtcCommit(g_scene2);
 
   /* instantiate geometry */
@@ -921,4 +924,7 @@ export void device_cleanup ()
   rtcDeleteScene (g_scene1); g_scene1 = NULL;
   rtcDeleteScene (g_scene2); g_scene2 = NULL;
   rtcDeleteDevice(g_device); g_device = NULL;
+  delete[] g_spheres; g_spheres = NULL;
+  delete g_sphere0; g_sphere0 = NULL;
+  delete g_sphere1; g_sphere1 = NULL;
 }

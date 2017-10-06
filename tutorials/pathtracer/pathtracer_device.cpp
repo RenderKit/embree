@@ -1505,7 +1505,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     float fy = y + RandomSampler_get1D(sampler);
     L = L + renderPixelFunction(fx,fy,sampler,camera,stats);
   }
-  L = L/(float)g_spp;
+  L = L/g_spp;
   return L;
 }
 
