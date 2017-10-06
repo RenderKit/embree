@@ -17,7 +17,7 @@
 #pragma once
 
 #include "bvh.h"
-#include "bvh_intersector_node.h"
+#include "node_intersector1.h"
 #include "../common/stack_item.h"
 
 namespace embree
@@ -33,401 +33,399 @@ namespace embree
 
     /* KNL code path */
     __forceinline static void isort_update(vfloat16 &dist, vllong8 &ptr, const vfloat16 &d, const vllong8 &p)
-      {
-        const vfloat16 dist_shift = align_shift_right<15>(dist,dist);
-        const vllong8  ptr_shift  = align_shift_right<7>(ptr,ptr);
-        const vbool16 m_geq = d >= dist;
-        const vbool16 m_geq_shift = m_geq << 1;
-        dist = select(m_geq,d,dist);
-        ptr  = select(vboold8(m_geq),p,ptr);
-        dist = select(m_geq_shift,dist_shift,dist);
-        ptr  = select(vboold8(m_geq_shift),ptr_shift,ptr);
+    {
+      const vfloat16 dist_shift = align_shift_right<15>(dist,dist);
+      const vllong8  ptr_shift  = align_shift_right<7>(ptr,ptr);
+      const vbool16 m_geq = d >= dist;
+      const vbool16 m_geq_shift = m_geq << 1;
+      dist = select(m_geq,d,dist);
+      ptr  = select(vboold8(m_geq),p,ptr);
+      dist = select(m_geq_shift,dist_shift,dist);
+      ptr  = select(vboold8(m_geq_shift),ptr_shift,ptr);
+    }
+
+    __forceinline static void isort_quick_update(vfloat16 &dist, vllong8 &ptr, const vfloat16 &d, const vllong8 &p)
+    {
+      //dist = align_shift_right<15>(dist,d);
+      //ptr  = align_shift_right<7>(ptr,p);
+      dist = align_shift_right<15>(dist,permute(d,vint16(zero)));
+      ptr  = align_shift_right<7>(ptr,permute(p,vllong8(zero)));
+    }
+
+    template<int N, int Nx, int types, class NodeRef, class BaseNode>
+    static __forceinline void traverseClosestHitAVX512(NodeRef& cur,
+                                                       size_t mask,
+                                                       const vfloat<Nx>& tNear,
+                                                       StackItemT<NodeRef>*& stackPtr,
+                                                       StackItemT<NodeRef>* stackEnd)
+    {
+      assert(mask != 0);
+      const BaseNode* node = cur.baseNode(types);
+
+      vllong8 children( vllong<N>::loadu((void*)node->children) );
+      children = vllong8::compact((int)mask,children);
+      vfloat16 distance = tNear;
+      distance = vfloat16::compact((int)mask,distance,tNear);
+
+      cur = toScalar(children);
+      cur.prefetch(types);
+
+
+      mask &= mask-1;
+      if (likely(mask == 0)) return;
+
+      /* 2 hits: order A0 B0 */
+      const vllong8 c0(children);
+      const vfloat16 d0(distance);
+      children = align_shift_right<1>(children,children);
+      distance = align_shift_right<1>(distance,distance);
+      const vllong8 c1(children);
+      const vfloat16 d1(distance);
+
+      cur = toScalar(children);
+      cur.prefetch(types);
+
+      /* a '<' keeps the order for equal distances, scenes like powerplant largely benefit from it */
+      const vboolf16 m_dist  = d0 < d1;
+      const vfloat16 dist_A0 = select(m_dist, d0, d1);
+      const vfloat16 dist_B0 = select(m_dist, d1, d0);
+      const vllong8 ptr_A0   = select(vboold8(m_dist), c0, c1);
+      const vllong8 ptr_B0   = select(vboold8(m_dist), c1, c0);
+
+      mask &= mask-1;
+      if (likely(mask == 0)) {
+        cur = toScalar(ptr_A0);
+        stackPtr[0].ptr            = toScalar(ptr_B0);
+        *(float*)&stackPtr[0].dist = toScalar(dist_B0);
+        stackPtr++;
+        return;
       }
 
-      __forceinline static void isort_quick_update(vfloat16 &dist, vllong8 &ptr, const vfloat16 &d, const vllong8 &p)
-      {
-        //dist = align_shift_right<15>(dist,d);
-        //ptr  = align_shift_right<7>(ptr,p);
-        dist = align_shift_right<15>(dist,permute(d,vint16(zero)));
-        ptr  = align_shift_right<7>(ptr,permute(p,vllong8(zero)));
+      /* 3 hits: order A1 B1 C1 */
+
+      children = align_shift_right<1>(children,children);
+      distance = align_shift_right<1>(distance,distance);
+
+      const vllong8 c2(children);
+      const vfloat16 d2(distance);
+
+      cur = toScalar(children);
+      cur.prefetch(types);
+
+      const vboolf16 m_dist1     = dist_A0 <= d2;
+      const vfloat16 dist_tmp_B1 = select(m_dist1, d2, dist_A0);
+      const vllong8  ptr_A1      = select(vboold8(m_dist1), ptr_A0, c2);
+      const vllong8  ptr_tmp_B1  = select(vboold8(m_dist1), c2, ptr_A0);
+
+      const vboolf16 m_dist2     = dist_B0 <= dist_tmp_B1;
+      const vfloat16 dist_B1     = select(m_dist2, dist_B0 , dist_tmp_B1);
+      const vfloat16 dist_C1     = select(m_dist2, dist_tmp_B1, dist_B0);
+      const vllong8  ptr_B1      = select(vboold8(m_dist2), ptr_B0, ptr_tmp_B1);
+      const vllong8  ptr_C1      = select(vboold8(m_dist2), ptr_tmp_B1, ptr_B0);
+
+      mask &= mask-1;
+      if (likely(mask == 0)) {
+        cur = toScalar(ptr_A1);
+        stackPtr[0].ptr  = toScalar(ptr_C1);
+        *(float*)&stackPtr[0].dist = toScalar(dist_C1);
+        stackPtr[1].ptr  = toScalar(ptr_B1);
+        *(float*)&stackPtr[1].dist = toScalar(dist_B1);
+        stackPtr+=2;
+        return;
       }
 
-      template<int N, int Nx, int types, class NodeRef, class BaseNode>
-        static __forceinline void traverseClosestHitAVX512(NodeRef& cur,
-                                                           size_t mask,
-                                                           const vfloat<Nx>& tNear,
-                                                           StackItemT<NodeRef>*& stackPtr,
-                                                           StackItemT<NodeRef>* stackEnd)
-      {
-        assert(mask != 0);
-        const BaseNode* node = cur.baseNode(types);
+      /* 4 hits: order A2 B2 C2 D2 */
 
-        vllong8 children( vllong<N>::loadu((void*)node->children) );
-        children = vllong8::compact((int)mask,children);
-        vfloat16 distance = tNear;
-        distance = vfloat16::compact((int)mask,distance,tNear);
+      const vfloat16 dist_A1  = select(m_dist1, dist_A0, d2);
 
-        cur = toScalar(children);
-        cur.prefetch(types);
+      children = align_shift_right<1>(children,children);
+      distance = align_shift_right<1>(distance,distance);
 
-        
-        mask &= mask-1;
-        if (likely(mask == 0)) return;
+      const vllong8 c3(children);
+      const vfloat16 d3(distance);
 
+      cur = toScalar(children);
+      cur.prefetch(types);
 
+      const vboolf16 m_dist3     = dist_A1 <= d3;
+      const vfloat16 dist_tmp_B2 = select(m_dist3, d3, dist_A1);
+      const vllong8  ptr_A2      = select(vboold8(m_dist3), ptr_A1, c3);
+      const vllong8  ptr_tmp_B2  = select(vboold8(m_dist3), c3, ptr_A1);
 
-        /* 2 hits: order A0 B0 */
-        const vllong8 c0(children);
-        const vfloat16 d0(distance);
-        children = align_shift_right<1>(children,children);
-        distance = align_shift_right<1>(distance,distance);        
-        const vllong8 c1(children);
-        const vfloat16 d1(distance);
-        
-        cur = toScalar(children);
-        cur.prefetch(types);
+      const vboolf16 m_dist4     = dist_B1 <= dist_tmp_B2;
+      const vfloat16 dist_B2     = select(m_dist4, dist_B1 , dist_tmp_B2);
+      const vfloat16 dist_tmp_C2 = select(m_dist4, dist_tmp_B2, dist_B1);
+      const vllong8  ptr_B2      = select(vboold8(m_dist4), ptr_B1, ptr_tmp_B2);
+      const vllong8  ptr_tmp_C2  = select(vboold8(m_dist4), ptr_tmp_B2, ptr_B1);
 
-        /* a '<' keeps the order for equal distances, scenes like powerplant largely benefit from it */
-        const vboolf16 m_dist  = d0 < d1;
-        const vfloat16 dist_A0 = select(m_dist, d0, d1);
-        const vfloat16 dist_B0 = select(m_dist, d1, d0);
-        const vllong8 ptr_A0   = select(vboold8(m_dist), c0, c1);
-        const vllong8 ptr_B0   = select(vboold8(m_dist), c1, c0);
+      const vboolf16 m_dist5     = dist_C1 <= dist_tmp_C2;
+      const vfloat16 dist_C2     = select(m_dist5, dist_C1 , dist_tmp_C2);
+      const vfloat16 dist_D2     = select(m_dist5, dist_tmp_C2, dist_C1);
+      const vllong8  ptr_C2      = select(vboold8(m_dist5), ptr_C1, ptr_tmp_C2);
+      const vllong8  ptr_D2      = select(vboold8(m_dist5), ptr_tmp_C2, ptr_C1);
 
-        mask &= mask-1;
-        if (likely(mask == 0)) {
-          cur = toScalar(ptr_A0);
-          stackPtr[0].ptr            = toScalar(ptr_B0);
-          *(float*)&stackPtr[0].dist = toScalar(dist_B0);
-          stackPtr++;
-          return;
-        }
-
-        /* 3 hits: order A1 B1 C1 */
-
-        children = align_shift_right<1>(children,children);
-        distance = align_shift_right<1>(distance,distance);        
-
-        const vllong8 c2(children);
-        const vfloat16 d2(distance);
-
-        cur = toScalar(children);
-        cur.prefetch(types);
-
-        const vboolf16 m_dist1     = dist_A0 <= d2;
-        const vfloat16 dist_tmp_B1 = select(m_dist1, d2, dist_A0);
-        const vllong8  ptr_A1      = select(vboold8(m_dist1), ptr_A0, c2);
-        const vllong8  ptr_tmp_B1  = select(vboold8(m_dist1), c2, ptr_A0);
-
-        const vboolf16 m_dist2     = dist_B0 <= dist_tmp_B1;
-        const vfloat16 dist_B1     = select(m_dist2, dist_B0 , dist_tmp_B1);
-        const vfloat16 dist_C1     = select(m_dist2, dist_tmp_B1, dist_B0);
-        const vllong8  ptr_B1      = select(vboold8(m_dist2), ptr_B0, ptr_tmp_B1);
-        const vllong8  ptr_C1      = select(vboold8(m_dist2), ptr_tmp_B1, ptr_B0);
-
-        mask &= mask-1;
-        if (likely(mask == 0)) {
-          cur = toScalar(ptr_A1);
-          stackPtr[0].ptr  = toScalar(ptr_C1);
-          *(float*)&stackPtr[0].dist = toScalar(dist_C1);
-          stackPtr[1].ptr  = toScalar(ptr_B1);
-          *(float*)&stackPtr[1].dist = toScalar(dist_B1);
-          stackPtr+=2;
-          return;
-        }
-
-        /* 4 hits: order A2 B2 C2 D2 */
-
-        const vfloat16 dist_A1  = select(m_dist1, dist_A0, d2);
-
-        children = align_shift_right<1>(children,children);
-        distance = align_shift_right<1>(distance,distance);        
-
-        const vllong8 c3(children);
-        const vfloat16 d3(distance);
-
-        cur = toScalar(children);
-        cur.prefetch(types);
-
-        const vboolf16 m_dist3     = dist_A1 <= d3;
-        const vfloat16 dist_tmp_B2 = select(m_dist3, d3, dist_A1);
-        const vllong8  ptr_A2      = select(vboold8(m_dist3), ptr_A1, c3);
-        const vllong8  ptr_tmp_B2  = select(vboold8(m_dist3), c3, ptr_A1);
-
-        const vboolf16 m_dist4     = dist_B1 <= dist_tmp_B2;
-        const vfloat16 dist_B2     = select(m_dist4, dist_B1 , dist_tmp_B2);
-        const vfloat16 dist_tmp_C2 = select(m_dist4, dist_tmp_B2, dist_B1);
-        const vllong8  ptr_B2      = select(vboold8(m_dist4), ptr_B1, ptr_tmp_B2);
-        const vllong8  ptr_tmp_C2  = select(vboold8(m_dist4), ptr_tmp_B2, ptr_B1);
-
-        const vboolf16 m_dist5     = dist_C1 <= dist_tmp_C2;
-        const vfloat16 dist_C2     = select(m_dist5, dist_C1 , dist_tmp_C2);
-        const vfloat16 dist_D2     = select(m_dist5, dist_tmp_C2, dist_C1);
-        const vllong8  ptr_C2      = select(vboold8(m_dist5), ptr_C1, ptr_tmp_C2);
-        const vllong8  ptr_D2      = select(vboold8(m_dist5), ptr_tmp_C2, ptr_C1);
-
-        mask &= mask-1;
-        if (likely(mask == 0)) {
-          cur = toScalar(ptr_A2);
-          stackPtr[0].ptr  = toScalar(ptr_D2);
-          *(float*)&stackPtr[0].dist = toScalar(dist_D2);
-          stackPtr[1].ptr  = toScalar(ptr_C2);
-          *(float*)&stackPtr[1].dist = toScalar(dist_C2);
-          stackPtr[2].ptr  = toScalar(ptr_B2);
-          *(float*)&stackPtr[2].dist = toScalar(dist_B2);
-          stackPtr+=3;
-          return;
-        }
-
-        /* >=5 hits: reverse to descending order for writing to stack */
-
-        const size_t hits = 4 + __popcnt(mask);
-        const vfloat16 dist_A2  = select(m_dist3, dist_A1, d3);
-        vfloat16 dist(neg_inf);
-        vllong8 ptr(zero);
-
-
-        isort_quick_update(dist,ptr,dist_A2,ptr_A2);
-        isort_quick_update(dist,ptr,dist_B2,ptr_B2);
-        isort_quick_update(dist,ptr,dist_C2,ptr_C2);
-        isort_quick_update(dist,ptr,dist_D2,ptr_D2);
-
-        do {
-
-          children = align_shift_right<1>(children,children);
-          distance = align_shift_right<1>(distance,distance);        
-
-          cur = toScalar(children);
-          cur.prefetch(types);
-
-          const vfloat16 new_dist(permute(distance,vint16(zero)));
-          const vllong8 new_ptr(permute(children,vllong8(zero)));
-
-          mask &= mask-1;
-          isort_update(dist,ptr,new_dist,new_ptr);
-
-        } while(mask);
-
-        const vboold8 m_stack_ptr(0x55);  // 10101010 (lsb -> msb)
-        const vboolf16 m_stack_dist(0x4444); // 0010001000100010 (lsb -> msb)
-
-        /* extract current noderef */
-        cur = toScalar(permute(ptr,vllong8(hits-1)));
-        /* rearrange pointers to beginning of 16 bytes block */
-        vllong8 stackElementA0;
-        stackElementA0 = vllong8::expand(m_stack_ptr,ptr,stackElementA0);
-        /* put distances in between */
-        vuint16 stackElementA1((__m512i)stackElementA0);
-        stackElementA1 = vuint16::expand(m_stack_dist,asUInt(dist),stackElementA1);
-        /* write out first 4 x 16 bytes block to stack */
-        vuint16::storeu(stackPtr,stackElementA1);
-        /* get upper half of dist and ptr */
-        dist = align_shift_right<4>(dist,dist);
-        ptr  = align_shift_right<4>(ptr,ptr);
-        /* assemble and write out second block */
-        vllong8 stackElementB0;
-        stackElementB0 = vllong8::expand(m_stack_ptr,ptr,stackElementB0);
-        vuint16 stackElementB1((__m512i)stackElementB0);
-        stackElementB1 = vuint16::expand(m_stack_dist,asUInt(dist),stackElementB1);
-        vuint16::storeu(stackPtr + 4,stackElementB1);
-        /* increase stack pointer */
-        stackPtr += hits-1;
+      mask &= mask-1;
+      if (likely(mask == 0)) {
+        cur = toScalar(ptr_A2);
+        stackPtr[0].ptr  = toScalar(ptr_D2);
+        *(float*)&stackPtr[0].dist = toScalar(dist_D2);
+        stackPtr[1].ptr  = toScalar(ptr_C2);
+        *(float*)&stackPtr[1].dist = toScalar(dist_C2);
+        stackPtr[2].ptr  = toScalar(ptr_B2);
+        *(float*)&stackPtr[2].dist = toScalar(dist_B2);
+        stackPtr+=3;
+        return;
       }
+
+      /* >=5 hits: reverse to descending order for writing to stack */
+
+      const size_t hits = 4 + __popcnt(mask);
+      const vfloat16 dist_A2  = select(m_dist3, dist_A1, d3);
+      vfloat16 dist(neg_inf);
+      vllong8 ptr(zero);
+
+
+      isort_quick_update(dist,ptr,dist_A2,ptr_A2);
+      isort_quick_update(dist,ptr,dist_B2,ptr_B2);
+      isort_quick_update(dist,ptr,dist_C2,ptr_C2);
+      isort_quick_update(dist,ptr,dist_D2,ptr_D2);
+
+      do {
+
+        children = align_shift_right<1>(children,children);
+        distance = align_shift_right<1>(distance,distance);
+
+        cur = toScalar(children);
+        cur.prefetch(types);
+
+        const vfloat16 new_dist(permute(distance,vint16(zero)));
+        const vllong8 new_ptr(permute(children,vllong8(zero)));
+
+        mask &= mask-1;
+        isort_update(dist,ptr,new_dist,new_ptr);
+
+      } while(mask);
+
+      const vboold8 m_stack_ptr(0x55);  // 10101010 (lsb -> msb)
+      const vboolf16 m_stack_dist(0x4444); // 0010001000100010 (lsb -> msb)
+
+      /* extract current noderef */
+      cur = toScalar(permute(ptr,vllong8(hits-1)));
+      /* rearrange pointers to beginning of 16 bytes block */
+      vllong8 stackElementA0;
+      stackElementA0 = vllong8::expand(m_stack_ptr,ptr,stackElementA0);
+      /* put distances in between */
+      vuint16 stackElementA1((__m512i)stackElementA0);
+      stackElementA1 = vuint16::expand(m_stack_dist,asUInt(dist),stackElementA1);
+      /* write out first 4 x 16 bytes block to stack */
+      vuint16::storeu(stackPtr,stackElementA1);
+      /* get upper half of dist and ptr */
+      dist = align_shift_right<4>(dist,dist);
+      ptr  = align_shift_right<4>(ptr,ptr);
+      /* assemble and write out second block */
+      vllong8 stackElementB0;
+      stackElementB0 = vllong8::expand(m_stack_ptr,ptr,stackElementB0);
+      vuint16 stackElementB1((__m512i)stackElementB0);
+      stackElementB1 = vuint16::expand(m_stack_dist,asUInt(dist),stackElementB1);
+      vuint16::storeu(stackPtr + 4,stackElementB1);
+      /* increase stack pointer */
+      stackPtr += hits-1;
+    }
 
 
     /* SKX code path */
 #if defined(__AVX512VL__)
 
-      template<int N>
+    template<int N>
     __forceinline static void isort_update(vfloat<N> &dist, vint<N> &ptr, const vfloat<N> &d, const vint<N> &p)
-      {
-        const vfloat<N> dist_shift = align_shift_right<N-1>(dist,dist);
-        const vint<N>  ptr_shift  = align_shift_right<N-1>(ptr,ptr);
-        const vboolf<N> m_geq = d >= dist;
-        const vboolf<N> m_geq_shift = m_geq << 1;
-        dist = select(m_geq,d,dist);
-        ptr  = select(m_geq,p,ptr);
-        dist = select(m_geq_shift,dist_shift,dist);
-        ptr  = select(m_geq_shift,ptr_shift,ptr);
+    {
+      const vfloat<N> dist_shift = align_shift_right<N-1>(dist,dist);
+      const vint<N>  ptr_shift  = align_shift_right<N-1>(ptr,ptr);
+      const vboolf<N> m_geq = d >= dist;
+      const vboolf<N> m_geq_shift = m_geq << 1;
+      dist = select(m_geq,d,dist);
+      ptr  = select(m_geq,p,ptr);
+      dist = select(m_geq_shift,dist_shift,dist);
+      ptr  = select(m_geq_shift,ptr_shift,ptr);
+    }
+
+    template<int N>
+    __forceinline static void isort_quick_update(vfloat<N> &dist, vint<N> &ptr, const vfloat<N> &d, const vint<N> &p)
+    {
+      dist = align_shift_right<N-1>(dist,permute(d,vint<N>(zero)));
+      ptr  = align_shift_right<N-1>(ptr,permute(p,vint<N>(zero)));
+    }
+
+    template<int N, int Nx, int types, class NodeRef, class BaseNode>
+    static __forceinline void traverseClosestHitAVX512VL(NodeRef& cur,
+                                                         size_t mask,
+                                                         const vfloat<Nx>& tNear,
+                                                         StackItemT<NodeRef>*& stackPtr,
+                                                         StackItemT<NodeRef>* stackEnd)
+    {
+      assert(mask != 0);
+      const BaseNode* node = cur.baseNode(types);
+      vint<N> children( step );
+      children = vint<N>::compact((int)mask,children);
+      vfloat<N> distance = tNear;
+      distance = vfloat<N>::compact((int)mask,distance,tNear);
+
+      cur = node->child((unsigned int)toScalar(children));
+      cur.prefetch(types);
+
+
+      mask &= mask-1;
+      if (likely(mask == 0)) return;
+
+      /* 2 hits: order A0 B0 */
+      const vint<N> c0(children);
+      const vfloat<N> d0(distance);
+      children = align_shift_right<1>(children,children);
+      distance = align_shift_right<1>(distance,distance);
+      const vint<N> c1(children);
+      const vfloat<N> d1(distance);
+
+      cur = node->child((unsigned int)toScalar(children));
+      cur.prefetch(types);
+
+      /* a '<' keeps the order for equal distances, scenes like powerplant largely benefit from it */
+      const vboolf<N> m_dist  = d0 < d1;
+      const vfloat<N> dist_A0 = select(m_dist, d0, d1);
+      const vfloat<N> dist_B0 = select(m_dist, d1, d0);
+      const vint<N> ptr_A0   = select(vboolf<N>(m_dist), c0, c1);
+      const vint<N> ptr_B0   = select(vboolf<N>(m_dist), c1, c0);
+
+      mask &= mask-1;
+      if (likely(mask == 0)) {
+        cur = node->child((unsigned int)toScalar(ptr_A0));
+        stackPtr[0].ptr            = node->child((unsigned int)toScalar(ptr_B0));
+        *(float*)&stackPtr[0].dist = toScalar(dist_B0);
+        stackPtr++;
+        return;
       }
 
-      template<int N>
-      __forceinline static void isort_quick_update(vfloat<N> &dist, vint<N> &ptr, const vfloat<N> &d, const vint<N> &p)
-      {
-        dist = align_shift_right<N-1>(dist,permute(d,vint<N>(zero)));
-        ptr  = align_shift_right<N-1>(ptr,permute(p,vint<N>(zero)));
+      /* 3 hits: order A1 B1 C1 */
+
+      children = align_shift_right<1>(children,children);
+      distance = align_shift_right<1>(distance,distance);
+
+      const vint<N> c2(children);
+      const vfloat<N> d2(distance);
+
+      cur = node->child((unsigned int)toScalar(children));
+      cur.prefetch(types);
+
+      const vboolf<N> m_dist1     = dist_A0 <= d2;
+      const vfloat<N> dist_tmp_B1 = select(m_dist1, d2, dist_A0);
+      const vint<N>  ptr_A1      = select(vboolf<N>(m_dist1), ptr_A0, c2);
+      const vint<N>  ptr_tmp_B1  = select(vboolf<N>(m_dist1), c2, ptr_A0);
+
+      const vboolf<N> m_dist2     = dist_B0 <= dist_tmp_B1;
+      const vfloat<N> dist_B1     = select(m_dist2, dist_B0 , dist_tmp_B1);
+      const vfloat<N> dist_C1     = select(m_dist2, dist_tmp_B1, dist_B0);
+      const vint<N>  ptr_B1      = select(vboolf<N>(m_dist2), ptr_B0, ptr_tmp_B1);
+      const vint<N>  ptr_C1      = select(vboolf<N>(m_dist2), ptr_tmp_B1, ptr_B0);
+
+      mask &= mask-1;
+      if (likely(mask == 0)) {
+        cur = node->child((unsigned int)toScalar(ptr_A1));
+        stackPtr[0].ptr  = node->child((unsigned int)toScalar(ptr_C1));
+        *(float*)&stackPtr[0].dist = toScalar(dist_C1);
+        stackPtr[1].ptr  = node->child((unsigned int)toScalar(ptr_B1));
+        *(float*)&stackPtr[1].dist = toScalar(dist_B1);
+        stackPtr+=2;
+        return;
       }
 
-      template<int N, int Nx, int types, class NodeRef, class BaseNode>
-        static __forceinline void traverseClosestHitAVX512VL(NodeRef& cur,
-                                                             size_t mask,
-                                                             const vfloat<Nx>& tNear,
-                                                             StackItemT<NodeRef>*& stackPtr,
-                                                             StackItemT<NodeRef>* stackEnd)
-      {
-        assert(mask != 0);
-        const BaseNode* node = cur.baseNode(types);
-        vint<N> children( step );
-        children = vint<N>::compact((int)mask,children);
-        vfloat<N> distance = tNear;
-        distance = vfloat<N>::compact((int)mask,distance,tNear);
+      /* 4 hits: order A2 B2 C2 D2 */
 
-        cur = node->child((unsigned int)toScalar(children));
-        cur.prefetch(types);
+      const vfloat<N> dist_A1  = select(m_dist1, dist_A0, d2);
 
-        
-        mask &= mask-1;
-        if (likely(mask == 0)) return;
-        
-        /* 2 hits: order A0 B0 */
-        const vint<N> c0(children);
-        const vfloat<N> d0(distance);
-        children = align_shift_right<1>(children,children);
-        distance = align_shift_right<1>(distance,distance);        
-        const vint<N> c1(children);
-        const vfloat<N> d1(distance);
-        
-        cur = node->child((unsigned int)toScalar(children));
-        cur.prefetch(types);
+      children = align_shift_right<1>(children,children);
+      distance = align_shift_right<1>(distance,distance);
 
-        /* a '<' keeps the order for equal distances, scenes like powerplant largely benefit from it */
-        const vboolf<N> m_dist  = d0 < d1;
-        const vfloat<N> dist_A0 = select(m_dist, d0, d1);
-        const vfloat<N> dist_B0 = select(m_dist, d1, d0);
-        const vint<N> ptr_A0   = select(vboolf<N>(m_dist), c0, c1);
-        const vint<N> ptr_B0   = select(vboolf<N>(m_dist), c1, c0);
+      const vint<N> c3(children);
+      const vfloat<N> d3(distance);
 
-        mask &= mask-1;
-        if (likely(mask == 0)) {
-          cur = node->child((unsigned int)toScalar(ptr_A0));
-          stackPtr[0].ptr            = node->child((unsigned int)toScalar(ptr_B0));
-          *(float*)&stackPtr[0].dist = toScalar(dist_B0);
-          stackPtr++;
-          return;
-        }
+      cur = node->child((unsigned int)toScalar(children));
+      cur.prefetch(types);
 
-        /* 3 hits: order A1 B1 C1 */
+      const vboolf<N> m_dist3     = dist_A1 <= d3;
+      const vfloat<N> dist_tmp_B2 = select(m_dist3, d3, dist_A1);
+      const vint<N>  ptr_A2      = select(vboolf<N>(m_dist3), ptr_A1, c3);
+      const vint<N>  ptr_tmp_B2  = select(vboolf<N>(m_dist3), c3, ptr_A1);
 
-        children = align_shift_right<1>(children,children);
-        distance = align_shift_right<1>(distance,distance);        
+      const vboolf<N> m_dist4     = dist_B1 <= dist_tmp_B2;
+      const vfloat<N> dist_B2     = select(m_dist4, dist_B1 , dist_tmp_B2);
+      const vfloat<N> dist_tmp_C2 = select(m_dist4, dist_tmp_B2, dist_B1);
+      const vint<N>  ptr_B2      = select(vboolf<N>(m_dist4), ptr_B1, ptr_tmp_B2);
+      const vint<N>  ptr_tmp_C2  = select(vboolf<N>(m_dist4), ptr_tmp_B2, ptr_B1);
 
-        const vint<N> c2(children);
-        const vfloat<N> d2(distance);
+      const vboolf<N> m_dist5     = dist_C1 <= dist_tmp_C2;
+      const vfloat<N> dist_C2     = select(m_dist5, dist_C1 , dist_tmp_C2);
+      const vfloat<N> dist_D2     = select(m_dist5, dist_tmp_C2, dist_C1);
+      const vint<N>  ptr_C2      = select(vboolf<N>(m_dist5), ptr_C1, ptr_tmp_C2);
+      const vint<N>  ptr_D2      = select(vboolf<N>(m_dist5), ptr_tmp_C2, ptr_C1);
 
-        cur = node->child((unsigned int)toScalar(children));
-        cur.prefetch(types);
-
-        const vboolf<N> m_dist1     = dist_A0 <= d2;
-        const vfloat<N> dist_tmp_B1 = select(m_dist1, d2, dist_A0);
-        const vint<N>  ptr_A1      = select(vboolf<N>(m_dist1), ptr_A0, c2);
-        const vint<N>  ptr_tmp_B1  = select(vboolf<N>(m_dist1), c2, ptr_A0);
-
-        const vboolf<N> m_dist2     = dist_B0 <= dist_tmp_B1;
-        const vfloat<N> dist_B1     = select(m_dist2, dist_B0 , dist_tmp_B1);
-        const vfloat<N> dist_C1     = select(m_dist2, dist_tmp_B1, dist_B0);
-        const vint<N>  ptr_B1      = select(vboolf<N>(m_dist2), ptr_B0, ptr_tmp_B1);
-        const vint<N>  ptr_C1      = select(vboolf<N>(m_dist2), ptr_tmp_B1, ptr_B0);
-
-        mask &= mask-1;
-        if (likely(mask == 0)) {
-          cur = node->child((unsigned int)toScalar(ptr_A1));
-          stackPtr[0].ptr  = node->child((unsigned int)toScalar(ptr_C1));
-          *(float*)&stackPtr[0].dist = toScalar(dist_C1);
-          stackPtr[1].ptr  = node->child((unsigned int)toScalar(ptr_B1));
-          *(float*)&stackPtr[1].dist = toScalar(dist_B1);
-          stackPtr+=2;
-          return;
-        }
-
-        /* 4 hits: order A2 B2 C2 D2 */
-        
-        const vfloat<N> dist_A1  = select(m_dist1, dist_A0, d2);
-
-        children = align_shift_right<1>(children,children);
-        distance = align_shift_right<1>(distance,distance);        
-
-        const vint<N> c3(children);
-        const vfloat<N> d3(distance);
-
-        cur = node->child((unsigned int)toScalar(children));
-        cur.prefetch(types);
-
-        const vboolf<N> m_dist3     = dist_A1 <= d3;
-        const vfloat<N> dist_tmp_B2 = select(m_dist3, d3, dist_A1);
-        const vint<N>  ptr_A2      = select(vboolf<N>(m_dist3), ptr_A1, c3);
-        const vint<N>  ptr_tmp_B2  = select(vboolf<N>(m_dist3), c3, ptr_A1);
-
-        const vboolf<N> m_dist4     = dist_B1 <= dist_tmp_B2;
-        const vfloat<N> dist_B2     = select(m_dist4, dist_B1 , dist_tmp_B2);
-        const vfloat<N> dist_tmp_C2 = select(m_dist4, dist_tmp_B2, dist_B1);
-        const vint<N>  ptr_B2      = select(vboolf<N>(m_dist4), ptr_B1, ptr_tmp_B2);
-        const vint<N>  ptr_tmp_C2  = select(vboolf<N>(m_dist4), ptr_tmp_B2, ptr_B1);
-
-        const vboolf<N> m_dist5     = dist_C1 <= dist_tmp_C2;
-        const vfloat<N> dist_C2     = select(m_dist5, dist_C1 , dist_tmp_C2);
-        const vfloat<N> dist_D2     = select(m_dist5, dist_tmp_C2, dist_C1);
-        const vint<N>  ptr_C2      = select(vboolf<N>(m_dist5), ptr_C1, ptr_tmp_C2);
-        const vint<N>  ptr_D2      = select(vboolf<N>(m_dist5), ptr_tmp_C2, ptr_C1);
-
-        mask &= mask-1;
-        if (likely(mask == 0)) {
-          cur = node->child((unsigned int)toScalar(ptr_A2));
-          stackPtr[0].ptr  = node->child((unsigned int)toScalar(ptr_D2));
-          *(float*)&stackPtr[0].dist = toScalar(dist_D2);
-          stackPtr[1].ptr  = node->child((unsigned int)toScalar(ptr_C2));
-          *(float*)&stackPtr[1].dist = toScalar(dist_C2);
-          stackPtr[2].ptr  = node->child((unsigned int)toScalar(ptr_B2));
-          *(float*)&stackPtr[2].dist = toScalar(dist_B2);
-          stackPtr+=3;
-          return;
-        }
-
-        /* >=5 hits: reverse to descending order for writing to stack */
-
-        const size_t hits = 4 + __popcnt(mask);
-        const vfloat<N> dist_A2  = select(m_dist3, dist_A1, d3);
-        vfloat<N> dist(neg_inf);
-        vint<N> ptr(zero);
-
-        
-        isort_quick_update(dist,ptr,dist_A2,ptr_A2);
-        isort_quick_update(dist,ptr,dist_B2,ptr_B2);
-        isort_quick_update(dist,ptr,dist_C2,ptr_C2);
-        isort_quick_update(dist,ptr,dist_D2,ptr_D2);
-
-        do {
-
-          children = align_shift_right<1>(children,children);
-          distance = align_shift_right<1>(distance,distance);        
-
-          cur = node->child((unsigned int)toScalar(children));
-          cur.prefetch(types);
-
-          const vfloat<N> new_dist(permute(distance,vint<N>(zero)));
-          const vint<N> new_ptr(permute(children,vint<N>(zero)));
-
-          mask &= mask-1;
-          isort_update(dist,ptr,new_dist,new_ptr);
-
-        } while(mask);
-
-        for (size_t i=0;i<hits-1;i++)
-        {
-          stackPtr->ptr  = node->child((unsigned int)toScalar(ptr));
-          *(float*)&stackPtr->dist = toScalar(dist);
-          dist = align_shift_right<1>(dist,dist);
-          ptr  = align_shift_right<1>(ptr,ptr);
-          stackPtr++;
-        }
-        cur = node->child((unsigned int)toScalar(ptr));
+      mask &= mask-1;
+      if (likely(mask == 0)) {
+        cur = node->child((unsigned int)toScalar(ptr_A2));
+        stackPtr[0].ptr  = node->child((unsigned int)toScalar(ptr_D2));
+        *(float*)&stackPtr[0].dist = toScalar(dist_D2);
+        stackPtr[1].ptr  = node->child((unsigned int)toScalar(ptr_C2));
+        *(float*)&stackPtr[1].dist = toScalar(dist_C2);
+        stackPtr[2].ptr  = node->child((unsigned int)toScalar(ptr_B2));
+        *(float*)&stackPtr[2].dist = toScalar(dist_B2);
+        stackPtr+=3;
+        return;
       }
+
+      /* >=5 hits: reverse to descending order for writing to stack */
+
+      const size_t hits = 4 + __popcnt(mask);
+      const vfloat<N> dist_A2  = select(m_dist3, dist_A1, d3);
+      vfloat<N> dist(neg_inf);
+      vint<N> ptr(zero);
+
+
+      isort_quick_update(dist,ptr,dist_A2,ptr_A2);
+      isort_quick_update(dist,ptr,dist_B2,ptr_B2);
+      isort_quick_update(dist,ptr,dist_C2,ptr_C2);
+      isort_quick_update(dist,ptr,dist_D2,ptr_D2);
+
+      do {
+
+        children = align_shift_right<1>(children,children);
+        distance = align_shift_right<1>(distance,distance);
+
+        cur = node->child((unsigned int)toScalar(children));
+        cur.prefetch(types);
+
+        const vfloat<N> new_dist(permute(distance,vint<N>(zero)));
+        const vint<N> new_ptr(permute(children,vint<N>(zero)));
+
+        mask &= mask-1;
+        isort_update(dist,ptr,new_dist,new_ptr);
+
+      } while(mask);
+
+      for (size_t i=0;i<hits-1;i++)
+      {
+        stackPtr->ptr  = node->child((unsigned int)toScalar(ptr));
+        *(float*)&stackPtr->dist = toScalar(dist);
+        dist = align_shift_right<1>(dist,dist);
+        ptr  = align_shift_right<1>(ptr,ptr);
+        stackPtr++;
+      }
+      cur = node->child((unsigned int)toScalar(ptr));
+    }
 #endif
 
 #endif
 
     /* Specialization for BVH4. */
     template<int Nx, int types>
-      class BVHNNodeTraverser1Hit<4,Nx,types>
+    class BVHNNodeTraverser1Hit<4,Nx,types>
     {
       typedef BVH4 BVH;
       typedef BVH4::NodeRef NodeRef;
@@ -541,7 +539,7 @@ namespace embree
 
     /* Specialization for BVH8. */
     template<int Nx, int types>
-      class BVHNNodeTraverser1Hit<8,Nx,types>
+    class BVHNNodeTraverser1Hit<8,Nx,types>
     {
       typedef BVH8 BVH;
       typedef BVH8::NodeRef NodeRef;
@@ -676,7 +674,7 @@ namespace embree
 #define ENABLE_TRANSFORM_CACHE 0
 
     template<int N, int Nx, int types>
-      class BVHNNodeTraverser1Transform<N,Nx,types,true>
+    class BVHNNodeTraverser1Transform<N,Nx,types,true>
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
@@ -837,7 +835,7 @@ namespace embree
     };
 
     template<int N, int Nx, int types>
-      class BVHNNodeTraverser1Transform<N,Nx,types,false>
+    class BVHNNodeTraverser1Transform<N,Nx,types,false>
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
@@ -868,7 +866,7 @@ namespace embree
 
     /*! BVH node traversal for single rays. */
     template<int N, int Nx, int types>
-      class BVHNNodeTraverser1 : public BVHNNodeTraverser1Hit<N, Nx, types>, public BVHNNodeTraverser1Transform<N, Nx, types, (bool)(types & BVH_FLAG_TRANSFORM_NODE)>
+    class BVHNNodeTraverser1 : public BVHNNodeTraverser1Hit<N, Nx, types>, public BVHNNodeTraverser1Transform<N, Nx, types, (bool)(types & BVH_FLAG_TRANSFORM_NODE)>
     {
     public:
       __forceinline explicit BVHNNodeTraverser1(const TravRay<N,Nx>& vray) : BVHNNodeTraverser1Transform<N, Nx, types, (bool)(types & BVH_FLAG_TRANSFORM_NODE)>(vray) {}

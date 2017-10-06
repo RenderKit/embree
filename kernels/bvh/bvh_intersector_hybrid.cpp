@@ -16,7 +16,8 @@
 
 #include "bvh_intersector_hybrid.h"
 #include "bvh_traverser1.h"
-#include "bvh_intersector_node.h"
+#include "node_intersector1.h"
+#include "node_intersector_packet.h"
 
 #include "../geometry/intersector_iterators.h"
 #include "../geometry/triangle_intersector.h"

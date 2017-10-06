@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "instance_intersector1.h"
+#include "instance_intersector.h"
 #include "../common/scene.h"
 
 namespace embree
