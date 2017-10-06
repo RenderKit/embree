@@ -105,7 +105,7 @@ if(numProcessors EQUAL 0)
 endif()
 
 # set build name
-set(CTEST_BUILD_NAME "${TEST_NAME}-${osname}-${cpu}")
+set(CTEST_BUILD_NAME "${osname}-${cpu}")
 set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
 IF (WIN32)
   set(CTEST_BUILD_COMMAND "${CMAKE_COMMAND} --build . --config ${CTEST_CONFIGURATION_TYPE}")
