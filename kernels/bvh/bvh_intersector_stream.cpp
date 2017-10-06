@@ -37,10 +37,6 @@ namespace embree
 {
   namespace isa
   {
-    // =====================================================================================================
-    // =====================================================================================================
-    // =====================================================================================================
-
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
     __forceinline void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersect(Accel::Intersectors* __restrict__ This,
                                                                                                        RayK<K>** inputPackets, size_t numOctantRays, IntersectContext* context)
@@ -269,7 +265,6 @@ namespace embree
     typedef ArrayIntersectorKStream<VSIZEX,QuadMiIntersectorKPluecker<4 COMMA VSIZEX COMMA true > > Quad4iIntersectorStreamPluecker;
     typedef ArrayIntersectorKStream<VSIZEX,ObjectIntersectorK<VSIZEX COMMA false > > ObjectIntersectorStream;
 
-
     // =====================================================================================================
     // =====================================================================================================
     // =====================================================================================================
@@ -301,6 +296,5 @@ namespace embree
         This->occluded(valid, ray, context);
       }
     }
-
   }
 }
