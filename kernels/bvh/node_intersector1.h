@@ -381,8 +381,8 @@ namespace embree
       const vbool<N> vmask = asInt(tNear) <= asInt(tFar);
       const size_t mask = movemask(vmask);
 #else
-      const vfloat<N> tNear = max(tnear,tNearX,tNearY,tNearZ);
-      const vfloat<N> tFar  = min(tfar, tFarX ,tFarY ,tFarZ );
+      const vfloat<N> tNear = max(ray.tnear,tNearX,tNearY,tNearZ);
+      const vfloat<N> tFar  = min(ray.tfar, tFarX ,tFarY ,tFarZ );
       const vbool<N> vmask = tNear <= tFar;
       const size_t mask = movemask(vmask);
 #endif
