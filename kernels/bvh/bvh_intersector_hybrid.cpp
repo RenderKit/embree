@@ -133,7 +133,7 @@ namespace embree
       assert(context);
       if (unlikely(types == BVH_AN1 && context->user && isCoherent(context->user->flags)))
       {
-        intersect_coherent(valid_i,This,ray,context);
+        intersectCoherent(valid_i,This,ray,context);
         return;
       }
 #endif
@@ -367,7 +367,7 @@ namespace embree
 
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
-    void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::intersect_coherent(vint<K>* __restrict__ valid_i,
+    void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::intersectCoherent(vint<K>* __restrict__ valid_i,
                                                                                                    Accel::Intersectors* __restrict__ This,
                                                                                                    RayK<K>& __restrict__ ray,
                                                                                                    IntersectContext* context)
@@ -604,7 +604,7 @@ namespace embree
       assert(context);
       if (unlikely(types == BVH_AN1 && context->user && isCoherent(context->user->flags)))
       {
-        occluded_coherent(valid_i,This,ray,context);
+        occludedCoherent(valid_i,This,ray,context);
         return;
       }
 #endif
@@ -778,7 +778,7 @@ namespace embree
 
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
-    void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::occluded_coherent(vint<K>* __restrict__ valid_i, Accel::Intersectors* __restrict__ This,
+    void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::occludedCoherent(vint<K>* __restrict__ valid_i, Accel::Intersectors* __restrict__ This,
                                                                                                   RayK<K>& __restrict__ ray, IntersectContext* context)
     {
       BVH* __restrict__ bvh = (BVH*) This->ptr;

@@ -59,8 +59,8 @@ namespace embree
       static void intersect(vint<K>* valid, Accel::Intersectors* This, RayK<K>& ray, IntersectContext* context);
       static void occluded (vint<K>* valid, Accel::Intersectors* This, RayK<K>& ray, IntersectContext* context);
 
-      static void intersect_coherent(vint<K>* valid, Accel::Intersectors* This, RayK<K>& ray, IntersectContext* context);
-      static void occluded_coherent (vint<K>* valid, Accel::Intersectors* This, RayK<K>& ray, IntersectContext* context);
+      static void intersectCoherent(vint<K>* valid, Accel::Intersectors* This, RayK<K>& ray, IntersectContext* context);
+      static void occludedCoherent (vint<K>* valid, Accel::Intersectors* This, RayK<K>& ray, IntersectContext* context);
 
     };
 
