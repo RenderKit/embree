@@ -60,9 +60,7 @@ namespace embree
 
       /*! load the ray into SIMD registers */
       context->geomID_to_instID = nullptr;
-      TravRay<N,Nx> vray(ray.org,ray.dir);
-      vfloat<Nx> ray_near = max(ray.tnear,0.0f);
-      vfloat<Nx> ray_far  = max(ray.tfar ,0.0f);
+      TravRay<N,Nx> vray(ray.org, ray.dir, max(ray.tnear, 0.0f), max(ray.tfar, 0.0f));
 
       /*! initialize the node traverser */
       BVHNNodeTraverser1<N,Nx,types> nodeTraverser(vray);
@@ -78,7 +76,7 @@ namespace embree
         /*! if popped node is too far, pop next one */
 #if defined(__AVX512ER__)
         /* much faster on KNL */
-        if (unlikely(any(vfloat<Nx>(*(float*)&stackPtr->dist) > ray_far)))
+        if (unlikely(any(vfloat<Nx>(*(float*)&stackPtr->dist) > vray.tfar)))
           continue;
 #else
         if (unlikely(*(float*)&stackPtr->dist > ray.tfar))
@@ -91,7 +89,7 @@ namespace embree
           /* intersect node */
           size_t mask; vfloat<Nx> tNear;
           STAT3(normal.trav_nodes,1,1,1);
-          bool nodeIntersected = BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time,tNear,mask);
+          bool nodeIntersected = BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur, vray, ray.time, tNear, mask);
           if (unlikely(!nodeIntersected)) { STAT3(normal.trav_nodes,-1,-1,-1); break; }
 
           /*! if no child is hit, pop next node */
@@ -99,20 +97,20 @@ namespace embree
             goto pop;
 
           /* select next child and push other children */
-          nodeTraverser.traverseClosestHit(cur,mask,tNear,stackPtr,stackEnd);
+          nodeTraverser.traverseClosestHit(cur, mask, tNear, stackPtr, stackEnd);
         }
 
         /* ray transformation support */
-        if (unlikely(nodeTraverser.traverseTransform(cur,ray,vray,context,stackPtr,stackEnd)))
+        if (unlikely(nodeTraverser.traverseTransform(cur, ray, vray, context, stackPtr, stackEnd)))
           goto pop;
 
         /*! this is a leaf node */
         assert(cur != BVH::emptyNode);
         STAT3(normal.trav_leaves,1,1,1);
-        size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
+        size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
         size_t lazy_node = 0;
-        PrimitiveIntersector1::intersect(pre,ray,context,prim,num,lazy_node);
-        ray_far = ray.tfar;
+        PrimitiveIntersector1::intersect(pre, ray, context, prim, num, lazy_node);
+        vray.tfar = ray.tfar;
 
         /*! push lazy node onto stack */
         if (unlikely(lazy_node)) {
@@ -153,9 +151,7 @@ namespace embree
 
       /*! load the ray into SIMD registers */
       context->geomID_to_instID = nullptr;
-      TravRay<N,Nx> vray(ray.org,ray.dir);
-      vfloat<Nx> ray_near = max(ray.tnear,0.0f);
-      vfloat<Nx> ray_far  = max(ray.tfar ,0.0f);
+      TravRay<N,Nx> vray(ray.org, ray.dir, max(ray.tnear, 0.0f), max(ray.tfar, 0.0f));
 
       /*! initialize the node traverser */
       BVHNNodeTraverser1<N,Nx,types> nodeTraverser(vray);
@@ -174,7 +170,7 @@ namespace embree
           /* intersect node */
           size_t mask; vfloat<Nx> tNear;
           STAT3(shadow.trav_nodes,1,1,1);
-          bool nodeIntersected = BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time,tNear,mask);
+          bool nodeIntersected = BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur, vray, ray.time, tNear, mask);
           if (unlikely(!nodeIntersected)) { STAT3(shadow.trav_nodes,-1,-1,-1); break; }
 
           /*! if no child is hit, pop next node */
@@ -182,19 +178,19 @@ namespace embree
             goto pop;
 
           /* select next child and push other children */
-          nodeTraverser.traverseAnyHit(cur,mask,tNear,stackPtr,stackEnd);
+          nodeTraverser.traverseAnyHit(cur, mask, tNear, stackPtr, stackEnd);
         }
 
         /* ray transformation support */
-        if (unlikely(nodeTraverser.traverseTransform(cur,ray,vray,context,stackPtr,stackEnd)))
+        if (unlikely(nodeTraverser.traverseTransform(cur, ray, vray, context, stackPtr, stackEnd)))
           goto pop;
 
         /*! this is a leaf node */
         assert(cur != BVH::emptyNode);
         STAT3(shadow.trav_leaves,1,1,1);
-        size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
+        size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
         size_t lazy_node = 0;
-        if (PrimitiveIntersector1::occluded(pre,ray,context,prim,num,lazy_node)) {
+        if (PrimitiveIntersector1::occluded(pre, ray, context, prim, num, lazy_node)) {
           ray.geomID = 0;
           break;
         }
