@@ -681,18 +681,18 @@ namespace embree
       typedef typename BVH::TransformNode TransformNode;
 
     public:
-      __forceinline explicit BVHNNodeTraverser1Transform(const TravRay<N,Nx>& vray)
+      __forceinline explicit BVHNNodeTraverser1Transform(const TravRayBase<N,Nx>& vray)
 #if ENABLE_TRANSFORM_CACHE
         : cacheSlot(0), cacheTag(-1)
 #endif
       {
-        new (&tlray) TravRay<N,Nx>(vray);
+        new (&tlray) TravRayBase<N,Nx>(vray);
       }
 
       /* If a transform node is passed, traverses the node and returns true. */
       __forceinline bool traverseTransform(NodeRef& cur,
                                            Ray& ray,
-                                           TravRay<N,Nx>& vray,
+                                           TravRayBase<N,Nx>& vray,
                                            IntersectContext* context,
                                            StackItemT<NodeRef>*& stackPtr,
                                            StackItemT<NodeRef>* stackEnd)
@@ -723,9 +723,9 @@ namespace embree
 #endif
             //if (likely(!node->identity)) 
           {
-            const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay<N,Nx>&)tlray).org_xyz);
-            const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay<N,Nx>&)tlray).dir_xyz);  
-            new (&vray) TravRay<N,Nx>(ray_org,ray_dir);
+            const Vec3fa ray_org = xfmPoint (node->world2local,((TravRayBase<N,Nx>&)tlray).org_xyz);
+            const Vec3fa ray_dir = xfmVector(node->world2local,((TravRayBase<N,Nx>&)tlray).dir_xyz);
+            new (&vray) TravRayBase<N,Nx>(ray_org,ray_dir);
             ray.org = ray_org;
             ray.dir = ray_dir;
 #if ENABLE_TRANSFORM_CACHE
@@ -743,9 +743,9 @@ namespace embree
         if (cur == BVH::popRay)
         {
           //context->geomID_to_instID = nullptr;
-          vray = (TravRay<N,Nx>&) tlray;
-          ray.org = ((TravRay<N,Nx>&)tlray).org_xyz;
-          ray.dir = ((TravRay<N,Nx>&)tlray).dir_xyz;
+          vray = (TravRayBase<N,Nx>&) tlray;
+          ray.org = ((TravRayBase<N,Nx>&)tlray).org_xyz;
+          ray.dir = ((TravRayBase<N,Nx>&)tlray).dir_xyz;
           if (ray.geomID == -1) {
             ray.instID = context->instID;
             ray.geomID = context->geomID;
@@ -759,7 +759,7 @@ namespace embree
       /* If a transform node is passed, traverses the node and returns true. */
       __forceinline bool traverseTransform(NodeRef& cur,
                                            Ray& ray,
-                                           TravRay<N,Nx>& vray,
+                                           TravRayBase<N,Nx>& vray,
                                            IntersectContext* context,
                                            NodeRef*& stackPtr,
                                            NodeRef* stackEnd)
@@ -790,9 +790,9 @@ namespace embree
 #endif
             //if (likely(!node->identity)) 
           {
-            const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay<N,Nx>&)tlray).org_xyz);
-            const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay<N,Nx>&)tlray).dir_xyz);
-            new (&vray) TravRay<N,Nx>(ray_org,ray_dir);
+            const Vec3fa ray_org = xfmPoint (node->world2local,((TravRayBase<N,Nx>&)tlray).org_xyz);
+            const Vec3fa ray_dir = xfmVector(node->world2local,((TravRayBase<N,Nx>&)tlray).dir_xyz);
+            new (&vray) TravRayBase<N,Nx>(ray_org,ray_dir);
             ray.org = ray_org;
             ray.dir = ray_dir;
 #if ENABLE_TRANSFORM_CACHE
@@ -810,9 +810,9 @@ namespace embree
         if (cur == BVH::popRay)
         {
           //context->geomID_to_instID = nullptr;
-          vray = (TravRay<N,Nx>&) tlray;
-          ray.org = ((TravRay<N,Nx>&)tlray).org_xyz;
-          ray.dir = ((TravRay<N,Nx>&)tlray).dir_xyz;
+          vray = (TravRayBase<N,Nx>&) tlray;
+          ray.org = ((TravRayBase<N,Nx>&)tlray).org_xyz;
+          ray.dir = ((TravRayBase<N,Nx>&)tlray).dir_xyz;
           if (ray.geomID == -1) {
             ray.instID = context->instID;
             ray.geomID = context->geomID;
@@ -824,13 +824,13 @@ namespace embree
       }
 
     private:
-      TravRay<N,Nx> tlray;
+      TravRayBase<N,Nx> tlray;
 
 #if ENABLE_TRANSFORM_CACHE
     private:
       unsigned int cacheSlot;
       vintx cacheTag;
-      TravRay<N,Nx> cacheEntry[VSIZEX];
+      TravRayBase<N,Nx> cacheEntry[VSIZEX];
 #endif
     };
 
@@ -841,11 +841,11 @@ namespace embree
       typedef typename BVH::NodeRef NodeRef;
 
     public:
-      __forceinline explicit BVHNNodeTraverser1Transform(const TravRay<N,Nx>& vray) {}
+      __forceinline explicit BVHNNodeTraverser1Transform(const TravRayBase<N,Nx>& vray) {}
 
       __forceinline bool traverseTransform(NodeRef& cur,
                                            Ray& ray,
-                                           TravRay<N,Nx>& vray,
+                                           TravRayBase<N,Nx>& vray,
                                            IntersectContext* context,
                                            StackItemT<NodeRef>*& stackPtr,
                                            StackItemT<NodeRef>* stackEnd)
@@ -855,7 +855,7 @@ namespace embree
 
       __forceinline bool traverseTransform(NodeRef& cur,
                                            Ray& ray,
-                                           TravRay<N,Nx>& vray,
+                                           TravRayBase<N,Nx>& vray,
                                            IntersectContext* context,
                                            NodeRef*& stackPtr,
                                            NodeRef* stackEnd)
@@ -869,7 +869,7 @@ namespace embree
     class BVHNNodeTraverser1 : public BVHNNodeTraverser1Hit<N, Nx, types>, public BVHNNodeTraverser1Transform<N, Nx, types, (bool)(types & BVH_FLAG_TRANSFORM_NODE)>
     {
     public:
-      __forceinline explicit BVHNNodeTraverser1(const TravRay<N,Nx>& vray) : BVHNNodeTraverser1Transform<N, Nx, types, (bool)(types & BVH_FLAG_TRANSFORM_NODE)>(vray) {}
+      __forceinline explicit BVHNNodeTraverser1(const TravRayBase<N,Nx>& vray) : BVHNNodeTraverser1Transform<N, Nx, types, (bool)(types & BVH_FLAG_TRANSFORM_NODE)>(vray) {}
     };
   }
 }

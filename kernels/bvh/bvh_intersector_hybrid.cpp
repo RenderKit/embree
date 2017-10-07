@@ -65,8 +65,7 @@ namespace embree
       stack[0].dist = neg_inf;
 
       /*! load the ray into SIMD registers */
-      TravRay<N,Nx> vray(k,ray_org,ray_dir,ray_rdir,nearXYZ);
-      vfloat<Nx> ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
+      TravRay<N,Nx> vray(k, ray_org, ray_dir, ray_rdir, nearXYZ, ray_tnear[k], ray_tfar[k]);
 
       /* pop loop */
       while (true) pop:
@@ -79,7 +78,7 @@ namespace embree
         /*! if popped node is too far, pop next one */
 #if defined(__AVX512ER__)
         /* much faster on KNL */
-        if (unlikely(any(vfloat<Nx>(*(float*)&stackPtr->dist) > ray_far)))
+        if (unlikely(any(vfloat<Nx>(*(float*)&stackPtr->dist) > vray.tfar)))
           continue;
 #else
         if (unlikely(*(float*)&stackPtr->dist > ray.tfar[k]))
@@ -96,14 +95,14 @@ namespace embree
           /* intersect node */
           size_t mask = 0;
           vfloat<Nx> tNear;
-          BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
+          BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur, vray, ray.time[k], tNear, mask);
 
           /*! if no child is hit, pop next node */
           if (unlikely(mask == 0))
             goto pop;
 
           /* select next child and push other children */
-          BVHNNodeTraverser1<N,Nx,types>::traverseClosestHit(cur,mask,tNear,stackPtr,stackEnd);
+          BVHNNodeTraverser1<N,Nx,types>::traverseClosestHit(cur, mask, tNear, stackPtr, stackEnd);
         }
 
         /*! this is a leaf node */
@@ -114,7 +113,7 @@ namespace embree
         size_t lazy_node = 0;
         PrimitiveIntersectorK::intersect(pre, ray, k, context, prim, num, lazy_node);
 
-        ray_far = ray.tfar[k];
+        vray.tfar = ray.tfar[k];
 
         if (unlikely(lazy_node)) {
           stackPtr->ptr = lazy_node;
@@ -127,13 +126,13 @@ namespace embree
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
     void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::intersect(vint<K>* __restrict__ valid_i, Accel::Intersectors* __restrict__ This, RayK<K>& __restrict__ ray, IntersectContext* __restrict__ context)
     {
-      BVH* __restrict__ bvh = (BVH*) This->ptr;
+      BVH* __restrict__ bvh = (BVH*)This->ptr;
       
 #if ENABLE_FAST_COHERENT_CODEPATHS == 1
       assert(context);
       if (unlikely(types == BVH_AN1 && context->user && isCoherent(context->user->flags)))
       {
-        intersect_coherent(valid_i,This,ray,context);
+        intersectCoherent(valid_i,This,ray,context);
         return;
       }
 #endif
@@ -367,7 +366,7 @@ namespace embree
 
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
-    void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::intersect_coherent(vint<K>* __restrict__ valid_i,
+    void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::intersectCoherent(vint<K>* __restrict__ valid_i,
                                                                                                    Accel::Intersectors* __restrict__ This,
                                                                                                    RayK<K>& __restrict__ ray,
                                                                                                    IntersectContext* context)
@@ -545,8 +544,7 @@ namespace embree
 	stack[0]  = root;
 
 	/*! load the ray into SIMD registers */
-        TravRay<N,Nx> vray(k,ray_org,ray_dir,ray_rdir,nearXYZ);
-        const vfloat<Nx> ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
+        TravRay<N,Nx> vray(k, ray_org, ray_dir, ray_rdir, nearXYZ, ray_tnear[k], ray_tfar[k]);
 
 	/* pop loop */
 	while (true) pop:
@@ -554,7 +552,7 @@ namespace embree
 	  /*! pop next node */
 	  if (unlikely(stackPtr == stack)) break;
 	  stackPtr--;
-	  NodeRef cur = (NodeRef) *stackPtr;
+          NodeRef cur = (NodeRef)*stackPtr;
 
           /* downtraversal loop */
           while (true)
@@ -566,23 +564,23 @@ namespace embree
             /* intersect node */
             size_t mask = 0;
             vfloat<Nx> tNear;
-            BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
+            BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur, vray, ray.time[k], tNear, mask);
 
             /*! if no child is hit, pop next node */
             if (unlikely(mask == 0))
               goto pop;
 
             /* select next child and push other children */
-            BVHNNodeTraverser1<N,Nx,types>::traverseAnyHit(cur,mask,tNear,stackPtr,stackEnd);
+            BVHNNodeTraverser1<N,Nx,types>::traverseAnyHit(cur, mask, tNear, stackPtr, stackEnd);
           }
 
 	  /*! this is a leaf node */
           assert(cur != BVH::emptyNode);
 	  STAT3(shadow.trav_leaves,1,1,1);
-	  size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
+          size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
           size_t lazy_node = 0;
-          if (PrimitiveIntersectorK::occluded(pre,ray,k,context,prim,num,lazy_node)) {
+          if (PrimitiveIntersectorK::occluded(pre, ray, k, context, prim, num, lazy_node)) {
 	    ray.geomID[k] = 0;
 	    return true;
 	  }
@@ -604,7 +602,7 @@ namespace embree
       assert(context);
       if (unlikely(types == BVH_AN1 && context->user && isCoherent(context->user->flags)))
       {
-        occluded_coherent(valid_i,This,ray,context);
+        occludedCoherent(valid_i,This,ray,context);
         return;
       }
 #endif
@@ -778,7 +776,7 @@ namespace embree
 
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
-    void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::occluded_coherent(vint<K>* __restrict__ valid_i, Accel::Intersectors* __restrict__ This,
+    void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::occludedCoherent(vint<K>* __restrict__ valid_i, Accel::Intersectors* __restrict__ This,
                                                                                                   RayK<K>& __restrict__ ray, IntersectContext* context)
     {
       BVH* __restrict__ bvh = (BVH*) This->ptr;
