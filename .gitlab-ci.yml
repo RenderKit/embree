@@ -66,10 +66,10 @@ continuous-linux-x64-RelWithDebInfo-ICC17-AVX2-TBB-KLOCKWORK:
   tags:   [linux, icc17, klocwork]
   only:   [pushes]
 
-continuous-linux-knl-x64-RelWithDebInfo-CLANG4-AVX512KNL-TBB:
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX512KNL tasking:TBB intensity:2"
-  tags:   [linux, knl, clang4]
-  only:   [pushes]
+#continuous-linux-knl-x64-RelWithDebInfo-CLANG4-AVX512KNL-TBB:
+#  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 isa:AVX512KNL tasking:TBB intensity:2"
+#  tags:   [linux, knl, clang4]
+#  only:   [pushes]
 
 continuous-linux-skx-x64-RelWithDebInfo-ICC17-AVX512SKX-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 isa:AVX512SKX tasking:TBB intensity:2"
