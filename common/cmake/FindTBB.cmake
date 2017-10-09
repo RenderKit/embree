@@ -99,7 +99,7 @@ ELSE ()
     FIND_LIBRARY(TBB_LIBRARY tbb)
     FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc)
     
-  ELSEIF (EXISTS ${EMBREE_TBB_ROOT}/cmake/TBBBuild.cmake)
+  ELSEIF (EXISTS ${EMBREE_TBB_ROOT}/cmake/TBBBuild.cmake AND EXISTS ${EMBREE_TBB_ROOT}/src/tbb/tbb_version.h)
     OPTION(EMBREE_TBB_STATIC_LIB "Build TBB as a static library (building TBB as a static library is NOT recommended)")
     if (EMBREE_TBB_STATIC_LIB)
       include(${EMBREE_TBB_ROOT}/cmake/TBBBuild.cmake)
