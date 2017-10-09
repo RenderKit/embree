@@ -84,7 +84,7 @@ namespace embree
         {
           /* stop if we found a leaf node */
           if (unlikely(cur.isLeaf())) break;
-          STAT3(normal.trav_nodes,1,1,1);
+          STAT3(normal.trav_nodes, 1, 1, 1);
 
           /* intersect node */
           size_t mask = 0;
@@ -151,13 +151,9 @@ namespace embree
       Precalculations pre(valid, ray);
 
       /* load ray */
+      TravRayK<K, robust> tray(ray.org, ray.dir, single ? N : 0);
       const vfloat<K> org_ray_tnear = max(ray.tnear, 0.0f);
       const vfloat<K> org_ray_tfar  = max(ray.tfar , 0.0f);
-
-      TravRayK<K, robust> tray(ray.org, ray.dir, org_ray_tnear, org_ray_tfar, single ? N : 0);
-
-      tray.tnear = select(valid, tray.tnear, vfloat<K>(pos_inf));
-      tray.tfar  = select(valid, tray.tfar , vfloat<K>(neg_inf));
 
       /* determine switch threshold based on flags */
       const size_t switchThreshold = (context->user && isCoherent(context->user->flags)) ? 2 : switchThresholdIncoherent;
@@ -171,12 +167,13 @@ namespace embree
         const vbool<K> octant_valid = octant[valid_index] == octant;
 
 #if defined(__AVX__)
-        STAT3(normal.trav_hit_boxes[__popcnt(movemask(octant_valid))],1,1,1);
+        STAT3(normal.trav_hit_boxes[__popcnt(movemask(octant_valid))], 1, 1, 1);
 #endif
 
         valid_bits &= ~(size_t)movemask(octant_valid);
 
-        const vfloat<K> inf = vfloat<K>(pos_inf);
+        tray.tnear = select(octant_valid, org_ray_tnear, vfloat<K>(pos_inf));
+        tray.tfar  = select(octant_valid, org_ray_tfar , vfloat<K>(neg_inf));
 
         /* allocate stack and push root node */
         vfloat<K> stack_near[stackSizeChunk];
@@ -184,7 +181,7 @@ namespace embree
         stack_node[0] = BVH::invalidNode;
         stack_near[0] = inf;
         stack_node[1] = bvh->root;
-        stack_near[1] = select(octant_valid, tray.tnear, inf);
+        stack_near[1] = tray.tnear;
         NodeRef* stackEnd MAYBE_UNUSED = stack_node+stackSizeChunk;
         NodeRef* __restrict__ sptr_node = stack_node + 2;
         vfloat<K>* __restrict__ sptr_near = stack_near + 2;
@@ -231,7 +228,7 @@ namespace embree
           {
             /* process nodes */
             const vbool<K> valid_node = tray.tfar > curDist;
-            STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
+            STAT3(normal.trav_nodes, 1, popcnt(valid_node), K);
             const NodeRef nodeRef = cur;
             const BaseNode* __restrict__ const node = nodeRef.baseNode(types);
 
@@ -255,7 +252,7 @@ namespace embree
               {                                
                 assert(sptr_node < stackEnd);
                 assert(child != BVH::emptyNode);
-                const vfloat<K> childDist = select(lhit,lnearP,inf);
+                const vfloat<K> childDist = select(lhit, lnearP, inf);
                 /* push cur node onto stack and continue with hit child */
                 if (any(childDist < curDist))
                 {
@@ -278,7 +275,7 @@ namespace embree
             }
 
 #if defined(__AVX__)
-            //STAT3(normal.trav_hit_boxes[num_child_hits],1,1,1);
+            //STAT3(normal.trav_hit_boxes[num_child_hits], 1, 1, 1);
 #endif
 
             if (unlikely(cur == BVH::emptyNode))
@@ -330,7 +327,7 @@ namespace embree
           /* intersect leaf */
           assert(cur != BVH::emptyNode);
           const vbool<K> valid_leaf = tray.tfar > curDist;
-          STAT3(normal.trav_leaves,1,popcnt(valid_leaf),K);
+          STAT3(normal.trav_leaves, 1, popcnt(valid_leaf), K);
           if (unlikely(none(valid_leaf))) continue;
           size_t items; const Primitive* prim = (Primitive*)cur.leaf(items);
 
@@ -374,10 +371,9 @@ namespace embree
       Precalculations pre(valid, ray);
 
       /* load ray */
+      TravRayK<K, robust> tray(ray.org, ray.dir, single ? N : 0);
       const vfloat<K> org_ray_tnear = max(ray.tnear, 0.0f);
       const vfloat<K> org_ray_tfar  = max(ray.tfar , 0.0f);
-
-      TravRayK<K, robust> tray(ray.org, ray.dir, single ? N : 0);
 
       vint<K> octant = ray.octant();
       octant = select(valid, octant, vint<K>(0xffffffff));
@@ -414,7 +410,7 @@ namespace embree
           while (likely(!cur.isLeaf()))
           {
             /* process nodes */
-            //STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
+            //STAT3(normal.trav_nodes, 1, popcnt(valid_node), K);
             const NodeRef nodeRef = cur;
             const AlignedNode* __restrict__ const node = nodeRef.alignedNode();
 
@@ -426,14 +422,14 @@ namespace embree
             curDist = pos_inf;
             
 #if defined(__AVX__)
-            //STAT3(normal.trav_hit_boxes[__popcnt(m_frusta_node)],1,1,1);
+            //STAT3(normal.trav_hit_boxes[__popcnt(m_frusta_node)], 1, 1, 1);
 #endif
             size_t num_child_hits = 0;
             do {
               const size_t i = __bscf(m_frusta_node);
               vfloat<K> lnearP;
               vbool<K> lhit = false; // motion blur is not supported, so the initial value will be ignored
-              STAT3(normal.trav_nodes,1,1,1);
+              STAT3(normal.trav_nodes, 1, 1, 1);
               BVHNNodeIntersectorK<N, K, types, robust>::intersect(nodeRef, i, tray, ray.time, lnearP, lhit);
 
               if (likely(any(lhit)))
@@ -483,7 +479,7 @@ namespace embree
           assert(cur != BVH::invalidNode);
           assert(cur != BVH::emptyNode);
           const vbool<K> valid_leaf = tray.tfar > curDist;
-          STAT3(normal.trav_leaves,1,popcnt(valid_leaf),K);
+          STAT3(normal.trav_leaves, 1, popcnt(valid_leaf), K);
           if (unlikely(none(valid_leaf))) continue;
           size_t items; const Primitive* prim = (Primitive*)cur.leaf(items);
 
@@ -544,7 +540,7 @@ namespace embree
           {
             /* stop if we found a leaf node */
             if (unlikely(cur.isLeaf())) break;
-            STAT3(shadow.trav_nodes,1,1,1);
+            STAT3(shadow.trav_nodes, 1, 1, 1);
 
             /* intersect node */
             size_t mask = 0;
@@ -561,7 +557,7 @@ namespace embree
 
           /* this is a leaf node */
           assert(cur != BVH::emptyNode);
-	  STAT3(shadow.trav_leaves,1,1,1);
+          STAT3(shadow.trav_leaves, 1, 1, 1);
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
           size_t lazy_node = 0;
@@ -606,19 +602,18 @@ namespace embree
       if (unlikely(valid_bits == 0)) return;
 
       /* verify correct input */
-      assert(all(valid,ray.valid()));
-      assert(all(valid,ray.tnear >= 0.0f));
+      assert(all(valid, ray.valid()));
+      assert(all(valid, ray.tnear >= 0.0f));
       assert(!(types & BVH_MB) || all(valid, (ray.time >= 0.0f) & (ray.time <= 1.0f)));
       Precalculations pre(valid, ray);
 
       /* load ray */
+      TravRayK<K, robust> tray(ray.org, ray.dir, single ? N : 0);
       const vfloat<K> org_ray_tnear = max(ray.tnear, 0.0f);
       const vfloat<K> org_ray_tfar  = max(ray.tfar , 0.0f);
 
-      TravRayK<K, robust> tray(ray.org, ray.dir, org_ray_tnear, org_ray_tfar, single ? N : 0);
-
-      tray.tnear = select(valid, tray.tnear, vfloat<K>(pos_inf));
-      tray.tfar  = select(valid, tray.tfar , vfloat<K>(neg_inf));
+      tray.tnear = select(valid, org_ray_tnear, vfloat<K>(pos_inf));
+      tray.tfar  = select(valid, org_ray_tfar , vfloat<K>(neg_inf));
 
       vbool<K> terminated = !valid;
       const vfloat<K> inf = vfloat<K>(pos_inf);
@@ -677,7 +672,7 @@ namespace embree
         {
           /* process nodes */
           const vbool<K> valid_node = tray.tfar > curDist;
-          STAT3(shadow.trav_nodes,1,popcnt(valid_node),K);
+          STAT3(shadow.trav_nodes, 1, popcnt(valid_node), K);
           const NodeRef nodeRef = cur;
           const BaseNode* __restrict__ const node = nodeRef.baseNode(types);
 
@@ -736,7 +731,7 @@ namespace embree
         /* intersect leaf */
         assert(cur != BVH::emptyNode);
         const vbool<K> valid_leaf = tray.tfar > curDist;
-        STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),K);
+        STAT3(shadow.trav_leaves, 1, popcnt(valid_leaf), K);
         if (unlikely(none(valid_leaf))) continue;
         size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
 
@@ -750,6 +745,7 @@ namespace embree
           *sptr_near = neg_inf;   sptr_near++;
         }
       }
+
       vint<K>::store(valid & terminated, &ray.geomID, 0);
       AVX_ZERO_UPPER();
     }
@@ -780,10 +776,9 @@ namespace embree
       Precalculations pre(valid,ray);
 
       /* load ray */
-      const vfloat<K> org_ray_tnear = max(ray.tnear,0.0f);
-      const vfloat<K> org_ray_tfar  = max(ray.tfar ,0.0f);
-
       TravRayK<K, robust> tray(ray.org, ray.dir, single ? N : 0);
+      const vfloat<K> org_ray_tnear = max(ray.tnear, 0.0f);
+      const vfloat<K> org_ray_tfar  = max(ray.tfar , 0.0f);
 
       vbool<K> terminated = !valid;
 
@@ -822,7 +817,7 @@ namespace embree
           while (likely(!cur.isLeaf()))
           {
             /* process nodes */
-            //STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
+            //STAT3(normal.trav_nodes, 1, popcnt(valid_node), K);
             const NodeRef nodeRef = cur;
             const AlignedNode* __restrict__ const node = nodeRef.alignedNode();
 
@@ -834,14 +829,14 @@ namespace embree
             m_active = 0;
 
 #if defined(__AVX__)
-            //STAT3(normal.trav_hit_boxes[__popcnt(m_frusta_node)],1,1,1);
+            //STAT3(normal.trav_hit_boxes[__popcnt(m_frusta_node)], 1, 1, 1);
 #endif
             size_t num_child_hits = 0;
             do {
               const size_t i = __bscf(m_frusta_node);
               vfloat<K> lnearP;
               vbool<K> lhit = false; // motion blur is not supported, so the initial value will be ignored
-              STAT3(normal.trav_nodes,1,1,1);
+              STAT3(normal.trav_nodes, 1, 1, 1);
               BVHNNodeIntersectorK<N, K, types, robust>::intersect(nodeRef, i, tray, ray.time, lnearP, lhit);
 
               if (likely(any(lhit)))
@@ -867,7 +862,7 @@ namespace embree
           assert(cur != BVH::invalidNode);
           assert(cur != BVH::emptyNode);
 #if defined(__AVX__)
-          STAT3(normal.trav_leaves,1,__popcnt(m_active),K);
+          STAT3(normal.trav_leaves, 1, __popcnt(m_active), K);
 #endif
           if (unlikely(!m_active)) continue;
           size_t items; const Primitive* prim = (Primitive*)cur.leaf(items);
@@ -885,8 +880,8 @@ namespace embree
           }
         }
       } while(valid_bits);
-      vint<K>::store(valid & terminated, &ray.geomID, 0);
 
+      vint<K>::store(valid & terminated, &ray.geomID, 0);
       AVX_ZERO_UPPER();
     }
   }
