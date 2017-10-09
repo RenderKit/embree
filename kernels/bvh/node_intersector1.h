@@ -22,7 +22,11 @@ namespace embree
 {
   namespace isa
   {
-    /* Ray structure used in ray traversal (without tnear and tfar) */
+    //////////////////////////////////////////////////////////////////////////////////////
+    // Ray structure used in single-ray traversal
+    //////////////////////////////////////////////////////////////////////////////////////
+
+    /* Base (without tnear and tfar) */
     template<int N, int Nx>
     struct TravRayBase
     {
@@ -124,7 +128,7 @@ namespace embree
       size_t farX, farY, farZ;
     };
 
-    /* Ray structure used in ray traversal */
+    /* Full (with tnear and tfar) */
     template<int N, int Nx>
     struct TravRay : TravRayBase<N,Nx>
     {
