@@ -50,13 +50,13 @@ namespace embree
     {
       Vec3vf<K> rdir;
       Vec3vf<K> org_rdir;
-      vfloat<K> min_dist;
-      vfloat<K> max_dist;
+      vfloat<K> tnear;
+      vfloat<K> tfar;
 
       __forceinline Packet () {}
       
       __forceinline Packet (const Vec3vf<K>& org, const Vec3vf<K>& dir, const vfloat<K>& tnear, const vfloat<K>& tfar)
-        : rdir(rcp_safe(dir)), org_rdir(org*rdir), min_dist(tnear), max_dist(tfar) {}
+        : rdir(rcp_safe(dir)), org_rdir(org*rdir), tnear(tnear), tfar(tfar) {}
 
       template<int N, int Nx>
         __forceinline size_t intersectRay(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t rid, const NearFarPreCompute& nf) const
@@ -74,8 +74,8 @@ namespace embree
         const vfloat<Nx> rmaxX = msub(bmaxX, vfloat<Nx>(rdir.x[rid]), vfloat<Nx>(org_rdir.x[rid]));
         const vfloat<Nx> rmaxY = msub(bmaxY, vfloat<Nx>(rdir.y[rid]), vfloat<Nx>(org_rdir.y[rid]));
         const vfloat<Nx> rmaxZ = msub(bmaxZ, vfloat<Nx>(rdir.z[rid]), vfloat<Nx>(org_rdir.z[rid]));
-        const vfloat<Nx> rmin  = maxi(rminX, rminY, rminZ, vfloat<Nx>(min_dist[rid]));
-        const vfloat<Nx> rmax  = mini(rmaxX, rmaxY, rmaxZ, vfloat<Nx>(max_dist[rid]));
+        const vfloat<Nx> rmin  = maxi(rminX, rminY, rminZ, vfloat<Nx>(tnear[rid]));
+        const vfloat<Nx> rmax  = mini(rmaxX, rmaxY, rmaxZ, vfloat<Nx>(tfar[rid]));
 
         const vbool<Nx> vmask_first_hit = rmin <= rmax;
 
@@ -100,8 +100,8 @@ namespace embree
         const vfloat<K> rmaxY = msub(bmaxY, rdir.y, org_rdir.y);
         const vfloat<K> rmaxZ = msub(bmaxZ, rdir.z, org_rdir.z);
         
-        const vfloat<K> rmin  = maxi(rminX, rminY, rminZ, min_dist);
-        const vfloat<K> rmax  = mini(rmaxX, rmaxY, rmaxZ, max_dist);
+        const vfloat<K> rmin  = maxi(rminX, rminY, rminZ, tnear);
+        const vfloat<K> rmax  = mini(rmaxX, rmaxY, rmaxZ, tfar);
 
         const vbool<K> vmask_first_hit = rmin <= rmax;
 
@@ -114,13 +114,13 @@ namespace embree
     {
       Vec3vf<K> rdir;
       Vec3vf<K> org;
-      vfloat<K> min_dist;
-      vfloat<K> max_dist;
+      vfloat<K> tnear;
+      vfloat<K> tfar;
 
       __forceinline Packet () {}
       
       __forceinline Packet (const Vec3vf<K>& org, const Vec3vf<K>& dir, const vfloat<K>& tnear, const vfloat<K>& tfar)
-        : rdir(rcp_safe(dir)), org(org), min_dist(tnear), max_dist(tfar) {}
+        : rdir(rcp_safe(dir)), org(org), tnear(tnear), tfar(tfar) {}
 
       template<int N, int Nx>
       __forceinline size_t intersectRay(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t rid, const NearFarPreCompute& nf) const
@@ -140,8 +140,8 @@ namespace embree
         const vfloat<Nx> rmaxZ = (bmaxZ - vfloat<Nx>(org.z[rid])) * vfloat<Nx>(rdir.z[rid]);
         const float round_down = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512
         const float round_up   = 1.0f+2.0f*float(ulp);
-        const vfloat<Nx> rmin  = round_down*max(rminX, rminY, rminZ, vfloat<Nx>(min_dist[rid]));
-        const vfloat<Nx> rmax  = round_up  *min(rmaxX, rmaxY, rmaxZ, vfloat<Nx>(max_dist[rid]));
+        const vfloat<Nx> rmin  = round_down*max(rminX, rminY, rminZ, vfloat<Nx>(tnear[rid]));
+        const vfloat<Nx> rmax  = round_up  *min(rmaxX, rmaxY, rmaxZ, vfloat<Nx>(tfar[rid]));
 
         const vbool<Nx> vmask_first_hit = rmin <= rmax;
 
@@ -168,8 +168,8 @@ namespace embree
         
         const float round_down = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512
         const float round_up   = 1.0f+2.0f*float(ulp);
-        const vfloat<K> rmin  = round_down*max(rminX, rminY, rminZ, vfloat<K>(min_dist));
-        const vfloat<K> rmax  = round_up  *min(rmaxX, rmaxY, rmaxZ, vfloat<K>(max_dist));
+        const vfloat<K> rmin  = round_down*max(rminX, rminY, rminZ, vfloat<K>(tnear));
+        const vfloat<K> rmax  = round_up  *min(rmaxX, rmaxY, rmaxZ, vfloat<K>(tfar));
 
         const vbool<K> vmask_first_hit = rmin <= rmax;
 
