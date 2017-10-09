@@ -64,4 +64,6 @@ inline void Light_Constructor(Light* self)
   self->eval = Light_eval;
 }
 
+extern "C" void Light_destroy(const Light* light);
+
 } // namespace embree
