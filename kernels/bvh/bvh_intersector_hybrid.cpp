@@ -64,7 +64,7 @@ namespace embree
       /* pop loop */
       while (true) pop:
       {
-        /*! pop next node */
+        /* pop next node */
         if (unlikely(stackPtr == stack)) break;
         stackPtr--;
         NodeRef cur = NodeRef(stackPtr->ptr);
@@ -530,7 +530,7 @@ namespace embree
 	/* pop loop */
 	while (true) pop:
 	{
-	  /*! pop next node */
+          /* pop next node */
 	  if (unlikely(stackPtr == stack)) break;
 	  stackPtr--;
           NodeRef cur = (NodeRef)*stackPtr;
