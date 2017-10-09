@@ -1244,7 +1244,7 @@ namespace embree
       case TRIANGLE_MESH_MB: switch (sflags) {
         case RTC_SCENE_STATIC : return avx2 ? 55.0f*NN : 45.0f*NN; // triangle4imb
         case RTC_SCENE_ROBUST : return avx2 ? 55.0f*NN : 45.0f*NN; // triangle4imb
-        case RTC_SCENE_COMPACT: return avx2 ? 47.0f*NN : 45.0f*NN; // triangle4imb
+        case RTC_SCENE_COMPACT: return avx2 ? 45.0f*NN : 45.0f*NN; // triangle4imb
         default: return inf;
         }
         
@@ -1381,7 +1381,7 @@ namespace embree
         double single_to_threaded = double(bytes_all_threads.second)/double(bytes_one_thread.second);
      
         const bool failed0 = expected_to_single > 1.0f;
-        const bool failed1 = sflags == RTC_SCENE_DYNAMIC ? single_to_threaded > 1.30f : single_to_threaded > 1.14f;
+        const bool failed1 = sflags == RTC_SCENE_DYNAMIC ? single_to_threaded > 1.30f : single_to_threaded > 1.12f;
 
         if (failed0 || failed1) {
           std::cout << state->red ("-") << std::flush;
