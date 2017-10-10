@@ -60,7 +60,7 @@ continuous-fedora26-x64-RelWithDebInfo-GCC-AVX2-TBB:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC isa:AVX2 tasking:TBB intensity:2"
   tags:   [docker]
   only:   [pushes]
-  
+
 continuous-linux-x64-RelWithDebInfo-ICC17-AVX2-TBB-KLOCKWORK:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 isa:AVX2 tasking:TBB klocwork:ON intensity:2"
   tags:   [linux, icc17, klocwork]
@@ -435,10 +435,11 @@ release-macosx-x64-Release-ICC16-TBB-PACKAGE-PKG:
   artifacts:
     paths:
       - build/*.dmg
-  
+
 release-linux-x64-Release-ICC17-TBB-PACKAGE-ZIP:
+  image: embreedocker/centos:6.0
   script: "scripts/test.py platform:x64 build:Release compiler:ICC17 isa:[SSE2,SSE42,AVX,AVX2,AVX512KNL,AVX512SKX] tasking:TBB intensity:3 package:ZIP"
-  tags:   [centos6, icc17]
+  tags:   [docker]
   only:   [web]
   artifacts:
     paths:
@@ -446,7 +447,7 @@ release-linux-x64-Release-ICC17-TBB-PACKAGE-ZIP:
 
 release-linux-x64-Release-ICC17-TBB-PACKAGE-RPM:
   script: "scripts/test.py platform:x64 build:Release compiler:ICC17 isa:[SSE2,SSE42,AVX,AVX2,AVX512KNL,AVX512SKX] tasking:TBB intensity:3 package:RPM"
-  tags:   [centos6, icc17]
+  tags:   [docker]
   only:   [web]
   artifacts:
     paths:
