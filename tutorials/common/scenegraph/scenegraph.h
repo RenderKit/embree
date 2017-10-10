@@ -708,6 +708,11 @@ namespace embree
         return positions[0].size();
       }
 
+      size_t numNormals() const {
+        if (normals.size()) return normals[0].size();
+        else return 0;
+      }
+
       size_t numTimeSteps() const {
         return positions.size();
       }

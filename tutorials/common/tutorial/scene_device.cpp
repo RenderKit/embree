@@ -210,10 +210,9 @@ namespace embree
     numEdgeCreases = unsigned(in->edge_creases.size());
     numVertexCreases = unsigned(in->vertex_creases.size());
     numHoles = unsigned(in->holes.size());
-    numNormals = unsigned(in->normals.size());
+    numNormals = unsigned(in->numNormals());
     numTexCoords = unsigned(in->texcoords.size());
     materialID = scene_in->materialID(in->material);
-    
     size_t numEdges = in->position_indices.size();
     size_t numFaces = in->verticesPerFace.size();
     subdivlevel = new float[numEdges];
@@ -365,7 +364,7 @@ namespace embree
 
     /* set normal buffers and optionally normal topology */
     if (mesh->normals) {
-      rtcSetBuffer2(scene_out, geomID, (RTCBufferType)(RTC_USER_VERTEX_BUFFER+1), mesh->normals, 0, sizeof(Vec3fa  ), mesh->numNormals);
+      rtcSetBuffer2(scene_out, geomID, (RTCBufferType)(RTC_USER_VERTEX_BUFFER+1), mesh->normals[0], 0, sizeof(Vec3fa  ), mesh->numNormals);
       if (mesh->normal_indices) {
         rtcSetBuffer(scene_out, geomID, (RTCBufferType)(RTC_INDEX_BUFFER+1),  mesh->normal_indices  , 0, sizeof(unsigned int));
         rtcSetIndexBuffer(scene_out, geomID, (RTCBufferType)(RTC_USER_VERTEX_BUFFER+1), (RTCBufferType)(RTC_INDEX_BUFFER+1));
