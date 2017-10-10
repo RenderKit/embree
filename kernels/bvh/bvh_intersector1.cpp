@@ -119,7 +119,6 @@ namespace embree
           stackPtr++;
         }
       }
-      AVX_ZERO_UPPER();
     }
 
     template<int N, int types, bool robust, typename PrimitiveIntersector1>
@@ -201,7 +200,6 @@ namespace embree
           stackPtr++;
         }
       }
-      AVX_ZERO_UPPER();
     }
   }
 }

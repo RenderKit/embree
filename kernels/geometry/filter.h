@@ -56,7 +56,7 @@ namespace embree
         ray.Ng = Ng;
         
         /* invoke filter function */
-        AVX_ZERO_UPPER(); geometry->intersectionFilter1(geometry->userPtr,(RTCRay&)ray);
+        geometry->intersectionFilter1(geometry->userPtr,(RTCRay&)ray);
 
         /* restore hit if filter not passed */
         if (unlikely(ray.geomID == RTC_INVALID_GEOMETRY_ID)) 
@@ -74,7 +74,7 @@ namespace embree
       {
         assert(geometry->intersectionFilterN);
         int mask = -1; Hit hit(ray.instID,geomID,primID,u,v,t,Ng);
-        AVX_ZERO_UPPER(); geometry->intersectionFilterN(&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,1);
+        geometry->intersectionFilterN(&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,1);
         return mask != 0;
       }
     }
@@ -97,7 +97,7 @@ namespace embree
         ray.Ng = Ng;
         
         /* invoke filter function */
-        AVX_ZERO_UPPER(); geometry->occlusionFilter1(geometry->userPtr,(RTCRay&)ray);
+        geometry->occlusionFilter1(geometry->userPtr,(RTCRay&)ray);
       
         /* restore hit if filter not passed */
         if (unlikely(ray.geomID == RTC_INVALID_GEOMETRY_ID)) 
@@ -114,7 +114,7 @@ namespace embree
       {
         assert(geometry->occlusionFilterN);
         int mask = -1; Hit hit(ray.instID,geomID,primID,u,v,t,Ng);
-        AVX_ZERO_UPPER(); geometry->occlusionFilterN(&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,1);
+        geometry->occlusionFilterN(&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,1);
         return mask != 0;
       }
     }
@@ -136,7 +136,6 @@ namespace embree
         const vfloat4 ray_Ng_z = ray.Ng.z;     vfloat4::store(valid,&ray.Ng.z,Ng.z);
         
         /* invoke filter function */
-        AVX_ZERO_UPPER();
         if (geometry->hasISPCIntersectionFilter<vfloat4>()) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid.mask32());
         else { const vint4 mask = valid.mask32(); filter4(&mask,geometry->userPtr,(RTCRay4&)ray); }
       
@@ -163,7 +162,7 @@ namespace embree
       {
         assert(geometry->intersectionFilterN);
         vint4 mask = valid.mask32(); Hit4 hit(ray.instID,geomID,primID,u,v,t,Ng);
-        AVX_ZERO_UPPER(); geometry->intersectionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,4);
+        geometry->intersectionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,4);
         return mask != vint4(0);
       }
   }
@@ -189,7 +188,6 @@ namespace embree
         vfloat4::store(valid,&ray.Ng.z,Ng.z);
         
         /* invoke filter function */
-        AVX_ZERO_UPPER();
         if (geometry->hasISPCOcclusionFilter<vfloat4>()) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid.mask32());
         else { const vint4 mask = valid.mask32(); filter4(&mask,geometry->userPtr,(RTCRay4&)ray); }
       
@@ -207,7 +205,7 @@ namespace embree
       {
         assert(geometry->occlusionFilterN);
         vint4 mask = valid.mask32(); Hit4 hit(ray.instID,geomID,primID,u,v,t,Ng);
-        AVX_ZERO_UPPER(); geometry->occlusionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,4);
+        geometry->occlusionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,4);
         return mask != vint4(0);
       }
     }
@@ -230,7 +228,6 @@ namespace embree
         const vfloat4 ray_Ng_z = ray.Ng.z;     ray.Ng.z[k] = Ng.z;
         
         /* invoke filter function */
-        AVX_ZERO_UPPER();
         if (geometry->hasISPCIntersectionFilter<vfloat4>()) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid.mask32());
         else { const vint4 mask = valid.mask32(); filter4(&mask,geometry->userPtr,(RTCRay4&)ray); }
       
@@ -254,7 +251,7 @@ namespace embree
       {
         assert(geometry->intersectionFilterN);
         vint4 mask = valid.mask32(); Hit4 hit(ray.instID,geomID,primID,u,v,t,Ng);
-        AVX_ZERO_UPPER(); geometry->intersectionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,4);
+        geometry->intersectionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,4);
         return mask[k] != 0;
       }
     }
@@ -279,7 +276,6 @@ namespace embree
         ray.Ng.z[k] = Ng.z;
         
         /* invoke filter function */
-        AVX_ZERO_UPPER();
         if (geometry->hasISPCOcclusionFilter<vfloat4>()) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid.mask32());
         else { const vint4 mask = valid.mask32(); filter4(&mask,geometry->userPtr,(RTCRay4&)ray); }
         
@@ -297,7 +293,7 @@ namespace embree
       {
         assert(geometry->occlusionFilterN);
         vint4 mask = valid.mask32(); Hit4 hit(ray.instID,geomID,primID,u,v,t,Ng);
-        AVX_ZERO_UPPER(); geometry->occlusionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,4);
+        geometry->occlusionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,4);
         return mask[k] != 0;
       }
     }
@@ -346,7 +342,7 @@ namespace embree
       {
         assert(geometry->intersectionFilterN);
         vint8 mask = valid.mask32(); Hit8 hit(ray.instID,geomID,primID,u,v,t,Ng);
-        AVX_ZERO_UPPER(); geometry->intersectionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,8);
+        geometry->intersectionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,8);
         return mask != vint8(0);
       }
     }
@@ -389,7 +385,7 @@ namespace embree
       {
         assert(geometry->occlusionFilterN);
         vint8 mask = valid.mask32(); Hit8 hit(ray.instID,geomID,primID,u,v,t,Ng);
-        AVX_ZERO_UPPER(); geometry->occlusionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,8);
+        geometry->occlusionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,8);
         return mask != vint8(0);
       }
     }
@@ -435,7 +431,7 @@ namespace embree
       {
         assert(geometry->intersectionFilterN);
         vint8 mask = valid.mask32(); Hit8 hit(ray.instID,geomID,primID,u,v,t,Ng);
-        AVX_ZERO_UPPER(); geometry->intersectionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,8);
+        geometry->intersectionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,8);
         return mask[k] != 0;
       }
     }
@@ -479,7 +475,7 @@ namespace embree
       {
         assert(geometry->occlusionFilterN);
         vint8 mask = valid.mask32(); Hit8 hit(ray.instID,geomID,primID,u,v,t,Ng);
-        AVX_ZERO_UPPER(); geometry->occlusionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,8);
+        geometry->occlusionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,8);
         return mask[k] != 0;
       }
     }
@@ -531,7 +527,7 @@ namespace embree
       {
         assert(geometry->intersectionFilterN);
         vint16 mask = valid.mask32(); Hit16 hit(ray.instID,geomID,primID,u,v,t,Ng);
-        AVX_ZERO_UPPER(); geometry->intersectionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,16);
+        geometry->intersectionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,16);
         return mask != vint16(0);
       }
     }
@@ -574,7 +570,7 @@ namespace embree
       {
         assert(geometry->occlusionFilterN);
         vint16 mask = valid.mask32(); Hit16 hit(ray.instID,geomID,primID,u,v,t,Ng);
-        AVX_ZERO_UPPER(); geometry->occlusionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,16);
+        geometry->occlusionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,16);
         return mask != vint16(0);
       }
     }
@@ -620,7 +616,7 @@ namespace embree
       {
         assert(geometry->intersectionFilterN);
         vint16 mask = valid.mask32(); Hit16 hit(ray.instID,geomID,primID,u,v,t,Ng);
-        AVX_ZERO_UPPER(); geometry->intersectionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,16);
+        geometry->intersectionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,16);
         return mask[k] != 0;
       }
     }
@@ -664,7 +660,7 @@ namespace embree
       {
         assert(geometry->occlusionFilterN);
         vint16 mask = valid.mask32(); Hit16 hit(ray.instID,geomID,primID,u,v,t,Ng);
-        AVX_ZERO_UPPER(); geometry->occlusionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,16);
+        geometry->occlusionFilterN((int*)&mask,geometry->userPtr,context->user,(RTCRayN*)&ray,(RTCHitN*)&hit,16);
         return mask[k] != 0;
       }
     }    

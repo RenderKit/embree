@@ -360,8 +360,6 @@ namespace embree
           }
         }
       } while(valid_bits);
-
-      AVX_ZERO_UPPER();
     }
 
 
@@ -524,8 +522,6 @@ namespace embree
         }
         
       } while(valid_bits);
-
-      AVX_ZERO_UPPER();
     }
 
     // ===================================================================================================================================================================
@@ -771,7 +767,6 @@ namespace embree
         }
       }
       vint<K>::store(valid & terminated,&ray.geomID,0);
-      AVX_ZERO_UPPER();
     }
 
 
@@ -906,8 +901,6 @@ namespace embree
         }
       } while(valid_bits);
       vint<K>::store(valid & terminated, &ray.geomID, 0);
-
-      AVX_ZERO_UPPER();
     }
   }
 }

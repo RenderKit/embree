@@ -37,7 +37,6 @@ namespace embree
       
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim) 
       {
-        AVX_ZERO_UPPER();
         AccelSet* accel = (AccelSet*) context->scene->get(prim.geomID());
 
         /* perform ray mask test */
@@ -51,7 +50,6 @@ namespace embree
       
       static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim) 
       {
-        AVX_ZERO_UPPER();
         AccelSet* accel = (AccelSet*) context->scene->get(prim.geomID());
 
         /* perform ray mask test */
@@ -89,7 +87,6 @@ namespace embree
       
       static __forceinline void intersect(const vbool<K>& valid_i, const Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim)
       {
-        AVX_ZERO_UPPER();
         vbool<K> valid = valid_i;
         AccelSet* accel = (AccelSet*) context->scene->get(prim.geomID());
         

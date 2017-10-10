@@ -33,14 +33,6 @@
 #  include "avx512.h"
 #endif
 
-#if defined(__AVX512F__)
-#  define AVX_ZERO_UPPER()
-#elif defined (__AVX__)
-#  define AVX_ZERO_UPPER() _mm256_zeroupper()
-#else
-#  define AVX_ZERO_UPPER()
-#endif
-
 namespace embree
 {
   /* foreach unique */
