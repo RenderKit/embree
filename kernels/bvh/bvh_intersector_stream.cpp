@@ -48,7 +48,7 @@ namespace embree
       assert(numOctantRays <= MAX_INTERNAL_STREAM_SIZE);
 
       __aligned(64) TravRayKStream<K, robust> packets[MAX_INTERNAL_STREAM_SIZE/K];
-      __aligned(64) Frustum<N, Nx, K, robust> frustum;
+      __aligned(64) Frustum<robust> frustum;
 
       bool commonOctant = true;
       const size_t m_active = initPacketsAndFrustum<false>(inputPackets, numOctantRays, packets, frustum, commonOctant);
@@ -157,7 +157,7 @@ namespace embree
 
       /* inactive rays should have been filtered out before */
       __aligned(64) TravRayKStream<K, robust> packets[MAX_INTERNAL_STREAM_SIZE/K];
-      __aligned(64) Frustum<N, Nx, K, robust> frustum;
+      __aligned(64) Frustum<robust> frustum;
 
       bool commonOctant = true;
       size_t m_active = initPacketsAndFrustum<true>(inputPackets, numOctantRays, packets, frustum, commonOctant);

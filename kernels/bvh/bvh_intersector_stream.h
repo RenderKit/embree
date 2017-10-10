@@ -17,8 +17,8 @@
 #pragma once
 
 #include "node_intersector_packet_stream.h"
+#include "node_intersector_frustum.h"
 #include "bvh_traverser_stream.h"
-#include "frustum.h"
 
 namespace embree
 {
@@ -40,7 +40,7 @@ namespace embree
 
       template<bool occluded>
       __forceinline static size_t initPacketsAndFrustum(RayK<K>** inputPackets, size_t numOctantRays,
-                                                        TravRayKStream<K, robust>* packets, Frustum<N, Nx, K, robust>& frustum, bool& commonOctant)
+                                                        TravRayKStream<K, robust>* packets, Frustum<robust>& frustum, bool& commonOctant)
       {
         const size_t numPackets = (numOctantRays+K-1)/K;
 
@@ -110,7 +110,8 @@ namespace embree
 
         frustum.init(reduced_min_origin, reduced_max_origin,
                      reduced_min_rdir, reduced_max_rdir,
-                     frustum_min_dist, frustum_max_dist);
+                     frustum_min_dist, frustum_max_dist,
+                     N);
         
         return m_active;
       }
@@ -137,11 +138,11 @@ namespace embree
       __forceinline static size_t traverseCoherentStream(size_t m_trav_active,
                                                          TravRayKStream<K, robust>* packets,
                                                          const AlignedNode* __restrict__ node,
-                                                         const Frustum<N, Nx, K, robust>& frustum,
+                                                         const Frustum<robust>& frustum,
                                                          size_t* maskK,
                                                          vfloat<Nx>& dist)
       {
-        size_t m_node_hit = frustum.intersect(node, dist);
+        size_t m_node_hit = intersectNode<N,Nx>(node, frustum, dist);
         const size_t first_index    = __bsf(m_trav_active);
         const size_t first_packetID = first_index / K;
         const size_t first_rayID    = first_index % K;
