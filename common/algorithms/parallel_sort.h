@@ -277,8 +277,10 @@ namespace embree
     }
     
   public:
-    ParallelRadixSort (Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize)
-      : radixCount(nullptr), src(src), tmp(tmp), N(N)
+    ParallelRadixSort (Ty* const src, Ty* const tmp, const size_t N)
+      : radixCount(nullptr), src(src), tmp(tmp), N(N) {}
+
+    void sort(const size_t blockSize)
     {
       assert(blockSize > 0);
       
@@ -295,6 +297,12 @@ namespace embree
         const size_t numThreads = min((N+blockSize-1)/blockSize,TaskScheduler::threadCount(),size_t(MAX_TASKS));
         tbbRadixSort(numThreads);
       }
+    }
+
+    ~ParallelRadixSort()
+    {
+      alignedFree(radixCount); 
+      radixCount = nullptr;
     }
     
   private:
@@ -421,8 +429,6 @@ namespace embree
         tbbRadixIteration(6*BITS,0,src,tmp,numTasks);
         tbbRadixIteration(7*BITS,1,tmp,src,numTasks);
       }
-      alignedFree(radixCount); 
-      radixCount = nullptr;
     }
     
   private:
@@ -435,13 +441,13 @@ namespace embree
   template<typename Ty>
     void radix_sort(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = 8192)
   {
-    ParallelRadixSort<Ty,Ty>(src,tmp,N,blockSize);
+    ParallelRadixSort<Ty,Ty>(src,tmp,N).sort(blockSize);
   }
   
   template<typename Ty, typename Key>
     void radix_sort(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = 8192)
   {
-    ParallelRadixSort<Ty,Key>(src,tmp,N,blockSize);
+    ParallelRadixSort<Ty,Key>(src,tmp,N).sort(blockSize);
   }
   
   template<typename Ty>
