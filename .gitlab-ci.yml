@@ -475,6 +475,7 @@ release-linux-x64-Release-ICC17-TBB-PACKAGE-ZIP:
       - build/*.rpm.tar.gz
 
 release-linux-x64-Release-ICC17-TBB-PACKAGE-RPM:
+  image: embreedocker/centos:6.0
   script: "scripts/test.py platform:x64 build:Release compiler:ICC17 isa:[SSE2,SSE42,AVX,AVX2,AVX512KNL,AVX512SKX] tasking:TBB intensity:3 package:RPM"
   tags:   [docker]
   only:   [web]
